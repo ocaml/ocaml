@@ -529,6 +529,9 @@ Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
 # val f : c -> 'a -> 'a = <fun>
 #     val g : c -> 'a -> 'a = <fun>
 #     val h : < id : 'a; .. > -> 'a = <fun>
+#     type 'a u = c option
+# val just : 'a option -> 'a = <fun>
+# val f : c -> 'a -> 'a = <fun>
 #       val f : 'a -> int = <fun>
 val g : 'a -> int = <fun>
 # type 'a t = Leaf of 'a | Node of ('a * 'a) t

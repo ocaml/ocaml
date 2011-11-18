@@ -1326,6 +1326,10 @@ and type_expect ?in_function env sexp ty_expected =
         exp_loc = loc;
         exp_type = type_constant cst;
         exp_env = env }
+  | Pexp_let(Nonrecursive, [spat, sval], sbody) when contains_gadt env spat ->
+      type_expect ?in_function env
+        {sexp with pexp_desc = Pexp_match (sval, [spat, sbody])}
+        ty_expected
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let scp =
         match rec_flag with
@@ -1459,13 +1463,11 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = ty_res;
         exp_env = env }
   | Pexp_match(sarg, caselist) ->
-      let separate = !Clflags.principal || Env.has_local_constraints env in
-      if separate then begin_def ();
+      begin_def ();
       let arg = type_exp env sarg in
-      if separate then begin
-          end_def ();
-          generalize_structure arg.exp_type;
-      end;
+      end_def ();
+      if is_nonexpansive arg then generalize arg.exp_type
+      else generalize_expansive env arg.exp_type;
       let cases, partial =
         type_cases env arg.exp_type ty_expected true loc caselist
       in
@@ -2458,6 +2460,7 @@ and type_statement env sexp =
 (* Typing of match cases *)
 
 and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
+  (* ty_arg is _fully_ generalized *)
   let dont_propagate, has_gadts =
     let patterns = List.map fst caselist in
     List.exists contains_polymorphic_variant patterns,
@@ -2470,14 +2473,15 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     else ty_arg, ty_res, env in
   let lev, env =
     if has_gadts then begin
+      (* raise level for existentials *)
       begin_def ();
       Ident.set_current_time (get_current_level ()); 
       let lev = Ident.current_time () in
-      Ctype.init_def (lev+1000);               (* for existentials *)
+      Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
       (lev, Env.add_gadt_instance_level lev env)
     end else (get_current_level (), env)
   in
-  if !Clflags.principal then begin_def (); (* propagation of the argument *)
+  begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
   (* Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
@@ -2514,18 +2518,15 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   end;
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
-  begin match pat_env_list with [] -> ()
-  | (pat, _) :: _ -> unify_pat env pat (instance env ty_arg)
-  end;
-  if !Clflags.principal then begin
-    let patl = List.map fst pat_env_list in
-    List.iter (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar())))
-      patl;
-    end_def ();
-    List.iter (iter_pattern (fun {pat_type=t} -> generalize_structure t)) patl
-  end;
+  (* Post-processing and generalization *)
+  let patl = List.map fst pat_env_list in
+  List.iter (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar())))
+    patl;
+  List.iter (fun pat -> unify_pat env pat (instance env ty_arg)) patl;
+  end_def ();
+  List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
+  (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
-  let ty_arg' = instance env ty_arg in
   let cases =
     List.map2
       (fun (pat, (ext_env, unpacks)) (spat, sexp) ->
@@ -2542,8 +2543,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         (* Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
           Printtyp.raw_type_expr ty_res'; *)
         let exp = type_expect ?in_function ext_env sexp ty_res' in
-        ({pat with pat_type = ty_arg'},
-         {exp with exp_type = instance env ty_res'}))
+        (pat, {exp with exp_type = instance env ty_res'}))
       pat_env_list caselist
   in
   if !Clflags.principal || has_gadts then begin

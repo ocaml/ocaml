@@ -624,10 +624,6 @@ let generalize_structure var_level ty =
   simple_abbrevs := Mnil;
   generalize_structure var_level ty
 
-(* let generalize_expansive ty = generalize_structure !nongen_level ty *)
-let generalize_global ty = generalize_structure !global_level ty
-let generalize_structure ty = generalize_structure !current_level ty
-
 (* Generalize the spine of a function, if the level >= !current_level *)
 
 let rec generalize_spine ty =
@@ -711,6 +707,9 @@ let rec update_level env level ty =
 
 (* Generalize and lower levels of contravariant branches simultaneously *)
 
+let generalize_contravariant env =
+  if !Clflags.principal then generalize_structure else update_level env
+
 let rec generalize_expansive env var_level ty =
   let ty = repr ty in
   if ty.level <> generic_level then begin
@@ -724,13 +723,13 @@ let rec generalize_expansive env var_level ty =
           abbrev := Mnil;
           List.iter2
             (fun (co,cn,ct) t ->
-              if ct then update_level env var_level t
+              if ct then generalize_contravariant env var_level t
               else generalize_expansive env var_level t)
             variance tyl
       | Tpackage (_, _, tyl) ->
-          List.iter (update_level env var_level) tyl
+          List.iter (generalize_contravariant env var_level) tyl
       | Tarrow (_, t1, t2, _) ->
-          update_level env var_level t1;
+          generalize_contravariant env var_level t1;
           generalize_expansive env var_level t2
       | _ ->
           iter_type_expr (generalize_expansive env var_level) ty
@@ -743,6 +742,9 @@ let generalize_expansive env ty =
     generalize_expansive env !nongen_level ty
   with Unify ([_, ty'] as tr) ->
     raise (Unify ((ty, ty') :: tr))
+
+let generalize_global ty = generalize_structure !global_level ty
+let generalize_structure ty = generalize_structure !current_level ty
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
@@ -1972,6 +1974,17 @@ let mcomp env t1 t2 =
 
 (* Real unification *)
 
+let find_lowest_level ty =
+  let lowest = ref generic_level in
+  let rec find ty =
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      if ty.level < !lowest then lowest := ty.level;
+      ty.level <- pivot_level - ty.level;
+      iter_type_expr find ty
+    end
+  in find ty; unmark_type ty; !lowest
+
 let find_newtype_level env path = 
   match (Env.find_type path env).type_newtype_level with
     Some x -> x
@@ -2057,6 +2070,9 @@ and unify2 env t1 t2 =
     expand_both t1' t2'
   in
   let t1', t2' = expand_both t1 t2 in
+  let lv = min t1'.level t2'.level in
+  update_level !env lv t2;
+  update_level !env lv t1;
   if unify_eq !env t1' t2' then () else
 
   let t1 = repr t1 and t2 = repr t2 in
@@ -2069,6 +2085,15 @@ and unify2 env t1 t2 =
     | None, Some lv2 -> Env.add_gadt_instance_chain !env lv2 t1
     | None, None     -> ()
   end;
+  let t1, t2 =
+    if !Clflags.principal
+    && (find_lowest_level t1' < lv || find_lowest_level t2' < lv) then
+      (* Expand abbreviations hiding a lower level *)
+      (* Should also do it for parameterized types, after unification... *)
+      (match t1.desc with Tconstr (_, [], _) -> t1' | _ -> t1),
+      (match t2.desc with Tconstr (_, [], _) -> t2' | _ -> t2)
+    else (t1, t2)
+  in
   if unify_eq !env t1 t1' || not (unify_eq !env t2 t2') then
     unify3 env t1 t1' t2 t2'
   else
@@ -2084,26 +2109,20 @@ and unify3 env t1 t1' t2 t2' =
   begin match (d1, d2) with (* handle vars and univars specially *)
     (Tunivar _, Tunivar _) ->
       unify_univar t1' t2' !univar_pairs;
-      update_level !env t1'.level t2';
       link_type t1' t2'
   | (Tvar _, _) ->
       occur !env t1 t2';
       occur_univar !env t2;
-      update_level !env t1'.level t2;
       link_type t1' t2;      
   | (_, Tvar _) ->
       occur !env t2 t1';
       occur_univar !env t1;
-      update_level !env t2'.level t1;
       link_type t2' t1;
   | _ ->
-      update_level !env t1'.level t2;
-      update_level !env t2'.level t1;
       let umode = !umode in
       begin match umode with
       | Expression ->
           occur !env t1' t2';
-          update_level !env t1'.level t2;
           link_type t1' t2
       | Pattern ->
           add_type_equality t1' t2'

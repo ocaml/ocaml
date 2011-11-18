@@ -78,14 +78,13 @@ let newpersty desc =
 let rec typexp s ty =
   let ty = repr ty in
   match ty.desc with
-    Tvar _ | Tunivar _ ->
+    Tvar _ | Tunivar _ as desc ->
       if s.for_saving || ty.id < 0 then
-        let desc = match ty.desc with (* Tvar _ -> Tvar None *) | d -> d in
         let ty' =
           if s.for_saving then newpersty desc
           else newty2 ty.level desc
         in
-        save_desc ty ty.desc; ty.desc <- Tsubst ty'; ty'
+        save_desc ty desc; ty.desc <- Tsubst ty'; ty'
       else ty
   | Tsubst ty ->
       ty
