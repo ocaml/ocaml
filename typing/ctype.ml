@@ -2669,7 +2669,8 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
   if rm1 == rm2 then () else
-  let may_inst = is_Tvar rm1 && may_instantiate inst_nongen rm1 in
+  let may_inst =
+    is_Tvar rm1 && may_instantiate inst_nongen rm1 || rm1.desc = Tnil in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   let r1, r2 =
     if row2.row_closed then
