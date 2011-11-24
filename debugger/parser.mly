@@ -170,6 +170,8 @@ longident :
     LIDENT                      { Lident $1 }
   | module_path DOT LIDENT      { Ldot($1, $3) }
   | OPERATOR                    { Lident $1 }
+  | module_path DOT OPERATOR    { Ldot($1, $3) }
+  | module_path DOT LPAREN OPERATOR RPAREN { Ldot($1, $4) }
 ;
 
 module_path :
