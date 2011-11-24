@@ -1,0 +1,71 @@
+
+#                                                       module Typeable :
+  sig
+    type 'a ty =
+        Int : int ty
+      | String : string ty
+      | List : 'a ty -> 'a list ty
+      | Pair : ('a ty * 'b ty) -> ('a * 'b) ty
+      | Fun : ('a ty * 'b ty) -> ('a -> 'b) ty
+    type ('a, 'b) eq = Eq : ('a, 'a) eq
+    exception CastFailure
+    val check_eq : 'a ty -> 'b ty -> ('a, 'b) eq
+    val gcast : 'a ty -> 'b ty -> 'a -> 'b
+  end
+#                               module HOAS :
+  sig
+    type 'a term =
+        Tag : 't Typeable.ty * int -> 't term
+      | Con : 't -> 't term
+      | Lam : 's Typeable.ty * ('s term -> 't term) -> ('s -> 't) term
+      | App : ('s -> 't) term * 's term -> 't term
+    val intp : 'a term -> 'a
+  end
+#                                                               module DeBruijn :
+  sig
+    type ('env, 't) ix =
+        ZeroIx : ('env * 't, 't) ix
+      | SuccIx : ('env, 't) ix -> ('env * 's, 't) ix
+    val to_int : ('a, 'b) ix -> int
+    type ('env, 't) term =
+        Var : ('env, 't) ix -> ('env, 't) term
+      | Con : 't -> ('env, 't) term
+      | Lam : ('env * 's, 't) term -> ('env, 's -> 't) term
+      | App : ('env, 's -> 't) term * ('env, 's) term -> ('env, 't) term
+    type 'a stack =
+        Empty : unit stack
+      | Push : 'env stack * 't -> ('env * 't) stack
+    val prj : ('a, 'b) ix -> 'a stack -> 'b
+    val intp : ('a, 'b) term -> 'a stack -> 'b
+  end
+#                                                                             module Convert :
+  sig
+    type ('a, 'b) layout =
+        EmptyLayout : ('env, unit) layout
+      | PushLayout : 't Typeable.ty * ('env, 'env') layout *
+          ('env, 't) DeBruijn.ix -> ('env, 'env' * 't) layout
+    val size : ('a, 'b) layout -> int
+    val inc : ('a, 'b) layout -> ('a * 't, 'b) layout
+    val prj :
+      'a Typeable.ty -> int -> ('b, 'c) layout -> ('b, 'a) DeBruijn.ix
+    val cvt : ('a, 'a) layout -> 'b HOAS.term -> ('a, 'b) DeBruijn.term
+    val convert : 'a HOAS.term -> (unit, 'a) DeBruijn.term
+  end
+#                                               module Main :
+  sig
+    val i : 'a Typeable.ty -> ('a -> 'a) HOAS.term
+    val zero : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val one : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val two : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val three : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val plus :
+      'a Typeable.ty ->
+      ((('a -> 'a) -> 'a -> 'a) ->
+       (('a -> 'a) -> 'a -> 'a) -> ('a -> 'a) -> 'a -> 'a)
+      HOAS.term
+    val plus_2_3 : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val i' : (unit, int -> int) DeBruijn.term
+    val plus_2_3' : (unit, (int -> int) -> int -> int) DeBruijn.term
+    val eval_plus_2_3' : int
+  end
+# 
