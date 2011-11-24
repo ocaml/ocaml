@@ -617,7 +617,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    - [@.]: flush the pretty printer and output a new line, as with
      [print_newline ()].
    - [@<n>]: print the following item as if it were of length [n].
-     Hence, [printf "@<0>%s" arg] is equivalent to [print_as 0 arg].
+     Hence, [printf "@<0>%s" arg] prints [arg] as a zero length string.
      If [@<n>] is not followed by a conversion specification,
      then the following character of the format is printed as if
      it were of length [n].
@@ -632,6 +632,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
      [close_tag].
    - [@\}]: close the most recently opened tag.
    - [@@]: print a plain [@] character.
+   - [@%]: print a plain [%] character.
 
    Example: [printf "@[%s@ %d@]@." "x =" 1] is equivalent to
    [open_box (); print_string "x ="; print_space ();

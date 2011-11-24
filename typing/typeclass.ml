@@ -194,11 +194,11 @@ let rc node =
 (* Enter a value in the method environment only *)
 let enter_met_env lab kind ty val_env met_env par_env =
   let (id, val_env) =
-    Env.enter_value lab {val_type = ty; val_kind = Val_unbound} val_env
+    Env.enter_value lab {val_type = ty; val_kind = Val_unbound; val_loc = Location.none} val_env
   in
   (id, val_env,
-   Env.add_value id {val_type = ty; val_kind = kind} met_env,
-   Env.add_value id {val_type = ty; val_kind = Val_unbound} par_env)
+   Env.add_value id {val_type = ty; val_kind = kind; val_loc = Location.none} met_env,
+   Env.add_value id {val_type = ty; val_kind = Val_unbound; val_loc = Location.none} par_env)
 
 (* Enter an instance variable in the environment *)
 let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
@@ -585,7 +585,9 @@ let rec class_field cl_num self_type meths vars
              in
              let desc =
                {val_type = expr.exp_type;
-                val_kind = Val_ivar (Immutable, cl_num)}
+                val_kind = Val_ivar (Immutable, cl_num);
+                val_loc = Location.none;
+               }
              in
              let id' = Ident.create (Ident.name id) in
              ((id', expr)
@@ -940,7 +942,9 @@ and class_expr cl_num val_env met_env scl =
              Ctype.generalize expr.exp_type;
              let desc =
                {val_type = expr.exp_type; val_kind = Val_ivar (Immutable,
-                                                               cl_num)}
+                                                               cl_num);
+                val_loc = Location.none;
+               }
              in
              let id' = Ident.create (Ident.name id) in
              ((id', expr)
@@ -1024,7 +1028,8 @@ let temp_abbrev env id arity =
        type_manifest = Some ty;
        type_variance = List.map (fun _ -> true, true, true) !params;
        type_newtype_level = None;
-     }
+       type_loc = Location.none;
+      }
       env
   in
   (!params, ty, env)
@@ -1238,7 +1243,7 @@ let class_infos define_class kind
      type_manifest = Some obj_ty;
      type_variance = List.map (fun _ -> true, true, true) obj_params;
      type_newtype_level = None;
-   }
+     type_loc = cl.pci_loc}
   in
   let (cl_params, cl_ty) =
     Ctype.instance_parameterized_type params (Ctype.self_type typ)
@@ -1252,8 +1257,8 @@ let class_infos define_class kind
      type_private = Public;
      type_manifest = Some cl_ty;
      type_variance = List.map (fun _ -> true, true, true) cl_params;
-     type_newtype_level = None
-   }
+     type_newtype_level = None;
+     type_loc = cl.pci_loc}
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
     arity, pub_meths, List.rev !coercion_locs, expr) :: res,

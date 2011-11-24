@@ -481,7 +481,9 @@ let rec push_defaults loc bindings pat_expr_list partial =
           Texp_match
             ({exp with exp_type = pat.pat_type; exp_desc =
               Texp_ident (Path.Pident param,
-                          {val_type = pat.pat_type; val_kind = Val_reg})},
+                          {val_type = pat.pat_type; val_kind = Val_reg;
+                           val_loc = Location.none;
+                          })},
              pat_expr_list, partial) }
       in
       push_defaults loc bindings

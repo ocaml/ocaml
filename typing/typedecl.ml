@@ -60,6 +60,7 @@ let enter_type env (name, sdecl) id =
         | Some _ -> Some(Ctype.newvar ()) end;
       type_variance = List.map (fun _ -> true, true, true) sdecl.ptype_params;
       type_newtype_level = None;
+      type_loc = sdecl.ptype_loc;
     }
   in
   Env.add_type id decl env
@@ -220,6 +221,7 @@ let transl_declaration env (name, sdecl) id =
         end;
       type_variance = List.map (fun _ -> true, true, true) params;
       type_newtype_level = None;
+      type_loc = sdecl.ptype_loc;
     } in
 
   (* Check constraints *)
@@ -829,11 +831,11 @@ let transl_exn_rebind env loc lid =
   | _ -> raise(Error(loc, Not_an_exception lid))
 
 (* Translate a value declaration *)
-let transl_value_decl env valdecl =
+let transl_value_decl env loc valdecl =
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
   match valdecl.pval_prim with
     [] ->
-      { val_type = ty; val_kind = Val_reg }
+      { val_type = ty; val_kind = Val_reg; val_loc = loc }
   | decl ->
       let arity = Ctype.arity ty in
       if arity = 0 then
@@ -843,7 +845,7 @@ let transl_value_decl env valdecl =
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      { val_type = ty; val_kind = Val_prim prim }
+      { val_type = ty; val_kind = Val_prim prim; val_loc = loc }
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
@@ -877,6 +879,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
         end;
       type_variance = [];
       type_newtype_level = None;
+      type_loc = sdecl.ptype_loc;
     }
   in
   begin match row_path with None -> ()
@@ -907,7 +910,9 @@ let abstract_type_decl arity =
       type_private = Public;
       type_manifest = None;
       type_variance = replicate_list (true, true, true) arity;
-      type_newtype_level = None; } in
+      type_newtype_level = None;
+      type_loc = Location.none;
+     } in
   Ctype.end_def();
   generalize_decl decl;
   decl

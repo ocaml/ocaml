@@ -96,7 +96,7 @@ let line i f s (*...*) =
 let list i f ppf l =
   match l with
   | [] -> line i ppf "[]\n";
-  | h::t ->
+  | _ :: _ ->
      line i ppf "[\n";
      List.iter (f (i+1) ppf) l;
      line i ppf "]\n";
@@ -152,7 +152,7 @@ let rec core_type i ppf x =
       core_type i ppf ct;
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident s;
-      list i package_with ppf l
+      list i package_with ppf l;
 
 and package_with i ppf (s, t) =
   line i ppf "with type %s\n" s;
@@ -524,7 +524,7 @@ and module_type i ppf x =
       list i longident_x_with_constraint ppf l;
   | Pmty_typeof m ->
       line i ppf "Pmty_typeof\n";
-      module_expr i ppf m
+      module_expr i ppf m;
 
 and signature i ppf x = list i signature_item ppf x
 

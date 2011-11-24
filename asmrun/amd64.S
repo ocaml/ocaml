@@ -20,6 +20,7 @@
 
 #ifdef SYS_macosx
 
+#define LBL(x) L##x	
 #define G(r) _##r
 #define GREL(r) _##r@GOTPCREL
 #define GCALL(r) _##r
@@ -33,6 +34,7 @@
 
 #else
 
+#define LBL(x) .L##x	
 #define G(r) r
 #define GREL(r) r@GOTPCREL
 #define GCALL(r) r@PLT
@@ -126,7 +128,7 @@
 
 FUNCTION(G(caml_call_gc))
         RECORD_STACK_FRAME(0)
-.Lcaml_call_gc:
+LBL(caml_call_gc):
     /* Build array of registers, save it into caml_gc_regs */
         pushq   %r13
         pushq   %r12
@@ -203,62 +205,62 @@ FUNCTION(G(caml_call_gc))
         ret
 
 FUNCTION(G(caml_alloc1))
-.Lcaml_alloc1:
+LBL(caml_alloc1):
         subq    $16, %r15
         CMP_VAR(caml_young_limit, %r15)
-        jb      .L100
+        jb      LBL(100)
         ret
-.L100:
+LBL(100):
         RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .Lcaml_call_gc
+        call    LBL(caml_call_gc)
 	addq	$8, %rsp
-        jmp     .Lcaml_alloc1
+        jmp     LBL(caml_alloc1)
 
 FUNCTION(G(caml_alloc2))
-.Lcaml_alloc2:
+LBL(caml_alloc2):
         subq    $24, %r15
         CMP_VAR(caml_young_limit, %r15)
-        jb      .L101
+        jb      LBL(101)
         ret
-.L101:
+LBL(101):
         RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .Lcaml_call_gc
+        call    LBL(caml_call_gc)
 	addq	$8, %rsp
-        jmp     .Lcaml_alloc2
+        jmp     LBL(caml_alloc2)
 
 FUNCTION(G(caml_alloc3))
-.Lcaml_alloc3:
+LBL(caml_alloc3):
         subq    $32, %r15
         CMP_VAR(caml_young_limit, %r15)
-        jb      .L102
+        jb      LBL(102)
         ret
-.L102:
+LBL(102):
         RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .Lcaml_call_gc
+        call    LBL(caml_call_gc)
 	addq	$8, %rsp
-        jmp     .Lcaml_alloc3
+        jmp     LBL(caml_alloc3)
 
 FUNCTION(G(caml_allocN))
-.Lcaml_allocN:
+LBL(caml_allocN):
         pushq   %rax                       /* save desired size */
         subq    %rax, %r15
         CMP_VAR(caml_young_limit, %r15)
-        jb      .L103
+        jb      LBL(103)
         addq    $8, %rsp                  /* drop desired size */
         ret
-.L103:
+LBL(103):
         RECORD_STACK_FRAME(8)
-        call    .Lcaml_call_gc
+        call    LBL(caml_call_gc)
         popq    %rax                      /* recover desired size */
-        jmp     .Lcaml_allocN
+        jmp     LBL(caml_allocN)
 
 /* Call a C function from Caml */
 
 FUNCTION(G(caml_c_call))
-.Lcaml_c_call:
+LBL(caml_c_call):
     /* Record lowest stack address and return address */
         popq    %r12
         STORE_VAR(%r12, caml_last_return_address)
@@ -288,7 +290,7 @@ FUNCTION(G(caml_start_program))
     /* Initial entry point is G(caml_program) */
         leaq    GCALL(caml_program)(%rip), %r12
     /* Common code for caml_start_program and caml_callback* */
-.Lcaml_start_program:
+LBL(caml_start_program):
     /* Build a callback link */
 	subq	$8, %rsp	/* stack 16-aligned */
         PUSH_VAR(caml_gc_regs)
@@ -298,17 +300,17 @@ FUNCTION(G(caml_start_program))
 	LOAD_VAR(caml_young_ptr, %r15)
 	LOAD_VAR(caml_exception_pointer, %r14)
     /* Build an exception handler */
-        lea     .L108(%rip), %r13
+        lea     LBL(108)(%rip), %r13
         pushq   %r13
         pushq   %r14
         movq    %rsp, %r14
     /* Call the Caml code */
         call    *%r12
-.L107:
+LBL(107):
     /* Pop the exception handler */
         popq    %r14
         popq    %r12    /* dummy register */
-.L109:
+LBL(109):
     /* Update alloc ptr and exception ptr */
 	STORE_VAR(%r15,caml_young_ptr)
 	STORE_VAR(%r14,caml_exception_pointer)
@@ -327,21 +329,21 @@ FUNCTION(G(caml_start_program))
         popq    %rbx
     /* Return to caller. */
         ret
-.L108:
+LBL(108):
     /* Exception handler*/
     /* Mark the bucket as an exception result and return it */
         orq     $2, %rax
-        jmp     .L109
+        jmp     LBL(109)
 
 /* Raise an exception from Caml */
 
 FUNCTION(G(caml_raise_exn))
         TESTL_VAR($1, caml_backtrace_active)
-        jne     .L110
+        jne     LBL(110)
         movq    %r14, %rsp
         popq    %r14
         ret
-.L110:
+LBL(110):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, %rdi            /* arg 1: exception bucket */
         movq    0(%rsp), %rsi         /* arg 2: pc of raise */
@@ -357,13 +359,13 @@ FUNCTION(G(caml_raise_exn))
 
 FUNCTION(G(caml_raise_exception))
         TESTL_VAR($1, caml_backtrace_active)
-        jne     .L111
+        jne     LBL(111)
         movq    %rdi, %rax
         LOAD_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
         popq    %r14                  /* Recover previous exception handler */
         LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
-.L111:
+LBL(111):
         movq    %rdi, %r12            /* Save exception bucket */
                                       /* arg 1: exception bucket */
 	LOAD_VAR(caml_last_return_address,%rsi)   /* arg 2: pc of raise */
@@ -391,7 +393,7 @@ FUNCTION(G(caml_callback_exn))
         movq    %rdi, %rbx      /* closure */
         movq    %rsi, %rax      /* argument */
         movq    0(%rbx), %r12   /* code pointer */
-        jmp     .Lcaml_start_program
+        jmp     LBL(caml_start_program)
 
 FUNCTION(G(caml_callback2_exn))
     /* Save callee-save registers */
@@ -407,7 +409,7 @@ FUNCTION(G(caml_callback2_exn))
         movq    %rsi, %rax               /* first argument */
         movq    %rdx, %rbx               /* second argument */
         leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
-        jmp     .Lcaml_start_program
+        jmp     LBL(caml_start_program)
 
 FUNCTION(G(caml_callback3_exn))
     /* Save callee-save registers */
@@ -424,18 +426,18 @@ FUNCTION(G(caml_callback3_exn))
         movq    %rdi, %rsi               /* closure */
         movq    %rcx, %rdi               /* third argument */
         leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
-        jmp     .Lcaml_start_program
+        jmp     LBL(caml_start_program)
 
 FUNCTION(G(caml_ml_array_bound_error))
         leaq    GCALL(caml_array_bound_error)(%rip), %rax
-        jmp     .Lcaml_c_call
+        jmp     LBL(caml_c_call)
 
         .data
         .globl  G(caml_system__frametable)
         .align  EIGHT_ALIGN
 G(caml_system__frametable):
         .quad   1           /* one descriptor */
-        .quad   .L107       /* return address into callback */
+        .quad   LBL(107)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN

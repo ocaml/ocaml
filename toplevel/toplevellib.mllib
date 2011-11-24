@@ -1,7 +1,7 @@
 Myocamlbuild_config
 Misc Tbl Config Clflags Terminfo Ccomp Warnings Consistbl
 
-Linenum Location Longident Syntaxerr Parser
+Location Longident Syntaxerr Parser
 Lexer Parse Printast
 
 Unused_var Ident Path Primitive Types

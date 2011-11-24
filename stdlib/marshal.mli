@@ -115,7 +115,7 @@ val header_size : int
    {!Marshal.data_size}[ buff ofs] is the size, in characters,
    of the data part, assuming a valid header is stored in
    [buff] starting at position [ofs].
-   Finally, {!Marshal.total_size}[ buff ofs] is the total size,
+   Finally, {!Marshal.total_size} [buff ofs] is the total size,
    in characters, of the marshaled value.
    Both {!Marshal.data_size} and {!Marshal.total_size} raise [Failure]
    if [buff], [ofs] does not contain a valid header.

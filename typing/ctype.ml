@@ -1014,6 +1014,7 @@ let new_declaration newtype manifest =
     type_manifest = manifest;
     type_variance = [];
     type_newtype_level = newtype;
+    type_loc = Location.none;
   }
 
 let instance_constructor ?in_pattern cstr =
@@ -3985,6 +3986,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_private = priv;
       type_variance = decl.type_variance;
       type_newtype_level = None;
+      type_loc = decl.type_loc;
     }
   with Not_found ->
     clear_hash ();

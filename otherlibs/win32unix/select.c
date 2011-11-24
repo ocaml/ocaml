@@ -556,7 +556,7 @@ void socket_poll (HANDLE hStop, void *_data)
       if (iterQuery->uFlagsFd & FLAGS_FD_IS_BLOCKING)
       {
         DEBUG_PRINT("Restore a blocking socket");
-        iMode = 1;
+        iMode = 0;
         check_error(lpSelectData,
           WSAEventSelect((SOCKET)(iterQuery->hFileDescr), aEvents[i], 0) != 0 ||
           ioctlsocket((SOCKET)(iterQuery->hFileDescr), FIONBIO, &iMode) != 0);
