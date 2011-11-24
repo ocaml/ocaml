@@ -247,17 +247,14 @@ let variables_of_type =
   loop  
 
 let varify_constructors var_names t = 
-  let counter = ref 0 in 
   let offlimits = variables_of_type t in
   let freshly_created = ref [] in
-  let rec fresh () = 
-    let ret = "x" ^ (string_of_int !counter) in 
-    counter := !counter + 1;
-    if List.mem ret offlimits then fresh () 
-    else
-      begin 
-        freshly_created := ret :: !freshly_created;
-        ret end
+  let rec fresh ?(count=0) name =
+    let ret = if count = 0 then name else name ^ string_of_int count in
+    if List.mem ret offlimits then fresh ~count:(count+1) name else begin 
+      freshly_created := ret :: !freshly_created;
+      ret
+    end
   in
   let sofar : (string,string) Hashtbl.t = Hashtbl.create 0 in
   let rec loop t = 
@@ -273,7 +270,7 @@ let varify_constructors var_names t =
 		Ptyp_var (Hashtbl.find sofar s)
 	  with
 	    | Not_found ->
-	      let name = fresh () in 
+	      let name = fresh s in 
 	      Hashtbl.add sofar s name;
 	      Ptyp_var name end
       | Ptyp_constr(longident, lst) ->
@@ -310,6 +307,14 @@ let varify_constructors var_names t =
   in
   (!freshly_created,loop t)
 
+let wrap_type_annotation newtypes core_type body =
+  let exp = mkexp(Pexp_constraint(body,Some core_type,None)) in
+  let exp =
+    List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
+      newtypes exp
+  in
+  let polyvars, core_type = varify_constructors newtypes core_type in
+  (exp, ghtyp(Ptyp_poly(polyvars,core_type)))
 
 %}
 
@@ -819,6 +824,10 @@ concrete_method :
       { $4, $3, $2, ghexp(Pexp_poly ($5, None)), symbol_rloc () }
   | METHOD override_flag private_flag label COLON poly_type EQUAL seq_expr
       { $4, $3, $2, ghexp(Pexp_poly($8,Some $6)), symbol_rloc () }
+  | METHOD override_flag private_flag label COLON TYPE lident_list
+    DOT core_type EQUAL seq_expr
+      { let exp, poly = wrap_type_annotation $7 $9 $11 in
+        $4, $3, $2, ghexp(Pexp_poly(exp, Some poly)), symbol_rloc () }
 ;
 
 /* Class types */
@@ -1177,36 +1186,20 @@ let_bindings:
 ;
 
 lident_list:
-    LIDENT                                 { [$1] }
+    LIDENT                            { [$1] }
   | LIDENT lident_list                { $1 :: $2 }
-
-
+;
+pat_ident:
+    val_ident                         { mkpat (Ppat_var $1) }
+;
 let_binding:
-    val_ident fun_binding
-      { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
-  | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
-      { (ghpat(Ppat_constraint({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1},
-                               ghtyp(Ptyp_poly($3,$5)))),
-         $7) }
-  | val_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
-      { 
-	let newtypes = $4 in
-	let core_type = $6 in
-	let exp = mkexp(Pexp_constraint($8,Some core_type,None)) in
-	let rec mk_newtypes = 
-	  function
-	    |[newtype] -> mkexp(Pexp_newtype(newtype,exp))
-	    | newtype :: newtypes ->
-		mkexp(Pexp_newtype(newtype,mk_newtypes newtypes))
-	    | [] -> assert false
-	in
-	let exp = mk_newtypes newtypes in
-	let polyvars, core_type = varify_constructors newtypes core_type in
-	
-	(ghpat(Ppat_constraint({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1},
-                               ghtyp(Ptyp_poly(polyvars,core_type)))),
-         exp)
-      }
+    pat_ident fun_binding
+      { ($1, $2) }
+  | pat_ident COLON typevar_list DOT core_type EQUAL seq_expr
+      { (ghpat(Ppat_constraint($1, ghtyp(Ptyp_poly($3,$5)))), $7) }
+  | pat_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
+      { let exp, poly = wrap_type_annotation $4 $6 $8 in
+	(ghpat(Ppat_constraint($1, poly)), exp) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
 ;

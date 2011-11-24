@@ -33,14 +33,18 @@ val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> cltype_declaration
 
 val find_type_expansion:
-    ?use_local:bool -> ?level:int -> Path.t -> t -> type_expr list * type_expr
-val find_type_expansion_opt: Path.t -> t -> type_expr list * type_expr
+    ?level:int -> Path.t -> t -> type_expr list * type_expr * int option
+val find_type_expansion_opt:
+    Path.t -> t -> type_expr list * type_expr * int option
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> Types.module_type
 
 val has_local_constraints: t -> bool
-val map_newtype_level: t -> int -> int
+val add_gadt_instance_level: int -> t -> t
+val gadt_instance_level: t -> type_expr -> int option
+val add_gadt_instances: t -> int -> type_expr list -> unit
+val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 

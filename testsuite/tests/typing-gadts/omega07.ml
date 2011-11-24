@@ -138,6 +138,8 @@ let rec summandLessThanSum : type a b c. (a,b,c) plus -> (a,c) le = fun p ->
 
 type (_,_) equal = Eq : ('a,'a) equal
 
+let convert : type a b. (a,b) equal -> a -> b = fun Eq x -> x
+
 let rec sameNat : type a b. a nat -> b nat -> (a,b) equal option = fun a b ->
   match a, b with
   | NZ, NZ -> Some Eq

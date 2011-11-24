@@ -146,9 +146,9 @@ type type_declaration =
     type_manifest: type_expr option;
     type_variance: (bool * bool * bool) list;
     (* covariant, contravariant, weakly contravariant *)
-    type_newtype_level: int option;
-    type_loc: Location.t;
-   }
+    type_newtype_level: (int * int) option;
+    (* definition level * expansion level *)
+    type_loc: Location.t }
 
 and type_kind =
     Type_abstract

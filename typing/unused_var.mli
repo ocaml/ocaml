@@ -14,3 +14,6 @@
 
 val warn : Format.formatter -> Parsetree.structure -> Parsetree.structure;;
 (* Warn on unused variables; return the second argument. *)
+
+val free_idents : Parsetree.expression -> string list
+(* Conservatively approximate the free variables of an expression. *)

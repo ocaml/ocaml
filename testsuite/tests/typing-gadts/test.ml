@@ -19,6 +19,12 @@ module Exp =
 	    (eval f) (eval a)
 	| Abs f -> f 
 
+    let discern : type a. a t -> _ = function
+        IntLit _ -> 1
+      | BoolLit _ -> 2
+      | Pair _ -> 3
+      | App _ -> 4
+      | Abs _ -> 5
   end
 ;;
 
@@ -159,17 +165,37 @@ type _ t = Int : int t ;;
 
 let ky x y = ignore (x = y); x ;;
 
+let test : type a. a t -> a =
+  function Int -> ky (1 : a) 1
+;;
+
+let test : type a. a t -> _ =
+  function Int -> 1       (* ok *)
+;;
+
+let test : type a. a t -> _ =
+  function Int -> ky (1 : a) 1  (* fails *)
+;;
+
 let test : type a. a t -> a = fun x ->
-  let r = match x with Int -> ky (1 : a) 1
+  let r = match x with Int -> ky (1 : a) 1  (* fails *)
   in r
 ;;
 let test : type a. a t -> a = fun x ->
-  let r = match x with Int -> ky 1 (1 : a)
+  let r = match x with Int -> ky 1 (1 : a)  (* fails *)
+  in r
+;;
+let test (type a) x =
+  let r = match (x : a t) with Int -> ky 1 1
   in r
 ;;
 let test : type a. a t -> a = fun x ->
-  let r = match x with Int -> (1 : a)
-  in r (* fails too *)
+  let r = match x with Int -> (1 : a)       (* ok! *)
+  in r
+;;
+let test : type a. a t -> _ = fun x ->
+  let r = match x with Int -> 1       (* ok! *)
+  in r
 ;;
 let test : type a. a t -> a = fun x ->
   let r : a = match x with Int -> 1
@@ -178,7 +204,7 @@ let test : type a. a t -> a = fun x ->
 let test2 : type a. a t -> a option = fun x ->
   let r = ref None in
   begin match x with Int -> r := Some (1 : a) end;
-  !r (* normalized to int option *)
+  !r (* ok *)
 ;;
 let test2 : type a. a t -> a option = fun x ->
   let r : a option ref = ref None in
@@ -190,19 +216,19 @@ let test2 : type a. a t -> a option = fun x ->
   let u = ref None in
   begin match x with Int -> r := Some 1; u := !r end;
   !u
-;; (* fail *)
+;; (* ok (u non-ambiguous) *)
 let test2 : type a. a t -> a option = fun x ->
   let r : a option ref = ref None in
   let u = ref None in
   begin match x with Int -> u := Some 1; r := !u end;
   !u
-;; (* fail *)
+;; (* fails because u : (int | a) option ref *)
 let test2 : type a. a t -> a option = fun x ->
   let u = ref None in
   let r : a option ref = ref None in
   begin match x with Int -> r := Some 1; u := !r end;
   !u
-;; (* fail *)
+;; (* ok *)
 let test2 : type a. a t -> a option = fun x ->
   let u = ref None in
   let a =
@@ -210,33 +236,135 @@ let test2 : type a. a t -> a option = fun x ->
     begin match x with Int -> r := Some 1; u := !r end;
     !u
   in a
+;; (* ok *)
+let either = ky
+let we_y1x (type a) (x : a) (v : a t) =
+  match v with Int -> let y = either 1 x in y
 ;; (* fail *)
 
 (* Effect of external consraints *)
-
 let f (type a) (x : a t) y =
   ignore (y : a);
-  let r = match x with Int -> (y : a) in (* fails *)
+  let r = match x with Int -> (y : a) in (* ok *)
   r
 ;;
 let f (type a) (x : a t) y =
   let r = match x with Int -> (y : a) in
-  ignore (y : a); (* fails *)
+  ignore (y : a); (* ok *)
   r
 ;;
 let f (type a) (x : a t) y =
   ignore (y : a);
-  let r = match x with Int -> y in
+  let r = match x with Int -> y in (* ok *)
   r
 ;;
 let f (type a) (x : a t) y =
   let r = match x with Int -> y in
-  ignore (y : a);
+  ignore (y : a); (* ok *)
   r
 ;;
 let f (type a) (x : a t) (y : a) =
-  match x with Int -> y (* should return an int! *)
+  match x with Int -> y (* returns 'a *)
 ;;
+
+(* Combination with local modules *)
+
+let f (type a) (x : a t) y =
+  match x with Int ->
+    let module M = struct type b = a let z = (y : b) end
+    in M.z
+;; (* fails because of aliasing... *)
+
+let f (type a) (x : a t) y =
+  match x with Int ->
+    let module M = struct type b = int let z = (y : b) end
+    in M.z
+;; (* ok *)
+
+(* Objects and variants *)
+
+type _ h =
+  | Has_m : <m : int> h
+  | Has_b : <b : bool> h
+
+let f : type a. a h -> a = function
+  | Has_m -> object method m = 1 end
+  | Has_b -> object method b = true end
+;;
+type _ j =
+  | Has_A : [`A of int] j
+  | Has_B : [`B of bool] j
+
+let f : type a. a j -> a = function
+  | Has_A -> `A 1
+  | Has_B -> `B true
+;;
+
+type (_,_) eq = Eq : ('a,'a) eq ;;
+
+let f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
+  fun Eq o -> o
+;; (* fail *)
+
+let f : type a b. (a,b) eq -> <m : a; ..> -> <m : b; ..> =
+  fun Eq o -> o
+;; (* fail *)
+
+let f (type a) (type b) (eq : (a,b) eq) (o : <m : a; ..>) : <m : b; ..> =
+  match eq with Eq -> o ;; (* should fail *)
+
+let f : type a b. (a,b) eq -> <m : a> -> <m : b> =
+  fun Eq o -> o
+;; (* ok *)
+
+let int_of_bool : (bool,int) eq = Obj.magic Eq;;
+
+let x = object method m = true end;;
+let y = (x, f int_of_bool x);;
+
+let f : type a. (a, int) eq -> <m : a> -> bool =
+  fun Eq o -> ignore (o : <m : int; ..>); o#m = 3
+;; (* should be ok *)
+
+let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
+  fun eq o ->
+    ignore (o : < m : a >);
+    let r : < m : b > = match eq with Eq -> o in (* fail with principal *)
+    r;;
+
+let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
+  fun eq o ->
+    let r : < m : b > = match eq with Eq -> o in (* fail *)
+    ignore (o : < m : a >);
+    r;;
+
+let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
+  fun Eq o -> o ;; (* fail *)
+
+let f (type a) (type b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
+  match eq with Eq -> v ;; (* should fail *)
+
+let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
+  fun Eq o -> o ;; (* fail *)
+
+let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
+  fun Eq o -> o ;; (* ok *)
+
+let f : type a. (a, int) eq -> [`A of a] -> bool =
+  fun Eq v -> match v with `A 1 -> true | _ -> false
+;; (* ok *)
+
+let f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
+  fun eq o ->
+    ignore (o : [< `A of a | `B]);
+    let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)
+    r;;
+
+let f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
+  fun eq o ->
+    let r : [`A of b | `B] = match eq with Eq -> o in (* fail *)
+    ignore (o : [< `A of a | `B]);
+    r;;
 
 (* Pattern matching *)
 
@@ -307,4 +435,4 @@ let f : type a. a ty -> a t -> int = fun x y ->
   | {left=TE TC; right=D [|1.0|]} -> 14
   | {left=TA; right=D 0} -> -1
   | {left=TA; right=D z} -> z
-;; (* warn *)
+;; (* ok *)

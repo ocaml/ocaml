@@ -61,7 +61,10 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
     Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
       let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
       Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
-      (match row1.row_more with {desc=Tvar _|Tconstr _} -> true | _ -> false) &&
+      begin match row1.row_more with
+        {desc=Tvar _|Tconstr _|Tnil} -> true
+      | _ -> false
+      end &&
       let r1, r2, pairs =
         Ctype.merge_row_fields row1.row_fields row2.row_fields in
       (not row2.row_closed ||

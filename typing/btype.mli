@@ -17,6 +17,14 @@
 open Asttypes
 open Types
 
+(**** Sets, maps and hashtables of types ****)
+
+module TypeSet  : Set.S with type elt = type_expr
+module TypeMap  : Map.S with type key = type_expr
+module TypeHash : Hashtbl.S with type key = type_expr
+
+(**** Levels ****)
+
 val generic_level: int
 
 val newty2: int -> type_desc -> type_expr
@@ -45,6 +53,8 @@ val field_kind_repr: field_kind -> field_kind
 
 val commu_repr: commutable -> commutable
         (* Return the canonical representative of a commutation lock *)
+
+(**** polymorphic variants ****)
 
 val row_repr: row_desc -> row_desc
         (* Return the canonical representative of a row description *)
@@ -153,15 +163,10 @@ val set_row_field: row_field option ref -> row_field -> unit
 val set_univar: type_expr option ref -> type_expr -> unit
 val set_kind: field_kind option ref -> field_kind -> unit
 val set_commu: commutable ref -> commutable -> unit
+val set_typeset: TypeSet.t ref -> TypeSet.t -> unit
         (* Set references, logging the old value *)
 val log_type: type_expr -> unit
         (* Log the old value of a type, before modifying it by hand *)
-
-(**** Sets, maps and hashtables of types ****)
-
-module TypeSet  : Set.S with type elt = type_expr
-module TypeMap  : Map.S with type key = type_expr
-module TypeHash : Hashtbl.S with type key = type_expr
 
 (**** Forward declarations ****)
 val print_raw: (Format.formatter -> type_expr -> unit) ref

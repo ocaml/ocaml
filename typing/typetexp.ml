@@ -53,6 +53,10 @@ exception Error of Location.t * error
 
 type variable_context = int * (string, type_expr) Tbl.t
 
+(* Local definitions *)
+
+let instance_list = Ctype.instance_list Env.empty
+
 (* Narrowing unbound identifier errors. *)
 
 let rec narrow_unbound_lid_error env loc lid make_error =
@@ -202,9 +206,9 @@ let rec transl_type env policy styp =
       if name <> "" && name.[0] = '_' then
         raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
       begin try
-        instance (List.assoc name !univars)
+        instance env (List.assoc name !univars)
       with Not_found -> try
-        instance (fst(Tbl.find name !used_variables))
+        instance env (fst(Tbl.find name !used_variables))
       with Not_found ->
         let v =
           if policy = Univars then new_pre_univar ~name () else newvar ~name ()
@@ -224,7 +228,7 @@ let rec transl_type env policy styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
       let args = List.map (transl_type env policy) stl in
-      let params = Ctype.instance_list decl.type_params in
+      let params = instance_list decl.type_params in
       let unify_param =
         match decl.type_manifest with
           None -> unify_var
@@ -278,7 +282,7 @@ let rec transl_type env policy styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                        List.length stl)));
       let args = List.map (transl_type env policy) stl in
-      let params = Ctype.instance_list decl.type_params in
+      let params = instance_list decl.type_params in
       List.iter2
         (fun (sty, ty) ty' ->
            try unify_var env ty' ty with Unify trace ->
@@ -313,7 +317,8 @@ let rec transl_type env policy styp =
                       row_fixed = false; row_more = newvar () } in
           let static = Btype.static_row row in
           let row =
-            if static || policy <> Univars then row
+            if static then { row with row_more = newty Tnil }
+            else if policy <> Univars then row
             else { row with row_more = new_pre_univar () }
           in
           newty (Tvariant row)
@@ -330,7 +335,7 @@ let rec transl_type env policy styp =
           let t =
             try List.assoc alias !univars
             with Not_found ->
-              instance (fst(Tbl.find alias !used_variables))
+              instance env (fst(Tbl.find alias !used_variables))
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty with Unify trace ->
@@ -351,7 +356,7 @@ let rec transl_type env policy styp =
             end_def ();
             generalize_structure t;
           end;
-          let t = instance t in
+          let t = instance env t in
           let px = Btype.proxy t in
           begin match px.desc with
           | Tvar None -> Btype.log_type px; px.desc <- Tvar (Some alias)
@@ -450,7 +455,8 @@ let rec transl_type env policy styp =
           row_fixed = false; row_name = !name } in
       let static = Btype.static_row row in
       let row =
-        if static || policy <> Univars then row
+        if static then { row with row_more = newty Tnil }
+        else if policy <> Univars then row
         else { row with row_more = new_pre_univar () }
       in
       newty (Tvariant row)
@@ -586,7 +592,7 @@ let transl_simple_type_univars env styp =
       [] !pre_univars
   in
   make_fixed_univars typ;
-  instance (Btype.newgenty (Tpoly (typ, univs)))
+  instance env (Btype.newgenty (Tpoly (typ, univs)))
 
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := Tbl.empty;
@@ -658,14 +664,16 @@ let report_error ppf = function
         Printtyp.type_expr ty
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
-        "Variant tags `%s@ and `%s have the same hash value.@ Change one of them."
-        lab1 lab2
+        "@[Variant tags `%s@ and `%s have the same hash value.@ %s@]"
+        lab1 lab2 "Change one of them."
   | Invalid_variable_name name ->
       fprintf ppf "The type variable name %s is not allowed in programs" name
   | Cannot_quantify (name, v) ->
-      fprintf ppf "This type scheme cannot quantify '%s :@ %s." name
-        (if Btype.is_Tvar v then "it escapes this scope" else
-         if Btype.is_Tunivar v then "it is aliased to another variable"
+      fprintf ppf
+        "@[<hov>The universal type variable '%s cannot be generalized:@ %s.@]"
+        name
+        (if Btype.is_Tvar v then "it escapes its scope" else
+         if Btype.is_Tunivar v then "it is already bound to another variable"
          else "it is not a variable")
   | Multiple_constraints_on_type s ->
       fprintf ppf "Multiple constraints for type %s" s

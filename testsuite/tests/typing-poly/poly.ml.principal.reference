@@ -265,8 +265,8 @@ Error: This field value has type 'b option ref option
 #           Characters 145-166:
   object method virtual visit : 'a.('a visitor -> 'a) end;;
                                 ^^^^^^^^^^^^^^^^^^^^^
-Error: This type scheme cannot quantify 'a :
-it escapes this scope.
+Error: The universal type variable 'a cannot be generalized:
+       it escapes its scope.
 #                 type ('a, 'b) list_visitor = < caseCons : 'b -> 'b list -> 'a; caseNil : 'a >
 type 'b alist = < visit : 'a. ('a, 'b) list_visitor -> 'a >
 class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
@@ -555,13 +555,20 @@ Warning 18: this use of a polymorphic method is not principal.
 #     class c : object method id : 'a -> 'a end
 # type u = c option
 # val just : 'a option -> 'a = <fun>
-# val f : c -> 'a -> 'a = <fun>
-#     Characters 106-117:
+# Characters 42-62:
+  let f x = let l = [Some x; (None : u)] in (just(List.hd l))#id;;
+                                            ^^^^^^^^^^^^^^^^^^^^
+Warning 18: this use of a polymorphic method is not principal.
+val f : c -> 'a -> 'a = <fun>
+#     Characters 101-112:
     let x = List.hd [Some x; none] in (just x)#id;;
                                       ^^^^^^^^^^^
 Warning 18: this use of a polymorphic method is not principal.
 val g : c -> 'a -> 'a = <fun>
 #     val h : < id : 'a; .. > -> 'a = <fun>
+#     type 'a u = c option
+# val just : 'a option -> 'a = <fun>
+# val f : c -> 'a -> 'a = <fun>
 #       val f : 'a -> int = <fun>
 val g : 'a -> int = <fun>
 # type 'a t = Leaf of 'a | Node of ('a * 'a) t

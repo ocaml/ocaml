@@ -31,10 +31,15 @@ let rm_vars tbl (vll1, vll2) =
 let w_suspicious x = Warnings.Unused_var x;;
 let w_strict x = Warnings.Unused_var_strict x;;
 
+type ppf_or_idents = Ppf of Format.formatter | Free of string list ref
+
 let check_rm_vars ppf tbl (vlul_pat, vlul_as) =
   let check_rm_var kind (v, loc, used) =
-    if not !used && not (silent v)
-    then Location.print_warning loc ppf (kind v);
+    begin match ppf with
+      Ppf ppf when not !used && not (silent v) ->
+        Location.print_warning loc ppf (kind v)
+    | _ -> ()
+    end;
     Hashtbl.remove tbl v;
   in
   List.iter (check_rm_var w_strict) vlul_pat;
@@ -47,8 +52,10 @@ let check_rm_let ppf tbl vlulpl =
     flag && (silent v || not !used)
   in
   let warn_var w_kind (v, loc, used) =
-    if not (silent v) && not !used
-    then Location.print_warning loc ppf (w_kind v)
+    match ppf with
+      Ppf ppf when not (silent v) && not !used ->
+        Location.print_warning loc ppf (w_kind v)
+    | _ -> ()
   in
   let check_rm_pat (def, def_as) =
     let def_unused = List.fold_left check_rm_one true def in
@@ -57,6 +64,14 @@ let check_rm_let ppf tbl vlulpl =
     List.iter (warn_var w_suspicious) def_as;
   in
   List.iter check_rm_pat vlulpl;
+;;
+
+let add_free_ident ppf s =
+  match ppf with
+    Free r ->
+      if List.mem s !r then () else
+      r := s :: !r
+  | _ -> ()
 ;;
 
 let rec get_vars ((vacc, asacc) as acc) p =
@@ -112,7 +127,7 @@ and expression ppf tbl e =
   match e.pexp_desc with
   | Pexp_ident (Longident.Lident id) ->
       begin try (Hashtbl.find tbl id) := true;
-      with Not_found -> ()
+      with Not_found -> add_free_ident ppf id
       end;
   | Pexp_ident _ -> ()
   | Pexp_constant _ -> ()
@@ -136,7 +151,8 @@ and expression ppf tbl e =
   | Pexp_record (iel, eo) ->
       List.iter (fun (_, e) -> expression ppf tbl e) iel;
       expression_option ppf tbl eo;
-  | Pexp_field (e, _) -> expression ppf tbl e;
+  | Pexp_field (e, _) ->
+      expression ppf tbl e;
   | Pexp_setfield (e1, _, e2) ->
       expression ppf tbl e1;
       expression ppf tbl e2;
@@ -164,7 +180,9 @@ and expression ppf tbl e =
       expression ppf tbl e2;
   | Pexp_send (e, _) -> expression ppf tbl e;
   | Pexp_new _ -> ()
-  | Pexp_setinstvar (_, e) -> expression ppf tbl e;
+  | Pexp_setinstvar (f, e) ->
+      add_free_ident ppf f;
+      expression ppf tbl e;
   | Pexp_override sel -> List.iter (fun (_, e) -> expression ppf tbl e) sel;
   | Pexp_letmodule (_, me, e) ->
       module_expr ppf tbl me;
@@ -262,7 +280,14 @@ let warn ppf ast =
   if Warnings.is_active (w_suspicious "") || Warnings.is_active (w_strict "")
   then begin
     let tbl = Hashtbl.create 97 in
-    structure ppf tbl ast;
+    structure (Ppf ppf) tbl ast;
   end;
   ast
+;;
+
+let free_idents e =
+  let tbl = Hashtbl.create 7 in
+  let idents = ref [] in
+  expression (Free idents) tbl e;
+  !idents
 ;;
