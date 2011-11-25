@@ -50,9 +50,9 @@ module Nonexhaustive :
 #               Characters 119-120:
       let eval (D x) = x
                        ^
-Error: This expression has type ex#12 t
-       but an expression was expected of type ex#12 t
-       The type constructor ex#12 would escape its scope
+Error: This expression has type ex#16 t
+       but an expression was expected of type ex#16 t
+       The type constructor ex#16 would escape its scope
 #                       Characters 157-158:
   	  C ->
      ^
@@ -255,4 +255,12 @@ Here is an example of a value that is not matched:
 {left=TE TC; right=D [|  |]}
 type ('a, 'b) pair = { left : 'a; right : 'b; }
 val f : 'a ty -> 'a t -> int = <fun>
+#           module M : sig type 'a t val eq : ('a t, 'b t) eq end
+#       Characters 69-71:
+    function Eq -> Eq (* fail *)
+                   ^^
+Error: This expression has type (a, a) eq
+       but an expression was expected of type (a, b) eq
+#       val f : ('a M.t * 'a, 'b M.t * 'b) eq -> ('a, 'b) eq = <fun>
+#       val f : ('a * 'a M.t, 'b * 'b M.t) eq -> ('a, 'b) eq = <fun>
 # 

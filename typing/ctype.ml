@@ -193,16 +193,21 @@ type unification_mode =
   | Pattern (* unification in pattern which may add local constraints *)
 
 let umode = ref Expression
+let generate_equations = ref false
 
-let set_mode mode f = 
-  let old_unification_mode = !umode in
+let set_mode mode ?(generate = (mode = Pattern)) f = 
+  let old_unification_mode = !umode
+  and old_gen = !generate_equations in
   try
     umode := mode;
+    generate_equations := generate;
     let ret = f () in
     umode := old_unification_mode;
+    generate_equations := old_gen;
     ret
   with e ->
     umode := old_unification_mode;
+    generate_equations := old_gen;
     raise e
 
                   (**********************************************)
@@ -2120,8 +2125,7 @@ and unify3 env t1 t1' t2 t2' =
       occur_univar !env t1;
       link_type t2' t1;
   | _ ->
-      let umode = !umode in
-      begin match umode with
+      begin match !umode with
       | Expression ->
           occur !env t1' t2';
           link_type t1' t2
@@ -2140,30 +2144,33 @@ and unify3 env t1 t1' t2 t2' =
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list env tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-          if umode = Expression || in_current_module p1 || in_pervasives p1
+          if !umode = Expression || not !generate_equations
+          || in_current_module p1 || in_pervasives p1
           || is_datatype (Env.find_type p1 !env)
-          then unify_list env tl1 tl2
-          else set_mode Expression (fun () -> unify_list env tl1 tl2)
+          then
+            unify_list env tl1 tl2
+          else
+            set_mode Pattern ~generate:false (fun () -> unify_list env tl1 tl2)
       | (Tconstr ((Path.Pident p) as path,[],_),
          Tconstr ((Path.Pident p') as path',[],_))
         when is_abstract_newtype !env path && is_abstract_newtype !env path'
-        && umode = Pattern -> 
+        && !generate_equations -> 
           let source,destination = 
             if find_newtype_level !env path > find_newtype_level !env path'
             then  p,t2'
             else  p',t1'
           in add_gadt_equation env source destination
       | (Tconstr ((Path.Pident p) as path,[],_), _)
-        when is_abstract_newtype !env path && umode = Pattern -> 
+        when is_abstract_newtype !env path && !generate_equations -> 
           reify env t2';
           local_non_recursive_abbrev !env (Path.Pident p) t2';
           add_gadt_equation env p t2'
       | (_, Tconstr ((Path.Pident p) as path,[],_))
-        when is_abstract_newtype !env path && umode = Pattern -> 
+        when is_abstract_newtype !env path && !generate_equations -> 
           reify env t1' ;
           local_non_recursive_abbrev !env (Path.Pident p) t1';
           add_gadt_equation env p t1'
-      | (Tconstr (p1,_,_), Tconstr (p2,_,_)) when umode = Pattern ->
+      | (Tconstr (_,[],_), _) | (_, Tconstr (_,[],_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
           mcomp !env t1' t2'

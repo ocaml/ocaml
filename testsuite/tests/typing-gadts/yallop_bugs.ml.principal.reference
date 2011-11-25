@@ -1,10 +1,8 @@
 
-#                           Characters 212-216:
+#                           Characters 240-248:
            let f (Refl : (a T.t, b T.t) eq) = (x :> b)
-                  ^^^^
-Error: This pattern matches values of type (a T.t, a T.t) eq
-       but a pattern was expected which matches values of type
-         (a T.t, b T.t) eq
+                                              ^^^^^^^^
+Error: Type a is not a subtype of b 
 #                         Characters 36-67:
   type (_, +_) eq = Refl : ('a, 'a) eq
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

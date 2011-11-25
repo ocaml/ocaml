@@ -436,3 +436,21 @@ let f : type a. a ty -> a t -> int = fun x y ->
   | {left=TA; right=D 0} -> -1
   | {left=TA; right=D z} -> z
 ;; (* ok *)
+
+(* Injectivity *)
+
+module M : sig type 'a t val eq : ('a t, 'b t) eq end =
+  struct type 'a t = int let eq = Eq end
+;;
+
+let f : type a b. (a M.t, b M.t) eq -> (a, b) eq =
+  function Eq -> Eq (* fail *)
+;;
+
+let f : type a b. (a M.t * a, b M.t * b) eq -> (a, b) eq =
+  function Eq -> Eq (* ok *)
+;;
+
+let f : type a b. (a * a M.t, b * b M.t) eq -> (a, b) eq =
+  function Eq -> Eq (* ok *)
+;;
