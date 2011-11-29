@@ -140,6 +140,7 @@ val summary: t -> summary
 
 type error =
     Not_an_interface of string
+  | Wrong_version_interface of string * string
   | Corrupted_interface of string
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string

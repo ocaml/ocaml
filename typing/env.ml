@@ -25,6 +25,7 @@ open Btype
 
 type error =
     Not_an_interface of string
+  | Wrong_version_interface of string * string
   | Corrupted_interface of string
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
@@ -177,7 +178,14 @@ let read_pers_struct modname filename =
     really_input ic buffer 0 (String.length cmi_magic_number);
     if buffer <> cmi_magic_number then begin
       close_in ic;
-      raise(Error(Not_an_interface filename))
+      let pre_len = String.length cmi_magic_number - 3 in
+      if String.sub buffer 0 pre_len = String.sub cmi_magic_number 0 pre_len then
+      begin
+        let msg = if buffer < cmi_magic_number then "an older" else "a newer" in
+         raise (Error (Wrong_version_interface (filename, msg)))
+      end else begin
+        raise(Error(Not_an_interface filename))
+      end
     end;
     let (name, sign) = input_value ic in
     let crcs = input_value ic in
@@ -938,6 +946,9 @@ open Format
 let report_error ppf = function
   | Not_an_interface filename -> fprintf ppf
       "%s@ is not a compiled interface" filename
+  | Wrong_version_interface (filename, older_newer) -> fprintf ppf
+      "%s@ is not a compiled interface for this version of OCaml.@.\
+       It seems to be for %s version of OCaml." filename older_newer
   | Corrupted_interface filename -> fprintf ppf
       "Corrupted compiled interface@ %s" filename
   | Illegal_renaming(modname, filename) -> fprintf ppf
