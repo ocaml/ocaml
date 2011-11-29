@@ -94,7 +94,7 @@ let mkuminus name arg =
       mkexp(Pexp_constant(Const_int64(Int64.neg n)))
   | "-", Pexp_constant(Const_nativeint n) ->
       mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
-  | _, Pexp_constant(Const_float f) ->
+  | ("-" | "-."), Pexp_constant(Const_float f) ->
       mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
@@ -209,101 +209,101 @@ let exp_of_label lbl =
 let pat_of_label lbl =
   mkpat (Ppat_var(Longident.last lbl))
 
-let variables_of_type = 
-  let rec loop t = 
+let variables_of_type =
+  let rec loop t =
       match t.ptyp_desc with
       | Ptyp_any -> []
       | Ptyp_var x ->  [x]
       | Ptyp_arrow (label,core_type,core_type') ->
-	  loop core_type @ loop core_type'
+          loop core_type @ loop core_type'
       | Ptyp_tuple lst -> List.concat (List.map loop lst)
       | Ptyp_constr(longident, lst) ->
-	  List.concat (List.map loop lst) 
+          List.concat (List.map loop lst)
       | Ptyp_object lst ->
-	  List.concat (List.map loop_core_field lst)		    
+          List.concat (List.map loop_core_field lst)
       | Ptyp_class (longident, lst, lbl_list) ->
-	  List.concat (List.map loop lst)
+          List.concat (List.map loop lst)
       | Ptyp_alias(core_type, str) ->
-	  str :: loop core_type 
-      | Ptyp_variant(row_field_list, flag, lbl_lst_option) -> 
-	  List.concat (List.map loop_row_field row_field_list)
+          str :: loop core_type
+      | Ptyp_variant(row_field_list, flag, lbl_lst_option) ->
+          List.concat (List.map loop_row_field row_field_list)
       | Ptyp_poly(string_lst, core_type) ->
-	  loop core_type
+          loop core_type
       | Ptyp_package(longident,lst) ->
-	  List.concat (List.map (fun (n,typ) -> (loop typ)) lst)
-  and loop_core_field t = 
+          List.concat (List.map (fun (n,typ) -> (loop typ)) lst)
+  and loop_core_field t =
       match t.pfield_desc with
       | Pfield(n,typ) ->
-	  loop typ
+          loop typ
       | Pfield_var ->
-	[]
-  and loop_row_field  = 
+        []
+  and loop_row_field  =
     function
       | Rtag(label,flag,lst) ->
-	  List.concat (List.map loop lst) 
+          List.concat (List.map loop lst)
       | Rinherit t ->
-	  loop t
+          loop t
   in
-  loop  
+  loop
 
-let varify_constructors var_names t = 
+let varify_constructors var_names t =
   let offlimits = variables_of_type t in
   let freshly_created = ref [] in
   let rec fresh ?(count=0) name =
     let ret = if count = 0 then name else name ^ string_of_int count in
-    if List.mem ret offlimits then fresh ~count:(count+1) name else begin 
+    if List.mem ret offlimits then fresh ~count:(count+1) name else begin
       freshly_created := ret :: !freshly_created;
       ret
     end
   in
   let sofar : (string,string) Hashtbl.t = Hashtbl.create 0 in
-  let rec loop t = 
-    let desc = 
+  let rec loop t =
+    let desc =
       match t.ptyp_desc with
       | Ptyp_any -> Ptyp_any
       | Ptyp_var x -> Ptyp_var x
       | Ptyp_arrow (label,core_type,core_type') ->
-	  Ptyp_arrow(label, loop core_type, loop core_type')
+          Ptyp_arrow(label, loop core_type, loop core_type')
       | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
       | Ptyp_constr(Lident s, []) when List.mem s var_names ->
-	begin try 
-		Ptyp_var (Hashtbl.find sofar s)
-	  with
-	    | Not_found ->
-	      let name = fresh s in 
-	      Hashtbl.add sofar s name;
-	      Ptyp_var name end
+        begin try
+                Ptyp_var (Hashtbl.find sofar s)
+          with
+            | Not_found ->
+              let name = fresh s in
+              Hashtbl.add sofar s name;
+              Ptyp_var name end
       | Ptyp_constr(longident, lst) ->
-	  Ptyp_constr(longident, List.map loop lst) 
+          Ptyp_constr(longident, List.map loop lst)
       | Ptyp_object lst ->
-	  Ptyp_object (List.map loop_core_field lst)		    
+          Ptyp_object (List.map loop_core_field lst)
       | Ptyp_class (longident, lst, lbl_list) ->
-	  Ptyp_class (longident, List.map loop lst, lbl_list) 
+          Ptyp_class (longident, List.map loop lst, lbl_list)
       | Ptyp_alias(core_type, string) ->
-	  Ptyp_alias(loop core_type, string) 
-      | Ptyp_variant(row_field_list, flag, lbl_lst_option) -> 
-	  Ptyp_variant(List.map loop_row_field row_field_list, flag, lbl_lst_option) 
+          Ptyp_alias(loop core_type, string)
+      | Ptyp_variant(row_field_list, flag, lbl_lst_option) ->
+          Ptyp_variant(List.map loop_row_field row_field_list, flag, lbl_lst_option)
       | Ptyp_poly(string_lst, core_type) ->
-	  Ptyp_poly(string_lst, loop core_type) 
+          Ptyp_poly(string_lst, loop core_type)
       | Ptyp_package(longident,lst) ->
-	  Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
+          Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
     in
     {t with ptyp_desc = desc}
-  and loop_core_field t = 
-    let desc = 
+  and loop_core_field t =
+    let desc =
       match t.pfield_desc with
       | Pfield(n,typ) ->
-	  Pfield(n,loop typ)
+          Pfield(n,loop typ)
       | Pfield_var ->
-	  Pfield_var
+          Pfield_var
     in
     { t with pfield_desc=desc}
-  and loop_row_field  = 
+  and loop_row_field  =
     function
       | Rtag(label,flag,lst) ->
-	  Rtag(label,flag,List.map loop lst) 
+          Rtag(label,flag,List.map loop lst)
       | Rinherit t ->
-	  Rinherit (loop t)
+          Rinherit (loop t)
   in
   (!freshly_created,loop t)
 
@@ -1199,7 +1199,7 @@ let_binding:
       { (ghpat(Ppat_constraint($1, ghtyp(Ptyp_poly($3,$5)))), $7) }
   | pat_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $4 $6 $8 in
-	(ghpat(Ppat_constraint($1, poly)), exp) }
+        (ghpat(Ppat_constraint($1, poly)), exp) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
 ;
@@ -1445,9 +1445,9 @@ constructor_declarations:
 ;
 constructor_declaration:
 
-  | constr_ident generalized_constructor_arguments          
-      { let arg_types,ret_type = $2 in 
-	($1, arg_types,ret_type, symbol_rloc()) }
+  | constr_ident generalized_constructor_arguments
+      { let arg_types,ret_type = $2 in
+        ($1, arg_types,ret_type, symbol_rloc()) }
 ;
 
 constructor_arguments:
@@ -1458,9 +1458,9 @@ constructor_arguments:
 generalized_constructor_arguments:
     /*empty*/                                   { ([],None) }
   | OF core_type_list                           { (List.rev $2,None) }
-  | COLON core_type_list MINUSGREATER simple_core_type    { (List.rev $2,Some $4) }
-  | COLON simple_core_type                       
-                                                { ([],Some $2) } 
+  | COLON core_type_list MINUSGREATER simple_core_type
+                                                { (List.rev $2,Some $4) }
+  | COLON simple_core_type                      { ([],Some $2) }
 ;
 
 
