@@ -338,9 +338,10 @@
     (modify-syntax-entry ?' "w" tbl)
     (modify-syntax-entry ?_ "w" tbl)
     (modify-syntax-entry ?\" "." tbl)
-    (modify-syntax-entry '(?\300 . ?\326) "w" tbl)
-    (modify-syntax-entry '(?\330 . ?\366) "w" tbl)
-    (modify-syntax-entry '(?\370 . ?\377) "w" tbl)
+    (let ((i 192))
+      (while (< i 256)
+        (or (= i 215) (= i 247) (modify-syntax-entry i "w" tbl))
+        (setq i (1+ i))))
     tbl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
