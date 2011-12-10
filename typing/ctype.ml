@@ -187,7 +187,8 @@ module TypePairs =
  end)
 
 
-(* unification mode *)
+(**** unification mode ****)
+
 type unification_mode = 
   | Expression (* unification in expression *)
   | Pattern (* unification in pattern which may add local constraints *)
@@ -209,6 +210,23 @@ let set_mode mode ?(generate = (mode = Pattern)) f =
     umode := old_unification_mode;
     generate_equations := old_gen;
     raise e
+
+
+(*** Checks for type definitions ***)
+
+let in_current_module = function
+  | Path.Pident _ -> true
+  | Path.Pdot _ | Path.Papply _ -> false
+
+let in_pervasives p = 
+    try ignore (Env.find_type p Env.initial); true
+    with Not_found -> false
+        
+let is_datatype decl=
+  match decl.type_kind with
+    Type_record _ | Type_variant _ -> true
+  | Type_abstract -> false
+
 
                   (**********************************************)
                   (*  Miscellaneous operations on object types  *)
@@ -1448,8 +1466,11 @@ let rec non_recursive_abbrev env ty0 ty =
         begin try
           non_recursive_abbrev env ty0 (try_expand_once_opt env ty)
         with Cannot_expand ->
-          if !Clflags.recursive_types then () else
-          iter_type_expr (non_recursive_abbrev env ty0) ty
+          if !Clflags.recursive_types &&
+            (in_current_module p || in_pervasives p ||
+             is_datatype (Env.find_type p env))
+          then ()
+          else iter_type_expr (non_recursive_abbrev env ty0) ty
         end
     | Tobject _ | Tvariant _ ->
         ()
@@ -1794,18 +1815,6 @@ let is_abstract_newtype env p =
   not (decl.type_newtype_level = None) &&
   decl.type_manifest = None &&
   decl.type_kind = Type_abstract
-
-let in_current_module = function
-  | Path.Pident _ -> true
-  | Path.Pdot _ | Path.Papply _ -> false
-
-let in_pervasives p = 
-    try ignore (Env.find_type p Env.initial); true
-    with Not_found -> false
-        
-let is_datatype = function
-    {type_kind = Type_record _ | Type_variant _} -> true
-  | _ -> false
 
 (* mcomp type_pairs subst env t1 t2 does not raise an 
    exception if it is possible that t1 and t2 are actually

@@ -31,6 +31,7 @@ Standard library:
       with user-provided hash functions.
 
 Bug Fixes:
+- PR#5343: ocaml -rectypes is unsound wrt module subtyping
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 
