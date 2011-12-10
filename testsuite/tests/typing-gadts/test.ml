@@ -454,3 +454,16 @@ let f : type a b. (a M.t * a, b M.t * b) eq -> (a, b) eq =
 let f : type a b. (a * a M.t, b * b M.t) eq -> (a, b) eq =
   function Eq -> Eq (* ok *)
 ;;
+
+(* Applications of polymorphic variants *)
+
+type _ t =
+  | V1 : [`A | `B] t
+  | V2 : [`C | `D] t
+
+let f : type a. a t -> a = function
+  | V1 -> `A
+  | V2 -> `C
+;;
+
+f V1;;

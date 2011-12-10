@@ -263,4 +263,7 @@ Error: This expression has type (a, a) eq
        but an expression was expected of type (a, b) eq
 #       val f : ('a M.t * 'a, 'b M.t * 'b) eq -> ('a, 'b) eq = <fun>
 #       val f : ('a * 'a M.t, 'b * 'b M.t) eq -> ('a, 'b) eq = <fun>
+#                     type 'a t = V1 : [ `A | `B ] t | V2 : [ `C | `D ] t
+val f : 'a t -> 'a = <fun>
+#   - : [ `A | `B ] = `A
 # 
