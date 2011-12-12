@@ -37,6 +37,10 @@ MANDIR=$(PREFIX)/man
 ########## Toolchain and OS dependencies
 
 TOOLCHAIN=mingw
+
+### Toolchain prefix
+TOOLPREF=i686-w64-mingw32-
+
 CCOMPTYPE=cc
 O=o
 A=a
@@ -61,7 +65,7 @@ SHAREDCCCOMPOPTS=
 MKSHAREDLIBRPATH=
 NATIVECCPROFOPTS=
 NATIVECCRPATH=
-ASM=as
+ASM=$(TOOLPREF)as
 ASPP=gcc
 ASPPPROFFLAGS=
 PROFILING=noprof
@@ -77,7 +81,7 @@ CMXS=cmxs
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=gcc -mno-cygwin
+BYTECC=$(TOOLPREF)gcc
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
@@ -104,16 +108,16 @@ MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### How to build a static library
-MKLIB=rm -f $(1); ar rcs $(1) $(2)
-#ml let mklib out files opts = Printf.sprintf "rm -f %s && ar rcs %s %s %s" out opts out files;;
+MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
+#ml let mklib out files opts = Printf.sprintf "rm -f %s && %sar rcs %s %s %s" out toolpref opts out files;;
 
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)
 #ml let syslib x = "-l"^x;;
 
 ### The ranlib command
-RANLIB=ranlib
-RANLIBCMD=ranlib
+RANLIB=$(TOOLPREF)ranlib
+RANLIBCMD=$(TOOLPREF)ranlib
 
 ############# Configuration for the native-code compiler
 
@@ -136,7 +140,7 @@ NATIVECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
 NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
-PACKLD=ld -r $(NATIVECCLINKOPTS) -o #there must be a space after this '-o'
+PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o #there must be a space after this '-o'
 
 ############# Configuration for the contributed libraries
 

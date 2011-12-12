@@ -3,7 +3,9 @@
 
 There are no less than four ports of OCaml for MS Windows available:
   - a native Win32 port, built with the Microsoft development tools;
-  - a native Win32 port, built with the Cygwin/MinGW development tools;
+  - a native Win32 port, built with the 32-bit version of the gcc
+    compiler from the mingw-w64 project, packaged in Cygwin
+    (under the name mingw64-i686);
   - a port consisting of the Unix sources compiled under the Cygwin
     Unix-like environment for Windows;
   - a native Win64 port (64-bit Windows), built with the Microsoft
@@ -183,10 +185,6 @@ by Jacob Navia, then significantly improved by Christopher A. Watford.
            The native Win32 port built with Mingw
            --------------------------------------
 
-NOTE: Due to changes in cygwin's compilers, this port is not available
-in OCaml 3.12.1.  A patch will be made available soon after the release
-of 3.12.1.
-
 REQUIREMENTS:
 
 This port runs under MS Windows Vista, XP, and 2000.
@@ -202,11 +200,27 @@ and the flexdll tool, available at
         http://alain.frisch.fr/flexdll.html
 You will need to install at least the following Cygwin packages (use
 the Setup tool from Cygwin):
-binutils, gcc-core, gcc-mingw-core, mingw-runtime, w32api.
 
-Do *not* install the Mingw/MSYS development tools from www.mingw.org:
-these are not compatible with this Caml port (@responsefile not
-recognized on the command line).
+ mingw64-i686-binutils
+ mingw64-i686-gcc
+ mingw64-i686-runtime
+
+
+NOTE:
+  - There is another 32-bit gcc compiler, from the MinGW.org
+    project, packaged in Cygwin under the name mingw-gcc.
+    It is not currently supported by flexdll and OCaml.
+
+  - The standard gcc compiler shipped with Cygwin used to
+    support a "-mno-cygwin" option, which turned the compiler
+    into a mingw compiler. This option was used
+    by previous versions of flexdll and OCaml, but it is no
+    longer available in recent version, hence the switch
+    to another toolchain packaged in Cygwin.
+
+  - The standalone mingw toolchain from the MinGW-w64 project
+    (http://mingw-w64.sourceforge.net/) is not supported.
+    Please use the version packaged in Cygwin instead.
 
 The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available
 as part of the ActiveTCL distribution at
@@ -235,14 +249,19 @@ RECOMPILATION FROM THE SOURCES:
 You will need the following software components to perform the recompilation:
 - Windows NT, 2000, XP, or Vista.
 - Cygwin: http://sourceware.cygnus.com/cygwin/
-  Install at least the following packages: binutils, diffutils,
-    gcc-core, gcc-mingw-core, make, mingw-runtime, ncurses, w32api.
+  Install at least the following packages:
+     mingw64-i686-binutils
+     mingw64-i686-gcc
+     mingw64-i686-runtime
+     diffutils
+     make
+     ncurses
 - TCL/TK version 8.5 (see above).
 - The flexdll tool (see above).
 
-Do *not* install the standalone distribution of MinGW, nor the
-companion MSYS tools: these have problems with long command lines.
-Instead, use the version of MinGW provided by Cygwin.
+The standalone mingw toolchain from the MinGW-w64 project
+(http://mingw-w64.sourceforge.net/) is not supported.  Please use the
+version packaged in Cygwin instead.
 
 Start a Cygwin shell and unpack the source distribution
 (ocaml-X.YY.Z.tar.gz) with "tar xzf".  Change to the top-level
@@ -345,7 +364,7 @@ THIRD-PARTY SOFTWARE:
     http://www.microsoft.com/downloads/en/default.aspx
     under the name "Microsoft Windows 7 SDK".
 
-[2] flexdll version 0.23 or later.
+[2] flexdll version 0.27 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
 

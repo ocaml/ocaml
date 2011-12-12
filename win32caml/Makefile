@@ -40,7 +40,7 @@ endif
 	rm -f ocaml.res
 endif
 ifeq ($(TOOLCHAIN),mingw)
-	windres -i ocaml.rc -o $@
+	$(TOOLPREF)windres -i ocaml.rc -o $@
 endif
 
 $(OBJS): inria.h inriares.h history.h editbuffer.h
