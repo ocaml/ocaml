@@ -55,6 +55,9 @@ let incr_numtable nt =
 let global_table = ref(empty_numtable : Ident.t numtable)
 and literal_table = ref([] : (int * structured_constant) list)
 
+let is_global_defined id =
+  Tbl.mem id (!global_table).num_tbl
+
 let slot_for_getglobal id =
   try
     find_numtable !global_table id

@@ -85,7 +85,7 @@ let load_compunit ic filename ppf compunit =
     raise Load_failed
   end
 
-let load_file ppf name =
+let rec load_file recursive ppf name =
   try
     let filename = find_in_path !Config.load_path name in
     let ic = open_in_bin filename in
@@ -95,7 +95,20 @@ let load_file ppf name =
       if buffer = Config.cmo_magic_number then begin
         let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
         seek_in ic compunit_pos;
-        load_compunit ic filename ppf (input_value ic : compilation_unit);
+        let cu : compilation_unit = input_value ic in
+        if recursive then
+          List.iter
+            (function
+              | (Reloc_getglobal id, _) when not (Symtable.is_global_defined id) ->
+                  let file = Ident.name id ^ ".cmo" in
+                  begin match try Some (Misc.find_in_path_uncap !Config.load_path file) with Not_found -> None with
+                  | None -> ()
+                  | Some file -> if not (load_file recursive ppf file) then raise Load_failed
+                  end
+              | _ -> ()
+            )
+            cu.cu_reloc;
+        load_compunit ic filename ppf cu;
         true
       end else
       if buffer = Config.cma_magic_number then begin
@@ -123,9 +136,15 @@ let load_file ppf name =
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
 
-let dir_load ppf name = ignore (load_file ppf name)
+let dir_load ppf name = ignore (load_file false ppf name)
 
 let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
+
+let dir_load_rec ppf name = ignore (load_file true ppf name)
+
+let _ = Hashtbl.add directive_table "load_rec" (Directive_string (dir_load_rec std_out))
+
+let load_file = load_file false
 
 (* Load commands from a file *)
 
