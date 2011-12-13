@@ -836,10 +836,17 @@ static void caml_threadstatus_finalize(value wrapper)
   st_event_destroy(Threadstatus_val(wrapper));
 }
 
+static int caml_threadstatus_compare(value wrapper1, value wrapper2)
+{
+  st_event ts1 = Threadstatus_val(wrapper1);
+  st_event ts2 = Threadstatus_val(wrapper2);
+  return ts1 == ts2 ? 0 : ts1 < ts2 ? -1 : 1;
+}
+
 static struct custom_operations caml_threadstatus_ops = {
   "_threadstatus",
   caml_threadstatus_finalize,
-  custom_compare_default,
+  caml_threadstatus_compare,
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default,
