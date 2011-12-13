@@ -18,18 +18,18 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-static int open_access_flags[12] = {
+static int open_access_flags[13] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static int open_create_flags[12] = {
+static int open_create_flags[13] = {
   0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0, 0
 };
 
-static int open_share_flags[12] = {
+static int open_share_flags[13] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FILE_SHARE_DELETE
-}
+};
 
 CAMLprim value unix_open(value path, value flags, value perm)
 {
