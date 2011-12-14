@@ -261,8 +261,16 @@ source and compiled files.
 Change the current working directory.
 
 \item["#load \""\var{file-name}"\";;"]
-Load in memory a bytecode object file (".cmo" file) produced by
-the batch compiler "ocamlc".
+Load in memory a bytecode object file (".cmo" file) or library file
+(".cma" file) produced by the batch compiler "ocamlc".
+
+\item["#load_rec \""\var{file-name}"\";;"]
+Load in memory a bytecode object file (".cmo" file) or library file
+(".cma" file) produced by the batch compiler "ocamlc".
+When loading an object file that depends on other modules
+which have not been loaded yet, the .cmo files for these modules
+are searched and loaded as well, recursively. The loading order
+is not specified.
 
 \item["#use \""\var{file-name}"\";;"]
 Read, compile and execute source phrases from the given file.
