@@ -47,6 +47,9 @@ let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
 let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
 
+let mkpatvar name pos =
+  { ppat_desc = Ppat_var name; ppat_loc = rhs_loc pos }
+
 (*
   Ghost expressions and patterns:
   expressions and patterns that do not appear explicitely in the
@@ -1189,17 +1192,14 @@ lident_list:
     LIDENT                            { [$1] }
   | LIDENT lident_list                { $1 :: $2 }
 ;
-pat_ident:
-    val_ident                         { mkpat (Ppat_var $1) }
-;
 let_binding:
-    pat_ident fun_binding
-      { ($1, $2) }
-  | pat_ident COLON typevar_list DOT core_type EQUAL seq_expr
-      { (ghpat(Ppat_constraint($1, ghtyp(Ptyp_poly($3,$5)))), $7) }
-  | pat_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
+    val_ident fun_binding
+      { (mkpatvar $1 1, $2) }
+  | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
+      { (ghpat(Ppat_constraint(mkpatvar $1 1, ghtyp(Ptyp_poly($3,$5)))), $7) }
+  | val_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $4 $6 $8 in
-        (ghpat(Ppat_constraint($1, poly)), exp) }
+        (ghpat(Ppat_constraint(mkpatvar $1 1, poly)), exp) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
 ;
