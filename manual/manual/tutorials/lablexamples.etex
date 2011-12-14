@@ -72,8 +72,10 @@ hline ~x:3 ~y:2 ~x:5;;
 \end{caml_example}
 
 As an exception to the above parameter matching rules, if an
-application is total, labels may be omitted. In practice, most
-applications are total, so that labels can be omitted in applications.
+application is total (omitting all optional arguments), labels may be
+omitted.
+In practice, many applications are total, so that labels can often be
+omitted.
 \begin{caml_example}
 f 3 2;;
 ListLabels.map succ [1;2;3];;
@@ -113,10 +115,12 @@ bump ~step:3 2;;
 \end{caml_example}
 
 A function taking some optional arguments must also take at least one
-non-labeled argument. This is because the criterion for deciding
-whether an optional has been omitted is the application on a
-non-labeled argument appearing after this optional argument in the
-function type.
+non-optional argument. The criterion for deciding whether an optional
+argument has been omitted is the non-labeled application of an
+argument appearing after this optional argument in the function type.
+Note that if that argument is labeled, you will only be able to
+eliminate optional arguments through the special case for total
+applications.
 
 \begin{caml_example}
 let test ?(x = 0) ?(y = 0) () ?(z = 0) () = (x, y, z);;
@@ -124,7 +128,7 @@ test ();;
 test ~x:2 () ~z:3 ();;
 \end{caml_example}
 
-Optional parameters may also commute with non-optional or unlabelled
+Optional parameters may also commute with non-optional or unlabeled
 ones, as long as they are applied simultaneously. By nature, optional
 arguments do not commute with unlabeled arguments applied
 independently.
