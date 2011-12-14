@@ -155,7 +155,7 @@ let rec core_type i ppf x =
       list i package_with ppf l;
 
 and package_with i ppf (s, t) =
-  line i ppf "with type %s\n" s;
+  line i ppf "with type %a\n" fmt_longident s;
   core_type i ppf t
 
 and core_field_type i ppf x =

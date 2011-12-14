@@ -38,7 +38,7 @@ type error =
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
-  | Multiple_constraints_on_type of string
+  | Multiple_constraints_on_type of Longident.t
   | Repeated_method_label of string
   | Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
@@ -127,7 +127,7 @@ let create_package_mty fake loc env (p, l) =
                ptype_manifest = if fake then None else Some t;
                ptype_variance = [];
                ptype_loc = loc} in
-      {pmty_desc=Pmty_with (mty, [ Longident.Lident s, Pwith_type d ]);
+      {pmty_desc=Pmty_with (mty, [ s, Pwith_type d ]);
        pmty_loc=loc}
     )
     {pmty_desc=Pmty_ident p; pmty_loc=loc}
@@ -676,7 +676,7 @@ let report_error ppf = function
          if Btype.is_Tunivar v then "it is already bound to another variable"
          else "it is not a variable")
   | Multiple_constraints_on_type s ->
-      fprintf ppf "Multiple constraints for type %s" s
+      fprintf ppf "Multiple constraints for type %a" longident s
   | Repeated_method_label s ->
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
         s "Multiple occurences are not allowed."

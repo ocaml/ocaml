@@ -446,6 +446,7 @@ let rec tree_of_typexp sch ty =
     | Tunivar _ ->
         Otyp_var (false, name_of_type ty)
     | Tpackage (p, n, tyl) ->
+        let n = List.map (fun li -> String.concat "." (Longident.flatten li)) n in
         Otyp_module (Path.name p, n, tree_of_typlist sch tyl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;

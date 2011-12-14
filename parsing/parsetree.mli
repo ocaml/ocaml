@@ -35,7 +35,7 @@ and core_type_desc =
   | Ptyp_poly of string list * core_type
   | Ptyp_package of package_type
 
-and package_type = Longident.t * (string * core_type) list
+and package_type = Longident.t * (Longident.t * core_type) list
 
 and core_field_type =
   { pfield_desc: core_field_desc;

@@ -41,7 +41,7 @@ type error =
   | With_need_typeconstr
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
-  | Scoping_pack of string * type_expr
+  | Scoping_pack of Longident.t * type_expr
 
 exception Error of Location.t * error
 
@@ -650,21 +650,32 @@ let check_recmodule_inclusion env bindings =
 
 (* Helper for unpack *)
 
+let rec package_constraints env loc mty constrs =
+  if constrs = [] then mty
+  else let sg = extract_sig env loc mty in
+  let sg' =
+    List.map
+      (function
+        | Tsig_type (id, ({type_params=[]} as td), rs) when List.mem_assoc [Ident.name id] constrs ->
+            let ty = List.assoc [Ident.name id] constrs in
+            Tsig_type (id, {td with type_manifest = Some ty}, rs)
+        | Tsig_module (id, mty, rs) ->
+            let rec aux = function
+              | (m :: ((_ :: _) as l), t) :: rest when m = Ident.name id -> (l, t) :: aux rest
+              | _ :: rest -> aux rest
+              | [] -> []
+            in
+            Tsig_module (id, package_constraints env loc mty (aux constrs), rs)
+        | item -> item
+      )
+      sg
+  in
+  Tmty_signature sg'
+
 let modtype_of_package env loc p nl tl =
   try match Env.find_modtype p env with
   | Tmodtype_manifest mty when nl <> [] ->
-      let sg = extract_sig env loc mty in
-      let ntl = List.combine nl tl in
-      let sg' =
-        List.map
-          (function
-              Tsig_type (id, ({type_params=[]} as td), rs) 
-              when List.mem (Ident.name id) nl ->
-                let ty = List.assoc (Ident.name id) ntl in
-                Tsig_type (id, {td with type_manifest = Some ty}, rs)
-            | item -> item)
-          sg in
-      Tmty_signature sg'
+      package_constraints env loc mty (List.combine (List.map Longident.flatten nl) tl)
   | _ ->
       if nl = [] then Tmty_ident p
       else raise(Error(loc, Signature_expected))
@@ -1041,8 +1052,13 @@ let type_package env m p nl tl =
       let (id, new_env) = Env.enter_module "%M" modl.mod_type env in
       (Pident id, new_env)
   in
+  let rec mkpath mp = function
+    | Lident name -> Pdot(mp, name, nopos)
+    | Ldot (m, name) -> Pdot(mkpath mp m, name, nopos)
+    | _ -> assert false
+  in
   let tl' =
-    List.map (fun name -> Ctype.newconstr (Pdot(mp, name, nopos)) []) nl in
+    List.map (fun name -> Ctype.newconstr (mkpath mp name) []) nl in
   (* go back to original level *)
   Ctype.end_def ();
   if nl = [] then (wrap_constraint env modl (Tmty_ident p), []) else
@@ -1216,8 +1232,8 @@ let report_error ppf = function
       fprintf ppf
         "The type of this packed module contains variables:@ %a"
         type_expr ty
-  | Scoping_pack (id, ty) ->
+  | Scoping_pack (lid, ty) ->
       fprintf ppf
-        "The type %s in this module cannot be exported.@ " id;
+        "The type %a in this module cannot be exported.@ " longident lid;
       fprintf ppf
         "Its type contains local dependencies:@ %a" type_expr ty

@@ -14422,7 +14422,7 @@ module Struct =
               match wc with
               | Ast.WcNil _ -> acc
               | Ast.WcTyp (_, (Ast.TyId (_, (Ast.IdLid (_, id)))), ct) ->
-                  (id, (ctyp ct)) :: acc
+                  (Lident id, (ctyp ct)) :: acc
               | Ast.WcAnd (_, wc1, wc2) ->
                   package_type_constraints wc1
                     (package_type_constraints wc2 acc)

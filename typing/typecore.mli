@@ -117,7 +117,7 @@ val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
    Typedtree.class_structure * class_signature * string list) ref
 val type_package:
-  (Env.t -> Parsetree.module_expr -> Path.t -> string list -> type_expr list ->
+  (Env.t -> Parsetree.module_expr -> Path.t -> Longident.t list -> type_expr list ->
    Typedtree.module_expr * type_expr list) ref
 
 val create_package_type: Location.t -> Env.t -> Parsetree.package_type -> type_expr

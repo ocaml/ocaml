@@ -53,7 +53,7 @@ type error =
   | With_need_typeconstr
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
-  | Scoping_pack of string * type_expr
+  | Scoping_pack of Longident.t * type_expr
 
 exception Error of Location.t * error
 

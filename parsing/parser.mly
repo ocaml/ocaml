@@ -1601,7 +1601,7 @@ package_type:
   | mty_longident WITH package_type_cstrs { ($1, $3) }
 ;
 package_type_cstr:
-    TYPE LIDENT EQUAL core_type { ($2, $4) }
+    TYPE label_longident EQUAL core_type { ($2, $4) }
 ;
 package_type_cstrs:
     package_type_cstr { [$1] }
