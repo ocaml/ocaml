@@ -35,6 +35,11 @@ Bug Fixes:
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 
+Feature wishes:
+- PR#5358: first class modules don't allow "with type" declarations for types in sub-modules
+- PR#5411: new directive for the toplevel: #load_rec
+- PR#5420: Unix.openfile share mode (Windows)
+
 OCaml 3.12.1:
 ----------------------
 
