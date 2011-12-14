@@ -621,7 +621,7 @@ package-type:
     | modtype-path 'with' package-type-constraint { 'and' package-type-constraint }
 ;
 package-type-constraint:
-          'type' typeconstr-name '=' typexpr
+          'type' typeconstr '=' typexpr
 ;
 \end{syntax}
 
