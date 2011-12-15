@@ -19,7 +19,7 @@ Index: toplevel/topdirs.ml
 ===================================================================
 --- toplevel/topdirs.ml	(revision 11316)
 +++ toplevel/topdirs.ml	(working copy)
-@@ -297,10 +297,73 @@
+@@ -297,10 +297,92 @@
      !traced_functions;
    traced_functions := []
  
@@ -49,6 +49,25 @@ Index: toplevel/topdirs.ml
 +  | Pclass -> "class"
 +  | Pcltype -> "class type"
 +
++let rec trim_modtype = function
++    Tmty_signature _ -> Tmty_signature []
++  | Tmty_functor (id, mty, mty') ->
++      Tmty_functor (id, mty, trim_modtype mty')
++  | Tmty_ident _ as mty -> mty
++
++let trim_signature = function
++    Tmty_signature sg ->
++      Tmty_signature
++        (List.map
++           (function
++               Tsig_module (id, mty, rs) ->
++                 Tsig_module (id, trim_modtype mty, rs)
++             (*| Tsig_modtype (id, Tmodtype_manifest mty) ->
++                 Tsig_modtype (id, Tmodtype_manifest (trim_modtype mty))*)
++             | item -> item)
++           sg)
++  | mty -> mty
++
 +let show_type ppf kind lid =
 +  let env = !Toploop.toplevel_env in
 +  try
@@ -72,7 +91,7 @@ Index: toplevel/topdirs.ml
 +          Tsig_exception (id, desc.cstr_args)
 +      | Pmodule ->
 +          let path, desc = Env.lookup_module lid env in
-+          Tsig_module (id, desc, Trec_not)
++          Tsig_module (id, trim_signature desc, Trec_not)
 +      | Pmodtype ->
 +          let path, desc = Env.lookup_modtype lid env in
 +          Tsig_modtype (id, desc)
@@ -93,7 +112,7 @@ Index: toplevel/topdirs.ml
  let _ =
    Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_out));
    Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_out));
-@@ -329,4 +392,19 @@
+@@ -329,4 +411,19 @@
               (Directive_string (parse_warnings std_out false));
  
    Hashtbl.add directive_table "warn_error"
