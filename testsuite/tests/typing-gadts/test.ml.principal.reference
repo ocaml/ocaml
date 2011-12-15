@@ -279,4 +279,28 @@ Error: This expression has type (a, a) eq
 #                     type 'a t = V1 : [ `A | `B ] t | V2 : [ `C | `D ] t
 val f : 'a t -> 'a = <fun>
 #   - : [ `A | `B ] = `A
+#                 type 'a int_foo = IF_constr : < foo : int; .. > int_foo
+type 'a int_bar = IB_constr : < bar : int; .. > int_bar
+#         Characters 98-99:
+    (x:<foo:int>)
+     ^
+Error: This expression has type t = < foo : int; .. >
+       but an expression was expected of type < foo : int >
+       Type ex#20 = < bar : int; .. > is not compatible with type <  > 
+       The second object type has no method bar
+#         Characters 98-99:
+    (x:<foo:int;bar:int>)
+     ^
+Error: This expression has type t = < foo : int; .. >
+       but an expression was expected of type < bar : int; foo : int >
+       Type ex#22 = < bar : int; .. > is not compatible with type
+         < bar : int > 
+#         Characters 98-99:
+    (x:<foo:int;bar:int;..>)
+     ^
+Error: This expression has type < bar : int; foo : int; .. > as 'a
+       but an expression was expected of type 'a
+       The type constructor ex#25 would escape its scope
+#         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
+#         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
 # 

@@ -2133,6 +2133,8 @@ and unify3 env t1 t1' t2 t2' =
       occur !env t2 t1';
       occur_univar !env t1;
       link_type t2' t1;
+  | (Tfield _, Tfield _) -> (* special case for GADTs *)
+      unify_fields env t1' t2'
   | _ ->
       begin match !umode with
       | Expression ->
@@ -2196,8 +2198,6 @@ and unify3 env t1 t1' t2 t2' =
           end
       | (Tvariant row1, Tvariant row2) ->
           unify_row env row1 row2
-      | (Tfield _, Tfield _) ->           (* Actually unused *)
-          unify_fields env t1' t2'
       | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
           begin match field_kind_repr kind with
             Fvar r when f <> dummy_method -> set_kind r Fabsent
@@ -2272,8 +2272,8 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
           if !trace_gadt_instances then update_level !env va.level t1;
           unify env t1 t2 
         with Unify trace ->
-          raise (Unify ((newty (Tfield(n, k1, t1, va)),
-                         newty (Tfield(n, k2, t2, va)))::trace)))
+          raise (Unify ((newty (Tfield(n, k1, t1, newty Tnil)),
+                         newty (Tfield(n, k2, t2, newty Tnil)))::trace)))
       pairs
   with exn ->
     log_type rest1; rest1.desc <- d1;
@@ -2482,14 +2482,21 @@ let unify env ty1 ty2 =
 
 (**** Special cases of unification ****)
 
+let expand_head_trace env t =
+  let reset_tracing = check_trace_gadt_instances env in
+  let t = expand_head_unif env t in
+  if reset_tracing then trace_gadt_instances := false;
+  t
+
 (*
    Unify [t] and [l:'a -> 'b]. Return ['a] and ['b].
    In label mode, label mismatch is accepted when
    (1) the requested label is ""
    (2) the original label is not optional
 *)
+
 let rec filter_arrow env t l =
-  let t = expand_head_unif env t in
+  let t = expand_head_trace env t in
   match t.desc with
     Tvar _ ->
       let lv = t.level in
@@ -2505,7 +2512,7 @@ let rec filter_arrow env t l =
 
 (* Used by [filter_method]. *)
 let rec filter_method_field env name priv ty =
-  let ty = repr ty in
+  let ty = expand_head_trace env ty in
   match ty.desc with
     Tvar _ ->
       let level = ty.level in
@@ -2532,7 +2539,7 @@ let rec filter_method_field env name priv ty =
 
 (* Unify [ty] and [< name : 'a; .. >]. Return ['a]. *)
 let rec filter_method env name priv ty =
-  let ty = expand_head_unif env ty in
+  let ty = expand_head_trace env ty in
   match ty.desc with
     Tvar _ ->
       let ty1 = newvar () in

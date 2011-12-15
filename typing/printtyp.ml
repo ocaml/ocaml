@@ -420,10 +420,12 @@ let rec tree_of_typexp sch ty =
             Otyp_variant (non_gen, Ovar_fields fields, row.row_closed, tags)
         end
     | Tobject (fi, nm) ->
-        tree_of_typobject sch fi nm
+        tree_of_typobject sch fi !nm
+    | Tnil | Tfield _ ->
+        tree_of_typobject sch ty None
     | Tsubst ty ->
         tree_of_typexp sch ty
-    | Tlink _ | Tnil | Tfield _ ->
+    | Tlink _ ->
         fatal_error "Printtyp.tree_of_typexp"
     | Tpoly (ty, []) ->
         tree_of_typexp sch ty
@@ -469,7 +471,7 @@ and tree_of_typlist sch tyl =
   List.map (tree_of_typexp sch) tyl
 
 and tree_of_typobject sch fi nm =
-  begin match !nm with
+  begin match nm with
   | None ->
       let pr_fields fi =
         let (fields, rest) = flatten_fields fi in
@@ -971,9 +973,10 @@ let print_tags ppf fields =
 
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
-    Tfield _, _ | _, Tfield _
+    Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
   | _, Tvar _ | Tvar _, _
   | Tvariant _, Tvariant _ -> true
+  | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) -> l = l'
   | _ -> false
 
 let rec mismatch unif = function
@@ -1016,12 +1019,12 @@ let explanation unif t3 t4 ppf =
   | _, Tfield (lab, _, _, _) when lab = dummy_method ->
       fprintf ppf
         "@,Self type cannot be unified with a closed object type"
-  | Tfield (l, _, _, _), Tfield (l', _, _, _) when l = l' ->
+  | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) when l = l' ->
       fprintf ppf "@,Types for method %s are incompatible" l
-  | _, Tfield (l, _, _, _) ->
+  | (Tnil|Tconstr _), Tfield (l, _, _, _) ->
       fprintf ppf
         "@,@[The first object type has no method %s@]" l
-  | Tfield (l, _, _, _), _ ->
+  | Tfield (l, _, _, _), (Tnil|Tconstr _) ->
       fprintf ppf
         "@,@[The second object type has no method %s@]" l
   | Tvariant row1, Tvariant row2 ->

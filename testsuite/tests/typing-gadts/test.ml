@@ -467,3 +467,37 @@ let f : type a. a t -> a = function
 ;;
 
 f V1;;
+
+(* PR#5425 and PR#5427 *)
+
+type _ int_foo =
+  | IF_constr : <foo:int; ..> int_foo
+
+type _ int_bar = 
+  | IB_constr : <bar:int; ..> int_bar
+;;
+
+let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
+  let IF_constr, IB_constr = e, e' in
+  (x:<foo:int>)
+;;
+
+let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
+  let IF_constr, IB_constr = e, e' in
+  (x:<foo:int;bar:int>)
+;;
+
+let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
+  let IF_constr, IB_constr = e, e' in
+  (x:<foo:int;bar:int;..>)
+;;
+
+let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =
+  let IF_constr, IB_constr = e, e' in
+  (x:<foo:int;bar:int;..>)
+;;
+
+let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
+  let IF_constr, IB_constr = e, e' in
+  x, x#foo, x#bar
+;;
