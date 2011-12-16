@@ -71,6 +71,7 @@ CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 CMXS=cmxs
 NATDYNLINK=true
+RUNTIMED=noruntimed
 
 ########## Configuration for the bytecode compiler
 

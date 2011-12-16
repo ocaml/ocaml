@@ -20,6 +20,12 @@ open Cmm
 open Reg
 open Mach
 
+(* Which asm conventions to use *)
+let masm =
+  match Config.ccomp_type with
+  | "msvc" -> true
+  | _      -> false
+
 (* Registers available for register allocation *)
 
 (* Register map:
@@ -34,10 +40,16 @@ open Mach
     tos         100             top of floating-point stack. *)
 
 let int_reg_name =
-  [| "%eax"; "%ebx"; "%ecx"; "%edx"; "%esi"; "%edi"; "%ebp" |]
+  if masm then
+    [| "eax"; "ebx"; "ecx"; "edx"; "esi"; "edi"; "ebp" |]
+  else
+    [| "%eax"; "%ebx"; "%ecx"; "%edx"; "%esi"; "%edi"; "%ebp" |]
 
 let float_reg_name =
-  [| "%tos" |]
+  if masm then
+    [| "tos" |]
+  else
+    [| "%tos" |]
 
 let num_register_classes = 2
 
@@ -181,8 +193,13 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)
+  if masm then
+    Ccomp.command (Config.asm ^
+                   Filename.quote outfile ^ " " ^ Filename.quote infile ^
+                   (if !Clflags.verbose then "" else ">NUL"))
+  else
+    Ccomp.command (Config.asm ^ " -o " ^
+                   Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 open Clflags;;
 open Config;;

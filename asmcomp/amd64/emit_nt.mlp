@@ -604,13 +604,11 @@ let emit_instr fallthrough i =
         `	movsxd	{emit_reg tmp2}, DWORD PTR [{emit_reg tmp1}+{emit_reg i.arg.(0)}*4]\n`;
         `	add	{emit_reg tmp1}, {emit_reg tmp2}\n`;
         `	jmp	{emit_reg tmp1}\n`;
-        `	.DATA\n`;
         emit_align 4;
         `{emit_label lbl}	LABEL DWORD\n`;
         for i = 0 to Array.length jumptbl - 1 do
           `	DWORD	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
-        done;
-        `	.CODE\n`
+        done
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`
     | Lpushtrap ->

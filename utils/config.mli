@@ -22,10 +22,9 @@ val standard_library: string
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
 val ccomp_type: string
-        (* The "kind" of the C compiler: one of
+        (* The "kind" of the C compiler, assembler and linker used: one of
                "cc" (for Unix-style C compilers)
-               "msvc" (Microsoft Visual C++)
-               "mrc" (Macintosh MPW) *)
+               "msvc" (for Microsoft Visual C++ and MASM) *)
 val bytecomp_c_compiler: string
         (* The C compiler to use for compiling C files
            with the bytecode compiler *)

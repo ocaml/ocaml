@@ -20,13 +20,27 @@ open Cmm
 open Reg
 open Mach
 
+(* Which ABI to use *)
+
+let win64 =
+  match Config.system with
+  | "win64" | "mingw64" -> true
+  | _                   -> false
+
+(* Which asm conventions to use *)
+
+let masm =
+  match Config.ccomp_type with
+  | "msvc" -> true
+  | _      -> false
+
 (* Registers available for register allocation *)
 
 (* Register map:
-    rax         0               rax - r11: Caml function arguments
-    rbx         1               rdi - r9: C function arguments
-    rdi         2               rax: Caml and C function results
-    rsi         3               rbx, rbp, r12-r15 are preserved by C
+    rax         0
+    rbx         1
+    rdi         2
+    rsi         3
     rdx         4
     rcx         5
     r8          6
@@ -39,18 +53,44 @@ open Mach
     r14         trap pointer
     r15         allocation pointer
 
-  xmm0 - xmm15  100 - 115       xmm0 - xmm9: Caml function arguments
-                                xmm0 - xmm7: C function arguments
-                                xmm0: Caml and C function results *)
+  xmm0 - xmm15  100 - 115  *)
+
+(* Conventions:
+     rax - r11: Caml function arguments
+     rax: Caml and C function results
+     xmm0 - xmm9: Caml function arguments
+     xmm0: Caml and C function results
+   Under Unix:
+     rdi, rsi, rdx, rcx, r8, r9: C function arguments
+     xmm0 - xmm7: C function arguments
+     rbx, rbp, r12-r15 are preserved by C
+     xmm registers are not preserved by C
+   Under Win64:
+     rcx, rdx, r8, r9: C function arguments
+     xmm0 - xmm3: C function arguments
+     rbx, rbp, rsi, rdi r12-r15 are preserved by C
+     xmm6-xmm15 are preserved by C
+*)
 
 let int_reg_name =
-  [| "%rax"; "%rbx"; "%rdi"; "%rsi"; "%rdx"; "%rcx"; "%r8"; "%r9";
-     "%r10"; "%r11"; "%rbp"; "%r12"; "%r13" |]
+  match Config.ccomp_type with
+  | "msvc" ->
+      [| "rax"; "rbx"; "rdi"; "rsi"; "rdx"; "rcx"; "r8"; "r9";
+         "r10"; "r11"; "rbp"; "r12"; "r13" |]
+  | _ ->
+      [| "%rax"; "%rbx"; "%rdi"; "%rsi"; "%rdx"; "%rcx"; "%r8"; "%r9";
+         "%r10"; "%r11"; "%rbp"; "%r12"; "%r13" |]
 
 let float_reg_name =
-  [| "%xmm0"; "%xmm1"; "%xmm2"; "%xmm3"; "%xmm4"; "%xmm5"; "%xmm6"; "%xmm7";
-     "%xmm8"; "%xmm9"; "%xmm10"; "%xmm11";
-     "%xmm12"; "%xmm13"; "%xmm14"; "%xmm15" |]
+  match Config.ccomp_type with
+  | "msvc" ->
+      [| "xmm0"; "xmm1"; "xmm2"; "xmm3"; "xmm4"; "xmm5"; "xmm6"; "xmm7";
+         "xmm8"; "xmm9"; "xmm10"; "xmm11";
+         "xmm12"; "xmm13"; "xmm14"; "xmm15" |]
+  | _ ->
+      [| "%xmm0"; "%xmm1"; "%xmm2"; "%xmm3"; "%xmm4"; "%xmm5"; "%xmm6"; "%xmm7";
+         "%xmm8"; "%xmm9"; "%xmm10"; "%xmm11";
+         "%xmm12"; "%xmm13"; "%xmm14"; "%xmm15" |]
 
 let num_register_classes = 2
 
@@ -141,26 +181,74 @@ let loc_parameters arg =
 let loc_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
-(* C calling convention:
+(* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
      first float args in xmm0 ... xmm7
-     remaining args on stack.
-   Return value in rax or xmm0. *)
+     remaining args on stack
+     return value in rax or xmm0.
+  C calling conventions under Win64:
+     first integer args in rcx, rdx, r8, r9
+     first float args in xmm0 ... xmm3     
+     each integer arg consumes a float reg, and conversely
+     remaining args on stack
+     always 32 bytes reserved at bottom of stack.
+     Return value in rax or xmm0. *)
 
-let loc_external_arguments arg =
-  calling_conventions 2 7 100 107 outgoing arg
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+
+let unix_loc_external_arguments arg =
+  calling_conventions 2 7 100 107 outgoing arg
+
+let win64_int_external_arguments =
+  [| 5 (*rcx*); 4 (*rdx*); 6 (*r8*); 7 (*r9*) |]
+let win64_float_external_arguments =
+  [| 100 (*xmm0*); 101 (*xmm1*); 102 (*xmm2*); 103 (*xmm3*) |]
+
+let win64_loc_external_arguments arg =
+  let loc = Array.create (Array.length arg) Reg.dummy in
+  let reg = ref 0
+  and ofs = ref 32 in
+  for i = 0 to Array.length arg - 1 do
+    match arg.(i).typ with
+      Int | Addr as ty ->
+        if !reg < 4 then begin
+          loc.(i) <- phys_reg win64_int_external_arguments.(!reg);
+          incr reg
+        end else begin
+          loc.(i) <- stack_slot (Outgoing !ofs) ty;
+          ofs := !ofs + size_int
+        end
+    | Float ->
+        if !reg < 4 then begin
+          loc.(i) <- phys_reg win64_float_external_arguments.(!reg);
+          incr reg
+        end else begin
+          loc.(i) <- stack_slot (Outgoing !ofs) Float;
+          ofs := !ofs + size_float
+        end
+  done;
+  (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
+
+let loc_external_arguments =
+  if win64 then win64_loc_external_arguments else unix_loc_external_arguments
 
 let loc_exn_bucket = rax
 
 (* Registers destroyed by operations *)
 
-let destroyed_at_c_call =         (* rbp, rbx, r12-r15 preserved *)
-  Array.of_list(List.map phys_reg
-    [0;2;3;4;5;6;7;8;9;
-     100;101;102;103;104;105;106;107;
-     108;109;110;111;112;113;114;115])
+let destroyed_at_c_call =
+  if win64 then
+    (* Win64: rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
+    Array.of_list(List.map phys_reg
+      [0;4;5;6;7;8;9;
+       100;101;102;103;104;105])
+  else
+    (* Unix: rbp, rbx, r12-r15 preserved *)
+    Array.of_list(List.map phys_reg
+      [0;2;3;4;5;6;7;8;9;
+       100;101;102;103;104;105;106;107;
+       108;109;110;111;112;113;114;115])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
@@ -177,11 +265,11 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_,_) -> 0
+    Iextcall(_,_) -> if win64 then 8 else 0
   | _ -> 11
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 4; 0 |]
+    Iextcall(_, _) -> if win64 then [| 8; 10 |] else [| 4; 0 |]
   | Iintop(Idiv | Imod) -> [| 11; 16 |]
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Idiv|Imod|Icomp _), _)
         -> [| 12; 16 |]
@@ -196,5 +284,10 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)
+  if masm then
+    Ccomp.command (Config.asm ^
+                   Filename.quote outfile ^ " " ^ Filename.quote infile ^
+                   (if !Clflags.verbose then "" else ">NUL"))
+  else
+    Ccomp.command (Config.asm ^ " -o " ^
+                   Filename.quote outfile ^ " " ^ Filename.quote infile)

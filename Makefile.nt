@@ -432,15 +432,13 @@ partialclean::
 beforedepend:: asmcomp/arch.ml
 
 ifeq ($(TOOLCHAIN),msvc)
-ASMCOMP_PROC=asmcomp/$(ARCH)/proc_nt.ml
 ASMCOMP_EMIT=asmcomp/$(ARCH)/emit_nt.mlp
 else
-ASMCOMP_PROC=asmcomp/$(ARCH)/proc.ml
 ASMCOMP_EMIT=asmcomp/$(ARCH)/emit.mlp
 endif
 
-asmcomp/proc.ml: $(ASMCOMP_PROC)
-	cp $(ASMCOMP_PROC) asmcomp/proc.ml
+asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
+	cp asmcomp/$(ARCH)/proc.ml asmcomp/proc.ml
 
 partialclean::
 	rm -f asmcomp/proc.ml
