@@ -430,8 +430,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       ] ]
     ;
     package_type_cstr:
-      [ [ "type"; i = a_LIDENT; "="; ty = ctyp ->
-            <:with_constr< type $lid:i$ = $ty$ >>
+      [ [ "type"; i = ident; "="; ty = ctyp ->
+            <:with_constr< type $id:i$ = $ty$ >>
       ] ]
     ;
     package_type_cstrs:
