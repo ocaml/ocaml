@@ -371,7 +371,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       match Ast.list_of_ctyp t [] with
       [ [] -> ()
       | ts ->
-          pp f "@[<hv0>| %a@]" (list o#ctyp "@ | ") ts ];
+          pp f "@[<hv0>| %a@]" (list o#constructor_declaration "@ | ") ts ];
+
+    method private constructor_declaration f t =
+      match t with
+      [ <:ctyp< $t1$ : $t2$ -> $t3$ >> -> pp f "@[<2>%a :@ @[<2>%a@ ->@ %a@]@]" o#ctyp t1 o#constructor_type t2 o#ctyp t3
+      | t -> o#ctyp f t ];
 
     method string f = pp f "%s";
     method quoted_string f = pp f "%S";
