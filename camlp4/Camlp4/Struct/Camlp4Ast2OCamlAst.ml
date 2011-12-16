@@ -286,8 +286,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   and package_type_constraints wc acc =
     match wc with
     [ <:with_constr<>> -> acc
-    | <:with_constr< type $lid:id$ = $ct$ >> ->
-        [(Lident id, ctyp ct) :: acc]
+    | <:with_constr< type $id:id$ = $ct$ >> ->
+        [(ident id, ctyp ct) :: acc]
     | <:with_constr< $wc1$ and $wc2$ >> ->
         package_type_constraints wc1 (package_type_constraints wc2 acc)
     | _ -> error (loc_of_with_constr wc) "unexpected `with constraint' for a package type" ]
