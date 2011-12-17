@@ -23,19 +23,15 @@ Tier 1 (actively used and maintained by the core Caml team):
 
     AMD64 (Opteron)    Linux, MacOS X, MS Windows
     IA32 (Pentium)     Linux, FreeBSD, MacOS X, MS Windows
-    PowerPC            MacOS X
+    PowerPC            Linux, MacOS X
+    ARM                Linux
 
 Tier 2 (maintained when possible, with help from users):
 
-    Alpha              Digital Unix/Compaq Tru64, Linux, all BSD
     AMD64              FreeBSD, OpenBSD
-    HP PA-RISC         HPUX 11, Linux
     IA32 (Pentium)     NetBSD, OpenBSD, Solaris 9
-    IA64               Linux, FreeBSD
-    MIPS               IRIX 6
-    PowerPC            Linux, NetBSD
-    SPARC              Solaris 9, Linux, NetBSD
-    Strong ARM         Linux
+    PowerPC            NetBSD
+    SPARC              Solaris, Linux, NetBSD
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
@@ -79,8 +75,9 @@ COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
-2007, 2008 Institut National de Recherche en Informatique et en Automatique
-(INRIA) and distributed under the conditions stated in file LICENSE.
+2007, 2008, 2009, 2010, 2011, 2012 Institut National de Recherche en
+Informatique et en Automatique (INRIA) and distributed under the
+conditions stated in file LICENSE.
 
 INSTALLATION:
 
@@ -106,7 +103,7 @@ There exists a mailing list of users of the Caml implementations
 developed at INRIA. The purpose of this list is to share
 experience, exchange ideas (and even code), and report on applications
 of the Caml language. Messages can be written in English or in
-French. The list has about 750 subscribers.
+French. The list has more than 1000 subscribers.
 
 Messages to the list should be sent to:
 
@@ -114,9 +111,9 @@ Messages to the list should be sent to:
 
 You can subscribe to this list via the Web interface at
 
-    http://yquem.inria.fr/cgi-bin/mailman/listinfo/caml-list
+        https://sympa-roc.inria.fr/wws/info/caml-list
 
-Archives of the list are available on the Web site http://caml.inria.fr/
+Archives of the list are available on the Web site above.
 
 The Usenet news groups comp.lang.ml and comp.lang.functional
 also contains discussions about the ML family of programming languages,

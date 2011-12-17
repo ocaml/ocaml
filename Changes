@@ -41,6 +41,7 @@ Feature wishes:
 - PR#5420: Unix.openfile share mode (Windows)
 
 Shedding weight:
+- Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
 - The "DBM" library (interface with Unix DBM key-value stores) is no
   longer part of this distribution.  It now lives its own life at
   https://forge.ocamlcore.org/projects/camldbm/
