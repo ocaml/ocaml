@@ -23,8 +23,6 @@ val pthread_link : string
 val x11_includes : string
 val x11_link : string
 val tk_link : string
-val dbm_includes : string
-val dbm_link : string
 val bytecc : string
 val bytecccompopts : string
 val bytecclinkopts : string

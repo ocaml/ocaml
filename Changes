@@ -2,7 +2,6 @@ OCaml 3.13.0:
 -------------
 
 - The official name of the language is now OCaml.
-- Warning 28 is now enabled by default.
 
 Language features:
 - Added Generalized Abstract Data Types (GADTs) to the language. See
@@ -17,6 +16,7 @@ Language features:
 Compilers:
 - Revised simplification of let-alias (PR#5205, PR#5288)
 - Better reporting of compiler version mismatch in .cmi files
+- Warning 28 is now enabled by default.
 
 Native-code compiler:
 - Optimized handling of partially-applied functions (PR#5287)
@@ -39,6 +39,12 @@ Feature wishes:
 - PR#5358: first class modules don't allow "with type" declarations for types in sub-modules
 - PR#5411: new directive for the toplevel: #load_rec
 - PR#5420: Unix.openfile share mode (Windows)
+
+Shedding weight:
+- The "DBM" library (interface with Unix DBM key-value stores) is no
+  longer part of this distribution.  It now lives its own life at
+  https://forge.ocamlcore.org/projects/camldbm/
+
 
 OCaml 3.12.1:
 ----------------------

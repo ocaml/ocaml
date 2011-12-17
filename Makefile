@@ -280,7 +280,7 @@ install:
 	if test -d $(MANDIR)/man$(MANEXT); then : ; \
 	  else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
 	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
-	  dllthreads.so dllunix.so dllgraphics.so dllmldbm.so dllstr.so \
+	  dllthreads.so dllunix.so dllgraphics.so dllstr.so \
 	  dlltkanim.so
 	cd byterun; $(MAKE) install
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)

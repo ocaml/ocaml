@@ -268,13 +268,6 @@ BNG_ASM_LEVEL=1
 # For SunOS with OpenLook:
 #X11_LINK=-L$(X11_LIB) -lX11
 
-### -I options for finding the include file ndbm.h
-# Needed for the "dbm" package
-# Usually:
-#DBM_INCLUDES=
-# For recent Linux systems:
-#DBM_INCLUDES=-I/usr/include/gdbm
-
 ### Preprocessor options for finding tcl.h and tk.h
 # Needed for the "labltk" package
 # Required only if not in the standard include path.

@@ -1393,54 +1393,6 @@ fi
 echo "X11_INCLUDES=$x11_include" >> Makefile
 echo "X11_LINK=$x11_link" >> Makefile
 
-# See if we can compile the dbm library
-
-dbm_include="not found"
-dbm_link="not found"
-use_gdbm_ndbm=no
-
-for dir in /usr/include /usr/include/db1 /usr/include/gdbm; do
-  if test -f $dir/ndbm.h; then
-    dbm_include=$dir
-    if sh ./hasgot dbm_open; then
-      dbm_link=""
-    elif sh ./hasgot -lndbm dbm_open; then
-      dbm_link="-lndbm"
-    elif sh ./hasgot -ldb1 dbm_open; then
-      dbm_link="-ldb1"
-    elif sh ./hasgot -lgdbm dbm_open; then
-      dbm_link="-lgdbm"
-    elif sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
-      dbm_link="-lgdbm_compat -lgdbm"
-    fi
-    break
-  fi
-  if test -f $dir/gdbm-ndbm.h; then
-    dbm_include=$dir
-    use_gdbm_ndbm=yes
-    if sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
-      dbm_link="-lgdbm_compat -lgdbm"
-    fi
-    break
-  fi
-done
-if test "$dbm_include" = "not found" || test "$dbm_link" = "not found"; then
-  echo "NDBM not found, the \"dbm\" library will not be supported."
-else
-  echo "NDBM found (in $dbm_include)"
-  if test "$dbm_include" = "/usr/include"; then
-    dbm_include=""
-  else
-    dbm_include="-I$dbm_include"
-  fi
-  if test "$use_gdbm_ndbm" = "yes"; then
-    echo "#define DBM_USES_GDBM_NDBM" >> s.h
-  fi
-  otherlibraries="$otherlibraries dbm"
-fi
-echo "DBM_INCLUDES=$dbm_include" >> Makefile
-echo "DBM_LINK=$dbm_link" >> Makefile
-
 # Look for tcl/tk
 
 echo "Configuring LablTk..."
