@@ -650,12 +650,6 @@ model=default
 system=unknown
 
 case "$host" in
-  alpha*-*-osf*)                arch=alpha; system=digital;;
-  alpha*-*-linux*)              arch=alpha; system=linux;;
-  alpha*-*-gnu*)                arch=alpha; system=gnu;;
-  alpha*-*-freebsd*)            arch=alpha; system=freebsd;;
-  alpha*-*-netbsd*)             arch=alpha; system=netbsd;;
-  alpha*-*-openbsd*)            arch=alpha; system=openbsd;;
   sparc*-*-sunos4.*)            arch=sparc; system=sunos;;
   sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
@@ -677,11 +671,6 @@ case "$host" in
                                   arch=i386; system=macosx
                                 fi;;
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
-  mips-*-irix6*)                arch=mips; system=irix;;
-  hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
-  hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
-  hppa*-*-linux*)               arch=hppa; system=linux;;
-  hppa*-*-gnu*)                 arch=hppa; system=gnu;;
   powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
@@ -689,9 +678,6 @@ case "$host" in
                                 if $arch64; then model=ppc64; else model=ppc; fi;;
   arm*-*-linux*)                arch=arm; system=linux;;
   arm*-*-gnu*)                  arch=arm; system=gnu;;
-  ia64-*-linux*)                arch=ia64; system=linux;;
-  ia64-*-gnu*)                  arch=ia64; system=gnu;;
-  ia64-*-freebsd*)              arch=ia64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-gnu*)                arch=amd64; system=gnu;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
@@ -706,17 +692,13 @@ esac
 
 if $arch64; then
   case "$arch,$model" in
-    sparc,default|mips,default|hppa,default|power,ppc)
+    sparc,default|power,ppc)
       arch=none; model=default; system=unknown;;
   esac
 fi
 
 if test -z "$ccoption"; then
-  case "$arch,$system,$cc" in
-    alpha,digital,gcc*) nativecc=cc;;
-    mips,*,gcc*) nativecc=cc;;
-    *) nativecc="$bytecc";;
-  esac
+  nativecc="$bytecc"
 else
   nativecc="$ccoption"
 fi
@@ -726,9 +708,6 @@ nativecclinkopts=''
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$host_type" in
-  alpha,cc*,digital,*) nativecccompopts=-std1;;
-  mips,cc*,irix,*)     nativecccompopts=-n32
-                       nativecclinkopts="-n32 -Wl,-woff,84";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
   *,*,rhapsody,*darwin[1-5].*)
@@ -744,11 +723,6 @@ esac
 asppprofflags='-DPROFILING'
 
 case "$arch,$model,$system" in
-  alpha,*,digital)  as='as -O2 -nocpp'
-                    aspp='as -O2'
-                    asppprofflags='-pg -DPROFILING';;
-  alpha,*,*)        as='as'
-                    aspp='gcc -c';;
   amd64,*,macosx)   as='as -arch x86_64'
                     aspp='gcc -arch x86_64 -c';;
   amd64,*,solaris)  as='as --64'
@@ -757,16 +731,10 @@ case "$arch,$model,$system" in
                     aspp='gcc -c';;
   arm,*,*)          as='as';
                     aspp='gcc -c';;
-  hppa,*,*)         as='as';
-                    aspp='gcc -traditional -c';;
   i386,*,solaris)   as='as'
                     aspp='/usr/ccs/bin/as -P';;
   i386,*,*)         as='as'
                     aspp='gcc -c';;
-  ia64,*,*)         as='as -xexplicit'
-                    aspp='gcc -c -Wa,-xexplicit';;
-  mips,*,irix)      as='as -n32 -O2 -nocpp -g0'
-                    aspp='as -n32 -O2';;
   power,*,elf)      as='as -u -m ppc'
                     aspp='gcc -c';;
   power,*,bsd)      as='as'
@@ -787,7 +755,6 @@ if test -n "$asppoption"; then aspp="$asppoption"; fi
 
 cc_profile='-pg'
 case "$arch,$model,$system" in
-  alpha,*,digital) profiling='prof';;
   i386,*,linux_elf) profiling='prof';;
   i386,*,gnu) profiling='prof';;
   i386,*,bsd_elf) profiling='prof';;
@@ -1053,14 +1020,7 @@ if sh ./hasgot -i termios.h &&
   echo "#define HAS_TERMIOS" >> s.h
 fi
 
-# Async I/O under OSF1 3.x are so buggy that the test program hangs...
-testasyncio=true
-if test -f /usr/bin/uname; then
-  case "`/usr/bin/uname -s -r`" in
-    "OSF1 V3."*) testasyncio=false;;
-  esac
-fi
-if $testasyncio && sh ./runtest async_io.c; then
+if sh ./runtest async_io.c; then
   echo "Asynchronous I/O are supported."
   echo "#define HAS_ASYNC_IO" >> s.h
 fi
@@ -1177,13 +1137,11 @@ esac
 # Determine the target architecture for the "num" library
 
 case "$arch" in
-  alpha)    bng_arch=alpha; bng_asm_level=1;;
   i386)     bng_arch=ia32
             if sh ./trycompile ia32sse2.c
             then bng_asm_level=2
             else bng_asm_level=1
             fi;;
-  mips)     bng_arch=mips; bng_asm_level=1;;
   power)    bng_arch=ppc; bng_asm_level=1;;
   amd64)    bng_arch=amd64; bng_asm_level=1;;
   *)        bng_arch=generic; bng_asm_level=0;;
