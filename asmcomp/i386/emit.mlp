@@ -82,6 +82,9 @@ let label_prefix =
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
+let emit_data_label lbl =
+  emit_string label_prefix; emit_string "d"; emit_int lbl
+
 
 (* Some data directives have different names under Solaris *)
 
@@ -921,7 +924,7 @@ let emit_item = function
   | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
-      `{emit_label (100000 + lbl)}:\n`
+      `{emit_data_label lbl}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -937,7 +940,7 @@ let emit_item = function
   | Csymbol_address s ->
       `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.long	{emit_label (100000 + lbl)}\n`
+      `	.long	{emit_data_label lbl}\n`
   | Cstring s ->
       if use_ascii_dir
       then emit_string_directive "	.ascii	" s

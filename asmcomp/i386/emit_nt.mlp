@@ -71,6 +71,9 @@ let emit_int32 n = emit_printf "0%lxh" n
 let emit_label lbl =
   emit_string "L"; emit_int lbl
 
+let emit_data_label lbl =
+  emit_string "Ld"; emit_int lbl
+
 (* Output an align directive. *)
 
 let emit_align n = `	ALIGN	{emit_int n}\n`
@@ -813,7 +816,7 @@ let emit_item = function
       add_def_symbol s ;
       `{emit_symbol s} LABEL DWORD\n`
   | Cdefine_label lbl ->
-      `{emit_label (100000 + lbl)}	LABEL DWORD\n`
+      `{emit_data_label lbl}	LABEL DWORD\n`
   | Cint8 n ->
       `	BYTE	{emit_int n}\n`
   | Cint16 n ->
@@ -830,7 +833,7 @@ let emit_item = function
       add_used_symbol s ;
       `	DWORD	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	DWORD	{emit_label (100000 + lbl)}\n`
+      `	DWORD	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_bytes_directive "	BYTE	" s
   | Cskip n ->

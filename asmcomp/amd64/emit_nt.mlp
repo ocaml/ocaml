@@ -80,6 +80,9 @@ let add_used_symbol s =
 let emit_label lbl =
   emit_string "L"; emit_int lbl
 
+let emit_data_label lbl =
+  emit_string "Ld"; emit_int lbl
+
 (* Output a .align directive. *)
 
 let emit_align n =
@@ -696,7 +699,7 @@ let emit_item = function
       add_def_symbol s;
       `{emit_symbol s} LABEL QWORD\n`
   | Cdefine_label lbl ->
-      `{emit_label (100000 + lbl)} LABEL QWORD\n`
+      `{emit_data_label lbl} LABEL QWORD\n`
   | Cint8 n ->
       `	BYTE	{emit_int n}\n`
   | Cint16 n ->
@@ -713,7 +716,7 @@ let emit_item = function
       add_used_symbol s;
       `	QWORD	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	QWORD	{emit_label (100000 + lbl)}\n`
+      `	QWORD	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_bytes_directive "	BYTE	" s
   | Cskip n ->
