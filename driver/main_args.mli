@@ -15,6 +15,7 @@
 module type Bytecomp_options =
   sig
     val _a : unit -> unit
+    val _absname : unit -> unit
     val _annot : unit -> unit
     val _c : unit -> unit
     val _cc : string -> unit
@@ -71,6 +72,7 @@ module type Bytecomp_options =
 ;;
 
 module type Bytetop_options = sig
+  val _absname : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
   val _labels : unit -> unit
@@ -99,6 +101,7 @@ end;;
 
 module type Optcomp_options = sig
   val _a : unit -> unit
+  val _absname : unit -> unit
   val _annot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
@@ -166,6 +169,7 @@ module type Optcomp_options = sig
 end;;
 
 module type Opttop_options = sig
+  val _absname : unit -> unit
   val _compact : unit -> unit
   val _I : string -> unit
   val _init : string -> unit

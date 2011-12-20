@@ -62,6 +62,7 @@ module Options = Main_args.Make_opttop_options (struct
   let set r () = r := true
   let clear r () = r := false
 
+  let _absname = set Location.absname
   let _compact = clear optimize_for_speed
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in

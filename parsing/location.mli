@@ -58,3 +58,7 @@ val reset: unit -> unit
 val highlight_locations: formatter -> t -> t -> bool
 
 val print: formatter -> t -> unit
+val print_filename: formatter -> string -> unit
+
+
+val absname: bool ref

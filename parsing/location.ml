@@ -14,6 +14,10 @@
 
 open Lexing
 
+let absname = ref false
+    (* This reference should be in Clflags, but it would create an additional dependency
+       and make bootstrapping Camlp4 more difficult. *)
+
 type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let in_file name =
@@ -196,6 +200,22 @@ let rec highlight_locations ppf loc1 loc2 =
 
 open Format
 
+let absolute_path s = (* This function could go into Filename *)
+  let open Filename in
+  let s = if is_relative s then concat (Sys.getcwd ()) s else s in
+  (* Now simplify . and .. components *)
+  let rec aux s =
+    let base = basename s in
+    let dir = dirname s in
+    if base = current_dir_name then if dir = s then dir else aux dir
+    else if base = parent_dir_name then dirname (aux dir)
+    else concat (aux dir) base
+  in
+  aux s
+
+let print_filename ppf file =
+  Format.fprintf ppf "%s" (if !absname then absolute_path file else file)
+
 let reset () =
   num_loc_lines := 0
 
@@ -215,7 +235,7 @@ let print_loc ppf loc =
       fprintf ppf "Characters %i-%i:@."
               loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
-    fprintf ppf "%s%s%s%i" msg_file file msg_line line;
+    fprintf ppf "%s%a%s%i" msg_file print_filename file msg_line line;
     if startchar >= 0 then
       fprintf ppf "%s%i%s%i" msg_chars startchar msg_to endchar
   end

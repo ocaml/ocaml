@@ -945,19 +945,19 @@ open Format
 
 let report_error ppf = function
   | Not_an_interface filename -> fprintf ppf
-      "%s@ is not a compiled interface" filename
+      "%a@ is not a compiled interface" Location.print_filename filename
   | Wrong_version_interface (filename, older_newer) -> fprintf ppf
-      "%s@ is not a compiled interface for this version of OCaml.@.\
-       It seems to be for %s version of OCaml." filename older_newer
+      "%a@ is not a compiled interface for this version of OCaml.@.\
+       It seems to be for %s version of OCaml." Location.print_filename filename older_newer
   | Corrupted_interface filename -> fprintf ppf
-      "Corrupted compiled interface@ %s" filename
+      "Corrupted compiled interface@ %a" Location.print_filename filename
   | Illegal_renaming(modname, filename) -> fprintf ppf
-      "Wrong file naming: %s@ contains the compiled interface for@ %s"
-      filename modname
+      "Wrong file naming: %a@ contains the compiled interface for@ %s"
+      Location.print_filename filename modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
-      "@[<hov>The files %s@ and %s@ \
+      "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"
-      source1 source2 name
+      Location.print_filename source1 Location.print_filename source2 name
   | Need_recursive_types(import, export) ->
       fprintf ppf
         "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"

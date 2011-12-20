@@ -17,6 +17,7 @@ Compilers:
 - Revised simplification of let-alias (PR#5205, PR#5288)
 - Better reporting of compiler version mismatch in .cmi files
 - Warning 28 is now enabled by default.
+- New option -absname to use absolute paths in error messages
 
 Native-code compiler:
 - Optimized handling of partially-applied functions (PR#5287)

@@ -16,6 +16,10 @@ let mk_a f =
   "-a", Arg.Unit f, " Build a library"
 ;;
 
+let mk_absname f =
+  "-absname", Arg.Unit f, "  Show absolute filenames in error message"
+;;
+
 let mk_annot f =
   "-annot", Arg.Unit f, " Save information in <filename>.annot"
 ;;
@@ -378,6 +382,7 @@ let mk__ f =
 
 module type Bytecomp_options = sig
   val _a : unit -> unit
+  val _absname : unit -> unit
   val _annot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
@@ -433,6 +438,7 @@ module type Bytecomp_options = sig
 end;;
 
 module type Bytetop_options = sig
+  val _absname : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
   val _labels : unit -> unit
@@ -461,6 +467,7 @@ end;;
 
 module type Optcomp_options = sig
   val _a : unit -> unit
+  val _absname : unit -> unit
   val _annot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
@@ -528,6 +535,7 @@ module type Optcomp_options = sig
 end;;
 
 module type Opttop_options = sig
+  val _absname : unit -> unit
   val _compact : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
@@ -577,6 +585,7 @@ module Make_bytecomp_options (F : Bytecomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_absname F._absname;
     mk_annot F._annot;
     mk_c F._c;
     mk_cc F._cc;
@@ -641,6 +650,7 @@ end;;
 module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
+    mk_absname F._absname;
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
@@ -672,6 +682,7 @@ module Make_optcomp_options (F : Optcomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_absname F._absname;
     mk_annot F._annot;
     mk_c F._c;
     mk_cc F._cc;
@@ -741,6 +752,7 @@ end;;
 
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
+    mk_absname F._absname;
     mk_compact F._compact;
     mk_I F._I;
     mk_init F._init;
