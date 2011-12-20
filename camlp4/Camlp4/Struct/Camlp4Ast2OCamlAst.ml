@@ -352,7 +352,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mktype loc tl cl Ptype_abstract (mkprivate' pflag) m ]
   ;
 
-  value type_decl tl cl t = type_decl tl cl (loc_of_ctyp t) None False t;
+  value type_decl tl cl t loc = type_decl tl cl loc None False t;
 
   value mkvalue_desc t p = {pval_type = ctyp t; pval_prim = p};
 
@@ -936,7 +936,7 @@ value varify_constructors var_names =
     match x with
     [ <:ctyp< $x$ and $y$ >> ->
          mktype_decl x (mktype_decl y acc)
-    | Ast.TyDcl _ c tl td cl ->
+    | Ast.TyDcl loc c tl td cl ->
         let cl =
           List.map
             (fun (t1, t2) ->
@@ -944,7 +944,7 @@ value varify_constructors var_names =
               (ctyp t1, ctyp t2, mkloc loc))
             cl
         in
-        [(c, type_decl (List.fold_right optional_type_parameters tl []) cl td) :: acc]
+        [(c, type_decl (List.fold_right optional_type_parameters tl []) cl td loc) :: acc]
     | _ -> assert False ]
   and module_type =
     fun
