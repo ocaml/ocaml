@@ -532,14 +532,16 @@ let primitive_is_ccall = function
 
 (* Assertions *)
 
-let assert_failed loc =
-  let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
-  Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
+let assert_failed exp =
+  let (fname, line, char) =
+    Location.get_pos_info exp.exp_loc.Location.loc_start in
+  Lprim(Praise, [event_after exp
+    (Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string fname);
                Const_base(Const_int line);
-               Const_base(Const_int char)]))])])
+               Const_base(Const_int char)]))]))])
 ;;
 
 let rec cut n l =
@@ -762,8 +764,8 @@ and transl_exp0 e =
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
-      else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
-  | Texp_assertfalse -> assert_failed e.exp_loc
+      else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e)
+  | Texp_assertfalse -> assert_failed e
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would

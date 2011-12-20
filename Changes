@@ -36,6 +36,7 @@ Bug Fixes:
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
+- PR#4880: "assert" constructs now show up in the exception stack backtrace
 - PR#4869: rare collisions between assembly labels for code and data
 
 Feature wishes:
