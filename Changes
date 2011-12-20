@@ -12,6 +12,14 @@ Language features:
   Using the -principal option guarantees forward compatibility.
 - New (module M) and (module M : S) syntax in patterns, for immediate
   unpacking of a first-class module.
+- Let-like operators can now be defined. Syntax for definining
+  such an operator: let (let!) x f = ...; for using it:  let! p = e1 in e2,
+  sugar for (let!) e1 (fun p -> e2); or with an explicit module qualifier
+  M.let! p = e1 in e2. Multiple-bindings are allowed (let! p1 = e1 and p2 = e2
+  in in e3 is equivalent to let! (p1, p2) = (e1, e2) in e3.  The lexical
+  definition for a let-like operator is the string "let", immediatly followed
+  by an non-empty sequence of operator characters.
+  
 
 Compilers:
 - Revised simplification of let-alias (PR#5205, PR#5288)

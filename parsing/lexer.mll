@@ -402,6 +402,8 @@ rule token = parse
             { INFIXOP4(Lexing.lexeme lexbuf) }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
+  | "let" symbolchar+
+            { LETOP(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
       { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
