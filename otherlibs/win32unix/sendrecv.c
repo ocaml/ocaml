@@ -132,9 +132,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len, value fla
   return Val_int(ret);
 }
 
-CAMLprim value unix_sendto(argv, argc)
-     value * argv;
-     int argc;
+CAMLprim value unix_sendto(value * argv, int argc)
 {
   return unix_sendto_native
            (argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
