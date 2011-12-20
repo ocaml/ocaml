@@ -175,6 +175,15 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 static char * system_stack_top;
 static char sig_alt_stack[SIGSTKSZ];
 
+#if defined(SYS_linux)
+/* PR#4746: recent Linux kernels with support for stack randomization
+   silently add 2 Mb of stack space on top of RLIMIT_STACK.
+   2 Mb = 0x200000, to which we add 8 kB (=0x2000) for overshoot. */
+#define EXTRA_STACK 0x202000
+#else
+#define EXTRA_STACK 0x2000
+#endif
+
 DECLARE_SIGNAL_HANDLER(segv_handler)
 {
   struct rlimit limit;
@@ -189,7 +198,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
   if (((uintnat) fault_addr & (sizeof(intnat) - 1)) == 0
       && getrlimit(RLIMIT_STACK, &limit) == 0
       && fault_addr < system_stack_top
-      && fault_addr >= system_stack_top - limit.rlim_cur - 0x2000
+      && fault_addr >= system_stack_top - limit.rlim_cur - EXTRA_STACK
 #ifdef CONTEXT_PC
       && Is_in_code_area(CONTEXT_PC)
 #endif

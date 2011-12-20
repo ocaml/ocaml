@@ -10,7 +10,8 @@ compile:
 	fi
 
 run:
-	@for f in *.bytecode; do \
+	@ulimit -s 1024; \
+         for f in *.bytecode; do \
 	  printf " ... testing '$$f':"; \
 	  (./$$f > $$f.result 2>&1; true); \
 	  diff -q $$f.reference $$f.result > /dev/null || (echo " => failed" && exit 1) && echo " => passed"; \

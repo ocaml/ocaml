@@ -7,6 +7,7 @@ Bug fixes:
            been deprecated, and new ones without the prefix added
 - PR#4697: Unix.putenv leaks memory on failure
 - PR#4705: camlp4 does not allow to define types with `True or `False
+- PR#4746: wrong detection of stack overflows in native code under Linux
 - PR#4937: camlp4 incorrectly handles optional arguments if 'option' is redefined
 - PR#5024: camlp4r now handles underscores in irrefutable patern matching of records
 - PR#5211: updated Genlex documentation to state that camlp4 is mandatory for 'parser'
