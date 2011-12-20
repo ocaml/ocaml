@@ -81,7 +81,6 @@ and as a
 \input{libstr.tex}
 \input{libthreads.tex}
 \input{libgraph.tex}
-\input{libdbm.tex}
 \input{libdynlink.tex}
 \input{liblabltk.tex}
 \input{libbigarray.tex}

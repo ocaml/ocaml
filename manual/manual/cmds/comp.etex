@@ -119,6 +119,9 @@ linking with this library automatically adds back the "-custom",
 "-cclib" and "-ccopt" options as if they had been provided on the
 command line, unless the "-noautolink" option is given.
 
+\item["-absname"]
+Force error messages to show absolute paths for file names.
+
 \item["-annot"]
 Dump detailed information about the compilation (types, bindings,
 tail-calls, etc).  The information for file \var{src}".ml"

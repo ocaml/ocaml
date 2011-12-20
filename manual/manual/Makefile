@@ -15,7 +15,6 @@ TEXT=-fix -exec xxdate.exe -text -w 79
 SRC2=../$(SRC)
 MLIS=$(SRC2)/stdlib/*.mli \
 	$(SRC2)/otherlibs/bigarray/bigarray.mli \
-	$(SRC2)/otherlibs/dbm/dbm.mli \
 	$(SRC2)/otherlibs/dynlink/dynlink.mli \
 	$(SRC2)/otherlibs/graph/graphics.mli \
 	$(SRC2)/otherlibs/graph/graphicsX11.mli \
@@ -50,7 +49,6 @@ html: files
 	-d libref \
 	-I $(SRC2)/stdlib  \
 	-I $(SRC2)/otherlibs/bigarray \
-	-I $(SRC2)/otherlibs/dbm \
 	-I $(SRC2)/otherlibs/dynlink \
 	-I $(SRC2)/otherlibs/graph \
 	-I $(SRC2)/otherlibs/num \

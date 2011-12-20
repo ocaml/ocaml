@@ -13,14 +13,13 @@ OTHERLIB_INTF=Unix.tex UnixLabels.tex Str.tex \
   Num.tex Arithstatus.tex Bigint.tex \
   Graphics.tex GraphicsX11.tex \
   Thread.tex Mutex.tex Condition.tex Event.tex ThreadUnix.tex \
-  Dbm.tex Dynlink.tex Bigarray.tex Tk.tex
+  Dynlink.tex Bigarray.tex Tk.tex
 
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
 
 MLIS=$(CSLDIR)/stdlib/*.mli \
 	$(CSLDIR)/otherlibs/bigarray/bigarray.mli \
-	$(CSLDIR)/otherlibs/dbm/dbm.mli \
 	$(CSLDIR)/otherlibs/dynlink/dynlink.mli \
 	$(CSLDIR)/otherlibs/graph/graphics.mli \
 	$(CSLDIR)/otherlibs/graph/graphicsX11.mli \
@@ -34,7 +33,7 @@ MLIS=$(CSLDIR)/stdlib/*.mli \
 
 BLURB=core.tex builtin.tex stdlib.tex \
   libunix.tex libstr.tex libnum.tex libgraph.tex \
-  libthreads.tex libdbm.tex libdynlink.tex liblabltk.tex libbigarray.tex
+  libthreads.tex libdynlink.tex liblabltk.tex libbigarray.tex
 
 FILES=$(BLURB) $(INTF)
 
@@ -43,7 +42,7 @@ TEXQUOTE=../../tools/texquote2
 
 CSLDIR=../../../release
 
-VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dbm:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
+VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
 all: libs 
 
@@ -52,7 +51,6 @@ libs: $(FILES)
 $(INTF): $(MLIS)
 	$(CSLDIR)/ocamldoc/ocamldoc.opt -latex -I $(CSLDIR)/stdlib  \
 	-I $(CSLDIR)/otherlibs/bigarray \
-	-I $(CSLDIR)/otherlibs/dbm \
 	-I $(CSLDIR)/otherlibs/dynlink \
 	-I $(CSLDIR)/otherlibs/graph \
 	-I $(CSLDIR)/otherlibs/num \

@@ -130,6 +130,9 @@ The following command-line options are recognized by the "ocaml" command.
 
 \begin{options}
 
+\item["-absname"]
+Force error messages to show absolute paths for file names.
+
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for
 source and compiled files. By default, the current directory is
