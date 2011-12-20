@@ -1444,11 +1444,21 @@ let test57 () =
 test (test57 ())
 ;;
 
-(*
 let test58 () =
+     sscanf "string1%string2" "%s@%%s" id = "string1"
+  && sscanf "string1%string2" "%s@%%%s" (^) = "string1string2"
+  && sscanf "string1@string2" "%[a-z0-9]@%s" (^) = "string1string2"
+  && sscanf "string1@%string2" "%[a-z0-9]%@%%%s" (^) = "string1string2"
 ;;
 
 test (test58 ())
+;;
+
+(*
+let test59 () =
+;;
+
+test (test59 ())
 ;;
 *)
 
