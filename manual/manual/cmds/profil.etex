@@ -146,8 +146,8 @@ The output of "gprof" is described in the Unix manual page for
 "gprof(1)".  It generally consists of two parts: a ``flat'' profile
 showing the time spent in each function and the number of invocation
 of each function, and a ``hierarchical'' profile based on the call
-graph.  Currently, only the Intel x86/Linux and Alpha/Digital Unix
-ports of "ocamlopt" support the two profiles.  On other platforms,
+graph.  Currently, only the Intel x86 ports of "ocamlopt" under
+Linux, BSD and MacOS X support the two profiles.  On other platforms,
 "gprof" will report only the ``flat'' profile with just time
 information.  When reading the output of "gprof", keep in mind that
 the accumulated times computed by "gprof" are based on heuristics and

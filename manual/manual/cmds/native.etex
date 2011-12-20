@@ -258,7 +258,7 @@ compile-time and at link-time.  Linking object files not compiled with
 information about the profiles.
 
 Full support for "gprof" is only available for certain platforms
-(currently: Intel x86/Linux and Alpha/Digital Unix).
+(currently: Intel x86 32 and 64 bits under Linux, BSD and MacOS X).
 On other platforms, the "-p" option will result in a less precise
 profile (no call graph information, only a time profile).
 \end{unix}
@@ -539,17 +539,11 @@ platform used:
 (MS Windows 64 bits).
 \end{itemize}
 
-\item On IA32 processors only (Intel Pentium, AMD Athlon, etc, in
-32-bit mode), some intermediate results in floating-point computations
-are kept in extended precision rather than being rounded to double
+\item On IA32 processors only (Intel and AMD x86 processors in 32-bit
+mode), some intermediate results in floating-point computations are
+kept in extended precision rather than being rounded to double
 precision like the bytecode compiler always does.  Floating-point
-results can therefore differ between bytecode and native code; in
-general, the results obtained with native code are ``more exact''
-(less affected by rounding errors and loss of precision).
-
-\item On the Alpha processor only, floating-point operations involving
-infinite or denormalized numbers can abort the program on a
-``floating-point exception'' signal.
+results can therefore differ slightly between bytecode and native code.
 
 \end{itemize}
 

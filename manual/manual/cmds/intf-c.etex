@@ -1455,14 +1455,22 @@ compilation of OCaml, as the variables "BYTECCLINKOPTS"
 -output-obj").  Currently, the only ports that require special
 attention are:
 \begin{itemize}
-\item Alpha under Digital Unix / Tru64 Unix with "gcc":
-object files produced by "ocamlc -output-obj" must be linked with the
-"gcc" options "-Wl,-T,12000000 -Wl,-D,14000000".
-This is not necessary for object files produced by "ocamlopt -output-obj".
-\item Windows NT: the object file produced by OCaml have been
-compiled with the "/MD" flag, and therefore all other object files
-linked with it should also be compiled with "/MD".
+\item Windows with the MSVC compiler: the object file produced by
+Objective Caml have been compiled with the "/MD" flag, and therefore
+all other object files linked with it should also be compiled with
+"/MD".
 \end{itemize}
+
+\paragraph{Stack backtraces.}  When OCaml bytecode produced by
+"ocamlc -g" is embedded in a C program, no debugging information is
+included, and therefore it is impossible to print stack backtraces on
+uncaught exceptions.  This is not the case when native code produced
+by "ocamlopt -g" is embedded in a C program: stack backtrace
+information is available, but the backtrace mechanism needs to be
+turned on programmatically.   This can be achieved from the OCaml side
+by calling "Printexc.record_backtrace true" in the initialization of
+one of the Caml modules.  This can also be achieved from the C side
+by calling "caml_record_backtrace(Val_int(1));" in the Caml-C glue code.
 
 \section{Advanced example with callbacks}
 \pdfsection{Advanced example with callbacks}
