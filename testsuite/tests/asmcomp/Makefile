@@ -17,7 +17,6 @@ OTHEROBJS=\
   $(TOPDIR)/utils/ccomp.cmo \
   $(TOPDIR)/utils/warnings.cmo \
   $(TOPDIR)/utils/consistbl.cmo \
-  $(TOPDIR)/parsing/linenum.cmo \
   $(TOPDIR)/parsing/location.cmo \
   $(TOPDIR)/parsing/longident.cmo \
   $(TOPDIR)/parsing/syntaxerr.cmo \
