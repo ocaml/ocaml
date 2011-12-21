@@ -28,7 +28,7 @@ clean::
 	rm -f *~
 
 bng.$(O): bng.h bng_digit.c \
-       bng_alpha.c bng_amd64.c bng_ia32.c bng_mips.c bng_ppc.c bng_sparc.c
+       bng_amd64.c bng_ia32.c bng_ppc.c bng_sparc.c
 
 depend:
 	sed -e 's/\.o/.$(O)/g' .depend > .depend.nt

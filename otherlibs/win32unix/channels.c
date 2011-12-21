@@ -20,15 +20,15 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-extern long _get_osfhandle(int);
-extern int _open_osfhandle(long, int);
+extern intptr_t _get_osfhandle(int);
+extern int _open_osfhandle(intptr_t, int);
 
 int win_CRT_fd_of_filedescr(value handle)
 {
   if (CRT_fd_val(handle) != NO_CRT_FD) {
     return CRT_fd_val(handle);
   } else {
-    int fd = _open_osfhandle((long) Handle_val(handle), O_BINARY);
+    int fd = _open_osfhandle((intptr_t) Handle_val(handle), O_BINARY);
     if (fd == -1) uerror("channel_of_descr", Nothing);
     CRT_fd_val(handle) = fd;
     return fd;

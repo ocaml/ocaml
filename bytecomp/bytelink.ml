@@ -513,7 +513,11 @@ let link objfiles output_name =
         extern \"C\" {\n\
         #endif\n\
         #ifdef _WIN64\n\
+        #ifdef __MINGW32__\n\
+        typedef long long value;\n\
+        #else\n\
         typedef __int64 value;\n\
+        #endif\n\
         #else\n\
         typedef long value;\n\
         #endif\n";
