@@ -80,12 +80,7 @@ let interface ppf sourcefile outputprefix =
     let ast =
       Pparse.file ppf inputfile Parse.interface ast_intf_magic_number in
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
-    Typecore.reset_delayed_checks ();
-    let env = initial_env () in
-    let sg = Typemod.transl_signature env ast in
-    if Warnings.is_active (Warnings.Unused_value_declaration "") then
-      ignore (Includemod.signatures env sg sg);
-    Typecore.force_delayed_checks ();
+    let sg = Typemod.transl_signature (initial_env()) ast in
     if !Clflags.print_types then
       fprintf std_formatter "%a@." Printtyp.signature
                                    (Typemod.simplify_signature sg);
