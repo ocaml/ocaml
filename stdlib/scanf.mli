@@ -65,16 +65,16 @@
 
 (** {7 Formatted input as a functional feature} *)
 
-(** The Caml scanning facility is reminiscent of the corresponding C feature.
+(** The OCaml scanning facility is reminiscent of the corresponding C feature.
     However, it is also largely different, simpler, and yet more powerful:
     the formatted input functions are higher-order functionals and the
     parameter passing mechanism is just the regular function application not
     the variable assignment based mechanism which is typical for formatted
-    input in imperative languages; the Caml format strings also feature
+    input in imperative languages; the OCaml format strings also feature
     useful additions to easily define complex tokens; as expected within a
     functional programming language, the formatted input functions also
     support polymorphism, in particular arbitrary interaction with
-    polymorphic user-defined scanners.  Furthermore, the Caml formatted input
+    polymorphic user-defined scanners.  Furthermore, the OCaml formatted input
     facility is fully type-checked at compile time. *)
 
 (** {6 Formatted input channel} *)
@@ -298,18 +298,18 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
      Hence, the [%s] conversion always succeeds: it returns an empty
      string, if the bounding condition holds when the scan begins.
    - [S]: reads a delimited string argument (delimiters and special
-     escaped characters follow the lexical conventions of Caml).
+     escaped characters follow the lexical conventions of OCaml).
    - [c]: reads a single character. To test the current input character
      without reading it, specify a null field width, i.e. use
      specification [%0c]. Raise [Invalid_argument], if the field width
      specification is greater than 1.
    - [C]: reads a single delimited character (delimiters and special
-     escaped characters follow the lexical conventions of Caml).
+     escaped characters follow the lexical conventions of OCaml).
    - [f], [e], [E], [g], [G]: reads an optionally signed
      floating-point number in decimal notation, in the style [dddd.ddd
      e/E+-dd].
    - [F]: reads a floating point number according to the lexical
-     conventions of Caml (hence the decimal point is mandatory if the
+     conventions of OCaml (hence the decimal point is mandatory if the
      exponent part is not mentioned).
    - [B]: reads a boolean argument ([true] or [false]).
    - [b]: reads a boolean argument (for backward compatibility; do not use
@@ -392,7 +392,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
      nothing to read in the input: in this case, it simply returns [""].
 
    - in addition to the relevant digits, ['_'] characters may appear
-   inside numbers (this is reminiscent to the usual Caml lexical
+   inside numbers (this is reminiscent to the usual OCaml lexical
    conventions). If stricter scanning is desired, use the range
    conversion facility instead of the number conversions.
 

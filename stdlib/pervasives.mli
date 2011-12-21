@@ -229,7 +229,7 @@ external ( asr ) : int -> int -> int = "%asrint"
 
 (** {6 Floating-point arithmetic}
 
-   Caml's floating-point numbers follow the
+   OCaml's floating-point numbers follow the
    IEEE 754 standard, using double precision (64 bits) numbers.
    Floating-point operations never raise an exception on overflow,
    underflow, division by zero, etc.  Instead, special IEEE numbers

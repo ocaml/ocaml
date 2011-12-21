@@ -18,7 +18,7 @@
 
    This module implements a simple ``standard'' lexical analyzer, presented
    as a function from character streams to token streams. It implements
-   roughly the lexical conventions of Caml, but is parameterized by the
+   roughly the lexical conventions of OCaml, but is parameterized by the
    set of keywords of your language.
 
 

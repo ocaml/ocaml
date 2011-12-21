@@ -391,7 +391,7 @@ type positional_specification =
    with $n$ being the {\em value} of the integer argument defining [*]; we
    clearly cannot statically guess the value of this parameter in the general
    case. Put it another way: this means type dependency, which is completely
-   out of scope of the Caml type algebra. *)
+   out of scope of the OCaml type algebra. *)
 
 let scan_positional_spec fmt got_spec i =
   match Sformat.unsafe_get fmt i with
@@ -430,7 +430,7 @@ let get_index spec n =
   | Spec_index p -> p
 ;;
 
-(* Format a float argument as a valid Caml lexeme. *)
+(* Format a float argument as a valid OCaml lexeme. *)
 let format_float_lexeme =
 
   (* To be revised: this procedure should be a unique loop that performs the
@@ -443,7 +443,7 @@ let format_float_lexeme =
   let make_valid_float_lexeme s =
     (* Check if s is already a valid lexeme:
        in this case do nothing,
-       otherwise turn s into a valid Caml lexeme. *)
+       otherwise turn s into a valid OCaml lexeme. *)
     let l = String.length s in
     let rec valid_float_loop i =
       if i >= l then s ^ "." else
@@ -670,7 +670,7 @@ let sprintf fmt = ksprintf (fun s -> s) fmt;;
 (* Obsolete and deprecated. *)
 let kprintf = ksprintf;;
 
-(* For Caml system internal use only: needed to implement modules [Format]
+(* For OCaml system internal use only: needed to implement modules [Format]
   and [Scanf]. *)
 
 module CamlinternalPr = struct
