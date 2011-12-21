@@ -951,7 +951,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let () = o#node f ce Ast.loc_of_class_expr in
     match ce with
     [ <:class_expr< $ce$ $e$ >> ->
-          pp f "@[<2>%a@ %a@]" o#class_expr ce o#expr e
+          pp f "@[<2>%a@ %a@]" o#class_expr ce o#apply_expr e
     | <:class_expr< $id:i$ >> ->
           pp f "@[<2>%a@]" o#ident i
     | <:class_expr< $id:i$ [ $t$ ] >> ->
