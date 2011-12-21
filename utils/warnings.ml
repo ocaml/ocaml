@@ -50,6 +50,7 @@ type t =
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
+  | Unused_value_declaration of string      (* 31 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -89,9 +90,10 @@ let number = function
   | Wildcard_arg_to_constant_constr -> 28
   | Eol_in_string -> 29
   | Duplicate_definitions _ -> 30
+  | Unused_value_declaration _ -> 31
 ;;
 
-let last_warning_number = 30;;
+let last_warning_number = 31;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -186,7 +188,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29";;
+let defaults_w = "+a-4-6-7-9-27-29-31";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -260,6 +262,7 @@ let message = function
   | Duplicate_definitions (kind, cname, tc1, tc2) ->
       Printf.sprintf "the %s %s is defined in both types %s and %s."
         kind cname tc1 tc2
+  | Unused_value_declaration v -> "unused value " ^ v ^ "."
 ;;
 
 let nerrors = ref 0;;
@@ -334,6 +337,7 @@ let descriptions =
    29, "Unescaped end-of-line in a string constant (non-portable code).";
    30, "Two labels or constructors of the same name are defined in two\n\
    \    mutually recursive types.";
+   31, "Unused value declaration.";
   ]
 ;;
 

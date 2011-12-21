@@ -22,6 +22,13 @@ open Path
 open Types
 open Btype
 
+let add_delayed_check_forward = ref (fun _ -> assert false)
+
+let value_declarations : ((string * Location.t), (unit -> unit)) = Hashtbl.create 16
+    (* This table is used to usage of value declarations.  A declaration is
+       identified with its name and location.  The callback attached to a declaration
+       is called whenever the value is used explicitly (lookup_value) or implicitly
+       (inclusion test between signatures, cf Includemod.value_descriptions). *)
 
 type error =
     Not_an_interface of string
@@ -224,7 +231,8 @@ let find_pers_struct name =
 let reset_cache () =
   current_unit := "";
   Hashtbl.clear persistent_structures;
-  Consistbl.clear crc_units
+  Consistbl.clear crc_units;
+  Hashtbl.clear value_declarations
 
 let set_unit_name name =
   current_unit := name
@@ -456,6 +464,24 @@ and lookup_class =
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+let mark_value_used name vd =
+  try Hashtbl.find value_declarations (name, vd.val_loc) ();
+  with Not_found -> ()
+
+let set_value_used_callback name vd callback =
+  let old =
+    try Hashtbl.find value_declarations (name, vd.val_loc)
+    with Not_found ->
+      Format.eprintf "Cannot find callback for value %S %a@." name Location.print_loc vd.val_loc;
+      assert false
+  in
+  Hashtbl.replace value_declarations (name, vd.val_loc) (fun () -> callback old)
+
+let lookup_value lid env =
+  let (_, desc) as r = lookup_value lid env in
+  mark_value_used (Longident.last lid) desc;
+  r
+
 (* GADT instance tracking *)
 
 let add_gadt_instance_level lv env =
@@ -677,6 +703,21 @@ let rec components_of_module env sub path mty =
 (* Insertion of bindings by identifier + path *)
 
 and store_value id path decl env =
+  let loc = decl.val_loc in
+  if not loc.Location.loc_ghost && Warnings.is_active (Warnings.Unused_value_declaration "") then begin
+    let name = Ident.name id in
+    let key = (name, loc) in
+    if Hashtbl.mem value_declarations key then ()
+    else let used = ref false in
+    Hashtbl.add value_declarations key (fun () -> used := true);
+    !add_delayed_check_forward
+      (fun () ->
+        if not (name = "" || name.[0] = '_' || !used) then begin
+          used := true;
+          Location.prerr_warning loc (Warnings.Unused_value_declaration name)
+        end
+      )
+  end;
   { env with
     values = Ident.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }

@@ -152,6 +152,11 @@ open Format
 
 val report_error: formatter -> error -> unit
 
+val mark_value_used: string -> value_description -> unit
+val set_value_used_callback: string -> value_description -> ((unit -> unit) -> unit) -> unit
+
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_modtype_inclusion:
       (t -> module_type -> Path.t -> module_type -> unit) ref
+(* Forward declaration to break mutual recursion with Typecore. *)
+val add_delayed_check_forward: ((unit -> unit) -> unit) ref

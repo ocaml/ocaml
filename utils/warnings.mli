@@ -45,6 +45,7 @@ type t =
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
+  | Unused_value_declaration of string      (* 31 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

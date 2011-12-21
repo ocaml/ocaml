@@ -816,6 +816,8 @@ and type_structure funct_body anchor env sstr scope =
           Typecore.type_binding env rec_flag sdefs scope in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         let bound_idents = let_bound_idents defs in
+        (* Note: Env.find_value does not trigger the value_used event. Values
+           will be marked as being used during the signature inclusion test. *)
         let make_sig_value id =
           Tsig_value(id, Env.find_value (Pident id) newenv) in
         (Tstr_value(rec_flag, defs) :: str_rem,
@@ -1085,7 +1087,6 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
   let (str, sg, finalenv) = type_structure initial_env ast Location.none in
   let simple_sg = simplify_signature sg in
-  Typecore.force_delayed_checks ();
   if !Clflags.print_types then begin
     fprintf std_formatter "%a@." Printtyp.signature simple_sg;
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
@@ -1100,6 +1101,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           raise(Error(Location.none, Interface_not_compiled sourceintf)) in
       let dclsig = Env.read_signature modulename intf_file in
       let coercion = Includemod.compunit sourcefile sg intf_file dclsig in
+      Typecore.force_delayed_checks ();
+      (* It is important to run these checks after the inclusion test above,
+         so that value declarations which are not used internally but exported
+         are not reported as being unused. *)
       (str, coercion)
     end else begin
       check_nongen_schemes finalenv str;
@@ -1107,6 +1112,11 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       let coercion =
         Includemod.compunit sourcefile sg
                             "(inferred signature)" simple_sg in
+      Typecore.force_delayed_checks ();
+      (* See comment above. Here the target signature contains all
+         the value being exported. We can still capture unused
+         declarations like "let x = true;; let x = 1;;", because in this
+         case, the inferred signature contains only the last declaration. *)
       if not !Clflags.dont_write_files then
         Env.save_signature simple_sg modulename (outputprefix ^ ".cmi");
       (str, coercion)

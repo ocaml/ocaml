@@ -1262,6 +1262,7 @@ let duplicate_ident_types loc caselist env =
   List.fold_left
     (fun env s ->
       try
+        (* XXX This will mark the value as being used; I don't think this is what we want *)
         let (path, desc) = Typetexp.find_value env loc (Longident.Lident s) in
         match path with
           Path.Pident id ->
@@ -2613,7 +2614,8 @@ and type_let env rec_flag spat_sexp_list scope allow =
   let nvs = List.map (fun _ -> newvar ()) spatl in
   let (pat_list, new_env, force, unpacks) =
     type_pattern_list env spatl scope nvs allow in
-  if rec_flag = Recursive then
+  let is_recursive = (rec_flag = Recursive) in
+  if is_recursive then
     List.iter2
       (fun pat (_, sexp) ->
         let pat =
@@ -2643,12 +2645,55 @@ and type_let env rec_flag spat_sexp_list scope allow =
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
   let exp_env =
-    match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
+    if is_recursive then new_env else env in
+
+  let current_slot = ref None in
+  let warn_unused = Warnings.is_active (Warnings.Unused_value_declaration "") in
+  let pat_slot_list =
+    (* Algorithm to detect unused declarations in recursive bindings:
+       - During type checking of the definitions, we capture the 'value_used'
+         events on the bound identifiers and record them in a slot corresponding
+         to the current definition (!current_slot).  In effect, this creates a dependency
+         graph between definitions.
+
+       - After type checking the definition (!current_slot = Mone), when one of the bound identifier is
+         effectively used, we trigger again all the events recorded in the corresponding
+         slot. The effect is to traverse the transitive closure of the graph created
+         in the first step.
+     *)
+    List.map
+      (fun pat ->
+        if not (is_recursive && warn_unused) then pat, None
+        else
+          let slot = ref [] in
+          let used_after_binding () =
+            List.iter
+              (fun (name, vd) -> Env.mark_value_used name vd)
+              (get_ref slot)
+          in
+          List.iter
+            (fun id ->
+              let vd = Env.find_value (Path.Pident id) new_env in (* note: Env.find_value does not trigger the value_used event *)
+              let name = Ident.name id in
+              Env.set_value_used_callback
+                name vd
+                (fun old_callback ->
+                  match !current_slot with
+                  | Some slot -> slot := (name, vd) :: !slot
+                  | None -> used_after_binding (); old_callback ()
+                )
+            )
+            (Typedtree.pat_bound_idents pat);
+          pat, Some slot
+        )
+      pat_list
+  in
   let exp_list =
     List.map2
-      (fun (spat, sexp) pat ->
+      (fun (spat, sexp) (pat, slot) ->
         let sexp =
           if rec_flag = Recursive then wrap_unpacks sexp unpacks else sexp in
+        current_slot := slot;
         match pat.pat_type.desc with
         | Tpoly (ty, tl) ->
             begin_def ();
@@ -2663,7 +2708,8 @@ and type_let env rec_flag spat_sexp_list scope allow =
             check_univars env true "definition" exp pat.pat_type vars;
             {exp with exp_type = instance env exp.exp_type}
         | _ -> type_expect exp_env sexp pat.pat_type)
-      spat_sexp_list pat_list in
+      spat_sexp_list pat_slot_list in
+  current_slot := None;
   List.iter2
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
     pat_list exp_list;
@@ -2872,3 +2918,6 @@ let report_error ppf = function
   | Unexpected_existential ->
       fprintf ppf
         "Unexpected existential"
+
+let () =
+  Env.add_delayed_check_forward := add_delayed_check
