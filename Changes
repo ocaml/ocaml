@@ -42,9 +42,11 @@ Bug Fixes:
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping
 - PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
+- emacs mode: colorization of comments and strings now works correctly
 
 Feature wishes:
-- PR#5358: first class modules don't allow "with type" declarations for types in sub-modules
+- PR#5358: first class modules don't allow "with type" declarations for types
+  in sub-modules
 - PR#5411: new directive for the toplevel: #load_rec
 - PR#5420: Unix.openfile share mode (Windows)
 
