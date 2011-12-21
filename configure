@@ -1531,10 +1531,6 @@ if test $has_tk = true; then
   fi
 fi
 
-case "$host" in
-  *-*-cygwin*) tk_libs="$tk_libs -lws2_32";;
-esac
-
 if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
     echo "Tcl/Tk libraries found."
