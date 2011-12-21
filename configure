@@ -1325,6 +1325,7 @@ do
     else
       x11_libs="-L$dir"
       case "$host" in
+        *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
         *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
         *) x11_link="-L$dir -lX11";;
       esac
