@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                                OCaml                                *)
+(*                           Objective Caml                            *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -22,6 +22,10 @@ external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 external make: int -> 'a -> 'a array = "caml_make_vect"
 external create: int -> 'a -> 'a array = "caml_make_vect"
+external sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
+external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
+external concat : 'a array list -> 'a array = "caml_array_concat"
+external unsafe_blit : 'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
 
 let init l f =
   if l = 0 then [||] else
@@ -41,58 +45,13 @@ let make_matrix sx sy init =
 let create_matrix = make_matrix
 
 let copy a =
-  let l = length a in
-  if l = 0 then [||] else begin
-    let res = create l (unsafe_get a 0) in
-    for i = 1 to pred l do
-      unsafe_set res i (unsafe_get a i)
-    done;
-    res
-  end
+  let l = length a in if l = 0 then [||] else sub a 0 l
 
 let append a1 a2 =
-  let l1 = length a1 and l2 = length a2 in
-  if l1 = 0 && l2 = 0 then [||] else begin
-    let r = create (l1 + l2) (unsafe_get (if l1 > 0 then a1 else a2) 0) in
-    for i = 0 to l1 - 1 do unsafe_set r i (unsafe_get a1 i) done;
-    for i = 0 to l2 - 1 do unsafe_set r (i + l1) (unsafe_get a2 i) done;
-    r
-  end
-
-let concat_aux init al =
-  let rec size accu = function
-    | [] -> accu
-    | h::t -> size (accu + length h) t
-  in
-  let res = create (size 0 al) init in
-  let rec fill pos = function
-    | [] -> ()
-    | h::t ->
-        for i = 0 to length h - 1 do
-          unsafe_set res (pos + i) (unsafe_get h i);
-        done;
-        fill (pos + length h) t;
-  in
-  fill 0 al;
-  res
-;;
-
-let concat al =
-  let rec find_init aa =
-    match aa with
-    | [] -> [||]
-    | a :: rem ->
-        if length a > 0 then concat_aux (unsafe_get a 0) aa else find_init rem
-  in find_init al
-
-let sub a ofs len =
-  if ofs < 0 || len < 0 || ofs > length a - len then invalid_arg "Array.sub"
-  else if len = 0 then [||]
-  else begin
-    let r = create len (unsafe_get a ofs) in
-    for i = 1 to len - 1 do unsafe_set r i (unsafe_get a (ofs + i)) done;
-    r
-  end
+  let l1 = length a1 in
+  if l1 = 0 then copy a2
+  else if length a2 = 0 then sub a1 0 l1
+  else append_prim a1 a2
 
 let fill a ofs len v =
   if ofs < 0 || len < 0 || ofs > length a - len
@@ -103,16 +62,7 @@ let blit a1 ofs1 a2 ofs2 len =
   if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
              || ofs2 < 0 || ofs2 > length a2 - len
   then invalid_arg "Array.blit"
-  else if ofs1 < ofs2 then
-    (* Top-down copy *)
-    for i = len - 1 downto 0 do
-      unsafe_set a2 (ofs2 + i) (unsafe_get a1 (ofs1 + i))
-    done
-  else
-    (* Bottom-up copy *)
-    for i = 0 to len - 1 do
-      unsafe_set a2 (ofs2 + i) (unsafe_get a1 (ofs1 + i))
-    done
+  else unsafe_blit a1 ofs1 a2 ofs2 len
 
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done

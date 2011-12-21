@@ -26,6 +26,8 @@ Native-code compiler:
 
 Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)
+- Array: faster implementations of "blit", "copy", "sub", "append" and "concat"
+  (PR#2395, PR#2787, PR#4591)
 - Hashtbl:
     . Statistically-better generic hash function based on Murmur 3 (PR#5225)
     . Fixed behavior of generic hash function w.r.t. -0.0 and NaN (PR#5222)
@@ -34,12 +36,12 @@ Standard library:
       with user-provided hash functions.
 
 Bug Fixes:
-- PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
-- PR#5343: ocaml -rectypes is unsound wrt module subtyping
+- PR#4869: rare collisions between assembly labels for code and data
+- PR#4880: "assert" constructs now show up in the exception stack backtrace
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
-- PR#4880: "assert" constructs now show up in the exception stack backtrace
-- PR#4869: rare collisions between assembly labels for code and data
+- PR#5343: ocaml -rectypes is unsound wrt module subtyping
+- PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
 
 Feature wishes:
 - PR#5358: first class modules don't allow "with type" declarations for types in sub-modules

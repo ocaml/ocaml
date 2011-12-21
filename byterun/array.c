@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                                OCaml                                */
+/*                           Objective Caml                            */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -15,20 +15,23 @@
 
 /* Operations on arrays */
 
+#include <string.h>
 #include "alloc.h"
 #include "fail.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
 
-CAMLexport mlsize_t caml_array_length(value array){
-  tag_t tag = Tag_val(array);
-  if (tag == Double_array_tag)
+CAMLexport mlsize_t caml_array_length(value array)
+{
+  if (Tag_val(array) == Double_array_tag)
     return Wosize_val(array) / Double_wosize;
-  else return Wosize_val(array);
+  else
+    return Wosize_val(array);
 }
 
-CAMLexport int caml_is_double_array(value array){
+CAMLexport int caml_is_double_array(value array)
+{
   return (Tag_val(array) == Double_array_tag);
 }
 
@@ -201,4 +204,182 @@ CAMLprim value caml_make_array(value init)
       CAMLreturn (res);
     }
   }
+}
+
+/* Blitting */
+
+CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
+                               value n)
+{
+  value * src, * dst;
+  intnat count;
+
+  if (Tag_val(a2) == Double_array_tag) {
+    /* Arrays of floats.  The values being copied are floats, not
+       pointer, so we can do a direct copy.  memmove takes care of
+       potential overlap between the copied areas. */
+    memmove((double *)a2 + Long_val(ofs2),
+            (double *)a1 + Long_val(ofs1),
+            Long_val(n) * sizeof(double));
+    return Val_unit;
+  }
+  if (Is_young(a2)) {
+    /* Arrays of values, destination is in young generation.
+       Here too we can do a direct copy since this cannot create
+       old-to-young pointers, nor mess up with the incremental major GC.
+       Again, memmove takes care of overlap. */
+    memmove(&Field(a2, Long_val(ofs2)),
+            &Field(a1, Long_val(ofs1)),
+            Long_val(n) * sizeof(value));
+    return Val_unit;
+  }
+  /* Array of values, destination is in old generation.
+     We must use caml_modify.  */
+  count = Long_val(n);
+  if (a1 == a2 && Long_val(ofs1) < Long_val(ofs2)) {
+    /* Copy in descending order */
+    for (dst = &Field(a2, Long_val(ofs2) + count - 1),
+           src = &Field(a1, Long_val(ofs1) + count - 1);
+         count > 0;
+         count--, src--, dst--) {
+      caml_modify(dst, *src);
+    }
+  } else {
+    /* Copy in ascending order */
+    for (dst = &Field(a2, Long_val(ofs2)), src = &Field(a1, Long_val(ofs1));
+         count > 0;
+         count--, src++, dst++) {
+      caml_modify(dst, *src);
+    }
+  }
+  /* Many caml_modify in a row can create a lot of old-to-young refs.
+     Give the minor GC a chance to run if it needs to. */
+  caml_check_urgent_gc(Val_unit);
+  return Val_unit;
+}
+
+/* A generic function for extraction and concatenation of sub-arrays */
+
+static value caml_array_gather(intnat num_arrays,
+                               value arrays[/*num_arrays*/],
+                               intnat offsets[/*num_arrays*/],
+                               intnat lengths[/*num_arrays*/])
+{
+  CAMLparamN(arrays, num_arrays);
+  value res;                    /* no need to register it as a root */
+  int isfloat;
+  mlsize_t i, size, wsize, count, pos;
+  value * src;
+
+  /* Determine total size and whether result array is an array of floats */
+  size = 0;
+  isfloat = 0;
+  for (i = 0; i < num_arrays; i++) {
+    size += lengths[i];
+    if (Tag_val(arrays[i]) == Double_array_tag) isfloat = 1;
+  }
+  if (size == 0) {
+    /* If total size = 0, just return empty array */
+    res = Atom(0);
+  }
+  else if (isfloat) {
+    /* This is an array of floats.  We can use memcpy directly. */
+    wsize = size * Double_wosize;
+    if (wsize > Max_wosize) caml_invalid_argument("Array.concat");
+    res = caml_alloc(wsize, Double_array_tag);
+    for (i = 0, pos = 0; i < num_arrays; i++) {
+      memcpy((double *)res + pos,
+             (double *)arrays[i] + offsets[i],
+             lengths[i] * sizeof(double));
+      pos += lengths[i];
+    }
+    Assert(pos == size);
+  }
+  else if (size > Max_wosize) {
+    /* Array of values, too big. */
+    caml_invalid_argument("Array.concat");
+  }
+  else if (size < Max_young_wosize) {
+    /* Array of values, small enough to fit in young generation.
+       We can use memcpy directly. */
+    res = caml_alloc_small(size, 0);
+    for (i = 0, pos = 0; i < num_arrays; i++) {
+      memcpy(&Field(res, pos),
+             &Field(arrays[i], offsets[i]),
+             lengths[i] * sizeof(value));
+      pos += lengths[i];
+    }
+    Assert(pos == size);
+  } else {
+    /* Array of values, must be allocated in old generation and filled
+       using caml_initialize. */
+    res = caml_alloc_shr(size, 0);
+    pos = 0;
+    for (i = 0, pos = 0; i < num_arrays; i++) {
+      for (src = &Field(arrays[i], offsets[i]), count = lengths[i];
+           count > 0;
+           count--, src++, pos++) {
+        caml_initialize(&Field(res, pos), *src);
+      }
+      /* Many caml_initialize in a row can create a lot of old-to-young
+         refs.  Give the minor GC a chance to run if it needs to. */
+      res = caml_check_urgent_gc(res);
+    }
+    Assert(pos == size);
+  }
+  CAMLreturn (res);
+}
+
+CAMLprim value caml_array_sub(value a, value ofs, value len)
+{
+  value arrays[1] = { a };
+  intnat offsets[1] = { Long_val(ofs) };
+  intnat lengths[1] = { Long_val(len) };
+  return caml_array_gather(1, arrays, offsets, lengths);
+}
+
+CAMLprim value caml_array_append(value a1, value a2)
+{
+  value arrays[2] = { a1, a2 };
+  intnat offsets[2] = { 0, 0 };
+  intnat lengths[2] = { caml_array_length(a1), caml_array_length(a2) };
+  return caml_array_gather(2, arrays, offsets, lengths);
+}
+
+CAMLprim value caml_array_concat(value al)
+{
+#define STATIC_SIZE 16
+  value static_arrays[STATIC_SIZE], * arrays;
+  intnat static_offsets[STATIC_SIZE], * offsets;
+  intnat static_lengths[STATIC_SIZE], * lengths;
+  intnat n, i;
+  value l, res;
+
+  /* Length of list = number of arrays */
+  for (n = 0, l = al; l != Val_int(0); l = Field(l, 1)) n++;
+  /* Allocate extra storage if too many arrays */
+  if (n <= STATIC_SIZE) {
+    arrays = static_arrays;
+    offsets = static_offsets;
+    lengths = static_lengths;
+  } else {
+    arrays = caml_stat_alloc(n * sizeof(value));
+    offsets = caml_stat_alloc(n * sizeof(intnat));
+    lengths = caml_stat_alloc(n * sizeof(value));
+  }
+  /* Build the parameters to caml_array_gather */
+  for (i = 0, l = al; l != Val_int(0); l = Field(l, 1), i++) {
+    arrays[i] = Field(l, 0);
+    offsets[i] = 0;
+    lengths[i] = caml_array_length(Field(l, 0));
+  }
+  /* Do the concatenation */
+  res = caml_array_gather(n, arrays, offsets, lengths);
+  /* Free the extra storage if needed */
+  if (n > STATIC_SIZE) {
+    caml_stat_free(arrays);
+    caml_stat_free(offsets);
+    caml_stat_free(lengths);
+  }
+  return res;
 }
