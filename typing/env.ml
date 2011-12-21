@@ -24,7 +24,7 @@ open Btype
 
 let add_delayed_check_forward = ref (fun _ -> assert false)
 
-let value_declarations : ((string * Location.t), (unit -> unit)) = Hashtbl.create 16
+let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t = Hashtbl.create 16
     (* This table is used to usage of value declarations.  A declaration is
        identified with its name and location.  The callback attached to a declaration
        is called whenever the value is used explicitly (lookup_value) or implicitly
