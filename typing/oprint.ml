@@ -32,9 +32,9 @@ let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
   ||
   (match name.[0] with
-  | 'l' when String.length name > 3 && String.sub name 0 3 = "let" -> true
-  | 'a'..'z' | 'A'..'Z' | '\223'..'\246' | '\248'..'\255' | '_' -> false
-  | _ -> true)
+      'a'..'z' | 'A'..'Z' | '\223'..'\246' | '\248'..'\255' | '_' ->
+        false
+    | _ -> true)
 
 let value_ident ppf name =
   if parenthesized_ident name then
