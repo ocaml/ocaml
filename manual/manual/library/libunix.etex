@@ -70,12 +70,11 @@ Windows)}
 \entree{"chown", "fchown"}{not implemented (make no sense on a DOS
 file system)}
 \entree{"umask"}{not implemented}
-\entree{"set_nonblock", "clear_nonblock"}{implemented as dummy
-functions; use threads instead of non-blocking I/O}
-\entree{"rewinddir"}{not implemented; re-open the directory instead}
 \entree{"mkfifo"}{not implemented}
 \entree{"kill", "pause"}{not implemented (no inter-process signals in Windows)}
-\entree{"alarm", "times"}{not implemented}
+\entree{"alarm"}{not implemented}
+\entree{"times"}{partially implemented, will not report timings for child
+processes}
 \entree{"getitimer", "setitimer"}{not implemented}
 \entree{"getuid", "getgid"}{always return 1}
 \entree{"getgid", "getegid", "getgroups"}{not implemented}
