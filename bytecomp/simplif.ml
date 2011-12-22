@@ -260,6 +260,9 @@ let simplify_exits lam =
 
 let simplify_lets lam =
 
+  (* Disable optimisations for bytecode compilation with -g flag *)
+  let optimize = !Clflags.native_code || not !Clflags.debug in
+
   (* First pass: count the occurrences of all let-bound identifiers *)
 
   let occ = (Hashtbl.create 83: (Ident.t, int ref) Hashtbl.t) in
@@ -307,7 +310,7 @@ let simplify_lets lam =
       count bv l1; List.iter (count bv) ll
   | Lfunction(kind, params, l) ->
       count Tbl.empty l
-  | Llet(str, v, Lvar w, l2) when not !Clflags.debug ->
+  | Llet(str, v, Lvar w, l2) when optimize ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
       count (bind_var bv v) l2;
@@ -361,7 +364,6 @@ let simplify_lets lam =
      and substitute the bindings of variables used exactly once. *)
 
   let subst = Hashtbl.create 83 in
-  let optimize = !Clflags.native_code || not !Clflags.debug in
 
 (* This (small)  optimisation is always legal, it may uncover some
    tail call later on. *)
