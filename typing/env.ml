@@ -524,12 +524,13 @@ let lookup_type lid env =
   mark_type_used (Longident.last lid) desc;
   r
 
+let mark_type_path env path =
+  let decl = try find_type path env with Not_found -> assert false in
+  mark_type_used (Path.name path) decl
+
 let mark_type_constr env = function
-  | {desc=Tconstr(path, _, _)} ->
-      let decl = try find_type path env with Not_found -> assert false in
-      mark_type_used (Path.name path) decl
-  | _ ->
-      assert false
+  | {desc=Tconstr(path, _, _)} -> mark_type_path env path
+  | _ -> assert false
 
 let lookup_constructor lid env =
   let desc = lookup_constructor lid env in
@@ -540,6 +541,16 @@ let lookup_label lid env =
   let desc = lookup_label lid env in
   mark_type_constr env desc.lbl_res;
   desc
+
+let lookup_class lid env =
+  let (_, desc) as r = lookup_class lid env in
+  mark_type_path env desc.cty_path;
+  r
+
+let lookup_cltype lid env =
+  let (_, desc) as r = lookup_cltype lid env in
+  mark_type_path env desc.clty_path;
+  r
 
 (* GADT instance tracking *)
 
@@ -770,7 +781,7 @@ and check_usage loc id warn tbl =
     Hashtbl.add tbl key (fun () -> used := true);
     !add_delayed_check_forward
       (fun () ->
-        if not (name = "" || name.[0] = '_' || !used) then begin
+        if not (name = "" || name.[0] = '_' || name.[0] = '#' || !used) then begin
           used := true;
           Location.prerr_warning loc (warn name)
         end
