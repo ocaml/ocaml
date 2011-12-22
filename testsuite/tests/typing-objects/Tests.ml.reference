@@ -292,4 +292,10 @@ Warning 10: this expression should have type unit.
   unit -> object method private m : int method n : int method o : int end
 #   - : int * int = (1, 1)
 #   class c : unit -> object method m : int end
+#       - : int = 15
+# - : int = 16
+# - : int = 17
+#         - : int * int * int = (18, 19, 20)
+#           - : int * int * int * int * int = (21, 22, 23, 33, 33)
+#           - : int * int * int * int * int = (24, 25, 26, 33, 33)
 # 

@@ -42,6 +42,7 @@ Bug Fixes:
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping
 - PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
+- PR#5436: update object ids on unmarshaling
 - emacs mode: colorization of comments and strings now works correctly
 
 Feature wishes:

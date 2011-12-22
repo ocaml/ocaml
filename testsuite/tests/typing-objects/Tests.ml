@@ -302,3 +302,26 @@ end;;
 let x = new d () in x#n, x#o;;
 
 class c () = object method virtual m : int method private m = 1 end;;
+
+(* Marshaling (cf. PR#5436) *)
+
+Oo.id (object end);;
+Oo.id (object end);;
+Oo.id (object end);;
+let o = object end in
+  let s = Marshal.to_string o [] in
+  let o' : < > = Marshal.from_string s 0 in
+  let o'' : < > = Marshal.from_string s 0 in
+  (Oo.id o, Oo.id o', Oo.id o'');;
+
+let o = object val x = 33 method m = x end in
+  let s = Marshal.to_string o [Marshal.Closures] in
+  let o' : <m:int> = Marshal.from_string s 0 in
+  let o'' : <m:int> = Marshal.from_string s 0 in
+  (Oo.id o, Oo.id o', Oo.id o'', o#m, o'#m);;
+
+let o = object val x = 33 val y = 44 method m = x end in
+  let s = Marshal.to_string o [Marshal.Closures] in
+  let o' : <m:int> = Marshal.from_string s 0 in
+  let o'' : <m:int> = Marshal.from_string s 0 in
+  (Oo.id o, Oo.id o', Oo.id o'', o#m, o'#m);;
