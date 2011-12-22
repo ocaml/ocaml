@@ -367,9 +367,9 @@ LBL(caml_c_call):
 	STORE_VAR(%r15, caml_young_ptr)
 	STORE_VAR(%r14, caml_exception_pointer)
     /* Call the function (address in %rax) */
-	PREPARE_FOR_C_CALL
+    /* No need to PREPARE_FOR_C_CALL since the caller already
+       reserved the stack space if needed (cf. amd64/proc.ml) */
         call    *%rax
-	CLEANUP_AFTER_C_CALL
     /* Reload alloc ptr */
 	LOAD_VAR(caml_young_ptr, %r15)
     /* Return to caller */
