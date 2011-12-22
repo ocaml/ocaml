@@ -1228,15 +1228,21 @@ and transl_prim_2 p arg1 arg2 dbg =
       end
   | Parrayrefs kind ->
       begin match kind with
-        Pgenarray ->
+      | Pgenarray ->
           bind "index" (transl arg2) (fun idx ->
-            bind "arr" (transl arg1) (fun arr ->
-              bind "header" (header arr) (fun hdr ->
-                Cifthenelse(is_addr_array_hdr hdr,
-                  Csequence(Cop(Ccheckbound dbg, [addr_array_length hdr; idx]),
-                            addr_array_ref arr idx),
-                  Csequence(Cop(Ccheckbound dbg, [float_array_length hdr; idx]),
-                            float_array_ref arr idx)))))
+          bind "arr" (transl arg1) (fun arr ->
+          bind "header" (header arr) (fun hdr ->
+            if wordsize_shift = numfloat_shift then
+              Csequence(Cop(Ccheckbound dbg, [addr_array_length hdr; idx]),
+                        Cifthenelse(is_addr_array_hdr hdr, 
+                                    addr_array_ref arr idx,
+                                    float_array_ref arr idx))
+            else
+              Cifthenelse(is_addr_array_hdr hdr,
+                Csequence(Cop(Ccheckbound dbg, [addr_array_length hdr; idx]),
+                          addr_array_ref arr idx),
+                Csequence(Cop(Ccheckbound dbg, [float_array_length hdr; idx]),
+                          float_array_ref arr idx)))))
       | Paddrarray | Pintarray ->
           bind "index" (transl arg2) (fun idx ->
             bind "arr" (transl arg1) (fun arr ->
@@ -1339,17 +1345,24 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
       end)
   | Parraysets kind ->
       return_unit(begin match kind with
-        Pgenarray ->
+      | Pgenarray ->
           bind "newval" (transl arg3) (fun newval ->
-            bind "index" (transl arg2) (fun idx ->
-              bind "arr" (transl arg1) (fun arr ->
-                bind "header" (header arr) (fun hdr ->
-                  Cifthenelse(is_addr_array_hdr hdr,
-                    Csequence(Cop(Ccheckbound dbg, [addr_array_length hdr; idx]),
-                              addr_array_set arr idx newval),
-                    Csequence(Cop(Ccheckbound dbg, [float_array_length hdr; idx]),
-                              float_array_set arr idx
-                                              (unbox_float newval)))))))
+          bind "index" (transl arg2) (fun idx ->
+          bind "arr" (transl arg1) (fun arr ->
+          bind "header" (header arr) (fun hdr ->
+            if wordsize_shift = numfloat_shift then
+              Csequence(Cop(Ccheckbound dbg, [addr_array_length hdr; idx]),
+                        Cifthenelse(is_addr_array_hdr hdr, 
+                                    addr_array_set arr idx newval,
+                                    float_array_set arr idx
+                                                    (unbox_float newval)))
+            else
+              Cifthenelse(is_addr_array_hdr hdr,
+                Csequence(Cop(Ccheckbound dbg, [addr_array_length hdr; idx]),
+                          addr_array_set arr idx newval),
+                Csequence(Cop(Ccheckbound dbg, [float_array_length hdr; idx]),
+                          float_array_set arr idx
+                                          (unbox_float newval)))))))
       | Paddrarray ->
           bind "index" (transl arg2) (fun idx ->
             bind "arr" (transl arg1) (fun arr ->
