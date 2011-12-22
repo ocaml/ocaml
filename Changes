@@ -35,6 +35,8 @@ Standard library:
     . Added optional "seed" parameter to Hashtbl.create for diversification
     . Added new functorial interface "MakeSeeded" to support diversification
       with user-provided hash functions.
+- Arg: options with empty doc strings are no longer included in the usage string
+  (PR#5437)
 
 Bug Fixes:
 - PR#4869: rare collisions between assembly labels for code and data
