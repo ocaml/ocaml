@@ -62,7 +62,7 @@ let extract_sig_open env loc mty =
 let type_open env loc lid =
   let (path, mty) = Typetexp.find_module env loc lid in
   let sg = extract_sig_open env loc mty in
-  Env.open_signature path sg env
+  Env.open_signature ~loc path sg env
 
 (* Record a module type *)
 let rm node =

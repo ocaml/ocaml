@@ -78,7 +78,7 @@ val add_signature: signature -> t -> t
 (* Insertion of all fields of a signature, relative to the given path.
    Used to implement open. *)
 
-val open_signature: Path.t -> signature -> t -> t
+val open_signature: ?loc:Location.t -> Path.t -> signature -> t -> t
 val open_pers_signature: string -> t -> t
 
 (* Insertion by name *)

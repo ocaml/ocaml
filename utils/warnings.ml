@@ -51,6 +51,7 @@ type t =
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
   | Unused_value_declaration of string      (* 31 *)
+  | Unused_open of string                   (* 32 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -91,9 +92,10 @@ let number = function
   | Eol_in_string -> 29
   | Duplicate_definitions _ -> 30
   | Unused_value_declaration _ -> 31
+  | Unused_open _ -> 32
 ;;
 
-let last_warning_number = 31;;
+let last_warning_number = 32;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -188,7 +190,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-31";;
+let defaults_w = "+a-4-6-7-9-27-29-31-32";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -263,6 +265,7 @@ let message = function
       Printf.sprintf "the %s %s is defined in both types %s and %s."
         kind cname tc1 tc2
   | Unused_value_declaration v -> "unused value " ^ v ^ "."
+  | Unused_open s -> "unused open " ^ s ^ "."
 ;;
 
 let nerrors = ref 0;;
@@ -338,6 +341,7 @@ let descriptions =
    30, "Two labels or constructors of the same name are defined in two\n\
    \    mutually recursive types.";
    31, "Unused value declaration.";
+   32, "Unused open statement.";
   ]
 ;;
 
