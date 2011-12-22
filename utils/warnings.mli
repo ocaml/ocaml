@@ -47,6 +47,7 @@ type t =
   | Duplicate_definitions of string * string * string * string (*30 *)
   | Unused_value_declaration of string      (* 31 *)
   | Unused_open of string                   (* 32 *)
+  | Unused_type_declaration of string       (* 33 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

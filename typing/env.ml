@@ -30,6 +30,8 @@ let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t = Has
        is called whenever the value is used explicitly (lookup_value) or implicitly
        (inclusion test between signatures, cf Includemod.value_descriptions). *)
 
+let type_declarations = Hashtbl.create 16
+
 type error =
     Not_an_interface of string
   | Wrong_version_interface of string * string
@@ -262,7 +264,8 @@ let reset_cache () =
   current_unit := "";
   Hashtbl.clear persistent_structures;
   Consistbl.clear crc_units;
-  Hashtbl.clear value_declarations
+  Hashtbl.clear value_declarations;
+  Hashtbl.clear type_declarations
 
 let set_unit_name name =
   current_unit := name
@@ -498,6 +501,10 @@ let mark_value_used name vd =
   try Hashtbl.find value_declarations (name, vd.val_loc) ();
   with Not_found -> ()
 
+let mark_type_used name vd =
+  try Hashtbl.find type_declarations (name, vd.type_loc) ();
+  with Not_found -> ()
+
 let set_value_used_callback name vd callback =
   let old =
     try Hashtbl.find value_declarations (name, vd.val_loc)
@@ -511,6 +518,28 @@ let lookup_value lid env =
   let (_, desc) as r = lookup_value lid env in
   mark_value_used (Longident.last lid) desc;
   r
+
+let lookup_type lid env =
+  let (_, desc) as r = lookup_type lid env in
+  mark_type_used (Longident.last lid) desc;
+  r
+
+let mark_type_constr env = function
+  | {desc=Tconstr(path, _, _)} ->
+      let decl = try find_type path env with Not_found -> assert false in
+      mark_type_used (Path.name path) decl
+  | _ ->
+      assert false
+
+let lookup_constructor lid env =
+  let desc = lookup_constructor lid env in
+  mark_type_constr env desc.cstr_res;
+  desc
+
+let lookup_label lid env =
+  let desc = lookup_label lid env in
+  mark_type_constr env desc.lbl_res;
+  desc
 
 (* GADT instance tracking *)
 
@@ -732,22 +761,24 @@ let rec components_of_module env sub path mty =
 
 (* Insertion of bindings by identifier + path *)
 
-and store_value id path decl env =
-  let loc = decl.val_loc in
-  if not loc.Location.loc_ghost && Warnings.is_active (Warnings.Unused_value_declaration "") then begin
+and check_usage loc id warn tbl =
+  if not loc.Location.loc_ghost && Warnings.is_active (warn "") then begin
     let name = Ident.name id in
     let key = (name, loc) in
-    if Hashtbl.mem value_declarations key then ()
+    if Hashtbl.mem tbl key then ()
     else let used = ref false in
-    Hashtbl.add value_declarations key (fun () -> used := true);
+    Hashtbl.add tbl key (fun () -> used := true);
     !add_delayed_check_forward
       (fun () ->
         if not (name = "" || name.[0] = '_' || !used) then begin
           used := true;
-          Location.prerr_warning loc (Warnings.Unused_value_declaration name)
+          Location.prerr_warning loc (warn name)
         end
       )
   end;
+
+and store_value id path decl env =
+  check_usage decl.val_loc id (fun s -> Warnings.Unused_value_declaration s) value_declarations;
   { env with
     values = EnvTbl.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
@@ -759,6 +790,7 @@ and store_annot id path annot env =
   else env
 
 and store_type id path info env =
+  check_usage info.type_loc id (fun s -> Warnings.Unused_type_declaration s) type_declarations;
   let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in 
   { env with

@@ -153,6 +153,7 @@ open Format
 val report_error: formatter -> error -> unit
 
 val mark_value_used: string -> value_description -> unit
+val mark_type_used: string -> type_declaration -> unit
 val set_value_used_callback: string -> value_description -> ((unit -> unit) -> unit) -> unit
 
 (* Forward declaration to break mutual recursion with Includemod. *)

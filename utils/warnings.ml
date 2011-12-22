@@ -52,6 +52,7 @@ type t =
   | Duplicate_definitions of string * string * string * string (*30 *)
   | Unused_value_declaration of string      (* 31 *)
   | Unused_open of string                   (* 32 *)
+  | Unused_type_declaration of string       (* 33 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -93,9 +94,10 @@ let number = function
   | Duplicate_definitions _ -> 30
   | Unused_value_declaration _ -> 31
   | Unused_open _ -> 32
+  | Unused_type_declaration _ -> 32
 ;;
 
-let last_warning_number = 32;;
+let last_warning_number = 33;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -266,6 +268,7 @@ let message = function
         kind cname tc1 tc2
   | Unused_value_declaration v -> "unused value " ^ v ^ "."
   | Unused_open s -> "unused open " ^ s ^ "."
+  | Unused_type_declaration s -> "unused type " ^ s ^ "."
 ;;
 
 let nerrors = ref 0;;
