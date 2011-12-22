@@ -47,6 +47,7 @@ Bug Fixes:
 - PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
 - PR#5436: update object ids on unmarshaling
 - emacs mode: colorization of comments and strings now works correctly
+- PR#5313: ocamlopt -g misses optimizations
 
 Feature wishes:
 - PR#5358: first class modules don't allow "with type" declarations for types
