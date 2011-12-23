@@ -214,13 +214,31 @@ module Make(Ord: OrderedType) = struct
             part (part (if p v d then (add v d t, f) else (t, add v d f)) l) r in
       part (Empty, Empty) s
 
+    (* Beware: those two functions assume that the added k is *strictly*
+       smaller (or bigger) than all the present keys in the tree; it
+       does not test for equality with the current min (or max) key.
+
+       Indeed, they are only used during the "join" operation which
+       respects this precondition.
+    *)
+
+    let rec add_min_binding k v = function
+      | Empty -> singleton k v
+      | Node (l, x, d, r, h) ->
+        bal (add_min_binding k v l) x d r
+
+    let rec add_max_binding k v = function
+      | Empty -> singleton k v
+      | Node (l, x, d, r, h) ->
+        bal l x d (add_max_binding k v r)
+
     (* Same as create and bal, but no assumptions are made on the
        relative heights of l and r. *)
 
     let rec join l v d r =
       match (l, r) with
-        (Empty, _) -> add v d r
-      | (_, Empty) -> add v d l
+        (Empty, _) -> add_min_binding v d r
+      | (_, Empty) -> add_max_binding v d l
       | (Node(ll, lv, ld, lr, lh), Node(rl, rv, rd, rr, rh)) ->
           if lh > rh + 2 then bal ll lv ld (join lr v d r) else
           if rh > lh + 2 then bal (join l v d rl) rv rd rr else
