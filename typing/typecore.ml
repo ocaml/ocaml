@@ -1669,7 +1669,7 @@ let rec type_exp env sexp =
       type_exp (!type_open env sexp.pexp_loc lid) e
 
 and type_label_exp create env loc ty (lid, sarg) =
-  let label = Typetexp.find_label env sarg.pexp_loc lid in
+  let label = Typetexp.find_label env loc lid in
   begin_def ();
   if !Clflags.principal then begin_def ();
   let (vars, ty_arg, ty_res) = instance_label true label in
