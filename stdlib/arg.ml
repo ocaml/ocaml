@@ -238,6 +238,10 @@ let max_arg_len cur (kwd, spec, doc) =
 
 let add_padding len ksd =
   match ksd with
+  | (_, _, "") ->
+      (* Do not pad undocumented options, so that they still don't show up when
+       * run through [usage] or [parse]. *)
+      ksd
   | (kwd, (Symbol (l, _) as spec), msg) ->
       let cutcol = second_word msg in
       let spaces = String.make (len - cutcol + 3) ' ' in
