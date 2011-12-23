@@ -106,10 +106,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           "Cannot print %S this identifier does not respect OCaml lexing rules (%s)"
           str (Lexer.Error.to_string exn)) ];
 
-  value ocaml_char =
-    fun
-    [ "'" -> "\\'"
-    | c -> c ];
+  value ocaml_char x = x;
 
   value rec get_expr_args a al =
     match a with
@@ -559,7 +556,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< $int64:s$ >> -> o#numeric f s "L"
     | <:expr< $int32:s$ >> -> o#numeric f s "l"
     | <:expr< $flo:s$ >> -> o#numeric f s ""
-    | <:expr< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
+    | <:expr< $chr:s$ >> -> pp f "'%s'" s
     | <:expr< $id:i$ >> -> o#var_ident f i
     | <:expr< { $b$ } >> ->
         pp f "@[<hv0>@[<hv2>{%a@]@ }@]" o#record_binding b
@@ -669,7 +666,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:patt< $int32:s$ >> -> o#numeric f s "l"
     | <:patt< $int:s$ >> -> o#numeric f s ""
     | <:patt< $flo:s$ >> -> o#numeric f s ""
-    | <:patt< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
+    | <:patt< $chr:s$ >> -> pp f "'%s'" s
     | <:patt< ~ $s$ >> -> pp f "~%s" s
     | <:patt< ` $uid:s$ >> -> pp f "`%a" o#var s
     | <:patt< # $i$ >> -> pp f "@[<2>#%a@]" o#ident i
