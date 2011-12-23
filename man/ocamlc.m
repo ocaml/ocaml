@@ -390,9 +390,8 @@ specify the name of the output file produced.
 .B \-output\-obj
 Cause the linker to produce a C object file instead of a bytecode
 executable file. This is useful to wrap Caml code as a C library,
-callable from any C program. The name of the output object file is
-.B camlprog.o
-by default; it can be set with the
+callable from any C program. The name of the output object file 
+must be set with the
 .B \-o
 option. This
 option can also be used to produce a C source file (.c extension) or
