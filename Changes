@@ -9,9 +9,10 @@ Bug fixes:
 - PR#4705: camlp4 does not allow to define types with `True or `False
 - PR#4746: wrong detection of stack overflows in native code under Linux
 - PR#4937: camlp4 incorrectly handles optional arguments if 'option' is redefined
-- PR#5024: camlp4r now handles underscores in irrefutable patern matching of records
-- PR#5211: updated Genlex documentation to state that camlp4 is mandatory for 'parser'
-           keyword and associated notation
+- PR#5024: camlp4r now handles underscores in irrefutable patern matching of
+           records
+- PR#5211: updated Genlex documentation to state that camlp4 is mandatory for
+           'parser' keyword and associated notation
 - PR#5238, PR#5277: Sys_error when getting error location
 - PR#5301: camlp4r and exception equal to another one with parameters
 - PR#5316: objinfo now shows ccopts/ccobjs/force_link when applicable
@@ -24,13 +25,19 @@ Bug fixes:
 - PR#5356: ocamlbuild handling of 'predicates' for ocamlfind
 - PR#5364: wrong compilation of "((val m : SIG1) : SIG2)"
 - PR#5370: ocamldep omits filename in syntax error message
+- PR#5380: Strange sscanf input segfault
+- emacs mode: colorization of comments and strings now works correctly
 
 Feature wishes:
 - PR#4444: new String.trim function, removing leading and trailing whistespace
 - PR#4898: new Sys.big_endian boolean for machine endianness
 - PR#5236: new '%revapply' primitive with the semantics 'revapply x f = f x'
 - ocamldebug: ability to inspect values containing code pointers
-- ocamldebug: new 'environment' directive to set environment variables for debugee
+- ocamldebug: new 'environment' directive to set environment variables
+              for debugee
+
+Other changes:
+- Copy VERSION file to library directory when installing.
 
 Objective Caml 3.12.1:
 ----------------------
