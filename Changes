@@ -12,8 +12,6 @@ Language features:
   Using the -principal option guarantees forward compatibility.
 - New (module M) and (module M : S) syntax in patterns, for immediate
   unpacking of a first-class module.
-- New syntax "let.e0 p = e1 in e2" where e0 is a simple expression,
-  expanded to "e0 e1 (fun p -> e2).
 
 Compilers:
 - Revised simplification of let-alias (PR#5205, PR#5288)
