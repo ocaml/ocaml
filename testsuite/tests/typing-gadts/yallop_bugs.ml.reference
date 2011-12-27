@@ -16,7 +16,7 @@ Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (IntLit, 0)
 type 'a t = IntLit : int t | BoolLit : bool t
-val check : 'a t * 'a -> bool = <fun>
+val check : 's t * 's -> bool = <fun>
 #             Characters 91-180:
   .............................................function
     | {fst = BoolLit; snd = false} -> false
@@ -25,5 +25,5 @@ Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 {fst=IntLit; snd=0}
 type ('a, 'b) pair = { fst : 'a; snd : 'b; }
-val check : ('a t, 'a) pair -> bool = <fun>
+val check : ('s t, 's) pair -> bool = <fun>
 # 

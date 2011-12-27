@@ -1176,9 +1176,15 @@ let rec copy_sep fixed free bound visited ty =
     t
   end
 
-let instance_poly fixed univars sch =
-  let vars = List.map (fun _ -> newvar ()) univars in
-  let pairs = List.map2 (fun u v -> repr u, (v, [])) univars vars in
+let instance_poly ?(keep_names=false) fixed univars sch =
+  let univars = List.map repr univars in
+  let copy_var ty =
+    match ty.desc with
+      Tunivar name -> if keep_names then newty (Tvar name) else newvar ()
+    | _ -> assert false
+  in
+  let vars = List.map copy_var univars in
+  let pairs = List.map2 (fun u v -> u, (v, [])) univars vars in
   delayed_copy := [];
   let ty = copy_sep fixed (compute_univars sch) [] pairs sch in
   List.iter Lazy.force !delayed_copy;

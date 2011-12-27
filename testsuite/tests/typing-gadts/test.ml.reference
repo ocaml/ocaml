@@ -7,7 +7,7 @@
       | Pair : 'a t * 'b t -> ('a * 'b) t
       | App : ('a -> 'b) t * 'a t -> 'b t
       | Abs : ('a -> 'b) -> ('a -> 'b) t
-    val eval : 'a t -> 'a
+    val eval : 's t -> 's
     val discern : 'a t -> int
   end
 #                                     module List :
@@ -35,17 +35,17 @@ module Nonexhaustive :
   sig
     type 'a u = C1 : int -> int u | C2 : bool -> bool u
     type 'a v = C1 : int -> int v
-    val unexhaustive : 'a u -> 'a
+    val unexhaustive : 's u -> 's
     module M : sig type t type u end
     type 'a t = Foo : M.t -> M.t t | Bar : M.u -> M.u t
-    val same_type : 'a t * 'a t -> bool
+    val same_type : 's t * 's t -> bool
   end
 #                             module Exhaustive :
   sig
     type t = int
     type u = bool
     type 'a v = Foo : t -> t v | Bar : u -> u v
-    val same_type : 'a v * 'a v -> bool
+    val same_type : 's v * 's v -> bool
   end
 #               Characters 119-120:
       let eval (D x) = x
@@ -70,7 +70,7 @@ Error: This pattern matches values of type ([? `A ] as 'a) * bool t
 #                                 module Propagation :
   sig
     type 'a t = IntLit : int -> int t | BoolLit : bool -> bool t
-    val check : 'a t -> 'a
+    val check : 's t -> 's
   end
 #             Characters 87-88:
     let f = function A -> 1 | B -> 2
@@ -199,8 +199,8 @@ Error: This expression has type [> `A of a ]
   ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
     fun Eq o -> o..............
 Error: This definition has type
-         ('c, 'd) eq -> ([< `A of 'd & 'c | `B ] as 'e) -> 'e
-       which is less general than 'a 'b. ('a, 'b) eq -> 'e -> 'e
+         ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
+       which is less general than 'a0 'b0. ('a0, 'b0) eq -> 'c -> 'c
 #     val f : ('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ] = <fun>
 #       val f : ('a, int) eq -> [ `A of 'a ] -> bool = <fun>
 #           val f : ('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ] = <fun>

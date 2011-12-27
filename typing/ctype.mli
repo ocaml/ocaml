@@ -128,6 +128,7 @@ val instance_declaration: type_declaration -> type_declaration
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 val instance_poly:
+        ?keep_names:bool ->
         bool -> type_expr list -> type_expr -> type_expr list * type_expr
         (* Take an instance of a type scheme containing free univars *)
 val instance_label:

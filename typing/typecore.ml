@@ -521,7 +521,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       begin match ty.desc with
       | Tpoly (body, tyl) ->
           begin_def ();
-          let _, ty' = instance_poly false tyl body in
+          let _, ty' = instance_poly ~keep_names:true false tyl body in
           end_def ();
           generalize ty';
           let id = enter_variable loc name ty' in
@@ -2619,7 +2619,8 @@ and type_let env rec_flag spat_sexp_list scope allow =
         let pat =
           match pat.pat_type.desc with
           | Tpoly (ty, tl) ->
-              {pat with pat_type = snd (instance_poly false tl ty)}
+              {pat with pat_type =
+               snd (instance_poly ~keep_names:true false tl ty)}
           | _ -> pat
         in unify_pat env pat (type_approx env sexp))
       pat_list spat_sexp_list;
@@ -2653,7 +2654,7 @@ and type_let env rec_flag spat_sexp_list scope allow =
         | Tpoly (ty, tl) ->
             begin_def ();
             if !Clflags.principal then begin_def ();
-            let vars, ty' = instance_poly true tl ty in
+            let vars, ty' = instance_poly ~keep_names:true true tl ty in
             if !Clflags.principal then begin
               end_def ();
               generalize_structure ty'
@@ -2674,8 +2675,7 @@ and type_let env rec_flag spat_sexp_list scope allow =
          iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
     pat_list exp_list;
   List.iter
-    (fun pat -> iter_pattern
-      (fun pat -> generalize pat.pat_type) pat)
+    (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
     pat_list;
   (List.combine pat_list exp_list, new_env, unpacks)
 
