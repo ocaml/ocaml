@@ -192,13 +192,13 @@ let rc node =
 
 
 (* Enter a value in the method environment only *)
-let enter_met_env lab kind ty val_env met_env par_env =
+let enter_met_env loc lab kind ty val_env met_env par_env =
   let (id, val_env) =
-    Env.enter_value lab {val_type = ty; val_kind = Val_unbound; val_loc = Location.none} val_env
+    Env.enter_value lab {val_type = ty; val_kind = Val_unbound; val_loc = loc} val_env
   in
   (id, val_env,
-   Env.add_value id {val_type = ty; val_kind = kind; val_loc = Location.none} met_env,
-   Env.add_value id {val_type = ty; val_kind = Val_unbound; val_loc = Location.none} par_env)
+   Env.add_value id {val_type = ty; val_kind = kind; val_loc = loc} met_env,
+   Env.add_value id {val_type = ty; val_kind = Val_unbound; val_loc = loc} par_env)
 
 (* Enter an instance variable in the environment *)
 let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
@@ -218,7 +218,7 @@ let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
   let (id, _, _, _) as result =
     match id with Some id -> (id, val_env, met_env, par_env)
     | None ->
-        enter_met_env lab (Val_ivar (mut, cl_num)) ty val_env met_env par_env
+        enter_met_env Location.none lab (Val_ivar (mut, cl_num)) ty val_env met_env par_env
   in
   vars := Vars.add lab (id, mut, virt, ty) !vars;
   result
@@ -462,7 +462,7 @@ let rec class_field cl_num self_type meths vars
             (val_env, met_env, par_env)
         | Some name ->
             let (id, val_env, met_env, par_env) =
-              enter_met_env name (Val_anc (inh_meths, cl_num)) self_type
+              enter_met_env sparent.pcl_loc name (Val_anc (inh_meths, cl_num)) self_type
                 val_env met_env par_env
             in
             (val_env, met_env, par_env)
