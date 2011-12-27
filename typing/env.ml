@@ -56,24 +56,26 @@ type summary =
 module EnvTbl =
   struct
     (* A table indexed by identifier, with an extra slot to record usage. *)
-    type 'a t = ('a * bool ref) Ident.tbl
+    type 'a t = 'a Ident.tbl * bool ref Ident.tbl
 
+    let empty = (Ident.empty, Ident.empty)
     let current_slot = ref (ref true)
-    let add id x tbl = Ident.add id (x, !current_slot) tbl
 
-    let find_same_not_using id tbl =
-      let (x, _) = Ident.find_same id tbl in
-      x
+    let add id x (tbl, slots) =
+      let slot = !current_slot in
+      let slots = if !slot then slots else Ident.add id slot slots in
+      Ident.add id x tbl, slots
 
-    let find_same id tbl =
-      let (x, slot) = Ident.find_same id tbl in
-      slot := true;
-      x
+    let find_same_not_using id (tbl, _) =
+      Ident.find_same id tbl
 
-    let find_name s tbl =
-      let (x, slot) = Ident.find_name s tbl in
-      slot := true;
-      x
+    let find_same id (tbl, slots) =
+      (try Ident.find_same id slots := true with Not_found -> ());
+      Ident.find_same id tbl
+
+    let find_name s (tbl, slots) =
+      (try Ident.find_name s slots := true with Not_found -> ());
+      Ident.find_name s tbl
 
     let with_slot slot f x =
       let old_slot = !current_slot in
@@ -81,6 +83,9 @@ module EnvTbl =
       try_finally
         (fun () -> f x)
         (fun () -> current_slot := old_slot)
+
+    let keys (tbl, _) =
+      Ident.keys tbl
   end
 
 type t = {
@@ -131,16 +136,16 @@ and functor_components = {
 }
 
 let empty = {
-  values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
-  labels = Ident.empty; types = Ident.empty; 
-  constrs_by_path = Ident.empty;
-  modules = Ident.empty; modtypes = Ident.empty;
-  components = Ident.empty; classes = Ident.empty;
-  cltypes = Ident.empty; 
+  values = EnvTbl.empty; annotations = EnvTbl.empty; constrs = EnvTbl.empty;
+  labels = EnvTbl.empty; types = EnvTbl.empty; 
+  constrs_by_path = EnvTbl.empty;
+  modules = EnvTbl.empty; modtypes = EnvTbl.empty;
+  components = EnvTbl.empty; classes = EnvTbl.empty;
+  cltypes = EnvTbl.empty; 
   summary = Env_empty; local_constraints = false; gadt_instances = [] }
 
 let diff_keys is_local tbl1 tbl2 =
-  let keys2 = Ident.keys tbl2 in
+  let keys2 = EnvTbl.keys tbl2 in
   List.filter
     (fun id ->
       is_local (EnvTbl.find_same_not_using id tbl2) &&
