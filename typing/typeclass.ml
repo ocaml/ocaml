@@ -932,18 +932,23 @@ and class_expr cl_num val_env met_env scl =
       let (vals, met_env) =
         List.fold_right
           (fun id (vals, met_env) ->
+             let path = Pident id in
+             let vd = Env.find_value path val_env in (* do not mark the value as used *)
              Ctype.begin_def ();
              let expr =
-               Typecore.type_exp val_env
-                 {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
-                  pexp_loc = Location.none}
+               {
+                exp_desc = Texp_ident(path, vd);
+                exp_loc = Location.none;
+                exp_type = Ctype.instance val_env vd.val_type;
+                exp_env = val_env;
+               }
              in
              Ctype.end_def ();
              Ctype.generalize expr.exp_type;
              let desc =
                {val_type = expr.exp_type; val_kind = Val_ivar (Immutable,
                                                                cl_num);
-                val_loc = Location.none;
+                val_loc = vd.val_loc;
                }
              in
              let id' = Ident.create (Ident.name id) in
