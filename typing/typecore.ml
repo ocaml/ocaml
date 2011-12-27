@@ -2692,17 +2692,6 @@ let type_binding env rec_flag spat_sexp_list scope =
 
 (* Typing of toplevel expressions *)
 
-let lookup_ident_type env sexp =
-  (* Special case for keeping type variables when looking-up a variable *)
-  match sexp.pexp_desc with
-    Pexp_ident lid ->
-      let (path, desc) = Env.lookup_value lid env in
-      begin match desc.val_kind with
-        Val_reg | Val_prim _ -> desc.val_type
-      | Val_ivar _ | Val_self _ | Val_anc _ | Val_unbound -> raise Not_found
-      end
-  | _ -> raise Not_found
-  
 let type_expression env sexp =
   Typetexp.reset_type_variables();
   begin_def();
@@ -2710,8 +2699,12 @@ let type_expression env sexp =
   end_def();
   if is_nonexpansive exp then generalize exp.exp_type
   else generalize_expansive env exp.exp_type;
-  try {exp with exp_type = lookup_ident_type env sexp }
-  with Not_found -> exp
+  match sexp.pexp_desc with
+    Pexp_ident lid ->
+      (* Special case for keeping type variables when looking-up a variable *)
+      let (path, desc) = Env.lookup_value lid env in
+      {exp with exp_type = desc.val_type}
+  | _ -> exp
 
 (* Error report *)
 
