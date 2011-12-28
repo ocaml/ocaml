@@ -754,8 +754,28 @@ let transl_type_decl env name_sdecl_list =
   (* Enter types. *)
   let temp_env = List.fold_left2 enter_type env name_sdecl_list id_list in
   (* Translate each declaration. *)
-  let decls =
-    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+  let current_slot = ref None in
+  let warn_unused = Warnings.is_active (Warnings.Unused_type_declaration "") in
+  let id_slots id =
+    if not warn_unused then id, None
+    else
+      (* See typecore.ml for a description of the algorithm used
+         to detect unused declarations in a set of recursive definitions. *)
+      let slot = ref [] in
+      let td = Env.find_type (Path.Pident id) temp_env in
+      let name = Ident.name id in
+      Env.set_type_used_callback
+        name td
+        (fun old_callback ->
+          match !current_slot with
+          | Some slot -> slot := (name, td) :: !slot
+          | None -> List.iter (fun (name, d) -> Env.mark_type_used name d) (get_ref slot); old_callback ()
+        );
+      id, Some slot
+  in
+  let transl_declaration name_sdecl (id, slot) = current_slot := slot; transl_declaration temp_env name_sdecl id in
+  let decls = List.map2 transl_declaration name_sdecl_list (List.map id_slots id_list) in
+  current_slot := None;
   (* Check for duplicates *)
   check_duplicates name_sdecl_list;
   (* Build the final env. *)

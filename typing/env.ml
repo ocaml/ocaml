@@ -511,13 +511,12 @@ let mark_type_used name vd =
   with Not_found -> ()
 
 let set_value_used_callback name vd callback =
-  let old =
-    try Hashtbl.find value_declarations (name, vd.val_loc)
-    with Not_found ->
-      Format.eprintf "Cannot find callback for value %S %a@." name Location.print_loc vd.val_loc;
-      assert false
-  in
+  let old = try Hashtbl.find value_declarations (name, vd.val_loc) with Not_found -> assert false in
   Hashtbl.replace value_declarations (name, vd.val_loc) (fun () -> callback old)
+
+let set_type_used_callback name td callback =
+  let old = try Hashtbl.find type_declarations (name, td.type_loc) with Not_found -> assert false in
+  Hashtbl.replace type_declarations (name, td.type_loc) (fun () -> callback old)
 
 let lookup_value lid env =
   let (_, desc) as r = lookup_value lid env in

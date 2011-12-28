@@ -735,10 +735,6 @@ let rec iter3 f lst1 lst2 lst3 =
   | _ ->
       assert false
 
-let get_ref r =
-  let v = !r in
-  r := []; v
-
 let add_pattern_variables env =
   let pv = get_ref pattern_variables in
   (List.fold_right
