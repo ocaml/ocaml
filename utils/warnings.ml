@@ -345,6 +345,7 @@ let descriptions =
    \    mutually recursive types.";
    31, "Unused value declaration.";
    32, "Unused open statement.";
+   33, "Unused type declaration.";
   ]
 ;;
 
