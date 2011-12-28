@@ -328,8 +328,6 @@ and rewrite_class_field iflag =
   | Pcf_meth (_, _, _, sexp, loc) ->
       if !instr_fun && not loc.loc_ghost then insert_profile rw_exp sexp
       else rewrite_exp iflag sexp
-  | Pcf_let(_, spat_sexp_list, _) ->
-      rewrite_patexp_list iflag spat_sexp_list
   | Pcf_init sexp ->
       rewrite_exp iflag sexp
   | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _  -> ()

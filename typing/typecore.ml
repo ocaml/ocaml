@@ -871,7 +871,7 @@ let rec is_nonexpansive exp =
             Cf_meth _ -> true
           | Cf_val (_,_,e,_) -> incr count; is_nonexpansive_opt e
           | Cf_init e -> is_nonexpansive e
-          | Cf_inher _ | Cf_let _ -> false)
+          | Cf_inher _ -> false)
         fields &&
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&

@@ -644,10 +644,6 @@ module Analyser =
             (* don't give a $*%@ ! *)
             iter acc_inher acc_fields loc.Location.loc_end.Lexing.pos_cnum q
 
-        | Parsetree.Pcf_let (_, _, loc) :: q ->
-            (* don't give a $*%@ ! *)
-            iter acc_inher acc_fields loc.Location.loc_end.Lexing.pos_cnum q
-
         | (Parsetree.Pcf_init exp) :: q ->
             iter acc_inher acc_fields exp.Parsetree.pexp_loc.Location.loc_end.Lexing.pos_cnum q
       in

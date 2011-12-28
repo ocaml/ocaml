@@ -324,7 +324,6 @@ let rec add_labels_class ~text ~classes ~values ~methods cl =
               add_labels_expr ~text ~classes ~values e;
               values
           | Pcf_inher _ | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _ -> values
-          | Pcf_let _ -> values (* not in the grammar *)
         end)
   | Pcl_fun (_, opt, pat, cl) ->
       begin match opt with None -> ()

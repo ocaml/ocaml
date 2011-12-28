@@ -489,9 +489,6 @@ and class_field i ppf x =
       line i ppf "Pcf_cstr %a\n" fmt_location loc;
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
-  | Pcf_let (rf, l, loc) ->
-      line i ppf "Pcf_let %a %a\n" fmt_rec_flag rf fmt_location loc;
-      list (i+1) pattern_x_expression_def ppf l;
   | Pcf_init (e) ->
       line i ppf "Pcf_init\n";
       expression (i+1) ppf e;
