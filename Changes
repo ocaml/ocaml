@@ -16,24 +16,25 @@ Language features:
 Compilers:
 - Revised simplification of let-alias (PR#5205, PR#5288)
 - Better reporting of compiler version mismatch in .cmi files
-- Warning 28 is now enabled by default.
+* Warning 28 is now enabled by default.
 - New option -absname to use absolute paths in error messages
 
 Native-code compiler:
 - Optimized handling of partially-applied functions (PR#5287)
-- Small improvements in code generated for array bounds checks (PR#5345, PR#5360).
+- Small improvements in code generated for array bounds checks (PR#5345,
+  PR#5360).
 
 Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)
 - Array: faster implementations of "blit", "copy", "sub", "append" and "concat"
   (PR#2395, PR#2787, PR#4591)
-- Hashtbl:
+* Hashtbl:
     . Statistically-better generic hash function based on Murmur 3 (PR#5225)
     . Fixed behavior of generic hash function w.r.t. -0.0 and NaN (PR#5222)
     . Added optional "seed" parameter to Hashtbl.create for diversification
     . Added new functorial interface "MakeSeeded" to support diversification
       with user-provided hash functions.
-- Arg: options with empty doc strings are no longer included in the usage string
+* Arg: options with empty doc strings are no longer included in the usage string
   (PR#5437)
 
 Bug Fixes:
@@ -55,8 +56,8 @@ Feature wishes:
 - PR#5420: Unix.openfile share mode (Windows)
 
 Shedding weight:
-- Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
-- The "DBM" library (interface with Unix DBM key-value stores) is no
+* Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
+* The "DBM" library (interface with Unix DBM key-value stores) is no
   longer part of this distribution.  It now lives its own life at
   https://forge.ocamlcore.org/projects/camldbm/
 
@@ -236,7 +237,7 @@ Compilers and toplevel:
   caused by the incomplete comparison of applicative paths F(X).t.
 
 Native-code compiler:
-- AMD64: shorter and slightly more efficient code generated for 
+- AMD64: shorter and slightly more efficient code generated for
   float comparisons.
 
 Standard library:
