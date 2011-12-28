@@ -11,7 +11,7 @@ compile:
 run:
 	@printf " ... testing 'cmmain':"
 	@./program > program.result
-	@diff -q program.reference program.result > /dev/null || (echo " => failed" && exit 1)
+	@$(DIFF) program.reference program.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 	
 promote: defaultpromote

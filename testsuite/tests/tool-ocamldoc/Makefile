@@ -6,7 +6,7 @@ run: $(CUSTOM_MODULE).cmo
 	@for file in t*.ml; do \
 	  printf " ... testing '$$file'"; \
 	  $(OCAMLDOC) -hide-warnings -g $(CUSTOM_MODULE).cmo -o `basename $$file ml`result $$file; \
-	  diff -q `basename $$file ml`reference `basename $$file ml`result > /dev/null && echo " => passed" || (echo " => failed" && exit 1); \
+	  $(DIFF) `basename $$file ml`reference `basename $$file ml`result > /dev/null && echo " => passed" || (echo " => failed" && exit 1); \
 	done;
 	@$(OCAMLDOC) -hide-warnings -html t*.ml 2>&1 | grep -v test_types_display || true
 	@$(OCAMLDOC) -hide-warnings -latex t*.ml 2>&1 | grep -v test_types_display || true

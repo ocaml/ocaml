@@ -9,7 +9,7 @@ default:
 	done
 	@for file in *.reference; do \
 	  printf " ... testing '$$file':"; \
-	  diff -q $$file `basename $$file reference`result || (echo " => failed" && exit 1) && echo " => passed"; \
+	  $(DIFF) $$file `basename $$file reference`result || (echo " => failed" && exit 1) && echo " => passed"; \
 	done
 
 promote: defaultpromote

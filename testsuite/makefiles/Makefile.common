@@ -4,6 +4,7 @@ TOPDIR=$(BASEDIR)/..
 
 include $(TOPDIR)/config/Makefile
 
+DIFF=diff -q
 BOOTDIR=$(TOPDIR)/boot
 OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
 OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml$(EXE) -I $(TOPDIR)/stdlib
