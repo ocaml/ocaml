@@ -58,7 +58,7 @@ val my_record : my_record ty =
       Field {label = "b"; field_type = List String; get = <fun>; set = <fun>}];
     create_builder = <fun>; of_builder = <fun>}
 #                                                                         type noarg = Noarg
-type ('a, 'b) ty =
+type (_, _) ty =
     Int : (int, 'c) ty
   | String : (string, 'd) ty
   | List : ('a, 'e) ty -> ('a list, 'e) ty
@@ -75,16 +75,16 @@ and ('a, 'e, 'b) ty_sum = {
   sum_inj : 'c. ('b, 'c) ty_sel * 'c -> 'a;
 }
 and 'e ty_dyn = Tdyn : ('a, 'e) ty * 'a -> 'e ty_dyn
-and ('a, 'b) ty_sel =
+and (_, _) ty_sel =
     Thd : ('a -> 'b, 'a) ty_sel
   | Ttl : ('b -> 'c, 'd) ty_sel -> ('a -> 'b -> 'c, 'd) ty_sel
-and ('a, 'b) ty_case =
+and (_, _) ty_case =
     TCarg : ('b, 'a) ty_sel * ('a, 'e) ty -> ('e, 'b) ty_case
   | TCnoarg : ('b, noarg) ty_sel -> ('e, 'b) ty_case
-#         type 'a ty_env =
+#         type _ ty_env =
     Enil : unit ty_env
   | Econs : ('a, 'e) ty * 'e ty_env -> ('a -> 'e) ty_env
-#                                                         type ('a, 'b) eq = Eq : ('a, 'a) eq
+#                                                         type (_, _) eq = Eq : ('a, 'a) eq
 val eq_sel : ('a, 'b) ty_sel -> ('a, 'c) ty_sel -> ('b, 'c) eq option = <fun>
 val get_case :
   ('b, 'a) ty_sel ->
@@ -129,7 +129,7 @@ val v : variant =
   VSum ("Cons",
    Some
     (VPair (VInt 1, VSum ("Cons", Some (VPair (VInt 2, VSum ("Nil", None)))))))
-#                                                               type ('a, 'b) ty =
+#                                                               type (_, _) ty =
     Int : (int, 'c) ty
   | String : (string, 'd) ty
   | List : ('a, 'e) ty -> ('a list, 'e) ty
@@ -149,7 +149,7 @@ val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum (<fun>, <fun>)
 Error: This pattern matches values of type a * a vlist
        but a pattern was expected which matches values of type
          ex#46 = ex#47 * ex#48
-#                                                         type ('a, 'b) ty =
+#                                                         type (_, _) ty =
     Int : (int, 'd) ty
   | String : (string, 'f) ty
   | List : ('a, 'e) ty -> ('a list, 'e) ty
@@ -164,10 +164,10 @@ Error: This pattern matches values of type a * a vlist
         inj : 'c. ('b, 'c) ty_sel * 'c -> 'a;
         proj : 'a -> string * 'e ty_dyn option > -> ('a, 'e) ty
 and 'e ty_dyn = Tdyn : ('a, 'e) ty * 'a -> 'e ty_dyn
-and ('a, 'b) ty_sel =
+and (_, _) ty_sel =
     Thd : ('a -> 'b, 'a) ty_sel
   | Ttl : ('b -> 'c, 'd) ty_sel -> ('a -> 'b -> 'c, 'd) ty_sel
-and ('a, 'b) ty_case =
+and (_, _) ty_case =
     TCarg : ('b, 'a) ty_sel * ('a, 'e) ty -> ('e, 'b) ty_case
   | TCnoarg : ('b, noarg) ty_sel -> ('e, 'b) ty_case
 #                                                                     val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum <obj>

@@ -265,9 +265,9 @@ let out_type = ref print_out_type
 (* Class types *)
 
 let type_parameter ppf (ty, (co, cn)) =
-  fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
-    (*if co then if cn then "!" else "+" else if cn then "-" else "?"*)
-    ty
+  fprintf ppf "%s%s"
+    (if not cn then "+" else if not co then "-" else "")
+    (if ty = "_" then ty else "'"^ty)
 
 let print_out_class_params ppf =
   function

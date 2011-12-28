@@ -7,14 +7,14 @@
       | List : 'a ty -> 'a list ty
       | Pair : ('a ty * 'b ty) -> ('a * 'b) ty
       | Fun : ('a ty * 'b ty) -> ('a -> 'b) ty
-    type ('a, 'b) eq = Eq : ('a, 'a) eq
+    type (_, _) eq = Eq : ('a, 'a) eq
     exception CastFailure
     val check_eq : 't ty -> 't' ty -> ('t, 't') eq
     val gcast : 't ty -> 't' ty -> 't -> 't'
   end
 #                               module HOAS :
   sig
-    type 'a term =
+    type _ term =
         Tag : 't Typeable.ty * int -> 't term
       | Con : 't -> 't term
       | Lam : 's Typeable.ty * ('s term -> 't term) -> ('s -> 't) term
@@ -32,7 +32,7 @@
       | Con : 't -> ('env, 't) term
       | Lam : ('env * 's, 't) term -> ('env, 's -> 't) term
       | App : ('env, 's -> 't) term * ('env, 's) term -> ('env, 't) term
-    type 'a stack =
+    type _ stack =
         Empty : unit stack
       | Push : 'env stack * 't -> ('env * 't) stack
     val prj : ('env, 't) ix -> 'env stack -> 't
@@ -40,7 +40,7 @@
   end
 #                                                                             module Convert :
   sig
-    type ('a, 'b) layout =
+    type (_, _) layout =
         EmptyLayout : ('env, unit) layout
       | PushLayout : 't Typeable.ty * ('env, 'env') layout *
           ('env, 't) DeBruijn.ix -> ('env, 'env' * 't) layout

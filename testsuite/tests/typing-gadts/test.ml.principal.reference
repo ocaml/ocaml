@@ -1,7 +1,7 @@
 
 #                                                         module Exp :
   sig
-    type 'a t =
+    type _ t =
         IntLit : int -> int t
       | BoolLit : bool -> bool t
       | Pair : 'a t * 'b t -> ('a * 'b) t
@@ -13,7 +13,7 @@
 #                                     module List :
   sig
     type zero
-    type 'a t = Nil : zero t | Cons : 'a * 'b t -> ('a * 'b) t
+    type _ t = Nil : zero t | Cons : 'a * 'b t -> ('a * 'b) t
     val head : ('a * 'b) t -> 'a
     val tail : ('a * 'b) t -> 'b t
     val length : 'a t -> int
@@ -76,7 +76,7 @@ Error: This expression has type bool but an expression was expected of type s
                               ^
 Error: This pattern matches values of type b
        but a pattern was expected which matches values of type a
-#   type 'a t = Int : int t
+#   type _ t = Int : int t
 #   val ky : 'a -> 'a -> 'a = <fun>
 #       val test : 'a t -> 'a = <fun>
 #       val test : 'a t -> int = <fun>
@@ -138,11 +138,11 @@ Error: This expression has type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #           val f : 'a t -> int -> int = <fun>
-#                     type 'a h = Has_m : < m : int > h | Has_b : < b : bool > h
+#                     type _ h = Has_m : < m : int > h | Has_b : < b : bool > h
 val f : 'a h -> 'a = <fun>
-#               type 'a j = Has_A : [ `A of int ] j | Has_B : [ `B of bool ] j
+#               type _ j = Has_A : [ `A of int ] j | Has_B : [ `B of bool ] j
 val f : 'a j -> 'a = <fun>
-#   type ('a, 'b) eq = Eq : ('a, 'a) eq
+#   type (_, _) eq = Eq : ('a, 'a) eq
 #       Characters 5-91:
   ....f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
     fun Eq o -> o
@@ -226,7 +226,7 @@ Error: This expression has type [> `A of a | `B ]
        This instance of a is ambiguous:
        it would escape the scope of its equation
 #                                                     type 'a t = A of int | B of bool | C of float | D of 'a
-type 'a ty =
+type _ ty =
     TE : 'a ty -> 'a array ty
   | TA : int ty
   | TB : bool ty
@@ -276,11 +276,11 @@ Error: This expression has type (a, a) eq
        but an expression was expected of type (a, b) eq
 #       val f : ('a M.t * 'a, 'b M.t * 'b) eq -> ('a, 'b) eq = <fun>
 #       val f : ('a * 'a M.t, 'b * 'b M.t) eq -> ('a, 'b) eq = <fun>
-#                     type 'a t = V1 : [ `A | `B ] t | V2 : [ `C | `D ] t
+#                     type _ t = V1 : [ `A | `B ] t | V2 : [ `C | `D ] t
 val f : 'a t -> 'a = <fun>
 #   - : [ `A | `B ] = `A
-#                 type 'a int_foo = IF_constr : < foo : int; .. > int_foo
-type 'a int_bar = IB_constr : < bar : int; .. > int_bar
+#                 type _ int_foo = IF_constr : < foo : int; .. > int_foo
+type _ int_bar = IB_constr : < bar : int; .. > int_bar
 #         Characters 98-99:
     (x:<foo:int>)
      ^
