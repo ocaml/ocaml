@@ -46,6 +46,7 @@ Bug Fixes:
 - PR#5436: update object ids on unmarshaling
 - emacs mode: colorization of comments and strings now works correctly
 - PR#5313: ocamlopt -g misses optimizations
+- PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in another thread
 
 Feature wishes:
 - PR#5358: first class modules don't allow "with type" declarations for types
