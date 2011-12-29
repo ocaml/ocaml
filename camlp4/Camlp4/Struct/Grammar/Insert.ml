@@ -256,10 +256,6 @@ module Make (Structure : Structure.S) = struct
                 Some t
             | None -> None ]
       | LocAct _ _ | DeadEnd -> None ]
-    and insert_new =
-      fun
-      [ [s :: sl] -> Node {node = s; son = insert_new sl; brother = DeadEnd}
-      | [] -> LocAct action [] ]
     in
     insert gsymbols tree
   ;
