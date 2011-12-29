@@ -38,16 +38,19 @@ Standard library:
   (PR#5437)
 
 Bug Fixes:
+- PR#4549: Filename.dirname is not handling multiple / on Unix
 - PR#4869: rare collisions between assembly labels for code and data
 - PR#4880: "assert" constructs now show up in the exception stack backtrace
 - PR#5313: ocamlopt -g misses optimizations
 - PR#5322: type abbreviations expanding to a universal type variable
+- PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in
+  another thread
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping
 - PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
 - PR#5436: update object ids on unmarshaling
+- PR#5453: configure doesn't find X11 under Ubuntu/MultiarchSpec
 - emacs mode: colorization of comments and strings now works correctly
-- PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in another thread
 
 Feature wishes:
 - PR#5358: first class modules don't allow "with type" declarations for types

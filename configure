@@ -1312,7 +1312,10 @@ for dir in \
     /lib/usr/lib/X11      \
                           \
     /usr/openwin/lib      \
-    /usr/openwin/share/lib \
+    /usr/openwin/share/lib    \
+                              \
+    /usr/lib/i386-linux-gnu   \
+    /usr/lib/x86_64-linux-gnu \
     ; \
 do
   if test -f $dir/libX11.a || \
