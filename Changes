@@ -25,7 +25,8 @@ Bug fixes:
 - PR#5356: ocamlbuild handling of 'predicates' for ocamlfind
 - PR#5364: wrong compilation of "((val m : SIG1) : SIG2)"
 - PR#5370: ocamldep omits filename in syntax error message
-- PR#5380: Strange sscanf input segfault
+- PR#5380: strange sscanf input segfault
+- PR#5453: configure doesn't find X11 under Ubuntu/MultiarchSpec
 - emacs mode: colorization of comments and strings now works correctly
 
 Feature wishes:
