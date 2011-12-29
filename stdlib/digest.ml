@@ -17,6 +17,8 @@
 
 type t = string
 
+let compare = String.compare
+
 external unsafe_string: string -> int -> int -> t = "caml_md5_string"
 external channel: in_channel -> int -> t = "caml_md5_chan"
 
@@ -48,4 +50,3 @@ let to_hex d =
     String.blit (Printf.sprintf "%02x" (int_of_char d.[i])) 0 result (2*i) 2;
   done;
   result
-;;
