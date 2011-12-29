@@ -40,13 +40,13 @@ Standard library:
 Bug Fixes:
 - PR#4869: rare collisions between assembly labels for code and data
 - PR#4880: "assert" constructs now show up in the exception stack backtrace
+- PR#5313: ocamlopt -g misses optimizations
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping
 - PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
 - PR#5436: update object ids on unmarshaling
 - emacs mode: colorization of comments and strings now works correctly
-- PR#5313: ocamlopt -g misses optimizations
 - PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in another thread
 
 Feature wishes:
@@ -54,6 +54,7 @@ Feature wishes:
   in sub-modules
 - PR#5411: new directive for the toplevel: #load_rec
 - PR#5420: Unix.openfile share mode (Windows)
+- PR#5454: Digest.compare is missing and md5 doc update
 
 Shedding weight:
 * Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
