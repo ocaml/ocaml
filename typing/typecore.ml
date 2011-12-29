@@ -242,7 +242,7 @@ let has_variants p =
 
 
 (* pattern environment *)
-let pattern_variables = ref ([]: (Ident.t * type_expr * Location.t) list)
+let pattern_variables = ref ([]: (Ident.t * type_expr * Location.t * bool (* as-variable *)) list)
 let pattern_force = ref ([] : (unit -> unit) list)
 let pattern_scope = ref (None : Annot.ident option);;
 let allow_modules = ref false
@@ -255,11 +255,11 @@ let reset_pattern scope allow =
   module_variables := [];
 ;;
 
-let enter_variable ?(is_module=false) loc name ty =
-  if List.exists (fun (id, _, _) -> Ident.name id = name) !pattern_variables
+let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty =
+  if List.exists (fun (id, _, _, _) -> Ident.name id = name) !pattern_variables
   then raise(Error(loc, Multiply_bound_variable name));
   let id = Ident.create name in
-  pattern_variables := (id, ty, loc) :: !pattern_variables;
+  pattern_variables := (id, ty, loc, is_as_variable) :: !pattern_variables;
   if is_module then begin
     (* Note: unpack patterns enter a variable of the same name *)
     if not !allow_modules then raise (Error (loc, Modules_not_allowed));
@@ -273,7 +273,7 @@ let enter_variable ?(is_module=false) loc name ty =
 
 let sort_pattern_variables vs =
   List.sort
-    (fun (x,_,_) (y,_,_) -> Pervasives.compare (Ident.name x) (Ident.name y))
+    (fun (x,_,_,_) (y,_,_,_) -> Pervasives.compare (Ident.name x) (Ident.name y))
     vs
 
 let enter_orpat_variables loc env  p1_vs p2_vs =
@@ -283,7 +283,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   and p2_vs = sort_pattern_variables p2_vs in
 
   let rec unify_vars p1_vs p2_vs = match p1_vs, p2_vs with
-      | (x1,t1,l1)::rem1, (x2,t2,l2)::rem2 when Ident.equal x1 x2 ->
+      | (x1,t1,l1,a1)::rem1, (x2,t2,l2,a2)::rem2 when Ident.equal x1 x2 ->
           if x1==x2 then
             unify_vars rem1 rem2
           else begin
@@ -296,9 +296,9 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
-      | (x,_,_)::_, [] -> raise (Error (loc, Orpat_vars x))
-      | [],(x,_,_)::_  -> raise (Error (loc, Orpat_vars x))
-      | (x,_,_)::_, (y,_,_)::_ ->
+      | (x,_,_,_)::_, [] -> raise (Error (loc, Orpat_vars x))
+      | [],(x,_,_,_)::_  -> raise (Error (loc, Orpat_vars x))
+      | (x,_,_,_)::_, (y,_,_,_)::_ ->
           let min_var =
             if Ident.name x < Ident.name y then x
             else y in
@@ -537,7 +537,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let ty_var = build_as_type !env q in
       end_def ();
       generalize ty_var;
-      let id = enter_variable loc name ty_var in
+      let id = enter_variable ~is_as_variable:true loc name ty_var in
       rp {
         pat_desc = Tpat_alias(q, id);
         pat_loc = loc;
@@ -735,11 +735,12 @@ let rec iter3 f lst1 lst2 lst3 =
   | _ ->
       assert false
 
-let add_pattern_variables env =
+let add_pattern_variables ?check ?check_as env =
   let pv = get_ref pattern_variables in
   (List.fold_right
-    (fun (id, ty, loc) env ->
-       let e1 = Env.add_value id {val_type = ty; val_kind = Val_reg; val_loc = loc} env in
+    (fun (id, ty, loc, as_var) env ->
+       let check = if as_var then check_as else check in
+       let e1 = Env.add_value ?check id {val_type = ty; val_kind = Val_reg; val_loc = loc} env in
        Env.add_annot id (Annot.Iref_internal loc) e1
     )
     pv env,
@@ -749,7 +750,7 @@ let type_pattern ~lev env spat scope expected_ty =
   reset_pattern scope true;
   let new_env = ref env in
   let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
-  let new_env, unpacks = add_pattern_variables !new_env in
+  let new_env, unpacks = add_pattern_variables ~check:(fun s -> Warnings.Unused_var_strict s) ~check_as:(fun s -> Warnings.Unused_var s) !new_env in
   (pat, new_env, get_ref pattern_force, unpacks)
 
 let type_pattern_list env spatl scope expected_tys allow =
@@ -771,7 +772,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
-      (fun (id, ty, loc) (pv, env) ->
+      (fun (id, ty, loc, _) (pv, env) ->
          let id' = Ident.create (Ident.name id) in
          ((id', id, ty)::pv,
           Env.add_value id' {val_type = ty;
@@ -801,7 +802,7 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
   pattern_variables := [];
   let (val_env, met_env, par_env) =
     List.fold_right
-      (fun (id, ty, loc) (val_env, met_env, par_env) ->
+      (fun (id, ty, loc, as_var) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty;
                             val_kind = Val_unbound;
                             val_loc = loc;
@@ -810,6 +811,7 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
                             val_kind = Val_self (meths, vars, cl_num, privty);
                             val_loc = loc;
                            }
+            ~check:(fun s -> if as_var then Warnings.Unused_var s else Warnings.Unused_var_strict s)
             met_env,
           Env.add_value id {val_type = ty; val_kind = Val_unbound;
                             val_loc = loc;
@@ -1685,7 +1687,9 @@ and type_expect ?in_function env sexp ty_expected =
         Env.enter_value param {val_type = instance_def Predef.type_int;
                                val_kind = Val_reg;
                                val_loc = loc;
-                              } env in
+                              } env
+          ~check:(fun s -> Warnings.Unused_for_index s)
+      in
       let body = type_statement new_env sbody in
       rue {
         exp_desc = Texp_for(id, low, high, dir, body);
@@ -2589,9 +2593,19 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
 
 (* Typing of let bindings *)
 
-and type_let env rec_flag spat_sexp_list scope allow =
+and type_let ?(check = fun s -> Warnings.Unused_var s) ?(check_strict = fun s -> Warnings.Unused_var_strict s) env rec_flag spat_sexp_list scope allow =
   begin_def();
   if !Clflags.principal then begin_def ();
+
+  let is_fake_let =
+    match spat_sexp_list with
+    | [_, {pexp_desc=Pexp_match({pexp_desc=Pexp_ident(Longident.Lident "*opt*")},_)}] ->
+        true (* the fake let-declaration introduced by fun ?(x = e) -> ... *)
+    | _ ->
+        false
+  in
+  let check = if is_fake_let then check_strict else check in
+
   let spatl =
     List.map
       (fun (spat, sexp) ->
@@ -2644,7 +2658,7 @@ and type_let env rec_flag spat_sexp_list scope allow =
     if is_recursive then new_env else env in
 
   let current_slot = ref None in
-  let warn_unused = Warnings.is_active (Warnings.Unused_value_declaration "") in
+  let warn_unused = Warnings.is_active (check "") || Warnings.is_active (check_strict "") in
   let pat_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:
        - During type checking of the definitions, we capture the 'value_used'
@@ -2656,27 +2670,39 @@ and type_let env rec_flag spat_sexp_list scope allow =
          effectively used, we trigger again all the events recorded in the corresponding
          slot. The effect is to traverse the transitive closure of the graph created
          in the first step.
+
+       We also keep track of whether *all* variables in a given pattern are unused.
+       If this is the case, for local declarations, the issued warning is 26, not 27.
      *)
     List.map
       (fun pat ->
-        if not (is_recursive && warn_unused) then pat, None
+        if not warn_unused then pat, None
         else
+          let some_used = ref false in (* has one of the identifier of this pattern been used? *)
           let slot = ref [] in
-          let used_after_binding () =
-            List.iter
-              (fun (name, vd) -> Env.mark_value_used name vd)
-              (get_ref slot)
-          in
           List.iter
             (fun id ->
               let vd = Env.find_value (Path.Pident id) new_env in (* note: Env.find_value does not trigger the value_used event *)
               let name = Ident.name id in
+              let used = ref false in
+              if not (name = "" || name.[0] = '_' || name.[0] = '#') then
+                add_delayed_check
+                  (fun () ->
+                    if not !used then
+                      Location.prerr_warning vd.val_loc
+                        ((if !some_used then check_strict else check) name)
+                  );
               Env.set_value_used_callback
                 name vd
-                (fun old_callback ->
+                (fun () ->
                   match !current_slot with
                   | Some slot -> slot := (name, vd) :: !slot
-                  | None -> used_after_binding (); old_callback ()
+                  | None ->
+                      List.iter
+                        (fun (name, vd) -> Env.mark_value_used name vd)
+                        (get_ref slot);
+                      used := true;
+                      some_used := true
                 )
             )
             (Typedtree.pat_bound_idents pat);
@@ -2689,7 +2715,7 @@ and type_let env rec_flag spat_sexp_list scope allow =
       (fun (spat, sexp) (pat, slot) ->
         let sexp =
           if rec_flag = Recursive then wrap_unpacks sexp unpacks else sexp in
-        current_slot := slot;
+        if is_recursive then current_slot := slot;
         match pat.pat_type.desc with
         | Tpoly (ty, tl) ->
             begin_def ();
@@ -2723,14 +2749,20 @@ and type_let env rec_flag spat_sexp_list scope allow =
 
 (* Typing of toplevel bindings *)
 
+let type_binding env rec_flag spat_sexp_list scope =
+  Typetexp.reset_type_variables();
+  let (pat_exp_list, new_env, unpacks) =
+    type_let
+      ~check:(fun s -> Warnings.Unused_value_declaration s)
+      ~check_strict:(fun s -> Warnings.Unused_value_declaration s)
+      env rec_flag spat_sexp_list scope false
+  in
+  (pat_exp_list, new_env)
+
 let type_let env rec_flag spat_sexp_list scope =
   let (pat_exp_list, new_env, unpacks) =
     type_let env rec_flag spat_sexp_list scope false in
   (pat_exp_list, new_env)
-
-let type_binding env rec_flag spat_sexp_list scope =
-  Typetexp.reset_type_variables();
-  type_let env rec_flag spat_sexp_list scope
 
 (* Typing of toplevel expressions *)
 

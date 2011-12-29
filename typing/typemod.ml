@@ -382,7 +382,7 @@ and transl_signature env sg =
         match item.psig_desc with
         | Psig_value(name, sdesc) ->
             let desc = Typedecl.transl_value_decl env item.psig_loc sdesc in
-            let (id, newenv) = Env.enter_value name desc env in
+            let (id, newenv) = Env.enter_value ~check:(fun s -> Warnings.Unused_value_declaration s) name desc env in
             let rem = transl_sig newenv srem in
             if List.exists (Ident.equal id) (get_values rem) then rem
             else Tsig_value(id, desc) :: rem
@@ -825,7 +825,7 @@ and type_structure funct_body anchor env sstr scope =
          final_env)
     | {pstr_desc = Pstr_primitive(name, sdesc); pstr_loc = loc} :: srem ->
         let desc = Typedecl.transl_value_decl env loc sdesc in
-        let (id, newenv) = Env.enter_value name desc env in
+        let (id, newenv) = Env.enter_value ~check:(fun s -> Warnings.Unused_value_declaration s) name desc env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (Tstr_primitive(id, desc) :: str_rem,
          Tsig_value(id, desc) :: sig_rem,

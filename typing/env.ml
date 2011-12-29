@@ -511,8 +511,16 @@ let mark_type_used name vd =
   with Not_found -> ()
 
 let set_value_used_callback name vd callback =
-  let old = try Hashtbl.find value_declarations (name, vd.val_loc) with Not_found -> assert false in
-  Hashtbl.replace value_declarations (name, vd.val_loc) (fun () -> callback old)
+  let key = (name, vd.val_loc) in
+  try
+    let old = Hashtbl.find value_declarations key in
+    Hashtbl.replace value_declarations key (fun () -> old (); callback ())
+      (* this is to support cases like:
+               let x = let x = 1 in x in x
+         where the two declarations have the same location
+         (e.g. resulting from Camlp4 expansion of grammar entries) *)
+  with Not_found ->
+    Hashtbl.add value_declarations key callback
 
 let set_type_used_callback name td callback =
   let old = try Hashtbl.find type_declarations (name, td.type_loc) with Not_found -> assert false in
@@ -783,17 +791,14 @@ and check_usage loc id warn tbl =
     if Hashtbl.mem tbl key then ()
     else let used = ref false in
     Hashtbl.add tbl key (fun () -> used := true);
-    !add_delayed_check_forward
-      (fun () ->
-        if not (name = "" || name.[0] = '_' || name.[0] = '#' || !used) then begin
-          used := true;
-          Location.prerr_warning loc (warn name)
-        end
-      )
+    if not (name = "" || name.[0] = '_' || name.[0] = '#')
+    then
+      !add_delayed_check_forward
+        (fun () -> if not !used then Location.prerr_warning loc (warn name))
   end;
 
-and store_value id path decl env =
-  check_usage decl.val_loc id (fun s -> Warnings.Unused_value_declaration s) value_declarations;
+and store_value ?check id path decl env =
+  begin match check with Some f -> check_usage decl.val_loc id f value_declarations | None -> () end;
   { env with
     values = EnvTbl.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
@@ -888,8 +893,8 @@ let _ =
 
 (* Insertion of bindings by identifier *)
 
-let add_value id desc env =
-  store_value id (Pident id) desc env
+let add_value ?check id desc env =
+  store_value ?check id (Pident id) desc env
 
 let add_annot id annot env =
   store_annot id (Pident id) annot env
@@ -926,7 +931,7 @@ let add_local_constraint id info elv env =
 let enter store_fun name data env =
   let id = Ident.create name in (id, store_fun id (Pident id) data env)
 
-let enter_value = enter store_value
+let enter_value ?check = enter (store_value ?check)
 and enter_type = enter store_type
 and enter_exception = enter store_exception
 and enter_module = enter store_module
