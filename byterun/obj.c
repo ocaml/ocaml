@@ -191,7 +191,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_small (1, Forward_tag);
-  Modify (&Field (res, 0), v);
+  Field (res, 0) = v;
   CAMLreturn (res);
 }
 
