@@ -53,6 +53,7 @@ Bug Fixes:
 - emacs mode: colorization of comments and strings now works correctly
 
 Feature wishes:
+- PR#352: new option "-stdin" to make ocaml read stdin as a script
 - PR#5358: first class modules don't allow "with type" declarations for types
   in sub-modules
 - PR#5411: new directive for the toplevel: #load_rec
