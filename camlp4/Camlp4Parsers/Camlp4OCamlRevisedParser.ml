@@ -1782,13 +1782,19 @@ New syntax:\
     ;
     str_item_quot:
       [ [ "#"; n = a_LIDENT; dp = opt_expr -> <:str_item< # $n$ $dp$ >>
-        | st1 = str_item; semi; st2 = SELF -> <:str_item< $st1$; $st2$ >>
+        | st1 = str_item; semi; st2 = SELF ->
+            match st2 with
+            [ <:str_item<>> -> st1
+            | _ -> <:str_item< $st1$; $st2$ >> ]
         | st = str_item -> st
         | -> <:str_item<>> ] ]
     ;
     sig_item_quot:
       [ [ "#"; n = a_LIDENT; dp = opt_expr -> <:sig_item< # $n$ $dp$ >>
-        | sg1 = sig_item; semi; sg2 = SELF -> <:sig_item< $sg1$; $sg2$ >>
+        | sg1 = sig_item; semi; sg2 = SELF ->
+            match sg2 with
+            [ <:sig_item<>> -> sg2
+            | _ -> <:sig_item< $sg1$; $sg2$ >> ]
         | sg = sig_item -> sg
         | -> <:sig_item<>> ] ]
     ;
