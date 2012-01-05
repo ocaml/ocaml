@@ -1879,12 +1879,17 @@ New syntax:\
     ;
     class_str_item_quot:
       [ [ x1 = class_str_item; semi; x2 = SELF ->
-          <:class_str_item< $x1$; $x2$ >>
+          match x2 with
+          [ <:class_str_item<>> -> x1
+          | _ -> <:class_str_item< $x1$; $x2$ >> ]
         | x = class_str_item -> x
         | -> <:class_str_item<>> ] ]
     ;
     class_sig_item_quot:
-      [ [ x1 = class_sig_item; semi; x2 = SELF -> <:class_sig_item< $x1$; $x2$ >>
+      [ [ x1 = class_sig_item; semi; x2 = SELF ->
+          match x2 with
+          [ <:class_sig_item<>> -> x1
+          | _ -> <:class_sig_item< $x1$; $x2$ >> ]
         | x = class_sig_item -> x
         | -> <:class_sig_item<>> ] ]
     ;
