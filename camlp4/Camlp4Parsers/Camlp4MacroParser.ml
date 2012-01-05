@@ -52,6 +52,7 @@ Added statements:
      DEFINE <lident> = <expression> IN <expression>
      __FILE__
      __LOCATION__
+     LOCATION_OF <parameter>
 
   In patterns:
 
@@ -84,6 +85,10 @@ Added statements:
 
   The expression __FILE__ returns the current compiled file name.
   The expression __LOCATION__ returns the current location of itself.
+  If used inside a macro, it returns the location where the macro is
+  called.
+  The expression (LOCATION_OF parameter) returns the location of the given
+  macro parameter. It cannot be used outside a macro definition.
 
 *)
 
@@ -151,6 +156,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       [ <:expr< $lid:x$ >> | <:expr< $uid:x$ >> as e ->
           try List.assoc x env with
           [ Not_found -> super#expr e ]
+      | <:expr@_loc< LOCATION_OF $lid:x$ >> | <:expr@_loc< LOCATION_OF $uid:x$ >> as e ->
+          try
+            let loc = Ast.loc_of_expr (List.assoc x env) in
+            let (a, b, c, d, e, f, g, h) = Loc.to_tuple loc in
+            <:expr< Loc.of_tuple
+              ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
+               $`int:e$, $`int:f$, $`int:g$,
+               $if h then <:expr< True >> else <:expr< False >> $) >>
+          with [ Not_found -> super#expr e ]
       | e -> super#expr e ];
 
     method patt =
@@ -387,15 +401,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "DEFINE"; i = LIDENT; "="; def = expr; "IN"; body = expr ->
             (new subst _loc [(i, def)])#expr body ] ]
     ;
-    expr: LEVEL "simple"
-      [ [ LIDENT "__FILE__" -> <:expr< $`str:Loc.file_name _loc$ >>
-        | LIDENT "__LOCATION__" ->
-            let (a, b, c, d, e, f, g, h) = Loc.to_tuple _loc in
-            <:expr< Loc.of_tuple
-                ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
-                 $`int:e$, $`int:f$, $`int:g$,
-                 $if h then <:expr< True >> else <:expr< False >> $) >> ] ]
-    ;
     patt:
       [ [ "IFDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; endif ->
             if is_defined i then p1 else p2
@@ -434,12 +439,20 @@ module MakeNothing (AstFilters : Camlp4.Sig.AstFilters) = struct
  open AstFilters;
  open Ast;
 
- value remove_nothings =
+ (* Remove NOTHING and expanse __FILE__ and __LOCATION__ *)
+ value map_expr =
    fun
    [ <:expr< $e$ NOTHING >> | <:expr< fun $ <:patt< NOTHING >> $ -> $e$ >> -> e
+   | <:expr@_loc< $lid:"__FILE__"$ >> -> <:expr< $`str:Loc.file_name _loc$ >>
+   | <:expr@_loc< $lid:"__LOCATION__"$ >> ->
+     let (a, b, c, d, e, f, g, h) = Loc.to_tuple _loc in
+     <:expr< Loc.of_tuple
+       ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
+        $`int:e$, $`int:f$, $`int:g$,
+        $if h then <:expr< True >> else <:expr< False >> $) >>
    | e -> e];
 
- register_str_item_filter (Ast.map_expr remove_nothings)#str_item;
+ register_str_item_filter (Ast.map_expr map_expr)#str_item;
 
 end;
 
