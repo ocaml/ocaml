@@ -35,7 +35,7 @@ val create : ?seed:int -> int -> ('a, 'b) t
    The optional [seed] parameter (an integer) can be given to
    diversify the hash function used to access the returned table.
    With high probability, hash tables created with different seeds
-   have different collision patterns.  In Web-facing applications 
+   have different collision patterns.  In Web-facing applications
    for instance, it is recommended to create hash tables with a
    randomly-chosen seed.  This prevents a denial-of-service attack
    whereas a malicious user sends input crafted to create many
@@ -124,7 +124,8 @@ type statistics = {
 val stats : ('a, 'b) t -> statistics
 (** [Hashtbl.stats tbl] returns statistics about the table [tbl]:
    number of buckets, size of the biggest bucket, distribution of
-   buckets by size. *)
+   buckets by size.
+   @since 3.13.0 *)
 
 (** {6 Functorial interface} *)
 
@@ -226,7 +227,7 @@ module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
     The operations perform similarly to those of the generic
     interface, but use the seeded hashing and equality functions
     specified in the functor argument [H] instead of generic
-    equality and hashing. 
+    equality and hashing.
     @since 3.13.0 *)
 
 
@@ -263,10 +264,6 @@ val hash_param : int -> int -> 'a -> int
 
 val seeded_hash_param : int -> int -> int -> 'a -> int
 (** A variant of {!Hashtbl.hash_param} that is further parameterized by
-   an integer seed.  Usage: 
+   an integer seed.  Usage:
    [Hashtbl.seeded_hash_param meaningful total seed x].
    @since 3.13.0 *)
-
-
-
-
