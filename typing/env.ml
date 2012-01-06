@@ -556,11 +556,15 @@ let lookup_label lid env =
 
 let lookup_class lid env =
   let (_, desc) as r = lookup_class lid env in
-  mark_type_path env desc.cty_path;
+  (* special support for Typeclass.unbound_class *)
+  if Path.name desc.cty_path = "" then ignore (lookup_type lid env)
+  else mark_type_path env desc.cty_path;
   r
 
 let lookup_cltype lid env =
   let (_, desc) as r = lookup_cltype lid env in
+  if Path.name desc.clty_path = "" then ignore (lookup_type lid env)
+  else mark_type_path env desc.clty_path;
   mark_type_path env desc.clty_path;
   r
 

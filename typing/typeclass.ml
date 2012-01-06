@@ -805,10 +805,16 @@ and class_expr cl_num val_env met_env scl =
       let pv =
         List.map
           (function (id, id', ty) ->
+            let path = Pident id' in
+            let vd = Env.find_value path val_env' (* do not mark the value as being used *) in
             (id,
-             Typecore.type_exp val_env'
-               {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
-                pexp_loc = Location.none}))
+             {
+              exp_desc = Texp_ident(path, vd);
+              exp_loc = Location.none;
+              exp_type = Ctype.instance val_env' vd.val_type;
+              exp_env = val_env'
+             })
+          )
           pv
       in
       let rec not_function = function
@@ -1019,7 +1025,7 @@ let rec approx_description ct =
 
 (*******************************)
 
-let temp_abbrev env id arity =
+let temp_abbrev loc env id arity =
   let params = ref [] in
   for i = 1 to arity do
     params := Ctype.newvar () :: !params
@@ -1034,7 +1040,7 @@ let temp_abbrev env id arity =
        type_manifest = Some ty;
        type_variance = List.map (fun _ -> true, true, true) !params;
        type_newtype_level = None;
-       type_loc = Location.none;
+       type_loc = loc;
       }
       env
   in
@@ -1044,8 +1050,8 @@ let rec initial_env define_class approx
     (res, env) (cl, id, ty_id, obj_id, cl_id) =
   (* Temporary abbreviations *)
   let arity = List.length (fst cl.pci_params) in
-  let (obj_params, obj_ty, env) = temp_abbrev env obj_id arity in
-  let (cl_params, cl_ty, env) = temp_abbrev env cl_id arity in
+  let (obj_params, obj_ty, env) = temp_abbrev cl.pci_loc env obj_id arity in
+  let (cl_params, cl_ty, env) = temp_abbrev cl.pci_loc env cl_id arity in
 
   (* Temporary type for the class constructor *)
   let constr_type = approx cl.pci_expr in
