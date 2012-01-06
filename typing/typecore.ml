@@ -772,13 +772,14 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
-      (fun (id, ty, loc, _) (pv, env) ->
+      (fun (id, ty, loc, as_var) (pv, env) ->
+         let check s = if as_var then Warnings.Unused_var s else Warnings.Unused_var_strict s in
          let id' = Ident.create (Ident.name id) in
          ((id', id, ty)::pv,
           Env.add_value id' {val_type = ty;
                              val_kind = Val_ivar (Immutable, cl_num);
                              val_loc = loc;
-                            }
+                            } ~check
             env))
       !pattern_variables ([], met_env)
   in
