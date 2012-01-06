@@ -5,7 +5,7 @@ TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 SRC=../../release
-OCAMLDOC=$(SRC)/ocamldoc/ocamldoc.opt -hide Pervasives 
+OCAMLDOC=$(SRC)/ocamldoc/ocamldoc.opt -hide Pervasives
 HEVEA=hevea
 HACHA=hacha
 INFO=-fix -exec xxdate.exe -info -w 79
@@ -67,7 +67,8 @@ html: files
 
 info: files
 	cd infoman; rm -f ocaml.info*; \
-	${HEVEA} ${INFO} -o ocaml.info -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
+	${HEVEA} ${INFO} -o ocaml.info.body -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
+	cat manual.info.header infoman/ocaml.info.body > infoman/ocaml.info
 	cd infoman; rm -f ocaml.info.tmp; gzip -9 ocaml.info*
 
 text: files
