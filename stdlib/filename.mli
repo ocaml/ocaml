@@ -59,17 +59,19 @@ val chop_extension : string -> string
 
 val basename : string -> string
 (** Split a file name into directory name / base file name.
-   [concat (dirname name) (basename name)] returns a file name
-   which is equivalent to [name]. Moreover, after setting the
-   current directory to [dirname name] (with {!Sys.chdir}),
+   If [name] is a valid file name, then [concat (dirname name) (basename name)]
+   returns a file name which is equivalent to [name]. Moreover,
+   after setting the current directory to [dirname name] (with {!Sys.chdir}),
    references to [basename name] (which is a relative file name)
    designate the same file as [name] before the call to {!Sys.chdir}.
 
-   The result is not specified if the argument is not a valid file name
-   (for example, under Unix if there is a NUL character in the string). *)
+   This function conforms to the specification of POSIX.1-2008 for the
+   [basename] utility. *)
 
 val dirname : string -> string
-(** See {!Filename.basename}. *)
+(** See {!Filename.basename}.
+   This function conforms to the specification of POSIX.1-2008 for the
+   [dirname] utility. *)
 
 val temp_file : ?temp_dir: string -> string -> string -> string
 (** [temp_file prefix suffix] returns the name of a
