@@ -30,6 +30,11 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
@@ -455,5 +460,9 @@ CAMLextern void caml_remove_generational_global_root (value *);
    previously registered with [caml_register_generational_global_root]. */
 
 CAMLextern void caml_modify_generational_global_root(value *r, value newval);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_MEMORY_H */

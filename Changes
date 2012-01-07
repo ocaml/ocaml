@@ -38,7 +38,8 @@ Standard library:
   (PR#5437)
 
 Bug Fixes:
-* PR#4549: Filename.dirname is not handling multiple / on Unix
+* PR#5467: no extern "C" into ocaml C-stub headers
+- PR#4549: Filename.dirname is not handling multiple / on Unix
 - PR#4869: rare collisions between assembly labels for code and data
 - PR#4880: "assert" constructs now show up in the exception stack backtrace
 - PR#5313: ocamlopt -g misses optimizations
