@@ -36,6 +36,8 @@ Standard library:
       with user-provided hash functions.
 * Arg: options with empty doc strings are no longer included in the usage string
   (PR#5437)
+* Scanf: new function "unescaped" (PR#3888)
+* String: new function "map" (PR#3888)
 
 Bug Fixes:
 * PR#5467: no extern "C" into ocaml C-stub headers

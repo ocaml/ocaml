@@ -111,7 +111,7 @@ val escaped : string -> string
    represented by escape sequences, following the lexical
    conventions of OCaml.  If there is no special
    character in the argument, return the original string itself,
-   not a copy. *)
+   not a copy. Its inverse function is Scanf.unescaped. *)
 
 val index : string -> char -> int
 (** [String.index s c] returns the character number of the first

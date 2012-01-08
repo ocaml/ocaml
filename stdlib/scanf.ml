@@ -1488,7 +1488,8 @@ let bscanf ib = kscanf ib scanf_bad_input;;
 
 let fscanf ic = bscanf (Scanning.from_channel ic);;
 
-let sscanf s = bscanf (Scanning.from_string s);;
+let sscanf : string -> ('a, 'b, 'c, 'd) scanner
+  = fun s -> bscanf (Scanning.from_string s);;
 
 let scanf fmt = bscanf Scanning.stdib fmt;;
 
@@ -1520,6 +1521,9 @@ let string_to_String s =
 let format_from_string s fmt =
   sscanf_format (string_to_String s) fmt (fun x -> x)
 ;;
+
+let unescaped s =
+  sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
 
 (*
  Local Variables:

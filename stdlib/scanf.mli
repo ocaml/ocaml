@@ -509,8 +509,14 @@ val format_from_string :
     @since 3.10.0
 *)
 
+val unescaped : string -> string
+(** Return a copy of the argument with escape sequences, following the
+    lexical conventions of OCaml, replaced by their corresponding
+    special characters.  If there is no escape sequence in the
+    argument, still return a copy, contrary to String.escaped. *)
+
 (*
- Local Variables:
+  Local Variables:
   compile-command: "cd ..; make world"
   End:
 *)
