@@ -53,19 +53,17 @@ install::
 clean::
 	rm -f libcamlrun_shared.so
 
-.SUFFIXES: .d.c .d.o .pic.c .pic.o
+.SUFFIXES: .d.o .pic.o
 
-.c.d.c:
+.c.d.o:
 	ln -s -f $*.c $*.d.c
-
-.d.c.d.o:
 	$(CC) -c $(DFLAGS) $*.d.c
+	rm $*.d.c
 
-.c.pic.c:
+.c.pic.o:
 	ln -s -f $*.c $*.pic.c
-
-.pic.c.pic.o:
 	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $*.pic.c
+	rm $*.pic.c
 
 clean::
 	rm -f *.pic.c *.d.c
