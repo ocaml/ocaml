@@ -1793,7 +1793,7 @@ New syntax:\
       [ [ "#"; n = a_LIDENT; dp = opt_expr -> <:sig_item< # $n$ $dp$ >>
         | sg1 = sig_item; semi; sg2 = SELF ->
             match sg2 with
-            [ <:sig_item<>> -> sg2
+            [ <:sig_item<>> -> sg1
             | _ -> <:sig_item< $sg1$; $sg2$ >> ]
         | sg = sig_item -> sg
         | -> <:sig_item<>> ] ]
