@@ -123,6 +123,8 @@ type control =
        compaction is triggered at the end of each major GC cycle
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
+       If compaction is permanently disabled, it is strongly suggested
+       to set [allocation_policy] to 1.
        Default: 500. *)
 
     mutable stack_limit : int;
