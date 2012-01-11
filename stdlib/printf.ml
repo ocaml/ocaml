@@ -217,7 +217,7 @@ let iter_on_format_args fmt add_conv add_char =
   and scan_conv skip i =
     if i > lim then incomplete_format fmt else
     match Sformat.unsafe_get fmt i with
-    | '%' | '!' | ',' -> succ i
+    | '%' | '@' | '!' | ',' -> succ i
     | 's' | 'S' | '[' -> add_conv skip i 's'
     | 'c' | 'C' -> add_conv skip i 'c'
     | 'd' | 'i' |'o' | 'u' | 'x' | 'X' | 'N' -> add_conv skip i 'i'
@@ -505,8 +505,10 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
 
   and scan_conv spec n widths i =
     match Sformat.unsafe_get fmt i with
-    | '%' ->
-      cont_s n "%" (succ i)
+    | '%' | '@' as c ->
+      cont_s n (String.make 1 c) (succ i)
+    | '!' -> cont_f n (succ i)
+    | ',' -> cont_s n "" (succ i)
     | 's' | 'S' as conv ->
       let (x : string) = get_arg spec n in
       let x = if conv = 's' then x else "\"" ^ String.escaped x ^ "\"" in
@@ -515,6 +517,8 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
         if i = succ pos then x else
         format_string (extract_format fmt pos i widths) x in
       cont_s (next_index spec n) s (succ i)
+    | '[' as conv ->
+      bad_conversion_format fmt i conv
     | 'c' | 'C' as conv ->
       let (x : char) = get_arg spec n in
       let s =
@@ -546,6 +550,8 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let n = Sformat.succ_index (get_index spec n) in
       let arg = get_arg Spec_none n in
       cont_a (next_index spec n) printer arg (succ i)
+    | 'r' as conv ->
+      bad_conversion_format fmt i conv
     | 't' ->
       let printer = get_arg spec n in
       cont_t (next_index spec n) printer (succ i)
@@ -570,8 +576,6 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
         let s = format_int (extract_format_int 'n' fmt pos i widths) x in
         cont_s (next_index spec n) s (succ i)
       end
-    | ',' -> cont_s n "" (succ i)
-    | '!' -> cont_f n (succ i)
     | '{' | '(' as conv (* ')' '}' *) ->
       let (xf : ('a, 'b, 'c, 'd, 'e, 'f) format6) = get_arg spec n in
       let i = succ i in

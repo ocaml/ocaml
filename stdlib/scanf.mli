@@ -232,21 +232,14 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
 (** {6 Format string description} *)
 
-(** The format string is a character string which contains three types of
+(** The format is a character string which contains three types of
     objects:
     - plain characters, which are simply matched with the characters of the
       input (with a special case for space and line feed, see {!Scanf.space}),
     - conversion specifications, each of which causes reading and conversion of
       one argument for the function [f] (see {!Scanf.conversion}),
     - scanning indications to specify boundaries of tokens
-      (see scanning {!Scanf.indication}).
-
-   As a special convention for format strings, the [\@] character introduces
-   an escape for both characters [\@] and [%]: in a format string,
-   [\@\@] and [\@%] are respectively equivalent to the plain characters [\@]
-   and [%].
-   @since 3.13
-*)
+      (see scanning {!Scanf.indication}). *)
 
 (** {7:space The space character in format strings} *)
 
@@ -269,157 +262,148 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
 (** {7:conversion Conversion specifications in format strings} *)
 
-(** Conversion specifications have the following form:
+(** Conversion specifications consist in the [%] character, followed by
+    an optional flag, an optional field width, and followed by one or
+    two conversion characters. The conversion characters and their
+    meanings are:
 
-   [% \[flags\] \[width\] \[.precision\] type]
+    - [d]: reads an optionally signed decimal integer.
+    - [i]: reads an optionally signed integer
+      (usual input conventions for decimal ([0-9]+), hexadecimal
+       ([0x[0-9a-f]+] and [0X[0-9A-F]+]), octal ([0o[0-7]+]), and binary
+       ([0b[0-1]+]) notations are understood).
+    - [u]: reads an unsigned decimal integer.
+    - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-fA-F]+]).
+    - [o]: reads an unsigned octal integer ([[0-7]+]).
+    - [s]: reads a string argument that spreads as much as possible, until the
+      following bounding condition holds: {ul
+      {- a whitespace has been found (see {!Scanf.space}),}
+      {- a scanning indication (see scanning {!Scanf.indication}) has been
+         encountered,}
+      {- the end-of-input has been reached.}}
+      Hence, this conversion always succeeds: it returns an empty
+      string, if the bounding condition holds when the scan begins.
+    - [S]: reads a delimited string argument (delimiters and special
+      escaped characters follow the lexical conventions of Caml).
+    - [c]: reads a single character. To test the current input character
+      without reading it, specify a null field width, i.e. use
+      specification [%0c]. Raise [Invalid_argument], if the field width
+      specification is greater than 1.
+    - [C]: reads a single delimited character (delimiters and special
+      escaped characters follow the lexical conventions of Caml).
+    - [f], [e], [E], [g], [G]: reads an optionally signed
+      floating-point number in decimal notation, in the style [dddd.ddd
+      e/E+-dd].
+    - [F]: reads a floating point number according to the lexical
+      conventions of Caml (hence the decimal point is mandatory if the
+      exponent part is not mentioned).
+    - [B]: reads a boolean argument ([true] or [false]).
+    - [b]: reads a boolean argument (for backward compatibility; do not use
+      in new programs).
+    - [ld], [li], [lu], [lx], [lX], [lo]: reads an [int32] argument to
+      the format specified by the second letter for regular integers.
+    - [nd], [ni], [nu], [nx], [nX], [no]: reads a [nativeint] argument to
+      the format specified by the second letter for regular integers.
+    - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
+      the format specified by the second letter for regular integers.
+    - [\[ range \]]: reads characters that matches one of the characters
+      mentioned in the range of characters [range] (or not mentioned in
+      it, if the range starts with [^]). Reads a [string] that can be
+      empty, if the next input character does not match the range. The set of
+      characters from [c1] to [c2] (inclusively) is denoted by [c1-c2].
+      Hence, [%\[0-9\]] returns a string representing a decimal number
+      or an empty string if no decimal digit is found; similarly,
+      [%\[\\048-\\057\\065-\\070\]] returns a string of hexadecimal digits.
+      If a closing bracket appears in a range, it must occur as the
+      first character of the range (or just after the [^] in case of
+      range negation); hence [\[\]\]] matches a [\]] character and
+      [\[^\]\]] matches any character that is not [\]].
+      Use [%%] and [%\@] to include a [%] or a [\@] in a range.
+    - [r]: user-defined reader. Takes the next [ri] formatted input function and
+      applies it to the scanning buffer [ib] to read the next argument. The
+      input function [ri] must therefore have type [Scanning.in_channel -> 'a] and
+      the argument read has type ['a].
+    - [\{ fmt %\}]: reads a format string argument.
+      The format string read must have the same type as the format string
+      specification [fmt].
+      For instance, ["%{ %i %}"] reads any format string that can read a value of
+      type [int]; hence, if [s] is the string ["fmt:\"number is %u\""], then
+      [Scanf.sscanf s "fmt: %{%i%}"] succeeds and returns the format string
+      ["number is %u"].
+    - [\( fmt %\)]: scanning format substitution.
+      Reads a format string and then goes on scanning with the format string
+      read, instead of using [fmt].
+      The format string read must have the same type as the format string
+      specification [fmt] that it replaces.
+      For instance, ["%( %i %)"] reads any format string that can read a value
+      of type [int].
+      Returns the format string read, and the value read using the format
+      string read.
+      Hence, if [s] is the string ["\"%4d\"1234.00"], then
+      [Scanf.sscanf s "%(%i%)" (fun fmt i -> fmt, i)] evaluates to
+      [("%4d", 1234)].
+      If the special flag [_] is used, the conversion discards the
+      format string read and only returns the value read with the format
+      string read.
+      Hence, if [s] is the string ["\"%4d\"1234.00"], then
+      [Scanf.sscanf s "%_(%i%)"] is simply equivalent to
+      [Scanf.sscanf "1234.00" "%4d"].
+    - [l]: returns the number of lines read so far.
+    - [n]: returns the number of characters read so far.
+    - [N] or [L]: returns the number of tokens read so far.
+    - [!]: matches the end of input condition.
+    - [%]: matches one [%] character in the input.
+    - [\@]: matches one [\@] character in the input.
+    - [,]: does nothing.
 
-   In short, a conversion specification consists in the [%] character,
-   followed by optional modifiers, and a type which is made of one or
-   several characters.
+    Following the [%] character that introduces a conversion, there may be
+    the special flag [_]: the conversion that follows occurs as usual,
+    but the resulting value is discarded.
+    For instance, if [f] is the function [fun i -> i + 1], and [s] is the
+    string ["x = 1"], then [Scanf.sscanf s "%_s = %i" f] returns [2].
 
-   The types and their meanings are:
+    The field width is composed of an optional integer literal
+    indicating the maximal width of the token to read.
+    For instance, [%6d] reads an integer, having at most 6 decimal digits;
+    [%4f] reads a float with at most 4 characters; and [%8[\\000-\\255]]
+    returns the next 8 characters (or all the characters still available,
+    if fewer than 8 characters are available in the input).
 
-   - [d]: reads an optionally signed decimal integer.
-   - [i]: reads an optionally signed integer
-     (usual input conventions for decimal ([0-9]+), hexadecimal
-      ([0x[0-9a-f]+] and [0X[0-9A-F]+]), octal ([0o[0-7]+]), and binary
-      ([0b[0-1]+]) notations are understood).
-   - [u]: reads an unsigned decimal integer.
-   - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-f]+] or [[0-9A-F]+]).
-   - [o]: reads an unsigned octal integer ([[0-7]+]).
-   - [s]: reads a string argument that spreads as much as possible, until
-     the following bounding conditions holds:
-     {ul
-       {- a whitespace has been found (see {!Scanf.space}),}
-       {- a scanning indication has been encountered
-          (see scanning {!Scanf.indication}),}
-       {- the end-of-input has been reached.}
-     }
-     Hence, the [%s] conversion always succeeds: it returns an empty
-     string, if the bounding condition holds when the scan begins.
-   - [S]: reads a delimited string argument (delimiters and special
-     escaped characters follow the lexical conventions of OCaml).
-   - [c]: reads a single character. To test the current input character
-     without reading it, specify a null field width, i.e. use
-     specification [%0c]. Raise [Invalid_argument], if the field width
-     specification is greater than 1.
-   - [C]: reads a single delimited character (delimiters and special
-     escaped characters follow the lexical conventions of OCaml).
-   - [f], [e], [E], [g], [G]: reads an optionally signed
-     floating-point number in decimal notation, in the style [dddd.ddd
-     e/E+-dd].
-   - [F]: reads a floating point number according to the lexical
-     conventions of OCaml (hence the decimal point is mandatory if the
-     exponent part is not mentioned).
-   - [B]: reads a boolean argument ([true] or [false]).
-   - [b]: reads a boolean argument (for backward compatibility; do not use
-     in new programs).
-   - [ld], [li], [lu], [lx], [lX], [lo]: reads an [int32] argument to
-     the format specified by the second letter for regular integers.
-   - [nd], [ni], [nu], [nx], [nX], [no]: reads a [nativeint] argument to
-     the format specified by the second letter for regular integers.
-   - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
-     the format specified by the second letter for regular integers.
-   - [\[ range \]]: reads characters that matches one of the characters
-     mentioned in the range of characters [range] (or not mentioned in
-     it, if the range starts with [^]). Reads a [string] that can be
-     empty, if the next input character does not match the range. The set of
-     characters from [c1] to [c2] (inclusively) is denoted by [c1-c2].
-     Hence, [%\[0-9\]] returns a string representing a decimal number
-     or an empty string if no decimal digit is found; similarly,
-     [%\[\\048-\\057\\065-\\070\]] returns a string of hexadecimal digits.
-     If a closing bracket appears in a range, it must occur as the
-     first character of the range (or just after the [^] in case of
-     range negation); hence [\[\]\]] matches a [\]] character and
-     [\[^\]\]] matches any character that is not [\]].
-   - [r]: user-defined reader. Takes the next [ri] formatted input function and
-     applies it to the scanning buffer [ib] to read the next argument. The
-     input function [ri] must therefore have type [Scanning.in_channel -> 'a] and
-     the argument read has type ['a].
-   - [\{ fmt %\}]: reads a format string argument.
-     The format string read must have the same type as the format string
-     specification [fmt].
-     For instance, ["%{ %i %}"] reads any format string that can read a value of
-     type [int]; hence, if [s] is the string ["fmt:\"number is %u\""], then
-     [Scanf.sscanf s "fmt: %{%i%}"] succeeds and returns the format string
-     ["number is %u"].
-   - [\( fmt %\)]: scanning format substitution.
-     Reads a format string and then goes on scanning with the format string
-     read, instead of using [fmt].
-     The format string read must have the same type as the format string
-     specification [fmt] that it replaces.
-     For instance, ["%( %i %)"] reads any format string that can read a value
-     of type [int].
-     Returns the format string read, and the value read using the format
-     string read.
-     Hence, if [s] is the string ["\"%4d\"1234.00"], then
-     [Scanf.sscanf s "%(%i%)" (fun fmt i -> fmt, i)] evaluates to
-     [("%4d", 1234)].
-     If the special flag [_] is used, the conversion discards the
-     format string read and only returns the value read with the format
-     string read.
-     Hence, if [s] is the string ["\"%4d\"1234.00"], then
-     [Scanf.sscanf s "%_(%i%)"] is simply equivalent to
-     [Scanf.sscanf "1234.00" "%4d"].
-   - [l]: returns the number of lines read so far.
-   - [n]: returns the number of characters read so far.
-   - [N] or [L]: returns the number of tokens read so far.
-   - [!]: matches the end of input condition.
-   - [%]: matches one [%] character in the input.
-   - [,]: the no-op delimiter for conversion specifications.
+    Notes:
 
-   Following the [%] character that introduces a conversion, there may be
-   the special flag [_]: the conversion that follows occurs as usual,
-   but the resulting value is discarded.
-   For instance, if [f] is the function [fun i -> i + 1], and [s] is the
-   string ["x = 1"], then [Scanf.sscanf s "%_s = %i" f] returns [2].
+    - as mentioned above, a [%s] conversion always succeeds, even if there is
+      nothing to read in the input: in this case, it simply returns [""].
 
-   The optional [width] is an integer literal indicating the maximal width
-   of the token to read.
-   For instance, [%6d] reads an integer, having at most 6 decimal digits;
-   [%4f] reads a float with at most 4 characters; and [%8\[\\000-\\255\]]
-   returns the next 8 characters (or all the characters still available,
-   if fewer than 8 characters are available in the input).
+    - in addition to the relevant digits, ['_'] characters may appear
+    inside numbers (this is reminiscent to the usual Caml lexical
+    conventions). If stricter scanning is desired, use the range
+    conversion facility instead of the number conversions.
 
-   The optional [precision] is a dot [.] followed by an integer literal
-   indicating the maximum number of digits that follow the decimal point in
-   the [%f], [%e], and [%E] conversions. For instance, [%.4f] reads a
-   [float] with at most 4 fractional digits.
-
-   Notes:
-
-   - as mentioned above, the [%s] conversion always succeeds, even if there is
-     nothing to read in the input: in this case, it simply returns [""].
-
-   - in addition to the relevant digits, ['_'] characters may appear
-   inside numbers (this is reminiscent to the usual OCaml lexical
-   conventions). If stricter scanning is desired, use the range
-   conversion facility instead of the number conversions.
-
-   - the [scanf] facility is not intended for heavy duty lexical
-   analysis and parsing. If it appears not expressive enough for your
-   needs, several alternative exists: regular expressions (module
-   [Str]), stream parsers, [ocamllex]-generated lexers,
-   [ocamlyacc]-generated parsers. *)
+    - the [scanf] facility is not intended for heavy duty lexical
+    analysis and parsing. If it appears not expressive enough for your
+    needs, several alternative exists: regular expressions (module
+    [Str]), stream parsers, [ocamllex]-generated lexers,
+    [ocamlyacc]-generated parsers. *)
 
 (** {7:indication Scanning indications in format strings} *)
 
 (** Scanning indications appear just after the string conversions [%s]
-    and [%\[ range \]] to delimit the end of the token. A scanning
+    and [%[ range ]] to delimit the end of the token. A scanning
     indication is introduced by a [\@] character, followed by some
-    literal character [c]. It means that the string token should end
+    plain character [c]. It means that the string token should end
     just before the next matching [c] (which is skipped). If no [c]
     character is encountered, the string token spreads as much as
     possible. For instance, ["%s@\t"] reads a string up to the next
-    tab character or up to the end of input.
-
-    When it does not introduce a scanning indication, the [\@] character
-    introduces an escape for the next character: [\@c] is treated as a plain
-    [c] character.
+    tab character or to the end of input. If a [\@] character appears
+    anywhere else in the format string, it is treated as a plain character.
 
     Note:
 
-    - the scanning indications introduce slight differences in the syntax of
+    - As usual in format strings, [%] characters must be escaped using [%%]
+      and [%\@] is equivalent to [\@]; this rule still holds within range
+      specifications and scanning indications.
+      For instance, ["%s@%%"] reads a string up to the next [%] character.
+    - The scanning indications introduce slight differences in the syntax of
     [Scanf] format strings, compared to those used for the [Printf]
     module. However, the scanning indications are similar to those used in
     the [Format] module; hence, when producing formatted text to be scanned
@@ -513,10 +497,6 @@ val unescaped : string -> string
 (** Return a copy of the argument with escape sequences, following the
     lexical conventions of OCaml, replaced by their corresponding
     special characters.  If there is no escape sequence in the
-    argument, still return a copy, contrary to String.escaped. *)
-
-(*
-  Local Variables:
-  compile-command: "cd ..; make world"
-  End:
+    argument, still return a copy, contrary to String.escaped.
+    @since 3.13.0
 *)
