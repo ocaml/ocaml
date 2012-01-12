@@ -314,7 +314,8 @@ external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
     and [y] are used to determine the quadrant of the result.
     Result is in radians and is between [-pi] and [pi]. *)
 
-external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot" "float"
+external hypot : float -> float -> float
+               = "caml_hypot_float" "caml_hypot" "float"
 (** [hypot x y] returns [sqrt(x *. x + y *. y)], that is, the length
   of the hypotenuse of a right-angled triangle with sides of length
   [x] and [y], or, equivalently, the distance of the point [(x,y)]
@@ -344,11 +345,13 @@ external floor : float -> float = "caml_floor_float" "floor" "float"
 external abs_float : float -> float = "%absfloat"
 (** [abs_float f] returns the absolute value of [f]. *)
 
-external copysign : float -> float -> float = "caml_copysign_float" "caml_copysign" "float"
+external copysign : float -> float -> float
+                  = "caml_copysign_float" "caml_copysign" "float"
 (** [copysign x y] returns a float whose absolute value is that of [x]
   and whose sign is that of [y].  If [x] is [nan], returns [nan].
   If [y] is [nan], returns either [x] or [-. x], but it is not
-  specified which.  *)
+  specified which.
+  @since 3.13.0  *)
 
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
 (** [mod_float a b] returns the remainder of [a] with respect to
