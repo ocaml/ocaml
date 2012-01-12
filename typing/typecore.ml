@@ -2419,6 +2419,7 @@ and type_application env funct sargs =
 
 and type_construct env loc lid sarg explicit_arity ty_expected =
   let constr = Typetexp.find_constructor env loc lid in
+  Env.mark_constructor env (Longident.last lid) constr;
   let sargs =
     match sarg with
       None -> []

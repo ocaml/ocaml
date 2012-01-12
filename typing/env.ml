@@ -32,6 +32,8 @@ let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t = Has
 
 let type_declarations = Hashtbl.create 16
 
+let used_constructors : (string * Location.t * string, (unit -> unit)) Hashtbl.t = Hashtbl.create 16
+
 type error =
     Not_an_interface of string
   | Wrong_version_interface of string * string
@@ -503,11 +505,15 @@ and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
 let mark_value_used name vd =
-  try Hashtbl.find value_declarations (name, vd.val_loc) ();
+  try Hashtbl.find value_declarations (name, vd.val_loc) ()
   with Not_found -> ()
 
 let mark_type_used name vd =
-  try Hashtbl.find type_declarations (name, vd.type_loc) ();
+  try Hashtbl.find type_declarations (name, vd.type_loc) ()
+  with Not_found -> ()
+
+let mark_constructor_used name vd constr =
+  try Hashtbl.find used_constructors (name, vd.type_loc, constr) ()
   with Not_found -> ()
 
 let set_value_used_callback name vd callback =
@@ -540,18 +546,24 @@ let mark_type_path env path =
   let decl = try find_type path env with Not_found -> assert false in
   mark_type_used (Path.last path) decl
 
-let mark_type_constr env = function
-  | {desc=Tconstr(path, _, _)} -> mark_type_path env path
+let ty_path = function
+  | {desc=Tconstr(path, _, _)} -> path
   | _ -> assert false
 
 let lookup_constructor lid env =
   let desc = lookup_constructor lid env in
-  mark_type_constr env desc.cstr_res;
+  mark_type_path env (ty_path desc.cstr_res);
   desc
+
+let mark_constructor env name desc =
+  let ty_path = ty_path desc.cstr_res in
+  let ty_decl = try find_type ty_path env with Not_found -> assert false in
+  let ty_name = Path.last ty_path in
+  mark_constructor_used ty_name ty_decl name
 
 let lookup_label lid env =
   let desc = lookup_label lid env in
-  mark_type_constr env desc.lbl_res;
+  mark_type_path env (ty_path desc.lbl_res);
   desc
 
 let lookup_class lid env =
@@ -814,9 +826,27 @@ and store_annot id path annot env =
   else env
 
 and store_type id path info env =
-  check_usage info.type_loc id (fun s -> Warnings.Unused_type_declaration s) type_declarations;
+  let loc = info.type_loc in
+  check_usage loc id (fun s -> Warnings.Unused_type_declaration s) type_declarations;
   let constructors = constructors_of_type path info in
-  let labels = labels_of_type path info in 
+  let labels = labels_of_type path info in
+
+  if not loc.Location.loc_ghost && Warnings.is_active (Warnings.Unused_constructor "") then begin
+    let ty = Ident.name id in
+    List.iter
+      (fun (c, _) ->
+        let k = (ty, loc, c) in
+        if not (Hashtbl.mem used_constructors k) then
+          let used = ref false in
+          Hashtbl.add used_constructors k (fun () -> used := true);
+          !add_delayed_check_forward
+            (fun () ->
+              if not !used then
+                Location.prerr_warning loc (Warnings.Unused_constructor c)
+            )
+         )
+      constructors
+  end;
   { env with
     constrs =
       List.fold_right

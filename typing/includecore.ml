@@ -206,6 +206,11 @@ let type_declarations env id decl1 decl2 =
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> []
     | (Type_variant cstrs1, Type_variant cstrs2) ->
+        let name = Ident.name id in
+        if decl1.type_private = Private || decl2.type_private = Public then
+          List.iter
+            (fun (c, _, _) -> Env.mark_constructor_used name decl1 c)
+            cstrs1;
         compare_variants env decl1 decl2 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         let err = compare_records env decl1 decl2 1 labels1 labels2 in
