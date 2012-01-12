@@ -55,6 +55,7 @@ type t =
   | Unused_type_declaration of string       (* 33 *)
   | Unused_for_index of string              (* 34 *)
   | Unused_ancestor of string               (* 35 *)
+  | Unused_constructor of string            (* 36 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -99,9 +100,10 @@ let number = function
   | Unused_type_declaration _ -> 33
   | Unused_for_index _ -> 34
   | Unused_ancestor _ -> 35
+  | Unused_constructor _ -> 36
 ;;
 
-let last_warning_number = 35;;
+let last_warning_number = 36;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -196,7 +198,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-31-32-33-34-35";;
+let defaults_w = "+a-4-6-7-9-27-29-31-32-33-34-35-36";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -275,6 +277,7 @@ let message = function
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
+  | Unused_constructor s -> "unused constructor " ^ s ^ "."
 ;;
 
 let nerrors = ref 0;;
@@ -354,6 +357,7 @@ let descriptions =
    33, "Unused type declaration.";
    34, "Unused for-loop index.";
    35, "Unused ancestor variable.";
+   36, "Unused constructor.";
   ]
 ;;
 
