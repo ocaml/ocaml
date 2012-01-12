@@ -52,7 +52,6 @@ external ( || ) : bool -> bool -> bool = "%sequor"
 
 external ( ~- ) : int -> int = "%negint"
 external ( ~+ ) : int -> int = "%identity"
-external (~+) : int -> int = "%identity"
 external succ : int -> int = "%succint"
 external pred : int -> int = "%predint"
 external ( + ) : int -> int -> int = "%addint"
@@ -91,7 +90,8 @@ external acos : float -> float = "caml_acos_float" "acos" "float"
 external asin : float -> float = "caml_asin_float" "asin" "float"
 external atan : float -> float = "caml_atan_float" "atan" "float"
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
-external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot" "float"
+external hypot : float -> float -> float
+               = "caml_hypot_float" "caml_hypot" "float"
 external cos : float -> float = "caml_cos_float" "cos" "float"
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
 external log : float -> float = "caml_log_float" "log" "float"
@@ -105,7 +105,8 @@ external tanh : float -> float = "caml_tanh_float" "tanh" "float"
 external ceil : float -> float = "caml_ceil_float" "ceil" "float"
 external floor : float -> float = "caml_floor_float" "floor" "float"
 external abs_float : float -> float = "%absfloat"
-external copysign : float -> float -> float = "caml_copysign_float" "caml_copysign" "float"
+external copysign : float -> float -> float
+                  = "caml_copysign_float" "caml_copysign" "float"
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
 external frexp : float -> float * int = "caml_frexp_float"
 external ldexp : float -> int -> float = "caml_ldexp_float"
@@ -214,7 +215,8 @@ let rec ( @ ) l1 l2 =
 type in_channel
 type out_channel
 
-external open_descriptor_out : int -> out_channel = "caml_ml_open_descriptor_out"
+external open_descriptor_out : int -> out_channel
+                             = "caml_ml_open_descriptor_out"
 external open_descriptor_in : int -> in_channel = "caml_ml_open_descriptor_in"
 
 let stdin = open_descriptor_in 0
