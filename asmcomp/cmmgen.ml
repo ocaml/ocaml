@@ -389,6 +389,7 @@ let fundecls_size fundecls =
 
 type rhs_kind =
   | RHS_block of int
+  | RHS_floatblock of int
   | RHS_nonrec
 ;;
 let rec expr_size = function
@@ -402,6 +403,8 @@ let rec expr_size = function
       RHS_block (List.length args)
   | Uprim(Pmakearray(Paddrarray | Pintarray), args, _) ->
       RHS_block (List.length args)
+  | Uprim(Pmakearray(Pfloatarray), args, _) ->
+      RHS_floatblock (List.length args)
   | Usequence(exp, exp') ->
       expr_size exp'
   | _ -> RHS_nonrec
@@ -1524,25 +1527,29 @@ and transl_switch arg index cases = match Array.length cases with
 
 and transl_letrec bindings cont =
   let bsz = List.map (fun (id, exp) -> (id, exp, expr_size exp)) bindings in
+  let op_alloc prim sz =
+    Cop(Cextcall(prim, typ_addr, true, Debuginfo.none), [int_const sz]) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, exp, RHS_block sz) :: rem ->
-        Clet(id, Cop(Cextcall("caml_alloc_dummy", typ_addr, true, Debuginfo.none),
-                     [int_const sz]),
-             init_blocks rem)
+        Clet(id, op_alloc "caml_alloc_dummy" sz, init_blocks rem)
+    | (id, exp, RHS_floatblock sz) :: rem ->
+        Clet(id, op_alloc "caml_alloc_dummy_float" sz, init_blocks rem)
     | (id, exp, RHS_nonrec) :: rem ->
         Clet (id, Cconst_int 0, init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
-    | (id, exp, RHS_block sz) :: rem -> fill_nonrec rem
+    | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+        fill_nonrec rem
     | (id, exp, RHS_nonrec) :: rem ->
         Clet (id, transl exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
-    | (id, exp, RHS_block _) :: rem ->
-        Csequence(Cop(Cextcall("caml_update_dummy", typ_void, false, Debuginfo.none),
-                      [Cvar id; transl exp]),
-                  fill_blocks rem)
+    | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+        let op =
+          Cop(Cextcall("caml_update_dummy", typ_void, false, Debuginfo.none),
+              [Cvar id; transl exp]) in
+        Csequence(op, fill_blocks rem)
     | (id, exp, RHS_nonrec) :: rem ->
         fill_blocks rem
   in init_blocks bsz
