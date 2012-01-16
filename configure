@@ -780,6 +780,9 @@ else
   echo "RANLIBCMD=" >> Makefile
 fi
 
+echo "ARCMD=ar" >> Makefile
+
+
 # Do #! scripts work?
 
 if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then

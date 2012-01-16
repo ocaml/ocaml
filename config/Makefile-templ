@@ -86,6 +86,9 @@ RANLIBCMD=ranlib
 #RANLIB=ar rs
 #RANLIBCMD=
 
+### How to invoke ar
+#ARCMD=ar
+
 ### Shared library support
 # Extension for shared libraries: so if supported, a if not supported
 #SO=so

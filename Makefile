@@ -383,6 +383,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
 	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
+	    -e 's|%%ARCMD%%|$(ARCMD)|' \
 	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
 	    -e 's|%%ARCH%%|$(ARCH)|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \

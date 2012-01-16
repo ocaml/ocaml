@@ -120,6 +120,9 @@ SYSLIB=-l$(1)
 RANLIB=$(TOOLPREF)ranlib
 RANLIBCMD=$(TOOLPREF)ranlib
 
+### The ar command
+ARCMD=$(TOOLPREF)ar
+
 ############# Configuration for the native-code compiler
 
 ### Name of architecture for the native-code compiler
