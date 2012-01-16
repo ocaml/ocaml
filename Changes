@@ -26,6 +26,8 @@ Native-code compiler:
 
 Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)
+* Arg: options with empty doc strings are no longer included in the usage string
+  (PR#5437)
 - Array: faster implementations of "blit", "copy", "sub", "append" and "concat"
   (PR#2395, PR#2787, PR#4591)
 * Hashtbl:
@@ -34,10 +36,9 @@ Standard library:
     . Added optional "seed" parameter to Hashtbl.create for diversification
     . Added new functorial interface "MakeSeeded" to support diversification
       with user-provided hash functions.
-* Arg: options with empty doc strings are no longer included in the usage string
-  (PR#5437)
-* Scanf: new function "unescaped" (PR#3888)
-* String: new function "map" (PR#3888)
+- Scanf: new function "unescaped" (PR#3888)
+- Set and Map: more efficient implementation of "filter" and "partition"
+- String: new function "map" (PR#3888)
 
 Bug Fixes:
 * PR#4549: Filename.dirname is not handling multiple / on Unix
