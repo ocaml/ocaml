@@ -50,6 +50,7 @@ type t =
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
+  | Multiple_definition of string * string * string (* 31 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -89,9 +90,10 @@ let number = function
   | Wildcard_arg_to_constant_constr -> 28
   | Eol_in_string -> 29
   | Duplicate_definitions _ -> 30
+  | Multiple_definition _ -> 31
 ;;
 
-let last_warning_number = 30;;
+let last_warning_number = 31;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -260,6 +262,10 @@ let message = function
   | Duplicate_definitions (kind, cname, tc1, tc2) ->
       Printf.sprintf "the %s %s is defined in both types %s and %s."
         kind cname tc1 tc2
+  | Multiple_definition(modname, file1, file2) ->
+      Printf.sprintf
+        "files %s and %s both define a module named %s"
+        file1 file2 modname
 ;;
 
 let nerrors = ref 0;;
@@ -334,6 +340,7 @@ let descriptions =
    29, "Unescaped end-of-line in a string constant (non-portable code).";
    30, "Two labels or constructors of the same name are defined in two\n\
    \    mutually recursive types.";
+   31, "A module is linked twice in the same executable";
   ]
 ;;
 

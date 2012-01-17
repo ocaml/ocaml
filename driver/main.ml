@@ -75,10 +75,12 @@ let print_standard_library () =
 
 let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
+let ppf = Format.err_formatter
+
 (* Error messages to standard error formatter *)
-let anonymous = process_file Format.err_formatter;;
-let impl = process_implementation_file Format.err_formatter;;
-let intf = process_interface_file Format.err_formatter;;
+let anonymous = process_file ppf;;
+let impl = process_implementation_file ppf;;
+let intf = process_interface_file ppf;;
 
 let show_config () =
   Config.print_config stdout;
@@ -170,14 +172,14 @@ let main () =
     if !make_archive then begin
       Compile.init_path();
 
-      Bytelibrarian.create_archive (List.rev !objfiles)
+      Bytelibrarian.create_archive ppf  (List.rev !objfiles)
                                    (extract_output !output_name)
     end
     else if !make_package then begin
       Compile.init_path();
-      let exctracted_output = extract_output !output_name in 
-      let revd = List.rev !objfiles in 
-      Bytepackager.package_files (revd)
+      let exctracted_output = extract_output !output_name in
+      let revd = List.rev !objfiles in
+      Bytepackager.package_files ppf (revd)
         (exctracted_output)
     end
     else if not !compile_only && !objfiles <> [] then begin
@@ -198,11 +200,11 @@ let main () =
           default_output !output_name
       in
       Compile.init_path();
-      Bytelink.link (List.rev !objfiles) target
+      Bytelink.link ppf (List.rev !objfiles) target
     end;
     exit 0
   with x ->
-    Errors.report_error Format.err_formatter x;
+    Errors.report_error ppf x;
     exit 2
 
 let _ = main ()

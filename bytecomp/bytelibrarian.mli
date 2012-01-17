@@ -21,7 +21,7 @@
       content table = list of compilation units
 *)
 
-val create_archive: string list -> string -> unit
+val create_archive: Format.formatter -> string list -> string -> unit
 
 type error =
     File_not_found of string

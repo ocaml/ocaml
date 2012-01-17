@@ -29,6 +29,7 @@ type error =
   | File_exists of string
   | Cannot_open_dll of string
 
+
 exception Error of error
 
 type link_action =
@@ -161,9 +162,10 @@ let scan_file obj_name tolink =
 (* Consistency check between interfaces *)
 
 let crc_interfaces = Consistbl.create ()
+let implementations_defined = ref ([] : (string * string) list)
 
-let check_consistency file_name cu =
-  try
+let check_consistency ppf file_name cu =
+  begin try
     List.iter
       (fun (name, crc) ->
         if name = cu.cu_name
@@ -172,6 +174,15 @@ let check_consistency file_name cu =
       cu.cu_imports
   with Consistbl.Inconsistency(name, user, auth) ->
     raise(Error(Inconsistent_import(name, user, auth)))
+  end;
+  begin try
+    let source = List.assoc cu.cu_name !implementations_defined in
+    Location.print_warning (Location.in_file file_name) ppf
+      (Warnings.Multiple_definition(cu.cu_name, file_name, source))
+  with Not_found -> ()
+  end;
+  implementations_defined :=
+    (cu.cu_name, file_name) :: !implementations_defined
 
 let extract_crc_interfaces () =
   Consistbl.extract crc_interfaces
@@ -182,8 +193,8 @@ let debug_info = ref ([] : (int * string) list)
 
 (* Link in a compilation unit *)
 
-let link_compunit output_fun currpos_fun inchan file_name compunit =
-  check_consistency file_name compunit;
+let link_compunit ppf output_fun currpos_fun inchan file_name compunit =
+  check_consistency ppf file_name compunit;
   seek_in inchan compunit.cu_pos;
   let code_block = String.create compunit.cu_codesize in
   really_input inchan code_block 0 compunit.cu_codesize;
@@ -200,10 +211,10 @@ let link_compunit output_fun currpos_fun inchan file_name compunit =
 
 (* Link in a .cmo file *)
 
-let link_object output_fun currpos_fun file_name compunit =
+let link_object ppf output_fun currpos_fun file_name compunit =
   let inchan = open_in_bin file_name in
   try
-    link_compunit output_fun currpos_fun inchan file_name compunit;
+    link_compunit ppf output_fun currpos_fun inchan file_name compunit;
     close_in inchan
   with
     Symtable.Error msg ->
@@ -213,14 +224,14 @@ let link_object output_fun currpos_fun file_name compunit =
 
 (* Link in a .cma file *)
 
-let link_archive output_fun currpos_fun file_name units_required =
+let link_archive ppf output_fun currpos_fun file_name units_required =
   let inchan = open_in_bin file_name in
   try
     List.iter
       (fun cu ->
          let name = file_name ^ "(" ^ cu.cu_name ^ ")" in
          try
-           link_compunit output_fun currpos_fun inchan name cu
+           link_compunit ppf output_fun currpos_fun inchan name cu
          with Symtable.Error msg ->
            raise(Error(Symbol_error(name, msg))))
       units_required;
@@ -229,11 +240,11 @@ let link_archive output_fun currpos_fun file_name units_required =
 
 (* Link in a .cmo or .cma file *)
 
-let link_file output_fun currpos_fun = function
+let link_file ppf output_fun currpos_fun = function
     Link_object(file_name, unit) ->
-      link_object output_fun currpos_fun file_name unit
+      link_object ppf output_fun currpos_fun file_name unit
   | Link_archive(file_name, units) ->
-      link_archive output_fun currpos_fun file_name units
+      link_archive ppf output_fun currpos_fun file_name units
 
 (* Output the debugging information *)
 (* Format is:
@@ -265,7 +276,7 @@ let make_absolute file =
 
 (* Create a bytecode executable file *)
 
-let link_bytecode tolink exec_name standalone =
+let link_bytecode ppf tolink exec_name standalone =
   Misc.remove_file exec_name; (* avoid permission problems, cf PR#1911 *)
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
@@ -303,7 +314,7 @@ let link_bytecode tolink exec_name standalone =
     end;
     let output_fun = output_string outchan
     and currpos_fun () = pos_out outchan - start_code in
-    List.iter (link_file output_fun currpos_fun) tolink;
+    List.iter (link_file ppf output_fun currpos_fun) tolink;
     if standalone then Dll.close_all_dlls();
     (* The final STOP instruction *)
     output_byte outchan Opcodes.opSTOP;
@@ -402,7 +413,7 @@ let output_cds_file outfile =
 
 (* Output a bytecode executable as a C file *)
 
-let link_bytecode_as_c tolink outfile =
+let link_bytecode_as_c ppf tolink outfile =
   let outchan = open_out outfile in
   begin try
     (* The bytecode *)
@@ -424,7 +435,7 @@ let link_bytecode_as_c tolink outfile =
       output_code_string outchan code;
       currpos := !currpos + String.length code
     and currpos_fun () = !currpos in
-    List.iter (link_file output_fun currpos_fun) tolink;
+    List.iter (link_file ppf output_fun currpos_fun) tolink;
     (* The final STOP instruction *)
     Printf.fprintf outchan "\n0x%x};\n\n" Opcodes.opSTOP;
     (* The table of global data *)
@@ -491,7 +502,7 @@ let fix_exec_name name =
 
 (* Main entry point (build a custom runtime if needed) *)
 
-let link objfiles output_name =
+let link ppf objfiles output_name =
   let objfiles =
     if !Clflags.nopervasives then objfiles
     else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
@@ -501,12 +512,12 @@ let link objfiles output_name =
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
   Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
-    link_bytecode tolink output_name true
+    link_bytecode ppf tolink output_name true
   else if not !Clflags.output_c_object then begin
     let bytecode_name = Filename.temp_file "camlcode" "" in
     let prim_name = Filename.temp_file "camlprim" ".c" in
     try
-      link_bytecode tolink bytecode_name false;
+      link_bytecode ppf tolink bytecode_name false;
       let poc = open_out prim_name in
       output_string poc "\
         #ifdef __cplusplus\n\
@@ -544,7 +555,7 @@ let link objfiles output_name =
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
     let temps = ref [] in
     try
-      link_bytecode_as_c tolink c_file;
+      link_bytecode_as_c ppf tolink c_file;
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
         if Ccomp.compile_file c_file <> 0 then raise(Error Custom_runtime);

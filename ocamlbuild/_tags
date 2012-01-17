@@ -16,7 +16,7 @@ true: debug
 "discard_printf.ml": rectypes
 "ocamlbuildlib.cma" or "ocamlbuildlightlib.cma": linkall
 <*.byte> or <*.native> or <*.top>: use_unix
-"ocamlbuildlight.byte": -use_unix
+"ocamlbuildlight.byte": -use_unix, nopervasives
 <*.cmx>: for-pack(Ocamlbuild_pack)
 <{ocamlbuild_{pack,unix_plugin,plugin,executor},ppcache}{,.p}.cmx>: -for-pack(Ocamlbuild_pack)
 "doc": not_hygienic
