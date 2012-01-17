@@ -69,6 +69,7 @@ Feature wishes:
 - PR#5454: Digest.compare is missing and md5 doc update
 - PR#5467: no extern "C" into ocaml C-stub headers
 - PR#5478: ocamlopt assumes ar command exists
+- PR5479: Num.num_of_string may raise an exception, not reflected in the documentation.
 
 Shedding weight:
 * Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
