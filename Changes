@@ -58,6 +58,7 @@ Bug Fixes:
 - PR#5476: bug in native code compilation of let rec on float arrays
 - PR#4688: (Windows) special floating-point values aren't converted to strings correctly
 - emacs mode: colorization of comments and strings now works correctly
+- PR5475: Wrapper script for interpreted LablTk wrongly handles command line parameters
 
 Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script

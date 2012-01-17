@@ -1046,7 +1046,7 @@ rule "labltk"
   ~prod:"otherlibs/labltk/lib/labltk"
   begin fun _ _ ->
     Echo(["#!/bin/sh\n";
-          Printf.sprintf "exec %s -I %s $*\n" (labltk_installdir/"labltktop") labltk_installdir],
+          Printf.sprintf "exec %s -I %s \"$@\"\n" (labltk_installdir/"labltktop") labltk_installdir],
          "otherlibs/labltk/lib/labltk")
   end;;
 
