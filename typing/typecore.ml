@@ -101,6 +101,100 @@ let rp node =
   node
 ;;
 
+(* Upper approximation of free identifiers on the parse tree *)
+
+let iter_expression f e =
+
+  let rec expr e =
+    f e;
+    match e.pexp_desc with
+    | Pexp_ident _
+    | Pexp_assertfalse
+    | Pexp_new _
+    | Pexp_constant _ -> ()
+    | Pexp_function (_, eo, pel) -> may expr eo; List.iter (fun (_, e) -> expr e) pel
+    | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
+    | Pexp_let (_, pel, e)
+    | Pexp_match (e, pel)
+    | Pexp_try (e, pel) -> expr e; List.iter (fun (_, e) -> expr e) pel
+    | Pexp_array el
+    | Pexp_tuple el -> List.iter expr el
+    | Pexp_construct (_, eo, _)
+    | Pexp_variant (_, eo) -> may expr eo
+    | Pexp_record (iel, eo) -> may expr eo; List.iter (fun (_, e) -> expr e) iel
+    | Pexp_open (_, e)
+    | Pexp_newtype (_, e)
+    | Pexp_poly (e, _)
+    | Pexp_lazy e
+    | Pexp_assert e
+    | Pexp_setinstvar (_, e)
+    | Pexp_send (e, _)
+    | Pexp_constraint (e, _, _)
+    | Pexp_field (e, _) -> expr e
+    | Pexp_when (e1, e2)
+    | Pexp_while (e1, e2)
+    | Pexp_sequence (e1, e2)
+    | Pexp_setfield (e1, _, e2) -> expr e1; expr e2
+    | Pexp_ifthenelse (e1, e2, eo) -> expr e1; expr e2; may expr eo
+    | Pexp_for (_, e1, e2, _, e3) -> expr e1; expr e2; expr e3
+    | Pexp_override sel -> List.iter (fun (_, e) -> expr e) sel
+    | Pexp_letmodule (_, me, e) -> expr e; module_expr me
+    | Pexp_object (_, cs) -> List.iter class_field cs
+    | Pexp_pack me -> module_expr me
+
+  and module_expr me =
+    match me.pmod_desc with
+    | Pmod_ident _ -> ()
+    | Pmod_structure str -> List.iter structure_item str
+    | Pmod_constraint (me, _)
+    | Pmod_functor (_, _, me) -> module_expr me
+    | Pmod_apply (me1, me2) -> module_expr me1; module_expr me2
+    | Pmod_unpack e -> expr e
+
+  and structure_item str =
+    match str.pstr_desc with
+    | Pstr_eval e -> expr e
+    | Pstr_value (_, pel) -> List.iter (fun (_, e) -> expr e) pel
+    | Pstr_primitive _
+    | Pstr_type _
+    | Pstr_exception _
+    | Pstr_modtype _
+    | Pstr_open _
+    | Pstr_class_type _
+    | Pstr_exn_rebind _ -> ()
+    | Pstr_include me
+    | Pstr_module (_, me) -> module_expr me
+    | Pstr_recmodule l -> List.iter (fun (_, _, me) -> module_expr me) l
+    | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
+
+  and class_expr ce =
+    match ce.pcl_desc with
+    | Pcl_constr _ -> ()
+    | Pcl_structure (_, cfl) -> List.iter class_field cfl
+    | Pcl_fun (_, eo, _,  ce) -> may expr eo; class_expr ce
+    | Pcl_apply (ce, lel) -> class_expr ce; List.iter (fun (_, e) -> expr e) lel
+    | Pcl_let (_, pel, ce) -> List.iter (fun (_, e) -> expr e) pel; class_expr ce
+    | Pcl_constraint (ce, _) -> class_expr ce
+
+  and class_field = function
+    | Pcf_inher (_, ce, _) -> class_expr ce
+    | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _ -> ()
+    | Pcf_val (_,_,_, e, _) | Pcf_meth (_,_,_, e, _) -> expr e
+    | Pcf_init e -> expr e
+
+  in
+  expr e
+
+
+let free_idents el =
+  let idents = Hashtbl.create 8 in
+  let f = function
+    | {pexp_desc=Pexp_ident (Longident.Lident id); _} -> Hashtbl.replace idents id ()
+    | _ -> ()
+  in
+  List.iter (iter_expression f) el;
+  Hashtbl.fold (fun x () rest -> x :: rest) idents []
+
 
 (* Typing of constants *)
 
@@ -1273,11 +1367,11 @@ let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
 
 (* Duplicate types of values in the environment *)
 (* XXX Should we do something about global type variables too? *)
+
 let duplicate_ident_types loc caselist env =
   let caselist =
     List.filter (fun (pat, _) -> contains_gadt env pat) caselist in
-  let idents = Unused_var.free_idents
-      {pexp_desc = Pexp_match(dummy_expr,caselist); pexp_loc = loc} in
+  let idents = free_idents (List.map snd caselist) in
   List.fold_left
     (fun env s ->
       try
