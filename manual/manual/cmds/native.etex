@@ -397,31 +397,10 @@ to \var{uppercase-letter}.
 to \var{lowercase-letter}.
 \end{options}
 
-Warning numbers which are out of the range of warnings that are currently
-defined are ignored. The warning numbers are as follows.
+Warning numbers and letters which are out of the range of warnings
+that are currently defined are ignored. The warning are as follows.
 \begin{options}
 \input{warnings.tex}
-\end{options}
-
-The letters stand for the following sets of warnings.  Any letter not
-mentioned here corresponds to the empty set.
-
-\begin{options}
-\item[A] all warnings
-\item[C] 1, 2
-\item[D] 3
-\item[E] 4
-\item[F] 5
-\item[L] 6
-\item[M] 7
-\item[P] 8
-\item[R] 9
-\item[S] 10
-\item[U] 11, 12
-\item[V] 13
-\item[X] 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
-\item[Y] 26
-\item[Z] 27
 \end{options}
 
 The default setting is "-w +a-4-6-7-9-27..29".
