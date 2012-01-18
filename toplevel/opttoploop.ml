@@ -225,7 +225,6 @@ let execute_phrase print_outcome ppf phr =
       incr phrase_seqid;
       phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
       Compilenv.reset ?packname:None !phrase_name;
-      let _ = Unused_var.warn ppf sstr in
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
       in

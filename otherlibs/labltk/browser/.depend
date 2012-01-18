@@ -10,10 +10,14 @@ fileselect.cmo: useunix.cmi setpath.cmi list2.cmo jg_toplevel.cmo jg_memo.cmi \
     jg_entry.cmo jg_box.cmo fileselect.cmi
 fileselect.cmx: useunix.cmx setpath.cmx list2.cmx jg_toplevel.cmx jg_memo.cmx \
     jg_entry.cmx jg_box.cmx fileselect.cmi
+help.cmo:
+help.cmx:
 jg_bind.cmo: jg_bind.cmi
 jg_bind.cmx: jg_bind.cmi
 jg_box.cmo: jg_completion.cmi jg_bind.cmi
 jg_box.cmx: jg_completion.cmx jg_bind.cmx
+jg_button.cmo:
+jg_button.cmx:
 jg_completion.cmo: jg_completion.cmi
 jg_completion.cmx: jg_completion.cmi
 jg_config.cmo: jg_tk.cmo jg_config.cmi
@@ -22,6 +26,8 @@ jg_entry.cmo: jg_bind.cmi
 jg_entry.cmx: jg_bind.cmx
 jg_memo.cmo: jg_memo.cmi
 jg_memo.cmx: jg_memo.cmi
+jg_menu.cmo:
+jg_menu.cmx:
 jg_message.cmo: jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_bind.cmi \
     jg_message.cmi
 jg_message.cmx: jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_bind.cmx \
@@ -30,8 +36,14 @@ jg_multibox.cmo: jg_completion.cmi jg_bind.cmi jg_multibox.cmi
 jg_multibox.cmx: jg_completion.cmx jg_bind.cmx jg_multibox.cmi
 jg_text.cmo: jg_toplevel.cmo jg_tk.cmo jg_button.cmo jg_bind.cmi jg_text.cmi
 jg_text.cmx: jg_toplevel.cmx jg_tk.cmx jg_button.cmx jg_bind.cmx jg_text.cmi
+jg_tk.cmo:
+jg_tk.cmx:
+jg_toplevel.cmo:
+jg_toplevel.cmx:
 lexical.cmo: jg_tk.cmo lexical.cmi
 lexical.cmx: jg_tk.cmx lexical.cmi
+list2.cmo:
+list2.cmx:
 main.cmo: viewer.cmi shell.cmi searchpos.cmi searchid.cmi jg_config.cmi \
     editor.cmi
 main.cmx: viewer.cmx shell.cmx searchpos.cmx searchid.cmx jg_config.cmx \
@@ -62,5 +74,24 @@ viewer.cmx: useunix.cmx shell.cmx setpath.cmx searchpos.cmx searchid.cmx \
     mytypes.cmi jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_multibox.cmx \
     jg_message.cmx jg_menu.cmx jg_entry.cmx jg_completion.cmx jg_button.cmx \
     jg_box.cmx jg_bind.cmx help.cmx viewer.cmi
+dummy.cmi:
+dummyUnix.cmi:
+dummyWin.cmi:
+editor.cmi:
+fileselect.cmi:
+jg_bind.cmi:
+jg_completion.cmi:
+jg_config.cmi:
+jg_memo.cmi:
+jg_message.cmi:
+jg_multibox.cmi:
+jg_text.cmi:
+lexical.cmi:
 mytypes.cmi: shell.cmi
+searchid.cmi:
+searchpos.cmi:
+setpath.cmi:
+shell.cmi:
 typecheck.cmi: mytypes.cmi
+useunix.cmi:
+viewer.cmi:

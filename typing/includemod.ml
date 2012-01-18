@@ -51,6 +51,7 @@ exception Error of error list
 (* Inclusion between value descriptions *)
 
 let value_descriptions env cxt subst id vd1 vd2 =
+  Env.mark_value_used (Ident.name id) vd1;
   let vd2 = Subst.value_description subst vd2 in
   try
     Includecore.value_descriptions env vd1 vd2
@@ -60,6 +61,7 @@ let value_descriptions env cxt subst id vd1 vd2 =
 (* Inclusion between type declarations *)
 
 let type_declarations env cxt subst id decl1 decl2 =
+  Env.mark_type_used (Ident.name id) decl1;
   let decl2 = Subst.type_declaration subst decl2 in
   let err = Includecore.type_declarations env id decl1 decl2 in
   if err <> [] then raise(Error[cxt, Type_declarations(id, decl1, decl2, err)])

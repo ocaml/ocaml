@@ -102,3 +102,7 @@ val search_substring: string -> string -> int -> int
 val rev_split_words: string -> string list
         (* [rev_split_words s] splits [s] in blank-separated words, and return
            the list of words in reverse order. *)
+
+val get_ref: 'a list ref -> 'a list
+        (* [get_ref lr] returns the content of the list reference [lr] and reset
+           its content to the empty list. *)

@@ -880,13 +880,6 @@ value varify_constructors var_names =
       in
       let vars = id_to_string vs in
       let ampersand_vars = List.map (fun x -> "&" ^ x) vars in
-      let rec merge_quoted_vars lst = 
-	match lst with
-	  [
-	    [x] -> x
-	  | [x::y] -> <:ctyp<$x$ $merge_quoted_vars y$ >>
-	  | [] -> assert False ]
-      in
       let ty' = varify_constructors vars (ctyp ty) in
       let mkexp = mkexp _loc in
       let mkpat = mkpat _loc in

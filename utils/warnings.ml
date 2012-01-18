@@ -51,6 +51,12 @@ type t =
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
   | Multiple_definition of string * string * string (* 31 *)
+  | Unused_value_declaration of string      (* 32 *)
+  | Unused_open of string                   (* 33 *)
+  | Unused_type_declaration of string       (* 34 *)
+  | Unused_for_index of string              (* 35 *)
+  | Unused_ancestor of string               (* 36 *)
+  | Unused_constructor of string            (* 37 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -91,9 +97,15 @@ let number = function
   | Eol_in_string -> 29
   | Duplicate_definitions _ -> 30
   | Multiple_definition _ -> 31
+  | Unused_value_declaration _ -> 32
+  | Unused_open _ -> 33
+  | Unused_type_declaration _ -> 34
+  | Unused_for_index _ -> 35
+  | Unused_ancestor _ -> 36
+  | Unused_constructor _ -> 37
 ;;
 
-let last_warning_number = 31;;
+let last_warning_number = 37;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -188,7 +200,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29";;
+let defaults_w = "+a-4-6-7-9-27-29-32-33-34-35-36-37";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -266,6 +278,12 @@ let message = function
       Printf.sprintf
         "files %s and %s both define a module named %s"
         file1 file2 modname
+  | Unused_value_declaration v -> "unused value " ^ v ^ "."
+  | Unused_open s -> "unused open " ^ s ^ "."
+  | Unused_type_declaration s -> "unused type " ^ s ^ "."
+  | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
+  | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
+  | Unused_constructor s -> "unused constructor " ^ s ^ "."
 ;;
 
 let nerrors = ref 0;;
@@ -340,7 +358,13 @@ let descriptions =
    29, "Unescaped end-of-line in a string constant (non-portable code).";
    30, "Two labels or constructors of the same name are defined in two\n\
    \    mutually recursive types.";
-   31, "A module is linked twice in the same executable";
+   31, "A module is linked twice in the same executable.";
+   32, "Unused value declaration.";
+   33, "Unused open statement.";
+   34, "Unused type declaration.";
+   35, "Unused for-loop index.";
+   36, "Unused ancestor variable.";
+   37, "Unused constructor.";
   ]
 ;;
 

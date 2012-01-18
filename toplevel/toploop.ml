@@ -217,7 +217,6 @@ let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
-      let _ = Unused_var.warn ppf sstr in
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
       in

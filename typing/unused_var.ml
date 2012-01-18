@@ -14,6 +14,8 @@
 
 open Parsetree
 
+(* TODO: simpler implementation for free_idents *)
+
 let silent v = String.length v > 0 && v.[0] = '_';;
 
 let add_vars tbl (vll1, vll2) =
@@ -273,15 +275,6 @@ and class_field ppf tbl cf =
   | Pcf_meth (_, _, _, e, _) -> expression ppf tbl e;
   | Pcf_cstr _ -> ()
   | Pcf_init e -> expression ppf tbl e;
-;;
-
-let warn ppf ast =
-  if Warnings.is_active (w_suspicious "") || Warnings.is_active (w_strict "")
-  then begin
-    let tbl = Hashtbl.create 97 in
-    structure (Ppf ppf) tbl ast;
-  end;
-  ast
 ;;
 
 let free_idents e =

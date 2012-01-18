@@ -60,7 +60,7 @@ val lookup_cltype: Longident.t -> t -> Path.t * cltype_declaration
 
 (* Insertion by identifier *)
 
-val add_value: Ident.t -> value_description -> t -> t
+val add_value: ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_annot: Ident.t -> Annot.ident -> t -> t
 val add_type: Ident.t -> type_declaration -> t -> t
 val add_exception: Ident.t -> exception_declaration -> t -> t
@@ -78,12 +78,12 @@ val add_signature: signature -> t -> t
 (* Insertion of all fields of a signature, relative to the given path.
    Used to implement open. *)
 
-val open_signature: Path.t -> signature -> t -> t
+val open_signature: ?loc:Location.t -> Path.t -> signature -> t -> t
 val open_pers_signature: string -> t -> t
 
 (* Insertion by name *)
 
-val enter_value: string -> value_description -> t -> Ident.t * t
+val enter_value: ?check:(string -> Warnings.t) -> string -> value_description -> t -> Ident.t * t
 val enter_type: string -> type_declaration -> t -> Ident.t * t
 val enter_exception: string -> exception_declaration -> t -> Ident.t * t
 val enter_module: string -> module_type -> t -> Ident.t * t
@@ -152,6 +152,16 @@ open Format
 
 val report_error: formatter -> error -> unit
 
+val mark_value_used: string -> value_description -> unit
+val mark_type_used: string -> type_declaration -> unit
+val mark_constructor_used: string -> type_declaration -> string -> unit
+val mark_constructor: t -> string -> constructor_description -> unit
+
+val set_value_used_callback: string -> value_description -> (unit -> unit) -> unit
+val set_type_used_callback: string -> type_declaration -> ((unit -> unit) -> unit) -> unit
+
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_modtype_inclusion:
       (t -> module_type -> Path.t -> module_type -> unit) ref
+(* Forward declaration to break mutual recursion with Typecore. *)
+val add_delayed_check_forward: ((unit -> unit) -> unit) ref

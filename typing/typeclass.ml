@@ -192,13 +192,13 @@ let rc node =
 
 
 (* Enter a value in the method environment only *)
-let enter_met_env lab kind ty val_env met_env par_env =
+let enter_met_env ?check loc lab kind ty val_env met_env par_env =
   let (id, val_env) =
-    Env.enter_value lab {val_type = ty; val_kind = Val_unbound; val_loc = Location.none} val_env
+    Env.enter_value lab {val_type = ty; val_kind = Val_unbound; val_loc = loc} val_env
   in
   (id, val_env,
-   Env.add_value id {val_type = ty; val_kind = kind; val_loc = Location.none} met_env,
-   Env.add_value id {val_type = ty; val_kind = Val_unbound; val_loc = Location.none} par_env)
+   Env.add_value ?check id {val_type = ty; val_kind = kind; val_loc = loc} met_env,
+   Env.add_value id {val_type = ty; val_kind = Val_unbound; val_loc = loc} par_env)
 
 (* Enter an instance variable in the environment *)
 let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
@@ -218,7 +218,7 @@ let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
   let (id, _, _, _) as result =
     match id with Some id -> (id, val_env, met_env, par_env)
     | None ->
-        enter_met_env lab (Val_ivar (mut, cl_num)) ty val_env met_env par_env
+        enter_met_env Location.none lab (Val_ivar (mut, cl_num)) ty val_env met_env par_env
   in
   vars := Vars.add lab (id, mut, virt, ty) !vars;
   result
@@ -462,7 +462,8 @@ let rec class_field cl_num self_type meths vars
             (val_env, met_env, par_env)
         | Some name ->
             let (id, val_env, met_env, par_env) =
-              enter_met_env name (Val_anc (inh_meths, cl_num)) self_type
+              enter_met_env ~check:(fun s -> Warnings.Unused_ancestor s)
+                sparent.pcl_loc name (Val_anc (inh_meths, cl_num)) self_type
                 val_env met_env par_env
             in
             (val_env, met_env, par_env)
@@ -772,10 +773,16 @@ and class_expr cl_num val_env met_env scl =
       let pv =
         List.map
           (function (id, id', ty) ->
+            let path = Pident id' in
+            let vd = Env.find_value path val_env' (* do not mark the value as being used *) in
             (id,
-             Typecore.type_exp val_env'
-               {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
-                pexp_loc = Location.none}))
+             {
+              exp_desc = Texp_ident(path, vd);
+              exp_loc = Location.none;
+              exp_type = Ctype.instance val_env' vd.val_type;
+              exp_env = val_env'
+             })
+          )
           pv
       in
       let rec not_function = function
@@ -900,18 +907,23 @@ and class_expr cl_num val_env met_env scl =
       let (vals, met_env) =
         List.fold_right
           (fun id (vals, met_env) ->
+             let path = Pident id in
+             let vd = Env.find_value path val_env in (* do not mark the value as used *)
              Ctype.begin_def ();
              let expr =
-               Typecore.type_exp val_env
-                 {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
-                  pexp_loc = Location.none}
+               {
+                exp_desc = Texp_ident(path, vd);
+                exp_loc = Location.none;
+                exp_type = Ctype.instance val_env vd.val_type;
+                exp_env = val_env;
+               }
              in
              Ctype.end_def ();
              Ctype.generalize expr.exp_type;
              let desc =
                {val_type = expr.exp_type; val_kind = Val_ivar (Immutable,
                                                                cl_num);
-                val_loc = Location.none;
+                val_loc = vd.val_loc;
                }
              in
              let id' = Ident.create (Ident.name id) in
@@ -981,7 +993,7 @@ let rec approx_description ct =
 
 (*******************************)
 
-let temp_abbrev env id arity =
+let temp_abbrev loc env id arity =
   let params = ref [] in
   for i = 1 to arity do
     params := Ctype.newvar () :: !params
@@ -996,7 +1008,7 @@ let temp_abbrev env id arity =
        type_manifest = Some ty;
        type_variance = List.map (fun _ -> true, true, true) !params;
        type_newtype_level = None;
-       type_loc = Location.none;
+       type_loc = loc;
       }
       env
   in
@@ -1006,8 +1018,8 @@ let rec initial_env define_class approx
     (res, env) (cl, id, ty_id, obj_id, cl_id) =
   (* Temporary abbreviations *)
   let arity = List.length (fst cl.pci_params) in
-  let (obj_params, obj_ty, env) = temp_abbrev env obj_id arity in
-  let (cl_params, cl_ty, env) = temp_abbrev env cl_id arity in
+  let (obj_params, obj_ty, env) = temp_abbrev cl.pci_loc env obj_id arity in
+  let (cl_params, cl_ty, env) = temp_abbrev cl.pci_loc env cl_id arity in
 
   (* Temporary type for the class constructor *)
   let constr_type = approx cl.pci_expr in

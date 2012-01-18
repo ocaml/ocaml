@@ -49,3 +49,8 @@ let rec head = function
     Pident id -> id
   | Pdot(p, s, pos) -> head p
   | Papply(p1, p2) -> assert false
+
+let rec last = function
+  | Pident id -> Ident.name id
+  | Pdot(_, s, _) -> s
+  | Papply(_, p) -> last p

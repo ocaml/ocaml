@@ -195,3 +195,7 @@ let rev_split_words s =
       | _ -> split2 res i (j+1)
     end
   in split1 [] 0
+
+let get_ref r =
+  let v = !r in
+  r := []; v

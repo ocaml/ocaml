@@ -46,6 +46,12 @@ type t =
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
   | Multiple_definition of string * string * string (* 31 *)
+  | Unused_value_declaration of string      (* 32 *)
+  | Unused_open of string                   (* 33 *)
+  | Unused_type_declaration of string       (* 34 *)
+  | Unused_for_index of string              (* 35 *)
+  | Unused_ancestor of string               (* 36 *)
+  | Unused_constructor of string            (* 37 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
