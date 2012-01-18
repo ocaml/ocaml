@@ -192,9 +192,6 @@ required in order to be able to debug the program with "ocamldebug"
 the program terminates on an uncaught exception (see
 section~\ref{ocamlrun-options}).
 
-\item["-help-warnings"]
-Show description for all available warning numbers.
-
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"
@@ -416,6 +413,7 @@ mentioned here corresponds to the empty set.
 \item[D] 3
 \item[E] 4
 \item[F] 5
+\item[K] 32, 33, 34, 35, 36, 37
 \item[L] 6
 \item[M] 7
 \item[P] 8
@@ -428,7 +426,7 @@ mentioned here corresponds to the empty set.
 \item[Z] 27
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27..29".
+The default setting is "-w +a-4-6-7-9-27-29-32-33-34-35-36-37".
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
 
@@ -448,6 +446,9 @@ of OCaml add some new warnings.
 
 The default setting is "-warn-error -a"
 (none of the warnings is treated as an error).
+
+\item["-warn-help"]
+Show description for all available warning numbers.
 
 \item["-where"]
 Print the location of the standard library, then exit.
