@@ -418,7 +418,13 @@ module Genarray :
      than the big array, only the initial portion of the file is
      mapped to the big array.  If the file is smaller than the big
      array, the file is automatically grown to the size of the big array.
-     This requires write permissions on [fd]. *)
+     This requires write permissions on [fd].
+
+     Array accesses are bounds-checked, but the bounds are determined by
+     the initial call to [map_file]. Therefore, you should make sure no
+     other process modifies the mapped file while you're accessing it,
+     or a SIGBUS signal may be raised. This happens, for instance, if the
+     file is shrinked. *)
 
   end
 
