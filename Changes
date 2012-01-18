@@ -63,6 +63,8 @@ Bug Fixes:
 
 Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script
+- PR#5199: tests are run only for bytecode if either native support is missing,
+  or a non-empty value is set to "BYTECODE_ONLY" Makefile variable
 - PR#5329: (Windows) more efficient Unix.select if all fd's are sockets
 - PR#5358: first class modules don't allow "with type" declarations for types
   in sub-modules

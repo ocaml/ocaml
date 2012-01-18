@@ -1,7 +1,12 @@
 BASEDIR=../..
 CSC=csc
 
-default: prepare bytecode bytecode-dll native native-dll
+default:
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  $(MAKE) all; \
+	fi
+
+all: prepare bytecode bytecode-dll native native-dll
 
 prepare:
 	@$(OCAMLC) -c plugin.ml

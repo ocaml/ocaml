@@ -16,12 +16,14 @@ run-byte: common
 	@echo " => passed"
 
 run-opt: common
-	@printf " ... testing 'native':"
-	@$(OCAMLOPT) -c tcallback.ml
-	@$(OCAMLOPT) -o ./program unix.cmxa callbackprim.$(O) tcallback.cmx
-	@./program > native.result
-	@$(DIFF) reference native.result || (echo " => failed" && exit 1) 
-	@echo " => passed"
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  printf " ... testing 'native':"; \
+	  $(OCAMLOPT) -c tcallback.ml; \
+	  $(OCAMLOPT) -o ./program unix.cmxa callbackprim.$(O) tcallback.cmx; \
+	  ./program > native.result; \
+	  $(DIFF) reference native.result || (echo " => failed" && exit 1); \
+	  echo " => passed"; \
+	fi
 	
 promote: defaultpromote
 

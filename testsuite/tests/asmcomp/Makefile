@@ -94,7 +94,12 @@ OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 
 ADD_COMPFLAGS=$(INCLUDES) -g
 
-default: arch codegen tests
+default:
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  $(MAKE) all; \
+	fi
+
+all: arch codegen tests
 
 codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
