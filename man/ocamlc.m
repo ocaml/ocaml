@@ -667,7 +667,6 @@ pattern.
 
 29
 \ \ A non-escaped end-of-line was found in a string constant.  This may
-
 cause portability problems between Unix and Windows.
 
 The letters stand for the following sets of warnings.  Any letter not
@@ -687,6 +686,9 @@ mentioned here corresponds to the empty set.
 
 .B F
 \ 5
+
+.B K
+\ 32, 33, 34, 35, 36, 37
 
 .B L
 \ 6
@@ -710,7 +712,7 @@ mentioned here corresponds to the empty set.
 \ 13
 
 .B X
-\ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+\ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 30
 
 .B Y
 \ 26
@@ -720,7 +722,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-9\-27\-29 .
+.BR \-w\ +a\-4\-6\-9\-27\-29\-32\-33\-34\-35\-36\-37 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
