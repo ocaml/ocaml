@@ -24,7 +24,6 @@ OTHEROBJS=\
   $(TOPDIR)/parsing/lexer.cmo \
   $(TOPDIR)/parsing/parse.cmo \
   $(TOPDIR)/parsing/printast.cmo \
-  $(TOPDIR)/typing/unused_var.cmo \
   $(TOPDIR)/typing/ident.cmo \
   $(TOPDIR)/typing/path.cmo \
   $(TOPDIR)/typing/primitive.cmo \
