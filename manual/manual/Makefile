@@ -121,4 +121,4 @@ version.tex: $(SRC)/stdlib/sys.ml
 	sed -n -e 's/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $(SRC)/VERSION > version.tex
 
 warnings.tex: $(SRC)/utils/warnings.ml
-	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help | sed -e 's/^ *\([0-9][0-9]*\)\(.*\)/\\item[\1] \2/' > warnings.tex
+	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help | sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/' > warnings.tex
