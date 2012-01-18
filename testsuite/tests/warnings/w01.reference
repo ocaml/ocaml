@@ -1,7 +1,5 @@
 File "w01.ml", line 4, characters 12-14:
 Warning 2: this is not the end of a comment.
-File "w01.ml", line 9, characters 8-9:
-Warning 27: unused variable y.
 File "w01.ml", line 10, characters 0-3:
 Warning 5: this function application is partial,
 maybe some arguments are missing.
@@ -11,5 +9,7 @@ Here is an example of a value that is not matched:
 0
 File "w01.ml", line 25, characters 0-1:
 Warning 10: this expression should have type unit.
+File "w01.ml", line 9, characters 8-9:
+Warning 27: unused variable y.
 File "w01.ml", line 32, characters 2-3:
 Warning 11: this match case is unused.
