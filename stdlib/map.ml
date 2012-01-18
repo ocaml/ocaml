@@ -200,27 +200,31 @@ module Make(Ord: OrderedType) = struct
         Empty -> false
       | Node(l, v, d, r, _) -> p v d || exists p l || exists p r
 
-    let filter p s =
-      let rec filt accu = function
-        | Empty -> accu
-        | Node(l, v, d, r, _) ->
-            filt (filt (if p v d then add v d accu else accu) l) r in
-      filt Empty s
+    (* Beware: those two functions assume that the added k is *strictly*
+       smaller (or bigger) than all the present keys in the tree; it
+       does not test for equality with the current min (or max) key.
 
-    let partition p s =
-      let rec part (t, f as accu) = function
-        | Empty -> accu
-        | Node(l, v, d, r, _) ->
-            part (part (if p v d then (add v d t, f) else (t, add v d f)) l) r in
-      part (Empty, Empty) s
+       Indeed, they are only used during the "join" operation which
+       respects this precondition.
+    *)
+
+    let rec add_min_binding k v = function
+      | Empty -> singleton k v
+      | Node (l, x, d, r, h) ->
+        bal (add_min_binding k v l) x d r
+
+    let rec add_max_binding k v = function
+      | Empty -> singleton k v
+      | Node (l, x, d, r, h) ->
+        bal l x d (add_max_binding k v r)
 
     (* Same as create and bal, but no assumptions are made on the
        relative heights of l and r. *)
 
     let rec join l v d r =
       match (l, r) with
-        (Empty, _) -> add v d r
-      | (_, Empty) -> add v d l
+        (Empty, _) -> add_min_binding v d r
+      | (_, Empty) -> add_max_binding v d l
       | (Node(ll, lv, ld, lr, lh), Node(rl, rv, rd, rr, rh)) ->
           if lh > rh + 2 then bal ll lv ld (join lr v d r) else
           if rh > lh + 2 then bal (join l v d rl) rv rd rr else
@@ -265,6 +269,20 @@ module Make(Ord: OrderedType) = struct
           concat_or_join (merge f l1 l2) v2 (f v2 d1 (Some d2)) (merge f r1 r2)
       | _ ->
           assert false
+
+    let rec filter p = function
+        Empty -> Empty
+      | Node(l, v, d, r, _) ->
+          let l' = filter p l and r' = filter p r in
+          if p v d then join l' v d r' else concat l' r'
+
+    let rec partition p = function
+        Empty -> (Empty, Empty)
+      | Node(l, v, d, r, _) ->
+          let (lt, lf) = partition p l and (rt, rf) = partition p r in
+          if p v d
+          then (join lt v d rt, concat lf rf)
+          else (concat lt rt, join lf v d rf)
 
     type 'a enumeration = End | More of key * 'a * 'a t * 'a enumeration
 

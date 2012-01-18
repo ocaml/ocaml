@@ -122,18 +122,16 @@ typing/datarepr.cmo: typing/types.cmi typing/predef.cmi utils/misc.cmi \
     typing/btype.cmi parsing/asttypes.cmi typing/datarepr.cmi
 typing/datarepr.cmx: typing/types.cmx typing/predef.cmx utils/misc.cmx \
     typing/btype.cmx parsing/asttypes.cmi typing/datarepr.cmi
-typing/env.cmo: utils/warnings.cmi typing/types.cmi utils/tbl.cmi \
-    typing/subst.cmi typing/predef.cmi typing/path.cmi utils/misc.cmi \
-    parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
-    typing/datarepr.cmi utils/consistbl.cmi utils/config.cmi \
-    utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi typing/annot.cmi \
-    typing/env.cmi
-typing/env.cmx: utils/warnings.cmx typing/types.cmx utils/tbl.cmx \
-    typing/subst.cmx typing/predef.cmx typing/path.cmx utils/misc.cmx \
-    parsing/longident.cmx parsing/location.cmx typing/ident.cmx \
-    typing/datarepr.cmx utils/consistbl.cmx utils/config.cmx \
-    utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi typing/annot.cmi \
-    typing/env.cmi
+typing/env.cmo: typing/types.cmi utils/tbl.cmi typing/subst.cmi \
+    typing/predef.cmi typing/path.cmi utils/misc.cmi parsing/longident.cmi \
+    parsing/location.cmi typing/ident.cmi typing/datarepr.cmi \
+    utils/consistbl.cmi utils/config.cmi utils/clflags.cmi typing/btype.cmi \
+    parsing/asttypes.cmi typing/annot.cmi typing/env.cmi
+typing/env.cmx: typing/types.cmx utils/tbl.cmx typing/subst.cmx \
+    typing/predef.cmx typing/path.cmx utils/misc.cmx parsing/longident.cmx \
+    parsing/location.cmx typing/ident.cmx typing/datarepr.cmx \
+    utils/consistbl.cmx utils/config.cmx utils/clflags.cmx typing/btype.cmx \
+    parsing/asttypes.cmi typing/annot.cmi typing/env.cmi
 typing/ident.cmo: typing/ident.cmi
 typing/ident.cmx: typing/ident.cmi
 typing/includeclass.cmo: typing/types.cmi typing/printtyp.cmi \
@@ -339,13 +337,15 @@ bytecomp/bytelibrarian.cmo: utils/misc.cmi utils/config.cmi \
 bytecomp/bytelibrarian.cmx: utils/misc.cmx utils/config.cmx \
     bytecomp/cmo_format.cmi utils/clflags.cmx bytecomp/bytelink.cmx \
     bytecomp/bytelibrarian.cmi
-bytecomp/bytelink.cmo: bytecomp/symtable.cmi bytecomp/opcodes.cmo \
-    utils/misc.cmi bytecomp/instruct.cmi typing/ident.cmi bytecomp/dll.cmi \
+bytecomp/bytelink.cmo: utils/warnings.cmi bytecomp/symtable.cmi \
+    bytecomp/opcodes.cmo utils/misc.cmi parsing/location.cmi \
+    bytecomp/instruct.cmi typing/ident.cmi bytecomp/dll.cmi \
     utils/consistbl.cmi utils/config.cmi bytecomp/cmo_format.cmi \
     utils/clflags.cmi utils/ccomp.cmi bytecomp/bytesections.cmi \
     bytecomp/bytelink.cmi
-bytecomp/bytelink.cmx: bytecomp/symtable.cmx bytecomp/opcodes.cmx \
-    utils/misc.cmx bytecomp/instruct.cmx typing/ident.cmx bytecomp/dll.cmx \
+bytecomp/bytelink.cmx: utils/warnings.cmx bytecomp/symtable.cmx \
+    bytecomp/opcodes.cmx utils/misc.cmx parsing/location.cmx \
+    bytecomp/instruct.cmx typing/ident.cmx bytecomp/dll.cmx \
     utils/consistbl.cmx utils/config.cmx bytecomp/cmo_format.cmi \
     utils/clflags.cmx utils/ccomp.cmx bytecomp/bytesections.cmx \
     bytecomp/bytelink.cmi

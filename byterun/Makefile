@@ -65,6 +65,9 @@ clean::
 	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $*.pic.c
 	rm $*.pic.c
 
+clean::
+	rm -f *.pic.c *.d.c
+
 depend : prims.c opnames.h jumptbl.h version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
 	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend

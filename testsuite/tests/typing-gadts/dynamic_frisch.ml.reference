@@ -9,9 +9,9 @@
   | VString of string
   | VList of variant list
   | VPair of variant * variant
-val variantize : 'a ty -> 'a -> variant = <fun>
+val variantize : 't ty -> 't -> variant = <fun>
 exception VariantMismatch
-val devariantize : 'a ty -> variant -> 'a = <fun>
+val devariantize : 't ty -> variant -> 't = <fun>
 #                                                   type 'a ty =
     Int : int ty
   | String : string ty
@@ -27,7 +27,7 @@ and ('a, 'b) field = { label : string; field_type : 'b ty; get : 'a -> 'b; }
   | VList of variant list
   | VPair of variant * variant
   | VRecord of (string * variant) list
-val variantize : 'a ty -> 'a -> variant = <fun>
+val variantize : 't ty -> 't -> variant = <fun>
 #                                                                                                   type 'a ty =
     Int : int ty
   | String : string ty
@@ -48,7 +48,7 @@ and ('a, 'builder, 'b) field_ = {
   get : 'a -> 'b;
   set : 'builder -> 'b -> unit;
 }
-val devariantize : 'a ty -> variant -> 'a = <fun>
+val devariantize : 't ty -> variant -> 't = <fun>
 #                                                   type my_record = { a : int; b : string list; }
 val my_record : my_record ty =
   Record
@@ -58,7 +58,7 @@ val my_record : my_record ty =
       Field {label = "b"; field_type = List String; get = <fun>; set = <fun>}];
     create_builder = <fun>; of_builder = <fun>}
 #                                                                         type noarg = Noarg
-type ('a, 'b) ty =
+type (_, _) ty =
     Int : (int, 'c) ty
   | String : (string, 'd) ty
   | List : ('a, 'e) ty -> ('a list, 'e) ty
@@ -75,20 +75,20 @@ and ('a, 'e, 'b) ty_sum = {
   sum_inj : 'c. ('b, 'c) ty_sel * 'c -> 'a;
 }
 and 'e ty_dyn = Tdyn : ('a, 'e) ty * 'a -> 'e ty_dyn
-and ('a, 'b) ty_sel =
+and (_, _) ty_sel =
     Thd : ('a -> 'b, 'a) ty_sel
   | Ttl : ('b -> 'c, 'd) ty_sel -> ('a -> 'b -> 'c, 'd) ty_sel
-and ('a, 'b) ty_case =
+and (_, _) ty_case =
     TCarg : ('b, 'a) ty_sel * ('a, 'e) ty -> ('e, 'b) ty_case
   | TCnoarg : ('b, noarg) ty_sel -> ('e, 'b) ty_case
-#         type 'a ty_env =
+#         type _ ty_env =
     Enil : unit ty_env
   | Econs : ('a, 'e) ty * 'e ty_env -> ('a -> 'e) ty_env
-#                                                         type ('a, 'b) eq = Eq : ('a, 'a) eq
+#                                                         type (_, _) eq = Eq : ('a, 'a) eq
 val eq_sel : ('a, 'b) ty_sel -> ('a, 'c) ty_sel -> ('b, 'c) eq option = <fun>
 val get_case :
-  ('a, 'b) ty_sel ->
-  (string * ('c, 'a) ty_case) list -> string * ('b, 'c) ty option = <fun>
+  ('b, 'a) ty_sel ->
+  (string * ('e, 'b) ty_case) list -> string * ('a, 'e) ty option = <fun>
 #                                                         type variant =
     VInt of int
   | VString of string
@@ -98,8 +98,8 @@ val get_case :
   | VConv of string * variant
   | VSum of string * variant option
 val may_map : ('a -> 'b) -> 'a option -> 'b option = <fun>
-val variantize : 'a ty_env -> ('b, 'a) ty -> 'b -> variant = <fun>
-#                                               val devariantize : 'a ty_env -> ('b, 'a) ty -> variant -> 'b = <fun>
+val variantize : 'e ty_env -> ('a, 'e) ty -> 'a -> variant = <fun>
+#                                               val devariantize : 'e ty_env -> ('t, 'e) ty -> variant -> 't = <fun>
 #     val wrap_A : ('a, 'b) ty -> ([ `A of 'a ], 'b) ty = <fun>
 #   val ty : ('a, ([ `A of ('a * 'b) option ] as 'b) -> 'c) ty -> ('b, 'c) ty =
   <fun>
@@ -124,12 +124,12 @@ val v : variant =
     sum_inj = <fun>}
 #                                             val a : [ `A of int | `B of string | `C ] = `A 3
 type 'a vlist = [ `Cons of 'a * 'a vlist | `Nil ]
-val ty_list : ('a, 'b) ty -> ('a vlist, 'b) ty = <fun>
+val ty_list : ('a, 'e) ty -> ('a vlist, 'e) ty = <fun>
 val v : variant =
   VSum ("Cons",
    Some
     (VPair (VInt 1, VSum ("Cons", Some (VPair (VInt 2, VSum ("Nil", None)))))))
-#                                                               type ('a, 'b) ty =
+#                                                               type (_, _) ty =
     Int : (int, 'c) ty
   | String : (string, 'd) ty
   | List : ('a, 'e) ty -> ('a list, 'e) ty
@@ -149,7 +149,7 @@ val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum (<fun>, <fun>)
 Error: This pattern matches values of type a * a vlist
        but a pattern was expected which matches values of type
          ex#46 = ex#47 * ex#48
-#                                                         type ('a, 'b) ty =
+#                                                         type (_, _) ty =
     Int : (int, 'd) ty
   | String : (string, 'f) ty
   | List : ('a, 'e) ty -> ('a list, 'e) ty
@@ -164,13 +164,13 @@ Error: This pattern matches values of type a * a vlist
         inj : 'c. ('b, 'c) ty_sel * 'c -> 'a;
         proj : 'a -> string * 'e ty_dyn option > -> ('a, 'e) ty
 and 'e ty_dyn = Tdyn : ('a, 'e) ty * 'a -> 'e ty_dyn
-and ('a, 'b) ty_sel =
+and (_, _) ty_sel =
     Thd : ('a -> 'b, 'a) ty_sel
   | Ttl : ('b -> 'c, 'd) ty_sel -> ('a -> 'b -> 'c, 'd) ty_sel
-and ('a, 'b) ty_case =
+and (_, _) ty_case =
     TCarg : ('b, 'a) ty_sel * ('a, 'e) ty -> ('e, 'b) ty_case
   | TCnoarg : ('b, noarg) ty_sel -> ('e, 'b) ty_case
 #                                                                     val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum <obj>
 type 'a vlist = [ `Cons of 'a * 'a vlist | `Nil ]
-val ty_list : ('a, 'b) ty -> ('a vlist, 'b) ty = <fun>
+val ty_list : ('a, 'e) ty -> ('a vlist, 'e) ty = <fun>
 #   * * * * * * * * *   

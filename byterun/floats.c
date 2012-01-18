@@ -28,6 +28,12 @@
 #include "reverse.h"
 #include "stacks.h"
 
+#ifdef _MSC_VER
+#include <float.h>
+#define isnan _isnan
+#define isfinite _finite
+#endif
+
 #ifdef ARCH_ALIGN_DOUBLE
 
 CAMLexport double caml_Double_val(value val)
@@ -77,7 +83,11 @@ CAMLprim value caml_format_float(value fmt, value arg)
   char * p;
   char * dest;
   value res;
+  double d = Double_val(arg);
 
+#ifdef HAS_BROKEN_PRINTF
+  if (isfinite(d)) {
+#endif
   prec = MAX_DIGITS;
   for (p = String_val(fmt); *p != 0; p++) {
     if (*p >= '0' && *p <= '9') {
@@ -98,11 +108,30 @@ CAMLprim value caml_format_float(value fmt, value arg)
   } else {
     dest = caml_stat_alloc(prec);
   }
-  sprintf(dest, String_val(fmt), Double_val(arg));
+  sprintf(dest, String_val(fmt), d);
   res = caml_copy_string(dest);
   if (dest != format_buffer) {
     caml_stat_free(dest);
   }
+#ifdef HAS_BROKEN_PRINTF
+  } else {
+    if (isnan(d))
+    {
+      res = caml_copy_string("nan");
+    }
+    else
+    {
+      if (d > 0)
+      {
+        res = caml_copy_string("inf");
+      }
+      else
+      {
+        res = caml_copy_string("-inf");
+      }
+    }
+  }
+#endif
   return res;
 }
 

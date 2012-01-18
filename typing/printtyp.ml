@@ -236,7 +236,8 @@ let name_of_type t =
           (* No name available, create a new one *)
           new_name ()
     in
-    names := (t, name) :: !names;
+    (* Exception for type declarations *)
+    if name <> "_" then names := (t, name) :: !names;
     name
 
 let check_name_of_type t = ignore(name_of_type t)

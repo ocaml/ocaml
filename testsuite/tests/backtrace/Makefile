@@ -7,7 +7,7 @@ run-all:
 	  for arg in a b c d ''; do \
 	    printf " ... testing '$$file' (with argument '$$arg'):"; \
 	    OCAMLRUNPARAM=b=1 $(EXECNAME) $$arg > `basename $$file ml`$$arg.result 2>&1; \
-	    diff -q `basename $$file ml`$$arg.reference `basename $$file ml`$$arg.result > /dev/null && echo " => passed" || (echo " => failed" && exit 1); \
+	    $(DIFF) `basename $$file ml`$$arg.reference `basename $$file ml`$$arg.result > /dev/null && echo " => passed" || (echo " => failed" && exit 1); \
 	  done; \
 	done
 

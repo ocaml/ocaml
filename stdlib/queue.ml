@@ -15,7 +15,7 @@
 
 exception Empty
 
-(* O'Caml currently does not allow the components of a sum type to be
+(* OCaml currently does not allow the components of a sum type to be
    mutable. Yet, for optimal space efficiency, we must have cons cells
    whose [next] field is mutable. This leads us to define a type of
    cyclic lists, so as to eliminate the [Nil] case and the sum

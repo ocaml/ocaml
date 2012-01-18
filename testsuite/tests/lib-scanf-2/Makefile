@@ -11,10 +11,10 @@ compile: tscanf2_io.cmo tscanf2_io.cmx
 run:
 	@printf " ... testing with ocamlc"
 	@./master.byte ./slave.byte > result.byte 2>&1
-	@diff -q reference result.byte > /dev/null || (echo " => failed" && exit 1)
+	@$(DIFF) reference result.byte > /dev/null || (echo " => failed" && exit 1)
 	@printf " ocamlopt"
 	@./master.native ./slave.native > result.native 2>&1
-	@diff -q reference result.native > /dev/null || (echo " => failed" && exit 1)
+	@$(DIFF) reference result.native > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
 promote:

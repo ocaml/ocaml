@@ -18,8 +18,7 @@ open Obj
 (**** Object representation ****)
 
 let last_id = ref 0
-let new_id () =
-  let id = !last_id in incr last_id; id
+let () = Callback.register "CamlinternalOO.last_id" last_id
 
 let set_id o id =
   let id0 = !id in

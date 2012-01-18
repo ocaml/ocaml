@@ -18,11 +18,21 @@
    This module provides functions to compute 128-bit ``digests'' of
    arbitrary-length strings or files. The digests are of cryptographic
    quality: it is very hard, given a digest, to forge a string having
-   that digest. The algorithm used is MD5.
+   that digest. The algorithm used is MD5. This module should not be
+   used for secure and sensitive cryptographic applications. For these
+   kind of applications more recent and stronger cryptographic
+   primitives should be used instead.
 *)
 
 type t = string
 (** The type of digests: 16-character strings. *)
+
+val compare : t -> t -> int
+(** The comparison function for 16-character digest, with the same
+    specification as {!Pervasives.compare} and the implementation
+    shared with {!String.compare}. Along with the type [t], this
+    function [compare] allows the module [Digest] to be passed as
+    argument to the functors {!Set.Make} and {!Map.Make}. *)
 
 val string : string -> t
 (** Return the digest of the given string. *)

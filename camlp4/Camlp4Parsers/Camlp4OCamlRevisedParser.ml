@@ -1782,13 +1782,19 @@ New syntax:\
     ;
     str_item_quot:
       [ [ "#"; n = a_LIDENT; dp = opt_expr -> <:str_item< # $n$ $dp$ >>
-        | st1 = str_item; semi; st2 = SELF -> <:str_item< $st1$; $st2$ >>
+        | st1 = str_item; semi; st2 = SELF ->
+            match st2 with
+            [ <:str_item<>> -> st1
+            | _ -> <:str_item< $st1$; $st2$ >> ]
         | st = str_item -> st
         | -> <:str_item<>> ] ]
     ;
     sig_item_quot:
       [ [ "#"; n = a_LIDENT; dp = opt_expr -> <:sig_item< # $n$ $dp$ >>
-        | sg1 = sig_item; semi; sg2 = SELF -> <:sig_item< $sg1$; $sg2$ >>
+        | sg1 = sig_item; semi; sg2 = SELF ->
+            match sg2 with
+            [ <:sig_item<>> -> sg1
+            | _ -> <:sig_item< $sg1$; $sg2$ >> ]
         | sg = sig_item -> sg
         | -> <:sig_item<>> ] ]
     ;
@@ -1873,12 +1879,17 @@ New syntax:\
     ;
     class_str_item_quot:
       [ [ x1 = class_str_item; semi; x2 = SELF ->
-          <:class_str_item< $x1$; $x2$ >>
+          match x2 with
+          [ <:class_str_item<>> -> x1
+          | _ -> <:class_str_item< $x1$; $x2$ >> ]
         | x = class_str_item -> x
         | -> <:class_str_item<>> ] ]
     ;
     class_sig_item_quot:
-      [ [ x1 = class_sig_item; semi; x2 = SELF -> <:class_sig_item< $x1$; $x2$ >>
+      [ [ x1 = class_sig_item; semi; x2 = SELF ->
+          match x2 with
+          [ <:class_sig_item<>> -> x1
+          | _ -> <:class_sig_item< $x1$; $x2$ >> ]
         | x = class_sig_item -> x
         | -> <:class_sig_item<>> ] ]
     ;

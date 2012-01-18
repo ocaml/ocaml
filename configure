@@ -780,6 +780,9 @@ else
   echo "RANLIBCMD=" >> Makefile
 fi
 
+echo "ARCMD=ar" >> Makefile
+
+
 # Do #! scripts work?
 
 if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
@@ -1312,7 +1315,10 @@ for dir in \
     /lib/usr/lib/X11      \
                           \
     /usr/openwin/lib      \
-    /usr/openwin/share/lib \
+    /usr/openwin/share/lib    \
+                              \
+    /usr/lib/i386-linux-gnu   \
+    /usr/lib/x86_64-linux-gnu \
     ; \
 do
   if test -f $dir/libX11.a || \
@@ -1325,6 +1331,7 @@ do
     else
       x11_libs="-L$dir"
       case "$host" in
+        *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
         *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
         *) x11_link="-L$dir -lX11";;
       esac
@@ -1443,10 +1450,6 @@ if test $has_tk = true; then
     has_tk=false
   fi
 fi
-
-case "$host" in
-  *-*-cygwin*) tk_libs="$tk_libs -lws2_32";;
-esac
 
 if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then

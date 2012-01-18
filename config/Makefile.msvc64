@@ -120,6 +120,9 @@ SYSLIB=$(1).lib
 RANLIB=echo
 RANLIBCMD=
 
+### The ar command
+ARCMD=
+
 ############# Configuration for the native-code compiler
 
 ### Name of architecture for the native-code compiler

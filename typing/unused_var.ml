@@ -274,7 +274,6 @@ and class_field ppf tbl cf =
   | Pcf_virt _ | Pcf_valvirt _ -> ()
   | Pcf_meth (_, _, _, e, _) -> expression ppf tbl e;
   | Pcf_cstr _ -> ()
-  | Pcf_let (recflag, pel, _) -> let_pel ppf tbl recflag pel None;
   | Pcf_init e -> expression ppf tbl e;
 ;;
 

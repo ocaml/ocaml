@@ -125,16 +125,11 @@ module StringSet =
   end)
 
 let make_params sdecl =
-  let param_counter = ref 0 in 
   try 
     List.map 
       (function
-	  None ->
-	    incr param_counter ;
-	    enter_type_variable true sdecl.ptype_loc
-	      (Printf.sprintf "*%d" !param_counter)
-	| Some x ->
-	    enter_type_variable true sdecl.ptype_loc x)
+	  None -> Ctype.new_global_var ~name:"_" ()
+	| Some x -> enter_type_variable true sdecl.ptype_loc x)
       sdecl.ptype_params
   with Already_bound ->
     raise(Error(sdecl.ptype_loc, Repeated_parameter))

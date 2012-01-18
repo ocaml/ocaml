@@ -438,7 +438,7 @@ let int_of_width_opt = function
 ;;
 
 let int_of_prec_opt = function
-  | None -> 0
+  | None -> max_int
   | Some prec -> prec
 ;;
 
@@ -737,7 +737,7 @@ let scan_exp_part width ib =
 ;;
 
 (* Scan the integer part of a floating point number, (not using the
-   Caml lexical convention since the integer part can be empty):
+   OCaml lexical convention since the integer part can be empty):
    an optional sign, followed by a possibly empty sequence of decimal
    digits (e.g. -.1). *)
 let scan_int_part width ib =
@@ -925,7 +925,7 @@ let scan_backslash_char width ib =
     bad_input_escape c
 ;;
 
-(* Scan a character (a Caml token). *)
+(* Scan a character (an OCaml token). *)
 let scan_Char width ib =
 
   let rec find_start width =
@@ -946,7 +946,7 @@ let scan_Char width ib =
   find_start width
 ;;
 
-(* Scan a delimited string (a Caml token). *)
+(* Scan a delimited string (an OCaml token). *)
 let scan_String width ib =
 
   let rec find_start width =
@@ -979,7 +979,7 @@ let scan_String width ib =
   find_start width
 ;;
 
-(* Scan a boolean (a Caml token). *)
+(* Scan a boolean (an OCaml token). *)
 let scan_bool width ib =
   if width < 4 then bad_token_length "a boolean" else
   let c = Scanning.checked_peek_char ib in
@@ -999,31 +999,51 @@ type char_set =
    | Neg_set of string (* Negative (complementary) set. *)
 ;;
 
+
 (* Char sets are read as sub-strings in the format string. *)
-let read_char_set fmt i =
-  let lim = Sformat.length fmt - 1 in
+let scan_range fmt j =
 
-  let rec find_in_set j =
-    if j > lim then incomplete_format fmt else
+  let len = Sformat.length fmt in
+
+  let buffer = Buffer.create len in
+
+  let rec scan_closing j =
+    if j >= len then incomplete_format fmt else
     match Sformat.get fmt j with
-    | ']' -> j
-    | _ -> find_in_set (succ j)
+    | ']' -> j, Buffer.contents buffer
+    | '%' ->
+      let j = j + 1 in
+      if j >= len then incomplete_format fmt else
+      begin match Sformat.get fmt j with
+      | '%' | '@' as c ->
+        Buffer.add_char buffer c;
+        scan_closing (j + 1)
+      | c -> bad_conversion fmt j c
+      end
+    | c ->
+      Buffer.add_char buffer c;
+      scan_closing (j + 1) in
 
-  and find_set i =
-    if i > lim then incomplete_format fmt else
-    match Sformat.get fmt i with
-    | ']' -> find_in_set (succ i)
-    | _ -> find_in_set i in
+  let scan_first_pos j =
+    if j >= len then incomplete_format fmt else
+    match Sformat.get fmt j with
+    | ']' as c ->
+      Buffer.add_char buffer c;
+      scan_closing (j + 1)
+    | _ -> scan_closing j in
 
-  if i > lim then incomplete_format fmt else
-  match Sformat.get fmt i with
-  | '^' ->
-    let i = succ i in
-    let j = find_set i in
-    j, Neg_set (Sformat.sub fmt (Sformat.index_of_int i) (j - i))
-  | _ ->
-    let j = find_set i in
-    j, Pos_set (Sformat.sub fmt (Sformat.index_of_int i) (j - i))
+  let rec scan_first_neg j =
+    if j >= len then incomplete_format fmt else
+    match Sformat.get fmt j with
+    | '^' ->
+      let j = j + 1 in
+      let k, char_set = scan_first_pos j in
+      k, Neg_set char_set
+    | _ ->
+      let k, char_set = scan_first_pos j in
+      k, Pos_set char_set in
+
+  scan_first_neg j
 ;;
 
 (* Char sets are now represented as bit vectors that are represented as
@@ -1370,18 +1390,19 @@ let scan_format ib ef fmt rv f =
       let width = int_of_width_opt width_opt in
       let prec = int_of_prec_opt prec_opt in
       match Sformat.get fmt i with
-      | '%' as conv ->
-        check_char ib conv; scan_fmt ir f (succ i)
+      | '%' | '@' as c ->
+        check_char ib c;
+        scan_fmt ir f (succ i)
       | 's' ->
-        let i, stp = scan_fmt_stoppers (succ i) in
+        let i, stp = scan_indication (succ i) in
         let _x = scan_string stp width ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
       | 'S' ->
         let _x = scan_String width ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
       | '[' (* ']' *) ->
-        let i, char_set = read_char_set fmt (succ i) in
-        let i, stp = scan_fmt_stoppers (succ i) in
+        let i, char_set = scan_range fmt (succ i) in
+        let i, stp = scan_indication (succ i) in
         let _x = scan_chars_in_char_set stp char_set width ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
       | ('c' | 'C') when width = 0 ->
@@ -1458,12 +1479,23 @@ let scan_format ib ef fmt rv f =
 
       | c -> bad_conversion fmt i c
 
-    and scan_fmt_stoppers i =
-      if i > lim then i - 1, [] else
-      match Sformat.get fmt i with
-      | '@' when i < lim -> let i = succ i in i, [Sformat.get fmt i]
-      | '@' when i = lim -> incomplete_format fmt
-      | _ -> i - 1, [] in
+    and scan_indication j =
+      if j > lim then j - 1, [] else
+      match Sformat.get fmt j with
+      | '@' ->
+        let k = j + 1 in
+        if k > lim then j - 1, [] else
+        begin match Sformat.get fmt k with
+        | '%' ->
+          let k = k + 1 in
+          if k > lim then j - 1, [] else
+          begin match Sformat.get fmt k with
+          | '%' | '@' as c  -> k, [ c ]
+          | _c -> j - 1, []
+          end
+        | c -> k, [ c ]
+        end
+      | _c -> j - 1, [] in
 
     scan_fmt in
 
@@ -1488,7 +1520,8 @@ let bscanf ib = kscanf ib scanf_bad_input;;
 
 let fscanf ic = bscanf (Scanning.from_channel ic);;
 
-let sscanf s = bscanf (Scanning.from_string s);;
+let sscanf : string -> ('a, 'b, 'c, 'd) scanner
+  = fun s -> bscanf (Scanning.from_string s);;
 
 let scanf fmt = bscanf Scanning.stdib fmt;;
 
@@ -1520,6 +1553,9 @@ let string_to_String s =
 let format_from_string s fmt =
   sscanf_format (string_to_String s) fmt (fun x -> x)
 ;;
+
+let unescaped s =
+  sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
 
 (*
  Local Variables:

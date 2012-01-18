@@ -22,6 +22,10 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* <private> */
 CAMLextern intnat volatile caml_signals_are_pending;
 CAMLextern intnat volatile caml_pending_signals[];
@@ -47,5 +51,9 @@ CAMLextern void (*caml_leave_blocking_section_hook)(void);
 CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
 CAMLextern void (* volatile caml_async_action_hook)(void);
 /* </private> */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_SIGNALS_H */

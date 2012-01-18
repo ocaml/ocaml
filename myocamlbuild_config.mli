@@ -16,6 +16,7 @@ val libdir : string
 val manext : string
 val ranlib : string
 val ranlibcmd : string
+val arcmd : string
 val sharpbangscripts : bool
 val bng_arch : string
 val bng_asm_level : string

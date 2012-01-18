@@ -569,38 +569,6 @@ let rec class_field cl_num self_type meths vars
       type_constraint val_env sty sty' loc;
       (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher)
 
-  | Pcf_let (rec_flag, sdefs, loc) ->
-      let (defs, val_env) =
-        try
-          Typecore.type_let val_env rec_flag sdefs None
-        with Ctype.Unify [(ty, _)] ->
-          raise(Error(loc, Make_nongen_seltype ty))
-      in
-      let (vals, met_env, par_env) =
-        List.fold_right
-          (fun id (vals, met_env, par_env) ->
-             let expr =
-               Typecore.type_exp val_env
-                 {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
-                  pexp_loc = Location.none}
-             in
-             let desc =
-               {val_type = expr.exp_type;
-                val_kind = Val_ivar (Immutable, cl_num);
-                val_loc = Location.none;
-               }
-             in
-             let id' = Ident.create (Ident.name id) in
-             ((id', expr)
-              :: vals,
-              Env.add_value id' desc met_env,
-              Env.add_value id' desc par_env))
-          (let_bound_idents defs)
-          ([], met_env, par_env)
-      in
-      (val_env, met_env, par_env, lazy(Cf_let(rec_flag, defs, vals))::fields,
-       concr_meths, warn_vals, inher)
-
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
       let vars_local = !vars in

@@ -195,7 +195,6 @@ and class_field =
   | Pcf_meth of
       (string * private_flag * override_flag * expression * Location.t)
   | Pcf_cstr of (core_type * core_type * Location.t)
-  | Pcf_let of rec_flag * (pattern * expression) list * Location.t
   | Pcf_init of expression
 
 and class_declaration = class_expr class_infos

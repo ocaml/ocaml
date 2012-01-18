@@ -20,7 +20,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    [arg1] to [argN] according to the format string [format], and
    outputs the resulting string on the channel [outchan].
 
-   The format is a character string which contains two types of
+   The format string is a character string which contains two types of
    objects: plain characters, which are simply copied to the output
    channel, and conversion specifications, each of which causes
    conversion and printing of arguments.
@@ -31,60 +31,66 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 
    In short, a conversion specification consists in the [%] character,
    followed by optional modifiers and a type which is made of one or
-   two characters. The types and their meanings are:
+   two characters.
 
-   - [d], [i], [n], [l], [L], or [N]: convert an integer argument to
-     signed decimal.
-   - [u]: convert an integer argument to unsigned decimal.
+   The types and their meanings are:
+
+   - [d], [i]: convert an integer argument to signed decimal.
+   - [u], [n], [l], [L], or [N]: convert an integer argument to
+     unsigned decimal.  Warning: [n], [l], [L], and [N] are
+     used for [scanf], and should not be used for [printf].
    - [x]: convert an integer argument to unsigned hexadecimal,
      using lowercase letters.
    - [X]: convert an integer argument to unsigned hexadecimal,
      using uppercase letters.
    - [o]: convert an integer argument to unsigned octal.
    - [s]: insert a string argument.
-   - [S]: insert a string argument in Caml syntax (double quotes, escapes).
+   - [S]: convert a string argument to OCaml syntax (double quotes, escapes).
    - [c]: insert a character argument.
-   - [C]: insert a character argument in Caml syntax (single quotes, escapes).
+   - [C]: convert a character argument to OCaml syntax (single quotes, escapes).
    - [f]: convert a floating-point argument to decimal notation,
      in the style [dddd.ddd].
-   - [F]: convert a floating-point argument to Caml syntax ([dddd.]
+   - [F]: convert a floating-point argument to OCaml syntax ([dddd.]
      or [dddd.ddd] or [d.ddd e+-dd]).
    - [e] or [E]: convert a floating-point argument to decimal notation,
      in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
      in style [f] or [e], [E] (whichever is more compact).
    - [B]: convert a boolean argument to the string [true] or [false]
-   - [b]: convert a boolean argument (for backward compatibility; do not
-     use in new programs).
+   - [b]: convert a boolean argument (deprecated; do not use in new
+     programs).
    - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to
      the format specified by the second letter (decimal, hexadecimal, etc).
    - [nd], [ni], [nu], [nx], [nX], [no]: convert a [nativeint] argument to
      the format specified by the second letter.
    - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: convert an [int64] argument to
      the format specified by the second letter.
-   - [a]: user-defined printer. Takes two arguments and applies the
+   - [a]: user-defined printer. Take two arguments and apply the
      first one to [outchan] (the current output channel) and to the
      second argument. The first argument must therefore have type
      [out_channel -> 'b -> unit] and the second ['b].
      The output produced by the function is inserted in the output of
      [fprintf] at the current point.
-   - [t]: same as [%a], but takes only one argument (with type
+   - [t]: same as [%a], but take only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
    - [\{ fmt %\}]: convert a format string argument. The argument must
      have the same type as the internal format string [fmt].
-   - [( fmt %)]: format string substitution. Takes a format string
-     argument and substitutes it to the internal format string [fmt]
+   - [( fmt %)]: format string substitution. Take a format string
+     argument and substitute it to the internal format string [fmt]
      to print following arguments. The argument must have the same
      type as the internal format string [fmt].
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
-   - [,]: the no-op delimiter for conversion specifications.
+   - [\@]: take no argument and output one [\@] character.
+   - [,]: take no argument and do nothing.
 
    The optional [flags] are:
    - [-]: left-justify the output (default is right justification).
    - [0]: for numerical conversions, pad with zeroes instead of spaces.
-   - [+]: for numerical conversions, prefix number with a [+] sign if positive.
-   - space: for numerical conversions, prefix number with a space if positive.
+   - [+]: for signed numerical conversions, prefix number with a [+]
+     sign if positive.
+   - space: for signed numerical conversions, prefix number with a
+     space if positive.
    - [#]: request an alternate formatting style for numbers.
 
    The optional [width] is an integer indicating the minimal
@@ -153,7 +159,7 @@ val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 
 (**/**)
 
-(* For Caml system internal use only. Don't call directly. *)
+(* For OCaml system internal use only. Don't call directly. *)
 
 module CamlinternalPr : sig
 

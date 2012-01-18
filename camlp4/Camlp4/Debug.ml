@@ -50,24 +50,15 @@ value mode =
 
 value formatter =
   let header = "camlp4-debug: " in
-  let normal s =
-    let rec self from accu =
-      try
-        let i = String.index_from s from '\n'
-        in self (i + 1) [String.sub s from (i - from + 1) :: accu]
-      with
-      [ Not_found -> [ String.sub s from (String.length s - from) :: accu ] ]
-    in String.concat header (List.rev (self 0 [])) in
-  let after_new_line str = header ^ normal str in
-  let f = ref after_new_line in
-  let output str chr = do {
-    output_string out_channel (f.val str);
-    output_char out_channel chr;
-    f.val := if chr = '\n' then after_new_line else normal;
-  } in
+  let at_bol = ref True in
   (make_formatter
     (fun buf pos len ->
-      let p = pred len in output (String.sub buf pos p) buf.[pos + p])
+       for i = pos to pos + len - 1 do
+         if at_bol.val then output_string out_channel header else ();
+         let ch = buf.[i];
+         output_char out_channel ch;
+         at_bol.val := ch = '\n';
+       done)
     (fun () -> flush out_channel));
 
 value printf section fmt = fprintf formatter ("%s: " ^^ fmt) section;

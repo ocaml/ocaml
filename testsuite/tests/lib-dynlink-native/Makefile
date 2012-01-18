@@ -12,7 +12,7 @@ compile: $(PLUGINS) main mylib.so
 run:
 	@printf " ... testing 'main'"
 	@./main plugin_thread.so > result
-	@diff -q reference result > /dev/null || (echo " => failed" && exit 1)
+	@$(DIFF) reference result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
 main: api.cmx main.cmx

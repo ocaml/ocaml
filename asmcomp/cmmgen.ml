@@ -369,6 +369,14 @@ let make_float_alloc tag args =
   make_alloc_generic float_array_set tag
                      (List.length args * size_float / size_addr) args
 
+(* Bounds checking *)
+
+let make_checkbound dbg = function
+  | [Cop(Clsr, [a1; Cconst_int n]); Cconst_int m] when (m lsl n) > n ->
+      Cop(Ccheckbound dbg, [a1; Cconst_int(m lsl n + 1 lsl n - 1)])
+  | args ->
+      Cop(Ccheckbound dbg, args)
+
 (* To compile "let rec" over values *)
 
 let fundecls_size fundecls =
@@ -381,6 +389,7 @@ let fundecls_size fundecls =
 
 type rhs_kind =
   | RHS_block of int
+  | RHS_floatblock of int
   | RHS_nonrec
 ;;
 let rec expr_size = function
@@ -394,6 +403,8 @@ let rec expr_size = function
       RHS_block (List.length args)
   | Uprim(Pmakearray(Paddrarray | Pintarray), args, _) ->
       RHS_block (List.length args)
+  | Uprim(Pmakearray(Pfloatarray), args, _) ->
+      RHS_floatblock (List.length args)
   | Usequence(exp, exp') ->
       expr_size exp'
   | _ -> RHS_nonrec
@@ -534,7 +545,7 @@ let bigarray_elt_size = function
 
 let bigarray_indexing unsafe elt_kind layout b args dbg =
   let check_bound a1 a2 k =
-    if unsafe then k else Csequence(Cop(Ccheckbound dbg, [a1;a2]), k) in
+    if unsafe then k else Csequence(make_checkbound dbg [a1;a2], k) in
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
@@ -1209,7 +1220,7 @@ and transl_prim_2 p arg1 arg2 dbg =
         (bind "str" (transl arg1) (fun str ->
           bind "index" (untag_int (transl arg2)) (fun idx ->
             Csequence(
-              Cop(Ccheckbound dbg, [string_length str; idx]),
+              make_checkbound dbg [string_length str; idx],
               Cop(Cload Byte_unsigned, [add_int str idx])))))
 
   (* Array operations *)
@@ -1228,26 +1239,31 @@ and transl_prim_2 p arg1 arg2 dbg =
       end
   | Parrayrefs kind ->
       begin match kind with
-        Pgenarray ->
+      | Pgenarray ->
           bind "index" (transl arg2) (fun idx ->
-            bind "arr" (transl arg1) (fun arr ->
-              bind "header" (header arr) (fun hdr ->
-                Cifthenelse(is_addr_array_hdr hdr,
-                  Csequence(Cop(Ccheckbound dbg, [addr_array_length hdr; idx]),
-                            addr_array_ref arr idx),
-                  Csequence(Cop(Ccheckbound dbg, [float_array_length hdr; idx]),
-                            float_array_ref arr idx)))))
+          bind "arr" (transl arg1) (fun arr ->
+          bind "header" (header arr) (fun hdr ->
+            if wordsize_shift = numfloat_shift then
+              Csequence(make_checkbound dbg [addr_array_length hdr; idx],
+                        Cifthenelse(is_addr_array_hdr hdr, 
+                                    addr_array_ref arr idx,
+                                    float_array_ref arr idx))
+            else
+              Cifthenelse(is_addr_array_hdr hdr,
+                Csequence(make_checkbound dbg [addr_array_length hdr; idx],
+                          addr_array_ref arr idx),
+                Csequence(make_checkbound dbg [float_array_length hdr; idx],
+                          float_array_ref arr idx)))))
       | Paddrarray | Pintarray ->
           bind "index" (transl arg2) (fun idx ->
             bind "arr" (transl arg1) (fun arr ->
-              Csequence(Cop(Ccheckbound dbg, [addr_array_length(header arr); idx]),
+              Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                         addr_array_ref arr idx)))
       | Pfloatarray ->
           box_float(
             bind "index" (transl arg2) (fun idx ->
               bind "arr" (transl arg1) (fun arr ->
-                Csequence(Cop(Ccheckbound dbg,
-                              [float_array_length(header arr); idx]),
+                Csequence(make_checkbound dbg [float_array_length(header arr); idx],
                           unboxed_float_array_ref arr idx))))
       end
 
@@ -1316,7 +1332,7 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
         (bind "str" (transl arg1) (fun str ->
           bind "index" (untag_int (transl arg2)) (fun idx ->
             Csequence(
-              Cop(Ccheckbound dbg, [string_length str; idx]),
+              make_checkbound dbg [string_length str; idx],
               Cop(Cstore Byte_unsigned,
                   [add_int str idx; untag_int(transl arg3)])))))
 
@@ -1339,31 +1355,38 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
       end)
   | Parraysets kind ->
       return_unit(begin match kind with
-        Pgenarray ->
+      | Pgenarray ->
           bind "newval" (transl arg3) (fun newval ->
-            bind "index" (transl arg2) (fun idx ->
-              bind "arr" (transl arg1) (fun arr ->
-                bind "header" (header arr) (fun hdr ->
-                  Cifthenelse(is_addr_array_hdr hdr,
-                    Csequence(Cop(Ccheckbound dbg, [addr_array_length hdr; idx]),
-                              addr_array_set arr idx newval),
-                    Csequence(Cop(Ccheckbound dbg, [float_array_length hdr; idx]),
-                              float_array_set arr idx
-                                              (unbox_float newval)))))))
+          bind "index" (transl arg2) (fun idx ->
+          bind "arr" (transl arg1) (fun arr ->
+          bind "header" (header arr) (fun hdr ->
+            if wordsize_shift = numfloat_shift then
+              Csequence(make_checkbound dbg [addr_array_length hdr; idx],
+                        Cifthenelse(is_addr_array_hdr hdr, 
+                                    addr_array_set arr idx newval,
+                                    float_array_set arr idx
+                                                    (unbox_float newval)))
+            else
+              Cifthenelse(is_addr_array_hdr hdr,
+                Csequence(make_checkbound dbg [addr_array_length hdr; idx],
+                          addr_array_set arr idx newval),
+                Csequence(make_checkbound dbg [float_array_length hdr; idx],
+                          float_array_set arr idx
+                                          (unbox_float newval)))))))
       | Paddrarray ->
           bind "index" (transl arg2) (fun idx ->
             bind "arr" (transl arg1) (fun arr ->
-              Csequence(Cop(Ccheckbound dbg, [addr_array_length(header arr); idx]),
+              Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                         addr_array_set arr idx (transl arg3))))
       | Pintarray ->
           bind "index" (transl arg2) (fun idx ->
             bind "arr" (transl arg1) (fun arr ->
-              Csequence(Cop(Ccheckbound dbg, [addr_array_length(header arr); idx]),
+              Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                         int_array_set arr idx (transl arg3))))
       | Pfloatarray ->
           bind "index" (transl arg2) (fun idx ->
             bind "arr" (transl arg1) (fun arr ->
-              Csequence(Cop(Ccheckbound dbg, [float_array_length(header arr);idx]),
+              Csequence(make_checkbound dbg [float_array_length(header arr);idx],
                         float_array_set arr idx (transl_unbox_float arg3))))
       end)
   | _ ->
@@ -1504,25 +1527,29 @@ and transl_switch arg index cases = match Array.length cases with
 
 and transl_letrec bindings cont =
   let bsz = List.map (fun (id, exp) -> (id, exp, expr_size exp)) bindings in
+  let op_alloc prim sz =
+    Cop(Cextcall(prim, typ_addr, true, Debuginfo.none), [int_const sz]) in
   let rec init_blocks = function
     | [] -> fill_nonrec bsz
     | (id, exp, RHS_block sz) :: rem ->
-        Clet(id, Cop(Cextcall("caml_alloc_dummy", typ_addr, true, Debuginfo.none),
-                     [int_const sz]),
-             init_blocks rem)
+        Clet(id, op_alloc "caml_alloc_dummy" sz, init_blocks rem)
+    | (id, exp, RHS_floatblock sz) :: rem ->
+        Clet(id, op_alloc "caml_alloc_dummy_float" sz, init_blocks rem)
     | (id, exp, RHS_nonrec) :: rem ->
         Clet (id, Cconst_int 0, init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
-    | (id, exp, RHS_block sz) :: rem -> fill_nonrec rem
+    | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+        fill_nonrec rem
     | (id, exp, RHS_nonrec) :: rem ->
         Clet (id, transl exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
-    | (id, exp, RHS_block _) :: rem ->
-        Csequence(Cop(Cextcall("caml_update_dummy", typ_void, false, Debuginfo.none),
-                      [Cvar id; transl exp]),
-                  fill_blocks rem)
+    | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+        let op =
+          Cop(Cextcall("caml_update_dummy", typ_void, false, Debuginfo.none),
+              [Cvar id; transl exp]) in
+        Csequence(op, fill_blocks rem)
     | (id, exp, RHS_nonrec) :: rem ->
         fill_blocks rem
   in init_blocks bsz

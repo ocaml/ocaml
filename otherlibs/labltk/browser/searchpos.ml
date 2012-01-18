@@ -693,13 +693,6 @@ and search_pos_class_structure ~pos cls =
       | Cf_val (_, _, Some exp, _) -> search_pos_expr exp ~pos
       | Cf_val _ -> ()
       | Cf_meth (_, exp) -> search_pos_expr exp ~pos
-      | Cf_let (_, pel, iel) ->
-          List.iter pel ~f:
-            begin fun (pat, exp) ->
-              search_pos_pat pat ~pos ~env:exp.exp_env;
-              search_pos_expr exp ~pos
-            end;
-          List.iter iel ~f:(fun (_,exp) -> search_pos_expr exp ~pos)
       | Cf_init exp -> search_pos_expr exp ~pos
     end
 

@@ -117,13 +117,32 @@ module Make(Ord: OrderedType) =
           if c = 0 then t else
           if c < 0 then bal (add x l) v r else bal l v (add x r)
 
+    let singleton x = Node(Empty, x, Empty, 1)
+
+    (* Beware: those two functions assume that the added v is *strictly*
+       smaller (or bigger) than all the present elements in the tree; it
+       does not test for equality with the current min (or max) element.
+       Indeed, they are only used during the "join" operation which
+       respects this precondition.
+    *)
+
+    let rec add_min_element v = function
+      | Empty -> singleton v
+      | Node (l, x, r, h) ->
+        bal (add_min_element v l) x r
+
+    let rec add_max_element v = function
+      | Empty -> singleton v
+      | Node (l, x, r, h) ->
+        bal l x (add_max_element v r)
+
     (* Same as create and bal, but no assumptions are made on the
        relative heights of l and r. *)
 
     let rec join l v r =
       match (l, r) with
-        (Empty, _) -> add v r
-      | (_, Empty) -> add v l
+        (Empty, _) -> add_min_element v r
+      | (_, Empty) -> add_max_element v l
       | (Node(ll, lv, lr, lh), Node(rl, rv, rr, rh)) ->
           if lh > rh + 2 then bal ll lv (join lr v r) else
           if rh > lh + 2 then bal (join l v rl) rv rr else
@@ -196,8 +215,6 @@ module Make(Ord: OrderedType) =
       | Node(l, v, r, _) ->
           let c = Ord.compare x v in
           c = 0 || mem x (if c < 0 then l else r)
-
-    let singleton x = Node(Empty, x, Empty, 1)
 
     let rec remove x = function
         Empty -> Empty
@@ -300,19 +317,19 @@ module Make(Ord: OrderedType) =
         Empty -> false
       | Node(l, v, r, _) -> p v || exists p l || exists p r
 
-    let filter p s =
-      let rec filt accu = function
-        | Empty -> accu
-        | Node(l, v, r, _) ->
-            filt (filt (if p v then add v accu else accu) l) r in
-      filt Empty s
+    let rec filter p = function
+        Empty -> Empty
+      | Node(l, v, r, _) ->
+          let l' = filter p l and r' = filter p r in
+          if p v then join l' v r' else concat l' r'
 
-    let partition p s =
-      let rec part (t, f as accu) = function
-        | Empty -> accu
-        | Node(l, v, r, _) ->
-            part (part (if p v then (add v t, f) else (t, add v f)) l) r in
-      part (Empty, Empty) s
+    let rec partition p = function
+        Empty -> (Empty, Empty)
+      | Node(l, v, r, _) ->
+          let (lt, lf) = partition p l and (rt, rf) = partition p r in
+          if p v
+          then (join lt v rt, concat lf rf)
+          else (concat lt rt, join lf v rf)
 
     let rec cardinal = function
         Empty -> 0

@@ -48,8 +48,9 @@ and strengthen_sig env sg p =
       sigelt :: strengthen_sig env rem p
   | Tsig_type(id, decl, rs) :: rem ->
       let newdecl =
-        match decl.type_manifest with
-          Some ty when decl.type_private = Public -> decl
+        match decl.type_manifest, decl.type_private, decl.type_kind with
+          Some _, Public, _ -> decl
+        | Some _, Private, (Type_record _ | Type_variant _) -> decl
         | _ ->
             let manif =
               Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),

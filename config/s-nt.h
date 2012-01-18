@@ -27,3 +27,4 @@
 #define HAS_MKTIME
 #define HAS_PUTENV
 #define HAS_LOCALE
+#define HAS_BROKEN_PRINTF

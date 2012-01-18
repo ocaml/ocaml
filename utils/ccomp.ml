@@ -73,9 +73,10 @@ let create_archive archive file_list =
       command(Printf.sprintf "link /lib /nologo /out:%s %s"
                              quoted_archive (quote_files file_list))
   | _ ->
+      assert(String.length Config.ar > 0);
       let r1 =
-        command(Printf.sprintf "ar rc %s %s"
-                quoted_archive (quote_files file_list)) in
+        command(Printf.sprintf "%s rc %s %s"
+                Config.ar quoted_archive (quote_files file_list)) in
       if r1 <> 0 || String.length Config.ranlib = 0
       then r1
       else command(Config.ranlib ^ " " ^ quoted_archive)

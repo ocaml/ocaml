@@ -123,6 +123,8 @@ type control =
        compaction is triggered at the end of each major GC cycle
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
+       If compaction is permanently disabled, it is strongly suggested
+       to set [allocation_policy] to 1.
        Default: 500. *)
 
     mutable stack_limit : int;
@@ -221,7 +223,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
 
 
-   The [f] function can use all features of O'Caml, including
+   The [f] function can use all features of OCaml, including
    assignments that make the value reachable again.  It can also
    loop forever (in this case, the other
    finalisation functions will not be called during the execution of f,

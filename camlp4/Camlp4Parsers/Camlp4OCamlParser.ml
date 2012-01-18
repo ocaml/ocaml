@@ -584,9 +584,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     type_kind:
       [ [ "private"; tk = type_kind -> <:ctyp< private $tk$ >>
-        | t = TRY [OPT "|"; t = constructor_declarations;
-                   test_not_dot_nor_lparen -> t] ->
-            <:ctyp< [ $t$ ] >>
+        | (x, t) = TRY [x = OPT "|"; t = constructor_declarations;
+                        test_not_dot_nor_lparen -> (x, t)] ->
+            (* If there is no "|" and [t] is an antiquotation,
+               then it is not a sum type. *)
+            match (x, t) with
+            [ (None, Ast.TyAnt _) -> t
+            | _ -> <:ctyp< [ $t$ ] >> ]
         | t = TRY ctyp -> <:ctyp< $t$ >>
         | t = TRY ctyp; "="; "private"; tk = type_kind ->
             <:ctyp< $t$ == private $tk$ >>

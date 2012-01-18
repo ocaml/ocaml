@@ -21,7 +21,7 @@ WIN_FILES = accept.c bind.c channels.c close.c \
   mkdir.c open.c pipe.c read.c rename.c \
   select.c sendrecv.c \
   shutdown.c sleep.c socket.c sockopt.c startup.c stat.c \
-  system.c unixsupport.c windir.c winwait.c write.c \
+  system.c times.c unixsupport.c windir.c winwait.c write.c \
   winlist.c winworker.c windbug.c
 
 # Files from the ../unix directory

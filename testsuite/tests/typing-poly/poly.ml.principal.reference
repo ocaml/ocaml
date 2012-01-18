@@ -576,8 +576,8 @@ val g : 'a -> int = <fun>
 #     Characters 34-74:
     function Leaf _ -> 1 | Node x -> 1 + d x
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type 'b t -> int which is less general than
-         'a. 'a t -> int
+Error: This definition has type 'a t -> int which is less general than
+         'a0. 'a0 t -> int
 #   Characters 34-78:
     function Leaf x -> x | Node x -> 1 + depth x;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -586,12 +586,12 @@ Error: This definition has type int t -> int which is less general than
 #   Characters 34-74:
     function Leaf x -> x | Node x -> depth x;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type 'b t -> 'b which is less general than
-         'a. 'a t -> 'b
+Error: This definition has type 'a t -> 'a which is less general than
+         'a0. 'a0 t -> 'a
 #   Characters 38-78:
     function Leaf x -> x | Node x -> depth x;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type 'c. 'c t -> 'c which is less general than
+Error: This definition has type 'b. 'b t -> 'b which is less general than
          'b 'a. 'a t -> 'b
 #   val r : 'a list * '_b list ref = ([], {contents = []})
 val q : unit -> 'a list * '_b list ref = <fun>

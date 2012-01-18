@@ -22,6 +22,10 @@
 #include "config.h"
 #include "misc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Definitions
 
   word: Four bytes on 32 and 16 bit architectures,
@@ -293,6 +297,10 @@ CAMLextern header_t caml_atom_table[];
 /* The table of global identifiers */
 
 extern value caml_global_data;
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* CAML_MLVALUES_H */

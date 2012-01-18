@@ -1,0 +1,164 @@
+#########################################################################
+#                                                                       #
+#                                 OCaml                                 #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
+#                                                                       #
+#########################################################################
+
+# $Id: Makefile.mingw 11319 2011-12-16 17:02:48Z xleroy $
+
+# Configuration for Windows, Mingw compiler
+
+######### General configuration
+
+PREFIX=C:/ocamlmgw64
+
+### Where to install the binaries
+BINDIR=$(PREFIX)/bin
+
+### Where to install the standard library
+LIBDIR=$(PREFIX)/lib
+
+### Where to install the stub DLLs
+STUBLIBDIR=$(LIBDIR)/stublibs
+
+### Where to install the info files
+DISTRIB=$(PREFIX)
+
+### Where to install the man pages
+MANDIR=$(PREFIX)/man
+
+########## Toolchain and OS dependencies
+
+TOOLCHAIN=mingw
+
+### Toolchain prefix
+TOOLPREF=x86_64-w64-mingw32-
+
+CCOMPTYPE=cc
+O=o
+A=a
+S=s
+SO=s.o
+DO=d.o
+EXE=.exe
+EXT_DLL=.dll
+EXT_OBJ=.$(O)
+EXT_LIB=.$(A)
+EXT_ASM=.$(S)
+MANEXT=1
+SHARPBANGSCRIPTS=false
+PTHREAD_LINK=
+X11_INCLUDES=
+X11_LINK=
+DBM_INCLUDES=
+DBM_LINK=
+BYTECCRPATH=
+SUPPORTS_SHARED_LIBRARIES=true
+SHAREDCCCOMPOPTS=
+MKSHAREDLIBRPATH=
+NATIVECCPROFOPTS=
+NATIVECCRPATH=
+ASM=$(TOOLPREF)as
+ASPP=gcc
+ASPPPROFFLAGS=
+PROFILING=noprof
+RUNTIMED=noruntimed
+DYNLINKOPTS=
+DEBUGGER=ocamldebugger
+CC_PROFILE=
+SYSTHREAD_SUPPORT=true
+EXTRALIBS=
+NATDYNLINK=true
+CMXS=cmxs
+RUNTIMED=noruntimed
+
+########## Configuration for the bytecode compiler
+
+### Which C compiler to use for the bytecode interpreter.
+BYTECC=$(TOOLPREF)gcc
+
+### Additional compile-time options for $(BYTECC).  (For static linking.)
+BYTECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
+
+### Additional link-time options for $(BYTECC).  (For static linking.)
+BYTECCLINKOPTS=
+
+### Additional compile-time options for $(BYTECC).  (For building a DLL.)
+DLLCCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused -DCAML_DLL
+
+### Libraries needed
+BYTECCLIBS=-lws2_32
+NATIVECCLIBS=-lws2_32
+
+### How to invoke the C preprocessor
+CPP=$(BYTECC) -E
+
+### Flexlink
+FLEXLINK=flexlink -chain mingw64
+FLEXDIR=$(shell $(FLEXLINK) -where)
+IFLEXDIR=-I"$(FLEXDIR)"
+MKDLL=$(FLEXLINK)
+MKEXE=$(FLEXLINK) -exe
+MKMAINDLL=$(FLEXLINK) -maindll
+
+### How to build a static library
+MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
+#ml let mklib out files opts = Printf.sprintf "rm -f %s && %sar rcs %s %s %s" out toolpref opts out files;;
+
+### Canonicalize the name of a system library
+SYSLIB=-l$(1)
+#ml let syslib x = "-l"^x;;
+
+### The ranlib command
+RANLIB=$(TOOLPREF)ranlib
+RANLIBCMD=$(TOOLPREF)ranlib
+
+### The ar command
+ARCMD=$(TOOLPREF)ar
+
+############# Configuration for the native-code compiler
+
+### Name of architecture for the native-code compiler
+ARCH=amd64
+
+### Name of architecture model for the native-code compiler.
+MODEL=default
+
+### Name of operating system family for the native-code compiler.
+SYSTEM=mingw64
+
+### Which C compiler to use for the native-code compiler.
+NATIVECC=$(BYTECC)
+
+### Additional compile-time options for $(NATIVECC).
+NATIVECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
+
+### Additional link-time options for $(NATIVECC)
+NATIVECCLINKOPTS=
+
+### Build partially-linked object file
+PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o #there must be a space after this '-o'
+
+############# Configuration for the contributed libraries
+
+OTHERLIBRARIES=win32unix str num win32graph dynlink bigarray systhreads
+
+### Name of the target architecture for the "num" library
+BNG_ARCH=amd64
+BNG_ASM_LEVEL=1
+
+### Configuration for LablTk (not supported)
+TK_DEFS=
+TK_LINK=
+
+############# Aliases for common commands
+
+MAKEREC=$(MAKE) -f Makefile.nt
+MAKECMD=$(MAKE)

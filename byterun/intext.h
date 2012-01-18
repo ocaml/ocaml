@@ -81,6 +81,10 @@ void caml_output_val (struct channel * chan, value v, value flags);
 
 /* </private> */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 CAMLextern void caml_output_value_to_malloc(value v, value flags,
                                             /*out*/ char ** buf,
                                             /*out*/ intnat * len);
@@ -158,5 +162,9 @@ extern char * caml_code_area_start, * caml_code_area_end;
 #endif
 
 /* </private> */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_INTEXT_H */

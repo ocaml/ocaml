@@ -55,6 +55,7 @@ let native_c_compiler = sf "%s %s" C.nativecc C.nativecccompopts
 let native_c_libraries = C.nativecclibs
 let native_pack_linker = C.packld
 let ranlib = C.ranlibcmd
+let ar = C.arcmd
 let cc_profile = C.cc_profile
 let mkdll = C.mkdll
 let mkexe = C.mkexe

@@ -112,8 +112,6 @@ and class_field =
   | Cf_val of string * Ident.t * expression option * bool
         (* None = virtual, true = override *)
   | Cf_meth of string * expression
-  | Cf_let of rec_flag * (pattern * expression) list *
-              (Ident.t * expression) list
   | Cf_init of expression
 
 (* Value expressions for the module language *)

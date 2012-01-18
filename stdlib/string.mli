@@ -101,12 +101,17 @@ val iteri : (int -> char -> unit) -> string -> unit
    @since 3.13.0
 *)
 
+val map : (char -> char) -> string -> string
+(** [String.map f s] applies function [f] in turn to all
+   the characters of [s] and stores the results in a new string that
+   is returned. *)
+
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
    represented by escape sequences, following the lexical
    conventions of OCaml.  If there is no special
    character in the argument, return the original string itself,
-   not a copy. *)
+   not a copy. Its inverse function is Scanf.unescaped. *)
 
 val index : string -> char -> int
 (** [String.index s c] returns the character number of the first

@@ -982,9 +982,6 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN seq_expr
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
-  | LET DOT simple_expr let_binding IN seq_expr
-      { let (pat, expr) = $4 in
-        mkexp(Pexp_apply($3, ["", expr;  "", ghexp(Pexp_function("", None, [pat, $6]))])) }
   | LET MODULE UIDENT module_binding IN seq_expr
       { mkexp(Pexp_letmodule($3, $4, $6)) }
   | LET OPEN mod_longident IN seq_expr

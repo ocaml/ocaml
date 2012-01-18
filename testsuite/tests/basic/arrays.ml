@@ -46,7 +46,9 @@ let test2 () =
   if not (testcopy [|1.2;2.3;3.4;4.5|]) then
     print_string "Test2: failed on float array\n";
   if not (testcopy [|"un"; "deux"; "trois"|]) then
-    print_string "Test2: failed on string array\n"
+    print_string "Test2: failed on string array\n";
+  if not (testcopy (bigarray 42)) then
+    print_string "Test2: failed on big array\n"
 
 module AbstractFloat =
   (struct
@@ -79,8 +81,41 @@ let test3 () =
           AbstractFloat.to_float u.(2) = 3.0) then
     print_string "Test3: failed on u\n"
 
+let test4 () =
+  let a = bigarray 0 in
+  let b = Array.sub a 50 10 in
+  if b <> [| 50;51;52;53;54;55;56;57;58;59 |] then
+    print_string "Test4: failed\n"
+
+let test5 () =
+  if Array.append [| 1;2;3 |] [| 4;5 |] <> [| 1;2;3;4;5 |] then
+    print_string "Test5: failed on int arrays\n";
+  if Array.append [| 1.0;2.0;3.0 |] [| 4.0;5.0 |] <> [| 1.0;2.0;3.0;4.0;5.0 |] then
+    print_string "Test5: failed on float arrays\n"
+
+let test6 () =
+  let a = [| 0;1;2;3;4;5;6;7;8;9 |] in
+  let b = Array.concat [a;a;a;a;a;a;a;a;a;a] in
+  if not (Array.length b = 100 && b.(6) = 6 && b.(42) = 2 && b.(99) = 9) then
+    print_string "Test6: failed\n"
+
+let test7 () =
+  let a = Array.make 10 "a" in
+  let b = [| "b1"; "b2"; "b3" |] in
+  Array.blit b 0 a 5 3;
+  if a <> [|"a"; "a"; "a"; "a"; "a"; "b1"; "b2"; "b3"; "a"; "a"|]
+  || b <> [|"b1"; "b2"; "b3"|]
+  then print_string "Test7: failed(1)\n";
+  Array.blit a 5 a 6 4;
+  if a <> [|"a"; "a"; "a"; "a"; "a"; "b1"; "b1"; "b2"; "b3"; "a"|]
+  then print_string "Test7: failed(2)\n"
+
 let _ =
   test1();
   test2();
   test3();
+  test4();
+  test5();
+  test6();
+  test7();
   exit 0

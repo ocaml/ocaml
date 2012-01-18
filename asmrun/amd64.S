@@ -18,7 +18,7 @@
 
 /* PIC mode support based on contribution by Paul Stravers (see PR#4795) */
 
-#ifdef SYS_macosx
+#if defined(SYS_macosx)
 
 #define LBL(x) L##x	
 #define G(r) _##r
@@ -27,6 +27,20 @@
 #define FUNCTION_ALIGN 2
 #define EIGHT_ALIGN 3
 #define SIXTEEN_ALIGN 4
+#define FUNCTION(name) \
+        .globl name; \
+        .align FUNCTION_ALIGN; \
+        name:
+
+#elif defined(SYS_mingw64)
+	
+#define LBL(x) .L##x	
+#define G(r) r
+#undef  GREL
+#define GCALL(r) r
+#define FUNCTION_ALIGN 4
+#define EIGHT_ALIGN 8
+#define SIXTEEN_ALIGN 16
 #define FUNCTION(name) \
         .globl name; \
         .align FUNCTION_ALIGN; \
@@ -49,7 +63,7 @@
 
 #endif
 
-#ifdef __PIC__
+#if defined(__PIC__) && !defined(SYS_mingw64)
 
 /* Position-independent operations on global variables. */
 
@@ -122,6 +136,88 @@
 
 #endif
 
+/* Save and restore all callee-save registers on stack.  
+   Keep the stack 16-aligned. */
+
+#if defined(SYS_mingw64)	
+
+/* Win64 API: callee-save regs are rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 */
+
+#define PUSH_CALLEE_SAVE_REGS \
+        pushq   %rbx; \
+        pushq   %rbp; \
+        pushq   %rsi; \
+        pushq   %rdi; \
+        pushq   %r12; \
+        pushq   %r13; \
+        pushq   %r14; \
+        pushq   %r15; \
+	subq	$(8+10*16), %rsp; \
+	movupd  %xmm6, 0*16(%rsp); \
+        movupd  %xmm7, 1*16(%rsp); \
+        movupd  %xmm8, 2*16(%rsp); \
+        movupd  %xmm9, 3*16(%rsp); \
+        movupd  %xmm10, 4*16(%rsp); \
+        movupd  %xmm11, 5*16(%rsp); \
+        movupd  %xmm12, 6*16(%rsp); \
+        movupd  %xmm13, 7*16(%rsp); \
+        movupd  %xmm14, 8*16(%rsp); \
+        movupd  %xmm15, 9*16(%rsp)
+
+#define POP_CALLEE_SAVE_REGS \
+        movupd  0*16(%rsp), %xmm6; \
+        movupd  1*16(%rsp), %xmm7; \
+        movupd  2*16(%rsp), %xmm8; \
+        movupd  3*16(%rsp), %xmm9; \
+        movupd  4*16(%rsp), %xmm10; \
+        movupd  5*16(%rsp), %xmm11; \
+        movupd  6*16(%rsp), %xmm12; \
+        movupd  7*16(%rsp), %xmm13; \
+        movupd  8*16(%rsp), %xmm14; \
+        movupd  9*16(%rsp), %xmm15; \
+        addq    $(8+10*16), %rsp; \
+        popq    %r15; \
+        popq    %r14; \
+        popq    %r13; \
+        popq    %r12; \
+        popq    %rdi; \
+        popq    %rsi; \
+        popq    %rbp; \
+        popq    %rbx
+
+#else
+
+/* Unix API: callee-save regs are rbx, rbp, r12-r15 */
+
+#define PUSH_CALLEE_SAVE_REGS \
+        pushq   %rbx; \
+        pushq   %rbp; \
+        pushq   %r12; \
+        pushq   %r13; \
+        pushq   %r14; \
+        pushq   %r15; \
+	subq	$8, %rsp
+
+#define POP_CALLEE_SAVE_REGS \
+	addq	$8, %rsp; \
+        popq    %r15; \
+        popq    %r14; \
+        popq    %r13; \
+        popq    %r12; \
+        popq    %rbp; \
+        popq    %rbx
+
+#endif	
+
+#ifdef SYS_mingw64
+   /* Calls from Caml to C must reserve 32 bytes of extra stack space */
+#  define PREPARE_FOR_C_CALL subq $32, %rsp	
+#  define CLEANUP_AFTER_C_CALL addq $32, %rsp
+#else
+#  define PREPARE_FOR_C_CALL
+#  define CLEANUP_AFTER_C_CALL
+#endif
+
         .text
 
 /* Allocation */
@@ -166,7 +262,9 @@ LBL(caml_call_gc):
         movsd   %xmm14, 14*8(%rsp)
         movsd   %xmm15, 15*8(%rsp)
     /* Call the garbage collector */
+	PREPARE_FOR_C_CALL
         call    GCALL(caml_garbage_collection)
+	CLEANUP_AFTER_C_CALL
     /* Restore caml_young_ptr, caml_exception_pointer */
 	LOAD_VAR(caml_young_ptr, %r15)
 	LOAD_VAR(caml_exception_pointer, %r14)
@@ -269,6 +367,8 @@ LBL(caml_c_call):
 	STORE_VAR(%r15, caml_young_ptr)
 	STORE_VAR(%r14, caml_exception_pointer)
     /* Call the function (address in %rax) */
+    /* No need to PREPARE_FOR_C_CALL since the caller already
+       reserved the stack space if needed (cf. amd64/proc.ml) */
         call    *%rax
     /* Reload alloc ptr */
 	LOAD_VAR(caml_young_ptr, %r15)
@@ -280,13 +380,7 @@ LBL(caml_c_call):
 
 FUNCTION(G(caml_start_program))
     /* Save callee-save registers */
-        pushq   %rbx
-        pushq   %rbp
-        pushq   %r12
-        pushq   %r13
-        pushq   %r14
-        pushq   %r15
-	subq	$8, %rsp	/* stack 16-aligned */
+        PUSH_CALLEE_SAVE_REGS
     /* Initial entry point is G(caml_program) */
         leaq    GCALL(caml_program)(%rip), %r12
     /* Common code for caml_start_program and caml_callback* */
@@ -320,13 +414,7 @@ LBL(109):
         POP_VAR(caml_gc_regs)
 	addq	$8, %rsp
     /* Restore callee-save registers. */
-	addq	$8, %rsp
-        popq    %r15
-        popq    %r14
-        popq    %r13
-        popq    %r12
-        popq    %rbp
-        popq    %rbx
+        POP_CALLEE_SAVE_REGS
     /* Return to caller. */
         ret
 LBL(108):
@@ -334,6 +422,20 @@ LBL(108):
     /* Mark the bucket as an exception result and return it */
         orq     $2, %rax
         jmp     LBL(109)
+
+/* Registers holding arguments of C functions. */
+
+#ifdef SYS_mingw64
+#define C_ARG_1 %rcx
+#define C_ARG_2 %rdx
+#define C_ARG_3 %r8
+#define C_ARG_4 %r9
+#else
+#define C_ARG_1 %rdi
+#define C_ARG_2 %rsi
+#define C_ARG_3 %rdx
+#define C_ARG_4 %rcx
+#endif
 
 /* Raise an exception from Caml */
 
@@ -345,10 +447,11 @@ FUNCTION(G(caml_raise_exn))
         ret
 LBL(110):
         movq    %rax, %r12            /* Save exception bucket */
-        movq    %rax, %rdi            /* arg 1: exception bucket */
-        movq    0(%rsp), %rsi         /* arg 2: pc of raise */
-        leaq    8(%rsp), %rdx         /* arg 3: sp of raise */
-        movq    %r14, %rcx            /* arg 4: sp of handler */
+        movq    %rax, C_ARG_1         /* arg 1: exception bucket */
+        movq    0(%rsp), C_ARG_2      /* arg 2: pc of raise */
+        leaq    8(%rsp), C_ARG_3      /* arg 3: sp of raise */
+        movq    %r14, C_ARG_4         /* arg 4: sp of handler */
+	PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
         movq    %r14, %rsp
@@ -360,17 +463,18 @@ LBL(110):
 FUNCTION(G(caml_raise_exception))
         TESTL_VAR($1, caml_backtrace_active)
         jne     LBL(111)
-        movq    %rdi, %rax
+        movq    C_ARG_1, %rax
         LOAD_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
         popq    %r14                  /* Recover previous exception handler */
         LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
 LBL(111):
-        movq    %rdi, %r12            /* Save exception bucket */
+        movq    C_ARG_1, %r12            /* Save exception bucket */
                                       /* arg 1: exception bucket */
-	LOAD_VAR(caml_last_return_address,%rsi)   /* arg 2: pc of raise */
-        LOAD_VAR(caml_bottom_of_stack,%rdx)       /* arg 3: sp of raise */
-        LOAD_VAR(caml_exception_pointer,%rcx)     /* arg 4: sp of handler */
+	LOAD_VAR(caml_last_return_address,C_ARG_2)   /* arg 2: pc of raise */
+        LOAD_VAR(caml_bottom_of_stack,C_ARG_3)       /* arg 3: sp of raise */
+        LOAD_VAR(caml_exception_pointer,C_ARG_4)     /* arg 4: sp of handler */
+	PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
 	LOAD_VAR(caml_exception_pointer,%rsp)
@@ -382,49 +486,31 @@ LBL(111):
 
 FUNCTION(G(caml_callback_exn))
     /* Save callee-save registers */
-        pushq   %rbx
-        pushq   %rbp
-        pushq   %r12
-        pushq   %r13
-        pushq   %r14
-        pushq   %r15
-	subq	$8, %rsp	/* stack 16-aligned */
+        PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    %rdi, %rbx      /* closure */
-        movq    %rsi, %rax      /* argument */
-        movq    0(%rbx), %r12   /* code pointer */
+        movq    C_ARG_1, %rbx      /* closure */
+        movq    C_ARG_2, %rax      /* argument */
+        movq    0(%rbx), %r12      /* code pointer */
         jmp     LBL(caml_start_program)
 
 FUNCTION(G(caml_callback2_exn))
     /* Save callee-save registers */
-        pushq   %rbx
-        pushq   %rbp
-        pushq   %r12
-        pushq   %r13
-        pushq   %r14
-        pushq   %r15
-	subq	$8, %rsp	/* stack 16-aligned */
+        PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        /* closure stays in %rdi */
-        movq    %rsi, %rax               /* first argument */
-        movq    %rdx, %rbx               /* second argument */
+        movq    C_ARG_1, %rdi      /* closure -- no op with Unix conventions */
+        movq    C_ARG_2, %rax      /* first argument */
+        movq    C_ARG_3, %rbx      /* second argument */
         leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
         jmp     LBL(caml_start_program)
 
 FUNCTION(G(caml_callback3_exn))
     /* Save callee-save registers */
-        pushq   %rbx
-        pushq   %rbp
-        pushq   %r12
-        pushq   %r13
-        pushq   %r14
-        pushq   %r15
-	subq	$8, %rsp	/* stack 16-aligned */
+        PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    %rsi, %rax               /* first argument */
-        movq    %rdx, %rbx               /* second argument */
-        movq    %rdi, %rsi               /* closure */
-        movq    %rcx, %rdi               /* third argument */
+        movq    C_ARG_2, %rax      /* first argument */
+        movq    C_ARG_3, %rbx      /* second argument */
+        movq    C_ARG_1, %rsi      /* closure */
+        movq    C_ARG_4, %rdi      /* third argument */
         leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
         jmp     LBL(caml_start_program)
 
@@ -442,8 +528,10 @@ G(caml_system__frametable):
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
 
-#ifdef SYS_macosx
+#if defined(SYS_macosx)
 	.literal16
+#elif defined(SYS_mingw64)
+	.section .rdata,"dr"
 #else
 	.section    .rodata.cst8,"a",@progbits
 #endif

@@ -23,11 +23,8 @@ open Mach
 open Linearize
 open Emitaux
 
-let macosx =
-  match Config.system with
-  | "macosx" -> true
-  | _ -> false
-
+let macosx = (Config.system = "macosx")
+let mingw64 = (Config.system = "mingw64")
 
 (* Tradeoff between code size and code speed *)
 
@@ -64,17 +61,17 @@ let emit_symbol s =
     Emitaux.emit_symbol '$' s
 
 let emit_call s =
-  if !Clflags.dlcode && not macosx
+  if !Clflags.dlcode && not macosx && not mingw64
   then `call	{emit_symbol s}@PLT`
   else `call	{emit_symbol s}`
 
 let emit_jump s =
-  if !Clflags.dlcode && not macosx
+  if !Clflags.dlcode && not macosx && not mingw64
   then `jmp	{emit_symbol s}@PLT`
   else `jmp	{emit_symbol s}`
 
 let load_symbol_addr s =
-  if !Clflags.dlcode
+  if !Clflags.dlcode && not mingw64
   then `movq	{emit_symbol s}@GOTPCREL(%rip)`
   else if !pic_code
   then `leaq	{emit_symbol s}(%rip)`
@@ -604,9 +601,12 @@ let emit_instr fallthrough i =
         `	movslq	({emit_reg tmp1}, {emit_reg i.arg.(0)}, 4), {emit_reg tmp2}\n`;
         `	addq	{emit_reg tmp2}, {emit_reg tmp1}\n`;
         `	jmp	*{emit_reg tmp1}\n`;
-        if macosx
-        then `	.const\n`
-        else `	.section .rodata\n`;
+        if macosx then
+          `	.const\n`
+        else if mingw64 then
+          `	.section .rdata,\"dr\"\n`
+        else
+          `	.section .rodata\n`;
         emit_align 4;
         `{emit_label lbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
@@ -701,9 +701,12 @@ let fundecl fundecl =
     | _ -> ()
   end;
   if !float_constants <> [] then begin
-    if macosx
-    then `	.literal8\n`
-    else `	.section	.rodata.cst8,\"a\",@progbits\n`;
+    if macosx then
+      `	.literal8\n`
+    else if mingw64 then
+      `	.section .rdata,\"dr\"\n`
+    else
+      `	.section .rodata.cst8,\"a\",@progbits\n`;
     List.iter emit_float_constant !float_constants
   end
 
@@ -749,9 +752,11 @@ let begin_assembly() =
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
     if macosx then
-        `	.literal16\n`
+      `	.literal16\n`
+    else if mingw64 then
+      `	.section .rdata,\"dr\"\n`
     else
-        `	.section        .rodata.cst8,\"a\",@progbits\n`;
+      `	.section .rodata.cst8,\"a\",@progbits\n`;
     emit_align 16;
     `{emit_symbol "caml_negf_mask"}:	.quad   0x8000000000000000, 0\n`;
     emit_align 16;
