@@ -370,5 +370,17 @@ let descriptions =
 
 let help_warnings () =
   List.iter (fun (i, s) -> Printf.printf "%3i %s\n" i s) descriptions;
+  print_endline "  A All warnings.";
+  for i = Char.code 'b' to Char.code 'z' do
+    let c = Char.chr i in
+    match letter c with
+    | [] -> ()
+    | [n] ->
+        Printf.printf "  %c Synonym for warning %i.\n" (Char.uppercase c) n
+    | l ->
+        Printf.printf "  %c Set of warnings %s.\n"
+          (Char.uppercase c)
+          (String.concat ", " (List.map string_of_int l))
+  done;
   exit 0
 ;;
