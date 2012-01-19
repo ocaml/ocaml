@@ -143,7 +143,6 @@ let comparisons_table = create_hashtable 11 [
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%ignore", Pignore;
-  "%revapply",Prevapply;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
   "%setfield0", Psetfield(0, true);
@@ -286,7 +285,7 @@ let prim_obj_dup =
   { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
-let transl_prim prim args =
+let transl_prim loc prim args =
   try
     let (gencomp, intcomp, floatcomp, stringcomp,
          nativeintcomp, int32comp, int64comp,
@@ -323,7 +322,10 @@ let transl_prim prim args =
     end
   with Not_found ->
   try
-    let p = Hashtbl.find primitives_table prim.prim_name in
+    let p =
+      match prim.prim_name with
+          "%revapply" -> Prevapply loc
+        | name -> Hashtbl.find primitives_table name in
     (* Try strength reduction based on the type of the argument *)
     begin match (p, args) with
         (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
@@ -614,7 +616,7 @@ and transl_exp0 e =
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
-        let prim = transl_prim p args in
+        let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
           (Praise, [arg1]) ->
             wrap0 (Lprim(Praise, [event_after arg1 (List.hd argl)]))

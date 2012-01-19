@@ -190,7 +190,16 @@ let simplify_exits lam =
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
-  | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
+  | Lprim(p, ll) -> begin
+    let ll = List.map simplif ll in
+    match p, ll with
+      | Prevapply loc, [x; Lapply(f, args, _)]
+      | Prevapply loc, [x; Levent (Lapply(f, args, _),_)] ->
+        Lapply(f, args@[x], loc)
+      | Prevapply loc, [x; f] -> Lapply(f, [x], loc)
+      | Prevapply _, _ -> assert false
+      | _ -> Lprim(p, ll)
+     end
   | Lswitch(l, sw) ->
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts

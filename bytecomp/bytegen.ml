@@ -524,8 +524,8 @@ let rec comp_expr env exp sz cont =
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg]) ->
       comp_expr env arg sz (add_const_unit cont)
-  | Lprim(Prevapply, [arg;func]) ->
-      let exp = Lapply(func, [arg], Location.none) in
+  | Lprim(Prevapply loc, [arg;func]) ->
+      let exp = Lapply(func, [arg], loc) in
       comp_expr env exp sz cont
   | Lprim(Pnot, [arg]) ->
       let newcont =

@@ -563,8 +563,8 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
-  | Lprim(Prevapply,[arg;funct]) ->
-      close fenv cenv (Lapply(funct, [arg], Location.none))
+  | Lprim(Prevapply loc,[arg;funct]) ->
+      close fenv cenv (Lapply(funct, [arg], loc))
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
                             (getglobal id)
