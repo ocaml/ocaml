@@ -51,9 +51,6 @@ val print_loc: formatter -> t -> unit
 val print_error: formatter -> t -> unit
 val print_error_cur_file: formatter -> unit
 val print_warning: t -> formatter -> Warnings.t -> unit
-    (** Used only in the toplevels, for Toploop.print_warning. Do not
-        use to report warnings in the compiler. *)
-
 val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit

@@ -19,4 +19,4 @@ exception Error
 val preprocess : string -> string
 val remove_preprocessed : string -> unit
 val remove_preprocessed_if_ast : string -> unit
-val file : string -> (Lexing.lexbuf -> 'a) -> string -> 'a
+val file : formatter -> string -> (Lexing.lexbuf -> 'a) -> string -> 'a

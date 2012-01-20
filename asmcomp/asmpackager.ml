@@ -79,7 +79,7 @@ let check_units members =
 
 (* Make the .o file for the package *)
 
-let make_package_object members targetobj targetname coercion =
+let make_package_object ppf members targetobj targetname coercion =
   let objtemp =
     if !Clflags.keep_asm_file
     then chop_extension_if_any targetobj ^ ".pack" ^ Config.ext_obj
@@ -96,7 +96,7 @@ let make_package_object members targetobj targetname coercion =
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
   Asmgen.compile_implementation
-    (chop_extension_if_any objtemp)
+    (chop_extension_if_any objtemp) ppf
     (Translmod.transl_store_package
        components (Ident.create_persistent targetname) coercion);
   let objfiles =
@@ -152,7 +152,7 @@ let build_package_cmx members cmxfile =
 
 (* Make the .cmx and the .o for the package *)
 
-let package_object_files files targetcmx
+let package_object_files ppf files targetcmx
                          targetobj targetname coercion =
   let pack_path =
     match !Clflags.for_package with
@@ -160,12 +160,12 @@ let package_object_files files targetcmx
     | Some p -> p ^ "." ^ targetname in
   let members = map_left_right (read_member_info pack_path) files in
   check_units members;
-  make_package_object members targetobj targetname coercion;
+  make_package_object ppf members targetobj targetname coercion;
   build_package_cmx members targetcmx
 
 (* The entry point *)
 
-let package_files files targetcmx =
+let package_files ppf files targetcmx =
   let files =
     List.map
       (fun f ->
@@ -182,7 +182,7 @@ let package_files files targetcmx =
   Compilenv.reset ?packname:!Clflags.for_package targetname;
   try
     let coercion = Typemod.package_units files targetcmi targetname in
-    package_object_files files targetcmx targetobj targetname coercion
+    package_object_files ppf files targetcmx targetobj targetname coercion
   with x ->
     remove_file targetcmx; remove_file targetobj;
     raise x

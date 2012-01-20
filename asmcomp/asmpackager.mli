@@ -15,7 +15,7 @@
 (* "Package" a set of .cmx/.o files into one .cmx/.o file having the
    original compilation units as sub-modules. *)
 
-val package_files: string list -> string -> unit
+val package_files: Format.formatter -> string list -> string -> unit
 
 type error =
     Illegal_renaming of string * string

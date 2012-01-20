@@ -110,11 +110,11 @@ let rec live i finally =
       i.live <- across;
       Reg.add_set_array across i.arg
 
-let fundecl f =
+let fundecl ppf f =
   let initially_live = live f.fun_body Reg.Set.empty in
   (* Sanity check: only function parameters can be live at entrypoint *)
   let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
   if not (Reg.Set.is_empty wrong_live) then begin
-    Format.eprintf "%a@." Printmach.regset wrong_live;
+    Format.fprintf ppf "%a@." Printmach.regset wrong_live;
     Misc.fatal_error "Liveness.fundecl"
   end

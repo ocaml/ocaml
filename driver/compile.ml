@@ -49,12 +49,12 @@ let initial_env () =
     fatal_error "cannot open pervasives.cmi"
 
 (* Note: this function is duplicated in optcompile.ml *)
-let check_unit_name filename name =
+let check_unit_name ppf filename name =
   try
     begin match name.[0] with
     | 'A'..'Z' -> ()
     | _ ->
-       Location.prerr_warning (Location.in_file filename)
+       Location.print_warning (Location.in_file filename) ppf
         (Warnings.Bad_module_name name);
        raise Exit;
     end;
@@ -62,7 +62,7 @@ let check_unit_name filename name =
       match name.[i] with
       | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '\'' -> ()
       | _ ->
-         Location.prerr_warning (Location.in_file filename)
+         Location.print_warning (Location.in_file filename) ppf
            (Warnings.Bad_module_name name);
          raise Exit;
     done;
@@ -71,18 +71,18 @@ let check_unit_name filename name =
 
 (* Compile a .mli file *)
 
-let interface sourcefile outputprefix =
+let interface ppf sourcefile outputprefix =
   Location.input_name := sourcefile;
   init_path ();
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
-  check_unit_name sourcefile modulename;
+  check_unit_name ppf sourcefile modulename;
   Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
   try
     let ast =
-      Pparse.file inputfile Parse.interface ast_intf_magic_number in
-    if !Clflags.dump_parsetree then eprintf "%a@." Printast.interface ast;
+      Pparse.file ppf inputfile Parse.interface ast_intf_magic_number in
+    if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
     let sg = Typemod.transl_signature (initial_env()) ast in
     if !Clflags.print_types then
       fprintf std_formatter "%a@." Printtyp.signature
@@ -97,25 +97,25 @@ let interface sourcefile outputprefix =
 
 (* Compile a .ml file *)
 
-let print_if flag printer arg =
-  if !flag then eprintf "%a@." printer arg;
+let print_if ppf flag printer arg =
+  if !flag then fprintf ppf "%a@." printer arg;
   arg
 
 let (++) x f = f x
 
-let implementation sourcefile outputprefix =
+let implementation ppf sourcefile outputprefix =
   Location.input_name := sourcefile;
   init_path ();
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
-  check_unit_name sourcefile modulename;
+  check_unit_name ppf sourcefile modulename;
   Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
   let env = initial_env() in
   if !Clflags.print_types then begin
     try ignore(
-      Pparse.file inputfile Parse.implementation ast_impl_magic_number
-      ++ print_if Clflags.dump_parsetree Printast.implementation
+      Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
+      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ Typemod.type_implementation sourcefile outputprefix modulename env)
     with x ->
       Pparse.remove_preprocessed_if_ast inputfile;
@@ -124,15 +124,15 @@ let implementation sourcefile outputprefix =
     let objfile = outputprefix ^ ".cmo" in
     let oc = open_out_bin objfile in
     try
-      Pparse.file inputfile Parse.implementation ast_impl_magic_number
-      ++ print_if Clflags.dump_parsetree Printast.implementation
+      Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
+      ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
       ++ Translmod.transl_implementation modulename
-      ++ print_if Clflags.dump_rawlambda Printlambda.lambda
+      ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Simplif.simplify_lambda
-      ++ print_if Clflags.dump_lambda Printlambda.lambda
+      ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
       ++ Bytegen.compile_implementation modulename
-      ++ print_if Clflags.dump_instr Printinstr.instrlist
+      ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
       ++ Emitcode.to_file oc modulename;
       Warnings.check_fatal ();
       close_out oc;

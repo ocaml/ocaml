@@ -47,7 +47,7 @@ let remove_preprocessed_if_ast inputfile =
 
 exception Outdated_version
 
-let file inputfile parse_fun ast_magic =
+let file ppf inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
@@ -66,7 +66,7 @@ let file inputfile parse_fun ast_magic =
     try
       if is_ast_file then begin
         if !Clflags.fast then
-          eprintf "@[Warning: %s@]@."
+          fprintf ppf "@[Warning: %s@]@."
             "option -unsafe used with a preprocessor returning a syntax tree";
         Location.input_name := input_value ic;
         input_value ic

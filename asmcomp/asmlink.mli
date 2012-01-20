@@ -16,9 +16,9 @@
 
 open Format
 
-val link: string list -> string -> unit
+val link: formatter -> string list -> string -> unit
 
-val link_shared: string list -> string -> unit
+val link_shared: formatter -> string list -> string -> unit
 
 val call_linker_shared: string list -> string -> unit
 

@@ -16,8 +16,8 @@
 
 open Format
 
-val interface: string -> string -> unit
-val implementation: string -> string -> unit
+val interface: formatter -> string -> string -> unit
+val implementation: formatter -> string -> string -> unit
 val c_file: string -> unit
 
 val initial_env: unit -> Env.t

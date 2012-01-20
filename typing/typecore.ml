@@ -189,8 +189,7 @@ let iter_expression f e =
 let free_idents el =
   let idents = Hashtbl.create 8 in
   let f = function
-    | {pexp_desc=Pexp_ident (Longident.Lident id); _} ->
-        Hashtbl.replace idents id ()
+    | {pexp_desc=Pexp_ident (Longident.Lident id); _} -> Hashtbl.replace idents id ()
     | _ -> ()
   in
   List.iter (iter_expression f) el;
@@ -1383,7 +1382,7 @@ let duplicate_ident_types loc caselist env =
             let desc = {desc with val_type = correct_levels desc.val_type} in
             Env.add_value id desc env
         | _ -> env
-      with Not_found | Typetexp.Error (_, Typetexp.Unbound_value _) -> env)
+      with Not_found -> env)
     env idents
 
 (* Typing of expressions *)
