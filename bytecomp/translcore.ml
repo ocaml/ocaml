@@ -325,6 +325,7 @@ let transl_prim loc prim args =
     let p =
       match prim.prim_name with
           "%revapply" -> Prevapply loc
+        | "%apply" -> Pdirapply loc
         | name -> Hashtbl.find primitives_table name in
     (* Try strength reduction based on the type of the argument *)
     begin match (p, args) with

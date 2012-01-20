@@ -193,11 +193,18 @@ let simplify_exits lam =
   | Lprim(p, ll) -> begin
     let ll = List.map simplif ll in
     match p, ll with
+        (* Simplify %revapply, for n-ary functions with n > 1 *)
       | Prevapply loc, [x; Lapply(f, args, _)]
       | Prevapply loc, [x; Levent (Lapply(f, args, _),_)] ->
         Lapply(f, args@[x], loc)
       | Prevapply loc, [x; f] -> Lapply(f, [x], loc)
-      | Prevapply _, _ -> assert false
+
+        (* Simplify %apply, for n-ary functions with n > 1 *)
+      | Pdirapply loc, [Lapply(f, args, _); x]
+      | Pdirapply loc, [Levent (Lapply(f, args, _),_); x] ->
+        Lapply(f, args@[x], loc)
+      | Pdirapply loc, [f; x] -> Lapply(f, [x], loc)
+
       | _ -> Lprim(p, ll)
      end
   | Lswitch(l, sw) ->
