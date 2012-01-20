@@ -22,24 +22,24 @@ let output_prefix name =
     | Some n -> if !compile_only then (output_name := None; n) else name in
   Misc.chop_extension_if_any oname
 
-let process_interface_file ppf name =
-  Compile.interface ppf name (output_prefix name)
+let process_interface_file name =
+  Compile.interface name (output_prefix name)
 
-let process_implementation_file ppf name =
+let process_implementation_file name =
   let opref = output_prefix name in
-  Compile.implementation ppf name opref;
+  Compile.implementation name opref;
   objfiles := (opref ^ ".cmo") :: !objfiles
 
-let process_file ppf name =
+let process_file name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then begin
     let opref = output_prefix name in
-    Compile.implementation ppf name opref;
+    Compile.implementation name opref;
     objfiles := (opref ^ ".cmo") :: !objfiles
   end
   else if Filename.check_suffix name !Config.interface_suffix then begin
     let opref = output_prefix name in
-    Compile.interface ppf name opref;
+    Compile.interface name opref;
     if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   end
   else if Filename.check_suffix name ".cmo"
@@ -75,12 +75,10 @@ let print_standard_library () =
 
 let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
-let ppf = Format.err_formatter
-
 (* Error messages to standard error formatter *)
-let anonymous = process_file ppf;;
-let impl = process_implementation_file ppf;;
-let intf = process_interface_file ppf;;
+let anonymous = process_file;;
+let impl = process_implementation_file;;
+let intf = process_interface_file;;
 
 let show_config () =
   Config.print_config stdout;
@@ -172,15 +170,14 @@ let main () =
     if !make_archive then begin
       Compile.init_path();
 
-      Bytelibrarian.create_archive ppf  (List.rev !objfiles)
+      Bytelibrarian.create_archive (List.rev !objfiles)
                                    (extract_output !output_name)
     end
     else if !make_package then begin
       Compile.init_path();
       let exctracted_output = extract_output !output_name in
       let revd = List.rev !objfiles in
-      Bytepackager.package_files ppf (revd)
-        (exctracted_output)
+      Bytepackager.package_files revd exctracted_output
     end
     else if not !compile_only && !objfiles <> [] then begin
       let target =
@@ -200,11 +197,11 @@ let main () =
           default_output !output_name
       in
       Compile.init_path();
-      Bytelink.link ppf (List.rev !objfiles) target
+      Bytelink.link (List.rev !objfiles) target
     end;
     exit 0
   with x ->
-    Errors.report_error ppf x;
+    Errors.report_error Format.err_formatter x;
     exit 2
 
 let _ = main ()

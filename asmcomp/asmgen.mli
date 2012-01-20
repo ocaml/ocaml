@@ -16,9 +16,9 @@
 
 val compile_implementation :
     ?toplevel:(string -> bool) ->
-    string -> Format.formatter -> int * Lambda.lambda -> unit
+    string -> int * Lambda.lambda -> unit
 val compile_phrase :
-    Format.formatter -> Cmm.phrase -> unit
+    Cmm.phrase -> unit
 
 type error = Assembler_error of string
 exception Error of error

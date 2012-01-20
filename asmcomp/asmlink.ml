@@ -197,8 +197,8 @@ let scan_file obj_name tolink = match read_file obj_name with
 
 (* Second pass: generate the startup file and link it with everything else *)
 
-let make_startup_file ppf filename units_list =
-  let compile_phrase p = Asmgen.compile_phrase ppf p in
+let make_startup_file filename units_list =
+  let compile_phrase = Asmgen.compile_phrase in
   let oc = open_out filename in
   Emitaux.output_channel := oc;
   Location.input_name := "caml_startup"; (* set name of "current" input *)
@@ -230,8 +230,8 @@ let make_startup_file ppf filename units_list =
   Emit.end_assembly();
   close_out oc
 
-let make_shared_startup_file ppf units filename =
-  let compile_phrase p = Asmgen.compile_phrase ppf p in
+let make_shared_startup_file units filename =
+  let compile_phrase = Asmgen.compile_phrase in
   let oc = open_out filename in
   Emitaux.output_channel := oc;
   Location.input_name := "caml_startup";
@@ -254,7 +254,7 @@ let call_linker_shared file_list output_name =
   if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
   then raise(Error Linking_error)
 
-let link_shared ppf objfiles output_name =
+let link_shared objfiles output_name =
   let units_tolink = List.fold_right scan_file objfiles [] in
   List.iter
     (fun (info, file_name, crc) -> check_consistency file_name info crc)
@@ -268,7 +268,7 @@ let link_shared ppf objfiles output_name =
     if !Clflags.keep_startup_file
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
-  make_shared_startup_file ppf
+  make_shared_startup_file
     (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink) startup;
   let startup_obj = output_name ^ ".startup" ^ ext_obj in
   if Proc.assemble_file startup startup_obj <> 0
@@ -299,7 +299,7 @@ let call_linker file_list startup_file output_name =
 
 (* Main entry point *)
 
-let link ppf objfiles output_name =
+let link objfiles output_name =
   let stdlib =
     if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
   let stdexit =
@@ -322,7 +322,7 @@ let link ppf objfiles output_name =
   let startup =
     if !Clflags.keep_startup_file then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
-  make_startup_file ppf startup units_tolink;
+  make_startup_file startup units_tolink;
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));

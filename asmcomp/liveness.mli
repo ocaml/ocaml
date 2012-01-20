@@ -17,4 +17,4 @@
 
 open Format
 
-val fundecl: formatter -> Mach.fundecl -> unit
+val fundecl: Mach.fundecl -> unit

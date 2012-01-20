@@ -24,77 +24,77 @@ type error = Assembler_error of string
 
 exception Error of error
 
-let liveness ppf phrase =
-  Liveness.fundecl ppf phrase; phrase
+let liveness phrase =
+  Liveness.fundecl phrase; phrase
 
-let dump_if ppf flag message phrase =
-  if !flag then Printmach.phase message ppf phrase
+let dump_if flag message phrase =
+  if !flag then Printmach.phase message Format.err_formatter phrase
 
-let pass_dump_if ppf flag message phrase =
-  dump_if ppf flag message phrase; phrase
+let pass_dump_if flag message phrase =
+  dump_if flag message phrase; phrase
 
-let pass_dump_linear_if ppf flag message phrase =
-  if !flag then fprintf ppf "*** %s@.%a@." message Printlinear.fundecl phrase;
+let pass_dump_linear_if flag message phrase =
+  if !flag then fprintf Format.err_formatter "*** %s@.%a@." message Printlinear.fundecl phrase;
   phrase
 
-let rec regalloc ppf round fd =
+let rec regalloc round fd =
   if round > 50 then
     fatal_error(fd.Mach.fun_name ^
                 ": function too complex, cannot complete register allocation");
-  dump_if ppf dump_live "Liveness analysis" fd;
+  dump_if dump_live "Liveness analysis" fd;
   Interf.build_graph fd;
-  if !dump_interf then Printmach.interferences ppf ();
-  if !dump_prefer then Printmach.preferences ppf ();
+  if !dump_interf then Printmach.interferences Format.err_formatter ();
+  if !dump_prefer then Printmach.preferences Format.err_formatter ();
   Coloring.allocate_registers();
-  dump_if ppf dump_regalloc "After register allocation" fd;
+  dump_if dump_regalloc "After register allocation" fd;
   let (newfd, redo_regalloc) = Reload.fundecl fd in
-  dump_if ppf dump_reload "After insertion of reloading code" newfd;
+  dump_if dump_reload "After insertion of reloading code" newfd;
   if redo_regalloc then begin
-    Reg.reinit(); Liveness.fundecl ppf newfd; regalloc ppf (round + 1) newfd
+    Reg.reinit(); Liveness.fundecl newfd; regalloc (round + 1) newfd
   end else newfd
 
 let (++) x f = f x
 
-let compile_fundecl (ppf : formatter) fd_cmm =
+let compile_fundecl fd_cmm =
   Reg.reset();
   fd_cmm
   ++ Selection.fundecl
-  ++ pass_dump_if ppf dump_selection "After instruction selection"
+  ++ pass_dump_if dump_selection "After instruction selection"
   ++ Comballoc.fundecl
-  ++ pass_dump_if ppf dump_combine "After allocation combining"
-  ++ liveness ppf
-  ++ pass_dump_if ppf dump_live "Liveness analysis"
+  ++ pass_dump_if dump_combine "After allocation combining"
+  ++ liveness
+  ++ pass_dump_if dump_live "Liveness analysis"
   ++ Spill.fundecl
-  ++ liveness ppf
-  ++ pass_dump_if ppf dump_spill "After spilling"
+  ++ liveness
+  ++ pass_dump_if dump_spill "After spilling"
   ++ Split.fundecl
-  ++ pass_dump_if ppf dump_split "After live range splitting"
-  ++ liveness ppf
-  ++ regalloc ppf 1
+  ++ pass_dump_if dump_split "After live range splitting"
+  ++ liveness
+  ++ regalloc 1
   ++ Linearize.fundecl
-  ++ pass_dump_linear_if ppf dump_linear "Linearized code"
+  ++ pass_dump_linear_if dump_linear "Linearized code"
   ++ Scheduling.fundecl
-  ++ pass_dump_linear_if ppf dump_scheduling "After instruction scheduling"
+  ++ pass_dump_linear_if dump_scheduling "After instruction scheduling"
   ++ Emit.fundecl
 
-let compile_phrase ppf p =
-  if !dump_cmm then fprintf ppf "%a@." Printcmm.phrase p;
+let compile_phrase p =
+  if !dump_cmm then eprintf "%a@." Printcmm.phrase p;
   match p with
-  | Cfunction fd -> compile_fundecl ppf fd
+  | Cfunction fd -> compile_fundecl fd
   | Cdata dl -> Emit.data dl
 
 
 (* For the native toplevel: generates generic functions unless
    they are already available in the process *)
-let compile_genfuns ppf f =
+let compile_genfuns f =
   List.iter
     (function
        | (Cfunction {fun_name = name}) as ph when f name ->
-           compile_phrase ppf ph
+           compile_phrase ph
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_implementation ?toplevel prefixname ppf (size, lam) =
+let compile_implementation ?toplevel prefixname (size, lam) =
   let asmfile =
     if !keep_asm_file
     then prefixname ^ ext_asm
@@ -105,8 +105,8 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
     Emit.begin_assembly();
     Closure.intro size lam
     ++ Cmmgen.compunit size
-    ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
-    (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
+    ++ List.iter compile_phrase ++ (fun () -> ());
+    (match toplevel with None -> () | Some f -> compile_genfuns f);
 
     (* We add explicit references to external primitive symbols.  This
        is to ensure that the object files that define these symbols,
@@ -114,7 +114,7 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
        This is important if a module that uses such a symbol is later
        dynlinked. *)
 
-    compile_phrase ppf
+    compile_phrase
       (Cmmgen.reference_symbols
          (List.filter (fun s -> s <> "" && s.[0] <> '%')
             (List.map Primitive.native_name !Translmod.primitive_declarations))

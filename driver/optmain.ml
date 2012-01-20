@@ -22,21 +22,21 @@ let output_prefix name =
     | Some n -> if !compile_only then (output_name := None; n) else name in
   Misc.chop_extension_if_any oname
 
-let process_interface_file ppf name =
-  Optcompile.interface ppf name (output_prefix name)
+let process_interface_file name =
+  Optcompile.interface name (output_prefix name)
 
-let process_implementation_file ppf name =
+let process_implementation_file name =
   let opref = output_prefix name in
-  Optcompile.implementation ppf name opref;
+  Optcompile.implementation name opref;
   objfiles := (opref ^ ".cmx") :: !objfiles
 
-let process_file ppf name =
+let process_file name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then
-    process_implementation_file ppf name
+    process_implementation_file name
   else if Filename.check_suffix name !Config.interface_suffix then begin
     let opref = output_prefix name in
-    Optcompile.interface ppf name opref;
+    Optcompile.interface name opref;
     if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   end
   else if Filename.check_suffix name ".cmx"
@@ -84,9 +84,9 @@ let default_output = function
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
 (* Error messages to standard error formatter *)
-let anonymous = process_file Format.err_formatter;;
-let impl = process_implementation_file Format.err_formatter;;
-let intf = process_interface_file Format.err_formatter;;
+let anonymous = process_file;;
+let impl = process_implementation_file;;
+let intf = process_interface_file;;
 
 let show_config () =
   Config.print_config stdout;
@@ -167,7 +167,6 @@ end);;
 
 let main () =
   native_code := true;
-  let ppf = Format.err_formatter in
   try
     Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
     if
@@ -184,12 +183,12 @@ let main () =
     else if !make_package then begin
       Optcompile.init_path();
       let target = extract_output !output_name in
-      Asmpackager.package_files ppf (List.rev !objfiles) target;
+      Asmpackager.package_files (List.rev !objfiles) target;
     end
     else if !shared then begin
       Optcompile.init_path();
       let target = extract_output !output_name in
-      Asmlink.link_shared ppf (List.rev !objfiles) target;
+      Asmlink.link_shared (List.rev !objfiles) target;
     end
     else if not !compile_only && !objfiles <> [] then begin
       let target =
@@ -208,11 +207,11 @@ let main () =
           default_output !output_name
       in
       Optcompile.init_path();
-      Asmlink.link ppf (List.rev !objfiles) target
+      Asmlink.link (List.rev !objfiles) target
     end;
     exit 0
   with x ->
-    Opterrors.report_error ppf x;
+    Opterrors.report_error Format.err_formatter x;
     exit 2
 
 let _ = main ()

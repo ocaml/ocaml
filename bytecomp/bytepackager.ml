@@ -124,10 +124,10 @@ let read_member_info file =
    Accumulate relocs, debug info, etc.
    Return size of bytecode. *)
 
-let rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst objfile compunit =
+let rename_append_bytecode packagename oc mapping defined ofs prefix subst objfile compunit =
   let ic = open_in_bin objfile in
   try
-    Bytelink.check_consistency ppf objfile compunit;
+    Bytelink.check_consistency objfile compunit;
     List.iter
       (rename_relocation packagename objfile mapping defined ofs)
       compunit.cu_reloc;
@@ -148,20 +148,20 @@ let rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst o
 (* Same, for a list of .cmo and .cmi files.
    Return total size of bytecode. *)
 
-let rec rename_append_bytecode_list ppf packagename oc mapping defined ofs prefix subst = function
+let rec rename_append_bytecode_list packagename oc mapping defined ofs prefix subst = function
     [] ->
       ofs
   | m :: rem ->
       match m.pm_kind with
       | PM_intf ->
-          rename_append_bytecode_list ppf packagename oc mapping defined ofs prefix subst rem
+          rename_append_bytecode_list packagename oc mapping defined ofs prefix subst rem
       | PM_impl compunit ->
           let size =
-            rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst
+            rename_append_bytecode packagename oc mapping defined ofs prefix subst
                                    m.pm_file compunit in
           let id = Ident.create_persistent m.pm_name in
           let root = Path.Pident (Ident.create_persistent prefix) in
-          rename_append_bytecode_list ppf packagename
+          rename_append_bytecode_list packagename
             oc mapping (id :: defined)
             (ofs + size) prefix (Subst.add_module id (Path.Pdot (root, Ident.name id, Path.nopos)) subst) rem
 
@@ -186,7 +186,7 @@ let build_global_target oc target_name members mapping pos coercion =
 
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 
-let package_object_files ppf files targetfile targetname coercion =
+let package_object_files files targetfile targetname coercion =
   let members =
     map_left_right read_member_info files in
   let unit_names =
@@ -203,7 +203,7 @@ let package_object_files ppf files targetfile targetname coercion =
     let pos_depl = pos_out oc in
     output_binary_int oc 0;
     let pos_code = pos_out oc in
-    let ofs = rename_append_bytecode_list ppf targetname oc mapping [] 0 targetname Subst.identity members in
+    let ofs = rename_append_bytecode_list targetname oc mapping [] 0 targetname Subst.identity members in
     build_global_target oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then
@@ -233,7 +233,7 @@ let package_object_files ppf files targetfile targetname coercion =
 
 (* The entry point *)
 
-let package_files ppf files targetfile =
+let package_files files targetfile =
     let files =
     List.map
 	(fun f ->
@@ -245,7 +245,7 @@ let package_files ppf files targetfile =
     let targetname = String.capitalize(Filename.basename prefix) in
     try
       let coercion = Typemod.package_units files targetcmi targetname in
-    let ret = package_object_files ppf files targetfile targetname coercion in
+    let ret = package_object_files files targetfile targetname coercion in
     ret
   with x ->
     remove_file targetfile; raise x
