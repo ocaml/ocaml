@@ -641,7 +641,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    it had no pretty-printing indication semantics. If you need to prevent
    the pretty-printing indication interpretation of a [@] character, simply
    use the regular way to escape a character in format string: write [%@].
-   @since 3.12.3.
+   @since 3.12.2.
 
 *)
 
