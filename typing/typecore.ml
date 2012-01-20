@@ -186,7 +186,7 @@ let iter_expression f e =
   expr e
 
 
-let free_idents el =
+let all_idents el =
   let idents = Hashtbl.create 8 in
   let f = function
     | {pexp_desc=Pexp_ident (Longident.Lident id); _} ->
@@ -1372,7 +1372,7 @@ let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
 let duplicate_ident_types loc caselist env =
   let caselist =
     List.filter (fun (pat, _) -> contains_gadt env pat) caselist in
-  let idents = free_idents (List.map snd caselist) in
+  let idents = all_idents (List.map snd caselist) in
   List.fold_left
     (fun env s ->
       try
