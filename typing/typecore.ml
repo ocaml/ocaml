@@ -112,7 +112,8 @@ let iter_expression f e =
     | Pexp_assertfalse
     | Pexp_new _
     | Pexp_constant _ -> ()
-    | Pexp_function (_, eo, pel) -> may expr eo; List.iter (fun (_, e) -> expr e) pel
+    | Pexp_function (_, eo, pel) ->
+        may expr eo; List.iter (fun (_, e) -> expr e) pel
     | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
     | Pexp_let (_, pel, e)
     | Pexp_match (e, pel)
@@ -121,7 +122,8 @@ let iter_expression f e =
     | Pexp_tuple el -> List.iter expr el
     | Pexp_construct (_, eo, _)
     | Pexp_variant (_, eo) -> may expr eo
-    | Pexp_record (iel, eo) -> may expr eo; List.iter (fun (_, e) -> expr e) iel
+    | Pexp_record (iel, eo) ->
+        may expr eo; List.iter (fun (_, e) -> expr e) iel
     | Pexp_open (_, e)
     | Pexp_newtype (_, e)
     | Pexp_poly (e, _)
@@ -172,8 +174,10 @@ let iter_expression f e =
     | Pcl_constr _ -> ()
     | Pcl_structure (_, cfl) -> List.iter class_field cfl
     | Pcl_fun (_, eo, _,  ce) -> may expr eo; class_expr ce
-    | Pcl_apply (ce, lel) -> class_expr ce; List.iter (fun (_, e) -> expr e) lel
-    | Pcl_let (_, pel, ce) -> List.iter (fun (_, e) -> expr e) pel; class_expr ce
+    | Pcl_apply (ce, lel) ->
+        class_expr ce; List.iter (fun (_, e) -> expr e) lel
+    | Pcl_let (_, pel, ce) ->
+        List.iter (fun (_, e) -> expr e) pel; class_expr ce
     | Pcl_constraint (ce, _) -> class_expr ce
 
   and class_field = function
@@ -1376,14 +1380,15 @@ let duplicate_ident_types loc caselist env =
   List.fold_left
     (fun env s ->
       try
-        (* XXX This will mark the value as being used; I don't think this is what we want *)
-        let (path, desc) = Typetexp.find_value env loc (Longident.Lident s) in
+        (* XXX This will mark the value as being used;
+           I don't think this is what we want *)
+        let (path, desc) = Env.lookup_value (Longident.Lident s) env in
         match path with
           Path.Pident id ->
             let desc = {desc with val_type = correct_levels desc.val_type} in
             Env.add_value id desc env
         | _ -> env
-      with Not_found | Typetexp.Error (_, Typetexp.Unbound_value _) -> env)
+      with Not_found -> env)
     env idents
 
 (* Typing of expressions *)
