@@ -900,39 +900,13 @@ let cltype_declaration id ppf cl =
 
 (* Print a module type *)
 
-let rec add_decls env = function
-  | Tsig_class(id, decl, _) :: rem ->
-      add_decls (Env.add_class id decl env) rem
-  | Tsig_cltype(id, decl, _) :: Tsig_type(id', decl', _) :: rem ->
-      add_decls (Env.add_type id' decl' (Env.add_cltype id decl env)) rem
-  | Tsig_type(id, decl, _) :: rem ->
-      (Env.add_type id decl env, rem)
-  | Tsig_module(id, mty, _) :: rem ->
-      (Env.add_module id mty env, rem)
-  | _ -> assert false
-
-let recursion = function
-    Tsig_type(_,_,rs)
-  | Tsig_module(_,_,rs)
-  | Tsig_class(_,_,rs)
-  | Tsig_cltype(_,_,rs) -> rs
-  | _ -> Trec_not
-
-let rec add_rec_decls rs0 env sg =
-  match sg with
-    item :: _ when recursion item = rs0 ->
-      let (env, rem) = add_decls env sg in
-      if rs0 = Trec_not then env else
-      add_rec_decls Trec_next env rem
-  | _ -> env
-
-let wrap_env rs sg f =
-  if rs = Trec_next then f () else
+let wrap_env fenv ftree arg =
   let env = !printing_env in
-  printing_env := add_rec_decls rs env sg;
-  let tree = f () in
-  printing_env := env; tree
-  
+  printing_env := fenv env;
+  let tree = ftree arg in
+  printing_env := env;
+  tree
+
 let rec tree_of_modtype = function
   | Tmty_ident p ->
       Omty_ident (tree_of_path p)
@@ -940,32 +914,33 @@ let rec tree_of_modtype = function
       Omty_signature (tree_of_signature sg)
   | Tmty_functor(param, ty_arg, ty_res) ->
       Omty_functor
-        (Ident.name param, tree_of_modtype ty_arg, tree_of_modtype ty_res)
+        (Ident.name param,
+         wrap_env (Env.add_module param ty_arg) tree_of_modtype ty_arg,
+         tree_of_modtype ty_res)
 
-and tree_of_signature = function
+and tree_of_signature sg =
+  wrap_env (Env.add_signature sg) tree_of_signature_rec sg
+
+and tree_of_signature_rec = function
   | [] -> []
   | Tsig_value(id, decl) :: rem ->
-      tree_of_value_description id decl :: tree_of_signature rem
+      tree_of_value_description id decl :: tree_of_signature_rec rem
   | Tsig_type(id, _, _) :: rem when is_row_name (Ident.name id) ->
-      tree_of_signature rem
-  | Tsig_type(id, decl, rs) :: rem as sg ->
-      wrap_env rs sg (fun () ->
-        Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
-        tree_of_signature rem)
+      tree_of_signature_rec rem
+  | Tsig_type(id, decl, rs) :: rem ->
+      Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
+      tree_of_signature_rec rem
   | Tsig_exception(id, decl) :: rem ->
-      tree_of_exception_declaration id decl :: tree_of_signature rem
-  | Tsig_module(id, mty, rs) :: rem as sg ->
-      wrap_env rs sg (fun () ->
-        Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs) ::
-        tree_of_signature rem)
+      tree_of_exception_declaration id decl :: tree_of_signature_rec rem
+  | Tsig_module(id, mty, rs) :: rem ->
+      Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs) ::
+      tree_of_signature_rec rem
   | Tsig_modtype(id, decl) :: rem ->
-      tree_of_modtype_declaration id decl :: tree_of_signature rem
-  | Tsig_class(id, decl, rs) :: ctydecl :: tydecl1 :: tydecl2 :: rem as sg ->
-      wrap_env rs sg (fun () ->
-        tree_of_class_declaration id decl rs :: tree_of_signature rem)
-  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem as sg ->
-      wrap_env rs sg (fun () ->
-        tree_of_cltype_declaration id decl rs :: tree_of_signature rem)
+      tree_of_modtype_declaration id decl :: tree_of_signature_rec rem
+  | Tsig_class(id, decl, rs) :: ctydecl :: tydecl1 :: tydecl2 :: rem ->
+      tree_of_class_declaration id decl rs :: tree_of_signature_rec rem
+  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
+      tree_of_cltype_declaration id decl rs :: tree_of_signature_rec rem
   | _ ->
       assert false
 
