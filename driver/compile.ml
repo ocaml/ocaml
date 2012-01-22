@@ -83,9 +83,10 @@ let interface ppf sourcefile outputprefix =
     let ast =
       Pparse.file ppf inputfile Parse.interface ast_intf_magic_number in
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
-    let sg = Typemod.transl_signature (initial_env()) ast in
+    let env = initial_env () in
+    let sg = Typemod.transl_signature env ast in
     if !Clflags.print_types then
-      fprintf std_formatter "%a@." Printtyp.signature
+      fprintf std_formatter "%a@." (Printtyp.signature env)
                                    (Typemod.simplify_signature sg);
     Warnings.check_fatal ();
     if not !Clflags.print_types then

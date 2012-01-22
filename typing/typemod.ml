@@ -213,11 +213,14 @@ let map_rec fn decls rem =
   | [] -> rem
   | d1 :: dl -> fn Trec_first d1 :: map_end (fn Trec_next) dl rem
 
+let map_rec' = map_rec
+(*
 let rec map_rec' fn decls rem =
   match decls with
   | (id,_ as d1) :: dl when Btype.is_row_name (Ident.name id) ->
       fn Trec_not d1 :: map_rec' fn dl rem
   | _ -> map_rec fn decls rem
+*)
 
 (* Auxiliary for translating recursively-defined module types.
    Return a module type that approximates the shape of the given module
@@ -382,7 +385,8 @@ and transl_signature env sg =
         match item.psig_desc with
         | Psig_value(name, sdesc) ->
             let desc = Typedecl.transl_value_decl env item.psig_loc sdesc in
-            let (id, newenv) = Env.enter_value ~check:(fun s -> Warnings.Unused_value_declaration s) name desc env in
+            let (id, newenv) = Env.enter_value name desc env
+                ~check:(fun s -> Warnings.Unused_value_declaration s) in
             let rem = transl_sig newenv srem in
             if List.exists (Ident.equal id) (get_values rem) then rem
             else Tsig_value(id, desc) :: rem
@@ -1088,7 +1092,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   let (str, sg, finalenv) = type_structure initial_env ast Location.none in
   let simple_sg = simplify_signature sg in
   if !Clflags.print_types then begin
-    fprintf std_formatter "%a@." Printtyp.signature simple_sg;
+    fprintf std_formatter "%a@." (Printtyp.signature initial_env) simple_sg;
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =

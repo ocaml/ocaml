@@ -23,6 +23,7 @@ val ident: formatter -> Ident.t -> unit
 val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
 val raw_type_expr: formatter -> type_expr -> unit
+val set_env: Env.t -> unit
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
 val reset_and_mark_loops: type_expr -> unit
@@ -44,7 +45,7 @@ val tree_of_exception_declaration: Ident.t -> exception_declaration -> out_sig_i
 val exception_declaration: Ident.t -> formatter -> exception_declaration -> unit
 val tree_of_module: Ident.t -> module_type -> rec_status -> out_sig_item
 val modtype: formatter -> module_type -> unit
-val signature: formatter -> signature -> unit
+val signature: Env.t -> formatter -> signature -> unit
 val tree_of_modtype_declaration: Ident.t -> modtype_declaration -> out_sig_item
 val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit
 val class_type: formatter -> class_type -> unit
