@@ -778,7 +778,7 @@ let rec type_module sttn funct_body anchor env smod =
             modtype_of_package env smod.pmod_loc p nl tl
         | {desc = Tvar _} ->
             raise (Typecore.Error
-                     (smod.pmod_loc, Typecore.Cannot_infer_signature))
+                     (smod.pmod_loc, env, Typecore.Cannot_infer_signature))
         | _ ->
             raise (Error (smod.pmod_loc, Not_a_packed_module exp.exp_type))
       in

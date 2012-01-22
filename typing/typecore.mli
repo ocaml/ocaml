@@ -104,9 +104,9 @@ type error =
   | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
 
-exception Error of Location.t * error
+exception Error of Location.t * Env.t * error
 
-val report_error: formatter -> error -> unit
+val report_error: Env.t -> formatter -> error -> unit
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref

@@ -75,6 +75,6 @@ type error =
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
 
-exception Error of Location.t * error
+exception Error of Location.t * Env.t * error
 
-val report_error : formatter -> error -> unit
+val report_error : Env.t -> formatter -> error -> unit

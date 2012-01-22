@@ -60,9 +60,9 @@ val unification_error:
     (formatter -> unit) -> formatter -> (formatter -> unit) ->
     unit
 val report_unification_error:
-    formatter -> (type_expr * type_expr) list ->
+    formatter -> Env.t -> (type_expr * type_expr) list ->
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 val report_subtyping_error:
-    formatter -> (type_expr * type_expr) list ->
+    formatter -> Env.t -> (type_expr * type_expr) list ->
     string -> (type_expr * type_expr) list -> unit

@@ -30,8 +30,8 @@ type error =
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr * Includecore.type_mismatch list
   | Constraint_failed of type_expr * type_expr
-  | Inconsistent_constraint of (type_expr * type_expr) list
-  | Type_clash of (type_expr * type_expr) list
+  | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
+  | Type_clash of Env.t * (type_expr * type_expr) list
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
   | Missing_native_external
@@ -73,7 +73,7 @@ let update_type temp_env env id loc =
       let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
       try Ctype.unify env (Ctype.newconstr path params) ty
       with Ctype.Unify trace ->
-        raise (Error(loc, Type_clash trace))
+        raise (Error(loc, Type_clash (env, trace)))
 
 (* Determine if a type is (an abbreviation for) the type "float" *)
 (* We use the Ctype.expand_head_opt version of expand_head to get access
@@ -223,7 +223,7 @@ let transl_declaration env (name, sdecl) id =
   List.iter
     (fun (ty, ty', loc) ->
       try Ctype.unify env ty ty' with Ctype.Unify tr ->
-        raise(Error(loc, Inconsistent_constraint tr)))
+        raise(Error(loc, Inconsistent_constraint (env, tr))))
     cstrs;
   Ctype.end_def ();
   (* Add abstract row *)
@@ -429,7 +429,7 @@ let check_recursion env loc path decl to_check =
         Ctype.correct_abbrev env path decl.type_params body
       with Ctype.Recursive_abbrev ->
         raise(Error(loc, Recursive_abbrev (Path.name path)))
-      | Ctype.Unify trace -> raise(Error(loc, Type_clash trace))
+      | Ctype.Unify trace -> raise(Error(loc, Type_clash (env, trace)))
       end;
       (* Check that recursion is regular *)
       if decl.type_params = [] then () else
@@ -878,7 +878,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
          Ctype.unify env (transl_simple_type env false ty)
                          (transl_simple_type env false ty')
        with Ctype.Unify tr ->
-         raise(Error(loc, Inconsistent_constraint tr)))
+         raise(Error(loc, Inconsistent_constraint (env, tr))))
     sdecl.ptype_cstrs;
   let no_row = not (is_fixed_type sdecl) in
   let decl =
@@ -1017,13 +1017,13 @@ let report_error ppf = function
       fprintf ppf
         "@[<hv>In the definition of %s, type@ %a@ should be@ %a@]"
         (Path.name path) Printtyp.type_expr ty Printtyp.type_expr ty'
-  | Inconsistent_constraint trace ->
+  | Inconsistent_constraint (env, trace) ->
       fprintf ppf "The type constraints are not consistent.@.";
-      Printtyp.report_unification_error ppf trace
+      Printtyp.report_unification_error ppf env trace
         (fun ppf -> fprintf ppf "Type")
         (fun ppf -> fprintf ppf "is not compatible with type")
-  | Type_clash trace ->
-      Printtyp.report_unification_error ppf trace
+  | Type_clash (env, trace) ->
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "This type constructor expands to type")
         (function ppf ->
