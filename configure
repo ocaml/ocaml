@@ -625,6 +625,7 @@ if test $withsharedlibs = "yes"; then
       if test $arch64 == true; then
         natdynlink=true
       fi;;
+    x86_64-*-darwin*)             natdynlink=true;;
     powerpc64-*-linux*)           natdynlink=true;;
     sparc-*-linux*)               natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
