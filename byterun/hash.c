@@ -55,7 +55,7 @@ CAMLexport uint32 caml_hash_mix_uint32(uint32 h, uint32 d)
   return h;
 }
 
-/* Mix a platform-native integer. */  
+/* Mix a platform-native integer. */
 
 CAMLexport uint32 caml_hash_mix_intnat(uint32 h, intnat d)
 {
@@ -230,7 +230,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         /* Block contents unknown.  Do nothing. */
         break;
       case Infix_tag:
-        /* Mix in the offset to distinguish different functions from 
+        /* Mix in the offset to distinguish different functions from
            the same mutually-recursive definition */
         h = caml_hash_mix_uint32(h, Infix_offset_val(v));
         v = v - Infix_offset_val(v);
