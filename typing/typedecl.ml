@@ -1019,11 +1019,11 @@ let report_error ppf = function
         (Path.name path) Printtyp.type_expr ty Printtyp.type_expr ty'
   | Inconsistent_constraint (env, trace) ->
       fprintf ppf "The type constraints are not consistent.@.";
-      Printtyp.report_unification_error ppf env trace
+      Printtyp.report_unification_error ppf ~env trace
         (fun ppf -> fprintf ppf "Type")
         (fun ppf -> fprintf ppf "is not compatible with type")
   | Type_clash (env, trace) ->
-      Printtyp.report_unification_error ppf env trace
+      Printtyp.report_unification_error ppf ~env trace
         (function ppf ->
            fprintf ppf "This type constructor expands to type")
         (function ppf ->

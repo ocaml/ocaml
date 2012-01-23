@@ -44,12 +44,12 @@ type error =
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of (Types.type_expr * Types.type_expr) list
-  | Alias_type_mismatch of (Types.type_expr * Types.type_expr) list
+  | Type_mismatch of Env.t * (Types.type_expr * Types.type_expr) list
+  | Alias_type_mismatch of Env.t * (Types.type_expr * Types.type_expr) list
   | Present_has_conjunction of string
   | Present_has_no_type of string
-  | Constructor_mismatch of Types.type_expr * Types.type_expr
-  | Not_a_variant of Types.type_expr
+  | Constructor_mismatch of Env.t * Types.type_expr * Types.type_expr
+  | Not_a_variant of Env.t * Types.type_expr
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * Types.type_expr

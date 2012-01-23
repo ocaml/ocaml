@@ -76,6 +76,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _noprompt = set noprompt
   let _nostdlib = set no_std_include
   let _principal = set principal
+  let _real_paths = set real_paths
   let _rectypes = set recursive_types
   let _strict_sequence = set strict_sequence
   let _S = set keep_asm_file

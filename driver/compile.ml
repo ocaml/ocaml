@@ -86,8 +86,9 @@ let interface ppf sourcefile outputprefix =
     let env = initial_env () in
     let sg = Typemod.transl_signature env ast in
     if !Clflags.print_types then
-      fprintf std_formatter "%a@." (Printtyp.signature env)
-                                   (Typemod.simplify_signature sg);
+      Printtyp.wrap_printing_env env (fun () ->
+        fprintf std_formatter "%a@."
+          Printtyp.signature (Typemod.simplify_signature sg));
     Warnings.check_fatal ();
     if not !Clflags.print_types then
       Env.save_signature sg modulename (outputprefix ^ ".cmi");

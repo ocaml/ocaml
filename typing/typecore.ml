@@ -2913,7 +2913,7 @@ let type_expression env sexp =
 open Format
 open Printtyp
 
-let report_error env ppf = function
+let report_error ppf = function
   | Polymorphic_label lid ->
       fprintf ppf "@[The record field label %a is polymorphic.@ %s@]"
         longident lid "You cannot instantiate it in a pattern."
@@ -2923,25 +2923,26 @@ let report_error env ppf = function
         but is applied here to %i argument(s)@]"
        longident lid expected provided
   | Label_mismatch(lid, trace) ->
-      report_unification_error ppf env trace
+      report_unification_error ppf trace
         (function ppf ->
            fprintf ppf "The record field label %a@ belongs to the type"
                    longident lid)
         (function ppf ->
            fprintf ppf "but is mixed here with labels of type")
   | Pattern_type_clash trace ->
-      report_unification_error ppf env trace
+      report_unification_error ppf trace
         (function ppf ->
            fprintf ppf "This pattern matches values of type")
         (function ppf ->
-           fprintf ppf "but a pattern was expected which matches values of type")
+           fprintf ppf
+            "but a pattern was expected which matches values of type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
   | Orpat_vars id ->
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
         (Ident.name id)
   | Expr_type_clash trace ->
-      report_unification_error ppf env trace
+      report_unification_error ppf trace
         (function ppf ->
            fprintf ppf "This expression has type")
         (function ppf ->
@@ -2999,13 +3000,13 @@ let report_error env ppf = function
       else
         fprintf ppf "The value %s is not an instance variable" v
   | Not_subtype(tr1, tr2) ->
-      report_subtyping_error ppf env tr1 "is not a subtype of" tr2
+      report_subtyping_error ppf tr1 "is not a subtype of" tr2
   | Outside_class ->
       fprintf ppf "This object duplication occurs outside a method definition"
   | Value_multiply_overridden v ->
       fprintf ppf "The instance variable %s is overridden several times" v
   | Coercion_failure (ty, ty', trace, b) ->
-      report_unification_error ppf env trace
+      report_unification_error ppf trace
         (function ppf ->
            let ty, ty' = prepare_expansion (ty, ty') in
            fprintf ppf
@@ -3058,7 +3059,7 @@ let report_error env ppf = function
       fprintf ppf "in an order different from other calls.@ ";
       fprintf ppf "This is only allowed when the real type is known."
   | Less_general (kind, trace) ->
-      report_unification_error ppf env trace
+      report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
   | Modules_not_allowed ->
@@ -3071,7 +3072,7 @@ let report_error env ppf = function
         "This expression is packed module, but the expected type is@ %a"
         type_expr ty
   | Recursive_local_constraint trace ->
-      report_unification_error ppf env trace
+      report_unification_error ppf trace
         (function ppf ->
            fprintf ppf "Recursive local constraint when unifying")
         (function ppf ->
@@ -3079,6 +3080,9 @@ let report_error env ppf = function
   | Unexpected_existential ->
       fprintf ppf
         "Unexpected existential"
+
+let report_error env ppf err =
+  wrap_printing_env env (fun () -> report_error ppf err)
 
 let () =
   Env.add_delayed_check_forward := add_delayed_check

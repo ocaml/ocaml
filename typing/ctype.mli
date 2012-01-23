@@ -182,11 +182,11 @@ val matches : Env.t -> type_expr -> type_expr -> bool
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of (type_expr * type_expr) list
-  | CM_Class_type_mismatch of class_type * class_type
-  | CM_Parameter_mismatch of (type_expr * type_expr) list
-  | CM_Val_type_mismatch of string * (type_expr * type_expr) list
-  | CM_Meth_type_mismatch of string * (type_expr * type_expr) list
+  | CM_Type_parameter_mismatch of Env.t * (type_expr * type_expr) list
+  | CM_Class_type_mismatch of Env.t * class_type * class_type
+  | CM_Parameter_mismatch of Env.t * (type_expr * type_expr) list
+  | CM_Val_type_mismatch of string * Env.t * (type_expr * type_expr) list
+  | CM_Meth_type_mismatch of string * Env.t * (type_expr * type_expr) list
   | CM_Non_mutable_value of string
   | CM_Non_concrete_value of string
   | CM_Missing_value of string
@@ -197,7 +197,7 @@ type class_match_failure =
   | CM_Private_method of string
   | CM_Virtual_method of string
 val match_class_types:
-        ?trace:bool -> Env.t -> class_type -> class_type -> class_match_failure list
+  ?trace:bool -> Env.t -> class_type -> class_type -> class_match_failure list
         (* Check if the first class type is more general than the second. *)
 val equal: Env.t -> bool -> type_expr list -> type_expr list -> bool
         (* [equal env [x1...xn] tau [y1...yn] sigma]

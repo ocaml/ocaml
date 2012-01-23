@@ -142,14 +142,14 @@ let f txt =
           | Syntaxerr.Applicative_path l -> l
           | Syntaxerr.Other l -> l
           end
-      | Typecore.Error (l,err) ->
-          Typecore.report_error Format.std_formatter err; l
-      | Typeclass.Error (l,err) ->
-          Typeclass.report_error Format.std_formatter err; l
+      | Typecore.Error (l, env, err) ->
+          Typecore.report_error env Format.std_formatter err; l
+      | Typeclass.Error (l, env, err) ->
+          Typeclass.report_error env Format.std_formatter err; l
       | Typedecl.Error (l, err) ->
           Typedecl.report_error Format.std_formatter err; l
-      | Typemod.Error (l,err) ->
-          Typemod.report_error Format.std_formatter err; l
+      | Typemod.Error (l, env, err) ->
+          Typemod.report_error env Format.std_formatter err; l
       | Typetexp.Error (l,err) ->
           Typetexp.report_error Format.std_formatter err; l
       | Includemod.Error errl ->

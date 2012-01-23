@@ -230,8 +230,7 @@ let execute_phrase print_outcome ppf phr =
           match res with
           | Result v ->
               if print_outcome then
-                let out =
-                  Printtyp.set_env newenv;
+                Printtyp.wrap_printing_env newenv (fun () ->
                   match str with
                   | [Tstr_eval exp] ->
                       let outv = outval_of_value newenv v exp.exp_type in
@@ -239,10 +238,7 @@ let execute_phrase print_outcome ppf phr =
                       Ophr_eval (outv, ty)
                   | [] -> Ophr_signature []
                   | _ -> Ophr_signature (item_list newenv
-                                           (Typemod.simplify_signature sg))
-                in
-                Printtyp.set_env Env.empty;
-                out
+                                           (Typemod.simplify_signature sg)))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;

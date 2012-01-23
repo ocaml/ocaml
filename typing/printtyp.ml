@@ -192,16 +192,23 @@ let () = Btype.print_raw := raw_type_expr
 (* Normalize paths *)
 
 let printing_env = ref Env.empty
-let set_env env = printing_env := env
+
+let wrap_printing_env env f =
+  if env == !printing_env then f () else
+  begin
+    printing_env := env;
+    try_finally f (fun () -> printing_env := Env.empty)
+  end
 
 let rec path_length = function
     Pident _ -> 1
   | Pdot (p, _, _) -> 1 + path_length p
-  | Papply (p1, p2) -> 1 + path_length p1 + path_length p2
+  | Papply (p1, p2) -> path_length p1 + path_length p2
 
 let same_type t t' = repr t == repr t'
 
 let rec best_type_path p =
+  if !Clflags.real_paths then p else
   try
     let desc = Env.find_type p !printing_env in
     if desc.type_private = Private then p else
@@ -964,10 +971,8 @@ let modtype_declaration id ppf decl =
 let print_signature ppf tree =
   fprintf ppf "@[<v>%a@]" !Oprint.out_signature tree
 
-let signature env ppf sg =
-  printing_env := env;
-  fprintf ppf "%a" print_signature (tree_of_signature  sg);
-  printing_env := Env.empty
+let signature ppf sg =
+  fprintf ppf "%a" print_signature (tree_of_signature sg)
 
 (* Print an unification error *)
 
@@ -1166,10 +1171,9 @@ let unification_error unif tr txt1 ppf txt2 =
       print_labels := true;
       raise exn
 
-let report_unification_error ppf env tr txt1 txt2 =
-  printing_env := env;
-  unification_error true tr txt1 ppf txt2;
-  printing_env := Env.empty
+let report_unification_error ppf ?(env = !printing_env) ?(unif=true)
+    tr txt1 txt2 =
+  wrap_printing_env env (fun () -> unification_error unif tr txt1 ppf txt2)
 ;;
 
 let trace fst txt ppf tr =
@@ -1185,14 +1189,13 @@ let trace fst txt ppf tr =
     print_labels := true;
     raise exn
 
-let report_subtyping_error ppf env tr1 txt1 tr2 =
-  printing_env := env;
-  reset ();
-  let tr1 = List.map prepare_expansion tr1
-  and tr2 = List.map prepare_expansion tr2 in
-  trace true txt1 ppf tr1;
-  if tr2 = [] then () else
-  let mis = mismatch true tr2 in
-  trace false "is not compatible with type" ppf tr2;
-  explanation true mis ppf;
-  printing_env := Env.empty
+let report_subtyping_error ppf ?(env = !printing_env) tr1 txt1 tr2 =
+  wrap_printing_env env (fun () -> 
+    reset ();
+    let tr1 = List.map prepare_expansion tr1
+    and tr2 = List.map prepare_expansion tr2 in
+    trace true txt1 ppf tr1;
+    if tr2 = [] then () else
+    let mis = mismatch true tr2 in
+    trace false "is not compatible with type" ppf tr2;
+    explanation true mis ppf)
