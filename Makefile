@@ -31,6 +31,9 @@ CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
 MKDIR=mkdir -p
 
+CAMLP4OUT=$(CAMLP4:=out)
+CAMLP4OPT=$(CAMLP4:=opt)
+
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
 
@@ -131,7 +134,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc
+  otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc
 
 # Compile everything the first time
 world:
@@ -264,12 +267,12 @@ opt:
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 $(DEBUGGER) ocamldoc ocamlbuild.byte camlp4out \
+	 $(DEBUGGER) ocamldoc ocamlbuild.byte $(CAMLP4OUT) \
 	 ocamlopt.opt otherlibrariesopt ocamllex.opt ocamltoolsopt.opt \
-	 ocamldoc.opt ocamlbuild.native camlp4opt
+	 ocamldoc.opt ocamlbuild.native $(CAMLP4OPT)
 
 base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \
+	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
 	 otherlibrariesopt
 
 # Installation

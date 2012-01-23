@@ -43,6 +43,7 @@ debugruntime=noruntimed
 withsharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
+withcamlp4=camlp4
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -112,6 +113,8 @@ while : ; do
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=runtimed;;
+    -no-camlp4|--no-camlp4)
+        withcamlp4="";;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -683,7 +686,7 @@ case "$host" in
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
-  x86_64-*-darwin9.5)           arch=amd64; system=macosx;;
+  x86_64-*-darwin*)             arch=amd64; system=macosx;;
 esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
@@ -1571,6 +1574,7 @@ echo "MKEXE=$mkexe" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
+echo "CAMLP4=${withcamlp4}" >>Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
