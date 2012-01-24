@@ -29,12 +29,12 @@ type error =
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of Env.t * (type_expr * type_expr) list
-  | Alias_type_mismatch of Env.t * (type_expr * type_expr) list
+  | Type_mismatch of (type_expr * type_expr) list
+  | Alias_type_mismatch of (type_expr * type_expr) list
   | Present_has_conjunction of string
   | Present_has_no_type of string
   | Constructor_mismatch of Env.t * type_expr * type_expr
-  | Not_a_variant of Env.t * type_expr
+  | Not_a_variant of type_expr
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
@@ -238,13 +238,13 @@ let rec transl_type env policy styp =
       List.iter2
         (fun (sty, ty) ty' ->
            try unify_param env ty' ty with Unify trace ->
-             raise (Error(sty.ptyp_loc, Type_mismatch (env, swap_list trace))))
+             raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       let constr = newconstr path args in
       begin try
         Ctype.enforce_constraints env constr
       with Unify trace ->
-        raise (Error(styp.ptyp_loc, Type_mismatch (env, trace)))
+        raise (Error(styp.ptyp_loc, Type_mismatch trace))
       end;
       constr
   | Ptyp_object fields ->
@@ -286,12 +286,12 @@ let rec transl_type env policy styp =
       List.iter2
         (fun (sty, ty) ty' ->
            try unify_var env ty' ty with Unify trace ->
-             raise (Error(sty.ptyp_loc, Type_mismatch (env, swap_list trace))))
+             raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       let ty =
         try Ctype.expand_head env (newconstr path args)
         with Unify trace ->
-          raise (Error(styp.ptyp_loc, Type_mismatch (env, trace)))
+          raise (Error(styp.ptyp_loc, Type_mismatch trace))
       in
       begin match ty.desc with
         Tvariant row ->
@@ -340,7 +340,7 @@ let rec transl_type env policy styp =
           let ty = transl_type env policy st in
           begin try unify_var env t ty with Unify trace ->
             let trace = swap_list trace in
-            raise(Error(styp.ptyp_loc, Alias_type_mismatch (env, trace)))
+            raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
           end;
           ty
         with Not_found ->
@@ -350,7 +350,7 @@ let rec transl_type env policy styp =
           let ty = transl_type env policy st in
           begin try unify_var env t ty with Unify trace ->
             let trace = swap_list trace in
-            raise(Error(styp.ptyp_loc, Alias_type_mismatch (env, trace)))
+            raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
           end;
           if !Clflags.principal then begin
             end_def ();
@@ -422,7 +422,7 @@ let rec transl_type env policy styp =
             | {desc=Tvar _}, Some(p, _) ->
                 raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p))
             | _ ->
-                raise(Error(sty.ptyp_loc, Not_a_variant (env, ty)))
+                raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in
             List.iter
               (fun (l, f) ->
@@ -557,7 +557,7 @@ let globalize_used_variables env fixed =
     List.iter
       (function (loc, t1, t2) ->
         try unify env t1 t2 with Unify trace ->
-          raise (Error(loc, Type_mismatch (env, trace))))
+          raise (Error(loc, Type_mismatch trace)))
       !r
 
 let transl_simple_type env fixed styp =
@@ -634,14 +634,14 @@ let report_error ppf = function
       fprintf ppf "This type is recursive"
   | Unbound_row_variable lid ->
       fprintf ppf "Unbound row variable in #%a" longident lid
-  | Type_mismatch (env, trace) ->
-      Printtyp.report_unification_error ppf ~env trace
+  | Type_mismatch trace ->
+      Printtyp.report_unification_error ppf trace
         (function ppf ->
            fprintf ppf "This type")
         (function ppf ->
            fprintf ppf "should be an instance of type")
-  | Alias_type_mismatch (env, trace) ->
-      Printtyp.report_unification_error ppf ~env trace
+  | Alias_type_mismatch trace ->
+      Printtyp.report_unification_error ppf trace
         (function ppf ->
            fprintf ppf "This alias is bound to type")
         (function ppf ->
@@ -658,11 +658,10 @@ let report_error ppf = function
           Printtyp.type_expr ty
           "which should be"
           Printtyp.type_expr ty')
-  | Not_a_variant (env, ty) ->
-      Printtyp.wrap_printing_env env (fun () ->
-        Printtyp.reset_and_mark_loops ty;
-        fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
-          Printtyp.type_expr ty)
+  | Not_a_variant ty ->
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
+        Printtyp.type_expr ty
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
         "@[Variant tags `%s@ and `%s have the same hash value.@ %s@]"
