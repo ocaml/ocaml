@@ -208,8 +208,9 @@ let rec path_length = function
 let same_type t t' = repr t == repr t'
 
 let rec best_type_path p =
-  if !Clflags.real_paths then p else
-  try
+  if !Clflags.real_paths || !printing_env == Env.empty || path_length p = 1
+  then p
+  else try
     let desc = Env.find_type p !printing_env in
     if desc.type_private = Private then p else
     match desc.type_manifest with
