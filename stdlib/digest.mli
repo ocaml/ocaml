@@ -61,3 +61,8 @@ val input : in_channel -> t
 
 val to_hex : t -> string
 (** Return the printable hexadecimal representation of the given digest. *)
+
+val from_hex : string -> t
+(** Convert a hexadecimal representation back into the corresponding digest.
+   Raise [Invalid_argument] if the argument is not exactly 32 hexadecimal
+   characters. *)
