@@ -461,7 +461,9 @@ external ignore : 'a -> unit = "%ignore"
 (** {6 String conversion functions} *)
 
 val string_of_bool : bool -> string
-(** Return the string representation of a boolean. *)
+(** Return the string representation of a boolean. As the returned values
+   may be shared, the user should not modify them directly.
+*)
 
 val bool_of_string : string -> bool
 (** Convert the given string to a boolean.
