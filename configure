@@ -129,17 +129,23 @@ esac
 case "$bindir" in
   /*) ;;
   "") ;;
-   *) echo "The -bindir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -bindir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 case "$libdir" in
   /*) ;;
   "") ;;
-   *) echo "The -libdir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -libdir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 case "$mandir" in
   /*) ;;
   "") ;;
-   *) echo "The -mandir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -mandir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 
 # Generate the files
