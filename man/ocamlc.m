@@ -744,14 +744,14 @@ sign (or a lowercase letter) turns them back into warnings, and a
 .B @
 sign both enables and marks the corresponding warnings.
 
-Note: it is not recommended to use warning sets (i.e. letters) as
-arguments to
+Note: it is not recommended to use the
 .B \-warn\-error
-in production code, because this can break your build when future versions
-of OCaml add some new warnings.
+option in production code, because it will almost certainly prevent
+compiling your program with later versions of OCaml when they add new
+warnings.
 
 The default setting is
-.B \-warn\-error\ +a
+.B \-warn\-error\ -a
 (none of the warnings is treated as an error).
 .TP
 .B \-where
