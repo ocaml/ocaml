@@ -20,6 +20,8 @@ open Parsetree
 
 (* Print the dependencies *)
 
+type file_kind = ML | MLI;;
+
 let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
@@ -27,6 +29,10 @@ let native_only = ref false
 let force_slash = ref false
 let error_occurred = ref false
 let raw_dependencies = ref false
+let sort_files = ref false
+let all_dependencies = ref false
+let one_line = ref false
+let files = ref []
 
 (* Fix path to use '/' as directory separator instead of '\'.
    Only under Windows. *)
@@ -57,6 +63,7 @@ let add_to_synonym_list synonyms suffix =
     error_occurred := true
   end
 
+(* Find file 'name' (capitalized) in search path *)
 let find_file name =
   let uname = String.uncapitalize name in
   let rec find_in_array a pos =
@@ -77,24 +84,51 @@ let rec find_file_in_list = function
   [] -> raise Not_found
 | x :: rem -> try find_file x with Not_found -> find_file_in_list rem
 
-let find_dependency modname (byt_deps, opt_deps) =
+
+let find_dependency target_kind modname (byt_deps, opt_deps) =
   try
     let candidates = List.map ((^) modname) !mli_synonyms in
     let filename = find_file_in_list candidates in
     let basename = Filename.chop_extension filename in
-    let optname =
-      if List.exists (fun ext -> Sys.file_exists (basename ^ ext)) !ml_synonyms
-      then basename ^ ".cmx"
-      else basename ^ ".cmi" in
-    ((basename ^ ".cmi") :: byt_deps, optname :: opt_deps)
+    let cmi_file = basename ^ ".cmi" in
+    let ml_exists =
+      List.exists (fun ext -> Sys.file_exists (basename ^ ext)) !ml_synonyms in
+    let new_opt_dep =
+      if !all_dependencies then
+        match target_kind with
+        | MLI -> [ cmi_file ]
+        | ML  ->
+          cmi_file :: (if ml_exists then [ basename ^ ".cmx"] else [])
+      else
+        (* this is a make-specific hack that makes .cmx to be a 'proxy'
+           target that would force the dependency on .cmi via transitivity *)
+        if ml_exists
+        then [ basename ^ ".cmx" ]
+        else [ cmi_file ]
+    in
+    ( cmi_file :: byt_deps, new_opt_dep @ opt_deps)
   with Not_found ->
   try
+    (* "just .ml" case *)
     let candidates = List.map ((^) modname) !ml_synonyms in
     let filename = find_file_in_list candidates in
     let basename = Filename.chop_extension filename in
-    let bytename =
-      basename ^ (if !native_only then ".cmx" else ".cmo") in
-    (bytename :: byt_deps, (basename ^ ".cmx") :: opt_deps)
+    let bytenames =
+      if !all_dependencies then
+        match target_kind with
+        | MLI -> [basename ^ ".cmi"]
+        | ML  -> [basename ^ ".cmi"; basename ^ ".cmo"]
+      else
+        (* again, make-specific hack *)
+        [basename ^ (if !native_only then ".cmx" else ".cmo")] in
+    let optnames =
+      if !all_dependencies
+      then match target_kind with
+        | MLI -> [basename ^ ".cmi"]
+        | ML  -> [basename ^ ".cmi"; basename ^ ".cmx"]
+      else [ basename ^ ".cmx" ]
+    in
+    (bytenames @ byt_deps, optnames @  opt_deps)
   with Not_found ->
     (byt_deps, opt_deps)
 
@@ -128,22 +162,21 @@ let print_filename s =
   end
 ;;
 
-let print_dependencies target_file deps =
-  print_filename target_file; print_string depends_on;
+let print_dependencies target_files deps =
   let rec print_items pos = function
     [] -> print_string "\n"
   | dep :: rem ->
-      if pos + 1 + String.length dep <= 77 then begin
-        print_string " "; print_filename dep;
+    if !one_line || (pos + 1 + String.length dep <= 77) then begin
+        if pos <> 0 then print_string " "; print_filename dep;
         print_items (pos + String.length dep + 1) rem
       end else begin
         print_string escaped_eol; print_filename dep;
         print_items (String.length dep + 4) rem
       end in
-  print_items (String.length target_file + 1) deps
+  print_items 0 (target_files @ [depends_on] @ deps)
 
 let print_raw_dependencies source_file deps =
-  print_filename source_file; print_string ":";
+  print_filename source_file; print_string depends_on;
   Depend.StringSet.iter
     (fun dep ->
       if (String.length dep > 0)
@@ -219,19 +252,30 @@ let ml_file_dependencies source_file =
   try
     let ast = parse_use_file ic in
     Depend.add_use_file Depend.StringSet.empty ast;
+    if !sort_files then
+      files := (source_file, ML, !Depend.free_structure_names) :: !files
+    else
     if !raw_dependencies then begin
       print_raw_dependencies source_file !Depend.free_structure_names
     end else begin
       let basename = Filename.chop_extension source_file in
-      let init_deps =
+      let byte_targets =
+        if !native_only then [] else [ basename ^ ".cmo" ] in
+      let native_targets =
+        if !all_dependencies
+        then [ basename ^ ".cmx"; basename ^ ".o" ]
+        else [ basename ^ ".cmx" ] in
+      let init_deps = if !all_dependencies then [source_file] else [] in
+      let cmi_name = basename ^ ".cmi" in
+      let init_deps, extra_targets =
         if List.exists (fun ext -> Sys.file_exists (basename ^ ext)) !mli_synonyms
-        then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
-        else ([], []) in
-      let (byt_deps, opt_deps) =
-        Depend.StringSet.fold find_dependency
+        then (cmi_name :: init_deps, cmi_name :: init_deps), []
+        else (init_deps, init_deps), ( if !all_dependencies then [cmi_name] else [] ) in
+      let (byt_deps, native_deps) =
+        Depend.StringSet.fold (find_dependency ML)
                               !Depend.free_structure_names init_deps in
-      print_dependencies (basename ^ ".cmo") byt_deps;
-      print_dependencies (basename ^ ".cmx") opt_deps
+      if not !native_only then print_dependencies (byte_targets @ extra_targets) byt_deps;
+      print_dependencies (native_targets @ extra_targets) native_deps;
     end;
     close_in ic; remove_preprocessed input_file
   with x ->
@@ -244,20 +288,21 @@ let mli_file_dependencies source_file =
   try
     let ast = parse_interface ic in
     Depend.add_signature Depend.StringSet.empty ast;
+    if !sort_files then
+      files := (source_file, MLI, !Depend.free_structure_names) :: !files
+    else
     if !raw_dependencies then begin
       print_raw_dependencies source_file !Depend.free_structure_names
     end else begin
       let basename = Filename.chop_extension source_file in
       let (byt_deps, opt_deps) =
-        Depend.StringSet.fold find_dependency
+        Depend.StringSet.fold (find_dependency MLI)
                               !Depend.free_structure_names ([], []) in
-      print_dependencies (basename ^ ".cmi") byt_deps
+      print_dependencies [basename ^ ".cmi"] byt_deps
     end;
     close_in ic; remove_preprocessed input_file
   with x ->
     close_in ic; remove_preprocessed input_file; raise x
-
-type file_kind = ML | MLI;;
 
 let file_dependencies_as kind source_file =
   Location.input_name := source_file;
@@ -291,6 +336,79 @@ let file_dependencies source_file =
     file_dependencies_as MLI source_file
   else ()
 
+let sort_files_by_dependencies files =
+  let h = Hashtbl.create 31 in
+  let worklist = ref [] in
+
+(* Init Hashtbl with all defined modules *)
+  let files = List.map (fun (file, file_kind, deps) ->
+    let modname = Filename.chop_extension (Filename.basename file) in
+    modname.[0] <- Char.uppercase modname.[0];
+    let key = (modname, file_kind) in
+    let new_deps = ref [] in
+    Hashtbl.add h key (file, new_deps);
+    worklist := key :: !worklist;
+    (modname, file_kind, deps, new_deps)
+  ) files in
+
+(* Keep only dependencies to defined modules *)
+  List.iter (fun (modname, file_kind, deps, new_deps) ->
+    let add_dep modname kind =
+      new_deps := (modname, kind) :: !new_deps;
+    in
+    Depend.StringSet.iter (fun modname ->
+      match file_kind with
+          ML -> (* ML depends both on ML and MLI *)
+            if Hashtbl.mem h (modname, MLI) then add_dep modname MLI;
+            if Hashtbl.mem h (modname, ML) then add_dep modname ML
+        | MLI -> (* MLI depends on MLI if exists, or ML otherwise *)
+          if Hashtbl.mem h (modname, MLI) then add_dep modname MLI
+          else if Hashtbl.mem h (modname, ML) then add_dep modname ML
+    ) deps;
+    if file_kind = ML then (* add dep from .ml to .mli *)
+      if Hashtbl.mem h (modname, MLI) then add_dep modname MLI
+  ) files;
+
+(* Print and remove all files with no remaining dependency. Iterate
+   until all files have been removed (worklist is empty) or
+   no file was removed during a turn (cycle). *)
+  let printed = ref true in
+  while !printed && !worklist <> [] do
+    let files = !worklist in
+    worklist := [];
+    printed := false;
+    List.iter (fun key ->
+      let (file, deps) = Hashtbl.find h key in
+      let set = !deps in
+      deps := [];
+      List.iter (fun key ->
+        if Hashtbl.mem h key then deps := key :: !deps
+      ) set;
+      if !deps = [] then begin
+        printed := true;
+        Printf.printf "%s " file;
+        Hashtbl.remove h key;
+      end else
+        worklist := key :: !worklist
+    ) files
+  done;
+
+  if !worklist <> [] then begin
+    fprintf Format.err_formatter
+      "@[Warning: cycle in dependencies. End of list is not sorted.@]@.";
+    Hashtbl.iter (fun _ (file, deps) ->
+      fprintf Format.err_formatter "\t@[%s: " file;
+      List.iter (fun (modname, kind) ->
+        fprintf Format.err_formatter "%s.%s " modname
+          (if kind=ML then "ml" else "mli");
+      ) !deps;
+      fprintf Format.err_formatter "@]@.";
+      Printf.printf "%s@ " file) h;
+  end;
+  Printf.printf "\n%!";
+  ()
+
+
 (* Entry point *)
 
 let usage = "Usage: ocamldep [options] <source files>\nOptions are:"
@@ -323,10 +441,16 @@ let _ =
        "<e> Consider <e> as a synonym of the .ml extension";
      "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),
        "<e> Consider <e> as a synonym of the .mli extension";
+     "-sort", Arg.Set sort_files,
+              " Sort files according to their dependencies";
      "-modules", Arg.Set raw_dependencies,
               " Print module dependencies in raw form (not suitable for make)";
      "-native", Arg.Set native_only,
              "  Generate dependencies for a pure native-code project (no .cmo files)";
+     "-all", Arg.Set all_dependencies,
+             "  Generate dependencies on all files (not accommodating for make shortcomings)";
+     "-one-line", Arg.Set one_line,
+             "  Output one line per file, regardless of the length";
      "-pp", Arg.String(fun s -> preprocessor := Some s),
          "<cmd> Pipe sources through preprocessor <cmd>";
      "-slash", Arg.Set force_slash,
@@ -336,4 +460,5 @@ let _ =
      "-vnum", Arg.Unit print_version_num,
            "    Print version number and exit";
     ] file_dependencies usage;
+  if !sort_files then sort_files_by_dependencies !files;
   exit (if !error_occurred then 2 else 0)
