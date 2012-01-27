@@ -501,7 +501,7 @@ invocations of the C compiler and linker in
 .B \-custom
 mode.  Useful to debug C library problems.
 .TP
-.BR \-vnum\ or \-version
+.BR \-vnum \ or\  \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
@@ -542,6 +542,27 @@ between them.  A warning specifier is one of the following:
 .BI @ num
 \ \ Enable and mark warning number
 .IR num .
+
+.BI + num1 .. num2
+\ \ Enable all warnings between
+.I num1
+and
+.I num2
+(inclusive).
+
+.BI \- num1 .. num2
+\ \ Disable all warnings between
+.I num1
+and
+.I num2
+(inclusive).
+
+.BI @ num1 .. num2
+\ \ Enable and mark all warnings between
+.I num1
+and
+.I num2
+(inclusive).
 
 .BI + letter
 \ \ Enable the set of warnings corresponding to
@@ -722,7 +743,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-9\-27\-29\-32\-33\-34\-35\-36\-37 .
+.BR \-w\ +a\-4\-6\-9\-27\-29\-32..37 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
