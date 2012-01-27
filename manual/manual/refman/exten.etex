@@ -7,7 +7,7 @@ OCaml reference manual.
 
 \section{Integer literals for types "int32", "int64" and "nativeint"}
 
-(Introduced in OCaml 3.07)
+(Introduced in Objective Caml 3.07)
 
 \begin{syntax}
 int32-literal: integer-literal 'l'
@@ -29,7 +29,7 @@ provide operations on these integer types.
 \section{Streams and stream parsers}
 \label{s:streams}
 
-(Removed in OCaml 3.03)
+(Removed in Objective Caml 3.03)
 
 The syntax for streams and stream parsers is no longer part of the
 OCaml language, but available through a Camlp4 syntax
@@ -43,7 +43,7 @@ run "ocaml" and issue the \verb'#load "camlp4o.cma";;' command.
 
 \section{Recursive definitions of values} \label{s:letrecvalues}
 
-(Introduced in OCaml 1.00)
+(Introduced in Objective Caml 1.00)
 
 As mentioned in section~\ref{s:localdef}, the @'let rec'@ binding
 construct, in addition to the definition of recursive functions,
@@ -112,7 +112,7 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
 
 \section{Range patterns}
 
-(Introduced in OCaml 1.00)
+(Introduced in Objective Caml 1.00)
 
 In patterns, OCaml recognizes the form
 @"'" @c@ "'" ".." "'" @d@ "'"@
@@ -128,7 +128,7 @@ instance, the pattern "'0'..'9'" matches all characters that are digits.
 \section{Assertion checking}
 \ikwd{assert\@\texttt{assert}}
 
-(Introduced in OCaml 1.06)
+(Introduced in Objective Caml 1.06)
 
 OCaml supports the "assert" construct to check debugging assertions.
 The expression @"assert" expr@ evaluates the expression @expr@ and
@@ -147,7 +147,8 @@ is not turned off by the "-noassert" option).
 \section{Lazy evaluation}
 \ikwd{lazy\@\texttt{lazy}}
 
-(Introduced in OCaml 1.06 for expressions; in OCaml 3.11 for patterns)
+(Introduced in Objective Caml 1.06 for expressions;
+ in Objective Caml 3.11 for patterns)
 
 The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
 encapsulates the computation of @expr@.  The argument @expr@ is not
@@ -178,7 +179,7 @@ standard library (see
 \ikwd{let\@\texttt{let}}
 \ikwd{module\@\texttt{module}}
 
-(Introduced in OCaml 2.00)
+(Introduced in Objective Caml 2.00)
 
 The expression
 @"let" "module" module-name "=" module-expr "in" expr@
@@ -198,7 +199,7 @@ It then returns the value of @expr@.  For example:
 \ikwd{module\@\texttt{module}}
 \ikwd{rec\@\texttt{rec}}
 
-(Introduced in OCaml 3.07)
+(Introduced in Objective Caml 3.07)
 
 \begin{syntax}
 definition:
@@ -280,7 +281,7 @@ and for row types (section~\ref{s-private-rows}).
 \subsection{Private variant and record types}
 \label{s-private-types-variant}
 
-(Introduced in OCaml 3.07)
+(Introduced in Objective Caml 3.07)
 
 \begin{syntax}
 type-representation:
@@ -321,7 +322,7 @@ the parameter by a `"+"' or a `"-"', it is invariant otherwise.
 
 \subsection{Private type abbreviations} \label{s-private-types-abbrev}
 
-(Introduced in OCaml 3.11)
+(Introduced in Objective Caml 3.11)
 
 \begin{syntax}
 type-equation:
@@ -369,7 +370,7 @@ N.t :> int)" and "(l : N.t list :> int list)" for the above examples.
 \subsection{Private row types} \label{s-private-rows}
 \ikwd{private\@\texttt{private}}
 
-(Introduced in OCaml 3.09)
+(Introduced in Objective Caml 3.09)
 
 \begin{syntax}
 type-equation:
