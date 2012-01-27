@@ -278,8 +278,8 @@ source file that appears on the command line.
 Cause the linker to produce a C object file instead of a bytecode
 executable file. This is useful to wrap Caml code as a C library,
 callable from any C program. See chapter~\ref{c:intf-c},
-section~\ref{s:embedded-code}. The name of the output object file is
-"camlprog.o" by default; it can be set with the "-o" option. This
+section~\ref{s:embedded-code}. The name of the output object file
+must be set with the "-o" option. This
 option can also be used to produce a C source file (".c" extension) or
 a compiled shared/dynamic library (".so" extension, ".dll" under Windows).
 
@@ -404,7 +404,7 @@ that are currently defined are ignored. The warning are as follows.
 \input{warnings.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32-33-34-35-36-37".
+The default setting is "-w +a-4-6-7-9-27-29-32..37".
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
 
