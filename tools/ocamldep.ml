@@ -117,7 +117,7 @@ let find_dependency target_kind modname (byt_deps, opt_deps) =
       if !all_dependencies then
         match target_kind with
         | MLI -> [basename ^ ".cmi"]
-        | ML  -> [basename ^ ".cmi"; basename ^ ".cmo"]
+        | ML  -> [basename ^ ".cmi";]
       else
         (* again, make-specific hack *)
         [basename ^ (if !native_only then ".cmx" else ".cmo")] in
