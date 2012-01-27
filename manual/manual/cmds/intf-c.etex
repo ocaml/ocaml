@@ -225,7 +225,7 @@ execute the "ocamlopt" command with:
 ".so" or ".dll" files) that implement the required primitives.
 \end{itemize}
 
-Starting with OCaml 3.00, it is possible to record the
+Starting with Objective Caml 3.00, it is possible to record the
 "-custom" option as well as the names of C libraries in a Caml
 library file ".cma" or ".cmxa".  For instance, consider a Caml library
 "mylib.cma", built from the Caml object files "a.cmo" and "b.cmo",
@@ -259,7 +259,7 @@ library, however.
 \subsection{Dynamically linking C code with Caml code}
 \label{dynlink-c-code}
 
-Starting with OCaml 3.03, an alternative to static linking of C code
+Starting with Objective Caml 3.03, an alternative to static linking of C code
 using the "-custom" code is provided.  In this mode, the Caml linker
 generates a pure bytecode executable (no embedded custom runtime
 system) that simply records the names of dynamically-loaded libraries
@@ -1938,8 +1938,8 @@ use the Caml run-time system, typically a blocking input/output operation.
 The "ocamlmklib" command facilitates the construction of libraries
 containing both Caml code and C code, and usable both in static
 linking and dynamic linking modes.  This command is available under
-Windows since OCaml 3.11 and under other operating systems since OCaml
-3.03.
+Windows since Objective Caml 3.11 and under other operating systems since
+Objective Caml 3.03.
 
 The "ocamlmklib" command takes three kinds of arguments:
 \begin{itemize}
