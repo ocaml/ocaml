@@ -89,7 +89,8 @@ executable file. It does not need "ocamlrun" to run.
 \section{Options}
 
 The following command-line options are recognized by "ocamlopt".
-The options "-pack", "-a", "-shared", "-c" and "-output-obj" are mutually exclusive.
+The options "-pack", "-a", "-shared", "-c" and "-output-obj" are mutually
+exclusive.
 
 \begin{options}
 
@@ -244,8 +245,8 @@ is given, specify the name of plugin file produced.
 Cause the linker to produce a C object file instead of an executable
 file. This is useful to wrap Caml code as a C library,
 callable from any C program. See chapter~\ref{c:intf-c},
-section~\ref{s:embedded-code}. The name of the output object file is
-"camlprog.o" by default; it can be set with the "-o" option.
+section~\ref{s:embedded-code}. The name of the output object file
+must be set with the "-o" option.
 This option can also be used to produce a compiled shared/dynamic
 library (".so" extension, ".dll" under Windows).
 
