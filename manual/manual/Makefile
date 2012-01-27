@@ -95,7 +95,7 @@ clean:
 	cd cmds; $(MAKE) clean
 	cd tutorials; $(MAKE) clean
 	-rm -f texstuff/*
-	cd htmlman; rm -f index.html manual*.html *.haux *.hind
+	cd htmlman; rm -rf libref index.html manual*.html *.haux *.hind
 	cd textman; rm -f manual.txt *.haux *.hind
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
 	rm -f warnings.tex
