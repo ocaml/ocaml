@@ -95,7 +95,7 @@ be sent from another buffer in Caml mode.
 
 (defun inferior-caml-mode-output-hook ()
   (set-variable 'comint-output-filter-functions
-        (list (function inferior-caml-signal-output)) 
+        (list (function inferior-caml-signal-output))
         t))
 (add-hook 'inferior-caml-mode-hooks 'inferior-caml-mode-output-hook)
 
