@@ -120,7 +120,7 @@ appear elsewhere inside the class specification will be assumed to be
 universal, and made polymorphic in the resulting method type.
 Writing an explicit polymorphic type will disable this behaviour.
 
-Several specification for the same method must have compatible types.
+Several specifications for the same method must have compatible types.
 Any non-private specification of a method forces it to be public.
 
 \subsubsection*{Virtual method specification}
