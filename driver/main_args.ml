@@ -169,6 +169,11 @@ let mk_noprompt f =
   "-noprompt", Arg.Unit f, " Suppress all prompts"
 ;;
 
+let mk_nopromptcont f =
+  "-nopromptcont", Arg.Unit f,
+  " Suppress prompts for continuation lines of multi-line inputs"
+;;
+
 let mk_nostdlib f =
   "-nostdlib", Arg.Unit f,
   " Do not add default directory to the list of include directories"
@@ -450,6 +455,7 @@ module type Bytetop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
@@ -550,6 +556,7 @@ module type Opttop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
@@ -664,6 +671,7 @@ struct
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
+    mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
@@ -769,6 +777,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
+    mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_principal F._principal;
     mk_rectypes F._rectypes;

@@ -80,6 +80,7 @@ module type Bytetop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
@@ -180,6 +181,7 @@ module type Opttop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit

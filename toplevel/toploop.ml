@@ -352,6 +352,7 @@ let refill_lexbuf buffer len =
     let prompt =
       if !Clflags.noprompt then ""
       else if !first_line then "# "
+      else if !Clflags.nopromptcont then ""
       else if Lexer.in_comment () then "* "
       else "  "
     in

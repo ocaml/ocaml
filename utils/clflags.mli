@@ -36,6 +36,7 @@ val use_vmthreads : bool ref
 val noassert : bool ref
 val verbose : bool ref
 val noprompt : bool ref
+val nopromptcont : bool ref
 val init_file : string option ref
 val use_prims : string ref
 val use_runtime : string ref
