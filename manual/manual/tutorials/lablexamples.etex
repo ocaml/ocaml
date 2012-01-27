@@ -45,7 +45,7 @@ cannot use a reserved keyword (like "in" or "to") as label.
 
 Formal parameters and arguments are matched according to their
 respective labels\footnote{This correspond to the commuting label mode
-of OCaml 3.00 through 3.02, with some additional flexibility
+of Objective Caml 3.00 through 3.02, with some additional flexibility
 on total applications. The so-called classic mode ("-nolabels"
 options) is now deprecated for normal use.}, the absence of label
 being interpreted as the empty label.
