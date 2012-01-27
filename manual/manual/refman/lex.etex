@@ -170,7 +170,8 @@ infix-symbol:
          '+' || '-' || '*' || '/' || '$' || '%') { operator-char }
 ;
 prefix-symbol:
-        ('!' || '?' || '~') { operator-char }
+        '!' { operator-char }
+      | ('?' || '~') operator-char { operator-char }
 ;
 operator-char:
         '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
@@ -182,7 +183,7 @@ operator-char:
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@
 class. These symbols are parsed as prefix and infix operators inside
-expressions, but otherwise behave much as identifiers.
+expressions, but otherwise behave like normal identifiers.
 %% Identifiers starting with a lowercase letter and enclosed
 %% between backquote characters @'`' lowercase-ident '`'@ are also parsed
 %% as infix operators.
