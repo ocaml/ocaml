@@ -17,7 +17,7 @@
 #include "unixsupport.h"
 
 int socket_domain_table[] = {
-  PF_UNIX, PF_INET
+  PF_UNIX, PF_INET /*, PF_INET6 */
 };
 
 int socket_type_table[] = {
@@ -29,6 +29,12 @@ CAMLprim value unix_socket(domain, type, proto)
 {
   SOCKET s;
   int oldvalue, oldvaluelen, newvalue, retcode;
+
+  /* IPv6 requires WinSock2, we must raise an error on PF_INET6 */
+  if (Int_val(domain) >= sizeof(socket_domain_table)/sizeof(int)) {
+    win32_maperr(WSAEPFNOSUPPORT);
+    uerror("socket", Nothing);
+  }
 
   oldvaluelen = sizeof(oldvalue);
   retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
