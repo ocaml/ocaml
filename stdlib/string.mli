@@ -25,6 +25,24 @@
   Two parameters [start] and [len] are said to designate a valid
   substring of [s] if [len >= 0] and [start] and [start+len] are
   valid positions in [s].
+
+  One should be aware that string constants are shared:
+
+  {[
+
+      # let f () = "foo";;
+      val f : unit -> string = <fun>
+      # (f ()).[0] <- 'b';;
+      - : unit = ()
+      # f ();;
+      - : string = "boo"
+
+  ]}
+
+  Many functions from the standard library may return string constants.
+  Users should use [String.copy] to make sure they are not modifying a
+  shared string constant.
+
  *)
 
 external length : string -> int = "%string_length"
