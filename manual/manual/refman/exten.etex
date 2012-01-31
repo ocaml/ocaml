@@ -39,7 +39,8 @@ Support for basic operations on streams is still available through the
 OCaml programs
 that use the stream parser syntax should be compiled with the
 "-pp camlp4o" option to "ocamlc" and "ocamlopt".  For interactive use,
-run "ocaml" and issue the \verb'#load "camlp4o.cma";;' command.
+run "ocaml" and issue the \verb'#load "dynlink.cma";;' command,
+followed by the \verb'#load "camlp4o.cma";;' command.
 
 \section{Recursive definitions of values} \label{s:letrecvalues}
 
