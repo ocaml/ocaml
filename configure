@@ -1221,10 +1221,22 @@ fi
 
 # Determine the location of X include files and libraries
 
+# If the user specified -x11include and/or -x11lib, these settings
+# are used. Otherwise, we check whether there is pkg-config, and take
+# the flags from there. Otherwise, we search the location.
+
 x11_include="not found"
 x11_link="not found"
 
-for dir in \
+if test -z "$x11_include_dir" -a -z "$x11_lib_dir"; then
+  if pkg-config --exists x11 2>/dev/null; then
+    x11_include=`pkg-config --cflags x11`
+    x11_link=`pkg-config --libs x11`
+  fi
+fi
+
+if test "$x11_include" = "not found"; then
+  for dir in \
     $x11_include_dir          \
                               \
     /usr/X11R7/include        \
@@ -1270,20 +1282,21 @@ for dir in \
     /usr/openwin/include      \
     /usr/openwin/share/include \
     ; \
-do
-  if test -f $dir/X11/X.h; then
-    x11_include=$dir
-    break
+    do
+    if test -f $dir/X11/X.h; then
+      x11_include_dir=$dir
+      x11_include="-I$dir"
+      break
+    fi
+  done
+
+  if test "$x11_include" = "not found"; then
+      x11_try_lib_dir=''
+  else
+      x11_try_lib_dir=`echo $x11_include_dir | sed -e 's|include|lib|'`
   fi
-done
 
-if test "$x11_include" = "not found"; then
-  x11_try_lib_dir=''
-else
-  x11_try_lib_dir=`echo $x11_include | sed -e 's|include|lib|'`
-fi
-
-for dir in \
+  for dir in \
     $x11_lib_dir          \
     $x11_try_lib_dir      \
                           \
@@ -1325,45 +1338,51 @@ for dir in \
     /lib/usr/lib/X11      \
                           \
     /usr/openwin/lib      \
-    /usr/openwin/share/lib    \
-                              \
-    /usr/lib/i386-linux-gnu   \
-    /usr/lib/x86_64-linux-gnu \
+    /usr/openwin/share/lib \
     ; \
-do
-  if test -f $dir/libX11.a || \
-     test -f $dir/libX11.so || \
-     test -f $dir/libX11.dll.a || \
-     test -f $dir/libX11.dylib || \
-     test -f $dir/libX11.sa; then
-    if test $dir = /usr/lib; then
-      x11_link="-lX11"
-    else
-      x11_libs="-L$dir"
-      case "$host" in
-        *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
-        *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
-        *) x11_link="-L$dir -lX11";;
-      esac
+    do
+    if test -f $dir/libX11.a || \
+       test -f $dir/libX11.so || \
+       test -f $dir/libX11.dll.a || \
+       test -f $dir/libX11.dylib || \
+       test -f $dir/libX11.sa; then
+      if test $dir = /usr/lib; then
+        x11_link="-lX11"
+      else
+        x11_libs="-L$dir"
+        case "$host" in
+          *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
+          *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
+          *) x11_link="-L$dir -lX11";;
+        esac
+      fi
+      break
     fi
-    break
+  done
+fi
+
+if test "x11_include" != "not found"; then
+  if test "$x11_include" = "-I/usr/include"; then
+    x11_include=""
   fi
-done
+  if ./hasgot $x11_include $x11_link -i X11/Xlib.h XrmInitialize; then
+    echo "X11 works"
+  else
+    echo "Cannot compile X11 program"
+    x11_include="not found"
+  fi
+fi
 
 
 if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
   echo "X11 not found, the \"graph\" library will not be supported."
-  x11_include=""
+  x11_include="n/a"
+  x11_link="n/a"
 else
-  echo "Location of X11 include files: $x11_include/X11"
+  echo "Options for compiling for X11: $x11_include"
   echo "Options for linking with X11: $x11_link"
   otherlibraries="$otherlibraries graph"
-  if test "$x11_include" = "/usr/include"; then
-    x11_include=""
-  else
-    x11_include="-I$x11_include"
-  fi
 fi
 echo "X11_INCLUDES=$x11_include" >> Makefile
 echo "X11_LINK=$x11_link" >> Makefile
