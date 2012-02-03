@@ -87,7 +87,7 @@ THIRD-PARTY SOFTWARE:
     http://www.microsoft.com/downloads/en/default.aspx
     under the name "Microsoft Windows 7 SDK".
 
-[2] flexdll version 0.23 or later.
+[2] flexdll version 0.26 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
 [3] TCL/TK version 8.5.  Windows binaries are available as part of the
@@ -106,7 +106,8 @@ You will need the following software components to perform the recompilation:
   Make sure to install the 32-bit version of TCL/TK, even if you are
   compiling on a 64-bit Windows.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
-  Install at least the following packages: diffutils, make, ncurses.
+  Install at least the following packages (and their dependencies):
+  diffutils, make, ncurses.
 
 First, you need to set up your cygwin environment for using the MS
 tools.  The following assumes that you have installed [1], [2], and [3]
@@ -121,13 +122,14 @@ to adjust the paths accordingly.
 
   Then enter the following commands:
     cd "%PFPATH%\Microsoft Visual Studio 9.0\VC\bin"
+    set FLEXDLLDIR=%PFPATH%\flexdll
     vcvars32
     echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
     echo LIB="%LIB%;C:\Tcl\lib" >>C:\cygwin\tmp\msenv
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
-    echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
-    echo FLPATH="`cygpath '%PFPATH%\flexdll'`" >>C:\cygwin\tmp\msenv
-    echo PATH="${VCPATH}:$PATH:${FLPATH}" >>C:\cygwin\tmp\msenv
+    echo INCLUDE="%INCLUDE%;%FLEXDLLDIR%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
+    echo FLPATH="`cygpath '%FLEXDLLDIR%'`" >>C:\cygwin\tmp\msenv
+    echo PATH="$VCPATH:$FLPATH:$PATH" >>C:\cygwin\tmp\msenv
     echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
     echo export OCAMLBUILD_FIND=/usr/bin/find >>C:\cygwin\tmp\msenv
 
