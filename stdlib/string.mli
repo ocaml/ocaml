@@ -33,9 +33,9 @@
       # let f () = "foo";;
       val f : unit -> string = <fun>
       # (f ()).[0] <- 'b';;
-      - : unit = ()
+      _ : unit = ()
       # f ();;
-      - : string = "boo"
+      _ : string = "boo"
 
   ]}
 
