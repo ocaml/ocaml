@@ -1678,7 +1678,10 @@ and unify3 env t1 t1' t2 t2' =
         unify_fields env t1' t2'
     | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
         begin match field_kind_repr kind with
-          Fvar r when f <> dummy_method -> set_kind r Fabsent
+          Fvar r when f <> dummy_method ->
+            set_kind r Fabsent;
+            if d2 = Tnil then unify env rem t2'
+            else unify env (newty2 rem.level Tnil) rem
         | _      -> raise (Unify [])
         end
     | (Tnil, Tnil) ->

@@ -1405,7 +1405,9 @@ let rec unify_parents env ty cl =
         let decl = Env.find_class p env in
         let _, body = Ctype.find_cltype_for_path env decl.cty_path in
         Ctype.unify env ty (Ctype.instance body)
-      with exn -> assert (exn = Not_found)
+      with
+        Not_found -> ()
+      | exn -> assert false
       end
   | Tclass_structure st -> unify_parents_struct env ty st
   | Tclass_fun (_, _, cl, _)
