@@ -411,8 +411,7 @@ See `caml-types-location-re' for annotation file format.
         (unless (caml-types-not-in-file l-file r-file target-file)
           (setq annotation ())
           (while (next-annotation)
-            (cond ((looking-at
-                    "^\\([a-z]+\\)(\n  \\(\\([^\n)]\\|.)\\|\n[^)]\\)*\\)\n)")
+            (cond ((looking-at "^\\([a-z]+\\)(\n  \\(\\(.*\n  \\)*.*\\)\n)")
                    (let ((kind (caml-types-hcons (match-string 1) table))
                          (info (caml-types-hcons (match-string 2) table)))
                      (setq annotation (cons (cons kind info) annotation))))))
