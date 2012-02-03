@@ -61,6 +61,8 @@ Bug Fixes:
 - emacs mode: colorization of comments and strings now works correctly
 - PR5475: Wrapper script for interpreted LablTk wrongly handles command line parameters
 - PR5461: Double linking of bytecode modules
+- PR#5498: Unification with an empty object only checks the absence of
+           the first method
 
 Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script
