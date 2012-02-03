@@ -41,6 +41,7 @@ COMPILECMD=(progn \
 
 install:
 	@if test "$(EMACSDIR)" = ""; then \
+	  $(EMACS) --batch --eval 't; see PR#5403'; \
 	  set xxx `($(EMACS) --batch --eval "(mapcar 'print load-path)") \
 				2>/dev/null | \
 	           sed -n -e 's/^"\(.*\/site-lisp\).*/\1/gp' | \
