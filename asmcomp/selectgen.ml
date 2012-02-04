@@ -389,8 +389,7 @@ method insert_op_debug op dbg rs rd =
   rd
 
 method insert_op op rs rd =
-  self#insert (Iop op) rs rd;
-  rd
+  self#insert_op_debug op Debuginfo.none rs rd
 
 (* Add the instructions for the given expression
    at the end of the self sequence *)
