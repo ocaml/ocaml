@@ -23,6 +23,12 @@ Native-code compiler:
 - Optimized handling of partially-applied functions (PR#5287)
 - Small improvements in code generated for array bounds checks (PR#5345,
   PR#5360).
+* New ARM backend (PR#5433):
+    . Supports both Linux/EABI (armel) and Linux/EABI+VFPv3 (armhf).
+    . Added support for the Thumb-2 instruction set with average code size
+      savings of 28%.
+    . Added support for position-independent code, natdynlink, profiling and
+      exception backtraces.
 
 Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)

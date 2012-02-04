@@ -643,6 +643,7 @@ if test $withsharedlibs = "yes"; then
     i[345]86-*-netbsd*)           natdynlink=true;;
     x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
+    arm*-*-linux*)                natdynlink=true;;
   esac
 fi
 
@@ -686,8 +687,13 @@ case "$host" in
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
                                 if $arch64; then model=ppc64; else model=ppc; fi;;
-  arm*-*-linux*)                arch=arm; system=linux;;
-  arm*-*-gnu*)                  arch=arm; system=gnu;;
+  arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
+  armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
+  armv6t2*-*-linux-gnueabi)     arch=arm; model=armv6t2; system=linux_eabi;;
+  armv6*-*-linux-gnueabi)       arch=arm; model=armv6; system=linux_eabi;;
+  armv5te*-*-linux-gnueabi)     arch=arm; model=armv5te; system=linux_eabi;;
+  armv5*-*-linux-gnueabi)       arch=arm; model=armv5; system=linux_eabi;;
+  arm*-*-linux-gnueabi)         arch=arm; system=linux_eabi;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-gnu*)                arch=amd64; system=gnu;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
@@ -775,6 +781,7 @@ case "$arch,$model,$system" in
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,*,linux) profiling='prof';;
   amd64,*,gnu) profiling='prof';;
+  arm,*,linux*) profiling='prof';;
   *) profiling='noprof';;
 esac
 
