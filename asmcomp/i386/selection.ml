@@ -282,9 +282,6 @@ method! insert_op_debug op dbg rs rd =
   with Use_default ->
     super#insert_op_debug op dbg rs rd
 
-method! insert_op op rs rd =
-  self#insert_op_debug op Debuginfo.none rs rd
-
 (* Selection of push instructions for external calls *)
 
 method select_push exp =
