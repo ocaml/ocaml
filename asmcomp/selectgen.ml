@@ -204,7 +204,7 @@ method virtual is_immediate : int -> bool
 (* Selection of addressing modes *)
 
 method virtual select_addressing :
-  Cmm.expression -> Arch.addressing_mode * Cmm.expression
+  Cmm.memory_chunk -> Cmm.expression -> Arch.addressing_mode * Cmm.expression
 
 (* Default instruction selection for stores (of words) *)
 
@@ -219,10 +219,10 @@ method select_operation op args =
   | (Capply(ty, dbg), _) -> (Icall_ind, args)
   | (Cextcall(s, ty, alloc, dbg), _) -> (Iextcall(s, alloc), args)
   | (Cload chunk, [arg]) ->
-      let (addr, eloc) = self#select_addressing arg in
+      let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
   | (Cstore chunk, [arg1; arg2]) ->
-      let (addr, eloc) = self#select_addressing arg1 in
+      let (addr, eloc) = self#select_addressing chunk arg1 in
       if chunk = Word then begin
         let (op, newarg2) = self#select_store addr arg2 in
         (op, [newarg2; eloc])

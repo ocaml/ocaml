@@ -69,7 +69,7 @@ method! regs_for tyv =
 method is_immediate n =
   n land 0xFF = n || is_immed n 2
 
-method select_addressing = function
+method select_addressing chunk = function
     Cop(Cadda, [arg; Cconst_int n]) when is_offset n ->
       (Iindexed n, arg)
   | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])]) when is_offset n ->

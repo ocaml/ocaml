@@ -168,7 +168,7 @@ method! is_simple_expr e =
   | _ ->
       super#is_simple_expr e
 
-method select_addressing exp =
+method select_addressing chunk exp =
   match select_addr exp with
     (Asymbol s, d) ->
       (Ibased(s, d), Ctuple [])
@@ -200,7 +200,7 @@ method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
     Caddi | Cadda | Csubi | Csuba ->
-      begin match self#select_addressing (Cop(op, args)) with
+      begin match self#select_addressing Word (Cop(op, args)) with
         (Iindexed d, _) -> super#select_operation op args
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
@@ -233,7 +233,7 @@ method! select_operation op args =
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
         when loc = loc' ->
-          let (addr, arg) = self#select_addressing loc in
+          let (addr, arg) = self#select_addressing Word loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
           super#select_operation op args
@@ -250,11 +250,11 @@ method! select_operation op args =
 method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
   match args with
     [arg1; Cop(Cload chunk, [loc2])] ->
-      let (addr, arg2) = self#select_addressing loc2 in
+      let (addr, arg2) = self#select_addressing chunk loc2 in
       (Ispecific(Ifloatarithmem(chunk_double chunk, mem_op, addr)),
                  [arg1; arg2])
   | [Cop(Cload chunk, [loc1]); arg2] ->
-      let (addr, arg1) = self#select_addressing loc1 in
+      let (addr, arg1) = self#select_addressing chunk loc1 in
       (Ispecific(Ifloatarithmem(chunk_double chunk, mem_rev_op, addr)),
                  [arg2; arg1])
   | [arg1; arg2] ->
@@ -295,10 +295,10 @@ method select_push exp =
   | Cconst_natpointer n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
   | Cop(Cload Word, [loc]) ->
-      let (addr, arg) = self#select_addressing loc in
+      let (addr, arg) = self#select_addressing Word loc in
       (Ispecific(Ipush_load addr), arg)
   | Cop(Cload Double_u, [loc]) ->
-      let (addr, arg) = self#select_addressing loc in
+      let (addr, arg) = self#select_addressing Double_u loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)
 
