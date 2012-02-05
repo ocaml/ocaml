@@ -90,7 +90,7 @@ camltk_setimgdata_native (value imgname, value pixmap, value x, value y,
     tk_error("no such image");
 #endif
 
-  pib.pixelPtr = String_val(pixmap);
+  pib.pixelPtr = (unsigned char *)String_val(pixmap);
   pib.width = Int_val(w);
   pib.height = Int_val(h);
   pib.pitch = pib.width * 3;

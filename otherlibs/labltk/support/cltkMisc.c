@@ -35,7 +35,7 @@ CAMLprim value camltk_splitlist (value v)
 
   utf = caml_string_to_tcl(v);
   /* argv is allocated by Tcl, to be freed by us */
-  result = Tcl_SplitList(cltclinterp,utf,&argc,&argv);
+  result = Tcl_SplitList(cltclinterp,utf,&argc,(const char ***)&argv);
   switch(result) {
   case TCL_OK:
    { value res = copy_string_list(argc,argv);

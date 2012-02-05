@@ -142,7 +142,7 @@ int fill_args (char **argv, int where, value v)
       tmpargv = (char **)stat_alloc((size + 1) * sizeof(char *));
       fill_args(tmpargv,0,Field(v,0));
       tmpargv[size] = NULL;
-      merged = Tcl_Merge(size,tmpargv);
+      merged = Tcl_Merge(size,(const char *const*)tmpargv);
       for(i = 0; i<size; i++){ stat_free(tmpargv[i]); }
       stat_free((char *)tmpargv);
       /* must be freed by stat_free */
@@ -207,17 +207,17 @@ CAMLprim value camltk_tcl_direct_eval(value v)
       result = Tcl_Eval(cltclinterp, Tcl_DStringValue(&buf));
       Tcl_DStringFree(&buf);
     } else {
-      result = (*info.proc)(info.clientData,cltclinterp,size,argv);
+      result = (*info.proc)(info.clientData,cltclinterp,size,(const char**)argv);
     }
 #else
-    result = (*info.proc)(info.clientData,cltclinterp,size,argv);
+    result = (*info.proc)(info.clientData,cltclinterp,size,(const char**)argv);
 #endif
   } else { /* implement the autoload stuff */
     if (Tcl_GetCommandInfo(cltclinterp,"unknown",&info)) { /* unknown found */
       for (i = size; i >= 0; i--)
         argv[i+1] = argv[i];
       argv[0] = "unknown";
-      result = (*info.proc)(info.clientData,cltclinterp,size+1,argv);
+      result = (*info.proc)(info.clientData,cltclinterp,size+1,(const char**)argv);
     } else { /* ah, it isn't there at all */
       result = TCL_ERROR;
       Tcl_AppendResult(cltclinterp, "Unknown command \"",
