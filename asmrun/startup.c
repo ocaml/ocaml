@@ -20,6 +20,7 @@
 #include "callback.h"
 #include "backtrace.h"
 #include "custom.h"
+#include "debugger.h"
 #include "fail.h"
 #include "freelist.h"
 #include "gc.h"

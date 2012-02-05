@@ -209,7 +209,7 @@ void caml_array_bound_error(void)
 }
 
 int caml_is_special_exception(value exn) {
-  return exn == caml_exn_Match_failure
-    || exn == caml_exn_Assert_failure
-    || exn == caml_exn_Undefined_recursive_module;
+  return exn == (value) caml_exn_Match_failure
+    || exn == (value) caml_exn_Assert_failure
+    || exn == (value) caml_exn_Undefined_recursive_module;
 }
