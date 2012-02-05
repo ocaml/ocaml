@@ -14,6 +14,7 @@
 (* $Id$ *)
 
 (** String operations.
+
   Given a string [s] of length [l], we call character number in [s]
   the index of a character in [s].  Indexes start at [0], and we will
   call a character number valid in [s] if it falls within the range
@@ -26,22 +27,29 @@
   substring of [s] if [len >= 0] and [start] and [start+len] are
   valid positions in [s].
 
-  One should be aware that string constants are shared:
+  Caml strings can be modified in place, for instance via the
+  {!String.set} and {!String.blit} functions described below.  This
+  possibility should be used rarely and with much care, however, since
+  both the Caml compiler and most Caml libraries share strings as if
+  they were immutable, rather than copying them.  In particular,
+  string literals are shared: a single copy of the string is created
+  at program loading time and returned by all evaluations of the
+  string literal.  Consider for example:
 
   {[
-
       # let f () = "foo";;
       val f : unit -> string = <fun>
       # (f ()).[0] <- 'b';;
       _ : unit = ()
       # f ();;
       _ : string = "boo"
-
   ]}
 
-  Many functions from the standard library may return string constants.
-  Users should use [String.copy] to make sure they are not modifying a
-  shared string constant.
+  Likewise, many functions from the standard library can return string
+  literals or one of their string arguments.  Therefore, the returned strings 
+  must not be modified directly.  If mutation is absolutely necessary,
+  it should be performed on a fresh copy of the string, as produced by
+  {!String.copy}.
 
  *)
 
