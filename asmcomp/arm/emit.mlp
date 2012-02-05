@@ -4,9 +4,10 @@
 (*                                                                     *)
 (*                  Benedikt Meurer, University of Siegen              *)
 (*                                                                     *)
-(*    Copyright 2012 Lehrstuhl für Compilerbau und Softwareanalyse,    *)
-(*    Universität Siegen. All rights reserved. This file is distri-    *)
-(*    buted under the terms of the Q Public License version 1.0.       *)
+(*    Copyright 1998 Institut National de Recherche en Informatique    *)
+(*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    *)
+(*    reserved.  This file is distributed  under the terms of the Q    *)
+(*    Public License version 1.0.                                      *)
 (*                                                                     *)
 (***********************************************************************)
 
