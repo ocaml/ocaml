@@ -21,12 +21,10 @@ let fatal_error msg =
 
 (* Exceptions *)
 
-let try_finally f1 f2 =
-  try
-    let result = f1 () in
-    f2 ();
-    result
-  with x -> f2 (); raise x
+let try_finally work cleanup =
+  let result = (try work () with e -> cleanup (); raise e) in
+  cleanup ();
+  result
 ;;
 
 (* List functions *)
