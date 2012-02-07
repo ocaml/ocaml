@@ -174,7 +174,7 @@ class-expr:
    |  class-expr {{argument}}
    |  'fun' {{parameter}} '->' class-expr
    |  'let' ['rec'] let-binding {'and' let-binding} 'in' class-expr
-   |  'object' ['(' pattern [':' typexpr] ')'] { class-field } 'end'
+   |  'object' class-body 'end'
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
