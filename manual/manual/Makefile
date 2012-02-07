@@ -104,9 +104,9 @@ release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
 	dvips -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
 	cp htmlman/manual.html $(RELEASE)refman.html
-	rm -f htmlman/manual.html
-	tar cf - htmlman/*.* htmlman/libref | gzip > $(RELEASE)refman.html.tar.gz
-	zip -8 $(RELEASE)refman.html.zip htmlman/*.* htmlman/libref/*.*
+	rm -f htmlman/manual.{html,haux,hmanual*,htoc}
+	tar zcf $(RELEASE)refman-html.tar.gz htmlman/*.* htmlman/libref
+	zip -8 $(RELEASE)refman-html.zip htmlman/*.* htmlman/libref/*.*
 	cp texstuff/pdfmanual.pdf $(RELEASE)refman.pdf
 	cp textman/manual.txt $(RELEASE)refman.txt
 	tar cf - infoman/ocaml.info* | gzip > $(RELEASE)refman.info.tar.gz
