@@ -86,7 +86,7 @@ type 'a option = None | Some of 'a
 \end{ocamldoccode}
 \index{option@\verb`option`}
 \begin{ocamldocdescription}
-  The type of optional values of type "'a". 
+  The type of optional values of type "'a".
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -94,7 +94,7 @@ type int32
 \end{ocamldoccode}
 \index{int32@\verb`int32`}
 \begin{ocamldocdescription}
- The type of signed 32-bit integers.  
+ The type of signed 32-bit integers.
  See the "Int32"[\moduleref{Int32}] module.
 \end{ocamldocdescription}
 
@@ -103,7 +103,7 @@ type int64
 \end{ocamldoccode}
 \index{int64@\verb`int64`}
 \begin{ocamldocdescription}
- The type of signed 64-bit integers.  
+ The type of signed 64-bit integers.
  See the "Int64"[\moduleref{Int64}] module.
 \end{ocamldocdescription}
 
@@ -118,15 +118,20 @@ type nativeint
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
-type ('a, 'b, 'c, 'd) format4
+type ('a, 'b, 'c, 'd, 'e, 'f) format6
 \end{ocamldoccode}
 \index{format4@\verb`format4`}
 \begin{ocamldocdescription}
-  The type of format strings. "'a" is the type of the parameters
-  of the format, "'d" is the result type for the "printf"-style
-  function, "'b" is the type of the first argument given to
-  "\%a" and "\%t" printing functions (see module "Printf"[\moduleref{Printf}]),
-  and "'c" is the result type of these functions.
+  The type of format strings. "'a" is the type of the parameters of
+  the format, "'f" is the result type for the "printf"-style
+  functions, "'b" is the type of the first argument given to "%a" and
+  "%t" printing functions (see module "Printf"[\moduleref{Printf}]),
+  "'c" is the result type of these functions, and also the type of the
+  argument transmitted to the first argument of "kprintf"-style
+  functions, "'d" is the result type for the "scanf"-style functions
+  (see module "Scanf"[\moduleref{Scanf}]),
+  and "'e" is the type of the receiver function for the "scanf"-style
+  functions.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -177,7 +182,7 @@ exception Failure of string
 \index{Failure@\verb`Failure`}
 \begin{ocamldocdescription}
    Exception raised by library functions to signal that they are
-   undefined on the given arguments. 
+   undefined on the given arguments.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
