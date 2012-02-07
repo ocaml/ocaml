@@ -122,7 +122,7 @@ val environment : unit -> string array
 val getenv : string -> string
 (** Return the value associated to a variable in the process
    environment. Raise [Not_found] if the variable is unbound.
-   (This function is identical to [Sys.getenv].) *)
+   (This function is identical to {!Sys.getenv}.) *)
 
 val putenv : string -> string -> unit
 (** [Unix.putenv name value] sets the value associated to a
