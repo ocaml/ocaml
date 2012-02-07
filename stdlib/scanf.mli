@@ -25,7 +25,8 @@
     strings, files, or anything that can return characters. The more general
     source of characters is named a {e formatted input channel} (or {e
     scanning buffer}) and has type {!Scanning.in_channel}. The more general
-    formatted input function reads from any scanning buffer and is named [bscanf].
+    formatted input function reads from any scanning buffer and is named
+    [bscanf].
 
     Generally speaking, the formatted input functions have 3 arguments:
     - the first argument is a source of characters for the input,
@@ -58,10 +59,10 @@
 
     - if we define the receiver [f] as [let f x = x + 1],
 
-    then [bscanf Scanning.stdin "%d" f] reads an integer [n] from the standard input
-    and returns [f n] (that is [n + 1]). Thus, if we evaluate [bscanf stdin
-    "%d" f], and then enter [41] at the keyboard, we get [42] as the final
-    result. *)
+    then [bscanf Scanning.stdin "%d" f] reads an integer [n] from the
+    standard input and returns [f n] (that is [n + 1]). Thus, if we
+    evaluate [bscanf stdin "%d" f], and then enter [41] at the
+    keyboard, we get [42] as the final result. *)
 
 (** {7 Formatted input as a functional feature} *)
 
@@ -132,8 +133,8 @@ val open_in : file_name -> in_channel;;
 *)
 
 val open_in_bin : file_name -> in_channel;;
-(** [Scanning.open_in_bin fname] returns a formatted input channel for bufferized
-    reading in binary mode of file [fname].
+(** [Scanning.open_in_bin fname] returns a formatted input channel for
+    bufferized reading in binary mode of file [fname].
     @since 3.12.0
 *)
 
@@ -192,12 +193,13 @@ end;;
 
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
-(** The type of formatted input scanners: [('a, 'b, 'c, 'd) scanner] is the
-    type of a formatted input function that reads from some formatted input channel
-    according to some format string; more precisely, if [scan] is some
-    formatted input function, then [scan ic fmt f] applies [f] to the arguments
-    specified by the format string [fmt], when [scan] has read those arguments
-    from the formatted input channel [ic].
+(** The type of formatted input scanners: [('a, 'b, 'c, 'd) scanner]
+    is the type of a formatted input function that reads from some
+    formatted input channel according to some format string; more
+    precisely, if [scan] is some formatted input function, then [scan
+    ic fmt f] applies [f] to the arguments specified by the format
+    string [fmt], when [scan] has read those arguments from the
+    formatted input channel [ic].
 
     For instance, the [scanf] function below has type [('a, 'b, 'c, 'd)
     scanner], since it is a formatted input function that reads from
@@ -282,7 +284,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
          encountered,}
       {- the end-of-input has been reached.}}
       Hence, this conversion always succeeds: it returns an empty
-      string, if the bounding condition holds when the scan begins.
+      string if the bounding condition holds when the scan begins.
     - [S]: reads a delimited string argument (delimiters and special
       escaped characters follow the lexical conventions of Caml).
     - [c]: reads a single character. To test the current input character
@@ -319,17 +321,16 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       range negation); hence [\[\]\]] matches a [\]] character and
       [\[^\]\]] matches any character that is not [\]].
       Use [%%] and [%\@] to include a [%] or a [\@] in a range.
-    - [r]: user-defined reader. Takes the next [ri] formatted input function and
-      applies it to the scanning buffer [ib] to read the next argument. The
-      input function [ri] must therefore have type [Scanning.in_channel -> 'a] and
-      the argument read has type ['a].
-    - [\{ fmt %\}]: reads a format string argument.
-      The format string read must have the same type as the format string
-      specification [fmt].
-      For instance, ["%{ %i %}"] reads any format string that can read a value of
-      type [int]; hence, if [s] is the string ["fmt:\"number is %u\""], then
-      [Scanf.sscanf s "fmt: %{%i%}"] succeeds and returns the format string
-      ["number is %u"].
+    - [r]: user-defined reader. Takes the next [ri] formatted input
+      function and applies it to the scanning buffer [ib] to read the
+      next argument. The input function [ri] must therefore have type
+      [Scanning.in_channel -> 'a] and the argument read has type ['a].
+    - [\{ fmt %\}]: reads a format string argument.  The format string
+      read must have the same type as the format string specification
+      [fmt].  For instance, ["%{ %i %}"] reads any format string that
+      can read a value of type [int]; hence, if [s] is the string
+      ["fmt:\"number is %u\""], then [Scanf.sscanf s "fmt: %{%i%}"]
+      succeeds and returns the format string ["number is %u"].
     - [\( fmt %\)]: scanning format substitution.
       Reads a format string and then goes on scanning with the format string
       read, instead of using [fmt].
@@ -430,7 +431,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
     - as a consequence, scanning a [%s] conversion never raises exception
     [End_of_file]: if the end of input is reached the conversion succeeds and
-    simply returns the characters read so far, or [""] if none were ever read. *)
+    simply returns the characters read so far, or [""] if none were ever read.
+    *)
 
 (** {6 Specialised formatted input functions} *)
 
