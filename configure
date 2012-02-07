@@ -31,6 +31,7 @@ mathlib='-lm'
 dllib=''
 x11_include_dir=''
 x11_lib_dir=''
+graph_wanted=yes
 tk_wanted=yes
 pthread_wanted=yes
 tk_defs=''
@@ -83,14 +84,15 @@ while : ; do
         asppoption="$2"; shift;;
     -lib*)
         cclibs="$2 $cclibs"; shift;;
-    -no-curses)
+    -no-curses|--no-curses)
         withcurses=no;;
-    -no-shared-libs)
+    -no-shared-libs|--no-shared-libs)
         withsharedlibs=no;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
         x11_lib_dir=$2; shift;;
+    -no-graph|--no-graph) graph_wanted=no;;
     -with-pthread*|--with-pthread*)
         ;; # Ignored for backward compatibility
     -no-pthread*|--no-pthread*)
@@ -1380,16 +1382,20 @@ if test "x11_include" != "not found"; then
   fi
 fi
 
-
+has_graph=false
 if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
   echo "X11 not found, the \"graph\" library will not be supported."
-  x11_include="n/a"
-  x11_link="n/a"
+  x11_include="not found"
+  x11_link="not found"
 else
   echo "Options for compiling for X11: $x11_include"
   echo "Options for linking with X11: $x11_link"
-  otherlibraries="$otherlibraries graph"
+  if test "$graph_wanted" = yes
+  then
+    has_graph=true
+    otherlibraries="$otherlibraries graph"
+  fi
 fi
 echo "X11_INCLUDES=$x11_include" >> Makefile
 echo "X11_LINK=$x11_link" >> Makefile
@@ -1403,7 +1409,7 @@ if test $tk_wanted = no; then
 elif test $tk_x11 = no; then
   has_tk=true
 elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
-  echo "X11 not found."
+  echo "X11 not found or disabled."
   has_tk=false
 else
   tk_x11_include="$x11_include"
@@ -1676,17 +1682,19 @@ echo "        $otherlibraries"
 echo "Configuration for the \"num\" library:"
 echo "        target architecture ...... $bng_arch (asm level $bng_asm_level)"
 
-if test "$x11_include" != "not found" && test "$x11_lib" != "not found"; then
+if $has_graph; then
 echo "Configuration for the \"graph\" library:"
 echo "        options for compiling .... $x11_include"
 echo "        options for linking ...... $x11_link"
+else
+echo "The \"graph\" library: not supported"
 fi
 
 if test $has_tk = true; then
 echo "Configuration for the \"labltk\" library:"
 echo "        use tcl/tk version ....... $tcl_version"
-echo "        options for compiling .... $tk_defs"
-echo "        options for linking ...... $tk_libs"
+echo "        options for compiling .... $tk_defs $x11_includes"
+echo "        options for linking ...... $tk_libs $x11_link"
 else
 echo "The \"labltk\" library: not supported"
 fi
