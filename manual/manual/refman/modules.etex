@@ -196,7 +196,7 @@ the module expression
 \end{verbatim}
 is equivalent to the module expression
 \begin{verbatim}
-        struct type t = int  let x = 2  let y = (x + 1 : t) end
+        struct type t = S.t  let x = S.x  let y = (x + 1 : t) end
 \end{verbatim}
 The difference between @'open'@ and @'include'@ is that @'open'@
 simply provides short names for the components of the opened
