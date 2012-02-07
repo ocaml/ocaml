@@ -877,11 +877,12 @@ external decr : int ref -> unit = "%decr"
     ['a] is the type of the parameters of the format,
     ['b] is the type of the first argument given to
          [%a] and [%t] printing functions,
-    ['c] is the type of the argument transmitted to the first argument of
-         "kprintf"-style functions,
-    ['d] is the result type for the "scanf"-style functions,
-    ['e] is the type of the receiver function for the "scanf"-style functions,
-    ['f] is the result type for the "printf"-style function.
+    ['c] is the type of the result of the [%a] and [%t] functions, and
+         also the type of the argument transmitted to the first argument
+         of [kprintf]-style functions,
+    ['d] is the result type for the [scanf]-style functions,
+    ['e] is the type of the receiver function for the [scanf]-style functions,
+    ['f] is the result type for the [printf]-style function.
  *)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
