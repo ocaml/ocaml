@@ -44,12 +44,12 @@ CSLDIR=../../../release
 
 VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
-all: libs 
+all: libs
 
 libs: $(FILES)
 
 $(INTF): $(MLIS)
-	$(CSLDIR)/ocamldoc/ocamldoc.opt -latex -I $(CSLDIR)/stdlib  \
+	$(CSLDIR)/ocamldoc/ocamldoc -latex -I $(CSLDIR)/stdlib  \
 	-I $(CSLDIR)/otherlibs/bigarray \
 	-I $(CSLDIR)/otherlibs/dynlink \
 	-I $(CSLDIR)/otherlibs/graph \
