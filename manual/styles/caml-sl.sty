@@ -15,24 +15,28 @@
 \def \@@@parinunderline {\@eunderline\@oldpar\@bunderline}
 \def\@eunderline{\egroup\underline{\box0}}
 
-\def\caml{
-  \bgroup
-  \flushleft
-  \parindent 0pt
-  \parskip 0pt
-  \let\do\@makeother\dospecials
-  \catcode`\^^M=\active
-  \catcode`\\=0
-  \catcode`\ \active
-  \frenchspacing
-  \@vobeyspaces
-  \let\@oldpar\par
-  \let\?\@camlinputline
-  \let\:\@camloutputline
-  \let\;\@camlblankline
-  \let\<\@bunderline
-  \let\>\@eunderline
-  \let\\\@camlbackslash
+{\catcode`'=\active
+  \global\def\caml{
+    \bgroup
+    \flushleft
+    \parindent 0pt
+    \parskip 0pt
+    \let\do\@makeother\dospecials
+    \catcode`'=\active
+    \chardef'=13
+    \catcode`\^^M=\active
+    \catcode`\\=0
+    \catcode`\ \active
+    \frenchspacing
+    \@vobeyspaces
+    \let\@oldpar\par
+    \let\?\@camlinputline
+    \let\:\@camloutputline
+    \let\;\@camlblankline
+    \let\<\@bunderline
+    \let\>\@eunderline
+    \let\\\@camlbackslash
+  }
 }
 
 \def\endcaml{

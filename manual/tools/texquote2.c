@@ -49,6 +49,7 @@ int main(argc, argv)
   transl['&'] = "{\\char38}";
   transl['#'] = "\\#";
   transl['%'] = "\\%";
+  transl['\''] = "{\\char13}";
   inverbatim = 0;
   incaml = 0;
   inquote = 0;
