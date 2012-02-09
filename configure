@@ -1702,3 +1702,8 @@ fi
 echo
 echo "** OCaml configuration completed successfully **"
 echo
+
+if test ! -z "$MACOSX_DEPLOYMENT_TARGET"; then
+  echo "WARNING: the environment variable MACOSX_DEPLOYMENT_TARGET is set."
+  echo "This will probably prevent compiling the OCaml system."
+fi
