@@ -30,5 +30,5 @@ val register_exception : string -> exn -> unit
    exception contained in the exception value [exn]
    under the name [n]. C code can later retrieve a handle to
    the exception by calling [caml_named_value(n)]. The exception
-   value thus obtained is suitable for passign as first argument
+   value thus obtained is suitable for passing as first argument
    to [raise_constant] or [raise_with_arg]. *)
