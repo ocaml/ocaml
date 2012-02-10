@@ -1413,7 +1413,7 @@ elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
   has_tk=false
 else
   tk_x11_include="$x11_include"
-  tk_x11_libs="$x11_libs -lX11"
+  tk_x11_libs="$x11_link"
   has_tk=true
 fi
 
