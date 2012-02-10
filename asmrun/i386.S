@@ -200,7 +200,7 @@ LBL(103):
         popl    %eax                    /* recover desired size */
         jmp     G(caml_allocN)
 
-/* Call a C function from Caml */
+/* Call a C function from OCaml */
 
         .globl  G(caml_c_call)
         .align  FUNCTION_ALIGN
@@ -214,7 +214,7 @@ G(caml_c_call):
     /* Call the function (address in %eax) */
         jmp     *%eax
 
-/* Start the Caml program */
+/* Start the OCaml program */
 
         .globl  G(caml_start_program)
         .align  FUNCTION_ALIGN
@@ -239,7 +239,7 @@ LBL(106):
         ALIGN_STACK(8)
         pushl   G(caml_exception_pointer)
         movl    %esp, G(caml_exception_pointer)
-    /* Call the Caml code */
+    /* Call the OCaml code */
         call    *%esi
 LBL(107):
     /* Pop the exception handler */
@@ -267,7 +267,7 @@ LBL(108):
         orl     $2, %eax
         jmp     LBL(109)
 
-/* Raise an exception from Caml */
+/* Raise an exception from OCaml */
 
         .globl  G(caml_raise_exn)
         .align  FUNCTION_ALIGN
@@ -322,7 +322,7 @@ LBL(111):
         UNDO_ALIGN_STACK(8)
         ret
 
-/* Callback from C to Caml */
+/* Callback from C to OCaml */
 
         .globl  G(caml_callback_exn)
         .align  FUNCTION_ALIGN

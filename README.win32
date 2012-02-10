@@ -59,7 +59,7 @@ runs without any additional tools.
 The native-code compiler (ocamlopt) requires the Microsoft Windows SDK
 (item [1]) and the flexdll tool (item [2]).
 
-Statically linking Caml bytecode with C code (ocamlc -custom) also requires
+Statically linking OCaml bytecode with C code (ocamlc -custom) also requires
 items [1] and [2].
 
 The LablTk GUI requires Tcl/Tk 8.5 (item [3]).
@@ -177,7 +177,7 @@ CREDITS:
 
 The initial port of Caml Special Light (the ancestor of OCaml) to
 Windows NT was done by Kevin Gallo at Microsoft Research, who kindly
-contributed his changes to the Caml project.
+contributed his changes to the OCaml project.
 
 The graphical user interface for the toplevel was initially developed
 by Jacob Navia, then significantly improved by Christopher A. Watford.
@@ -195,7 +195,7 @@ The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
 The native-code compiler (ocamlopt), as well as static linking of
-Caml bytecode with C code (ocamlc -custom), require
+OCaml bytecode with C code (ocamlc -custom), require
 the Cygwin development tools, available at
         http://www.cygwin.com/
 and the flexdll tool, available at
@@ -344,7 +344,7 @@ Windows 7 64 on Intel64/AMD64 machines.
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
-Statically linking Caml bytecode with C code (ocamlc -custom) requires the
+Statically linking OCaml bytecode with C code (ocamlc -custom) requires the
 Microsoft Platform SDK compiler (item [1] in the section
 "third-party software" below) and the flexdll tool (item [2]).
 

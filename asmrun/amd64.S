@@ -210,7 +210,7 @@
 #endif	
 
 #ifdef SYS_mingw64
-   /* Calls from Caml to C must reserve 32 bytes of extra stack space */
+   /* Calls from OCaml to C must reserve 32 bytes of extra stack space */
 #  define PREPARE_FOR_C_CALL subq $32, %rsp	
 #  define CLEANUP_AFTER_C_CALL addq $32, %rsp
 #else
@@ -355,7 +355,7 @@ LBL(103):
         popq    %rax                      /* recover desired size */
         jmp     LBL(caml_allocN)
 
-/* Call a C function from Caml */
+/* Call a C function from OCaml */
 
 FUNCTION(G(caml_c_call))
 LBL(caml_c_call):
@@ -376,7 +376,7 @@ LBL(caml_c_call):
 	pushq	%r12
 	ret
 
-/* Start the Caml program */
+/* Start the OCaml program */
 
 FUNCTION(G(caml_start_program))
     /* Save callee-save registers */
@@ -398,7 +398,7 @@ LBL(caml_start_program):
         pushq   %r13
         pushq   %r14
         movq    %rsp, %r14
-    /* Call the Caml code */
+    /* Call the OCaml code */
         call    *%r12
 LBL(107):
     /* Pop the exception handler */
@@ -437,7 +437,7 @@ LBL(108):
 #define C_ARG_4 %rcx
 #endif
 
-/* Raise an exception from Caml */
+/* Raise an exception from OCaml */
 
 FUNCTION(G(caml_raise_exn))
         TESTL_VAR($1, caml_backtrace_active)
@@ -482,7 +482,7 @@ LBL(111):
 	LOAD_VAR(caml_young_ptr,%r15)  /* Reload alloc ptr */
         ret
 
-/* Callback from C to Caml */
+/* Callback from C to OCaml */
 
 FUNCTION(G(caml_callback_exn))
     /* Save callee-save registers */

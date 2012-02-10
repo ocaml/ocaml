@@ -32,7 +32,7 @@
 /* The Tcl interpretor */
 Tcl_Interp *cltclinterp = NULL;
 
-/* Copy a list of strings from the C heap to Caml */
+/* Copy a list of strings from the C heap to OCaml */
 value copy_string_list(int argc, char **argv)
 {
   CAMLparam0();
@@ -53,7 +53,7 @@ value copy_string_list(int argc, char **argv)
 }
 
 /*
- * Calling Tcl from Caml
+ * Calling Tcl from OCaml
  *   this version works on an arbitrary Tcl command,
  *   and does parsing and substitution
  */
@@ -65,7 +65,7 @@ CAMLprim value camltk_tcl_eval(value str)
   CheckInit();
 
   /* Tcl_Eval may write to its argument, so we take a copy
-   * If the evaluation raises a Caml exception, we have a space
+   * If the evaluation raises an OCaml exception, we have a space
    * leak
    */
   Tcl_ResetResult(cltclinterp);
@@ -84,7 +84,7 @@ CAMLprim value camltk_tcl_eval(value str)
 }
 
 /*
- * Calling Tcl from Caml
+ * Calling Tcl from OCaml
  *   direct call, argument is TkArgs vect
   type TkArgs =
       TkToken of string

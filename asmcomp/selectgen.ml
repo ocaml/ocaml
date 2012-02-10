@@ -824,7 +824,7 @@ method emit_fundecl f =
 end
 
 (* Tail call criterion (estimated).  Assumes:
-- all arguments are of type "int" (always the case for Caml function calls)
+- all arguments are of type "int" (always the case for OCaml function calls)
 - one extra argument representing the closure environment (conservative).
 *)
 

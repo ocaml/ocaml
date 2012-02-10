@@ -62,7 +62,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   startpos = Int64_val(vstart);
   num_dims = Wosize_val(vdim);
   major_dim = flags & CAML_BA_FORTRAN_LAYOUT ? num_dims - 1 : 0;
-  /* Extract dimensions from Caml array */
+  /* Extract dimensions from OCaml array */
   num_dims = Wosize_val(vdim);
   if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Bigarray.mmap: bad number of dimensions");
@@ -117,7 +117,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   addr = (void *) ((uintnat) addr + delta);
   /* Close the file mapping */
   CloseHandle(fmap);
-  /* Build and return the Caml bigarray */
+  /* Build and return the OCaml bigarray */
   return caml_ba_alloc(flags | CAML_BA_MAPPED_FILE, num_dims, addr, dim);
 }
 

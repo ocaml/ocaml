@@ -183,7 +183,7 @@ caml_allocN:
         .type   caml_allocN, %function
         .size   caml_allocN, .-caml_allocN
 
-/* Call a C function from Caml */
+/* Call a C function from OCaml */
 /* Function to call is in r7 */
 
         .align  2
@@ -213,7 +213,7 @@ caml_c_call:
         .type   caml_c_call, %function
         .size   caml_c_call, .-caml_c_call
 
-/* Start the Caml program */
+/* Start the OCaml program */
 
         .align  2
         .globl  caml_start_program
@@ -222,8 +222,8 @@ caml_start_program:
         ldr     r12, =caml_program
 
 /* Code shared with caml_callback* */
-/* Address of Caml code to call is in r12 */
-/* Arguments to the Caml code are in r0...r3 */
+/* Address of OCaml code to call is in r12 */
+/* Arguments to the OCaml code are in r0...r3 */
 
 .Ljump_to_caml:
     /* Save return address and callee-save registers */
@@ -240,7 +240,7 @@ caml_start_program:
         str     r4, [sp, 0]
         str     r5, [sp, 4]
         str     r6, [sp, 8]
-    /* Setup a trap frame to catch exceptions escaping the Caml code */
+    /* Setup a trap frame to catch exceptions escaping the OCaml code */
         sub     sp, sp, 2*4
         ldr     r6, =caml_exception_pointer
         ldr     r5, =.Ltrap_handler
@@ -253,7 +253,7 @@ caml_start_program:
         ldr     alloc_ptr, [r4]
         ldr     r4, =caml_young_limit
         ldr     alloc_limit, [r4]
-    /* Call the Caml code */
+    /* Call the OCaml code */
         blx     r12
 .Lcaml_retaddr:
     /* Pop the trap frame, restoring caml_exception_pointer */
@@ -299,7 +299,7 @@ caml_start_program:
         .type   .Ltrap_handler, %function
         .size   .Ltrap_handler, .-.Ltrap_handler
 
-/* Raise an exception from Caml */
+/* Raise an exception from OCaml */
 
         .align  2
         .globl  caml_raise_exn
@@ -359,7 +359,7 @@ caml_raise_exception:
         .type   caml_raise_exception, %function
         .size   caml_raise_exception, .-caml_raise_exception
 
-/* Callback from C to Caml */
+/* Callback from C to OCaml */
 
         .align  2
         .globl  caml_callback_exn

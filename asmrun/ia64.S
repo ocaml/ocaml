@@ -166,7 +166,7 @@ caml_call_gc:
         cmp.ltu p6, p0 = r4, r5         /* enough space? */
         (p6) br.cond.spnt .L100 ;;      /* no: call GC again */
 
-        /* Reload return address and say that we are back into Caml code */
+        /* Reload return address and say that we are back into OCaml code */
         ADDRGLOBAL(r3, caml_last_return_address#) ;;
         ld8     r2 = [r3]
         st8     [r3] = r0 ;;
@@ -178,7 +178,7 @@ caml_call_gc:
 
         .endp   caml_call_gc#
 
-/* Call a C function from Caml */
+/* Call a C function from OCaml */
 /* Function to call is in r2 */
 
         .global caml_c_call#
@@ -186,7 +186,7 @@ caml_call_gc:
         .align  16
 
 caml_c_call:
-        /* The Caml code that called us does not expect any
+        /* The OCaml code that called us does not expect any
            code-generator registers to be preserved */
 
         /* Recover entry point from the function pointer in r2 */
@@ -218,7 +218,7 @@ caml_c_call:
         LOADGLOBAL(r4, caml_young_ptr#)
         LOADGLOBAL(r5, caml_young_limit#)
 
-        /* Reload return address and say that we are back into Caml code */
+        /* Reload return address and say that we are back into OCaml code */
         ADDRGLOBAL(r3, caml_last_return_address#) ;;
         ld8     r2 = [r3]
         st8     [r3] = r0 ;;
@@ -229,7 +229,7 @@ caml_c_call:
 
         .endp   caml_c_call#
 
-/* Start the Caml program */
+/* Start the OCaml program */
 
         .global caml_start_program#
         .proc   caml_start_program#
@@ -241,7 +241,7 @@ caml_start_program:
 
         /* Code shared with caml_callback* */
 .L103:
-        /* Allocate 64 "out" registers (for the Caml code) and no locals */
+        /* Allocate 64 "out" registers (for the OCaml code) and no locals */
         alloc	r3 = ar.pfs, 0, 0, 64, 0
         add     sp = -(56 * 8), sp ;;
 
@@ -296,7 +296,7 @@ caml_start_program:
         LOADGLOBAL(r3, caml_saved_rnat#) ;;
         ST8OFF(r2, r3, 8)
 
-        /* Set up a trap frame to catch exceptions escaping the Caml code */
+        /* Set up a trap frame to catch exceptions escaping the OCaml code */
         mov     r6 = sp
         add     sp = -16, sp ;;
         LOADGLOBAL(r3, caml_exception_pointer#)
@@ -321,10 +321,10 @@ caml_start_program:
         LOADGLOBAL(r4, caml_young_ptr#)
         LOADGLOBAL(r5, caml_young_limit#)
 
-        /* We are back into Caml code */
+        /* We are back into OCaml code */
         STOREGLOBAL(r0, caml_last_return_address#)
 
-        /* Call the Caml code */
+        /* Call the OCaml code */
         br.call.sptk b0 = b6 ;;
 .L102:
 
@@ -408,11 +408,11 @@ caml_start_program:
         .proc   caml_raise_exception#
         .align  16
 caml_raise_exception:
-        /* Allocate 64 "out" registers (for the Caml code) and no locals */
+        /* Allocate 64 "out" registers (for the OCaml code) and no locals */
         /* Since we don't return, don't bother saving the PFS */
         alloc	r2 = ar.pfs, 0, 0, 64, 0
 
-        /* Move exn bucket where Caml expects it */
+        /* Move exn bucket where OCaml expects it */
         mov     r8 = r32 ;;
 
         /* Perform "context switch" as per the Software Conventions Guide,
@@ -434,7 +434,7 @@ caml_raise_exception:
         LOADGLOBAL(r5, caml_young_limit#)
         LOADGLOBAL(r6, caml_exception_pointer#)
 
-        /* Say that we're back into Caml */
+        /* Say that we're back into OCaml */
         STOREGLOBAL(r0, caml_last_return_address#)
 
         /* Raise the exception proper */
@@ -450,7 +450,7 @@ caml_raise_exception:
 
         .endp   caml_raise_exception
 
-/* Callbacks from C to Caml */
+/* Callbacks from C to OCaml */
 
         .global caml_callback_exn#
         .proc   caml_callback_exn#

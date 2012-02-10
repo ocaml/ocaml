@@ -238,7 +238,7 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
   caml_gr_init_event_queue();
 
   /* The global data structures are now correctly initialized.
-     Restart the Caml main thread. */
+     Restart the OCaml main thread. */
   open_graph_errmsg = NULL;
   SetEvent(open_graph_event);
 

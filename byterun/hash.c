@@ -146,7 +146,7 @@ CAMLexport uint32 caml_hash_mix_float(uint32 hash, float d)
   return hash;
 }
 
-/* Mix a Caml string */
+/* Mix an OCaml string */
 
 CAMLexport uint32 caml_hash_mix_string(uint32 h, value s)
 {
@@ -271,7 +271,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   /* Final mixing of bits */
   FINAL_MIX(h);
   /* Fold result to the range [0, 2^30-1] so that it is a nonnegative
-     Caml integer both on 32 and 64-bit platforms. */
+     OCaml integer both on 32 and 64-bit platforms. */
   return Val_int(h & 0x3FFFFFFFU);
 }
 

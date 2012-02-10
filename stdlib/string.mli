@@ -27,10 +27,10 @@
   substring of [s] if [len >= 0] and [start] and [start+len] are
   valid positions in [s].
 
-  Caml strings can be modified in place, for instance via the
+  OCaml strings can be modified in place, for instance via the
   {!String.set} and {!String.blit} functions described below.  This
   possibility should be used rarely and with much care, however, since
-  both the Caml compiler and most Caml libraries share strings as if
+  both the OCaml compiler and most OCaml libraries share strings as if
   they were immutable, rather than copying them.  In particular,
   string literals are shared: a single copy of the string is created
   at program loading time and returned by all evaluations of the

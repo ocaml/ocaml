@@ -117,7 +117,7 @@ CAMLexport file_offset caml_channel_size(struct channel *channel)
   file_offset end;
   int fd;
 
-  /* We extract data from [channel] before dropping the Caml lock, in case
+  /* We extract data from [channel] before dropping the OCaml lock, in case
      someone else touches the block. */
   fd = channel->fd;
   offset = channel->offset;
@@ -411,7 +411,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
   return (p - channel->curr);
 }
 
-/* Caml entry points for the I/O functions.  Wrap struct channel *
+/* OCaml entry points for the I/O functions.  Wrap struct channel *
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
 /* FIXME CAMLexport, but not in io.h  exported for Cash ? */

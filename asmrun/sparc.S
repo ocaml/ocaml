@@ -217,7 +217,7 @@ L100:   add     %sp, 96 + 15*8, %g1
         retl
         add     %sp, 20*4 + 15*8, %sp       /* in delay slot */
 
-/* Call a C function from Caml */
+/* Call a C function from OCaml */
 
         .global Caml_c_call
 /* Function to call is in %g2 */
@@ -239,7 +239,7 @@ Caml_c_call:
         retl
         ld      [%g1 + %lo(Caml_young_ptr)], Alloc_ptr   /* in delay slot */
 
-/* Start the Caml program */
+/* Start the OCaml program */
 
         .global Caml_start_program
 Caml_start_program:
@@ -257,7 +257,7 @@ L108:
         Load(Caml_gc_regs, %l3)
         st      %l0, [%sp + 96]
         st      %l1, [%sp + 100]
-    /* Set up a trap frame to catch exceptions escaping the Caml code */
+    /* Set up a trap frame to catch exceptions escaping the OCaml code */
         call    L111
         st      %l3, [%sp + 104]
         b       L110
@@ -274,7 +274,7 @@ L111:   sub     %sp, 8, %sp
 #else
         Load(Caml_young_limit, Alloc_limit)
 #endif
-    /* Call the Caml code */
+    /* Call the OCaml code */
 L109:   call    %l2
         nop
     /* Pop trap frame and restore caml_exception_pointer */

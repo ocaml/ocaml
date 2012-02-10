@@ -89,7 +89,7 @@
 
 (define-derived-mode camldebug-mode comint-mode "Inferior CDB"
 
-  "Major mode for interacting with an inferior Camldebug process.
+  "Major mode for interacting with an inferior ocamldebug process.
 
 The following commands are available:
 

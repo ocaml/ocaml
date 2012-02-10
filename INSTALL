@@ -47,7 +47,7 @@ The "configure" script accepts the following options:
         Directory where the binaries will be installed
 
 -libdir <dir>                   (default: /usr/local/lib/ocaml)
-        Directory where the Caml library will be installed
+        Directory where the OCaml library will be installed
 
 -mandir <dir>                   (default: /usr/local/man/man1)
         Directory where the manual pages will be installed
@@ -237,9 +237,9 @@ autoconfiguration):
         ocamllex         the lexer generator
         ocaml            the interactive, toplevel-based system
         ocamlmktop       a tool to make toplevel systems that integrate
-                         user-defined C primitives and Caml code
+                         user-defined C primitives and OCaml code
         ocamldebug       the source-level replay debugger
-        ocamldep         generator of "make" dependencies for Caml sources
+        ocamldep         generator of "make" dependencies for OCaml sources
         ocamldoc         documentation generator
         ocamlprof        execution count profiler
         ocamlcp          the bytecode compiler in profiling mode
@@ -271,7 +271,7 @@ In the latter case, the destination directory defaults to the
 
 9- After installation, do *not* strip the ocamldebug and ocamlbrowser
 executables.  (These are mixed-mode executables, containing both
-compiled C code and Caml bytecode; stripping erases the bytecode!)
+compiled C code and OCaml bytecode; stripping erases the bytecode!)
 Other executables such as ocamlrun can safely be stripped.
 
 IF SOMETHING GOES WRONG:

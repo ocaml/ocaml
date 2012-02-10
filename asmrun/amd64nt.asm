@@ -192,7 +192,7 @@ L103:
         pop     rax                      ; recover desired size
         jmp     caml_allocN
 
-; Call a C function from Caml
+; Call a C function from OCaml
 
         PUBLIC  caml_c_call
         ALIGN   16
@@ -212,7 +212,7 @@ caml_c_call:
 	push	r12
 	ret
 
-; Start the Caml program
+; Start the OCaml program
 
         PUBLIC  caml_start_program
         ALIGN   16
@@ -254,7 +254,7 @@ L106:
         push    r13
         push    r14
         mov     r14, rsp
-    ; Call the Caml code
+    ; Call the OCaml code
         call    r12
 L107:
     ; Pop the exception handler
@@ -297,7 +297,7 @@ L108:
         or      rax, 2
         jmp     L109
 
-; Raise an exception from Caml
+; Raise an exception from OCaml
 
         PUBLIC  caml_raise_exn
         ALIGN   16
@@ -346,7 +346,7 @@ L111:
         mov     r15, caml_young_ptr ; Reload alloc ptr
         ret
 
-; Callback from C to Caml
+; Callback from C to OCaml
 
         PUBLIC  caml_callback_exn
         ALIGN   16

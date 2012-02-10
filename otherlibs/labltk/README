@@ -13,11 +13,11 @@ In addition to the basic interface with Tcl/Tk, this package contains
 
 mlTk = CamlTk + LablTk
 ======================
-There existed two parallel Tcl/Tk interfaces for O'Caml, CamlTk and LablTk.
+There existed two parallel Tcl/Tk interfaces for OCaml, CamlTk and LablTk.
 
 CamlTk uses classical features only, therefore it is easy to understand for
-the beginners of ML. It makes many conservative O'Caml gurus also happy.
-LablTk, on the other hand, uses rather newer features of O'Caml, the labeled
+the beginners of ML. It makes many conservative OCaml gurus also happy.
+LablTk, on the other hand, uses rather newer features of OCaml, the labeled
 optional arguments and polymorphic variants. Its syntax has much more Tcl/Tk
 script flavor, but provides more powerful typing than CamlTk at the same time
 (i.e. less run time type checking of widgets).
@@ -44,9 +44,9 @@ OSF/1 V4.0 (alpha), DGUX SVR4 (m88k) and Windows (VC++ and Cygwin).
 INSTALLATION
 ============
 
-0. Check-out the O'Caml CVS source code tree.
+0. Check-out the OCaml CVS source code tree.
 
-1. Compile O'Caml (= make world). If you want, also make opt.
+1. Compile OCaml (= make world). If you want, also make opt.
 
 2. Untar this mlTk distribution in the otherlibs directory, just like
    the labltk source tree.
@@ -55,9 +55,9 @@ INSTALLATION
 
 4. To install the library, make install (and make installopt)
 
-To compile mlTk, you need the O'Caml source tree, since mltk/camlbrowser
-requires some modules of O'Caml. If you are not interested in camlbrowser,
-you can compile mlTk without the O'Caml source tree, but you have to modify
+To compile mlTk, you need the OCaml source tree, since mltk/camlbrowser
+requires some modules of OCaml. If you are not interested in camlbrowser,
+you can compile mlTk without the OCaml source tree, but you have to modify
 support/Makefile.common.
 
 

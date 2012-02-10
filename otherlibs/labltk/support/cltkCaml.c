@@ -27,7 +27,7 @@
 value * tkerror_exn = NULL;
 value * handler_code = NULL;
 
-/* The Tcl command for evaluating callback in Caml */
+/* The Tcl command for evaluating callback in OCaml */
 int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp,
               int argc, CONST84 char **argv)
 {
@@ -41,7 +41,7 @@ int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp,
       return TCL_ERROR;
     callback2(*handler_code,Val_int(id),
               copy_string_list(argc - 2,(char **)&argv[2]));
-    /* Never fails (Caml would have raised an exception) */
+    /* Never fails (OCaml would have raised an exception) */
     /* but result may have been set by callback */
     return TCL_OK;
   }
@@ -69,14 +69,14 @@ CAMLprim void tk_error(char *errmsg)
 }
 
 
-/* The initialisation of the C global variables pointing to Caml values
-   must be made accessible from Caml, so that we are sure that it *always*
+/* The initialisation of the C global variables pointing to OCaml values
+   must be made accessible from OCaml, so that we are sure that it *always*
    takes place during loading of the protocol module
  */
 
 CAMLprim value camltk_init(value v)
 {
-  /* Initialize the Caml pointers */
+  /* Initialize the OCaml pointers */
   if (tkerror_exn == NULL)
     tkerror_exn = caml_named_value("tkerror");
   if (handler_code == NULL)

@@ -151,7 +151,7 @@ int GetOcamlPath(void)
      || _access(path, 0) != 0) {
     /* Registry key doesn't exist or contains invalid path */
     /* Ask user */
-    if (!BrowseForFile("Ocaml interpreter|ocaml.exe", path)) {
+    if (!BrowseForFile("OCaml interpreter|ocaml.exe", path)) {
       ShowDbgMsg("Impossible to find ocaml.exe. I quit");
       exit(0);
     }

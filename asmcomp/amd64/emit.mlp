@@ -653,7 +653,7 @@ let emit_profile () =
   | "linux" | "gnu" ->
       (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
          and rbx, rbp, r12-r15 like all C functions.
-         We need to preserve r10 and r11 ourselves, since Caml can
+         We need to preserve r10 and r11 ourselves, since OCaml can
          use them for argument passing. *)
       `	pushq	%r10\n`;
       `	movq	%rsp, %rbp\n`;

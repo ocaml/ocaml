@@ -78,7 +78,7 @@ clean::
 	rm -f ocamlprof ocamlcp
 
 
-# To help building mixed-mode libraries (Caml + C)
+# To help building mixed-mode libraries (OCaml + C)
 
 ocamlmklib: myocamlbuild_config.cmo ocamlmklib.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlmklib myocamlbuild_config.cmo \

@@ -211,7 +211,7 @@ let _ =
   if (Array.length Sys.argv) > 1 && (Sys.argv.(1) = "-benchmark") then begin
     let s = String.make 50000 'a' in
     let num_iter = 1000 in
-    time "Caml implementation" num_iter
+    time "OCaml implementation" num_iter
       (fun () ->
         let ctx = init() in
         update ctx s 0 (String.length s);

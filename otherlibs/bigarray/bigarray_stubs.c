@@ -130,8 +130,8 @@ caml_ba_multov(uintnat a, uintnat b, int * overflow)
 /* [caml_ba_alloc] will allocate a new bigarray object in the heap.
    If [data] is NULL, the memory for the contents is also allocated
    (with [malloc]) by [caml_ba_alloc].
-   [data] cannot point into the Caml heap.
-   [dim] may point into an object in the Caml heap.
+   [data] cannot point into the OCaml heap.
+   [dim] may point into an object in the OCaml heap.
 */
 CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
@@ -190,7 +190,7 @@ CAMLexport value caml_ba_alloc_dims(int flags, int num_dims, void * data, ...)
   return res;
 }
 
-/* Allocate a bigarray from Caml */
+/* Allocate a bigarray from OCaml */
 
 CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
 {
@@ -773,7 +773,7 @@ static void caml_ba_serialize(value v,
     caml_ba_serialize_longarray(b->data, num_elts, -0x80000000, 0x7FFFFFFF);
     break;
   }
-  /* Compute required size in Caml heap.  Assumes struct caml_ba_array
+  /* Compute required size in OCaml heap.  Assumes struct caml_ba_array
      is exactly 4 + num_dims words */
   Assert(sizeof(struct caml_ba_array) == 5 * sizeof(value));
   *wsize_32 = (4 + b->num_dims) * 4;
@@ -794,7 +794,7 @@ static void caml_ba_deserialize_longarray(void * dest, intnat num_elts)
 #else
   if (sixty)
     caml_deserialize_error("input_value: cannot read bigarray "
-                      "with 64-bit Caml ints");
+                      "with 64-bit OCaml ints");
   caml_deserialize_block_4(dest, num_elts);
 #endif
 }
@@ -905,7 +905,7 @@ CAMLprim value caml_ba_slice(value vb, value vind)
   sub_data =
     (char *) b->data +
     offset * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
-  /* Allocate a Caml bigarray to hold the result */
+  /* Allocate an OCaml bigarray to hold the result */
   res = caml_ba_alloc(b->flags, b->num_dims - num_inds, sub_data, sub_dims);
   /* Create or update proxy in case of managed bigarray */
   caml_ba_update_proxy(b, Caml_ba_array_val(res));
@@ -946,7 +946,7 @@ CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
   sub_data =
     (char *) b->data +
     ofs * mul * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
-  /* Allocate a Caml bigarray to hold the result */
+  /* Allocate an OCaml bigarray to hold the result */
   res = caml_ba_alloc(b->flags, b->num_dims, sub_data, b->dim);
   /* Doctor the changed dimension */
   Caml_ba_array_val(res)->dim[changed_dim] = len;

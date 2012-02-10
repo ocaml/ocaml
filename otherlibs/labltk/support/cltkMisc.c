@@ -51,7 +51,7 @@ CAMLprim value camltk_splitlist (value v)
   }
 }
 
-/* Copy a Caml string to the C heap. Should deallocate with stat_free */
+/* Copy an OCaml string to the C heap. Should deallocate with stat_free */
 char *string_to_c(value s)
 {
   int l = string_length(s);

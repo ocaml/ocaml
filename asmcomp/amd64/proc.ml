@@ -56,10 +56,10 @@ let masm =
   xmm0 - xmm15  100 - 115  *)
 
 (* Conventions:
-     rax - r11: Caml function arguments
-     rax: Caml and C function results
-     xmm0 - xmm9: Caml function arguments
-     xmm0: Caml and C function results
+     rax - r11: OCaml function arguments
+     rax: OCaml and C function results
+     xmm0 - xmm9: OCaml function arguments
+     xmm0: OCaml and C function results
    Under Unix:
      rdi, rsi, rdx, rcx, r8, r9: C function arguments
      xmm0 - xmm7: C function arguments

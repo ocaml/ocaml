@@ -88,11 +88,11 @@
 #define Callback_link(sp) ((struct caml_context *)((sp) + 16))
 #endif
 
-/* Structure of Caml callback contexts */
+/* Structure of OCaml callback contexts */
 
 struct caml_context {
-  char * bottom_of_stack;       /* beginning of Caml stack chunk */
-  uintnat last_retaddr;         /* last return address in Caml code */
+  char * bottom_of_stack;       /* beginning of OCaml stack chunk */
+  uintnat last_retaddr;         /* last return address in OCaml code */
   value * gc_regs;              /* pointer to register block */
 };
 

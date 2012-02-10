@@ -33,7 +33,7 @@
 #endif
 
 /* cltkMisc.c */
-/* copy a Caml string to the C heap. Must be deallocated with stat_free */
+/* copy an OCaml string to the C heap. Must be deallocated with stat_free */
 extern char *string_to_c(value s);
 
 /* cltkUtf.c */
@@ -45,7 +45,7 @@ CAMLTKextern Tcl_Interp *cltclinterp; /* The Tcl interpretor */
 extern value copy_string_list(int argc, char **argv);
 
 /* cltkCaml.c */
-/* pointers to Caml values */
+/* pointers to OCaml values */
 extern value *tkerror_exn;
 extern value *handler_code;
 extern int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp,

@@ -94,7 +94,7 @@ static caml_thread_t all_threads = NULL;
 /* The descriptor for the currently executing thread */
 static caml_thread_t curr_thread = NULL;
 
-/* The master lock protecting the Caml runtime system */
+/* The master lock protecting the OCaml runtime system */
 static st_masterlock caml_master_lock;
 
 /* Whether the ``tick'' thread is already running */
@@ -344,7 +344,7 @@ static value caml_thread_new_descriptor(value clos)
 
 static void caml_thread_remove_info(caml_thread_t th)
 {
-  if (th->next == th) all_threads = NULL; /* last Caml thread exiting */
+  if (th->next == th) all_threads = NULL; /* last OCaml thread exiting */
   th->next->prev = th->prev;
   th->prev->next = th->next;
 #ifndef NATIVE_CODE
@@ -646,7 +646,7 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 #endif
   caml_thread_stop();
   if (exit_buf != NULL) {
-    /* Native-code and (main thread or thread created by Caml) */
+    /* Native-code and (main thread or thread created by OCaml) */
     siglongjmp(exit_buf->buf, 1);
   } else {
     /* Bytecode, or thread created from C */

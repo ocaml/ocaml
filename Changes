@@ -97,7 +97,7 @@ Shedding weight:
 
 
 OCaml 3.12.1:
-----------------------
+-------------
 
 Bug fixes:
 - PR#4345, PR#4767: problems with camlp4 printing of float values

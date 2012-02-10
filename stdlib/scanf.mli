@@ -286,18 +286,18 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       Hence, this conversion always succeeds: it returns an empty
       string if the bounding condition holds when the scan begins.
     - [S]: reads a delimited string argument (delimiters and special
-      escaped characters follow the lexical conventions of Caml).
+      escaped characters follow the lexical conventions of OCaml).
     - [c]: reads a single character. To test the current input character
       without reading it, specify a null field width, i.e. use
       specification [%0c]. Raise [Invalid_argument], if the field width
       specification is greater than 1.
     - [C]: reads a single delimited character (delimiters and special
-      escaped characters follow the lexical conventions of Caml).
+      escaped characters follow the lexical conventions of OCaml).
     - [f], [e], [E], [g], [G]: reads an optionally signed
       floating-point number in decimal notation, in the style [dddd.ddd
       e/E+-dd].
     - [F]: reads a floating point number according to the lexical
-      conventions of Caml (hence the decimal point is mandatory if the
+      conventions of OCaml (hence the decimal point is mandatory if the
       exponent part is not mentioned).
     - [B]: reads a boolean argument ([true] or [false]).
     - [b]: reads a boolean argument (for backward compatibility; do not use
@@ -376,7 +376,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       nothing to read in the input: in this case, it simply returns [""].
 
     - in addition to the relevant digits, ['_'] characters may appear
-    inside numbers (this is reminiscent to the usual Caml lexical
+    inside numbers (this is reminiscent to the usual OCaml lexical
     conventions). If stricter scanning is desired, use the range
     conversion facility instead of the number conversions.
 

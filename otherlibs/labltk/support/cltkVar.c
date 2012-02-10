@@ -39,7 +39,7 @@ CAMLprim value camltk_getvar(value var)
 
   if (s == NULL)
     tk_error(Tcl_GetStringResult(cltclinterp));
-  else 
+  else
     return(tcl_string_to_caml(s));
 }
 
@@ -51,7 +51,7 @@ CAMLprim value camltk_setvar(value var, value contents)
   CheckInit();
 
   /* SetVar makes a copy of the contents. */
-  /* In case we have write traces in Caml, it's better to make sure that
+  /* In case we have write traces in OCaml, it's better to make sure that
      var doesn't move... */
   stable_var = string_to_c(var);
   utf_contents = caml_string_to_tcl(contents);

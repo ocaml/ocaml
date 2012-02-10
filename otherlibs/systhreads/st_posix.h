@@ -321,7 +321,7 @@ static void * caml_thread_tick(void * arg)
   struct timeval timeout;
   sigset_t mask;
 
-  /* Block all signals so that we don't try to execute a Caml signal handler */
+  /* Block all signals so that we don't try to execute an OCaml signal handler*/
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
   /* Allow async cancellation */

@@ -12,7 +12,7 @@
 
 ;(* $Id$ *)
 
-;;; inf-caml.el --- run the Caml toplevel in an Emacs buffer
+;;; inf-caml.el --- run the OCaml toplevel in an Emacs buffer
 
 ;; Xavier Leroy, july 1993.
 
@@ -37,14 +37,14 @@
   (setq inferior-caml-mode-map
         (copy-keymap comint-mode-map)))
 
-;; Augment Caml mode, so you can process Caml code in the source files.
+;; Augment Caml mode, so you can process OCaml code in the source files.
 
 (defvar inferior-caml-program "ocaml"
-  "*Program name for invoking an inferior Caml from Emacs.")
+  "*Program name for invoking an inferior OCaml from Emacs.")
 
 (defun inferior-caml-mode ()
-  "Major mode for interacting with an inferior Caml process.
-Runs a Caml toplevel as a subprocess of Emacs, with I/O through an
+  "Major mode for interacting with an inferior OCaml process.
+Runs an OCaml toplevel as a subprocess of Emacs, with I/O through an
 Emacs buffer. A history of input phrases is maintained. Phrases can
 be sent from another buffer in Caml mode.
 
@@ -106,7 +106,7 @@ be sent from another buffer in Caml mode.
     (if (not cmd)
         (if (comint-check-proc inferior-caml-buffer-name)
             (setq cmd inferior-caml-program)
-          (setq cmd (read-from-minibuffer "Caml toplevel to run: "
+          (setq cmd (read-from-minibuffer "OCaml toplevel to run: "
                                           inferior-caml-program))))
     (setq inferior-caml-program cmd)
     (let ((cmdlist (inferior-caml-args-to-list cmd))
@@ -124,11 +124,11 @@ be sent from another buffer in Caml mode.
 ;;  caml-run-process-when-needed
 
 (defun run-caml (&optional cmd)
-  "Run an inferior Caml process.
+  "Run an inferior OCaml process.
 Input and output via buffer `*inferior-caml*'."
   (interactive
    (list (if (not (comint-check-proc inferior-caml-buffer-name))
-             (read-from-minibuffer "Caml toplevel to run: "
+             (read-from-minibuffer "OCaml toplevel to run: "
                                    inferior-caml-program))))
   (caml-run-process-if-needed cmd)
   (switch-to-buffer-other-window inferior-caml-buffer-name))
@@ -174,7 +174,7 @@ Input and output via buffer `*inferior-caml*'."
 ;; patched by Didier to move cursor after evaluation
 
 (defun inferior-caml-eval-region (start end)
-  "Send the current region to the inferior Caml process."
+  "Send the current region to the inferior OCaml process."
   (interactive "r")
   (save-excursion (caml-run-process-if-needed))
   (save-excursion
