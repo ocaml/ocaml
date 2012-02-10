@@ -121,7 +121,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte camlp4out $(DEBUGGER) win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -211,7 +211,7 @@ opt: opt-core otherlibrariesopt ocamlbuildlib.native
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-	 ocamltoolsopt.opt ocamlbuild.native camlp4opt ocamldoc.opt
+	 ocamltoolsopt.opt ocamlbuild.native $(CAMLP4OPT) ocamldoc.opt
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -652,5 +652,19 @@ depend: beforedepend
 	 done) > .depend
 
 alldepend:: depend
+
+distclean:
+	./build/distclean.sh
+
+.PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
+.PHONY: partialclean beforedepend alldepend cleanboot coldstart
+.PHONY: compare core coreall
+.PHONY: coreboot defaultentry depend distclean install installopt
+.PHONY: library library-cross libraryopt ocamlbuild-mixed-boot
+.PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
+.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
+.PHONY: ocamlyacc opt-core opt opt.opt otherlibraries
+.PHONY: otherlibrariesopt promote promote-cross
+.PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
 include .depend
