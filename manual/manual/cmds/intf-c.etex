@@ -2,7 +2,7 @@
 \pdfchapterfold{-9}{Interfacing C with OCaml}
 
 This chapter describes how user-defined primitives, written in C, can
-be linked with Caml code and called from Caml functions.
+be linked with OCaml code and called from OCaml functions.
 
 \section{Overview and compilation information}
 \pdfsection{Overview and compilation information}
@@ -36,10 +36,10 @@ thus hiding their implementation as a C function, or explicitly as
 \end{alltt}
 The latter is slightly more efficient, as it allows clients of the
 module to call directly the C function instead of going through the
-corresponding Caml function. 
+corresponding OCaml function.
 
 The arity (number of arguments) of a primitive is automatically
-determined from its Caml type in the "external" declaration, by
+determined from its OCaml type in the "external" declaration, by
 counting the number of function arrows in the type.  For instance,
 "input" above has arity 4, and the "input" C function is called with
 four arguments.  Similarly,
@@ -47,7 +47,7 @@ four arguments.  Similarly,
     external input2 : in_channel * string * int * int -> int = "input2"
 \end{verbatim}
 has arity 1, and the "input2" C function receives one argument (which
-is a quadruple of Caml values).
+is a quadruple of OCaml values).
 
 Type abbreviations are not expanded when determining the arity of a
 primitive.  For instance,
@@ -64,9 +64,9 @@ to name the functional return type in a type abbreviation.
 
 User primitives with arity $n \leq 5$ are implemented by C functions
 that take $n$ arguments of type "value", and return a result of type
-"value". The type "value" is the type of the representations for Caml
+"value". The type "value" is the type of the representations for OCaml
 values. It encodes objects of several base types (integers,
-floating-point numbers, strings, \ldots), as well as Caml data
+floating-point numbers, strings, \ldots), as well as OCaml data
 structures. The type "value" and the associated conversion
 functions and macros are described in details below.  For instance,
 here is the declaration for the C function implementing the "input"
@@ -77,16 +77,16 @@ CAMLprim value input(value channel, value buffer, value offset, value length)
   ...
 }
 \end{verbatim}
-When the primitive function is applied in a Caml program, the C
+When the primitive function is applied in an OCaml program, the C
 function is called with the values of the expressions to which the
 primitive is applied as arguments. The value returned by the function is
-passed back to the Caml program as the result of the function
+passed back to the OCaml program as the result of the function
 application.
 
 User primitives with arity greater than 5 should be implemented by two
 C functions. The first function, to be used in conjunction with the
 bytecode compiler "ocamlc", receives two arguments: a pointer to an
-array of Caml values (the values for the arguments), and an
+array of OCaml values (the values for the arguments), and an
 integer which is the number of arguments provided. The other function,
 to be used in conjunction with the native-code compiler "ocamlopt",
 takes its arguments directly. For instance, here are the two C
@@ -118,15 +118,15 @@ For instance, in the case of "add_nat", the declaration is:
 
 Implementing a user primitive is actually two separate tasks: on the
 one hand, decoding the arguments to extract C values from the given
-Caml values, and encoding the return value as a Caml 
+OCaml values, and encoding the return value as an OCaml
 value; on the other hand, actually computing the result from the arguments.
 Except for very simple primitives, it is often preferable to have two
 distinct C functions to implement these two tasks. The first function
 actually implements the primitive, taking native C values as
 arguments and returning a native C value. The second function,
 often called the ``stub code'', is a simple wrapper around the first
-function that converts its arguments from Caml values to C values,
-call the first function, and convert the returned C value to Caml
+function that converts its arguments from OCaml values to C values,
+call the first function, and convert the returned C value to OCaml
 value. For instance, here is the stub code for the "input"
 primitive:
 \begin{verbatim}
@@ -140,7 +140,7 @@ CAMLprim value input(value channel, value buffer, value offset, value length)
 (Here, "Val_long", "Long_val" and so on are conversion macros for the
 type "value", that will be described later.  The "CAMLprim" macro
 expands to the required compiler directives to ensure that the
-function following it is exported and accessible from Caml.)
+function following it is exported and accessible from OCaml.)
 The hard work is performed by the function "getblock", which is
 declared as:
 \begin{verbatim}
@@ -154,13 +154,13 @@ To write C code that operates on OCaml values, the following
 include files are provided:
 \begin{tableau}{|l|p{12cm}|}{Include file}{Provides}
 \entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion macros}
-\entree{"caml/alloc.h"}{allocation functions (to create structured Caml
+\entree{"caml/alloc.h"}{allocation functions (to create structured OCaml
 objects)}
 \entree{"caml/memory.h"}{miscellaneous memory-related functions
 and macros (for GC interface, in-place modification of structures, etc).}
 \entree{"caml/fail.h"}{functions for raising exceptions
 (see section~\ref{s:c-exceptions})}
-\entree{"caml/callback.h"}{callback from C to Caml (see
+\entree{"caml/callback.h"}{callback from C to OCaml (see
 section~\ref{s:callback}).}
 \entree{"caml/custom.h"}{operations on custom blocks (see
 section~\ref{s:custom}).}
@@ -173,7 +173,7 @@ serialization and deserialization functions for custom blocks
 These files reside in the "caml/" subdirectory of the OCaml
 standard library directory (usually "/usr/local/lib/ocaml").
 
-\subsection{Statically linking C code with Caml code}
+\subsection{Statically linking C code with OCaml code}
 \label{staticlink-c-code}
 
 The OCaml runtime system comprises three main parts: the bytecode
@@ -182,13 +182,13 @@ implement the primitive operations. Some bytecode instructions are
 provided to call these C functions, designated by their offset in a
 table of functions (the table of primitives).
 
-In the default mode, the Caml linker produces bytecode for the
+In the default mode, the OCaml linker produces bytecode for the
 standard runtime system, with a standard set of primitives. References
 to primitives that are not in this standard set result in the
 ``unavailable C primitive'' error.  (Unless dynamic loading of C
 libraries is supported -- see section~\ref{dynlink-c-code} below.)
 
-In the ``custom runtime'' mode, the Caml linker scans the
+In the ``custom runtime'' mode, the OCaml linker scans the
 object files and determines the set of required primitives. Then, it
 builds a suitable runtime system, by calling the native code linker with:
 \begin{itemize}
@@ -196,10 +196,10 @@ builds a suitable runtime system, by calling the native code linker with:
 \item a library that provides the bytecode interpreter, the
 memory manager, and the standard primitives;
 \item libraries and object code files (".o" files) mentioned on the
-command line for the Caml linker, that provide implementations
+command line for the OCaml linker, that provide implementations
 for the user's primitives.
 \end{itemize}
-This builds a runtime system with the required primitives. The Caml
+This builds a runtime system with the required primitives. The OCaml
 linker generates bytecode for this custom runtime system. The
 bytecode is appended to the end of the custom runtime system, so that
 it will be automatically executed when the output file (custom
@@ -208,7 +208,7 @@ runtime + bytecode) is launched.
 To link in ``custom runtime'' mode, execute the "ocamlc" command with:
 \begin{itemize}
 \item the "-custom" option;
-\item the names of the desired Caml object files (".cmo" and ".cma" files) ;
+\item the names of the desired OCaml object files (".cmo" and ".cma" files) ;
 \item the names of the C object files and libraries (".o" and ".a"
 files) that implement the required primitives. Under Unix and Windows,
 a library named "lib"\var{name}".a" (respectively, ".lib") residing in one of the standard library directories can also be specified as "-cclib -l"\var{name}.
@@ -216,19 +216,19 @@ a library named "lib"\var{name}".a" (respectively, ".lib") residing in one of th
 
 If you are using the native-code compiler "ocamlopt", the "-custom"
 flag is not needed, as the final linking phase of "ocamlopt" always
-builds a standalone executable.  To build a mixed Caml/C executable,
+builds a standalone executable.  To build a mixed OCaml/C executable,
 execute the "ocamlopt" command with:
 \begin{itemize}
-\item the names of the desired Caml native object files (".cmx" and
+\item the names of the desired OCaml native object files (".cmx" and
 ".cmxa" files);
 \item the names of the C object files and libraries (".o", ".a",
 ".so" or ".dll" files) that implement the required primitives.
 \end{itemize}
 
 Starting with Objective Caml 3.00, it is possible to record the
-"-custom" option as well as the names of C libraries in a Caml
-library file ".cma" or ".cmxa".  For instance, consider a Caml library
-"mylib.cma", built from the Caml object files "a.cmo" and "b.cmo",
+"-custom" option as well as the names of C libraries in an OCaml
+library file ".cma" or ".cmxa".  For instance, consider an OCaml library
+"mylib.cma", built from the OCaml object files "a.cmo" and "b.cmo",
 which reference C code in "libmylib.a".  If the library is
 built as follows:
 \begin{alltt}
@@ -256,14 +256,14 @@ options themselves at link-time:
 The former alternative is more convenient for the final users of the
 library, however.
 
-\subsection{Dynamically linking C code with Caml code}
+\subsection{Dynamically linking C code with OCaml code}
 \label{dynlink-c-code}
 
 Starting with Objective Caml 3.03, an alternative to static linking of C code
-using the "-custom" code is provided.  In this mode, the Caml linker
+using the "-custom" code is provided.  In this mode, the OCaml linker
 generates a pure bytecode executable (no embedded custom runtime
 system) that simply records the names of dynamically-loaded libraries
-containing the C code.  The standard Caml runtime system "ocamlrun"
+containing the C code.  The standard OCaml runtime system "ocamlrun"
 then loads dynamically these libraries, and resolves references to the
 required primitives, before executing the bytecode.
 
@@ -272,7 +272,7 @@ Linux, MacOS~X, and Windows.  It is supported, but not
 fully tested yet, under FreeBSD, Tru64, Solaris and Irix.  It is not
 supported yet under other Unixes.
 
-To dynamically link C code with Caml code, the C code must first be
+To dynamically link C code with OCaml code, the C code must first be
 compiled into a shared library (under Unix) or DLL (under Windows).
 This involves 1- compiling the C files with appropriate C compiler
 flags for producing position-independent code (when required by the
@@ -283,9 +283,9 @@ find it later at program start-up time (see
 section~\ref{s-ocamlrun-dllpath}).
 Finally (step 3), execute the "ocamlc" command with
 \begin{itemize}
-\item the names of the desired Caml object files (".cmo" and ".cma" files) ;
+\item the names of the desired OCaml object files (".cmo" and ".cma" files) ;
 \item the names of the C shared libraries (".so" or ".dll" files) that
-implement the required primitives.  Under Unix and Windows, 
+implement the required primitives.  Under Unix and Windows,
 a library named "dll"\var{name}".so" (respectively, ".dll") residing
 in one of the standard library directories can also be specified as
 "-dllib -l"\var{name}.
@@ -296,9 +296,9 @@ The "ocamlmklib" tool (see section~\ref{s-ocamlmklib})
 automates steps 2 and 3.
 
 As in the case of static linking, it is possible (and recommended) to
-record the names of C libraries in a Caml ".cma" library archive.  
-Consider again a Caml library
-"mylib.cma", built from the Caml object files "a.cmo" and "b.cmo",
+record the names of C libraries in an OCaml ".cma" library archive.
+Consider again an OCaml library
+"mylib.cma", built from the OCaml object files "a.cmo" and "b.cmo",
 which reference C code in "dllmylib.so".  If the library is
 built as follows:
 \begin{alltt}
@@ -319,9 +319,9 @@ statically linked (using "-custom") or dynamically linked.
 
 \subsection{Choosing between static linking and dynamic linking}
 
-After having described two different ways of linking C code with Caml
+After having described two different ways of linking C code with OCaml
 code, we now review the pros and cons of each, to help developers of
-mixed Caml/C libraries decide.
+mixed OCaml/C libraries decide.
 
 The main advantage of dynamic linking is that it preserves the
 platform-independence of bytecode executables.  That is, the bytecode
@@ -335,7 +335,7 @@ addition, dynamic linking results in smaller executables.
 
 Another advantage of dynamic linking is that the final users of the
 library do not need to have a C compiler, C linker, and C runtime
-libraries installed on their machines.  This is no big deal under 
+libraries installed on their machines.  This is no big deal under
 Unix and Cygwin, but many Windows users are reluctant to install
 Microsoft Visual C just to be able to do "ocamlc -custom".
 
@@ -370,7 +370,7 @@ portable way.
 \label{s:custom-runtime}
 
 It is sometimes inconvenient to build a custom runtime system each
-time Caml code is linked with C libraries, like "ocamlc -custom" does.
+time OCaml code is linked with C libraries, like "ocamlc -custom" does.
 For one thing, the building of the runtime system is slow on some
 systems (that have bad linkers or slow remote file systems); for
 another thing, the platform-independence of bytecode files is lost,
@@ -404,7 +404,7 @@ bytecode executable (so that the bytecode from "unix.cma" and
 \section{The "value" type}
 \pdfsection{The value type}
 
-All Caml objects are represented by the C type "value",
+All OCaml objects are represented by the C type "value",
 defined in the include file "caml/mlvalues.h", along with macros to
 manipulate values of that type. An object of type "value" is either:
 \begin{itemize}
@@ -435,7 +435,7 @@ structured input-output, structured and raw blocks are further
 classified according to their tags as follows:
 \begin{tableau}{|l|p{10cm}|}{Tag}{Contents of the block}
 \entree{0 to $\hbox{"No_scan_tag"}-1$}{A structured block (an array of
-Caml objects). Each field is a "value".}
+OCaml objects). Each field is a "value".}
 \entree{"Closure_tag"}{A closure representing a functional value. The first
 word is a pointer to a piece of code, the remaining words are
 "value" containing the environment.}
@@ -457,24 +457,24 @@ cast to and from the type "value". This includes pointers returned by
 obtained with the \verb'&' operator.
 
 Caution: if a pointer returned by "malloc" is cast to the type "value"
-and returned to Caml, explicit deallocation of the pointer using
+and returned to OCaml, explicit deallocation of the pointer using
 "free" is potentially dangerous, because the pointer may still be
-accessible from the Caml world.  Worse, the memory space deallocated
-by "free" can later be reallocated as part of the Caml heap; the
-pointer, formerly pointing outside the Caml heap, now points inside
-the Caml heap, and this can confuse the garbage collector.  To avoid
-these problems, it is preferable to wrap the pointer in a Caml block
+accessible from the OCaml world.  Worse, the memory space deallocated
+by "free" can later be reallocated as part of the OCaml heap; the
+pointer, formerly pointing outside the OCaml heap, now points inside
+the OCaml heap, and this can confuse the garbage collector.  To avoid
+these problems, it is preferable to wrap the pointer in a OCaml block
 with tag "Abstract_tag" or "Custom_tag".
 
-\section{Representation of Caml data types}
-\pdfsection{Representation of Caml data types}
+\section{Representation of OCaml data types}
+\pdfsection{Representation of OCaml data types}
 
-This section describes how Caml data types are encoded in the
+This section describes how OCaml data types are encoded in the
 "value" type.
 
 \subsection{Atomic types}
 
-\begin{tableau}{|l|l|}{Caml type}{Encoding}
+\begin{tableau}{|l|l|}{OCaml type}{Encoding}
 \entree{"int"}{Unboxed integer values.}
 \entree{"char"}{Unboxed integer values (ASCII code).}
 \entree{"float"}{Blocks with tag "Double_tag".}
@@ -500,7 +500,7 @@ are represented as arrays of floating-point numbers, with tag
 
 \subsection{Arrays}
 
-Arrays of integers and pointers are represented like tuples, 
+Arrays of integers and pointers are represented like tuples,
 that is, as pointers to blocks tagged~0.  They are accessed with the
 "Field" macro for reading and the "caml_modify" function for writing.
 
@@ -575,7 +575,7 @@ Like constructed terms, polymorphic variant values are represented either
 as integers (for polymorphic variants without arguments), or as blocks
 (for polymorphic variants with an argument).  Unlike constructed
 terms, variant constructors are not numbered starting from 0, but
-identified by a hash value (a Caml integer), as computed by the C function
+identified by a hash value (an OCaml integer), as computed by the C function
 "hash_variant" (declared in "<caml/mlvalues.h>"):
 the hash value for a variant constructor named, say, "VConstr"
 is "hash_variant(\"VConstr\")".
@@ -612,11 +612,11 @@ and false if it is an immediate integer.
 \item "Long_val("\var{v}")" returns the "long int" encoded in value \var{v}.
 \item "Val_int("\var{i}")" returns the value encoding the "int" \var{i}.
 \item "Int_val("\var{v}")" returns the "int" encoded in value \var{v}.
-\item "Val_bool("\var{x}")" returns the Caml boolean representing the
+\item "Val_bool("\var{x}")" returns the OCaml boolean representing the
 truth value of the C integer \var{x}.
-\item "Bool_val("\var{v}")" returns 0 if \var{v} is the Caml boolean
+\item "Bool_val("\var{v}")" returns 0 if \var{v} is the OCaml boolean
 "false", 1 if \var{v} is "true".
-\item "Val_true", "Val_false" represent the Caml booleans "true" and "false".
+\item "Val_true", "Val_false" represent the OCaml booleans "true" and "false".
 \end{itemize}
 
 \subsection{Accessing blocks}
@@ -642,9 +642,9 @@ $\hbox{"string_length"}(v)-1$.
 $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
 \var{v}, with type "char *". This pointer is a valid C string: there is a
-null character after the last character in the string. However, Caml
+null character after the last character in the string. However, OCaml
 strings can contain embedded null characters, that will confuse
-the usual C functions over strings. 
+the usual C functions over strings.
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
 \item "Double_field("\var{v}", "\var{n}")" returns
@@ -701,7 +701,7 @@ the null-terminated C string \var{s} (a "char *").
 with the "double" \var{d}.
 \item
 "caml_copy_int32("\var{i}")", "copy_int64("\var{i}")" and
-"caml_copy_nativeint("\var{i}")" return a value of Caml type "int32",
+"caml_copy_nativeint("\var{i}")" return a value of OCaml type "int32",
 "int64" and "nativeint", respectively, initialized with the integer
 \var{i}.
 \item
@@ -737,18 +737,18 @@ against \verb"Max_young_wosize" to determine the correct allocation procedure.
 \begin{itemize}
 \item
 "caml_alloc_small("\var{n}", "\var{t}")" returns a fresh small block of size
-$n \leq \hbox{"Max_young_wosize"}$ words, with tag \var{t}. 
-If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
+$n \leq \hbox{"Max_young_wosize"}$ words, with tag \var{t}.
+If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then
 the fields of the block (initially containing garbage) must be initialized
 with legal values (using direct assignment to the fields of the block)
 before the next allocation.
 \item
 "caml_alloc_shr("\var{n}", "\var{t}")" returns a fresh block of size
-\var{n}, with tag \var{t}. 
+\var{n}, with tag \var{t}.
 The size of the block can be greater than \verb"Max_young_wosize". (It
 can also be smaller, but in this case it is more efficient to call
-"caml_alloc_small" instead of "caml_alloc_shr".) 
-If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
+"caml_alloc_small" instead of "caml_alloc_shr".)
+If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then
 the fields of the block (initially containing garbage) must be initialized
 with legal values (using the "caml_initialize" function described below)
 before the next allocation.
@@ -766,7 +766,7 @@ with argument \var{s}.
 \end{itemize}
 
 Raising arbitrary exceptions from C is more delicate: the
-exception identifier is dynamically allocated by the Caml program, and
+exception identifier is dynamically allocated by the OCaml program, and
 therefore must be communicated to the C function using the
 registration facility described below in section~\ref{s:register-exn}.
 Once the exception identifier is recovered in C, the following
@@ -775,9 +775,9 @@ functions actually raise the exception:
 \item "caml_raise_constant("\var{id}")" raises the exception \var{id} with
 no argument;
 \item "caml_raise_with_arg("\var{id}", "\var{v}")" raises the exception
-\var{id} with the Caml value \var{v} as argument;
+\var{id} with the OCaml value \var{v} as argument;
 \item "caml_raise_with_args("\var{id}", "\var{n}", "\var{v}")"
-raises the exception \var{id} with the Caml values
+raises the exception \var{id} with the OCaml values
 \var{v}"[0]", \ldots, \var{v}"["\var{n}"-1]" as arguments;
 \item "caml_raise_with_string("\var{id}", "\var{s}")", where \var{s} is a
 null-terminated C string, raises the exception \var{id} with a copy of
@@ -963,7 +963,7 @@ value (see rule~6).
 %% "Begin_roots" and "End_roots" macros), if they are to survive a call
 %% to an allocation function.
 %% \end{gcrule}
-%% 
+%%
 %% Registration is performed with the "Begin_roots" set of macros.
 %% "Begin_roots1("\var{v}")" registers variable \var{v} with the garbage
 %% collector.  Generally, \var{v} will be a local variable or a
@@ -975,20 +975,20 @@ value (see rule~6).
 %% allows you to register an array of roots.  \var{ptr} is a pointer to
 %% the first element, and \var{size} is the number of elements in the
 %% array.
-%% 
+%%
 %% Once registered, each of your variables (or array element) has the
 %% following properties: if it points to a heap-allocated block, this
 %% block (and its contents) will not be reclaimed; moreover, if this
 %% block is relocated by the garbage collector, the variable is updated
 %% to point to the new location for the block.
-%% 
+%%
 %% Each of the "Begin_roots" macros open a C block that must be closed
 %% with a matching "End_roots" at the same nesting level.  The block must
 %% be exited normally (i.e. not with "return" or "goto").  However, the
-%% roots are automatically un-registered if a Caml exception is raised,
+%% roots are automatically un-registered if an OCaml exception is raised,
 %% so you can exit the block with "failwith", "invalid_argument", or one
 %% of the "raise" functions.
-%% 
+%%
 %% {\bf Note:} The "Begin_roots" macros use a local variable and a
 %% structure tag named "caml__roots_block".  Do not use this identifier
 %% in your programs.
@@ -998,7 +998,7 @@ value (see rule~6).
         Field(\var{v}, \var{n}) = \var{w};
 \end{alltt}
 is safe only if \var{v} is a block newly allocated by "caml_alloc_small";
-that is, if no allocation took place between the 
+that is, if no allocation took place between the
 allocation of \var{v} and the assignment to the field. In all other cases,
 never assign directly. If the block has just been allocated by "caml_alloc_shr",
 use "caml_initialize" to assign a value to a field for the first time:
@@ -1113,7 +1113,7 @@ The stub code file, "curses_stubs.c", looks like this:
 #include <caml/custom.h>
 
 /* Encapsulation of opaque window handles (of type WINDOW *)
-   as Caml custom blocks. */
+   as OCaml custom blocks. */
 
 static struct custom_operations curses_window_ops = {
   "fr.inria.caml.curses_windows",
@@ -1124,10 +1124,10 @@ static struct custom_operations curses_window_ops = {
   custom_deserialize_default
 };
 
-/* Accessing the WINDOW * part of a Caml custom block */
+/* Accessing the WINDOW * part of an OCaml custom block */
 #define Window_val(v) (*((WINDOW **) Data_custom_val(v)))
 
-/* Allocating a Caml custom block to hold the given WINDOW * */
+/* Allocating an OCaml custom block to hold the given WINDOW * */
 static value alloc_window(WINDOW * w)
 {
   value v = alloc_custom(&curses_window_ops, sizeof(WINDOW *), 0, 1);
@@ -1211,7 +1211,7 @@ or, even simpler,
 (When passed a ".c" file, the "ocamlc" command simply calls the C
 compiler on that file, with the right "-I" option.)
 
-Now, here is a sample Caml program "test.ml" that uses the "curses"
+Now, here is a sample OCaml program "test.ml" that uses the "curses"
 module:
 \begin{verbatim}
 open Curses
@@ -1230,61 +1230,61 @@ To compile and link this program, run:
 (On some machines, you may need to put "-cclib -ltermcap" or
 "-cclib -lcurses -cclib -ltermcap" instead of "-cclib -lcurses".)
 
-\section{Advanced topic: callbacks from C to Caml} \label{s:callback}
-\pdfsection{Advanced topic: callbacks from C to Caml}
+\section{Advanced topic: callbacks from C to OCaml} \label{s:callback}
+\pdfsection{Advanced topic: callbacks from C to OCaml}
 
-So far, we have described how to call C functions from Caml. In this
-section, we show how C functions can call Caml functions, either as
-callbacks (Caml calls C which calls Caml), or because the main program
+So far, we have described how to call C functions from OCaml. In this
+section, we show how C functions can call OCaml functions, either as
+callbacks (OCaml calls C which calls OCaml), or because the main program
 is written in C.
 
-\subsection{Applying Caml closures from C} \label{s:callbacks}
+\subsection{Applying OCaml closures from C} \label{s:callbacks}
 
-C functions can apply Caml functional values (closures) to Caml values.
+C functions can apply OCaml functional values (closures) to OCaml values.
 The following functions are provided to perform the applications:
 \begin{itemize}
 \item "caml_callback("\var{f, a}")" applies the functional value \var{f} to
 the value \var{a} and return the value returned by~\var{f}.
 \item "caml_callback2("\var{f, a, b}")" applies the functional value \var{f}
-(which is assumed to be a curried Caml function with two arguments) to
+(which is assumed to be a curried OCaml function with two arguments) to
 \var{a} and \var{b}.
 \item "caml_callback3("\var{f, a, b, c}")" applies the functional value \var{f}
-(a curried Caml function with three arguments) to \var{a}, \var{b} and \var{c}.
+(a curried OCaml function with three arguments) to \var{a}, \var{b} and \var{c}.
 \item "caml_callbackN("\var{f, n, args}")" applies the functional value \var{f}
 to the \var{n} arguments contained in the array of values \var{args}.
 \end{itemize}
 If the function \var{f} does not return, but raises an exception that
 escapes the scope of the application, then this exception is
-propagated to the next enclosing Caml code, skipping over the C
-code. That is, if a Caml function \var{f} calls a C function \var{g} that
-calls back a Caml function \var{h} that raises a stray exception, then the
+propagated to the next enclosing OCaml code, skipping over the C
+code. That is, if an OCaml function \var{f} calls a C function \var{g} that
+calls back an OCaml function \var{h} that raises a stray exception, then the
 execution of \var{g} is interrupted and the exception is propagated back
 into \var{f}.
 
-If the C code wishes to catch exceptions escaping the Caml function,
+If the C code wishes to catch exceptions escaping the OCaml function,
 it can use the functions "caml_callback_exn", "caml_callback2_exn",
 "caml_callback3_exn", "caml_callbackN_exn".  These functions take the same
 arguments as their non-"_exn" counterparts, but catch escaping
 exceptions and return them to the C code.  The return value \var{v} of the
 "caml_callback*_exn" functions must be tested with the macro
 "Is_exception_result("\var{v}")".  If the macro returns ``false'', no
-exception occured, and \var{v} is the value returned by the Caml
+exception occured, and \var{v} is the value returned by the OCaml
 function.  If "Is_exception_result("\var{v}")" returns ``true'',
 an exception escaped, and its value (the exception descriptor) can be
 recovered using "Extract_exception("\var{v}")".
 
-\subsection{Registering Caml closures for use in C functions}
+\subsection{Registering OCaml closures for use in C functions}
 
 The main difficulty with the "callback" functions described above is
-obtaining a closure to the Caml function to be called. For this
+obtaining a closure to the OCaml function to be called. For this
 purpose, OCaml provides a simple registration mechanism, by
-which Caml code can register Caml functions under some global name,
+which OCaml code can register OCaml functions under some global name,
 and then C code can retrieve the corresponding closure by this global
 name.
 
-On the Caml side, registration is performed by evaluating
+On the OCaml side, registration is performed by evaluating
 "Callback.register" \var{n} \var{v}. Here, \var{n} is the global name
-(an arbitrary string) and \var{v} the Caml value. For instance:
+(an arbitrary string) and \var{v} the OCaml value. For instance:
 \begin{verbatim}
     let f x = print_string "f is applied to "; print_int x; print_newline()
     let _ = Callback.register "test function" f
@@ -1292,9 +1292,9 @@ On the Caml side, registration is performed by evaluating
 
 On the C side, a pointer to the value registered under name \var{n} is
 obtained by calling "caml_named_value("\var{n}")". The returned
-pointer must then be dereferenced to recover the actual Caml value.
+pointer must then be dereferenced to recover the actual OCaml value.
 If no value is registered under the name \var{n}, the null pointer is
-returned. For example, here is a C wrapper that calls the Caml function "f"
+returned. For example, here is a C wrapper that calls the OCaml function "f"
 above:
 \begin{verbatim}
     void call_caml_f(int arg)
@@ -1321,10 +1321,10 @@ only once:
     }
 \end{verbatim}
 
-\subsection{Registering Caml exceptions for use in C functions} \label{s:register-exn}
+\subsection{Registering OCaml exceptions for use in C functions} \label{s:register-exn}
 
 The registration mechanism described above can also be used to
-communicate exception identifiers from Caml to C. The Caml code
+communicate exception identifiers from OCaml to C. The OCaml code
 registers the exception by evaluating
 "Callback.register_exception" \var{n} \var{exn}, where \var{n} is an
 arbitrary name and \var{exn} is an exception value of the
@@ -1348,44 +1348,44 @@ the given argument:
 
 \subsection{Main program in C} \label{s:main-c}
 
-In normal operation, a mixed Caml/C program starts by executing the
-Caml initialization code, which then may proceed to call C
-functions. We say that the main program is the Caml code. In some
+In normal operation, a mixed OCaml/C program starts by executing the
+OCaml initialization code, which then may proceed to call C
+functions. We say that the main program is the OCaml code. In some
 applications, it is desirable that the C code plays the role of the
-main program, calling Caml functions when needed. This can be achieved as
+main program, calling OCaml functions when needed. This can be achieved as
 follows:
 \begin{itemize}
 \item The C part of the program must provide a "main" function,
-which will override the default "main" function provided by the Caml
+which will override the default "main" function provided by the OCaml
 runtime system. Execution will start in the user-defined "main" function
 just like for a regular C program.
 
 \item At some point, the C code must call "caml_main(argv)" to
-initialize the Caml code. The "argv" argument is a C array of strings
+initialize the OCaml code. The "argv" argument is a C array of strings
 (type "char **"), terminated with a "NULL" pointer,
 which represents the command-line arguments, as
-passed as second argument to "main". The Caml array "Sys.argv" will
+passed as second argument to "main". The OCaml array "Sys.argv" will
 be initialized from this parameter. For the bytecode compiler,
 "argv[0]" and "argv[1]" are also consulted to find the file containing
 the bytecode.
 
-\item The call to "caml_main" initializes the Caml runtime system,
+\item The call to "caml_main" initializes the OCaml runtime system,
 loads the bytecode (in the case of the bytecode compiler), and
-executes the initialization code of the Caml program. Typically, this
+executes the initialization code of the OCaml program. Typically, this
 initialization code registers callback functions using "Callback.register".
-Once the Caml initialization code is complete, control returns to the
+Once the OCaml initialization code is complete, control returns to the
 C code that called "caml_main".
 
-\item The C code can then invoke Caml functions using the callback
+\item The C code can then invoke OCaml functions using the callback
 mechanism (see section~\ref{s:callbacks}).
 \end{itemize}
 
-\subsection{Embedding the Caml code in the C code} \label{s:embedded-code}
+\subsection{Embedding the OCaml code in the C code} \label{s:embedded-code}
 
 The bytecode compiler in custom runtime mode ("ocamlc -custom")
 normally appends the bytecode to the executable file containing the
 custom runtime. This has two consequences. First, the final linking
-step must be performed by "ocamlc". Second, the Caml runtime library
+step must be performed by "ocamlc". Second, the OCaml runtime library
 must be able to find the name of the executable file from the
 command-line arguments. When using "caml_main(argv)" as in
 section~\ref{s:main-c}, this means that "argv[0]" or "argv[1]" must
@@ -1394,13 +1394,13 @@ contain the executable file name.
 An alternative is to embed the bytecode in the C code. The
 "-output-obj" option to "ocamlc" is provided for this purpose.  It
 causes the "ocamlc" compiler to output a C object file (".o" file,
-".obj" under Windows) containing the bytecode for the Caml part of the
+".obj" under Windows) containing the bytecode for the OCaml part of the
 program, as well as a "caml_startup" function. The C object file
 produced by "ocamlc -output-obj" can then be linked with C code using
 the standard C compiler, or stored in a C library.
 
 The "caml_startup" function must be called from the main C program in
-order to initialize the Caml runtime and execute the Caml
+order to initialize the OCaml runtime and execute the OCaml
 initialization code. Just like "caml_main", it takes one "argv"
 parameter containing the command-line parameters. Unlike "caml_main",
 this "argv" parameter is used only to initialize "Sys.argv", but not
@@ -1408,26 +1408,26 @@ for finding the name of the executable file.
 
 The "-output-obj" option can also be used to obtain the C source file.
 More interestingly, the same option can also produce directly a shared
-library (".so" file, ".dll" under Windows) that contains the Caml
-code, the Caml runtime system and any other static C code given to
+library (".so" file, ".dll" under Windows) that contains the OCaml
+code, the OCaml runtime system and any other static C code given to
 "ocamlc" (".o", ".a", respectively, ".obj", ".lib"). This use of
 "-output-obj" is very similar to a normal linking step, but instead of
-producing a main program that automatically runs the Caml code, it
-produces a shared library that can run the Caml code on demand. The
+producing a main program that automatically runs the OCaml code, it
+produces a shared library that can run the OCaml code on demand. The
 three possible behaviors of "-output-obj" are selected according
 to the extension of the resulting file (given with "-o").
 
 The native-code compiler "ocamlopt" also supports the "-output-obj"
 option, causing it to output a C object file or a shared library
-containing the native code for all Caml modules on the command-line,
-as well as the Caml startup code. Initialization is performed by
+containing the native code for all OCaml modules on the command-line,
+as well as the OCaml startup code. Initialization is performed by
 calling "caml_startup" as in the case of the bytecode compiler.
 
 For the final linking phase, in addition to the object file produced
 by "-output-obj", you will have to provide the OCaml runtime
 library ("libcamlrun.a" for bytecode, "libasmrun.a" for native-code),
-as well as all C libraries that are required by the Caml libraries
-used.  For instance, assume the Caml part of your program uses the
+as well as all C libraries that are required by the OCaml libraries
+used.  For instance, assume the OCaml part of your program uses the
 Unix library.  With "ocamlc", you should do:
 \begin{alltt}
         ocamlc -output-obj -o camlcode.o unix.cma {\it{other}} .cmo {\it{and}} .cma {\it{files}}
@@ -1456,7 +1456,7 @@ compilation of OCaml, as the variables "BYTECCLINKOPTS"
 attention are:
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
-Objective Caml have been compiled with the "/MD" flag, and therefore
+OCaml have been compiled with the "/MD" flag, and therefore
 all other object files linked with it should also be compiled with
 "/MD".
 \end{itemize}
@@ -1469,20 +1469,20 @@ by "ocamlopt -g" is embedded in a C program: stack backtrace
 information is available, but the backtrace mechanism needs to be
 turned on programmatically.   This can be achieved from the OCaml side
 by calling "Printexc.record_backtrace true" in the initialization of
-one of the Caml modules.  This can also be achieved from the C side
-by calling "caml_record_backtrace(Val_int(1));" in the Caml-C glue code.
+one of the OCaml modules.  This can also be achieved from the C side
+by calling "caml_record_backtrace(Val_int(1));" in the OCaml-C glue code.
 
 \section{Advanced example with callbacks}
 \pdfsection{Advanced example with callbacks}
 
 This section illustrates the callback facilities described in
-section~\ref{s:callback}. We are going to package some Caml functions
+section~\ref{s:callback}. We are going to package some OCaml functions
 in such a way that they can be linked with C code and called from C
-just like any C functions. The Caml functions are defined in the
-following "mod.ml" Caml source:
+just like any C functions. The OCaml functions are defined in the
+following "mod.ml" OCaml source:
 
 \begin{verbatim}
-(* File mod.ml -- some ``useful'' Caml functions *)
+(* File mod.ml -- some ``useful'' OCaml functions *)
 
 let rec fib n = if n < 2 then 1 else fib(n-1) + fib(n-2)
 
@@ -1497,7 +1497,7 @@ let _ = Callback.register "format_result" format_result
 Here is the C stub code for calling these functions from C:
 
 \begin{verbatim}
-/* File modwrap.c -- wrappers around the Caml functions */
+/* File modwrap.c -- wrappers around the OCaml functions */
 
 #include <stdio.h>
 #include <string.h>
@@ -1522,8 +1522,8 @@ char * format_result(int n)
 }
 \end{verbatim}
 
-We now compile the Caml code to a C object file and put it in a C
-library along with the stub code in "modwrap.c" and the Caml runtime system:
+We now compile the OCaml code to a C object file and put it in a C
+library along with the stub code in "modwrap.c" and the OCaml runtime system:
 \begin{verbatim}
         ocamlc -custom -output-obj -o modcaml.o mod.ml
         ocamlc -c modwrap.c
@@ -1539,7 +1539,7 @@ program, just like regular C functions. Just remember to call
 "caml_startup" once before.
 
 \begin{verbatim}
-/* File main.c -- a sample client for the Caml functions */
+/* File main.c -- a sample client for the OCaml functions */
 
 #include <stdio.h>
 
@@ -1547,7 +1547,7 @@ int main(int argc, char ** argv)
 {
   int result;
 
-  /* Initialize Caml code */
+  /* Initialize OCaml code */
   caml_startup(argv);
   /* Do some computation */
   result = fib(10);
@@ -1589,7 +1589,7 @@ finalization function is associated with the block.
 
 \item "int (*compare)(value v1, value v2)" \\
 The "compare" field contains a pointer to a C function that is
-called whenever two custom blocks are compared using Caml's generic
+called whenever two custom blocks are compared using OCaml's generic
 comparison operators ("=", "<>", "<=", ">=", "<", ">" and
 "compare").  The C function should return 0 if the data contained in
 the two blocks are structurally equal, a negative integer if the data
@@ -1602,7 +1602,7 @@ default comparison function simply raises "Failure".
 
 \item "long (*hash)(value v)" \\
 The "hash" field contains a pointer to a C function that is called
-whenever Caml's generic hash operator (see module "Hashtbl") is
+whenever OCaml's generic hash operator (see module "Hashtbl") is
 applied to a custom block.  The C function can return an arbitrary
 long integer representing the hash value of the data contained in the
 given custom block.  The hash value must be compatible with the
@@ -1616,7 +1616,7 @@ the custom block is ignored during hash computation.
 \item "void (*serialize)(value v, unsigned long * wsize_32, unsigned long * wsize_64)" \\
 The "serialize" field contains a pointer to a C function that is
 called whenever the custom block needs to be serialized (marshaled)
-using the Caml functions "output_value" or "Marshal.to_...".
+using the OCaml functions "output_value" or "Marshal.to_...".
 For a custom block, those functions first write the identifier of the
 block (as given by the "identifier" field) to the output stream,
 then call the user-provided "serialize" function.  That function is
@@ -1634,7 +1634,7 @@ serialize the custom block.
 \item "unsigned long (*deserialize)(void * dst)" \\
 The "deserialize" field contains a pointer to a C function that is
 called whenever a custom block with identifier "identifier" needs to
-be deserialized (un-marshaled) using the Caml functions "input_value"
+be deserialized (un-marshaled) using the OCaml functions "input_value"
 or "Marshal.from_...".  This user-provided function is responsible for
 reading back the data written by the "serialize" operation, using the
 "deserialize_..." functions defined in "<caml/intext.h>" and listed
@@ -1654,7 +1654,7 @@ using "register_custom_operations" (see below).
 Note: the "finalize", "compare", "hash", "serialize" and "deserialize"
 functions attached to custom block descriptors must never trigger a
 garbage collection.  Within these functions, do not call any of the
-Caml allocation functions, and do not perform a callback into Caml
+OCaml allocation functions, and do not perform a callback into OCaml
 code.  Do not use "CAMLparam" to register the parameters to these
 functions, and do not use "CAMLreturn" to return the result.
 
@@ -1665,12 +1665,12 @@ Custom blocks must be allocated via the "caml_alloc_custom" function.
 returns a fresh custom block, with room for \var{size} bytes of user
 data, and whose associated operations are given by \var{ops} (a
 pointer to a "struct custom_operations", usually statically allocated
-as a C global variable).  
+as a C global variable).
 
 The two parameters \var{used} and \var{max} are used to control the
 speed of garbage collection when the finalized object contains
 pointers to out-of-heap resources.  Generally speaking, the
-Caml incremental major collector adjusts its speed relative to the
+OCaml incremental major collector adjusts its speed relative to the
 allocation rate of the program.  The faster the program allocates, the
 harder the GC works in order to reclaim quickly unreachable blocks
 and avoid having large amount of ``floating garbage'' (unreferenced
@@ -1718,8 +1718,8 @@ has type "void *" and should be cast to the actual type of the data
 stored in the custom block.
 
 The contents of custom blocks are not scanned by the garbage
-collector, and must therefore not contain any pointer inside the Caml
-heap.  In other terms, never store a Caml "value" in a custom block,
+collector, and must therefore not contain any pointer inside the OCaml
+heap.  In other terms, never store an OCaml "value" in a custom block,
 and do not use "Field", "Store_field" nor "caml_modify" to access the data
 part of a custom block.  Conversely, any C data structure (not
 containing heap pointers) can be stored in a custom block.
@@ -1808,77 +1808,77 @@ collection, as described for "caml_alloc_custom".
 \section{Advanced topic: multithreading}
 \label{s:C-multithreading}
 
-Using multiple threads (shared-memory concurrency) in a mixed Caml/C
+Using multiple threads (shared-memory concurrency) in a mixed OCaml/C
 application requires special precautions, which are described in this
 section.
 
 \subsection{Registering threads created from C}
 
-Callbacks from C to Caml are possible only if the calling thread is
-known to the Caml run-time system.  Threads created from Caml (through
+Callbacks from C to OCaml are possible only if the calling thread is
+known to the OCaml run-time system.  Threads created from OCaml (through
 the "Thread.create" function of the system threads library) are
 automatically known to the run-time system.  If the application
-creates additional threads from C and wishes to callback into Caml
+creates additional threads from C and wishes to callback into OCaml
 code from these threads, it must first register them with the run-time
 system.  The following functions are declared in the include file
 "<caml/threads.h>".
 
 \begin{itemize}
 \item
-"caml_c_thread_register()" registers the calling thread with the Caml
+"caml_c_thread_register()" registers the calling thread with the OCaml
 run-time system.  Returns 1 on success, 0 on error.  Registering an
 already-register thread does nothing and returns 0.
 \item
 "caml_c_thread_unregister()"  must be called before the thread
-  terminates, to unregister it from the Caml run-time system.
+  terminates, to unregister it from the OCaml run-time system.
 Returns 1 on success, 0 on error.  If the calling thread was not
 previously registered, does nothing and returns 0.
 \end{itemize}
 
 \subsection{Parallel execution of long-running C code}
 
-The Caml run-time system is not reentrant: at any time, at most one
-thread can be executing Caml code or C code that uses the Caml
+The OCaml run-time system is not reentrant: at any time, at most one
+thread can be executing OCaml code or C code that uses the OCaml
 run-time system.  Technically, this is enforced by a ``master lock''
 that any thread must hold while executing such code.
 
-When Caml calls the C code implementing a primitive, the master lock
+When OCaml calls the C code implementing a primitive, the master lock
 is held, therefore the C code has full access to the facilities of the
-run-time system.  However, no other thread can execute Caml code
+run-time system.  However, no other thread can execute OCaml code
 concurrently with the C code of the primitive.
 
 If a C primitive runs for a long time or performs potentially blocking
 input-output operations, it can explicitly release the master lock,
-enabling other Caml threads to run concurrently with its operations.
-The C code must re-acquire the master lock before returning to Caml.
-This is achieved with the following functions, declared in 
+enabling other OCaml threads to run concurrently with its operations.
+The C code must re-acquire the master lock before returning to OCaml.
+This is achieved with the following functions, declared in
 the include file "<caml/threads.h>".
 
 \begin{itemize}
 \item
 "caml_release_runtime_system()"
-The calling thread releases the master lock and other Caml resources,
-enabling other threads to run Caml code in parallel with the execution
-of the calling thread.  
+The calling thread releases the master lock and other OCaml resources,
+enabling other threads to run OCaml code in parallel with the execution
+of the calling thread.
 \item
 "caml_acquire_runtime_system()"
-The calling thread re-acquires the master lock and other Caml
-resources.  It may block until no other thread uses the Caml run-time
+The calling thread re-acquires the master lock and other OCaml
+resources.  It may block until no other thread uses the OCaml run-time
 system.
 \end{itemize}
 
 After "caml_release_runtime_system()" was called and until
 "caml_acquire_runtime_system()" is called, the C code must not access
-any Caml data, nor call any function of the run-time system, nor call
-back into Caml code.  Consequently, arguments provided by Caml to the
+any OCaml data, nor call any function of the run-time system, nor call
+back into OCaml code.  Consequently, arguments provided by OCaml to the
 C primitive must be copied into C data structures before calling
-"caml_release_runtime_system()", and results to be returned to Caml
-must be encoded as Caml values after "caml_acquire_runtime_system()"
+"caml_release_runtime_system()", and results to be returned to OCaml
+must be encoded as OCaml values after "caml_acquire_runtime_system()"
 returns.
 
 Example: the following C primitive invokes "gethostbyname" to find the
 IP address of a host name.  The "gethostbyname" function can block for
-a long time, so we choose to release the Caml run-time system while it
+a long time, so we choose to release the OCaml run-time system while it
 is running.
 \begin{verbatim}
 CAMLprim stub_gethostbyname(value vname)
@@ -1888,34 +1888,34 @@ CAMLprim stub_gethostbyname(value vname)
   struct hostent * h;
 
   /* Copy the string argument to a C string, allocated outside the
-     Caml heap. */
+     OCaml heap. */
   name = stat_alloc(caml_string_length(vname) + 1);
   strcpy(name, String_val(vname));
-  /* Release the Caml run-time system */
+  /* Release the OCaml run-time system */
   caml_release_runtime_system();
   /* Resolve the name */
   h = gethostbyname(name);
-  /* Re-acquire the Caml run-time system */
+  /* Re-acquire the OCaml run-time system */
   caml_acquire_runtime_system();
-  /* Encode the relevant fields of h as the Caml value vres */
+  /* Encode the relevant fields of h as the OCaml value vres */
   ... /* Omitted */
-  /* Return to Caml */
+  /* Return to OCaml */
   CAMLreturn (vres);
 }
 \end{verbatim}
 
-Callbacks from C to Caml must be performed while holding the master
-lock to the Caml run-time system.  This is naturally the case if the
+Callbacks from C to OCaml must be performed while holding the master
+lock to the OCaml run-time system.  This is naturally the case if the
 callback is performed by a C primitive that did not release the
 run-time system.  If the C primitive released the run-time system
 previously, or the callback is performed from other C code that was
-not invoked from Caml (e.g. an event loop in a GUI application), the
+not invoked from OCaml (e.g. an event loop in a GUI application), the
 run-time system must be acquired before the callback and released
 after:
 \begin{verbatim}
   caml_acquire_runtime_system();
-  /* Resolve Caml function vfun to be invoked */
-  /* Build Caml argument varg to the callback */
+  /* Resolve OCaml function vfun to be invoked */
+  /* Build OCaml argument varg to the callback */
   vres = callback(vfun, varg);
   /* Copy relevant parts of result vres to C data structures */
   caml_release_runtime_system();
@@ -1931,31 +1931,31 @@ names, declared in "<caml/signals.h>":
   "caml_acquire_runtime_system"
 \end{itemize}
 Intuition: a ``blocking section'' is a piece of C code that does not
-use the Caml run-time system, typically a blocking input/output operation.
+use the OCaml run-time system, typically a blocking input/output operation.
 
-\section{Building mixed C/Caml libraries: "ocamlmklib"} \label{s-ocamlmklib}
+\section{Building mixed C/OCaml libraries: "ocamlmklib"} \label{s-ocamlmklib}
 
 The "ocamlmklib" command facilitates the construction of libraries
-containing both Caml code and C code, and usable both in static
+containing both OCaml code and C code, and usable both in static
 linking and dynamic linking modes.  This command is available under
 Windows since Objective Caml 3.11 and under other operating systems since
 Objective Caml 3.03.
 
 The "ocamlmklib" command takes three kinds of arguments:
 \begin{itemize}
-\item Caml source files and object files (".cmo", ".cmx", ".ml")
-comprising the Caml part of the library;
+\item OCaml source files and object files (".cmo", ".cmx", ".ml")
+comprising the OCaml part of the library;
 \item C object files (".o", ".a", respectively, ".obj", ".lib")
   comprising the C part of the library;
 \item Support libraries for the C part ("-l"\var{lib}).
 \end{itemize}
 It generates the following outputs:
 \begin{itemize}
-\item A Caml bytecode library ".cma" incorporating the ".cmo" and
-".ml" Caml files given as arguments, and automatically referencing the
+\item An OCaml bytecode library ".cma" incorporating the ".cmo" and
+".ml" OCaml files given as arguments, and automatically referencing the
 C library generated with the C object files.
-\item A Caml native-code library ".cmxa" incorporating the ".cmx" and
-".ml" Caml files given as arguments, and automatically referencing the
+\item An OCaml native-code library ".cmxa" incorporating the ".cmx" and
+".ml" OCaml files given as arguments, and automatically referencing the
 C library generated with the C object files.
 \item If dynamic linking is supported on the target platform, a
 ".so" (respectively, ".dll") shared library built from the C object files given as arguments,
@@ -1981,7 +1981,7 @@ libraries ("-l"\var{lib}).
 the bytecode compiler.
 \item["-ocamlopt" \var{cmd}] Use \var{cmd} instead of "ocamlopt" to call
 the native-code compiler.
-\item["-o" \var{output}] Set the name of the generated Caml library.
+\item["-o" \var{output}] Set the name of the generated OCaml library.
 "ocamlmklib" will generate \var{output}".cma" and/or \var{output}".cmxa".
 If not specified, defaults to "a".
 \item["-oc" \var{outputc}] Set the name of the generated C library.
@@ -1990,12 +1990,12 @@ libraries are supported) and "lib"\var{outputc}".a".
 If not specified, defaults to the output name given with "-o".
 \end{options}
 
-\paragraph{Example} Consider a Caml interface to the standard "libz"
+\paragraph{Example} Consider an OCaml interface to the standard "libz"
 C library for reading and writing compressed files.  Assume this
 library resides in "/usr/local/zlib".  This interface is
-composed of a Caml part "zip.cmo"/"zip.cmx" and a C part "zipstubs.o"
+composed of an OCaml part "zip.cmo"/"zip.cmx" and a C part "zipstubs.o"
 containing the stub code around the "libz" entry points.  The
-following command builds the Caml libraries "zip.cma" and "zip.cmxa",
+following command builds the OCaml libraries "zip.cma" and "zip.cmxa",
 as well as the companion C libraries "dllzip.so" and "libzip.a":
 \begin{verbatim}
 ocamlmklib -o zip zip.cmo zip.cmx zipstubs.o -lz -L/usr/local/zlib

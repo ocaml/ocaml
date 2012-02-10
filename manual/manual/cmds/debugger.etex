@@ -482,17 +482,17 @@ command-line option.
 
 \begin{options}
 \item["cd" \var{directory}]
-Set the working directory for "camldebug" to \var{directory}.
+Set the working directory for "ocamldebug" to \var{directory}.
 
 \item["pwd"]
-Print the working directory for "camldebug".
+Print the working directory for "ocamldebug".
 \end{options}
 
 \subsection{Turning reverse execution on and off}
 
 In some cases, you may want to turn reverse execution off. This speeds
 up the program execution, and is also sometimes useful for interactive
-programs. 
+programs.
 
 Normally, the debugger takes checkpoints of the program state from
 time to time. That is, it makes a copy of the current state of the
@@ -613,9 +613,9 @@ Read debugger commands from the script \var{filename}.
 
 The most user-friendly way to use the debugger is to run it under Emacs.
 See the file "emacs/README" in the distribution for information on how
-to load the Emacs Lisp files for Caml support.
+to load the Emacs Lisp files for OCaml support.
 
-The Caml debugger is started under Emacs by the command "M-x
+The OCaml debugger is started under Emacs by the command "M-x
 camldebug", with argument the name of the executable file
 \var{progname} to debug.  Communication with the debugger takes place
 in an Emacs buffer named  "*camldebug-"\var{progname}"*". The editing
@@ -654,7 +654,7 @@ current frame.
 current frame.
 \end{options}
 
-In all buffers in Caml editing mode, the following debugger commands
+In all buffers in OCaml editing mode, the following debugger commands
 are also available:
 
 \begin{options}

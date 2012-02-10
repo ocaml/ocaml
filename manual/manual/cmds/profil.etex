@@ -3,7 +3,7 @@
 
 This chapter describes how the execution of OCaml
 programs can be profiled, by recording how many times functions are
-called, branches of conditionals are taken, \ldots 
+called, branches of conditionals are taken, \ldots
 
 \section{Compiling for profiling}
 
@@ -91,7 +91,7 @@ The following options are recognized by "ocamlprof":
 
 \begin{options}
 
-\item["-f" \var{dumpfile}] 
+\item["-f" \var{dumpfile}]
 Specifies an alternate dump file of profiling information to be read.
 
 \item["-F" \var{string}]
@@ -135,11 +135,11 @@ the program:
         ./myprog
         gprof myprog
 \end{alltt}
-Caml function names in the output of "gprof" have the following format:
+OCaml function names in the output of "gprof" have the following format:
 \begin{alltt}
         \var{Module-name}_\var{function-name}_\var{unique-number}
 \end{alltt}
-Other functions shown are either parts of the Caml run-time system or
+Other functions shown are either parts of the OCaml run-time system or
 external C functions linked with the program.
 
 The output of "gprof" is described in the Unix manual page for

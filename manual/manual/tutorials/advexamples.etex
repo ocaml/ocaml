@@ -562,7 +562,7 @@ class ['observer, 'event] subject =
 \end{caml_example}
 The difficulty usually relies  in defining instances of the pattern above
 by inheritance. This can be done in a natural and obvious manner in
-Ocaml, as shown on the following example manipulating windows.
+OCaml, as shown on the following example manipulating windows.
 \begin{caml_example}
 type event = Raise | Resize | Move;;
 let string_of_event = function
@@ -640,6 +640,6 @@ window#move 1; window#resize 2;;
 %
 
 
-% LocalWords:  Caml objectexamples bsection init caml val int Oo succ incr ref
+% LocalWords:  objectexamples bsection init caml val int Oo succ incr ref
 % LocalWords:  typecheck leq bool cp eval sig struct ABSPOINT Abspoint iter neg
 % LocalWords:  accu mem rec repr Euro euro ccp inlined ostring len concat OCaml

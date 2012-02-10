@@ -79,7 +79,7 @@ indentation and line breaking \\
 \subsubsection{System interface:}
 \begin{tabular}{lll}
 "Arg" & p.~\pageref{Arg} & parsing of command line arguments \\
-"Callback" & p.~\pageref{Callback} & registering Caml functions to
+"Callback" & p.~\pageref{Callback} & registering OCaml functions to
 be called from C \\
 "Filename" & p.~\pageref{Filename} & operations on file names \\
 "Gc" & p.~\pageref{Gc} & memory management control and statistics \\
@@ -94,7 +94,7 @@ be called from C \\
 \item \ahref{libref/Array.html}{Module \texttt{Array}: array operations}
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
 \item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible string buffers}
-\item \ahref{libref/Callback.html}{Module \texttt{Callback}: registering Caml values with the C runtime}
+\item \ahref{libref/Callback.html}{Module \texttt{Callback}: registering OCaml values with the C runtime}
 \item \ahref{libref/Char.html}{Module \texttt{Char}: character operations}
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
 \item \ahref{libref/Digest.html}{Module \texttt{Digest}: MD5 message digest}

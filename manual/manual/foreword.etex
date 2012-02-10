@@ -35,26 +35,26 @@ systems, including Linux and \hbox{MacOS~X}.
 
 \section*{License}
 
-The OCaml system is copyright \copyright\ 1996--2011
+The OCaml system is copyright \copyright\ 1996--2012
 Institut National de Recherche en Informatique et en
 Automatique (INRIA).
-INRIA holds all ownership rights to the OCaml system. 
+INRIA holds all ownership rights to the OCaml system.
 
 The OCaml system is open source and can be freely
 redistributed.  See the file "LICENSE" in the distribution for
 licensing information.
 
-The present documentation is copyright \copyright\ \number\year\ 
+The present documentation is copyright \copyright\ \number\year\
 Institut National de Recherche en Informatique et en
 Automatique (INRIA).  The OCaml documentation and user's
 manual may be reproduced and distributed in whole or
-in part, subject to the following conditions: 
+in part, subject to the following conditions:
 \begin{itemize}
 \item The copyright notice above and this permission notice must be
 preserved complete on all complete or partial copies.
 \item Any translation or derivative work of the OCaml
 documentation and user's manual must be approved by the authors in
-writing before distribution. 
+writing before distribution.
 \item If you distribute the OCaml
 documentation and user's manual in part, instructions for obtaining
 the complete version of this manual must be included, and a
@@ -73,7 +73,7 @@ additional information on OCaml.
 \end{latexonly}
 
 \begin{htmlonly}
-The complete OCaml distribution can be accessed via the 
+The complete OCaml distribution can be accessed via the
 \url{http://caml.inria.fr/}{Caml Web site}.
 The \url{http://caml.inria.fr/}{Caml Web site}
 contains a lot of additional information on OCaml.

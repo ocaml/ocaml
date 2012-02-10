@@ -40,7 +40,7 @@ let f ~x:x1 ~y:y1 = x1 - y1;;
 f ~x:3 ~y:2;;
 \end{caml_example}
 
-Labels obey the same rules as other identifiers in Caml, that is you
+Labels obey the same rules as other identifiers in OCaml, that is you
 cannot use a reserved keyword (like "in" or "to") as label.
 
 Formal parameters and arguments are matched according to their
@@ -340,7 +340,7 @@ List.map f [`On; `Off];;
 "[>`Off|`On] list" means that to match this list, you should at
 least be able to match "`Off" and "`On", without argument.
 "[<`On|`Off|`Number of int]" means that "f" may be applied to "`Off",
-"`On" (both without argument), or "`Number" $n$ where 
+"`On" (both without argument), or "`Number" $n$ where
 $n$ is an integer.
 The ">" and "<" inside the variant type shows that they may still be
 refined, either by defining more tags or allowing less. As such they
@@ -353,7 +353,7 @@ When writing type annotations, one will most often describe fixed
 variant types, that is types that can be no longer refined. This is
 also the case for type abbreviations. Such types do not contain "<" or
 ">", but just an enumeration of the tags and their associated types,
-just like in a normal datatype definition. 
+just like in a normal datatype definition.
 \begin{caml_example}
 type 'a vlist = [`Nil | `Cons of 'a * 'a vlist];;
 let rec map f : 'a vlist -> 'b vlist = function

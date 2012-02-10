@@ -26,7 +26,7 @@ expressions with attached semantic actions, in the style of
 \begin{alltt}
         ocamllex \var{lexer}.mll
 \end{alltt}
-produces Caml code for a lexical analyzer in file \var{lexer}".ml".
+produces OCaml code for a lexical analyzer in file \var{lexer}".ml".
 This file defines one lexing function per entry point in the lexer
 definition. These functions have the same names as the entry
 points. Lexing functions take as argument a lexer buffer, and return
@@ -51,7 +51,7 @@ The following command-line options are recognized by "ocamllex".
 
 \item["-ml"]
 Output code that does not use OCaml's built-in automata
-interpreter. Instead, the automaton is encoded by Caml functions.
+interpreter. Instead, the automaton is encoded by OCaml functions.
 This option mainly is useful for debugging "ocamllex", using it for
 production lexers is not recommended.
 
@@ -63,10 +63,10 @@ The default is the input file name with its extension replaced by ".ml".
 Quiet mode.  "ocamllex" normally outputs informational messages
 to standard output.  They are suppressed if option "-q" is used.
 
-\item["-v" or "-version"] 
+\item["-v" or "-version"]
 Print version string and exit.
 
-\item["-vnum"] 
+\item["-vnum"]
 Print short version number and exit.
 
 \item["-help" or "--help"]
@@ -91,13 +91,13 @@ and \ldots
 \{ \var{trailer} \}
 \end{alltt}
 \endgroup
-Comments are delimited by "(*" and "*)", as in Caml.
+Comments are delimited by "(*" and "*)", as in OCaml.
 The "parse" keyword, can be replaced by the "shortest" keyword, with
 the semantic consequences explained below.
 
 
 \subsection{Header and trailer}
-The {\it header} and {\it trailer} sections are arbitrary Caml
+The {\it header} and {\it trailer} sections are arbitrary OCaml
 text enclosed in curly braces. Either or both can be omitted. If
 present, the header text is copied as is at the beginning of the
 output file and the trailer text at the end. Typically, the
@@ -115,12 +115,12 @@ In regular expressions that follow this declaration, the identifier
 
 \subsection{Entry points}
 
-The names of the entry points must be valid identifiers for Caml
+The names of the entry points must be valid identifiers for OCaml
 values (starting with a lowercase letter).
 Similarily, the arguments \texttt{\var{arg$_1$}\ldots{}
-\var{arg$_n$}} must be valid identifiers for Caml.
-Each entry point becomes a
-Caml function that takes $n+1$ arguments,
+\var{arg$_n$}} must be valid identifiers for OCaml.
+Each entry point becomes an
+OCaml function that takes $n+1$ arguments,
 the extra implicit last argument being of type "Lexing.lexbuf".
 Characters are read from the "Lexing.lexbuf" argument and matched
 against the regular expressions provided in the rule, until a prefix
@@ -145,7 +145,7 @@ may facilitate the use of "ocamllex" as a simple text processing tool.
 \subsection{Regular expressions}
 
 The regular expressions are in the style of "lex", with a more
-Caml-like syntax.
+OCaml-like syntax.
 \begin{syntax}
 regexp:
   \ldots
@@ -192,7 +192,7 @@ Match the difference of the two specified character sets.
 
 \item[@regexp '*'@]
 (Repetition.) Match the concatenation of zero or more
-strings that match @regexp@. 
+strings that match @regexp@.
 
 \item[@regexp '+'@]
 (Strict repetition.) Match the concatenation of one or more
@@ -225,7 +225,7 @@ then concatenation, then "|" (alternation), then "as".
 
 \subsection{Actions}
 
-The actions are arbitrary Caml expressions. They are evaluated in
+The actions are arbitrary OCaml expressions. They are evaluated in
 a context where the identifiers defined by using the "as" construct
 are bound to subparts of the matched string.
 Additionally, "lexbuf" is bound to the current lexer
@@ -291,7 +291,7 @@ can be matched without binding this variable.
 \end{itemize}
 For instance, in
 \verb+('a' as x) | ( 'a' (_ as x) )+ the variable \verb+x+  is of type
-"char", whereas in 
+"char", whereas in
 \verb+("ab" as x) | ( 'a' (_ as x) ? )+ the variable \verb+x+  is of type
 "string option".
 
@@ -322,7 +322,7 @@ Assuming the input file is \var{grammar}".mly", executing
 \begin{alltt}
         ocamlyacc \var{options} \var{grammar}.mly
 \end{alltt}
-produces Caml code for a parser in the file \var{grammar}".ml",
+produces OCaml code for a parser in the file \var{grammar}".ml",
 and its interface in file \var{grammar}".mli".
 
 The generated module defines one parsing function per entry point in
@@ -352,11 +352,11 @@ Grammar definitions have the following format:
 
 Comments are enclosed between \verb|/*| and \verb|*/| (as in C) in the
 ``declarations'' and ``rules'' sections, and between \verb|(*| and
-\verb|*)| (as in Caml) in the ``header'' and ``trailer'' sections.
+\verb|*)| (as in OCaml) in the ``header'' and ``trailer'' sections.
 
 \subsection{Header and trailer}
 
-The header and the trailer sections are Caml code that is copied
+The header and the trailer sections are OCaml code that is copied
 as is into file \var{grammar}".ml". Both sections are optional. The header
 goes at the beginning of the output file; it usually contains
 "open" directives and auxiliary functions required by the semantic
@@ -378,7 +378,7 @@ Declare the given symbols @constr \ldots constr@ as tokens with an
 attached attribute of the
 given type. These symbols are added as constructors with arguments of
 the given type for the "token" concrete type. The @typexpr@ part is
-an arbitrary Caml type expression, except that all type
+an arbitrary OCaml type expression, except that all type
 constructor names must be fully qualified (e.g. "Modname.typename")
 for all types except standard built-in types, even if the proper
 \verb|open| directives (e.g. \verb|open Modname|) were given in the
@@ -398,7 +398,7 @@ Specify the type of the semantic attributes for the given symbols.
 This is mandatory for start symbols only. Other nonterminal symbols
 need not be given types by hand: these types will be inferred when
 running the output files through the OCaml compiler (unless the
-\verb"-s" option is in effect). The @typexpr@ part is an arbitrary Caml
+\verb"-s" option is in effect). The @typexpr@ part is an arbitrary OCaml
 type expression, except that all type constructor names must be
 fully qualified, as explained above for "%token".
 
@@ -461,7 +461,7 @@ right-hand side part, to override the default precedence and
 associativity of the rule with the precedence and associativity of the
 given symbol.
 
-Semantic actions are arbitrary Caml expressions, that
+Semantic actions are arbitrary OCaml expressions, that
 are evaluated to produce the semantic attribute attached to
 the defined nonterminal. The semantic actions can access the
 semantic attributes of the symbols in the right-hand side of
@@ -474,7 +474,7 @@ resynchronization points, as in "yacc".
 
 Actions occurring in the middle of rules are not supported.
 
-Nonterminal symbols are like regular Caml symbols, except that they
+Nonterminal symbols are like regular OCaml symbols, except that they
 cannot end with "'" (single quote).
 
 \subsection{Error handling}

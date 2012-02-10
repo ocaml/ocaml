@@ -3,32 +3,32 @@
 
 The "bigarray" library implements large, multi-dimensional, numerical
 arrays.  These arrays are called ``big arrays'' to distinguish them
-from the standard Caml arrays described in 
+from the standard OCaml arrays described in
 \ifouthtml
 \ahref{libref/Array.html}{Module \texttt{Array}}.
 \else
 section~\ref{Array}.
 \fi
-The main differences between ``big arrays''  and standard Caml arrays
+The main differences between ``big arrays''  and standard OCaml arrays
 are as follows:
 \begin{itemize}
-\item Big arrays are not limited in size, unlike Caml arrays
+\item Big arrays are not limited in size, unlike OCaml arrays
 ("float array" are limited to 2097151 elements on a 32-bit platform,
 other "array" types to 4194303 elements).
 \item Big arrays are multi-dimensional.  Any number of dimensions
-between 1 and 16 is supported.  In contrast, Caml arrays are
+between 1 and 16 is supported.  In contrast, OCaml arrays are
 mono-dimensional and require encoding multi-dimensional arrays as
 arrays of arrays.
 \item Big arrays can only contain integers and floating-point
-numbers, while Caml arrays can contain arbitrary Caml data types.
+numbers, while OCaml arrays can contain arbitrary OCaml data types.
 However, big arrays provide more space-efficient storage of integer
 and floating-point elements, in particular because they support
 ``small'' types such as single-precision floats and 8 and 16-bit
-integers, in addition to the standard Caml types of double-precision
+integers, in addition to the standard OCaml types of double-precision
 floats and 32 and 64-bit integers.
 \item The memory layout of big arrays is entirely compatible with that
 of arrays in C and Fortran, allowing large arrays to be passed back
-and forth between Caml code and C / Fortran code with no data copying
+and forth between OCaml code and C / Fortran code with no data copying
 at all.
 \item Big arrays support interesting high-level operations that normal
 arrays do not provide efficiently, such as extracting sub-arrays and
@@ -59,9 +59,9 @@ start "ocaml" and type "#load \"bigarray.cma\";;".
 \input{Bigarray.tex}
 \fi
 
-\section{Big arrays in the Caml-C interface}
+\section{Big arrays in the OCaml-C interface}
 
-C stub code that interface C or Fortran code with Caml code, as
+C stub code that interface C or Fortran code with OCaml code, as
 described in chapter~\ref{c:intf-c}, can exploit big arrays as
 follows.
 
@@ -71,14 +71,14 @@ The include file "<caml/bigarray.h>" must be included in the C stub
 file.  It declares the functions, constants and macros discussed
 below.
 
-\subsection{Accessing a Caml bigarray from C or Fortran}
+\subsection{Accessing an OCaml bigarray from C or Fortran}
 
-If \var{v} is a Caml "value" representing a big array, the expression
+If \var{v} is a OCaml "value" representing a big array, the expression
 "Data_bigarray_val("\var{v}")" returns a pointer to the data part of the array.
 This pointer is of type "void *" and can be cast to the appropriate C
 type for the array (e.g. "double []", "char [][10]", etc).
 
-Various characteristics of the Caml big array can be consulted from C
+Various characteristics of the OCaml big array can be consulted from C
 as follows:
 \begin{tableau}{|l|l|}{C expression}{Returns}
 \entree{"Bigarray_val("\var{v}")->num_dims"}{number of dimensions}
@@ -117,16 +117,16 @@ to a C function and a Fortran function.
     }
 \end{verbatim}
 
-\subsection{Wrapping a C or Fortran array as a Caml big array}
+\subsection{Wrapping a C or Fortran array as an OCaml big array}
 
 A pointer \var{p} to an already-allocated C or Fortran array can be
-wrapped and returned to Caml as a big array using the "alloc_bigarray"
+wrapped and returned to OCaml as a big array using the "alloc_bigarray"
 or "alloc_bigarray_dims" functions.
 \begin{itemize}
 \item
 "alloc_bigarray("\var{kind} "|" \var{layout}, \var{numdims}, \var{p}, \var{dims}")"
 
-Return a Caml big array wrapping the data pointed to by \var{p}.
+Return an OCaml big array wrapping the data pointed to by \var{p}.
 \var{kind} is the kind of array elements (one of the "BIGARRAY_"
 kind constants above).  \var{layout} is "BIGARRAY_C_LAYOUT" for an
 array with C layout and "BIGARRAY_FORTRAN_LAYOUT" for an array with
@@ -144,7 +144,7 @@ passed as an array.
 \end{itemize}
 %
 The following example illustrates how statically-allocated C and
-Fortran arrays can be made available to Caml.
+Fortran arrays can be made available to OCaml.
 \begin{verbatim}
     extern long my_c_array[100][200];
     extern float my_fortran_array_[300][400];

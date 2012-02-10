@@ -3,7 +3,7 @@
 
 This chapter describes the toplevel system for OCaml, that permits interactive use of the OCaml system
 through a read-eval-print loop. In this mode, the system repeatedly
-reads Caml phrases from the input, then typechecks, compile and
+reads OCaml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
 any. The system prints a "#" (sharp) prompt before reading each
 phrase.
@@ -342,7 +342,7 @@ results in the error ``Reference to undefined global `\ldots'\,''.
 Note that entering "open "\var{Mod} merely accesses the compiled
 interface (".cmi" file) for \var{Mod}, but does not load the
 implementation of \var{Mod}, and does not cause any error if no
-implementation of \var{Mod} has been loaded. The error 
+implementation of \var{Mod} has been loaded. The error
 ``reference to undefined global \var{Mod}'' will occur only when
 executing a value or module definition that refers to \var{Mod}.
 
@@ -355,7 +355,7 @@ error messages.
 
 \item[Cannot find file \var{filename}]
 The named file could not be found in the current directory, nor in the
-directories of the search path. 
+directories of the search path.
 
 If \var{filename} has the format \var{mod}".cmi", this
 means you have referenced the compilation unit \var{mod}, but its
@@ -383,7 +383,7 @@ with "#load". See section~\ref{s:toplevel-modules} above.
 \section{Building custom toplevel systems: "ocamlmktop"}
 
 The "ocamlmktop" command builds OCaml toplevels that
-contain user code preloaded at start-up. 
+contain user code preloaded at start-up.
 
 The "ocamlmktop" command takes as argument a set of ".cmo" and ".cma"
 files, and links them with the object files that implement the OCaml toplevel.

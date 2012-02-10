@@ -20,7 +20,7 @@ The usage for "ocamlrun" is:
 The first non-option argument is taken to be the name of the file
 containing the executable bytecode. (That file is searched in the
 executable path as well as in the current directory.) The remaining
-arguments are passed to the Caml program, in the string array
+arguments are passed to the OCaml program, in the string array
 "Sys.argv". Element 0 of this array is the name of the
 bytecode executable file; elements 1 to \var{n} are the remaining
 arguments \nth{arg}{1} to \nth{arg}{n}.
@@ -28,16 +28,16 @@ arguments \nth{arg}{1} to \nth{arg}{n}.
 As mentioned in chapter~\ref{c:camlc}, the bytecode executable files
 produced by the "ocamlc" command are self-executable, and manage to
 launch the "ocamlrun" command on themselves automatically. That is,
-assuming "caml.out" is a bytecode executable file,
+assuming "a.out" is a bytecode executable file,
 \begin{alltt}
-        caml.out \nth{arg}{1} ... \nth{arg}{n}
+        a.out \nth{arg}{1} ... \nth{arg}{n}
 \end{alltt}
 works exactly as
 \begin{alltt}
-        ocamlrun caml.out \nth{arg}{1} ... \nth{arg}{n}
+        ocamlrun a.out \nth{arg}{1} ... \nth{arg}{n}
 \end{alltt}
 Notice that it is not possible to pass options to "ocamlrun" when
-invoking "caml.out" directly.
+invoking "a.out" directly.
 
 \begin{windows}
 Under several versions of Windows, bytecode executable files are
@@ -67,13 +67,13 @@ section~\ref{s-ocamlrun-dllpath}).
 \item["-p"]
 Print the names of the primitives known to this version of
 "ocamlrun" and exit.
-\item["-v"] 
+\item["-v"]
 Direct the memory manager to print some progress messages on
 standard error.  This is equivalent to setting "v=63" in the
 "OCAMLRUNPARAM" environment variable (see below).
-\item["-version"] 
+\item["-version"]
 Print version string and exit.
-\item["-vnum"] 
+\item["-vnum"]
 Print short version number and exit.
 
 \end{options}
@@ -91,7 +91,7 @@ The following environment variables are also consulted:
   dynamic loading (see section~\ref{s-ocamlrun-dllpath}).  If not set,
   default to the library directory specified when compiling OCaml.
 
-\item["OCAMLRUNPARAM"] Set the runtime system options 
+\item["OCAMLRUNPARAM"] Set the runtime system options
   and garbage collection parameters.
   (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
   This variable must be a sequence of parameter specifications.
@@ -99,14 +99,14 @@ The following environment variables are also consulted:
   sign, a decimal number (or an hexadecimal number prefixed by "0x"),
   and an optional multiplier.  There are
   nine options, six of which correspond to the fields of the
-  "control" record documented in 
+  "control" record documented in
 \ifouthtml
  \ahref{libref/Gc.html}{Module \texttt{Gc}}.
 \else
  section~\ref{Gc}.
 \fi
   \begin{options}
-  \item[b] (backtrace) Trigger the printing of a stack backtrace 
+  \item[b] (backtrace) Trigger the printing of a stack backtrace
         when an uncaught exception aborts the program.
         This option takes no argument.
   \item[p] (parser trace) Turn on debugging support for
@@ -189,7 +189,7 @@ directories listed in the file "/etc/ld.so.conf" and the environment
 variable "LD_LIBRARY_PATH".  Under Windows, these include the Windows
 system directories, plus the directories listed in the "PATH"
 environment variable.
-\end{enumerate} 
+\end{enumerate}
 
 \section{Common errors}
 
@@ -248,7 +248,7 @@ to "ocamlrun", or with the "OCAMLRUNPARAM" environment variable set to
 messages, this is probably a looping recursive function. If it
 displays lots of ``"Growing heap"\ldots'' messages, with the heap size
 growing slowly, this is probably an attempt to construct a data
-structure with too many (infinitely many?) cells. If it displays few 
+structure with too many (infinitely many?) cells. If it displays few
 ``"Growing heap"\ldots'' messages, but with a huge increment in the
 heap size, this is probably an attempt to build an excessively large
 array or string.

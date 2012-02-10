@@ -202,7 +202,7 @@ otherwise:
       new         object      of          open        or          private
       rec         sig         struct      then        to          true
       try         type        val         virtual     when        while
-      with        
+      with
 \end{verbatim}
 %
 The following character sequences are also keywords:
@@ -237,7 +237,7 @@ linenum-directive:
 ;
 \end{syntax}
 
-Preprocessors that generate Caml source code can insert line number
+Preprocessors that generate OCaml source code can insert line number
 directives in their output so that error messages produced by the
 compiler contain line numbers and file names referring to the source
 file before preprocessing, instead of after preprocessing.

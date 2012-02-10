@@ -12,14 +12,14 @@ module system.
 \section{Basics}
 \pdfsection{Basics}
 
-For this overview of Caml, we use the interactive system, which
+For this overview of OCaml, we use the interactive system, which
 is started by running "ocaml" from the Unix shell, or by launching the
 "OCamlwin.exe" application under Windows. This tutorial is presented
 as the transcript of a session with the interactive system:
 lines starting with "#" represent user input; the system responses are
 printed below, without a leading "#".
 
-Under the interactive system, the user types Caml phrases, terminated
+Under the interactive system, the user types OCaml phrases, terminated
 by ";;", in response to the "#" prompt, and the system compiles them
 on the fly, executes them, and prints the outcome of evaluation.
 Phrases are either simple expressions, or "let" definitions of
@@ -30,7 +30,7 @@ let pi = 4.0 *. atan 1.0;;
 let square x = x *. x;;
 square(sin pi) +. square(cos pi);;
 \end{caml_example}
-The Caml system computes both the value and the type for
+The OCaml system computes both the value and the type for
 each phrase. Even function parameters need no explicit type declaration:
 the system infers their types from their usage in the
 function. Notice also that integers and floating-point numbers are
@@ -50,7 +50,7 @@ fib 10;;
 \section{Data types}
 \pdfsection{Data types}
 
-In addition to integers and floating-point numbers,  Caml offers the
+In addition to integers and floating-point numbers, OCaml offers the
 usual basic data types: booleans, characters, and character strings.
 \begin{caml_example}
 (1 < 2) = false;;
@@ -69,13 +69,13 @@ semicolon-separated elements, or built from the empty list "[]"
 let l = ["is"; "a"; "tale"; "told"; "etc."];;
 "Life" :: l;;
 \end{caml_example}
-As with all other Caml data structures, lists do not need to be
+As with all other OCaml data structures, lists do not need to be
 explicitly allocated and deallocated from memory: all memory
-management is entirely automatic in Caml. Similarly, there is no
-explicit handling of pointers: the Caml compiler silently introduces
+management is entirely automatic in OCaml. Similarly, there is no
+explicit handling of pointers: the OCaml compiler silently introduces
 pointers where necessary.
 
-As with most Caml data structures, inspecting and destructuring lists
+As with most OCaml data structures, inspecting and destructuring lists
 is performed by pattern-matching. List patterns have the exact same
 shape as list expressions, with identifier representing unspecified
 parts of the list. As an example, here is insertion sort on a list:
@@ -96,7 +96,7 @@ The type inferred for "sort", "'a list -> 'a list", means that "sort"
 can actually apply to lists of any type, and returns a list of the
 same type. The type "'a" is a {\em type variable}, and stands for any
 given type. The reason why "sort" can apply to lists of any type is
-that the comparisons ("=", "<=", etc.) are {\em polymorphic} in Caml:
+that the comparisons ("=", "<=", etc.) are {\em polymorphic} in OCaml:
 they operate between any two values of the same type. This makes
 "sort" itself polymorphic over all list types.
 \begin{caml_example}
@@ -106,16 +106,16 @@ sort [3.14; 2.718];;
 
 The "sort" function above does not modify its input list: it builds
 and returns a new list containing the same elements as the input list,
-in ascending order. There is actually no way in Caml to modify
+in ascending order. There is actually no way in OCaml to modify
 in-place a list once it is built: we say that lists are  {\em immutable}
-data structures. Most Caml data structures are immutable, but a few
+data structures. Most OCaml data structures are immutable, but a few
 (most notably arrays) are {\em mutable}, meaning that they can be
 modified in-place at any time.
 
 \section{Functions as values}
 \pdfsection{Functions as values}
 
-Caml is a  functional language: functions in the full mathematical
+OCaml is a  functional language: functions in the full mathematical
 sense are supported and can be passed around freely just as any other
 piece of data. For instance, here is a "deriv" function that takes any
 float function as argument and returns an approximation of its
@@ -134,7 +134,7 @@ let cos2 = compose square cos;;
 Functions that take other functions as arguments are called
 ``functionals'', or ``higher-order functions''. Functionals are
 especially useful to provide iterators or similar generic operations
-over a data structure. For instance, the standard Caml library
+over a data structure. For instance, the standard OCaml library
 provides a "List.map" functional that applies a given function to each
 element of a list, and returns the list of the results:
 \begin{caml_example}
@@ -163,7 +163,7 @@ let add_ratio r1 r2 =
   {num = r1.num * r2.denum + r2.num * r1.denum;
    denum = r1.denum * r2.denum};;
 add_ratio {num=1; denum=3} {num=2; denum=5};;
-\end{caml_example}  
+\end{caml_example}
 
 The declaration of a variant type lists all possible shapes for values
 of that type. Each case is identified by a name, called a constructor,
@@ -237,7 +237,7 @@ let rec insert x btree =
 \pdfsection{Imperative features}
 
 Though all examples so far were written in purely applicative style,
-Caml is also equipped with full imperative features. This includes the
+OCaml is also equipped with full imperative features. This includes the
 usual "while" and "for" loops, as well as mutable data structures such
 as arrays. Arrays are either given in extension between "[|" and "|]"
 brackets, or allocated and initialized with the "Array.create"
@@ -265,7 +265,7 @@ translate mypoint 1.0 2.0;;
 mypoint;;
 \end{caml_example}
 
-Caml has no built-in notion of variable -- identifiers whose current
+OCaml has no built-in notion of variable -- identifiers whose current
 value can be changed by assignment. (The "let" binding is not an
 assignment, it introduces a new identifier with a new scope.)
 However, the standard library provides references, which are mutable
@@ -321,7 +321,7 @@ g r;;
 \section{Exceptions}
 \pdfsection{Exceptions}
 
-Caml provides exceptions for signalling and handling exceptional
+OCaml provides exceptions for signalling and handling exceptional
 conditions. Exceptions can also be used as a general-purpose non-local
 control structure. Exceptions are declared with the "exception"
 construct, and signalled with the "raise" operator. For instance, the
@@ -380,7 +380,7 @@ let temporarily_set_reference ref newval funct =
 \pdfsection{Symbolic processing of expressions}
 
 We finish this introduction with a more complete example
-representative of the use of Caml for symbolic processing: formal
+representative of the use of OCaml for symbolic processing: formal
 manipulations of arithmetic expressions containing variables. The
 following variant type describes the expressions we shall manipulate:
 \begin{caml_example}
@@ -476,8 +476,8 @@ print_expr (deriv e "x"); print_newline();;
 \end{caml_example}
 
 Parsing (transforming concrete syntax into abstract syntax) is usually
-more delicate. Caml offers several tools to help write parsers:
-on the one hand, Caml versions of the lexer generator Lex and the
+more delicate. OCaml offers several tools to help write parsers:
+on the one hand, OCaml versions of the lexer generator Lex and the
 parser generator Yacc (see chapter~\ref{c:ocamlyacc}), which handle
 LALR(1) languages using push-down automata; on the other hand, a
 predefined type of streams (of characters or tokens) and
@@ -560,15 +560,15 @@ read_expression "x-1";;
 Answer: the generic lexer provided by "Genlex" recognizes negative
 integer literals as one integer token.  Hence, "x-1" is read as
 the token "Ident \"x\"" followed by the token "Int(-1)"; this sequence
-does not match any of the parser rules.  On the other hand, 
+does not match any of the parser rules.  On the other hand,
 the second space in "x - 1" causes the lexer to return the three
 expected tokens: "Ident \"x\"", then "Kwd \"-\"", then "Int(1)".
 
-\section{Standalone Caml programs}
-\pdfsection{Standalone Caml programs}
+\section{Standalone OCaml programs}
+\pdfsection{Standalone OCaml programs}
 
 All examples given so far were executed under the interactive system.
-Caml code can also be compiled separately and executed
+OCaml code can also be compiled separately and executed
 non-interactively using the batch compilers "ocamlc" or "ocamlopt".
 The source code must be put in a file with extension ".ml". It
 consists of a sequence of phrases, which will be evaluated at runtime
@@ -588,7 +588,7 @@ let main () =
 main ();;
 \end{verbatim}
 "Sys.argv" is an array of strings containing the command-line
-parameters. "Sys.argv.(1)" is thus the first command-line parameter. 
+parameters. "Sys.argv.(1)" is thus the first command-line parameter.
 The program above is compiled and executed with the following shell
 commands:
 \begin{verbatim}

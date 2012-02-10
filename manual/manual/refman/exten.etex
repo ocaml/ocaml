@@ -267,7 +267,7 @@ function component of a safe module is applied during this computation
 \section{Private types}
 \ikwd{private\@\texttt{private}}
 
-Private type declarations in module signatures, of the form 
+Private type declarations in module signatures, of the form
 "type t = private ...", enable libraries to
 reveal some, but not all aspects of the implementation of a type to
 clients of the library.  In this respect, they strike a middle ground
@@ -332,7 +332,7 @@ type-equation:
 \end{syntax}
 Unlike a regular type abbreviation, a private type abbreviation
 declares a type that is distinct from its implementation type @typexpr@.
-However, coercions from the type to @typexpr@ are permitted.  
+However, coercions from the type to @typexpr@ are permitted.
 Moreover, the compiler ``knows'' the implementation type and can take
 advantage of this knowledge to perform type-directed optimizations.
 For ambiguity reasons, @typexpr@ cannot be an object or polymorphic
@@ -644,7 +644,7 @@ encapsulated in this value.
 The @package-type@ syntactic class appearing in the  @('module'
 module-expr ':' package-type)@ expressions, the @('val' expr ':'
 package-type)@ module expressions and the @('module' package-type)@
-type expression represents a subset of module types.  
+type expression represents a subset of module types.
 This subset consists of named module types with optional constraints
 of a limited form: only non-parametrized types can be specified.  For
 type-checking purposes, package types are compared by path equality on
@@ -658,7 +658,7 @@ module binding @'let'~M = ("val" expr_1 ":" package-type) "in" expr_2@,
 however.
 
 \paragraph{Basic example} A typical use of first-class modules is to
-select at run-time among several implementations of a signatures.  
+select at run-time among several implementations of a signatures.
 Each implementation is a structure that we can encapsulate as a
 first-class module, then store in a data structure such as a hash
 table:
@@ -708,7 +708,7 @@ The type inferred for this function is "(module Set.S with type elt =
             type t = s
             let compare = cmp
           end) in
-          (module S : Set.S with type elt = s) 
+          (module S : Set.S with type elt = s)
 \end{verbatim}
 
 This function has type "('a -> 'a -> int) -> (module Set.S with type elt = 'a)".
@@ -809,7 +809,7 @@ polymorphic recursion.
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-module-type: 
+module-type:
      ...
    | 'module' 'type' 'of' module-expr
 \end{syntax}
