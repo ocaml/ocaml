@@ -50,6 +50,7 @@ int main(argc, argv)
   transl['#'] = "\\#";
   transl['%'] = "\\%";
   transl['\''] = "{\\char13}";
+  transl['`'] = "{\\char18}";
   inverbatim = 0;
   incaml = 0;
   inquote = 0;

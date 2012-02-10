@@ -16,17 +16,16 @@
 \def\@eunderline{\egroup\underline{\box0}}
 
 {\catcode`'=\active
+ \catcode``=\active
   \global\def\caml{
     \bgroup
     \flushleft
     \parindent 0pt
     \parskip 0pt
     \let\do\@makeother\dospecials
-    \catcode`'=\active
-    \chardef'=13
-    \catcode`\^^M=\active
-    \catcode`\\=0
-    \catcode`\ \active
+    \catcode13=\active    % 13 = ^M = CR
+    \catcode92=0          % 92 = \
+    \catcode32=\active    % 32 = SPC
     \frenchspacing
     \@vobeyspaces
     \let\@oldpar\par
@@ -36,6 +35,10 @@
     \let\<\@bunderline
     \let\>\@eunderline
     \let\\\@camlbackslash
+    \catcode39=\active    % 39 = '
+    \chardef'=13
+    \catcode96=\active    % 96 = `
+    \chardef`=18
   }
 }
 
