@@ -2302,7 +2302,7 @@
 
 2006-12-08  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
-	Ocaml distrib stuffs.
+	OCaml distrib stuffs.
 
 	* command.ml,
 	* command.mli: Add a normalization callback.

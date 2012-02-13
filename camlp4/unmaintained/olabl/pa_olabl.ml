@@ -1964,7 +1964,7 @@ value rec cstream gloc =
       else <:expr< Stream.lapp $slazy loc e$ $cstream gloc secl$ >> ]
 ;
 
-(* Syntax extensions in Ocaml grammar *)
+(* Syntax extensions in OCaml grammar *)
 
 EXTEND
   GLOBAL: expr;

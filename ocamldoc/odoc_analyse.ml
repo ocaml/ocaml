@@ -81,7 +81,7 @@ let parse_file inputfile parse_fun ast_magic =
       else false
     with
       Outdated_version ->
-        fatal_error "Ocaml and preprocessor have incompatible versions"
+        fatal_error "OCaml and preprocessor have incompatible versions"
     | _ -> false
   in
   let ast =

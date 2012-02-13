@@ -1756,7 +1756,7 @@ by |, insert one."
       (goto-char (match-end 0))))
 
 ;; to mark phrases, so that repeated calls will take several of them
-;; knows little about Ocaml appart literals and comments, so it should work
+;; knows little about OCaml except literals and comments, so it should work
 ;; with other dialects as long as ;; marks the end of phrase.
 
 (defun caml-indent-phrase (arg)

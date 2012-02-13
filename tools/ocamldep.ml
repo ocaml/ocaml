@@ -219,7 +219,7 @@ let is_ast_file ic ast_magic =
     really_input ic buffer 0 (String.length ast_magic);
     if buffer = ast_magic then true
     else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
-      failwith "Ocaml and preprocessor have incompatible versions"
+      failwith "OCaml and preprocessor have incompatible versions"
     else false
   with End_of_file -> false
 

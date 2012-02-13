@@ -22,10 +22,10 @@ exception Exit_hygiene_failed
 
 let laws =
   [
-    { law_name = "Leftover Ocaml compilation files";
+    { law_name = "Leftover OCaml compilation files";
       law_rules = [Not ".cmo"; Not ".cmi"; Not ".cmx"; Not ".cma"; Not ".cmxa"];
       law_penalty = Fail };
-    { law_name = "Leftover Ocaml type annotation files";
+    { law_name = "Leftover OCaml type annotation files";
       law_rules = [Not ".annot"];
       law_penalty = Warn };
     { law_name = "Leftover object files";

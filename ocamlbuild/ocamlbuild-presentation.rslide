@@ -121,7 +121,7 @@ slide "How difficult is it to build regular projects by hand?" do
 end
 
 slide "How does ocamlbuild manage all that?" do
-  > It has a lot of hand-crafted Ocaml-specific compilation logic!
+  > It has a lot of hand-crafted OCaml-specific compilation logic!
   box "A dynamic exploration approach", '<2>' do
     * Start from the given targets
     * Attempt to discover dependencies using _ocamldep_

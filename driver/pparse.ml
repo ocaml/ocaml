@@ -59,7 +59,7 @@ let file ppf inputfile parse_fun ast_magic =
       else false
     with
       Outdated_version ->
-        Misc.fatal_error "Ocaml and preprocessor have incompatible versions"
+        Misc.fatal_error "OCaml and preprocessor have incompatible versions"
     | _ -> false
   in
   let ast =

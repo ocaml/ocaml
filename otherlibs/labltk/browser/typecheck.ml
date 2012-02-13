@@ -73,7 +73,7 @@ let parse_pp ~parse ~wrap ~ext text =
           Outdated_version ->
             close_in ic;
             Sys.remove tmpfile;
-            failwith "Ocaml and preprocessor have incompatible versions"
+            failwith "OCaml and preprocessor have incompatible versions"
         | _ ->
             seek_in ic 0;
             let buffer = Lexing.from_channel ic in
