@@ -782,11 +782,30 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_type = expected_ty;
         pat_env = !env }
   | Ppat_constraint(sp, sty) ->
+      (* Separate when not already separated by !principal *)
+      let separate = true in
+      if separate then begin_def();
       let ty, force = Typetexp.transl_simple_type_delayed !env sty in
+      let ty, expected_ty' =
+        if separate then begin
+          end_def();
+          generalize_structure ty;
+          instance !env ty, instance !env ty
+        end else ty, ty
+      in
       unify_pat_types loc !env ty expected_ty;
-      let p = type_pat sp expected_ty in
+      let p = type_pat sp expected_ty' in
+      (*Format.printf "%a@.%a@."
+        Printtyp.raw_type_expr ty
+        Printtyp.raw_type_expr p.pat_type;*)
       pattern_force := force :: !pattern_force;
-      p
+      if separate then
+        match p.pat_desc with
+          Tpat_var id ->
+            {p with pat_type = ty;
+             pat_desc = Tpat_alias ({p with pat_desc = Tpat_any}, id)}
+        | _ -> {p with pat_type = ty}
+      else p
   | Ppat_type lid ->
       let (r,ty) = build_or_pat !env loc lid in
       unify_pat_types loc !env ty expected_ty;
@@ -839,9 +858,9 @@ let add_pattern_variables ?check ?check_as env =
   (List.fold_right
     (fun (id, ty, loc, as_var) env ->
        let check = if as_var then check_as else check in
-       let e1 = Env.add_value ?check id {val_type = ty; val_kind = Val_reg; val_loc = loc} env in
-       Env.add_annot id (Annot.Iref_internal loc) e1
-    )
+       let e1 = Env.add_value ?check id
+           {val_type = ty; val_kind = Val_reg; val_loc = loc} env in
+       Env.add_annot id (Annot.Iref_internal loc) e1)
     pv env,
    get_ref module_variables)
 
@@ -849,7 +868,10 @@ let type_pattern ~lev env spat scope expected_ty =
   reset_pattern scope true;
   let new_env = ref env in
   let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
-  let new_env, unpacks = add_pattern_variables ~check:(fun s -> Warnings.Unused_var_strict s) ~check_as:(fun s -> Warnings.Unused_var s) !new_env in
+  let new_env, unpacks =
+    add_pattern_variables !new_env
+      ~check:(fun s -> Warnings.Unused_var_strict s)
+      ~check_as:(fun s -> Warnings.Unused_var s) in
   (pat, new_env, get_ref pattern_force, unpacks)
 
 let type_pattern_list env spatl scope expected_tys allow =
@@ -872,7 +894,9 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   let (pv, met_env) =
     List.fold_right
       (fun (id, ty, loc, as_var) (pv, env) ->
-         let check s = if as_var then Warnings.Unused_var s else Warnings.Unused_var_strict s in
+         let check s =
+           if as_var then Warnings.Unused_var s
+           else Warnings.Unused_var_strict s in
          let id' = Ident.create (Ident.name id) in
          ((id', id, ty)::pv,
           Env.add_value id' {val_type = ty;
@@ -911,7 +935,8 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
                             val_kind = Val_self (meths, vars, cl_num, privty);
                             val_loc = loc;
                            }
-            ~check:(fun s -> if as_var then Warnings.Unused_var s else Warnings.Unused_var_strict s)
+            ~check:(fun s -> if as_var then Warnings.Unused_var s
+                             else Warnings.Unused_var_strict s)
             met_env,
           Env.add_value id {val_type = ty; val_kind = Val_unbound;
                             val_loc = loc;
@@ -1818,7 +1843,8 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = instance_def Predef.type_unit;
         exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
-      let separate = !Clflags.principal || Env.has_local_constraints env in
+      let separate = true (* always separate, 1% slowdown for lablgtk *)
+        (* !Clflags.principal || Env.has_local_constraints env *) in
       let (arg, ty') =
         match (sty, sty') with
           (None, None) ->               (* Case actually unused *)
@@ -2715,13 +2741,16 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
 
 (* Typing of let bindings *)
 
-and type_let ?(check = fun s -> Warnings.Unused_var s) ?(check_strict = fun s -> Warnings.Unused_var_strict s) env rec_flag spat_sexp_list scope allow =
+and type_let ?(check = fun s -> Warnings.Unused_var s)
+             ?(check_strict = fun s -> Warnings.Unused_var_strict s)
+    env rec_flag spat_sexp_list scope allow =
   begin_def();
   if !Clflags.principal then begin_def ();
 
   let is_fake_let =
     match spat_sexp_list with
-    | [_, {pexp_desc=Pexp_match({pexp_desc=Pexp_ident(Longident.Lident "*opt*")},_)}] ->
+    | [_, {pexp_desc=Pexp_match(
+           {pexp_desc=Pexp_ident(Longident.Lident "*opt*")},_)}] ->
         true (* the fake let-declaration introduced by fun ?(x = e) -> ... *)
     | _ ->
         false
@@ -2747,6 +2776,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s) ?(check_strict = fun s ->
   let (pat_list, new_env, force, unpacks) =
     type_pattern_list env spatl scope nvs allow in
   let is_recursive = (rec_flag = Recursive) in
+  (* If recursive, first unify with an approximation of the expression *)
   if is_recursive then
     List.iter2
       (fun pat (_, sexp) ->
@@ -2758,6 +2788,15 @@ and type_let ?(check = fun s -> Warnings.Unused_var s) ?(check_strict = fun s ->
           | _ -> pat
         in unify_pat env pat (type_approx env sexp))
       pat_list spat_sexp_list;
+  (* Polymorphic variant processing *)
+  List.iter
+    (fun pat ->
+      if has_variants pat then begin
+        Parmatch.pressure_variants env [pat];
+        iter_pattern finalize_variant pat
+      end)
+    pat_list;
+  (* Generalize the structure *)
   let pat_list =
     if !Clflags.principal then begin
       end_def ();
@@ -2767,14 +2806,6 @@ and type_let ?(check = fun s -> Warnings.Unused_var s) ?(check_strict = fun s ->
           {pat with pat_type = instance env pat.pat_type})
         pat_list
     end else pat_list in
-  (* Polymoprhic variant processing *)
-  List.iter
-    (fun pat ->
-      if has_variants pat then begin
-        Parmatch.pressure_variants env [pat];
-        iter_pattern finalize_variant pat
-      end)
-    pat_list;
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
   let exp_env =
@@ -2786,26 +2817,30 @@ and type_let ?(check = fun s -> Warnings.Unused_var s) ?(check_strict = fun s ->
     (* Algorithm to detect unused declarations in recursive bindings:
        - During type checking of the definitions, we capture the 'value_used'
          events on the bound identifiers and record them in a slot corresponding
-         to the current definition (!current_slot).  In effect, this creates a dependency
-         graph between definitions.
+         to the current definition (!current_slot).
+         In effect, this creates a dependency graph between definitions.
 
-       - After type checking the definition (!current_slot = Mone), when one of the bound identifier is
-         effectively used, we trigger again all the events recorded in the corresponding
-         slot. The effect is to traverse the transitive closure of the graph created
+       - After type checking the definition (!current_slot = Mone),
+         when one of the bound identifier is effectively used, we trigger
+         again all the events recorded in the corresponding slot.
+         The effect is to traverse the transitive closure of the graph created
          in the first step.
 
-       We also keep track of whether *all* variables in a given pattern are unused.
-       If this is the case, for local declarations, the issued warning is 26, not 27.
+       We also keep track of whether *all* variables in a given pattern
+       are unused. If this is the case, for local declarations, the issued
+       warning is 26, not 27.
      *)
     List.map
       (fun pat ->
         if not warn_unused then pat, None
         else
-          let some_used = ref false in (* has one of the identifier of this pattern been used? *)
+          let some_used = ref false in
+            (* has one of the identifier of this pattern been used? *)
           let slot = ref [] in
           List.iter
             (fun id ->
-              let vd = Env.find_value (Path.Pident id) new_env in (* note: Env.find_value does not trigger the value_used event *)
+              let vd = Env.find_value (Path.Pident id) new_env in
+              (* note: Env.find_value does not trigger the value_used event *)
               let name = Ident.name id in
               let used = ref false in
               if not (name = "" || name.[0] = '_' || name.[0] = '#') then

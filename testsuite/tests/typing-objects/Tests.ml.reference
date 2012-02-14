@@ -281,7 +281,7 @@ Error: This expression has type 'a t but an expression was expected of type
   fun (x : 'a t) -> (x : 'a); ();;
                     ^^^^^^^^
 Warning 10: this expression should have type unit.
-- : ('a t as 'a) -> unit = <fun>
+- : ('a t as 'a) t -> unit = <fun>
 #         class ['a] c :
   unit -> object constraint 'a = (< .. > as 'b) -> unit method m : 'a end
 #       class ['a] c :

@@ -70,7 +70,7 @@
   tl:'a ostream ->
   object
     val hd : 'a
-    val tl : 'a ostream
+    val tl : < empty : bool; fold : 'c. f:('a -> 'c -> 'c) -> init:'c -> 'c >
     method empty : bool
     method fold : f:('a -> 'c -> 'c) -> init:'c -> 'c
   end
@@ -119,7 +119,7 @@ val p1 : point = <obj>
 val cp : color_point = <obj>
 val c : circle = <obj>
 val d : float = 11.4536240470737098
-#   val f : < m : 'b. 'b -> 'b > -> < m : 'b. 'b -> 'b > = <fun>
+#   val f : < m : 'a. 'a -> 'a > -> < m : 'b. 'b -> 'b > = <fun>
 #   Characters 41-42:
   let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
                                            ^
@@ -593,6 +593,6 @@ Error: This field value has type unit -> unit which is less general than
     type 'par t = 'par
     val ident : 'a -> 'a
     class alias : object method alias : 'a t -> 'a end
-    val f : < m : 'a. 'a > -> < m : 'a. 'a >
+    val f : < m : 'a. 'a t > -> < m : 'a. 'a >
   end
 # 

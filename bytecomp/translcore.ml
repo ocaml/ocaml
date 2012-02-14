@@ -936,6 +936,7 @@ and transl_let rec_flag pat_expr_list body =
           (fun (pat, expr) ->
             match pat.pat_desc with
               Tpat_var id -> id
+            | Tpat_alias ({pat_desc=Tpat_any}, id) -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
       let transl_case (pat, expr) id =
