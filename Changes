@@ -70,6 +70,7 @@ Bug Fixes:
 - PR5461: Double linking of bytecode modules
 - PR#5498: Unification with an empty object only checks the absence of
            the first method
+- PR#5503: error when ocamlbuild is passed an absolute path as build directory
 
 Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script
