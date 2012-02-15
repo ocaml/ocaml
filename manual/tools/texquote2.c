@@ -49,8 +49,8 @@ int main(argc, argv)
   transl['&'] = "{\\char38}";
   transl['#'] = "\\#";
   transl['%'] = "\\%";
-  transl['\''] = "{\\char13}";
-  transl['`'] = "{\\char18}";
+  transl['\''] = "{\\textquotesingle}";
+  transl['`'] = "{\\textasciigrave}";
   inverbatim = 0;
   incaml = 0;
   inquote = 0;
@@ -93,10 +93,10 @@ int main(argc, argv)
       switch(c) {
       case '"':
         if (inquote) {
-          fputs("}", stdout);
+          fputs("}}", stdout);
           inquote = 0;
         } else {
-          fputs("{\\machine ", stdout);
+          fputs("{\\machine{", stdout);
           inquote = 1;
         }
         break;

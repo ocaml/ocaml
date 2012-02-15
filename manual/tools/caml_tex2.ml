@@ -63,7 +63,11 @@ let read_output () =
   done;
   Buffer.contents output, underline
 
-let escape_backslash = global_replace ~!"\\\\" "\\\\\\\\"
+let escape_specials s =
+  let s1 = global_replace ~!"\\\\" "\\\\\\\\" s in
+  let s2 = global_replace ~!"'" "\\\\textquotesingle\\\\-" s1 in
+  let s3 = global_replace ~!"`" "\\\\textasciigrave\\\\-" s2 in
+  s3
 
 let process_file file =
   prerr_endline ("Processing " ^ file);
@@ -115,13 +119,13 @@ let process_file file =
               String.sub phrase ~pos:e ~len:(String.length phrase - e)
             in
             String.concat ""
-              [escape_backslash start; "\\<";
-               escape_backslash underlined; "\\>";
-               escape_backslash rest]
+              [escape_specials start; "\\<";
+               escape_specials underlined; "\\>";
+               escape_specials rest]
           end else
-            escape_backslash phrase in
-        (* Backslash may also appear in output strings -Didier *)
-        let output = escape_backslash output in
+            escape_specials phrase in
+        (* Special characters may also appear in output strings -Didier *)
+        let output = escape_specials output in
         let phrase = global_replace ~!"^\\(.\\)" camlin phrase
         and output = global_replace ~!"^\\(.\\)" camlout output in
         if not !first then output_string oc "\\;\n";
@@ -134,7 +138,7 @@ let process_file file =
     end
     else if string_match ~!"\\\\begin{caml_eval}[ \t]*$" !input 0
     then begin
-      while input := input_line ic; 
+      while input := input_line ic;
         not (string_match ~!"\\\\end{caml_eval}[ \t]*$" !input 0)
       do
         fprintf caml_output "%s\n" !input;

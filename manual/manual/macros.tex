@@ -35,8 +35,8 @@
 % cmr10 agrandie a 11 pt.
 \fi
 
-% Pour la traduction "xxxx" -> {\machine xxxx} faite par texquote2
-\def\machine{\ttstretch}
+% Pour la traduction "xxxx" -> {\machine{xxxx}} faite par texquote2
+\def\machine#1{\mbox{\ttstretch{#1}}}
 
 % Environnements
 

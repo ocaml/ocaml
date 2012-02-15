@@ -1,6 +1,6 @@
 \newcommand{\machine}{\tt}
-\newcommand{\firstline}{\black\#\blue }
-\newcommand{\nextline}{\ }
+\newcommand{\firstline}{\black\#\blue\ }
+\newcommand{\nextline}{\ \ }
 \newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}
 \newenvironment{camlunder}{\@style{U}}{}
 \newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}

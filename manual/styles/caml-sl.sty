@@ -14,10 +14,9 @@
 \def \@@par@inunderline #1{\@eunderline\@oldpar\?\@bunderline}
 \def \@@@parinunderline {\@eunderline\@oldpar\@bunderline}
 \def\@eunderline{\egroup\underline{\box0}}
+\def\@camlnoop{}
 
-{\catcode`'=\active
- \catcode``=\active
-  \global\def\caml{
+\def\caml{
     \bgroup
     \flushleft
     \parindent 0pt
@@ -35,11 +34,7 @@
     \let\<\@bunderline
     \let\>\@eunderline
     \let\\\@camlbackslash
-    \catcode39=\active    % 39 = '
-    \chardef'=13
-    \catcode96=\active    % 96 = `
-    \chardef`=18
-  }
+    \let\-\@camlnoop
 }
 
 \def\endcaml{
