@@ -51,6 +51,10 @@ Bug Fixes:
 - PR#4549: Filename.dirname is not handling multiple / on Unix
 - PR#4869: rare collisions between assembly labels for code and data
 - PR#4880: "assert" constructs now show up in the exception stack backtrace
+- PR#5064, PR#5485: try to ensure that 4K words of stack are available
+  before calling into C functions, raising a Stack_overflow exception
+  otherwise.  This reduces (but does not eliminate) the risk of
+  segmentation faults due to stack overflow in C code
 - PR#5313: ocamlopt -g misses optimizations
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in

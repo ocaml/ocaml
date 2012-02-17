@@ -220,11 +220,21 @@
 
         .text
 
+        .globl  G(caml_system__code_begin)
+G(caml_system__code_begin):
+
 /* Allocation */
 
 FUNCTION(G(caml_call_gc))
         RECORD_STACK_FRAME(0)
 LBL(caml_call_gc):
+#ifndef SYS_mingw64
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        subq    $32768, %rsp
+        movq    %rax, 0(%rsp)
+        addq    $32768, %rsp
+#endif
     /* Build array of registers, save it into caml_gc_regs */
         pushq   %r13
         pushq   %r12
@@ -363,6 +373,13 @@ LBL(caml_c_call):
         popq    %r12
         STORE_VAR(%r12, caml_last_return_address)
         STORE_VAR(%rsp, caml_bottom_of_stack)
+#ifndef SYS_mingw64
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        subq    $32768, %rsp
+        movq    %rax, 0(%rsp)
+        addq    $32768, %rsp
+#endif
     /* Make the exception handler and alloc ptr available to the C code */
 	STORE_VAR(%r15, caml_young_ptr)
 	STORE_VAR(%r14, caml_exception_pointer)
@@ -517,6 +534,9 @@ FUNCTION(G(caml_callback3_exn))
 FUNCTION(G(caml_ml_array_bound_error))
         leaq    GCALL(caml_array_bound_error)(%rip), %rax
         jmp     LBL(caml_c_call)
+
+        .globl  G(caml_system__code_end)
+G(caml_system__code_end):
 
         .data
         .globl  G(caml_system__frametable)

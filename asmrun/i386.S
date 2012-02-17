@@ -81,6 +81,9 @@
 /* Allocation */
 
         .text
+        .globl  G(caml_system__code_begin)
+G(caml_system__code_begin):
+
         .globl  G(caml_call_gc)
         .globl  G(caml_alloc1)
         .globl  G(caml_alloc2)
@@ -95,8 +98,15 @@ G(caml_call_gc):
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-    /* Build array of registers, save it into caml_gc_regs */
 LBL(105):
+#if !defined(SYS_mingw) && !defined(SYS_cygwin)
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        subl    $16384, %esp
+        movl    %eax, 0(%esp)
+        addl    $16384, %esp
+#endif
+    /* Build array of registers, save it into caml_gc_regs */
         pushl   %ebp
         pushl   %edi
         pushl   %esi
@@ -211,6 +221,13 @@ G(caml_c_call):
         movl    %edx, G(caml_last_return_address)
         leal    4(%esp), %edx
         movl    %edx, G(caml_bottom_of_stack)
+#if !defined(SYS_mingw) && !defined(SYS_cygwin)
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        subl    $16384, %esp
+        movl    %eax, 0(%esp)
+        addl    $16384, %esp
+#endif
     /* Call the function (address in %eax) */
         jmp     *%eax
 
@@ -395,6 +412,9 @@ G(caml_ml_array_bound_error):
 #endif
     /* Branch to [caml_array_bound_error] (never returns) */
         call    G(caml_array_bound_error)
+
+        .globl  G(caml_system__code_end)
+G(caml_system__code_end):
 
         .data
         .globl  G(caml_system__frametable)

@@ -663,7 +663,6 @@ model=default
 system=unknown
 
 case "$host" in
-  sparc*-*-sunos4.*)            arch=sparc; system=sunos;;
   sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
   sparc*-*-linux*)              arch=sparc; system=linux;;
@@ -1149,7 +1148,7 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx|amd64,macosx)
+  i386,linux_elf|amd64,linux|power,elf|power,rhapsody|amd64,macosx|i386,macosx)
     echo "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)

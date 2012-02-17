@@ -41,6 +41,9 @@
 
         .text
 
+        .globl  _caml_system__code_begin
+_caml_system__code_begin:
+        
 /* Invoke the garbage collector. */
 
         .globl  _caml_call_gc
@@ -54,6 +57,11 @@ _caml_call_gc:
     /* Record lowest stack address */
         addi    r0, r1, FRAMESIZE
         Storeglobal r0, _caml_bottom_of_stack, r11
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        addi    r1, r1, -4096*WORD
+        stg     r0, 0(r1)
+        addi    r1, r1, 4096*WORD
     /* Record pointer to register array */
         addi    r0, r1, 8*32 + 32
         Storeglobal r0, _caml_gc_regs, r11
@@ -204,6 +212,11 @@ _caml_c_call:
     /* Record lowest stack address and return address */
         Storeglobal r1, _caml_bottom_of_stack, r12
         Storeglobal r25, _caml_last_return_address, r12
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        addi    r1, r1, -4096*WORD
+        stg     r0, 0(r1)
+        addi    r1, r1, 4096*WORD
     /* Make the exception handler and alloc ptr available to the C code */
         Storeglobal r31, _caml_young_ptr, r11
         Storeglobal r29, _caml_exception_pointer, r11
@@ -461,6 +474,9 @@ _caml_callback3_exn:
         mr      r6, r0
         Addrglobal r12, _caml_apply3
         b       L102
+
+        .globl  _caml_system__code_end
+_caml_system__code_end:
 
 /* Frame table */
 

@@ -58,6 +58,9 @@ alloc_limit     .req    r11
 
 /* Allocation functions and GC interface */
 
+        .globl  caml_system__code_begin
+caml_system__code_begin:
+        
         .align  2
         .globl  caml_call_gc
 caml_call_gc:
@@ -414,6 +417,9 @@ caml_ml_array_bound_error:
         b       caml_c_call
         .type   caml_ml_array_bound_error, %function
         .size   caml_ml_array_bound_error, .-caml_ml_array_bound_error
+
+        .globl  caml_system__code_end
+caml_system__code_end:
 
 /* GC roots for callback */
 
