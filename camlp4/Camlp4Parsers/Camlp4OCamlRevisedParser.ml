@@ -361,7 +361,7 @@ New syntax:\
     parser
     [ [: `((KEYWORD "(", _) as tok); xs :] ->
         match xs with parser
-        [ [: `(KEYWORD ("mod"|"land"|"lor"|"lxor"|"lsl"|"lsr"|"asr" as i), _loc);
+        [ [: `(KEYWORD ("or"|"mod"|"land"|"lor"|"lxor"|"lsl"|"lsr"|"asr" as i), _loc);
              `(KEYWORD ")", _); xs :] ->
                 [: `(LIDENT i, _loc); infix_kwds_filter xs :]
         | [: xs :] ->
