@@ -59,6 +59,7 @@ Bug Fixes:
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in
   another thread
+- PR#5309: Queue.add is not thread/signal safe
 - PR#5327: (Windows) Unix.select blocks if same socket listed in first and
   third arguments
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
