@@ -28,6 +28,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Unknown_builtin_primitive of string
 
 exception Error of Location.t * error
 
@@ -286,11 +287,12 @@ let prim_obj_dup =
     prim_native_name = ""; prim_native_float = false }
 
 let transl_prim loc prim args =
+  let prim_name = prim.prim_name in
   try
     let (gencomp, intcomp, floatcomp, stringcomp,
          nativeintcomp, int32comp, int64comp,
          simplify_constant_constructor) =
-      Hashtbl.find comparisons_table prim.prim_name in
+      Hashtbl.find comparisons_table prim_name in
     begin match args with
       [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
@@ -323,7 +325,7 @@ let transl_prim loc prim args =
   with Not_found ->
   try
     let p =
-      match prim.prim_name with
+      match prim_name with
           "%revapply" -> Prevapply loc
         | "%apply" -> Pdirapply loc
         | name -> Hashtbl.find primitives_table name in
@@ -346,6 +348,8 @@ let transl_prim loc prim args =
       | _ -> p
     end
   with Not_found ->
+    if String.length prim_name > 0 && prim_name.[0] = '%' then
+      raise(Error(loc, Unknown_builtin_primitive prim_name));
     Pccall prim
 
 
@@ -1051,3 +1055,5 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Unknown_builtin_primitive prim_name ->
+    fprintf ppf  "Unknown builtin primitive \"%s\"" prim_name
