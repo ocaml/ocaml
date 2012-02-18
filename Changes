@@ -47,7 +47,6 @@ Standard library:
 - String: new function "map" (PR#3888)
 
 Bug Fixes:
-* PR#4072: Unexpected execution order
 - PR#4549: Filename.dirname is not handling multiple / on Unix
 - PR#4869: rare collisions between assembly labels for code and data
 - PR#4880: "assert" constructs now show up in the exception stack backtrace

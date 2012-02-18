@@ -410,7 +410,7 @@ let rec comp_expr env exp sz cont =
       end
   | Lconst cst ->
       Kconst cst :: cont
-  | Lapply(Lvar _ as func, args, loc) ->
+  | Lapply(func, args, loc) ->
       let nargs = List.length args in
       if is_tailcall cont then begin
         comp_args env args sz
@@ -428,10 +428,6 @@ let rec comp_expr env exp sz cont =
                       (Kapply nargs :: cont1))
         end
       end
-  | Lapply(func, args, loc) ->
-    let func_id = Ident.create "func_id" in
-    let exp = Llet(Strict, func_id, func, Lapply(Lvar func_id, args, loc)) in
-    comp_expr env exp sz cont
   | Lsend(kind, met, obj, args, _) ->
       let args = if kind = Cached then List.tl args else args in
       let nargs = List.length args + 1 in
