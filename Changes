@@ -76,6 +76,8 @@ Bug Fixes:
 - PR#5498: Unification with an empty object only checks the absence of
            the first method
 - PR#5503: error when ocamlbuild is passed an absolute path as build directory
+- PR#5509: misclassification of statically-allocated empty array that
+  falls exactly at beginning of an otherwise unused data page.
 
 Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script
