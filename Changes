@@ -75,6 +75,7 @@ Bug Fixes:
 - PR#5498: Unification with an empty object only checks the absence of
            the first method
 - PR#5503: error when ocamlbuild is passed an absolute path as build directory
+- PR#5504: Please consider stopping using keyword substitutions
 - PR#5509: misclassification of statically-allocated empty array that
   falls exactly at beginning of an otherwise unused data page.
 - PR#5510: ocamldep has duplicate -ml{,i}-synonym options
