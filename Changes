@@ -63,6 +63,7 @@ Bug Fixes:
   third arguments
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping
+- PR#5394: Documentation for -dtypes is missing in manpage
 - PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
 - PR#5436: update object ids on unmarshaling
 - PR#5453: configure doesn't find X11 under Ubuntu/MultiarchSpec
