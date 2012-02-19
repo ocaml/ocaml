@@ -170,6 +170,11 @@ file can be used with the emacs commands given in
 .B emacs/caml\-types.el
 to display types and other annotations interactively.
 .TP
+.B \-dtypes
+Has been deprecated. Please use 
+.BI \-annot 
+instead.
+.TP
 .B \-c
 Compile only. Suppress the linking phase of the
 compilation. Source code files are turned into compiled files, but no
