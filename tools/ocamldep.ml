@@ -437,10 +437,6 @@ let _ =
        "<e> Consider <e> as a synonym of the .ml extension";
      "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),
        "<e> Consider <e> as a synonym of the .mli extension";
-     "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),
-       "<e> Consider <e> as a synonym of the .ml extension";
-     "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),
-       "<e> Consider <e> as a synonym of the .mli extension";
      "-sort", Arg.Set sort_files,
               " Sort files according to their dependencies";
      "-modules", Arg.Set raw_dependencies,
