@@ -272,6 +272,18 @@ let simplify_exits lam =
   in
   simplif lam
 
+(* Compile-time beta-reduction of functions immediately applied:
+      Lapply(Lfunction(Curried, params, body), args, loc) ->
+        let paramN = argN in ... let param1 = arg1 in body
+      Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock(args))], loc) ->
+        let paramN = argN in ... let param1 = arg1 in body
+   Assumes |args| = |params|.
+*)
+
+let beta_reduce params body args =
+  List.fold_left2 (fun l param arg -> Llet(Strict, param, arg, l))
+                  body params args
+
 (* Simplification of lets *)
 
 let simplify_lets lam =
@@ -322,6 +334,12 @@ let simplify_lets lam =
   | Lconst cst -> ()
   | Lvar v ->
       use_var bv v 1
+  | Lapply(Lfunction(Curried, params, body), args, _)
+    when optimize && List.length params = List.length args ->
+      count bv (beta_reduce params body args)
+  | Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock _, args)], _)
+    when optimize && List.length params = List.length args ->
+      count bv (beta_reduce params body args)
   | Lapply(l1, ll, _) ->
       count bv l1; List.iter (count bv) ll
   | Lfunction(kind, params, l) ->
@@ -397,6 +415,12 @@ let simplify_lets lam =
         l
       end
   | Lconst cst as l -> l
+  | Lapply(Lfunction(Curried, params, body), args, _)
+    when optimize && List.length params = List.length args ->
+      simplif (beta_reduce params body args)
+  | Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock _, args)], _)
+    when optimize && List.length params = List.length args ->
+      simplif (beta_reduce params body args)
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
   | Lfunction(kind, params, l) -> Lfunction(kind, params, simplif l)
   | Llet(str, v, Lvar w, l2) when optimize ->

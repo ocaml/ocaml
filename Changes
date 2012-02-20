@@ -18,6 +18,7 @@ Compilers:
 - Better reporting of compiler version mismatch in .cmi files
 * Warning 28 is now enabled by default.
 - New option -absname to use absolute paths in error messages
+- Optimize away compile-time beta-redexes, e.g. (fun x y -> e) a b.
 
 Native-code compiler:
 - Optimized handling of partially-applied functions (PR#5287)
