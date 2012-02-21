@@ -84,6 +84,7 @@ Bug Fixes:
 - PR#5509: misclassification of statically-allocated empty array that
   falls exactly at beginning of an otherwise unused data page.
 - PR#5510: ocamldep has duplicate -ml{,i}-synonym options
+- PR#5511: in Bigarray.reshape, unwarranted limitation on new array dimensions.
 
 Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script

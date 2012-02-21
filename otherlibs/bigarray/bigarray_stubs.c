@@ -1080,7 +1080,7 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
   num_elts = 1;
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
-    if (dim[i] < 0 || dim[i] > 0x7FFFFFFFL)
+    if (dim[i] < 0)
       caml_invalid_argument("Bigarray.reshape: negative dimension");
     num_elts *= dim[i];
   }
