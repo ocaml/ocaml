@@ -1,4 +1,14 @@
-{ open Lexing;; }
+{
+  open Lexing;;
+  open Printf;;
+
+  let print_char_repr c =
+  match c with
+  | '\'' -> printf "{\\textquotesingle}"
+  | '`' -> printf "{\\textasciigrave}"
+  | _ -> printf "\\char%d" (int_of_char c);
+  ;;
+}
 
 rule main = parse
     "\\begin{syntax}" {
@@ -83,8 +93,7 @@ and indoublequote = parse
       print_string "}";
       syntax lexbuf }
   | _ {
-      print_string "\\char";
-      print_int (int_of_char (lexeme_char lexbuf 0));
+      print_char_repr (lexeme_char lexbuf 0);
       indoublequote lexbuf }
 
 

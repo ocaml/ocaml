@@ -214,8 +214,8 @@ specification:
                  { 'and' module-name':' module-type }
 \end{syntax}
 
-Recursive module definitions, introduced by the 'module rec' \ldots
-'and' \ldots\ construction, generalize regular module definitions
+Recursive module definitions, introduced by the "module rec" \ldots
+"and" \ldots\ construction, generalize regular module definitions
 @'module' module-name '=' module-expr@ and module specifications
 @'module' module-name ':' module-type@ by allowing the defining
 @module-expr@ and the @module-type@ to refer recursively to the module

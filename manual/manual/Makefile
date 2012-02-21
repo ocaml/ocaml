@@ -31,7 +31,9 @@ manual: files
 	TEXINPUTS=$(TEXINPUTS) latex manual.tex
 
 index::
-	cd texstuff; makeindex manual.idx
+	cd texstuff && \
+	  ../../tools/fix_index.sh manual.idx && \
+	  makeindex manual.idx
 	cd texstuff; makeindex manual.kwd.idx
 
 pdfmanual: files
@@ -39,7 +41,9 @@ pdfmanual: files
 	TEXINPUTS=$(TEXINPUTS) pdflatex pdfmanual.tex
 
 index::
-	cd texstuff; makeindex pdfmanual.idx
+	cd texstuff && \
+	  ../../tools/fix_index.sh pdfmanual.idx && \
+	  makeindex pdfmanual.idx
 	cd texstuff; makeindex pdfmanual.kwd.idx
 
 html: files

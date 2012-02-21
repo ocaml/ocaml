@@ -77,7 +77,12 @@ Display a short usage summary and exit.
 \section{Syntax of lexer definitions}
 
 The format of lexer definitions is as follows:
-\begingroup\newcommand{\sub}[1]{$_{#1}$}
+\begingroup%
+\newcommand{\sub}[1]{$_{#1}$}%
+\renewcommand{\{}{\char`\{}%
+\renewcommand{\}}{\char`\}}%
+\renewcommand{\\}{\char`\\}%
+\renewcommand{\%}{\char`\%}%
 \begin{alltt}
 \{ \var{header} \}
 let \var{ident} = \var{regexp} \ldots
@@ -290,15 +295,15 @@ extended as follows:
 can be matched without binding this variable.
 \end{itemize}
 For instance, in
-\verb+('a' as x) | ( 'a' (_ as x) )+ the variable \verb+x+  is of type
+"('a' as x) | ( 'a' (_ as x) )" the variable "x"  is of type
 "char", whereas in
-\verb+("ab" as x) | ( 'a' (_ as x) ? )+ the variable \verb+x+  is of type
+"(\"ab\" as x) | ( 'a' (_ as x) ? )" the variable "x"  is of type
 "string option".
 
 
 In some cases, a sucessful match may not yield a unique set of bindings.
 For instance the matching of \verb+aba+ by the regular expression
-\verb+(('a'|"ab") as x) (("ba"|'a') as y)+ may result in binding
+"(('a'|\"ab\") as x) ((\"ba\"|'a') as y)" may result in binding
 either
 \verb+x+ to \verb+"ab"+ and \verb+y+ to \verb+"a"+, or
 \verb+x+ to \verb+"a"+ and \verb+y+ to \verb+"ba"+.
@@ -339,6 +344,11 @@ the concrete type "token", defined in the interface file
 \section{Syntax of grammar definitions}
 
 Grammar definitions have the following format:
+\begingroup%
+\renewcommand{\{}{\char`\{}%
+\renewcommand{\}}{\char`\}}%
+\renewcommand{\\}{\char`\\}%
+\renewcommand{\%}{\char`\%}%
 \begin{alltt}
 \%\{
   \var{header}
@@ -349,6 +359,7 @@ Grammar definitions have the following format:
 \%\%
   \var{trailer}
 \end{alltt}
+\endgroup
 
 Comments are enclosed between \verb|/*| and \verb|*/| (as in C) in the
 ``declarations'' and ``rules'' sections, and between \verb|(*| and
@@ -448,6 +459,12 @@ resolve reduce/reduce and shift/reduce conflicts:
 \subsection{Rules}
 
 The syntax for rules is as usual:
+\begingroup%
+\newcommand{\sub}[1]{$_{#1}$}%
+\renewcommand{\{}{\char`\{}%
+\renewcommand{\}}{\char`\}}%
+\renewcommand{\\}{\char`\\}%
+\renewcommand{\%}{\char`\%}%
 \begin{alltt}
 \var{nonterminal} :
     \var{symbol} \ldots \var{symbol} \{ \var{semantic-action} \}
@@ -455,6 +472,7 @@ The syntax for rules is as usual:
   | \var{symbol} \ldots \var{symbol} \{ \var{semantic-action} \}
 ;
 \end{alltt}
+\endgroup
 %
 Rules can also contain the \verb"%prec "{\it symbol} directive in the
 right-hand side part, to override the default precedence and

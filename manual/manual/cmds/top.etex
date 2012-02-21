@@ -337,7 +337,7 @@ At start-up, the toplevel system contains implementations for all the
 modules in the the standard library. Implementations for user modules
 can be entered with the "#load" directive described above. Referencing
 a unit for which no implementation has been provided
-results in the error ``Reference to undefined global `\ldots'\,''.
+results in the error "Reference to undefined global `...'".
 
 Note that entering "open "\var{Mod} merely accesses the compiled
 interface (".cmi" file) for \var{Mod}, but does not load the

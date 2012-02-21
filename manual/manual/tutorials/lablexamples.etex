@@ -254,27 +254,27 @@ their nature or role. Best labels combine in their meaning nature and
 role. When this is not possible the role is to prefer, since the nature will
 often be given by the type itself. Obscure abbreviations should be
 avoided.
-\caml
-\:ListLabels.map : f:('a -> 'b) -> 'a list -> 'b list
-\:UnixLabels.write : file_descr -> buf:string -> pos:int -> len:int -> unit
-\endcaml
+\begin{alltt}
+"ListLabels.map : f:('a -> 'b) -> 'a list -> 'b list"
+UnixLabels.write : file_descr -> buf:string -> pos:int -> len:int -> unit
+\end{alltt}
 
 When there are several objects of same nature and role, they are all
 left unlabeled.
-\caml
-\:ListLabels.iter2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> unit
-\endcaml
+\begin{alltt}
+"ListLabels.iter2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> unit"
+\end{alltt}
 
 When there is no preferable object, all arguments are labeled.
-\caml
-\:StringLabels.blit :
-\:  src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int -> unit
-\endcaml
+\begin{alltt}
+StringLabels.blit :
+  src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int -> unit
+\end{alltt}
 
 However, when there is only one argument, it is often left unlabeled.
-\caml
-\:StringLabels.create : int -> string
-\endcaml
+\begin{alltt}
+StringLabels.create : int -> string
+\end{alltt}
 This principle also applies to functions of several arguments whose
 return type is a type variable, as long as the role of each argument
 is not ambiguous. Labeling such functions may lead to awkward error

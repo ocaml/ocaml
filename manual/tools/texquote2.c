@@ -86,7 +86,11 @@ int main(argc, argv)
     for (p = (unsigned char *) line; *p != 0; p++) {
       c = *p;
       if (inverb) {
-        if (c == inverb) inverb = 0;
+        if (c == inverb){
+          inverb = 0;
+        }else if (c == '\'' || c == '`'){
+          fprintf (stderr, "Warning: %c found in \\verb\n", c);
+        }
         putchar(c);
         continue;
       }

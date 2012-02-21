@@ -207,12 +207,12 @@ otherwise:
 %
 The following character sequences are also keywords:
 %
-\begin{verbatim}
-    !=    #     &     &&    '     (     )     *     +     ,     -
-    -.    ->    .     ..    :     ::    :=    :>    ;     ;;    <
-    <-    =     >     >]    >}    ?     ??    [     [<    [>    [|
-    ]     _     `     {     {<    |     |]    }     ~
-\end{verbatim}
+\begin{alltt}
+"    !=    #     &     &&    '     (     )     *     +     ,     -"
+"    -.    ->    .     ..    :     ::    :=    :>    ;     ;;    <"
+"    <-    =     >     >]    >}    ?     ??    [     [<    [>    [|"
+"    ]     _     `     {     {<    |     |]    }     ~"
+\end{alltt}
 %
 Note that the following identifiers are keywords of the Camlp4
 extensions and should be avoided for compatibility reasons.

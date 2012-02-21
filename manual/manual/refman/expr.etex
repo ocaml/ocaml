@@ -217,9 +217,9 @@ is introduced by the keyword "function":
 \ikwd{function\@\texttt{function}}
 
 $$\begin{array}{rlll}
-\token{function} & {\sl pattern}_1 & \token{->} & {\sl expr}_1 \\
+\token{function} & \textsl{pattern}_1 & \token{->} & \textsl{expr}_1 \\
 \token{|}   & \ldots \\
-\token{|}   & {\sl pattern}_n & \token{->} & {\sl expr}_n
+\token{|}   & \textsl{pattern}_n & \token{->} & \textsl{expr}_n
 \end{array}$$
 This expression evaluates to a functional value with one argument.
 When this function is applied to a value \var{v}, this value is
@@ -390,10 +390,10 @@ The @"else" expr_3@ part can be omitted, in which case it defaults to
 
 The expression
 $$\begin{array}{rlll}
-\token{match} & {\sl expr} \\
-\token{with} & {\sl pattern}_1 & \token{->} & {\sl expr}_1 \\
+\token{match} & \textsl{expr} \\
+\token{with} & \textsl{pattern}_1 & \token{->} & \textsl{expr}_1 \\
 \token{|}     & \ldots \\
-\token{|}     & {\sl pattern}_n & \token{->} & {\sl expr}_n
+\token{|}     & \textsl{pattern}_n & \token{->} & \textsl{expr}_n
 \end{array}$$
 matches the value of @expr@ against the patterns @pattern_1@ to
 @pattern_n@. If the matching against @pattern_i@ succeeds, the
@@ -413,7 +413,7 @@ The expression @expr_1 '&&' expr_2@ evaluates to @'true'@ if both
 @expr_1@ and @expr_2@ evaluate to @'true'@; otherwise, it evaluates to
 @'false'@. The first component, @expr_1@, is evaluated first. The
 second component, @expr_2@, is not evaluated if the first component
-evaluates to @'false'@. Hence, the expression @expr_1 '&&' expr_2@ behaves 
+evaluates to @'false'@. Hence, the expression @expr_1 '&&' expr_2@ behaves
 exactly as
 \begin{center}
 @'if' expr_1 'then' expr_2 'else' 'false'@.
@@ -423,7 +423,7 @@ The expression @expr_1 '||' expr_2@ evaluates to @'true'@ if one of
 @expr_1@ and @expr_2@ evaluates to @'true'@; otherwise, it evaluates to
 @'false'@. The first component, @expr_1@, is evaluated first. The
 second component, @expr_2@, is not evaluated if the first component
-evaluates to @'true'@. Hence, the expression @expr_1 '||' expr_2@ behaves 
+evaluates to @'true'@. Hence, the expression @expr_1 '||' expr_2@ behaves
 exactly as
 \begin{center}
 @'if' expr_1 'then' 'true' 'else' expr_2@.
@@ -466,10 +466,10 @@ value @'()'@.
 
 The expression
 $$\begin{array}{rlll}
-\token{try~} & {\sl expr} \\
-\token{with} & {\sl pattern}_1 & \token{->} & {\sl expr}_1 \\
+\token{try~} & \textsl{expr} \\
+\token{with} & \textsl{pattern}_1 & \token{->} & \textsl{expr}_1 \\
 \token{|}   & \ldots \\
-\token{|}   & {\sl pattern}_n & \token{->} & {\sl expr}_n
+\token{|}   & \textsl{pattern}_n & \token{->} & \textsl{expr}_n
 \end{array}$$
 evaluates the expression @expr@ and returns its value if the
 evaluation of @expr@ does not raise any exception. If the evaluation
