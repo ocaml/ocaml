@@ -404,7 +404,7 @@ val get_all_formatter_output_functions :
    including line breaking and indentation functions. Useful to record the
    current setting and restore it afterwards. *)
 
-(** {6:tags Changing the meaning of printing semantics tags} *)
+(** {6:tagsmeaning Changing the meaning of printing semantics tags} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
