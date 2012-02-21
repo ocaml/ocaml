@@ -22,6 +22,8 @@ type t = {
 
 val none: t
 
+val is_none: t -> bool
+
 val to_string: t -> string
 
 val from_location: kind -> Location.t -> t

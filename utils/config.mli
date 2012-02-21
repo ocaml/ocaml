@@ -99,6 +99,9 @@ val asm: string
         (* The assembler (and flags) to use for assembling
            ocamlopt-generated code. *)
 
+val asm_cfi_supported: bool
+        (* Whether assembler understands CFI directives *)
+
 val ext_obj: string
         (* Extension for object files, e.g. [.o] under Unix. *)
 val ext_asm: string

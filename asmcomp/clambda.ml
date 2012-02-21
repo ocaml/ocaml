@@ -25,8 +25,7 @@ type ulambda =
   | Uconst of structured_constant * string option
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
-  | Uclosure of (function_label * int * Ident.t list * ulambda) list
-              * ulambda list
+  | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
   | Ulet of Ident.t * ulambda * ulambda
   | Uletrec of (Ident.t * ulambda) list * ulambda
@@ -41,6 +40,14 @@ type ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
+
+and ufunction = {
+  label  : function_label;
+  arity  : int;
+  params : Ident.t list;
+  body   : ulambda;
+  dbg    : Debuginfo.t
+}
 
 and ulambda_switch =
   { us_index_consts: int array;

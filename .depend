@@ -505,6 +505,7 @@ asmcomp/linearize.cmi: asmcomp/reg.cmi asmcomp/mach.cmi asmcomp/debuginfo.cmi
 asmcomp/liveness.cmi: asmcomp/mach.cmi
 asmcomp/mach.cmi: asmcomp/reg.cmi asmcomp/debuginfo.cmi asmcomp/cmm.cmi \
     asmcomp/arch.cmo
+asmcomp/printclambda.cmi: asmcomp/clambda.cmi
 asmcomp/printcmm.cmi: asmcomp/cmm.cmi
 asmcomp/printlinear.cmi: asmcomp/linearize.cmi
 asmcomp/printmach.cmi: asmcomp/reg.cmi asmcomp/mach.cmi
@@ -655,6 +656,12 @@ asmcomp/mach.cmo: asmcomp/reg.cmi asmcomp/debuginfo.cmi asmcomp/cmm.cmi \
     asmcomp/arch.cmo asmcomp/mach.cmi
 asmcomp/mach.cmx: asmcomp/reg.cmx asmcomp/debuginfo.cmx asmcomp/cmm.cmx \
     asmcomp/arch.cmx asmcomp/mach.cmi
+asmcomp/printclambda.cmo: bytecomp/printlambda.cmi bytecomp/lambda.cmi \
+    typing/ident.cmi asmcomp/debuginfo.cmi asmcomp/clambda.cmi \
+    parsing/asttypes.cmi asmcomp/printclambda.cmi
+asmcomp/printclambda.cmx: bytecomp/printlambda.cmx bytecomp/lambda.cmx \
+    typing/ident.cmx asmcomp/debuginfo.cmx asmcomp/clambda.cmx \
+    parsing/asttypes.cmi asmcomp/printclambda.cmi
 asmcomp/printcmm.cmo: typing/ident.cmi asmcomp/debuginfo.cmi asmcomp/cmm.cmi \
     asmcomp/printcmm.cmi
 asmcomp/printcmm.cmx: typing/ident.cmx asmcomp/debuginfo.cmx asmcomp/cmm.cmx \

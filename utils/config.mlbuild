@@ -89,6 +89,7 @@ let model = C.model
 let system = C.system
 
 let asm = C.asm
+let asm_cfi_supported = C.asm_cfi_supported
 
 let ext_obj = C.ext_obj
 let ext_asm = C.ext_asm
@@ -122,6 +123,7 @@ let print_config oc =
   p "model" model;
   p "system" system;
   p "asm" asm;
+  p_bool "asm_cfi_supported" asm_cfi_supported;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;

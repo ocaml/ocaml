@@ -30,6 +30,10 @@ Native-code compiler:
       savings of 28%.
     . Added support for position-independent code, natdynlink, profiling and
       exception backtraces.
+- In -g mode, generation of CFI information and a few filename/line
+  number debugging annotations, enabling in particular precise stack
+  backtraces with the gdb debugger. Currently supported for x86 32-bits
+  and 64-bits only. (PR#5487)
 
 Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)

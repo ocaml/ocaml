@@ -58,6 +58,7 @@ and error_size = ref 500                (* -error-size *)
 let dump_parsetree = ref false          (* -dparsetree *)
 and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)
+and dump_clambda = ref false            (* -dclambda *)
 and dump_instr = ref false              (* -dinstr *)
 
 let keep_asm_file = ref false           (* -S *)

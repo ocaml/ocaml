@@ -328,6 +328,10 @@ let mk_dlambda f =
   "-dlambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dclambda f =
+  "-dclambda", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
 ;;
@@ -528,6 +532,7 @@ module type Optcomp_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -573,6 +578,7 @@ module type Opttop_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -748,11 +754,13 @@ struct
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dclambda F._dclambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
     mk_dlive F._dlive;
     mk_dspill F._dspill;
+    mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
     mk_dprefer F._dprefer;
     mk_dalloc F._dalloc;
@@ -793,11 +801,13 @@ module Make_opttop_options (F : Opttop_options) = struct
 
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
+    mk_dclambda F._dclambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
     mk_dlive F._dlive;
     mk_dspill F._dspill;
+    mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
     mk_dprefer F._dprefer;
     mk_dalloc F._dalloc;

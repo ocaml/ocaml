@@ -299,7 +299,10 @@ let rec lam ppf = function
        | Lev_before -> "before"
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body" in
-      fprintf ppf "@[<2>(%s %i-%i@ %a)@]" kind
+      fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
+              ev.lev_loc.Location.loc_start.Lexing.pos_fname
+              ev.lev_loc.Location.loc_start.Lexing.pos_lnum
+              (if ev.lev_loc.Location.loc_ghost then "<ghost>" else "")
               ev.lev_loc.Location.loc_start.Lexing.pos_cnum
               ev.lev_loc.Location.loc_end.Lexing.pos_cnum
               lam expr

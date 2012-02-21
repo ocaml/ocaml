@@ -1542,6 +1542,17 @@ else
   echo "LIBBFD_LINK=" >> Makefile
 fi
 
+# Check whether assembler supports CFI directives
+
+asm_cfi_supported=false
+
+export aspp
+
+if sh ./tryassemble cfi.S; then
+  echo "#define ASM_CFI_SUPPORTED" >> m.h
+  asm_cfi_supported=true
+fi
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"
@@ -1613,6 +1624,7 @@ echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
 echo "CAMLP4=${withcamlp4}" >>Makefile
+echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
@@ -1657,6 +1669,11 @@ else
   echo "        options for linking....... $nativecclinkopts $cclibs"
   echo "        assembler ................ $as"
   echo "        preprocessed assembler ... $aspp"
+  if test "$asm_cfi_supported" = "true"; then
+  echo "        assembler supports CFI ... yes"
+  else
+  echo "        assembler supports CFI ... no"
+  fi
   echo "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then
   echo "        profiling with gprof ..... supported"

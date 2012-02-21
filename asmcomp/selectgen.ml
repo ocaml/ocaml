@@ -819,7 +819,8 @@ method emit_fundecl f =
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = self#extract;
-    fun_fast = f.Cmm.fun_fast }
+    fun_fast = f.Cmm.fun_fast;
+    fun_dbg  = f.Cmm.fun_dbg }
 
 end
 
