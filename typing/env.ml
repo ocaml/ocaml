@@ -220,8 +220,7 @@ let check_consistency filename crcs =
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
   try
-    let buffer = String.create (String.length cmi_magic_number) in
-    really_input ic buffer 0 (String.length cmi_magic_number);
+    let buffer = Misc.input_bytes ic (String.length cmi_magic_number) in
     if buffer <> cmi_magic_number then begin
       close_in ic;
       let pre_len = String.length cmi_magic_number - 3 in

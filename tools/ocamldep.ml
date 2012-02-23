@@ -215,8 +215,7 @@ let remove_preprocessed inputfile =
 
 let is_ast_file ic ast_magic =
   try
-    let buffer = String.create (String.length ast_magic) in
-    really_input ic buffer 0 (String.length ast_magic);
+    let buffer = Misc.input_bytes ic (String.length ast_magic) in
     if buffer = ast_magic then true
     else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
       failwith "OCaml and preprocessor have incompatible versions"

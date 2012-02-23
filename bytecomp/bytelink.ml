@@ -116,8 +116,7 @@ let scan_file obj_name tolink =
       raise(Error(File_not_found obj_name)) in
   let ic = open_in_bin file_name in
   try
-    let buffer = String.create (String.length cmo_magic_number) in
-    really_input ic buffer 0 (String.length cmo_magic_number);
+    let buffer = input_bytes ic (String.length cmo_magic_number) in
     if buffer = cmo_magic_number then begin
       (* This is a .cmo file. It must be linked in any case.
          Read the relocation information to see which modules it
@@ -196,13 +195,11 @@ let debug_info = ref ([] : (int * string) list)
 let link_compunit ppf output_fun currpos_fun inchan file_name compunit =
   check_consistency ppf file_name compunit;
   seek_in inchan compunit.cu_pos;
-  let code_block = String.create compunit.cu_codesize in
-  really_input inchan code_block 0 compunit.cu_codesize;
+  let code_block = input_bytes inchan compunit.cu_codesize in
   Symtable.patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
-    let buffer = String.create compunit.cu_debugsize in
-    really_input inchan buffer 0 compunit.cu_debugsize;
+    let buffer = input_bytes inchan compunit.cu_debugsize in
     debug_info := (currpos_fun(), buffer) :: !debug_info
   end;
   output_fun code_block;

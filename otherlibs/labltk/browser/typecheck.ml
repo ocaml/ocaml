@@ -60,8 +60,7 @@ let parse_pp ~parse ~wrap ~ext text =
       let ic = open_in_bin tmpfile in
       let ast =
         try
-          let buffer = String.create (String.length ast_magic) in
-          really_input ic buffer 0 (String.length ast_magic);
+          let buffer = Misc.input_bytes ic (String.length ast_magic) in
           if buffer = ast_magic then begin
             ignore (input_value ic);
             wrap (input_value ic)

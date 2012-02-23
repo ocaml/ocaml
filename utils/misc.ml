@@ -141,6 +141,14 @@ let copy_file_chunk ic oc len =
     end
   in copy len
 
+(* Reading from a channel *)
+
+let input_bytes ic n =
+  let result = String.create n in
+  really_input ic result 0 n;
+  result
+;;
+
 (* Integer operations *)
 
 let rec log2 n =

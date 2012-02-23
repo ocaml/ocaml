@@ -101,8 +101,7 @@ let rec load_file recursive ppf name =
 
 and really_load_file recursive ppf name filename ic =
   let ic = open_in_bin filename in
-  let buffer = String.create (String.length Config.cmo_magic_number) in
-  really_input ic buffer 0 (String.length Config.cmo_magic_number);
+  let buffer = Misc.input_bytes ic (String.length Config.cmo_magic_number) in
   try
     if buffer = Config.cmo_magic_number then begin
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
