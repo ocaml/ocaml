@@ -346,11 +346,13 @@ let descriptions =
    21, "Non-returning statement.";
    22, "Camlp4 warning.";
    23, "Useless record \"with\" clause.";
-   24, "Bad module name: the source file name is not a valid OCaml module name.";
+   24, "Bad module name: the source file name is not a valid OCaml module \
+        name.";
    25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
-   \    checked";
-   26, "Suspicious unused variable: unused variable that is bound with \"let\"\n\
-   \    or \"as\", and doesn't start with an underscore (\"_\") character.";
+   \    checked.";
+   26, "Suspicious unused variable: unused variable that is bound\n\
+   \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
+   \    character.";
    27, "Innocuous unused variable: unused variable that is not bound with\n\
    \    \"let\" nor \"as\", and doesn't start with an underscore (\"_\")\n\
    \    character.";

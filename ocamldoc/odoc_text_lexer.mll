@@ -720,7 +720,10 @@ rule main = parse
 | shortcut_list_item
     {
       incr_cpts lexbuf ;
-      if !shortcut_list_mode then
+      if !target_mode || (!open_brackets >= 1) || !code_pre_mode
+          || !ele_ref_mode || !verb_mode then
+        Char (Lexing.lexeme lexbuf)
+      else if !shortcut_list_mode then
         (
          SHORTCUT_LIST_ITEM
         )
@@ -734,7 +737,10 @@ rule main = parse
 | shortcut_enum_item
     {
       incr_cpts lexbuf ;
-      if !shortcut_list_mode then
+      if !target_mode || (!open_brackets >= 1) || !code_pre_mode
+         || !ele_ref_mode || !verb_mode then
+        Char (Lexing.lexeme lexbuf)
+      else if !shortcut_list_mode then
         SHORTCUT_ENUM_ITEM
       else
         (

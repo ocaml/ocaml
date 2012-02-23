@@ -301,9 +301,9 @@ class text =
       ps fmt "\n\\end{ocamldoccode}\n"
 
     method latex_of_Verbatim fmt s =
-      ps fmt "\\begin{verbatim}";
+      ps fmt "\n\\begin{verbatim}\n";
       ps fmt s;
-      ps fmt "\\end{verbatim}"
+      ps fmt "\n\\end{verbatim}\n"
 
     method latex_of_Bold fmt t =
       ps fmt "{\\bf ";

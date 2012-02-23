@@ -40,13 +40,13 @@
       # let f () = "foo";;
       val f : unit -> string = <fun>
       # (f ()).[0] <- 'b';;
-      _ : unit = ()
+      - : unit = ()
       # f ();;
-      _ : string = "boo"
+      - : string = "boo"
   ]}
 
   Likewise, many functions from the standard library can return string
-  literals or one of their string arguments.  Therefore, the returned strings 
+  literals or one of their string arguments.  Therefore, the returned strings
   must not be modified directly.  If mutation is absolutely necessary,
   it should be performed on a fresh copy of the string, as produced by
   {!String.copy}.
