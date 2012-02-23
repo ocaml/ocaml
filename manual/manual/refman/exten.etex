@@ -540,9 +540,9 @@ actually be unified with "int".
 The other application is to ensure that some definition is sufficiently
 polymorphic.
 \caml
-\?let id : 'a. 'a -> 'a = \<fun x -> x+1\> ;;
+\?let id : {\textquotesingle}a. {\textquotesingle}a -> {\textquotesingle}a = \<fun x -> x+1\> ;;
 \:Error: This definition has type int -> int which is less general than
-\:         'a. 'a -> 'a
+\:         {\textquotesingle}a. {\textquotesingle}a -> {\textquotesingle}a
 \endcaml
 
 \section{Explicit naming of type variables}
@@ -901,11 +901,11 @@ same type.
 \endcaml
 
 \section{Explicit overriding in class definitions}
-\ikwd{method!\@\texttt{method!}}
-\ikwd{val!\@\texttt{val!}}
-\ikwd{inherit!\@\texttt{inherit!}}
+\ikwd{methodx\@\texttt{method\char33}}
+\ikwd{valx\@\texttt{val\char33}}
+\ikwd{inheritx\@\texttt{inherit\char33}}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12) "foo \verb+xxx+ bar"
 
 \begin{syntax}
 class-field:

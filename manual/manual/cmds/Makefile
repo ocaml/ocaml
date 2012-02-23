@@ -17,6 +17,9 @@ clean:
 .etex.tex:
 	$(TEXQUOTE) < $*.etex > $*.tex
 
+ocamldoc.tex: ocamldoc.etex $(TRANSF)
+	$(TRANSF) < ocamldoc.etex | $(TEXQUOTE) > ocamldoc.tex
+
 top.tex: top.etex $(TRANSF)
 	$(TRANSF) < top.etex | $(TEXQUOTE) > top.tex
 
@@ -26,5 +29,5 @@ lexyacc.tex: lexyacc.etex $(TRANSF)
 debugger.tex: debugger.etex $(TRANSF)
 	$(TRANSF) < debugger.etex | $(TEXQUOTE) > debugger.tex
 
-warnings.tex: ../warnings.tex
-	cp ../warnings.tex .
+warnings.etex: ../warnings.etex
+	cp ../warnings.etex .

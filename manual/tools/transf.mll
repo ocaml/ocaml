@@ -14,6 +14,9 @@ rule main = parse
     "\\begin{syntax}" {
       print_string "\\begin{syntax}";
       syntax lexbuf }
+  | "\\begin{verbatim}" {
+      print_string "\\begin{verbatim}";
+      verbatim lexbuf }
   | "\\@" {
       print_string "@";
       main lexbuf }
@@ -39,12 +42,12 @@ and syntax = parse
       print_string "\\token{";
       indoublequote lexbuf }
   | "epsilon" { print_string "\\emptystring"; syntax lexbuf }
-  | ['a'-'z'] ['a'-'z' '0'-'9' '-'] * as lxm {
+  | ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '-'] * as lxm {
       print_string "\\nonterm{";
       print_string lxm ;
       print_string"}";
       syntax lexbuf }
-  | '@' (['a'-'z'] ['a'-'z' '0'-'9' '-'] * as lxm) '@' {
+  | '@' (['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '-'] * as lxm) '@' {
       print_string "\\nt{";
       print_string lxm ;
       print_string"}";
@@ -81,8 +84,7 @@ and inquote = parse
       print_string "}";
       syntax lexbuf }
   | _ {
-      print_string "\\char";
-      print_int (int_of_char (lexeme_char lexbuf 0));
+      print_char_repr (lexeme_char lexbuf 0);
       inquote lexbuf }
 
 and indoublequote = parse
@@ -96,4 +98,10 @@ and indoublequote = parse
       print_char_repr (lexeme_char lexbuf 0);
       indoublequote lexbuf }
 
-
+and verbatim = parse
+    "\n\\end{verbatim}" {
+      print_string "\n\\end{verbatim}";
+      main lexbuf }
+  | _ {
+      print_char (lexeme_char lexbuf 0);
+      verbatim lexbuf }

@@ -28,8 +28,11 @@ int main(argc, argv)
   int c;
   int inquote;
   int inverb;
-  int inverbatim;
+  int inverbatim_like;
   int incaml;
+  int inverbatim = 0;
+  char *verbatim_end_in = "";
+  char *verbatim_end_out = "";
 
   for (c = 0; c < 256; c++) transl[c] = NULL;
 #ifdef TIE_BLANKS
@@ -51,18 +54,18 @@ int main(argc, argv)
   transl['%'] = "\\%";
   transl['\''] = "{\\textquotesingle}";
   transl['`'] = "{\\textasciigrave}";
-  inverbatim = 0;
+  inverbatim_like = 0;
   incaml = 0;
   inquote = 0;
+  inverbatim = 0;
 
   puts ("% THIS FILE IS GENERATED.\n");
 
   while(fgets(line, LINE_LENGTH, stdin) != NULL) {
-    if (inverbatim) {
+    if (inverbatim_like) {
       fputs(line, stdout);
-      if (isprefix(line, "\\end{verbatim")
-          || isprefix(line, "\\end{caml_")
-          || isprefix(line, "\\end{rawhtml}")) inverbatim = 0;
+      if (isprefix(line, "\\end{caml_")
+          || isprefix(line, "\\end{rawhtml}")) inverbatim_like = 0;
       continue;
     }
     if (incaml) {
@@ -70,16 +73,45 @@ int main(argc, argv)
       if (isprefix(line, "\\endcaml")) incaml = 0;
       continue;
     }
-    if (isprefix(line, "\\begin{verbatim")
-        || isprefix(line, "\\begin{caml_")
+    if (inverbatim){
+      if (isprefix (line, verbatim_end_in)){
+        fputs (verbatim_end_out, stdout);
+        inverbatim = 0;
+      }else{
+        for (p = (unsigned char *) line; *p != 0; p++){
+          c = *p;
+          if (c == ' ' || c == '\n' || transl[c] == NULL){
+            putchar (c);
+          }else{
+            fputs (transl[c], stdout);
+          }
+        }
+      }
+      continue;
+    }
+    if (isprefix(line, "\\begin{caml_")
         || isprefix(line, "\\begin{rawhtml}")) {
       fputs(line, stdout);
-      inverbatim = 1;
+      inverbatim_like = 1;
       continue;
     }
     if (isprefix(line, "\\caml")) {
       fputs(line, stdout);
       incaml = 1;
+      continue;
+    }
+    if (isprefix (line, "\\begin{verbatim}")){
+      fputs ("\\begin{machineenv}", stdout);
+      inverbatim = 1;
+      verbatim_end_in = "\\end{verbatim}";
+      verbatim_end_out = "\\end{machineenv}";
+      continue;
+    }
+    if (isprefix (line, "\\begin{ocamldoccode}")){
+      fputs ("\\begin{ocamldoccode}", stdout);
+      inverbatim = 1;
+      verbatim_end_in = "\\end{ocamldoccode}";
+      verbatim_end_out = "\\end{ocamldoccode}";
       continue;
     }
     inverb = 0;
@@ -105,12 +137,7 @@ int main(argc, argv)
         }
         break;
       case '\\':
-        if (isprefix(p, "\\verb") && p[5] != 0 && !isalpha(p[5])) {
-          inverb = p[5];
-          p = p + 5;
-          fputs("\\verb", stdout);
-          putchar(inverb);
-        } else if (inquote) {
+        if (inquote) {
           if (p[1] == '"' || p[1] == '\\') {
             c = p[1];
             p++;
@@ -119,6 +146,11 @@ int main(argc, argv)
             fputs(transl[c], stdout);
           else
             putchar(c);
+        } else if (isprefix(p, "\\verb") && p[5] != 0 && !isalpha(p[5])) {
+          inverb = p[5];
+          p = p + 5;
+          fputs("\\verb", stdout);
+          putchar(inverb);
         } else {
           putchar('\\');
         }

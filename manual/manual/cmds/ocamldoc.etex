@@ -97,7 +97,7 @@ read with the "-load" option in a subsequent invocation of "ocamldoc".
 
 \item["-hide" \var{modules}]
 Hide the given complete module names in the generated documentation.
-\var{modules} is a list of complete module names are separated
+\var{modules} is a list of complete module names separated
  by '","', without blanks.  For instance: "Pervasives,M2.M3".
 
 \item["-inv-merge-ml-mli"]
@@ -124,20 +124,20 @@ Specify merge options between interfaces and implementations.
 \var{flags} can be one or several of the following characters:
 \begin{options}
         \item["d"] merge description
-        \item["a"] merge @author
-        \item["v"] merge @version
-        \item["l"] merge @see
-        \item["s"] merge @since
-        \item["b"] merge @before
-        \item["o"] merge @deprecated
-        \item["p"] merge @param
-        \item["e"] merge @raise
-        \item["r"] merge @return
+        \item["a"] merge "\@author"
+        \item["v"] merge "\@version"
+        \item["l"] merge "\@see"
+        \item["s"] merge "\@since"
+        \item["b"] merge "\@before"
+        \item["o"] merge "\@deprecated"
+        \item["p"] merge "\@param"
+        \item["e"] merge "\@raise"
+        \item["r"] merge "\@return"
         \item["A"] merge everything
 \end{options}
 
 \item["-no-custom-tags"]
-Do not allow custom @-tags (see section \ref{s:ocamldoc-tags}).
+Do not allow custom \@-tags (see section \ref{s:ocamldoc-tags}).
 
 \item["-no-stop"]
 Keep elements placed after/between the "(**/**)" special comment(s)
@@ -174,7 +174,8 @@ line of comments.
 Use \var{title} as the title for the generated documentation.
 
 \item["-intro" \var{file}]
-Use content of \var{file} as ocamldoc text to use as introduction (HTML, \LaTeX and TeXinfo only).
+Use content of \var{file} as ocamldoc text to use as introduction (HTML,
+\LaTeX{} and TeXinfo only).
 For HTML, the file is used to create the whole "index.html" file.
 
 \item["-v"]
@@ -229,7 +230,7 @@ Display the complete list of parameters for functions and methods.
 Use \var{filename} as the Cascading Style Sheet file.
 
 \item["-colorize-code"]
-Colorize the OCaml code enclosed in "[ ]" and "\{[ ]\}", using colors
+Colorize the OCaml code enclosed in "[ ]" and "{[ ]}", using colors
 to emphasize keywords, etc.  If the code fragments are not
 syntactically correct, no color is added.
 
@@ -367,9 +368,9 @@ following rules:
 \item Only elements (values, types, classes, ...) declared in the ".mli"
 file are kept.  In other terms, definitions from the ".ml" file that are
 not exported in the ".mli" file are not documented.
-\item Descriptions of elements and descriptions in @-tags are handled
+\item Descriptions of elements and descriptions in \@-tags are handled
 as follows.  If a description for the same element or in the same
-@-tag of the same element is present in both files, then the
+\@-tag of the same element is present in both files, then the
 description of the ".ml" file is concatenated to the one in the ".mli" file,
 if the corresponding "-m" flag is given on the command line.
 If a description is present in the ".ml" file and not in the
@@ -440,11 +441,11 @@ A special comment after an element is associated to this element if
 there is no blank line or comment between the special comment and the
 element.
 
-There are two exceptions: for type constructors and record fields in
+There are two exceptions: for constructors and record fields in
 type definitions, the associated comment can only be placed after the
 constructor or field definition, without blank lines or other comments
-between them. The special comment for a type constructor
-with another type constructor following must be placed before the '|'
+between them. The special comment for a constructor
+with another constructor following must be placed before the '"|"'
 character separating the two constructors.
 
 The following sample interface file "foo.mli" illustrates the
@@ -566,11 +567,11 @@ module type my_module_type =
 A special comment is associated to an element if it is placed before
 the element and there is no blank line between the comment and the
 element. Meanwhile, there can be a simple comment between the special
-comment and the element. There are two exceptions, for type
+comment and the element. There are two exceptions, for
 constructors and record fields in type definitions, whose associated
 comment must be placed after the constructor or field definition,
-without blank line between them. The special comment for a type constructor
-with another type constructor following must be placed before the '|'
+without blank line between them. The special comment for a constructor
+with another constructor following must be placed before the '"|"'
 character separating the two constructors.
 
 The following example of file "toto.ml" shows where to place comments
@@ -578,7 +579,7 @@ in a ".ml" file.
 
 \begin{verbatim}
 (** The first special comment of the file is the comment associated
-    to the whole module.*)
+    to the whole module. *)
 
 (** The comment for function f *)
 let f x y = x + y
@@ -686,7 +687,7 @@ comments to be ignored.
 The inside of documentation comments "(**"\ldots"*)" consists of
 free-form text with optional formatting annotations, followed by
 optional {\em tags} giving more specific information about parameters,
-version, authors, \ldots\ The tags are distinguished by a leading @
+version, authors, \ldots\ The tags are distinguished by a leading "\@"
 character.  Thus, a documentation comment has the following shape:
 \begin{verbatim}
 (** The comment begins with a description, which is text formatted
@@ -696,10 +697,10 @@ character.  Thus, a documentation comment has the following shape:
    @param x description for parameter x
 *)
 \end{verbatim}
-Some elements support only a subset of all @-tags.  Tags that are not
+Some elements support only a subset of all \@-tags.  Tags that are not
 relevant to the documented element are simply ignored.  For instance,
 all tags are ignored when documenting type constructors, record
-fields, and class inheritance clauses.  Similarly, a "@param" tag on a
+fields, and class inheritance clauses.  Similarly, a "\@param" tag on a
 class instance variable is ignored.
 
 At last, "(**)" is the empty documentation comment.
@@ -712,54 +713,59 @@ text descriptions.
 
 \newpage
 
-\noindent{\it text} ::= ({\it text\_element})"+"\\
+\begin{syntax}
+text: {{text-element}}
+;
+\end{syntax}
+\noindent{}@text-element@ ::= \\
 
-\noindent{\it text\_element} ::= \\
-\begin{tabular}{@{}lp{10cm}}
-{\tt | \{[0-9]+ {\it text}\}} & format {\it text} as a section header;
+
+\begin{tabular}{rlp{10cm}}
+@||@&@ '{' {{ "0" \ldots "9" }} text '}' @ & format @text@ as a section header;
   the integer following "{" indicates the sectioning level. \\
-{\tt | \{[0-9]+:{\it label} {\it text}\}} &
-  same, but also associate the name {\it label} to the current point.
+@||@&@ '{' {{ "0" \ldots "9" }} ':' lbl text '}' @ &
+  same, but also associate the name @lbl@ to the current point.
   This point can be referenced by its fully-qualified label in a
   "{!" command, just like any other element. \\
-{\tt | \{b {\it text}\}} & set {\it text} in bold. \\
-{\tt | \{i {\it text}\}} & set {\it text} in italic. \\
-{\tt | \{e {\it text}\}} & emphasize {\it text}. \\
-{\tt | \{C {\it text}\}} & center {\it text}. \\
-{\tt | \{L {\it text}\}} & left align {\it text}. \\
-{\tt | \{R {\it text}\}} & right align {\it text}. \\
-{\tt | \{ul {\it list}\}} & build a list. \\
-{\tt | \{ol {\it list}\}} & build an enumerated list. \\
-{\tt | \{\{:{\it string}\}{\it text}\}} & put a link to the given address
-(given as a string) on the given text. \\
-{\tt | [{\it string}]} & set the given {\it string} in source code style. \\
-{\tt | \{[{\it string}]\}} & set the given {\it string} in preformatted
+@||@&@ '{b' text '}' @ & set @text@ in bold. \\
+@||@&@ '{i' text '}' @ & set @text@ in italic. \\
+@||@&@ '{e' text '}' @ & emphasize @text@. \\
+@||@&@ '{C' text '}' @ & center @text@. \\
+@||@&@ '{L' text '}' @ & left align @text@. \\
+@||@&@ '{R' text '}' @ & right align @text@. \\
+@||@&@ '{ul' list '}' @ & build a list. \\
+@||@&@ '{ol' list '}' @ & build an enumerated list. \\
+@||@&@ '{{:' string '}' text '}' @ & put a link to the given address
+(given as @string@) on the given @text@. \\
+@||@&@ '[' string ']' @ & set the given @string@ in source code style. \\
+@||@&@ '{[' string ']}' @ & set the given @string@ in preformatted
 				source code style.\\
-{\tt | \{v {\it string} v\}} & set the given {\it string} in verbatim style. \\
-{\tt | \{\% {\it string} \%\}} & take the given {\it string}
-as raw \LaTeX\ code.\\
-{\tt | \{!{\it string}\}} & insert a reference to the element named
-{\it string}. {\it string} must be a fully qualified element name,
-for example {\tt Foo.Bar.t}. The kind of the referenced element can be forced
+@||@&@ '{v' string 'v}' @ & set the given @string@ in verbatim style. \\
+@||@&@ '{%' string '%}' @ & take the given @string@ as raw \LaTeX\ code.\\
+@||@&@ '{!' string '}' @ & insert a reference to the element named
+@string@. @string@ must be a fully qualified element name,
+for example "Foo.Bar.t". The kind of the referenced element can be forced
 (useful when various elements have the same qualified name) with the following
-syntax: {\tt\{!{\it kind}: Foo.Bar.t\}} where {\tt \it kind} can be
-{\tt module}, {\tt modtype}, {\tt class}, {\tt classtype}, {\tt val},
-{\tt type}, {\tt exception}, {\tt attribute}, {\tt method} or {\tt section}.\\
-{\tt | \{!modules: {\it string} {\it string} ...\}} & insert an index table
+syntax: @ '{!' kind ':' string '}' @ where @kind@ can be
+"module", "modtype", "class", "classtype", "val",
+"type", "exception", "attribute", "method" or "section".\\
+@||@&@ '{!modules:' string string ... '}' @ & insert an index table
 for the given module names. Used in HTML only.\\
-{\tt | \{!indexlist\}} & insert a table of links to the various indexes
+@||@&@ '{!indexlist}' @ & insert a table of links to the various indexes
 (types, values, modules, ...). Used in HTML only.\\
-{\tt | \{\^{} {\it text}\}} & set text in superscript.\\
-{\tt | \{\_ {\it text}\}} & set text in subscript.\\
-{\tt | {\it escaped\_string}} & typeset the given string as is;
-special characters ('{\tt \{}', '{\tt \}}', '{\tt [}', '{\tt ]}' and '{\tt @}')
-must be	escaped by a '{\tt \textbackslash}'\\
-{\tt | {\it blank\_line} } & force a new line.
+@||@&@ '{^' text '}' @ & set text in superscript.\\
+@||@&@ '{_' text '}' @ & set text in subscript.\\
+@||@&@ escaped-string @ & typeset the given string as is;
+special characters ('"{"', '"}"', '"["', '"]"' and '"\@"')
+must be	escaped by a '"\\"'\\
+@||@&@ blank-line @ & force a new line.
 \end{tabular} \\
 
-\noindent{\it list} ::= \\
-{}~~{\tt | (\{-  {\it text}\})+}\\
-{}~~{\tt | (\{li  {\it text}\})+}\\
+\begin{syntax}
+list:
+| {{ '{-' text '}' }}
+| {{ '{li' text '}' }}
+\end{syntax}
 
 A shortcut syntax exists for lists and enumerated lists:
 \begin{verbatim}
@@ -792,66 +798,67 @@ is composed of the first characters of the description, until
 \item the first blank line
 \end{itemize}
 outside of the following text formatting :
-{\tt \{ul {\em list}\}},
-{\tt \{ol {\em list}\}},
-{\tt [{\em string}]},
-{\tt \{[{\em string}]\}},
-{\tt \{v {\em string} v\}},
-{\tt \{\% {\em string}\%\}},
-{\tt \{!{\em string}\}},
-{\tt \{\^{} {\em text}\}},
-{\tt \{\_ {\em text}\}}.
+@ '{ul' list '}' @,
+@ '{ol' list '}' @,
+@ '[' string ']' @,
+@ '{[' string ']}' @,
+@ '{v' string 'v}' @,
+@ '{%' string '%}' @,
+@ '{!' string '}' @,
+@ '{^' text '}' @,
+@ '{_' text '}' @.
 
 %%%%%%%%%%%%%
-\subsection{Documentation tags (@-tags)}
+\subsection{Documentation tags (\@-tags)}
 \label{s:ocamldoc-tags}
 
 \subsubsection{Predefined tags}
-The folowing table gives the list of predefined @-tags, with their
+The following table gives the list of predefined \@-tags, with their
 syntax and meaning.\\
 
 \begin{tabular}{|p{5cm}|p{10cm}|}\hline
-"@author "{\em string} & The author of the element. One author by "@author" tag.
-There may be several "@author" tags for the same element. \\ \hline
+@ "@author" string @ & The author of the element. One author per
+"\@author" tag.
+There may be several "\@author" tags for the same element. \\ \hline
 
-"@deprecated "{\em text} & The {\em text} should describe when the element was
+@ "@deprecated" text @ & The @text@ should describe when the element was
 deprecated, what to use as a replacement, and possibly the reason
 for deprecation. \\ \hline
 
-"@param "{\em id text} & Associate the given description ({\em text}) to the
-given parameter name {\em id}. This tag is used for functions,
+@ "@param" id text @ & Associate the given description (@text@) to the
+given parameter name @id@. This tag is used for functions,
 methods, classes and functors. \\ \hline
 
-"@raise Exc "{\em text} & Explain that the element may raise
- the exception "Exc". \\ \hline
+@ "@raise" Exc text @ & Explain that the element may raise
+ the exception @Exc@. \\ \hline
 
-"@return "{\em text} & Describe the return value and
+@ "@return" text @ & Describe the return value and
  its possible values. This tag is used for functions
  and methods. \\ \hline
 
-"@see <url> "{\em text} &  Add a reference to the URL between '"<"' and '">"'
-with the given text as comment. \\ \hline
+@ "@see" '<' URL '>' text @ &  Add a reference to the @URL@
+with the given @text@ as comment. \\ \hline
 
-"@see 'filename' "{\em text} &  Add a reference to the given file name
-(written between single quotes), with the given text as comment. \\ \hline
+@ "@see" "'" filename "'" text @ &  Add a reference to the given file name
+(written between single quotes), with the given @text@ as comment. \\ \hline
 
-"@see \"document name\" "{\em text} &  Add a reference to the given
-document name (written between double quotes), with the given text
+@ "@see" '"' document-name '"' text @ &  Add a reference to the given
+document name (written between double quotes), with the given @text@
 as comment. \\ \hline
 
-"@since "{\em string} & Indicate when the element was introduced. \\ \hline
+@ "@since" string @ & Indicate when the element was introduced. \\ \hline
 
-"@before "{\em v text} & Associate the given description ({\em text}) to the
-given version {\em v} in order to document compatibility issues. \\ \hline
+@ "@before" v text @ & Associate the given description (@text@) to the
+given version @v@ in order to document compatibility issues. \\ \hline
 
-"@version "{\em string} & The version number for the element. \\ \hline
+@ "@version" string @ & The version number for the element. \\ \hline
 \end{tabular}
 
 \subsubsection{Custom tags}
 \label{s:ocamldoc-custom-tags}
 You can use custom tags in the documentation comments, but they will
 have no effect if the generator used does not handle them. To use a
-custom tag,  for example "foo", just put "@foo" with some text in your
+custom tag,  for example "foo", just put "\@foo" with some text in your
 comment, as in:
 \begin{verbatim}
 (** My comment to show you a custom tag.
@@ -885,15 +892,19 @@ The files you can used to define custom generators are installed in the
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The generator class}
 A generator class is a class of type "Odoc_args.doc_generator".
-It has only one method\\
-"generator : Odoc_info.Module.t_module list -> unit"\\
-This method will be called with the list of analysed and possibly
+It has only one method
+\begin{verbatim}
+        generator : Odoc_info.Module.t_module list -> unit
+\end{verbatim}
+\noindent{}This method will be called with the list of analysed and possibly
 merged "Odoc_info.t_module" structures.
 Of course the class can have other methods, but the object of this
  class must be coerced to "Odoc_args.doc_generator" before being
- passed to the function\\
-"Odoc_args.set_doc_generator : Odoc_args.doc_generator -> unit"\\
-which installs the new documentation generator.
+ passed to the function
+\begin{verbatim}
+        Odoc_args.set_doc_generator : Odoc_args.doc_generator -> unit
+\end{verbatim}
+\noindent{}which installs the new documentation generator.
 
 The following example shows how to define and install a new documentation generator.
 See the "odoc_fhtml" generator (in the Ocamldoc Hump) for a complete example.
@@ -929,8 +940,8 @@ Here is how to develop a HTML generator handling your custom tags.
 
 The class "Odoc_html.html" inherits
 from the class "Odoc_html.info", containing a field "tag_functions" which is a
-list pairs composed of a custom tag (e.g. 'foo') and a function taking a "text"
-and returning HTML code (of type "string").
+list pairs composed of a custom tag (e.g. "\"foo\"") and a function taking
+a "text" and returning HTML code (of type "string").
 To handle a new tag "bar", create a HTML generator class from the existing one
  and complete the "tag_functions" field:
 \begin{verbatim}
@@ -961,9 +972,12 @@ adding your own tag handler to the field "tag_functions".
 \section{Adding command line options}
 The command line analysis is performed after loading the module containing the
 documentation generator, thus allowing command line options to be added to the
- list of existing ones. Adding an option can be done with the function\\
-"Odoc_args.add_option : string * Arg.spec * string -> unit"\\
-Note: Existing command line options can be redefined using this function.
+ list of existing ones. Adding an option can be done with the function
+\begin{verbatim}
+        Odoc_args.add_option : string * Arg.spec * string -> unit
+\end{verbatim}
+\noindent{}Note: Existing command line options can be redefined using
+this function.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compilation and usage}
@@ -972,30 +986,38 @@ Note: Existing command line options can be redefined using this function.
 %%%%%%%%%%%%%%
 \subsubsection{Defining a custom generator class in one file}
 Let "custom.ml" be the file defining a new generator class.
-Compilation of "custom.ml" can be performed by the following command~:\\
-"ocamlc -I +ocamldoc -c custom.ml"\\
-The file "custom.cmo" is created and can be used this way~:\\
-{\tt ocamldoc -g custom.cmo {\em other-options} {\em source-files}}\\
-It is important not to give the {\bf\tt -html} or any other option selecting a
-built in generator to {\tt ocamldoc},
+Compilation of "custom.ml" can be performed by the following command~:
+\begin{alltt}
+        ocamlc -I +ocamldoc -c custom.ml
+\end{alltt}
+\noindent{}The file "custom.cmo" is created and can be used this way~:
+\begin{alltt}
+        ocamldoc -g custom.cmo \var{other-options} \var{source-files}
+\end{alltt}
+\noindent{}It is important not to give the "-html" or any other option
+selecting a built-in generator to "ocamldoc",
 which would result in using this generator instead of the one you just loaded.
 
 %%%%%%%%%%%%%%
 \subsubsection{Defining a custom generator class in several files}
 It is possible to define a generator class in several modules, which
-are defined in several files "file1.ml[i]", "file2.ml[i]", ...,
-"fileN.ml[i]". A ".cma" library file must
-be created, including all these files.\\
-The following commands create the "custom.cma" file from files "file1.ml[i]", ...,
-"fileN.ml[i]"~:\\
-{\tt
-ocamlc -I +ocamldoc -c file1.ml[i]\\
-ocamlc -I +ocamldoc -c file2.ml[i]\\
-...\\
-ocamlc -I +ocamldoc -c fileN.ml[i]\\
-ocamlc -o custom.cma -a file1.cmo file2.cmo ... fileN.cmo}\\
-Then, the following command uses {\tt custom.cma} as custom generator:\\
-{\tt ocamldoc -g custom.cma {\em other-options} {\em source-files}}\\
-Again, it is important not to give the {\bf\tt -html} or any other option selecting a
-built in generator to {\tt ocamldoc},
+are defined in several files \var{\nth{file}{1}}".ml"["i"],
+\var{\nth{file}{2}}".ml"["i"], ..., \var{\nth{file}{n}}".ml"["i"]. A ".cma"
+library file must be created, including all these files.
+
+The following commands create the "custom.cma" file from files
+\var{\nth{file}{1}}".ml"["i"], ..., \var{\nth{file}{n}}".ml"["i"]~:
+\begin{alltt}
+ocamlc -I +ocamldoc -c \var{\nth{file}{1}}.ml\textrm{[}i\textrm{]}
+ocamlc -I +ocamldoc -c \var{\nth{file}{2}}.ml\textrm{[}i\textrm{]}
+...
+ocamlc -I +ocamldoc -c \var{\nth{file}{n}}.ml\textrm{[}i\textrm{]}
+ocamlc -o custom.cma -a \var{\nth{file}{1}}.cmo \var{\nth{file}{2}}.cmo ... \var{\nth{file}{n}}.cmo
+\end{alltt}
+\noindent{}Then, the following command uses "custom.cma" as custom generator:
+\begin{alltt}
+        ocamldoc -g custom.cma \var{other-options} \var{source-files}
+\end{alltt}
+\noindent{}Again, it is important not to give the "-html" or any other
+option selecting a built-in generator to "ocamldoc",
 which would result in using this generator instead of the one you just loaded.

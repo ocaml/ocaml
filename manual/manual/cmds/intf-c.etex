@@ -588,10 +588,10 @@ containing "hash_variant(\"VConstr\")" and field number 1 containing
 
 Unlike constructed values, polymorphic variant values taking several
 arguments are not flattened.
-That is, "`VConstr("\var{v}", "\var{v'}")" is represented by a block
+That is, "`VConstr("\var{v}", "\var{w}")" is represented by a block
 of size 2, whose field number 1 contains the representation of the
-pair "("\var{v}", "\var{v'}")", rather than a block of size 3
-containing \var{v} and \var{v'} in fields 1 and 2.
+pair "("\var{v}", "\var{w}")", rather than a block of size 3
+containing \var{v} and \var{w} in fields 1 and 2.
 
 \section{Operations on values}
 \pdfsection{Operations on values}
@@ -1044,7 +1044,7 @@ value alloc_list_int(int i1, int i2)
   CAMLparam0 ();
   CAMLlocal2 (result, r);
 
-  r = caml_alloc_small(2, 0);                  /* Allocate a cons cell */
+  r = caml_alloc_small(2, 0);             /* Allocate a cons cell */
   Field(r, 0) = Val_int(i2);              /* car = the integer i2 */
   Field(r, 1) = Val_int(0);               /* cdr = the empty list [] */
   result = caml_alloc_small(2, 0);        /* Allocate the other cons cell */
@@ -1482,7 +1482,7 @@ just like any C functions. The OCaml functions are defined in the
 following "mod.ml" OCaml source:
 
 \begin{verbatim}
-(* File mod.ml -- some ``useful'' OCaml functions *)
+(* File mod.ml -- some "useful" OCaml functions *)
 
 let rec fib n = if n < 2 then 1 else fib(n-1) + fib(n-2)
 

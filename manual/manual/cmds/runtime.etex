@@ -138,9 +138,9 @@ The following environment variables are also consulted:
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
   $2^{20}$, and $2^{30}$ respectively.
   For example, on a 32-bit machine, under "bash" the command
-\begin{alltt}
+\begin{verbatim}
         export OCAMLRUNPARAM='b,s=256k,v=0x015'
-\end{alltt}
+\end{verbatim}
   tells a subsequent "ocamlrun" to print backtraces for uncaught exceptions,
   set its initial minor heap size to 1~megabyte and
   print a message at the start of each major GC cycle, when the heap

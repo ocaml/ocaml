@@ -6,7 +6,7 @@
 \begin{syntax}
 typexpr:
         "'" ident
-      | "_" 
+      | "_"
       | '(' typexpr ')'
       | [['?']label-name':'] typexpr '->' typexpr
       | typexpr {{ '*' typexpr }}
@@ -163,7 +163,7 @@ just an abbreviation for a closed variant type where all possible tags
 are also potentially present.
 
 In all three cases, tags may be either specified directly in the
-{\it `tag-name \rm [\dots]} form, or indirectly through a type
+@'`'tag-name ["of" typexpr]@ form, or indirectly through a type
 expression. In this last case, the type expression must expand to an
 exact variant type, whose tag specifications are inserted in its
 place.
@@ -214,7 +214,7 @@ type @('#' class-path 'as' "'" ident) '->' "'" ident@.
 
 Use of \#-types to abbreviate polymorphic variant types is deprecated.
 If "t" is an exact variant type then "#t" translates to "[< t]",
-and @"#t[>" "`tag"_1 \dots"`tag"_k"]"@ translates to 
+and @"#t[>" "`tag"_1 \dots"`tag"_k"]"@ translates to
 @"[<" "t" ">" "`tag"_1 \dots"`tag"_k"]"@
 
 \subsubsection*{Variant and record types}

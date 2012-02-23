@@ -1,4 +1,5 @@
 \newcommand{\machine}{\tt}
+\newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
 \newcommand{\firstline}{\black\#\blue\ }
 \newcommand{\nextline}{\ \ }
 \newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}

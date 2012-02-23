@@ -432,7 +432,7 @@ Show description for all available warning numbers.
 Print the location of the standard library, then exit.
 
 \item["-" \var{file}]
-Process \var{file} as a file name, even if it starts with a dash (-)
+Process \var{file} as a file name, even if it starts with a dash ("-")
 character.
 
 \item["-help" or "--help"]

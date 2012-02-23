@@ -5,8 +5,8 @@
 \def\var#1{{\it#1}}
 \def\nth#1#2{${\it#1}_{#2}$}
 \def\nmth#1#2#3{${\it#1}_{#2}^{#3}$}
-\def\optvar#1{[\var{#1}\/]}
-\def\event{$bowtie$}
+\def\optvar#1{\textrm{[}\var{#1}\/\textrm{]}}
+\def\event{$\bowtie$}
 \def\fromoneto#1#2{$#1 = 1, \ldots, #2$}
 
 % Pour avoir les exposants sur la ligne au-dessus (???)
@@ -38,6 +38,11 @@
 % Pour la traduction "xxxx" -> {\machine{xxxx}} faite par texquote2
 \def\machine#1{\mbox{\ttstretch{#1}}}
 
+% Pour la traduction "\begin{verbatim}...\end{verbatim}"
+%                    -> "\begin{machineenv}...\end{machineenv}"
+% faite aussi par texquote2.
+\newenvironment{machineenv}{\alltt}{\endalltt}
+
 % Environnements
 
 \newlength{\versionwidth}
@@ -48,8 +53,8 @@
 
 \def\unix{\versionspecific{Unix}}
 \def\endunix{\end{description}}
-\def\macos{\versionspecific{MacOS 9}}
-\def\endmacos{\end{description}}
+%\def\macos{\versionspecific{MacOS 9}}
+%\def\endmacos{\end{description}}
 \def\windows{\versionspecific{Windows}}
 \def\endwindows{\end{description}}
 
@@ -179,6 +184,23 @@
 % Pour alltt
 
 \def\rminalltt#1{{\rm #1}}
+
+% redefinition de l'environnement alltt pour que les {} \ et % soient
+% dans la bonne fonte
+
+\let\@oldalltt=\alltt
+\let\@oldendalltt=\endalltt
+\renewenvironment{alltt}{%
+\begingroup%
+\renewcommand{\{}{\char`\{}%
+\renewcommand{\}}{\char`\}}%
+\renewcommand{\\}{\char`\\}%
+\renewcommand{\%}{\char`\%}%
+\@oldalltt%
+}{%
+\@oldendalltt%
+\endgroup%
+}
 
 % Index stuff -- cf multind.sty
 

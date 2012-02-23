@@ -6,7 +6,7 @@ OCaml programs. This interface is generated in an automated way, and
 you should refer to Tcl/Tk books and man pages for detailed
 information on the behavior of the numerous functions. We also suggest
 to use "ocamlbrowser" to see the types of the various functions, that
-are the best documentation for the library itself. 
+are the best documentation for the library itself.
 
 \smallskip\noindent
 Programs that use the "labltk" library must be linked as follows:
@@ -24,7 +24,7 @@ If the library was not compiled correctly, try to run again the
 "configure" script with the option "-tkdefs" \var{switches},
 where \var{switches} is a list of C-style inclusion paths leading to
 the right "tcl.h" and "tk.h", for instance
-'"-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4"'.
+"\"-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4\"".
 
 A script is installed, to make easier the use of the "labltk"
 library as toplevel.

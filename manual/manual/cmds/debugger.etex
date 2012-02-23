@@ -32,7 +32,7 @@ The OCaml debugger is invoked by running the program
 "ocamldebug" with the name of the bytecode executable file as first
 argument:
 \begin{alltt}
-        ocamldebug [\var{options}] \var{program} [\var{arguments}]
+        ocamldebug \optvar{options} \var{program} \optvar{arguments}
 \end{alltt}
 The arguments following \var{program} are optional, and are passed as
 command-line arguments to the program being debugged. (See also the
