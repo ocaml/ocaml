@@ -159,13 +159,16 @@ let ignore_low_bit_int = function
   | Cop(Cor, [c; Cconst_int 1]) -> c
   | c -> c
 
-let is_nonzero_constant = function
-    Cconst_int n -> n <> 0
-  | Cconst_natint n -> n <> 0n
+(* Division or modulo on tagged integers.  The overflow case min_int / -1
+   cannot occur, but we must guard against division by zero. *)
+
+let is_different_from x = function
+    Cconst_int n -> n <> x
+  | Cconst_natint n -> n <> Nativeint.of_int x
   | _ -> false
 
 let safe_divmod op c1 c2 dbg =
-  if !Clflags.fast || is_nonzero_constant c2 then
+  if !Clflags.fast || is_different_from 0 c2 then
     Cop(op, [c1; c2])
   else
     bind "divisor" c2 (fun c2 ->
@@ -173,6 +176,35 @@ let safe_divmod op c1 c2 dbg =
                   Cop(op, [c1; c2]),
                   Cop(Craise dbg,
                       [Cconst_symbol "caml_bucket_Division_by_zero"])))
+
+(* Division or modulo on boxed integers.  The overflow case min_int / -1
+   can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
+
+let safe_divmod_bi mkop mkm1 c1 c2 bi dbg =
+  bind "dividend" c1 (fun c1 ->
+  bind "divisor" c2 (fun c2 ->
+    let c3 =
+      if Arch.division_crashes_on_overflow
+      && (size_int = 4 || bi <> Pint32)
+      && not (is_different_from (-1) c2)
+      then
+        Cifthenelse(Cop(Ccmpi Cne, [c2; Cconst_int(-1)]), mkop c1 c2, mkm1 c1)
+      else
+        mkop c1 c2 in
+    if !Clflags.fast || is_different_from 0 c2 then
+      c3
+    else
+      Cifthenelse(c2, c3,
+                  Cop(Craise dbg,
+                      [Cconst_symbol "caml_bucket_Division_by_zero"]))))
+
+let safe_div_bi =
+  safe_divmod_bi (fun c1 c2 -> Cop(Cdivi, [c1;c2]))
+                 (fun c1 -> Cop(Csubi, [Cconst_int 0; c1]))
+
+let safe_mod_bi =
+  safe_divmod_bi (fun c1 c2 -> Cop(Cmodi, [c1;c2]))
+                 (fun c1 -> Cconst_int 0)
 
 (* Bool *)
 
@@ -1284,13 +1316,13 @@ and transl_prim_2 p arg1 arg2 dbg =
       box_int bi (Cop(Cmuli,
                       [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
   | Pdivbint bi ->
-      box_int bi (safe_divmod Cdivi
+      box_int bi (safe_div_bi
                       (transl_unbox_int bi arg1) (transl_unbox_int bi arg2)
-                      dbg)
+                      bi dbg)
   | Pmodbint bi ->
-      box_int bi (safe_divmod Cmodi
+      box_int bi (safe_mod_bi
                       (transl_unbox_int bi arg1) (transl_unbox_int bi arg2)
-                      dbg)
+                      bi dbg)
   | Pandbint bi ->
       box_int bi (Cop(Cand,
                      [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))

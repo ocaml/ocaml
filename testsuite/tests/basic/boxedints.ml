@@ -166,6 +166,7 @@ struct
        9, 127531236, -365;
        10, 1234567, 12345678;
        11, 1234567, -12345678];
+    test 12 (div min_int (of_int (-1))) min_int;
 
     testing_function "mod";
     List.iter
@@ -181,6 +182,7 @@ struct
        9, 127531236, -365;
        10, 1234567, 12345678;
        11, 1234567, -12345678];
+    test 12 (rem min_int (of_int (-1))) (of_int 0);
 
     testing_function "and";
     List.iter
@@ -400,6 +402,7 @@ struct
        9, 127531236, -365;
        10, 1234567, 12345678;
        11, 1234567, -12345678];
+    test 12 (div min_int (of_int (-1))) min_int;
 
     testing_function "mod";
     List.iter
@@ -415,6 +418,7 @@ struct
        9, 127531236, -365;
        10, 1234567, 12345678;
        11, 1234567, -12345678];
+    test 12 (rem min_int (of_int (-1))) (of_int 0);
 
     testing_function "and";
     List.iter
