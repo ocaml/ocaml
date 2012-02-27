@@ -123,8 +123,8 @@ caml_ba_multov(uintnat a, uintnat b, int * overflow)
 
 /* Allocation of a big array */
 
-#define CAML_BA_MAX_MEMORY 256*1024*1024
-/* 256 Mb -- after allocating that much, it's probably worth speeding
+#define CAML_BA_MAX_MEMORY 1024*1024*1024
+/* 1 Gb -- after allocating that much, it's probably worth speeding
    up the major GC */
 
 /* [caml_ba_alloc] will allocate a new bigarray object in the heap.
@@ -136,7 +136,7 @@ caml_ba_multov(uintnat a, uintnat b, int * overflow)
 CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
-  uintnat num_elts, size;
+  uintnat num_elts, asize, size;
   int overflow, i;
   value res;
   struct caml_ba_array * b;
@@ -160,10 +160,13 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
   }
-  res = caml_alloc_custom(&caml_ba_ops,
-                          sizeof(struct caml_ba_array)
-                          + (num_dims - 1) * sizeof(intnat),
-                          size, CAML_BA_MAX_MEMORY);
+  /* PR#5516: use C99's / gcc's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L) || defined(__GNUC__)
+  asize = sizeof(struct caml_ba_array) + num_dims * sizeof(intnat);
+#else
+  asize = sizeof(struct caml_ba_array) + (num_dims - 1) * sizeof(intnat);
+#endif
+  res = caml_alloc_custom(&caml_ba_ops, asize, size, CAML_BA_MAX_MEMORY);
   b = Caml_ba_array_val(res);
   b->data = data;
   b->num_dims = num_dims;
@@ -183,6 +186,7 @@ CAMLexport value caml_ba_alloc_dims(int flags, int num_dims, void * data, ...)
   int i;
   value res;
 
+  Assert(num_dims <= CAML_BA_MAX_NUM_DIMS);
   va_start(ap, data);
   for (i = 0; i < num_dims; i++) dim[i] = va_arg(ap, intnat);
   va_end(ap);
