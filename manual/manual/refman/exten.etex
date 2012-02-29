@@ -5,7 +5,8 @@ This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
 OCaml reference manual.
 
-\section{Integer literals for types "int32", "int64" and "nativeint"}
+\section{Integer literals for types \texttt{int32}, \texttt{int64}
+         and \texttt{nativeint}}
 
 (Introduced in Objective Caml 3.07)
 
@@ -460,7 +461,7 @@ fragment is more self-contained).
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-pattern:
+@pattern@:
     ...
   | '{' field ['=' pattern] { ';' field ['=' pattern] } [';' '_' ] '}'
 ;
@@ -473,7 +474,8 @@ expr:
 
 In a record pattern or a record construction expression, a single
 identifier @id@ stands for @id = id@, and a qualified identifier
-@path ',' id@ stands for @path '.' id = id@.  For example, assuming
+@module-path '.' id@ stands for @module-path '.' id = id@.
+For example, assuming
 the record type
 \begin{verbatim}
           type point = { x: float; y: float }
@@ -514,7 +516,7 @@ record type.
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-let-binding:
+@let-binding@:
           ...
         | value-name ':' poly-typexpr '=' expr
 \end{syntax}
@@ -552,7 +554,7 @@ polymorphic.
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-parameter:
+@parameter@:
        ...
      | '(' "type" typeconstr-name ')'
 ;
@@ -654,7 +656,8 @@ constraints.
 The module expression @("val" expr ":" package-type)@ cannot be used in the
 body of a functor, because this can cause unsoundness in conjunction
 with applicative functors.  It can be used anywhere in the context of a local
-module binding @'let'~M = ("val" expr_1 ":" package-type) "in" expr_2@,
+module binding
+@'let' 'module' module-name = ("val" expr_1 ":" package-type) "in" expr_2@,
 however.
 
 \paragraph{Basic example} A typical use of first-class modules is to
@@ -700,7 +703,8 @@ implementation of a module without using a functor.
 \end{verbatim}
 
 The type inferred for this function is "(module Set.S with type elt =
-'a) -> 'a list -> 'a list". To use this function, one can wrap the "Set.Make" functor:
+'a) -> 'a list -> 'a list". To use this function, one can wrap the "Set.Make"
+functor:
 
 \begin{verbatim}
         let make_set (type s) cmp =
@@ -809,7 +813,7 @@ polymorphic recursion.
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-module-type:
+@module-type@:
      ...
    | 'module' 'type' 'of' module-expr
 \end{syntax}
@@ -845,7 +849,7 @@ construct at the structure level this time:
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-mod-constraint:
+@mod-constraint@:
           ...
         | 'type' [type-parameters] typeconstr-name ':=' [type-parameters] typeconstr
         | 'module' module-name ':=' extended-module-path
@@ -901,14 +905,14 @@ same type.
 \endcaml
 
 \section{Explicit overriding in class definitions}
-\ikwd{methodx\@\texttt{method\char33}}
-\ikwd{valx\@\texttt{val\char33}}
-\ikwd{inheritx\@\texttt{inherit\char33}}
+\ikwd{method.\@\texttt{method\char33}}
+\ikwd{val.\@\texttt{val\char33}}
+\ikwd{inherit.\@\texttt{inherit\char33}}
 
-(Introduced in OCaml 3.12) "foo \verb+xxx+ bar"
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
-class-field:
+@class-field@:
       ...
    |  'inherit!' class-expr ['as' value-name]
    |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr

@@ -2,6 +2,7 @@
 \renewcommand{\@indexsection}[1]{\chapter{#1}}
 \newcommand{\black}{\htmlcolor{#000000}}
 \newcommand{\machine}{\tt}
+\newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
 \newenvironment{camlunder}{\@style{U}}{}
 \newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
 \newcommand{\endcaml}{\activebracetrue\end{alltt}}

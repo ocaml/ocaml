@@ -401,7 +401,7 @@ knows which C primitives are required) and also when building the
 bytecode executable (so that the bytecode from "unix.cma" and
 "threads.cma" is actually linked in).
 
-\section{The "value" type}
+\section{The \texttt{value} type}
 \pdfsection{The value type}
 
 All OCaml objects are represented by the C type "value",
@@ -1933,7 +1933,8 @@ names, declared in "<caml/signals.h>":
 Intuition: a ``blocking section'' is a piece of C code that does not
 use the OCaml run-time system, typically a blocking input/output operation.
 
-\section{Building mixed C/OCaml libraries: "ocamlmklib"} \label{s-ocamlmklib}
+\section{Building mixed C/OCaml libraries: \texttt{ocamlmklib}}
+\label{s-ocamlmklib}
 
 The "ocamlmklib" command facilitates the construction of libraries
 containing both OCaml code and C code, and usable both in static

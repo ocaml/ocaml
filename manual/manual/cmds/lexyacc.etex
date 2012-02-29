@@ -18,7 +18,7 @@ principles, techniques, and tools'' by Aho, Sethi and Ullman
 (Addison-Wesley, 1986), or ``Lex $\&$ Yacc'', by Levine, Mason and
 Brown (O'Reilly, 1992).
 
-\section{Overview of "ocamllex"}
+\section{Overview of \texttt{ocamllex}}
 
 The "ocamllex" command produces a lexical analyzer from a set of regular
 expressions with attached semantic actions, in the style of
@@ -99,7 +99,7 @@ The {\it header} and {\it trailer} sections are arbitrary OCaml
 text enclosed in curly braces. Either or both can be omitted. If
 present, the header text is copied as is at the beginning of the
 output file and the trailer text at the end. Typically, the
-header section contains the \verb"open" directives required
+header section contains the "open" directives required
 by the actions, and possibly some auxiliary functions used in the
 actions.
 
@@ -312,7 +312,7 @@ All identifiers starting with "__ocaml_lex" are reserved for use by
 "ocamllex"; do not use any such identifier in your programs.
 
 
-\section{Overview of "ocamlyacc"}
+\section{Overview of \texttt{ocamlyacc}}
 
 The "ocamlyacc" command produces a parser from a context-free grammar
 specification with attached semantic actions, in the style of "yacc".

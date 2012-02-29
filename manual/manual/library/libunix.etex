@@ -32,12 +32,13 @@ more information on the functions that are not supported under Windows.
 \ifouthtml
 \begin{links}
 \item \ahref{libref/Unix.html}{Module \texttt{Unix}: Unix system calls}
-\item \ahref{libref/UnixLabels.html}{Module \texttt{UnixLabels}: Labeled Unix system calls}
+\item \ahref{libref/UnixLabels.html}{Module \texttt{UnixLabels}: Labeled
+   Unix system calls}
 \end{links}
 \else
 \input{Unix.tex}
 
-\section{Module "UnixLabels": labelized version of the interface}
+\section{Module \texttt{UnixLabels}: labelized version of the interface}
 \label{UnixLabels}
 \index{UnixLabels (module)@\verb~UnixLabels~ (module)}%
 \pdfsection{Module UnixLabels: labelized version of the interface}
@@ -81,7 +82,7 @@ processes}
 \entree{"setuid", "setgid"}{not implemented}
 \entree{"getpwnam", "getpwuid"}{always raise "Not_found"}
 \entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
-\entree{type "socket_domain"}{the domains "PF_UNIX" and "PF_INET6" 
+\entree{type "socket_domain"}{the domains "PF_UNIX" and "PF_INET6"
 are not supported; "PF_INET" is fully supported}
 \entree{"establish_server"}{not implemented; use threads}
 \entree{terminal functions ("tc*")}{not implemented}

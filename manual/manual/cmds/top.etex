@@ -380,7 +380,7 @@ with "#load". See section~\ref{s:toplevel-modules} above.
 
 \end{options}
 
-\section{Building custom toplevel systems: "ocamlmktop"}
+\section{Building custom toplevel systems: \texttt{ocamlmktop}}
 
 The "ocamlmktop" command builds OCaml toplevels that
 contain user code preloaded at start-up.

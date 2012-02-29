@@ -717,14 +717,17 @@ text descriptions.
 text: {{text-element}}
 ;
 \end{syntax}
-\noindent{}@text-element@ ::= \\
 
+\noindent
+\begin{syntaxleft}
+\nonterm{text-element}\is{}
+\end{syntaxleft}
 
 \begin{tabular}{rlp{10cm}}
 @||@&@ '{' {{ "0" \ldots "9" }} text '}' @ & format @text@ as a section header;
   the integer following "{" indicates the sectioning level. \\
-@||@&@ '{' {{ "0" \ldots "9" }} ':' lbl text '}' @ &
-  same, but also associate the name @lbl@ to the current point.
+@||@&@ '{' {{ "0" \ldots "9" }} ':' @ \nt{label} @ text '}' @ &
+  same, but also associate the name \nt{label} to the current point.
   This point can be referenced by its fully-qualified label in a
   "{!" command, just like any other element. \\
 @||@&@ '{b' text '}' @ & set @text@ in bold. \\
@@ -746,7 +749,7 @@ text: {{text-element}}
 @string@. @string@ must be a fully qualified element name,
 for example "Foo.Bar.t". The kind of the referenced element can be forced
 (useful when various elements have the same qualified name) with the following
-syntax: @ '{!' kind ':' string '}' @ where @kind@ can be
+syntax: @ '{!' @ \nt{kind} @ ':' string '}' @ where \nt{kind} can be
 "module", "modtype", "class", "classtype", "val",
 "type", "exception", "attribute", "method" or "section".\\
 @||@&@ '{!modules:' string string ... '}' @ & insert an index table
@@ -755,10 +758,10 @@ for the given module names. Used in HTML only.\\
 (types, values, modules, ...). Used in HTML only.\\
 @||@&@ '{^' text '}' @ & set text in superscript.\\
 @||@&@ '{_' text '}' @ & set text in subscript.\\
-@||@&@ escaped-string @ & typeset the given string as is;
+@||@& \nt{escaped-string} & typeset the given string as is;
 special characters ('"{"', '"}"', '"["', '"]"' and '"\@"')
 must be	escaped by a '"\\"'\\
-@||@&@ blank-line @ & force a new line.
+@||@& \nt{blank-line} & force a new line.
 \end{tabular} \\
 
 \begin{syntax}
@@ -839,17 +842,17 @@ methods, classes and functors. \\ \hline
 @ "@see" '<' URL '>' text @ &  Add a reference to the @URL@
 with the given @text@ as comment. \\ \hline
 
-@ "@see" "'" filename "'" text @ &  Add a reference to the given file name
+@ "@see" "'"@\nt{filename}@"'" text @ &  Add a reference to the given file name
 (written between single quotes), with the given @text@ as comment. \\ \hline
 
-@ "@see" '"' document-name '"' text @ &  Add a reference to the given
+@ "@see" '"'@\nt{document-name}@'"' text @ &  Add a reference to the given
 document name (written between double quotes), with the given @text@
 as comment. \\ \hline
 
 @ "@since" string @ & Indicate when the element was introduced. \\ \hline
 
-@ "@before" v text @ & Associate the given description (@text@) to the
-given version @v@ in order to document compatibility issues. \\ \hline
+@ "@before" @ \nt{version} @ text @ & Associate the given description (@text@)
+to the given \nt{version} in order to document compatibility issues. \\ \hline
 
 @ "@version" string @ & The version number for the element. \\ \hline
 \end{tabular}

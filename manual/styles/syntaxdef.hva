@@ -57,6 +57,11 @@
 \stx@silent{symbol}%
 %%Not defined in debugger.etex
 \stx@silent{integer}
+%%Not defined in ocamldoc.etex
+\stx@silent{string}
+\stx@silent{id}
+\stx@silent{Exc}
+\stx@silent{URL}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Refer to anchor
 \def\ref@anchor#1{%
@@ -100,4 +105,6 @@
 \def\emptystring{\epsilon}
 \def\syntax{$$\begin{array}{>{\set@name}rcl}\spacefalse}
 \def\endsyntax{\end{array}$$}
+\def\syntaxleft{$\begin{array}{>{\set@name}rcl}\spacefalse}
+\def\endsyntaxleft{\end{array}$}
 \def\synt#1{$\spacefalse#1$}
