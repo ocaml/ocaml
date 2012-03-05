@@ -335,6 +335,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%EXT_DLL%%|.dll|" \
 	    -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
 	    -e 's|%%ASM%%|$(ASM)|' \
+	    -e 's|%%ASM_CFI_SUPPORTED%%|false|' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
