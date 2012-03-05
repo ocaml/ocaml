@@ -22,7 +22,7 @@ open Format
 open Command
 
 let entry = ref None
-let build_dir = ref "_build"
+let build_dir = ref (Filename.concat (Sys.getcwd ()) "_build")
 let include_dirs = ref []
 let exclude_dirs = ref []
 let nothing_should_be_rebuilt = ref false
@@ -126,7 +126,12 @@ let add_to' rxs x =
   else
     ()
 let set_cmd rcmd = String (fun s -> rcmd := Sh s)
-let set_build_dir s = make_links := false; build_dir := s
+let set_build_dir s =
+  make_links := false;
+  if Filename.is_relative s then
+    build_dir := Filename.concat (Sys.getcwd ()) s
+  else
+    build_dir := s
 let spec = ref (
   Arg.align
   [
