@@ -160,9 +160,14 @@ void caml_oldify_one (value v, value *p)
 
         Assert (tag == Forward_tag);
         if (Is_block (f)){
-          vv = Is_in_value_area(f);
-          if (vv) {
+          if (Is_young (f)){
+            vv = 1;
             ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
+          }else{
+            vv = Is_in_value_area(f);
+            if (vv){
+              ft = Tag_val (f);
+            }
           }
         }
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
