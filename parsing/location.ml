@@ -207,7 +207,8 @@ let absolute_path s = (* This function could go into Filename *)
   let rec aux s =
     let base = basename s in
     let dir = dirname s in
-    if base = current_dir_name then if dir = s then dir else aux dir
+    if dir = s then dir
+    else if base = current_dir_name then aux dir
     else if base = parent_dir_name then dirname (aux dir)
     else concat (aux dir) base
   in
