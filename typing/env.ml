@@ -161,7 +161,7 @@ let is_ident = function
 let is_local (p, _) = is_ident p
 
 let is_local_exn = function
-    {cstr_tag = Cstr_exception p} -> is_ident p
+    {cstr_tag = Cstr_exception (p, _)} -> is_ident p
   | _ -> false
 
 let diff env1 env2 =
@@ -515,6 +515,10 @@ let mark_constructor_used name vd constr =
   try Hashtbl.find used_constructors (name, vd.type_loc, constr) ()
   with Not_found -> ()
 
+let mark_exception_used ed constr =
+  try Hashtbl.find used_constructors ("exn", ed.exn_loc, constr) ()
+  with Not_found -> ()
+
 let set_value_used_callback name vd callback =
   let key = (name, vd.val_loc) in
   try
@@ -555,10 +559,17 @@ let lookup_constructor lid env =
   desc
 
 let mark_constructor env name desc =
-  let ty_path = ty_path desc.cstr_res in
-  let ty_decl = try find_type ty_path env with Not_found -> assert false in
-  let ty_name = Path.last ty_path in
-  mark_constructor_used ty_name ty_decl name
+  match desc.cstr_tag with
+  | Cstr_exception (_, loc) ->
+      begin
+        try Hashtbl.find used_constructors ("exn", loc, name) ()
+        with Not_found -> ()
+      end
+  | _ ->
+      let ty_path = ty_path desc.cstr_res in
+      let ty_decl = try find_type ty_path env with Not_found -> assert false in
+      let ty_name = Path.last ty_path in
+      mark_constructor_used ty_name ty_decl name
 
 let lookup_label lid env =
   let desc = lookup_label lid env in
@@ -877,7 +888,21 @@ and store_type_infos id path info env =
     summary = Env_type(env.summary, id, info) }
 
 and store_exception id path decl env =
-  
+  let loc = decl.exn_loc in
+  if not loc.Location.loc_ghost && Warnings.is_active (Warnings.Unused_exception "") then begin
+    let ty = "exn" in
+    let c = Ident.name id in
+    let k = (ty, loc, c) in
+    if not (Hashtbl.mem used_constructors k) then begin
+      let used = ref false in
+      Hashtbl.add used_constructors k (fun () -> used := true);
+      !add_delayed_check_forward
+        (fun () ->
+          if not !used then
+            Location.prerr_warning loc (Warnings.Unused_exception c)
+        )
+    end;
+  end;
   { env with
     constrs = EnvTbl.add id (Datarepr.exception_descr path decl) env.constrs;
     summary = Env_exception(env.summary, id, decl) }

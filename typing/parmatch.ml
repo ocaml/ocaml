@@ -153,7 +153,7 @@ open Format
 ;;
 
 let get_constr_name tag ty tenv  = match tag with
-| Cstr_exception path -> Path.name path
+| Cstr_exception (path, _) -> Path.name path
 | _ ->
   try
     let name,_,_ = get_constr tag ty tenv in name
@@ -777,7 +777,7 @@ let build_other ext env =  match env with
       (Tpat_construct
          ({c with
            cstr_tag=(Cstr_exception
-            (Path.Pident (Ident.create "*exception*")))},
+            (Path.Pident (Ident.create "*exception*"), Location.none))},
           []))
       Ctype.none Env.empty
 | ({pat_desc = Tpat_construct (_,_)} as p,_) :: _ ->

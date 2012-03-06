@@ -156,6 +156,7 @@ val mark_value_used: string -> value_description -> unit
 val mark_type_used: string -> type_declaration -> unit
 val mark_constructor_used: string -> type_declaration -> string -> unit
 val mark_constructor: t -> string -> constructor_description -> unit
+val mark_exception_used: exception_declaration -> string -> unit
 
 val set_value_used_callback: string -> value_description -> (unit -> unit) -> unit
 val set_type_used_callback: string -> type_declaration -> ((unit -> unit) -> unit) -> unit

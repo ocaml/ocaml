@@ -57,6 +57,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string            (* 37 *)
+  | Unused_exception of string              (* 38 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -103,9 +104,10 @@ let number = function
   | Unused_for_index _ -> 35
   | Unused_ancestor _ -> 36
   | Unused_constructor _ -> 37
+  | Unused_exception _ -> 38
 ;;
 
-let last_warning_number = 37;;
+let last_warning_number = 38;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -121,7 +123,7 @@ let letter = function
   | 'h' -> []
   | 'i' -> []
   | 'j' -> []
-  | 'k' -> [32; 33; 34; 35; 36; 37]
+  | 'k' -> [32; 33; 34; 35; 36; 37; 38]
   | 'l' -> [6]
   | 'm' -> [7]
   | 'n' -> []
@@ -200,7 +202,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..37";;
+let defaults_w = "+a-4-6-7-9-27-29-32..38";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -284,6 +286,7 @@ let message = function
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
   | Unused_constructor s -> "unused constructor " ^ s ^ "."
+  | Unused_exception s -> "unused exception constructor " ^ s ^ "."
 ;;
 
 let nerrors = ref 0;;
@@ -367,6 +370,7 @@ let descriptions =
    35, "Unused for-loop index.";
    36, "Unused ancestor variable.";
    37, "Unused constructor.";
+   38, "Unused exception constructor.";
   ]
 ;;
 

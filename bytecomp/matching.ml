@@ -2037,7 +2037,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
       List.fold_right
         (fun (ex, act) rem ->
           match ex with
-          | Cstr_exception path ->
+          | Cstr_exception (path, _) ->
               Lifthenelse(Lprim(Pintcomp Ceq,
                                 [Lprim(Pfield 0, [arg]); transl_path path]),
                           act, rem)

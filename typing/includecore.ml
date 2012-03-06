@@ -253,7 +253,6 @@ let type_declarations env id decl1 decl2 =
 (* Inclusion between exception declarations *)
 
 let exception_declarations env ed1 ed2 =
-  (* TODO: mark ed1 as being used *)
   Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2]) ed1.exn_args ed2.exn_args
 
 (* Inclusion between class types *)

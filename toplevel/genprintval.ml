@@ -354,7 +354,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
         let cstr = Env.lookup_constructor lid env in
         let path =
           match cstr.cstr_tag with
-            Cstr_exception p -> p | _ -> raise Not_found in
+            Cstr_exception (p, _) -> p | _ -> raise Not_found in
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)

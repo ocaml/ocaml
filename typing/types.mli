@@ -118,7 +118,7 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_exception of Path.t            (* Exception constructor *)
+  | Cstr_exception of Path.t * Location.t (* Exception constructor *)
 
 (* Record label descriptions *)
 

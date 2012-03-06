@@ -668,7 +668,7 @@ and transl_exp0 e =
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable), ll)
           end
-      | Cstr_exception path ->
+      | Cstr_exception (path, _) ->
           Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       end
   | Texp_variant(l, arg) ->
