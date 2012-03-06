@@ -22,7 +22,7 @@ val constructor_descrs:
   type_expr -> (string * type_expr list * type_expr option) list ->
   private_flag -> (string * constructor_description) list
 val exception_descr:
-  Path.t -> type_expr list -> constructor_description
+  Path.t -> exception_declaration -> constructor_description
 val label_descrs:
   type_expr -> (string * mutable_flag * type_expr) list ->
     record_representation -> private_flag ->

@@ -251,8 +251,10 @@ let value_description s descr =
     val_loc = if s.for_saving then Location.none else descr.val_loc;
    }
 
-let exception_declaration s tyl =
-  List.map (type_expr s) tyl
+let exception_declaration s descr =
+  { exn_args = List.map (type_expr s) descr.exn_args;
+    exn_loc = if s.for_saving then Location.none else descr.exn_loc;
+   }
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)

@@ -368,8 +368,9 @@ let include_err ppf = function
       fprintf ppf
        "@[<hv 2>Exception declarations do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
-      (exception_declaration id) d1
-      (exception_declaration id) d2
+        (exception_declaration id) d1
+        (exception_declaration id) d2;
+      show_locs ppf (d1.exn_loc, d2.exn_loc)
   | Module_types(mty1, mty2)->
       fprintf ppf
        "@[<hv 2>Modules do not match:@ \

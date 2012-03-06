@@ -877,6 +877,7 @@ and store_type_infos id path info env =
     summary = Env_type(env.summary, id, info) }
 
 and store_exception id path decl env =
+  
   { env with
     constrs = EnvTbl.add id (Datarepr.exception_descr path decl) env.constrs;
     summary = Env_exception(env.summary, id, decl) }

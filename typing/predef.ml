@@ -180,6 +180,7 @@ let build_initial_env add_type add_exception empty_env =
      type_newtype_level = None}
   in
 
+  let add_exception id l = add_exception id { exn_args = l; exn_loc = Location.none } in
   add_exception ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_exception ident_out_of_memory [] (

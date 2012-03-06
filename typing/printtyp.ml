@@ -673,8 +673,8 @@ let type_declaration id ppf decl =
 (* Print an exception declaration *)
 
 let tree_of_exception_declaration id decl =
-  reset_and_mark_loops_list decl;
-  let tyl = tree_of_typlist false decl in
+  reset_and_mark_loops_list decl.exn_args;
+  let tyl = tree_of_typlist false decl.exn_args in
   Osig_exception (Ident.name id, tyl)
 
 let exception_declaration id ppf decl =

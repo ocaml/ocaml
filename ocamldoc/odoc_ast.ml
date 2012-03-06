@@ -1205,7 +1205,7 @@ module Analyser =
             {
               ex_name = complete_name ;
               ex_info = comment_opt ;
-              ex_args = List.map (Odoc_env.subst_type new_env) tt_excep_decl ;
+              ex_args = List.map (Odoc_env.subst_type new_env) tt_excep_decl.exn_args ;
               ex_alias = None ;
               ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
               ex_code =

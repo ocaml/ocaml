@@ -524,7 +524,7 @@ module Analyser =
               {
                 ex_name = Name.concat current_module_name name ;
                 ex_info = comment_opt ;
-                ex_args = List.map (Odoc_env.subst_type env) types_excep_decl ;
+                ex_args = List.map (Odoc_env.subst_type env) types_excep_decl.exn_args ;
                 ex_alias = None ;
                 ex_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
                 ex_code =

@@ -826,13 +826,14 @@ let transl_closed_type env sty =
   | []      -> ty
   | tv :: _ -> raise (Error (sty.ptyp_loc, Unbound_type_var_exc (tv, ty)))
 
-let transl_exception env excdecl =
+let transl_exception env loc excdecl =
   reset_type_variables();
   Ctype.begin_def();
   let types = List.map (transl_closed_type env) excdecl in
   Ctype.end_def();
   List.iter Ctype.generalize types;
-  types
+  { exn_args = types;
+    exn_loc = loc }
 
 (* Translate an exception rebinding *)
 let transl_exn_rebind env loc lid =
@@ -842,7 +843,7 @@ let transl_exn_rebind env loc lid =
     with Not_found ->
       raise(Error(loc, Unbound_exception lid)) in
   match cdescr.cstr_tag with
-    Cstr_exception path -> (path, cdescr.cstr_args)
+    Cstr_exception path -> (path, {exn_args = cdescr.cstr_args; exn_loc = loc})
   | _ -> raise(Error(loc, Not_an_exception lid))
 
 (* Translate a value declaration *)

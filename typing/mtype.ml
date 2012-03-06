@@ -118,7 +118,9 @@ let nondep_supertype env mid mty =
           Tsig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
           :: rem'
       | Tsig_exception(id, d) ->
-          Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
+          let d = {exn_args = List.map (Ctype.nondep_type env mid) d.exn_args;
+                   exn_loc = d.exn_loc} in
+          Tsig_exception(id, d) :: rem'
       | Tsig_module(id, mty, rs) ->
           Tsig_module(id, nondep_mty env va mty, rs) :: rem'
       | Tsig_modtype(id, d) ->

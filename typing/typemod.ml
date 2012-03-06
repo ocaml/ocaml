@@ -394,7 +394,7 @@ and transl_signature env sg =
             let rem = transl_sig newenv srem in
             map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
         | Psig_exception(name, sarg) ->
-            let arg = Typedecl.transl_exception env sarg in
+            let arg = Typedecl.transl_exception env item.psig_loc sarg in
             let (id, newenv) = Env.enter_exception name arg env in
             let rem = transl_sig newenv srem in
             Tsig_exception(id, arg) :: rem
@@ -841,8 +841,8 @@ and type_structure funct_body anchor env sstr scope =
         (Tstr_type decls :: str_rem,
          map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls sig_rem,
          final_env)
-    | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
-        let arg = Typedecl.transl_exception env sarg in
+    | {pstr_desc = Pstr_exception(name, sarg); pstr_loc = loc} :: srem ->
+        let arg = Typedecl.transl_exception env loc sarg in
         let (id, newenv) = Env.enter_exception name arg env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (Tstr_exception(id, arg) :: str_rem,
