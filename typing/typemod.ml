@@ -1223,11 +1223,13 @@ let report_error ppf = function
            contains type variables that cannot be generalized@]" modtype mty
   | Implementation_is_required intf_name ->
       fprintf ppf
-        "@[The interface %s@ declares values, not just types.@ \
-           An implementation must be provided.@]" intf_name
+        "@[The interface %a@ declares values, not just types.@ \
+           An implementation must be provided.@]"
+        Location.print_filename intf_name
   | Interface_not_compiled intf_name ->
       fprintf ppf
-        "@[Could not find the .cmi file for interface@ %s.@]" intf_name
+        "@[Could not find the .cmi file for interface@ %a.@]"
+        Location.print_filename intf_name
   | Not_allowed_in_functor_body ->
       fprintf ppf
         "This kind of expression is not allowed within the body of a functor."
