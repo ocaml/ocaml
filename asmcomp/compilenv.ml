@@ -227,8 +227,11 @@ open Format
 
 let report_error ppf = function
   | Not_a_unit_info filename ->
-      fprintf ppf "%s@ is not a compilation unit description." filename
+      fprintf ppf "%a@ is not a compilation unit description."
+        Location.print_filename filename
   | Corrupted_unit_info filename ->
-      fprintf ppf "Corrupted compilation unit description@ %s" filename
+      fprintf ppf "Corrupted compilation unit description@ %a"
+        Location.print_filename filename
   | Illegal_renaming(modname, filename) ->
-      fprintf ppf "%s@ contains the description for unit@ %s" filename modname
+      fprintf ppf "%a@ contains the description for unit@ %s"
+        Location.print_filename filename modname

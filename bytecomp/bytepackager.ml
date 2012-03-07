@@ -255,13 +255,17 @@ open Format
 
 let report_error ppf = function
     Forward_reference(file, ident) ->
-      fprintf ppf "Forward reference to %s in file %s" (Ident.name ident) file
+      fprintf ppf "Forward reference to %s in file %a" (Ident.name ident)
+        Location.print_filename file
   | Multiple_definition(file, ident) ->
-      fprintf ppf "File %s redefines %s" file (Ident.name ident)
+      fprintf ppf "File %a redefines %s"
+        Location.print_filename file
+        (Ident.name ident)
   | Not_an_object_file file ->
-      fprintf ppf "%s is not a bytecode object file" file
+      fprintf ppf "%a is not a bytecode object file"
+        Location.print_filename file
   | Illegal_renaming(file, id) ->
-      fprintf ppf "Wrong file naming: %s@ contains the code for@ %s"
-        file id
+      fprintf ppf "Wrong file naming: %a@ contains the code for@ %s"
+        Location.print_filename file id
   | File_not_found file ->
       fprintf ppf "File %s not found" file
