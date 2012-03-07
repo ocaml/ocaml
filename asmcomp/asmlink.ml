@@ -342,7 +342,8 @@ let report_error ppf = function
   | File_not_found name ->
       fprintf ppf "Cannot find file %s" name
   | Not_an_object_file name ->
-      fprintf ppf "The file %s is not a compilation unit description" name
+      fprintf ppf "The file %a is not a compilation unit description"
+        Location.print_filename name
   | Missing_implementations l ->
      let print_references ppf = function
        | [] -> ()
@@ -359,27 +360,35 @@ let report_error ppf = function
        print_modules l
   | Inconsistent_interface(intf, file1, file2) ->
       fprintf ppf
-       "@[<hov>Files %s@ and %s@ make inconsistent assumptions \
+       "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
               over interface %s@]"
-       file1 file2 intf
+       Location.print_filename file1
+       Location.print_filename file2
+       intf
   | Inconsistent_implementation(intf, file1, file2) ->
       fprintf ppf
-       "@[<hov>Files %s@ and %s@ make inconsistent assumptions \
+       "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
               over implementation %s@]"
-       file1 file2 intf
+       Location.print_filename file1
+       Location.print_filename file2
+       intf
   | Assembler_error file ->
-      fprintf ppf "Error while assembling %s" file
+      fprintf ppf "Error while assembling %a" Location.print_filename file
   | Linking_error ->
       fprintf ppf "Error during linking"
   | Multiple_definition(modname, file1, file2) ->
       fprintf ppf
-        "@[<hov>Files %s@ and %s@ both define a module named %s@]"
-        file1 file2 modname
+        "@[<hov>Files %a@ and %a@ both define a module named %s@]"
+        Location.print_filename file1
+        Location.print_filename file2
+        modname
   | Missing_cmx(filename, name) ->
       fprintf ppf
-        "@[<hov>File %s@ was compiled without access@ \
+        "@[<hov>File %a@ was compiled without access@ \
          to the .cmx file@ for module %s,@ \
          which was produced by `ocamlopt -for-pack'.@ \
-         Please recompile %s@ with the correct `-I' option@ \
+         Please recompile %a@ with the correct `-I' option@ \
          so that %s.cmx@ is found.@]"
-        filename name filename name
+        Location.print_filename filename name
+        Location.print_filename  filename
+        name
