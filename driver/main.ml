@@ -173,14 +173,15 @@ let main () =
       Compile.init_path();
 
       Bytelibrarian.create_archive ppf  (List.rev !objfiles)
-                                   (extract_output !output_name)
+                                   (extract_output !output_name);
+      Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compile.init_path();
-      let exctracted_output = extract_output !output_name in
+      let extracted_output = extract_output !output_name in
       let revd = List.rev !objfiles in
-      Bytepackager.package_files ppf (revd)
-        (exctracted_output)
+      Bytepackager.package_files ppf revd (extracted_output);
+      Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
       let target =
@@ -200,7 +201,8 @@ let main () =
           default_output !output_name
       in
       Compile.init_path();
-      Bytelink.link ppf (List.rev !objfiles) target
+      Bytelink.link ppf (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end;
     exit 0
   with x ->

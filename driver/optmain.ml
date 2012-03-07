@@ -187,16 +187,19 @@ let main () =
       Optcompile.init_path();
       let target = extract_output !output_name in
       Asmlibrarian.create_archive (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end
     else if !make_package then begin
       Optcompile.init_path();
       let target = extract_output !output_name in
       Asmpackager.package_files ppf (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end
     else if !shared then begin
       Optcompile.init_path();
       let target = extract_output !output_name in
       Asmlink.link_shared ppf (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
       let target =
@@ -215,7 +218,8 @@ let main () =
           default_output !output_name
       in
       Optcompile.init_path();
-      Asmlink.link ppf (List.rev !objfiles) target
+      Asmlink.link ppf (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end;
     exit 0
   with x ->
