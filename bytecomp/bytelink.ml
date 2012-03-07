@@ -177,7 +177,7 @@ let check_consistency ppf file_name cu =
   begin try
     let source = List.assoc cu.cu_name !implementations_defined in
     Location.print_warning (Location.in_file file_name) ppf
-      (Warnings.Multiple_definition(cu.cu_name, file_name, source))
+      (Warnings.Multiple_definition(cu.cu_name, Location.show_filename file_name, Location.show_filename source))
   with Not_found -> ()
   end;
   implementations_defined :=

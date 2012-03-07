@@ -214,8 +214,11 @@ let absolute_path s = (* This function could go into Filename *)
   in
   aux s
 
+let show_filename file =
+  if !absname then absolute_path file else file
+
 let print_filename ppf file =
-  Format.fprintf ppf "%s" (if !absname then absolute_path file else file)
+  Format.fprintf ppf "%s" (show_filename file)
 
 let reset () =
   num_loc_lines := 0
