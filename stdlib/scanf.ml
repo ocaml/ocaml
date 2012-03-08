@@ -1111,7 +1111,7 @@ let make_char_bit_vect bit set =
 ;;
 
 (* Compute the predicate on chars corresponding to a char set. *)
-let make_pred bit set stp =
+let make_predicate bit set stp =
   let r = make_char_bit_vect bit set in
   List.iter
     (fun c -> set_bit_of_range r (int_of_char c) (bit_not bit)) stp;
@@ -1131,9 +1131,9 @@ let make_setp stp char_set =
       (fun c -> if c == p1 || c == p2 then 1 else 0)
     | 3 ->
       let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
-      if p2 = '-' then make_pred 1 set stp else
+      if p2 = '-' then make_predicate 1 set stp else
       (fun c -> if c == p1 || c == p2 || c == p3 then 1 else 0)
-    | _ -> make_pred 1 set stp
+    | _ -> make_predicate 1 set stp
     end
   | Neg_set set ->
     begin match String.length set with
@@ -1146,9 +1146,9 @@ let make_setp stp char_set =
       (fun c -> if c != p1 && c != p2 then 1 else 0)
     | 3 ->
       let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
-      if p2 = '-' then make_pred 0 set stp else
+      if p2 = '-' then make_predicate 0 set stp else
       (fun c -> if c != p1 && c != p2 && c != p3 then 1 else 0)
-    | _ -> make_pred 0 set stp
+    | _ -> make_predicate 0 set stp
     end
 ;;
 
@@ -1335,17 +1335,9 @@ let scan_format ib ef fmt rv f =
     let rec scan_fmt ir f i =
       if i > lim then ir, f else
       match Sformat.unsafe_get fmt i with
-      | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
       | '%' -> scan_skip ir f (succ i)
-      | '@' -> skip_indication ir f (succ i)
+      | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
       | c -> check_char ib c; scan_fmt ir f (succ i)
-
-    and skip_indication ir f i =
-     if i < lim then
-       match Sformat.unsafe_get fmt i with
-       | '@' | '%' as c -> check_char ib c; scan_fmt ir f (succ i)
-       | c -> check_char ib c; scan_fmt ir f i
-     else incomplete_format fmt
 
     and scan_skip ir f i =
       if i > lim then ir, f else
@@ -1392,6 +1384,12 @@ let scan_format ib ef fmt rv f =
       match Sformat.get fmt i with
       | '%' | '@' as c ->
         check_char ib c;
+        scan_fmt ir f (succ i)
+      | '!' ->
+        if not (Scanning.end_of_input ib)
+        then bad_input "end of input not found" else
+        scan_fmt ir f (succ i)
+      | ',' ->
         scan_fmt ir f (succ i)
       | 's' ->
         let i, stp = scan_indication (succ i) in
@@ -1451,11 +1449,6 @@ let scan_format ib ef fmt rv f =
           | _ -> scan_fmt ir (stack f (token_int64 conv1 ib)) (succ i) end
         (* This is not an integer conversion, but a regular %l, %n or %L. *)
         | _ -> scan_fmt ir (stack f (get_count conv0 ib)) i end
-      | '!' ->
-        if Scanning.end_of_input ib then scan_fmt ir f (succ i)
-        else bad_input "end of input not found"
-      | ',' ->
-        scan_fmt ir f (succ i)
       | '(' | '{' as conv (* ')' '}' *) ->
         let i = succ i in
         (* Find the static specification for the format to read. *)

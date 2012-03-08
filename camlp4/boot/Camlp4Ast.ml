@@ -471,7 +471,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
             value meta_loc = meta_loc_expr;
             module Expr =
               struct
-                value meta_string _loc s = Ast.ExStr _loc (safe_string_escaped s);
+                value meta_string _loc s =
+                  Ast.ExStr _loc (safe_string_escaped s);
                 value meta_int _loc s = Ast.ExInt _loc s;
                 value meta_float _loc s = Ast.ExFlo _loc s;
                 value meta_char _loc s = Ast.ExChr _loc (String.escaped s);

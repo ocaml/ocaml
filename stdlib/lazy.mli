@@ -62,15 +62,23 @@ val force_val : 'a t -> 'a;;
     whether [force_val x] raises the same exception or [Undefined].
 *)
 
-val lazy_from_fun : (unit -> 'a) -> 'a t;;
-(** [lazy_from_fun f] is the same as [lazy (f ())] but slightly more
-    efficient. *)
+val from_fun : (unit -> 'a) -> 'a t;;
+(** [from_fun f] is the same as [lazy (f ())] but slightly more efficient. *)
 
-val lazy_from_val : 'a -> 'a t;;
-(** [lazy_from_val v] returns an already-forced suspension of [v]
+val from_val : 'a -> 'a t;;
+(** [from_val v] returns an already-forced suspension of [v].
     This is for special purposes only and should not be confused with
     [lazy (v)]. *)
 
-val lazy_is_val : 'a t -> bool;;
-(** [lazy_is_val x] returns [true] if [x] has already been forced and
+val is_val : 'a t -> bool;;
+(** [is_val x] returns [true] if [x] has already been forced and
     did not raise an exception. *)
+
+val lazy_from_fun : (unit -> 'a) -> 'a t;;
+(** @deprecated synonym for [from_fun]. *)
+
+val lazy_from_val : 'a -> 'a t;;
+(** @deprecated synonym for [from_val]. *)
+
+val lazy_is_val : 'a t -> bool;;
+(** @deprecated synonym for [is_val]. *)

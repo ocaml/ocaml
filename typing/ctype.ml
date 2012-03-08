@@ -2134,7 +2134,7 @@ and unify3 env t1 t1' t2 t2' =
   | (Tvar _, _) ->
       occur !env t1 t2';
       occur_univar !env t2;
-      link_type t1' t2;      
+      link_type t1' t2;
   | (_, Tvar _) ->
       occur !env t2 t1';
       occur_univar !env t1;
@@ -2171,19 +2171,19 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr ((Path.Pident p) as path,[],_),
          Tconstr ((Path.Pident p') as path',[],_))
         when is_abstract_newtype !env path && is_abstract_newtype !env path'
-        && !generate_equations -> 
-          let source,destination = 
+        && !generate_equations ->
+          let source,destination =
             if find_newtype_level !env path > find_newtype_level !env path'
             then  p,t2'
             else  p',t1'
           in add_gadt_equation env source destination
       | (Tconstr ((Path.Pident p) as path,[],_), _)
-        when is_abstract_newtype !env path && !generate_equations -> 
+        when is_abstract_newtype !env path && !generate_equations ->
           reify env t2';
           local_non_recursive_abbrev !env (Path.Pident p) t2';
           add_gadt_equation env p t2'
       | (_, Tconstr ((Path.Pident p) as path,[],_))
-        when is_abstract_newtype !env path && !generate_equations -> 
+        when is_abstract_newtype !env path && !generate_equations ->
           reify env t1' ;
           local_non_recursive_abbrev !env (Path.Pident p) t1';
           add_gadt_equation env p t1'
@@ -2197,7 +2197,7 @@ and unify3 env t1 t1' t2 t2' =
           (* XXX One should do some kind of unification... *)
           begin match (repr t2').desc with
             Tobject (_, {contents = Some (_, va::_)}) when
-	      (match (repr va).desc with
+              (match (repr va).desc with
                 Tvar _|Tunivar _|Tnil -> true | _ -> false) -> ()
           | Tobject (_, nm2) -> set_name nm2 !nm1
           | _ -> ()

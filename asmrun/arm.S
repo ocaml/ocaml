@@ -63,6 +63,7 @@ caml_system__code_begin:
         
         .align  2
         .globl  caml_call_gc
+        .type caml_call_gc, %function
 caml_call_gc:
         PROFILE
     /* Record return address */
@@ -103,6 +104,7 @@ caml_call_gc:
 
         .align  2
         .globl  caml_alloc1
+        .type caml_alloc1, %function
 caml_alloc1:
         PROFILE
 .Lcaml_alloc1:
@@ -124,6 +126,7 @@ caml_alloc1:
 
         .align  2
         .globl  caml_alloc2
+        .type caml_alloc2, %function
 caml_alloc2:
         PROFILE
 .Lcaml_alloc2:
@@ -145,6 +148,7 @@ caml_alloc2:
 
         .align  2
         .globl  caml_alloc3
+        .type caml_alloc3, %function
 caml_alloc3:
         PROFILE
 .Lcaml_alloc3:
@@ -166,6 +170,7 @@ caml_alloc3:
 
         .align  2
         .globl  caml_allocN
+        .type caml_allocN, %function
 caml_allocN:
         PROFILE
 .Lcaml_allocN:
@@ -191,6 +196,7 @@ caml_allocN:
 
         .align  2
         .globl  caml_c_call
+        .type caml_c_call, %function
 caml_c_call:
         PROFILE
     /* Record lowest stack address and return address */
@@ -220,6 +226,7 @@ caml_c_call:
 
         .align  2
         .globl  caml_start_program
+        .type caml_start_program, %function
 caml_start_program:
         PROFILE
         ldr     r12, =caml_program
@@ -332,6 +339,7 @@ caml_raise_exn:
 
         .align  2
         .globl  caml_raise_exception
+        .type caml_raise_exception, %function
 caml_raise_exception:
         PROFILE
     /* Reload trap ptr, alloc ptr and alloc limit */
@@ -366,6 +374,7 @@ caml_raise_exception:
 
         .align  2
         .globl  caml_callback_exn
+        .type caml_callback_exn, %function
 caml_callback_exn:
         PROFILE
     /* Initial shuffling of arguments (r0 = closure, r1 = first arg) */
@@ -379,6 +388,7 @@ caml_callback_exn:
 
         .align  2
         .globl  caml_callback2_exn
+        .type caml_callback2_exn, %function
 caml_callback2_exn:
         PROFILE
     /* Initial shuffling of arguments (r0 = closure, r1 = arg1, r2 = arg2) */
@@ -393,6 +403,7 @@ caml_callback2_exn:
 
         .align  2
         .globl  caml_callback3_exn
+        .type caml_callback3_exn, %function
 caml_callback3_exn:
         PROFILE
     /* Initial shuffling of arguments */
@@ -409,6 +420,7 @@ caml_callback3_exn:
 
         .align  2
         .globl  caml_ml_array_bound_error
+        .type caml_ml_array_bound_error, %function
 caml_ml_array_bound_error:
         PROFILE
     /* Load address of [caml_array_bound_error] in r7 */

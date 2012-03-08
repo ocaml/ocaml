@@ -783,9 +783,9 @@ New syntax:\
       [ RIGHTA
         [ TRY ["("; "type"]; i = a_LIDENT; ")"; e = SELF ->
             <:expr< fun (type $i$) -> $e$ >>
-        | p = TRY labeled_ipatt; e = SELF ->
+        | bi = TRY cvalue_binding -> bi
+        | p = labeled_ipatt; e = SELF ->
             <:expr< fun $p$ -> $e$ >>
-        | bi = cvalue_binding -> bi
       ] ]
     ;
     match_case:
@@ -984,6 +984,8 @@ New syntax:\
     ;
     label_ipatt_list:
       [ [ p1 = label_ipatt; ";"; p2 = SELF -> <:patt< $p1$ ; $p2$ >>
+        | p1 = label_ipatt; ";"; "_"       -> <:patt< $p1$ ; _ >>
+        | p1 = label_ipatt; ";"; "_"; ";"  -> <:patt< $p1$ ; _ >>
         | p1 = label_ipatt; ";"            -> p1
         | p1 = label_ipatt                 -> p1
       ] ];

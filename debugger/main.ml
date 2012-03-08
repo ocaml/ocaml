@@ -183,7 +183,11 @@ let speclist = [
       " Print version number and exit";
    ]
 
+let function_placeholder () =
+  raise Not_found
+
 let main () =
+  Callback.register "Debugger.function_placeholder" function_placeholder;
   try
     socket_name :=
       (match Sys.os_type with

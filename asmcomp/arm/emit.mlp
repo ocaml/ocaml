@@ -829,6 +829,7 @@ let fundecl fundecl =
     `	.thumb\n`
   else
     `	.arm\n`;
+  `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in

@@ -133,7 +133,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
     let rec self i acc =
       match i with
-      [ <:ident< $i1$.$i2$ >> ->
+      [ <:ident< $lid:"*predef*"$.$lid:"option"$ >> ->
+          (ldot (lident "*predef*") "option", `lident)
+      | <:ident< $i1$.$i2$ >> ->
           self i2 (Some (self i1 acc))
       | <:ident< $i1$ $i2$ >> ->
           let i' = Lapply (fst (self i1 None)) (fst (self i2 None)) in
@@ -204,6 +206,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp< '$s$ >> -> [s]
     | _ -> assert False ];
 
+  value predef_option loc =
+    TyId (loc, IdAcc (loc, IdLid (loc, "*predef*"), IdLid (loc, "option")));
+
   value rec ctyp =
     fun
     [ TyId loc i ->
@@ -226,7 +231,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | TyArr loc (TyLab _ lab t1) t2 ->
         mktyp loc (Ptyp_arrow lab (ctyp t1) (ctyp t2))
     | TyArr loc (TyOlb loc1 lab t1) t2 ->
-        let t1 = TyApp loc1 <:ctyp@loc1< option >> t1 in
+        let t1 = TyApp loc1 (predef_option loc1) t1 in
         mktyp loc (Ptyp_arrow ("?" ^ lab) (ctyp t1) (ctyp t2))
     | TyArr loc t1 t2 -> mktyp loc (Ptyp_arrow "" (ctyp t1) (ctyp t2))
     | <:ctyp@loc< < $fl$ > >> -> mktyp loc (Ptyp_object (meth_list fl []))
@@ -553,7 +558,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:patt@loc< ($tup:_$) >> -> error loc "singleton tuple pattern"
     | PaTyc loc p t -> mkpat loc (Ppat_constraint (patt p) (ctyp t))
     | PaTyp loc i -> mkpat loc (Ppat_type (long_type_ident i))
-    | PaVrn loc s -> mkpat loc (Ppat_variant s None)
+    | PaVrn loc s -> mkpat loc (Ppat_variant (conv_con s) None)
     | PaLaz loc p -> mkpat loc (Ppat_lazy (patt p))
     | PaMod loc m -> mkpat loc (Ppat_unpack m)
     | PaEq _ _ _ | PaSem _ _ _ | PaCom _ _ _ | PaNil _ as p ->
@@ -836,7 +841,7 @@ value varify_constructors var_names =
     | <:expr@loc< $uid:s$ >> ->
         (* let ca = constructors_arity () in *)
         mkexp loc (Pexp_construct (lident (conv_con s)) None True)
-    | ExVrn loc s -> mkexp loc (Pexp_variant s None)
+    | ExVrn loc s -> mkexp loc (Pexp_variant (conv_con s) None)
     | ExWhi loc e1 el ->
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))
@@ -1063,7 +1068,7 @@ value varify_constructors var_names =
     | CtFun loc (TyLab _ lab t) ct ->
         mkcty loc (Pcty_fun lab (ctyp t) (class_type ct))
     | CtFun loc (TyOlb loc1 lab t) ct ->
-        let t = TyApp loc1 <:ctyp@loc1< option >> t in
+        let t = TyApp loc1 (predef_option loc1) t in
         mkcty loc (Pcty_fun ("?" ^ lab) (ctyp t) (class_type ct))
     | CtFun loc t ct -> mkcty loc (Pcty_fun "" (ctyp t) (class_type ct))
     | CtSig loc t_o ctfl ->

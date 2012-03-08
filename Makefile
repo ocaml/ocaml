@@ -282,6 +282,7 @@ install:
 	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(STUBLIBDIR); fi
 	if test -d $(MANDIR)/man$(MANEXT); then : ; \
 	  else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
+	cp VERSION $(LIBDIR)/
 	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
 	  dllthreads.so dllunix.so dllgraphics.so dllstr.so \
 	  dlltkanim.so

@@ -84,6 +84,9 @@ val word_size : int
 (** Size of one word on the machine currently executing the OCaml
    program, in bits: 32 or 64. *)
 
+val big_endian : bool
+(** Whether the machine currently executing the Caml program is big-endian. *)
+
 val max_string_length : int
 (** Maximum length of a string. *)
 

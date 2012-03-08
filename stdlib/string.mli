@@ -132,6 +132,12 @@ val map : (char -> char) -> string -> string
    the characters of [s] and stores the results in a new string that
    is returned. *)
 
+val trim : string -> string
+(** Return a copy of the argument, without leading and trailing whitespace.
+   The characters regarded as whitespace are: [' '], ['\012'], ['\n'],
+   ['\r'], and ['\t'].  If there is no whitespace character in the argument,
+   return the original string itself, not a copy. *)
+
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
    represented by escape sequences, following the lexical
