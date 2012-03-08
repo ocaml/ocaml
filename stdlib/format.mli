@@ -22,7 +22,7 @@
 
    For a gentle introduction to the basics of pretty-printing using
    [Format], read
-   {{:http://caml.inria.fr/resources/doc/guides/format.html}http://caml.inria.fr/resources/doc/guides/format.html}.
+   {{:http://caml.inria.fr/resources/doc/guides/format.en.html}http://caml.inria.fr/resources/doc/guides/format.en.html}.
 
    You may consider this module as providing an extension to the
    [printf] facility to provide automatic line breaking. The addition of
