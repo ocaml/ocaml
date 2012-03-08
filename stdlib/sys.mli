@@ -85,7 +85,8 @@ val word_size : int
    program, in bits: 32 or 64. *)
 
 val big_endian : bool
-(** Whether the machine currently executing the Caml program is big-endian. *)
+(** Whether the machine currently executing the Caml program is big-endian.
+    @since 4.00.0 *)
 
 val max_string_length : int
 (** Maximum length of a string. *)

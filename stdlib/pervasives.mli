@@ -320,7 +320,7 @@ external hypot : float -> float -> float
   of the hypotenuse of a right-angled triangle with sides of length
   [x] and [y], or, equivalently, the distance of the point [(x,y)]
   to origin.
-  @since 3.13.0  *)
+  @since 4.00.0  *)
 
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
 (** Hyperbolic cosine.  Argument is in radians. *)
@@ -351,7 +351,7 @@ external copysign : float -> float -> float
   and whose sign is that of [y].  If [x] is [nan], returns [nan].
   If [y] is [nan], returns either [x] or [-. x], but it is not
   specified which.
-  @since 3.13.0  *)
+  @since 4.00.0  *)
 
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
 (** [mod_float a b] returns the remainder of [a] with respect to

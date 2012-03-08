@@ -39,7 +39,8 @@ val create : ?seed:int -> int -> ('a, 'b) t
    for instance, it is recommended to create hash tables with a
    randomly-chosen seed.  This prevents a denial-of-service attack
    whereas a malicious user sends input crafted to create many
-   collisions in the table and therefore slow the application down. *)
+   collisions in the table and therefore slow the application down.
+   @before 4.00.0 the [seed] parameter was not present. *)
 
 val clear : ('a, 'b) t -> unit
 (** Empty a hash table. *)
@@ -125,7 +126,7 @@ val stats : ('a, 'b) t -> statistics
 (** [Hashtbl.stats tbl] returns statistics about the table [tbl]:
    number of buckets, size of the biggest bucket, distribution of
    buckets by size.
-   @since 3.13.0 *)
+   @since 4.00.0 *)
 
 (** {6 Functorial interface} *)
 
@@ -180,7 +181,7 @@ module Make (H : HashedType) : S with type key = H.t
     The operations perform similarly to those of the generic
     interface, but use the hashing and equality functions
     specified in the functor argument [H] instead of generic
-    equality and hashing.  *)
+    equality and hashing. *)
 
 module type SeededHashedType =
   sig
@@ -196,7 +197,7 @@ module type SeededHashedType =
           below. *)
   end
 (** The input signature of the functor {!Hashtbl.MakeSeeded}.
-    @since 3.13.0 *)
+    @since 4.00.0 *)
 
 module type SeededS =
   sig
@@ -217,7 +218,7 @@ module type SeededS =
     val stats: 'a t -> statistics
   end
 (** The output signature of the functor {!Hashtbl.MakeSeeded}.
-    @since 3.13.0 *)
+    @since 4.00.0 *)
 
 module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
 (** Functor building an implementation of the hashtable structure.
@@ -228,7 +229,7 @@ module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
     interface, but use the seeded hashing and equality functions
     specified in the functor argument [H] instead of generic
     equality and hashing.
-    @since 3.13.0 *)
+    @since 4.00.0 *)
 
 
 (** {6 The polymorphic hash functions} *)
@@ -243,7 +244,7 @@ val hash : 'a -> int
 val seeded_hash : int -> 'a -> int
 (** A variant of {!Hashtbl.hash} that is further parameterized by
    an integer seed.
-   @since 3.13.0 *)
+   @since 4.00.0 *)
 
 val hash_param : int -> int -> 'a -> int
 (** [Hashtbl.hash_param meaningful total x] computes a hash value for [x],
@@ -266,4 +267,4 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
 (** A variant of {!Hashtbl.hash_param} that is further parameterized by
    an integer seed.  Usage:
    [Hashtbl.seeded_hash_param meaningful total seed x].
-   @since 3.13.0 *)
+   @since 4.00.0 *)

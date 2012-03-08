@@ -117,7 +117,7 @@ val stdin : in_channel;;
 
 type file_name = string;;
 (** A convenient alias to designate a file name.
-    @since 3.13.0
+    @since 4.00.0
 *)
 
 val open_in : file_name -> in_channel;;
@@ -500,5 +500,5 @@ val unescaped : string -> string
     lexical conventions of OCaml, replaced by their corresponding
     special characters.  If there is no escape sequence in the
     argument, still return a copy, contrary to String.escaped.
-    @since 3.13.0
+    @since 4.00.0
 *)
