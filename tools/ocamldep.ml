@@ -244,18 +244,46 @@ let parse_interface ic =
 
 (* Process one file *)
 
-let ml_file_dependencies source_file =
+let report_err source_file exn =
+  error_occurred := true;
+  match exn with
+    | Lexer.Error(err, range) ->
+        Format.fprintf Format.err_formatter "@[%a%a@]@."
+        Location.print_error range  Lexer.report_error err
+    | Syntaxerr.Error err ->
+        Format.fprintf Format.err_formatter "@[%a@]@."
+        Syntaxerr.report_error err
+    | Sys_error msg ->
+        Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
+    | Preprocessing_error ->
+        Format.fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
+            source_file
+    | x -> raise x
+
+let read_parse_and_extract parse_function extract_function source_file =
   Depend.free_structure_names := Depend.StringSet.empty;
-  let input_file = preprocess source_file in
-  let ic = open_in_bin input_file in
   try
-    let ast = parse_use_file ic in
-    Depend.add_use_file Depend.StringSet.empty ast;
-    if !sort_files then
-      files := (source_file, ML, !Depend.free_structure_names) :: !files
-    else
+    let input_file = preprocess source_file in
+    let ic = open_in_bin input_file in
+    try
+      let ast = parse_function ic in
+      extract_function Depend.StringSet.empty ast;
+      !Depend.free_structure_names
+    with x ->
+      close_in ic; remove_preprocessed input_file; raise x
+  with x ->
+    report_err source_file x;
+    Depend.StringSet.empty
+
+let ml_file_dependencies source_file =
+  let extracted_deps = read_parse_and_extract
+    parse_use_file Depend.add_use_file source_file
+  in
+  if !sort_files then
+    files := (source_file, ML, !Depend.free_structure_names) :: !files
+  else
     if !raw_dependencies then begin
-      print_raw_dependencies source_file !Depend.free_structure_names
+      print_raw_dependencies source_file extracted_deps
     end else begin
       let basename = Filename.chop_extension source_file in
       let byte_targets =
@@ -272,36 +300,26 @@ let ml_file_dependencies source_file =
         else (init_deps, init_deps), ( if !all_dependencies then [cmi_name] else [] ) in
       let (byt_deps, native_deps) =
         Depend.StringSet.fold (find_dependency ML)
-                              !Depend.free_structure_names init_deps in
+          extracted_deps init_deps in
       if not !native_only then print_dependencies (byte_targets @ extra_targets) byt_deps;
       print_dependencies (native_targets @ extra_targets) native_deps;
-    end;
-    close_in ic; remove_preprocessed input_file
-  with x ->
-    close_in ic; remove_preprocessed input_file; raise x
+    end
 
 let mli_file_dependencies source_file =
-  Depend.free_structure_names := Depend.StringSet.empty;
-  let input_file = preprocess source_file in
-  let ic = open_in_bin input_file in
-  try
-    let ast = parse_interface ic in
-    Depend.add_signature Depend.StringSet.empty ast;
-    if !sort_files then
-      files := (source_file, MLI, !Depend.free_structure_names) :: !files
-    else
+  let extracted_deps = read_parse_and_extract
+    parse_interface Depend.add_signature source_file in
+  if !sort_files then
+    files := (source_file, MLI, extracted_deps) :: !files
+  else
     if !raw_dependencies then begin
-      print_raw_dependencies source_file !Depend.free_structure_names
+      print_raw_dependencies source_file extracted_deps
     end else begin
       let basename = Filename.chop_extension source_file in
       let (byt_deps, opt_deps) =
         Depend.StringSet.fold (find_dependency MLI)
-                              !Depend.free_structure_names ([], []) in
+          extracted_deps ([], []) in
       print_dependencies [basename ^ ".cmi"] byt_deps
-    end;
-    close_in ic; remove_preprocessed input_file
-  with x ->
-    close_in ic; remove_preprocessed input_file; raise x
+    end
 
 let file_dependencies_as kind source_file =
   Location.input_name := source_file;
@@ -311,22 +329,7 @@ let file_dependencies_as kind source_file =
       | ML -> ml_file_dependencies source_file
       | MLI -> mli_file_dependencies source_file
     end
-  with x ->
-    let report_err = function
-    | Lexer.Error(err, range) ->
-        Format.fprintf Format.err_formatter "@[%a%a@]@."
-        Location.print_error range  Lexer.report_error err
-    | Syntaxerr.Error err ->
-        Format.fprintf Format.err_formatter "@[%a@]@."
-        Syntaxerr.report_error err
-    | Sys_error msg ->
-        Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
-    | Preprocessing_error ->
-        Format.fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
-            source_file
-    | x -> raise x in
-    error_occurred := true;
-    report_err x
+  with x -> report_err source_file x
 
 let file_dependencies source_file =
   if List.exists (Filename.check_suffix source_file) !ml_synonyms then
