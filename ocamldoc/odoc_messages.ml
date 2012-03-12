@@ -244,7 +244,7 @@ let tag_not_handled tag = "Tag @"^tag^" not handled by this generator"
 let bad_tree = "Incorrect tree structure."
 let not_a_valid_tag s = s^" is not a valid tag."
 let fun_without_param f = "Function "^f^" has no parameter.";;
-let method_without_param f = "Méthode "^f^" has no parameter.";;
+let method_without_param f = "Method "^f^" has no parameter.";;
 let anonymous_parameters f = "Function "^f^" has anonymous parameters."
 let function_colon f = "Function "^f^": "
 let implicit_match_in_parameter = "Parameters contain implicit pattern matching."
@@ -298,6 +298,10 @@ let cross_type_not_found n = "Type "^n^" not found"
 let object_end = "object ... end"
 let struct_end = "struct ... end"
 let sig_end = "sig ... end"
+
+let current_generator_is_not kind =
+  Printf.sprintf "Current generator is not a %s generator" kind
+;;
 
 (** Messages for verbose mode. *)
 
