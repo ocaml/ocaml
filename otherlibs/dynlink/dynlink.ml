@@ -158,6 +158,9 @@ let check_unsafe_module cu =
 
 (* Load in-core and execute a bytecode object file *)
 
+external register_code_fragment: string -> int -> unit
+                               = "caml_register_code_fragment"
+
 let load_compunit ic file_name compunit =
   check_consistency file_name compunit;
   check_unsafe_module compunit;
@@ -187,6 +190,7 @@ let load_compunit ic file_name compunit =
       | _ -> assert false in
     raise(Error(Linking_error (file_name, new_error)))
   end;
+  register_code_fragment code code_size;
   begin try
     ignore((Meta.reify_bytecode code code_size) ())
   with exn ->

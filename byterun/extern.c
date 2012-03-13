@@ -24,6 +24,7 @@
 #include "gc.h"
 #include "intext.h"
 #include "io.h"
+#include "md5.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -56,6 +57,7 @@ static struct trail_entry * extern_trail_cur, * extern_trail_limit;
 
 static void extern_out_of_memory(void);
 static void extern_invalid_argument(char *msg);
+static struct code_fragment * extern_find_code(char *addr);
 
 /* Initialize the trail */
 
@@ -289,6 +291,7 @@ static void writecode64(int code, intnat val)
 
 static void extern_rec(value v)
 {
+  struct code_fragment * cf;
  tailcall:
   if (Is_long(v)) {
     intnat n = Long_val(v);
@@ -438,12 +441,11 @@ static void extern_rec(value v)
     }
     }
   }
-  else if ((char *) v >= caml_code_area_start &&
-           (char *) v < caml_code_area_end) {
+  else if ((cf = extern_find_code((char *) v)) != NULL) {
     if (!extern_closures)
       extern_invalid_argument("output_value: functional value");
-    writecode32(CODE_CODEPOINTER, (char *) v - caml_code_area_start);
-    writeblock((char *) caml_code_checksum(), 16);
+    writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
+    writeblock((char *) cf->digest, 16);
   } else {
     extern_invalid_argument("output_value: abstract value (outside heap)");
   }
@@ -724,3 +726,20 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
   }
 #endif
 }
+
+/* Find where a code pointer comes from */
+
+static struct code_fragment * extern_find_code(char *addr)
+{
+  int i;
+  for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {
+    struct code_fragment * cf = caml_code_fragments_table.contents[i];
+    if (! cf->digest_computed) {
+      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+      cf->digest_computed = 1;
+    }
+    if (cf->code_start <= addr && addr < cf->code_end) return cf;
+  }
+  return NULL;
+}
+
