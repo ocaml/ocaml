@@ -66,11 +66,11 @@ The textual representation of the graph is written to the file
 "ocamldoc.out", or to the file specified with the {\bf\tt -o} option.
 Use "dot ocamldoc.out" to display it.
 
-\item["-g" \var{file.cm[o,a]}]
+\item["-g" \var{file.cm[o,a,xs]}]
 Dynamically load the given file, which defines a custom documentation
 generator.  See section \ref{s:ocamldoc-compilation-and-usage}.  This
-option is supported by the "ocamldoc" command, but not by its
-native-code version "ocamldoc.opt".
+option is supported by the "ocamldoc" command (to load ".cmo" and ".cma" files)
+and by its native-code version "ocamldoc.opt" (to load ".cmxs" files).
 If the given file is a simple one and does not exist in
 the current directory, then ocamldoc looks for it in the custom
 generators default directory, and in the directories specified with
@@ -226,13 +226,17 @@ The following options apply in conjunction with the "-html" option:
 \item["-all-params"]
 Display the complete list of parameters for functions and methods.
 
-\item["-css-style" \var{filename}]
-Use \var{filename} as the Cascading Style Sheet file.
+\item["-charset" \var{charset}]
+Add information about character encoding being \var{charset}
+(default is iso-8859-1).
 
 \item["-colorize-code"]
 Colorize the OCaml code enclosed in "[ ]" and "{[ ]}", using colors
 to emphasize keywords, etc.  If the code fragments are not
 syntactically correct, no color is added.
+
+\item["-css-style" \var{filename}]
+Use \var{filename} as the Cascading Style Sheet file.
 
 \item["-index-only"]
 Generate only index files.
@@ -889,47 +893,74 @@ the "Odoc_info" module, which gives access to all the types and functions
  representing the elements found in the given modules, with their associated
 description.
 
-The files you can used to define custom generators are installed in the
+The files you can use to define custom generators are installed in the
 "ocamldoc" sub-directory of the OCaml standard library.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The generator class}
-A generator class is a class of type "Odoc_args.doc_generator".
-It has only one method
+\subsection{The generator modules}
+The type of a generator module depends on the kind of generated documentation.
+Here is the list of generator module types, with the name of the generator
+class in the module~:
+\begin{itemize}
+\item for HTML~: "Odoc_html.Html_generator" (class "html"),
+\item for \LaTeX~: "Odoc_latex.Latex_generator" (class "latex"),
+\item for TeXinfo~: "Odoc_texi.Texi_generator" (class "texi"),
+\item for man pages~: "Odoc_man.Man_generator" (class "man"),
+\item for graphviz (dot)~: "Odoc_dot.Dot_generator" (class "dot"),
+\item for other kinds~: "Odoc_gen.Base" (class "doc_generator").
+\end{itemize}
+That is, to define a new generator, one must implement a module with
+the expected signature, and with the given generator class, providing
+the "generate" method as entry point to make the generator generates
+documentation for a given list of modules~:
+
 \begin{verbatim}
-        generator : Odoc_info.Module.t_module list -> unit
+        method generate : Odoc_info.Module.t_module list -> unit
 \end{verbatim}
+
 \noindent{}This method will be called with the list of analysed and possibly
 merged "Odoc_info.t_module" structures.
-Of course the class can have other methods, but the object of this
- class must be coerced to "Odoc_args.doc_generator" before being
- passed to the function
-\begin{verbatim}
-        Odoc_args.set_doc_generator : Odoc_args.doc_generator -> unit
-\end{verbatim}
-\noindent{}which installs the new documentation generator.
 
-The following example shows how to define and install a new documentation generator.
-See the "odoc_fhtml" generator (in the Ocamldoc Hump) for a complete example.
-\begin{verbatim}
-class my_doc_gen =
-  object
-    (* ... *)
+It is recommanded to inherit from the current generator of the same
+kind as the one you want to define. Doing so, it is possible to
+load various custom generators to combine improvments brought by each one.
 
-    method generate module_list =
+This is done using first class modules (see chapter \ref{s-first-class-modules}).
+
+The easiest way to define a custom generator is the following this example,
+here extending the current HTML generator. We don't have to know if this is
+the original HTML generator defined in ocamldoc or if it has been extended
+already by a previously loaded custom generator~:
+
+\begin{verbatim}
+module Generator (G : Odoc_html.Html_generator) =
+struct
+  class html =
+    object(self)
+      inherit G.html as html
       (* ... *)
-      ()
 
-    (* ... *)
+      method generate module_list =
+        (* ... *)
+        ()
+
+      (* ... *)
   end
+end;;
 
-let my_generator = new my_doc_gen
-let _ = Odoc_args.set_doc_generator (my_generator :> Odoc_args.doc_generator)
+let _ = Odoc_args.extend_generator (module Generator : Odoc_gen.Html_functor);;
 \end{verbatim}
 
-Note: The new class can inherit from "Odoc_html.html", "Odoc_latex.latex",
-"Odoc_man.man", "Odoc_texi.texi" or "Odoc_dot.dot", and
-redefine only some methods to benefit from the existing methods.
+To know which methods to override and/or which methods are available,
+have a look at the different base implementations, depending on the
+kind of generator you are extending~:
+\begin{itemize}
+\item for HTML~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_html.ml?view=markup}{odoc_html.ml},
+\item for \LaTeX~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_latex.ml?view=markup}{"odoc_latex.ml"},
+\item for TeXinfo~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_texi.ml?view=markup}{"odoc_texi.ml"},
+\item for man pages~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_man.ml?view=markup}{"odoc_man.ml"},
+\item for graphviz (dot)~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_dot.ml?view=markup}{"odoc_dot.ml"}.
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Handling custom tags}
@@ -941,23 +972,27 @@ Making a custom generator handle custom tags (see
 \subsubsection*{For HTML}
 Here is how to develop a HTML generator handling your custom tags.
 
-The class "Odoc_html.html" inherits
+The class "Odoc_html.Generator.html" inherits
 from the class "Odoc_html.info", containing a field "tag_functions" which is a
 list pairs composed of a custom tag (e.g. "\"foo\"") and a function taking
 a "text" and returning HTML code (of type "string").
-To handle a new tag "bar", create a HTML generator class from the existing one
+To handle a new tag "bar", extend the current HTML generator
  and complete the "tag_functions" field:
 \begin{verbatim}
-class my_gen =
-  object(self)
-    inherit Odoc_html.html
+module Generator (G : Odoc_html.Html_generator) =
+struct
+  class html =
+    object(self)
+      inherit G.html
 
-    (** Return HTML code for the given text of a bar tag. *)
-    method html_of_bar t = (* your code here *)
+      (** Return HTML code for the given text of a bar tag. *)
+      method html_of_bar t = (* your code here *)
 
-    initializer
-      tag_functions <- ("bar", self#html_of_bar) :: tag_functions
+      initializer
+        tag_functions <- ("bar", self#html_of_bar) :: tag_functions
   end
+end
+let _ = Odoc_args.extend_generator (module Generator : Odoc_gen.Html_functor);;
 \end{verbatim}
 
 Another method of the class "Odoc_html.info" will look for the
@@ -966,10 +1001,7 @@ the tag. If no function is associated to a custom tag, then the method
 prints a warning message on "stderr".
 
 \subsubsection{For other generators}
-As for the HTML custom generator, you can define a new \LaTeX
-(resp. "man") generator by inheriting from the class
-"Odoc_latex.latex" (resp. "Odoc_man.man") and
-adding your own tag handler to the field "tag_functions".
+You can act the same way for other kinds of generators.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Adding command line options}

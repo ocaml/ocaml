@@ -600,7 +600,7 @@ variable it introduces, but it can be combined with explicit
 polymorphic annotations where needed. It is also extremely useful for
 first-class modules.
 
-\section{First-class modules}
+\section{First-class modules}\label{s-first-class-modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
