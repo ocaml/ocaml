@@ -178,7 +178,7 @@ let kind_name_exists kind =
     match kind with
       RK_module -> (fun e -> match e with Odoc_search.Res_module _ -> true | _ -> false)
     | RK_module_type -> (fun e -> match e with Odoc_search.Res_module_type _ -> true | _ -> false)
-    | RK_class -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
+    | RK_class -> (fun e -> match e with Odoc_search.Res_class _ -> true | _ -> false)
     | RK_class_type -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
     | RK_value -> (fun e -> match e with Odoc_search.Res_value _ -> true | _ -> false)
     | RK_type -> (fun e -> match e with Odoc_search.Res_type _ -> true | _ -> false)
