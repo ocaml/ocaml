@@ -16,7 +16,7 @@ compile: $(PLUGINS) main mylib.so
 
 run:
 	@printf " ... testing 'main'"
-	@./main plugin_thread.so > result
+	@./main plugin.so plugin2.so plugin_thread.so > result
 	@$(DIFF) reference result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 

@@ -151,15 +151,15 @@ CAMLextern void caml_deserialize_error(char * msg);
 /* <private> */
 
 /* Auxiliary stuff for sending code pointers */
-unsigned char * caml_code_checksum (void);
 
-#ifndef NATIVE_CODE
-#include "fix_code.h"
-#define caml_code_area_start ((char *) caml_start_code)
-#define caml_code_area_end ((char *) caml_start_code + caml_code_size)
-#else
-extern char * caml_code_area_start, * caml_code_area_end;
-#endif
+struct code_fragment {
+  char * code_start;
+  char * code_end;
+  unsigned char digest[16];
+  char digest_computed;
+};
+
+struct ext_table caml_code_fragments_table;
 
 /* </private> */
 

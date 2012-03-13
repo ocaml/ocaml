@@ -49,6 +49,8 @@ Standard library:
     . Added optional "seed" parameter to Hashtbl.create for diversification
     . Added new functorial interface "MakeSeeded" to support diversification
       with user-provided hash functions.
+- Marshal: marshalling of function values (flag Marshal.Closures) now
+  also works for functions that come from dynamically-loaded modules (PR#5215)
 - Scanf: new function "unescaped" (PR#3888)
 - Set and Map: more efficient implementation of "filter" and "partition"
 - String: new function "map" (PR#3888)

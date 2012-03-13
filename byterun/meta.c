@@ -22,6 +22,7 @@
 #include "interp.h"
 #include "intext.h"
 #include "major_gc.h"
+#include "md5.h"
 #include "memory.h"
 #include "minor_gc.h"
 #include "misc.h"
@@ -59,6 +60,17 @@ CAMLprim value caml_reify_bytecode(value prog, value len)
   clos = caml_alloc_small (1, Closure_tag);
   Code_val(clos) = (code_t) prog;
   return clos;
+}
+
+CAMLprim value caml_register_code_fragment(value prog, value len)
+{
+  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
+  cf->code_start = (char *) prog;
+  cf->code_end = (char *) prog + Long_val(len);
+  caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+  cf->digest_computed = 1;
+  caml_ext_table_add(&caml_code_fragments_table, cf);
+  return Val_unit;
 }
 
 CAMLprim value caml_realloc_global(value size)
