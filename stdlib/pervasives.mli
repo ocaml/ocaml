@@ -926,8 +926,7 @@ val at_exit : (unit -> unit) -> unit
 
 (**/**)
 
-
-(** {6 For system use only, not for the casual user} *)
+(* The following is for system use only. Do not call directly. *)
 
 val valid_float_lexem : string -> string
 
