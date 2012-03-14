@@ -127,13 +127,13 @@ let print_ident_annot pp str k =
 let print_info pp prev_loc ti =
   match ti with
   | Ti_class _ | Ti_mod _ -> prev_loc
-  | Ti_pat  {pat_loc = loc; pat_type = typ}
-  | Ti_expr {exp_loc = loc; exp_type = typ} ->
+  | Ti_pat  {pat_loc = loc; pat_type = typ; pat_env = env}
+  | Ti_expr {exp_loc = loc; exp_type = typ; exp_env = env} ->
       if loc <> prev_loc then fprintf pp "%a@." print_location loc;
       fprintf pp "type(@.  ";
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
-      Printtyp.type_sch pp typ;
+      Printtyp.wrap_printing_env env (fun () -> Printtyp.type_sch pp typ);
       fprintf pp "@.)@.";
       loc
   | An_call (loc, k) ->
