@@ -75,8 +75,9 @@ module State = struct
   (* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
   let bits s =
     s.idx <- (s.idx + 1) mod 55;
+    let curval = s.st.(s.idx) in
     let newval = s.st.((s.idx + 24) mod 55)
-                 + (s.st.(s.idx) lxor ((s.st.(s.idx) lsr 25) land 31)) in
+                 + (curval lxor ((curval lsr 25) land 0x1F)) in
     s.st.(s.idx) <- newval;
     newval land 0x3FFFFFFF   (* land is needed for 64-bit arch *)
   ;;

@@ -85,7 +85,7 @@ val npeek : int -> 'a t -> 'a list
 
 (**/**)
 
-(** {6 For system use only, not for the casual user} *)
+(* The following is for system use only. Do not call directly. *)
 
 val iapp : 'a t -> 'a t -> 'a t
 val icons : 'a -> 'a t -> 'a t
