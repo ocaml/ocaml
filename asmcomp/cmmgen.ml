@@ -1402,20 +1402,23 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
                           float_array_set arr idx
                                           (unbox_float newval)))))))
       | Paddrarray ->
+          bind "newval" (transl arg3) (fun newval ->
           bind "index" (transl arg2) (fun idx ->
-            bind "arr" (transl arg1) (fun arr ->
-              Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
-                        addr_array_set arr idx (transl arg3))))
+          bind "arr" (transl arg1) (fun arr ->
+            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+                      addr_array_set arr idx newval))))
       | Pintarray ->
+          bind "newval" (transl arg3) (fun newval ->
           bind "index" (transl arg2) (fun idx ->
-            bind "arr" (transl arg1) (fun arr ->
-              Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
-                        int_array_set arr idx (transl arg3))))
+          bind "arr" (transl arg1) (fun arr ->
+            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+                      int_array_set arr idx newval))))
       | Pfloatarray ->
+          bind "newval" (transl_unbox_float arg3) (fun newval ->
           bind "index" (transl arg2) (fun idx ->
-            bind "arr" (transl arg1) (fun arr ->
-              Csequence(make_checkbound dbg [float_array_length(header arr);idx],
-                        float_array_set arr idx (transl_unbox_float arg3))))
+          bind "arr" (transl arg1) (fun arr ->
+            Csequence(make_checkbound dbg [float_array_length(header arr);idx],
+                      float_array_set arr idx newval))))
       end)
   | _ ->
     fatal_error "Cmmgen.transl_prim_3"

@@ -66,6 +66,7 @@ Bug Fixes:
 - PR#4746: wrong detection of stack overflows in native code under Linux
 - PR#4869: rare collisions between assembly labels for code and data
 - PR#4880: "assert" constructs now show up in the exception stack backtrace
+- PR#4892: Array.set could raise "out of bounds" before evaluating 3rd arg
 - PR#4937: camlp4 incorrectly handles optional arguments if 'option' is
   redefined
 - PR#5024: camlp4r now handles underscores in irrefutable patern matching of
