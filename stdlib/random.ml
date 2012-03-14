@@ -25,7 +25,7 @@
    passes all the Diehard tests.
 *)
 
-external random_seed: unit -> int = "caml_sys_random_seed";;
+external random_seed: unit -> int array = "caml_sys_random_seed";;
 
 module State = struct
 
@@ -43,7 +43,7 @@ module State = struct
       Char.code d.[0] + (Char.code d.[1] lsl 8) + (Char.code d.[2] lsl 16)
       + (Char.code d.[3] lsl 24)
     in
-    let seed = if seed = [| |] then [| 0 |] else seed in
+    let seed = if Array.length seed = 0 then [| 0 |] else seed in
     let l = Array.length seed in
     for i = 0 to 54 do
       s.st.(i) <- i;
@@ -64,7 +64,7 @@ module State = struct
     result
   ;;
 
-  let make_self_init () = make [| random_seed () |];;
+  let make_self_init () = make (random_seed ());;
 
   let copy s =
     let result = new_state () in
@@ -172,7 +172,7 @@ let bool () = State.bool default;;
 
 let full_init seed = State.full_init default seed;;
 let init seed = State.full_init default [| seed |];;
-let self_init () = init (random_seed());;
+let self_init () = full_init (random_seed());;
 
 (* Manipulating the current state. *)
 

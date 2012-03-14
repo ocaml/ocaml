@@ -528,18 +528,15 @@ void caml_win32_overflow_detection()
 
 /* Seeding of pseudo-random number generators */
 
-intnat caml_win32_random_seed (void)
+int caml_win32_random_seed (intnat data[16])
 {
-  intnat seed;
-  SYSTEMTIME t;
-
-  GetLocalTime(&t);
-  seed = t.wMonth;
-  seed = (seed << 5) ^ t.wDay;
-  seed = (seed << 4) ^ t.wHour;
-  seed = (seed << 5) ^ t.wMinute;
-  seed = (seed << 5) ^ t.wSecond;
-  seed = (seed << 9) ^ t.wMilliseconds;
-  seed ^= GetCurrentProcessId();
-  return seed;
+  /* For better randomness, consider:
+     http://msdn.microsoft.com/library/en-us/seccrypto/security/rtlgenrandom.asp
+  */
+  FILETIME t;
+  GetSystemTimeAsFileTime(&t);
+  data[0] = t.dwLowDateTime;
+  data[1] = t.dwHighDateTime;
+  data[2] = GetCurrentProcessId();
+  return 3;
 }
