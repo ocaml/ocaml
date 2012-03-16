@@ -23,7 +23,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib dumpobj objinfo
+all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj objinfo
 # scrapelabels addlabels
 
 .PHONY: all
@@ -63,19 +63,25 @@ CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
-ocamlprof: $(CSLPROF) profiling.cmo
+ocamlprof: $(CSLPROF) profiling.cmo profiling.cmx
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
 ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp warnings.cmo main_args.cmo ocamlcp.cmo
 
+ocamloptp: ocamloptp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamloptp warnings.cmo main_args.cmo \
+	         ocamloptp.cmo
+
 install::
 	cp ocamlprof $(BINDIR)/ocamlprof$(EXE)
 	cp ocamlcp $(BINDIR)/ocamlcp$(EXE)
+	cp ocamloptp $(BINDIR)/ocamloptp$(EXE)
 	cp profiling.cmi profiling.cmo $(LIBDIR)
+	cp profiling.cmx profiling.o $(LIBDIR)
 
 clean::
-	rm -f ocamlprof ocamlcp
+	rm -f ocamlprof ocamlcp ocamloptp
 
 
 # To help building mixed-mode libraries (OCaml + C)

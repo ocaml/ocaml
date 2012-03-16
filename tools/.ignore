@@ -10,6 +10,7 @@ cvt_emit
 cvt_emit.bak
 cvt_emit.ml
 ocamlcp
+ocamloptp
 ocamlmktop
 primreq
 ocamldumpobj
