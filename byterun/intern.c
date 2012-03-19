@@ -74,77 +74,6 @@ static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset);
 static void intern_bad_code_pointer(unsigned char digest[16]) Noreturn;
 
-/* To be save, decided to save context of whole intern_rec function */
-struct intern_item {
-  unsigned int code;
-  tag_t tag;
-  mlsize_t size, len, ofs_ind;
-  value v, clos;
-  asize_t ofs;
-  header_t header;
-  struct custom_operations * ops;
-  int label; // return label number index
-  value* dest; // this is what we passed to intern_rec
-  unsigned char digest[16];
-  char * codeptr;
-};
-
-/* FIXME: This is duplicated in two other places, with the only difference of
-   the type of elements stored in the stack. Possible solution in C would
-   be to instantiate stack these function via. C preprocessor macro.
- */
-
-#define INTERN_STACK_INIT_SIZE 256
-#define INTERN_STACK_MAX_SIZE (1024*1024*100)
-
-static struct intern_item intern_stack_init[INTERN_STACK_INIT_SIZE];
-
-static struct intern_item * intern_stack = intern_stack_init;
-static struct intern_item * intern_stack_limit = intern_stack_init
-                                                   + INTERN_STACK_INIT_SIZE;
-
-
-/* Free the compare stack if needed */
-static void intern_free_stack(void)
-{
-  if (intern_stack != intern_stack_init) {
-    free(intern_stack);
-    /* Reinitialize the globals for next time around */
-    intern_stack = intern_stack_init;
-    intern_stack_limit = intern_stack + INTERN_STACK_INIT_SIZE;
-  }
-}
-
-/* Same, then raise Out_of_memory */
-static void intern_stack_overflow(void)
-{
-  caml_gc_message (0x04, "Stack overflow in un-marshaling value\n", 0);
-  intern_free_stack();
-  caml_raise_out_of_memory();
-}
-
-static struct intern_item * intern_resize_stack(struct intern_item * sp)
-{
-  asize_t newsize = 2 * (intern_stack_limit - intern_stack);
-  asize_t sp_offset = sp - intern_stack;
-  struct intern_item * newstack;
-
-  if (newsize >= INTERN_STACK_MAX_SIZE) intern_stack_overflow();
-  if (intern_stack == intern_stack_init) {
-    newstack = malloc(sizeof(struct intern_item) * newsize);
-    if (newstack == NULL) intern_stack_overflow();
-    memcpy(newstack, intern_stack_init,
-           sizeof(struct intern_item) * INTERN_STACK_INIT_SIZE);
-  } else {
-    newstack =
-      realloc(intern_stack, sizeof(struct intern_item) * newsize);
-    if (newstack == NULL) intern_stack_overflow();
-  }
-  intern_stack = newstack;
-  intern_stack_limit = newstack + newsize;
-  return newstack + sp_offset;
-}
-
 #define Sign_extend_shift ((sizeof(intnat) - 1) * 8)
 #define Sign_extend(x) (((intnat)(x) << Sign_extend_shift) >> Sign_extend_shift)
 
@@ -193,131 +122,87 @@ static void intern_cleanup(void)
   }
 }
 
-
-static void intern_rec(value* _dest)
+static void intern_rec(value *dest)
 {
-  value* arg_dest = _dest; /* Argument to our intern_rec function */
-  int    arg_ret  = 0;     /* Return label index */
-  struct intern_item* sp = intern_stack;
-
-  /* Allocate our stack frame */
-#define ENTER()                                                       \
-  do {                                                                \
-    sp++;                                                             \
-    if (sp >= intern_stack_limit) sp = intern_resize_stack(sp);       \
-  } while(0)
-
-  /* Return from function:
-     1. De-allocate stack frame
-     2. Return to the right place - to the code just after 
-        RECURSE statement */
-#define RETURN()                                 \
-  do{                                            \
-    if (sp > intern_stack_init) {                \
-      sp--;                                      \
-      switch ((sp+1)->label) {                   \
-      case 0 : goto ret0;                        \
-      case 1 : goto ret1;                        \
-      case 2 : goto ret2;                        \
-      case 3 : goto ret3;                        \
-      case 4 : goto ret4;                        \
-      }                                          \
-    }                                            \
-  } while(0)
-
-  /* Access our stack frame variable */
-#define S(a) (sp->a)
-
-  /* This will perform the actual recursive call:
-     1. setup arguments 
-     2. jump to the entry point 
-     3. generate return label out of index */
-#define RECURSE(dest, label)                            \
-  arg_ret = label;                                      \
-  arg_dest = dest;                                      \
-  goto call;                                            \
- ret##label:                                            \
-
- call: /* This is the entry point of each invocation */
-
-  ENTER(); /* Create a stack frame */
-
-  /* First thing we need to do is to substitute arguments of the call */
-  S(dest) = arg_dest;
-  S(label) = arg_ret;
-
-  /* Begin body of the original recursive function */
+  unsigned int code;
+  tag_t tag;
+  mlsize_t size, len, ofs_ind;
+  value v, clos;
+  asize_t ofs;
+  header_t header;
+  unsigned char digest[16];
+  struct custom_operations * ops;
+  char * codeptr;
 
  tailcall:
-  S(code) = read8u();
-  if (S(code) >= PREFIX_SMALL_INT) {
-    if (S(code) >= PREFIX_SMALL_BLOCK) {
+  code = read8u();
+  if (code >= PREFIX_SMALL_INT) {
+    if (code >= PREFIX_SMALL_BLOCK) {
       /* Small block */
-      S(tag) = S(code) & 0xF;
-      S(size) = (S(code) >> 4) & 0x7;
+      tag = code & 0xF;
+      size = (code >> 4) & 0x7;
     read_block:
-      if (S(size) == 0) {
-        S(v) = Atom(S(tag));
+      if (size == 0) {
+        v = Atom(tag);
       } else {
-        S(v) = Val_hp(intern_dest);
-        *S(dest) = S(v);
-        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = S(v);
-        S(dest) = (value *) (intern_dest + 1);
-        *intern_dest = Make_header(S(size), S(tag), intern_color);
-        intern_dest += 1 + S(size);
+        v = Val_hp(intern_dest);
+        *dest = v;
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
+        dest = (value *) (intern_dest + 1);
+        *intern_dest = Make_header(size, tag, intern_color);
+        intern_dest += 1 + size;
         /* For objects, we need to freshen the oid */
-        if (S(tag) == Object_tag && camlinternaloo_last_id != (value*)-1) {
-          RECURSE(S(dest)++,1);
-          RECURSE(S(dest)++,2);
+        if (tag == Object_tag && camlinternaloo_last_id != (value*)-1) {
+          intern_rec(dest++);
+          intern_rec(dest++);
           if (camlinternaloo_last_id == NULL)
             camlinternaloo_last_id = caml_named_value("CamlinternalOO.last_id");
           if (camlinternaloo_last_id == NULL)
             camlinternaloo_last_id = (value*)-1;
           else {
             value id = Field(*camlinternaloo_last_id,0);
-            Field(S(dest),-1) = id;
+            Field(dest,-1) = id;
             Field(*camlinternaloo_last_id,0) = id + 2;
           }
-          S(size) -= 2;
-          if (S(size) == 0) return;
+          size -= 2;
+          if (size == 0) return;
         }
-        for(/*nothing*/; S(size) > 1; S(size)--, S(dest)++) {
-          RECURSE(S(dest),3);
-        }
+        for(/*nothing*/; size > 1; size--, dest++)
+          intern_rec(dest);
         goto tailcall;
       }
     } else {
       /* Small integer */
-      S(v) = Val_int(S(code) & 0x3F);
+      v = Val_int(code & 0x3F);
     }
   } else {
-    if (S(code) >= PREFIX_SMALL_STRING) {
+    if (code >= PREFIX_SMALL_STRING) {
       /* Small string */
-      S(len) = (S(code) & 0x1F);
+      len = (code & 0x1F);
     read_string:
-      S(size) = (S(len) + sizeof(value)) / sizeof(value);
-      S(v) = Val_hp(intern_dest);
-      if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = S(v);
-      *intern_dest = Make_header(S(size), String_tag, intern_color);
-      intern_dest += 1 + S(size);
-      Field(S(v), S(size) - 1) = 0;
-      S(ofs_ind) = Bsize_wsize(S(size)) - 1;
-      Byte(S(v), S(ofs_ind)) = S(ofs_ind) - S(len);
-      readblock(String_val(S(v)), S(len));
+      size = (len + sizeof(value)) / sizeof(value);
+      v = Val_hp(intern_dest);
+      if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
+      *intern_dest = Make_header(size, String_tag, intern_color);
+      intern_dest += 1 + size;
+      Field(v, size - 1) = 0;
+      ofs_ind = Bsize_wsize(size) - 1;
+      Byte(v, ofs_ind) = ofs_ind - len;
+      readblock(String_val(v), len);
     } else {
-      switch(S(code)) {
+      switch(code) {
       case CODE_INT8:
-        S(v) = Val_long(read8s());
+        v = Val_long(read8s());
         break;
       case CODE_INT16:
-        S(v) = Val_long(read16s());
+        v = Val_long(read16s());
         break;
       case CODE_INT32:
-        S(v) = Val_long(read32s());
+        v = Val_long(read32s());
         break;
       case CODE_INT64:
 #ifdef ARCH_SIXTYFOUR
-        S(v) = Val_long(read64s());
+        v = Val_long(read64s());
         break;
 #else
         intern_cleanup();
@@ -325,29 +210,29 @@ static void intern_rec(value* _dest)
         break;
 #endif
       case CODE_SHARED8:
-        S(ofs) = read8u();
+        ofs = read8u();
       read_shared:
-        Assert (S(ofs) > 0);
-        Assert (S(ofs) <= obj_counter);
+        Assert (ofs > 0);
+        Assert (ofs <= obj_counter);
         Assert (intern_obj_table != NULL);
-        S(v) = intern_obj_table[obj_counter - S(ofs)];
+        v = intern_obj_table[obj_counter - ofs];
         break;
       case CODE_SHARED16:
-        S(ofs) = read16u();
+        ofs = read16u();
         goto read_shared;
       case CODE_SHARED32:
-        S(ofs) = read32u();
+        ofs = read32u();
         goto read_shared;
       case CODE_BLOCK32:
-        S(header) = (header_t) read32u();
-        S(tag) = Tag_hd(S(header));
-        S(size) = Wosize_hd(S(header));
+        header = (header_t) read32u();
+        tag = Tag_hd(header);
+        size = Wosize_hd(header);
         goto read_block;
       case CODE_BLOCK64:
 #ifdef ARCH_SIXTYFOUR
         header = (header_t) read64s();
         tag = Tag_hd(header);
-        S(size) = Wosize_hd(header);
+        size = Wosize_hd(header);
         goto read_block;
 #else
         intern_cleanup();
@@ -355,10 +240,10 @@ static void intern_rec(value* _dest)
         break;
 #endif
       case CODE_STRING8:
-        S(len) = read8u();
+        len = read8u();
         goto read_string;
       case CODE_STRING32:
-        S(len) = read32u();
+        len = read32u();
         goto read_string;
       case CODE_DOUBLE_LITTLE:
       case CODE_DOUBLE_BIG:
@@ -366,15 +251,15 @@ static void intern_rec(value* _dest)
           intern_cleanup();
           caml_invalid_argument("input_value: non-standard floats");
         }
-        S(v) = Val_hp(intern_dest);
-        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = S(v);
+        v = Val_hp(intern_dest);
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header(Double_wosize, Double_tag, intern_color);
         intern_dest += 1 + Double_wosize;
-        readblock((char *) S(v), 8);
+        readblock((char *) v, 8);
 #if ARCH_FLOAT_ENDIANNESS == 0x76543210
         if (code != CODE_DOUBLE_BIG) Reverse_64(v, v);
 #elif ARCH_FLOAT_ENDIANNESS == 0x01234567
-        if (S(code) != CODE_DOUBLE_LITTLE) Reverse_64(S(v), S(v));
+        if (code != CODE_DOUBLE_LITTLE) Reverse_64(v, v);
 #else
         if (code == CODE_DOUBLE_LITTLE)
           Permute_64(v, ARCH_FLOAT_ENDIANNESS, v, 0x01234567)
@@ -384,88 +269,87 @@ static void intern_rec(value* _dest)
         break;
       case CODE_DOUBLE_ARRAY8_LITTLE:
       case CODE_DOUBLE_ARRAY8_BIG:
-        S(len) = read8u();
+        len = read8u();
       read_double_array:
         if (sizeof(double) != 8) {
           intern_cleanup();
           caml_invalid_argument("input_value: non-standard floats");
         }
-        S(size) = S(len) * Double_wosize;
-        S(v) = Val_hp(intern_dest);
-        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = S(v);
-        *intern_dest = Make_header(S(size), Double_array_tag, intern_color);
-        intern_dest += 1 + S(size);
-        readblock((char *) S(v), S(len) * 8);
+        size = len * Double_wosize;
+        v = Val_hp(intern_dest);
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
+        *intern_dest = Make_header(size, Double_array_tag, intern_color);
+        intern_dest += 1 + size;
+        readblock((char *) v, len * 8);
 #if ARCH_FLOAT_ENDIANNESS == 0x76543210
         if (code != CODE_DOUBLE_ARRAY8_BIG &&
             code != CODE_DOUBLE_ARRAY32_BIG) {
           mlsize_t i;
-          for (i = 0; i < len; i++) Reverse_64((value)((double *)S(v) + i),
-                                               (value)((double *)S(v) + i));
+          for (i = 0; i < len; i++) Reverse_64((value)((double *)v + i),
+                                               (value)((double *)v + i));
         }
 #elif ARCH_FLOAT_ENDIANNESS == 0x01234567
-        if (S(code) != CODE_DOUBLE_ARRAY8_LITTLE &&
-            S(code) != CODE_DOUBLE_ARRAY32_LITTLE) {
+        if (code != CODE_DOUBLE_ARRAY8_LITTLE &&
+            code != CODE_DOUBLE_ARRAY32_LITTLE) {
           mlsize_t i;
-          for (i = 0; i < S(len); i++) Reverse_64((value)((double *)S(v) + i),
-                                               (value)((double *)S(v) + i));
+          for (i = 0; i < len; i++) Reverse_64((value)((double *)v + i),
+                                               (value)((double *)v + i));
         }
 #else
         if (code == CODE_DOUBLE_ARRAY8_LITTLE ||
             code == CODE_DOUBLE_ARRAY32_LITTLE) {
           mlsize_t i;
           for (i = 0; i < len; i++)
-            Permute_64((value)((double *)S(v) + i), ARCH_FLOAT_ENDIANNESS,
-                       (value)((double *)S(v) + i), 0x01234567);
+            Permute_64((value)((double *)v + i), ARCH_FLOAT_ENDIANNESS,
+                       (value)((double *)v + i), 0x01234567);
         } else {
           mlsize_t i;
           for (i = 0; i < len; i++)
-            Permute_64((value)((double *)S(v) + i), ARCH_FLOAT_ENDIANNESS,
-                       (value)((double *)S(v) + i), 0x76543210);
+            Permute_64((value)((double *)v + i), ARCH_FLOAT_ENDIANNESS,
+                       (value)((double *)v + i), 0x76543210);
         }
 #endif
         break;
       case CODE_DOUBLE_ARRAY32_LITTLE:
       case CODE_DOUBLE_ARRAY32_BIG:
-        S(len) = read32u();
+        len = read32u();
         goto read_double_array;
       case CODE_CODEPOINTER:
-
-        S(ofs) = read32u();
-        readblock(S(digest), 16);
-        S(codeptr) = intern_resolve_code_pointer(S(digest), S(ofs));
-        if (S(codeptr) != NULL) {
-          S(v) = (value) S(codeptr);
+        ofs = read32u();
+        readblock(digest, 16);
+        codeptr = intern_resolve_code_pointer(digest, ofs);
+        if (codeptr != NULL) {
+          v = (value) codeptr;
         } else {
           value * function_placeholder =
             caml_named_value ("Debugger.function_placeholder");
           if (function_placeholder != NULL) {
-            S(v) = *function_placeholder;
+            v = *function_placeholder;
           } else {
             intern_cleanup();
-            intern_bad_code_pointer(S(digest));
+            intern_bad_code_pointer(digest);
           }
         }
         break;
       case CODE_INFIXPOINTER:
-        S(ofs) = read32u();
-        RECURSE(&S(clos),4);
-        S(v) = S(clos) + S(ofs);
+        ofs = read32u();
+        intern_rec(&clos);
+        v = clos + ofs;
         break;
       case CODE_CUSTOM:
-        S(ops) = caml_find_custom_operations((char *) intern_src);
-        if (S(ops) == NULL) {
+        ops = caml_find_custom_operations((char *) intern_src);
+        if (ops == NULL) {
           intern_cleanup();
           caml_failwith("input_value: unknown custom block identifier");
         }
         while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
-        S(size) = S(ops)->deserialize((void *) (intern_dest + 2));
-        S(size) = 1 + (S(size) + sizeof(value) - 1) / sizeof(value);
-        S(v) = Val_hp(intern_dest);
-        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = S(v);
-        *intern_dest = Make_header(S(size), Custom_tag, intern_color);
-        Custom_ops_val(S(v)) = S(ops);
-        intern_dest += 1 + S(size);
+        size = ops->deserialize((void *) (intern_dest + 2));
+        size = 1 + (size + sizeof(value) - 1) / sizeof(value);
+        v = Val_hp(intern_dest);
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
+        *intern_dest = Make_header(size, Custom_tag, intern_color);
+        Custom_ops_val(v) = ops;
+        intern_dest += 1 + size;
         break;
       default:
         intern_cleanup();
@@ -473,18 +357,7 @@ static void intern_rec(value* _dest)
       }
     }
   }
-  *S(dest) = S(v);
-
-  /* Leave our function */
-  RETURN();
-  /* Return label has index 0 */
- ret0:
-  return;
-
-  /* Undefine un-needed macros */
-#undef RECURSE
-#undef S
-#undef RETURN
+  *dest = v;
 }
 
 static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
