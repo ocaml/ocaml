@@ -25,6 +25,8 @@ type ref_kind =
   | RK_attribute
   | RK_method
   | RK_section of text
+  | RK_recfield
+  | RK_const
 
 and text_element =
   | Raw of string (** Raw text. *)

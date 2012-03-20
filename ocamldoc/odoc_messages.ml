@@ -127,6 +127,11 @@ let latex_type_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of types.\n"^
   "\t\t(default is \""^default_latex_type_prefix^"\")"
 
+let default_latex_type_elt_prefix = "typeelt:"
+let latex_type_elt_prefix =
+  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of type elements.\n"^
+  "\t\t(default is \""^default_latex_type_elt_prefix^"\")"
+
 let default_latex_exception_prefix = "exception:"
 let latex_exception_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of exceptions.\n"^
@@ -294,6 +299,8 @@ let cross_attribute_not_found n = "Attribute "^n^" not found"
 let cross_section_not_found n = "Section "^n^" not found"
 let cross_value_not_found n = "Value "^n^" not found"
 let cross_type_not_found n = "Type "^n^" not found"
+let cross_recfield_not_found n = Printf.sprintf "Record field %s not found" n
+let cross_const_not_found n = Printf.sprintf "Constructor %s not found" n
 
 let object_end = "object ... end"
 let struct_end = "struct ... end"

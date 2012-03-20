@@ -37,6 +37,9 @@ module Naming =
     (** The prefix for types marks. *)
     let mark_type = "TYPE"
 
+    (** The prefix for types elements (record fields or constructors). *)
+    let mark_type_elt = "TYPEELT"
+
     (** The prefix for functions marks. *)
     let mark_function = "FUN"
 
@@ -89,8 +92,24 @@ module Naming =
     (** Return the link target for the given type. *)
     let type_target t = target mark_type (Name.simple t.ty_name)
 
+    (** Return the link target for the given variant constructor. *)
+    let const_target t f =
+      let name = Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.vc_name in
+      target mark_type_elt name
+
+    (** Return the link target for the given record field. *)
+    let recfield_target t f = target mark_type_elt
+      (Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.rf_name)
+
     (** Return the complete link target for the given type. *)
     let complete_type_target t = complete_target mark_type t.ty_name
+
+    let complete_recfield_target name =
+      let typ = Name.father name in
+      let field = Name.simple name in
+      Printf.sprintf "%s.%s" (complete_target mark_type_elt typ) field
+
+    let complete_const_target = complete_recfield_target
 
     (** Return the link target for the given exception. *)
     let exception_target e = target mark_exception (Name.simple e.ex_name)
@@ -440,6 +459,8 @@ class virtual text =
             | Odoc_info.RK_method -> (Naming.complete_target Naming.mark_method name, h name)
             | Odoc_info.RK_section t -> (Naming.complete_label_target name,
                                          Odoc_info.Italic [Raw (Odoc_info.string_of_text t)])
+            | Odoc_info.RK_recfield -> (Naming.complete_recfield_target name, h name)
+            | Odoc_info.RK_const -> (Naming.complete_const_target name, h name)
           in
           let text =
             match text_opt with
@@ -1466,7 +1487,9 @@ class html =
             bs b (self#keyword "|");
             bs b "</code></td>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
-            bs b (self#constructor constr.vc_name);
+            bp b "<span id=\"%s\">%s</span>"
+              (Naming.const_target t constr)
+              (self#constructor constr.vc_name);
             (
              match constr.vc_args, constr.vc_ret with
                [], None -> ()
@@ -1480,7 +1503,7 @@ class html =
                  bs b (" " ^ (self#keyword ":") ^ " ");
                  self#html_of_type_expr_list ~par: false b father " * " l;
 		 bs b (" " ^ (self#keyword "->") ^ " ");
-                 self#html_of_type_expr b father r;		 
+                 self#html_of_type_expr b father r;
             );
             bs b "</code></td>\n";
             (
@@ -1521,7 +1544,9 @@ class html =
             bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
             if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
-            bs b (r.rf_name ^ "&nbsp;: ") ;
+            bp b "<span id=\"%s\">%s</span>&nbsp;:"
+              (Naming.recfield_target t r)
+              r.rf_name;
             self#html_of_type_expr b father r.rf_type;
             bs b ";</code></td>\n";
             (
