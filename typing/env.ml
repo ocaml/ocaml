@@ -201,7 +201,7 @@ type pers_struct =
     ps_flags: pers_flags list }
 
 let persistent_structures =
-  (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
+  (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
 
 (* Consistency between persistent structures *)
 
@@ -254,17 +254,29 @@ let read_pers_struct modname filename =
         if not !Clflags.recursive_types then
           raise(Error(Need_recursive_types(ps.ps_name, !current_unit))))
       ps.ps_flags;
-    Hashtbl.add persistent_structures modname ps;
+    Hashtbl.add persistent_structures modname (Some ps);
     ps
   with End_of_file | Failure _ ->
     close_in ic;
     raise(Error(Corrupted_interface(filename)))
 
 let find_pers_struct name =
-  try
-    Hashtbl.find persistent_structures name
-  with Not_found ->
-    read_pers_struct name (find_in_path_uncap !load_path (name ^ ".cmi"))
+  if name = "*predef*" then raise Not_found;
+  let r =
+    try Some (Hashtbl.find persistent_structures name)
+    with Not_found -> None
+  in
+  match r with
+  | Some None -> raise Not_found
+  | Some (Some sg) -> sg
+  | None ->
+      let filename =
+        try find_in_path_uncap !load_path (name ^ ".cmi")
+        with Not_found ->
+          Hashtbl.add persistent_structures name None;
+          raise Not_found
+      in
+      read_pers_struct name filename
 
 let reset_cache () =
   current_unit := "";
@@ -272,6 +284,10 @@ let reset_cache () =
   Consistbl.clear crc_units;
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations
+
+let reset_missing_cmis () =
+  let l = Hashtbl.fold (fun name r acc -> if r = None then name :: acc else acc) persistent_structures [] in
+  List.iter (Hashtbl.remove persistent_structures) l
 
 let set_unit_name name =
   current_unit := name
@@ -1115,7 +1131,7 @@ let save_signature_with_imports sg modname filename imports =
         ps_crcs = crcs;
         ps_filename = filename;
         ps_flags = flags } in
-    Hashtbl.add persistent_structures modname ps;
+    Hashtbl.add persistent_structures modname (Some ps);
     Consistbl.set crc_units modname crc filename
   with exn ->
     close_out oc;
