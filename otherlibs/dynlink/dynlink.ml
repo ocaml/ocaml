@@ -158,10 +158,10 @@ let check_unsafe_module cu =
 
 (* Load in-core and execute a bytecode object file *)
 
-external register_code_fragment: string -> int -> unit
+external register_code_fragment: string -> int -> string -> unit
                                = "caml_register_code_fragment"
 
-let load_compunit ic file_name compunit =
+let load_compunit ic file_name file_digest compunit =
   check_consistency file_name compunit;
   check_unsafe_module compunit;
   seek_in ic compunit.cu_pos;
@@ -190,7 +190,11 @@ let load_compunit ic file_name compunit =
       | _ -> assert false in
     raise(Error(Linking_error (file_name, new_error)))
   end;
-  register_code_fragment code code_size;
+  (* PR#5215: identify this code fragment by 
+     digest of file contents + unit name.
+     Unit name is needed for .cma files, which produce several code fragments.*)
+  let digest = Digest.string (file_digest ^ compunit.cu_name) in
+  register_code_fragment code code_size digest;
   begin try
     ignore((Meta.reify_bytecode code code_size) ())
   with exn ->
@@ -202,6 +206,8 @@ let loadfile file_name =
   init();
   if not (Sys.file_exists file_name) then raise(Error (File_not_found file_name));
   let ic = open_in_bin file_name in
+  let file_digest = Digest.channel ic (-1) in
+  seek_in ic 0;
   try
     let buffer =
       try Misc.input_bytes ic (String.length Config.cmo_magic_number)
@@ -210,7 +216,8 @@ let loadfile file_name =
     if buffer = Config.cmo_magic_number then begin
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
       seek_in ic compunit_pos;
-      load_compunit ic file_name (input_value ic : compilation_unit)
+      let cu = (input_value ic : compilation_unit) in
+      load_compunit ic file_name file_digest cu
     end else
     if buffer = Config.cma_magic_number then begin
       let toc_pos = input_binary_int ic in  (* Go to table of contents *)
@@ -222,7 +229,7 @@ let loadfile file_name =
       with Failure reason ->
         raise(Error(Cannot_open_dll reason))
       end;
-      List.iter (load_compunit ic file_name) lib.lib_units
+      List.iter (load_compunit ic file_name file_digest) lib.lib_units
     end else
       raise(Error(Not_a_bytecode_file file_name));
     close_in ic
