@@ -63,7 +63,7 @@ CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
-ocamlprof: $(CSLPROF) profiling.cmo profiling.cmx
+ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
 ocamlcp: ocamlcp.cmo
@@ -73,11 +73,15 @@ ocamloptp: ocamloptp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamloptp warnings.cmo main_args.cmo \
 	         ocamloptp.cmo
 
+opt:: profiling.cmx
+
 install::
 	cp ocamlprof $(BINDIR)/ocamlprof$(EXE)
 	cp ocamlcp $(BINDIR)/ocamlcp$(EXE)
 	cp ocamloptp $(BINDIR)/ocamloptp$(EXE)
 	cp profiling.cmi profiling.cmo $(LIBDIR)
+
+installopt::
 	cp profiling.cmx profiling.o $(LIBDIR)
 
 clean::

@@ -263,6 +263,7 @@ opt:
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
 	$(MAKE) otherlibrariesopt
+	$(MAKE) ocamltoolsopt
 	$(MAKE) ocamlbuildlib.native
 
 # Native-code versions of the tools
@@ -325,6 +326,7 @@ installopt:
 	  then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
 	if test -f lex/ocamllex.opt; \
 	  then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
+	cd tools; $(MAKE) installopt
 
 clean:: partialclean
 
@@ -624,6 +626,9 @@ clean::
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi
 	cd tools; $(MAKE) all
 
+ocamltoolsopt: ocamlopt
+	cd tools; $(MAKE) opt
+
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi
 	cd tools; $(MAKE) opt.opt
 
@@ -765,8 +770,8 @@ distclean:
 .PHONY: coreboot defaultentry depend distclean install installopt
 .PHONY: library library-cross libraryopt ocamlbuild-mixed-boot
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
-.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
-.PHONY: ocamlyacc opt-core opt opt.opt otherlibraries
+.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
+.PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
