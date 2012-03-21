@@ -71,9 +71,12 @@ static struct extern_item * extern_stack_limit = extern_stack_init
 
 static void extern_out_of_memory(void);
 static void extern_invalid_argument(char *msg);
+static void extern_stack_overflow(void);
 static struct code_fragment * extern_find_code(char *addr);
+static void extern_replay_trail(void);
+static void free_extern_output(void);
 
-/* Free the compare stack if needed */
+/* Free the extern stack if needed */
 static void extern_free_stack(void)
 {
   if (extern_stack != extern_stack_init) {
@@ -82,14 +85,6 @@ static void extern_free_stack(void)
     extern_stack = extern_stack_init;
     extern_stack_limit = extern_stack + EXTERN_STACK_INIT_SIZE;
   }
-}
-
-/* Same, then raise Out_of_memory */
-static void extern_stack_overflow(void)
-{
-  caml_gc_message (0x04, "Stack overflow in marshaling value\n", 0);
-  extern_free_stack();
-  caml_raise_out_of_memory();
 }
 
 static struct extern_item * extern_resize_stack(struct extern_item * sp)
@@ -218,6 +213,7 @@ static void free_extern_output(void)
     free(blk);
   }
   extern_output_first = NULL;
+  extern_free_stack();
 }
 
 static void grow_extern_output(intnat required)
@@ -271,6 +267,14 @@ static void extern_invalid_argument(char *msg)
   extern_replay_trail();
   free_extern_output();
   caml_invalid_argument(msg);
+}
+
+static void extern_stack_overflow(void)
+{
+  caml_gc_message (0x04, "Stack overflow in marshaling value\n", 0);
+  extern_replay_trail();
+  free_extern_output();
+  caml_raise_out_of_memory();
 }
 
 /* Write characters, integers, and blocks in the output buffer */
@@ -508,10 +512,15 @@ static void extern_rec(value v)
   }
   next_item:
     /* Pop one more item to marshal, if any */
-    if (sp == extern_stack) return; /* we're done */
+    if (sp == extern_stack) {
+        /* We are done cleanup the stack and leave the function */
+        extern_free_stack();
+        return;
+    }
     v = *((sp->v)++);
     if (--(sp->count) == 0) sp--;
   }
+  /* Never reached as function leaves with return */
 }
 
 enum { NO_SHARING = 1, CLOSURES = 2 };
