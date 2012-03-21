@@ -1,3 +1,9 @@
+Next version
+------------
+
+Bug fixes:
+- PR#5551: Avoid repeated lookups for missing cmi files
+
 OCaml 4.00.0:
 -------------
 
