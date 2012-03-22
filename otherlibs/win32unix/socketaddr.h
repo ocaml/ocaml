@@ -13,7 +13,7 @@
 
 /* $Id$ */
 
-#include <misc.h>
+#include "misc.h"
 
 union sock_addr_union {
   struct sockaddr s_gen;
