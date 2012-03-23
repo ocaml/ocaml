@@ -87,7 +87,7 @@ THIRD-PARTY SOFTWARE:
     http://www.microsoft.com/downloads/en/default.aspx
     under the name "Microsoft Windows 7 SDK".
 
-[2] flexdll version 0.26 or later.
+[2] flexdll version 0.28 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
 [3] TCL/TK version 8.5.  Windows binaries are available as part of the
@@ -366,7 +366,7 @@ THIRD-PARTY SOFTWARE:
     http://www.microsoft.com/downloads/en/default.aspx
     under the name "Microsoft Windows 7 SDK".
 
-[2] flexdll version 0.27 or later.
+[2] flexdll version 0.28 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
 
