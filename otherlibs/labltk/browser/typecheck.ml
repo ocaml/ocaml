@@ -139,6 +139,7 @@ let f txt =
           begin match err with
             Syntaxerr.Unclosed(l,_,_,_) -> l
           | Syntaxerr.Applicative_path l -> l
+          | Syntaxerr.Variable_in_scope(l,_) -> l
           | Syntaxerr.Other l -> l
           end
       | Typecore.Error (l,err) ->
