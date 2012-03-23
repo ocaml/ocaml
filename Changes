@@ -52,8 +52,10 @@ Standard library:
       with user-provided hash functions.
 - Marshal: marshalling of function values (flag Marshal.Closures) now
   also works for functions that come from dynamically-loaded modules (PR#5215)
-- Random: more random initialization (Random.self_init()), using /dev/urandom
-    when available (e.g. Linux, FreeBSD, MacOS X, Solaris)
+- Random: 
+     . More random initialization (Random.self_init()), using /dev/urandom
+       when available (e.g. Linux, FreeBSD, MacOS X, Solaris)
+     . Faster implementation of Random.float
 - Scanf: new function "unescaped" (PR#3888)
 - Set and Map: more efficient implementation of "filter" and "partition"
 - String: new function "map" (PR#3888)
