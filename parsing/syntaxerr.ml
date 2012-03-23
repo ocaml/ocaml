@@ -19,7 +19,9 @@ open Format
 type error =
     Unclosed of Location.t * string * Location.t * string
   | Applicative_path of Location.t
+  | Variable_in_scope of Location.t * string
   | Other of Location.t
+
 
 exception Error of error
 exception Escape_error
@@ -41,5 +43,10 @@ let report_error ppf = function
         "%aSyntax error: applicative paths of the form F(X).t \
          are not supported when the option -no-app-func is set."
         Location.print_error loc
+  | Variable_in_scope (loc, var) ->
+      fprintf ppf
+        "%a@[In this scoped type, variable '%s@ \
+         is reserved for the local type %s.@]"
+        Location.print_error loc var var
   | Other loc ->
       fprintf ppf "%aSyntax error" Location.print_error loc
