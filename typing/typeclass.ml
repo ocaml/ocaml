@@ -675,8 +675,12 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   end;
 
   (* Typing of method bodies *)
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.generalize_spine ty) methods;
+  if !Clflags.principal then begin
+    Ctype.raise_nongen_level ();
+    Ctype.init_def (Ctype.get_current_level () - 1);
+    List.iter (fun (_,_,ty) -> Ctype.generalize_structure ty) methods;
+    Ctype.end_def ()
+  end;
   let fields = List.map Lazy.force (List.rev fields) in
   if !Clflags.principal then
     List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ()))

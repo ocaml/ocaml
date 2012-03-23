@@ -302,7 +302,7 @@ let f : type a. a j -> a = function
 
 type (_,_) eq = Eq : ('a,'a) eq ;;
 
-let f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
+let f : type a b. (a,b) eq -> (<m : a; ..> as 'c) -> (<m : b; ..> as 'c) =
   fun Eq o -> o
 ;; (* fail *)
 
