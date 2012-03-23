@@ -54,8 +54,7 @@ val tree_of_cltype_declaration: Ident.t -> cltype_declaration -> rec_status -> o
 val cltype_declaration: Ident.t -> formatter -> cltype_declaration -> unit
 val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
-val trace: bool -> string -> bool ->
-    formatter -> (type_expr * type_expr) list -> unit
+val trace: bool -> string -> formatter -> (type_expr * type_expr) list -> unit
 val unification_error:
     bool -> (type_expr * type_expr) list ->
     (formatter -> unit) -> formatter -> (formatter -> unit) ->

@@ -936,12 +936,12 @@ let rec trace fst txt ppf = function
        (trace false txt) rem
   | _ -> ()
 
-let rec filter_trace keep_last = function
+let rec filter_trace = function
   | (_, t1') :: (_, t2') :: [] when is_Tvar t1' || is_Tvar t2' ->
       []
   | (t1, t1') :: (t2, t2') :: rem ->
-      let rem' = filter_trace keep_last rem in
-      if t1 == t1' && t2 == t2' && (rem' <> [] || not keep_last)
+      let rem' = filter_trace rem in
+      if t1 == t1' && t2 == t2'
       then rem'
       else (t1, t1') :: (t2, t2') :: rem'
   | _ -> []
@@ -1085,7 +1085,7 @@ let unification_error unif tr txt1 ppf txt2 =
   | [] | _ :: [] -> assert false
   | t1 :: t2 :: tr ->
     try
-      let tr = filter_trace false tr in
+      let tr = filter_trace tr in
       let t1, t1' = may_prepare_expansion (tr = []) t1
       and t2, t2' = may_prepare_expansion (tr = []) t2 in
       print_labels := not !Clflags.classic;
@@ -1108,13 +1108,13 @@ let unification_error unif tr txt1 ppf txt2 =
 let report_unification_error ppf tr txt1 txt2 =
   unification_error true tr txt1 ppf txt2;;
 
-let trace fst txt keep_last ppf tr =
+let trace fst txt ppf tr =
   print_labels := not !Clflags.classic;
   trace_same_names tr;
   try match tr with
     t1 :: t2 :: tr' ->
-      if fst then trace fst txt ppf (t1 :: t2 :: filter_trace keep_last tr')
-      else trace fst txt ppf (filter_trace keep_last  tr);
+      if fst then trace fst txt ppf (t1 :: t2 :: filter_trace tr')
+      else trace fst txt ppf (filter_trace tr);
       print_labels := true
   | _ -> ()
   with exn ->
@@ -1123,12 +1123,10 @@ let trace fst txt keep_last ppf tr =
 
 let report_subtyping_error ppf tr1 txt1 tr2 =
   reset ();
-  fprintf ppf "@[";
   let tr1 = List.map prepare_expansion tr1
   and tr2 = List.map prepare_expansion tr2 in
-  trace true txt1 true ppf tr1;
+  trace true txt1 ppf tr1;
   if tr2 = [] then () else
   let mis = mismatch true tr2 in
-  trace false "is not compatible with type" false ppf tr2;
-  explanation true mis ppf;
-  fprintf ppf "@]"
+  trace false "is not compatible with type" ppf tr2;
+  explanation true mis ppf
