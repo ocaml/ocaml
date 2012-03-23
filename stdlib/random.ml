@@ -130,13 +130,12 @@ module State = struct
     else fun s bound -> Int64.to_nativeint (int64 s (Int64.of_nativeint bound))
   ;;
 
-  (* Returns a float 0 <= x < 1 with at most 90 bits of precision. *)
+  (* Returns a float 0 <= x <= 1 with at most 60 bits of precision. *)
   let rawfloat s =
-    let scale = 1073741824.0
-    and r0 = Pervasives.float (bits s)
+    let scale = 1073741824.0  (* 2^30 *)
     and r1 = Pervasives.float (bits s)
     and r2 = Pervasives.float (bits s)
-    in ((r0 /. scale +. r1) /. scale +. r2) /. scale
+    in (r1 /. scale +. r2) /. scale
   ;;
 
   let float s bound = rawfloat s *. bound;;

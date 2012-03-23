@@ -25,8 +25,11 @@ val full_init : int array -> unit
 (** Same as {!Random.init} but takes more data as seed. *)
 
 val self_init : unit -> unit
-(** Initialize the generator with a more-or-less random seed chosen
-   in a system-dependent way. *)
+(** Initialize the generator with a random seed chosen
+   in a system-dependent way.  If [/dev/urandom] is available on
+   the host machine, it is used to provide a highly random initial
+   seed.  Otherwise, a less random seed is computed from system
+   parameters (current time, process IDs). *)
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
@@ -53,7 +56,7 @@ val int64 : Int64.t -> Int64.t;;
 
 val float : float -> float
 (** [Random.float bound] returns a random floating-point number
-   between 0 (inclusive) and [bound] (exclusive).  If [bound] is
+   between 0 and [bound] (inclusive).  If [bound] is
    negative, the result is negative or zero.  If [bound] is 0,
    the result is 0. *)
 
