@@ -121,7 +121,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) 
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -239,7 +239,6 @@ installbyt:
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	if test -f debugger/ocamldebug.exe; then (cd debugger; $(MAKEREC) install); \
 	   else :; fi
-	cd win32caml ; $(MAKE) install
 	./build/partial-install.sh
 	cp config/Makefile $(LIBDIR)/Makefile.config
 	cp README $(DISTRIB)/Readme.general.txt
@@ -615,14 +614,6 @@ ocamlbuild-mixed-boot:
 	./build/mixed-boot.sh
 partialclean::
 	rm -rf _build
-
-# The Win32 toplevel GUI
-
-win32gui:
-	cd win32caml ; $(MAKE) all
-
-clean::
-	cd win32caml ; $(MAKE) clean
 
 # Default rules
 

@@ -179,9 +179,6 @@ The initial port of Caml Special Light (the ancestor of OCaml) to
 Windows NT was done by Kevin Gallo at Microsoft Research, who kindly
 contributed his changes to the OCaml project.
 
-The graphical user interface for the toplevel was initially developed
-by Jacob Navia, then significantly improved by Christopher A. Watford.
-
 ------------------------------------------------------------------------------
 
            The native Win32 port built with Mingw
