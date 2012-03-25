@@ -303,4 +303,7 @@ Error: This expression has type < bar : int; foo : int; .. > as 'a
        The type constructor ex#25 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
+#       type 'a ty = Int : int -> int ty
+#     val f : 'a ty -> 'a = <fun>
+#       val g : 'a ty -> 'a = <fun>
 # 

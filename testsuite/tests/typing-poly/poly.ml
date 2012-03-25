@@ -633,8 +633,8 @@ let l : t = { f = lazy (raise Not_found)};;
 
 (* variant *)
 type t = {f: 'a. 'a -> unit};;
-{f=fun ?x y -> ()};;
-{f=fun ?x y -> y};; (* fail *)
+let f ?x y = () in {f};;
+let f ?x y = y in {f};; (* fail *)
 
 (* Polux Moon caml-list 2011-07-26 *)
 module Polux = struct

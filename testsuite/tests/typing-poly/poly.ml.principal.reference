@@ -620,9 +620,9 @@ val transf_alist : (int -> t) -> ('a * t) list -> ('a * t) list = <fun>
 val l : t = {f = <lazy>}
 #     type t = { f : 'a. 'a -> unit; }
 # - : t = {f = <fun>}
-# Characters 3-16:
-  {f=fun ?x y -> y};; (* fail *)
-     ^^^^^^^^^^^^^
+# Characters 19-20:
+  let f ?x y = y in {f};; (* fail *)
+                     ^
 Error: This field value has type unit -> unit which is less general than
          'a. 'a -> unit
 #               module Polux :

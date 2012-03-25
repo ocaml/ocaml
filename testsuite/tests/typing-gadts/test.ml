@@ -501,3 +501,14 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
   let IF_constr, IB_constr = e, e' in
   x, x#foo, x#bar
 ;;
+
+(* PR#5554 *)
+
+type 'a ty = Int : int -> int ty;;
+
+let f : type a. a ty -> a =
+  fun x -> match x with Int y -> y;;
+
+let g : type a. a ty -> a =
+  let () = () in
+  fun x -> match x with Int y -> y;;
