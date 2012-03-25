@@ -2322,11 +2322,14 @@ and type_argument env sarg ty_expected' ty_expected =
     let ls, tvar = list_labels env ty in
     not tvar && List.for_all ((=) "") ls
   in
-  (* let ty_expected = instance ty_expected' in *)
-  match expand_head env ty_expected', sarg with
-  | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
-      type_expect env sarg ty_expected'
-  | {desc = Tarrow("",ty_arg,ty_res,_); level = lv}, _ ->
+  let rec is_inferred sexp =
+    match sexp.pexp_desc with
+      Pexp_ident _ | Pexp_apply _ | Pexp_send _ | Pexp_field _ -> true
+    | Pexp_open (_, e) -> is_inferred e
+    | _ -> false
+  in
+  match expand_head env ty_expected' with
+    {desc = Tarrow("",ty_arg,ty_res,_); level = lv} when is_inferred sarg ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       if !Clflags.principal then begin_def ();
@@ -2364,7 +2367,8 @@ and type_argument env sarg ty_expected' ty_expected =
         {pat_desc = Tpat_var id; pat_type = ty;
          pat_loc = Location.none; pat_env = env},
         {exp_type = ty; exp_loc = Location.none; exp_env = env; exp_desc =
-         Texp_ident(Path.Pident id,{val_type = ty; val_kind = Val_reg; val_loc = Location.none})}
+         Texp_ident(Path.Pident id, {val_type = ty; val_kind = Val_reg;
+                                     val_loc = Location.none})}
       in
       let eta_pat, eta_var = var_pair "eta" ty_arg in
       let func texp =
@@ -2656,6 +2660,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       (lev, Env.add_gadt_instance_level lev env)
     end else (get_current_level (), env)
   in
+  (* if has_gadts then
+    Format.printf "lev = %d@.%a@." lev Printtyp.raw_type_expr ty_res;*)
   begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
