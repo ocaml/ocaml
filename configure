@@ -320,7 +320,7 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $withsharedlibs = yes; then
-      flexlink="flexlink -chain cygwin -merge-manifest"
+      flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
         echo "flexlink not found: native shared libraries won't be available"
