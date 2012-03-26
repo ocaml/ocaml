@@ -423,6 +423,7 @@ let loop ppf =
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
+      Env.reset_missing_cmis ();
       ignore(execute_phrase true ppf phr)
     with
     | End_of_file -> exit 0
