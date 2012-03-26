@@ -5,10 +5,10 @@ The "num" library implements integer arithmetic and rational
 arithmetic in arbitrary precision.
 
 More documentation on the functions provided in this library can be found
-in {\em The CAML Numbers Reference Manual\/} by 
+in {\em The CAML Numbers Reference Manual\/} by
 Valérie Ménissier-Morain, technical report 141, INRIA, july 1992
 (available electronically,
-"ftp://ftp.inria.fr/INRIA/publication/RT/RT-0141.ps.gz").
+\url{http://hal.inria.fr/docs/00/07/00/27/PDF/RT-0141.pdf}).
 
 Programs that use the "num" library must be linked as follows:
 \begin{alltt}
