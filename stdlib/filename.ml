@@ -217,7 +217,12 @@ let temp_file_name temp_dir prefix suffix =
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
 ;;
 
-let temp_file ?(temp_dir=temp_dir_name) prefix suffix =
+let current_temp_dir_name = ref temp_dir_name
+
+let set_temp_dir_name s = current_temp_dir_name := s
+let get_temp_dir_name () = !current_temp_dir_name
+
+let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
@@ -227,7 +232,7 @@ let temp_file ?(temp_dir=temp_dir_name) prefix suffix =
       if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0
 
-let open_temp_file ?(mode = [Open_text]) ?(temp_dir=temp_dir_name) prefix suffix =
+let open_temp_file ?(mode = [Open_text]) ?(temp_dir = !current_temp_dir_name) prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
