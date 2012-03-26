@@ -9,10 +9,12 @@ called, branches of conditionals are taken, \ldots
 
 Before profiling an execution, the program must be compiled in
 profiling mode, using the "ocamlcp" front-end to the "ocamlc" compiler
-(see chapter~\ref{c:camlc}). When compiling modules separately,
-"ocamlcp" must be used when compiling the modules (production
-of ".cmo" files), and can also be used (though this is not strictly
-necessary) when linking them together.
+(see chapter~\ref{c:camlc}) or the "ocamloptp" front-end to the
+"ocamlopt" compiler (see chapter~\ref{c:nativecomp}). When compiling
+modules separately, "ocamlcp" or "ocamloptp" must be used when
+compiling the modules (production of ".cmo" or ".cmx" files), and can
+also be used (though this is not strictly necessary) when linking them
+together.
 
 \paragraph{Note} If a module (".ml" file) doesn't have a corresponding
 interface (".mli" file), then compiling it with "ocamlcp" will produce
@@ -20,15 +22,16 @@ object files (".cmi" and ".cmo") that are not compatible with the ones
 produced by "ocamlc", which may lead to problems (if the ".cmi" or
 ".cmo" is still around) when switching between profiling and
 non-profiling compilations.  To avoid this problem, you should always
-have a ".mli" file for each ".ml" file.
+have a ".mli" file for each ".ml" file.  The same problem exists with
+"ocamloptp".
 
 \paragraph{Note} To make sure your programs can be compiled in
 profiling mode, avoid using any identifier that begins with
 "__ocaml_prof".
 
-The amount of profiling information can be controlled through the "-p"
-option to "ocamlcp", followed by one or several letters indicating which
-parts of the program should be profiled:
+The amount of profiling information can be controlled through the "-P"
+option to "ocamlcp" or "ocamloptp", followed by one or several letters
+indicating which parts of the program should be profiled:
 
 %% description des options
 \begin{options}
@@ -45,35 +48,42 @@ body of each branch
 beginning of the body of each branch
 \end{options}
 
-For instance, compiling with "ocamlcp -p film" profiles function calls,
+For instance, compiling with "ocamlcp -P film" profiles function calls,
 if\ldots then\ldots else\ldots, loops and pattern matching.
 
-Calling "ocamlcp" without the "-p" option defaults to "-p fm", meaning
-that only function calls and pattern matching are profiled.
+Calling "ocamlcp" or "ocamloptp" without the "-P" option defaults to
+"-P fm", meaning that only function calls and pattern matching are
+profiled.
 
-{\bf Note:} Due to the implementation of streams and stream patterns as
-syntactic sugar, it is hard to predict what parts of stream expressions
-and patterns will be profiled by a given flag.  To profile a program with
-streams, we recommend using "ocamlcp -p a".
+\paragraph{Note} For compatibility with previous releases, "ocamlcp"
+also accepts the "-p" option, with the same arguments and behaviour as
+"-P".
+
+The "ocamlcp" and "ocamloptp" commands also accept all the options of
+the corresponding "ocamlc" or "ocamlopt" compiler, except the "-pp"
+(preprocessing) option.
 
 
 \section{Profiling an execution}
 
-Running a bytecode executable file that has been compiled with "ocamlcp"
-records the execution counts for the specified parts of the program
-and saves them in a file called "ocamlprof.dump" in the current directory.
+Running an executable that has been compiled with "ocamlcp" or
+"ocamloptp" records the execution counts for the specified parts of
+the program and saves them in a file called "ocamlprof.dump" in the
+current directory.
 
 If the environment variable "OCAMLPROF_DUMP" is set when the program
 exits, its value is used as the file name instead of "ocamlprof.dump".
 
 The dump file is written only if the program terminates
 normally (by calling "exit" or by falling through). It is not written
-if the program terminates with an "uncaught exception".
+if the program terminates with an uncaught exception.
 
 If a compatible dump file already exists in the current directory, then the
 profiling information is accumulated in this dump file. This allows, for
 instance, the profiling of several executions of a program on
-different inputs.
+different inputs.  Note that dump files produced by byte-code
+executables (compiled with "ocamlcp") are compatible with the dump
+files produced by native executables (compiled with "ocamloptp").
 
 \section{Printing profiling information}
 
@@ -85,7 +95,7 @@ where execution counts have been inserted as comments. For instance,
 prints the source code for the "foo" module, with comments indicating
 how many times the functions in this module have been called. Naturally,
 this information is accurate only if the source file has not been modified
-since the profiling execution took place.
+after it was compiled.
 
 The following options are recognized by "ocamlprof":
 
@@ -123,7 +133,7 @@ Display a short usage summary and exit.
 \section{Time profiling}
 
 Profiling with "ocamlprof" only records execution counts, not the actual
-time spent into each function. There is currently no way to perform
+time spent within each function. There is currently no way to perform
 time profiling on bytecode programs generated by "ocamlc".
 
 Native-code programs generated by "ocamlopt" can be profiled for time
@@ -152,3 +162,8 @@ Linux, BSD and MacOS X support the two profiles.  On other platforms,
 information.  When reading the output of "gprof", keep in mind that
 the accumulated times computed by "gprof" are based on heuristics and
 may not be exact.
+
+\paragraph{Note} The "ocamloptp" command also accepts the "-p"
+option.  In that case, both kinds of profiling are performed by the
+program, and you can display the results with the "gprof" and "ocamlprof"
+commands, respectively.
