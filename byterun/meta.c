@@ -15,6 +15,7 @@
 
 /* Primitives for the toplevel */
 
+#include <string.h>
 #include "alloc.h"
 #include "config.h"
 #include "fail.h"
@@ -22,7 +23,6 @@
 #include "interp.h"
 #include "intext.h"
 #include "major_gc.h"
-#include "md5.h"
 #include "memory.h"
 #include "minor_gc.h"
 #include "misc.h"
@@ -62,12 +62,12 @@ CAMLprim value caml_reify_bytecode(value prog, value len)
   return clos;
 }
 
-CAMLprim value caml_register_code_fragment(value prog, value len)
+CAMLprim value caml_register_code_fragment(value prog, value len, value digest)
 {
   struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
   cf->code_start = (char *) prog;
   cf->code_end = (char *) prog + Long_val(len);
-  caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+  memcpy(cf->digest, String_val(digest), 16);
   cf->digest_computed = 1;
   caml_ext_table_add(&caml_code_fragments_table, cf);
   return Val_unit;
