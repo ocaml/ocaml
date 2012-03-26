@@ -71,6 +71,7 @@ static struct extern_item * extern_stack_limit = extern_stack_init
 
 static void extern_out_of_memory(void);
 static void extern_invalid_argument(char *msg);
+static void extern_failwith(char *msg);
 static void extern_stack_overflow(void);
 static struct code_fragment * extern_find_code(char *addr);
 static void extern_replay_trail(void);
@@ -222,8 +223,7 @@ static void grow_extern_output(intnat required)
   intnat extra;
 
   if (extern_userprovided_output != NULL) {
-    extern_replay_trail();
-    caml_failwith("Marshal.to_buffer: buffer overflow");
+    extern_failwith("Marshal.to_buffer: buffer overflow");
   }
   extern_output_block->end = extern_ptr;
   if (required <= SIZE_EXTERN_OUTPUT_BLOCK / 2)
@@ -267,6 +267,13 @@ static void extern_invalid_argument(char *msg)
   extern_replay_trail();
   free_extern_output();
   caml_invalid_argument(msg);
+}
+
+static void extern_failwith(char *msg)
+{
+  extern_replay_trail();
+  free_extern_output();
+  caml_failwith(msg);
 }
 
 static void extern_stack_overflow(void)
@@ -491,12 +498,14 @@ static void extern_rec(value v)
       size_64 += 1 + sz;
       field0 = Field(v, 0);
       extern_record_location(v);
+      /* Remember that we still have to serialize fields 1 ... sz - 1 */
       if (sz > 1) {
         sp++;
         if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
         sp->v = &Field(v,1);
         sp->count = sz-1;
       }
+      /* Continue serialization with the first field */
       v = field0;
       continue;
     }
@@ -513,7 +522,7 @@ static void extern_rec(value v)
   next_item:
     /* Pop one more item to marshal, if any */
     if (sp == extern_stack) {
-        /* We are done cleanup the stack and leave the function */
+        /* We are done.   Cleanup the stack and leave the function */
         extern_free_stack();
         return;
     }
