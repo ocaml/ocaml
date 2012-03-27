@@ -116,9 +116,13 @@ let implementation ppf sourcefile outputprefix =
     try ignore(
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env)
+      ++ Typemod.type_implementation sourcefile outputprefix modulename env);
+      Warnings.check_fatal ();
+      Pparse.remove_preprocessed inputfile;
+      Stypes.dump (outputprefix ^ ".annot");
     with x ->
       Pparse.remove_preprocessed_if_ast inputfile;
+      Stypes.dump (outputprefix ^ ".annot");
       raise x
   end else begin
     let objfile = outputprefix ^ ".cmo" in
