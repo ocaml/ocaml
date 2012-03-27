@@ -1240,7 +1240,7 @@ is written in C.
 
 \subsection{Applying OCaml closures from C} \label{s:callbacks}
 
-C functions can apply OCaml functional values (closures) to OCaml values.
+C functions can apply OCaml function values (closures) to OCaml values.
 The following functions are provided to perform the applications:
 \begin{itemize}
 \item "caml_callback("\var{f, a}")" applies the functional value \var{f} to
@@ -1273,14 +1273,30 @@ function.  If "Is_exception_result("\var{v}")" returns ``true'',
 an exception escaped, and its value (the exception descriptor) can be
 recovered using "Extract_exception("\var{v}")".
 
-\subsection{Registering OCaml closures for use in C functions}
+\subsection{Obtaining or registering OCaml closures for use in C functions}
 
-The main difficulty with the "callback" functions described above is
-obtaining a closure to the OCaml function to be called. For this
-purpose, OCaml provides a simple registration mechanism, by
-which OCaml code can register OCaml functions under some global name,
-and then C code can retrieve the corresponding closure by this global
-name.
+There are two ways to obtain OCaml function values (closures) to
+be passed to the "callback" functions described above.  One way is to
+pass the OCaml function as an argument to a primitive function.  For
+example, if the OCaml code contains the declaration
+\begin{verbatim}
+    external apply : ('a -> 'b) -> 'a -> 'b = "caml_apply"
+\end{verbatim}
+the corresponding C stub can be written as follows:
+\begin{verbatim}
+    CAMLprim value caml_apply(value vf, value vx)
+    {
+      CAMLparam2(vf, vx);
+      CAMLlocal1(vy);
+      vy = caml_callback(vf, vx);
+      CAMLreturn(vy);
+    }
+\end{verbatim}
+
+Another possibility is to use the registration mechanism provided by
+OCaml.  This registration mechanism enables OCaml code to register
+OCaml functions under some global name, and C code to retrieve the
+corresponding closure by this global name.
 
 On the OCaml side, registration is performed by evaluating
 "Callback.register" \var{n} \var{v}. Here, \var{n} is the global name
@@ -1600,6 +1616,20 @@ the data from the second block.
 The "compare" field can be set to "custom_compare_default"; this
 default comparison function simply raises "Failure".
 
+\item "int (*compare_ext)(value v1, value v2)" \\
+(Since 3.12.1.)  
+The "compare_ext" field contains a pointer to a C function that is
+called whenever one custom block and one unboxed integer are compared using OCaml's generic
+comparison operators ("=", "<>", "<=", ">=", "<", ">" and
+"compare").  As in the case of the "compare" field, the C function
+should return 0 if the two arguments are structurally equal, a
+negative integer if the first argument compares less than the second
+argument, and a positive integer if the first argument compares
+greater than the second argument.
+
+The "compare_ext" field can be set to "custom_compare_ext_default"; this
+default comparison function simply raises "Failure".
+
 \item "long (*hash)(value v)" \\
 The "hash" field contains a pointer to a C function that is called
 whenever OCaml's generic hash operator (see module "Hashtbl") is
@@ -1660,8 +1690,10 @@ functions, and do not use "CAMLreturn" to return the result.
 
 \subsection{Allocating custom blocks}
 
-Custom blocks must be allocated via the "caml_alloc_custom" function.
+Custom blocks must be allocated via the "caml_alloc_custom" function:
+\begin{center}
 "caml_alloc_custom("\var{ops}", "\var{size}", "\var{used}", "\var{max}")"
+\end{center}
 returns a fresh custom block, with room for \var{size} bytes of user
 data, and whose associated operations are given by \var{ops} (a
 pointer to a "struct custom_operations", usually statically allocated
