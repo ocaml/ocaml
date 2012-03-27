@@ -273,7 +273,7 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
-    bytecccompopts="-fno-defer-pop -no-cpp-precomp $gcc_warnings"
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
     mathlib=""
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
