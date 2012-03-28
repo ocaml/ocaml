@@ -2816,7 +2816,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
     if is_recursive then new_env else env in
 
   let current_slot = ref None in
-  let warn_unused = Warnings.is_active (check "") || Warnings.is_active (check_strict "") in
+  let warn_unused =
+    Warnings.is_active (check "") || Warnings.is_active (check_strict "") in
   let pat_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:
        - During type checking of the definitions, we capture the 'value_used'

@@ -633,12 +633,14 @@ let rec generalize_structure var_level ty =
   if ty.level <> generic_level then begin
     if is_Tvar ty && ty.level > var_level then
       set_level ty var_level
-    else if ty.level > !current_level then begin
+    else if
+      ty.level > !current_level &&
+      match ty.desc with
+        Tconstr (p, _, abbrev) ->
+          not (is_object_type p) && (abbrev := Mnil; true)
+      | _ -> true
+    then begin
       set_level ty generic_level;
-      begin match ty.desc with
-        Tconstr (_, _, abbrev) -> abbrev := Mnil
-      | _ -> ()
-      end;
       iter_type_expr (generalize_structure var_level) ty
     end
   end
@@ -653,9 +655,21 @@ let rec generalize_spine ty =
   let ty = repr ty in
   if ty.level < !current_level || ty.level = generic_level then () else
   match ty.desc with
-    Tarrow (_, _, ty', _) | Tpoly (ty', _) ->
+    Tarrow (_, ty1, ty2, _) ->
+      set_level ty generic_level;
+      generalize_spine ty1;
+      generalize_spine ty2;
+  | Tpoly (ty', _) ->
       set_level ty generic_level;
       generalize_spine ty'
+  | Ttuple tyl
+  | Tpackage (_, _, tyl) ->
+      set_level ty generic_level;
+      List.iter generalize_spine tyl
+  | Tconstr (p, tyl, memo) when not (is_object_type p) ->
+      set_level ty generic_level;
+      memo := Mnil;
+      List.iter generalize_spine tyl
   | _ -> ()
 
 let forward_try_expand_once = (* Forward declaration *)
@@ -983,6 +997,8 @@ let rec copy ?env ?partial ty =
               dup_kind r;
               copy_type_desc copy desc
           end
+      | Tobject (ty1, _) when partial <> None ->
+          Tobject (copy ty1, ref None)
       | _ -> copy_type_desc copy desc
       end;
     t
