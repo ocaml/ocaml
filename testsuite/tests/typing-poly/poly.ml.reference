@@ -595,4 +595,7 @@ Error: This field value has type unit -> unit which is less general than
     class alias : object method alias : 'a t -> 'a end
     val f : < m : 'a. 'a t > -> < m : 'a. 'a >
   end
+#       Exception: Pervasives.Exit.
+#   Exception: Pervasives.Exit.
+#   Exception: Pervasives.Exit.
 # 
