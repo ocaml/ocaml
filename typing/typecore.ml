@@ -2772,9 +2772,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
         | _, Pexp_constraint (_, Some sty, None) when !Clflags.principal ->
             (* propagate type annotation to pattern,
                to allow it to be generalized in -principal mode *)
-            {ppat_desc = Ppat_constraint
-               (spat, {ptyp_desc=Ptyp_poly([],sty);
-                       ptyp_loc={sty.ptyp_loc with Location.loc_ghost=true}});
+            {ppat_desc = Ppat_constraint (spat, sty);
              ppat_loc = {spat.ppat_loc with Location.loc_ghost=true}}
         | _ -> spat)
       spat_sexp_list in
