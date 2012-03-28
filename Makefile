@@ -145,6 +145,7 @@ world:
 world.opt:
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
+	$(MAKE) ocamltoolsopt
 
 # Hard bootstrap how-to:
 # (only necessary in some cases, for example if you remove some primitive)
