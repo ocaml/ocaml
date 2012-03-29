@@ -6,7 +6,7 @@
 #   - : int = 7
 # - : unit = ()
 # - : int = 10
-#   val q : point = <obj>
+#   val q : < get_x : int; move : int -> unit > = <obj>
 #   - : int * int = (10, 17)
 #           class color_point :
   int ->
@@ -64,7 +64,7 @@ Error: Some type variables are unbound in this type:
     method set_center : 'a -> unit
   end
 #   val c : point circle = <obj>
-val c' : color_point circle = <obj>
+val c' : < color : string; get_x : int; move : int -> unit > circle = <obj>
 #           class ['a] color_circle :
   'a ->
   object
@@ -239,9 +239,7 @@ Error: This expression has type
        but an expression was expected of type
          #comparable as 'a = < leq : 'a -> bool; .. >
        Type int_comparable = < leq : int_comparable -> bool; x : int >
-       is not compatible with type
-         int_comparable3 =
-           < leq : int_comparable -> bool; setx : int -> unit; x : int > 
+       is not compatible with type 'a = < leq : 'a -> bool; .. > 
        The first object type has no method setx
 #   val sort : (#comparable as 'a) list -> 'a list = <fun>
 #     Characters 13-66:
