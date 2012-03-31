@@ -57,7 +57,7 @@ Standard library:
       with user-provided hash functions.
 - Marshal: marshalling of function values (flag Marshal.Closures) now
   also works for functions that come from dynamically-loaded modules (PR#5215)
-- Random: 
+- Random:
      . More random initialization (Random.self_init()), using /dev/urandom
        when available (e.g. Linux, FreeBSD, MacOS X, Solaris)
      . Faster implementation of Random.float
@@ -90,6 +90,7 @@ Bug Fixes:
 - PR#5238, PR#5277: Sys_error when getting error location
 - PR#5301: camlp4r and exception equal to another one with parameters
 - PR#5309: Queue.add is not thread/signal safe
+- PR#5311: better message for warning 23
 - PR#5313: ocamlopt -g misses optimizations
 - PR#5316: objinfo now shows ccopts/ccobjs/force_link when applicable
 - PR#5322: type abbreviations expanding to a universal type variable
@@ -125,6 +126,7 @@ Bug Fixes:
 - PR#5511: in Bigarray.reshape, unwarranted limitation on new array dimensions.
 - PR#5513: Int64.div causes floating point exception (ocamlopt, x86)
 - PR#5516: in Bigarray C stubs, use C99 / GCC flexible array types if possible
+- PR#5538: combining -i and -annot in ocamlc
 - PR#5560: incompatible type for tuple pattern with -principal
 - problem with printing of string literals in camlp4 (reported on caml-list)
 - emacs mode: colorization of comments and strings now works correctly
