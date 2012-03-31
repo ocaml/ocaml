@@ -21,6 +21,7 @@ MLIS=$(SRC2)/stdlib/*.mli \
 	$(SRC2)/otherlibs/num/num.mli \
 	$(SRC2)/otherlibs/num/arith_status.mli \
 	$(SRC2)/otherlibs/num/big_int.mli \
+	$(SRC2)/otherlibs/num/ratio.mli \
 	$(SRC2)/otherlibs/str/*.mli \
 	$(SRC2)/otherlibs/systhreads/*.mli \
 	$(SRC2)/otherlibs/unix/*.mli \
