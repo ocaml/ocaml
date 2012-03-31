@@ -235,7 +235,7 @@ let message = function
        Here is an example of a value that is not matched:\n" ^ s
   | Non_closed_record_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
-      "\nEither bind these labels explicitly or add `; _' to the pattern."
+      "\nEither bind these labels explicitly or add '; _' to the pattern."
   | Statement_type ->
       "this expression should have type unit."
   | Unused_match -> "this match case is unused."
@@ -262,8 +262,8 @@ let message = function
       "this statement never returns (or has an unsound type.)"
   | Camlp4 s -> s
   | Useless_record_with ->
-      "this record is defined by a `with' expression,\n\
-       but no fields are borrowed from the original."
+      "all the fields are explicitely listed in this record:\n\
+       the 'with' clause is useless."
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
   | All_clauses_guarded ->
