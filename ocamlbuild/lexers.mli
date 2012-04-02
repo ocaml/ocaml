@@ -32,6 +32,8 @@ val trim_blanks : Lexing.lexbuf -> string
    Example:
       ":aaa:bbb:::ccc:" -> [""; "aaa"; "bbb"; ""; ""; "ccc"; ""] *)
 val parse_environment_path : Lexing.lexbuf -> string list
+(* Same one, for Windows (PATH is ;-separated) *)
+val parse_environment_path_w : Lexing.lexbuf -> string list
 
 val conf_lines : string option -> int -> string -> Lexing.lexbuf -> conf
 val path_scheme : bool -> Lexing.lexbuf ->

@@ -257,10 +257,11 @@ let sys_command =
 (* FIXME warning fix and use Filename.concat *)
 let filename_concat x y =
   if x = Filename.current_dir_name || x = "" then y else
-  if x.[String.length x - 1] = '/' then
+  if Sys.os_type = "Win32" && (x.[String.length x - 1] = '\\') || x.[String.length x - 1] = '/' then
     if y = "" then x
     else x ^ y
-  else x ^ "/" ^ y
+  else
+    x ^ "/" ^ y
 
 (* let reslash =
   match Sys.os_type with

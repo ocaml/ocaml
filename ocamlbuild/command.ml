@@ -91,9 +91,15 @@ let atomize_paths l = S(List.map (fun x -> P x) l)
 
 let env_path = lazy begin
   let path_var = Sys.getenv "PATH" in
+  let parse_path =
+    if Sys.os_type = "Win32" then
+      Lexers.parse_environment_path_w
+    else
+      Lexers.parse_environment_path
+  in
   let paths =
     try
-      Lexers.parse_environment_path (Lexing.from_string path_var)
+      parse_path (Lexing.from_string path_var)
     with Lexers.Error msg -> raise (Lexers.Error ("$PATH: " ^ msg))
   in
   let norm_current_dir_name path =
@@ -120,13 +126,21 @@ let virtual_solver virtual_command =
                               has failed finding a valid command" virtual_command)
 
 
-(* FIXME windows *)
 let search_in_path cmd =
+  (* Try to find [cmd] in path [path]. *)
+  let try_path path =
+    (* On Windows, we need to also check for the ".exe" version of the file. *)
+    let exists file =
+      sys_file_exists file || Sys.os_type = "Win32" && sys_file_exists (file ^ ".exe")
+    in
+    (* Don't know why we're trying to be subtle here... *)
+    if path = Filename.current_dir_name then exists cmd
+    else exists (filename_concat path cmd)
+  in
   if Filename.is_implicit cmd then
-    let path = List.find begin fun path ->
-      if path = Filename.current_dir_name then sys_file_exists cmd
-      else sys_file_exists (filename_concat path cmd)
-    end !*env_path in
+    let path = List.find try_path !*env_path in
+    (* We're not trying to append ".exe" here because all windows shells are
+     * capable of understanding the command without the ".exe" suffix. *)
     filename_concat path cmd
   else cmd
 

@@ -81,6 +81,15 @@ and comma_or_blank_sep_strings_aux = parse
   | space* eof { [] }
   | _ { raise (Error "Expecting (comma|blank)-separated strings (2)") }
 
+and parse_environment_path_w = parse
+  | ([^ ';']* as word) { word :: parse_environment_path_aux_w lexbuf }
+  | ';' ([^ ';']* as word) { "" :: word :: parse_environment_path_aux_w lexbuf }
+  | eof { [] }
+and parse_environment_path_aux_w = parse
+  | ';' ([^ ';']* as word) { word :: parse_environment_path_aux_w lexbuf }
+  | eof { [] }
+  | _ { raise (Error "Impossible: expecting colon-separated strings") }
+
 and parse_environment_path = parse
   | ([^ ':']* as word) { word :: parse_environment_path_aux lexbuf }
   | ':' ([^ ':']* as word) { "" :: word :: parse_environment_path_aux lexbuf }
