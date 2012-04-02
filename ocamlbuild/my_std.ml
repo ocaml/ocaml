@@ -249,8 +249,6 @@ let sys_command =
   | "Win32" -> fun cmd ->
       if cmd = "" then 0 else
       let cmd = "bash -c "^Filename.quote cmd in
-      (* FIXME fix Filename.quote for windows *)
-      let cmd = String.subst "\"&\"\"&\"" "&&" cmd in
       Sys.command cmd
   | _ -> fun cmd -> if cmd = "" then 0 else Sys.command cmd
 
