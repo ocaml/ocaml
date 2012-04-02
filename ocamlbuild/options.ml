@@ -50,8 +50,8 @@ let mk_virtual_solvers =
       if sys_file_exists !dir then
         let long = filename_concat !dir cmd in
         let long_opt = long ^ ".opt" in
-        if sys_file_exists long_opt then A long_opt
-        else if sys_file_exists long then A long
+        if file_or_exe_exists long_opt then A long_opt
+        else if file_or_exe_exists long then A long
         else try let _ = search_in_path opt in a_opt
         with Not_found -> a_cmd
       else
