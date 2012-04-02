@@ -125,29 +125,33 @@ let virtual_solver virtual_command =
     failwith (Printf.sprintf "the solver for the virtual command %S \
                               has failed finding a valid command" virtual_command)
 
+(* On Windows, we need to also check for the ".exe" version of the file. *)
+let file_or_exe_exists file =
+  sys_file_exists file || Sys.os_type = "Win32" && sys_file_exists (file ^ ".exe")
 
 let search_in_path cmd =
   (* Try to find [cmd] in path [path]. *)
   let try_path path =
-    (* On Windows, we need to also check for the ".exe" version of the file. *)
-    let exists file =
-      sys_file_exists file || Sys.os_type = "Win32" && sys_file_exists (file ^ ".exe")
-    in
     (* Don't know why we're trying to be subtle here... *)
-    if path = Filename.current_dir_name then exists cmd
-    else exists (filename_concat path cmd)
+    if path = Filename.current_dir_name then file_or_exe_exists cmd
+    else file_or_exe_exists (filename_concat path cmd)
   in
   if Filename.is_implicit cmd then
     let path = List.find try_path !*env_path in
     (* We're not trying to append ".exe" here because all windows shells are
      * capable of understanding the command without the ".exe" suffix. *)
     filename_concat path cmd
-  else cmd
+  else
+    cmd
 
 (*** string_of_command_spec{,_with_calls *)
 let rec string_of_command_spec_with_calls call_with_tags call_with_target resolve_virtuals spec =
   let self = string_of_command_spec_with_calls call_with_tags call_with_target resolve_virtuals in
   let b = Buffer.create 256 in
+  (* The best way to prevent bash from switching to its windows-style
+   * quote-handling is to prepend an empty string before the command name. *)
+  if Sys.os_type = "Win32" then
+    Buffer.add_string b "''";
   let first = ref true in
   let put_space () =
     if !first then
