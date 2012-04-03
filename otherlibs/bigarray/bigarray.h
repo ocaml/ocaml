@@ -73,8 +73,8 @@ struct caml_ba_array {
   intnat num_dims;            /* Number of dimensions */
   intnat flags;  /* Kind of element array + memory layout + allocation status */
   struct caml_ba_proxy * proxy; /* The proxy for sub-arrays, or NULL */
-  /* PR#5516: use C99's / gcc's flexible array types if possible */
-#if (__STDC_VERSION__ >= 199901L) || defined(__GNUC__)
+  /* PR#5516: use C99's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L)
   intnat dim[]  /*[num_dims]*/; /* Size in each dimension */
 #else
   intnat dim[1] /*[num_dims]*/; /* Size in each dimension */
