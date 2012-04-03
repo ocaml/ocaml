@@ -200,33 +200,60 @@ let wrap_printing_env env f =
     try_finally f (fun () -> printing_env := Env.empty)
   end
 
-let rec path_length = function
-    Pident _ -> 1
-  | Pdot (p, _, _) -> 1 + path_length p
-  | Papply (p1, p2) -> path_length p1 + path_length p2
+let rec make_longident = function
+    [name] -> Lident name
+  | name :: names -> Ldot (make_longident names, name)
+  | [] -> invalid_arg "Printtyp.make_longident"
+
+let rec make_ident = function
+    [name] -> Oide_ident name
+  | name :: names -> Oide_dot (make_ident names, name)
+  | [] -> invalid_arg "Printtyp.make_ident"
+
+let rec remove_open p0 names p =
+  match p with
+    Pdot (p1, name, _) ->
+      let names = names @ [name] in
+      begin try
+        let (p', _) = Env.lookup_type (make_longident names) !printing_env in
+        if Path.same p0 p' then make_ident names else raise Not_found
+      with Not_found ->
+        remove_open p0 names p1
+      end
+  | _ -> tree_of_path p0
 
 let same_type t t' = repr t == repr t'
 
-let rec best_type_path p =
-  if !Clflags.real_paths || !printing_env == Env.empty || path_length p = 1
-  then p
-  else try
+let rec ident_size = function
+    Oide_ident _ -> 1
+  | Oide_dot (p, _) -> 1 + ident_size p
+  | Oide_apply (p1, p2) -> ident_size p1 + ident_size p2
+
+let rec shortest_type_path p =
+  let id = remove_open p [] p in
+  if ident_size id = 1 then id else
+  try
     let desc = Env.find_type p !printing_env in
-    if desc.type_private = Private then p else
+    if desc.type_private = Private then id else
     match desc.type_manifest with
       Some ty ->
         begin match repr ty with
           {desc = Tconstr (p1, tyl, _)} ->
             if List.length desc.type_params = List.length tyl
             && List.for_all2 same_type desc.type_params tyl then
-              let p' = best_type_path p1 in
-              if path_length p' < path_length p then p' else p
-            else p
-        | _ -> p
+              let id' = shortest_type_path p1 in
+              if ident_size id' < ident_size id then id' else id
+            else id
+        | _ -> id
         end
-    | None -> p
+    | None -> id
   with
-    Not_found -> p
+    Not_found -> id
+
+let short_tree_of_path p =
+  if !Clflags.real_paths || !printing_env == Env.empty
+  then tree_of_path p
+  else shortest_type_path p
 
 (* Print a type expression *)
 
@@ -423,8 +450,7 @@ let rec tree_of_typexp sch ty =
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist sch tyl)
     | Tconstr(p, tyl, abbrev) ->
-        let p' = best_type_path p in
-        Otyp_constr (tree_of_path p', tree_of_typlist sch tyl)
+        Otyp_constr (short_tree_of_path p, tree_of_typlist sch tyl)
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -442,8 +468,7 @@ let rec tree_of_typexp sch ty =
         let all_present = List.length present = List.length fields in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
-            let p' = best_type_path p in
-            let id = tree_of_path p' in
+            let id = short_tree_of_path p in
             let args = tree_of_typlist sch tyl in
             if row.row_closed && all_present then
               Otyp_constr (id, args)
@@ -532,8 +557,7 @@ and tree_of_typobject sch fi nm =
   | Some (p, ty :: tyl) ->
       let non_gen = is_non_gen sch (repr ty) in
       let args = tree_of_typlist sch tyl in
-      let p' = best_type_path p in
-      Otyp_class (non_gen, tree_of_path p', args)
+      Otyp_class (non_gen, short_tree_of_path p, args)
   | _ ->
       fatal_error "Printtyp.tree_of_typobject"
   end
@@ -982,7 +1006,8 @@ let same_path t t' =
   t == t' ||
   match t.desc, t'.desc with
     Tconstr(p,tl,_), Tconstr(p',tl',_) ->
-      Path.same (best_type_path p) (best_type_path p') &&
+      (* Path.same (shorten_type_path p) (shorten_type_path p') && *)
+      short_tree_of_path p = short_tree_of_path p' &&
       List.length tl = List.length tl' &&
       List.for_all2 same_type tl tl'
   | _ ->
@@ -1135,7 +1160,7 @@ let rec path_same_name p1 p2 =
 let type_same_name t1 t2 =
   match (repr t1).desc, (repr t2).desc with
     Tconstr (p1, _, _), Tconstr (p2, _, _) ->
-      path_same_name (best_type_path p1) (best_type_path p2)
+      path_same_name p1 p2
   | _ -> ()
 
 let rec trace_same_names = function
