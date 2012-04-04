@@ -81,7 +81,7 @@ EXTRALIBS=
 NATDYNLINK=true
 CMXS=cmxs
 RUNTIMED=noruntimed
-ASM_CFI_SUPPORTED=true
+ASM_CFI_SUPPORTED=false
 
 ########## Configuration for the bytecode compiler
 
