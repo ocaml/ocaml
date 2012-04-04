@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "output.h"
 
+void interprete(FILE *input);
+
 char * input_name;
 
 int main(argc, argv)

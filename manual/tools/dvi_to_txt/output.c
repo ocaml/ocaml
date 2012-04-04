@@ -1,4 +1,6 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "output.h"
 
 void null(), print_FF(), plain_line(), printer_line();

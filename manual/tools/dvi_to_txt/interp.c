@@ -1,4 +1,6 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 #include "io.h"
 #include "dvi.h"
@@ -116,7 +118,7 @@ int outchar(c)
   return scalex;
 }
 
-int outrule(height, width)
+void outrule(height, width)
      int height, width;
 {
   char c;
