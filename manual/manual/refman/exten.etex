@@ -542,9 +542,9 @@ actually be unified with "int".
 The other application is to ensure that some definition is sufficiently
 polymorphic.
 \caml
-\?let id : {\textquotesingle}a. {\textquotesingle}a -> {\textquotesingle}a = \<fun x -> x+1\> ;;
+\?let id : \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a = \<fun x -> x+1\> ;;
 \:Error: This definition has type int -> int which is less general than
-\:         {\textquotesingle}a. {\textquotesingle}a -> {\textquotesingle}a
+\:         \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a
 \endcaml
 
 \section{Explicit naming of type variables}
@@ -595,10 +595,30 @@ Here is another example:
             S.elements (List.fold_right S.add l S.empty)
 \end{verbatim}
 
-This construction by itself does not make polymorphic the type
-variable it introduces, but it can be combined with explicit
-polymorphic annotations where needed. It is also extremely useful for
-first-class modules.
+It is also extremely useful for first-class modules and GADTs.
+
+\paragraph{Polymorphic syntax} (Introduced in OCaml 4.00)
+
+\begin{syntax}
+@let-binding@:
+       ...
+     | value-name ":" "type" { typeconstr } "." typexpr "=" expr;
+\end{syntax}
+The @("type" t)@ syntax construction by itself does not make
+polymorphic the type variable it introduces, but it can be combined
+with explicit polymorphic annotations where needed. 
+Some syntactic sugar is provided to makes this easier.
+Namely,
+\begin{verbatim}
+        let rec f : type t1 t2. t1 * t2 list -> t1 = ...
+\end{verbatim}
+\noindent
+is automatically expanded into
+\begin{verbatim}
+        let rec f : 't1 't2. 't1 * 't2 list -> 't1 =
+          fun (type t1) (type t2) -> (... : t1 * t2 list -> t1)
+\end{verbatim}
+
 
 \section{First-class modules}\label{s-first-class-modules}
 \ikwd{module\@\texttt{module}}
@@ -933,3 +953,5 @@ As a side-effect, these 3 keywords avoid the warnings
 ``method override'' and `` instance variable override''.
 As of OCaml 3.12, the warning ``method override'' has to be
 enabled manually for backwards compatibility reasons.
+
+\section{Generalized algebraic datatypes}
