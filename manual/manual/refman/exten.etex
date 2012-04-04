@@ -547,7 +547,7 @@ polymorphic.
 \:         \textquotesingle\-a. \textquotesingle\-a -> \textquotesingle\-a
 \endcaml
 
-\section{Explicit naming of type variables}
+\section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
 
@@ -607,7 +607,7 @@ It is also extremely useful for first-class modules and GADTs.
 The @("type" t)@ syntax construction by itself does not make
 polymorphic the type variable it introduces, but it can be combined
 with explicit polymorphic annotations where needed. 
-Some syntactic sugar is provided to makes this easier.
+Some syntactic sugar is provided to make this easier.
 Namely,
 \begin{verbatim}
         let rec f : type t1 t2. t1 * t2 list -> t1 = ...
@@ -642,9 +642,9 @@ expr:
 ;
 package-type:
       modtype-path
-    | modtype-path 'with' package-type-constraint { 'and' package-type-constraint }
+    | modtype-path 'with' package-constraint { 'and' package-constraint }
 ;
-package-type-constraint:
+package-constraint:
           'type' typeconstr '=' typexpr
 ;
 \end{syntax}
@@ -720,11 +720,10 @@ implementation of a module without using a functor.
         let sort (type s) set l =
           let module Set = (val set : Set.S with type elt = s) in
           Set.elements (List.fold_right Set.add l Set.empty)
+        val sort : (module Set.S with type elt = 'a) -> 'a list -> 'a list
 \end{verbatim}
 
-The type inferred for this function is "(module Set.S with type elt =
-'a) -> 'a list -> 'a list". To use this function, one can wrap the "Set.Make"
-functor:
+To use this function, one can wrap the "Set.Make" functor:
 
 \begin{verbatim}
         let make_set (type s) cmp =
@@ -733,9 +732,8 @@ functor:
             let compare = cmp
           end) in
           (module S : Set.S with type elt = s)
+        val make_set : ('a -> 'a -> int) -> (module Set.S with type elt = 'a)
 \end{verbatim}
-
-This function has type "('a -> 'a -> int) -> (module Set.S with type elt = 'a)".
 
 Another advanced use of first-class module is to encode existential
 types. In particular, they can be used to simulate generalized
@@ -955,3 +953,122 @@ As of OCaml 3.12, the warning ``method override'' has to be
 enabled manually for backwards compatibility reasons.
 
 \section{Generalized algebraic datatypes}
+\ikwd{type\@\texttt{type}}
+\ikwd{match\@\texttt{match}}
+
+(Introduced in OCaml 4.00)
+
+\begin{syntax}
+constr-decl:
+          ...
+        | constr-name ':' typexpr { '*' typexpr } '->' typexpr
+;
+type-param:
+          ...
+        | [variance] '_'
+;
+\end{syntax}
+
+Generalized algebraic datatypes, or GADTs, extend usual sum types in
+two ways: constraints on type parameters may change depending on the
+value constructor, and some type variables may be existentially
+quantified.
+Adding constraints is done by giving an explicit return type
+(the rightmost @typexpr@ in the above syntax), where type parameters
+are instantiated.
+This return type must use the same type constructor as the type being
+defined, and have the same number of parameters.
+Variables are made existential when they appear inside a constructor's
+argument, but not in its return type.
+
+Since the use of a return type often eludes the need to name type
+parameters in the left-hand side of a type definition, one can replace
+them with anonymous types ``"_"'' there.
+
+The constraints associated to each constructor can be recovered
+through pattern-matching.
+Namely, if the type of the scrutinee of a pattern-matching contains
+a locally abstract type, this type can be refined according to the
+constructor used.
+These extra constraints are only valid inside the corresponding branch
+of the pattern-matching.
+If a constructor has some existential variables, fresh locally
+abstract types are generated, and they must not escape the
+scope of this branch.
+
+Here is a concrete example:
+\begin{verbatim}
+        type _ term =
+          | Int : int -> int term
+          | Add : (int -> int -> int) term
+          | App : ('b -> 'a) term * 'b term -> 'a term
+
+        let rec eval : type a. a term -> a = function
+          | Int n    -> n                 (* a = int *)
+          | Add      -> (fun x y -> x+y)  (* a = int -> int -> int *)
+          | App(f,x) -> (eval f) (eval x)
+                  (* eval called at types (b->a) and b for fresh b *)
+
+        let two = eval (App (App (Add, Int 1), Int 1))
+        val two : int = 2
+\end{verbatim}
+
+Type inference for GADTs is notoriously hard.
+This is due to the fact some types may become ambiguous when escaping
+from a branch.
+For instance, in the "Int" case above, "n" could have either type "int"
+or "a", and they are not equivalent outside of that branch.
+As a first approximation, type inference will always work if a
+pattern-matching is annotated with types containing no free type
+variables (both on the scrutinee and the return type).
+This is the case in the above example, thanks to the type annotation
+containing only locally abstract types.
+
+In practice, type inference is a bit more clever than that: type
+annotations do not need to be immediately on the pattern-matching, and
+the types do not have to be always closed. Type annotations are
+propagated in two ways: for the scrutinee, they follow the flow of
+type inference, in a way similar to polymorphic methods; for the
+return type, they follow the structure of the program, they are split
+on functions, and go through tuples, records, and sum types.
+Moreover, the notion of ambiguity used is stronger: a type is only
+seen as ambiguous if it was mixed with incompatible types (equated by
+constraints), without type annotations between them.
+For instance, the following program types correctly.
+\begin{verbatim}
+        let rec sum : type a. a term -> _ = fun x ->
+          let y =
+            match x with
+            | Int n -> n
+            | Add   -> 0
+            | App(f,x) -> sum f + sum x
+          in y + 1
+        val sum : 'a term -> int = <fun>
+\end{verbatim}
+Here the return type "int" is never mixed with "a", so it is seen as
+non-ambiguous, and can be inferred.
+When using such partial type annotations we strongly suggest
+specifying the "-principal" mode, to check that inference is
+principal.
+
+The exhaustiveness check is aware of GADT constraints, and can
+automatically infer that some cases cannot happen.
+For instance, the following pattern matching is correctly seen as
+exhaustive (the "Add" case cannot happen).
+\begin{verbatim}
+        let get_int : int term -> int = function
+          | Int n    -> n
+          | App(_,_) -> 0
+\end{verbatim}
+
+% Another frequent application of GADTs is equality witnesses.
+% \begin{verbatim}
+%         type (_,_) eq = Eq : ('a,'a) eq
+
+%         let cast : type a b. (a,b) eq -> a -> b = fun Eq x -> x
+%         val cast : ('a, 'b) eq -> 'a -> 'b = <fun>
+% \end{verbatim}
+% Here type "eq" has only one constructor, and by matching on it one
+% adds a local constraint allowing the conversion between "a" and "b".
+% By building such equality witnesses, one can make equal types which
+% are syntactically different.
