@@ -126,7 +126,8 @@ Bug Fixes:
 - PR#5510: ocamldep has duplicate -ml{,i}-synonym options
 - PR#5511: in Bigarray.reshape, unwarranted limitation on new array dimensions.
 - PR#5513: Int64.div causes floating point exception (ocamlopt, x86)
-- PR#5516: in Bigarray C stubs, use C99 / GCC flexible array types if possible
+- PR#5516: in Bigarray C stubs, use C99 flexible array types if possible
+- PR#5543: in Bigarray.map_file, try to avoid using lseek() when growing file
 - PR#5538: combining -i and -annot in ocamlc
 - PR#5560: incompatible type for tuple pattern with -principal
 - problem with printing of string literals in camlp4 (reported on caml-list)
