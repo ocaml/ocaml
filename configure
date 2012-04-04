@@ -1116,6 +1116,11 @@ if sh ./hasgot -i sys/types.h -i sys/mman.h && sh ./hasgot mmap munmap; then
   echo "#define HAS_MMAP" >> s.h
 fi
 
+if sh ./hasgot pwrite; then
+  echo "pwrite() found"
+  echo "#define HAS_PWRITE" >> s.h
+fi
+
 nargs=none
 for i in 5 6; do
   if sh ./trycompile -DNUM_ARGS=${i} gethostbyname.c; then nargs=$i; break; fi

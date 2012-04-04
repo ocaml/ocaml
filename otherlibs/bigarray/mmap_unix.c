@@ -25,12 +25,14 @@
 
 extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 
+#include <errno.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 #ifdef HAS_MMAP
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #endif
 
 #if defined(HAS_MMAP)
@@ -39,15 +41,61 @@ extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 #define MAP_FAILED ((void *) -1)
 #endif
 
+/* [caml_grow_file] function contributed by Gerd Stolpmann (PR#5543). */
+
+static int caml_grow_file(int fd, file_offset size)
+{
+  char c;
+  int p;
+
+  /* First use pwrite for growing - it is a conservative method, as it
+     can never happen that we shrink by accident
+   */
+#ifdef HAS_PWRITE
+  c = 0;
+  p = pwrite(fd, &c, 1, size - 1);
+#else
+
+  /* Emulate pwrite with lseek. This should only be necessary on ancient
+     systems nowadays
+   */
+  file_offset currpos;
+  currpos = lseek(fd, 0, SEEK_CUR);
+  if (currpos != -1) {
+    p = lseek(fd, size - 1, SEEK_SET);
+    if (p != -1) {
+      c = 0;
+      p = write(fd, &c, 1);
+      if (p != -1) 
+        p = lseek(fd, currpos, SEEK_SET);
+    }
+  }
+  else p=-1;
+#endif
+#ifdef HAS_TRUNCATE
+  if (p == -1 && errno == ESPIPE) {
+    /* Plan B. Check if at least ftruncate is possible. There are
+       some non-seekable descriptor types that do not support pwrite
+       but ftruncate, like shared memory. We never get into this case
+       for real files, so there is no danger of truncating persistent
+       data by accident
+     */
+    p = ftruncate(fd, size);
+  }
+#endif
+  return p;
+}
+
+
 CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
                                 value vshared, value vdim, value vstart)
 {
   int fd, flags, major_dim, shared;
   intnat num_dims, i;
   intnat dim[CAML_BA_MAX_NUM_DIMS];
-  file_offset currpos, startpos, file_size, data_size;
+  file_offset startpos, file_size, data_size;
+  struct stat st;
   uintnat array_size, page, delta;
-  char c;
   void * addr;
 
   fd = Int_val(vfd);
@@ -65,18 +113,15 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
     if (dim[i] < 0)
       caml_invalid_argument("Bigarray.create: negative dimension");
   }
-  /* Determine file size */
+  /* Determine file size. We avoid lseek here because it is fragile,
+     and because some mappable file types do not support it
+   */
   caml_enter_blocking_section();
-  currpos = lseek(fd, 0, SEEK_CUR);
-  if (currpos == -1) {
+  if (fstat(fd, &st) == -1) {
     caml_leave_blocking_section();
     caml_sys_error(NO_ARG);
   }
-  file_size = lseek(fd, 0, SEEK_END);
-  if (file_size == -1) {
-    caml_leave_blocking_section();
-    caml_sys_error(NO_ARG);
-  }
+  file_size = st.st_size;
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
@@ -99,19 +144,12 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   } else {
     /* Check that file is large enough, and grow it otherwise */
     if (file_size < startpos + array_size) {
-      if (lseek(fd, startpos + array_size - 1, SEEK_SET) == -1) {
-        caml_leave_blocking_section();
-        caml_sys_error(NO_ARG);
-      }
-      c = 0;
-      if (write(fd, &c, 1) != 1) {
+      if (caml_grow_file(fd, startpos + array_size) == -1) { /* PR#5543 */
         caml_leave_blocking_section();
         caml_sys_error(NO_ARG);
       }
     }
   }
-  /* Restore original file position */
-  lseek(fd, currpos, SEEK_SET);
   /* Determine offset so that the mapping starts at the given file pos */
   page = getpagesize();
   delta = (uintnat) (startpos % page);
