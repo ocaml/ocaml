@@ -33,9 +33,11 @@ type-params:
         | '(' type-param { "," type-param } ')'
 ;
 type-param:
-          "'" ident
-        | "+" "'" ident
-        | "-" "'" ident
+          [variance] "'" ident
+;
+variance:
+          '+'
+        | '-'
 ;
 constr-decl:
           constr-name

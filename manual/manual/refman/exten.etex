@@ -625,7 +625,8 @@ is automatically expanded into
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, pattern syntax and package type inference
+since 4.00)
 
 \begin{syntax}
 typexpr:
@@ -634,11 +635,15 @@ typexpr:
 ;
 module-expr:
       ...
-    | '(''val' expr ':' package-type')'
+    | '(''val' expr [':' package-type]')'
 ;
 expr:
       ...
-    | '(''module' module-expr ':' package-type')'
+    | '(''module' module-expr [':' package-type]')'
+;
+pattern:
+      ...
+    | '(''module' module-name [':' package-type]')'
 ;
 package-type:
       modtype-path
@@ -649,7 +654,7 @@ package-constraint:
 ;
 \end{syntax}
 
-Modules are typically thought as static components. This extension
+Modules are typically thought of as static components. This extension
 makes it possible to pack a module as a first-class value, which can
 later be dynamically unpacked into a module.
 
@@ -657,16 +662,24 @@ The expression @('module' module-expr ':' package-type)@ converts the
 module (structure or functor) denoted by module expression @module-expr@
 to a value of the core language that encapsulates this module.  The
 type of this core language value is @('module' package-type)@.
+The @package-type@ annotation can be omitted if it can be inferred
+from the context.
 
 Conversely, the module expression @('val' expr ':' package-type)@
 evaluates the core language expression @expr@ to a value, which must
 have type @'module' package-type@, and extracts the module that was
-encapsulated in this value.
+encapsulated in this value. Again @package-type@ can be omitted if the
+type of @expr@ is known.
+
+The pattern @('module' module-name ':' package-type)@ matches a
+package with type @package-type@ and binds it to @module-name@.
+It is not allowed in toplevel let bindings.
+Again @package-type@ can be omitted if it can be inferred from the
+enclosing pattern.
 
 The @package-type@ syntactic class appearing in the  @('module'
-module-expr ':' package-type)@ expressions, the @('val' expr ':'
-package-type)@ module expressions and the @('module' package-type)@
-type expression represents a subset of module types.
+package-type)@ type expression and in the annotated forms represents a
+subset of module types.
 This subset consists of named module types with optional constraints
 of a limited form: only non-parametrized types can be specified.  For
 type-checking purposes, package types are compared by path equality on
@@ -717,8 +730,7 @@ With first-class modules, it is possible to parametrize some code over the
 implementation of a module without using a functor.
 
 \begin{verbatim}
-        let sort (type s) set l =
-          let module Set = (val set : Set.S with type elt = s) in
+        let sort (type s) (module Set : Set.S with type elt = s) l =
           Set.elements (List.fold_right Set.add l Set.empty)
         val sort : (module Set.S with type elt = 'a) -> 'a list -> 'a list
 \end{verbatim}
@@ -735,6 +747,7 @@ To use this function, one can wrap the "Set.Make" functor:
         val make_set : ('a -> 'a -> int) -> (module Set.S with type elt = 'a)
 \end{verbatim}
 
+\iffalse
 Another advanced use of first-class module is to encode existential
 types. In particular, they can be used to simulate generalized
 algebraic data types (GADT). To demonstrate this, we first define a type
@@ -821,6 +834,7 @@ then pretty-print the value as a string:
 
 Note that this function uses an explicit polymorphic annotation to obtain
 polymorphic recursion.
+\fi
 
 \section{Recovering the type of a module}
 
@@ -1063,7 +1077,7 @@ exhaustive (the "Add" case cannot happen).
 
 \paragraph{Advanced examples}
 The "term" type we have defined above is an {\em indexed} type, where
-a type parameter reflects the value contents.
+a type parameter reflects a property of the value contents.
 Another use of GADTs is {\em singleton} types, where a GADT value
 represents exactly one type. This value can be used as runtime
 representation for this type, and a function receiving it can have a
@@ -1071,7 +1085,7 @@ polytypic behavior.
 
 Here is an example of a polymorphic function that takes the
 runtime representation of some type "t" and a value of the same type,
-then pretty-print the value as a string:
+then pretty-prints the value as a string:
 \begin{verbatim}
         type _ typ =
           | Int : int typ
@@ -1108,10 +1122,10 @@ to implement dynamic types.
           | Int, Int -> Some Eq
           | String, String -> Some Eq
           | Pair(a1,a2), Pair(b1,b2) ->
-            begin match eq_type a1 b1, eq_type a2 b2 with
-            | Some Eq, Some Eq -> Some Eq
-            | _ -> None
-            end
+              begin match eq_type a1 b1, eq_type a2 b2 with
+              | Some Eq, Some Eq -> Some Eq
+              | _ -> None
+              end
           | _ -> None
 
         type dyn = Dyn : 'a typ * 'a -> dyn
@@ -1119,6 +1133,6 @@ to implement dynamic types.
         let get_dyn : type a. a typ -> dyn -> a option =
           fun a (Dyn(b,x)) ->
           match eq_type a b with
-            None -> None
+          | None -> None
           | Some Eq -> Some x
 \end{verbatim}
