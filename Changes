@@ -88,6 +88,7 @@ Bug Fixes:
 - PR#5211: updated Genlex documentation to state that camlp4 is mandatory for
   'parser' keyword and associated notation
 - PR#5238, PR#5277: Sys_error when getting error location
+- PR#5295: OS threads: problem with caml_c_thread_unregister()
 - PR#5301: camlp4r and exception equal to another one with parameters
 - PR#5309: Queue.add is not thread/signal safe
 - PR#5310: Ratio.create_ratio/create_normalized_ratio have misleading names
