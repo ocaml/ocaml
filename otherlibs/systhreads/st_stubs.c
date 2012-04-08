@@ -344,7 +344,10 @@ static value caml_thread_new_descriptor(value clos)
 
 static void caml_thread_remove_info(caml_thread_t th)
 {
-  if (th->next == th) all_threads = NULL; /* last OCaml thread exiting */
+  if (th->next == th)
+    all_threads = NULL; /* last OCaml thread exiting */
+  else if (all_threads == th)
+    all_threads = th->next;     /* PR#5295 */
   th->next->prev = th->prev;
   th->prev->next = th->next;
 #ifndef NATIVE_CODE
