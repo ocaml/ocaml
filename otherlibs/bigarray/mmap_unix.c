@@ -152,11 +152,14 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   }
   /* Determine offset so that the mapping starts at the given file pos */
   page = getpagesize();
-  delta = (uintnat) (startpos % page);
+  delta = (uintnat) startpos % page;
   /* Do the mmap */
   shared = Bool_val(vshared) ? MAP_SHARED : MAP_PRIVATE;
-  addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
-              shared, fd, startpos - delta);
+  if (array_size > 0)
+    addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
+                shared, fd, startpos - delta);
+  else
+    addr = NULL;                /* PR#5463 - mmap fails on empty region */
   caml_leave_blocking_section();
   if (addr == (void *) MAP_FAILED) caml_sys_error(NO_ARG);
   addr = (void *) ((uintnat) addr + delta);
@@ -166,8 +169,8 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
 
 #else
 
-value caml_ba_map_file(value vfd, value vkind, value vlayout,
-                       value vshared, value vdim, value vpos)
+CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
+                                value vshared, value vdim, value vpos)
 {
   caml_invalid_argument("Bigarray.map_file: not supported");
   return Val_unit;
@@ -186,6 +189,12 @@ void caml_ba_unmap_file(void * addr, uintnat len)
 #if defined(HAS_MMAP)
   uintnat page = getpagesize();
   uintnat delta = (uintnat) addr % page;
-  munmap((void *)((uintnat)addr - delta), len + delta);
+  if (len == 0) return;         /* PR#5463 */
+  addr = (void *)((uintnat)addr - delta);
+  len  = len + delta;
+#if defined(_POSIX_SYNCHRONIZED_IO)
+  msync(addr, len, MS_ASYNC);   /* PR#3571 */
+#endif
+  munmap(addr, len);
 #endif
 }
