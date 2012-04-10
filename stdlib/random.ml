@@ -53,7 +53,7 @@ module State = struct
       let j = i mod 55 in
       let k = i mod l in
       accu := combine !accu seed.(k);
-      s.st.(j) <- s.st.(j) lxor extract !accu;
+      s.st.(j) <- (s.st.(j) lxor extract !accu) land 0x3FFFFFFF;  (* PR#5575 *)
     done;
     s.idx <- 0;
   ;;
@@ -78,8 +78,9 @@ module State = struct
     let curval = s.st.(s.idx) in
     let newval = s.st.((s.idx + 24) mod 55)
                  + (curval lxor ((curval lsr 25) land 0x1F)) in
-    s.st.(s.idx) <- newval;
-    newval land 0x3FFFFFFF   (* land is needed for 64-bit arch *)
+    let newval30 = newval land 0x3FFFFFFF in  (* PR#5575 *)
+    s.st.(s.idx) <- newval30;
+    newval30
   ;;
 
   let rec intaux s n =
