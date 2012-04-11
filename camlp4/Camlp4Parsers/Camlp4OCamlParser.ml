@@ -158,6 +158,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   DELETE_RULE Gram expr: SELF; ":="; SELF; dummy END;
   DELETE_RULE Gram expr: "~"; a_LIDENT; ":"; SELF END;
   DELETE_RULE Gram expr: "?"; a_LIDENT; ":"; SELF END;
+  DELETE_RULE Gram constructor_declarations: a_UIDENT; ":"; ctyp END;
   (* Some other DELETE_RULE are after the grammar *)
 
   value clear = Gram.Entry.clear;
@@ -540,6 +541,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:ctyp< $t1$ * $t2$ >>
         | t = ctyp LEVEL "ctyp1" -> t
       ] ]
+    ;
+    constructor_declarations:
+      [ [ s = a_UIDENT; ":"; t = constructor_arg_list ; "->" ; ret = ctyp ->
+            <:ctyp< $uid:s$ : ($t$ -> $ret$) >>
+        | s = a_UIDENT; ":"; ret = constructor_arg_list ->
+           match Ast.list_of_ctyp ret [] with
+               [ [c] -> <:ctyp< $uid:s$ : $c$ >>
+               | _ -> raise (Stream.Error "invalid generalized constructor type") ]
+        ] ]
     ;
     semi:
       [ [ ";;" -> () | -> () ] ]
