@@ -158,7 +158,7 @@ external quick_stat : unit -> stat = "caml_gc_quick_stat"
 
 external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)].  This function
-    is as fast at [quick_stat]. *)
+    is as fast as [quick_stat]. *)
 
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
