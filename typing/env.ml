@@ -151,7 +151,8 @@ let diff_keys is_local tbl1 tbl2 =
   List.filter
     (fun id ->
       is_local (EnvTbl.find_same_not_using id tbl2) &&
-      try ignore (EnvTbl.find_same_not_using id tbl1); false with Not_found -> true)
+      try ignore (EnvTbl.find_same_not_using id tbl1); false
+      with Not_found -> true)
     keys2
 
 let is_ident = function
@@ -579,6 +580,28 @@ let lookup_cltype lid env =
   else mark_type_path env desc.clty_path;
   mark_type_path env desc.clty_path;
   r
+
+(* Iter on an environment (ignoring the body of functors) *)
+
+let iter_env proj1 proj2 f env =
+  Ident.iter (fun id -> f (Pident id)) (fst (proj1 env));
+  let rec iter_components path path' mcomps =
+    match Lazy.force mcomps with
+      Structure_comps comps ->
+        Tbl.iter
+          (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
+          (proj2 comps);
+        Tbl.iter
+          (fun s (c, n) ->
+            iter_components (Pdot (path, s, n)) (Pdot (path', s, n)) c)
+          comps.comp_components
+    | Functor_comps _ -> ()
+  in
+  Ident.iter
+    (fun id (path, comps) -> iter_components (Pident id) path comps)
+    (fst env.components)
+
+let iter_types f = iter_env (fun env -> env.types) (fun sc -> sc.comp_types) f
 
 (* GADT instance tracking *)
 

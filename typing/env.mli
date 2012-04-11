@@ -21,6 +21,7 @@ type t
 val empty: t
 val initial: t
 val diff: t -> t -> Ident.t list
+val iter_types: (Path.t -> Path.t * type_declaration -> unit) -> t -> unit
 
 (* Lookup by paths *)
 

@@ -192,68 +192,68 @@ let () = Btype.print_raw := raw_type_expr
 (* Normalize paths *)
 
 let printing_env = ref Env.empty
-
-let wrap_printing_env env f =
-  if env == !printing_env then f () else
-  begin
-    printing_env := env;
-    try_finally f (fun () -> printing_env := Env.empty)
-  end
-
-let rec make_longident = function
-    [name] -> Lident name
-  | name :: names -> Ldot (make_longident names, name)
-  | [] -> invalid_arg "Printtyp.make_longident"
-
-let rec make_ident = function
-    [name] -> Oide_ident name
-  | name :: names -> Oide_dot (make_ident names, name)
-  | [] -> invalid_arg "Printtyp.make_ident"
-
-let rec remove_open p0 names p =
-  match p with
-    Pdot (p1, name, _) ->
-      let names = names @ [name] in
-      begin try
-        let (p', _) = Env.lookup_type (make_longident names) !printing_env in
-        if Path.same p0 p' then make_ident names else raise Not_found
-      with Not_found ->
-        remove_open p0 names p1
-      end
-  | _ -> tree_of_path p0
+let printing_map = ref (Lazy.lazy_from_val Tbl.empty)
 
 let same_type t t' = repr t == repr t'
 
-let rec ident_size = function
-    Oide_ident _ -> 1
-  | Oide_dot (p, _) -> 1 + ident_size p
-  | Oide_apply (p1, p2) -> ident_size p1 + ident_size p2
-
-let rec shortest_type_path p =
-  let id = remove_open p [] p in
-  if ident_size id = 1 then id else
+let rec normalize_type_path env p =
   try
-    let desc = Env.find_type p !printing_env in
-    if desc.type_private = Private then id else
+    let desc = Env.find_type p env in
+    if desc.type_private = Private then p else
     match desc.type_manifest with
       Some ty ->
         begin match repr ty with
           {desc = Tconstr (p1, tyl, _)} ->
             if List.length desc.type_params = List.length tyl
-            && List.for_all2 same_type desc.type_params tyl then
-              let id' = shortest_type_path p1 in
-              if ident_size id' < ident_size id then id' else id
-            else id
-        | _ -> id
+            && List.for_all2 same_type desc.type_params tyl
+            then normalize_type_path env p1
+            else p
+        | _ -> p
         end
-    | None -> id
+    | None -> p
   with
-    Not_found -> id
+    Not_found -> p
 
-let short_tree_of_path p =
-  if !Clflags.real_paths || !printing_env == Env.empty
-  then tree_of_path p
-  else shortest_type_path p
+let rec path_length = function
+    Pident id ->
+      let s = Ident.name id in if s <> "" && s.[0] = '_' then 10 else 1
+  | Pdot (p, _, _) -> 1 + path_length p
+  | Papply (p1, p2) -> path_length p1 + path_length p2
+
+let set_printing_env env =
+  if not !Clflags.real_paths && env != !printing_env then begin
+    (* printf "Reset printing_map@."; *)
+    printing_env := env;
+    printing_map := lazy begin
+      (* printf "Recompute printing_map.@."; *)
+      let map = ref Tbl.empty in
+      Env.iter_types
+        (fun p (p', decl) ->
+          let p1 = normalize_type_path env p' in
+          try
+            let p2 = Tbl.find p1 !map in
+            if path_length p < path_length p2 then raise Not_found
+          with Not_found ->
+            (* printf "%a --> %a@." path p1 path p; *)
+            map := Tbl.add p1 p !map)
+        env;
+      !map
+    end
+  end
+
+let wrap_printing_env env f =
+  if env == !printing_env then f () else
+  begin
+    set_printing_env env;
+    try_finally f (fun () -> set_printing_env Env.empty)
+  end
+
+let best_type_path p =
+  if !Clflags.real_paths || !printing_env == Env.empty || path_length p = 1
+  then p
+  else try
+    Tbl.find (normalize_type_path !printing_env p) (Lazy.force !printing_map)
+  with Not_found -> p
 
 (* Print a type expression *)
 
@@ -450,7 +450,8 @@ let rec tree_of_typexp sch ty =
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist sch tyl)
     | Tconstr(p, tyl, abbrev) ->
-        Otyp_constr (short_tree_of_path p, tree_of_typlist sch tyl)
+        let p' = best_type_path p in
+        Otyp_constr (tree_of_path p', tree_of_typlist sch tyl)
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -468,7 +469,8 @@ let rec tree_of_typexp sch ty =
         let all_present = List.length present = List.length fields in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
-            let id = short_tree_of_path p in
+            let p' = best_type_path p in
+            let id = tree_of_path p' in
             let args = tree_of_typlist sch tyl in
             if row.row_closed && all_present then
               Otyp_constr (id, args)
@@ -557,7 +559,8 @@ and tree_of_typobject sch fi nm =
   | Some (p, ty :: tyl) ->
       let non_gen = is_non_gen sch (repr ty) in
       let args = tree_of_typlist sch tyl in
-      Otyp_class (non_gen, short_tree_of_path p, args)
+      let p' = best_type_path p in
+      Otyp_class (non_gen, tree_of_path p', args)
   | _ ->
       fatal_error "Printtyp.tree_of_typobject"
   end
@@ -934,9 +937,9 @@ let cltype_declaration id ppf cl =
 
 let wrap_env fenv ftree arg =
   let env = !printing_env in
-  printing_env := fenv env;
+  set_printing_env (fenv env);
   let tree = ftree arg in
-  printing_env := env;
+  set_printing_env env;
   tree
 
 let rec tree_of_modtype = function
@@ -1006,8 +1009,7 @@ let same_path t t' =
   t == t' ||
   match t.desc, t'.desc with
     Tconstr(p,tl,_), Tconstr(p',tl',_) ->
-      (* Path.same (shorten_type_path p) (shorten_type_path p') && *)
-      short_tree_of_path p = short_tree_of_path p' &&
+      Path.same (best_type_path p) (best_type_path p') &&
       List.length tl = List.length tl' &&
       List.for_all2 same_type tl tl'
   | _ ->
@@ -1160,7 +1162,7 @@ let rec path_same_name p1 p2 =
 let type_same_name t1 t2 =
   match (repr t1).desc, (repr t2).desc with
     Tconstr (p1, _, _), Tconstr (p2, _, _) ->
-      path_same_name p1 p2
+      path_same_name (best_type_path p1) (best_type_path p2)
   | _ -> ()
 
 let rec trace_same_names = function

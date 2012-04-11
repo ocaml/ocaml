@@ -57,3 +57,4 @@ val add: t -> 'a -> 'a tbl -> 'a tbl
 val find_same: t -> 'a tbl -> 'a
 val find_name: string -> 'a tbl -> 'a
 val keys: 'a tbl -> t list
+val iter: (t -> 'a -> unit) -> 'a tbl -> unit
