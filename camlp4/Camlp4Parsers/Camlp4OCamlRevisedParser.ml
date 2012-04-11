@@ -303,6 +303,15 @@ New syntax:\
   value stopped_at _loc =
     Some (Loc.move_line 1 _loc) (* FIXME be more precise *);
 
+  value rec generalized_type_of_type =
+    fun
+    [ <:ctyp< $t1$ -> $t2$ >> ->
+        let (tl, rt) = generalized_type_of_type t2 in
+        ([t1 :: tl], rt)
+    | t ->
+        ([], t) ]
+  ;
+
   value symbolchar =
     let list =
       ['$'; '!'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '='; '>'; '?';
@@ -1135,12 +1144,9 @@ New syntax:\
             <:ctyp< $t1$ | $t2$ >>
         | s = a_UIDENT; "of"; t = constructor_arg_list ->
             <:ctyp< $uid:s$ of $t$ >>
-        | s = a_UIDENT; ":"; t = constructor_arg_list ; "->" ; ret = ctyp ->
-            <:ctyp< $uid:s$ : ($t$ -> $ret$) >>
-        | s = a_UIDENT; ":"; ret = constructor_arg_list ->
- 	    match Ast.list_of_ctyp ret [] with 
- 		[ [c] -> <:ctyp<  $uid:s$ : $c$ >>
- 		| _ -> raise (Stream.Error "invalid generalized constructor type") ] 
+        | s = a_UIDENT; ":"; t = ctyp ->
+            let (tl, rt) = generalized_type_of_type t in
+            <:ctyp< $uid:s$ : ($Ast.tyAnd_of_list tl$ -> $rt$) >>
         | s = a_UIDENT ->
 	  <:ctyp< $uid:s$ >>
       ] ]
