@@ -691,7 +691,7 @@ module Analyser =
             new_module.m_info <- merge_infos new_module.m_info info_after_opt ;
             let new_env = Odoc_env.add_module env new_module.m_name in
             let new_env2 =
-              match new_module.m_type with (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
+              match new_module.m_type with (* A VOIR : cela peut-il Ãªtre Tmty_ident ? dans ce cas, on aurait pas la signature *)
                 Types.Tmty_signature s -> Odoc_env.add_signature new_env new_module.m_name ~rel: (Name.simple new_module.m_name) s
               | _ -> new_env
             in
@@ -711,7 +711,7 @@ module Analyser =
                       raise (Failure (Odoc_messages.module_not_found current_module_name name))
                   in
                   match sig_module_type with
-                    (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
+                    (* A VOIR : cela peut-il Ãªtre Tmty_ident ? dans ce cas, on aurait pas la signature *)
                     Types.Tmty_signature s ->
                       Odoc_env.add_signature e complete_name ~rel: name s
                   | _ ->
@@ -826,7 +826,7 @@ module Analyser =
             mt.mt_info <- merge_infos mt.mt_info info_after_opt ;
             let new_env = Odoc_env.add_module_type env mt.mt_name in
             let new_env2 =
-              match sig_mtype with (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
+              match sig_mtype with (* A VOIR : cela peut-il Ãªtre Tmty_ident ? dans ce cas, on aurait pas la signature *)
                 Some (Types.Tmty_signature s) -> Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
               | _ -> new_env
             in
@@ -856,7 +856,7 @@ module Analyser =
                 im_info = comment_opt;
               }
             in
-            (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
+            (0, env, [ Element_included_module im ]) (* A VOIR : Ã©tendre l'environnement ? avec quoi ? *)
 
         | Parsetree.Psig_class class_description_list ->
             (* we start by extending the environment *)
@@ -1179,7 +1179,7 @@ module Analyser =
           ([], Class_structure (inher_l, ele))
 
       | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Tcty_fun (label, type_expr, class_type)) ->
-          (* label = string. Dans les signatures, pas de nom de paramètres à l'intérieur des tuples *)
+          (* label = string. Dans les signatures, pas de nom de paramÃ¨tres Ã  l'intÃ©rieur des tuples *)
           (* si label = "", pas de label. ici on a l'information pour savoir si on a un label explicite. *)
           if parse_label = label then
             (
@@ -1195,7 +1195,7 @@ module Analyser =
             )
           else
             (
-             raise (Failure "Parsetree.Pcty_fun (parse_label, _, pclass_type), labels différents")
+             raise (Failure "Parsetree.Pcty_fun (parse_label, _, pclass_type), labels diffÃ©rents")
             )
 
       | _ ->
