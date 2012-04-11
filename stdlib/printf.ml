@@ -638,12 +638,19 @@ let mkprintf to_s get_out outc outs flush k fmt =
   kapr kpr fmt
 ;;
 
+(**************************************************************
+
+  Defining [fprintf] and various flavors of [fprintf].
+
+ **************************************************************)
+
 let kfprintf k oc =
   mkprintf false (fun _ -> oc) output_char output_string flush k
 ;;
-let ifprintf _ = kapr (fun _ -> Obj.magic ignore);;
+let ikfprintf k oc = kapr (fun _ _ -> Obj.magic (k oc));;
 
 let fprintf oc = kfprintf ignore oc;;
+let ifprintf oc = ikfprintf ignore oc;;
 let printf fmt = fprintf stdout fmt;;
 let eprintf fmt = fprintf stderr fmt;;
 
@@ -671,7 +678,12 @@ let ksprintf k =
 
 let sprintf fmt = ksprintf (fun s -> s) fmt;;
 
-(* Obsolete and deprecated. *)
+(**************************************************************
+
+  Deprecated stuff.
+
+ **************************************************************)
+
 let kprintf = ksprintf;;
 
 (* For OCaml system internal use only: needed to implement modules [Format]
