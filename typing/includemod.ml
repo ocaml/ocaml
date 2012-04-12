@@ -63,7 +63,7 @@ let value_descriptions env cxt subst id vd1 vd2 =
 let type_declarations env cxt subst id decl1 decl2 =
   Env.mark_type_used (Ident.name id) decl1;
   let decl2 = Subst.type_declaration subst decl2 in
-  let err = Includecore.type_declarations env id decl1 decl2 in
+  let err = Includecore.type_declarations env (Ident.name id) decl1 id decl2 in
   if err <> [] then raise(Error[cxt, Type_declarations(id, decl1, decl2, err)])
 
 (* Inclusion between exception declarations *)
