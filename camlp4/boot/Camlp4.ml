@@ -13344,6 +13344,8 @@ module Struct =
             open Camlp4_import.Longident
               
             open Camlp4_import.Asttypes
+
+            open Camlp4_import.Reftypes
               
             open Ast
               
@@ -13789,7 +13791,7 @@ module Struct =
               | Ast.PaId (loc, (Ast.IdLid (_, s))) -> mkpat loc (Ppat_var s)
               | Ast.PaId (loc, i) ->
                   let p =
-                    Ppat_construct (long_uident ~conv_con i, None,
+                    Ppat_construct (Pconstr (long_uident ~conv_con i), None,
                       constructors_arity ())
                   in mkpat loc p
               | PaAli (loc, p1, p2) ->
@@ -13804,25 +13806,25 @@ module Struct =
               | Ast.PaApp (loc, (Ast.PaId (_, (Ast.IdUid (_, s)))),
                   (Ast.PaTup (_, (Ast.PaAny loc_any)))) ->
                   mkpat loc
-                    (Ppat_construct (lident (conv_con s),
+                    (Ppat_construct (Pconstr (lident (conv_con s)),
                        Some (mkpat loc_any Ppat_any), false))
               | (PaApp (loc, _, _) as f) ->
                   let (f, al) = patt_fa [] f in
                   let al = List.map patt al
                   in
                     (match (patt f).ppat_desc with
-                     | Ppat_construct (li, None, _) ->
+                     | Ppat_construct (Pconstr li, None, _) ->
                          if constructors_arity ()
                          then
                            mkpat loc
-                             (Ppat_construct (li,
+                             (Ppat_construct (Pconstr li,
                                 Some (mkpat loc (Ppat_tuple al)), true))
                          else
                            (let a =
                               match al with
                               | [ a ] -> a
                               | _ -> mkpat loc (Ppat_tuple al)
-                            in mkpat loc (Ppat_construct (li, Some a, false)))
+                            in mkpat loc (Ppat_construct (Pconstr li, Some a, false)))
                      | Ppat_variant (s, None) ->
                          let a =
                            if constructors_arity ()
@@ -13910,7 +13912,7 @@ module Struct =
             and mklabpat =
               function
               | Ast.PaEq (_, i, p) ->
-                  ((ident ~conv_lid: conv_lab i), (patt p))
+                  (Plabel (ident ~conv_lid: conv_lab i), (patt p))
               | p -> error (loc_of_patt p) "invalid pattern"
               
             let rec expr_fa al =
@@ -13961,7 +13963,7 @@ module Struct =
                          let ca = constructors_arity ()
                          in
                            ((mkexp loc
-                               (Pexp_construct (mkli (conv_con s) ml, None,
+                               (Pexp_construct (Pconstr (mkli (conv_con s) ml), None,
                                   ca))),
                             l)
                      | (loc, ml, Ast.ExId (_, (Ast.IdLid (_, s)))) :: l ->
@@ -13977,7 +13979,7 @@ module Struct =
                              in
                                (loc,
                                 (mkexp loc
-                                   (Pexp_field (e1, mkli (conv_lab s) ml))))
+                                   (Pexp_field (e1, Plabel (mkli (conv_lab s) ml)))))
                          | _ ->
                              error (loc_of_expr e2)
                                "lowercase identifier expected")
@@ -14179,12 +14181,12 @@ module Struct =
               | ExTyc (loc, e, t) ->
                   mkexp loc (Pexp_constraint (expr e, Some (ctyp t), None))
               | Ast.ExId (loc, (Ast.IdUid (_, "()"))) ->
-                  mkexp loc (Pexp_construct (lident "()", None, true))
+                  mkexp loc (Pexp_construct (Pconstr (lident "()"), None, true))
               | Ast.ExId (loc, (Ast.IdLid (_, s))) ->
                   mkexp loc (Pexp_ident (lident s))
               | Ast.ExId (loc, (Ast.IdUid (_, s))) ->
                   mkexp loc
-                    (Pexp_construct (lident (conv_con s), None, true))
+                    (Pexp_construct (Pconstr (lident (conv_con s)), None, true))
               | ExVrn (loc, s) -> mkexp loc (Pexp_variant (s, None))
               | ExWhi (loc, e1, el) ->
                   let e2 = ExSeq (loc, el)
@@ -14230,7 +14232,7 @@ module Struct =
               match x with
               | Ast.RbSem (_, x, y) -> mklabexp x (mklabexp y acc)
               | Ast.RbEq (_, i, e) ->
-                  ((ident ~conv_lid: conv_lab i), (expr e)) :: acc
+                  (Plabel (ident ~conv_lid: conv_lab i), (expr e)) :: acc
               | _ -> assert false
             and mkideexp x acc =
               match x with

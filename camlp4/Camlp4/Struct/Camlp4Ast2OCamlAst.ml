@@ -25,6 +25,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   open Camlp4_import.Parsetree;
   open Camlp4_import.Longident;
   open Camlp4_import.Asttypes;
+  open Camlp4_import.Reftypes;
   open Ast;
 
   value constructors_arity () =
@@ -417,7 +418,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     fun
     [ <:patt@loc< $lid:s$ >> -> mkpat loc (Ppat_var s)
     | <:patt@loc< $id:i$ >> ->
-        let p = Ppat_construct (long_uident ~conv_con i)
+        let p = Ppat_construct (Pconstr (long_uident ~conv_con i))
                   None (constructors_arity ())
         in mkpat loc p
     | PaAli loc p1 p2 ->
@@ -431,7 +432,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | PaAnt loc _ -> error loc "antiquotation not allowed here"
     | PaAny loc -> mkpat loc Ppat_any
     | <:patt@loc< $uid:s$ ($tup:<:patt@loc_any< _ >>$) >> ->
-        mkpat loc (Ppat_construct (lident (conv_con s))
+        mkpat loc (Ppat_construct (Pconstr (lident (conv_con s)))
               (Some (mkpat loc_any Ppat_any)) False)
     | PaApp loc _ _ as f ->
         let (f, al) = patt_fa [] f in
@@ -505,7 +506,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         error (loc_of_patt p) "invalid pattern" ]
   and mklabpat =
     fun
-    [ <:patt< $i$ = $p$ >> -> (ident ~conv_lid:conv_lab i, patt p)
+    [ <:patt< $i$ = $p$ >> -> (Plabel (ident ~conv_lid:conv_lab i), patt p)
     | p -> error (loc_of_patt p) "invalid pattern" ];
 
   value rec expr_fa al =
@@ -556,7 +557,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           match sep_expr_acc [] e with
           [ [(loc, ml, <:expr< $uid:s$ >>) :: l] ->
               let ca = constructors_arity () in
-              (mkexp loc (Pexp_construct (mkli (conv_con s) ml) None ca), l)
+              (mkexp loc (Pexp_construct (Pconstr (mkli (conv_con s) ml)) None ca), l)
           | [(loc, ml, <:expr< $lid:s$ >>) :: l] ->
               (mkexp loc (Pexp_ident (mkli s ml)), l)
           | [(_, [], e) :: l] -> (expr e, l)
@@ -568,7 +569,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
               match e2 with
               [ <:expr< $lid:s$ >> ->
                   let loc = Loc.merge loc_bp loc_ep
-                  in  (loc, mkexp loc (Pexp_field e1 (mkli (conv_lab s) ml)))
+                  in  (loc, mkexp loc (Pexp_field e1 (Plabel (mkli (conv_lab s) ml))))
               | _ -> error (loc_of_expr e2) "lowercase identifier expected" ])
             (loc, e) l
         in
@@ -721,12 +722,12 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:expr@loc< ($tup:_$) >> -> error loc "singleton tuple"
     | ExTyc loc e t -> mkexp loc (Pexp_constraint (expr e) (Some (ctyp t)) None)
     | <:expr@loc< () >> ->
-        mkexp loc (Pexp_construct (lident "()") None True)
+        mkexp loc (Pexp_construct (Pconstr (lident "()")) None True)
     | <:expr@loc< $lid:s$ >> ->
         mkexp loc (Pexp_ident (lident s))
     | <:expr@loc< $uid:s$ >> ->
         (* let ca = constructors_arity () in *)
-        mkexp loc (Pexp_construct (lident (conv_con s)) None True)
+        mkexp loc (Pexp_construct (Pconstr (lident (conv_con s))) None True)
     | ExVrn loc s -> mkexp loc (Pexp_variant s None)
     | ExWhi loc e1 el ->
         let e2 = ExSeq loc el in
@@ -770,7 +771,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     match x with
     [ <:rec_binding< $x$; $y$ >> ->
          mklabexp x (mklabexp y acc)
-    | <:rec_binding< $i$ = $e$ >> -> [(ident ~conv_lid:conv_lab i, expr e) :: acc]
+    | <:rec_binding< $i$ = $e$ >> -> [(Plabel (ident ~conv_lid:conv_lab i), expr e) :: acc]
     | _ -> assert False ]
   and mkideexp x acc =
     match x with

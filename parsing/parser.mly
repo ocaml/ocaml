@@ -1227,7 +1227,7 @@ record_pattern_end:
     opt_semi                                    { Closed }
   | SEMI UNDERSCORE opt_semi                    { Open }
 ;
-  
+
 /* Primitive declarations */
 
 primitive_declaration:

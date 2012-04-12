@@ -70,6 +70,14 @@ value rec print_ident ppf =
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2 ]
 ;
 
+value print_constructor_ref ppf = fun
+  [ Oconstr li -> print_ident ppf li
+  | Oconstr_ty li tyname -> fprintf ppf "%a.^%s" print_ident li tyname];
+
+value print_label_ref ppf = fun
+  [ Olabel li -> print_ident ppf li
+  | Olabel_ty li tyname -> fprintf ppf "%a.^%s" print_ident li tyname];
+
 value value_ident ppf name =
   if List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"]
   then
@@ -87,7 +95,7 @@ value print_out_value ppf tree =
   let rec print_tree ppf =
     fun
     [ Oval_constr name ([_ :: _] as params) ->
-        fprintf ppf "@[<1>%a@ %a@]" print_ident name
+        fprintf ppf "@[<1>%a@ %a@]" print_constructor_ref name
           (print_tree_list print_simple_tree "") params
     | Oval_variant name (Some param) ->
         fprintf ppf "@[<2>`%s@ %a@]" name print_simple_tree param
@@ -107,9 +115,9 @@ value print_out_value ppf tree =
         fprintf ppf "@[<1>[%a]@]" (print_tree_list print_tree ";") tl
     | Oval_array tl ->
         fprintf ppf "@[<2>[|%a|]@]" (print_tree_list print_tree ";") tl
-    | Oval_constr (Oide_ident "true") [] -> fprintf ppf "True"
-    | Oval_constr (Oide_ident "false") [] -> fprintf ppf "False"
-    | Oval_constr name [] -> print_ident ppf name
+    | Oval_constr (Oconstr (Oide_ident "true")) [] -> fprintf ppf "True"
+    | Oval_constr (Oconstr (Oide_ident "false")) [] -> fprintf ppf "False"
+    | Oval_constr name [] -> print_constructor_ref ppf name
     | Oval_variant name None -> fprintf ppf "`%s" name
     | Oval_stuff s -> fprintf ppf "%s" s
     | Oval_record fel ->
@@ -125,12 +133,12 @@ value print_out_value ppf tree =
     | [(name, tree) :: fields] ->
         let name =
           match name with
-          [ Oide_ident "contents" -> Oide_ident "val"
+          [ Olabel (Oide_ident "contents") -> Olabel (Oide_ident "val")
           | x -> x ]
         in
         do {
           if not first then fprintf ppf ";@ " else ();
-          fprintf ppf "@[<1>%a=@,%a@]" print_ident name (cautious print_tree)
+          fprintf ppf "@[<1>%a=@,%a@]" print_label_ref name (cautious print_tree)
             tree;
           print_fields False ppf fields
         } ]
