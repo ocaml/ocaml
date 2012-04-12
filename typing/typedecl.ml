@@ -359,8 +359,10 @@ let check_abbrev env (_, sdecl) (id, decl) =
               else if not (Ctype.equal env false args decl.type_params)
               then [Includecore.Constraint]
               else
-                Includecore.type_declarations env id
+                Includecore.type_declarations env
+                  (Path.last path)
                   decl'
+                  id
                   (Subst.type_declaration
                      (Subst.add_type id path Subst.identity) decl)
             in
