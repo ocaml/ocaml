@@ -52,7 +52,7 @@ let mkpatvar name pos =
 
 (*
   Ghost expressions and patterns:
-  expressions and patterns that do not appear explicitely in the
+  expressions and patterns that do not appear explicitly in the
   source file they have the loc_ghost flag set to true.
   Then the profiler will not try to instrument them and the
   -stypes option will not try to display their type.

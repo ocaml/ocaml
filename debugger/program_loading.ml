@@ -50,10 +50,10 @@ let get_environment () =
   let env =
     Array.fold_right
       (fun elem acc ->
-	if have_name_in_config_env elem then
-	  acc
-	else
-	  elem :: acc)
+        if have_name_in_config_env elem then
+          acc
+        else
+          elem :: acc)
       env
       [] in
   Array.of_list (env @ !Debugger_config.environment)
@@ -109,7 +109,7 @@ let generic_exec =
     "Win32" -> generic_exec_win
   | _ -> generic_exec_unix
 
-(* Execute the program by calling the runtime explicitely *)
+(* Execute the program by calling the runtime explicitly *)
 let exec_with_runtime =
   generic_exec
     (function () ->
@@ -120,7 +120,7 @@ let exec_with_runtime =
              thinks each command line parameter is a file.
              So no good solution so far *)
           Printf.sprintf "%sset CAML_DEBUG_SOCKET=%s && %s %s %s"
-	             (get_win32_environment ())
+                     (get_win32_environment ())
                      !socket_name
                      runtime_program
                      !program_name
@@ -140,7 +140,7 @@ let exec_direct =
         "Win32" ->
           (* See the comment above *)
           Printf.sprintf "%sset CAML_DEBUG_SOCKET=%s && %s %s"
-	             (get_win32_environment ())
+                     (get_win32_environment ())
                      !socket_name
                      !program_name
                      !arguments

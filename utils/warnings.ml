@@ -262,7 +262,7 @@ let message = function
       "this statement never returns (or has an unsound type.)"
   | Camlp4 s -> s
   | Useless_record_with ->
-      "all the fields are explicitely listed in this record:\n\
+      "all the fields are explicitly listed in this record:\n\
        the 'with' clause is useless."
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
