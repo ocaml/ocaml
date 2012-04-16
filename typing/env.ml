@@ -865,13 +865,14 @@ and store_type id path info env =
         if not (Hashtbl.mem used_constructors k) then
           let used = ref false in
           Hashtbl.add used_constructors k (fun () -> used := true);
-          !add_delayed_check_forward
-            (fun () ->
-              if not !used then
-                Location.prerr_warning loc (Warnings.Unused_constructor c)
-            )
-         )
-      constructors
+          if not (ty = "" || ty.[0] = '_')
+          then !add_delayed_check_forward
+              (fun () ->
+                if not !used then
+                  Location.prerr_warning loc (Warnings.Unused_constructor c)
+              )
+      )
+      cyonstructors
   end;
   { env with
     constrs =
