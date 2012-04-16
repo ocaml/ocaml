@@ -872,7 +872,7 @@ and store_type id path info env =
                   Location.prerr_warning loc (Warnings.Unused_constructor c)
               )
       )
-      cyonstructors
+      constructors
   end;
   { env with
     constrs =
