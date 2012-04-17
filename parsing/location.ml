@@ -223,8 +223,8 @@ let print_filename ppf file =
 let reset () =
   num_loc_lines := 0
 
-let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
-  ("File \"", "\", line ", ", characters ", "-", ":", "")
+let (msg_file, msg_line, msg_chars, msg_to, msg_colon) =
+  ("File \"", "\", line ", ", characters ", "-", ":")
 
 (* return file, line, char from the given position *)
 let get_pos_info pos =
@@ -236,7 +236,7 @@ let print_loc ppf loc =
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
   if file = "//toplevel//" then begin
     if highlight_locations ppf loc none then () else
-      fprintf ppf "Characters %i-%i:@."
+      fprintf ppf "Characters %i-%i"
               loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
     fprintf ppf "%s%a%s%i" msg_file print_filename file msg_line line;
@@ -248,7 +248,8 @@ let print_loc ppf loc =
 let print ppf loc =
   if loc.loc_start.pos_fname = "//toplevel//"
   && highlight_locations ppf loc none then ()
-  else fprintf ppf "%a%s@.%s" print_loc loc msg_colon msg_head
+  else fprintf ppf "%a%s@." print_loc loc msg_colon
+;;
 
 let print_error ppf loc =
   print ppf loc;
