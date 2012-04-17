@@ -144,7 +144,7 @@ static char *compact_allocate (mlsize_t size)
   return adr;
 }
 
-void caml_compact_heap (void)
+static void do_compaction (void)
 {
   char *ch, *chend;
                                           Assert (caml_gc_phase == Phase_idle);
@@ -395,6 +395,60 @@ void caml_compact_heap (void)
 
 uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 
+void caml_compact_heap (void)
+{
+  uintnat target_size;
+
+  do_compaction ();
+  /* Compaction may fail to shrink the heap to a reasonable size
+     because it deals in complete chunks: if a very large chunk
+     is at the beginning of the heap, everything gets moved to
+     it and it is not freed.
+
+     In that case, we allocate a new chunk of the desired heap
+     size, chain it at the beginning of the heap (thus pretending
+     its address is smaller), and launch a second compaction.
+     This will move all data to this new chunk and free the
+     very large chunk.
+
+     See PR#5389
+  */
+  /* We compute:
+     freewords = caml_fl_cur_size          (exact)
+     heapsize = caml_heap_size             (exact)
+     usedwords = heap_size - freewords
+     target_size = usedwords * (1 + caml_percent_free / 100)
+
+     We recompact if target_size < heap_size / 2
+  */
+  target_size = (caml_stat_heap_size - Bsize_wsize (caml_fl_cur_size))
+                * (100 + caml_percent_free) / 100;
+  target_size = caml_round_heap_chunk_size (target_size);
+  if (target_size < caml_stat_heap_size / 2){
+    char *chunk;
+
+  caml_gc_message (0x10, "Recompacting...\n", 0);
+
+    /* round it up to a page size */
+    chunk = caml_alloc_for_heap (target_size);
+    if (chunk == NULL) return;
+    caml_make_free_blocks ((value *) chunk,
+                           Wsize_bsize (Chunk_size (chunk)), 0);
+    if (caml_page_table_add (In_heap, chunk, chunk + Chunk_size (chunk)) != 0){
+      caml_free_for_heap (chunk);
+      return;
+    }
+    Chunk_next (chunk) = caml_heap_start;
+    caml_heap_start = chunk;
+    caml_stat_heap_size += Chunk_size (chunk);
+    if (caml_stat_heap_size > caml_stat_top_heap_size){
+      caml_stat_top_heap_size = caml_stat_heap_size;
+    }
+    do_compaction ();
+    Assert (Chunk_next (caml_heap_start) == NULL);
+  }
+}
+
 void caml_compact_heap_maybe (void)
 {
   /* Estimated free words in the heap:
@@ -408,7 +462,7 @@ void caml_compact_heap_maybe (void)
   float fw, fp;
                                           Assert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
-  if (caml_stat_major_collections < 3 || caml_stat_heap_chunks < 3) return;
+  if (caml_stat_major_collections < 3) return;
 
   fw = 3.0 * caml_fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
   if (fw < 0) fw = caml_fl_cur_size;
