@@ -32,7 +32,21 @@ let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t = Has
 
 let type_declarations = Hashtbl.create 16
 
-let used_constructors : (string * Location.t * string, (unit -> unit)) Hashtbl.t = Hashtbl.create 16
+type constructor_usage = [`Positive|`Pattern|`Privatize]
+type constructor_usages =
+    {
+     mutable cu_positive: bool;
+     mutable cu_pattern: bool;
+     mutable cu_privatize: bool;
+    }
+let add_constructor_usage cu = function
+  | `Positive -> cu.cu_positive <- true
+  | `Pattern -> cu.cu_pattern <- true
+  | `Privatize -> cu.cu_privatize <- true
+let constructor_usages () =
+  {cu_positive = false; cu_pattern = false; cu_privatize = false}
+
+let used_constructors : (string * Location.t * string, (constructor_usage -> unit)) Hashtbl.t = Hashtbl.create 16
 
 type error =
     Not_an_interface of string
@@ -527,12 +541,12 @@ let mark_type_used name vd =
   try Hashtbl.find type_declarations (name, vd.type_loc) ()
   with Not_found -> ()
 
-let mark_constructor_used name vd constr =
-  try Hashtbl.find used_constructors (name, vd.type_loc, constr) ()
+let mark_constructor_used usage name vd constr =
+  try Hashtbl.find used_constructors (name, vd.type_loc, constr) usage
   with Not_found -> ()
 
-let mark_exception_used ed constr =
-  try Hashtbl.find used_constructors ("exn", ed.exn_loc, constr) ()
+let mark_exception_used usage ed constr =
+  try Hashtbl.find used_constructors ("exn", ed.exn_loc, constr) usage
   with Not_found -> ()
 
 let set_value_used_callback name vd callback =
@@ -574,18 +588,18 @@ let lookup_constructor lid env =
   mark_type_path env (ty_path desc.cstr_res);
   desc
 
-let mark_constructor env name desc =
+let mark_constructor usage env name desc =
   match desc.cstr_tag with
   | Cstr_exception (_, loc) ->
       begin
-        try Hashtbl.find used_constructors ("exn", loc, name) ()
+        try Hashtbl.find used_constructors ("exn", loc, name) usage
         with Not_found -> ()
       end
   | _ ->
       let ty_path = ty_path desc.cstr_res in
       let ty_decl = try find_type ty_path env with Not_found -> assert false in
       let ty_name = Path.last ty_path in
-      mark_constructor_used ty_name ty_decl name
+      mark_constructor_used usage ty_name ty_decl name
 
 let lookup_label lid env =
   let desc = lookup_label lid env in
@@ -857,19 +871,24 @@ and store_type id path info env =
   let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in
 
-  if not loc.Location.loc_ghost && Warnings.is_active (Warnings.Unused_constructor "") then begin
+  if not loc.Location.loc_ghost &&
+    Warnings.is_active (Warnings.Unused_constructor ("", false, false))
+  then begin
     let ty = Ident.name id in
     List.iter
       (fun (c, _) ->
         let k = (ty, loc, c) in
         if not (Hashtbl.mem used_constructors k) then
-          let used = ref false in
-          Hashtbl.add used_constructors k (fun () -> used := true);
+          let used = constructor_usages () in
+          Hashtbl.add used_constructors k (add_constructor_usage used);
           if not (ty = "" || ty.[0] = '_')
           then !add_delayed_check_forward
               (fun () ->
-                if not !used then
-                  Location.prerr_warning loc (Warnings.Unused_constructor c)
+                if not used.cu_positive then
+                  Location.prerr_warning loc
+                    (Warnings.Unused_constructor
+                       (c, used.cu_pattern, used.cu_privatize)
+                    )
               )
       )
       constructors
@@ -906,17 +925,22 @@ and store_type_infos id path info env =
 
 and store_exception id path decl env =
   let loc = decl.exn_loc in
-  if not loc.Location.loc_ghost && Warnings.is_active (Warnings.Unused_exception "") then begin
+  if not loc.Location.loc_ghost &&
+    Warnings.is_active (Warnings.Unused_exception ("", false))
+  then begin
     let ty = "exn" in
     let c = Ident.name id in
     let k = (ty, loc, c) in
     if not (Hashtbl.mem used_constructors k) then begin
-      let used = ref false in
-      Hashtbl.add used_constructors k (fun () -> used := true);
+      let used = constructor_usages () in
+      Hashtbl.add used_constructors k (add_constructor_usage used);
       !add_delayed_check_forward
         (fun () ->
-          if not !used then
-            Location.prerr_warning loc (Warnings.Unused_exception c)
+          if not used.cu_positive then
+            Location.prerr_warning loc
+              (Warnings.Unused_exception
+                 (c, used.cu_pattern)
+              )
         )
     end;
   end;

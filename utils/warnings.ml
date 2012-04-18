@@ -56,8 +56,8 @@ type t =
   | Unused_type_declaration of string       (* 34 *)
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
-  | Unused_constructor of string            (* 37 *)
-  | Unused_exception of string              (* 38 *)
+  | Unused_constructor of string * bool * bool  (* 37 *)
+  | Unused_exception of string * bool       (* 38 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -285,8 +285,21 @@ let message = function
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
-  | Unused_constructor s -> "unused constructor " ^ s ^ "."
-  | Unused_exception s -> "unused exception constructor " ^ s ^ "."
+  | Unused_constructor (s, false, false) -> "unused constructor " ^ s ^ "."
+  | Unused_constructor (s, true, _) ->
+      "constructor " ^ s ^
+      " is never used to build values.\n\
+        (However, this constructor appears in patterns.)"
+  | Unused_constructor (s, false, true) ->
+      "constructor " ^ s ^
+      " is never used to build values.\n\
+        Its type is exported as a private type."
+  | Unused_exception (s, false) ->
+      "unused exception constructor " ^ s ^ "."
+  | Unused_exception (s, true) ->
+      "exception constructor " ^ s ^
+      " is never raised or used to build values.\n\
+        (However, this constructor appears in patterns.)"
 ;;
 
 let nerrors = ref 0;;

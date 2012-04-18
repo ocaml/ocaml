@@ -69,7 +69,7 @@ let type_declarations env cxt subst id decl1 decl2 =
 (* Inclusion between exception declarations *)
 
 let exception_declarations env cxt subst id decl1 decl2 =
-  Env.mark_exception_used decl1 (Ident.name id);
+  Env.mark_exception_used `Positive decl1 (Ident.name id);
   let decl2 = Subst.exception_declaration subst decl2 in
   if Includecore.exception_declarations env decl1 decl2
   then ()
