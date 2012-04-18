@@ -427,8 +427,6 @@ void caml_compact_heap (void)
   if (target_size < caml_stat_heap_size / 2){
     char *chunk;
 
-  caml_gc_message (0x10, "Recompacting...\n", 0);
-
     /* round it up to a page size */
     chunk = caml_alloc_for_heap (target_size);
     if (chunk == NULL) return;
