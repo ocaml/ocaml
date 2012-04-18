@@ -78,7 +78,10 @@ let int_const n =
           (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
 
 let add_const c n =
-  if n = 0 then c else Cop(Caddi, [c; Cconst_int n])
+  if n = 0 then c
+  else match c with
+  | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+  | c -> Cop(Caddi, [c; Cconst_int n])
 
 let incr_int = function
     Cconst_int n when n < max_int -> Cconst_int(n+1)
