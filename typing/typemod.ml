@@ -461,7 +461,7 @@ and transl_signature env sg =
                      Tsig_type(i', d', rs);
                      Tsig_type(i'', d'', rs)])
                  classes [rem])
-    in transl_sig env sg
+    in transl_sig (Env.in_signature env) sg
 
 and transl_modtype_info env sinfo =
   match sinfo with
