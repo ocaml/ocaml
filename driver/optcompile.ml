@@ -124,10 +124,12 @@ let implementation ppf sourcefile outputprefix =
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ Asmgen.eval_typedtree_hooks
       ++ Translmod.transl_store_implementation modulename
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       +++ Simplif.simplify_lambda
       +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+      ++ Asmgen.eval_lambda_hooks
       ++ Asmgen.compile_implementation outputprefix ppf;
       Compilenv.save_unit_info cmxfile;
     end;
