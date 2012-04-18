@@ -293,7 +293,7 @@ let message = function
   | Unused_constructor (s, false, true) ->
       "constructor " ^ s ^
       " is never used to build values.\n\
-        Its type is exported as a private type."
+        It's type is exported as a private type."
   | Unused_exception (s, false) ->
       "unused exception constructor " ^ s ^ "."
   | Unused_exception (s, true) ->
