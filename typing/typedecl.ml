@@ -844,7 +844,7 @@ let transl_exn_rebind env loc lid =
       Env.lookup_constructor lid env
     with Not_found ->
       raise(Error(loc, Unbound_exception lid)) in
-  Env.mark_constructor env (Longident.last lid) cdescr;
+  Env.mark_constructor `Positive env (Longident.last lid) cdescr;
   match cdescr.cstr_tag with
     Cstr_exception (path, _) ->
       (path, {exn_args = cdescr.cstr_args; exn_loc = loc})

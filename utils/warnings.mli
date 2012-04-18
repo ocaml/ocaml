@@ -51,8 +51,8 @@ type t =
   | Unused_type_declaration of string       (* 34 *)
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
-  | Unused_constructor of string            (* 37 *)
-  | Unused_exception of string              (* 38 *)
+  | Unused_constructor of string * bool * bool  (* 37 *)
+  | Unused_exception of string * bool       (* 38 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

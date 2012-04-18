@@ -666,6 +666,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
             Hashtbl.find constrs s
         | _ ->  Typetexp.find_constructor !env loc lid
       in
+      Env.mark_constructor `Pattern !env (Longident.last lid) constr;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, Unexpected_existential));
       (* if constructor is gadt, we must verify that the expected type has the
@@ -2569,7 +2570,7 @@ and type_application env funct sargs =
 
 and type_construct env loc lid sarg explicit_arity ty_expected =
   let constr = Typetexp.find_constructor env loc lid in
-  Env.mark_constructor env (Longident.last lid) constr;
+  Env.mark_constructor `Positive env (Longident.last lid) constr;
   let sargs =
     match sarg with
       None -> []
