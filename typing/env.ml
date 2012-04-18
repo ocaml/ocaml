@@ -119,6 +119,7 @@ type t = {
   summary: summary;
   local_constraints: bool;
   gadt_instances: (int * TypeSet.t ref) list;
+  in_signature: bool;
 }
 
 and module_components = module_components_repr Lazy.t
@@ -158,7 +159,11 @@ let empty = {
   modules = EnvTbl.empty; modtypes = EnvTbl.empty;
   components = EnvTbl.empty; classes = EnvTbl.empty;
   cltypes = EnvTbl.empty; 
-  summary = Env_empty; local_constraints = false; gadt_instances = [] }
+  summary = Env_empty; local_constraints = false; gadt_instances = [];
+  in_signature = false;
+ }
+
+let in_signature env = {env with in_signature = true}
 
 let diff_keys is_local tbl1 tbl2 =
   let keys2 = EnvTbl.keys tbl2 in
@@ -871,7 +876,7 @@ and store_type id path info env =
   let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in
 
-  if not loc.Location.loc_ghost &&
+  if not env.in_signature && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_constructor ("", false, false))
   then begin
     let ty = Ident.name id in
@@ -925,7 +930,7 @@ and store_type_infos id path info env =
 
 and store_exception id path decl env =
   let loc = decl.exn_loc in
-  if not loc.Location.loc_ghost &&
+  if not env.in_signature && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_exception ("", false))
   then begin
     let ty = "exn" in
