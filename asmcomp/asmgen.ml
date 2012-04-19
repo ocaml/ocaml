@@ -84,7 +84,6 @@ let (++) x f = f x
 let compile_fundecl (ppf : formatter) fd_cmm =
   Reg.reset();
   fd_cmm
-  ++ eval_hooks !cmm_hooks
   ++ Selection.fundecl
   ++ pass_dump_if ppf dump_selection "After instruction selection"
   ++ Comballoc.fundecl
@@ -133,6 +132,7 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
     Closure.intro size lam
     ++ eval_hooks !clambda_hooks
     ++ Cmmgen.compunit size
+    ++ eval_cmm_hooks
     ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
     (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
 

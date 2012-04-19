@@ -30,7 +30,7 @@ val add_typedtree_hook :
   (Typedtree.structure * Typedtree.module_coercion) hook -> unit
 val add_lambda_hook : (int * Lambda.lambda) hook -> unit
 val add_clambda_hook : Clambda.ulambda hook -> unit
-val add_cmm_hook : Cmm.fundecl hook -> unit
+val add_cmm_hook : Cmm.phrase list hook -> unit
 
 val eval_typedtree_hooks :
   (Typedtree.structure * Typedtree.module_coercion) hook
