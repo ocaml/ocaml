@@ -25,10 +25,10 @@
 
 module Hashtbl : sig
   type ('a, 'b) t = ('a, 'b) Hashtbl.t
-  val create : ?seed:int -> int -> ('a, 'b) t
+  val create : ?random:bool -> int -> ('a, 'b) t
   val clear : ('a, 'b) t -> unit
-  val add : ('a, 'b) t -> key:'a -> data:'b -> unit
   val copy : ('a, 'b) t -> ('a, 'b) t
+  val add : ('a, 'b) t -> key:'a -> data:'b -> unit
   val find : ('a, 'b) t -> 'a -> 'b
   val find_all : ('a, 'b) t -> 'a -> 'b list
   val mem : ('a, 'b) t -> 'a -> bool
@@ -39,6 +39,7 @@ module Hashtbl : sig
       f:(key:'a -> data:'b -> 'c -> 'c) ->
         ('a, 'b) t -> init:'c -> 'c
   val length : ('a, 'b) t -> int
+  val randomize : unit -> unit
   type statistics = Hashtbl.statistics
   val stats : ('a, 'b) t -> statistics
   module type HashedType = Hashtbl.HashedType
@@ -67,7 +68,7 @@ module Hashtbl : sig
     sig
       type key
       and 'a t
-      val create : ?seed:int -> int -> 'a t
+      val create : ?random:bool -> int -> 'a t
       val clear : 'a t -> unit
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit

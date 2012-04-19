@@ -34,13 +34,30 @@ and ('a, 'b) bucketlist =
     Empty
   | Cons of 'a * 'b * ('a, 'b) bucketlist
 
+(* To pick random seeds if requested *)
+
+let randomized_default =
+  let params =
+    try Sys.getenv "OCAMLRUNPARAM" with Not_found ->
+    try Sys.getenv "CAMLRUNPARAM" with Not_found -> "" in
+  String.contains params 'R'
+
+let randomized = ref randomized_default
+
+let randomize () = randomized := true
+
+let prng = lazy (Random.State.make_self_init())
+
+(* Creating a fresh, empty table *)
+
 let rec power_2_above x n =
   if x >= n then x
   else if x * 2 > Sys.max_array_length then x
   else power_2_above (x * 2) n
 
-let create ?(seed = 0) initial_size =
+let create ?(random = !randomized) initial_size =
   let s = power_2_above 16 initial_size in
+  let seed = if random then Random.State.bits (Lazy.force prng) else 0 in
   { size = 0; seed = seed; data = Array.make s Empty }
 
 let clear h =
@@ -239,7 +256,7 @@ module type SeededS =
   sig
     type key
     type 'a t
-    val create : ?seed:int -> int -> 'a t
+    val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
@@ -352,5 +369,5 @@ module Make(H: HashedType): (S with type key = H.t) =
         let equal = H.equal
         let hash (seed: int) x = H.hash x
       end)
-    let create sz = create ~seed:0 sz
+    let create sz = create ~random:false sz
   end

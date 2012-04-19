@@ -210,10 +210,10 @@ let chop_extension name =
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
-let prng = Random.State.make_self_init ();;
+let prng = lazy(Random.State.make_self_init ());;
 
 let temp_file_name temp_dir prefix suffix =
-  let rnd = (Random.State.bits prng) land 0xFFFFFF in
+  let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
 ;;
 

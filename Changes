@@ -47,9 +47,13 @@ Standard library:
 * Hashtbl:
     . Statistically-better generic hash function based on Murmur 3 (PR#5225)
     . Fixed behavior of generic hash function w.r.t. -0.0 and NaN (PR#5222)
-    . Added optional "seed" parameter to Hashtbl.create for diversification
-    . Added new functorial interface "MakeSeeded" to support diversification
-      with user-provided hash functions.
+    . Added optional "random" parameter to Hashtbl.create to randomize
+      collision patterns and improve security (PR#5572, CVE-2012-0839)
+    . Added "randomize" function and "R" parameter to OCAMLRUNPARAMS
+      to turn randomization on by default (PR#5572, CVE-2012-0839)
+    . Added new functorial interface "MakeSeeded" to support randomization
+      with user-provided seeded hash functions.
+- Filename: on-demand (lazy) initialization of the PRNG used by "temp_file".
 - Marshal: marshalling of function values (flag Marshal.Closures) now
   also works for functions that come from dynamically-loaded modules (PR#5215)
 - Random:
