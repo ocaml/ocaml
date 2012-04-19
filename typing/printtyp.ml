@@ -214,11 +214,15 @@ let rec normalize_type_path env p =
   with
     Not_found -> p
 
-let rec path_length = function
+let rec path_size = function
     Pident id ->
-      let s = Ident.name id in if s <> "" && s.[0] = '_' then 10 else 1
-  | Pdot (p, _, _) -> 1 + path_length p
-  | Papply (p1, p2) -> path_length p1 + path_length p2
+      (let s = Ident.name id in if s <> "" && s.[0] = '_' then 10 else 1),
+      -Ident.binding_time id
+  | Pdot (p, _, _) ->
+      let (l, b) = path_size p in (1+l, b)
+  | Papply (p1, p2) ->
+      let (l, b) = path_size p1 in
+      (l + fst (path_size p2), b)
 
 let set_printing_env env =
   if not !Clflags.real_paths && env != !printing_env then begin
@@ -232,7 +236,7 @@ let set_printing_env env =
           let p1 = normalize_type_path env p' in
           try
             let p2 = Tbl.find p1 !map in
-            if path_length p < path_length p2 then raise Not_found
+            if path_size p < path_size p2 then raise Not_found
           with Not_found ->
             (* printf "%a --> %a@." path p1 path p; *)
             map := Tbl.add p1 p !map)
@@ -249,7 +253,7 @@ let wrap_printing_env env f =
   end
 
 let best_type_path p =
-  if !Clflags.real_paths || !printing_env == Env.empty || path_length p = 1
+  if !Clflags.real_paths || !printing_env == Env.empty
   then p
   else try
     Tbl.find (normalize_type_path !printing_env p) (Lazy.force !printing_map)
@@ -942,6 +946,15 @@ let wrap_env fenv ftree arg =
   set_printing_env env;
   tree
 
+let rec filter_rem_sig item rem =
+  match item, rem with
+  | Tsig_class _, ctydecl :: tydecl1 :: tydecl2 :: rem ->
+      ([ctydecl; tydecl1; tydecl2], rem)
+  | Tsig_cltype _, tydecl1 :: tydecl2 :: rem ->
+      ([tydecl1; tydecl2], rem)
+  | _ ->
+      ([], rem)
+
 let rec tree_of_modtype = function
   | Tmty_ident p ->
       Omty_ident (tree_of_path p)
@@ -949,35 +962,37 @@ let rec tree_of_modtype = function
       Omty_signature (tree_of_signature sg)
   | Tmty_functor(param, ty_arg, ty_res) ->
       Omty_functor
-        (Ident.name param,
-         wrap_env (Env.add_module param ty_arg) tree_of_modtype ty_arg,
-         tree_of_modtype ty_res)
+        (Ident.name param, tree_of_modtype ty_arg,
+         wrap_env (Env.add_module param ty_arg) tree_of_modtype ty_res)
 
 and tree_of_signature sg =
-  wrap_env (Env.add_signature sg) tree_of_signature_rec sg
+  wrap_env (fun env -> env) tree_of_signature_rec sg
 
 and tree_of_signature_rec = function
-  | [] -> []
-  | Tsig_value(id, decl) :: rem ->
-      tree_of_value_description id decl :: tree_of_signature_rec rem
-  | Tsig_type(id, _, _) :: rem when is_row_name (Ident.name id) ->
-      tree_of_signature_rec rem
-  | Tsig_type(id, decl, rs) :: rem ->
-      Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
-      tree_of_signature_rec rem
-  | Tsig_exception(id, decl) :: rem ->
-      tree_of_exception_declaration id decl :: tree_of_signature_rec rem
-  | Tsig_module(id, mty, rs) :: rem ->
-      Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs) ::
-      tree_of_signature_rec rem
-  | Tsig_modtype(id, decl) :: rem ->
-      tree_of_modtype_declaration id decl :: tree_of_signature_rec rem
-  | Tsig_class(id, decl, rs) :: ctydecl :: tydecl1 :: tydecl2 :: rem ->
-      tree_of_class_declaration id decl rs :: tree_of_signature_rec rem
-  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
-      tree_of_cltype_declaration id decl rs :: tree_of_signature_rec rem
-  | _ ->
-      assert false
+    [] -> []
+  | item :: rem ->
+      let (sg, rem) = filter_rem_sig item rem in
+      let trees =
+        match item with
+        | Tsig_value(id, decl) ->
+            [tree_of_value_description id decl]
+        | Tsig_type(id, _, _) when is_row_name (Ident.name id) ->
+            []
+        | Tsig_type(id, decl, rs) ->
+            [Osig_type(tree_of_type_decl id decl, tree_of_rec rs)]
+        | Tsig_exception(id, decl) ->
+            [tree_of_exception_declaration id decl]
+        | Tsig_module(id, mty, rs) ->
+            [Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)]
+        | Tsig_modtype(id, decl) ->
+            [tree_of_modtype_declaration id decl]
+        | Tsig_class(id, decl, rs) ->
+            [tree_of_class_declaration id decl rs]
+        | Tsig_cltype(id, decl, rs) ->
+            [tree_of_cltype_declaration id decl rs]
+      in
+      set_printing_env (Env.add_signature (item :: sg) !printing_env);
+      trees @ tree_of_signature_rec rem
 
 and tree_of_modtype_declaration id decl =
   let mty =

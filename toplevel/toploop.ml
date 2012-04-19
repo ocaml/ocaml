@@ -230,7 +230,7 @@ let execute_phrase print_outcome ppf phr =
           match res with
           | Result v ->
               if print_outcome then
-                Printtyp.wrap_printing_env newenv (fun () ->
+                Printtyp.wrap_printing_env oldenv (fun () ->
                   match str with
                   | [Tstr_eval exp] ->
                       let outv = outval_of_value newenv v exp.exp_type in
