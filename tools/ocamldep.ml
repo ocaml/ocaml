@@ -196,7 +196,7 @@ let preprocess sourcefile =
     None -> sourcefile
   | Some pp ->
       flush Pervasives.stdout;
-      let tmpfile = Filename.temp_file "camlpp" "" in
+      let tmpfile = Filename.temp_file "ocamldeppp" "" in
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Sys.command comm <> 0 then begin
         Misc.remove_file tmpfile;

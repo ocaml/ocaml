@@ -46,7 +46,7 @@ let preprocess sourcefile =
   match !Clflags.preprocessor with
     None -> sourcefile
   | Some pp ->
-      let tmpfile = Filename.temp_file "camlpp" "" in
+      let tmpfile = Filename.temp_file "ocamldocpp" "" in
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Ccomp.command comm <> 0 then begin
         remove_file tmpfile;
