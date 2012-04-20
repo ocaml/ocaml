@@ -163,7 +163,7 @@ Feature wishes:
   documentation.
 - ocamldebug: ability to inspect values that contain code pointers
 - ocamldebug: new 'environment' directive to set environment variables
-  for debugee
+  for debuggee
 
 Shedding weight:
 * Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
@@ -173,7 +173,7 @@ Shedding weight:
 * The "OCamlWin" toplevel user interface for MS Windows is no longer
   part of this distribution.  It now lives its own life at
   https://forge.ocamlcore.org/projects/ocamltopwin/
-  
+
 Other changes:
 - Copy VERSION file to library directory when installing.
 
