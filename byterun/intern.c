@@ -74,6 +74,8 @@ static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset);
 static void intern_bad_code_pointer(unsigned char digest[16]) Noreturn;
 
+static void intern_free_stack(void);
+
 #define Sign_extend_shift ((sizeof(intnat) - 1) * 8)
 #define Sign_extend(x) (((intnat)(x) << Sign_extend_shift) >> Sign_extend_shift)
 
@@ -120,21 +122,142 @@ static void intern_cleanup(void)
     /* restore original header for heap block, otherwise GC is confused */
     Hd_val(intern_block) = intern_header;
   }
+  /* free the recursion stack */
+  intern_free_stack();
 }
+
+/* Item on the stack with defined operation */
+struct intern_item {
+  value * dest;
+  intnat arg;
+  enum {
+    OReadItems,
+    OFreshIOD,
+    OShift
+  } op;
+};
+
+/* FIXME: This is duplicated in two other places, with the only difference of
+   the type of elements stored in the stack. Possible solution in C would
+   be to instantiate stack these function via. C preprocessor macro.
+ */
+
+#define INTERN_STACK_INIT_SIZE 256
+#define INTERN_STACK_MAX_SIZE (1024*1024*100)
+
+static struct intern_item intern_stack_init[INTERN_STACK_INIT_SIZE];
+
+static struct intern_item * intern_stack = intern_stack_init;
+static struct intern_item * intern_stack_limit = intern_stack_init
+                                                   + INTERN_STACK_INIT_SIZE;
+
+/* Free the recursion stack if needed */
+static void intern_free_stack(void)
+{
+  if (intern_stack != intern_stack_init) {
+    free(intern_stack);
+    /* Reinitialize the globals for next time around */
+    intern_stack = intern_stack_init;
+    intern_stack_limit = intern_stack + INTERN_STACK_INIT_SIZE;
+  }
+}
+
+/* Same, then raise Out_of_memory */
+static void intern_stack_overflow(void)
+{
+  caml_gc_message (0x04, "Stack overflow in un-marshaling value\n", 0);
+  intern_free_stack();
+  caml_raise_out_of_memory();
+}
+
+static struct intern_item * intern_resize_stack(struct intern_item * sp)
+{
+  asize_t newsize = 2 * (intern_stack_limit - intern_stack);
+  asize_t sp_offset = sp - intern_stack;
+  struct intern_item * newstack;
+
+  if (newsize >= INTERN_STACK_MAX_SIZE) intern_stack_overflow();
+  if (intern_stack == intern_stack_init) {
+    newstack = malloc(sizeof(struct intern_item) * newsize);
+    if (newstack == NULL) intern_stack_overflow();
+    memcpy(newstack, intern_stack_init,
+           sizeof(struct intern_item) * INTERN_STACK_INIT_SIZE);
+  } else {
+    newstack =
+      realloc(intern_stack, sizeof(struct intern_item) * newsize);
+    if (newstack == NULL) intern_stack_overflow();
+  }
+  intern_stack = newstack;
+  intern_stack_limit = newstack + newsize;
+  return newstack + sp_offset;
+}
+
+/* Convenience macros for requesting operation on the stack */
+#define PushItem()                                                      \
+  do {                                                                  \
+    sp++;                                                               \
+    if (sp >= intern_stack_limit) sp = intern_resize_stack(sp);         \
+  } while(0)
+
+#define ReadItems(_n)                                                   \
+  do {                                                                  \
+    if (_n > 0) {                                                       \
+      PushItem();                                                       \
+      sp->op = OReadItems;                                              \
+      sp->dest = dest;                                                  \
+      sp->arg = _n;                                                     \
+      dest += _n;                                                       \
+    }                                                                   \
+  } while(0)
 
 static void intern_rec(value *dest)
 {
   unsigned int code;
   tag_t tag;
   mlsize_t size, len, ofs_ind;
-  value v, clos;
+  value v;
   asize_t ofs;
   header_t header;
   unsigned char digest[16];
   struct custom_operations * ops;
   char * codeptr;
+  struct intern_item * sp;
 
- tailcall:
+  sp = intern_stack;
+
+  /* Initially let's try to read the first object from the stream */
+  v = *dest;
+  ReadItems(1);
+
+  /* The un-marshaler loop, the recursion is unrolled */
+  while(sp != intern_stack) {
+
+  /* Pop one more item to un-marshal, if any */
+  dest = sp->dest;
+
+  /* Interpret next item on the stack */
+  if (sp->op == OFreshIOD) {
+    /* Refresh the object ID */
+    if (camlinternaloo_last_id == NULL)
+      camlinternaloo_last_id = caml_named_value("CamlinternalOO.last_id");
+    if (camlinternaloo_last_id == NULL)
+      camlinternaloo_last_id = (value*)-1;
+    else {
+      value id = Field(*camlinternaloo_last_id,0);
+      Field(dest,-1) = id;
+      Field(*camlinternaloo_last_id,0) = id + 2;
+    }
+    if (--(sp->arg) == 0) sp--;
+  } else if (sp->op == OShift) {
+    /* Shift value by an offset */
+    *dest += sp->arg;
+  } else if (sp->op == OReadItems) {
+  
+  /* Pop one more item to un-marshal, if any */
+  sp->dest++;
+  if (--(sp->arg) == 0) sp--;
+
+    /* Read an item */
   code = read8u();
   if (code >= PREFIX_SMALL_INT) {
     if (code >= PREFIX_SMALL_BLOCK) {
@@ -144,6 +267,7 @@ static void intern_rec(value *dest)
     read_block:
       if (size == 0) {
         v = Atom(tag);
+        *dest = v; 
       } else {
         v = Val_hp(intern_dest);
         *dest = v;
@@ -153,27 +277,28 @@ static void intern_rec(value *dest)
         intern_dest += 1 + size;
         /* For objects, we need to freshen the oid */
         if (tag == Object_tag && camlinternaloo_last_id != (value*)-1) {
-          intern_rec(dest++);
-          intern_rec(dest++);
-          if (camlinternaloo_last_id == NULL)
-            camlinternaloo_last_id = caml_named_value("CamlinternalOO.last_id");
-          if (camlinternaloo_last_id == NULL)
-            camlinternaloo_last_id = (value*)-1;
-          else {
-            value id = Field(*camlinternaloo_last_id,0);
-            Field(dest,-1) = id;
-            Field(*camlinternaloo_last_id,0) = id + 2;
-          }
-          size -= 2;
-          if (size == 0) return;
-        }
-        for(/*nothing*/; size > 1; size--, dest++)
-          intern_rec(dest);
-        goto tailcall;
+          /* Make a spare buffer for the two elements retrieved later */
+          dest += 2;
+          /* Request to read rest of the elements of the block */
+          ReadItems(size-2);
+          /* Restore back the pointer - the macro increments dest */
+          dest = dest-size;
+          /* Push new item on the stack */
+          PushItem();
+          /* Request freshing OID */
+          sp->op = OFreshIOD;                                           
+          sp->dest = dest;                                              
+          sp->arg = 1;
+          /* Finally read other two items: fields and methods */
+          ReadItems(2);
+        } else
+          /* If it's not an object then read the contents of the block */
+          ReadItems(size);
       }
     } else {
       /* Small integer */
       v = Val_int(code & 0x3F);
+      *dest = v;
     }
   } else {
     if (code >= PREFIX_SMALL_STRING) {
@@ -333,8 +458,10 @@ static void intern_rec(value *dest)
         break;
       case CODE_INFIXPOINTER:
         ofs = read32u();
-        intern_rec(&clos);
-        v = clos + ofs;
+        PushItem();                                                     
+        sp->op = OShift;                                                
+        sp->arg = ofs;                                                   
+        ReadItems(1);
         break;
       case CODE_CUSTOM:
         ops = caml_find_custom_operations((char *) intern_src);
@@ -356,8 +483,12 @@ static void intern_rec(value *dest)
         caml_failwith("input_value: ill-formed message");
       }
     }
-  }
   *dest = v;
+  }
+  }
+  }
+  /* We are done. Cleanup the stack and leave the function */
+  intern_free_stack();
 }
 
 static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
