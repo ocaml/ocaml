@@ -89,10 +89,8 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
 DRIVER=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
   driver/main_args.cmo driver/main.cmo
 
-OPTEND=  driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
-  driver/main_args.cmo
-OPTMAIN= driver/optmain.cmo
-OPTDRIVER= $(OPTEND) $(OPTMAIN)
+OPTDRIVER= driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
+  driver/main_args.cmo driver/optmain.cmo
 
 TOPLEVEL=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
   driver/main_args.cmo toplevel/genprintval.cmo toplevel/toploop.cmo \
@@ -107,8 +105,9 @@ TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
-OPTFILES=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTEND)
-NATTOPOBJS= $(OPTFILES) \
+NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
+  driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
+  driver/main_args.cmo \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
@@ -316,7 +315,6 @@ install:
 installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
-	cp driver/ocamlopt.cma driver/optmain.cmo $(LIBDIR)/
 	cd stdlib; $(MAKE) installopt
 	cd ocamldoc; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); \
@@ -324,11 +322,7 @@ installopt:
 	if test -f ocamlc.opt; \
 	  then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
 	if test -f ocamlopt.opt; \
-	  then \
-            cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); \
-	    cp driver/ocamlopt.$(A) driver/ocamlopt.cmxa \
-	       driver/optmain.cmx driver/optmain.$(O) $(LIBDIR)/; \
-	  else :; fi
+	  then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
 	if test -f lex/ocamllex.opt; \
 	  then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
 
@@ -346,17 +340,15 @@ partialclean::
 	rm -f ocamlc ocamlcomp.sh
 
 # The native-code compiler
-driver/ocamlopt.cma: $(OPTOBJS)
-	$(CAMLC) $(LINKFLAGS) -a -o driver/ocamlopt.cma $(OPTFILES)
 
-ocamlopt: $(OPTOBJS) driver/ocamlopt.cma
+ocamlopt: $(OPTOBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt $(OPTOBJS)
 	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlopt|' \
 	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
 	@chmod +x ocamlcompopt.sh
 
 partialclean::
-	rm -f ocamlopt ocamlcompopt.sh driver/ocamlopt.cma
+	rm -f ocamlopt ocamlcompopt.sh
 
 # The toplevel
 
@@ -454,17 +446,14 @@ partialclean::
 
 # The native-code compiler compiled with itself
 
-driver/ocamlopt.cmxa: $(OPTOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -a -o driver/ocamlopt.cmxa $(OPTFILES:.cmo=.cmx)
-
-ocamlopt.opt: driver/ocamlopt.cmxa $(OPTOBJS:.cmo=.cmx)
+ocamlopt.opt: $(OPTOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt $(OPTOBJS:.cmo=.cmx)
 	@sed -e 's|@compiler@|$$topdir/ocamlopt.opt|' \
 	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
 	@chmod +x ocamlcompopt.sh
 
 partialclean::
-	rm -f ocamlopt.opt driver/ocamlopt.cmxa driver/ocamlopt.$(A)
+	rm -f ocamlopt.opt
 
 $(OPTOBJS:.cmo=.cmx): ocamlopt
 

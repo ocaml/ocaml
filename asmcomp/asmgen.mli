@@ -23,15 +23,3 @@ val compile_phrase :
 type error = Assembler_error of string
 exception Error of error
 val report_error: Format.formatter -> error -> unit
-
-type 'a hook = ('a -> 'a)
-
-val add_typedtree_hook :
-  (Typedtree.structure * Typedtree.module_coercion) hook -> unit
-val add_lambda_hook : (int * Lambda.lambda) hook -> unit
-val add_clambda_hook : Clambda.ulambda hook -> unit
-val add_cmm_hook : Cmm.phrase list hook -> unit
-
-val eval_typedtree_hooks :
-  (Typedtree.structure * Typedtree.module_coercion) hook
-val eval_lambda_hooks : (int * Lambda.lambda) hook

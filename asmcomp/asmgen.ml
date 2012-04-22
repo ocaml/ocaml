@@ -20,32 +20,6 @@ open Clflags
 open Misc
 open Cmm
 
-(* hooks *)
-
-let eval_hooks hooks x =
-  List.fold_left (fun x hook -> hook x) x hooks
-let add_hook ref hook = ref := hook :: !ref
-
-type 'a hook = ('a -> 'a)
-
-let typedtree_hooks = ref []
-let lambda_hooks = ref []
-let clambda_hooks = ref []
-let cmm_hooks = ref []
-
-let add_typedtree_hook = add_hook typedtree_hooks
-let add_lambda_hook = add_hook lambda_hooks
-let add_clambda_hook = add_hook clambda_hooks
-let add_cmm_hook = add_hook cmm_hooks
-
-let eval_typedtree_hooks = eval_hooks !typedtree_hooks
-let eval_lambda_hooks = eval_hooks !lambda_hooks
-let eval_clambda_hooks = eval_hooks !clambda_hooks
-let eval_cmm_hooks = eval_hooks !cmm_hooks
-
-(* asm generation *)
-
-
 type error = Assembler_error of string
 
 exception Error of error
@@ -130,9 +104,7 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
     Emitaux.output_channel := oc;
     Emit.begin_assembly();
     Closure.intro size lam
-    ++ eval_hooks !clambda_hooks
     ++ Cmmgen.compunit size
-    ++ eval_cmm_hooks
     ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
     (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
 
@@ -165,4 +137,3 @@ let report_error ppf = function
   | Assembler_error file ->
       fprintf ppf "Assembler error, input left in file %a"
         Location.print_filename file
-
