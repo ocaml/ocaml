@@ -1040,7 +1040,9 @@ containing only locally abstract types.
 
 In practice, type inference is a bit more clever than that: type
 annotations do not need to be immediately on the pattern-matching, and
-the types do not have to be always closed. Type annotations are
+the types do not have to be always closed.
+As a result, it is usually enough to only annotate functions, as in
+the example above. Type annotations are
 propagated in two ways: for the scrutinee, they follow the flow of
 type inference, in a way similar to polymorphic methods; for the
 return type, they follow the structure of the program, they are split
