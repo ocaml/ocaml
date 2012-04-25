@@ -766,12 +766,17 @@ let transl_type_decl env name_sdecl_list =
         (fun old_callback ->
           match !current_slot with
           | Some slot -> slot := (name, td) :: !slot
-          | None -> List.iter (fun (name, d) -> Env.mark_type_used name d) (get_ref slot); old_callback ()
+          | None ->
+              List.iter (fun (name, d) -> Env.mark_type_used name d)
+                (get_ref slot);
+              old_callback ()
         );
       id, Some slot
   in
-  let transl_declaration name_sdecl (id, slot) = current_slot := slot; transl_declaration temp_env name_sdecl id in
-  let decls = List.map2 transl_declaration name_sdecl_list (List.map id_slots id_list) in
+  let transl_declaration name_sdecl (id, slot) =
+    current_slot := slot; transl_declaration temp_env name_sdecl id in
+  let decls =
+    List.map2 transl_declaration name_sdecl_list (List.map id_slots id_list) in
   current_slot := None;
   (* Check for duplicates *)
   check_duplicates name_sdecl_list;
