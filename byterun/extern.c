@@ -53,11 +53,62 @@ static struct trail_block extern_trail_first;
 static struct trail_block * extern_trail_block;
 static struct trail_entry * extern_trail_cur, * extern_trail_limit;
 
+
+/* Stack for pending values to marshal */
+
+struct extern_item { value * v; mlsize_t count; };
+
+#define EXTERN_STACK_INIT_SIZE 256
+#define EXTERN_STACK_MAX_SIZE (1024*1024*100)
+
+static struct extern_item extern_stack_init[EXTERN_STACK_INIT_SIZE];
+
+static struct extern_item * extern_stack = extern_stack_init;
+static struct extern_item * extern_stack_limit = extern_stack_init
+                                                   + EXTERN_STACK_INIT_SIZE;
+
 /* Forward declarations */
 
 static void extern_out_of_memory(void);
 static void extern_invalid_argument(char *msg);
+static void extern_failwith(char *msg);
+static void extern_stack_overflow(void);
 static struct code_fragment * extern_find_code(char *addr);
+static void extern_replay_trail(void);
+static void free_extern_output(void);
+
+/* Free the extern stack if needed */
+static void extern_free_stack(void)
+{
+  if (extern_stack != extern_stack_init) {
+    free(extern_stack);
+    /* Reinitialize the globals for next time around */
+    extern_stack = extern_stack_init;
+    extern_stack_limit = extern_stack + EXTERN_STACK_INIT_SIZE;
+  }
+}
+
+static struct extern_item * extern_resize_stack(struct extern_item * sp)
+{
+  asize_t newsize = 2 * (extern_stack_limit - extern_stack);
+  asize_t sp_offset = sp - extern_stack;
+  struct extern_item * newstack;
+
+  if (newsize >= EXTERN_STACK_MAX_SIZE) extern_stack_overflow();
+  if (extern_stack == extern_stack_init) {
+    newstack = malloc(sizeof(struct extern_item) * newsize);
+    if (newstack == NULL) extern_stack_overflow();
+    memcpy(newstack, extern_stack_init,
+           sizeof(struct extern_item) * EXTERN_STACK_INIT_SIZE);
+  } else {
+    newstack =
+      realloc(extern_stack, sizeof(struct extern_item) * newsize);
+    if (newstack == NULL) extern_stack_overflow();
+  }
+  extern_stack = newstack;
+  extern_stack_limit = newstack + newsize;
+  return newstack + sp_offset;
+}
 
 /* Initialize the trail */
 
@@ -163,6 +214,7 @@ static void free_extern_output(void)
     free(blk);
   }
   extern_output_first = NULL;
+  extern_free_stack();
 }
 
 static void grow_extern_output(intnat required)
@@ -171,8 +223,7 @@ static void grow_extern_output(intnat required)
   intnat extra;
 
   if (extern_userprovided_output != NULL) {
-    extern_replay_trail();
-    caml_failwith("Marshal.to_buffer: buffer overflow");
+    extern_failwith("Marshal.to_buffer: buffer overflow");
   }
   extern_output_block->end = extern_ptr;
   if (required <= SIZE_EXTERN_OUTPUT_BLOCK / 2)
@@ -216,6 +267,21 @@ static void extern_invalid_argument(char *msg)
   extern_replay_trail();
   free_extern_output();
   caml_invalid_argument(msg);
+}
+
+static void extern_failwith(char *msg)
+{
+  extern_replay_trail();
+  free_extern_output();
+  caml_failwith(msg);
+}
+
+static void extern_stack_overflow(void)
+{
+  caml_gc_message (0x04, "Stack overflow in marshaling value\n", 0);
+  extern_replay_trail();
+  free_extern_output();
+  caml_raise_out_of_memory();
 }
 
 /* Write characters, integers, and blocks in the output buffer */
@@ -292,7 +358,10 @@ static void writecode64(int code, intnat val)
 static void extern_rec(value v)
 {
   struct code_fragment * cf;
- tailcall:
+  struct extern_item * sp;
+  sp = extern_stack;
+
+  while(1) {
   if (Is_long(v)) {
     intnat n = Long_val(v);
     if (n >= 0 && n < 0x40) {
@@ -307,7 +376,7 @@ static void extern_rec(value v)
 #endif
     } else
       writecode32(CODE_INT32, n);
-    return;
+    goto next_item;
   }
   if (Is_in_value_area(v)) {
     header_t hd = Hd_val(v);
@@ -322,7 +391,7 @@ static void extern_rec(value v)
         /* Do not short-circuit the pointer. */
       }else{
         v = f;
-        goto tailcall;
+        continue;
       }
     }
     /* Atoms are treated specially for two reasons: they are not allocated
@@ -333,7 +402,7 @@ static void extern_rec(value v)
       } else {
         writecode32(CODE_BLOCK32, hd);
       }
-      return;
+      goto next_item;
     }
     /* Check if already seen */
     if (Color_hd(hd) == Caml_blue) {
@@ -345,7 +414,7 @@ static void extern_rec(value v)
       } else {
         writecode32(CODE_SHARED32, d);
       }
-      return;
+      goto next_item;
     }
 
     /* Output the contents of the object */
@@ -416,7 +485,6 @@ static void extern_rec(value v)
     }
     default: {
       value field0;
-      mlsize_t i;
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
 #ifdef ARCH_SIXTYFOUR
@@ -430,14 +498,16 @@ static void extern_rec(value v)
       size_64 += 1 + sz;
       field0 = Field(v, 0);
       extern_record_location(v);
-      if (sz == 1) {
-        v = field0;
-      } else {
-        extern_rec(field0);
-        for (i = 1; i < sz - 1; i++) extern_rec(Field(v, i));
-        v = Field(v, i);
+      /* Remember that we still have to serialize fields 1 ... sz - 1 */
+      if (sz > 1) {
+        sp++;
+        if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
+        sp->v = &Field(v,1);
+        sp->count = sz-1;
       }
-      goto tailcall;
+      /* Continue serialization with the first field */
+      v = field0;
+      continue;
     }
     }
   }
@@ -449,6 +519,17 @@ static void extern_rec(value v)
   } else {
     extern_invalid_argument("output_value: abstract value (outside heap)");
   }
+  next_item:
+    /* Pop one more item to marshal, if any */
+    if (sp == extern_stack) {
+        /* We are done.   Cleanup the stack and leave the function */
+        extern_free_stack();
+        return;
+    }
+    v = *((sp->v)++);
+    if (--(sp->count) == 0) sp--;
+  }
+  /* Never reached as function leaves with return */
 }
 
 enum { NO_SHARING = 1, CLOSURES = 2 };
