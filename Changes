@@ -139,6 +139,7 @@ Bug Fixes:
 - PR#5511: in Bigarray.reshape, unwarranted limitation on new array dimensions.
 - PR#5513: Int64.div causes floating point exception (ocamlopt, x86)
 - PR#5516: in Bigarray C stubs, use C99 flexible array types if possible
+- PR#5531: Allow ocamlbuild to add ocamldoc flags through -docflag and -docflags switches
 - PR#5543: in Bigarray.map_file, try to avoid using lseek() when growing file
 - PR#5538: combining -i and -annot in ocamlc
 - PR#5560: incompatible type for tuple pattern with -principal
