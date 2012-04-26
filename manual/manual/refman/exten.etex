@@ -1046,7 +1046,8 @@ the example above. Type annotations are
 propagated in two ways: for the scrutinee, they follow the flow of
 type inference, in a way similar to polymorphic methods; for the
 return type, they follow the structure of the program, they are split
-on functions, and go through tuples, records, and sum types.
+on functions, propagated to all branches of a pattern matching,
+and go through tuples, records, and sum types.
 Moreover, the notion of ambiguity used is stronger: a type is only
 seen as ambiguous if it was mixed with incompatible types (equated by
 constraints), without type annotations between them.
