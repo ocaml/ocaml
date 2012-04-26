@@ -388,6 +388,7 @@ end;;
 
 flag ["ocaml"; "ocamlyacc"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "menhir"] (atomize !Options.ocaml_yaccflags);;
+flag ["ocaml"; "doc"] (atomize !Options.ocaml_docflags);;
 
 (* Tell menhir to explain conflicts *)
 flag [ "ocaml" ; "menhir" ; "explain" ] (S[A "--explain"]);;
