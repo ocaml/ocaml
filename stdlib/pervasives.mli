@@ -866,9 +866,33 @@ external decr : int ref -> unit = "%decr"
 
 (** {6 Operations on format strings} *)
 
-(** Format strings are used to read and print data using formatted input
-    functions in module {!Scanf} and formatted output in modules {!Printf} and
-    {!Format}. *)
+(** Format strings are character strings with special lexical conventions
+  that defines the functionality of formatted input/output functions. Format
+  strings are used to read data with formatted input functions from module
+  {!Scanf} and to print data with formatted output functions from modules
+  {!Printf} and {!Format}.
+
+  Format strings are made of three kinds of entities:
+  - {e conversions specifications}, introduced by the special character ['%']
+    followed by one or more characters specifying what kind of argument to
+    read or print,
+  - {e formatting indications}, introduced by the special character ['@']
+    followed by one or more characters specifying how to read or print the
+    argument,
+  - {e plain characters} that are regular characters with usual lexical
+    conventions. Plain characters specify string literals to be read in the
+    input or printed in the output.
+
+  There is an additional lexical rule to escape the special characters in
+  format strings: if a special character follows a ['%'] character, it is
+  treated as a plain character. In other words, ["%%"] is considered as a
+  plain ['%'] and ["%@"] as a plain ['@'].
+
+  For more information about conversion indications and formatting
+  indications available, read the documentation of modules {!Scanf},
+  {!Printf} and {!Format}.
+
+*)
 
 (** Format strings have a general and highly polymorphic type
     [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
@@ -883,7 +907,7 @@ external decr : int ref -> unit = "%decr"
     ['d] is the result type for the [scanf]-style functions,
     ['e] is the type of the receiver function for the [scanf]-style functions,
     ['f] is the result type for the [printf]-style function.
- *)
+*)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
@@ -895,14 +919,17 @@ external format_of_string :
   ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
   ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 (** [format_of_string s] returns a format string read from the string
-    literal [s]. *)
+    literal [s].
+    Note: [format_of_string] can not convert a string argument that is not a
+    literal. If you need this functionality, use the more general
+    {!Scanf.format_from_string} function. *)
 
 val ( ^^ ) :
       ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
       ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
       ('a, 'b, 'c, 'd, 'g, 'h) format6
-(** [f1 ^^ f2] catenates formats [f1] and [f2].  The result is a format
-  that accepts arguments from [f1], then arguments from [f2]. *)
+(** [f1 ^^ f2] catenates format strings [f1] and [f2].  The result is a
+  format string that accepts arguments from [f1], then arguments from [f2]. *)
 
 
 (** {6 Program termination} *)

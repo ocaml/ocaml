@@ -282,7 +282,7 @@ type tag = string;;
    those strings is considered as zero for line breaking).
 
    Thus, tag handling is in some sense transparent to pretty-printing
-   and does not interfere with usual pretty-printing. Hence, a single
+   and does not interfere with usual indentation. Hence, a single
    pretty printing routine can output both simple ``verbatim''
    material or richer decorated output depending on the treatment of
    tags. By default, tags are not active, hence the output is not
@@ -366,6 +366,17 @@ val get_formatter_output_functions :
 (** Return the current output functions of the pretty-printer. *)
 
 (** {6:meaning Changing the meaning of standard formatter pretty printing} *)
+
+type formatter_out_functions = {
+  out_string : string -> int -> int -> unit;
+  out_flush : unit -> unit;
+  out_newline : unit -> unit;
+  out_spaces : int -> unit;
+}
+;;
+
+val set_formatter_out_functions: formatter_out_functions -> unit;;
+val get_formatter_out_functions: unit -> formatter_out_functions;;
 
 (** The [Format] module is versatile enough to let you completely redefine
  the meaning of pretty printing: you may provide your own functions to define
