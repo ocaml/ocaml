@@ -463,7 +463,9 @@ let () =
   pflag ["ocaml"; "doc"] "pp"
     (fun param -> S [A "-pp"; A param]);
   pflag ["ocaml"; "infer_interface"] "pp"
-    (fun param -> S [A "-pp"; A param])
+    (fun param -> S [A "-pp"; A param]);
+  pflag ["ocaml";"compile";] "warn" 
+    (fun param -> S [A "-w"; A param])
 
 let camlp4_flags camlp4s =
   List.iter begin fun camlp4 ->
