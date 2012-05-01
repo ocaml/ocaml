@@ -65,6 +65,10 @@ Standard library:
      . More random initialization (Random.self_init()), using /dev/urandom
        when available (e.g. Linux, FreeBSD, MacOS X, Solaris)
      . Faster implementation of Random.float
+- Format strings for formatted input/output revised to correct PR#5380
+    . Consistently treat %@ as a plain @ character
+    . Consistently treat %% as a plain % character
+- Scanf: width and precision for floating point numbers are now handled
 - Scanf: new function "unescaped" (PR#3888)
 - Set and Map: more efficient implementation of "filter" and "partition"
 - String: new function "map" (PR#3888)
@@ -88,7 +92,7 @@ Bug Fixes:
 - PR#4892: Array.set could raise "out of bounds" before evaluating 3rd arg
 - PR#4937: camlp4 incorrectly handles optional arguments if 'option' is
   redefined
-- PR#5024: camlp4r now handles underscores in irrefutable patern matching of
+- PR#5024: camlp4r now handles underscores in irrefutable pattern matching of
            records
 - PR#5064, PR#5485: try to ensure that 4K words of stack are available
   before calling into C functions, raising a Stack_overflow exception
@@ -115,7 +119,7 @@ Bug Fixes:
 - PR#5331: ocamlmktop is not always a shell script
 - PR#5335: Unix.environment segfaults after a call to clearenv
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping
-- PR#5344: some predifined exceptions need special printing
+- PR#5344: some predefined exceptions need special printing
 - PR#5356: ocamlbuild handling of 'predicates' for ocamlfind
 - PR#5364: wrong compilation of "((val m : SIG1) : SIG2)"
 - PR#5370: ocamldep omits filename in syntax error message
@@ -148,7 +152,7 @@ Bug Fixes:
 
 Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script
-- PR#4444: new String.trim function, removing leading and trailing whistespace
+- PR#4444: new String.trim function, removing leading and trailing whitespace
 - PR#4898: new Sys.big_endian boolean for machine endianness
 - PR#5199: tests are run only for bytecode if either native support is missing,
   or a non-empty value is set to "BYTECODE_ONLY" Makefile variable
@@ -180,7 +184,7 @@ Shedding weight:
 * The "OCamlWin" toplevel user interface for MS Windows is no longer
   part of this distribution.  It now lives its own life at
   https://forge.ocamlcore.org/projects/ocamltopwin/
-  
+
 Other changes:
 - Copy VERSION file to library directory when installing.
 
