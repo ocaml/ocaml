@@ -163,6 +163,7 @@ Feature wishes:
 - PR#5478: ocamlopt assumes ar command exists
 - PR#5479: Num.num_of_string may raise an exception, not reflected in the
   documentation.
+- PR#5599: Add warn() tag in ocamlbuild to control -w compiler switch
 - ocamldebug: ability to inspect values that contain code pointers
 - ocamldebug: new 'environment' directive to set environment variables
   for debuggee
