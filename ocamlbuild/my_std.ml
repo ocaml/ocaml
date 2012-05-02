@@ -332,7 +332,7 @@ module Digest = struct
 (* USEFUL FOR DIGEST DEBUGING
   let digest_log_hash = Hashtbl.create 103;;
   let digest_log = "digest.log";;
-  let digest_log_oc = open_out_gen [Open_append;Open_wronly;Open_text;Open_creat] 0o644 digest_log;;
+  let digest_log_oc = open_out_gen [Open_append;Open_wronly;Open_text;Open_creat] 0o666 digest_log;;
   let my_to_hex x = to_hex x ^ ";";;
   if sys_file_exists digest_log then
     with_input_file digest_log begin fun ic ->
