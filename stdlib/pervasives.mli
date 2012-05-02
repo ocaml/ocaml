@@ -508,7 +508,9 @@ val ( @ ) : 'a list -> 'a list -> 'a list
 (** List concatenation. *)
 
 
-(** {6 Input/output} *)
+(** {6 Input/output}
+    Note: all input/output functions can raise [Sys_error] when the system
+    calls they invoke fail. *)
 
 type in_channel
 (** The type of input channel. *)
