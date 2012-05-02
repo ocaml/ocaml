@@ -792,9 +792,9 @@ New syntax:\
       [ RIGHTA
         [ TRY ["("; "type"]; i = a_LIDENT; ")"; e = SELF ->
             <:expr< fun (type $i$) -> $e$ >>
-        | bi = TRY cvalue_binding -> bi
-        | p = labeled_ipatt; e = SELF ->
+        | p = TRY labeled_ipatt; e = SELF ->
             <:expr< fun $p$ -> $e$ >>
+        | bi = cvalue_binding -> bi
       ] ]
     ;
     match_case:
