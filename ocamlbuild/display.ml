@@ -120,7 +120,7 @@ let create
     match log_file with
     | None -> None
     | Some fn ->
-        let oc = open_out_gen [Open_text; Open_wronly; Open_creat; Open_trunc] 0o644 fn in
+        let oc = open_out_gen [Open_text; Open_wronly; Open_creat; Open_trunc] 0o666 fn in
         let f = Format.formatter_of_out_channel oc in
         Format.fprintf f "### Starting build.\n";
         Some (f, oc)
