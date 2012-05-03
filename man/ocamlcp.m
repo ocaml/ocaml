@@ -95,7 +95,7 @@ count points are set in both
 branches
 .TP
 .B l
-\BR while , \ for
+.BR while , \ for
 loops: a count point is set at the beginning of the loop body
 .TP
 .B m
