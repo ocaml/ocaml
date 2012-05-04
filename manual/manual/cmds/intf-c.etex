@@ -1273,6 +1273,28 @@ function.  If "Is_exception_result("\var{v}")" returns ``true'',
 an exception escaped, and its value (the exception descriptor) can be
 recovered using "Extract_exception("\var{v}")".
 
+\paragraph{Warning:} If the OCaml function returned with an exception,
+"Extract_exception" should be applied to the exception result prior
+to calling a function that may trigger garbage collection.
+Otherwise, if \var{v} is reachable during garbage collection, the runtime
+can crash since \var{v} does not contain a valid value.
+
+Example:
+\begin{verbatim}
+    value call_caml_f_ex(value closure, value arg)
+    {
+      CAMLparam2(closure, arg);
+      CAMLlocal2(res, tmp);
+      res = caml_callback_exn(closure, arg);
+      if(Is_exception_result(res)) {
+        res = Extract_exception(res);
+        tmp = caml_alloc(3, 0); /* Safe to allocate: res contains valid value. */
+        ...
+      }
+      CAMLreturn (res);
+    }
+\end{verbatim}
+
 \subsection{Obtaining or registering OCaml closures for use in C functions}
 
 There are two ways to obtain OCaml function values (closures) to
