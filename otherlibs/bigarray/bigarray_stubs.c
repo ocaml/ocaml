@@ -496,19 +496,18 @@ CAMLprim value caml_ba_layout(value vb)
   return Val_int(Caml_ba_array_val(vb)->flags & CAML_BA_LAYOUT_MASK);
 }
 
-/* Finalization / release of a big array */
+/* Finalization of a big array */
 
 static void caml_ba_finalize(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
-  intnat i;
 
   switch (b->flags & CAML_BA_MANAGED_MASK) {
   case CAML_BA_EXTERNAL:
     break;
   case CAML_BA_MANAGED:
     if (b->proxy == NULL) {
-      free(b->data);            /* no op if b->data = NULL */
+      free(b->data);
     } else {
       if (-- b->proxy->refcount == 0) {
         free(b->proxy->data);
@@ -527,17 +526,6 @@ static void caml_ba_finalize(value v)
     }
     break;
   }
-  /* Make sure that subsequent accesses to the bigarray fail (empty bounds)
-     and that subsequent calls to caml_ba_finalize do nothing. */
-  for (i = 0; i < b->num_dims; i++) b->dim[i] = 0;
-  b->data = NULL;
-  b->proxy = NULL;
-}
-
-CAMLprim value caml_ba_release(value v)
-{
-  caml_ba_finalize(v);
-  return Val_unit;
 }
 
 /* Comparison of two big arrays */
