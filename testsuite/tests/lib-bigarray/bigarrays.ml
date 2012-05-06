@@ -384,12 +384,6 @@ let _ =
   test 12 true (test_blit_fill complex64 [Complex.zero; Complex.one; Complex.i]
                              Complex.i 1 1);
 
-  testing_function "release";
-  let a = from_list int [1;2;3;4;5] in
-  test 1 (Array1.dim a) 5;
-  Array1.release a;
-  test 2 (Array1.dim a) 0;
-  
 (* Bi-dimensional arrays *)
 
   print_newline();
@@ -539,14 +533,6 @@ let _ =
   test 7 (Array2.slice_right a 2) (from_list_fortran int [1002;2002;3002;4002;5002]);
   test 8 (Array2.slice_right a 3) (from_list_fortran int [1003;2003;3003;4003;5003]);
 
-  testing_function "release";
-  let a = (make_array2 int c_layout 0 4 6 id) in
-  test 1 (Array2.dim1 a) 4;
-  test 2 (Array2.dim2 a) 6;
-  Array2.release a;
-  test 3 (Array2.dim1 a) 0;
-  test 4 (Array2.dim2 a) 0;
-
 (* Tri-dimensional arrays *)
 
   print_newline();
@@ -668,16 +654,6 @@ let _ =
   test 6 (Array3.slice_right_1 a 1 2) (from_list_fortran int [112;212;312]);
   test 7 (Array3.slice_right_1 a 3 1) (from_list_fortran int [131;231;331]);
 
-  testing_function "release";
-  let a = (make_array3 int c_layout 0 4 5 6 id) in
-  test 1 (Array3.dim1 a) 4;
-  test 2 (Array3.dim2 a) 5;
-  test 3 (Array3.dim3 a) 6;
-  Array3.release a;
-  test 4 (Array3.dim1 a) 0;
-  test 5 (Array3.dim2 a) 0;
-  test 6 (Array3.dim3 a) 0;
-
 (* Reshaping *)
   print_newline();
   testing_function "------ Reshaping --------";
@@ -741,7 +717,6 @@ let _ =
     let a = Array1.map_file fd float64 c_layout true 10000 in
     Unix.close fd;
     for i = 0 to 9999 do a.{i} <- float i done;
-    Array1.release a;
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
     let b = Array2.map_file fd float64 fortran_layout false 100 (-1) in
     Unix.close fd;
@@ -752,8 +727,7 @@ let _ =
       done
     done;
     test 1 !ok true;
-    b.{50,50} <- (-1.0);         (* private mapping -> no effect on file *)
-    Array2.release b;
+    b.{50,50} <- (-1.0);
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
     let c = Array2.map_file fd float64 c_layout false (-1) 100 in
     Unix.close fd;
@@ -764,7 +738,6 @@ let _ =
       done
     done;
     test 2 !ok true;
-    Array2.release c;
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
     let c = Array2.map_file fd ~pos:800L float64 c_layout false (-1) 100 in
     Unix.close fd;
@@ -775,7 +748,6 @@ let _ =
       done
     done;
     test 3 !ok true;
-    Array2.release c;
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
     let c = Array2.map_file fd ~pos:79200L float64 c_layout false (-1) 100 in
     Unix.close fd;
@@ -783,13 +755,12 @@ let _ =
     for j = 0 to 99 do
       if c.{0,j} <> float (100 * 99 + j) then ok := false
     done;
-    test 4 !ok true;
-    Array2.release c;
-    test 5 (Array2.dim1 c) 0;        
-    test 5 (Array2.dim2 c) 0
+    test 4 !ok true
   end;
-  (* Win32 doesn't let us erase the file if any mapping on the file is
-     still active.  Normally, they have all been released explicitly. *)
+  (* Force garbage collection of the mapped bigarrays above, otherwise
+     Win32 doesn't let us erase the file.  Notice the begin...end above
+     so that the VM doesn't keep stack references to the mapped bigarrays. *)
+  Gc.full_major();
   Sys.remove mapped_file;
 
   ()

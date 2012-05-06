@@ -73,10 +73,6 @@ Standard library:
 - Set and Map: more efficient implementation of "filter" and "partition"
 - String: new function "map" (PR#3888)
 
-Other libraries:
-- Bigarray: added "release" functions that free memory and file mappings
-  just like GC finalization does eventually, but does it immediately.
-
 Bug Fixes:
 - PR#1643: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added

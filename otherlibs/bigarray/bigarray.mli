@@ -426,27 +426,7 @@ module Genarray :
      or a SIGBUS signal may be raised. This happens, for instance, if the
      file is shrinked. *)
 
-  val release: ('a, 'b, 'c) t -> unit
-  (** Release the resources associated with the given big array,
-     then set all of its dimensions to 0, causing subsequent accesses
-     to the big array to fail.  This releasing of resources is performed
-     automatically by the garbage collector when the big array is no longer
-     referenced by the program.  However, memory behavior of the program
-     can be improved by releasing the resources explicitly via
-     [Genarray.release] as soon as the big array is no longer useful.
-
-     If the big array was created with [Genarray.create], the memory
-     space occupied by its data is freed.  If the big array was
-     created with [Genarray.map_file], updates performed on the array
-     are flushed to the file (if the mapping is shared), then the
-     mapping is removed, freeing the corresponding virtual memory
-     space.  If several views on the big array data were created
-     using [Genarray.sub_*] or [Genarray.slice_*], data release occurs
-     when the last not-yet-released view is released.  Multiple calls
-     to [Genarray.release] on the same big array are safe: the second
-     and subsequent calls have no effect. *)
-
-end
+  end
 
 (** {6 One-dimensional arrays} *)
 
@@ -516,20 +496,16 @@ module Array1 : sig
   (** Memory mapping of a file as a one-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
 
-  val release: ('a, 'b, 'c) t -> unit
-  (** Explicit release of the resources associated with the big array.
-     See {!Bigarray.Genarray.release} for more details. *)
-
   external unsafe_get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
   (** Like {!Bigarray.Array1.get}, but bounds checking is not always performed.
       Use with caution and only when the program logic guarantees that
-      the access is within bounds and the big array has not been released. *)
+      the access is within bounds. *)
 
   external unsafe_set: ('a, 'b, 'c) t -> int -> 'a -> unit
                      = "%caml_ba_unsafe_set_1"
   (** Like {!Bigarray.Array1.set}, but bounds checking is not always performed.
       Use with caution and only when the program logic guarantees that
-      the access is within bounds and the big array has not been released. *)
+      the access is within bounds. *)
 
 end
 
@@ -625,21 +601,15 @@ module Array2 :
   (** Memory mapping of a file as a two-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
 
-  val release: ('a, 'b, 'c) t -> unit
-  (** Explicit release of the resources associated with the big array.
-     See {!Bigarray.Genarray.release} for more details. *)
-
   external unsafe_get: ('a, 'b, 'c) t -> int -> int -> 'a
                      = "%caml_ba_unsafe_ref_2"
-  (** Like {!Bigarray.Array2.get}, but bounds checking is not always performed.
-      Use with caution and only when the program logic guarantees that
-      the access is within bounds and the big array has not been released. *)
+  (** Like {!Bigarray.Array2.get}, but bounds checking is not always
+      performed. *)
 
   external unsafe_set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit
                      = "%caml_ba_unsafe_set_2"
-  (** Like {!Bigarray.Array2.set}, but bounds checking is not always performed.
-      Use with caution and only when the program logic guarantees that
-      the access is within bounds and the big array has not been released. *)
+  (** Like {!Bigarray.Array2.set}, but bounds checking is not always
+      performed. *)
 
 end
 
@@ -759,21 +729,15 @@ module Array3 :
   (** Memory mapping of a file as a three-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
 
-  val release: ('a, 'b, 'c) t -> unit
-  (** Explicit release of the resources associated with the big array.
-     See {!Bigarray.Genarray.release} for more details. *)
-
   external unsafe_get: ('a, 'b, 'c) t -> int -> int -> int -> 'a
                      = "%caml_ba_unsafe_ref_3"
-  (** Like {!Bigarray.Array3.get}, but bounds checking is not always performed.
-      Use with caution and only when the program logic guarantees that
-      the access is within bounds and the big array has not been released. *)
+  (** Like {!Bigarray.Array3.get}, but bounds checking is not always
+      performed. *)
 
   external unsafe_set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit
                      = "%caml_ba_unsafe_set_3"
-  (** Like {!Bigarray.Array3.set}, but bounds checking is not always performed.
-      Use with caution and only when the program logic guarantees that
-      the access is within bounds and the big array has not been released. *)
+  (** Like {!Bigarray.Array3.set}, but bounds checking is not always
+      performed. *)
 
 end
 
