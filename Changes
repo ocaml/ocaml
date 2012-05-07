@@ -38,6 +38,17 @@ Native-code compiler:
   and 64-bits only. (PR#5487)
 - New tool: ocamloptp, the equivalent of ocamlcp for the native-code compiler.
 
+OCamldoc:
+- PR#5544: improve HTML output (less formatting in html code)
+- PR#5522: allow refering to record fields and variant constructors
+- fix PR#5419 (error message in french)
+- fix PR#5535 (no cross ref to class after dump+load)
+* Use first class modules for custom generators, to be able to
+  load various plugins incrementally adding features to the current
+  generator
+* PR#5507: Use Location.t structures for locations.
+- fix: do not keep code when not told to keep code.
+
 Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)
 * Arg: options with empty doc strings are no longer included in the usage string
