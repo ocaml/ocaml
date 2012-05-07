@@ -454,6 +454,8 @@ let () =
 let () =
   pflag ["ocaml"; "native"; "compile"] "for-pack"
     (fun param -> S [A "-for-pack"; A param]);
+  pflag ["ocaml"; "native"; "pack"] "for-pack"
+    (fun param -> S [A "-for-pack"; A param]);
   pflag ["ocaml"; "native"; "compile"] "inline"
     (fun param -> S [A "-inline"; A param]);
   pflag ["ocaml"; "compile"] "pp"
