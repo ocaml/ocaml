@@ -289,7 +289,7 @@ module Analyser =
               val_recursive = false ;
               val_parameters = Odoc_value.dummy_parameter_list subst_typ ;
               val_code = None ;
-              val_loc = { loc_impl = None ; loc_inter = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) };
+              val_loc = { loc_impl = None ; loc_inter = Some loc };
             } ;
             met_private = private_flag = Asttypes.Private ;
             met_virtual = false ;
@@ -345,7 +345,7 @@ module Analyser =
                   val_recursive = false ;
                   val_parameters = [] ;
                   val_code = None ;
-                  val_loc = { loc_impl = None ; loc_inter = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum)} ;
+                  val_loc = { loc_impl = None ; loc_inter = Some loc} ;
                 } ;
                 att_mutable = mutable_flag = Asttypes.Mutable ;
                 att_virtual = virtual_flag = Asttypes.Virtual ;
@@ -459,6 +459,7 @@ module Analyser =
                 signat
                 table
                 current_module_name
+                ele.Parsetree.psig_loc
                 ele.Parsetree.psig_loc.Location.loc_start.Lexing.pos_cnum
                 ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum
                 (match q with
@@ -481,7 +482,7 @@ module Analyser =
     (** Analyse the given signature_item_desc to create the corresponding module element
        (with the given attached comment).*)
     and analyse_signature_item_desc env signat table current_module_name
-        pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
+        sig_item_loc pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
         match sig_item_desc with
           Parsetree.Psig_value (name_pre, value_desc) ->
             let type_expr =
@@ -499,7 +500,7 @@ module Analyser =
                 val_recursive = false ;
                 val_parameters = Odoc_value.dummy_parameter_list subst_typ ;
                 val_code = None ;
-                val_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele)}
+                val_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
               }
             in
             let (maybe_more, info_after_opt) =
@@ -526,7 +527,7 @@ module Analyser =
                 ex_info = comment_opt ;
                 ex_args = List.map (Odoc_env.subst_type env) types_excep_decl.exn_args ;
                 ex_alias = None ;
-                ex_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
+                ex_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
                 ex_code =
                    (
                     if !Odoc_global.keep_code then
@@ -611,10 +612,7 @@ module Analyser =
                       (match sig_type_decl.Types.type_manifest with
                         None -> None
                       | Some t -> Some (Odoc_env.subst_type new_env t));
-                      ty_loc =
-                      { loc_impl = None ;
-                        loc_inter = Some (!file_name,loc_start) ;
-                      };
+                      ty_loc = { loc_impl = None ;  loc_inter = Some sig_item_loc } ;
                       ty_code =
                         (
                          if !Odoc_global.keep_code then
@@ -676,7 +674,7 @@ module Analyser =
                 m_is_interface = true ;
                 m_file = !file_name ;
                 m_kind = module_kind ;
-                m_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
+                m_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
                 m_top_deps = [] ;
                 m_code = None ;
                 m_code_intf = code_intf ;
@@ -727,8 +725,9 @@ module Analyser =
                   (acc_maybe_more, [])
               | (name, modtype) :: q ->
                   let complete_name = Name.concat current_module_name name in
-                  let loc_start = modtype.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
-                  let loc_end = modtype.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
+                  let loc = modtype.Parsetree.pmty_loc in
+                  let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
+                  let loc_end = loc.Location.loc_end.Lexing.pos_cnum in
                   let (assoc_com, ele_comments) =
                     if first then
                       (comment_opt, [])
@@ -740,7 +739,7 @@ module Analyser =
                   let pos_limit2 =
                     match q with
                       [] -> pos_limit
-                    | (_, mty) :: _ -> mty.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum
+                    | (_, mty) :: _ -> loc.Location.loc_start.Lexing.pos_cnum
                   in
                   (* get the information for the module in the signature *)
                   let sig_module_type =
@@ -752,7 +751,6 @@ module Analyser =
                   let module_kind = analyse_module_kind new_env complete_name modtype sig_module_type in
                   let code_intf =
                     if !Odoc_global.keep_code then
-                      let loc = modtype.Parsetree.pmty_loc in
                       let st = loc.Location.loc_start.Lexing.pos_cnum in
                       let en = loc.Location.loc_end.Lexing.pos_cnum in
                       Some (get_string_of_file st en)
@@ -767,7 +765,7 @@ module Analyser =
                       m_is_interface = true ;
                       m_file = !file_name ;
                       m_kind = module_kind ;
-                      m_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
+                      m_loc = { loc_impl = None ; loc_inter = Some loc } ;
                       m_top_deps = [] ;
                       m_code = None ;
                       m_code_intf = code_intf ;
@@ -815,7 +813,7 @@ module Analyser =
                 mt_is_interface = true ;
                 mt_file = !file_name ;
                 mt_kind = module_type_kind ;
-                mt_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
+                mt_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
               }
             in
             let (maybe_more, info_after_opt) =
@@ -913,7 +911,7 @@ module Analyser =
                      cl_virtual = class_desc.Parsetree.pci_virt = Asttypes.Virtual ;
                      cl_kind = class_kind ;
                      cl_parameters = parameters ;
-                     cl_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
+                     cl_loc = { loc_impl = None ; loc_inter = Some class_desc.Parsetree.pci_loc } ;
                    }
                  in
                  let (maybe_more, info_after_opt) =
@@ -987,7 +985,7 @@ module Analyser =
                       clt_type_parameters = sig_cltype_decl.clty_params ;
                       clt_virtual = ct_decl.Parsetree.pci_virt = Asttypes.Virtual ;
                       clt_kind = kind ;
-                      clt_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
+                      clt_loc = { loc_impl = None ; loc_inter = Some ct_decl.Parsetree.pci_loc } ;
                     }
                   in
                   let (maybe_more, info_after_opt) =
@@ -1295,7 +1293,7 @@ module Analyser =
         m_is_interface = true ;
         m_file = !file_name ;
         m_kind = Module_struct elements ;
-        m_loc = { loc_impl = None ; loc_inter = Some (!file_name, 0) } ;
+        m_loc = { loc_impl = None ; loc_inter = Some (Location.in_file !file_name) } ;
         m_top_deps = [] ;
         m_code = None ;
         m_code_intf = code_intf ;

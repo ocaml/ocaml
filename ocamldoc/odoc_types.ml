@@ -93,8 +93,8 @@ let dummy_info = {
 }
 
 type location = {
-    loc_impl : (string * int) option ;
-    loc_inter : (string * int) option ;
+    loc_impl : Location.t option ;
+    loc_inter : Location.t option ;
   }
 
 let dummy_loc = { loc_impl = None ; loc_inter = None }

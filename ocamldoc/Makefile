@@ -305,6 +305,13 @@ test_stdlib: dummy
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli
 
+test_stdlib_code: dummy
+	$(MKDIR) $@
+	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
+	`ls ../stdlib/*.ml | grep -v Labels` \
+	../otherlibs/unix/unix.ml \
+	../otherlibs/str/str.ml
+
 test_framed: dummy
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -g odoc_fhtml.cmo -sort -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli

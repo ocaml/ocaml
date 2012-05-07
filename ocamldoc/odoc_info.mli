@@ -100,8 +100,8 @@ type info = Odoc_types.info = {
 
 (** Location of elements in implementation and interface files. *)
 type location = Odoc_types.location = {
-    loc_impl : (string * int) option ; (** implementation file name and position *)
-    loc_inter : (string * int) option ; (** interface file name and position *)
+    loc_impl : Location.t option ; (** implementation location *)
+    loc_inter : Location.t option ; (** interface location *)
   }
 
 (** A dummy location. *)

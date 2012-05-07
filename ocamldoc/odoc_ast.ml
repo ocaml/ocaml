@@ -372,7 +372,7 @@ module Analyser =
              val_recursive = rec_flag = Asttypes.Recursive ;
              val_parameters = tt_analyse_function_parameters env comment_opt pat_exp_list2 ;
              val_code = code ;
-             val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+             val_loc = { loc_impl = Some loc ; loc_inter = None } ;
            }
            in
            [ new_value ]
@@ -396,7 +396,7 @@ module Analyser =
              val_recursive = rec_flag = Asttypes.Recursive ;
              val_parameters = [] ;
              val_code = code ;
-             val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+             val_loc = { loc_impl = Some loc ; loc_inter = None } ;
            }
            in
            [ new_value ]
@@ -585,7 +585,7 @@ module Analyser =
                 val_recursive = false ;
                 val_parameters = [] ;
                 val_code = code ;
-                val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+                val_loc = { loc_impl = Some loc ; loc_inter = None } ;
               } ;
               att_mutable = mutable_flag = Asttypes.Mutable ;
               att_virtual = virt ;
@@ -624,7 +624,7 @@ module Analyser =
                 val_recursive = false ;
                 val_parameters = [] ;
                 val_code = code ;
-                val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+                val_loc = { loc_impl = Some loc ; loc_inter = None } ;
               } ;
               met_private = private_flag = Asttypes.Private ;
               met_virtual = true ;
@@ -665,7 +665,7 @@ module Analyser =
                 val_recursive = false ;
                 val_parameters = tt_analyse_method_expression env complete_name info_opt exp ;
                 val_code = code ;
-                val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+                val_loc = { loc_impl = Some loc ; loc_inter = None } ;
               } ;
               met_private = private_flag = Asttypes.Private ;
               met_virtual = false ;
@@ -847,7 +847,8 @@ module Analyser =
     let analyse_class env current_module_name comment_opt p_class_decl tt_type_params tt_class_exp table =
       let name = p_class_decl.Parsetree.pci_name in
       let complete_name = Name.concat current_module_name name in
-      let pos_start = p_class_decl.Parsetree.pci_expr.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum in
+      let loc = p_class_decl.Parsetree.pci_expr.Parsetree.pcl_loc in
+      let pos_start = loc.Location.loc_start.Lexing.pos_cnum in
       let type_parameters = tt_type_params in
       let virt = p_class_decl.Parsetree.pci_virt = Asttypes.Virtual in
       let cltype = Odoc_env.subst_class_type env tt_class_exp.Typedtree.cl_type in
@@ -869,7 +870,7 @@ module Analyser =
           cl_type_parameters = type_parameters ;
           cl_kind = kind ;
           cl_parameters = parameters ;
-          cl_loc = { loc_impl = Some (!file_name, pos_start) ; loc_inter = None } ;
+          cl_loc = { loc_impl = Some loc ; loc_inter = None } ;
         }
       in
       cl
@@ -1141,7 +1142,7 @@ module Analyser =
                 val_recursive = false ;
                 val_parameters = [] ;
                 val_code = code ;
-                val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+                val_loc = { loc_impl = Some loc ; loc_inter = None } ;
               }
             in
             let new_env = Odoc_env.add_value env new_value.val_name in
@@ -1164,8 +1165,9 @@ module Analyser =
                 [] -> (maybe_more_acc, [])
               | (name, type_decl) :: q ->
                   let complete_name = Name.concat current_module_name name in
-                  let loc_start = type_decl.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum in
-                  let loc_end =  type_decl.Parsetree.ptype_loc.Location.loc_end.Lexing.pos_cnum in
+                  let loc = type_decl.Parsetree.ptype_loc in
+                  let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
+                  let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
                   let pos_limit2 =
                   match q with
                       [] -> pos_limit
@@ -1207,10 +1209,10 @@ module Analyser =
                       ty_kind = kind ;
                       ty_private = tt_type_decl.Types.type_private;
                       ty_manifest =
-                      (match tt_type_decl.Types.type_manifest with
-                         None -> None
-                       | Some t -> Some (Odoc_env.subst_type new_env t));
-                      ty_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
+                        (match tt_type_decl.Types.type_manifest with
+                           None -> None
+                         | Some t -> Some (Odoc_env.subst_type new_env t));
+                      ty_loc = { loc_impl = Some loc ; loc_inter = None } ;
                       ty_code =
                       (
                        if !Odoc_global.keep_code then
@@ -1250,7 +1252,7 @@ module Analyser =
               ex_info = comment_opt ;
               ex_args = List.map (Odoc_env.subst_type new_env) tt_excep_decl.exn_args ;
               ex_alias = None ;
-              ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+              ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
               ex_code =
                 (
                  if !Odoc_global.keep_code then
@@ -1279,7 +1281,7 @@ module Analyser =
               ex_args = [] ;
               ex_alias = Some { ea_name = (Odoc_env.full_exception_name env (Name.from_path tt_path)) ;
                                 ea_ex = None ; } ;
-              ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+              ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
               ex_code = None ;
             }
           in
@@ -1406,7 +1408,7 @@ module Analyser =
               mt_is_interface = false ;
               mt_file = !file_name ;
               mt_kind = Some kind ;
-              mt_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+              mt_loc = { loc_impl = Some loc ; loc_inter = None } ;
             }
           in
           let new_env = Odoc_env.add_module_type env mt.mt_name in
@@ -1521,7 +1523,7 @@ module Analyser =
                       clt_type_parameters = List.map (Odoc_env.subst_type new_env) type_params ;
                       clt_virtual = virt ;
                       clt_kind = kind ;
-                      clt_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ;
+                      clt_loc = { loc_impl = Some loc ;
                                   loc_inter = None } ;
                     }
                 in
@@ -1545,8 +1547,9 @@ module Analyser =
      (** Analysis of a [Parsetree.module_expr] and a name to return a [t_module].*)
      and analyse_module env current_module_name module_name comment_opt p_module_expr tt_module_expr =
       let complete_name = Name.concat current_module_name module_name in
-      let pos_start = p_module_expr.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
-      let pos_end = p_module_expr.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
+      let loc = p_module_expr.Parsetree.pmod_loc in
+      let pos_start = loc.Location.loc_start.Lexing.pos_cnum in
+      let pos_end = loc.Location.loc_end.Lexing.pos_cnum in
       let modtype =
         (* A VOIR : Odoc_env.subst_module_type env  ? *)
         tt_module_expr.Typedtree.mod_type
@@ -1568,7 +1571,7 @@ module Analyser =
           m_is_interface = false ;
           m_file = !file_name ;
           m_kind = Module_struct [] ;
-          m_loc = { loc_impl = Some (!file_name, pos_start) ; loc_inter = None } ;
+          m_loc = { loc_impl = Some loc ; loc_inter = None } ;
           m_top_deps = [] ;
           m_code = None ; (* code is set by the caller, after the module is created *)
           m_code_intf = m_code_intf ;
@@ -1768,7 +1771,7 @@ module Analyser =
          m_is_interface = false ;
          m_file = !file_name ;
          m_kind = kind ;
-         m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
+         m_loc = { loc_impl = Some (Location.in_file !file_name) ; loc_inter = None } ;
          m_top_deps = [] ;
          m_code = (if !Odoc_global.keep_code then Some !file else None) ;
          m_code_intf = None ;
