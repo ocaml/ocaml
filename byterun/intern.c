@@ -126,14 +126,71 @@ static void intern_cleanup(void)
   intern_free_stack();
 }
 
+static void readfloat(double * dest, unsigned int code)
+{
+  if (sizeof(double) != 8) {
+    intern_cleanup();
+    caml_invalid_argument("input_value: non-standard floats");
+  }
+  readblock((char *) dest, 8);
+  /* Fix up endianness, if needed */
+#if ARCH_FLOAT_ENDIANNESS == 0x76543210
+  /* Host is big-endian; fix up if data read is little-endian */
+  if (code != CODE_DOUBLE_BIG) Reverse_64(dest, dest);
+#elif ARCH_FLOAT_ENDIANNESS == 0x01234567
+  /* Host is little-endian; fix up if data read is big-endian */
+  if (code != CODE_DOUBLE_LITTLE) Reverse_64(dest, dest);
+#else
+  /* Host is neither big nor little; permute as appropriate */
+  if (code == CODE_DOUBLE_LITTLE)
+    Permute_64(dest, ARCH_FLOAT_ENDIANNESS, dest, 0x01234567)
+  else
+    Permute_64(dest, ARCH_FLOAT_ENDIANNESS, dest, 0x76543210);
+#endif
+}
+
+static void readfloats(double * dest, mlsize_t len, unsigned int code)
+{
+  mlsize_t i;
+  if (sizeof(double) != 8) {
+    intern_cleanup();
+    caml_invalid_argument("input_value: non-standard floats");
+  }
+  readblock((char *) dest, len * 8);
+  /* Fix up endianness, if needed */
+#if ARCH_FLOAT_ENDIANNESS == 0x76543210
+  /* Host is big-endian; fix up if data read is little-endian */
+  if (code != CODE_DOUBLE_ARRAY8_BIG &&
+      code != CODE_DOUBLE_ARRAY32_BIG) {
+    for (i = 0; i < len; i++) Reverse_64(dest + i, dest + i);
+  }
+#elif ARCH_FLOAT_ENDIANNESS == 0x01234567
+  /* Host is little-endian; fix up if data read is big-endian */
+  if (code != CODE_DOUBLE_ARRAY8_LITTLE &&
+      code != CODE_DOUBLE_ARRAY32_LITTLE) {
+    for (i = 0; i < len; i++) Reverse_64(dest + i, dest + i);
+  }
+#else
+  /* Host is neither big nor little; permute as appropriate */
+  if (code == CODE_DOUBLE_ARRAY8_LITTLE ||
+      code == CODE_DOUBLE_ARRAY32_LITTLE) {
+    for (i = 0; i < len; i++)
+      Permute_64(dest + i, ARCH_FLOAT_ENDIANNESS, dest + i, 0x01234567);
+  } else {
+    for (i = 0; i < len; i++)
+      Permute_64(dest + i, ARCH_FLOAT_ENDIANNESS, dest + i, 0x76543210);
+  }
+#endif
+}
+
 /* Item on the stack with defined operation */
 struct intern_item {
   value * dest;
   intnat arg;
   enum {
-    OReadItems,
-    OFreshIOD,
-    OShift
+    OReadItems, /* read arg items and store them in dest[0], dest[1], ... */
+    OFreshOID,  /* generate a fresh OID and store it in *dest */
+    OShift      /* offset *dest by arg */
   } op;
 };
 
@@ -199,14 +256,13 @@ static struct intern_item * intern_resize_stack(struct intern_item * sp)
     if (sp >= intern_stack_limit) sp = intern_resize_stack(sp);         \
   } while(0)
 
-#define ReadItems(_n)                                                   \
+#define ReadItems(_dest,_n)                                             \
   do {                                                                  \
     if (_n > 0) {                                                       \
       PushItem();                                                       \
       sp->op = OReadItems;                                              \
-      sp->dest = dest;                                                  \
+      sp->dest = _dest;                                                 \
       sp->arg = _n;                                                     \
-      dest += _n;                                                       \
     }                                                                   \
   } while(0)
 
@@ -226,38 +282,40 @@ static void intern_rec(value *dest)
   sp = intern_stack;
 
   /* Initially let's try to read the first object from the stream */
-  v = *dest;
-  ReadItems(1);
+  ReadItems(dest, 1);
 
   /* The un-marshaler loop, the recursion is unrolled */
   while(sp != intern_stack) {
 
-  /* Pop one more item to un-marshal, if any */
-  dest = sp->dest;
-
   /* Interpret next item on the stack */
-  if (sp->op == OFreshIOD) {
+  dest = sp->dest;
+  switch (sp->op) {
+  case OFreshOID:
     /* Refresh the object ID */
-    if (camlinternaloo_last_id == NULL)
+    if (camlinternaloo_last_id == NULL) {
       camlinternaloo_last_id = caml_named_value("CamlinternalOO.last_id");
-    if (camlinternaloo_last_id == NULL)
-      camlinternaloo_last_id = (value*)-1;
-    else {
+      if (camlinternaloo_last_id == NULL)
+        camlinternaloo_last_id = (value*) (-1);
+    }
+    if (camlinternaloo_last_id != (value*) (-1)) {
       value id = Field(*camlinternaloo_last_id,0);
-      Field(dest,-1) = id;
+      Field(dest, 0) = id;
       Field(*camlinternaloo_last_id,0) = id + 2;
     }
-    if (--(sp->arg) == 0) sp--;
-  } else if (sp->op == OShift) {
+    /* Pop item and iterate */
+    sp--;
+    break;
+  case OShift:
     /* Shift value by an offset */
     *dest += sp->arg;
-  } else if (sp->op == OReadItems) {
-  
-  /* Pop one more item to un-marshal, if any */
-  sp->dest++;
-  if (--(sp->arg) == 0) sp--;
-
-    /* Read an item */
+    /* Pop item and iterate */
+    sp--;
+    break;
+  case OReadItems:
+    /* Pop item */
+    sp->dest++;
+    if (--(sp->arg) == 0) sp--;
+    /* Read a value and set v to this value */
   code = read8u();
   if (code >= PREFIX_SMALL_INT) {
     if (code >= PREFIX_SMALL_BLOCK) {
@@ -267,38 +325,30 @@ static void intern_rec(value *dest)
     read_block:
       if (size == 0) {
         v = Atom(tag);
-        *dest = v; 
       } else {
         v = Val_hp(intern_dest);
-        *dest = v;
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        dest = (value *) (intern_dest + 1);
         *intern_dest = Make_header(size, tag, intern_color);
         intern_dest += 1 + size;
         /* For objects, we need to freshen the oid */
-        if (tag == Object_tag && camlinternaloo_last_id != (value*)-1) {
-          /* Make a spare buffer for the two elements retrieved later */
-          dest += 2;
+        if (tag == Object_tag) {
+          Assert(size >= 2);
           /* Request to read rest of the elements of the block */
-          ReadItems(size-2);
-          /* Restore back the pointer - the macro increments dest */
-          dest = dest-size;
-          /* Push new item on the stack */
-          PushItem();
+          ReadItems(&Field(v, 2), size - 2);
           /* Request freshing OID */
-          sp->op = OFreshIOD;                                           
-          sp->dest = dest;                                              
+          PushItem();
+          sp->op = OFreshOID;                                           
+          sp->dest = &Field(v, 1);
           sp->arg = 1;
-          /* Finally read other two items: fields and methods */
-          ReadItems(2);
+          /* Finally read first two block elements: method table and old OID */
+          ReadItems(&Field(v, 0), 2);
         } else
           /* If it's not an object then read the contents of the block */
-          ReadItems(size);
+          ReadItems(&Field(v, 0), size);
       }
     } else {
       /* Small integer */
       v = Val_int(code & 0x3F);
-      *dest = v;
     }
   } else {
     if (code >= PREFIX_SMALL_STRING) {
@@ -372,68 +422,22 @@ static void intern_rec(value *dest)
         goto read_string;
       case CODE_DOUBLE_LITTLE:
       case CODE_DOUBLE_BIG:
-        if (sizeof(double) != 8) {
-          intern_cleanup();
-          caml_invalid_argument("input_value: non-standard floats");
-        }
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header(Double_wosize, Double_tag, intern_color);
         intern_dest += 1 + Double_wosize;
-        readblock((char *) v, 8);
-#if ARCH_FLOAT_ENDIANNESS == 0x76543210
-        if (code != CODE_DOUBLE_BIG) Reverse_64(v, v);
-#elif ARCH_FLOAT_ENDIANNESS == 0x01234567
-        if (code != CODE_DOUBLE_LITTLE) Reverse_64(v, v);
-#else
-        if (code == CODE_DOUBLE_LITTLE)
-          Permute_64(v, ARCH_FLOAT_ENDIANNESS, v, 0x01234567)
-        else
-          Permute_64(v, ARCH_FLOAT_ENDIANNESS, v, 0x76543210);
-#endif
+        readfloat((double *) v, code);
         break;
       case CODE_DOUBLE_ARRAY8_LITTLE:
       case CODE_DOUBLE_ARRAY8_BIG:
         len = read8u();
       read_double_array:
-        if (sizeof(double) != 8) {
-          intern_cleanup();
-          caml_invalid_argument("input_value: non-standard floats");
-        }
         size = len * Double_wosize;
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header(size, Double_array_tag, intern_color);
         intern_dest += 1 + size;
-        readblock((char *) v, len * 8);
-#if ARCH_FLOAT_ENDIANNESS == 0x76543210
-        if (code != CODE_DOUBLE_ARRAY8_BIG &&
-            code != CODE_DOUBLE_ARRAY32_BIG) {
-          mlsize_t i;
-          for (i = 0; i < len; i++) Reverse_64((value)((double *)v + i),
-                                               (value)((double *)v + i));
-        }
-#elif ARCH_FLOAT_ENDIANNESS == 0x01234567
-        if (code != CODE_DOUBLE_ARRAY8_LITTLE &&
-            code != CODE_DOUBLE_ARRAY32_LITTLE) {
-          mlsize_t i;
-          for (i = 0; i < len; i++) Reverse_64((value)((double *)v + i),
-                                               (value)((double *)v + i));
-        }
-#else
-        if (code == CODE_DOUBLE_ARRAY8_LITTLE ||
-            code == CODE_DOUBLE_ARRAY32_LITTLE) {
-          mlsize_t i;
-          for (i = 0; i < len; i++)
-            Permute_64((value)((double *)v + i), ARCH_FLOAT_ENDIANNESS,
-                       (value)((double *)v + i), 0x01234567);
-        } else {
-          mlsize_t i;
-          for (i = 0; i < len; i++)
-            Permute_64((value)((double *)v + i), ARCH_FLOAT_ENDIANNESS,
-                       (value)((double *)v + i), 0x76543210);
-        }
-#endif
+        readfloats((double *) v, len, code);
         break;
       case CODE_DOUBLE_ARRAY32_LITTLE:
       case CODE_DOUBLE_ARRAY32_BIG:
@@ -458,11 +462,13 @@ static void intern_rec(value *dest)
         break;
       case CODE_INFIXPOINTER:
         ofs = read32u();
+        /* Read a value to *dest, then offset *dest by ofs */
         PushItem();                                                     
+        sp->dest = dest;
         sp->op = OShift;                                                
-        sp->arg = ofs;                                                   
-        ReadItems(1);
-        break;
+        sp->arg = ofs;
+        ReadItems(dest, 1);
+        continue;  /* with next iteration of main loop, skipping *dest = v */
       case CODE_CUSTOM:
         ops = caml_find_custom_operations((char *) intern_src);
         if (ops == NULL) {
@@ -483,8 +489,12 @@ static void intern_rec(value *dest)
         caml_failwith("input_value: ill-formed message");
       }
     }
+  } 
+  /* end of case OReadItems */
   *dest = v;
-  }
+  break;
+  default:
+    Assert(0);
   }
   }
   /* We are done. Cleanup the stack and leave the function */
