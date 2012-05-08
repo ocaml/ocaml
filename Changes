@@ -6,9 +6,8 @@ OCaml 4.00.0:
 - The official name of the language is now OCaml.
 
 Language features:
-- Added Generalized Abstract Data Types (GADTs) to the language. See
-  testsuite/tests/typing-gadts for the syntax and some examples of
-  use. Please use -principal for testing.
+- Added Generalized Abstract Data Types (GADTs) to the language.
+  See chapter "Language extensions" of the reference manual for documentation.
 - It is now possible to omit type annotations when packing and unpacking
   first-class modules. The type-checker attempts to infer it from the context.
   Using the -principal option guarantees forward compatibility.
@@ -145,6 +144,7 @@ Bug Fixes:
 - PR#5543: in Bigarray.map_file, try to avoid using lseek() when growing file
 - PR#5538: combining -i and -annot in ocamlc
 - PR#5560: incompatible type for tuple pattern with -principal
+- PR#5610: new unmarshaler (from PR#5318) fails to freshen object identifiers
 - problem with printing of string literals in camlp4 (reported on caml-list)
 - emacs mode: colorization of comments and strings now works correctly
 

@@ -1,6 +1,6 @@
 (* Test for output_value / input_value *)
 
-let max_data_depth = 2600000
+let max_data_depth = 500000
 
 type t = A | B of int | C of float | D of string | E of char
        | F of t | G of t * t | H of int * t | I of t * float | J
@@ -429,14 +429,24 @@ let rec check_big n x =
 
 (* Test for really deep data structures *)
 let test_deep () =
+  (* Right-leaning *)
   let rec loop acc i =
     if i < max_data_depth
     then loop (i :: acc) (i+1)
     else acc in
   let x = loop [] 0 in
   let s = Marshal.to_string x [] in
-  test 425 (Marshal.from_string s 0 = x)
+  test 425 (Marshal.from_string s 0 = x);
+  (* Left-leaning *)
+  let rec loop acc i =
+    if i < max_data_depth
+    then loop (G(acc, B i)) (i+1)
+    else acc in
+  let x = loop A 0 in
+  let s = Marshal.to_string x [] in
+  test 426 (Marshal.from_string s 0 = x)
 
+(* Test for objects *)
 class foo = object (self : 'self) 
   val data1 = "foo"
   val data2 = "bar"
@@ -470,47 +480,49 @@ let test_objects () =
   let x = new foo in
   let s = Marshal.to_string x [Marshal.Closures] in
   let x = Marshal.from_string s 0 in
-  test 426 (x#test1 = "foobar");
-  test 427 (x#test2 = false);
-  test 428 (x#test3 = "foobar");
-  test 429 (x#test4 = 42L);
+  test 500 (x#test1 = "foobar");
+  test 501 (x#test2 = false);
+  test 502 (x#test3 = "foobar");
+  test 503 (x#test4 = 42L);
   let x = new bar in
   let s = Marshal.to_string x [Marshal.Closures] in
   let x = Marshal.from_string s 0 in
-  test 430 (x#test1 = "footest5test3test442");
-  test 431 (x#test2 = false);
-  test 432 (x#test3 = "footest5test3test442");
-  test 433 (x#test4 = 42L);
-  let x = new foobar in
-  let s = Marshal.to_string x [Marshal.Closures] in
+  test 504 (x#test1 = "footest5test3test442");
+  test 505 (x#test2 = false);
+  test 506 (x#test3 = "footest5test3test442");
+  test 507 (x#test4 = 42L);
+  let x0 = new foobar in
+  let s = Marshal.to_string x0 [Marshal.Closures] in
   let x = Marshal.from_string s 0 in
-  test 434 (x#test1 = "footest5test3test442");
-  test 435 (x#test2 = false);
-  test 436 (x#test3 = "footest5test3test442");
-  test 437 (x#test4 = 42L)
+  test 508 (x#test1 = "footest5test3test442");
+  test 509 (x#test2 = false);
+  test 510 (x#test3 = "footest5test3test442");
+  test 511 (x#test4 = 42L);
+  test 512 (Oo.id x = Oo.id x0 + 1)     (* PR#5610 *)
 
 (* Test for infix pointers *)
 let test_infix () =
-  let is_odd n =
-    let t = true and
-        f = false in
-    let rec odd n =
-      if n = 0
-      then t
-      else even (n-1)
-    and even n =
-      if n = 0
-      then f
-      else odd (n-1)
-    in
-    odd n
+  let t = true and
+      f = false in
+  let rec odd n =
+    if n = 0
+    then f
+    else even (n-1)
+  and even n =
+    if n = 0
+    then t
+    else odd (n-1)
   in
-  let s = Marshal.to_string is_odd [Marshal.Closures] in
-  let is_odd' : int -> bool = Marshal.from_string s 0 in
-  test 438 (is_odd' 41 = false);
-  test 439 (is_odd' 41 = is_odd 41);
-  test 438 (is_odd' 142 = true);
-  test 439 (is_odd' 142 = is_odd 142)
+  let s = Marshal.to_string (odd, even) [Marshal.Closures] in
+  let (odd', even': (int -> bool) * (int -> bool)) = Marshal.from_string s 0 in
+  test 600 (odd' 41 = true);
+  test 601 (odd' 41 = odd 41);
+  test 602 (odd' 142 = false);
+  test 603 (odd' 142 = odd 142);
+  test 604 (even' 41 = false);
+  test 605 (even' 41 = even 41);
+  test 606 (even' 142 = true);
+  test 607 (even' 142 = even 142)
   
 let main() =
   if Array.length Sys.argv <= 2 then begin
