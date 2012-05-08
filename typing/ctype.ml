@@ -690,12 +690,11 @@ let forward_try_expand_once = (* Forward declaration *)
 let get_level env p = 
   try
     match (Env.find_type p env).type_newtype_level with
-      | None -> Path.binding_time p
-      | Some (x, _) -> x
-  with 
-    | _ -> 
-      (* no newtypes in predef *)
-      Path.binding_time p
+    | None -> Path.binding_time p
+    | Some (x, _) -> x
+  with Not_found -> 
+    (* no newtypes in predef *)
+    Path.binding_time p
 
 let rec update_level env level ty =
   let ty = repr ty in
@@ -1437,10 +1436,13 @@ let expand_head_opt env ty =
 let enforce_constraints env ty =
   match ty with
     {desc = Tconstr (path, args, abbrev); level = level} ->
-      let decl = Env.find_type path env in
-      ignore
-        (subst env level Public (ref Mnil) None decl.type_params args
-           (newvar2 level))
+      begin try
+        let decl = Env.find_type path env in
+        ignore
+          (subst env level Public (ref Mnil) None decl.type_params args
+             (newvar2 level))
+      with Not_found -> ()
+      end
   | _ ->
       assert false
 
@@ -1490,7 +1492,7 @@ let rec non_recursive_abbrev env ty0 ty =
         with Cannot_expand ->
           if !Clflags.recursive_types &&
             (in_current_module p || in_pervasives p ||
-             is_datatype (Env.find_type p env))
+             try is_datatype (Env.find_type p env) with Not_found -> false)
           then ()
           else iter_type_expr (non_recursive_abbrev env ty0) ty
         end
@@ -1832,11 +1834,13 @@ let reify env t =
   in
   iterator t
 
-let is_abstract_newtype env p = 
-  let decl = Env.find_type p env in 
-  not (decl.type_newtype_level = None) &&
-  decl.type_manifest = None &&
-  decl.type_kind = Type_abstract
+let is_abstract_newtype env p =
+  try
+    let decl = Env.find_type p env in 
+    not (decl.type_newtype_level = None) &&
+    decl.type_manifest = None &&
+    decl.type_kind = Type_abstract
+  with Not_found -> false
 
 (* mcomp type_pairs subst env t1 t2 does not raise an 
    exception if it is possible that t1 and t2 are actually
@@ -1957,22 +1961,24 @@ and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
     in_pervasives p ||
     in_current_module p && decl.type_newtype_level = None
   in
-  let decl = Env.find_type p1 env in
-  let decl' = Env.find_type p2 env in
-  if Path.same p1 p2 then
-    if non_aliased p1 decl then mcomp_list type_pairs subst env tl1 tl2 else ()
-  else match decl.type_kind, decl'.type_kind with
-  | Type_record (lst,r), Type_record (lst',r') when r = r' ->
-      mcomp_list type_pairs subst env tl1 tl2;
-      mcomp_record_description type_pairs subst env lst lst'
-  | Type_variant v1, Type_variant v2 ->
-      mcomp_list type_pairs subst env tl1 tl2;
-      mcomp_variant_description type_pairs subst env v1 v2
-  | Type_variant _, Type_record _
-  | Type_record _, Type_variant _ -> raise (Unify [])
-  | _ ->
-      if non_aliased p1 decl && (non_aliased p2 decl' || is_datatype decl')
-      || is_datatype decl && non_aliased p2 decl' then raise (Unify [])
+  try
+    let decl = Env.find_type p1 env in
+    let decl' = Env.find_type p2 env in
+    if Path.same p1 p2 then
+      (if non_aliased p1 decl then mcomp_list type_pairs subst env tl1 tl2)
+    else match decl.type_kind, decl'.type_kind with
+    | Type_record (lst,r), Type_record (lst',r') when r = r' ->
+        mcomp_list type_pairs subst env tl1 tl2;
+        mcomp_record_description type_pairs subst env lst lst'
+    | Type_variant v1, Type_variant v2 ->
+        mcomp_list type_pairs subst env tl1 tl2;
+        mcomp_variant_description type_pairs subst env v1 v2
+    | Type_variant _, Type_record _
+    | Type_record _, Type_variant _ -> raise (Unify [])
+    | _ ->
+        if non_aliased p1 decl && (non_aliased p2 decl' || is_datatype decl')
+        || is_datatype decl && non_aliased p2 decl' then raise (Unify [])
+  with Not_found -> ()
 
 and mcomp_type_option type_pairs subst env t t' = 
   match t, t' with
@@ -2022,10 +2028,11 @@ let find_lowest_level ty =
     end
   in find ty; unmark_type ty; !lowest
 
-let find_newtype_level env path = 
-  match (Env.find_type path env).type_newtype_level with
-    Some x -> x
+let find_newtype_level env path =
+  try match (Env.find_type path env).type_newtype_level with
+  | Some x -> x
   | None -> assert false
+  with Not_found -> assert false
         
 let add_gadt_equation env source destination =
   let destination = duplicate_type destination in 
@@ -2179,7 +2186,7 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
           if !umode = Expression || not !generate_equations
           || in_current_module p1 || in_pervasives p1
-          || is_datatype (Env.find_type p1 !env)
+          || try is_datatype (Env.find_type p1 !env) with Not_found -> false
           then
             unify_list env tl1 tl2
           else

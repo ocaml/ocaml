@@ -300,7 +300,7 @@ and 'a v = 'a u t constraint 'a = int
 Error: Constraints are not satisfied in this type.
        Type 'a u t should be an instance of g t
 # type 'a u = 'a constraint 'a = g
-and 'a v = 'a u t constraint 'a = int
+and 'a v = 'a u t constraint 'a = g
 #     Characters 38-58:
   type 'a u = < m : 'a v > and 'a v = 'a list u;;
       ^^^^^^^^^^^^^^^^^^^^

@@ -283,7 +283,7 @@ and 'a v = 'a u t constraint 'a = int
 Error: Constraints are not satisfied in this type.
        Type 'a u t should be an instance of g t
 # type 'a u = 'a constraint 'a = g
-and 'a v = 'a u t constraint 'a = int
+and 'a v = 'a u t constraint 'a = g
 #     Characters 38-58:
   type 'a u = < m : 'a v > and 'a v = 'a list u;;
       ^^^^^^^^^^^^^^^^^^^^
@@ -441,12 +441,7 @@ Error: Type < m : 'a. 'a -> ('a * (< m : 'c. 'c -> 'b as 'e > as 'd) as 'b) >
   = struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
-       Modules do not match:
-         sig val f : (< m : 'a. 'a * ('a * 'b) > as 'b) -> unit end
-       is not included in
-         sig
-           val f : < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) > -> unit
-         end
+       ...
        Values do not match:
          val f : (< m : 'a. 'a * ('a * 'b) > as 'b) -> unit
        is not included in
