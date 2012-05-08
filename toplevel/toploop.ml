@@ -220,8 +220,8 @@ let execute_phrase print_outcome ppf phr =
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) =
         Typemod.type_structure oldenv sstr Location.none in
-      let _ =
-        Includemod.compunit "//toplevel//" sg "(inferred signature)" sg in
+      let sg' = Typemod.simplify_signature sg in
+      ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
@@ -238,8 +238,7 @@ let execute_phrase print_outcome ppf phr =
                     let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                     Ophr_eval (outv, ty)
                 | [] -> Ophr_signature []
-                | _ -> Ophr_signature (item_list newenv
-                                             (Typemod.simplify_signature sg))
+                | _ -> Ophr_signature (item_list newenv sg')
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
