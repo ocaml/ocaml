@@ -769,6 +769,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  reset_debug_info();                   (* PR#5603 *)
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
     if macosx then

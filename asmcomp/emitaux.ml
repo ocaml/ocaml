@@ -123,12 +123,17 @@ let file_pos_nums =
 (* Number of files *)
 let file_pos_num_cnt = ref 1
 
+(* Reset debug state at beginning of asm file *)
+let reset_debug_info () =
+  file_pos_nums := [];
+  file_pos_num_cnt := 1
+
 (* We only diplay .file if the file has not been seen before. We
    display .loc for every instruction. *)
 let emit_debug_info dbg =
-  let line = dbg.Debuginfo.dinfo_line in
-  let file_name = dbg.Debuginfo.dinfo_file in
   if !Clflags.debug && not (Debuginfo.is_none dbg) then (
+    let line = dbg.Debuginfo.dinfo_line in
+    let file_name = dbg.Debuginfo.dinfo_file in
     let file_num =
       try List.assoc file_name !file_pos_nums
       with Not_found ->
