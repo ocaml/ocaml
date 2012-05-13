@@ -19,6 +19,10 @@ dependencies. (See below for a typical "Makefile".)
 Dependencies are generated both for compiling with the bytecode
 compiler "ocamlc" and with the native-code compiler "ocamlopt".
 
+The "ocamlbuild" compilation manager (see chapter~\ref{c:ocamlbuild})
+provide a higher-level, more automated alternative to the combination
+of "make" and "ocamldep".  
+
 \section{Options}
 
 The following command-line options are recognized by "ocamldep".

@@ -598,3 +598,10 @@ $ ./fib 10
 $ ./fib 20
 10946
 \end{verbatim}
+
+More complex standalone OCaml programs are typically composed of
+multiple source files, and can link with precompiled libraries.
+Chapters~\ref{c:camlc} and~\ref{c:nativecomp} explain how to use the
+batch compilers "ocamlc" and "ocamlopt".  Recompilation of
+multi-file OCaml projects can be automated using the "ocamlbuild"
+compilation manager, documented in chapter~\ref{c:ocamlbuild}.

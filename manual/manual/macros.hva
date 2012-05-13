@@ -84,7 +84,7 @@
 
 \newcommand{\vfill}{}
 \def\number{}
-\def\year{2008}
+\def\year{2012}
 
 % Pour alltt
 \def\rminalltt#1{{\rm #1}}
@@ -97,3 +97,5 @@
 {\setenvclass{itemize}{ftoc2}\setenvclass{li-itemize}{li-links}\itemize}
 {\enditemize}
 
+% Pour le chapitre ocamlbuild
+\newcommand{\mathscr}[1]{{\mathcal{#1}}}

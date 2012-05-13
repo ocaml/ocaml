@@ -69,6 +69,7 @@ and as a
 \input{ocamldoc.tex}
 \input{debugger.tex}
 \input{profil.tex}
+\input{ocamlbuild.tex}
 % \input emacs.tex
 \input{intf-c.tex}
 
