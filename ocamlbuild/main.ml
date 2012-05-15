@@ -37,9 +37,10 @@ let clean () =
 ;;
 
 let show_tags () =
-  Log.eprintf "Warning: these do not include dynamically-generated tags, such as \
-    link, compile, pack, byte, native, c, pdf... (this list is by no means \
-    exhaustive).\n";
+  if List.length !Options.show_tags > 0 then
+    Log.eprintf "Warning: the following tags do not include \
+    dynamically-generated tags, such as link, compile, pack, byte, native, c, \
+    pdf... (this list is by no means exhaustive).\n";
   List.iter begin fun path ->
     Log.eprintf "@[<2>Tags for %S:@ {. %a .}@]" path Tags.print (tags_of_pathname path)
   end !Options.show_tags
