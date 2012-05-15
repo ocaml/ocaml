@@ -28,7 +28,9 @@ let seeded_hash seed x = seeded_hash_param 10 100 seed x
 type ('a, 'b) t =
   { mutable size: int;                        (* number of entries *)
     mutable data: ('a, 'b) bucketlist array;  (* the buckets *)
-    mutable seed: int }                       (* for randomization *)
+    mutable seed: int;                        (* for randomization *)
+    initial_size: int;                        (* initial array size *)
+  }
 
 and ('a, 'b) bucketlist =
     Empty
@@ -58,13 +60,24 @@ let rec power_2_above x n =
 let create ?(random = !randomized) initial_size =
   let s = power_2_above 16 initial_size in
   let seed = if random then Random.State.bits (Lazy.force prng) else 0 in
-  { size = 0; seed = seed; data = Array.make s Empty }
+  { initial_size; size = 0; seed = seed; data = Array.make s Empty }
 
 let clear h =
-  for i = 0 to Array.length h.data - 1 do
+  h.size <- 0;
+  let len = Array.length h.data in
+  for i = 0 to len - 1 do
     h.data.(i) <- Empty
-  done;
-  h.size <- 0
+  done
+
+let reset h =
+  let len = Array.length h.data in
+  if Obj.size (Obj.repr h) < 4 (* compatibility with old hash tables *)
+    || len = h.initial_size then
+    clear h
+  else begin
+    h.size <- 0;
+    h.data <- Array.create len Empty
+  end
 
 let copy h = { h with data = Array.copy h.data }
 
@@ -90,7 +103,7 @@ let resize indexfun h =
 
 let key_index h key =
   (* compatibility with old hash tables *)
-  if Obj.size (Obj.repr h) = 3
+  if Obj.size (Obj.repr h) >= 3
   then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
   else (old_hash_param 10 100 key) mod (Array.length h.data)
 
@@ -238,7 +251,8 @@ module type S =
     type key
     type 'a t
     val create: int -> 'a t
-    val clear: 'a t -> unit
+    val clear : 'a t -> unit
+    val reset : 'a t -> unit
     val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
@@ -258,6 +272,7 @@ module type SeededS =
     type 'a t
     val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
+    val reset : 'a t -> unit
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
@@ -278,6 +293,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     type 'a t = 'a hashtbl
     let create = create
     let clear = clear
+    let reset = reset
     let copy = copy
 
     let key_index h key =

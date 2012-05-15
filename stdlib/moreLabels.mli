@@ -27,6 +27,7 @@ module Hashtbl : sig
   type ('a, 'b) t = ('a, 'b) Hashtbl.t
   val create : ?random:bool -> int -> ('a, 'b) t
   val clear : ('a, 'b) t -> unit
+  val reset : ('a, 'b) t -> unit
   val copy : ('a, 'b) t -> ('a, 'b) t
   val add : ('a, 'b) t -> key:'a -> data:'b -> unit
   val find : ('a, 'b) t -> 'a -> 'b
@@ -50,6 +51,7 @@ module Hashtbl : sig
       and 'a t
       val create : int -> 'a t
       val clear : 'a t -> unit
+      val reset : 'a t -> unit
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
@@ -70,6 +72,7 @@ module Hashtbl : sig
       and 'a t
       val create : ?random:bool -> int -> 'a t
       val clear : 'a t -> unit
+      val reset : 'a t -> unit
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
