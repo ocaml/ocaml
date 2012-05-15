@@ -146,6 +146,13 @@ NATIVECCLINKOPTS=
 ### Build partially-linked object file
 PACKLD=link /lib /nologo /machine:AMD64 /out:# there must be no space after this '/out:'
 
+############# Configuration for camlp4
+
+# This variable controls whether camlp4 will be built.
+# If it is set to camlp4, then it will be built.
+# If it is set to the empty string, then it will not be built.
+CAMLP4=camlp4
+
 ############# Configuration for the contributed libraries
 
 OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray
