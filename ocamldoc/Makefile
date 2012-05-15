@@ -210,7 +210,7 @@ debug:
 $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa dynlink.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLCMOFILES) $(LIBCMOFILES)
