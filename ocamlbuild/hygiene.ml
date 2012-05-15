@@ -72,7 +72,8 @@ let check ?sanitize laws entry =
         list_collect
           begin function
             | File(path, name, _, true) ->
-                if Filename.check_suffix name suffix then
+                if Filename.check_suffix name suffix
+                  && not ( Pathname.link_to_dir (filename_concat path name) !Options.build_dir ) then
                   begin
                     remove path name;
                     Some(sf "File %s in %s has suffix %s" name path suffix)
