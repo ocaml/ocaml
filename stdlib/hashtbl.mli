@@ -30,7 +30,7 @@ val create : ?random:bool -> int -> ('a, 'b) t
    initial size [n].  For best results, [n] should be on the
    order of the expected number of elements that will be in
    the table.  The table grows as needed, so [n] is just an
-   initial guess.  
+   initial guess.
 
    The optional [random] parameter (a boolean) controls whether
    the internal organization of the hash table is randomized at each
@@ -43,7 +43,7 @@ val create : ?random:bool -> int -> ('a, 'b) t
    security-sensitive applications, the deterministic collision
    patterns can be exploited by a malicious user to create a
    denial-of-service attack: the attacker sends input crafted to
-   create many collisions in the table, slowing the application down.  
+   create many collisions in the table, slowing the application down.
 
    A hash table that is created with [~random:true] uses the seeded
    hash function {!Hashtbl.seeded_hash} with a seed that is randomly
@@ -65,7 +65,12 @@ val create : ?random:bool -> int -> ('a, 'b) t
    hash tables were created in non-randomized mode. *)
 
 val clear : ('a, 'b) t -> unit
-(** Empty a hash table. *)
+(** Empty a hash table. Use [reset] instead of [clear] to shrink the
+    size of the bucket table to its initial size. *)
+
+val reset : ('a, 'b) t -> unit
+(** Empty a hash table and shrink the size of the bucket table
+    to its initial size. *)
 
 val copy : ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable. *)
@@ -212,6 +217,7 @@ module type S =
     type 'a t
     val create : int -> 'a t
     val clear : 'a t -> unit
+    val reset : 'a t -> unit
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
@@ -260,6 +266,7 @@ module type SeededS =
     type 'a t
     val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
+    val reset : 'a t -> unit
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
