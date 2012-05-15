@@ -72,6 +72,7 @@ SYSTHREAD_SUPPORT=true
 CMXS=cmxs
 NATDYNLINK=true
 RUNTIMED=noruntimed
+ASM_CFI_SUPPORTED=false
 
 ########## Configuration for the bytecode compiler
 
