@@ -243,11 +243,28 @@ let emit_intconst dst n =
 
 (* Adjust sp (up or down) by the given byte amount *)
 
-let emit_stack_adjustment instr n =
-  if n <= 0 then 0 else
-    decompose_intconst (Int32.of_int n)
-      (fun bits ->
-        `	{emit_string instr}	sp, sp, #{emit_int32 bits}\n`)
+let emit_stack_adjustment n =
+  if n = 0 then 0 else begin
+    let instr = if n < 0 then "sub" else "add" in
+    let ninstr = decompose_intconst (Int32.of_int (abs n))
+                   (fun bits ->
+                     `	{emit_string instr}	sp, sp, #{emit_int32 bits}\n`) in
+    cfi_adjust_cfa_offset (-n);
+    ninstr
+  end
+
+(* Deallocate the stack frame before a return or tail call *)
+
+let output_epilogue f =
+  let n = frame_size() in
+  if n > 0 then begin
+    let ninstr = emit_stack_adjustment n in
+    let ninstr = ninstr + f () in
+    (* reset CFA back cause function body may continue *)
+    cfi_adjust_cfa_offset n;
+    ninstr
+  end else
+    f ()
 
 (* Name of current function *)
 let function_name = ref ""
@@ -424,22 +441,20 @@ let emit_instr i =
         `	{emit_call s}\n`;
         `{record_frame i.live i.dbg}\n`; 1
     | Lop(Itailcall_ind) ->
-        let n = frame_size() in
-        if !contains_calls then
-          `	ldr	lr, [sp, #{emit_int (n-4)}]\n`;
-        let ninstr = emit_stack_adjustment "add" n in
-        `	bx	{emit_reg i.arg.(0)}\n`;
-        2 + ninstr
+        output_epilogue begin fun () ->
+          if !contains_calls then
+            `	ldr	lr, [sp, #{emit_int (-4)}]\n`;
+          `	bx	{emit_reg i.arg.(0)}\n`; 2
+        end
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
           `	b	{emit_label !tailrec_entry_point}\n`; 1
         end else begin
-          let n = frame_size() in
-          if !contains_calls then
-            `	ldr	lr, [sp, #{emit_int (n-4)}]\n`;
-          let ninstr = emit_stack_adjustment "add" n in
-          `	{emit_jump s}\n`;
-          2 + ninstr
+          output_epilogue begin fun () ->
+            if !contains_calls then
+              `	ldr	lr, [sp, #{emit_int (-4)}]\n`;
+            `	{emit_jump s}\n`; 2
+          end
         end
     | Lop(Iextcall(s, false)) ->
         `	{emit_call s}\n`; 1
@@ -450,10 +465,7 @@ let emit_instr i =
         1 + ninstr
     | Lop(Istackoffset n) ->
         assert (n mod 8 = 0);
-        let ninstr =
-          if n >= 0
-          then emit_stack_adjustment "sub" n
-          else emit_stack_adjustment "add" (-n) in
+        let ninstr = emit_stack_adjustment (-n) in
         stack_offset := !stack_offset + n;
         ninstr
     | Lop(Iload(Single, addr)) when !fpu >= VFPv3_D16 ->
@@ -673,9 +685,9 @@ let emit_instr i =
         let n = frame_size() in
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
     | Lreturn ->
-        let ninstr = emit_stack_adjustment "add" (frame_size()) in
-        `	bx	lr\n`;
-        ninstr + 1
+        output_epilogue begin fun () ->
+          `	bx	lr\n`; 1
+        end
     | Llabel lbl ->
         `{emit_label lbl}:\n`; 0
     | Lbranch lbl ->
@@ -765,9 +777,11 @@ let emit_instr i =
     | Lpushtrap ->
         stack_offset := !stack_offset + 8;
         `	push	\{trap_ptr, lr}\n`;
+        cfi_adjust_cfa_offset 8;
         `	mov	trap_ptr, sp\n`; 2
     | Lpoptrap ->
         `	pop	\{trap_ptr, lr}\n`;
+        cfi_adjust_cfa_offset (-8);
         stack_offset := !stack_offset - 8; 1
     | Lraise ->
         if !Clflags.debug then begin
@@ -833,16 +847,20 @@ let fundecl fundecl =
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
+  cfi_startproc();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
-  ignore(emit_stack_adjustment "sub" n);
-  if !contains_calls then
-    `	str	lr, [sp, #{emit_int(n - 4)}]\n`;
+  if n > 0 then begin
+    ignore(emit_stack_adjustment (-n));
+    if !contains_calls then
+      `	str	lr, [sp, #{emit_int(n - 4)}]\n`
+  end;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all 0 fundecl.fun_body;
   emit_literals();
   List.iter emit_call_gc !call_gc_sites;
   List.iter emit_call_bound_error !bound_error_sites;
+  cfi_endproc();
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `	.size	{emit_symbol fundecl.fun_name}, .-{emit_symbol fundecl.fun_name}\n`
 
