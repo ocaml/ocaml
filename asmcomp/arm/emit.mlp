@@ -347,6 +347,7 @@ let emit_load_symbol_addr dst s =
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
+    emit_debug_info i.dbg;
     match i.desc with
       Lend -> 0
     | Lop(Imove | Ispill | Ireload) ->
@@ -831,6 +832,7 @@ let fundecl fundecl =
     `	.arm\n`;
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
+  emit_debug_info fundecl.fun_dbg;
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
   ignore(emit_stack_adjustment "sub" n);
@@ -869,6 +871,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  reset_debug_info();
   `	.syntax	unified\n`;
   begin match !arch with
   | ARMv4   -> `	.arch	armv4t\n`
