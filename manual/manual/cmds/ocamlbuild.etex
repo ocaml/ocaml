@@ -154,7 +154,7 @@ drwxrwx--- 2 linus gallium 4096 2007-01-17 16:24 _build/
 lrwxrwxrwx 1 linus gallium   19 2007-01-17 16:24 hello.native -> _build/hello.native*
 \end{verbatim}
 What's this funny \texttt{\_build} directory ?  Well that's where \ocb does its dirty work
-of compiling.  You usually won't have to look very often into this directory.  Source files are be copied
+of compiling.  You usually won't have to look very often into this directory.  Source files are copied
 into \texttt{\_build} and this is where the compilers will be run.  Various cache files are also stored
 there.  Its contents may look like this:
 \begin{verbatim}
@@ -277,7 +277,7 @@ use the \texttt{-cflag} option as in:
 ocamlbuild -cflag -rectypes hello.native
 \end{verbatim}
 You can put multiple \texttt{-cflag} options, they will be passed to the compiler
-in the same order.  You can also given them in a comma-separated list with the
+in the same order.  You can also give them in a comma-separated list with the
 \texttt{-cflags} option (notice the plural):
 \begin{verbatim}
 ocamlbuild -cflags -I,+lablgtk,-rectypes hello.native
@@ -348,9 +348,10 @@ By preceding a tag with a minus sign, one may remove tags from one or more files
      <**/*.cmx>: ocaml, native
 \end{verbatim}
 
-A special tag made from the path name of the file relative to the toplevel
-of the project is automatically defined for each file.  For a file
-\texttt{foo/bar.ml} this tag will be \texttt{file:foo/bar.ml}.
+Two special tags made from the path name of the file relative to the toplevel
+of the project are automatically defined for each file.  For a file
+\texttt{foo/bar.ml} those tags will be \texttt{file:foo/bar.ml}, and
+\texttt{extension:ml}.
 
 If you do not have subdirectories, you can put \texttt{*.ml} instead of
 \texttt{**/*.ml}.
