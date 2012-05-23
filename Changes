@@ -3,6 +3,7 @@ Next version
 
 Bug fixes:
 - PR#5551: Avoid repeated lookups for missing cmi files
+- PR#5620: invalid printing of type manifest (camlp4 revised syntax)
 
 OCaml 4.00.0:
 -------------
