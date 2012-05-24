@@ -43,10 +43,10 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	jg_completion.cmo \
 
 all: ocamlbrowser$(EXE)
 
-ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
+ocamlbrowser$(EXE): $(TOPDIR)/compilerlibs/ocamlcommon.cma jglib.cma $(OBJ) \
 			../support/lib$(LIBNAME).$(A) $(XTRAOBJ)
 	$(CAMLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
-		$(TOPDIR)/toplevel/toplevellib.cma \
+		$(TOPDIR)/compilerlibs/ocamlcommon.cma \
 		unix.cma str.cma $(XTRALIBS) $(LIBNAME).cma jglib.cma \
 	        $(OBJ) $(XTRAOBJ)
 
@@ -72,7 +72,7 @@ depend: help.ml
 	$(CAMLDEP) *.ml *.mli > .depend
 
 shell.cmo: dummy.cmi
-setpath.cmo fileselect.cmo lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/toplevel/toplevellib.cma
+setpath.cmo fileselect.cmo lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/compilerlibs/ocamlcommon.cma
 mytypes.cmi searchpos.cmi searchpos.cmo typecheck.cmo: $(TOPDIR)/typing/stypes.cmi
 
 include	.depend

@@ -74,6 +74,21 @@ Standard library:
 - Set and Map: more efficient implementation of "filter" and "partition"
 - String: new function "map" (PR#3888)
 
+Installation procedure:
+- Compiler internals are now installed in `ocamlc -where`/compiler-libs.
+  The files available there include the .cmi interfaces for all compiler
+  modules, plus the following libraries:
+      ocamlcommon.cma/.cmxa     modules common to ocamlc, ocamlopt, ocaml
+      ocamlbytecomp.cma/.cmxa   modules for ocamlc and ocaml
+      ocamloptcomp.cma/.cmxa    modules specific to ocamlopt
+      ocamltoplevel.cma         modules specific to ocaml
+   (PR#1804, PR#4653, frequently-asked feature).
+* Some .cmi for toplevel internals that used to be installed in
+  `ocamlc -where` are now to be found in  `ocamlc -where`/compiler-libs.
+  Add "-I +compiler-libs" where needed.
+* toplevellib.cma is no longer installed because subsumed by
+  ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma
+
 Bug Fixes:
 - PR#1643: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added

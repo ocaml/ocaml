@@ -17,7 +17,7 @@ true: -traverse
 # Traverse only these directories
 <{bytecomp,driver,stdlib,tools,asmcomp,camlp4,ocamlbuild,toplevel,ocamldoc,typing,otherlibs,utils,debugger,lex,parsing,byterun,asmrun}/**>: traverse
 
-"boot" or "byterun" or "asmrun": not_hygienic
+"boot" or "byterun" or "asmrun" or "compilerlibs": not_hygienic
 
 # These should not be required but it fails on *BSD and Windows...
 "yacc" or "win32caml": not_hygienic

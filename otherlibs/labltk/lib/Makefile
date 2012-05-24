@@ -42,7 +42,13 @@ SUPPORT=../support/support.cmo ../support/rawwidget.cmo \
 
 TKOBJS=$(SUPPORT) $(LABLTKOBJS) $(CAMLTKOBJS)
 
-TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
+TOPLEVELLIBS=$(TOPDIR)/compilerlibs/ocamlcommon.cma \
+             $(TOPDIR)/compilerlibs/ocamlbytecomp.cma \
+             $(TOPDIR)/compilerlibs/ocamltoplevel.cma
+
+TOPLEVELSTART=$(TOPDIR)/toplevel/topstart.cmo
+
+TOPDEPS = $(TOPLEVELLIBS) $(TOPLEVELSTART)
 
 $(LIBNAME).cma: $(SUPPORT) ../Widgets.src
 	$(MAKE) superclean
@@ -62,11 +68,11 @@ $(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx) ../Widgets.src
 
 $(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).$(A)
 	$(CAMLC) -verbose -linkall -o $(LIBNAME)top$(EXE) -I ../support \
-	       -I $(TOPDIR)/toplevel toplevellib.cma \
+	       $(TOPLEVELLIBS) \
 	       -I $(OTHERS)/unix -I $(OTHERS)/win32unix unix.cma \
 	       -I ../labltk -I ../camltk $(LIBNAME).cma \
 	       -I $(OTHERS)/str str.cma \
-	       topstart.cmo
+	       $(TOPLEVELSTART)
 
 $(LIBNAME): Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
