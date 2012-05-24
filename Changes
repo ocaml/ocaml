@@ -2,6 +2,8 @@ Next version
 ------------
 
 Bug fixes:
+- PR#5327: (Windows) Unix.select blocks if same socket listed in first and
+  third arguments
 - PR#5551: Avoid repeated lookups for missing cmi files
 - PR#5620: invalid printing of type manifest (camlp4 revised syntax)
 
@@ -109,8 +111,6 @@ Bug Fixes:
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in
   another thread
-- PR#5327: (Windows) Unix.select blocks if same socket listed in first and
-  third arguments
 - PR#5328: under Windows, Unix.select leaves sockets in non-blocking mode
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5331: ocamlmktop is not always a shell script
