@@ -60,7 +60,7 @@ let rec power_2_above x n =
 let create ?(random = !randomized) initial_size =
   let s = power_2_above 16 initial_size in
   let seed = if random then Random.State.bits (Lazy.force prng) else 0 in
-  { initial_size; size = 0; seed = seed; data = Array.make s Empty }
+  { initial_size = s; size = 0; seed = seed; data = Array.make s Empty }
 
 let clear h =
   h.size <- 0;
@@ -76,7 +76,7 @@ let reset h =
     clear h
   else begin
     h.size <- 0;
-    h.data <- Array.create len Empty
+    h.data <- Array.make h.initial_size Empty
   end
 
 let copy h = { h with data = Array.copy h.data }
@@ -88,7 +88,7 @@ let resize indexfun h =
   let osize = Array.length odata in
   let nsize = osize * 2 in
   if nsize < Sys.max_array_length then begin
-    let ndata = Array.create nsize Empty in
+    let ndata = Array.make nsize Empty in
     h.data <- ndata;          (* so that indexfun sees the new bucket count *)
     let rec insert_bucket = function
         Empty -> ()
