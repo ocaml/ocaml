@@ -62,7 +62,7 @@ exception Error of Location.t * error
    Self type have a dummy private method, thus preventing it to become
    closed.
 *)
-let dummy_method = Ctype.dummy_method
+let dummy_method = Btype.dummy_method
 
 (*
    Path associated to the temporary class type of a class being typed
