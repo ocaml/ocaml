@@ -84,6 +84,8 @@ let interface ppf sourcefile outputprefix =
     if !Clflags.print_types then
       fprintf std_formatter "%a@." Printtyp.signature
                                    (Typemod.simplify_signature sg);
+    ignore (Includemod.signatures (initial_env()) sg sg);
+    Typecore.force_delayed_checks ();
     Warnings.check_fatal ();
     if not !Clflags.print_types then
       Env.save_signature sg modulename (outputprefix ^ ".cmi");
