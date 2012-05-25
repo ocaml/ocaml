@@ -55,7 +55,6 @@ val none: type_expr
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
 
-val dummy_method: label
 val object_fields: type_expr -> type_expr
 val flatten_fields:
         type_expr -> (string * field_kind * type_expr) list * type_expr

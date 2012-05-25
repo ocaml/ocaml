@@ -992,7 +992,7 @@ let rec mismatch unif = function
 
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
-  | Tfield _, Tvar _ | Tvar _, Tfield _ ->
+  | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       fprintf ppf "@,Self type cannot escape its class"
   | Tconstr (p, tl, _), Tvar _
     when unif && t4.level < Path.binding_time p ->

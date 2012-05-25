@@ -43,6 +43,7 @@ val newmarkedgenvar: unit -> type_expr
 
 val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
+val dummy_method: label
 
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)

@@ -110,6 +110,10 @@ let rec typexp s ty =
                         None -> None
                       | Some (p, tl) ->
                           Some (type_path s p, List.map (typexp s) tl)))
+      | Tfield (m, k, t1, t2)
+        when s == identity && ty.level < generic_level && m = dummy_method ->
+          (* not allowed to lower the level of the dummy method *)
+          Tfield (m, k, t1, typexp s t2)
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in

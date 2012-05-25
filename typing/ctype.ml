@@ -240,8 +240,6 @@ let is_datatype decl=
 
 (**** Object field manipulation. ****)
 
-let dummy_method = "*dummy method*"
-
 let object_fields ty =
   match (repr ty).desc with
     Tobject (fields, _) -> fields
@@ -733,7 +731,8 @@ let rec update_level env level ty =
         end;
         set_level ty level;
         iter_type_expr (update_level env level) ty
-    | Tfield(lab, _, _, _) when lab = dummy_method ->
+    | Tfield(lab, _, ty1, _)
+      when lab = dummy_method && (repr ty1).level > level->
         raise (Unify [(ty, newvar2 level)])
     | _ ->
         set_level ty level;
