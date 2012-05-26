@@ -54,6 +54,12 @@ val even4 : four even = EvenSS (EvenSS EvenZ)
 #                                 type (_, _) equal = Eq : ('a, 'a) equal
 val convert : ('a, 'b) equal -> 'a -> 'b = <fun>
 val sameNat : 'a nat -> 'b nat -> ('a, 'b) equal option = <fun>
+#                                         val plus_func : ('a, 'b, 'm) plus -> ('a, 'b, 'n) plus -> ('m, 'n) equal =
+  <fun>
+val plus_assoc :
+  ('a, 'b, 'ab) plus ->
+  ('ab, 'c, 'm) plus ->
+  ('b, 'c, 'bc) plus -> ('a, 'bc, 'n) plus -> ('m, 'n) equal = <fun>
 #             val smaller : ('a succ, 'b succ) le -> ('a, 'b) le = <fun>
 #   type (_, _) diff = Diff : 'c nat * ('a, 'c, 'b) plus -> ('a, 'b) diff
 #   * * * * * * * * *                 val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
