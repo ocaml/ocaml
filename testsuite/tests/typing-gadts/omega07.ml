@@ -151,6 +151,27 @@ let rec sameNat : type a b. a nat -> b nat -> (a,b) equal option = fun a b ->
   | _ -> None
 ;;
 
+(* Extra: associativity of addition *)
+
+let rec plus_func : type a b m n.
+  (a,b,m) plus -> (a,b,n) plus -> (m,n) equal =
+  fun p1 p2 ->
+  match p1, p2 with
+  | PlusZ _, PlusZ _ -> Eq
+  | PlusS p1', PlusS p2' ->
+      let Eq = plus_func p1' p2' in Eq
+
+let rec plus_assoc : type a b c ab bc m n.
+  (a,b,ab) plus -> (ab,c,m) plus ->
+  (b,c,bc) plus -> (a,bc,n) plus -> (m,n) equal = fun p1 p2 p3 p4 ->
+  match p1, p4 with
+  | PlusZ b, PlusZ bc ->
+      let Eq = plus_func p2 p3 in Eq
+  | PlusS p1', PlusS p4' ->
+      let PlusS p2' = p2 in
+      let Eq = plus_assoc p1' p2' p3 p4' in Eq
+;;
+
 (* 3.9 Computing Programs and Properties Simultaneously *)
 
 (* Plus and app1 are moved to section 2 *)
