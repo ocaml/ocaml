@@ -2982,12 +2982,12 @@ let report_error ppf = function
         (function ppf ->
            fprintf ppf "but an expression was expected of type")
   | Apply_non_function typ ->
+      reset_and_mark_loops typ;
       begin match (repr typ).desc with
         Tarrow _ ->
           fprintf ppf "This function is applied to too many arguments;@ ";
           fprintf ppf "maybe you forgot a `;'. The function has type @ %a" type_expr typ
       | _ ->
-          reset_and_mark_loops typ;
           fprintf ppf
             "This expression is not a function; it cannot be applied.@ It has type@ %a" type_expr typ
       end
