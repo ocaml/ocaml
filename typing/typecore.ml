@@ -2985,7 +2985,7 @@ let report_error ppf = function
       reset_and_mark_loops typ;
       begin match (repr typ).desc with
         Tarrow _ ->
-          fprintf ppf "@[<v>@[<2>This function has type@;<1 2>%a@]"
+          fprintf ppf "@[<v>@[<2>This function has type@ %a@]"
             type_expr typ;
           fprintf ppf "@ @[It is applied to too many arguments;@ %s@]@]"
                       "maybe you forgot a `;'."
