@@ -2985,10 +2985,11 @@ let report_error ppf = function
       begin match (repr typ).desc with
         Tarrow _ ->
           fprintf ppf "This function is applied to too many arguments;@ ";
-          fprintf ppf "maybe you forgot a `;'"
+          fprintf ppf "maybe you forgot a `;'. The function has type @ %a" type_expr typ
       | _ ->
+          reset_and_mark_loops typ;
           fprintf ppf
-            "This expression is not a function; it cannot be applied"
+            "This expression is not a function; it cannot be applied.@ It has type@ %a" type_expr typ
       end
   | Apply_wrong_label (l, ty) ->
       let print_label ppf = function
