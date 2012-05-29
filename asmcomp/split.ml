@@ -21,7 +21,7 @@ open Mach
 
 type subst = Reg.t Reg.Map.t
 
-let subst_reg r sub =
+let subst_reg r (sub : subst) =
   try
     Reg.Map.find r sub
   with Not_found ->

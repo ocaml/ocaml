@@ -36,6 +36,11 @@ type resumption_status =
   | Resumed_select of file_descr list * file_descr list * file_descr list
   | Resumed_wait of int * process_status
 
+(* to avoid warning *)
+let _ = [Resumed_wakeup; Resumed_delay; Resumed_join;
+         Resumed_io; Resumed_select ([], [], []);
+         Resumed_wait (0, WEXITED 0)]
+
 external thread_initialize : unit -> unit = "thread_initialize"
 external thread_wait_read : file_descr -> unit = "thread_wait_read"
 external thread_wait_write : file_descr -> unit = "thread_wait_write"

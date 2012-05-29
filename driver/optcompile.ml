@@ -17,7 +17,6 @@
 open Misc
 open Config
 open Format
-open Typedtree
 
 (* Initialize the search path.
    The current directory is always searched first,

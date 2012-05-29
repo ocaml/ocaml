@@ -994,7 +994,7 @@ let rec approx_description ct =
 
 let temp_abbrev loc env id arity =
   let params = ref [] in
-  for i = 1 to arity do
+  for _i = 1 to arity do
     params := Ctype.newvar () :: !params
   done;
   let ty = Ctype.newobj (Ctype.newvar ()) in

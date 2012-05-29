@@ -132,7 +132,7 @@ module Win32 = struct
         | '\\' -> loop_bs (n+1) (i+1);
         | c    -> add_bs n; loop i
       end
-    and add_bs n = for j = 1 to n do Buffer.add_char b '\\'; done
+    and add_bs n = for _j = 1 to n do Buffer.add_char b '\\'; done
     in
     loop 0;
     Buffer.contents b

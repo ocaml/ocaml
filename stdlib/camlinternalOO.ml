@@ -58,6 +58,7 @@ let initial_object_size = 2
 (**** Items ****)
 
 type item = DummyA | DummyB | DummyC of int
+let _ = [DummyA; DummyB; DummyC 0] (* to avoid warnings *)
 
 let dummy_item = (magic () : item)
 
@@ -67,6 +68,8 @@ type tag
 type label = int
 type closure = item
 type t = DummyA | DummyB | DummyC of int
+let _ = [DummyA; DummyB; DummyC 0] (* to avoid warnings *)
+
 type obj = t array
 external ret : (obj -> 'a) -> closure = "%identity"
 

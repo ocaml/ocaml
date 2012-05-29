@@ -18,7 +18,6 @@ open Misc
 open Arch
 open Asttypes
 open Primitive
-open Types
 open Lambda
 open Clambda
 open Cmm
@@ -713,8 +712,6 @@ let simplif_primitive p =
 (* constants first *)
 
 let transl_isout h arg = tag_int (Cop(Ccmpa Clt, [h ; arg]))
-
-exception Found of int
 
 let make_switch_gen arg cases acts =
   let lcases = Array.length cases in

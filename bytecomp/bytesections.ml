@@ -52,7 +52,7 @@ let read_toc ic =
   if header <> Config.exec_magic_number then raise Bad_magic_number;
   seek_in ic (pos_trailer - 8 * num_sections);
   section_table := [];
-  for i = 1 to num_sections do
+  for _i = 1 to num_sections do
     let name = Misc.input_bytes ic 4 in
     let len = input_binary_int ic in
     section_table := (name, len) :: !section_table

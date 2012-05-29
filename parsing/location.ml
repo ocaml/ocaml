@@ -156,10 +156,10 @@ let highlight_dumb ppf lb loc =
       if !line = !line_start && !line = !line_end then begin
         (* loc is on one line: underline location *)
         Format.fprintf ppf "@.  ";
-        for i = !pos_at_bol to loc.loc_start.pos_cnum - 1 do
+        for _i = !pos_at_bol to loc.loc_start.pos_cnum - 1 do
           Format.pp_print_char ppf ' '
         done;
-        for i = loc.loc_start.pos_cnum to loc.loc_end.pos_cnum - 1 do
+        for _i = loc.loc_start.pos_cnum to loc.loc_end.pos_cnum - 1 do
           Format.pp_print_char ppf '^'
         done
       end;

@@ -14,7 +14,6 @@
 
 (* Link a set of .cmx/.o files and produce an executable *)
 
-open Sys
 open Misc
 open Config
 open Cmx_format

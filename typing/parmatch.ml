@@ -1223,7 +1223,7 @@ let pretty_line ps =
       prerr_string ">")
     ps
 
-let pretty_matrix pss =
+let pretty_matrix (pss : matrix) =
   prerr_endline "begin matrix" ;
   List.iter
     (fun ps ->

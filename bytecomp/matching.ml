@@ -274,9 +274,9 @@ let ctx_match ctx pss =
         pss)
     ctx
 
-type jumps = (int * ctx ) list
+type jumps = (int * ctx list) list
 
-let pretty_jumps env = match env with
+let pretty_jumps (env : jumps) = match env with
 | [] -> ()
 | _ ->
     List.iter

@@ -58,7 +58,7 @@ let copy_chars_unix ic oc start stop =
   done
 
 let copy_chars_win32 ic oc start stop =
-  for i = start to stop - 1 do
+  for _i = start to stop - 1 do
     let c = input_char ic in
     if c <> '\r' then output_char oc c
   done
@@ -72,10 +72,10 @@ let copy_chunk sourcefile ic oc trl loc add_parens =
   if loc.start_pos < loc.end_pos || add_parens then begin
     fprintf oc "# %d \"%s\"\n" loc.start_line sourcefile;
     if add_parens then begin
-      for i = 1 to loc.start_col - 1 do output_char oc ' ' done;
+      for _i = 1 to loc.start_col - 1 do output_char oc ' ' done;
       output_char oc '(';
     end else begin
-      for i = 1 to loc.start_col do output_char oc ' ' done;
+      for _i = 1 to loc.start_col do output_char oc ' ' done;
     end;
     seek_in ic loc.start_pos;
     copy_chars ic oc loc.start_pos loc.end_pos;

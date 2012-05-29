@@ -15,9 +15,6 @@
 (* Common functions for emitting assembly code *)
 
 open Debuginfo
-open Cmm
-open Reg
-open Linearize
 
 let output_channel = ref stdout
 

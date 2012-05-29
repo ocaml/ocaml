@@ -14,7 +14,6 @@
 
 (* Compilation environments for compilation units *)
 
-open Clambda
 open Cmx_format
 
 val reset: ?packname:string -> string -> unit

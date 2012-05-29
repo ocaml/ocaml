@@ -14,11 +14,9 @@
 
 (* Instruction selection for the AMD64 *)
 
-open Misc
 open Arch
 open Proc
 open Cmm
-open Reg
 open Mach
 
 (* Auxiliary for recognizing addressing modes *)

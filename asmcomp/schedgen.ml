@@ -14,7 +14,6 @@
 
 (* Instruction scheduling *)
 
-open Misc
 open Reg
 open Mach
 open Linearize
