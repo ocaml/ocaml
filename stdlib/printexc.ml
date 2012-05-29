@@ -88,6 +88,7 @@ type loc_info =
                     * int    (* end char *)
   | Unknown_location of bool (*is_raise*)
 
+(* to avoid warning *)
 let _ = [Known_location (false, "", 0, 0, 0); Unknown_location false]
 
 external get_exception_backtrace:
