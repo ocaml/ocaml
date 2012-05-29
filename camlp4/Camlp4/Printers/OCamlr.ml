@@ -190,6 +190,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       }
     | <:ctyp< $t1$ : mutable $t2$ >> ->
         pp f "@[%a :@ mutable %a@]" o#ctyp t1 o#ctyp t2
+    | <:ctyp< $t1$ == $t2$ >> ->
+        pp f "@[<2>%a ==@ %a@]" o#simple_ctyp t1 o#ctyp t2
     | t -> super#ctyp f t ];
 
     method simple_ctyp f t =
