@@ -17,7 +17,6 @@
 (* $Id$ *)
 
 open StdLabels
-open Support
 open Tables
 open Printer
 open Compile

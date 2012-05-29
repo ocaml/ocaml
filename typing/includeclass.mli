@@ -15,7 +15,6 @@
 (* Inclusion checks for the class language *)
 
 open Types
-open Typedtree
 open Ctype
 open Format
 

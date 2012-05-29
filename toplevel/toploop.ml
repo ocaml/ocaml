@@ -15,7 +15,6 @@
 (* The interactive toplevel loop *)
 
 open Path
-open Lexing
 open Format
 open Config
 open Misc

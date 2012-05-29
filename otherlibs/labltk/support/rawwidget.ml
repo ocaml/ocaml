@@ -16,8 +16,6 @@
 
 (* $Id$ *)
 
-open Support
-
 (*
  * Widgets
  *)

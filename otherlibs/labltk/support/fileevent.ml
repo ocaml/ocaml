@@ -17,7 +17,6 @@
 (* $Id$ *)
 
 open Unix
-open Support
 open Protocol
 
 external add_file_input : file_descr -> cbid -> unit

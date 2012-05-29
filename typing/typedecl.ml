@@ -19,7 +19,6 @@ open Asttypes
 open Parsetree
 open Primitive
 open Types
-open Typedtree
 open Typetexp
 
 type error =

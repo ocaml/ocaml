@@ -17,7 +17,6 @@
 (* $Id$ *)
 
 (* Timers *)
-open Support
 open Protocol
 
 type tkTimer = int

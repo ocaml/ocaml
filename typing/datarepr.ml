@@ -15,7 +15,6 @@
 (* Compute constructor and label descriptions from type declarations,
    determining their representation. *)
 
-open Misc
 open Asttypes
 open Types
 open Btype

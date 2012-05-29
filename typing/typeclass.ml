@@ -12,7 +12,6 @@
 
 (* $Id$ *)
 
-open Misc
 open Parsetree
 open Asttypes
 open Path

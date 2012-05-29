@@ -14,7 +14,6 @@
 
 (* Inclusion checks for the core language *)
 
-open Misc
 open Asttypes
 open Path
 open Types

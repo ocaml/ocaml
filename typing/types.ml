@@ -14,7 +14,6 @@
 
 (* Representation of types and declarations *)
 
-open Misc
 open Asttypes
 
 (* Type expressions for the core language *)

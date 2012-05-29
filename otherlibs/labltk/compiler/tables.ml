@@ -17,7 +17,6 @@
 (* $Id$ *)
 
 open StdLabels
-open Support
 
 (* Internal compiler errors *)
 

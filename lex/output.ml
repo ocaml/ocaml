@@ -15,7 +15,6 @@
 (* Output the DFA tables and its entry points *)
 
 open Printf
-open Syntax
 open Lexgen
 open Compact
 open Common

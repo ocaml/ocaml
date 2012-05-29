@@ -21,7 +21,6 @@ open Longident
 open Path
 open Types
 open Typedtree
-open Primitive
 open Lambda
 open Translobj
 open Translcore

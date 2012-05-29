@@ -20,7 +20,6 @@
 open StdLabels
 open Lexing
 open Parser
-open Support
 
 exception Lexical_error of string
 let current_line = ref 1

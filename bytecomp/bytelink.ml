@@ -14,10 +14,8 @@
 
 (* Link a set of .cmo files and produce a bytecode executable. *)
 
-open Sys
 open Misc
 open Config
-open Instruct
 open Cmo_format
 
 type error =

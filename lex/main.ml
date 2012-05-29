@@ -15,7 +15,6 @@
 (* The lexer generator. Command-line parsing. *)
 
 open Syntax
-open Lexgen
 
 let ml_automata = ref false
 let source_name = ref None

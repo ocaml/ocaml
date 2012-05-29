@@ -16,7 +16,6 @@
 
 (* $Id$ *)
 
-open Support
 open Widget
 
 type callback_buffer = string list

@@ -14,9 +14,6 @@
 
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
-open Misc
-open Asttypes
-open Primitive
 open Path
 open Types
 open Typedtree

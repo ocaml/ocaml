@@ -16,7 +16,6 @@
 
 (* $Id$ *)
 
-open Support
 open Protocol
 
 external internal_tracevar : string -> cbid -> unit
