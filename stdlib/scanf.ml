@@ -1032,7 +1032,7 @@ let scan_range fmt j =
       scan_closing (j + 1)
     | _ -> scan_closing j in
 
-  let rec scan_first_neg j =
+  let scan_first_neg j =
     if j >= len then incomplete_format fmt else
     match Sformat.get fmt j with
     | '^' ->
