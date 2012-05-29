@@ -24,7 +24,7 @@ COBJS=startup.$(O) main.$(O) fail.$(O) roots.$(O) signals.$(O) signals_asm.$(O) 
   intern.$(O) hash.$(O) sys.$(O) parsing.$(O) gc_ctrl.$(O) terminfo.$(O) \
   md5.$(O) obj.$(O) lexing.$(O) win32.$(O) printexc.$(O) callback.$(O) \
   weak.$(O) compact.$(O) finalise.$(O) custom.$(O) globroots.$(O) \
-  backtrace.$(O) natdynlink.$(O) debugger.$(O)
+  backtrace.$(O) natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
