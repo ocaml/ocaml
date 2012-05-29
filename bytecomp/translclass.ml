@@ -49,7 +49,7 @@ let lfield v i = Lprim(Pfield i, [Lvar v])
 
 let transl_label l = share (Const_immstring l)
 
-let rec transl_meth_list lst =
+let transl_meth_list lst =
   if lst = [] then Lconst (Const_pointer 0) else
   share (Const_block
             (0, List.map (fun lab -> Const_immstring lab) lst))

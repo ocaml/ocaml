@@ -1135,7 +1135,7 @@ let type_format loc fmt =
           match fmt.[j] with
           | ']' -> scan_closing (j + 1)
           | c -> scan_closing j in
-        let rec scan_first_neg j =
+        let scan_first_neg j =
           if j >= len then incomplete_format fmt else
           match fmt.[j] with
           | '^' -> scan_first_pos (j + 1)

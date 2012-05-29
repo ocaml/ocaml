@@ -385,7 +385,7 @@ let rec transl_type env policy styp =
         with Not_found ->
           Hashtbl.add hfields h (l,f)
       in
-      let rec add_field = function
+      let add_field = function
           Rtag (l, c, stl) ->
             name := None;
             let f = match present with

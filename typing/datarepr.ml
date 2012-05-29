@@ -20,7 +20,7 @@ open Types
 open Btype
 
 (* Simplified version of Ctype.free_vars *)
-let rec free_vars ty =
+let free_vars ty =
   let ret = ref TypeSet.empty in
   let rec loop ty = 
     let ty = repr ty in

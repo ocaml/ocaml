@@ -118,7 +118,7 @@ let get_type_path ty tenv =
   | Tconstr (path,_,_) -> path
   | _ -> fatal_error "Parmatch.get_type_path"
 
-let rec get_type_descr ty tenv =
+let get_type_descr ty tenv =
   match (Ctype.repr ty).desc with
   | Tconstr (path,_,_) -> Env.find_type path tenv
   | _ -> fatal_error "Parmatch.get_type_descr"
@@ -976,7 +976,7 @@ type 'a result =
   | Rsome of 'a     (* This matching value *)
 
 let rec orify_many =
-  let rec orify x y = 
+  let orify x y = 
     make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env	
   in
   function
@@ -992,7 +992,7 @@ let rec try_many  f = function
       | r -> r
 
 
-let rec try_many_gadt  f = function
+let try_many_gadt  f = function
   | [] -> Rnone
   | (p,pss)::rest ->
       match f (p,pss) with

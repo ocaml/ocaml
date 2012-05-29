@@ -124,7 +124,7 @@ let rec class_body cty =
   | Tcty_fun (_, ty, cty) ->
       class_body cty
 
-let rec extract_constraints cty =
+let extract_constraints cty =
   let sign = Ctype.signature_of_class_type cty in
   (Vars.fold (fun lab _ vars -> lab :: vars) sign.cty_vars [],
    begin let (fields, _) =
@@ -784,7 +784,7 @@ and class_expr cl_num val_env met_env scl =
           )
           pv
       in
-      let rec not_function = function
+      let not_function = function
           Tcty_fun _ -> false
         | _ -> true
       in
@@ -1013,7 +1013,7 @@ let temp_abbrev loc env id arity =
   in
   (!params, ty, env)
 
-let rec initial_env define_class approx
+let initial_env define_class approx
     (res, env) (cl, id, ty_id, obj_id, cl_id) =
   (* Temporary abbreviations *)
   let arity = List.length (fst cl.pci_params) in

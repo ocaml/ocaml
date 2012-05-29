@@ -292,7 +292,7 @@ let check_constraints env (_, sdecl) (_, decl) =
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant l ->
-      let rec find_pl = function
+      let find_pl = function
           Ptype_variant pl -> pl
         | Ptype_record _ | Ptype_abstract -> assert false
       in
@@ -316,7 +316,7 @@ let check_constraints env (_, sdecl) (_, decl) =
 	      () )
 	l
   | Type_record (l, _) ->
-      let rec find_pl = function
+      let find_pl = function
           Ptype_record pl -> pl
         | Ptype_variant _ | Ptype_abstract -> assert false
       in
