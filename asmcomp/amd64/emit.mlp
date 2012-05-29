@@ -14,7 +14,6 @@
 
 (* Emission of x86-64 (AMD 64) assembly code *)
 
-open Misc
 open Cmm
 open Arch
 open Proc
