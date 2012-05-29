@@ -747,7 +747,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-9\-27\-29\-32..37 .
+.BR \-w\ +a\-4\-6\-9\-27\-29\-32..39 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

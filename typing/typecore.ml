@@ -2817,8 +2817,10 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
     if is_recursive then new_env else env in
 
   let current_slot = ref None in
+  let rec_needed = ref false in
   let warn_unused =
-    Warnings.is_active (check "") || Warnings.is_active (check_strict "") in
+    Warnings.is_active (check "") || Warnings.is_active (check_strict "") || (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))
+  in
   let pat_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:
        - During type checking of the definitions, we capture the 'value_used'
@@ -2826,7 +2828,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
          to the current definition (!current_slot).
          In effect, this creates a dependency graph between definitions.
 
-       - After type checking the definition (!current_slot = Mone),
+       - After type checking the definition (!current_slot = None),
          when one of the bound identifier is effectively used, we trigger
          again all the events recorded in the corresponding slot.
          The effect is to traverse the transitive closure of the graph created
@@ -2860,7 +2862,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
                 name vd
                 (fun () ->
                   match !current_slot with
-                  | Some slot -> slot := (name, vd) :: !slot
+                  | Some slot -> slot := (name, vd) :: !slot; rec_needed := true
                   | None ->
                       List.iter
                         (fun (name, vd) -> Env.mark_value_used name vd)
@@ -2896,6 +2898,9 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
         | _ -> type_expect exp_env sexp pat.pat_type)
       spat_sexp_list pat_slot_list in
   current_slot := None;
+  if is_recursive && not !rec_needed && Warnings.is_active Warnings.Unused_rec_flag then
+    Location.prerr_warning (fst (List.hd spat_sexp_list)).ppat_loc
+      Warnings.Unused_rec_flag;
   List.iter2
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
     pat_list exp_list;
