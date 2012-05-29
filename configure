@@ -1687,6 +1687,10 @@ if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
 fi
 
+# Allow user defined C Compiler flags
+bytecccompopts="$bytecccompopts $CFLAGS"
+nativecccompopts="$nativecccompopts $CFLAGS"
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
