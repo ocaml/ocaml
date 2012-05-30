@@ -2,6 +2,7 @@
   make clean
   ./build/distclean.sh
   ./configure -prefix `pwd`/_install
+  (cd otherlibs/labltk/browser; make help.ml)
   ./build/fastworld.sh
   # Go to "Bootstrap camlp4"
 
@@ -121,7 +122,7 @@
 
  In Camlp4/Printers/OCaml.ml:
    | <:expr< let open $i$ in $e$ >> ->
-       pp f "@[<2>let open %a@]@ @[<2>in@ %a@]" 
+       pp f "@[<2>let open %a@]@ @[<2>in@ %a@]"
              o#ident i o#reset_semi#expr e
  And at the end of #simple_expr:
    <:expr< let open $_$ in $_$ >>

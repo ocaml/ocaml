@@ -38,3 +38,8 @@ type override_flag = Override | Fresh
 type closed_flag = Closed | Open
 
 type label = string
+
+type 'a loc = 'a Location.loc = {
+  txt : 'a;
+  loc : Location.t;
+}

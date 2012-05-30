@@ -158,6 +158,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/predef.cmo \
 	$(OCAMLSRCDIR)/typing/datarepr.cmo \
 	$(OCAMLSRCDIR)/typing/subst.cmo \
+	$(OCAMLSRCDIR)/typing/cmi_format.cmo \
 	$(OCAMLSRCDIR)/typing/env.cmo \
 	$(OCAMLSRCDIR)/typing/ctype.cmo \
 	$(OCAMLSRCDIR)/typing/primitive.cmo \
@@ -168,6 +169,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/typedtree.cmo \
 	$(OCAMLSRCDIR)/typing/parmatch.cmo \
 	$(OCAMLSRCDIR)/typing/stypes.cmo \
+	$(OCAMLSRCDIR)/typing/cmt_format.cmo \
 	$(OCAMLSRCDIR)/typing/typecore.cmo \
 	$(OCAMLSRCDIR)/typing/includeclass.cmo \
 	$(OCAMLSRCDIR)/typing/typedecl.cmo \

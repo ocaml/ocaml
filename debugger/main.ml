@@ -224,6 +224,11 @@ let main () =
       Env.report_error err_formatter e;
       eprintf "@]@.";
       exit 2
+  | Cmi_format.Error e ->
+      eprintf "Debugger [version %s] environment error:@ @[@;" Config.version;
+      Cmi_format.report_error err_formatter e;
+      eprintf "@]@.";
+      exit 2
 
 let _ =
   Printexc.catch (Unix.handle_unix_error main) ()

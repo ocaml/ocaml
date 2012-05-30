@@ -351,11 +351,11 @@ let unmark_class_signature sign =
 
 let rec unmark_class_type =
   function
-    Tcty_constr (p, tyl, cty) ->
+    Cty_constr (p, tyl, cty) ->
       List.iter unmark_type tyl; unmark_class_type cty
-  | Tcty_signature sign ->
+  | Cty_signature sign ->
       unmark_class_signature sign
-  | Tcty_fun (_, ty, cty) ->
+  | Cty_fun (_, ty, cty) ->
       unmark_type ty; unmark_class_type cty
 
 

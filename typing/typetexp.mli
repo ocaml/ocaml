@@ -17,15 +17,15 @@
 open Format;;
 
 val transl_simple_type:
-        Env.t -> bool -> Parsetree.core_type -> Types.type_expr
+        Env.t -> bool -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_univars:
-        Env.t -> Parsetree.core_type -> Types.type_expr
+        Env.t -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_delayed:
-        Env.t -> Parsetree.core_type -> Types.type_expr * (unit -> unit)
+        Env.t -> Parsetree.core_type -> Typedtree.core_type * (unit -> unit)
         (* Translate a type, but leave type variables unbound. Returns
            the type and a function that binds the type variable. *)
 val transl_type_scheme:
-        Env.t -> Parsetree.core_type -> Types.type_expr
+        Env.t -> Parsetree.core_type -> Typedtree.core_type
 val reset_type_variables: unit -> unit
 val enter_type_variable: bool -> Location.t -> string -> Types.type_expr
 val type_variable: Location.t -> string -> Types.type_expr
@@ -70,14 +70,14 @@ val report_error: formatter -> error -> unit
 
 (* Support for first-class modules. *)
 val transl_modtype_longident: (Location.t -> Env.t -> Longident.t -> Path.t) ref  (* from Typemod *)
-val transl_modtype: (Env.t -> Parsetree.module_type -> Types.module_type) ref (* from Typemod *)
-val create_package_mty: Location.t -> Env.t -> Parsetree.package_type -> (Longident.t * Parsetree.core_type) list * Parsetree.module_type
+val transl_modtype: (Env.t -> Parsetree.module_type -> Typedtree.module_type) ref (* from Typemod *)
+val create_package_mty: Location.t -> Env.t -> Parsetree.package_type -> (Longident.t Asttypes.loc * Parsetree.core_type) list * Parsetree.module_type
 
 val find_type: Env.t -> Location.t -> Longident.t -> Path.t * Types.type_declaration
-val find_constructor: Env.t -> Location.t -> Longident.t -> Types.constructor_description
-val find_label: Env.t -> Location.t -> Longident.t -> Types.label_description
+val find_constructor : Env.t -> Location.t -> Longident.t -> Path.t * Types.constructor_description
+val find_label : Env.t -> Location.t -> Longident.t -> Path.t * Types.label_description
 val find_value: Env.t -> Location.t -> Longident.t -> Path.t * Types.value_description
 val find_class:  Env.t -> Location.t -> Longident.t -> Path.t * Types.class_declaration
 val find_module: Env.t -> Location.t -> Longident.t -> Path.t * Types.module_type
 val find_modtype: Env.t -> Location.t -> Longident.t -> Path.t * Types.modtype_declaration
-val find_cltype: Env.t -> Location.t -> Longident.t -> Path.t * Types.cltype_declaration
+val find_class_type: Env.t -> Location.t -> Longident.t -> Path.t * Types.class_type_declaration

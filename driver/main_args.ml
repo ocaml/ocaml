@@ -24,6 +24,10 @@ let mk_annot f =
   "-annot", Arg.Unit f, " Save information in <filename>.annot"
 ;;
 
+let mk_binannot f =
+  "-bin-annot", Arg.Unit f, " Save typedtree in <filename>.cmt"
+;;
+
 let mk_c f =
   "-c", Arg.Unit f, " Compile only (do not link)"
 ;;
@@ -397,6 +401,7 @@ module type Bytecomp_options = sig
   val _a : unit -> unit
   val _absname : unit -> unit
   val _annot : unit -> unit
+  val _binannot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
@@ -484,6 +489,7 @@ module type Optcomp_options = sig
   val _a : unit -> unit
   val _absname : unit -> unit
   val _annot : unit -> unit
+  val _binannot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
@@ -606,6 +612,7 @@ struct
     mk_a F._a;
     mk_absname F._absname;
     mk_annot F._annot;
+    mk_binannot F._binannot;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
@@ -705,6 +712,7 @@ struct
     mk_a F._a;
     mk_absname F._absname;
     mk_annot F._annot;
+    mk_binannot F._binannot;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;

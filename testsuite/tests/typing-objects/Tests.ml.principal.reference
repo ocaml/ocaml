@@ -168,9 +168,9 @@ Error: This expression has type bool but an expression was expected of type
 Warning 13: the following instance variables are overridden by the class c :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-Characters 53-58:
+Characters 53-54:
     val y = 3
-        ^^^^^
+        ^
 Warning 13: the instance variable y is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Characters 81-84:
@@ -179,9 +179,9 @@ Characters 81-84:
 Warning 13: the following instance variables are overridden by the class d :
   t z
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-Characters 91-96:
+Characters 91-92:
     val u = 3
-        ^^^^^
+        ^
 Warning 13: the instance variable u is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 class e :

@@ -22,7 +22,7 @@ type edit_window =
     frame: frame widget;
     modified: Textvariable.textVariable;
     mutable shell: (string * Shell.shell) option;
-    mutable structure: Typedtree.structure;
+    mutable structure: Typedtree.structure_item list;
     mutable type_info: Stypes.annotation list;
     mutable signature: Types.signature;
     mutable psignature: Parsetree.signature;

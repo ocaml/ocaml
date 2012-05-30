@@ -19,17 +19,17 @@ open Asttypes
 open Types
 
 val constructor_descrs:
-  type_expr -> (string * type_expr list * type_expr option) list ->
-  private_flag -> (string * constructor_description) list
+  type_expr -> (Ident.t * type_expr list * type_expr option) list ->
+  private_flag -> (Ident.t * constructor_description) list
 val exception_descr:
   Path.t -> exception_declaration -> constructor_description
 val label_descrs:
-  type_expr -> (string * mutable_flag * type_expr) list ->
+  type_expr -> (Ident.t * mutable_flag * type_expr) list ->
     record_representation -> private_flag ->
-    (string * label_description) list
+    (Ident.t * label_description) list
 
 exception Constr_not_found
 
 val find_constr_by_tag:
-  constructor_tag -> (string * type_expr list * type_expr option) list ->
-    string * type_expr list * type_expr option
+  constructor_tag -> (Ident.t * type_expr list * type_expr option) list ->
+    Ident.t * type_expr list * type_expr option

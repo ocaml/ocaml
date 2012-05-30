@@ -588,6 +588,12 @@ New syntax:\
         let stopped_at _loc = Some (Loc.move_line 1 _loc)
           
         (* FIXME be more precise *)
+        let rec generalized_type_of_type =
+          function
+          | Ast.TyArr (_, t1, t2) ->
+              let (tl, rt) = generalized_type_of_type t2 in ((t1 :: tl), rt)
+          | t -> ([], t)
+          
         let symbolchar =
           let list =
             [ '$'; '!'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '=';
@@ -676,8 +682,8 @@ New syntax:\
                  (match Stream.peek __strm with
                   | Some
                       ((KEYWORD
-                          (("mod" | "land" | "lor" | "lxor" | "lsl" | "lsr" |
-                              "asr"
+                          (("or" | "mod" | "land" | "lor" | "lxor" | "lsl" |
+                              "lsr" | "asr"
                             as i)),
                         _loc))
                       ->
@@ -3027,16 +3033,8 @@ New syntax:\
                     [ (None, (Some Camlp4.Sig.Grammar.RightA),
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj
-                                 (cvalue_binding :
-                                   'cvalue_binding Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (bi : 'cvalue_binding) (_loc : Gram.Loc.t)
-                                -> (bi : 'fun_binding))));
-                         ([ Gram.Stry
-                              (Gram.Snterm
-                                 (Gram.Entry.obj
-                                    (labeled_ipatt :
-                                      'labeled_ipatt Gram.Entry.t)));
+                                 (labeled_ipatt :
+                                   'labeled_ipatt Gram.Entry.t));
                             Gram.Sself ],
                           (Gram.Action.mk
                              (fun (e : 'fun_binding) (p : 'labeled_ipatt)
@@ -3044,6 +3042,14 @@ New syntax:\
                                 (Ast.ExFun (_loc,
                                    (Ast.McArr (_loc, p, (Ast.ExNil _loc), e))) :
                                   'fun_binding))));
+                         ([ Gram.Stry
+                              (Gram.Snterm
+                                 (Gram.Entry.obj
+                                    (cvalue_binding :
+                                      'cvalue_binding Gram.Entry.t))) ],
+                          (Gram.Action.mk
+                             (fun (bi : 'cvalue_binding) (_loc : Gram.Loc.t)
+                                -> (bi : 'fun_binding))));
                          ([ Gram.Stry
                               (Gram.srules fun_binding
                                  [ ([ Gram.Skeyword "("; Gram.Skeyword "type" ],
@@ -4294,6 +4300,25 @@ New syntax:\
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (label_ipatt : 'label_ipatt Gram.Entry.t));
+                            Gram.Skeyword ";"; Gram.Skeyword "_";
+                            Gram.Skeyword ";" ],
+                          (Gram.Action.mk
+                             (fun _ _ _ (p1 : 'label_ipatt)
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.PaSem (_loc, p1, (Ast.PaAny _loc)) :
+                                  'label_ipatt_list))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (label_ipatt : 'label_ipatt Gram.Entry.t));
+                            Gram.Skeyword ";"; Gram.Skeyword "_" ],
+                          (Gram.Action.mk
+                             (fun _ _ (p1 : 'label_ipatt) (_loc : Gram.Loc.t)
+                                ->
+                                (Ast.PaSem (_loc, p1, (Ast.PaAny _loc)) :
+                                  'label_ipatt_list))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (label_ipatt : 'label_ipatt Gram.Entry.t));
                             Gram.Skeyword ";"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'label_ipatt_list) _
@@ -5037,40 +5062,16 @@ New syntax:\
                                  (a_UIDENT : 'a_UIDENT Gram.Entry.t));
                             Gram.Skeyword ":";
                             Gram.Snterm
-                              (Gram.Entry.obj
-                                 (constructor_arg_list :
-                                   'constructor_arg_list Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (ret : 'constructor_arg_list) _
-                                (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
-                                (match Ast.list_of_ctyp ret [] with
-                                 | [ c ] ->
-                                     Ast.TyCol (_loc,
-                                       (Ast.TyId (_loc,
-                                          (Ast.IdUid (_loc, s)))),
-                                       c)
-                                 | _ ->
-                                     raise
-                                       (Stream.Error
-                                          "invalid generalized constructor type") :
-                                  'constructor_declarations))));
-                         ([ Gram.Snterm
-                              (Gram.Entry.obj
-                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
-                            Gram.Skeyword ":";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (constructor_arg_list :
-                                   'constructor_arg_list Gram.Entry.t));
-                            Gram.Skeyword "->";
-                            Gram.Snterm
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (ret : 'ctyp) _ (t : 'constructor_arg_list)
-                                _ (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.TyCol (_loc,
-                                   (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
-                                   (Ast.TyArr (_loc, t, ret))) :
+                             (fun (t : 'ctyp) _ (s : 'a_UIDENT)
+                                (_loc : Gram.Loc.t) ->
+                                (let (tl, rt) = generalized_type_of_type t
+                                 in
+                                   Ast.TyCol (_loc,
+                                     (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
+                                     (Ast.TyArr (_loc,
+                                        (Ast.tyAnd_of_list tl), rt))) :
                                   'constructor_declarations))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -8756,7 +8757,10 @@ New syntax:\
                           (Gram.Action.mk
                              (fun (st2 : 'str_item_quot) _ (st1 : 'str_item)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.StSem (_loc, st1, st2) : 'str_item_quot))));
+                                (match st2 with
+                                 | Ast.StNil _ -> st1
+                                 | _ -> Ast.StSem (_loc, st1, st2) :
+                                  'str_item_quot))));
                          ([ Gram.Skeyword "#";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -8792,7 +8796,10 @@ New syntax:\
                           (Gram.Action.mk
                              (fun (sg2 : 'sig_item_quot) _ (sg1 : 'sig_item)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.SgSem (_loc, sg1, sg2) : 'sig_item_quot))));
+                                (match sg2 with
+                                 | Ast.SgNil _ -> sg1
+                                 | _ -> Ast.SgSem (_loc, sg1, sg2) :
+                                  'sig_item_quot))));
                          ([ Gram.Skeyword "#";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -9232,7 +9239,9 @@ New syntax:\
                           (Gram.Action.mk
                              (fun (x2 : 'class_str_item_quot) _
                                 (x1 : 'class_str_item) (_loc : Gram.Loc.t) ->
-                                (Ast.CrSem (_loc, x1, x2) :
+                                (match x2 with
+                                 | Ast.CrNil _ -> x1
+                                 | _ -> Ast.CrSem (_loc, x1, x2) :
                                   'class_str_item_quot)))) ]) ]))
                   ());
              Gram.extend
@@ -9261,7 +9270,9 @@ New syntax:\
                           (Gram.Action.mk
                              (fun (x2 : 'class_sig_item_quot) _
                                 (x1 : 'class_sig_item) (_loc : Gram.Loc.t) ->
-                                (Ast.CgSem (_loc, x1, x2) :
+                                (match x2 with
+                                 | Ast.CgNil _ -> x1
+                                 | _ -> Ast.CgSem (_loc, x1, x2) :
                                   'class_sig_item_quot)))) ]) ]))
                   ());
              Gram.extend (with_constr_quot : 'with_constr_quot Gram.Entry.t)
@@ -13692,6 +13703,7 @@ Added statements:
      DEFINE <lident> = <expression> IN <expression>
      __FILE__
      __LOCATION__
+     LOCATION_OF <parameter>
 
   In patterns:
 
@@ -13724,6 +13736,10 @@ Added statements:
 
   The expression __FILE__ returns the current compiled file name.
   The expression __LOCATION__ returns the current location of itself.
+  If used inside a macro, it returns the location where the macro is
+  called.
+  The expression (LOCATION_OF parameter) returns the location of the given
+  macro parameter. It cannot be used outside a macro definition.
 
 *)
     open Camlp4
@@ -13794,6 +13810,48 @@ Added statements:
                    Ast.ExId (_, (Ast.IdUid (_, x)))
                  as e) ->
                   (try List.assoc x env with | Not_found -> super#expr e)
+              | (Ast.ExApp (_loc,
+                   (Ast.ExId (_, (Ast.IdUid (_, "LOCATION_OF")))),
+                   (Ast.ExId (_, (Ast.IdLid (_, x))))) |
+                   Ast.ExApp (_loc,
+                     (Ast.ExId (_, (Ast.IdUid (_, "LOCATION_OF")))),
+                     (Ast.ExId (_, (Ast.IdUid (_, x)))))
+                 as e) ->
+                  (try
+                     let loc = Ast.loc_of_expr (List.assoc x env) in
+                     let (a, b, c, d, e, f, g, h) = Loc.to_tuple loc
+                     in
+                       Ast.ExApp (_loc,
+                         (Ast.ExId (_loc,
+                            (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Loc")),
+                               (Ast.IdLid (_loc, "of_tuple")))))),
+                         (Ast.ExTup (_loc,
+                            (Ast.ExCom (_loc,
+                               (Ast.ExStr (_loc, (Ast.safe_string_escaped a))),
+                               (Ast.ExCom (_loc,
+                                  (Ast.ExCom (_loc,
+                                     (Ast.ExCom (_loc,
+                                        (Ast.ExCom (_loc,
+                                           (Ast.ExCom (_loc,
+                                              (Ast.ExCom (_loc,
+                                                 (Ast.ExInt (_loc,
+                                                    (string_of_int b))),
+                                                 (Ast.ExInt (_loc,
+                                                    (string_of_int c))))),
+                                              (Ast.ExInt (_loc,
+                                                 (string_of_int d))))),
+                                           (Ast.ExInt (_loc,
+                                              (string_of_int e))))),
+                                        (Ast.ExInt (_loc, (string_of_int f))))),
+                                     (Ast.ExInt (_loc, (string_of_int g))))),
+                                  (if h
+                                   then
+                                     Ast.ExId (_loc,
+                                       (Ast.IdUid (_loc, "True")))
+                                   else
+                                     Ast.ExId (_loc,
+                                       (Ast.IdUid (_loc, "False")))))))))))
+                   with | Not_found -> super#expr e)
               | e -> super#expr e
             method patt =
               function
@@ -14541,87 +14599,6 @@ Added statements:
                                 (i : 'uident) _ (_loc : Gram.Loc.t) ->
                                 (if is_defined i then e1 else e2 : 'expr)))) ]) ]))
                   ());
-             Gram.extend (expr : 'expr Gram.Entry.t)
-               ((fun () ->
-                   ((Some (Camlp4.Sig.Grammar.Level "simple")),
-                    [ (None, None,
-                       [ ([ Gram.Stoken
-                              (((function
-                                 | LIDENT "__LOCATION__" -> true
-                                 | _ -> false),
-                                "LIDENT \"__LOCATION__\"")) ],
-                          (Gram.Action.mk
-                             (fun (__camlp4_0 : Gram.Token.t)
-                                (_loc : Gram.Loc.t) ->
-                                match __camlp4_0 with
-                                | LIDENT "__LOCATION__" ->
-                                    (let (a, b, c, d, e, f, g, h) =
-                                       Loc.to_tuple _loc
-                                     in
-                                       Ast.ExApp (_loc,
-                                         (Ast.ExId (_loc,
-                                            (Ast.IdAcc (_loc,
-                                               (Ast.IdUid (_loc, "Loc")),
-                                               (Ast.IdLid (_loc, "of_tuple")))))),
-                                         (Ast.ExTup (_loc,
-                                            (Ast.ExCom (_loc,
-                                               (Ast.ExStr (_loc,
-                                                  (Ast.safe_string_escaped a))),
-                                               (Ast.ExCom (_loc,
-                                                  (Ast.ExCom (_loc,
-                                                     (Ast.ExCom (_loc,
-                                                        (Ast.ExCom (_loc,
-                                                           (Ast.ExCom (_loc,
-                                                              (Ast.ExCom
-                                                                 (_loc,
-                                                                 (Ast.ExInt
-                                                                    (_loc,
-                                                                    (
-                                                                    string_of_int
-                                                                    b))),
-                                                                 (Ast.ExInt
-                                                                    (_loc,
-                                                                    (
-                                                                    string_of_int
-                                                                    c))))),
-                                                              (Ast.ExInt
-                                                                 (_loc,
-                                                                 (string_of_int
-                                                                    d))))),
-                                                           (Ast.ExInt (_loc,
-                                                              (string_of_int
-                                                                 e))))),
-                                                        (Ast.ExInt (_loc,
-                                                           (string_of_int f))))),
-                                                     (Ast.ExInt (_loc,
-                                                        (string_of_int g))))),
-                                                  (if h
-                                                   then
-                                                     Ast.ExId (_loc,
-                                                       (Ast.IdUid (_loc,
-                                                          "True")))
-                                                   else
-                                                     Ast.ExId (_loc,
-                                                       (Ast.IdUid (_loc,
-                                                          "False"))))))))))) :
-                                      'expr)
-                                | _ -> assert false)));
-                         ([ Gram.Stoken
-                              (((function
-                                 | LIDENT "__FILE__" -> true
-                                 | _ -> false),
-                                "LIDENT \"__FILE__\"")) ],
-                          (Gram.Action.mk
-                             (fun (__camlp4_0 : Gram.Token.t)
-                                (_loc : Gram.Loc.t) ->
-                                match __camlp4_0 with
-                                | LIDENT "__FILE__" ->
-                                    (Ast.ExStr (_loc,
-                                       (Ast.safe_string_escaped
-                                          (Loc.file_name _loc))) :
-                                      'expr)
-                                | _ -> assert false))) ]) ]))
-                  ());
              Gram.extend (patt : 'patt Gram.Entry.t)
                ((fun () ->
                    (None,
@@ -14790,17 +14767,47 @@ Added statements:
           
         open Ast
           
-        let remove_nothings =
+        (* Remove NOTHING and expanse __FILE__ and __LOCATION__ *)
+        let map_expr =
           function
           | Ast.ExApp (_, e, (Ast.ExId (_, (Ast.IdUid (_, "NOTHING"))))) |
               Ast.ExFun (_,
                 (Ast.McArr (_, (Ast.PaId (_, (Ast.IdUid (_, "NOTHING")))),
                    (Ast.ExNil _), e)))
               -> e
+          | Ast.ExId (_loc, (Ast.IdLid (_, "__FILE__"))) ->
+              Ast.ExStr (_loc,
+                (Ast.safe_string_escaped (Loc.file_name _loc)))
+          | Ast.ExId (_loc, (Ast.IdLid (_, "__LOCATION__"))) ->
+              let (a, b, c, d, e, f, g, h) = Loc.to_tuple _loc
+              in
+                Ast.ExApp (_loc,
+                  (Ast.ExId (_loc,
+                     (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Loc")),
+                        (Ast.IdLid (_loc, "of_tuple")))))),
+                  (Ast.ExTup (_loc,
+                     (Ast.ExCom (_loc,
+                        (Ast.ExStr (_loc, (Ast.safe_string_escaped a))),
+                        (Ast.ExCom (_loc,
+                           (Ast.ExCom (_loc,
+                              (Ast.ExCom (_loc,
+                                 (Ast.ExCom (_loc,
+                                    (Ast.ExCom (_loc,
+                                       (Ast.ExCom (_loc,
+                                          (Ast.ExInt (_loc,
+                                             (string_of_int b))),
+                                          (Ast.ExInt (_loc,
+                                             (string_of_int c))))),
+                                       (Ast.ExInt (_loc, (string_of_int d))))),
+                                    (Ast.ExInt (_loc, (string_of_int e))))),
+                                 (Ast.ExInt (_loc, (string_of_int f))))),
+                              (Ast.ExInt (_loc, (string_of_int g))))),
+                           (if h
+                            then Ast.ExId (_loc, (Ast.IdUid (_loc, "True")))
+                            else Ast.ExId (_loc, (Ast.IdUid (_loc, "False")))))))))))
           | e -> e
           
-        let _ =
-          register_str_item_filter (Ast.map_expr remove_nothings)#str_item
+        let _ = register_str_item_filter (Ast.map_expr map_expr)#str_item
           
       end
       

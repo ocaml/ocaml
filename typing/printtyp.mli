@@ -46,12 +46,14 @@ val tree_of_module: Ident.t -> module_type -> rec_status -> out_sig_item
 val modtype: formatter -> module_type -> unit
 val signature: formatter -> signature -> unit
 val tree_of_modtype_declaration: Ident.t -> modtype_declaration -> out_sig_item
+val tree_of_signature : Types.signature -> out_sig_item list
+val tree_of_typexp : bool -> type_expr -> out_type
 val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit
 val class_type: formatter -> class_type -> unit
 val tree_of_class_declaration: Ident.t -> class_declaration -> rec_status -> out_sig_item
 val class_declaration: Ident.t -> formatter -> class_declaration -> unit
-val tree_of_cltype_declaration: Ident.t -> cltype_declaration -> rec_status -> out_sig_item
-val cltype_declaration: Ident.t -> formatter -> cltype_declaration -> unit
+val tree_of_cltype_declaration: Ident.t -> class_type_declaration -> rec_status -> out_sig_item
+val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
 val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
 val trace: bool -> string -> formatter -> (type_expr * type_expr) list -> unit

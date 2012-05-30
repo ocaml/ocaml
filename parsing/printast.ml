@@ -38,7 +38,8 @@ let rec fmt_longident_aux f x =
       fprintf f "%a(%a)" fmt_longident_aux y fmt_longident_aux z;
 ;;
 
-let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
+let fmt_longident_noloc f x = fprintf f "\"%a\"" fmt_longident_aux x;;
+let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x.txt;;
 
 let fmt_constant f x =
   match x with
@@ -112,6 +113,7 @@ let option i f ppf x =
 
 let longident i ppf li = line i ppf "%a\n" fmt_longident li;;
 let string i ppf s = line i ppf "\"%s\"\n" s;;
+let string_loc i ppf s = line i ppf "\"%s\"\n" s.txt;;
 let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
 let label i ppf x = line i ppf "label=\"%s\"\n" x;;
 
@@ -172,9 +174,9 @@ and pattern i ppf x =
   let i = i+1 in
   match x.ppat_desc with
   | Ppat_any -> line i ppf "Ppat_any\n";
-  | Ppat_var (s) -> line i ppf "Ppat_var \"%s\"\n" s;
+  | Ppat_var (s) -> line i ppf "Ppat_var \"%s\"\n" s.txt;
   | Ppat_alias (p, s) ->
-      line i ppf "Ppat_alias \"%s\"\n" s;
+      line i ppf "Ppat_alias \"%s\"\n" s.txt;
       pattern i ppf p;
   | Ppat_constant (c) -> line i ppf "Ppat_constant %a\n" fmt_constant c;
   | Ppat_tuple (l) ->
@@ -204,11 +206,11 @@ and pattern i ppf x =
       line i ppf "Ppat_constraint";
       pattern i ppf p;
       core_type i ppf ct;
-  | Ppat_type li ->
+  | Ppat_type (li) ->
       line i ppf "Ppat_type";
       longident i ppf li
   | Ppat_unpack s ->
-      line i ppf "Ppat_unpack \"%s\"\n" s;
+      line i ppf "Ppat_unpack \"%s\"\n" s.txt;
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;
@@ -276,7 +278,7 @@ and expression i ppf x =
       expression i ppf e1;
       expression i ppf e2;
   | Pexp_for (s, e1, e2, df, e3) ->
-      line i ppf "Pexp_for \"%s\" %a\n" s fmt_direction_flag df;
+      line i ppf "Pexp_for \"%s\" %a\n" s.txt fmt_direction_flag df;
       expression i ppf e1;
       expression i ppf e2;
       expression i ppf e3;
@@ -294,13 +296,13 @@ and expression i ppf x =
       expression i ppf e;
   | Pexp_new (li) -> line i ppf "Pexp_new %a\n" fmt_longident li;
   | Pexp_setinstvar (s, e) ->
-      line i ppf "Pexp_setinstvar \"%s\"\n" s;
+      line i ppf "Pexp_setinstvar \"%s\"\n" s.txt;
       expression i ppf e;
   | Pexp_override (l) ->
       line i ppf "Pexp_override\n";
       list i string_x_expression ppf l;
   | Pexp_letmodule (s, me, e) ->
-      line i ppf "Pexp_letmodule \"%s\"\n" s;
+      line i ppf "Pexp_letmodule \"%s\"\n" s.txt;
       module_expr i ppf me;
       expression i ppf e;
   | Pexp_assert (e) ->
@@ -333,10 +335,10 @@ and value_description i ppf x =
   core_type (i+1) ppf x.pval_type;
   list (i+1) string ppf x.pval_prim;
 
-and string_option_underscore i ppf = 
+and string_option_underscore i ppf =
   function
     | Some x ->
-	string i ppf x
+	string i ppf x.txt
     | None ->
 	string i ppf "_"
 
@@ -381,30 +383,31 @@ and class_type i ppf x =
       core_type i ppf co;
       class_type i ppf cl;
 
-and class_signature i ppf (ct, l) =
+and class_signature i ppf { pcsig_self = ct; pcsig_fields = l } =
   line i ppf "class_signature\n";
   core_type (i+1) ppf ct;
   list (i+1) class_type_field ppf l;
 
 and class_type_field i ppf x =
-  match x with
+  let loc = x.pctf_loc in
+  match x.pctf_desc with
   | Pctf_inher (ct) ->
       line i ppf "Pctf_inher\n";
       class_type i ppf ct;
-  | Pctf_val (s, mf, vf, ct, loc) ->
+  | Pctf_val (s, mf, vf, ct) ->
       line i ppf
         "Pctf_val \"%s\" %a %a %a\n" s
         fmt_mutable_flag mf fmt_virtual_flag vf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pctf_virt (s, pf, ct, loc) ->
+  | Pctf_virt (s, pf, ct) ->
       line i ppf
         "Pctf_virt \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pctf_meth (s, pf, ct, loc) ->
+  | Pctf_meth (s, pf, ct) ->
       line i ppf
         "Pctf_meth \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pctf_cstr (ct1, ct2, loc) ->
+  | Pctf_cstr (ct1, ct2) ->
       line i ppf "Pctf_cstr %a\n" fmt_location loc;
       core_type i ppf ct1;
       core_type i ppf ct2;
@@ -415,7 +418,7 @@ and class_description i ppf x =
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
   string_list_x_location (i+1) ppf x.pci_params;
-  line i ppf "pci_name = \"%s\"\n" x.pci_name;
+  line i ppf "pci_name = \"%s\"\n" x.pci_name.txt;
   line i ppf "pci_expr =\n";
   class_type (i+1) ppf x.pci_expr;
 
@@ -425,7 +428,7 @@ and class_type_declaration i ppf x =
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
   string_list_x_location (i+1) ppf x.pci_params;
-  line i ppf "pci_name = \"%s\"\n" x.pci_name;
+  line i ppf "pci_name = \"%s\"\n" x.pci_name.txt;
   line i ppf "pci_expr =\n";
   class_type (i+1) ppf x.pci_expr;
 
@@ -458,35 +461,36 @@ and class_expr i ppf x =
       class_expr i ppf ce;
       class_type i ppf ct;
 
-and class_structure i ppf (p, l) =
+and class_structure i ppf { pcstr_pat = p; pcstr_fields = l } =
   line i ppf "class_structure\n";
   pattern (i+1) ppf p;
   list (i+1) class_field ppf l;
 
 and class_field i ppf x =
-  match x with
+  let loc = x.pcf_loc in
+  match x.pcf_desc with
   | Pcf_inher (ovf, ce, so) ->
       line i ppf "Pcf_inher %a\n" fmt_override_flag ovf;
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
-  | Pcf_valvirt (s, mf, ct, loc) ->
+  | Pcf_valvirt (s, mf, ct) ->
       line i ppf "Pcf_valvirt \"%s\" %a %a\n"
-        s fmt_mutable_flag mf fmt_location loc;
+        s.txt fmt_mutable_flag mf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pcf_val (s, mf, ovf, e, loc) ->
+  | Pcf_val (s, mf, ovf, e) ->
       line i ppf "Pcf_val \"%s\" %a %a %a\n"
-        s fmt_mutable_flag mf fmt_override_flag ovf fmt_location loc;
+        s.txt fmt_mutable_flag mf fmt_override_flag ovf fmt_location loc;
       expression (i+1) ppf e;
-  | Pcf_virt (s, pf, ct, loc) ->
+  | Pcf_virt (s, pf, ct) ->
       line i ppf "Pcf_virt \"%s\" %a %a\n"
-        s fmt_private_flag pf fmt_location loc;
+        s.txt fmt_private_flag pf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pcf_meth (s, pf, ovf, e, loc) ->
+  | Pcf_meth (s, pf, ovf, e) ->
       line i ppf "Pcf_meth \"%s\" %a %a %a\n"
-        s fmt_private_flag pf fmt_override_flag ovf fmt_location loc;
+        s.txt fmt_private_flag pf fmt_override_flag ovf fmt_location loc;
       expression (i+1) ppf e;
-  | Pcf_cstr (ct1, ct2, loc) ->
-      line i ppf "Pcf_cstr %a\n" fmt_location loc;
+  | Pcf_constr (ct1, ct2) ->
+      line i ppf "Pcf_constr %a\n" fmt_location loc;
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
   | Pcf_init (e) ->
@@ -499,7 +503,7 @@ and class_declaration i ppf x =
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
   string_list_x_location (i+1) ppf x.pci_params;
-  line i ppf "pci_name = \"%s\"\n" x.pci_name;
+  line i ppf "pci_name = \"%s\"\n" x.pci_name.txt;
   line i ppf "pci_expr =\n";
   class_expr (i+1) ppf x.pci_expr;
 
@@ -507,12 +511,12 @@ and module_type i ppf x =
   line i ppf "module_type %a\n" fmt_location x.pmty_loc;
   let i = i+1 in
   match x.pmty_desc with
-  | Pmty_ident (li) -> line i ppf "Pmty_ident %a\n" fmt_longident li;
+  | Pmty_ident li -> line i ppf "Pmty_ident %a\n" fmt_longident li;
   | Pmty_signature (s) ->
       line i ppf "Pmty_signature\n";
       signature i ppf s;
   | Pmty_functor (s, mt1, mt2) ->
-      line i ppf "Pmty_functor \"%s\"\n" s;
+      line i ppf "Pmty_functor \"%s\"\n" s.txt;
       module_type i ppf mt1;
       module_type i ppf mt2;
   | Pmty_with (mt, l) ->
@@ -530,24 +534,24 @@ and signature_item i ppf x =
   let i = i+1 in
   match x.psig_desc with
   | Psig_value (s, vd) ->
-      line i ppf "Psig_value \"%s\"\n" s;
+      line i ppf "Psig_value \"%s\"\n" s.txt;
       value_description i ppf vd;
   | Psig_type (l) ->
       line i ppf "Psig_type\n";
       list i string_x_type_declaration ppf l;
   | Psig_exception (s, ed) ->
-      line i ppf "Psig_exception \"%s\"\n" s;
+      line i ppf "Psig_exception \"%s\"\n" s.txt;
       exception_declaration i ppf ed;
   | Psig_module (s, mt) ->
-      line i ppf "Psig_module \"%s\"\n" s;
+      line i ppf "Psig_module \"%s\"\n" s.txt;
       module_type i ppf mt;
   | Psig_recmodule decls ->
       line i ppf "Psig_recmodule\n";
       list i string_x_module_type ppf decls;
   | Psig_modtype (s, md) ->
-      line i ppf "Psig_modtype \"%s\"\n" s;
+      line i ppf "Psig_modtype \"%s\"\n" s.txt;
       modtype_declaration i ppf md;
-  | Psig_open (li) -> line i ppf "Psig_open %a\n" fmt_longident li;
+  | Psig_open li -> line i ppf "Psig_open %a\n" fmt_longident li;
   | Psig_include (mt) ->
       line i ppf "Psig_include\n";
       module_type i ppf mt;
@@ -573,8 +577,8 @@ and with_constraint i ppf x =
   | Pwith_typesubst (td) ->
       line i ppf "Pwith_typesubst\n";
       type_declaration (i+1) ppf td;
-  | Pwith_module (li) -> line i ppf "Pwith_module %a\n" fmt_longident li;
-  | Pwith_modsubst (li) -> line i ppf "Pwith_modsubst %a\n" fmt_longident li;
+  | Pwith_module li -> line i ppf "Pwith_module %a\n" fmt_longident li;
+  | Pwith_modsubst li -> line i ppf "Pwith_modsubst %a\n" fmt_longident li;
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.pmod_loc;
@@ -585,7 +589,7 @@ and module_expr i ppf x =
       line i ppf "Pmod_structure\n";
       structure i ppf s;
   | Pmod_functor (s, mt, me) ->
-      line i ppf "Pmod_functor \"%s\"\n" s;
+      line i ppf "Pmod_functor \"%s\"\n" s.txt;
       module_type i ppf mt;
       module_expr i ppf me;
   | Pmod_apply (me1, me2) ->
@@ -613,26 +617,26 @@ and structure_item i ppf x =
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
       list i pattern_x_expression_def ppf l;
   | Pstr_primitive (s, vd) ->
-      line i ppf "Pstr_primitive \"%s\"\n" s;
+      line i ppf "Pstr_primitive \"%s\"\n" s.txt;
       value_description i ppf vd;
-  | Pstr_type (l) ->
+  | Pstr_type l ->
       line i ppf "Pstr_type\n";
       list i string_x_type_declaration ppf l;
   | Pstr_exception (s, ed) ->
-      line i ppf "Pstr_exception \"%s\"\n" s;
+      line i ppf "Pstr_exception \"%s\"\n" s.txt;
       exception_declaration i ppf ed;
   | Pstr_exn_rebind (s, li) ->
-      line i ppf "Pstr_exn_rebind \"%s\" %a\n" s fmt_longident li;
+      line i ppf "Pstr_exn_rebind \"%s\" %a\n" s.txt fmt_longident li;
   | Pstr_module (s, me) ->
-      line i ppf "Pstr_module \"%s\"\n" s;
+      line i ppf "Pstr_module \"%s\"\n" s.txt;
       module_expr i ppf me;
   | Pstr_recmodule bindings ->
       line i ppf "Pstr_recmodule\n";
       list i string_x_modtype_x_module ppf bindings;
   | Pstr_modtype (s, mt) ->
-      line i ppf "Pstr_modtype \"%s\"\n" s;
+      line i ppf "Pstr_modtype \"%s\"\n" s.txt;
       module_type i ppf mt;
-  | Pstr_open (li) -> line i ppf "Pstr_open %a\n" fmt_longident li;
+  | Pstr_open li -> line i ppf "Pstr_open %a\n" fmt_longident li;
   | Pstr_class (l) ->
       line i ppf "Pstr_class\n";
       list i class_declaration ppf l;
@@ -644,15 +648,15 @@ and structure_item i ppf x =
       module_expr i ppf me
 
 and string_x_type_declaration i ppf (s, td) =
-  string i ppf s;
+  string i ppf s.txt;
   type_declaration (i+1) ppf td;
 
 and string_x_module_type i ppf (s, mty) =
-  string i ppf s;
+  string i ppf s.txt;
   module_type (i+1) ppf mty;
 
 and string_x_modtype_x_module i ppf (s, mty, modl) =
-  string i ppf s;
+  string i ppf s.txt;
   module_type (i+1) ppf mty;
   module_expr (i+1) ppf modl;
 
@@ -665,18 +669,18 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) = 
-  line i ppf "\"%s\" %a\n" s fmt_location loc;
+and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) =
+  line i ppf "\"%s\" %a\n" s.txt fmt_location loc;
   list (i+1) core_type ppf l;
   option (i+1) core_type ppf r_opt;
 
 and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
-  line i ppf "\"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
+  line i ppf "\"%s\" %a %a\n" s.txt fmt_mutable_flag mf fmt_location loc;
   core_type (i+1) ppf ct;
 
 and string_list_x_location i ppf (l, loc) =
   line i ppf "<params> %a\n" fmt_location loc;
-  list (i+1) string ppf l;
+  list (i+1) string_loc ppf l;
 
 and longident_x_pattern i ppf (li, p) =
   line i ppf "%a\n" fmt_longident li;
@@ -693,7 +697,7 @@ and pattern_x_expression_def i ppf (p, e) =
   expression (i+1) ppf e;
 
 and string_x_expression i ppf (s, e) =
-  line i ppf "<override> \"%s\"\n" s;
+  line i ppf "<override> \"%s\"\n" s.txt;
   expression (i+1) ppf e;
 
 and longident_x_expression i ppf (li, e) =
@@ -728,7 +732,7 @@ and directive_argument i ppf x =
   | Pdir_none -> line i ppf "Pdir_none\n"
   | Pdir_string (s) -> line i ppf "Pdir_string \"%s\"\n" s;
   | Pdir_int (i) -> line i ppf "Pdir_int %d\n" i;
-  | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li;
+  | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident_noloc li;
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b);
 ;;
 

@@ -110,7 +110,7 @@ let label_descrs ty_res lbls repres priv =
       [] -> []
     | (name, mut_flag, ty_arg) :: rest ->
         let lbl =
-          { lbl_name = name;
+          { lbl_name = Ident.name name;
             lbl_res = ty_res;
             lbl_arg = ty_arg;
             lbl_mut = mut_flag;

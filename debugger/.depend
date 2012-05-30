@@ -124,12 +124,14 @@ main.cmo: unix_tools.cmi $(UNIXDIR)/unix.cmi time_travel.cmi \
     show_information.cmi question.cmi program_management.cmi primitives.cmi \
     parameters.cmi ../utils/misc.cmi input_handling.cmi frames.cmi exec.cmi \
     ../typing/env.cmi debugger_config.cmi ../utils/config.cmi \
-    command_line.cmi ../utils/clflags.cmi checkpoints.cmi
+    command_line.cmi ../typing/cmi_format.cmi ../utils/clflags.cmi \
+    checkpoints.cmi
 main.cmx: unix_tools.cmx $(UNIXDIR)/unix.cmx time_travel.cmx \
     show_information.cmx question.cmx program_management.cmx primitives.cmx \
     parameters.cmx ../utils/misc.cmx input_handling.cmx frames.cmx exec.cmx \
     ../typing/env.cmx debugger_config.cmx ../utils/config.cmx \
-    command_line.cmx ../utils/clflags.cmx checkpoints.cmx
+    command_line.cmx ../typing/cmi_format.cmx ../utils/clflags.cmx \
+    checkpoints.cmx
 parameters.cmo: primitives.cmi envaux.cmi debugger_config.cmi \
     ../utils/config.cmi parameters.cmi
 parameters.cmx: primitives.cmx envaux.cmx debugger_config.cmx \

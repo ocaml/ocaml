@@ -69,7 +69,7 @@ clean:
 	rm -f *.cm? ocamlbrowser$(EXE) dummy.mli *~ *.orig *.$(O) help.ml
 
 depend: help.ml
-	$(CAMLDEP) *.ml *.mli > .depend
+	$(CAMLDEP) $(LABLTKLIB) $(OCAMLTOPLIB) *.ml *.mli > .depend
 
 shell.cmo: dummy.cmi
 setpath.cmo fileselect.cmo lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/compilerlibs/ocamlcommon.cma

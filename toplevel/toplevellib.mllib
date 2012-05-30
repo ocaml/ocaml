@@ -4,9 +4,11 @@ Misc Tbl Config Clflags Terminfo Ccomp Warnings Consistbl
 Location Longident Syntaxerr Parser
 Lexer Parse Printast
 
-Unused_var Ident Path Primitive Types
-Btype Oprint Subst Predef Datarepr Env
-Typedtree Ctype Printtyp Includeclass Mtype Includecore
+Ident Path Primitive Types
+Btype Oprint Subst Predef Datarepr
+Cmi_format Env
+Typedtree
+Cmt_format Ctype Printtyp Includeclass Mtype Includecore
 Includemod Parmatch Typetexp Stypes Typecore
 Typedecl Typeclass Typemod
 

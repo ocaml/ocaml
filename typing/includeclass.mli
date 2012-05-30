@@ -21,7 +21,7 @@ open Format
 val class_types:
         Env.t -> class_type -> class_type -> class_match_failure list
 val class_type_declarations:
-        Env.t -> cltype_declaration -> cltype_declaration ->
+        Env.t -> class_type_declaration -> class_type_declaration ->
         class_match_failure list
 val class_declarations:
         Env.t -> class_declaration -> class_declaration ->

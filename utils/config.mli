@@ -75,6 +75,8 @@ val ast_impl_magic_number: string
         (* Magic number for file holding an implementation syntax tree *)
 val cmxs_magic_number: string
         (* Magic number for dynamically-loadable plugins *)
+val cmt_magic_number: string
+        (* Magic number for compiled interface files *)
 
 val max_tag: int
         (* Biggest tag that can be stored in the header of a regular block. *)

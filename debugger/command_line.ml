@@ -209,8 +209,8 @@ let line_loop ppf line_buffer =
     with
     | Exit ->
         stop_user_input ()
-    | Sys_error s ->
-        error ("System error : " ^ s)
+(*    | Sys_error s ->
+        error ("System error : " ^ s) *)
 
 (** Instructions. **)
 let instr_cd ppf lexbuf =
