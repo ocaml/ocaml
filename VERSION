@@ -1,8 +1,4 @@
-<<<<<<< .working
 4.00.0+dev18_2012-05-30
-=======
-4.00.0+dev15_2012-04-16+binannot
->>>>>>> .merge-right.r12510
 
 # The version string is the first line of this file.
 # It must be in the format described in stdlib/sys.mli
