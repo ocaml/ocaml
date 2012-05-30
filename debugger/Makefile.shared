@@ -15,8 +15,8 @@
 include ../config/Makefile
 
 CAMLC=../ocamlcomp.sh
-COMPFLAGS=-warn-error A $(INCLUDES)
-LINKFLAGS=-linkall -I $(UNIXDIR)
+COMPFLAGS=-g -warn-error A $(INCLUDES)
+LINKFLAGS=-g -linkall -I $(UNIXDIR)
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex
@@ -35,7 +35,7 @@ OTHEROBJS=\
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
   ../typing/btype.cmo ../typing/primitive.cmo ../typing/typedtree.cmo \
   ../typing/subst.cmo ../typing/predef.cmo \
-  ../typing/datarepr.cmo ../typing/env.cmo ../typing/oprint.cmo \
+  ../typing/datarepr.cmo ../typing/cmi_format.cmo ../typing/env.cmo ../typing/oprint.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
   ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \
   ../bytecomp/dll.cmo ../bytecomp/meta.cmo ../bytecomp/symtable.cmo \

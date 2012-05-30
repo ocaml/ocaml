@@ -21,19 +21,24 @@ val type_module:
         Env.t -> Parsetree.module_expr -> Typedtree.module_expr
 val type_structure:
         Env.t -> Parsetree.structure -> Location.t ->
-          Typedtree.structure * signature * Env.t
+         Typedtree.structure * Types.signature * Env.t
 val type_implementation:
-        string -> string -> string -> Env.t -> Parsetree.structure ->
-                               Typedtree.structure * Typedtree.module_coercion
+  string -> string -> string -> Env.t -> Parsetree.structure ->
+  Typedtree.structure * Typedtree.module_coercion
 val transl_signature:
-        Env.t -> Parsetree.signature -> signature
+        Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
-        Env.t -> Typedtree.structure -> unit
+        Env.t -> Typedtree.structure_item list -> unit
 
 val simplify_signature: signature -> signature
 
+val save_signature : string -> Typedtree.signature -> string -> string ->
+  Env.t -> Types.signature_item list -> unit
+
 val package_units:
         string list -> string -> string -> Typedtree.module_coercion
+
+val bound_value_identifiers : Types.signature_item list -> Ident.t list
 
 type error =
     Cannot_apply of module_type

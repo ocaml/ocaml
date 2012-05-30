@@ -20,7 +20,7 @@ module Typedtree_search :
     sig
       type ele
 
-      type tab = (ele, Typedtree.structure_item) Hashtbl.t
+      type tab = (ele, Typedtree.structure_item_desc) Hashtbl.t
       type tab_values = (Odoc_name.t, Typedtree.pattern * Typedtree.expression) Hashtbl.t
 
       (** Create hash tables used to search by some of the functions below. *)
@@ -34,12 +34,12 @@ module Typedtree_search :
       (** This function returns the [Types.module_type] associated to the given module type name,
          in the given table.
          @raise Not_found if the module type was not found.*)
-      val search_module_type : tab -> string -> Types.module_type
+      val search_module_type : tab -> string -> Typedtree.module_type
 
       (** This function returns the [Types.exception_declaration] associated to the given exception name,
          in the given table.
          @raise Not_found if the exception was not found.*)
-      val search_exception : tab -> string -> Types.exception_declaration
+      val search_exception : tab -> string -> Typedtree.exception_declaration
 
       (** This function returns the [Path.t] associated to the given exception rebind name,
          in the table.
@@ -49,7 +49,7 @@ module Typedtree_search :
       (** This function returns the [Typedtree.type_declaration] associated to the given type name,
          in the given table.
          @raise Not_found if the type was not found. *)
-      val search_type_declaration : tab -> string -> Types.type_declaration
+      val search_type_declaration : tab -> string -> Typedtree.type_declaration
 
       (** This function returns the [Typedtree.class_expr] and type parameters
          associated to the given class name, in the given table.
@@ -59,7 +59,7 @@ module Typedtree_search :
       (** This function returns the [Types.cltype_declaration] associated to the given class type name,
          in the given table.
          @raise Not_found if the class type was not found. *)
-      val search_class_type_declaration : tab -> string -> Types.cltype_declaration
+      val search_class_type_declaration : tab -> string -> Typedtree.class_type_declaration
 
       (** This function returns the couple (pat, exp) for the given value name, in the
          given table of values.

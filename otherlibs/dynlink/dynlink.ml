@@ -126,13 +126,13 @@ let digest_interface unit loadpath =
       close_in ic;
       raise(Error(Corrupted_interface filename))
     end;
-    ignore (input_value ic);
+    let cmi = Cmi_format.input_cmi ic in
+    close_in ic;
     let crc =
-      match input_value ic with
+      match cmi.Cmi_format.cmi_crcs with
         (_, crc) :: _ -> crc
       | _             -> raise(Error(Corrupted_interface filename))
     in
-    close_in ic;
     crc
   with End_of_file | Failure _ ->
     close_in ic;
@@ -190,7 +190,7 @@ let load_compunit ic file_name file_digest compunit =
       | _ -> assert false in
     raise(Error(Linking_error (file_name, new_error)))
   end;
-  (* PR#5215: identify this code fragment by 
+  (* PR#5215: identify this code fragment by
      digest of file contents + unit name.
      Unit name is needed for .cma files, which produce several code fragments.*)
   let digest = Digest.string (file_digest ^ compunit.cu_name) in

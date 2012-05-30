@@ -46,7 +46,7 @@ module Signature_search :
       (** This function returns the Types.cltype_declaration  for the class type whose name is given,
          in the given table.
          @raise Not_found if error.*)
-      val search_class_type : tab -> string -> Types.cltype_declaration
+      val search_class_type : tab -> string -> Types.class_type_declaration
 
       (** This function returns the Types.module_type  for the module whose name is given,
          in the given table.

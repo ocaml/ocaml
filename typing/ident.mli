@@ -14,7 +14,7 @@
 
 (* Identifiers (unique names) *)
 
-type t
+type t = { stamp: int; name: string; mutable flags: int }
 
 val create: string -> t
 val create_persistent: string -> t

@@ -48,6 +48,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _absname = option "-absname"
   let _annot = option "-annot"
+  let _binannot = option "-bin-annot"
   let _c = option "-c"
   let _cc s = option_with_arg "-cc" s
   let _cclib s = option_with_arg "-cclib" s

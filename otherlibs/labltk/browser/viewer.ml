@@ -61,20 +61,20 @@ let view_symbol ~kind ~env ?path id =
   match kind with
     Pvalue ->
       let path, vd = lookup_value id env in
-      view_signature_item ~path ~env [Tsig_value (Ident.create name, vd)]
+      view_signature_item ~path ~env [Sig_value (Ident.create name, vd)]
   | Ptype -> view_type_id id ~env
-  | Plabel -> let ld = lookup_label id env in
+  | Plabel -> let _,ld = lookup_label id env in
       begin match ld.lbl_res.desc with
         Tconstr (path, _, _) -> view_type_decl path ~env
       | _ -> ()
       end
   | Pconstructor ->
-      let cd = lookup_constructor id env in
+      let _,cd = lookup_constructor id env in
       begin match cd.cstr_res.desc with
         Tconstr (cpath, _, _) ->
         if Path.same cpath Predef.path_exn then
           view_signature ~title:(string_of_longident id) ~env ?path
-            [Tsig_exception (Ident.create name, {exn_loc = Location.none; exn_args = cd.cstr_args})]
+            [Sig_exception (Ident.create name, {Types.exn_loc = Location.none; exn_args = cd.cstr_args})]
         else
           view_type_decl cpath ~env
       | _ -> ()
@@ -217,23 +217,23 @@ let search_symbol () =
 (* Display the contents of a module *)
 
 let ident_of_decl ~modlid = function
-    Tsig_value (id, _) -> Lident (Ident.name id), Pvalue
-  | Tsig_type (id, _, _) -> Lident (Ident.name id), Ptype
-  | Tsig_exception (id, _) -> Ldot (modlid, Ident.name id), Pconstructor
-  | Tsig_module (id, _, _) -> Lident (Ident.name id), Pmodule
-  | Tsig_modtype (id, _) -> Lident (Ident.name id), Pmodtype
-  | Tsig_class (id, _, _) -> Lident (Ident.name id), Pclass
-  | Tsig_cltype (id, _, _) -> Lident (Ident.name id), Pcltype
+    Sig_value (id, _) -> Lident (Ident.name id), Pvalue
+  | Sig_type (id, _, _) -> Lident (Ident.name id), Ptype
+  | Sig_exception (id, _) -> Ldot (modlid, Ident.name id), Pconstructor
+  | Sig_module (id, _, _) -> Lident (Ident.name id), Pmodule
+  | Sig_modtype (id, _) -> Lident (Ident.name id), Pmodtype
+  | Sig_class (id, _, _) -> Lident (Ident.name id), Pclass
+  | Sig_class_type (id, _, _) -> Lident (Ident.name id), Pcltype
 
 let view_defined ~env ?(show_all=false) modlid =
-  try match lookup_module modlid env with path, Tmty_signature sign ->
+  try match lookup_module modlid env with path, Mty_signature sign ->
     let rec iter_sign sign idents =
       match sign with
         [] -> List.rev idents
       | decl :: rem ->
           let rem = match decl, rem with
-            Tsig_class _, cty :: ty1 :: ty2 :: rem -> rem
-          | Tsig_cltype _, ty1 :: ty2 :: rem -> rem
+            Sig_class _, cty :: ty1 :: ty2 :: rem -> rem
+          | Sig_class_type _, ty1 :: ty2 :: rem -> rem
           | _, rem -> rem
           in iter_sign rem (ident_of_decl ~modlid decl :: idents)
     in
@@ -247,6 +247,10 @@ let view_defined ~env ?(show_all=false) modlid =
   | Env.Error err ->
       let tl, tw, finish = Jg_message.formatted ~title:"Error!" () in
       Env.report_error Format.std_formatter err;
+      finish ()
+  | Cmi_format.Error err ->
+      let tl, tw, finish = Jg_message.formatted ~title:"Error!" () in
+      Cmi_format.report_error Format.std_formatter err;
       finish ()
 
 

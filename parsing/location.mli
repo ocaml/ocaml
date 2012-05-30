@@ -41,6 +41,9 @@ val curr : Lexing.lexbuf -> t
 
 val symbol_rloc: unit -> t
 val symbol_gloc: unit -> t
+
+(** [rhs_loc n] returns the location of the symbol at position [n], starting
+  at 1, in the current parser rule. *)
 val rhs_loc: int -> t
 
 val input_name: string ref
@@ -57,6 +60,14 @@ val reset: unit -> unit
 
 val highlight_locations: formatter -> t -> t -> bool
 
+type 'a loc = {
+  txt : 'a;
+  loc : t;
+}
+
+val mknoloc : 'a -> 'a loc
+val mkloc : 'a -> t -> 'a loc
+
 val print: formatter -> t -> unit
 val print_filename: formatter -> string -> unit
 
@@ -66,3 +77,4 @@ val show_filename: string -> string
 
 
 val absname: bool ref
+

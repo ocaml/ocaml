@@ -17,6 +17,7 @@
 open StdLabels
 open Tk
 open Parsetree
+open Typedtree
 open Location
 open Jg_tk
 open Mytypes
@@ -105,7 +106,7 @@ let f txt =
     let psign = parse_pp text ~ext:".mli"
         ~parse:Parse.interface ~wrap:(fun x -> x) in
     txt.psignature <- psign;
-    txt.signature <- Typemod.transl_signature !env psign
+    txt.signature <- (Typemod.transl_signature !env psign).sig_type;
 
     else (* others are interpreted as .ml *)
 
@@ -115,7 +116,7 @@ let f txt =
     begin function
       Ptop_def pstr ->
         let str, sign, env' = Typemod.type_structure !env pstr Location.none in
-        txt.structure <- txt.structure @ str;
+        txt.structure <- txt.structure @ str.str_items;
         txt.signature <- txt.signature @ sign;
         env := env'
     | Ptop_dir _ -> ()
@@ -156,6 +157,8 @@ let f txt =
           Includemod.report_error Format.std_formatter errl; Location.none
       | Env.Error err ->
           Env.report_error Format.std_formatter err; Location.none
+      | Cmi_format.Error err ->
+          Cmi_format.report_error Format.std_formatter err; Location.none
       | Ctype.Tags(l, l') ->
           Format.printf "In this program,@ variant constructors@ `%s and `%s@ have same hash value.@." l l';
           Location.none

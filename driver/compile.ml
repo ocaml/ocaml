@@ -79,17 +79,21 @@ let interface ppf sourcefile outputprefix =
   check_unit_name ppf sourcefile modulename;
   Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
+  let initial_env = initial_env () in
   try
     let ast =
       Pparse.file ppf inputfile Parse.interface ast_intf_magic_number in
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
-    let sg = Typemod.transl_signature (initial_env()) ast in
+    let tsg = Typemod.transl_signature initial_env ast in
     if !Clflags.print_types then
       fprintf std_formatter "%a@." Printtyp.signature
-                                   (Typemod.simplify_signature sg);
+                                   (Typemod.simplify_signature tsg.sig_type);
     Warnings.check_fatal ();
-    if not !Clflags.print_types then
-      Env.save_signature sg modulename (outputprefix ^ ".cmi");
+    if not !Clflags.print_types then begin
+      let sg = Env.save_signature tsg.sig_type modulename (outputprefix ^ ".cmi") in
+      Typemod.save_signature modulename tsg outputprefix sourcefile
+       initial_env sg ;
+    end;
     Pparse.remove_preprocessed inputfile
   with e ->
     Pparse.remove_preprocessed_if_ast inputfile;
@@ -119,10 +123,10 @@ let implementation ppf sourcefile outputprefix =
       ++ Typemod.type_implementation sourcefile outputprefix modulename env);
       Warnings.check_fatal ();
       Pparse.remove_preprocessed inputfile;
-      Stypes.dump (outputprefix ^ ".annot");
+      Stypes.dump (Some (outputprefix ^ ".annot"));
     with x ->
       Pparse.remove_preprocessed_if_ast inputfile;
-      Stypes.dump (outputprefix ^ ".annot");
+      Stypes.dump (Some (outputprefix ^ ".annot"));
       raise x
   end else begin
     let objfile = outputprefix ^ ".cmo" in
@@ -141,12 +145,12 @@ let implementation ppf sourcefile outputprefix =
       Warnings.check_fatal ();
       close_out oc;
       Pparse.remove_preprocessed inputfile;
-      Stypes.dump (outputprefix ^ ".annot");
+      Stypes.dump (Some (outputprefix ^ ".annot"));
     with x ->
       close_out oc;
       remove_file objfile;
       Pparse.remove_preprocessed_if_ast inputfile;
-      Stypes.dump (outputprefix ^ ".annot");
+      Stypes.dump (Some (outputprefix ^ ".annot"));
       raise x
   end
 

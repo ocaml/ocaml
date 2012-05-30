@@ -276,3 +276,11 @@ let prerr_warning loc w = print_warning loc err_formatter w;;
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
+
+type 'a loc = {
+  txt : 'a;
+  loc : t;
+}
+
+let mkloc txt loc = { txt ; loc }
+let mknoloc txt = mkloc txt none
