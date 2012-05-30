@@ -272,10 +272,9 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                     (vals, meths_super cla str.cstr_meths meths)
                     inh_init cl_init msubst top cl in
                 (inh_init, cl_init, [], values)
-            | Tcf_val (name, _, _, id, Tcfk_concrete exp, over) ->
+            | Tcf_val (name, _, _, id, exp, over) ->
                 let values = if over then values else (name, id) :: values in
                 (inh_init, cl_init, methods, values)
-            | Tcf_val (_, _, _, _, Tcfk_virtual _, _)
             | Tcf_meth (_, _, _, Tcfk_virtual _, _)
             | Tcf_constr _
               ->
