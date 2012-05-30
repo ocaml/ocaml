@@ -4,18 +4,18 @@ val make_set : ('a -> 'a -> int) -> (module Set.S with type elt = 'a) = <fun>
 val sort_cmp : ('a -> 'a -> int) -> 'a list -> 'a list = <fun>
 module type S = sig type t val x : t end
 # val f : (module S with type t = int) -> int = <fun>
-# Characters 14-15:
+# Characters 6-37:
   let f (module M : S with type t = 'a) = M.x;; (* Error *)
-                ^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type of this packed module contains variables:
 (module S with type t = 'a)
 # val f : (module S with type t = 'a) -> 'a = <fun>
 # - : int = 1
 #   type 'a s = { s : (module S with type t = 'a); }
 # - : int s = {s = <module>}
-# Characters 17-18:
+# Characters 9-19:
   let f {s=(module M)} = M.x;; (* Error *)
-                   ^
+           ^^^^^^^^^^
 Error: The type of this packed module contains variables:
 (module S with type t = 'a)
 # val f : 'a s -> 'a = <fun>
@@ -32,13 +32,13 @@ Error: The signature for this packaged module couldn't be inferred.
 # - : int = 7
 # - : int = 6
 #   - : int = 3
-# Characters 12-13:
+# Characters 4-14:
   let (module M) = m;; (* Error: only allowed in [let .. in] *)
-              ^
+      ^^^^^^^^^^
 Error: Modules are not allowed in this pattern.
-# Characters 22-23:
+# Characters 14-24:
   class c = let (module M) = m in object end;; (* Error again *)
-                        ^
+                ^^^^^^^^^^
 Error: Modules are not allowed in this pattern.
 # module M : S
 #   module type S' = sig val f : int -> int end

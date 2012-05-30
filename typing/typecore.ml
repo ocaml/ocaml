@@ -357,7 +357,7 @@ let pattern_variables = ref ([]: (Ident.t * type_expr * string loc * Location.t 
 let pattern_force = ref ([] : (unit -> unit) list)
 let pattern_scope = ref (None : Annot.ident option);;
 let allow_modules = ref false
-let module_variables = ref ([] : (string loc) list)
+let module_variables = ref ([] : (string loc * Location.t) list)
 let reset_pattern scope allow =
   pattern_variables := [];
   pattern_force := [];
@@ -373,8 +373,8 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty =
   pattern_variables := (id, ty, name, loc, is_as_variable) :: !pattern_variables;
   if is_module then begin
     (* Note: unpack patterns enter a variable of the same name *)
-    if not !allow_modules then raise (Error (name.loc, Modules_not_allowed));
-    module_variables := name :: !module_variables
+    if not !allow_modules then raise (Error (loc, Modules_not_allowed));
+    module_variables := (name, loc) :: !module_variables
   end else begin
     match !pattern_scope with
     | None -> ()
@@ -1389,10 +1389,10 @@ let create_package_type loc env (p, l) =
 
  let wrap_unpacks sexp unpacks =
    List.fold_left
-     (fun sexp name ->
+     (fun sexp (name, loc) ->
        {pexp_loc = sexp.pexp_loc; pexp_desc = Pexp_letmodule (
         name,
-        {pmod_loc = name.loc; pmod_desc = Pmod_unpack
+        {pmod_loc = loc; pmod_desc = Pmod_unpack
            {pexp_desc=Pexp_ident(mkloc (Longident.Lident name.txt) name.loc); pexp_loc=name.loc}},
        sexp)})
     sexp unpacks
