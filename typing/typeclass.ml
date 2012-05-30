@@ -557,7 +557,7 @@ let rec class_field cl_num self_type meths vars
   | Pcf_val (lab, mut, ovf, sexp) ->
       if Concr.mem lab.txt warn_vals then begin
         if ovf = Fresh then
-          Location.prerr_warning loc (Warnings.Instance_variable_override[lab.txt])
+          Location.prerr_warning lab.loc (Warnings.Instance_variable_override[lab.txt])
       end else begin
         if ovf = Override then
           raise(Error(loc, No_overriding ("instance variable", lab.txt)))
