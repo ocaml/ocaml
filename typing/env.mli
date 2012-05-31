@@ -155,7 +155,7 @@ val report_error: formatter -> error -> unit
 val mark_value_used: string -> value_description -> unit
 val mark_type_used: string -> type_declaration -> unit
 
-type constructor_usage = [`Positive|`Pattern|`Privatize]
+type constructor_usage = Positive | Pattern | Privatize
 val mark_constructor_used: constructor_usage -> string -> type_declaration -> string -> unit
 val mark_constructor: constructor_usage -> t -> string -> constructor_description -> unit
 val mark_exception_used: constructor_usage -> exception_declaration -> string -> unit

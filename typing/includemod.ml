@@ -69,7 +69,7 @@ let type_declarations env cxt subst id decl1 decl2 =
 (* Inclusion between exception declarations *)
 
 let exception_declarations env cxt subst id decl1 decl2 =
-  Env.mark_exception_used `Positive decl1 (Ident.name id);
+  Env.mark_exception_used Env.Positive decl1 (Ident.name id);
   let decl2 = Subst.exception_declaration subst decl2 in
   if Includecore.exception_declarations env decl1 decl2
   then ()
@@ -277,7 +277,8 @@ and signature_components env cxt subst = function
   | (Sig_class(id1, decl1, _), Sig_class(id2, decl2, _), pos) :: rem ->
       class_declarations env cxt subst id1 decl1 decl2;
       (pos, Tcoerce_none) :: signature_components env cxt subst rem
-  | (Sig_class_type(id1, info1, _), Sig_class_type(id2, info2, _), pos) :: rem ->
+  | (Sig_class_type(id1, info1, _),
+     Sig_class_type(id2, info2, _), pos) :: rem ->
       class_type_declarations env cxt subst id1 info1 info2;
       signature_components env cxt subst rem
   | _ ->

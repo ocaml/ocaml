@@ -126,18 +126,16 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
       match sg with
           None -> None
         | Some (sg) ->
-          let cmi =
-                {
-                  cmi_name = modname;
-                  cmi_sign = sg;
-                  cmi_flags =
-                    if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
-                  cmi_crcs = imports;
-                }
-          in
+          let cmi = {
+            cmi_name = modname;
+            cmi_sign = sg;
+            cmi_flags =
+            if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
+            cmi_crcs = imports;
+          } in
           Some (output_cmi filename oc cmi)
     in
-    let source_digest = match sourcefile with Some f -> Some (Digest.file f) | None -> None in
+    let source_digest = Misc.may_map Digest.file sourcefile in
     let cmt = {
       cmt_modname = modname;
       cmt_annots = binary_annots;

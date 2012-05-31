@@ -169,9 +169,11 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
   | [], (cstr2,_,_)::_ -> [Field_missing (true, cstr2)]
   | (cstr1,_,_)::_, [] -> [Field_missing (false, cstr1)]
   | (cstr1, arg1, ret1)::rem1, (cstr2, arg2,ret2)::rem2 ->
-      if Ident.name cstr1 <> Ident.name cstr2 then [Field_names (n, cstr1, cstr2)] else
-      if List.length arg1 <> List.length arg2 then [Field_arity cstr1] else
-      match ret1, ret2 with
+      if Ident.name cstr1 <> Ident.name cstr2 then
+        [Field_names (n, cstr1, cstr2)]
+      else if List.length arg1 <> List.length arg2 then
+        [Field_arity cstr1]
+      else match ret1, ret2 with
       | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) ->
 	  [Field_type cstr1]
       | Some _, None | None, Some _ ->
@@ -193,8 +195,9 @@ let rec compare_records env decl1 decl2 n labels1 labels2 =
   | [], (lab2,_,_)::_ -> [Field_missing (true, lab2)]
   | (lab1,_,_)::_, [] -> [Field_missing (false, lab1)]
   | (lab1, mut1, arg1)::rem1, (lab2, mut2, arg2)::rem2 ->
-      if Ident.name lab1 <> Ident.name lab2 then [Field_names (n, lab1, lab2)] else
-      if mut1 <> mut2 then [Field_mutable lab1] else
+      if Ident.name lab1 <> Ident.name lab2
+      then [Field_names (n, lab1, lab2)]
+      else if mut1 <> mut2 then [Field_mutable lab1] else
       if Ctype.equal env true (arg1::decl1.type_params)
                               (arg2::decl2.type_params)
       then compare_records env decl1 decl2 (n+1) rem1 rem2
@@ -208,15 +211,16 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
     | (Type_variant cstrs1, Type_variant cstrs2) ->
         let mark cstrs usage name decl =
           List.iter
-            (fun (c, _, _) -> Env.mark_constructor_used usage name decl (Ident.name c))
+            (fun (c, _, _) ->
+              Env.mark_constructor_used usage name decl (Ident.name c))
             cstrs
         in
         let usage =
           if decl1.type_private = Private || decl2.type_private = Public
-          then `Positive else `Privatize
+          then Env.Positive else Env.Privatize
         in
         mark cstrs1 usage name decl1;
-        if equality then mark cstrs2 `Positive (Ident.name id) decl2;
+        if equality then mark cstrs2 Env.Positive (Ident.name id) decl2;
         compare_variants env decl1 decl2 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         let err = compare_records env decl1 decl2 1 labels1 labels2 in
@@ -259,7 +263,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
 (* Inclusion between exception declarations *)
 
 let exception_declarations env ed1 ed2 =
-  Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2]) ed1.exn_args ed2.exn_args
+  Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2])
+    ed1.exn_args ed2.exn_args
 
 (* Inclusion between class types *)
 let encode_val (mut, ty) rem =

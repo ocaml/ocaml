@@ -487,7 +487,8 @@ and class_expr i ppf x =
       line i ppf "Pcl_constraint\n";
       class_expr i ppf ce;
       class_type i ppf ct;
-  | Tcl_constraint (_, None, _, _, _) -> assert false (* TODO : is it possible ? see parsetree *)
+  | Tcl_constraint (_, None, _, _, _) -> assert false
+        (* TODO : is it possible ? see parsetree *)
 
 and class_structure i ppf { cstr_pat = p; cstr_fields = l } =
   line i ppf "class_structure\n";

@@ -177,9 +177,10 @@ let transl_declaration env (name, sdecl) id =
                 let ty = cty.ctyp_type in
                 let p = Path.Pident id in
                 match (Ctype.repr ty).desc with
-                    Tconstr (p', _, _) when Path.same p p' -> ty
-                  | _ -> raise(Error(sty.ptyp_loc,
-                                     Constraint_failed (ty, Ctype.newconstr p params)))
+                  Tconstr (p', _, _) when Path.same p p' -> ty
+                | _ ->
+                    raise (Error (sty.ptyp_loc, Constraint_failed
+                                    (ty, Ctype.newconstr p params)))
 	      in
 	      widen z;
 	      (name, lid, args, Some ret_type, loc)
@@ -728,7 +729,8 @@ let check_duplicates name_sdecl_list =
             try
               let name' = Hashtbl.find labels cname.txt in
               Location.prerr_warning loc
-                (Warnings.Duplicate_definitions ("label", cname.txt, name', name.txt))
+                (Warnings.Duplicate_definitions
+                   ("label", cname.txt, name', name.txt))
             with Not_found -> Hashtbl.add labels cname.txt name.txt)
           fl
     | Ptype_abstract -> ())
@@ -804,7 +806,8 @@ let transl_type_decl env name_sdecl_list =
     current_slot := slot; transl_declaration temp_env name_sdecl id in
   let tdecls =
     List.map2 transl_declaration name_sdecl_list (List.map id_slots id_list) in
-  let decls = List.map (fun (id, name_loc, tdecl) -> (id, tdecl.typ_type)) tdecls in
+  let decls =
+    List.map (fun (id, name_loc, tdecl) -> (id, tdecl.typ_type)) tdecls in
   current_slot := None;
   (* Check for duplicates *)
   check_duplicates name_sdecl_list;
@@ -887,7 +890,7 @@ let transl_exn_rebind env loc lid =
       Env.lookup_constructor lid env
     with Not_found ->
       raise(Error(loc, Unbound_exception lid)) in
-  Env.mark_constructor `Positive env (Longident.last lid) cdescr;
+  Env.mark_constructor Env.Positive env (Longident.last lid) cdescr;
   match cdescr.cstr_tag with
     Cstr_exception (path, _) ->
       (path, {exn_args = cdescr.cstr_args; Types.exn_loc = loc})

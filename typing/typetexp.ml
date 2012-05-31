@@ -115,7 +115,8 @@ let create_package_mty fake loc env (p, l) =
   let l =
     List.sort
       (fun (s1, t1) (s2, t2) ->
-         if s1.txt = s2.txt then raise (Error (loc, Multiple_constraints_on_type s1.txt));
+         if s1.txt = s2.txt then
+           raise (Error (loc, Multiple_constraints_on_type s1.txt));
          compare s1 s2)
       l
   in
@@ -197,7 +198,8 @@ let rec swap_list = function
 
 type policy = Fixed | Extensible | Univars
 
-let ctyp desc typ env loc = { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env }
+let ctyp ctyp_desc ctyp_type ctyp_env ctyp_loc =
+  { ctyp_desc; ctyp_type; ctyp_env; ctyp_loc }
 
 let rec transl_type env policy styp =
   let loc = styp.ptyp_loc in
@@ -215,14 +217,15 @@ let rec transl_type env policy styp =
       if name <> "" && name.[0] = '_' then
         raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
       begin try
-              instance env (List.assoc name !univars)
-        with Not_found -> try
-                            instance env (fst(Tbl.find name !used_variables))
-          with Not_found ->
-            let v =
-              if policy = Univars then new_pre_univar ~name () else newvar ~name () in
-            used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
-            v
+        instance env (List.assoc name !univars)
+      with Not_found -> try
+        instance env (fst(Tbl.find name !used_variables))
+      with Not_found ->
+        let v =
+          if policy = Univars then new_pre_univar ~name () else newvar ~name ()
+        in
+        used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
+        v
       end
     in
     ctyp (Ttyp_var name) ty env loc
@@ -253,7 +256,8 @@ let rec transl_type env policy styp =
            try unify_param env ty' cty.ctyp_type with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
-      let constr = newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
+      let constr =
+        newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
       begin try
         Ctype.enforce_constraints env constr
       with Unify trace ->
@@ -261,16 +265,17 @@ let rec transl_type env policy styp =
       end;
 	ctyp (Ttyp_constr (path, lid, args)) constr env loc
   | Ptyp_object fields ->
-      let fields = List.map (fun pf ->
-			       let desc =
-				 match pf.pfield_desc with
-				   | Pfield_var -> Tcfield_var
-				   | Pfield (s,e) ->
-				       let ty1 = transl_type env policy e in
-					 Tcfield (s, ty1)
-			       in
-				 { field_desc = desc; field_loc = pf.pfield_loc })
-	fields in
+      let fields = List.map
+          (fun pf ->
+	    let desc =
+	      match pf.pfield_desc with
+	      | Pfield_var -> Tcfield_var
+	      | Pfield (s,e) ->
+		  let ty1 = transl_type env policy e in
+		  Tcfield (s, ty1)
+	    in
+	    { field_desc = desc; field_loc = pf.pfield_loc })
+	  fields in
       let ty = newobj (transl_fields env policy [] fields) in
 	ctyp (Ttyp_object fields) ty env loc
   | Ptyp_class(lid, stl, present) ->

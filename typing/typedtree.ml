@@ -41,9 +41,12 @@ and pattern_desc =
   | Tpat_alias of pattern * Ident.t * string loc
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
-  | Tpat_construct of Path.t * Longident.t loc * constructor_description * pattern list * bool
+  | Tpat_construct of
+      Path.t * Longident.t loc * constructor_description * pattern list * bool
   | Tpat_variant of label * pattern option * row_desc ref
-  | Tpat_record of ( Path.t * Longident.t loc * label_description * pattern) list * closed_flag
+  | Tpat_record of
+      (Path.t * Longident.t loc * label_description * pattern) list *
+        closed_flag
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * row_desc option
   | Tpat_lazy of pattern
@@ -68,17 +71,23 @@ and expression_desc =
   | Texp_match of expression * (pattern * expression) list * partial
   | Texp_try of expression * (pattern * expression) list
   | Texp_tuple of expression list
-  | Texp_construct of Path.t * Longident.t loc * constructor_description * expression list * bool
+  | Texp_construct of
+      Path.t * Longident.t loc * constructor_description * expression list *
+        bool
   | Texp_variant of label * expression option
-  | Texp_record of (Path.t * Longident.t loc * label_description * expression) list * expression option
+  | Texp_record of
+      (Path.t * Longident.t loc * label_description * expression) list *
+        expression option
   | Texp_field of expression * Path.t * Longident.t loc * label_description
-  | Texp_setfield of expression * Path.t * Longident.t loc * label_description * expression
+  | Texp_setfield of
+      expression * Path.t * Longident.t loc * label_description * expression
   | Texp_array of expression list
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression
   | Texp_while of expression * expression
   | Texp_for of
-      Ident.t * string loc * expression * expression * direction_flag * expression
+      Ident.t * string loc * expression * expression * direction_flag *
+        expression
   | Texp_when of expression * expression
   | Texp_send of expression * meth * expression option
   | Texp_new of Path.t * Longident.t loc * Types.class_declaration
@@ -109,11 +118,14 @@ and class_expr =
 and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list (* Pcl_constr *)
   | Tcl_structure of class_structure
-  | Tcl_fun of label * pattern * (Ident.t * string loc * expression) list * class_expr * partial
+  | Tcl_fun of
+      label * pattern * (Ident.t * string loc * expression) list * class_expr *
+        partial
   | Tcl_apply of class_expr * (label * expression option * optional) list
   | Tcl_let of rec_flag *  (pattern * expression) list *
                   (Ident.t * string loc * expression) list * class_expr
-  | Tcl_constraint of class_expr * class_type option * string list * string list * Concr.t
+  | Tcl_constraint of
+      class_expr * class_type option * string list * string list * Concr.t
     (* Visible instance variables, methods and concretes methods *)
 
 and class_structure =
@@ -133,9 +145,12 @@ and class_field_kind =
 | Tcfk_concrete of expression
 
 and class_field_desc =
-    Tcf_inher of override_flag * class_expr * string option * (string * Ident.t) list * (string * Ident.t) list
+    Tcf_inher of
+      override_flag * class_expr * string option * (string * Ident.t) list *
+        (string * Ident.t) list
     (* Inherited instance variables and concrete methods *)
-  | Tcf_val of string * string loc * mutable_flag * Ident.t * class_field_kind * bool
+  | Tcf_val of
+      string * string loc * mutable_flag * Ident.t * class_field_kind * bool
         (* None = virtual, true = override *)
   | Tcf_meth of string * string loc * private_flag * class_field_kind * bool
   | Tcf_constr of core_type * core_type
@@ -160,7 +175,8 @@ and module_expr_desc =
   | Tmod_structure of structure
   | Tmod_functor of Ident.t * string loc * module_type * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
-  | Tmod_constraint of module_expr * Types.module_type * module_type_constraint * module_coercion
+  | Tmod_constraint of
+      module_expr * Types.module_type * module_type_constraint * module_coercion
   | Tmod_unpack of expression * Types.module_type
 
 and structure = {
@@ -385,7 +401,8 @@ let map_pattern_desc f d =
   | Tpat_tuple pats ->
       Tpat_tuple (List.map f pats)
   | Tpat_record (lpats, closed) ->
-      Tpat_record (List.map (fun ( lid, lid_loc, l,p) -> lid, lid_loc, l, f p) lpats, closed)
+      Tpat_record (List.map (fun ( lid, lid_loc, l,p) -> lid, lid_loc, l, f p)
+                     lpats, closed)
   | Tpat_construct (lid, lid_loc, c,pats, arity) ->
       Tpat_construct (lid, lid_loc, c, List.map f pats, arity)
   | Tpat_array pats ->
