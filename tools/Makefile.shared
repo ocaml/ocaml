@@ -23,7 +23,8 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj objinfo read_cmt
+all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
+     objinfo read_cmt
 # scrapelabels addlabels
 
 .PHONY: all
@@ -230,12 +231,8 @@ READ_CMT= \
 read_cmt: $(READ_CMT)
 	$(CAMLC) $(LINKFLAGS) -o read_cmt $(READ_CMT)
 
-# read_cmt is precious: sometimes we are stuck in the middle of a
-# bootstrap and we need to remake the dependencies
 clean::
-	if test -f read_cmt; then mv -f read_cmt read_cmt.bak; else :; fi
-
-clean::
+	rm -f read_cmt
 
 beforedepend::
 
