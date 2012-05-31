@@ -71,11 +71,11 @@ debugger_config.cmx : int64ops.cmx debugger_config.cmi
 dynlink.cmo : ../bytecomp/symtable.cmi ../bytecomp/opcodes.cmo \
     ../utils/misc.cmi ../bytecomp/meta.cmi ../bytecomp/dll.cmi \
     ../utils/consistbl.cmi ../utils/config.cmi ../bytecomp/cmo_format.cmi \
-    dynlink.cmi
+    ../typing/cmi_format.cmi dynlink.cmi
 dynlink.cmx : ../bytecomp/symtable.cmx ../bytecomp/opcodes.cmx \
     ../utils/misc.cmx ../bytecomp/meta.cmx ../bytecomp/dll.cmx \
     ../utils/consistbl.cmx ../utils/config.cmx ../bytecomp/cmo_format.cmi \
-    dynlink.cmi
+    ../typing/cmi_format.cmx dynlink.cmi
 envaux.cmo : ../typing/types.cmi ../typing/subst.cmi ../typing/printtyp.cmi \
     ../typing/path.cmi ../typing/mtype.cmi ../utils/misc.cmi \
     ../bytecomp/instruct.cmi ../typing/env.cmi envaux.cmi

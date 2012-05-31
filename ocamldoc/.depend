@@ -16,8 +16,8 @@ odoc_analyse.cmo : ../utils/warnings.cmi ../typing/typetexp.cmi \
     odoc_cross.cmi odoc_comments.cmi odoc_class.cmo odoc_ast.cmi \
     ../utils/misc.cmi ../parsing/location.cmi ../parsing/lexer.cmi \
     ../typing/includemod.cmi ../typing/env.cmi ../typing/ctype.cmi \
-    ../utils/config.cmi ../utils/clflags.cmi ../utils/ccomp.cmi \
-    odoc_analyse.cmi
+    ../utils/config.cmi ../typing/cmi_format.cmi ../utils/clflags.cmi \
+    ../utils/ccomp.cmi odoc_analyse.cmi
 odoc_analyse.cmx : ../utils/warnings.cmx ../typing/typetexp.cmx \
     ../typing/types.cmx ../typing/typemod.cmx ../typing/typedtree.cmx \
     ../typing/typedecl.cmx ../typing/typecore.cmx ../typing/typeclass.cmx \
@@ -28,8 +28,8 @@ odoc_analyse.cmx : ../utils/warnings.cmx ../typing/typetexp.cmx \
     odoc_cross.cmx odoc_comments.cmx odoc_class.cmx odoc_ast.cmx \
     ../utils/misc.cmx ../parsing/location.cmx ../parsing/lexer.cmx \
     ../typing/includemod.cmx ../typing/env.cmx ../typing/ctype.cmx \
-    ../utils/config.cmx ../utils/clflags.cmx ../utils/ccomp.cmx \
-    odoc_analyse.cmi
+    ../utils/config.cmx ../typing/cmi_format.cmx ../utils/clflags.cmx \
+    ../utils/ccomp.cmx odoc_analyse.cmi
 odoc_args.cmo : odoc_types.cmi odoc_texi.cmo odoc_messages.cmo odoc_man.cmo \
     odoc_latex.cmo odoc_html.cmo odoc_global.cmi odoc_gen.cmi odoc_dot.cmo \
     odoc_config.cmi ../utils/misc.cmi ../utils/config.cmi odoc_args.cmi
@@ -109,13 +109,13 @@ odoc_info.cmo : ../typing/printtyp.cmi odoc_value.cmo odoc_types.cmi \
     odoc_print.cmi odoc_parameter.cmo odoc_name.cmi odoc_module.cmo \
     odoc_misc.cmi odoc_global.cmi odoc_exception.cmo odoc_dep.cmo \
     odoc_config.cmi odoc_comments.cmi odoc_class.cmo odoc_analyse.cmi \
-    odoc_info.cmi
+    ../parsing/location.cmi odoc_info.cmi
 odoc_info.cmx : ../typing/printtyp.cmx odoc_value.cmx odoc_types.cmx \
     odoc_type.cmx odoc_text.cmx odoc_str.cmx odoc_search.cmx odoc_scan.cmx \
     odoc_print.cmx odoc_parameter.cmx odoc_name.cmx odoc_module.cmx \
     odoc_misc.cmx odoc_global.cmx odoc_exception.cmx odoc_dep.cmx \
     odoc_config.cmx odoc_comments.cmx odoc_class.cmx odoc_analyse.cmx \
-    odoc_info.cmi
+    ../parsing/location.cmx odoc_info.cmi
 odoc_inherit.cmo :
 odoc_inherit.cmx :
 odoc_latex.cmo : odoc_to_text.cmo odoc_messages.cmo odoc_latex_style.cmo \
@@ -179,15 +179,15 @@ odoc_sig.cmo : ../typing/types.cmi ../typing/typedtree.cmi \
     odoc_type.cmo odoc_parameter.cmo odoc_name.cmi odoc_module.cmo \
     odoc_misc.cmi odoc_messages.cmo odoc_merge.cmi odoc_global.cmi \
     odoc_exception.cmo odoc_env.cmi odoc_class.cmo ../utils/misc.cmi \
-    ../parsing/location.cmi ../typing/btype.cmi ../parsing/asttypes.cmi \
-    odoc_sig.cmi
+    ../parsing/location.cmi ../typing/ident.cmi ../typing/btype.cmi \
+    ../parsing/asttypes.cmi odoc_sig.cmi
 odoc_sig.cmx : ../typing/types.cmx ../typing/typedtree.cmx \
     ../typing/path.cmx ../parsing/parsetree.cmi odoc_value.cmx odoc_types.cmx \
     odoc_type.cmx odoc_parameter.cmx odoc_name.cmx odoc_module.cmx \
     odoc_misc.cmx odoc_messages.cmx odoc_merge.cmx odoc_global.cmx \
     odoc_exception.cmx odoc_env.cmx odoc_class.cmx ../utils/misc.cmx \
-    ../parsing/location.cmx ../typing/btype.cmx ../parsing/asttypes.cmi \
-    odoc_sig.cmi
+    ../parsing/location.cmx ../typing/ident.cmx ../typing/btype.cmx \
+    ../parsing/asttypes.cmi odoc_sig.cmi
 odoc_str.cmo : ../typing/types.cmi ../typing/printtyp.cmi odoc_value.cmo \
     odoc_type.cmo odoc_print.cmi odoc_name.cmi odoc_misc.cmi \
     odoc_messages.cmo odoc_exception.cmo odoc_class.cmo \
@@ -216,8 +216,8 @@ odoc_type.cmo : ../typing/types.cmi odoc_types.cmi odoc_name.cmi \
     ../parsing/asttypes.cmi
 odoc_type.cmx : ../typing/types.cmx odoc_types.cmx odoc_name.cmx \
     ../parsing/asttypes.cmi
-odoc_types.cmo : odoc_messages.cmo odoc_types.cmi
-odoc_types.cmx : odoc_messages.cmx odoc_types.cmi
+odoc_types.cmo : odoc_messages.cmo ../parsing/location.cmi odoc_types.cmi
+odoc_types.cmx : odoc_messages.cmx ../parsing/location.cmx odoc_types.cmi
 odoc_value.cmo : ../typing/types.cmi ../typing/printtyp.cmi odoc_types.cmi \
     odoc_parameter.cmo odoc_name.cmi
 odoc_value.cmx : ../typing/types.cmx ../typing/printtyp.cmx odoc_types.cmx \
@@ -238,7 +238,7 @@ odoc_gen.cmi : odoc_texi.cmo odoc_module.cmo odoc_man.cmo odoc_latex.cmo \
 odoc_global.cmi : odoc_types.cmi
 odoc_info.cmi : ../typing/types.cmi odoc_value.cmo odoc_types.cmi \
     odoc_type.cmo odoc_search.cmi odoc_parameter.cmo odoc_module.cmo \
-    odoc_global.cmi odoc_exception.cmo odoc_class.cmo
+    odoc_global.cmi odoc_exception.cmo odoc_class.cmo ../parsing/location.cmi
 odoc_merge.cmi : odoc_types.cmi odoc_module.cmo
 odoc_misc.cmi : ../typing/types.cmi odoc_types.cmi ../parsing/longident.cmi
 odoc_name.cmi : ../typing/path.cmi ../parsing/longident.cmi \
@@ -253,4 +253,4 @@ odoc_str.cmi : ../typing/types.cmi odoc_value.cmo odoc_type.cmo \
     odoc_exception.cmo odoc_class.cmo
 odoc_text.cmi : odoc_types.cmi
 odoc_text_parser.cmi : odoc_types.cmi
-odoc_types.cmi :
+odoc_types.cmi : ../parsing/location.cmi
