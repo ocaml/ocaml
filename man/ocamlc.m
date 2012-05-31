@@ -209,8 +209,8 @@ file can be used with the emacs commands given in
 to display types and other annotations interactively.
 .TP
 .B \-dtypes
-Has been deprecated. Please use 
-.BI \-annot 
+Has been deprecated. Please use
+.B \-annot
 instead.
 .TP
 .B \-c
@@ -615,7 +615,7 @@ function type and is ignored.
 \ \ \ Label omitted in function application.
 
 7
-\ \ \ Method overridden without using the "override" keyword
+\ \ \ Method overridden without using the "method!" keyword
 
 8
 \ \ \ Partial match: missing cases in pattern-matching.
