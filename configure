@@ -1717,8 +1717,8 @@ fi
 if test $has_tk = true; then
 echo "Configuration for the \"labltk\" library:"
 echo "        use tcl/tk version ....... $tcl_version"
-echo "        options for compiling .... $tk_defs $x11_includes"
-echo "        options for linking ...... $tk_libs $x11_link"
+echo "        options for compiling .... $tk_defs $tk_x11_include"
+echo "        options for linking ...... $tk_libs $tk_x11_libs"
 else
 echo "The \"labltk\" library: not supported"
 fi
