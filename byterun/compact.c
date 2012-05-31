@@ -438,11 +438,13 @@ void caml_compact_heap (void)
     }
     Chunk_next (chunk) = caml_heap_start;
     caml_heap_start = chunk;
+    ++ caml_stat_heap_chunks;
     caml_stat_heap_size += Chunk_size (chunk);
     if (caml_stat_heap_size > caml_stat_top_heap_size){
       caml_stat_top_heap_size = caml_stat_heap_size;
     }
     do_compaction ();
+    Assert (caml_stat_heap_chunks == 1);
     Assert (Chunk_next (caml_heap_start) == NULL);
   }
 }
