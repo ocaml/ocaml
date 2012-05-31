@@ -3338,14 +3338,16 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
             raise (Failure [CM_Type_parameter_mismatch
                                (expand_trace env trace)]))
           patt_params subj_params;
-        (* old code: equal_clty false type_pairs subst env patt_type subj_type; *)
+     (* old code: equal_clty false type_pairs subst env patt_type subj_type; *)
         equal_clty false type_pairs subst env
           (Cty_signature sign1) (Cty_signature sign2);
         (* Use moregeneral for class parameters, need to recheck everything to
            keeps relationships (PR#4824) *)
-        let clty_params = List.fold_right (fun ty cty -> Cty_fun ("*",ty,cty)) in
+        let clty_params =
+          List.fold_right (fun ty cty -> Cty_fun ("*",ty,cty)) in
         match_class_types ~trace:false env
-          (clty_params patt_params patt_type) (clty_params subj_params subj_type)
+          (clty_params patt_params patt_type)
+          (clty_params subj_params subj_type)
       with
         Failure r -> r
       end

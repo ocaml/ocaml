@@ -27,7 +27,8 @@ val omegas : int -> pattern list
 val omega_list : 'a list -> pattern list
 val normalize_pat : pattern -> pattern
 val all_record_args :
-    (Path.t * Longident.t loc * label_description * pattern) list -> (Path.t * Longident.t loc * label_description * pattern) list
+    (Path.t * Longident.t loc * label_description * pattern) list ->
+    (Path.t * Longident.t loc * label_description * pattern) list
 
 val le_pat : pattern -> pattern -> bool
 val le_pats : pattern list -> pattern list -> bool

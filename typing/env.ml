@@ -25,15 +25,17 @@ open Btype
 
 let add_delayed_check_forward = ref (fun _ -> assert false)
 
-let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t = Hashtbl.create 16
+let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t =
+  Hashtbl.create 16
     (* This table is used to usage of value declarations.  A declaration is
-       identified with its name and location.  The callback attached to a declaration
-       is called whenever the value is used explicitly (lookup_value) or implicitly
-       (inclusion test between signatures, cf Includemod.value_descriptions). *)
+       identified with its name and location.  The callback attached to a
+       declaration is called whenever the value is used explicitly
+       (lookup_value) or implicitly (inclusion test between signatures,
+       cf Includemod.value_descriptions). *)
 
 let type_declarations = Hashtbl.create 16
 
-type constructor_usage = [`Positive|`Pattern|`Privatize]
+type constructor_usage = Positive | Pattern | Privatize
 type constructor_usages =
     {
      mutable cu_positive: bool;
@@ -41,13 +43,15 @@ type constructor_usages =
      mutable cu_privatize: bool;
     }
 let add_constructor_usage cu = function
-  | `Positive -> cu.cu_positive <- true
-  | `Pattern -> cu.cu_pattern <- true
-  | `Privatize -> cu.cu_privatize <- true
+  | Positive -> cu.cu_positive <- true
+  | Pattern -> cu.cu_pattern <- true
+  | Privatize -> cu.cu_privatize <- true
 let constructor_usages () =
   {cu_positive = false; cu_pattern = false; cu_privatize = false}
 
-let used_constructors : (string * Location.t * string, (constructor_usage -> unit)) Hashtbl.t = Hashtbl.create 16
+let used_constructors :
+    (string * Location.t * string, (constructor_usage -> unit)) Hashtbl.t
+  = Hashtbl.create 16
 
 type error =
   | Illegal_renaming of string * string
@@ -155,7 +159,8 @@ type t = {
   in_signature: bool;
 }
 
-and module_components = (t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t
+and module_components =
+  (t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t
 
 and module_components_repr =
     Structure_comps of structure_components
@@ -169,7 +174,8 @@ and structure_components = {
   mutable comp_constrs_by_path:
       (string, (constructor_description list * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
-  mutable comp_modules: (string, ((Subst.t * Types.module_type,module_type) EnvLazy.t * int)) Tbl.t;
+  mutable comp_modules:
+   (string, ((Subst.t * Types.module_type,module_type) EnvLazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
   mutable comp_components: (string, (module_components * int)) Tbl.t;
   mutable comp_classes: (string, (class_declaration * int)) Tbl.t;
@@ -205,7 +211,8 @@ let diff_keys is_local tbl1 tbl2 =
   List.filter
     (fun id ->
       is_local (EnvTbl.find_same_not_using id tbl2) &&
-      try ignore (EnvTbl.find_same_not_using id tbl1); false with Not_found -> true)
+      try ignore (EnvTbl.find_same_not_using id tbl1); false
+      with Not_found -> true)
     keys2
 
 let is_ident = function
@@ -321,7 +328,9 @@ let reset_cache () =
   Hashtbl.clear type_declarations
 
 let reset_missing_cmis () =
-  let l = Hashtbl.fold (fun name r acc -> if r = None then name :: acc else acc) persistent_structures [] in
+  let l = Hashtbl.fold
+      (fun name r acc -> if r = None then name :: acc else acc)
+      persistent_structures [] in
   List.iter (Hashtbl.remove persistent_structures) l
 
 let set_unit_name name =
@@ -341,7 +350,9 @@ let rec find_module_descr path env =
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
-      begin match EnvLazy.force !components_of_module_maker' (find_module_descr p env) with
+      begin match
+        EnvLazy.force !components_of_module_maker' (find_module_descr p env)
+      with
         Structure_comps c ->
           let (descr, pos) = Tbl.find s c.comp_components in
           descr
@@ -349,7 +360,9 @@ let rec find_module_descr path env =
          raise Not_found
       end
   | Papply(p1, p2) ->
-      begin match EnvLazy.force !components_of_module_maker' (find_module_descr p1 env) with
+      begin match
+        EnvLazy.force !components_of_module_maker' (find_module_descr p1 env)
+      with
         Functor_comps f ->
           !components_of_functor_appl' f p1 p2
       | Structure_comps c ->
@@ -362,7 +375,9 @@ let find proj1 proj2 path env =
       let (p, data) = EnvTbl.find_same id (proj1 env)
       in data
   | Pdot(p, s, pos) ->
-      begin match EnvLazy.force !components_of_module_maker' (find_module_descr p env) with
+      begin match
+        EnvLazy.force !components_of_module_maker' (find_module_descr p env)
+      with
         Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in data
       | Functor_comps f ->
@@ -432,9 +447,12 @@ let find_module path env =
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
-      begin match EnvLazy.force !components_of_module_maker' (find_module_descr p env) with
+      begin match
+        EnvLazy.force !components_of_module_maker' (find_module_descr p env)
+      with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s c.comp_modules in EnvLazy.force subst_modtype_maker data
+          let (data, pos) = Tbl.find s c.comp_modules in
+          EnvLazy.force subst_modtype_maker data
       | Functor_comps f ->
           raise Not_found
       end
@@ -585,7 +603,9 @@ let set_value_used_callback name vd callback =
     Hashtbl.add value_declarations key callback
 
 let set_type_used_callback name td callback =
-  let old = try Hashtbl.find type_declarations (name, td.type_loc) with Not_found -> assert false in
+  let old =
+    try Hashtbl.find type_declarations (name, td.type_loc)
+    with Not_found -> assert false in
   Hashtbl.replace type_declarations (name, td.type_loc) (fun () -> callback old)
 
 let lookup_value lid env =
@@ -811,12 +831,14 @@ and components_of_module_maker (env, sub, path, mty) =
 		(List.map snd constructors, nopos) c.comp_constrs_by_path;
             List.iter
               (fun (name, descr) ->
-                c.comp_constrs <- Tbl.add (Ident.name name) (descr, nopos) c.comp_constrs)
+                c.comp_constrs <-
+                  Tbl.add (Ident.name name) (descr, nopos) c.comp_constrs)
               constructors;
 	    let labels = labels_of_type path decl' in
             List.iter
               (fun (name, descr) ->
-                c.comp_labels <- Tbl.add (Ident.name name) (descr, nopos) c.comp_labels)
+                c.comp_labels <-
+                  Tbl.add (Ident.name name) (descr, nopos) c.comp_labels)
               (labels);
             env := store_type_infos id path decl !env
         | Sig_exception(id, decl) ->
@@ -887,7 +909,7 @@ and check_usage loc id warn tbl =
   end;
 
 and store_value ?check id path decl env =
-  begin match check with Some f -> check_usage decl.val_loc id f value_declarations | None -> () end;
+  may (fun f -> check_usage decl.val_loc id f value_declarations) check;
   { env with
     values = EnvTbl.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
@@ -900,7 +922,8 @@ and store_annot id path annot env =
 
 and store_type id path info env =
   let loc = info.type_loc in
-  check_usage loc id (fun s -> Warnings.Unused_type_declaration s) type_declarations;
+  check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
+    type_declarations;
   let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in
 
@@ -909,7 +932,7 @@ and store_type id path info env =
   then begin
     let ty = Ident.name id in
     List.iter
-      (fun (c, _) ->
+      begin fun (c, _) ->
         let c = Ident.name c in
         let k = (ty, loc, c) in
         if not (Hashtbl.mem used_constructors k) then
@@ -921,10 +944,8 @@ and store_type id path info env =
                 if not used.cu_positive then
                   Location.prerr_warning loc
                     (Warnings.Unused_constructor
-                       (c, used.cu_pattern, used.cu_privatize)
-                    )
-              )
-      )
+                       (c, used.cu_pattern, used.cu_privatize)))
+      end
       constructors
   end;
   { env with
@@ -1133,7 +1154,8 @@ let open_pers_signature name env =
   open_signature (Pident(Ident.create_persistent name)) ps.ps_sig env
 
 let open_signature ?(loc = Location.none) root sg env =
-  if not loc.Location.loc_ghost && Warnings.is_active (Warnings.Unused_open "") then begin
+  if not loc.Location.loc_ghost && Warnings.is_active (Warnings.Unused_open "")
+  then begin
     let used = ref false in
     !add_delayed_check_forward
       (fun () ->
@@ -1141,8 +1163,8 @@ let open_signature ?(loc = Location.none) root sg env =
           Location.prerr_warning loc (Warnings.Unused_open (Path.name root))
       );
     EnvTbl.with_slot used (open_signature root sg) env
-  end else
-    open_signature root sg env
+  end
+  else open_signature root sg env
 
 (* Read a signature from a file *)
 
@@ -1240,7 +1262,8 @@ let fold_modules f lid env acc =
           match ps with
               None -> acc
             | Some ps ->
-              f name (Pident(Ident.create_persistent name)) (Mty_signature ps.ps_sig) acc)
+              f name (Pident(Ident.create_persistent name))
+                     (Mty_signature ps.ps_sig) acc)
         persistent_structures
         acc
     | Some l ->
@@ -1248,7 +1271,9 @@ let fold_modules f lid env acc =
       begin match EnvLazy.force components_of_module_maker desc with
           Structure_comps c ->
             Tbl.fold
-              (fun s (data, pos) acc -> f s (Pdot (p, s, pos)) (EnvLazy.force subst_modtype_maker data) acc)
+              (fun s (data, pos) acc ->
+                f s (Pdot (p, s, pos))
+                    (EnvLazy.force subst_modtype_maker data) acc)
               c.comp_modules
               acc
         | Functor_comps _ ->

@@ -77,8 +77,9 @@ let rm node =
   node
 
 (* Forward declaration, to be filled in by type_module_type_of *)
-let type_module_type_of_fwd
-  : (Env.t -> Parsetree.module_expr -> Typedtree.module_expr * Types.module_type) ref
+let type_module_type_of_fwd :
+    (Env.t -> Parsetree.module_expr ->
+      Typedtree.module_expr * Types.module_type) ref
   = ref (fun env m -> assert false)
 
 (* Merge one "with" constraint in a signature *)
@@ -449,7 +450,9 @@ and transl_signature env sg =
         | Psig_value(name, sdesc) ->
             let tdesc = Typedecl.transl_value_decl env item.psig_loc sdesc in
             let desc = tdesc.val_val in
-            let (id, newenv) = Env.enter_value ~check:(fun s -> Warnings.Unused_value_declaration s) name.txt desc env in
+            let (id, newenv) =
+              Env.enter_value name.txt desc env
+                ~check:(fun s -> Warnings.Unused_value_declaration s)  in
             let (trem,rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_value (id, name, tdesc)) env loc :: trem,
             (if List.exists (Ident.equal id) (get_values rem) then rem
@@ -457,7 +460,8 @@ and transl_signature env sg =
               final_env
         | Psig_type sdecls ->
             List.iter
-              (fun (name, decl) -> check "type" item.psig_loc type_names name.txt)
+              (fun (name, decl) ->
+                check "type" item.psig_loc type_names name.txt)
               sdecls;
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
@@ -490,7 +494,8 @@ and transl_signature env sg =
               transl_recmodule_modtypes item.psig_loc env sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_recmodule decls) env loc :: trem,
-            map_rec (fun rs (id, _, tmty) -> Sig_module(id, tmty.mty_type, rs)) decls rem,
+            map_rec (fun rs (id, _, tmty) -> Sig_module(id, tmty.mty_type, rs))
+              decls rem,
             final_env
         | Psig_modtype(name, sinfo) ->
             check "module type" item.psig_loc modtype_names name.txt;
@@ -524,18 +529,21 @@ and transl_signature env sg =
               cl;
             let (classes, newenv) = Typeclass.class_descriptions env cl in
             let (trem, rem, final_env) = transl_sig newenv srem in
-              mksig (Tsig_class (List.map2 (fun pcl tcl ->
-				       let (_, _, _, _, _, _, _, _, _, _, _, tcl) = tcl in
-					 tcl
-				    ) cl classes)) env loc :: trem,
-             List.flatten
-               (map_rec
+            mksig (Tsig_class
+                     (List.map2
+                        (fun pcl tcl ->
+		          let (_, _, _, _, _, _, _, _, _, _, _, tcl) = tcl in
+                          tcl)
+			cl classes)) env loc
+            :: trem,
+            List.flatten
+              (map_rec
                  (fun rs (i, _, d, i', d', i'', d'', i''', d''', _, _, _) ->
-                    [Sig_class(i, d, rs);
-                     Sig_class_type(i', d', rs);
-                     Sig_type(i'', d'', rs);
-                     Sig_type(i''', d''', rs)])
-               classes [rem]),
+                   [Sig_class(i, d, rs);
+                    Sig_class_type(i', d', rs);
+                    Sig_type(i'', d'', rs);
+                    Sig_type(i''', d''', rs)])
+                 classes [rem]),
             final_env
         | Psig_class_type cl ->
             List.iter
@@ -560,7 +568,8 @@ and transl_signature env sg =
   let previous_saved_types = Cmt_format.get_saved_types () in
   let (trem, rem, final_env) = transl_sig (Env.in_signature env) sg in
   let sg = { sig_items = trem; sig_type =  rem; sig_final_env = final_env } in
-  Cmt_format.set_saved_types ( (Cmt_format.Partial_signature sg) :: previous_saved_types );
+  Cmt_format.set_saved_types
+    ((Cmt_format.Partial_signature sg) :: previous_saved_types);
   sg
 
 and transl_modtype_info env sinfo =
@@ -582,7 +591,7 @@ and transl_recmodule_modtypes loc env sdecls =
       env curr in
   let transition env_c curr =
     List.map2
-      (fun (_, smty) (id, id_loc, mty) -> (id, id_loc, transl_modtype env_c smty))
+      (fun (_,smty) (id,id_loc,mty) -> (id, id_loc, transl_modtype env_c smty))
       sdecls curr in
   let init =
     List.map
@@ -671,7 +680,8 @@ let enrich_type_decls anchor decls oldenv newenv =
       List.fold_left
         (fun e (id, _, info) ->
           let info' =
-            Mtype.enrich_typedecl oldenv (Pdot(p, Ident.name id, nopos)) info.typ_type
+            Mtype.enrich_typedecl oldenv (Pdot(p, Ident.name id, nopos))
+              info.typ_type
           in
             Env.add_type id info' e)
         oldenv decls
@@ -763,12 +773,14 @@ let rec package_constraints env loc mty constrs =
   let sg' =
     List.map
       (function
-        | Sig_type (id, ({type_params=[]} as td), rs) when List.mem_assoc [Ident.name id] constrs ->
+        | Sig_type (id, ({type_params=[]} as td), rs)
+          when List.mem_assoc [Ident.name id] constrs ->
             let ty = List.assoc [Ident.name id] constrs in
             Sig_type (id, {td with type_manifest = Some ty}, rs)
         | Sig_module (id, mty, rs) ->
             let rec aux = function
-              | (m :: ((_ :: _) as l), t) :: rest when m = Ident.name id -> (l, t) :: aux rest
+              | (m :: ((_ :: _) as l), t) :: rest when m = Ident.name id ->
+                  (l, t) :: aux rest
               | _ :: rest -> aux rest
               | [] -> []
             in
@@ -782,7 +794,8 @@ let rec package_constraints env loc mty constrs =
 let modtype_of_package env loc p nl tl =
   try match Env.find_modtype p env with
   | Modtype_manifest mty when nl <> [] ->
-      package_constraints env loc mty (List.combine (List.map Longident.flatten nl) tl)
+      package_constraints env loc mty
+        (List.combine (List.map Longident.flatten nl) tl)
   | _ ->
       if nl = [] then Mty_ident p
       else raise(Error(loc, Signature_expected))
@@ -865,7 +878,8 @@ let rec type_module sttn funct_body anchor env smod =
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
-      rm {(wrap_constraint env arg mty.mty_type (Tmodtype_explicit mty)) with mod_loc = smod.pmod_loc}
+      rm {(wrap_constraint env arg mty.mty_type (Tmodtype_explicit mty)) with
+          mod_loc = smod.pmod_loc}
 
   | Pmod_unpack sexp ->
       if funct_body then
@@ -941,7 +955,8 @@ and type_structure funct_body anchor env sstr scope =
          final_env)
     | Pstr_primitive(name, sdesc) ->
         let desc = Typedecl.transl_value_decl env loc sdesc in
-        let (id, newenv) = Env.enter_value ~check:(fun s -> Warnings.Unused_value_declaration s) name.txt desc.val_val env in
+        let (id, newenv) = Env.enter_value name.txt desc.val_val env
+            ~check:(fun s -> Warnings.Unused_value_declaration s) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (mkstr (Tstr_primitive(id, name, desc)) loc :: str_rem,
          Sig_value(id, desc.val_val) :: sig_rem,
@@ -955,7 +970,8 @@ and type_structure funct_body anchor env sstr scope =
           enrich_type_decls anchor decls env newenv in
         let (str_rem, sig_rem, final_env) = type_struct newenv' srem in
         (mkstr (Tstr_type decls) loc :: str_rem,
-         map_rec'' (fun rs (id, _, info) -> Sig_type(id, info.typ_type, rs)) decls sig_rem,
+         map_rec'' (fun rs (id, _, info) -> Sig_type(id, info.typ_type, rs))
+           decls sig_rem,
          final_env)
     | Pstr_exception(name, sarg) ->
         let arg = Typedecl.transl_exception env loc sarg in
@@ -1010,7 +1026,8 @@ and type_structure funct_body anchor env sstr scope =
     | Pstr_modtype(name, smty) ->
         check "module type" loc modtype_names name.txt;
         let mty = transl_modtype env smty in
-        let (id, newenv) = Env.enter_modtype name.txt (Modtype_manifest mty.mty_type) env in
+        let (id, newenv) =
+          Env.enter_modtype name.txt (Modtype_manifest mty.mty_type) env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (mkstr (Tstr_modtype(id, name, mty)) loc :: str_rem,
          Sig_modtype(id, Modtype_manifest mty.mty_type) :: sig_rem,
@@ -1054,7 +1071,8 @@ and type_structure funct_body anchor env sstr scope =
         let (classes, new_env) = Typeclass.class_type_declarations env cl in
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
         (mkstr (Tstr_class_type
-           (List.map (fun (i, i_loc, d, _, _, _, _, c) -> (i, i_loc, c)) classes)) loc ::
+           (List.map (fun (i, i_loc, d, _, _, _, _, c) ->
+             (i, i_loc, c)) classes)) loc ::
 (*  TODO: check with Jacques why this is here
        Tstr_type
            (List.map (fun (_, _, i, d, _, _) -> (i, d)) classes) ::
@@ -1082,12 +1100,14 @@ and type_structure funct_body anchor env sstr scope =
          sg @ sig_rem,
          final_env)
   in
-  if !Clflags.annotations
-  then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr; (* moved to genannot *)
+  if !Clflags.annotations then
+    (* moved to genannot *)
+    List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   let previous_saved_types = Cmt_format.get_saved_types () in
   let (items, sg, final_env) = type_struct env sstr in
   let str = { str_items = items; str_type = sg; str_final_env = final_env } in
-  Cmt_format.set_saved_types (( Cmt_format.Partial_structure str) :: previous_saved_types);
+  Cmt_format.set_saved_types
+    (Cmt_format.Partial_structure str :: previous_saved_types);
   str, sg, final_env
 
 let type_module = type_module true false None
@@ -1193,8 +1213,9 @@ let type_package env m p nl tl =
     List.map (fun name -> Ctype.newconstr (mkpath mp name) []) nl in
   (* go back to original level *)
   Ctype.end_def ();
-  if nl = [] then (wrap_constraint env modl (Mty_ident p) Tmodtype_implicit, []) else
-  let mty = modtype_of_package env modl.mod_loc p nl tl' in
+  if nl = [] then
+    (wrap_constraint env modl (Mty_ident p) Tmodtype_implicit, [])
+  else let mty = modtype_of_package env modl.mod_loc p nl tl' in
   List.iter2
     (fun n ty ->
       try Ctype.unify env ty (Ctype.newvar ())
@@ -1237,7 +1258,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       (* It is important to run these checks after the inclusion test above,
          so that value declarations which are not used internally but exported
          are not reported as being unused. *)
-      Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
+      Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
+        (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
       (str, coercion)
     end else begin
       check_nongen_schemes finalenv str.str_items;
@@ -1251,8 +1273,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
          declarations like "let x = true;; let x = 1;;", because in this
          case, the inferred signature contains only the last declaration. *)
       if not !Clflags.dont_write_files then begin
-        let sg = Env.save_signature simple_sg modulename (outputprefix ^ ".cmi") in
-        Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename (Cmt_format.Implementation str)
+        let sg =
+          Env.save_signature simple_sg modulename (outputprefix ^ ".cmi") in
+        Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
+          (Cmt_format.Implementation str)
           (Some sourcefile) initial_env (Some sg);
       end;
       (str, coercion)
@@ -1260,7 +1284,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     end
   with e ->
     Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-      (Cmt_format.Partial_implementation (Array.of_list (Cmt_format.get_saved_types ())))
+      (Cmt_format.Partial_implementation
+         (Array.of_list (Cmt_format.get_saved_types ())))
       (Some sourcefile) initial_env None;
     raise e
 
@@ -1317,7 +1342,9 @@ let package_units objfiles cmifile modulename =
         (Env.imported_units()) in
     (* Write packaged signature *)
     if not !Clflags.dont_write_files then begin
-      let sg = Env.save_signature_with_imports sg modulename (prefix ^ ".cmi") imports in
+      let sg =
+        Env.save_signature_with_imports sg modulename
+          (prefix ^ ".cmi") imports in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
         (Cmt_format.Packed (sg, objfiles)) None Env.initial (Some sg)
     end;

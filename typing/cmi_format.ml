@@ -44,10 +44,12 @@ let read_cmi filename =
     if buffer <> Config.cmi_magic_number then begin
       close_in ic;
       let pre_len = String.length Config.cmi_magic_number - 3 in
-      if String.sub buffer 0 pre_len = String.sub Config.cmi_magic_number 0 pre_len then
+      if String.sub buffer 0 pre_len
+          = String.sub Config.cmi_magic_number 0 pre_len then
       begin
-        let msg = if buffer < Config.cmi_magic_number then "an older" else "a newer" in
-         raise (Error (Wrong_version_interface (filename, msg)))
+        let msg =
+          if buffer < Config.cmi_magic_number then "an older" else "a newer" in
+        raise (Error (Wrong_version_interface (filename, msg)))
       end else begin
         raise(Error(Not_an_interface filename))
       end
@@ -78,10 +80,14 @@ let output_cmi filename oc cmi =
 open Format
 
 let report_error ppf = function
-  | Not_an_interface filename -> fprintf ppf
-      "%a@ is not a compiled interface" Location.print_filename filename
-  | Wrong_version_interface (filename, older_newer) -> fprintf ppf
-      "%a@ is not a compiled interface for this version of OCaml.@.\
-       It seems to be for %s version of OCaml." Location.print_filename filename older_newer
-  | Corrupted_interface filename -> fprintf ppf
-      "Corrupted compiled interface@ %a" Location.print_filename filename
+  | Not_an_interface filename ->
+      fprintf ppf "%a@ is not a compiled interface"
+        Location.print_filename filename
+  | Wrong_version_interface (filename, older_newer) ->
+      fprintf ppf
+        "%a@ is not a compiled interface for this version of OCaml.@.\
+         It seems to be for %s version of OCaml."
+        Location.print_filename filename older_newer
+  | Corrupted_interface filename ->
+      fprintf ppf "Corrupted compiled interface@ %a"
+        Location.print_filename filename

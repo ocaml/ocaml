@@ -50,8 +50,10 @@ type error =
 
 open Typedtree
 
-let ctyp desc typ env loc = { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env }
-let cltyp desc typ env loc = { cltyp_desc = desc; cltyp_type = typ; cltyp_loc = loc; cltyp_env = env }
+let ctyp desc typ env loc =
+  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env }
+let cltyp desc typ env loc =
+  { cltyp_desc = desc; cltyp_type = typ; cltyp_loc = loc; cltyp_env = env }
 let mkcf desc loc = { cf_desc = desc; cf_loc = loc }
 let mkctf desc loc = { ctf_desc = desc; ctf_loc = loc }
 
@@ -228,7 +230,8 @@ let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
   let (id, _, _, _) as result =
     match id with Some id -> (id, val_env, met_env, par_env)
     | None ->
-        enter_met_env Location.none lab (Val_ivar (mut, cl_num)) ty val_env met_env par_env
+        enter_met_env Location.none lab (Val_ivar (mut, cl_num))
+          ty val_env met_env par_env
   in
   vars := Vars.add lab (id, mut, virt, ty) !vars;
   result
@@ -359,9 +362,10 @@ let add_val env loc lab (mut, virt, ty) val_sig =
   in
   Vars.add lab (mut, virt, ty) val_sig
 
-let rec class_type_field env self_type meths (fields, val_sig, concr_meths, inher) ctf =
-    let loc = ctf.pctf_loc in
-    match ctf.pctf_desc with
+let rec class_type_field env self_type meths
+    (fields, val_sig, concr_meths, inher) ctf =
+  let loc = ctf.pctf_loc in
+  match ctf.pctf_desc with
     Pctf_inher sparent ->
       let parent = class_type env sparent in
       let inher =
@@ -534,7 +538,8 @@ let rec class_field cl_num self_type meths vars
             (val_env, met_env, par_env)
       in
       (val_env, met_env, par_env,
-       lazy(mkcf (Tcf_inher (ovf, parent, super, inh_vars, inh_meths)) loc)::fields,
+       lazy (mkcf (Tcf_inher (ovf, parent, super, inh_vars, inh_meths)) loc)
+       :: fields,
        concr_meths, warn_vals, inher)
 
   | Pcf_valvirt (lab, mut, styp) ->
@@ -550,13 +555,16 @@ let rec class_field cl_num self_type meths vars
           val_env met_env par_env loc
       in
       (val_env, met_env', par_env,
-       lazy(mkcf (Tcf_val (lab.txt, lab, mut, id, Tcfk_virtual cty, met_env' == met_env)) loc) :: fields,
+       lazy (mkcf (Tcf_val (lab.txt, lab, mut, id, Tcfk_virtual cty,
+                            met_env' == met_env)) loc)
+       :: fields,
        concr_meths, warn_vals, inher)
 
   | Pcf_val (lab, mut, ovf, sexp) ->
       if Concr.mem lab.txt warn_vals then begin
         if ovf = Fresh then
-          Location.prerr_warning lab.loc (Warnings.Instance_variable_override[lab.txt])
+          Location.prerr_warning lab.loc
+            (Warnings.Instance_variable_override[lab.txt])
       end else begin
         if ovf = Override then
           raise(Error(loc, No_overriding ("instance variable", lab.txt)))
@@ -569,19 +577,22 @@ let rec class_field cl_num self_type meths vars
       if !Clflags.principal then begin
         Ctype.end_def ();
         Ctype.generalize_structure exp.exp_type
-      end;
+       end;
       let (id, val_env, met_env', par_env) =
         enter_val cl_num vars false lab.txt mut Concrete exp.exp_type
           val_env met_env par_env loc
       in
       (val_env, met_env', par_env,
-       lazy(mkcf (Tcf_val (lab.txt, lab, mut, id, Tcfk_concrete exp, met_env' == met_env)) loc) :: fields,
+       lazy (mkcf (Tcf_val (lab.txt, lab, mut, id,
+                            Tcfk_concrete exp, met_env' == met_env)) loc)
+       :: fields,
        concr_meths, Concr.add lab.txt warn_vals, inher)
 
   | Pcf_virt (lab, priv, sty) ->
       let cty = virtual_method val_env meths self_type lab.txt priv sty loc in
       (val_env, met_env, par_env,
-        lazy(mkcf(Tcf_meth (lab.txt, lab, priv, Tcfk_virtual cty, true)) loc) ::fields,
+        lazy (mkcf(Tcf_meth (lab.txt, lab, priv, Tcfk_virtual cty, true)) loc)
+       ::fields,
         concr_meths, warn_vals, inher)
 
   | Pcf_meth (lab, priv, ovf, expr)  ->
@@ -589,7 +600,8 @@ let rec class_field cl_num self_type meths vars
         if ovf = Fresh then
           Location.prerr_warning loc (Warnings.Method_override [lab.txt])
       end else begin
-        if ovf = Override then raise(Error(loc, No_overriding("method", lab.txt)))
+        if ovf = Override then
+          raise(Error(loc, No_overriding("method", lab.txt)))
       end;
       let (_, ty) =
         Ctype.filter_self_method val_env lab.txt priv meths self_type
@@ -820,11 +832,12 @@ and class_expr cl_num val_env met_env scl =
   | Pcl_fun (l, Some default, spat, sbody) ->
       let loc = default.pexp_loc in
       let scases =
-        [{ppat_loc = loc; ppat_desc =
-          Ppat_construct(mknoloc (Longident.(Ldot (Lident"*predef*", "Some"))),
-                         Some{ppat_loc = loc; ppat_desc = Ppat_var (mknoloc "*sth*")},
-                         false)},
-         {pexp_loc = loc; pexp_desc = Pexp_ident(mknoloc (Longident.Lident"*sth*"))};
+        [{ppat_loc = loc; ppat_desc = Ppat_construct (
+          mknoloc (Longident.(Ldot (Lident"*predef*", "Some"))),
+          Some{ppat_loc = loc; ppat_desc = Ppat_var (mknoloc "*sth*")},
+          false)},
+         {pexp_loc = loc; pexp_desc =
+          Pexp_ident(mknoloc (Longident.Lident"*sth*"))};
          {ppat_loc = loc; ppat_desc =
           Ppat_construct(mknoloc (Longident.(Ldot (Lident"*predef*", "None"))),
                          None, false)},
@@ -836,7 +849,8 @@ and class_expr cl_num val_env met_env scl =
                     scases)} in
       let sfun =
         {pcl_loc = scl.pcl_loc; pcl_desc =
-         Pcl_fun(l, None, {ppat_loc = loc; ppat_desc = Ppat_var (mknoloc "*opt*")},
+         Pcl_fun(l, None,
+                 {ppat_loc = loc; ppat_desc = Ppat_var (mknoloc "*opt*")},
                  {pcl_loc = scl.pcl_loc; pcl_desc =
                   Pcl_let(Default, [spat, smatch], sbody)})}
       in
@@ -852,17 +866,17 @@ and class_expr cl_num val_env met_env scl =
       end;
       let pv =
         List.map
-          (function (id, id_loc, id', ty) ->
+          begin fun (id, id_loc, id', ty) ->
             let path = Pident id' in
-            let vd = Env.find_value path val_env' (* do not mark the value as being used *) in
+            (* do not mark the value as being used *)
+            let vd = Env.find_value path val_env' in
             (id, id_loc,
-             {
-              exp_desc = Texp_ident(path, mknoloc (Longident.Lident (Ident.name id)), vd);
+             {exp_desc =
+              Texp_ident(path, mknoloc (Longident.Lident (Ident.name id)), vd);
               exp_loc = Location.none; exp_extra = [];
               exp_type = Ctype.instance val_env' vd.val_type;
-              exp_env = val_env'
-             })
-          )
+              exp_env = val_env'})
+          end
           pv
       in
       let not_function = function
@@ -988,11 +1002,12 @@ and class_expr cl_num val_env met_env scl =
         List.fold_right
           (fun (id, id_loc) (vals, met_env) ->
              let path = Pident id in
-             let vd = Env.find_value path val_env in (* do not mark the value as used *)
+             (* do not mark the value as used *)
+             let vd = Env.find_value path val_env in
              Ctype.begin_def ();
              let expr =
-               {
-                exp_desc = Texp_ident(path, mknoloc (Longident.Lident (Ident.name id)), vd);
+               {exp_desc =
+                Texp_ident(path, mknoloc(Longident.Lident (Ident.name id)),vd);
                 exp_loc = Location.none; exp_extra = [];
                 exp_type = Ctype.instance val_env vd.val_type;
                 exp_env = val_env;
@@ -1030,9 +1045,12 @@ and class_expr cl_num val_env met_env scl =
 
       limited_generalize (Ctype.row_variable (Ctype.self_type cl.cl_type))
           cl.cl_type;
-      limited_generalize (Ctype.row_variable (Ctype.self_type clty.cltyp_type)) clty.cltyp_type;
+      limited_generalize (Ctype.row_variable (Ctype.self_type clty.cltyp_type))
+        clty.cltyp_type;
 
-      begin match Includeclass.class_types val_env cl.cl_type clty.cltyp_type with
+      begin match
+        Includeclass.class_types val_env cl.cl_type clty.cltyp_type
+      with
         []    -> ()
       | error -> raise(Error(cl.cl_loc, Class_match_failure error))
       end;
@@ -1485,8 +1503,9 @@ let class_type_declarations env cls =
   in
   (List.map
      (function
-       (_, id_loc, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, _, _, ci) ->
-        (ty_id, id_loc, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci))
+       (_, id_loc, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+        _, _, ci) ->
+       (ty_id, id_loc, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci))
      decl,
    env)
 
@@ -1508,7 +1527,7 @@ let rec unify_parents env ty cl =
   | Tcl_constraint (cl, _, _, _, _) -> unify_parents env ty cl
 and unify_parents_struct env ty st =
   List.iter
-    (function { cf_desc = Tcf_inher (_, cl, _, _, _) } -> unify_parents env ty cl
+    (function {cf_desc = Tcf_inher (_, cl, _, _, _)} -> unify_parents env ty cl
       | _ -> ())
     st.cstr_fields
 

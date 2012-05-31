@@ -152,7 +152,8 @@ val enforce_constraints: Env.t -> type_expr -> unit
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt: newtype_level:int -> Env.t ref -> type_expr -> type_expr -> unit
-        (* Unify the two types given and update the environment with the local constraints. Raise [Unify] if not possible. *)
+        (* Unify the two types given and update the environment with the
+           local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
@@ -174,7 +175,7 @@ val rigidify: type_expr -> type_expr list
         (* "Rigidify" a type and return its type variable *)
 val all_distinct_vars: Env.t -> type_expr list -> bool
         (* Check those types are all distinct type variables *)
-val matches : Env.t -> type_expr -> type_expr -> bool
+val matches: Env.t -> type_expr -> type_expr -> bool
         (* Same as [moregeneral false], implemented using the two above
            functions and backtracking. Ignore levels *)
 
@@ -196,7 +197,7 @@ type class_match_failure =
   | CM_Private_method of string
   | CM_Virtual_method of string
 val match_class_types:
-        ?trace:bool -> Env.t -> class_type -> class_type -> class_match_failure list
+    ?trace:bool -> Env.t -> class_type -> class_type -> class_match_failure list
         (* Check if the first class type is more general than the second. *)
 val equal: Env.t -> bool -> type_expr list -> type_expr list -> bool
         (* [equal env [x1...xn] tau [y1...yn] sigma]
