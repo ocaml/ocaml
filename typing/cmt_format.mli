@@ -85,7 +85,8 @@ val save_cmt :
   binary_annots ->
   string option ->  (* source file *)
   Env.t -> (* initial env *)
-  Types.signature option -> (* if a .cmi was generated, the signature saved there *)
+  Types.signature option -> (* if a .cmi was generated,
+                               the signature saved there *)
   unit
 
 (* Miscellaneous functions *)
