@@ -20,6 +20,11 @@ Compilers:
 * Warning 28 is now enabled by default.
 - New option -absname to use absolute paths in error messages
 - Optimize away compile-time beta-redexes, e.g. (fun x y -> e) a b.
+- Added option -bin-annot to dump the AST with type annotations.
+- Added lots of new warnings about unused variables, opens, fields,
+  constructors, etc.
+* New meaning for warning 7: it is now triggered when a method is overridden
+  with the "method" keyword.  Use "method!" to avoid the warning.
 
 Native-code compiler:
 - Optimized handling of partially-applied functions (PR#5287)
@@ -63,6 +68,7 @@ Standard library:
       to turn randomization on by default (PR#5572, CVE-2012-0839)
     . Added new functorial interface "MakeSeeded" to support randomization
       with user-provided seeded hash functions.
+    . Install new header <caml/hash.h> for C code.
 - Filename: on-demand (lazy) initialization of the PRNG used by "temp_file".
 - Marshal: marshalling of function values (flag Marshal.Closures) now
   also works for functions that come from dynamically-loaded modules (PR#5215)
@@ -88,11 +94,15 @@ Installation procedure:
   Add "-I +compiler-libs" where needed.
 * toplevellib.cma is no longer installed because subsumed by
   ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma
+- Added a configuration option (-with-debug-runtime) to compile and install
+  a debug version of the runtime system, and a compiler option
+  (-runtime-variant) to select the debug runtime.
 
 Bug Fixes:
 - PR#1643: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added
 - PR#3571: in Bigarrays, call msync() before unmapping to commit changes
+- PR#4292: various documentation problems
 - PR#4549: Filename.dirname is not handling multiple / on Unix
 - PR#4688: (Windows) special floating-point values aren't converted to strings
   correctly
@@ -110,18 +120,29 @@ Bug Fixes:
   before calling into C functions, raising a Stack_overflow exception
   otherwise.  This reduces (but does not eliminate) the risk of
   segmentation faults due to stack overflow in C code
+- PR#5084: sub-sub-module building fails for native code compilation
+- PR#5120: fix the output function of Camlp4.Debug.formatter
+- PR#5159: better documentation of type Lexing.position
+- PR#5171: Map.join does more comparisons than needed
+- PR#5176: emacs mode: stack overflow in regexp matcher
+- PR#5179: port OCaml to mingw-w64
 - PR#5211: updated Genlex documentation to state that camlp4 is mandatory for
   'parser' keyword and associated notation
+- PR#5231: camlp4: fix parsing of <:str_item< type t = $x$ >>
 - PR#5238, PR#5277: Sys_error when getting error location
+- PR#5261, PR#5497: Ocaml source-code examples are not "copy-paste-able"
+- PR#5290: added hash functions for channels, nats, mutexes, conditions
 - PR#5295: OS threads: problem with caml_c_thread_unregister()
 - PR#5301: camlp4r and exception equal to another one with parameters
 - PR#5305: prevent ocamlbuild from complaining about links to _build/
+- PR#5306: comparing to Thread.self() raises exception at runtime
 - PR#5309: Queue.add is not thread/signal safe
 - PR#5310: Ratio.create_ratio/create_normalized_ratio have misleading names
 - PR#5311: better message for warning 23
 - PR#5313: ocamlopt -g misses optimizations
 - PR#5316: objinfo now shows ccopts/ccobjs/force_link when applicable
 - PR#5318: segfault on stack overflow when reading marshaled data
+- PR#5319: %r11 clobbered by Lswitch in Windows AMD64 native-code compilation
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in
   another thread
@@ -129,22 +150,40 @@ Bug Fixes:
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5331: ocamlmktop is not always a shell script
 - PR#5335: Unix.environment segfaults after a call to clearenv
+- PR#5338: sanitize.sh has windows style end-of-lines (mingw)
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping
-- PR#5344: some predifined exceptions need special printing
+- PR#5344: some predefined exceptions need special printing
+- PR#5349: Hashtbl.replace uses new key instead of reusing old key
 - PR#5356: ocamlbuild handling of 'predicates' for ocamlfind
 - PR#5364: wrong compilation of "((val m : SIG1) : SIG2)"
 - PR#5370: ocamldep omits filename in syntax error message
+- PR#5374: camlp4 creates wrong location for type definitions
 - PR#5380: strange sscanf input segfault
-- PR#5394: Documentation for -dtypes is missing in manpage
+- PR#5382: EOPNOTSUPP and ENOTSUPP different on exotic platforms
+- PR#5383: build failure in Win32/MSVC
+- PR#5387: camlp4: str_item and other syntactic elements with Nils are
+  not very usable
+- PR#5389: compaction sometimes leaves a very large heap
+- PR#5393: fails to build from source on GNU/kFreeBSD because of -R link option
+- PR#5394: documentation for -dtypes is missing in manpage
+- PR#5397: Filename.temp_dir_name should be mutable
+- PR#5410: fix printing of class application with Camlp4
 - PR#5416: (Windows) Unix.(set|clear)_close_on_exec now preserves blocking mode
+- PR#5435: ocamlbuild does not find .opt executables on Windows
 - PR#5436: update object ids on unmarshaling
+- PR#5442: camlp4: quotation issue with strings
 - PR#5453: configure doesn't find X11 under Ubuntu/MultiarchSpec
 - PR#5461: Double linking of bytecode modules
 - PR#5463: Bigarray.*.map_file fail if empty array is requested
+- PR#5465: increase stack size of ocamlopt.opt for windows
 - PR#5469: private record type generated by functor loses abbreviation
 - PR#5475: Wrapper script for interpreted LablTk wrongly handles command line
   parameters
 - PR#5476: bug in native code compilation of let rec on float arrays
+- PR#5477: use pkg-config to configure graphics on linux
+- PR#5481: update camlp4 magic numbers
+- PR#5482: remove bashism in test suite scripts
+- PR#5495: camlp4o dies on infix definition (or)
 - PR#5498: Unification with an empty object only checks the absence of
   the first method
 - PR#5503: error when ocamlbuild is passed an absolute path as build directory
@@ -154,44 +193,85 @@ Bug Fixes:
 - PR#5511: in Bigarray.reshape, unwarranted limitation on new array dimensions.
 - PR#5513: Int64.div causes floating point exception (ocamlopt, x86)
 - PR#5516: in Bigarray C stubs, use C99 flexible array types if possible
-- PR#5531: Allow ocamlbuild to add ocamldoc flags through -docflag and -docflags switches
+- PR#5518: segfault with lazy empty array
+- PR#5531: Allow ocamlbuild to add ocamldoc flags through -docflag
+  and -docflags switches
 - PR#5543: in Bigarray.map_file, try to avoid using lseek() when growing file
 - PR#5538: combining -i and -annot in ocamlc
+- PR#5551: repeated calls to find_in_path degrade performance
+- PR#5552: Mac OS X: unrecognized gcc option "-no-cpp-precomp"
+- PR#5555: add Hashtbl.reset to resize the bucket table to its initial size
 - PR#5560: incompatible type for tuple pattern with -principal
+- PR#5575: Random states are not marshallable across architectures
+- PR#5579: camlp4: when a plugin is loaded in the toplevel,
+  Token.Filter.define_filter has no effect before the first syntax error
+- PR#5585: typo: "explicitely"
+- PR#5587: documentation: "allows to" is not correct English
+- PR#5593: remove C file when -output-obj fails
+- PR#5598: add backslash-space support in strings in ocamllex
 - PR#5603: wrong .file debug info generated by ocamlopt -g
+- PR#5604: fix permissions of files created by ocamlbuild itself
 - PR#5610: new unmarshaler (from PR#5318) fails to freshen object identifiers
+- PR#5614: add missing -linkall flag when compiling ocamldoc.opt
+- PR#5616: move ocamlbuild documentation to the reference manual
+- PR#5619: Uncaught CType.Unify exception in the compiler
 - PR#5620: invalid printing of type manifest (camlp4 revised syntax)
 - problem with printing of string literals in camlp4 (reported on caml-list)
 - emacs mode: colorization of comments and strings now works correctly
+- problem with forall and method (reported on caml-list on 2011-07-26)
 
 Feature wishes:
 - PR#352: new option "-stdin" to make ocaml read stdin as a script
+- PR#1164: better error message when mixing -a and .cmxa
+- PR#1284: documentation: remove restriction on mixed streams
+- PR#1496: allow configuring LIBDIR, BINDIR, and MANDIR relative to $(PREFIX)
+- PR#1835: add Digest.from_hex
+- PR#1898: toplevel: add option to suppress continuation prompts
+- PR#4278: configure: option to disable "graph" library
 - PR#4444: new String.trim function, removing leading and trailing whistespace
+- PR#4549: make Filename.dirname/basename POSIX compliant
+- PR#4830: add option -v to expunge.ml
 - PR#4898: new Sys.big_endian boolean for machine endianness
+- PR#4963, PR#5467: no extern "C" into ocaml C-stub headers
 - PR#5199: tests are run only for bytecode if either native support is missing,
   or a non-empty value is set to "BYTECODE_ONLY" Makefile variable
+- PR#5215: marshalling of dynlinked closure
 - PR#5236: new '%revapply' primitive with the semantics 'revapply x f = f x',
     and '%apply' with semantics 'apply f x = f x'.
+- PR#5295: OS threads: problem with caml_c_thread_unregister()
 - PR#5297: compiler now checks existence of builtin primitives
 - PR#5329: (Windows) more efficient Unix.select if all fd's are sockets
 - PR#5358: first class modules don't allow "with type" declarations for types
   in sub-modules
+- PR#5385: configure: emit a warning when MACOSX_DEPLOYMENT_TARGET is set
+- PR#5396: ocamldep: add options -sort, -all, and -one-line
 - PR#5397: Filename.temp_dir_name should be mutable
+- PR#5403: give better error message when emacs is not found in PATH
 - PR#5411: new directive for the toplevel: #load_rec
 - PR#5420: Unix.openfile share mode (Windows)
+- PR#5421: Unix: do not leak fds in various open_proc* functions
+- PR#5434: implement Unix.times in win32unix (partially)
 - PR#5437: warning for useless open statements
 - PR#5438: new warnings for unused declarations
+- PR#5439: upgrade config.guess and config.sub
+- PR#5445 and others: better printing of types with user-provided names
 - PR#5454: Digest.compare is missing and md5 doc update
-- PR#5467: no extern "C" into ocaml C-stub headers
+- PR#5455: .emacs instructions, add lines to recognize ocaml scripts
+- PR#5456: pa_macro: replace __LOCATION__ after macro expansion; add LOCATION_OF
+- PR#5461: bytecode: emit warning when linking two modules with the same name
 - PR#5478: ocamlopt assumes ar command exists
 - PR#5479: Num.num_of_string may raise an exception, not reflected in the
   documentation.
-- PR#5555: Add function Hashtbl.reset to resize the bucket table to
+- PR#5501: increase IO_BUFFER_SIZE to 64KiB
+- PR#5532: improve error message when bytecode file is wrong
+- PR#5555: add function Hashtbl.reset to resize the bucket table to
   its initial size.
+- PR#5586: increase UNIX_BUFFER_SIZE to 64KiB
 - PR#5599: Add warn() tag in ocamlbuild to control -w compiler switch
 - ocamldebug: ability to inspect values that contain code pointers
 - ocamldebug: new 'environment' directive to set environment variables
   for debuggee
+- configure: add -no-camlp4 option
 
 Shedding weight:
 * Removed the obsolete native-code generators for Alpha, HPPA, IA64 and MIPS.
