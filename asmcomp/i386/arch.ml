@@ -22,7 +22,6 @@ let command_line_options =
 
 (* Specific operations for the Intel 386 processor *)
 
-open Misc
 open Format
 
 type addressing_mode =
