@@ -651,3 +651,7 @@ type t = { foo : int }
 let {foo} = (raise Exit : t);;
 type s = A of int
 let (A x) = (raise Exit : s);;
+
+(* PR#5224 *)
+
+type 'x t = < f : 'y. 'y t >;;

@@ -906,8 +906,8 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?env ?partial ty =
-  let copy = copy ?env ?partial in
+let rec copy ?env ?partial ?keep_names ty =
+  let copy = copy ?env ?partial ?keep_names in
   let ty = repr ty in
   match ty.desc with
     Tsubst ty -> ty
@@ -998,7 +998,7 @@ let rec copy ?env ?partial ty =
           end
       | Tobject (ty1, _) when partial <> None ->
           Tobject (copy ty1, ref None)
-      | _ -> copy_type_desc copy desc
+      | _ -> copy_type_desc ?keep_names copy desc
       end;
     t
 
@@ -1079,8 +1079,8 @@ let instance_constructor ?in_pattern cstr =
   cleanup_types ();
   (ty_args, ty_res)
 
-let instance_parameterized_type sch_args sch =
-  let ty_args = List.map copy sch_args in
+let instance_parameterized_type ?keep_names sch_args sch =
+  let ty_args = List.map (copy ?keep_names) sch_args in
   let ty = copy sch in
   cleanup_types ();
   (ty_args, ty)

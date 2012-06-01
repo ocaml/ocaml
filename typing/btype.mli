@@ -86,7 +86,8 @@ val iter_row: (type_expr -> unit) -> row_desc -> unit
 val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
 
-val copy_type_desc: (type_expr -> type_expr) -> type_desc -> type_desc
+val copy_type_desc:
+    ?keep_names:bool -> (type_expr -> type_expr) -> type_desc -> type_desc
         (* Copy on types *)
 val copy_row:
     (type_expr -> type_expr) ->

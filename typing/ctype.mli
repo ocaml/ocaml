@@ -119,6 +119,7 @@ val instance_constructor:
         constructor_description -> type_expr list * type_expr
         (* Same, for a constructor *)
 val instance_parameterized_type:
+        ?keep_names:bool ->
         type_expr list -> type_expr -> type_expr list * type_expr
 val instance_parameterized_type_2:
         type_expr list -> type_expr list -> type_expr ->

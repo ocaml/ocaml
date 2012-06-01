@@ -593,4 +593,8 @@ Error: This field value has type unit -> unit which is less general than
 #       Exception: Pervasives.Exit.
 #   Exception: Pervasives.Exit.
 #   Exception: Pervasives.Exit.
+#       Characters 20-44:
+  type 'x t = < f : 'y. 'y t >;;
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the definition of t, type 'y t should be 'x t
 # 
