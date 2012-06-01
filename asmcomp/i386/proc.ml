@@ -200,6 +200,3 @@ let assemble_file infile outfile =
   else
     Ccomp.command (Config.asm ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
-
-open Clflags;;
-open Config;;
