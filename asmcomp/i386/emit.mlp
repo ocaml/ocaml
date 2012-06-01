@@ -16,7 +16,6 @@
 
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
-open Location
 open Misc
 open Cmm
 open Arch
