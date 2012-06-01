@@ -109,26 +109,26 @@ type summary =
 module EnvTbl =
   struct
     (* A table indexed by identifier, with an extra slot to record usage. *)
-    type 'a t = 'a Ident.tbl * bool ref Ident.tbl
+    type 'a t = ('a * bool ref) Ident.tbl
 
-    let empty = (Ident.empty, Ident.empty)
+    let empty = Ident.empty
     let current_slot = ref (ref true)
 
-    let add id x (tbl, slots) =
-      let slot = !current_slot in
-      let slots = if !slot then slots else Ident.add id slot slots in
-      Ident.add id x tbl, slots
+    let add id x tbl =
+      Ident.add id (x, !current_slot) tbl
 
-    let find_same_not_using id (tbl, _) =
-      Ident.find_same id tbl
+    let find_same_not_using id tbl =
+      fst (Ident.find_same id tbl)
 
-    let find_same id (tbl, slots) =
-      (try Ident.find_same id slots := true with Not_found -> ());
-      Ident.find_same id tbl
+    let find_same id tbl =
+      let (x, slot) = Ident.find_same id tbl in
+      slot := true;
+      x
 
-    let find_name s (tbl, slots) =
-      (try Ident.find_name s slots := true with Not_found -> ());
-      Ident.find_name s tbl
+    let find_name s tbl =
+      let (x, slot) = Ident.find_name s tbl in
+      slot := true;
+      x
 
     let with_slot slot f x =
       let old_slot = !current_slot in
@@ -137,7 +137,7 @@ module EnvTbl =
         (fun () -> f x)
         (fun () -> current_slot := old_slot)
 
-    let keys (tbl, _) =
+    let keys tbl =
       Ident.keys tbl
   end
 
