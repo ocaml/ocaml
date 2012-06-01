@@ -66,10 +66,10 @@ let extract_sig_open env loc mty =
 
 (* Compute the environment after opening a module *)
 
-let type_open env loc lid =
+let type_open ?toplevel env loc lid =
   let (path, mty) = Typetexp.find_module env loc lid.txt in
   let sg = extract_sig_open env loc mty in
-  path, Env.open_signature ~loc path sg env
+  path, Env.open_signature ~loc ?toplevel path sg env
 
 (* Record a module type *)
 let rm node =
@@ -913,7 +913,7 @@ let rec type_module sttn funct_body anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
 
-and type_structure funct_body anchor env sstr scope =
+and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
@@ -1033,7 +1033,7 @@ and type_structure funct_body anchor env sstr scope =
          Sig_modtype(id, Modtype_manifest mty.mty_type) :: sig_rem,
          final_env)
     | Pstr_open (lid) ->
-	let (path, newenv) = type_open env loc lid in
+	let (path, newenv) = type_open ~toplevel env loc lid in
 	let (str_rem, sig_rem, final_env) = type_struct newenv srem in
 	  (mkstr (Tstr_open (path, lid)) loc :: str_rem, sig_rem, final_env)
     | Pstr_class cl ->
@@ -1110,6 +1110,7 @@ and type_structure funct_body anchor env sstr scope =
     (Cmt_format.Partial_structure str :: previous_saved_types);
   str, sg, final_env
 
+let type_toplevel_phrase env s = type_structure ~toplevel:true false None env s Location.none
 let type_module = type_module true false None
 let type_structure = type_structure false None
 
