@@ -1038,6 +1038,8 @@ let rec is_nonexpansive exp =
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&
       !count = 0
+  | Texp_letmodule (_, _, mexp, e) ->
+      is_nonexpansive_mod mexp && is_nonexpansive e
   | Texp_pack mexp ->
       is_nonexpansive_mod mexp
   | _ -> false
