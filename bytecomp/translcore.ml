@@ -18,7 +18,6 @@
 open Misc
 open Asttypes
 open Primitive
-open Path
 open Types
 open Typedtree
 open Typeopt
