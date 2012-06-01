@@ -78,6 +78,7 @@ Bug Fixes:
 - PR#1643: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added
 - PR#3571: in Bigarrays, call msync() before unmapping to commit changes
+- PR#4511, PR#4838: local modules remove polymorphism
 - PR#4549: Filename.dirname is not handling multiple / on Unix
 - PR#4688: (Windows) special floating-point values aren't converted to strings
   correctly
