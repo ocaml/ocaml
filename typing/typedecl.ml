@@ -444,7 +444,7 @@ let check_recursion env loc path decl to_check =
           end;
           List.iter (check_regular cpath args prev_exp) args'
       | Tpoly (ty, tl) ->
-          let (_, ty) = Ctype.instance_poly false tl ty in
+          let (_, ty) = Ctype.instance_poly ~keep_names:true false tl ty in
           check_regular cpath args prev_exp ty
       | _ ->
           Btype.iter_type_expr (check_regular cpath args prev_exp) ty
@@ -463,7 +463,8 @@ let check_recursion env loc path decl to_check =
       (* Check that recursion is regular *)
       if decl.type_params = [] then () else
       let (args, body) =
-        Ctype.instance_parameterized_type decl.type_params body in
+        Ctype.instance_parameterized_type
+          ~keep_names:true decl.type_params body in
       check_regular path args [] body
 
 let check_abbrev_recursion env id_loc_list (id, _, tdecl) =
