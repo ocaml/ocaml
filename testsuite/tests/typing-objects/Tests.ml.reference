@@ -298,4 +298,12 @@ Warning 10: this expression should have type unit.
 #         - : int * int * int = (18, 19, 20)
 #           - : int * int * int * int * int = (21, 22, 23, 33, 33)
 #           - : int * int * int * int * int = (24, 25, 26, 33, 33)
+#         Characters 42-69:
+  class a = let _ = new b in object end
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This kind of recursive class expression is not allowed
+#   Characters 11-38:
+  class a = let _ = new a in object end;;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This kind of recursive class expression is not allowed
 # 

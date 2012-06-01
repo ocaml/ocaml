@@ -362,11 +362,15 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                      cl_init))
       end
 
-let rec build_class_lets cl =
+let rec build_class_lets cl ids =
   match cl.cl_desc with
-    Tcl_let (rec_flag, defs, vals, cl) ->
-      let env, wrap = build_class_lets cl in
-      (env, fun x -> Translcore.transl_let rec_flag defs (wrap x))
+    Tcl_let (rec_flag, defs, vals, cl') ->
+      let env, wrap = build_class_lets cl' [] in
+      (env, fun x ->
+        let lam = Translcore.transl_let rec_flag defs (wrap x) in
+        (* Check recursion in toplevel let-definitions *)
+        if ids = [] || Translcore.check_recursive_lambda ids lam then lam
+        else raise(Error(cl.cl_loc, Illegal_class_expr)))
   | _ ->
       (cl.cl_env, fun x -> x)
 
@@ -595,7 +599,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   let tables = Ident.create (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let top = not req in
-  let cl_env, llets = build_class_lets cl in
+  let cl_env, llets = build_class_lets cl ids in
   let new_ids = if top then [] else Env.diff top_env cl_env in
   let env2 = Ident.create "env" in
   let meth_ids = get_class_meths cl in
@@ -662,8 +666,6 @@ let transl_class ids cl_id pub_meths cl vflag =
   let cla = Ident.create "class" in
   let (inh_init, obj_init) =
     build_object_init_0 cla [] cl copy_env subst_env top ids in
-  if not (Translcore.check_recursive_lambda ids obj_init) then
-    raise(Error(cl.cl_loc, Illegal_class_expr));
   let inh_init' = List.rev inh_init in
   let (inh_init', cl_init) =
     build_class_init cla true ([],[]) inh_init' obj_init msubst top cl
@@ -817,7 +819,7 @@ open Format
 
 let report_error ppf = function
   | Illegal_class_expr ->
-      fprintf ppf "This kind of class expression is not allowed"
+      fprintf ppf "This kind of recursive class expression is not allowed"
   | Tags (lab1, lab2) ->
       fprintf ppf "Method labels `%s' and `%s' are incompatible.@ %s"
         lab1 lab2 "Change one of them."
