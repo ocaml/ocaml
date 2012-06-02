@@ -747,31 +747,40 @@ let emit_instr i =
         4
     | Lswitch jumptbl ->
         if !arch > ARMv6 && !thumb then begin
-          let lbl = new_label() in
-          `	tbh	[pc, {emit_reg i.arg.(0)}]\n`;
-          `{emit_label lbl}:`;
-          for i = 0 to Array.length jumptbl - 1 do
-            `	.short	({emit_label jumptbl.(i)}-{emit_label lbl})/2\n`;
+          (* The Thumb-2 TBH instruction supports only forward branches,
+             so we need to generate appropriate trampolines for all labels
+             that appear before this switch instruction (PR#5623) *)
+          let tramtbl = Array.copy jumptbl in
+          `	tbh	[pc, {emit_reg i.arg.(0)}, lsl #1]\n`;
+          for j = 0 to Array.length tramtbl - 1 do
+            let rec label i =
+              match i.desc with
+                Lend -> new_label()
+              | Llabel lbl when lbl = tramtbl.(j) -> lbl
+              | _ -> label i.next in
+            tramtbl.(j) <- label i.next;
+            `	.short	({emit_label tramtbl.(j)}-.)/2+{emit_int j}\n`
           done;
-          `	.align	1\n`;
-          2 + Array.length jumptbl / 2
+          (* Generate the necessary trampolines *)
+          for j = 0 to Array.length tramtbl - 1 do
+            if tramtbl.(j) <> jumptbl.(j) then
+              `{emit_label tramtbl.(j)}:	b	{emit_label jumptbl.(j)}\n`
+          done
+        end else if not !pic_code then begin
+          `	ldr	pc, [pc, {emit_reg i.arg.(0)}, lsl #2]\n`;
+          `	nop\n`;
+          for j = 0 to Array.length jumptbl - 1 do
+            `	.word	{emit_label jumptbl.(j)}\n`
+          done
         end else begin
-          if not !pic_code then begin
-            `	ldr	pc, [pc, {emit_reg i.arg.(0)}, lsl #2]\n`;
-            `	nop\n`;
-            for i = 0 to Array.length jumptbl - 1 do
-              `	.word	{emit_label jumptbl.(i)}\n`
-            done
-          end else begin
-            (* Slightly slower, but position-independent *)
-            `	add	pc, pc, {emit_reg i.arg.(0)}, lsl #2\n`;
-            `	nop\n`;
-            for i = 0 to Array.length jumptbl - 1 do
-              `	b	{emit_label jumptbl.(i)}\n`
-            done
-          end;
-          2 + Array.length jumptbl
-        end
+          (* Slightly slower, but position-independent *)
+          `	add	pc, pc, {emit_reg i.arg.(0)}, lsl #2\n`;
+          `	nop\n`;
+          for j = 0 to Array.length jumptbl - 1 do
+            `	b	{emit_label jumptbl.(j)}\n`
+          done
+        end;
+        2 + Array.length jumptbl
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`; 1
     | Lpushtrap ->
