@@ -41,6 +41,7 @@ run-all:
 
 run-file:
 	@printf " $(DESC)"
+	@rm -f program program.exe
 	@$(COMP) $(COMPFLAGS) $(FILE) -o program
 	@if [ -f `basename $(FILE) ml`runner ]; then \
 	  sh `basename $(FILE) ml`runner; \
@@ -56,4 +57,4 @@ run-file:
 promote: defaultpromote
 
 clean: defaultclean
-	@rm -f *.result ./program
+	@rm -f *.result ./program program.exe
