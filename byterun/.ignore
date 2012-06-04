@@ -6,6 +6,7 @@ version.h
 ocamlrun
 ocamlrun.exe
 ocamlrund
+ocamlrund.exe
 ld.conf
 interp.a.lst
 *.[sd]obj
