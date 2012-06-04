@@ -256,6 +256,7 @@ esac
 
 bytecc="$cc"
 mkexe="\$(BYTECC)"
+mkexedebugflag="-g"
 bytecccompopts=""
 bytecclinkopts=""
 dllccompopts=""
@@ -328,6 +329,7 @@ case "$bytecc,$host" in
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
+        mkexedebugflag="-link -g"
       fi
     fi
     exe=".exe"
@@ -1628,6 +1630,7 @@ echo "TOOLCHAIN=cc" >> Makefile
 echo "NATDYNLINK=$natdynlink" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
+echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
