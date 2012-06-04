@@ -4,6 +4,7 @@ prims.c
 opnames.h
 version.h
 ocamlrun
+ocamlrun.exe
 ocamlrund
 ld.conf
 interp.a.lst

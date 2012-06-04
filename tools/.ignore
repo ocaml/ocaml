@@ -24,5 +24,6 @@ scrapelabels
 addlabels
 myocamlbuild_config.ml
 objinfo_helper
+objinfo_helper.exe
 read_cmt
 read_cmt.bak
