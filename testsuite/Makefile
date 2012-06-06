@@ -63,7 +63,7 @@ report: FORCE
 	@echo ''
 	@echo 'Summary:'
 	@echo '  ' `grep 'passed$$' _log | wc -l` 'test(s) passed'
-	@echo '  ' `grep 'failed$$' _log | wc -l` 'test(s) failed'
+	@echo '  ' `grep '_FAILED_$$' _log | wc -l` 'test(s) failed'
 	@echo '  ' `grep '^Error' _log | wc -l` 'compilation error(s)'
 	@echo '  ' `grep '^Warning' _log | wc -l` 'compilation warning(s)'
 	@echo '  ' `grep '^make\[2\]: ' _log | wc -l` 'makefile error(s)'
