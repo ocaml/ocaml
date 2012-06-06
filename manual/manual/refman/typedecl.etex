@@ -179,7 +179,8 @@ are inferred from its definition, and the variance annotations are
 only checked for conformance with the definition.
 
 \ikwd{constraint\@\texttt{constraint}}
-The construct @ 'constraint' "'" ident '=' typexpr @ allows to specify
+The construct @ 'constraint' "'" ident '=' typexpr @ allows the
+specification of
 type parameters.  Any actual type argument corresponding to the type
 parameter @ident@ has to be an instance of @typexpr@ (more precisely,
 @ident@ and @typexpr@ are unified). Type variables of @typexpr@ can
