@@ -726,13 +726,13 @@ It is only possible to coerce an expression @expr@ from type
 @typexpr_1@ (like for a type annotation), and @typexpr_1@ is a subtype
 of @typexpr_2@. The type of the coerced expression is an
 instance of @typexpr_2@. If the types contain variables,
-they may be instanciated by the subtyping algorithm, but this is only
+they may be instantiated by the subtyping algorithm, but this is only
 done after determining whether @typexpr_1@ is a potential subtype of
 @typexpr_2@. This means that typing may fail during this latter
 unification step, even if some instance of @typexpr_1@ is a subtype of
 some instance of @typexpr_2@.
 %
-In the following paragraphs we describe the subtyping relation used. 
+In the following paragraphs we describe the subtyping relation used.
 
 \subsubsection*{Object types}
 
