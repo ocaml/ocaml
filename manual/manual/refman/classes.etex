@@ -45,7 +45,7 @@ The expression @class-path@ is equivalent to the class type bound to
 the name @class-path@. Similarly, the expression
 @'[' typexpr_1 ',' \ldots typexpr_n ']' class-path@ is equivalent to
 the parametric class type bound to the name @class-path@, in which
-type parameters have been instanciated to respectively @typexpr_1@,
+type parameters have been instantiated to respectively @typexpr_1@,
 \ldots @typexpr_n@.
 
 \subsubsection*{Class function type}
@@ -77,9 +77,9 @@ mutable instance variable.
 
 \ikwd{inherit\@\texttt{inherit}}
 
-The inheritance construct @'inherit' class-type@ allows to include
-methods and instance variables from other classes types.
-The instance variable and method types from this class type are added
+The inheritance construct @'inherit' class-type@ provides for inclusion of
+methods and instance variables from other class types.
+The instance variable and method types from @class-type@ are added
 into the current class type.
 
 \subsubsection*{Instance variable specification}
@@ -197,7 +197,7 @@ The expression @class-path@ evaluates to the class bound to the name
 @class-path@. Similarly, the expression
 @'[' typexpr_1 ',' \ldots typexpr_n ']' class-path@
 evaluates to the parametric class bound to the name @class-path@,
-in which type parameters have been instanciated to respectively
+in which type parameters have been instantiated to respectively
 @typexpr_1@, \ldots @typexpr_n@.
 
 The expression @'(' class-expr ')'@ evaluates to the same module as
@@ -275,7 +275,7 @@ extensible.
 
 \ikwd{inherit\@\texttt{inherit}}
 
-The inheritance construct @'inherit' class-expr@ allows to reuse
+The inheritance construct @'inherit' class-expr@ allows reusing
 methods and instance variables from other classes. The class
 expression @class-expr@ must evaluate to a class body.  The instance
 variables, methods and initializers from this class body are added
@@ -288,8 +288,8 @@ to the inheritance construct above.  @value-name@ is not a true
 variable and can only be used to select a method, i.e. in an expression
 @value-name '#' method-name@.  This gives access to the
 method @method-name@ as it was defined in the parent class even if it is
-redefined in the current class. 
-The scope of an ancestor binding is limited to the current class. 
+redefined in the current class.
+The scope of an ancestor binding is limited to the current class.
 The ancestor method may be called from a subclass but only indirectly. 
 
 \subsubsection*{Instance variable definition}
