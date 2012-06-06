@@ -76,14 +76,14 @@ At the top a row of menus.
 
 \item {\bf Modules - Path editor} changes the load path.  {\bf Modules
     - Reset cache} rescans the load path and resets the module cache.
-  Do it if you recompile some interface, or get confused about what is 
+  Do it if you recompile some interface, or get confused about what is
   in the cache.
 
-\item {\bf Modules - Search symbol} allows to search a symbol either
-  by its name, like the bottom line of the viewer, or, more
+\item {\bf Modules - Search symbol} allows searching a symbol either
+  by its name, like the bottom line of the viewer, or more
   interestingly, by its type. {\bf Exact type} searches for a type
   with exactly the same information as the pattern (variables match
-  only variables). {\bf Included type} allows to give only partial
+  only variables). {\bf Included type} allows giving only partial
   information: the actual type may take more arguments and return more
   results, and variables in the pattern match anything. In both cases,
   argument and tuple order is irrelevant\footnote{To avoid
@@ -148,15 +148,15 @@ Essential functions are in the {\bf Compiler} menu.
   and type-checker.
 
 \item  {\bf Lex} adds colors according to lexical categories.
-  
+
 \item {\bf Typecheck} verifies typing, and memorizes to let one see an
   expression's type by double-clicking on it. This is also valid for
   interfaces. If an error occurs, the part of the interface preceding
   the error is computed.
-  
-  After typechecking, pressing the right button pops up a menu giving
-  the type of the pointed expression, and eventually allowing to
-  follow some links.
+
+  After typechecking, pressing the right button pops up a menu that gives
+  the type of the pointed expression and, where applicable, provides
+  some links that can be followed.
 
 \item {\bf Clear errors} dismisses type-checker error messages and warnings.
 
