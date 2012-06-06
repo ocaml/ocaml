@@ -47,7 +47,7 @@ run-file:
 	  sh `basename $(FILE) ml`runner; \
 	else \
 	  ./program $(PROGRAM_ARGS) > `basename $(FILE) ml`result; \
-	fi
+	fi || (echo " => failed" && exit 1)
 	@if [ -f `basename $(FILE) ml`checker ]; then \
 	  sh `basename $(FILE) ml`checker; \
 	else \
