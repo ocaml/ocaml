@@ -215,9 +215,9 @@ $(OCAMLDOC_OPT): $(EXECMXFILES)
 	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLCMOFILES) $(LIBCMOFILES)
+	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS)	$(OCAMLSRCDIR)/tools/depend.cmx $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
 
