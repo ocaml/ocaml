@@ -55,7 +55,7 @@ Standard library:
     . Fixed behavior of generic hash function w.r.t. -0.0 and NaN (PR#5222)
     . Added optional "random" parameter to Hashtbl.create to randomize
       collision patterns and improve security (PR#5572, CVE-2012-0839)
-    . Added "randomize" function and "R" parameter to OCAMLRUNPARAMS
+    . Added "randomize" function and "R" parameter to OCAMLRUNPARAM
       to turn randomization on by default (PR#5572, CVE-2012-0839)
     . Added new functorial interface "MakeSeeded" to support randomization
       with user-provided seeded hash functions.
@@ -177,6 +177,7 @@ Feature wishes:
 - PR#5555: Add function Hashtbl.reset to resize the bucket table to
   its initial size.
 - PR#5599: Add warn() tag in ocamlbuild to control -w compiler switch
+- PR#5636: in system threads library, issue with linking of pthread_atfork
 - ocamldebug: ability to inspect values that contain code pointers
 - ocamldebug: new 'environment' directive to set environment variables
   for debugee
