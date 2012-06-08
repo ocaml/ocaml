@@ -36,7 +36,7 @@ exception Error of Location.t * error
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
-  ref((fun cc rootpath modl -> assert false) :
+  ref ((fun cc rootpath modl -> assert false) :
       module_coercion -> Path.t option -> module_expr -> lambda)
 
 let transl_object =

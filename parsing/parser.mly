@@ -24,6 +24,10 @@ let mktopctr i d =  (* toplevel contract *)
   { ptopctr_id = i; ptopctr_desc = d; ptopctr_loc = symbol_rloc() }
 let mkctr d =   (* local contract *)
   { pctr_desc = d; pctr_loc = symbol_rloc() }
+let mktopaxm i d =  (* toplevel contract *)
+  { ptopaxm_id = i; ptopaxm_desc = d; ptopaxm_loc = symbol_rloc() }
+let mkaxm d =   (* axiom *)
+  { paxm_desc = d; paxm_loc = symbol_rloc() }
 let mktyp d =
   { ptyp_desc = d; ptyp_loc = symbol_rloc() }
 let mkpat d =
@@ -221,6 +225,7 @@ let pat_of_label lbl =
 %token AND
 %token AS
 %token ASSERT
+%token AXIOM
 %token BACKQUOTE
 %token BANG
 %token BAR
@@ -247,10 +252,12 @@ let pat_of_label lbl =
 %token EOF
 %token EQUAL
 %token EXCEPTION
+%token EXIST
 %token EXTERNAL
 %token FALSE
 %token <string> FLOAT
 %token FOR
+%token FORALL
 %token FUN
 %token FUNCTION
 %token FUNCTOR
@@ -280,6 +287,7 @@ let pat_of_label lbl =
 %token LBRACKETGREATER
 %token LESS
 %token LESSMINUS
+%token LESSMINUSGREATER
 %token LET
 %token <string> LIDENT
 %token LPAREN
@@ -363,6 +371,7 @@ The precedences must be listed from low to high.
 %nonassoc THEN                          /* below ELSE (if ... then ...) */
 %nonassoc ELSE                          /* (if ... then ... else ...) */
 %nonassoc LESSMINUS                     /* below COLONEQUAL (lbl <- x := e) */
+%right    LESSMINUSGREATER              /* axiom a1: e <-> e */
 %right    COLONEQUAL                    /* expr (e := e := e) */
 %nonassoc AS
 %left     BAR                           /* pattern (p|p|p) */
@@ -484,6 +493,8 @@ structure_item:
       { mkstr(Pstr_primitive($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
+  | AXIOM axiom_declaration
+      { mkstr(Pstr_axiom($2)) }
   | CONTRACT contract_declarations
       { mkstr(Pstr_contract(List.rev $2)) } 
   | EXCEPTION UIDENT constructor_arguments
@@ -554,6 +565,8 @@ signature_item:
       { mksig(Psig_value($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
+  | AXIOM axiom_declaration
+      { mksig(Psig_axiom($2)) }
   | CONTRACT contract_declarations
       { mksig(Psig_contract(List.rev $2)) } 
   | EXCEPTION UIDENT constructor_arguments
@@ -1143,6 +1156,35 @@ type_constraint:
   | COLONGREATER error                          { syntax_error() }
 ;
 
+/* axiom declaration */
+
+ident_comma_list:
+  | ident                                       { [$1] }
+  | ident_comma_list COMMA ident                { $3 :: $1 } 
+
+logical_formula1:
+    expr                                
+      { mkaxm(Paxm_atom($1)) }
+  | logical_formula1 LESSMINUSGREATER logical_formula1
+      { mkaxm(Paxm_iff($1,$3)) }
+  | logical_formula1 MINUSGREATER logical_formula1
+      { mkaxm(Paxm_imply($1,$3)) }
+  | logical_formula1 AMPERSAND AMPERAMPER logical_formula1
+      { mkaxm(Paxm_and($1,$4)) }
+  | logical_formula1 BARBAR logical_formula1
+      { mkaxm(Paxm_or($1,$3)) }
+  | LPAREN logical_formula RPAREN
+      { $2 }
+
+logical_formula:
+    logical_formula1        
+      { $1 }
+  | FORALL ident_comma_list COLON core_type DOT logical_formula   
+      { mkaxm(Paxm_forall($2,$4,$6)) }
+  | EXIST ident COLON core_type DOT logical_formula    
+      { mkaxm(Paxm_exist($2,$4,$6)) }
+
+
 /* Polymorphic contracts */
 
 contractvar_list:
@@ -1162,9 +1204,9 @@ core_contract:
   | simple_core_contract_or_tuple AND core_contract
       { mkctr(Pctr_and($1, $3)) }
   | simple_core_contract_or_tuple OR core_contract
-      { mkctr(Pctr_and($1, $3)) }
+      { mkctr(Pctr_or($1, $3)) }
   | contractvar_list DOT core_contract
-     { mkctr(Pctr_poly(List.rev $1, $3)) }
+      { mkctr(Pctr_poly(List.rev $1, $3)) }
  ;
 
 simple_core_contract_or_tuple:
@@ -1290,6 +1332,12 @@ primitive_declaration:
     STRING                                      { [$1] }
   | STRING primitive_declaration                { $1 :: $2 }
 ;
+
+/* Axiom declaration */
+
+axiom_declaration:
+   ident COLON logical_formula
+      { mktopaxm $1 $3 }
 
 /* Contract declarations */
 

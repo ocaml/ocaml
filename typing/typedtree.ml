@@ -99,6 +99,28 @@ and meth =
   | Tmeth_val of Ident.t
 *)
 
+(* typed axiom declaration *)
+
+and logical_formula = 
+  { taxm_desc: logical_formula_desc;
+    taxm_loc: Location.t }
+
+and logical_formula_desc = 
+  | Taxm_forall of Ident.t list * type_expr * logical_formula
+  | Taxm_exist of Ident.t * type_expr * logical_formula
+  | Taxm_iff of logical_formula * logical_formula
+  | Taxm_imply of logical_formula * logical_formula
+  | Taxm_and of logical_formula * logical_formula
+  | Taxm_or of logical_formula * logical_formula
+  | Taxm_atom of expression
+
+and axiom_declaration = 
+  { ttopaxm_id: Path.t;
+    ttopaxm_desc: logical_formula;
+    ttopaxm_loc: Location.t }
+
+(* typed contracts *) 
+
 and core_contract = 
   { contract_desc: core_contract_desc;
     contract_loc:  Location.t;
@@ -186,10 +208,14 @@ and structure_item =
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
   | Tstr_contract of contract_declaration list
- (* contracts in module type signature are put in Tstr_mty_contracts *)
-  | Tstr_mty_contracts of (Path.t * Types.contract_declaration) Ident.tbl
+  | Tstr_axiom of axiom_declaration 
+ (* contracts in module type signature are put in 
+    Tstr_mty_contracts *)
+  | Tstr_mty_contracts of 
+      (Path.t * Types.contract_declaration) Ident.tbl
  (* opened contracts are put in Tstr_opened_contracts *)
-  | Tstr_opened_contracts of (Path.t * Types.contract_declaration) Ident.tbl
+  | Tstr_opened_contracts of 
+      (Path.t * Types.contract_declaration) Ident.tbl
 
 (*  We use the module_coercion in Types 
 and module_coercion =
@@ -442,10 +468,11 @@ and structure_item_to_iface f str_item = match str_item with
   | Tstr_open (path) -> Types.Tstr_open (path)
   | Tstr_class (ls) -> 
       Types.Tstr_class (List.map (fun (id, i, s, ce, vflag) ->
-                                      (id, i, s, class_expr_to_iface ce, vflag)) ls)
+                              (id, i, s, class_expr_to_iface ce, vflag)) ls)
   | Tstr_cltype (ls) -> Types.Tstr_cltype (ls)  
   | Tstr_include (modexp, ids) -> Types.Tstr_include (f modexp, ids)
   | Tstr_contract (ls) -> Types.Tstr_contract 
+  | Tstr_axiom (a) -> Types.Tstr_contract
   | Tstr_mty_contracts(cs) -> Types.Tstr_contract
   | Tstr_opened_contracts (ctbl) -> Types.Tstr_contract
 
@@ -753,6 +780,7 @@ and structure_item_from_iface f (str_item:Types.structure_item) =
              (id, i, s, class_expr_from_iface ce, vflag)) ls)
   | Types.Tstr_cltype (ls) -> Tstr_cltype (ls)  
   | Types.Tstr_include (modexp, ids) -> Tstr_include (f modexp, ids)
+  | Types.Tstr_axiom (a) -> Tstr_axiom (axiom_declaration_from_iface a)
   | Types.Tstr_contract -> Tstr_contract []
 
 and module_expr_desc_from_iface f (modexpr:Types.module_expr_desc) = 
@@ -919,17 +947,43 @@ and core_contract_from_iface ccntr =
       | Types.Tctr_poly (vs, c) -> Tctr_poly (vs, f c)
   in
   { contract_desc = core_contract_desc_from_iface core_contract_from_iface 
-						      ccntr.Types.contract_desc;
+					      ccntr.Types.contract_desc;
     contract_loc  = ccntr.Types.contract_loc;
     contract_type = ccntr.Types.contract_type;
-    contract_env  = Env.empty}
+    contract_env  = Env.empty }
 
 and contract_declaration_from_iface decl = 
-  { ttopctr_id = decl.Types.ttopctr_id;
+  { ttopctr_id   = decl.Types.ttopctr_id;
     ttopctr_desc = core_contract_from_iface decl.Types.ttopctr_desc;
     ttopctr_type = decl.Types.ttopctr_type;
-    ttopctr_loc = decl.Types.ttopctr_loc }
+    ttopctr_loc  = decl.Types.ttopctr_loc }
 
+and logical_formula_from_iface fml = 
+ let tfml = match fml.Types.taxm_desc with
+  | Types.Taxm_forall (vars, ty, f) -> 
+      Taxm_forall (vars, ty, logical_formula_from_iface f)
+  | Types.Taxm_exist (var, ty, f) -> 
+      Taxm_exist (var, ty, logical_formula_from_iface f)
+  | Types.Taxm_iff (f1, f2) -> 
+      Taxm_iff (logical_formula_from_iface f1,
+		logical_formula_from_iface f2)
+  | Types.Taxm_imply (f1, f2) -> 
+      Taxm_imply (logical_formula_from_iface f1,
+		  logical_formula_from_iface f2)
+  | Types.Taxm_and (f1, f2) -> 
+      Taxm_and (logical_formula_from_iface f1,
+		  logical_formula_from_iface f2)
+  | Types.Taxm_or (f1, f2) -> 
+      Taxm_or (logical_formula_from_iface f1,
+		  logical_formula_from_iface f2)
+  | Types.Taxm_atom (e) -> 
+      Taxm_atom (expression_from_iface e)
+ in { taxm_desc = tfml; taxm_loc = fml.Types.taxm_loc }
+
+and axiom_declaration_from_iface decl = 
+  { ttopaxm_id   = decl.Types.ttopaxm_id;
+    ttopaxm_desc = logical_formula_from_iface decl.Types.ttopaxm_desc;
+    ttopaxm_loc  = decl.Types.ttopaxm_loc }
 
 and class_expr_from_iface cexpr = 
   let class_expr_desc_from_iface f ce_desc = match ce_desc with
@@ -938,13 +992,13 @@ and class_expr_from_iface cexpr =
 	  Tclass_structure (class_structure_from_iface cstr)
       | Types.Tclass_fun (p, ies, ce, pl) -> 
           Tclass_fun (pattern_from_iface p, 
-                            List.map (fun (i,e) -> (i, expression_from_iface e)) ies,
-                            f ce, 
-                            pl)
+                      List.map (fun (i,e) -> (i, expression_from_iface e)) ies,
+                      f ce, 
+                      pl)
       | Types.Tclass_apply (ce, expop_opls) ->
           Tclass_apply (f ce, 
-		      List.map (fun (expop, opl) -> 
-                                      (option_from_iface expression_from_iface expop, opl)) 
+		        List.map (fun (expop, opl) -> 
+                         (option_from_iface expression_from_iface expop, opl)) 
                                    expop_opls)
       | Types.Tclass_let (rflag, patexps, ies, ce) -> 
           Tclass_let (rflag,

@@ -312,7 +312,8 @@ let check_constraints env (_, sdecl) (_, decl) =
 *)
 let check_abbrev env (_, sdecl) (id, decl) =
   match decl with
-    {type_kind = (Type_variant _ | Type_record _); type_manifest = Some ty} ->
+    {type_kind = (Type_variant _ | Type_record _); 
+     type_manifest = Some ty} ->
       begin match (Ctype.repr ty).desc with
         Tconstr(path, args, _) ->
           begin try
@@ -764,40 +765,132 @@ let transl_exn_rebind env loc lid =
 let rec transl_contract_decls env cdecls =
   match cdecls with
   | []     -> []
-  | (d::ds) -> let t_loc   = d.ptopctr_loc in
-               let x       = d.ptopctr_id in  (* x has type string *)
-               let longx   = Longident.Lident x in
-               let (path, vd) = try 
-                                  Env.lookup_value longx env 
-	                        with Not_found ->
-                                raise(Error(t_loc, Illegal_contract_id(longx))) in
-               let ty = vd.val_type in
-               let t_desc  = Typecore.tc_contract env d.ptopctr_desc ty in
-	       let t_d     = { Typedtree.ttopctr_id   = path; (* unique internal name *)
-                               ttopctr_desc = t_desc;
-                               ttopctr_type = ty; 
-                               ttopctr_loc  = t_loc } in
-               let t_ds    = transl_contract_decls env ds in
-               t_d::t_ds
+  | (d::ds) -> 
+      let t_loc   = d.ptopctr_loc in
+      let x       = d.ptopctr_id in  (* x has type string *)
+      let longx   = Longident.Lident x in
+      let (path, vd) = try 
+        Env.lookup_value longx env 
+      with Not_found ->
+        raise(Error(t_loc, Illegal_contract_id(longx))) in
+      let ty      = vd.val_type in
+      let t_desc  = Typecore.tc_contract env d.ptopctr_desc ty in
+      let t_d     = { Typedtree.ttopctr_id = path; (* unique internal name *)
+                      ttopctr_desc = t_desc;
+                      ttopctr_type = ty; 
+                      ttopctr_loc  = t_loc } in
+      let t_ds    = transl_contract_decls env ds in
+      t_d::t_ds
 
 let rec transl_contract_decls_in_sig env cdecls =
   match cdecls with
   | []     -> []
-  | (d::ds) -> let t_loc   = d.ptopctr_loc in
-               let x       = d.ptopctr_id in  (* x has type string *)
-               let longx   = Longident.Lident x in
-               let (path, vd) = try 
-                                  Env.lookup_value longx env 
-	                        with Not_found ->
-                                raise(Error(t_loc, Illegal_contract_id(longx))) in
-               let ty = vd.val_type in
-               let t_desc  = Typecore.tc_contract_in_sig env d.ptopctr_desc ty in
-	       let t_decl = { Types.ttopctr_id   = path;
-                              ttopctr_desc = t_desc;
-                              ttopctr_type = ty;
-                              ttopctr_loc  = t_loc } in
-               let t_ds    = transl_contract_decls_in_sig env ds in
-               (Path.head path, t_decl)::t_ds
+  | (d::ds) -> 
+      let t_loc   = d.ptopctr_loc in
+      let x       = d.ptopctr_id in  (* x has type string *)
+      let longx   = Longident.Lident x in
+      let (path, vd) = try 
+        Env.lookup_value longx env 
+      with Not_found ->
+        raise(Error(t_loc, Illegal_contract_id(longx))) in
+      let ty = vd.val_type in
+      let t_desc  = Typecore.tc_contract_in_sig env d.ptopctr_desc ty in
+      let t_decl  = { Types.ttopctr_id = path;
+                      ttopctr_desc = t_desc;
+                      ttopctr_type = ty;
+                      ttopctr_loc  = t_loc } in
+      let t_ds    = transl_contract_decls_in_sig env ds in
+      (Path.head path, t_decl)::t_ds
+
+(* type check axioms in signature, i.e. convert Paxm to Taxm *)
+
+and tc_axiom env fml = 
+  let rec add_vars vs tenv = match vs with
+  | [] -> ([], tenv)
+  | ((x,ty)::l) -> 
+      let tty = transl_type_scheme env ty in
+      let val_desc = { val_type = tty; val_kind = Val_reg } in
+      let (id, tenv1) = Env.enter_value x val_desc tenv in
+      let (ids, tenv2) = add_vars l tenv1 in
+      (id::ids, tenv2)
+  in 
+  match fml.paxm_desc with
+  | Paxm_forall (vars, ty, f) -> 
+      let tty     = transl_type_scheme env ty in
+      let tyvars  = List.map (fun v -> (v,ty)) vars in
+      let (ids, new_env) = add_vars tyvars env in
+      let typed_f = tc_axiom new_env f in
+      let desc    = Taxm_forall (ids, tty, typed_f) in
+      {taxm_desc = desc; taxm_loc = fml.paxm_loc}
+  | Paxm_exist (var, ty, f) -> 
+      let tty       = transl_type_scheme env ty in
+      let val_desc = { val_type = tty; val_kind = Val_reg } in
+      let (id, new_env) = Env.enter_value var val_desc env in
+      let typed_f = tc_axiom new_env f in
+      let desc    = Taxm_exist (id, tty, typed_f) in
+      {taxm_desc = desc; taxm_loc = fml.paxm_loc}
+  | Paxm_iff (f1, f2) -> 
+      let desc = Taxm_iff (tc_axiom env f1, tc_axiom env f2) in
+      {taxm_desc = desc; taxm_loc = fml.paxm_loc}
+  | Paxm_imply (f1, f2) -> 
+      let desc = Taxm_imply (tc_axiom env f1, tc_axiom env f2) in
+      {taxm_desc = desc; taxm_loc = fml.paxm_loc}
+  | Paxm_and (f1, f2) -> 
+      let desc = Taxm_and (tc_axiom env f1, tc_axiom env f2) in
+      {taxm_desc = desc; taxm_loc = fml.paxm_loc}
+  | Paxm_or (f1, f2) -> 
+      let desc = Taxm_or (tc_axiom env f1, tc_axiom env f2) in
+      {taxm_desc = desc; taxm_loc = fml.paxm_loc}
+  | Paxm_atom (e) -> 
+      let desc = Taxm_atom (Typecore.type_exp env e) in
+      {taxm_desc = desc; taxm_loc = fml.paxm_loc}
+
+(* Translate an axiom declaration *)
+
+let rec transl_axiom_decl env adecl = 
+  let t_loc = adecl.ptopaxm_loc in
+  let x     = adecl.ptopaxm_id in
+  let id = Ident.create x in
+  let path = Path.Pident id in
+  let t_desc  = tc_axiom env adecl.ptopaxm_desc in
+  { Typedtree.ttopaxm_id = path; (* unique internal name *)
+    ttopaxm_desc = t_desc;
+    ttopaxm_loc  = t_loc } 
+
+let rec transl_logical_formula_in_sig env fml = 
+  let tfml = match fml.paxm_desc with
+  | Paxm_forall (vars, ty, f) ->
+      let t = transl_type_scheme env ty in
+      let ids = List.map Ident.create  vars in
+      Types.Taxm_forall (ids, t, transl_logical_formula_in_sig env f)
+  | Paxm_exist (var, ty, f) ->
+      let t = transl_type_scheme env ty in
+      let id = Ident.create var in
+      Types.Taxm_exist (id, t, transl_logical_formula_in_sig env f)
+  | Paxm_iff (f1, f2) -> 
+      Types.Taxm_iff (transl_logical_formula_in_sig env f1,
+		      transl_logical_formula_in_sig env f2)
+  | Paxm_imply (f1, f2) -> 
+      Types.Taxm_imply (transl_logical_formula_in_sig env f1,
+		      transl_logical_formula_in_sig env f2)
+  | Paxm_and (f1, f2) -> 
+      Types.Taxm_and (transl_logical_formula_in_sig env f1,
+		      transl_logical_formula_in_sig env f2)
+  | Paxm_or (f1, f2) -> 
+      Types.Taxm_or (transl_logical_formula_in_sig env f1,
+		     transl_logical_formula_in_sig env f2)
+  | Paxm_atom (e) -> 
+      Types.Taxm_atom (expression_to_iface(Typecore.type_expression env e))
+  in { Types.taxm_desc = tfml; taxm_loc = fml.paxm_loc }
+
+let transl_axiom_decl_in_sig env adecl = 
+  let t_loc  = adecl.ptopaxm_loc in
+  let path   = Path.Pident (Ident.create adecl.ptopaxm_id) in
+  let t_desc = transl_logical_formula_in_sig env adecl.ptopaxm_desc in
+  let t_decl = { Types.ttopaxm_id = path;
+		 ttopaxm_desc = t_desc;
+		 ttopaxm_loc  = t_loc } in
+  (Path.head path, t_decl)
 
 
 (* Translate a value declaration *)

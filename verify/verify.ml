@@ -148,7 +148,6 @@ let rec subst bound_vars id1 id2 expr = match expr.exp_desc with
       let new_es = List.map (subst bound_vars id1 id2) es in
       {expr with exp_desc = Texp_App(new_e1, new_es)}
   | Texp_raise (e) -> expr
-      
 
 (* Translate wrapped expression e |><| c to unwrapped expression 
 val transl_core_contract: 
@@ -206,10 +205,46 @@ let rec transl_core_contract env cntr e callee caller =
         let new_x = Ident.create "x" in
         let vd = { val_type = e.exp_type; val_kind = Val_reg } in
 	let xe = { e with exp_desc = Texp_ident(Pident new_x, vd) } in
-        let wrapped_p = contract_id_in_expr env p in 
+        (* let wrapped_p = contract_id_in_expr env p in 
         let expanded_p = deep_transl_contract env wrapped_p in
-        let cond = Texp_ifthenelse (subst [] x new_x expanded_p, xe, Some callee) in 
+        *)
+        let cond = Texp_ifthenelse (subst [] x new_x p, xe, Some callee) in 
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var new_x) cty, e)], mkexp cond cty) 
+       
+       (* e |>r1,r2<| try {x | p} with [Ei -> booli] 
+          if (try let x = e in p
+              with Contract_exn (f,row,col,bl) -> raise Contract_exn (f,row,col,bl)
+                    | Ei .. -> booli
+                    | _ -> false)
+          then e else r1
+          This forces evaluation of e, that is, if e diverges, RHS diverges;
+          However, if e throws an exception, we still test p[e/x], which may 
+          allow certain exceptions. If p[e/x] throws exceptions, we treat it
+          as false, thus raise exception r1.
+        *)
+        (*
+        begin match exnop with
+        | None -> 
+
+        let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
+        let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
+	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
+
+        | Some exns -> 
+
+	let letexp = Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], p) in
+        let ctr_exn = Texp_construct(cexn_path, cexn_cdesc, 
+                       [mkexp (Texp_tuple evars) dummy_tuple]) in
+        let raise_ctr_exn = Texp_raise (mkexp ctr_exn Predef.type_exn) in 
+        let contract_exn_branch = (contract_exn_pat,
+                                   mkexp raise_ctr_exn Predef.type_bool) in
+        let branches = (contract_exn_branch :: exns) @     
+                    [(mkpat Tpat_any Predef.type_exn,     (* the -> false branch *)
+                     mkexp (Texp_constant(Const_int 0)) Predef.type_bool)] in
+	let trycond = Texp_try(mkexp letexp Predef.type_bool, branches) in
+        Texp_ifthenelse (mkexp trycond Predef.type_bool, e, Some callee) 
+        end
+        *)
      | Tctr_arrow (xop, c1, c2) -> 
       (* indy version:
          e |>r1,r2<| x:c1 -> c2 = 
@@ -224,11 +259,39 @@ let rec transl_core_contract env cntr e callee caller =
              let v_c1 = transl_core_contract env c1 xvar caller callee in
 	     let resarg = Texp_apply (e, [(Some v_c1, Required)]) in
               (* e.g. x:({a | a > 0} -> {b | true}) -> {c | x 0 > c} 
-                 we want to blame the x in {c | x 0 > c}  *)
-             let v_c1_indy = transl_core_contract env c1 xvar caller callee in
+                 we want to blame the x in {c | x 0 > c}  *)	     
+	     let new_callee = match callee.exp_desc with
+             | Texp_bad (Caller (loc, _, _)) 
+	     | Texp_bad (Callee (loc, _)) ->
+	       { callee with exp_desc =
+			 Texp_bad (Callee (c2.contract_loc, Pident x))}
+             | Texp_unr (Caller (loc, _, _)) | Texp_unr (Callee (loc, _)) -> 
+	       { callee with exp_desc =
+				Texp_unr (Callee (c2.contract_loc, Pident x))}
+             | _ -> callee in 
+             let new_caller = match caller.exp_desc with
+             | Texp_bad (Caller (loc, _, _)) | Texp_bad (Callee (loc, _)) -> 
+		 { caller with exp_desc =
+		   Texp_bad (Caller (c2.contract_loc,
+				     Some (ThmEnv.contract_name env),
+				     Pident x))}
+             | Texp_unr (Caller (loc, _, _)) | Texp_unr (Callee (loc, _)) -> 
+		 { caller with exp_desc =
+		   Texp_unr (Caller (c2.contract_loc, 
+				     Some (ThmEnv.contract_name env),
+				     Pident x))}
+             | _ -> caller in
+	     
+	     let env2 = add_dep_contracts env v c1 in
+          (*   let v_c1_indy = transl_core_contract env2 c1 xvar caller callee in
 	     let c2subst = subst_contract x v_c1_indy c2 in 
+            
 	     let resfun = transl_core_contract env c2subst 
-		                               (mkexp resarg c2_type) callee caller in
+                              (mkexp resarg c2_type) callee caller in
+          *)
+	     let c2subst = subst_contract x xvar c2 in 
+	     let resfun = transl_core_contract env2 c2subst 
+                               (mkexp resarg c2_type) new_callee new_caller in
 	     Texp_function ([(mkpat (Tpat_var v) c1_type, resfun)], Partial)
          | None -> 
 	     let v = Ident.create "v" in
@@ -367,7 +430,12 @@ and subst_contract v e cntr =
 and deep_transl_contract env expr = 
       Typedtree.map_expression (fun ei -> match ei.exp_desc with
           | Texp_contract (c, e, r1, r2) -> 
-              transl_core_contract env c e r1 r2
+	      begin match e.exp_desc with
+	      | Texp_ident (path, vdesc) ->
+		  let env2 = update_contract_name env path in
+		  transl_core_contract env2 c e r1 r2
+	      | _ -> transl_core_contract env c e r1 r2
+              end
           | _ -> ei) expr
    
 (* fetch_contract takes a function name and lookup its contract in the
@@ -409,6 +477,7 @@ and find_in_ident_tbl path =
    contracts exported from nested modules.
 *)
 and wrap_id_with_contract env expr = 
+  let depContracts = dep_contracts env in
   let cdecls = contract_decls env in
   let opened_contracts = opened_contract_decls env in
   let caller_path = name env in
@@ -417,14 +486,14 @@ and wrap_id_with_contract env expr =
          let bl_caller = Caller (expr.exp_loc, Some caller_path, callee_path) in 
          let bl_callee = Callee (expr.exp_loc, callee_path) in     
          begin
-          (* try  lookup for dependent contract first 
+          try  (* lookup for dependent contract first *)
            let id = match callee_path with
                      | Pident(i) -> i
                      | _ -> raise Not_found
            in
-           let c = Ident.find_same id local_fun_contracts in
+           let c = Ident.find_same id depContracts in
            requiresC c expr bl_caller bl_callee
-          with Not_found -> *)
+          with Not_found -> 
           try (* lookup for contracts in current module *)
            let c = fetch_contract_by_path callee_path cdecls in
            requiresC c.ttopctr_desc expr bl_caller bl_callee
@@ -433,12 +502,8 @@ and wrap_id_with_contract env expr =
 	   let (p, c) = find_in_ident_tbl callee_path opened_contracts in 
              requiresC (core_contract_from_iface c.Types.ttopctr_desc) 
 		        expr bl_caller bl_callee 
- 	  with Not_found -> 	    
-             (* Format.fprintf Format.std_formatter "%s" (name callee_path); *)
-	    (* convert exception to Texp_bad *)
-            if cmpPath_byname callee_path Predef.path_exn = 0
-	    then Texp_bad (Callee (expr.exp_loc, callee_path))
-	    else expr.exp_desc
+ 	  with Not_found -> 	                
+	    expr.exp_desc
          end
        | others -> others
   in { expr with exp_desc = contracted_exp_desc }
@@ -466,25 +531,31 @@ essential for static contract checking for functions in a program.
 
 val contract_id_in_contract :
           ThmEnv.t -> Typedtree.core_contract -> Typedtree.core_contract
+
+ -- this is only used in translcore.ml for local contracts
+ -- glocal contract is done at verify/transl_core_contract
 *)
 and contract_id_in_contract env c = 
   let new_desc = match c.contract_desc with
-	  | Tctr_pred (id, e, exnop) -> 
+	  | Tctr_pred (id, e, exnopt) -> 
               let ce = contract_id_in_expr env e in
               let expanded_ce = deep_transl_contract env ce in
-              Tctr_pred (id, expanded_ce, exnop)
+              Tctr_pred (id, expanded_ce, exnopt)
           | Tctr_arrow (idopt, c1, c2) -> 
-	      let new_c1 = contract_id_in_contract env c1 in
+	      let new_c1 = contract_id_in_contract env c1 in              
 	      let new_c2 = contract_id_in_contract env c2 in
-              Tctr_arrow (idopt, new_c1, new_c2)
+	      Tctr_arrow (idopt, new_c1, new_c2)
           | Tctr_tuple cs -> 
-              let rec sub_dep xs = begin match xs with
+              let rec sub_dep senv xs = begin match xs with
                 | [] -> []
                 | (vo, c)::l -> 
-                  let new_c = contract_id_in_contract env c 
-                  in (vo, new_c) :: sub_dep l
+                  let new_c = contract_id_in_contract env c in
+                  let senv2 = match vo with
+		  | None -> senv
+                  | Some id -> update_name env (Pident id) in
+                  (vo, new_c) :: sub_dep senv2 l
                 end
-             in Tctr_tuple (sub_dep cs)
+             in Tctr_tuple (sub_dep env cs)
 	  | Tctr_constr (i, cdesc, cs) -> 
               let rec sub_dep xs = begin match xs with
                 | [] -> []
@@ -508,6 +579,18 @@ and contract_id_in_contract env c =
   in {c with contract_desc = new_desc}
 
 
+(*
+(* val get_top_id_in_contract : contract_declaration -> Path.t list *)
+let rec get_top_id_in_contract cdecl = 
+  match (cdecl.ttopctr_desc).contract_desc with 
+  | Tctr_pred (id, e exnopt) -> 
+
+(* val get_top_id_in_contracts : contract_declaration list -> Path.t list *)
+let rec get_top_id_in_contracts cdecls = match cdecls with
+| [] -> []
+| (h::t) -> (get_top_id_in_contract h)@(get_top_id_in_contracts t)
+*)
+
 (* val transl_str_contracts : core_contract list -> 
                               (Path.t, contract_declaration) Tbl.t ->
                               Typedtree.structure -> 
@@ -528,17 +611,19 @@ let rec transl_str_contracts contract_flag env strs =
      let expanded_cexpr = deep_transl_contract senv cexpr in 
      if contract_flag = 0 then (* dynamic contract checking only *)    
        (pat, expanded_cexpr)
-     else if contract_flag = 1 then (* static contract checking only *)
+     else if contract_flag = 1 || contract_flag = -1 then 
+          (* static contract checking only *)
        let mkexp desc = {expr with exp_desc = desc} in
        try
          let c  = fetch_contract_by_pattern pat contract_decls in
          let bl_callee = Callee (cexpr.exp_loc, fpath) in
          let ce = ensuresC c.ttopctr_desc cexpr bl_callee in
-         let _ = static_contract_checking senv 
+         let _ = static_contract_checking senv contract_flag
                       (fid, deep_transl_contract senv (mkexp ce))  in
          (pat, expr)  
        with Not_found -> 
-         let _ = static_contract_checking senv (fid, expanded_cexpr) in
+         let _ = static_contract_checking senv contract_flag
+          	     (fid, expanded_cexpr) in
      	 (pat, expr)
      else (* contract_flag is 2, which is hybrid (i.e. static followed by dynamic)
              contract checking. *)
@@ -547,21 +632,24 @@ let rec transl_str_contracts contract_flag env strs =
          let c  = fetch_contract_by_pattern pat contract_decls in
          let bl_callee = Callee (cexpr.exp_loc, fpath) in
          let ce = ensuresC c.ttopctr_desc cexpr bl_callee in
-         let (residual_exp, validity) = static_contract_checking senv 
+         let (residual_exp, validity) = static_contract_checking senv contract_flag
                                   (fid, deep_transl_contract senv (mkexp ce)) in
          match validity with
 	 | Valid -> (pat, expr)
          | _ -> (pat, residual_exp)
        with Not_found -> 
-         let (residual_exp, validity) = static_contract_checking senv 
+         let (residual_exp, validity) = static_contract_checking senv contract_flag
                                      (fid, expanded_cexpr) in
          match validity with
 	 | Valid -> (pat, expr)
          | _ -> (pat, residual_exp)
   in
   match strs with
-   [] -> []
- | Tstr_value(rec_flag, pat_expr_list) :: rem ->
+  | [] -> []
+  | Tstr_axiom(decl) :: rem -> 
+      let new_env = add_tasks env [mlaxiom_to_smtaxiom decl] in
+      transl_str_contracts contract_flag new_env rem
+  | Tstr_value(rec_flag, pat_expr_list) :: rem ->
    (* We lookup tstr_contracts to see there is any contract for this function. 
       If there is one, we fetch the contract and wrap the function body with it.
       For each function called in the body of this function including a 
@@ -572,17 +660,27 @@ let rec transl_str_contracts contract_flag env strs =
       let f = fun x -> ... (f <| C_f) (x - 1)  
    	                 + (g <| C_g) x ...
     *)       
-     let module_env = try let ts = add_tasks env (def_to_axioms pat_expr_list) in
-                          ts
-                      with ToErgosrc.Error(loc,err) -> 
-			ToErgosrc.report_error std_formatter err; env 
+     let pre_processed_list = 
+       List.map (fun (p,e) -> (p, pre_processing e)) pat_expr_list in
+     let module_env = 
+       try 
+	 (* let used_in_contracts = get_top_id_in_contracts contract_decls in 
+         let required_dfns = List.filter (fun (p,e) -> 
+	   match p.pat_desc with
+	   | Tpat_var (id) -> List.mem (Pident id) used_in_contracts
+	   | _ -> false) 
+	     pat_expr_list in *)
+         let ts = add_tasks env (def_to_axioms pre_processed_list) in
+         ts
+       with ToErgosrc.Error(loc,err) -> 
+	 ToErgosrc.report_error std_formatter err; env 
      in
-     let wrapped_pat_expr_list =
+     let wrapped_pat_expr_list = 
        List.map (fun (p,e) -> 
 	     let senv = match p.pat_desc with
 	     | Tpat_var (id) -> update_name module_env (Pident id)
              | _ -> module_env in 
-             contract_wrapping senv (p,e)) pat_expr_list in        
+             contract_wrapping senv (p, e)) pre_processed_list in
      let contract_rem = transl_str_contracts contract_flag module_env rem in
      (Tstr_value(rec_flag, wrapped_pat_expr_list))::contract_rem
  | (Tstr_type id_tdecl_list) :: rem -> 
@@ -595,10 +693,12 @@ let rec transl_str_contracts contract_flag env strs =
         logic Cons : 'a , 'a list -> 'a list 
      *)
     if contract_flag = 1 or contract_flag = 2
-       then let new_env = add_tasks env (List.flatten (List.map (type_to_typelogic Location.none) 
+    then let new_env = 
+	 add_tasks env (List.flatten (List.map 
+					(type_to_typelogic Location.none) 
                                         id_tdecl_list)) in
             transl_str_contracts contract_flag new_env rem
-       else transl_str_contracts contract_flag env rem
+    else transl_str_contracts contract_flag env rem
  | (Tstr_module(id, mexpr) :: rem) -> 
     let new_module_expr_desc = 
          begin
@@ -643,11 +743,8 @@ and aux_transl_contracts contract_flag (str, cc) =
   in
   let (tstr_contracts, mty_opened_contracts) = extract_contracts str in
   (* let checked_tstr_contracts = List.map (fun c -> 
-                 let new_c_desc = contract_id_in_contract 
-                                    tstr_contracts 
-				    mty_opened_contracts 
-                                    c.ttopctr_id
-                                    c.ttopctr_desc in
+                 let senv = update_name env c.ttopctr_id in 
+                 let new_c_desc = contract_id_in_contract senv c.ttopctr_desc in
                  {c with ttopctr_desc = new_c_desc}) tstr_contracts in *)
   let env = initEnv tstr_contracts mty_opened_contracts in
   (transl_str_contracts contract_flag env str, cc)

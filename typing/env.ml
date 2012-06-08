@@ -36,6 +36,7 @@ type summary =
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
   | Env_contract of summary * Ident.t * contract_declaration
+  | Env_axiom of summary * Ident.t * axiom_declaration
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type
   | Env_modtype of summary * Ident.t * modtype_declaration
@@ -51,6 +52,7 @@ type t = {
   labels: (Path.t * label_description) Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
   contracts: (Path.t * contract_declaration) Ident.tbl;
+  axioms: (Path.t * axiom_declaration) Ident.tbl;
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
   components: (Path.t * module_components) Ident.tbl;
@@ -72,6 +74,7 @@ and structure_components = {
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
   mutable comp_contracts: (string, contract_declaration * int) Tbl.t;
+  mutable comp_axioms: (string, axiom_declaration * int) Tbl.t;
   mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
   mutable comp_components: (string, (module_components * int)) Tbl.t;
@@ -91,7 +94,7 @@ and functor_components = {
 let empty = {
   values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
   labels = Ident.empty; types = Ident.empty;
-  contracts = Ident.empty;
+  contracts = Ident.empty; axioms  = Ident.empty;
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty;
@@ -530,6 +533,10 @@ let rec prefix_idents root pos sub = function
 	 we do not need to add subst here any more. *)
       let (pl, final_sub) = prefix_idents root pos sub rem in
       (p::pl, final_sub)
+  | Tsig_axiom(id, decl) :: rem -> 
+      let p = Pdot(root, Ident.name id, pos) in
+      let (pl, final_sub) = prefix_idents root pos sub rem in
+      (p::pl, final_sub)
 
 (* Compute structure descriptions *)
 
@@ -540,7 +547,7 @@ let rec components_of_module env sub path mty =
         { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
-	  comp_contracts = Tbl.empty;
+	  comp_contracts = Tbl.empty; comp_axioms = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty } in
@@ -603,6 +610,10 @@ let rec components_of_module env sub path mty =
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes;
+	| Tsig_axiom(id, decl) -> 
+	    let decl' = Subst.axiom_declaration sub decl in
+            c.comp_axioms <-
+              Tbl.add (Ident.name id) (decl', !pos) c.comp_axioms;	    
         | Tsig_contract(id, decl, _) -> 
 	    let decl' = Subst.contract_declaration sub decl in
             c.comp_contracts <-
@@ -625,7 +636,7 @@ let rec components_of_module env sub path mty =
           comp_values = Tbl.empty; comp_annotations = Tbl.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
-          comp_contracts = Tbl.empty;
+          comp_contracts = Tbl.empty; comp_axioms = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty })
@@ -703,6 +714,12 @@ and store_contract id path cdecl env =
     contracts = Ident.add id (path, cdecl) env.contracts;
     summary = Env_contract(env.summary, id, cdecl) }
 
+and store_axiom id path adecl env = 
+  { env with 
+    axioms = Ident.add id (path, adecl) env.axioms;
+    summary = Env_axiom(env.summary, id, adecl) }
+
+
 (* Compute the components of a functor application in a path. *)
 
 let components_of_functor_appl f p1 p2 =
@@ -752,6 +769,9 @@ and add_cltype id ty env =
 and add_contract id contract_decl env =
   store_contract id (Pident id) contract_decl env
 
+and add_axiom id axiom_decl env = 
+  store_axiom id (Pident id) axiom_decl env
+
 (* Insertion of bindings by name *)
 
 let enter store_fun name data env =
@@ -765,6 +785,7 @@ and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
 and enter_contract = enter store_contract 
+and enter_axiom = enter store_axiom
 
 (* Insertion of all components of a signature *)
 
@@ -778,6 +799,7 @@ let add_item comp env =
   | Tsig_class(id, decl, _)  -> add_class id decl env
   | Tsig_cltype(id, decl, _) -> add_cltype id decl env
   | Tsig_contract(id, decl, _)-> add_contract id decl env
+  | Tsig_axiom(id, decl)     -> add_axiom id decl env
 
 let rec add_signature sg env =
   match sg with
@@ -817,7 +839,11 @@ let open_signature root sg env =
                          (Subst.cltype_declaration sub decl) env
         | Tsig_contract(id, decl, _) -> 
             store_contract (Ident.hide id) p 
-                         (Subst.contract_declaration sub decl) env)
+                         (Subst.contract_declaration sub decl) env
+	| Tsig_axiom(id, decl) -> 
+	    store_axiom (Ident.hide id) p
+                         (Subst.axiom_declaration sub decl) env
+      )
       env sg pl in
   { newenv with summary = Env_open(env.summary, root) }
 

@@ -416,6 +416,48 @@ and core_contract_desc i ppf x =
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) vs;
       core_contract i ppf c;
 
+and axiom_declaration i ppf x =
+  line i ppf "axiom_declaration %a\n" fmt_location x.ptopaxm_loc;
+  line (i+1) ppf "function_name = %s\n" x.ptopaxm_id;
+  logical_formula (i+1) ppf x.ptopaxm_desc;
+
+and logical_formula i ppf x = 
+  match x.paxm_desc with
+    Paxm_forall (vs,ty,fml) -> 
+     line i ppf "forall ";
+     ident_list i ppf vs;
+     core_type i ppf ty;
+     logical_formula (i+1) ppf fml;
+  | Paxm_exist (v,ty,fml) ->
+     line i ppf "exist ";
+     ident i ppf v;      
+     core_type i ppf ty;
+     logical_formula (i+1) ppf fml;
+  | Paxm_iff (fml1, fml2) -> 
+     logical_formula i ppf fml1;
+     string i ppf "<->";
+     logical_formula (i+1) ppf fml2;
+  | Paxm_imply (fml1, fml2) -> 
+     logical_formula i ppf fml1;
+     string i ppf "->";
+     logical_formula (i+1) ppf fml2;
+  | Paxm_and (fml1, fml2) -> 
+     logical_formula i ppf fml1;
+     string i ppf "and";
+     logical_formula (i+1) ppf fml2;
+  | Paxm_or (fml1, fml2) -> 
+     logical_formula i ppf fml1;
+     string i ppf "or";
+     logical_formula (i+1) ppf fml2;
+  | Paxm_atom (e) -> 
+     expression i ppf e
+
+and ident i ppf v = 
+  line i ppf "%s" v
+
+and ident_list i ppf vs = 
+  list i ident ppf vs
+
 and exception_declaration i ppf x = list i core_type ppf x
 
 and class_type i ppf x =
@@ -593,6 +635,9 @@ and signature_item i ppf x =
   | Psig_contract (l) ->
       line i ppf "Psig_contract\n";
       list i string_x_contract_declaration ppf l;
+  | Psig_axiom (a) -> 
+      line i ppf "Psig_axiom\n";
+      string_x_axiom_declaration i ppf a;
   | Psig_exception (s, ed) ->
       line i ppf "Psig_exception \"%s\"\n" s;
       exception_declaration i ppf ed;
@@ -680,6 +725,9 @@ and structure_item i ppf x =
   | Pstr_contract (l) -> 
       line i ppf "Pstr_contract\n";
       list i string_x_contract_declaration ppf l;
+  | Pstr_axiom (a) -> 
+      line i ppf "Pstr_axiom\n";
+      string_x_axiom_declaration i ppf a;
   | Pstr_exception (s, ed) ->
       line i ppf "Pstr_exception \"%s\"\n" s;
       exception_declaration i ppf ed;
@@ -711,6 +759,9 @@ and string_x_type_declaration i ppf (s, td) =
 
 and string_x_contract_declaration i ppf (c) =
   contract_declaration (i+1) ppf c;
+
+and string_x_axiom_declaration i ppf (a) = 
+  axiom_declaration (i+1) ppf a
 
 and string_x_module_type i ppf (s, mty) =
   string i ppf s;

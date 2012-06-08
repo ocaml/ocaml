@@ -40,10 +40,14 @@ type aval =
 
 
 type t = {
-  tasks:   decl list;                     (* logical store *)
-  name: Path.t; 
+  tasks:   decl list;              (* logical store *)
+  name: Path.t;                    (* name of function under contract checking *)
+  depth: int;                      (* number of unrollings *)
+  contract_name: Path.t;
+  dep_contracts: Typedtree.core_contract Ident.tbl; 
   contract_decls: contract_declaration list;
   opened_contract_decls: (Path.t * Types.contract_declaration) Ident.tbl; 
+  axioms: axiom_declaration list;
   goalTasks: decl list;
   abinds: (Ident.t, expression) Tbl.t;
   vals: (expression, aval) Tbl.t;         (* variable |-> value *)
@@ -73,8 +77,12 @@ let init_tasks =
 let initEnv l1 l2 = { 
   tasks  = init_tasks;
   name = Pident (Ident.create "caller");
+  depth = 0;
+  dep_contracts = Ident.empty; 
+  contract_name = Pident (Ident.create "contract caller");
   contract_decls = l1;
   opened_contract_decls = l2;
+  axioms = [];
   goalTasks = []; (* represent a goal in terms of tasks *)
   abinds =  Tbl.empty;
   vals = Tbl.empty;
@@ -88,8 +96,17 @@ let extend_denv env exp aval = {env with vals = Tbl.add exp aval env.vals}
 (* the name of the current function under contract checking *)
 let update_name env n =  { env with name = n }
 
+let update_contract_name env n =  { env with contract_name = n }
+
+let add_dep_contracts env x c = 
+  { env with dep_contracts = Ident.add x c env.dep_contracts }
+
 let add_contract_decl env cdecl = 
   { env with contract_decls = (env.contract_decls)@[cdecl] }
+
+(* add axioms *)
+let add_axiom env a = 
+  { env with axioms = a::(env.axioms) }
 
 (* add function info to program *)
 
@@ -103,6 +120,8 @@ let add_goalTasks env gts =
 
 let tasks env = env.tasks
 let name env = env.name
+let contract_name env = env.contract_name
+let dep_contracts env = env.dep_contracts
 let contract_decls env = env.contract_decls
 let opened_contract_decls env = env.opened_contract_decls
 let goalTasks env = env.goalTasks

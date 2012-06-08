@@ -43,7 +43,7 @@ let askErgo filename tasks =
   let outchnl = open_out filename in
   out_ergotasks outchnl tasks;
   close_out outchnl;
-  let (cin, cout) as p = open_process (Printf.sprintf "alt-ergo %s" filename) in
+  let (cin, cout) as p = open_process (Printf.sprintf "alt-ergo -notriggers %s" filename) in
   let out = channel_contents cin in
   let _ = Unix.close_process p in
   isValid out

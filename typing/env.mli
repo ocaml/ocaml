@@ -59,6 +59,7 @@ val lookup_contract: Longident.t -> t -> Path.t * contract_declaration
 val add_value: Ident.t -> value_description -> t -> t
 val add_annot: Ident.t -> Annot.ident -> t -> t
 val add_type: Ident.t -> type_declaration -> t -> t
+val add_axiom: Ident.t -> axiom_declaration -> t -> t
 val add_contract: Ident.t -> contract_declaration -> t -> t
 val add_exception: Ident.t -> exception_declaration -> t -> t
 val add_module: Ident.t -> module_type -> t -> t
@@ -125,6 +126,7 @@ type summary =
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
   | Env_contract of summary * Ident.t * contract_declaration
+  | Env_axiom of summary * Ident.t * axiom_declaration
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type
   | Env_modtype of summary * Ident.t * modtype_declaration

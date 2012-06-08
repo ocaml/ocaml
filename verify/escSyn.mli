@@ -12,3 +12,4 @@ val is_expression_true : expression -> bool_info
 val is_expression_bool : expression -> bool
 val is_expression_prop : expression -> bool
 val is_expression_argable : expression -> bool
+val pre_processing : expression -> expression

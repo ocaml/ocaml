@@ -165,6 +165,8 @@ let init_shape modl =
         :: init_shape_struct env rem
     | Tsig_cltype(id, ctyp, _) :: rem ->
         init_shape_struct env rem
+    | Tsig_axiom(id, adecl) :: rem -> 
+	init_shape_struct (Env.add_axiom id adecl env) rem
     | Tsig_contract(id, cdecl, _) :: rem -> 
         init_shape_struct (Env.add_contract id cdecl env) rem
   in
@@ -349,6 +351,8 @@ and transl_structure fields cc rootpath = function
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
+  | Tstr_axiom(decl) :: rem -> 
+      transl_structure fields cc rootpath rem
   (* the three constructors below are auxilary so we don't translate them *)
   | Tstr_contract(decls) :: rem -> 
       transl_structure fields cc rootpath rem
@@ -464,6 +468,8 @@ let transl_store_structure glob map prims str =
       Llet(Strict, mid,
            subst_lambda subst (transl_module Tcoerce_none None modl),
            store_idents 0 ids)
+  | Tstr_axiom(decl) :: rem -> 
+      transl_store subst rem
   | Tstr_contract(decls) :: rem ->
       transl_store subst rem
   | Tstr_mty_contracts(decls) :: rem -> 
@@ -523,6 +529,7 @@ let rec defined_idents = function
       List.map (fun (i, _, _, _, _) -> i) cl_list @ defined_idents rem
   | Tstr_cltype cl_list :: rem -> defined_idents rem
   | Tstr_include(modl, ids) :: rem -> ids @ defined_idents rem
+  | Tstr_axiom decl :: rem -> defined_idents rem
   | Tstr_contract decls :: rem -> defined_idents rem
   | Tstr_mty_contracts decls :: rem -> defined_idents rem
   | Tstr_opened_contracts tbl :: rem -> defined_idents rem
@@ -677,6 +684,8 @@ let transl_toplevel_item = function
           Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
                     set_idents (pos + 1) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
+  | Tstr_axiom(decl) -> 
+      lambda_unit
   | Tstr_contract(decls) ->
       lambda_unit
   | Tstr_mty_contracts(tbl) -> 

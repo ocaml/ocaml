@@ -8,6 +8,8 @@ type validity = Valid | Invalid | Unknown | HighFailure | Timeout
 
 type bool_info = Ptrue | Pfalse | Pothers
 
+(* functions related expressions and patterns *)
+
 let is_pattern_true pat = match pat.pat_desc with
 | Tpat_construct (path, cdesc, ps) -> 
   if path = Predef.path_bool 
@@ -60,3 +62,16 @@ let rec is_expression_argable exp = match exp.exp_desc with
     | Some a -> is_expression_argable a
     | None -> false) args
 | _ -> false
+
+let rec exn_to_bad exp = 
+  let new_desc = match exp.exp_desc with
+  | Texp_ident (path, value_desc) -> 
+      if (Path.name path) = "Pervasives.failwith"
+      then Texp_bad (Callee (exp.exp_loc, path))
+      else exp.exp_desc
+  | others -> others
+  in {exp with exp_desc = new_desc}
+
+let pre_processing exp =  map_expression exn_to_bad exp
+
+  

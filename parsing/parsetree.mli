@@ -126,11 +126,26 @@ and value_description =
   { pval_type: core_type;
     pval_prim: string list }
 
+(* axiom declaration *)
+
+and logical_formula = 
+  { paxm_desc: logical_formula_desc;
+    paxm_loc: Location.t }
+
+and logical_formula_desc = 
+  | Paxm_forall of string list * core_type  * logical_formula
+  | Paxm_exist of string * core_type * logical_formula
+  | Paxm_imply of logical_formula * logical_formula
+  | Paxm_iff of logical_formula * logical_formula
+  | Paxm_and of logical_formula * logical_formula
+  | Paxm_or of logical_formula * logical_formula
+  | Paxm_atom of expression
+
 (* contract description *)
 
 and core_contract =
    { pctr_desc: core_contract_desc;
-     pctr_loc:  Location.t }
+     pctr_loc: Location.t }
 
 and core_contract_desc = 
     Pctr_pred of string * expression * ((pattern * expression) list) option
@@ -246,6 +261,7 @@ and signature_item_desc =
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
   | Psig_contract of contract_declaration list
+  | Psig_axiom of axiom_declaration 
 
 and modtype_declaration =
     Pmodtype_abstract
@@ -278,10 +294,15 @@ and module_expr_desc =
 *)
 
 and contract_declaration =  
-  { ptopctr_id:  string;
+  { ptopctr_id: string;
     ptopctr_desc: core_contract;
     ptopctr_loc: Location.t }
 
+and axiom_declaration = 
+  { ptopaxm_id: string;
+    ptopaxm_desc: logical_formula;
+    ptopaxm_loc: Location.t }
+ 
 and structure = structure_item list
 
 and structure_item =
@@ -294,6 +315,7 @@ and structure_item_desc =
   | Pstr_primitive of string * value_description
   | Pstr_type of (string * type_declaration) list
   | Pstr_contract of contract_declaration list
+  | Pstr_axiom of axiom_declaration 
   | Pstr_exception of string * exception_declaration
   | Pstr_exn_rebind of string * Longident.t
   | Pstr_module of string * module_expr

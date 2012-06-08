@@ -288,6 +288,26 @@ and core_contract_desc s = function
 let contract_declaration s decl = 
   { decl with ttopctr_desc = core_contract s decl.ttopctr_desc }
 
+let rec logical_formula s fml = 
+  let sfml = match fml.taxm_desc with
+  | Taxm_forall(vars, ty, f) -> 
+      Taxm_forall(vars, ty, logical_formula s f)
+  | Taxm_exist(vars, ty, f) -> 
+      Taxm_exist(vars, ty, logical_formula s f)
+  | Taxm_iff(f1, f2) -> 
+      Taxm_iff(logical_formula s f1, logical_formula s f2)
+  | Taxm_imply(f1, f2) -> 
+      Taxm_imply(logical_formula s f1, logical_formula s f2)
+  | Taxm_and(f1, f2) -> 
+      Taxm_and(logical_formula s f1, logical_formula s f2)
+  | Taxm_or(f1, f2) -> 
+      Taxm_or(logical_formula s f1, logical_formula s f2)
+  | Taxm_atom(e) -> Taxm_atom(expression s e)
+  in { taxm_desc = sfml; taxm_loc = fml.taxm_loc }
+
+let axiom_declaration s decl = 
+  { decl with ttopaxm_desc = logical_formula s decl.ttopaxm_desc }
+
 let exception_declaration s tyl =
   List.map (type_expr s) tyl
 
@@ -313,6 +333,9 @@ let rec rename_bound_idents s idents = function
           contract f = c1 -> c2
          So we skip contract decl here.         
       *)
+      let id' = Ident.get_known_new_name id idents in
+      rename_bound_idents s (id' :: idents) sg
+  | Tsig_axiom(id, _) :: sg -> 
       let id' = Ident.get_known_new_name id idents in
       rename_bound_idents s (id' :: idents) sg
 
@@ -359,6 +382,8 @@ and signature_component s comp newid =
       Tsig_cltype(newid, cltype_declaration s d, rs)
   | Tsig_contract(id, d, rs) -> 
       Tsig_contract(newid, contract_declaration s d, rs)
+  | Tsig_axiom(id, d) -> 
+      Tsig_axiom(newid, axiom_declaration s d)
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract

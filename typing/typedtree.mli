@@ -88,7 +88,29 @@ and expression_desc =
   | Texp_unr of blame 
   | Texp_Lambda of Ident.t list * expression (* /\'a. e |><| c, 'a is a contractvar *)
   | Texp_App of expression * expression list (* e 'a, 'a is a contractvar *)
-  | Texp_raise of expression 
+  | Texp_raise of expression
+
+(* typed axiom declaration *)
+
+and logical_formula = 
+  { taxm_desc: logical_formula_desc;
+    taxm_loc: Location.t }
+
+and logical_formula_desc = 
+  | Taxm_forall of Ident.t list * type_expr * logical_formula
+  | Taxm_exist of Ident.t * type_expr * logical_formula
+  | Taxm_iff of logical_formula * logical_formula
+  | Taxm_imply of logical_formula * logical_formula
+  | Taxm_and of logical_formula * logical_formula
+  | Taxm_or of logical_formula * logical_formula
+  | Taxm_atom of expression
+
+and axiom_declaration = 
+  { ttopaxm_id: Path.t;
+    ttopaxm_desc: logical_formula;
+    ttopaxm_loc: Location.t }
+
+(* typed contracts *) 
 
 and core_contract = 
   { contract_desc: core_contract_desc;
@@ -186,8 +208,11 @@ and structure_item =
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
   | Tstr_contract of contract_declaration list
-  | Tstr_mty_contracts of (Path.t * Types.contract_declaration) Ident.tbl
-  | Tstr_opened_contracts of (Path.t * Types.contract_declaration) Ident.tbl
+  | Tstr_axiom of axiom_declaration 
+  | Tstr_mty_contracts of 
+      (Path.t * Types.contract_declaration) Ident.tbl
+  | Tstr_opened_contracts of 
+      (Path.t * Types.contract_declaration) Ident.tbl
 
 (* We use the one in Types 
 and module_coercion =

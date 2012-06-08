@@ -68,6 +68,7 @@ let rec is_expression_tvalue exp = is_expression_tv exp ||
  | Texp_function _ -> true
  | _ -> false)
 
+
 let constant_to_string c = match c with
 | Const_int i -> string_of_int i
 | Const_char ch -> String.make 1 ch
@@ -134,7 +135,7 @@ and check exp = match exp.exp_desc with
    if b1 then (e1, b1)
    else let (pe_list, b) = match check_pat_exp_list pat_expr_list with
    | Some (p,e) -> ([(p,e)], true) 
-   | None -> (pat_expr_list, false)
+   | None -> ([], false)
    in
    let ptial = match partial with
    | Total -> if List.length pat_expr_list = List.length pe_list
@@ -151,18 +152,24 @@ and check exp = match exp.exp_desc with
     | Some e -> ({exp with exp_desc = Texp_construct (path, constr_desc, [e])}, true)
     | None -> (exp, false)
    end
-| Texp_ifthenelse (expr1, then_expr, exprop) -> 
-    begin match exprop with
-    | None -> let truePat = { pat_desc = trueCon;
-                              pat_loc = expr1.exp_loc;
-			      pat_type = expr1.exp_type;
-			      pat_env = expr1.exp_env } in 
-      check ({exp with exp_desc = Texp_match (expr1, [(truePat, then_expr)], Partial)})
-    | Some else_expr -> 
-      check
-     ({exp with exp_desc = Texp_match (expr1, [((truePat expr1), then_expr);
-                                            ((falsePat expr1), else_expr)], Total)})
-    end
+| Texp_ifthenelse (expr0, then_expr, exprop) -> 
+    let (e0, b0) = check expr0 in
+    if b0 then (e0, b0)
+    else 
+     let (then_expr1, b1) = check then_expr in
+     if b1 then 
+       ({exp with exp_desc = Texp_ifthenelse (expr0, then_expr1, None)}, b1)
+     else 
+       begin match exprop with
+       | None -> let desc = Texp_unr (UnknownBlame) in
+                 ({exp with exp_desc = desc}, false)
+       | Some else_expr -> 
+	  let (e2, b3) = check else_expr in
+	  if b3 then let desc = Texp_match (expr0, [(falsePat expr0,e2)], Partial) in
+		     ({exp with exp_desc = desc}, b3)
+                else let desc = Texp_unr (UnknownBlame) in
+                 ({exp with exp_desc = desc}, false)
+      end
 | Texp_apply (e1, eopt_optl_list) -> 
    let (a1, b1) = check e1 in
    if b1 
@@ -227,11 +234,11 @@ let is_contract_exception e = match e.exp_desc with
   | _ -> false 
 
 (* This is the SL machine:
-   the senv contains both the mapping from variable to value and
+   the senv contains both the mapping from variable to value and 
    the logical store  *)
 let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : expression =
-  (* print_string "***esc.simpl_expr: \n"; print_expression exp; *)
-  let mkexp desc = {exp with exp_desc = desc} in 
+ (* print_string "***esc.simpl_expr: \n"; print_expression exp; print_string "\n"; *)
+  let mkexp desc = {exp with exp_desc = desc} in          
   match exp.exp_desc with  
   | Texp_constant (c) -> rebuild senv exp k
   | Texp_bad (bl) -> rebuild senv exp k
@@ -261,7 +268,7 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
 	   let (args, lets) = genLet l in
 	   if is_expression_argable e
            then ((Some e, optl)::args, lets)
-           else let x = Ident.create "x" in
+           else let x = Ident.create "e" in
                 let vd = { val_type = e.exp_type;
                            val_kind = Val_reg } in
                 let ex = {e with exp_desc = Texp_ident (Pident x, vd)} in
@@ -277,17 +284,19 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
      in
      let (args, p_e_list) = genLet eopt_optl_list in
      begin match p_e_list with
-     | [] ->  simpl_expr senv e1 (Capp (senv, [], eopt_optl_list, exp.exp_type)::k) 
-     | _ -> simpl_expr senv ({exp with exp_desc = Texp_let (Nonrecursive, p_e_list, 
-				    {exp with exp_desc = Texp_apply(e1, args)})}) k
+     | [] ->  
+	 simpl_expr senv e1 (Capp (senv, [], eopt_optl_list, exp.exp_type)::k) 
+     | _ -> 
+	 simpl_expr senv ({exp with exp_desc = Texp_let (Nonrecursive, p_e_list, 
+	     	          {exp with exp_desc = Texp_apply(e1, args)})}) k
      end
-  | Texp_match (expr, pat_expr_list, ptial) -> 
+  | Texp_match (expr, pat_expr_list, ptial) ->       
       begin match k with
       | (Capp (env, [], nds, res_type) :: k1) ->  (* [matchR] *)
           let p_e_list = List.map (fun (p,e) -> (p, 
                          { exp_desc = Texp_apply(e, nds);
-                           exp_loc  = exp.exp_loc;
-                           exp_env  = exp.exp_env;
+                           exp_loc  = e.exp_loc;
+                           exp_env  = e.exp_env;
 			   exp_type = res_type;
                          })) 
                          pat_expr_list in
@@ -356,7 +365,7 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
 		       match e0 with K x -> let x = ei in e2 *)
 		    let new_e = simpl_expr senv ({exp with exp_desc = Texp_match(e0, 
 				     List.map (fun (pi,ei) -> (pi, {expr with exp_desc = 
-								 Texp_let (rflag, (p,ei)::l, expr)}))
+						 Texp_let (rflag, (p,ei)::l, expr)}))
 				 	    alts, ptial)}) [] in
 		    (Some new_e, ds, isExn, env)
 	       | (Tpat_var (id1), Texp_ifthenelse(e0, then_e, else_eopt))
@@ -367,15 +376,19 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
 				      {expr with exp_desc = Texp_let (rflag, (p,then_e)::l, expr)},
 				       match else_eopt with 
 				       | None -> None
-				       | Some e3 -> Some {expr with exp_desc = Texp_let (rflag, (p,e3)::l, expr)})}) [] in
-		    (Some new_e, ds, isExn, env)
+				       | Some e3 -> begin match e3.exp_desc with
+					 | Texp_bad _ | Texp_unr _ -> else_eopt
+					 | _ -> Some {expr with exp_desc = Texp_let (rflag, (p,e3)::l, expr)}
+					  end)}) [] 
+		    in (Some new_e, ds, isExn, env)
                | (Tpat_var (id1), _) -> 
 		   if rflag = Nonrecursive && is_expression_tvalue simpl_e
-		   then let new_id   = Ident.rename id1 in
-  		   let vd       = { val_type = e.exp_type; val_kind = Val_reg } in
-		   let eid      = {e with exp_desc = Texp_ident(Pident new_id, vd)} in
-		   let env2     = extend_senv env id1 eid in
-		   let env3     = extend_denv env2 eid (Inline simpl_e) in 
+		   then 
+		   let new_id = Ident.rename id1 in 
+  		   let vd     = { val_type = e.exp_type; val_kind = Val_reg } in
+		   let eid    = {e with exp_desc = Texp_ident(Pident new_id, vd)} in
+		   let env2   = extend_senv env id1 eid in
+		   let env3   = extend_denv env2 eid (Inline simpl_e) in 
  		   do_let l (trans_e, ds, isExn, env3)
 		   else
 		     let env2 = add_tasks env
@@ -387,12 +400,15 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
      in
      let (new_e, simpl_list, is_exn, new_senv) = do_let pat_expr_list (None, [], false, senv) in
      match new_e with 
-     | Some exp -> simpl_expr new_senv exp k
+     | Some exp -> (* means let-expression is transformed, so simplify the new expression *)
+         simpl_expr new_senv exp k
      | None -> 
 	 let body = simpl_expr new_senv expr [] in
-	 if List.length simpl_list = 0 then rebuild new_senv body k
-	 else if is_exn then let (p, texp_exn) = List.hd simpl_list in texp_exn
-	 else 
+	 if List.length simpl_list = 0 (* means all let-bindings are redundant *)
+	 then rebuild new_senv body k
+	 else if is_exn 
+	      then let (p, texp_exn) = List.hd simpl_list in texp_exn
+	      else 
 	   rebuild new_senv {exp with exp_desc = Texp_let(rflag, simpl_list, body)} k   
    end
   | Texp_sequence (e1, e2) -> 
@@ -466,7 +482,7 @@ and simpl_args senv f ds nds res_type k = match nds with
     begin match f.exp_desc with
     | Texp_function ([(p,e)], optl) -> begin match p.pat_desc with
       | Tpat_var (id) ->
-	  let new_id   = Ident.rename id in
+	  let new_id   = Ident.rename id in 
 	  let vd       = { val_type = p.pat_type; val_kind = Val_reg } in
           let eid      = {exp_desc = Texp_ident(Pident new_id, vd);
                           exp_type = p.pat_type;
@@ -527,25 +543,35 @@ and simpl_args senv f ds nds res_type k = match nds with
 and rebuildMatch senv scrut aval alts ptial k = 
    let env1 = extend_denv senv scrut aval in
    let (_,e) = List.hd alts in
+   let goal_tasks = goalTasks senv in 
    let new_alts = List.map (fun (p,e) -> 
-     match scrut.exp_desc with
-     | Texp_ident (Pident id1, vd) -> 
-	begin match p.pat_desc with 
-	| Tpat_construct (path, cdesc, []) -> 
-	    (* if pattern is a constructor with no parameters, we inline this constructor *)
-	 let new_id = Ident.rename id1 in
-	 let eid    = {e with exp_desc = Texp_ident(Pident new_id, vd)} in
-	 let senv2  = extend_senv senv id1 eid in
-	 let senv3   = extend_denv senv2 eid (Inline ({scrut with exp_desc = 
-						     Texp_construct(path,cdesc,[])})) in
-         (p, simpl_expr senv3 e k)
-        | _ ->
-	    let env2 = add_tasks env1 ((bound_vars_to_logic p)@[toAxiom scrut p])
-	    in (p,simpl_expr env2 e k)
-        end
-     | _ -> 
-       let env2 = add_tasks env1 ((bound_vars_to_logic p)@[toAxiom scrut p])
-       in (p,simpl_expr env2 e k)) alts in
+   let env2 = add_tasks env1 (bound_vars_to_logic p) in
+   if is_bad e then
+    begin
+    let env3 = add_tasks env2 (goal_tasks@[toGoal_pneq scrut p]) in
+    let ts2  = tasks env3 in 
+    let filename = (Location.toString e.exp_loc)^"_match.why" in
+    write_tasks_to_file filename ts2;
+    begin match askErgo filename ts2 with
+    | Valid -> (* this branch is unreachable *)
+              (p, {e with exp_desc = Texp_unr (UnknownBlame)})
+    | _ -> let env4 = add_tasks env2 [toAxiom scrut p] in           
+   	   match (scrut.exp_desc, p.pat_desc) with 
+           | (Texp_ident (Pident id1, vd),  Tpat_construct (path, cdesc, [])) -> 
+   	 (* if pattern is a constructor with no parameters, 
+	    we inline this constructor *)
+   	   let new_id = Ident.rename id1 in 
+   	   let eid    = {e with exp_desc = Texp_ident(Pident new_id, vd)} in
+   	   let senv2  = extend_senv env4 id1 eid in 
+   	   let senv3  = extend_denv senv2 eid (Inline ({scrut with exp_desc = 
+   					     Texp_construct(path,cdesc,[])})) in
+             (p, simpl_expr senv3 e k) 
+           | _ -> (p,simpl_expr env4 e k)
+     end 
+     end 
+    else let env4 = add_tasks env2 [toAxiom scrut p] in
+         (p,simpl_expr env4 e k)
+    ) alts in
    {e with exp_desc = Texp_match (scrut, new_alts, ptial)}
 
 and rebuildIf senv scrut e1 e2opt k = 
@@ -553,17 +579,16 @@ and rebuildIf senv scrut e1 e2opt k =
     let unr_exp = {e1 with exp_desc = Texp_unr (UnknownBlame)} in
     let then_senv = extend_denv senv scrut 
                                 (Inline (trueExpression scrut)) in
-    let then_senv2 = add_tasks then_senv 
-		     [toAxiom scrut (truePat scrut)] in
+    let then_senv2 = add_tasks then_senv [toAxiom scrut (truePat scrut)] in
     let else_senv = extend_denv senv scrut 
                                 (Inline (falseExpression scrut)) in
     let else_senv2 = add_tasks else_senv 
-		         [toAxiom_neg scrut (falsePat scrut)] in
+		         [toAxiom scrut (falsePat scrut)] in
     match is_expression_true scrut with
-     | Ptrue -> simpl_expr then_senv e1 k
+     | Ptrue -> simpl_expr senv e1 k
      | Pfalse -> begin match e2opt with
        | None -> rebuild senv (mkexp (Texp_ifthenelse (scrut, unr_exp, None))) k
-       | Some e2 -> simpl_expr else_senv e2 k
+       | Some e2 -> simpl_expr senv e2 k
        end 
      | Pothers -> begin match e2opt with
        | Some e2 -> begin match e2.exp_desc with
@@ -571,16 +596,15 @@ and rebuildIf senv scrut e1 e2opt k =
              let goal_tasks = goalTasks senv in        
 	     let senv1 = if is_expression_prop scrut
                          then add_tasks senv (goal_tasks@[toGoal scrut])
-	                 else add_tasks senv (goal_tasks@[toGoal_eq scrut]) in
+	                 else add_tasks senv (goal_tasks@[toGoal_beq scrut]) in
 	     let ts1   = tasks senv1 in     
-	     let filename = (Location.toString scrut.exp_loc)^".why" in
-	     begin match askErgo "temp1.why" ts1 with 
+	     let filename = (Location.toString e1.exp_loc)^"_if.why" in
+	     write_tasks_to_file filename ts1;
+	     begin match askErgo filename ts1 with 
 	     | Valid -> (* scrutinee is Valid *)
-		 write_tasks_to_file filename ts1;
 		 simpl_expr then_senv2 e1 k
 	     | _ -> (* we omit the negation check for the moment
-		       let senv2 = add_tasks senv 
-		       (goal_tasks@[toGoal_neg scrut]) in
+		       let senv2 = add_tasks senv (goal_tasks@[toGoal_bneg scrut]) in
 		       let ts2 = tasks senv2 in
 		       write_tasks_to_file "temp2.why" ts2;
 		       match askErgo filename ts2 with
@@ -588,20 +612,19 @@ and rebuildIf senv scrut e1 e2opt k =
 		       begin match e2opt with
 		       | Some e2 -> 
                        let else_senv2 = add_tasks else_senv 
-		       [toAxiom_neg [] scrut (falsePat scrut)] in
+		       [toAxiom [] scrut (falsePat scrut)] in
                        simpl_expr else_senv2 e2 k
 		       | None -> rebuild senv (mkexp (Texp_ifthenelse 
 		       ((falseExpression scrut), unr_exp, None))) k
 		       end 
 		       | _ -> *) (* no validity info about scrutinee *)
 		 let new_e1 = simpl_expr then_senv2 e1 [] in
-		 let new_e2 = Some (simpl_expr else_senv2 e2 []) in
 		 rebuild senv (mkexp (Texp_ifthenelse 
-					   (scrut, new_e1, new_e2))) k
+					   (scrut, new_e1, e2opt))) k
              end
 	 | _ -> 
 	     let new_e1 = simpl_expr then_senv2 e1 [] in
-             let new_e2 = Some (simpl_expr else_senv e2 []) in
+             let new_e2 = Some (simpl_expr else_senv2 e2 []) in
 	     rebuild senv (mkexp (Texp_ifthenelse (scrut, new_e1, new_e2))) k
         end
        | None -> 	     
@@ -634,6 +657,7 @@ and knownCon senv (path, cdesc) es alts k =
    
 
 and rebuild senv a k = 
+ (* print_string "***esc.rebuild: \n"; print_expression a; print_string "\n"; *)
   match (a.exp_desc, k) with
   | (_, []) -> a
   | (Texp_bad (bl), Cmatch _ :: k1) -> rebuild senv a k1
@@ -660,25 +684,28 @@ and rebuild senv a k =
        | Inline e -> (* if scrutinee reappears, replace it by its aval *)
                      simpl_expr senv e k1
        | _ -> (* [[ a ]]_(K x) *)
-	   if a.exp_type = Predef.type_bool 
-	   then begin
+         if a.exp_type = Predef.type_bool 
+	   then begin 
              let goal_tasks = goalTasks senv in
-             let ts1  = tasks (add_tasks senv (goal_tasks@[toGoal a])) in
-             let filename = (Location.toString a.exp_loc)^".why" in 
-             match askErgo "temp_match1.why" ts1 with
+             let senv1  = begin if is_expression_prop a
+	                  then add_tasks senv (goal_tasks@[toGoal a])
+                          else add_tasks senv (goal_tasks@[toGoal_beq a]) end in
+	     let ts1  = tasks senv1 in
+             let filename = (Location.toString a.exp_loc)^"cmatch.why" in 
+             match askErgo filename ts1 with
              | Valid -> (* scrutinee is Valid *)
 	       write_tasks_to_file filename ts1;
 	       rebuildMatch matchenv a (Inline {a with exp_desc = trueExp}) 
                             alts ptial k1
-             | _ -> (* we omit the negation check for the moment
+             | _ -> (* omit negation test 
 		    let g = goal_tasks@[toGoal_neg a] in
                     let ts2 = tasks (add_tasks senv g) in
                match askErgo filename ts2 with
                | Valid -> (* negation of the scrutinee is Valid *)
  	         rebuildMatch matchenv a (Inline {a with exp_desc = falseExp}) alts ptial k1
                | _ -> *)
-                rebuildMatch matchenv a NoVal alts ptial k1 end
-	   else rebuildMatch matchenv a NoVal alts ptial k1
+	        rebuildMatch matchenv a NoVal alts ptial k1 end
+            else rebuildMatch matchenv a NoVal alts ptial k1 
        end
   | (_, Cif (ifenv, e1, e2opt) :: k1) ->       
       begin match lookup_denv a senv with
@@ -726,7 +753,7 @@ match exp.exp_desc with
 	  ("\t"^(Location.toString loc)^": "^"fails "^(Path.name path)^"'s precondition!", [])
       end
   | Callee (loc, path) -> 
-      ((Ident.name id)^" may not satisfy its postcondition!", [])
+      ("\t"^(Location.toString loc)^": "^(Ident.name id)^" may not satisfy its postcondition!", [])
   | UnknownBlame -> raise(Error(ErrorExp_Unknownblame))
   end
 | Texp_unr (bl) -> raise(Error(ErrorExp_Texp_unr))
@@ -868,17 +895,25 @@ let rec rmUNR exp =
   | _ -> expr
   in map_expression removeUNR exp
 
-let static_contract_checking env (id, exp) = 
+let static_contract_checking env contract_flag (id, exp) = 
   try
   (* print_string "\n raw expression: \n"; print_expression exp; *)
   let sexp =  simpl_expr (update_name env (Pident id)) exp [] in
   (* print_string "\n simplified expression: \n"; print_expression sexp; *)
   let cleaned_sexp = rmUNR sexp in
-  (* print_string "\n rmUNR expression: \n"; print_expression cleaned_sexp; *)
+  (* print_string "\n**residual code: \n"; print_expression cleaned_sexp; *)
   let (counter_example, has_bad) = check cleaned_sexp in
-  let validity = if has_bad 
-                 then EscSyn.Unknown
-                 else EscSyn.Valid
+  let validity = 
+      if has_bad 
+      then begin 
+           if contract_flag = -1 
+           then begin print_string ("\n**residual code of "^(Ident.name id)^": \n"); 
+ 	        print_expression sexp; 
+                EscSyn.Unknown
+                end
+           else EscSyn.Unknown
+           end
+      else EscSyn.Valid
                  (*  if has_function_call 
                            function_names counter_example 
                       then Unknown
@@ -886,6 +921,7 @@ let static_contract_checking env (id, exp) =
   in 
   (* print_string "\n validity: "; print_validity validity; *)
   (* write_tasks_to_file ((Ident.name id)^".why") (tasks env); *)
+  print_newline ();
   let rpt = static_report (id, counter_example) validity in
   fprintf std_formatter "%s" rpt;
   (cleaned_sexp, validity)

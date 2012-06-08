@@ -723,7 +723,8 @@ and is_nonexpansive_mod mexp =
               List.for_all (fun (_, m) -> is_nonexpansive_mod m) id_mod_list
           | Tstr_exception _ -> false (* true would be unsound *)
           | Tstr_class _ -> false (* could be more precise *)
-	  | Tstr_contract _ | Tstr_opened_contracts _ | Tstr_mty_contracts _ -> false
+	  | Tstr_contract _ | Tstr_opened_contracts _ 
+	  | Tstr_mty_contracts _ | Tstr_axiom _ -> false
         )
         items
   | Tmod_apply _ -> false
@@ -1986,7 +1987,7 @@ and type_expect ?in_function env sexp ty_expected =
       let exp =
         re {
           exp_desc = Texp_constant cst;
-          exp_loc = loc;
+          exp_loc  = loc;
           exp_type =
             (* Terrible hack for format strings *)
             begin match (repr (expand_head env ty_expected)).desc with
@@ -2140,14 +2141,15 @@ and type_expect ?in_function env sexp ty_expected =
       unify_exp env exp ty_expected;
       exp
 
+  
 (* converting the contract declared in signature from Pctr to Tctr. 
 This checking is done when we read a .mli *)
 and tc_contract_in_sig env c ty = 
   let typedtree_core_contract = tc_contract env c ty in
   core_contract_to_iface typedtree_core_contract
 
-(* val type_cs : Env.t -> (string option * Parsetree.core_contract) list -> 
-                 Typedtree.core_conract *)
+(* val type_cs : Env.t -> (string option * Parsetree.core_contract) list 
+  -> Typedtree.core_conract *)
 and tc_dep_contracts env = function 
   | [] -> [] 
   | (((vo,c),t)::l) -> 
@@ -2175,7 +2177,8 @@ val tc_contract:
       Typedtree.core_contract 
 *)
 and tc_contract_aux env c ty = 
-  let rty = Ctype.repr ty in  (* This is to replace Tlink by its real type. *)
+  let rty = Ctype.repr ty in  
+  (* This is to replace Tlink by its real type. *)
   let loc = c.pctr_loc in
   let (typed_c, local_env) = match c.pctr_desc with
         Pctr_pred (x, e, exnop) -> 
@@ -2183,7 +2186,8 @@ and tc_contract_aux env c ty =
           let (id_x, new_env) = enter_value x val_desc env in
           let typed_e = type_exp new_env e in
           (* the new_env contains x so that we can write contract
-             {x | x > 0} -> {y | y > x} by assuming x scopes over the RHS of -> . *)
+             {x | x > 0} -> {y | y > x} 
+	     by assuming x scopes over the RHS of -> . *)
           let typed_exns = begin match exnop with
           | None -> None
           | Some exns -> let cases, _ = 
@@ -2191,31 +2195,35 @@ and tc_contract_aux env c ty =
                         in Some cases end in
           (Tctr_pred (id_x, typed_e, typed_exns), new_env) 
       | Pctr_arrow (xop, c1, c2) ->  
-          let (ty1, ty2) = match rty.desc with
-                           | Tarrow (l, t1, t2, cm) -> (t1, t2)                
-			   | Tpoly _ -> print_string "Tpoly...\n";
-                                  raise(Error(loc,Contract_wrong_type(c,rty))) 
-                           | _ -> print_string "after Tpoly:\n";
-                                 raise(Error(loc,Contract_wrong_type(c,rty))) 
+          let (ty1, ty2) = 
+	    match rty.desc with
+            | Tarrow (l, t1, t2, cm) -> (t1, t2)                
+	    | Tpoly _ -> print_string "Tpoly...\n";
+                raise(Error(loc,Contract_wrong_type(c,rty))) 
+            | _ -> print_string "after Tpoly:\n";
+                raise(Error(loc,Contract_wrong_type(c,rty))) 
           in
           let (typed_c1, env_after_c1) = tc_contract_aux env c1 ty1 in
           let (id_xop, env_for_c2) = 
                 match xop with
-                   Some x -> let val1_desc = {val_type = ty1; val_kind = Val_reg} in
-		             let (id_x, new_env) = enter_value x val1_desc env in
-                             (* putting a in the env
-                                a:{x | x > 0} -> {y | y > a} 
-                                It is ok to write such contract:
-                                x:{x | x > 0} -> {y | y > x} *)
-                             (Some id_x, new_env)
+                   Some x -> 
+		     let val1_desc = {val_type = ty1; val_kind = Val_reg} in
+		     let (id_x, new_env) = enter_value x val1_desc env in
+                     (* putting a in the env
+                        a:{x | x > 0} -> {y | y > a} 
+                        It is ok to write such contract:
+                        x:{x | x > 0} -> {y | y > x} *)
+                     (Some id_x, new_env)
                  | None   -> begin 
-                              match typed_c1.contract_desc with
-			      (* we convert  {x | x > 0} -> {y | y > x} to
-				 x:{x | x > 0} -> {y | y > x} so that we do not need
-                                 extra work at transl_contract side. *)
-                              | Tctr_pred(id_x, e, exnop) -> (Some id_x, env_after_c1)
-                              | _ -> (None, env_after_c1)
-                             end
+                     match typed_c1.contract_desc with
+		       (* we convert  {x | x > 0} -> {y | y > x} to
+			  x:{x | x > 0} -> {y | y > x} 
+			  so that we do not need
+                          extra work at transl_contract side. *)
+                     | Tctr_pred(id_x, e, exnop) -> 
+			 (Some id_x, env_after_c1)
+                     | _ -> (None, env_after_c1)
+                 end
           in
           let typed_c2 = tc_contract env_for_c2 c2 ty2 in
           (Tctr_arrow (id_xop, typed_c1, typed_c2), env) (* return original env *) 

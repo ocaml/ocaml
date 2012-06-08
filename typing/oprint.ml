@@ -399,7 +399,7 @@ and bindings ppf p_e_list =
         List.iter
 	  (fun (pi, ei) -> 
 	    if !spc then fprintf ppf "@ " else spc := true;
-	    fprintf ppf "@[<hv>| %a@ ->@ %a@]" print_out_pattern pi 
+	    fprintf ppf "@[<hov>| %a ->@ @[<hv>%a@]@]" print_out_pattern pi 
 	      print_out_expression ei)
         p_e_list
 
@@ -412,19 +412,19 @@ and print_out_expression_desc ppf =
        begin 
          match rflag with
              | Recursive -> 
-		 fprintf ppf "@[<hov>let rec@ %a@ in@ %a@]"
+		 fprintf ppf "@[<hv>let rec@ %a@ in %a@]"
 		   top_bindings pat_exp_list
 		   print_out_expression e
              | Nonrecursive -> 
-		 fprintf ppf "@[<hov>let@ %a@ in@ %a@]"
+		 fprintf ppf "@[<hv>let %a@ in %a@]"
 		   top_bindings pat_exp_list
 		   print_out_expression e
              | Default -> 
-		 fprintf ppf "@[<hov>let@ %a@]"
+		 fprintf ppf "@[<hv>let %a@]"
 		   top_bindings pat_exp_list
        end 
   | Texp_function (pat_exp_list, pl) -> 
-       fprintf ppf "@[function@ @[ %a @] @]" bindings pat_exp_list
+       fprintf ppf "@[<v>function@ @[ %a @] @]" bindings pat_exp_list
   | Texp_apply (e1, eop_opl_list) -> 
        let rec picke xs = match xs with 
                       | [] -> []
@@ -434,17 +434,17 @@ and print_out_expression_desc ppf =
                                    end
        in
        let es = picke eop_opl_list in
-       fprintf ppf "@[Texp_apply((%a)@ (%a)) @]" 
+       fprintf ppf "@[<hov>Texp_apply((%a)@ (%a)) @]" 
        print_out_expression e1
        (print_list_init print_out_expression  
 	               (fun ppf -> fprintf ppf "@ "))
                        es
   | Texp_match (e, pat_exp_list, pl) -> 
-       fprintf ppf "@[match@ %a with@ %a @]" 
+       fprintf ppf "@[<hv>match %a with@ %a @]" 
        print_out_expression e
        bindings pat_exp_list
   | Texp_tuple (es) -> 
-       fprintf ppf "@[(%a)@]"
+       fprintf ppf "@[<hv>(%a)@]"
        (print_list print_out_expression
 	               (fun ppf -> fprintf ppf ",@ "))
                        es
@@ -476,11 +476,11 @@ and print_out_expression_desc ppf =
      begin
        match else_expop with
        |  None -> 
-	   fprintf ppf "@[if@ %a then@ %a @]" 
+	   fprintf ppf "@[<hv>if %a@ then %a @]" 
              print_out_expression e
              print_out_expression then_exp
        | Some else_exp -> 
-	   fprintf ppf "@[if@ %a@ @\n then@ %a @\n else@ %a@]" 
+	   fprintf ppf "@[<hv>if %a@ then %a@ else %a@]" 
              print_out_expression e
              print_out_expression then_exp
 	     print_out_expression else_exp
@@ -553,7 +553,7 @@ and print_blame ppf bl = match bl with
          | Some p -> fprintf ppf "(Blame %s +> %s)" (Path.name p) (Path.name path)
       end
   | Callee (loc, path) -> 
-       fprintf ppf "(Blame callee@ %s)" (Path.name path)
+       fprintf ppf "(Blame callee %s)" (Path.name path)
   | UnknownBlame -> fprintf ppf "%s" "UnknownBlame"
 
 and print_out_pattern ppf pat = print_out_pattern_desc ppf pat.pat_desc

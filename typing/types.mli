@@ -277,6 +277,24 @@ and contract_declaration =
     ttopctr_type: type_expr;
     ttopctr_loc: Location.t }
 
+and logical_formula = 
+  { taxm_desc: logical_formula_desc;
+    taxm_loc: Location.t }
+
+and logical_formula_desc = 
+  | Taxm_forall of Ident.t list * type_expr * logical_formula
+  | Taxm_exist of Ident.t * type_expr * logical_formula
+  | Taxm_iff of logical_formula * logical_formula
+  | Taxm_imply of logical_formula * logical_formula
+  | Taxm_and of logical_formula * logical_formula
+  | Taxm_or of logical_formula * logical_formula
+  | Taxm_atom of expression
+
+and axiom_declaration = 
+  { ttopaxm_id: Path.t;
+    ttopaxm_desc: logical_formula;
+    ttopaxm_loc: Location.t }
+
 (* Value expressions for the class language *)
 
 and class_expr =
@@ -324,6 +342,7 @@ and signature_item =
   | Tsig_class of Ident.t * class_declaration * rec_status
   | Tsig_cltype of Ident.t * cltype_declaration * rec_status
   | Tsig_contract of Ident.t * contract_declaration * rec_status
+  | Tsig_axiom of Ident.t * axiom_declaration
 
 and modtype_declaration =
     Tmodtype_abstract
@@ -366,6 +385,7 @@ and structure_item =
       (Ident.t * int * string list * class_expr * virtual_flag) list
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
+  | Tstr_axiom of axiom_declaration
   | Tstr_contract 
 
 

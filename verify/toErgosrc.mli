@@ -20,6 +20,8 @@ type error =
 
 exception Error of Location.t * error
 
+type fvalue = VBottom | VValue of lexpr
+
 val def_to_axioms : (pattern * expression) list -> decl list
 val toGoal : expression -> decl 
 val toGoal_neg :  expression -> decl 
@@ -31,5 +33,9 @@ val report_error: Format.formatter -> error -> unit
 val is_expression_ergoble: expression -> bool
 val is_scrutinee_ergoble: expression -> bool
 val bound_vars_to_logic : pattern -> decl list
-val toGoal_eq : expression -> decl
-val toGoal_neq : expression -> decl
+val toGoal_beq : expression -> decl
+val toGoal_bneq : expression -> decl
+val toGoal_peq : expression -> pattern -> decl 
+val toGoal_pneq :  expression -> pattern ->  decl 
+val mlaxiom_to_smtaxiom : axiom_declaration -> decl
+val simpl_formula : (string, fvalue) Tbl.t -> lexpr -> lexpr

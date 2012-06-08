@@ -46,6 +46,7 @@ val type_self_pattern:
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+
 val tc_contract:
         Env.t -> Parsetree.core_contract -> type_expr -> Typedtree.core_contract
 

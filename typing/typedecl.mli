@@ -41,6 +41,14 @@ val transl_contract_decls_in_sig:
     Env.t -> Parsetree.contract_declaration list -> 
     (Ident.t * Types.contract_declaration) list
 
+val transl_axiom_decl:
+    Env.t -> Parsetree.axiom_declaration -> 
+    Typedtree.axiom_declaration 
+
+val transl_axiom_decl_in_sig:
+    Env.t -> Parsetree.axiom_declaration -> 
+    (Ident.t * Types.axiom_declaration) 
+
 val abstract_type_decl: int -> type_declaration
 val approx_type_decl:
     Env.t -> (string * Parsetree.type_declaration) list ->

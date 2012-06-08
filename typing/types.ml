@@ -182,14 +182,12 @@ type cltype_declaration =
     clty_path: Path.t;
     clty_variance: (bool * bool) list }
 
-(* These patterns/expressions are almost the same as those in typedtree except
-   without the field related to type and Env.t. 
-   They are used in contracts that are 
-   in .mli file. *)
+(* These patterns/expressions are almost the same as those in typedtree except without the field related to type and Env.t. 
+   They are used in contracts that are in .mli file. *)
 type pattern =
   { pat_desc: pattern_desc;
-    pat_loc: Location.t;
-    pat_type: type_expr}
+    pat_loc:  Location.t;
+    pat_type: type_expr }
 
 
 and pattern_desc =
@@ -286,6 +284,23 @@ and contract_declaration =
     ttopctr_type: type_expr;
     ttopctr_loc: Location.t }
 
+and logical_formula = 
+ { taxm_desc: logical_formula_desc;
+    taxm_loc: Location.t }
+
+and logical_formula_desc = 
+  | Taxm_forall of Ident.t list * type_expr * logical_formula
+  | Taxm_exist of Ident.t * type_expr * logical_formula
+  | Taxm_iff of logical_formula * logical_formula
+  | Taxm_imply of logical_formula * logical_formula
+  | Taxm_and of logical_formula * logical_formula
+  | Taxm_or of logical_formula * logical_formula
+  | Taxm_atom of expression
+
+and axiom_declaration = 
+  { ttopaxm_id: Path.t;
+    ttopaxm_desc: logical_formula;
+    ttopaxm_loc: Location.t }
 
 (* Value expressions for the class language *)
 
@@ -335,6 +350,7 @@ and signature_item =
 (* we use contract_declaration instead of core_contract because 
    we want to keep its Path.t info *)
   | Tsig_contract of Ident.t * contract_declaration * rec_status
+  | Tsig_axiom of Ident.t * axiom_declaration
 
 and modtype_declaration =
     Tmodtype_abstract
@@ -378,6 +394,7 @@ and structure_item =
       (Ident.t * int * string list * class_expr * virtual_flag) list
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
+  | Tstr_axiom of axiom_declaration
   | Tstr_contract 
 
 

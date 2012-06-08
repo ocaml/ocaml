@@ -470,9 +470,13 @@ and transl_signature env sg =
                      Tsig_type(i', d', rs);
                      Tsig_type(i'', d'', rs)])
                  classes [rem])
+        | Psig_axiom(a) -> 
+	    let (id, typed_a) = Typedecl.transl_axiom_decl_in_sig env a in
+	    let rem = transl_sig env srem in
+	    (Tsig_axiom(id,typed_a))::rem
 	| Psig_contract(cds) -> 
             (* check contract before translation:
-               1. we want to make sure that a contract C_f in a signature 
+               1. We want to make sure that a contract C_f in a signature 
                   (or .mli) is syntactically equivalent (up to 
                   alpha-conversion) to the contract C_f in its struct (or .ml).
                   The reason is that we have sub-typing relationship between
@@ -838,6 +842,12 @@ and type_structure funct_body anchor env sstr scope =
         let contract_decls = Typedecl.transl_contract_decls env sdecls in 
         let (str_rem, sig_rem, final_env) = type_struct env srem in
         let newstr = (Tstr_contract contract_decls) :: str_rem in
+        (newstr, sig_rem, final_env)
+    | {pstr_desc = Pstr_axiom(sdecl)} :: srem  -> 
+        (* we type check an axiom *)
+        let axiom_decl = Typedecl.transl_axiom_decl env sdecl in 
+        let (str_rem, sig_rem, final_env) = type_struct env srem in
+        let newstr = (Tstr_axiom axiom_decl) :: str_rem in
         (newstr, sig_rem, final_env)
     | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
         let arg = Typedecl.transl_exception env sarg in

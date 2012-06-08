@@ -54,6 +54,7 @@ val modtype: t -> module_type -> module_type
 val signature: t -> signature -> signature
 val modtype_declaration: t -> modtype_declaration -> modtype_declaration
 val contract_declaration: t -> contract_declaration -> contract_declaration
+val axiom_declaration: t -> axiom_declaration -> axiom_declaration
 
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)

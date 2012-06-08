@@ -123,6 +123,7 @@ let item_ident_name = function
   | Tsig_class(id, _, _) -> (id, Field_class(Ident.name id))
   | Tsig_cltype(id, _, _) -> (id, Field_classtype(Ident.name id))
   | Tsig_contract(id, _, _) -> (id, Field_contract(Ident.name id))
+  | Tsig_axiom(id,_) -> (id, Field_value(Ident.name id))
 
 (* Simplify a structure coercion *)
 
@@ -198,6 +199,7 @@ and signatures env subst sig1 sig2 =
           | Tsig_type(_,_,_)
           | Tsig_modtype(_,_)
 	  | Tsig_contract(_,_,_)
+	  | Tsig_axiom(_,_)
           | Tsig_cltype(_,_,_) -> pos
           | Tsig_value(_,_)
           | Tsig_exception(_,_)
@@ -240,7 +242,7 @@ and signatures env subst sig1 sig2 =
                 Subst.add_module id2 (Pident id1) subst
             | Tsig_modtype _ ->
                 Subst.add_modtype id2 (Tmty_ident (Pident id1)) subst
-            | Tsig_value _ | Tsig_contract _ -> 
+            | Tsig_value _ | Tsig_contract _ | Tsig_axiom _ -> 
 		Subst.add_value id2 (Pident id1) subst
 	    | Tsig_exception _ | Tsig_class _ | Tsig_cltype _ ->
                 subst
