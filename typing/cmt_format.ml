@@ -69,7 +69,7 @@ let output_cmt oc cmt =
 
 let read filename =
 (*  Printf.fprintf stderr "Cmt_format.read %s\n%!" filename; *)
-  let ic = open_in filename in
+  let ic = open_in_bin filename in
   try
     let magic_number = read_magic_number ic in
     let cmi, cmt =
