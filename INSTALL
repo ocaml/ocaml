@@ -169,6 +169,9 @@ Examples:
   For Sun Solaris with the "acc" compiler:
     ./configure -cc "acc -fast" -libs "-lucb"
 
+  For Sun Solaris on Sparc 64bit, to compile natively (32bit only)
+    ./configure -cc "gcc -m32" -as "as -32" -aspp "gcc -m32 -c"
+
   For AIX 4.3 with the IBM compiler xlc:
     ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
 
