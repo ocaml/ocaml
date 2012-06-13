@@ -2165,14 +2165,15 @@ and unify3 env t1 t1' t2 t2' =
   | (Tfield _, Tfield _) -> (* special case for GADTs *)
       unify_fields env t1' t2'
   | _ ->
-      begin match !umode with
-      | Expression ->
-          occur !env t1' t2';
-          link_type t1' t2
-      | Pattern ->
-          add_type_equality t1' t2'
-      end;
-      try match (d1, d2) with
+    begin match !umode with
+    | Expression ->
+        occur !env t1' t2';
+        link_type t1' t2
+    | Pattern ->
+        add_type_equality t1' t2'
+    end;
+    try
+      begin match (d1, d2) with
         (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2 ||
         !Clflags.classic && not (is_optional l1 || is_optional l2) ->
           unify  env t1 t2; unify env  u1 u2;
@@ -2246,20 +2247,20 @@ and unify3 env t1 t1' t2 t2' =
           unify_list env tl1 tl2
       | (_, _) ->
           raise (Unify [])
-      with Unify trace ->
-        t1'.desc <- d1;
-        raise (Unify trace)
-  end;
-  (* XXX Commentaires + changer "create_recursion" *)
-  if create_recursion then begin
-    match t2.desc with
-      Tconstr (p, tl, abbrev) ->
-        forget_abbrev abbrev p;
-        let t2'' = expand_head_unif !env t2 in
-        if not (closed_parameterized_type tl t2'') then
-          link_type (repr t2) (repr t2')
-    | _ ->
-        () (* t2 has already been expanded by update_level *)
+      end;
+      (* XXX Commentaires + changer "create_recursion" *)
+      if create_recursion then
+        match t2.desc with
+          Tconstr (p, tl, abbrev) ->
+            forget_abbrev abbrev p;
+            let t2'' = expand_head_unif !env t2 in
+            if not (closed_parameterized_type tl t2'') then
+              link_type (repr t2) (repr t2')
+        | _ ->
+            () (* t2 has already been expanded by update_level *)
+    with Unify trace ->
+      t1'.desc <- d1;
+      raise (Unify trace)
   end
 
 and unify_list env tl1 tl2 =
