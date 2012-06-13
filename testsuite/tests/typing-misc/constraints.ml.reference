@@ -1,0 +1,25 @@
+
+# Characters 12-32:
+  type 'a t = [`A of 'a t t] as 'a;; (* fails *)
+              ^^^^^^^^^^^^^^^^^^^^
+Error: Constraints are not satisfied in this type.
+       Type
+       [ `A of 'a ] t t as 'a
+       should be an instance of
+       ([ `A of 'b t t ] as 'b) t
+#   Characters 5-27:
+  type 'a t = [`A of 'a t t];; (* fails *)
+      ^^^^^^^^^^^^^^^^^^^^^^
+Error: In the definition of t, type 'a t t should be 'a t
+#   type 'a t = [ `A of 'a t t ] constraint 'a = 'a t
+#   type 'a t = [ `A of 'a t ] constraint 'a = 'a t
+#   type 'a t = 'a constraint 'a = [ `A of 'a ]
+#     * *     type 'a t = 'a
+# Characters 11-21:
+  let f (x : 'a t as 'a) = ();; (* fails *)
+             ^^^^^^^^^^
+Error: This alias is bound to type 'a t = 'a
+       but is used as an instance of type 'a
+       The type variable 'a occurs inside 'a
+#   val f : 'a t -> 'a -> bool = <fun>
+# 

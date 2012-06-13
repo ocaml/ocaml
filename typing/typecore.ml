@@ -2270,6 +2270,9 @@ and type_expect ?in_function env sexp ty_expected =
       in
       re { exp with exp_desc = Texp_poly(exp, cty) }
   | Pexp_newtype(name, sbody) ->
+      let ty = newvar () in
+      (* remember original level *)
+      begin_def ();
       (* Create a fake abstract type declaration for name. *)
       let level = get_current_level () in
       let decl = {
@@ -2283,9 +2286,6 @@ and type_expect ?in_function env sexp ty_expected =
         type_loc = loc;
       }
       in
-      let ty = newvar () in
-      (* remember original level *)
-      begin_def ();
       Ident.set_current_time ty.level;
       let (id, new_env) = Env.enter_type name decl env in
       Ctype.init_def(Ident.current_time());
