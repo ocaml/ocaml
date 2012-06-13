@@ -30,6 +30,7 @@ val ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
 val preprocessor : string option ref
+val ppx : string list ref
 val annotations : bool ref
 val binary_annotations : bool ref
 val use_threads : bool ref

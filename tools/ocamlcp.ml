@@ -73,6 +73,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _output_obj = option "-output-obj"
   let _pack = option "-pack"
   let _pp s = incompatible "-pp"
+  let _ppx s = incompatible "-ppx"
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
   let _runtime_variant s = option_with_arg "-runtime-variant" s
