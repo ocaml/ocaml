@@ -46,6 +46,7 @@ let recursive_types = Clflags.recursive_types
 
 (** Optional preprocessor command. *)
 let preprocessor = Clflags.preprocessor
+let ppx = Clflags.ppx
 
 let sort_modules = ref false
 

@@ -174,7 +174,8 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translclass.cmo \
-	$(OCAMLSRCDIR)/tools/depend.cmo
+	$(OCAMLSRCDIR)/tools/depend.cmo \
+	$(OCAMLSRCDIR)/driver/pparse.cmo
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
