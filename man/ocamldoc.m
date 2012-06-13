@@ -239,6 +239,10 @@ options.
 Pipe sources through preprocessor
 .IR command .
 .TP
+.BI \-ppx \ command
+Pipe abstract syntax tree through preprocessor
+.IR command .
+.TP
 .B \-sort
 Sort the list of top-level modules before generating the documentation.
 .TP

@@ -441,6 +441,10 @@ file is built from the basename of the source file with the
 extension .ppi for an interface (.mli) file and .ppo for an
 implementation (.ml) file.
 .TP
+.BI \-ppx \ command
+Pipe abstract syntax tree through preprocessor
+.IR command .
+.TP
 .B \-principal
 Check information path during type-checking, to make sure that all
 types are derived in a principal way.  When using labelled arguments

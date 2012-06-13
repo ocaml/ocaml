@@ -407,6 +407,10 @@ is redirected to
 an intermediate file, which is compiled. If there are no compilation
 errors, the intermediate file is deleted afterwards.
 .TP
+.BI \-ppx \ command
+Pipe abstract syntax tree through preprocessor
+.IR command .
+.TP
 .B \-principal
 Check information path during type-checking, to make sure that all
 types are derived in a principal way. All programs accepted in
