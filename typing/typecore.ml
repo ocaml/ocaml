@@ -526,7 +526,7 @@ let rec find_record_qual = function
   | ({ txt = Longident.Ldot (modname, _) }, _) :: _ -> Some modname
   | _ :: rest -> find_record_qual rest
 
-let type_label_a_list ?labels env loc type_lbl_a lid_a_list =
+let type_label_a_list ?labels env type_lbl_a lid_a_list =
   let record_qual = find_record_qual lid_a_list in
   let lbl_a_list =
     List.map
@@ -536,9 +536,9 @@ let type_label_a_list ?labels env loc type_lbl_a lid_a_list =
               Longident.Lident s, Some labels, _ when Hashtbl.mem labels s ->
                 (Hashtbl.find labels s : Path.t * Types.label_description)
             | Longident.Lident s, _, Some modname ->
-              Typetexp.find_label env loc (Longident.Ldot (modname, s))
+              Typetexp.find_label env lid.loc (Longident.Ldot (modname, s))
             | _ ->
-              Typetexp.find_label env loc lid.txt
+              Typetexp.find_label env lid.loc lid.txt
         in (path, lid, label, a)
       )  lid_a_list in
   (* Invariant: records are sorted in the typed tree *)
@@ -764,7 +764,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         (label_path, label_lid, label, arg)
       in
       let lbl_pat_list =
-        type_label_a_list ?labels !env loc type_label_pat lid_sp_list in
+        type_label_a_list ?labels !env type_label_pat lid_sp_list in
       check_recordpat_labels loc lbl_pat_list closed;
       rp {
         pat_desc = Tpat_record (lbl_pat_list, closed);
@@ -1753,7 +1753,7 @@ and type_expect ?in_function env sexp ty_expected =
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
       let lbl_exp_list =
-        type_label_a_list env loc (type_label_exp true env loc ty_expected)
+        type_label_a_list env (type_label_exp true env loc ty_expected)
           lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
@@ -2357,7 +2357,7 @@ and type_label_exp create env loc ty_expected
   begin try
     unify env (instance_def ty_res) (instance env ty_expected)
   with Unify trace ->
-    raise(Error(loc , Label_mismatch(lid_of_label label, trace)))
+    raise (Error(lid.loc, Label_mismatch(lid_of_label label, trace)))
   end;
   (* Instantiate so that we can generalize internal nodes *)
   let ty_arg = instance_def ty_arg in
@@ -2367,8 +2367,10 @@ and type_label_exp create env loc ty_expected
     generalize_structure ty_arg
   end;
   if label.lbl_private = Private then
-    raise(Error(loc, if create then Private_type ty_expected
-                     else Private_label (lid_of_label label, ty_expected)));
+    if create then
+      raise (Error(loc, Private_type ty_expected))
+    else
+      raise (Error(lid.loc, Private_label(lid_of_label label, ty_expected)));
   let arg =
     let snap = if vars = [] then None else Some (Btype.snapshot ()) in
     let arg = type_argument env sarg ty_arg (instance env ty_arg) in
