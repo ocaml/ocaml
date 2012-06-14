@@ -402,11 +402,24 @@ let check_abbrev env (_, sdecl) (id, decl) =
       end
   | _ -> ()
 
+(* Check that recursion is well-founded *)
+
+let check_well_founded env loc path decl =
+  Misc.may
+    (fun body ->
+      try Ctype.correct_abbrev env path decl.type_params body with
+      | Ctype.Recursive_abbrev ->
+          raise(Error(loc, Recursive_abbrev (Path.name path)))
+      | Ctype.Unify trace -> raise(Error(loc, Type_clash trace)))
+    decl.type_manifest
+
 (* Check for ill-defined abbrevs *)
 
 let check_recursion env loc path decl to_check =
   (* to_check is true for potentially mutually recursive paths.
      (path, decl) is the type declaration to be checked. *)
+
+  if decl.type_params = [] then () else
 
   let visited = ref [] in
 
@@ -450,22 +463,13 @@ let check_recursion env loc path decl to_check =
           Btype.iter_type_expr (check_regular cpath args prev_exp) ty
     end in
 
-  match decl.type_manifest with
-  | None -> ()
-  | Some body ->
-      (* Check that recursion is well-founded *)
-      begin try
-        Ctype.correct_abbrev env path decl.type_params body
-      with Ctype.Recursive_abbrev ->
-        raise(Error(loc, Recursive_abbrev (Path.name path)))
-      | Ctype.Unify trace -> raise(Error(loc, Type_clash trace))
-      end;
-      (* Check that recursion is regular *)
-      if decl.type_params = [] then () else
+  Misc.may
+    (fun body ->
       let (args, body) =
         Ctype.instance_parameterized_type
           ~keep_names:true decl.type_params body in
-      check_regular path args [] body
+      check_regular path args [] body)
+    decl.type_manifest
 
 let check_abbrev_recursion env id_loc_list (id, _, tdecl) =
   let decl = tdecl.typ_type in
@@ -830,6 +834,9 @@ let transl_type_decl env name_sdecl_list =
     List.map2 (fun id (_,sdecl) -> (id, sdecl.ptype_loc))
       id_list name_sdecl_list
   in
+  List.iter (fun (id, decl) ->
+    check_well_founded newenv (List.assoc id id_loc_list) (Path.Pident id) decl)
+    decls;
   List.iter (check_abbrev_recursion newenv id_loc_list) tdecls;
   (* Check that all type variable are closed *)
   List.iter2
@@ -1019,6 +1026,7 @@ let approx_type_decl env name_sdecl_list =
 let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
+  check_well_founded env loc path decl;
   check_recursion env loc path decl
     (fun path -> List.exists (fun id -> Path.isfree id path) recmod_ids)
 

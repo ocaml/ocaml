@@ -14,7 +14,11 @@ Error: In the definition of t, type 'a t t should be 'a t
 #   type 'a t = [ `A of 'a t t ] constraint 'a = 'a t
 #   type 'a t = [ `A of 'a t ] constraint 'a = 'a t
 #   type 'a t = 'a constraint 'a = [ `A of 'a ]
-#     * *     type 'a t = 'a
+#   Characters 47-52:
+  type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
+                                                ^^^^^
+Error: The type abbreviation t is cyclic
+#   type 'a t = 'a
 # Characters 11-21:
   let f (x : 'a t as 'a) = ();; (* fails *)
              ^^^^^^^^^^
