@@ -65,7 +65,7 @@ let instr ppf i =
   | Lraise ->
       fprintf ppf "raise %a" reg i.arg.(0)
   end;
-  if i.dbg != Debuginfo.none then
+  if not (Debuginfo.is_none i.dbg) then
     fprintf ppf " %s" (Debuginfo.to_string i.dbg)
 
 let rec all_instr ppf i =

@@ -1554,11 +1554,14 @@ fi
 
 asm_cfi_supported=false
 
-export aspp
+export as aspp
 
 if sh ./tryassemble cfi.S; then
   echo "#define ASM_CFI_SUPPORTED" >> m.h
   asm_cfi_supported=true
+  echo "Assembler supports CFI"
+else
+  echo "Assembler does not support CFI"
 fi
 
 # Final twiddling of compiler options to work around known bugs
