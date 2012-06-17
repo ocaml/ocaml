@@ -133,6 +133,7 @@ let reset_debug_info () =
 let emit_debug_info dbg =
   if !Clflags.debug && not (Debuginfo.is_none dbg) then (
     let line = dbg.Debuginfo.dinfo_line in
+    assert (line <> 0); (* clang errors out on zero line numbers *)
     let file_name = dbg.Debuginfo.dinfo_file in
     let file_num =
       try List.assoc file_name !file_pos_nums
@@ -182,13 +183,13 @@ let emit_frames a =
       lbl in
   let emit_frame fd =
     a.efa_label fd.fd_lbl;
-    a.efa_16 (if fd.fd_debuginfo == Debuginfo.none
+    a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
               then fd.fd_frame_size
               else fd.fd_frame_size + 1);
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    if fd.fd_debuginfo != Debuginfo.none then begin
+    if not (Debuginfo.is_none fd.fd_debuginfo) then begin
       let d = fd.fd_debuginfo in
       let line = min 0xFFFFF d.dinfo_line
       and char_start = min 0xFF d.dinfo_char_start
