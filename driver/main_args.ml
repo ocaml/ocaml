@@ -318,6 +318,14 @@ let mk_dparsetree f =
   "-dparsetree", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dtypedtree f =
+  "-dtypedtree", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dresidual f =
+  "-dresidual", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_drawlambda f =
   "-drawlambda", Arg.Unit f, " (undocumented)"
 ;;
@@ -439,6 +447,8 @@ module type Bytecomp_options = sig
   val _nopervasives : unit -> unit
   val _use_prims : string -> unit
   val _dparsetree : unit -> unit
+  val _dtypedtree : unit -> unit
+  val _dresidual : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dinstr : unit -> unit
@@ -470,6 +480,8 @@ module type Bytetop_options = sig
   val _warn_help : unit -> unit
 
   val _dparsetree : unit -> unit
+  val _dtypedtree : unit -> unit
+  val _dresidual : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dinstr : unit -> unit
@@ -529,6 +541,8 @@ module type Optcomp_options = sig
 
   val _nopervasives : unit -> unit
   val _dparsetree : unit -> unit
+  val _dtypedtree : unit -> unit
+  val _dresidual : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dcmm : unit -> unit
@@ -575,6 +589,8 @@ module type Opttop_options = sig
   val _warn_help : unit -> unit
 
   val _dparsetree : unit -> unit
+  val _dtypedtree : unit -> unit
+  val _dresidual : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dcmm : unit -> unit
@@ -658,6 +674,8 @@ struct
     mk_nopervasives F._nopervasives;
     mk_use_prims F._use_prims;
     mk_dparsetree F._dparsetree;
+    mk_dtypedtree F._dtypedtree;
+    mk_dresidual F._dresidual;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
@@ -692,6 +710,8 @@ struct
     mk_warn_help F._warn_help;
 
     mk_dparsetree F._dparsetree;
+    mk_dtypedtree F._dtypedtree;
+    mk_dresidual F._dresidual;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
@@ -755,6 +775,8 @@ struct
 
     mk_nopervasives F._nopervasives;
     mk_dparsetree F._dparsetree;
+    mk_dtypedtree F._dtypedtree;
+    mk_dresidual F._dresidual;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dcmm F._dcmm;
@@ -802,6 +824,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_warn_help F._warn_help;
 
     mk_dparsetree F._dparsetree;
+    mk_dtypedtree F._dtypedtree;
+    mk_dresidual F._dresidual;
     mk_drawlambda F._drawlambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;

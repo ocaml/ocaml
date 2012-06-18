@@ -25,8 +25,12 @@ type fvalue = VBottom | VValue of lexpr
 val def_to_axioms : (pattern * expression) list -> decl list
 val toGoal : expression -> decl 
 val toGoal_neg :  expression -> decl 
-val toAxiom : expression -> pattern -> decl 
-val toAxiom_neg : expression -> pattern -> decl 
+val toAxiom : expression -> decl 
+val toAxiom_neg : expression -> decl 
+val toAxiom_peq : expression -> pattern -> decl 
+val toAxiom_pneq : expression -> pattern -> decl 
+val toAxiom_beq : expression -> decl 
+val toAxiom_bneq : expression -> decl 
 val type_to_typelogic : loc -> Ident.t * type_declaration -> decl list
 val out_ergotasks : out_channel -> decl list -> unit
 val report_error: Format.formatter -> error -> unit

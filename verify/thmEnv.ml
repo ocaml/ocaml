@@ -120,6 +120,7 @@ let add_goalTasks env gts =
 
 let tasks env = env.tasks
 let name env = env.name
+let depth env = env.depth
 let contract_name env = env.contract_name
 let dep_contracts env = env.dep_contracts
 let contract_decls env = env.contract_decls

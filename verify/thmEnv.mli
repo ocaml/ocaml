@@ -26,6 +26,7 @@ val initEnv : contract_declaration list ->
               (Path.t * Types.contract_declaration) Ident.tbl -> t
 val tasks : t -> decl list
 val name  : t -> Path.t
+val depth : t -> int
 val contract_name : t -> Path.t
 val dep_contracts : t -> Typedtree.core_contract Ident.tbl
 val contract_decls : t -> contract_declaration list

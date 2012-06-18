@@ -130,13 +130,15 @@ let implementation ppf sourcefile outputprefix =
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
       ++ print_if ppf Clflags.dump_typedtree Printtyp.implementation
       ++ begin
-          if !Clflags.dcontract
-           then Verify.transl_contracts 0
-           else if !Clflags.scontract
-                then Verify.transl_contracts 1
-                else if !Clflags.hcontract
-                     then Verify.transl_contracts 2
-                     else fun x -> x
+          if !Clflags.dump_residual 
+          then Verify.transl_contracts (-1)
+          else if !Clflags.dcontract
+               then Verify.transl_contracts 0
+               else if !Clflags.scontract
+                    then Verify.transl_contracts 1
+                    else if !Clflags.hcontract
+                         then Verify.transl_contracts 2
+                         else fun x -> x
          end
       ++ Translmod.transl_implementation modulename
       ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda

@@ -412,15 +412,15 @@ and print_out_expression_desc ppf =
        begin 
          match rflag with
              | Recursive -> 
-		 fprintf ppf "@[<hv>let rec@ %a@ in %a@]"
+		 fprintf ppf "@[<hv>let rec@ @[%a@] in %a@]"
 		   top_bindings pat_exp_list
 		   print_out_expression e
              | Nonrecursive -> 
-		 fprintf ppf "@[<hv>let %a@ in %a@]"
+		 fprintf ppf "@[<hv>let @[%a@] in %a@]"
 		   top_bindings pat_exp_list
 		   print_out_expression e
              | Default -> 
-		 fprintf ppf "@[<hv>let %a@]"
+		 fprintf ppf "@[<hv>let @[%a@]@]"
 		   top_bindings pat_exp_list
        end 
   | Texp_function (pat_exp_list, pl) -> 

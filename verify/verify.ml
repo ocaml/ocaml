@@ -202,6 +202,10 @@ let rec transl_core_contract env cntr e callee caller =
           Moreover, wrap free-variables in p with the variable's contract if any.
 	  This detects non-crash-free contracts.
        *) 
+        begin match is_expression_true p with
+        | Ptrue ->  e.exp_desc
+	| Pfalse -> callee.exp_desc
+        | _ ->
         let new_x = Ident.create "x" in
         let vd = { val_type = e.exp_type; val_kind = Val_reg } in
 	let xe = { e with exp_desc = Texp_ident(Pident new_x, vd) } in
@@ -210,7 +214,7 @@ let rec transl_core_contract env cntr e callee caller =
         *)
         let cond = Texp_ifthenelse (subst [] x new_x p, xe, Some callee) in 
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var new_x) cty, e)], mkexp cond cty) 
-       
+        end
        (* e |>r1,r2<| try {x | p} with [Ei -> booli] 
           if (try let x = e in p
               with Contract_exn (f,row,col,bl) -> raise Contract_exn (f,row,col,bl)
@@ -670,8 +674,21 @@ let rec transl_str_contracts contract_flag env strs =
 	   | Tpat_var (id) -> List.mem (Pident id) used_in_contracts
 	   | _ -> false) 
 	     pat_expr_list in *)
-         let ts = add_tasks env (def_to_axioms pre_processed_list) in
-         ts
+         let env1 = add_tasks env (def_to_axioms pre_processed_list) in	 
+	 if depth env = 0 then env1
+         else
+         List.fold_right (fun (p,e) default -> 
+	     match p.pat_desc with
+	     | Tpat_var (id) when rec_flag = Nonrecursive ->
+		 let new_id   = Ident.rename id in 
+		 let vd       = { val_type = p.pat_type; val_kind = Val_reg } in
+		 let eid      = {exp_desc = Texp_ident(Pident new_id, vd);
+				 exp_type = p.pat_type;
+				 exp_loc  = p.pat_loc;
+				 exp_env  = p.pat_env } in
+		 let env2     = extend_senv default id eid in
+	         extend_denv env2 eid (Inline e)
+	     | _ -> default) pat_expr_list env1
        with ToErgosrc.Error(loc,err) -> 
 	 ToErgosrc.report_error std_formatter err; env 
      in

@@ -21,7 +21,7 @@ let askErgo tasks =
   let outchnl = open_out filename in
   out_ergotasks outchnl tasks;
   close_out outchnl;
-  ignore (Sys.command (Printf.sprintf "alt-ergo %s" filename));
+  ignore (Sys.command (Printf.sprintf "alt-ergo -redondance 4 %s" filename));
   let s = input_line stdin in
   (* close_in stdin; *)
   print_string ("the result"^s);
@@ -43,7 +43,7 @@ let askErgo filename tasks =
   let outchnl = open_out filename in
   out_ergotasks outchnl tasks;
   close_out outchnl;
-  let (cin, cout) as p = open_process (Printf.sprintf "alt-ergo -notriggers %s" filename) in
+  let (cin, cout) as p = open_process (Printf.sprintf "alt-ergo -redondance 4 %s" filename) in
   let out = channel_contents cin in
   let _ = Unix.close_process p in
   isValid out

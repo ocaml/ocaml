@@ -34,7 +34,7 @@ match (Ctype.repr ty).desc with
 | _ -> false
 
 let rec getop path = match path with
-| Pident (id) -> Ident.unique_name id
+| Pident (id) -> Ident.name id
 | Pdot (t, str, i) -> str
 | Papply (t1, t2) -> getop t2
 
@@ -53,7 +53,7 @@ let is_expression_prop exp = match exp.exp_desc with
    end
   | _ -> false
  end
-| _ -> false
+| _ ->  false
 
 let rec is_expression_argable exp = match exp.exp_desc with
 | Texp_ident _ | Texp_constant _ -> true

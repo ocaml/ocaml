@@ -64,9 +64,9 @@ let rec is_expression_tv exp = match exp.exp_desc with
 | _ -> false
 
 let rec is_expression_tvalue exp = is_expression_tv exp ||
- (match exp.exp_desc with
- | Texp_function _ -> true
- | _ -> false)
+ (match (Ctype.repr exp.exp_type).desc with
+   | Tarrow _ -> true
+   | _ -> false)
 
 
 let constant_to_string c = match c with
@@ -212,7 +212,13 @@ type cont =  (* e a1 HOLE an *)
   | CLam of expression (* original expression *)
           * pattern *partial (* \x.HOLE *)
   | Cprim of (inexp option * optional) list * type_expr (* op HOLE e2 *)
-  | Clet of rec_flag * (pattern * outexp) list (* let x = e1 in HOLE *)
+  | Cin of rec_flag * (pattern * outexp) list (* let x = e1 in HOLE *)
+            (* let x1 = a1 
+                   x = HOLE
+	           x2 = a2
+               in e2 *)
+  | Clet of rec_flag * (pattern * outexp) list *
+	     pattern * (pattern * inexp) list * inexp 
   | Cmatch of (ThmEnv.t * expression (* original env and expression *)
             * inalt list * partial) (* match HOLE with x alts *)
   | Cif of (ThmEnv.t * expression * expression option) (* if HOLE then e1 else e2 *)
@@ -237,7 +243,7 @@ let is_contract_exception e = match e.exp_desc with
    the senv contains both the mapping from variable to value and 
    the logical store  *)
 let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : expression =
- (* print_string "***esc.simpl_expr: \n"; print_expression exp; print_string "\n"; *)
+  (* print_string "***esc.simpl_expr: \n"; print_expression exp; print_string "\n"; *)
   let mkexp desc = {exp with exp_desc = desc} in          
   match exp.exp_desc with  
   | Texp_constant (c) -> rebuild senv exp k
@@ -290,7 +296,7 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
 	 simpl_expr senv ({exp with exp_desc = Texp_let (Nonrecursive, p_e_list, 
 	     	          {exp with exp_desc = Texp_apply(e1, args)})}) k
      end
-  | Texp_match (expr, pat_expr_list, ptial) ->       
+  | Texp_match (e0, pat_expr_list, ptial) ->       
       begin match k with
       | (Capp (env, [], nds, res_type) :: k1) ->  (* [matchR] *)
           let p_e_list = List.map (fun (p,e) -> (p, 
@@ -300,9 +306,18 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
 			   exp_type = res_type;
                          })) 
                          pat_expr_list in
-	  let expr1 = {exp with exp_desc = Texp_match (expr, p_e_list, ptial)} in
+	  let expr1 = {exp with exp_desc = Texp_match (e0, p_e_list, ptial)} in
           simpl_expr senv expr1 k1
-      | _ -> simpl_expr senv expr (Cmatch (senv, exp, pat_expr_list, ptial) :: k) 
+      | (Clet (rflag, ds, p, uds, e2) :: k1) -> 
+        (* let x = (match e0 with K x -> ei) in e2  ==>  [let-match]
+	   match e0 with K x -> let x = ei in e2 *)
+	   if rflag = Nonrecursive then
+	   let rhs = {exp with exp_desc = Texp_match(e0, 
+			     List.map (fun (pi,ei) -> (pi, {ei with exp_desc = 
+			 Texp_let (rflag, (p,ei)::uds, e2)})) pat_expr_list, ptial)}
+           in simpl_expr senv rhs (Cin (rflag, ds)::k1)
+	  else simpl_expr senv e0 (Cmatch (senv, exp, pat_expr_list, ptial) :: k) 
+      | _ -> simpl_expr senv e0 (Cmatch (senv, exp, pat_expr_list, ptial) :: k) 
       end
   | Texp_try (e, pat_expr_list) ->
      simpl_expr senv e ((Ctry pat_expr_list) :: k) 
@@ -320,11 +335,12 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
      *)
      begin match k with
      | (Cif (env, e11, e22opt) :: k1) -> 
-	 simpl_expr env {e1 with exp_desc = Texp_ifthenelse (e0, 
+	 let rhs =  {e1 with exp_desc = Texp_ifthenelse (e0, 
 	   { e1 with exp_desc = Texp_ifthenelse (e1, e11, e22opt) },
            match e2opt with
 	   | None -> None
-           | Some e2 -> Some { e1 with exp_desc = Texp_ifthenelse (e2, e11, e22opt)})} k1
+           | Some e2 -> Some { e1 with exp_desc = Texp_ifthenelse (e2, e11, e22opt)})} 
+	 in simpl_expr env rhs k1    
      | _ -> simpl_expr senv e0 (Cif (senv, e1, e2opt) :: k) 
      end
   | Texp_let (rflag, pat_expr_list, expr) ->     
@@ -345,72 +361,16 @@ let rec simpl_expr (senv : ThmEnv.t) (exp : expression) (k: cont list) : express
          let rhs = {then_e with exp_desc = Texp_let (rflag, pat_expr_list,
               {then_e with exp_desc = Texp_ifthenelse (expr, then_e, else_eopt)})}
          in simpl_expr env rhs k1     
-     | _ -> 
-       let rec do_let xs acc = match xs with
-       | [] -> acc             
-       | (p,e)::l -> 
-         let (trans_e, ds, isExn, env) = acc in
-	 let simpl_e = simpl_expr env e [] in
-         (* let x = BAD in e  ==> BAD *)
-         if is_bad simpl_e then (None, [(p,simpl_e)], true, env)
-         else (* let x = UNR in e  ==> UNR *)
-	 if is_unr simpl_e then (None, [(p,simpl_e)], true, env)
-         else 
-         begin match (p.pat_desc, simpl_e.exp_desc) with
+     | _ -> begin match pat_expr_list with
+       | [] -> simpl_expr senv expr k
+       | (p,e)::l ->  begin match (p.pat_desc, e.exp_desc) with
 	       | (Tpat_var (id1), Texp_ident (Pident id2, _)) 
-                  when rflag = Nonrecursive && id1 = id2 -> do_let l acc
-	       | (Tpat_var (id1), Texp_match(e0, alts, ptial))
-		  when rflag = Nonrecursive -> 
-		    (* let x = (match e0 with K x -> ei) in e2  ==>  [let-match]
-		       match e0 with K x -> let x = ei in e2 *)
-		    let new_e = simpl_expr senv ({exp with exp_desc = Texp_match(e0, 
-				     List.map (fun (pi,ei) -> (pi, {expr with exp_desc = 
-						 Texp_let (rflag, (p,ei)::l, expr)}))
-				 	    alts, ptial)}) [] in
-		    (Some new_e, ds, isExn, env)
-	       | (Tpat_var (id1), Texp_ifthenelse(e0, then_e, else_eopt))
-		  when rflag = Nonrecursive -> 
-		    (* let x = (if e0 then e1 else e3) in e2  ==>  [let-if]
-		       if e0 then let x = e1 in e2 else let x = e3 in e2 *)
-		    let new_e = simpl_expr senv ({exp with exp_desc = Texp_ifthenelse(e0, 
-				      {expr with exp_desc = Texp_let (rflag, (p,then_e)::l, expr)},
-				       match else_eopt with 
-				       | None -> None
-				       | Some e3 -> begin match e3.exp_desc with
-					 | Texp_bad _ | Texp_unr _ -> else_eopt
-					 | _ -> Some {expr with exp_desc = Texp_let (rflag, (p,e3)::l, expr)}
-					  end)}) [] 
-		    in (Some new_e, ds, isExn, env)
-               | (Tpat_var (id1), _) -> 
-		   if rflag = Nonrecursive && is_expression_tvalue simpl_e
-		   then 
-		   let new_id = Ident.rename id1 in 
-  		   let vd     = { val_type = e.exp_type; val_kind = Val_reg } in
-		   let eid    = {e with exp_desc = Texp_ident(Pident new_id, vd)} in
-		   let env2   = extend_senv env id1 eid in
-		   let env3   = extend_denv env2 eid (Inline simpl_e) in 
- 		   do_let l (trans_e, ds, isExn, env3)
-		   else
-		     let env2 = add_tasks env
-			 ((bound_vars_to_logic p)@[toAxiom simpl_e p]) in
-		     (* (def_to_axioms [(p,simpl_e)]) in *)
-		     do_let l (trans_e, ds@[(p, simpl_e)], isExn, env2)
-	       | _ -> do_let l (trans_e, ds@[(p, simpl_e)], isExn, env)
-         end
-     in
-     let (new_e, simpl_list, is_exn, new_senv) = do_let pat_expr_list (None, [], false, senv) in
-     match new_e with 
-     | Some exp -> (* means let-expression is transformed, so simplify the new expression *)
-         simpl_expr new_senv exp k
-     | None -> 
-	 let body = simpl_expr new_senv expr [] in
-	 if List.length simpl_list = 0 (* means all let-bindings are redundant *)
-	 then rebuild new_senv body k
-	 else if is_exn 
-	      then let (p, texp_exn) = List.hd simpl_list in texp_exn
-	      else 
-	   rebuild new_senv {exp with exp_desc = Texp_let(rflag, simpl_list, body)} k   
-   end
+                  when rflag = Nonrecursive && id1 = id2 -> 
+		    simpl_expr senv ({exp with exp_desc = Texp_let (rflag, l, expr)}) k
+	       | _ -> simpl_expr senv e (Clet (rflag, [], p, l, expr) ::k)
+		  end
+           end
+      end
   | Texp_sequence (e1, e2) -> 
      let new_e1 = simpl_expr senv e1 k in 
      let new_e2 = simpl_expr senv e2 k in 
@@ -550,12 +510,12 @@ and rebuildMatch senv scrut aval alts ptial k =
     begin
     let env3 = add_tasks env2 (goal_tasks@[toGoal_pneq scrut p]) in
     let ts2  = tasks env3 in 
-    let filename = (Location.toString e.exp_loc)^"_match.why" in
+    let filename = (Location.toString scrut.exp_loc)^"_match.why" in
     write_tasks_to_file filename ts2;
     begin match askErgo filename ts2 with
     | Valid -> (* this branch is unreachable *)
               (p, {e with exp_desc = Texp_unr (UnknownBlame)})
-    | _ -> let env4 = add_tasks env2 [toAxiom scrut p] in           
+    | _ -> let env4 = add_tasks env2 [toAxiom_peq scrut p] in           
    	   match (scrut.exp_desc, p.pat_desc) with 
            | (Texp_ident (Pident id1, vd),  Tpat_construct (path, cdesc, [])) -> 
    	 (* if pattern is a constructor with no parameters, 
@@ -569,21 +529,27 @@ and rebuildMatch senv scrut aval alts ptial k =
            | _ -> (p,simpl_expr env4 e k)
      end 
      end 
-    else let env4 = add_tasks env2 [toAxiom scrut p] in
+    else let env4 = add_tasks env2 [toAxiom_peq scrut p] in
          (p,simpl_expr env4 e k)
     ) alts in
    {e with exp_desc = Texp_match (scrut, new_alts, ptial)}
 
+and ergo_counter = ref 1
+
 and rebuildIf senv scrut e1 e2opt k = 
+    let is_prop = is_expression_prop scrut in
     let mkexp desc = {e1 with exp_desc = desc} in
     let unr_exp = {e1 with exp_desc = Texp_unr (UnknownBlame)} in
     let then_senv = extend_denv senv scrut 
                                 (Inline (trueExpression scrut)) in
-    let then_senv2 = add_tasks then_senv [toAxiom scrut (truePat scrut)] in
+    let then_axiom = if is_prop then toAxiom scrut 
+                     else toAxiom_beq scrut in
+    let then_senv2 = add_tasks then_senv [then_axiom] in
     let else_senv = extend_denv senv scrut 
                                 (Inline (falseExpression scrut)) in
-    let else_senv2 = add_tasks else_senv 
-		         [toAxiom scrut (falsePat scrut)] in
+    let else_axiom = if is_prop then toAxiom_neg scrut 
+                     else toAxiom_bneq scrut in
+    let else_senv2 = add_tasks else_senv [else_axiom] in
     match is_expression_true scrut with
      | Ptrue -> simpl_expr senv e1 k
      | Pfalse -> begin match e2opt with
@@ -594,12 +560,15 @@ and rebuildIf senv scrut e1 e2opt k =
        | Some e2 -> begin match e2.exp_desc with
 	 | Texp_bad _ when (is_scrutinee_ergoble scrut) -> 
              let goal_tasks = goalTasks senv in        
-	     let senv1 = if is_expression_prop scrut
+	     let senv1 = if is_prop
                          then add_tasks senv (goal_tasks@[toGoal scrut])
 	                 else add_tasks senv (goal_tasks@[toGoal_beq scrut]) in
 	     let ts1   = tasks senv1 in     
-	     let filename = (Location.toString e1.exp_loc)^"_if.why" in
+             let inits = (Location.toString scrut.exp_loc) in
+	     let filename = inits^"_"^(string_of_int !ergo_counter)^"_if.why" in
+             ergo_counter := !ergo_counter + 1;
 	     write_tasks_to_file filename ts1;
+	     (* print_string "call altergo: \n"; print_expression scrut; *)
 	     begin match askErgo filename ts1 with 
 	     | Valid -> (* scrutinee is Valid *)
 		 simpl_expr then_senv2 e1 k
@@ -612,7 +581,7 @@ and rebuildIf senv scrut e1 e2opt k =
 		       begin match e2opt with
 		       | Some e2 -> 
                        let else_senv2 = add_tasks else_senv 
-		       [toAxiom [] scrut (falsePat scrut)] in
+		       [toAxiom_bneq scrut] in
                        simpl_expr else_senv2 e2 k
 		       | None -> rebuild senv (mkexp (Texp_ifthenelse 
 		       ((falseExpression scrut), unr_exp, None))) k
@@ -657,17 +626,21 @@ and knownCon senv (path, cdesc) es alts k =
    
 
 and rebuild senv a k = 
- (* print_string "***esc.rebuild: \n"; print_expression a; print_string "\n"; *)
+  (* print_string "***esc.rebuild: \n"; print_expression a; print_string "\n"; *)
   match (a.exp_desc, k) with
   | (_, []) -> a
   | (Texp_bad (bl), Cmatch _ :: k1) -> rebuild senv a k1
   | (Texp_bad (bl), Cif _ :: k1) -> rebuild senv a k1
   | (Texp_bad (bl), Capp _ :: k1) -> rebuild senv a k1
   | (Texp_bad (bl), Cargs _ :: k1) -> rebuild senv a k1
+  | (Texp_bad (bl), Clet _ :: k1) -> rebuild senv a k1
+  | (Texp_bad (bl), Cin _ :: k1) -> rebuild senv a k1
   | (Texp_unr (bl), Cmatch _ :: k1) -> rebuild senv a k1
   | (Texp_unr (bl), Cif _ :: k1) -> rebuild senv a k1
   | (Texp_unr (bl), Capp _ :: k1) -> rebuild senv a k1
   | (Texp_unr (bl), Cargs _ :: k1) -> rebuild senv a k1
+  | (Texp_unr (bl), Clet _ :: k1) -> rebuild senv a k1
+  | (Texp_unr (bl), Cin _ :: k1) -> rebuild senv a k1
   | (Texp_construct (path, cdesc, es), 
      Cmatch (matchenv, e_match, alts, ptial) :: k1) -> 
       knownCon matchenv (path, cdesc) es alts k1
@@ -677,12 +650,74 @@ and rebuild senv a k =
       simpl_args env f (ds@[(Some a, optl)]) nds res_type k1
   | (_, Capp (env, ds, nds, res_type) :: k1) -> 
       simpl_args env a ds nds res_type k1
-  | (_, Clet (rflag, es) :: k1) -> 
-      rebuild senv ({a with exp_desc = Texp_let (rflag, es, a)}) k1
+  | (_, Clet (rflag, ds, p, uds, e3) :: k1) ->       
+      begin match p.pat_desc with
+      | Tpat_var (id1) when rflag = Nonrecursive && 
+	  ((is_expression_tvalue a) || (match e3.exp_desc with
+	  | Texp_ident(Pident id2, vd) -> id2 = id1 
+	  | _ -> false)) ->
+        let new_id = Ident.rename id1 in 
+  	let vd     = { val_type = a.exp_type; val_kind = Val_reg } in
+	let eid    = {a with exp_desc = Texp_ident(Pident new_id, vd)} in
+	let env2   = extend_senv senv id1 eid in
+	let env3   = extend_denv env2 eid (Inline a) in  
+	  begin match uds with
+	  | [] -> simpl_expr env3 e3 (Cin (rflag, ds) :: k1)
+	  | ((x,e)::l) ->
+	      simpl_expr env3 e (Clet (rflag, ds, x, l, e3) :: k1)	      
+	  end	  
+     | _ -> begin match a.exp_desc with
+       | Texp_let(rec_flag, pelist, a2) -> 
+	   (* let x = (let y = a1 in a2) in e3 ==> [let-let]
+	      let y = a1 in let x = a2 in e3 *)
+	  begin match uds with
+	  | [] ->  	  (* (def_to_axioms [(p,a)]) in *)		    
+              let env2 = add_tasks senv (
+		                (bound_vars_to_logic p)@[toAxiom_peq a p]) in
+	      simpl_expr env2 e3 (Cin (rflag, ds@pelist@[(p,a2)]) :: k1)
+            | ((x,e)::l) ->
+	      let env2 = add_tasks senv ((bound_vars_to_logic p)@[toAxiom_peq a p]) in
+	      simpl_expr env2 e (Clet (rflag, ds@[(p,a2)], x, l, e3) :: k1)
+	  end 
+       | Texp_ifthenelse (a0, a1, a2opt) when rflag = Nonrecursive ->
+	 (* let x1 = ..
+                x = (if a0 then a1 else a2) 
+                xn = ..
+            in e3  ==>  [let-if]
+            let x1 = ..
+                if a0 then let x = a1 
+	                       xn = ..
+                           in e3 
+	              else let x = a2 
+	                       xn = ..
+                           in e3 *)
+           let e1 = {a1 with exp_desc = Texp_let (rflag, (p,a1)::uds, e3)} in
+	   let e2opt = match a2opt with 
+	       | None -> None
+	       | Some a2 -> begin match a2.exp_desc with
+		 | Texp_bad _ | Texp_unr _ -> a2opt
+		 | _ -> Some {a2 with exp_desc = 
+			               Texp_let (rflag, (p,a2)::uds, e3)}
+	       end
+	   in rebuildIf senv a0 e1 e2opt (Cin (rflag, ds) :: k1)
+       | _ -> 	   
+	   let env2 = add_tasks senv ((bound_vars_to_logic p)@[toAxiom_peq a p]) in
+	   begin match uds with
+	   | [] ->  simpl_expr env2 e3 (Cin (rflag, ds@[(p,a)]) :: k1) 
+	   | ((x,e)::l) -> 
+	      simpl_expr env2 e (Clet (rflag, ds@[(p,a)], x, l, e3) :: k1)
+           end
+      end
+    end
+  | (_, Cin (rflag, ds) :: k1) -> 
+      begin match ds with 
+      | [] -> rebuild senv a k1
+      | _ -> rebuild senv ({a with exp_desc = Texp_let (rflag, ds, a)}) k1
+      end
   | (_, Cmatch (matchenv, e_match, alts, ptial) :: k1) -> 
        begin match lookup_denv a senv with
        | Inline e -> (* if scrutinee reappears, replace it by its aval *)
-                     simpl_expr senv e k1
+                     rebuildMatch matchenv e NoVal alts ptial k1
        | _ -> (* [[ a ]]_(K x) *)
          if a.exp_type = Predef.type_bool 
 	   then begin 
@@ -710,8 +745,16 @@ and rebuild senv a k =
   | (_, Cif (ifenv, e1, e2opt) :: k1) ->       
       begin match lookup_denv a senv with
       | Inline e -> (* if scrutinee reappears, replace it by its aval *)
-                    simpl_expr senv e k
-      | _ -> rebuildIf ifenv a e1 e2opt k1
+                    rebuildIf ifenv e e1 e2opt k1
+      | _ -> begin match a.exp_desc with
+        | Texp_let (rflag, pelist, e) -> 
+       (* if (let x = a1 in a2) then .. else ..
+           ==> [if-let]
+          let x = a1 in if a2 then .. else ..
+       *)
+	  rebuild senv e (Cif (ifenv, e1, e2opt):: Cin (rflag, pelist) :: k1)     
+        | _ -> rebuildIf ifenv a e1 e2opt k1
+        end
       end
   | _ -> raise(Error(Rebuild_pattern_not_matched))
   
@@ -720,7 +763,7 @@ and rebuildVar senv ((n, e):(Ident.t * expression))
                (v:aval) (k:cont list) : outexp = 
 (* e is the expression form of the ident n *)
     match v with
-    | Inline a -> simpl_expr senv a k
+    | Inline a -> rebuild senv a k
     | NotCon (cs) -> begin match k with
       | Cmatch (senv, e_match, alts, ptial) :: k1 -> 
 	  rebuildMatch senv e (NotCon cs) alts ptial k1
