@@ -3033,8 +3033,16 @@ New syntax:\
                     [ (None, (Some Camlp4.Sig.Grammar.RightA),
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj
-                                 (labeled_ipatt :
-                                   'labeled_ipatt Gram.Entry.t));
+                                 (cvalue_binding :
+                                   'cvalue_binding Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (bi : 'cvalue_binding) (_loc : Gram.Loc.t)
+                                -> (bi : 'fun_binding))));
+                         ([ Gram.Stry
+                              (Gram.Snterm
+                                 (Gram.Entry.obj
+                                    (labeled_ipatt :
+                                      'labeled_ipatt Gram.Entry.t)));
                             Gram.Sself ],
                           (Gram.Action.mk
                              (fun (e : 'fun_binding) (p : 'labeled_ipatt)
@@ -3042,14 +3050,6 @@ New syntax:\
                                 (Ast.ExFun (_loc,
                                    (Ast.McArr (_loc, p, (Ast.ExNil _loc), e))) :
                                   'fun_binding))));
-                         ([ Gram.Stry
-                              (Gram.Snterm
-                                 (Gram.Entry.obj
-                                    (cvalue_binding :
-                                      'cvalue_binding Gram.Entry.t))) ],
-                          (Gram.Action.mk
-                             (fun (bi : 'cvalue_binding) (_loc : Gram.Loc.t)
-                                -> (bi : 'fun_binding))));
                          ([ Gram.Stry
                               (Gram.srules fun_binding
                                  [ ([ Gram.Skeyword "("; Gram.Skeyword "type" ],

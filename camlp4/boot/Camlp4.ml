@@ -3531,7 +3531,7 @@ module Struct =
               
             let skip_opt_linefeed (__strm : _ Stream.t) =
               match Stream.peek __strm with
-              | Some '\010' -> (Stream.junk __strm; ())
+              | Some '\n' -> (Stream.junk __strm; ())
               | _ -> ()
               
             let chr c =
@@ -3541,8 +3541,8 @@ module Struct =
               
             let rec backslash (__strm : _ Stream.t) =
               match Stream.peek __strm with
-              | Some '\010' -> (Stream.junk __strm; '\010')
-              | Some '\013' -> (Stream.junk __strm; '\013')
+              | Some '\n' -> (Stream.junk __strm; '\n')
+              | Some '\r' -> (Stream.junk __strm; '\r')
               | Some 'n' -> (Stream.junk __strm; '\n')
               | Some 'r' -> (Stream.junk __strm; '\r')
               | Some 't' -> (Stream.junk __strm; '\t')
@@ -3581,8 +3581,8 @@ module Struct =
               
             let rec backslash_in_string strict store (__strm : _ Stream.t) =
               match Stream.peek __strm with
-              | Some '\010' -> (Stream.junk __strm; skip_indent __strm)
-              | Some '\013' ->
+              | Some '\n' -> (Stream.junk __strm; skip_indent __strm)
+              | Some '\r' ->
                   (Stream.junk __strm;
                    let s = __strm in (skip_opt_linefeed s; skip_indent s))
               | _ ->
@@ -7418,13 +7418,15 @@ module Struct =
                       
                     module Expr =
                       struct
-                        let meta_string _loc s = Ast.ExStr (_loc, s)
+                        let meta_string _loc s =
+                          Ast.ExStr (_loc, (safe_string_escaped s))
                           
                         let meta_int _loc s = Ast.ExInt (_loc, s)
                           
                         let meta_float _loc s = Ast.ExFlo (_loc, s)
                           
-                        let meta_char _loc s = Ast.ExChr (_loc, s)
+                        let meta_char _loc s =
+                          Ast.ExChr (_loc, (String.escaped s))
                           
                         let meta_bool _loc =
                           function
@@ -9747,13 +9749,15 @@ module Struct =
                       
                     module Patt =
                       struct
-                        let meta_string _loc s = Ast.PaStr (_loc, s)
+                        let meta_string _loc s =
+                          Ast.PaStr (_loc, (safe_string_escaped s))
                           
                         let meta_int _loc s = Ast.PaInt (_loc, s)
                           
                         let meta_float _loc s = Ast.PaFlo (_loc, s)
                           
-                        let meta_char _loc s = Ast.PaChr (_loc, s)
+                        let meta_char _loc s =
+                          Ast.PaChr (_loc, (String.escaped s))
                           
                         let meta_bool _loc =
                           function
@@ -18955,7 +18959,7 @@ module Printers =
                        "Cannot print %S this identifier does not respect OCaml lexing rules (%s)"
                        str (Lexer.Error.to_string exn))
               
-            let ocaml_char x = match x with | "'" -> "\\'" | c -> c
+            let ocaml_char x = Char.escaped (Struct.Token.Eval.char x)
               
             let rec get_expr_args a al =
               match a with
@@ -19484,7 +19488,7 @@ module Printers =
                       | Ast.ExInt64 (_, s) -> o#numeric f s "L"
                       | Ast.ExInt32 (_, s) -> o#numeric f s "l"
                       | Ast.ExFlo (_, s) -> o#numeric f s ""
-                      | Ast.ExChr (_, s) -> pp f "'%s'" s
+                      | Ast.ExChr (_, s) -> pp f "'%s'" (ocaml_char s)
                       | Ast.ExId (_, i) -> o#var_ident f i
                       | Ast.ExRec (_, b, (Ast.ExNil _)) ->
                           pp f "@[<hv0>@[<hv2>{%a@]@ }@]" o#record_binding b
@@ -19629,7 +19633,7 @@ module Printers =
                       | Ast.PaInt32 (_, s) -> o#numeric f s "l"
                       | Ast.PaInt (_, s) -> o#numeric f s ""
                       | Ast.PaFlo (_, s) -> o#numeric f s ""
-                      | Ast.PaChr (_, s) -> pp f "'%s'" s
+                      | Ast.PaChr (_, s) -> pp f "'%s'" (ocaml_char s)
                       | Ast.PaLab (_, s, (Ast.PaNil _)) -> pp f "~%s" s
                       | Ast.PaVrn (_, s) -> pp f "`%a" o#var s
                       | Ast.PaTyp (_, i) -> pp f "@[<2>#%a@]" o#ident i
@@ -20487,6 +20491,8 @@ module Printers =
                            else ())
                       | Ast.TyCol (_, t1, (Ast.TyMut (_, t2))) ->
                           pp f "@[%a :@ mutable %a@]" o#ctyp t1 o#ctyp t2
+                      | Ast.TyMan (_, t1, t2) ->
+                          pp f "@[<2>%a ==@ %a@]" o#simple_ctyp t1 o#ctyp t2
                       | t -> super#ctyp f t
                 method simple_ctyp =
                   fun f t ->
