@@ -342,12 +342,13 @@ let type_constraint val_env sty sty' loc =
   end;
   (cty, cty')
 
-let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
-let make_method cl_num expr =
+let make_method self_loc cl_num expr =
+  let mkpat d = { ppat_desc = d; ppat_loc = self_loc } in
+  let mkid s = mkloc s self_loc in
   { pexp_desc =
       Pexp_function ("", None,
-                     [mkpat (Ppat_alias (mkpat(Ppat_var (mknoloc "self-*")),
-                                         mknoloc ("self-" ^ cl_num))),
+                     [mkpat (Ppat_alias (mkpat (Ppat_var (mkid "self-*")),
+                                         mkid ("self-" ^ cl_num))),
                       expr]);
     pexp_loc = expr.pexp_loc }
 
@@ -491,7 +492,7 @@ let class_type env scty =
 
 (*******************************)
 
-let rec class_field cl_num self_type meths vars
+let rec class_field self_loc cl_num self_type meths vars
     (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher)
   cf =
   let loc = cf.pcf_loc in
@@ -629,7 +630,7 @@ let rec class_field cl_num self_type meths vars
       with Ctype.Unify trace ->
         raise(Error(loc, Field_type_mismatch ("method", lab.txt, trace)))
       end;
-      let meth_expr = make_method cl_num expr in
+      let meth_expr = make_method self_loc cl_num expr in
       (* backup variables for Pexp_override *)
       let vars_local = !vars in
 
@@ -656,7 +657,7 @@ let rec class_field cl_num self_type meths vars
         concr_meths, warn_vals, inher)
 
   | Pcf_init expr ->
-      let expr = make_method cl_num expr in
+      let expr = make_method self_loc cl_num expr in
       let vars_local = !vars in
       let field =
         lazy begin
@@ -676,6 +677,9 @@ and class_structure cl_num final val_env met_env loc
   { pcstr_pat = spat; pcstr_fields = str } =
   (* Environment for substructures *)
   let par_env = met_env in
+
+  (* Location of self. Used for locations of self arguments *)
+  let self_loc = {spat.ppat_loc with Location.loc_ghost = true} in
 
   (* Self type, with a dummy method preventing it from being closed/escaped. *)
   let self_type = Ctype.newvar () in
@@ -717,7 +721,7 @@ and class_structure cl_num final val_env met_env loc
 
   (* Typing of class fields *)
   let (_, _, _, fields, concr_meths, _, inher) =
-    List.fold_left (class_field cl_num self_type meths vars)
+    List.fold_left (class_field self_loc cl_num self_type meths vars)
       (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [])
       str
   in
