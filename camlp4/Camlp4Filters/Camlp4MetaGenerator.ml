@@ -161,10 +161,10 @@ value filter st =
        let bi = mk_meta m in
        <:module_expr<
         struct
-          value meta_string _loc s = $m.str$ _loc s;
+          value meta_string _loc s = $m.str$ _loc (safe_string_escaped s);
           value meta_int _loc s = $m.int$ _loc s;
           value meta_float _loc s = $m.flo$ _loc s;
-          value meta_char _loc s = $m.chr$ _loc s;
+          value meta_char _loc s = $m.chr$ _loc (String.escaped s);
           value meta_bool _loc =
             fun
             [ False -> $m_uid m "False"$
