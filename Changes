@@ -43,6 +43,7 @@ Native-code compiler:
 - New tool: ocamloptp, the equivalent of ocamlcp for the native-code compiler.
 
 OCamldoc:
+- PR#5645: ocamldoc doesn't handle module/type substitution in signatures
 - PR#5544: improve HTML output (less formatting in html code)
 - PR#5522: allow refering to record fields and variant constructors
 - fix PR#5419 (error message in french)
