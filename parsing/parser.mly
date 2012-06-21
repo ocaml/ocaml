@@ -1212,18 +1212,19 @@ expr_comma_list:
   | expr COMMA expr                             { [$3; $1] }
 ;
 record_expr:
-    simple_expr WITH lbl_expr_list opt_semi     { (Some $1, List.rev $3) }
-  | lbl_expr_list opt_semi                      { (None, List.rev $1) }
+    simple_expr WITH lbl_expr_list              { (Some $1, $3) }
+  | lbl_expr_list                               { (None, $1) }
 ;
 lbl_expr_list:
+     lbl_expr { [$1] }
+  |  lbl_expr SEMI lbl_expr_list { $1 :: $3 }
+  |  lbl_expr SEMI { [$1] }
+;
+lbl_expr:
     label_longident EQUAL expr
-      { [mkrhs $1 1,$3] }
+      { (mkrhs $1 1,$3) }
   | label_longident
-      { [mkrhs $1 1, exp_of_label $1 1] }
-  | lbl_expr_list SEMI label_longident EQUAL expr
-      { (mkrhs $3 3, $5) :: $1 }
-  | lbl_expr_list SEMI label_longident
-      { (mkrhs $3 3, exp_of_label $3 3) :: $1 }
+      { (mkrhs $1 1, exp_of_label $1 1) }
 ;
 field_expr_list:
     label EQUAL expr
