@@ -812,7 +812,7 @@ if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *-*-cygwin*)
       echo "We won't use it, though, because of conflicts with .exe extension"
-      echo "under Cygwin"
+      echo "  under Cygwin"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)
       echo "SHARPBANGSCRIPTS=true" >> Makefile;;
