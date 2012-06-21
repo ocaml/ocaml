@@ -1212,18 +1212,19 @@ expr_comma_list:
   | expr COMMA expr                             { [$3; $1] }
 ;
 record_expr:
-    simple_expr WITH lbl_expr_list opt_semi     { (Some $1, List.rev $3) }
-  | lbl_expr_list opt_semi                      { (None, List.rev $1) }
+    simple_expr WITH lbl_expr_list              { (Some $1, $3) }
+  | lbl_expr_list                               { (None, $1) }
 ;
 lbl_expr_list:
+     lbl_expr { [$1] }
+  |  lbl_expr SEMI lbl_expr_list { $1 :: $3 }
+  |  lbl_expr SEMI { [$1] }
+;
+lbl_expr:
     label_longident EQUAL expr
-      { [mkrhs $1 1,$3] }
+      { (mkrhs $1 1,$3) }
   | label_longident
-      { [mkrhs $1 1, exp_of_label $1 1] }
-  | lbl_expr_list SEMI label_longident EQUAL expr
-      { (mkrhs $3 3, $5) :: $1 }
-  | lbl_expr_list SEMI label_longident
-      { (mkrhs $3 3, exp_of_label $3 3) :: $1 }
+      { (mkrhs $1 1, exp_of_label $1 1) }
 ;
 field_expr_list:
     label EQUAL expr
@@ -1280,9 +1281,9 @@ simple_pattern:
       { mkpat(Ppat_variant($1, None)) }
   | SHARP type_longident
       { mkpat(Ppat_type (mkrhs $2 2)) }
-  | LBRACE lbl_pattern_list record_pattern_end RBRACE
-      { mkpat(Ppat_record(List.rev $2, $3)) }
-  | LBRACE lbl_pattern_list opt_semi error
+  | LBRACE lbl_pattern_list RBRACE
+      { let (fields, closed) = $2 in mkpat(Ppat_record(fields, closed)) }
+  | LBRACE lbl_pattern_list error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
       { reloc_pat (mktailpat (List.rev $2)) }
@@ -1319,14 +1320,16 @@ pattern_semi_list:
   | pattern_semi_list SEMI pattern              { $3 :: $1 }
 ;
 lbl_pattern_list:
-    label_longident EQUAL pattern               { [(mkrhs $1 1, $3)] }
-  | label_longident                             { [(mkrhs $1 1, pat_of_label $1 1)] }
-  | lbl_pattern_list SEMI label_longident EQUAL pattern { (mkrhs $3 3, $5) :: $1 }
-  | lbl_pattern_list SEMI label_longident       { (mkrhs $3 3, pat_of_label $3 3) :: $1 }
+     lbl_pattern { [$1], Closed }
+  |  lbl_pattern SEMI { [$1], Closed }
+  |  lbl_pattern SEMI UNDERSCORE opt_semi { [$1], Open }
+  |  lbl_pattern SEMI lbl_pattern_list { let (fields, closed) = $3 in $1 :: fields, closed }
 ;
-record_pattern_end:
-    opt_semi                                    { Closed }
-  | SEMI UNDERSCORE opt_semi                    { Open }
+lbl_pattern:
+    label_longident EQUAL pattern
+      { (mkrhs $1 1,$3) }
+  | label_longident
+      { (mkrhs $1 1, pat_of_label $1 1) }
 ;
 
 /* Primitive declarations */
