@@ -78,6 +78,7 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     type 'a t = (key, 'a) Hashtbl.t
     let create s = Hashtbl.create s
     let clear = Hashtbl.clear
+    let reset = Hashtbl.reset
     let copy = Hashtbl.copy
     let add = Hashtbl.add
     let remove = Hashtbl.remove
