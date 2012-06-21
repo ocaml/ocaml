@@ -1,4 +1,5 @@
 BASEDIR=../..
+
 CC=$(NATIVECC)
 CFLAGS=$(NATIVECCCOMPOPTS) -g
 
@@ -141,11 +142,11 @@ clean: defaultclean
 	@rm -f parsecmm.ml parsecmm.mli lexcmm.ml
 	@rm -f $(CASES:=.s)
 
+include $(BASEDIR)/makefiles/Makefile.common
+
 power.o: power-$(SYSTEM).o
 	@cp power-$(SYSTEM).o power.o
 
 promote:
-
-include $(BASEDIR)/makefiles/Makefile.common
 
 arch: $(ARCH).o
