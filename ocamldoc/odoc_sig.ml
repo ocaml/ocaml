@@ -257,6 +257,38 @@ module Analyser =
           in
           Odoc_type.Type_record (List.map f l)
 
+    let erased_names_of_constraints constraints acc =
+      List.fold_right (fun (longident, constraint_) acc ->
+        match constraint_ with
+        | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ -> acc
+        | Parsetree.Pwith_typesubst _ | Parsetree.Pwith_modsubst _ ->
+          Name.Set.add (Name.from_longident longident.txt) acc)
+        constraints acc
+
+    let filter_out_erased_items_from_signature erased signature =
+      if Name.Set.is_empty erased then signature
+      else List.fold_right (fun sig_item acc ->
+        let take_item psig_desc = { sig_item with Parsetree.psig_desc } :: acc in
+        match sig_item.Parsetree.psig_desc with
+        | Parsetree.Psig_value (_, _)
+        | Parsetree.Psig_exception (_, _)
+        | Parsetree.Psig_open _
+        | Parsetree.Psig_include _
+        | Parsetree.Psig_class _
+        | Parsetree.Psig_class_type _ as tp -> take_item tp
+        | Parsetree.Psig_type types ->
+          (match List.filter (fun (name, _) -> not (Name.Set.mem name.txt erased)) types with
+          | [] -> acc
+          | types -> take_item (Parsetree.Psig_type types))
+        | Parsetree.Psig_module (name, _)
+        | Parsetree.Psig_modtype (name, _) as m ->
+          if Name.Set.mem name.txt erased then acc else take_item m
+        | Parsetree.Psig_recmodule mods ->
+          (match List.filter (fun (name, _) -> not (Name.Set.mem name.txt erased)) mods with
+          | [] -> acc
+          | mods -> take_item (Parsetree.Psig_recmodule mods)))
+        signature []
+
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
        signature. @return the couple (inherited_class list, elements).*)
     let analyse_class_elements env current_class_name last_pos pos_limit
@@ -1013,7 +1045,8 @@ module Analyser =
             (maybe_more, new_env, eles)
 
     (** Return a module_type_kind from a Parsetree.module_type and a Types.module_type *)
-    and analyse_module_type_kind env current_module_name module_type sig_module_type =
+    and analyse_module_type_kind
+      ?(erased = Name.Set.empty) env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
         Parsetree.Pmty_ident longident ->
           let name =
@@ -1027,6 +1060,7 @@ module Analyser =
 
       | Parsetree.Pmty_signature ast ->
           (
+           let ast = filter_out_erased_items_from_signature erased ast in
            (* we must have a signature in the module type *)
            match sig_module_type with
              Types.Mty_signature signat ->
@@ -1057,7 +1091,7 @@ module Analyser =
                    mp_kind = mp_kind ;
                  }
                in
-               let k = analyse_module_type_kind env
+               let k = analyse_module_type_kind ~erased env
                    current_module_name
                    module_type2
                    body_module_type
@@ -1069,13 +1103,15 @@ module Analyser =
                raise (Failure "Parsetree.Pmty_functor _ but not Types.Mty_functor _")
           )
 
-      | Parsetree.Pmty_with (module_type2, _) ->
+      | Parsetree.Pmty_with (module_type2, constraints) ->
           (* of module_type * (Longident.t * with_constraint) list *)
           (
            let loc_start = module_type2.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
            let loc_end = module_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
            let s = get_string_of_file loc_start loc_end in
-           let k = analyse_module_type_kind env current_module_name module_type2 sig_module_type in
+           let erased = erased_names_of_constraints constraints erased in
+           let k = analyse_module_type_kind ~erased env current_module_name module_type2 sig_module_type in
+
            Module_type_with (k, s)
           )
 
@@ -1086,7 +1122,8 @@ module Analyser =
           Module_type_typeof s
 
     (** analyse of a Parsetree.module_type and a Types.module_type.*)
-    and analyse_module_kind env current_module_name module_type sig_module_type =
+    and analyse_module_kind
+        ?(erased = Name.Set.empty) env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
         Parsetree.Pmty_ident longident ->
           let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
@@ -1094,6 +1131,7 @@ module Analyser =
 
       | Parsetree.Pmty_signature signature ->
           (
+           let signature = filter_out_erased_items_from_signature erased signature in
            match sig_module_type with
              Types.Mty_signature signat ->
                Module_struct
@@ -1128,7 +1166,7 @@ module Analyser =
                    mp_kind = mp_kind ;
                  }
                in
-               let k = analyse_module_kind env
+               let k = analyse_module_kind ~erased env
                    current_module_name
                    module_type2
                    body_module_type
@@ -1139,13 +1177,14 @@ module Analyser =
                (* if we're here something's wrong *)
                raise (Failure "Parsetree.Pmty_functor _ but not Types.Mty_functor _")
           )
-      | Parsetree.Pmty_with (module_type2, _) ->
+      | Parsetree.Pmty_with (module_type2, constraints) ->
           (*of module_type * (Longident.t * with_constraint) list*)
           (
            let loc_start = module_type2.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
            let loc_end = module_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
            let s = get_string_of_file loc_start loc_end in
-           let k = analyse_module_type_kind env current_module_name module_type2 sig_module_type in
+           let erased = erased_names_of_constraints constraints erased in
+           let k = analyse_module_type_kind ~erased env current_module_name module_type2 sig_module_type in
            Module_with (k, s)
           )
       | Parsetree.Pmty_typeof module_expr ->
