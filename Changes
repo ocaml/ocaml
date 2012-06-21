@@ -133,6 +133,7 @@ Bug Fixes:
   'parser' keyword and associated notation
 - PR#5224: confusing error message in non-regular type definition
 - PR#5231: camlp4: fix parsing of <:str_item< type t = $x$ >>
+- PR#5233: finaliser on weak array gives dangling pointers (crash)
 - PR#5238, PR#5277: Sys_error when getting error location
 - PR#5261, PR#5497: Ocaml source-code examples are not "copy-paste-able"
 - PR#5290: added hash functions for channels, nats, mutexes, conditions
