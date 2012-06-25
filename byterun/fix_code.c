@@ -34,7 +34,6 @@
 code_t caml_start_code;
 asize_t caml_code_size;
 unsigned char * caml_saved_code;
-unsigned char caml_code_md5[16];
 
 /* Read the main bytecode block from a file */
 
