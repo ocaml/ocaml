@@ -627,6 +627,7 @@ if test $withsharedlibs = "yes"; then
   case "$host" in
     *-*-cygwin*)                  natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
+    i[3456]86-*-gnu*)             natdynlink=true;;
     x86_64-*-linux*)              natdynlink=true;;
     i[3456]86-*-darwin[89].*)     natdynlink=true;;
     i[3456]86-*-darwin*)
@@ -634,8 +635,8 @@ if test $withsharedlibs = "yes"; then
         natdynlink=true
       fi;;
     x86_64-*-darwin*)             natdynlink=true;;
-    powerpc64-*-linux*)           natdynlink=true;;
-    sparc-*-linux*)               natdynlink=true;;
+    powerpc*-*-linux*)            natdynlink=true;;
+    sparc*-*-linux*)              natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
     i[345]86-*-freebsd*)          natdynlink=true;;
