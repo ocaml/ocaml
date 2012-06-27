@@ -35,7 +35,6 @@ val type_to_typelogic : loc -> Ident.t * type_declaration -> decl list
 val out_ergotasks : out_channel -> decl list -> unit
 val report_error: Format.formatter -> error -> unit
 val is_expression_ergoble: expression -> bool
-val is_scrutinee_ergoble: expression -> bool
 val bound_vars_to_logic : pattern -> decl list
 val toGoal_beq : expression -> decl
 val toGoal_bneq : expression -> decl

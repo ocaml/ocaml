@@ -178,12 +178,6 @@ else match exp.exp_desc with
             | None -> true) 
 | _ -> false
 
-let is_scrutinee_ergoble exp = match exp.exp_desc with
-| Texp_ident _ -> false
-| Texp_match _ -> false
-| _ -> is_expression_ergoble exp
-
-
 (* HOL, we introduce 
   type ('a, 'b) arrow 
   logic apply : ('a , 'b) arrow , 'a -> 'b *)
@@ -822,6 +816,7 @@ match e0.exp_desc with
     end
    | "=" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
+	  (*
 	  if is_expression_argable x 
 	     then if is_expression_argable y 
 	          then let e1 = expression_to_lexpr x in
@@ -845,10 +840,11 @@ match e0.exp_desc with
 		  let e1 = expression_to_eqlexpr xvar x in
 		  let e2 = expression_to_eqlexpr yvar y in
 		  f_exists x1 t1 (f_exists x2 t2 (f_and (f_and e1 e2) (f_eq xvar yvar)))
-	(*  let e1 = expression_to_lexpr x in
+	    *)
+	  let e1 = expression_to_lexpr x in
 	  let e2 = expression_to_lexpr y in
  	  f_iff (f_eq e1 e2)
-                (f_eq f (mklexpr l0 etrue)) *)
+                (f_eq f (mklexpr l0 etrue)) 
        | _ -> raise Not_primitive
     end
    | "<>" -> begin match expop_optl_list with 
@@ -896,8 +892,8 @@ match e0.exp_desc with
     end 
     | "not" -> begin match expop_optl_list with 
       | (Some x, _)::l -> 
-	  let e1 = expression_to_lexpr x in
- 	  f_eq f (f_not e1)
+	  let e1 = expression_to_eqlexpr f x in
+ 	  f_not e1
       | _ -> raise Not_primitive
     end 
     | _ -> raise Not_primitive

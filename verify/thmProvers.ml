@@ -21,7 +21,7 @@ let askErgo tasks =
   let outchnl = open_out filename in
   out_ergotasks outchnl tasks;
   close_out outchnl;
-  ignore (Sys.command (Printf.sprintf "alt-ergo -redondance 4 %s" filename));
+  ignore (Sys.command (Printf.sprintf "alt-ergo -redondance 4 -stop 2 %s" filename));
   let s = input_line stdin in
   (* close_in stdin; *)
   print_string ("the result"^s);

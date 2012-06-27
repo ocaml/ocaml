@@ -14,141 +14,6 @@ type error =
 
 exception Error of Location.t * error
 
-let rec rename_path_ident bvars path id1 id2 = match path with
- | Pident id -> if not(List.mem id bvars) && id = id1
-                then Pident id2
-                else path
- | Pdot (p, s, pos) -> Pdot (rename_path_ident bvars p id1 id2, s, pos)
- | Papply (p1, p2) -> Papply(p1, rename_path_ident bvars p2 id1 id2)
-
-(* subst replace free variables id1 in expr by id2 *)
-let rec subst bound_vars id1 id2 expr = match expr.exp_desc with
- | Texp_ident (path, vd) -> 
-     {expr with exp_desc = Texp_ident (rename_path_ident bound_vars path id1 id2, vd)}
- | Texp_constant (c) -> expr
- | Texp_let (rec_flag, pat_expr_list, e2) -> 
-     let bvars     = let_bound_idents pat_expr_list in
-     let p_e_list  = List.map (fun (p,e) -> (p, subst (bound_vars@bvars) id1 id2 e)) 
-	                   pat_expr_list in
-     let new_e2 = subst bound_vars id1 id2 e2 in
-     {expr with exp_desc = Texp_let (rec_flag, p_e_list, new_e2)}
- | Texp_function (pat_expr_list, ptial) -> 
-     let bvars     = let_bound_idents pat_expr_list in
-     let p_e_list  = List.map (fun (p,e) -> (p, subst (bound_vars@bvars) id1 id2 e)) 
-	                   pat_expr_list in
-     {expr with exp_desc = Texp_function (p_e_list, ptial)}
- | Texp_apply (e1, es) ->
-     let new_e1 = subst bound_vars id1 id2 e1 in
-     let new_es = List.map (fun (e_opt, optl) -> match e_opt with
-                            | Some e -> (Some (subst bound_vars id1 id2 e), optl)
-                            | None -> (None, optl)) es
-     in {expr with exp_desc = Texp_apply (new_e1, new_es)}
- | Texp_match (e0, pat_expr_list, ptial) -> 
-     let new_e0   = subst bound_vars id1 id2 e0 in
-     let bvars    = let_bound_idents pat_expr_list in
-     let p_e_list = List.map (fun (p,e) -> (p, subst (bound_vars@bvars) id1 id2 e)) 
- 	                     pat_expr_list in
-     {expr with exp_desc = Texp_match (new_e0, p_e_list, ptial)} 
- | Texp_try (e1, pat_expr_list) -> 
-     let new_e1   = subst bound_vars id1 id2 e1 in
-     let bvars    = let_bound_idents pat_expr_list in
-     let p_e_list = List.map (fun (p,e) -> (p, subst (bound_vars@bvars) id1 id2 e)) 
- 	                     pat_expr_list in
-     {expr with exp_desc = Texp_try (new_e1, p_e_list)}
- | Texp_tuple (es) -> 
-     let new_es = List.map (subst bound_vars id1 id2) es in
-     {expr with exp_desc = Texp_tuple new_es}
- | Texp_construct (path, cdesc, es) -> 
-     let new_es = List.map (subst bound_vars id1 id2) es in
-     {expr with exp_desc = Texp_construct (path, cdesc, new_es)}
- | Texp_variant (lbl, e_opt) -> 
-     let new_e = match e_opt with
-     | Some e -> Some (subst bound_vars id1 id2 e)
-     | None -> None
-     in {expr with exp_desc = Texp_variant (lbl, new_e)}
- | Texp_record (ldesc_expr_list, e_opt) ->
-     let l_e_list = List.map (fun (p,e) -> (p, subst bound_vars id1 id2 e)) 
- 	                     ldesc_expr_list in
-     {expr with exp_desc = Texp_record (l_e_list, match e_opt with
-     | Some e -> Some (subst bound_vars id1 id2 e)
-     | None -> None)}
- | Texp_field (e, ldesc) -> 
-     let new_e = subst bound_vars id1 id2 e in
-     {expr with exp_desc = Texp_field (new_e, ldesc)}
- | Texp_setfield (e1, ldesc, e2) -> 
-     let new_e1 = subst bound_vars id1 id2 e1 in
-     let new_e2 = subst bound_vars id1 id2 e2 in
-     {expr with exp_desc = Texp_setfield (new_e1, ldesc, new_e2)}
- | Texp_array (es) -> 
-     let new_es = List.map (subst bound_vars id1 id2) es in
-     {expr with exp_desc = Texp_tuple new_es}
- | Texp_ifthenelse (e0, e1, e2_opt) -> 
-     let new_e0 = subst bound_vars id1 id2 e0 in
-     let new_e1 = subst bound_vars id1 id2 e1 in
-     let new_e2 = match e2_opt with
-     | Some e -> Some (subst bound_vars id1 id2 e)
-     | None -> None 
-     in {expr with exp_desc = Texp_ifthenelse (new_e0, new_e1, new_e2)}    
- | Texp_sequence (e1, e2) -> 
-     let new_e1 = subst bound_vars id1 id2 e1 in
-     let new_e2 = subst bound_vars id1 id2 e2 in
-     {expr with exp_desc = Texp_sequence (new_e1, new_e2)}    
- | Texp_while (e1, e2) -> 
-     let new_e1 = subst bound_vars id1 id2 e1 in
-     let new_e2 = subst bound_vars id1 id2 e2 in
-     {expr with exp_desc = Texp_while (new_e1, new_e2)}    
- | Texp_for (id, e1, e2, dflag, e3) ->
-     let new_e1 = subst bound_vars id1 id2 e1 in
-     let new_e2 = subst bound_vars id1 id2 e2 in
-     let new_e3 = subst bound_vars id1 id2 e3 in
-     {expr with exp_desc = Texp_for (id, new_e1, new_e2, dflag, new_e3)}    
-  | Texp_when (e1, e2) -> 
-     let new_e1 = subst bound_vars id1 id2 e1 in
-     let new_e2 = subst bound_vars id1 id2 e2 in
-     {expr with exp_desc = Texp_when (new_e1, new_e2)}    
-  | Texp_send (e, meth) -> 
-     let new_e = subst bound_vars id1 id2 e in
-     {expr with exp_desc = Texp_send (new_e, meth)}    
-  | Texp_new _ -> expr
-  | Texp_instvar _ -> expr
-  | Texp_setinstvar (path1, path2, e) -> 
-     let new_e = subst bound_vars id1 id2 e in
-     {expr with exp_desc = Texp_setinstvar(path1, path2, new_e)}
-  | Texp_override (path1, path_expr_list) -> 
-     let p_e_list = List.map (fun (p,e) -> (p, subst bound_vars id1 id2 e)) 
- 	                      path_expr_list in
-     {expr with exp_desc = Texp_override (path1, p_e_list)}
-  | Texp_letmodule (id, modexpr, e) -> 
-      let new_e = subst bound_vars id1 id2 e in
-      {expr with exp_desc = Texp_letmodule (id, modexpr, new_e)}
-  | Texp_assert (e) -> 
-      let new_e = subst bound_vars id1 id2 e in
-      {expr with exp_desc = Texp_assert(new_e)}
-  | Texp_assertfalse -> expr
-  | Texp_lazy (e) -> 
-      let new_e = subst bound_vars id1 id2 e in
-      {expr with exp_desc = Texp_assert(new_e)}
-  | Texp_object _ -> expr
-  | Texp_pack _ -> expr
-  | Texp_local_contract (c, e) -> 
-      let new_e = subst bound_vars id1 id2 e in
-      {expr with exp_desc = Texp_local_contract(c, new_e)}
-  | Texp_contract (c, e1, e2, e3) -> 
-      let new_e1 = subst bound_vars id1 id2 e1 in
-      let new_e2 = subst bound_vars id1 id2 e2 in
-      let new_e3 = subst bound_vars id1 id2 e3 in
-      {expr with exp_desc = Texp_contract (c, new_e1, new_e2, new_e3)}    
-  | Texp_bad _ -> expr
-  | Texp_unr _ -> expr
-  | Texp_Lambda (ids, e) -> 
-      let new_e = subst bound_vars id1 id2 e in
-      {expr with exp_desc = Texp_Lambda (ids, new_e)}
-  | Texp_App (e1, es) -> 
-      let new_e1 = subst bound_vars id1 id2 e1 in
-      let new_es = List.map (subst bound_vars id1 id2) es in
-      {expr with exp_desc = Texp_App(new_e1, new_es)}
-  | Texp_raise (e) -> expr
-
 (* Translate wrapped expression e |><| c to unwrapped expression 
 val transl_core_contract: 
    Typedtree.contract_declaration list ->         % contract decls in this module
@@ -204,18 +69,18 @@ let rec transl_core_contract env cntr e callee caller =
        *) 
         begin match is_expression_true p with
         | Ptrue ->  e.exp_desc
-	| Pfalse -> callee.exp_desc
         | _ ->
         let new_x = Ident.create "x" in
         let vd = { val_type = e.exp_type; val_kind = Val_reg } in
 	let xe = { e with exp_desc = Texp_ident(Pident new_x, vd) } in
         (* let wrapped_p = contract_id_in_expr env p in 
         let expanded_p = deep_transl_contract env wrapped_p in
-        *)
         let cond = Texp_ifthenelse (subst [] x new_x p, xe, Some callee) in 
+        *)
+        let cond = Texp_ifthenelse (subst [] (Tbl.add x new_x Tbl.empty) p, xe, Some callee) in 
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var new_x) cty, e)], mkexp cond cty) 
         end
-       (* e |>r1,r2<| try {x | p} with [Ei -> booli] 
+        (* e |>r1,r2<| try {x | p} with [Ei -> booli] 
           if (try let x = e in p
               with Contract_exn (f,row,col,bl) -> raise Contract_exn (f,row,col,bl)
                     | Ei .. -> booli
@@ -229,13 +94,10 @@ let rec transl_core_contract env cntr e callee caller =
         (*
         begin match exnop with
         | None -> 
-
         let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
         let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
-
         | Some exns -> 
-
 	let letexp = Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], p) in
         let ctr_exn = Texp_construct(cexn_path, cexn_cdesc, 
                        [mkexp (Texp_tuple evars) dummy_tuple]) in
@@ -675,19 +537,14 @@ let rec transl_str_contracts contract_flag env strs =
 	   | _ -> false) 
 	     pat_expr_list in *)
          let env1 = add_tasks env (def_to_axioms pre_processed_list) in	 
-	 if depth env = 0 then env1
-         else
-         List.fold_right (fun (p,e) default -> 
+	 List.fold_right (fun (p,e) default -> 
 	     match p.pat_desc with
-	     | Tpat_var (id) when rec_flag = Nonrecursive ->
-		 let new_id   = Ident.rename id in 
-		 let vd       = { val_type = p.pat_type; val_kind = Val_reg } in
-		 let eid      = {exp_desc = Texp_ident(Pident new_id, vd);
-				 exp_type = p.pat_type;
-				 exp_loc  = p.pat_loc;
-				 exp_env  = p.pat_env } in
-		 let env2     = extend_senv default id eid in
-	         extend_denv env2 eid (Inline e)
+	     | Tpat_var (id) ->
+		 begin match rec_flag with
+		 | Nonrecursive -> extend_nonrec_env default id e
+                 | Recursive -> extend_rec_env default id e
+		 | Default -> default
+                 end
 	     | _ -> default) pat_expr_list env1
        with ToErgosrc.Error(loc,err) -> 
 	 ToErgosrc.report_error std_formatter err; env 

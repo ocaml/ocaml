@@ -370,9 +370,9 @@ val map_expression_aux: (expression -> expression_desc) ->  expression -> expres
 *)
 
 and map_expression f (expr:expression) =
-   let map_exprop f exprop = match exprop with
+   let map_expropt g exprop = match exprop with
        | None -> None
-       | Some e -> Some (map_expression f e) in
+       | Some e -> Some (map_expression g e) in
    let map_expression_aux f expr = match expr.exp_desc with 
     | Texp_let (rec_flag, pat_expr_list, expr1) -> 
         Texp_let (rec_flag, 
@@ -383,7 +383,7 @@ and map_expression f (expr:expression) =
                                 pat_expr_list, partial) 
     | Texp_apply (expr1, exprop_opt_list) ->
         Texp_apply (map_expression f expr1, 
-                                List.map (fun (eop, opt) -> (map_exprop f eop, opt))
+                                List.map (fun (eop, opt) -> (map_expropt f eop, opt))
                           exprop_opt_list) 
     | Texp_match (expr1, pat_expr_list, partial) ->
         Texp_match (map_expression f expr1, 
@@ -394,16 +394,15 @@ and map_expression f (expr:expression) =
                               List.map (fun (p, e) -> (p, map_expression f e)) 
                               pat_expr_list) 
     | Texp_tuple (expr_list) ->
-        Texp_tuple (List.map (fun e -> map_expression f e) expr_list) 
+        Texp_tuple (List.map (map_expression f) expr_list) 
     | Texp_construct (path, constr_desc, expr_list) ->
-        Texp_construct (path, constr_desc, List.map (fun e -> map_expression f e) 
-						    expr_list)
+        Texp_construct (path, constr_desc, List.map (map_expression f) expr_list)
     | Texp_variant (l, exprop) -> 
-        Texp_variant (l, map_exprop f exprop)
+        Texp_variant (l, map_expropt f exprop)
     | Texp_record (ldesc_expr_list, exprop) ->
         Texp_record (List.map (fun (l, e) -> (l, map_expression f e)) 
                                      ldesc_expr_list, 
-                           map_exprop f exprop)
+                           map_expropt f exprop)
     | Texp_field (expr1, ldesc) -> Texp_field (map_expression f expr1, ldesc) 
     | Texp_setfield (expr1, ldesc, expr2) -> 
         Texp_setfield (map_expression f expr1, ldesc, map_expression f expr2) 
@@ -412,7 +411,7 @@ and map_expression f (expr:expression) =
     | Texp_ifthenelse (expr1, then_expr, exprop) -> 
         Texp_ifthenelse (map_expression f expr1, 
                          map_expression f then_expr, 
-                         map_exprop f exprop) 
+                         map_expropt f exprop) 
     | Texp_sequence (expr1, expr2) -> 
         Texp_sequence (map_expression f expr1, map_expression f expr2)
     | Texp_while (expr1, expr2) -> 
@@ -436,7 +435,7 @@ and map_expression f (expr:expression) =
 (*    | Texp_object (class_str, class_sig, string_list) -> 
         Texp_object (class_str, class_sig, string_list)  *)
     | Texp_contract (c, e, r1, r2) -> 
-        Texp_contract (c, map_expression f e, r1, r2)
+        Texp_contract (c, map_expression f e, r1, r2) 
     | others -> others
   in 
   let result_exp_desc = map_expression_aux f expr in

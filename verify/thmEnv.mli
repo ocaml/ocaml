@@ -20,6 +20,8 @@ type t = {
   goalTasks: decl list;
   abinds: (Ident.t, expression) Tbl.t;
   vals: (expression, aval) Tbl.t;
+  nonrecs: (Ident.t, expression) Tbl.t;
+  recs: (Ident.t, expression) Tbl.t
 }
 
 val initEnv : contract_declaration list ->  
@@ -35,11 +37,19 @@ val goalTasks : t -> decl list
 val add_tasks : t -> decl list-> t
 val update_name : t -> Path.t -> t
 val update_contract_name : t -> Path.t -> t
+val decrease_depth : t -> t
+val increase_depth : t -> t
 val add_dep_contracts : t -> Ident.t -> Typedtree.core_contract -> t
 val add_contract_decl : t -> contract_declaration -> t
 val add_axiom : t -> axiom_declaration -> t
 val add_goalTasks : t -> decl list -> t
 val extend_senv : t -> Ident.t -> expression -> t
 val extend_denv : t -> expression -> aval -> t 
+val extend_nonrec_env : t -> Ident.t -> expression -> t
+val extend_rec_env : t -> Ident.t -> expression -> t
 val lookup_senv : Ident.t -> t -> aval
 val lookup_denv : expression -> t -> aval
+val lookup_nonrec_env : Ident.t -> t -> expression
+val lookup_rec_env : Ident.t -> t -> expression
+val nonrecs : t -> (Ident.t, expression) Tbl.t
+val recs : t -> (Ident.t, expression) Tbl.t

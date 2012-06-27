@@ -49,28 +49,29 @@ type t = {
   opened_contract_decls: (Path.t * Types.contract_declaration) Ident.tbl; 
   axioms: axiom_declaration list;
   goalTasks: decl list;
-  abinds: (Ident.t, expression) Tbl.t;
-  vals: (expression, aval) Tbl.t;         (* variable |-> value *)
+  abinds: (Ident.t, expression) Tbl.t;    (* variable |-> tvalue *)
+  vals: (expression, aval) Tbl.t;         (* variable |-> expression *)
+  nonrecs : (Ident.t, expression) Tbl.t;  (* top-level nonrecursive functions *)
+  recs : (Ident.t, expression) Tbl.t;     (* top-level recursive functions *)
 }
 
+
 let init_tasks = 
-  let a_list = PPTexternal ([PPTvarid ("'a", Location.none)], "list", 
-                           Location.none) in
-  let a_b_arrow = PPTexternal ([PPTvarid ("'a", Location.none);
-                                PPTvarid ("'b", Location.none)], "arrow", 
-                              Location.none) in
-  let a_b_tuple = PPTexternal ([PPTvarid ("'a", Location.none);
-                                PPTvarid ("'b", Location.none)], "tuple", 
-                              Location.none) in
-  [TypeDecl (Location.none, ["'a";"'b"], "arrow");
-   TypeDecl (Location.none, ["'a";"'b"], "tuple");
-   Logic (Location.none, false, ["apply"], 
-          PFunction ([a_b_arrow; PPTvarid ("'a", Location.none)],
-          PPTvarid ("'b", Location.none)));
-   TypeDecl (Location.none, ["'a"], "list");
-   Logic (Location.none, false, ["nil"], PFunction ([], a_list));
-   Logic (Location.none, false, ["cons"], PFunction ([PPTvarid ("'a", Location.none); a_list], a_list ));
-   Logic (Location.none, false, ["tup"], PFunction ([PPTvarid ("'a", Location.none);PPTvarid ("'b", Location.none);], a_b_tuple));
+  let loc = Location.none in
+  let mklexpr desc = {pp_loc = loc; pp_desc = desc} in
+  let a = PPTvarid ("'a", loc) in
+  let b = PPTvarid ("'b", loc) in
+  let a_list = PPTexternal ([a], "list", loc) in
+  let a_b_arrow = PPTexternal ([a;b], "arrow", loc) in
+  let a_b_tuple = PPTexternal ([a;b], "tuple", loc) in
+  [TypeDecl (loc, ["'a";"'b"], "arrow");
+   TypeDecl (loc, ["'a";"'b"], "tuple");
+   Logic (loc, false, ["apply"], PFunction ([a_b_arrow; a], b));
+   TypeDecl (loc, ["'a"], "list");
+   Logic (loc, false, ["nil"], PFunction ([], a_list));
+   Logic (loc, false, ["cons"], PFunction ([a; a_list], a_list ));
+   Logic (loc, false, ["tup"], PFunction ([a;b], a_b_tuple));
+   Axiom (loc, "list_a0", mklexpr (PPforall(["x"], a, [], mklexpr(PPforall(["l"], a_list, [], mklexpr (PPinfix(mklexpr(PPvar "nil"), PPneq, mklexpr(PPapp("cons", [mklexpr(PPvar "x");mklexpr(PPvar "l")])))))))))
  ]
 
 (* empty environment *)
@@ -86,17 +87,25 @@ let initEnv l1 l2 = {
   goalTasks = []; (* represent a goal in terms of tasks *)
   abinds =  Tbl.empty;
   vals = Tbl.empty;
+  nonrecs = Tbl.empty;
+  recs = Tbl.empty;
 }
 
 (* Insertion of bindings by identifier *)
 
 let extend_senv env id1 id2 = {env with abinds = Tbl.add id1 id2 env.abinds}
 let extend_denv env exp aval = {env with vals = Tbl.add exp aval env.vals}
+let extend_nonrec_env env id1 e = {env with nonrecs = Tbl.add id1 e env.nonrecs}
+let extend_rec_env env id1 e = {env with recs = Tbl.add id1 e env.recs}
+
 
 (* the name of the current function under contract checking *)
 let update_name env n =  { env with name = n }
 
 let update_contract_name env n =  { env with contract_name = n }
+
+let decrease_depth env = { env with depth = env.depth - 1 }
+let increase_depth env = { env with depth = env.depth + 1 }
 
 let add_dep_contracts env x c = 
   { env with dep_contracts = Ident.add x c env.dep_contracts }
@@ -133,6 +142,10 @@ let lookup_senv id env = try let x = Tbl.find id env.abinds in
 let lookup_denv exp env = try Tbl.find exp env.vals
                           with Not_found -> NoVal
 
+let lookup_nonrec_env id env = Tbl.find id env.nonrecs
+let lookup_rec_env id env = Tbl.find id env.recs
+let recs env = env.recs
+let nonrecs env = env.nonrecs
 
 (* Error report *)
 
