@@ -20,7 +20,7 @@ ADD_CFLAGS+=$(CUSTOM_FLAG)
 
 default: compile run
 
-compile: $(ML_FILES) $(CMO_FILES) $(CMX_FILES) $(MAIN_MODULE).cmo $(MAIN_MODULE).cmx
+compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
 	@for file in $(C_FILES); do \
 	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(TOPDIR)/byterun $$file.c; \
 	done;
@@ -28,6 +28,7 @@ compile: $(ML_FILES) $(CMO_FILES) $(CMX_FILES) $(MAIN_MODULE).cmo $(MAIN_MODULE)
 	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) $(MAIN_MODULE).cmo
 	@if [ -z "$(BYTECODE_ONLY)" ]; then \
 	  rm -f program.native program.native.exe; \
+	  $(MAKE) $(CMX_FILES) $(MAIN_MODULE).cmx; \
 	  $(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(ADD_CMX_FILES) $(MAIN_MODULE).cmx; \
 	fi
 
