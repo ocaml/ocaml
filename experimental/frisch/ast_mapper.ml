@@ -6,6 +6,7 @@ open Asttypes
 (* First, some helpers to build AST fragments *)
 
 let map_flatten f l = List.flatten (List.map f l)
+let map_snd f (x, y) = (x, f y)
 
 module SI = struct
   (* Structure items *)
@@ -33,7 +34,8 @@ module E = struct
   let ident ?loc x = mk ?loc (Pexp_ident x)
   let lid ?(loc = Location.none) lid = ident ~loc (mkloc (Longident.parse lid) loc)
   let let_ ?loc r pel e = mk ?loc (Pexp_let (r, pel, e))
-  let app ?loc f el = mk ?loc (Pexp_apply (f, List.map (fun e -> ("", e)) el))
+  let apply_with_labels ?loc f el = mk ?loc (Pexp_apply (f, el))
+  let apply ?loc f el = apply_with_labels ?loc f (List.map (fun e -> ("", e)) el)
   let const ?loc x = mk ?loc (Pexp_constant x)
   let strconst ?loc x = const ?loc (Const_string x)
 end
@@ -235,6 +237,7 @@ class create =
       match desc with
       | Pexp_ident x -> this # exp_ident ~loc x
       | Pexp_let (r, pel, e) -> this # exp_let ~loc r pel e
+      | Pexp_apply (e, l) -> this # exp_apply ~loc e l
             (* ... *)
       | _ -> x
 
@@ -246,6 +249,10 @@ class create =
       E.let_ ~loc r
         (List.map (fun (p, e) -> this # pat p, this # expr e) pel)
         (this # expr e)
+
+    method exp_apply = this # default_exp_apply
+    method default_exp_apply ~loc e l =
+      E.apply_with_labels ~loc (this # expr e) (List.map (map_snd (this # expr)) l)
 
         (* module exprs *)
 

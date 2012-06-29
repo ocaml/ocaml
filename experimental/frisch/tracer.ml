@@ -1,7 +1,5 @@
 open Ast_mapper
-open Longident
 open Location
-open Parsetree
 
 (* To define a concrete AST rewriter, we can inherit from the generic
    mapper, and redefine the cases we are interested in.  In the
@@ -10,7 +8,7 @@ open Parsetree
    the compilation unit.  *)
 
 let trace s =
-  SI.eval E.(app (lid "Pervasives.print_endline") [strconst s])
+  SI.eval E.(apply (lid "Pervasives.print_endline") [strconst s])
 
 let tracer =
   object
