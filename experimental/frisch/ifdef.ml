@@ -27,8 +27,10 @@ let ifdef =
            else
              this # module_expr body_not_def
 
-      | {pmod_desc = Pmod_ident {txt = Lident "IFDEF"}} ->
-          failwith "Improper use of IFDEF" (* todo: location *)
+      | {pmod_desc = Pmod_ident {txt = Lident "IFDEF"}; pmod_loc = loc} ->
+          Format.printf "%a@.Improper use of IFDEF. The correct form is: IFDEF(<var_name:uident>)(<then:modtype>)(<body:modtype>)@."
+            Location.print_loc loc;
+          exit 2
       | x -> super # module_expr x
   end
 
