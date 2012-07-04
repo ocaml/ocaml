@@ -301,16 +301,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:binding< $b1$ and $b2$ >> ->
           do { o#binding f b1; pp f o#andsep; o#binding f b2 }
       | <:binding< $p$ = $e$ >> ->
-          let (pl, e) =
+          let (pl, e') =
             match p with
             [ <:patt< ($_$ : $_$) >> -> ([], e)
             | _ -> expr_fun_args e ] in
-          match (p, e) with
-          [ (<:patt< $lid:_$ >>, <:expr< ($e$ : $t$) >>) ->
+          match (p, e') with
+          [ (<:patt< $lid:_$ >>, <:expr< ($e'$ : $t$) >>) ->
               pp f "%a :@ %a =@ %a"
-                (list o#fun_binding "@ ") [`patt p::pl] o#ctyp t o#expr e
-          | _ -> pp f "%a @[<0>%a=@]@ %a" o#simple_patt
-                    p (list' o#fun_binding "" "@ ") pl o#expr e ]
+                (list o#fun_binding "@ ") [`patt p::pl] o#ctyp t o#expr e'
+          | (<:patt< $lid:_$ >>, _) ->
+              pp f "%a @[<0>%a=@]@ %a" o#simple_patt
+                p (list' o#fun_binding "" "@ ") pl o#expr e'
+          | _ ->
+              pp f "%a =@ %a" o#simple_patt p o#expr e ]
       | <:binding< $anti:s$ >> -> o#anti f s ];
 
     method record_binding f bi =
