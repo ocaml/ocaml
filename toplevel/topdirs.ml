@@ -40,6 +40,16 @@ let dir_directory s =
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
 
+(* To remove a directory from the load path *)
+let dir_remove_directory s =
+  let d = expand_directory Config.standard_library s in
+  Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path;
+  Dll.remove_path [d]
+
+let _ =
+  Hashtbl.add directive_table "remove_directory"
+    (Directive_string dir_remove_directory)
+
 (* To change the current directory *)
 
 let dir_cd s = Sys.chdir s
