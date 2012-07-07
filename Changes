@@ -278,6 +278,8 @@ Feature wishes:
   its initial size.
 - PR#5586: increase UNIX_BUFFER_SIZE to 64KiB
 - PR#5599: Add warn() tag in ocamlbuild to control -w compiler switch
+- PR#5628: add #remove_directory and Topdirs.remove_directory to remove
+  a directory from the load path
 - PR#5636: in system threads library, issue with linking of pthread_atfork
 - ocamldebug: ability to inspect values that contain code pointers
 - ocamldebug: new 'environment' directive to set environment variables
