@@ -390,6 +390,10 @@ flag ["ocaml"; "link"] begin
   atomize !Options.ocaml_lflags
 end;;
 
+flag ["c"; "link"] begin
+  atomize !Options.ocaml_lflags
+end;;
+
 flag ["ocaml"; "ocamlyacc"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "menhir"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "doc"] (atomize !Options.ocaml_docflags);;
