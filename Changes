@@ -192,6 +192,7 @@ Feature wishes:
   documentation.
 - PR#5555: Add function Hashtbl.reset to resize the bucket table to
   its initial size.
+- PR#5597: register names for instrtrace primitives in embedded bytecode
 - PR#5599: Add warn() tag in ocamlbuild to control -w compiler switch
 - PR#5628: add #remove_directory and Topdirs.remove_directory to remove
   a directory from the load path
