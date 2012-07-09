@@ -226,7 +226,7 @@ let is_generic_function name =
 (* CFI directives *)
 
 let is_cfi_enabled () =
-  !Clflags.debug && Config.asm_cfi_supported
+  Config.asm_cfi_supported
 
 let cfi_startproc () =
   if is_cfi_enabled () then
@@ -241,4 +241,4 @@ let cfi_adjust_cfa_offset n =
   begin
     emit_string "	.cfi_adjust_cfa_offset	"; emit_int n; emit_string "\n";
   end
- 
+
