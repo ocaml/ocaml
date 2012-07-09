@@ -286,6 +286,7 @@ Feature wishes:
 - PR#5628: add #remove_directory and Topdirs.remove_directory to remove
   a directory from the load path
 - PR#5636: in system threads library, issue with linking of pthread_atfork
+- PR#5666: C includes don't provide a revision number
 - ocamldebug: ability to inspect values that contain code pointers
 - ocamldebug: new 'environment' directive to set environment variables
   for debuggee
