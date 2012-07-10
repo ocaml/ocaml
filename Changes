@@ -104,6 +104,7 @@ Bug Fixes:
 - PR#5131: compilation of custom runtime with g++ generates lots of warnings
 - PR#5211: updated Genlex documentation to state that camlp4 is mandatory for
   'parser' keyword and associated notation
+- PR#5218: use $(MAKE) instead of "make" in Makefiles
 - PR#5224: confusing error message in non-regular type definition
 - PR#5233: finaliser on weak array gives dangling pointers (crash)
 - PR#5238, PR#5277: Sys_error when getting error location
