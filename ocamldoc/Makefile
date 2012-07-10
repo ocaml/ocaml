@@ -207,7 +207,7 @@ libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 generatorsopt: $(GENERATORS_CMXS)
 
 debug:
-	make OCAMLPP=""
+	$(MAKE) OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)

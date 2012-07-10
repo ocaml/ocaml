@@ -387,7 +387,7 @@ ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
-	cd otherlibs/dynlink && make allopt
+	cd otherlibs/dynlink && $(MAKE) allopt
 
 # The configuration file
 
@@ -761,7 +761,7 @@ clean::
 
 package-macosx:
 	sudo rm -rf package-macosx/root
-	make PREFIX="`pwd`"/package-macosx/root install
+	$(MAKE) PREFIX="`pwd`"/package-macosx/root install
 	tools/make-package-macosx
 	sudo rm -rf package-macosx/root
 
