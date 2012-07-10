@@ -61,6 +61,8 @@ and expression =
 and exp_extra =
   | Texp_constraint of core_type option * core_type option
   | Texp_open of Path.t * Longident.t loc * Env.t
+  | Texp_poly of core_type option
+  | Texp_newtype of string
 
 and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
@@ -98,9 +100,7 @@ and expression_desc =
   | Texp_assert of expression
   | Texp_assertfalse
   | Texp_lazy of expression
-  | Texp_poly of expression * core_type option
   | Texp_object of class_structure * string list
-  | Texp_newtype of string * expression
   | Texp_pack of module_expr
 
 and meth =

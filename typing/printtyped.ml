@@ -230,19 +230,26 @@ and pattern i ppf x =
       line i ppf "Ppat_lazy\n";
       pattern i ppf p;
 
-and expression i ppf x =
-  line i ppf "expression %a\n" fmt_location x.exp_loc;
-  let i = i+1 in
-  match x.exp_extra with
-    | (Texp_constraint (cto1, cto2), _) :: rem ->
+and expression_extra i ppf x =
+  match x with
+  | Texp_constraint (cto1, cto2) ->
       line i ppf "Pexp_constraint\n";
       option i core_type ppf cto1;
       option i core_type ppf cto2;
-      expression i ppf { x with exp_extra = rem }
-  | (Texp_open (m, _,_), _) :: rem ->
+  | Texp_open (m, _, _) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_path m;
-      expression i ppf { x with exp_extra = rem }
-    | [] ->
+  | Texp_poly cto ->
+      line i ppf "Pexp_poly\n";
+      option i core_type ppf cto;
+  | Texp_newtype s ->
+      line i ppf "Pexp_newtype \"%s\"\n" s;
+
+and expression i ppf x =
+  line i ppf "expression %a\n" fmt_location x.exp_loc;
+  let i =
+    List.fold_left (fun i (extra,_) -> expression_extra i ppf extra; i+1)
+      (i+1) x.exp_extra
+  in
   match x.exp_desc with
   | Texp_ident (li,_,_) -> line i ppf "Pexp_ident %a\n" fmt_path li;
   | Texp_instvar (_, li,_) -> line i ppf "Pexp_instvar %a\n" fmt_path li;
@@ -342,16 +349,9 @@ and expression i ppf x =
   | Texp_lazy (e) ->
       line i ppf "Pexp_lazy";
       expression i ppf e;
-  | Texp_poly (e, cto) ->
-      line i ppf "Pexp_poly\n";
-      expression i ppf e;
-      option i core_type ppf cto;
   | Texp_object (s, _) ->
       line i ppf "Pexp_object";
       class_structure i ppf s
-  | Texp_newtype (s, e) ->
-      line i ppf "Pexp_newtype \"%s\"\n" s;
-      expression i ppf e
   | Texp_pack me ->
       line i ppf "Pexp_pack";
       module_expr i ppf me

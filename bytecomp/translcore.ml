@@ -834,9 +834,6 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Cty_signature cty;
           cl_env = e.exp_env }
-  | Texp_poly (exp, _ )
-  | Texp_newtype (_, exp)
-    -> transl_exp exp
 
 and transl_list expr_list =
   List.map transl_exp expr_list

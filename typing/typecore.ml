@@ -994,9 +994,6 @@ let rec is_nonexpansive exp =
   match exp.exp_desc with
     Texp_ident(_,_,_) -> true
   | Texp_constant _ -> true
-  | Texp_poly (e, _)
-  | Texp_newtype (_, e)
-    -> is_nonexpansive e
   | Texp_let(rec_flag, pat_exp_list, body) ->
       List.for_all (fun (pat, exp) -> is_nonexpansive exp) pat_exp_list &&
       is_nonexpansive body
@@ -2247,7 +2244,7 @@ and type_expect ?in_function env sexp ty_expected =
         match (expand_head env ty).desc with
           Tpoly (ty', []) ->
             let exp = type_expect env sbody ty' in
-            re { exp with exp_type = instance env ty }
+            { exp with exp_type = instance env ty }
         | Tpoly (ty', tl) ->
             (* One more level to generalize locally *)
             begin_def ();
@@ -2260,15 +2257,15 @@ and type_expect ?in_function env sexp ty_expected =
             let exp = type_expect env sbody ty'' in
             end_def ();
             check_univars env false "method" exp ty_expected vars;
-            re { exp with exp_type = instance env ty }
+            { exp with exp_type = instance env ty }
         | Tvar _ ->
             let exp = type_exp env sbody in
             let exp = {exp with exp_type = newty (Tpoly (exp.exp_type, []))} in
             unify_exp env exp ty;
-            re exp
+            exp
         | _ -> assert false
       in
-      re { exp with exp_desc = Texp_poly(exp, cty) }
+      re { exp with exp_extra = (Texp_poly cty, loc) :: exp.exp_extra }
   | Pexp_newtype(name, sbody) ->
       let ty = newvar () in
       (* remember original level *)
@@ -2312,7 +2309,8 @@ and type_expect ?in_function env sexp ty_expected =
 
       (* non-expansive if the body is non-expansive, so we don't introduce
          any new extra node in the typed AST. *)
-      rue { body with exp_loc = sexp.pexp_loc; exp_type = ety }
+      rue { body with exp_loc = loc; exp_type = ety;
+            exp_extra = (Texp_newtype name, loc) :: body.exp_extra }
   | Pexp_pack m ->
       let (p, nl, tl) =
         match Ctype.expand_head env (instance env ty_expected) with
