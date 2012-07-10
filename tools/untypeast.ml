@@ -176,15 +176,22 @@ and untype_pattern pat =
 
 and option f x = match x with None -> None | Some e -> Some (f e)
 
+and untype_extra (extra, loc) sexp =
+  let desc =
+    match extra with
+      Texp_constraint (cty1, cty2) ->
+        Pexp_constraint (sexp,
+                         option untype_core_type cty1,
+                         option untype_core_type cty2)
+    | Texp_open (path, lid, _) -> Pexp_open (lid, sexp)
+    | Texp_poly cto -> Pexp_poly (sexp, option untype_core_type cto)
+    | Texp_newtype s -> Pexp_newtype (s, sexp)
+  in
+  { pexp_desc = desc;
+    pexp_loc = loc }
+      
 and untype_expression exp =
   let desc =
-  match exp.exp_extra with
-      (Texp_constraint (cty1, cty2), _) :: rem ->
-        Pexp_constraint (untype_expression { exp with exp_extra = rem },
-                         option untype_core_type cty1, option untype_core_type cty2)
-    | (Texp_open (path, lid, _), _) :: rem ->
-        Pexp_open (lid, untype_expression { exp with exp_extra = rem} )
-    | [] ->
     match exp.exp_desc with
       Texp_ident (path, lid, _) -> Pexp_ident (lid)
     | Texp_constant cst -> Pexp_constant cst
@@ -279,15 +286,10 @@ and untype_expression exp =
         Pexp_object (untype_class_structure cl)
     | Texp_pack (mexpr) ->
         Pexp_pack (untype_module_expr mexpr)
-    | Texp_poly (exp, None) -> Pexp_poly(untype_expression exp, None)
-    | Texp_poly (exp, Some ct) ->
-        Pexp_poly (untype_expression exp, Some (untype_core_type ct))
-    | Texp_newtype (s, exp) ->
-        Pexp_newtype (s, untype_expression exp)
   in
-  { pexp_loc = exp.exp_loc;
-    pexp_desc = desc;
-  }
+  List.fold_right untype_extra exp.exp_extra
+    { pexp_loc = exp.exp_loc;
+      pexp_desc = desc }
 
 and untype_package_type pack =
   (pack.pack_txt,
