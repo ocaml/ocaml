@@ -205,7 +205,6 @@ static int argvsize;
 static void store_argument(char * arg);
 static void expand_argument(char * arg);
 static void expand_pattern(char * arg);
-static void expand_diversion(char * filename);
 
 static void out_of_memory(void)
 {
@@ -227,10 +226,6 @@ static void expand_argument(char * arg)
 {
   char * p;
 
-  if (arg[0] == '@') {
-    expand_diversion(arg + 1);
-    return;
-  }
   for (p = arg; *p != 0; p++) {
     if (*p == '*' || *p == '?') {
       expand_pattern(arg);
@@ -265,62 +260,6 @@ static void expand_pattern(char * pat)
   _findclose(handle);
 }
 
-static void expand_diversion(char * filename)
-{
-  struct _stat stat;
-  int fd;
-  char * buf, * endbuf, * p, * q, * s;
-  int inquote;
-
-  if (_stat(filename, &stat) == -1 ||
-      (fd = _open(filename, O_RDONLY | O_BINARY, 0)) == -1) {
-    fprintf(stderr, "Cannot open file %s\n", filename);
-    exit(2);
-  }
-  buf = (char *) malloc(stat.st_size + 1);
-  if (buf == NULL) out_of_memory();
-  _read(fd, buf, stat.st_size);
-  endbuf = buf + stat.st_size;
-  _close(fd);
-  for (p = buf; p < endbuf; /*nothing*/) {
-    /* Skip leading blanks */
-    while (p < endbuf && isspace(*p)) p++;
-    if (p >= endbuf) break;
-    s = p;
-    /* Skip to end of argument, taking quotes into account */
-    q = s;
-    inquote = 0;
-    while (p < endbuf) {
-      if (! inquote) {
-        if (isspace(*p)) break;
-        if (*p == '"') { inquote = 1; p++; continue; }
-        *q++ = *p++;
-      } else {
-        switch (*p) {
-          case '"':
-            inquote = 0; p++; continue;
-          case '\\':
-            if (p + 4 <= endbuf && strncmp(p, "\\\\\\\"", 4) == 0) {
-              p += 4; *q++ = '\\'; *q++ = '"'; continue;
-            }
-            if (p + 3 <= endbuf && strncmp(p, "\\\\\"", 3) == 0) {
-              p += 3; *q++ = '\\'; inquote = 0; continue;
-            }
-            if (p + 2 <= endbuf && p[1] == '"') {
-              p += 2; *q++ = '"'; continue;
-            }
-            /* fallthrough */
-        default:
-          *q++ = *p++;
-        }
-      }
-    }
-    /* Delimit argument and expand it */
-    *q++ = 0;
-    expand_argument(s);
-    p++;
-  }
-}
 
 CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
 {
