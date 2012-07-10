@@ -29,10 +29,10 @@ module type OBJ =
 
 module type EVALPATH =
   sig
-    type value
-    val eval_path: Path.t -> value
+    type valu
+    val eval_path: Path.t -> valu
     exception Error
-    val same_value: value -> value -> bool
+    val same_value: valu -> valu -> bool
   end
 
 module type S =
@@ -48,5 +48,5 @@ module type S =
           Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
-module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) :
+module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) :
          (S with type t = O.t)

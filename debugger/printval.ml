@@ -47,7 +47,7 @@ let check_depth ppf depth obj ty =
 
 module EvalPath =
   struct
-    type value = Debugcom.Remote_value.t
+    type valu = Debugcom.Remote_value.t
     exception Error
     let rec eval_path = function
       Pident id ->
