@@ -126,6 +126,7 @@ Bug Fixes:
 - PR#5084: sub-sub-module building fails for native code compilation
 - PR#5120: fix the output function of Camlp4.Debug.formatter
 - PR#5131: compilation of custom runtime with g++ generates lots of warnings
+- PR#5137: caml-types-explore does not work
 - PR#5159: better documentation of type Lexing.position
 - PR#5171: Map.join does more comparisons than needed
 - PR#5176: emacs mode: stack overflow in regexp matcher
