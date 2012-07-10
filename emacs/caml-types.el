@@ -594,7 +594,7 @@ The function uses two overlays.
  . One overlay delimits the largest region whose all subnodes
    are well-typed.
  . Another overlay delimits the current node under the mouse (whose type
-   annotation is beeing displayed).
+   annotation is being displayed).
 "
   (interactive "e")
   (set-buffer (window-buffer (caml-event-window event)))
@@ -686,30 +686,30 @@ The function uses two overlays.
                            target-pos
                            (vector target-file target-line target-bol cnum))
                      (save-excursion
-                       (setq node (caml-types-find-location "type"
-                                   target-pos () target-tree))
+                       (setq node (caml-types-find-location target-pos "type" ()
+							    target-tree))
                        (set-buffer caml-types-buffer)
                        (erase-buffer)
                        (cond
-                        (node
-                         (setq Left
-                               (caml-types-get-pos target-buf (elt node 0))
-                               Right
-                               (caml-types-get-pos target-buf (elt node 1)))
-                         (move-overlay
-                          caml-types-expr-ovl Left Right target-buf)
-                         (setq limits
-                               (caml-types-find-interval target-buf
-                                                         target-pos node)
-                               type (elt node 2))
-                         )
-                        (t
+			((null node)
                          (delete-overlay caml-types-expr-ovl)
                          (setq type "*no type information*")
                          (setq limits
                                (caml-types-find-interval
-                                target-buf target-pos target-tree))
+                                target-buf target-pos target-tree)))
+                        (t
+			 (let ((left
+				(caml-types-get-pos target-buf (elt node 0)))
+                               (right
+				(caml-types-get-pos target-buf (elt node 1))))
+                         (move-overlay
+                          caml-types-expr-ovl left right target-buf)
+                         (setq limits
+                               (caml-types-find-interval target-buf
+                                                         target-pos node)
+                               type (cdr (assoc "type" (elt node 2))))
                          ))
+			)
                        (setq mes (format "type: %s" type))
                        (insert type)
                        ))

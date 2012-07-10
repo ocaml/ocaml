@@ -102,6 +102,7 @@ Bug Fixes:
   segmentation faults due to stack overflow in C code
 - PR#5073: wrong location for 'Unbound record field label' error
 - PR#5131: compilation of custom runtime with g++ generates lots of warnings
+- PR#5137: caml-types-explore does not work
 - PR#5211: updated Genlex documentation to state that camlp4 is mandatory for
   'parser' keyword and associated notation
 - PR#5218: use $(MAKE) instead of "make" in Makefiles
