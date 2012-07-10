@@ -233,6 +233,7 @@ Bug Fixes:
 - PR#5655: ocamlbuild doesn't pass cflags when building C stubs
 - PR#5661: fixes for the test suite
 - PR#5671: initialization of compare_ext field in caml_final_custom_operations()
+- PR#5677: do not use "value" as identifier (genprintval.ml)
 - problem with printing of string literals in camlp4 (reported on caml-list)
 - emacs mode: colorization of comments and strings now works correctly
 - problem with forall and method (reported on caml-list on 2011-07-26)
