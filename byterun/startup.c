@@ -443,6 +443,10 @@ CAMLexport void caml_startup_code(
 {
   value res;
   char* cds_file;
+  char * exe_name;
+#ifdef __linux__
+  static char proc_self_exe[256];
+#endif
 
   caml_init_ieee_floats();
   caml_init_custom_operations();
@@ -455,6 +459,11 @@ CAMLexport void caml_startup_code(
     strcpy(caml_cds_file, cds_file);
   }
   parse_camlrunparam();
+  exe_name = argv[0];
+#ifdef __linux__
+  if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
+    exe_name = proc_self_exe;
+#endif
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
@@ -489,7 +498,7 @@ CAMLexport void caml_startup_code(
   caml_section_table_size = section_table_size;
   /* Initialize system libraries */
   caml_init_exceptions();
-  caml_sys_init("", argv);
+  caml_sys_init(exe_name, argv);
   /* Execute the program */
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);
