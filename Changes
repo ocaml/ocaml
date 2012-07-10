@@ -105,7 +105,7 @@ Bug Fixes:
 - PR#3571: in Bigarrays, call msync() before unmapping to commit changes
 - PR#4292: various documentation problems
 - PR#4511, PR#4838: local modules remove polymorphism
-- PR#4549: Filename.dirname is not handling multiple / on Unix
+* PR#4549: Filename.dirname is not handling multiple / on Unix
 - PR#4688: (Windows) special floating-point values aren't converted to strings
   correctly
 - PR#4697: Unix.putenv leaks memory on failure
@@ -116,8 +116,8 @@ Bug Fixes:
 - PR#4892: Array.set could raise "out of bounds" before evaluating 3rd arg
 - PR#4937: camlp4 incorrectly handles optional arguments if 'option' is
   redefined
-- PR#5024: camlp4r now handles underscores in irrefutable patern matching of
-           records
+- PR#5024: camlp4r now handles underscores in irrefutable pattern matching of
+  records
 - PR#5064, PR#5485: try to ensure that 4K words of stack are available
   before calling into C functions, raising a Stack_overflow exception
   otherwise.  This reduces (but does not eliminate) the risk of
@@ -137,6 +137,7 @@ Bug Fixes:
 - PR#5233: finaliser on weak array gives dangling pointers (crash)
 - PR#5238, PR#5277: Sys_error when getting error location
 - PR#5261, PR#5497: Ocaml source-code examples are not "copy-paste-able"
+* PR#5279: executable name is not initialized properly in caml_startup_code
 - PR#5290: added hash functions for channels, nats, mutexes, conditions
 - PR#5295: OS threads: problem with caml_c_thread_unregister()
 - PR#5301: camlp4r and exception equal to another one with parameters
