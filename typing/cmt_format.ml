@@ -504,11 +504,6 @@ end = struct
 	    Texp_object (map_class_structure cl, string_list)
 	  | Texp_pack (mexpr) ->
 	    Texp_pack (map_module_expr mexpr)
-	  | Texp_poly (exp, None) -> Texp_poly (map_expression exp, None)
-	  | Texp_poly (exp, Some ct) ->
-	    Texp_poly (map_expression exp, Some ( map_core_type ct ))
-	  | Texp_newtype (s, exp) ->
-	    Texp_newtype (s, map_expression exp)
       in
       let exp_extra = List.map map_exp_extra exp.exp_extra in
       Map.leave_expression {
@@ -526,8 +521,13 @@ end = struct
         | Texp_constraint (Some ct1, Some ct2) ->
           Texp_constraint (Some (map_core_type ct1),
                            Some (map_core_type ct2)), loc
+	| Texp_poly (Some ct) ->
+	  Texp_poly (Some ( map_core_type ct )), loc
+	| Texp_newtype _
         | Texp_constraint (None, None)
-        | Texp_open _ -> exp_extra
+        | Texp_open _
+	| Texp_poly None -> exp_extra
+
 
     and map_package_type pack =
       let pack = Map.enter_package_type pack in
