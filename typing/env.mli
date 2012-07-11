@@ -140,6 +140,8 @@ val crc_units: Consistbl.t
    exported in debugging information. *)
 
 val summary: t -> summary
+val keep_only_summary : t -> t
+
 
 (* Error report *)
 
