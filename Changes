@@ -36,10 +36,10 @@ Native-code compiler:
       savings of 28%.
     . Added support for position-independent code, natdynlink, profiling and
       exception backtraces.
-- In -g mode, generation of CFI information and a few filename/line
-  number debugging annotations, enabling in particular precise stack
-  backtraces with the gdb debugger. Currently supported for x86 32-bits
-  and 64-bits only. (PR#5487)
+- Generation of CFI information and a filename/line number debugging
+  annotations, enabling in particular precise stack backtraces with
+  the gdb debugger. Currently supported for x86 32-bits and 64-bits only.
+  (PR#5487)
 - New tool: ocamloptp, the equivalent of ocamlcp for the native-code compiler.
 
 OCamldoc:
