@@ -967,7 +967,10 @@ let get_saved_types () = !saved_types
 let set_saved_types l = saved_types := l
 
 let save_cmt filename modname binary_annots sourcefile initial_env sg =
-  if !Clflags.binary_annotations && not !Clflags.print_types then begin
+  if !Clflags.binary_annotations
+    && not !Clflags.print_types
+    && not !Clflags.dont_write_files
+  then begin
     let imports = Env.imported_units () in
     let oc = open_out_bin filename in
     let this_crc =
