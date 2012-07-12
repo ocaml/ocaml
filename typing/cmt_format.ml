@@ -56,6 +56,7 @@ type cmt_infos = {
   cmt_initial_env : Env.t;
   cmt_imports : (string * Digest.t) list;
   cmt_interface_digest : Digest.t option;
+  cmt_use_summaries : bool;
 }
 
 type error =
@@ -996,6 +997,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
           keep_only_summary initial_env else initial_env;
       cmt_imports = List.sort compare imports;
       cmt_interface_digest = this_crc;
+      cmt_use_summaries = need_to_clear_env;
     } in
     clear_env_hcons ();
     output_cmt oc cmt;
