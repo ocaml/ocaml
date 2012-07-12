@@ -75,6 +75,9 @@ let env_of_event =
     None    -> Env.empty
   | Some ev -> env_from_summary ev.Instruct.ev_typenv ev.Instruct.ev_typsubst
 
+let env_of_only_summary env =
+  Env.env_of_only_summary env_from_summary env
+
 (* Error report *)
 
 open Format

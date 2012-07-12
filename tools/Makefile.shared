@@ -212,10 +212,12 @@ READ_CMT= \
           ../typing/oprint.cmo \
           ../typing/primitive.cmo \
           ../typing/printtyp.cmo \
+          ../typing/typedtreeMap.cmo \
+          ../typing/typedtreeIter.cmo \
           ../typing/cmt_format.cmo \
           ../typing/stypes.cmo \
           \
-          pprintast.cmo untypeast.cmo typedtreeIter.cmo  \
+          pprintast.cmo untypeast.cmo \
           cmt2annot.cmo read_cmt.cmo
 
 read_cmt: $(READ_CMT)

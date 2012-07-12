@@ -169,6 +169,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/typedtree.cmo \
 	$(OCAMLSRCDIR)/typing/parmatch.cmo \
 	$(OCAMLSRCDIR)/typing/stypes.cmo \
+	$(OCAMLSRCDIR)/typing/typedtreeMap.cmo \
 	$(OCAMLSRCDIR)/typing/cmt_format.cmo \
 	$(OCAMLSRCDIR)/typing/typecore.cmo \
 	$(OCAMLSRCDIR)/typing/includeclass.cmo \

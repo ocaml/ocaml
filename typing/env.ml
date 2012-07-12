@@ -1304,6 +1304,20 @@ let initial = Predef.build_initial_env add_type add_exception empty
 
 let summary env = env.summary
 
+let keep_only_summary env =
+  { empty with
+    summary = env.summary;
+    local_constraints = env.local_constraints;
+    in_signature = env.in_signature;
+  }
+
+let env_of_only_summary env_from_summary env =
+  let new_env = env_from_summary env.summary Subst.identity in
+  { new_env with
+    local_constraints = env.local_constraints;
+    in_signature = env.in_signature;
+  }
+
 (* Error report *)
 
 open Format

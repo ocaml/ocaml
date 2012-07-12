@@ -49,10 +49,11 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
   typing/typedtree.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
-  typing/mtype.cmo typing/includecore.cmo \
+  typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
   typing/includemod.cmo typing/parmatch.cmo \
   typing/typetexp.cmo \
-  typing/cmt_format.cmo typing/stypes.cmo typing/typecore.cmo \
+  typing/typedtreeIter.cmo typing/typedtreeMap.cmo typing/cmt_format.cmo \
+  typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
   typing/typemod.cmo
 

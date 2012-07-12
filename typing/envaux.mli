@@ -23,6 +23,8 @@ val env_of_event: Instruct.debug_event option -> Env.t
 
 val reset_cache: unit -> unit
 
+val env_of_only_summary : Env.t -> Env.t
+
 (* Error report *)
 
 type error =

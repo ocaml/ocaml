@@ -45,6 +45,7 @@ OTHEROBJS=\
   $(TOPDIR)/typing/includemod.cmo \
   $(TOPDIR)/typing/parmatch.cmo \
   $(TOPDIR)/typing/typetexp.cmo \
+  $(TOPDIR)/typing/typedtreeMap.cmo \
   $(TOPDIR)/typing/cmt_format.cmo \
   $(TOPDIR)/typing/stypes.cmo \
   $(TOPDIR)/typing/typecore.cmo \

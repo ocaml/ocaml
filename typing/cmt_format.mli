@@ -57,6 +57,7 @@ type cmt_infos = {
   cmt_initial_env : Env.t;
   cmt_imports : (string * Digest.t) list;
   cmt_interface_digest : Digest.t option;
+  cmt_use_summaries : bool;
 }
 
 type error =

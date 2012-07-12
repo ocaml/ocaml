@@ -19,6 +19,8 @@ open Typedtree
    integrated in Typerex).
 *)
 
+
+
 let read_magic_number ic =
   let len_magic_number = String.length Config.cmt_magic_number in
   let magic_number = String.create len_magic_number in
@@ -54,10 +56,98 @@ type cmt_infos = {
   cmt_initial_env : Env.t;
   cmt_imports : (string * Digest.t) list;
   cmt_interface_digest : Digest.t option;
+  cmt_use_summaries : bool;
 }
 
 type error =
     Not_a_typedtree of string
+
+
+
+
+
+(*
+  Keeping all the environments in the typedtree can result in
+  huge typedtrees.
+*)
+
+
+let need_to_clear_env =
+  try ignore (Sys.getenv "OCAML_BINANNOT_WITHENV"); false
+  with Not_found -> true
+
+(* Re-introduce sharing after clearing environments *)
+let env_hcons = Hashtbl.create 133
+let keep_only_summary env =
+  let new_env = Env.keep_only_summary env in
+  try
+    Hashtbl.find env_hcons new_env
+  with Not_found ->
+    Hashtbl.add env_hcons new_env new_env;
+    new_env
+let clear_env_hcons () = Hashtbl.clear env_hcons
+
+module ClearEnv  = TypedtreeMap.MakeMap (struct
+  open TypedtreeMap
+  include DefaultMapArgument
+
+  let leave_pattern p = { p with pat_env = keep_only_summary p.pat_env }
+  let leave_expression e =
+    let exp_extra = List.map (function
+        (Texp_open (path, lloc, env), loc) ->
+          (Texp_open (path, lloc, keep_only_summary env), loc)
+      | exp_extra -> exp_extra) e.exp_extra in
+    { e with
+      exp_env = keep_only_summary e.exp_env;
+      exp_extra = exp_extra }
+  let leave_class_expr c =
+    { c with cl_env = keep_only_summary c.cl_env }
+  let leave_module_expr m =
+    { m with mod_env = keep_only_summary m.mod_env }
+  let leave_structure s =
+    { s with str_final_env = keep_only_summary s.str_final_env }
+  let leave_structure_item str =
+    { str with str_env = keep_only_summary str.str_env }
+  let leave_module_type m =
+    { m with mty_env = keep_only_summary m.mty_env }
+  let leave_signature s =
+    { s with sig_final_env = keep_only_summary s.sig_final_env }
+  let leave_signature_item s =
+    { s with sig_env = keep_only_summary s.sig_env }
+  let leave_core_type c =
+    { c with ctyp_env = keep_only_summary c.ctyp_env }
+  let leave_class_type c =
+    { c with cltyp_env = keep_only_summary c.cltyp_env }
+
+end)
+
+let clear_part p = match p with
+  | Partial_structure s -> Partial_structure (ClearEnv.map_structure s)
+  | Partial_structure_item s ->
+    Partial_structure_item (ClearEnv.map_structure_item s)
+  | Partial_expression e -> Partial_expression (ClearEnv.map_expression e)
+  | Partial_pattern p -> Partial_pattern (ClearEnv.map_pattern p)
+  | Partial_class_expr ce -> Partial_class_expr (ClearEnv.map_class_expr ce)
+  | Partial_signature s -> Partial_signature (ClearEnv.map_signature s)
+  | Partial_signature_item s ->
+    Partial_signature_item (ClearEnv.map_signature_item s)
+  | Partial_module_type s -> Partial_module_type (ClearEnv.map_module_type s)
+
+let clear_env binary_annots =
+  if need_to_clear_env then
+    match binary_annots with
+      | Implementation s -> Implementation (ClearEnv.map_structure s)
+      | Interface s -> Interface (ClearEnv.map_signature s)
+      | Packed _ -> binary_annots
+      | Partial_implementation array ->
+        Partial_implementation (Array.map clear_part array)
+      | Partial_interface array ->
+        Partial_interface (Array.map clear_part array)
+
+  else binary_annots
+
+
+
 
 exception Error of error
 
@@ -109,7 +199,8 @@ let read_cmt filename =
 
 let read_cmi filename =
   match read filename with
-      None, _ -> raise (Cmi_format.Error (Cmi_format.Not_an_interface filename))
+      None, _ ->
+        raise (Cmi_format.Error (Cmi_format.Not_an_interface filename))
     | Some cmi, _ -> cmi
 
 let saved_types = ref []
@@ -138,17 +229,20 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
     let source_digest = Misc.may_map Digest.file sourcefile in
     let cmt = {
       cmt_modname = modname;
-      cmt_annots = binary_annots;
+      cmt_annots = clear_env binary_annots;
       cmt_comments = Lexer.comments ();
       cmt_args = Sys.argv;
       cmt_sourcefile = sourcefile;
       cmt_builddir =  Sys.getcwd ();
       cmt_loadpath = !Config.load_path;
       cmt_source_digest = source_digest;
-      cmt_initial_env = initial_env;
+      cmt_initial_env = if need_to_clear_env then
+          keep_only_summary initial_env else initial_env;
       cmt_imports = List.sort compare imports;
       cmt_interface_digest = this_crc;
+      cmt_use_summaries = need_to_clear_env;
     } in
+    clear_env_hcons ();
     output_cmt oc cmt;
     close_out oc;
     set_saved_types [];

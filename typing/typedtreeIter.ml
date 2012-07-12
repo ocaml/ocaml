@@ -102,7 +102,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
       | Some x -> f x
 
 
-    open Misc
     open Asttypes
 
     let rec iter_structure str =
