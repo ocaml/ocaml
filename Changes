@@ -36,7 +36,7 @@ Native-code compiler:
       savings of 28%.
     . Added support for position-independent code, natdynlink, profiling and
       exception backtraces.
-- Generation of CFI information and a filename/line number debugging
+- Generation of CFI information, and filename/line number debugging (with -g)
   annotations, enabling in particular precise stack backtraces with
   the gdb debugger. Currently supported for x86 32-bits and 64-bits only.
   (PR#5487)
