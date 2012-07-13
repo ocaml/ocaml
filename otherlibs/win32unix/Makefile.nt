@@ -27,7 +27,8 @@ WIN_FILES = accept.c bind.c channels.c close.c \
 # Files from the ../unix directory
 UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   cstringv.c envir.c execv.c execve.c execvp.c \
-  exit.c getcwd.c gethost.c gethostname.c getproto.c \
+  exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
+  getnameinfo.c getproto.c \
   getserv.c gmtime.c putenv.c rmdir.c \
   socketaddr.c strofaddr.c time.c unlink.c utimes.c
 

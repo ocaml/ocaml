@@ -28,3 +28,4 @@
 #define HAS_PUTENV
 #define HAS_LOCALE
 #define HAS_BROKEN_PRINTF
+#define HAS_IPV6

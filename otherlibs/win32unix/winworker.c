@@ -18,7 +18,8 @@
 #include "windbug.h"
 #include <mlvalues.h>
 #include <alloc.h>
-#include "unixsupport.h"
+#include <memory.h>
+#include <signals.h>
 
 typedef enum {
   WORKER_CMD_NONE = 0,

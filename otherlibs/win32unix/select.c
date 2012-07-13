@@ -13,17 +13,14 @@
 
 /* $Id$ */
 
+#include "winworker.h"
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
 #include <signals.h>
-#include <winsock2.h>
-#include <windows.h>
 #include <stdio.h>
-#include "unixsupport.h"
 #include "windbug.h"
-#include "winworker.h"
 #include "winlist.h"
 
 /* This constant define the maximum number of objects that

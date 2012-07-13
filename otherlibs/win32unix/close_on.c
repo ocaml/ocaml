@@ -14,8 +14,8 @@
 /* $Id$ */
 
 #include <mlvalues.h>
-#include <windows.h>
 #include "unixsupport.h"
+#include <windows.h>
 
 int win_set_inherit(value fd, BOOL inherit)
 {

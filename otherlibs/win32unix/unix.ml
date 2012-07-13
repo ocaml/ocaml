@@ -658,7 +658,11 @@ type getaddrinfo_option =
   | AI_CANONNAME
   | AI_PASSIVE
 
-let getaddrinfo node service opts =
+external getaddrinfo_system
+  : string -> string -> getaddrinfo_option list -> addr_info list
+  = "unix_getaddrinfo"
+
+let getaddrinfo_emulation node service opts =
   (* Parse options *)
   let opt_socktype = ref None
   and opt_protocol = ref 0
@@ -720,6 +724,12 @@ let getaddrinfo node service opts =
           addresses)
       ports)
 
+let getaddrinfo node service opts =
+  try
+    List.rev(getaddrinfo_system node service opts)
+  with Invalid_argument _ ->
+    getaddrinfo_emulation node service opts
+
 type name_info =
   { ni_hostname : string;
     ni_service : string }
@@ -731,7 +741,11 @@ type getnameinfo_option =
   | NI_NUMERICSERV
   | NI_DGRAM
 
-let getnameinfo addr opts =
+external getnameinfo_system
+  : sockaddr -> getnameinfo_option list -> name_info
+  = "unix_getnameinfo"
+
+let getnameinfo_emulation addr opts =
   match addr with
   | ADDR_UNIX f ->
       { ni_hostname = ""; ni_service = f } (* why not? *)
@@ -751,6 +765,12 @@ let getnameinfo addr opts =
         with Not_found ->
           string_of_int p in
       { ni_hostname = hostname; ni_service = service }
+
+let getnameinfo addr opts =
+  try
+    getnameinfo_system addr opts
+  with Invalid_argument _ ->
+    getnameinfo_emulation addr opts
 
 (* High-level process management (system, popen) *)
 
@@ -874,12 +894,14 @@ external select :
 (* High-level network functions *)
 
 let open_connection sockaddr =
-  let domain =
-    match sockaddr with ADDR_UNIX _ -> PF_UNIX | ADDR_INET(_,_) -> PF_INET in
   let sock =
-    socket domain SOCK_STREAM 0 in
-  connect sock sockaddr;
-  (in_channel_of_descr sock, out_channel_of_descr sock)
+    socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
+  try
+    connect sock sockaddr;
+    set_close_on_exec sock;
+    (in_channel_of_descr sock, out_channel_of_descr sock)
+  with exn ->
+    close sock; raise exn
 
 let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND

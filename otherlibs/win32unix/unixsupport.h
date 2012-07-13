@@ -20,7 +20,11 @@
 #include <direct.h>
 #include <process.h>
 #include <sys/types.h>
-#include <winsock.h>
+#include <winsock2.h>
+#ifdef HAS_IPV6
+#include <ws2tcpip.h>
+#include <wspiapi.h>
+#endif
 
 struct filedescr {
   union {
