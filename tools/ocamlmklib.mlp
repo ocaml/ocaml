@@ -28,7 +28,6 @@ and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
 and dynlink = ref supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
-and c_Lopts = ref []      (* options to pass to mksharedlib and ocamlc -cclib *)
 and c_opts = ref []      (* options to pass to mksharedlib and ocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
 and ocamlc = ref (compiler_path "ocamlc")
@@ -94,7 +93,7 @@ let parse_arguments argv =
     else if starts_with s "-l" then
       c_libs := s :: !c_libs
     else if starts_with s "-L" then
-     (c_Lopts := s :: !c_Lopts;
+     (c_opts := s :: !c_opts;
       let l = chop_prefix s "-L" in
       if not (Filename.is_relative l) then rpath := l :: !rpath)
     else if s = "-ocamlc" then
@@ -138,8 +137,6 @@ let parse_arguments argv =
     (fun r -> r := List.rev !r)
     [ bytecode_objs; native_objs; caml_libs; caml_opts;
       c_libs; c_objs; c_opts; ld_opts; rpath ];
-(* Put -L options in front of -l options in -cclib to mimic -ccopt behavior *)
-  c_libs := !c_Lopts @ !c_libs;
 
   if !output_c = "" then output_c := !output
 
