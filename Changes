@@ -125,6 +125,7 @@ Bug Fixes:
 * PR#5312: command-line arguments @reponsefile auto-expansion feature
   removed from the Windows OCaml runtime, to avoid conflicts with "-w @..."
 - PR#5313: ocamlopt -g misses optimizations
+- PR#5214: ocamlfind plugin invokes 'cut' utility
 - PR#5316: objinfo now shows ccopts/ccobjs/force_link when applicable
 - PR#5318: segfault on stack overflow when reading marshaled data
 - PR#5322: type abbreviations expanding to a universal type variable
