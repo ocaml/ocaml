@@ -133,6 +133,7 @@ Bug Fixes:
 - PR#5179: port OCaml to mingw-w64
 - PR#5211: updated Genlex documentation to state that camlp4 is mandatory for
   'parser' keyword and associated notation
+- PR#5214: ocamlfind plugin invokes 'cut' utility
 - PR#5218: use $(MAKE) instead of "make" in Makefiles
 - PR#5224: confusing error message in non-regular type definition
 - PR#5231: camlp4: fix parsing of <:str_item< type t = $x$ >>
