@@ -91,8 +91,7 @@ THIRD-PARTY SOFTWARE:
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
 [3] TCL/TK version 8.5.  Windows binaries are available as part of the
-    ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
-
+    ActiveTCL distribution at http://www.activestate.com/activetcl/downloads
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -317,14 +316,17 @@ the OCaml packages).  Alternatively, recompile from the source distribution.
 
 RECOMPILATION FROM THE SOURCES:
 
+Before starting, make sure that the gcc version installed by cygwin
+is not 4.5.3 (it has a bug that affects OCaml).  If needed, use cygwin's
+setup.exe to downgrade to 4.3.4.
+
 You will need to recompile (and install) flexdll from source with
 Cygwin's C compiler because the official binary version of flexdll
 doesn't handle Cygwin's symbolic links and sometimes fails to
 launch the C compiler.
 
 In order to recompile flexdll, you first need to configure, compile,
-and install OCaml without flexdll support (by following the instructions
-in file INSTALL, except the "make opt.opt" part), then modify the
+and install OCaml without flexdll support, then modify the
 flexdll Makefile to change line 51 from:
   LINKFLAGS = -ccopt "-link version_res.o"
 to:
@@ -333,7 +335,7 @@ to:
 Then "make CHAINS=cygwin" and add the flexdll directory to your PATH.
 Make sure to add it before "/usr/bin" or you will get cygwin's flexlink.
 
-Then, OCaml's source directory, type:
+Then, in OCaml's source directory, type:
   make clean
   make distclean
 and follow the instructions for Unix machines given in the file INSTALL.
@@ -341,11 +343,14 @@ and follow the instructions for Unix machines given in the file INSTALL.
 
 NOTES:
 
-The libraries available in this port are "num", "str", "threads",
-"unix" and "labltk".  "graph" is not available.
-The replay debugger is fully supported.
-When upgrading from 3.12.0 to 3.12.1, you will need to remove
-/usr/local/bin/ocamlmktop.exe before typing "make install".
+- There is a problem with cygwin's port of gcc version 4.5.3.  You should
+  use cygwin's setup program to downgrade to 4.3.4 before compiling OCaml.
+- The replay debugger is fully supported.
+- When upgrading from 3.12.0 to 3.12.1, you will need to remove
+  /usr/local/bin/ocamlmktop.exe before typing "make install".
+- In order to use the "graph" and "labltk" libraries, you will need
+  to use Cygwin's setup.exe to install the xinit, libX11-devel, tcl,
+  and tcl-tk packages before compiling OCaml.
 
 ------------------------------------------------------------------------------
 
