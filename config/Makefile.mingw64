@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile.mingw 11319 2011-12-16 17:02:48Z xleroy $
-
 # Configuration for Windows, Mingw compiler
 
 ######### General configuration
