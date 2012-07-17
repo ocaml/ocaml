@@ -76,7 +76,7 @@ Standard library:
 - Random:
      . More random initialization (Random.self_init()), using /dev/urandom
        when available (e.g. Linux, FreeBSD, MacOS X, Solaris)
-     . Faster implementation of Random.float
+     * Faster implementation of Random.float (changes the generated sequences)
 - Scanf: new function "unescaped" (PR#3888)
 - Set and Map: more efficient implementation of "filter" and "partition"
 - String: new function "map" (PR#3888)
