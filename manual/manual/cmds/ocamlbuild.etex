@@ -11,8 +11,10 @@
 %(***********************************************************************)
 
 %(*** preamble
-\newcommand{\ocb}{\texttt{ocamlbuild}\xspace}
-\newcommand{\tags}{\texttt{\_tags}\xspace}
+%Luc: definition moved in preamble, otherwise hevea does
+%not see them while formating table of contents
+%\newcommand{\ocb}{\texttt{ocamlbuild}\xspace}
+%\newcommand{\tags}{\texttt{\_tags}\xspace}
 %***)
 %(*** title
 \chapter{The ocamlbuild compilation manager} \label{c:ocamlbuild}
