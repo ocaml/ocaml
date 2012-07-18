@@ -64,6 +64,8 @@ val row_field: label -> row_desc -> row_field
         (* Return the canonical representative of a row field *)
 val row_more: row_desc -> type_expr
         (* Return the extension variable of the row *)
+val row_fixed: row_desc -> bool
+        (* Return whether the row should be treated as fixed or not *)
 val static_row: row_desc -> bool
         (* Return whether the row is static or not *)
 val hash_variant: label -> int
