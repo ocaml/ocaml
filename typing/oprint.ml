@@ -449,8 +449,8 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
       end
 
 
-and print_out_label ppf (name, mut, arg) =
-  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
+and print_out_label ppf (name, mut, focus, arg) =
+  fprintf ppf "@[<2>%s%s%s :@ %a@];" (if mut then "mutable " else "") (if focus then "match " else "") name
     !out_type arg
 
 let _ = out_module_type := print_out_module_type

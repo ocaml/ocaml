@@ -592,8 +592,9 @@ class latex =
                     (fun r ->
                       let s_field =
                         p fmt2
-                          "@[<h 6>  %s%s :@ %s ;"
+                          "@[<h 6>  %s%s%s :@ %s ;"
                           (if r.rf_mutable then "mutable " else "")
+                          (if r.rf_focus then "match " else "")
                           r.rf_name
                           (self#normal_type mod_name r.rf_type);
                         flush2 ()

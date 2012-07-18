@@ -82,7 +82,7 @@ let add_type_declaration bv td =
   | Ptype_variant cstrs ->
       List.iter (fun (c, args, rty, _) -> List.iter (add_type bv) args; Misc.may (add_type bv) rty) cstrs
   | Ptype_record lbls ->
-      List.iter (fun (l, mut, ty, _) -> add_type bv ty) lbls in
+      List.iter (fun (l, mut, foc, ty, _) -> add_type bv ty) lbls in
   add_tkind td.ptype_kind
 
 let rec add_class_type bv cty =

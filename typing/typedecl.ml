@@ -195,23 +195,23 @@ let transl_declaration env (name, sdecl) id =
       | Ptype_record lbls ->
         let all_labels = ref StringSet.empty in
         List.iter
-          (fun ({ txt = name }, mut, arg, loc) ->
+          (fun ({ txt = name }, mut, focus, arg, loc) ->
             if StringSet.mem name !all_labels then
               raise(Error(sdecl.ptype_loc, Duplicate_label name));
             all_labels := StringSet.add name !all_labels)
           lbls;
-        let lbls = List.map (fun (name, mut, arg, loc) ->
+        let lbls = List.map (fun (name, mut, focus, arg, loc) ->
           let cty = transl_simple_type env true arg in
-          (Ident.create name.txt, name, mut, cty, loc)
+          (Ident.create name.txt, name, mut, focus, cty, loc)
         ) lbls in
         let lbls' =
           List.map
-            (fun (name, name_loc, mut, cty, loc) ->
+            (fun (name, name_loc, mut, focus, cty, loc) ->
               let ty = cty.ctyp_type in
-              name, mut, match ty.desc with Tpoly(t,[]) -> t | _ -> ty)
+              name, mut, focus, match ty.desc with Tpoly(t,[]) -> t | _ -> ty)
             lbls in
         let rep =
-          if List.for_all (fun (name, mut, arg) -> is_float env arg) lbls'
+          if List.for_all (fun (name, mut, f, arg) -> is_float env arg) lbls'
           then Record_float
           else Record_regular in
         Ttype_record lbls, Type_record(lbls', rep)
@@ -282,7 +282,7 @@ let generalize_decl decl =
 	  may Ctype.generalize ret_type)
 	v
   | Type_record(r, rep) ->
-      List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
+      List.iter (fun (_, _, _, ty) -> Ctype.generalize ty) r
   end;
   begin match decl.type_manifest with
   | None    -> ()
@@ -351,11 +351,11 @@ let check_constraints env (_, sdecl) (_, decl) =
       let pl = find_pl sdecl.ptype_kind in
       let rec get_loc name = function
           [] -> assert false
-        | (name', _, sty, _) :: tl ->
+        | (name', _, _, sty, _) :: tl ->
             if name = name'.txt then sty.ptyp_loc else get_loc name tl
       in
       List.iter
-        (fun (name, _, ty) ->
+        (fun (name, _, _, ty) ->
           check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
         l
   end;
@@ -556,7 +556,7 @@ let whole_type decl =
         (Ttuple (List.map (fun (_, tl, _) -> Btype.newgenty (Ttuple tl)) tll))
   | Type_record (ftl, _) ->
       Btype.newgenty
-        (Ttuple (List.map (fun (_, _, ty) -> ty) ftl))
+        (Ttuple (List.map (fun (_, _, _, ty) -> ty) ftl))
   | Type_abstract ->
       match decl.type_manifest with
         Some ty -> ty
@@ -656,7 +656,7 @@ let compute_variance_decl env check decl (required, loc as rloc) =
       end
   | Type_record (ftl, _) ->
       compute_variance_type env check rloc decl
-        (List.map (fun (_, mut, ty) -> (mut = Mutable, ty)) ftl)
+        (List.map (fun (_, mut, _, ty) -> (mut = Mutable, ty)) ftl)
 
 let is_sharp id =
   let s = Ident.name id in
@@ -730,7 +730,7 @@ let check_duplicates name_sdecl_list =
           cl
     | Ptype_record fl ->
         List.iter
-          (fun (cname, _, _, loc) ->
+          (fun (cname, _, _, _, loc) ->
             try
               let name' = Hashtbl.find labels cname.txt in
               Location.prerr_warning loc
@@ -1125,8 +1125,8 @@ let report_error ppf = function
 	    Btype.newgenty (Ttuple tl))
             "case" (fun (lab,_,_) -> Ident.name lab ^ " of ")
       | Type_record (tl, _), _ ->
-          explain_unbound ppf ty tl (fun (_,_,t) -> t)
-            "field" (fun (lab,_,_) -> Ident.name lab ^ ": ")
+          explain_unbound ppf ty tl (fun (_,_,_,t) -> t)
+            "field" (fun (lab,_,_,_) -> Ident.name lab ^ ": ")
       | Type_abstract, Some ty' ->
           explain_unbound_single ppf ty ty'
       | _ -> ()

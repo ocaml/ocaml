@@ -237,7 +237,7 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
               match r with None -> false | Some x -> matches x
             end
           | Type_record(l, rep) ->
-            List.exists l ~f:(fun (_, _, t) -> matches t)
+            List.exists l ~f:(fun (_, _, _, t) -> matches t)
           end
           then [lid_of_id id, Ptype] else []
       | Sig_exception (id, l) ->

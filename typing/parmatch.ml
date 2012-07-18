@@ -135,7 +135,7 @@ let rec get_constr tag ty tenv =
 
 let find_label lbl lbls =
   try
-    let name,_,_ = List.nth lbls lbl.lbl_pos in
+    let name,_,_,_ = List.nth lbls lbl.lbl_pos in
     name
   with Failure "nth" -> Ident.create "*Unknown label*"
 

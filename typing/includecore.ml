@@ -191,9 +191,10 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
 let rec compare_records env decl1 decl2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
-  | [], (lab2,_,_)::_ -> [Field_missing (true, lab2)]
-  | (lab1,_,_)::_, [] -> [Field_missing (false, lab1)]
-  | (lab1, mut1, arg1)::rem1, (lab2, mut2, arg2)::rem2 ->
+  | [], (lab2,_,_,_)::_ -> [Field_missing (true, lab2)]
+  | (lab1,_,_,_)::_, [] -> [Field_missing (false, lab1)]
+  | (lab1, mut1, foc1, arg1)::rem1, (lab2, mut2, foc2, arg2)::rem2 ->
+      (* note: we allow foc1 <> foc2 *)
       if Ident.name lab1 <> Ident.name lab2
       then [Field_names (n, lab1, lab2)]
       else if mut1 <> mut2 then [Field_mutable lab1] else

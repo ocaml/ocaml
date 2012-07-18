@@ -317,7 +317,7 @@ and type_kind =
     Ttype_abstract
   | Ttype_variant of (Ident.t * string loc * core_type list * Location.t) list
   | Ttype_record of
-      (Ident.t * string loc * mutable_flag * core_type * Location.t) list
+      (Ident.t * string loc * mutable_flag * focus_flag * core_type * Location.t) list
 
 and exception_declaration =
   { exn_params : core_type list;

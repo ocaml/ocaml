@@ -272,7 +272,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     | None ->
                         let rec tree_of_fields pos = function
                           | [] -> []
-                          | (lbl_name, _, lbl_arg) :: remainder ->
+                          | (lbl_name, _, _, lbl_arg) :: remainder ->
                               let ty_arg =
                                 try
                                   Ctype.apply env decl.type_params lbl_arg

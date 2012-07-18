@@ -30,6 +30,7 @@ type variant_constructor = {
 type record_field = {
     rf_name : string ;
     rf_mutable : bool ; (** true if mutable *)
+    rf_focus : bool; (** [true] if autofocus. *)
     rf_type : Types.type_expr ;
     mutable rf_text : Odoc_types.text option ; (** optional user description *)
   }

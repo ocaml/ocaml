@@ -201,12 +201,12 @@ module Analyser =
           let rec f = function
               [] ->
                 []
-            | (name, _, ct, xxloc) :: [] ->
+            | (name, _, _, ct, xxloc) :: [] ->
                 let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
                 let s = get_string_of_file pos pos_end in
                 let (_,comment_opt) =  My_ir.just_after_special !file_name s in
                 [name.txt, comment_opt]
-            | (name,_,ct,xxloc) :: ((name2,_,ct2,xxloc2) as ele2) :: q ->
+            | (name,_,_,ct,xxloc) :: ((name2,_,_,ct2,xxloc2) as ele2) :: q ->
                 let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
                 let pos2 = ct2.Parsetree.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
                 let s = get_string_of_file pos pos2 in
@@ -239,7 +239,7 @@ module Analyser =
           Odoc_type.Type_variant (List.map f l)
 
       | Types.Type_record (l, _) ->
-          let f (field_name, mutable_flag, type_expr) =
+          let f (field_name, mutable_flag, focus_flag, type_expr) =
             let field_name = Ident.name field_name in
             let comment_opt =
               try
@@ -251,6 +251,7 @@ module Analyser =
             {
               rf_name = field_name ;
               rf_mutable = mutable_flag = Mutable ;
+              rf_focus = focus_flag = AutoFocus ;
               rf_type = Odoc_env.subst_type env type_expr ;
               rf_text = comment_opt
             }

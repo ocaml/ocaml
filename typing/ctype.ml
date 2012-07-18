@@ -527,7 +527,7 @@ let closed_type_decl decl =
                 List.iter closed_type tyl)
           v
     | Type_record(r, rep) ->
-        List.iter (fun (_, _, ty) -> closed_type ty) r
+        List.iter (fun (_, _, _, ty) -> closed_type ty) r
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -1103,7 +1103,7 @@ let instance_declaration decl =
          List.map (fun (s,tl,ot) -> (s, List.map copy tl, may_map copy ot))
            cl)
      | Type_record (fl, rr) ->
-         Type_record (List.map (fun (s,m,ty) -> (s, m, copy ty)) fl, rr)}
+         Type_record (List.map (fun (s,m,f,ty) -> (s, m, f, copy ty)) fl, rr)}
   in
   cleanup_types ();
   decl
@@ -2002,9 +2002,9 @@ and mcomp_variant_description type_pairs subst env =
 and mcomp_record_description type_pairs subst env =
   let rec iter = fun x y ->
     match x, y with
-      (name, mutable_flag, t) :: xs, (name', mutable_flag', t') :: ys ->
+      (name, mutable_flag, focus, t) :: xs, (name', mutable_flag', focus', t') :: ys ->
         mcomp type_pairs subst env t t';
-        if name = name' && mutable_flag = mutable_flag'
+        if name = name' && mutable_flag = mutable_flag' && focus = focus'
         then iter xs ys
         else raise (Unify [])
     | [], [] -> ()
@@ -4020,7 +4020,7 @@ let nondep_type_decl env mid id is_covariant decl =
       | Type_record(lbls, rep) ->
           Type_record
             (List.map
-               (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
+               (fun (c, mut, f, t) -> (c, mut, f, nondep_type_rec env mid t))
                lbls,
              rep)
       with Not_found when is_covariant -> Type_abstract

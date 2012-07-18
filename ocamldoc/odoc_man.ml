@@ -514,6 +514,7 @@ class man =
           List.iter
             (fun r ->
               bs b (if r.rf_mutable then "\n\n.B mutable \n" else "\n ");
+              bs b (if r.rf_focus then "\n\n.B match \n" else "\n ");
               bs b (r.rf_name^" : ");
               self#man_of_type_expr b father r.rf_type;
               bs b ";";

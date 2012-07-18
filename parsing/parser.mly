@@ -1446,8 +1446,13 @@ label_declarations:
   | label_declarations SEMI label_declaration   { $3 :: $1 }
 ;
 label_declaration:
-    mutable_flag label COLON poly_type          { (mkrhs $2 2, $1, $4, symbol_rloc()) }
+    mutable_flag focus_flag label COLON poly_type          { (mkrhs $3 3, $1, $2, $5, symbol_rloc()) }
 ;
+focus_flag:
+  |       { NoFocus }
+  | MATCH { AutoFocus}
+;
+
 
 /* "with" constraints (additional type equations over signature components) */
 

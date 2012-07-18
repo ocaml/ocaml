@@ -251,7 +251,7 @@ let rec extract_label_names sexp env ty =
       let td = Env.find_type path env in
       begin match td.type_kind with
       | Type_record (fields, _) ->
-          List.map (fun (name, _, _) -> name) fields
+          List.map (fun (name, _, _, _) -> name) fields
       | Type_abstract when td.type_manifest <> None ->
           extract_label_names sexp env (expand_head env ty)
       | _ -> assert false
@@ -602,6 +602,8 @@ type type_pat_mode =
   | Normal
   | Inside_or
 
+let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
+
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
    Unification may update the typing environment. *)
@@ -609,6 +611,29 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
   let type_pat ?(mode=mode) ?(env=env) =
     type_pat ~constrs ~labels ~no_existentials ~mode ~env in
   let loc = sp.ppat_loc in
+  let record_expected =
+    match (Ctype.expand_head !env expected_ty).desc with
+    | Tconstr (path, _, _) ->
+        begin try
+          match Env.find_type path !env with
+          | {type_kind = Type_record (fields, _)} ->
+              Some
+                (List.find (fun (_, _, focus, _) -> focus = AutoFocus) fields)
+          | _ -> None
+        with Not_found (* Env.find_type, or List.find *) -> None
+        end
+    | _ -> None
+  in
+  let autofocus =
+    match record_expected, sp.ppat_desc with
+    | Some _, (Ppat_any | Ppat_var _ | Ppat_alias _ | Ppat_record _ | Ppat_constraint _ | Ppat_or _) -> None
+    | Some (l, _, _, _), _ -> Some l
+    | _ -> None
+  in
+  match autofocus with
+  | Some lab ->
+      type_pat (mkpat (Ppat_record ([{txt=Longident.Lident (Ident.name lab); loc=Location.none}, sp], Open))) expected_ty
+  | None ->
   match sp.ppat_desc with
     Ppat_any ->
       rp {
@@ -938,8 +963,6 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   in
   let val_env, _ = add_pattern_variables val_env in
   (pat, pv, val_env, met_env)
-
-let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
 
 let type_self_pattern cl_num privty val_env met_env par_env spat =
   let spat =

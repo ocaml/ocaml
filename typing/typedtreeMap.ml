@@ -154,8 +154,8 @@ module MakeMap(Map : MapArgument) = struct
 	Ttype_variant list
       | Ttype_record list ->
 	let list =
-          List.map (fun (s, name, mut, ct, loc) ->
-            (s, name, mut, map_core_type ct, loc)
+          List.map (fun (s, name, mut, foc, ct, loc) ->
+            (s, name, mut, foc, map_core_type ct, loc)
           ) list in
 	Ttype_record list
     in

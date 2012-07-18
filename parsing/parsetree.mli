@@ -145,7 +145,7 @@ and type_kind =
   | Ptype_variant of
       (string loc * core_type list * core_type option * Location.t) list
   | Ptype_record of
-      (string loc * mutable_flag * core_type * Location.t) list
+      (string loc * mutable_flag * focus_flag * core_type * Location.t) list
 
 and exception_declaration = core_type list
 

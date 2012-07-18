@@ -346,7 +346,7 @@ let unmark_type_decl decl =
 	  Misc.may unmark_type ret_type_opt)
 	cstrs
   | Type_record(lbls, rep) ->
-      List.iter (fun (c, mut, t) -> unmark_type t) lbls
+      List.iter (fun (c, mut, focus, t) -> unmark_type t) lbls
   end;
   begin match decl.type_manifest with
     None    -> ()

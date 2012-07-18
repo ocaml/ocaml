@@ -177,7 +177,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 List.iter iter_core_type cts
             ) list
         | Ttype_record list ->
-            List.iter (fun (s, _, mut, ct, loc) ->
+            List.iter (fun (s, _, mut, foc, ct, loc) ->
                 iter_core_type ct
             ) list
       end;

@@ -594,7 +594,7 @@ let rec tree_of_type_decl id decl =
 	  may mark_loops ret_type_opt)
 	cstrs
   | Type_record(l, rep) ->
-      List.iter (fun (_, _, ty) -> mark_loops ty) l
+      List.iter (fun (_, _, _, ty) -> mark_loops ty) l
   end;
 
   let type_param =
@@ -663,8 +663,8 @@ and tree_of_constructor_ret =
     | None -> None
     | Some ret_type -> Some (tree_of_typexp false ret_type)
 
-and tree_of_label (name, mut, arg) =
-  (Ident.name name, mut = Mutable, tree_of_typexp false arg)
+and tree_of_label (name, mut, focus, arg) =
+  (Ident.name name, mut = Mutable, focus = AutoFocus, tree_of_typexp false arg)
 
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)

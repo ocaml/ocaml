@@ -180,7 +180,7 @@ let type_declaration s decl =
                  cstrs)
         | Type_record(lbls, rep) ->
             Type_record
-              (List.map (fun (n, mut, arg) -> (n, mut, typexp s arg)) lbls,
+              (List.map (fun (n, mut, focus, arg) -> (n, mut, focus, typexp s arg)) lbls,
                rep)
         end;
       type_manifest =

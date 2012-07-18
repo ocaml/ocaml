@@ -1521,6 +1521,7 @@ class html =
             bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
             if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
+            if r.rf_focus then bs b (self#keyword "match&nbsp;") ;
             bs b (r.rf_name ^ "&nbsp;: ") ;
             self#html_of_type_expr b father r.rf_type;
             bs b ";</code></td>\n";

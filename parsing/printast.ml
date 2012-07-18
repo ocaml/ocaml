@@ -58,6 +58,11 @@ let fmt_mutable_flag f x =
   | Mutable -> fprintf f "Mutable";
 ;;
 
+let fmt_focus_flag f = function
+  | AutoFocus -> fprintf f "AutoFocus"
+  | NoFocus -> fprintf f "NoFocus"
+;;
+
 let fmt_virtual_flag f x =
   match x with
   | Virtual -> fprintf f "Virtual";
@@ -364,7 +369,7 @@ and type_kind i ppf x =
       list (i+1) string_x_core_type_list_x_location ppf l;
   | Ptype_record l ->
       line i ppf "Ptype_record\n";
-      list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
+      list (i+1) label_definition ppf l;
 
 and exception_declaration i ppf x = list i core_type ppf x
 
@@ -674,8 +679,8 @@ and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) =
   list (i+1) core_type ppf l;
   option (i+1) core_type ppf r_opt;
 
-and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
-  line i ppf "\"%s\" %a %a\n" s.txt fmt_mutable_flag mf fmt_location loc;
+and label_definition i ppf (s, mf, ff, ct, loc) =
+  line i ppf "\"%s\" %a %a %a\n" s.txt fmt_mutable_flag mf fmt_focus_flag ff fmt_location loc;
   core_type (i+1) ppf ct;
 
 and string_list_x_location i ppf (l, loc) =

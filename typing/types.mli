@@ -127,6 +127,7 @@ type label_description =
     lbl_res: type_expr;                 (* Type of the result *)
     lbl_arg: type_expr;                 (* Type of the argument *)
     lbl_mut: mutable_flag;              (* Is this a mutable field? *)
+    lbl_focus: focus_flag;
     lbl_pos: int;                       (* Position in block *)
     lbl_all: label_description array;   (* All the labels in this type *)
     lbl_repres: record_representation;  (* Representation for this record *)
@@ -153,7 +154,7 @@ type type_declaration =
 and type_kind =
     Type_abstract
   | Type_record of
-      (Ident.t * mutable_flag * type_expr) list * record_representation
+      (Ident.t * mutable_flag * focus_flag * type_expr) list * record_representation
   | Type_variant of (Ident.t * type_expr list * type_expr option) list
 
 type exception_declaration =
