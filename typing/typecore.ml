@@ -330,7 +330,7 @@ let finalize_variant pat =
           begin match opat with None -> assert false
           | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
           end
-      | Reither (c, l, true, e) when not row.row_fixed ->
+      | Reither (c, l, true, e) when not (row_fixed row) ->
           set_row_field e (Reither (c, [], false, ref None))
       | _ -> ()
       end;

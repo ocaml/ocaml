@@ -653,7 +653,7 @@ let full_match ignore_generalized closing env =  match env with
         env
     in
     let row = row_of_pat p in
-    if closing && not row.row_fixed then
+    if closing && not (Btype.row_fixed row) then
       (* closing=true, we are considering the variant as closed *)
       List.for_all
         (fun (tag,f) ->
@@ -1239,7 +1239,7 @@ let rec pressure_variants tdefs = function
             begin match constrs, tdefs with
               ({pat_desc=Tpat_variant _} as p,_):: _, Some env ->
                 let row = row_of_pat p in
-                if row.row_fixed
+                if Btype.row_fixed row
                 || pressure_variants None (filter_extra pss) then ()
                 else close_variant env row
             | _ -> ()
