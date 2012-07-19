@@ -8,7 +8,7 @@
 
 \noindent This chapter gives an overview of the object-oriented features of
 OCaml. Note that the relation between object, class and type
-in OCaml is very different from that in main stream
+in OCaml is very different from that in mainstream
 object-oriented languages like Java or C++, so that you should not
 assume that similar keywords mean the same thing.
 
@@ -164,7 +164,7 @@ calling the definition of class "point" with the value of the
 \begin{caml_example}
 class adjusted_point x_init =  point ((x_init / 10) * 10);;
 \end{caml_example}
-An alternative solution would have been to define the adjustment in
+An alternate solution would have been to define the adjustment in
 a special allocation function:
 \begin{caml_example}
 let new_adjusted_point x_init = new point ((x_init / 10) * 10);;
@@ -250,7 +250,7 @@ class my_int =
 \end{caml_example}
 You can ignore the first two lines of the error message. What matters
 is the last one: putting self into an external reference would make it
-impossible to extend it afterwards.
+impossible to extend it through inheritance.
 We will see in section \ref{ss:using-coercions} a workaround to this
 problem.
 Note however that, since immediate objects are not extensible, the
@@ -547,7 +547,7 @@ let new_ref x_init =
 \end{caml_example}
 On the other hand, a class for polymorphic references must explicitly
 list the type parameters in its declaration. Class type parameters are
-always listed between "[" and "]". The type parameters must also be
+listed between "[" and "]". The type parameters must also be
 bound somewhere in the class body by a type constraint.
 \begin{caml_example}
 class ['a] ref x_init =
@@ -644,7 +644,7 @@ since objects themselves are not polymorphic (only their constructors
 are), using the "fold" method fixes its type for this individual object.
 Our next attempt to use it as a string iterator fails.
 
-The problem here is that quantification was wrongly located: this is
+The problem here is that quantification was wrongly located: it is
 not the class we want to be polymorphic, but the "fold" method.
 This can be achieved by giving an explicitly polymorphic type in the
 method definition.
@@ -819,7 +819,7 @@ In that case, the solution is to use the explicit form.
 %
 Sometimes, a change in the class-type definition can also solve the problem
 \begin{caml_example}
-class type c2 =  object ('a) method m : 'a end;;
+class type c2 = object ('a) method m : 'a end;;
 fun (x:c0) -> (x :> c2);;
 \end{caml_example}
 While class types "c1" and "c2" are different, both object types
@@ -827,7 +827,7 @@ While class types "c1" and "c2" are different, both object types
 Yet, when the domain of a coercion is left implicit and its co-domain
 is an abbreviation of a known class type, then the class type, rather
 than the object type, is used to derive the coercion function. This
-allows to leave the domain implicit in most cases when coercing form a
+allows leaving the domain implicit in most cases when coercing form a
 subclass to its superclass.
 %
 The type of a coercion can always be seen as below:
@@ -835,7 +835,8 @@ The type of a coercion can always be seen as below:
 let to_c1 x = (x :> c1);;
 let to_c2 x = (x :> c2);;
 \end{caml_example}
-Note the difference between the two coercions: in the second case, the type
+Note the difference between these two coercions: in the case of "to_c2",
+the type
 "#c2 = < m : 'a; .. > as 'a" is polymorphically recursive (according
 to the explicit recursion in the class type of "c2"); hence the
 success of applying this coercion to an object of class "c0".
@@ -921,7 +922,7 @@ and d = object (self)
 end;;
 \end{caml_example}
 It is also possible to use a virtual class. Inheriting from this class
-simultaneously allows to enforce all methods of "c" to have the same
+simultaneously forces all methods of "c" to have the same
 type as the methods of "c'".
 \begin{caml_example}
 class virtual c' = object method virtual m : int end;;
@@ -933,7 +934,7 @@ type c' = <m : int>;;
 \end{caml_example*}
 However, the abbreviation "#c'" cannot be defined directly in a similar way.
 It can only be defined by a class or a class-type definition.
-This is because "#" sharp abbreviations carry an implicit anonymous
+This is because a "#"-abbreviation carries an implicit anonymous
 variable ".." that cannot be explicitly named.
 The closer you get to it is:
 \begin{caml_example*}
@@ -946,7 +947,7 @@ with an extra type variable capturing the open object type.
 \label{ss:functional-objects}
 
 It is possible to write a version of class "point" without assignments
-on the instance variables. The construct "{< ... >}" returns a copy of
+on the instance variables. The override construct "{< ... >}" returns a copy of
 ``self'' (that is, the current object), possibly changing the value of
 some instance variables.
 \begin{caml_example}
@@ -976,11 +977,11 @@ class bad_functional_point y =
   end;;
 \end{caml_example}
 While objects of either class will behave the same, objects of their
-subclasses will be different. In a subclass of the latter, the method
-"move" will
+subclasses will be different. In a subclass of "bad_functional_point",
+the method "move" will
 keep returning an object of the parent class.  On the contrary, in a
-subclass of the former, the method "move" will return an object of the
-subclass.
+subclass of "functional_point", the method "move" will return an
+object of the subclass.
 
 Functional update is often used in conjunction with binary methods
 as illustrated in section \ref{module:string}.
@@ -991,11 +992,12 @@ as illustrated in section \ref{module:string}.
 
 Objects can also be cloned, whether they are functional or imperative.
 The library function "Oo.copy" makes a shallow copy of an object. That is,
-it returns an object that is equal to the previous one. The
-instance variables have been copied but their contents are shared.
+it returns a new object that has the same methods and instance
+variables as its argument. The
+instance variables are copied but their contents are shared.
 Assigning a new value to an instance variable of the copy (using a method
 call) will not affect instance variables of the original, and conversely.
-A deeper assignment (for example if the instance variable if a reference cell)
+A deeper assignment (for example if the instance variable is a reference cell)
 will of course affect both the original and the copy.
 
 The type of "Oo.copy" is the following:
@@ -1023,7 +1025,8 @@ particular, an object and its copy are not equal.
 let q = Oo.copy p;;
 p = q, p = p;;
 \end{caml_example}
-Other generic comparissons such as ("<", "<=",...) can also be used on objects.  The
+Other generic comparisons such as ("<", "<=", ...) can also be used on
+objects.  The
 relation "<" defines an unspecified but strict ordering on objets.  The
 ordering relationship between two objects is fixed once for all after the
 two objects have been created and it is not affected by mutation of fields.
@@ -1055,7 +1058,7 @@ class backup =
   end;;
 \end{caml_example}
 The above definition will only backup one level.
-The backup facility can be added to any class using multiple inheritance.
+The backup facility can be added to any class by using multiple inheritance.
 \begin{caml_example}
 class ['a] backup_ref x = object inherit ['a] ref x inherit backup end;;
 let rec get p n = if n = 0 then p # get else get (p # restore) (n-1);;
@@ -1063,8 +1066,8 @@ let p = new backup_ref 0  in
 p # save; p # set 1; p # save; p # set 2;
 [get p 0; get p 1; get p 2; get p 3; get p 4];;
 \end{caml_example}
-A variant of backup could retain all copies. (We then add a method clear to
-manually erase all copies.)
+We can define a variant of backup that retains all copies. (We also
+add a method "clear" to manually erase all copies.)
 \begin{caml_example}
 class backup =
   object (self : 'mytype)
@@ -1114,17 +1117,17 @@ as self. The class "comparable" below is a template for classes with a
 binary method "leq" of type "'a -> bool" where the type variable "'a"
 is bound to the type of self. Therefore, "#comparable" expands to "<
 leq : 'a -> bool; .. > as 'a".  We see here that the binder "as" also
-allows to write recursive types.
+allows writing recursive types.
 \begin{caml_example}
 class virtual comparable =
   object (_ : 'a)
     method virtual leq : 'a -> bool
   end;;
 \end{caml_example}
-We then define a subclass "money" of "comparable". The class money
+We then define a subclass "money" of "comparable". The class "money"
 simply wraps floats as comparable objects. We will extend it below with
-more operations. There is a type constraint on the class parameter "x"
-as the primitive "<=" is a polymorphic comparison function in
+more operations. We have to use a type constraint on the class parameter "x"
+because the primitive "<=" is a polymorphic function in
 OCaml.  The "inherit" clause ensures that the type of objects
 of this class is an instance of "#comparable".
 \begin{caml_example}
@@ -1137,13 +1140,13 @@ class money (x : float) =
   end;;
 \end{caml_example}
 % pas expliqué: la mutabilite peut être cachée
-Note that the type "money1" is not a subtype of type
+Note that the type "money" is not a subtype of type
 "comparable", as the self type appears in contravariant position
 in the type of method "leq".
 Indeed, an object "m" of class "money" has a method "leq"
 that expects an argument of type "money" since it accesses
-its "value" method.  Considering "m" of type "comparable" would allow to
-call method "leq" on "m" with an argument that does not have a method
+its "value" method.  Considering "m" of type "comparable" would allow a
+call to method "leq" on "m" with an argument that does not have a method
 "value", which would be an error.
 
 Similarly, the type "money2" below is not a subtype of type "money".
@@ -1175,7 +1178,7 @@ or "money2".
 More examples of binary methods can be found in sections
 \ref{module:string} and \ref{module:set}.
 
-Notice the use of functional update for method "times".
+Note the use of override for method "times".
 Writing  "new money2 (k *. repr)" instead of  "{< repr = k *. repr >}"
 would not behave well with inheritance: in a subclass "money3" of "money2"
 the "times" method would return an object of class "money2" but not of class
@@ -1204,9 +1207,9 @@ methods.  In order to interact with other objects of the same class, the
 representation of "money" objects must be revealed, using a method such as
 "value". If we remove all binary methods (here "plus" and "leq"),
 the representation can easily be hidden inside objects by removing the method
-"value" as well. However, this is not possible as long as some binary
-requires access to the representation on object of the same class but
-different from self.
+"value" as well. However, this is not possible as soon as some binary
+method requires access to the representation of objects of the same
+class (other than self).
 \begin{caml_example}
 class safe_money x =
   object (self : 'a)
@@ -1253,7 +1256,7 @@ objects of the same class) and functions should see each others internal
 representation, while their representation should be hidden from the
 outside. The solution is always to define all friends in the same module,
 give access to the representation and use a signature constraint to make the
-representation abstract outside of the module.
+representation abstract outside the module.
 
 
 
