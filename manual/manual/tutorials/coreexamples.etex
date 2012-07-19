@@ -5,9 +5,9 @@ This part of the manual is a tutorial introduction to the
 OCaml language. A good familiarity with programming in a conventional
 languages (say, Pascal or C) is assumed, but no prior exposure to
 functional languages is required. The present chapter introduces the
-core language. Chapter~\ref{c:objectexamples} deals with the
-object-oriented features, and chapter~\ref{c:moduleexamples} with the
-module system.
+core language. Chapter~~\ref{c:moduleexamples} with the
+module system, and chapter\ref{c:objectexamples} deals with the
+object-oriented features.
 
 \section{Basics}
 \pdfsection{Basics}
@@ -19,8 +19,8 @@ as the transcript of a session with the interactive system:
 lines starting with "#" represent user input; the system responses are
 printed below, without a leading "#".
 
-Under the interactive system, the user types OCaml phrases, terminated
-by ";;", in response to the "#" prompt, and the system compiles them
+Under the interactive system, the user types OCaml phrases terminated
+by ";;" in response to the "#" prompt, and the system compiles them
 on the fly, executes them, and prints the outcome of evaluation.
 Phrases are either simple expressions, or "let" definitions of
 identifiers (either values or functions).
@@ -158,11 +158,11 @@ User-defined data structures include records and variants. Both are
 defined with the "type" declaration. Here, we declare a record type to
 represent rational numbers.
 \begin{caml_example}
-type ratio = {num: int; denum: int};;
+type ratio = {num: int; denom: int};;
 let add_ratio r1 r2 =
-  {num = r1.num * r2.denum + r2.num * r1.denum;
-   denum = r1.denum * r2.denum};;
-add_ratio {num=1; denum=3} {num=2; denum=5};;
+  {num = r1.num * r2.denom + r2.num * r1.denom;
+   denom = r1.denom * r2.denom};;
+add_ratio {num=1; denom=3} {num=2; denom=5};;
 \end{caml_example}
 
 The declaration of a variant type lists all possible shapes for values
@@ -297,8 +297,8 @@ let random () =
   !current_rand;;
 \end{caml_example}
 
-Again, there is nothing magic with references: they are implemented as
-a one-field mutable record, as follows.
+Again, there is nothing magical with references: they are implemented as
+a single-field mutable record, as follows.
 \begin{caml_example}
 type 'a ref = { mutable contents: 'a };;
 let (!) r = r.contents;;
@@ -569,7 +569,7 @@ expected tokens: "Ident \"x\"", then "Kwd \"-\"", then "Int(1)".
 
 All examples given so far were executed under the interactive system.
 OCaml code can also be compiled separately and executed
-non-interactively using the batch compilers "ocamlc" or "ocamlopt".
+non-interactively using the batch compilers "ocamlc" and "ocamlopt".
 The source code must be put in a file with extension ".ml". It
 consists of a sequence of phrases, which will be evaluated at runtime
 in their order of appearance in the source file. Unlike in interactive
