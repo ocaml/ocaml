@@ -51,7 +51,8 @@ In data type definitions, type variables are names for the
 data type parameters. In type constraints, they represent unspecified
 types that can be instantiated by any type to satisfy the type
 constraint.  In general the scope of a named type variable is the
-whole enclosing definition; and they can only be generalized when leaving
+whole top-level phrase where it appears, and it can only be
+generalized when leaving
 this scope.  Anonymous variables have no such restriction.
 In the following cases, the scope of named type variables is
 restricted to the type expression where they appear: 1) for universal
@@ -158,7 +159,8 @@ variant type.
 
 The third case is a closed variant type. It gives information about
 all the possible tags and their associated types, and which tags are
-known to potentially appear in values. The above exact variant type is
+known to potentially appear in values. The exact variant type (first
+case) is
 just an abbreviation for a closed variant type where all possible tags
 are also potentially present.
 
@@ -181,7 +183,7 @@ other available tags.
 \subsubsection*{Object types}
 
 An object type
-@'<' method-type { ';' method-type } '>'@
+@'<' [method-type { ';' method-type }] '>'@
 is a record of method types.
 
 Each method may have an explicit polymorphic type: @{{ "'" ident }}
@@ -189,11 +191,11 @@ Each method may have an explicit polymorphic type: @{{ "'" ident }}
 an explicit polymorphic type can only be unified to an
 equivalent one, with polymorphic variables at the same positions.
 
-The type @'<' method-type { ';' method-type } ';' '..'  '>'@ is the
-type of an object with methods and their associated types are described by
+The type @'<' {method-type ';'} '..'  '>'@ is the
+type of an object whose method names and types are described by
 @method-type_1, \ldots, method-type_n@, and possibly some other
 methods represented by the ellipsis.  This ellipsis actually is
-a special kind of type variable (also called {\em row variable} in the
+a special kind of type variable (called {\em row variable} in the
 literature) that stands for any number of extra method types.
 
 \subsubsection*{\#-types}
