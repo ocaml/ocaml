@@ -62,7 +62,8 @@ Variant values are either a constant constructor, or a non-constant
 constructor applied to a number of values. The former case is written
 @constr@; the latter case is written @constr '('v_1',' ... ',' v_n
 ')'@, where the @v_i@ are said to be the arguments of the non-constant
-constructor @constr@.
+constructor @constr@. The parentheses may be omitted if there is only
+one argument.
 
 The following constants are treated like built-in constant
 constructors:
