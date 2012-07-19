@@ -99,7 +99,7 @@ class safe_account =
 In particular, this does not require the knowledge of the implementation of
 the method "deposit".
 
-To keep trace of operations, we extend the class with a mutable field
+To keep track of operations, we extend the class with a mutable field
 "history" and a private method "trace" to add an operation in the
 log. Then each method to be traced is redefined.
 \begin{caml_example}
@@ -138,7 +138,7 @@ benefit from safety checks and from the trace.
 Let's test it:
 \begin{caml_example}
 let ccp = new account_with_deposit (euro 100.) in
-let balance = ccp#withdraw (euro 50.) in
+let _balance = ccp#withdraw (euro 50.) in
 ccp#history;;
 \end{caml_example}
 Closing an account can be done with the following polymorphic function:
@@ -226,8 +226,8 @@ so as to do his own financial bookkeeping, automatically.  On the
 other hand, the function "discount" is given as such, with no
 possibility for further personalization.
 
-It is important that to provide the client's view as a functor
-"Client" so that client accounts can still be build after a possible
+It is important to provide the client's view as a functor
+"Client" so that client accounts can still be built after a possible
 specialization of the "bank".
 The functor "Client" may remain unchanged and be passed
 the new definition to initialize a client's view of the extended account.
@@ -560,7 +560,7 @@ class ['observer, 'event] subject =
         List.iter (fun x -> x#notify self e) observers
   end;;
 \end{caml_example}
-The difficulty usually relies  in defining instances of the pattern above
+The difficulty usually lies  in defining instances of the pattern above
 by inheritance. This can be done in a natural and obvious manner in
 OCaml, as shown on the following example manipulating windows.
 \begin{caml_example}
@@ -583,7 +583,7 @@ class ['subject] window_observer =
     method notify s e = s#draw
   end;;
 \end{caml_example}
-Unsurprisingly the type of "window" is recursive.
+As can be expected, the type of "window" is recursive.
 \begin{caml_example}
 let window = new window_subject;;
 \end{caml_example}
@@ -597,7 +597,7 @@ window#move 1;;
 
 Classes "window_observer" and "window_subject" can still be extended by
 inheritance. For instance, one may enrich the "subject" with new
-behaviors and refined the behavior of the observer.
+behaviors and refine the behavior of the observer.
 \begin{caml_example}
 class ['observer] richer_window_subject =
   object (self)
@@ -624,7 +624,7 @@ class ['subject] trace_observer =
         "<Window %d <== %s>\n" s#identity (string_of_event e)
   end;;
 \end{caml_example}
-and attached several observers to the same object:
+and attach several observers to the same object:
 \begin{caml_example}
 let window = new richer_window_subject;;
 window#add_observer (new richer_window_observer);;
