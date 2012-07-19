@@ -43,8 +43,8 @@ supports tuple of up to $2^{22} - 1$ elements (4194303 elements).
 \subsection{Records}
 
 Record values are labeled tuples of values. The record value written
-$\{ field_1 = v_1; \ldots; field_n = v_n \}$ associates the value
-$v_i$ to the record field $field_i$, for $i = 1 \ldots n$. The current
+@'{' field_1 '=' v_1';' \ldots';' field_n '=' v_n '}'@ associates the value
+$v_i$ to the record field @field_i@, for $i = 1 \ldots n$. The current
 implementation supports records with up to $2^{22} - 1$ fields
 (4194303 fields).
 
@@ -58,10 +58,11 @@ platforms, the limit is $2^{54} - 1$ for all arrays.
 
 \subsection{Variant values}
 
-Variant values are either a constant constructor, or a pair of a
-non-constant constructor and a value. The former case is written
-$constr$; the latter case is written $constr(v)$, where $v$ is said
-to be the argument of the non-constant constructor $constr$.
+Variant values are either a constant constructor, or a non-constant
+constructor applied to a number of values. The former case is written
+@constr@; the latter case is written @constr '('v_1',' ... ',' v_n
+')'@, where the @v_i@ are said to be the arguments of the non-constant
+constructor @constr@.
 
 The following constants are treated like built-in constant
 constructors:
@@ -73,7 +74,7 @@ constructors:
 \end{tableau}
 
 The current implementation limits each variant type to have at most
-246 non-constant constructors.
+246 non-constant constructors and $2^{30}-1$ constant constructors.
 
 \subsection{Polymorphic variants}
 
