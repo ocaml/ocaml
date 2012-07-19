@@ -219,6 +219,7 @@ installbyt:
 	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi toplevel/*.cmi $(COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) $(COMPLIBDIR)
 	cp expunge $(LIBDIR)/expunge.exe
+	cp toplevel/topdirs.cmi $(LIBDIR)
 	cd tools ; $(MAKEREC) install
 	cd ocamldoc ; $(MAKEREC) install
 	mkdir -p $(STUBLIBDIR)
