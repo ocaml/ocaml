@@ -15,10 +15,10 @@ pattern:
   | "`"tag-name pattern
   | "#"typeconstr-name
   | pattern { ',' pattern }
-  | '{' field '=' pattern { ';' field '=' pattern } '}'
-  | '[' pattern { ';' pattern } ']'
+  | '{' field '=' pattern { ';' field '=' pattern } [ ';' ] '}'
+  | '[' pattern { ';' pattern } [ ';' ] ']'
   | pattern '::' pattern
-  | '[|' pattern { ';' pattern } '|]'
+  | '[|' pattern { ';' pattern } [ ';' ] '|]'
   | "lazy" pattern
 \end{syntax}
 
@@ -47,7 +47,7 @@ A pattern that consists in a value name matches any value,
 binding the name to the value. The pattern @"_"@ also matches
 any value, but does not bind any name.
 
-Patterns are {\em linear\/}: a variable cannot appear several times in
+Patterns are {\em linear\/}: a variable cannot be bound several times by
 a given pattern. In particular, there is no way to test for equality
 between two parts of a data structure using only a pattern (but
 @"when"@ guards can be used for this purpose).
@@ -62,7 +62,7 @@ are equal to this constant.
 
 The pattern @pattern_1 "as" value-name@ matches the same values as
 @pattern_1@. If the matching against @pattern_1@ is successful,
-the name @name@ is bound to the matched value, in addition to the
+the name @value-name@ is bound to the matched value, in addition to the
 bindings performed by the matching against @pattern_1@.
 
 \subsubsection*{Parenthesized patterns}
@@ -77,21 +77,26 @@ constraint forces the type of @pattern_1@ to be compatible with
 
 The pattern @pattern_1 "|" pattern_2@ represents the logical ``or'' of
 the two patterns @pattern_1@ and @pattern_2@. A value matches
-@pattern_1 "|" pattern_2@ either if it matches @pattern_1@ or if it
-matches @pattern_2@. The two sub-patterns @pattern_1@ and @pattern_2@
+@pattern_1 "|" pattern_2@ if it matches @pattern_1@ or
+@pattern_2@. The two sub-patterns @pattern_1@ and @pattern_2@
 must bind exactly the same identifiers to values having the same types.
 Matching is performed from left to right.
 More precisely,
-in case some value~$v$ matches @pattern_1 "|" pattern_2@, the bindings 
+in case some value~$v$ matches @pattern_1 "|" pattern_2@, the bindings
 performed are those of @pattern_1@ when $v$ matches @pattern_1@.
-Otherwise, value~$v$ matches  @pattern_2@ whose bindings are performed.
+Otherwise, value~$v$ matches @pattern_2@ whose bindings are performed.
 
 
 \subsubsection*{Variant patterns}
 
-The pattern @constr pattern_1@ matches all variants whose
-constructor is equal to @constr@, and whose argument matches
-@pattern_1@.
+The pattern @constr '(' pattern_1 ',' \ldots ',' pattern_n ')'@ matches
+all variants whose
+constructor is equal to @constr@, and whose arguments match
+@pattern_1 \ldots pattern_n@.  It is a type error if $n$ is not the
+number of arguments expected by the constructor.
+
+The pattern @constr '_'@ matches all variants whose constructor is
+@constr@.
 
 The pattern @pattern_1 "::" pattern_2@ matches non-empty lists whose
 heads match @pattern_1@, and whose tails match @pattern_2@.
@@ -107,13 +112,13 @@ The pattern @"`tag-name" pattern_1@ matches all polymorphic variants
 whose tag is equal to @tag-name@, and whose argument matches
 @pattern_1@.
 
-\subsubsection*{Variant abbreviation patterns}
+\subsubsection*{Polymorphic variant abbreviation patterns}
 
-If the type @["('a,'b,...)"] typeconstr = "[`tag"_1 typexpr_1 "|"
-\ldots "|" "`tag"_n typexpr_n"]"@ is defined, then the pattern @\#typeconstr@
-is a shorthand for the or-pattern @"(`tag"_1"(_" ":" typexpr_1")" "|"
-\ldots "|" "`tag"_n"(_" ":" typexpr_n"))"@. It matches all values of type
-@\#typeconstr@.
+If the type @["('a,'b,"\ldots")"] typeconstr = "[" "`"tag_1 typexpr_1 "|"
+\ldots "|" "`"tag_n typexpr_n"]"@ is defined, then the pattern @"#"typeconstr@
+is a shorthand for the following or-pattern:
+@"(" "`"tag_1"(_" ":" typexpr_1")" "|" \ldots "|" "`"tag_n"(_"
+":" typexpr_n"))"@. It matches all values of type @"#"typeconstr@.
 
 \subsubsection*{Tuple patterns}
 
