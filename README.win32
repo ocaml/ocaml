@@ -185,7 +185,7 @@ contributed his changes to the OCaml project.
 
 REQUIREMENTS:
 
-This port runs under MS Windows Vista, XP, and 2000.
+This port runs under MS Windows Seven, Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -201,10 +201,14 @@ the Setup tool from Cygwin):
 
  mingw64-i686-binutils
  mingw64-i686-gcc
+ mingw64-i686-gcc-core
  mingw64-i686-runtime
 
 
-NOTE:
+NOTES:
+
+  - Do not use the Cygwin version of flexdll for this port.
+
   - There is another 32-bit gcc compiler, from the MinGW.org
     project, packaged in Cygwin under the name mingw-gcc.
     It is not currently supported by flexdll and OCaml.
@@ -222,7 +226,7 @@ NOTE:
 
 The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available
 as part of the ActiveTCL distribution at
-http://www.activestate.com/products/ActiveTcl/
+  http://www.activestate.com/activetcl/downloads
 Note that you will need to install the 32-bit version of ActiveTCL,
 even if you are on a 64-bit version of Windows.
 
@@ -245,23 +249,26 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 RECOMPILATION FROM THE SOURCES:
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, XP, or Vista.
-- Cygwin: http://sourceware.cygnus.com/cygwin/
-  Install at least the following packages:
+- Windows NT, 2000, XP, Vista, or Seven.
+- Cygwin: http://cygwin.com/
+  Install at least the following packages (and their dependencies, as
+  computed by Cygwin's setup.exe):
      mingw64-i686-binutils
      mingw64-i686-gcc
+     mingw64-i686-gcc-core
      mingw64-i686-runtime
      diffutils
      make
      ncurses
-- TCL/TK version 8.5 (see above).
-- The flexdll tool (see above).
+- Tcl/Tk version 8.5 (see above).
+- The flexdll tool (see above).  Do not forget to add the flexdll directory
+  to your PATH
 
 The standalone mingw toolchain from the MinGW-w64 project
 (http://mingw-w64.sourceforge.net/) is not supported.  Please use the
 version packaged in Cygwin instead.
 
-Start a Cygwin shell and unpack the source distribution
+Start a new Cygwin shell and unpack the source distribution
 (ocaml-X.YY.Z.tar.gz) with "tar xzf".  Change to the top-level
 directory of the OCaml distribution.  Then, do
 
@@ -272,7 +279,7 @@ directory of the OCaml distribution.  Then, do
 Then, edit config/Makefile as needed, following the comments in this file.
 Normally, the only variables that need to be changed are
         PREFIX      where to install everything
-        TK_ROOT     where TCL/TK was installed
+        TK_ROOT     where Tcl/Tk was installed
 
 Finally, use "make -f Makefile.nt" to build the system, e.g.
 
