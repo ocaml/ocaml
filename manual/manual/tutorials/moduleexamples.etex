@@ -45,10 +45,9 @@ module PrioQueue =
 \end{caml_example}
 Outside the structure, its components can be referred to using the
 ``dot notation'', that is, identifiers qualified by a structure name.
-For instance, "PrioQueue.insert" in a value context is
-the function "insert" defined inside the structure
-"PrioQueue". Similarly, "PrioQueue.queue" in a type context is the
-type "queue" defined in "PrioQueue". 
+For instance, "PrioQueue.insert" is the function "insert" defined
+inside the structure "PrioQueue" and "PrioQueue.queue" is the type
+"queue" defined in "PrioQueue".
 \begin{caml_example}
 PrioQueue.insert PrioQueue.empty 1 "hello";;
 \end{caml_example}
@@ -58,7 +57,7 @@ PrioQueue.insert PrioQueue.empty 1 "hello";;
 
 Signatures are interfaces for structures. A signature specifies
 which components of a structure are accessible from the outside, and
-with which type. It can be used to hide some components of a structure 
+with which type. It can be used to hide some components of a structure
 (e.g. local function definitions) or export some components with a
 restricted type. For instance, the signature below specifies the three
 priority queue operations "empty", "insert" and "extract", but not the
@@ -202,17 +201,17 @@ As demonstrated above, it is important that the type "element" in the
 signature "SET" be declared equal to "Elt.t"; unfortunately, this is
 impossible above since "SET" is defined in a context where "Elt" does
 not exist. To overcome this difficulty, OCaml provides a
-"with type" construct over signatures that allows to enrich a signature
+"with type" construct over signatures that allows enriching a signature
 with extra type equalities:
 \begin{caml_example}
-module AbstractSet = 
+module AbstractSet2 =
   (Set : functor(Elt: ORDERED_TYPE) -> (SET with type element = Elt.t));;
 \end{caml_example}
 
 As in the case of simple structures, an alternate syntax is provided
 for defining functors and restricting their result:
 \begin{verbatim}
-module AbstractSet(Elt: ORDERED_TYPE) : (SET with type element = Elt.t) =
+module AbstractSet2(Elt: ORDERED_TYPE) : (SET with type element = Elt.t) =
   struct ... end;;
 \end{verbatim}
 
@@ -232,10 +231,10 @@ module NoCaseString =
 module NoCaseStringSet = AbstractSet(NoCaseString);;
 NoCaseStringSet.add "FOO" AbstractStringSet.empty;;
 \end{caml_example}
-Notice that the two types "AbstractStringSet.set" and 
+Note that the two types "AbstractStringSet.set" and
 "NoCaseStringSet.set" are not compatible, and values of these
 two types do not match. This is the correct behavior: even though both
-set types contain elements of the same type (strings), both are built
+set types contain elements of the same type (strings), they are built
 upon different orderings of that type, and different invariants need
 to be maintained by the operations (being strictly increasing for the
 standard ordering and for the case-insensitive ordering). Applying
@@ -265,13 +264,13 @@ construct;
 specifications, analogous to the inside of a "sig"\ldots"end"
 construct.
 \end{itemize}
-Both files define a structure named \var{A} as if
+These two files together define a structure named \var{A} as if
 the following definition was entered at top-level:
 \begin{alltt}
 module \var{A}: sig (* \hbox{contents of file} \var{A}.mli *) end
         = struct (* \hbox{contents of file} \var{A}.ml *) end;;
 \end{alltt}
-The files defining the compilation units can be compiled separately
+The files that define the compilation units can be compiled separately
 using the "ocamlc -c" command (the "-c" option means ``compile only, do
 not try to link''); this produces compiled interface files (with
 extension ".cmi") and compiled object code files (with extension
@@ -304,8 +303,8 @@ linking phase determines the order in which the module definitions
 occur. Hence, in the example above, "Aux" appears first and "Main" can
 refer to it, but "Aux" cannot refer to "Main".
 
-Notice that only top-level structures can be mapped to
-separately-compiled files, but not functors nor module types.
+Note that only top-level structures can be mapped to
+separately-compiled files, but neither functors nor module types.
 However, all module-class objects can appear as components of a
 structure, so the solution is to put the functor or module type
 inside a structure, which can then be mapped to a file.
