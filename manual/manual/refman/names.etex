@@ -7,7 +7,7 @@ objects and refer to these objects by name later:
 \item value names (syntactic class @value-name@),
 \item value constructors and exception constructors (class @constr-name@),
 \item labels (@label-name@),
-\item variant tags (@tag-name@),
+\item polymorphic variant tags (@tag-name@),
 \item type constructors (@typeconstr-name@),
 \item record fields (@field-name@),
 \item class names (@class-name@),
@@ -78,7 +78,7 @@ The capitalization rules  are summarized in the table below.
 \entree{Values}{lowercase}
 \entree{Constructors}{uppercase}
 \entree{Labels}{lowercase}
-\entree{Variant tags}{uppercase}
+\entree{Polymorphic variant tags}{uppercase}
 \entree{Exceptions}{uppercase}
 \entree{Type constructors}{lowercase}
 \entree{Record fields}{lowercase}
@@ -89,7 +89,7 @@ The capitalization rules  are summarized in the table below.
 \entree{Module types}{any}
 \end{tableau}
 
-{\it Note on variant tags:\/} the current implementation accepts
+{\it Note on polymorphic variant tags:\/} the current implementation accepts
 lowercase variant tags in addition to uppercase variant tags, but we
 suggest you avoid lowercase variant tags for portability and
 compatibility with future OCaml versions.
@@ -98,37 +98,29 @@ compatibility with future OCaml versions.
 
 \begin{syntax}
 value-path:
-        value-name
-      | module-path '.' value-name
+        [ module-path '.' ] value-name
 ;
 constr:
-        constr-name
-      | module-path '.' constr-name
+        [ module-path '.' ] constr-name
 ;
 typeconstr:
-        typeconstr-name
-      | extended-module-path '.' typeconstr-name
+        [ extended-module-path '.' ] typeconstr-name
 ;
 field:
-        field-name
-      | module-path '.' field-name
+        [ module-path '.' ] field-name
 ;
 module-path:
-        module-name
-      | module-path '.' module-name
+        { module-name '.' } module-name
 ;
 extended-module-path:
-        module-name
-      | extended-module-path '.' module-name
+        [ extended-module-path '.' ] module-name
       | extended-module-path '(' extended-module-path ')'
 ;
 modtype-path:
-        modtype-name
-      | extended-module-path '.' modtype-name
+        [ extended-module-path '.' ] modtype-name
 ;
 class-path:
-        class-name
-      | module-path '.' class-name
+        [ module-path '.' ] class-name
 \end{syntax}
 
 A named object can be referred to either by its name (following the
@@ -145,5 +137,3 @@ result of a functor application.
 Label names, tag names, method names and instance variable names need
 not be qualified: the former three are global labels, while the latter
 are local to a class.
-
-% $Id$
