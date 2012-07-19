@@ -62,7 +62,7 @@ ListLabels.fold_left [1;2;3] ~init:0 ~f:(+);;
 ListLabels.fold_left ~init:0;;
 \end{caml_example}
 
-If in a function several arguments bear the same label (or no label),
+If several arguments of a function bear the same label (or no label),
 they will not commute among themselves, and order matters. But they
 can still commute with other arguments.
 
@@ -86,7 +86,7 @@ type is a type variable will never be considered as totally applied.
 ListLabels.fold_left (+) 0 [1;2;3];;
 \end{caml_example}
 
-When a function is passed as an argument to an higher-order function,
+When a function is passed as an argument to a higher-order function,
 labels must match in both types. Neither adding nor removing labels
 are allowed.
 \begin{caml_example}
@@ -208,7 +208,7 @@ let bump_it (bump : ?step:int -> int -> int) x =
   bump ~step:2 x;;
 bump_it bump 1;;
 \end{caml_example}
-In practive, such problems appear mostly when using objects whose
+In practice, such problems appear mostly when using objects whose
 methods have optional arguments, so that writing the type of object
 arguments is often a good idea.
 
@@ -248,10 +248,11 @@ To speak in an ``object-oriented'' way, one can consider that each
 function has a main argument, its {\em object}, and other arguments
 related with its action, the {\em parameters}. To permit the
 combination of functions through functionals in commuting label mode, the
-object will not be labeled. Its role is clear by the function
-itself. The parameters are labeled with names reminding either of
-their nature or role. Best labels combine in their meaning nature and
-role. When this is not possible the role is to prefer, since the nature will
+object will not be labeled. Its role is clear from the function
+itself. The parameters are labeled with names reminding of
+their nature or their role. The best labels combine nature and
+role. When this is not possible the role is to be preferred, since the
+nature will
 often be given by the type itself. Obscure abbreviations should be
 avoided.
 \begin{alltt}
@@ -296,11 +297,11 @@ libraries.
 \entree{"mode:"}{an operation mode or a flag list}
 \end{tableau}
 
-All these are only suggestions, but one shall keep in mind that the
+All these are only suggestions, but keep in mind that the
 choice of labels is essential for readability. Bizarre choices will
 make the program harder to maintain.
 
-In the ideal, the right function name with right labels shall be
+In the ideal, the right function name with right labels sould be
 enough to understand the function's meaning. Since one can get this
 information with OCamlBrowser or the "ocaml" toplevel, the documentation
 is only used when a more detailed specification is needed.
@@ -342,15 +343,14 @@ least be able to match "`Off" and "`On", without argument.
 "[<`On|`Off|`Number of int]" means that "f" may be applied to "`Off",
 "`On" (both without argument), or "`Number" $n$ where
 $n$ is an integer.
-The ">" and "<" inside the variant type shows that they may still be
-refined, either by defining more tags or allowing less. As such they
-contain an implicit type variable. Both variant types appearing only
-once in the type, the implicit type variables they constrain are not
-shown.
+The ">" and "<" inside the variant types show that they may still be
+refined, either by defining more tags or by allowing less. As such, they
+contain an implicit type variable. Because each variant types appears only
+once in the whole type, their implicit type variables are not shown.
 
 The above variant types were polymorphic, allowing further refinement.
 When writing type annotations, one will most often describe fixed
-variant types, that is types that can be no longer refined. This is
+variant types, that is types that cannot be refined. This is
 also the case for type abbreviations. Such types do not contain "<" or
 ">", but just an enumeration of the tags and their associated types,
 just like in a normal datatype definition.
