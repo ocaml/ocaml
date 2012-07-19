@@ -171,7 +171,7 @@ infix-symbol:
 ;
 prefix-symbol:
         '!' { operator-char }
-      | ('?' || '~') operator-char { operator-char }
+      | ('?' || '~') {{ operator-char }}
 ;
 operator-char:
         '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
@@ -218,7 +218,7 @@ Note that the following identifiers are keywords of the Camlp4
 extensions and should be avoided for compatibility reasons.
 %
 \begin{verbatim}
-    parser    <<    <:    >>    $     $$    $:
+    parser    value   <<    <:    >>    $     $$    $:
 \end{verbatim}
 
 \subsubsection*{Ambiguities}
