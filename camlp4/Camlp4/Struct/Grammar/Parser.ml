@@ -34,16 +34,14 @@ module Make (Structure : Structure.S) = struct
   value drop_prev_loc = Tools.drop_prev_loc;
 
   value add_loc bp parse_fun strm =
-    let count1 = Stream.count strm in
     let x = parse_fun strm in
-    let count2 = Stream.count strm in
+    let ep = loc_ep strm in
     let loc =
-      if count1 < count2 then
-        let ep = loc_ep strm in
-        Loc.merge bp ep
-      else
+      if Loc.start_off bp > Loc.stop_off ep then
         (* If nothing has been consumed, create a 0-length location. *)
         Loc.join bp
+      else
+        Loc.merge bp ep
     in
     (x, loc);
 
