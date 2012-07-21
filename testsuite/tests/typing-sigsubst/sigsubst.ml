@@ -9,7 +9,7 @@ end;;
 module type PrintableComparable = sig
   include Printable
   include Comparable with type t = t
-end;;
+end;; (* Fails *)
 module type PrintableComparable = sig
   type t
   include Printable with type t := t
@@ -35,3 +35,6 @@ module type S =
   sig module T : sig type exp type arg end val f : T.exp -> T.arg end;;
 module M = struct type exp = string type arg = int end;;
 module type S' = S with module T := M;;
+
+
+module type S = sig type 'a t end with type 'a t := unit;; (* Fails *)
