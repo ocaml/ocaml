@@ -108,6 +108,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp)
   if (pc >= caml_start_code && pc < end_code){
     caml_backtrace_buffer[caml_backtrace_pos++] = pc;
   }
+  fprintf(stderr, "sp=%lx - caml_trapsp = %lx\n", sp, caml_trapsp);
   for (/*nothing*/; sp < caml_trapsp; sp++) {
     code_t p = (code_t) *sp;
     if (p >= caml_start_code && p < end_code) {

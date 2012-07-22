@@ -23,9 +23,10 @@
 #include "mlvalues.h"
 #include "stack.h"
 
+CAMLexport code_t * caml_after_stackoverflow = NULL;
 int caml_backtrace_active = 0;
 int caml_backtrace_pos = 0;
-code_t * caml_backtrace_buffer = NULL;
+backtrace_item_t * caml_backtrace_buffer = NULL;
 value caml_backtrace_last_exn = Val_unit;
 #define BACKTRACE_BUFFER_SIZE 1024
 
@@ -54,6 +55,25 @@ CAMLprim value caml_backtrace_status(value vunit)
   return Val_bool(caml_backtrace_active);
 }
 
+void store_backtrace_descr(frame_descr* d)
+{
+  if( caml_backtrace_pos == 0 ){
+    backtrace_item_t *p = &caml_backtrace_buffer[caml_backtrace_pos++];
+    p -> backtrace_descriptor = d;
+    p -> backtrace_count = 0x10;
+  } else {
+    backtrace_item_t *prev = &caml_backtrace_buffer[caml_backtrace_pos-1];
+    if ( prev->backtrace_descriptor == d && (prev->backtrace_count & 0xf) == 0 ){
+      prev->backtrace_count += 0x10;
+    } else {
+      backtrace_item_t *p = &caml_backtrace_buffer[caml_backtrace_pos++];
+      p -> backtrace_descriptor = d;
+      p -> backtrace_count = 0x10;
+    }
+  }
+}
+
+
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 
@@ -62,16 +82,110 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
   frame_descr * d;
   uintnat h;
 
+  /*
+    {
+      code_t* stack_ptr = caml_bottom_of_stack;
+#ifdef Stack_grows_upwards
+      stack_ptr += sizeof(code_t*);
+#else
+      stack_ptr -= sizeof(code_t*);
+#endif
+
+    }
+  */
+
+  /*  fprintf(stderr, "caml_bottom_of_stack = %ld\n", caml_bottom_of_stack); */
+
   if (exn != caml_backtrace_last_exn) {
     caml_backtrace_pos = 0;
     caml_backtrace_last_exn = exn;
   }
   if (caml_backtrace_buffer == NULL) {
-    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_item_t));
     if (caml_backtrace_buffer == NULL) return;
   }
   if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
 
+  if( caml_after_stackoverflow != NULL ){
+    char *fault_addr = caml_after_stackoverflow;
+#ifndef Stack_grows_upwards
+    int sp_move = sizeof(code_t*);
+#else
+    int sp_move = - sizeof(code_t*);
+#endif
+    int attempts = 32768;
+
+    caml_after_stackoverflow = NULL;
+
+#ifndef Stack_grows_upwards
+    fault_addr += 32768;
+#else
+    fault_addr -= 32768;
+#endif
+    sp = fault_addr;
+    pc = *((uintnat *)sp);
+    sp += sp_move;
+
+    /*    fprintf(stderr, "stack overflow at raise %ld - sp=%ld - trapsp=%ld = %ld\n", fault_addr, sp, trapsp, trapsp-sp); */
+    while (1) {
+      /* Find the descriptor corresponding to the return address */
+      h = Hash_retaddr(pc);
+      while(1) {
+        /*        fprintf(stderr, "trying hash\n"); */
+        d = caml_frame_descriptors[h];
+        if (d == 0){
+          /* fprintf(stderr, "failed :-( \n"); */
+#ifndef Stack_grows_upwards
+          if (sp > trapsp) return;
+#else
+          if (sp < trapsp) return;
+#endif
+          pc = *((uintnat *)sp);
+          sp += sp_move;
+          /* fprintf(stderr, "trying now pc = %ld at sp = %ld\n", pc, sp); */
+          break;
+        }
+        if (d->retaddr == pc) {
+          attempts = 0;
+          break;
+        }
+        h = (h+1) & caml_frame_descriptors_mask;
+      }
+      if( d == 0 ) continue;
+      /*      fprintf(stderr, "found frame !\n"); */
+      /* Skip to next frame */
+      if (d->frame_size != 0xFFFF) {
+        /* Regular frame, store its descriptor in the backtrace buffer */
+        if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+        store_backtrace_descr(d);
+#ifndef Stack_grows_upwards
+        sp += (d->frame_size & 0xFFFC);
+#else
+        sp -= (d->frame_size & 0xFFFC);
+#endif
+        pc = Saved_return_address(sp);
+#ifdef Mask_already_scanned
+        pc = Mask_already_scanned(pc);
+#endif
+      } else {
+        /* Special frame marking the top of a stack chunk for an ML callback.
+         Skip C portion of stack and continue with next ML stack chunk. */
+        struct caml_context * next_context = Callback_link(sp);
+        sp = next_context->bottom_of_stack;
+        pc = next_context->last_retaddr;
+        /* A null sp means no more ML stack chunks; stop here. */
+        if (sp == NULL) return;
+      }
+      /* Stop when we reach the current exception handler */
+#ifndef Stack_grows_upwards
+      if (sp > trapsp) return;
+#else
+      if (sp < trapsp) return;
+#endif
+    }
+  } else {
+
+    fprintf(stderr, "stack at raise %ld - %ld = %ld\n", sp, trapsp, trapsp-sp);
   while (1) {
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(pc);
@@ -85,7 +199,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     if (d->frame_size != 0xFFFF) {
       /* Regular frame, store its descriptor in the backtrace buffer */
       if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
-      caml_backtrace_buffer[caml_backtrace_pos++] = (code_t) d;
+      store_backtrace_descr(d);
 #ifndef Stack_grows_upwards
       sp += (d->frame_size & 0xFFFC);
 #else
@@ -110,6 +224,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 #else
     if (sp < trapsp) return;
 #endif
+  }
+
   }
 }
 
@@ -162,7 +278,7 @@ static void extract_location_info(frame_descr * d,
   li->loc_endchr = ((info2 & 0xF) << 6) | (info1 >> 26);
 }
 
-static void print_location(struct loc_info * li, int index)
+static void print_location(struct loc_info * li, int index, int count)
 {
   char * info;
 
@@ -178,6 +294,9 @@ static void print_location(struct loc_info * li, int index)
   fprintf (stderr, "%s file \"%s\", line %d, characters %d-%d\n",
            info, li->loc_filename, li->loc_lnum,
            li->loc_startchr, li->loc_endchr);
+  if( count != 1 << 4 ){
+    fprintf(stderr, "\t(called %d times)\n", count >> 4);
+  }
 }
 
 /* Print a backtrace */
@@ -188,8 +307,8 @@ void caml_print_exception_backtrace(void)
   struct loc_info li;
 
   for (i = 0; i < caml_backtrace_pos; i++) {
-    extract_location_info((frame_descr *) (caml_backtrace_buffer[i]), &li);
-    print_location(&li, i);
+    extract_location_info(caml_backtrace_buffer[i].backtrace_descriptor, &li);
+    print_location(&li, i, caml_backtrace_buffer[i].backtrace_count);
   }
 }
 
@@ -204,7 +323,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
 
   arr = caml_alloc(caml_backtrace_pos, 0);
   for (i = 0; i < caml_backtrace_pos; i++) {
-    extract_location_info((frame_descr *) (caml_backtrace_buffer[i]), &li);
+    extract_location_info(caml_backtrace_buffer[i].backtrace_descriptor, &li);
     if (li.loc_valid) {
       fname = caml_copy_string(li.loc_filename);
       p = caml_alloc_small(5, 0);

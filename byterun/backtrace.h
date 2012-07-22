@@ -18,9 +18,21 @@
 
 #include "mlvalues.h"
 
+#ifdef NATIVE_CODE
+#include "../asmrun/stack.h"
+
+typedef struct backtrace_item {
+  frame_descr* backtrace_descriptor;
+  uintnat      backtrace_count;
+} backtrace_item_t;
+CAMLextern backtrace_item_t * caml_backtrace_buffer;
+
+#else
+CAMLextern code_t * caml_backtrace_buffer;
+#endif
+
 CAMLextern int caml_backtrace_active;
 CAMLextern int caml_backtrace_pos;
-CAMLextern code_t * caml_backtrace_buffer;
 CAMLextern value caml_backtrace_last_exn;
 CAMLextern char * caml_cds_file;
 
