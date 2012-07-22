@@ -14,6 +14,7 @@
 
 (* Instruction selection for the Sparc processor *)
 
+open Misc
 open Cmm
 open Reg
 open Arch

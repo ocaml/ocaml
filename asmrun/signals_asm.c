@@ -187,7 +187,6 @@ static char sig_alt_stack[SIGSTKSZ];
 #define EXTRA_STACK 0x2000
 #endif
 
-extern void* caml_after_stackoverflow;
 DECLARE_SIGNAL_HANDLER(segv_handler)
 {
   struct rlimit limit;
@@ -212,7 +211,6 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
     caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
     caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
 #endif
-    caml_after_stackoverflow = fault_addr;
     caml_raise_stack_overflow();
   }
   /* Otherwise, deactivate our exception handler and return,

@@ -14,6 +14,7 @@
 
 (* Specific operations for the Sparc processor *)
 
+open Misc
 open Format
 
 (* SPARC V8 adds multiply and divide.
