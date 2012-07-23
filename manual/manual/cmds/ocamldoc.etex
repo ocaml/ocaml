@@ -948,7 +948,7 @@ struct
   end
 end;;
 
-let _ = Odoc_args.extend_generator (module Generator : Odoc_gen.Html_functor);;
+let _ = Odoc_args.extend_html_generator (module Generator : Odoc_gen.Html_functor);;
 \end{verbatim}
 
 To know which methods to override and/or which methods are available,
@@ -992,7 +992,7 @@ struct
         tag_functions <- ("bar", self#html_of_bar) :: tag_functions
   end
 end
-let _ = Odoc_args.extend_generator (module Generator : Odoc_gen.Html_functor);;
+let _ = Odoc_args.extend_html_generator (module Generator : Odoc_gen.Html_functor);;
 \end{verbatim}
 
 Another method of the class "Odoc_html.info" will look for the
