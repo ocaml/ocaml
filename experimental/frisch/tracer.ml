@@ -1,5 +1,6 @@
 open Ast_mapper
 open Location
+open Parsetree
 
 (* To define a concrete AST rewriter, we can inherit from the generic
    mapper, and redefine the cases we are interested in.  In the
@@ -11,16 +12,19 @@ let trace s =
   SI.eval E.(apply (lid "Pervasives.print_endline") [strconst s])
 
 let tracer =
-  object
+  object(this)
     inherit Ast_mapper.create as super
     val path = ""
 
-    method! implementation input_name structure =
+    method! implementation input_name ast =
       let path = String.capitalize (Filename.chop_extension input_name) in
-      {< path = path >} # default_implementation input_name structure
+      (input_name, {< path = path >} # structure ast)
 
-    method! str_module ~loc s m =
-      {< path = path ^ "." ^ s.txt >} # default_str_module ~loc s m
+    method! structure_item = function
+      | {pstr_desc = Pstr_module (s, _); pstr_loc = _loc} as si ->
+          [ SI.map {< path = path ^ "." ^ s.txt >} si ]
+      | si ->
+          [ SI.map this si ]
 
     method! structure l =
       trace (Printf.sprintf "Entering module %s" path) ::

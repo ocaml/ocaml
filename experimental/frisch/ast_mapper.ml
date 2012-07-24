@@ -7,6 +7,8 @@ open Asttypes
 
 let map_flatten f l = List.flatten (List.map f l)
 let map_snd f (x, y) = (x, f y)
+let map_tuple f1 f2 (x, y) = (f1 x, f2 y)
+let map_opt f = function None -> None | Some x -> Some (f x)
 
 module SI = struct
   (* Structure items *)
@@ -25,19 +27,102 @@ module SI = struct
   let class_ ?loc l = mk ?loc (Pstr_class l)
   let class_type ?loc l = mk ?loc (Pstr_class_type l)
   let include_ ?loc me = mk ?loc (Pstr_include me)
+
+  let map sub {pstr_loc = loc; pstr_desc = desc} =
+    match desc with
+    | Pstr_eval x -> eval ~loc (sub # expr x)
+    | Pstr_value (r, pel) -> value ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
+    | Pstr_primitive (name, vd) -> primitive ~loc name (sub # value_description vd)
+    | Pstr_type l -> typ ~loc (List.map (fun (s, d) -> (s, sub # type_declaration d)) l)
+    | Pstr_exception (name, ed) -> exn ~loc name (List.map (sub # typ) ed)
+    | Pstr_exn_rebind (s, lid) -> exn_rebind ~loc s lid
+    | Pstr_module (s, m) -> module_ ~loc s (sub # module_expr m)
+    | Pstr_recmodule l -> rec_module ~loc (List.map (fun (s, mty, me) -> (s, sub # module_type mty, sub # module_expr me)) l)
+    | Pstr_modtype (s, mty) -> modtype ~loc s (sub # module_type mty)
+    | Pstr_open lid -> open_ ~loc lid
+    | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
+    | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
+    | Pstr_include e -> include_ ~loc (sub # module_expr e)
 end
 
 module E = struct
   (* Expressions *)
 
   let mk ?(loc = Location.none) x = {pexp_desc = x; pexp_loc = loc}
-  let ident ?loc x = mk ?loc (Pexp_ident x)
+
+  let ident ?loc a = mk ?loc (Pexp_ident a)
+  let const ?loc a = mk ?loc (Pexp_constant a)
+  let let_ ?loc a b c = mk ?loc (Pexp_let (a, b, c))
+  let func ?loc a b c = mk ?loc (Pexp_function (a, b, c))
+  let apply_with_labels ?loc a b = mk ?loc (Pexp_apply (a, b))
+  let match_ ?loc a b = mk ?loc (Pexp_match (a, b))
+  let try_ ?loc a b = mk ?loc (Pexp_try (a, b))
+  let tuple ?loc a = mk ?loc (Pexp_tuple a)
+  let constr ?loc a b c = mk ?loc (Pexp_construct (a, b, c))
+  let variant ?loc a b = mk ?loc (Pexp_variant (a, b))
+  let record ?loc a b = mk ?loc (Pexp_record (a, b))
+  let field ?loc a b = mk ?loc (Pexp_field (a, b))
+  let setfield ?loc a b c = mk ?loc (Pexp_setfield (a, b, c))
+  let array ?loc a = mk ?loc (Pexp_array a)
+  let ifthenelse ?loc a b c = mk ?loc (Pexp_ifthenelse (a, b, c))
+  let sequence ?loc a b = mk ?loc (Pexp_sequence (a, b))
+  let while_ ?loc a b = mk ?loc (Pexp_while (a, b))
+  let for_ ?loc a b c d e = mk ?loc (Pexp_for (a, b, c, d, e))
+  let constraint_ ?loc a b c = mk ?loc (Pexp_constraint (a, b, c))
+  let when_ ?loc a b = mk ?loc (Pexp_when (a, b))
+  let send ?loc a b = mk ?loc (Pexp_send (a, b))
+  let new_ ?loc a = mk ?loc (Pexp_new a)
+  let setinstvar ?loc a b = mk ?loc (Pexp_setinstvar (a, b))
+  let override ?loc a = mk ?loc (Pexp_override a)
+  let letmodule ?loc (a, b, c)= mk ?loc (Pexp_letmodule (a, b, c))
+  let assert_ ?loc a = mk ?loc (Pexp_assert a)
+  let assertfalse ?loc () = mk ?loc Pexp_assertfalse
+  let lazy_ ?loc a = mk ?loc (Pexp_lazy a)
+  let poly ?loc a b = mk ?loc (Pexp_poly (a, b))
+  let object_ ?loc a = mk ?loc (Pexp_object a)
+  let newtype ?loc a b = mk ?loc (Pexp_newtype (a, b))
+  let pack ?loc a = mk ?loc (Pexp_pack a)
+  let open_ ?loc a b = mk ?loc (Pexp_open (a, b))
+
   let lid ?(loc = Location.none) lid = ident ~loc (mkloc (Longident.parse lid) loc)
-  let let_ ?loc r pel e = mk ?loc (Pexp_let (r, pel, e))
-  let apply_with_labels ?loc f el = mk ?loc (Pexp_apply (f, el))
   let apply ?loc f el = apply_with_labels ?loc f (List.map (fun e -> ("", e)) el)
-  let const ?loc x = mk ?loc (Pexp_constant x)
   let strconst ?loc x = const ?loc (Const_string x)
+
+  let map sub {pexp_loc = loc; pexp_desc = desc} =
+    match desc with
+    | Pexp_ident x -> ident ~loc x
+    | Pexp_constant x -> const ~loc x
+    | Pexp_let (r, pel, e) -> let_ ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
+    | Pexp_function (lab, def, pel) -> func ~loc lab (map_opt (sub # expr) def) (List.map (map_tuple (sub # pat) (sub # expr)) pel)
+    | Pexp_apply (e, l) -> apply_with_labels ~loc (sub # expr e) (List.map (map_snd (sub # expr)) l)
+    | Pexp_match (e, l) -> match_ ~loc (sub # expr e) (List.map (map_tuple (sub # pat) (sub # expr)) l)
+    | Pexp_try (e, l) -> try_ ~loc (sub # expr e) (List.map (map_tuple (sub # pat) (sub # expr)) l)
+    | Pexp_tuple el -> tuple ~loc (List.map (sub # expr) el)
+    | Pexp_construct (lid, arg, b) -> constr ~loc lid (map_opt (sub # expr) arg) b
+    | Pexp_variant (lab, eo) -> variant ~loc lab (map_opt (sub # expr) eo)
+    | Pexp_record (l, eo) -> record ~loc (List.map (map_snd (sub # expr)) l) (map_opt (sub # expr) eo)
+    | Pexp_field (e, lid) -> field ~loc (sub # expr e) lid
+    | Pexp_setfield (e1, lid, e2) -> setfield ~loc (sub # expr e1) lid (sub # expr e2)
+    | Pexp_array el -> array ~loc (List.map (sub # expr) el)
+    | Pexp_ifthenelse (e1, e2, e3) -> ifthenelse ~loc (sub # expr e1) (sub # expr e2) (map_opt (sub # expr) e3)
+    | Pexp_sequence (e1, e2) -> sequence ~loc (sub # expr e1) (sub # expr e2)
+    | Pexp_while (e1, e2) -> while_ ~loc (sub # expr e1) (sub # expr e2)
+    | Pexp_for (id, e1, e2, d, e3) -> for_ ~loc id (sub # expr e1) (sub # expr e2) d (sub # expr e3)
+    | Pexp_constraint (e, t1, t2) -> constraint_ ~loc (sub # expr e) (map_opt (sub # typ) t1) (map_opt (sub # typ) t2)
+    | Pexp_when (e1, e2) -> when_ ~loc (sub # expr e1) (sub # expr e2)
+    | Pexp_send (e, s) -> send ~loc (sub # expr e) s
+    | Pexp_new lid -> new_ ~loc lid
+    | Pexp_setinstvar (s, e) -> setinstvar ~loc s (sub # expr e)
+    | Pexp_override sel -> override ~loc (List.map (map_snd (sub # expr)) sel)
+    | Pexp_letmodule (s, me, e) -> letmodule ~loc (s, sub # module_expr me, sub # expr e)
+    | Pexp_assert e -> assert_ ~loc (sub # expr e)
+    | Pexp_assertfalse -> assertfalse ~loc ()
+    | Pexp_lazy e -> lazy_ ~loc (sub # expr e)
+    | Pexp_poly (e, t) -> poly ~loc (sub # expr e) (map_opt (sub # typ) t)
+    | Pexp_object cls -> object_ ~loc (sub # class_structure cls)
+    | Pexp_newtype (s, e) -> newtype ~loc s (sub # expr e)
+    | Pexp_pack me -> pack ~loc (sub # module_expr me)
+    | Pexp_open (lid, e) -> open_ ~loc lid (sub # expr e)
 end
 
 module T = struct
@@ -45,9 +130,39 @@ module T = struct
 
   let mk ?(loc = Location.none) x = {ptyp_desc = x; ptyp_loc = loc}
   let any ?loc () = mk ?loc Ptyp_any
-  let var ?loc s = mk ?loc (Ptyp_var s)
-  let arrow ?loc ?(lab = "") t1 t2 = mk ?loc (Ptyp_arrow (lab, t1, t2))
-  let tuple ?loc tyl = mk ?loc (Ptyp_tuple tyl)
+  let var ?loc a = mk ?loc (Ptyp_var a)
+  let arrow ?loc a b c = mk ?loc (Ptyp_arrow (a, b, c))
+  let tuple ?loc a = mk ?loc (Ptyp_tuple a)
+  let constr ?loc a b = mk ?loc (Ptyp_constr (a, b))
+  let object_ ?loc a = mk ?loc (Ptyp_object a)
+  let class_ ?loc a b c = mk ?loc (Ptyp_class (a, b, c))
+  let alias ?loc a b = mk ?loc (Ptyp_alias (a, b))
+  let variant ?loc a b c = mk ?loc (Ptyp_variant (a, b, c))
+  let poly ?loc a b = mk ?loc (Ptyp_poly (a, b))
+  let package ?loc a b = mk ?loc (Ptyp_package (a, b))
+
+  let core_field_type sub = function
+    | {pfield_desc = Pfield (s, d); pfield_loc} ->
+        {pfield_desc = Pfield (s, sub # typ d); pfield_loc}
+    | x -> x
+
+  let row_field sub = function
+    | Rtag (l, b, tl) -> Rtag (l, b, List.map (sub # typ) tl)
+    | Rinherit t -> Rinherit (sub # typ t)
+
+  let map sub {ptyp_desc = desc; ptyp_loc = loc} =
+    match desc with
+    | Ptyp_any -> any ~loc ()
+    | Ptyp_var s -> var ~loc s
+    | Ptyp_arrow (lab, t1, t2) -> arrow ~loc lab (sub # typ t1) (sub # typ t2)
+    | Ptyp_tuple tyl -> tuple ~loc (List.map (sub # typ) tyl)
+    | Ptyp_constr (lid, tl) -> constr ~loc lid (List.map (sub # typ) tl)
+    | Ptyp_object l -> object_ ~loc (List.map (core_field_type sub) l)
+    | Ptyp_class (lid, tl, ll) -> class_ ~loc lid (List.map (sub # typ) tl) ll
+    | Ptyp_alias (t, s) -> alias ~loc (sub # typ t) s
+    | Ptyp_variant (rl, b, ll) -> variant ~loc (List.map (row_field sub) rl) b ll
+    | Ptyp_poly (sl, t) -> poly ~loc sl (sub # typ t)
+    | Ptyp_package (lid, l) -> package ~loc lid (List.map (map_snd (sub # typ)) l)
 end
 
 module M = struct
@@ -60,7 +175,18 @@ module M = struct
   let apply ?loc m1 m2 = mk ?loc (Pmod_apply (m1, m2))
   let constr ?loc m mty = mk ?loc (Pmod_constraint (m, mty))
   let unpack ?loc e = mk ?loc (Pmod_unpack e)
+
+  let map sub {pmod_loc = loc; pmod_desc = desc} =
+    match desc with
+    | Pmod_ident x -> ident ~loc x
+    | Pmod_structure str -> structure ~loc (sub # structure str)
+    | Pmod_functor (arg, arg_ty, body) -> funct ~loc arg (sub # module_type arg_ty) (sub # module_expr body)
+    | Pmod_apply (m1, m2) -> apply ~loc (sub # module_expr m1) (sub # module_expr m2)
+    | Pmod_constraint (m, mty) -> constr ~loc (sub # module_expr m) (sub # module_type mty)
+    | Pmod_unpack e -> unpack ~loc (sub # expr e)
 end
+
+
 
 
 (* Now, a generic AST mapper class, to be extended to cover all kinds
@@ -102,193 +228,30 @@ class create =
         prerr_endline (Printexc.to_string exn);
         exit 2
 
-    method implementation = this # default_implementation
-    method default_implementation (input_name : string) ast = (input_name, this # structure ast)
+    method implementation (input_name : string) ast = (input_name, this # structure ast)
+    method interface (input_name: string) ast = (input_name, this # signature ast)
+    method structure l = map_flatten (this # structure_item) l
+    method structure_item si = [ SI.map this si ]
+    method module_expr = M.map this
 
-    method interface = this # default_interface
-    method default_interface (input_name : string) ast = (input_name, this # signature ast)
+    method signature l = map_flatten (this # signature_item) l
+    method signature_item (x : signature_item) = [ x ] (* todo *)
+    method module_type x = x (* todo *)
 
-    method structure = this # default_structure
-    method default_structure l = map_flatten (this # structure_item) l
+    method class_declaration x = x (* todo *)
+    method class_type_declaration x = x (* todo *)
+    method class_structure {pcstr_pat; pcstr_fields} =
+      {
+       pcstr_pat = this # pat pcstr_pat;
+       pcstr_fields = List.map (this # class_field) pcstr_fields;
+      }
+    method class_field x = x (* ... *)
 
-    method signature = this # default_signature
-    method default_signature l = map_flatten (this # signature_item) l
+    method type_declaration x = x (* todo *)
+    method typ = T.map this
 
-        (* signature items *)
-    method signature_item = this # default_signature_item
-    method default_signature_item (x : signature_item) = [ x ] (* ... *)
-
-        (* structure items *)
-    method structure_item = this # default_structure_item
-    method default_structure_item {pstr_loc = loc; pstr_desc = desc} : structure_item list =
-      match desc with
-      | Pstr_eval x -> this # str_eval ~loc x
-      | Pstr_value (r, pel) -> this # str_value ~loc r pel
-      | Pstr_primitive (name, vd) -> this # str_primitive ~loc name vd
-      | Pstr_type l -> this # str_type ~loc l
-      | Pstr_exception (s, e) -> this # str_exception ~loc s e
-      | Pstr_exn_rebind (s, lid) -> this # str_exn_rebind ~loc s lid
-      | Pstr_module (s, m) -> this # str_module ~loc s m
-      | Pstr_recmodule l -> this # str_recmodule ~loc l
-      | Pstr_modtype (s, mty) -> this # str_modtype ~loc s mty
-      | Pstr_open lid -> this # str_open ~loc lid
-      | Pstr_class l -> this # str_class ~loc l
-      | Pstr_class_type l -> this # str_class_type ~loc l
-      | Pstr_include e -> this # str_include ~loc e
-
-    method str_eval = this # default_str_eval
-    method default_str_eval ~loc x = [ SI.eval ~loc (this # expr x) ]
-
-    method str_value = this # default_str_value
-    method default_str_value ~loc r pel = [ SI.value ~loc r (List.map (fun (p, e) -> this # pat p, this # expr e) pel) ]
-
-    method str_primitive = this # default_str_primitive
-    method default_str_primitive ~loc name vd = [ SI.primitive ~loc name (this # value_description vd) ]
-
-    method str_type = this # default_str_type
-    method default_str_type ~loc l =
-      [ SI.typ ~loc (List.map (fun (s, d) -> (s, this # type_declaration d)) l) ]
-
-    method str_exception = this # default_str_exception
-    method default_str_exception ~loc s ed =
-      [ SI.exn ~loc s (List.map (this # typ) ed) ]
-
-    method str_exn_rebind = this # default_str_exn_rebind
-    method default_str_exn_rebind ~loc s lid =
-      [ SI.exn_rebind ~loc s lid ]
-
-    method str_module = this # default_str_module
-    method default_str_module ~loc s m = [ SI.module_ ~loc s (this # module_expr m) ]
-
-    method str_recmodule = this # default_str_recmodule
-    method default_str_recmodule ~loc l =
-      let f (s, mty, me) = (s, this # module_type mty, this # module_expr me) in
-      [ SI.rec_module ~loc (List.map f l) ]
-
-    method str_modtype = this # default_str_modtype
-    method default_str_modtype ~loc s mty =
-      [ SI.modtype ~loc s (this # module_type mty) ]
-
-    method str_open = this # default_str_open
-    method default_str_open ~loc lid =
-      [ SI.open_ ~loc lid ]
-
-    method str_class = this # default_str_class
-    method default_str_class ~loc l =
-      [ SI.class_ ~loc (List.map (this # class_declaration) l) ]
-
-    method str_class_type = this # default_str_class_type
-    method default_str_class_type ~loc l =
-      [ SI.class_type ~loc (List.map (this # class_type_declaration) l) ]
-
-    method str_include = this # default_str_include
-    method default_str_include ~loc me =
-      [ SI.include_ ~loc (this # module_expr me) ]
-
-        (* class declarations *)
-    method class_declaration = this # default_class_declaration
-    method default_class_declaration x = x (* ... *)
-
-        (* class type declarations *)
-    method class_type_declaration = this # default_class_type_declaration
-    method default_class_type_declaration x = x (* ... *)
-
-        (* type declarations *)
-    method type_declaration = this # default_type_declaration
-    method default_type_declaration x = x (* ... *)
-
-        (* value descriptions *)
-    method value_description = this # default_value_description
-    method default_value_description vd =
+    method value_description vd =
       {vd with pval_type = this # typ vd.pval_type}
-
-(* core types *)
-    method typ x = this # default_typ x
-    method default_typ ({ptyp_desc = desc; ptyp_loc = loc} as x) =
-      match desc with
-      | Ptyp_any -> this # typ_any ~loc
-      | Ptyp_var s -> this # typ_var ~loc s
-      | Ptyp_arrow (lab, t1, t2) -> this # typ_arrow ~loc lab t1 t2
-      | Ptyp_tuple tyl -> this # typ_tuple ~loc tyl
-            (* ... *)
-      | _ -> x
-
-    method typ_any = this # default_typ_any
-    method default_typ_any ~loc = T.any ~loc ()
-
-    method typ_var = this # default_typ_var
-    method default_typ_var ~loc s = T.var ~loc s
-
-    method typ_arrow = this # default_typ_arrow
-    method default_typ_arrow ~loc lab t1 t2 =
-      T.arrow ~loc ~lab (this # typ t1) (this # typ t2)
-
-    method typ_tuple = this # default_typ_tuple
-    method default_typ_tuple ~loc tyl = T.tuple ~loc (List.map (this # typ) tyl)
-
-
-        (* patterns *)
-    method pat = this # default_pat
-    method default_pat p = p (* ... *)
-
-        (* expressions *)
-    method expr = this # default_expr
-    method default_expr ({pexp_loc = loc; pexp_desc = desc} as x) =
-      match desc with
-      | Pexp_ident x -> this # exp_ident ~loc x
-      | Pexp_let (r, pel, e) -> this # exp_let ~loc r pel e
-      | Pexp_apply (e, l) -> this # exp_apply ~loc e l
-            (* ... *)
-      | _ -> x
-
-    method exp_ident = this # default_exp_ident
-    method default_exp_ident ~loc x = E.ident ~loc x
-
-    method exp_let = this # default_exp_let
-    method default_exp_let ~loc r pel e =
-      E.let_ ~loc r
-        (List.map (fun (p, e) -> this # pat p, this # expr e) pel)
-        (this # expr e)
-
-    method exp_apply = this # default_exp_apply
-    method default_exp_apply ~loc e l =
-      E.apply_with_labels ~loc (this # expr e) (List.map (map_snd (this # expr)) l)
-
-        (* module exprs *)
-
-    method module_expr = this # default_module_expr
-    method default_module_expr {pmod_loc = loc; pmod_desc = desc} =
-      match desc with
-      | Pmod_ident x -> this # mod_ident ~loc x
-      | Pmod_structure str -> this # mod_structure ~loc str
-      | Pmod_functor (arg, arg_ty, body) -> this # mod_functor ~loc arg arg_ty body
-      | Pmod_apply (m1, m2) -> this # mod_apply ~loc m1 m2
-      | Pmod_constraint (m, mty) -> this # mod_constraint ~loc m mty
-      | Pmod_unpack e -> this # mod_unpack ~loc e
-
-    method mod_ident = this # default_mod_ident
-    method default_mod_ident ~loc x = M.ident ~loc x
-
-    method mod_structure = this # default_mod_structure
-    method default_mod_structure ~loc x =
-      M.structure ~loc (this # structure x)
-
-    method mod_functor = this # default_mod_functor
-    method default_mod_functor ~loc arg arg_ty body =
-      M.funct ~loc arg (this # module_type arg_ty) (this # module_expr body)
-
-    method mod_apply = this # default_mod_apply
-    method default_mod_apply ~loc m1 m2 =
-      M.apply ~loc (this # module_expr m1) (this # module_expr m2)
-
-    method mod_constraint = this # default_mod_constraint
-    method default_mod_constraint ~loc m mty =
-      M.constr ~loc (this # module_expr m) (this # module_type mty)
-
-    method mod_unpack = this # default_mod_unpack
-    method default_mod_unpack ~loc e = M.unpack ~loc (this # expr e)
-
-(* module types *)
-    method module_type = this # default_module_type
-    method default_module_type x = x (* ... *)
+    method pat p = p (* todo *)
+    method expr = E.map this
   end
