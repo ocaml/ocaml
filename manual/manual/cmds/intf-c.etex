@@ -1227,8 +1227,9 @@ To compile and link this program, run:
 \begin{verbatim}
         ocamlc -custom -o test unix.cma test.ml curses_stubs.o -cclib -lcurses
 \end{verbatim}
-(On some machines, you may need to put "-cclib -ltermcap" or
-"-cclib -lcurses -cclib -ltermcap" instead of "-cclib -lcurses".)
+(On some machines, you may need to put
+"-cclib -lcurses -cclib -ltermcap" or "-cclib -ltermcap"
+instead of "-cclib -lcurses".)
 
 \section{Advanced topic: callbacks from C to OCaml} \label{s:callback}
 \pdfsection{Advanced topic: callbacks from C to OCaml}
