@@ -10,6 +10,7 @@ Bug fixes:
 - PR#5551: Avoid repeated lookups for missing cmi files
 - PR#5662: typo in md5.c
 - PR#5695: remove warnings on sparc code emitter
+- PR#5697: better location for warnings on statement expressions
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary

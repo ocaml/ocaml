@@ -988,6 +988,16 @@ let force_delayed_checks () =
 let fst3 (x, _, _) = x
 let snd3 (_, x, _) = x
 
+let rec final_subexpression sexp =
+  match sexp.pexp_desc with
+    Pexp_let (_, _, e)
+  | Pexp_sequence (_, e)
+  | Pexp_try (e, _)
+  | Pexp_ifthenelse (_, e, _)
+  | Pexp_match (_, (_, e) :: _)
+    -> final_subexpression e
+  | _ -> sexp
+
 (* Generalization criterion for expressions *)
 
 let rec is_nonexpansive exp =
@@ -2699,7 +2709,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
 (* Typing of statements (expressions whose values are discarded) *)
 
 and type_statement env sexp =
-  let loc = sexp.pexp_loc in
+  let loc = (final_subexpression sexp).pexp_loc in
   begin_def();
   let exp = type_exp env sexp in
   end_def();
