@@ -13,3 +13,12 @@ module B =
       struct
       end
   end
+
+
+let () =
+  let o = object
+    method x = 1
+    method y = 2
+  end
+  in
+  ignore (o # x + o # y)

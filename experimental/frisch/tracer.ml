@@ -9,7 +9,7 @@ open Parsetree
    the compilation unit.  *)
 
 let trace s =
-  SI.eval E.(apply (lid "Pervasives.print_endline") [strconst s])
+  E.(apply (lid "Pervasives.print_endline") [strconst s])
 
 let tracer =
   object(this)
@@ -27,9 +27,17 @@ let tracer =
           [ SI.map this si ]
 
     method! structure l =
-      trace (Printf.sprintf "Entering module %s" path) ::
+      SI.eval (trace (Printf.sprintf "Entering module %s" path)) ::
       (super # structure l) @
-      [ trace (Printf.sprintf "Leaving module %s" path) ]
+      [ SI.eval (trace (Printf.sprintf "Leaving module %s" path)) ]
+
+    method! expr e =
+      match e.pexp_desc with
+      | Pexp_send (_, s) ->
+          E.sequence (trace (Printf.sprintf "calling method %s" s)) (super # expr e)
+      | _ ->
+          super # expr e
+
   end
 
 let () = tracer # main
