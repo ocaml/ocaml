@@ -39,6 +39,8 @@ parsing/lexer.cmo : utils/warnings.cmi parsing/parser.cmi utils/misc.cmi \
     parsing/location.cmi parsing/lexer.cmi
 parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \
     parsing/location.cmx parsing/lexer.cmi
+parsing/linenum.cmo : utils/misc.cmi
+parsing/linenum.cmx : utils/misc.cmx
 parsing/location.cmo : utils/warnings.cmi utils/terminfo.cmi \
     parsing/location.cmi
 parsing/location.cmx : utils/warnings.cmx utils/terminfo.cmx \
@@ -111,7 +113,7 @@ typing/typedtree.cmi : typing/types.cmi typing/primitive.cmi typing/path.cmi \
     parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
     typing/env.cmi parsing/asttypes.cmi
 typing/typedtreeIter.cmi : typing/typedtree.cmi parsing/asttypes.cmi
-typing/typedtreeMap.cmi : typing/typedtree.cmi parsing/asttypes.cmi
+typing/typedtreeMap.cmi : typing/typedtree.cmi
 typing/typemod.cmi : typing/types.cmi typing/typedtree.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
     typing/includemod.cmi typing/ident.cmi typing/env.cmi
@@ -301,10 +303,10 @@ typing/typedtree.cmo : typing/types.cmi typing/primitive.cmi typing/path.cmi \
 typing/typedtree.cmx : typing/types.cmx typing/primitive.cmx typing/path.cmx \
     utils/misc.cmx parsing/longident.cmx parsing/location.cmx \
     typing/ident.cmx typing/env.cmx parsing/asttypes.cmi typing/typedtree.cmi
-typing/typedtreeIter.cmo : typing/typedtree.cmi utils/misc.cmi \
-    parsing/asttypes.cmi typing/typedtreeIter.cmi
-typing/typedtreeIter.cmx : typing/typedtree.cmx utils/misc.cmx \
-    parsing/asttypes.cmi typing/typedtreeIter.cmi
+typing/typedtreeIter.cmo : typing/typedtree.cmi parsing/asttypes.cmi \
+    typing/typedtreeIter.cmi
+typing/typedtreeIter.cmx : typing/typedtree.cmx parsing/asttypes.cmi \
+    typing/typedtreeIter.cmi
 typing/typedtreeMap.cmo : typing/typedtree.cmi utils/misc.cmi \
     parsing/asttypes.cmi typing/typedtreeMap.cmi
 typing/typedtreeMap.cmx : typing/typedtree.cmx utils/misc.cmx \

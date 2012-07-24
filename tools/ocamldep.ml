@@ -185,62 +185,6 @@ let print_raw_dependencies source_file deps =
     deps;
   print_char '\n'
 
-(* Optionally preprocess a source file *)
-
-let preprocessor = ref None
-
-exception Preprocessing_error
-
-let preprocess sourcefile =
-  match !preprocessor with
-    None -> sourcefile
-  | Some pp ->
-      flush Pervasives.stdout;
-      let tmpfile = Filename.temp_file "camlpp" "" in
-      let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
-      if Sys.command comm <> 0 then begin
-        Misc.remove_file tmpfile;
-        raise Preprocessing_error
-      end;
-      tmpfile
-
-let remove_preprocessed inputfile =
-  match !preprocessor with
-    None -> ()
-  | Some _ -> Misc.remove_file inputfile
-
-(* Parse a file or get a dumped syntax tree in it *)
-
-let is_ast_file ic ast_magic =
-  try
-    let buffer = Misc.input_bytes ic (String.length ast_magic) in
-    if buffer = ast_magic then true
-    else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
-      failwith "OCaml and preprocessor have incompatible versions"
-    else false
-  with End_of_file -> false
-
-let parse_use_file ic =
-  if is_ast_file ic Config.ast_impl_magic_number then
-    let _source_file = input_value ic in
-    [Ptop_def (input_value ic : Parsetree.structure)]
-  else begin
-    seek_in ic 0;
-    let lb = Lexing.from_channel ic in
-    Location.init lb !Location.input_name;
-    Parse.use_file lb
-  end
-
-let parse_interface ic =
-  if is_ast_file ic Config.ast_intf_magic_number then
-    let _source_file = input_value ic in
-    (input_value ic : Parsetree.signature)
-  else begin
-    seek_in ic 0;
-    let lb = Lexing.from_channel ic in
-    Location.init lb !Location.input_name;
-    Parse.interface lb
-  end
 
 (* Process one file *)
 
@@ -255,29 +199,25 @@ let report_err source_file exn =
         Syntaxerr.report_error err
     | Sys_error msg ->
         Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
-    | Preprocessing_error ->
+    | Pparse.Error ->
         Format.fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
             source_file
     | x -> raise x
 
-let read_parse_and_extract parse_function extract_function source_file =
+let read_parse_and_extract parse_function extract_function magic source_file =
   Depend.free_structure_names := Depend.StringSet.empty;
   try
-    let input_file = preprocess source_file in
-    let ic = open_in_bin input_file in
-    try
-      let ast = parse_function ic in
-      extract_function Depend.StringSet.empty ast;
-      !Depend.free_structure_names
-    with x ->
-      close_in ic; remove_preprocessed input_file; raise x
+    let input_file = Pparse.preprocess source_file in
+    let ast = Pparse.file Format.err_formatter input_file parse_function magic in
+    extract_function Depend.StringSet.empty ast;
+    !Depend.free_structure_names
   with x ->
     report_err source_file x;
     Depend.StringSet.empty
 
 let ml_file_dependencies source_file =
   let extracted_deps = read_parse_and_extract
-    parse_use_file Depend.add_use_file source_file
+      Parse.implementation Depend.add_implementation Config.ast_impl_magic_number source_file
   in
   if !sort_files then
     files := (source_file, ML, !Depend.free_structure_names) :: !files
@@ -307,7 +247,8 @@ let ml_file_dependencies source_file =
 
 let mli_file_dependencies source_file =
   let extracted_deps = read_parse_and_extract
-    parse_interface Depend.add_signature source_file in
+      Parse.interface Depend.add_signature Config.ast_intf_magic_number source_file
+  in
   if !sort_files then
     files := (source_file, MLI, extracted_deps) :: !files
   else
@@ -449,8 +390,10 @@ let _ =
              "  Generate dependencies on all files (not accommodating for make shortcomings)";
      "-one-line", Arg.Set one_line,
              "  Output one line per file, regardless of the length";
-     "-pp", Arg.String(fun s -> preprocessor := Some s),
+     "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd> Pipe sources through preprocessor <cmd>";
+    "-ppx", Arg.String(fun s -> Clflags.ppx := s :: !Clflags.ppx),
+         "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
      "-slash", Arg.Set force_slash,
             "   (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-version", Arg.Unit print_version,
