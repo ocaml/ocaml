@@ -5,9 +5,11 @@ This part of the manual is a tutorial introduction to the
 OCaml language. A good familiarity with programming in a conventional
 languages (say, Pascal or C) is assumed, but no prior exposure to
 functional languages is required. The present chapter introduces the
-core language. Chapter~~\ref{c:moduleexamples} with the
-module system, and chapter\ref{c:objectexamples} deals with the
-object-oriented features.
+core language. Chapter~\ref{c:moduleexamples} deals with the
+module system, chapter~\ref{c:objectexamples} with the
+object-oriented features, chapter~\ref{c:labl-examples} with
+extensions to the core language (labeled arguments and polymorphic
+variants), and chapter~\ref{c:advexamples} gives some advanced examples.
 
 \section{Basics}
 \pdfsection{Basics}

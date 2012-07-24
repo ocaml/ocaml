@@ -275,7 +275,7 @@ using the "ocamlc -c" command (the "-c" option means ``compile only, do
 not try to link''); this produces compiled interface files (with
 extension ".cmi") and compiled object code files (with extension
 ".cmo"). When all units have been compiled, their ".cmo" files are
-linked together using the "ocaml" command. For instance, the following
+linked together using the "ocamlc" command. For instance, the following
 commands compile and link a program composed of two compilation units
 "Aux" and "Main":
 \begin{verbatim}
@@ -298,7 +298,7 @@ declarations contained in "Main.ml" and "Main.mli" can refer to
 definition in "Aux.ml", using the "Aux."\var{ident} notation, provided
 these definitions are exported in "Aux.mli".
 
-The order in which the ".cmo" files are given to "ocaml" during the
+The order in which the ".cmo" files are given to "ocamlc" during the
 linking phase determines the order in which the module definitions
 occur. Hence, in the example above, "Aux" appears first and "Main" can
 refer to it, but "Aux" cannot refer to "Main".

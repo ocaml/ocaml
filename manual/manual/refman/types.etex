@@ -170,7 +170,7 @@ expression. In this last case, the type expression must expand to an
 exact variant type, whose tag specifications are inserted in its
 place.
 
-Full specification of variant tags are only used for non-exact closed
+Full specifications of variant tags are only used for non-exact closed
 types. They can be understood as a conjunctive type for the argument:
 it is intended to have all the types enumerated in the
 specification.
@@ -189,7 +189,8 @@ is a record of method types.
 Each method may have an explicit polymorphic type: @{{ "'" ident }}
 '.' typexpr@. Explicit polymorphic variables have a local scope, and
 an explicit polymorphic type can only be unified to an
-equivalent one, with polymorphic variables at the same positions.
+equivalent one, where only the order and names of polymorphic
+variables may change.
 
 The type @'<' {method-type ';'} '..'  '>'@ is the
 type of an object whose method names and types are described by

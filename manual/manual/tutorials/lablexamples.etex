@@ -345,8 +345,9 @@ least be able to match "`Off" and "`On", without argument.
 $n$ is an integer.
 The ">" and "<" inside the variant types show that they may still be
 refined, either by defining more tags or by allowing less. As such, they
-contain an implicit type variable. Because each variant types appears only
-once in the whole type, their implicit type variables are not shown.
+contain an implicit type variable. Because each of the variant types
+appears only once in the whole type, their implicit type variables are
+not shown.
 
 The above variant types were polymorphic, allowing further refinement.
 When writing type annotations, one will most often describe fixed

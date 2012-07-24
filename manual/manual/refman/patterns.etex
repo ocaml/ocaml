@@ -108,7 +108,7 @@ respectively. This pattern behaves like
 
 \subsubsection*{Polymorphic variant patterns}
 
-The pattern @"`tag-name" pattern_1@ matches all polymorphic variants
+The pattern @"`"tag-name pattern_1@ matches all polymorphic variants
 whose tag is equal to @tag-name@, and whose argument matches
 @pattern_1@.
 
@@ -118,7 +118,7 @@ If the type @["('a,'b,"\ldots")"] typeconstr = "[" "`"tag_1 typexpr_1 "|"
 \ldots "|" "`"tag_n typexpr_n"]"@ is defined, then the pattern @"#"typeconstr@
 is a shorthand for the following or-pattern:
 @"(" "`"tag_1"(_" ":" typexpr_1")" "|" \ldots "|" "`"tag_n"(_"
-":" typexpr_n"))"@. It matches all values of type @"#"typeconstr@.
+":" typexpr_n"))"@. It matches all values of type @"[<" typeconstr "]"@.
 
 \subsubsection*{Tuple patterns}
 
