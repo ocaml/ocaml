@@ -141,9 +141,12 @@ module T = struct
   let poly ?loc a b = mk ?loc (Ptyp_poly (a, b))
   let package ?loc a b = mk ?loc (Ptyp_package (a, b))
 
+  let field_type ?(loc = Location.none) x = {pfield_desc = x; pfield_loc = loc}
+  let field ?loc s t = field_type ?loc (Pfield (s, t))
+  let field_var ?loc () = field_type ?loc Pfield_var
+
   let core_field_type sub = function
-    | {pfield_desc = Pfield (s, d); pfield_loc} ->
-        {pfield_desc = Pfield (s, sub # typ d); pfield_loc}
+    | {pfield_desc = Pfield (s, d); pfield_loc = loc} -> field ~loc s (sub # typ d)
     | x -> x
 
   let row_field sub = function
@@ -163,6 +166,26 @@ module T = struct
     | Ptyp_variant (rl, b, ll) -> variant ~loc (List.map (row_field sub) rl) b ll
     | Ptyp_poly (sl, t) -> poly ~loc sl (sub # typ t)
     | Ptyp_package (lid, l) -> package ~loc lid (List.map (map_snd (sub # typ)) l)
+end
+
+module P = struct
+  (* Patterns *)
+
+  let mk ?(loc = Location.none) x = {ppat_desc = x; ppat_loc = loc}
+  let any ?loc () = mk ?loc Ppat_any
+  let var ?loc a = mk ?loc (Ppat_var a)
+  let alias ?loc a b = mk ?loc (Ppat_alias (a, b))
+  let constant ?loc a = mk ?loc (Ppat_constant a)
+  let tuple ?loc a = mk ?loc (Ppat_tuple a)
+  let constr ?loc a b c = mk ?loc (Ppat_construct (a, b, c))
+  let variant ?loc a b = mk ?loc (Ppat_variant (a, b))
+  let record ?loc a b = mk ?loc (Ppat_record (a, b))
+  let array ?loc a = mk ?loc (Ppat_array a)
+  let or_ ?loc a b = mk ?loc (Ppat_or (a, b))
+  let constraint_ ?loc a b = mk ?loc (Ppat_constraint (a, b))
+  let type_ ?loc a = mk ?loc (Ppat_type a)
+  let lazy_ ?loc a = mk ?loc (Ppat_lazy a)
+  let unpack ?loc a = mk ?loc (Ppat_unpack a)
 end
 
 module M = struct
@@ -255,3 +278,26 @@ class create =
     method pat p = p (* todo *)
     method expr = E.map this
   end
+
+
+let set_loc loc = object
+  inherit create as super
+
+  method! expr x =
+    if x.pexp_loc.loc_ghost then
+      super # expr {x with pexp_loc = loc}
+    else
+      x
+
+  method! typ x =
+    if x.ptyp_loc.loc_ghost then
+      super # typ {x with ptyp_loc = loc}
+    else
+      x
+
+  method! pat x =
+    if x.ppat_loc.loc_ghost then
+      super # pat {x with ppat_loc = loc}
+    else
+      x
+end
