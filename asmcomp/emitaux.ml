@@ -169,14 +169,12 @@ type emit_frame_actions =
 
 let emit_frames a =
   let filenames = Hashtbl.create 7 in
-  let lbl_filenames = ref 200000 in
   let label_filename name =
     try
       Hashtbl.find filenames name
     with Not_found ->
-      let lbl = !lbl_filenames in
+      let lbl = Linearize.new_label () in
       Hashtbl.add filenames name lbl;
-      incr lbl_filenames;
       lbl in
   let emit_frame fd =
     a.efa_label fd.fd_lbl;
