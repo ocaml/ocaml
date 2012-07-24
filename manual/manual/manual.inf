@@ -111,3 +111,10 @@
 \def\goodbreak{\ \\}
 
 \def\@savedlistI{}
+
+%%
+% Pour le chapitre ocamlbuild
+\newcommand{\mathscr}[1]{{\mathcal{#1}}}
+\newcommand{\ocb}{\texttt{ocamlbuild}\xspace}
+\newcommand{\tags}{\texttt{\_tags}\xspace}
+\newcommand{\@cup}{|\_|}

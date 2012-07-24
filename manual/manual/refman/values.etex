@@ -43,7 +43,7 @@ supports tuple of up to $2^{22} - 1$ elements (4194303 elements).
 \subsection{Records}
 
 Record values are labeled tuples of values. The record value written
-@'{' field_1 '=' v_1';' \ldots';' field_n '=' v_n '}'@ associates the value
+@'{' field_1 '=' @v@_1';' \ldots';' field_n '=' @v@_n '}'@ associates the value
 $v_i$ to the record field @field_i@, for $i = 1 \ldots n$. The current
 implementation supports records with up to $2^{22} - 1$ fields
 (4194303 fields).
@@ -60,8 +60,8 @@ platforms, the limit is $2^{54} - 1$ for all arrays.
 
 Variant values are either a constant constructor, or a non-constant
 constructor applied to a number of values. The former case is written
-@constr@; the latter case is written @constr '('v_1',' ... ',' v_n
-')'@, where the @v_i@ are said to be the arguments of the non-constant
+@constr@; the latter case is written @constr '('@v@_1',' ... ',' @v@_n
+')'@, where the @@v@_i@ are said to be the arguments of the non-constant
 constructor @constr@. The parentheses may be omitted if there is only
 one argument.
 

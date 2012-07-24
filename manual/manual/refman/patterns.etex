@@ -114,10 +114,10 @@ whose tag is equal to @tag-name@, and whose argument matches
 
 \subsubsection*{Polymorphic variant abbreviation patterns}
 
-If the type @["('a,'b,"\ldots")"] typeconstr = "[" "`"tag_1 typexpr_1 "|"
-\ldots "|" "`"tag_n typexpr_n"]"@ is defined, then the pattern @"#"typeconstr@
+If the type @["('a,'b,"\ldots")"] typeconstr = "[" "`"tag-name_1 typexpr_1 "|"
+\ldots "|" "`"tag-name_n typexpr_n"]"@ is defined, then the pattern @"#"typeconstr@
 is a shorthand for the following or-pattern:
-@"(" "`"tag_1"(_" ":" typexpr_1")" "|" \ldots "|" "`"tag_n"(_"
+@"(" "`"tag-name_1"(_" ":" typexpr_1")" "|" \ldots "|" "`"tag-name_n"(_"
 ":" typexpr_n"))"@. It matches all values of type @"[<" typeconstr "]"@.
 
 \subsubsection*{Tuple patterns}

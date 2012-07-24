@@ -461,7 +461,7 @@ fragment is more self-contained).
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-@pattern@:
+pattern:
     ...
   | '{' field ['=' pattern] { ';' field ['=' pattern] } [';' '_' ] '}'
 ;
@@ -516,7 +516,7 @@ record type.
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-@let-binding@:
+let-binding:
           ...
         | value-name ':' poly-typexpr '=' expr
 \end{syntax}
@@ -554,7 +554,7 @@ polymorphic.
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-@parameter@:
+parameter:
        ...
      | '(' "type" typeconstr-name ')'
 ;
@@ -600,11 +600,11 @@ It is also extremely useful for first-class modules and GADTs.
 \paragraph{Polymorphic syntax} (Introduced in OCaml 4.00)
 
 \begin{syntax}
-@let-binding@:
+let-binding:
        ...
      | value-name ":" "type" { typeconstr } "." typexpr "=" expr;
 \end{syntax}
-The @("type" t)@ syntax construction by itself does not make
+The @("type" @t@)@ syntax construction by itself does not make
 polymorphic the type variable it introduces, but it can be combined
 with explicit polymorphic annotations where needed. 
 Some syntactic sugar is provided to make this easier.
@@ -845,7 +845,7 @@ polymorphic recursion.
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-@module-type@:
+module-type:
      ...
    | 'module' 'type' 'of' module-expr
 \end{syntax}
@@ -881,7 +881,7 @@ construct at the structure level this time:
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-@mod-constraint@:
+mod-constraint:
           ...
         | 'type' [type-parameters] typeconstr-name ':=' [type-parameters] typeconstr
         | 'module' module-name ':=' extended-module-path
@@ -944,7 +944,7 @@ same type.
 (Introduced in OCaml 3.12)
 
 \begin{syntax}
-@class-field@:
+class-field:
       ...
    |  'inherit!' class-expr ['as' value-name]
    |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr

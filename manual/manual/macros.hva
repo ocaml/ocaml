@@ -1,13 +1,22 @@
+%%Colors for links
+\def\link@color{\#006000}
+\def\hover@color{\@getstylecolor{subsection}}
+\newstyle{a:link}{color:\link@color;text-decoration:underline;}
+\newstyle{a:visited}{color:\link@color;text-decoration:underline;}
+\newstyle{a:hover}{color:black;text-decoration:none;background-color:\hover@color}
+%%%
+\newcommand{\input@color}{\htmlcolor{006000}}
+\newcommand{\output@color}{\maroon}
 \newcommand{\machine}{\tt}
 \newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
-\newcommand{\firstline}{\black\#\blue\ }
+\newcommand{\firstline}{\black\#\input@color\ }
 \newcommand{\nextline}{\ \ }
 \newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}
 \newenvironment{camlunder}{\@style{U}}{}
-\newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
+\newcommand{\caml}{\begin{alltt}\renewcommand{\;}{}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
 \let\?=\@zyva
 \newcommand{\endcaml}{\activebracetrue\end{alltt}}
-\renewcommand{\:}{\renewcommand{\?}{\@zyva}\maroon}
+\renewcommand{\:}{\renewcommand{\?}{\@zyva}\output@color}
 \newcommand{\var}[1]{\textit{#1}}
 
 \newenvironment{library}{}{}

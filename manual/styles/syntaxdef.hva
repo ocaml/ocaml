@@ -43,6 +43,11 @@
 \stx@silent{external-declaration}%
 \stx@silent{unit-name}%
 %%Redefined in exten.etex
+\stx@silent{parameter}%
+\stx@silent{pattern}%
+\stx@silent{constr-decl}%
+\stx@silent{type-param}%
+\stx@silent{let-binding}%
 \stx@silent{expr}%
 \stx@silent{typexpr}%
 \stx@silent{module-expr}%
@@ -50,6 +55,9 @@
 \stx@silent{definition}%
 \stx@silent{specification}%
 \stx@silent{type-equation}%
+\stx@silent{class-field}%
+\stx@silent{mod-constraint}%
+\stx@silent{module-type}%
 %%Redefined in names.etex
 \stx@silent{label-name}%
 %%Not really defined in lexyacc.etex
@@ -63,17 +71,29 @@
 \stx@silent{Exc}
 \stx@silent{URL}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%special anchor
+\newstyle{a.syntax:link}{color:maroon;text-decoration:underline}
+\newstyle{a.syntax:visited}{color:maroon;text-decoration:underline}
+\newstyle{a.syntax:hover}{color:black;text-decoration:none;background-color:\#FF6060}
+%compatibility for hevea-1.1?/heeva-2.??
+\ifu\@tr@url
+\providecommand{\@tr@url}[1]{#1}\def\stx@id{NAME}\else
+\def\stx@id{id}\fi
+\newcommand{\@syntaxlocref}[2]
+{\@aelement{href="\@print{#}\@tr@url{#1}" class="syntax"}{#2}}
+\newcommand{\@syntaxaname}[2]
+{\@aelement{\stx@id="#1" class="syntax"}{#2}}
 %%Refer to anchor
 \def\ref@anchor#1{%
 \@ifundefined{stx@#1@exists}
 {\stx@warning{#1}{Undefined non-terminal: '#1'}#1}
-{\ahrefloc{#1}{#1}}}
+{\@syntaxlocref{#1}{#1}}}
 \def\stx@exists#1{\def\csname stx@#1@exists\endcsname{}}
 %%Define anachor
 \def\def@anchor#1{%
 \@ifundefined{stx@#1}
 {{\@nostyle\@auxdowrite{\string\stx@exists\{#1\}}}%
-\gdef\csname stx@#1\endcsname{}\aname{#1}{#1}}
+\gdef\csname stx@#1\endcsname{}\@syntaxaname{#1}{#1}}
 {\@ifundefined{stx@#1@silent}
 {\hva@warn{Redefinition of non-terminal '#1'}#1}
 {\ref@anchor{#1}}}}
