@@ -4,7 +4,8 @@ command_line.cmi :
 debugcom.cmi : primitives.cmi
 debugger_config.cmi :
 dynlink.cmi :
-envaux.cmi : ../typing/path.cmi ../bytecomp/instruct.cmi ../typing/env.cmi
+envaux.cmi : ../typing/subst.cmi ../typing/path.cmi ../bytecomp/instruct.cmi \
+    ../typing/env.cmi
 eval.cmi : ../typing/types.cmi ../typing/path.cmi parser_aux.cmi \
     ../parsing/longident.cmi ../bytecomp/instruct.cmi ../typing/ident.cmi \
     ../typing/env.cmi debugcom.cmi
