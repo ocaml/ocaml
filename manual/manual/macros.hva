@@ -1,8 +1,9 @@
 %%Colors for links
-\def\link@color{\#006000}
+\def\visited@color{\#006000}
+\def\link@color{\#00A000}
 \def\hover@color{\@getstylecolor{subsection}}
 \newstyle{a:link}{color:\link@color;text-decoration:underline;}
-\newstyle{a:visited}{color:\link@color;text-decoration:underline;}
+\newstyle{a:visited}{color:\visited@color;text-decoration:underline;}
 \newstyle{a:hover}{color:black;text-decoration:none;background-color:\hover@color}
 %%%
 \newcommand{\input@color}{\htmlcolor{006000}}
