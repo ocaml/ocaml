@@ -86,15 +86,17 @@ mkdir -p resources
 #                                         stop here -> |
 cat >resources/ReadMe.txt <<EOF
 This package installs OCaml version ${VERSION}.
-You need Mac OS X 10.5.x (Leopard), with the
-XCode tools installed (v3.1.1 or later), and
-optionally X11.
+You need Mac OS X 10.7.x (Lion), with the
+XCode tools installed (v3.2.6 or later).
 
 Files will be installed in the following directories:
 
 /usr/local/bin - command-line executables
 /usr/local/lib/ocaml - library and support files
 /usr/local/man - manual pages
+
+Note that this package installs only command-line
+tools and does not include any GUI application.
 EOF
 
 chmod -R g-w root
