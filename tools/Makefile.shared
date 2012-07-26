@@ -23,7 +23,8 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib dumpobj objinfo
+all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
+     objinfo read_cmt
 
 # scrapelabels addlabels
 
@@ -71,13 +72,23 @@ ocamlprof: $(CSLPROF) profiling.cmo
 ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp warnings.cmo main_args.cmo ocamlcp.cmo
 
+ocamloptp: ocamloptp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamloptp warnings.cmo main_args.cmo \
+	         ocamloptp.cmo
+
+opt:: profiling.cmx
+
 install::
 	cp ocamlprof $(BINDIR)/ocamlprof$(EXE)
 	cp ocamlcp $(BINDIR)/ocamlcp$(EXE)
+	cp ocamloptp $(BINDIR)/ocamloptp$(EXE)
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
+installopt::
+	cp profiling.cmx profiling.o $(LIBDIR)
+
 clean::
-	rm -f ocamlprof ocamlcp
+	rm -f ocamlprof ocamlcp ocamloptp
 
 
 # To help building mixed-mode libraries (OCaml + C)
@@ -224,12 +235,8 @@ READ_CMT= \
 read_cmt: $(READ_CMT)
 	$(CAMLC) $(LINKFLAGS) -o read_cmt $(READ_CMT)
 
-# read_cmt is precious: sometimes we are stuck in the middle of a
-# bootstrap and we need to remake the dependencies
 clean::
-	if test -f read_cmt; then mv -f read_cmt read_cmt.bak; else :; fi
-
-clean::
+	rm -f read_cmt
 
 beforedepend::
 

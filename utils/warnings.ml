@@ -348,14 +348,14 @@ let descriptions =
     5, "Partially applied function: expression whose result has function\n\
    \    type and is ignored.";
     6, "Label omitted in function application.";
-    7, "Some methods are overridden in the class where they are defined.";
+    7, "Method overridden.";
     8, "Partial match: missing cases in pattern-matching.";
     9, "Missing fields in a record pattern.";
    10, "Expression on the left-hand side of a sequence that doesn't have type\n\
    \    \"unit\" (and that is not a function, see warning number 5).";
    11, "Redundant case in a pattern matching (unused match case).";
    12, "Redundant sub-pattern in a pattern-matching.";
-   13, "Override of an instance variable.";
+   13, "Instance variable overridden.";
    14, "Illegal backslash escape in a string constant.";
    15, "Private method made public implicitly.";
    16, "Unerasable optional argument.";

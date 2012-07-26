@@ -156,7 +156,7 @@ module Analyser :
 
       (** Return a module_type_kind from a Parsetree.module_type and a Types.module_type *)
       val analyse_module_type_kind :
-          Odoc_env.env -> Odoc_name.t ->
+          ?erased:Odoc_name.Set.t -> Odoc_env.env -> Odoc_name.t ->
             Parsetree.module_type -> Types.module_type ->
               Odoc_module.module_type_kind
 

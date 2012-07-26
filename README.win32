@@ -91,8 +91,7 @@ THIRD-PARTY SOFTWARE:
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
 [3] TCL/TK version 8.5.  Windows binaries are available as part of the
-    ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
-
+    ActiveTCL distribution at http://www.activestate.com/activetcl/downloads
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -186,7 +185,7 @@ contributed his changes to the OCaml project.
 
 REQUIREMENTS:
 
-This port runs under MS Windows Vista, XP, and 2000.
+This port runs under MS Windows Seven, Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -202,10 +201,14 @@ the Setup tool from Cygwin):
 
  mingw64-i686-binutils
  mingw64-i686-gcc
+ mingw64-i686-gcc-core
  mingw64-i686-runtime
 
 
-NOTE:
+NOTES:
+
+  - Do not use the Cygwin version of flexdll for this port.
+
   - There is another 32-bit gcc compiler, from the MinGW.org
     project, packaged in Cygwin under the name mingw-gcc.
     It is not currently supported by flexdll and OCaml.
@@ -223,7 +226,7 @@ NOTE:
 
 The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available
 as part of the ActiveTCL distribution at
-http://www.activestate.com/products/ActiveTcl/
+  http://www.activestate.com/activetcl/downloads
 Note that you will need to install the 32-bit version of ActiveTCL,
 even if you are on a 64-bit version of Windows.
 
@@ -246,23 +249,26 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 RECOMPILATION FROM THE SOURCES:
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, XP, or Vista.
-- Cygwin: http://sourceware.cygnus.com/cygwin/
-  Install at least the following packages:
+- Windows NT, 2000, XP, Vista, or Seven.
+- Cygwin: http://cygwin.com/
+  Install at least the following packages (and their dependencies, as
+  computed by Cygwin's setup.exe):
      mingw64-i686-binutils
      mingw64-i686-gcc
+     mingw64-i686-gcc-core
      mingw64-i686-runtime
      diffutils
      make
      ncurses
-- TCL/TK version 8.5 (see above).
-- The flexdll tool (see above).
+- Tcl/Tk version 8.5 (see above).
+- The flexdll tool (see above).  Do not forget to add the flexdll directory
+  to your PATH
 
 The standalone mingw toolchain from the MinGW-w64 project
 (http://mingw-w64.sourceforge.net/) is not supported.  Please use the
 version packaged in Cygwin instead.
 
-Start a Cygwin shell and unpack the source distribution
+Start a new Cygwin shell and unpack the source distribution
 (ocaml-X.YY.Z.tar.gz) with "tar xzf".  Change to the top-level
 directory of the OCaml distribution.  Then, do
 
@@ -273,7 +279,7 @@ directory of the OCaml distribution.  Then, do
 Then, edit config/Makefile as needed, following the comments in this file.
 Normally, the only variables that need to be changed are
         PREFIX      where to install everything
-        TK_ROOT     where TCL/TK was installed
+        TK_ROOT     where Tcl/Tk was installed
 
 Finally, use "make -f Makefile.nt" to build the system, e.g.
 
@@ -317,16 +323,42 @@ the OCaml packages).  Alternatively, recompile from the source distribution.
 
 RECOMPILATION FROM THE SOURCES:
 
-Just follow the instructions for Unix machines given in the file INSTALL.
+Before starting, make sure that the gcc version installed by cygwin
+is not 4.5.3 (it has a bug that affects OCaml).  If needed, use cygwin's
+setup.exe to downgrade to 4.3.4.
+
+You will need to recompile (and install) flexdll from source with
+Cygwin's C compiler because the official binary version of flexdll
+doesn't handle Cygwin's symbolic links and sometimes fails to
+launch the C compiler.
+
+In order to recompile flexdll, you first need to configure, compile,
+and install OCaml without flexdll support (configure with options
+-no-shared-libs -no-tk -no-camlp4), then modify the flexdll Makefile
+to change line 51 from:
+  LINKFLAGS = -ccopt "-link version_res.o"
+to:
+  LINKFLAGS = -cclib version_res.o
+
+Then "make CHAINS=cygwin" and add the flexdll directory to your PATH.
+Make sure to add it before "/usr/bin" or you will get cygwin's flexlink.
+
+Then, in OCaml's source directory, type:
+  make clean
+  make distclean
+and follow the instructions for Unix machines given in the file INSTALL.
 
 
 NOTES:
 
-The libraries available in this port are "num", "str", "threads",
-"unix" and "labltk".  "graph" is not available.
-The replay debugger is fully supported.
-When upgrading from 3.12.0 to 3.12.1, you will need to remove
-/usr/local/bin/ocamlmktop.exe before typing "make install".
+- There is a problem with cygwin's port of gcc version 4.5.3.  You should
+  use cygwin's setup program to downgrade to 4.3.4 before compiling OCaml.
+- The replay debugger is fully supported.
+- When upgrading from 3.12.0 to 3.12.1, you will need to remove
+  /usr/local/bin/ocamlmktop.exe before typing "make install".
+- In order to use the "graph" and "labltk" libraries, you will need
+  to use Cygwin's setup.exe to install the xinit, libX11-devel, tcl,
+  and tcl-tk packages before compiling OCaml.
 
 ------------------------------------------------------------------------------
 

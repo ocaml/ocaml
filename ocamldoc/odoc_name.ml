@@ -215,3 +215,9 @@ let to_path n =
   | Some p -> p
 
 let from_longident = Odoc_misc.string_of_longident
+
+module Set = Set.Make (struct
+  type z = t
+  type t = z
+  let compare = String.compare
+end)

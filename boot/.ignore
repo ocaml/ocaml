@@ -1,6 +1,8 @@
 Saved
 ocamlrun
+ocamlrun.exe
 ocamlyacc
+ocamlyacc.exe
 camlheader
 myocamlbuild
 myocamlbuild.native

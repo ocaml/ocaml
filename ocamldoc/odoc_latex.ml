@@ -37,6 +37,7 @@ let latex_titles = ref [
 
 let latex_value_prefix = ref Odoc_messages.default_latex_value_prefix
 let latex_type_prefix = ref Odoc_messages.default_latex_type_prefix
+let latex_type_elt_prefix = ref Odoc_messages.default_latex_type_elt_prefix
 let latex_exception_prefix = ref Odoc_messages.default_latex_exception_prefix
 let latex_module_prefix = ref Odoc_messages.default_latex_module_prefix
 let latex_module_type_prefix = ref Odoc_messages.default_latex_module_type_prefix
@@ -96,19 +97,19 @@ class text =
         "}", "\\\\}";
         "\\$", "\\\\$";
         "\\^", "{\\\\textasciicircum}";
-        "à", "\\\\`a";
-        "â", "\\\\^a";
-        "é", "\\\\'e";
-        "è", "\\\\`e";
-        "ê", "\\\\^e";
-        "ë", "\\\\\"e";
-        "ç", "\\\\c{c}";
-        "ô", "\\\\^o";
-        "ö", "\\\\\"o";
-        "î", "\\\\^i";
-        "ï", "\\\\\"i";
-        "ù", "\\\\`u";
-        "û", "\\\\^u";
+        "Ã ", "\\\\`a";
+        "Ã¢", "\\\\^a";
+        "Ã©", "\\\\'e";
+        "Ã¨", "\\\\`e";
+        "Ãª", "\\\\^e";
+        "Ã«", "\\\\\"e";
+        "Ã§", "\\\\c{c}";
+        "Ã´", "\\\\^o";
+        "Ã¶", "\\\\\"o";
+        "Ã®", "\\\\^i";
+        "Ã¯", "\\\\\"i";
+        "Ã¹", "\\\\`u";
+        "Ã»", "\\\\^u";
         "%", "\\\\%";
         "_", "\\\\_";
         "~", "\\\\~{}";
@@ -239,6 +240,12 @@ class text =
 
     (** Make a correct label from a type name. *)
     method type_label ?no_ name = !latex_type_prefix^(self#label ?no_ name)
+
+    (** Make a correct label from a record field. *)
+    method recfield_label ?no_ name = !latex_type_elt_prefix^(self#label ?no_ name)
+
+    (** Make a correct label from a variant constructor. *)
+    method const_label ?no_ name = !latex_type_elt_prefix^(self#label ?no_ name)
 
     (** Return latex code for the label of a given label. *)
     method make_label label = "\\label{"^label^"}"
@@ -409,6 +416,8 @@ class text =
             | Odoc_info.RK_attribute -> self#attribute_label
             | Odoc_info.RK_method -> self#method_label
             | Odoc_info.RK_section _ -> assert false
+            | Odoc_info.RK_recfield -> self#recfield_label
+            | Odoc_info.RK_const -> self#const_label
           in
           let text =
             match text_opt with
@@ -566,7 +575,7 @@ class latex =
                              ":"
                              (self#normal_type_list ~par: false mod_name " * " l)
 			     "->"
-                             (self#normal_type mod_name r)			     
+                             (self#normal_type mod_name r)
                       );
                       flush2 ()
                     in
@@ -694,7 +703,7 @@ class latex =
           self#latex_of_module_kind fmt father k2;
           self#latex_of_text fmt [Code ")"]
       | Module_with (k, s) ->
-          (* TODO: à modifier quand Module_with sera plus détaillé *)
+          (* TODO: Ã  modifier quand Module_with sera plus dÃ©taillÃ© *)
           self#latex_of_module_type_kind fmt father k;
           self#latex_of_text fmt
             [ Code " ";
@@ -723,7 +732,7 @@ class latex =
           self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
       | Class_apply capp ->
-          (* TODO: afficher le type final à partir du typedtree *)
+          (* TODO: afficher le type final Ã  partir du typedtree *)
           self#latex_of_text fmt [Raw "class application not handled yet"]
 
       | Class_constr cco ->

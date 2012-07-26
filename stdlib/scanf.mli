@@ -144,7 +144,7 @@ val open_in_bin : file_name -> in_channel;;
 *)
 
 val close_in : in_channel -> unit;;
-(** Closes the [Pervasives.input_channel] associated with the given
+(** Closes the [Pervasives.in_channel] associated with the given
   [Scanning.in_channel] formatted input channel.
   @since 3.12.0
 *)

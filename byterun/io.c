@@ -284,7 +284,7 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
       retcode = read(fd, p, 16384);
     }
 #endif
-  caml_leave_blocking_section();
+    caml_leave_blocking_section();
   } while (retcode == -1 && errno == EINTR);
   if (retcode == -1) caml_sys_io_error(NO_ARG);
   return retcode;
