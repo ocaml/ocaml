@@ -113,6 +113,10 @@ to call the given
 .I command
 as a preprocessor for each source file.
 .TP
+.BI \-ppx \ command
+Pipe abstract syntax tree through preprocessor
+.IR command .
+.TP
 .B \-slash
 Under Unix, this option does nothing.
 .TP
