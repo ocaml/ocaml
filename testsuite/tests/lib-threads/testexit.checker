@@ -1,1 +1,1 @@
-sort testexit.result | diff -q testexit.reference -
+LC_ALL=C sort testexit.result | diff -q testexit.reference -
