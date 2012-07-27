@@ -142,7 +142,15 @@ module T = struct
   let package ?loc a b = mk ?loc (Ptyp_package (a, b))
 
   let field_type ?(loc = Location.none) x = {pfield_desc = x; pfield_loc = loc}
-  let field ?loc s t = field_type ?loc (Pfield (s, t))
+  let field ?loc s t =
+    let t =
+      (* The type-checker expects the field to be a Ptyp_poly. Maybe
+         it should wrap the type automatically... *)
+      match t.ptyp_desc with
+      | Ptyp_poly _ -> t
+      | _ -> poly ?loc [] t
+    in
+    field_type ?loc (Pfield (s, t))
   let field_var ?loc () = field_type ?loc Pfield_var
 
   let core_field_type sub = function
