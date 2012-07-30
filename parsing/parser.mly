@@ -380,7 +380,6 @@ let wrap_type_annotation newtypes core_type body =
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
-%token QUESTIONQUESTION
 %token QUOTE
 %token RBRACE
 %token RBRACKET

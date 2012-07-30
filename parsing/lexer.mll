@@ -268,7 +268,6 @@ rule token = parse
           raise (Error(Keyword_as_label name, Location.curr lexbuf));
         LABEL name }
   | "?"  { QUESTION }
-  | "??" { QUESTIONQUESTION }
   | "?" lowercase identchar * ':'
       { let s = Lexing.lexeme lexbuf in
         let name = String.sub s 1 (String.length s - 2) in
