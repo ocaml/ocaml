@@ -48,7 +48,7 @@ struct
     method private gen_if_tag name target info_opt =
       match info_opt with
         None -> ()
-      |	Some i ->
+      | Some i ->
           let l =
             List.fold_left
               (fun acc (t, text) ->
@@ -69,7 +69,7 @@ struct
                        | _ -> (None, text) :: acc
 
                      end
-                 |	_ -> acc
+                 | _ -> acc
               )
               []
               i.i_custom
