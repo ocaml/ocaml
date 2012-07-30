@@ -149,23 +149,23 @@ struct
   ] @
     (if !esc_8bits
     then [
-    (Str.regexp "à", "@`a") ;
-    (Str.regexp "â", "@^a") ;
-    (Str.regexp "é", "@'e") ;
-    (Str.regexp "è", "@`e") ;
-    (Str.regexp "ê", "@^e") ;
-    (Str.regexp "ë", "@\"e") ;
-    (Str.regexp "ç", "@,{c}") ;
-    (Str.regexp "ô", "@^o") ;
-    (Str.regexp "ö", "@\"o") ;
-    (Str.regexp "î", "@^i") ;
-    (Str.regexp "ï", "@\"i") ;
-    (Str.regexp "ù", "@`u") ;
-    (Str.regexp "û", "@^u") ;
-    (Str.regexp "æ", "@ae{}" ) ;
-    (Str.regexp "Æ", "@AE{}" ) ;
-    (Str.regexp "ß", "@ss{}" ) ;
-    (Str.regexp "©", "@copyright{}" ) ;
+    (Str.regexp "\xE0", "@`a") ;
+    (Str.regexp "\xE2", "@^a") ;
+    (Str.regexp "\xE9", "@'e") ;
+    (Str.regexp "\xE8", "@`e") ;
+    (Str.regexp "\xEA", "@^e") ;
+    (Str.regexp "\xEB", "@\"e") ;
+    (Str.regexp "\xF7", "@,{c}") ;
+    (Str.regexp "\xF4", "@^o") ;
+    (Str.regexp "\xF6", "@\"o") ;
+    (Str.regexp "\xEE", "@^i") ;
+    (Str.regexp "\xEF", "@\"i") ;
+    (Str.regexp "\xF9", "@`u") ;
+    (Str.regexp "\xFB", "@^u") ;
+    (Str.regexp "\xE6", "@ae{}" ) ;
+    (Str.regexp "\xC6", "@AE{}" ) ;
+    (Str.regexp "\xDF", "@ss{}" ) ;
+    (Str.regexp "\xA9", "@copyright{}" ) ;
     ]
     else [])
 

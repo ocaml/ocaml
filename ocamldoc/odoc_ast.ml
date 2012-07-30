@@ -452,7 +452,7 @@ module Analyser =
            | l ->
                match l with
                  [] ->
-                   (* cas impossible, on l'a filtrÃ© avant *)
+                   (* cas impossible, on l'a filtre avant *)
                    assert false
                | (pattern_param, exp) :: second_ele :: q ->
                    (* implicit pattern matching -> anonymous parameter *)
@@ -697,10 +697,10 @@ module Analyser =
               Typedtree.Tcl_ident (p,_,_) -> Name.from_path p
             | _ ->
                 (* we try to get the name from the environment. *)
-                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( même quand on a class tutu = toto *)
+                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( meme quand on a class tutu = toto *)
                 Name.from_longident lid.txt
           in
-          (* On n'a pas ici les paramÃ¨tres de type sous forme de Types.type_expr,
+          (* On n'a pas ici les parametres de type sous forme de Types.type_expr,
              par contre on peut les trouver dans le class_type *)
           let params =
             match tt_class_exp.Typedtree.cl_type with
@@ -785,7 +785,7 @@ module Analyser =
             match tt_class_expr2.Typedtree.cl_desc with
               Typedtree.Tcl_ident (p,_,_) -> Name.from_path p (* A VOIR : obtenir le nom complet *)
             | _ ->
-                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( mÃªme quand on a class tutu = toto *)
+                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( meme quand on a class tutu = toto *)
                 match p_class_expr2.Parsetree.pcl_desc with
                   Parsetree.Pcl_constr (lid, _) ->
                     (* we try to get the name from the environment. *)
@@ -978,7 +978,7 @@ module Analyser =
         | Element_type t ->
              (function
                 Types.Sig_type (ident,_,_) ->
-                  (* A VOIR: il est possible que le détail du type soit caché *)
+                  (* A VOIR: il est possible que le detail du type soit cache *)
                   let n1 = Name.simple t.ty_name
                   and n2 = Ident.name ident in
                   n1 = n2
@@ -1321,7 +1321,7 @@ module Analyser =
              let new_env = Odoc_env.add_module env new_module.m_name in
              let new_env2 =
                match new_module.m_type with
-                 (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
+                 (* A VOIR : cela peut-il etre Tmty_ident ? dans ce cas, on aurait pas la signature *)
                  Types.Mty_signature s ->
                    Odoc_env.add_signature new_env new_module.m_name
                      ~rel: (Name.simple new_module.m_name) s
@@ -1420,7 +1420,7 @@ module Analyser =
           let new_env = Odoc_env.add_module_type env mt.mt_name in
           let new_env2 =
             match tt_module_type.mty_type with
-              (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on n'aurait pas la signature *)
+              (* A VOIR : cela peut-il etre Tmty_ident ? dans ce cas, on n'aurait pas la signature *)
               Types.Mty_signature s ->
                 Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
             | _ ->
@@ -1549,7 +1549,7 @@ module Analyser =
               im_info = comment_opt ;
             }
           in
-          (0, env, [ Element_included_module im ]) (* A VOIR : Ã©tendre l'environnement ? avec quoi ? *)
+          (0, env, [ Element_included_module im ]) (* A VOIR : etendre l'environnement ? avec quoi ? *)
 
      (** Analysis of a [Parsetree.module_expr] and a name to return a [t_module].*)
      and analyse_module env current_module_name module_name comment_opt p_module_expr tt_module_expr =
