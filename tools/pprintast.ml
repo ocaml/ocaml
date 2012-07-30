@@ -111,9 +111,9 @@ let fixity_of_exp e =
       (fixity_of_longident li)
 (*
   | Pexp_cspval (_,li) ->
-	  if false (* default valu of !Clflags.prettycsp *)
-	  then (fixity_of_longident li)
-	  else Prefix
+          if false (* default valu of !Clflags.prettycsp *)
+          then (fixity_of_longident li)
+          else Prefix
 *)
       | _ -> Prefix ;;
 
@@ -328,7 +328,7 @@ let rec core_type ppf x =
             );
         | s ->
             fprintf ppf "%s :@ " s ;
-	    core_type ppf ct1; (* todo: what do we do here? *)
+            core_type ppf ct1; (* todo: what do we do here? *)
       );
       fprintf ppf "@ ->@ " ;
       core_type ppf ct2 ;
@@ -563,9 +563,9 @@ and simple_expr ppf x =
       fprintf ppf "%a@ " fmt_longident li
   | Pexp_ident (li) -> (* was (li, b) *)
       if is_infix (fixity_of_longident li)
-	|| match li.txt with
-	  | Longident.Lident (li) -> List.mem li.[0] prefix_symbols
-	  | _ -> false
+        || match li.txt with
+          | Longident.Lident (li) -> List.mem li.[0] prefix_symbols
+          | _ -> false
       then
         fprintf ppf "(%a)" fmt_longident li
       else
@@ -981,10 +981,10 @@ and type_declaration ppf x =
   (match x.ptype_manifest with
      | None -> ()
      | Some(y) ->
-	 core_type ppf y;
-	 match x.ptype_kind with
-	   | Ptype_variant _ | Ptype_record _ -> fprintf ppf " = "
-	   | Ptype_abstract -> ());
+         core_type ppf y;
+         match x.ptype_kind with
+           | Ptype_variant _ | Ptype_record _ -> fprintf ppf " = "
+           | Ptype_abstract -> ());
   (match x.ptype_kind with
     | Ptype_variant (first::rest) ->
         pp_open_hovbox ppf indent ;
@@ -1397,11 +1397,11 @@ and signature_item ppf x =
     | Psig_value (s, vd) ->
       let intro = if vd.pval_prim = [] then "val" else "external" in
         pp_open_hovbox ppf indent ;
-	if (is_infix (fixity_of_string s.txt))
-	  || List.mem s.txt.[0] prefix_symbols then
+        if (is_infix (fixity_of_string s.txt))
+          || List.mem s.txt.[0] prefix_symbols then
           fprintf ppf "%s ( %s ) :@ "
             intro s.txt                (* OXX done *)
-	else
+        else
         fprintf ppf "%s %s :@ " intro s.txt;
         value_description ppf vd;
         pp_close_box ppf () ;
@@ -2155,5 +2155,3 @@ let toplevel_phrase ppf x =
 
 let print_structure = structure
 let print_signature = signature
-
-

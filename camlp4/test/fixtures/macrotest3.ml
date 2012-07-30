@@ -8,4 +8,3 @@ IFNDEF UNDEFINED_VARIABLE THEN
 END;;
 
 Printf.printf "%d\n" (DOUBLE_SQUARE(42)) ;;
-

@@ -57,4 +57,3 @@ value fortran_printtab(value ba)
   printtab_(Data_bigarray_val(ba), &dimx, &dimy);
   return Val_unit;
 }
-

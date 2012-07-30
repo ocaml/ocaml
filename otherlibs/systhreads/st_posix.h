@@ -158,7 +158,7 @@ static INLINE int st_masterlock_waiters(st_masterlock * m)
 {
   return m->waiters;
 }
- 
+
 /* Mutexes */
 
 typedef pthread_mutex_t * st_mutex;
@@ -411,6 +411,6 @@ value caml_wait_signal(value sigs) /* ML */
   return Val_int(signo);
 #else
   invalid_argument("Thread.wait_signal not implemented");
-  return Val_int(0);		/* not reached */
+  return Val_int(0);            /* not reached */
 #endif
 }

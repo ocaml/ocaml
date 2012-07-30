@@ -31,9 +31,9 @@ class virtual ['a, 'cursor] storage_base =
     method fold : 'b. ('a -> int -> 'b -> 'b) -> 'b -> 'b = fun f a0 ->
       let cur = self#first in
       let rec loop count a =
-	if count >= self#len then a else
-	let a' = f cur#get count a in
-	cur#incr (); loop (count + 1) a'
+        if count >= self#len then a else
+        let a' = f cur#get count a in
+        cur#incr (); loop (count + 1) a'
       in
       loop 0 a0
     method iter proc =
@@ -63,7 +63,7 @@ struct
   let highest_bit = 1 lsl 30
   let lower_bits = highest_bit - 1
 
-  let char_of c = 
+  let char_of c =
     try Char.chr c with Invalid_argument _ ->  raise Out_of_range
 
   let of_char = Char.code
@@ -129,7 +129,7 @@ class text_raw buf =
   object (self : 'self)
     inherit [cursor] ustorage_base
     val contents = buf
-    method first = new cursor (self :> text_raw) 0 
+    method first = new cursor (self :> text_raw) 0
     method len = (String.length contents) / 4
     method get i = get_buf contents (4 * i)
     method nth i = new cursor (self :> text_raw) i

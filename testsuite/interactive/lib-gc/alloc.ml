@@ -48,4 +48,3 @@ let argspecs = [
 Arg.parse argspecs (fun _ -> ()) "Usage: alloc [-c]";;
 
 main ();;
-

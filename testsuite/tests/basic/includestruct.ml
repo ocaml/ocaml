@@ -65,7 +65,7 @@ module D =
     include F(struct end)
     let test() = print_t A; print_newline(); print_t (B 42); print_newline()
   end
-    
+
 let _ =
   D.test();
   D.print_t D.A; print_newline(); D.print_t (D.B 42); print_newline()
@@ -89,4 +89,3 @@ module G =
 let _ =
   begin try raise (G.Exn "foo") with G.Exn s -> print_string s end;
   print_int ((new G.c)#m); print_newline()
-

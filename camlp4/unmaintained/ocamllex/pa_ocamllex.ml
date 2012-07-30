@@ -75,7 +75,7 @@ let output_tables tbl =
 
 let rec make_alias n = function
   | [] -> []
-  | h::t -> 
+  | h::t ->
       (h, "__ocaml_lex_arg_" ^ (string_of_int n)) :: (make_alias (succ n) t)
 
 let abstraction =
@@ -87,13 +87,13 @@ let application =
 
 let int i = <:expr< $int:string_of_int i$ >>
 
-let output_memory_actions acts = 
+let output_memory_actions acts =
   let aux = function
-    | Copy (tgt, src) -> 
-	<:expr< lexbuf.Lexing.lex_mem.($int tgt$) := 
+    | Copy (tgt, src) ->
+        <:expr< lexbuf.Lexing.lex_mem.($int tgt$) :=
       lexbuf.Lexing.lex_mem.($int src$) >>
     | Set tgt ->
-        <:expr< lexbuf.Lexing.lex_mem.($int tgt$) := 
+        <:expr< lexbuf.Lexing.lex_mem.($int tgt$) :=
       lexbuf.Lexing.lex_curr_pos >>
   in
   <:expr< do { $list:List.map aux acts$ } >>
@@ -110,17 +110,17 @@ let output_tag_access = function
 let rec output_env e = function
   | [] -> e
   | (x, Ident_string (o,nstart,nend)) :: rem ->
-      <:expr< 
-	  let $lid:x$ = 
-	    Lexing.$lid:if o then "sub_lexeme_opt" else "sub_lexeme"$
-	    lexbuf $output_tag_access nstart$ $output_tag_access nend$
+      <:expr<
+          let $lid:x$ =
+            Lexing.$lid:if o then "sub_lexeme_opt" else "sub_lexeme"$
+            lexbuf $output_tag_access nstart$ $output_tag_access nend$
           in $output_env e rem$
       >>
   | (x, Ident_char (o,nstart)) :: rem ->
-      <:expr< 
-	  let $lid:x$ = 
-	    Lexing.$lid: if o then "sub_lexeme_char_opt" else "sub_lexeme_char"$
-	    lexbuf $output_tag_access nstart$
+      <:expr<
+          let $lid:x$ =
+            Lexing.$lid: if o then "sub_lexeme_char_opt" else "sub_lexeme_char"$
+            lexbuf $output_tag_access nstart$
           in $output_env e rem$
       >>
 
@@ -129,36 +129,36 @@ let output_entry e =
   let args = make_alias 0 (e.auto_args @ [ <:patt< lexbuf >> ]) in
   let f = "__ocaml_lex_rec_" ^ e.auto_name ^ "_rec" in
   let call_f = application <:expr< $lid:f$ >> args in
-  let body_wrapper = 
-    <:expr< 
+  let body_wrapper =
+    <:expr<
       do {
-	lexbuf.Lexing.lex_mem := Array.create $int e.auto_mem_size$ (-1) ;
-	$output_memory_actions init_moves$;
+        lexbuf.Lexing.lex_mem := Array.create $int e.auto_mem_size$ (-1) ;
+        $output_memory_actions init_moves$;
         $call_f$ $int init_num$
       } >> in
-  let cases = 
+  let cases =
     List.map
       (fun (num, env, (loc,e)) ->
-         <:patt< $int:string_of_int num$ >>, 
-	 None, 
-	 output_env <:expr< $e$ >> env
-	     (* Note: the <:expr<...>> above is there to set the location *)
+         <:patt< $int:string_of_int num$ >>,
+         None,
+         output_env <:expr< $e$ >> env
+             (* Note: the <:expr<...>> above is there to set the location *)
       ) e.auto_actions @
     [ <:patt< __ocaml_lex_n >>,
       None,
-      <:expr< do 
+      <:expr< do
         { lexbuf.Lexing.refill_buff lexbuf; $call_f$ __ocaml_lex_n  }>> ]
   in
-  let engine = 
-    if e.auto_mem_size = 0 
+  let engine =
+    if e.auto_mem_size = 0
     then <:expr< Lexing.engine >>
     else <:expr< Lexing.new_engine >> in
-  let body = 
+  let body =
     <:expr< fun state ->
       match $engine$ lex_tables state lexbuf with [ $list:cases$ ] >> in
   [
     <:patt< $lid:e.auto_name$ >>, (abstraction args body_wrapper);
-    <:patt< $lid:f$ >>, (abstraction args body) 
+    <:patt< $lid:f$ >>, (abstraction args body)
   ]
 
 (* Main output function *)
@@ -166,7 +166,7 @@ let output_entry e =
 exception Table_overflow
 
 let output_lexdef tables entry_points =
-  Printf.eprintf 
+  Printf.eprintf
     "pa_ocamllex: lexer found; %d states, %d transitions, table size %d bytes\n"
     (Array.length tables.tbl_base)
     (Array.length tables.tbl_trans)
@@ -181,7 +181,7 @@ let output_lexdef tables entry_points =
           Array.length tables.tbl_check_code) +
     Array.length tables.tbl_code) in
   if  size_groups > 0 then
-    Printf.eprintf "pa_ocamllex: %d additional bytes used for bindings\n" 
+    Printf.eprintf "pa_ocamllex: %d additional bytes used for bindings\n"
       size_groups ;
   flush stderr;
   if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;
@@ -237,7 +237,7 @@ EXTEND
  let_regexp: [
    [ x = LIDENT; "="; r = regexp ->
        if Hashtbl.mem named_regexps x then
-         Printf.eprintf 
+         Printf.eprintf
            "pa_ocamllex (warning): multiple definition of named regexp '%s'\n"
            x;
        Hashtbl.add named_regexps x r;
@@ -250,11 +250,11 @@ EXTEND
           let (entries, transitions) = make_dfa def in
           let tables = compact_tables transitions in
           let output = output_lexdef tables entries in
-          <:str_item< declare $list: output$ end >> 
-        with 
-	  |Table_overflow ->
+          <:str_item< declare $list: output$ end >>
+        with
+          |Table_overflow ->
              failwith "Transition table overflow in lexer, automaton is too big"
-	  | Lexgen.Memory_overflow ->
+          | Lexgen.Memory_overflow ->
               failwith "Position memory overflow in lexer, too many as variables")
    ]
  ];
@@ -262,11 +262,11 @@ EXTEND
 
  Pcaml.str_item: [
    [ "pa_ocamllex"; LIDENT "rule"; d = lexer_def -> d
-   | "pa_ocamllex"; "let"; let_regexp -> 
+   | "pa_ocamllex"; "let"; let_regexp ->
        <:str_item< declare $list: []$ end >>
    ]
  ];
- 
+
  definition: [
    [ x=LIDENT; pl = LIST0 Pcaml.patt LEVEL "simple"; "=";
      short=[ LIDENT "parse" -> false | LIDENT "shortest" -> true ];
@@ -275,7 +275,7 @@ EXTEND
  ];
 
  action: [
-   [ "{"; e = OPT Pcaml.expr; "}" -> 
+   [ "{"; e = OPT Pcaml.expr; "}" ->
        let e = match e with
          | Some e -> e
          | None -> <:expr< () >>
@@ -285,7 +285,7 @@ EXTEND
  ];
 
  header:  [
-   [ "{"; e = LIST0 [ si = Pcaml.str_item; OPT ";;" -> si ]; "}" -> 
+   [ "{"; e = LIST0 [ si = Pcaml.str_item; OPT ";;" -> si ]; "}" ->
        [<:str_item< declare $list:e$ end>>, loc] ]
    | [ -> [] ]
  ];
@@ -305,7 +305,7 @@ EXTEND
    | x = LIDENT ->
        try  Hashtbl.find named_regexps x
        with Not_found ->
-         failwith 
+         failwith
            ("pa_ocamllex (error): reference to unbound regexp name `"^x^"'")
    ]
  ];
@@ -353,4 +353,3 @@ let standalone =
 let () =
   Pcaml.add_option "-ocamllex" (Arg.Unit standalone)
     "Activate (standalone) ocamllex emulation mode."
-

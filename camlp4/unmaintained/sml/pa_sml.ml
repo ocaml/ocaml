@@ -279,7 +279,7 @@ value record_expr loc x1 =
     <:expr<
       let module M =
         struct
-          class a = object $list:list1 @ list2$ end; 
+          class a = object $list:list1 @ list2$ end;
         end
       in
       new M.a

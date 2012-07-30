@@ -36,7 +36,7 @@ let rec lident_of_path path =
       Path.Pident id -> Longident.Lident (Ident.name id)
     | Path.Pdot (p, s, _) -> Longident.Ldot (lident_of_path p, s)
     | Path.Papply (p1, p2) ->
-	Longident.Lapply (lident_of_path p1, lident_of_path p2)
+        Longident.Lapply (lident_of_path p1, lident_of_path p2)
 
 let rec untype_structure str =
   List.map untype_structure_item str.str_items
@@ -189,7 +189,7 @@ and untype_extra (extra, loc) sexp =
   in
   { pexp_desc = desc;
     pexp_loc = loc }
-      
+
 and untype_expression exp =
   let desc =
     match exp.exp_desc with

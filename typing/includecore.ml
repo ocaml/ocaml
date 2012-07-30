@@ -174,18 +174,18 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
         [Field_arity cstr1]
       else match ret1, ret2 with
       | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) ->
-	  [Field_type cstr1]
+          [Field_type cstr1]
       | Some _, None | None, Some _ ->
-	  [Field_type cstr1]
+          [Field_type cstr1]
       | _ ->
-	  if Misc.for_all2
-	      (fun ty1 ty2 ->
-		Ctype.equal env true (ty1::decl1.type_params)
-		  (ty2::decl2.type_params))
-	      (arg1) (arg2)
-	  then
-	    compare_variants env decl1 decl2 (n+1) rem1 rem2
-	  else [Field_type cstr1]
+          if Misc.for_all2
+              (fun ty1 ty2 ->
+                Ctype.equal env true (ty1::decl1.type_params)
+                  (ty2::decl2.type_params))
+              (arg1) (arg2)
+          then
+            compare_variants env decl1 decl2 (n+1) rem1 rem2
+          else [Field_type cstr1]
 
 
 let rec compare_records env decl1 decl2 n labels1 labels2 =

@@ -279,7 +279,7 @@ static uintnat caml_thread_stack_usage(void)
     sz += (value *) th->top_of_stack - (value *) th->bottom_of_stack;
 #else
     sz += th->stack_high - th->sp;
-#endif    
+#endif
   }
   if (prev_stack_usage_hook != NULL)
     sz += prev_stack_usage_hook();
@@ -501,7 +501,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 #endif
   /* The thread now stops running */
   return 0;
-}  
+}
 
 CAMLprim value caml_thread_new(value clos)          /* ML */
 {
@@ -525,7 +525,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
     caml_thread_remove_info(th);
     st_check_error(err, "Thread.create");
   }
-  /* Create the tick thread if not already done.  
+  /* Create the tick thread if not already done.
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process*/
   if (! caml_tick_thread_running) {
@@ -581,7 +581,7 @@ CAMLexport int caml_c_thread_register(void)
   return 1;
 }
 
-/* Unregister a thread that was created from C and registered with 
+/* Unregister a thread that was created from C and registered with
    the function above */
 
 CAMLexport int caml_c_thread_unregister(void)

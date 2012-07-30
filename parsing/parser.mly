@@ -1422,7 +1422,7 @@ constructor_declaration:
 
   | constr_ident generalized_constructor_arguments
       { let arg_types,ret_type = $2 in
-	(mkrhs $1 1, arg_types,ret_type, symbol_rloc()) }
+        (mkrhs $1 1, arg_types,ret_type, symbol_rloc()) }
 ;
 
 constructor_arguments:

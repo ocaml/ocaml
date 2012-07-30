@@ -1,5 +1,5 @@
 #!/bin/sh
-cd `dirname $0` 
+cd `dirname $0`
 set -e
 set -x
 CMDOPTS="" # -- command args

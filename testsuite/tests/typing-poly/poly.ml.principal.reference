@@ -347,7 +347,7 @@ Characters 21-24:
 Warning 11: this match case is unused.
 - : int * [< `B ] -> int = <fun>
 #       Characters 69-135:
-  type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b] 
+  type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
        Type

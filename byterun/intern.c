@@ -337,7 +337,7 @@ static void intern_rec(value *dest)
           ReadItems(&Field(v, 2), size - 2);
           /* Request freshing OID */
           PushItem();
-          sp->op = OFreshOID;                                           
+          sp->op = OFreshOID;
           sp->dest = &Field(v, 1);
           sp->arg = 1;
           /* Finally read first two block elements: method table and old OID */
@@ -463,9 +463,9 @@ static void intern_rec(value *dest)
       case CODE_INFIXPOINTER:
         ofs = read32u();
         /* Read a value to *dest, then offset *dest by ofs */
-        PushItem();                                                     
+        PushItem();
         sp->dest = dest;
-        sp->op = OShift;                                                
+        sp->op = OShift;
         sp->arg = ofs;
         ReadItems(dest, 1);
         continue;  /* with next iteration of main loop, skipping *dest = v */
@@ -489,7 +489,7 @@ static void intern_rec(value *dest)
         caml_failwith("input_value: ill-formed message");
       }
     }
-  } 
+  }
   /* end of case OReadItems */
   *dest = v;
   break;

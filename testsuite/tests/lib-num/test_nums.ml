@@ -12,10 +12,10 @@ eq_num (add_num (Int 1) (Int 3), Int 4);;
 test 2
 eq_num (add_num (Int 1) (Big_int (big_int_of_int 3)), Int 4);;
 test 3
-eq_num (add_num (Int 1) (Ratio (ratio_of_string "3/4")), 
+eq_num (add_num (Int 1) (Ratio (ratio_of_string "3/4")),
         Ratio (ratio_of_string "7/4"));;
 test 4
-eq_num (add_num (Big_int (big_int_of_int 1)) (Ratio (ratio_of_string "3/4")), 
+eq_num (add_num (Big_int (big_int_of_int 1)) (Ratio (ratio_of_string "3/4")),
         Ratio (ratio_of_string "7/4"));;
 test 5
 eq_num (add_num (Big_int (big_int_of_int 1)) (Big_int (big_int_of_int 3)),
@@ -27,10 +27,10 @@ test 7
 eq_num (add_num (Ratio (ratio_of_string "2/3")) (Ratio (ratio_of_string "3/4")),
         Ratio (ratio_of_string "17/12"));;
 test 8
-eq_num (add_num (Int least_int) (Int 1), 
+eq_num (add_num (Int least_int) (Int 1),
         Int (- (pred biggest_int)));;
 test 9
-eq_num (add_num (Int biggest_int) (Int 1), 
+eq_num (add_num (Int biggest_int) (Int 1),
         Big_int (minus_big_int (pred_big_int (big_int_of_int least_int))));;
 
 testing_function "sub_num";;
@@ -40,10 +40,10 @@ eq_num (sub_num (Int 1) (Int 3), Int (-2));;
 test 2
 eq_num (sub_num (Int 1) (Big_int (big_int_of_int 3)), Int (-2));;
 test 3
-eq_num (sub_num (Int 1) (Ratio (ratio_of_string "3/4")), 
+eq_num (sub_num (Int 1) (Ratio (ratio_of_string "3/4")),
         Ratio (ratio_of_string "1/4"));;
 test 4
-eq_num (sub_num (Big_int (big_int_of_int 1)) (Ratio (ratio_of_string "3/4")), 
+eq_num (sub_num (Big_int (big_int_of_int 1)) (Ratio (ratio_of_string "3/4")),
         Ratio (ratio_of_string "1/4"));;
 test 5
 eq_num (sub_num (Big_int (big_int_of_int 1)) (Big_int (big_int_of_int 3)),
@@ -55,7 +55,7 @@ test 8
 eq_num (sub_num (Ratio (ratio_of_string "2/3")) (Ratio (ratio_of_string "3/4")),
         Ratio (ratio_of_string "-1/12"));;
 test 9
-eq_num (sub_num (Int least_int) (Int (-1)), 
+eq_num (sub_num (Int least_int) (Int (-1)),
         Int (- (pred biggest_int)));;
 test 10
 eq_num (sub_num (Int (-1)) (Int biggest_int), pred_num (Int least_int));;
@@ -68,12 +68,12 @@ test 2
 eq_num (mult_num (Int 127) (Int (int_of_string "257")),
                   Int (int_of_string "32639"));;
 test 3
-eq_num (mult_num (Int 257) (Int (int_of_string "260")), 
+eq_num (mult_num (Int 257) (Int (int_of_string "260")),
         Big_int (big_int_of_string "66820"));;
 test 4
 eq_num (mult_num (Int 2) (Big_int (big_int_of_int 3)), Int 6);;
 test 5
-eq_num (mult_num (Int 10) (Ratio (ratio_of_string "3/4")), 
+eq_num (mult_num (Int 10) (Ratio (ratio_of_string "3/4")),
         Ratio (ratio_of_string "15/2"));;
 test 6
 eq_num (mult_num (Big_int (big_int_of_int 10)) (Ratio (ratio_of_string "3/4")),
@@ -93,31 +93,31 @@ testing_function "div_num";;
 test 1
 eq_num (div_num (Int 6) (Int 3), Int 2);;
 test 2
-eq_num (div_num (Int (int_of_string "32639")) 
+eq_num (div_num (Int (int_of_string "32639"))
                  (Int (int_of_string "257")), Int 127);;
 test 3
-eq_num (div_num (Big_int (big_int_of_string "66820")) 
-                 (Int (int_of_string "257")), 
+eq_num (div_num (Big_int (big_int_of_string "66820"))
+                 (Int (int_of_string "257")),
         Int 260);;
 test 4
 eq_num (div_num (Int 6) (Big_int (big_int_of_int 3)), Int 2);;
 test 5
-eq_num (div_num (Ratio (ratio_of_string "15/2")) 
+eq_num (div_num (Ratio (ratio_of_string "15/2"))
                  (Int 10),
-        Ratio (ratio_of_string "3/4"));; 
+        Ratio (ratio_of_string "3/4"));;
 test 6
 eq_num (div_num (Big_int (big_int_of_int 6)) (Big_int (big_int_of_int 3)),
         Int 2);;
-test 7 
-eq_num (div_num (Ratio (ratio_of_string "15/2")) 
+test 7
+eq_num (div_num (Ratio (ratio_of_string "15/2"))
                  (Big_int (big_int_of_int 10)),
         Ratio (ratio_of_string "3/4"));;
 test 8
-eq_num (div_num (Ratio (ratio_of_string "15/2")) 
+eq_num (div_num (Ratio (ratio_of_string "15/2"))
                  (Ratio (ratio_of_string "3/4")),
         Big_int (big_int_of_int 10));;
 test 9
-eq_num (div_num (Ratio (ratio_of_string "1/2")) 
+eq_num (div_num (Ratio (ratio_of_string "1/2"))
                  (Ratio (ratio_of_string "3/4")),
         Ratio (ratio_of_string "2/3"));;
 
@@ -137,7 +137,7 @@ testing_function "num_of_ratio";;
 test 1
 eq_num (num_of_ratio (ratio_of_string "4/2"), Int 2);;
 test 2
-eq_num (num_of_ratio (ratio_of_string "11811160075/11"), 
+eq_num (num_of_ratio (ratio_of_string "11811160075/11"),
         Big_int (big_int_of_string "1073741825"));;
 test 3
 eq_num (num_of_ratio (ratio_of_string "123456789012/1234"),
@@ -205,13 +205,13 @@ test 2 eq (f1 1, false);;
 
 test 3 eq (f1 (0/1), true);;
 
-test 4 eq (f1 (let n = num_of_string "2000000000000000000000000" in n-n) , 
+test 4 eq (f1 (let n = num_of_string "2000000000000000000000000" in n-n) ,
             true);;
 
-test 5 eq (f1 (let n = num_of_string "2000000000000000000000000" in n/n-1) , 
+test 5 eq (f1 (let n = num_of_string "2000000000000000000000000" in n/n-1) ,
             true);;
 
-test 6 eq (f1 (let n = num_of_string "2000000000000000000000000" in n+1) , 
+test 6 eq (f1 (let n = num_of_string "2000000000000000000000000" in n+1) ,
             false);;
 
 test 7 eq (f1 (1/2), false);;

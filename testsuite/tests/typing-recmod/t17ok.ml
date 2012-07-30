@@ -25,18 +25,17 @@ struct
     type t = I of int * int | D of int * Diet.t * int
     val compare : t -> t -> int
     val iter : (int -> unit) -> t -> unit
-  end = 
+  end =
   struct
     type t = I of int * int | D of int * Diet.t * int
     let compare x1 x2 = 0
     let rec iter f = function
       | I (l, r) -> for i = l to r do f i done
       | D (_, d, _) -> Diet.iter (iter f) d
-  end 
+  end
 
   and Diet : SET with type t = Elt.t tree and type elt = Elt.t = MakeDiet(Elt)
 
   type t = Diet.t
   let iter f = Diet.iter (Elt.iter f)
 end
-

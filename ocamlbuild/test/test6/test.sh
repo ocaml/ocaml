@@ -23,4 +23,3 @@ if $BUILD1; then
 else
   echo FAIL
 fi
-

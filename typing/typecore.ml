@@ -1396,7 +1396,7 @@ let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 let create_package_type loc env (p, l) =
   let s = !Typetexp.transl_modtype_longident loc env p in
   let fields = List.map (fun (name, ct) ->
-			   name, Typetexp.transl_simple_type env false ct) l in
+                           name, Typetexp.transl_simple_type env false ct) l in
   let ty = newty (Tpackage (s,
                     List.map fst l,
                    List.map (fun (_, cty) -> cty.ctyp_type) fields))
@@ -2045,8 +2045,8 @@ and type_expect ?in_function env sexp ty_expected =
                   let (obj_ty, res_ty) = filter_arrow env method_type "" in
                   unify env obj_ty desc.val_type;
                   unify env res_ty (instance env typ);
-		  let exp =
-		    Texp_apply({exp_desc =
+                  let exp =
+                    Texp_apply({exp_desc =
                                 Texp_ident(Path.Pident method_id, lid,
                                            {val_type = method_type;
                                             val_kind = Val_reg;
@@ -2060,11 +2060,11 @@ and type_expect ?in_function env sexp ty_expected =
                                   exp_type = desc.val_type;
                                   exp_env = env},
                                Required])
-		  in
+                  in
                   (Tmeth_name met, Some (re {exp_desc = exp;
-					     exp_loc = loc; exp_extra = [];
-					     exp_type = typ;
-					     exp_env = env}), typ)
+                                             exp_loc = loc; exp_extra = [];
+                                             exp_type = typ;
+                                             exp_env = env}), typ)
               |  _ ->
                   assert false
               end
@@ -3225,4 +3225,3 @@ let report_error ppf = function
 
 let () =
   Env.add_delayed_check_forward := add_delayed_check
-

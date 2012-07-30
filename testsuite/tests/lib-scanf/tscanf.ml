@@ -265,15 +265,15 @@ test (test10 ())
 
 (* %[] style *)
 let test11 () =
-  sscanf "Pierre	Weis	70" "%s %s %s"
+  sscanf "Pierre\tWeis\t70" "%s %s %s"
     (fun prenom nom poids ->
      prenom = "Pierre" && nom = "Weis" && int_of_string poids = 70)
   &&
-  sscanf "Jean-Luc	de Léage	68" "%[^	] %[^	] %d"
+  sscanf "Jean-Luc\tde Léage\t68" "%[^\t] %[^\t] %d"
     (fun prenom nom poids ->
      prenom = "Jean-Luc" && nom = "de Léage" && poids = 68)
   &&
-  sscanf "Daniel	de Rauglaudre	66" "%s@\t %s@\t %d"
+  sscanf "Daniel\tde Rauglaudre\t66" "%s@\t %s@\t %d"
     (fun prenom nom poids ->
      prenom = "Daniel" && nom = "de Rauglaudre" && poids = 66)
 ;;

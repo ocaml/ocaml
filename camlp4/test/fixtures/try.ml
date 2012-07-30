@@ -3,4 +3,3 @@ try
   in
     foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar foo bar
 with Not_found -> stderr
-

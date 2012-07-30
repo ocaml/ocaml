@@ -36,7 +36,7 @@ ELSIF
   print_int (A * a_should_be_present + 5);
 ENDIF;
 
-value e = 
+value e =
   IFDEF DNE THEN
     print_int (c_should_not_be_present + 2)
   ELSE

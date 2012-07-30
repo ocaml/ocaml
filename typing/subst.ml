@@ -176,7 +176,7 @@ let type_declaration s decl =
             Type_variant
               (List.map
                  (fun (n, args, ret_type) ->
-		   (n, List.map (typexp s) args, may_map (typexp s) ret_type))
+                   (n, List.map (typexp s) args, may_map (typexp s) ret_type))
                  cstrs)
         | Type_record(lbls, rep) ->
             Type_record
@@ -185,7 +185,7 @@ let type_declaration s decl =
         end;
       type_manifest =
         begin
-	  match decl.type_manifest with
+          match decl.type_manifest with
             None -> None
           | Some ty -> Some(typexp s ty)
         end;

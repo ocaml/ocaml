@@ -18,7 +18,7 @@ case $# in
   *) echo $1;;
 esac
 ) | \
-while read f; do 
+while read f; do
 awk -f - "$f" <<\EOF
 
 function checkline (x) {

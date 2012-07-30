@@ -22,7 +22,7 @@ open Btype
 (* Simplified version of Ctype.free_vars *)
 let free_vars ty =
   let ret = ref TypeSet.empty in
-  let rec loop ty = 
+  let rec loop ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       ty.level <- pivot_level - ty.level;
@@ -34,7 +34,7 @@ let free_vars ty =
           iter_row loop row;
           if not (static_row row) then loop row.row_more
       | _ ->
-	  iter_type_expr loop ty
+          iter_type_expr loop ty
     end
   in
   loop ty;
@@ -51,39 +51,39 @@ let constructor_descrs ty_res cstrs priv =
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
     | (name, ty_args, ty_res_opt) :: rem ->
-	let ty_res = 
-	  match ty_res_opt with
-	  | Some ty_res' -> ty_res'
-	  | None -> ty_res
-	in
+        let ty_res =
+          match ty_res_opt with
+          | Some ty_res' -> ty_res'
+          | None -> ty_res
+        in
         let (tag, descr_rem) =
           match ty_args with
             [] -> (Cstr_constant idx_const,
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
-	let existentials = 
-	  match ty_res_opt with
-	  | None -> []
-	  | Some type_ret ->
-	      let res_vars = free_vars type_ret in
-	      let arg_vars = free_vars (newgenty (Ttuple ty_args)) in
-	      TypeSet.elements (TypeSet.diff arg_vars res_vars)
-	in
-	let cstr =
-          { cstr_res = ty_res;    
-	    cstr_existentials = existentials; 
+        let existentials =
+          match ty_res_opt with
+          | None -> []
+          | Some type_ret ->
+              let res_vars = free_vars type_ret in
+              let arg_vars = free_vars (newgenty (Ttuple ty_args)) in
+              TypeSet.elements (TypeSet.diff arg_vars res_vars)
+        in
+        let cstr =
+          { cstr_res = ty_res;
+            cstr_existentials = existentials;
             cstr_args = ty_args;
             cstr_arity = List.length ty_args;
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
-	    cstr_normal = !num_normal;
+            cstr_normal = !num_normal;
             cstr_private = priv;
-	    cstr_generalized = ty_res_opt <> None
-	  } in
+            cstr_generalized = ty_res_opt <> None
+          } in
         (name, cstr) :: descr_rem in
-  describe_constructors 0 0 cstrs 
+  describe_constructors 0 0 cstrs
 
 let exception_descr path_exc decl =
   { cstr_res = Predef.type_exn;
