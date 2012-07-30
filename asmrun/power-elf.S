@@ -29,7 +29,7 @@
 
         .globl  caml_system__code_begin
 caml_system__code_begin:
-        
+
         .globl  caml_call_gc
         .type   caml_call_gc, @function
 caml_call_gc:

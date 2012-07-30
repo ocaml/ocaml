@@ -70,7 +70,7 @@ static int caml_grow_file(int fd, file_offset size)
     if (p != -1) {
       c = 0;
       p = write(fd, &c, 1);
-      if (p != -1) 
+      if (p != -1)
         p = lseek(fd, currpos, SEEK_SET);
     }
   }

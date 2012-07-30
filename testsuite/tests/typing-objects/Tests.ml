@@ -159,7 +159,7 @@ e#f, e#g, e#h, e#i, e#j;;
 
 class c a = object val x = 1 val y = 1 val z = 1 val a = a end;;
 class d b = object val z = 2 val t = 2 val u = 2 val b = b end;;
-class e () = object 
+class e () = object
   val x = 3
   inherit c 5
   val y = 3

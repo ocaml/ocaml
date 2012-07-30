@@ -589,10 +589,10 @@ let rec tree_of_type_decl id decl =
   | Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter
-	(fun (_, args,ret_type_opt) ->
-	  List.iter mark_loops args;
-	  may mark_loops ret_type_opt)
-	cstrs
+        (fun (_, args,ret_type_opt) ->
+          List.iter mark_loops args;
+          may mark_loops ret_type_opt)
+        cstrs
   | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
   end;

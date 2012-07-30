@@ -825,16 +825,16 @@ and components_of_module_maker (env, sub, path, mty) =
             let decl' = Subst.type_declaration sub decl in
             c.comp_types <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_types;
-	    let constructors = constructors_of_type path decl' in
-	    c.comp_constrs_by_path <-
-	      Tbl.add (Ident.name id)
-		(List.map snd constructors, nopos) c.comp_constrs_by_path;
+            let constructors = constructors_of_type path decl' in
+            c.comp_constrs_by_path <-
+              Tbl.add (Ident.name id)
+                (List.map snd constructors, nopos) c.comp_constrs_by_path;
             List.iter
               (fun (name, descr) ->
                 c.comp_constrs <-
                   Tbl.add (Ident.name name) (descr, nopos) c.comp_constrs)
               constructors;
-	    let labels = labels_of_type path decl' in
+            let labels = labels_of_type path decl' in
             List.iter
               (fun (name, descr) ->
                 c.comp_labels <-

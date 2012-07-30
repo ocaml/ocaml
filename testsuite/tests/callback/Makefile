@@ -12,7 +12,7 @@ run-byte: common
 	@$(OCAMLC) -c tcallback.ml
 	@$(OCAMLC) -o ./program -custom unix.cma callbackprim.$(O) tcallback.cmo
 	@./program > bytecode.result
-	@$(DIFF) reference bytecode.result || (echo " => failed" && exit 1) 
+	@$(DIFF) reference bytecode.result || (echo " => failed" && exit 1)
 	@echo " => passed"
 
 run-opt: common
@@ -24,7 +24,7 @@ run-opt: common
 	  $(DIFF) reference native.result || (echo " => failed" && exit 1); \
 	  echo " => passed"; \
 	fi
-	
+
 promote: defaultpromote
 
 clean: defaultclean

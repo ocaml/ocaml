@@ -17,8 +17,7 @@ let rec fib n =
 
 let _ =
   let n =
-    if Array.length Sys.argv >= 2 
+    if Array.length Sys.argv >= 2
     then int_of_string Sys.argv.(1)
     else 40 in
   print_int(fib n); print_newline(); exit 0
-

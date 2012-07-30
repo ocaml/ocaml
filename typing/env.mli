@@ -216,6 +216,3 @@ val fold_classs:
 val fold_cltypes:
   (string -> Path.t -> Types.class_type_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
-
-
-

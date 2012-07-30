@@ -112,7 +112,7 @@ module rec Strengthen
 ;;
 
 module rec Strengthen2
-  : sig type t 
+  : sig type t
         val f : t -> t
         module M : sig type u end
         module R : sig type v end
@@ -150,7 +150,7 @@ module rec PolyRec
       | Node(l,r) -> 1 + max (PolyRec.depth l) (PolyRec.depth r)
     end
 ;;
-  
+
 (* Wrong LHS signatures (PR#4336) *)
 
 (*
@@ -212,7 +212,7 @@ and Binding
   : sig
       type t = (string * Expr.t) list
       val fv: t -> StringSet.t
-      val bv: t -> StringSet.t    
+      val bv: t -> StringSet.t
       val simpl: t -> t
     end
   = struct
@@ -258,7 +258,7 @@ module type HEAP =
     val deleteMin: heap -> heap
   end
 
-module Bootstrap (MakeH: functor (Element:ORDERED) -> 
+module Bootstrap (MakeH: functor (Element:ORDERED) ->
                                     HEAP with module Elem = Element)
                  (Element: ORDERED) : HEAP with module Elem = Element =
   struct
@@ -268,7 +268,7 @@ module Bootstrap (MakeH: functor (Element:ORDERED) ->
           val eq: t -> t -> bool
           val lt: t -> t -> bool
           val leq: t -> t -> bool
-      end                  
+      end
     = struct
         type t = E | H of Elem.t * PrimH.heap
         let leq t1 t2 =
@@ -432,7 +432,7 @@ module rec Coerce1
       module A = (Coerce1: sig val f: int -> int end)
       let g x = x
       let f x = if x <= 0 then 1 else A.f (x-1) * x
-    end 
+    end
 ;;
 
 let _ =
@@ -461,7 +461,7 @@ module Coerce4(A : sig val f : int -> int end) = struct
 end
 
 module rec Coerce5
-  : sig val blabla: int -> int val f: int -> int end 
+  : sig val blabla: int -> int val f: int -> int end
   = struct let blabla x = 0 let f x = 5 end
 and Coerce6
   : sig val at: int -> int end
@@ -473,16 +473,16 @@ let _ =
 
 (* Miscellaneous bug reports *)
 
-module rec F 
+module rec F
   : sig type t = X of int | Y of int
         val f: t -> bool
     end
   = struct
-      type t = X of int | Y of int  
+      type t = X of int | Y of int
       let f = function
         | X _ -> false
         | _ -> true
-    end;; 
+    end;;
 
 let _ =
   test 100 (F.f (F.X 1)) false;

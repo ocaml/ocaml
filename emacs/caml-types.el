@@ -687,21 +687,21 @@ The function uses two overlays.
                            (vector target-file target-line target-bol cnum))
                      (save-excursion
                        (setq node (caml-types-find-location target-pos "type" ()
-							    target-tree))
+                                                            target-tree))
                        (set-buffer caml-types-buffer)
                        (erase-buffer)
                        (cond
-			((null node)
+                        ((null node)
                          (delete-overlay caml-types-expr-ovl)
                          (setq type "*no type information*")
                          (setq limits
                                (caml-types-find-interval
                                 target-buf target-pos target-tree)))
                         (t
-			 (let ((left
-				(caml-types-get-pos target-buf (elt node 0)))
+                         (let ((left
+                                (caml-types-get-pos target-buf (elt node 0)))
                                (right
-				(caml-types-get-pos target-buf (elt node 1))))
+                                (caml-types-get-pos target-buf (elt node 1))))
                          (move-overlay
                           caml-types-expr-ovl left right target-buf)
                          (setq limits
@@ -709,7 +709,7 @@ The function uses two overlays.
                                                          target-pos node)
                                type (cdr (assoc "type" (elt node 2))))
                          ))
-			)
+                        )
                        (setq mes (format "type: %s" type))
                        (insert type)
                        ))

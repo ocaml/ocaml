@@ -1722,4 +1722,3 @@ let report_error ppf = function
         "instance variable"
   | No_overriding (kind, name) ->
       fprintf ppf "@[The %s `%s'@ has no previous definition@]" kind name
-

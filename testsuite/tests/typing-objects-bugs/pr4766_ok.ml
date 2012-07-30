@@ -1,9 +1,9 @@
-class virtual ['a] c = 
-object (s : 'a) 
-  method virtual m : 'b 
+class virtual ['a] c =
+object (s : 'a)
+  method virtual m : 'b
 end
 
-let o = 
+let o =
     object (s :'a)
       inherit ['a] c
       method m = 42

@@ -263,21 +263,21 @@ let rec transl_type env policy styp =
       with Unify trace ->
         raise (Error(styp.ptyp_loc, Type_mismatch trace))
       end;
-	ctyp (Ttyp_constr (path, lid, args)) constr env loc
+        ctyp (Ttyp_constr (path, lid, args)) constr env loc
   | Ptyp_object fields ->
       let fields = List.map
           (fun pf ->
-	    let desc =
-	      match pf.pfield_desc with
-	      | Pfield_var -> Tcfield_var
-	      | Pfield (s,e) ->
-		  let ty1 = transl_type env policy e in
-		  Tcfield (s, ty1)
-	    in
-	    { field_desc = desc; field_loc = pf.pfield_loc })
-	  fields in
+            let desc =
+              match pf.pfield_desc with
+              | Pfield_var -> Tcfield_var
+              | Pfield (s,e) ->
+                  let ty1 = transl_type env policy e in
+                  Tcfield (s, ty1)
+            in
+            { field_desc = desc; field_loc = pf.pfield_loc })
+          fields in
       let ty = newobj (transl_fields env policy [] fields) in
-	ctyp (Ttyp_object fields) ty env loc
+        ctyp (Ttyp_object fields) ty env loc
   | Ptyp_class(lid, stl, present) ->
       let (path, decl, is_variant) =
         try
@@ -317,7 +317,7 @@ let rec transl_type env policy styp =
            try unify_var env ty' cty.ctyp_type with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
-	let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
+        let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
       let ty =
         try Ctype.expand_head env (newconstr path ty_args)
         with Unify trace ->
@@ -359,7 +359,7 @@ let rec transl_type env policy styp =
       | _ ->
           assert false
       in
-	ctyp (Ttyp_class (path, lid, args, present)) ty env loc
+        ctyp (Ttyp_class (path, lid, args, present)) ty env loc
   | Ptyp_alias(st, alias) ->
       let cty =
         try
@@ -423,20 +423,20 @@ let rec transl_type env policy styp =
             let tl = List.map (transl_type env policy) stl in
             let f = match present with
               Some present when not (List.mem l present) ->
-		let ty_tl = List.map (fun cty -> cty.ctyp_type) tl in
+                let ty_tl = List.map (fun cty -> cty.ctyp_type) tl in
                 Reither(c, ty_tl, false, ref None)
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
                   raise(Error(styp.ptyp_loc, Present_has_conjunction l));
                 match tl with [] -> Rpresent None
                 | st :: _ ->
-		      Rpresent (Some st.ctyp_type)
+                      Rpresent (Some st.ctyp_type)
             in
             add_typed_field styp.ptyp_loc l f;
-	      Ttag (l,c,tl)
+              Ttag (l,c,tl)
         | Rinherit sty ->
             let cty = transl_type env policy sty in
-	    let ty = cty.ctyp_type in
+            let ty = cty.ctyp_type in
             let nm =
               match repr cty.ctyp_type with
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
@@ -475,7 +475,7 @@ let rec transl_type env policy styp =
                 in
                 add_typed_field sty.ptyp_loc l f)
               fl;
-	      Tinherit cty
+              Tinherit cty
       in
       let tfields = List.map add_field fields in
       let fields = Hashtbl.fold (fun _ p l -> p :: l) hfields [] in
@@ -531,19 +531,19 @@ let rec transl_type env policy styp =
       let mty = !transl_modtype env mty in
       widen z;
       let ptys = List.map (fun (s, pty) ->
-			     s, transl_type env policy pty
-			  ) l in
+                             s, transl_type env policy pty
+                          ) l in
       let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
       let ty = newty (Tpackage (path,
                        List.map (fun (s, pty) -> s.txt) l,
                        List.map (fun (_,cty) -> cty.ctyp_type) ptys))
       in
-	ctyp (Ttyp_package {
-		pack_name = path;
-		pack_type = mty.mty_type;
-		pack_fields = ptys;
+        ctyp (Ttyp_package {
+                pack_name = path;
+                pack_type = mty.mty_type;
+                pack_fields = ptys;
                 pack_txt = p;
-	      }) ty env loc
+              }) ty env loc
 
 and transl_fields env policy seen =
   function
@@ -641,7 +641,7 @@ let transl_simple_type_univars env styp =
   in
   make_fixed_univars typ.ctyp_type;
     { typ with ctyp_type =
-	instance env (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
+        instance env (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := Tbl.empty;

@@ -281,9 +281,9 @@ LBL(107):
     /* Pop the exception handler */
         popl    G(caml_exception_pointer)
 #ifdef SYS_macosx
-        addl	$12, %esp
+        addl    $12, %esp
 #else
-        addl	$4, %esp
+        addl    $4, %esp
 #endif
         CFI_ADJUST(-8)
 LBL(109):
@@ -339,7 +339,7 @@ LBL(110):
         .align  FUNCTION_ALIGN
 G(caml_raise_exception):
         PROFILE_C
-	testl   $1, G(caml_backtrace_active)
+        testl   $1, G(caml_backtrace_active)
         jne     LBL(111)
         movl    4(%esp), %eax
         movl    G(caml_exception_pointer), %esp
@@ -429,7 +429,7 @@ G(caml_ml_array_bound_error):
         movl    %edx, G(caml_bottom_of_stack)
     /* For MacOS X: re-align the stack */
 #ifdef SYS_macosx
-        andl	$-16, %esp
+        andl    $-16, %esp
 #endif
     /* Branch to [caml_array_bound_error] (never returns) */
         call    G(caml_array_bound_error)

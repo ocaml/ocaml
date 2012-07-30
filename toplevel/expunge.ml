@@ -33,7 +33,7 @@ let to_keep = ref StringSet.empty
 
 let negate = Sys.argv.(3) = "-v"
 
-let keep = 
+let keep =
   if negate then fun name -> is_exn name || not (StringSet.mem name !to_keep)
   else fun name -> is_exn name || (StringSet.mem name !to_keep)
 

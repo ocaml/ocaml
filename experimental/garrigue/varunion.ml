@@ -67,7 +67,7 @@ module M = Mix(I)(M1)(M2) ;;
 
 let c = (`C 'c' : M.t) ;;
 
-module M(X : sig type t = private [> `A] end) = 
+module M(X : sig type t = private [> `A] end) =
   struct let f (#X.t as x) = x end;;
 
 (* code generation *)
@@ -128,7 +128,7 @@ module F(X: sig
 end) : sig type v = private [< X.t | X.u | `D] end = struct
   open X
   let f = function #u -> 1 | #t -> 2 | `D -> 3
-  let g = function #u|#t|`D -> 2 
+  let g = function #u|#t|`D -> 2
   type v = [t|u|`D]
 end
 
@@ -201,7 +201,7 @@ module Add(X : Exp with type t = private [> num | 'a add] as 'a) = struct
       `Num n1, `Num n2 -> `Num (n1+n2)
     | `Num 0, e | e, `Num 0 -> e
     | e12 -> `Add e12
-end 
+end
 
 type 'a mul = [`Mul of 'a * 'a]
 
@@ -376,7 +376,7 @@ module Add(X : Exp with type t = private [> num | 'a add] as 'a) = struct
       `Num n1, `Num n2 -> `Num (n1+n2)
     | `Num 0, e | e, `Num 0 -> e
     | _ -> e
-end 
+end
 
 module Mul(X : Exp with type t = private [> num | 'a mul] as 'a) = struct
   type t = X.t mul

@@ -17,5 +17,3 @@
 
 (function "checkbound1" (x: int)
   (checkbound x 2))
-
-

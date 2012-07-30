@@ -448,7 +448,7 @@ function `B,1 -> 1 | _,1 -> 2;;
 function 1,`B -> 1 | 1,_ -> 2;;
 
 (* pass typetexp, but fails during Typedecl.check_recursion *)
-type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b] 
+type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
 and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
 
 (* PR#1917: expanding may change original in Ctype.unify2 *)
@@ -459,12 +459,12 @@ class type ['a, 'b] a = object
   method as_a: ('a, 'b) a
 end and ['a, 'b] b = object
   method a: ('a, 'b) #a as 'a
-  method as_b: ('a, 'b) b 
+  method as_b: ('a, 'b) b
 end
 
 class type ['b] ca = object ('s) inherit ['s, 'b] a end
 class type ['a] cb = object ('s) inherit ['a, 's] b end
-	  
+
 type bt = 'b ca cb as 'b
 ;;
 

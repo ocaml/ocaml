@@ -629,7 +629,7 @@ let clean_env env =
     function
       | [] -> []
       | x :: xs ->
-	  if generalized_constructor x then loop xs else x :: loop xs
+          if generalized_constructor x then loop xs else x :: loop xs
   in
   loop env
 
@@ -697,7 +697,7 @@ let extendable_match env = match env with
 let should_extend ext env = match ext with
 | None -> false
 | Some ext -> match env with
-  | ({pat_desc = 
+  | ({pat_desc =
       Tpat_construct(_, _, {cstr_tag=(Cstr_constant _|Cstr_block _)},_,_)}
      as p, _) :: _ ->
       let path = get_type_path p.pat_type p.pat_env in
@@ -749,7 +749,7 @@ let rec adt_path env ty =
   | {type_kind=Type_variant constr_list} ->
       begin match (Ctype.repr ty).desc with
       | Tconstr (path,_,_) ->
-	  path
+          path
       | _ -> assert false end
   | {type_manifest = Some _} ->
       adt_path env (Ctype.expand_head_once env (clean_copy ty))
@@ -760,25 +760,25 @@ let rec map_filter f  =
   function
       [] -> []
     | x :: xs ->
-	match f x with
-	| None -> map_filter f xs
-	| Some y -> y :: map_filter f xs
+        match f x with
+        | None -> map_filter f xs
+        | Some y -> y :: map_filter f xs
 
 (* Sends back a pattern that complements constructor tags all_tag *)
 let complete_constrs p all_tags =
   match p.pat_desc with
   | Tpat_construct (_,_,c,_,_) ->
       begin try
-	let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-	let constrs =
+        let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
+        let constrs =
           Env.find_constructors (adt_path p.pat_env p.pat_type) p.pat_env in
-	map_filter
+        map_filter
           (fun cnstr ->
-	    if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
-	  constrs
+            if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
+          constrs
       with
       | Datarepr.Constr_not_found ->
-	  fatal_error "Parmatch.complete_constr: constr_not_found"
+          fatal_error "Parmatch.complete_constr: constr_not_found"
       end
   | _ -> fatal_error "Parmatch.complete_constr"
 
@@ -935,8 +935,8 @@ let build_other_gadt ext env =
           | {pat_desc = Tpat_construct (_,_,c,_,_)} -> c.cstr_tag
           | _ -> fatal_error "Parmatch.get_tag" in
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-	let cnstrs  = complete_constrs p all_tags in
-	let pats = List.map (pat_of_constr p) cnstrs in
+        let cnstrs  = complete_constrs p all_tags in
+        let pats = List.map (pat_of_constr p) cnstrs in
         (* List.iter (Format.eprintf "%a@." top_pretty) pats;
            Format.eprintf "@.@."; *)
         pats
@@ -1030,11 +1030,11 @@ let rec try_many_gadt  f = function
       match f (p,pss) with
       | Rnone -> try_many f rest
       | Rsome sofar ->
-	  let others = try_many f rest in
-	  match others with
-	    Rnone -> Rsome sofar
-	  | Rsome sofar' ->
-	      Rsome (sofar @ sofar')
+          let others = try_many f rest in
+          match others with
+            Rnone -> Rsome sofar
+          | Rsome sofar' ->
+              Rsome (sofar @ sofar')
 
 
 
@@ -1088,13 +1088,13 @@ let rec exhaust ext pss n = match pss with
 let combinations f lst lst' =
   let rec iter2 x =
     function
-	[] -> []
+        [] -> []
       | y :: ys ->
-	  f x y :: iter2 x ys
+          f x y :: iter2 x ys
   in
   let rec iter =
     function
-	[] -> []
+        [] -> []
       | x :: xs -> iter2 x lst' @ iter xs
   in
   iter lst
@@ -1147,11 +1147,11 @@ let rec exhaust_gadt (ext:Path.t option) pss n = match pss with
             with
             | Rsome r -> Rsome (List.map (fun row ->  (set_args p row)) r)
             | r       -> r in
-	let before = try_many_gadt try_non_omega constrs in
+        let before = try_many_gadt try_non_omega constrs in
         if
-	  full_match_gadt constrs && not (should_extend ext constrs)
+          full_match_gadt constrs && not (should_extend ext constrs)
         then
-	  before
+          before
         else
           (*
             D = filter_extra pss is the default matrix
@@ -1166,18 +1166,18 @@ let rec exhaust_gadt (ext:Path.t option) pss n = match pss with
           | Rnone -> before
           | Rsome r ->
               try
-		let missing_trailing = build_other_gadt ext constrs in
-		let before =
-		  match before with
-		    Rnone -> []
-		  | Rsome lst -> lst
-		in
-		let dug =
-		  combinations
-		    (fun head tail -> head :: tail)
-		    missing_trailing
-		    r
-		in
+                let missing_trailing = build_other_gadt ext constrs in
+                let before =
+                  match before with
+                    Rnone -> []
+                  | Rsome lst -> lst
+                in
+                let dug =
+                  combinations
+                    (fun head tail -> head :: tail)
+                    missing_trailing
+                    r
+                in
                 Rsome (dug @ before)
               with
       (* cannot occur, since constructors don't make a full signature *)
@@ -1192,11 +1192,11 @@ let exhaust_gadt ext pss n =
       (* The following line is needed to compile stdlib/printf.ml *)
       if lst = [] then Rsome (omegas n) else
       let singletons =
-	List.map
-	  (function
-	      [x] -> x
-	    | _ -> assert false)
-	  lst
+        List.map
+          (function
+              [x] -> x
+            | _ -> assert false)
+          lst
       in
       Rsome [orify_many singletons]
 
@@ -1732,9 +1732,9 @@ let check_partial_all v casel =
     function
       | [] -> None
       | x :: xs ->
-	  match f x with
-	  | None -> get_first f xs
-	  | x -> x
+          match f x with
+          | None -> get_first f xs
+          | x -> x
 
 
 (* conversion from Typedtree.pattern to Parsetree.pattern list *)
@@ -1748,11 +1748,11 @@ module Conv = struct
     function
       | xs :: [] -> List.map (fun y -> [y]) xs
       | (x::xs)::ys ->
-	  List.map
-	    (fun lst -> x :: lst)
-	    (select ys)
-	  @
-	    select (xs::ys)
+          List.map
+            (fun lst -> x :: lst)
+            (select ys)
+          @
+            select (xs::ys)
       | _ -> []
 
   let name_counter = ref 0
@@ -1771,72 +1771,72 @@ module Conv = struct
     let rec loop pat =
       match pat.pat_desc with
         Tpat_or (a,b,_) ->
-	  loop a @ loop b
+          loop a @ loop b
       | Tpat_any | Tpat_constant _ | Tpat_var _ ->
-	  [mkpat Ppat_any]
+          [mkpat Ppat_any]
       | Tpat_alias (p,_,_) -> loop p
       | Tpat_tuple lst ->
-	  let results = select (List.map loop lst) in
-	  List.map
-	    (fun lst -> mkpat (Ppat_tuple lst))
-	    results
+          let results = select (List.map loop lst) in
+          List.map
+            (fun lst -> mkpat (Ppat_tuple lst))
+            results
       | Tpat_construct (cstr_path, cstr_lid, cstr,lst,_) ->
-	  let id = fresh () in
+          let id = fresh () in
           let lid = { cstr_lid with txt = Longident.Lident id } in
-	  Hashtbl.add constrs id (cstr_path,cstr);
-	  let results = select (List.map loop lst) in
-	  begin match lst with
-	    [] ->
-	      [mkpat (Ppat_construct(lid, None, false))]
+          Hashtbl.add constrs id (cstr_path,cstr);
+          let results = select (List.map loop lst) in
+          begin match lst with
+            [] ->
+              [mkpat (Ppat_construct(lid, None, false))]
           | _ ->
-	      List.map
-	        (fun lst ->
-		  let arg =
-		    match lst with
-		      [] -> assert false
-		    | [x] -> Some x
-		    | _ -> Some (mkpat (Ppat_tuple lst))
-		  in
-		  mkpat (Ppat_construct(lid, arg, false)))
-	        results
+              List.map
+                (fun lst ->
+                  let arg =
+                    match lst with
+                      [] -> assert false
+                    | [x] -> Some x
+                    | _ -> Some (mkpat (Ppat_tuple lst))
+                  in
+                  mkpat (Ppat_construct(lid, arg, false)))
+                results
           end
       | Tpat_variant(label,p_opt,row_desc) ->
-	  begin match p_opt with
-	  | None ->
-	      [mkpat (Ppat_variant(label, None))]
-	  | Some p ->
-	      let results = loop p in
-	      List.map
-	        (fun p ->
-		  mkpat (Ppat_variant(label, Some p)))
-	        results
+          begin match p_opt with
+          | None ->
+              [mkpat (Ppat_variant(label, None))]
+          | Some p ->
+              let results = loop p in
+              List.map
+                (fun p ->
+                  mkpat (Ppat_variant(label, Some p)))
+                results
           end
       | Tpat_record (subpatterns, _closed_flag) ->
-	  let pats =
-	    select
-	      (List.map (fun (_,_,_,x) -> (loop x)) subpatterns)
-	  in
-	  let label_idents =
-	    List.map
-	      (fun (lbl_path,_,lbl,_) ->
-	        let id = fresh () in
-	        Hashtbl.add labels id (lbl_path, lbl);
-	        Longident.Lident id)
-	      subpatterns
-	  in
-	  List.map
-	    (fun lst ->
-	      let lst = List.map2 (fun lid pat ->
+          let pats =
+            select
+              (List.map (fun (_,_,_,x) -> (loop x)) subpatterns)
+          in
+          let label_idents =
+            List.map
+              (fun (lbl_path,_,lbl,_) ->
+                let id = fresh () in
+                Hashtbl.add labels id (lbl_path, lbl);
+                Longident.Lident id)
+              subpatterns
+          in
+          List.map
+            (fun lst ->
+              let lst = List.map2 (fun lid pat ->
                 (mknoloc lid, pat)
               )  label_idents lst in
               mkpat (Ppat_record (lst, Open)))
-	    pats
+            pats
       | Tpat_array lst ->
-	  let results = select (List.map loop lst) in
-	  List.map (fun lst -> mkpat (Ppat_array lst)) results
+          let results = select (List.map loop lst) in
+          List.map (fun lst -> mkpat (Ppat_array lst)) results
       | Tpat_lazy p ->
-	  let results = loop p in
-	  List.map (fun p -> mkpat (Ppat_lazy p)) results
+          let results = loop p in
+          List.map (fun p -> mkpat (Ppat_lazy p)) results
     in
     let ps = loop typed in
     (ps, constrs, labels)
@@ -1862,38 +1862,38 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
     begin match exhaust None pss (List.length ps) with
     | Rnone -> Total
     | Rsome [u] ->
-	let v =
-	  match pred with
-	  | Some pred ->
-	      let (patterns,constrs,labels) = Conv.conv u in
+        let v =
+          match pred with
+          | Some pred ->
+              let (patterns,constrs,labels) = Conv.conv u in
 (*              Hashtbl.iter (fun s (path, _) ->
                 Printf.fprintf stderr "CONV: %s -> %s \n%!" s (Path.name path))
                 constrs
               ; *)
-	      get_first (pred constrs labels) patterns
-	  | None -> Some u
-	in
-	begin match v with
-	  None -> Total
-	| Some v ->
+              get_first (pred constrs labels) patterns
+          | None -> Some u
+        in
+        begin match v with
+          None -> Total
+        | Some v ->
             let errmsg =
               try
-		let buf = Buffer.create 16 in
-		let fmt = formatter_of_buffer buf in
-		top_pretty fmt v;
-		begin match check_partial_all v casel with
-		| None -> ()
-		| Some _ ->
+                let buf = Buffer.create 16 in
+                let fmt = formatter_of_buffer buf in
+                top_pretty fmt v;
+                begin match check_partial_all v casel with
+                | None -> ()
+                | Some _ ->
                     (* This is 'Some loc', where loc is the location of
                        a possibly matching clause.
                        Forget about loc, because printing two locations
                        is a pain in the top-level *)
                     Buffer.add_string buf
                       "\n(However, some guarded clause may match this value.)"
-		end ;
-		Buffer.contents buf
+                end ;
+                Buffer.contents buf
               with _ ->
-		"" in
+                "" in
             Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
             Partial end
     | _ ->
@@ -2065,9 +2065,9 @@ let check_partial_param do_check_partial do_check_fragile loc casel =
       let pss = get_mins le_pats pss in
       let total = do_check_partial loc casel pss in
       if
-	total = Total && Warnings.is_active (Warnings.Fragile_match "")
+        total = Total && Warnings.is_active (Warnings.Fragile_match "")
       then begin
-	do_check_fragile loc casel pss
+        do_check_fragile loc casel pss
       end ;
       total
     end else

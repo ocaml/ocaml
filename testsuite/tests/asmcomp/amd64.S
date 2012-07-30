@@ -39,12 +39,12 @@ CALL_GEN_CODE:
         pushq   %r13
         pushq   %r14
         pushq   %r15
-	movq	%rdi, %r10
-	movq	%rsi, %rax
-	movq	%rdx, %rbx
-	movq	%rcx, %rdi
-	movq	%r8, %rsi
-        call	*%r10
+        movq    %rdi, %r10
+        movq    %rsi, %rax
+        movq    %rdx, %rbx
+        movq    %rcx, %rdi
+        movq    %r8, %rsi
+        call    *%r10
         popq    %r15
         popq    %r14
         popq    %r13
@@ -59,17 +59,17 @@ CAML_C_CALL:
         jmp     *%rax
 
 #ifdef SYS_macosx
-	.literal16
+        .literal16
 #else
-	.section	.rodata.cst8,"aM",@progbits,8
+        .section        .rodata.cst8,"aM",@progbits,8
 #endif
         .globl  CAML_NEGF_MASK
         .align  ALIGN
 CAML_NEGF_MASK:
-	.quad	0x8000000000000000, 0
+        .quad   0x8000000000000000, 0
         .globl  CAML_ABSF_MASK
         .align  ALIGN
 CAML_ABSF_MASK:
-	.quad	0x7FFFFFFFFFFFFFFF, 0
+        .quad   0x7FFFFFFFFFFFFFFF, 0
 
         .comm   young_limit, 8

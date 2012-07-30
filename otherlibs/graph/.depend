@@ -5,7 +5,7 @@ color.o: color.c libgraph.h \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/misc.h \
- 
+
 draw.o: draw.c libgraph.h \
   \
   \

@@ -142,6 +142,7 @@ Bug Fixes:
 - PR#5261, PR#5497: Ocaml source-code examples are not "copy-paste-able"
 * PR#5279: executable name is not initialized properly in caml_startup_code
 - PR#5290: added hash functions for channels, nats, mutexes, conditions
+- PR#5291: undetected loop in class initialization
 - PR#5295: OS threads: problem with caml_c_thread_unregister()
 - PR#5301: camlp4r and exception equal to another one with parameters
 - PR#5305: prevent ocamlbuild from complaining about links to _build/
@@ -208,8 +209,8 @@ Bug Fixes:
 - PR#5518: segfault with lazy empty array
 - PR#5531: Allow ocamlbuild to add ocamldoc flags through -docflag
   and -docflags switches
-- PR#5543: in Bigarray.map_file, try to avoid using lseek() when growing file
 - PR#5538: combining -i and -annot in ocamlc
+- PR#5543: in Bigarray.map_file, try to avoid using lseek() when growing file
 - PR#5648: (probably fixed) test failures in tests/lib-threads
 - PR#5551: repeated calls to find_in_path degrade performance
 - PR#5552: Mac OS X: unrecognized gcc option "-no-cpp-precomp"

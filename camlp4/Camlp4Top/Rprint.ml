@@ -456,10 +456,10 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
   match ty with
   [ Otyp_abstract ->
       fprintf ppf "@[<2>@[<hv 2>@[%s %t@]@]%a@]" kwd type_defined
-	print_constraints constraints
+        print_constraints constraints
   | _ ->
       fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@]%a@]" kwd type_defined
-	print_types ty print_constraints constraints ]
+        print_types ty print_constraints constraints ]
 ;
 
 (* Phrases *)

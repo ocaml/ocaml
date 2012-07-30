@@ -6,7 +6,7 @@
 #load "bool.cmo";;
 #load "glob_ast.cmo";;
 #load "glob_lexer.cmo";;
-#load "glob.cmo";;  
+#load "glob.cmo";;
 #load "lexers.cmo";;
 #load "my_std.cmo";;
 #load "tags.cmo";;

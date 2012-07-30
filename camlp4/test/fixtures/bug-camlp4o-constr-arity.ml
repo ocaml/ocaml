@@ -72,4 +72,3 @@ let rec next line pos0 = () in ();;
 
 (* fun Some None None None -> ();; *)
 (* fun x, y -> ();; |+ syntax error +| *)
-

@@ -189,7 +189,7 @@ value int_repr s =
     [ 'b' | 'o' | 'x' | 'B' | 'O' | 'X' ->
         "#" ^ String.sub s 1 (String.length s - 1)
     | _ -> s ]
-  else s  
+  else s
 ;
 
 value assoc_left_parsed_op_list = ["+"; "*"; "land"; "lor"; "lxor"];

@@ -364,9 +364,9 @@ and value_description i ppf x =
 and string_option_underscore i ppf =
   function
     | Some x ->
-	string i ppf x.txt
+        string i ppf x.txt
     | None ->
-	string i ppf "_"
+        string i ppf "_"
 
 and type_declaration i ppf x =
   line i ppf "type_declaration %a\n" fmt_location x.typ_loc;

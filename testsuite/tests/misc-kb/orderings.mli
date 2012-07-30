@@ -14,7 +14,7 @@
 
 open Terms
 
-type ordering = 
+type ordering =
     Greater
   | Equal
   | NotGE
