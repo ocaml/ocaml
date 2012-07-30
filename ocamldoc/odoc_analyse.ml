@@ -64,7 +64,7 @@ let process_implementation_file ppf sourcefile =
     let parsetree = Pparse.file Format.err_formatter inputfile Parse.implementation ast_impl_magic_number in
     let typedtree =
       Typemod.type_implementation
-	sourcefile prefixname modulename env parsetree
+        sourcefile prefixname modulename env parsetree
     in
     (Some (parsetree, typedtree), inputfile)
   with
