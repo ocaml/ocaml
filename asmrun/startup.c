@@ -33,7 +33,6 @@
 #include "printexc.h"
 #include "stack.h"
 #include "sys.h"
-#include "natdynlink.h"
 #ifdef HAS_UI
 #include "ui.h"
 #endif
