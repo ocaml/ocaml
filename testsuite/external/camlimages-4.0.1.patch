@@ -1,0 +1,22 @@
+--- camlimages-4.0.1/OMakefile.orig	2011-07-06 13:29:05.000000000 +0200
++++ camlimages-4.0.1/OMakefile	2011-07-06 13:30:04.000000000 +0200
+@@ -24,9 +24,10 @@
+ INCLUDES[]=
+   /usr/include/X11
+   /usr/local/include
++  /opt/local/include
+ 
+ # Specify non standard library directories
+-LDFLAGS[]+= 
++LDFLAGS[]+= -L/opt/local/lib
+ # for example, 
+ # LDFLAGS[]+= -L/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ImageIO.framework/Versions/A/Resources/
+ 
+@@ -34,6 +35,7 @@
+ PATH_RGB_TXT[]=
+   /etc/X11
+   /usr/share/X11
++  /opt/local/share/netpbm
+ 
+ BYTE_ENABLED=1
+ NATIVE_ENABLED=1

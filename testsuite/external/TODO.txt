@@ -1,0 +1,20 @@
+# TODO: lablgl
+# http://wwwfun.kurims.kyoto-u.ac.jp/soft/lsl/lablgl.html
+
+Haxe: missing a source archive of released version...
+# # http://code.google.com/p/haxe/source/browse/#svn%2Ftrunk
+# HAXE=haxe-2.10dev
+# haxe:
+# 	printf "%s " "$@" >/dev/tty
+# 	test -d ${PREFIX}
+# 	rm -rf ${HAXE}
+# 	tar zxf ${HAXE}.tar.gz
+# 	./Patcher.sh ${HAXE}
+# 	( cd ${HAXE} && \
+# 	  export PATH=${PREFIX}/bin:$$PATH && \
+# 	  make )
+# 	echo ${VERSION} >$@
+# clean::
+# 	rm -rf ${HAXE} haxe
+# all: haxe
+

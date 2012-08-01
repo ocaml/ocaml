@@ -1,0 +1,300 @@
+--- obrowser-1.1.1/Makefile.orig	2011-07-05 16:15:30.000000000 +0200
++++ obrowser-1.1.1/Makefile	2011-07-05 16:16:42.000000000 +0200
+@@ -16,9 +16,9 @@
+ EXAMPLES = $(patsubst examples/%,%, $(wildcard examples/*))
+ EXAMPLES_TARGETS = $(patsubst examples/%,%.example, $(wildcard examples/*))
+ OCAMLFIND = ocamlfind
+-.PHONY: tuto dist plugin lwt
++.PHONY: tuto dist plugin lwt AXO
+ 
+-all: .check_version rt/caml/stdlib.cma vm.js tuto $(EXAMPLES_TARGETS) examples.html AXO lwt
++all: .check_version rt/caml/stdlib.cma vm.js tuto AXO $(EXAMPLES_TARGETS) examples.html lwt
+ 
+ .check_version:
+ 	@[ "$(shell ocamlc -vnum)" = "3.12.0" ] || \
+--- obrowser-1.1.1.orig/Makefile	2011-04-20 18:26:44.000000000 +0200
++++ obrowser-1.1.1/Makefile	2012-03-12 16:55:44.000000000 +0100
+@@ -21,10 +21,11 @@
+ all: .check_version rt/caml/stdlib.cma vm.js tuto $(EXAMPLES_TARGETS) examples.html AXO lwt
+ 
+ .check_version:
+-	@[ "$(shell ocamlc -vnum)" = "3.12.0" ] || \
+-	  [ "$(shell ocamlc -vnum)" = "3.12.1" ] || \
+-	  ( echo "You need ocaml version 3.12.0 or 3.12.1"; \
+-            exit 1 )
++	@case `ocaml -vnum` in \
++	  3.1[2-9].*);; \
++	  4.*);; \
++	  *) echo "You need ocaml version 3.12.0 or later"; exit 1;; \
++	 esac
+ 	touch $@
+ 
+ %.example: 
+--- obrowser-1.1.1.orig/rt/caml/pervasives.mli	2011-04-20 18:26:44.000000000 +0200
++++ obrowser-1.1.1/rt/caml/pervasives.mli	2012-01-12 01:07:49.000000000 +0100
+@@ -1,6 +1,6 @@
+ (***********************************************************************)
+ (*                                                                     *)
+-(*                           Objective Caml                            *)
++(*                                OCaml                                *)
+ (*                                                                     *)
+ (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+ (*                                                                     *)
+@@ -11,7 +11,7 @@
+ (*                                                                     *)
+ (***********************************************************************)
+ 
+-(* $Id: pervasives.mli 10548 2010-06-09 10:26:19Z weis $ *)
++(* $Id: pervasives.mli 11922 2011-12-21 15:37:54Z doligez $ *)
+ 
+ (** The initially opened module.
+ 
+@@ -52,24 +52,24 @@
+    Equality between cyclic data structures may not terminate. *)
+ 
+ external ( <> ) : 'a -> 'a -> bool = "%notequal"
+-(** Negation of {!Pervasives.(=)}. *)
++(** Negation of {!Pervasives.( = )}. *)
+ 
+ external ( < ) : 'a -> 'a -> bool = "%lessthan"
+-(** See {!Pervasives.(>=)}. *)
++(** See {!Pervasives.( >= )}. *)
+ 
+ external ( > ) : 'a -> 'a -> bool = "%greaterthan"
+-(** See {!Pervasives.(>=)}. *)
++(** See {!Pervasives.( >= )}. *)
+ 
+ external ( <= ) : 'a -> 'a -> bool = "%lessequal"
+-(** See {!Pervasives.(>=)}. *)
++(** See {!Pervasives.( >= )}. *)
+ 
+ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
+ (** Structural ordering functions. These functions coincide with
+    the usual orderings over integers, characters, strings
+    and floating-point numbers, and extend them to a
+    total ordering over all types.
+-   The ordering is compatible with [(=)]. As in the case
+-   of [(=)], mutable structures are compared by contents.
++   The ordering is compatible with [( = )]. As in the case
++   of [( = )], mutable structures are compared by contents.
+    Comparison between functional values raises [Invalid_argument].
+    Comparison between cyclic structures may not terminate. *)
+ 
+@@ -108,12 +108,12 @@
+    mutable fields and objects with mutable instance variables,
+    [e1 == e2] is true if and only if physical modification of [e1]
+    also affects [e2].
+-   On non-mutable types, the behavior of [(==)] is
++   On non-mutable types, the behavior of [( == )] is
+    implementation-dependent; however, it is guaranteed that
+    [e1 == e2] implies [compare e1 e2 = 0]. *)
+ 
+ external ( != ) : 'a -> 'a -> bool = "%noteq"
+-(** Negation of {!Pervasives.(==)}. *)
++(** Negation of {!Pervasives.( == )}. *)
+ 
+ 
+ (** {6 Boolean operations} *)
+@@ -229,7 +229,7 @@
+ 
+ (** {6 Floating-point arithmetic}
+ 
+-   Caml's floating-point numbers follow the
++   OCaml's floating-point numbers follow the
+    IEEE 754 standard, using double precision (64 bits) numbers.
+    Floating-point operations never raise an exception on overflow,
+    underflow, division by zero, etc.  Instead, special IEEE numbers
+@@ -310,10 +310,18 @@
+     Result is in radians and is between [-pi/2] and [pi/2]. *)
+ 
+ external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
+-(** [atan x y] returns the arc tangent of [y /. x].  The signs of [x]
++(** [atan2 y x] returns the arc tangent of [y /. x].  The signs of [x]
+     and [y] are used to determine the quadrant of the result.
+     Result is in radians and is between [-pi] and [pi]. *)
+ 
++external hypot : float -> float -> float
++               = "caml_hypot_float" "caml_hypot" "float"
++(** [hypot x y] returns [sqrt(x *. x + y *. y)], that is, the length
++  of the hypotenuse of a right-angled triangle with sides of length
++  [x] and [y], or, equivalently, the distance of the point [(x,y)]
++  to origin.
++  @since 3.13.0  *)
++
+ external cosh : float -> float = "caml_cosh_float" "cosh" "float"
+ (** Hyperbolic cosine.  Argument is in radians. *)
+ 
+@@ -337,6 +345,14 @@
+ external abs_float : float -> float = "%absfloat"
+ (** [abs_float f] returns the absolute value of [f]. *)
+ 
++external copysign : float -> float -> float
++                  = "caml_copysign_float" "caml_copysign" "float"
++(** [copysign x y] returns a float whose absolute value is that of [x]
++  and whose sign is that of [y].  If [x] is [nan], returns [nan].
++  If [y] is [nan], returns either [x] or [-. x], but it is not
++  specified which.
++  @since 3.13.0  *)
++
+ external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
+ (** [mod_float a b] returns the remainder of [a] with respect to
+    [b].  The returned value is [a -. n *. b], where [n]
+@@ -505,7 +521,7 @@
+ (** The standard output for the process. *)
+ 
+ val stderr : out_channel
+-(** The standard error ouput for the process. *)
++(** The standard error output for the process. *)
+ 
+ 
+ (** {7 Output functions on standard output} *)
+@@ -642,7 +658,7 @@
+    The given integer is taken modulo 2{^32}.
+    The only reliable way to read it back is through the
+    {!Pervasives.input_binary_int} function. The format is compatible across
+-   all machines for a given version of Objective Caml. *)
++   all machines for a given version of OCaml. *)
+ 
+ val output_value : out_channel -> 'a -> unit
+ (** Write the representation of a structured value of any type
+@@ -855,12 +871,16 @@
+ (** Format strings have a general and highly polymorphic type
+     [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
+     The two simplified types, [format] and [format4] below are
+-    included for backward compatibility with earlier releases of Objective
+-    Caml.
++    included for backward compatibility with earlier releases of OCaml.
+     ['a] is the type of the parameters of the format,
+-    ['c] is the result type for the "printf"-style function,
+-    and ['b] is the type of the first argument given to
+-    [%a] and [%t] printing functions. *)
++    ['b] is the type of the first argument given to
++         [%a] and [%t] printing functions,
++    ['c] is the type of the argument transmitted to the first argument of
++         "kprintf"-style functions,
++    ['d] is the result type for the "scanf"-style functions,
++    ['e] is the type of the receiver function for the "scanf"-style functions,
++    ['f] is the result type for the "printf"-style function.
++ *)
+ type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
+ 
+ type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+@@ -888,7 +908,7 @@
+ (** Terminate the process, returning the given status code
+    to the operating system: usually 0 to indicate no errors,
+    and a small positive integer to indicate failure.
+-   All open output channels are flushed with flush_all.
++   All open output channels are flushed with [flush_all].
+    An implicit [exit 0] is performed each time a program
+    terminates normally.  An implicit [exit 2] is performed if the program
+    terminates early because of an uncaught exception. *)
+--- obrowser-1.1.1.orig/rt/caml/pervasives.ml	2011-04-20 18:26:44.000000000 +0200
++++ obrowser-1.1.1/rt/caml/pervasives.ml	2012-01-12 17:04:04.000000000 +0100
+@@ -91,6 +91,8 @@
+ external asin : float -> float = "caml_asin_float" "asin" "float"
+ external atan : float -> float = "caml_atan_float" "atan" "float"
+ external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
++external hypot : float -> float -> float
++               = "caml_hypot_float" "caml_hypot" "float"
+ external cos : float -> float = "caml_cos_float" "cos" "float"
+ external cosh : float -> float = "caml_cosh_float" "cosh" "float"
+ external log : float -> float = "caml_log_float" "log" "float"
+@@ -104,6 +106,8 @@
+ external ceil : float -> float = "caml_ceil_float" "ceil" "float"
+ external floor : float -> float = "caml_floor_float" "floor" "float"
+ external abs_float : float -> float = "%absfloat"
++external copysign : float -> float -> float
++                  = "caml_copysign_float" "caml_copysign" "float"
+ external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
+ external frexp : float -> float * int = "caml_frexp_float"
+ external ldexp : float -> int -> float = "caml_ldexp_float"
+--- obrowser-1.1.1.orig/rt/caml/list.ml	2011-04-20 18:26:44.000000000 +0200
++++ obrowser-1.1.1/rt/caml/list.ml	2012-01-12 17:30:31.000000000 +0100
+@@ -1,6 +1,6 @@
+ (***********************************************************************)
+ (*                                                                     *)
+-(*                           Objective Caml                            *)
++(*                                OCaml                                *)
+ (*                                                                     *)
+ (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+ (*                                                                     *)
+@@ -11,7 +11,7 @@
+ (*                                                                     *)
+ (***********************************************************************)
+ 
+-(* $Id: list.ml 7597 2006-09-11 12:18:00Z doligez $ *)
++(* $Id: list.ml 11156 2011-07-27 14:17:02Z doligez $ *)
+ 
+ (* List operations *)
+ 
+@@ -56,6 +56,12 @@
+     [] -> []
+   | a::l -> let r = f a in r :: map f l
+ 
++let rec mapi i f = function
++    [] -> []
++  | a::l -> let r = f i a in r :: mapi (i + 1) f l
++
++let mapi f l = mapi 0 f l
++
+ let rev_map f l =
+   let rec rmap_f accu = function
+     | [] -> accu
+@@ -68,6 +74,12 @@
+     [] -> ()
+   | a::l -> f a; iter f l
+ 
++let rec iteri i f = function
++    [] -> ()
++  | a::l -> f i a; iteri (i + 1) f l
++
++let iteri f l = iteri 0 f l
++
+ let rec fold_left f accu l =
+   match l with
+     [] -> accu
+--- obrowser-1.1.1.orig/rt/caml/list.mli	2011-04-20 18:26:44.000000000 +0200
++++ obrowser-1.1.1/rt/caml/list.mli	2012-01-12 17:30:31.000000000 +0100
+@@ -1,6 +1,6 @@
+ (***********************************************************************)
+ (*                                                                     *)
+-(*                           Objective Caml                            *)
++(*                                OCaml                                *)
+ (*                                                                     *)
+ (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+ (*                                                                     *)
+@@ -11,7 +11,7 @@
+ (*                                                                     *)
+ (***********************************************************************)
+ 
+-(* $Id: list.mli 7597 2006-09-11 12:18:00Z doligez $ *)
++(* $Id: list.mli 12013 2012-01-11 13:24:58Z doligez $ *)
+ 
+ (** List operations.
+ 
+@@ -75,11 +75,25 @@
+    [a1; ...; an]. It is equivalent to
+    [begin f a1; f a2; ...; f an; () end]. *)
+ 
++val iteri : (int -> 'a -> unit) -> 'a list -> unit
++(** Same as {!List.iter}, but the function is applied to the index of
++   the element as first argument (counting from 0), and the element
++   itself as second argument.
++   @since 3.13.0
++*)
++
+ val map : ('a -> 'b) -> 'a list -> 'b list
+ (** [List.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
+    and builds the list [[f a1; ...; f an]]
+    with the results returned by [f].  Not tail-recursive. *)
+ 
++val mapi : (int -> 'a -> 'b) -> 'a list -> 'b list
++(** Same as {!List.map}, but the function is applied to the index of
++   the element as first argument (counting from 0), and the element
++   itself as second argument.  Not tail-recursive.
++   @since 3.13.0
++*)
++
+ val rev_map : ('a -> 'b) -> 'a list -> 'b list
+ (** [List.rev_map f l] gives the same result as
+    {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
