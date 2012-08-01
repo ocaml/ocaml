@@ -23,6 +23,7 @@
 # - absence of white lines at end of file (white-at-eof)
 # - presence of a LF character at the end of the file (missing-lf)
 # - maximum line length of 80 characters (long-line)
+# - presence of a copyright header (missing-header)
 
 # Exceptions are handled with a SVN property: "ocaml:typo".
 # Its value for a given file is a comma-separated list of rule names,
@@ -34,6 +35,17 @@
 #   is automatically exempt from all the rules.
 # - Any file whose name begins with "Makefile" is automatically exempt
 #   from the "tabs" rule.
+# - Any file whose name matches one of the following patterns is
+#   automatically exempt from the "missing-header" rule.
+#     */.depend
+#     */.ignore
+#     *.mlpack
+#     *.mllib
+#     *.odocl
+#     *.clib
+#     */unmaintained/*
+#     */experimental/*
+#     *.reference
 
 # ASCII characters are bytes from 0 to 127.  Any other byte is
 # flagged as a non-ASCII character.
@@ -103,8 +115,14 @@ IGNORE_DIRS='
     fi
     rules="$userrules"
     case "$f" in
-      Makefile*) rules="tab,$rules";;
-      */Makefile*) rules="tab,$rules";;
+      Makefile*|*/Makefile*) rules="tab,$rules";;
+    esac
+    h(){ rules="missing-header,$rules"; }
+    case "$f" in
+      */.depend|*/.ignore) h;;
+      *.mlpack|*.mllib|*.odocl|*.itarget|*.clib) h;;
+      */unmaintained/*|*/experimental/*) h;;
+      *.reference) h;;
     esac
 
     (cat "$f"; echo) \
@@ -141,8 +159,17 @@ IGNORE_DIRS='
 
         length($0) > 80 {
           RSTART = 81;
-          RLENGTH = length($0) - 81;
+          RLENGTH = 0;
           err("long-line", "line is over 80 characters");
+        }
+
+        3 <= NR && NR <= 8 \
+        && (/ OCaml / || / ocamlbuild / || / OCamldoc /) {
+          header_ocaml = 1;
+        }
+
+        7 <= NR && NR <= 12 && / Copyright / && header_ocaml {
+          header_copyright = 1;
         }
 
         {
@@ -162,12 +189,17 @@ IGNORE_DIRS='
           if (!empty_file && match(prev_line, /^[ \t]*$/)){
             err("white-at-eof", "white line(s) at EOF");
           }
+          NR = 1;
+          RSTART = 1;
+          RLENGTH = 0;
+          if (!(header_ocaml && header_copyright)){
+            err("missing-header", "missing copyright header");
+          }
           split(svnrules, r, ",");
           for (i in r){
             name = r[i];
             if (name != "" && !counts[name]){
-              printf ("%s, line 1, char 1: unused rule exception [%s]\n",
-                      file, name);
+              err("unused-prop", sprintf("unused [%s] in ocaml:typo", name));
             }
           }
         }
