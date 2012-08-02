@@ -24,6 +24,7 @@
 # - presence of a LF character at the end of the file (missing-lf)
 # - maximum line length of 80 characters (long-line)
 # - presence of a copyright header (missing-header)
+# - absence of a leftover "$Id$" string (svn-keyword)
 
 # Exceptions are handled with a SVN property: "ocaml:typo".
 # Its value for a given file is a comma-separated list of rule names,
@@ -37,10 +38,11 @@
 #   from the "tabs" rule.
 # - Any file whose name matches one of the following patterns is
 #   automatically exempt from the "missing-header" rule.
-#     */.depend
+#     */.depend*
 #     */.ignore
 #     *.mlpack
 #     *.mllib
+#     *.mltop
 #     *.odocl
 #     *.clib
 #     */unmaintained/*
@@ -119,8 +121,8 @@ IGNORE_DIRS='
     esac
     h(){ rules="missing-header,$rules"; }
     case "$f" in
-      */.depend|*/.ignore) h;;
-      *.mlpack|*.mllib|*.odocl|*.itarget|*.clib) h;;
+      */.depend*|*/.ignore) h;;
+      *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) h;;
       */unmaintained/*|*/experimental/*) h;;
       *.reference) h;;
     esac
@@ -130,7 +132,7 @@ IGNORE_DIRS='
       '
         function err(name, msg) {
           ++ counts[name];
-          if (!index(("," rules svnrules ","), ("," name ",")) \
+          if (("," rules svnrules ",") !~ ("[, ]" name "[, ]") \
               && counts[name] <= 10){
             printf ("%s:%d.%d:", file, NR, RSTART + RLENGTH);
             printf (" [%s] %s\n", name, msg);
@@ -157,18 +159,23 @@ IGNORE_DIRS='
           err("white-at-eol", "whitespace at end of line");
         }
 
+        match($0, /\$Id\$/) {
+          err("svn-keyword", "SVN keyword marker");
+        }
+
         length($0) > 80 {
           RSTART = 81;
           RLENGTH = 0;
           err("long-line", "line is over 80 characters");
         }
 
-        3 <= NR && NR <= 8 \
+        3 <= NR && NR <= 5 \
         && (/ OCaml / || / ocamlbuild / || / OCamldoc /) {
-          header_ocaml = 1;
+          header_ocaml = NR;
         }
 
-        7 <= NR && NR <= 12 && / Copyright / && header_ocaml {
+        header_ocaml && header_ocaml + 4 <= NR && NR <= header_ocaml + 6 \
+        && / Copyright / {
           header_copyright = 1;
         }
 
@@ -195,7 +202,7 @@ IGNORE_DIRS='
           if (!(header_ocaml && header_copyright)){
             err("missing-header", "missing copyright header");
           }
-          split(svnrules, r, ",");
+          split(svnrules, r, "[, ]");
           for (i in r){
             name = r[i];
             if (name != "" && !counts[name]){
