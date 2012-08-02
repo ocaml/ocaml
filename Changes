@@ -19,6 +19,14 @@ Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
    as part of compilerlibs, to be used on bin-annot files.
 
+
+OCaml 4.00.1:
+-------------
+
+Bug fixes:
+- PR#5700: crash with native-code stack backtraces under MacOS 10.8 x86-64
+
+
 OCaml 4.00.0:
 -------------
 

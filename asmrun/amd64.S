@@ -490,9 +490,10 @@ CFI_STARTPROC
 LBL(110):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
-        movq    0(%rsp), C_ARG_2      /* arg 2: pc of raise */
-        leaq    8(%rsp), C_ARG_3      /* arg 3: sp of raise */
+        popq    C_ARG_2               /* arg 2: pc of raise */
+        movq    %rsp, C_ARG_3         /* arg 3: sp at raise */
         movq    %r14, C_ARG_4         /* arg 4: sp of handler */
+	/* PR#5700: thanks to popq above, stack is now 16-aligned */
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
