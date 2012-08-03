@@ -3,6 +3,7 @@ OCaml 4.00.1:
 
 Bug fixes:
 - PR#5700: crash with native-code stack backtraces under MacOS 10.8 x86-64
+- PR#5718: false positive on 'unused constructor' warning
 
 
 OCaml 4.00.0:

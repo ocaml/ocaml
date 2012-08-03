@@ -927,7 +927,7 @@ and store_type id path info env =
   let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in
 
-  if not env.in_signature && not loc.Location.loc_ghost &&
+  if not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_constructor ("", false, false))
   then begin
     let ty = Ident.name id in
@@ -941,7 +941,7 @@ and store_type id path info env =
           if not (ty = "" || ty.[0] = '_')
           then !add_delayed_check_forward
               (fun () ->
-                if not used.cu_positive then
+                if not env.in_signature && not used.cu_positive then
                   Location.prerr_warning loc
                     (Warnings.Unused_constructor
                        (c, used.cu_pattern, used.cu_privatize)))
@@ -980,7 +980,7 @@ and store_type_infos id path info env =
 
 and store_exception id path decl env =
   let loc = decl.exn_loc in
-  if not env.in_signature && not loc.Location.loc_ghost &&
+  if not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_exception ("", false))
   then begin
     let ty = "exn" in
@@ -991,7 +991,7 @@ and store_exception id path decl env =
       Hashtbl.add used_constructors k (add_constructor_usage used);
       !add_delayed_check_forward
         (fun () ->
-          if not used.cu_positive then
+          if not env.in_signature && not used.cu_positive then
             Location.prerr_warning loc
               (Warnings.Unused_exception
                  (c, used.cu_pattern)
