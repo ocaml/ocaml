@@ -510,6 +510,7 @@ LBL(111):
         LOAD_VAR(caml_last_return_address,C_ARG_2)   /* arg 2: pc of raise */
         LOAD_VAR(caml_bottom_of_stack,C_ARG_3)       /* arg 3: sp of raise */
         LOAD_VAR(caml_exception_pointer,C_ARG_4)     /* arg 4: sp of handler */
+        subq    $8, %rsp              /* PR#5700: maintain stack alignment */
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
