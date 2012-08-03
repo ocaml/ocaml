@@ -56,6 +56,9 @@ and with the native-code compiler
 The following command-line options are recognized by
 .BR ocamldep (1).
 .TP
+.B \-absname
+Show absolute filenames in error messages.
+.TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
 source files. If a source file foo.ml mentions an external

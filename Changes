@@ -3,6 +3,7 @@ Next version
 
 Compilers:
 - PR#5634: parsetree rewriter (-ppx flag)
+- ocamldep now supports -absname
 
 Bug fixes:
 - PR#5327: (Windows) Unix.select blocks if same socket listed in first and

@@ -373,6 +373,8 @@ let _ =
   Clflags.classic := false;
   add_to_load_path Filename.current_dir_name;
   Arg.parse [
+     "-absname", Arg.Set Location.absname,
+        " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
         " Generate dependencies on all files";
      "-I", Arg.String add_to_load_path,
