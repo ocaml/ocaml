@@ -33,14 +33,14 @@ expr:
   | '(' expr ')'
   | 'begin' expr 'end'
   | '(' expr ':' typexpr ')'
-  | expr ',' expr { ',' expr }
+  | expr {{',' expr}}
   | constr expr
   | "`"tag-name expr
   | expr '::' expr
-  | '[' expr { ';' expr } ']'
-  | '[|' expr { ';' expr } '|]'
-  | '{' field '=' expr { ';' field '=' expr } '}'
-  | '{' expr 'with' field '=' expr { ';' field '=' expr } '}'
+  | '[' expr { ';' expr } [';'] ']'
+  | '[|' expr { ';' expr } [';'] '|]'
+  | '{' field '=' expr { ';' field '=' expr } [';'] '}'
+  | '{' expr 'with' field '=' expr { ';' field '=' expr } [';'] '}'
   | expr {{ argument }}
   | prefix-symbol expr
   | expr infix-op expr
@@ -66,7 +66,7 @@ expr:
   | inst-var-name '<-' expr
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
-  | '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'
+  | '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } [';'] '>}'
   | 'assert' expr
   | 'lazy' expr
 ;
@@ -263,8 +263,7 @@ expr@ are equivalent to
   "in" expr@
 \end{center}
 where @ident@
-is a fresh variable. When @expr_0@ will be evaluated is left
-unspecified.
+is a fresh variable, except that it is unspecified when @expr_0@ is evaluated.
 
 After these two transformations, expressions are of the form
 \begin{center}
@@ -420,6 +419,7 @@ exactly as
 \end{center}
 
 The expression @expr_1 '||' expr_2@ evaluates to @'true'@ if one of
+the expressions
 @expr_1@ and @expr_2@ evaluates to @'true'@; otherwise, it evaluates to
 @'false'@. The first component, @expr_1@, is evaluated first. The
 second component, @expr_2@, is not evaluated if the first component
@@ -430,8 +430,8 @@ exactly as
 \end{center}
 
 \ikwd{or\@\texttt{or}}
-The boolean operator @'&'@ is synonymous for @'&&'@.  The boolean operator
-@'or'@ is synonymous for @'||'@.
+The boolean operators @'&'@ and @'or'@ are deprecated synonyms for
+(respectively) @'&&'@ and @'||'@.
 
 \subsubsection*{Loops}
 
@@ -518,7 +518,7 @@ expr_n '}'@ evaluates to the record value
 $\{ field_1 = v_1; \ldots; field_n = v_n \}$
 where $v_i$ is the value of @expr_i@ for \fromoneto{i}{n}.
 The fields @field_1@ to @field_n@ must all belong to the same record
-types; all fields belonging to this record type must appear exactly
+type; each field of this record type must appear exactly
 once in the record expression, though they can appear in any
 order. The order in which @expr_1@ to @expr_n@ are evaluated is not
 specified.
@@ -643,7 +643,7 @@ details). Their meaning may be changed at any time using
 \ikwd{new\@\texttt{new}}
 
 When @class-path@ evaluates to a class body, @'new' class-path@
-evaluates to an object containing the instance variables and
+evaluates to a new object containing the instance variables and
 methods of this class.
 
 When @class-path@ evaluates to a class function, @'new' class-path@
@@ -660,13 +660,13 @@ class-name '=' 'object' class-body 'end'@ ---see sections
 \ref{ss:class-body} and following for the syntax of @class-body@---
 and immediately creating a single object from it by @'new' class-name@.
 
-The typing of immediate objects is slightly different from explicitely
+The typing of immediate objects is slightly different from explicitly
 defining a class in two respects. First, the inferred object type may
 contain free type variables. Second, since the class body of an
 immediate object will never be extended, its self type can be unified
 with a closed object type.
 
-\subsubsection*{Message sending}
+\subsubsection*{Method invocation}
 
 The expression @expr '#' method-name@ invokes the method
 @method-name@ of the object denoted by @expr@.
@@ -691,7 +691,7 @@ variable @inst-var-name@, which must be mutable.  The whole expression
 \subsubsection*{Object duplication}
 
 An object can be duplicated using the library function "Oo.copy"
-(see 
+(see
 \ifouthtml \ahref{libref/Oo.html}{Module \texttt{Oo}}\else
 section~\ref{Oo}\fi). Inside a method, the expression
 @ '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'@
@@ -711,8 +711,8 @@ The expression @'('expr ':' typexpr_1 ':>' typexpr_2')'@ coerces the
 expression @expr@ from type @typexpr_1@ to type @typexpr_2@.
 
 The former operator will sometimes fail to coerce an expression @expr@
-from a type $t_1$ to a type $t_2$ even if type $t_1$ is a subtype of type
-$t_2$: in the current implementation it only expands two levels of
+from a type @t_1@ to a type @t_2@ even if type @t_1@ is a subtype of type
+@t_2@: in the current implementation it only expands two levels of
 type abbreviations containing objects and/or polymorphic variants,
 keeping only recursion when it is explicit in the class type (for objects).
 As an exception to the above algorithm, if both the inferred type of @expr@
@@ -736,20 +736,24 @@ In the following paragraphs we describe the subtyping relation used.
 
 \subsubsection*{Object types}
 
-A fixed object type admits as subtype any object type including all
+A fixed object type admits as subtype any object type that includes all
 its methods. The types of the methods shall be subtypes of those in
 the supertype. Namely,
-\[ "< " met_1 " : " typ_1 " ; " ... " ; " met_n " : " typ_n "> " \]
+\begin{center}
+@ '<' met_1 ':' typ_1 ';' \dots ';' met_n ':' typ_n '>' @
+\end{center}
 is a supertype of
-\[ "< " met_1 " : " typ'_1 " ; " ... " ; " met_n " : " typ'_n " ; "
-met_{n+1} " : " typ'_{n+1} " ; " ... " ; " met_{n+m} " : " typ'_{n+m}
-~["; .."] " >" \]
-which may contain an ellipsis "..", if every $typ_i$ is a supertype of
-$typ'_i$.
+\begin{center}
+@ '<' met_1 ':' typ@$'_1$@ ';' \dots ';' met_n ':' typ@$'_n$@ ';'
+met@$_{n+1}$@ ':' typ@$'_{n+1}$@ ';' \dots ';' met@$_{n+m}$@ ':' typ@$'_{n+m}$@
+~[';' '..'] '>' @
+\end{center}
+which may contain an ellipsis ".." if every @typ_i@ is a supertype of
+the corresponding @typ@$'_i$.
 
 A monomorphic method type can be a supertype of a polymorphic method
-type. Namely, if @@typ@@ is an instance of $typ'$, then $"'"a_1
-..."'"a_n"."typ'$ is a subtype of @@typ@@.
+type. Namely, if @typ@ is an instance of @typ@$'$, then @ "'"a_1
+\dots "'"a_n '.' typ@$'$ is a subtype of @typ@.
 
 Inside a class definition, newly defined types are not available for
 subtyping, as the type abbreviations are not yet completely
@@ -760,42 +764,47 @@ there are no binary methods.
 
 \subsubsection*{Polymorphic variant types}
 
-A polymorphic variant type @@typ@@ is subtype of another polymorphic
-variant type $typ'$ if the upper bound of @@typ@@ ({\em i.e.} the
+A polymorphic variant type @@typ@@ is a subtype of another polymorphic
+variant type @typ@$'$ if the upper bound of @@typ@@ ({\em i.e.} the
 maximum set of constructors that may appear in an instance of @@typ@@)
-is included in the lower bound of $typ'$, and the types of arguments
+is included in the lower bound of @typ@$'$, and the types of arguments
 for the constructors of @@typ@@ are subtypes of those in
-$typ'$. Namely,
-\[ "["["<"] " '"C_1 " of " typ_1 " | " ... " | '"C_n " of " typ_n " ]" \]
+@typ@$'$. Namely,
+\begin{center}
+@ "["["<"] "'"C_1 "of" typ_1 "|" \dots "|" "'"C_n "of" typ_n "]" @
+\end{center}
 which may be a shrinkable type, is a subtype of
-\[ "["[">"] " '"C_1 " of " typ'_1 " | " ... " | '"C_n " of " typ'_n
- "| '"C_{n+1} " of " typ'_{n+1} " | " ... " | '"C_{n+m} " of "
-  typ'_{n+m} " ]" \]
-which may be an extensible type, if every $typ_i$ is a subtype of $typ'_i$.
+\begin{center}
+@ "["[">"] "'"C_1 "of" typ@$'_1$@ "|" \dots "|" "'"C_n "of" typ@$'_n$@
+ "|" "'"C@$_{n+1}$@ "of" typ@$'_{n+1}$@ "|" \dots "|" "'"C@$_{n+m}$@ "of"
+  typ@$'_{n+m}$@ "]" @
+\end{center}
+which may be an extensible type, if every @typ_i@ is a subtype of @typ@$'_i$.
 
 \subsubsection*{Variance}
 
 Other types do not introduce new subtyping, but they may propagate the
-subtyping of their arguments. For instance, $typ_1 " * " typ_2$ is a
-subtype of $typ'_1 " * " typ'_2$ when $typ_1$ and $typ_2$ are
-respectively subtypes of $typ'_1$ and $typ'_2$.
+subtyping of their arguments. For instance, @typ_1 "*" typ_2@ is a
+subtype of @typ@$'_1$@ "*" typ@$'_2$ when @typ_1@ and @typ_2@ are
+respectively subtypes of @typ@$'_1$ and @typ@$'_2$.
 For function types, the relation is more subtle:
-$typ_1$ "->" $typ_2$ is a subtype of $typ'_1$ "->" $typ'_2$
-if $typ_1$ is a supertype of $typ'_1$ and $typ_2$ is a
-subtype of $typ'_2$. For this reason, function types are covariant in
+@typ_1 "->" typ_2@ is a subtype of @typ@$'_1$@~"->" typ@$'_2$
+if @typ_1@ is a supertype of @typ@$'_1$ and @typ_2@ is a
+subtype of @typ@$'_2$. For this reason, function types are covariant in
 their second argument (like tuples), but contravariant in their first
 argument. Mutable types, like "array" or "ref" are neither covariant
 nor contravariant, they are nonvariant, that is they do not propagate
 subtyping.
 
-For user defined types, the variance is automatically inferred: a
+For user-defined types, the variance is automatically inferred: a
 parameter is covariant if it has only covariant occurences,
 contravariant if it has only contravariant occurences,
 variance-free if it has no occurences, and nonvariant otherwise.
 A variance-free parameter may change freely through subtyping, it does
 not have to be a subtype or a supertype.
 %
-For abstract and private types, the variance must be given explicitly,
+For abstract and private types, the variance must be given explicitly
+(see section~\ref{s:type-defs}),
 otherwise the default is nonvariant. This is also the case for
 constrained arguments in type definitions.
 
