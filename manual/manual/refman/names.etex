@@ -6,7 +6,7 @@ objects and refer to these objects by name later:
 \begin{itemize}
 \item value names (syntactic class @value-name@),
 \item value constructors and exception constructors (class @constr-name@),
-\item labels (@label-name@),
+\item labels (@label-name@, defined in section~\ref{s:labelname}),
 \item polymorphic variant tags (@tag-name@),
 \item type constructors (@typeconstr-name@),
 \item record fields (@field-name@),
@@ -42,9 +42,6 @@ infix-op:
 ;
 constr-name:
         capitalized-ident
-;
-label-name:
-        lowercase-ident
 ;
 tag-name:
         ident
