@@ -119,7 +119,7 @@ Immutable fields are covariant, mutable fields are non-variant.
 Both mutable and immutable fields may have a explicitly polymorphic
 types.  The polymorphism of the contents is statically checked whenever
 a record value is created or modified.  Extracted values may have their
-types instanciated.
+types instantiated.
 
 The two components of a type definition, the optional equation and the
 optional representation, can be combined independently, giving
