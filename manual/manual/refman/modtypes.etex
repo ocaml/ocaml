@@ -26,7 +26,7 @@ module-type:
         | '(' module-type ')'
 ;
 mod-constraint:
-          'type' [type-parameters] typeconstr '=' typexpr
+          'type' [type-params] typeconstr '=' typexpr
         | 'module' module-path '=' extended-module-path
 ;
 %BEGIN LATEX
