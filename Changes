@@ -27,7 +27,7 @@ OCaml 4.00.1:
 Bug fixes:
 - PR#5700: crash with native-code stack backtraces under MacOS 10.8 x86-64
 - PR#5712: some documentation problems
-
+- PR#5719: ocamlyacc generates code that is not warning 33-compliant
 
 OCaml 4.00.0:
 -------------
