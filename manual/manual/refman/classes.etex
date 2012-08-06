@@ -21,20 +21,17 @@ specify the general shape and type properties of classes.
 
 \begin{syntax}
 class-type:
-      class-body-type
-   |  [['?']label-name':'] typexpr '->' class-type
+      {[['?']label-name':'] typexpr '->'} class-body-type
 ;
 class-body-type:
       'object' ['(' typexpr ')'] {class-field-spec} 'end'
-   |  class-path
-   |  '[' typexpr {',' typexpr} ']' class-path
+   |  ['[' typexpr {',' typexpr} ']'] class-path
 ;
 %\end{syntax} \begin{syntax}
 class-field-spec:
       'inherit' class-type
    |  'val' ['mutable'] ['virtual'] inst-var-name ':' typexpr
-   |  'method' ['private'] method-name ':' poly-typexpr
-   |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
+   |  'method' ['private'] ['virtual'] method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
 ;
 \end{syntax}
@@ -61,13 +58,13 @@ The class type expression
 @'object' ['(' typexpr ')'] {class-field-spec} 'end'@
 is the type of a class body. It specifies its instance variables and
 methods. In this type, @typexpr@ is matched against the self type, therefore
-providing a binding for the self type.
+providing a name for the self type.
 
 A class body will match a class body type if it provides definitions
-for all the components specified in the class type, and these
-definitions meet the type requirements given in the class type.
+for all the components specified in the class body type, and these
+definitions meet the type requirements given in the class body type.
 Furthermore, all methods either virtual or public present in the class
-body must also be present in the class type (on the other hand, some
+body must also be present in the class body type (on the other hand, some
 instance variables and concrete private methods may be omitted).  A
 virtual method will match a concrete method, which makes it possible
 to forget its implementation. An immutable instance variable will match a
@@ -120,7 +117,8 @@ appear elsewhere inside the class specification will be assumed to be
 universal, and made polymorphic in the resulting method type.
 Writing an explicit polymorphic type will disable this behaviour.
 
-Several specifications for the same method must have compatible types.
+If several specifications are present for the same method, they
+must have compatible types.
 Any non-private specification of a method forces it to be public.
 
 \subsubsection*{Virtual method specification}
@@ -138,9 +136,9 @@ name of the method and @poly-typexpr@ its expected type.
 \ikwd{constraint\@\texttt{constraint}}
 
 The construct @'constraint' typexpr_1 '=' typexpr_2@ forces the two
-type expressions to be equals. This is typically used to specify type
-parameters: they can be that way be bound to a specified type
-expression.
+type expressions to be equal. This is typically used to specify type
+parameters: in this way, they can be bound to specific type
+expressions.
 
 \subsection{Class expressions}
 
@@ -197,14 +195,14 @@ The expression @class-path@ evaluates to the class bound to the name
 @class-path@. Similarly, the expression
 @'[' typexpr_1 ',' \ldots typexpr_n ']' class-path@
 evaluates to the parametric class bound to the name @class-path@,
-in which type parameters have been instantiated to respectively
+in which type parameters have been instantiated respectively to
 @typexpr_1@, \ldots @typexpr_n@.
 
 The expression @'(' class-expr ')'@ evaluates to the same module as
 @class-expr@.
 
 The expression @'(' class-expr ':' class-type ')'@ checks that
-@class-type@ match the type of @class-expr@ (that is, that the
+@class-type@ matches the type of @class-expr@ (that is, that the
 implementation @class-expr@ meets the type specification
 @class-type@). The whole expression evaluates to the same class as
 @class-expr@, except that all components not specified in
@@ -213,9 +211,9 @@ implementation @class-expr@ meets the type specification
 \subsubsection*{Class application}
 
 Class application is denoted by juxtaposition of (possibly labeled)
-expressions. It denotes the class whose constructor is the original
-constructor applied to the given arguments. The arguments are
-evaluated like for expression application, but the constructor itself will
+expressions. It denotes the class whose constructor is the first
+expression applied to the given arguments. The arguments are
+evaluated as for expression application, but the constructor itself will
 only be evaluated when objects are created. In particular, side-effects
 caused by the application of the constructor will only occur at object
 creation time.
@@ -280,7 +278,7 @@ methods and instance variables from other classes. The class
 expression @class-expr@ must evaluate to a class body.  The instance
 variables, methods and initializers from this class body are added
 into the current class.  The addition of a method will override any
-previously defined methods of the same name.
+previously defined method of the same name.
 
 \ikwd{as\@\texttt{as}}
 An ancestor can be bound by prepending the construct @'as' value-name@
@@ -290,7 +288,7 @@ variable and can only be used to select a method, i.e. in an expression
 method @method-name@ as it was defined in the parent class even if it is
 redefined in the current class.
 The scope of an ancestor binding is limited to the current class.
-The ancestor method may be called from a subclass but only indirectly. 
+The ancestor method may be called from a subclass but only indirectly.
 
 \subsubsection*{Instance variable definition}
 
