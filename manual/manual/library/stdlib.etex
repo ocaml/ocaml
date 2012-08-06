@@ -44,6 +44,8 @@ the above 3 modules \\
 "Random" & p.~\pageref{Random} & pseudo-random number generator \\
 "Set" & p.~\pageref{Set} & sets over ordered types \\
 "Map" & p.~\pageref{Map} & association tables over ordered types \\
+"MoreLabels" &p.~\pageref{MoreLabels} & labelized versions of
+"Hashtbl", "Set", and "Map" \\
 "Oo" & p.~\pageref{Oo} & useful functions on objects \\
 "Stack" & p.~\pageref{Stack} & last-in first-out stacks \\
 "Queue" & p.~\pageref{Queue} & first-in first-out queues \\
@@ -150,6 +152,7 @@ be called from C \\
 \input{List.tex}
 \input{Map.tex}
 \input{Marshal.tex}
+\input{MoreLabels.tex}
 \input{Nativeint.tex}
 \input{Oo.tex}
 \input{Parsing.tex}
