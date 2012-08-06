@@ -139,6 +139,7 @@ The current implementation places practically no restrictions on the
 length of string literals.
 
 \subsubsection*{Naming labels}
+\label{s:labelname}
 
 To avoid ambiguities, naming labels in expressions cannot just be defined
 syntactically as the sequence of the three tokens "~", @ident@ and
