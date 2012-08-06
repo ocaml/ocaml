@@ -632,7 +632,6 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
      For more details about tags, see the functions [open_tag] and
      [close_tag].
    - [@\}]: close the most recently opened tag.
-   - [@%]: print a plain [%] character.
 
    Example: [printf "@[%s@ %d@]@." "x =" 1] is equivalent to
    [open_box (); print_string "x ="; print_space ();
