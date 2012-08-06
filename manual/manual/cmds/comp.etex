@@ -404,7 +404,8 @@ that are currently defined are ignored. The warning are as follows.
 \input{warnings.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..37".
+The default setting is "-w +a-4-6-7-9-27-29-32..39".  It is displayed by
+"ocamlc -help".
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
 
