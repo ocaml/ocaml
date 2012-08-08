@@ -799,7 +799,7 @@ variable caml-mode-indentation."
 ;; We will adapt OCaml to output error messages in a compatible format.
 ;; In the meantime we add the new format here in addition to the old one.
 (defconst caml-error-regexp-newstyle
-  "^File \"\\([^\"\n]+\\)\", line \\([0-9]+\\), char \\([0-9]+\\) to line \\([0-9]+\\), char \\([0-9]+\\):"
+  "^[ A-\377]+ \"\\([^\"\n]+\\)\", line \\([0-9]+\\), char \\([0-9]+\\) to line \\([0-9]+\\), char \\([0-9]+\\):"
   "Regular expression matching the error messages produced by ocamlc/ocamlopt.")
 
 (if (boundp 'compilation-error-regexp-alist)
