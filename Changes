@@ -6,6 +6,8 @@ Compilers:
 - ocamldep now supports -absname
 
 Bug fixes:
+- PR#4762: ?? is not used at all, but registered as a lexer token
+- PR#4994: ocaml-mode doesn't work with xemacs21
 - PR#5327: (Windows) Unix.select blocks if same socket listed in first and
   third arguments
 - PR#5551: Avoid repeated lookups for missing cmi files
@@ -13,7 +15,6 @@ Bug fixes:
 - PR#5695: remove warnings on sparc code emitter
 - PR#5697: better location for warnings on statement expressions
 - PR#5698: remove harcoded limit of 200000 labels in emitaux.ml
-- PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#5708: catch Failure"int_of_string" in ocamldebug
 
 Internals:

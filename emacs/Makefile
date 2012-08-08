@@ -80,4 +80,4 @@ compile-only:
 	$(EMACS) --batch --eval '$(COMPILECMD)'
 
 clean:
-	rm -f ocamltags *~ #*# *.elc
+	rm -f ocamltags *~ \#*# *.elc
