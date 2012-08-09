@@ -217,8 +217,9 @@ let read_parse_and_extract parse_function extract_function magic source_file =
     Depend.StringSet.empty
 
 let ml_file_dependencies source_file =
-  let extracted_deps = read_parse_and_extract
-      Parse.implementation Depend.add_implementation Config.ast_impl_magic_number source_file
+  let extracted_deps =
+    read_parse_and_extract Parse.use_file Depend.add_use_file
+                           Config.ast_impl_magic_number source_file
   in
   if !sort_files then
     files := (source_file, ML, !Depend.free_structure_names) :: !files
