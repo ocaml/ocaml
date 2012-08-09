@@ -1,3 +1,10 @@
+TODO:
+Understand why ocamlnet does not detect lablgtk, ocamlssl, camlzip, cryptokit
+
+TODO: cryptogps
+http://www.ocaml-programming.de/packages
+and make ocamlnet depend on it
+
 # TODO: lablgl
 # http://wwwfun.kurims.kyoto-u.ac.jp/soft/lsl/lablgl.html
 
