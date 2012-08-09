@@ -210,6 +210,7 @@ let read_parse_and_extract parse_function extract_function magic source_file =
   try
     let input_file = Pparse.preprocess source_file in
     let ast = Pparse.file Format.err_formatter input_file parse_function magic in
+Printf.eprintf "after Pparse.file\n%!";  (* FIXME DEBUG *)
     extract_function Depend.StringSet.empty ast;
     !Depend.free_structure_names
   with x ->
@@ -217,9 +218,8 @@ let read_parse_and_extract parse_function extract_function magic source_file =
     Depend.StringSet.empty
 
 let ml_file_dependencies source_file =
-  let extracted_deps =
-    read_parse_and_extract Parse.use_file Depend.add_use_file
-                           Config.ast_impl_magic_number source_file
+  let extracted_deps = read_parse_and_extract
+      Parse.implementation Depend.add_implementation Config.ast_impl_magic_number source_file
   in
   if !sort_files then
     files := (source_file, ML, !Depend.free_structure_names) :: !files
