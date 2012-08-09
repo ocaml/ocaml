@@ -51,9 +51,9 @@ ODOC_TEST=odoc_test.cmo
 GENERATORS_CMOS= \
 	generators/odoc_todo.cmo \
 	generators/odoc_literate.cmo
-GENERATORS_CMXS_TMP1=$(GENERATORS_CMOS:.cmo=.cmxs)
-GENERATORS_CMXS_TMP2=$(NATDYNLINK:false=)
-GENERATORS_CMXS=$(GENERATORS_CMXS_TMP2:true=$(GENERATORS_CMXS_TMP1))
+true = $(GENERATORS_CMOS:.cmo=.cmxs)
+false =
+GENERATORS_CMXS := $($(NATDYNLINK))
 
 
 # Compilation
