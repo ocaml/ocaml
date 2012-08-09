@@ -336,8 +336,9 @@ module Timer = Timer;;\n\
   Hashtbl.iter
     (fun name _ ->
       let name = realname name in
+      output_string oc " ";
       output_string oc name;
-      output_string oc ".cmo ")
+      output_string oc ".cmo")
     module_table;
   output_string oc "\n";
   Hashtbl.iter
