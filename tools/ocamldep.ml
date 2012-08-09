@@ -210,7 +210,6 @@ let read_parse_and_extract parse_function extract_function magic source_file =
   try
     let input_file = Pparse.preprocess source_file in
     let ast = Pparse.file Format.err_formatter input_file parse_function magic in
-Printf.eprintf "after Pparse.file\n%!";  (* FIXME DEBUG *)
     extract_function Depend.StringSet.empty ast;
     !Depend.free_structure_names
   with x ->
