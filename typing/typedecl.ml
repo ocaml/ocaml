@@ -783,7 +783,7 @@ let transl_value_decl env valdecl =
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
-let transl_with_constraint env id row_path sdecl =
+let transl_with_constraint env id row_path orig_decl sdecl =
   reset_type_variables();
   Ctype.begin_def();
   let params =
@@ -791,6 +791,10 @@ let transl_with_constraint env id row_path sdecl =
       List.map (enter_type_variable true sdecl.ptype_loc) sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
+  let orig_decl = Ctype.instance_declaration orig_decl in
+  let arity_ok = List.length params = orig_decl.type_arity in
+  if arity_ok then
+    List.iter2 (Ctype.unify_var env) params orig_decl.type_params;
   List.iter
     (function (ty, ty', loc) ->
        try
@@ -803,7 +807,7 @@ let transl_with_constraint env id row_path sdecl =
   let decl =
     { type_params = params;
       type_arity = List.length params;
-      type_kind = Type_abstract;
+      type_kind = if arity_ok then orig_decl.type_kind else Type_abstract;
       type_private = sdecl.ptype_private;
       type_manifest =
         begin match sdecl.ptype_manifest with

@@ -32,6 +32,7 @@ module Async : sig
         err : producer ; (** Connected to child process standard error *)
         waitpid : Unix.process_status Join.chan Join.chan ; (** Invoke continuation argument when child process changes status. *)
         kill : int -> unit; (** Send (Unix) signal to child process *)
+        gkill : int -> unit  (** Send (Unix) signal to child process group *)
       }
 (** Notice that [out] or [err] above can be empty producers when
     child process channels redirection is not commanded. *)
@@ -84,7 +85,8 @@ module Sync : sig
 
   type t = (** Abstraction of forked command *)
       { wait : unit  -> result; (** Get result (will block) *)
-        kill : int -> unit;    (** Kill child *)
+        kill : int -> unit;     (** Kill child *)
+        gkill : int -> unit;     (** Kill child group *)
       }
   val command : string -> string array ->  t
     (** Analogous of {!JoinProc.command}.

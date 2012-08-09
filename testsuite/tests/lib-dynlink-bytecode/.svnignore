@@ -1,8 +1,15 @@
+#!/bin/sh
+
+svn propset svn:ignore -F - . <<EOF
+
+*.result
+*.byte
+*.native
+program
 main
 static
 custom
 *.a
 *.so
-*.result
-*.cm*
-*.o
+
+EOF

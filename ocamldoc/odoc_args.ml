@@ -39,6 +39,7 @@ let analyse_merge_options s =
     (M.merge_version, [Odoc_types.Merge_version]) ;
     (M.merge_see, [Odoc_types.Merge_see]) ;
     (M.merge_since, [Odoc_types.Merge_since]) ;
+    (M.merge_before, [Odoc_types.Merge_before]) ;
     (M.merge_deprecated, [Odoc_types.Merge_deprecated]) ;
     (M.merge_param, [Odoc_types.Merge_param]) ;
     (M.merge_raised_exception, [Odoc_types.Merge_raised_exception]) ;
@@ -49,6 +50,76 @@ let analyse_merge_options s =
   in
   analyse_option_string l s
 
+
+let dump = ref (None : string option)
+
+let load = ref ([] : string list)
+
+(** Allow arbitrary recursive types. *)
+let recursive_types = Clflags.recursive_types
+
+let verbose = ref false
+
+(** Optional preprocessor command. *)
+let preprocessor = Clflags.preprocessor
+
+let sort_modules = ref false
+
+let no_custom_tags = ref false
+
+let no_stop = ref false
+
+let remove_stars = ref false
+
+let keep_code = ref false
+
+let inverse_merge_ml_mli = ref false
+
+let filter_with_module_constraints = ref true
+
+let title = ref (None : string option)
+
+let intro_file = ref (None : string option)
+
+let with_parameter_list = ref false
+
+let hidden_modules = ref ([] : string list)
+
+let target_dir = ref Filename.current_dir_name
+
+let css_style = ref None
+
+let index_only = ref false
+
+let colorize_code = ref false
+
+let charset = ref "iso-8859-1"
+
+let with_header = ref true
+
+let with_trailer = ref true
+
+let separate_files = ref false
+
+let latex_titles = ref [
+  1, "section" ;
+  2, "subsection" ;
+  3, "subsubsection" ;
+  4, "paragraph" ;
+  5, "subparagraph" ;
+]
+
+let with_toc = ref true
+
+let with_index = ref true
+
+let esc_8bits = ref false
+
+let info_section = ref "Objective Caml"
+
+let info_entry = ref []
+
+let files = ref []
 
 let f_latex_title s =
   try
@@ -83,7 +154,7 @@ let add_hidden_modules s =
 let set_generator (g : Odoc_gen.generator) = current_generator := Some g
 
 (** The default option list *)
-let options = ref [
+let default_options = [
   "-version", Arg.Unit (fun () -> print_string M.message_version ; print_newline () ; exit 0) , M.option_version ;
   "-vnum", Arg.Unit (fun () -> print_string M.config_version ;
                                print_newline () ; exit 0) , M.option_version ;
@@ -150,11 +221,12 @@ let options = ref [
   "\n\n *** HTML options ***\n";
 
 (* html only options *)
-  "-all-params", Arg.Set Odoc_html.with_parameter_list, M.with_parameter_list ;
-  "-css-style", Arg.String (fun s -> Odoc_html.css_style := Some s), M.css_style ;
-  "-index-only", Arg.Set Odoc_html.index_only, M.index_only ;
-  "-colorize-code", Arg.Set Odoc_html.colorize_code, M.colorize_code ;
-  "-short-functors", Arg.Set Odoc_html.html_short_functors, M.html_short_functors ^
+  "-all-params", Arg.Set with_parameter_list, M.with_parameter_list ;
+  "-css-style", Arg.String (fun s -> css_style := Some s), M.css_style ;
+  "-index-only", Arg.Set index_only, M.index_only ;
+  "-colorize-code", Arg.Set colorize_code, M.colorize_code ;
+  "-short-functors", Arg.Set html_short_functors, M.html_short_functors ;
+  "-charset", Arg.Set_string charset, (M.charset !charset)^
   "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)
@@ -205,7 +277,34 @@ let options = ref [
 
 ]
 
+let options = ref default_options
+
+let modified_options () =
+  !options != default_options
+
+let append_last_doc suffix =
+  match List.rev !options with
+  | (key, spec, doc) :: tl ->
+      options := List.rev ((key, spec, doc ^ suffix) :: tl)
+  | [] -> ()
+
+(** The help option list, overriding the default ones from the Arg module *)
+let help_options = ref []
+let help_action () =
+  let msg =
+    Arg.usage_string
+      (!options @ !help_options)
+      (M.usage ^ M.options_are) in 
+  print_string msg
+let () =
+  help_options := [
+    "-help", Arg.Unit help_action, M.help ;
+    "--help", Arg.Unit help_action, M.help
+]
+
 let add_option o =
+  if not (modified_options ()) then
+    append_last_doc "\n *** custom generator options ***\n";
   let (s,_,_) = o in
   let rec iter = function
       [] -> [o]
@@ -233,7 +332,9 @@ let parse () =
     in
     Odoc_global.files := !Odoc_global.files @ [sf]
   in
-  let _ = Arg.parse !options
+  if modified_options () then append_last_doc "\n";
+  let options = !options @ !help_options in
+  let _ = Arg.parse options
       anonymous
       (M.usage^M.options_are)
   in

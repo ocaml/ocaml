@@ -131,7 +131,7 @@ val open_in : file_name -> in_channel;;
     @since 3.12.0
 *)
 
-val open_in_bin : file_name -> in_channel;;
+val open_in_bin : string -> in_channel;;
 (** [Scanning.open_in_bin fname] returns a formatted input channel for bufferized
     reading in binary mode of file [fname].
     @since 3.12.0

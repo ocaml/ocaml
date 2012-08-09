@@ -147,44 +147,44 @@ FUNCTION(G(caml_call_gc))
 	STORE_VAR(%r14, caml_exception_pointer)
     /* Save floating-point registers */
         subq    $(16*8), %rsp
-        movlpd  %xmm0, 0*8(%rsp)
-        movlpd  %xmm1, 1*8(%rsp)
-        movlpd  %xmm2, 2*8(%rsp)
-        movlpd  %xmm3, 3*8(%rsp)
-        movlpd  %xmm4, 4*8(%rsp)
-        movlpd  %xmm5, 5*8(%rsp)
-        movlpd  %xmm6, 6*8(%rsp)
-        movlpd  %xmm7, 7*8(%rsp)
-        movlpd  %xmm8, 8*8(%rsp)
-        movlpd  %xmm9, 9*8(%rsp)
-        movlpd  %xmm10, 10*8(%rsp)
-        movlpd  %xmm11, 11*8(%rsp)
-        movlpd  %xmm12, 12*8(%rsp)
-        movlpd  %xmm13, 13*8(%rsp)
-        movlpd  %xmm14, 14*8(%rsp)
-        movlpd  %xmm15, 15*8(%rsp)
+        movsd   %xmm0, 0*8(%rsp)
+        movsd   %xmm1, 1*8(%rsp)
+        movsd   %xmm2, 2*8(%rsp)
+        movsd   %xmm3, 3*8(%rsp)
+        movsd   %xmm4, 4*8(%rsp)
+        movsd   %xmm5, 5*8(%rsp)
+        movsd   %xmm6, 6*8(%rsp)
+        movsd   %xmm7, 7*8(%rsp)
+        movsd   %xmm8, 8*8(%rsp)
+        movsd   %xmm9, 9*8(%rsp)
+        movsd   %xmm10, 10*8(%rsp)
+        movsd   %xmm11, 11*8(%rsp)
+        movsd   %xmm12, 12*8(%rsp)
+        movsd   %xmm13, 13*8(%rsp)
+        movsd   %xmm14, 14*8(%rsp)
+        movsd   %xmm15, 15*8(%rsp)
     /* Call the garbage collector */
         call    GCALL(caml_garbage_collection)
     /* Restore caml_young_ptr, caml_exception_pointer */
 	LOAD_VAR(caml_young_ptr, %r15)
 	LOAD_VAR(caml_exception_pointer, %r14)
     /* Restore all regs used by the code generator */
-        movlpd  0*8(%rsp), %xmm0
-        movlpd  1*8(%rsp), %xmm1
-        movlpd  2*8(%rsp), %xmm2
-        movlpd  3*8(%rsp), %xmm3
-        movlpd  4*8(%rsp), %xmm4
-        movlpd  5*8(%rsp), %xmm5
-        movlpd  6*8(%rsp), %xmm6
-        movlpd  7*8(%rsp), %xmm7
-        movlpd  8*8(%rsp), %xmm8
-        movlpd  9*8(%rsp), %xmm9
-        movlpd  10*8(%rsp), %xmm10
-        movlpd  11*8(%rsp), %xmm11
-        movlpd  12*8(%rsp), %xmm12
-        movlpd  13*8(%rsp), %xmm13
-        movlpd  14*8(%rsp), %xmm14
-        movlpd  15*8(%rsp), %xmm15
+        movsd   0*8(%rsp), %xmm0
+        movsd   1*8(%rsp), %xmm1
+        movsd   2*8(%rsp), %xmm2
+        movsd   3*8(%rsp), %xmm3
+        movsd   4*8(%rsp), %xmm4
+        movsd   5*8(%rsp), %xmm5
+        movsd   6*8(%rsp), %xmm6
+        movsd   7*8(%rsp), %xmm7
+        movsd   8*8(%rsp), %xmm8
+        movsd   9*8(%rsp), %xmm9
+        movsd   10*8(%rsp), %xmm10
+        movsd   11*8(%rsp), %xmm11
+        movsd   12*8(%rsp), %xmm12
+        movsd   13*8(%rsp), %xmm13
+        movsd   14*8(%rsp), %xmm14
+        movsd   15*8(%rsp), %xmm15
         addq    $(16*8), %rsp
         popq    %rax
         popq    %rbx

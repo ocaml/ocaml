@@ -689,11 +689,11 @@ val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** {6 Deprecated} *)
 
 val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a;;
-(** Deprecated and error prone function. Do not use it.
+(** A deprecated and error prone function. Do not use it.
 
   If you need to print to some buffer [b], you must first define a
   formatter writing to [b], using [let to_b = formatter_of_buffer b]; then
   use regular calls to [Format.fprintf] on formatter [to_b]. *)
 
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
-(** Deprecated name. A synonym for [ksprintf]. *)
+(** A deprecated synonym for [ksprintf]. *)

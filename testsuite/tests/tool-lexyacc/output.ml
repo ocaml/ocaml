@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: output.ml,v 1.5 2000/12/28 13:06:41 weis Exp $ *)
+(* $Id$ *)
 
 (* Generating a DFA as a set of mutually recursive functions *)
 

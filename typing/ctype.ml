@@ -177,6 +177,11 @@ module TypePairs =
                   (*  Miscellaneous operations on object types  *)
                   (**********************************************)
 
+(* Note:
+   We need to maintain some invariants:
+   * cty_self must be a Tobject
+   * ...
+*)
 
 (**** Object field manipulation. ****)
 
@@ -878,6 +883,20 @@ let instance_parameterized_type_2 sch_args sch_lst sch =
   let ty = copy sch in
   cleanup_types ();
   (ty_args, ty_lst, ty)
+
+let instance_declaration decl =
+  let decl =
+    {decl with type_params = List.map copy decl.type_params;
+     type_manifest = may_map copy decl.type_manifest;
+     type_kind = match decl.type_kind with
+     | Type_abstract -> Type_abstract
+     | Type_variant cl ->
+         Type_variant (List.map (fun (s,tl) -> (s, List.map copy tl)) cl)
+     | Type_record (fl, rr) ->
+         Type_record (List.map (fun (s,m,ty) -> (s, m, copy ty)) fl, rr)}
+  in
+  cleanup_types ();
+  decl
 
 let instance_class params cty =
   let rec copy_class_type =

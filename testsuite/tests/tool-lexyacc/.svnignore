@@ -1,8 +1,13 @@
+#!/bin/sh
+
+svn propset svn:ignore -F - . <<EOF
+
+*.result
+*.byte
+*.native
+program
 scanner.ml
 grammar.mli
 grammar.ml
-*.byte
-*.native
-*.result
-*.cm*
-*.o
+
+EOF

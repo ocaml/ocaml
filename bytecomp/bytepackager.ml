@@ -39,7 +39,7 @@ let force_link = ref false
    SETGLOBAL relocations that correspond to one of the units being
    consolidated. *)
 
-let rename_relocation objfile mapping defined base (rel, ofs) =
+let rename_relocation packagename objfile mapping defined base (rel, ofs) =
   let rel' =
     match rel with
       Reloc_getglobal id ->
@@ -49,7 +49,14 @@ let rename_relocation objfile mapping defined base (rel, ofs) =
           then Reloc_getglobal id'
           else raise(Error(Forward_reference(objfile, id)))
         with Not_found ->
-          rel
+          (* PR#5276: unique-ize dotted global names, which appear
+             if one of the units being consolidated is itself a packed
+             module. *)
+          let name = Ident.name id in
+          if String.contains name '.' then
+            Reloc_getglobal (Ident.create_persistent (packagename ^ "." ^ name))
+          else
+            rel
         end
     | Reloc_setglobal id ->
         begin try
@@ -58,7 +65,12 @@ let rename_relocation objfile mapping defined base (rel, ofs) =
           then raise(Error(Multiple_definition(objfile, id)))
           else Reloc_setglobal id'
         with Not_found ->
-          rel
+          (* PR#5276, as above *)
+          let name = Ident.name id in
+          if String.contains name '.' then
+	    Reloc_setglobal (Ident.create_persistent (packagename ^ "." ^ name))
+          else
+            rel
         end
     | _ ->
         rel in
@@ -112,12 +124,12 @@ let read_member_info file =
    Accumulate relocs, debug info, etc.
    Return size of bytecode. *)
 
-let rename_append_bytecode oc mapping defined ofs prefix subst objfile compunit =
+let rename_append_bytecode packagename oc mapping defined ofs prefix subst objfile compunit =
   let ic = open_in_bin objfile in
   try
     Bytelink.check_consistency objfile compunit;
     List.iter
-      (rename_relocation objfile mapping defined ofs)
+      (rename_relocation packagename objfile mapping defined ofs)
       compunit.cu_reloc;
     primitives := compunit.cu_primitives @ !primitives;
     if compunit.cu_force_link then force_link := true;
@@ -136,20 +148,20 @@ let rename_append_bytecode oc mapping defined ofs prefix subst objfile compunit 
 (* Same, for a list of .cmo and .cmi files.
    Return total size of bytecode. *)
 
-let rec rename_append_bytecode_list oc mapping defined ofs prefix subst = function
+let rec rename_append_bytecode_list packagename oc mapping defined ofs prefix subst = function
     [] ->
       ofs
   | m :: rem ->
       match m.pm_kind with
       | PM_intf ->
-          rename_append_bytecode_list oc mapping defined ofs prefix subst rem
+          rename_append_bytecode_list packagename oc mapping defined ofs prefix subst rem
       | PM_impl compunit ->
           let size =
-            rename_append_bytecode oc mapping defined ofs prefix subst
+            rename_append_bytecode packagename oc mapping defined ofs prefix subst
                                    m.pm_file compunit in
           let id = Ident.create_persistent m.pm_name in
           let root = Path.Pident (Ident.create_persistent prefix) in
-          rename_append_bytecode_list
+          rename_append_bytecode_list packagename
             oc mapping (id :: defined)
             (ofs + size) prefix (Subst.add_module id (Path.Pdot (root, Ident.name id, Path.nopos)) subst) rem
 
@@ -191,7 +203,7 @@ let package_object_files files targetfile targetname coercion =
     let pos_depl = pos_out oc in
     output_binary_int oc 0;
     let pos_code = pos_out oc in
-    let ofs = rename_append_bytecode_list oc mapping [] 0 targetname Subst.identity members in
+    let ofs = rename_append_bytecode_list targetname oc mapping [] 0 targetname Subst.identity members in
     build_global_target oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then

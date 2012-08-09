@@ -310,7 +310,7 @@ external atan : float -> float = "caml_atan_float" "atan" "float"
     Result is in radians and is between [-pi/2] and [pi/2]. *)
 
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
-(** [atan x y] returns the arc tangent of [y /. x].  The signs of [x]
+(** [atan2 y x] returns the arc tangent of [y /. x].  The signs of [x]
     and [y] are used to determine the quadrant of the result.
     Result is in radians and is between [-pi] and [pi]. *)
 
@@ -505,7 +505,7 @@ val stdout : out_channel
 (** The standard output for the process. *)
 
 val stderr : out_channel
-(** The standard error ouput for the process. *)
+(** The standard error output for the process. *)
 
 
 (** {7 Output functions on standard output} *)
@@ -858,9 +858,14 @@ external decr : int ref -> unit = "%decr"
     included for backward compatibility with earlier releases of Objective
     Caml.
     ['a] is the type of the parameters of the format,
-    ['c] is the result type for the "printf"-style function,
-    and ['b] is the type of the first argument given to
-    [%a] and [%t] printing functions. *)
+    ['b] is the type of the first argument given to
+         [%a] and [%t] printing functions,
+    ['c] is the type of the argument transmitted to the first argument of
+         "kprintf"-style functions,
+    ['d] is the result type for the "scanf"-style functions,
+    ['e] is the type of the receiver function for the "scanf"-style functions,
+    ['f] is the result type for the "printf"-style function.
+ *)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4

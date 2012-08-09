@@ -264,6 +264,8 @@ installbin lex/ocamllex.opt$EXE $BINDIR/ocamllex.opt$EXE
 installbin tools/ocamldep.native$EXE $BINDIR/ocamldep.opt$EXE
 
 echo "Installing some tools..."
+installbin tools/objinfo.byte$EXE $BINDIR/ocamlobjinfo$EXE
+installbin ../tools/objinfo_helper$EXE $LIBDIR/objinfo_helper$EXE
 installbin tools/ocamlcp.byte$EXE $BINDIR/ocamlcp$EXE
 installbin tools/ocamldep.byte$EXE $BINDIR/ocamldep$EXE
 installbin tools/ocamlmklib.byte$EXE $BINDIR/ocamlmklib$EXE
