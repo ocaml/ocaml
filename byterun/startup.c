@@ -370,12 +370,12 @@ CAMLexport void caml_main(char **argv)
     fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      caml_fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
+      caml_fatal_error_arg("Fatal error: cannot find file '%s'\n", argv[pos]);
       break;
     case BAD_BYTECODE:
       caml_fatal_error_arg(
-        "Fatal error: the file %s is not a bytecode executable file\n",
-        argv[pos]);
+        "Fatal error: the file '%s' is not a bytecode executable file\n",
+        exe_name);
       break;
     }
   }
