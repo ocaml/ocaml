@@ -251,7 +251,6 @@ let setup_arch arch =
 
 let camlp4_arch =
   dir "" [
-    dir "stdlib" [];
     dir "camlp4" [
       dir "build" [];
       dir_pack "Camlp4" [
@@ -268,8 +267,7 @@ setup_arch camlp4_arch;;
 
 Pathname.define_context "" ["stdlib"];;
 Pathname.define_context "utils" [Pathname.current_dir_name; "stdlib"];;
-Pathname.define_context "camlp4" ["camlp4"; "stdlib"];;
-Pathname.define_context "camlp4/boot" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/boot" ["camlp4"];;
 Pathname.define_context "camlp4/Camlp4Parsers" ["camlp4"; "stdlib"];;
 Pathname.define_context "camlp4/Camlp4Printers" ["camlp4"; "stdlib"];;
 Pathname.define_context "camlp4/Camlp4Filters" ["camlp4"; "stdlib"];;
@@ -285,7 +283,7 @@ Pathname.define_context "debugger" ["bytecomp"; "utils"; "typing"; "parsing"; "t
 Pathname.define_context "otherlibs/dynlink" ["otherlibs/dynlink"; "bytecomp"; "utils"; "typing"; "parsing"; "stdlib"];;
 Pathname.define_context "otherlibs/dynlink/nat" ["otherlibs/dynlink/nat"; "asmcomp"; "stdlib"];;
 Pathname.define_context "asmcomp" ["asmcomp"; "bytecomp"; "parsing"; "typing"; "utils"; "stdlib"];;
-Pathname.define_context "ocamlbuild" ["ocamlbuild"; "stdlib"; "."];;
+Pathname.define_context "ocamlbuild" ["ocamlbuild"; "."];;
 Pathname.define_context "lex" ["lex"; "stdlib"];;
 
 List.iter (fun x -> let x = "otherlibs"/x in Pathname.define_context x [x; "stdlib"])
