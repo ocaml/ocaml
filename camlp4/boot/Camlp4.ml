@@ -17079,13 +17079,12 @@ module Struct =
                 let drop_prev_loc = Tools.drop_prev_loc
                   
                 let add_loc bp parse_fun strm =
-                  let count1 = Stream.count strm in
                   let x = parse_fun strm in
-                  let count2 = Stream.count strm in
+                  let ep = loc_ep strm in
                   let loc =
-                    if count1 < count2
-                    then (let ep = loc_ep strm in Loc.merge bp ep)
-                    else Loc.join bp
+                    if (Loc.start_off bp) > (Loc.stop_off ep)
+                    then Loc.join bp
+                    else Loc.merge bp ep
                   in (x, loc)
                   
                 let stream_peek_nth strm n =
@@ -19158,20 +19157,21 @@ module Printers =
                       | Ast.BiAnd (_, b1, b2) ->
                           (o#binding f b1; pp f o#andsep; o#binding f b2)
                       | Ast.BiEq (_, p, e) ->
-                          let (pl, e) =
+                          let (pl, e') =
                             (match p with
                              | Ast.PaTyc (_, _, _) -> ([], e)
                              | _ -> expr_fun_args e)
                           in
-                            (match (p, e) with
+                            (match (p, e') with
                              | (Ast.PaId (_, (Ast.IdLid (_, _))),
-                                Ast.ExTyc (_, e, t)) ->
+                                Ast.ExTyc (_, e', t)) ->
                                  pp f "%a :@ %a =@ %a"
                                    (list o#fun_binding "@ ")
-                                   ((`patt p) :: pl) o#ctyp t o#expr e
-                             | _ ->
+                                   ((`patt p) :: pl) o#ctyp t o#expr e'
+                             | (Ast.PaId (_, (Ast.IdLid (_, _))), _) ->
                                  pp f "%a @[<0>%a=@]@ %a" o#simple_patt p
-                                   (list' o#fun_binding "" "@ ") pl o#expr e)
+                                   (list' o#fun_binding "" "@ ") pl o#expr e'
+                             | _ -> pp f "%a =@ %a" o#simple_patt p o#expr e)
                       | Ast.BiAnt (_, s) -> o#anti f s
                 method record_binding =
                   fun f bi ->
