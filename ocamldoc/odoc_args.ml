@@ -221,12 +221,12 @@ let default_options = [
   "\n\n *** HTML options ***\n";
 
 (* html only options *)
-  "-all-params", Arg.Set with_parameter_list, M.with_parameter_list ;
-  "-css-style", Arg.String (fun s -> css_style := Some s), M.css_style ;
-  "-index-only", Arg.Set index_only, M.index_only ;
-  "-colorize-code", Arg.Set colorize_code, M.colorize_code ;
-  "-short-functors", Arg.Set html_short_functors, M.html_short_functors ;
-  "-charset", Arg.Set_string charset, (M.charset !charset)^
+  "-all-params", Arg.Set Odoc_html.with_parameter_list, M.with_parameter_list ;
+  "-css-style", Arg.String (fun s -> Odoc_html.css_style := Some s), M.css_style ;
+  "-index-only", Arg.Set Odoc_html.index_only, M.index_only ;
+  "-colorize-code", Arg.Set Odoc_html.colorize_code, M.colorize_code ;
+  "-short-functors", Arg.Set Odoc_html.html_short_functors, M.html_short_functors ;
+  "-charset", Arg.Set_string Odoc_html.charset, (M.charset !Odoc_html.charset)^
   "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)

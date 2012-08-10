@@ -1,5 +1,5 @@
 (***********************************************************************)
-(*                               Ocamldoc                              *)
+(*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
 (*                                                                     *)

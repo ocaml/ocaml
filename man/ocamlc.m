@@ -1,47 +1,45 @@
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLC 1
 
 .SH NAME
-ocamlc \- The Objective Caml bytecode compiler
-
+ocamlc \- The OCaml bytecode compiler
 
 .SH SYNOPSIS
 .B ocamlc
 [
-.B \-aciv
-]
-[
-.BI \-cclib \ libname
-]
-[
-.BI \-ccopt \ option
-]
-[
-.B \-custom
-]
-[
-.B \-unsafe
-]
-[
-.BI \-o \ exec-file
-]
-[
-.BI \-I \ lib-dir
+.I options
 ]
 .I filename ...
 
 .B ocamlc.opt
-.I (same options)
+[
+.I options
+]
+.I filename ...
 
 .SH DESCRIPTION
 
-The Objective Caml bytecode compiler
+The OCaml bytecode compiler
 .BR ocamlc (1)
-compiles Caml source files to bytecode object files and link
+compiles OCaml source files to bytecode object files and links
 these object files to produce standalone bytecode executable files.
 These executable files are then run by the bytecode interpreter
 .BR ocamlrun (1).
 
-The 
+The
 .BR ocamlc (1)
 command has a command-line interface similar to the one of
 most C compilers. It accepts several types of arguments and processes them
@@ -51,25 +49,25 @@ Arguments ending in .mli are taken to be source files for
 compilation unit interfaces. Interfaces specify the names exported by
 compilation units: they declare value names with their types, define
 public data types, declare abstract data types, and so on. From the
-file 
+file
 .IR x \&.mli,
-the 
+the
 .BR ocamlc (1)
 compiler produces a compiled interface
-in the file 
+in the file
 .IR x \&.cmi.
 
 Arguments ending in .ml are taken to be source files for compilation
 unit implementations. Implementations provide definitions for the
 names exported by the unit, and also contain expressions to be
-evaluated for their side-effects.  From the file 
+evaluated for their side-effects.  From the file
 .IR x \&.ml,
-the 
+the
 .BR ocamlc (1)
-compiler produces compiled object bytecode in the file 
+compiler produces compiled object bytecode in the file
 .IR x \&.cmo.
- 
-If the interface file 
+
+If the interface file
 .IR x \&.mli
 exists, the implementation
 .IR x \&.ml
@@ -77,54 +75,91 @@ is checked against the corresponding compiled interface
 .IR x \&.cmi,
 which is assumed to exist. If no interface
 .IR x \&.mli
-is provided, the compilation of 
+is provided, the compilation of
 .IR x \&.ml
-produces a compiled interface file 
+produces a compiled interface file
 .IR x \&.cmi
-in addition to the compiled object code file 
+in addition to the compiled object code file
 .IR x \&.cmo.
-The file 
+The file
 .IR x \&.cmi
 produced
 corresponds to an interface that exports everything that is defined in
-the implementation 
+the implementation
 .IR x \&.ml.
 
 Arguments ending in .cmo are taken to be compiled object bytecode.  These
 files are linked together, along with the object files obtained
-by compiling .ml arguments (if any), and the Caml Light standard
+by compiling .ml arguments (if any), and the OCaml standard
 library, to produce a standalone executable program. The order in
 which .cmo and.ml arguments are presented on the command line is
 relevant: compilation units are initialized in that order at
 run-time, and it is a link-time error to use a component of a unit
-before having initialized it. Hence, a given 
+before having initialized it. Hence, a given
 .IR x \&.cmo
-file must come before all .cmo files that refer to the unit 
+file must come before all .cmo files that refer to the unit
 .IR x .
 
 Arguments ending in .cma are taken to be libraries of object bytecode.
 A library of object bytecode packs in a single file a set of object
-bytecode files (.cmo files). Libraries are built with 
-.B ocamlc \-a
-(see the description of the 
+bytecode files (.cmo files). Libraries are built with
+.B ocamlc\ \-a
+(see the description of the
 .B \-a
 option below). The object files
-contained in the library are linked as regular .cmo files (see above), in the order specified when the .cma file was built. The only difference is that if an object file
+contained in the library are linked as regular .cmo files (see above),
+in the order specified when the .cma file was built. The only
+difference is that if an object file
 contained in a library is not referenced anywhere in the program, then
 it is not linked in.
 
-Arguments ending in .c are passed to the C compiler, which generates a .o object file. This object file is linked with the program if the
+Arguments ending in .c are passed to the C compiler, which generates
+a .o object file. This object file is linked with the program if the
 .B \-custom
-flag is set (see the description of 
+flag is set (see the description of
 .B \-custom
 below).
 
 Arguments ending in .o or .a are assumed to be C object files and
-libraries. They are passed to the C linker when linking in 
+libraries. They are passed to the C linker when linking in
 .B \-custom
-mode (see the description of 
+mode (see the description of
 .B \-custom
 below).
+
+Arguments ending in .so
+are assumed to be C shared libraries (DLLs).  During linking, they are
+searched for external C functions referenced from the OCaml code,
+and their names are written in the generated bytecode executable.
+The run-time system
+.BR ocamlrun (1)
+then loads them dynamically at program start-up time.
+
+The output of the linking phase is a file containing compiled bytecode
+that can be executed by the OCaml bytecode interpreter:
+the command
+.BR ocamlrun (1).
+If
+.B caml.out
+is the name of the file produced by the linking phase, the command
+.B ocamlrun caml.out
+.IR arg1 \  \ arg2 \ ... \ argn
+executes the compiled code contained in
+.BR caml.out ,
+passing it as arguments the character strings
+.I arg1
+to
+.IR argn .
+(See
+.BR ocamlrun (1)
+for more details.)
+
+On most systems, the file produced by the linking
+phase can be run directly, as in:
+.B ./caml.out
+.IR arg1 \  \ arg2 \ ... \ argn .
+The produced file has the executable bit set, and it manages to launch
+the bytecode interpreter by itself.
 
 .B ocamlc.opt
 is the same compiler as
@@ -135,102 +170,250 @@ Thus, it behaves exactly like
 .BR ocamlc ,
 but compiles faster.
 .B ocamlc.opt
-is not available in all installations of Objective Caml.
+may not be available in all installations of OCaml.
 
 .SH OPTIONS
 
-The following command-line options are recognized by 
+The following command-line options are recognized by
 .BR ocamlc (1).
-
 .TP
 .B \-a
-Build a library (.cma file) with the object files (.cmo files) given on the command line, instead of linking them into an executable
-file. The name of the library can be set with the 
+Build a library (.cma file) with the object files (.cmo files) given
+on the command line, instead of linking them into an executable
+file. The name of the library must be set with the
 .B \-o
-option. The default name is 
-.BR library.cma .
- 
+option.
+.IP
+If
+.BR \-custom , \ \-cclib \ or \ \-ccopt
+options are passed on the command
+line, these options are stored in the resulting .cma library.  Then,
+linking with this library automatically adds back the
+.BR \-custom , \ \-cclib \ and \ \-ccopt
+options as if they had been provided on the
+command line, unless the
+.B -noautolink
+option is given.
+.TP
+.B \-annot
+Dump detailed information about the compilation (types, bindings,
+tail-calls, etc).  The information for file
+.IR src .ml
+is put into file
+.IR src .annot.
+In case of a type error, dump all the information inferred by the
+type-checker before the error. The
+.IR src .annot
+file can be used with the emacs commands given in
+.B emacs/caml\-types.el
+to display types and other annotations interactively.
+.TP
+.B \-dtypes
+Has been deprecated. Please use 
+.BI \-annot 
+instead.
 .TP
 .B \-c
 Compile only. Suppress the linking phase of the
 compilation. Source code files are turned into compiled files, but no
 executable file is produced. This option is useful to
 compile modules separately.
-
+.TP
+.BI \-cc \ ccomp
+Use
+.I ccomp
+as the C linker when linking in "custom runtime" mode (see the
+.B \-custom
+option) and as the C compiler for compiling .c source files.
 .TP
 .BI \-cclib\ -l libname
-Pass the 
+Pass the
 .BI \-l libname
-option to the C linker when linking in
-``custom runtime'' mode (see the 
+option to the C linker when linking in "custom runtime" mode (see the
 .B \-custom
-option). This causes the
-given C library to be linked with the program.
-
+option). This causes the given C library to be linked with the program.
 .TP
 .B \-ccopt
 Pass the given option to the C compiler and linker, when linking in
-``custom runtime'' mode (see the 
+"custom runtime" mode (see the
 .B \-custom
 option). For instance,
-.B -ccopt -L
-.I dir
+.BI \-ccopt\ \-L dir
 causes the C linker to search for C libraries in
-directory 
+directory
 .IR dir .
-
+.TP
+.B \-config
+Print the version number of
+.BR ocamlc (1)
+and a detailed summary of its configuration, then exit.
 .TP
 .B \-custom
-Link in ``custom runtime'' mode. In the default linking mode, the
+Link in "custom runtime" mode. In the default linking mode, the
 linker produces bytecode that is intended to be executed with the
-shared runtime system, 
+shared runtime system,
 .BR ocamlrun (1).
 In the custom runtime mode, the
 linker produces an output file that contains both the runtime system
 and the bytecode for the program. The resulting file is larger, but it
-can be executed directly, even if the 
+can be executed directly, even if the
 .BR ocamlrun (1)
 command is not
-installed. Moreover, the ``custom runtime'' mode enables linking Caml
+installed. Moreover, the "custom runtime" mode enables linking OCaml
 code with user-defined C functions.
 
+Never use the
+.BR strip (1)
+command on executables produced by
+.BR ocamlc\ \-custom ,
+this would remove the bytecode part of the executable.
+.TP
+.BI \-dllib\ \-l libname
+Arrange for the C shared library
+.BI dll libname .so
+to be loaded dynamically by the run-time system
+.BR ocamlrun (1)
+at program start-up time.
+.TP
+.BI \-dllpath \ dir
+Adds the directory
+.I dir
+to the run-time search path for shared
+C libraries.  At link-time, shared libraries are searched in the
+standard search path (the one corresponding to the
+.B \-I
+option).
+The
+.B \-dllpath
+option simply stores
+.I dir
+in the produced
+executable file, where
+.BR ocamlrun (1)
+can find it and use it.
+.TP
+.B \-g
+Add debugging information while compiling and linking. This option is
+required in order to be able to debug the program with
+.BR ocamldebug (1)
+and to produce stack backtraces when
+the program terminates on an uncaught exception.
 .TP
 .B \-i
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (.ml
-file). This can be useful to check the types inferred by the
+file). No compiled files (.cmo and .cmi files) are produced.
+This can be useful to check the types inferred by the
 compiler. Also, since the output follows the syntax of interfaces, it
 can help in writing an explicit interface (.mli file) for a file: just
 redirect the standard output of the compiler to a .mli file, and edit
 that file to remove all declarations of unexported names.
-
 .TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
-compiled interface files (.cmi) and compiled object code files
-(.cmo). By default, the current directory is searched first, then the
+compiled interface files (.cmi), compiled object code files
+(.cmo), libraries (.cma), and C libraries specified with
+.B \-cclib\ \-l
+.IR xxx .
+By default, the current directory is searched first, then the
 standard library directory. Directories added with
 .B -I
 are searched
 after the current directory, in the order in which they were given on
 the command line, but before the standard library directory.
 
+If the given directory starts with
+.BR + ,
+it is taken relative to the
+standard library directory. For instance,
+.B \-I\ +labltk
+adds the subdirectory
+.B labltk
+of the standard library to the search path.
 .TP
-.BI \-o \ exec-file
+.BI \-impl \ filename
+Compile the file
+.I filename
+as an implementation file, even if its extension is not .ml.
+.TP
+.BI \-intf \ filename
+Compile the file
+.I filename
+as an interface file, even if its extension is not .mli.
+.TP
+.BI \-intf\-suffix \ string
+Recognize file names ending with
+.I string
+as interface files (instead of the default .mli).
+.TP
+.B \-labels
+Labels are not ignored in types, labels may be used in applications,
+and labelled parameters can be given in any order.  This is the default.
+.TP
+.B \-linkall
+Force all modules contained in libraries to be linked in. If this
+flag is not given, unreferenced modules are not linked in. When
+building a library (option
+.BR \-a ),
+setting the
+.B \-linkall
+option forces all subsequent links of programs involving that library
+to link all the modules contained in the library.
+.TP
+.B \-make\-runtime
+Build a custom runtime system (in the file specified by option
+.BR \-o )
+incorporating the C object files and libraries given on the command
+line.  This custom runtime system can be used later to execute
+bytecode executables produced with the option
+.B ocamlc\ \-use\-runtime
+.IR runtime-name .
+.TP
+.B \-noassert
+Do not compile assertion checks.  Note that the special form
+.B assert\ false
+is always compiled because it is typed specially.
+This flag has no effect when linking already-compiled files.
+.TP
+.B \-noautolink
+When linking .cma libraries, ignore
+.BR \-custom , \ \-cclib \ and \ \-ccopt
+options potentially contained in the libraries (if these options were
+given when building the libraries).  This can be useful if a library
+contains incorrect specifications of C libraries or C options; in this
+case, during linking, set
+.B \-noautolink
+and pass the correct C libraries and options on the command line.
+.TP
+.B \-nolabels
+Ignore non-optional labels in types. Labels cannot be used in
+applications, and parameter order becomes strict.
+.TP
+.BI \-o \ exec\-file
 Specify the name of the output file produced by the linker. The
-default output name is 
+default output name is
 .BR a.out ,
-in keeping with the Unix tradition. If the 
+in keeping with the Unix tradition. If the
 .B \-a
-option is given, specify the name of the library produced.
-
+option is given, specify the name of the library
+produced.  If the
+.B \-pack
+option is given, specify the name of the
+packed object file produced.  If the
+.B \-output\-obj
+option is given,
+specify the name of the output file produced.
 .TP
-.B \-v
-Print the version number of the compiler.
-
+.B \-output\-obj
+Cause the linker to produce a C object file instead of a bytecode
+executable file. This is useful to wrap OCaml code as a C library,
+callable from any C program. The name of the output object file 
+must be set with the
+.B \-o
+option. This
+option can also be used to produce a C source file (.c extension) or
+a compiled shared/dynamic library (.so extension).
 .TP
-<<<<<<< .courant
-=======
 .B \-pack
 Build a bytecode object file (.cmo file) and its associated compiled
 interface (.cmi) that combines the object
@@ -287,24 +470,22 @@ then the
 .B d
 suffix is supported and gives a debug version of the runtime.
 .TP
+.B \-strict\-sequence
+The left-hand part of a sequence must have type unit.
+.TP
 .B \-thread
 Compile or link multithreaded programs, in combination with the
 system "threads" library described in
-.IR The\ Objective\ Caml\ user's\ manual .
+.IR The\ OCaml\ user's\ manual .
 .TP
->>>>>>> .fusion-droit.r10497
 .B \-unsafe
-Turn bound checking off on array and string accesses (the 
-.B v.(i)
-and
-.B s.[i]
-constructs). Programs compiled with 
+Turn bound checking off for array and string accesses (the
+.BR v.(i) and s.[i]
+constructs). Programs compiled with
 .B \-unsafe
 are therefore
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
-<<<<<<< .courant
-=======
 .TP
 .BI \-use\-runtime \ runtime\-name
 Generate a bytecode executable file that can be executed on the custom
@@ -324,22 +505,19 @@ invocations of the C compiler and linker in
 .B \-custom
 mode.  Useful to debug C library problems.
 .TP
-.BR \-vnum or \-version
+.BR \-vnum \ or\  \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
 .B \-vmthread
 Compile or link multithreaded programs, in combination with the
 VM-level threads library described in
-.IR The\ Objective\ Caml\ user's\ manual .
+.IR The\ OCaml\ user's\ manual .
 .TP
 .BI \-w \ warning\-list
 Enable, disable, or mark as errors the warnings specified by the argument
 .IR warning\-list .
->>>>>>> .fusion-droit.r10497
 
-<<<<<<< .courant
-=======
 Each warning can be
 .IR enabled \ or\  disabled ,
 and each warning can be
@@ -368,6 +546,27 @@ between them.  A warning specifier is one of the following:
 .BI @ num
 \ \ Enable and mark warning number
 .IR num .
+
+.BI + num1 .. num2
+\ \ Enable all warnings between
+.I num1
+and
+.I num2
+(inclusive).
+
+.BI \- num1 .. num2
+\ \ Disable all warnings between
+.I num1
+and
+.I num2
+(inclusive).
+
+.BI @ num1 .. num2
+\ \ Enable and mark all warnings between
+.I num1
+and
+.I num2
+(inclusive).
 
 .BI + letter
 \ \ Enable the set of warnings corresponding to
@@ -416,7 +615,7 @@ function type and is ignored.
 \ \ \ Label omitted in function application.
 
 7
-\ \ \ Some methods are overridden in the class where they are defined.
+\ \ \ Method overridden without using the "override" keyword
 
 8
 \ \ \ Partial match: missing cases in pattern-matching.
@@ -493,7 +692,6 @@ pattern.
 
 29
 \ \ A non-escaped end-of-line was found in a string constant.  This may
-
 cause portability problems between Unix and Windows.
 
 The letters stand for the following sets of warnings.  Any letter not
@@ -513,6 +711,9 @@ mentioned here corresponds to the empty set.
 
 .B F
 \ 5
+
+.B K
+\ 32, 33, 34, 35, 36, 37
 
 .B L
 \ 6
@@ -536,7 +737,7 @@ mentioned here corresponds to the empty set.
 \ 13
 
 .B X
-\ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+\ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 30
 
 .B Y
 \ 26
@@ -546,7 +747,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-9\-27\-29 .
+.BR \-w\ +a\-4\-6\-9\-27\-29\-32..37 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
@@ -568,14 +769,14 @@ sign (or a lowercase letter) turns them back into warnings, and a
 .B @
 sign both enables and marks the corresponding warnings.
 
-Note: it is not recommended to use warning sets (i.e. letters) as
-arguments to
+Note: it is not recommended to use the
 .B \-warn\-error
-in production code, because this can break your build when future versions
-of OCaml add some new warnings.
+option in production code, because it will almost certainly prevent
+compiling your program with later versions of OCaml when they add new
+warnings.
 
 The default setting is
-.B \-warn\-error\ +a
+.B \-warn\-error\ -a
 (none of the warnings is treated as an error).
 .TP
 .B \-where
@@ -589,10 +790,8 @@ as a file name, even if it starts with a dash (-) character.
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.
 
->>>>>>> .fusion-droit.r10497
 .SH SEE ALSO
-.BR ocaml (1),
-.BR ocamlrun (1).
+.BR ocamlopt (1), \ ocamlrun (1), \ ocaml (1).
 .br
-.I The Objective Caml user's manual,
+.IR "The OCaml user's manual" ,
 chapter "Batch compilation".

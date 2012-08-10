@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -100,8 +100,7 @@ let read_member_info file =
     if Filename.check_suffix file ".cmo" then begin
     let ic = open_in_bin file in
     try
-      let buffer = String.create (String.length Config.cmo_magic_number) in
-      really_input ic buffer 0 (String.length Config.cmo_magic_number);
+      let buffer = input_bytes ic (String.length Config.cmo_magic_number) in
       if buffer <> Config.cmo_magic_number then
         raise(Error(Not_an_object_file file));
       let compunit_pos = input_binary_int ic in
@@ -124,10 +123,10 @@ let read_member_info file =
    Accumulate relocs, debug info, etc.
    Return size of bytecode. *)
 
-let rename_append_bytecode packagename oc mapping defined ofs prefix subst objfile compunit =
+let rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst objfile compunit =
   let ic = open_in_bin objfile in
   try
-    Bytelink.check_consistency objfile compunit;
+    Bytelink.check_consistency ppf objfile compunit;
     List.iter
       (rename_relocation packagename objfile mapping defined ofs)
       compunit.cu_reloc;
@@ -148,20 +147,20 @@ let rename_append_bytecode packagename oc mapping defined ofs prefix subst objfi
 (* Same, for a list of .cmo and .cmi files.
    Return total size of bytecode. *)
 
-let rec rename_append_bytecode_list packagename oc mapping defined ofs prefix subst = function
+let rec rename_append_bytecode_list ppf packagename oc mapping defined ofs prefix subst = function
     [] ->
       ofs
   | m :: rem ->
       match m.pm_kind with
       | PM_intf ->
-          rename_append_bytecode_list packagename oc mapping defined ofs prefix subst rem
+          rename_append_bytecode_list ppf packagename oc mapping defined ofs prefix subst rem
       | PM_impl compunit ->
           let size =
-            rename_append_bytecode packagename oc mapping defined ofs prefix subst
+            rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst
                                    m.pm_file compunit in
           let id = Ident.create_persistent m.pm_name in
           let root = Path.Pident (Ident.create_persistent prefix) in
-          rename_append_bytecode_list packagename
+          rename_append_bytecode_list ppf packagename
             oc mapping (id :: defined)
             (ofs + size) prefix (Subst.add_module id (Path.Pdot (root, Ident.name id, Path.nopos)) subst) rem
 
@@ -186,7 +185,7 @@ let build_global_target oc target_name members mapping pos coercion =
 
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 
-let package_object_files files targetfile targetname coercion =
+let package_object_files ppf files targetfile targetname coercion =
   let members =
     map_left_right read_member_info files in
   let unit_names =
@@ -203,7 +202,7 @@ let package_object_files files targetfile targetname coercion =
     let pos_depl = pos_out oc in
     output_binary_int oc 0;
     let pos_code = pos_out oc in
-    let ofs = rename_append_bytecode_list targetname oc mapping [] 0 targetname Subst.identity members in
+    let ofs = rename_append_bytecode_list ppf targetname oc mapping [] 0 targetname Subst.identity members in
     build_global_target oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then
@@ -233,19 +232,20 @@ let package_object_files files targetfile targetname coercion =
 
 (* The entry point *)
 
-let package_files files targetfile =
-  let files =
+let package_files ppf files targetfile =
+    let files =
     List.map
-      (fun f ->
+	(fun f ->
         try find_in_path !Config.load_path f
         with Not_found -> raise(Error(File_not_found f)))
-      files in
-  let prefix = chop_extensions targetfile in
-  let targetcmi = prefix ^ ".cmi" in
-  let targetname = String.capitalize(Filename.basename prefix) in
-  try
-    let coercion = Typemod.package_units files targetcmi targetname in
-    package_object_files files targetfile targetname coercion
+	files in
+    let prefix = chop_extensions targetfile in
+    let targetcmi = prefix ^ ".cmi" in
+    let targetname = String.capitalize(Filename.basename prefix) in
+    try
+      let coercion = Typemod.package_units files targetcmi targetname in
+    let ret = package_object_files ppf files targetfile targetname coercion in
+    ret
   with x ->
     remove_file targetfile; raise x
 
@@ -255,13 +255,17 @@ open Format
 
 let report_error ppf = function
     Forward_reference(file, ident) ->
-      fprintf ppf "Forward reference to %s in file %s" (Ident.name ident) file
+      fprintf ppf "Forward reference to %s in file %a" (Ident.name ident)
+        Location.print_filename file
   | Multiple_definition(file, ident) ->
-      fprintf ppf "File %s redefines %s" file (Ident.name ident)
+      fprintf ppf "File %a redefines %s"
+        Location.print_filename file
+        (Ident.name ident)
   | Not_an_object_file file ->
-      fprintf ppf "%s is not a bytecode object file" file
+      fprintf ppf "%a is not a bytecode object file"
+        Location.print_filename file
   | Illegal_renaming(file, id) ->
-      fprintf ppf "Wrong file naming: %s@ contains the code for@ %s"
-        file id
+      fprintf ppf "Wrong file naming: %a@ contains the code for@ %s"
+        Location.print_filename file id
   | File_not_found file ->
       fprintf ppf "File %s not found" file

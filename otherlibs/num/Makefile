@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -76,7 +76,7 @@ clean: partialclean
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 bng.o: bng.h bng_digit.c \
-       bng_alpha.c bng_amd64.c bng_ia32.c bng_mips.c bng_ppc.c bng_sparc.c
+       bng_amd64.c bng_ia32.c bng_ppc.c bng_sparc.c
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

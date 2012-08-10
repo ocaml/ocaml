@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -192,6 +192,7 @@ type open_flag =
   | O_DSYNC
   | O_SYNC
   | O_RSYNC
+  | O_SHARE_DELETE
 
 type file_perm = int
 

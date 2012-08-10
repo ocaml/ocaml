@@ -1,13 +1,12 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
 (*                                                                     *)
 (*  Copyright 2000 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
+(*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -28,7 +27,7 @@ let sz = 450;;
 
 open_graph (Printf.sprintf " %ix%i" sz sz);;
 
-(* To be defined for older versions of O'Caml
+(* To be defined for older versions of OCaml
    Lineto, moveto and draw_rect.
 
 let rlineto x y =
@@ -151,7 +150,7 @@ let x,y = current_point () in
 fill_rect x (y - 5) (8 * 20) 25;;
 set_color yellow;;
 go_legend ();;
-draw_string "Graphics (Caml)";;
+draw_string "Graphics (OCaml)";;
 
 (* Pie parts in different colors. *)
 let draw_green_string s = set_color green; draw_string s;;

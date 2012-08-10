@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -21,12 +21,10 @@ let fatal_error msg =
 
 (* Exceptions *)
 
-let try_finally f1 f2 =
-  try
-    let result = f1 () in
-    f2 ();
-    result
-  with x -> f2 (); raise x
+let try_finally work cleanup =
+  let result = (try work () with e -> cleanup (); raise e) in
+  cleanup ();
+  result
 ;;
 
 (* List functions *)
@@ -158,6 +156,14 @@ let copy_file_chunk ic oc len =
     end
   in copy len
 
+(* Reading from a channel *)
+
+let input_bytes ic n =
+  let result = String.create n in
+  really_input ic result 0 n;
+  result
+;;
+
 (* Integer operations *)
 
 let rec log2 n =
@@ -210,3 +216,7 @@ let rev_split_words s =
       | _ -> split2 res i (j+1)
     end
   in split1 [] 0
+
+let get_ref r =
+  let v = !r in
+  r := []; v

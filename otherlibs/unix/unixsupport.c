@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -165,7 +165,11 @@
 #define ESOCKTNOSUPPORT (-1)
 #endif
 #ifndef EOPNOTSUPP
-#define EOPNOTSUPP (-1)
+#  ifdef ENOTSUP
+#    define EOPNOTSUPP ENOTSUP
+#  else
+#    define EOPNOTSUPP (-1)
+#  endif
 #endif
 #ifndef EPFNOSUPPORT
 #define EPFNOSUPPORT (-1)
@@ -251,6 +255,11 @@ value unix_error_of_code (int errcode)
 {
   int errconstr;
   value err;
+
+#if defined(ENOTSUP) && (EOPNOTSUPP != ENOTSUP)
+  if (errcode == ENOTSUP)
+    errcode = EOPNOTSUPP;
+#endif
 
   errconstr =
       cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);

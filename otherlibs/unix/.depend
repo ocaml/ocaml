@@ -445,9 +445,9 @@ write.o: write.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
  ../../byterun/gc.h ../../byterun/mlvalues.h ../../byterun/major_gc.h \
  ../../byterun/freelist.h ../../byterun/minor_gc.h \
  ../../byterun/signals.h unixsupport.h
-unix.cmi:
-unixLabels.cmi: unix.cmi
-unix.cmo: unix.cmi
-unix.cmx: unix.cmi
-unixLabels.cmo: unix.cmi unixLabels.cmi
-unixLabels.cmx: unix.cmx unixLabels.cmi
+unix.cmi :
+unixLabels.cmi : unix.cmi
+unix.cmo : unix.cmi
+unix.cmx : unix.cmi
+unixLabels.cmo : unix.cmi unixLabels.cmi
+unixLabels.cmx : unix.cmx unixLabels.cmi

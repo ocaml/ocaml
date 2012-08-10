@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*        François Pottier, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -15,7 +15,7 @@
 
 exception Empty
 
-(* O'Caml currently does not allow the components of a sum type to be
+(* OCaml currently does not allow the components of a sum type to be
    mutable. Yet, for optimal space efficiency, we must have cons cells
    whose [next] field is mutable. This leads us to define a type of
    cyclic lists, so as to eliminate the [Nil] case and the sum
@@ -54,12 +54,12 @@ let clear q =
   q.tail <- Obj.magic None
 
 let add x q =
-  q.length <- q.length + 1;
-  if q.length = 1 then
+  if q.length = 0 then
     let rec cell = {
       content = x;
       next = cell
     } in
+    q.length <- 1;
     q.tail <- cell
   else
     let tail = q.tail in
@@ -68,6 +68,7 @@ let add x q =
       content = x;
       next = head
     } in
+    q.length <- q.length + 1;
     tail.next <- cell;
     q.tail <- cell
 

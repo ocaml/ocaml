@@ -179,21 +179,21 @@ module Analyser =
             match cons_core_type_list_list with
               [] ->
                 (0, acc)
-            | (name, core_type_list, loc) :: [] ->
+            | (name, _, _, loc) :: [] ->
                 let s = get_string_of_file
 		    loc.Location.loc_end.Lexing.pos_cnum
 		    pos_limit
 		in
                 let (len, comment_opt) =  My_ir.just_after_special !file_name s in
                 (len, acc @ [ (name, comment_opt) ])
-            | (name, core_type_list, loc) :: (name2, core_type_list2, loc2)
+            | (name, _, _, loc) :: (name2, core_type_list2, ret_type2, loc2)
               :: q ->
 		let pos_end_first = loc.Location.loc_end.Lexing.pos_cnum in
 		let pos_start_second = loc2.Location.loc_start.Lexing.pos_cnum in
 		let s = get_string_of_file pos_end_first pos_start_second in
 		let (_,comment_opt) = My_ir.just_after_special !file_name  s in
 		f (acc @ [name, comment_opt])
-                  ((name2, core_type_list2, loc2) :: q)
+                  ((name2, core_type_list2, ret_type2, loc2) :: q)
           in
           f [] cons_core_type_list_list
 
@@ -219,9 +219,8 @@ module Analyser =
       match type_kind with
         Types.Type_abstract ->
           Odoc_type.Type_abstract
-
       | Types.Type_variant l ->
-          let f (constructor_name, type_expr_list) =
+          let f (constructor_name, type_expr_list, ret_type) =
             let comment_opt =
               try
                 match List.assoc constructor_name name_comment_list with
@@ -232,6 +231,7 @@ module Analyser =
             {
               vc_name = constructor_name ;
               vc_args = List.map (Odoc_env.subst_type env) type_expr_list ;
+	      vc_ret =  may_map (Odoc_env.subst_type env) ret_type;
               vc_text = comment_opt
             }
           in
@@ -524,7 +524,7 @@ module Analyser =
               {
                 ex_name = Name.concat current_module_name name ;
                 ex_info = comment_opt ;
-                ex_args = List.map (Odoc_env.subst_type env) types_excep_decl ;
+                ex_args = List.map (Odoc_env.subst_type env) types_excep_decl.exn_args ;
                 ex_alias = None ;
                 ex_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
 		ex_code =

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -28,6 +28,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Unknown_builtin_primitive of string
 
 exception Error of Location.t * error
 
@@ -285,12 +286,13 @@ let prim_obj_dup =
   { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
-let transl_prim prim args =
+let transl_prim loc prim args =
+  let prim_name = prim.prim_name in
   try
     let (gencomp, intcomp, floatcomp, stringcomp,
          nativeintcomp, int32comp, int64comp,
          simplify_constant_constructor) =
-      Hashtbl.find comparisons_table prim.prim_name in
+      Hashtbl.find comparisons_table prim_name in
     begin match args with
       [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
@@ -322,7 +324,11 @@ let transl_prim prim args =
     end
   with Not_found ->
   try
-    let p = Hashtbl.find primitives_table prim.prim_name in
+    let p =
+      match prim_name with
+          "%revapply" -> Prevapply loc
+        | "%apply" -> Pdirapply loc
+        | name -> Hashtbl.find primitives_table name in
     (* Try strength reduction based on the type of the argument *)
     begin match (p, args) with
         (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
@@ -342,6 +348,8 @@ let transl_prim prim args =
       | _ -> p
     end
   with Not_found ->
+    if String.length prim_name > 0 && prim_name.[0] = '%' then
+      raise(Error(loc, Unknown_builtin_primitive prim_name));
     Pccall prim
 
 (*> JOCAML *)
@@ -518,7 +526,9 @@ let rec push_defaults loc bindings pat_expr_list partial =
           Texp_match
             ({exp with exp_type = pat.pat_type; exp_desc =
               Texp_ident (Path.Pident param,
-                          {val_type = pat.pat_type; val_kind = Val_reg})},
+                          {val_type = pat.pat_type; val_kind = Val_reg;
+                           val_loc = Location.none;
+                          })},
              pat_expr_list, partial) }
       in
       push_defaults loc bindings
@@ -567,12 +577,16 @@ let primitive_is_ccall = function
 
 (* Assertions *)
 
-
-let assert_failed loc =
-  (* [Location.get_pos_info] is too expensive *)
-  Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
+let assert_failed exp =
+  let (fname, line, char) =
+    Location.get_pos_info exp.exp_loc.Location.loc_start in
+  Lprim(Praise, [event_after exp
+    (Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
-           transl_location loc])])
+           Lconst(Const_block(0,
+              [Const_base(Const_string fname);
+               Const_base(Const_int line);
+               Const_base(Const_int char)]))]))])
 ;;
 
 (* do nothing to be used in place of Transljoin.reply_handler,
@@ -675,7 +689,7 @@ and transl_exp0 e =
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
-        let prim = transl_prim p args in
+        let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
           (Praise, [arg1]) ->
             wrap0 (Lprim(Praise, [event_after arg1 (List.hd argl)]))
@@ -724,7 +738,7 @@ and transl_exp0 e =
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable), ll)
           end
-      | Cstr_exception path ->
+      | Cstr_exception (path, _) ->
           Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       end
   | Texp_variant(l, arg) ->
@@ -828,8 +842,8 @@ and transl_exp0 e =
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
-      else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
-  | Texp_assertfalse -> assert_failed e.exp_loc
+      else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e)
+  | Texp_assertfalse -> assert_failed e
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would
@@ -849,12 +863,13 @@ and transl_exp0 e =
 	  | Tproc _ -> assert false (* By typing *)
           (* the following may represent a float/forward/lazy: need a
              forward_tag *)
-          | Tvar | Tlink _ | Tsubst _ | Tunivar
+          | Tvar _ | Tlink _ | Tsubst _ | Tunivar _
           | Tpoly(_,_) | Tfield(_,_,_,_) ->
               Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
-          | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil | Tvariant _
+          | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil
+          | Tvariant _
               -> transl_exp e
           (* optimize predefined types (excepted float) *)
           | Tconstr(_,_,_) ->
@@ -1302,6 +1317,7 @@ and transl_let reply_handler transl_exp rec_flag pat_expr_list body =
           (fun (pat, expr) ->
             match pat.pat_desc with
               Tpat_var id -> id
+            | Tpat_alias ({pat_desc=Tpat_any}, id) -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
       let transl_case (pat, expr) id =
@@ -1471,3 +1487,5 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Unknown_builtin_primitive prim_name ->
+    fprintf ppf  "Unknown builtin primitive \"%s\"" prim_name

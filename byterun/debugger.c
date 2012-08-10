@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "alloc.h"
 #include "config.h"
 #include "debugger.h"
 #include "misc.h"
@@ -28,6 +29,7 @@
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
 int caml_debugger_fork_mode = 1; /* parent by default */
+value marshal_flags = Val_emptylist;
 
 #if !defined(HAS_SOCKETS) || defined(NATIVE_CODE)
 
@@ -162,6 +164,11 @@ void caml_debugger_init(void)
   struct hostent * host;
   int n;
 
+  caml_register_global_root(&marshal_flags);
+  marshal_flags = caml_alloc(2, Tag_cons);
+  Store_field(marshal_flags, 0, Val_int(1)); /* Marshal.Closures */
+  Store_field(marshal_flags, 1, Val_emptylist);
+
   address = getenv("CAML_DEBUG_SOCKET");
   if (address == NULL) return;
   dbg_addr = address;
@@ -230,7 +237,7 @@ static void safe_output_value(struct channel *chan, value val)
   saved_external_raise = caml_external_raise;
   if (sigsetjmp(raise_buf.buf, 0) == 0) {
     caml_external_raise = &raise_buf;
-    caml_output_val(chan, val, Val_unit);
+    caml_output_val(chan, val, marshal_flags);
   } else {
     /* Send wrong magic number, will cause [caml_input_value] to fail */
     caml_really_putblock(chan, "\000\000\000\000", 4);

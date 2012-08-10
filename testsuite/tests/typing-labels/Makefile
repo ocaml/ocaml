@@ -1,2 +1,3 @@
-include ../../makefiles/Makefile.several
-include ../../makefiles/Makefile.common
+BASEDIR=../..
+include $(BASEDIR)/makefiles/Makefile.several
+include $(BASEDIR)/makefiles/Makefile.common

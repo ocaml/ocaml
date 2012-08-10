@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                             Objective Caml                          */
+/*                                OCaml                                */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
@@ -11,10 +11,11 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: posix.c 9270 2009-05-20 11:52:42Z doligez $ */
+/* $Id$ */
 
 /* Win32 implementation of the "st" interface */
 
+#define _WIN32_WINNT 0x0400
 #include <windows.h>
 #include <WinError.h>
 #include <stdio.h>

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*         Manuel Serrano and Xavier Leroy, INRIA Rocquencourt         */
 /*                                                                     */
@@ -21,6 +21,7 @@
 #include "custom.h"
 #include "fail.h"
 #include "intext.h"
+#include "hash.h"
 #include "memory.h"
 #include "mlvalues.h"
 
@@ -70,7 +71,8 @@ static struct custom_operations caml_ba_ops = {
   caml_ba_compare,
   caml_ba_hash,
   caml_ba_serialize,
-  caml_ba_deserialize
+  caml_ba_deserialize,
+  custom_compare_ext_default
 };
 
 /* Multiplication of unsigned longs with overflow detection */
@@ -116,20 +118,20 @@ caml_ba_multov(uintnat a, uintnat b, int * overflow)
 
 /* Allocation of a big array */
 
-#define CAML_BA_MAX_MEMORY 256*1024*1024
-/* 256 Mb -- after allocating that much, it's probably worth speeding
+#define CAML_BA_MAX_MEMORY 1024*1024*1024
+/* 1 Gb -- after allocating that much, it's probably worth speeding
    up the major GC */
 
 /* [caml_ba_alloc] will allocate a new bigarray object in the heap.
    If [data] is NULL, the memory for the contents is also allocated
    (with [malloc]) by [caml_ba_alloc].
-   [data] cannot point into the Caml heap.
-   [dim] may point into an object in the Caml heap.
+   [data] cannot point into the OCaml heap.
+   [dim] may point into an object in the OCaml heap.
 */
 CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
-  uintnat num_elts, size;
+  uintnat num_elts, asize, size;
   int overflow, i;
   value res;
   struct caml_bigarray * b;
@@ -153,11 +155,14 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     if (data == NULL && size != 0) raise_out_of_memory();
     flags |= BIGARRAY_MANAGED;
   }
-  res = alloc_custom(&caml_ba_ops,
-                     sizeof(struct caml_ba_array)
-                     + (num_dims - 1) * sizeof(intnat),
-                     size, CAML_BA_MAX_MEMORY);
-  b = Bigarray_val(res);
+  /* PR#5516: use C99's / gcc's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L) || defined(__GNUC__)
+  asize = sizeof(struct caml_ba_array) + num_dims * sizeof(intnat);
+#else
+  asize = sizeof(struct caml_ba_array) + (num_dims - 1) * sizeof(intnat);
+#endif
+  res = caml_alloc_custom(&caml_ba_ops, asize, size, CAML_BA_MAX_MEMORY);
+  b = Caml_ba_array_val(res);
   b->data = data;
   b->num_dims = num_dims;
   b->flags = flags;
@@ -176,6 +181,7 @@ CAMLexport value caml_ba_alloc_dims(int flags, int num_dims, void * data, ...)
   int i;
   value res;
 
+  Assert(num_dims <= CAML_BA_MAX_NUM_DIMS);
   va_start(ap, data);
   for (i = 0; i < num_dims; i++) dim[i] = va_arg(ap, intnat);
   va_end(ap);
@@ -183,7 +189,7 @@ CAMLexport value caml_ba_alloc_dims(int flags, int num_dims, void * data, ...)
   return res;
 }
 
-/* Allocate a bigarray from Caml */
+/* Allocate a bigarray from OCaml */
 
 CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
 {
@@ -621,69 +627,85 @@ static int caml_ba_compare(value v1, value v2)
 static intnat caml_ba_hash(value v)
 {
   struct caml_bigarray * b = Bigarray_val(v);
-  intnat num_elts, n, h;
+  intnat num_elts, n;
+  uint32 h, w;
   int i;
 
   num_elts = 1;
   for (i = 0; i < b->num_dims; i++) num_elts = num_elts * b->dim[i];
-  if (num_elts >= 50) num_elts = 50;
   h = 0;
-
-#define COMBINE(h,v) ((h << 4) + h + (v))
 
   switch (b->flags & BIGARRAY_KIND_MASK) {
   case BIGARRAY_SINT8:
   case BIGARRAY_UINT8: {
     uint8 * p = b->data;
-    for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
+    if (num_elts > 256) num_elts = 256;
+    for (n = 0; n + 4 <= num_elts; n += 4, p += 4) {
+      w = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+      h = caml_hash_mix_uint32(h, w);
+    }
+    w = 0;
+    switch (num_elts & 3) {
+    case 3: w  = p[2] << 16;    /* fallthrough */
+    case 2: w |= p[1] << 8;     /* fallthrough */
+    case 1: w |= p[0];
+            h = caml_hash_mix_uint32(h, w);
+    }
     break;
   }
   case BIGARRAY_SINT16:
   case BIGARRAY_UINT16: {
     uint16 * p = b->data;
-    for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
-    break;
-  }
-  case BIGARRAY_FLOAT32:
-  case BIGARRAY_COMPLEX32:
-  case BIGARRAY_INT32:
-#ifndef ARCH_SIXTYFOUR
-  case BIGARRAY_CAML_INT:
-  case BIGARRAY_NATIVE_INT:
-#endif
-  {
-    uint32 * p = b->data;
-    for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
-    break;
-  }
-  case BIGARRAY_FLOAT64:
-  case BIGARRAY_COMPLEX64:
-  case BIGARRAY_INT64:
-#ifdef ARCH_SIXTYFOUR
-  case BIGARRAY_CAML_INT:
-  case BIGARRAY_NATIVE_INT:
-#endif
-#ifdef ARCH_SIXTYFOUR
-  {
-    uintnat * p = b->data;
-    for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
-    break;
-  }
-#else
-  {
-    uint32 * p = b->data;
-    for (n = 0; n < num_elts; n++) {
-#ifdef ARCH_BIG_ENDIAN
-      h = COMBINE(h, p[1]); h = COMBINE(h, p[0]); p += 2;
-#else
-      h = COMBINE(h, p[0]); h = COMBINE(h, p[1]); p += 2;
-#endif
+    if (num_elts > 128) num_elts = 128;
+    for (n = 0; n + 2 <= num_elts; n += 2, p += 2) {
+      w = p[0] | (p[1] << 16);
+      h = caml_hash_mix_uint32(h, w);
     }
+    if ((num_elts & 1) != 0)
+      h = caml_hash_mix_uint32(h, p[0]);
     break;
   }
-#endif
+  case CAML_BA_INT32:
+  {
+    uint32 * p = b->data;
+    if (num_elts > 64) num_elts = 64;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_uint32(h, *p);
+    break;
   }
-#undef COMBINE
+  case BIGARRAY_CAML_INT:
+  case BIGARRAY_NATIVE_INT:
+  {
+    intnat * p = b->data;
+    if (num_elts > 64) num_elts = 64;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_intnat(h, *p);
+    break;
+  }
+  case CAML_BA_INT64:
+  {
+    int64 * p = b->data;
+    if (num_elts > 32) num_elts = 32;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_int64(h, *p);
+    break;
+  }
+  case CAML_BA_COMPLEX32:
+    num_elts *= 2;              /* fallthrough */
+  case CAML_BA_FLOAT32:
+  {
+    float * p = b->data;
+    if (num_elts > 64) num_elts = 64;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_float(h, *p);
+    break;
+  }
+  case CAML_BA_COMPLEX64:
+    num_elts *= 2;              /* fallthrough */
+  case CAML_BA_FLOAT64:
+  {
+    double * p = b->data;
+    if (num_elts > 32) num_elts = 32;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_double(h, *p);
+    break;
+  }
+  }
   return h;
 }
 
@@ -756,7 +778,7 @@ static void caml_ba_serialize(value v,
     caml_ba_serialize_longarray(b->data, num_elts, -0x80000000, 0x7FFFFFFF);
     break;
   }
-  /* Compute required size in Caml heap.  Assumes struct caml_bigarray
+  /* Compute required size in OCaml heap.  Assumes struct caml_ba_array
      is exactly 4 + num_dims words */
   Assert(sizeof(struct caml_bigarray) == 5 * sizeof(value));
   *wsize_32 = (4 + b->num_dims) * 4;
@@ -781,7 +803,7 @@ static void caml_ba_deserialize_longarray(void * dest, intnat num_elts)
 #else
   if (sixty)
     deserialize_error("input_value: cannot read bigarray "
-                      "with 64-bit Caml ints");
+                      "with 64-bit OCaml ints");
   deserialize_block_4(dest, num_elts);
 #endif
 }
@@ -892,7 +914,7 @@ CAMLprim value caml_ba_slice(value vb, value vind)
   sub_data =
     (char *) b->data +
     offset * caml_ba_element_size[b->flags & BIGARRAY_KIND_MASK];
-  /* Allocate a Caml bigarray to hold the result */
+  /* Allocate an OCaml bigarray to hold the result */
   res = alloc_bigarray(b->flags, b->num_dims - num_inds, sub_data, sub_dims);
   /* Create or update proxy in case of managed bigarray */
   caml_ba_update_proxy(b, Bigarray_val(res));
@@ -933,7 +955,7 @@ CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
   sub_data =
     (char *) b->data +
     ofs * mul * caml_ba_element_size[b->flags & BIGARRAY_KIND_MASK];
-  /* Allocate a Caml bigarray to hold the result */
+  /* Allocate an OCaml bigarray to hold the result */
   res = alloc_bigarray(b->flags, b->num_dims, sub_data, b->dim);
   /* Doctor the changed dimension */
   Bigarray_val(res)->dim[changed_dim] = len;
@@ -1067,7 +1089,7 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
   num_elts = 1;
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
-    if (dim[i] < 0 || dim[i] > 0x7FFFFFFFL)
+    if (dim[i] < 0)
       invalid_argument("Bigarray.reshape: negative dimension");
     num_elts *= dim[i];
   }

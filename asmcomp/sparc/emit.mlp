@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -93,6 +93,9 @@ let label_prefix =
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
+
+let emit_data_label lbl =
+  emit_string label_prefix; emit_string "d"; emit_int lbl
 
 (* Output a pseudo-register *)
 
@@ -692,7 +695,7 @@ let emit_item = function
   | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
-      `{emit_label (lbl + 100000)}:\n`
+      `{emit_data_label lbl}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -708,7 +711,7 @@ let emit_item = function
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.word	{emit_label (lbl + 100000)}\n`
+      `	.word	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_string_directive "	.ascii	" s
   | Cskip n ->

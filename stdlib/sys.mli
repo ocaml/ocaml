@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -75,14 +75,18 @@ val interactive : bool ref
    the interactive toplevel system [ocaml]. *)
 
 val os_type : string
-(** Operating system currently executing the Caml program. One of
+(** Operating system currently executing the OCaml program. One of
 -  ["Unix"] (for all Unix versions, including Linux and Mac OS X),
 -  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
 -  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
 
 val word_size : int
-(** Size of one word on the machine currently executing the Caml
+(** Size of one word on the machine currently executing the OCaml
    program, in bits: 32 or 64. *)
+
+val big_endian : bool
+(** Whether the machine currently executing the Caml program is big-endian.
+    @since 4.00.0 *)
 
 val max_string_length : int
 (** Maximum length of a string. *)
@@ -199,7 +203,7 @@ val catch_break : bool -> unit
 
 
 val ocaml_version : string;;
-(** [ocaml_version] is the version of Objective Caml.
+(** [ocaml_version] is the version of OCaml.
     It is a string of the form ["major.minor[.patchlevel][+additional-info]"],
     where [major], [minor], and [patchlevel] are integers, and
     [additional-info] is an arbitrary string. The [[.patchlevel]] and

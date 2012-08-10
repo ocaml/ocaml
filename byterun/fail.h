@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -54,8 +54,13 @@ struct longjmp_buffer {
 
 CAMLextern struct longjmp_buffer * caml_external_raise;
 extern value caml_exn_bucket;
+int caml_is_special_exception(value exn);
 
 /* </private> */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 CAMLextern void caml_raise (value bucket) Noreturn;
 CAMLextern void caml_raise_constant (value tag) Noreturn;
@@ -73,5 +78,9 @@ CAMLextern void caml_raise_not_found (void) Noreturn;
 CAMLextern void caml_init_exceptions (void);
 CAMLextern void caml_array_bound_error (void) Noreturn;
 CAMLextern void caml_raise_sys_blocked_io (void) Noreturn;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_FAIL_H */

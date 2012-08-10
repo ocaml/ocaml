@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -54,7 +54,8 @@ let has_fallthrough = function
 type fundecl =
   { fun_name: string;
     fun_body: instruction;
-    fun_fast: bool }
+    fun_fast: bool;
+    fun_dbg : Debuginfo.t }
 
 (* Invert a test *)
 
@@ -264,4 +265,5 @@ let rec linear i n =
 let fundecl f =
   { fun_name = f.Mach.fun_name;
     fun_body = linear f.Mach.fun_body end_instr;
-    fun_fast = f.Mach.fun_fast }
+    fun_fast = f.Mach.fun_fast;
+    fun_dbg  = f.Mach.fun_dbg }

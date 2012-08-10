@@ -4,20 +4,27 @@ TOPDIR=$(BASEDIR)/..
 
 include $(TOPDIR)/config/Makefile
 
+DIFF=diff -q
 BOOTDIR=$(TOPDIR)/boot
 OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
-OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml$(EXE)
-OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc$(EXE)
-OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt$(EXE)
+OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml$(EXE) -I $(TOPDIR)/stdlib
+OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc$(EXE) -I $(TOPDIR)/stdlib
+OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt$(EXE) -I $(TOPDIR)/stdlib
 OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc$(EXE)
 OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex$(EXE)
 OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib$(EXE)
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj$(EXE)
+BYTECODE_ONLY=`if [ "$(ASM)" = "none" ]; then echo 'YES'; else echo ''; fi`
 #COMPFLAGS=
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=
+
+defaultpromote:
+	@for file in *.reference; do \
+	  cp `basename $$file reference`result $$file; \
+	done
 
 defaultclean:
 	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)

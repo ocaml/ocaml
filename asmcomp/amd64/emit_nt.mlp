@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -79,6 +79,9 @@ let add_used_symbol s =
 
 let emit_label lbl =
   emit_string "L"; emit_int lbl
+
+let emit_data_label lbl =
+  emit_string "Ld"; emit_int lbl
 
 (* Output a .align directive. *)
 
@@ -591,19 +594,24 @@ let emit_instr fallthrough i =
             end
     | Lswitch jumptbl ->
         let lbl = new_label() in
-        if !pic_code then begin
-          `	lea	r11, {emit_label lbl}\n`;
-          `	jmp	QWORD PTR [r11+{emit_reg i.arg.(0)}*8]\n`
-        end else begin
-          `	jmp	QWORD PTR [{emit_reg i.arg.(0)}*8 + {emit_label lbl}]\n`
-        end;
-        `	.DATA\n`;
-        emit_align 8;
-        `{emit_label lbl}	LABEL QWORD\n`;
+        (* rax and rdx are clobbered by the Lswitch,
+           meaning that no variable that is live across the Lswitch
+           is assigned to rax or rdx.  However, the argument to Lswitch
+           can still be assigned to one of these two registers, so
+           we must be careful not to clobber it before use. *)
+        let (tmp1, tmp2) =
+          if i.arg.(0).loc = Reg 0 (* rax *)
+          then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
+          else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
+        `	lea	{emit_reg tmp1}, {emit_label lbl}\n`;
+        `	movsxd	{emit_reg tmp2}, DWORD PTR [{emit_reg tmp1}+{emit_reg i.arg.(0)}*4]\n`;
+        `	add	{emit_reg tmp1}, {emit_reg tmp2}\n`;
+        `	jmp	{emit_reg tmp1}\n`;
+        emit_align 4;
+        `{emit_label lbl}	LABEL DWORD\n`;
         for i = 0 to Array.length jumptbl - 1 do
-          `	QWORD	{emit_label jumptbl.(i)}\n`
-        done;
-        `	.CODE\n`
+          `	DWORD	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
+        done
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`
     | Lpushtrap ->
@@ -691,7 +699,7 @@ let emit_item = function
       add_def_symbol s;
       `{emit_symbol s} LABEL QWORD\n`
   | Cdefine_label lbl ->
-      `{emit_label (100000 + lbl)} LABEL QWORD\n`
+      `{emit_data_label lbl} LABEL QWORD\n`
   | Cint8 n ->
       `	BYTE	{emit_int n}\n`
   | Cint16 n ->
@@ -708,7 +716,7 @@ let emit_item = function
       add_used_symbol s;
       `	QWORD	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	QWORD	{emit_label (100000 + lbl)}\n`
+      `	QWORD	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_bytes_directive "	BYTE	" s
   | Cskip n ->

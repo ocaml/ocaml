@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -176,8 +176,9 @@ let fundecl ppf f =
        if !first then first := false else fprintf ppf "@ ";
        fprintf ppf "%a: %a" Ident.print id machtype ty)
      cases in
-  fprintf ppf "@[<1>(function %s@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
-         f.fun_name print_cases f.fun_args sequence f.fun_body
+  fprintf ppf "@[<1>(function%s %s@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
+         (Debuginfo.to_string f.fun_dbg) f.fun_name
+         print_cases f.fun_args sequence f.fun_body
 
 let data_item ppf = function
   | Cdefine_symbol s -> fprintf ppf "\"%s\":" s

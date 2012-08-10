@@ -134,8 +134,8 @@ Error: The type abbreviation t is cyclic
 # # - : bool = true
 #     module M : sig class ['a] c : unit -> object method f : 'a -> unit end end
 #   module M' : sig class ['a] c : unit -> object method f : 'a -> unit end end
-# - : ('b #M.c as 'a) -> 'a = <fun>
-# - : ('b #M'.c as 'a) -> 'a = <fun>
+# - : ('a #M.c as 'b) -> 'b = <fun>
+# - : ('a #M'.c as 'b) -> 'b = <fun>
 # class ['a] c : 'a #c -> object  end
 # class ['a] c : 'a #c -> object  end
 #     class c : unit -> object method f : int end
@@ -268,18 +268,20 @@ Error: Type int -> bool is not a subtype of int -> int
   fun (x : 'a t as 'a) -> ();;
            ^^^^^^^^^^
 Error: This alias is bound to type 'a t but is used as an instance of type 'a
+       The type variable 'a occurs inside 'a t
 # Characters 19-20:
   fun (x : 'a t) -> (x : 'a); ();;
                      ^
 Error: This expression has type 'a t but an expression was expected of type
          'a
+       The type variable 'a occurs inside 'a t
 # type 'a t = < x : 'a >
 # - : ('a t as 'a) -> unit = <fun>
 # Characters 18-26:
   fun (x : 'a t) -> (x : 'a); ();;
                     ^^^^^^^^
 Warning 10: this expression should have type unit.
-- : ('a t as 'a) -> unit = <fun>
+- : ('a t as 'a) t -> unit = <fun>
 #         class ['a] c :
   unit -> object constraint 'a = (< .. > as 'b) -> unit method m : 'a end
 #       class ['a] c :
@@ -290,4 +292,10 @@ Warning 10: this expression should have type unit.
   unit -> object method private m : int method n : int method o : int end
 #   - : int * int = (1, 1)
 #   class c : unit -> object method m : int end
+#       - : int = 15
+# - : int = 16
+# - : int = 17
+#         - : int * int * int = (18, 19, 20)
+#           - : int * int * int * int * int = (21, 22, 23, 33, 33)
+#           - : int * int * int * int * int = (24, 25, 26, 33, 33)
 # 

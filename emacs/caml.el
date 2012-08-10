@@ -1,6 +1,6 @@
 ;(***********************************************************************)
 ;(*                                                                     *)
-;(*                           Objective Caml                            *)
+;(*                                OCaml                                *)
 ;(*                                                                     *)
 ;(*                Jacques Garrigue and Ian T Zimmerman                 *)
 ;(*                                                                     *)
@@ -12,7 +12,7 @@
 
 ;(* $Id$ *)
 
-;;; caml.el --- O'Caml code editing commands for Emacs
+;;; caml.el --- OCaml code editing commands for Emacs
 ;; Luc Maranget, January 2008. A few jocaml additions.
 (defconst caml-is-jocaml t)
 
@@ -21,12 +21,12 @@
 ;;indentation code is Copyright (C) 1996 by Ian T Zimmerman <itz@rahul.net>
 ;;copying: covered by the current FSF General Public License.
 
-;; indentation code adapted for Objective Caml by Jacques Garrigue,
+;; indentation code adapted for OCaml by Jacques Garrigue,
 ;; july 1997. <garrigue@kurims.kyoto-u.ac.jp>
 
 ;;user customizable variables
 (defvar caml-quote-char "'"
-  "*Quote for character constants. \"'\" for Objective Caml, \"`\" for Caml-Light.")
+  "*Quote for character constants. \"'\" for OCaml, \"`\" for Caml-Light.")
 
 (defvar caml-imenu-enable nil
   "*Enable Imenu support.")
@@ -590,7 +590,7 @@ have caml-electric-indent on, which see.")
 ;;; subshell support
 
 (defun caml-eval-region (start end)
-  "Send the current region to the inferior Caml process."
+  "Send the current region to the inferior OCaml process."
   (interactive"r")
   (require 'inf-caml)
   (inferior-caml-eval-region start end))
@@ -598,7 +598,7 @@ have caml-electric-indent on, which see.")
 ;; old version ---to be deleted later
 ;
 ; (defun caml-eval-phrase ()
-;   "Send the current Caml phrase to the inferior Caml process."
+;   "Send the current OCaml phrase to the inferior Caml process."
 ;   (interactive)
 ;   (save-excursion
 ;     (let ((bounds (caml-mark-phrase)))
@@ -827,7 +827,7 @@ from an error message produced by camlc.")
 ;that way we get our effect even when we do \C-x` in compilation buffer
 
 (defadvice next-error (after caml-next-error activate)
- "Reads the extra positional information provided by the Caml compiler.
+ "Reads the extra positional information provided by the OCaml compiler.
 
 Puts the point and the mark exactly around the erroneous program
 fragment. The erroneous fragment is also temporarily highlighted if
@@ -905,7 +905,7 @@ whole string."
 ;; itz Thu Sep 24 19:02:42 PDT 1998 this is to have some level of
 ;; comfort when sending phrases to the toplevel and getting errors.
 (defun caml-goto-phrase-error ()
-  "Find the error location in current Caml phrase."
+  "Find the error location in current OCaml phrase."
   (interactive)
   (require 'inf-caml)
   (let ((bounds (save-excursion (caml-mark-phrase))))
@@ -990,7 +990,7 @@ to the end.
     beg))
 
 (defun caml-mark-phrase (&optional min-pos max-pos)
-  "Put mark at end of this Caml phrase, point at beginning.
+  "Put mark at end of this OCaml phrase, point at beginning.
 "
   (interactive)
   (let* ((beg (caml-find-phrase min-pos max-pos)) (end (point)))
@@ -1789,7 +1789,7 @@ by |, insert one."
       (goto-char (match-end 0))))
 
 ;; to mark phrases, so that repeated calls will take several of them
-;; knows little about Ocaml appart literals and comments, so it should work
+;; knows little about OCaml except literals and comments, so it should work
 ;; with other dialects as long as ;; marks the end of phrase.
 
 (defun caml-indent-phrase (arg)
@@ -1945,7 +1945,7 @@ with prefix arg, indent that many phrases starting with the current phrase."
     (beginning-of-line 1)
     (backward-char 4)))
 
-(autoload 'run-caml "inf-caml" "Run an inferior Caml process." t)
+(autoload 'run-caml "inf-caml" "Run an inferior OCaml process." t)
 
 (autoload 'caml-types-show-type "caml-types"
   "Show the type of expression or pattern at point." t)

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include "alloc.h"
+#include "callback.h"
 #include "custom.h"
 #include "fail.h"
 #include "gc.h"
@@ -62,6 +63,10 @@ static header_t intern_header;
 static value intern_block;
 /* Point to the heap block allocated as destination block.
    Meaningful only if intern_extra_block is NULL. */
+
+static value * camlinternaloo_last_id = NULL;
+/* Pointer to a reference holding the last object id.
+   -1 means not available (CamlinternalOO not loaded). */
 
 #define Sign_extend_shift ((sizeof(intnat) - 1) * 8)
 #define Sign_extend(x) (((intnat)(x) << Sign_extend_shift) >> Sign_extend_shift)
@@ -125,7 +130,10 @@ static void intern_rec(value *dest)
   header_t header;
   char cksum[16];
   struct custom_operations * ops;
+  value * function_placeholder;
+  int get_function_placeholder;
 
+  get_function_placeholder = 1;
  tailcall:
   code = read8u();
   if (code >= PREFIX_SMALL_INT) {
@@ -143,6 +151,22 @@ static void intern_rec(value *dest)
         dest = (value *) (intern_dest + 1);
         *intern_dest = Make_header(size, tag, intern_color);
         intern_dest += 1 + size;
+        /* For objects, we need to freshen the oid */
+        if (tag == Object_tag && camlinternaloo_last_id != (value*)-1) {
+          intern_rec(dest++);
+          intern_rec(dest++);
+          if (camlinternaloo_last_id == NULL)
+            camlinternaloo_last_id = caml_named_value("CamlinternalOO.last_id");
+          if (camlinternaloo_last_id == NULL)
+            camlinternaloo_last_id = (value*)-1;
+          else {
+            value id = Field(*camlinternaloo_last_id,0);
+            Field(dest,-1) = id;
+            Field(*camlinternaloo_last_id,0) = id + 2;
+          }
+          size -= 2;
+          if (size == 0) return;
+        }
         for(/*nothing*/; size > 1; size--, dest++)
           intern_rec(dest);
         goto tailcall;
@@ -295,6 +319,15 @@ static void intern_rec(value *dest)
         ofs = read32u();
         readblock(cksum, 16);
         if (memcmp(cksum, caml_code_checksum(), 16) != 0) {
+          if (get_function_placeholder) {
+            function_placeholder =
+              caml_named_value ("Debugger.function_placeholder");
+            get_function_placeholder = 0;
+          }
+          if (function_placeholder != NULL) {
+            v = *function_placeholder;
+            break;
+          }
           intern_cleanup();
           caml_failwith("input_value: code mismatch");
         }
@@ -361,6 +394,8 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
 {
   mlsize_t wosize;
 
+  if (camlinternaloo_last_id == (value*)-1)
+    camlinternaloo_last_id = NULL; /* Reset ignore flag */
   if (whsize == 0) {
     intern_obj_table = NULL;
     intern_extra_block = NULL;

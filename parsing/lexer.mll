@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -426,7 +426,7 @@ and comment = parse
   | "*)"
       { match !comment_start_loc with
         | [] -> assert false
-        | [x] -> comment_start_loc := [];
+        | [_] -> comment_start_loc := [];
         | _ :: l -> comment_start_loc := l;
                     comment lexbuf;
        }

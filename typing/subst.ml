@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -71,18 +71,20 @@ let new_id = ref (-1)
 let reset_for_saving () = new_id := -1
 
 let newpersty desc =
-  decr new_id; { desc = desc; level = generic_level; id = !new_id }
+  decr new_id;
+  { desc = desc; level = generic_level; id = !new_id }
 
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
   match ty.desc with
-    Tvar | Tunivar ->
+    Tvar _ | Tunivar _ as desc ->
       if s.for_saving || ty.id < 0 then
         let ty' =
-          if s.for_saving then newpersty ty.desc else newty2 ty.level ty.desc
+          if s.for_saving then newpersty desc
+          else newty2 ty.level desc
         in
-        save_desc ty ty.desc; ty.desc <- Tsubst ty'; ty'
+        save_desc ty desc; ty.desc <- Tsubst ty'; ty'
       else ty
   | Tsubst ty ->
       ty
@@ -94,7 +96,7 @@ let rec typexp s ty =
     let desc = ty.desc in
     save_desc ty desc;
     (* Make a stub *)
-    let ty' = if s.for_saving then newpersty Tvar else newgenvar () in
+    let ty' = if s.for_saving then newpersty (Tvar None) else newgenvar () in
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
@@ -126,11 +128,11 @@ let rec typexp s ty =
               let more' =
                 match more.desc with
                   Tsubst ty -> ty
-                | Tconstr _ -> typexp s more
-                | Tunivar | Tvar ->
+                | Tconstr _ | Tnil -> typexp s more
+                | Tunivar _ | Tvar _ ->
                     save_desc more more.desc;
                     if s.for_saving then newpersty more.desc else
-                    if dup && more.desc <> Tunivar then newgenvar () else more
+                    if dup && is_Tvar more then newgenty more.desc else more
                 | _ -> assert false
               in
               (* Register new type first for recursion *)
@@ -167,22 +169,26 @@ let type_declaration s decl =
         begin match decl.type_kind with
           Type_abstract -> Type_abstract
         | Type_variant cstrs ->
-            Type_variant(
-              List.map (fun (n, args) -> (n, List.map (typexp s) args))
-                       cstrs)
+            Type_variant
+              (List.map
+                 (fun (n, args, ret_type) -> 
+		   (n, List.map (typexp s) args, may_map (typexp s) ret_type))
+                 cstrs)
         | Type_record(lbls, rep) ->
-            Type_record(
-              List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
-                       lbls,
-              rep)
+            Type_record
+              (List.map (fun (n, mut, arg) -> (n, mut, typexp s arg)) lbls,
+               rep)
         end;
       type_manifest =
-        begin match decl.type_manifest with
-          None -> None
-        | Some ty -> Some(typexp s ty)
+        begin 
+	  match decl.type_manifest with
+            None -> None
+          | Some ty -> Some(typexp s ty)
         end;
       type_private = decl.type_private;
       type_variance = decl.type_variance;
+      type_newtype_level = None;
+      type_loc = if s.for_saving then Location.none else decl.type_loc;
     }
   in
   cleanup_types ();
@@ -241,10 +247,14 @@ let class_type s cty =
 
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
-    val_kind = descr.val_kind }
+    val_kind = descr.val_kind;
+    val_loc = if s.for_saving then Location.none else descr.val_loc;
+   }
 
-let exception_declaration s tyl =
-  List.map (type_expr s) tyl
+let exception_declaration s descr =
+  { exn_args = List.map (type_expr s) descr.exn_args;
+    exn_loc = if s.for_saving then Location.none else descr.exn_loc;
+   }
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)

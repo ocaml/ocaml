@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -190,7 +190,23 @@ let simplify_exits lam =
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
-  | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
+  | Lprim(p, ll) -> begin
+    let ll = List.map simplif ll in
+    match p, ll with
+        (* Simplify %revapply, for n-ary functions with n > 1 *)
+      | Prevapply loc, [x; Lapply(f, args, _)]
+      | Prevapply loc, [x; Levent (Lapply(f, args, _),_)] ->
+        Lapply(f, args@[x], loc)
+      | Prevapply loc, [x; f] -> Lapply(f, [x], loc)
+
+        (* Simplify %apply, for n-ary functions with n > 1 *)
+      | Pdirapply loc, [Lapply(f, args, _); x]
+      | Pdirapply loc, [Levent (Lapply(f, args, _),_); x] ->
+        Lapply(f, args@[x], loc)
+      | Pdirapply loc, [f; x] -> Lapply(f, [x], loc)
+
+      | _ -> Lprim(p, ll)
+     end
   | Lswitch(l, sw) ->
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
@@ -256,69 +272,113 @@ let simplify_exits lam =
   in
   simplif lam
 
+(* Compile-time beta-reduction of functions immediately applied:
+      Lapply(Lfunction(Curried, params, body), args, loc) ->
+        let paramN = argN in ... let param1 = arg1 in body
+      Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock(args))], loc) ->
+        let paramN = argN in ... let param1 = arg1 in body
+   Assumes |args| = |params|.
+*)
+
+let beta_reduce params body args =
+  List.fold_left2 (fun l param arg -> Llet(Strict, param, arg, l))
+                  body params args
+
 (* Simplification of lets *)
 
 let simplify_lets lam =
 
-  (* First pass: count the occurrences of all identifiers *)
-  let occ = Hashtbl.create 83 in
+  (* Disable optimisations for bytecode compilation with -g flag *)
+  let optimize = !Clflags.native_code || not !Clflags.debug in
+
+  (* First pass: count the occurrences of all let-bound identifiers *)
+
+  let occ = (Hashtbl.create 83: (Ident.t, int ref) Hashtbl.t) in
+  (* The global table [occ] associates to each let-bound identifier
+     the number of its uses (as a reference):
+     - 0 if never used
+     - 1 if used exactly once in and not under a lambda or within a loop
+     - > 1 if used several times or under a lambda or within a loop.
+     The local table [bv] associates to each locally-let-bound variable
+     its reference count, as above.  [bv] is enriched at let bindings
+     but emptied when crossing lambdas and loops. *)
+
+  (* Current use count of a variable. *)
   let count_var v =
     try
       !(Hashtbl.find occ v)
     with Not_found ->
       0
-  and incr_var v =
-    try
-      incr(Hashtbl.find occ v)
-    with Not_found ->
-      Hashtbl.add occ v (ref 1) in
 
-  let rec count = function
-  | Lvar v -> incr_var v
+  (* Entering a [let].  Returns updated [bv]. *)
+  and bind_var bv v =
+    let r = ref 0 in
+    Hashtbl.add occ v r;
+    Tbl.add v r bv
+
+  (* Record a use of a variable *)
+  and use_var bv v n =
+    try
+      let r = Tbl.find v bv in r := !r + n
+    with Not_found ->
+      (* v is not locally bound, therefore this is a use under a lambda
+         or within a loop.  Increase use count by 2 -- enough so
+         that single-use optimizations will not apply. *)
+    try
+      let r = Hashtbl.find occ v in r := !r + 2
+    with Not_found ->
+      (* Not a let-bound variable, ignore *)
+      () in
+
+  let rec count bv = function
   | Lconst cst -> ()
-  | Lapply(l1, ll, _) -> count l1; List.iter count ll
-  | Lfunction(kind, params, l) -> count l
-  | Llet(str, v, Lvar w, l2) when not !Clflags.debug ->
+  | Lvar v ->
+      use_var bv v 1
+  | Lapply(Lfunction(Curried, params, body), args, _)
+    when optimize && List.length params = List.length args ->
+      count bv (beta_reduce params body args)
+  | Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock _, args)], _)
+    when optimize && List.length params = List.length args ->
+      count bv (beta_reduce params body args)
+  | Lapply(l1, ll, _) ->
+      count bv l1; List.iter (count bv) ll
+  | Lfunction(kind, params, l) ->
+      count Tbl.empty l
+  | Llet(str, v, Lvar w, l2) when optimize ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
-      count l2;
-      let vc = count_var v in
-      begin try
-        let r = Hashtbl.find occ w in r := !r + vc
-      with Not_found ->
-        Hashtbl.add occ w (ref vc)
-      end
+      count (bind_var bv v) l2;
+      use_var bv w (count_var v)
   | Llet(str, v, l1, l2) ->
-      count l2;
+      count (bind_var bv v) l2;
       (* If v is unused, l1 will be removed, so don't count its variables *)
-      if str = Strict || count_var v > 0 then count l1
+      if str = Strict || count_var v > 0 then count bv l1
   | Lletrec(bindings, body) ->
-      List.iter (fun (v, l) -> count l) bindings;
-      count body
-  | Lprim(p, ll) -> List.iter count ll
+      List.iter (fun (v, l) -> count bv l) bindings;
+      count bv body
+  | Lprim(p, ll) -> List.iter (count bv) ll
   | Lswitch(l, sw) ->
-      count_default sw ;
-      count l;
-      List.iter (fun (_, l) -> count l) sw.sw_consts;
-      List.iter (fun (_, l) -> count l) sw.sw_blocks
-  | Lstaticraise (i,ls) -> List.iter count ls
-  | Lstaticcatch(l1, (i,_), l2) ->
-      count l1; count l2
-  | Ltrywith(l1, v, l2) -> count l1; count l2
-  | Lifthenelse(l1, l2, l3) -> count l1; count l2; count l3
-  | Lsequence(l1, l2) -> count l1; count l2
-  | Lwhile(l1, l2) -> count l1; count l2
-  | Lfor(_, l1, l2, dir, l3) -> count l1; count l2; count l3
+      count_default bv sw ;
+      count bv l;
+      List.iter (fun (_, l) -> count bv l) sw.sw_consts;
+      List.iter (fun (_, l) -> count bv l) sw.sw_blocks
+  | Lstaticraise (i,ls) -> List.iter (count bv) ls
+  | Lstaticcatch(l1, (i,_), l2) -> count bv l1; count bv l2
+  | Ltrywith(l1, v, l2) -> count bv l1; count bv l2
+  | Lifthenelse(l1, l2, l3) -> count bv l1; count bv l2; count bv l3
+  | Lsequence(l1, l2) -> count bv l1; count bv l2
+  | Lwhile(l1, l2) -> count Tbl.empty l1; count Tbl.empty l2
+  | Lfor(_, l1, l2, dir, l3) -> count bv l1; count bv l2; count Tbl.empty l3
   | Lassign(v, l) ->
       (* Lalias-bound variables are never assigned, so don't increase
          v's refcount *)
-      count l
-  | Lsend(_, m, o, ll, _) -> List.iter count (m::o::ll)
-  | Levent(l, _) -> count l
+      count bv l
+  | Lsend(_, m, o, ll, _) -> List.iter (count bv) (m::o::ll)
+  | Levent(l, _) -> count bv l
   | Lifused(v, l) ->
-      if count_var v > 0 then count l
+      if count_var v > 0 then count bv l
 
-  and count_default sw = match sw.sw_failaction with
+  and count_default bv sw = match sw.sw_failaction with
   | None -> ()
   | Some al ->
       let nconsts = List.length sw.sw_consts
@@ -326,17 +386,26 @@ let simplify_lets lam =
       if
         nconsts < sw.sw_numconsts && nblocks < sw.sw_numblocks
       then begin (* default action will occur twice in native code *)
-        count al ; count al
+        count bv al ; count bv al
       end else begin (* default action will occur once *)
         assert (nconsts < sw.sw_numconsts || nblocks < sw.sw_numblocks) ;
-        count al
+        count bv al
       end
   in
-  count lam;
+  count Tbl.empty lam;
+
   (* Second pass: remove Lalias bindings of unused variables,
      and substitute the bindings of variables used exactly once. *)
 
   let subst = Hashtbl.create 83 in
+
+(* This (small)  optimisation is always legal, it may uncover some
+   tail call later on. *)
+
+  let mklet (kind,v,e1,e2) = match e2 with
+  | Lvar w when optimize && Ident.same v w -> e1
+  | _ -> Llet (kind,v,e1,e2) in
+
 
   let rec simplif = function
     Lvar v as l ->
@@ -346,33 +415,38 @@ let simplify_lets lam =
         l
       end
   | Lconst cst as l -> l
+  | Lapply(Lfunction(Curried, params, body), args, _)
+    when optimize && List.length params = List.length args ->
+      simplif (beta_reduce params body args)
+  | Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock _, args)], _)
+    when optimize && List.length params = List.length args ->
+      simplif (beta_reduce params body args)
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
   | Lfunction(kind, params, l) -> Lfunction(kind, params, simplif l)
-  | Llet(str, v, Lvar w, l2) when not !Clflags.debug ->
+  | Llet(str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [linit]), lbody)
-    when not !Clflags.debug ->
+    when optimize ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
-        Llet(Variable, v, slinit, eliminate_ref v slbody)
+       mklet (Variable, v, slinit, eliminate_ref v slbody)
       with Real_reference ->
-        Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [slinit]), slbody)
+        mklet(Strict, v, Lprim(Pmakeblock(0, Mutable), [slinit]), slbody)
       end
   | Llet(Alias, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | 1 when not !Clflags.debug ->
-             Hashtbl.add subst v (simplif l1); simplif l2
+      | 1 when optimize -> Hashtbl.add subst v (simplif l1); simplif l2
       | n -> Llet(Alias, v, simplif l1, simplif l2)
       end
   | Llet(StrictOpt, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | n -> Llet(Alias, v, simplif l1, simplif l2)
+      | n -> mklet(Alias, v, simplif l1, simplif l2)
       end
-  | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
+  | Llet(kind, v, l1, l2) -> mklet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll) -> Lprim(p, List.map simplif ll)

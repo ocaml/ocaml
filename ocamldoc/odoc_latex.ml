@@ -86,82 +86,88 @@ class text =
         "\\"^sec^"{"^s^"}\n"
       with Not_found -> s
 
-    (** Associations of strings to subsitute in latex code. *)
-    val mutable subst_strings = [
-      ("MAXENCE"^"ZZZ", "\\$");
-      ("MAXENCE"^"YYY", "\\&");
-      ("MAXENCE"^"XXX", "{\\textbackslash}") ;
-      ("à", "\\`a") ;
-      ("â", "\\^a") ;
-      ("é", "\\'e") ;
-      ("è", "\\`e") ;
-      ("ê", "\\^e") ;
-      ("ë", "\\\"e") ;
-      ("ç", "\\c{c}") ;
-      ("ô", "\\^o") ;
-      ("ö", "\\\"o") ;
-      ("î", "\\^i") ;
-      ("ï", "\\\"i") ;
-      ("ù", "\\`u") ;
-      ("û", "\\^u") ;
-      ("%", "\\%") ;
-      ("_", "\\_");
-      ("\\.\\.\\.", "$\\ldots$");
-      ("~", "\\~{}");
-      ("#", "\\verb`#`");
-      ("}", "\\}");
-      ("{", "\\{");
-      ("&", "\\&");
-      (">", "$>$");
-      ("<", "$<$");
-      ("=", "$=$");
-      (">=", "$\\geq$");
-      ("<=", "$\\leq$");
-      ("->", "$\\rightarrow$") ;
-      ("<-", "$\\leftarrow$");
-      ("|", "\\textbar ");
-      ("\\^", "\\textasciicircum ") ;
-      ("\\.\\.\\.", "$\\ldots$");
-      ("\\\\", "MAXENCE"^"XXX") ;
-      ("&", "MAXENCE"^"YYY") ;
-<<<<<<< .courant
-      ("\\$", "MAXENCE"^"ZZZ")
-     ] 
-=======
-      ("\\$", "MAXENCE"^"ZZZ");
-    ]
+    (** Associations of strings to substitute in latex code. *)
+    val subst_strings = List.map (fun (x, y) -> (Str.regexp x, y))
+      [
+        "\001", "\001\002";
+        "\\\\", "\001b";
 >>>>>>> .fusion-droit.r10497
 
-    val mutable subst_strings_simple =    
-      [ 
-        ("MAXENCE"^"XXX", "{\\textbackslash}") ;
-        "}", "\\}" ;
-        "{", "\\{" ;
-        ("\\\\", "MAXENCE"^"XXX") ;
+        "{", "\\\\{";
+        "}", "\\\\}";
+        "\\$", "\\\\$";
+        "\\^", "{\\\\textasciicircum}";
+        "à", "\\\\`a";
+        "â", "\\\\^a";
+        "é", "\\\\'e";
+        "è", "\\\\`e";
+        "ê", "\\\\^e";
+        "ë", "\\\\\"e";
+        "ç", "\\\\c{c}";
+        "ô", "\\\\^o";
+        "ö", "\\\\\"o";
+        "î", "\\\\^i";
+        "ï", "\\\\\"i";
+        "ù", "\\\\`u";
+        "û", "\\\\^u";
+        "%", "\\\\%";
+        "_", "\\\\_";
+        "~", "\\\\~{}";
+        "#", "{\\char35}";
+        "->", "$\\\\rightarrow$";
+        "<-", "$\\\\leftarrow$";
+        ">=", "$\\\\geq$";
+        "<=", "$\\\\leq$";
+        ">", "$>$";
+        "<", "$<$";
+        "=", "$=$";
+        "|", "{\\\\textbar}";
+        "\\.\\.\\.", "$\\\\ldots$";
+        "&", "\\\\&";
+
+        "\001b", "{\\\\char92}";
+        "\001\002", "\001";
+      ]
+
+    val subst_strings_simple = List.map (fun (x, y) -> (Str.regexp x, y))
+      [
+        "\001", "\001\002";
+        "\\\\", "\001b";
+        "{", "\001l";
+
+        "}", "{\\\\char125}";
+        "'", "{\\\\textquotesingle}";
+        "`", "{\\\\textasciigrave}";
+
+        "\001b", "{\\\\char92}";
+        "\001l", "{\\\\char123}";
+        "\001\002", "\001";
       ] 
 
-    val mutable subst_strings_code = [
-      ("MAXENCE"^"ZZZ", "\\$");
-      ("MAXENCE"^"YYY", "\\&");
-      ("MAXENCE"^"XXX", "{\\textbackslash}") ;
-      ("%", "\\%") ;
-      ("_", "\\_");
-      ("~", "\\~{}");
-      ("#", "\\verb`#`");
-      ("}", "\\}");
-      ("{", "\\{");
-      ("&", "\\&");
-      ("\\^", "\\textasciicircum ") ;
-      ("&", "MAXENCE"^"YYY") ;
-      ("\\$", "MAXENCE"^"ZZZ") ;
-      ("\\\\", "MAXENCE"^"XXX") ;
-     ] 
+    val subst_strings_code = List.map (fun (x, y) -> (Str.regexp x, y))
+      [
+        "\001", "\001\002";
+        "\\\\", "\001b";
+        "{", "\001l";
+
+        "}", "{\\\\char125}";
+        "'", "{\\\\textquotesingle}";
+        "`", "{\\\\textasciigrave}";
+        "%", "\\\\%";
+        "_", "\\\\_";
+        "~", "{\\\\char126}";
+        "#", "{\\\\char35}";
+        "&", "\\\\&";
+        "\\$", "\\\\$";
+        "\\^", "{\\\\char94}";
+
+        "\001b", "{\\\\char92}";
+        "\001l", "{\\\\char123}";
+        "\001\002", "\001";
+      ]
 
     method subst l s =
-      List.fold_right
-        (fun (s, s2) -> fun acc -> Str.global_replace (Str.regexp s) s2 acc)
-        l
-        s
+      List.fold_left (fun acc (re, st) -> Str.global_replace re st acc) s l
 
     (** Escape the strings which would clash with LaTeX syntax. *)
     method escape s = self#subst subst_strings s
@@ -299,9 +305,9 @@ class text =
       ps fmt "\n\\end{ocamldoccode}\n"
 
     method latex_of_Verbatim fmt s = 
-      ps fmt "\\begin{verbatim}";
+      ps fmt "\n\\begin{verbatim}\n";
       ps fmt s;
-      ps fmt "\\end{verbatim}"
+      ps fmt "\n\\end{verbatim}\n"
 
     method latex_of_Bold fmt t =
       ps fmt "{\\bf ";
@@ -556,14 +562,24 @@ class latex =
                     let s_cons = 
                       p fmt2 "@[<h 6>  | %s" constr.vc_name;
                       (
-		       match constr.vc_args with
-                         [] -> ()
-                       | l -> 
-                           p fmt2 " %s@ %s" 
-			     "of"
+                       match constr.vc_args, constr.vc_ret with
+                         [], None -> ()
+                       | l, None ->
+                           p fmt2 " %s@ %s"
+                             "of"
                              (self#normal_type_list ~par: false mod_name " * " l)
-		      );
-		      flush2 ()
+                       | [], Some r ->
+                           p fmt2 " %s@ %s"
+                             ":"
+                             (self#normal_type mod_name r)
+                       | l, Some r ->
+                           p fmt2 " %s@ %s@ %s@ %s"
+                             ":"
+                             (self#normal_type_list ~par: false mod_name " * " l)
+			     "->"
+                             (self#normal_type mod_name r)			     
+                      );
+                      flush2 ()
                     in
                     [ CodePre s_cons ] @
                     (match constr.vc_text with
@@ -1117,6 +1133,7 @@ class latex =
       ps fmt "\\documentclass[11pt]{article} \n";
       ps fmt "\\usepackage[latin1]{inputenc} \n";
       ps fmt "\\usepackage[T1]{fontenc} \n";
+      ps fmt "\\usepackage{textcomp}\n";
       ps fmt "\\usepackage{fullpage} \n";
       ps fmt "\\usepackage{url} \n";
       ps fmt "\\usepackage{ocamldoc}\n";

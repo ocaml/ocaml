@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -14,6 +14,7 @@
 (* $Id$ *)
 
 (** String operations.
+
   Given a string [s] of length [l], we call character number in [s]
   the index of a character in [s].  Indexes start at [0], and we will
   call a character number valid in [s] if it falls within the range
@@ -25,6 +26,31 @@
   Two parameters [start] and [len] are said to designate a valid
   substring of [s] if [len >= 0] and [start] and [start+len] are
   valid positions in [s].
+
+  OCaml strings can be modified in place, for instance via the
+  {!String.set} and {!String.blit} functions described below.  This
+  possibility should be used rarely and with much care, however, since
+  both the OCaml compiler and most OCaml libraries share strings as if
+  they were immutable, rather than copying them.  In particular,
+  string literals are shared: a single copy of the string is created
+  at program loading time and returned by all evaluations of the
+  string literal.  Consider for example:
+
+  {[
+      # let f () = "foo";;
+      val f : unit -> string = <fun>
+      # (f ()).[0] <- 'b';;
+      - : unit = ()
+      # f ();;
+      - : string = "boo"
+  ]}
+
+  Likewise, many functions from the standard library can return string
+  literals or one of their string arguments.  Therefore, the returned strings
+  must not be modified directly.  If mutation is absolutely necessary,
+  it should be performed on a fresh copy of the string, as produced by
+  {!String.copy}.
+
  *)
 
 external length : string -> int = "%string_length"
@@ -96,17 +122,31 @@ val iter : (char -> unit) -> string -> unit
 
 val iteri : (int -> char -> unit) -> string -> unit
 (** Same as {!String.iter}, but the
-   function is applied to the index of the element as first argument (counting from 0),
-   and the character itself as second argument.
-   @since 3.13.0
+   function is applied to the index of the element as first argument
+   (counting from 0), and the character itself as second argument.
+   @since 4.00.0
 *)
+
+val map : (char -> char) -> string -> string
+(** [String.map f s] applies function [f] in turn to all
+   the characters of [s] and stores the results in a new string that
+   is returned.
+   @since 4.00.0 *)
+
+val trim : string -> string
+(** Return a copy of the argument, without leading and trailing
+   whitespace.  The characters regarded as whitespace are: [' '],
+   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is no leading nor
+   trailing whitespace character in the argument, return the original
+   string itself, not a copy.
+   @since 4.00.0 *)
 
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
    represented by escape sequences, following the lexical
-   conventions of Objective Caml.  If there is no special
+   conventions of OCaml.  If there is no special
    character in the argument, return the original string itself,
-   not a copy. *)
+   not a copy. Its inverse function is Scanf.unescaped. *)
 
 val index : string -> char -> int
 (** [String.index s c] returns the character number of the first

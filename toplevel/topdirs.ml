@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -85,19 +85,43 @@ let load_compunit ic filename ppf compunit =
     raise Load_failed
   end
 
-let load_file ppf name =
+let rec load_file recursive ppf name =
+  let filename = try Some (find_in_path !Config.load_path name) with Not_found -> None in
+  match filename with
+  | None -> fprintf ppf "Cannot find file %s.@." name; false
+  | Some filename ->
+      let ic = open_in_bin filename in
+      try
+        let success = really_load_file recursive ppf name filename ic in
+        close_in ic;
+        success
+      with exn ->
+        close_in ic;
+        raise exn
+
+and really_load_file recursive ppf name filename ic =
+  let ic = open_in_bin filename in
+  let buffer = Misc.input_bytes ic (String.length Config.cmo_magic_number) in
   try
-    let filename = find_in_path !Config.load_path name in
-    let ic = open_in_bin filename in
-    let buffer = String.create (String.length Config.cmo_magic_number) in
-    really_input ic buffer 0 (String.length Config.cmo_magic_number);
-    let success = try
-      if buffer = Config.cmo_magic_number then begin
-        let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
-        seek_in ic compunit_pos;
-        load_compunit ic filename ppf (input_value ic : compilation_unit);
-        true
-      end else
+    if buffer = Config.cmo_magic_number then begin
+      let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
+      seek_in ic compunit_pos;
+      let cu : compilation_unit = input_value ic in
+      if recursive then
+        List.iter
+          (function
+            | (Reloc_getglobal id, _) when not (Symtable.is_global_defined id) ->
+                let file = Ident.name id ^ ".cmo" in
+                begin match try Some (Misc.find_in_path_uncap !Config.load_path file) with Not_found -> None with
+                | None -> ()
+                | Some file -> if not (load_file recursive ppf file) then raise Load_failed
+                end
+            | _ -> ()
+          )
+          cu.cu_reloc;
+      load_compunit ic filename ppf cu;
+      true
+    end else
       if buffer = Config.cma_magic_number then begin
         let toc_pos = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic toc_pos;
@@ -118,14 +142,17 @@ let load_file ppf name =
         fprintf ppf "File %s is not a bytecode object file.@." name;
         false
       end
-    with Load_failed -> false in
-    close_in ic;
-    success
-  with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
+  with Load_failed -> false
 
-let dir_load ppf name = ignore (load_file ppf name)
+let dir_load ppf name = ignore (load_file false ppf name)
 
 let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
+
+let dir_load_rec ppf name = ignore (load_file true ppf name)
+
+let _ = Hashtbl.add directive_table "load_rec" (Directive_string (dir_load_rec std_out))
+
+let load_file = load_file false
 
 (* Load commands from a file *)
 
@@ -150,7 +177,7 @@ let match_printer_type ppf desc typename =
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance desc.val_type);
+    (Ctype.instance_def desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   ty_arg

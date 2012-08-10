@@ -28,6 +28,7 @@ let css_style = ref None
 let index_only = ref false
 let colorize_code = ref false
 let html_short_functors = ref false
+let charset = ref "iso-8859-1"
 
 
 (** The functions used for naming files and html marks.*)
@@ -739,7 +740,7 @@ class html =
     method character_encoding () =
       Printf.sprintf
         "<meta content=\"text/html; charset=%s\" http-equiv=\"Content-Type\">\n"
-        !Odoc_info.Args.charset
+        !charset
 
     (** The default style options. *)
     val mutable default_style_options =
@@ -1386,15 +1387,8 @@ class html =
       bp b "<span id=\"%s\">" (Naming.exception_target e);
       bs b (self#keyword "exception");
       bs b " ";
-<<<<<<< .courant
-      (* html mark *)
-      bp b "<a name=\"%s\"></a>%s"
-	(Naming.exception_target e)
-	(Name.simple e.ex_name);
-=======
       bs b (Name.simple e.ex_name);
       bs b "</span>";
->>>>>>> .fusion-droit.r10497
       (
        match e.ex_args with
          [] -> ()
@@ -1467,11 +1461,19 @@ class html =
             bs b "<code>";
 	    bs b (self#constructor constr.vc_name);
             (
-	     match constr.vc_args with
-               [] -> ()
-             | l ->
+             match constr.vc_args, constr.vc_ret with
+               [], None -> ()
+             | l,None ->
 		 bs b (" " ^ (self#keyword "of") ^ " ");
 		 self#html_of_type_expr_list ~par: false b father " * " l;
+             | [],Some r ->
+                 bs b (" " ^ (self#keyword ":") ^ " ");
+                 self#html_of_type_expr b father r;
+             | l,Some r ->
+                 bs b (" " ^ (self#keyword ":") ^ " ");
+                 self#html_of_type_expr_list ~par: false b father " * " l;
+		 bs b (" " ^ (self#keyword "->") ^ " ");
+                 self#html_of_type_expr b father r;		 
             );
             bs b "</code></td>\n";
             (
@@ -2379,23 +2381,6 @@ class html =
         self#print_header b self#title;
         bs b "<body>\n";
         bs b "<center><h1>";
-<<<<<<< .courant
-	bs b title;
-	bs b "</h1></center>\n" ;
-	let info = Odoc_info.apply_opt
-	    Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file
-	in
-	(
-	 match info with
-	   None ->
-	     self#html_of_Index_list b;
-	     bs b "<br/>";
-	     self#html_of_Module_list b
-	       (List.map (fun m -> m.m_name) module_list)
-	 | Some i -> self#html_of_info ~indent: false b info
-	);
-	Buffer.output_buffer chanout b;
-=======
         bs b title;
         bs b "</h1></center>\n" ;
         let info = Odoc_info.apply_opt
@@ -2413,7 +2398,6 @@ class html =
         );
         bs b "</body>\n</html>";
         Buffer.output_buffer chanout b;
->>>>>>> .fusion-droit.r10497
         close_out chanout
       with
         Sys_error s ->

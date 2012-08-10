@@ -1,6 +1,6 @@
 (*************************************************************************)
 (*                                                                       *)
-(*                Objective Caml LablTk library                          *)
+(*                         OCaml LablTk library                          *)
 (*                                                                       *)
 (*            Jacques Garrigue, Kyoto University RIMS                    *)
 (*                                                                       *)
@@ -171,7 +171,7 @@ let search_pos_type_decl td ~pos ~env =
       Ptype_abstract | Ptype_private -> ()
     | Ptype_variant (dl, _) ->
         List.iter dl
-          ~f:(fun (_, tl, _) -> List.iter tl ~f:(search_pos_type ~pos ~env))
+          ~f:(fun (_, tl, _, _) -> List.iter tl ~f:(search_pos_type ~pos ~env))
     | Ptype_record (dl, _) ->
         List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env) in
     search_tkind td.ptype_kind;
@@ -496,7 +496,8 @@ and view_expr_type ?title ?path ?env ?(name="noname") t =
     | Some path -> parent_path path, ident_of_path path ~default:name
   in
   view_signature ~title ?path ?env
-    [Tsig_value (id, {val_type = t; val_kind = Val_reg})]
+    [Tsig_value (id, {val_type = t; val_kind = Val_reg;
+                      val_loc = Location.none})]
 
 and view_decl lid ~kind ~env =
   match kind with
@@ -696,13 +697,6 @@ and search_pos_class_structure ~pos cls =
           search_pos_class_expr cl ~pos
       | Cf_val (_, _, exp) -> search_pos_expr exp ~pos
       | Cf_meth (_, exp) -> search_pos_expr exp ~pos
-      | Cf_let (_, pel, iel) ->
-          List.iter pel ~f:
-            begin fun (pat, exp) ->
-              search_pos_pat pat ~pos ~env:exp.exp_env;
-              search_pos_expr exp ~pos
-            end;
-          List.iter iel ~f:(fun (_,exp) -> search_pos_expr exp ~pos)
       | Cf_init exp -> search_pos_expr exp ~pos
     end
 

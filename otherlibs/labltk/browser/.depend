@@ -1,144 +1,101 @@
-<<<<<<< .courant
-editor.cmo: fileselect.cmi jg_bind.cmi jg_button.cmo jg_menu.cmo \
-    jg_message.cmi jg_text.cmi jg_tk.cmo jg_toplevel.cmo lexical.cmi \
-    mytypes.cmi searchid.cmi searchpos.cmi setpath.cmi shell.cmi \
-    typecheck.cmi viewer.cmi editor.cmi 
-editor.cmx: fileselect.cmx jg_bind.cmx jg_button.cmx jg_menu.cmx \
-    jg_message.cmx jg_text.cmx jg_tk.cmx jg_toplevel.cmx lexical.cmx \
-    mytypes.cmi searchid.cmx searchpos.cmx setpath.cmx shell.cmx \
-    typecheck.cmx viewer.cmx editor.cmi 
-fileselect.cmo: jg_box.cmo jg_entry.cmo jg_memo.cmi jg_toplevel.cmo list2.cmo \
-    setpath.cmi useunix.cmi fileselect.cmi 
-fileselect.cmx: jg_box.cmx jg_entry.cmx jg_memo.cmx jg_toplevel.cmx list2.cmx \
-    setpath.cmx useunix.cmx fileselect.cmi 
-jg_bind.cmo: jg_bind.cmi 
-jg_bind.cmx: jg_bind.cmi 
-jg_box.cmo: jg_bind.cmi jg_completion.cmi 
-jg_box.cmx: jg_bind.cmx jg_completion.cmx 
-jg_completion.cmo: jg_completion.cmi 
-jg_completion.cmx: jg_completion.cmi 
-jg_config.cmo: jg_tk.cmo jg_config.cmi 
-jg_config.cmx: jg_tk.cmx jg_config.cmi 
-jg_entry.cmo: jg_bind.cmi 
-jg_entry.cmx: jg_bind.cmx 
-jg_memo.cmo: jg_memo.cmi 
-jg_memo.cmx: jg_memo.cmi 
-=======
-editor.cmo: viewer.cmi typecheck.cmi shell.cmi setpath.cmi searchpos.cmi \
+editor.cmo : viewer.cmi typecheck.cmi shell.cmi setpath.cmi searchpos.cmi \
     searchid.cmi mytypes.cmi lexical.cmi jg_toplevel.cmo jg_tk.cmo \
     jg_text.cmi jg_message.cmi jg_menu.cmo jg_button.cmo jg_bind.cmi \
     fileselect.cmi editor.cmi
-editor.cmx: viewer.cmx typecheck.cmx shell.cmx setpath.cmx searchpos.cmx \
+editor.cmx : viewer.cmx typecheck.cmx shell.cmx setpath.cmx searchpos.cmx \
     searchid.cmx mytypes.cmi lexical.cmx jg_toplevel.cmx jg_tk.cmx \
     jg_text.cmx jg_message.cmx jg_menu.cmx jg_button.cmx jg_bind.cmx \
     fileselect.cmx editor.cmi
-fileselect.cmo: useunix.cmi setpath.cmi list2.cmo jg_toplevel.cmo jg_memo.cmi \
-    jg_entry.cmo jg_box.cmo fileselect.cmi
-fileselect.cmx: useunix.cmx setpath.cmx list2.cmx jg_toplevel.cmx jg_memo.cmx \
-    jg_entry.cmx jg_box.cmx fileselect.cmi
-jg_bind.cmo: jg_bind.cmi
-jg_bind.cmx: jg_bind.cmi
-jg_box.cmo: jg_completion.cmi jg_bind.cmi
-jg_box.cmx: jg_completion.cmx jg_bind.cmx
-jg_completion.cmo: jg_completion.cmi
-jg_completion.cmx: jg_completion.cmi
-jg_config.cmo: jg_tk.cmo jg_config.cmi
-jg_config.cmx: jg_tk.cmx jg_config.cmi
-jg_entry.cmo: jg_bind.cmi
-jg_entry.cmx: jg_bind.cmx
-jg_memo.cmo: jg_memo.cmi
-jg_memo.cmx: jg_memo.cmi
->>>>>>> .fusion-droit.r10497
-jg_message.cmo: jg_bind.cmi jg_text.cmi jg_tk.cmo jg_toplevel.cmo \
+fileselect.cmo : useunix.cmi setpath.cmi list2.cmo jg_toplevel.cmo \
+    jg_memo.cmi jg_entry.cmo jg_box.cmo fileselect.cmi
+fileselect.cmx : useunix.cmx setpath.cmx list2.cmx jg_toplevel.cmx \
+    jg_memo.cmx jg_entry.cmx jg_box.cmx fileselect.cmi
+help.cmo :
+help.cmx :
+jg_bind.cmo : jg_bind.cmi
+jg_bind.cmx : jg_bind.cmi
+jg_box.cmo : jg_completion.cmi jg_bind.cmi
+jg_box.cmx : jg_completion.cmx jg_bind.cmx
+jg_button.cmo :
+jg_button.cmx :
+jg_completion.cmo : jg_completion.cmi
+jg_completion.cmx : jg_completion.cmi
+jg_config.cmo : jg_tk.cmo jg_config.cmi
+jg_config.cmx : jg_tk.cmx jg_config.cmi
+jg_entry.cmo : jg_bind.cmi
+jg_entry.cmx : jg_bind.cmx
+jg_memo.cmo : jg_memo.cmi
+jg_memo.cmx : jg_memo.cmi
+jg_menu.cmo :
+jg_menu.cmx :
+jg_message.cmo : jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_bind.cmi \
     jg_message.cmi
-jg_message.cmx: jg_bind.cmx jg_text.cmx jg_tk.cmx jg_toplevel.cmx \
-<<<<<<< .courant
-    jg_message.cmi 
-jg_multibox.cmo: jg_bind.cmi jg_completion.cmi jg_multibox.cmi 
-jg_multibox.cmx: jg_bind.cmx jg_completion.cmx jg_multibox.cmi 
-jg_text.cmo: jg_bind.cmi jg_button.cmo jg_tk.cmo jg_toplevel.cmo jg_text.cmi 
-jg_text.cmx: jg_bind.cmx jg_button.cmx jg_tk.cmx jg_toplevel.cmx jg_text.cmi 
-lexical.cmo: jg_tk.cmo lexical.cmi 
-lexical.cmx: jg_tk.cmx lexical.cmi 
-=======
+jg_message.cmx : jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_bind.cmx \
     jg_message.cmi
-jg_multibox.cmo: jg_completion.cmi jg_bind.cmi jg_multibox.cmi
-jg_multibox.cmx: jg_completion.cmx jg_bind.cmx jg_multibox.cmi
-jg_text.cmo: jg_toplevel.cmo jg_tk.cmo jg_button.cmo jg_bind.cmi jg_text.cmi
-jg_text.cmx: jg_toplevel.cmx jg_tk.cmx jg_button.cmx jg_bind.cmx jg_text.cmi
-lexical.cmo: jg_tk.cmo lexical.cmi
-lexical.cmx: jg_tk.cmx lexical.cmi
->>>>>>> .fusion-droit.r10497
-<<<<<<< .courant
-main.cmo: editor.cmi jg_config.cmi searchid.cmi searchpos.cmi shell.cmi \
-    viewer.cmi 
-main.cmx: editor.cmx jg_config.cmx searchid.cmx searchpos.cmx shell.cmx \
-    viewer.cmx 
-searchid.cmo: list2.cmo searchid.cmi 
-searchid.cmx: list2.cmx searchid.cmi 
-=======
-main.cmo: viewer.cmi shell.cmi searchpos.cmi searchid.cmi jg_config.cmi \
+jg_multibox.cmo : jg_completion.cmi jg_bind.cmi jg_multibox.cmi
+jg_multibox.cmx : jg_completion.cmx jg_bind.cmx jg_multibox.cmi
+jg_text.cmo : jg_toplevel.cmo jg_tk.cmo jg_button.cmo jg_bind.cmi \
+    jg_text.cmi
+jg_text.cmx : jg_toplevel.cmx jg_tk.cmx jg_button.cmx jg_bind.cmx \
+    jg_text.cmi
+jg_tk.cmo :
+jg_tk.cmx :
+jg_toplevel.cmo :
+jg_toplevel.cmx :
+lexical.cmo : jg_tk.cmo lexical.cmi
+lexical.cmx : jg_tk.cmx lexical.cmi
+list2.cmo :
+list2.cmx :
+main.cmo : viewer.cmi shell.cmi searchpos.cmi searchid.cmi jg_config.cmi \
     editor.cmi
-main.cmx: viewer.cmx shell.cmx searchpos.cmx searchid.cmx jg_config.cmx \
+main.cmx : viewer.cmx shell.cmx searchpos.cmx searchid.cmx jg_config.cmx \
     editor.cmx
-searchid.cmo: list2.cmo searchid.cmi
-searchid.cmx: list2.cmx searchid.cmi
->>>>>>> .fusion-droit.r10497
-<<<<<<< .courant
-searchpos.cmo: jg_bind.cmi jg_memo.cmi jg_message.cmi jg_text.cmi jg_tk.cmo \
-    lexical.cmi searchid.cmi searchpos.cmi 
-searchpos.cmx: jg_bind.cmx jg_memo.cmx jg_message.cmx jg_text.cmx jg_tk.cmx \
-    lexical.cmx searchid.cmx searchpos.cmi 
-setpath.cmo: jg_bind.cmi jg_box.cmo jg_button.cmo jg_toplevel.cmo list2.cmo \
-    useunix.cmi setpath.cmi 
-setpath.cmx: jg_bind.cmx jg_box.cmx jg_button.cmx jg_toplevel.cmx list2.cmx \
-    useunix.cmx setpath.cmi 
-shell.cmo: dummy.cmi fileselect.cmi jg_memo.cmi jg_menu.cmo jg_message.cmi \
-    jg_text.cmi jg_tk.cmo jg_toplevel.cmo lexical.cmi list2.cmo shell.cmi 
-shell.cmx: dummy.cmi fileselect.cmx jg_memo.cmx jg_menu.cmx jg_message.cmx \
-    jg_text.cmx jg_tk.cmx jg_toplevel.cmx lexical.cmx list2.cmx shell.cmi 
-typecheck.cmo: jg_message.cmi jg_text.cmi jg_tk.cmo mytypes.cmi typecheck.cmi 
-typecheck.cmx: jg_message.cmx jg_text.cmx jg_tk.cmx mytypes.cmi typecheck.cmi 
-useunix.cmo: useunix.cmi 
-useunix.cmx: useunix.cmi 
-=======
-searchpos.cmo: searchid.cmi lexical.cmi jg_tk.cmo jg_text.cmi jg_message.cmi \
-    jg_memo.cmi jg_bind.cmi searchpos.cmi
-searchpos.cmx: searchid.cmx lexical.cmx jg_tk.cmx jg_text.cmx jg_message.cmx \
-    jg_memo.cmx jg_bind.cmx searchpos.cmi
-setpath.cmo: useunix.cmi list2.cmo jg_toplevel.cmo jg_button.cmo jg_box.cmo \
+searchid.cmo : list2.cmo searchid.cmi
+searchid.cmx : list2.cmx searchid.cmi
+searchpos.cmo : searchid.cmi lexical.cmi jg_tk.cmo jg_text.cmi \
+    jg_message.cmi jg_memo.cmi jg_bind.cmi searchpos.cmi
+searchpos.cmx : searchid.cmx lexical.cmx jg_tk.cmx jg_text.cmx \
+    jg_message.cmx jg_memo.cmx jg_bind.cmx searchpos.cmi
+setpath.cmo : useunix.cmi list2.cmo jg_toplevel.cmo jg_button.cmo jg_box.cmo \
     jg_bind.cmi setpath.cmi
-setpath.cmx: useunix.cmx list2.cmx jg_toplevel.cmx jg_button.cmx jg_box.cmx \
+setpath.cmx : useunix.cmx list2.cmx jg_toplevel.cmx jg_button.cmx jg_box.cmx \
     jg_bind.cmx setpath.cmi
-shell.cmo: list2.cmo lexical.cmi jg_toplevel.cmo jg_tk.cmo jg_text.cmi \
+shell.cmo : list2.cmo lexical.cmi jg_toplevel.cmo jg_tk.cmo jg_text.cmi \
     jg_message.cmi jg_menu.cmo jg_memo.cmi fileselect.cmi dummy.cmi shell.cmi
-shell.cmx: list2.cmx lexical.cmx jg_toplevel.cmx jg_tk.cmx jg_text.cmx \
+shell.cmx : list2.cmx lexical.cmx jg_toplevel.cmx jg_tk.cmx jg_text.cmx \
     jg_message.cmx jg_menu.cmx jg_memo.cmx fileselect.cmx dummy.cmi shell.cmi
-typecheck.cmo: mytypes.cmi jg_tk.cmo jg_text.cmi jg_message.cmi typecheck.cmi
-typecheck.cmx: mytypes.cmi jg_tk.cmx jg_text.cmx jg_message.cmx typecheck.cmi
-useunix.cmo: useunix.cmi
-useunix.cmx: useunix.cmi
->>>>>>> .fusion-droit.r10497
-<<<<<<< .courant
-viewer.cmo: help.cmo jg_bind.cmi jg_box.cmo jg_button.cmo jg_completion.cmi \
-    jg_entry.cmo jg_menu.cmo jg_message.cmi jg_multibox.cmi jg_text.cmi \
-    jg_tk.cmo jg_toplevel.cmo mytypes.cmi searchid.cmi searchpos.cmi \
-    setpath.cmi shell.cmi useunix.cmi viewer.cmi 
-viewer.cmx: help.cmx jg_bind.cmx jg_box.cmx jg_button.cmx jg_completion.cmx \
-    jg_entry.cmx jg_menu.cmx jg_message.cmx jg_multibox.cmx jg_text.cmx \
-    jg_tk.cmx jg_toplevel.cmx mytypes.cmi searchid.cmx searchpos.cmx \
-    setpath.cmx shell.cmx useunix.cmx viewer.cmi 
-mytypes.cmi: shell.cmi 
-typecheck.cmi: mytypes.cmi 
-=======
-viewer.cmo: useunix.cmi shell.cmi setpath.cmi searchpos.cmi searchid.cmi \
+typecheck.cmo : mytypes.cmi jg_tk.cmo jg_text.cmi jg_message.cmi \
+    typecheck.cmi
+typecheck.cmx : mytypes.cmi jg_tk.cmx jg_text.cmx jg_message.cmx \
+    typecheck.cmi
+useunix.cmo : useunix.cmi
+useunix.cmx : useunix.cmi
+viewer.cmo : useunix.cmi shell.cmi setpath.cmi searchpos.cmi searchid.cmi \
     mytypes.cmi jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_multibox.cmi \
     jg_message.cmi jg_menu.cmo jg_entry.cmo jg_completion.cmi jg_button.cmo \
     jg_box.cmo jg_bind.cmi help.cmo viewer.cmi
-viewer.cmx: useunix.cmx shell.cmx setpath.cmx searchpos.cmx searchid.cmx \
+viewer.cmx : useunix.cmx shell.cmx setpath.cmx searchpos.cmx searchid.cmx \
     mytypes.cmi jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_multibox.cmx \
     jg_message.cmx jg_menu.cmx jg_entry.cmx jg_completion.cmx jg_button.cmx \
     jg_box.cmx jg_bind.cmx help.cmx viewer.cmi
-mytypes.cmi: shell.cmi
-typecheck.cmi: mytypes.cmi
->>>>>>> .fusion-droit.r10497
+dummy.cmi :
+dummyUnix.cmi :
+dummyWin.cmi :
+editor.cmi :
+fileselect.cmi :
+jg_bind.cmi :
+jg_completion.cmi :
+jg_config.cmi :
+jg_memo.cmi :
+jg_message.cmi :
+jg_multibox.cmi :
+jg_text.cmi :
+lexical.cmi :
+mytypes.cmi : shell.cmi
+searchid.cmi :
+searchpos.cmi :
+setpath.cmi :
+shell.cmi :
+typecheck.cmi : mytypes.cmi
+useunix.cmi :
+viewer.cmi :

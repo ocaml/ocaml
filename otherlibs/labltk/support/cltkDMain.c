@@ -1,6 +1,6 @@
 /*************************************************************************/
 /*                                                                       */
-/*                Objective Caml LablTk library                          */
+/*                         OCaml LablTk library                          */
 /*                                                                       */
 /*         Francois Rouaix, Francois Pessaux and Jun Furuse              */
 /*               projet Cristal, INRIA Rocquencourt                      */
@@ -35,7 +35,7 @@
 
 
 /* 
- * Dealing with signals: when a signal handler is defined in Caml,
+ * Dealing with signals: when a signal handler is defined in OCaml,
  * the actual execution of the signal handler upon reception of the
  * signal is delayed until we are sure we are out of the GC.
  * If a signal occurs during the MainLoop, we would have to wait

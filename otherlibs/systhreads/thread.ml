@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Objective Caml                              *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)
@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: thread_posix.ml 9547 2010-01-22 12:48:24Z doligez $ *)
+(* $Id$ *)
 
 (* User-level threads *)
 
@@ -63,7 +63,7 @@ let _ =
   at_exit
     (fun () ->
         thread_cleanup();
-        (* In case of DLL-embedded Ocaml the preempt_signal handler
+        (* In case of DLL-embedded OCaml the preempt_signal handler
            will point to nowhere after DLL unloading and an accidental
            preempt_signal will crash the main program. So restore the
            default handler. *)

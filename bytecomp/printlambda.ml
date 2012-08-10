@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -92,6 +92,8 @@ let record_rep ppf r =
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pignore -> fprintf ppf "ignore"
+  | Prevapply _ -> fprintf ppf "revapply"
+  | Pdirapply _ -> fprintf ppf "dirapply"
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
@@ -297,7 +299,10 @@ let rec lam ppf = function
        | Lev_before -> "before"
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body" in
-      fprintf ppf "@[<2>(%s %i-%i@ %a)@]" kind
+      fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
+              ev.lev_loc.Location.loc_start.Lexing.pos_fname
+              ev.lev_loc.Location.loc_start.Lexing.pos_lnum
+              (if ev.lev_loc.Location.loc_ghost then "<ghost>" else "")
               ev.lev_loc.Location.loc_start.Lexing.pos_cnum
               ev.lev_loc.Location.loc_end.Lexing.pos_cnum
               lam expr

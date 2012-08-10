@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -18,41 +18,85 @@
 open Misc
 open Asttypes
 open Types
+open Btype
+
+(* Simplified version of Ctype.free_vars *)
+let rec free_vars ty =
+  let ret = ref TypeSet.empty in
+  let rec loop ty = 
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      ty.level <- pivot_level - ty.level;
+      match ty.desc with
+      | Tvar _ ->
+          ret := TypeSet.add ty !ret
+      | Tvariant row ->
+          let row = row_repr row in
+          iter_row loop row;
+          if not (static_row row) then loop row.row_more
+      | _ ->
+	  iter_type_expr loop ty
+    end
+  in
+  loop ty;
+  unmark_type ty;
+  !ret
 
 let constructor_descrs ty_res cstrs priv =
-  let num_consts = ref 0 and num_nonconsts = ref 0 in
+  let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
-    (function (name, []) -> incr num_consts
-            | (name, _)  -> incr num_nonconsts)
+    (fun (name, args, ret) ->
+      if args = [] then incr num_consts else incr num_nonconsts;
+      if ret = None then incr num_normal)
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
-    | (name, ty_args) :: rem ->
+    | (name, ty_args, ty_res_opt) :: rem ->
+	let ty_res = 
+	  match ty_res_opt with
+	  | Some ty_res' -> ty_res'
+	  | None -> ty_res
+	in
         let (tag, descr_rem) =
           match ty_args with
             [] -> (Cstr_constant idx_const,
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
-        let cstr =
-          { cstr_res = ty_res;
+	let existentials = 
+	  match ty_res_opt with
+	  | None -> []
+	  | Some type_ret ->
+	      let res_vars = free_vars type_ret in
+	      let arg_vars = free_vars (newgenty (Ttuple ty_args)) in
+	      TypeSet.elements (TypeSet.diff arg_vars res_vars)
+	in
+	let cstr =
+          { cstr_res = ty_res;    
+	    cstr_existentials = existentials; 
             cstr_args = ty_args;
             cstr_arity = List.length ty_args;
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
-            cstr_private = priv } in
+	    cstr_normal = !num_normal;
+            cstr_private = priv;
+	    cstr_generalized = ty_res_opt <> None
+	  } in
         (name, cstr) :: descr_rem in
-  describe_constructors 0 0 cstrs
+  describe_constructors 0 0 cstrs 
 
 let exception_descr path_exc decl =
   { cstr_res = Predef.type_exn;
-    cstr_args = decl;
-    cstr_arity = List.length decl;
-    cstr_tag = Cstr_exception path_exc;
+    cstr_existentials = [];
+    cstr_args = decl.exn_args;
+    cstr_arity = List.length decl.exn_args;
+    cstr_tag = Cstr_exception (path_exc, decl.exn_loc);
     cstr_consts = -1;
     cstr_nonconsts = -1;
-    cstr_private = Public }
+    cstr_private = Public;
+    cstr_normal = -1;
+    cstr_generalized = false }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
@@ -84,13 +128,13 @@ exception Constr_not_found
 let rec find_constr tag num_const num_nonconst = function
     [] ->
       raise Constr_not_found
-  | (name, [] as cstr) :: rem ->
+  | (name, ([] as cstr),(_ as ret_type_opt)) :: rem ->
       if tag = Cstr_constant num_const
-      then cstr
+      then (name,cstr,ret_type_opt)
       else find_constr tag (num_const + 1) num_nonconst rem
-  | (name, _ as cstr) :: rem ->
+  | (name, (_ as cstr),(_ as ret_type_opt)) :: rem ->
       if tag = Cstr_block num_nonconst
-      then cstr
+      then (name,cstr,ret_type_opt)
       else find_constr tag num_const (num_nonconst + 1) rem
 
 let find_constr_by_tag tag cstrlist =

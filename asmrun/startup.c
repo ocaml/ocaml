@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
@@ -20,6 +20,7 @@
 #include "callback.h"
 #include "backtrace.h"
 #include "custom.h"
+#include "debugger.h"
 #include "fail.h"
 #include "freelist.h"
 #include "gc.h"
@@ -57,9 +58,11 @@ static void init_atoms(void)
     caml_fatal_error("Fatal error: not enough memory for the initial page table");
 
   for (i = 0; caml_data_segments[i].begin != 0; i++) {
+    /* PR#5509: we must include the zero word at end of data segment,
+       because pointers equal to caml_data_segments[i].end are static data. */
     if (caml_page_table_add(In_static_data,
                             caml_data_segments[i].begin,
-                            caml_data_segments[i].end) != 0)
+                            caml_data_segments[i].end + sizeof(value)) != 0)
       caml_fatal_error("Fatal error: not enough memory for the initial page table");
   }
 

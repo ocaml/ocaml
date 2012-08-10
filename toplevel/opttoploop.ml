@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -225,7 +225,6 @@ let execute_phrase print_outcome ppf phr =
       incr phrase_seqid;
       phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
       Compilenv.reset ?packname:None !phrase_name;
-      let _ = Unused_var.warn ppf sstr in
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
       in
@@ -301,8 +300,15 @@ let use_print_results = ref true
 
 let use_file ppf name =
   try
-    let filename = find_in_path !Config.load_path name in
-    let ic = open_in_bin filename in
+    let (filename, ic, must_close) =
+      if name = "" then
+        ("(stdin)", stdin, false)
+      else begin
+        let filename = find_in_path !Config.load_path name in
+        let ic = open_in_bin filename in
+        (filename, ic, true)
+      end
+    in
     let lb = Lexing.from_channel ic in
     Location.init lb filename;
     (* Skip initial #! line if any *)
@@ -320,7 +326,7 @@ let use_file ppf name =
         | Exit -> false
         | Sys.Break -> fprintf ppf "Interrupted.@."; false
         | x -> Opterrors.report_error ppf x; false) in
-    close_in ic;
+    if must_close then close_in ic;
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
 
@@ -357,6 +363,7 @@ let refill_lexbuf buffer len =
     let prompt =
       if !Clflags.noprompt then ""
       else if !first_line then "# "
+      else if !Clflags.nopromptcont then ""
       else if Lexer.in_comment () then "* "
       else "  "
     in
@@ -409,10 +416,11 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
-  fprintf ppf "        Objective Caml version %s - native toplevel@.@." Config.version;
+  fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
-  Location.input_name := "";
+  Location.init lb "//toplevel//";
+  Location.input_name := "//toplevel//";
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
   load_ocamlinit ppf;

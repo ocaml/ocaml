@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -217,7 +217,6 @@ let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
-      let _ = Unused_var.warn ppf sstr in
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
       in
@@ -284,14 +283,21 @@ let protect r newval body =
     r := oldval;
     raise x
 
-(* Read and execute commands from a file *)
+(* Read and execute commands from a file, or from stdin if [name] is "". *)
 
 let use_print_results = ref true
 
 let use_file ppf name =
   try
-    let filename = find_in_path !Config.load_path name in
-    let ic = open_in_bin filename in
+    let (filename, ic, must_close) =
+      if name = "" then
+        ("(stdin)", stdin, false)
+      else begin
+        let filename = find_in_path !Config.load_path name in
+        let ic = open_in_bin filename in
+        (filename, ic, true)
+      end
+    in
     let lb = Lexing.from_channel ic in
     Location.init lb filename;
     (* Skip initial #! line if any *)
@@ -309,7 +315,7 @@ let use_file ppf name =
         | Exit -> false
         | Sys.Break -> fprintf ppf "Interrupted.@."; false
         | x -> Errors.report_error ppf x; false) in
-    close_in ic;
+    if must_close then close_in ic;
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
 
@@ -346,6 +352,7 @@ let refill_lexbuf buffer len =
     let prompt =
       if !Clflags.noprompt then ""
       else if !first_line then "# "
+      else if !Clflags.nopromptcont then ""
       else if Lexer.in_comment () then "* "
       else "  "
     in
@@ -403,7 +410,8 @@ let loop ppf =
   fprintf ppf "        JoCaml version %s@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
-  Location.input_name := "";
+  Location.init lb "//toplevel//";
+  Location.input_name := "//toplevel//";
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
   load_ocamlinit ppf;
@@ -423,7 +431,7 @@ let loop ppf =
     | x -> Errors.report_error ppf x; Btype.backtrack snap
   done
 
-(* Execute a script *)
+(* Execute a script.  If [name] is "", read the script from stdin. *)
 
 let run_script ppf name args =
   let len = Array.length args in

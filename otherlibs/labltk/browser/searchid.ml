@@ -1,6 +1,6 @@
 (*************************************************************************)
 (*                                                                       *)
-(*                Objective Caml LablTk library                          *)
+(*                         OCaml LablTk library                          *)
 (*                                                                       *)
 (*            Jacques Garrigue, Kyoto University RIMS                    *)
 (*                                                                       *)
@@ -101,7 +101,7 @@ let rec all_args ty =
 
 let rec equal ~prefix t1 t2 =
   match (repr t1).desc, (repr t2).desc with
-    Tvar, Tvar -> true
+    Tvar _, Tvar _ -> true
   | Tvariant row1, Tvariant row2 ->
       let row1 = row_repr row1 and row2 = row_repr row2 in
       let fields1 = filter_row_fields false row1.row_fields
@@ -144,7 +144,7 @@ let get_options = List.filter ~f:is_opt
 
 let rec included ~prefix t1 t2 =
   match (repr t1).desc, (repr t2).desc with
-    Tvar, _ -> true
+    Tvar _, _ -> true
   | Tvariant row1, Tvariant row2 ->
       let row1 = row_repr row1 and row2 = row_repr row2 in
       let fields1 = filter_row_fields false row1.row_fields
@@ -222,6 +222,7 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
           if matches vd.val_type then [lid_of_id id, Pvalue] else []
       | Tsig_type (id, td, _) ->
           if
+          matches (newconstr (Pident id) td.type_params) ||
           begin match td.type_manifest with
             None -> false
           | Some t -> matches t
@@ -229,13 +230,17 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
           begin match td.type_kind with
             Type_abstract -> false
           | Type_variant(l, priv) ->
-            List.exists l ~f:(fun (_, l) -> List.exists l ~f:matches)
+            List.exists l ~f:
+            begin fun (_, l, r) ->
+              List.exists l ~f:matches ||
+              match r with None -> false | Some x -> matches x
+            end
           | Type_record(l, rep, priv) ->
             List.exists l ~f:(fun (_, _, t) -> matches t)
           end
           then [lid_of_id id, Ptype] else []
       | Tsig_exception (id, l) ->
-          if List.exists l ~f:matches
+          if List.exists l.exn_args ~f:matches
           then [lid_of_id id, Pconstructor]
           else []
       | Tsig_module (id, Tmty_signature sign, _) ->

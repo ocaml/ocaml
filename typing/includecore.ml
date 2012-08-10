@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -61,7 +61,10 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
     Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
       let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
       Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
-      (match row1.row_more with {desc=Tvar|Tconstr _} -> true | _ -> false) &&
+      begin match row1.row_more with
+        {desc=Tvar _|Tconstr _|Tnil} -> true
+      | _ -> false
+      end &&
       let r1, r2, pairs =
         Ctype.merge_row_fields row1.row_fields row2.row_fields in
       (not row2.row_closed ||
@@ -91,7 +94,7 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
       let (fields2,rest2) = Ctype.flatten_fields fi2 in
       Ctype.equal env true (ty1::params1) (rest2::params2) &&
       let (fields1,rest1) = Ctype.flatten_fields fi1 in
-      (match rest1 with {desc=Tnil|Tvar|Tconstr _} -> true | _ -> false) &&
+      (match rest1 with {desc=Tnil|Tvar _|Tconstr _} -> true | _ -> false) &&
       let pairs, miss1, miss2 = Ctype.associate_fields fields1 fields2 in
       miss2 = [] &&
       let tl1, tl2 =
@@ -163,19 +166,27 @@ let report_type_mismatch first second decl ppf =
 let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with
     [], []           -> []
-  | [], (cstr2,_)::_ -> [Field_missing (true, cstr2)]
-  | (cstr1,_)::_, [] -> [Field_missing (false, cstr1)]
-  | (cstr1, arg1)::rem1, (cstr2, arg2)::rem2 ->
+  | [], (cstr2,_,_)::_ -> [Field_missing (true, cstr2)]
+  | (cstr1,_,_)::_, [] -> [Field_missing (false, cstr1)]
+  | (cstr1, arg1, ret1)::rem1, (cstr2, arg2,ret2)::rem2 ->
       if cstr1 <> cstr2 then [Field_names (n, cstr1, cstr2)] else
       if List.length arg1 <> List.length arg2 then [Field_arity cstr1] else
-      if Misc.for_all2
-          (fun ty1 ty2 ->
-            Ctype.equal env true (ty1::decl1.type_params)
-                                 (ty2::decl2.type_params))
-          arg1 arg2
-      then compare_variants env decl1 decl2 (n+1) rem1 rem2
-      else [Field_type cstr1]
-
+      match ret1, ret2 with
+      | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) -> 
+	  [Field_type cstr1]
+      | Some _, None | None, Some _ ->
+	  [Field_type cstr1]
+      | _ ->      
+	  if Misc.for_all2
+	      (fun ty1 ty2 ->
+		Ctype.equal env true (ty1::decl1.type_params)
+		  (ty2::decl2.type_params))
+	      (arg1) (arg2) 
+	  then 
+	    compare_variants env decl1 decl2 (n+1) rem1 rem2
+	  else [Field_type cstr1]
+	      
+	    
 let rec compare_records env decl1 decl2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
@@ -195,6 +206,11 @@ let type_declarations env id decl1 decl2 =
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> []
     | (Type_variant cstrs1, Type_variant cstrs2) ->
+        let name = Ident.name id in
+        if decl1.type_private = Private || decl2.type_private = Public then
+          List.iter
+            (fun (c, _, _) -> Env.mark_constructor_used name decl1 c)
+            cstrs1;
         compare_variants env decl1 decl2 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         let err = compare_records env decl1 decl2 1 labels1 labels2 in
@@ -237,13 +253,13 @@ let type_declarations env id decl1 decl2 =
 (* Inclusion between exception declarations *)
 
 let exception_declarations env ed1 ed2 =
-  Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2]) ed1 ed2
+  Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2]) ed1.exn_args ed2.exn_args
 
 (* Inclusion between class types *)
 let encode_val (mut, ty) rem =
   begin match mut with
     Asttypes.Mutable   -> Predef.type_unit
-  | Asttypes.Immutable -> Btype.newgenty Tvar
+  | Asttypes.Immutable -> Btype.newgenvar ()
   end
   ::ty::rem
 

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -86,15 +86,28 @@ val iter : f:(char -> unit) -> string -> unit
 
 val iteri : f:(int -> char -> unit) -> string -> unit
 (** Same as {!String.iter}, but the
-   function is applied to the index of the element as first argument (counting from 0),
-   and the character itself as second argument.
-   @since 3.13.0
+   function is applied to the index of the element as first argument
+   (counting from 0), and the character itself as second argument.
+   @since 4.00.0
 *)
+
+val map : f:(char -> char) -> string -> string
+(** [String.map f s] applies function [f] in turn to all
+   the characters of [s] and stores the results in a new string that
+   is returned.
+   @since 4.00.0 *)
+
+val trim : string -> string
+(** Return a copy of the argument, without leading and trailing whitespace.
+   The characters regarded as whitespace are: [' '], ['\012'], ['\n'],
+   ['\r'], and ['\t'].  If there is no whitespace character in the argument,
+   return the original string itself, not a copy.
+   @since 4.00.0 *)
 
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
    represented by escape sequences, following the lexical
-   conventions of Objective Caml.  If there is no special
+   conventions of OCaml.  If there is no special
    character in the argument, return the original string itself,
    not a copy. *)
 

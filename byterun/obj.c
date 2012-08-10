@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -171,7 +171,7 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
 }
 
 /* The following functions are used in stdlib/lazy.ml.
-   They are not written in O'Caml because they must be atomic with respect
+   They are not written in OCaml because they must be atomic with respect
    to the GC.
  */
 
@@ -191,7 +191,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_small (1, Forward_tag);
-  Modify (&Field (res, 0), v);
+  Field (res, 0) = v;
   CAMLreturn (res);
 }
 

@@ -1,15 +1,15 @@
-;*********************************************************************
-;
-;                           Objective Caml
-;
-;            Xavier Leroy, projet Cristal, INRIA Rocquencourt
-;
-;  Copyright 1996 Institut National de Recherche en Informatique et
-;  en Automatique.  All rights reserved.  This file is distributed
-;  under the terms of the GNU Library General Public License, with
-;  the special exception on linking described in file ../LICENSE.
-;
-;*********************************************************************
+;***********************************************************************
+;*                                                                     *
+;*                                OCaml                                *
+;*                                                                     *
+;*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+;*                                                                     *
+;*  Copyright 1996 Institut National de Recherche en Informatique et   *
+;*  en Automatique.  All rights reserved.  This file is distributed    *
+;*  under the terms of the GNU Library General Public License, with    *
+;*  the special exception on linking described in file ../LICENSE.     *
+;*                                                                     *
+;***********************************************************************
 
 ; $Id$
 
@@ -134,7 +134,7 @@ L103:   sub     eax, _caml_young_ptr         ; eax = - size
         pop     eax                     ; recover desired size
         jmp     _caml_allocN
 
-; Call a C function from Caml
+; Call a C function from OCaml
 
         PUBLIC  _caml_c_call
         ALIGN  4
@@ -147,7 +147,7 @@ _caml_c_call:
     ; Call the function (address in %eax)
         jmp	eax
 
-; Start the Caml program
+; Start the OCaml program
 
         PUBLIC  _caml_start_program
         ALIGN  4
@@ -171,7 +171,7 @@ L106:
         push	L108
         push	_caml_exception_pointer
         mov	_caml_exception_pointer, esp
-    ; Call the Caml code
+    ; Call the OCaml code
         call	esi
 L107:
     ; Pop the exception handler
@@ -196,7 +196,7 @@ L108:
         or      eax, 2
         jmp     L109
 
-; Raise an exception for Caml
+; Raise an exception for OCaml
 
         PUBLIC  _caml_raise_exn
         ALIGN   4
@@ -244,7 +244,7 @@ L111:
         pop     _caml_exception_pointer
         ret
 
-; Callback from C to Caml
+; Callback from C to OCaml
 
         PUBLIC  _caml_callback_exn
         ALIGN  4

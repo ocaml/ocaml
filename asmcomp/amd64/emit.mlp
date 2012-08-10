@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -23,11 +23,8 @@ open Mach
 open Linearize
 open Emitaux
 
-let macosx =
-  match Config.system with
-  | "macosx" -> true
-  | _ -> false
-
+let macosx = (Config.system = "macosx")
+let mingw64 = (Config.system = "mingw64")
 
 (* Tradeoff between code size and code speed *)
 
@@ -64,17 +61,17 @@ let emit_symbol s =
     Emitaux.emit_symbol '$' s
 
 let emit_call s =
-  if !Clflags.dlcode && not macosx
+  if !Clflags.dlcode && not macosx && not mingw64
   then `call	{emit_symbol s}@PLT`
   else `call	{emit_symbol s}`
 
 let emit_jump s =
-  if !Clflags.dlcode && not macosx
+  if !Clflags.dlcode && not macosx && not mingw64
   then `jmp	{emit_symbol s}@PLT`
   else `jmp	{emit_symbol s}`
 
 let load_symbol_addr s =
-  if !Clflags.dlcode
+  if !Clflags.dlcode && not mingw64
   then `movq	{emit_symbol s}@GOTPCREL(%rip)`
   else if !pic_code
   then `leaq	{emit_symbol s}(%rip)`
@@ -84,6 +81,9 @@ let load_symbol_addr s =
 
 let emit_label lbl =
   emit_string ".L"; emit_int lbl
+
+let emit_data_label lbl =
+  emit_string ".Ld"; emit_int lbl
 
 (* Output a .align directive. *)
 
@@ -317,11 +317,17 @@ let emit_float_test cmp neg arg lbl =
 
 (* Deallocate the stack frame before a return or tail call *)
 
-let output_epilogue () =
+let output_epilogue f =
   if frame_required() then begin
     let n = frame_size() - 8 in
-    `	addq	${emit_int n}, %rsp\n`
+    `	addq	${emit_int n}, %rsp\n`;
+    cfi_adjust_cfa_offset (-n);
+    f ();
+    (* reset CFA back cause function body may continue *)
+    cfi_adjust_cfa_offset n
   end
+  else
+    f ()
 
 (* Output the assembly code for an instruction *)
 
@@ -332,7 +338,9 @@ let tailrec_entry_point = ref 0
 
 let float_constants = ref ([] : (int * string) list)
 
+(* Emit an instruction *)
 let emit_instr fallthrough i =
+    emit_debug_info i.dbg;
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
@@ -373,14 +381,16 @@ let emit_instr fallthrough i =
         `	{emit_call s}\n`;
         record_frame i.live i.dbg
     | Lop(Itailcall_ind) ->
-        output_epilogue();
+        output_epilogue begin fun () ->
         `	jmp	*{emit_reg i.arg.(0)}\n`
+        end
     | Lop(Itailcall_imm s) ->
         if s = !function_name then
           `	jmp	{emit_label !tailrec_entry_point}\n`
         else begin
-          output_epilogue();
+          output_epilogue begin fun () ->
           `	{emit_jump s}\n`
+          end
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
@@ -394,6 +404,7 @@ let emit_instr fallthrough i =
         if n < 0
         then `	addq	${emit_int(-n)}, %rsp\n`
         else `	subq	${emit_int(n)}, %rsp\n`;
+        cfi_adjust_cfa_offset n;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
@@ -536,8 +547,9 @@ let emit_instr fallthrough i =
     | Lreloadretaddr ->
         ()
     | Lreturn ->
-        output_epilogue();
+        output_epilogue begin fun () ->
         `	ret\n`
+        end
     | Llabel lbl ->
         `{emit_Llabel fallthrough lbl}:\n`
     | Lbranch lbl ->
@@ -601,9 +613,12 @@ let emit_instr fallthrough i =
         `	movslq	({emit_reg tmp1}, {emit_reg i.arg.(0)}, 4), {emit_reg tmp2}\n`;
         `	addq	{emit_reg tmp2}, {emit_reg tmp1}\n`;
         `	jmp	*{emit_reg tmp1}\n`;
-        if macosx
-        then `	.const\n`
-        else `	.section .rodata\n`;
+        if macosx then
+          `	.const\n`
+        else if mingw64 then
+          `	.section .rdata,\"dr\"\n`
+        else
+          `	.section .rodata\n`;
         emit_align 4;
         `{emit_label lbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
@@ -613,12 +628,16 @@ let emit_instr fallthrough i =
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`
     | Lpushtrap ->
+        cfi_adjust_cfa_offset 8;
         `	pushq	%r14\n`;
+        cfi_adjust_cfa_offset 8;
         `	movq	%rsp, %r14\n`;
         stack_offset := !stack_offset + 16
     | Lpoptrap ->
         `	popq	%r14\n`;
+        cfi_adjust_cfa_offset (-8);
         `	addq	$8, %rsp\n`;
+        cfi_adjust_cfa_offset (-8);
         stack_offset := !stack_offset - 16
     | Lraise ->
         if !Clflags.debug then begin
@@ -650,7 +669,7 @@ let emit_profile () =
   | "linux" | "gnu" ->
       (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
          and rbx, rbp, r12-r15 like all C functions.
-         We need to preserve r10 and r11 ourselves, since Caml can
+         We need to preserve r10 and r11 ourselves, since OCaml can
          use them for argument passing. *)
       `	pushq	%r10\n`;
       `	movq	%rsp, %rbp\n`;
@@ -682,15 +701,19 @@ let fundecl fundecl =
   else
     `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
+  emit_debug_info fundecl.fun_dbg;
+  cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
     let n = frame_size() - 8 in
-    `	subq	${emit_int n}, %rsp\n`
+    `	subq	${emit_int n}, %rsp\n`;
+    cfi_adjust_cfa_offset n;
   end;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
+  cfi_endproc ();
   begin match Config.system with
     "linux" | "gnu" ->
       `	.type	{emit_symbol fundecl.fun_name},@function\n`;
@@ -698,9 +721,12 @@ let fundecl fundecl =
     | _ -> ()
   end;
   if !float_constants <> [] then begin
-    if macosx
-    then `	.literal8\n`
-    else `	.section	.rodata.cst8,\"a\",@progbits\n`;
+    if macosx then
+      `	.literal8\n`
+    else if mingw64 then
+      `	.section .rdata,\"dr\"\n`
+    else
+      `	.section .rodata.cst8,\"a\",@progbits\n`;
     List.iter emit_float_constant !float_constants
   end
 
@@ -712,7 +738,7 @@ let emit_item = function
   | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
-      `{emit_label (100000 + lbl)}:\n`
+      `{emit_data_label lbl}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -728,7 +754,7 @@ let emit_item = function
   | Csymbol_address s ->
       `	.quad	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.quad	{emit_label (100000 + lbl)}\n`
+      `	.quad	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_string_directive "	.ascii	" s
   | Cskip n ->
@@ -746,9 +772,11 @@ let begin_assembly() =
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
     if macosx then
-        `	.literal16\n`
+      `	.literal16\n`
+    else if mingw64 then
+      `	.section .rdata,\"dr\"\n`
     else
-        `	.section        .rodata.cst8,\"a\",@progbits\n`;
+      `	.section .rodata.cst8,\"a\",@progbits\n`;
     emit_align 16;
     `{emit_symbol "caml_negf_mask"}:	.quad   0x8000000000000000, 0\n`;
     emit_align 16;

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -13,7 +13,7 @@
 
 /* $Id$ */
 
-/* Callbacks from C to Caml */
+/* Callbacks from C to OCaml */
 
 #ifndef CAML_CALLBACK_H
 #define CAML_CALLBACK_H
@@ -22,6 +22,10 @@
 #include "compatibility.h"
 #endif
 #include "mlvalues.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 CAMLextern value caml_callback (value closure, value arg);
 CAMLextern value caml_callback2 (value closure, value arg1, value arg2);
@@ -45,5 +49,9 @@ CAMLextern void caml_main (char ** argv);
 CAMLextern void caml_startup (char ** argv);
 
 CAMLextern int caml_callback_depth;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

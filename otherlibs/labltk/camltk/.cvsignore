@@ -1,8 +1,0 @@
-*.ml
-*.mli
-labltktop
-labltk
-modules
-.depend
-*.cm*
-*.o

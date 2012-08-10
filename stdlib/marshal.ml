@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -16,6 +16,7 @@
 type extern_flags =
     No_sharing
   | Closures
+(* note: this type definition is used in 'byterun/debugger.c' *)
 
 external to_channel: out_channel -> 'a -> extern_flags list -> unit
     = "caml_output_value"

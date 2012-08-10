@@ -1,13 +1,13 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*        Mehdi Dogguy, PPS laboratory, University Paris Diderot       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.   Modifications Copyright 2010 Mehdi Dogguy,       *)
-(*  used and distributed as part of Objective Caml by permission from  *)
+(*  used and distributed as part of OCaml by permission from           *)
 (*  the author.   This file is distributed under the terms of the      *)
 (*  Q Public License version 1.0.                                      *)
 (*                                                                     *)
@@ -34,8 +34,7 @@ let input_stringlist ic len =
       else acc
     in fold 0 0 []
   in
-  let sect = String.create len in
-  let _ = really_input ic sect 0 len in
+  let sect = Misc.input_bytes ic len in
   get_string_list sect len
 
 let print_name_crc (name, crc) =
@@ -49,12 +48,13 @@ let print_cmo_infos cu =
   print_string "Interfaces imported:\n";
   List.iter print_name_crc cu.cu_imports;
   printf "Uses unsafe features: ";
-  match cu.cu_primitives with
+  (match cu.cu_primitives with
     | [] -> printf "no\n"
     | l  ->
         printf "YES\n";
         printf "Primitives declared in this module:\n";
-        List.iter print_line l
+        List.iter print_line l);
+  printf "Force link: %s\n" (if cu.cu_force_link then "YES" else "no")
 
 let rec print_approx_infos ppf = function
     Value_closure(fundesc, approx) ->
@@ -122,7 +122,17 @@ let print_cmx_infos (ui, crc) =
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in
   printf "Currying functions:%a\n" pr_funs ui.ui_curry_fun;
-  printf "Apply functions:%a\n" pr_funs ui.ui_apply_fun
+  printf "Apply functions:%a\n" pr_funs ui.ui_apply_fun;
+  printf "Send functions:%a\n" pr_funs ui.ui_send_fun;
+  printf "Force link: %s\n" (if ui.ui_force_link then "YES" else "no")
+
+let print_cmxa_infos (lib : Cmx_format.library_infos) =
+  printf "Extra C object files:";
+  List.iter print_spaced_string (List.rev lib.lib_ccobjs);
+  printf "\nExtra C options:";
+  List.iter print_spaced_string lib.lib_ccopts;
+  printf "\n";
+  List.iter print_cmx_infos lib.lib_units
 
 let print_cmxs_infos header =
   List.iter
@@ -207,8 +217,7 @@ let dump_obj filename =
   printf "File %s\n" filename;
   let ic = open_in_bin filename in
   let len_magic_number = String.length cmo_magic_number in
-  let magic_number = String.create len_magic_number in
-  really_input ic magic_number 0 len_magic_number;
+  let magic_number = Misc.input_bytes ic len_magic_number in
   if magic_number = cmo_magic_number then begin
     let cu_pos = input_binary_int ic in
     seek_in ic cu_pos;
@@ -234,7 +243,7 @@ let dump_obj filename =
   end else if magic_number = cmxa_magic_number then begin
     let li = (input_value ic : library_infos) in
     close_in ic;
-    List.iter print_cmx_infos li.lib_units
+    print_cmxa_infos li
   end else begin
     let pos_trailer = in_channel_length ic - len_magic_number in
     let _ = seek_in ic pos_trailer in

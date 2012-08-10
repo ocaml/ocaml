@@ -1,7 +1,7 @@
-        O'Caml emacs mode, snapshot of $Date$
+        OCaml emacs mode, snapshot of $Date$
 
 The files in this archive define a caml-mode for emacs, for editing
-Objective Caml and Objective Label programs, as well as an
+OCaml and Objective Label programs, as well as an
 inferior-caml-mode, to run a toplevel.
 
 Caml-mode supports indentation, compilation and error retrieving,
@@ -12,17 +12,20 @@ This package is based on the original caml-mode for caml-light by
 Xavier Leroy, extended with indentation by Ian Zimmerman. For details
 see README.itz, which is the README from Ian Zimmerman's package.
 
-To use it, just put the .el files in your path, and add the following
-three lines in your .emacs.
+To use it, just put the .el files in your emacs load path, and add the
+following lines in your .emacs.
 
-    (setq auto-mode-alist
-          (cons '("\\.ml[iylp]?$" . caml-mode) auto-mode-alist))
-    (autoload 'caml-mode "caml" "Major mode for editing Caml code." t)
-    (autoload 'run-caml "inf-caml" "Run an inferior Caml process." t)
+    (add-to-list 'auto-mode-alist '("\\.ml[iylp]?$" . caml-mode))
+    (autoload 'caml-mode "caml" "Major mode for editing OCaml code." t)
+    (autoload 'run-caml "inf-caml" "Run an inferior OCaml process." t)
+    (autoload 'camldebug "camldebug" "Run ocamldebug on program." t)
+    (add-to-list 'interpreter-mode-alist '("ocamlrun" . caml-mode))
+    (add-to-list 'interpreter-mode-alist '("ocaml" . caml-mode))
 
-I added camldebug.el from the original distribution, since there will
-soon be a debugger for Objective Caml, but I do not know enough about
-it.
+or put the .el files in, eg. "/usr/share/emacs/site-lisp/caml-mode/"
+and add the following line in addtion to the four lines above:
+
+    (add-to-list 'load-path "/usr/share/emacs/site-lisp/caml-mode")
 
 To install the mode itself, edit the Makefile and do
 
@@ -120,7 +123,7 @@ Version 1.07:
 
 Version 1.06:
 ------------
-* new keywords in O'Caml 1.06
+* new keywords in Objective Caml 1.06
 
 * compatibility with GNU Emacs 20
 
@@ -150,7 +153,7 @@ Version 1.03b:
     (setq caml-quote-char "`")
     (setq inferior-caml-program "camllight")
   Literals will be correctly understood and highlighted. However,
-  indentation rules are still Objective Caml's: this just happens to
+  indentation rules are still OCaml's: this just happens to
   work well in most cases, but is only intended for occasional use.
 
 * as many people asked for it, application is now indented. This seems
@@ -164,10 +167,10 @@ Version 1.03b:
 
 Version 1.03:
 ------------
-* support of Objective Caml and Objective Label.
+* support of OCaml and Objective Label.
 
 * an indentation very close to mine, which happens to be the same as
-  Xavier's, since the sources of the Objective Caml compiler do not
+  Xavier's, since the sources of the OCaml compiler do not
   change if you indent them in this mode.
 
 * highlighting.
@@ -175,7 +178,7 @@ Version 1.03:
 Some remarks about the style supported:
 --------------------------------------
 
-Since Objective Caml's syntax is very liberal (more than 100
+Since OCaml's syntax is very liberal (more than 100
 shift-reduce conflicts with yacc), automatic indentation is far from
 easy. Moreover, you expect the indentation to be not purely syntactic,
 but also semantic: reflecting the meaning of your program.

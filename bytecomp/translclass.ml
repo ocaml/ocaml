@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -142,15 +142,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
                    (inh_init, obj_init, has_init)
                | Cf_init _ ->
                    (inh_init, obj_init, true)
-               | Cf_let (rec_flag, defs, vals) ->
-                   (inh_init,
-                    Translcore.transl_let rec_flag defs
-                      (List.fold_right
-                         (fun (id, expr) rem ->
-                            lsequence (Lifused(id, set_inst_var obj id expr))
-                                      rem)
-                         vals obj_init),
-                    has_init))
+            )
             str.cl_field
             (inh_init, obj_init obj, false)
         in
@@ -293,11 +285,6 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                 (inh_init, cl_init,
                  Lvar (Meths.find name str.cl_meths) :: met_code @ methods,
                  values)
-            | Cf_let (rec_flag, defs, vals) ->
-                let vals =
-                  List.map (function (id, _) -> (Ident.name id, id)) vals
-                in
-                (inh_init, cl_init, methods, vals @ values)
             | Cf_init exp ->
                 (inh_init,
                  Lsequence(mkappl (oo_prim "add_initializer",

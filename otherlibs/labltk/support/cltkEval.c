@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                 MLTk, Tcl/Tk interface of OCaml                     */
 /*                                                                     */
 /*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
 /*               projet Cristal, INRIA Rocquencourt                    */
@@ -10,7 +10,7 @@
 /*  en Automatique and Kyoto University.  All rights reserved.         */
 /*  This file is distributed under the terms of the GNU Library        */
 /*  General Public License, with the special exception on linking      */
-/*  described in file LICENSE found in the Objective Caml source tree. */
+/*  described in file LICENSE found in the OCaml source tree.          */
 /*                                                                     */
 /***********************************************************************/
 
@@ -32,7 +32,7 @@
 /* The Tcl interpretor */
 Tcl_Interp *cltclinterp = NULL;
 
-/* Copy a list of strings from the C heap to Caml */
+/* Copy a list of strings from the C heap to OCaml */
 value copy_string_list(int argc, char **argv)
 {
   CAMLparam0();
@@ -53,7 +53,7 @@ value copy_string_list(int argc, char **argv)
 }
 
 /*
- * Calling Tcl from Caml
+ * Calling Tcl from OCaml
  *   this version works on an arbitrary Tcl command,
  *   and does parsing and substitution
  */
@@ -65,7 +65,7 @@ CAMLprim value camltk_tcl_eval(value str)
   CheckInit();
   
   /* Tcl_Eval may write to its argument, so we take a copy
-   * If the evaluation raises a Caml exception, we have a space
+   * If the evaluation raises an OCaml exception, we have a space
    * leak
    */
   Tcl_ResetResult(cltclinterp);
@@ -85,7 +85,7 @@ CAMLprim value camltk_tcl_eval(value str)
 
 
 /* 
- * Calling Tcl from Caml
+ * Calling Tcl from OCaml
  *   direct call, argument is TkArgs vect
   type TkArgs =
       TkToken of string
@@ -143,7 +143,7 @@ int fill_args (char **argv, int where, value v)
       tmpargv = (char **)stat_alloc((size + 1) * sizeof(char *));
       fill_args(tmpargv,0,Field(v,0));
       tmpargv[size] = NULL;
-      merged = Tcl_Merge(size,tmpargv);
+      merged = Tcl_Merge(size,(const char *const*)tmpargv);
       for(i = 0 ; i<size; i++){ stat_free(tmpargv[i]); }
       stat_free((char *)tmpargv);
       /* must be freed by stat_free */
@@ -208,17 +208,17 @@ CAMLprim value camltk_tcl_direct_eval(value v)
       result = Tcl_Eval(cltclinterp, Tcl_DStringValue(&buf));
       Tcl_DStringFree(&buf);
     } else {
-      result = (*info.proc)(info.clientData,cltclinterp,size,argv);
+      result = (*info.proc)(info.clientData,cltclinterp,size,(const char**)argv);
     }
 #else
-    result = (*info.proc)(info.clientData,cltclinterp,size,argv);
+    result = (*info.proc)(info.clientData,cltclinterp,size,(const char**)argv);
 #endif
   } else { /* implement the autoload stuff */
     if (Tcl_GetCommandInfo(cltclinterp,"unknown",&info)) { /* unknown found */
       for (i = size; i >= 0; i--)
         argv[i+1] = argv[i];
       argv[0] = "unknown";
-      result = (*info.proc)(info.clientData,cltclinterp,size+1,argv);
+      result = (*info.proc)(info.clientData,cltclinterp,size+1,(const char**)argv);
     } else { /* ah, it isn't there at all */
       result = TCL_ERROR;
       Tcl_AppendResult(cltclinterp, "Unknown command \"", 

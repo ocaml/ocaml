@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -46,7 +46,8 @@ val rhs_loc: int -> t
 val input_name: string ref
 val input_lexbuf: Lexing.lexbuf option ref
 
-val get_pos_info : Lexing.position -> string * int * int (* file, line, char *)
+val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
+val print_loc: formatter -> t -> unit
 val print_error: formatter -> t -> unit
 val print_error_cur_file: formatter -> unit
 val print_warning: t -> formatter -> Warnings.t -> unit
@@ -55,3 +56,13 @@ val echo_eof: unit -> unit
 val reset: unit -> unit
 
 val highlight_locations: formatter -> t -> t -> bool
+
+val print: formatter -> t -> unit
+val print_filename: formatter -> string -> unit
+
+val show_filename: string -> string
+    (** In -absname mode, return the absolute path for this filename.
+        Otherwise, returns the filename unchanged. *)
+    
+
+val absname: bool ref

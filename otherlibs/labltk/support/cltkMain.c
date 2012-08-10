@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                 MLTk, Tcl/Tk interface of OCaml                     */
 /*                                                                     */
 /*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
 /*               projet Cristal, INRIA Rocquencourt                    */
@@ -10,7 +10,7 @@
 /*  en Automatique and Kyoto University.  All rights reserved.         */
 /*  This file is distributed under the terms of the GNU Library        */
 /*  General Public License, with the special exception on linking      */
-/*  described in file LICENSE found in the Objective Caml source tree. */
+/*  described in file LICENSE found in the OCaml source tree.          */
 /*                                                                     */
 /***********************************************************************/
 
@@ -35,7 +35,7 @@
 #endif
 
 /* 
- * Dealing with signals: when a signal handler is defined in Caml,
+ * Dealing with signals: when a signal handler is defined in OCaml,
  * the actual execution of the signal handler upon reception of the
  * signal is delayed until we are sure we are out of the GC.
  * If a signal occurs during the MainLoop, we would have to wait
@@ -125,7 +125,7 @@ CAMLprim value camltk_opentk(value argv)
         
         sprintf( argcstr, "%d", argc );
         Tcl_SetVar(cltclinterp, "argc", argcstr, TCL_GLOBAL_ONLY);
-        args = Tcl_Merge(argc, tkargv); /* args must be freed by Tcl_Free */
+        args = Tcl_Merge(argc, (const char *const*)tkargv); /* args must be freed by Tcl_Free */
         Tcl_SetVar(cltclinterp, "argv", args, TCL_GLOBAL_ONLY);
         Tcl_Free(args);
         stat_free( tkargv );

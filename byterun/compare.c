@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -106,7 +106,7 @@ static intnat compare_val(value v1, value v2, int total)
       /* Subtraction above cannot overflow and cannot result in UNORDERED */
       if (Is_in_value_area(v2)) {
         switch (Tag_val(v2)) {
-        case Forward_tag: 
+        case Forward_tag:
           v2 = Forward_val(v2);
           continue;
         case Custom_tag: {

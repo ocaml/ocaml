@@ -1,8 +1,9 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*  Developed by Jacob Navia, based on code by J-M Geffroy and X Leroy */
+/*                                                                     */
 /*  Copyright 2001 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License, with    */
@@ -452,7 +453,8 @@ static struct custom_operations image_ops = {
         custom_compare_default,
         custom_hash_default,
         custom_serialize_default,
-        custom_deserialize_default
+        custom_deserialize_default,
+        custom_compare_ext_default
 };
 
 CAMLprim value caml_gr_create_image(value vw, value vh)

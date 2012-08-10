@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*             Damien Doligez, projet Para, INRIA Rocquencourt         */
 /*                                                                     */
@@ -353,7 +353,7 @@ void caml_shrink_heap (char *chunk)
 {
   char **cp;
 
-  /* Never deallocate the first block, because caml_heap_start is both the
+  /* Never deallocate the first chunk, because caml_heap_start is both the
      first block and the base address for page numbers, and we don't
      want to shift the page table, it's too messy (see above).
      It will never happen anyway, because of the way compaction works.

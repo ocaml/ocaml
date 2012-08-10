@@ -1,7 +1,21 @@
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLYACC 1
 
 .SH NAME
-ocamlyacc \- The Objective Caml parser generator
+ocamlyacc \- The OCaml parser generator
 
 .SH SYNOPSIS
 .B ocamlyacc
@@ -20,18 +34,18 @@ ocamlyacc \- The Objective Caml parser generator
 
 .SH DESCRIPTION
 
-The 
+The
 .BR ocamlyacc (1)
 command produces a parser from a LALR(1) context-free grammar
 specification with attached semantic actions, in the style of
 .BR yacc (1).
-Assuming the input file is 
+Assuming the input file is
 .IR grammar \&.mly,
 running
 .B ocamlyacc
-produces Caml code for a parser in the file 
+produces OCaml code for a parser in the file
 .IR grammar \&.ml,
-and its interface in file 
+and its interface in file
 .IR grammar \&.mli.
 
 The generated module defines one parsing function per entry point in
@@ -45,22 +59,14 @@ program. Lexer buffers are an abstract data type
 implemented in the standard library module Lexing. Tokens are values from
 the concrete type token, defined in the interface file
 .IR grammar \&.mli
-produced by 
+produced by
 .BR ocamlyacc (1).
 
 .SH OPTIONS
 
-The 
+The
 .BR ocamlyacc (1)
 command recognizes the following options:
-
-.TP
-.B \-v
-Generate a description of the parsing tables and a report on conflicts
-resulting from ambiguities in the grammar. The description is put in
-file 
-.IR grammar \&.output.
-
 .TP
 .BI \-b prefix
 Name the output files
@@ -68,8 +74,6 @@ Name the output files
 .IR prefix \&.mli,
 .IR prefix \&.output,
 instead of the default naming convention.
-<<<<<<< .courant
-=======
 .TP
 .B \-q
 This option has no effect.
@@ -96,10 +100,9 @@ Process
 as the grammar specification, even if its name
 starts with a dash (-) character.  This option must be the last on the
 command line.
->>>>>>> .fusion-droit.r10497
 
 .SH SEE ALSO
 .BR ocamllex (1).
 .br
-.I The Objective Caml user's manual,
+.IR "The OCaml user's manual" ,
 chapter "Lexer and parser generators".

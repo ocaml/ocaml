@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -75,7 +75,7 @@ let add_type_declaration bv td =
   let rec add_tkind = function
     Ptype_abstract -> ()
   | Ptype_variant cstrs ->
-      List.iter (fun (c, args, _) -> List.iter (add_type bv) args) cstrs
+      List.iter (fun (c, args, rty, _) -> List.iter (add_type bv) args; Misc.may (add_type bv) rty) cstrs
   | Ptype_record lbls ->
       List.iter (fun (l, mut, ty, _) -> add_type bv ty) lbls in
   add_tkind td.ptype_kind
@@ -321,7 +321,6 @@ and add_class_field bv = function
   | Pcf_virt(_, _, ty, _) -> add_type bv ty
   | Pcf_meth(_, _, _, e, _) -> add_expr bv e
   | Pcf_cstr(ty1, ty2, _) -> add_type bv ty1; add_type bv ty2
-  | Pcf_let(_, pel, _) -> add_pat_expr_list bv pel
   | Pcf_init e -> add_expr bv e
 
 and add_class_declaration bv decl =

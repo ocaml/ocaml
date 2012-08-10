@@ -1,6 +1,6 @@
 ;(***********************************************************************)
 ;(*                                                                     *)
-;(*                           Objective Caml                            *)
+;(*                                OCaml                                *)
 ;(*                                                                     *)
 ;(*                Jacques Garrigue and Ian T Zimmerman                 *)
 ;(*                                                                     *)
@@ -16,7 +16,7 @@
 
 ; defined also in caml.el
 (defvar caml-quote-char "'"
-  "*Quote for character constants. \"'\" for Objective Caml, \"`\" for Caml-Light.")
+  "*Quote for character constants. \"'\" for OCaml, \"`\" for Caml-Light.")
 
 (defconst caml-mode-patterns
   (list
@@ -53,7 +53,7 @@
           "\\|\|\\|->\\|&\\|#")
          nil 'keyword)
    '(";" nil struct))
-  "Hilit19 patterns used for Caml mode")
+  "Hilit19 patterns used for OCaml mode")
 
 (hilit-set-mode-patterns 'caml-mode caml-mode-patterns)
 (hilit-set-mode-patterns

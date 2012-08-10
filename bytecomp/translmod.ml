@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -109,13 +109,7 @@ let mod_prim name =
     fatal_error ("Primitive " ^ name ^ " not found.")
 
 let undefined_location loc =
-  (* Confer Translcore.assert_failed *)
-  let fname = match loc.Location.loc_start.Lexing.pos_fname with
-              | "" -> !Location.input_name
-              | x -> x in
-  let pos = loc.Location.loc_start in
-  let line = pos.Lexing.pos_lnum in
-  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
+  let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lconst(Const_block(0,
                      [Const_base(Const_string fname);
                       Const_base(Const_int line);
@@ -267,7 +261,7 @@ let rec transl_module cc rootpath mexp =
   | Tmod_constraint(arg, mty, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->
-      Translcore.transl_exp arg
+      apply_coercion cc (Translcore.transl_exp arg)
 
 and transl_structure fields cc rootpath = function
     [] ->

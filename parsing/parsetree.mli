@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -35,7 +35,7 @@ and core_type_desc =
   | Ptyp_poly of string list * core_type
   | Ptyp_package of package_type
 
-and package_type = Longident.t * (string * core_type) list
+and package_type = Longident.t * (Longident.t * core_type) list
 
 and core_field_type =
   { pfield_desc: core_field_desc;
@@ -152,7 +152,7 @@ and value_description =
 (* Type declarations *)
 
 and type_declaration =
-  { ptype_params: string list;
+  { ptype_params: string option list;
     ptype_cstrs: (core_type * core_type * Location.t) list;
     ptype_kind: type_kind;
     ptype_private: private_flag;
@@ -162,7 +162,8 @@ and type_declaration =
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of (string * core_type list * Location.t) list
+  | Ptype_variant of
+      (string * core_type list * core_type option * Location.t) list
   | Ptype_record of
       (string * mutable_flag * core_type * Location.t) list
 
@@ -211,12 +212,13 @@ and class_structure = pattern * class_field list
 and class_field =
     Pcf_inher of override_flag * class_expr * string option
   | Pcf_valvirt of (string * mutable_flag * core_type * Location.t)
-  | Pcf_val of (string * mutable_flag * override_flag * expression * Location.t)
-  | Pcf_virt  of (string * private_flag * core_type * Location.t)
-  | Pcf_meth of (string * private_flag *override_flag * expression * Location.t)
-  | Pcf_cstr  of (core_type * core_type * Location.t)
-  | Pcf_let   of rec_flag * (pattern * expression) list * Location.t
-  | Pcf_init  of expression
+  | Pcf_val of
+      (string * mutable_flag * override_flag * expression * Location.t)
+  | Pcf_virt of (string * private_flag * core_type * Location.t)
+  | Pcf_meth of
+      (string * private_flag * override_flag * expression * Location.t)
+  | Pcf_cstr of (core_type * core_type * Location.t)
+  | Pcf_init of expression
 
 and class_declaration = class_expr class_infos
 
@@ -261,7 +263,7 @@ and with_constraint =
   | Pwith_typesubst of type_declaration
   | Pwith_modsubst of Longident.t
 
-(* value expressions for the module language *)
+(* Value expressions for the module language *)
 
 and module_expr =
   { pmod_desc: module_expr_desc;

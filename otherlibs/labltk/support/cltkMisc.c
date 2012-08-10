@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                 MLTk, Tcl/Tk interface of OCaml                     */
 /*                                                                     */
 /*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
 /*               projet Cristal, INRIA Rocquencourt                    */
@@ -10,7 +10,7 @@
 /*  en Automatique and Kyoto University.  All rights reserved.         */
 /*  This file is distributed under the terms of the GNU Library        */
 /*  General Public License, with the special exception on linking      */
-/*  described in file LICENSE found in the Objective Caml source tree. */
+/*  described in file LICENSE found in the OCaml source tree.          */
 /*                                                                     */
 /***********************************************************************/
 
@@ -35,7 +35,7 @@ CAMLprim value camltk_splitlist (value v)
 
   utf = caml_string_to_tcl(v);
   /* argv is allocated by Tcl, to be freed by us */
-  result = Tcl_SplitList(cltclinterp,utf,&argc,&argv);
+  result = Tcl_SplitList(cltclinterp,utf,&argc,(const char ***)&argv);
   switch(result) {
   case TCL_OK:
    { value res = copy_string_list(argc,argv);
@@ -51,7 +51,7 @@ CAMLprim value camltk_splitlist (value v)
   }
 }
 
-/* Copy a Caml string to the C heap. Should deallocate with stat_free */
+/* Copy an OCaml string to the C heap. Should deallocate with stat_free */
 char *string_to_c(value s)
 {
   int l = string_length(s);

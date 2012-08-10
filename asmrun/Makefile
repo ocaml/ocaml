@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -180,10 +180,12 @@ clean::
 .c.d.o:
 	ln -s -f $*.c $*.d.c
 	$(CC) -c $(DFLAGS) $*.d.c
+	rm -f $*.d.c
 
 .c.p.o:
 	ln -s -f $*.c $*.p.c
 	$(CC) -c $(PFLAGS) $*.p.c
+	rm -f $*.p.c
 
 .s.o:
 	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.s

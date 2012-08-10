@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -26,8 +26,8 @@ exception Escape_error
 
 let report_error ppf = function
   | Unclosed(opening_loc, opening, closing_loc, closing) ->
-      if String.length !Location.input_name = 0
-      && Location.highlight_locations ppf opening_loc closing_loc
+      if !Location.input_name = "//toplevel//"
+         && Location.highlight_locations ppf opening_loc closing_loc
       then fprintf ppf "Syntax error: '%s' expected, \
                    the highlighted '%s' might be unmatched" closing opening
       else begin
@@ -37,7 +37,9 @@ let report_error ppf = function
           Location.print_error opening_loc opening
       end
   | Applicative_path loc ->
-      fprintf ppf "%aSyntax error: applicative paths of the form F(X).t are not supported when the option -no-app-func is set."
+      fprintf ppf
+        "%aSyntax error: applicative paths of the form F(X).t \
+         are not supported when the option -no-app-func is set."
         Location.print_error loc
   | Other loc ->
       fprintf ppf "%aSyntax error" Location.print_error loc

@@ -61,16 +61,16 @@ module P = struct
       | None -> None in
       k(y) in
     {get=get;kill=prod.kill}
+                
 
-
-
+         
   let when_none k_none prod =
     def get(k) = kont(k) & prod.get(reader)
     and kont(k) & reader(x) =
       begin match x with
       | Some _ -> 0
       | None -> k_none()
-      end & k(x) in
+      end &        k(x) in
     {get=get;kill=prod.kill}
 
 

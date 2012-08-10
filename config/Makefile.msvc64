@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -71,6 +71,7 @@ CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 CMXS=cmxs
 NATDYNLINK=true
+RUNTIMED=noruntimed
 
 ########## Configuration for the bytecode compiler
 
@@ -118,6 +119,9 @@ SYSLIB=$(1).lib
 ### The ranlib command
 RANLIB=echo
 RANLIBCMD=
+
+### The ar command
+ARCMD=
 
 ############# Configuration for the native-code compiler
 

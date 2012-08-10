@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 default: compile run
 
 compile:
@@ -17,20 +19,22 @@ compile:
 run:
 	@printf " ... testing 'main'"
 	@export LD_LIBRARY_PATH=`pwd` && ./main plug1.cma plug2.cma > main.result
-	@diff -q main.reference main.result > /dev/null || (echo " => failed" && exit 1)
+	@$(DIFF) main.reference main.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
 	@printf " ... testing 'static'"
 	@export LD_LIBRARY_PATH=`pwd` && ./static > static.result
-	@diff -q static.reference static.result > /dev/null || (echo " => failed" && exit 1)
+	@$(DIFF) static.reference static.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
 	@printf " ... testing 'custom'"
 	@export LD_LIBRARY_PATH=`pwd` && ./custom > custom.result
-	@diff -q custom.reference custom.result > /dev/null || (echo " => failed" && exit 1)
+	@$(DIFF) custom.reference custom.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
+	
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f ./main ./static ./custom *.result
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -117,7 +117,7 @@ CAMLexport file_offset caml_channel_size(struct channel *channel)
   file_offset end;
   int fd;
 
-  /* We extract data from [channel] before dropping the Caml lock, in case
+  /* We extract data from [channel] before dropping the OCaml lock, in case
      someone else touches the block. */
   fd = channel->fd;
   offset = channel->offset;
@@ -411,7 +411,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
   return (p - channel->curr);
 }
 
-/* Caml entry points for the I/O functions.  Wrap struct channel *
+/* OCaml entry points for the I/O functions.  Wrap struct channel *
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
 /* FIXME CAMLexport, but not in io.h  exported for Cash ? */
@@ -431,13 +431,19 @@ static int compare_channel(value vchan1, value vchan2)
   return (chan1 == chan2) ? 0 : (chan1 < chan2) ? -1 : 1;
 }
 
+static intnat hash_channel(value vchan)
+{
+  return (intnat) (Channel(vchan));
+}
+
 static struct custom_operations channel_operations = {
   "_chan",
   caml_finalize_channel,
   compare_channel,
-  custom_hash_default,
+  hash_channel,
   custom_serialize_default,
-  custom_deserialize_default
+  custom_deserialize_default,
+  custom_compare_ext_default
 };
 
 CAMLexport value caml_alloc_channel(struct channel *chan)

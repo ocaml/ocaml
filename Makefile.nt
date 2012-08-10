@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -37,11 +37,11 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 
 OPTUTILS=$(UTILS)
 
-PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
+PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo
 
-TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
+TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
@@ -110,9 +110,9 @@ OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
   typing/ident.cmo typing/path.cmo typing/types.cmo typing/btype.cmo \
+  utils/warnings.cmo parsing/location.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
-  bytecomp/dll.cmo \
-  bytecomp/symtable.cmo toplevel/expunge.cmo
+  bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
 PERVASIVES=$(STDLIB_MODULES) topdirs toploop outcometree
 
@@ -121,7 +121,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte camlp4out $(DEBUGGER) win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -211,7 +211,7 @@ opt: opt-core otherlibrariesopt ocamlbuildlib.native
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-	 ocamltoolsopt.opt ocamlbuild.native camlp4opt ocamldoc.opt
+	 ocamltoolsopt.opt ocamlbuild.native $(CAMLP4OPT) ocamldoc.opt
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -323,6 +323,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \
 	    -e "s|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|" \
 	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
+	    -e 's|%%ARCMD%%|$(ARCMD)|' \
 	    -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
 	    -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
 	    -e "s|%%ARCH%%|$(ARCH)|" \
@@ -334,6 +335,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e "s|%%EXT_DLL%%|.dll|" \
 	    -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
 	    -e 's|%%ASM%%|$(ASM)|' \
+	    -e 's|%%ASM_CFI_SUPPORTED%%|false|' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
@@ -365,16 +367,6 @@ partialclean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
-
-# The auxiliary lexer for counting line numbers
-
-parsing/linenum.ml: parsing/linenum.mll
-	$(CAMLLEX) parsing/linenum.mll
-
-partialclean::
-	rm -f parsing/linenum.ml
-
-beforedepend:: parsing/linenum.ml
 
 # The bytecode compiler compiled with the native-code compiler
 
@@ -442,15 +434,13 @@ partialclean::
 beforedepend:: asmcomp/arch.ml
 
 ifeq ($(TOOLCHAIN),msvc)
-ASMCOMP_PROC=asmcomp/$(ARCH)/proc_nt.ml
 ASMCOMP_EMIT=asmcomp/$(ARCH)/emit_nt.mlp
 else
-ASMCOMP_PROC=asmcomp/$(ARCH)/proc.ml
 ASMCOMP_EMIT=asmcomp/$(ARCH)/emit.mlp
 endif
 
-asmcomp/proc.ml: $(ASMCOMP_PROC)
-	cp $(ASMCOMP_PROC) asmcomp/proc.ml
+asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
+	cp asmcomp/$(ARCH)/proc.ml asmcomp/proc.ml
 
 partialclean::
 	rm -f asmcomp/proc.ml
@@ -663,5 +653,19 @@ depend: beforedepend
 	 done) > .depend
 
 alldepend:: depend
+
+distclean:
+	./build/distclean.sh
+
+.PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
+.PHONY: partialclean beforedepend alldepend cleanboot coldstart
+.PHONY: compare core coreall
+.PHONY: coreboot defaultentry depend distclean install installopt
+.PHONY: library library-cross libraryopt ocamlbuild-mixed-boot
+.PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
+.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
+.PHONY: ocamlyacc opt-core opt opt.opt otherlibraries
+.PHONY: otherlibrariesopt promote promote-cross
+.PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
 include .depend

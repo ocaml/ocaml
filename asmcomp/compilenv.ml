@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -87,8 +87,7 @@ let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
 let read_unit_info filename =
   let ic = open_in_bin filename in
   try
-    let buffer = String.create (String.length cmx_magic_number) in
-    really_input ic buffer 0 (String.length cmx_magic_number);
+    let buffer = input_bytes ic (String.length cmx_magic_number) in
     if buffer <> cmx_magic_number then begin
       close_in ic;
       raise(Error(Not_a_unit_info filename))
@@ -103,8 +102,7 @@ let read_unit_info filename =
 
 let read_library_info filename =
   let ic = open_in_bin filename in
-  let buffer = String.create (String.length cmxa_magic_number) in
-  really_input ic buffer 0 (String.length cmxa_magic_number);
+  let buffer = input_bytes ic (String.length cmxa_magic_number) in
   if buffer <> cmxa_magic_number then
     raise(Error(Not_a_unit_info filename));
   let infos = (input_value ic : library_infos) in
@@ -229,8 +227,11 @@ open Format
 
 let report_error ppf = function
   | Not_a_unit_info filename ->
-      fprintf ppf "%s@ is not a compilation unit description." filename
+      fprintf ppf "%a@ is not a compilation unit description."
+        Location.print_filename filename
   | Corrupted_unit_info filename ->
-      fprintf ppf "Corrupted compilation unit description@ %s" filename
+      fprintf ppf "Corrupted compilation unit description@ %a"
+        Location.print_filename filename
   | Illegal_renaming(modname, filename) ->
-      fprintf ppf "%s@ contains the description for unit@ %s" filename modname
+      fprintf ppf "%a@ contains the description for unit@ %s"
+        Location.print_filename filename modname

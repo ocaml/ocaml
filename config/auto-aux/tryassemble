@@ -1,0 +1,7 @@
+#!/bin/sh
+if test "$verbose" = yes; then
+echo "tryassemble: $aspp -o tst $*" >&2
+$aspp -o tst $* || exit 100
+else
+$aspp -o tst $* 2> /dev/null || exit 100
+fi

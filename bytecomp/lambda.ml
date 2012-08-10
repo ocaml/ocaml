@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -19,6 +19,8 @@ open Asttypes
 type primitive =
     Pidentity
   | Pignore
+  | Prevapply of Location.t
+  | Pdirapply of Location.t
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -446,6 +448,7 @@ let transl_location loc =
 (*>JOCAML*)
 let may_raise = function
   | Pccall desc -> desc.Primitive.prim_alloc
+  | Prevapply _|Pdirapply _ (* call function, anything can happen *)
   | Praise 
   | Pstringrefs | Pstringsets
   | Parrayrefs _

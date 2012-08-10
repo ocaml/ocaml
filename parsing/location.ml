@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -14,9 +14,11 @@
 
 open Lexing
 
-type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
+let absname = ref false
+    (* This reference should be in Clflags, but it would create an additional
+       dependency and make bootstrapping Camlp4 more difficult. *)
 
-let none = { loc_start = dummy_pos; loc_end = dummy_pos; loc_ghost = true };;
+type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let in_file name =
   let loc = {
@@ -27,6 +29,8 @@ let in_file name =
   } in
   { loc_start = loc; loc_end = loc; loc_ghost = true }
 ;;
+
+let none = in_file "_none_";;
 
 let curr lexbuf = {
   loc_start = lexbuf.lex_start_p;
@@ -196,6 +200,26 @@ let rec highlight_locations ppf loc1 loc2 =
 
 open Format
 
+let absolute_path s = (* This function could go into Filename *)
+  let open Filename in
+  let s = if is_relative s then concat (Sys.getcwd ()) s else s in
+  (* Now simplify . and .. components *)
+  let rec aux s =
+    let base = basename s in
+    let dir = dirname s in
+    if dir = s then dir
+    else if base = current_dir_name then aux dir
+    else if base = parent_dir_name then dirname (aux dir)
+    else concat (aux dir) base
+  in
+  aux s
+
+let show_filename file =
+  if !absname then absolute_path file else file
+
+let print_filename ppf file =
+  Format.fprintf ppf "%s" (show_filename file)
+
 let reset () =
   num_loc_lines := 0
 
@@ -204,33 +228,27 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
 
 (* return file, line, char from the given position *)
 let get_pos_info pos =
-  let (filename, linenum, linebeg) =
-    if pos.pos_fname = "" && !input_name = "" then
-      ("", -1, 0)
-    else if pos.pos_fname = "" then
-      Linenum.for_position !input_name pos.pos_cnum
-    else
-      (pos.pos_fname, pos.pos_lnum, pos.pos_bol)
-  in
-  (filename, linenum, pos.pos_cnum - linebeg)
+  (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
 ;;
 
-let print ppf loc =
+let print_loc ppf loc =
   let (file, line, startchar) = get_pos_info loc.loc_start in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
-  let (startchar, endchar) =
-    if startchar < 0 then (0, 1) else (startchar, endchar)
-  in
-  if file = "" then begin
+  if file = "//toplevel//" then begin
     if highlight_locations ppf loc none then () else
       fprintf ppf "Characters %i-%i:@."
               loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
-    fprintf ppf "%s%s%s%i" msg_file file msg_line line;
-    fprintf ppf "%s%i" msg_chars startchar;
-    fprintf ppf "%s%i%s@.%s" msg_to endchar msg_colon msg_head;
+    fprintf ppf "%s%a%s%i" msg_file print_filename file msg_line line;
+    if startchar >= 0 then
+      fprintf ppf "%s%i%s%i" msg_chars startchar msg_to endchar
   end
 ;;
+
+let print ppf loc =
+  if loc.loc_start.pos_fname = "//toplevel//"
+  && highlight_locations ppf loc none then ()
+  else fprintf ppf "%a%s@.%s" print_loc loc msg_colon msg_head
 
 let print_error ppf loc =
   print ppf loc;
@@ -245,7 +263,7 @@ let print_warning loc ppf w =
       let n = Warnings.print ppf w in
       num_loc_lines := !num_loc_lines + n
     in
-    fprintf ppf "%a" print loc;
+    print ppf loc;
     fprintf ppf "Warning %a@." printw w;
     pp_print_flush ppf ();
     incr num_loc_lines;

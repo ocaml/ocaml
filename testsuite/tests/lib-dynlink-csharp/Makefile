@@ -1,6 +1,12 @@
+BASEDIR=../..
 CSC=csc
 
-default: prepare bytecode bytecode-dll native native-dll
+default:
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  $(MAKE) all; \
+	fi
+
+all: prepare bytecode bytecode-dll native native-dll
 
 prepare:
 	@$(OCAMLC) -c plugin.ml
@@ -14,7 +20,7 @@ bytecode:
 	  $(OCAMLC) -output-obj -o main.dll dynlink.cma main.ml entry.c; \
 	  $(CSC) /out:main.exe main.cs; \
 	  ./main.exe > bytecode.result; \
-	  diff -q bytecode.reference bytecode.result > /dev/null && echo " => passed" || echo " => failed"; \
+	  $(DIFF) bytecode.reference bytecode.result > /dev/null && echo " => passed" || echo " => failed"; \
 	fi
 
 bytecode-dll:
@@ -26,7 +32,7 @@ bytecode-dll:
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) ../../byterun/libcamlrun.$(A)  $(BYTECCLIBS) -v; \
 	  $(CSC) /out:main.exe main.cs; \
 	  ./main.exe > bytecode.result; \
-	  diff -q bytecode.reference bytecode.result > /dev/null && echo " => passed" || echo " => failed"; \
+	  $(DIFF) bytecode.reference bytecode.result > /dev/null && echo " => passed" || echo " => failed"; \
 	fi
 
 native:
@@ -37,7 +43,7 @@ native:
 	  $(OCAMLOPT) -output-obj -o main.dll dynlink.cmxa entry.c main.ml; \
 	  $(CSC) /out:main.exe main.cs; \
 	  ./main.exe > native.result; \
-	  diff -q native.reference native.result > /dev/null && echo " => passed" || echo " => failed"; \
+	  $(DIFF) native.reference native.result > /dev/null && echo " => passed" || echo " => failed"; \
 	fi
 
 native-dll:
@@ -49,10 +55,12 @@ native-dll:
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) ../../asmrun/libasmrun.lib -v; \
 	  $(CSC) /out:main.exe main.cs; \
 	  ./main.exe > native.result; \
-	  diff -q native.reference native.result > /dev/null && echo " => passed" || echo " => failed"; \
+	  $(DIFF) native.reference native.result > /dev/null && echo " => passed" || echo " => failed"; \
 	fi
+
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result *.exe *.dll
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

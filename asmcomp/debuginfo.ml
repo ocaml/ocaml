@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -31,6 +31,9 @@ let none = {
   dinfo_char_end = 0
 }
 
+let is_none t =
+  t == none
+
 let to_string d =
   if d == none
   then ""
@@ -38,7 +41,7 @@ let to_string d =
            d.dinfo_file d.dinfo_line d.dinfo_char_start d.dinfo_char_end
 
 let from_location kind loc =
-  if loc.loc_ghost then none else
+  if loc == Location.none then none else
   { dinfo_kind = kind;
     dinfo_file = loc.loc_start.pos_fname;
     dinfo_line = loc.loc_start.pos_lnum;
@@ -50,3 +53,4 @@ let from_location kind loc =
 
 let from_call ev = from_location Dinfo_call ev.Lambda.lev_loc
 let from_raise ev = from_location Dinfo_raise ev.Lambda.lev_loc
+

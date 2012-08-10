@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*              Xavier Leroy, projet Cristal, INRIA Rocquencourt       *)
 (*                                                                     *)
@@ -18,7 +18,7 @@
 
    This module implements a simple ``standard'' lexical analyzer, presented
    as a function from character streams to token streams. It implements
-   roughly the lexical conventions of Caml, but is parameterized by the
+   roughly the lexical conventions of OCaml, but is parameterized by the
    set of keywords of your language.
 
 
@@ -37,6 +37,11 @@
                   [< 'Kwd "+"; n2 = parse_expr >] -> n1+n2
                 | ...
    ]}
+
+   One should notice that the use of the [parser] keyword and associated
+   notation for streams are only available through camlp4 extensions. This
+   means that one has to preprocess its sources {i e. g.} by using the
+   ["-pp"] command-line switch of the compilers.
 *)
 
 (** The type of tokens. The lexical classes are: [Int] and [Float]

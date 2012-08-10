@@ -1,7 +1,7 @@
 DESCRIPTION:
 
-This directory contains files to help editing Caml code, running a
-Caml toplevel, and running the Caml debugger under the Gnu Emacs editor.
+This directory contains files to help editing OCaml code, running a
+OCaml toplevel, and running the OCaml debugger under the Gnu Emacs editor.
 
 AUTHORS:
 
@@ -13,10 +13,10 @@ camldebug.el is derived from FSF code.
 
 CONTENTS:
 
-    caml.el         A major mode for editing Caml code in Gnu Emacs
-    inf-caml.el     To run a Caml toplevel under Emacs, with input and
+    caml.el         A major mode for editing OCaml code in Gnu Emacs
+    inf-caml.el     To run a OCaml toplevel under Emacs, with input and
                     output in an Emacs buffer.
-    camldebug.el    To run the Caml debugger under Emacs.
+    camldebug.el    To run the OCaml debugger under Emacs.
 
 
 NOTE FOR EMACS 18 USERS:
@@ -29,13 +29,13 @@ USAGE:
 Add the following lines to your .emacs file:
 
 (setq auto-mode-alist (cons '("\\.ml[iylp]?" . caml-mode) auto-mode-alist))
-(autoload 'caml-mode "caml" "Major mode for editing Caml code." t)
-(autoload 'run-caml "inf-caml" "Run an inferior Caml process." t)
-(autoload 'camldebug "camldebug" "Run the Caml debugger." t)
+(autoload 'caml-mode "caml" "Major mode for editing OCaml code." t)
+(autoload 'run-caml "inf-caml" "Run an inferior OCaml process." t)
+(autoload 'camldebug "camldebug" "Run the OCaml debugger." t)
 
 The Caml major mode is triggered by visiting a file with extension .ml,
 .mli, .mly. .mll or .mlp, or manually by M-x caml-mode. It gives you the
-correct syntax table for the Caml language. For a brief description of
+correct syntax table for the OCaml language. For a brief description of
 the indentation capabilities, see below under NEWS.
 
 The Caml mode also allows you to run batch Caml compilations from
@@ -44,16 +44,16 @@ sets the point at the beginning of the erroneous program fragment, and
 the mark at the end. Under Emacs 19, the program fragment is
 temporarily highlighted.
 
-M-x run-caml starts a Caml toplevel with input and output in an Emacs
+M-x run-caml starts an OCaml toplevel with input and output in an Emacs
 buffer named *inferior-caml*. This gives you the full power of Emacs
-to edit the input to the Caml toplevel. This mode is based on comint
+to edit the input to the OCaml toplevel. This mode is based on comint
 so you get all the usual comint features, including command history.
 
 After M-x run-caml, typing C-c C-e or M-C-x in a buffer in Caml mode
-sends the current phrase (containing the point) to the Caml toplevel,
+sends the current phrase (containing the point) to the OCaml toplevel,
 and evaluates it.
 
-M-x camldebug FILE starts the Caml debugger camldebug on the executable
+M-x camldebug FILE starts the OCaml debugger camldebug on the executable
 FILE, with input and output in an Emacs buffer named *camldebug-FILE*.
 For a brief description of the commands available in this buffer, see
 NEWS below.

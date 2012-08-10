@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -20,8 +20,16 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 CAMLextern char * caml_format_exception (value);
 void caml_fatal_uncaught_exception (value) Noreturn;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_PRINTEXC_H */

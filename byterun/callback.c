@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -13,7 +13,7 @@
 
 /* $Id$ */
 
-/* Callbacks from C to Caml */
+/* Callbacks from C to OCaml */
 
 #include <string.h>
 #include "callback.h"
@@ -195,7 +195,7 @@ CAMLexport value caml_callbackN (value closure, int narg, value args[])
   return res;
 }
 
-/* Naming of Caml values */
+/* Naming of OCaml values */
 
 struct named_value {
   value val;

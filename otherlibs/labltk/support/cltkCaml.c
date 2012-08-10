@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                 MLTk, Tcl/Tk interface of OCaml                     */
 /*                                                                     */
 /*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
 /*               projet Cristal, INRIA Rocquencourt                    */
@@ -10,7 +10,7 @@
 /*  en Automatique and Kyoto University.  All rights reserved.         */
 /*  This file is distributed under the terms of the GNU Library        */
 /*  General Public License, with the special exception on linking      */
-/*  described in file LICENSE found in the Objective Caml source tree. */
+/*  described in file LICENSE found in the OCaml source tree.          */
 /*                                                                     */
 /***********************************************************************/
 
@@ -27,7 +27,7 @@
 value * tkerror_exn = NULL;
 value * handler_code = NULL;
 
-/* The Tcl command for evaluating callback in Caml */
+/* The Tcl command for evaluating callback in OCaml */
 int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp, int argc, char **argv)
 {
   CheckInit();
@@ -39,7 +39,7 @@ int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp, int argc, char **argv)
     if (Tcl_GetInt(interp, argv[1], &id) != TCL_OK)
       return TCL_ERROR;
     callback2(*handler_code,Val_int(id),copy_string_list(argc - 2,&argv[2]));
-    /* Never fails (Caml would have raised an exception) */
+    /* Never fails (OCaml would have raised an exception) */
     /* but result may have been set by callback */
     return TCL_OK;
   }
@@ -67,14 +67,14 @@ CAMLprim void tk_error(char *errmsg)
 }
 
 
-/* The initialisation of the C global variables pointing to Caml values
-   must be made accessible from Caml, so that we are sure that it *always*
+/* The initialisation of the C global variables pointing to OCaml values
+   must be made accessible from OCaml, so that we are sure that it *always*
    takes place during loading of the protocol module
  */
 
 CAMLprim value camltk_init(value v)
 {
-  /* Initialize the Caml pointers */
+  /* Initialize the OCaml pointers */
   if (tkerror_exn == NULL)
     tkerror_exn = caml_named_value("tkerror");
   if (handler_code == NULL)

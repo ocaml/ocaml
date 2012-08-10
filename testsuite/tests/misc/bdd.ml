@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-(* Translated to Caml by Xavier Leroy *)
+(* Translated to OCaml by Xavier Leroy *)
 (* Original code written in SML by ... *)
 
 type bdd = One | Zero | Node of bdd * int * int * bdd

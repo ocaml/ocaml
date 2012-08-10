@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*  David Nowak and Xavier Leroy, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)

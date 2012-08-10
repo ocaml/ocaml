@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -49,7 +49,7 @@ let file_argument name =
     end
 
 let print_version () =
-  Printf.printf "The Objective Caml toplevel, version %s\n" Sys.ocaml_version;
+  Printf.printf "The OCaml toplevel, version %s\n" Sys.ocaml_version;
   exit 0;
 ;;
 
@@ -62,6 +62,7 @@ module Options = Main_args.Make_opttop_options (struct
   let set r () = r := true
   let clear r () = r := false
 
+  let _absname = set Location.absname
   let _compact = clear optimize_for_speed
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
@@ -73,11 +74,13 @@ module Options = Main_args.Make_opttop_options (struct
   let _noassert = set noassert
   let _nolabels = set classic
   let _noprompt = set noprompt
+  let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
   let _principal = set principal
   let _rectypes = set recursive_types
   let _strict_sequence = set strict_sequence
   let _S = set keep_asm_file
+  let _stdin () = file_argument ""
   let _unsafe = set fast
   let _version () = print_version ()
   let _vnum () = print_version_num ()

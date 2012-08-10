@@ -1,3 +1,4 @@
+BASEDIR=../..
 CC=$(NATIVECC)
 CFLAGS=$(NATIVECCCOMPOPTS) -g
 
@@ -16,7 +17,6 @@ OTHEROBJS=\
   $(TOPDIR)/utils/ccomp.cmo \
   $(TOPDIR)/utils/warnings.cmo \
   $(TOPDIR)/utils/consistbl.cmo \
-  $(TOPDIR)/parsing/linenum.cmo \
   $(TOPDIR)/parsing/location.cmo \
   $(TOPDIR)/parsing/longident.cmo \
   $(TOPDIR)/parsing/syntaxerr.cmo \
@@ -24,7 +24,6 @@ OTHEROBJS=\
   $(TOPDIR)/parsing/lexer.cmo \
   $(TOPDIR)/parsing/parse.cmo \
   $(TOPDIR)/parsing/printast.cmo \
-  $(TOPDIR)/typing/unused_var.cmo \
   $(TOPDIR)/typing/ident.cmo \
   $(TOPDIR)/typing/path.cmo \
   $(TOPDIR)/typing/primitive.cmo \
@@ -94,7 +93,12 @@ OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 
 ADD_COMPFLAGS=$(INCLUDES) -g
 
-default: arch codegen tests
+default:
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  $(MAKE) all; \
+	fi
+
+all: arch codegen tests
 
 codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
@@ -138,7 +142,8 @@ clean: defaultclean
 power.o: power-$(SYSTEM).o
 	@cp power-$(SYSTEM).o power.o
 
+promote:
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common
 
 arch: $(ARCH).o

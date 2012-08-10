@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -14,6 +14,10 @@
 
 let mk_a f =
   "-a", Arg.Unit f, " Build a library"
+;;
+
+let mk_absname f =
+  "-absname", Arg.Unit f, "  Show absolute filenames in error message"
 ;;
 
 let mk_annot f =
@@ -169,6 +173,11 @@ let mk_noprompt f =
   "-noprompt", Arg.Unit f, " Suppress all prompts"
 ;;
 
+let mk_nopromptcont f =
+  "-nopromptcont", Arg.Unit f,
+  " Suppress prompts for continuation lines of multi-line inputs"
+;;
+
 let mk_nostdlib f =
   "-nostdlib", Arg.Unit f,
   " Do not add default directory to the list of include directories"
@@ -215,6 +224,10 @@ let mk_runtime_variant f =
 
 let mk_S f =
   "-S", Arg.Unit f, " Keep intermediate assembly file"
+;;
+
+let mk_stdin f =
+  "-stdin", Arg.Unit f, " Read script from standard input"
 ;;
 
 let mk_strict_sequence f =
@@ -319,6 +332,10 @@ let mk_dlambda f =
   "-dlambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dclambda f =
+  "-dclambda", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
 ;;
@@ -382,6 +399,7 @@ let mk__ f =
 
 module type Bytecomp_options = sig
   val _a : unit -> unit
+  val _absname : unit -> unit
   val _annot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
@@ -438,6 +456,7 @@ module type Bytecomp_options = sig
 end;;
 
 module type Bytetop_options = sig
+  val _absname : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
   val _labels : unit -> unit
@@ -445,9 +464,11 @@ module type Bytetop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
+  val _stdin: unit -> unit
   val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
@@ -466,6 +487,7 @@ end;;
 
 module type Optcomp_options = sig
   val _a : unit -> unit
+  val _absname : unit -> unit
   val _annot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
@@ -498,9 +520,9 @@ module type Optcomp_options = sig
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
+  val _S : unit -> unit
   val _strict_sequence : unit -> unit
   val _shared : unit -> unit
-  val _S : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
   val _v : unit -> unit
@@ -516,6 +538,7 @@ module type Optcomp_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -534,6 +557,7 @@ module type Optcomp_options = sig
 end;;
 
 module type Opttop_options = sig
+  val _absname : unit -> unit
   val _compact : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
@@ -543,11 +567,13 @@ module type Opttop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
-  val _strict_sequence : unit -> unit
   val _S : unit -> unit
+  val _stdin : unit -> unit
+  val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
@@ -558,6 +584,7 @@ module type Opttop_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -583,6 +610,7 @@ module Make_bytecomp_options (F : Bytecomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_absname F._absname;
     mk_annot F._annot;
     mk_c F._c;
     mk_cc F._cc;
@@ -647,6 +675,7 @@ end;;
 module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
+    mk_absname F._absname;
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
@@ -654,9 +683,11 @@ struct
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
+    mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_unsafe F._unsafe;
     mk_version F._version;
@@ -678,6 +709,7 @@ module Make_optcomp_options (F : Optcomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_absname F._absname;
     mk_annot F._annot;
     mk_c F._c;
     mk_cc F._cc;
@@ -729,11 +761,13 @@ struct
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dclambda F._dclambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
     mk_dlive F._dlive;
     mk_dspill F._dspill;
+    mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
     mk_dprefer F._dprefer;
     mk_dalloc F._dalloc;
@@ -748,6 +782,7 @@ end;;
 
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
+    mk_absname F._absname;
     mk_compact F._compact;
     mk_I F._I;
     mk_init F._init;
@@ -757,10 +792,12 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
+    mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
     mk_S F._S;
+    mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_unsafe F._unsafe;
     mk_version F._version;
@@ -771,11 +808,13 @@ module Make_opttop_options (F : Opttop_options) = struct
 
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
+    mk_dclambda F._dclambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
     mk_dlive F._dlive;
     mk_dspill F._dspill;
+    mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
     mk_dprefer F._dprefer;
     mk_dalloc F._dalloc;

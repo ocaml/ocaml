@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -399,4 +399,5 @@ let fundecl f =
   { fun_name = f.fun_name;
     fun_args = f.fun_args;
     fun_body = new_body;
-    fun_fast = f.fun_fast }
+    fun_fast = f.fun_fast;
+    fun_dbg  = f.fun_dbg }

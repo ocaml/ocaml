@@ -1,31 +1,31 @@
-join.cmi:
-joinCom.cmi: join.cmi
-joinCount.cmi: join.cmi
-joinFifo.cmi: joinCom.cmi join.cmi
-joinHelper.cmi: join.cmi
-joinMapRed.cmi: joinPool.cmi joinHelper.cmi
-joinPool.cmi: join.cmi
-joinProc.cmi:
-joinTextProc.cmi: joinCom.cmi join.cmi
-join.cmo: site.cmo ns.cmo join.cmi
-join.cmx: site.cmx ns.cmx join.cmi
-joinCom.cmo: join.cmi joinCom.cmi
-joinCom.cmx: join.cmx joinCom.cmi
-joinCount.cmo: join.cmi joinCount.cmi
-joinCount.cmx: join.cmx joinCount.cmi
-joinFifo.cmo: joinCom.cmi join.cmi joinFifo.cmi
-joinFifo.cmx: joinCom.cmx join.cmx joinFifo.cmi
-joinHelper.cmo: join.cmi joinHelper.cmi
-joinHelper.cmx: join.cmx joinHelper.cmi
-joinMapRed.cmo: joinPool.cmi joinHelper.cmi join.cmi joinMapRed.cmi
-joinMapRed.cmx: joinPool.cmx joinHelper.cmx join.cmx joinMapRed.cmi
-joinPool.cmo: joinCount.cmi join.cmi joinPool.cmi
-joinPool.cmx: joinCount.cmx join.cmx joinPool.cmi
-joinProc.cmo: joinProc.cmi
-joinProc.cmx: joinProc.cmi
-joinTextProc.cmo: joinProc.cmi joinCom.cmi join.cmi joinTextProc.cmi
-joinTextProc.cmx: joinProc.cmx joinCom.cmx join.cmx joinTextProc.cmi
-ns.cmo: site.cmo
-ns.cmx: site.cmx
-site.cmo:
-site.cmx:
+join.cmi :
+joinCom.cmi : join.cmi
+joinCount.cmi : join.cmi
+joinFifo.cmi : joinCom.cmi join.cmi
+joinHelper.cmi : join.cmi
+joinMapRed.cmi : joinPool.cmi joinHelper.cmi
+joinPool.cmi : join.cmi
+joinProc.cmi :
+joinTextProc.cmi : joinCom.cmi join.cmi
+join.cmo : site.cmo ns.cmo join.cmi
+join.cmx : site.cmx ns.cmx join.cmi
+joinCom.cmo : join.cmi joinCom.cmi
+joinCom.cmx : join.cmx joinCom.cmi
+joinCount.cmo : join.cmi joinCount.cmi
+joinCount.cmx : join.cmx joinCount.cmi
+joinFifo.cmo : joinCom.cmi join.cmi joinFifo.cmi
+joinFifo.cmx : joinCom.cmx join.cmx joinFifo.cmi
+joinHelper.cmo : join.cmi joinHelper.cmi
+joinHelper.cmx : join.cmx joinHelper.cmi
+joinMapRed.cmo : joinPool.cmi joinHelper.cmi join.cmi joinMapRed.cmi
+joinMapRed.cmx : joinPool.cmx joinHelper.cmx join.cmx joinMapRed.cmi
+joinPool.cmo : joinCount.cmi join.cmi joinPool.cmi
+joinPool.cmx : joinCount.cmx join.cmx joinPool.cmi
+joinProc.cmo : joinProc.cmi
+joinProc.cmx : joinProc.cmi
+joinTextProc.cmo : joinProc.cmi joinCom.cmi join.cmi joinTextProc.cmi
+joinTextProc.cmx : joinProc.cmx joinCom.cmx join.cmx joinTextProc.cmi
+ns.cmo : site.cmo
+ns.cmx : site.cmx
+site.cmo :
+site.cmx :

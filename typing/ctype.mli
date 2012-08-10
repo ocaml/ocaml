@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -24,6 +24,7 @@ exception Subtype of
 exception Cannot_expand
 exception Cannot_apply
 exception Recursive_abbrev
+exception Unification_recursive_abbrev of (type_expr * type_expr) list
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -40,9 +41,10 @@ val restore_global_level: int -> unit
         (* This pair of functions is only used in Typetexp *)
 
 val newty: type_desc -> type_expr
-val newvar: unit -> type_expr
+val newvar: ?name:string -> unit -> type_expr
+val newvar2: ?name:string -> int -> type_expr
         (* Return a fresh variable *)
-val new_global_var: unit -> type_expr
+val new_global_var: ?name:string -> unit -> type_expr
         (* Return a fresh variable, bound at toplevel
            (as type variables ['a] in type constraints). *)
 val newobj: type_expr -> type_expr
@@ -106,11 +108,17 @@ val limited_generalize: type_expr -> type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
 
-val instance: type_expr -> type_expr
+val instance: ?partial:bool -> Env.t -> type_expr -> type_expr
         (* Take an instance of a type scheme *)
-val instance_list: type_expr list -> type_expr list
+        (* partial=None  -> normal
+           partial=false -> newvar() for non generic subterms
+           partial=true  -> newty2 ty.level Tvar for non generic subterms *)
+val instance_def: type_expr -> type_expr
+        (* use defaults *)
+val instance_list: Env.t -> type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:
+        ?in_pattern:Env.t ref * int -> 
         constructor_description -> type_expr list * type_expr
         (* Same, for a constructor *)
 val instance_parameterized_type:
@@ -122,6 +130,7 @@ val instance_declaration: type_declaration -> type_declaration
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 val instance_poly:
+        ?keep_names:bool ->
         bool -> type_expr list -> type_expr -> type_expr list * type_expr
         (* Take an instance of a type scheme containing free univars *)
 val instance_label:
@@ -145,6 +154,8 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
+val unify_gadt: newtype_level:int -> Env.t ref -> type_expr -> type_expr -> unit
+        (* Unify the two types given and update the environment with the local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
@@ -158,6 +169,7 @@ val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}). *)
 val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
         (* A special case of unification (with {m : 'a; 'b}), returning unit. *)
+val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val filter_self_method:
         Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
@@ -251,3 +263,5 @@ val arity: type_expr -> int
 
 val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
+
+val get_current_level: unit -> int

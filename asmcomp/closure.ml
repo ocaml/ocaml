@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -495,6 +495,9 @@ let rec close fenv cenv = function
       end
   | Lfunction(kind, params, body) as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
+
+    (* We convert [f a] to [let a' = a in fun b c -> f a' b c] 
+       when fun_arity > nargs *)
   | Lapply(funct, args, loc) ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
@@ -507,6 +510,31 @@ let rec close fenv cenv = function
         when nargs = fundesc.fun_arity ->
           let app = direct_apply fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
+
+      | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
+          when nargs < fundesc.fun_arity ->
+	let first_args = List.map (fun arg ->
+	  (Ident.create "arg", arg) ) uargs in
+	let final_args = Array.to_list (Array.init (fundesc.fun_arity - nargs) (fun _ ->
+	  Ident.create "arg")) in
+	let rec iter args body =
+	  match args with
+	      [] -> body
+	    | (arg1, arg2) :: args ->
+	      iter args
+		(Ulet ( arg1, arg2, body))
+	in
+	let internal_args =
+	  (List.map (fun (arg1, arg2) -> Lvar arg1) first_args)
+	  @ (List.map (fun arg -> Lvar arg ) final_args)
+	in
+	let (new_fun, approx) = close fenv cenv
+	  (Lfunction(
+	    Curried, final_args, Lapply(funct, internal_args, loc)))
+	in
+	let new_fun = iter first_args new_fun in
+	(new_fun, approx)
+
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
           let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
@@ -566,6 +594,9 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
+  | Lprim(Pdirapply loc,[funct;arg])
+  | Lprim(Prevapply loc,[arg;funct]) ->
+      close fenv cenv (Lapply(funct, [arg], loc))
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
                             (getglobal id)
@@ -717,6 +748,9 @@ and close_functions fenv cenv fun_defs =
   let useless_env = ref initially_closed in
   (* Translate each function definition *)
   let clos_fundef (id, params, body, fundesc) env_pos =
+    let dbg = match body with
+      | Levent (_,({lev_kind=Lev_function} as ev)) -> Debuginfo.from_call ev
+      | _ -> Debuginfo.none in
     let env_param = Ident.create "env" in
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
@@ -728,7 +762,11 @@ and close_functions fenv cenv fun_defs =
     let (ubody, approx) = close fenv_rec cenv_body body in
     if !useless_env && occurs_var env_param ubody then useless_env := false;
     let fun_params = if !useless_env then params else params @ [env_param] in
-    ((fundesc.fun_label, fundesc.fun_arity, fun_params, ubody),
+    ({ label  = fundesc.fun_label;
+       arity  = fundesc.fun_arity;
+       params = fun_params;
+       body   = ubody;
+       dbg },
      (id, env_pos, Value_closure(fundesc, approx))) in
   (* Translate all function definitions. *)
   let clos_info_list =
@@ -758,11 +796,12 @@ and close_functions fenv cenv fun_defs =
 
 and close_one_function fenv cenv id funct =
   match close_functions fenv cenv [id, funct] with
-      ((Uclosure([_, _, params, body], _) as clos),
+      ((Uclosure([f], _) as clos),
        [_, _, (Value_closure(fundesc, _) as approx)]) ->
         (* See if the function can be inlined *)
-        if lambda_smaller body (!Clflags.inline_threshold + List.length params)
-        then fundesc.fun_inline <- Some(params, body);
+        if lambda_smaller f.body
+          (!Clflags.inline_threshold + List.length f.params)
+        then fundesc.fun_inline <- Some(f.params, f.body);
         (clos, approx)
     | _ -> fatal_error "Closure.close_one_function"
 

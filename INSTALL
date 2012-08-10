@@ -47,16 +47,35 @@ Added options.
    The Objective Caml library is <dir>. No version check is performed. Use
    this option at your own risk.
 
-<<<<<<< .courant
-=======
--no-curses
-        Do not use the curses library.
-
--host <hosttype>                (default: determined automatically)
 2- From the top directory, do:
 
         make world
 
+This builds the JOCaml bytecode compiler for the first time.  This
+phase is fairly verbose; consider redirecting the output to a file:
+
+        make world > log.world 2>&1     # in sh
+        make world >& log.world         # in csh
+
+3- (Optional) To be sure everything works well, you can try to
+bootstrap the system --- that is, to recompile all OCaml sources with
+the newly created compiler. From the top directory, do:
+
+        make bootstrap
+
+or, better:
+
+        make bootstrap > log.bootstrap 2>&1     # in sh
+        make bootstrap >& log.bootstrap         # in csh
+
+The "make bootstrap" checks that the bytecode programs compiled with
+the new compiler are identical to the bytecode programs compiled with
+the old compiler. If this is the case, you can be pretty sure the
+system has been correctly compiled. Otherwise, this does not
+necessarily mean something went wrong. The best thing to do is to try
+a second bootstrapping phase: just do "make bootstrap" again.  It will
+either crash almost immediately, or re-re-compile everything correctly
+and reach the fixpoint.
 
 4- If your platform is supported by the native-code compiler (as
 reported during the autoconfiguration), you can now build the
@@ -64,15 +83,42 @@ native-code compiler. From the top directory, do:
 
         make opt
 
-5- Compile fast versions of the Objective Caml compilers, by
-compiling them with the native-code compiler (you have only compiled
-them to bytecode so far).  Just do:
+5- Compile fast versions of the OCaml compilers, by compiling them
+with the native-code compiler (you have only compiled them to bytecode
+so far).  Just do:
 
         make opt.opt
 
 6- You can now install the JoCaml system. This will create the
 JoCaml commands (in the binary directory selected during
 autoconfiguration).
+
+An alternative, and faster approach to steps 2 to 5 is
+
+        make world.opt          # to build using native-code compilers
+
+The result is equivalent to "make world opt opt.opt", but this may
+fail if anything goes wrong in native-code generation.
+
+6- You can now install the OCaml system. This will create the
+following commands (in the binary directory selected during
+autoconfiguration):
+
+        jocamlc           the batch bytecode compiler
+        jocamlopt         the batch native-code compiler (if supported)
+        jocamlrun         the runtime system for the bytecode compiler
+        jocamlyacc        the parser generator
+        jocamllex         the lexer generator
+        jocaml            the interactive, toplevel-based system
+        jocamlmktop       a tool to make toplevel systems that integrate
+                         user-defined C primitives and Jocaml code
+        jocamldep         generator of "make" dependencies for Jocaml sources
+
+and also, if you built them during step 5,
+
+        jocamlc.opt       the batch bytecode compiler compiled with jocamlopt
+        jocamlopt.opt     the batch native-code compiler compiled with jocamlopt
+        jocamllex.opt     the lexer generator compiled with jocamlopt
 
 From the top directory, become superuser and do:
 
@@ -88,7 +134,21 @@ Plus some of those suffixed by .opt, if you performed step 5.
 Some of OCaml commands have no JoCaml equivalent: ocamldebug,
 ocamlprof, ocamlcp, ocamldoc.
 
+8- (Optional) The emacs/ subdirectory contains Emacs-Lisp files for an
+OCaml editing mode and an interface for the debugger.  To install
+these files, change to the emacs/ subdirectory and do
 
+        make EMACSDIR=<directory where to install the files> install
+or
+        make install
+
+In the latter case, the destination directory defaults to the
+"site-lisp" directory of your Emacs installation.
+
+9- After installation, do *not* strip the ocamldebug and ocamlbrowser
+executables.  (These are mixed-mode executables, containing both
+compiled C code and OCaml bytecode; stripping erases the bytecode!)
+Other executables such as ocamlrun can safely be stripped.
 
 IF SOMETHING GOES WRONG:
 

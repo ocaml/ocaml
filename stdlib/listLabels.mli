@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -76,10 +76,10 @@ val iter : f:('a -> unit) -> 'a list -> unit
    [begin f a1; f a2; ...; f an; () end]. *)
 
 val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
-(** Same as {!List.iter}, but the
-   function is applied to the index of the element as first argument (counting from 0),
-   and the element itself as second argument.
-   @since 3.13.0
+(** Same as {!List.iter}, but the function is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 4.00.0
 *)
 
 val map : f:('a -> 'b) -> 'a list -> 'b list
@@ -88,10 +88,10 @@ val map : f:('a -> 'b) -> 'a list -> 'b list
    with the results returned by [f].  Not tail-recursive. *)
 
 val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
-(** Same as {!List.map}, but the
-   function is applied to the index of the element as first argument (counting from 0),
-   and the element itself as second argument.
-   @since 3.13.0
+(** Same as {!List.map}, but the function is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 4.00.0
 *)
 
 val rev_map : f:('a -> 'b) -> 'a list -> 'b list

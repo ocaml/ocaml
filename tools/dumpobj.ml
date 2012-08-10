@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -483,8 +483,7 @@ let print_reloc (info, pos) =
 (* Print a .cmo file *)
 
 let dump_obj filename ic =
-  let buffer = String.create (String.length cmo_magic_number) in
-  really_input ic buffer 0 (String.length cmo_magic_number);
+  let buffer = Misc.input_bytes ic (String.length cmo_magic_number) in
   if buffer <> cmo_magic_number then begin
     prerr_endline "Not an object file"; exit 2
   end;
@@ -503,8 +502,7 @@ let dump_obj filename ic =
 (* Read the primitive table from an executable *)
 
 let read_primitive_table ic len =
-  let p = String.create len in
-  really_input ic p 0 len;
+  let p = Misc.input_bytes ic len in
   let rec split beg cur =
     if cur >= len then []
     else if p.[cur] = '\000' then

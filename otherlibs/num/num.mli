@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
@@ -155,7 +155,9 @@ val approx_num_exp : int -> num -> string
    first argument is the number of digits in the mantissa. *)
 
 val num_of_string : string -> num
-(** Convert a string to a number. *)
+(** Convert a string to a number.
+   Raise [Failure "num_of_string"] if the given string is not
+   a valid representation of an integer *)
 
 (** {6 Coercions between numerical types} *)
 

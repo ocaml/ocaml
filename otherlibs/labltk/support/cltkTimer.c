@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                 MLTk, Tcl/Tk interface of OCaml                     */
 /*                                                                     */
 /*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
 /*               projet Cristal, INRIA Rocquencourt                    */
@@ -10,7 +10,7 @@
 /*  en Automatique and Kyoto University.  All rights reserved.         */
 /*  This file is distributed under the terms of the GNU Library        */
 /*  General Public License, with the special exception on linking      */
-/*  described in file LICENSE found in the Objective Caml source tree. */
+/*  described in file LICENSE found in the OCaml source tree.          */
 /*                                                                     */
 /***********************************************************************/
 
@@ -34,11 +34,11 @@ CAMLprim value camltk_add_timer(value milli, value cbid)
   CheckInit();
   /* look at tkEvent.c , Tk_Token is an int */
   return (Val_int(Tcl_CreateTimerHandler(Int_val(milli), TimerProc,
-                                       (ClientData) (Int_val(cbid)))));
+                                       (ClientData) (Long_val(cbid)))));
 }
 
 CAMLprim value camltk_rem_timer(value token)
 {
-  Tcl_DeleteTimerHandler((Tcl_TimerToken) Int_val(token));
+  Tcl_DeleteTimerHandler((Tcl_TimerToken) Long_val(token));
   return Val_unit;
 }

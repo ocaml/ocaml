@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -24,23 +24,29 @@ module StringSet =
     let compare = compare
   end)
 
+let is_exn =
+  let h = Hashtbl.create 64 in
+  Array.iter (fun n -> Hashtbl.add h n ()) Runtimedef.builtin_exceptions;
+  Hashtbl.mem h
+
 let to_keep = ref StringSet.empty
 
+let negate = Sys.argv.(3) = "-v"
+
+let keep = 
+  if negate then fun name -> is_exn name || not (StringSet.mem name !to_keep)
+  else fun name -> is_exn name || (StringSet.mem name !to_keep)
+
 let expunge_map tbl =
-  Symtable.filter_global_map
-    (fun id -> StringSet.mem (Ident.name id) !to_keep)
-    tbl
+  Symtable.filter_global_map (fun id -> keep (Ident.name id)) tbl
 
 let expunge_crcs tbl =
-  List.filter (fun (unit, crc) -> StringSet.mem unit !to_keep) tbl
+  List.filter (fun (unit, crc) -> keep unit) tbl
 
 let main () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
-  Array.iter
-    (fun exn -> to_keep := StringSet.add exn !to_keep)
-    Runtimedef.builtin_exceptions;
-  for i = 3 to Array.length Sys.argv - 1 do
+  for i = (if negate then 4 else 3) to Array.length Sys.argv - 1 do
     to_keep := StringSet.add (String.capitalize Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in

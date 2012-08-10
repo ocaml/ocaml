@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -66,6 +66,11 @@ val copy_file_chunk: in_channel -> out_channel -> int -> unit
            them to [oc]. It raises [End_of_file] when encountering
            EOF on [ic]. *)
 
+val input_bytes : in_channel -> int -> string;;
+        (* [input_bytes ic n] reads [n] bytes from [ic] and returns them
+           in a new string.  It raises [End_of_file] if EOF is encountered
+           before all the bytes are read. *)
+
 val log2: int -> int
         (* [log2 n] returns [s] such that [n = 1 lsl s]
            if [n] is a power of 2*)
@@ -102,3 +107,7 @@ val search_substring: string -> string -> int -> int
 val rev_split_words: string -> string list
         (* [rev_split_words s] splits [s] in blank-separated words, and return
            the list of words in reverse order. *)
+
+val get_ref: 'a list ref -> 'a list
+        (* [get_ref lr] returns the content of the list reference [lr] and reset
+           its content to the empty list. *)

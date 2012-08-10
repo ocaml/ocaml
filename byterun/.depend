@@ -20,8 +20,8 @@ compare.o: compare.c custom.h compatibility.h mlvalues.h config.h \
 custom.o: custom.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h custom.h fail.h memory.h gc.h major_gc.h \
  freelist.h minor_gc.h
-debugger.o: debugger.c config.h ../config/m.h ../config/s.h \
- compatibility.h debugger.h misc.h mlvalues.h fail.h fix_code.h \
+debugger.o: debugger.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h debugger.h fail.h fix_code.h \
  instruct.h intext.h io.h stacks.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h sys.h
 dynlink.o: dynlink.c config.h ../config/m.h ../config/s.h compatibility.h \
@@ -54,11 +54,11 @@ globroots.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  roots.h globroots.h
 hash.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h custom.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
+ minor_gc.h hash.h int64_native.h
 instrtrace.o: instrtrace.c
 intern.o: intern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h custom.h fail.h gc.h intext.h io.h fix_code.h \
- memory.h major_gc.h freelist.h minor_gc.h reverse.h
+ ../config/s.h mlvalues.h callback.h custom.h fail.h gc.h intext.h io.h \
+ fix_code.h memory.h major_gc.h freelist.h minor_gc.h reverse.h
 interp.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h backtrace.h callback.h debugger.h fail.h \
  fix_code.h instrtrace.h instruct.h interp.h major_gc.h freelist.h \
@@ -155,8 +155,8 @@ compare.d.o: compare.c custom.h compatibility.h mlvalues.h config.h \
 custom.d.o: custom.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h custom.h fail.h memory.h gc.h major_gc.h \
  freelist.h minor_gc.h
-debugger.d.o: debugger.c config.h ../config/m.h ../config/s.h \
- compatibility.h debugger.h misc.h mlvalues.h fail.h fix_code.h \
+debugger.d.o: debugger.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h debugger.h fail.h fix_code.h \
  instruct.h intext.h io.h stacks.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h sys.h
 dynlink.d.o: dynlink.c config.h ../config/m.h ../config/s.h compatibility.h \
@@ -189,13 +189,13 @@ globroots.d.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  roots.h globroots.h
 hash.d.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h custom.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
+ minor_gc.h hash.h int64_native.h
 instrtrace.d.o: instrtrace.c instruct.h misc.h compatibility.h config.h \
  ../config/m.h ../config/s.h mlvalues.h opnames.h prims.h stacks.h \
  memory.h gc.h major_gc.h freelist.h minor_gc.h
 intern.d.o: intern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h custom.h fail.h gc.h intext.h io.h fix_code.h \
- memory.h major_gc.h freelist.h minor_gc.h reverse.h
+ ../config/s.h mlvalues.h callback.h custom.h fail.h gc.h intext.h io.h \
+ fix_code.h memory.h major_gc.h freelist.h minor_gc.h reverse.h
 interp.d.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h backtrace.h callback.h debugger.h fail.h \
  fix_code.h instrtrace.h instruct.h interp.h major_gc.h freelist.h \
@@ -292,8 +292,8 @@ compare.pic.o: compare.c custom.h compatibility.h mlvalues.h config.h \
 custom.pic.o: custom.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h custom.h fail.h memory.h gc.h major_gc.h \
  freelist.h minor_gc.h
-debugger.pic.o: debugger.c config.h ../config/m.h ../config/s.h \
- compatibility.h debugger.h misc.h mlvalues.h fail.h fix_code.h \
+debugger.pic.o: debugger.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h debugger.h fail.h fix_code.h \
  instruct.h intext.h io.h stacks.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h sys.h
 dynlink.pic.o: dynlink.c config.h ../config/m.h ../config/s.h compatibility.h \
@@ -326,11 +326,11 @@ globroots.pic.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  roots.h globroots.h
 hash.pic.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h custom.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
+ minor_gc.h hash.h int64_native.h
 instrtrace.pic.o: instrtrace.c
 intern.pic.o: intern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h custom.h fail.h gc.h intext.h io.h fix_code.h \
- memory.h major_gc.h freelist.h minor_gc.h reverse.h
+ ../config/s.h mlvalues.h callback.h custom.h fail.h gc.h intext.h io.h \
+ fix_code.h memory.h major_gc.h freelist.h minor_gc.h reverse.h
 interp.pic.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h backtrace.h callback.h debugger.h fail.h \
  fix_code.h instrtrace.h instruct.h interp.h major_gc.h freelist.h \

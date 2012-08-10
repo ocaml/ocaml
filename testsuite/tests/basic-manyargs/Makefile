@@ -1,6 +1,7 @@
+BASEDIR=../..
 #MODULES=
 MAIN_MODULE=manyargs
 C_FILES=manyargsprim
 
-include ../../makefiles/Makefile.one
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.common

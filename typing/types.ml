@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -25,7 +25,7 @@ type type_expr =
     mutable id: int }
 
 and type_desc =
-    Tvar
+    Tvar of string option
   | Tarrow of label * type_expr * type_expr * commutable
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
@@ -35,12 +35,12 @@ and type_desc =
   | Tlink of type_expr
   | Tsubst of type_expr         (* for copying *)
   | Tvariant of row_desc
-  | Tunivar
+  | Tunivar of string option
   | Tpoly of type_expr * type_expr list
+  | Tpackage of Path.t * Longident.t list * type_expr list
 (*>JOCAML*)
   | Tproc of kont_locs
 (*<JOCAML*)
-  | Tpackage of Path.t * string list * type_expr list
 
 (*>JOCAML*)
 and kont_locs = (Ident.t * Location.t) list
@@ -94,7 +94,9 @@ module Vars = Meths
 
 type value_description =
   { val_type: type_expr;                (* Type of the value *)
-    val_kind: value_kind }
+    val_kind: value_kind;
+    val_loc: Location.t;
+ }
 
 and value_kind =
     Val_reg                             (* Regular value *)
@@ -119,17 +121,20 @@ and value_kind =
 
 type constructor_description =
   { cstr_res: type_expr;                (* Type of the result *)
+    cstr_existentials: type_expr list;  (* list of existentials *)
     cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
     cstr_nonconsts: int;                (* Number of non-const constructors *)
+    cstr_normal: int;                   (* Number of non generalized constrs *)
+    cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag }        (* Read-only constructor? *)
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_exception of Path.t            (* Exception constructor *)
+  | Cstr_exception of Path.t * Location.t (* Exception constructor *)
 
 (* Record label descriptions *)
 
@@ -161,16 +166,20 @@ type type_declaration =
     type_kind: type_kind;
     type_private: private_flag;
     type_manifest: type_expr option;
-    type_variance: (bool * bool * bool) list }
-            (* covariant, contravariant, weakly contravariant *)
+    type_variance: (bool * bool * bool) list;
+    (* covariant, contravariant, weakly contravariant *)
+    type_newtype_level: (int * int) option;
+    type_loc: Location.t }
 
 and type_kind =
     Type_abstract
-  | Type_variant of (string * type_expr list) list
   | Type_record of
       (string * mutable_flag * type_expr) list * record_representation
+  | Type_variant of (string * type_expr list * type_expr option) list 
 
-type exception_declaration = type_expr list
+type exception_declaration =
+    { exn_args: type_expr list;
+      exn_loc: Location.t }
 
 (* Type expressions for the class language *)
 

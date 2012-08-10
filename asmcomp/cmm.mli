@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -94,7 +94,8 @@ type fundecl =
   { fun_name: string;
     fun_args: (Ident.t * machtype) list;
     fun_body: expression;
-    fun_fast: bool }
+    fun_fast: bool;
+    fun_dbg : Debuginfo.t; }
 
 type data_item =
     Cdefine_symbol of string

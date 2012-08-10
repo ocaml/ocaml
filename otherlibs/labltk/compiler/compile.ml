@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                 MLTk, Tcl/Tk interface of Objective Caml            *)
+(*                 MLTk, Tcl/Tk interface of OCaml                     *)
 (*                                                                     *)
 (*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    *)
 (*               projet Cristal, INRIA Rocquencourt                    *)
@@ -10,7 +10,7 @@
 (*  en Automatique and Kyoto University.  All rights reserved.         *)
 (*  This file is distributed under the terms of the GNU Library        *)
 (*  General Public License, with the special exception on linking      *)
-(*  described in file LICENSE found in the Objective Caml source tree. *)
+(*  described in file LICENSE found in the OCaml source tree.          *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -548,7 +548,7 @@ let write_TKtoCAML ~w name ~def:typdef =
 (* Converters                 *)
 (******************************)
 
-(* Produce an in-lined converter Caml -> Tk for simple types *)
+(* Produce an in-lined converter OCaml -> Tk for simple types *)
 (* the converter is a function of type:  <type> -> string  *)
 let rec converterCAMLtoTK ~context_widget argname ty =
  match ty with

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                             Objective Caml                          */
+/*                                OCaml                                */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: posix.c 9270 2009-05-20 11:52:42Z doligez $ */
+/* $Id$ */
 
 #include "alloc.h"
 #include "backtrace.h"
@@ -94,7 +94,7 @@ static caml_thread_t all_threads = NULL;
 /* The descriptor for the currently executing thread */
 static caml_thread_t curr_thread = NULL;
 
-/* The master lock protecting the Caml runtime system */
+/* The master lock protecting the OCaml runtime system */
 static st_masterlock caml_master_lock;
 
 /* Whether the ``tick'' thread is already running */
@@ -344,7 +344,7 @@ static value caml_thread_new_descriptor(value clos)
 
 static void caml_thread_remove_info(caml_thread_t th)
 {
-  if (th->next == th) all_threads = NULL; /* last Caml thread exiting */
+  if (th->next == th) all_threads = NULL; /* last OCaml thread exiting */
   th->next->prev = th->prev;
   th->prev->next = th->next;
 #ifndef NATIVE_CODE
@@ -646,7 +646,7 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 #endif
   caml_thread_stop();
   if (exit_buf != NULL) {
-    /* Native-code and (main thread or thread created by Caml) */
+    /* Native-code and (main thread or thread created by OCaml) */
     siglongjmp(exit_buf->buf, 1);
   } else {
     /* Bytecode, or thread created from C */
@@ -685,18 +685,23 @@ static void caml_mutex_finalize(value wrapper)
   st_mutex_destroy(Mutex_val(wrapper));
 }
 
-static int caml_mutex_condition_compare(value wrapper1, value wrapper2)
+static int caml_mutex_compare(value wrapper1, value wrapper2)
 {
   st_mutex mut1 = Mutex_val(wrapper1);
   st_mutex mut2 = Mutex_val(wrapper2);
   return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
 }
 
+static intnat caml_mutex_hash(value wrapper)
+{
+  return (intnat) (Mutex_val(wrapper));
+}
+
 static struct custom_operations caml_mutex_ops = {
   "_mutex",
   caml_mutex_finalize,
-  caml_mutex_condition_compare,
-  custom_hash_default,
+  caml_mutex_compare,
+  caml_mutex_hash,
   custom_serialize_default,
   custom_deserialize_default
 };
@@ -759,13 +764,26 @@ static void caml_condition_finalize(value wrapper)
   st_condvar_destroy(Condition_val(wrapper));
 }
 
+static int caml_condition_compare(value wrapper1, value wrapper2)
+{
+  st_condvar cond1 = Condition_val(wrapper1);
+  st_condvar cond2 = Condition_val(wrapper2);
+  return cond1 == cond2 ? 0 : cond1 < cond2 ? -1 : 1;
+}
+
+static intnat caml_condition_hash(value wrapper)
+{
+  return (intnat) (Condition_val(wrapper));
+}
+
 static struct custom_operations caml_condition_ops = {
   "_condition",
   caml_condition_finalize,
-  caml_mutex_condition_compare,
-  custom_hash_default,
+  caml_condition_compare,
+  caml_condition_hash,
   custom_serialize_default,
-  custom_deserialize_default
+  custom_deserialize_default,
+  custom_compare_ext_default
 };
 
 CAMLprim value caml_condition_new(value unit)        /* ML */
@@ -818,13 +836,21 @@ static void caml_threadstatus_finalize(value wrapper)
   st_event_destroy(Threadstatus_val(wrapper));
 }
 
+static int caml_threadstatus_compare(value wrapper1, value wrapper2)
+{
+  st_event ts1 = Threadstatus_val(wrapper1);
+  st_event ts2 = Threadstatus_val(wrapper2);
+  return ts1 == ts2 ? 0 : ts1 < ts2 ? -1 : 1;
+}
+
 static struct custom_operations caml_threadstatus_ops = {
   "_threadstatus",
   caml_threadstatus_finalize,
-  custom_compare_default,
+  caml_threadstatus_compare,
   custom_hash_default,
   custom_serialize_default,
-  custom_deserialize_default
+  custom_deserialize_default,
+  custom_compare_ext_default
 };
 
 static value caml_threadstatus_new (void)

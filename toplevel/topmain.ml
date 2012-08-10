@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -14,7 +14,7 @@
 
 open Clflags
 
-let usage = "Usage: jocaml <options> <object-files> [script-file]\noptions are:"
+let usage = "Usage: jocaml <options> <object-files> [script-file [arguments]]\noptions are:"
 
 let preload_objects = ref []
 
@@ -31,6 +31,7 @@ let prepare ppf =
       Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
       false
 
+(* If [name] is "", then the "file" is stdin treated as a script file. *)
 let file_argument name =
   let ppf = Format.err_formatter in
   if Filename.check_suffix name ".cmo" || Filename.check_suffix name ".cma"
@@ -66,6 +67,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let set r () = r := true
   let clear r () = r := false
 
+  let _absname = set Location.absname
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library
         Config.ocaml_library dir in
@@ -76,9 +78,11 @@ module Options = Main_args.Make_bytetop_options (struct
   let _noassert = set noassert
   let _nolabels = set classic
   let _noprompt = set noprompt
+  let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
   let _principal = set principal
   let _rectypes = set recursive_types
+  let _stdin () = file_argument ""
   let _strict_sequence = set strict_sequence
   let _unsafe = set fast
   let _version () = print_version ()

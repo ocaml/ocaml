@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -167,4 +167,10 @@ void caml_init_exceptions(void)
   out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
   out_of_memory_bucket.exn = Field(caml_global_data, OUT_OF_MEMORY_EXN);
   caml_register_global_root(&out_of_memory_bucket.exn);
+}
+
+int caml_is_special_exception(value exn) {
+  return exn == Field(caml_global_data, MATCH_FAILURE_EXN)
+    || exn == Field(caml_global_data, ASSERT_FAILURE_EXN)
+    || exn == Field(caml_global_data, UNDEFINED_RECURSIVE_MODULE_EXN);
 }

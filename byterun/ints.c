@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -142,7 +142,7 @@ static char * parse_format(value fmt,
   char lastletter;
   mlsize_t len, len_suffix;
 
-  /* Copy Caml format fmt to format_string,
+  /* Copy OCaml format fmt to format_string,
      adding the suffix before the last letter of the format */
   len = caml_string_length(fmt);
   len_suffix = strlen(suffix);
@@ -227,7 +227,8 @@ CAMLexport struct custom_operations caml_int32_ops = {
   int32_cmp,
   int32_hash,
   int32_serialize,
-  int32_deserialize
+  int32_deserialize,
+  custom_compare_ext_default
 };
 
 CAMLexport value caml_copy_int32(int32 i)
@@ -381,7 +382,11 @@ static int int64_cmp(value v1, value v2)
 
 static intnat int64_hash(value v)
 {
-  return I64_to_intnat(Int64_val(v));
+  int64 x = Int64_val(v);
+  uint32 lo, hi;
+
+  I64_split(x, hi, lo);
+  return hi ^ lo;
 }
 
 static void int64_serialize(value v, uintnat * wsize_32,
@@ -410,7 +415,8 @@ CAMLexport struct custom_operations caml_int64_ops = {
   int64_cmp,
   int64_hash,
   int64_serialize,
-  int64_deserialize
+  int64_deserialize,
+  custom_compare_ext_default
 };
 
 CAMLexport value caml_copy_int64(int64 i)
@@ -606,7 +612,14 @@ static int nativeint_cmp(value v1, value v2)
 
 static intnat nativeint_hash(value v)
 {
-  return Nativeint_val(v);
+  intnat n = Nativeint_val(v);
+#ifdef ARCH_SIXTYFOUR
+  /* 32/64 bits compatibility trick.  See explanations in file "hash.c",
+     function caml_hash_mix_intnat. */
+  return (n >> 32) ^ (n >> 63) ^ n;
+#else
+  return n;
+#endif
 }
 
 static void nativeint_serialize(value v, uintnat * wsize_32,
@@ -654,7 +667,8 @@ CAMLexport struct custom_operations caml_nativeint_ops = {
   nativeint_cmp,
   nativeint_hash,
   nativeint_serialize,
-  nativeint_deserialize
+  nativeint_deserialize,
+  custom_compare_ext_default
 };
 
 CAMLexport value caml_copy_nativeint(intnat i)

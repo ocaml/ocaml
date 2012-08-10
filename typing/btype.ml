@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
 (*                                                                     *)
@@ -16,6 +16,17 @@
 
 open Types
 
+(**** Sets, maps and hashtables of types ****)
+
+module TypeSet = Set.Make(TypeOps)
+module TypeMap = Map.Make (TypeOps)
+module TypeHash = Hashtbl.Make(TypeOps)
+
+(**** Forward declarations ****)
+
+let print_raw =
+  ref (fun _ -> assert false : Format.formatter -> type_expr -> unit)
+
 (**** Type level management ****)
 
 let generic_level = 100000000
@@ -30,9 +41,9 @@ let pivot_level = 2 * lowest_level - 1
 let new_id = ref (-1)
 
 let newty2 level desc  =
-  incr new_id; { desc = desc; level = level; id = !new_id }
+  incr new_id; { desc; level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
-let newgenvar ()       = newgenty Tvar
+let newgenvar ?name () = newgenty (Tvar name)
 (*
 let newmarkedvar level =
   incr new_id; { desc = Tvar; level = pivot_level - level; id = !new_id }
@@ -40,6 +51,11 @@ let newmarkedgenvar () =
   incr new_id;
   { desc = Tvar; level = pivot_level - generic_level; id = !new_id }
 *)
+
+(**** Check some types ****)
+
+let is_Tvar = function {desc=Tvar _} -> true | _ -> false
+let is_Tunivar = function {desc=Tunivar _} -> true | _ -> false
 
 (**** Representative of a type ****)
 
@@ -134,7 +150,7 @@ let proxy ty =
       let rec proxy_obj ty =
         match ty.desc with
           Tfield (_, _, _, ty) | Tlink ty -> proxy_obj ty
-        | Tvar | Tunivar | Tconstr _ -> ty
+        | Tvar _ | Tunivar _ | Tconstr _ -> ty
         | Tnil -> ty0
         | _ -> assert false
       in proxy_obj ty
@@ -175,13 +191,13 @@ let rec iter_row f row =
     row.row_fields;
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
-  | Tvar | Tunivar | Tsubst _ | Tconstr _ ->
+  | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil ->
       Misc.may (fun (_,l) -> List.iter f l) row.row_name
   | _ -> assert false
 
 let iter_type_expr f ty =
   match ty.desc with
-    Tvar                -> ()
+    Tvar _              -> ()
   | Tarrow (_, ty1, ty2, _) -> f ty1; f ty2
   | Ttuple l            -> List.iter f l
   | Tconstr (_, l, _)   -> List.iter f l
@@ -193,7 +209,7 @@ let iter_type_expr f ty =
   | Tnil                -> ()
   | Tlink ty            -> f ty
   | Tsubst ty           -> f ty
-  | Tunivar             -> ()
+  | Tunivar _           -> ()
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
   | Tproc _             -> ()
   | Tpackage (_, _, l)  -> List.iter f l
@@ -235,13 +251,13 @@ let copy_commu c =
    encoding during substitution *)
 let rec norm_univar ty =
   match ty.desc with
-    Tunivar | Tsubst _ -> ty
+    Tunivar _ | Tsubst _ -> ty
   | Tlink ty           -> norm_univar ty
   | Ttuple (ty :: _)   -> norm_univar ty
   | _                  -> assert false
 
 let rec copy_type_desc f = function
-    Tvar                -> Tvar
+    Tvar _              -> Tvar None (* forget the name *)
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
   | Ttuple l            -> Ttuple (List.map f l)
   | Tconstr (p, l, _)   -> Tconstr (p, List.map f l, ref Mnil)
@@ -254,7 +270,7 @@ let rec copy_type_desc f = function
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f ty.desc
   | Tsubst ty           -> assert false
-  | Tunivar             -> Tunivar
+  | Tunivar _ as ty     -> ty (* keep the name *)
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
       Tpoly (f ty, tyl)
@@ -317,7 +333,11 @@ let unmark_type_decl decl =
   begin match decl.type_kind with
     Type_abstract -> ()
   | Type_variant cstrs ->
-      List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
+      List.iter 
+	(fun (c, tl, ret_type_opt) -> 
+	  List.iter unmark_type tl;
+	  Misc.may unmark_type ret_type_opt)
+	cstrs
   | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
   end;
@@ -439,15 +459,17 @@ type change =
   | Ckind of field_kind option ref * field_kind option
   | Ccommu of commutable ref * commutable
   | Cuniv of type_expr option ref * type_expr option
+  | Ctypeset of TypeSet.t ref * TypeSet.t
 
 let undo_change = function
-    Ctype  (ty, desc)  -> ty.desc <- desc
+    Ctype  (ty, desc) -> ty.desc <- desc
   | Clevel (ty, level) -> ty.level <- level
   | Cname  (r, v) -> r := v
   | Crow   (r, v) -> r := v
   | Ckind  (r, v) -> r := v
   | Ccommu (r, v) -> r := v
   | Cuniv  (r, v) -> r := v
+  | Ctypeset (r, v) -> r := v
 
 type changes =
     Change of change * changes ref
@@ -468,7 +490,22 @@ let log_change ch =
 
 let log_type ty =
   if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
-let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
+let link_type ty ty' =
+  log_type ty;
+  let desc = ty.desc in
+  ty.desc <- Tlink ty';
+  (* Name is a user-supplied name for this unification variable (obtained
+   * through a type annotation for instance). *)
+  match desc, ty'.desc with
+    Tvar name, Tvar name' ->
+      begin match name, name' with
+      | Some _, None ->  log_type ty'; ty'.desc <- Tvar name
+      | None, Some _ ->  ()
+      | Some _, Some _ ->
+          if ty.level < ty'.level then (log_type ty'; ty'.desc <- Tvar name)
+      | None, None   ->  ()
+      end
+  | _ -> ()
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
 let set_level ty level =
@@ -484,6 +521,8 @@ let set_kind rk k =
   log_change (Ckind (rk, !rk)); rk := Some k
 let set_commu rc c =
   log_change (Ccommu (rc, !rc)); rc := c
+let set_typeset rs s =
+  log_change (Ctypeset (rs, !rs)); rs := s
 
 let snapshot () =
   let old = !last_snapshot in

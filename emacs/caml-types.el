@@ -1,6 +1,6 @@
 ;(***********************************************************************)
 ;(*                                                                     *)
-;(*                           Objective Caml                            *)
+;(*                                OCaml                                *)
 ;(*                                                                     *)
 ;(*          Damien Doligez, projet Moscova, INRIA Rocquencourt         *)
 ;(*                                                                     *)
@@ -38,7 +38,7 @@ Their format is:
   <SP> is a space character (ASCII 0x20)
   <LF> is a line-feed character (ASCII 0x0A)
   num is a sequence of decimal digits
-  filename is a string with the lexical conventions of O'Caml
+  filename is a string with the lexical conventions of OCaml
   open-paren is an open parenthesis (ASCII 0x28)
   close-paren is a closed parenthesis (ASCII 0x29)
   data is any sequence of characters where <LF> is always followed by
@@ -411,8 +411,7 @@ See `caml-types-location-re' for annotation file format.
         (unless (caml-types-not-in-file l-file r-file target-file)
           (setq annotation ())
           (while (next-annotation)
-            (cond ((looking-at
-                    "^\\([a-z]+\\)(\n  \\(\\([^\n)]\\|.)\\|\n[^)]\\)*\\)\n)")
+            (cond ((looking-at "^\\([a-z]+\\)(\n  \\(\\(.*\n  \\)*.*\\)\n)")
                    (let ((kind (caml-types-hcons (match-string 1) table))
                          (info (caml-types-hcons (match-string 2) table)))
                      (setq annotation (cons (cons kind info) annotation))))))

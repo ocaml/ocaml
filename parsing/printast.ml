@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -19,9 +19,7 @@ open Location;;
 open Parsetree;;
 
 let fmt_position f l =
-  if l.pos_fname = "" && l.pos_lnum = 1
-  then fprintf f "%d" l.pos_cnum
-  else if l.pos_lnum = -1
+  if l.pos_lnum = -1
   then fprintf f "%s[%d]" l.pos_fname l.pos_cnum
   else fprintf f "%s[%d,%d+%d]" l.pos_fname l.pos_lnum l.pos_bol
                (l.pos_cnum - l.pos_bol)
@@ -105,7 +103,7 @@ let line i f s (*...*) =
 let list i f ppf l =
   match l with
   | [] -> line i ppf "[]\n";
-  | h::t ->
+  | _ :: _ ->
      line i ppf "[\n";
      List.iter (f (i+1) ppf) l;
      line i ppf "]\n";
@@ -170,10 +168,10 @@ let rec core_type i ppf x =
       core_type i ppf ct;
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident s;
-      list i package_with ppf l
+      list i package_with ppf l;
 
 and package_with i ppf (s, t) =
-  line i ppf "with type %s\n" s;
+  line i ppf "with type %a\n" fmt_longident s;
   core_type i ppf t
 
 and core_field_type i ppf x =
@@ -389,11 +387,18 @@ and value_description i ppf x =
   core_type (i+1) ppf x.pval_type;
   list (i+1) string ppf x.pval_prim;
 
+and string_option_underscore i ppf = 
+  function
+    | Some x ->
+	string i ppf x
+    | None ->
+	string i ppf "_"
+
 and type_declaration i ppf x =
   line i ppf "type_declaration %a\n" fmt_location x.ptype_loc;
   let i = i+1 in
   line i ppf "ptype_params =\n";
-  list (i+1) string ppf x.ptype_params;
+  list (i+1) string_option_underscore ppf x.ptype_params;
   line i ppf "ptype_cstrs =\n";
   list (i+1) core_type_x_core_type_x_location ppf x.ptype_cstrs;
   line i ppf "ptype_kind =\n";
@@ -538,9 +543,6 @@ and class_field i ppf x =
       line i ppf "Pcf_cstr %a\n" fmt_location loc;
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
-  | Pcf_let (rf, l, loc) ->
-      line i ppf "Pcf_let %a %a\n" fmt_rec_flag rf fmt_location loc;
-      list (i+1) pattern_x_expression_def ppf l;
   | Pcf_init (e) ->
       line i ppf "Pcf_init\n";
       expression (i+1) ppf e;
@@ -573,7 +575,7 @@ and module_type i ppf x =
       list i longident_x_with_constraint ppf l;
   | Pmty_typeof m ->
       line i ppf "Pmty_typeof\n";
-      module_expr i ppf m
+      module_expr i ppf m;
 
 and signature i ppf x = list i signature_item ppf x
 
@@ -724,9 +726,10 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and string_x_core_type_list_x_location i ppf (s, l, loc) =
+and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) = 
   line i ppf "\"%s\" %a\n" s fmt_location loc;
   list (i+1) core_type ppf l;
+  option (i+1) core_type ppf r_opt;
 
 and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
   line i ppf "\"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;

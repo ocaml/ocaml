@@ -2,7 +2,7 @@
 
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -31,6 +31,7 @@ mathlib='-lm'
 dllib=''
 x11_include_dir=''
 x11_lib_dir=''
+graph_wanted=yes
 tk_wanted=no
 pthread_wanted=yes
 tk_defs=''
@@ -44,6 +45,8 @@ withsharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
 ocamlc=''
+withcamlp4=""
+
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -87,22 +90,39 @@ while : ; do
         asppoption="$2"; shift;;
     -lib*)
         cclibs="$2 $cclibs"; shift;;
-    -dldefs*|--dldefs*)
-         dl_defs="$2"; shift;;
-    -no-curses)
+    -no-curses|--no-curses)
         withcurses=no;;
-    -no-shared-libs)
+    -no-shared-libs|--no-shared-libs)
         withsharedlibs=no;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
         x11_lib_dir=$2; shift;;
+    -no-graph|--no-graph) graph_wanted=no;;
+    -with-pthread*|--with-pthread*)
+        ;; # Ignored for backward compatibility
+    -no-pthread*|--no-pthread*)
+        pthread_wanted=no;;
+    -no-tk|--no-tk)
+        tk_wanted=no;;
+    -partialld|--partialld)
+        partialld="$2"; shift;;
+    -tkdefs*|--tkdefs*)
+        tk_defs=$2; shift;;
+    -tklibs*|--tklibs*)
+        tk_libs=$2; shift;;
+    -tk-no-x11|--tk-no-x11)
+        tk_x11=no;;
+    -dldefs*|--dldefs*)
+        dl_defs="$2"; shift;;
     -dllibs*|--dllibs*)
         dllib="$2"; shift;;
     -verbose|--verbose)
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=runtimed;;
+    -no-camlp4|--no-camlp4)
+        withcamlp4="";;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -117,17 +137,23 @@ esac
 case "$bindir" in
   /*) ;;
   "") ;;
-   *) echo "The -bindir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -bindir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 case "$libdir" in
   /*) ;;
   "") ;;
-   *) echo "The -libdir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -libdir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 case "$mandir" in
   /*) ;;
   "") ;;
-   *) echo "The -mandir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -mandir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 
 # Generate the files
@@ -241,14 +267,14 @@ case "$host,$cc" in
 
 WARNING: you are using gcc version 2.7.2.1 on an Intel x86 processor.
 This version of gcc is known to generate incorrect code for the
-Objective Caml runtime system on some Intel x86 machines. (The symptom
+OCaml runtime system on some Intel x86 machines. (The symptom
 is a crash of boot/ocamlc when compiling stdlib/pervasives.mli.)
 In particular, the version of gcc 2.7.2.1 that comes with
 Linux RedHat 4.x / Intel is affected by this problem.
 Other Linux distributions might also be affected.
 If you are using one of these configurations, you are strongly advised
 to use another version of gcc, such as 2.95, which are
-known to work well with Objective Caml.
+known to work well with OCaml.
 
 Press <enter> to proceed or <interrupt> to stop.
 EOF
@@ -257,7 +283,7 @@ EOF
 
 WARNING: you are using gcc version 2.96 on an Intel x86 processor.
 Certain patched versions of gcc 2.96 are known to generate incorrect
-code for the Objective Caml runtime system.  (The symptom is a segmentation
+code for the OCaml runtime system.  (The symptom is a segmentation
 violation on boot/ocamlc.)  Those incorrectly patched versions can be found
 in RedHat 7.2 and Mandrake 8.0 and 8.1; other Linux distributions
 might also be affected.  (See bug #57760 on bugzilla.redhat.com)
@@ -375,7 +401,7 @@ sh ./runtest ansi.c
 case $? in
   0) echo "The C compiler is ANSI-compliant.";;
   1) echo "The C compiler $cc is not ANSI-compliant."
-     echo "You need an ANSI C compiler to build Objective Caml."
+     echo "You need an ANSI C compiler to build OCaml."
      exit 2;;
   *) echo "Unable to compile the test program."
      echo "Make sure the C compiler $cc is properly installed."
@@ -394,7 +420,7 @@ case "$2,$3" in
        echo "#define ARCH_SIXTYFOUR" >> m.h
        arch64=true;;
   *,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
-       echo "Objective Caml won't run on this architecture."
+       echo "OCaml won't run on this architecture."
        exit 2;;
     *) echo "Unable to compile the test program."
        echo "Make sure the C compiler $cc is properly installed."
@@ -403,7 +429,7 @@ esac
 if test $1 != 4 && test $2 != 4 && test $4 != 4; then
   echo "Sorry, we can't find a 32-bit integer type"
   echo "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)"
-  echo "Objective Caml won't run on this architecture."
+  echo "OCaml won't run on this architecture."
   exit 2
 fi
 
@@ -445,7 +471,7 @@ fi
 
 if test $3 = 8 && test $int64_native = false; then
   echo "This architecture has 64-bit pointers but no 64-bit integer type."
-  echo "Objective Caml won't run on this architecture."
+  echo "OCaml won't run on this architecture."
   exit 2
 fi
 
@@ -458,7 +484,7 @@ case $? in
   1) echo "This is a little-endian architecture."
      echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
   2) echo "This architecture seems to be neither big endian nor little endian."
-     echo "Objective Caml won't run on this architecture."
+     echo "OCaml won't run on this architecture."
      exit 2;;
   *) echo "Something went wrong during endianness determination."
      echo "You'll have to figure out endianness yourself"
@@ -493,7 +519,7 @@ case "$host" in
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
       *) echo "Something went wrong during alignment determination for doubles."
          echo "I'm going to assume this architecture has alignment constraints over doubles."
-         echo "That's a safe bet: Objective Caml will work even if"
+         echo "That's a safe bet: OCaml will work even if"
          echo "this architecture has actually no alignment constraints."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
     esac;;
@@ -519,7 +545,7 @@ if $int64_native; then
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
         *) echo "Something went wrong during alignment determination for 64-bit integers."
            echo "I'm going to assume this architecture has alignment constraints."
-           echo "That's a safe bet: Objective Caml will work even if"
+           echo "That's a safe bet: OCaml will work even if"
            echo "this architecture has actually no alignment constraints."
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
       esac
@@ -611,13 +637,7 @@ if test $withsharedlibs = "yes"; then
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
-    i[3456]86-*-darwin10.*)
-       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
-       bytecccompopts="$dl_defs $bytecccompopts"
-       dl_needs_underscore=false
-       shared_libraries_supported=true
-       ;;
-    i[3456]86-*-darwin*)
+    i[3456]86-*-darwin[89].*)
       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
@@ -655,11 +675,12 @@ if test $withsharedlibs = "yes"; then
     *-*-cygwin*)                  natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
     x86_64-*-linux*)              natdynlink=true;;
-    i[3456]86-*-darwin10.*)
+    i[3456]86-*-darwin[89].*)     natdynlink=true;;
+    i[3456]86-*-darwin*)
       if test $arch64 == true; then
         natdynlink=true
       fi;;
-    i[3456]86-*-darwin[89]*)      natdynlink=true;;
+    x86_64-*-darwin*)             natdynlink=true;;
     powerpc64-*-linux*)           natdynlink=true;;
     sparc-*-linux*)               natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
@@ -671,6 +692,7 @@ if test $withsharedlibs = "yes"; then
     i[345]86-*-netbsd*)           natdynlink=true;;
     x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
+    arm*-*-linux*)                natdynlink=true;;
   esac
 fi
 
@@ -688,13 +710,6 @@ model=default
 system=unknown
 
 case "$host" in
-  alpha*-*-osf*)                arch=alpha; system=digital;;
-  alpha*-*-linux*)              arch=alpha; system=linux;;
-  alpha*-*-gnu*)                arch=alpha; system=gnu;;
-  alpha*-*-freebsd*)            arch=alpha; system=freebsd;;
-  alpha*-*-netbsd*)             arch=alpha; system=netbsd;;
-  alpha*-*-openbsd*)            arch=alpha; system=openbsd;;
-  sparc*-*-sunos4.*)            arch=sparc; system=sunos;;
   sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
   sparc*-*-linux*)              arch=sparc; system=linux;;
@@ -715,27 +730,24 @@ case "$host" in
                                   arch=i386; system=macosx
                                 fi;;
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
-  mips-*-irix6*)                arch=mips; system=irix;;
-  hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
-  hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
-  hppa*-*-linux*)               arch=hppa; system=linux;;
-  hppa*-*-gnu*)                 arch=hppa; system=gnu;;
   powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
                                 if $arch64; then model=ppc64; else model=ppc; fi;;
-  arm*-*-linux*)                arch=arm; system=linux;;
-  arm*-*-gnu*)                  arch=arm; system=gnu;;
-  ia64-*-linux*)                arch=ia64; system=linux;;
-  ia64-*-gnu*)                  arch=ia64; system=gnu;;
-  ia64-*-freebsd*)              arch=ia64; system=freebsd;;
+  arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
+  armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
+  armv6t2*-*-linux-gnueabi)     arch=arm; model=armv6t2; system=linux_eabi;;
+  armv6*-*-linux-gnueabi)       arch=arm; model=armv6; system=linux_eabi;;
+  armv5te*-*-linux-gnueabi)     arch=arm; model=armv5te; system=linux_eabi;;
+  armv5*-*-linux-gnueabi)       arch=arm; model=armv5; system=linux_eabi;;
+  arm*-*-linux-gnueabi)         arch=arm; system=linux_eabi;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-gnu*)                arch=amd64; system=gnu;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
-  x86_64-*-darwin9.5)           arch=amd64; system=macosx;;
+  x86_64-*-darwin*)             arch=amd64; system=macosx;;
 esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
@@ -744,17 +756,13 @@ esac
 
 if $arch64; then
   case "$arch,$model" in
-    sparc,default|mips,default|hppa,default|power,ppc)
+    sparc,default|power,ppc)
       arch=none; model=default; system=unknown;;
   esac
 fi
 
 if test -z "$ccoption"; then
-  case "$arch,$system,$cc" in
-    alpha,digital,gcc*) nativecc=cc;;
-    mips,*,gcc*) nativecc=cc;;
-    *) nativecc="$bytecc";;
-  esac
+  nativecc="$bytecc"
 else
   nativecc="$ccoption"
 fi
@@ -764,9 +772,6 @@ nativecclinkopts=''
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$host_type" in
-  alpha,cc*,digital,*) nativecccompopts=-std1;;
-  mips,cc*,irix,*)     nativecccompopts=-n32
-                       nativecclinkopts="-n32 -Wl,-woff,84";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
   *,*,rhapsody,*darwin[1-5].*)
@@ -782,11 +787,6 @@ esac
 asppprofflags='-DPROFILING'
 
 case "$arch,$model,$system" in
-  alpha,*,digital)  as='as -O2 -nocpp'
-                    aspp='as -O2'
-                    asppprofflags='-pg -DPROFILING';;
-  alpha,*,*)        as='as'
-                    aspp='gcc -c';;
   amd64,*,macosx)   as='as -arch x86_64'
                     aspp='gcc -arch x86_64 -c';;
   amd64,*,solaris)  as='as --64'
@@ -795,16 +795,10 @@ case "$arch,$model,$system" in
                     aspp='gcc -c';;
   arm,*,*)          as='as';
                     aspp='gcc -c';;
-  hppa,*,*)         as='as';
-                    aspp='gcc -traditional -c';;
   i386,*,solaris)   as='as'
                     aspp='/usr/ccs/bin/as -P';;
   i386,*,*)         as='as'
                     aspp='gcc -c';;
-  ia64,*,*)         as='as -xexplicit'
-                    aspp='gcc -c -Wa,-xexplicit';;
-  mips,*,irix)      as='as -n32 -O2 -nocpp -g0'
-                    aspp='as -n32 -O2';;
   power,*,elf)      as='as -u -m ppc'
                     aspp='gcc -c';;
   power,*,bsd)      as='as'
@@ -825,7 +819,6 @@ if test -n "$asppoption"; then aspp="$asppoption"; fi
 
 cc_profile='-pg'
 case "$arch,$model,$system" in
-  alpha,*,digital) profiling='prof';;
   i386,*,linux_elf) profiling='prof';;
   i386,*,gnu) profiling='prof';;
   i386,*,bsd_elf) profiling='prof';;
@@ -836,6 +829,7 @@ case "$arch,$model,$system" in
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,*,linux) profiling='prof';;
   amd64,*,gnu) profiling='prof';;
+  arm,*,linux*) profiling='prof';;
   *) profiling='noprof';;
 esac
 
@@ -850,6 +844,9 @@ else
   echo "RANLIB=ar rs" >> Makefile
   echo "RANLIBCMD=" >> Makefile
 fi
+
+echo "ARCMD=ar" >> Makefile
+
 
 # Do #! scripts work?
 
@@ -905,9 +902,9 @@ fi
 
 # For the Pervasives module
 
-if sh ./trycompile expm1.c $mathlib; then
-  echo "expm1() and log1p() found."
-  echo "#define HAS_EXPM1_LOG1P" >> s.h
+if sh ./hasgot2 -i math.h $mathlib expm1 log1p hypot copysign; then
+  echo "expm1(), log1p(), hypot(), copysign() found."
+  echo "#define HAS_C99_FLOAT_OPS" >> s.h
 fi
 
 # For the Sys module
@@ -1094,14 +1091,7 @@ if sh ./hasgot -i termios.h &&
   echo "#define HAS_TERMIOS" >> s.h
 fi
 
-# Async I/O under OSF1 3.x are so buggy that the test program hangs...
-testasyncio=true
-if test -f /usr/bin/uname; then
-  case "`/usr/bin/uname -s -r`" in
-    "OSF1 V3."*) testasyncio=false;;
-  esac
-fi
-if $testasyncio && sh ./runtest async_io.c; then
+if sh ./runtest async_io.c; then
   echo "Asynchronous I/O are supported."
   echo "#define HAS_ASYNC_IO" >> s.h
 fi
@@ -1208,7 +1198,7 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx|amd64,macosx)
+  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx)
     echo "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
@@ -1217,18 +1207,16 @@ esac
 
 # Determine the target architecture for the "num" library
 
-#case "$arch" in
-#  alpha)    bng_arch=alpha; bng_asm_level=1;;
-#  i386)     bng_arch=ia32
-#            if sh ./trycompile ia32sse2.c
-#            then bng_asm_level=2
-#            else bng_asm_level=1
-#            fi;;
-#  mips)     bng_arch=mips; bng_asm_level=1;;
-#  power)    bng_arch=ppc; bng_asm_level=1;;
-#  amd64)    bng_arch=amd64; bng_asm_level=1;;
-#  *)        bng_arch=generic; bng_asm_level=0;;
-#esac
+case "$arch" in
+  i386)     bng_arch=ia32
+            if sh ./trycompile ia32sse2.c
+            then bng_asm_level=2
+            else bng_asm_level=1
+            fi;;
+  power)    bng_arch=ppc; bng_asm_level=1;;
+  amd64)    bng_arch=amd64; bng_asm_level=1;;
+  *)        bng_arch=generic; bng_asm_level=0;;
+esac
 
 
 
@@ -1291,10 +1279,22 @@ echo "PTHREAD_LINK=$pthread_caml_link" >> Makefile
 
 # Determine the location of X include files and libraries
 
+# If the user specified -x11include and/or -x11lib, these settings
+# are used. Otherwise, we check whether there is pkg-config, and take
+# the flags from there. Otherwise, we search the location.
+
 x11_include="not found"
 x11_link="not found"
 
-for dir in \
+if test -z "$x11_include_dir" -a -z "$x11_lib_dir"; then
+  if pkg-config --exists x11 2>/dev/null; then
+    x11_include=`pkg-config --cflags x11`
+    x11_link=`pkg-config --libs x11`
+  fi
+fi
+
+if test "$x11_include" = "not found"; then
+  for dir in \
     $x11_include_dir          \
                               \
     /usr/X11R7/include        \
@@ -1340,20 +1340,21 @@ for dir in \
     /usr/openwin/include      \
     /usr/openwin/share/include \
     ; \
-do
-  if test -f $dir/X11/X.h; then
-    x11_include=$dir
-    break
+    do
+    if test -f $dir/X11/X.h; then
+      x11_include_dir=$dir
+      x11_include="-I$dir"
+      break
+    fi
+  done
+
+  if test "$x11_include" = "not found"; then
+      x11_try_lib_dir=''
+  else
+      x11_try_lib_dir=`echo $x11_include_dir | sed -e 's|include|lib|'`
   fi
-done
 
-if test "$x11_include" = "not found"; then
-  x11_try_lib_dir=''
-else
-  x11_try_lib_dir=`echo $x11_include | sed -e 's|include|lib|'`
-fi
-
-for dir in \
+  for dir in \
     $x11_lib_dir          \
     $x11_try_lib_dir      \
                           \
@@ -1395,91 +1396,61 @@ for dir in \
     /lib/usr/lib/X11      \
                           \
     /usr/openwin/lib      \
-    /usr/openwin/share/lib \
+    /usr/openwin/share/lib    \
+                              \
+    /usr/lib/i386-linux-gnu   \
+    /usr/lib/x86_64-linux-gnu \
     ; \
-do
-  if test -f $dir/libX11.a || \
-     test -f $dir/libX11.so || \
-     test -f $dir/libX11.dll.a || \
-     test -f $dir/libX11.dylib || \
-     test -f $dir/libX11.sa; then
-    if test $dir = /usr/lib; then
-      x11_link="-lX11"
-    else
-      x11_libs="-L$dir"
-      case "$host" in
-        *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
-        *) x11_link="-L$dir -lX11";;
-      esac
+    do
+    if test -f $dir/libX11.a || \
+       test -f $dir/libX11.so || \
+       test -f $dir/libX11.dll.a || \
+       test -f $dir/libX11.dylib || \
+       test -f $dir/libX11.sa; then
+      if test $dir = /usr/lib; then
+        x11_link="-lX11"
+      else
+        x11_libs="-L$dir"
+        case "$host" in
+          *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
+          *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
+          *) x11_link="-L$dir -lX11";;
+        esac
+      fi
+      break
     fi
-    break
-  fi
-done
+  done
+fi
 
+if test "x11_include" != "not found"; then
+  if test "$x11_include" = "-I/usr/include"; then
+    x11_include=""
+  fi
+  if ./hasgot $x11_include $x11_link -i X11/Xlib.h XrmInitialize; then
+    echo "X11 works"
+  else
+    echo "Cannot compile X11 program"
+    x11_include="not found"
+  fi
+fi
+
+has_graph=false
 if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
   echo "X11 not found, the \"graph\" library will not be supported."
-  x11_include=""
+  x11_include="not found"
+  x11_link="not found"
 else
-  echo "Location of X11 include files: $x11_include/X11"
+  echo "Options for compiling for X11: $x11_include"
   echo "Options for linking with X11: $x11_link"
-  otherlibraries="$otherlibraries graph"
-  if test "$x11_include" = "/usr/include"; then
-    x11_include=""
-  else
-    x11_include="-I$x11_include"
+  if test "$graph_wanted" = yes
+  then
+    has_graph=true
+    otherlibraries="$otherlibraries graph"
   fi
 fi
 echo "X11_INCLUDES=$x11_include" >> Makefile
 echo "X11_LINK=$x11_link" >> Makefile
-
-# See if we can compile the dbm library
-
-dbm_include="not found"
-dbm_link="not found"
-use_gdbm_ndbm=no
-
-#for dir in /usr/include /usr/include/db1 /usr/include/gdbm; do
-#  if test -f $dir/ndbm.h; then
-#    dbm_include=$dir
-#    if sh ./hasgot dbm_open; then
-#      dbm_link=""
-#    elif sh ./hasgot -lndbm dbm_open; then
-#      dbm_link="-lndbm"
-#    elif sh ./hasgot -ldb1 dbm_open; then
-#      dbm_link="-ldb1"
-#    elif sh ./hasgot -lgdbm dbm_open; then
-#      dbm_link="-lgdbm"
-#    elif sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
-#      dbm_link="-lgdbm_compat -lgdbm"
-#    fi
-#    break
-#  fi
-#  if test -f $dir/gdbm-ndbm.h; then
-#    dbm_include=$dir
-#    use_gdbm_ndbm=yes
-#    if sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
-#      dbm_link="-lgdbm_compat -lgdbm"
-#    fi
-#    break
-#  fi
-#done
-#if test "$dbm_include" = "not found" || test "$dbm_link" = "not found"; then
-#  echo "NDBM not found, the \"dbm\" library will not be supported."
-#else
-#  echo "NDBM found (in $dbm_include)"
-#  if test "$dbm_include" = "/usr/include"; then
-#    dbm_include=""
-#  else
-#    dbm_include="-I$dbm_include"
-#  fi
-#  if test "$use_gdbm_ndbm" = "yes"; then
-#    echo "#define DBM_USES_GDBM_NDBM" >> s.h
-#  fi
-#  otherlibraries="$otherlibraries dbm"
-#fi
-#echo "DBM_INCLUDES=$dbm_include" >> Makefile
-#echo "DBM_LINK=$dbm_link" >> Makefile
 
 # Look for tcl/tk
 
@@ -1490,11 +1461,11 @@ if test $tk_wanted = no; then
 elif test $tk_x11 = no; then
   has_tk=true
 elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
-  echo "X11 not found."
+  echo "X11 not found or disabled."
   has_tk=false
 else
   tk_x11_include="$x11_include"
-  tk_x11_libs="$x11_libs -lX11"
+  tk_x11_libs="$x11_link"
   has_tk=true
 fi
 
@@ -1628,6 +1599,17 @@ else
   echo "LIBBFD_LINK=" >> Makefile
 fi
 
+# Check whether assembler supports CFI directives
+
+asm_cfi_supported=false
+
+export aspp
+
+if sh ./tryassemble cfi.S; then
+  echo "#define ASM_CFI_SUPPORTED" >> m.h
+  asm_cfi_supported=true
+fi
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"
@@ -1698,6 +1680,8 @@ echo "MKEXE=$mkexe" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
+echo "CAMLP4=${withcamlp4}" >>Makefile
+echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
@@ -1749,6 +1733,11 @@ else
   echo "        options for linking....... $nativecclinkopts $cclibs"
   echo "        assembler ................ $as"
   echo "        preprocessed assembler ... $aspp"
+  if test "$asm_cfi_supported" = "true"; then
+  echo "        assembler supports CFI ... yes"
+  else
+  echo "        assembler supports CFI ... no"
+  fi
   echo "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then
   echo "        profiling with gprof ..... supported"
@@ -1773,21 +1762,29 @@ echo "        $otherlibraries"
 #echo "Configuration for the \"num\" library:"
 #echo "        target architecture ...... $bng_arch (asm level $bng_asm_level)"
 
-if test "$x11_include" != "not found" && test "$x11_lib" != "not found"; then
+if $has_graph; then
 echo "Configuration for the \"graph\" library:"
 echo "        options for compiling .... $x11_include"
 echo "        options for linking ...... $x11_link"
+else
+echo "The \"graph\" library: not supported"
 fi
 
-#if test $has_tk = true; then
-#echo "Configuration for the \"labltk\" library:"
-#echo "        use tcl/tk version ....... $tcl_version"
-#echo "        options for compiling .... $tk_defs"
-#echo "        options for linking ...... $tk_libs"
-#else
-#echo "The \"labltk\" library: not supported"
-#fi
+if test $has_tk = true; then
+echo "Configuration for the \"labltk\" library:"
+echo "        use tcl/tk version ....... $tcl_version"
+echo "        options for compiling .... $tk_defs $x11_includes"
+echo "        options for linking ...... $tk_libs $x11_link"
+else
+echo "The \"labltk\" library: not supported"
+fi
 
 echo
+
 echo "** JoCaml configuration completed successfully **"
 echo
+
+if test ! -z "$MACOSX_DEPLOYMENT_TARGET"; then
+  echo "WARNING: the environment variable MACOSX_DEPLOYMENT_TARGET is set."
+  echo "This will probably prevent compiling the OCaml system."
+fi

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -48,8 +48,9 @@ and strengthen_sig env sg p =
       sigelt :: strengthen_sig env rem p
   | Tsig_type(id, decl, rs) :: rem ->
       let newdecl =
-        match decl.type_manifest with
-          Some ty when decl.type_private = Public -> decl
+        match decl.type_manifest, decl.type_private, decl.type_kind with
+          Some _, Public, _ -> decl
+        | Some _, Private, (Type_record _ | Type_variant _) -> decl
         | _ ->
             let manif =
               Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
@@ -110,12 +111,16 @@ let nondep_supertype env mid mty =
       match item with
         Tsig_value(id, d) ->
           Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
-                          val_kind = d.val_kind}) :: rem'
+                          val_kind = d.val_kind;
+                          val_loc = d.val_loc;
+                         }) :: rem'
       | Tsig_type(id, d, rs) ->
           Tsig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
           :: rem'
       | Tsig_exception(id, d) ->
-          Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
+          let d = {exn_args = List.map (Ctype.nondep_type env mid) d.exn_args;
+                   exn_loc = d.exn_loc} in
+          Tsig_exception(id, d) :: rem'
       | Tsig_module(id, mty, rs) ->
           Tsig_module(id, nondep_mty env va mty, rs) :: rem'
       | Tsig_modtype(id, d) ->

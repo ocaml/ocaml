@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*              LablTk, Tcl/Tk interface of Objective Caml             *)
+(*                 MLTk, Tcl/Tk interface of OCaml                     *)
 (*                                                                     *)
 (*         Jacques Garrigue, Nagoya University Mathematics Dept.       *)
 (*                                                                     *)
@@ -8,7 +8,7 @@
 (*  en Automatique and Kyoto University.  All rights reserved.         *)
 (*  This file is distributed under the terms of the GNU Library        *)
 (*  General Public License, with the special exception on linking      *)
-(*  described in file LICENSE found in the Objective Caml source tree. *)
+(*  described in file LICENSE found in the OCaml source tree.          *)
 (*                                                                     *)
 (***********************************************************************)
 

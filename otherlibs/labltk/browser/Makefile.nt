@@ -1,75 +1,35 @@
-<<<<<<< .courant
-include ../support/Makefile.common.nt
+#########################################################################
+#                                                                       #
+#                         OCaml LablTk library                          #
+#                                                                       #
+#            Jacques Garrigue, Kyoto University RIMS                    #
+#                                                                       #
+#   Copyright 2000 Institut National de Recherche en Informatique et    #
+#   en Automatique and Kyoto University.  All rights reserved.          #
+#   This file is distributed under the terms of the GNU Library         #
+#   General Public License, with the special exception on linking       #
+#   described in file ../../../LICENSE.                                 #
+#                                                                       #
+#########################################################################
 
-LABLTKLIB=-I ../labltk -I ../lib -I ../support
-=======
 # $Id$
 
->>>>>>> .fusion-droit.r10497
 OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
-OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
-INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
+
 CCFLAGS=-I../../../byterun $(TK_DEFS)
 
+include ../support/Makefile.common
+
 ifeq ($(CCOMPTYPE),cc)
-WINDOWS_APP=-ccopt "-Wl,--subsystem,windows"
+WINDOWS_APP=-ccopt "-link -Wl,--subsystem,windows"
 else
-WINDOWS_APP=-ccopt "/link /subsystem:windows"
+WINDOWS_APP=-ccopt "-link /subsystem:windows"
 endif
 
-OBJS =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
-	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
-	help.cmo	\
-	viewer.cmo	typecheck.cmo	editor.cmo	main.cmo
+XTRAOBJ=winmain.$(O)
+XTRALIBS=threads.cma -custom $(WINDOWS_APP)
 
-JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
-	jg_box.cmo \
-	jg_button.cmo	jg_toplevel.cmo	jg_text.cmo	jg_message.cmo \
-	jg_menu.cmo	jg_entry.cmo	jg_multibox.cmo	jg_memo.cmo
-
-# Default rules
-
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .c .$(O)
-
-.ml.cmo:
-	$(CAMLCOMP) $(INCLUDES) $<
-
-.mli.cmi:
-	$(CAMLCOMP) $(INCLUDES) $<
-
-.c.$(O):
-	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
-
-all: ocamlbrowser.exe
-
-ocamlbrowser.exe: $(TOPDIR)/toplevel/toplevellib.cma \
-	../support/lib$(LIBNAME).$(A)
-ocamlbrowser.exe: jglib.cma $(OBJS) winmain.$(O)
-	$(CAMLC) -o ocamlbrowser.exe -custom $(INCLUDES) \
-		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma threads.cma str.cma $(LIBNAME).cma jglib.cma $(OBJS) \
-		winmain.$(O) $(WINDOWS_APP)
-
-jglib.cma: $(JG)
-	$(CAMLCOMP) -a -o jglib.cma $(JG) 
-
-help.ml:
-	echo 'let text = "\\' > $@
-	sed -e 's/^ /\\032/' -e 's/$$/\\n\\/' help.txt >> $@
-	echo '";;' >> $@
-
-install:
-	if test -f ocamlbrowser.exe; then cp ocamlbrowser.exe $(BINDIR)/jocamlbrowser$(EXE); fi
-
-clean:
-	rm -f *.cm? ocamlbrowser.exe dummy.mli *~ *.orig *.$(O)
-
-depend:
-	$(CAMLDEP) *.ml *.mli > .depend
+include Makefile.shared
 
 dummy.mli:
 	cp dummyWin.mli dummy.mli
-shell.cmo: dummy.cmi
-setpath.cmo fileselect.cmo lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/toplevel/toplevellib.cma
-
-include	.depend

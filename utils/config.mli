@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -26,10 +26,9 @@ val ocaml_library : string option
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
 val ccomp_type: string
-        (* The "kind" of the C compiler: one of
+        (* The "kind" of the C compiler, assembler and linker used: one of
                "cc" (for Unix-style C compilers)
-               "msvc" (Microsoft Visual C++)
-               "mrc" (Macintosh MPW) *)
+               "msvc" (for Microsoft Visual C++ and MASM) *)
 val bytecomp_c_compiler: string
         (* The C compiler to use for compiling C files
            with the bytecode compiler *)
@@ -51,6 +50,8 @@ val mkmaindll: string
         (* The linker command line to build main programs as dlls. *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
+val ar: string
+        (* Name of the ar command, or "" if not needed  (MSVC) *)
 val cc_profile : string
         (* The command line option to the C compiler to enable profiling. *)
 
@@ -101,6 +102,9 @@ val system: string
 val asm: string
         (* The assembler (and flags) to use for assembling
            ocamlopt-generated code. *)
+
+val asm_cfi_supported: bool
+        (* Whether assembler understands CFI directives *)
 
 val ext_obj: string
         (* Extension for object files, e.g. [.o] under Unix. *)

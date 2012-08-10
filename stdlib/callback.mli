@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -13,11 +13,11 @@
 
 (* $Id$ *)
 
-(** Registering Caml values with the C runtime.
+(** Registering OCaml values with the C runtime.
 
-   This module allows Caml values to be registered with the C runtime
+   This module allows OCaml values to be registered with the C runtime
    under a symbolic name, so that C code can later call back registered
-   Caml functions, or raise registered Caml exceptions.
+   OCaml functions, or raise registered OCaml exceptions.
 *)
 
 val register : string -> 'a -> unit
@@ -30,5 +30,5 @@ val register_exception : string -> exn -> unit
    exception contained in the exception value [exn]
    under the name [n]. C code can later retrieve a handle to
    the exception by calling [caml_named_value(n)]. The exception
-   value thus obtained is suitable for passign as first argument
+   value thus obtained is suitable for passing as first argument
    to [raise_constant] or [raise_with_arg]. *)

@@ -1,3 +1,14 @@
+(***********************************************************************)
+(*                             OCamldoc                                *)
+(*                                                                     *)
+(*            Maxence Guesdon, projet Gallium, INRIA Rocquencourt      *)
+(*                                                                     *)
+(*  Copyright 2010 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (** The types of generators. *)
 
 (** The minimal class type of documentation generators. *)

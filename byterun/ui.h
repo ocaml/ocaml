@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Damien Doligez, projet Para, INRIA Rocquencourt          */
 /*                                                                     */

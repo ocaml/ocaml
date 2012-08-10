@@ -26,11 +26,15 @@ run-all:
 	done;
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
-	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) -w a $(CMA_FILES) -I ../../lib $(CMO_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
-	  $(MAKE) run-file DESC=ocamlopt COMP=$(PREFIX)/bin/jocamlopt COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES) -w a $(CMXA_FILES) -I ../../lib $(CMX_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
+	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) -w a $(CMA_FILES) -I $(BASEDIR)/lib $(CMO_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
+	  if [ -z "$(BYTECODE_ONLY)" ]; then \
+	    $(MAKE) run-file DESC=ocamlopt COMP=$(PREFIX)/bin/ocamlopt COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES) -w a $(CMXA_FILES) -I $(BASEDIR)/lib $(CMX_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS); \
+	  fi && \
 	  if [ ! -z $(UNSAFE) ]; then \
-	    $(MAKE) run-file DESC=ocamlc-unsafe COMP=$(PREFIX)/bin/ocamlc COMPFLAGS='-w a -unsafe -I ../../li $(CMO_FILES)' FILE=$$file && \
-	    $(MAKE) run-file DESC=ocamlopt-unsafe COMP=$(PREFIX)/bin/ocamlopt COMPFLAGS='-w a -unsafe -I ../../lib $(CMX_FILES)' FILE=$$file; \
+	    $(MAKE) run-file DESC=ocamlc-unsafe COMP=$(PREFIX)/bin/ocamlc COMPFLAGS='-w a -unsafe -I $(BASEDIR)/lib $(CMO_FILES)' FILE=$$file && \
+	    if [ -z "$(BYTECODE_ONLY)" ]; then \
+	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP=$(PREFIX)/bin/ocamlopt COMPFLAGS='-w a -unsafe -I $(BASEDIR)/lib $(CMX_FILES)' FILE=$$file; \
+	    fi; \
 	  fi && \
 	  echo " => passed"; \
 	done;
@@ -46,8 +50,10 @@ run-file:
 	@if [ -f `basename $(FILE) ml`checker ]; then \
 	  sh `basename $(FILE) ml`checker; \
 	else \
-	  diff -q `basename $(FILE) ml`reference `basename $(FILE) ml`result > /dev/null || (echo " => failed" && exit 1); \
+	  $(DIFF) `basename $(FILE) ml`reference `basename $(FILE) ml`result > /dev/null || (echo " => failed" && exit 1); \
 	fi
+
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result ./program

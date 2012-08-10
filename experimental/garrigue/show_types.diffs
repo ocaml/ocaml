@@ -1,0 +1,160 @@
+Index: typing/printtyp.ml
+===================================================================
+--- typing/printtyp.ml	(revision 11316)
++++ typing/printtyp.ml	(working copy)
+@@ -894,8 +894,10 @@
+       tree_of_class_declaration id decl rs :: tree_of_signature rem
+   | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
+       tree_of_cltype_declaration id decl rs :: tree_of_signature rem
+-  | _ ->
+-      assert false
++  | Tsig_class(id, decl, rs) :: _ ->
++      tree_of_class_declaration id decl rs :: []
++  | Tsig_cltype(id, decl, rs) :: _ ->
++      tree_of_cltype_declaration id decl rs :: []
+ 
+ and tree_of_modtype_declaration id decl =
+   let mty =
+Index: toplevel/topdirs.ml
+===================================================================
+--- toplevel/topdirs.ml	(revision 11316)
++++ toplevel/topdirs.ml	(working copy)
+@@ -297,10 +297,92 @@
+     !traced_functions;
+   traced_functions := []
+ 
++(* Warnings *)
++
+ let parse_warnings ppf iserr s =
+   try Warnings.parse_options iserr s
+   with Arg.Bad err -> fprintf ppf "%s.@." err
+ 
++(* Typing information *)
++
++type pkind =
++    Pvalue
++  | Ptype
++  | Pexception
++  | Pmodule
++  | Pmodtype
++  | Pclass
++  | Pcltype
++
++let name_of_kind = function
++    Pvalue -> "value"
++  | Ptype -> "type"
++  | Pexception -> "exception"
++  | Pmodule -> "module"
++  | Pmodtype -> "module type"
++  | Pclass -> "class"
++  | Pcltype -> "class type"
++
++let rec trim_modtype = function
++    Tmty_signature _ -> Tmty_signature []
++  | Tmty_functor (id, mty, mty') ->
++      Tmty_functor (id, mty, trim_modtype mty')
++  | Tmty_ident _ as mty -> mty
++
++let trim_signature = function
++    Tmty_signature sg ->
++      Tmty_signature
++        (List.map
++           (function
++               Tsig_module (id, mty, rs) ->
++                 Tsig_module (id, trim_modtype mty, rs)
++             (*| Tsig_modtype (id, Tmodtype_manifest mty) ->
++                 Tsig_modtype (id, Tmodtype_manifest (trim_modtype mty))*)
++             | item -> item)
++           sg)
++  | mty -> mty
++
++let show_type ppf kind lid =
++  let env = !Toploop.toplevel_env in
++  try
++    let id =
++      let s = match lid with
++        Longident.Lident s -> s
++      | Longident.Ldot (_,s) -> s
++      | Longident.Lapply _ -> failwith "invalid"
++      in Ident.create_persistent s
++    in
++    let item =
++      match kind with
++        Pvalue ->
++          let path, desc = Env.lookup_value lid env in
++          Tsig_value (id, desc)
++      | Ptype ->
++          let path, desc = Env.lookup_type lid env in
++          Tsig_type (id, desc, Trec_not)
++      | Pexception ->
++          let desc = Env.lookup_constructor lid env in
++          Tsig_exception (id, desc.cstr_args)
++      | Pmodule ->
++          let path, desc = Env.lookup_module lid env in
++          Tsig_module (id, trim_signature desc, Trec_not)
++      | Pmodtype ->
++          let path, desc = Env.lookup_modtype lid env in
++          Tsig_modtype (id, desc)
++      | Pclass ->
++          let path, desc = Env.lookup_class lid env in
++          Tsig_class (id, desc, Trec_not)
++      | Pcltype ->
++          let path, desc = Env.lookup_cltype lid env in
++          Tsig_cltype (id, desc, Trec_not)
++    in
++    fprintf ppf "%a@." Printtyp.signature [item]
++  with
++    Not_found ->
++      fprintf ppf "Unknown %s.@." (name_of_kind kind)
++  | Failure "invalid" ->
++      fprintf ppf "Invalid path %a@." Printtyp.longident lid
++
+ let _ =
+   Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_out));
+   Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_out));
+@@ -329,4 +411,19 @@
+              (Directive_string (parse_warnings std_out false));
+ 
+   Hashtbl.add directive_table "warn_error"
+-             (Directive_string (parse_warnings std_out true))
++             (Directive_string (parse_warnings std_out true));
++
++  Hashtbl.add directive_table "show_value"
++             (Directive_ident (show_type std_out Pvalue));
++  Hashtbl.add directive_table "show_type"
++             (Directive_ident (show_type std_out Ptype));
++  Hashtbl.add directive_table "show_exception"
++             (Directive_ident (show_type std_out Pexception));
++  Hashtbl.add directive_table "show_module"
++             (Directive_ident (show_type std_out Pmodule));
++  Hashtbl.add directive_table "show_module_type"
++             (Directive_ident (show_type std_out Pmodtype));
++  Hashtbl.add directive_table "show_class"
++             (Directive_ident (show_type std_out Pclass));
++  Hashtbl.add directive_table "show_class_type"
++             (Directive_ident (show_type std_out Pcltype))
+Index: parsing/parser.mly
+===================================================================
+--- parsing/parser.mly	(revision 11316)
++++ parsing/parser.mly	(working copy)
+@@ -1769,6 +1769,11 @@
+     LIDENT                                      { Lident $1 }
+   | mod_longident DOT LIDENT                    { Ldot($1, $3) }
+ ;
++any_longident:
++    val_ident                                   { Lident $1 }
++  | mod_longident DOT val_ident                 { Ldot($1, $3) }
++  | mod_longident                               { $1 }
++;
+ 
+ /* Toplevel directives */
+ 
+@@ -1776,7 +1781,7 @@
+     SHARP ident                 { Ptop_dir($2, Pdir_none) }
+   | SHARP ident STRING          { Ptop_dir($2, Pdir_string $3) }
+   | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
+-  | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
++  | SHARP ident any_longident   { Ptop_dir($2, Pdir_ident $3) }
+   | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }
+   | SHARP ident TRUE            { Ptop_dir($2, Pdir_bool true) }
+ ;

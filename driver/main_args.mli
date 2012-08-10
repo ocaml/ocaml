@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -15,6 +15,7 @@
 module type Bytecomp_options =
   sig
     val _a : unit -> unit
+    val _absname : unit -> unit
     val _annot : unit -> unit
     val _c : unit -> unit
     val _cc : string -> unit
@@ -72,6 +73,7 @@ module type Bytecomp_options =
 ;;
 
 module type Bytetop_options = sig
+  val _absname : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
   val _labels : unit -> unit
@@ -79,9 +81,11 @@ module type Bytetop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
+  val _stdin : unit -> unit
   val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
@@ -100,6 +104,7 @@ end;;
 
 module type Optcomp_options = sig
   val _a : unit -> unit
+  val _absname : unit -> unit
   val _annot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
@@ -132,9 +137,9 @@ module type Optcomp_options = sig
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
+  val _S : unit -> unit
   val _strict_sequence : unit -> unit
   val _shared : unit -> unit
-  val _S : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
   val _v : unit -> unit
@@ -150,6 +155,7 @@ module type Optcomp_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -168,6 +174,7 @@ module type Optcomp_options = sig
 end;;
 
 module type Opttop_options = sig
+  val _absname : unit -> unit
   val _compact : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
@@ -177,11 +184,13 @@ module type Opttop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
-  val _strict_sequence : unit -> unit
   val _S : unit -> unit
+  val _stdin : unit -> unit
+  val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
@@ -192,6 +201,7 @@ module type Opttop_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit

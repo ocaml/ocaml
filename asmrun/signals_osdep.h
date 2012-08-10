@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -15,26 +15,9 @@
 
 /* Processor- and OS-dependent signal interface */
 
-/****************** Alpha, all OS */
-
-#if defined(TARGET_alpha)
-
-  #define DECLARE_SIGNAL_HANDLER(name) \
-    static void name(int sig, int code, struct sigcontext * context)
-
-  #define SET_SIGACT(sigact,name) \
-     sigact.sa_handler = (void (*)(int)) (name); \
-     sigact.sa_flags = 0
-
-  typedef long context_reg;
-  #define CONTEXT_PC (context->sc_pc)
-  #define CONTEXT_EXCEPTION_POINTER (context->sc_regs[15])
-  #define CONTEXT_YOUNG_LIMIT (context->sc_regs[13])
-  #define CONTEXT_YOUNG_PTR (context->sc_regs[14])
-
 /****************** AMD64, Linux */
 
-#elif defined(TARGET_amd64) && defined (SYS_linux)
+#if defined(TARGET_amd64) && defined (SYS_linux)
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, siginfo_t * info, ucontext_t * context)
@@ -78,7 +61,7 @@
 
 /****************** ARM, Linux */
 
-#elif defined(TARGET_arm) && defined (SYS_linux)
+#elif defined(TARGET_arm) && (defined(SYS_linux_eabi) || defined(SYS_linux_eabihf))
 
   #include <sys/ucontext.h>
 
@@ -176,23 +159,6 @@
     sigact.sa_flags = SA_SIGINFO
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
-
-/****************** MIPS, all OS */
-
-#elif defined(TARGET_mips)
-
-  #define DECLARE_SIGNAL_HANDLER(name) \
-    static void name(int sig, int code, struct sigcontext * context)
-
-  #define SET_SIGACT(sigact,name) \
-     sigact.sa_handler = (void (*)(int)) (name); \
-     sigact.sa_flags = 0
-
-  typedef int context_reg;
-  #define CONTEXT_PC (context->sc_pc)
-  #define CONTEXT_EXCEPTION_POINTER (context->sc_regs[30])
-  #define CONTEXT_YOUNG_LIMIT (context->sc_regs[22])
-  #define CONTEXT_YOUNG_PTR (context->sc_regs[23])
 
 /****************** PowerPC, MacOS X */
 

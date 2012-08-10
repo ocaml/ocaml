@@ -1,7 +1,7 @@
 
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -28,11 +28,15 @@ LINKFLAGS=
 CAMLYACC=boot/ocamlyacc
 YACCFLAGS=-v
 CAMLLEX=boot/ocamlrun boot/ocamllex
+#CAMLDEP=boot/ocamlrun tools/ocamldep
 CAMLDEP=boot/ocamlrun tools/ocamldep
 DEPFLAGS=$(NOJOIN) $(INCLUDES)
 CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
 MKDIR=mkdir -p
+
+CAMLP4OUT=$(CAMLP4:=out)
+CAMLP4OPT=$(CAMLP4:=opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
@@ -43,11 +47,11 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 
 OPTUTILS=$(UTILS)
 
-PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
+PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo
 
-TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
+TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
@@ -55,9 +59,9 @@ TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
   typing/typedtree.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/includecore.cmo \
-  typing/includemod.cmo typing/parmatch.cmo \
+  typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
   typing/typejoin.cmo typing/joinmatching.cmo \
-  typing/typetexp.cmo typing/stypes.cmo typing/typecore.cmo \
+  typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
   typing/typemod.cmo
 
@@ -76,7 +80,7 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
 ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
-  asmcomp/clambda.cmo asmcomp/compilenv.cmo \
+  asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
   asmcomp/comballoc.cmo asmcomp/liveness.cmo \
@@ -121,6 +125,7 @@ OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
   typing/ident.cmo typing/path.cmo typing/types.cmo typing/btype.cmo \
+  utils/warnings.cmo parsing/location.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
@@ -139,7 +144,8 @@ defaultentry:
 # enough for developping jocaml (et c'est deja pas mal)
 center:runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 # Recompile the system using the bootstrap compiler
-all: center camlp4out $(DEBUGGER) ocamldoc
+all: center $(CAMLP4OUT) $(DEBUGGER) ocamldoc
+
 
 # Compile everything the first time
 world:
@@ -265,12 +271,12 @@ opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \
+	  $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
 	 otherlibrariesopt \
-	 ocamllex.opt ocamltoolsopt.opt camlp4opt ocamldoc.opt
+	 ocamllex.opt ocamltoolsopt.opt $(CAMLP4OPT) ocamldoc.opt
 
 base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \
+	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
 	 otherlibrariesopt
 
 # Installation
@@ -280,8 +286,9 @@ install:
 	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(STUBLIBDIR); fi
 #	if test -d $(MANDIR)/man$(MANEXT); then : ; \
 #	  else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
+	cp VERSION $(LIBDIR)/
 	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
-	  dllthreads.so dllunix.so dllgraphics.so dllmldbm.so dllstr.so \
+	  dllthreads.so dllunix.so dllgraphics.so dllstr.so \
 	  dlltkanim.so
 	cd byterun; $(MAKE) install
 	cp ocamlc $(BINDIR)/jocamlc$(EXE)
@@ -391,29 +398,30 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
-            -e 's|%%OCAMLLIB%%|$(OCAMLLIB)|' \
-            -e 's|%%BYTERUN%%|$(BINDIR)/jocamlrun|' \
-            -e 's|%%CCOMPTYPE%%|cc|' \
-            -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
-            -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
-            -e 's|%%PACKLD%%|$(PACKLD)|' \
-            -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
-            -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
-            -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
-            -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
-            -e 's|%%ARCH%%|$(ARCH)|' \
-            -e 's|%%MODEL%%|$(MODEL)|' \
-            -e 's|%%SYSTEM%%|$(SYSTEM)|' \
-            -e 's|%%EXT_OBJ%%|.o|' \
-            -e 's|%%EXT_ASM%%|.s|' \
-            -e 's|%%EXT_LIB%%|.a|' \
-            -e 's|%%EXT_DLL%%|.so|' \
-            -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
-            -e 's|%%ASM%%|$(ASM)|' \
-            -e 's|%%MKDLL%%|$(MKDLL)|' \
-            -e 's|%%MKEXE%%|$(MKEXE)|' \
-            -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
-            utils/config.mlp > utils/config.ml
+	    -e 's|%%BYTERUN%%|$(BINDIR)/jocamlrun|' \
+	    -e 's|%%CCOMPTYPE%%|cc|' \
+	    -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
+	    -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
+	    -e 's|%%PACKLD%%|$(PACKLD)|' \
+	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
+	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
+	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
+	    -e 's|%%ARCMD%%|$(ARCMD)|' \
+	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+	    -e 's|%%ARCH%%|$(ARCH)|' \
+	    -e 's|%%MODEL%%|$(MODEL)|' \
+	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
+	    -e 's|%%EXT_OBJ%%|.o|' \
+	    -e 's|%%EXT_ASM%%|.s|' \
+	    -e 's|%%EXT_LIB%%|.a|' \
+	    -e 's|%%EXT_DLL%%|.so|' \
+	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
+	    -e 's|%%ASM%%|$(ASM)|' \
+	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
+	    -e 's|%%MKDLL%%|$(MKDLL)|' \
+	    -e 's|%%MKEXE%%|$(MKEXE)|' \
+	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
+	    utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
 partialclean::
@@ -440,16 +448,6 @@ partialclean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
-
-# The auxiliary lexer for counting line numbers
-
-parsing/linenum.ml: parsing/linenum.mll
-	$(CAMLLEX) parsing/linenum.mll
-
-partialclean::
-	rm -f parsing/linenum.ml
-
-beforedepend:: parsing/linenum.ml
 
 # The bytecode compiler compiled with the native-code compiler
 
@@ -718,6 +716,11 @@ checkstack:
 	  else :; \
 	fi
 	@rm -f tools/checkstack
+
+# Make clean in the test suite
+
+clean::
+	cd testsuite; $(MAKE) clean
 
 # Make MacOS X package
 

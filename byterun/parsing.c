@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -125,7 +125,7 @@ static void print_token(struct parser_tables *tables, int state, value tok)
             state, token_name(tables->names_block, Tag_val(tok)));
     v = Field(tok, 0);
     if (Is_long(v))
-      fprintf(stderr, "%ld", Long_val(v));
+      fprintf(stderr, "%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val(v));
     else if (Tag_val(v) == String_tag)
       fprintf(stderr, "%s", String_val(v));
     else if (Tag_val(v) == Double_tag)

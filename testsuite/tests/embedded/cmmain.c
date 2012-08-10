@@ -9,7 +9,7 @@ extern char * format_result(int n);
 
 int main(int argc, char ** argv)
 {
-  printf("Initializing Caml code...\n");
+  printf("Initializing OCaml code...\n");
 #ifdef NO_BYTECODE_FILE
   caml_startup(argv);
 #else

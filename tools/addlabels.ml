@@ -1,3 +1,16 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Jacques Garrigue, Kyoto University RIMS                  *)
+(*                                                                     *)
+(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  en Automatique and Kyoto University.  All rights reserved.         *)
+(*  This file is distributed under the terms of the Q Public License   *)
+(*  version 1.0.                                                       *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* $Id$ *)
 
 open StdLabels
@@ -315,7 +328,6 @@ let rec add_labels_class ~text ~classes ~values ~methods cl =
               add_labels_expr ~text ~classes ~values e;
               values
           | Pcf_inher _ | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _ -> values
-          | Pcf_let _ -> values (* not in the grammar *)
         end)
   | Pcl_fun (_, opt, pat, cl) ->
       begin match opt with None -> ()

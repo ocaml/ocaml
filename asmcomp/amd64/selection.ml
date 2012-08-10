@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -121,7 +121,7 @@ method is_immediate n = n <= 0x7FFFFFFF && n >= -0x80000000
 
 method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
-method select_addressing exp =
+method select_addressing chunk exp =
   let (a, d) = select_addr exp in
   (* PR#4625: displacement must be a signed 32-bit immediate *)
   if d < -0x8000_0000 || d > 0x7FFF_FFFF
@@ -157,7 +157,7 @@ method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
     Caddi | Cadda | Csubi | Csuba ->
-      begin match self#select_addressing (Cop(op, args)) with
+      begin match self#select_addressing Word (Cop(op, args)) with
         (Iindexed d, _) -> super#select_operation op args
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
@@ -191,7 +191,7 @@ method! select_operation op args =
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
         when loc = loc' && self#is_immediate n ->
-          let (addr, arg) = self#select_addressing loc in
+          let (addr, arg) = self#select_addressing Word loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
           super#select_operation op args
@@ -202,12 +202,12 @@ method! select_operation op args =
 
 method select_floatarith commutative regular_op mem_op args =
   match args with
-    [arg1; Cop(Cload (Double|Double_u), [loc2])] ->
-      let (addr, arg2) = self#select_addressing loc2 in
+    [arg1; Cop(Cload (Double|Double_u as chunk), [loc2])] ->
+      let (addr, arg2) = self#select_addressing chunk loc2 in
       (Ispecific(Ifloatarithmem(mem_op, addr)),
                  [arg1; arg2])
-  | [Cop(Cload (Double|Double_u), [loc1]); arg2] when commutative ->
-      let (addr, arg1) = self#select_addressing loc1 in
+  | [Cop(Cload (Double|Double_u as chunk), [loc1]); arg2] when commutative ->
+      let (addr, arg1) = self#select_addressing chunk loc1 in
       (Ispecific(Ifloatarithmem(mem_op, addr)),
                  [arg2; arg1])
   | [arg1; arg2] ->
@@ -226,9 +226,6 @@ method! insert_op_debug op dbg rs rd =
     rd
   with Use_default ->
     super#insert_op_debug op dbg rs rd
-
-method! insert_op op rs rd =
-  self#insert_op_debug op Debuginfo.none rs rd
 
 end
 

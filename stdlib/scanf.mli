@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
 (*                                                                     *)
@@ -25,7 +25,8 @@
     strings, files, or anything that can return characters. The more general
     source of characters is named a {e formatted input channel} (or {e
     scanning buffer}) and has type {!Scanning.in_channel}. The more general
-    formatted input function reads from any scanning buffer and is named [bscanf].
+    formatted input function reads from any scanning buffer and is named
+    [bscanf].
 
     Generally speaking, the formatted input functions have 3 arguments:
     - the first argument is a source of characters for the input,
@@ -58,23 +59,23 @@
 
     - if we define the receiver [f] as [let f x = x + 1],
 
-    then [bscanf Scanning.stdin "%d" f] reads an integer [n] from the standard input
-    and returns [f n] (that is [n + 1]). Thus, if we evaluate [bscanf stdin
-    "%d" f], and then enter [41] at the keyboard, we get [42] as the final
-    result. *)
+    then [bscanf Scanning.stdin "%d" f] reads an integer [n] from the
+    standard input and returns [f n] (that is [n + 1]). Thus, if we
+    evaluate [bscanf stdin "%d" f], and then enter [41] at the
+    keyboard, we get [42] as the final result. *)
 
 (** {7 Formatted input as a functional feature} *)
 
-(** The Caml scanning facility is reminiscent of the corresponding C feature.
+(** The OCaml scanning facility is reminiscent of the corresponding C feature.
     However, it is also largely different, simpler, and yet more powerful:
     the formatted input functions are higher-order functionals and the
     parameter passing mechanism is just the regular function application not
     the variable assignment based mechanism which is typical for formatted
-    input in imperative languages; the Caml format strings also feature
+    input in imperative languages; the OCaml format strings also feature
     useful additions to easily define complex tokens; as expected within a
     functional programming language, the formatted input functions also
     support polymorphism, in particular arbitrary interaction with
-    polymorphic user-defined scanners.  Furthermore, the Caml formatted input
+    polymorphic user-defined scanners.  Furthermore, the OCaml formatted input
     facility is fully type-checked at compile time. *)
 
 (** {6 Formatted input channel} *)
@@ -116,7 +117,7 @@ val stdin : in_channel;;
 
 type file_name = string;;
 (** A convenient alias to designate a file name.
-    @since 3.13.0
+    @since 4.00.0
 *)
 
 val open_in : file_name -> in_channel;;
@@ -132,8 +133,8 @@ val open_in : file_name -> in_channel;;
 *)
 
 val open_in_bin : string -> in_channel;;
-(** [Scanning.open_in_bin fname] returns a formatted input channel for bufferized
-    reading in binary mode of file [fname].
+(** [Scanning.open_in_bin fname] returns a formatted input channel for
+    bufferized reading in binary mode of file [fname].
     @since 3.12.0
 *)
 
@@ -192,12 +193,13 @@ end;;
 
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
-(** The type of formatted input scanners: [('a, 'b, 'c, 'd) scanner] is the
-    type of a formatted input function that reads from some formatted input channel
-    according to some format string; more precisely, if [scan] is some
-    formatted input function, then [scan ic fmt f] applies [f] to the arguments
-    specified by the format string [fmt], when [scan] has read those arguments
-    from the formatted input channel [ic].
+(** The type of formatted input scanners: [('a, 'b, 'c, 'd) scanner]
+    is the type of a formatted input function that reads from some
+    formatted input channel according to some format string; more
+    precisely, if [scan] is some formatted input function, then [scan
+    ic fmt f] applies [f] to the arguments specified by the format
+    string [fmt], when [scan] has read those arguments from the
+    formatted input channel [ic].
 
     For instance, the [scanf] function below has type [('a, 'b, 'c, 'd)
     scanner], since it is a formatted input function that reads from
@@ -273,7 +275,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
        ([0x[0-9a-f]+] and [0X[0-9A-F]+]), octal ([0o[0-7]+]), and binary
        ([0b[0-1]+]) notations are understood).
     - [u]: reads an unsigned decimal integer.
-    - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-f]+] or [[0-9A-F]+]).
+    - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-fA-F]+]).
     - [o]: reads an unsigned octal integer ([[0-7]+]).
     - [s]: reads a string argument that spreads as much as possible, until the
       following bounding condition holds: {ul
@@ -282,20 +284,20 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
          encountered,}
       {- the end-of-input has been reached.}}
       Hence, this conversion always succeeds: it returns an empty
-      string, if the bounding condition holds when the scan begins.
+      string if the bounding condition holds when the scan begins.
     - [S]: reads a delimited string argument (delimiters and special
-      escaped characters follow the lexical conventions of Caml).
+      escaped characters follow the lexical conventions of OCaml).
     - [c]: reads a single character. To test the current input character
       without reading it, specify a null field width, i.e. use
       specification [%0c]. Raise [Invalid_argument], if the field width
       specification is greater than 1.
     - [C]: reads a single delimited character (delimiters and special
-      escaped characters follow the lexical conventions of Caml).
+      escaped characters follow the lexical conventions of OCaml).
     - [f], [e], [E], [g], [G]: reads an optionally signed
       floating-point number in decimal notation, in the style [dddd.ddd
       e/E+-dd].
     - [F]: reads a floating point number according to the lexical
-      conventions of Caml (hence the decimal point is mandatory if the
+      conventions of OCaml (hence the decimal point is mandatory if the
       exponent part is not mentioned).
     - [B]: reads a boolean argument ([true] or [false]).
     - [b]: reads a boolean argument (for backward compatibility; do not use
@@ -318,17 +320,17 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       first character of the range (or just after the [^] in case of
       range negation); hence [\[\]\]] matches a [\]] character and
       [\[^\]\]] matches any character that is not [\]].
-    - [r]: user-defined reader. Takes the next [ri] formatted input function and
-      applies it to the scanning buffer [ib] to read the next argument. The
-      input function [ri] must therefore have type [Scanning.in_channel -> 'a] and
-      the argument read has type ['a].
-    - [\{ fmt %\}]: reads a format string argument.
-      The format string read must have the same type as the format string
-      specification [fmt].
-      For instance, ["%{ %i %}"] reads any format string that can read a value of
-      type [int]; hence, if [s] is the string ["fmt:\"number is %u\""], then
-      [Scanf.sscanf s "fmt: %{%i%}"] succeeds and returns the format string
-      ["number is %u"].
+      Use [%%] and [%\@] to include a [%] or a [\@] in a range.
+    - [r]: user-defined reader. Takes the next [ri] formatted input
+      function and applies it to the scanning buffer [ib] to read the
+      next argument. The input function [ri] must therefore have type
+      [Scanning.in_channel -> 'a] and the argument read has type ['a].
+    - [\{ fmt %\}]: reads a format string argument.  The format string
+      read must have the same type as the format string specification
+      [fmt].  For instance, ["%{ %i %}"] reads any format string that
+      can read a value of type [int]; hence, if [s] is the string
+      ["fmt:\"number is %u\""], then [Scanf.sscanf s "fmt: %{%i%}"]
+      succeeds and returns the format string ["number is %u"].
     - [\( fmt %\)]: scanning format substitution.
       Reads a format string and then goes on scanning with the format string
       read, instead of using [fmt].
@@ -352,7 +354,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [N] or [L]: returns the number of tokens read so far.
     - [!]: matches the end of input condition.
     - [%]: matches one [%] character in the input.
-    - [,]: the no-op delimiter for conversion specifications.
+    - [\@]: matches one [\@] character in the input.
+    - [,]: does nothing.
 
     Following the [%] character that introduces a conversion, there may be
     the special flag [_]: the conversion that follows occurs as usual,
@@ -363,7 +366,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     The field width is composed of an optional integer literal
     indicating the maximal width of the token to read.
     For instance, [%6d] reads an integer, having at most 6 decimal digits;
-    [%4f] reads a float with at most 4 characters; and [%8\[\\000-\\255\]]
+    [%4f] reads a float with at most 4 characters; and [%8[\\000-\\255]]
     returns the next 8 characters (or all the characters still available,
     if fewer than 8 characters are available in the input).
 
@@ -373,7 +376,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       nothing to read in the input: in this case, it simply returns [""].
 
     - in addition to the relevant digits, ['_'] characters may appear
-    inside numbers (this is reminiscent to the usual Caml lexical
+    inside numbers (this is reminiscent to the usual OCaml lexical
     conventions). If stricter scanning is desired, use the range
     conversion facility instead of the number conversions.
 
@@ -386,19 +389,22 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** {7:indication Scanning indications in format strings} *)
 
 (** Scanning indications appear just after the string conversions [%s]
-    and [%\[ range \]] to delimit the end of the token. A scanning
-    indication is introduced by a [@] character, followed by some
-    constant character [c]. It means that the string token should end
+    and [%[ range ]] to delimit the end of the token. A scanning
+    indication is introduced by a [\@] character, followed by some
+    plain character [c]. It means that the string token should end
     just before the next matching [c] (which is skipped). If no [c]
     character is encountered, the string token spreads as much as
     possible. For instance, ["%s@\t"] reads a string up to the next
-    tab character or to the end of input. If a scanning
-    indication [\@c] does not follow a string conversion, it is treated
-    as a plain [c] character.
+    tab character or to the end of input. If a [\@] character appears
+    anywhere else in the format string, it is treated as a plain character.
 
     Note:
 
-    - the scanning indications introduce slight differences in the syntax of
+    - As usual in format strings, [%] characters must be escaped using [%%]
+      and [%\@] is equivalent to [\@]; this rule still holds within range
+      specifications and scanning indications.
+      For instance, ["%s@%%"] reads a string up to the next [%] character.
+    - The scanning indications introduce slight differences in the syntax of
     [Scanf] format strings, compared to those used for the [Printf]
     module. However, the scanning indications are similar to those used in
     the [Format] module; hence, when producing formatted text to be scanned
@@ -425,7 +431,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
     - as a consequence, scanning a [%s] conversion never raises exception
     [End_of_file]: if the end of input is reached the conversion succeeds and
-    simply returns the characters read so far, or [""] if none were ever read. *)
+    simply returns the characters read so far, or [""] if none were ever read.
+    *)
 
 (** {6 Specialised formatted input functions} *)
 
@@ -486,4 +493,12 @@ val format_from_string :
     Raise [Scan_failure] if [s], considered as a format string, does not
     have the same type as [fmt].
     @since 3.10.0
+*)
+
+val unescaped : string -> string
+(** Return a copy of the argument with escape sequences, following the
+    lexical conventions of OCaml, replaced by their corresponding
+    special characters.  If there is no escape sequence in the
+    argument, still return a copy, contrary to String.escaped.
+    @since 4.00.0
 *)

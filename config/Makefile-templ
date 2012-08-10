@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -46,19 +46,15 @@ SHARPBANGSCRIPTS=true
 #BYTECC=cc
 
 ### Additional compile-time options for $(BYTECC).
-# If using gcc on Intel 386 or Motorola 68k:
+# If using gcc on Intel x86:
 # (the -fno-defer-pop option circumvents a bug in certain versions of gcc)
 #BYTECCCOMPOPTS=-fno-defer-pop -Wall
-# If using gcc and being superstitious:
+# If using gcc and being cautious:
 #BYTECCCOMPOPTS=-Wall
-# Under NextStep:
-#BYTECCCOMPOPTS=-U__GNUC__ -fno-defer-pop -Wall
 # Otherwise:
 #BYTECCCOMPOPTS=
 
 ### Additional link-time options for $(BYTECC)
-### If using GCC on a Dec Alpha under OSF1:
-#BYTECCLINKOPTS=-Wl,-T,12000000 -Wl,-D,14000000
 # To support dynamic loading of shared libraries (they need to look at
 # our own symbols):
 #BYTECCLINKOPTS=-Wl,-E
@@ -90,6 +86,9 @@ RANLIBCMD=ranlib
 #RANLIB=ar rs
 #RANLIBCMD=
 
+### How to invoke ar
+#ARCMD=ar
+
 ### Shared library support
 # Extension for shared libraries: so if supported, a if not supported
 #SO=so
@@ -111,23 +110,15 @@ RANLIBCMD=ranlib
 ### Name of architecture for the native-code compiler
 ### Currently supported:
 ###
-### alpha       Digital/Compaq Alpha machines under DUnix/Tru64 or Linux
 ### i386        Intel Pentium PCs under Linux, *BSD*, NextStep
 ### sparc       Sun Sparcstation under SunOS 4.1 or Solaris 2
-### mips        SGI machines under IRIX
-### hppa        HP 9000/700 under HPUX and Linux
 ### power       Macintosh under Mac OS X and Linux
-### ia64        Intel Itanium/IA64 under Linux
 ### arm         ARM under Linux
 ###
 ### Set ARCH=none if your machine is not supported
-#ARCH=alpha
 #ARCH=i386
 #ARCH=sparc
-#ARCH=mips
-#ARCH=hppa
 #ARCH=power
-#ARCH=ia64
 #ARCH=arm
 #ARCH=none
 
@@ -144,37 +135,18 @@ RANLIBCMD=ranlib
 #MODEL=default
 
 ### Name of operating system family for the native-code compiler.
-### If ARCH=sparc: choose between
-###   SYSTEM=sunos      SunOS 4.1
-###   SYSTEM=solaris    Solaris 2
-###
-### If ARCH=i386:  choose between
-###   SYSTEM=linux_aout Linux with a.out binaries
-###   SYSTEM=linux_elf  Linux with ELF binaries
-###   SYSTEM=bsd        FreeBSD, probably works for NetBSD also
-###   SYSTEM=nextstep   NextStep
-###
-### For other architectures: set SYSTEM=unknown
-###
-#SYSTEM=sunos
 #SYSTEM=solaris
 #SYSTEM=linux
 #SYSTEM=linux_elf
 #SYSTEM=bsd
-#SYSTEM=nextstep
 #SYSTEM=unknown
 
 ### Which C compiler to use for the native-code compiler.
-### cc is better than gcc on the Mips and Alpha.
 #NATIVECC=cc
 #NATIVECC=gcc
 
 ### Additional compile-time options for $(NATIVECC).
-# For cc on the Alpha:
-#NATIVECCCOMPOPTS=-std1
-# For cc on the Mips:
-#NATIVECCCOMPOPTS=-std
-# For gcc if superstitious:
+# For gcc if cautious:
 #NATIVECCCOMPOPTS=-Wall
 
 ### Additional link-time options for $(NATIVECC)
@@ -185,29 +157,21 @@ RANLIBCMD=ranlib
 #NATIVECCRPATH=-Wl,-rpath
 
 ### Command and flags to use for assembling ocamlopt-generated code
-# For the Alpha or the Mips:
-#AS=as -O2
-# For the PowerPC:
-#AS=as -u -m ppc -w
-# Otherwise:
-#AS=as
+#ASM=as
 
 ### Command and flags to use for assembling .S files (often with preprocessing)
 # If gcc is available:
 #ASPP=gcc -c
-# On SunOS and Solaris:
+# On Solaris:
 #ASPP=as -P
 
 ### Extra flags to use for assembling .S files in profiling mode
-# On Digital Unix:
-#ASPPPROFFLAGS=-pg -DPROFILING
-# Otherwise:
 #ASPPPROFFLAGS=-DPROFILING
 
 ### Whether profiling with gprof is supported
-# If yes: (x86/Linux, Alpha/Digital Unix, Sparc/Solaris):
+# If yes: (e.g. x86/Linux, Sparc/Solaris):
 #PROFILING=prof
-# If no: (all others)
+# If no:
 #PROFILING=noprof
 
 ### Option to give to the C compiler for profiling
@@ -238,8 +202,6 @@ OTHERLIBRARIES=unix str num threads graph dynlink labltk bigarray join
 #	generic (portable C, works everywhere)
 #	ia32	(Intel x86)
 #	amd64	(AMD Opteron, Athlon64)
-#       alpha
-#	mips
 #	ppc	(Power PC)
 #	sparc
 # If you don't know, leave BNG_ARCH=generic, which selects a portable
@@ -267,13 +229,6 @@ BNG_ASM_LEVEL=1
 #X11_LINK=-lX11
 # For SunOS with OpenLook:
 #X11_LINK=-L$(X11_LIB) -lX11
-
-### -I options for finding the include file ndbm.h
-# Needed for the "dbm" package
-# Usually:
-#DBM_INCLUDES=
-# For recent Linux systems:
-#DBM_INCLUDES=-I/usr/include/gdbm
 
 ### Preprocessor options for finding tcl.h and tk.h
 # Needed for the "labltk" package

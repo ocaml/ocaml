@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -64,10 +64,11 @@ let make_symlist prefix sep suffix l =
 ;;
 
 let print_spec buf (key, spec, doc) =
-  match spec with
-  | Symbol (l, _) -> bprintf buf "  %s %s%s\n" key (make_symlist "{" "|" "}" l)
-                             doc
-  | _ -> bprintf buf "  %s %s\n" key doc
+  if String.length doc > 0 then
+    match spec with
+    | Symbol (l, _) -> bprintf buf "  %s %s%s\n" key (make_symlist "{" "|" "}" l)
+                               doc
+    | _ -> bprintf buf "  %s %s\n" key doc
 ;;
 
 let help_action () = raise (Stop (Unknown "-help"));;
@@ -237,6 +238,10 @@ let max_arg_len cur (kwd, spec, doc) =
 
 let add_padding len ksd =
   match ksd with
+  | (_, _, "") ->
+      (* Do not pad undocumented options, so that they still don't show up when
+       * run through [usage] or [parse]. *)
+      ksd
   | (kwd, (Symbol (l, _) as spec), msg) ->
       let cutcol = second_word msg in
       let spaces = String.make (len - cutcol + 3) ' ' in

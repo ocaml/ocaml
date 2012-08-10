@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_todo.ml 411 2004-08-03 13:08:20Z guesdon $ *)
+(* $Id$ *)
 
 (** An OCamldoc generator to retrieve information in "todo" tags and
    generate an html page with all todo items. *)

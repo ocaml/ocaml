@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -151,6 +151,7 @@ type open_flag =
   | O_DSYNC
   | O_SYNC
   | O_RSYNC
+  | O_SHARE_DELETE
 
 type file_perm = int
 
@@ -838,27 +839,47 @@ let open_proc cmd proc input output toclose =
 let open_process_in cmd =
   let (in_read, in_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) stdin in_write [in_read];
+  begin
+    try
+      open_proc cmd (Process_in inchan) stdin in_write [in_read];
+    with e ->
+      close_in inchan;
+      close in_write;
+      raise e
+  end;
   close in_write;
   inchan
 
 let open_process_out cmd =
   let (out_read, out_write) = pipe() in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read stdout [out_write];
+  begin
+    try
+      open_proc cmd (Process_out outchan) out_read stdout [out_write];
+    with e ->
+      close_out outchan;
+      close out_read;
+      raise e
+  end;
   close out_read;
   outchan
 
 let open_process cmd =
   let (in_read, in_write) = pipe() in
-  let (out_read, out_write) = pipe() in
-  let inchan = in_channel_of_descr in_read in
-  let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process(inchan, outchan)) out_read in_write
+  let fds_to_close = ref [in_read;in_write] in
+  try
+    let (out_read, out_write) = pipe() in
+    fds_to_close := [in_read;in_write;out_read;out_write];
+    let inchan = in_channel_of_descr in_read in
+    let outchan = out_channel_of_descr out_write in
+    open_proc cmd (Process(inchan, outchan)) out_read in_write
                                            [in_read; out_write];
-  close out_read;
-  close in_write;
-  (inchan, outchan)
+    close out_read;
+    close in_write;
+    (inchan, outchan)
+  with e ->
+    List.iter close !fds_to_close;
+    raise e
 
 let open_proc_full cmd env proc input output error toclose =
   let cloexec = List.for_all try_set_close_on_exec toclose in
@@ -874,17 +895,24 @@ let open_proc_full cmd env proc input output error toclose =
 
 let open_process_full cmd env =
   let (in_read, in_write) = pipe() in
-  let (out_read, out_write) = pipe() in
-  let (err_read, err_write) = pipe() in
-  let inchan = in_channel_of_descr in_read in
-  let outchan = out_channel_of_descr out_write in
-  let errchan = in_channel_of_descr err_read in
-  open_proc_full cmd env (Process_full(inchan, outchan, errchan))
-                 out_read in_write err_write [in_read; out_write; err_read];
-  close out_read;
-  close in_write;
-  close err_write;
-  (inchan, outchan, errchan)
+  let fds_to_close = ref [in_read;in_write] in
+  try
+    let (out_read, out_write) = pipe() in
+    fds_to_close := out_read::out_write:: !fds_to_close;
+    let (err_read, err_write) = pipe() in
+    fds_to_close := err_read::err_write:: !fds_to_close;
+    let inchan = in_channel_of_descr in_read in
+    let outchan = out_channel_of_descr out_write in
+    let errchan = in_channel_of_descr err_read in
+    open_proc_full cmd env (Process_full(inchan, outchan, errchan))
+      out_read in_write err_write [in_read; out_write; err_read];
+    close out_read;
+    close in_write;
+    close err_write;
+    (inchan, outchan, errchan)
+  with e ->
+    List.iter close !fds_to_close;
+    raise e
 
 let find_proc_id fun_name proc =
   try

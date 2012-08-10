@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -86,6 +86,10 @@ void caml_output_val (struct channel * chan, value v, value flags);
 
 /* </private> */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 CAMLextern void caml_output_value_to_malloc(value v, value flags,
                                             /*out*/ char ** buf,
                                             /*out*/ intnat * len);
@@ -110,7 +114,7 @@ void caml_intern_cleanup(void) ;
 /* </private> */
 
 CAMLextern value caml_input_val_from_string (value str, intnat ofs);
-  /* Read a structured value from the Caml string [str], starting
+  /* Read a structured value from the OCaml string [str], starting
      at offset [ofs]. */
 CAMLextern value caml_input_value_from_malloc(char * data, intnat ofs);
   /* Read a structured value from a malloced buffer.  [data] points
@@ -175,5 +179,9 @@ CAMLextern code_t caml_get_saved_code(int idx) ;
 CAMLextern value caml_get_saved_value(int idx) ;
 /*<JOCAML*/
 /* <JOCAML */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_INTEXT_H */

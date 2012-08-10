@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
 (*                                                                     *)
@@ -180,7 +180,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           find_printer env ty obj
         with Not_found ->
           match (Ctype.repr ty).desc with
-          | Tvar ->
+          | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
           | Tarrow(_, ty1, ty2, _) ->
               Oval_stuff "<fun>"
@@ -247,16 +247,25 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                       if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
-                    let (constr_name, constr_args) =
+                    let (constr_name, constr_args,ret_type) =
                       Datarepr.find_constr_by_tag tag constr_list in
+		    let type_params = 
+		      match ret_type with
+			Some t -> 
+			  begin match (Ctype.repr t).desc with 
+			    Tconstr (_,params,_) ->
+			      params
+			  | _ -> assert false end
+		      | None -> decl.type_params
+		    in
                     let ty_args =
                       List.map
                         (function ty ->
-                           try Ctype.apply env decl.type_params ty ty_list with
+                           try Ctype.apply env type_params ty ty_list with
                              Ctype.Cannot_apply -> abstract_type)
                         constr_args in
                     tree_of_constr_with_args (tree_of_constr env path)
-                                           constr_name 0 depth obj ty_args
+                                           constr_name 0 depth obj ty_args		    
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x
@@ -318,8 +327,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
               fatal_error "Printval.outval_of_value"
           | Tpoly (ty, _) ->
               tree_of_val (depth - 1) obj ty
-          | Tunivar ->
-              Oval_stuff "<poly>"
           | Tproc _ -> assert false
           | Tpackage _ ->
               Oval_stuff "<module>"
@@ -348,7 +355,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
         let cstr = Env.lookup_constructor lid env in
         let path =
           match cstr.cstr_tag with
-            Cstr_exception p -> p | _ -> raise Not_found in
+            Cstr_exception (p, _) -> p | _ -> raise Not_found in
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)

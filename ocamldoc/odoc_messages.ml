@@ -53,6 +53,9 @@ let colorize_code = "\n\t\tColorize code even in documentation pages "^html_only
 let charset c = Printf.sprintf
   "<s>\n\t\tAdd information about character encoding being s\n\t\t(default is %s)"
   c
+let charset c = Printf.sprintf
+  "<s>\n\t\tAdd information about character encoding being s\n\t\t(default is %s)"
+  c
 let generate_html = "\tGenerate HTML documentation"
 let generate_latex = "\tGenerate LaTeX documentation"
 let generate_texinfo = "\tGenerate TeXinfo documentation"
@@ -64,7 +67,9 @@ let option_not_in_native_code op = "Option "^op^" not available in native code v
 let default_out_file = "ocamldoc.out"
 let out_file =
   "<file>\tSet the output file name, used by texi, latex and dot generators\n"^
-  "\t\t(default is "^default_out_file^")"
+  "\t\t(default is "^default_out_file^")\n"^
+  "\t\tor the prefix of index files for the HTML generator\n"^
+  "\t\t(default is index)"
 
 let dot_include_all =
   "\n\t\tInclude all modules in the dot output, not only the\n"^

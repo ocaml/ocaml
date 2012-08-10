@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -240,6 +240,7 @@ type open_flag = Unix.open_flag =
   | O_DSYNC                     (** Writes complete as `Synchronised I/O data integrity completion' *)
   | O_SYNC                      (** Writes complete as `Synchronised I/O file integrity completion' *)
   | O_RSYNC                     (** Reads complete as writes (depending on O_SYNC/O_DSYNC) *)
+  | O_SHARE_DELETE              (** Windows only: allow the file to be deleted while still open *)
 (** The flags to {!UnixLabels.openfile}. *)
 
 

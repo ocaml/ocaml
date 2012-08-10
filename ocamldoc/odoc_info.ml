@@ -211,12 +211,12 @@ let info_string_of_info i =
    | Some t -> p b "%s" (escape_arobas (text_string_of_text t))
   );
   List.iter
-    (fun s -> p b "\n@author %s" (escape_arobas s))
+    (fun s -> p b "\n@@author %s" (escape_arobas s))
     i.i_authors;
   (
    match i.i_version with
      None -> ()
-   | Some s -> p b "\n@version %s" (escape_arobas s)
+   | Some s -> p b "\n@@version %s" (escape_arobas s)
   );
   (
    (* TODO: escape characters ? *)
@@ -227,7 +227,7 @@ let info_string_of_info i =
    in
    List.iter
      (fun (sref, t) ->
-       p b "\n@see %s %s"
+       p b "\n@@see %s %s"
 	 (escape_arobas (f_see_ref sref))
 	 (escape_arobas (text_string_of_text t))
      )
@@ -236,25 +236,25 @@ let info_string_of_info i =
   (
    match i.i_since with
      None -> ()
-   | Some s -> p b "\n@since %s" (escape_arobas s)
+   | Some s -> p b "\n@@since %s" (escape_arobas s)
   );
   (
    match i.i_deprecated with
      None -> ()
    | Some t ->
-       p b "\n@deprecated %s"
+       p b "\n@@deprecated %s"
 	 (escape_arobas (text_string_of_text t))
   );
   List.iter
     (fun (s, t) ->
-      p b "\n@param %s %s"
+      p b "\n@@param %s %s"
 	(escape_arobas s)
 	(escape_arobas (text_string_of_text t))
     )
     i.i_params;
   List.iter
     (fun (s, t) ->
-      p b "\n@raise %s %s"
+      p b "\n@@raise %s %s"
 	(escape_arobas s)
 	(escape_arobas (text_string_of_text t))
     )
@@ -263,12 +263,12 @@ let info_string_of_info i =
    match i.i_return_value with
      None -> ()
    | Some t ->
-       p b "\n@return %s"
+       p b "\n@@return %s"
 	 (escape_arobas (text_string_of_text t))
   );
   List.iter
     (fun (s, t) ->
-      p b "\n@%s %s" s
+      p b "\n@@%s %s" s
 	(escape_arobas (text_string_of_text t))
     )
     i.i_custom;

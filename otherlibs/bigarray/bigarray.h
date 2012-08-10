@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*         Manuel Serrano and Xavier Leroy, INRIA Rocquencourt         */
 /*                                                                     */
@@ -42,7 +42,7 @@ enum caml_ba_kind {
   CAML_BA_UINT16,              /* Unsigned 16-bit integers */
   CAML_BA_INT32,               /* Signed 32-bit integers */
   CAML_BA_INT64,               /* Signed 64-bit integers */
-  CAML_BA_CAML_INT,            /* Caml-style integers (signed 31 or 63 bits) */
+  CAML_BA_CAML_INT,            /* OCaml-style integers (signed 31 or 63 bits) */
   CAML_BA_NATIVE_INT,       /* Platform-native long integers (32 or 64 bits) */
   CAML_BA_COMPLEX32,           /* Single-precision complex */
   CAML_BA_COMPLEX64,           /* Double-precision complex */
@@ -56,8 +56,8 @@ enum caml_ba_layout {
 };
 
 enum caml_ba_managed {
-  CAML_BA_EXTERNAL = 0,        /* Data is not allocated by Caml */
-  CAML_BA_MANAGED = 0x200,     /* Data is allocated by Caml */
+  CAML_BA_EXTERNAL = 0,        /* Data is not allocated by OCaml */
+  CAML_BA_MANAGED = 0x200,     /* Data is allocated by OCaml */
   CAML_BA_MAPPED_FILE = 0x400, /* Data is a memory mapped file */
   CAML_BA_MANAGED_MASK = 0x600 /* Mask for "managed" bits in flags field */
 };
@@ -73,7 +73,12 @@ struct caml_ba_array {
   intnat num_dims;            /* Number of dimensions */
   intnat flags;  /* Kind of element array + memory layout + allocation status */
   struct caml_ba_proxy * proxy; /* The proxy for sub-arrays, or NULL */
+  /* PR#5516: use C99's / gcc's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L) || defined(__GNUC__)
+  intnat dim[]  /*[num_dims]*/; /* Size in each dimension */
+#else
   intnat dim[1] /*[num_dims]*/; /* Size in each dimension */
+#endif
 };
 
 #define Caml_ba_array_val(v) ((struct caml_ba_array *) Data_custom_val(v))

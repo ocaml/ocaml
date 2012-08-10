@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -48,14 +48,12 @@ let read_toc ic =
   let pos_trailer = in_channel_length ic - 16 in
   seek_in ic pos_trailer;
   let num_sections = input_binary_int ic in
-  let header = String.create(String.length Config.exec_magic_number) in
-  really_input ic header 0 (String.length Config.exec_magic_number);
+  let header = Misc.input_bytes ic (String.length Config.exec_magic_number) in
   if header <> Config.exec_magic_number then raise Bad_magic_number;
   seek_in ic (pos_trailer - 8 * num_sections);
   section_table := [];
   for i = 1 to num_sections do
-    let name = String.create 4 in
-    really_input ic name 0 4;
+    let name = Misc.input_bytes ic 4 in
     let len = input_binary_int ic in
     section_table := (name, len) :: !section_table
   done
@@ -81,10 +79,7 @@ let seek_section ic name =
 (* Return the contents of a section, as a string *)
 
 let read_section_string ic name =
-  let len = seek_section ic name in
-  let res = String.create len in
-  really_input ic res 0 len;
-  res
+  Misc.input_bytes ic (seek_section ic name)
 
 (* Return the contents of a section, as marshalled data *)
 

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -83,6 +83,8 @@ val parse :
 -   The reason for the error: unknown option, invalid or missing argument, etc.
 -   [usage_msg]
 -   The list of options, each followed by the corresponding [doc] string.
+    Beware: options that have an empty [doc] string will not be included in the
+    list.
 
     For the user to be able to specify anonymous arguments starting with a
     [-], include for example [("-", String anon_fun, doc)] in [speclist].

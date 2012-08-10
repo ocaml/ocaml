@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -21,6 +21,8 @@ type t = {
 }
 
 val none: t
+
+val is_none: t -> bool
 
 val to_string: t -> string
 

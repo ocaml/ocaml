@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -20,14 +20,14 @@
    sent over a pipe or network connection.  The bytes can then
    be read back later, possibly in another process, and decoded back
    into a data structure. The format for the byte sequences
-   is compatible across all machines for a given version of Objective Caml.
+   is compatible across all machines for a given version of OCaml.
 
    Warning: marshaling is currently not type-safe. The type
    of marshaled data is not transmitted along the value of the data,
    making it impossible to check that the data read back possesses the
    type expected by the context. In particular, the result type of
    the [Marshal.from_*] functions is given as ['a], but this is
-   misleading: the returned Caml value does not possess type ['a]
+   misleading: the returned OCaml value does not possess type ['a]
    for all ['a]; it has one, unique type which cannot be determined
    at compile-type.  The programmer should explicitly give the expected
    type of the returned value, using the following syntax:
@@ -115,7 +115,7 @@ val header_size : int
    {!Marshal.data_size}[ buff ofs] is the size, in characters,
    of the data part, assuming a valid header is stored in
    [buff] starting at position [ofs].
-   Finally, {!Marshal.total_size}[ buff ofs] is the total size,
+   Finally, {!Marshal.total_size} [buff ofs] is the total size,
    in characters, of the marshaled value.
    Both {!Marshal.data_size} and {!Marshal.total_size} raise [Failure]
    if [buff], [ofs] does not contain a valid header.

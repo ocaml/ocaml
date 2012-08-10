@@ -25,16 +25,22 @@ compile: $(ML_FILES) $(CMO_FILES) $(CMX_FILES) $(MAIN_MODULE).cmo $(MAIN_MODULE)
 	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(TOPDIR)/byterun $$file.c; \
 	done;
 	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) $(MAIN_MODULE).cmo
-	@$(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(ADD_CMX_FILES) $(MAIN_MODULE).cmx
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  $(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(ADD_CMX_FILES) $(MAIN_MODULE).cmx; \
+	fi
 
 run:
 	@printf " ... testing with ocamlc"
 	@./program.byte $(EXEC_ARGS) > $(MAIN_MODULE).result || (echo " => failed" && exit 1)
-	@diff -q $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1)
-	@printf " ocamlopt"
-	@./program.native $(EXEC_ARGS) > $(MAIN_MODULE).result || (echo " => failed" && exit 1)
-	@diff -q $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1)
+	@$(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1)
+	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  printf " ocamlopt"; \
+	  ./program.native $(EXEC_ARGS) > $(MAIN_MODULE).result || (echo " => failed" && exit 1); \
+	  $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1); \
+	fi
 	@echo " => passed"
+
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result ./program.* $(GENERATED_SOURCES) $(O_FILES)
