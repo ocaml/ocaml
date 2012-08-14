@@ -279,8 +279,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                                     ty_list
                                 with
                                   Ctype.Cannot_apply -> abstract_type in
-                              let lid = tree_of_label env path (Ident.name lbl_name) in
-                              let v =
+			      let name = Ident.name lbl_name in
+			      (* PR#5722: print full module path only
+				 for first record field *)
+                              let lid =
+				if pos = 0 then tree_of_label env path name
+				else Oide_ident name
+                              and v =
                                 tree_of_val (depth - 1) (O.field obj pos)
                                   ty_arg
                               in
