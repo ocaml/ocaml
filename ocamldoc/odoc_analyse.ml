@@ -284,7 +284,11 @@ let process_file ppf sourcefile =
       Location.input_name := file;
       try
         let mod_name =
-          String.capitalize (Filename.basename (Filename.chop_extension file))
+          let s =
+            try Filename.chop_extension file
+            with _ -> file
+          in
+          String.capitalize (Filename.basename s)
         in
         let txt =
           try Odoc_text.Texter.text_of_string (Odoc_misc.input_file_as_string file)
