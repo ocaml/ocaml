@@ -15,7 +15,6 @@
 
 (* Emission of ARM assembly code *)
 
-open Location
 open Misc
 open Cmm
 open Arch
