@@ -49,7 +49,7 @@ let rec apply_coercion restr arg =
             (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)],
                     Location.none))))
   | Tcoerce_primitive p ->
-      transl_primitive p
+      transl_primitive Location.none p
 
 and apply_coercion_field id (pos, cc) =
   apply_coercion cc (Lprim(Pfield pos, [Lvar id]))
@@ -278,7 +278,7 @@ and transl_structure fields cc rootpath = function
                 List.map
                   (fun (pos, cc) ->
                     match cc with
-                      Tcoerce_primitive p -> transl_primitive p
+                      Tcoerce_primitive p -> transl_primitive Location.none p
                     | _ -> apply_coercion cc (Lvar v.(pos)))
                   pos_cc_list)
       | _ ->
@@ -479,7 +479,8 @@ let transl_store_structure glob map prims str =
 
   and store_primitive (pos, prim) cont =
     Lsequence(Lprim(Psetfield(pos, false),
-                    [Lprim(Pgetglobal glob, []); transl_primitive prim]),
+                    [Lprim(Pgetglobal glob, []);
+                     transl_primitive Location.none prim]),
               cont)
 
   in List.fold_right store_primitive prims (transl_store !transl_store_subst str)

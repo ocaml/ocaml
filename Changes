@@ -17,7 +17,7 @@ Bug fixes:
 - PR#5698: remove harcoded limit of 200000 labels in emitaux.ml
 - PR#5708: catch Failure"int_of_string" in ocamldebug
 - PR#5731: instruction scheduling forgot to account for destroyed registers
-
+- PR#5735: %apply and %revapply not first class citizens
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
    as part of compilerlibs, to be used on bin-annot files.
