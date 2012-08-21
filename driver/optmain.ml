@@ -30,6 +30,8 @@ let process_implementation_file ppf name =
   Optcompile.implementation ppf name opref;
   objfiles := (opref ^ ".cmx") :: !objfiles
 
+let cmxa_present = ref false;;
+
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then
@@ -39,10 +41,12 @@ let process_file ppf name =
     Optcompile.interface ppf name opref;
     if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   end
-  else if Filename.check_suffix name ".cmx"
-       || Filename.check_suffix name ".cmxa" then
+  else if Filename.check_suffix name ".cmx" then
     objfiles := name :: !objfiles
-  else if Filename.check_suffix name ".cmi" && !make_package then
+  else if Filename.check_suffix name ".cmxa" then begin
+    cmxa_present := true;
+    objfiles := name :: !objfiles
+  end else if Filename.check_suffix name ".cmi" && !make_package then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ext_obj
        || Filename.check_suffix name ext_lib then
@@ -100,6 +104,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _a = set make_archive
   let _absname = set Location.absname
   let _annot = set annotations
+  let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
   let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
@@ -149,6 +154,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dparsetree = set dump_parsetree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
+  let _dclambda = set dump_clambda
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine
@@ -178,19 +184,24 @@ let main () =
     then
       fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
     if !make_archive then begin
+      if !cmxa_present then
+        fatal "Option -a cannot be used with .cmxa input files.";
       Optcompile.init_path();
       let target = extract_output !output_name in
       Asmlibrarian.create_archive (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end
     else if !make_package then begin
       Optcompile.init_path();
       let target = extract_output !output_name in
       Asmpackager.package_files ppf (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end
     else if !shared then begin
       Optcompile.init_path();
       let target = extract_output !output_name in
       Asmlink.link_shared ppf (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
       let target =
@@ -209,7 +220,8 @@ let main () =
           default_output !output_name
       in
       Optcompile.init_path();
-      Asmlink.link ppf (List.rev !objfiles) target
+      Asmlink.link ppf (List.rev !objfiles) target;
+      Warnings.check_fatal ();
     end;
     exit 0
   with x ->

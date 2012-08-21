@@ -53,7 +53,7 @@
           "\\|\|\\|->\\|&\\|#")
          nil 'keyword)
    '(";" nil struct))
-  "Hilit19 patterns used for Caml mode")
+  "Hilit19 patterns used for OCaml mode")
 
 (hilit-set-mode-patterns 'caml-mode caml-mode-patterns)
 (hilit-set-mode-patterns

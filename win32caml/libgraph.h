@@ -50,8 +50,8 @@ extern int bits_per_pixel;
 #define DEFAULT_SCREEN_WIDTH 1024
 #define DEFAULT_SCREEN_HEIGHT 768
 #define BORDER_WIDTH 2
-#define WINDOW_NAME "Caml graphics"
-#define ICON_NAME "Caml graphics"
+#define WINDOW_NAME "OCaml graphics"
+#define ICON_NAME "OCaml graphics"
 #define DEFAULT_EVENT_MASK \
           (ExposureMask | KeyPressMask | StructureNotifyMask)
 #define DEFAULT_FONT "fixed"

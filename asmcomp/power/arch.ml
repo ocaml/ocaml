@@ -46,6 +46,10 @@ let size_addr = if ppc64 then 8 else 4
 let size_int = size_addr
 let size_float = 8
 
+(* Behavior of division *)
+
+let division_crashes_on_overflow = true
+
 (* Operations on addressing modes *)
 
 let identity_addressing = Iindexed 0

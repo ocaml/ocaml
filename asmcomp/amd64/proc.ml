@@ -56,10 +56,10 @@ let masm =
   xmm0 - xmm15  100 - 115  *)
 
 (* Conventions:
-     rax - r11: Caml function arguments
-     rax: Caml and C function results
-     xmm0 - xmm9: Caml function arguments
-     xmm0: Caml and C function results
+     rax - r11: OCaml function arguments
+     rax: OCaml and C function results
+     xmm0 - xmm9: OCaml function arguments
+     xmm0: OCaml and C function results
    Under Unix:
      rdi, rsi, rdx, rcx, r8, r9: C function arguments
      xmm0 - xmm7: C function arguments
@@ -188,7 +188,7 @@ let loc_results res =
      return value in rax or xmm0.
   C calling conventions under Win64:
      first integer args in rcx, rdx, r8, r9
-     first float args in xmm0 ... xmm3     
+     first float args in xmm0 ... xmm3
      each integer arg consumes a float reg, and conversely
      remaining args on stack
      always 32 bytes reserved at bottom of stack.

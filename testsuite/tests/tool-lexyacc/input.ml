@@ -309,4 +309,3 @@ and char lexbuf =
 and comment lexbuf =
   Lexing.init lexbuf;
   state_4 lexbuf
-

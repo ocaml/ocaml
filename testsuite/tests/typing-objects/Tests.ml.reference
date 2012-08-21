@@ -162,26 +162,26 @@ Error: This expression has type bool but an expression was expected of type
 # - : int * int * int * int * int = (1, 3, 2, 2, 3)
 #   class c : 'a -> object val a : 'a val x : int val y : int val z : int end
 # class d : 'a -> object val b : 'a val t : int val u : int val z : int end
-#                             Characters 43-46:
+#                             Characters 42-45:
     inherit c 5
             ^^^
 Warning 13: the following instance variables are overridden by the class c :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-Characters 53-58:
+Characters 52-53:
     val y = 3
-        ^^^^^
+        ^
 Warning 13: the instance variable y is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-Characters 81-84:
+Characters 80-83:
     inherit d 7
             ^^^
 Warning 13: the following instance variables are overridden by the class d :
   t z
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-Characters 91-96:
+Characters 90-91:
     val u = 3
-        ^^^^^
+        ^
 Warning 13: the instance variable u is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 class e :
@@ -281,7 +281,7 @@ Error: This expression has type 'a t but an expression was expected of type
   fun (x : 'a t) -> (x : 'a); ();;
                     ^^^^^^^^
 Warning 10: this expression should have type unit.
-- : ('a t as 'a) -> unit = <fun>
+- : ('a t as 'a) t -> unit = <fun>
 #         class ['a] c :
   unit -> object constraint 'a = (< .. > as 'b) -> unit method m : 'a end
 #       class ['a] c :

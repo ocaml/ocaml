@@ -116,8 +116,7 @@ let scan_file obj_name tolink =
       raise(Error(File_not_found obj_name)) in
   let ic = open_in_bin file_name in
   try
-    let buffer = String.create (String.length cmo_magic_number) in
-    really_input ic buffer 0 (String.length cmo_magic_number);
+    let buffer = input_bytes ic (String.length cmo_magic_number) in
     if buffer = cmo_magic_number then begin
       (* This is a .cmo file. It must be linked in any case.
          Read the relocation information to see which modules it
@@ -178,7 +177,7 @@ let check_consistency ppf file_name cu =
   begin try
     let source = List.assoc cu.cu_name !implementations_defined in
     Location.print_warning (Location.in_file file_name) ppf
-      (Warnings.Multiple_definition(cu.cu_name, file_name, source))
+      (Warnings.Multiple_definition(cu.cu_name, Location.show_filename file_name, Location.show_filename source))
   with Not_found -> ()
   end;
   implementations_defined :=
@@ -196,13 +195,11 @@ let debug_info = ref ([] : (int * string) list)
 let link_compunit ppf output_fun currpos_fun inchan file_name compunit =
   check_consistency ppf file_name compunit;
   seek_in inchan compunit.cu_pos;
-  let code_block = String.create compunit.cu_codesize in
-  really_input inchan code_block 0 compunit.cu_codesize;
+  let code_block = input_bytes inchan compunit.cu_codesize in
   Symtable.patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
-    let buffer = String.create compunit.cu_debugsize in
-    really_input inchan buffer 0 compunit.cu_debugsize;
+    let buffer = input_bytes inchan compunit.cu_debugsize in
     debug_info := (currpos_fun(), buffer) :: !debug_info
   end;
   output_fun code_block;
@@ -469,6 +466,7 @@ let link_bytecode_as_c ppf tolink outfile =
     close_out outchan
   with x ->
     close_out outchan;
+    remove_file outfile;
     raise x
   end;
   if !Clflags.debug then
@@ -581,20 +579,25 @@ open Format
 
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %s" name
+      fprintf ppf "Cannot find file %a" Location.print_filename name
   | Not_an_object_file name ->
-      fprintf ppf "The file %s is not a bytecode object file" name
+      fprintf ppf "The file %a is not a bytecode object file"
+        Location.print_filename name
   | Symbol_error(name, err) ->
-      fprintf ppf "Error while linking %s:@ %a" name
+      fprintf ppf "Error while linking %a:@ %a" Location.print_filename name
       Symtable.report_error err
   | Inconsistent_import(intf, file1, file2) ->
       fprintf ppf
-        "@[<hov>Files %s@ and %s@ \
+        "@[<hov>Files %a@ and %a@ \
                  make inconsistent assumptions over interface %s@]"
-        file1 file2 intf
+        Location.print_filename file1
+        Location.print_filename file2
+        intf
   | Custom_runtime ->
       fprintf ppf "Error while building custom runtime system"
   | File_exists file ->
-      fprintf ppf "Cannot overwrite existing file %s" file
+      fprintf ppf "Cannot overwrite existing file %a"
+        Location.print_filename file
   | Cannot_open_dll file ->
-      fprintf ppf "Error on dynamically loaded library: %s" file
+      fprintf ppf "Error on dynamically loaded library: %a"
+        Location.print_filename file

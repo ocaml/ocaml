@@ -104,7 +104,7 @@ value caml_input_val (struct channel * chan);
 /* </private> */
 
 CAMLextern value caml_input_val_from_string (value str, intnat ofs);
-  /* Read a structured value from the Caml string [str], starting
+  /* Read a structured value from the OCaml string [str], starting
      at offset [ofs]. */
 CAMLextern value caml_input_value_from_malloc(char * data, intnat ofs);
   /* Read a structured value from a malloced buffer.  [data] points
@@ -151,15 +151,15 @@ CAMLextern void caml_deserialize_error(char * msg);
 /* <private> */
 
 /* Auxiliary stuff for sending code pointers */
-unsigned char * caml_code_checksum (void);
 
-#ifndef NATIVE_CODE
-#include "fix_code.h"
-#define caml_code_area_start ((char *) caml_start_code)
-#define caml_code_area_end ((char *) caml_start_code + caml_code_size)
-#else
-extern char * caml_code_area_start, * caml_code_area_end;
-#endif
+struct code_fragment {
+  char * code_start;
+  char * code_end;
+  unsigned char digest[16];
+  char digest_computed;
+};
+
+struct ext_table caml_code_fragments_table;
 
 /* </private> */
 

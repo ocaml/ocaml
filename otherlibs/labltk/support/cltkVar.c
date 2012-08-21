@@ -33,13 +33,13 @@ CAMLprim value camltk_getvar(value var)
   CheckInit();
 
   stable_var = string_to_c(var);
-  s = Tcl_GetVar(cltclinterp,stable_var,
-                   TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
+  s = (char *)Tcl_GetVar(cltclinterp,stable_var,
+                         TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
   stat_free(stable_var);
 
   if (s == NULL)
     tk_error(Tcl_GetStringResult(cltclinterp));
-  else 
+  else
     return(tcl_string_to_caml(s));
 }
 
@@ -51,12 +51,12 @@ CAMLprim value camltk_setvar(value var, value contents)
   CheckInit();
 
   /* SetVar makes a copy of the contents. */
-  /* In case we have write traces in Caml, it's better to make sure that
+  /* In case we have write traces in OCaml, it's better to make sure that
      var doesn't move... */
   stable_var = string_to_c(var);
   utf_contents = caml_string_to_tcl(contents);
-  s = Tcl_SetVar(cltclinterp,stable_var, utf_contents,
-                   TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
+  s = (char *)Tcl_SetVar(cltclinterp,stable_var, utf_contents,
+                         TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
   stat_free(stable_var);
   if( s == utf_contents ){
     tk_error("camltk_setvar: Tcl_SetVar returned strange result. Call the author of mlTk!");
@@ -65,7 +65,7 @@ CAMLprim value camltk_setvar(value var, value contents)
 
   if (s == NULL)
     tk_error(Tcl_GetStringResult(cltclinterp));
-  else 
+  else
     return(Val_unit);
 }
 

@@ -60,45 +60,31 @@ value initialization = lazy begin
     else ()
 end;
 
-value lookup x xs = try Some (List.assq x xs) with [ Not_found -> None ];
-
-value wrap parse_fun =
-  let token_streams = ref [] in
-  let cleanup lb =
-    try token_streams.val := List.remove_assq lb token_streams.val
-    with [ Not_found -> () ]
-  in
-  fun lb ->
-    let () = Lazy.force initialization in
-    let () = Register.iter_and_take_callbacks (fun (_, f) -> f ()) in
-    let token_stream =
-      match lookup lb token_streams.val with
-      [ None ->
-        let not_filtered_token_stream = Lexer.from_lexbuf lb in
-        let token_stream = Gram.filter (not_filtered not_filtered_token_stream) in
-        do { token_streams.val := [ (lb,token_stream) :: token_streams.val ]; token_stream }
-      | Some token_stream -> token_stream ]
-    in try
-      match token_stream with parser
-      [ [: `(EOI, _) :] -> raise End_of_file
-      | [: :] -> parse_fun token_stream ]
-    with
-    [ End_of_file | Sys.Break | (Loc.Exc_located _ (End_of_file | Sys.Break))
-        as x -> (cleanup lb; raise x)
-    | x ->
-        let x =
-          match x with
-          [ Loc.Exc_located loc x -> do {
+value wrap parse_fun lb =
+  let () = Lazy.force initialization in
+  let () = Register.iter_and_take_callbacks (fun (_, f) -> f ()) in
+  let not_filtered_token_stream = Lexer.from_lexbuf lb in
+  let token_stream = Gram.filter (not_filtered not_filtered_token_stream) in
+  try
+    match token_stream with parser
+    [ [: `(EOI, _) :] -> raise End_of_file
+    | [: :] -> parse_fun token_stream ]
+  with
+  [ End_of_file | Sys.Break | (Loc.Exc_located _ (End_of_file | Sys.Break))
+        as x -> raise x
+  | x ->
+      let x =
+        match x with
+        [ Loc.Exc_located loc x -> do {
             Toploop.print_location Format.err_formatter
               (Loc.to_ocaml_location loc);
             x }
-          | x -> x ]
-        in
-        do {
-          cleanup lb;
-          Format.eprintf "@[<0>%a@]@." Camlp4.ErrorHandler.print x;
-          raise Exit
-        } ];
+        | x -> x ]
+      in
+      do {
+        Format.eprintf "@[<0>%a@]@." Camlp4.ErrorHandler.print x;
+        raise Exit
+      } ];
 
 value toplevel_phrase token_stream =
   match Gram.parse_tokens_after_filter Syntax.top_phrase token_stream with

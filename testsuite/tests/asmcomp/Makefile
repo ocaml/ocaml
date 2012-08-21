@@ -1,4 +1,5 @@
 BASEDIR=../..
+
 CC=$(NATIVECC)
 CFLAGS=$(NATIVECCCOMPOPTS) -g
 
@@ -33,6 +34,7 @@ OTHEROBJS=\
   $(TOPDIR)/typing/subst.cmo \
   $(TOPDIR)/typing/predef.cmo \
   $(TOPDIR)/typing/datarepr.cmo \
+  $(TOPDIR)/typing/cmi_format.cmo \
   $(TOPDIR)/typing/env.cmo \
   $(TOPDIR)/typing/typedtree.cmo \
   $(TOPDIR)/typing/ctype.cmo \
@@ -43,6 +45,7 @@ OTHEROBJS=\
   $(TOPDIR)/typing/includemod.cmo \
   $(TOPDIR)/typing/parmatch.cmo \
   $(TOPDIR)/typing/typetexp.cmo \
+  $(TOPDIR)/typing/cmt_format.cmo \
   $(TOPDIR)/typing/stypes.cmo \
   $(TOPDIR)/typing/typecore.cmo \
   $(TOPDIR)/typing/typedecl.cmo \
@@ -139,11 +142,11 @@ clean: defaultclean
 	@rm -f parsecmm.ml parsecmm.mli lexcmm.ml
 	@rm -f $(CASES:=.s)
 
+include $(BASEDIR)/makefiles/Makefile.common
+
 power.o: power-$(SYSTEM).o
 	@cp power-$(SYSTEM).o power.o
 
 promote:
-
-include $(BASEDIR)/makefiles/Makefile.common
 
 arch: $(ARCH).o

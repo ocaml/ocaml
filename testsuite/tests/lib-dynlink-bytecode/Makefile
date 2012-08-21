@@ -3,6 +3,7 @@ BASEDIR=../..
 default: compile run
 
 compile:
+	@$(OCAMLC) -c registry.ml
 	@for file in stub*.c; do \
 	  $(OCAMLC) -c $$file; \
 	  $(OCAMLMKLIB) -o `echo $$file | sed -e 's/stub/plug/' | sed -e 's/\.c//'` `basename $$file c`o; \
@@ -12,9 +13,9 @@ compile:
 	  $(OCAMLMKLIB) -o `basename $$file .ml` `basename $$file ml`cmo; \
 	done
 	@$(OCAMLC) -c main.ml
-	@$(OCAMLC) -o main dynlink.cma main.cmo
-	@$(OCAMLC) -o static -linkall plug1.cma plug2.cma -use-runtime $(PREFIX)/bin/ocamlrun
-	@$(OCAMLC) -o custom -custom -linkall plug2.cma plug1.cma -I .
+	@$(OCAMLC) -o main dynlink.cma registry.cmo main.cmo
+	@$(OCAMLC) -o static -linkall registry.cmo plug1.cma plug2.cma -use-runtime $(PREFIX)/bin/ocamlrun
+	@$(OCAMLC) -o custom -custom -linkall registry.cmo plug2.cma plug1.cma -I .
 
 run:
 	@printf " ... testing 'main'"
@@ -31,10 +32,10 @@ run:
 	@export LD_LIBRARY_PATH=`pwd` && ./custom > custom.result
 	@$(DIFF) custom.reference custom.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
-	
+
 promote: defaultpromote
 
 clean: defaultclean
-	@rm -f ./main ./static ./custom *.result
+	@rm -f ./main ./static ./custom *.result marshal.data
 
 include $(BASEDIR)/makefiles/Makefile.common

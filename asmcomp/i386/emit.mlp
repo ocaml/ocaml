@@ -312,9 +312,18 @@ let output_test_zero arg =
 
 (* Deallocate the stack frame before a return or tail call *)
 
-let output_epilogue () =
+let output_epilogue f =
   let n = frame_size() - 4 in
-  if n > 0 then `	addl	${emit_int n}, %esp\n`
+  if n > 0 then
+  begin
+    `	addl	${emit_int n}, %esp\n`;
+    cfi_adjust_cfa_offset (-n);
+    f ();
+    (* reset CFA back cause function body may continue *)
+    cfi_adjust_cfa_offset n
+  end
+  else
+    f ()
 
 (* Determine if the given register is the top of the floating-point stack *)
 
@@ -418,6 +427,7 @@ let external_symbols_direct = ref StringSet.empty
 let external_symbols_indirect = ref StringSet.empty
 
 let emit_instr fallthrough i =
+    emit_debug_info i.dbg;
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
@@ -466,14 +476,16 @@ let emit_instr fallthrough i =
         `	call	{emit_symbol s}\n`;
         record_frame i.live i.dbg
     | Lop(Itailcall_ind) ->
-        output_epilogue();
+        output_epilogue begin fun () ->
         `	jmp	*{emit_reg i.arg.(0)}\n`
+        end
     | Lop(Itailcall_imm s) ->
         if s = !function_name then
           `	jmp	{emit_label !tailrec_entry_point}\n`
         else begin
-          output_epilogue();
+          output_epilogue begin fun () ->
           `	jmp	{emit_symbol s}\n`
+          end
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
@@ -499,6 +511,7 @@ let emit_instr fallthrough i =
         if n < 0
         then `	addl	${emit_int(-n)}, %esp\n`
         else `	subl	${emit_int(n)}, %esp\n`;
+        cfi_adjust_cfa_offset n;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
@@ -652,6 +665,7 @@ let emit_instr fallthrough i =
           `	fldl	{emit_reg i.arg.(0)}\n`;
         stack_offset := !stack_offset - 8;
         `	subl	$8, %esp\n`;
+        cfi_adjust_cfa_offset 8;
         `	fnstcw	4(%esp)\n`;
         `	movw	4(%esp), %ax\n`;
         `	movb    $12, %ah\n`;
@@ -666,6 +680,7 @@ let emit_instr fallthrough i =
         end;
         `	fldcw	4(%esp)\n`;
         `	addl	$8, %esp\n`;
+        cfi_adjust_cfa_offset (-8);
         stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ilea addr)) ->
         `	lea	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
@@ -682,29 +697,36 @@ let emit_instr fallthrough i =
           match r with
             {loc = Reg _; typ = Float} ->
               `	subl	$8, %esp\n`;
+              cfi_adjust_cfa_offset 8;
               `	fstpl	0(%esp)\n`;
               stack_offset := !stack_offset + 8
           | {loc = Stack sl; typ = Float} ->
               let ofs = slot_offset sl 1 in
               `	pushl	{emit_int(ofs + 4)}(%esp)\n`;
               `	pushl	{emit_int(ofs + 4)}(%esp)\n`;
+              cfi_adjust_cfa_offset 8;
               stack_offset := !stack_offset + 8
           | _ ->
               `	pushl	{emit_reg r}\n`;
+              cfi_adjust_cfa_offset 4;
               stack_offset := !stack_offset + 4
         done
     | Lop(Ispecific(Ipush_int n)) ->
         `	pushl	${emit_nativeint n}\n`;
+        cfi_adjust_cfa_offset 4;
         stack_offset := !stack_offset + 4
     | Lop(Ispecific(Ipush_symbol s)) ->
         `	pushl	${emit_symbol s}\n`;
+        cfi_adjust_cfa_offset 4;
         stack_offset := !stack_offset + 4
     | Lop(Ispecific(Ipush_load addr)) ->
         `	pushl	{emit_addressing addr i.arg 0}\n`;
+        cfi_adjust_cfa_offset 4;
         stack_offset := !stack_offset + 4
     | Lop(Ispecific(Ipush_load_float addr)) ->
         `	pushl	{emit_addressing (offset_addressing addr 4) i.arg 0}\n`;
         `	pushl	{emit_addressing addr i.arg 0}\n`;
+        cfi_adjust_cfa_offset 8;
         stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ifloatarithmem(double, op, addr))) ->
         if not (is_tos i.arg.(0)) then
@@ -722,8 +744,9 @@ let emit_instr fallthrough i =
     | Lreloadretaddr ->
         ()
     | Lreturn ->
-        output_epilogue();
+        output_epilogue begin fun () ->
         `	ret\n`
+        end
     | Llabel lbl ->
         `{emit_Llabel fallthrough lbl}:\n`
     | Lbranch lbl ->
@@ -787,11 +810,13 @@ let emit_instr fallthrough i =
         if trap_frame_size > 8 then
           `	subl	${emit_int (trap_frame_size - 8)}, %esp\n`;
         `	pushl	{emit_symbol "caml_exception_pointer"}\n`;
+        cfi_adjust_cfa_offset trap_frame_size;
         `	movl	%esp, {emit_symbol "caml_exception_pointer"}\n`;
         stack_offset := !stack_offset + trap_frame_size
     | Lpoptrap ->
         `	popl	{emit_symbol "caml_exception_pointer"}\n`;
         `	addl	${emit_int (trap_frame_size - 4)}, %esp\n`;
+        cfi_adjust_cfa_offset (-trap_frame_size);
         stack_offset := !stack_offset - trap_frame_size
     | Lraise ->
         if !Clflags.debug then begin
@@ -900,14 +925,20 @@ let fundecl fundecl =
   else
     `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
+  emit_debug_info fundecl.fun_dbg;
+  cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() - 4 in
   if n > 0 then
+  begin
     `	subl	${emit_int n}, %esp\n`;
+    cfi_adjust_cfa_offset n;
+  end;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
+  cfi_endproc ();
   begin match Config.system with
     "linux_elf" | "bsd_elf" | "gnu" ->
       `	.type	{emit_symbol fundecl.fun_name},@function\n`;
@@ -957,6 +988,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  reset_debug_info();                   (* PR#5603 *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;

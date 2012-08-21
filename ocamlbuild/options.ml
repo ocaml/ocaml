@@ -22,7 +22,7 @@ open Format
 open Command
 
 let entry = ref None
-let build_dir = ref "_build"
+let build_dir = ref (Filename.concat (Sys.getcwd ()) "_build")
 let include_dirs = ref []
 let exclude_dirs = ref []
 let nothing_should_be_rebuilt = ref false
@@ -50,8 +50,8 @@ let mk_virtual_solvers =
       if sys_file_exists !dir then
         let long = filename_concat !dir cmd in
         let long_opt = long ^ ".opt" in
-        if sys_file_exists long_opt then A long_opt
-        else if sys_file_exists long then A long
+        if file_or_exe_exists long_opt then A long_opt
+        else if file_or_exe_exists long then A long
         else try let _ = search_in_path opt in a_opt
         with Not_found -> a_cmd
       else
@@ -89,6 +89,7 @@ let ocaml_mods_internal = ref []
 let ocaml_pkgs_internal = ref []
 let ocaml_lflags_internal = ref []
 let ocaml_cflags_internal = ref []
+let ocaml_docflags_internal = ref []
 let ocaml_ppflags_internal = ref []
 let ocaml_yaccflags_internal = ref []
 let ocaml_lexflags_internal = ref []
@@ -126,7 +127,12 @@ let add_to' rxs x =
   else
     ()
 let set_cmd rcmd = String (fun s -> rcmd := Sh s)
-let set_build_dir s = make_links := false; build_dir := s
+let set_build_dir s =
+  make_links := false;
+  if Filename.is_relative s then
+    build_dir := Filename.concat (Sys.getcwd ()) s
+  else
+    build_dir := s
 let spec = ref (
   Arg.align
   [
@@ -157,6 +163,8 @@ let spec = ref (
    "-lflags", String (add_to ocaml_lflags_internal), "<flag,...> (idem)";
    "-cflag", String (add_to' ocaml_cflags_internal), "<flag> Add to ocamlc compile flags";
    "-cflags", String (add_to ocaml_cflags_internal), "<flag,...> (idem)";
+   "-docflag", String (add_to' ocaml_docflags_internal), "<flag> Add to ocamldoc flags";
+   "-docflags", String (add_to ocaml_docflags_internal), "<flag,...> (idem)";
    "-yaccflag", String (add_to' ocaml_yaccflags_internal), "<flag> Add to ocamlyacc flags";
    "-yaccflags", String (add_to ocaml_yaccflags_internal), "<flag,...> (idem)";
    "-lexflag", String (add_to' ocaml_lexflags_internal), "<flag> Add to ocamllex flags";
@@ -219,6 +227,7 @@ let ocaml_pkgs = ref []
 let ocaml_lflags = ref []
 let ocaml_cflags = ref []
 let ocaml_ppflags = ref []
+let ocaml_docflags = ref []
 let ocaml_yaccflags = ref []
 let ocaml_lexflags = ref []
 let program_args = ref []
@@ -267,6 +276,7 @@ let init () =
   reorder ocaml_cflags ocaml_cflags_internal;
   reorder ocaml_lflags ocaml_lflags_internal;
   reorder ocaml_ppflags ocaml_ppflags_internal;
+  reorder ocaml_docflags ocaml_docflags_internal;
   reorder ocaml_yaccflags ocaml_yaccflags_internal;
   reorder ocaml_lexflags ocaml_lexflags_internal;
   reorder program_args program_args_internal;

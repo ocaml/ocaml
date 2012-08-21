@@ -57,4 +57,3 @@ let char_for_decimal_code lexbuf i =
   Char.chr(100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
             10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
                  (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48))
-

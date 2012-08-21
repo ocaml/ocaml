@@ -123,7 +123,7 @@
         .globl  .caml_c_call
 .caml_c_call:
 # Preserve RTOC and return address in callee-save registers
-# The C function will preserve them, and the Caml code does not
+# The C function will preserve them, and the OCaml code does not
 # expect them to be preserved
 # Return address is in 25, RTOC is in 26
         mflr    25

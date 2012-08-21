@@ -55,15 +55,15 @@ exception Use_code of string
 let simpl_module_type ?code t =
   let rec iter t =
     match t with
-      Types.Tmty_ident p -> t
-    | Types.Tmty_signature _ ->
+      Types.Mty_ident p -> t
+    | Types.Mty_signature _ ->
         (
          match code with
-           None -> Types.Tmty_signature []
+           None -> Types.Mty_signature []
          | Some s -> raise (Use_code s)
         )
-    | Types.Tmty_functor (id, mt1, mt2) ->
-        Types.Tmty_functor (id, iter mt1, iter mt2)
+    | Types.Mty_functor (id, mt1, mt2) ->
+        Types.Mty_functor (id, iter mt1, iter mt2)
   in
   iter t
 
@@ -80,20 +80,20 @@ let string_of_module_type ?code ?(complete=false) t =
 let simpl_class_type t =
   let rec iter t =
     match t with
-      Types.Tcty_constr (p,texp_list,ct) -> t
-    | Types.Tcty_signature cs ->
-        (* on vire les vals et methods pour ne pas qu'elles soient imprimées
+      Types.Cty_constr (p,texp_list,ct) -> t
+    | Types.Cty_signature cs ->
+        (* on vire les vals et methods pour ne pas qu'elles soient imprimees
            quand on affichera le type *)
         let tnil = { Types.desc = Types.Tnil ; Types.level = 0; Types.id = 0 } in
-        Types.Tcty_signature { Types.cty_self = { cs.Types.cty_self with
+        Types.Cty_signature { Types.cty_self = { cs.Types.cty_self with
                                                   Types.desc = Types.Tobject (tnil, ref None) };
                                Types.cty_vars = Types.Vars.empty ;
                                Types.cty_concr = Types.Concr.empty ;
                                Types.cty_inher = []
                              }
-    | Types.Tcty_fun (l, texp, ct) ->
+    | Types.Cty_fun (l, texp, ct) ->
         let new_ct = iter ct in
-        Types.Tcty_fun (l, texp, new_ct)
+        Types.Cty_fun (l, texp, new_ct)
   in
   iter t
 

@@ -180,9 +180,9 @@ module Make (Token : Sig.Camlp4Token)
       pos_lnum = if absolute then line else pos.pos_lnum + line;
       pos_bol = pos.pos_cnum - chars;
     }
-	
+
     (* To convert integer literals, copied from "../parsing/lexer.mll" *)
-	
+
     let cvt_int_literal s =
       - int_of_string ("-" ^ s)
     let cvt_int32_literal s =

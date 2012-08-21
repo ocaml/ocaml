@@ -68,7 +68,7 @@ let rename_relocation packagename objfile mapping defined base (rel, ofs) =
           (* PR#5276, as above *)
           let name = Ident.name id in
           if String.contains name '.' then
-	    Reloc_setglobal (Ident.create_persistent (packagename ^ "." ^ name))
+            Reloc_setglobal (Ident.create_persistent (packagename ^ "." ^ name))
           else
             rel
         end
@@ -100,8 +100,7 @@ let read_member_info file =
     if Filename.check_suffix file ".cmo" then begin
     let ic = open_in_bin file in
     try
-      let buffer = String.create (String.length Config.cmo_magic_number) in
-      really_input ic buffer 0 (String.length Config.cmo_magic_number);
+      let buffer = input_bytes ic (String.length Config.cmo_magic_number) in
       if buffer <> Config.cmo_magic_number then
         raise(Error(Not_an_object_file file));
       let compunit_pos = input_binary_int ic in
@@ -236,10 +235,10 @@ let package_object_files ppf files targetfile targetname coercion =
 let package_files ppf files targetfile =
     let files =
     List.map
-	(fun f ->
+        (fun f ->
         try find_in_path !Config.load_path f
         with Not_found -> raise(Error(File_not_found f)))
-	files in
+        files in
     let prefix = chop_extensions targetfile in
     let targetcmi = prefix ^ ".cmi" in
     let targetname = String.capitalize(Filename.basename prefix) in
@@ -256,13 +255,17 @@ open Format
 
 let report_error ppf = function
     Forward_reference(file, ident) ->
-      fprintf ppf "Forward reference to %s in file %s" (Ident.name ident) file
+      fprintf ppf "Forward reference to %s in file %a" (Ident.name ident)
+        Location.print_filename file
   | Multiple_definition(file, ident) ->
-      fprintf ppf "File %s redefines %s" file (Ident.name ident)
+      fprintf ppf "File %a redefines %s"
+        Location.print_filename file
+        (Ident.name ident)
   | Not_an_object_file file ->
-      fprintf ppf "%s is not a bytecode object file" file
+      fprintf ppf "%a is not a bytecode object file"
+        Location.print_filename file
   | Illegal_renaming(file, id) ->
-      fprintf ppf "Wrong file naming: %s@ contains the code for@ %s"
-        file id
+      fprintf ppf "Wrong file naming: %a@ contains the code for@ %s"
+        Location.print_filename file id
   | File_not_found file ->
       fprintf ppf "File %s not found" file

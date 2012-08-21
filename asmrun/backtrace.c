@@ -193,7 +193,7 @@ void caml_print_exception_backtrace(void)
   }
 }
 
-/* Convert the backtrace to a data structure usable from Caml */
+/* Convert the backtrace to a data structure usable from OCaml */
 
 CAMLprim value caml_get_exception_backtrace(value unit)
 {

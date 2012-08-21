@@ -265,15 +265,15 @@ test (test10 ())
 
 (* %[] style *)
 let test11 () =
-  sscanf "Pierre	Weis	70" "%s %s %s"
+  sscanf "Pierre\tWeis\t70" "%s %s %s"
     (fun prenom nom poids ->
      prenom = "Pierre" && nom = "Weis" && int_of_string poids = 70)
   &&
-  sscanf "Jean-Luc	de Léage	68" "%[^	] %[^	] %d"
+  sscanf "Jean-Luc\tde Léage\t68" "%[^\t] %[^\t] %d"
     (fun prenom nom poids ->
      prenom = "Jean-Luc" && nom = "de Léage" && poids = 68)
   &&
-  sscanf "Daniel	de Rauglaudre	66" "%s@\t %s@\t %d"
+  sscanf "Daniel\tde Rauglaudre\t66" "%s@\t %s@\t %d"
     (fun prenom nom poids ->
      prenom = "Daniel" && nom = "de Rauglaudre" && poids = 66)
 ;;
@@ -585,7 +585,7 @@ and test27 () =
  (test27 ())
 ;;
 
-(* To scan a Caml string:
+(* To scan an OCaml string:
    the format is "\"%s@\"".
    A better way would be to add a %S (String.escaped), a %C (Char.escaped).
    This is now available. *)
@@ -950,7 +950,7 @@ test (test340 () && test35 ())
 
 (* The prefered reader functionnals. *)
 
-(* To read a list as in Caml (elements are ``blank + semicolon + blank''
+(* To read a list as in OCaml (elements are ``blank + semicolon + blank''
    separated, and the list is enclosed in brackets). *)
 let rec read_elems read_elem accu ib =
   kscanf ib (fun ib exc -> accu)
@@ -1444,11 +1444,21 @@ let test57 () =
 test (test57 ())
 ;;
 
-(*
 let test58 () =
+     sscanf "string1%string2" "%s@%%s" id = "string1"
+  && sscanf "string1%string2" "%s@%%%s" (^) = "string1string2"
+  && sscanf "string1@string2" "%[a-z0-9]@%s" (^) = "string1string2"
+  && sscanf "string1@%string2" "%[a-z0-9]%@%%%s" (^) = "string1string2"
 ;;
 
 test (test58 ())
+;;
+
+(*
+let test59 () =
+;;
+
+test (test59 ())
 ;;
 *)
 

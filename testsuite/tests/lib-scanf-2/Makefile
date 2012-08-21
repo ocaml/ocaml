@@ -2,10 +2,11 @@ BASEDIR=../..
 
 default: compile run
 
-compile: tscanf2_io.cmo tscanf2_io.cmx
+compile: tscanf2_io.cmo
 	@$(OCAMLC) unix.cma tscanf2_io.cmo -o master.byte tscanf2_master.ml
 	@$(OCAMLC) tscanf2_io.cmo -o slave.byte tscanf2_slave.ml
 	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  $(MAKE) tscanf2_io.cmx; \
 	  $(OCAMLOPT) unix.cmxa tscanf2_io.cmx -o master.native tscanf2_master.ml; \
 	  $(OCAMLOPT) tscanf2_io.cmx -o slave.native tscanf2_slave.ml; \
 	fi

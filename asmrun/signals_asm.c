@@ -46,14 +46,17 @@ extern void caml_win32_overflow_detection();
 #endif
 
 extern char * caml_code_area_start, * caml_code_area_end;
+extern char caml_system__code_begin, caml_system__code_end;
 
 #define Is_in_code_area(pc) \
  ( ((char *)(pc) >= caml_code_area_start && \
     (char *)(pc) <= caml_code_area_end)     \
-   || (Classify_addr(pc) & In_code_area) )
+|| ((char *)(pc) >= &caml_system__code_begin && \
+    (char *)(pc) <= &caml_system__code_end)     \
+|| (Classify_addr(pc) & In_code_area) )
 
 /* This routine is the common entry point for garbage collection
-   and signal handling.  It can trigger a callback to Caml code.
+   and signal handling.  It can trigger a callback to OCaml code.
    With system threads, this callback can cause a context switch.
    Hence [caml_garbage_collection] must not be called from regular C code
    (e.g. the [caml_alloc] function) because the context of the call
@@ -83,7 +86,7 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
     caml_record_signal(sig);
   /* Some ports cache [caml_young_limit] in a register.
      Use the signal context to modify that register too, but only if
-     we are inside Caml code (not inside C code). */
+     we are inside OCaml code (not inside C code). */
 #if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
     if (Is_in_code_area(CONTEXT_PC))
       CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
@@ -193,7 +196,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
   /* Sanity checks:
      - faulting address is word-aligned
      - faulting address is within the stack
-     - we are in Caml code */
+     - we are in OCaml code */
   fault_addr = CONTEXT_FAULTING_ADDRESS;
   if (((uintnat) fault_addr & (sizeof(intnat) - 1)) == 0
       && getrlimit(RLIMIT_STACK, &limit) == 0

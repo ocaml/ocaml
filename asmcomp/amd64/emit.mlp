@@ -317,11 +317,17 @@ let emit_float_test cmp neg arg lbl =
 
 (* Deallocate the stack frame before a return or tail call *)
 
-let output_epilogue () =
+let output_epilogue f =
   if frame_required() then begin
     let n = frame_size() - 8 in
-    `	addq	${emit_int n}, %rsp\n`
+    `	addq	${emit_int n}, %rsp\n`;
+    cfi_adjust_cfa_offset (-n);
+    f ();
+    (* reset CFA back cause function body may continue *)
+    cfi_adjust_cfa_offset n
   end
+  else
+    f ()
 
 (* Output the assembly code for an instruction *)
 
@@ -332,7 +338,9 @@ let tailrec_entry_point = ref 0
 
 let float_constants = ref ([] : (int * string) list)
 
+(* Emit an instruction *)
 let emit_instr fallthrough i =
+    emit_debug_info i.dbg;
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
@@ -373,20 +381,24 @@ let emit_instr fallthrough i =
         `	{emit_call s}\n`;
         record_frame i.live i.dbg
     | Lop(Itailcall_ind) ->
-        output_epilogue();
+        output_epilogue begin fun () ->
         `	jmp	*{emit_reg i.arg.(0)}\n`
+        end
     | Lop(Itailcall_imm s) ->
         if s = !function_name then
           `	jmp	{emit_label !tailrec_entry_point}\n`
         else begin
-          output_epilogue();
+          output_epilogue begin fun () ->
           `	{emit_jump s}\n`
+          end
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           `	{load_symbol_addr s}, %rax\n`;
           `	{emit_call "caml_c_call"}\n`;
-          record_frame i.live i.dbg
+          record_frame i.live i.dbg;
+          `	{load_symbol_addr "caml_young_ptr"}, %r11\n`;
+          `	movq    (%r11), %r15\n`;
         end else begin
           `	{emit_call s}\n`
         end
@@ -394,6 +406,7 @@ let emit_instr fallthrough i =
         if n < 0
         then `	addq	${emit_int(-n)}, %rsp\n`
         else `	subq	${emit_int(n)}, %rsp\n`;
+        cfi_adjust_cfa_offset n;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
@@ -536,8 +549,9 @@ let emit_instr fallthrough i =
     | Lreloadretaddr ->
         ()
     | Lreturn ->
-        output_epilogue();
+        output_epilogue begin fun () ->
         `	ret\n`
+        end
     | Llabel lbl ->
         `{emit_Llabel fallthrough lbl}:\n`
     | Lbranch lbl ->
@@ -616,12 +630,16 @@ let emit_instr fallthrough i =
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`
     | Lpushtrap ->
+        cfi_adjust_cfa_offset 8;
         `	pushq	%r14\n`;
+        cfi_adjust_cfa_offset 8;
         `	movq	%rsp, %r14\n`;
         stack_offset := !stack_offset + 16
     | Lpoptrap ->
         `	popq	%r14\n`;
+        cfi_adjust_cfa_offset (-8);
         `	addq	$8, %rsp\n`;
+        cfi_adjust_cfa_offset (-8);
         stack_offset := !stack_offset - 16
     | Lraise ->
         if !Clflags.debug then begin
@@ -653,7 +671,7 @@ let emit_profile () =
   | "linux" | "gnu" ->
       (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
          and rbx, rbp, r12-r15 like all C functions.
-         We need to preserve r10 and r11 ourselves, since Caml can
+         We need to preserve r10 and r11 ourselves, since OCaml can
          use them for argument passing. *)
       `	pushq	%r10\n`;
       `	movq	%rsp, %rbp\n`;
@@ -685,15 +703,19 @@ let fundecl fundecl =
   else
     `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
+  emit_debug_info fundecl.fun_dbg;
+  cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
     let n = frame_size() - 8 in
-    `	subq	${emit_int n}, %rsp\n`
+    `	subq	${emit_int n}, %rsp\n`;
+    cfi_adjust_cfa_offset n;
   end;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
+  cfi_endproc ();
   begin match Config.system with
     "linux" | "gnu" ->
       `	.type	{emit_symbol fundecl.fun_name},@function\n`;
@@ -749,6 +771,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  reset_debug_info();                   (* PR#5603 *)
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
     if macosx then

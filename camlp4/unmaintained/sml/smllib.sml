@@ -300,7 +300,7 @@ type substring = Substring.substring
 structure StringCvt =
   struct
     datatype radix = BIN | OCT | DEC | HEX
-    type ('a, 'b) reader = 'b -> ('a * 'b) option 
+    type ('a, 'b) reader = 'b -> ('a * 'b) option
   end
 
 structure ListPair =

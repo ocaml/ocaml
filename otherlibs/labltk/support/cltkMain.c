@@ -35,7 +35,7 @@
 #endif
 
 /*
- * Dealing with signals: when a signal handler is defined in Caml,
+ * Dealing with signals: when a signal handler is defined in OCaml,
  * the actual execution of the signal handler upon reception of the
  * signal is delayed until we are sure we are out of the GC.
  * If a signal occurs during the MainLoop, we would have to wait
@@ -125,7 +125,7 @@ CAMLprim value camltk_opentk(value argv)
 
         sprintf( argcstr, "%d", argc );
         Tcl_SetVar(cltclinterp, "argc", argcstr, TCL_GLOBAL_ONLY);
-        args = Tcl_Merge(argc, tkargv); /* args must be freed by Tcl_Free */
+        args = Tcl_Merge(argc, (const char *const*)tkargv); /* args must be freed by Tcl_Free */
         Tcl_SetVar(cltclinterp, "argv", args, TCL_GLOBAL_ONLY);
         Tcl_Free(args);
         stat_free( tkargv );

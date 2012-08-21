@@ -62,14 +62,15 @@ let mkexe = C.mkexe
 let mkmaindll = C.mkmaindll
 
 let exec_magic_number = "Caml1999X008"
-and cmi_magic_number = "Caml1999I013"
+and cmi_magic_number = "Caml1999I014"
 and cmo_magic_number = "Caml1999O007"
 and cma_magic_number = "Caml1999A008"
 and cmx_magic_number = "Caml1999Y011"
 and cmxa_magic_number = "Caml1999Z010"
-and ast_impl_magic_number = "Caml1999M014"
-and ast_intf_magic_number = "Caml1999N013"
+and ast_impl_magic_number = "Caml1999M015"
+and ast_intf_magic_number = "Caml1999N014"
 and cmxs_magic_number = "Caml2007D001"
+and cmt_magic_number = "Caml2012T001"
 
 let load_path = ref ([] : string list)
 
@@ -89,6 +90,7 @@ let model = C.model
 let system = C.system
 
 let asm = C.asm
+let asm_cfi_supported = C.asm_cfi_supported
 
 let ext_obj = C.ext_obj
 let ext_asm = C.ext_asm
@@ -122,6 +124,7 @@ let print_config oc =
   p "model" model;
   p "system" system;
   p "asm" asm;
+  p_bool "asm_cfi_supported" asm_cfi_supported;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;

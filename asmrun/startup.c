@@ -20,10 +20,12 @@
 #include "callback.h"
 #include "backtrace.h"
 #include "custom.h"
+#include "debugger.h"
 #include "fail.h"
 #include "freelist.h"
 #include "gc.h"
 #include "gc_ctrl.h"
+#include "intext.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -48,6 +50,7 @@ static void init_atoms(void)
 {
   extern struct segment caml_data_segments[], caml_code_segments[];
   int i;
+  struct code_fragment * cf;
 
   for (i = 0; i < 256; i++) {
     caml_atom_table[i] = Make_header(0, i, Caml_white);
@@ -57,9 +60,11 @@ static void init_atoms(void)
     caml_fatal_error("Fatal error: not enough memory for the initial page table");
 
   for (i = 0; caml_data_segments[i].begin != 0; i++) {
+    /* PR#5509: we must include the zero word at end of data segment,
+       because pointers equal to caml_data_segments[i].end are static data. */
     if (caml_page_table_add(In_static_data,
                             caml_data_segments[i].begin,
-                            caml_data_segments[i].end) != 0)
+                            caml_data_segments[i].end + sizeof(value)) != 0)
       caml_fatal_error("Fatal error: not enough memory for the initial page table");
   }
 
@@ -71,6 +76,13 @@ static void init_atoms(void)
     if (caml_code_segments[i].end > caml_code_area_end)
       caml_code_area_end = caml_code_segments[i].end;
   }
+  /* Register the code in the table of code fragments */
+  cf = caml_stat_alloc(sizeof(struct code_fragment));
+  cf->code_start = caml_code_area_start;
+  cf->code_end = caml_code_area_end;
+  cf->digest_computed = 0;
+  caml_ext_table_init(&caml_code_fragments_table, 8);
+  caml_ext_table_add(&caml_code_fragments_table, cf);
 }
 
 /* Configuration parameters and flags */

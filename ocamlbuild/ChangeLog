@@ -2302,7 +2302,7 @@
 
 2006-12-08  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
-	Ocaml distrib stuffs.
+	OCaml distrib stuffs.
 
 	* command.ml,
 	* command.mli: Add a normalization callback.
@@ -3619,4 +3619,3 @@
 	* ocamlbuild.ml: Add some flags -lflag, -ppflag, -cflag, --.
 	Also add a detection mechanism for dependencies.
 	* discard_printf.ml, Makefile: Update.
-

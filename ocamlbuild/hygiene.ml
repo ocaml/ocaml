@@ -72,7 +72,8 @@ let check ?sanitize laws entry =
         list_collect
           begin function
             | File(path, name, _, true) ->
-                if Filename.check_suffix name suffix then
+                if Filename.check_suffix name suffix
+                  && not ( Pathname.link_to_dir (filename_concat path name) !Options.build_dir ) then
                   begin
                     remove path name;
                     Some(sf "File %s in %s has suffix %s" name path suffix)
@@ -150,7 +151,7 @@ let check ?sanitize laws entry =
                @ or@ use@ other@ options@ (such@ as@ defining@ hygiene@ exceptions\
                @ or@ using@ the@ -no-hygiene@ option).@]"
                m (if m = 1 then "" else "s") fn;
-            let oc = open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o755 fn in
+            let oc = open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777 fn in
             (* See PR #5338: under mingw, one produces a shell script, which must follow
                Unix eol convention; hence Open_binary. *)
             let fp = Printf.fprintf in

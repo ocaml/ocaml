@@ -478,10 +478,10 @@ class man =
                    bs b "(* ";
                    self#man_of_text b t;
                    bs b " *)\n "
-               | [], None, Some r -> 
+               | [], None, Some r ->
                    bs b "\n.B : ";
                    self#man_of_type_expr b father r;
-                   bs b " "		   
+                   bs b " "
                | [], (Some t), Some r ->
                    bs b "\n.B : ";
                    self#man_of_type_expr b father r;
@@ -492,13 +492,13 @@ class man =
                | l, None, Some r ->
                    bs b "\n.B : ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
-		   bs b ".B -> ";
+                   bs b ".B -> ";
                    self#man_of_type_expr b father r;
                    bs b " "
                | l, (Some t), Some r ->
                    bs b "\n.B of ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
-		   bs b ".B -> ";
+                   bs b ".B -> ";
                    self#man_of_type_expr b father r;
                    bs b ".I \"  \"\n";
                    bs b "(* ";
@@ -999,6 +999,8 @@ class man =
         | Res_attribute a -> Name.simple a.att_value.val_name
         | Res_method m -> Name.simple m.met_value.val_name
         | Res_section _ -> assert false
+        | Res_recfield (_,f) -> f.rf_name
+        | Res_const (_,f) -> f.vc_name
       in
       let all_items_pre = Odoc_info.Search.search_by_name module_list (Str.regexp ".*")  in
       let all_items = List.filter
@@ -1040,6 +1042,8 @@ class man =
           | Res_attribute a -> a.att_value.val_name
           | Res_method m -> m.met_value.val_name
           | Res_section (s,_) -> s
+          | Res_recfield (_,f) -> f.rf_name
+          | Res_const (_,f) -> f.vc_name
          )
      in
      let date = Unix.time () in

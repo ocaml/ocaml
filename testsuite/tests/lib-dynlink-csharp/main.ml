@@ -17,7 +17,6 @@ let () =
       "../../../otherlibs/bigarray/bigarray.cma",
       "plugin.cmo"
   in
-  load s1; 
+  load s1;
   load s2;
   print_endline "OK."
-

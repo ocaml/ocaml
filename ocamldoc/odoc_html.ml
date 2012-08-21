@@ -37,6 +37,9 @@ module Naming =
     (** The prefix for types marks. *)
     let mark_type = "TYPE"
 
+    (** The prefix for types elements (record fields or constructors). *)
+    let mark_type_elt = "TYPEELT"
+
     (** The prefix for functions marks. *)
     let mark_function = "FUN"
 
@@ -89,8 +92,24 @@ module Naming =
     (** Return the link target for the given type. *)
     let type_target t = target mark_type (Name.simple t.ty_name)
 
+    (** Return the link target for the given variant constructor. *)
+    let const_target t f =
+      let name = Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.vc_name in
+      target mark_type_elt name
+
+    (** Return the link target for the given record field. *)
+    let recfield_target t f = target mark_type_elt
+      (Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.rf_name)
+
     (** Return the complete link target for the given type. *)
     let complete_type_target t = complete_target mark_type t.ty_name
+
+    let complete_recfield_target name =
+      let typ = Name.father name in
+      let field = Name.simple name in
+      Printf.sprintf "%s.%s" (complete_target mark_type_elt typ) field
+
+    let complete_const_target = complete_recfield_target
 
     (** Return the link target for the given exception. *)
     let exception_target e = target mark_exception (Name.simple e.ex_name)
@@ -316,14 +335,10 @@ class virtual text =
         in
         fun b s ->
       if !colorize_code then
-        (
-         bs b "<pre></pre>";
-         self#html_of_code b (remove_useless_newlines s);
-         bs b "<pre></pre>"
-        )
+         self#html_of_code b (remove_useless_newlines s)
       else
         (
-         bs b "<pre><code class=\"";
+         bs b "<pre class=\"codepre\"><code class=\"";
          bs b Odoc_ocamlhtml.code_class;
          bs b "\">" ;
          bs b (self#escape (remove_useless_newlines s));
@@ -331,7 +346,7 @@ class virtual text =
         )
 
     method html_of_Verbatim b s =
-      bs b "<pre>";
+      bs b "<pre class=\"verbatim\">";
       bs b (self#escape s);
       bs b "</pre>"
 
@@ -440,6 +455,8 @@ class virtual text =
             | Odoc_info.RK_method -> (Naming.complete_target Naming.mark_method name, h name)
             | Odoc_info.RK_section t -> (Naming.complete_label_target name,
                                          Odoc_info.Italic [Raw (Odoc_info.string_of_text t)])
+            | Odoc_info.RK_recfield -> (Naming.complete_recfield_target name, h name)
+            | Odoc_info.RK_const -> (Naming.complete_const_target name, h name)
           in
           let text =
             match text_opt with
@@ -466,7 +483,7 @@ class virtual text =
       bs b "<br>\n<table class=\"indextable\">\n";
       List.iter
         (fun name ->
-          bs b "<tr><td>";
+          bs b "<tr><td class=\"module\">";
           (
            try
              let m =
@@ -490,8 +507,9 @@ class virtual text =
       let index_if_not_empty l url m =
         match l with
           [] -> ()
-        | _ -> bp b "<a href=\"%s\">%s</a><br>\n" url m
+        | _ -> bp b "<li><a href=\"%s\">%s</a></li>\n" url m
       in
+      bp b "<ul class=\"indexlist\">\n";
       index_if_not_empty self#list_types self#index_types Odoc_messages.index_of_types;
       index_if_not_empty self#list_exceptions self#index_exceptions Odoc_messages.index_of_exceptions;
       index_if_not_empty self#list_values self#index_values Odoc_messages.index_of_values;
@@ -500,7 +518,8 @@ class virtual text =
       index_if_not_empty self#list_classes self#index_classes Odoc_messages.index_of_classes;
       index_if_not_empty self#list_class_types self#index_class_types Odoc_messages.index_of_class_types;
       index_if_not_empty self#list_modules self#index_modules Odoc_messages.index_of_modules;
-      index_if_not_empty self#list_module_types self#index_module_types Odoc_messages.index_of_module_types
+      index_if_not_empty self#list_module_types self#index_module_types Odoc_messages.index_of_module_types;
+      bp b "</ul>\n"
 
     method virtual list_types : Odoc_info.Type.t_type list
     method virtual index_types : string
@@ -690,7 +709,7 @@ class virtual info =
           let module M = Odoc_info in
           let dep = info.M.i_deprecated <> None in
           bs b "<div class=\"info\">\n";
-          if dep then bs b "<font color=\"#CCCCCC\">";
+          if dep then bs b "<span class=\"deprecated\">";
           (
            match info.M.i_desc with
              None -> ()
@@ -701,7 +720,7 @@ class virtual info =
                     (Odoc_info.first_sentence_of_text d));
                bs b "\n"
           );
-          if dep then bs b "</font>";
+          if dep then bs b "</span>";
           bs b "</div>\n"
 
   end
@@ -748,11 +767,7 @@ class html =
 
     (** The default style options. *)
     val mutable default_style_options =
-      ["a:visited {color : #416DFF; text-decoration : none; }" ;
-        "a:link {color : #416DFF; text-decoration : none;}" ;
-        "a:hover {color : Red; text-decoration : none; background-color: #5FFF88}" ;
-        "a:active {color : Red; text-decoration : underline; }" ;
-        ".keyword { font-weight : bold ; color : Red }" ;
+      [ ".keyword { font-weight : bold ; color : Red }" ;
         ".keywordsign { color : #C04600 }" ;
         ".superscript { font-size : 4 }" ;
         ".subscript { font-size : 4 }" ;
@@ -761,9 +776,18 @@ class html =
         ".type { color : #5C6585 }" ;
         ".string { color : Maroon }" ;
         ".warning { color : Red ; font-weight : bold }" ;
-        ".info { margin-left : 3em; margin-right : 3em }" ;
+        ".info { margin-left : 3em; margin-right: 3em }" ;
         ".param_info { margin-top: 4px; margin-left : 3em; margin-right : 3em }" ;
         ".code { color : #465F91 ; }" ;
+        ".typetable { border-style : hidden }" ;
+        ".paramstable { border-style : hidden ; padding: 5pt 5pt}" ;
+        "tr { background-color : White }" ;
+        "td.typefieldcomment { background-color : #FFFFFF ; font-size: smaller ;}" ;
+        "div.sig_block {margin-left: 2em}" ;
+        "*:target { background: yellow; }" ;
+
+        "body {font: 13px sans-serif; color: black; text-align: left; padding: 5px; margin: 0}";
+
         "h1 { font-size : 20pt ; text-align: center; }" ;
 
         "h2 { font-size : 20pt ; border: 1px solid #000000; "^
@@ -788,7 +812,7 @@ class html =
 
         "h6 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
-        "text-align: center; background-color: #C0FFFF ; "^
+        "text-align: center; background-color: #90BDFF ; "^
         "padding: 2px; }" ;
 
         "div.h7 { font-size : 20pt ; border: 1px solid #000000; "^
@@ -806,17 +830,22 @@ class html =
         "text-align: center; background-color: #FFFFFF ; "^
         "padding: 2px; }" ;
 
-        ".typetable { border-style : hidden }" ;
-        ".indextable { border-style : hidden }" ;
-        ".paramstable { border-style : hidden ; padding: 5pt 5pt}" ;
-        "body { background-color : White }" ;
-        "tr { background-color : White }" ;
-        "td.typefieldcomment { background-color : #FFFFFF ; font-size: smaller ;}" ;
-        "pre { margin-bottom: 4px }" ;
+        "a {color: #416DFF; text-decoration: none}";
+        "a:hover {background-color: #ddd; text-decoration: underline}";
+        "pre { margin-bottom: 4px; font-family: monospace; }" ;
+        "pre.verbatim, pre.codepre { }";
 
-        "div.sig_block {margin-left: 2em}" ;
+        ".indextable {border: 1px #ddd solid; border-collapse: collapse}";
+        ".indextable td, .indextable th {border: 1px #ddd solid; min-width: 80px}";
+        ".indextable td.module {background-color: #eee ;  padding-left: 2px; padding-right: 2px}";
+        ".indextable td.module a {color: 4E6272; text-decoration: none; display: block; width: 100%}";
+        ".indextable td.module a:hover {text-decoration: underline; background-color: transparent}";
+        ".deprecated {color: #888; font-style: italic}" ;
 
-        "*:target { background: yellow; } " ;
+        ".indextable tr td div.info { margin-left: 2px; margin-right: 2px }" ;
+
+        "ul.indexlist { margin-left: 0; padding-left: 0;}";
+        "ul.indexlist li { list-style-type: none ; margin-left: 0; padding-left: 0; }";
       ]
 
     (** The style file for all pages. *)
@@ -1052,21 +1081,24 @@ class html =
        match pre with
          None -> ()
        | Some name ->
-           bp b "<a href=\"%s\">%s</a>\n"
+           bp b "<a class=\"pre\" href=\"%s\" title=\"%s\">%s</a>\n"
              (fst (Naming.html_files name))
+             name
              Odoc_messages.previous
       );
       bs b "&nbsp;";
       let father = Name.father name in
       let href = if father = "" then self#index else fst (Naming.html_files father) in
-      bp b "<a href=\"%s\">%s</a>\n" href Odoc_messages.up;
+      let father_name = if father = "" then "Index" else father in
+      bp b "<a class=\"up\" href=\"%s\" title=\"%s\">%s</a>\n" href father_name Odoc_messages.up;
       bs b "&nbsp;";
       (
        match post with
          None -> ()
        | Some name ->
-           bp b "<a href=\"%s\">%s</a>\n"
+           bp b "<a class=\"post\" href=\"%s\" title=\"%s\">%s</a>\n"
              (fst (Naming.html_files name))
+             name
              Odoc_messages.next
       );
       bs b "</div>\n"
@@ -1244,7 +1276,7 @@ class html =
           self#html_of_module_kind b father k2;
           self#html_of_text b [Code ")"]
       | Module_with (k, s) ->
-          (* TODO: à modifier quand Module_with sera plus détaillé *)
+          (* TODO: modify when Module_with will be more detailed *)
           self#html_of_module_type_kind b father ?modu k;
           bs b "<code class=\"type\"> ";
           bs b (self#create_fully_qualified_module_idents_links father s);
@@ -1427,7 +1459,7 @@ class html =
         (match t.ty_manifest, t.ty_kind with
           None, Type_abstract -> "<pre>"
         | None, Type_variant _
-        | None, Type_record _ -> "<br><code>"
+        | None, Type_record _ -> "<pre><code>"
         | Some _, Type_abstract -> "<pre>"
         | Some _, Type_variant _
         | Some _, Type_record _ -> "<pre>"
@@ -1456,7 +1488,7 @@ class html =
           bs b
             (
              match t.ty_manifest with
-               None -> "</code>"
+               None -> "</code></pre>"
              | Some _ -> "</pre>"
             );
           bs b "<table class=\"typetable\">\n";
@@ -1466,7 +1498,9 @@ class html =
             bs b (self#keyword "|");
             bs b "</code></td>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
-            bs b (self#constructor constr.vc_name);
+            bp b "<span id=\"%s\">%s</span>"
+              (Naming.const_target t constr)
+              (self#constructor constr.vc_name);
             (
              match constr.vc_args, constr.vc_ret with
                [], None -> ()
@@ -1479,8 +1513,8 @@ class html =
              | l,Some r ->
                  bs b (" " ^ (self#keyword ":") ^ " ");
                  self#html_of_type_expr_list ~par: false b father " * " l;
-		 bs b (" " ^ (self#keyword "->") ^ " ");
-                 self#html_of_type_expr b father r;		 
+                 bs b (" " ^ (self#keyword "->") ^ " ");
+                 self#html_of_type_expr b father r;
             );
             bs b "</code></td>\n";
             (
@@ -1511,7 +1545,7 @@ class html =
           bs b
             (
              match t.ty_manifest with
-               None -> "</code>"
+               None -> "</code></pre>"
              | Some _ -> "</pre>"
             );
           bs b "<table class=\"typetable\">\n" ;
@@ -1521,7 +1555,9 @@ class html =
             bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
             if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
-            bs b (r.rf_name ^ "&nbsp;: ") ;
+            bp b "<span id=\"%s\">%s</span>&nbsp;:"
+              (Naming.recfield_target t r)
+              r.rf_name;
             self#html_of_type_expr b father r.rf_type;
             bs b ";</code></td>\n";
             (
@@ -1834,7 +1870,7 @@ class html =
           self#html_of_text b [Code "end"]
 
       | Class_apply capp ->
-          (* TODO: afficher le type final à partir du typedtree *)
+          (* TODO: display final type from typedtree *)
           self#html_of_text b [Raw "class application not handled yet"]
 
       | Class_constr cco ->
@@ -2085,9 +2121,11 @@ class html =
         let b = new_buf () in
         bs b "<html>\n";
         self#print_header b (self#inner_title title);
-        bs b "<body>\n<center><h1>";
+        bs b "<body>\n";
+        self#print_navbar b None None "";
+        bs b "<h1>";
         bs b title;
-        bs b "</h1></center>\n" ;
+        bs b "</h1>\n" ;
 
         let sorted_elements = List.sort
             (fun e1 e2 -> compare (Name.simple (name e1)) (Name.simple (name e2)))
@@ -2120,7 +2158,7 @@ class html =
         in
         bs b "<table>\n";
         List.iter f_group groups ;
-        bs b "</table><br>\n" ;
+        bs b "</table>\n" ;
         bs b "</body>\n</html>";
         Buffer.output_buffer chanout b;
         close_out chanout
@@ -2159,11 +2197,11 @@ class html =
           (self#inner_title cl.cl_name);
         bs b "<body>\n";
         self#print_navbar b pre_name post_name cl.cl_name;
-        bs b "<center><h1>";
+        bs b "<h1>";
         bs b (Odoc_messages.clas^" ");
         if cl.cl_virtual then bs b "virtual " ;
         bp b "<a href=\"%s\">%s</a>" type_file cl.cl_name;
-        bs b "</h1></center>\n<br>\n";
+        bs b "</h1>\n";
         self#html_of_class b ~with_link: false cl;
         (* parameters *)
         self#html_of_described_parameter_list b
@@ -2207,11 +2245,11 @@ class html =
 
         bs b "<body>\n";
         self#print_navbar b pre_name post_name clt.clt_name;
-        bs b "<center><h1>";
+        bs b "<h1>";
         bs b (Odoc_messages.class_type^" ");
         if clt.clt_virtual then bs b "virtual ";
         bp b "<a href=\"%s\">%s</a>" type_file clt.clt_name;
-        bs b "</h1></center>\n<br>\n";
+        bs b "</h1>\n";
         self#html_of_class_type b ~with_link: false clt;
 
         (* class inheritance *)
@@ -2252,14 +2290,14 @@ class html =
           (self#inner_title mt.mt_name);
         bs b "<body>\n";
         self#print_navbar b pre_name post_name mt.mt_name;
-        bp b "<center><h1>";
+        bp b "<h1>";
         bs b (Odoc_messages.module_type^" ");
         (
          match mt.mt_type with
            Some _ -> bp b "<a href=\"%s\">%s</a>" type_file mt.mt_name
          | None-> bs b mt.mt_name
         );
-        bs b "</h1></center>\n<br>\n" ;
+        bs b "</h1>\n" ;
         self#html_of_modtype b ~with_link: false mt;
 
         (* parameters for functors *)
@@ -2320,7 +2358,7 @@ class html =
           (self#inner_title modu.m_name);
         bs b "<body>\n" ;
         self#print_navbar b pre_name post_name modu.m_name ;
-        bs b "<center><h1>";
+        bs b "<h1>";
         if modu.m_text_only then
           bs b modu.m_name
         else
@@ -2339,7 +2377,7 @@ class html =
             | Some _ -> bp b " (<a href=\"%s\">.ml</a>)" code_file
            )
           );
-        bs b "</h1></center>\n<br>\n";
+        bs b "</h1>\n";
 
         if not modu.m_text_only then self#html_of_module b ~with_link: false modu;
 
@@ -2397,9 +2435,10 @@ class html =
         bs b "<html>\n";
         self#print_header b self#title;
         bs b "<body>\n";
-        bs b "<center><h1>";
+
+        bs b "<h1>";
         bs b title;
-        bs b "</h1></center>\n" ;
+        bs b "</h1>\n" ;
         let info = Odoc_info.apply_opt
             (Odoc_info.info_of_comment_file module_list)
             !Odoc_info.Global.intro_file

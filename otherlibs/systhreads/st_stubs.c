@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: posix.c 9270 2009-05-20 11:52:42Z doligez $ */
+/* $Id$ */
 
 #include "alloc.h"
 #include "backtrace.h"
@@ -94,7 +94,7 @@ static caml_thread_t all_threads = NULL;
 /* The descriptor for the currently executing thread */
 static caml_thread_t curr_thread = NULL;
 
-/* The master lock protecting the Caml runtime system */
+/* The master lock protecting the OCaml runtime system */
 static st_masterlock caml_master_lock;
 
 /* Whether the ``tick'' thread is already running */
@@ -279,7 +279,7 @@ static uintnat caml_thread_stack_usage(void)
     sz += (value *) th->top_of_stack - (value *) th->bottom_of_stack;
 #else
     sz += th->stack_high - th->sp;
-#endif    
+#endif
   }
   if (prev_stack_usage_hook != NULL)
     sz += prev_stack_usage_hook();
@@ -344,7 +344,10 @@ static value caml_thread_new_descriptor(value clos)
 
 static void caml_thread_remove_info(caml_thread_t th)
 {
-  if (th->next == th) all_threads = NULL; /* last Caml thread exiting */
+  if (th->next == th)
+    all_threads = NULL; /* last OCaml thread exiting */
+  else if (all_threads == th)
+    all_threads = th->next;     /* PR#5295 */
   th->next->prev = th->prev;
   th->prev->next = th->next;
 #ifndef NATIVE_CODE
@@ -498,7 +501,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 #endif
   /* The thread now stops running */
   return 0;
-}  
+}
 
 CAMLprim value caml_thread_new(value clos)          /* ML */
 {
@@ -522,7 +525,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
     caml_thread_remove_info(th);
     st_check_error(err, "Thread.create");
   }
-  /* Create the tick thread if not already done.  
+  /* Create the tick thread if not already done.
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process*/
   if (! caml_tick_thread_running) {
@@ -578,7 +581,7 @@ CAMLexport int caml_c_thread_register(void)
   return 1;
 }
 
-/* Unregister a thread that was created from C and registered with 
+/* Unregister a thread that was created from C and registered with
    the function above */
 
 CAMLexport int caml_c_thread_unregister(void)
@@ -646,7 +649,7 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 #endif
   caml_thread_stop();
   if (exit_buf != NULL) {
-    /* Native-code and (main thread or thread created by Caml) */
+    /* Native-code and (main thread or thread created by OCaml) */
     siglongjmp(exit_buf->buf, 1);
   } else {
     /* Bytecode, or thread created from C */

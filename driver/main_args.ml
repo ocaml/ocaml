@@ -24,6 +24,10 @@ let mk_annot f =
   "-annot", Arg.Unit f, " Save information in <filename>.annot"
 ;;
 
+let mk_binannot f =
+  "-bin-annot", Arg.Unit f, " Save typedtree in <filename>.cmt"
+;;
+
 let mk_c f =
   "-c", Arg.Unit f, " Compile only (do not link)"
 ;;
@@ -167,6 +171,11 @@ let mk_nolabels f =
 
 let mk_noprompt f =
   "-noprompt", Arg.Unit f, " Suppress all prompts"
+;;
+
+let mk_nopromptcont f =
+  "-nopromptcont", Arg.Unit f,
+  " Suppress prompts for continuation lines of multi-line inputs"
 ;;
 
 let mk_nostdlib f =
@@ -327,6 +336,10 @@ let mk_dlambda f =
   "-dlambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dclambda f =
+  "-dclambda", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
 ;;
@@ -392,6 +405,7 @@ module type Bytecomp_options = sig
   val _a : unit -> unit
   val _absname : unit -> unit
   val _annot : unit -> unit
+  val _binannot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
@@ -455,6 +469,7 @@ module type Bytetop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _real_paths : unit -> unit
@@ -480,6 +495,7 @@ module type Optcomp_options = sig
   val _a : unit -> unit
   val _absname : unit -> unit
   val _annot : unit -> unit
+  val _binannot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
@@ -529,6 +545,7 @@ module type Optcomp_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -557,6 +574,7 @@ module type Opttop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _real_paths : unit -> unit
@@ -574,6 +592,7 @@ module type Opttop_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -601,6 +620,7 @@ struct
     mk_a F._a;
     mk_absname F._absname;
     mk_annot F._annot;
+    mk_binannot F._binannot;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
@@ -673,6 +693,7 @@ struct
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
+    mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_principal F._principal;
     mk_real_paths F._real_paths;
@@ -701,6 +722,7 @@ struct
     mk_a F._a;
     mk_absname F._absname;
     mk_annot F._annot;
+    mk_binannot F._binannot;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
@@ -751,11 +773,13 @@ struct
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dclambda F._dclambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
     mk_dlive F._dlive;
     mk_dspill F._dspill;
+    mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
     mk_dprefer F._dprefer;
     mk_dalloc F._dalloc;
@@ -780,6 +804,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
+    mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_principal F._principal;
     mk_real_paths F._real_paths;
@@ -796,11 +821,13 @@ module Make_opttop_options (F : Opttop_options) = struct
 
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
+    mk_dclambda F._dclambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
     mk_dlive F._dlive;
     mk_dspill F._dspill;
+    mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
     mk_dprefer F._dprefer;
     mk_dalloc F._dalloc;

@@ -36,10 +36,10 @@ let store_string_char c = Buffer.add_char string_buff c
 let get_stored_string () = Buffer.contents string_buff
 
 let char_for_backslash = function
-    'n' -> '\n'
-  | 't' -> '\t'
-  | 'b' -> '\b'
-  | 'r' -> '\r'
+    'n' -> '\010'
+  | 'r' -> '\013'
+  | 'b' -> '\008'
+  | 't' -> '\009'
   | c   -> c
 
 let raise_lexical_error lexbuf msg =
@@ -114,7 +114,7 @@ let identstart =
 let identbody =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let backslash_escapes =
-  ['\\' '"' '\'' 'n' 't' 'b' 'r']
+  ['\\' '\'' '"' 'n' 't' 'b' 'r' ' ']
 
 rule main = parse
     [' ' '\013' '\009' '\012' ] +

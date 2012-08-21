@@ -84,6 +84,3 @@ let with_trailer = ref true
 let with_toc = ref true
 
 let with_index = ref true
-
-
-

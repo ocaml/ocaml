@@ -31,7 +31,7 @@
  * It takes the following parameters into account:
  * - limitation on number of objects is mostly due to limitation
  *   a WaitForMultipleObjects
- * - there is always an event "hStop" to watch 
+ * - there is always an event "hStop" to watch
  *
  * This lead to pick the following value as the biggest possible
  * value
@@ -115,7 +115,7 @@ typedef enum _SELECTHANDLETYPE {
 typedef enum _SELECTMODE {
   SELECT_MODE_NONE = 0,
   SELECT_MODE_READ = 1,
-  SELECT_MODE_WRITE = 2, 
+  SELECT_MODE_WRITE = 2,
   SELECT_MODE_EXCEPT = 4,
 } SELECTMODE;
 
@@ -191,18 +191,18 @@ LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
   /* Allocate the data structure */
   LPSELECTDATA res;
   DWORD        i;
-  
-  res = (LPSELECTDATA)caml_stat_alloc(sizeof(SELECTDATA)); 
+
+  res = (LPSELECTDATA)caml_stat_alloc(sizeof(SELECTDATA));
 
   /* Init common data */
   list_init((LPLIST)res);
   list_next_set((LPLIST)res, (LPLIST)lpSelectData);
   res->EType         = EType;
   res->nResultsCount = 0;
-        
+
 
   /* Data following are dedicated to APC like call, they
-     will be initialized if required. For now they are set to 
+     will be initialized if required. For now they are set to
      invalid values.
      */
   res->funcWorker    = NULL;
@@ -255,14 +255,14 @@ DWORD select_data_result_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, int l
 }
 
 /* Add a query to select data, return zero if something goes wrong */
-DWORD select_data_query_add (LPSELECTDATA lpSelectData, 
-                             SELECTMODE EMode, 
-                             HANDLE hFileDescr, 
+DWORD select_data_query_add (LPSELECTDATA lpSelectData,
+                             SELECTMODE EMode,
+                             HANDLE hFileDescr,
                              int lpOrigIdx,
                              unsigned int uFlagsFd)
 {
   DWORD res;
-  DWORD i; 
+  DWORD i;
 
   res = 0;
   if (lpSelectData->nQueriesCount < MAXIMUM_SELECT_OBJECTS)
@@ -280,22 +280,22 @@ DWORD select_data_query_add (LPSELECTDATA lpSelectData,
 }
 
 /* Search for a job that has available query slots and that match provided type.
- * If none is found, create a new one. Return the corresponding SELECTDATA, and 
+ * If none is found, create a new one. Return the corresponding SELECTDATA, and
  * update provided SELECTDATA head, if required.
  */
 LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData, SELECTTYPE EType)
 {
   LPSELECTDATA res;
-  
+
   res = NULL;
-  
+
   /* Search for job */
   DEBUG_PRINT("Searching an available job for type %d", EType);
   res = *lppSelectData;
   while (
       res != NULL
       && !(
-        res->EType == EType 
+        res->EType == EType
         && res->nQueriesCount < MAXIMUM_SELECT_OBJECTS
         )
       )
@@ -326,7 +326,7 @@ void read_console_poll(HANDLE hStop, void *_data)
   DWORD n;
   LPSELECTDATA  lpSelectData;
   LPSELECTQUERY lpQuery;
-  
+
   DEBUG_PRINT("Waiting for data on console");
 
   record;
@@ -338,7 +338,7 @@ void read_console_poll(HANDLE hStop, void *_data)
   events[0] = hStop;
   events[1] = lpQuery->hFileDescr;
   while (lpSelectData->EState == SELECT_STATE_NONE)
-  {    
+  {
     waitRes = WaitForMultipleObjects(2, events, FALSE, INFINITE);
     if (waitRes == WAIT_OBJECT_0 || check_error(lpSelectData, waitRes == WAIT_FAILED))
     {
@@ -359,7 +359,7 @@ void read_console_poll(HANDLE hStop, void *_data)
       lpSelectData->EState = SELECT_STATE_SIGNALED;
       break;
     }
-    else 
+    else
     {
       /* discard everything else and try again */
       if (check_error(lpSelectData, ReadConsoleInput(lpQuery->hFileDescr, &record, 1, &n) == 0))
@@ -371,9 +371,9 @@ void read_console_poll(HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor console input */
-LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData, 
-                                    SELECTMODE EMode, 
-                                    HANDLE hFileDescr, 
+LPSELECTDATA read_console_poll_add (LPSELECTDATA lpSelectData,
+                                    SELECTMODE EMode,
+                                    HANDLE hFileDescr,
                                     int lpOrigIdx,
                                     unsigned int uFlagsFd)
 {
@@ -414,14 +414,14 @@ void read_pipe_poll (HANDLE hStop, void *_data)
     {
       iterQuery = &(lpSelectData->aQueries[i]);
       res = PeekNamedPipe(
-          iterQuery->hFileDescr, 
-          NULL, 
-          0, 
-          NULL, 
-          &n, 
+          iterQuery->hFileDescr,
+          NULL,
+          0,
+          NULL,
+          &n,
           NULL);
-      if (check_error(lpSelectData, 
-            (res == 0) && 
+      if (check_error(lpSelectData,
+            (res == 0) &&
             (GetLastError() != ERROR_BROKEN_PIPE)))
       {
         break;
@@ -435,7 +435,7 @@ void read_pipe_poll (HANDLE hStop, void *_data)
     };
 
     /* Alas, nothing except polling seems to work for pipes.
-       Check the state & stop_worker_event every 10 ms 
+       Check the state & stop_worker_event every 10 ms
      */
     if (lpSelectData->EState == SELECT_STATE_NONE)
     {
@@ -446,7 +446,7 @@ void read_pipe_poll (HANDLE hStop, void *_data)
        * a chance that one of the 4 first calls succeed.
        */
       wait = 2 * wait;
-      if (wait > 10) 
+      if (wait > 10)
       {
         wait = 10;
       };
@@ -460,23 +460,23 @@ void read_pipe_poll (HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor pipe input */
-LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData, 
-                                 SELECTMODE EMode, 
-                                 HANDLE hFileDescr, 
+LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData,
+                                 SELECTMODE EMode,
+                                 HANDLE hFileDescr,
                                  int lpOrigIdx,
                                  unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
-  
+
   hd = lpSelectData;
   /* Polling pipe is a non blocking operation by default. This means that each
-     worker can handle many pipe. We begin to try to find a worker that is 
+     worker can handle many pipe. We begin to try to find a worker that is
      polling pipe, but for which there is under the limit of pipe per worker.
      */
   DEBUG_PRINT("Searching an available worker handling pipe");
   res = select_data_job_search(&hd, SELECT_TYPE_PIPE_READ);
-  
+
   /* Add a new pipe to poll */
   res->funcWorker = read_pipe_poll;
   select_data_query_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
@@ -528,22 +528,22 @@ void socket_poll (HANDLE hStop, void *_data)
 
     check_error(lpSelectData,
         WSAEventSelect(
-          (SOCKET)(iterQuery->hFileDescr), 
-          aEvents[nEvents], 
+          (SOCKET)(iterQuery->hFileDescr),
+          aEvents[nEvents],
           maskEvents) == SOCKET_ERROR);
   }
-  
+
   /* Add stop event */
   aEvents[nEvents]  = hStop;
   nEvents++;
 
   if (lpSelectData->nError == 0)
   {
-    check_error(lpSelectData, 
+    check_error(lpSelectData,
         WaitForMultipleObjects(
-          nEvents, 
-          aEvents, 
-          FALSE, 
+          nEvents,
+          aEvents,
+          FALSE,
           INFINITE) == WAIT_FAILED);
   };
 
@@ -599,9 +599,9 @@ void socket_poll (HANDLE hStop, void *_data)
 }
 
 /* Add a function to monitor socket */
-LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData, 
-                              SELECTMODE EMode, 
-                              HANDLE hFileDescr, 
+LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
+                              SELECTMODE EMode,
+                              HANDLE hFileDescr,
                               int lpOrigIdx,
                               unsigned int uFlagsFd)
 {
@@ -609,7 +609,7 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
   LPSELECTDATA candidate;
   DWORD i;
   LPSELECTQUERY aQueries;
-  
+
   res = lpSelectData;
   candidate = NULL;
   aQueries = NULL;
@@ -695,19 +695,19 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
 /***********************/
 
 /* Add a static result */
-LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData, 
-                              SELECTMODE EMode, 
-                              HANDLE hFileDescr, 
+LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData,
+                              SELECTMODE EMode,
+                              HANDLE hFileDescr,
                               int lpOrigIdx,
                               unsigned int uFlagsFd)
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
-  
+
   /* Look for an already initialized static element */
   hd = lpSelectData;
   res = select_data_job_search(&hd, SELECT_TYPE_STATIC);
-  
+
   /* Add a new query/result */
   select_data_query_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
   select_data_result_add(res, EMode, lpOrigIdx);
@@ -738,7 +738,7 @@ static SELECTHANDLETYPE get_handle_type(value fd)
   {
     switch(GetFileType(Handle_val(fd)))
     {
-      case FILE_TYPE_DISK: 
+      case FILE_TYPE_DISK:
         res = SELECT_HANDLE_DISK;
         break;
 
@@ -783,8 +783,8 @@ LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode, 
   DEBUG_PRINT("Begin dispatching handle %x", hFileDescr);
 
   DEBUG_PRINT("Waiting for %d on handle %x", EMode, hFileDescr);
-  
-  /* There is only 2 way to have except mode: transmission of OOB data through 
+
+  /* There is only 2 way to have except mode: transmission of OOB data through
      a socket TCP/IP and through a strange interaction with a TTY.
      With windows, we only consider the TCP/IP except condition
   */
@@ -879,7 +879,7 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds, value writefd
   CAMLlocal2(result, list);
   int i;
 
-  switch( iterResult->EMode )  
+  switch( iterResult->EMode )
   {
     case SELECT_MODE_READ:
       list = readfds;
@@ -892,12 +892,12 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds, value writefd
       break;
   };
 
-  for(i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i ) 
+  for(i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i )
   {
     list = Field(list, 1);
   }
 
-  if (list == Val_unit) 
+  if (list == Val_unit)
     failwith ("select.c: original file handle not found");
 
   result = Field(list, 0);
@@ -944,12 +944,12 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
 }
 
 CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value timeout)
-{  
+{
   /* Event associated to handle */
   DWORD   nEventsCount;
   DWORD   nEventsMax;
   HANDLE *lpEventsDone;
-  
+
   /* Data for all handles */
   LPSELECTDATA lpSelectData;
   LPSELECTDATA iterSelectData;
@@ -990,7 +990,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
   double tm;
   struct timeval tv;
   struct timeval * tvp;
-  
+
   DEBUG_PRINT("in select");
 
   err = 0;
@@ -1003,7 +1003,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
       leave_blocking_section();
     }
     read_list = write_list = except_list = Val_int(0);
-  } else {      
+  } else {
     if (fdlist_to_fdset(readfds, &read) && fdlist_to_fdset(writefds, &write) && fdlist_to_fdset(exceptfds, &except)) {
       DEBUG_PRINT("only sockets to select on, using classic select");
       if (tm < 0.0) {
@@ -1040,9 +1040,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
       writefds_len   = caml_list_length(writefds);
       exceptfds_len  = caml_list_length(exceptfds);
       hdsMax         = MAX(readfds_len, MAX(writefds_len, exceptfds_len));
-      
+
       hdsData = (HANDLE *)caml_stat_alloc(sizeof(HANDLE) * hdsMax);
-      
+
       if (tm >= 0.0)
         {
           milliseconds = 1000 * tm;
@@ -1052,8 +1052,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
         {
           milliseconds = INFINITE;
         }
-      
-      
+
+
       /* Create list of select data, based on the different list of fd to watch */
       DEBUG_PRINT("Dispatch read fd");
       handle_set_init(&hds, hdsData, hdsMax);
@@ -1072,7 +1072,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
             }
         }
       handle_set_reset(&hds);
-      
+
       DEBUG_PRINT("Dispatch write fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
@@ -1090,7 +1090,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
             }
         }
       handle_set_reset(&hds);
-      
+
       DEBUG_PRINT("Dispatch exceptional fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
@@ -1108,13 +1108,13 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
             }
         }
       handle_set_reset(&hds);
-      
+
       /* Building the list of handle to wait for */
       DEBUG_PRINT("Building events done array");
       nEventsMax   = list_length((LPLIST)lpSelectData);
       nEventsCount = 0;
       lpEventsDone = (HANDLE *)caml_stat_alloc(sizeof(HANDLE) * nEventsMax);
-      
+
       iterSelectData = lpSelectData;
       while (iterSelectData != NULL)
         {
@@ -1127,23 +1127,23 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
             {
               hasStaticData = TRUE;
             };
-          
+
           /* Execute APC */
           if (iterSelectData->funcWorker != NULL)
             {
-              iterSelectData->lpWorker = 
+              iterSelectData->lpWorker =
                 worker_job_submit(
-                                  iterSelectData->funcWorker, 
+                                  iterSelectData->funcWorker,
                                   (void *)iterSelectData);
-              DEBUG_PRINT("Job submitted to worker %x", iterSelectData->lpWorker); 
+              DEBUG_PRINT("Job submitted to worker %x", iterSelectData->lpWorker);
               lpEventsDone[nEventsCount] = worker_job_event_done(iterSelectData->lpWorker);
               nEventsCount++;
             };
           iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
         };
-      
+
       DEBUG_PRINT("Need to watch %d workers", nEventsCount);
-      
+
       /* Processing select itself */
       enter_blocking_section();
       /* There are worker started, waiting to be monitored */
@@ -1158,17 +1158,17 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
                 case WAIT_FAILED:
                   err = GetLastError();
                   break;
-                  
+
                 case WAIT_TIMEOUT:
                   DEBUG_PRINT("Select timeout");
                   break;
-                  
+
                 default:
                   DEBUG_PRINT("One worker is done");
                   break;
                 };
             }
-          
+
           /* Ordering stop to every worker */
           DEBUG_PRINT("Sending stop signal to every select workers");
           iterSelectData = lpSelectData;
@@ -1180,14 +1180,14 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
                 };
               iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
             };
-          
+
           DEBUG_PRINT("Waiting for every select worker to be done");
           switch (WaitForMultipleObjects(nEventsCount, lpEventsDone, TRUE, INFINITE))
             {
             case WAIT_FAILED:
               err = GetLastError();
               break;
-              
+
             default:
               DEBUG_PRINT("Every worker is done");
               break;
@@ -1199,16 +1199,16 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
           Sleep(milliseconds);
         }
       leave_blocking_section();
-      
+
       DEBUG_PRINT("Error status: %d (0 is ok)", err);
       /* Build results */
       if (err == 0)
         {
           DEBUG_PRINT("Building result");
-          read_list = Val_unit; 
+          read_list = Val_unit;
           write_list = Val_unit;
           except_list = Val_unit;
-          
+
           iterSelectData = lpSelectData;
           while (iterSelectData != NULL)
             {
@@ -1241,7 +1241,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
               iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
             }
         }
-      
+
       /* Free resources */
       DEBUG_PRINT("Free selectdata resources");
       iterSelectData = lpSelectData;
@@ -1252,12 +1252,12 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
           select_data_free(lpSelectData);
         }
       lpSelectData = NULL;
-      
+
       /* Free allocated events/handle set array */
       DEBUG_PRINT("Free local allocated resources");
       caml_stat_free(lpEventsDone);
       caml_stat_free(hdsData);
-      
+
       DEBUG_PRINT("Raise error if required");
       if (err != 0)
         {

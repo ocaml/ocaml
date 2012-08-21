@@ -44,3 +44,5 @@ val deps_of_tags : Tags.t -> pathname list
 val dep : Tags.elt list -> pathname list -> unit
 
 val pdep : Tags.elt list -> Tags.elt -> (string -> pathname list) -> unit
+
+val file_or_exe_exists: string -> bool

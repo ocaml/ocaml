@@ -28,11 +28,12 @@ and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
 and dynlink = ref supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
+and c_Lopts = ref []      (* options to pass to mksharedlib and ocamlc -cclib *)
 and c_opts = ref []      (* options to pass to mksharedlib and ocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
 and ocamlc = ref (compiler_path "ocamlc")
 and ocamlopt = ref (compiler_path "ocamlopt")
-and output = ref "a"        (* Output name for Caml part of library *)
+and output = ref "a"        (* Output name for OCaml part of library *)
 and output_c = ref ""       (* Output name for C part of library *)
 and rpath = ref []          (* rpath options *)
 and verbose = ref false
@@ -93,7 +94,7 @@ let parse_arguments argv =
     else if starts_with s "-l" then
       c_libs := s :: !c_libs
     else if starts_with s "-L" then
-     (c_opts := s :: !c_opts;
+     (c_Lopts := s :: !c_Lopts;
       let l = chop_prefix s "-L" in
       if not (Filename.is_relative l) then rpath := l :: !rpath)
     else if s = "-ocamlc" then
@@ -137,6 +138,8 @@ let parse_arguments argv =
     (fun r -> r := List.rev !r)
     [ bytecode_objs; native_objs; caml_libs; caml_opts;
       c_libs; c_objs; c_opts; ld_opts; rpath ];
+(* Put -L options in front of -l options in -cclib to mimic -ccopt behavior *)
+  c_libs := !c_Lopts @ !c_libs;
 
   if !output_c = "" then output_c := !output
 
@@ -152,15 +155,15 @@ Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|.dll 
 \n  -help          Print this help message and exit\
 \n  --help         Same as -help\
 \n  -h             Same as -help\
-\n  -I <dir>       Add <dir> to the path searched for Caml object files\
+\n  -I <dir>       Add <dir> to the path searched for OCaml object files\
 \n  -failsafe      fall back to static linking if DLL construction failed\
 \n  -ldopt <opt>   C option passed to the shared linker only\
-\n  -linkall       Build Caml archive with link-all behavior\
+\n  -linkall       Build OCaml archive with link-all behavior\
 \n  -l<lib>        Specify a dependent C library\
 \n  -L<dir>        Add <dir> to the path searched for C libraries\
 \n  -ocamlc <cmd>  Use <cmd> in place of \"ocamlc\"\
 \n  -ocamlopt <cmd> Use <cmd> in place of \"ocamlopt\"\
-\n  -o <name>      Generated Caml library is named <name>.cma or <name>.cmxa\
+\n  -o <name>      Generated OCaml library is named <name>.cma or <name>.cmxa\
 \n  -oc <name>     Generated C library is named dll<name>.so or lib<name>.a\
 \n  -rpath <dir>   Same as -dllpath <dir>\
 \n  -R<dir>        Same as -rpath\

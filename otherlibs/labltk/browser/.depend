@@ -1,97 +1,265 @@
-editor.cmo: viewer.cmi typecheck.cmi shell.cmi setpath.cmi searchpos.cmi \
-    searchid.cmi mytypes.cmi lexical.cmi jg_toplevel.cmo jg_tk.cmo \
-    jg_text.cmi jg_message.cmi jg_menu.cmo jg_button.cmo jg_bind.cmi \
-    fileselect.cmi editor.cmi
-editor.cmx: viewer.cmx typecheck.cmx shell.cmx setpath.cmx searchpos.cmx \
-    searchid.cmx mytypes.cmi lexical.cmx jg_toplevel.cmx jg_tk.cmx \
-    jg_text.cmx jg_message.cmx jg_menu.cmx jg_button.cmx jg_bind.cmx \
-    fileselect.cmx editor.cmi
-fileselect.cmo: useunix.cmi setpath.cmi list2.cmo jg_toplevel.cmo jg_memo.cmi \
-    jg_entry.cmo jg_box.cmo fileselect.cmi
-fileselect.cmx: useunix.cmx setpath.cmx list2.cmx jg_toplevel.cmx jg_memo.cmx \
-    jg_entry.cmx jg_box.cmx fileselect.cmi
-help.cmo:
-help.cmx:
-jg_bind.cmo: jg_bind.cmi
-jg_bind.cmx: jg_bind.cmi
-jg_box.cmo: jg_completion.cmi jg_bind.cmi
-jg_box.cmx: jg_completion.cmx jg_bind.cmx
-jg_button.cmo:
-jg_button.cmx:
-jg_completion.cmo: jg_completion.cmi
-jg_completion.cmx: jg_completion.cmi
-jg_config.cmo: jg_tk.cmo jg_config.cmi
-jg_config.cmx: jg_tk.cmx jg_config.cmi
-jg_entry.cmo: jg_bind.cmi
-jg_entry.cmx: jg_bind.cmx
-jg_memo.cmo: jg_memo.cmi
-jg_memo.cmx: jg_memo.cmi
-jg_menu.cmo:
-jg_menu.cmx:
-jg_message.cmo: jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_bind.cmi \
-    jg_message.cmi
-jg_message.cmx: jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_bind.cmx \
-    jg_message.cmi
-jg_multibox.cmo: jg_completion.cmi jg_bind.cmi jg_multibox.cmi
-jg_multibox.cmx: jg_completion.cmx jg_bind.cmx jg_multibox.cmi
-jg_text.cmo: jg_toplevel.cmo jg_tk.cmo jg_button.cmo jg_bind.cmi jg_text.cmi
-jg_text.cmx: jg_toplevel.cmx jg_tk.cmx jg_button.cmx jg_bind.cmx jg_text.cmi
-jg_tk.cmo:
-jg_tk.cmx:
-jg_toplevel.cmo:
-jg_toplevel.cmx:
-lexical.cmo: jg_tk.cmo lexical.cmi
-lexical.cmx: jg_tk.cmx lexical.cmi
-list2.cmo:
-list2.cmx:
-main.cmo: viewer.cmi shell.cmi searchpos.cmi searchid.cmi jg_config.cmi \
+editor.cmo : ../labltk/wm.cmi ../labltk/winfo.cmi ../support/widget.cmi \
+    viewer.cmi ../../../typing/types.cmi typecheck.cmi ../labltk/toplevel.cmi \
+    ../labltk/tk.cmo ../support/timer.cmi ../support/textvariable.cmi \
+    ../labltk/text.cmi shell.cmi setpath.cmi ../labltk/selection.cmi \
+    searchpos.cmi searchid.cmi ../support/protocol.cmi \
+    ../../../parsing/parsetree.cmi ../../../parsing/parser.cmi \
+    ../labltk/pack.cmi mytypes.cmi ../labltk/menu.cmi \
+    ../../../parsing/longident.cmi ../../../parsing/location.cmi \
+    ../labltk/listbox.cmi lexical.cmi ../../../parsing/lexer.cmi \
+    ../labltk/label.cmi jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_message.cmi \
+    jg_menu.cmo jg_button.cmo jg_bind.cmi ../../../typing/ident.cmi \
+    ../labltk/frame.cmi ../labltk/focus.cmi fileselect.cmi \
+    ../../../typing/env.cmi ../labltk/entry.cmi ../labltk/clipboard.cmi \
+    ../../../utils/clflags.cmi ../labltk/checkbutton.cmi ../labltk/button.cmi \
     editor.cmi
-main.cmx: viewer.cmx shell.cmx searchpos.cmx searchid.cmx jg_config.cmx \
-    editor.cmx
-searchid.cmo: list2.cmo searchid.cmi
-searchid.cmx: list2.cmx searchid.cmi
-searchpos.cmo: searchid.cmi lexical.cmi jg_tk.cmo jg_text.cmi jg_message.cmi \
-    jg_memo.cmi jg_bind.cmi searchpos.cmi
-searchpos.cmx: searchid.cmx lexical.cmx jg_tk.cmx jg_text.cmx jg_message.cmx \
-    jg_memo.cmx jg_bind.cmx searchpos.cmi
-setpath.cmo: useunix.cmi list2.cmo jg_toplevel.cmo jg_button.cmo jg_box.cmo \
-    jg_bind.cmi setpath.cmi
-setpath.cmx: useunix.cmx list2.cmx jg_toplevel.cmx jg_button.cmx jg_box.cmx \
-    jg_bind.cmx setpath.cmi
-shell.cmo: list2.cmo lexical.cmi jg_toplevel.cmo jg_tk.cmo jg_text.cmi \
-    jg_message.cmi jg_menu.cmo jg_memo.cmi fileselect.cmi dummy.cmi shell.cmi
-shell.cmx: list2.cmx lexical.cmx jg_toplevel.cmx jg_tk.cmx jg_text.cmx \
-    jg_message.cmx jg_menu.cmx jg_memo.cmx fileselect.cmx dummy.cmi shell.cmi
-typecheck.cmo: mytypes.cmi jg_tk.cmo jg_text.cmi jg_message.cmi typecheck.cmi
-typecheck.cmx: mytypes.cmi jg_tk.cmx jg_text.cmx jg_message.cmx typecheck.cmi
-useunix.cmo: useunix.cmi
-useunix.cmx: useunix.cmi
-viewer.cmo: useunix.cmi shell.cmi setpath.cmi searchpos.cmi searchid.cmi \
-    mytypes.cmi jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_multibox.cmi \
-    jg_message.cmi jg_menu.cmo jg_entry.cmo jg_completion.cmi jg_button.cmo \
-    jg_box.cmo jg_bind.cmi help.cmo viewer.cmi
-viewer.cmx: useunix.cmx shell.cmx setpath.cmx searchpos.cmx searchid.cmx \
-    mytypes.cmi jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_multibox.cmx \
-    jg_message.cmx jg_menu.cmx jg_entry.cmx jg_completion.cmx jg_button.cmx \
-    jg_box.cmx jg_bind.cmx help.cmx viewer.cmi
-dummy.cmi:
-dummyUnix.cmi:
-dummyWin.cmi:
-editor.cmi:
-fileselect.cmi:
-jg_bind.cmi:
-jg_completion.cmi:
-jg_config.cmi:
-jg_memo.cmi:
-jg_message.cmi:
-jg_multibox.cmi:
-jg_text.cmi:
-lexical.cmi:
-mytypes.cmi: shell.cmi
-searchid.cmi:
-searchpos.cmi:
-setpath.cmi:
-shell.cmi:
-typecheck.cmi: mytypes.cmi
-useunix.cmi:
-viewer.cmi:
+editor.cmx : ../labltk/wm.cmx ../labltk/winfo.cmx ../support/widget.cmx \
+    viewer.cmx ../../../typing/types.cmx typecheck.cmx ../labltk/toplevel.cmx \
+    ../labltk/tk.cmx ../support/timer.cmx ../support/textvariable.cmx \
+    ../labltk/text.cmx shell.cmx setpath.cmx ../labltk/selection.cmx \
+    searchpos.cmx searchid.cmx ../support/protocol.cmx \
+    ../../../parsing/parsetree.cmi ../../../parsing/parser.cmx \
+    ../labltk/pack.cmx mytypes.cmi ../labltk/menu.cmx \
+    ../../../parsing/longident.cmx ../../../parsing/location.cmx \
+    ../labltk/listbox.cmx lexical.cmx ../../../parsing/lexer.cmx \
+    ../labltk/label.cmx jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_message.cmx \
+    jg_menu.cmx jg_button.cmx jg_bind.cmx ../../../typing/ident.cmx \
+    ../labltk/frame.cmx ../labltk/focus.cmx fileselect.cmx \
+    ../../../typing/env.cmx ../labltk/entry.cmx ../labltk/clipboard.cmx \
+    ../../../utils/clflags.cmx ../labltk/checkbutton.cmx ../labltk/button.cmx \
+    editor.cmi
+fileselect.cmo : useunix.cmi ../labltk/tkwait.cmi ../labltk/tk.cmo \
+    ../support/textvariable.cmi setpath.cmi ../labltk/pack.cmi \
+    ../../../utils/misc.cmi ../labltk/listbox.cmi list2.cmo \
+    ../labltk/label.cmi jg_toplevel.cmo jg_memo.cmi jg_entry.cmo jg_box.cmo \
+    ../labltk/grab.cmi ../labltk/frame.cmi ../labltk/focus.cmi \
+    ../../../utils/config.cmi ../labltk/checkbutton.cmi ../labltk/button.cmi \
+    fileselect.cmi
+fileselect.cmx : useunix.cmx ../labltk/tkwait.cmx ../labltk/tk.cmx \
+    ../support/textvariable.cmx setpath.cmx ../labltk/pack.cmx \
+    ../../../utils/misc.cmx ../labltk/listbox.cmx list2.cmx \
+    ../labltk/label.cmx jg_toplevel.cmx jg_memo.cmx jg_entry.cmx jg_box.cmx \
+    ../labltk/grab.cmx ../labltk/frame.cmx ../labltk/focus.cmx \
+    ../../../utils/config.cmx ../labltk/checkbutton.cmx ../labltk/button.cmx \
+    fileselect.cmi
+help.cmo :
+help.cmx :
+jg_bind.cmo : ../labltk/tk.cmo ../labltk/focus.cmi ../labltk/button.cmi \
+    jg_bind.cmi
+jg_bind.cmx : ../labltk/tk.cmx ../labltk/focus.cmx ../labltk/button.cmx \
+    jg_bind.cmi
+jg_box.cmo : ../labltk/winfo.cmi ../labltk/tk.cmo ../labltk/scrollbar.cmi \
+    ../labltk/listbox.cmi jg_completion.cmi jg_bind.cmi ../labltk/frame.cmi
+jg_box.cmx : ../labltk/winfo.cmx ../labltk/tk.cmx ../labltk/scrollbar.cmx \
+    ../labltk/listbox.cmx jg_completion.cmx jg_bind.cmx ../labltk/frame.cmx
+jg_button.cmo : ../labltk/tk.cmo ../labltk/button.cmi
+jg_button.cmx : ../labltk/tk.cmx ../labltk/button.cmx
+jg_completion.cmo : ../support/timer.cmi jg_completion.cmi
+jg_completion.cmx : ../support/timer.cmx jg_completion.cmi
+jg_config.cmo : ../support/widget.cmi ../labltk/option.cmi jg_tk.cmo \
+    jg_config.cmi
+jg_config.cmx : ../support/widget.cmx ../labltk/option.cmx jg_tk.cmx \
+    jg_config.cmi
+jg_entry.cmo : ../labltk/tk.cmo jg_bind.cmi ../labltk/entry.cmi
+jg_entry.cmx : ../labltk/tk.cmx jg_bind.cmx ../labltk/entry.cmx
+jg_memo.cmo : jg_memo.cmi
+jg_memo.cmx : jg_memo.cmi
+jg_menu.cmo : ../labltk/toplevel.cmi ../labltk/tk.cmo ../labltk/menu.cmi
+jg_menu.cmx : ../labltk/toplevel.cmx ../labltk/tk.cmx ../labltk/menu.cmx
+jg_message.cmo : ../labltk/wm.cmi ../labltk/tkwait.cmi ../labltk/tk.cmo \
+    ../support/textvariable.cmi ../labltk/text.cmi ../labltk/message.cmi \
+    jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_bind.cmi ../labltk/grab.cmi \
+    ../labltk/frame.cmi ../labltk/button.cmi jg_message.cmi
+jg_message.cmx : ../labltk/wm.cmx ../labltk/tkwait.cmx ../labltk/tk.cmx \
+    ../support/textvariable.cmx ../labltk/text.cmx ../labltk/message.cmx \
+    jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_bind.cmx ../labltk/grab.cmx \
+    ../labltk/frame.cmx ../labltk/button.cmx jg_message.cmi
+jg_multibox.cmo : ../labltk/tk.cmo ../labltk/scrollbar.cmi \
+    ../labltk/listbox.cmi jg_completion.cmi jg_bind.cmi ../labltk/focus.cmi \
+    jg_multibox.cmi
+jg_multibox.cmx : ../labltk/tk.cmx ../labltk/scrollbar.cmx \
+    ../labltk/listbox.cmx jg_completion.cmx jg_bind.cmx ../labltk/focus.cmx \
+    jg_multibox.cmi
+jg_text.cmo : ../labltk/wm.cmi ../labltk/winfo.cmi ../labltk/tk.cmo \
+    ../support/textvariable.cmi ../labltk/text.cmi ../labltk/scrollbar.cmi \
+    ../labltk/radiobutton.cmi ../support/protocol.cmi ../labltk/label.cmi \
+    jg_toplevel.cmo jg_tk.cmo jg_button.cmo jg_bind.cmi ../labltk/frame.cmi \
+    ../labltk/focus.cmi ../labltk/entry.cmi ../labltk/button.cmi jg_text.cmi
+jg_text.cmx : ../labltk/wm.cmx ../labltk/winfo.cmx ../labltk/tk.cmx \
+    ../support/textvariable.cmx ../labltk/text.cmx ../labltk/scrollbar.cmx \
+    ../labltk/radiobutton.cmx ../support/protocol.cmx ../labltk/label.cmx \
+    jg_toplevel.cmx jg_tk.cmx jg_button.cmx jg_bind.cmx ../labltk/frame.cmx \
+    ../labltk/focus.cmx ../labltk/entry.cmx ../labltk/button.cmx jg_text.cmi
+jg_tk.cmo : ../labltk/tk.cmo
+jg_tk.cmx : ../labltk/tk.cmx
+jg_toplevel.cmo : ../labltk/wm.cmi ../support/widget.cmi \
+    ../labltk/toplevel.cmi ../labltk/tk.cmo
+jg_toplevel.cmx : ../labltk/wm.cmx ../support/widget.cmx \
+    ../labltk/toplevel.cmx ../labltk/tk.cmx
+lexical.cmo : ../labltk/tk.cmo ../labltk/text.cmi \
+    ../../../parsing/parser.cmi ../../../parsing/location.cmi \
+    ../../../parsing/lexer.cmi jg_tk.cmo lexical.cmi
+lexical.cmx : ../labltk/tk.cmx ../labltk/text.cmx \
+    ../../../parsing/parser.cmx ../../../parsing/location.cmx \
+    ../../../parsing/lexer.cmx jg_tk.cmx lexical.cmi
+list2.cmo :
+list2.cmx :
+main.cmo : ../../../utils/warnings.cmi viewer.cmi ../labltk/tk.cmo shell.cmi \
+    searchpos.cmi searchid.cmi ../support/protocol.cmi \
+    ../../../utils/misc.cmi ../labltk/message.cmi jg_config.cmi \
+    ../../../typing/env.cmi editor.cmi ../../../utils/config.cmi \
+    ../../../utils/clflags.cmi ../labltk/button.cmi
+main.cmx : ../../../utils/warnings.cmx viewer.cmx ../labltk/tk.cmx shell.cmx \
+    searchpos.cmx searchid.cmx ../support/protocol.cmx \
+    ../../../utils/misc.cmx ../labltk/message.cmx jg_config.cmx \
+    ../../../typing/env.cmx editor.cmx ../../../utils/config.cmx \
+    ../../../utils/clflags.cmx ../labltk/button.cmx
+searchid.cmo : ../../../typing/typetexp.cmi ../../../typing/types.cmi \
+    ../../../typing/typemod.cmi ../../../typing/typedtree.cmi \
+    ../../../parsing/syntaxerr.cmi ../../../typing/path.cmi \
+    ../../../parsing/parsetree.cmi ../../../parsing/parse.cmi \
+    ../../../parsing/longident.cmi ../../../parsing/location.cmi list2.cmo \
+    ../../../parsing/lexer.cmi ../../../typing/ident.cmi \
+    ../../../typing/env.cmi ../../../typing/ctype.cmi \
+    ../../../typing/btype.cmi ../../../parsing/asttypes.cmi searchid.cmi
+searchid.cmx : ../../../typing/typetexp.cmx ../../../typing/types.cmx \
+    ../../../typing/typemod.cmx ../../../typing/typedtree.cmx \
+    ../../../parsing/syntaxerr.cmx ../../../typing/path.cmx \
+    ../../../parsing/parsetree.cmi ../../../parsing/parse.cmx \
+    ../../../parsing/longident.cmx ../../../parsing/location.cmx list2.cmx \
+    ../../../parsing/lexer.cmx ../../../typing/ident.cmx \
+    ../../../typing/env.cmx ../../../typing/ctype.cmx \
+    ../../../typing/btype.cmx ../../../parsing/asttypes.cmi searchid.cmi
+searchpos.cmo : ../labltk/wm.cmi ../labltk/winfo.cmi ../support/widget.cmi \
+    ../../../typing/typetexp.cmi ../../../typing/types.cmi \
+    ../../../typing/typemod.cmi ../../../typing/typedtree.cmi \
+    ../../../typing/typedecl.cmi ../../../typing/typeclass.cmi \
+    ../labltk/tk.cmo ../labltk/text.cmi ../../../parsing/syntaxerr.cmi \
+    ../support/support.cmi ../../../typing/stypes.cmi searchid.cmi \
+    ../../../typing/printtyp.cmi ../../../typing/path.cmi \
+    ../../../parsing/parsetree.cmi ../../../parsing/parse.cmi \
+    ../labltk/pack.cmi ../labltk/option.cmi ../../../utils/misc.cmi \
+    ../labltk/menu.cmi ../../../parsing/longident.cmi \
+    ../../../parsing/location.cmi lexical.cmi ../../../parsing/lexer.cmi \
+    ../labltk/label.cmi jg_tk.cmo jg_text.cmi jg_message.cmi jg_memo.cmi \
+    jg_bind.cmi ../../../typing/ident.cmi ../../../typing/env.cmi \
+    ../../../typing/ctype.cmi ../../../utils/config.cmi ../labltk/button.cmi \
+    ../../../parsing/asttypes.cmi searchpos.cmi
+searchpos.cmx : ../labltk/wm.cmx ../labltk/winfo.cmx ../support/widget.cmx \
+    ../../../typing/typetexp.cmx ../../../typing/types.cmx \
+    ../../../typing/typemod.cmx ../../../typing/typedtree.cmx \
+    ../../../typing/typedecl.cmx ../../../typing/typeclass.cmx \
+    ../labltk/tk.cmx ../labltk/text.cmx ../../../parsing/syntaxerr.cmx \
+    ../support/support.cmx ../../../typing/stypes.cmx searchid.cmx \
+    ../../../typing/printtyp.cmx ../../../typing/path.cmx \
+    ../../../parsing/parsetree.cmi ../../../parsing/parse.cmx \
+    ../labltk/pack.cmx ../labltk/option.cmx ../../../utils/misc.cmx \
+    ../labltk/menu.cmx ../../../parsing/longident.cmx \
+    ../../../parsing/location.cmx lexical.cmx ../../../parsing/lexer.cmx \
+    ../labltk/label.cmx jg_tk.cmx jg_text.cmx jg_message.cmx jg_memo.cmx \
+    jg_bind.cmx ../../../typing/ident.cmx ../../../typing/env.cmx \
+    ../../../typing/ctype.cmx ../../../utils/config.cmx ../labltk/button.cmx \
+    ../../../parsing/asttypes.cmi searchpos.cmi
+setpath.cmo : useunix.cmi ../labltk/tk.cmo ../support/textvariable.cmi \
+    ../support/protocol.cmi ../labltk/listbox.cmi list2.cmo \
+    ../labltk/label.cmi jg_toplevel.cmo jg_button.cmo jg_box.cmo jg_bind.cmi \
+    ../labltk/frame.cmi ../labltk/entry.cmi ../../../utils/config.cmi \
+    ../labltk/button.cmi setpath.cmi
+setpath.cmx : useunix.cmx ../labltk/tk.cmx ../support/textvariable.cmx \
+    ../support/protocol.cmx ../labltk/listbox.cmx list2.cmx \
+    ../labltk/label.cmx jg_toplevel.cmx jg_button.cmx jg_box.cmx jg_bind.cmx \
+    ../labltk/frame.cmx ../labltk/entry.cmx ../../../utils/config.cmx \
+    ../labltk/button.cmx setpath.cmi
+shell.cmo : ../labltk/winfo.cmi ../../../utils/warnings.cmi \
+    ../labltk/toplevel.cmi ../labltk/tk.cmo ../support/timer.cmi \
+    ../labltk/text.cmi ../labltk/menu.cmi list2.cmo lexical.cmi \
+    jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_message.cmi jg_menu.cmo \
+    jg_memo.cmi fileselect.cmi ../support/fileevent.cmi dummy.cmi \
+    ../../../utils/config.cmi ../../../utils/clflags.cmi shell.cmi
+shell.cmx : ../labltk/winfo.cmx ../../../utils/warnings.cmx \
+    ../labltk/toplevel.cmx ../labltk/tk.cmx ../support/timer.cmx \
+    ../labltk/text.cmx ../labltk/menu.cmx list2.cmx lexical.cmx \
+    jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_message.cmx jg_menu.cmx \
+    jg_memo.cmx fileselect.cmx ../support/fileevent.cmx dummy.cmi \
+    ../../../utils/config.cmx ../../../utils/clflags.cmx shell.cmi
+typecheck.cmo : ../../../typing/typetexp.cmi ../../../typing/typemod.cmi \
+    ../../../typing/typedtree.cmi ../../../typing/typedecl.cmi \
+    ../../../typing/typecore.cmi ../../../typing/typeclass.cmi \
+    ../labltk/tk.cmo ../labltk/text.cmi ../../../parsing/syntaxerr.cmi \
+    ../../../typing/stypes.cmi ../../../parsing/parsetree.cmi \
+    ../../../parsing/parse.cmi mytypes.cmi ../../../utils/misc.cmi \
+    ../../../parsing/location.cmi ../../../parsing/lexer.cmi jg_tk.cmo \
+    jg_text.cmi jg_message.cmi ../../../typing/includemod.cmi \
+    ../../../typing/env.cmi ../../../typing/ctype.cmi \
+    ../../../utils/config.cmi ../../../typing/cmi_format.cmi \
+    ../../../utils/clflags.cmi ../../../utils/ccomp.cmi typecheck.cmi
+typecheck.cmx : ../../../typing/typetexp.cmx ../../../typing/typemod.cmx \
+    ../../../typing/typedtree.cmx ../../../typing/typedecl.cmx \
+    ../../../typing/typecore.cmx ../../../typing/typeclass.cmx \
+    ../labltk/tk.cmx ../labltk/text.cmx ../../../parsing/syntaxerr.cmx \
+    ../../../typing/stypes.cmx ../../../parsing/parsetree.cmi \
+    ../../../parsing/parse.cmx mytypes.cmi ../../../utils/misc.cmx \
+    ../../../parsing/location.cmx ../../../parsing/lexer.cmx jg_tk.cmx \
+    jg_text.cmx jg_message.cmx ../../../typing/includemod.cmx \
+    ../../../typing/env.cmx ../../../typing/ctype.cmx \
+    ../../../utils/config.cmx ../../../typing/cmi_format.cmx \
+    ../../../utils/clflags.cmx ../../../utils/ccomp.cmx typecheck.cmi
+useunix.cmo : useunix.cmi
+useunix.cmx : useunix.cmi
+viewer.cmo : ../labltk/wm.cmi useunix.cmi ../../../typing/types.cmi \
+    ../../../typing/typedtree.cmi ../labltk/toplevel.cmi ../labltk/tk.cmo \
+    ../support/textvariable.cmi ../labltk/text.cmi shell.cmi setpath.cmi \
+    searchpos.cmi searchid.cmi ../labltk/radiobutton.cmi \
+    ../support/protocol.cmi ../../../typing/predef.cmi \
+    ../../../typing/path.cmi ../labltk/pack.cmi mytypes.cmi \
+    ../labltk/menu.cmi ../../../parsing/longident.cmi \
+    ../../../parsing/location.cmi ../labltk/listbox.cmi ../labltk/label.cmi \
+    jg_toplevel.cmo jg_tk.cmo jg_text.cmi jg_multibox.cmi jg_message.cmi \
+    jg_menu.cmo jg_entry.cmo jg_completion.cmi jg_button.cmo jg_box.cmo \
+    jg_bind.cmi ../../../typing/ident.cmi help.cmo ../labltk/frame.cmi \
+    ../labltk/focus.cmi ../../../typing/env.cmi ../labltk/entry.cmi \
+    ../../../utils/config.cmi ../../../typing/cmi_format.cmi \
+    ../labltk/button.cmi viewer.cmi
+viewer.cmx : ../labltk/wm.cmx useunix.cmx ../../../typing/types.cmx \
+    ../../../typing/typedtree.cmx ../labltk/toplevel.cmx ../labltk/tk.cmx \
+    ../support/textvariable.cmx ../labltk/text.cmx shell.cmx setpath.cmx \
+    searchpos.cmx searchid.cmx ../labltk/radiobutton.cmx \
+    ../support/protocol.cmx ../../../typing/predef.cmx \
+    ../../../typing/path.cmx ../labltk/pack.cmx mytypes.cmi \
+    ../labltk/menu.cmx ../../../parsing/longident.cmx \
+    ../../../parsing/location.cmx ../labltk/listbox.cmx ../labltk/label.cmx \
+    jg_toplevel.cmx jg_tk.cmx jg_text.cmx jg_multibox.cmx jg_message.cmx \
+    jg_menu.cmx jg_entry.cmx jg_completion.cmx jg_button.cmx jg_box.cmx \
+    jg_bind.cmx ../../../typing/ident.cmx help.cmx ../labltk/frame.cmx \
+    ../labltk/focus.cmx ../../../typing/env.cmx ../labltk/entry.cmx \
+    ../../../utils/config.cmx ../../../typing/cmi_format.cmx \
+    ../labltk/button.cmx viewer.cmi
+dummy.cmi :
+dummyUnix.cmi :
+dummyWin.cmi :
+editor.cmi : ../support/widget.cmi
+fileselect.cmi :
+jg_bind.cmi : ../support/widget.cmi
+jg_completion.cmi :
+jg_config.cmi :
+jg_memo.cmi :
+jg_message.cmi : ../support/widget.cmi
+jg_multibox.cmi : ../support/widget.cmi ../labltk/tk.cmo
+jg_text.cmi : ../support/widget.cmi ../labltk/tk.cmo
+lexical.cmi : ../support/widget.cmi ../labltk/tk.cmo
+mytypes.cmi : ../support/widget.cmi ../../../typing/types.cmi \
+    ../../../typing/typedtree.cmi ../support/textvariable.cmi \
+    ../../../typing/stypes.cmi shell.cmi ../../../parsing/parsetree.cmi
+searchid.cmi : ../../../typing/path.cmi ../../../parsing/parsetree.cmi \
+    ../../../parsing/longident.cmi ../../../typing/env.cmi
+searchpos.cmi : ../support/widget.cmi ../../../typing/types.cmi \
+    ../../../typing/typedtree.cmi ../../../typing/stypes.cmi \
+    ../../../typing/path.cmi ../../../parsing/parsetree.cmi \
+    ../../../parsing/longident.cmi ../../../parsing/location.cmi \
+    ../../../typing/env.cmi
+setpath.cmi : ../support/widget.cmi
+shell.cmi : ../support/widget.cmi
+typecheck.cmi : ../support/widget.cmi mytypes.cmi
+useunix.cmi :
+viewer.cmi : ../support/widget.cmi ../../../parsing/longident.cmi \
+    ../../../typing/env.cmi

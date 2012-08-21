@@ -9,9 +9,9 @@ let gc_thread () =
 
 let stdin_thread () =
   while true do
-    print_string "> "; flush stdout;
+    print_string ">"; flush stdout;
     let s = read_line() in
-    print_string ">>> "; print_string s; print_newline()
+    print_string " >>> "; print_string s; print_newline()
   done
 
 let writer_thread (oc, size) =

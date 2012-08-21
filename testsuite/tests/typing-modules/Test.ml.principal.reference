@@ -1,9 +1,37 @@
 
-# module type S = sig type t and s = t end
+#     module type S = sig type t and s = t end
 # module type S' = sig type s = int end
 #   module type S = sig module rec M : sig  end and N : sig  end end
 # module type S' = sig module rec N : sig  end end
-#       type -'a t
+#     * * * * * * * * * * * * * * * *         type -'a t
 class type c = object method m : [ `A ] t end
 #   module M : sig val v : (#c as 'a) -> 'a end
+#       val id : 'a -> 'a = <fun>
+#       val ko : 'a -> unit = <fun>
+#       module Int : sig type t = int val compare : t -> t -> t end
+#   val f : int -> int = <fun>
+#   Characters 3-7:
+  f true;;
+    ^^^^
+Error: This expression has type bool but an expression was expected of type
+         int
+#   type 'a u constraint 'a = bool
+# Characters 11-16:
+  let f (x : Int.t u) = ();;
+             ^^^^^
+Error: This type Int.t = int should be an instance of type bool
+#   Characters 30-40:
+  let f (x : (Int.t as 'a) -> (bool as 'a)) = ();;
+                               ^^^^^^^^^^
+Error: This alias is bound to type bool but is used as an instance of type
+         Int.t = int
+#   Characters 11-16:
+  type t = [Int.t | `A];;
+            ^^^^^
+Error: The type Int.t is not a polymorphic variant type
+#   Characters 10-36:
+  type t = [`A of Int.t | `A of bool];;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This variant type contains a constructor [ `A of bool ]
+       which should be [ `A of int ]
 # 

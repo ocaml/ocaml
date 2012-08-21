@@ -63,8 +63,7 @@ let copy_object_file ppf oc name =
       raise(Error(File_not_found name)) in
   let ic = open_in_bin file_name in
   try
-    let buffer = String.create (String.length cmo_magic_number) in
-    really_input ic buffer 0 (String.length cmo_magic_number);
+    let buffer = input_bytes ic (String.length cmo_magic_number) in
     if buffer = cmo_magic_number then begin
       let compunit_pos = input_binary_int ic in
       seek_in ic compunit_pos;
@@ -118,4 +117,5 @@ let report_error ppf = function
   | File_not_found name ->
       fprintf ppf "Cannot find file %s" name
   | Not_an_object_file name ->
-      fprintf ppf "The file %s is not a bytecode object file" name
+      fprintf ppf "The file %a is not a bytecode object file"
+        Location.print_filename name

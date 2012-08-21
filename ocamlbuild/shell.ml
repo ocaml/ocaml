@@ -23,7 +23,12 @@ let is_simple_filename s =
     | _ -> false in
   loop 0
 let quote_filename_if_needed s =
-  if is_simple_filename s then s else Filename.quote s
+  if is_simple_filename s then s
+  (* We should probably be using [Filename.unix_quote] except that function
+   * isn't exported. Users on Windows will have to live with not being able to
+   * install OCaml into c:\o'caml. Too bad. *)
+  else if Sys.os_type = "Win32" then Printf.sprintf "'%s'" s
+  else Filename.quote s
 let chdir dir =
   reset_filesys_cache ();
   Sys.chdir dir

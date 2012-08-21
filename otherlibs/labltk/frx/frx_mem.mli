@@ -13,7 +13,7 @@
 (*  described in file LICENSE found in the OCaml source tree.          *)
 (*                                                                     *)
 (***********************************************************************)
-(* A Garbage Collector Gauge for Caml *)
+(* A Garbage Collector Gauge for OCaml *)
 
 val init : unit -> unit
   (* [init ()] creates the gauge and its updater, but keeps it iconified *)

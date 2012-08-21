@@ -18,6 +18,7 @@ open Format
 
 val dir_quit : unit -> unit
 val dir_directory : string -> unit
+val dir_remove_directory : string -> unit
 val dir_cd : string -> unit
 val dir_load : formatter -> string -> unit
 val dir_use : formatter -> string -> unit

@@ -49,7 +49,7 @@ let rec modtype_path s = function
     Pident id as p ->
       begin try
         match Tbl.find id s.modtypes with
-          | Tmty_ident p -> p
+          | Mty_ident p -> p
           | _ -> fatal_error "Subst.modtype_path"
       with Not_found -> p end
   | Pdot(p, n, pos) ->
@@ -110,6 +110,10 @@ let rec typexp s ty =
                         None -> None
                       | Some (p, tl) ->
                           Some (type_path s p, List.map (typexp s) tl)))
+      | Tfield (m, k, t1, t2)
+        when s == identity && ty.level < generic_level && m = dummy_method ->
+          (* not allowed to lower the level of the dummy method *)
+          Tfield (m, k, t1, typexp s t2)
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
@@ -171,8 +175,8 @@ let type_declaration s decl =
         | Type_variant cstrs ->
             Type_variant
               (List.map
-                 (fun (n, args, ret_type) -> 
-		   (n, List.map (typexp s) args, may_map (typexp s) ret_type))
+                 (fun (n, args, ret_type) ->
+                   (n, List.map (typexp s) args, may_map (typexp s) ret_type))
                  cstrs)
         | Type_record(lbls, rep) ->
             Type_record
@@ -180,8 +184,8 @@ let type_declaration s decl =
                rep)
         end;
       type_manifest =
-        begin 
-	  match decl.type_manifest with
+        begin
+          match decl.type_manifest with
             None -> None
           | Some ty -> Some(typexp s ty)
         end;
@@ -206,12 +210,12 @@ let class_signature s sign =
 
 let rec class_type s =
   function
-    Tcty_constr (p, tyl, cty) ->
-      Tcty_constr (type_path s p, List.map (typexp s) tyl, class_type s cty)
-  | Tcty_signature sign ->
-      Tcty_signature (class_signature s sign)
-  | Tcty_fun (l, ty, cty) ->
-      Tcty_fun (l, typexp s ty, class_type s cty)
+    Cty_constr (p, tyl, cty) ->
+      Cty_constr (type_path s p, List.map (typexp s) tyl, class_type s cty)
+  | Cty_signature sign ->
+      Cty_signature (class_signature s sign)
+  | Cty_fun (l, ty, cty) ->
+      Cty_fun (l, typexp s ty, class_type s cty)
 
 let class_declaration s decl =
   let decl =
@@ -251,41 +255,43 @@ let value_description s descr =
     val_loc = if s.for_saving then Location.none else descr.val_loc;
    }
 
-let exception_declaration s tyl =
-  List.map (type_expr s) tyl
+let exception_declaration s descr =
+  { exn_args = List.map (type_expr s) descr.exn_args;
+    exn_loc = if s.for_saving then Location.none else descr.exn_loc;
+   }
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
-  | Tsig_type(id, d, _) :: sg ->
+  | Sig_type(id, d, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | Tsig_module(id, mty, _) :: sg ->
+  | Sig_module(id, mty, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
-  | Tsig_modtype(id, d) :: sg ->
+  | Sig_modtype(id, d) :: sg ->
       let id' = Ident.rename id in
-      rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
+      rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Tsig_value(id, _) | Tsig_exception(id, _) |
-     Tsig_class(id, _, _) | Tsig_cltype(id, _, _)) :: sg ->
+  | (Sig_value(id, _) | Sig_exception(id, _) |
+     Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
 
 let rec modtype s = function
-    Tmty_ident p as mty ->
+    Mty_ident p as mty ->
       begin match p with
         Pident id ->
           begin try Tbl.find id s.modtypes with Not_found -> mty end
       | Pdot(p, n, pos) ->
-          Tmty_ident(Pdot(module_path s p, n, pos))
+          Mty_ident(Pdot(module_path s p, n, pos))
       | Papply(p1, p2) ->
           fatal_error "Subst.modtype"
       end
-  | Tmty_signature sg ->
-      Tmty_signature(signature s sg)
-  | Tmty_functor(id, arg, res) ->
+  | Mty_signature sg ->
+      Mty_signature(signature s sg)
+  | Mty_functor(id, arg, res) ->
       let id' = Ident.rename id in
-      Tmty_functor(id', modtype s arg,
+      Mty_functor(id', modtype s arg,
                         modtype (add_module id (Pident id') s) res)
 
 and signature s sg =
@@ -298,26 +304,26 @@ and signature s sg =
 
 and signature_component s comp newid =
   match comp with
-    Tsig_value(id, d) ->
-      Tsig_value(newid, value_description s d)
-  | Tsig_type(id, d, rs) ->
-      Tsig_type(newid, type_declaration s d, rs)
-  | Tsig_exception(id, d) ->
-      Tsig_exception(newid, exception_declaration s d)
-  | Tsig_module(id, mty, rs) ->
-      Tsig_module(newid, modtype s mty, rs)
-  | Tsig_modtype(id, d) ->
-      Tsig_modtype(newid, modtype_declaration s d)
-  | Tsig_class(id, d, rs) ->
-      Tsig_class(newid, class_declaration s d, rs)
-  | Tsig_cltype(id, d, rs) ->
-      Tsig_cltype(newid, cltype_declaration s d, rs)
+    Sig_value(id, d) ->
+      Sig_value(newid, value_description s d)
+  | Sig_type(id, d, rs) ->
+      Sig_type(newid, type_declaration s d, rs)
+  | Sig_exception(id, d) ->
+      Sig_exception(newid, exception_declaration s d)
+  | Sig_module(id, mty, rs) ->
+      Sig_module(newid, modtype s mty, rs)
+  | Sig_modtype(id, d) ->
+      Sig_modtype(newid, modtype_declaration s d)
+  | Sig_class(id, d, rs) ->
+      Sig_class(newid, class_declaration s d, rs)
+  | Sig_class_type(id, d, rs) ->
+      Sig_class_type(newid, cltype_declaration s d, rs)
 
 and modtype_declaration s = function
-    Tmodtype_abstract -> Tmodtype_abstract
-  | Tmodtype_manifest mty -> Tmodtype_manifest(modtype s mty)
+    Modtype_abstract -> Modtype_abstract
+  | Modtype_manifest mty -> Modtype_manifest(modtype s mty)
 
-(* For every binding k |-> d of m1, add k |-> f d to m2 
+(* For every binding k |-> d of m1, add k |-> f d to m2
    and return resulting merged map. *)
 
 let merge_tbls f m1 m2 =

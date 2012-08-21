@@ -142,7 +142,7 @@ static char * parse_format(value fmt,
   char lastletter;
   mlsize_t len, len_suffix;
 
-  /* Copy Caml format fmt to format_string,
+  /* Copy OCaml format fmt to format_string,
      adding the suffix before the last letter of the format */
   len = caml_string_length(fmt);
   len_suffix = strlen(suffix);

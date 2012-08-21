@@ -72,6 +72,7 @@ SYSTHREAD_SUPPORT=true
 CMXS=cmxs
 NATDYNLINK=true
 RUNTIMED=noruntimed
+ASM_CFI_SUPPORTED=false
 
 ########## Configuration for the bytecode compiler
 
@@ -100,11 +101,11 @@ NATIVECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
 CPP=cl /nologo /EP
 
 ### Flexlink
-FLEXLINK=flexlink -x64 -merge-manifest
+FLEXLINK=flexlink -x64 -merge-manifest -stack 33554432
 FLEXDIR=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe -link /STACK:33554432
+MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### How to build a static library
@@ -145,6 +146,13 @@ NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
 PACKLD=link /lib /nologo /machine:AMD64 /out:# there must be no space after this '/out:'
+
+############# Configuration for camlp4
+
+# This variable controls whether camlp4 will be built.
+# If it is set to camlp4, then it will be built.
+# If it is set to the empty string, then it will not be built.
+CAMLP4=camlp4
 
 ############# Configuration for the contributed libraries
 

@@ -106,7 +106,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           "Cannot print %S this identifier does not respect OCaml lexing rules (%s)"
           str (Lexer.Error.to_string exn)) ];
 
-  value ocaml_char x = x;
+  (* This is to be sure character literals are always escaped. *)
+  value ocaml_char x = Char.escaped (Struct.Token.Eval.char x);
 
   value rec get_expr_args a al =
     match a with
@@ -300,16 +301,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:binding< $b1$ and $b2$ >> ->
           do { o#binding f b1; pp f o#andsep; o#binding f b2 }
       | <:binding< $p$ = $e$ >> ->
-          let (pl, e) =
+          let (pl, e') =
             match p with
             [ <:patt< ($_$ : $_$) >> -> ([], e)
             | _ -> expr_fun_args e ] in
-          match (p, e) with
-          [ (<:patt< $lid:_$ >>, <:expr< ($e$ : $t$) >>) ->
+          match (p, e') with
+          [ (<:patt< $lid:_$ >>, <:expr< ($e'$ : $t$) >>) ->
               pp f "%a :@ %a =@ %a"
-                (list o#fun_binding "@ ") [`patt p::pl] o#ctyp t o#expr e
-          | _ -> pp f "%a @[<0>%a=@]@ %a" o#simple_patt
-                    p (list' o#fun_binding "" "@ ") pl o#expr e ]
+                (list o#fun_binding "@ ") [`patt p::pl] o#ctyp t o#expr e'
+          | (<:patt< $lid:_$ >>, _) ->
+              pp f "%a @[<0>%a=@]@ %a" o#simple_patt
+                p (list' o#fun_binding "" "@ ") pl o#expr e'
+          | _ ->
+              pp f "%a =@ %a" o#simple_patt p o#expr e ]
       | <:binding< $anti:s$ >> -> o#anti f s ];
 
     method record_binding f bi =
@@ -556,7 +560,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< $int64:s$ >> -> o#numeric f s "L"
     | <:expr< $int32:s$ >> -> o#numeric f s "l"
     | <:expr< $flo:s$ >> -> o#numeric f s ""
-    | <:expr< $chr:s$ >> -> pp f "'%s'" s
+    | <:expr< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:expr< $id:i$ >> -> o#var_ident f i
     | <:expr< { $b$ } >> ->
         pp f "@[<hv0>@[<hv2>{%a@]@ }@]" o#record_binding b
@@ -666,7 +670,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:patt< $int32:s$ >> -> o#numeric f s "l"
     | <:patt< $int:s$ >> -> o#numeric f s ""
     | <:patt< $flo:s$ >> -> o#numeric f s ""
-    | <:patt< $chr:s$ >> -> pp f "'%s'" s
+    | <:patt< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:patt< ~ $s$ >> -> pp f "~%s" s
     | <:patt< ` $uid:s$ >> -> pp f "`%a" o#var s
     | <:patt< # $i$ >> -> pp f "@[<2>#%a@]" o#ident i

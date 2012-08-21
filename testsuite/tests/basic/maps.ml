@@ -25,4 +25,3 @@ let () =
   print_endline "Inter";
   show (IntMap.merge (fun _ l r -> match l, r with Some x, Some y when x = y -> Some x | _ -> None) m1 m2);
   ()
-

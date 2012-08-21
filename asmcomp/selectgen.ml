@@ -204,7 +204,7 @@ method virtual is_immediate : int -> bool
 (* Selection of addressing modes *)
 
 method virtual select_addressing :
-  Cmm.expression -> Arch.addressing_mode * Cmm.expression
+  Cmm.memory_chunk -> Cmm.expression -> Arch.addressing_mode * Cmm.expression
 
 (* Default instruction selection for stores (of words) *)
 
@@ -219,10 +219,10 @@ method select_operation op args =
   | (Capply(ty, dbg), _) -> (Icall_ind, args)
   | (Cextcall(s, ty, alloc, dbg), _) -> (Iextcall(s, alloc), args)
   | (Cload chunk, [arg]) ->
-      let (addr, eloc) = self#select_addressing arg in
+      let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
   | (Cstore chunk, [arg1; arg2]) ->
-      let (addr, eloc) = self#select_addressing arg1 in
+      let (addr, eloc) = self#select_addressing chunk arg1 in
       if chunk = Word then begin
         let (op, newarg2) = self#select_store addr arg2 in
         (op, [newarg2; eloc])
@@ -366,7 +366,7 @@ method insert_move src dst =
     self#insert (Iop Imove) [|src|] [|dst|]
 
 method insert_moves src dst =
-  for i = 0 to Array.length src - 1 do
+  for i = 0 to min (Array.length src) (Array.length dst) - 1 do
     self#insert_move src.(i) dst.(i)
   done
 
@@ -389,8 +389,7 @@ method insert_op_debug op dbg rs rd =
   rd
 
 method insert_op op rs rd =
-  self#insert (Iop op) rs rd;
-  rd
+  self#insert_op_debug op Debuginfo.none rs rd
 
 (* Add the instructions for the given expression
    at the end of the self sequence *)
@@ -490,9 +489,8 @@ method emit_expr env exp =
               let (loc_arg, stack_ofs) =
                 self#emit_extcall_args env new_args in
               let rd = self#regs_for ty in
-              let loc_res = Proc.loc_external_results rd in
-              self#insert_debug (Iop(Iextcall(lbl, alloc))) dbg
-                             loc_arg loc_res;
+              let loc_res = self#insert_op_debug (Iextcall(lbl, alloc)) dbg
+                                    loc_arg (Proc.loc_external_results rd) in
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Ialloc _ ->
@@ -821,12 +819,13 @@ method emit_fundecl f =
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = self#extract;
-    fun_fast = f.Cmm.fun_fast }
+    fun_fast = f.Cmm.fun_fast;
+    fun_dbg  = f.Cmm.fun_dbg }
 
 end
 
 (* Tail call criterion (estimated).  Assumes:
-- all arguments are of type "int" (always the case for Caml function calls)
+- all arguments are of type "int" (always the case for OCaml function calls)
 - one extra argument representing the closure environment (conservative).
 *)
 

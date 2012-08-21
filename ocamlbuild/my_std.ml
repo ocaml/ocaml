@@ -249,18 +249,17 @@ let sys_command =
   | "Win32" -> fun cmd ->
       if cmd = "" then 0 else
       let cmd = "bash -c "^Filename.quote cmd in
-      (* FIXME fix Filename.quote for windows *)
-      let cmd = String.subst "\"&\"\"&\"" "&&" cmd in
       Sys.command cmd
   | _ -> fun cmd -> if cmd = "" then 0 else Sys.command cmd
 
 (* FIXME warning fix and use Filename.concat *)
 let filename_concat x y =
   if x = Filename.current_dir_name || x = "" then y else
-  if x.[String.length x - 1] = '/' then
+  if Sys.os_type = "Win32" && (x.[String.length x - 1] = '\\') || x.[String.length x - 1] = '/' then
     if y = "" then x
     else x ^ y
-  else x ^ "/" ^ y
+  else
+    x ^ "/" ^ y
 
 (* let reslash =
   match Sys.os_type with
@@ -333,7 +332,7 @@ module Digest = struct
 (* USEFUL FOR DIGEST DEBUGING
   let digest_log_hash = Hashtbl.create 103;;
   let digest_log = "digest.log";;
-  let digest_log_oc = open_out_gen [Open_append;Open_wronly;Open_text;Open_creat] 0o644 digest_log;;
+  let digest_log_oc = open_out_gen [Open_append;Open_wronly;Open_text;Open_creat] 0o666 digest_log;;
   let my_to_hex x = to_hex x ^ ";";;
   if sys_file_exists digest_log then
     with_input_file digest_log begin fun ic ->

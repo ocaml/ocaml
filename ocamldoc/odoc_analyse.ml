@@ -46,7 +46,7 @@ let preprocess sourcefile =
   match !Clflags.preprocessor with
     None -> sourcefile
   | Some pp ->
-      let tmpfile = Filename.temp_file "camlpp" "" in
+      let tmpfile = Filename.temp_file "ocamldocpp" "" in
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Ccomp.command comm <> 0 then begin
         remove_file tmpfile;
@@ -73,15 +73,14 @@ let parse_file inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
-      let buffer = String.create (String.length ast_magic) in
-      really_input ic buffer 0 (String.length ast_magic);
+      let buffer = Misc.input_bytes ic (String.length ast_magic) in
       if buffer = ast_magic then true
       else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
         raise Outdated_version
       else false
     with
       Outdated_version ->
-        fatal_error "Ocaml and preprocessor have incompatible versions"
+        fatal_error "OCaml and preprocessor have incompatible versions"
     | _ -> false
   in
   let ast =
@@ -114,7 +113,10 @@ let process_implementation_file ppf sourcefile =
   let env = initial_env () in
   try
     let parsetree = parse_file inputfile Parse.implementation ast_impl_magic_number in
-    let typedtree = Typemod.type_implementation sourcefile prefixname modulename env parsetree in
+    let typedtree =
+      Typemod.type_implementation
+        sourcefile prefixname modulename env parsetree
+    in
     (Some (parsetree, typedtree), inputfile)
   with
     e ->
@@ -165,13 +167,16 @@ let process_error exn =
   | Env.Error err ->
       Location.print_error_cur_file ppf;
       Env.report_error ppf err
+  | Cmi_format.Error err ->
+      Location.print_error_cur_file ppf;
+      Cmi_format.report_error ppf err
   | Ctype.Tags(l, l') ->
       Location.print_error_cur_file ppf;
       fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
        have the same hash value." l l'
-  | Typecore.Error(loc, err) ->
-      Location.print_error ppf loc; Typecore.report_error ppf err
+  | Typecore.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typecore.report_error env ppf err
   | Typetexp.Error(loc, err) ->
       Location.print_error ppf loc; Typetexp.report_error ppf err
   | Typedecl.Error(loc, err) ->
@@ -179,15 +184,15 @@ let process_error exn =
   | Includemod.Error err ->
       Location.print_error_cur_file ppf;
       Includemod.report_error ppf err
-  | Typemod.Error(loc, err) ->
-      Location.print_error ppf loc; Typemod.report_error ppf err
+  | Typemod.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typemod.report_error env ppf err
   | Translcore.Error(loc, err) ->
       Location.print_error ppf loc; Translcore.report_error ppf err
   | Sys_error msg ->
       Location.print_error_cur_file ppf;
       fprintf ppf "I/O error: %s" msg
-  | Typeclass.Error(loc, err) ->
-      Location.print_error ppf loc; Typeclass.report_error ppf err
+  | Typeclass.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typeclass.report_error env ppf err
   | Translclass.Error(loc, err) ->
       Location.print_error ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->
@@ -252,7 +257,7 @@ let process_file ppf sourcefile =
        try
          let (ast, signat, input_file) = process_interface_file ppf file in
          let file_module = Sig_analyser.analyse_signature file
-             !Location.input_name ast signat
+             !Location.input_name ast signat.sig_type
          in
 
          file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;
@@ -279,7 +284,11 @@ let process_file ppf sourcefile =
       Location.input_name := file;
       try
         let mod_name =
-          String.capitalize (Filename.basename (Filename.chop_extension file))
+          let s =
+            try Filename.chop_extension file
+            with _ -> file
+          in
+          String.capitalize (Filename.basename s)
         in
         let txt =
           try Odoc_text.Texter.text_of_string (Odoc_misc.input_file_as_string file)
@@ -289,7 +298,7 @@ let process_file ppf sourcefile =
         let m =
           {
             Odoc_module.m_name = mod_name ;
-            Odoc_module.m_type = Types.Tmty_signature [] ;
+            Odoc_module.m_type = Types.Mty_signature [] ;
             Odoc_module.m_info = None ;
             Odoc_module.m_is_interface = true ;
             Odoc_module.m_file = file ;
@@ -297,7 +306,7 @@ let process_file ppf sourcefile =
               [Odoc_module.Element_module_comment txt] ;
             Odoc_module.m_loc =
               { Odoc_types.loc_impl = None ;
-                Odoc_types.loc_inter = Some (file, 0) } ;
+                Odoc_types.loc_inter = Some (Location.in_file file) } ;
             Odoc_module.m_top_deps = [] ;
             Odoc_module.m_code = None ;
             Odoc_module.m_code_intf = None ;

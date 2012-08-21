@@ -11,10 +11,11 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: posix.c 9270 2009-05-20 11:52:42Z doligez $ */
+/* $Id$ */
 
 /* Win32 implementation of the "st" interface */
 
+#define _WIN32_WINNT 0x0400
 #include <windows.h>
 #include <WinError.h>
 #include <stdio.h>
@@ -53,7 +54,7 @@ static DWORD st_initialize(void)
 
 typedef HANDLE st_thread_id;
 
-static DWORD st_thread_create(st_thread_id * res, 
+static DWORD st_thread_create(st_thread_id * res,
                               LPTHREAD_START_ROUTINE fn, void * arg)
 {
   HANDLE h = CreateThread(NULL, 0, fn, arg, 0, NULL);
@@ -149,7 +150,7 @@ static INLINE int st_masterlock_waiters(st_masterlock * m)
 {
   return 1;                     /* info not maintained */
 }
- 
+
 /* Mutexes */
 
 typedef CRITICAL_SECTION * st_mutex;
@@ -366,12 +367,12 @@ static void st_check_error(DWORD retcode, char * msg)
   if (retcode == 0) return;
   if (retcode == ERROR_NOT_ENOUGH_MEMORY) raise_out_of_memory();
   if (! FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-		      NULL,
-		      retcode,
-		      0,
-		      err,
-		      sizeof(err),
-		      NULL)) {
+                      NULL,
+                      retcode,
+                      0,
+                      err,
+                      sizeof(err),
+                      NULL)) {
     sprintf(err, "error code %lx", retcode);
   }
   msglen = strlen(msg);
@@ -409,11 +410,11 @@ static DWORD st_atfork(void (*fn)(void))
 value caml_thread_sigmask(value cmd, value sigs) /* ML */
 {
   invalid_argument("Thread.sigmask not implemented");
-  return Val_int(0);		/* not reached */
+  return Val_int(0);            /* not reached */
 }
 
 value caml_wait_signal(value sigs) /* ML */
 {
   invalid_argument("Thread.wait_signal not implemented");
-  return Val_int(0);		/* not reached */
+  return Val_int(0);            /* not reached */
 }

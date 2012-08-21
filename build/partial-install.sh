@@ -131,26 +131,28 @@ installbin camlp4/camlp4orf.native$EXE $BINDIR/camlp4orf.opt$EXE
 installbin camlp4/camlp4r.native$EXE $BINDIR/camlp4r.opt$EXE
 installbin camlp4/camlp4rf.native$EXE $BINDIR/camlp4rf.opt$EXE
 
-cd camlp4
-CAMLP4DIR=$LIBDIR/camlp4
-for dir in Camlp4Parsers Camlp4Printers Camlp4Filters Camlp4Top; do
-  echo "Installing $dir..."
-  mkdir -p $CAMLP4DIR/$dir
-  installdir     \
-    $dir/*.cm*   \
-    $dir/*.$O    \
-    $CAMLP4DIR/$dir
-done
-installdir \
-  camlp4lib.cma camlp4lib.cmxa Camlp4.cmi \
-  camlp4fulllib.cma camlp4fulllib.cmxa \
-  camlp4o.cma camlp4of.cma camlp4oof.cma \
-  camlp4orf.cma camlp4r.cma camlp4rf.cma \
-  Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Top.cm[io] \
-  Camlp4_config.cmi camlp4prof.cm[iox] camlp4prof.$O Camlp4_import.cmi \
-  $CAMLP4DIR
-installlibdir camlp4lib.$A camlp4fulllib.$A $CAMLP4DIR
-cd ..
+if test -d camlp4; then
+  cd camlp4
+  CAMLP4DIR=$LIBDIR/camlp4
+  for dir in Camlp4Parsers Camlp4Printers Camlp4Filters Camlp4Top; do
+    echo "Installing $dir..."
+    mkdir -p $CAMLP4DIR/$dir
+    installdir     \
+      $dir/*.cm*   \
+      $dir/*.$O    \
+      $CAMLP4DIR/$dir
+  done
+  installdir \
+    camlp4lib.cma camlp4lib.cmxa Camlp4.cmi \
+    camlp4fulllib.cma camlp4fulllib.cmxa \
+    camlp4o.cma camlp4of.cma camlp4oof.cma \
+    camlp4orf.cma camlp4r.cma camlp4rf.cma \
+    Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Top.cm[io] \
+    Camlp4_config.cmi camlp4prof.cm[iox] camlp4prof.$O Camlp4_import.cmi \
+    $CAMLP4DIR
+  installlibdir camlp4lib.$A camlp4fulllib.$A $CAMLP4DIR
+  cd ..
+fi
 
 echo "Installing ocamlbuild..."
 cd ocamlbuild

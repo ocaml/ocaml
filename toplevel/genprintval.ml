@@ -33,10 +33,10 @@ module type OBJ =
 
 module type EVALPATH =
   sig
-    type value
-    val eval_path: Path.t -> value
+    type valu
+    val eval_path: Path.t -> valu
     exception Error
-    val same_value: value -> value -> bool
+    val same_value: valu -> valu -> bool
   end
 
 module type S =
@@ -52,7 +52,7 @@ module type S =
           Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
-module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
+module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     type t = O.t
 
@@ -156,10 +156,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 
     let tree_of_constr =
       tree_of_qualified
-        (fun lid env -> (Env.lookup_constructor lid env).cstr_res)
+        (fun lid env -> (snd (Env.lookup_constructor lid env)).cstr_res)
 
     and tree_of_label =
-      tree_of_qualified (fun lid env -> (Env.lookup_label lid env).lbl_res)
+      tree_of_qualified (fun lid env -> (snd (Env.lookup_label lid env)).lbl_res)
 
     (* An abstract type *)
 
@@ -249,15 +249,15 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                       else Cstr_constant(O.obj obj) in
                     let (constr_name, constr_args,ret_type) =
                       Datarepr.find_constr_by_tag tag constr_list in
-		    let type_params = 
-		      match ret_type with
-			Some t -> 
-			  begin match (Ctype.repr t).desc with 
-			    Tconstr (_,params,_) ->
-			      params
-			  | _ -> assert false end
-		      | None -> decl.type_params
-		    in
+                    let type_params =
+                      match ret_type with
+                        Some t ->
+                          begin match (Ctype.repr t).desc with
+                            Tconstr (_,params,_) ->
+                              params
+                          | _ -> assert false end
+                      | None -> decl.type_params
+                    in
                     let ty_args =
                       List.map
                         (function ty ->
@@ -265,7 +265,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                              Ctype.Cannot_apply -> abstract_type)
                         constr_args in
                     tree_of_constr_with_args (tree_of_constr env path)
-                                           constr_name 0 depth obj ty_args		    
+                                 (Ident.name constr_name) 0 depth obj ty_args
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x
@@ -279,7 +279,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                                     ty_list
                                 with
                                   Ctype.Cannot_apply -> abstract_type in
-                              let lid = tree_of_label env path lbl_name in
+                              let lid = tree_of_label env path (Ident.name lbl_name) in
                               let v =
                                 tree_of_val (depth - 1) (O.field obj pos)
                                   ty_arg
@@ -351,10 +351,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
       try
         (* Attempt to recover the constructor description for the exn
            from its name *)
-        let cstr = Env.lookup_constructor lid env in
+        let cstr = snd (Env.lookup_constructor lid env) in
         let path =
           match cstr.cstr_tag with
-            Cstr_exception p -> p | _ -> raise Not_found in
+            Cstr_exception (p, _) -> p | _ -> raise Not_found in
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)

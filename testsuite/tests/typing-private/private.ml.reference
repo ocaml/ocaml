@@ -7,7 +7,7 @@
 Error: This expression has type F0.t but an expression was expected of type
          Foobar.t
 #   module F : sig type t = Foobar.t end
-#   val f : F.t -> F.t = <fun>
+#   val f : F.t -> Foobar.t = <fun>
 #   module M : sig type t = < m : int > end
 # module M1 : sig type t = private < m : int; .. > end
 # module M2 : sig type t = private < m : int; .. > end
@@ -73,7 +73,7 @@ Error: Signature mismatch:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         sig type t = int val f : t -> t end
+         sig type t = int val f : int -> t end
        is not included in
          sig type t = private Foobar.t val f : int -> t end
        Type declarations do not match:
@@ -84,7 +84,7 @@ Error: Signature mismatch:
 #               module M1 : sig type t = M.t val mk : int -> t end
 #             module M2 : sig type t = M.t val mk : int -> t end
 #         module M3 : sig type t = M.t val mk : int -> t end
-#         Characters 29-47:
+#         Characters 26-44:
       type t = M.t = T of int
            ^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M.t

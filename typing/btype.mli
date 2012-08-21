@@ -43,6 +43,7 @@ val newmarkedgenvar: unit -> type_expr
 
 val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
+val dummy_method: label
 
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
@@ -63,6 +64,8 @@ val row_field: label -> row_desc -> row_field
         (* Return the canonical representative of a row field *)
 val row_more: row_desc -> type_expr
         (* Return the extension variable of the row *)
+val row_fixed: row_desc -> bool
+        (* Return whether the row should be treated as fixed or not *)
 val static_row: row_desc -> bool
         (* Return whether the row is static or not *)
 val hash_variant: label -> int
@@ -85,7 +88,8 @@ val iter_row: (type_expr -> unit) -> row_desc -> unit
 val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
 
-val copy_type_desc: (type_expr -> type_expr) -> type_desc -> type_desc
+val copy_type_desc:
+    ?keep_names:bool -> (type_expr -> type_expr) -> type_desc -> type_desc
         (* Copy on types *)
 val copy_row:
     (type_expr -> type_expr) ->

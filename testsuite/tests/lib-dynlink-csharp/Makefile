@@ -14,7 +14,7 @@ prepare:
 
 bytecode:
 	@printf " ... testing 'bytecode':"
-	@if [ ! `which $(CSC) > /dev/null` ]; then \
+	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
 	  echo " => passed"; \
 	else \
 	  $(OCAMLC) -output-obj -o main.dll dynlink.cma main.ml entry.c; \
@@ -25,7 +25,7 @@ bytecode:
 
 bytecode-dll:
 	@printf " ... testing 'bytecode-dll':"
-	@if [ ! `which $(CSC) > /dev/null` ]; then \
+	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
 	  echo " => passed"; \
 	else \
 	  $(OCAMLC) -output-obj -o main_obj.$(O) dynlink.cma entry.c main.ml; \
@@ -37,7 +37,7 @@ bytecode-dll:
 
 native:
 	@printf " ... testing 'native':"
-	@if [ ! `which $(CSC) > /dev/null` ]; then \
+	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
 	  echo " => passed"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main.dll dynlink.cmxa entry.c main.ml; \
@@ -48,7 +48,7 @@ native:
 
 native-dll:
 	@printf " ... testing 'native-dll':"
-	@if [ ! `which $(CSC) > /dev/null` ]; then \
+	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
 	  echo " => passed"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c main.ml; \

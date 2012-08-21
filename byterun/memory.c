@@ -255,6 +255,8 @@ void caml_free_for_heap (char *mem)
    caller.  All other blocks must have the color [caml_allocation_color(m)].
    The caller must update [caml_allocated_words] if applicable.
    Return value: 0 if no error; -1 in case of error.
+
+   See also: caml_compact_heap, which duplicates most of this function.
 */
 int caml_add_to_heap (char *m)
 {

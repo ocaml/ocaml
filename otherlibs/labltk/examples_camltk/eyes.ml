@@ -14,7 +14,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* The eyes of Caml (CamlTk) *)
+(* The eyes of OCaml (CamlTk) *)
 
 open Camltk;;
 

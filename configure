@@ -31,6 +31,7 @@ mathlib='-lm'
 dllib=''
 x11_include_dir=''
 x11_lib_dir=''
+graph_wanted=yes
 tk_wanted=yes
 pthread_wanted=yes
 tk_defs=''
@@ -43,6 +44,7 @@ debugruntime=noruntimed
 withsharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
+withcamlp4=camlp4
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -82,14 +84,15 @@ while : ; do
         asppoption="$2"; shift;;
     -lib*)
         cclibs="$2 $cclibs"; shift;;
-    -no-curses)
+    -no-curses|--no-curses)
         withcurses=no;;
-    -no-shared-libs)
+    -no-shared-libs|--no-shared-libs)
         withsharedlibs=no;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
         x11_lib_dir=$2; shift;;
+    -no-graph|--no-graph) graph_wanted=no;;
     -with-pthread*|--with-pthread*)
         ;; # Ignored for backward compatibility
     -no-pthread*|--no-pthread*)
@@ -112,6 +115,8 @@ while : ; do
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=runtimed;;
+    -no-camlp4|--no-camlp4)
+        withcamlp4="";;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -126,17 +131,23 @@ esac
 case "$bindir" in
   /*) ;;
   "") ;;
-   *) echo "The -bindir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -bindir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 case "$libdir" in
   /*) ;;
   "") ;;
-   *) echo "The -libdir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -libdir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 case "$mandir" in
   /*) ;;
   "") ;;
-   *) echo "The -mandir directory must be absolute." 1>&2; exit 2;;
+  '$(PREFIX)/'*) ;;
+   *) echo 'The -mandir directory must be absolute or relative to $(PREFIX).'>&2
+      exit 2;;
 esac
 
 # Generate the files
@@ -245,6 +256,7 @@ esac
 
 bytecc="$cc"
 mkexe="\$(BYTECC)"
+mkexedebugflag="-g"
 bytecccompopts=""
 bytecclinkopts=""
 dllccompopts=""
@@ -262,7 +274,7 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
-    bytecccompopts="-fno-defer-pop -no-cpp-precomp $gcc_warnings"
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
     mathlib=""
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
@@ -309,7 +321,7 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $withsharedlibs = yes; then
-      flexlink="flexlink -chain cygwin -merge-manifest"
+      flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
         echo "flexlink not found: native shared libraries won't be available"
@@ -317,6 +329,7 @@ case "$bytecc,$host" in
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
+        mkexedebugflag="-link -g"
       fi
     fi
     exe=".exe"
@@ -616,14 +629,16 @@ if test $withsharedlibs = "yes"; then
   case "$host" in
     *-*-cygwin*)                  natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
+    i[3456]86-*-gnu*)             natdynlink=true;;
     x86_64-*-linux*)              natdynlink=true;;
     i[3456]86-*-darwin[89].*)     natdynlink=true;;
     i[3456]86-*-darwin*)
       if test $arch64 == true; then
         natdynlink=true
       fi;;
-    powerpc64-*-linux*)           natdynlink=true;;
-    sparc-*-linux*)               natdynlink=true;;
+    x86_64-*-darwin*)             natdynlink=true;;
+    powerpc*-*-linux*)            natdynlink=true;;
+    sparc*-*-linux*)              natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
     i[345]86-*-freebsd*)          natdynlink=true;;
@@ -633,6 +648,7 @@ if test $withsharedlibs = "yes"; then
     i[345]86-*-netbsd*)           natdynlink=true;;
     x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
+    arm*-*-linux*)                natdynlink=true;;
   esac
 fi
 
@@ -650,7 +666,6 @@ model=default
 system=unknown
 
 case "$host" in
-  sparc*-*-sunos4.*)            arch=sparc; system=sunos;;
   sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
   sparc*-*-linux*)              arch=sparc; system=linux;;
@@ -676,14 +691,19 @@ case "$host" in
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
                                 if $arch64; then model=ppc64; else model=ppc; fi;;
-  arm*-*-linux*)                arch=arm; system=linux;;
-  arm*-*-gnu*)                  arch=arm; system=gnu;;
+  arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
+  armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
+  armv6t2*-*-linux-gnueabi)     arch=arm; model=armv6t2; system=linux_eabi;;
+  armv6*-*-linux-gnueabi)       arch=arm; model=armv6; system=linux_eabi;;
+  armv5te*-*-linux-gnueabi)     arch=arm; model=armv5te; system=linux_eabi;;
+  armv5*-*-linux-gnueabi)       arch=arm; model=armv5; system=linux_eabi;;
+  arm*-*-linux-gnueabi)         arch=arm; system=linux_eabi;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-gnu*)                arch=amd64; system=gnu;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
-  x86_64-*-darwin9.5)           arch=amd64; system=macosx;;
+  x86_64-*-darwin*)             arch=amd64; system=macosx;;
 esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
@@ -765,6 +785,7 @@ case "$arch,$model,$system" in
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,*,linux) profiling='prof';;
   amd64,*,gnu) profiling='prof';;
+  arm,*,linux*) profiling='prof';;
   *) profiling='noprof';;
 esac
 
@@ -1098,6 +1119,11 @@ if sh ./hasgot -i sys/types.h -i sys/mman.h && sh ./hasgot mmap munmap; then
   echo "#define HAS_MMAP" >> s.h
 fi
 
+if sh ./hasgot pwrite; then
+  echo "pwrite() found"
+  echo "#define HAS_PWRITE" >> s.h
+fi
+
 nargs=none
 for i in 5 6; do
   if sh ./trycompile -DNUM_ARGS=${i} gethostbyname.c; then nargs=$i; break; fi
@@ -1130,7 +1156,7 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx|amd64,macosx)
+  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx)
     echo "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
@@ -1211,10 +1237,22 @@ fi
 
 # Determine the location of X include files and libraries
 
+# If the user specified -x11include and/or -x11lib, these settings
+# are used. Otherwise, we check whether there is pkg-config, and take
+# the flags from there. Otherwise, we search the location.
+
 x11_include="not found"
 x11_link="not found"
 
-for dir in \
+if test -z "$x11_include_dir" -a -z "$x11_lib_dir"; then
+  if pkg-config --exists x11 2>/dev/null; then
+    x11_include=`pkg-config --cflags x11`
+    x11_link=`pkg-config --libs x11`
+  fi
+fi
+
+if test "$x11_include" = "not found"; then
+  for dir in \
     $x11_include_dir          \
                               \
     /usr/X11R7/include        \
@@ -1260,20 +1298,21 @@ for dir in \
     /usr/openwin/include      \
     /usr/openwin/share/include \
     ; \
-do
-  if test -f $dir/X11/X.h; then
-    x11_include=$dir
-    break
+    do
+    if test -f $dir/X11/X.h; then
+      x11_include_dir=$dir
+      x11_include="-I$dir"
+      break
+    fi
+  done
+
+  if test "$x11_include" = "not found"; then
+      x11_try_lib_dir=''
+  else
+      x11_try_lib_dir=`echo $x11_include_dir | sed -e 's|include|lib|'`
   fi
-done
 
-if test "$x11_include" = "not found"; then
-  x11_try_lib_dir=''
-else
-  x11_try_lib_dir=`echo $x11_include | sed -e 's|include|lib|'`
-fi
-
-for dir in \
+  for dir in \
     $x11_lib_dir          \
     $x11_try_lib_dir      \
                           \
@@ -1320,39 +1359,52 @@ for dir in \
     /usr/lib/i386-linux-gnu   \
     /usr/lib/x86_64-linux-gnu \
     ; \
-do
-  if test -f $dir/libX11.a || \
-     test -f $dir/libX11.so || \
-     test -f $dir/libX11.dll.a || \
-     test -f $dir/libX11.dylib || \
-     test -f $dir/libX11.sa; then
-    if test $dir = /usr/lib; then
-      x11_link="-lX11"
-    else
-      x11_libs="-L$dir"
-      case "$host" in
-        *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
-        *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
-        *) x11_link="-L$dir -lX11";;
-      esac
+    do
+    if test -f $dir/libX11.a || \
+       test -f $dir/libX11.so || \
+       test -f $dir/libX11.dll.a || \
+       test -f $dir/libX11.dylib || \
+       test -f $dir/libX11.sa; then
+      if test $dir = /usr/lib; then
+        x11_link="-lX11"
+      else
+        x11_libs="-L$dir"
+        case "$host" in
+          *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
+          *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
+          *) x11_link="-L$dir -lX11";;
+        esac
+      fi
+      break
     fi
-    break
+  done
+fi
+
+if test "x11_include" != "not found"; then
+  if test "$x11_include" = "-I/usr/include"; then
+    x11_include=""
   fi
-done
+  if ./hasgot $x11_include $x11_link -i X11/Xlib.h XrmInitialize; then
+    echo "X11 works"
+  else
+    echo "Cannot compile X11 program"
+    x11_include="not found"
+  fi
+fi
 
-
+has_graph=false
 if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
   echo "X11 not found, the \"graph\" library will not be supported."
-  x11_include=""
+  x11_include="not found"
+  x11_link="not found"
 else
-  echo "Location of X11 include files: $x11_include/X11"
+  echo "Options for compiling for X11: $x11_include"
   echo "Options for linking with X11: $x11_link"
-  otherlibraries="$otherlibraries graph"
-  if test "$x11_include" = "/usr/include"; then
-    x11_include=""
-  else
-    x11_include="-I$x11_include"
+  if test "$graph_wanted" = yes
+  then
+    has_graph=true
+    otherlibraries="$otherlibraries graph"
   fi
 fi
 echo "X11_INCLUDES=$x11_include" >> Makefile
@@ -1367,11 +1419,11 @@ if test $tk_wanted = no; then
 elif test $tk_x11 = no; then
   has_tk=true
 elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
-  echo "X11 not found."
+  echo "X11 not found or disabled."
   has_tk=false
 else
   tk_x11_include="$x11_include"
-  tk_x11_libs="$x11_libs -lX11"
+  tk_x11_libs="$x11_link"
   has_tk=true
 fi
 
@@ -1501,6 +1553,20 @@ else
   echo "LIBBFD_LINK=" >> Makefile
 fi
 
+# Check whether assembler supports CFI directives
+
+asm_cfi_supported=false
+
+export as aspp
+
+if sh ./tryassemble cfi.S; then
+  echo "#define ASM_CFI_SUPPORTED" >> m.h
+  asm_cfi_supported=true
+  echo "Assembler supports CFI"
+else
+  echo "Assembler does not support CFI"
+fi
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"
@@ -1568,9 +1634,12 @@ echo "TOOLCHAIN=cc" >> Makefile
 echo "NATDYNLINK=$natdynlink" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
+echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
+echo "CAMLP4=${withcamlp4}" >>Makefile
+echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
@@ -1615,6 +1684,11 @@ else
   echo "        options for linking....... $nativecclinkopts $cclibs"
   echo "        assembler ................ $as"
   echo "        preprocessed assembler ... $aspp"
+  if test "$asm_cfi_supported" = "true"; then
+  echo "        assembler supports CFI ... yes"
+  else
+  echo "        assembler supports CFI ... no"
+  fi
   echo "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then
   echo "        profiling with gprof ..... supported"
@@ -1639,17 +1713,19 @@ echo "        $otherlibraries"
 echo "Configuration for the \"num\" library:"
 echo "        target architecture ...... $bng_arch (asm level $bng_asm_level)"
 
-if test "$x11_include" != "not found" && test "$x11_lib" != "not found"; then
+if $has_graph; then
 echo "Configuration for the \"graph\" library:"
 echo "        options for compiling .... $x11_include"
 echo "        options for linking ...... $x11_link"
+else
+echo "The \"graph\" library: not supported"
 fi
 
 if test $has_tk = true; then
 echo "Configuration for the \"labltk\" library:"
 echo "        use tcl/tk version ....... $tcl_version"
-echo "        options for compiling .... $tk_defs"
-echo "        options for linking ...... $tk_libs"
+echo "        options for compiling .... $tk_defs $tk_x11_include"
+echo "        options for linking ...... $tk_libs $tk_x11_libs"
 else
 echo "The \"labltk\" library: not supported"
 fi
@@ -1657,3 +1733,8 @@ fi
 echo
 echo "** OCaml configuration completed successfully **"
 echo
+
+if test ! -z "$MACOSX_DEPLOYMENT_TARGET"; then
+  echo "WARNING: the environment variable MACOSX_DEPLOYMENT_TARGET is set."
+  echo "This will probably prevent compiling the OCaml system."
+fi

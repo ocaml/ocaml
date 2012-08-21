@@ -471,7 +471,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
             value meta_loc = meta_loc_expr;
             module Expr =
               struct
-                value meta_string _loc s = Ast.ExStr _loc (safe_string_escaped s);
+                value meta_string _loc s =
+                  Ast.ExStr _loc (safe_string_escaped s);
                 value meta_int _loc s = Ast.ExInt _loc s;
                 value meta_float _loc s = Ast.ExFlo _loc s;
                 value meta_char _loc s = Ast.ExChr _loc (String.escaped s);
@@ -2577,10 +2578,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
             value meta_loc = meta_loc_patt;
             module Patt =
               struct
-                value meta_string _loc s = Ast.PaStr _loc s;
+                value meta_string _loc s =
+                  Ast.PaStr _loc (safe_string_escaped s);
                 value meta_int _loc s = Ast.PaInt _loc s;
                 value meta_float _loc s = Ast.PaFlo _loc s;
-                value meta_char _loc s = Ast.PaChr _loc s;
+                value meta_char _loc s = Ast.PaChr _loc (String.escaped s);
                 value meta_bool _loc =
                   fun
                   [ False -> Ast.PaId _loc (Ast.IdUid _loc "False")
@@ -5047,6 +5049,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
             (*  source tree.                                                            *)
             (*                                                                          *)
             (****************************************************************************)
+            (* Note: when you modify these types you must increment
+   ast magic numbers defined in Camlp4_config.ml. *)
             'a 'a_out.
             ('self_type -> 'a -> 'a_out) ->
               meta_option 'a -> meta_option 'a_out =

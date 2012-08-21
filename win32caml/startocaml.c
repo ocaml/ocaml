@@ -56,7 +56,7 @@ int AskYesOrNo(char *msg)
     int r;
 
     hwnd = hwndMain;
-    r = MessageBox(hwnd, msg, "Ocaml", MB_YESNO | MB_SETFOREGROUND);
+    r = MessageBox(hwnd, msg, "OCaml", MB_YESNO | MB_SETFOREGROUND);
     if (r == IDYES)
         return (TRUE);
     return (FALSE);
@@ -151,7 +151,7 @@ int GetOcamlPath(void)
      || _access(path, 0) != 0) {
     /* Registry key doesn't exist or contains invalid path */
     /* Ask user */
-    if (!BrowseForFile("Ocaml interpreter|ocaml.exe", path)) {
+    if (!BrowseForFile("OCaml interpreter|ocaml.exe", path)) {
       ShowDbgMsg("Impossible to find ocaml.exe. I quit");
       exit(0);
     }
@@ -340,7 +340,7 @@ void *SafeMalloc(int size)
 
 error:
         sprintf(message,"Can't allocate %d bytes",size);
-        MessageBox(NULL, message, "Ocaml", MB_OK);
+        MessageBox(NULL, message, "OCaml", MB_OK);
         exit(-1);
     }
     result = malloc(size);
@@ -357,7 +357,7 @@ void InterruptOcaml(void)
     if (!GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pi.dwProcessId)) {
         char message[1024];
         sprintf(message, "GenerateConsole failed: %lu\n", GetLastError());
-        MessageBox(NULL, message, "Ocaml", MB_OK);
+        MessageBox(NULL, message, "OCaml", MB_OK);
     }
     WriteToPipe(" ");
 }

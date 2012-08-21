@@ -884,6 +884,7 @@ let end_assembly() =
   add_def_symbol lbl_end;
   `	PUBLIC	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}	LABEL	DWORD\n`;
+  `	DWORD	0\n`;
   let lbl = Compilenv.make_symbol (Some "frametable") in
   add_def_symbol lbl;
   `	PUBLIC	{emit_symbol lbl}\n`;

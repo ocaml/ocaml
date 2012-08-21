@@ -208,6 +208,11 @@ file can be used with the emacs commands given in
 .B emacs/caml\-types.el
 to display types and other annotations interactively.
 .TP
+.B \-dtypes
+Has been deprecated. Please use
+.B \-annot
+instead.
+.TP
 .B \-c
 Compile only. Suppress the linking phase of the
 compilation. Source code files are turned into compiled files, but no
@@ -402,9 +407,8 @@ specify the name of the output file produced.
 .B \-output\-obj
 Cause the linker to produce a C object file instead of a bytecode
 executable file. This is useful to wrap OCaml code as a C library,
-callable from any C program. The name of the output object file is
-.B camlprog.o
-by default; it can be set with the
+callable from any C program. The name of the output object file
+must be set with the
 .B \-o
 option. This
 option can also be used to produce a C source file (.c extension) or
@@ -501,7 +505,7 @@ invocations of the C compiler and linker in
 .B \-custom
 mode.  Useful to debug C library problems.
 .TP
-.BR \-vnum\ or \-version
+.BR \-vnum \ or\  \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
@@ -542,6 +546,27 @@ between them.  A warning specifier is one of the following:
 .BI @ num
 \ \ Enable and mark warning number
 .IR num .
+
+.BI + num1 .. num2
+\ \ Enable all warnings between
+.I num1
+and
+.I num2
+(inclusive).
+
+.BI \- num1 .. num2
+\ \ Disable all warnings between
+.I num1
+and
+.I num2
+(inclusive).
+
+.BI @ num1 .. num2
+\ \ Enable and mark all warnings between
+.I num1
+and
+.I num2
+(inclusive).
 
 .BI + letter
 \ \ Enable the set of warnings corresponding to
@@ -590,7 +615,7 @@ function type and is ignored.
 \ \ \ Label omitted in function application.
 
 7
-\ \ \ Method overridden without using the "override" keyword
+\ \ \ Method overridden without using the "method!" keyword
 
 8
 \ \ \ Partial match: missing cases in pattern-matching.
@@ -722,7 +747,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-9\-27\-29\-32\-33\-34\-35\-36\-37 .
+.BR \-w\ +a\-4\-6\-9\-27\-29\-32..39 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
@@ -744,14 +769,14 @@ sign (or a lowercase letter) turns them back into warnings, and a
 .B @
 sign both enables and marks the corresponding warnings.
 
-Note: it is not recommended to use warning sets (i.e. letters) as
-arguments to
+Note: it is not recommended to use the
 .B \-warn\-error
-in production code, because this can break your build when future versions
-of OCaml add some new warnings.
+option in production code, because it will almost certainly prevent
+compiling your program with later versions of OCaml when they add new
+warnings.
 
 The default setting is
-.B \-warn\-error\ +a
+.B \-warn\-error\ -a
 (none of the warnings is treated as an error).
 .TP
 .B \-where

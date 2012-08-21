@@ -147,13 +147,13 @@ let emit_frames a =
       lbl in
   let emit_frame fd =
     a.efa_label fd.fd_lbl;
-    a.efa_16 (if fd.fd_debuginfo == Debuginfo.none
+    a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
               then fd.fd_frame_size
               else fd.fd_frame_size + 1);
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    if fd.fd_debuginfo != Debuginfo.none then begin
+    if not (Debuginfo.is_none fd.fd_debuginfo) then begin
       let d = fd.fd_debuginfo in
       let line = min 0xFFFFF d.dinfo_line
       and char_start = min 0xFF d.dinfo_char_start
@@ -189,3 +189,59 @@ let is_generic_function name =
   List.exists
     (fun p -> isprefix p name)
     ["caml_apply"; "caml_curry"; "caml_send"; "caml_tuplify"]
+
+(* CFI directives *)
+
+let is_cfi_enabled () =
+  Config.asm_cfi_supported
+
+let cfi_startproc () =
+  if is_cfi_enabled () then
+    emit_string "\t.cfi_startproc\n"
+
+let cfi_endproc () =
+  if is_cfi_enabled () then
+    emit_string "\t.cfi_endproc\n"
+
+let cfi_adjust_cfa_offset n =
+  if is_cfi_enabled () then
+  begin
+    emit_string "\t.cfi_adjust_cfa_offset\t"; emit_int n; emit_string "\n";
+  end
+
+(* Emit debug information *)
+
+(* This assoc list is expected to be very short *)
+let file_pos_nums =
+  (ref [] : (string * int) list ref)
+
+(* Number of files *)
+let file_pos_num_cnt = ref 1
+
+(* Reset debug state at beginning of asm file *)
+let reset_debug_info () =
+  file_pos_nums := [];
+  file_pos_num_cnt := 1
+
+(* We only diplay .file if the file has not been seen before. We
+   display .loc for every instruction. *)
+let emit_debug_info dbg =
+  if is_cfi_enabled () &&
+    !Clflags.debug && not (Debuginfo.is_none dbg) then begin
+    let line = dbg.Debuginfo.dinfo_line in
+    assert (line <> 0); (* clang errors out on zero line numbers *)
+    let file_name = dbg.Debuginfo.dinfo_file in
+    let file_num =
+      try List.assoc file_name !file_pos_nums
+      with Not_found ->
+        let file_num = !file_pos_num_cnt in
+        incr file_pos_num_cnt;
+        emit_string "\t.file\t";
+        emit_int file_num; emit_char '\t';
+        emit_string_literal file_name; emit_char '\n';
+        file_pos_nums := (file_name,file_num) :: !file_pos_nums;
+        file_num in
+    emit_string "\t.loc\t";
+    emit_int file_num; emit_char '\t';
+    emit_int line; emit_char '\n'
+  end

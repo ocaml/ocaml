@@ -37,7 +37,7 @@ let rec super m = function
 
 
 (* Ex :
-let (m,_) = <<F(A,B)>> 
+let (m,_) = <<F(A,B)>>
 and (n,_) = <<H(F(A,x),F(x,y))>> in super m n
 ==> [[1],[2,Term ("B",[])];                      x <- B
      [2],[2,Term ("A",[]); 1,Term ("B",[])]]     x <- A  y <- B
@@ -109,7 +109,7 @@ let rec get_rule n = function
 
 (* Improved Knuth-Bendix completion procedure *)
 
-let kb_completion greater = 
+let kb_completion greater =
   let rec kbrec j rules =
   let rec process failures (k,l) eqs =
 (****
@@ -165,7 +165,7 @@ let kb_completion greater =
                   (strict_critical_pairs el (rename rl.numvars el))
         else
           try
-            let rk = get_rule k rules in 
+            let rk = get_rule k rules in
             let ek = (rk.lhs, rk.rhs) in
               process failures (k,l)
                       (mutual_critical_pairs el (rename rl.numvars ek))
@@ -185,4 +185,3 @@ let kb_complete greater complete_rules rules =
       kb_completion greater n complete_rules [] (n,n) eqs in
     print_string "Canonical set found :"; print_newline();
     pretty_rules (List.rev completed_rules)
-

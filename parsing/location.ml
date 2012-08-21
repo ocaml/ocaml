@@ -15,8 +15,8 @@
 open Lexing
 
 let absname = ref false
-    (* This reference should be in Clflags, but it would create an additional dependency
-       and make bootstrapping Camlp4 more difficult. *)
+    (* This reference should be in Clflags, but it would create an additional
+       dependency and make bootstrapping Camlp4 more difficult. *)
 
 type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
 
@@ -207,20 +207,24 @@ let absolute_path s = (* This function could go into Filename *)
   let rec aux s =
     let base = basename s in
     let dir = dirname s in
-    if base = current_dir_name then if dir = s then dir else aux dir
+    if dir = s then dir
+    else if base = current_dir_name then aux dir
     else if base = parent_dir_name then dirname (aux dir)
     else concat (aux dir) base
   in
   aux s
 
+let show_filename file =
+  if !absname then absolute_path file else file
+
 let print_filename ppf file =
-  Format.fprintf ppf "%s" (if !absname then absolute_path file else file)
+  Format.fprintf ppf "%s" (show_filename file)
 
 let reset () =
   num_loc_lines := 0
 
-let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
-  ("File \"", "\", line ", ", characters ", "-", ":", "")
+let (msg_file, msg_line, msg_chars, msg_to, msg_colon) =
+  ("File \"", "\", line ", ", characters ", "-", ":")
 
 (* return file, line, char from the given position *)
 let get_pos_info pos =
@@ -232,7 +236,7 @@ let print_loc ppf loc =
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
   if file = "//toplevel//" then begin
     if highlight_locations ppf loc none then () else
-      fprintf ppf "Characters %i-%i:@."
+      fprintf ppf "Characters %i-%i"
               loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
     fprintf ppf "%s%a%s%i" msg_file print_filename file msg_line line;
@@ -244,7 +248,8 @@ let print_loc ppf loc =
 let print ppf loc =
   if loc.loc_start.pos_fname = "//toplevel//"
   && highlight_locations ppf loc none then ()
-  else fprintf ppf "%a%s@.%s" print_loc loc msg_colon msg_head
+  else fprintf ppf "%a%s@." print_loc loc msg_colon
+;;
 
 let print_error ppf loc =
   print ppf loc;
@@ -271,3 +276,11 @@ let prerr_warning loc w = print_warning loc err_formatter w;;
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
+
+type 'a loc = {
+  txt : 'a;
+  loc : t;
+}
+
+let mkloc txt loc = { txt ; loc }
+let mknoloc txt = mkloc txt none

@@ -334,7 +334,7 @@ let rec get_before_dot s =
     let len = String.length s in
     let n = String.index s '.' in
     if n + 1 >= len then
-      (* le point est le dernier caractère *)
+      (* le point est le dernier caractere *)
       (true, s, "")
     else
       match s.[n+1] with

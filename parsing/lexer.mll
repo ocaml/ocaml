@@ -22,9 +22,9 @@ open Parser
 type error =
   | Illegal_character of char
   | Illegal_escape of string
-  | Unterminated_comment
+  | Unterminated_comment of Location.t
   | Unterminated_string
-  | Unterminated_string_in_comment
+  | Unterminated_string_in_comment of Location.t
   | Keyword_as_label of string
   | Literal_overflow of string
 ;;
@@ -113,6 +113,12 @@ let store_string_char c =
   String.unsafe_set (!string_buff) (!string_index) c;
   incr string_index
 
+let store_lexeme lexbuf =
+  let s = Lexing.lexeme lexbuf in
+  for i = 0 to String.length s - 1 do
+    store_string_char s.[i];
+  done
+
 let get_stored_string () =
   let s = String.sub (!string_buff) 0 (!string_index) in
   string_buff := initial_string_buffer;
@@ -122,6 +128,9 @@ let get_stored_string () =
 let string_start_loc = ref Location.none;;
 let comment_start_loc = ref [];;
 let in_comment () = !comment_start_loc <> [];;
+let is_in_string = ref false
+let in_string () = !is_in_string
+let print_warnings = ref true
 
 (* To translate escape sequences *)
 
@@ -204,11 +213,11 @@ let report_error ppf = function
       fprintf ppf "Illegal character (%s)" (Char.escaped c)
   | Illegal_escape s ->
       fprintf ppf "Illegal backslash escape in string or character (%s)" s
-  | Unterminated_comment ->
+  | Unterminated_comment _ ->
       fprintf ppf "Comment not terminated"
   | Unterminated_string ->
       fprintf ppf "String literal not terminated"
-  | Unterminated_string_in_comment ->
+  | Unterminated_string_in_comment _ ->
       fprintf ppf "This comment contains an unterminated string literal"
   | Keyword_as_label kwd ->
       fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
@@ -299,9 +308,11 @@ rule token = parse
           raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
   | "\""
       { reset_string_buffer();
+        is_in_string := true;
         let string_start = lexbuf.lex_start_p in
         string_start_loc := Location.curr lexbuf;
         string lexbuf;
+        is_in_string := false;
         lexbuf.lex_start_p <- string_start;
         STRING (get_stored_string()) }
   | "'" newline "'"
@@ -321,15 +332,24 @@ rule token = parse
         raise (Error(Illegal_escape esc, Location.curr lexbuf))
       }
   | "(*"
-      { comment_start_loc := [Location.curr lexbuf];
-        comment lexbuf;
-        token lexbuf }
+      { let start_loc = Location.curr lexbuf  in
+        comment_start_loc := [start_loc];
+        reset_string_buffer ();
+        let end_loc = comment lexbuf in
+        let s = get_stored_string () in
+        reset_string_buffer ();
+        COMMENT (s, { start_loc with Location.loc_end = end_loc.Location.loc_end })
+      }
   | "(*)"
-      { let loc = Location.curr lexbuf in
-        Location.prerr_warning loc Warnings.Comment_start;
-        comment_start_loc := [Location.curr lexbuf];
-        comment lexbuf;
-        token lexbuf
+      { let loc = Location.curr lexbuf  in
+        if !print_warnings then
+          Location.prerr_warning loc Warnings.Comment_start;
+        comment_start_loc := [loc];
+        reset_string_buffer ();
+        let end_loc = comment lexbuf in
+        let s = get_stored_string () in
+        reset_string_buffer ();
+        COMMENT (s, { loc with Location.loc_end = end_loc.Location.loc_end })
       }
   | "*)"
       { let loc = Location.curr lexbuf in
@@ -411,53 +431,64 @@ rule token = parse
 and comment = parse
     "(*"
       { comment_start_loc := (Location.curr lexbuf) :: !comment_start_loc;
+        store_lexeme lexbuf;
         comment lexbuf;
       }
   | "*)"
       { match !comment_start_loc with
         | [] -> assert false
-        | [_] -> comment_start_loc := [];
+        | [_] -> comment_start_loc := []; Location.curr lexbuf
         | _ :: l -> comment_start_loc := l;
-                    comment lexbuf;
+                  store_lexeme lexbuf;
+                  comment lexbuf;
        }
   | "\""
-      { reset_string_buffer();
+      {
         string_start_loc := Location.curr lexbuf;
+        store_string_char '"';
+        is_in_string := true;
         begin try string lexbuf
         with Error (Unterminated_string, _) ->
           match !comment_start_loc with
           | [] -> assert false
-          | loc :: _ -> comment_start_loc := [];
-                        raise (Error (Unterminated_string_in_comment, loc))
+          | loc :: _ ->
+            let start = List.hd (List.rev !comment_start_loc) in
+            comment_start_loc := [];
+            raise (Error (Unterminated_string_in_comment start, loc))
         end;
-        reset_string_buffer ();
+        is_in_string := false;
+        store_string_char '"';
         comment lexbuf }
   | "''"
-      { comment lexbuf }
+      { store_lexeme lexbuf; comment lexbuf }
   | "'" newline "'"
       { update_loc lexbuf None 1 false 1;
+        store_lexeme lexbuf;
         comment lexbuf
       }
   | "'" [^ '\\' '\'' '\010' '\013' ] "'"
-      { comment lexbuf }
+      { store_lexeme lexbuf; comment lexbuf }
   | "'\\" ['\\' '"' '\'' 'n' 't' 'b' 'r' ' '] "'"
-      { comment lexbuf }
+      { store_lexeme lexbuf; comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
-      { comment lexbuf }
+      { store_lexeme lexbuf; comment lexbuf }
   | "'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
-      { comment lexbuf }
+      { store_lexeme lexbuf; comment lexbuf }
   | eof
       { match !comment_start_loc with
         | [] -> assert false
-        | loc :: _ -> comment_start_loc := [];
-                      raise (Error (Unterminated_comment, loc))
+        | loc :: _ ->
+          let start = List.hd (List.rev !comment_start_loc) in
+          comment_start_loc := [];
+          raise (Error (Unterminated_comment start, loc))
       }
   | newline
       { update_loc lexbuf None 1 false 0;
+        store_lexeme lexbuf;
         comment lexbuf
       }
   | _
-      { comment lexbuf }
+      { store_lexeme lexbuf; comment lexbuf }
 
 and string = parse
     '"'
@@ -494,14 +525,12 @@ and string = parse
       { if not (in_comment ()) then
           Location.prerr_warning (Location.curr lexbuf) Warnings.Eol_in_string;
         update_loc lexbuf None 1 false 0;
-        let s = Lexing.lexeme lexbuf in
-        for i = 0 to String.length s - 1 do
-          store_string_char s.[i];
-        done;
+        store_lexeme lexbuf;
         string lexbuf
       }
   | eof
-      { raise (Error (Unterminated_string, !string_start_loc)) }
+      { is_in_string := false;
+        raise (Error (Unterminated_string, !string_start_loc)) }
   | _
       { store_string_char(Lexing.lexeme_char lexbuf 0);
         string lexbuf }
@@ -512,3 +541,21 @@ and skip_sharp_bang = parse
   | "#!" [^ '\n']* '\n'
        { update_loc lexbuf None 1 false 0 }
   | "" { () }
+
+{
+  let token_with_comments = token
+
+  let last_comments = ref []
+  let rec token lexbuf =
+    match token_with_comments lexbuf with
+        COMMENT (s, comment_loc) ->
+          last_comments := (s, comment_loc) :: !last_comments;
+          token lexbuf
+      | tok -> tok
+  let comments () = List.rev !last_comments
+  let init () =
+    is_in_string := false;
+    last_comments := [];
+    comment_start_loc := []
+
+}

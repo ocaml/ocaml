@@ -47,6 +47,10 @@ let size_addr = 4
 let size_int = 4
 let size_float = 8
 
+(* Behavior of division *)
+
+let division_crashes_on_overflow = false
+
 (* Operations on addressing modes *)
 
 let identity_addressing = Iindexed 0

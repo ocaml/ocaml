@@ -382,12 +382,21 @@ flag ["ocaml"; "compile"] begin
   atomize !Options.ocaml_cflags
 end;;
 
+flag ["c"; "compile"] begin
+  atomize !Options.ocaml_cflags
+end;;
+
 flag ["ocaml"; "link"] begin
+  atomize !Options.ocaml_lflags
+end;;
+
+flag ["c"; "link"] begin
   atomize !Options.ocaml_lflags
 end;;
 
 flag ["ocaml"; "ocamlyacc"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "menhir"] (atomize !Options.ocaml_yaccflags);;
+flag ["ocaml"; "doc"] (atomize !Options.ocaml_docflags);;
 
 (* Tell menhir to explain conflicts *)
 flag [ "ocaml" ; "menhir" ; "explain" ] (S[A "--explain"]);;
@@ -434,7 +443,7 @@ let () =
     (* tags package(X), predicate(X) and syntax(X) *)
     List.iter begin fun tags ->
       pflag tags "package" (fun pkg -> S [A "-package"; A pkg]);
-      pflag tags "predicate" (fun pkg -> S [A "-predicate"; A pkg]);
+      pflag tags "predicate" (fun pkg -> S [A "-predicates"; A pkg]);
       pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
     end all_tags
   end else begin
@@ -453,6 +462,8 @@ let () =
 let () =
   pflag ["ocaml"; "native"; "compile"] "for-pack"
     (fun param -> S [A "-for-pack"; A param]);
+  pflag ["ocaml"; "native"; "pack"] "for-pack"
+    (fun param -> S [A "-for-pack"; A param]);
   pflag ["ocaml"; "native"; "compile"] "inline"
     (fun param -> S [A "-inline"; A param]);
   pflag ["ocaml"; "compile"] "pp"
@@ -462,7 +473,9 @@ let () =
   pflag ["ocaml"; "doc"] "pp"
     (fun param -> S [A "-pp"; A param]);
   pflag ["ocaml"; "infer_interface"] "pp"
-    (fun param -> S [A "-pp"; A param])
+    (fun param -> S [A "-pp"; A param]);
+  pflag ["ocaml";"compile";] "warn"
+    (fun param -> S [A "-w"; A param])
 
 let camlp4_flags camlp4s =
   List.iter begin fun camlp4 ->

@@ -58,7 +58,9 @@ module P_alias =
     let p_class c _ = (false, false)
     let p_class_type ct _ = (false, false)
     let p_value v _ = false
-    let p_type t _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type t _ = (false, false)
     let p_exception e _ = e.ex_alias <> None
     let p_attribute a _ = false
     let p_method m _ = false
@@ -178,7 +180,7 @@ let kind_name_exists kind =
     match kind with
       RK_module -> (fun e -> match e with Odoc_search.Res_module _ -> true | _ -> false)
     | RK_module_type -> (fun e -> match e with Odoc_search.Res_module_type _ -> true | _ -> false)
-    | RK_class -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
+    | RK_class -> (fun e -> match e with Odoc_search.Res_class _ -> true | _ -> false)
     | RK_class_type -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
     | RK_value -> (fun e -> match e with Odoc_search.Res_value _ -> true | _ -> false)
     | RK_type -> (fun e -> match e with Odoc_search.Res_type _ -> true | _ -> false)
@@ -186,6 +188,8 @@ let kind_name_exists kind =
     | RK_attribute -> (fun e -> match e with Odoc_search.Res_attribute _ -> true | _ -> false)
     | RK_method -> (fun e -> match e with Odoc_search.Res_method _ -> true | _ -> false)
     | RK_section _ -> assert false
+    | RK_recfield -> (fun e -> match e with Odoc_search.Res_recfield _ -> true | _ -> false)
+    | RK_const -> (fun e -> match e with Odoc_search.Res_const _ -> true | _ -> false)
   in
   fun name ->
     try List.exists pred (get_known_elements name)
@@ -200,6 +204,8 @@ let type_exists = kind_name_exists RK_type
 let exception_exists = kind_name_exists RK_exception
 let attribute_exists = kind_name_exists RK_attribute
 let method_exists = kind_name_exists RK_method
+let recfield_exists = kind_name_exists RK_recfield
+let const_exists = kind_name_exists RK_const
 
 let lookup_module name =
   match List.find
@@ -246,8 +252,17 @@ class scan =
     inherit Odoc_scan.scanner
     method! scan_value v =
       add_known_element v.val_name (Odoc_search.Res_value v)
-    method! scan_type t =
-      add_known_element t.ty_name (Odoc_search.Res_type t)
+    method! scan_type_recfield t f =
+      add_known_element
+        (Printf.sprintf "%s.%s" t.ty_name f.rf_name)
+        (Odoc_search.Res_recfield (t, f))
+    method! scan_type_const t f =
+      add_known_element
+        (Printf.sprintf "%s.%s" t.ty_name f.vc_name)
+        (Odoc_search.Res_const (t, f))
+    method! scan_type_pre t =
+      add_known_element t.ty_name (Odoc_search.Res_type t);
+      true
     method! scan_exception e =
       add_known_element e.ex_name (Odoc_search.Res_exception e)
     method! scan_attribute a =
@@ -620,6 +635,8 @@ let not_found_of_kind kind name =
   | RK_attribute -> Odoc_messages.cross_attribute_not_found
   | RK_method -> Odoc_messages.cross_method_not_found
   | RK_section _ -> Odoc_messages.cross_section_not_found
+  | RK_recfield -> Odoc_messages.cross_recfield_not_found
+  | RK_const -> Odoc_messages.cross_const_not_found
   ) name
 
 let rec assoc_comments_text_elements parent_name module_list t_ele =
@@ -675,6 +692,10 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
                  | Odoc_search.Res_attribute a -> (a.att_value.val_name, RK_attribute)
                  | Odoc_search.Res_method m -> (m.met_value.val_name, RK_method)
                  | Odoc_search.Res_section (_ ,t)-> assert false
+                 | Odoc_search.Res_recfield (t, f) ->
+                     (Printf.sprintf "%s.%s" t.ty_name f.rf_name, RK_recfield)
+                 | Odoc_search.Res_const (t, f) ->
+                     (Printf.sprintf "%s.%s" t.ty_name f.vc_name, RK_const)
                in
                add_verified (name, Some kind) ;
                (name, Some kind)
@@ -731,6 +752,8 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
                    | RK_attribute -> attribute_exists
                    | RK_method -> method_exists
                    | RK_section _ -> assert false
+                   | RK_recfield -> recfield_exists
+                   | RK_const -> const_exists
                  in
                  if f name then
                    (

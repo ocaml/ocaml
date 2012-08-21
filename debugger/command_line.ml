@@ -209,8 +209,8 @@ let line_loop ppf line_buffer =
     with
     | Exit ->
         stop_user_input ()
-    | Sys_error s ->
-        error ("System error : " ^ s)
+(*    | Sys_error s ->
+        error ("System error : " ^ s) *)
 
 (** Instructions. **)
 let instr_cd ppf lexbuf =
@@ -229,6 +229,22 @@ let instr_shell ppf lexbuf =
   let err = Sys.command cmd in
   if (err != 0) then
     eprintf "Shell command %S failed with exit code %d\n%!" cmd err
+
+let instr_env ppf lexbuf =
+  let cmdarg = argument_list_eol argument lexbuf in
+  let cmdarg = string_trim (String.concat " " cmdarg) in
+  if cmdarg <> "" then
+    try
+      if (String.index cmdarg '=') > 0 then
+        Debugger_config.environment := cmdarg :: !Debugger_config.environment
+      else
+        eprintf "Environment variables should not have an empty name\n%!"
+    with Not_found ->
+      eprintf "Environment variables should have the \"name=value\" format\n%!"
+  else
+    List.iter
+      (printf "%s\n%!")
+      (List.rev !Debugger_config.environment)
 
 let instr_pwd ppf lexbuf =
   eol lexbuf;
@@ -454,7 +470,7 @@ let instr_help ppf lexbuf =
           fprintf ppf "Ambiguous command \"%s\" : %a@." x pr_instrs l
       end
   | None ->
-      fprintf ppf "List of commands :%a@." pr_instrs !instruction_list
+      fprintf ppf "List of commands : %a@." pr_instrs !instruction_list
 
 (* Printing values *)
 
@@ -962,6 +978,9 @@ With no argument, reset the search path." };
      { instr_name = "shell"; instr_prio = false;
        instr_action = instr_shell; instr_repeat = true; instr_help =
 "Execute a given COMMAND thru the system shell." };
+     { instr_name = "environment"; instr_prio = false;
+       instr_action = instr_env; instr_repeat = false; instr_help =
+"environment variable to give to program being debugged when it is started." };
       (* Displacements *)
      { instr_name = "run"; instr_prio = true;
        instr_action = instr_run; instr_repeat = true; instr_help =

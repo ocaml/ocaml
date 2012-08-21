@@ -89,7 +89,7 @@
 
 (define-derived-mode camldebug-mode comint-mode "Inferior CDB"
 
-  "Major mode for interacting with an inferior Camldebug process.
+  "Major mode for interacting with an inferior ocamldebug process.
 
 The following commands are available:
 
@@ -575,7 +575,7 @@ the camldebug commands `cd DIR' and `directory'."
         (let ((process-window))
           ;; it does not seem necessary to save excursion here,
           ;; since set-buffer as a temporary effect.
-          ;; comint-output-filter explicitly avoids it. 
+          ;; comint-output-filter explicitly avoids it.
           ;; in version 23, it prevents the marker to stay at end of buffer
           ;; (save-excursion
             (set-buffer (process-buffer proc))
@@ -595,8 +595,8 @@ the camldebug commands `cd DIR' and `directory'."
                                       (get-buffer-window (current-buffer))))
             ;; Insert the text, moving the process-marker.
             (comint-output-filter proc output)
-          ;; ) 
-          ;; this was the end of save-excursion. 
+          ;; )
+          ;; this was the end of save-excursion.
           ;; if save-excursion is used (comint-next-prompt 1) would be needed
           ;; to move the mark past then next prompt, but this is not as good
           ;; as solution.

@@ -22,7 +22,7 @@ let preprocess sourcefile =
   match !Clflags.preprocessor with
     None -> sourcefile
   | Some pp ->
-      let tmpfile = Filename.temp_file "camlpp" "" in
+      let tmpfile = Filename.temp_file "ocamlpp" "" in
       let comm = Printf.sprintf "%s %s > %s"
                                 pp (Filename.quote sourcefile) tmpfile
       in
@@ -51,15 +51,14 @@ let file ppf inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
-      let buffer = String.create (String.length ast_magic) in
-      really_input ic buffer 0 (String.length ast_magic);
+      let buffer = Misc.input_bytes ic (String.length ast_magic) in
       if buffer = ast_magic then true
       else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
         raise Outdated_version
       else false
     with
       Outdated_version ->
-        Misc.fatal_error "Ocaml and preprocessor have incompatible versions"
+        Misc.fatal_error "OCaml and preprocessor have incompatible versions"
     | _ -> false
   in
   let ast =

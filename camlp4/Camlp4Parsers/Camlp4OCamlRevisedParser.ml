@@ -303,6 +303,15 @@ New syntax:\
   value stopped_at _loc =
     Some (Loc.move_line 1 _loc) (* FIXME be more precise *);
 
+  value rec generalized_type_of_type =
+    fun
+    [ <:ctyp< $t1$ -> $t2$ >> ->
+        let (tl, rt) = generalized_type_of_type t2 in
+        ([t1 :: tl], rt)
+    | t ->
+        ([], t) ]
+  ;
+
   value symbolchar =
     let list =
       ['$'; '!'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '='; '>'; '?';
@@ -361,7 +370,7 @@ New syntax:\
     parser
     [ [: `((KEYWORD "(", _) as tok); xs :] ->
         match xs with parser
-        [ [: `(KEYWORD ("mod"|"land"|"lor"|"lxor"|"lsl"|"lsr"|"asr" as i), _loc);
+        [ [: `(KEYWORD ("or"|"mod"|"land"|"lor"|"lxor"|"lsl"|"lsr"|"asr" as i), _loc);
              `(KEYWORD ")", _); xs :] ->
                 [: `(LIDENT i, _loc); infix_kwds_filter xs :]
         | [: xs :] ->
@@ -984,6 +993,8 @@ New syntax:\
     ;
     label_ipatt_list:
       [ [ p1 = label_ipatt; ";"; p2 = SELF -> <:patt< $p1$ ; $p2$ >>
+        | p1 = label_ipatt; ";"; "_"       -> <:patt< $p1$ ; _ >>
+        | p1 = label_ipatt; ";"; "_"; ";"  -> <:patt< $p1$ ; _ >>
         | p1 = label_ipatt; ";"            -> p1
         | p1 = label_ipatt                 -> p1
       ] ];
@@ -1044,7 +1055,7 @@ New syntax:\
         | "'"; i = a_ident -> <:ctyp< '$lid:i$ >>
         | "+"; "'"; i = a_ident -> <:ctyp< +'$lid:i$ >>
         | "-"; "'"; i = a_ident -> <:ctyp< -'$lid:i$ >>
-        | "+"; "_" -> Ast.TyAnP _loc 
+        | "+"; "_" -> Ast.TyAnP _loc
         | "-"; "_" -> Ast.TyAnM _loc
         | "_" -> Ast.TyAny _loc
 
@@ -1133,14 +1144,11 @@ New syntax:\
             <:ctyp< $t1$ | $t2$ >>
         | s = a_UIDENT; "of"; t = constructor_arg_list ->
             <:ctyp< $uid:s$ of $t$ >>
-        | s = a_UIDENT; ":"; t = constructor_arg_list ; "->" ; ret = ctyp ->
-            <:ctyp< $uid:s$ : ($t$ -> $ret$) >>
-        | s = a_UIDENT; ":"; ret = constructor_arg_list ->
- 	    match Ast.list_of_ctyp ret [] with 
- 		[ [c] -> <:ctyp<  $uid:s$ : $c$ >>
- 		| _ -> raise (Stream.Error "invalid generalized constructor type") ] 
+        | s = a_UIDENT; ":"; t = ctyp ->
+            let (tl, rt) = generalized_type_of_type t in
+            <:ctyp< $uid:s$ : ($Ast.tyAnd_of_list tl$ -> $rt$) >>
         | s = a_UIDENT ->
-	  <:ctyp< $uid:s$ >>
+          <:ctyp< $uid:s$ >>
       ] ]
     ;
     constructor_declaration:
@@ -1392,9 +1400,9 @@ New syntax:\
     ;
     cvalue_binding:
       [ [ "="; e = expr -> e
-        | ":"; "type"; t1 = unquoted_typevars; "." ; t2 = ctyp ; "="; e = expr -> 
-	let u = Ast.TyTypePol _loc t1 t2 in
-	<:expr< ($e$ : $u$) >>
+        | ":"; "type"; t1 = unquoted_typevars; "." ; t2 = ctyp ; "="; e = expr ->
+        let u = Ast.TyTypePol _loc t1 t2 in
+        <:expr< ($e$ : $u$) >>
         | ":"; t = poly_type; "="; e = expr -> <:expr< ($e$ : $t$) >>
         | ":"; t = poly_type; ":>"; t2 = ctyp; "="; e = expr ->
             match t with

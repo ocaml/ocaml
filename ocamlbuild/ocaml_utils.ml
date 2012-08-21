@@ -29,8 +29,7 @@ let flag_and_dep tags cmd_spec =
   dep tags ps
 
 let stdlib_dir = lazy begin
-  (* FIXME *)
-  let ocamlc_where = sprintf "%s/ocamlc.where" (Pathname.pwd / !Options.build_dir) in
+  let ocamlc_where = !Options.build_dir / (Pathname.mk "ocamlc.where") in
   let () = Command.execute ~quiet:true (Cmd(S[!Options.ocamlc; A"-where"; Sh">"; P ocamlc_where])) in
   String.chomp (read_file ocamlc_where)
 end

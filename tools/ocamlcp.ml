@@ -45,6 +45,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _absname = option "-absname"
   let _annot = option "-annot"
+  let _binannot = option "-bin-annot"
   let _c = option "-c"
   let _cc s = option_with_arg "-cc" s
   let _cclib s = option_with_arg "-cclib" s
@@ -103,7 +104,7 @@ let add_profarg s =
 ;;
 
 let optlist =
-    ("-p", Arg.String add_profarg,
+    ("-P", Arg.String add_profarg,
            "[afilmt]  Profile constructs specified by argument (default fm):\n\
         \032     a  Everything\n\
         \032     f  Function calls and method calls\n\
@@ -111,6 +112,7 @@ let optlist =
         \032     l  while and for loops\n\
         \032     m  match ... with\n\
         \032     t  try ... with")
+    :: ("-p", Arg.String add_profarg, "[afilmt]  Same as option -P")
     :: Options.list
 in
 Arg.parse optlist process_file usage;

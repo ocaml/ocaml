@@ -102,7 +102,7 @@ let test x s1 s2 =
 
   check "split"
     (let (l, p, r) = S.split x s1 in
-     fun i -> 
+     fun i ->
        if i < x then S.mem i l = S.mem i s1
        else if i > x then S.mem i r = S.mem i s1
        else p = S.mem i s1)
@@ -117,4 +117,3 @@ let rset() =
 let _ =
   Random.init 42;
   for i = 1 to 25000 do test (relt()) (rset()) (rset()) done
-  

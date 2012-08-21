@@ -26,7 +26,7 @@ int debug_test (void)
     debug = (getenv("OCAMLDEBUG") != NULL);
     debug_init = 1;
   };
-#endif 
+#endif
 
   return debug;
 }

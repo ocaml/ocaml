@@ -59,7 +59,7 @@ runs without any additional tools.
 The native-code compiler (ocamlopt) requires the Microsoft Windows SDK
 (item [1]) and the flexdll tool (item [2]).
 
-Statically linking Caml bytecode with C code (ocamlc -custom) also requires
+Statically linking OCaml bytecode with C code (ocamlc -custom) also requires
 items [1] and [2].
 
 The LablTk GUI requires Tcl/Tk 8.5 (item [3]).
@@ -87,12 +87,11 @@ THIRD-PARTY SOFTWARE:
     http://www.microsoft.com/downloads/en/default.aspx
     under the name "Microsoft Windows 7 SDK".
 
-[2] flexdll version 0.23 or later.
+[2] flexdll version 0.29 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
 [3] TCL/TK version 8.5.  Windows binaries are available as part of the
-    ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
-
+    ActiveTCL distribution at http://www.activestate.com/activetcl/downloads
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -106,7 +105,8 @@ You will need the following software components to perform the recompilation:
   Make sure to install the 32-bit version of TCL/TK, even if you are
   compiling on a 64-bit Windows.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
-  Install at least the following packages: diffutils, make, ncurses.
+  Install at least the following packages (and their dependencies):
+  diffutils, make, ncurses.
 
 First, you need to set up your cygwin environment for using the MS
 tools.  The following assumes that you have installed [1], [2], and [3]
@@ -121,13 +121,14 @@ to adjust the paths accordingly.
 
   Then enter the following commands:
     cd "%PFPATH%\Microsoft Visual Studio 9.0\VC\bin"
+    set FLEXDLLDIR=%PFPATH%\flexdll
     vcvars32
     echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
     echo LIB="%LIB%;C:\Tcl\lib" >>C:\cygwin\tmp\msenv
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
-    echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
-    echo FLPATH="`cygpath '%PFPATH%\flexdll'`" >>C:\cygwin\tmp\msenv
-    echo PATH="${VCPATH}:$PATH:${FLPATH}" >>C:\cygwin\tmp\msenv
+    echo INCLUDE="%INCLUDE%;%FLEXDLLDIR%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
+    echo FLPATH="`cygpath '%FLEXDLLDIR%'`" >>C:\cygwin\tmp\msenv
+    echo PATH="$VCPATH:$FLPATH:$PATH" >>C:\cygwin\tmp\msenv
     echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
     echo export OCAMLBUILD_FIND=/usr/bin/find >>C:\cygwin\tmp\msenv
 
@@ -175,10 +176,7 @@ CREDITS:
 
 The initial port of Caml Special Light (the ancestor of OCaml) to
 Windows NT was done by Kevin Gallo at Microsoft Research, who kindly
-contributed his changes to the Caml project.
-
-The graphical user interface for the toplevel was initially developed
-by Jacob Navia, then significantly improved by Christopher A. Watford.
+contributed his changes to the OCaml project.
 
 ------------------------------------------------------------------------------
 
@@ -187,13 +185,13 @@ by Jacob Navia, then significantly improved by Christopher A. Watford.
 
 REQUIREMENTS:
 
-This port runs under MS Windows Vista, XP, and 2000.
+This port runs under MS Windows Seven, Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
 The native-code compiler (ocamlopt), as well as static linking of
-Caml bytecode with C code (ocamlc -custom), require
+OCaml bytecode with C code (ocamlc -custom), require
 the Cygwin development tools, available at
         http://www.cygwin.com/
 and the flexdll tool, available at
@@ -203,10 +201,14 @@ the Setup tool from Cygwin):
 
  mingw64-i686-binutils
  mingw64-i686-gcc
+ mingw64-i686-gcc-core
  mingw64-i686-runtime
 
 
-NOTE:
+NOTES:
+
+  - Do not use the Cygwin version of flexdll for this port.
+
   - There is another 32-bit gcc compiler, from the MinGW.org
     project, packaged in Cygwin under the name mingw-gcc.
     It is not currently supported by flexdll and OCaml.
@@ -224,7 +226,7 @@ NOTE:
 
 The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available
 as part of the ActiveTCL distribution at
-http://www.activestate.com/products/ActiveTcl/
+  http://www.activestate.com/activetcl/downloads
 Note that you will need to install the 32-bit version of ActiveTCL,
 even if you are on a 64-bit version of Windows.
 
@@ -247,23 +249,26 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 RECOMPILATION FROM THE SOURCES:
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, XP, or Vista.
-- Cygwin: http://sourceware.cygnus.com/cygwin/
-  Install at least the following packages:
+- Windows NT, 2000, XP, Vista, or Seven.
+- Cygwin: http://cygwin.com/
+  Install at least the following packages (and their dependencies, as
+  computed by Cygwin's setup.exe):
      mingw64-i686-binutils
      mingw64-i686-gcc
+     mingw64-i686-gcc-core
      mingw64-i686-runtime
      diffutils
      make
      ncurses
-- TCL/TK version 8.5 (see above).
-- The flexdll tool (see above).
+- Tcl/Tk version 8.5 (see above).
+- The flexdll tool (see above).  Do not forget to add the flexdll directory
+  to your PATH
 
 The standalone mingw toolchain from the MinGW-w64 project
 (http://mingw-w64.sourceforge.net/) is not supported.  Please use the
 version packaged in Cygwin instead.
 
-Start a Cygwin shell and unpack the source distribution
+Start a new Cygwin shell and unpack the source distribution
 (ocaml-X.YY.Z.tar.gz) with "tar xzf".  Change to the top-level
 directory of the OCaml distribution.  Then, do
 
@@ -274,7 +279,7 @@ directory of the OCaml distribution.  Then, do
 Then, edit config/Makefile as needed, following the comments in this file.
 Normally, the only variables that need to be changed are
         PREFIX      where to install everything
-        TK_ROOT     where TCL/TK was installed
+        TK_ROOT     where Tcl/Tk was installed
 
 Finally, use "make -f Makefile.nt" to build the system, e.g.
 
@@ -318,16 +323,42 @@ the OCaml packages).  Alternatively, recompile from the source distribution.
 
 RECOMPILATION FROM THE SOURCES:
 
-Just follow the instructions for Unix machines given in the file INSTALL.
+Before starting, make sure that the gcc version installed by cygwin
+is not 4.5.3 (it has a bug that affects OCaml).  If needed, use cygwin's
+setup.exe to downgrade to 4.3.4.
+
+You will need to recompile (and install) flexdll from source with
+Cygwin's C compiler because the official binary version of flexdll
+doesn't handle Cygwin's symbolic links and sometimes fails to
+launch the C compiler.
+
+In order to recompile flexdll, you first need to configure, compile,
+and install OCaml without flexdll support (configure with options
+-no-shared-libs -no-tk -no-camlp4), then modify the flexdll Makefile
+to change line 51 from:
+  LINKFLAGS = -ccopt "-link version_res.o"
+to:
+  LINKFLAGS = -cclib version_res.o
+
+Then "make CHAINS=cygwin" and add the flexdll directory to your PATH.
+Make sure to add it before "/usr/bin" or you will get cygwin's flexlink.
+
+Then, in OCaml's source directory, type:
+  make clean
+  make distclean
+and follow the instructions for Unix machines given in the file INSTALL.
 
 
 NOTES:
 
-The libraries available in this port are "num", "str", "threads",
-"unix" and "labltk".  "graph" is not available.
-The replay debugger is fully supported.
-When upgrading from 3.12.0 to 3.12.1, you will need to remove
-/usr/local/bin/ocamlmktop.exe before typing "make install".
+- There is a problem with cygwin's port of gcc version 4.5.3.  You should
+  use cygwin's setup program to downgrade to 4.3.4 before compiling OCaml.
+- The replay debugger is fully supported.
+- When upgrading from 3.12.0 to 3.12.1, you will need to remove
+  /usr/local/bin/ocamlmktop.exe before typing "make install".
+- In order to use the "graph" and "labltk" libraries, you will need
+  to use Cygwin's setup.exe to install the xinit, libX11-devel, tcl,
+  and tcl-tk packages before compiling OCaml.
 
 ------------------------------------------------------------------------------
 
@@ -342,7 +373,7 @@ Windows 7 64 on Intel64/AMD64 machines.
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
-Statically linking Caml bytecode with C code (ocamlc -custom) requires the
+Statically linking OCaml bytecode with C code (ocamlc -custom) requires the
 Microsoft Platform SDK compiler (item [1] in the section
 "third-party software" below) and the flexdll tool (item [2]).
 
@@ -364,7 +395,7 @@ THIRD-PARTY SOFTWARE:
     http://www.microsoft.com/downloads/en/default.aspx
     under the name "Microsoft Windows 7 SDK".
 
-[2] flexdll version 0.27 or later.
+[2] flexdll version 0.29 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
 

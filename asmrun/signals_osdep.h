@@ -61,7 +61,7 @@
 
 /****************** ARM, Linux */
 
-#elif defined(TARGET_arm) && defined (SYS_linux)
+#elif defined(TARGET_arm) && (defined(SYS_linux_eabi) || defined(SYS_linux_eabihf))
 
   #include <sys/ucontext.h>
 

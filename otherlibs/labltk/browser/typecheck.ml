@@ -17,6 +17,7 @@
 open StdLabels
 open Tk
 open Parsetree
+open Typedtree
 open Location
 open Jg_tk
 open Mytypes
@@ -60,8 +61,7 @@ let parse_pp ~parse ~wrap ~ext text =
       let ic = open_in_bin tmpfile in
       let ast =
         try
-          let buffer = String.create (String.length ast_magic) in
-          really_input ic buffer 0 (String.length ast_magic);
+          let buffer = Misc.input_bytes ic (String.length ast_magic) in
           if buffer = ast_magic then begin
             ignore (input_value ic);
             wrap (input_value ic)
@@ -73,7 +73,7 @@ let parse_pp ~parse ~wrap ~ext text =
           Outdated_version ->
             close_in ic;
             Sys.remove tmpfile;
-            failwith "Ocaml and preprocessor have incompatible versions"
+            failwith "OCaml and preprocessor have incompatible versions"
         | _ ->
             seek_in ic 0;
             let buffer = Lexing.from_channel ic in
@@ -106,7 +106,7 @@ let f txt =
     let psign = parse_pp text ~ext:".mli"
         ~parse:Parse.interface ~wrap:(fun x -> x) in
     txt.psignature <- psign;
-    txt.signature <- Typemod.transl_signature !env psign
+    txt.signature <- (Typemod.transl_signature !env psign).sig_type;
 
     else (* others are interpreted as .ml *)
 
@@ -116,7 +116,7 @@ let f txt =
     begin function
       Ptop_def pstr ->
         let str, sign, env' = Typemod.type_structure !env pstr Location.none in
-        txt.structure <- txt.structure @ str;
+        txt.structure <- txt.structure @ str.str_items;
         txt.signature <- txt.signature @ sign;
         env := env'
     | Ptop_dir _ -> ()
@@ -140,6 +140,7 @@ let f txt =
           begin match err with
             Syntaxerr.Unclosed(l,_,_,_) -> l
           | Syntaxerr.Applicative_path l -> l
+          | Syntaxerr.Variable_in_scope(l,_) -> l
           | Syntaxerr.Other l -> l
           end
       | Typecore.Error (l, env, err) ->
@@ -156,6 +157,8 @@ let f txt =
           Includemod.report_error Format.std_formatter errl; Location.none
       | Env.Error err ->
           Env.report_error Format.std_formatter err; Location.none
+      | Cmi_format.Error err ->
+          Cmi_format.report_error Format.std_formatter err; Location.none
       | Ctype.Tags(l, l') ->
           Format.printf "In this program,@ variant constructors@ `%s and `%s@ have same hash value.@." l l';
           Location.none

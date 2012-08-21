@@ -51,6 +51,6 @@ let rec do_list f = function
 
 
 let _ =
-  do_list (fun n -> print_int n; print_string " ") (sieve 50000);
+  do_list (fun n -> print_string " "; print_int n) (sieve 50000);
   print_newline();
   exit 0

@@ -51,13 +51,13 @@ test "deux" g 6 5 ;
 test "deux" g 9 7 ; ()
 ;;
 
-  
+
 let g x = match x with
   1 -> 1
 | 2 -> 2
 | 3 -> 3
 | 4 | 5 -> 4
-| 6 -> 5   
+| 6 -> 5
 | 7 | 8 -> 6
 | 9 -> 7
 | _ -> 8;;
@@ -70,7 +70,7 @@ let g x= match  x with
 | 2 -> 2
 | 3 -> 3
 | 4 | 5 -> 4
-| 6 -> 5   
+| 6 -> 5
 | 4|5|7 -> 100
 | 7 | 8 -> 6
 | 9 -> 7
@@ -251,7 +251,7 @@ test "fin" f (D (C,1)) (D (A,1)) ;
 test "fin" f (E (C,A)) (D (A,0)) ; ()
 ;;
 
-type length = 
+type length =
     Char of int | Pixel of int | Percent of int | No of string | Default
 
 let length = function
@@ -550,7 +550,7 @@ test "flatgarde" flatgarde (2,4) 3 ; ()
 
 (* Les bugs de jerome *)
 type f =
-  | ABSENT 
+  | ABSENT
   | FILE
   | SYMLINK
   | DIRECTORY
@@ -584,27 +584,27 @@ let replicaContent2shortString rc =
 ;;
 
 
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (ABSENT, Unchanged) "        " ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (ABSENT, Deleted) "deleted " ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (FILE, Modified) "changed " ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (DIRECTORY, PropsChanged) "props   " ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (FILE, Deleted) "assert false" ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (SYMLINK, Deleted) "assert false" ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (SYMLINK, PropsChanged) "assert false" ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (DIRECTORY, Deleted) "assert false" ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (ABSENT, Created) "assert false" ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (ABSENT, Modified) "assert false" ;
-test "jerome_constr" 
+test "jerome_constr"
    replicaContent2shortString (ABSENT, PropsChanged) "assert false" ;
 ;;
 
@@ -631,27 +631,27 @@ let replicaContent2shortString rc =
 ;;
 
 
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`ABSENT, `Unchanged) "        " ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`ABSENT, `Deleted) "deleted " ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`FILE, `Modified) "changed " ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`DIRECTORY, `PropsChanged) "props   " ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`FILE, `Deleted) "assert false" ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`SYMLINK, `Deleted) "assert false" ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`SYMLINK, `PropsChanged) "assert false" ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`DIRECTORY, `Deleted) "assert false" ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`ABSENT, `Created) "assert false" ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`ABSENT, `Modified) "assert false" ;
-test "jerome_variant" 
+test "jerome_variant"
    replicaContent2shortString (`ABSENT, `PropsChanged) "assert false" ;
 ;;
 
@@ -972,10 +972,10 @@ match n with
 type  habert_a=
   | A of habert_c
   | B of habert_c
-  
-and habert_c= {lvar:int; lassoc: habert_c;lnb:int} 
-  
-  
+
+and habert_c= {lvar:int; lassoc: habert_c;lnb:int}
+
+
 let habert=function
   | (A {lnb=i}|B {lnb=i}) when i=0 -> 1
   | A {lassoc=({lnb=j});lnb=i} -> 2
@@ -1000,13 +1000,13 @@ type type_expr = [
   | `TVariant of string list
   | `TBlock of int
   | `TCopy of type_expr
-  ] 
+  ]
 
 and recurs_type_expr = [
   | `TTuple of type_expr list
   | `TConstr of type_expr list
   | `TVariant of string list
-  ] 
+  ]
 
 
 let rec maf te =
@@ -1129,7 +1129,7 @@ type bg = [
   | `False
   | `True
   ]
-  
+
 type vg = [
   | `A
   | `B
@@ -1142,7 +1142,7 @@ type tg = {
     x : bg;
   }
 
-let predg x = true 
+let predg x = true
 
 let rec gilles o = match o with
   | {v = (`U data | `V data); x = `False} when predg o -> 1

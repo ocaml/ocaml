@@ -68,6 +68,15 @@ CAMLprim value caml_md5_chan(value vchan, value len)
   CAMLreturn (res);
 }
 
+CAMLexport void caml_md5_block(unsigned char digest[16],
+                               void * data, uintnat len)
+{
+  struct MD5Context ctx;
+  caml_MD5Init(&ctx);
+  caml_MD5Update(&ctx, data, len);
+  caml_MD5Final(digest, &ctx);
+}
+
 /*
  * This code implements the MD5 message-digest algorithm.
  * The algorithm is due to Ron Rivest.  This code was

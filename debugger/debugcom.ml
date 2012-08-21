@@ -189,8 +189,7 @@ let set_trap_barrier pos =
 let value_size = if 1 lsl 31 = 0 then 4 else 8
 
 let input_remote_value ic =
-  let v = String.create value_size in
-  really_input ic v 0 value_size; v
+  Misc.input_bytes ic value_size
 
 let output_remote_value ic v =
   output ic v 0 value_size
@@ -247,8 +246,7 @@ module Remote_value =
           if input_byte !conn.io_in = 0 then
             Remote(input_remote_value !conn.io_in)
           else begin
-            let buf = String.create 8 in
-            really_input !conn.io_in buf 0 8;
+            let buf = Misc.input_bytes !conn.io_in 8 in
             let floatbuf = float n (* force allocation of a new float *) in
             String.unsafe_blit buf 0 (Obj.magic floatbuf) 0 8;
             Local(Obj.repr floatbuf)

@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: posix.c 9270 2009-05-20 11:52:42Z doligez $ */
+/* $Id$ */
 
 /* POSIX thread implementation of the "st" interface */
 
@@ -158,7 +158,7 @@ static INLINE int st_masterlock_waiters(st_masterlock * m)
 {
   return m->waiters;
 }
- 
+
 /* Mutexes */
 
 typedef pthread_mutex_t * st_mutex;
@@ -321,7 +321,7 @@ static void * caml_thread_tick(void * arg)
   struct timeval timeout;
   sigset_t mask;
 
-  /* Block all signals so that we don't try to execute a Caml signal handler */
+  /* Block all signals so that we don't try to execute an OCaml signal handler*/
   sigfillset(&mask);
   pthread_sigmask(SIG_BLOCK, &mask, NULL);
   /* Allow async cancellation */
@@ -411,6 +411,6 @@ value caml_wait_signal(value sigs) /* ML */
   return Val_int(signo);
 #else
   invalid_argument("Thread.wait_signal not implemented");
-  return Val_int(0);		/* not reached */
+  return Val_int(0);            /* not reached */
 #endif
 }

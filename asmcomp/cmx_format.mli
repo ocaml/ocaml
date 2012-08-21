@@ -10,18 +10,18 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: compilenv.mli 9547 2010-01-22 12:48:24Z doligez $ *)
+(* $Id$ *)
 
 (* Format of .cmx, .cmxa and .cmxs files *)
 
 (* Each .o file has a matching .cmx file that provides the following infos
    on the compilation unit:
-     - list of other units imported, with CRCs of their .cmx files
+     - list of other units imported, with MD5s of their .cmx files
      - approximation of the structure implemented
        (includes descriptions of known functions: arity and direct entry
         points)
      - list of currying functions and application functions needed
-   The .cmx file contains these infos (as an externed record) plus a CRC
+   The .cmx file contains these infos (as an externed record) plus a MD5
    of these infos *)
 
 type unit_infos =
@@ -40,7 +40,7 @@ type unit_infos =
    infos on the library: *)
 
 type library_infos =
-  { lib_units: (unit_infos * Digest.t) list;  (* List of unit infos w/ CRCs *)
+  { lib_units: (unit_infos * Digest.t) list;  (* List of unit infos w/ MD5s *)
     lib_ccobjs: string list;            (* C object files needed *)
     lib_ccopts: string list }           (* Extra opts to C compiler *)
 
@@ -60,4 +60,3 @@ type dynheader = {
   dynu_magic: string;
   dynu_units: dynunit list;
 }
-

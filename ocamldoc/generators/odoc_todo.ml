@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_todo.ml 411 2004-08-03 13:08:20Z guesdon $ *)
+(* $Id$ *)
 
 (** An OCamldoc generator to retrieve information in "todo" tags and
    generate an html page with all todo items. *)
@@ -48,7 +48,7 @@ struct
     method private gen_if_tag name target info_opt =
       match info_opt with
         None -> ()
-      |	Some i ->
+      | Some i ->
           let l =
             List.fold_left
               (fun acc (t, text) ->
@@ -69,7 +69,7 @@ struct
                        | _ -> (None, text) :: acc
 
                      end
-                 |	_ -> acc
+                 | _ -> acc
               )
               []
               i.i_custom

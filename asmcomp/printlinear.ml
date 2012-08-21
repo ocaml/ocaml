@@ -65,7 +65,7 @@ let instr ppf i =
   | Lraise ->
       fprintf ppf "raise %a" reg i.arg.(0)
   end;
-  if i.dbg != Debuginfo.none then
+  if not (Debuginfo.is_none i.dbg) then
     fprintf ppf " %s" (Debuginfo.to_string i.dbg)
 
 let rec all_instr ppf i =
@@ -74,4 +74,9 @@ let rec all_instr ppf i =
   | _ -> fprintf ppf "%a@,%a" instr i all_instr i.next
 
 let fundecl ppf f =
-  fprintf ppf "@[<v 2>%s:@,%a@]" f.fun_name all_instr f.fun_body
+  let dbg =
+    if Debuginfo.is_none f.fun_dbg then
+      ""
+    else
+      " " ^ Debuginfo.to_string f.fun_dbg in
+  fprintf ppf "@[<v 2>%s:%s@,%a@]" f.fun_name dbg all_instr f.fun_body

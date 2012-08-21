@@ -41,6 +41,9 @@
 
         .text
 
+        .globl  _caml_system__code_begin
+_caml_system__code_begin:
+
 /* Invoke the garbage collector. */
 
         .globl  _caml_call_gc
@@ -48,12 +51,17 @@ _caml_call_gc:
     /* Set up stack frame */
 #define FRAMESIZE (32*WORD + 32*8 + 32)
         stwu    r1, -FRAMESIZE(r1)
-    /* Record return address into Caml code */
+    /* Record return address into OCaml code */
         mflr    r0
         Storeglobal r0, _caml_last_return_address, r11
     /* Record lowest stack address */
         addi    r0, r1, FRAMESIZE
         Storeglobal r0, _caml_bottom_of_stack, r11
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        addi    r1, r1, -4096*WORD
+        stg     r0, 0(r1)
+        addi    r1, r1, 4096*WORD
     /* Record pointer to register array */
         addi    r0, r1, 8*32 + 32
         Storeglobal r0, _caml_gc_regs, r11
@@ -184,7 +192,7 @@ _caml_call_gc:
         Loadglobal r0, _caml_last_return_address, r11
         addic   r0, r0, -16     /* Restart the allocation (4 instructions) */
         mtlr    r0
-    /* Say we are back into Caml code */
+    /* Say we are back into OCaml code */
         li      r12, 0
         Storeglobal r12, _caml_last_return_address, r11
     /* Deallocate stack frame */
@@ -193,7 +201,7 @@ _caml_call_gc:
         blr
 #undef FRAMESIZE
 
-/* Call a C function from Caml */
+/* Call a C function from OCaml */
 
         .globl  _caml_c_call
 _caml_c_call:
@@ -204,6 +212,11 @@ _caml_c_call:
     /* Record lowest stack address and return address */
         Storeglobal r1, _caml_bottom_of_stack, r12
         Storeglobal r25, _caml_last_return_address, r12
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        addi    r1, r1, -4096*WORD
+        stg     r0, 0(r1)
+        addi    r1, r1, 4096*WORD
     /* Make the exception handler and alloc ptr available to the C code */
         Storeglobal r31, _caml_young_ptr, r11
         Storeglobal r29, _caml_exception_pointer, r11
@@ -214,13 +227,13 @@ _caml_c_call:
     /* Reload allocation pointer and allocation limit*/
         Loadglobal r31, _caml_young_ptr, r11
         Loadglobal r30, _caml_young_limit, r11
-    /* Say we are back into Caml code */
+    /* Say we are back into OCaml code */
         li      r12, 0
         Storeglobal r12, _caml_last_return_address, r11
     /* Return to caller */
         blr
 
-/* Raise an exception from Caml */
+/* Raise an exception from OCaml */
         .globl  _caml_raise_exn
 _caml_raise_exn:
         addis   r11, 0, ha16(_caml_backtrace_active)
@@ -257,11 +270,11 @@ _caml_raise_exception:
         cmpwi   r11, 0
         bne     L112
 L113:
-    /* Reload Caml global registers */
+    /* Reload OCaml global registers */
         Loadglobal r1, _caml_exception_pointer, r11
         Loadglobal r31, _caml_young_ptr, r11
         Loadglobal r30, _caml_young_limit, r11
-    /* Say we are back into Caml code */
+    /* Say we are back into OCaml code */
         li      r0, 0
         Storeglobal r0, _caml_last_return_address, r11
     /* Pop trap frame */
@@ -274,15 +287,15 @@ L113:
 L112:
         mr      r28, r3        /* preserve exn bucket in callee-save */
                                /* arg 1: exception bucket (already in r3) */
-	Loadglobal r4, _caml_last_return_address, r11 /* arg 2: PC of raise */
-	Loadglobal r5, _caml_bottom_of_stack, r11 /* arg 3: SP of raise */
+        Loadglobal r4, _caml_last_return_address, r11 /* arg 2: PC of raise */
+        Loadglobal r5, _caml_bottom_of_stack, r11 /* arg 3: SP of raise */
         Loadglobal r6, _caml_exception_pointer, r11 /* arg 4: SP of handler */
         addi    r1, r1, -(16*WORD)    /* reserve stack space for C call */
         bl      _caml_stash_backtrace
         mr      r3, r28
         b       L113
 
-/* Start the Caml program */
+/* Start the OCaml program */
 
         .globl  _caml_start_program
 _caml_start_program:
@@ -343,7 +356,7 @@ L102:
         stg     r9, 0(r1)
         stg     r10, WORD(r1)
         stg     r11, 2*WORD(r1)
-    /* Build an exception handler to catch exceptions escaping out of Caml */
+    /* Build an exception handler to catch exceptions escaping out of OCaml */
         bl      L103
         b       L104
 L103:
@@ -356,10 +369,10 @@ L103:
     /* Reload allocation pointers */
         Loadglobal r31, _caml_young_ptr, r11
         Loadglobal r30, _caml_young_limit, r11
-    /* Say we are back into Caml code */
+    /* Say we are back into OCaml code */
         li      r0, 0
         Storeglobal r0, _caml_last_return_address, r11
-    /* Call the Caml code */
+    /* Call the OCaml code */
         mtctr    r12
 L105:
         bctrl
@@ -432,7 +445,7 @@ L104:
         b       L106
 #undef FRAMESIZE
 
-/* Callback from C to Caml */
+/* Callback from C to OCaml */
 
         .globl  _caml_callback_exn
 _caml_callback_exn:
@@ -462,6 +475,9 @@ _caml_callback3_exn:
         Addrglobal r12, _caml_apply3
         b       L102
 
+        .globl  _caml_system__code_end
+_caml_system__code_end:
+
 /* Frame table */
 
         .const
@@ -471,4 +487,4 @@ _caml_system__frametable:
         gdata   L105 + 4       /* return address into callback */
         .short  -1              /* negative size count => use callback link */
         .short  0               /* no roots here */
-	.align	X(2,3)
+        .align  X(2,3)

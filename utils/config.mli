@@ -75,6 +75,8 @@ val ast_impl_magic_number: string
         (* Magic number for file holding an implementation syntax tree *)
 val cmxs_magic_number: string
         (* Magic number for dynamically-loadable plugins *)
+val cmt_magic_number: string
+        (* Magic number for compiled interface files *)
 
 val max_tag: int
         (* Biggest tag that can be stored in the header of a regular block. *)
@@ -98,6 +100,9 @@ val system: string
 val asm: string
         (* The assembler (and flags) to use for assembling
            ocamlopt-generated code. *)
+
+val asm_cfi_supported: bool
+        (* Whether assembler understands CFI directives *)
 
 val ext_obj: string
         (* Extension for object files, e.g. [.o] under Unix. *)

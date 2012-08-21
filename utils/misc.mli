@@ -65,6 +65,13 @@ val copy_file_chunk: in_channel -> out_channel -> int -> unit
         (* [copy_file_chunk ic oc n] reads [n] bytes from [ic] and copies
            them to [oc]. It raises [End_of_file] when encountering
            EOF on [ic]. *)
+val string_of_file: in_channel -> string
+        (* [string_of_file ic] reads the contents of file [ic] and copies
+           them to a string. It stops when encountering EOF on [ic]. *)
+val input_bytes : in_channel -> int -> string;;
+        (* [input_bytes ic n] reads [n] bytes from [ic] and returns them
+           in a new string.  It raises [End_of_file] if EOF is encountered
+           before all the bytes are read. *)
 
 val log2: int -> int
         (* [log2 n] returns [s] such that [n = 1 lsl s]
@@ -106,3 +113,12 @@ val rev_split_words: string -> string list
 val get_ref: 'a list ref -> 'a list
         (* [get_ref lr] returns the content of the list reference [lr] and reset
            its content to the empty list. *)
+
+
+val fst3: 'a * 'b * 'c -> 'a
+val snd3: 'a * 'b * 'c -> 'b
+val thd3: 'a * 'b * 'c -> 'c
+
+val fst4: 'a * 'b * 'c * 'd -> 'a
+val snd4: 'a * 'b * 'c * 'd -> 'b
+val thd4: 'a * 'b * 'c * 'd -> 'c

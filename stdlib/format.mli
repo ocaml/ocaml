@@ -22,7 +22,8 @@
 
    For a gentle introduction to the basics of pretty-printing using
    [Format], read
-   {{:http://caml.inria.fr/resources/doc/guides/format.html}http://caml.inria.fr/resources/doc/guides/format.html}.
+   {{:http://caml.inria.fr/resources/doc/guides/format.en.html}
+    http://caml.inria.fr/resources/doc/guides/format.en.html}.
 
    You may consider this module as providing an extension to the
    [printf] facility to provide automatic line breaking. The addition of
@@ -404,7 +405,7 @@ val get_all_formatter_output_functions :
    including line breaking and indentation functions. Useful to record the
    current setting and restore it afterwards. *)
 
-(** {6:tags Changing the meaning of printing semantics tags} *)
+(** {6:tagsmeaning Changing the meaning of printing semantics tags} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
@@ -631,13 +632,18 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
      For more details about tags, see the functions [open_tag] and
      [close_tag].
    - [@\}]: close the most recently opened tag.
-   - [@@]: print a plain [@] character.
-   - [@%]: print a plain [%] character.
 
    Example: [printf "@[%s@ %d@]@." "x =" 1] is equivalent to
    [open_box (); print_string "x ="; print_space ();
     print_int 1; close_box (); print_newline ()].
    It prints [x = 1] within a pretty-printing box.
+
+   Note: the old [@@] ``pretty-printing indication'' is now deprecated, since
+   it had no pretty-printing indication semantics. If you need to prevent
+   the pretty-printing indication interpretation of a [@] character, simply
+   use the regular way to escape a character in format string: write [%@].
+   @since 3.12.2.
+
 *)
 
 val printf : ('a, formatter, unit) format -> 'a;;

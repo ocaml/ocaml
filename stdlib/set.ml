@@ -320,14 +320,20 @@ module Make(Ord: OrderedType) =
     let rec filter p = function
         Empty -> Empty
       | Node(l, v, r, _) ->
-          let l' = filter p l and r' = filter p r in
-          if p v then join l' v r' else concat l' r'
+          (* call [p] in the expected left-to-right order *)
+          let l' = filter p l in
+          let pv = p v in
+          let r' = filter p r in
+          if pv then join l' v r' else concat l' r'
 
     let rec partition p = function
         Empty -> (Empty, Empty)
       | Node(l, v, r, _) ->
-          let (lt, lf) = partition p l and (rt, rf) = partition p r in
-          if p v
+          (* call [p] in the expected left-to-right order *)
+          let (lt, lf) = partition p l in
+          let pv = p v in
+          let (rt, rf) = partition p r in
+          if pv
           then (join lt v rt, concat lf rf)
           else (concat lt rt, join lf v rf)
 

@@ -16,6 +16,8 @@
 /* Asm part of the runtime system, Intel 386 processor */
 /* Must be preprocessed by cpp */
 
+#include "../config/m.h"
+
 /* Linux/BSD with ELF binaries and Solaris do not prefix identifiers with _.
    Linux/BSD with a.out binaries and NextStep do. */
 
@@ -40,6 +42,16 @@
 #define FUNCTION_ALIGN 4
 #else
 #define FUNCTION_ALIGN 2
+#endif
+
+#ifdef ASM_CFI_SUPPORTED
+#define CFI_STARTPROC .cfi_startproc
+#define CFI_ENDPROC .cfi_endproc
+#define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
+#else
+#define CFI_STARTPROC
+#define CFI_ENDPROC
+#define CFI_ADJUST(n)
 #endif
 
 #if defined(PROFILING)
@@ -81,6 +93,9 @@
 /* Allocation */
 
         .text
+        .globl  G(caml_system__code_begin)
+G(caml_system__code_begin):
+
         .globl  G(caml_call_gc)
         .globl  G(caml_alloc1)
         .globl  G(caml_alloc2)
@@ -89,14 +104,22 @@
 
         .align  FUNCTION_ALIGN
 G(caml_call_gc):
+        CFI_STARTPROC
         PROFILE_CAML
     /* Record lowest stack address and return address */
         movl    0(%esp), %eax
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-    /* Build array of registers, save it into caml_gc_regs */
 LBL(105):
+#if !defined(SYS_mingw) && !defined(SYS_cygwin)
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        subl    $16384, %esp
+        movl    %eax, 0(%esp)
+        addl    $16384, %esp
+#endif
+    /* Build array of registers, save it into caml_gc_regs */
         pushl   %ebp
         pushl   %edi
         pushl   %esi
@@ -104,6 +127,7 @@ LBL(105):
         pushl   %ecx
         pushl   %ebx
         pushl   %eax
+        CFI_ADJUST(28)
         movl    %esp, G(caml_gc_regs)
         /* MacOSX note: 16-alignment of stack preserved at this point */
     /* Call the garbage collector */
@@ -116,8 +140,10 @@ LBL(105):
         popl    %esi
         popl    %edi
         popl    %ebp
+        CFI_ADJUST(-28)
     /* Return to caller */
         ret
+        CFI_ENDPROC
 
         .align  FUNCTION_ALIGN
 G(caml_alloc1):
@@ -200,7 +226,7 @@ LBL(103):
         popl    %eax                    /* recover desired size */
         jmp     G(caml_allocN)
 
-/* Call a C function from Caml */
+/* Call a C function from OCaml */
 
         .globl  G(caml_c_call)
         .align  FUNCTION_ALIGN
@@ -211,20 +237,29 @@ G(caml_c_call):
         movl    %edx, G(caml_last_return_address)
         leal    4(%esp), %edx
         movl    %edx, G(caml_bottom_of_stack)
+#if !defined(SYS_mingw) && !defined(SYS_cygwin)
+    /* Touch the stack to trigger a recoverable segfault
+       if insufficient space remains */
+        subl    $16384, %esp
+        movl    %eax, 0(%esp)
+        addl    $16384, %esp
+#endif
     /* Call the function (address in %eax) */
         jmp     *%eax
 
-/* Start the Caml program */
+/* Start the OCaml program */
 
         .globl  G(caml_start_program)
         .align  FUNCTION_ALIGN
 G(caml_start_program):
+        CFI_STARTPROC
         PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx
         pushl   %esi
         pushl   %edi
         pushl   %ebp
+        CFI_ADJUST(16)
     /* Initial entry point is caml_program */
         movl    $ G(caml_program), %esi
     /* Common code for caml_start_program and caml_callback* */
@@ -238,17 +273,19 @@ LBL(106):
         pushl   $ LBL(108)
         ALIGN_STACK(8)
         pushl   G(caml_exception_pointer)
+        CFI_ADJUST(20)
         movl    %esp, G(caml_exception_pointer)
-    /* Call the Caml code */
+    /* Call the OCaml code */
         call    *%esi
 LBL(107):
     /* Pop the exception handler */
         popl    G(caml_exception_pointer)
 #ifdef SYS_macosx
-        addl	$12, %esp
+        addl    $12, %esp
 #else
-        addl	$4, %esp
+        addl    $4, %esp
 #endif
+        CFI_ADJUST(-8)
 LBL(109):
     /* Pop the callback link, restoring the global variables */
         popl    G(caml_bottom_of_stack)
@@ -266,8 +303,9 @@ LBL(108):
     /* Mark the bucket as an exception result and return it */
         orl     $2, %eax
         jmp     LBL(109)
+        CFI_ENDPROC
 
-/* Raise an exception from Caml */
+/* Raise an exception from OCaml */
 
         .globl  G(caml_raise_exn)
         .align  FUNCTION_ALIGN
@@ -301,7 +339,7 @@ LBL(110):
         .align  FUNCTION_ALIGN
 G(caml_raise_exception):
         PROFILE_C
-	testl   $1, G(caml_backtrace_active)
+        testl   $1, G(caml_backtrace_active)
         jne     LBL(111)
         movl    4(%esp), %eax
         movl    G(caml_exception_pointer), %esp
@@ -322,7 +360,7 @@ LBL(111):
         UNDO_ALIGN_STACK(8)
         ret
 
-/* Callback from C to Caml */
+/* Callback from C to OCaml */
 
         .globl  G(caml_callback_exn)
         .align  FUNCTION_ALIGN
@@ -391,10 +429,13 @@ G(caml_ml_array_bound_error):
         movl    %edx, G(caml_bottom_of_stack)
     /* For MacOS X: re-align the stack */
 #ifdef SYS_macosx
-        andl	$-16, %esp
+        andl    $-16, %esp
 #endif
     /* Branch to [caml_array_bound_error] (never returns) */
         call    G(caml_array_bound_error)
+
+        .globl  G(caml_system__code_end)
+G(caml_system__code_end):
 
         .data
         .globl  G(caml_system__frametable)

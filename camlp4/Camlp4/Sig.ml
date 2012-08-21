@@ -64,6 +64,16 @@ end;
 (** A signature for locations. *)
 module type Loc = sig
 
+  (** The type of locations.  Note that, as for OCaml locations,
+      character numbers in locations refer to character numbers in the
+      parsed character stream, while line numbers refer to line
+      numbers in the source file. The source file and the parsed
+      character stream differ, for instance, when the parsed character
+      stream contains a line number directive. The line number
+      directive will only update the file-name field and the
+      line-number field of the position. It makes therefore no sense
+      to use character numbers with the source file if the sources
+      contain line number directives. *)
   type t;
 
   (** Return a start location for the given file name.
@@ -96,7 +106,8 @@ module type Loc = sig
       stop_line,  stop_bol,  stop_off, ghost)]. *)
   value to_tuple : t -> (string * int * int * int * int * int * int * bool);
 
-  (** [merge loc1 loc2] Return a location that starts at [loc1] and end at [loc2]. *)
+  (** [merge loc1 loc2] Return a location that starts at [loc1] and end at
+      [loc2]. *)
   value merge : t -> t -> t;
 
   (** The stop pos becomes equal to the start pos. *)
@@ -128,19 +139,19 @@ module type Loc = sig
   (** Return the line number of the ending of this location. *)
   value stop_line  : t -> int;
 
-  (** Returns the number of characters from the begining of the file
+  (** Returns the number of characters from the begining of the stream
       to the begining of the line of location's begining. *)
   value start_bol  : t -> int;
 
-  (** Returns the number of characters from the begining of the file
+  (** Returns the number of characters from the begining of the stream
       to the begining of the line of location's ending. *)
   value stop_bol   : t -> int;
 
-  (** Returns the number of characters from the begining of the file
+  (** Returns the number of characters from the begining of the stream
       of the begining of this location. *)
   value start_off  : t -> int;
 
-  (** Return the number of characters from the begining of the file
+  (** Return the number of characters from the begining of the stream
       of the ending of this location. *)
   value stop_off   : t -> int;
 

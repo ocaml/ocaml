@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_literate.ml,v 1.1 2008/02/28 11:09:33 guesdon Exp $ *)
+(* $Id$ *)
 
 open Odoc_info
 module Naming = Odoc_html.Naming

@@ -171,7 +171,7 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
 }
 
 /* The following functions are used in stdlib/lazy.ml.
-   They are not written in O'Caml because they must be atomic with respect
+   They are not written in OCaml because they must be atomic with respect
    to the GC.
  */
 

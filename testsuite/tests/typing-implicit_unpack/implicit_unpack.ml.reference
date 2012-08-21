@@ -146,15 +146,15 @@ module SSMap :
     val to_t : 'a -> 'a
   end
 val ssmap :
-  (module MapT with type data = SSMap.data and type key = SSMap.key and type map = 
+  (module MapT with type data = string and type key = string and type map = 
    SSMap.map) =
   <module>
 #         val ssmap :
-  (module MapT with type data = SSMap.data and type key = String.t and type map = 
+  (module MapT with type data = string and type key = string and type map = 
    SSMap.map) =
   <module>
 #           val ssmap :
-  (module MapT with type data = SSMap.data and type key = String.t and type map = 
+  (module MapT with type data = string and type key = string and type map = 
    SSMap.map) =
   <module>
 #       val ssmap :

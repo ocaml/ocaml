@@ -497,7 +497,7 @@ Camlp4 Version 3.00:
 - [Apr 17, 00] Added support for labels and variants.
 - [Mar 28, 00] Improved the grammars: now the rules starting with n
   terminals are locally LL(n), i.e. if any of the terminal fails, it is
-  not Error but just Failure. Allows to write the Ocaml syntax case:
+  not Error but just Failure. Allows to write the OCaml syntax case:
         ( operator )
         ( expr )
   with the problem of "( - )" as:
@@ -518,7 +518,7 @@ Camlp4 Version 2.04:
 
 - [Nov 23, 99] Changed the module name Config into Oconfig, because of
   conflict problem when applications want to link with the module Config of
-  Ocaml.
+  OCaml.
 
 Camlp4 Version 2.03:
 --------------------
@@ -534,9 +534,9 @@ Camlp4 Version 2.03:
   - [Mar 9, 99] Added missing case in pr_depend.ml.
 
 * Other:
-  - [Sep 10, 99] Updated from current Ocaml new interfaces.
+  - [Sep 10, 99] Updated from current OCaml new interfaces.
   - [Jul 9, 99] Added stream type constraint in pa_oop.ml to reflect the same
-    change in Ocaml.
+    change in OCaml.
   - [Jun 24, 99] Added missing "constraint" construction in types
   - [Jun 15, 99] Added option -I for command "mkcamlp4".
   - [May 14, 99] Added man pages (links) for camlp4o, camlp4r, mkcamlp4, ocpp
@@ -555,11 +555,11 @@ Camlp4 Version 2.02:
 --------------------
 
 * Parsing:
-  - [Feb 27, 99] Fixed 2 bugs, resulting of incorrect Ocaml parsing of the
+  - [Feb 27, 99] Fixed 2 bugs, resulting of incorrect OCaml parsing of the
     program example: "type t = F(B).t"
   - [Jan 30, 99] Fixed bug "pa_op.ml", could not parse "parser | [<>] -> ()".
   - [Jan 16, 99] Added "define" and "undef" in "pa_ifdef.cmo".
-  - [Dec 22, 98] Fixed precedence of "!=" in Ocaml syntax
+  - [Dec 22, 98] Fixed precedence of "!=" in OCaml syntax
 
 * Printing:
   - [Mar 4, 99] Added pr_depend.cmo for printing file dependencies.
@@ -603,7 +603,7 @@ Grammar interface
 Missing features added
 * Added "lazy" statement (pa_r.cmo, pa_o.cmo, pr_r.cmo, pr_o.cmo)
 * Added print "assert" statement (pr_o.cmo, pr_r.cmo)
-* Added parsing of infix operators like in Ocaml (e.g. |||) in pa_o.cmo
+* Added parsing of infix operators like in OCaml (e.g. |||) in pa_o.cmo
 
 Compilation
 * Added "make scratch"
@@ -636,20 +636,20 @@ Camlp4 Version 2.00:
 --------------------
 
 * Designation "righteous" has been renamed "revised".
-* Added class and objects in Ocaml printing (pr_o.cmo), revised parsing
+* Added class and objects in OCaml printing (pr_o.cmo), revised parsing
   (pa_r.cmo) and printing (pr_r.cmo).
-* Fixed bug in Ocaml syntax: let _, x = 1, 2;; was refused.
+* Fixed bug in OCaml syntax: let _, x = 1, 2;; was refused.
 
 Camlp4 Version 2.00--1:
 -----------------------
 
-* Added classes and objects in Ocaml syntax (pa_o.cmo)
+* Added classes and objects in OCaml syntax (pa_o.cmo)
 * Fixed pr_r.cmo et pr_r.cmo which wrote on stdout, even when option -o
 
 Camlp4 Version 2.00--:
 ----------------------
 
-* Adapted for Ocaml 2.00.
+* Adapted for OCaml 2.00.
 * No objects and classes in this version.
 
 * Added "let module" parsing and printing.
@@ -672,7 +672,7 @@ Camlp4 Version 2.00--:
 * Added missing statement "include" in signature item in normal and righteous
   syntaxes
 * Changed precedence of ":=" and "<-" in normal syntax (pa_o et pr_o):
-  now before "or", like in Ocaml compiler.
+  now before "or", like in OCaml compiler.
 * Same change in righteous syntax, by symmetry.
 
 Camlp4 Version 1.07.2:
@@ -684,8 +684,8 @@ Errors and missings in normal and righteous syntaxes.
 * Added missing syntax (normal): type foo = bar = {......}
 * Added missing syntax (normal): did not accept separators before ending
   constructions (many of them).
-* Fixed bug: "assert false" is now of type 'a, like in Ocaml.
-* Fixed to match Ocaml feature: "\^" is "\^" in Ocaml, but just "^" in Camlp4.
+* Fixed bug: "assert false" is now of type 'a, like in OCaml.
+* Fixed to match OCaml feature: "\^" is "\^" in OCaml, but just "^" in Camlp4.
 * Fixed bug in Windows NT/95: problem in backslash before newlines in strings
 
 Grammars, EXTEND, DELETE_RULE
@@ -736,7 +736,7 @@ Camlp4 Version 1.07.1:
 * Environment variable CAMLP4LIB to change camlp4 library directory
 * Grammar: empty rules have a correct location instead of (-1, -1)
 * Compilation possible in Windows NT/95
-* String constants no more shared while parsing Ocaml
+* String constants no more shared while parsing OCaml
 * Fixed bug in antiquotations in q_MLast.cmo (bad errors locations)
 * Fixed bug in antiquotations in q_MLast.cmo (EOI not checked)
 * Fixed bug in Plexer: could not create keywords with iso 8859 characters
@@ -748,17 +748,17 @@ Camlp4 Version 1.07:
 * Added iso 8859 uppercase characters for uidents in plexer.ml
 * Fixed bug factorization IDENT in grammars
 * Fixed bug pr_o.cmo was printing "declare"
-* Fixed bug constructor arity in Ocaml syntax (pa_o.cmo).
+* Fixed bug constructor arity in OCaml syntax (pa_o.cmo).
 * Changed "lazy" into "slazy".
 * Completed pa_ifdef.cmo.
 
 Camlp4 Version 1.06:
 --------------------
 
-* Adapted to Ocaml 1.06.
-* Changed version number to match Ocaml's => 1.06 too.
-* Deleted module Gstream, using Ocaml's Stream.
-* Generate different AST for C(x,y) and C x y (change done in Ocaml's compiler)
+* Adapted to OCaml 1.06.
+* Changed version number to match OCaml's => 1.06 too.
+* Deleted module Gstream, using OCaml's Stream.
+* Generate different AST for C(x,y) and C x y (change done in OCaml's compiler)
 * No more message "Interrupted" in toplevel in case of syntax error.
 * Added flag to suppress warnings while extending grammars.
 * Completed some missing statements and declarations (objects)
@@ -832,7 +832,7 @@ Camlp4 Version 0.6:
     when the quotation is in a context of a pattern. These expanders,
     returning strings which are parsed afterwards, may work for some
     language syntax and/or language extensions used (e.g. may work for
-    Righteous syntax and not for Ocaml syntax).
+    Righteous syntax and not for OCaml syntax).
   - A new type of expander returning directly syntax trees. A pair
     of functions, for expressions and for patterns must be provided.
     These expanders are independant from the language syntax and/or
@@ -842,12 +842,12 @@ Camlp4 Version 0.6:
   been deleted; one can use "ctyp", "patt", and "expr" in position of
   pattern or expression.
 
---- Ocaml and Righteous syntaxes
+--- OCaml and Righteous syntaxes
 
 * Fixed bug: "open Foo.Bar" was converted (pr_dump.cmo) into "open Bar.Foo"
 
-* Corrected behavior different from Ocaml's: "^" and "@" were at the same
-  level than "=": now, like Ocaml, they have a separated right associative
+* Corrected behavior different from OCaml's: "^" and "@" were at the same
+  level than "=": now, like OCaml, they have a separated right associative
   level.
 
 --- Grammars behavior
@@ -881,7 +881,7 @@ Camlp4 Version 0.5:
 
 * Possible creation of native code library (make opt)
 
-* Ocaml and Righteous Syntax more complete
+* OCaml and Righteous Syntax more complete
 
 * Added pa_ru.cmo for compiling sequences of type unit (Righteous)
 

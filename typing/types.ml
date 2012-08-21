@@ -121,7 +121,7 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_exception of Path.t            (* Exception constructor *)
+  | Cstr_exception of Path.t * Location.t (* Exception constructor *)
 
 (* Record label descriptions *)
 
@@ -155,19 +155,21 @@ type type_declaration =
 and type_kind =
     Type_abstract
   | Type_record of
-      (string * mutable_flag * type_expr) list * record_representation
-  | Type_variant of (string * type_expr list * type_expr option) list 
+      (Ident.t * mutable_flag * type_expr) list * record_representation
+  | Type_variant of (Ident.t * type_expr list * type_expr option) list
 
-type exception_declaration = type_expr list
+type exception_declaration =
+    { exn_args: type_expr list;
+      exn_loc: Location.t }
 
 (* Type expressions for the class language *)
 
 module Concr = Set.Make(OrderedString)
 
 type class_type =
-    Tcty_constr of Path.t * type_expr list * class_type
-  | Tcty_signature of class_signature
-  | Tcty_fun of label * type_expr * class_type
+    Cty_constr of Path.t * type_expr list * class_type
+  | Cty_signature of class_signature
+  | Cty_fun of label * type_expr * class_type
 
 and class_signature =
   { cty_self: type_expr;
@@ -183,7 +185,7 @@ type class_declaration =
     cty_new: type_expr option;
     cty_variance: (bool * bool) list }
 
-type cltype_declaration =
+type class_type_declaration =
   { clty_params: type_expr list;
     clty_type: class_type;
     clty_path: Path.t;
@@ -192,24 +194,24 @@ type cltype_declaration =
 (* Type expressions for the module language *)
 
 type module_type =
-    Tmty_ident of Path.t
-  | Tmty_signature of signature
-  | Tmty_functor of Ident.t * module_type * module_type
+    Mty_ident of Path.t
+  | Mty_signature of signature
+  | Mty_functor of Ident.t * module_type * module_type
 
 and signature = signature_item list
 
 and signature_item =
-    Tsig_value of Ident.t * value_description
-  | Tsig_type of Ident.t * type_declaration * rec_status
-  | Tsig_exception of Ident.t * exception_declaration
-  | Tsig_module of Ident.t * module_type * rec_status
-  | Tsig_modtype of Ident.t * modtype_declaration
-  | Tsig_class of Ident.t * class_declaration * rec_status
-  | Tsig_cltype of Ident.t * cltype_declaration * rec_status
+    Sig_value of Ident.t * value_description
+  | Sig_type of Ident.t * type_declaration * rec_status
+  | Sig_exception of Ident.t * exception_declaration
+  | Sig_module of Ident.t * module_type * rec_status
+  | Sig_modtype of Ident.t * modtype_declaration
+  | Sig_class of Ident.t * class_declaration * rec_status
+  | Sig_class_type of Ident.t * class_type_declaration * rec_status
 
 and modtype_declaration =
-    Tmodtype_abstract
-  | Tmodtype_manifest of module_type
+    Modtype_abstract
+  | Modtype_manifest of module_type
 
 and rec_status =
     Trec_not                            (* not recursive *)

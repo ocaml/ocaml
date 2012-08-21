@@ -28,7 +28,7 @@ let source_of_module pos mdle =
     try
       (String.sub m 0 len') = m' && (String.get m len') = '.'
     with
-      Invalid_argument _ -> false in
+        Invalid_argument _ -> false in
   let path =
     Hashtbl.fold
       (fun mdl dirs acc ->
@@ -39,7 +39,20 @@ let source_of_module pos mdle =
       Debugger_config.load_path_for
       !Config.load_path in
   let fname = pos.Lexing.pos_fname in
-  if Filename.is_implicit fname then
+  if fname = "" then
+    let innermost_module =
+      try
+        let dot_index = String.rindex mdle '.' in
+        String.sub mdle (succ dot_index) (pred ((String.length mdle) - dot_index))
+      with Not_found -> mdle in
+    let rec loop =
+      function
+        | [] -> raise Not_found
+        | ext :: exts ->
+          try find_in_path_uncap path (innermost_module ^ ext)
+          with Not_found -> loop exts
+    in loop source_extensions
+  else   if Filename.is_implicit fname then
     find_in_path path fname
   else
     fname
@@ -63,13 +76,11 @@ let get_buffer pos mdle =
   try List.assoc mdle !buffer_list with
     Not_found ->
       let inchan = open_in_bin (source_of_module pos mdle) in
-        let (content, _) as buffer =
-          (String.create (in_channel_length inchan), ref [])
-        in
-          unsafe_really_input inchan content 0 (in_channel_length inchan);
-          buffer_list :=
-            (list_truncate !buffer_max_count ((mdle, buffer)::!buffer_list));
-          buffer
+      let content = Misc.input_bytes inchan (in_channel_length inchan) in
+      let buffer = (content, ref []) in
+      buffer_list :=
+        (list_truncate !buffer_max_count ((mdle, buffer)::!buffer_list));
+      buffer
 
 let buffer_content =
   (fst : buffer -> string)

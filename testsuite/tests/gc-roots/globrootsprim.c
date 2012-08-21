@@ -52,5 +52,3 @@ value gb_generational_remove(value vblock)
   caml_remove_generational_global_root(&(Block_val(vblock)->v));
   return Val_unit;
 }
-
-

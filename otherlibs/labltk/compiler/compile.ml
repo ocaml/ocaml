@@ -548,7 +548,7 @@ let write_TKtoCAML ~w name ~def:typdef =
 (* Converters                 *)
 (******************************)
 
-(* Produce an in-lined converter Caml -> Tk for simple types *)
+(* Produce an in-lined converter OCaml -> Tk for simple types *)
 (* the converter is a function of type:  <type> -> string  *)
 let rec converterCAMLtoTK ~context_widget argname ty =
  match ty with

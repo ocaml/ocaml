@@ -25,7 +25,7 @@
    passes all the Diehard tests.
 *)
 
-external random_seed: unit -> int = "caml_sys_random_seed";;
+external random_seed: unit -> int array = "caml_sys_random_seed";;
 
 module State = struct
 
@@ -43,7 +43,7 @@ module State = struct
       Char.code d.[0] + (Char.code d.[1] lsl 8) + (Char.code d.[2] lsl 16)
       + (Char.code d.[3] lsl 24)
     in
-    let seed = if seed = [| |] then [| 0 |] else seed in
+    let seed = if Array.length seed = 0 then [| 0 |] else seed in
     let l = Array.length seed in
     for i = 0 to 54 do
       s.st.(i) <- i;
@@ -53,7 +53,7 @@ module State = struct
       let j = i mod 55 in
       let k = i mod l in
       accu := combine !accu seed.(k);
-      s.st.(j) <- s.st.(j) lxor extract !accu;
+      s.st.(j) <- (s.st.(j) lxor extract !accu) land 0x3FFFFFFF;  (* PR#5575 *)
     done;
     s.idx <- 0;
   ;;
@@ -64,7 +64,7 @@ module State = struct
     result
   ;;
 
-  let make_self_init () = make [| random_seed () |];;
+  let make_self_init () = make (random_seed ());;
 
   let copy s =
     let result = new_state () in
@@ -75,10 +75,12 @@ module State = struct
   (* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
   let bits s =
     s.idx <- (s.idx + 1) mod 55;
+    let curval = s.st.(s.idx) in
     let newval = s.st.((s.idx + 24) mod 55)
-                 + (s.st.(s.idx) lxor ((s.st.(s.idx) lsr 25) land 31)) in
-    s.st.(s.idx) <- newval;
-    newval land 0x3FFFFFFF   (* land is needed for 64-bit arch *)
+                 + (curval lxor ((curval lsr 25) land 0x1F)) in
+    let newval30 = newval land 0x3FFFFFFF in  (* PR#5575 *)
+    s.st.(s.idx) <- newval30;
+    newval30
   ;;
 
   let rec intaux s n =
@@ -129,13 +131,12 @@ module State = struct
     else fun s bound -> Int64.to_nativeint (int64 s (Int64.of_nativeint bound))
   ;;
 
-  (* Returns a float 0 <= x < 1 with at most 90 bits of precision. *)
+  (* Returns a float 0 <= x <= 1 with at most 60 bits of precision. *)
   let rawfloat s =
-    let scale = 1073741824.0
-    and r0 = Pervasives.float (bits s)
+    let scale = 1073741824.0  (* 2^30 *)
     and r1 = Pervasives.float (bits s)
     and r2 = Pervasives.float (bits s)
-    in ((r0 /. scale +. r1) /. scale +. r2) /. scale
+    in (r1 /. scale +. r2) /. scale
   ;;
 
   let float s bound = rawfloat s *. bound;;
@@ -171,7 +172,7 @@ let bool () = State.bool default;;
 
 let full_init seed = State.full_init default seed;;
 let init seed = State.full_init default [| seed |];;
-let self_init () = init (random_seed());;
+let self_init () = full_init (random_seed());;
 
 (* Manipulating the current state. *)
 

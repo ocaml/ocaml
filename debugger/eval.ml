@@ -149,7 +149,7 @@ and find_label lbl env ty path tydesc pos = function
     [] ->
       raise(Error(Wrong_label(ty, lbl)))
   | (name, mut, ty_arg) :: rem ->
-      if name = lbl then begin
+      if Ident.name name = lbl then begin
         let ty_res =
           Btype.newgenty(Tconstr(path, tydesc.type_params, ref Mnil))
         in

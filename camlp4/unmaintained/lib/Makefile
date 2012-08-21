@@ -43,7 +43,7 @@ installopt:
 	for f in $(LIBRARIESX) $(LIBRARIESP) *.cmx ; do \
 		test -f $$f && cp $$f "$(LIBDIR)/camlp4/." || true ; \
 	done
-	# Special treatment for this one: some versions of make don't like $(A) in $(TARGET:.cma=.$(A)) 
+	# Special treatment for this one: some versions of make don't like $(A) in $(TARGET:.cma=.$(A))
 	target="`echo $(LIBRARIES) | sed -e 's/\.cma$$/.$(A)/'`" ; \
 	   if test -f $$target ; then \
 	      cp $$target "$(LIBDIR)/camlp4/." && ( cd "$(LIBDIR)/camlp4/." && $(RANLIB) $$target ) \

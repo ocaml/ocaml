@@ -123,7 +123,7 @@ Version 1.07:
 
 Version 1.06:
 ------------
-* new keywords in O'Caml 1.06
+* new keywords in Objective Caml 1.06
 
 * compatibility with GNU Emacs 20
 
@@ -153,7 +153,7 @@ Version 1.03b:
     (setq caml-quote-char "`")
     (setq inferior-caml-program "camllight")
   Literals will be correctly understood and highlighted. However,
-  indentation rules are still Objective Caml's: this just happens to
+  indentation rules are still OCaml's: this just happens to
   work well in most cases, but is only intended for occasional use.
 
 * as many people asked for it, application is now indented. This seems
@@ -167,10 +167,10 @@ Version 1.03b:
 
 Version 1.03:
 ------------
-* support of Objective Caml and Objective Label.
+* support of OCaml and Objective Label.
 
 * an indentation very close to mine, which happens to be the same as
-  Xavier's, since the sources of the Objective Caml compiler do not
+  Xavier's, since the sources of the OCaml compiler do not
   change if you indent them in this mode.
 
 * highlighting.
@@ -178,7 +178,7 @@ Version 1.03:
 Some remarks about the style supported:
 --------------------------------------
 
-Since Objective Caml's syntax is very liberal (more than 100
+Since OCaml's syntax is very liberal (more than 100
 shift-reduce conflicts with yacc), automatic indentation is far from
 easy. Moreover, you expect the indentation to be not purely syntactic,
 but also semantic: reflecting the meaning of your program.

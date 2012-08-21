@@ -32,7 +32,8 @@ val compare : t -> t -> int
     specification as {!Pervasives.compare} and the implementation
     shared with {!String.compare}. Along with the type [t], this
     function [compare] allows the module [Digest] to be passed as
-    argument to the functors {!Set.Make} and {!Map.Make}. *)
+    argument to the functors {!Set.Make} and {!Map.Make}.
+    @since 4.00.0 *)
 
 val string : string -> t
 (** Return the digest of the given string. *)
@@ -61,3 +62,9 @@ val input : in_channel -> t
 
 val to_hex : t -> string
 (** Return the printable hexadecimal representation of the given digest. *)
+
+val from_hex : string -> t
+(** Convert a hexadecimal representation back into the corresponding digest.
+   Raise [Invalid_argument] if the argument is not exactly 32 hexadecimal
+   characters.
+   @since 4.00.0 *)

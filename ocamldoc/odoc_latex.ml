@@ -37,6 +37,7 @@ let latex_titles = ref [
 
 let latex_value_prefix = ref Odoc_messages.default_latex_value_prefix
 let latex_type_prefix = ref Odoc_messages.default_latex_type_prefix
+let latex_type_elt_prefix = ref Odoc_messages.default_latex_type_elt_prefix
 let latex_exception_prefix = ref Odoc_messages.default_latex_exception_prefix
 let latex_module_prefix = ref Odoc_messages.default_latex_module_prefix
 let latex_module_type_prefix = ref Odoc_messages.default_latex_module_type_prefix
@@ -86,77 +87,87 @@ class text =
         "\\"^sec^"{"^s^"}\n"
       with Not_found -> s
 
-    (** Associations of strings to subsitute in latex code. *)
-    val mutable subst_strings = [
-      ("MAXENCE"^"ZZZ", "\\$");
-      ("MAXENCE"^"YYY", "\\&");
-      ("MAXENCE"^"XXX", "{\\textbackslash}") ;
-      ("à", "\\`a") ;
-      ("â", "\\^a") ;
-      ("é", "\\'e") ;
-      ("è", "\\`e") ;
-      ("ê", "\\^e") ;
-      ("ë", "\\\"e") ;
-      ("ç", "\\c{c}") ;
-      ("ô", "\\^o") ;
-      ("ö", "\\\"o") ;
-      ("î", "\\^i") ;
-      ("ï", "\\\"i") ;
-      ("ù", "\\`u") ;
-      ("û", "\\^u") ;
-      ("%", "\\%") ;
-      ("_", "\\_");
-      ("\\.\\.\\.", "$\\ldots$");
-      ("~", "\\~{}");
-      ("#", "\\verb`#`");
-      ("}", "\\}");
-      ("{", "\\{");
-      ("&", "\\&");
-      (">", "$>$");
-      ("<", "$<$");
-      ("=", "$=$");
-      (">=", "$\\geq$");
-      ("<=", "$\\leq$");
-      ("->", "$\\rightarrow$") ;
-      ("<-", "$\\leftarrow$");
-      ("|", "\\textbar ");
-      ("\\^", "\\textasciicircum ") ;
-      ("\\.\\.\\.", "$\\ldots$");
-      ("\\\\", "MAXENCE"^"XXX") ;
-      ("&", "MAXENCE"^"YYY") ;
-      ("\\$", "MAXENCE"^"ZZZ");
-    ]
-
-    val mutable subst_strings_simple =
+    (** Associations of strings to substitute in latex code. *)
+    val subst_strings = List.map (fun (x, y) -> (Str.regexp x, y))
       [
-        ("MAXENCE"^"XXX", "{\\textbackslash}") ;
-        "}", "\\}" ;
-        "{", "\\{" ;
-        ("\\\\", "MAXENCE"^"XXX") ;
+        "\001", "\001\002";
+        "\\\\", "\001b";
+
+        "{", "\\\\{";
+        "}", "\\\\}";
+        "\\$", "\\\\$";
+        "\\^", "{\\\\textasciicircum}";
+        "\xE0", "\\\\`a";
+        "\xE2", "\\\\^a";
+        "\xE9", "\\\\'e";
+        "\xE8", "\\\\`e";
+        "\xEA", "\\\\^e";
+        "\xEB", "\\\\\"e";
+        "\xE7", "\\\\c{c}";
+        "\xF4", "\\\\^o";
+        "\xF6", "\\\\\"o";
+        "\xEE", "\\\\^i";
+        "\xEF", "\\\\\"i";
+        "\xF9", "\\\\`u";
+        "\xFB", "\\\\^u";
+        "%", "\\\\%";
+        "_", "\\\\_";
+        "~", "\\\\~{}";
+        "#", "{\\char35}";
+        "->", "$\\\\rightarrow$";
+        "<-", "$\\\\leftarrow$";
+        ">=", "$\\\\geq$";
+        "<=", "$\\\\leq$";
+        ">", "$>$";
+        "<", "$<$";
+        "=", "$=$";
+        "|", "{\\\\textbar}";
+        "\\.\\.\\.", "$\\\\ldots$";
+        "&", "\\\\&";
+
+        "\001b", "{\\\\char92}";
+        "\001\002", "\001";
       ]
 
-    val mutable subst_strings_code = [
-      ("MAXENCE"^"ZZZ", "\\$");
-      ("MAXENCE"^"YYY", "\\&");
-      ("MAXENCE"^"XXX", "{\\textbackslash}") ;
-      ("%", "\\%") ;
-      ("_", "\\_");
-      ("~", "\\~{}");
-      ("#", "\\verb`#`");
-      ("}", "\\}");
-      ("{", "\\{");
-      ("&", "\\&");
-      ("\\^", "\\textasciicircum ") ;
-      ("&", "MAXENCE"^"YYY") ;
-      ("\\$", "MAXENCE"^"ZZZ") ;
-      ("\\\\", "MAXENCE"^"XXX") ;
-     ]
+    val subst_strings_simple = List.map (fun (x, y) -> (Str.regexp x, y))
+      [
+        "\001", "\001\002";
+        "\\\\", "\001b";
+        "{", "\001l";
+
+        "}", "{\\\\char125}";
+        "'", "{\\\\textquotesingle}";
+        "`", "{\\\\textasciigrave}";
+
+        "\001b", "{\\\\char92}";
+        "\001l", "{\\\\char123}";
+        "\001\002", "\001";
+      ]
+
+    val subst_strings_code = List.map (fun (x, y) -> (Str.regexp x, y))
+      [
+        "\001", "\001\002";
+        "\\\\", "\001b";
+        "{", "\001l";
+
+        "}", "{\\\\char125}";
+        "'", "{\\\\textquotesingle}";
+        "`", "{\\\\textasciigrave}";
+        "%", "\\\\%";
+        "_", "\\\\_";
+        "~", "{\\\\char126}";
+        "#", "{\\\\char35}";
+        "&", "\\\\&";
+        "\\$", "\\\\$";
+        "\\^", "{\\\\char94}";
+
+        "\001b", "{\\\\char92}";
+        "\001l", "{\\\\char123}";
+        "\001\002", "\001";
+      ]
 
     method subst l s =
-      List.fold_right
-        (fun (s, s2) -> fun acc -> Str.global_replace (Str.regexp s) s2 acc)
-        l
-        s
+      List.fold_left (fun acc (re, st) -> Str.global_replace re st acc) s l
 
     (** Escape the strings which would clash with LaTeX syntax. *)
     method escape s = self#subst subst_strings s
@@ -230,6 +241,12 @@ class text =
     (** Make a correct label from a type name. *)
     method type_label ?no_ name = !latex_type_prefix^(self#label ?no_ name)
 
+    (** Make a correct label from a record field. *)
+    method recfield_label ?no_ name = !latex_type_elt_prefix^(self#label ?no_ name)
+
+    (** Make a correct label from a variant constructor. *)
+    method const_label ?no_ name = !latex_type_elt_prefix^(self#label ?no_ name)
+
     (** Return latex code for the label of a given label. *)
     method make_label label = "\\label{"^label^"}"
 
@@ -291,9 +308,9 @@ class text =
       ps fmt "\n\\end{ocamldoccode}\n"
 
     method latex_of_Verbatim fmt s =
-      ps fmt "\\begin{verbatim}";
+      ps fmt "\n\\begin{verbatim}\n";
       ps fmt s;
-      ps fmt "\\end{verbatim}"
+      ps fmt "\n\\end{verbatim}\n"
 
     method latex_of_Bold fmt t =
       ps fmt "{\\bf ";
@@ -399,6 +416,8 @@ class text =
             | Odoc_info.RK_attribute -> self#attribute_label
             | Odoc_info.RK_method -> self#method_label
             | Odoc_info.RK_section _ -> assert false
+            | Odoc_info.RK_recfield -> self#recfield_label
+            | Odoc_info.RK_const -> self#const_label
           in
           let text =
             match text_opt with
@@ -555,8 +574,8 @@ class latex =
                            p fmt2 " %s@ %s@ %s@ %s"
                              ":"
                              (self#normal_type_list ~par: false mod_name " * " l)
-			     "->"
-                             (self#normal_type mod_name r)			     
+                             "->"
+                             (self#normal_type mod_name r)
                       );
                       flush2 ()
                     in
@@ -684,7 +703,7 @@ class latex =
           self#latex_of_module_kind fmt father k2;
           self#latex_of_text fmt [Code ")"]
       | Module_with (k, s) ->
-          (* TODO: à modifier quand Module_with sera plus détaillé *)
+          (* TODO: a modifier quand Module_with sera plus detaille *)
           self#latex_of_module_type_kind fmt father k;
           self#latex_of_text fmt
             [ Code " ";
@@ -713,7 +732,7 @@ class latex =
           self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
       | Class_apply capp ->
-          (* TODO: afficher le type final à partir du typedtree *)
+          (* TODO: afficher le type final a partir du typedtree *)
           self#latex_of_text fmt [Raw "class application not handled yet"]
 
       | Class_constr cco ->
@@ -1112,6 +1131,7 @@ class latex =
       ps fmt "\\documentclass[11pt]{article} \n";
       ps fmt "\\usepackage[latin1]{inputenc} \n";
       ps fmt "\\usepackage[T1]{fontenc} \n";
+      ps fmt "\\usepackage{textcomp}\n";
       ps fmt "\\usepackage{fullpage} \n";
       ps fmt "\\usepackage{url} \n";
       ps fmt "\\usepackage{ocamldoc}\n";

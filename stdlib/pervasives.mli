@@ -320,7 +320,7 @@ external hypot : float -> float -> float
   of the hypotenuse of a right-angled triangle with sides of length
   [x] and [y], or, equivalently, the distance of the point [(x,y)]
   to origin.
-  @since 3.13.0  *)
+  @since 4.00.0  *)
 
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
 (** Hyperbolic cosine.  Argument is in radians. *)
@@ -351,7 +351,7 @@ external copysign : float -> float -> float
   and whose sign is that of [y].  If [x] is [nan], returns [nan].
   If [y] is [nan], returns either [x] or [-. x], but it is not
   specified which.
-  @since 3.13.0  *)
+  @since 4.00.0  *)
 
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
 (** [mod_float a b] returns the remainder of [a] with respect to
@@ -461,7 +461,9 @@ external ignore : 'a -> unit = "%ignore"
 (** {6 String conversion functions} *)
 
 val string_of_bool : bool -> string
-(** Return the string representation of a boolean. *)
+(** Return the string representation of a boolean. As the returned values
+   may be shared, the user should not modify them directly.
+*)
 
 val bool_of_string : string -> bool
 (** Convert the given string to a boolean.
@@ -506,7 +508,9 @@ val ( @ ) : 'a list -> 'a list -> 'a list
 (** List concatenation. *)
 
 
-(** {6 Input/output} *)
+(** {6 Input/output}
+    Note: all input/output functions can raise [Sys_error] when the system
+    calls they invoke fail. *)
 
 type in_channel
 (** The type of input channel. *)
@@ -875,11 +879,12 @@ external decr : int ref -> unit = "%decr"
     ['a] is the type of the parameters of the format,
     ['b] is the type of the first argument given to
          [%a] and [%t] printing functions,
-    ['c] is the type of the argument transmitted to the first argument of
-         "kprintf"-style functions,
-    ['d] is the result type for the "scanf"-style functions,
-    ['e] is the type of the receiver function for the "scanf"-style functions,
-    ['f] is the result type for the "printf"-style function.
+    ['c] is the type of the result of the [%a] and [%t] functions, and
+         also the type of the argument transmitted to the first argument
+         of [kprintf]-style functions,
+    ['d] is the result type for the [scanf]-style functions,
+    ['e] is the type of the receiver function for the [scanf]-style functions,
+    ['f] is the result type for the [printf]-style function.
  *)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
@@ -923,8 +928,7 @@ val at_exit : (unit -> unit) -> unit
 
 (**/**)
 
-
-(** {6 For system use only, not for the casual user} *)
+(* The following is for system use only. Do not call directly. *)
 
 val valid_float_lexem : string -> string
 

@@ -151,7 +151,7 @@ If
 options are passed on the command
 line, these options are stored in the resulting .cmxa library.  Then,
 linking with this library automatically adds back the
-\BR \-cclib \ and \ \-ccopt
+.BR \-cclib \ and \ \-ccopt
 options as if they had been provided on the
 command line, unless the
 .B \-noautolink
@@ -169,6 +169,11 @@ type-checker before the error. The
 file can be used with the emacs commands given in
 .B emacs/caml\-types.el
 to display types and other annotations interactively.
+.TP
+.B \-dtypes
+Has been deprecated. Please use
+.BI \-annot
+instead.
 .TP
 .B \-c
 Compile only. Suppress the linking phase of the
@@ -331,8 +336,8 @@ option is given, specify the name of plugin file produced.
 .B \-output\-obj
 Cause the linker to produce a C object file instead of an executable
 file. This is useful to wrap OCaml code as a C library,
-callable from any C program. The name of the output object file is
-camlprog.o by default; it can be set with the
+callable from any C program. The name of the output object file
+must be set with the
 .B \-o
 option.
 This option can also be used to produce a compiled shared/dynamic
@@ -511,14 +516,14 @@ sign (or a lowercase letter) turns them back into warnings, and a
 .B @
 sign both enables and marks the corresponding warnings.
 
-Note: it is not recommended to use warning sets (i.e. letters) as
-arguments to
+Note: it is not recommended to use the
 .B \-warn\-error
-in production code, because this can break your build when future versions
-of OCaml add some new warnings.
+option in production code, because it will almost certainly prevent
+compiling your program with later versions of OCaml when they add new
+warnings.
 
 The default setting is
-.B \-warn\-error\ +a
+.B \-warn\-error\ -a
 (none of the warnings is treated as an error).
 .TP
 .B \-where

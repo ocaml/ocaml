@@ -216,7 +216,7 @@ end;;
 
 let c3 = new int_comparable3 15;;
 l#add (c3 :> int_comparable);;
-(new sorted_list ())#add c3;;   (* Echec : leq n'est pas binaire *)
+(new sorted_list ())#add c3;;   (* Error; strange message with -principal *)
 
 let sort (l : #comparable list) = Sort.list (fun x -> x#leq) l;;
 let pr l =

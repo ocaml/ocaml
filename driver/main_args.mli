@@ -17,6 +17,7 @@ module type Bytecomp_options =
     val _a : unit -> unit
     val _absname : unit -> unit
     val _annot : unit -> unit
+    val _binannot : unit -> unit
     val _c : unit -> unit
     val _cc : string -> unit
     val _cclib : string -> unit
@@ -81,6 +82,7 @@ module type Bytetop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _real_paths : unit -> unit
@@ -106,6 +108,7 @@ module type Optcomp_options = sig
   val _a : unit -> unit
   val _absname : unit -> unit
   val _annot : unit -> unit
+  val _binannot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
@@ -155,6 +158,7 @@ module type Optcomp_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -183,6 +187,7 @@ module type Opttop_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
+  val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _real_paths : unit -> unit
@@ -200,6 +205,7 @@ module type Opttop_options = sig
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dclambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit

@@ -114,6 +114,14 @@ applications, and parameter order becomes strict.
 .B \-noprompt
 Do not display any prompt when waiting for input.
 .TP
+.B \-nopromptcont
+Do not display the secondary prompt when waiting for continuation lines in
+multi-line inputs.  This should be used e.g. when running
+.BR ocaml (1)
+in an
+.BR emacs (1)
+window.
+.TP
 .B \-nostdlib
 Do not include the standard library directory in the list of
 directories searched for source and compiled files.

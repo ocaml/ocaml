@@ -1564,7 +1564,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     if (!Setup(&hAccelTable))
         return 0;
     // Need to set up a console so that we can send ctrl-break signal
-    // to inferior Caml
+    // to inferior OCaml
     AllocConsole();
     GetConsoleTitle(consoleTitle,sizeof(consoleTitle));
     hwndConsole = FindWindow(NULL,consoleTitle);

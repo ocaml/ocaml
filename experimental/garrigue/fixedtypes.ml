@@ -59,7 +59,7 @@ module M6 : sig
       val x : int
       method x : int
       method move : int -> unit
-    end      
+    end
   type c = private #ci
   val create : int -> c
 end = struct

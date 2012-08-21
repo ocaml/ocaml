@@ -51,30 +51,30 @@ let rec add_signature env root ?rel signat =
   in
   let f env item =
     match item with
-      Types.Tsig_value (ident, _) -> { env with env_values = (rel_name ident, qualify ident) :: env.env_values }
-    | Types.Tsig_type (ident,_,_) -> { env with env_types = (rel_name ident, qualify ident) :: env.env_types }
-    | Types.Tsig_exception (ident, _) -> { env with env_exceptions = (rel_name ident, qualify ident) :: env.env_exceptions }
-    | Types.Tsig_module (ident, modtype, _) ->
+      Types.Sig_value (ident, _) -> { env with env_values = (rel_name ident, qualify ident) :: env.env_values }
+    | Types.Sig_type (ident,_,_) -> { env with env_types = (rel_name ident, qualify ident) :: env.env_types }
+    | Types.Sig_exception (ident, _) -> { env with env_exceptions = (rel_name ident, qualify ident) :: env.env_exceptions }
+    | Types.Sig_module (ident, modtype, _) ->
         let env2 =
-          match modtype with (* A VOIR : le cas où c'est un identificateur, dans ce cas on n'a pas de signature *)
-            Types.Tmty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
+          match modtype with (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
+            Types.Mty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
           |  _ -> env
         in
         { env2 with env_modules = (rel_name ident, qualify ident) :: env2.env_modules }
-    | Types.Tsig_modtype (ident, modtype_decl) ->
+    | Types.Sig_modtype (ident, modtype_decl) ->
         let env2 =
           match modtype_decl with
-            Types.Tmodtype_abstract ->
+            Types.Modtype_abstract ->
               env
-          | Types.Tmodtype_manifest modtype ->
+          | Types.Modtype_manifest modtype ->
               match modtype with
-                 (* A VOIR : le cas où c'est un identificateur, dans ce cas on n'a pas de signature *)
-                Types.Tmty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
+                 (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
+                Types.Mty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
               |  _ -> env
         in
         { env2 with env_module_types = (rel_name ident, qualify ident) :: env2.env_module_types }
-    | Types.Tsig_class (ident, _, _) -> { env with env_classes = (rel_name ident, qualify ident) :: env.env_classes }
-    | Types.Tsig_cltype (ident, _, _) -> { env with env_class_types = (rel_name ident, qualify ident) :: env.env_class_types }
+    | Types.Sig_class (ident, _, _) -> { env with env_classes = (rel_name ident, qualify ident) :: env.env_classes }
+    | Types.Sig_class_type (ident, _, _) -> { env with env_class_types = (rel_name ident, qualify ident) :: env.env_class_types }
   in
   List.fold_left f env signat
 
@@ -218,31 +218,31 @@ let subst_type env t =
 let subst_module_type env t =
   let rec iter t =
     match t with
-      Types.Tmty_ident p ->
+      Types.Mty_ident p ->
         let new_p = Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p)) in
-        Types.Tmty_ident new_p
-    | Types.Tmty_signature _ ->
+        Types.Mty_ident new_p
+    | Types.Mty_signature _ ->
         t
-    | Types.Tmty_functor (id, mt1, mt2) ->
-        Types.Tmty_functor (id, iter mt1, iter mt2)
+    | Types.Mty_functor (id, mt1, mt2) ->
+        Types.Mty_functor (id, iter mt1, iter mt2)
   in
   iter t
 
 let subst_class_type env t =
   let rec iter t =
     match t with
-      Types.Tcty_constr (p,texp_list,ct) ->
+      Types.Cty_constr (p,texp_list,ct) ->
         let new_p = Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
         let new_texp_list = List.map (subst_type env) texp_list in
         let new_ct = iter ct in
-        Types.Tcty_constr (new_p, new_texp_list, new_ct)
-    | Types.Tcty_signature cs ->
+        Types.Cty_constr (new_p, new_texp_list, new_ct)
+    | Types.Cty_signature cs ->
         (* on ne s'occupe pas des vals et methods *)
         t
-    | Types.Tcty_fun (l, texp, ct) ->
+    | Types.Cty_fun (l, texp, ct) ->
         let new_texp = subst_type env texp in
         let new_ct = iter ct in
-        Types.Tcty_fun (l, new_texp, new_ct)
+        Types.Cty_fun (l, new_texp, new_ct)
   in
   iter t
 

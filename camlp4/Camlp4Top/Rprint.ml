@@ -301,7 +301,9 @@ and print_ty_label ppf lab =
 ;
 
 value type_parameter ppf (ty, (co, cn)) =
-  fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
+  fprintf ppf "%s%s%s"
+    (if not cn then "+" else if not co then "-" else "")
+    (if ty = "_" then "" else "'")
     ty
 ;
 
@@ -451,8 +453,13 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
           print_kind ty2
     | ty -> print_kind ppf ty ]
   in
-  fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@]%a@]" kwd type_defined
-    print_types ty print_constraints constraints
+  match ty with
+  [ Otyp_abstract ->
+      fprintf ppf "@[<2>@[<hv 2>@[%s %t@]@]%a@]" kwd type_defined
+        print_constraints constraints
+  | _ ->
+      fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@]%a@]" kwd type_defined
+        print_types ty print_constraints constraints ]
 ;
 
 (* Phrases *)

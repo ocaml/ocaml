@@ -12,7 +12,7 @@
 
 type kind = Dinfo_call | Dinfo_raise
 
-type t = {
+type t = private {
   dinfo_kind: kind;
   dinfo_file: string;
   dinfo_line: int;
@@ -21,6 +21,8 @@ type t = {
 }
 
 val none: t
+
+val is_none: t -> bool
 
 val to_string: t -> string
 

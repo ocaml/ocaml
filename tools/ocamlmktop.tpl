@@ -13,4 +13,4 @@
 
 # $Id$
 
-exec %%BINDIR%%/ocamlc -linkall toplevellib.cma "$@" topstart.cmo
+exec %%BINDIR%%/ocamlc -I +compiler-libs -linkall ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma "$@" topstart.cmo

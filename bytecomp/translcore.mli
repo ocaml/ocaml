@@ -23,7 +23,7 @@ open Lambda
 val name_pattern: string -> (pattern * 'a) list -> Ident.t
 
 val transl_exp: expression -> lambda
-val transl_apply: lambda -> (expression option * optional) list
+val transl_apply: lambda -> (label * expression option * optional) list
                   -> Location.t -> lambda
 val transl_let:
       rec_flag -> (pattern * expression) list -> lambda -> lambda
@@ -37,6 +37,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Unknown_builtin_primitive of string
 
 exception Error of Location.t * error
 

@@ -20,7 +20,7 @@ let get = Hashtbl.find digests
 
 let put = Hashtbl.replace digests
 
-let _digests = lazy (Pathname.pwd / !Options.build_dir / (Pathname.mk "_digests"))
+let _digests = lazy (!Options.build_dir / (Pathname.mk "_digests"))
 
 let finalize () =
   with_output_file !*_digests begin fun oc ->

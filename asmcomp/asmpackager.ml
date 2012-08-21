@@ -193,13 +193,14 @@ open Format
 
 let report_error ppf = function
     Illegal_renaming(file, id) ->
-      fprintf ppf "Wrong file naming: %s@ contains the code for@ %s"
-        file id
+      fprintf ppf "Wrong file naming: %a@ contains the code for@ %s"
+        Location.print_filename file id
   | Forward_reference(file, ident) ->
-      fprintf ppf "Forward reference to %s in file %s" ident file
+      fprintf ppf "Forward reference to %s in file %a" ident
+        Location.print_filename file
   | Wrong_for_pack(file, path) ->
-      fprintf ppf "File %s@ was not compiled with the `-for-pack %s' option"
-              file path
+      fprintf ppf "File %a@ was not compiled with the `-for-pack %s' option"
+              Location.print_filename file path
   | File_not_found file ->
       fprintf ppf "File %s not found" file
   | Assembler_error file ->

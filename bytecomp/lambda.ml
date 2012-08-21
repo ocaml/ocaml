@@ -19,6 +19,8 @@ open Asttypes
 type primitive =
     Pidentity
   | Pignore
+  | Prevapply of Location.t
+  | Pdirapply of Location.t
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t

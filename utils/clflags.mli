@@ -31,11 +31,13 @@ val classic : bool ref
 val nopervasives : bool ref
 val preprocessor : string option ref
 val annotations : bool ref
+val binary_annotations : bool ref
 val use_threads : bool ref
 val use_vmthreads : bool ref
 val noassert : bool ref
 val verbose : bool ref
 val noprompt : bool ref
+val nopromptcont : bool ref
 val init_file : string option ref
 val use_prims : string ref
 val use_runtime : string ref
@@ -55,6 +57,7 @@ val error_size : int ref
 val dump_parsetree : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
+val dump_clambda : bool ref
 val dump_instr : bool ref
 val keep_asm_file : bool ref
 val optimize_for_speed : bool ref
