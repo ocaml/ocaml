@@ -127,7 +127,6 @@ world:
 world.opt:
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
-	$(MAKE) ocamltoolsopt
 
 # Hard bootstrap how-to:
 # (only necessary in some cases, for example if you remove some primitive)
@@ -252,8 +251,9 @@ opt:
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 $(DEBUGGER) ocamldoc ocamlbuild.byte $(CAMLP4OUT) \
-	 ocamlopt.opt otherlibrariesopt ocamllex.opt ocamltoolsopt.opt \
-	 ocamldoc.opt ocamlbuild.native $(CAMLP4OPT)
+	 ocamlopt.opt otherlibrariesopt ocamllex.opt \
+	 ocamltoolsopt ocamltoolsopt.opt ocamldoc.opt ocamlbuild.native \
+	 $(CAMLP4OPT)
 
 base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
