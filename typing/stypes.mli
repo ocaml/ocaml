@@ -29,7 +29,7 @@ type annotation =
 
 val record : annotation -> unit;;
 val record_phrase : Location.t -> unit;;
-val dump : string -> unit;;
+val dump : string option -> unit;;
 
 val get_location : annotation -> Location.t;;
 val get_info : unit -> annotation list;;

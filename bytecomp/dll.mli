@@ -46,6 +46,9 @@ val synchronize_primitive: int -> dll_address -> unit
 (* Add the given directories at the head of the search path for DLLs *)
 val add_path: string list -> unit
 
+(* Remove the given directories from the search path for DLLs *)
+val remove_path: string list -> unit
+
 (* Initialization for separate compilation.
    Initialize the DLL search path to the directories given in the
    environment variable CAML_LD_LIBRARY_PATH, plus contents of ld.conf file

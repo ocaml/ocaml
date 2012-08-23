@@ -1,1 +1,1 @@
-sort -u test6.result | diff -q test6.reference -
+LC_ALL=C sort -u test6.result | diff -q test6.reference -

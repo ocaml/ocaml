@@ -72,6 +72,7 @@ EXTRALIBS=
 CMXS=cmxs
 NATDYNLINK=true
 RUNTIMED=noruntimed
+ASM_CFI_SUPPORTED=false
 
 ########## Configuration for the bytecode compiler
 
@@ -95,11 +96,11 @@ NATIVECCLIBS=advapi32.lib ws2_32.lib
 CPP=cl /nologo /EP
 
 ### Flexlink
-FLEXLINK=flexlink -merge-manifest
+FLEXLINK=flexlink -merge-manifest -stack 16777216
 FLEXDIR=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe -link /STACK:16777216
+MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### How to build a static library

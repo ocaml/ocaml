@@ -23,12 +23,14 @@
 open Typedtree
 
 
-(* Nul process *)
+(* Null process *)
 let null_ex = 
   { exp_desc = Texp_null;
     exp_loc = Location.none;
     exp_type = Ctype.none;
-    exp_env = Env.empty ; }
+    exp_env = Env.empty ;
+    exp_extra = []; (* who knows? *)
+  }
 
 (* omega pattern *)
 let null_pat = Parmatch.omega
@@ -124,8 +126,9 @@ let rewrite_simple_one id reac =
   | None -> reac 
   | Some (rem, found) ->
       let (jid, pat) = found.jpat_desc in
-      let xi = Ident.create ("_"^Ident.name jid.jident_desc) in
-      let xi_pat = {pat with pat_desc = Tpat_var xi} in
+      let xname = "_"^Ident.name jid.jident_desc in
+      let xi = Ident.create xname in
+      let xi_pat = {pat with pat_desc = Tpat_var (xi,mknoloc xname)} in
       old,
       (rem, [{found with jpat_desc = (jid, xi_pat)}]::already_done),
       (xi, pat)::gd
@@ -142,8 +145,9 @@ let rewrite_one id dag node2id reac =
   | None -> reac 
   | Some (rem, found) ->
       let (jid, pat) = found.jpat_desc in
-      let xi = Ident.create ("_"^Ident.name jid.jident_desc) in
-      let xi_pat = {pat with pat_desc = Tpat_var xi} in
+      let xname = "_"^Ident.name jid.jident_desc in
+      let xi = Ident.create xname in
+      let xi_pat = {pat with pat_desc = Tpat_var (xi,mknoloc xname)} in
       let new_or_jpats =
 	let nodes = Agraph.nodes dag in
 	let has_info n = eq_pat (Agraph.info dag n) pat in

@@ -233,7 +233,7 @@ let rec is_principal id p = match p.exp_desc with
 | Texp_ifthenelse (_,pifso, Some pifno) ->
    is_principal id pifso && is_principal id pifno
 | Texp_ifthenelse (_,_,None) -> false
-| Texp_for (_,_,_,_,_) -> false
+| Texp_for (_,_,_,_,_,_) -> false
 | _ -> assert false
 
 (*
@@ -263,11 +263,11 @@ let simple_prim = ref ((fun p -> assert false) : Primitive.description -> bool)
 
 let rec simple_pat p = match p.pat_desc with
 | Tpat_any | Tpat_var _ -> true
-| Tpat_alias (p,_)|Tpat_lazy p -> simple_pat p
+| Tpat_alias (p,_,_)|Tpat_lazy p -> simple_pat p
 | Tpat_tuple ps -> List.for_all simple_pat ps
-| Tpat_record lps ->  List.for_all (fun (_,p) -> simple_pat p) lps
+| Tpat_record (lps,_) ->  List.for_all (fun (_,_,_,p) -> simple_pat p) lps
 | Tpat_or (p1,p2,_) -> simple_pat p1 && simple_pat p2
-| Tpat_constant _|Tpat_construct (_,_)|Tpat_variant (_,_,_)
+| Tpat_constant _|Tpat_construct _|Tpat_variant _
 | Tpat_array _ -> false
 
 let rec simple_exp e = match e.exp_desc with
@@ -285,33 +285,33 @@ let rec simple_exp e = match e.exp_desc with
    simple_exp e && simple_exp eifso && simple_exp_option eo
 | Texp_def (_,e)|Texp_loc(_,e) -> simple_exp e
 (* Simple simple expressions *)
-| Texp_ident _ | Texp_constant _ | Texp_function (_,_)
+| Texp_ident _ | Texp_constant _ | Texp_function _
 | Texp_variant (_,None) 
-| Texp_instvar (_,_) | Texp_setinstvar (_, _, _) | Texp_spawn (_)
+| Texp_instvar _ | Texp_setinstvar _ | Texp_spawn (_)
  -> true
 (* Recursion *)
-| Texp_construct (_,es) | Texp_tuple (es) | Texp_array (es)
+| Texp_construct (_,_,_,es,_) | Texp_tuple (es) | Texp_array (es)
  -> List.for_all simple_exp es
-| Texp_variant (_, Some e) | Texp_field (e,_)
+| Texp_variant (_, Some e) | Texp_field (e,_,_,_)
    -> simple_exp e
-| Texp_setfield (e1,_,e2) -> simple_exp e1 && simple_exp e2
-| Texp_apply ({exp_desc=Texp_ident (_, {val_kind=Val_prim p})}, args) ->
+| Texp_setfield (e1,_,_,_,e2) -> simple_exp e1 && simple_exp e2
+| Texp_apply ({exp_desc=Texp_ident (_,_,{val_kind=Val_prim p})}, args) ->
    List.length args < p.prim_arity || (* will be compiled as function *)
    (!simple_prim p &&
-   List.for_all (fun (eo,_) -> simple_exp_option eo) args)
+   List.for_all (fun (_,eo,_) -> simple_exp_option eo) args)
 | Texp_apply (_,_) -> false
-| Texp_for (_,e1,e2,_,e3) ->
+| Texp_for (_,_,e1,e2,_,e3) ->
    simple_exp e1 && simple_exp e2 && simple_exp e3
 | Texp_record (les,eo) ->
-   List.for_all (fun (_,e) -> simple_exp e) les &&
+   List.for_all (fun (_,_,_,e) -> simple_exp e) les &&
    simple_exp_option eo
 (* Asserts are special *)
 | Texp_assert e -> !Clflags.noassert || simple_exp e
 | Texp_assertfalse -> !Clflags.noassert
 (* Who knows ? *)
-| Texp_letmodule (_,_,_) | Texp_override (_,_) | Texp_lazy (_)
-| Texp_send (_,_) | Texp_while (_,_) | Texp_new (_,_) | Texp_try (_,_)
-| Texp_object (_, _, _) | Texp_pack _
+| Texp_letmodule _ | Texp_override (_,_) | Texp_lazy (_)
+| Texp_send _ | Texp_while (_,_) | Texp_new _ | Texp_try (_,_)
+| Texp_object _| Texp_pack _
   -> false
 (* Process constructs are not errors *)
 | Texp_reply (_, _)|Texp_par (_, _)|Texp_asyncsend (_, _)
@@ -338,7 +338,7 @@ and simple_proc p = match p.exp_desc with
 | Texp_ifthenelse (e, pifso, None) ->
    simple_exp e && simple_proc pifso    
 | Texp_def (_,p)|Texp_loc(_,p) -> simple_proc p
-| Texp_for (_,e1,e2,_,_body) -> (* _body is compiled so a not to fail *)
+| Texp_for (_,_,e1,e2,_,_body) -> (* _body is compiled so a not to fail *)
    simple_exp e1 && simple_exp e2
 (* Process constructs *)
 | Texp_reply (e, _) -> simple_exp e
@@ -346,13 +346,13 @@ and simple_proc p = match p.exp_desc with
 | Texp_asyncsend (e1, e2) -> simple_exp e1 && simple_exp e2
 | Texp_null -> true
 (* Plain expressions no longer are errors *)
-| Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
-  Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
-  Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
-  Texp_while (_, _)|Texp_array _|
-  Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
-  Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
-  Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
+| Texp_spawn _|Texp_object _|Texp_lazy _|Texp_assert _|
+  Texp_letmodule _|Texp_override _|Texp_setinstvar _|
+  Texp_instvar _|Texp_new _|Texp_send _|
+  Texp_while _|Texp_array _|
+  Texp_setfield _|Texp_field _|Texp_record _|
+  Texp_variant _|Texp_construct _|Texp_tuple _|Texp_try _|
+  Texp_apply _|Texp_function _|Texp_constant _|Texp_ident _|
   Texp_assertfalse|Texp_pack _
   -> assert false
 

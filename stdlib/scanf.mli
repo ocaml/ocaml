@@ -79,10 +79,11 @@
     facility is fully type-checked at compile time. *)
 
 (** {6 Formatted input channel} *)
+
 module Scanning : sig
 
 type in_channel;;
-(* The notion of input channel for the [Scanf] module:
+(** The notion of input channel for the [Scanf] module:
    those channels provide all the machinery necessary to read from a given
    [Pervasives.in_channel] value.
    A [Scanf.Scanning.in_channel] value is also called a {i formatted input
@@ -139,7 +140,7 @@ val open_in_bin : string -> in_channel;;
 *)
 
 val close_in : in_channel -> unit;;
-(** Closes the [Pervasives.input_channel] associated with the given
+(** Closes the [Pervasives.in_channel] associated with the given
   [Scanning.in_channel] formatted input channel.
   @since 3.12.0
 *)

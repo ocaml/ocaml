@@ -157,7 +157,10 @@ let get_info () =
 let dump filename =
   if !Clflags.annotations then begin
     let info = get_info () in
-    let pp = formatter_of_out_channel (open_out filename) in
+    let pp =
+      match filename with
+          None -> std_formatter
+        | Some filename -> formatter_of_out_channel (open_out filename) in
     sort_filter_phrases ();
     ignore (List.fold_left (print_info pp) Location.none info);
     phrases := [];

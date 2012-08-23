@@ -1,5 +1,5 @@
 Misc Config Clflags Tbl Consistbl
-Terminfo Warnings Asttypes Linenum Location Longident
+Terminfo Warnings Asttypes Location Longident
 Ident Path Primitive Types Btype Subst Predef
-Datarepr Env Lambda Instruct Cmo_format Opcodes
+Datarepr Cmi_format Env Lambda Instruct Cmo_format Opcodes
 Runtimedef Bytesections Dll Meta Symtable

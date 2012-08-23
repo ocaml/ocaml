@@ -24,6 +24,7 @@
 #include "gc.h"
 #include "intext.h"
 #include "io.h"
+#include "md5.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -52,10 +53,61 @@ static struct trail_block extern_trail_first;
 static struct trail_block * extern_trail_block;
 static struct trail_entry * extern_trail_cur, * extern_trail_limit;
 
+
+/* Stack for pending values to marshal */
+
+struct extern_item { value * v; mlsize_t count; };
+
+#define EXTERN_STACK_INIT_SIZE 256
+#define EXTERN_STACK_MAX_SIZE (1024*1024*100)
+
+static struct extern_item extern_stack_init[EXTERN_STACK_INIT_SIZE];
+
+static struct extern_item * extern_stack = extern_stack_init;
+static struct extern_item * extern_stack_limit = extern_stack_init
+                                                   + EXTERN_STACK_INIT_SIZE;
+
 /* Forward declarations */
 
 static void extern_out_of_memory(void);
+static void extern_failwith(char *msg);
+static void extern_stack_overflow(void);
+static struct code_fragment * extern_find_code(char *addr);
+static void extern_replay_trail(void);
+static void free_extern_output(void);
 
+/* Free the extern stack if needed */
+static void extern_free_stack(void)
+{
+  if (extern_stack != extern_stack_init) {
+    free(extern_stack);
+    /* Reinitialize the globals for next time around */
+    extern_stack = extern_stack_init;
+    extern_stack_limit = extern_stack + EXTERN_STACK_INIT_SIZE;
+  }
+}
+
+static struct extern_item * extern_resize_stack(struct extern_item * sp)
+{
+  asize_t newsize = 2 * (extern_stack_limit - extern_stack);
+  asize_t sp_offset = sp - extern_stack;
+  struct extern_item * newstack;
+
+  if (newsize >= EXTERN_STACK_MAX_SIZE) extern_stack_overflow();
+  if (extern_stack == extern_stack_init) {
+    newstack = malloc(sizeof(struct extern_item) * newsize);
+    if (newstack == NULL) extern_stack_overflow();
+    memcpy(newstack, extern_stack_init,
+           sizeof(struct extern_item) * EXTERN_STACK_INIT_SIZE);
+  } else {
+    newstack =
+      realloc(extern_stack, sizeof(struct extern_item) * newsize);
+    if (newstack == NULL) extern_stack_overflow();
+  }
+  extern_stack = newstack;
+  extern_stack_limit = newstack + newsize;
+  return newstack + sp_offset;
+}
 
 /* Initialize the trail */
 
@@ -162,6 +214,7 @@ static void free_extern_output(void)
     free(blk);
   }
   extern_output_first = NULL;
+  extern_free_stack();
 }
 
 static void grow_extern_output(intnat required)
@@ -170,8 +223,7 @@ static void grow_extern_output(intnat required)
   intnat extra;
 
   if (extern_userprovided_output != NULL) {
-    extern_replay_trail();
-    caml_failwith("Marshal.to_buffer: buffer overflow");
+    extern_failwith("Marshal.to_buffer: buffer overflow");
   }
   extern_output_block->end = extern_ptr;
   if (required <= SIZE_EXTERN_OUTPUT_BLOCK / 2)
@@ -215,6 +267,21 @@ extern void extern_invalid_argument(char *msg)
   extern_replay_trail();
   free_extern_output();
   caml_invalid_argument(msg);
+}
+
+static void extern_failwith(char *msg)
+{
+  extern_replay_trail();
+  free_extern_output();
+  caml_failwith(msg);
+}
+
+static void extern_stack_overflow(void)
+{
+  caml_gc_message (0x04, "Stack overflow in marshaling value\n", 0);
+  extern_replay_trail();
+  free_extern_output();
+  caml_raise_out_of_memory();
 }
 
 /* Write characters, integers, and blocks in the output buffer */
@@ -292,7 +359,8 @@ static void writecode64(int code, intnat val)
 #ifdef DEBUG
 #include <stdio.h>
 #endif
-static int32 saved_code[MAX_SAVED] ;
+typedef char *saved_code_t ;
+static  saved_code_t saved_code[MAX_SAVED] ;
 static int ncodes_saved = 0 ;
 
 CAMLprim value caml_register_saved_code(value v)
@@ -300,30 +368,30 @@ CAMLprim value caml_register_saved_code(value v)
   if (ncodes_saved >=  MAX_SAVED) {
     caml_failwith("caml_register_saved_code called too many times\n") ;
   }
-  saved_code[ncodes_saved] =  ((char *)Code_val(v)) - caml_code_area_start ;
+  char *c = (char *)Code_val(v) ;
+  saved_code[ncodes_saved] =  c;
 #ifdef DEBUG
-  fprintf(stderr, "CODE%i is %i\n", ncodes_saved, saved_code[ncodes_saved]) ;
+  fprintf(stderr, "CODE%i is %p\n", ncodes_saved, saved_code[ncodes_saved]) ;
 #endif
   ncodes_saved++ ;
   return Val_unit ;
 }
 
-/* Return offest in saved code tables or -1 when not present
+/* Return offset in saved code tables or -1 when not present
    Important: assumes code is not moving */
-static int caml_find_saved_code(code_t c)
+static int caml_find_saved_code(char *c)
 {
   int i ;
-  int32 ofs = ((char *)c) - caml_code_area_start ;
   for (i = 0 ; i < ncodes_saved ; i++) {
-    if (saved_code[i] == ofs) return i ;
+    if (saved_code[i] == c) return i ;
   }
   return -1 ;
 }
 
-CAMLexport code_t caml_get_saved_code(int idx)
+CAMLexport char *caml_get_saved_code(int idx)
 {
   if (idx < ncodes_saved) {
-    return (code_t)(caml_code_area_start + saved_code[idx]) ;
+    return saved_code[idx] ;
   } else {
     return NULL ;
   }
@@ -380,7 +448,11 @@ CAMLexport value caml_get_saved_value(int idx)
 
 static void extern_rec(value v)
 {
- tailcall:
+  struct code_fragment * cf;
+  struct extern_item * sp;
+  sp = extern_stack;
+
+  while(1) {
   if (Is_long(v)) {
     intnat n = Long_val(v);
     if (n >= 0 && n < 0x40) {
@@ -395,7 +467,7 @@ static void extern_rec(value v)
 #endif
     } else
       writecode32(CODE_INT32, n);
-    return;
+    goto next_item;
   }
   if (Is_in_value_area(v)) {
     header_t hd = Hd_val(v);
@@ -411,7 +483,7 @@ static void extern_rec(value v)
         /* Do not short-circuit the pointer. */
       }else{
         v = f;
-        goto tailcall;
+        continue;
       }
     }
     /* Atoms are treated specially for two reasons: they are not allocated
@@ -422,7 +494,7 @@ static void extern_rec(value v)
       } else {
         writecode32(CODE_BLOCK32, hd);
       }
-      return;
+      goto next_item;
     }
     /* Check if already seen */
     if (Color_hd(hd) == Caml_blue) {
@@ -434,7 +506,7 @@ static void extern_rec(value v)
       } else {
         writecode32(CODE_SHARED32, d);
       }
-      return;
+      goto next_item;
     }
 
     /* Output the contents of the object */
@@ -521,7 +593,6 @@ static void extern_rec(value v)
     /* <JOCAML */
      {
       value field0;
-      mlsize_t i;
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
 #ifdef ARCH_SIXTYFOUR
@@ -535,34 +606,45 @@ static void extern_rec(value v)
       size_64 += 1 + sz;
       field0 = Field(v, 0);
       extern_record_location(v);
-      if (sz == 1) {
-        v = field0;
-      } else {
-        extern_rec(field0);
-        for (i = 1; i < sz - 1; i++) extern_rec(Field(v, i));
-        v = Field(v, i);
+      /* Remember that we still have to serialize fields 1 ... sz - 1 */
+      if (sz > 1) {
+        sp++;
+        if (sp >= extern_stack_limit) sp = extern_resize_stack(sp);
+        sp->v = &Field(v,1);
+        sp->count = sz-1;
       }
-      goto tailcall;
+      /* Continue serialization with the first field */
+      v = field0;
+      continue;
     }
     }
   }
-  else if ((char *) v >= caml_code_area_start &&
-           (char *) v < caml_code_area_end) {
+  else if ((cf = extern_find_code((char *) v)) != NULL) {
     /* >JOCAML */
     int ofs = caml_find_saved_code((code_t)v) ;
     if (ofs >= 0) {
       Write(CODE_SAVEDCODE) ;
       Write(ofs) ;
-      return ;
     }
     /* <JOCAML */
-    if (!extern_closures)
+    else if (!extern_closures)
       extern_invalid_argument("output_value: functional value");
-    writecode32(CODE_CODEPOINTER, (char *) v - caml_code_area_start);
-    writeblock((char *) caml_code_checksum(), 16);
+    writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
+    writeblock((char *) cf->digest, 16);
   } else {
     extern_invalid_argument("output_value: abstract value (outside heap)");
   }
+  next_item:
+    /* Pop one more item to marshal, if any */
+    if (sp == extern_stack) {
+        /* We are done.   Cleanup the stack and leave the function */
+        extern_free_stack();
+        return;
+    }
+    v = *((sp->v)++);
+    if (--(sp->count) == 0) sp--;
+  }
+  /* Never reached as function leaves with return */
 }
 
 enum { NO_SHARING = 1, CLOSURES = 2 };
@@ -840,3 +922,20 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
   }
 #endif
 }
+
+/* Find where a code pointer comes from */
+
+static struct code_fragment * extern_find_code(char *addr)
+{
+  int i;
+  for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {
+    struct code_fragment * cf = caml_code_fragments_table.contents[i];
+    if (! cf->digest_computed) {
+      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+      cf->digest_computed = 1;
+    }
+    if (cf->code_start <= addr && addr < cf->code_end) return cf;
+  }
+  return NULL;
+}
+

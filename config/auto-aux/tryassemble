@@ -5,3 +5,13 @@ $aspp -o tst $* || exit 100
 else
 $aspp -o tst $* 2> /dev/null || exit 100
 fi
+
+# test as also (if differs)
+if test "$aspp" != "$as"; then
+if test "$verbose" = yes; then
+echo "tryassemble: $as -o tst $*" >&2
+$as -o tst $* || exit 100
+else
+$as -o tst $* 2> /dev/null || exit 100
+fi
+fi

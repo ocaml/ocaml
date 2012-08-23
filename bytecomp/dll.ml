@@ -40,6 +40,9 @@ let names_of_opened_dlls = ref ([] : string list)
 let add_path dirs =
   search_path := dirs @ !search_path
 
+let remove_path dirs =
+  search_path := List.filter (fun d -> not (List.mem d dirs)) !search_path
+
 (* Extract the name of a DLLs from its external name (xxx.so or -lxxx) *)
 
 let extract_dll_name file =

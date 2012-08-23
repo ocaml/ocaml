@@ -66,7 +66,7 @@ let rec eval_path = function
 (* To print values *)
 
 module EvalPath = struct
-  type value = Obj.t
+  type valu = Obj.t
   exception Error
   let eval_path p = try eval_path p with Symtable.Error _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
@@ -150,7 +150,7 @@ let load_lambda ppf lam =
 (* Print the outcome of an evaluation *)
 
 let rec pr_item env = function
-  | Tsig_value(id, decl) :: rem ->
+  | Sig_value(id, decl) :: rem ->
       let tree = Printtyp.tree_of_value_description id decl in
       let valopt =
         match decl.val_kind with
@@ -163,24 +163,24 @@ let rec pr_item env = function
             Some v
       in
       Some (tree, valopt, rem)
-  | Tsig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
+  | Sig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
       pr_item env rem
-  | Tsig_type(id, decl, rs) :: rem ->
+  | Sig_type(id, decl, rs) :: rem ->
       let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)
-  | Tsig_exception(id, decl) :: rem ->
+  | Sig_exception(id, decl) :: rem ->
       let tree = Printtyp.tree_of_exception_declaration id decl in
       Some (tree, None, rem)
-  | Tsig_module(id, mty, rs) :: rem ->
+  | Sig_module(id, mty, rs) :: rem ->
       let tree = Printtyp.tree_of_module id mty rs in
       Some (tree, None, rem)
-  | Tsig_modtype(id, decl) :: rem ->
+  | Sig_modtype(id, decl) :: rem ->
       let tree = Printtyp.tree_of_modtype_declaration id decl in
       Some (tree, None, rem)
-  | Tsig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
+  | Sig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
       let tree = Printtyp.tree_of_class_declaration id decl rs in
       Some (tree, None, rem)
-  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
+  | Sig_class_type(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
       let tree = Printtyp.tree_of_cltype_declaration id decl rs in
       Some (tree, None, rem)
   | _ -> None
@@ -218,8 +218,9 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       Typecore.reset_delayed_checks ();
-      let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
-      in
+      let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let sg' = Typemod.simplify_signature sg in
+      ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
@@ -230,14 +231,13 @@ let execute_phrase print_outcome ppf phr =
           match res with
           | Result v ->
               if print_outcome then
-                match str with
-                | [Tstr_eval exp] ->
+                match str.str_items with
+                | [ { str_desc = Tstr_eval exp }] ->
                     let outv = outval_of_value newenv v exp.exp_type in
                     let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                     Ophr_eval (outv, ty)
                 | [] -> Ophr_signature []
-                | _ -> Ophr_signature (item_list newenv
-                                             (Typemod.simplify_signature sg))
+                | _ -> Ophr_signature (item_list newenv sg')
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -423,6 +423,7 @@ let loop ppf =
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
+      Env.reset_missing_cmis ();
       ignore(execute_phrase true ppf phr)
     with
     | End_of_file -> exit 0

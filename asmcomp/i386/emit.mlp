@@ -988,6 +988,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  reset_debug_info();                   (* PR#5603 *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;

@@ -28,26 +28,56 @@ let seeded_hash seed x = seeded_hash_param 10 100 seed x
 type ('a, 'b) t =
   { mutable size: int;                        (* number of entries *)
     mutable data: ('a, 'b) bucketlist array;  (* the buckets *)
-    mutable seed: int }                       (* for randomization *)
+    mutable seed: int;                        (* for randomization *)
+    initial_size: int;                        (* initial array size *)
+  }
 
 and ('a, 'b) bucketlist =
     Empty
   | Cons of 'a * 'b * ('a, 'b) bucketlist
+
+(* To pick random seeds if requested *)
+
+let randomized_default =
+  let params =
+    try Sys.getenv "OCAMLRUNPARAM" with Not_found ->
+    try Sys.getenv "CAMLRUNPARAM" with Not_found -> "" in
+  String.contains params 'R'
+
+let randomized = ref randomized_default
+
+let randomize () = randomized := true
+
+let prng = lazy (Random.State.make_self_init())
+
+(* Creating a fresh, empty table *)
 
 let rec power_2_above x n =
   if x >= n then x
   else if x * 2 > Sys.max_array_length then x
   else power_2_above (x * 2) n
 
-let create ?(seed = 0) initial_size =
+let create ?(random = !randomized) initial_size =
   let s = power_2_above 16 initial_size in
-  { size = 0; seed = seed; data = Array.make s Empty }
+  let seed = if random then Random.State.bits (Lazy.force prng) else 0 in
+  { initial_size = s; size = 0; seed = seed; data = Array.make s Empty }
 
 let clear h =
-  for i = 0 to Array.length h.data - 1 do
+  h.size <- 0;
+  let len = Array.length h.data in
+  for i = 0 to len - 1 do
     h.data.(i) <- Empty
-  done;
-  h.size <- 0
+  done
+
+let reset h =
+  let len = Array.length h.data in
+  if Obj.size (Obj.repr h) < 4 (* compatibility with old hash tables *)
+    || len = h.initial_size then
+    clear h
+  else begin
+    h.size <- 0;
+    h.data <- Array.make h.initial_size Empty
+  end
 
 let copy h = { h with data = Array.copy h.data }
 
@@ -58,7 +88,7 @@ let resize indexfun h =
   let osize = Array.length odata in
   let nsize = osize * 2 in
   if nsize < Sys.max_array_length then begin
-    let ndata = Array.create nsize Empty in
+    let ndata = Array.make nsize Empty in
     h.data <- ndata;          (* so that indexfun sees the new bucket count *)
     let rec insert_bucket = function
         Empty -> ()
@@ -73,7 +103,7 @@ let resize indexfun h =
 
 let key_index h key =
   (* compatibility with old hash tables *)
-  if Obj.size (Obj.repr h) = 3
+  if Obj.size (Obj.repr h) >= 3
   then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
   else (old_hash_param 10 100 key) mod (Array.length h.data)
 
@@ -221,7 +251,8 @@ module type S =
     type key
     type 'a t
     val create: int -> 'a t
-    val clear: 'a t -> unit
+    val clear : 'a t -> unit
+    val reset : 'a t -> unit
     val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
@@ -239,8 +270,9 @@ module type SeededS =
   sig
     type key
     type 'a t
-    val create : ?seed:int -> int -> 'a t
+    val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
+    val reset : 'a t -> unit
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
@@ -261,6 +293,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     type 'a t = 'a hashtbl
     let create = create
     let clear = clear
+    let reset = reset
     let copy = copy
 
     let key_index h key =
@@ -352,5 +385,5 @@ module Make(H: HashedType): (S with type key = H.t) =
         let equal = H.equal
         let hash (seed: int) x = H.hash x
       end)
-    let create sz = create ~seed:0 sz
+    let create sz = create ~random:false sz
   end

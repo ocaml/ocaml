@@ -12,6 +12,7 @@
 
 (* $Id$ *)
 
+open Asttypes
 open Format
 open Location
 open Longident
@@ -20,6 +21,8 @@ open Parsetree
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 (* Collect free module identifiers in the a.s.t. *)
+
+let fst3 (x, _, _) = x
 
 let free_structure_names = ref StringSet.empty
 
@@ -32,9 +35,11 @@ let rec addmodule bv lid =
   | Lapply(l1, l2) -> addmodule bv l1; addmodule bv l2
 
 let add bv lid =
-  match lid with
+  match lid.txt with
     Ldot(l, s) -> addmodule bv l
   | _ -> ()
+
+let addmodule bv lid = addmodule bv lid.txt
 
 let rec add_type bv ty =
   match ty.ptyp_desc with
@@ -56,7 +61,7 @@ let rec add_type bv ty =
 
 and add_package_type bv (lid, l) =
   add bv lid;
-  List.iter (add_type bv) (List.map snd l)
+  List.iter (add_type bv) (List.map (fun (_, e) -> e) l)
 
 and add_field_type bv ft =
   match ft.pfield_desc with
@@ -84,18 +89,19 @@ let rec add_class_type bv cty =
   match cty.pcty_desc with
     Pcty_constr(l, tyl) ->
       add bv l; List.iter (add_type bv) tyl
-  | Pcty_signature (ty, fieldl) ->
+  | Pcty_signature { pcsig_self = ty; pcsig_fields = fieldl } ->
       add_type bv ty;
       List.iter (add_class_type_field bv) fieldl
   | Pcty_fun(_, ty1, cty2) ->
       add_type bv ty1; add_class_type bv cty2
 
-and add_class_type_field bv = function
+and add_class_type_field bv pctf =
+  match pctf.pctf_desc with
     Pctf_inher cty -> add_class_type bv cty
-  | Pctf_val(_, _, _, ty, _) -> add_type bv ty
-  | Pctf_virt(_, _, ty, _) -> add_type bv ty
-  | Pctf_meth(_, _, ty, _) -> add_type bv ty
-  | Pctf_cstr(ty1, ty2, _) -> add_type bv ty1; add_type bv ty2
+  | Pctf_val(_, _, _, ty) -> add_type bv ty
+  | Pctf_virt(_, _, ty) -> add_type bv ty
+  | Pctf_meth(_, _, ty) -> add_type bv ty
+  | Pctf_cstr(ty1, ty2) -> add_type bv ty1; add_type bv ty2
 
 let add_class_description bv infos =
   add_class_type bv infos.pci_expr
@@ -116,7 +122,7 @@ let rec add_pattern bv pat =
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
-  | Ppat_type (li) -> add bv li
+  | Ppat_type li -> add bv li
   | Ppat_lazy p -> add_pattern bv p
   | Ppat_unpack _ -> ()
 
@@ -144,7 +150,7 @@ let rec add_expr bv exp =
       add_expr bv e1; add_expr bv e2; add_opt add_expr bv opte3
   | Pexp_sequence(e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_while(e1, e2) -> add_expr bv e1; add_expr bv e2
-  | Pexp_for(_, e1, e2, _, e3) ->
+  | Pexp_for( _, e1, e2, _, e3) ->
       add_expr bv e1; add_expr bv e2; add_expr bv e3
   | Pexp_constraint(e1, oty2, oty3) ->
       add_expr bv e1;
@@ -152,16 +158,16 @@ let rec add_expr bv exp =
       add_opt add_type bv oty3
   | Pexp_when(e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_send(e, m) -> add_expr bv e
-  | Pexp_new l -> add bv l
+  | Pexp_new li -> add bv li
   | Pexp_setinstvar(v, e) -> add_expr bv e
   | Pexp_override sel -> List.iter (fun (s, e) -> add_expr bv e) sel
   | Pexp_letmodule(id, m, e) ->
-      add_module bv m; add_expr (StringSet.add id bv) e
+      add_module bv m; add_expr (StringSet.add id.txt bv) e
   | Pexp_assert (e) -> add_expr bv e
   | Pexp_assertfalse -> ()
   | Pexp_lazy (e) -> add_expr bv e
   | Pexp_poly (e, t) -> add_expr bv e; add_opt add_type bv t
-  | Pexp_object (pat, fieldl) ->
+  | Pexp_object { pcstr_pat = pat; pcstr_fields = fieldl } ->
       add_pattern bv pat; List.iter (add_class_field bv) fieldl
 (*> JOCAML *)
   | Pexp_spawn (e) -> add_expr bv e
@@ -190,14 +196,14 @@ and add_modtype bv mty =
     Pmty_ident l -> add bv l
   | Pmty_signature s -> add_signature bv s
   | Pmty_functor(id, mty1, mty2) ->
-      add_modtype bv mty1; add_modtype (StringSet.add id bv) mty2
+      add_modtype bv mty1; add_modtype (StringSet.add id.txt bv) mty2
   | Pmty_with(mty, cstrl) ->
       add_modtype bv mty;
       List.iter
         (function (_, Pwith_type td) -> add_type_declaration bv td
-                | (_, Pwith_module lid) -> addmodule bv lid
+                | (_, Pwith_module (lid)) -> addmodule bv lid
                 | (_, Pwith_typesubst td) -> add_type_declaration bv td
-                | (_, Pwith_modsubst lid) -> addmodule bv lid)
+                | (_, Pwith_modsubst (lid)) -> addmodule bv lid)
         cstrl
   | Pmty_typeof m -> add_module bv m
 
@@ -214,12 +220,12 @@ and add_sig_item bv item =
   | Psig_exception(id, args) ->
       List.iter (add_type bv) args; bv
   | Psig_module(id, mty) ->
-      add_modtype bv mty; StringSet.add id bv
+      add_modtype bv mty; StringSet.add id.txt bv
   | Psig_recmodule decls ->
-      let bv' = List.fold_right StringSet.add (List.map fst decls) bv in
+      let bv' = List.fold_right StringSet.add (List.map (fun (x,_) -> x.txt) decls) bv in
       List.iter (fun (id, mty) -> add_modtype bv' mty) decls;
       bv'
-  | Psig_modtype(id, mtyd) ->
+  | Psig_modtype(id,mtyd) ->
       begin match mtyd with
         Pmodtype_abstract -> ()
       | Pmodtype_manifest mty -> add_modtype bv mty
@@ -240,7 +246,7 @@ and add_module bv modl =
   | Pmod_structure s -> ignore (add_structure bv s)
   | Pmod_functor(id, mty, modl) ->
       add_modtype bv mty;
-      add_module (StringSet.add id bv) modl
+      add_module (StringSet.add id.txt bv) modl
   | Pmod_apply(mod1, mod2) ->
       add_module bv mod1; add_module bv mod2
   | Pmod_constraint(modl, mty) ->
@@ -266,11 +272,11 @@ and add_struct_item bv item =
   | Pstr_exn_rebind(id, l) ->
       add bv l; bv
   | Pstr_module(id, modl) ->
-      add_module bv modl; StringSet.add id bv
+      add_module bv modl; StringSet.add id.txt bv
   | Pstr_recmodule bindings ->
       let bv' =
         List.fold_right StringSet.add
-          (List.map (fun (id,_,_) -> id) bindings) bv in
+          (List.map (fun (id,_,_) -> id.txt) bindings) bv in
       List.iter
         (fun (id, mty, modl) -> add_modtype bv' mty; add_module bv' modl)
         bindings;
@@ -303,7 +309,7 @@ and add_class_expr bv ce =
   match ce.pcl_desc with
     Pcl_constr(l, tyl) ->
       add bv l; List.iter (add_type bv) tyl
-  | Pcl_structure(pat, fieldl) ->
+  | Pcl_structure { pcstr_pat = pat; pcstr_fields = fieldl } ->
       add_pattern bv pat; List.iter (add_class_field bv) fieldl
   | Pcl_fun(_, opte, pat, ce) ->
       add_opt add_expr bv opte; add_pattern bv pat; add_class_expr bv ce
@@ -314,13 +320,14 @@ and add_class_expr bv ce =
   | Pcl_constraint(ce, ct) ->
       add_class_expr bv ce; add_class_type bv ct
 
-and add_class_field bv = function
+and add_class_field bv pcf =
+  match pcf.pcf_desc with
     Pcf_inher(_, ce, _) -> add_class_expr bv ce
-  | Pcf_val(_, _, _, e, _) -> add_expr bv e
-  | Pcf_valvirt(_, _, ty, _)
-  | Pcf_virt(_, _, ty, _) -> add_type bv ty
-  | Pcf_meth(_, _, _, e, _) -> add_expr bv e
-  | Pcf_cstr(ty1, ty2, _) -> add_type bv ty1; add_type bv ty2
+  | Pcf_val(_, _, _, e) -> add_expr bv e
+  | Pcf_valvirt(_, _, ty)
+  | Pcf_virt(_, _, ty) -> add_type bv ty
+  | Pcf_meth(_, _, _, e) -> add_expr bv e
+  | Pcf_constr(ty1, ty2) -> add_type bv ty1; add_type bv ty2
   | Pcf_init e -> add_expr bv e
 
 and add_class_declaration bv decl =

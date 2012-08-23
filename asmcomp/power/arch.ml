@@ -48,7 +48,7 @@ let size_float = 8
 
 (* Behavior of division *)
 
-let division_crashes_on_overflow = false
+let division_crashes_on_overflow = true
 
 (* Operations on addressing modes *)
 

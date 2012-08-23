@@ -198,7 +198,7 @@ let preprocess sourcefile =
     None -> sourcefile
   | Some pp ->
       flush Pervasives.stdout;
-      let tmpfile = Filename.temp_file "camlpp" "" in
+      let tmpfile = Filename.temp_file "ocamldep_pp" "" in
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Sys.command comm <> 0 then begin
         Misc.remove_file tmpfile;
@@ -258,7 +258,8 @@ let report_err source_file exn =
     | Sys_error msg ->
         Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
     | Preprocessing_error ->
-        Format.fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
+        Format.fprintf Format.err_formatter
+                       "@[Preprocessing error on file %s@]@."
             source_file
     | x -> raise x
 
@@ -267,12 +268,14 @@ let read_parse_and_extract parse_function extract_function source_file =
   try
     let input_file = preprocess source_file in
     let ic = open_in_bin input_file in
+    let cleanup () = close_in ic; remove_preprocessed input_file in
     try
       let ast = parse_function ic in
       extract_function Depend.StringSet.empty ast;
+      cleanup ();
       !Depend.free_structure_names
     with x ->
-      close_in ic; remove_preprocessed input_file; raise x
+      cleanup (); raise x
   with x ->
     report_err source_file x;
     Depend.StringSet.empty
@@ -288,8 +291,7 @@ let ml_file_dependencies source_file =
       print_raw_dependencies source_file extracted_deps
     end else begin
       let basename = Filename.chop_extension source_file in
-      let byte_targets =
-        if !native_only then [] else [ basename ^ ".cmo" ] in
+      let byte_targets = [ basename ^ ".cmo" ] in
       let native_targets =
         if !all_dependencies
         then [ basename ^ ".cmx"; basename ^ ".o" ]
@@ -297,13 +299,16 @@ let ml_file_dependencies source_file =
       let init_deps = if !all_dependencies then [source_file] else [] in
       let cmi_name = basename ^ ".cmi" in
       let init_deps, extra_targets =
-        if List.exists (fun ext -> Sys.file_exists (basename ^ ext)) !mli_synonyms
+        if List.exists (fun ext -> Sys.file_exists (basename ^ ext))
+                       !mli_synonyms
         then (cmi_name :: init_deps, cmi_name :: init_deps), []
-        else (init_deps, init_deps), ( if !all_dependencies then [cmi_name] else [] ) in
+        else (init_deps, init_deps),
+             (if !all_dependencies then [cmi_name] else [])
+      in
       let (byt_deps, native_deps) =
         Depend.StringSet.fold (find_dependency ML)
           extracted_deps init_deps in
-      if not !native_only then print_dependencies (byte_targets @ extra_targets) byt_deps;
+      print_dependencies (byte_targets @ extra_targets) byt_deps;
       print_dependencies (native_targets @ extra_targets) native_deps;
     end
 
@@ -433,38 +438,38 @@ let _ =
   Arg.parse [
      "-nojoin", Arg.Set  Clflags.nojoin,
        "act over pure OCaml source files" ;
+     "-all", Arg.Set all_dependencies,
+        " Generate dependencies on all files";
      "-I", Arg.String add_to_load_path,
         "<dir>  Add <dir> to the list of include directories";
      "-impl", Arg.String (file_dependencies_as ML),
-           "<f> Process <f> as a .ml file";
+        "<f>  Process <f> as a .ml file";
      "-intf", Arg.String (file_dependencies_as MLI),
-           "<f> Process <f> as a .mli file";
+        "<f>  Process <f> as a .mli file";
      "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),
-       "<e> Consider <e> as a synonym of the .ml extension";
+        "<e>  Consider <e> as a synonym of the .ml extension";
      "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),
-       "<e> Consider <e> as a synonym of the .mli extension";
-     "-sort", Arg.Set sort_files,
-              " Sort files according to their dependencies";
+        "<e>  Consider <e> as a synonym of the .mli extension";
      "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),
        "<e> Consider <e> as a synonym of the .ml extension";
      "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),
        "<e> Consider <e> as a synonym of the .mli extension";
      "-modules", Arg.Set raw_dependencies,
-              " Print module dependencies in raw form (not suitable for make)";
+        " Print module dependencies in raw form (not suitable for make)";
      "-native", Arg.Set native_only,
-             "  Generate dependencies for a pure native-code project (no .cmo files)";
-     "-all", Arg.Set all_dependencies,
-             "  Generate dependencies on all files (not accommodating for make shortcomings)";
+        " Generate dependencies for native-code only (no .cmo files)";
      "-one-line", Arg.Set one_line,
-             "  Output one line per file, regardless of the length";
+        " Output one line per file, regardless of the length";
      "-pp", Arg.String(fun s -> preprocessor := Some s),
-         "<cmd> Pipe sources through preprocessor <cmd>";
+         "<cmd>  Pipe sources through preprocessor <cmd>";
      "-slash", Arg.Set force_slash,
-            "   (Windows) Use forward slash / instead of backslash \\ in file paths";
+         " (Windows) Use forward slash / instead of backslash \\ in file paths";
+     "-sort", Arg.Set sort_files,
+        " Sort files according to their dependencies";
      "-version", Arg.Unit print_version,
-              " Print version and exit";
+         " Print version and exit";
      "-vnum", Arg.Unit print_version_num,
-           "    Print version number and exit";
+         " Print version number and exit";
     ] file_dependencies usage;
   if !sort_files then sort_files_by_dependencies !files;
   exit (if !error_occurred then 2 else 0)

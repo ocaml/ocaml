@@ -5,7 +5,7 @@ join.o: join.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
  ../../byterun/major_gc.h ../../byterun/freelist.h \
  ../../byterun/minor_gc.h ../../byterun/roots.h ../../byterun/memory.h \
  ../../byterun/custom.h ../../byterun/intext.h ../../byterun/io.h \
- ../../byterun/fix_code.h ../../byterun/fail.h ../../byterun/misc.h
+ ../../byterun/fail.h ../../byterun/misc.h
 st_stubs.o: st_stubs.c ../../byterun/alloc.h \
  ../../byterun/compatibility.h ../../byterun/misc.h \
  ../../byterun/config.h ../../byterun/../config/m.h \

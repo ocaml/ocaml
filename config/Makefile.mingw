@@ -19,6 +19,9 @@
 
 PREFIX=C:/jocamlmgw
 
+### Remove this to disable compiling camlp4
+CAMLP4=camlp4
+
 ### Where to install the binaries
 BINDIR=$(PREFIX)/bin
 
@@ -69,7 +72,6 @@ ASM=$(TOOLPREF)as
 ASPP=gcc
 ASPPPROFFLAGS=
 PROFILING=noprof
-RUNTIMED=noruntimed
 DYNLINKOPTS=
 DEBUGGER=ocamldebugger
 CC_PROFILE=
@@ -78,6 +80,7 @@ EXTRALIBS=
 NATDYNLINK=true
 CMXS=cmxs
 RUNTIMED=noruntimed
+ASM_CFI_SUPPORTED=false
 
 ########## Configuration for the bytecode compiler
 
@@ -101,7 +104,7 @@ NATIVECCLIBS=-lws2_32
 CPP=$(BYTECC) -E
 
 ### Flexlink
-FLEXLINK=flexlink -chain mingw
+FLEXLINK=flexlink -chain mingw -stack 16777216
 FLEXDIR=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)

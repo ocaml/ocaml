@@ -633,8 +633,8 @@ let l : t = { f = lazy (raise Not_found)};;
 
 (* variant *)
 type t = {f: 'a. 'a -> unit};;
-{f=fun ?x y -> ()};;
-{f=fun ?x y -> y};; (* fail *)
+let f ?x y = () in {f};;
+let f ?x y = y in {f};; (* fail *)
 
 (* Polux Moon caml-list 2011-07-26 *)
 module Polux = struct
@@ -643,3 +643,15 @@ module Polux = struct
   class alias = object method alias : 'a . 'a t -> 'a = ident end
   let f (x : <m : 'a. 'a t>) = (x : <m : 'a. 'a>)
 end;;
+
+(* PR#5560 *)
+
+let (a, b) = (raise Exit : int * int);;
+type t = { foo : int }
+let {foo} = (raise Exit : t);;
+type s = A of int
+let (A x) = (raise Exit : s);;
+
+(* PR#5224 *)
+
+type 'x t = < f : 'y. 'y t >;;

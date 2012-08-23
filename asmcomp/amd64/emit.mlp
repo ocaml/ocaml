@@ -396,7 +396,9 @@ let emit_instr fallthrough i =
         if alloc then begin
           `	{load_symbol_addr s}, %rax\n`;
           `	{emit_call "caml_c_call"}\n`;
-          record_frame i.live i.dbg
+          record_frame i.live i.dbg;
+          `	{load_symbol_addr "caml_young_ptr"}, %r11\n`;
+          `	movq    (%r11), %r15\n`;
         end else begin
           `	{emit_call s}\n`
         end
@@ -769,6 +771,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  reset_debug_info();                   (* PR#5603 *)
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
     if macosx then

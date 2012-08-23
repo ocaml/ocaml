@@ -149,7 +149,8 @@ phrase:
 fundecl:
     LPAREN FUNCTION STRING LPAREN params RPAREN sequence RPAREN
       { List.iter (fun (id, ty) -> unbind_ident id) $5;
-        {fun_name = $3; fun_args = $5; fun_body = $7; fun_fast = true} }
+        {fun_name = $3; fun_args = $5; fun_body = $7; fun_fast = true;
+         fun_dbg = Debuginfo.none} }
 ;
 params:
     oneparam params     { $1 :: $2 }

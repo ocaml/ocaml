@@ -56,8 +56,9 @@ type t =
   | Unused_type_declaration of string       (* 34 *)
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
-  | Unused_constructor of string            (* 37 *)
-  | Unused_exception of string              (* 38 *)
+  | Unused_constructor of string * bool * bool  (* 37 *)
+  | Unused_exception of string * bool       (* 38 *)
+  | Unused_rec_flag                         (* 39 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -105,9 +106,10 @@ let number = function
   | Unused_ancestor _ -> 36
   | Unused_constructor _ -> 37
   | Unused_exception _ -> 38
+  | Unused_rec_flag -> 39
 ;;
 
-let last_warning_number = 38;;
+let last_warning_number = 39
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -123,7 +125,7 @@ let letter = function
   | 'h' -> []
   | 'i' -> []
   | 'j' -> []
-  | 'k' -> [32; 33; 34; 35; 36; 37; 38]
+  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39]
   | 'l' -> [6]
   | 'm' -> [7]
   | 'n' -> []
@@ -202,7 +204,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..38";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -235,7 +237,7 @@ let message = function
        Here is an example of a value that is not matched:\n" ^ s
   | Non_closed_record_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
-      "\nEither bind these labels explicitly or add `; _' to the pattern."
+      "\nEither bind these labels explicitly or add '; _' to the pattern."
   | Statement_type ->
       "this expression should have type unit."
   | Unused_match -> "this match case is unused."
@@ -262,8 +264,8 @@ let message = function
       "this statement never returns (or has an unsound type.)"
   | Camlp4 s -> s
   | Useless_record_with ->
-      "this record is defined by a `with' expression,\n\
-       but no fields are borrowed from the original."
+      "all the fields are explicitly listed in this record:\n\
+       the 'with' clause is useless."
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
   | All_clauses_guarded ->
@@ -285,8 +287,23 @@ let message = function
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
-  | Unused_constructor s -> "unused constructor " ^ s ^ "."
-  | Unused_exception s -> "unused exception constructor " ^ s ^ "."
+  | Unused_constructor (s, false, false) -> "unused constructor " ^ s ^ "."
+  | Unused_constructor (s, true, _) ->
+      "constructor " ^ s ^
+      " is never used to build values.\n\
+        (However, this constructor appears in patterns.)"
+  | Unused_constructor (s, false, true) ->
+      "constructor " ^ s ^
+      " is never used to build values.\n\
+        Its type is exported as a private type."
+  | Unused_exception (s, false) ->
+      "unused exception constructor " ^ s ^ "."
+  | Unused_exception (s, true) ->
+      "exception constructor " ^ s ^
+      " is never raised or used to build values.\n\
+        (However, this constructor appears in patterns.)"
+  | Unused_rec_flag ->
+      "unused rec flag."
 ;;
 
 let nerrors = ref 0;;
@@ -331,14 +348,14 @@ let descriptions =
     5, "Partially applied function: expression whose result has function\n\
    \    type and is ignored.";
     6, "Label omitted in function application.";
-    7, "Some methods are overridden in the class where they are defined.";
+    7, "Method overridden.";
     8, "Partial match: missing cases in pattern-matching.";
     9, "Missing fields in a record pattern.";
    10, "Expression on the left-hand side of a sequence that doesn't have type\n\
    \    \"unit\" (and that is not a function, see warning number 5).";
    11, "Redundant case in a pattern matching (unused match case).";
    12, "Redundant sub-pattern in a pattern-matching.";
-   13, "Override of an instance variable.";
+   13, "Instance variable overridden.";
    14, "Illegal backslash escape in a string constant.";
    15, "Private method made public implicitly.";
    16, "Unerasable optional argument.";
@@ -371,6 +388,7 @@ let descriptions =
    36, "Unused ancestor variable.";
    37, "Unused constructor.";
    38, "Unused exception constructor.";
+   39, "Unused rec flag.";
   ]
 ;;
 

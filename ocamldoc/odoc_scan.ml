@@ -28,7 +28,18 @@ class scanner =
   (** Scan of 'leaf elements'. *)
 
     method scan_value (v : Odoc_value.t_value) = ()
-    method scan_type (t : Odoc_type.t_type) = ()
+
+    method scan_type_pre (t : Odoc_type.t_type) = true
+
+    method scan_type_recfield t (f : Odoc_type.record_field) = ()
+    method scan_type_const t (f : Odoc_type.variant_constructor) = ()
+    method scan_type (t : Odoc_type.t_type) =
+      if self#scan_type_pre t then
+        match t.Odoc_type.ty_kind with
+          Odoc_type.Type_abstract -> ()
+        | Odoc_type.Type_variant l -> List.iter (self#scan_type_const t) l
+        | Odoc_type.Type_record l -> List.iter (self#scan_type_recfield t) l
+
     method scan_exception (e : Odoc_exception.t_exception) = ()
     method scan_attribute (a : Odoc_value.t_attribute) = ()
     method scan_method (m : Odoc_value.t_method) = ()
@@ -45,7 +56,7 @@ class scanner =
     method scan_class_pre (c : Odoc_class.t_class) = true
 
     (** This method scan the elements of the given class.
-       A VOIR : scan des classes h�rit�es.*)
+       A VOIR : scan des classes hÃ©ritÃ©es.*)
     method scan_class_elements c =
       List.iter
         (fun ele ->
@@ -71,7 +82,7 @@ class scanner =
     method scan_class_type_pre (ct : Odoc_class.t_class_type) = true
 
     (** This method scan the elements of the given class type.
-       A VOIR : scan des classes h�rit�es.*)
+       A VOIR : scan des classes hÃ©ritÃ©es.*)
     method scan_class_type_elements ct =
       List.iter
         (fun ele ->

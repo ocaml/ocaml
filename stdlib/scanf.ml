@@ -483,7 +483,7 @@ let compatible_format_type fmt1 fmt2 =
   Tformat.summarize_format_type (string_to_format fmt2);;
 
 (* Checking that [c] is indeed in the input, then skips it.
-   In this case, the character c has been explicitely specified in the
+   In this case, the character c has been explicitly specified in the
    format as being mandatory in the input; hence we should fail with
    End_of_file in case of end_of_input. (Remember that Scan_failure is raised
    only when (we can prove by evidence) that the input does not match the
@@ -1032,7 +1032,7 @@ let scan_range fmt j =
       scan_closing (j + 1)
     | _ -> scan_closing j in
 
-  let rec scan_first_neg j =
+  let scan_first_neg j =
     if j >= len then incomplete_format fmt else
     match Sformat.get fmt j with
     | '^' ->

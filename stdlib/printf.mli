@@ -27,7 +27,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 
    Conversion specifications have the following form:
 
-   [% \[flags\] \[width\] \[.precision\] type]
+   [% [flags] [width] [.precision] type]
 
    In short, a conversion specification consists in the [%] character,
    followed by optional modifiers and a type which is made of one or
@@ -159,7 +159,7 @@ val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 
 (**/**)
 
-(* For OCaml system internal use only. Don't call directly. *)
+(* The following is for system use only. Do not call directly. *)
 
 module CamlinternalPr : sig
 

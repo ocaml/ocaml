@@ -7,15 +7,15 @@ include $(TOPDIR)/config/Makefile
 DIFF=diff -q
 BOOTDIR=$(TOPDIR)/boot
 OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
-OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml$(EXE) -I $(TOPDIR)/stdlib
-OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc$(EXE) -I $(TOPDIR)/stdlib
-OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt$(EXE) -I $(TOPDIR)/stdlib
-OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc$(EXE)
-OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex$(EXE)
-OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib$(EXE)
+OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml -I $(TOPDIR)/stdlib
+OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc $(NOJOIN) -I $(TOPDIR)/stdlib
+OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt $(NOJOIN)  -I $(TOPDIR)/stdlib
+OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc
+OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex
+OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
-DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj$(EXE)
+DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj
 BYTECODE_ONLY=`if [ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]; then echo 'YES'; else echo ''; fi`
 #COMPFLAGS=
 #FORTRAN_COMPILER=

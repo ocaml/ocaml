@@ -99,6 +99,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _a = set make_archive
   let _absname = set Location.absname
   let _annot = set annotations
+  let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
   let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs

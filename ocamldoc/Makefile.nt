@@ -148,6 +148,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/predef.cmo \
 	$(OCAMLSRCDIR)/typing/datarepr.cmo \
 	$(OCAMLSRCDIR)/typing/subst.cmo \
+	$(OCAMLSRCDIR)/typing/cmi_format.cmo \
 	$(OCAMLSRCDIR)/typing/env.cmo \
 	$(OCAMLSRCDIR)/typing/ctype.cmo \
 	$(OCAMLSRCDIR)/typing/primitive.cmo \
@@ -155,9 +156,10 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/printtyp.cmo \
 	$(OCAMLSRCDIR)/typing/includecore.cmo \
 	$(OCAMLSRCDIR)/typing/typetexp.cmo \
-	$(OCAMLSRCDIR)/typing/parmatch.cmo \
 	$(OCAMLSRCDIR)/typing/typedtree.cmo \
+	$(OCAMLSRCDIR)/typing/parmatch.cmo \
 	$(OCAMLSRCDIR)/typing/stypes.cmo \
+	$(OCAMLSRCDIR)/typing/cmt_format.cmo \
 	$(OCAMLSRCDIR)/typing/typecore.cmo \
 	$(OCAMLSRCDIR)/typing/includeclass.cmo \
 	$(OCAMLSRCDIR)/typing/typedecl.cmo \
@@ -185,7 +187,7 @@ opt.opt: exeopt libopt
 exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 debug:
-	make OCAMLPP=""
+	$(MAKE) OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)

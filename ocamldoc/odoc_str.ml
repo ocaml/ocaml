@@ -128,7 +128,7 @@ let string_of_class_type_param_list l =
 let string_of_class_params c =
   let b = Buffer.create 256 in
   let rec iter = function
-      Types.Tcty_fun (label, t, ctype) ->
+      Types.Cty_fun (label, t, ctype) ->
         let parent = is_arrow_type t in
         Printf.bprintf b "%s%s%s%s -> "
           (
@@ -146,8 +146,8 @@ let string_of_class_params c =
           )
           (if parent then ")" else "");
         iter ctype
-    | Types.Tcty_signature _
-    | Types.Tcty_constr _ -> ()
+    | Types.Cty_signature _
+    | Types.Cty_constr _ -> ()
   in
   iter c.Odoc_class.cl_type;
   Buffer.contents b
