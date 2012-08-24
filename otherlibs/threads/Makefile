@@ -21,7 +21,7 @@ COMPILER=../../ocamlcomp.sh -I ../unix $(NOJOIN)
 CAMLC=../../ocamlcomp.sh -I ../unix $(NOJOIN)
 JCC=../../ocamlcomp.sh -I ../unix 
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error A
+COMPFLAGS=-warn-error A -annot
 OCAMLPP=-pp '../../tools/remove_DEBUG'
 
 JOIN_C_OBJS=join.o

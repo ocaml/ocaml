@@ -121,7 +121,7 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # enough for developping jocaml (et c'est deja pas mal)
-center:runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
+center:runtime ocamlc ocamllex ocamlyacc ocamltools library otherlibraries ocaml
 # Recompile the system using the bootstrap compiler
 all: center $(CAMLP4OUT) $(DEBUGGER) ocamldoc
 
@@ -369,16 +369,23 @@ partialclean::
 	rm -f ocamlopt ocamlcompopt.sh
 
 # The toplevel
+JOTOPLIBS=otherlibs/unix/unix.cma otherlibs/systhreads/threads.cma \
+ otherlibs/join/join.cma
+JOTOPINCLUDES=-I otherlibs/unix -I otherlibs/systhreads -I otherlibs/join
+jotoplibs:
+	for i in unix threads systhreads join ; do \
+          (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
+        done
 
 compilerlibs/ocamltoplevel.cma: $(TOPLEVEL)
 	$(CAMLC) -a -o $@ $(TOPLEVEL)
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
-ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp \
+ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma compilerlibs/ocamltoplevel.cma  jotoplibs $(TOPLEVELSTART) expunge
+	$(CAMLC) -thread $(LINKFLAGS) $(JOTOPINCLUDES) -linkall -o ocaml.tmp \
           compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-          compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
+          compilerlibs/ocamltoplevel.cma $(JOTOPLIBS) $(TOPLEVELSTART)
 	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp
 
@@ -401,6 +408,7 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
+	    -e 's|%%OCAMLLIB%%|$(OCAMLLIB)|' \
 	    -e 's|%%BYTERUN%%|$(BINDIR)/jocamlrun|' \
 	    -e 's|%%CCOMPTYPE%%|cc|' \
 	    -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \

@@ -16,7 +16,6 @@
 /* Structured output */
 
 /* The interface of this file is "intext.h" */
-
 #include <string.h>
 #include "alloc.h"
 #include "custom.h"
@@ -383,7 +382,12 @@ static int caml_find_saved_code(char *c)
 {
   int i ;
   for (i = 0 ; i < ncodes_saved ; i++) {
-    if (saved_code[i] == c) return i ;
+    if (saved_code[i] == c) { 
+#ifdef DEBUG
+      fprintf(stderr, "find code %p -> %i\n", c, i) ;
+#endif
+      return i ;
+    }
   }
   return -1 ;
 }
@@ -391,7 +395,11 @@ static int caml_find_saved_code(char *c)
 CAMLexport char *caml_get_saved_code(int idx)
 {
   if (idx < ncodes_saved) {
-    return saved_code[idx] ;
+    char *c = saved_code[idx] ;
+#ifdef DEBUG
+    fprintf(stderr, "get code %i -> %p\n", idx, c) ;
+#endif
+    return c ;
   } else {
     return NULL ;
   }
@@ -474,7 +482,15 @@ static void extern_rec(value v)
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
     char ctag ;
-
+#ifdef DEBUG
+    if (tag  == Closure_tag) {
+      fprintf(stderr,"Closure %p:",(void *)v) ;
+      int k ;
+      for (k = 0 ; k < sz ; k++)
+        fprintf(stderr," %p",(void *)Field(v,k)) ;
+      fprintf(stderr,"\n") ;
+    }
+#endif
     if (tag == Forward_tag) {
       value f = Forward_val (v);
       if (Is_block (f)
@@ -582,16 +598,18 @@ static void extern_rec(value v)
       extern_record_location(v);
       break;
     }
-    default: {
+    default:
+    /* <JOCAML */
+    {
       int ofs = caml_find_saved_value(v) ;
       if (ofs >= 0) {
         Write(CODE_SAVEDVALUE) ;
         Write(ofs) ;
-        break ; /* saved values do not follow sharing mechanism */
+        goto next_item ; /* saved values do not follow sharing mechanism */
       }
     }
-    /* <JOCAML */
-     {
+    /*<JOCAML */
+      {
       value field0;
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
@@ -620,17 +638,17 @@ static void extern_rec(value v)
     }
   }
   else if ((cf = extern_find_code((char *) v)) != NULL) {
-    /* >JOCAML */
-    int ofs = caml_find_saved_code((code_t)v) ;
+    /*>JOCAML */
+    int ofs = caml_find_saved_code((char *)v) ;
+    if (ofs < 0 && !extern_closures)
+      extern_invalid_argument("output_value: functional value");    
     if (ofs >= 0) {
-      Write(CODE_SAVEDCODE) ;
-      Write(ofs) ;
+      writecode8(CODE_SAVEDCODE,ofs) ;
+    } else {
+      writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
+      writeblock((char *) cf->digest, 16);
     }
-    /* <JOCAML */
-    else if (!extern_closures)
-      extern_invalid_argument("output_value: functional value");
-    writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-    writeblock((char *) cf->digest, 16);
+    /*<JOCAML */
   } else {
     extern_invalid_argument("output_value: abstract value (outside heap)");
   }

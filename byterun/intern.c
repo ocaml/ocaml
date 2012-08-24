@@ -16,7 +16,6 @@
 /* Structured input, compact format */
 
 /* The interface of this file is "intext.h" */
-
 #include <string.h>
 #include <stdio.h>
 #include "alloc.h"
@@ -125,6 +124,12 @@ static void intern_cleanup(void)
   /* free the recursion stack */
   intern_free_stack();
 }
+
+/*>JOCAML */
+void caml_intern_cleanup(void) {
+  intern_cleanup() ;
+}
+/*<JOCAML */
 
 static void readfloat(double * dest, unsigned int code)
 {
@@ -462,7 +467,7 @@ static void intern_rec(value *dest)
           }
         }
         break;
-        /*>JOCAML*/
+     /*>JOCAML*/
       case CODE_SAVEDCODE:
         ofs = read8u() ;
         v = (value)caml_get_saved_code(ofs) ;
@@ -470,7 +475,6 @@ static void intern_rec(value *dest)
           intern_cleanup() ;
           caml_failwith("input_value: no code saved");
         }
-        /* Saved code values are not shared */           
         break ;
       case CODE_SAVEDVALUE:
         ofs = read8u() ;
@@ -480,8 +484,8 @@ static void intern_rec(value *dest)
           caml_failwith("input_value: no value saved");
         }
         /* Beware of saved values in minor heap ! */
-	caml_initialize(dest, v) ;
-	return ;
+        caml_initialize(dest, v) ;
+	continue ; /* with next iteration of main loop, skipping *dest = v */
         /*<JOCAML*/
       case CODE_INFIXPOINTER:
         ofs = read32u();
@@ -525,7 +529,7 @@ static void intern_rec(value *dest)
   break;
   default:
     Assert(0);
-  }
+  }  
   }
   /* We are done. Cleanup the stack and leave the function */
   intern_free_stack();
