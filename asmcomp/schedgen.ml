@@ -65,6 +65,33 @@ let add_edge ancestor son delay =
 
 let add_edge_after son ancestor = add_edge ancestor son 0
 
+(* Add edges from all instructions that define a pseudoregister [arg] being used
+   as argument to node [node] (RAW dependencies *)
+
+let add_RAW_dependencies node arg =
+  try
+    let ancestor = Hashtbl.find code_results arg.loc in
+    add_edge ancestor node ancestor.delay
+  with Not_found ->
+    ()
+
+(* Add edges from all instructions that use a pseudoregister [res] that is
+   defined by node [node] (WAR dependencies). *)
+
+let add_WAR_dependencies node res =
+  let ancestors = Hashtbl.find_all code_uses res.loc in
+  List.iter (add_edge_after node) ancestors
+
+(* Add edges from all instructions that have already defined a pseudoregister
+   [res] that is defined by node [node] (WAW dependencies). *)
+
+let add_WAW_dependencies node res =
+  try
+    let ancestor = Hashtbl.find code_results res.loc in
+    add_edge ancestor node 0
+  with Not_found ->
+    ()
+
 (* Compute length of longest path to a result.
    For leafs of the DAG, see whether their result is used in the instruction
    immediately following the basic block (a "critical" output). *)
@@ -200,10 +227,19 @@ method private instr_issue_cycles instr =
   | Lreloadretaddr -> self#reload_retaddr_issue_cycles
   | _ -> assert false
 
+(* Pseudoregisters destroyed by an instruction *)
+
+method private destroyed_by_instr instr =
+  match instr.desc with
+  | Lop op -> Proc.destroyed_at_oper (Iop op)
+  | Lreloadretaddr -> [||]
+  | _ -> assert false
+
 (* Add an instruction to the code dag *)
 
 method private add_instruction ready_queue instr =
   let delay = self#instr_latency instr in
+  let destroyed = self#destroyed_by_instr instr in
   let node =
     { instr = instr;
       delay = delay;
@@ -214,28 +250,17 @@ method private add_instruction ready_queue instr =
       emitted_ancestors = 0 } in
   (* Add edges from all instructions that define one of the registers used
      (RAW dependencies) *)
-  for i = 0 to Array.length instr.arg - 1 do
-    try
-      let ancestor = Hashtbl.find code_results instr.arg.(i).loc in
-      add_edge ancestor node ancestor.delay
-    with Not_found ->
-      ()
-  done;
+  Array.iter (add_RAW_dependencies node) instr.arg;
   (* Also add edges from all instructions that use one of the result regs
-     of this instruction (WAR dependencies). *)
-  for i = 0 to Array.length instr.res - 1 do
-    let ancestors = Hashtbl.find_all code_uses instr.res.(i).loc in
-    List.iter (add_edge_after node) ancestors
-  done;
+     of this instruction, or a reg destroyed by this instruction
+     (WAR dependencies). *)
+  Array.iter (add_WAR_dependencies node) instr.res;
+  Array.iter (add_WAR_dependencies node) destroyed;   (* PR#5731 *)
   (* Also add edges from all instructions that have already defined one
-     of the results of this instruction (WAW dependencies). *)
-  for i = 0 to Array.length instr.res - 1 do
-    try
-      let ancestor = Hashtbl.find code_results instr.res.(i).loc in
-      add_edge ancestor node 0
-    with Not_found ->
-      ()
-  done;
+     of the results of this instruction, or a reg destroyed by
+     this instruction (WAW dependencies). *)
+  Array.iter (add_WAW_dependencies node) instr.res;
+  Array.iter (add_WAW_dependencies node) destroyed;   (* PR#5731 *)
   (* If this is a load, add edges from the most recent store viewed so
      far (if any) and remember the load.  Also add edges from the most
      recent checkbound and forget that checkbound. *)
@@ -263,6 +288,9 @@ method private add_instruction ready_queue instr =
   (* Remember the registers used and produced by this instruction *)
   for i = 0 to Array.length instr.res - 1 do
     Hashtbl.add code_results instr.res.(i).loc node
+  done;
+  for i = 0 to Array.length destroyed - 1 do
+    Hashtbl.add code_results destroyed.(i).loc node  (* PR#5731 *)
   done;
   for i = 0 to Array.length instr.arg - 1 do
     Hashtbl.add code_uses instr.arg.(i).loc node
