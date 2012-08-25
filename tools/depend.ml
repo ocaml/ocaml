@@ -186,7 +186,7 @@ and add_pat_expr_list bv pel =
 
 and add_bindings recf bv pel =
   let bv' = List.fold_left (fun bv (p, _) -> add_pattern bv p) bv pel in
-  let bv = if recf = Recursive then bv else bv' in
+  let bv = if recf = Recursive then bv' else bv in
   List.iter (fun (_, e) -> add_expr bv e) pel;
   bv'
 
