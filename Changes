@@ -8,6 +8,7 @@ Bug fixes:
 - PR#5719: ocamlyacc generates code that is not warning 33-compliant
 - PR#5731: instruction scheduling forgot to account for destroyed registers
 - PR#5735: %apply and %revapply not first class citizens
+- PR#5738: first class module patterns not handled by ocamldep
 
 OCaml 4.00.0:
 -------------
