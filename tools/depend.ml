@@ -124,7 +124,7 @@ let rec add_pattern bv pat =
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type li -> add bv li
   | Ppat_lazy p -> add_pattern bv p
-  | Ppat_unpack _ -> ()
+  | Ppat_unpack id -> add bv (mkloc (Lident id.txt) id.loc)
 
 let rec add_expr bv exp =
   match exp.pexp_desc with
