@@ -336,7 +336,11 @@ class virtual text =
         in
         fun b s ->
       if !colorize_code then
-         self#html_of_code b (remove_useless_newlines s)
+          (
+           bs b "<pre class=\"codepre\">";
+           self#html_of_code b (remove_useless_newlines s);
+           bs b "</pre>"
+          )
       else
         (
          bs b "<pre class=\"codepre\"><code class=\"";
