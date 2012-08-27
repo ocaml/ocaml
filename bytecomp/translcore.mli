@@ -29,7 +29,6 @@ val transl_let:
       rec_flag -> (pattern * expression) list -> lambda -> lambda
 (*> JOCAML *)
 val transl_def: joinautomaton list -> lambda -> lambda
-val transl_loc: joinlocation list -> lambda -> lambda    
 (*< JOCAML *)
 val transl_primitive: Primitive.description -> lambda
 val transl_exception:

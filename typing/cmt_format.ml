@@ -310,7 +310,6 @@ end = struct
             Tstr_include (map_module_expr mexpr, idents)
 (*> JOCAML *)
           | Tstr_def d -> Tstr_def (map_joinautomata d)
-          | Tstr_loc _ -> assert false
           | Tstr_exn_global (path,loc) -> Tstr_exn_global (path,loc)
 (*< JOCAML *)
       in
@@ -529,7 +528,6 @@ end = struct
               Texp_reply (map_expression e,id)
           |Texp_def (d, e) ->
               Texp_def(map_joinautomata d,map_expression e)
-          |Texp_loc (_, _) -> assert false
 (*<JOCAML *)
       in
       let exp_extra = List.map map_exp_extra exp.exp_extra in

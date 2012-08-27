@@ -376,7 +376,6 @@ and expression i ppf x =
       line i ppf "Pexp_def\n" ;
       list i joinautomaton ppf d ;
       expression i ppf e
-  | Texp_loc (_, _) -> assert false
 (*< JOCAML *)
 and value_description i ppf x =
   line i ppf "value_description\n";
@@ -708,7 +707,6 @@ and structure_item i ppf x =
       list i joinautomaton ppf d
   | Tstr_exn_global (path,_) ->
       line i ppf "Pstr_exn_glocal %a\n" fmt_path path
-  | Tstr_loc _ -> assert false
 (*< JOCAML *)
 
 and string_x_type_declaration i ppf (s, _, td) =

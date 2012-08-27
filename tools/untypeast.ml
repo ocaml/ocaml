@@ -90,8 +90,7 @@ and untype_structure_item item =
     | Tstr_include (mexpr, _) ->
         Pstr_include (untype_module_expr mexpr)
 (*> JOCAML *)
-    | Tstr_def _
-    | Tstr_loc _ -> assert false (* TODO *)
+    | Tstr_def _ -> assert false (* TODO *)
     | Tstr_exn_global (_,lid)  ->
         Pstr_exn_global lid
 (*< JOCAML *)
@@ -294,7 +293,7 @@ and untype_expression exp =
         Pexp_pack (untype_module_expr mexpr)
 (*>JOCAML *)
     |Texp_asyncsend (_, _)|Texp_spawn _|Texp_par (_, _)|Texp_null
-    | Texp_reply (_, _)|Texp_def (_, _)|Texp_loc (_, _) ->
+    | Texp_reply (_, _)|Texp_def (_, _) ->
         assert false (* TODO *)
 (*<JOCAML *)
   in

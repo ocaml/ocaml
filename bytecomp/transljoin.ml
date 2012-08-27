@@ -224,7 +224,7 @@ let rec is_principal id p = match p.exp_desc with
 | Texp_reply (_, kont) -> kont=id
 | Texp_par (p1, p2) ->
    is_principal id p1 || is_principal id p2
-| Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
+| Texp_let (_,_,p) | Texp_def (_,p)
 | Texp_sequence (_,p) | Texp_when (_,p) -> 
    is_principal id p
 | Texp_match (_,(_,p)::cls,_) ->
@@ -283,7 +283,7 @@ let rec simple_exp e = match e.exp_desc with
 | Texp_match (_, _, Partial) -> false
 | Texp_ifthenelse (e, eifso, eo) ->
    simple_exp e && simple_exp eifso && simple_exp_option eo
-| Texp_def (_,e)|Texp_loc(_,e) -> simple_exp e
+| Texp_def (_,e) -> simple_exp e
 (* Simple simple expressions *)
 | Texp_ident _ | Texp_constant _ | Texp_function _
 | Texp_variant (_,None) 
@@ -337,7 +337,7 @@ and simple_proc p = match p.exp_desc with
    simple_exp e && simple_proc pifso && simple_proc pifno
 | Texp_ifthenelse (e, pifso, None) ->
    simple_exp e && simple_proc pifso    
-| Texp_def (_,p)|Texp_loc(_,p) -> simple_proc p
+| Texp_def (_,p) -> simple_proc p
 | Texp_for (_,_,e1,e2,_,_body) -> (* _body is compiled so a not to fail *)
    simple_exp e1 && simple_exp e2
 (* Process constructs *)

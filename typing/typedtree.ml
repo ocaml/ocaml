@@ -109,12 +109,6 @@ and expression_desc =
   | Texp_null
   | Texp_reply of expression * Ident.t
   | Texp_def of joinautomaton list * expression
-  | Texp_loc of joinlocation list * expression
-
-
-and joinlocation =
-    {jloc_desc : joinident * joinautomaton list * expression ;
-      jloc_loc : Location.t}
 
 and 'a joinautomaton_gen =
     {jauto_desc : 'a ;
@@ -272,7 +266,6 @@ and structure_item_desc =
   | Tstr_include of module_expr * Ident.t list
 (*> JOCAML *)
   | Tstr_def of joinautomaton list
-  | Tstr_loc of joinlocation list
   | Tstr_exn_global of Path.t * Longident.t loc
 (*< JOCAML *)
 
@@ -521,18 +514,9 @@ let do_def_bound_idents autos r =
     (fun {jauto_original=names} r -> names@r)
     autos r
 
-let do_loc_bound_idents locs r =
-  List.fold_right
-    (fun {jloc_desc=(id_loc,autos,_)} r ->
-      id_loc.jident_desc::do_def_bound_idents autos r)
-    locs r
-      
-
 let def_bound_idents d = do_def_bound_idents d []
-let loc_bound_idents d = do_loc_bound_idents d []
 
 let rev_def_bound_idents d = List.rev (def_bound_idents d)
-let rev_loc_bound_idents d =  List.rev (loc_bound_idents d)
 (*< JOCAML *)
 
 let alpha_var env id = List.assoc id env

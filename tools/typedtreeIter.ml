@@ -157,7 +157,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ) list
         | Tstr_include (mexpr, _) ->
             iter_module_expr mexpr
-        | Tstr_def _|Tstr_loc _|Tstr_exn_global (_, _) ->
+        | Tstr_def _|Tstr_exn_global (_, _) ->
             assert false (* TODO *)
       end;
       Iter.leave_structure_item item
@@ -329,7 +329,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_module_expr mexpr
 (*>JOCAML *)
         | Texp_asyncsend (_, _)|Texp_spawn _|Texp_par (_, _)|Texp_null
-        | Texp_reply (_, _)|Texp_def (_, _)|Texp_loc (_, _) ->
+        | Texp_reply (_, _)|Texp_def (_, _) ->
             assert false (* TODO *)
 (*<JOCAML *)
       end;

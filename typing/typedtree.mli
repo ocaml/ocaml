@@ -108,12 +108,7 @@ and expression_desc =
   | Texp_null
   | Texp_reply of expression * Ident.t
   | Texp_def of joinautomaton list * expression
-  | Texp_loc of joinlocation list * expression
 
-
-and joinlocation =
-    {jloc_desc : joinident * joinautomaton list * expression ;
-    jloc_loc : Location.t}
 
 and 'a joinautomaton_gen =
     {jauto_desc : 'a ;
@@ -265,7 +260,6 @@ and structure_item_desc =
   | Tstr_include of module_expr * Ident.t list
 (*> JOCAML *)
   | Tstr_def of joinautomaton list
-  | Tstr_loc of joinlocation list
   | Tstr_exn_global of Path.t * Longident.t loc
 (*< JOCAML *)
 
@@ -451,9 +445,7 @@ val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
 val pat_bound_idents: pattern -> Ident.t list
 (*> JOCAML *)
 val def_bound_idents: joinautomaton list -> Ident.t list
-val loc_bound_idents: joinlocation list -> Ident.t list
 val rev_def_bound_idents: joinautomaton list -> Ident.t list
-val rev_loc_bound_idents: joinlocation list -> Ident.t list
 (*< JOCAML *)
 
 val let_bound_idents_with_loc:

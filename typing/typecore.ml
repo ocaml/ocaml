@@ -1272,7 +1272,7 @@ and is_nonexpansive_mod mexp =
           | Tstr_class _ -> false (* could be more precise *)
 (*>JOCAML*)
 (* Err on the safe side... *)
-          | Tstr_exn_global (_, _)|Tstr_loc _|Tstr_def _ -> false
+          | Tstr_exn_global (_, _)|Tstr_def _ -> false
 (*<JOCAML*)
         )
         str.str_items
@@ -3372,7 +3372,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let rec_needed = ref false in
   let warn_unused =
     Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
-    (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))
+     (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))
   in
   let pat_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:

@@ -18,6 +18,8 @@ OTHEROBJS=\
   $(TOPDIR)/utils/ccomp.cmo \
   $(TOPDIR)/utils/warnings.cmo \
   $(TOPDIR)/utils/consistbl.cmo \
+  $(TOPDIR)/utils/extarray.cmo \
+  $(TOPDIR)/utils/agraph.cmo \
   $(TOPDIR)/parsing/location.cmo \
   $(TOPDIR)/parsing/longident.cmo \
   $(TOPDIR)/parsing/syntaxerr.cmo \
@@ -47,6 +49,8 @@ OTHEROBJS=\
   $(TOPDIR)/typing/typetexp.cmo \
   $(TOPDIR)/typing/cmt_format.cmo \
   $(TOPDIR)/typing/stypes.cmo \
+  $(TOPDIR)/typing/joinmatching.cmo \
+  $(TOPDIR)/typing/typejoin.cmo \
   $(TOPDIR)/typing/typecore.cmo \
   $(TOPDIR)/typing/typedecl.cmo \
   $(TOPDIR)/typing/typeclass.cmo \
@@ -57,6 +61,7 @@ OTHEROBJS=\
   $(TOPDIR)/bytecomp/switch.cmo \
   $(TOPDIR)/bytecomp/matching.cmo \
   $(TOPDIR)/bytecomp/translobj.cmo \
+  $(TOPDIR)/bytecomp/transljoin.cmo \
   $(TOPDIR)/bytecomp/translcore.cmo \
   $(TOPDIR)/bytecomp/translclass.cmo \
   $(TOPDIR)/bytecomp/translmod.cmo \

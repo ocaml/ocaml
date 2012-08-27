@@ -642,7 +642,6 @@ and transl_exp0 e =
 (*> JOCAML *)
   | Texp_def (d,body) ->
       do_transl_def d (transl_exp body)
-  | Texp_loc (d,body) -> assert false
 (*>JOCAML*)
   | Texp_function (_, pat_expr_list, partial) ->
       let ((kind, params), body) =
@@ -932,7 +931,6 @@ and transl_proc die sync p = match p.exp_desc with
       rec_flag pat_expr_list (transl_proc die sync body)
 | Texp_def (d,body) ->
     do_transl_def d (transl_proc die sync body)
-| Texp_loc (d,body) -> assert false
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (Transljoin.reply_handler sync p transl_exp cond,
@@ -1015,7 +1013,6 @@ and transl_simple_proc die sync p = match p.exp_desc with
       rec_flag pat_expr_list (transl_simple_proc die sync body)
 | Texp_def (d,body) ->
     do_transl_def d (transl_simple_proc die sync body)
-| Texp_loc (d,body) -> assert false
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (transl_exp cond,
@@ -1459,7 +1456,6 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 (*> JOCAML *)
 (* For external usage *)
 let transl_def d k = do_transl_def d k
-and transl_loc d k = assert false
 and transl_let = transl_let id_lam transl_exp
 (*< JOCAML *)
 
