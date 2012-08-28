@@ -421,14 +421,130 @@ let as_procs sync e =
 let rec get_chan_rec id = function
  | [] -> raise Not_found
  | (oid,x)::rem ->
-     if id = oid then x else get_chan_rec id rem
+     if Ident.same id oid then x else get_chan_rec id rem
 
-let dump_idx fp (id, _) = fprintf fp "%s" (Ident.unique_name id)
+open Printf
 
+let dump_chan fp chan =
+  fprintf fp "{id=%s, sync=%b}"
+    (Ident.unique_name chan.jchannel_ident)
+    chan.jchannel_sync
+
+let compile_auto a =
+(*
+  eprintf "AUTO:" ;
+  List.iter (fun (_,chan) -> eprintf " %a" dump_chan chan) a.jauto_names ;
+  eprintf "\n%!" ;
+*)
+  let get_chan tag id =
+    try get_chan_rec id a.jauto_names
+    with Not_found ->
+      fatal_error
+        (Printf.sprintf "Transljoin.compile_auto [%s]: %s" tag
+           (Ident.unique_name id)) in
+          
+  let (disps, reacs), new_names = 
+    Joinmatching.compile a.jauto_loc
+      (List.map
+         (fun cl ->
+           let jpats,g = cl.jclause_desc in
+           cl.jclause_loc,jpats,g)
+         a.jauto_desc) in
+(* Allocate new names for dispatchers and guarded processes *)
+  let disps =  List.map (fun disp -> Ident.create "#d#", disp) disps
+  and reacs,fwds = match reacs with
+  | [((_,[_],_),_) as reac] -> (* Case of (single) forwarder *)
+      [],[Ident.create "#f", reac]
+  | _ ->
+      List.map (fun reac -> Ident.create "#g#", reac) reacs, [] in
+(* Automaton names *)
+   let name = Ident.create "#auto#"
+   and name_wrapped = Ident.create "#wrapped#" in
+(* Collect forwarders *)
+  let fwd_names =
+    List.map
+      (fun (d_id,(id,_,_)) ->
+        let chan = get_chan "dispatchers" id in
+        id,(chan,(Alone d_id)))
+      disps in
+  let fwd_names =
+    List.fold_right
+      (fun fwd r ->
+        let g_id,(_old,(patss,_gd)) = fwd in
+         List.fold_right
+          (fun pats r ->
+            List.fold_right
+              (fun pat r ->
+                let jid,_ = pat.jpat_desc in
+                let id = jid.jident_desc in
+                let chan = get_chan "forwarders" id in
+                (id,(chan,Alone g_id))::r)
+              pats r)
+          patss r)
+      fwds fwd_names in
+(* Collect channels *)
+  let is_fwd id =
+    try ignore(get_chan_rec id fwd_names) ; true
+    with Not_found -> false in
+
+(* First orignal names unsplit by compilation, and not a forwarder *)
+  let all_names,nchans =
+    List.fold_right
+      (fun (id,chan) (chans,nchans as k) ->
+        if is_fwd id then k
+        else
+          (id,(chan,Chan (name,nchans)))::chans,nchans+1)
+      a.jauto_names (fwd_names,0) in
+(* Then new names, introduced by pattern matching compilation *)
+  let all_names,nchans =
+     List.fold_right
+      (fun (id,ids) k ->
+        let chan = get_chan "old_name" id in
+        List.fold_right
+          (fun id (chans,nchans) ->
+            let chan = { chan with jchannel_ident = id} in
+            (id,(chan,Chan (name,nchans)))::chans,nchans+1)
+          ids k)
+      new_names (all_names,nchans) in
+(* Original names, with information *)
+  let is_orig id =
+     try ignore(get_chan_rec id a.jauto_names) ; true
+    with Not_found -> false in
+  let original = List.filter (fun (id,_) -> is_orig id) all_names in
+(* Precompile dispatchers *)
+  let disps =
+    let find_channel id =
+      try get_chan_rec id all_names
+      with Not_found ->
+        fatal_error
+        (Printf.sprintf "find_channel: %s"
+           (Ident.unique_name id)) in
+    List.map
+      (fun disp ->
+        let d_id,(chan_id, cls, par) = disp in
+        let chan = find_channel chan_id
+        and cls = List.map (fun (p,id) -> p,find_channel id) cls in
+        d_id,chan,cls,par)
+      disps in
+(* Precompile reactions, little to do: flatten *)
+  let precomp_reac (id,((_loc,pat,e),(pats,bv))) = id,pat,pats,bv,e in
+  let fwds = List.map precomp_reac fwds
+  and reacs = List.map precomp_reac reacs in
+(* Gather everything... *)
+  {
+    cauto_name = name,name_wrapped;
+    cauto_channels = all_names;
+    cauto_nchans = nchans;
+    cauto_original = original;
+    cauto_loc = a.jauto_loc;
+    cauto_dispatchers = disps;
+    cauto_forwarders = fwds;
+    cauto_reactions = reacs;
+  }
 let get_num msg names id =
  try
-   let {jchannel_id=x} = get_chan_rec id names in
-   match x with
+   let _,opt = get_chan_rec id names in
+   match opt with
    | Chan (_,num) -> num
    | _ ->
      fatal_error
@@ -441,8 +557,8 @@ let get_num msg names id =
 
 let get_chan msg names id =
   try
-   let {jchannel_id=x} = get_chan_rec id names in
-   x
+   let _,opt = get_chan_rec id names in
+   opt
  with
  | Not_found ->
      fatal_error
@@ -464,17 +580,18 @@ let rec principal_param ipri params nums = match params, nums with
 let names_block nchans names =
   let t = Array.create nchans "" in
   List.iter
-    (fun (id, {jchannel_id=x}) ->match x with
-    | Chan (_,i) -> t.(i) <- Ident.unique_name id
-    | _ -> ())
+    (fun (id, (_,opt)) ->
+      match opt with
+      | Chan (_,i) -> t.(i) <- Ident.unique_name id
+      | _ -> ())
     names ;
   Lconst
     (Const_block
        (0, Array.fold_right (fun s r -> Const_base (Const_string s)::r) t []))
 
 let create_auto
-   { jauto_name=(auto_name, wrapped_name);
-     jauto_names = names ; jauto_nchans=nchans ; } k =
+   { cauto_name=(auto_name, wrapped_name);
+     cauto_channels = names ; cauto_nchans=nchans ; } k =
   if nchans > 0 then
     Llet
       (Strict, auto_name,
@@ -485,15 +602,14 @@ let create_auto
          (Strict, wrapped_name, wrap_automaton auto_name Location.none, k))
   else k
 
-let create_channels {jauto_name=(raw_name, name) ; jauto_names=names} k =
+let create_channels {cauto_name=(raw_name, name) ; cauto_channels=names} k =
   List.fold_right
-    (fun (id,jc) k ->
-      let {jchannel_sync=sync ; jchannel_id=x} = jc in
-      match x with
+    (fun (id,(jc,opt)) k ->
+      match opt with
       | Chan (_,num) ->
 	  Llet
 	    (StrictOpt, id,
-	     (if sync then
+	     (if jc.jchannel_sync then
                create_sync
 	     else
                create_async) name num Location.none,
@@ -543,10 +659,10 @@ let create_forwarders autos dispss fwdss r =
     List.fold_right
       (fun auto r ->
         List.fold_right
-          (fun (_,chan) r -> match chan.jchannel_id with
+          (fun (_,(chan,opt)) r -> match opt with
           | Alone g -> make_g "fwd" chan g::r
           | Chan (_,_) -> r)
-          auto.jauto_names r)
+          auto.cauto_channels r)
       autos id2g in
 (* patch forwarder data structure *)
    let r =
@@ -707,13 +823,13 @@ let lapply (f,args) = Lapply (f,args,Location.none)
 (* gs is a list of compiled guarded processes *)
 
 let create_table auto gs r =
-  let n_chans = auto.jauto_nchans in
+  let n_chans = auto.cauto_nchans in
   if n_chans =0 then r
   else
-    let name,_ = auto.jauto_name (* wrapped name of automaton *)
-    and names = auto.jauto_names in (* all channels *)
+    let name,_ = auto.cauto_name       (* wrapped name of automaton *)
+    and names = auto.cauto_channels in (* all channels *)
 
-    let rec do_guard (Reac reac) (_, sync, _) k =
+    let rec do_guard reac (_, sync, _) k =
       let (g, _, actual, _, _) = reac in
 
       let create_reaction jpats r =
@@ -773,7 +889,7 @@ let create_table auto gs r =
       let pats = explode actual in
       List.fold_right create_reaction pats k in
 
-    let _, reacs, _ = auto.jauto_desc in
+    let reacs = auto.cauto_reactions in
     Lsequence
       (patch_table name
          (List.fold_right2 do_guard reacs gs []) Location.none,

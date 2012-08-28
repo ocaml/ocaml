@@ -72,25 +72,27 @@ val principal : Typedtree.expression -> Ident.t option
 
 (* Building definitions and locations *)
 
+val compile_auto : Typedtree.joinautomaton -> Typedtree.compiledautomaton
+
 val create_auto : 
-  'a Typedtree.joinautomaton_gen ->
+  Typedtree.compiledautomaton ->
     Lambda.lambda -> Lambda.lambda
 
 val create_channels :
-  'a Typedtree.joinautomaton_gen -> Lambda.lambda -> Lambda.lambda
+    Typedtree.compiledautomaton -> Lambda.lambda -> Lambda.lambda
 
 val create_dispatchers :
      (Ident.t * Typedtree.joinchannel * Lambda.lambda) list ->
        Lambda.lambda -> Lambda.lambda
 
 val create_forwarders :
-    'a Typedtree.joinautomaton_gen list ->
+    Typedtree.compiledautomaton list ->
       (Ident.t * Typedtree.joinchannel * Lambda.lambda) list list ->
          (Ident.t * Lambda.lambda) list list ->
            Lambda.lambda -> Lambda.lambda
 
 val create_table:
-    Typedtree.joinautomaton ->
+    Typedtree.compiledautomaton ->
       (Ident.t * Ident.t option * 'a) list -> Lambda.lambda ->
       Lambda.lambda
             

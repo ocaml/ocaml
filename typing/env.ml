@@ -1101,13 +1101,6 @@ and add_continuation id desc env  =
 
 
 and remove_continuations t =  {t with continuations = EnvTbl.empty}
-
-let do_purge ((path,d),sl as c) = match d.val_kind with
-  | Val_channel _|Val_alone _ -> (path,{ d with val_kind = Val_reg; }),sl
-  | _ -> c
-
-let remove_channel_info t =
-  { t with values = EnvTbl.map do_purge t.values ; }
 (*< JOCAML *)
 
 let add_local_constraint id info elv env =

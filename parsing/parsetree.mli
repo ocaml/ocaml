@@ -132,7 +132,7 @@ and joinautomaton =
 
 and joinclause =
     {pjclause_desc : joinpattern list * expression ;
-    pjclause_loc : Location.t}
+     pjclause_loc : Location.t}
 
 and joinpattern =
   { pjpat_desc: joinpattern_desc;

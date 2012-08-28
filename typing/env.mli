@@ -94,8 +94,6 @@ val add_signature: signature -> t -> t
 (*> JOCAML *)
 val add_continuation: Ident.t -> continuation_description -> t -> t
 val remove_continuations: t -> t
-(* Erase channel information *)
-val remove_channel_info: t -> t
 (*< JOCAML *)
 
 (* Insertion of all fields of a signature, relative to the given path.

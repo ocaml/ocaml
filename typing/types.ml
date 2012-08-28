@@ -110,12 +110,6 @@ and value_kind =
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
   | Val_unbound                         (* Unbound variable *)
-(*> JOCAML *)
-  | Val_channel of Ident.t * int
-     (* Channel: automaton, index *)
-  | Val_alone of Ident.t 
-     (* Channel: guard *)
-(*< JOCAML *)
 
 (* Constructor descriptions *)
 

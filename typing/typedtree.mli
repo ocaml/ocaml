@@ -109,49 +109,30 @@ and expression_desc =
   | Texp_reply of expression * Ident.t
   | Texp_def of joinautomaton list * expression
 
-
-and 'a joinautomaton_gen =
-    {jauto_desc : 'a ;
-      jauto_name : Ident.t * Ident.t; (* auto name, wrapped auto name *)
-      jauto_names : (Ident.t * joinchannel) list ;
-      jauto_original : Ident.t list ;
-      jauto_nchans : int;
-     (* names defined, description*)
-      jauto_loc : Location.t}
-      
 and joinautomaton =
- (joindispatcher list * joinreaction list * joinforwarder list)
-      joinautomaton_gen
-
-and joindispatcher =
-  Disp of
-    Ident.t * joinchannel  * (pattern * joinchannel) list * partial
-
-and joinclause = 
-   Ident.t * joinpattern list * joinpattern list list * 
-  (Ident.t * pattern) list * expression
-
-and joinreaction = Reac of joinclause
-
-and joinforwarder = Fwd of joinclause
+    {jauto_desc : joinclause list ;
+     jauto_loc : Location.t ;
+     jauto_names : (Ident.t * joinchannel) list ; (* Channel defined *) }
 
 and joinchannel =
     {jchannel_sync : bool ;
-     jchannel_id   : jchannel_id ;
      jchannel_ident : Ident.t ;
      jchannel_type : type_expr;
      jchannel_env : Env.t;}
 
-and jchannel_id = Chan of Ident.t * int | Alone of Ident.t
+and joinclause = 
+    { jclause_desc : joinpattern list * expression;
+      jclause_loc : Location.t; }
 
 and joinpattern =
-    { jpat_desc: joinident * pattern ;  (* as given in source *)
-      jpat_kont : Ident.t option ref ;  (* For synchronous channels, can be shared by several patterns *)
-      jpat_loc: Location.t}
+    { jpat_desc: joinident * pattern ; 
+      jpat_loc: Location.t ;
+      (* For synchronous channels, can be shared by several patterns *)
+      jpat_kont : Ident.t option ref ; }
 
 and joinident =
     { jident_desc : Ident.t ;
-      jident_loc  : Location.t;
+      jident_orig  : string loc ; (* Original ident as in source *)
       jident_type : type_expr;
       jident_env : Env.t;}
 (*< JOCAML *)
@@ -460,3 +441,38 @@ val mknoloc: 'a -> 'a Asttypes.loc
 val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
 val pat_bound_idents: pattern -> (Ident.t * string Asttypes.loc) list
+
+(*>JOCAML *)
+
+(* Compiled join automaton *)
+
+type joinchannelopt = Chan of Ident.t * int | Alone of Ident.t
+
+type joinchannelfull= joinchannel * joinchannelopt
+
+type dispatcher =
+   Ident.t * joinchannelfull  * (pattern * joinchannelfull) list * partial
+
+type reaction = 
+    Ident.t * (* Guarded process identifier *)
+      joinpattern list * (* Original join patterns *)
+      joinpattern list list *  (* Compiled joinpatterns *)
+      (Ident.t * pattern) list * (* Added matching *)
+      expression (* Guarded process *)
+
+type channel_env =  (Ident.t * joinchannelfull) list 
+
+type compiledautomaton =
+  {
+   cauto_name : Ident.t * Ident.t; (* auto name, wrapped auto name *)
+   (* All names defined, with sort of  *)
+   cauto_channels : channel_env ;
+   cauto_nchans : int ; (* number of actual channels *)
+   (* Original names *)
+   cauto_original : channel_env ;
+   cauto_loc : Location.t ;
+   cauto_dispatchers : dispatcher list ;
+   cauto_forwarders : reaction list ;
+   cauto_reactions : reaction list ;
+ }  
+(*<JOCAML *)

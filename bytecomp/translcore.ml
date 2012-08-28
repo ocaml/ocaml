@@ -32,6 +32,23 @@ type error =
 
 exception Error of Location.t * error
 
+(* Optimisation of channnel send/calls,
+   Done with side effect so as not to distroy code structure *)
+
+let chan_env = ref (Ident.empty)
+
+let add_chan_env ids =
+  chan_env :=
+    List.fold_left
+      (fun k (id,x) -> Ident.add id x k)
+      !chan_env
+      ids
+
+let get_chan_env id =
+  try Some (Ident.find_same id !chan_env)
+  with Not_found -> None
+
+
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
   ref((fun cc rootpath modl -> assert false) :
@@ -631,7 +648,7 @@ and transl_exp0 e =
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident
       (path, _,
-       {val_kind = Val_reg|Val_self _|Val_channel (_,_)|Val_alone _}) ->
+       {val_kind = Val_reg|Val_self _}) ->
       transl_path path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
@@ -641,8 +658,8 @@ and transl_exp0 e =
         rec_flag pat_expr_list (event_before body (transl_exp body))
 (*> JOCAML *)
   | Texp_def (d,body) ->
-      do_transl_def d (transl_exp body)
-(*>JOCAML*)
+      do_transl_def d (fun () -> transl_exp body)
+(*<JOCAML*)
   | Texp_function (_, pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
@@ -651,20 +668,6 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-(* two small optimizations *)
-  | Texp_apply
-      ({exp_desc = Texp_ident(path, _, {val_kind = Val_alone id})},
-       [_,Some arg,_])
-      ->
-        Lapply (Lvar id,[transl_exp arg],e.exp_loc)
-  | Texp_apply
-      ({exp_desc = Texp_ident(path, _, {val_kind = Val_channel (auto,idx)})},
-       [_,Some arg,_])
-      ->
-        Transljoin.local_send_sync
-	  auto idx (transl_exp arg)
-	  e.exp_loc
-(*<JOCAML*)
   | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})}, oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
@@ -703,7 +706,24 @@ and transl_exp0 e =
             end
       end
   | Texp_apply(funct, oargs) ->
-      event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
+(* two small optimizations *)
+      begin match funct.exp_desc,oargs with
+      | Texp_ident(Pident id, _, {val_kind = Val_reg}),
+         [_,Some arg,_] ->
+           begin match get_chan_env id with
+           | Some (Alone id) ->
+               Lapply (Lvar id,[transl_exp arg],e.exp_loc)
+           | Some (Chan (id,idx)) ->
+               Transljoin.local_send_sync
+	         id idx (transl_exp arg)
+	         e.exp_loc
+           | None ->
+               event_after e
+                 (transl_apply (transl_exp funct) oargs e.exp_loc)
+           end
+      | _,_ ->
+          event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
+      end
   | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
       Matching.for_multiple_match (id_lam,e.exp_loc)
         (transl_list transl_exp argl)
@@ -930,7 +950,7 @@ and transl_proc die sync p = match p.exp_desc with
       (fun e -> Transljoin.reply_handler sync p transl_exp e)
       rec_flag pat_expr_list (transl_proc die sync body)
 | Texp_def (d,body) ->
-    do_transl_def d (transl_proc die sync body)
+    do_transl_def d (fun () -> transl_proc die sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (Transljoin.reply_handler sync p transl_exp cond,
@@ -1012,7 +1032,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
       transl_exp
       rec_flag pat_expr_list (transl_simple_proc die sync body)
 | Texp_def (d,body) ->
-    do_transl_def d (transl_simple_proc die sync body)
+    do_transl_def d (fun () -> transl_simple_proc die sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (transl_exp cond,
@@ -1045,19 +1065,25 @@ and transl_simple_proc die sync p = match p.exp_desc with
     make_sequence
       (transl_simple_proc false sync p1)
       (transl_simple_proc die sync p2)
-| Texp_asyncsend
-    ({exp_desc=Texp_ident (_,_,{val_kind=Val_channel (auto,num)})},e2) ->
-      (if die then Transljoin.local_tail_send_async
-      else Transljoin.local_send_async)
-        auto num (transl_exp e2) p.exp_loc
-| Texp_asyncsend
-    ({exp_desc=Texp_ident (_,_,{val_kind=Val_alone (guard)})},e2) ->
-      (if die then Transljoin.local_tail_send_alone
-      else Transljoin.local_send_alone)
-        guard (transl_exp e2) p.exp_loc
 | Texp_asyncsend (e1,e2) ->
-    (if die then Transljoin.tail_send_async else Transljoin.send_async)
-      (transl_exp e1) (transl_exp e2) p.exp_loc
+    let default e1 e2 =
+      (if die then Transljoin.tail_send_async else Transljoin.send_async)
+      (transl_exp e1) (transl_exp e2) p.exp_loc in
+    begin match e1.exp_desc with
+    | Texp_ident (Pident id,_,{val_kind=Val_reg}) ->
+        begin match get_chan_env id with
+        | Some (Alone id) ->
+            (if die then Transljoin.local_tail_send_alone
+            else Transljoin.local_send_alone)
+              id (transl_exp e2) p.exp_loc
+        | Some (Chan (id,idx)) ->
+            (if die then Transljoin.local_tail_send_async
+            else Transljoin.local_send_async)
+              id idx (transl_exp e2) p.exp_loc
+        | None -> default e1 e2
+        end
+    | _ -> default e1 e2
+    end
 | Texp_reply (e, id) ->
     begin match sync with
     | Some main_id when main_id = id -> transl_exp e
@@ -1080,7 +1106,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
 
 (* Parameter list for a guarded process *)
 
-and transl_reaction (name,_) (Reac reac) =
+and transl_reaction (name,_) reac =
   let (x, _ , actuals, idpats, p) = reac in
 (* Principal continuation, as computed by typing *)
   let sync = Transljoin.principal p in
@@ -1119,14 +1145,15 @@ and transl_reaction (name,_) (Reac reac) =
   x, sync, lam
 
 and transl_dispatcher disp = 
-  let Disp (d_id, chan, cls, partial) = disp in
+  let d_id, (chan,_) , cls, partial = disp in
   let z = Ident.create "#z#" in
-  let rhs chan =
-    if chan.jchannel_sync then match  chan.jchannel_id with
+
+  let rhs (chan,opt) =
+    if chan.jchannel_sync then match opt with
     | Chan (name, i) ->
         Transljoin.local_send_sync name i (Lvar z) Location.none
     | Alone g -> Lapply (Lvar g, [Lvar z],Location.none)
-    else match chan.jchannel_id with
+    else match opt with
     | Chan (name, i) ->
         Transljoin.local_tail_send_async name i
           (Lvar z)  Location.none
@@ -1136,28 +1163,28 @@ and transl_dispatcher disp =
   let body =
     try
       let allchans =
-          List.map
-            (fun (p, chan) -> match chan.jchannel_id with
-            | Chan (auto,i) -> auto,(p,i)
-            | Alone _ -> raise Exit)
-            cls in
-        match allchans with
-        | [] -> assert false
-        | (auto,_)::_ ->
-            let cls =
-              List.map
-                (fun (_,(p,i)) ->
-                  p,Lconst (Const_base (Const_int i)))
-                allchans in
-            (if chan.jchannel_sync then
-              Transljoin.local_send_sync2
-            else
-              Transljoin.local_tail_send_async2)
-              auto
-              (Matching.for_function
-                 (id_lam,Location.none) None (Lvar z)
-                 cls partial)
-              (Lvar z)
+        List.map
+          (fun (p, (chan,opt)) -> match opt with
+          | Chan (auto,i) -> auto,(p,i)
+          | Alone _ -> raise Exit)
+          cls in
+      match allchans with
+      | [] -> assert false
+      | (auto,_)::_ ->
+          let cls =
+            List.map
+              (fun (_,(p,i)) ->
+                p,Lconst (Const_base (Const_int i)))
+              allchans in
+          (if chan.jchannel_sync then
+            Transljoin.local_send_sync2
+          else
+            Transljoin.local_tail_send_async2)
+            auto
+            (Matching.for_function
+               (id_lam,Location.none) None (Lvar z)
+               cls partial)
+            (Lvar z)
     with Exit ->
       let cls = List.map (fun (p, chan) -> p, rhs chan) cls in
       Matching.for_function
@@ -1166,7 +1193,7 @@ and transl_dispatcher disp =
   let lam =  Lfunction (Curried, params, body) in
   d_id, chan, lam
 
-and transl_forwarder (Fwd reac) =
+and transl_forwarder reac =
   let (x, jpat, _, idpats, p) = reac in
   let sync = Transljoin.principal p in
   let body =
@@ -1327,16 +1354,27 @@ and transl_let reply_handler transl_exp rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 (*> JOCAML *)
 
-and do_transl_def autos body =
-      
+(* Compile pattern matching in join patterns *)
+
+and do_transl_def autos kbody =
+(* Precompile automata, this includes PM compilation *)
+  let autos = List.map Transljoin.compile_auto autos in
+(* Add info and compile body *)
+  let saved_chan_env = !chan_env in
+  List.iter
+    (fun a ->
+      add_chan_env
+        (List.map (fun (id,(_,opt)) ->id,opt) a.cauto_original))
+    autos ;
+  let body = kbody () in
 (* compile (and name) real guarded processes *)
   let reactions =
     List.map
       (fun auto ->
-        if auto.jauto_nchans = 0 then []
+        if auto.cauto_nchans = 0 then []
         else
-          let _,reacs,_ = auto.jauto_desc in
-          List.map (transl_reaction auto.jauto_name) reacs)
+          let reacs = auto.cauto_reactions in
+          List.map (transl_reaction auto.cauto_name) reacs)
       autos in
 
 (* compile firing of guarded processes (aka automaton table) *)
@@ -1358,13 +1396,13 @@ and do_transl_def autos body =
   let disps =
     List.map
       (fun auto ->
-        let disps,_,_ = auto.jauto_desc in
+        let disps = auto.cauto_dispatchers in
         List.map transl_dispatcher disps)
       autos
   and fwds =
     List.map
       (fun auto ->
-        let _,_,fwds = auto.jauto_desc in
+        let fwds = auto.cauto_forwarders in
         List.map transl_forwarder fwds)
       autos in
   let r =
@@ -1376,11 +1414,11 @@ and do_transl_def autos body =
       Transljoin.create_forwarders autos disps fwds r in
 
 (* create channels structures *)
-  let r =
-    List.fold_right Transljoin.create_channels autos r in
+  let r = List.fold_right Transljoin.create_channels autos r in
 (* create automata structures *)
-  let r =
-    List.fold_right Transljoin.create_auto autos r in
+  let r = List.fold_right Transljoin.create_auto autos r in
+(* Restore channel env *)
+  chan_env := saved_chan_env ;
   r
 
 
@@ -1455,7 +1493,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 
 (*> JOCAML *)
 (* For external usage *)
-let transl_def d k = do_transl_def d k
+let transl_def d k = do_transl_def d (fun () -> k)
 and transl_let = transl_let id_lam transl_exp
 (*< JOCAML *)
 
