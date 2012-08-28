@@ -21,6 +21,9 @@ open Primitive
 open Path
 open Types
 open Typedtree
+(*>JOCAML *)
+open Auto
+(*<JOCAML *)
 open Typeopt
 open Lambda
 

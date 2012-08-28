@@ -515,33 +515,3 @@ let rec alpha_pat env p = match p.pat_desc with
 
 let mkloc = Location.mkloc
 let mknoloc = Location.mknoloc
-(*>JOCAML *)
-
-(* Compiled join automaton *)
-
-type joinchannelopt = Chan of Ident.t * int | Alone of Ident.t
-
-type joinchannelfull= joinchannel * joinchannelopt
-
-type dispatcher =
-   Ident.t * joinchannelfull  * (pattern * joinchannelfull) list * partial
-
-type reaction =  Ident.t * joinpattern list * joinpattern list list * 
-  (Ident.t * pattern) list * expression
-
-type channel_env =  (Ident.t * joinchannelfull) list 
-
-type compiledautomaton =
-  {
-   cauto_name : Ident.t * Ident.t; (* auto name, wrapped auto name *)
-   (* All names defined, with sort of  *)
-   cauto_channels : channel_env ;
-   cauto_nchans : int ; (* number of actual channels *)
-   (* Original names *)
-   cauto_original : channel_env ;
-   cauto_loc : Location.t ;
-   cauto_dispatchers : dispatcher list ;
-   cauto_forwarders : reaction list ;
-   cauto_reactions : reaction list ;
- }  
-(*<JOCAML *)

@@ -18,6 +18,9 @@ open Primitive
 open Types
 open Asttypes
 open Typedtree
+(*>JOCAML *)
+open Auto
+(*<JOCAML *)
 open Env
 open Lambda
 
