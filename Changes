@@ -9,6 +9,8 @@ Bug fixes:
 - PR#5731: instruction scheduling forgot to account for destroyed registers
 - PR#5735: %apply and %revapply not first class citizens
 - PR#5738: first class module patterns not handled by ocamldep
+- PR#5742: missing bound checks in Array.sub
+
 
 OCaml 4.00.0:
 -------------

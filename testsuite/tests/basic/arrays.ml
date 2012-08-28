@@ -110,6 +110,17 @@ let test7 () =
   if a <> [|"a"; "a"; "a"; "a"; "a"; "b1"; "b1"; "b2"; "b3"; "a"|]
   then print_string "Test7: failed(2)\n"
 
+let test8 () =
+  (try
+    ignore (Array.sub [||] 0 1); print_string "Test 8.1: failed\n"
+  with Invalid_argument _ -> ());
+  (try
+    ignore (Array.sub [|3;4|] 1 (-1)); print_string "Test 8.2: failed\n"
+  with Invalid_argument _ -> ());
+  (try
+    ignore (Array.sub [|3;4|] max_int 1); print_string "Test 8.3: failed\n"
+  with Invalid_argument _ -> ())
+
 let _ =
   test1();
   test2();
@@ -118,4 +129,5 @@ let _ =
   test5();
   test6();
   test7();
+  test8();
   exit 0
