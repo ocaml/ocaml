@@ -41,6 +41,24 @@ let rec lident_of_path path =
 let rec untype_structure str =
   List.map untype_structure_item str.str_items
 
+(*>JOCAML *)
+and untype_joinpattern jpat =
+  let jid,p = jpat.jpat_desc in
+  { pjpat_loc = jpat.jpat_loc;
+    pjpat_desc = jid.jident_orig,untype_pattern p; }
+    
+and untype_joinclause cl =
+  let jpats,g = cl.jclause_desc in
+  { pjclause_loc = cl.jclause_loc;
+    pjclause_desc = List.map untype_joinpattern jpats,untype_expression g; }
+
+and untype_joinautomaton a =
+  { pjauto_loc = a.jauto_loc;
+    pjauto_desc = List.map untype_joinclause a.jauto_desc; }
+
+and untype_def d = List.map untype_joinautomaton d
+(*<JOCAML *)
+
 and untype_structure_item item =
   let desc =
     match item.str_desc with
@@ -90,7 +108,8 @@ and untype_structure_item item =
     | Tstr_include (mexpr, _) ->
         Pstr_include (untype_module_expr mexpr)
 (*> JOCAML *)
-    | Tstr_def _ -> assert false (* TODO *)
+    | Tstr_def d ->
+        Pstr_def (untype_def d)
     | Tstr_exn_global (_,lid)  ->
         Pstr_exn_global lid
 (*< JOCAML *)
@@ -292,9 +311,18 @@ and untype_expression exp =
     | Texp_pack (mexpr) ->
         Pexp_pack (untype_module_expr mexpr)
 (*>JOCAML *)
-    |Texp_asyncsend (_, _)|Texp_spawn _|Texp_par (_, _)|Texp_null
-    | Texp_reply (_, _)|Texp_def (_, _) ->
-        assert false (* TODO *)
+    |Texp_asyncsend (e1,e2) ->
+        Pexp_apply (untype_expression e1,["",untype_expression e2])
+    |Texp_spawn e ->
+        Pexp_spawn (untype_expression e)
+    | Texp_par (e1, e2) ->
+        Pexp_par (untype_expression e1,untype_expression e2)
+    | Texp_null ->
+        Pexp_constant(Const_int 0)
+    | Texp_reply (e, id, name) ->
+        Pexp_reply (untype_expression e,name)
+    | Texp_def (d, e) ->
+        Pexp_def (untype_def d,untype_expression e)
 (*<JOCAML *)
   in
   List.fold_right untype_extra exp.exp_extra

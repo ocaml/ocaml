@@ -224,7 +224,7 @@ let principal p = match Typejoin.get_replies p with
 let rec is_principal id p = match p.exp_desc with
 |  Texp_asyncsend (_,_) | Texp_null 
  -> false
-| Texp_reply (_, kont) -> kont=id
+| Texp_reply (_, kont,_) -> kont=id
 | Texp_par (p1, p2) ->
    is_principal id p1 || is_principal id p2
 | Texp_let (_,_,p) | Texp_def (_,p)
@@ -317,7 +317,7 @@ let rec simple_exp e = match e.exp_desc with
 | Texp_object _| Texp_pack _
   -> false
 (* Process constructs are not errors *)
-| Texp_reply (_, _)|Texp_par (_, _)|Texp_asyncsend (_, _)
+| Texp_reply _|Texp_par (_, _)|Texp_asyncsend (_, _)
 | Texp_null
  -> assert false
 
@@ -344,7 +344,7 @@ and simple_proc p = match p.exp_desc with
 | Texp_for (_,_,e1,e2,_,_body) -> (* _body is compiled so a not to fail *)
    simple_exp e1 && simple_exp e2
 (* Process constructs *)
-| Texp_reply (e, _) -> simple_exp e
+| Texp_reply (e, _, _) -> simple_exp e
 | Texp_par (p1, p2) -> simple_proc p1 || simple_proc p2
 | Texp_asyncsend (e1, e2) -> simple_exp e1 && simple_exp e2
 | Texp_null -> true

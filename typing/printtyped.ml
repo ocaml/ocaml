@@ -369,7 +369,7 @@ and expression i ppf x =
       expression i ppf e2
   | Texp_null ->
       line  i ppf "Pexp_null\n"
-  | Texp_reply (e, id) ->
+  | Texp_reply (e, id, _) ->
       line i ppf "Pexp_reply \"%a\"\n" fmt_ident id;
       expression i ppf e      
   | Texp_def (d,e) ->

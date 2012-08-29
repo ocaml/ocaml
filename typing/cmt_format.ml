@@ -148,7 +148,14 @@ module TypedtreeMap : sig
     val leave_class_structure : class_structure -> class_structure
     val leave_class_field : class_field -> class_field
     val leave_structure_item : structure_item -> structure_item
-
+(*>JOCAML *)
+    val enter_joinpattern : joinpattern -> joinpattern
+    val enter_joinclause : joinclause -> joinclause
+    val enter_joinautomaton : joinautomaton -> joinautomaton
+    val leave_joinpattern : joinpattern -> joinpattern
+    val leave_joinclause : joinclause -> joinclause
+    val leave_joinautomaton : joinautomaton -> joinautomaton
+(*<JOCAML *)
   end
 
   module MakeMap :
@@ -229,7 +236,14 @@ end = struct
     val leave_class_structure : class_structure -> class_structure
     val leave_class_field : class_field -> class_field
     val leave_structure_item : structure_item -> structure_item
-
+(*>JOCAML *)
+    val enter_joinpattern : joinpattern -> joinpattern
+    val enter_joinclause : joinclause -> joinclause
+    val enter_joinautomaton : joinautomaton -> joinautomaton
+    val leave_joinpattern : joinpattern -> joinpattern
+    val leave_joinclause : joinclause -> joinclause
+    val leave_joinautomaton : joinautomaton -> joinautomaton
+(*<JOCAML *)
   end
 
 
@@ -255,7 +269,23 @@ end = struct
       List.map map_binding list
 
 (*>JOCAML *)
-    and map_joinautomaton d = d (* TODO *)            
+    and map_joinpattern jpat =
+      let jpat = Map.enter_joinpattern jpat in
+      let jid,pat = jpat.jpat_desc in
+      let pat = map_pattern pat in
+      Map.leave_joinpattern { jpat with jpat_desc = jid,pat; }
+
+    and map_clause cl =
+      let cl = Map.enter_joinclause cl in
+      let jpats,g = cl.jclause_desc in
+      let jpats = List.map map_joinpattern jpats
+      and g = map_expression g in
+      Map.leave_joinclause { cl with jclause_desc = jpats,g; }
+
+    and map_joinautomaton a =
+      let a = Map.enter_joinautomaton a in
+      let cls = List.map map_clause a.jauto_desc in
+      Map.leave_joinautomaton { a with jauto_desc = cls; }
 
     and map_joinautomata ds = List.map map_joinautomaton ds
 
@@ -524,8 +554,8 @@ end = struct
               Texp_par (map_expression e1,map_expression e2)
           |Texp_null ->
               Texp_null
-          | Texp_reply (e, id) ->
-              Texp_reply (map_expression e,id)
+          | Texp_reply (e, id, name) ->
+              Texp_reply (map_expression e,id,name)
           |Texp_def (d, e) ->
               Texp_def(map_joinautomata d,map_expression e)
 (*<JOCAML *)
@@ -863,7 +893,14 @@ module DefaultMapArgument = struct
       let leave_class_structure t = t
     let leave_class_field t = t
     let leave_structure_item t = t
-
+(*>JOCAML *)
+    let enter_joinpattern t = t
+    let enter_joinclause t = t
+    let enter_joinautomaton t = t
+    let leave_joinpattern t = t
+    let leave_joinclause t = t
+    let leave_joinautomaton t = t
+(*<JOCAML *)
   end
 
 end
@@ -899,7 +936,18 @@ module ClearEnv  = TypedtreeMap.MakeMap (struct
     { c with ctyp_env = keep_only_summary c.ctyp_env }
   let leave_class_type c =
     { c with cltyp_env = keep_only_summary c.cltyp_env }
-
+(*>JOCAML *)
+  let clean_joinchannel jc =
+    { jc with jchannel_env =  keep_only_summary jc.jchannel_env; }    
+  let leave_automaton a =
+    let names =
+      List.map (fun (id,jc) -> id,clean_joinchannel jc) a.jauto_names in
+    { a with jauto_names = names;}
+  let leave_joinpattern jpat =
+    let jid,p = jpat.jpat_desc in
+    let jid = { jid with jident_env = keep_only_summary jid.jident_env; } in
+    { jpat with jpat_desc = jid,p; }
+(*<JOCAML *)
 end)
 
 let rec clear_part p = match p with

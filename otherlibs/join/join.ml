@@ -13,7 +13,6 @@
 (* $Id$ *)
 
 open Join_types
-(*DEBUG*)open Join_debug
 
 type 'a chan = 'a async
 

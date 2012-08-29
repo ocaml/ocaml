@@ -80,7 +80,14 @@ module type IteratorArgument = sig
     val enter_binding : pattern -> expression -> unit
     val leave_binding : pattern -> expression -> unit
     val leave_bindings : rec_flag -> unit
-
+(*>JOCAML *)
+    val enter_joinpattern : joinpattern -> unit
+    val enter_joinclause : joinclause -> unit
+    val enter_joinautomaton : joinautomaton -> unit
+    val leave_joinpattern : joinpattern -> unit
+    val leave_joinclause : joinclause -> unit
+    val leave_joinautomaton : joinautomaton -> unit
+(*<JOCAML *)
       end
 
 module MakeIterator(Iter : IteratorArgument) : sig
@@ -122,6 +129,28 @@ module MakeIterator(Iter : IteratorArgument) : sig
       List.iter iter_binding list;
       Iter.leave_bindings rec_flag
 
+(*>JOCAML *)
+    and iter_joinpattern jpat =
+      Iter.enter_joinpattern jpat ;
+      let jid,pat = jpat.jpat_desc in
+      iter_pattern pat ;
+      Iter.leave_joinpattern jpat
+
+    and iter_clause cl =
+      Iter.enter_joinclause cl ;
+      let jpats,g = cl.jclause_desc in
+      List.iter iter_joinpattern jpats ;
+      iter_expression g ;
+      Iter.leave_joinclause cl
+
+    and iter_joinautomaton a =
+      Iter.enter_joinautomaton a ;
+      List.iter iter_clause a.jauto_desc ;
+      Iter.leave_joinautomaton a
+
+    and iter_joinautomata d = List.iter iter_joinautomaton d
+(*<JOCAML *)
+
     and iter_structure_item item =
       Iter.enter_structure_item item;
       begin
@@ -157,8 +186,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ) list
         | Tstr_include (mexpr, _) ->
             iter_module_expr mexpr
-        | Tstr_def _|Tstr_exn_global (_, _) ->
-            assert false (* TODO *)
+(*>JOCAML *)
+        | Tstr_def d ->
+            iter_joinautomata d
+        | Tstr_exn_global (_, _) ->
+            ()
+(*<JOCAML *)
       end;
       Iter.leave_structure_item item
 
@@ -328,9 +361,17 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_pack (mexpr) ->
             iter_module_expr mexpr
 (*>JOCAML *)
-        | Texp_asyncsend (_, _)|Texp_spawn _|Texp_par (_, _)|Texp_null
-        | Texp_reply (_, _)|Texp_def (_, _) ->
-            assert false (* TODO *)
+        | Texp_asyncsend (e1,e2)
+        | Texp_par (e1,e2) ->
+            iter_expression e1 ;
+            iter_expression e2
+        | Texp_spawn e
+        | Texp_reply (e,_,_) ->
+            iter_expression e
+        | Texp_null -> ()
+        | Texp_def (d, e) ->
+            iter_joinautomata d ;
+            iter_expression e
 (*<JOCAML *)
       end;
       Iter.leave_expression exp;
@@ -649,6 +690,14 @@ module DefaultIteratorArgument = struct
     let enter_bindings _ = ()
     let leave_bindings _ = ()
 
+(*>JOCAML *)
+    let enter_joinpattern _ = ()
+    let enter_joinclause _ = ()
+    let enter_joinautomaton _ = ()
+    let leave_joinpattern _ = ()
+    let leave_joinclause _ = ()
+    let leave_joinautomaton _ = ()
+(*<JOCAML *)
   end
 
 

@@ -1017,9 +1017,6 @@ let force_delayed_checks () =
   reset_delayed_checks ();
   Btype.backtrack snap
 
-let fst3 (x, _, _) = x
-let snd3 (_, x, _) = x
-
 (*> JOCAML *)
 (**************************)
 (* Collecting port names  *)
@@ -2710,14 +2707,14 @@ and do_type_expect ?in_function ctx env sexp ty_expected =
       let res = do_type_expect E env sres ty in
       let kid = match path with Path.Pident r -> r | _ -> assert false in
       re {
-        exp_desc = Texp_reply (res, kid) ;
+        exp_desc = Texp_reply (res, kid, jid) ;
         exp_loc  = sexp.pexp_loc; exp_extra = [];
         exp_type = Predef.type_process [kid, sexp.pexp_loc];
         exp_env  = env; }
   | Pexp_def (sautos, sbody) ->
       (* By imitation of 'let' *)
       let scp = Some (Annot.Idef sexp.pexp_loc) in
-      let (autos, new_env) = type_def false env sautos scp in
+      let (autos, new_env) = type_def env sautos scp in
       let body = do_type_exp ctx new_env sbody in
       rue {
         exp_desc = Texp_def (autos, body);
@@ -3498,8 +3495,10 @@ and type_clause env names cl =
     jpats !conts ;
   { jclause_loc = loc_clause ; jclause_desc = jpats, exp; }
 
-and type_auto env {apt_loc=my_loc; apt_names=def_names; apt_desc=cls; } =
+and type_auto current_slot
+    env ({apt_loc=my_loc; apt_names=def_names; apt_desc=cls; },slot) =
   let env = Env.remove_continuations env in
+  current_slot := slot; (* Imitation of exp_list computation in type_let *)
   let cls = List.map (type_clause env def_names) cls in
   let def_names =
     List.map
@@ -3554,18 +3553,63 @@ and add_auto_names loc p env names =
 
 (* Argument toplevel below characterize toplevel definitions *)
 
-and type_def toplevel env sautos scope =
+and type_def  ?(check = fun s -> Warnings.Unused_var s)
+    ?(check_strict = fun s -> Warnings.Unused_var_strict s)
+    env sautos scope =
   begin_def ();
-  let names_lhs_list = type_autos_lhs env sautos scope in
+  let autos = type_autos_lhs env sautos scope in
   let new_env =
     List.fold_left
       (fun env lhs ->
         let names = lhs.apt_names
         and loc = lhs.apt_loc in
         add_auto_names loc (fun _ -> true) env names)
-      env names_lhs_list in
-  let autos =
-    List.map (type_auto new_env) names_lhs_list in
+      env autos in
+(* Imitation of unused check for recursive bindings *)
+  let current_slot = ref None in
+  let warn_unused =
+    Warnings.is_active (check "") || Warnings.is_active (check_strict "") in
+  let autos_slots =
+    List.map
+      (fun a ->
+        if not warn_unused then a,None
+        else
+          let loc = a.apt_loc in
+          let some_used = ref false in
+          (* has one of the identifier of this definition been used? *)
+          let slot = ref [] in
+          (* Now, for all defined names *)
+          List.iter
+            (fun (id,_) ->
+              let vd = Env.find_value (Path.Pident id) new_env in
+              let name = Ident.name id in
+              let used = ref false in
+              if
+                not (name = "" || name.[0] = '_' || name.[0] = '#')
+              then begin
+                add_delayed_check
+                  (fun () ->
+                    if not !used then
+                      Location.prerr_warning loc
+                        ((if !some_used then check_strict else check) name))
+              end ;
+              Env.set_value_used_callback
+                name vd
+                (fun () ->
+                  match !current_slot with
+                  | Some slot ->
+                      slot := (name, vd) :: !slot
+                  | None ->
+                      List.iter
+                        (fun (name, vd) -> Env.mark_value_used name vd)
+                        (get_ref slot);
+                      used := true;
+                      some_used := true))
+            a.apt_names ;
+          a,Some slot)
+      autos in
+  let autos = List.map (type_auto current_slot new_env) autos_slots in
+  current_slot := None ;
   end_def () ;
 
 (* Generalization *)
@@ -3615,7 +3659,10 @@ let type_expression env sexp =
 (* Typing of toplevel join-definition *)
 let type_joindefinition env d scope =
   Typetexp.reset_type_variables();
-  type_def true env d scope
+  type_def
+    ~check:(fun s -> Warnings.Unused_value_declaration s)
+    ~check_strict:(fun s -> Warnings.Unused_value_declaration s)
+    env d scope
 (*< JOCAML *)
 
 (* Error report *)

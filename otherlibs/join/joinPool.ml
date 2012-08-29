@@ -12,7 +12,6 @@
 
 (* $Id$ *)
 
-open Printf
 
 module Simple = struct
 

@@ -106,7 +106,7 @@ and expression_desc =
   | Texp_spawn of expression (* insert processes in expressions *)
   | Texp_par of expression * expression
   | Texp_null
-  | Texp_reply of expression * Ident.t
+  | Texp_reply of expression * Ident.t * string loc
   | Texp_def of joinautomaton list * expression
 
 and joinautomaton =

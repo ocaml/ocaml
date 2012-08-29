@@ -1008,7 +1008,7 @@ and transl_proc die sync p = match p.exp_desc with
             (List.fold_right transl_fork forks
                (transl_proc false sync psync))
       end
-| Texp_asyncsend (_,_) | Texp_reply (_,_) | Texp_null  ->
+| Texp_asyncsend (_,_) | Texp_reply _ | Texp_null  ->
     transl_simple_proc die sync p
 | Texp_spawn _|Texp_object _|Texp_lazy _|Texp_assert _|
   Texp_letmodule  _|Texp_override _|Texp_setinstvar _|
@@ -1087,7 +1087,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
         end
     | _ -> default e1 e2
     end
-| Texp_reply (e, id) ->
+| Texp_reply (e, id, _) ->
     begin match sync with
     | Some main_id when main_id = id -> transl_exp e
     | _ ->

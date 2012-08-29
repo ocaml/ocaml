@@ -141,6 +141,10 @@ module ForIterator = struct
             | Nonrecursive -> push_Some (Annot.Idef body.exp_loc)
             | Default -> push_None ()
           end
+(*>JOCAML *)
+      | Texp_def (_,body) ->
+          push_Some (Annot.Idef exp.exp_loc)
+(*<JOCAML *)
       | Texp_function _ -> push_None ()
       | Texp_match _ -> push_None ()
       | Texp_try _ -> push_None ()
@@ -151,6 +155,9 @@ module ForIterator = struct
         Stypes.record (Stypes.Ti_expr exp);
       match exp.exp_desc with
       | Texp_let _
+(*>JOCAML *)
+      | Texp_def _
+(*<JOCAML *)
       | Texp_function _
       | Texp_match _
       | Texp_try _

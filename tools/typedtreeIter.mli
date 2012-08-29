@@ -74,7 +74,14 @@ module type IteratorArgument = sig
     val enter_binding : pattern -> expression -> unit
     val leave_binding : pattern -> expression -> unit
     val leave_bindings : rec_flag -> unit
-
+(*>JOCAML *)
+    val enter_joinpattern : joinpattern -> unit
+    val enter_joinclause : joinclause -> unit
+    val enter_joinautomaton : joinautomaton -> unit
+    val leave_joinpattern : joinpattern -> unit
+    val leave_joinclause : joinclause -> unit
+    val leave_joinautomaton : joinautomaton -> unit
+(*<JOCAML *)
       end
 
 module MakeIterator :
