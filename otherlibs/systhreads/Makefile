@@ -21,7 +21,7 @@ JCC=../../ocamlcomp.sh -I ../unix
 JCOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A -annot -g
-#OCAMLPP=-pp '../../tools/remove_DEBUG'
+OCAMLPP=-pp '../../tools/remove_DEBUG'
 
 
 BYTECODE_JOIN_C_OBJS=join_b.o
