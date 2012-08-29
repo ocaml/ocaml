@@ -1,5 +1,5 @@
 \chapter{The threads library}
-\label{c:threads}
+\label{c:threads}\cutname{threads.html}
 \pdfchapterfold{-5}{The threads library}
 
 The "threads" library allows concurrent programming in OCaml.

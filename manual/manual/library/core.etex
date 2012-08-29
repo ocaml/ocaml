@@ -1,4 +1,4 @@
-\chapter{The core library} \label{c:corelib}
+\chapter{The core library} \label{c:corelib}\cutname{core.html}
 \pdfchapterfold{-1}{The core library}
 
 This chapter describes the OCaml core library, which is
