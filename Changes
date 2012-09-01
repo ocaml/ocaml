@@ -11,6 +11,7 @@ Bug fixes:
 - PR#5327: (Windows) Unix.select blocks if same socket listed in first and
   third arguments
 - PR#5551: Avoid repeated lookups for missing cmi files
+- PR#5611: avoid clashes betwen .cmo files and output files during linking
 - PR#5662: typo in md5.c
 - PR#5695: remove warnings on sparc code emitter
 - PR#5697: better location for warnings on statement expressions
