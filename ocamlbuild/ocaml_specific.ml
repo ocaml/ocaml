@@ -478,20 +478,26 @@ let () =
   pflag ["ocaml";"compile";] "warn"
     (fun param -> S [A "-w"; A param])
 
+let try_opt name =
+  let cmd = Command.string_of_command_spec (A name)in
+  try ignore(Command.search_in_path cmd); name ^ ".opt"
+  with Not_found -> name
+
 let camlp4_flags camlp4s =
   List.iter begin fun camlp4 ->
-    flag ["ocaml"; "pp"; camlp4] (A camlp4)
+    flag ["ocaml"; "pp"; camlp4] (A (try_opt camlp4))
   end camlp4s;;
 
 camlp4_flags ["camlp4o"; "camlp4r"; "camlp4of"; "camlp4rf"; "camlp4orf"; "camlp4oof"];;
 
 let camlp4_flags' camlp4s =
-  List.iter begin fun (camlp4, flags) ->
+  List.iter begin fun (camlp4, cmd, flags) ->
+    let flags = S (A (try_opt cmd) :: flags) in
     flag ["ocaml"; "pp"; camlp4] flags
   end camlp4s;;
 
-camlp4_flags' ["camlp4orr", S[A"camlp4of"; A"-parser"; A"reloaded"];
-               "camlp4rrr", S[A"camlp4rf"; A"-parser"; A"reloaded"]];;
+camlp4_flags' ["camlp4orr", "camlp4of", [A"-parser"; A"reloaded"];
+               "camlp4rrr", "camlp4rf", [A"-parser"; A"reloaded"]];;
 
 flag ["ocaml"; "pp"; "camlp4:no_quot"] (A"-no_quot");;
 
