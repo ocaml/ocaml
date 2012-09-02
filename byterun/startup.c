@@ -319,6 +319,9 @@ static void parse_camlrunparam(void)
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
+#ifdef DEBUG
+      case 't': caml_trace_flag = 1; break;
+#endif
       }
     }
   }
