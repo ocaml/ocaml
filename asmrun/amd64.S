@@ -249,11 +249,11 @@ LBL(caml_call_gc):
         addq    $32768, %rsp
 #endif
     /* Build array of registers, save it into caml_gc_regs */
-        pushq   %r13
-        pushq   %r12
-        pushq   %rbp
         pushq   %r11
         pushq   %r10
+        pushq   %rbp
+        pushq   %r13
+        pushq   %r12
         pushq   %r9
         pushq   %r8
         pushq   %rcx
@@ -318,11 +318,11 @@ LBL(caml_call_gc):
         popq    %rcx
         popq    %r8
         popq    %r9
-        popq    %r10
-        popq    %r11
-        popq    %rbp
         popq    %r12
         popq    %r13
+        popq    %rbp
+        popq    %r10
+        popq    %r11
         CFI_ADJUST(-232)
     /* Return to caller */
         ret
