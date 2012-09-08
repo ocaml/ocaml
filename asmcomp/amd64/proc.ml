@@ -45,18 +45,18 @@ let masm =
     rcx         5
     r8          6
     r9          7
-    r10         8
-    r11         9
+    r12         8
+    r13         9
     rbp         10
-    r12         11
-    r13         12
+    r10         11
+    r11         12
     r14         trap pointer
     r15         allocation pointer
 
   xmm0 - xmm15  100 - 115  *)
 
 (* Conventions:
-     rax - r11: OCaml function arguments
+     rax - r13: OCaml function arguments
      rax: OCaml and C function results
      xmm0 - xmm9: OCaml function arguments
      xmm0: OCaml and C function results
@@ -70,16 +70,19 @@ let masm =
      xmm0 - xmm3: C function arguments
      rbx, rbp, rsi, rdi r12-r15 are preserved by C
      xmm6-xmm15 are preserved by C
+   Note (PR#5707): r11 should not be used for parameter passing, as it
+     can be destroyed by the dynamic loader according to SVR4 ABI.
+     Linux's dynamic loader also destroys r10.
 *)
 
 let int_reg_name =
   match Config.ccomp_type with
   | "msvc" ->
       [| "rax"; "rbx"; "rdi"; "rsi"; "rdx"; "rcx"; "r8"; "r9";
-         "r10"; "r11"; "rbp"; "r12"; "r13" |]
+         "r12"; "r13"; "rbp"; "r10"; "r11" |]
   | _ ->
       [| "%rax"; "%rbx"; "%rdi"; "%rsi"; "%rdx"; "%rcx"; "%r8"; "%r9";
-         "%r10"; "%r11"; "%rbp"; "%r12"; "%r13" |]
+         "%r12"; "%r13"; "%rbp"; "%r10"; "%r11" |]
 
 let float_reg_name =
   match Config.ccomp_type with
@@ -241,12 +244,12 @@ let destroyed_at_c_call =
   if win64 then
     (* Win64: rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
     Array.of_list(List.map phys_reg
-      [0;4;5;6;7;8;9;
+      [0;4;5;6;7;11;12;
        100;101;102;103;104;105])
   else
     (* Unix: rbp, rbx, r12-r15 preserved *)
     Array.of_list(List.map phys_reg
-      [0;2;3;4;5;6;7;8;9;
+      [0;2;3;4;5;6;7;11;12;
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 

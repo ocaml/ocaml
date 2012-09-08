@@ -35,6 +35,8 @@ OCaml 4.00.1:
 
 Bug fixes:
 - PR#5700: crash with native-code stack backtraces under MacOS 10.8 x86-64
+- PR#5707: AMD64 code generator: do not use r10 and r11 for parameter passing,
+  as these registers can be destroyed by the dynamic loader
 - PR#5712: some documentation problems
 - PR#5719: ocamlyacc generates code that is not warning 33-compliant
 - PR#5742: missing bound checks in Array.sub
