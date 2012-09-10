@@ -120,6 +120,21 @@ module List = struct
   let union a b =
     rev (rev_append_uniq (rev_append_uniq [] a) b)
 
+  let ordered_unique (type el) (lst : el list)  =
+    let module Set = Set.Make(struct
+      type t = el
+      let compare = Pervasives.compare
+      let print _ _ = ()
+    end)
+    in
+    let _, lst =
+      List.fold_left (fun (set,acc) el ->
+        if Set.mem el set
+        then set, acc
+        else Set.add el set, el :: acc) (Set.empty,[]) lst
+    in
+    List.rev lst
+
 end
 
 module String = struct
