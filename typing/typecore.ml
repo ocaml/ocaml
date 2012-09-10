@@ -2427,7 +2427,7 @@ and type_argument env sarg ty_expected' ty_expected =
         match (expand_head env ty_fun).desc with
         | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
             make_args
-              ((Some(option_none (instance env ty_arg) sarg.pexp_loc), Optional)
+              ((l, Some(option_none (instance env ty_arg) sarg.pexp_loc), Optional)
                :: args)
               ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
@@ -2463,9 +2463,7 @@ and type_argument env sarg ty_expected' ty_expected =
         { texp with exp_type = ty_fun; exp_desc =
           Texp_function("", [eta_pat, {texp with exp_type = ty_res; exp_desc =
                     Texp_apply (texp,
-                      (List.map (fun (label, exp) ->
-                          ("", label, exp)) args)@
-                                               ["", Some eta_var, Required])}],
+                                List.rev args @ ["", Some eta_var, Required])}],
                         Total) } in
       if warn then Location.prerr_warning texp.exp_loc
           (Warnings.Without_principality "eliminated optional argument");
