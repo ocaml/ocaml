@@ -19,8 +19,9 @@
 *.so
 *.obj
 
-*.cm[ioxa]
+*.cm[ioxat]
 *.cmx[as]
+*.cmti
 *.annot
 
 *.result
