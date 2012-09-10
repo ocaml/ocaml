@@ -318,7 +318,7 @@ static char *expand_heap (mlsize_t request)
   }
   remain = malloc_request;
   prev = hp = mem;
-  /* XXX find a way to do this with a call to caml_make_free_blocks */
+  /* FIXME find a way to do this with a call to caml_make_free_blocks */
   while (Wosize_bhsize (remain) > Max_wosize){
     Hd_hp (hp) = Make_header (Max_wosize, 0, Caml_blue);
 #ifdef DEBUG

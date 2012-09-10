@@ -496,7 +496,7 @@ void caml_init_major_heap (asize_t heap_size)
 
   caml_fl_init_merge ();
   caml_make_free_blocks ((value *) caml_heap_start,
-                         Wsize_bsize (caml_stat_heap_size), 1);
+                         Wsize_bsize (caml_stat_heap_size), 1, Caml_white);
   caml_gc_phase = Phase_idle;
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
