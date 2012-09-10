@@ -1,3 +1,16 @@
+/***********************************************************************/
+/*                                                                     */
+/*                                OCaml                                */
+/*                                                                     */
+/*                 File contributed by Josh Berdine                    */
+/*                                                                     */
+/*  Copyright 2011 Institut National de Recherche en Informatique et   */
+/*  en Automatique.  All rights reserved.  This file is distributed    */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
+/*                                                                     */
+/***********************************************************************/
+
 #include "unixsupport.h"
 #include <windows.h>
 #include <mlvalues.h>
@@ -17,11 +30,11 @@ double to_sec(FILETIME ft) {
 
 
 value unix_times(value unit) {
-
   value res;
   FILETIME creation, exit, stime, utime;
 
-  if (!(GetProcessTimes(GetCurrentProcess(), &creation, &exit, &stime, &utime))) {
+  if (!(GetProcessTimes(GetCurrentProcess(), &creation, &exit, &stime,
+                        &utime))) {
     win32_maperr(GetLastError());
     uerror("times", Nothing);
   }
@@ -32,5 +45,4 @@ value unix_times(value unit) {
   Store_double_field(res, 2, 0);
   Store_double_field(res, 3, 0);
   return res;
-
 }
