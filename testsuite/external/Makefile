@@ -2,15 +2,15 @@
 #                                                                       #
 #                                 OCaml                                 #
 #                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#           Damien Doligez, projet Gallium, INRIA Rocquencourt          #
 #                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   Copyright 2012 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
 #   under the terms of the Q Public License version 1.0.                #
 #                                                                       #
 #########################################################################
 
-# To use this test set, you OCaml installed in a directory where
+# To use this test set, you need OCaml installed in a directory where
 # you have write rights.
 
 # Warning: use of this Makefile will install lots of software
@@ -41,9 +41,17 @@ all-cygwin: findlib ounit res pcre react ocamltext ocamlssl camlzip cryptokit \
 	    camomile zen vsyml extlib fileutils ocamlify ocamlmod \
             calendar dbm ocamlscript camlp5 geneweb coq
 
+all-macos: findlib lablgtk ocamlgraph ounit res pcre core react ocamltext \
+           ocamlssl lwt camlzip cryptokit sqlite menhir obrowser hevea \
+           unison ocgi xmllight configfile xmlm lablgtkextras sks omake \
+           altergo boomerang camomile zen vsyml ocamlnet extlib fileutils \
+           odn ocamlify expect ocamlmod oasis calendar camlimages advi \
+           dbm ocsigen ocamlscript camlp5 geneweb coq framac
+
 platform:
 	case `uname -s` in \
 	  CYGWIN*) ${MAKE} all-cygwin;; \
+	  Darwin) ${MAKE} all-macos;; \
 	  *) ${MAKE} all;; \
 	esac
 
