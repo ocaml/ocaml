@@ -2426,10 +2426,8 @@ and type_argument env sarg ty_expected' ty_expected =
       let rec make_args args ty_fun =
         match (expand_head env ty_fun).desc with
         | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
-            make_args
-              ((l, Some(option_none (instance env ty_arg) sarg.pexp_loc), Optional)
-               :: args)
-              ty_fun
+            let ty = option_none (instance env ty_arg) sarg.pexp_loc in
+            make_args ((l, Some ty, Optional) :: args) ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
             args, ty_fun, no_labels ty_res'
         | Tvar _ ->  args, ty_fun, false
