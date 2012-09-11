@@ -82,15 +82,16 @@ val search_forward : regexp -> string -> int -> int
    matching the regular expression [r]. The search starts at position
    [start] and proceeds towards the end of the string.
    Return the position of the first character of the matched
-   substring, or raise [Not_found] if no substring matches. *)
+   substring.
+   @raise Not_found if no substring matches. *)
 
 val search_backward : regexp -> string -> int -> int
 (** [search_backward r s last] searches the string [s] for a
   substring matching the regular expression [r]. The search first
   considers substrings that start at position [last] and proceeds
   towards the beginning of string. Return the position of the first
-  character of the matched substring; raise [Not_found] if no
-  substring matches. *)
+  character of the matched substring.
+  @raise Not_found if no substring matches. *)
 
 val string_partial_match : regexp -> string -> int -> bool
 (** Similar to {!Str.string_match}, but also returns true if
@@ -99,29 +100,50 @@ val string_partial_match : regexp -> string -> int -> bool
 
 val matched_string : string -> string
 (** [matched_string s] returns the substring of [s] that was matched
-   by the latest {!Str.string_match}, {!Str.search_forward} or
-   {!Str.search_backward}.
+   by the last call to one of the following matching or searching
+   functions:
+   - {!Str.string_match}
+   - {!Str.search_forward}
+   - {!Str.search_backward}
+   - {!Str.string_partial_match}
+   - {!Str.global_substitute}
+   - {!Str.substitute_first}
+   provided that none of the following functions was called inbetween:
+   - {!Str.global_replace}
+   - {!Str.replace_first}
+   - {!Str.split}
+   - {!Str.bounded_split}
+   - {!Str.split_delim}
+   - {!Str.bounded_split_delim}
+   - {!Str.full_split}
+   - {!Str.bounded_full_split}
+
+   Note: in the case of [global_substitute] and [substitute_first],
+   a call to [matched_string] is only valid within the [subst] argument,
+   not after [global_substitute] or [substitute_first] returns.
+
    The user must make sure that the parameter [s] is the same string
    that was passed to the matching or searching function. *)
 
 val match_beginning : unit -> int
 (** [match_beginning()] returns the position of the first character
-   of the substring that was matched by {!Str.string_match},
-   {!Str.search_forward} or {!Str.search_backward}. *)
+   of the substring that was matched by the last call to a matching
+   or searching function (see {!Str.matched_string} for details). *)
 
 val match_end : unit -> int
 (** [match_end()] returns the position of the character following the
-   last character of the substring that was matched by [string_match],
-   [search_forward] or [search_backward]. *)
+   last character of the substring that was matched by the last call
+   to a matching or searching function (see {!Str.matched_string} for
+   details). *)
 
 val matched_group : int -> string -> string
 (** [matched_group n s] returns the substring of [s] that was matched
-   by the [n]th group [\(...\)] of the regular expression during
-   the latest {!Str.string_match}, {!Str.search_forward} or
-   {!Str.search_backward}.
+   by the [n]th group [\(...\)] of the regular expression that was
+   matched by the last call to a matching or searching function (see
+   {!Str.matched_string} for details).
    The user must make sure that the parameter [s] is the same string
    that was passed to the matching or searching function.
-   [matched_group n s] raises [Not_found] if the [n]th group
+   @raise Not_found if the [n]th group
    of the regular expression was not matched.  This can happen
    with groups inside alternatives [\|], options [?]
    or repetitions [*].  For instance, the empty string will match
@@ -131,7 +153,8 @@ val matched_group : int -> string -> string
 val group_beginning : int -> int
 (** [group_beginning n] returns the position of the first character
    of the substring that was matched by the [n]th group of
-   the regular expression.
+   the regular expression that was matched by the last call to a
+   matching or searching function (see {!Str.matched_string} for details).
    @raise Not_found if the [n]th group of the regular expression
    was not matched.
    @raise Invalid_argument if there are fewer than [n] groups in
@@ -140,7 +163,9 @@ val group_beginning : int -> int
 val group_end : int -> int
 (** [group_end n] returns
    the position of the character following the last character of
-   substring that was matched by the [n]th group of the regular expression.
+   substring that was matched by the [n]th group of the regular
+   expression that was matched by the last call to a matching or
+   searching function (see {!Str.matched_string} for details).
    @raise Not_found if the [n]th group of the regular expression
    was not matched.
    @raise Invalid_argument if there are fewer than [n] groups in
@@ -176,9 +201,11 @@ val substitute_first : regexp -> (string -> string) -> string -> string
 val replace_matched : string -> string -> string
 (** [replace_matched repl s] returns the replacement text [repl]
    in which [\1], [\2], etc. have been replaced by the text
-   matched by the corresponding groups in the most recent matching
-   operation.  [s] must be the same string that was matched during
-   this matching operation. *)
+   matched by the corresponding groups in the regular expression
+   that was matched by the last call to a matching or searching
+   function (see {!Str.matched_string} for details).
+   [s] must be the same string that was passed to the matching or
+   searching function. *)
 
 
 (** {6 Splitting} *)
@@ -189,7 +216,7 @@ val split : regexp -> string -> string list
    the substrings that match [r], and returns the list of substrings.
    For instance, [split (regexp "[ \t]+") s] splits [s] into
    blank-separated words.  An occurrence of the delimiter at the
-   beginning and at the end of the string is ignored. *)
+   beginning or at the end of the string is ignored. *)
 
 val bounded_split : regexp -> string -> int -> string list
 (** Same as {!Str.split}, but splits into at most [n] substrings,
