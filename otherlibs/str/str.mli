@@ -48,7 +48,7 @@ val regexp : string -> regexp
      ([\2] for the second expression, and so on up to [\9]).
    - [\b    ] Matches word boundaries.
    - [\     ] Quotes special characters.  The special characters
-              are [$^.*+?[]].
+              are [$^\.*+?[]].
 *)
 
 val regexp_case_fold : string -> regexp
