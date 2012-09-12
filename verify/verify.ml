@@ -14,6 +14,13 @@ type error =
 
 exception Error of Location.t * error
 
+(* naxu's temp file starts. *)
+
+let fmt_contract_declaration ppf (cdecl:Types.contract_declaration) = 
+  !(Oprint.out_contract_declaration []) ppf cdecl
+
+(* naxu's temp file ends. *)
+
 (* Translate wrapped expression e |><| c to unwrapped expression 
 val transl_core_contract: 
    Typedtree.contract_declaration list ->         % contract decls in this module
@@ -28,9 +35,9 @@ val transl_core_contract:
 let rec transl_core_contract env cntr e callee caller =
   let cty  = e.exp_type in
   let mkpat desc ty = { pat_desc =  desc; 
-                    pat_loc  = e.exp_loc;
-                    pat_type = ty;
-                    pat_env  = e.exp_env } in
+                        pat_loc  = e.exp_loc;
+                        pat_type = ty;
+                        pat_env  = e.exp_env } in
   let mkexp ed ty = {e with exp_desc = ed ; exp_type = ty} in
   let mkident i ty = Texp_ident (Pident i, {val_type = ty;
                                             val_kind = Val_reg}) in
@@ -75,9 +82,9 @@ let rec transl_core_contract env cntr e callee caller =
 	let xe = { e with exp_desc = Texp_ident(Pident new_x, vd) } in
         (* let wrapped_p = contract_id_in_expr env p in 
         let expanded_p = deep_transl_contract env wrapped_p in
-        let cond = Texp_ifthenelse (subst [] x new_x p, xe, Some callee) in 
+        let cond = Texp_ifthenelse (subst [] [(x, new_x)] p, xe, Some callee) in 
         *)
-        let cond = Texp_ifthenelse (subst [] (Tbl.add x new_x Tbl.empty) p, xe, Some callee) in 
+        let cond = Texp_ifthenelse (subst [] [(x, new_x)] p, xe, Some callee) in 
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var new_x) cty, e)], mkexp cond cty) 
         end
         (* e |>r1,r2<| try {x | p} with [Ei -> booli] 
@@ -244,7 +251,7 @@ let rec transl_core_contract env cntr e callee caller =
                          (mkpat Tpat_any Predef.type_exn, e)] in
          Texp_try(e1, branches1)      
      | Tctr_typconstr (p, cs) -> 
-        (* TO BE DONE. this could be a disjunctive contract. *)
+       (* TO BE DONE. this could be a disjunctive contract. *)
         e.exp_desc 
      | Tctr_var v -> e.exp_desc
        (* TO BE DONE
@@ -253,7 +260,7 @@ let rec transl_core_contract env cntr e callee caller =
          ce.exp_desc
        *)
      | Tctr_poly (vs, c) -> 
-      (* e |>r1,r2<| 'a. c = /\'a. e |>r1,r2<| c *)
+       (* e |>r1,r2<| 'a. c = /\'a. e |>r1,r2<| c *)
          let ce = transl_core_contract env c e callee caller in
          ce.exp_desc
   in mkexp ce cty
@@ -343,10 +350,10 @@ and find_in_ident_tbl path =
    contracts exported from nested modules.
 *)
 and wrap_id_with_contract env expr = 
-  let depContracts = dep_contracts env in
-  let cdecls = contract_decls env in
-  let opened_contracts = opened_contract_decls env in
-  let caller_path = name env in
+  let depContracts        = dep_contracts env in
+  let cdecls              = contract_decls env in
+  let opened_contracts    = opened_contract_decls env in
+  let caller_path         = name env in
   let contracted_exp_desc = match expr.exp_desc with
        | Texp_ident (callee_path, value_desc) -> 
          let bl_caller = Caller (expr.exp_loc, Some caller_path, callee_path) in 
@@ -445,17 +452,106 @@ and contract_id_in_contract env c =
   in {c with contract_desc = new_desc}
 
 
-(*
+let rec remove_path_list xs ys = match xs with
+  | [] -> []
+  | x::l -> if memPath x ys then remove_path_list l ys
+            else x::(remove_path_list l ys)
+
+let rec remove_redundant_path_name ps acc = match ps with
+  | [] -> acc
+  | x::l -> if not(memPath x acc) then remove_redundant_path_name l (x::acc)
+            else remove_redundant_path_name l acc
+
+let rec get_top_id_in_expression tops e = match e.exp_desc with 
+  | Texp_ident (path, vd) ->
+       if memPath path tops then [path] else [] 
+  | Texp_let(_, pat_expr_list, expr) -> 
+       (List.flatten (List.map (fun (_,ei) -> get_top_id_in_expression tops ei)
+                              pat_expr_list))@(get_top_id_in_expression tops expr)
+  | Texp_function (pat_expr_list, _) -> 
+       List.flatten (List.map (fun (_,ei) -> get_top_id_in_expression tops ei)
+                              pat_expr_list)
+  | Texp_apply (e1, eopt_optl_list) -> 
+       (get_top_id_in_expression tops e1)@ 
+        (List.flatten (List.map (fun (eopt,_) -> 
+	             match eopt with
+                    | None -> []
+		    | Some ei -> get_top_id_in_expression tops ei)
+               eopt_optl_list))
+  | Texp_match (e0, pat_expr_list, _) ->
+       (get_top_id_in_expression tops e0)@  
+        (List.flatten (List.map (fun (_, ei) -> get_top_id_in_expression tops ei)
+               pat_expr_list))
+  | Texp_try(e0, pat_expr_list) ->
+       (get_top_id_in_expression tops e0)@  
+        (List.flatten (List.map (fun (_, ei) -> get_top_id_in_expression tops ei)
+               pat_expr_list))       
+  | Texp_ifthenelse (e0, e1, e2opt) -> 
+       (get_top_id_in_expression tops e0)@(get_top_id_in_expression tops e1)@    
+       (match e2opt with 
+        | None -> []
+	| Some e2 -> get_top_id_in_expression tops e2)
+  | Texp_construct(_,_, es) -> 
+       List.flatten (List.map (fun ei -> get_top_id_in_expression tops ei) es)
+  | Texp_tuple(es) -> 
+       List.flatten (List.map (fun ei -> get_top_id_in_expression tops ei) es)
+  | Texp_variant(_, eopt) -> begin match eopt with
+                             | None -> []
+			     | Some a -> get_top_id_in_expression tops a
+			     end
+  | Texp_record(lbl_expr_list, eopt) -> 
+       (List.flatten (List.map (fun (_,ei) -> get_top_id_in_expression tops ei) 
+                      lbl_expr_list))@
+       (match eopt with 
+        | None -> []
+	| Some a -> get_top_id_in_expression tops a)
+  | Texp_field(e0,_) -> 
+       get_top_id_in_expression tops e0
+  | Texp_setfield (e1,_,e2) ->
+       (get_top_id_in_expression tops e1)@(get_top_id_in_expression tops e2)
+  | Texp_array (es) -> 
+       List.flatten (List.map (fun ei -> get_top_id_in_expression tops ei) es)
+  | Texp_sequence(e1, e2) -> 
+       (get_top_id_in_expression tops e1)@(get_top_id_in_expression tops e2)
+  | Texp_while(e1,e2) -> 
+       (get_top_id_in_expression tops e1)@(get_top_id_in_expression tops e2)
+  | Texp_for(_,e1,e2,_,e3) ->
+       (get_top_id_in_expression tops e1)@(get_top_id_in_expression tops e2)@
+       (get_top_id_in_expression tops e3)
+  | Texp_when(e1,e2) -> 
+       (get_top_id_in_expression tops e1)@(get_top_id_in_expression tops e2)
+  | Texp_send(e1,_) -> get_top_id_in_expression tops e1
+  | Texp_setinstvar(_,_,e1) -> get_top_id_in_expression tops e1
+  | Texp_override(_, path_expr_list) -> 
+       List.flatten (List.map (fun (_,ei) -> get_top_id_in_expression tops ei) 
+                    path_expr_list)
+  | Texp_letmodule(_,_,e1) -> get_top_id_in_expression tops e1
+  | Texp_assert(e1) -> get_top_id_in_expression tops e1
+  | Texp_lazy(e1) -> get_top_id_in_expression tops e1
+  | _ -> []
+
+
+let rec get_top_id_in_contract tops t acc = match t.contract_desc with 
+  | Tctr_pred (id, e, exnopt) -> 
+     remove_redundant_path_name (get_top_id_in_expression tops e) acc
+  | Tctr_arrow (idopt, t1, t2) -> 
+     let names1 = get_top_id_in_contract tops t1 acc in
+     let names2 = get_top_id_in_contract tops t2 (acc@names1) in
+     names1@names2
+  | Tctr_tuple(idopt_t_list) -> 
+     remove_redundant_path_name (List.flatten (List.map (fun (a,t) -> 
+     				get_top_id_in_contract tops t acc) idopt_t_list)) []
+  | _ -> []
+
 (* val get_top_id_in_contract : contract_declaration -> Path.t list *)
-let rec get_top_id_in_contract cdecl = 
-  match (cdecl.ttopctr_desc).contract_desc with 
-  | Tctr_pred (id, e exnopt) -> 
+let get_top_id_in_cdecl tops cdecl = get_top_id_in_contract tops cdecl.ttopctr_desc []
+
 
 (* val get_top_id_in_contracts : contract_declaration list -> Path.t list *)
-let rec get_top_id_in_contracts cdecls = match cdecls with
-| [] -> []
-| (h::t) -> (get_top_id_in_contract h)@(get_top_id_in_contracts t)
-*)
+let rec get_top_id_in_contracts tops cdecls = match cdecls with
+  | [] -> []
+  | h::t -> let names = get_top_id_in_contracts tops t in
+            remove_redundant_path_name (get_top_id_in_cdecl tops h) names
 
 (* val transl_str_contracts : core_contract list -> 
                               (Path.t, contract_declaration) Tbl.t ->
@@ -510,10 +606,11 @@ let rec transl_str_contracts contract_flag env strs =
 	 | Valid -> (pat, expr)
          | _ -> (pat, residual_exp)
   in
+  let t_decls = ThmEnv.type_decls env in
   match strs with
   | [] -> []
   | Tstr_axiom(decl) :: rem -> 
-      let new_env = add_tasks env [mlaxiom_to_smtaxiom decl] in
+      let new_env = add_tasks env [mlaxiom_to_smtaxiom t_decls decl] in
       transl_str_contracts contract_flag new_env rem
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
    (* We lookup tstr_contracts to see there is any contract for this function. 
@@ -526,17 +623,19 @@ let rec transl_str_contracts contract_flag env strs =
       let f = fun x -> ... (f <| C_f) (x - 1)  
    	                 + (g <| C_g) x ...
     *)       
+     let rec result_type t = match (Ctype.repr t).desc with
+          | Tarrow(_, t1, t2, _) -> result_type t2
+          | others -> Ctype.repr t in
+     let is_result_type_unit t = match (result_type t).desc with
+        | Tconstr(p,_, _) -> Path.name p = "unit"
+        | _ -> false in
      let pre_processed_list = 
-       List.map (fun (p,e) -> (p, pre_processing e)) pat_expr_list in
-     let module_env = 
-       try 
-	 (* let used_in_contracts = get_top_id_in_contracts contract_decls in 
-         let required_dfns = List.filter (fun (p,e) -> 
-	   match p.pat_desc with
-	   | Tpat_var (id) -> List.mem (Pident id) used_in_contracts
-	   | _ -> false) 
-	     pat_expr_list in *)
-         let env1 = add_tasks env (def_to_axioms pre_processed_list) in	 
+        List.map (fun (p,e) -> (p, pre_processing e)) pat_expr_list in
+     let defs_go_to_env =        
+        List.filter (fun (p,e) -> not(is_result_type_unit e.exp_type))  
+	 pre_processed_list in
+     let env0 = 
+       try  (* add current function definition to env *)       
 	 List.fold_right (fun (p,e) default -> 
 	     match p.pat_desc with
 	     | Tpat_var (id) ->
@@ -545,17 +644,45 @@ let rec transl_str_contracts contract_flag env strs =
                  | Recursive -> extend_rec_env default id e
 		 | Default -> default
                  end
-	     | _ -> default) pat_expr_list env1
+	     | _ -> default) defs_go_to_env env
        with ToErgosrc.Error(loc,err) -> 
-	 ToErgosrc.report_error std_formatter err; env 
+	 ToErgosrc.report_error std_formatter err; env
      in
+     let ys = List.flatten (List.map (fun (p,e) -> get_top_ids p) pat_expr_list) in
+     (* add top ids to env *)
+     let env1 = add_top_defs env0 ys in	 
+     let top_ids_so_far = top_defs env1 in
+     let used_in_contracts = get_top_id_in_contracts top_ids_so_far contract_decls in 
+  (* let top_ids_not_in_contracts = remove_path_list top_ids_so_far used_in_contracts in 
+  *)
+     let rec required_dfns = 
+         List.flatten (List.map (fun p -> match p with
+	          | Pident id -> begin try let e = try lookup_nonrec_env id env 
+		                        with Not_found -> lookup_rec_env id env in
+ 	                	let p = { pat_desc = Tpat_var (id);
+				          pat_loc  = e.exp_loc;
+				          pat_type = e.exp_type;
+				          pat_env  = e.exp_env } in
+			        [(p,e)]
+				with Not_found -> [] end
+		  | _ -> []) (intersection top_ids_so_far 
+		              (used_in_contracts@(descendants env)))) in
+     (* add logic declare to env *)
+     let logics = List.fold_right (fun (p,_) default -> 
+                     (bound_vars_to_logic p)@default) pat_expr_list [] in 
+     let env2 = add_tasks env1 logics in
+     let axioms = def_to_axioms t_decls required_dfns in
+     let env3 = add_tasks env2 axioms in
+(*     print_list (fmt_contract_declaration Format.std_formatter) 
+                (List.map contract_declaration_to_iface (ThmEnv.contract_decls env3));
+*)
      let wrapped_pat_expr_list = 
        List.map (fun (p,e) -> 
-	     let senv = match p.pat_desc with
-	     | Tpat_var (id) -> update_name module_env (Pident id)
-             | _ -> module_env in 
-             contract_wrapping senv (p, e)) pre_processed_list in
-     let contract_rem = transl_str_contracts contract_flag module_env rem in
+	     let current_env = match p.pat_desc with
+	     | Tpat_var (id) -> update_name env3 (Pident id)
+             | _ -> env3 in 
+             contract_wrapping current_env (p, e)) pre_processed_list in
+     let contract_rem = transl_str_contracts contract_flag env2 rem in
      (Tstr_value(rec_flag, wrapped_pat_expr_list))::contract_rem
  | (Tstr_type id_tdecl_list) :: rem -> 
      (* For static contract checking, we convert type declaration to 
@@ -600,35 +727,69 @@ Function transl_contracts is called in driver/compile.ml
 
 The flag info: 0: dynamic, 1: static, 2: hybrid  *)
 
+and get_top_ids p = match p.pat_desc with
+		      | Tpat_var(id) -> [Pident id]
+		      | Tpat_tuple(ps) -> List.flatten (List.map get_top_ids ps)
+		      | _ -> []
+
 and aux_transl_contracts contract_flag (str, cc) = 
   let rec extract_contracts xs = 
-        match xs with
-           | [] -> ([], Ident.empty)		 
-           | (Tstr_mty_contracts(t) :: rem) ->
-               let (current_contracts, mty_opened_contracts) = extract_contracts rem in 
-               (current_contracts, Ident.merge t mty_opened_contracts)
-	   | (Tstr_opened_contracts(t) :: rem) ->
-	       let (current_contracts, mty_opened_contracts) = extract_contracts rem in
-	       (current_contracts, Ident.merge t mty_opened_contracts) 
-           | ((Tstr_contract (ds)) :: rem) -> 
-	       let (current_contracts, mty_opened_contracts) = extract_contracts rem in	       
-	       (ds@current_contracts, mty_opened_contracts)
-           | (_::rem) -> extract_contracts rem
+    match xs with
+    | [] -> ([], Ident.empty, [], [], Tbl.empty)		 
+    | (Tstr_mty_contracts(t) :: rem) ->
+        let (current_contracts, mty_opened_contracts, type_decls, top_ids, top_funs) = 
+	  extract_contracts rem in 
+        (current_contracts, Ident.merge t mty_opened_contracts, type_decls, top_ids, top_funs)
+    | (Tstr_opened_contracts(t) :: rem) ->
+	let (current_contracts, mty_opened_contracts, type_decls, top_ids, top_funs) = 
+	  extract_contracts rem in
+	(current_contracts, Ident.merge t mty_opened_contracts, type_decls, top_ids, top_funs) 
+    | ((Tstr_contract (ds)) :: rem) -> 
+	let (current_contracts, mty_opened_contracts, type_decls, top_ids, top_funs) = 
+	  extract_contracts rem in	       
+	(ds@current_contracts, mty_opened_contracts, type_decls, top_ids, top_funs)
+    | ((Tstr_type(ts)) :: rem) -> 
+	let (current_contracts, mty_opened_contracts, type_decls, top_ids, top_funs) = 
+	  extract_contracts rem in	       	      
+	(current_contracts, mty_opened_contracts, ts@type_decls, top_ids, top_funs)
+    | ((Tstr_value(_,pat_expr_list)) :: rem) ->
+	let (current_contracts, mty_opened_contracts, type_decls, top_ids, top_funs) = 
+	  extract_contracts rem in	       	      
+	(current_contracts, mty_opened_contracts, type_decls, 
+	   top_ids@(List.flatten (List.map (fun (p,e) -> get_top_ids p) pat_expr_list)), 
+	   add_pat_expr_list_to_tbl pat_expr_list top_funs)
+    | (_::rem) -> extract_contracts rem
   in
-  let (tstr_contracts, mty_opened_contracts) = extract_contracts str in
+  let (tstr_contracts, mty_opened_contracts, type_decls, top_ids, top_funs) = 
+    extract_contracts str in
   (* let checked_tstr_contracts = List.map (fun c -> 
                  let senv = update_name env c.ttopctr_id in 
                  let new_c_desc = contract_id_in_contract senv c.ttopctr_desc in
                  {c with ttopctr_desc = new_c_desc}) tstr_contracts in *)
-  let env = initEnv tstr_contracts mty_opened_contracts in
+  let t_decls = List.map (fun (a,b) -> (Ident.unique_name a, b)) type_decls in
+  let used_in_contracts = get_top_id_in_contracts top_ids tstr_contracts in 
+  let top_ids_not_in_contracts = remove_path_list top_ids used_in_contracts in 
+  let rec required_dfns xs = match xs with 
+         | [] -> []
+         | path::l -> 
+     (* ids_called are ids called in the definition of functions used in contracts *)
+	      let ids_called = try let e = Tbl.find path top_funs in
+	                           get_top_id_in_expression top_ids_not_in_contracts e 
+                               with Not_found -> [] in
+ 	      ids_called@(required_dfns l)
+        in
+  let env = initEnv tstr_contracts mty_opened_contracts t_decls (required_dfns used_in_contracts) in
   (transl_str_contracts contract_flag env str, cc)
 
 and transl_contracts contract_flag (str, cc) = 
-  let time0 = Sys.time () in 
+  let time0 = Unix.gettimeofday () in 
   let (a,b) = aux_transl_contracts contract_flag (str, cc) in
-  let time1 = Sys.time () in 
+  let time1 = Unix.gettimeofday () in 
   printf "Static contract checking time: %f secs@." (time1 -. time0);   
   (a,b)  
+(*  with Esc.Error(loc, msg) -> 
+    Location.print_error std_formatter loc;
+    Esc.report_error std_formatter msg *)
 
 let report_error ppf = function
   | Illegal_tuple_expr -> 

@@ -23,12 +23,6 @@ open Types
 open Typedtree
 open Format
 
-(* naxu's temp file starts. *)
-
-let fmt_contract_declaration ppf (cdecl:Types.contract_declaration) = 
-  !Oprint.out_contract_declaration ppf cdecl
-
-(* naxu's temp file ends. *)
 
 type error =
     Cannot_apply of module_type

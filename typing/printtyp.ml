@@ -854,21 +854,21 @@ let signature ppf sg =
 (* Print a contract declaration *)
 
 let contract_declaration id ppf decl = 
-  fprintf ppf "@[<v>%a@]" !Oprint.out_contract_declaration decl
+  fprintf ppf "@[<v>%a@]" !(Oprint.out_contract_declaration []) decl
 
 (* -dtypedtree prints the outcometree *)
 
 let structure_item ppf x = match x with
   | Typedtree.Tstr_eval (e) -> 
       let iface_e = Typedtree.expression_to_iface e in
-      fprintf ppf "@[<1>Tstr_eval(%a)@]" !Oprint.out_expression iface_e;
+      fprintf ppf "@[<1>Tstr_eval(%a)@]" !(Oprint.out_expression []) iface_e;
   | Typedtree.Tstr_value (rec_flag, pat_expr_list) ->
       let (p, e) = List.hd pat_expr_list in
       let dummy_e = {e with Typedtree.exp_desc = Typedtree.Texp_assertfalse } in 
       let edesc = Typedtree.Texp_let (Default, pat_expr_list, dummy_e) in
       let iface_e = Typedtree.expression_desc_to_iface 
 	              Typedtree.expression_to_iface edesc in 
-      fprintf ppf "@[<1>Tstr_value(%a)@]" !Oprint.out_expression_desc iface_e;  
+      fprintf ppf "@[<1>Tstr_value(%a)@]" !(Oprint.out_expression_desc []) iface_e;  
   | _ -> fprintf std_formatter "typing/printtyp: ONLY eval, value are printed!\n"
 
 let print_structure ppf x = raw_list structure_item ppf x

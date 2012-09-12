@@ -259,5 +259,5 @@ val ensuresC : core_contract -> expression -> blame -> expression_desc
 val requiresC : core_contract -> expression -> 
                 blame -> blame -> expression_desc
 
-val print_expression : expression -> unit
-val print_pattern : pattern -> unit
+val print_expression : (string * type_declaration) list -> expression -> unit
+val print_pattern : (string * type_declaration) list -> pattern -> unit

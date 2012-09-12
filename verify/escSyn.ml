@@ -10,6 +10,15 @@ let should_trace = false
 let trace msg fn arg = if should_trace 
   then (printf "%s:\n" msg; fn arg; print_newline())
 
+let mtrace msg = if should_trace
+    then printf "%s\n" msg
+
+let rec print_list f xs = match xs with
+ | [] -> print_string " **list\n"
+ | x::l -> f x; print_list f l
+
+exception Not_bound_var
+
 type validity = Valid | Invalid | Unknown | HighFailure | Timeout
 
 (* 1: constructor true; 0: constructor false; 2: other constructor *)
@@ -17,6 +26,30 @@ type validity = Valid | Invalid | Unknown | HighFailure | Timeout
 type bool_info = Ptrue | Pfalse | Pothers
 
 (* functions related expressions and patterns *)
+
+let rec add_pat_expr_list_to_tbl xs tbl = match xs with
+  | [] -> tbl
+  | (p,e)::l -> begin match p.pat_desc with
+    | Tpat_var (id) -> let new_tbl = Tbl.add (Pident id) e tbl in
+                       add_pat_expr_list_to_tbl l new_tbl
+    | _ -> add_pat_expr_list_to_tbl l tbl
+    end 
+
+let rec pattern_to_expression p = 
+  let desc = match p.pat_desc with
+| Tpat_var(id) -> 
+    let vd = {val_type = p.pat_type; val_kind = Val_reg} in
+    Texp_ident(Pident id, vd)
+| Tpat_constant (c) -> Texp_constant (c)
+| Tpat_construct(path, cdesc, ps) -> 
+    Texp_construct(path, cdesc, List.map pattern_to_expression ps)
+| Tpat_tuple(ps) -> 
+    Texp_tuple(List.map pattern_to_expression ps)
+| _ -> failwith "escSyn.ml : pattern is not handled"
+ in {exp_desc = desc;
+     exp_loc  = p.pat_loc;
+     exp_type = p.pat_type;
+     exp_env  = p.pat_env}
 
 let is_pattern_true pat = match pat.pat_desc with
 | Tpat_construct (path, cdesc, ps) -> 
@@ -46,9 +79,13 @@ let rec getop path = match path with
 | Pdot (t, str, i) -> str
 | Papply (t1, t2) -> getop t2
 
+let get_primitive_op exp = match exp.exp_desc with
+ | Texp_ident(path, vd) -> getop path
+ | _ -> "nop"
+
 let is_expression_prop exp = match exp.exp_desc with 
 | Texp_apply(e0, args) -> begin match e0.exp_desc with
-  | Texp_ident(path, vd) ->  begin match getop path with
+  | Texp_ident(path, vd) -> begin match getop path with
       | ">" | ">=" | "=" | "<" | "<=" -> true
       | _ -> false
 	    end 
@@ -63,6 +100,25 @@ let is_expression_prop exp = match exp.exp_desc with
  end
 | _ ->  false
 
+let is_expression_primitiveop exp = match exp.exp_desc with
+| Texp_ident (path, vd) -> begin match vd.val_kind with
+  | Val_prim _ -> true
+  | _ -> false
+ end
+| _ -> false
+
+let rec is_expression_tv exp = match exp.exp_desc with
+| Texp_constant _ -> true
+| Texp_ident _ -> true
+| Texp_construct (_, _, es) -> List.for_all is_expression_tv es
+| Texp_tuple (es) -> List.for_all is_expression_tv es
+| _ -> false
+
+let rec is_expression_tvalue exp = is_expression_tv exp ||
+ (match (Ctype.repr exp.exp_type).desc with
+   | Tarrow _ -> true
+   | _ -> false)
+
 let rec is_expression_argable exp = match exp.exp_desc with
 | Texp_ident _ | Texp_constant _ -> true
 | Texp_apply (e, args) -> is_expression_argable e && 
@@ -70,6 +126,8 @@ let rec is_expression_argable exp = match exp.exp_desc with
     | Some a -> is_expression_argable a
     | None -> false) args
 | Texp_construct (path, cdesc, es) -> 
+    List.for_all is_expression_argable es
+| Texp_tuple (es) -> 
     List.for_all is_expression_argable es
 | _ -> false
 
@@ -91,19 +149,58 @@ let exn_to_bad exp =
 
 let pre_processing exp =  map_expression exn_to_bad exp
 
+let rec add x d t = match t with
+| [] -> [(x,d)]
+| ((i,v)::l) -> if Ident.unique_name x = Ident.unique_name i
+                 then (x,d)::l
+                 else (i,v)::(add x d l)
+
+let rec find x t = match t with
+| [] -> raise Not_bound_var
+| ((i,v)::l) -> if Ident.unique_name x = Ident.unique_name i
+                 then v
+                 else find x l
+
+let rec memIdent x t = match t with
+   | [] -> false
+   | i::l -> if Ident.unique_name x = Ident.unique_name i
+              then true 
+              else memIdent x l
   
-let rec rename_path_ident boundvars path gamma = match path with
- | Pident id -> if not(List.mem id boundvars) 
-                then try Pident (Tbl.find id gamma)
-		     with Not_found -> path
-                else path
- | Pdot (p, s, pos) -> Pdot (rename_path_ident boundvars p gamma, s, pos)
- | Papply (p1, p2) -> Papply(p1, rename_path_ident boundvars p2 gamma)
+let rec memPath p ps = match ps with
+         | [] -> false
+         | x::l -> begin match (p,x) with
+                   | (Pident id1, Pident id2) -> 
+		     if Ident.name id1 = Ident.name id2 then true
+		     else memPath p l
+		   | _ -> memPath p l
+                   end 
+
+let rec intersection xs ys = match xs with
+  | [] -> []
+  | x::l -> if memPath x ys then x::(intersection l ys)
+            else intersection l ys
+
+let rec rename_path_ident gamma path = match path with
+ | Pident id ->  begin try Pident (find id gamma)
+  	         with Not_bound_var -> path 
+                 end
+ | Pdot (p, s, pos) -> Pdot (rename_path_ident gamma p, s, pos)
+ | Papply (p1, p2) -> Papply(p1, rename_path_ident gamma p2)
+
+let rec rename_path_id boundvars gamma path = match path with
+ | Pident id ->  if memIdent id boundvars
+                 then path
+                 else begin try Pident (find id gamma)
+  	                    with Not_bound_var -> path 
+                      end
+ | Pdot (p, s, pos) -> Pdot (rename_path_ident gamma p, s, pos)
+ | Papply (p1, p2) -> Papply(p1, rename_path_ident gamma p2)
 
 (* subst replace free variables id1 in expr by id2 *)
 let rec subst bound_vars gamma expr = match expr.exp_desc with
  | Texp_ident (path, vd) -> 
-     {expr with exp_desc = Texp_ident (rename_path_ident bound_vars path gamma, vd)}
+     {expr with exp_desc = Texp_ident (rename_path_id [] gamma path, vd)}
  | Texp_constant (c) -> expr
  | Texp_let (rec_flag, pat_expr_list, e2) -> 
      let bvars     = let_bound_idents pat_expr_list in
@@ -230,14 +327,14 @@ let rec subst bound_vars gamma expr = match expr.exp_desc with
 
 let rec rename_pattern gamma pat = match pat.pat_desc with
 | Tpat_var(id) -> 
-     {pat with pat_desc = try Tpat_var (Tbl.find id gamma)
+     {pat with pat_desc = try Tpat_var (find id gamma)
                  with Not_found -> Tpat_var(id)}
    
 | d -> {pat with pat_desc = map_pattern_desc (rename_pattern gamma) d}
 
 let rec rename_boundvars gamma expr = match expr.exp_desc with
  | Texp_ident (path, vd) ->
-     let new_id = rename_path_ident [] path gamma in
+     let new_id = rename_path_ident gamma path in
      {expr with exp_desc = Texp_ident (new_id, vd)}
  | Texp_constant (c) -> expr
  | Texp_let (rec_flag, pat_expr_list, e2) -> 
@@ -250,12 +347,12 @@ let rec rename_boundvars gamma expr = match expr.exp_desc with
        match p.pat_desc with
        | Tpat_var(id) -> 
 	   let new_id = Ident.rename id in
-	   let new_gamma = Tbl.add id new_id gamma in
+	   let new_gamma = add id new_id gamma in
 	   ({p with pat_desc = Tpat_var(new_id)}, rename_boundvars new_gamma e)
        | Tpat_construct(path, cdesc, ps) -> 
 	  let bvars = let_bound_idents pat_expr_list in
 	  let new_gamma = List.fold_right (fun i default -> 
-		    Tbl.add i (Ident.rename i) default) bvars gamma in
+		    add i (Ident.rename i) default) bvars gamma in
 	  let new_ps = List.map (rename_pattern new_gamma) ps in
           ({p with pat_desc = Tpat_construct(path, cdesc, new_ps)},
             rename_boundvars new_gamma e)
@@ -274,7 +371,7 @@ let rec rename_boundvars gamma expr = match expr.exp_desc with
        match p.pat_desc with
        | Tpat_var(id) -> 
 	   let new_id = Ident.rename id in
-	   let new_gamma = Tbl.add id new_id gamma in
+	   let new_gamma = add id new_id gamma in
 	   ({p with pat_desc = Tpat_var(new_id)}, rename_boundvars new_gamma e)
        | Tpat_construct(path, cdesc, ps) -> 
 	  let bvars = List.fold_right (fun pi default -> 
@@ -282,9 +379,19 @@ let rec rename_boundvars gamma expr = match expr.exp_desc with
 	  let newbvars = List.map Ident.rename bvars in
           let blist = List.combine bvars newbvars in
 	  let new_gamma = List.fold_right (fun (i,ni) default ->
-	                   Tbl.add i ni default) blist gamma in
+	                   add i ni default) blist gamma in
 	  let new_ps = List.map (rename_pattern new_gamma) ps in
           ({p with pat_desc = Tpat_construct(path, cdesc, new_ps)},
+            rename_boundvars new_gamma e)
+       | Tpat_tuple(ps) -> 
+	  let bvars = List.fold_right (fun pi default -> 
+	                       default@(pat_bound_idents pi)) ps [] in
+	  let newbvars = List.map Ident.rename bvars in
+          let blist = List.combine bvars newbvars in
+	  let new_gamma = List.fold_right (fun (i,ni) default ->
+	                   add i ni default) blist gamma in
+	  let new_ps = List.map (rename_pattern new_gamma) ps in
+          ({p with pat_desc = Tpat_tuple(new_ps)},
             rename_boundvars new_gamma e)
        | _ -> (p,e))
  	                     pat_expr_list in

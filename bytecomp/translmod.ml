@@ -30,7 +30,7 @@ open Translclass
 (* naxu's temp function starts *)
 
 let fmt_contract_declaration ppf (cdecl:Types.contract_declaration) = 
-  !Oprint.out_contract_declaration ppf cdecl 
+  !(Oprint.out_contract_declaration []) ppf cdecl 
 
 (* naxu's temp function ends. *)
 

@@ -34,7 +34,7 @@ exception Error of error
 
 type aval = 
     Inline of expression
-  | NotCon of (pattern * expression) list
+  | IsTuple of expression list
   | IsCon of Path.t * constructor_description * expression list
   | NoVal 
 
@@ -44,7 +44,10 @@ type t = {
   name: Path.t;                    (* name of function under contract checking *)
   depth: int;                      (* number of unrollings *)
   contract_name: Path.t;
-  dep_contracts: Typedtree.core_contract Ident.tbl; 
+  top_defs: Path.t list;      (* top-level functions called in current definition *)
+  descendants: Path.t list ;
+  dep_contracts: Typedtree.core_contract Ident.tbl; (* "x:t1" -> t2 *)
+  type_decls: (string * type_declaration) list;
   contract_decls: contract_declaration list;
   opened_contract_decls: (Path.t * Types.contract_declaration) Ident.tbl; 
   axioms: axiom_declaration list;
@@ -61,28 +64,39 @@ let init_tasks =
   let mklexpr desc = {pp_loc = loc; pp_desc = desc} in
   let a = PPTvarid ("'a", loc) in
   let b = PPTvarid ("'b", loc) in
+  let c = PPTvarid ("'c", loc) in
   let a_list = PPTexternal ([a], "list", loc) in
   let a_b_arrow = PPTexternal ([a;b], "arrow", loc) in
-  let a_b_tuple = PPTexternal ([a;b], "tuple", loc) in
+  let a_b_tuple = PPTexternal ([a;b], "tuple2", loc) in
+  let a_b_c_tuple = PPTexternal ([a;b;c], "tuple3", loc) in
   [TypeDecl (loc, ["'a";"'b"], "arrow");
-   TypeDecl (loc, ["'a";"'b"], "tuple");
+   TypeDecl (loc, ["'a";"'b"], "tuple2");
+   TypeDecl (loc, ["'a";"'b";"'c"], "tuple3");
    Logic (loc, false, ["apply"], PFunction ([a_b_arrow; a], b));
    TypeDecl (loc, ["'a"], "list");
    Logic (loc, false, ["nil"], PFunction ([], a_list));
    Logic (loc, false, ["cons"], PFunction ([a; a_list], a_list ));
-   Logic (loc, false, ["tup"], PFunction ([a;b], a_b_tuple));
-   Axiom (loc, "list_a0", mklexpr (PPforall(["x"], a, [], mklexpr(PPforall(["l"], a_list, [], mklexpr (PPinfix(mklexpr(PPvar "nil"), PPneq, mklexpr(PPapp("cons", [mklexpr(PPvar "x");mklexpr(PPvar "l")])))))))))
+   Logic (loc, false, ["tup2"], PFunction ([a;b], a_b_tuple));
+   Logic (loc, false, ["tup3"], PFunction ([a;b;c], a_b_c_tuple));
+   (* axiom list_a0 : forall x:'a. forall l:'a list. nil <> cons(x,l) *)
+   Axiom (loc, "list_a0", mklexpr (PPforall(["x"], a, [], mklexpr(PPforall(["l"], a_list, [], mklexpr (PPinfix(mklexpr(PPvar "nil"), PPneq, mklexpr(PPapp("cons", [mklexpr(PPvar "x");mklexpr(PPvar "l")])))))))));
+   (* axiom cons_a0 : forall x,y:int. forall l,m:int list. 
+      cons(x,l) = cons(y,m) -> x=y and l=m 
+   Axiom (loc, "cons_a0", mklexpr *)
  ]
 
 (* empty environment *)
-let initEnv l1 l2 = { 
+let initEnv x1 x2 x3 x4 = { 
   tasks  = init_tasks;
   name = Pident (Ident.create "caller");
   depth = 0;
-  dep_contracts = Ident.empty; 
   contract_name = Pident (Ident.create "contract caller");
-  contract_decls = l1;
-  opened_contract_decls = l2;
+  top_defs = []; (* so far *)
+  descendants = x4;
+  dep_contracts = Ident.empty; 
+  type_decls = x3;
+  contract_decls = x1;
+  opened_contract_decls = x2;
   axioms = [];
   goalTasks = []; (* represent a goal in terms of tasks *)
   abinds =  Tbl.empty;
@@ -106,6 +120,8 @@ let update_contract_name env n =  { env with contract_name = n }
 
 let decrease_depth env = { env with depth = env.depth - 1 }
 let increase_depth env = { env with depth = env.depth + 1 }
+
+let add_top_defs env ds = { env with top_defs = env.top_defs@ds }
 
 let add_dep_contracts env x c = 
   { env with dep_contracts = Ident.add x c env.dep_contracts }
@@ -131,7 +147,10 @@ let tasks env = env.tasks
 let name env = env.name
 let depth env = env.depth
 let contract_name env = env.contract_name
+let top_defs env = env.top_defs
+let descendants env = env.descendants
 let dep_contracts env = env.dep_contracts
+let type_decls env = env.type_decls
 let contract_decls env = env.contract_decls
 let opened_contract_decls env = env.opened_contract_decls
 let goalTasks env = env.goalTasks

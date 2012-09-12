@@ -648,7 +648,7 @@ and transl_exp0 e =
   | Texp_let(rec_flag, pat_expr_list, body) ->
       (* original: 
 	 transl_let rec_flag pat_expr_list (event_before body (transl_exp body)) *)
-      let cenv = ThmEnv.initEnv [] Ident.empty in
+      let cenv = ThmEnv.initEnv [] Ident.empty [] [] in
       (* local contract wrapping *)
       let rec do_local xs accu = match xs with
       | [] -> ([], accu)

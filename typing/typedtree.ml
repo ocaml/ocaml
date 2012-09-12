@@ -88,7 +88,8 @@ and expression_desc =
   | Texp_contract of core_contract * expression * expression * expression
   | Texp_bad of blame 
   | Texp_unr of blame
-  | Texp_Lambda of Ident.t list * expression (* /\'a. e |><| c, 'a is a contractvar *)
+  | Texp_Lambda of Ident.t list * expression 
+(* /\'a. e |><| c, 'a is a contractvar *)
   | Texp_App of expression * expression list (* e 'a, 'a is a contractvar *)
 (* this is for re-raise contract exception in translcore.ml *)
   | Texp_raise of expression 
@@ -1030,14 +1031,14 @@ and class_field_from_iface cf = match cf with
 
 open Format
 
-let print_expression exp = 
+let print_expression type_decls exp = 
   let iface_e = expression_desc_to_iface 
                 expression_to_iface exp.exp_desc in 
   fprintf std_formatter "%a" 
-       !Oprint.out_expression_desc iface_e
+       !(Oprint.out_expression_desc type_decls) iface_e
 
-let print_pattern pat = 
+let print_pattern type_decls pat = 
   let iface_e = pattern_desc_to_iface 
                 pattern_to_iface pat.pat_desc in 
   fprintf std_formatter "%a" 
-       !Oprint.out_pattern_desc iface_e
+       !(Oprint.out_pattern_desc type_decls) iface_e

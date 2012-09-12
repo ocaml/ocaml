@@ -14,16 +14,14 @@ type error =
   | Pattern_not_shallow
   | Argument_is_none
   | Expression_not_ident
-  | Structure_not_convertable
-  | Constant_not_convertable
   | Pattern_not_convertable
   | Expression_not_convertable
   | Type_not_convertable
   | Not_toplevel_function
   | Pattern_to_lexpr
 
-
 exception Error of Location.t * error
+exception Haha
 
 (* make lexpr simper:
    (1) remove redundant existential quantifiers, 
@@ -147,6 +145,7 @@ let f_forall xs ty triggers e = mklexpr e.pp_loc (PPforall (xs, ty, triggers, e)
 let f_exists x ty e = mklexpr e.pp_loc (PPexists (x, ty, e))
 let f_var loc str_name = mklexpr loc (PPvar str_name)
 let f_app loc str_name es = mklexpr loc (PPapp(str_name,es))
+let f_tuple loc es = mklexpr loc (PPapp("tup2",es)) 
 
 let rec is_expression_ergoble exp = if exp.exp_type = Predef.type_exn then false
 else match exp.exp_desc with
@@ -182,18 +181,22 @@ else match exp.exp_desc with
   type ('a, 'b) arrow 
   logic apply : ('a , 'b) arrow , 'a -> 'b *)
 let rec type_to_ppure_type loc t = match (Ctype.repr t).desc with
-  | Tvar -> PPTvarid ("'a", loc)
+  | Tvar -> PPTvarid ((create_var "'a"), loc)
   | Tarrow (lbl, t1, t2, commu) -> 
       PPTexternal ([type_to_ppure_type loc t1;
                     type_to_ppure_type loc t2], "arrow", loc) 
   | Ttuple (ts) -> 
-      PPTexternal (List.map (type_to_ppure_type loc) ts, "tuple", loc)
+      if List.length ts = 2 then
+      PPTexternal (List.map (type_to_ppure_type loc) ts, "tuple2", loc)
+      else if List.length ts = 3 then
+      PPTexternal (List.map (type_to_ppure_type loc) ts, "tuple3", loc)
+      else PPTexternal (List.map (type_to_ppure_type loc) ts, "tuple4", loc)
   | Tconstr (path, ts, abbre) ->
       if path = Predef.path_int then PPTint
-	  else if path = Predef.path_bool then PPTbool
-	      else if path = Predef.path_unit then PPTunit
-	      else PPTexternal (List.map (type_to_ppure_type loc) ts,
-                   Path.name path, loc)
+      else if path = Predef.path_bool then PPTbool
+      else if path = Predef.path_unit then PPTunit
+      else if path = Predef.path_string then PPTint
+      else PPTexternal (List.map (type_to_ppure_type loc) ts, Path.name path, loc)
   | _ -> PPTvarid ("type_to_ppure_type : not handled", loc)
 
 (* first order type representation, for example:
@@ -201,15 +204,19 @@ let rec type_to_ppure_type loc t = match (Ctype.repr t).desc with
    int , int -> int
 
  let rec type_to_ppure_type loc t = match (Ctype.repr t).desc with
-  | Tvar -> PPTvarid ("'a", loc)
+  | Tvar -> PPTvarid ((create_var "'a"), loc)
   | Ttuple (ts) -> 
-      PPTexternal (List.map (type_to_ppure_type loc) ts, "tuple", loc)
+      if List.length ts = 2 then
+      PPTexternal (List.map (type_to_ppure_type loc) ts, "tuple2", loc)
+      else if List.length ts = 3 then
+      PPTexternal (List.map (type_to_ppure_type loc) ts, "tuple3", loc)
+      else PPTexternal (List.map (type_to_ppure_type loc) ts, "tuple4", loc)
   | Tconstr (path, ts, abbre) ->
       if path = Predef.path_int then PPTint
-	  else if path = Predef.path_bool then PPTbool
-	      else if path = Predef.path_unit then PPTunit
-	      else PPTexternal (List.map (type_to_ppure_type loc) ts,
-                   Path.name path, loc)
+      else if path = Predef.path_bool then PPTbool
+      else if path = Predef.path_unit then PPTunit
+      else if path = Predef.path_string then PPTint
+      else PPTexternal (List.map (type_to_ppure_type loc) ts, Path.name path, loc)
   | _ -> PPTvarid ("type_to_ppure_type : not handled", loc)
 
 let rec split_type ty = 
@@ -234,7 +241,7 @@ let rec type_to_logic_type loc t =
 (* val type_to_typelogic : loc -> Ident.t * Types.type_declaration -> decl list *)
 
 let type_expr_to_string t = match t.desc with
-| Tvar -> Ident.name (Ident.create "'a")
+| Tvar -> create_var "'a"
 | _ -> "not Tvar"
 
 let type_to_typelogic loc (id, tdecl) = 
@@ -244,23 +251,45 @@ let type_to_typelogic loc (id, tdecl) =
   let ppure_types = List.map (fun x -> PPTvarid (x, loc)) type_params in 
   let constrs = match tdecl.type_kind with
   | Type_abstract -> []
-  | Type_variant s_ts_list -> 
-     List.map (fun (s,ts) -> 
-               Logic (loc, true, [s], 
+  | Type_variant s_ts_list ->
+    List.map (fun (s,ts) -> 
+        Logic (loc, true, [s], 
                PFunction (List.map (type_to_ppure_type loc) ts, 
-               PPTexternal (ppure_types, type_name, loc)))) s_ts_list
-  | _ -> raise(Error(loc, Type_not_convertable))
+	       PPTexternal (ppure_types, type_name, loc)))) s_ts_list
+  | Type_record (s_mflg_ty_list, rrep) ->
+      List.map (fun (s,m,t) -> 
+      Logic (loc, true, [s], 
+             PFunction ([type_to_ppure_type loc t], 
+	     PPTexternal (ppure_types, type_name, loc)))) s_mflg_ty_list
   in t::constrs
 
 
 (* val expression_to_lexpr : Typedtree.expression 
                          -> Why_ptree.lexpr -> Why_ptree.lexpr *)
 
+let string_to_int x = match x with
+  | "A" -> 1  | "B" -> 2  | "C" -> 3  | "D" -> 4  | "E" -> 5
+  | "F" -> 6  | "G" -> 7  | "H" -> 8  | "I" -> 9  | "J" -> 10
+  | "K" -> 11  | "L" -> 12  | "M" -> 13  | "N" -> 14  | "O" -> 15  
+  | "P" -> 16  | "Q" -> 17  | "R" -> 18  | "S" -> 19  | "T" -> 20
+  | "U" -> 21  | "V" -> 22  | "W" -> 23  | "X" -> 24  | "Y" -> 25  | "Z" -> 26
+  | "a" -> 27 | "b" -> 28 | "c" -> 29 | "d" -> 30 | "e" -> 31
+  | "f" -> 32 | "g" -> 33 | "h" -> 34 | "i" -> 35 | "j" -> 36
+  | "k" -> 37 | "l" -> 38 | "m" -> 39 | "n" -> 40 | "o" -> 41
+  | "p" -> 42 | "q" -> 43 | "r" -> 44 | "s" -> 45 | "t" -> 46
+  | "u" -> 47 | "v" -> 48 | "w" -> 49 | "x" -> 50 | "y" -> 51 | "z" -> 52
+  | _ -> 0
+
+
+let string_to_int_list xs = List.map string_to_int xs 
+
 let constant_to_lconstant c = match c with
   | Const_int i -> eint (string_of_int i)
   | Const_float s -> ereal (Num.num_of_string s)
   | Const_char ch -> ebitv (String.make 1 ch)
-  | Const_string s -> ebitv s
+  | Const_string s -> if s = "" or s = " " or s = "\n" or s = "/" or s = "\\"
+                      then eint (string_of_int 0)
+                      else eint (string_of_int (string_to_int s))
   | Const_int32 i -> eint (Int32.to_string i)
   | Const_int64 i -> eint (Int64.to_string i)
   | Const_nativeint i -> eint (Int64.to_string (Int64.of_nativeint i))
@@ -272,41 +301,74 @@ let is_expression_ident e = match e.exp_desc with
 | _ -> false
 
 let expressionVar_to_string e = match e.exp_desc with
-  | Texp_ident (path, vd) -> Path.unique_name path
+  | Texp_ident (path, vd) -> Path.unique_name path 
   | _ -> raise(Error(e.exp_loc, Expression_not_ident))
 
 let patternVar_to_string p = match p.pat_desc with
   | Tpat_var (id) -> Ident.unique_name id
   | _ -> raise(Error(p.pat_loc, Pattern_not_ident))
 
-let pattern_to_ppure_type p = type_to_ppure_type p.pat_loc (p.pat_type)
+let rec patternVars_to_strings p = match p.pat_desc with
+  | Tpat_var (id) -> [Ident.unique_name id]
+  | Tpat_construct(_,_,ps) -> 
+      List.fold_right (fun p default ->  
+	                 (patternVars_to_strings p)@default) ps []
+  | Tpat_tuple(ps) -> 
+      List.fold_right (fun p default ->  
+	                 (patternVars_to_strings p)@default) ps []
+  | _ -> 
+      raise(Error(p.pat_loc, Pattern_not_ident))
 
-let rec pattern_to_lexpr p = 
+let pattern_to_ppure_type p = type_to_ppure_type p.pat_loc (p.pat_type)
+let expression_to_ppure_type e = type_to_ppure_type e.exp_loc (e.exp_type)
+
+let rec pattern_to_strings_and_types p = match p.pat_desc with
+  | Tpat_var (id) -> [(Ident.unique_name id, pattern_to_ppure_type p)]
+  | Tpat_construct(_,_,ps) -> 
+      List.fold_right (fun p default -> 
+	                 (pattern_to_strings_and_types p)@default) ps []
+  | Tpat_tuple(ps) -> 
+      List.fold_right (fun p default -> 
+	                 (pattern_to_strings_and_types p)@default) ps []
+  | _ -> raise(Error(p.pat_loc, Pattern_not_ident))
+
+let rec pattern_to_lexpr type_decls p = 
   let loc = p.pat_loc in
   match p.pat_desc with
   | Tpat_var (id) -> mklexpr loc (PPvar (Ident.unique_name id))
   | Tpat_constant (c) -> mklexpr loc (constant_to_lconstant c)
   | Tpat_construct (path, cdesc, ps) -> 
-  let loc = p.pat_loc in
      begin match cdesc.cstr_tag with
-     | Cstr_constant(i) -> 
-	 if i = 1 then begin if path = Predef.path_bool
-                         then mklexpr loc etrue 
-                         else mklexpr loc (PPvar (Path.unique_name path))
-                       end
-         else begin if path = Predef.path_list 
-              then mklexpr loc enil (* PPapp ("nil", List.map pattern_to_lexpr ps) *) 
-              else mklexpr loc efalse 
-              end
-     | Cstr_block(i) -> 
-	 if path = Predef.path_list 
-         then mklexpr loc (PPapp ("cons", List.map pattern_to_lexpr ps))
-         else mklexpr loc (PPapp (Path.unique_name path, List.map pattern_to_lexpr ps))
+     | Cstr_constant(i) when path = Predef.path_bool -> 
+         if i= 1 then mklexpr loc etrue
+         else mklexpr loc efalse
+     | Cstr_constant(i) when i = 0 && path = Predef.path_list -> mklexpr loc enil
      | Cstr_exception(p) ->
 	 mklexpr loc (PPapp ("exception"^(Path.unique_name p), 
-			     List.map pattern_to_lexpr ps))
+			     List.map (pattern_to_lexpr type_decls) ps))
+     | _ ->
+       let constructor_name = 
+         if path = Predef.path_list
+           then "cons"
+           else begin
+	   let rec get_cstr_list x = match x.type_kind with
+	   | Type_abstract -> []
+	   | Type_variant(ls) -> ls
+           | Type_record _ -> []
+	   in
+           let (_, ty_decl) = List.find (fun (a,b) -> a=Path.unique_name path) type_decls in
+	   let (constr_name, constr_args) = Datarepr.find_constr_by_tag
+	      cdesc.cstr_tag (get_cstr_list ty_decl) in 
+           constr_name end in
+        begin match ps with
+	| [] -> mklexpr loc (PPvar constructor_name)
+	| _ -> 
+	mklexpr loc (PPapp (constructor_name, List.map (pattern_to_lexpr type_decls) ps))
+        end
     end
-   | _ -> raise(Error(p.pat_loc, Pattern_to_lexpr))
+  | Tpat_tuple(ps) -> 
+      f_tuple loc (List.map (pattern_to_lexpr type_decls) ps)
+  | _ -> raise(Error(p.pat_loc, Pattern_to_lexpr))
 
 let rec flat_app exp = match exp.exp_desc with
 | Texp_apply (e1, es1) -> 
@@ -319,7 +381,7 @@ let rec flat_app exp = match exp.exp_desc with
 (* This is the operator [[e]]_f where f denotes e and 
    f can be (apply x y) or (K x) *)
 
-let rec expression_to_eqlexpr (f: lexpr) exp = 
+let rec expression_to_eqlexpr type_decls (f: lexpr) exp = 
  match (exp.exp_type).desc with
 | Tconstr (path, t, abbr) when cmpPath_byname path Predef.path_exn = 0 -> 
     (mklexpr exp.exp_loc efalse)
@@ -333,32 +395,36 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
     List.fold_right (fun (p, e) default -> 
           f_and (f_exists (patternVar_to_string p) 
                           (pattern_to_ppure_type p) 
-                          (expression_to_eqlexpr (pattern_to_lexpr p) e)) 
+                          (expression_to_eqlexpr type_decls (pattern_to_lexpr type_decls p) e)) 
                 default) 
     pat_expr_list
-    (expression_to_eqlexpr f e2) *)
+    (expression_to_eqlexpr type_decls f e2) *)
   | Texp_let (rflag, pat_exp_list, e2) -> 
      (* [[ let x:ty = e1 in e2 ]]_f = exists x:ty. [[ e1 ]]_x /\ [[ e2 ]]_f *)
       List.fold_right (fun (p, e1) default -> 
 	let x = patternVar_to_string p in
 	let x1 = mklexpr p.pat_loc (PPvar x) in 
-	f_exists x (type_to_ppure_type p.pat_loc p.pat_type) 
-	  (f_and (expression_to_eqlexpr x1 e1) default))
-	pat_exp_list (expression_to_eqlexpr f e2)
+	f_exists x (pattern_to_ppure_type p) 
+	  (f_and (expression_to_eqlexpr type_decls x1 e1) default))
+	pat_exp_list (expression_to_eqlexpr type_decls f e2)
   | Texp_function (pat_exp_list, ptl) ->
      (* pre-processing may make it one element in the list *) 
      (* [[ \x:ty.e ]]_f = forall x:ty. [[ e ]]_(apply f x) *)
       f_ands (List.map (fun (p,e) -> 
-      let x = patternVar_to_string p in
-      let xvar = mklexpr p.pat_loc (PPvar x) in
-      let apply_f_x = mklexpr e.exp_loc (PPapp("apply",[f;xvar])) in 
-      f_forall [x] (type_to_ppure_type p.pat_loc p.pat_type) []
-                          (expression_to_eqlexpr apply_f_x e))
+      let xs = pattern_to_strings_and_types p in
+      let xsvar = List.map (fun (x,_) -> mklexpr p.pat_loc (PPvar x)) xs in
+      let args = match xsvar with
+      | (x::y::_) -> [f_tuple p.pat_loc xsvar]
+      | _ -> xsvar
+      in
+      let apply_f_x = f_app e.exp_loc "apply" (f::args) in 
+      List.fold_right (fun (x,ty) default -> 
+      f_forall [x] ty [] default) xs (expression_to_eqlexpr type_decls apply_f_x e))
       pat_exp_list)
   | Texp_apply (e0, expop_optl_list) ->  
       let (g, args) = flat_app exp in
       let l0     = g.exp_loc in 
-      begin try primitive_to_eqlexpr f g args
+      begin try primitive_to_eqlexpr type_decls f g args
       with Not_primitive -> 
       (* [[ e1 e2 ]]_f = exists x1. exists x2. 
                            ([[ e1 ]]_x1 /\ [[ e2 ]]_x2) =>
@@ -373,24 +439,24 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
       | (Some a, _)::l -> 
 	  if is_expression_argable a 
           then 
- 	   let lexpr_a = expression_to_lexpr a in
+ 	   let lexpr_a = expression_to_lexpr type_decls a in
 	   let app = mklexpr l0 (PPapp ("apply", [acc;lexpr_a])) in
 	   form_app app l 
           else 
 	    let a1 = create_var "a" in
 	    let a1var = f_var a.exp_loc a1 in
             let app = mklexpr l0 (PPapp ("apply", [acc;a1var])) in
-	    let (res, ls) =  form_app app l in
+	    let (res, ls) = form_app app l in
             (res, (a1, a)::ls)
       | (None, _)::l -> raise(Error(exp.exp_loc, Argument_is_none)) 
       in
       if is_expression_argable e0
-       then let x0 = expression_to_lexpr e0 in
+       then let x0 = expression_to_lexpr type_decls e0 in
             let (app_res, ls) = form_app x0 expop_optl_list in
             List.fold_right (fun (x,e) acc -> 
      	    let xvar = f_var e.exp_loc x in
-   	    f_and (f_exists x (type_to_ppure_type e.exp_loc e.exp_type) 
-		          (expression_to_eqlexpr xvar e))
+   	    f_and (f_exists x (expression_to_ppure_type e) 
+		          (expression_to_eqlexpr type_decls xvar e))
             acc
             ) ls (f_eq f app_res)
        else let g1 = create_var "g" in
@@ -398,15 +464,15 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
 	    let (app_res, ls) = form_app g1var expop_optl_list in
             List.fold_right (fun (x,e) acc -> 
      	    let xvar = f_var e.exp_loc x in
-	    f_and (f_exists x (type_to_ppure_type e.exp_loc e.exp_type) 
-		          (expression_to_eqlexpr xvar e))
+	    f_and (f_exists x (expression_to_ppure_type e) 
+		          (expression_to_eqlexpr type_decls xvar e))
             acc) ((g1,e0)::ls) (f_eq f app_res)
       end
       (*
       let apply_exp = List.fold_left (fun acc e -> 
            match e with
            | (Some a, _) -> 
-	       let lexpr_a = expression_to_lexpr a in
+	       let lexpr_a = expression_to_lexpr type_decls a in
 	       mklexpr l0 (PPapp ("apply", [acc;lexpr_a]))
            | (None, _) -> raise(Error(exp.exp_loc, Argument_is_none))           
           ) x0 expop_optl_list in
@@ -423,15 +489,15 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
            List.fold_right (fun (x2, a) default -> match a with 
 	   | (Some e, _) -> 
 	   let x2var = f_var x2 in 
-           f_implies (f_forall [x2] (type_to_ppure_type e.exp_loc e.exp_type) []
-                              (expression_to_eqlexpr x2var e)) default
+           f_implies (f_forall [x2] (expression_to_ppure_type e) []
+                              (expression_to_eqlexpr type_decls x2var e)) default
            | _ -> raise(Error(exp.exp_loc, Argument_is_none))) 
            x2e2s (f_eq f (mklexpr l0 (PPapp (x1,x2vars))))
       else
 	let x1     = create_var "x" in
         let x1var  = f_var l0 x1 in
-        let e1     = f_forall [x1] (type_to_ppure_type g.exp_loc g.exp_type) []
-                                 (expression_to_eqlexpr x1var g) in
+        let e1     = f_forall [x1] (expression_to_ppure_type g) []
+                                 (expression_to_eqlexpr type_decls x1var g) in
         let x2s    = create_vars "x" (List.length args) in
         let x2e2s  = List.combine x2s args in
         let x2vars = List.map (fun y -> match y with
@@ -441,8 +507,8 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
         List.fold_right (fun (x2, a) default -> match a with 
 	   | (Some e, _) -> 
 	   let x2var = f_var e.exp_loc x2 in 
-           f_implies (f_forall [x2] (type_to_ppure_type e.exp_loc e.exp_type) []
-                              (expression_to_eqlexpr x2var e)) default
+           f_implies (f_forall [x2] (expression_to_ppure_type e) []
+                              (expression_to_eqlexpr type_decls x2var e)) default
            | _ -> raise(Error(exp.exp_loc, Argument_is_none))) 
          x2e2s (f_eq f (mklexpr l0 (PPapp (x1,x2vars)))))
       end
@@ -455,32 +521,42 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
       if is_expression_prop e0 
       then begin
       f_ands (List.map (fun (p,e) -> match is_pattern_true p with
-      | Ptrue -> f_implies (expression_to_lexpr e0) (expression_to_eqlexpr f e)
-      | Pfalse -> f_implies (f_not (expression_to_lexpr e0)) 
-                            (expression_to_eqlexpr f e)
-      | Pothers -> raise(Error(p.pat_loc, Pattern_not_convertable))) pat_exp_list)
+      | Ptrue -> f_implies (expression_to_lexpr type_decls e0) (expression_to_eqlexpr type_decls f e)
+      | Pfalse -> f_implies (f_not (expression_to_lexpr type_decls e0)) 
+                            (expression_to_eqlexpr type_decls f e)
+      | Pothers -> 
+	  raise(Error(p.pat_loc, Pattern_not_convertable))) pat_exp_list)
       end
       else 
       (f_ands (List.map (fun (p,e) -> match p.pat_desc with
           | Tpat_var (id) -> 
             let xi = Ident.unique_name id in
-            f_forall [xi] (type_to_ppure_type p.pat_loc p.pat_type) [] 
-                         (f_implies (f_eq (expression_to_lexpr e0) 
-				          (pattern_to_lexpr p))
-                                    (expression_to_eqlexpr f e))
+            f_forall [xi] (pattern_to_ppure_type p) [] 
+                          (f_implies (f_eq (expression_to_lexpr type_decls e0) 
+			 	           (pattern_to_lexpr type_decls p))
+                                     (expression_to_eqlexpr type_decls f e))
           | Tpat_constant (c) -> 
-            f_implies (f_eq (expression_to_lexpr e0) 
+            f_implies (f_eq (expression_to_lexpr type_decls e0) 
                             (mklexpr p.pat_loc (constant_to_lconstant c)))
-                      (expression_to_eqlexpr f e)
+                      (expression_to_eqlexpr type_decls f e)
           | Tpat_construct(path, cdesc, ps) -> 
-            List.fold_right (fun p default -> match p.pat_desc with
+            List.fold_right (fun pi default -> match pi.pat_desc with
             | Tpat_var (id) -> let x = Ident.unique_name id in
-            f_forall [x] (type_to_ppure_type p.pat_loc p.pat_type) [] 
-                       default
-            | Tpat_constant (c) -> default
+            f_forall [x] (pattern_to_ppure_type pi) [] default
+            | Tpat_constant (_) -> default
+	    | Tpat_construct(_, _, []) -> default
             | _ -> raise(Error(p.pat_loc, Pattern_not_shallow)))
-            ps (f_implies (f_eq (expression_to_lexpr e0) (pattern_to_lexpr p))
-                                   (expression_to_eqlexpr f e))
+            ps (f_implies (f_eq (expression_to_lexpr type_decls e0) (pattern_to_lexpr type_decls p))
+                                (expression_to_eqlexpr type_decls f e))
+	  | Tpat_tuple(ps) -> 
+	    List.fold_right (fun p default -> match p.pat_desc with
+            | Tpat_var (id) -> let x = Ident.unique_name id in
+            f_forall [x] (pattern_to_ppure_type p) [] default
+            | Tpat_constant _ -> default
+	    | Tpat_construct(_, _, []) -> default
+            | _ -> raise(Error(p.pat_loc, Pattern_not_shallow)))
+            ps (f_implies (f_eq (expression_to_lexpr type_decls e0) (pattern_to_lexpr type_decls p))
+                                (expression_to_eqlexpr type_decls f e))
           | _ -> raise(Error(p.pat_loc, Pattern_not_shallow))           
            ) pat_exp_list))
   | Texp_construct (path, cdesc, es) ->  
@@ -488,36 +564,56 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
                         [[ en ]]_xn) => f = K (x1,..., xn) *)
      let loc = exp.exp_loc in
      begin match cdesc.cstr_tag with
-     | Cstr_constant(i) -> 
-	 if i = 1 then begin if path = Predef.path_bool
-                         then f_eq f (mklexpr loc etrue)
-                         else f_eq f (f_var loc (Path.unique_name path))
-                       end
-         else begin if path = Predef.path_list 
-              then f_eq f (mklexpr loc enil)
-              else f_eq f (mklexpr loc efalse)
-              end
-     | Cstr_block(i) -> 
-	let constructor_name = if path = Predef.path_list 
-                                then "cons"
-                                else Path.unique_name path
-        in       
-       let xs = create_vars "x" (List.length es) in
-       let x_e = List.combine xs es in
-       let xs_lexpr = List.map (fun (x,e) -> f_var e.exp_loc x) x_e in
-       let args = List.map (fun (xi, ei) -> 
-	            f_exists xi (type_to_ppure_type ei.exp_loc ei.exp_type)
-                    (expression_to_eqlexpr (f_var ei.exp_loc xi) ei)) 
-                    x_e               in
-       let last = f_eq f (mklexpr loc (PPapp (constructor_name, xs_lexpr))) in
-       List.fold_right (fun fml default -> f_and fml default) args last
+     | Cstr_constant(i) when path = Predef.path_bool ->
+         if i = 1 then f_eq f (mklexpr loc etrue)
+         else f_eq f (mklexpr loc efalse)
+     | Cstr_constant(i) when i=0 && path = Predef.path_list ->                      
+               f_eq f (mklexpr loc enil)
      | Cstr_exception(p) ->
 	mklexpr loc efalse
 	(* mklexpr loc (PPapp ("exception"^(Path.unique_name p), 
-			     List.map (expression_to_eqlexpr f) es)) *)
+			     List.map (expression_to_eqlexpr type_decls f) es)) *)
+     | _ -> 
+	let constructor_name = if path = Predef.path_list 
+                                then "cons"
+                                else begin let rec get_cstr_list x = match x.type_kind with
+	   | Type_abstract -> []
+	   | Type_variant(ls) -> ls
+           | Type_record _ -> []
+	   in
+           let (_, ty_decl) = List.find (fun (a,b) -> 
+	    a = Path.unique_name path) type_decls in
+	   let (constr_name, constr_args) = Datarepr.find_constr_by_tag
+	      cdesc.cstr_tag (get_cstr_list ty_decl) in
+           constr_name end in
+       let constructor =  mklexpr loc (PPvar constructor_name) in
+       begin match es with 
+       | [] -> f_eq f constructor
+       | _ -> 
+        let rec form_app acc xs = match xs with
+	   | [] -> (acc, [])
+      	   | a::l -> 
+	  if is_expression_argable a 
+          then 
+ 	   let lexpr_a = expression_to_lexpr type_decls a in
+	   form_app (acc@[lexpr_a]) l
+          else 
+	    let a1 = create_var "a" in
+	    let a1var = f_var a.exp_loc a1 in
+	    let (res, ls) = form_app (acc@[a1var]) l in
+            (res, (a1, a)::ls)
+       in
+       let (app_res, ls) = form_app [] es in
+       List.fold_right (fun (x,e) acc -> 
+     	    let xvar = f_var e.exp_loc x in
+   	    f_and (f_exists x (expression_to_ppure_type e) 
+		          (expression_to_eqlexpr type_decls xvar e))
+            acc
+            ) ls (f_eq f (mklexpr loc (PPapp (constructor_name, app_res))))
+       end
     end 
   | Texp_tuple (es) ->  
-       f_eq f (f_app exp.exp_loc "tup" (List.map expression_to_lexpr es))
+       f_eq f (f_tuple exp.exp_loc (List.map (expression_to_lexpr type_decls) es))
   | Texp_ifthenelse (e0, e1, e2op) -> 
      (* [[ if e0 then e1 else e2 ]]_f = 
         \exists x0. [[ e0 ]]_x0 /\ (x0 = true -> [[ e1 ]]_f)
@@ -525,7 +621,7 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
      if EscSyn.is_expression_prop e0 
      then begin
        (* print_string "prop eqexp:"; print_expression e0; *)
-       (f_and (expression_to_lexpr e0) (expression_to_eqlexpr f e1))
+       (f_and (expression_to_lexpr type_decls e0) (expression_to_eqlexpr type_decls f e1))
        end
      else begin
        (* print_string "not prop eqexp:"; print_expression e0; *)
@@ -533,30 +629,29 @@ let rec expression_to_eqlexpr (f: lexpr) exp =
      let x0var = f_var e0.exp_loc x0 in        
       begin match e2op with
       | None -> f_exists x0 PPTbool
-        (f_and (expression_to_eqlexpr (mklexpr e0.exp_loc etrue) e0)
-               (expression_to_eqlexpr f e1))
+        (f_and (expression_to_eqlexpr type_decls (mklexpr e0.exp_loc etrue) e0)
+               (expression_to_eqlexpr type_decls f e1))
       | Some e2 -> 
 	  match e2.exp_desc with
 	  | Texp_unr _ | Texp_bad _ ->        
-		(f_and (expression_to_eqlexpr (mklexpr e0.exp_loc etrue) e0)
-		   (expression_to_eqlexpr f e1))
+		(f_and (expression_to_eqlexpr type_decls (mklexpr e0.exp_loc etrue) e0)
+		   (expression_to_eqlexpr type_decls f e1))
 	  | _ ->  f_exists x0 PPTbool
-          (f_and (expression_to_eqlexpr x0var e0)
+          (f_and (expression_to_eqlexpr type_decls x0var e0)
             (f_and (f_implies (f_eq x0var (mklexpr e1.exp_loc etrue)) 
-                              (expression_to_eqlexpr f e1))
+                              (expression_to_eqlexpr type_decls f e1))
                    (f_implies (f_eq x0var (mklexpr e2.exp_loc efalse))
-                              (expression_to_eqlexpr f e2))))
+                              (expression_to_eqlexpr type_decls f e2))))
       end
      end
   | Texp_unr _ -> mklexpr exp.exp_loc efalse
   | Texp_bad _ -> mklexpr exp.exp_loc efalse
-  | _ -> print_string "Expression not convertable: "; 
-         print_expression exp;
-         raise(Error(exp.exp_loc, Expression_not_convertable))
+  | Texp_sequence (_, e2) -> expression_to_eqlexpr type_decls f e2
+  | _ -> raise(Error(exp.exp_loc, Expression_not_convertable))
  end
 
 (* [[ e ]] = logical formula *)
-and expression_to_lexpr exp =  match exp.exp_desc with
+and expression_to_lexpr type_decls exp =  match exp.exp_desc with
   | Texp_ident (path, vd) -> 
       f_var exp.exp_loc (Path.unique_name path)
   | Texp_constant (c) -> 
@@ -565,30 +660,30 @@ and expression_to_lexpr exp =  match exp.exp_desc with
     List.fold_right (fun (p, e) default -> 
           f_and (f_exists (patternVar_to_string p) 
                           (pattern_to_ppure_type p) 
-                          (expression_to_eqlexpr (pattern_to_lexpr p) e)) 
+                          (expression_to_eqlexpr type_decls (pattern_to_lexpr type_decls p) e)) 
                 default) 
     pat_expr_list
-    (expression_to_lexpr e2)          
+    (expression_to_lexpr type_decls e2)          
   | Texp_function (pat_exp_list, ptl) ->
      (* pre-processing may make it one element in the list *) 
      (* [[ \x:ty.e ]] = forall x:ty. [[ e ]] *)
       f_ands (List.map (fun (p,e) -> 
-      let x = patternVar_to_string p in
-      f_forall [x] (type_to_ppure_type p.pat_loc p.pat_type) []
-                          (expression_to_lexpr e))
+      let xs = pattern_to_strings_and_types p in
+      List.fold_right (fun (x,ty) default -> 
+      f_forall [x] ty [] default) xs (expression_to_lexpr type_decls e))
       pat_exp_list)
   | Texp_apply (e0, expop_optl_list) ->  
       (* if we only call first order theorem prover, we need to flat application *)
       let (g, args) = flat_app exp in
       let l0     = g.exp_loc in
-      begin try primitive_to_lexpr g args
+      begin try primitive_to_lexpr type_decls g args
       with Not_primitive -> 
       let rec form_app acc xs = match xs with
       | [] -> (acc, [])
       | (Some a, _)::l -> 
 	  if is_expression_argable a 
           then 
- 	   let lexpr_a = expression_to_lexpr a in
+ 	   let lexpr_a = expression_to_lexpr type_decls a in
 	   let app = mklexpr l0 (PPapp ("apply", [acc;lexpr_a])) in
 	   form_app app l 
           else 
@@ -597,30 +692,31 @@ and expression_to_lexpr exp =  match exp.exp_desc with
             let app = mklexpr l0 (PPapp ("apply", [acc;a1var])) in
 	    let (res, ls) =  form_app app l in
             (res, (a1, a)::ls)
-      | (None, _)::l -> raise(Error(exp.exp_loc, Argument_is_none)) 
+      | (None, _)::l -> 
+	  raise(Error(exp.exp_loc, Argument_is_none)) 
       in
       if is_expression_argable e0
-       then let x0 = expression_to_lexpr e0 in
+       then let x0 = expression_to_lexpr type_decls e0 in
             let (app_res, ls) = form_app x0 expop_optl_list in
             List.fold_right (fun (x,e) acc -> 
      	    let xvar = f_var e.exp_loc x in
-   	    f_and (f_exists x (type_to_ppure_type e.exp_loc e.exp_type)
-		          (expression_to_eqlexpr xvar e))
+   	    f_and (f_exists x (expression_to_ppure_type e)
+		          (expression_to_eqlexpr type_decls xvar e))
             acc) ls app_res
        else let g1 = create_var "g" in
             let g1var = f_var e0.exp_loc g1 in
 	    let (app_res, ls) = form_app g1var expop_optl_list in
             List.fold_right (fun (x,e) acc -> 
      	    let xvar = f_var e.exp_loc x in
-   	    f_and (f_exists x (type_to_ppure_type e.exp_loc e.exp_type)
-		          (expression_to_eqlexpr xvar e))
+   	    f_and (f_exists x (expression_to_ppure_type e)
+		          (expression_to_eqlexpr type_decls xvar e))
             acc) ((g1,e0)::ls) app_res
       end
       (*
       let apply_exp = List.fold_left (fun acc e -> 
 	    match e with
            | (Some a, _) -> 
-	       let lexpr_a = expression_to_lexpr a in
+	       let lexpr_a = expression_to_lexpr type_decls a in
                mklexpr l0 (PPapp ("apply", [acc;lexpr_a]))
            | (None, _) -> raise(Error(exp.exp_loc, Argument_is_none)) 
        ) x0 expop_optl_list in
@@ -637,16 +733,16 @@ and expression_to_lexpr exp =  match exp.exp_desc with
            List.fold_right (fun (x2, a) default -> match a with 
 	   | (Some e, _) -> 
 	   let x2var = f_var e.exp_loc x2 in 
-           f_implies (f_forall [x2] (type_to_ppure_type e.exp_loc e.exp_type) []
-                              (expression_to_eqlexpr x2var e)) default
+           f_implies (f_forall [x2] (expression_to_ppure_type e) []
+                              (expression_to_eqlexpr type_decls x2var e)) default
            | _ -> raise(Error(exp.exp_loc, Argument_is_none))) 
            x2e2s (mklexpr l0 (PPapp (x1,x2vars)))
       else
         (* [[ e1 e2 ]] = apply [[ e1 ]] [[ e2 ]] *)
 	let x1     = create_var "x" in
         let x1var  = f_var l0 x1 in
-        let e1     = f_forall [x1] (type_to_ppure_type g.exp_loc g.exp_type) []
-                                 (expression_to_eqlexpr x1var g) in
+        let e1     = f_forall [x1] (expression_to_ppure_type g) []
+                                 (expression_to_eqlexpr type_decls x1var g) in
         let x2s    = create_vars "x" (List.length args) in
         let x2e2s  = List.combine x2s args in
         let x2vars = List.map (fun y -> match y with
@@ -656,8 +752,8 @@ and expression_to_lexpr exp =  match exp.exp_desc with
         List.fold_right (fun (x2, a) default -> match a with 
 	   | (Some e, _) -> 
 	   let x2var = f_var e.exp_loc x2 in 
-           f_implies (f_forall [x2] (type_to_ppure_type e.exp_loc e.exp_type) []
-                              (expression_to_eqlexpr x2var e)) default
+           f_implies (f_forall [x2] (expression_to_ppure_type e) []
+                              (expression_to_eqlexpr type_decls x2var e)) default
            | _ -> raise(Error(exp.exp_loc, Argument_is_none))) 
          x2e2s (mklexpr l0 (PPapp (x1,x2vars))))
       end
@@ -677,32 +773,43 @@ and expression_to_lexpr exp =  match exp.exp_desc with
       if is_expression_prop e0 
       then begin
       f_ands (List.map (fun (p,e) -> match is_pattern_true p with
-      | Ptrue -> f_implies (expression_to_lexpr e0) (expression_to_lexpr e)
-      | Pfalse -> f_implies (f_not (expression_to_lexpr e0)) 
-                            (expression_to_lexpr e)
-      | Pothers -> raise(Error(p.pat_loc, Pattern_not_convertable))) pat_exp_list)
+      | Ptrue -> f_implies (expression_to_lexpr type_decls e0) (expression_to_lexpr type_decls e)
+      | Pfalse -> f_implies (f_not (expression_to_lexpr type_decls e0)) 
+                            (expression_to_lexpr type_decls e)
+      | Pothers ->
+              raise(Error(p.pat_loc, Pattern_not_convertable))) pat_exp_list)
       end
       else 
       (f_ands (List.map (fun (p,e) -> match p.pat_desc with
           | Tpat_var (id) -> 
             let xi = Ident.unique_name id in
-            f_forall [xi] (type_to_ppure_type p.pat_loc p.pat_type) [] 
-                         (f_implies (f_eq (expression_to_lexpr e0) 
-				          (pattern_to_lexpr p))
-                                    (expression_to_lexpr e))
+            f_forall [xi] (pattern_to_ppure_type p) [] 
+                         (f_implies (f_eq (expression_to_lexpr type_decls e0) 
+				          (pattern_to_lexpr type_decls p))
+                                    (expression_to_lexpr type_decls e))
           | Tpat_constant (c) -> 
-            f_implies (f_eq (expression_to_lexpr e0) 
+            f_implies (f_eq (expression_to_lexpr type_decls e0) 
                             (mklexpr p.pat_loc (constant_to_lconstant c)))
-                      (expression_to_lexpr e)
+                      (expression_to_lexpr type_decls e)
           | Tpat_construct(path, cdesc, ps) -> 
             List.fold_right (fun p default -> match p.pat_desc with
             | Tpat_var (id) -> let x = Ident.unique_name id in
-            f_forall [x] (type_to_ppure_type p.pat_loc p.pat_type) [] 
+            f_forall [x] (pattern_to_ppure_type p) [] 
                        default
-            | Tpat_constant (c) -> default
+            | Tpat_constant _ -> default
+	    | Tpat_construct (_, _, []) -> default  
             | _ -> raise(Error(p.pat_loc, Pattern_not_shallow)))
-            ps (f_implies (f_eq (expression_to_lexpr e0) (pattern_to_lexpr p))
-                                   (expression_to_lexpr e))
+            ps (f_implies (f_eq (expression_to_lexpr type_decls e0) (pattern_to_lexpr type_decls p))
+                                   (expression_to_lexpr type_decls e))
+	  | Tpat_tuple(ps) ->
+	    List.fold_right (fun p default -> match p.pat_desc with
+            | Tpat_var (id) -> let x = Ident.unique_name id in
+            f_forall [x] (pattern_to_ppure_type p) [] default
+            | Tpat_constant _ -> default
+	    | Tpat_construct (_, _, []) -> default  
+            | _ -> raise(Error(p.pat_loc, Pattern_not_shallow)))
+            ps (f_implies (f_eq (expression_to_lexpr type_decls e0) (pattern_to_lexpr type_decls p))
+                                   (expression_to_lexpr type_decls e))
           | _ -> raise(Error(p.pat_loc, Pattern_not_shallow))
            ) pat_exp_list))
   | Texp_construct (path, cdesc, es) ->  
@@ -710,106 +817,127 @@ and expression_to_lexpr exp =  match exp.exp_desc with
                                 => K (x1,..., xn) *)
      let loc = exp.exp_loc in
      begin match cdesc.cstr_tag with
-     | Cstr_constant(i) -> 
-	 if i = 1 then begin if path = Predef.path_bool
-                         then mklexpr loc etrue 
-                         else f_var loc (Path.unique_name path)
-                       end
-         else begin if path = Predef.path_list 
-              then mklexpr loc enil 
-              else mklexpr loc efalse 
-              end
-     | Cstr_block(i) -> 
-	let constructor_name = if path = Predef.path_list 
-                                then "cons"
-                                else Path.unique_name path
-        in
+     | Cstr_constant(i) when  path = Predef.path_bool ->
+	 if i = 1 then mklexpr loc etrue 
+         else mklexpr loc efalse
+     | Cstr_constant(i) when i=0 && path = Predef.path_list ->
+              mklexpr loc enil 
+     | Cstr_exception(p) ->
+	 mklexpr loc (PPapp ("exception"^(Path.unique_name p), 
+			     List.map (expression_to_lexpr type_decls) es))
+     | _  -> 
+	let constructor_name = if path = Predef.path_list
+           then "cons"
+           else begin
+	   let rec get_cstr_list x = match x.type_kind with
+	   | Type_abstract -> []
+	   | Type_variant(ls) -> ls
+           | Type_record _ -> []
+	   in
+           let (_, ty_decl) = List.find (fun (a,b) -> a=Path.unique_name path) type_decls in
+	   let (constr_name, constr_args) = Datarepr.find_constr_by_tag
+	      cdesc.cstr_tag (get_cstr_list ty_decl) in 
+           constr_name end in
         (*
         let xs = create_vars "x" (List.length es) in
         let xes = List.combine xs es in
         let xsvars = List.map (fun (x,e) -> f_var e.exp_loc x) xes in
         List.fold_right (fun (x,e) default -> 
-         f_forall [x] (type_to_ppure_type e.exp_loc e.exp_type) [] default)
+         f_forall [x] (expression_to_ppure_type e) [] default)
          xes
          (f_implies (f_ands (List.map (fun (x, e) -> 
-                   expression_to_lexpr e) xes))
+                   expression_to_lexpr type_decls e) xes))
          (mklexpr loc (PPapp (constructor_name, xsvars))))
         *)
-       let xs = List.map expression_to_lexpr es in
-       mklexpr loc (PPapp (constructor_name, xs))
-     | Cstr_exception(p) ->
-	 mklexpr loc (PPapp ("exception"^(Path.unique_name p), 
-			     List.map expression_to_lexpr es))
+       let xs = List.map (expression_to_lexpr type_decls) es in
+       begin match xs with
+       | [] -> mklexpr loc (PPvar constructor_name)
+       | _ -> 
+            mklexpr loc (PPapp (constructor_name, xs))
+       end
     end 
-  | Texp_tuple (es) -> f_app exp.exp_loc "tup" (List.map expression_to_lexpr es)
+  | Texp_tuple (es) -> 
+     let tup = if List.length es = 2 then "tup2"
+               else if List.length es = 3 then "tup3"
+	       else "tup4" in
+     f_app exp.exp_loc tup (List.map (expression_to_lexpr type_decls) es)
   | Texp_ifthenelse (e0, e1, e2op) -> 
      (* [[ if e0 then e1 else e2 ]]_f = 
         \forall x0. [[ e0 ]]_x0 -> (x0 = true -> [[ e1 ]]_f
                                 /\ x0 = false -> [[ e2 ]]_f) *)    
-      print_string "e0 exp:"; print_expression e0;
       begin match e2op with
-      | None -> (f_implies (expression_to_lexpr e0)
-                           (expression_to_lexpr e1))
+      | None -> (f_implies (expression_to_lexpr type_decls e0)
+                           (expression_to_lexpr type_decls e1))
       | Some e2 ->
-        (f_and (f_implies (expression_to_lexpr e0)
-                          (expression_to_lexpr e1))
-               (f_implies (f_not (expression_to_lexpr e0))
-                          (expression_to_lexpr e2)))
+        (f_and (f_implies (expression_to_lexpr type_decls e0)
+                          (expression_to_lexpr type_decls e1))
+               (f_implies (f_not (expression_to_lexpr type_decls e0))
+                          (expression_to_lexpr type_decls e2)))
       end
   | Texp_unr _ -> mklexpr exp.exp_loc etrue
   | Texp_bad _ -> mklexpr exp.exp_loc efalse
-  | _ -> print_string "Expression not convertable 2: "; 
-         print_expression exp;
-         raise(Error(exp.exp_loc, Expression_not_convertable))
+  | Texp_sequence (_, e2) -> expression_to_lexpr type_decls e2
+  | _ -> raise(Error(exp.exp_loc, Expression_not_convertable))
 
 
-and primitive_to_eqlexpr f e0 expop_optl_list = 
+and primitive_to_eqlexpr type_decls f e0 expop_optl_list = 
 let l0 = e0.exp_loc in 
 match e0.exp_desc with
 | Texp_ident(path, vd) -> begin match getop path with
     | "&&" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
 	  let f_true = mklexpr e0.exp_loc etrue in
-	  let e1 = expression_to_eqlexpr f_true x in
-	  let e2 = expression_to_eqlexpr f_true y in
- 	  (f_iff (f_and e1 e2) (f_eq f f_true))
+	  let e1 = if is_expression_prop x
+                   then expression_to_lexpr type_decls x 
+                   else expression_to_eqlexpr type_decls f_true x in
+	  let e2 = if is_expression_prop y
+	           then expression_to_lexpr type_decls y
+                   else expression_to_eqlexpr type_decls f_true y in
+ 	  (f_and (f_iff e1 (f_eq f f_true))
+	         (f_iff e2 (f_eq f f_true)))
       | _ -> raise Not_primitive
     end
     | "||" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_eqlexpr f x in
-	  let e2 = expression_to_eqlexpr f y in
- 	   (f_or e1 e2)
+	  let f_true = mklexpr e0.exp_loc etrue in
+	  let e1 = if is_expression_prop x
+                   then expression_to_lexpr type_decls x 
+                   else expression_to_eqlexpr type_decls f_true x in
+	  let e2 = if is_expression_prop y
+	           then expression_to_lexpr type_decls y
+                   else expression_to_eqlexpr type_decls f_true y in
+ 	  (f_or (f_iff e1 (f_eq f f_true))
+	        (f_iff e2 (f_eq f f_true)))
       | _ -> raise Not_primitive
     end
     | ">" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
 	  f_iff (f_gt e1 e2)
                 (f_eq f (mklexpr l0 etrue)) 
       | _ -> raise Not_primitive
     end
     | ">=" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
 	  f_iff (f_ge e1 e2)
                 (f_eq f (mklexpr l0 etrue))            
       | _ -> raise Not_primitive
     end
    | "<" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
 	  f_iff (f_lt e1 e2)
                 (f_eq f (mklexpr l0 etrue)) 
       | _ -> raise Not_primitive
     end
    | "<=" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	  f_iff (f_le e1 e2)
                 (f_eq f (mklexpr l0 etrue)) 
       | _ -> raise Not_primitive
@@ -819,30 +947,30 @@ match e0.exp_desc with
 	  (*
 	  if is_expression_argable x 
 	     then if is_expression_argable y 
-	          then let e1 = expression_to_lexpr x in
-		       let e2 = expression_to_lexpr y in
+	          then let e1 = expression_to_lexpr type_decls x in
+		       let e2 = expression_to_lexpr type_decls y in
             	       (f_eq e1 e2)
-                  else let e1 = expression_to_lexpr x in
+                  else let e1 = expression_to_lexpr type_decls x in
 		       let yloc = y.exp_loc in
 		       let x2 = create_var "x" in
-		       let t2 = type_to_ppure_type yloc y.exp_type in
+		       let t2 = expression_to_ppure_type y in
 		       let yvar = f_var yloc x2 in
-		       let e2 = expression_to_eqlexpr e1 y in
+		       let e2 = expression_to_eqlexpr type_decls e1 y in
             	       f_exists x2 t2 (f_and e2 (f_eq e1 yvar))
              else let xloc = x.exp_loc in
 	          let yloc = y.exp_loc in
 	          let x1 = create_var "x" in
-	          let t1 = type_to_ppure_type xloc  x.exp_type in
+	          let t1 = expression_to_ppure_type x in
 		  let x2 = create_var "x" in
-	          let t2 = type_to_ppure_type y.exp_loc y.exp_type in
+	          let t2 = expression_to_ppure_type y in
 		  let xvar = f_var xloc x1 in
 		  let yvar = f_var yloc x2 in
-		  let e1 = expression_to_eqlexpr xvar x in
-		  let e2 = expression_to_eqlexpr yvar y in
+		  let e1 = expression_to_eqlexpr type_decls xvar x in
+		  let e2 = expression_to_eqlexpr type_decls yvar y in
 		  f_exists x1 t1 (f_exists x2 t2 (f_and (f_and e1 e2) (f_eq xvar yvar)))
 	    *)
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	  f_iff (f_eq e1 e2)
                 (f_eq f (mklexpr l0 etrue)) 
        | _ -> raise Not_primitive
@@ -850,49 +978,49 @@ match e0.exp_desc with
    | "<>" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
          
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	  f_eq f (f_neq e1 e2)
       | _ -> raise Not_primitive
     end
     | "+" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	  f_eq f (f_add e1 e2)
       | _ -> raise Not_primitive
     end 
     | "-" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	  f_eq f (f_sub e1 e2)
       | _ -> raise Not_primitive
     end 
     | "*" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	  f_eq f (f_mul e1 e2)
       | _ -> raise Not_primitive
     end 
     | "/" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	  f_eq f (f_div e1 e2)
       | _ -> raise Not_primitive
     end 
     | "mod" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	  f_eq f (f_mod e1 e2)
       | _ -> raise Not_primitive
     end 
     | "not" -> begin match expop_optl_list with 
       | (Some x, _)::l -> 
-	  let e1 = expression_to_eqlexpr f x in
+	  let e1 = expression_to_eqlexpr type_decls f x in
  	  f_not e1
       | _ -> raise Not_primitive
     end 
@@ -900,47 +1028,47 @@ match e0.exp_desc with
     end
 | _ -> raise Not_primitive
 
-and primitive_to_lexpr e0 expop_optl_list = match e0.exp_desc with
+and primitive_to_lexpr type_decls e0 expop_optl_list = match e0.exp_desc with
 | Texp_ident(path, vd) -> begin match getop path with
     | "&&" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_and e1 e2)
       | _ -> raise Not_primitive
     end
     | "||" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_or e1 e2)
       | _ -> raise Not_primitive
     end
     | ">" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
 	  (f_gt e1 e2)
       | _ -> raise Not_primitive
     end
     | ">=" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_ge e1 e2)
       | _ -> raise Not_primitive
     end
    | "<" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_lt e1 e2)
       | _ -> raise Not_primitive
     end
    | "<=" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_le e1 e2)
       | _ -> raise Not_primitive
     end
@@ -948,75 +1076,75 @@ and primitive_to_lexpr e0 expop_optl_list = match e0.exp_desc with
       | (Some x, _)::(Some y, _)::l -> 
          if is_expression_argable x 
 	     then if is_expression_argable y 
-	          then let e1 = expression_to_lexpr x in
-		       let e2 = expression_to_lexpr y in
+	          then let e1 = expression_to_lexpr type_decls x in
+		       let e2 = expression_to_lexpr type_decls y in
             	       (f_eq e1 e2)
-                  else let e1 = expression_to_lexpr x in
+                  else let e1 = expression_to_lexpr type_decls x in
 		       let yloc = y.exp_loc in
 		       let x2 = create_var "x" in
-		       let t2 = type_to_ppure_type yloc y.exp_type in
+		       let t2 = expression_to_ppure_type y in
 		       let yvar = f_var yloc x2 in
-		       let e2 = expression_to_eqlexpr yvar y in
+		       let e2 = expression_to_eqlexpr type_decls yvar y in
             	       f_exists x2 t2 (f_and e2 (f_eq e1 yvar))
              else let xloc = x.exp_loc in
 	          let yloc = y.exp_loc in
 	          let x1 = create_var "x" in
-	          let t1 = type_to_ppure_type xloc  x.exp_type in
+	          let t1 = expression_to_ppure_type x in
 		  let x2 = create_var "x" in
-	          let t2 = type_to_ppure_type y.exp_loc y.exp_type in
+	          let t2 = expression_to_ppure_type y in
 		  let xvar = f_var xloc x1 in
 		  let yvar = f_var yloc x2 in
-		  let e1 = expression_to_eqlexpr xvar x in
-		  let e2 = expression_to_eqlexpr yvar y in
+		  let e1 = expression_to_eqlexpr type_decls xvar x in
+		  let e2 = expression_to_eqlexpr type_decls yvar y in
 		  f_exists x1 t1 (f_exists x2 t2 (f_and (f_and e1 e2) (f_eq xvar yvar)))
       | _ -> raise Not_primitive
     end
    | "<>" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
          
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_neq e1 e2)
       | _ -> raise Not_primitive
     end
     | "+" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_add e1 e2)
       | _ -> raise Not_primitive
     end 
     | "-" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_sub e1 e2)
       | _ -> raise Not_primitive
     end 
     | "*" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_mul e1 e2)
       | _ -> raise Not_primitive
     end 
     | "/" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_div e1 e2)
       | _ -> raise Not_primitive
     end 
     | "mod" -> begin match expop_optl_list with 
       | (Some x, _)::(Some y, _)::l -> 
-	  let e1 = expression_to_lexpr x in
-	  let e2 = expression_to_lexpr y in
+	  let e1 = expression_to_lexpr type_decls x in
+	  let e2 = expression_to_lexpr type_decls y in
  	   (f_mod e1 e2)
       | _ -> raise Not_primitive
     end 
  (*   | "not" -> begin match expop_optl_list with 
       | (Some x, _)::l -> 
-	  let e1 = expression_to_lexpr x in
+	  let e1 = expression_to_lexpr type_decls x in
  	   (f_not e1)
       | _ -> raise Not_primitive
     end *)
@@ -1035,9 +1163,13 @@ let rec getArgsRes e =
       | [(p,e)] -> let (args, res) = getArgsRes e in 
                    begin match p.pat_desc with
                    | Tpat_var (id) -> ((id, p.pat_type)::args, res)
-                   | _ -> raise(Error(e.exp_loc, Not_lambda))
+                   | _ -> 
+		       print_string "Not lambda";
+		       raise(Error(e.exp_loc, Not_lambda))
                    end
-      | _ -> raise(Error(e.exp_loc, Not_lambda))
+      | _ -> 
+	  print_string "Not lambda";
+	  raise(Error(e.exp_loc, Not_lambda))
       end
    | _ -> ([], e)
 
@@ -1138,7 +1270,7 @@ let rec slice_expression exp =  match exp.exp_desc with
       l1@l2
   | _ -> []
    
-let let_binding_to_axioms (pat, exp) = match pat.pat_desc with
+let let_binding_to_axioms type_decls (pat, exp) = match pat.pat_desc with
 | Tpat_var (id) -> 
     let loc = pat.pat_loc in
     let f_name = Ident.unique_name id in
@@ -1150,26 +1282,24 @@ let let_binding_to_axioms (pat, exp) = match pat.pat_desc with
     let exps = slice_expression ok_exp in 
     let ergoble_exps = exps in (* List.filter is_expression_ergoble exps in *)
     List.map (fun ei -> 
-    let body = expression_to_eqlexpr (f_var loc f_name) ei in
+    let body = expression_to_eqlexpr type_decls (f_var loc f_name) ei in
     Axiom (pat.pat_loc, create_var f_name, body)
     ) ergoble_exps                 
 | _ -> raise(Error(pat.pat_loc, Not_toplevel_function))
 
-let bound_vars_to_logic pat =  match pat.pat_desc with
+let rec bound_vars_to_logic pat =  match pat.pat_desc with
 | Tpat_var (id) -> 
     let loc = pat.pat_loc in 
     let f_name = Ident.unique_name id in
     [Logic (loc, true, [f_name], type_to_logic_type loc pat.pat_type)]	   
-| Tpat_construct(path, cstr, patl) ->
-    List.map (fun p -> match p.pat_desc with 
-    | Tpat_var (id) ->     
-	let loc = p.pat_loc in 
-	let f_name = Ident.unique_name id in
-	Logic (loc, true, [f_name], type_to_logic_type loc p.pat_type)
-    | _ -> raise(Error(pat.pat_loc, Pattern_not_convertable))
-     )
-      patl
-| _ -> raise(Error(pat.pat_loc, Not_toplevel_function))
+| Tpat_construct(path, cstr, ps) ->
+    List.fold_right (fun p default -> (bound_vars_to_logic p)@default
+     ) ps []
+| Tpat_tuple(ps) -> 
+    List.fold_right (fun p default -> (bound_vars_to_logic p)@default
+     ) ps []
+| Tpat_constant _ | Tpat_any -> []
+| _ -> raise(Error(pat.pat_loc, Pattern_not_convertable))
 
 
 (* For example, ML code
@@ -1177,23 +1307,28 @@ let bound_vars_to_logic pat =  match pat.pat_desc with
    logic f : 'a -> 'a list  // type 'a list should have been in the tasks
    axiom f1 : forall x:'a. f(x) = cons(x,nil)
 *)
-let def_to_axioms pat_exp_list = 
+
+let def_to_axioms type_decls pat_exp_list = 
+  List.fold_right (fun x default -> 
+                     (let_binding_to_axioms type_decls x)@default) pat_exp_list [] 
+
+let def_to_logics_axioms type_decls pat_exp_list = 
   let logics = List.fold_right (fun (p,_) default -> 
                      (bound_vars_to_logic p)@default) pat_exp_list [] in 
   let axioms = List.fold_right (fun x default -> 
-                     (let_binding_to_axioms x)@default) pat_exp_list [] in
+                     (let_binding_to_axioms type_decls x)@default) pat_exp_list [] in
   logics@axioms
 
 
-(* convert scrutinee to temporary axioms *)
+(* convert escrutinee to temporary axioms *)
 
 (* 
 let toAxiom exp = 
   let axiom_name = create_var "a" in
   let loc = exp.exp_loc in
   let f = f_var loc (Ident.name id) in
-  let p = pattern_to_lexpr pat in
-  let body = f_and (f_eq f p) (expression_to_lexpr f exp) in
+  let p = pattern_to_lexpr type_decls pat in
+  let body = f_and (f_eq f p) (expression_to_lexpr type_decls f exp) in
   let loc = exp.exp_loc in
   let final_exp = List.fold_right (fun (id, ty) e ->
            mklexpr loc (PPforall ([Ident.unique_name id], 
@@ -1202,99 +1337,131 @@ let toAxiom exp =
   Axiom (exp.exp_loc, axiom_name, final_exp)
 *)
 
-let toAxiom exp = 
+let toAxiom type_decls exp = 
   let axiom_name = create_var "a" in
-  let body = expression_to_lexpr exp in
+  let body = expression_to_lexpr type_decls exp in
   Axiom (exp.exp_loc, axiom_name, body)
 
-let toAxiom_neg exp = 
+let toAxiom_neg type_decls exp = 
   let axiom_name = create_var "a" in
-  let body = f_not (expression_to_lexpr exp) in
+  let body = f_not (expression_to_lexpr type_decls exp) in
   Axiom (exp.exp_loc, axiom_name, body)
 
-let toAxiom_peq exp pat = 
+let toAxiom_peq type_decls exp pat = 
   let axiom_name = create_var "a" in
-  let p = pattern_to_lexpr pat in
-  let body = expression_to_eqlexpr p exp in
+  let p = pattern_to_lexpr type_decls pat in
+  let body = expression_to_eqlexpr type_decls p exp in
   Axiom (exp.exp_loc, axiom_name, body)
 
-let toAxiom_pneq exp pat = 
+let toAxiom_pneq type_decls exp pat = 
   let axiom_name = create_var "a" in
-  let p = pattern_to_lexpr pat in
-  let body = f_not (expression_to_eqlexpr p exp) in
+  let p = pattern_to_lexpr type_decls pat in
+  let body = f_not (expression_to_eqlexpr type_decls p exp) in
   Axiom (exp.exp_loc, axiom_name, body)
 
-let toAxiom_beq exp = 
+let toAxiom_beq type_decls exp = 
   let axiom_name = create_var "g" in
   let loc  = exp.exp_loc in
-  let body = expression_to_eqlexpr (mklexpr loc etrue) exp in
+  let body = expression_to_eqlexpr type_decls (mklexpr loc etrue) exp in
   Axiom (loc, axiom_name, body)
 
-let toAxiom_bneq exp = 
+let toAxiom_bneq type_decls exp = 
   let axiom_name = create_var "g" in
   let loc  = exp.exp_loc in
-  let body = expression_to_eqlexpr (mklexpr loc efalse) exp in
+  let body = expression_to_eqlexpr type_decls (mklexpr loc efalse) exp in
   Axiom (loc, axiom_name, body)
 
 (* convert query (i.e. boolean expression) to goal *)
 
-let toGoal_peq exp pat = 
+let toGoal_peq type_decls exp pat = 
   let goal_name = create_var "g" in
-  let p = pattern_to_lexpr pat in
-  let body = expression_to_eqlexpr p exp in
+  let p = pattern_to_lexpr type_decls pat in
+  let body = expression_to_eqlexpr type_decls p exp in
   Goal (exp.exp_loc, goal_name, body)
 
-let toGoal_pneq exp pat = 
+let toGoal_pneq type_decls exp pat = 
   let goal_name = create_var "g" in
-  let p = pattern_to_lexpr pat in
-  let body = f_not (expression_to_eqlexpr p exp) in
+  let p = pattern_to_lexpr type_decls pat in
+  let body = f_not (expression_to_eqlexpr type_decls p exp) in
   Goal (exp.exp_loc, goal_name, body)
 
-let toGoal_beq exp = 
+let toGoal_beq type_decls exp = 
   let goal_name = create_var "g" in
   let loc  = exp.exp_loc in
-  let body = expression_to_eqlexpr (mklexpr loc etrue) exp in
+  let body = expression_to_eqlexpr type_decls (mklexpr loc etrue) exp in
   Goal (loc, goal_name, body)
 
-let toGoal_bneq exp = 
+let toGoal_bneq type_decls exp = 
   let goal_name = create_var "g" in
   let loc  = exp.exp_loc in
-  let body = expression_to_eqlexpr (mklexpr loc efalse) exp in
+  let body = expression_to_eqlexpr type_decls (mklexpr loc efalse) exp in
   Goal (loc, goal_name, body)
 
-let toGoal exp = 
+let toGoal type_decls exp = 
   let goal_name = create_var "g" in
-  let body = expression_to_lexpr exp in
+  let body = expression_to_lexpr type_decls exp in
   Goal (exp.exp_loc, goal_name, body)
 
-let toGoal_neg exp = 
+let toGoal_neg type_decls exp = 
   let goal_name = create_var "g" in
-  let body = f_not (expression_to_lexpr exp) in
+  let body = f_not (expression_to_lexpr type_decls exp) in
   Goal (exp.exp_loc, goal_name, body)
 
 (* identically converting axiom declaration in .ml to Alt-ergo axiom *)
-let rec logical_formula_to_smt fml = match fml.taxm_desc with
+let rec logical_formula_to_smt type_decls fml = match fml.taxm_desc with
 | Taxm_forall (ids, ty, f) -> 
     f_forall (List.map Ident.unique_name ids) 
       (type_to_ppure_type fml.taxm_loc ty) []
-      (logical_formula_to_smt f)
+      (logical_formula_to_smt type_decls f)
 | Taxm_exist (id, ty, f) -> 
     f_exists (Ident.unique_name id)
-      (type_to_ppure_type fml.taxm_loc ty) (logical_formula_to_smt f)
+      (type_to_ppure_type fml.taxm_loc ty) (logical_formula_to_smt type_decls f)
 | Taxm_iff (f1, f2) -> 
-    f_iff (logical_formula_to_smt f1) (logical_formula_to_smt f2)
+    f_iff (logical_formula_to_smt type_decls f1) (logical_formula_to_smt type_decls f2)
 | Taxm_imply (f1, f2) -> 
-    f_implies (logical_formula_to_smt f1) (logical_formula_to_smt f2)
+    f_implies (logical_formula_to_smt type_decls f1) (logical_formula_to_smt type_decls f2)
 | Taxm_and (f1, f2) -> 
-    f_and (logical_formula_to_smt f1) (logical_formula_to_smt f2)
+    f_and (logical_formula_to_smt type_decls f1) (logical_formula_to_smt type_decls f2)
 | Taxm_or (f1, f2) -> 
-    f_or (logical_formula_to_smt f1) (logical_formula_to_smt f2)
-| Taxm_atom (e) -> expression_to_eqlexpr (mklexpr e.exp_loc etrue) e
+    f_or (logical_formula_to_smt type_decls f1) (logical_formula_to_smt type_decls f2)
+| Taxm_atom (e) -> expression_to_eqlexpr type_decls (mklexpr e.exp_loc etrue) e
 
-let mlaxiom_to_smtaxiom decl = 
+let mlaxiom_to_smtaxiom type_decls decl = 
   Axiom (decl.ttopaxm_loc, Path.unique_name decl.ttopaxm_id,
-	 (logical_formula_to_smt decl.ttopaxm_desc))
+	 (logical_formula_to_smt type_decls decl.ttopaxm_desc))
 
+let rec contract_to_smt type_decls t = match t.contract_desc with
+| Tctr_pred (id, p, _) -> 
+     expression_to_eqlexpr type_decls (mklexpr p.exp_loc etrue) p
+| Tctr_arrow(idopt, t1, t2) -> 
+     begin match idopt with
+     | None -> f_implies (contract_to_smt type_decls t1) (contract_to_smt type_decls t2)
+     | Some id -> f_forall [Ident.unique_name id] 
+            (type_to_ppure_type t1.contract_loc t1.contract_type) []
+            (f_implies (contract_to_smt type_decls t1) (contract_to_smt type_decls t2))
+     end
+| Tctr_tuple(idopt_t_list) -> 
+     let rec and_them xs = match xs with
+               | [] -> mklexpr t.contract_loc etrue
+               | [(idopt, t)] -> begin match idopt with
+	             | None -> contract_to_smt type_decls t
+		     | Some id -> f_forall [Ident.unique_name id] 
+		        (type_to_ppure_type t.contract_loc t.contract_type) []
+			(contract_to_smt type_decls t)
+                  end
+	       | (idopt, t)::l -> 
+	          begin match idopt with
+	             | None -> contract_to_smt type_decls t
+		     | Some id -> f_forall [Ident.unique_name id] 
+		        (type_to_ppure_type t.contract_loc t.contract_type) []
+	            (f_and (contract_to_smt type_decls t) (and_them l))
+	          end in
+     and_them idopt_t_list
+| _ -> mklexpr t.contract_loc etrue
+
+let contract_to_axiom type_decls t = 
+  Axiom (t.ttopctr_loc, Path.unique_name t.ttopctr_id,
+	 (contract_to_smt type_decls t.ttopctr_desc))
 
 
 (* reporting error *)
@@ -1309,14 +1476,10 @@ let report_error ppf = function
   | Argument_is_none -> fprintf ppf "toErgosrc: argument is none"
   | Expression_not_ident -> 
       fprintf ppf "toErgosrc: expression is not an ident"
-  | Constant_not_convertable -> 
-      fprintf ppf "toErgosrc: Constant not convertable"
   | Pattern_not_convertable -> 
       fprintf ppf "toErgosrc: Pattern not convertable"
   | Expression_not_convertable -> 
       fprintf ppf "toErgosrc: Expression not convertable"
-  | Structure_not_convertable -> 
-      fprintf ppf "toErgosrc: Structure not convertable"
   | Type_not_convertable -> 
       fprintf ppf "toErgosrc: Type not convertable"
   | Not_toplevel_function -> 
@@ -1360,7 +1523,7 @@ let rec out_ppure_type ppf pty = match pty with
   | PPTbitv (i) -> fprintf ppf "%d %s" i "bitv"
   | PPTvarid (str, loc) -> fprintf ppf "%s" str
   | PPTexternal (ptys, str, loc) -> 
-      if List.length ptys = 1 
+      if List.length ptys <= 1 
       then fprintf ppf "%a%s" (list out_ppure_type) ptys str
       else fprintf ppf "(%a) %s" (commalist out_ppure_type) ptys str
   | PPTfarray (pty) -> fprintf ppf "%a array" out_ppure_type pty
@@ -1438,8 +1601,8 @@ let out_decl ppf d = match d with
 	  fprintf ppf "goal %s : %a " name
 	  out_lexpr lexpr
 | Logic (loc, is_ac, names, lty) -> 
-	  fprintf ppf "logic %a : %a " 
-	  (commalist out_string) names out_logic_type lty
+    fprintf ppf "logic %a : %a " 
+	(commalist out_string) names out_logic_type lty
 | Predicate_def (loc, name, loc_str_pty_list, lexpr) -> 
 	  fprintf ppf "function %s %a = %a " name
           (list out_param) loc_str_pty_list out_lexpr lexpr
@@ -1448,7 +1611,7 @@ let out_decl ppf d = match d with
           (list out_param) loc_str_pty_list
           out_ppure_type pty out_lexpr lexpr
 | TypeDecl (loc, slist, ty_name) ->  
-          if List.length slist = 1 
+          if List.length slist <= 1 
           then fprintf ppf "type %a %s " (list out_typevar) slist ty_name
 	  else fprintf ppf "type (%a) %s " (commalist out_typevar) slist ty_name
 
