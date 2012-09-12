@@ -233,6 +233,10 @@ let mk_shared f =
   "-shared", Arg.Unit f, " Produce a dynlinkable plugin"
 ;;
 
+let mk_testgen f =
+  "-testgen", Arg.Unit f, " Generate test cases"
+;;
+
 let mk_thread f =
   "-thread", Arg.Unit f,
   " Generate code that supports the system threads library"
@@ -431,6 +435,7 @@ module type Bytecomp_options = sig
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _strict_sequence : unit -> unit
+  val _testgen : unit -> unit
   val _thread : unit -> unit
   val _vmthread : unit -> unit
   val _unsafe : unit -> unit
@@ -528,6 +533,7 @@ module type Optcomp_options = sig
   val _strict_sequence : unit -> unit
   val _shared : unit -> unit
   val _S : unit -> unit
+  val _testgen : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
   val _v : unit -> unit
@@ -657,6 +663,7 @@ struct
     mk_principal F._principal;
     mk_rectypes F._rectypes;
     mk_strict_sequence F._strict_sequence;
+    mk_testgen F._testgen;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_use_runtime F._use_runtime;
@@ -762,6 +769,7 @@ struct
     mk_S F._S;
     mk_strict_sequence F._strict_sequence;
     mk_shared F._shared;
+    mk_testgen F._testgen;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_v F._v;

@@ -49,6 +49,7 @@ module type Bytecomp_options =
     val _principal : unit -> unit
     val _rectypes : unit -> unit
     val _strict_sequence : unit -> unit
+    val _testgen : unit -> unit
     val _thread : unit -> unit
     val _vmthread : unit -> unit
     val _unsafe : unit -> unit
@@ -147,6 +148,7 @@ module type Optcomp_options = sig
   val _strict_sequence : unit -> unit
   val _shared : unit -> unit
   val _S : unit -> unit
+  val _testgen : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
   val _v : unit -> unit

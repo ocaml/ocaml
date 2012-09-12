@@ -782,14 +782,14 @@ and aux_transl_contracts contract_flag (str, cc) =
   (transl_str_contracts contract_flag env str, cc)
 
 and transl_contracts contract_flag (str, cc) = 
+  try
   let time0 = Unix.gettimeofday () in 
   let (a,b) = aux_transl_contracts contract_flag (str, cc) in
   let time1 = Unix.gettimeofday () in 
   printf "Static contract checking time: %f secs@." (time1 -. time0);   
   (a,b)  
-(*  with Esc.Error(loc, msg) -> 
-    Location.print_error std_formatter loc;
-    Esc.report_error std_formatter msg *)
+  with _ -> 
+      (str, cc)
 
 let report_error ppf = function
   | Illegal_tuple_expr -> 

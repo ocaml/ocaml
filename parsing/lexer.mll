@@ -38,6 +38,7 @@ let keyword_table =
     "and", AND;
     "as", AS;
     "assert", ASSERT;
+    "axiom", AXIOM;
     "begin", BEGIN;
     "class", CLASS;
     "constraint", CONSTRAINT;
@@ -51,6 +52,7 @@ let keyword_table =
     "external", EXTERNAL;
     "false", FALSE;
     "for", FOR;
+    "forall", FORALL;
     "fun", FUN;
     "function", FUNCTION;
     "functor", FUNCTOR;
@@ -366,6 +368,7 @@ rule token = parse
   | ";;" { SEMISEMI }
   | "<"  { LESS }
   | "<-" { LESSMINUS }
+  | "<->" { LESSMINUSGREATER }
   | "="  { EQUAL }
   | "["  { LBRACKET }
   | "[|" { LBRACKETBAR }

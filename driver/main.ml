@@ -124,6 +124,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _principal = set principal
   let _rectypes = set recursive_types
   let _strict_sequence = set strict_sequence
+  let _testgen = set testgen
   let _thread = set use_threads
   let _vmthread = set use_vmthreads
   let _unsafe = set fast

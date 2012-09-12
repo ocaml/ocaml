@@ -3,7 +3,7 @@ open Typedtree
 open Path
 open Format
 
-let should_trace = false
+let should_trace = true
 (* try ignore(Sys.getenv "-trace"); true
    with Not_found -> false *)
 
@@ -137,13 +137,18 @@ let exn_to_bad exp =
       if (Path.name path) = "Pervasives.failwith"
       then Texp_bad (Callee (exp.exp_loc, path))
       else exp.exp_desc *)
-  | Texp_apply(e1,args) -> begin match e1.exp_desc with
-    | Texp_ident(path, value_desc) -> 
-      if (Path.name path) = "Pervasives.failwith"
-      then Texp_bad (Callee (exp.exp_loc, path))
-      else exp.exp_desc
-    | _ -> exp.exp_desc
-    end
+  | Texp_apply(e1,args) ->
+     begin match e1.exp_desc with
+     | Texp_ident(path, value_desc) when (Path.name path) = "Pervasives.failwith" ->
+         Texp_bad (Callee (exp.exp_loc, path))
+     | _ ->   
+      let ty = exp.exp_type in
+      begin match ty.desc with
+      | Tconstr(path, _, _) when path = Predef.path_exn ->
+         Texp_bad (Callee (exp.exp_loc, path))
+      | _ -> exp.exp_desc
+      end
+     end
   | others -> others
   in {exp with exp_desc = new_desc}
 

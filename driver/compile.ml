@@ -138,8 +138,13 @@ let implementation ppf sourcefile outputprefix =
                     then Verify.transl_contracts 1
                     else if !Clflags.hcontract
                          then Verify.transl_contracts 2
-                         else fun x -> x
+                         else fun x -> x 
          end
+      (* ++ begin
+          if !Clflags.testgen
+           then Testgen.transl_contracts 
+           else fun x -> x
+         end *)
       ++ Translmod.transl_implementation modulename
       ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Simplif.simplify_lambda

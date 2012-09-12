@@ -15,15 +15,15 @@
 # The main Makefile
 
 include config/Makefile
-#include stdlib/StdlibModules
+include stdlib/StdlibModules
 
 #CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
 #CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
 #COMPFLAGS=-strict-sequence -warn-error A $(INCLUDES)
 #LINKFLAGS=
 
-CAMLC=ocamlc -g
-CAMLOPT=ocamlopt
+CAMLC=ocamlc 
+CAMLOPT=ocamlopt 
 COMPFLAGS=-warn-error A -I +ocamlgraph $(INCLUDES)
 LINKFLAGS=-I +ocamlgraph unix.cma nums.cma graph.cma str.cma
 
@@ -38,7 +38,7 @@ SHELL=/bin/sh
 MKDIR=mkdir -p
 
 INCLUDES=-I utils -I parsing -I typing -I ergo -I verify \
-	 -I bytecomp -I asmcomp -I driver \
+	 -I testgen -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
@@ -53,8 +53,8 @@ PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
 
 TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
-  typing/btype.cmo typing/subst.cmo typing/predef.cmo typing/oprint.cmo \
-  typing/datarepr.cmo typing/env.cmo \
+  typing/btype.cmo typing/subst.cmo typing/predef.cmo \
+  typing/datarepr.cmo typing/env.cmo typing/oprint.cmo \
   typing/typedtree.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/includecore.cmo \
@@ -76,6 +76,8 @@ ERGO=ergo/exception.cmo ergo/print_color.cmo ergo/options.cmo ergo/loc.cmo \
 
 VERIFY=verify/escSyn.cmo verify/thmEnv.cmo verify/toErgosrc.cmo \
        verify/thmProvers.cmo verify/esc.cmo verify/verify.cmo
+
+TESTGEN=testgen/testgen.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
@@ -116,19 +118,19 @@ TOPLEVEL=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
 TOPLEVELLIB=toplevel/toplevellib.cma
 TOPLEVELSTART=toplevel/topstart.cmo
 
-COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(VERIFY) $(COMP) $(BYTECOMP) $(DRIVER)
+COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(VERIFY)  $(COMP) $(BYTECOMP) $(DRIVER)
 
-TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(VERIFY) $(COMP) $(BYTECOMP) $(TOPLEVEL)
+TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(VERIFY)  $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
-NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(VERIFY) $(COMP) $(ASMCOMP) \
+NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(VERIFY)  $(COMP) $(ASMCOMP) \
   driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
   driver/main_args.cmo \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
-OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(VERIFY) $(COMP) $(ASMCOMP) $(OPTDRIVER)
+OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(VERIFY)  $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
@@ -205,6 +207,18 @@ bootstrap:
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 
 # Start up the system from the distribution compiler
+#coldstart:
+#	cd byterun; $(MAKE) all
+#	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
+#	cd yacc; $(MAKE) all
+#	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
+#	cd stdlib; $(MAKE) COMPILER=../boot/ocamlc all
+#	cd stdlib; cp $(LIBFILES) ../boot
+#	if test -f boot/libcamlrun.a; then :; else \
+#	  ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
+#	if test -d stdlib/caml; then :; else \
+#	  ln -s ../byterun stdlib/caml; fi
+
 coldstart:
 	cd byterun; $(MAKE) all
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
@@ -762,12 +776,12 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 partialclean::
-	for d in utils parsing typing ergo verify bytecomp asmcomp driver toplevel tools; \
+	for d in utils parsing typing ergo verify testgen bytecomp asmcomp driver toplevel tools; \
 	  do rm -f $$d/*.cm[iox] $$d/*.annot $$d/*.[so] $$d/*~; done
 	rm -f *~
 
 depend: beforedepend
-	(for d in utils parsing typing ergo verify bytecomp asmcomp driver toplevel; \
+	(for d in utils parsing typing ergo verify testgen bytecomp asmcomp driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 

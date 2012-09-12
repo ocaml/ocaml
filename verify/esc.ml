@@ -248,7 +248,7 @@ let is_contract_exception e = match e.exp_desc with
 
 (* This is the SL machine:
    the senv contains both the mapping from variable to value and 
-   the logical store  *)
+   the logical store. The senv is the one in thmEnv.ml  *)
 
 let rec simpl_expr (senv : ThmEnv.t) 
                    (exp : expression) (k: cont list) : expression =
@@ -932,7 +932,7 @@ and rebuild senv a k =
 		add_tasks default ((bound_vars_to_logic pi)@[toAxiom_peq t_decls ai pi]))
 	        pelist senv2  in
 	     simpl_expr senv3 e (Cin (Nonrecursive, pelist)::k1)
-	     	 | _ -> knownTuple l
+	 | _ -> knownTuple l
 	    end
       	in knownTuple alts
   | (_, CLam (e, p, ptial) :: k1) -> 
@@ -1396,13 +1396,16 @@ let rec static_contract_checking env contract_flag (id, exp) =
        print_string ("At depth "^string_of_int(depth env)^", ");
        fprintf std_formatter "%s" rpt; 
        (cleaned_sexp, validity)
-  with Error(err) -> report_error std_formatter err;
+  with 
+    _ -> (exp, EscSyn.Unknown)
+(*
+  Error(err) -> report_error std_formatter err;
                      raise (Error(err))
   | ToErgosrc.Error(loc,err) -> 
       Location.print_error std_formatter loc;
       ToErgosrc.report_error std_formatter err;
       raise(ToErgosrc.Error(loc,err))
-
+*)
 
 
  

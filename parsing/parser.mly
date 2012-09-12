@@ -1169,8 +1169,8 @@ logical_formula1:
       { mkaxm(Paxm_iff($1,$3)) }
   | logical_formula1 MINUSGREATER logical_formula1
       { mkaxm(Paxm_imply($1,$3)) }
-  | logical_formula1 AMPERSAND AMPERAMPER logical_formula1
-      { mkaxm(Paxm_and($1,$4)) }
+  | logical_formula1 AMPERAMPER logical_formula1
+      { mkaxm(Paxm_and($1,$3)) }
   | logical_formula1 BARBAR logical_formula1
       { mkaxm(Paxm_or($1,$3)) }
   | LPAREN logical_formula RPAREN

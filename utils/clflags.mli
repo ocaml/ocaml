@@ -38,6 +38,7 @@ val nocontract : bool ref
 val dcontract : bool ref
 val hcontract : bool ref
 val scontract : bool ref
+val testgen : bool ref
 val verbose : bool ref
 val noprompt : bool ref
 val init_file : string option ref
@@ -56,6 +57,7 @@ val make_package : bool ref
 val for_package : string option ref
 val dump_parsetree : bool ref
 val dump_typedtree : bool ref
+val dump_residual : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
 val dump_instr : bool ref
