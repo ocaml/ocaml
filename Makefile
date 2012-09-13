@@ -802,7 +802,7 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot defaultentry depend distclean install installopt
-.PHONY: library library-cross libraryopt ocamlbuild-mixed-boot
+.PHONY: library library-cross libraryopt
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
