@@ -149,7 +149,6 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nopervasives = set nopervasives
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
-  let _dresidual   = set dump_residual
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dcmm = set dump_cmm

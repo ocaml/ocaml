@@ -128,23 +128,10 @@ let implementation ppf sourcefile outputprefix =
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ Unused_var.warn ppf
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree Printtyp.implementation
-      ++ begin
-          if !Clflags.dump_residual 
-          then Verify.transl_contracts (-1)
-          else if !Clflags.dcontract
-               then Verify.transl_contracts 0
-               else if !Clflags.scontract
-                    then Verify.transl_contracts 1
-                    else if !Clflags.hcontract
-                         then Verify.transl_contracts 2
-                         else fun x -> x 
-         end
-      (* ++ begin
-          if !Clflags.testgen
-           then Testgen.transl_contracts 
-           else fun x -> x
-         end *)
+      ++ print_if ppf Clflags.dump_typedtree Printtyp.implementation      
+      ++ Verify.dynamic_contract_checking Clflags.dcontract
+      ++ Verify.static_contract_checking Clflags.scontract
+      ++ Verify.hybrid_contract_checking Clflags.hcontract
       ++ Translmod.transl_implementation modulename
       ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Simplif.simplify_lambda

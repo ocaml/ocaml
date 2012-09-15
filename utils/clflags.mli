@@ -57,7 +57,6 @@ val make_package : bool ref
 val for_package : string option ref
 val dump_parsetree : bool ref
 val dump_typedtree : bool ref
-val dump_residual : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
 val dump_instr : bool ref

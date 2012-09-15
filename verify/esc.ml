@@ -1362,7 +1362,7 @@ let inline_rec id exp exp1 =
   | _ -> e
   in map_expression expand_id exp
 
-let rec static_contract_checking env contract_flag (id, exp) = 
+let rec the_static_contract_checking env (id, exp) = 
   try
   let t_decls = type_decls env in
   trace "raw expression" (print_expression t_decls) exp; 
@@ -1381,12 +1381,12 @@ let rec static_contract_checking env contract_flag (id, exp) =
 	   match ThmEnv.depth env with
 	   | 0 -> 
 	    let new_senv = increase_depth env in  
-            static_contract_checking new_senv contract_flag (id,sexp)
+            the_static_contract_checking new_senv (id,sexp)
 	   | 1 ->  
 	    let the_exp = lookup_rec_env id env in
             let expanded_exp = inline_rec id sexp the_exp in
 	    let new_senv = increase_depth env in  
-            static_contract_checking new_senv contract_flag (id,expanded_exp)	 
+            the_static_contract_checking new_senv (id,expanded_exp)	 
            | _ ->  
                (cleaned_sexp, validity)
            end

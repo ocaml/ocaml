@@ -2185,6 +2185,10 @@ and tc_contract_aux env c ty =
           let val_desc = { val_type = rty; val_kind = Val_reg } in
           let (id_x, new_env) = enter_value x val_desc env in
           let typed_e = type_exp new_env e in
+	  let typed_bool_e = if (Ctype.repr typed_e.exp_type).desc = 
+	                        (Predef.type_bool).desc 
+	                      then typed_e
+	         else raise(Error(loc, Contract_wrong_type(c,Predef.type_bool))) in
           (* the new_env contains x so that we can write contract
              {x | x > 0} -> {y | y > x} 
 	     by assuming x scopes over the RHS of -> . *)
@@ -2193,7 +2197,7 @@ and tc_contract_aux env c ty =
           | Some exns -> let cases, _ = 
                  type_cases env (instance Predef.type_exn) Predef.type_bool None exns
                         in Some cases end in
-          (Tctr_pred (id_x, typed_e, typed_exns), new_env) 
+          (Tctr_pred (id_x, typed_bool_e, typed_exns), new_env) 
       | Pctr_arrow (xop, c1, c2) ->  
           let (ty1, ty2) = 
 	    match rty.desc with

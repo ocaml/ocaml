@@ -4,8 +4,8 @@ open EscSyn
 open Format
 
 
-val static_contract_checking: 
-    ThmEnv.t -> int -> (Ident.t * expression) -> expression * validity
+val the_static_contract_checking: 
+    ThmEnv.t -> (Ident.t * expression) -> expression * validity
 
 type error = 
   | Simpl_expr_Texp_function

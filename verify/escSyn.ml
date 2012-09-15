@@ -3,7 +3,7 @@ open Typedtree
 open Path
 open Format
 
-let should_trace = true
+let should_trace = false
 (* try ignore(Sys.getenv "-trace"); true
    with Not_found -> false *)
 
