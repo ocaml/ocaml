@@ -15,7 +15,7 @@ open Longident
 
 (* A few local helper functions to simplify the creation of AST nodes. *)
 let constr_ c l = T.constr (mknoloc (Longident.parse c)) l
-let apply_ f l = E.apply (E.lid f) l
+let apply_ f l = E.apply_nolabs (E.lid f) l
 let oobject l = T.object_ (List.map (fun (s, t) -> T.field s t) l @ [T.field_var ()])
 let eident x = E.ident (mknoloc (Lident x))
 let pvar x = P.var (mknoloc x)
@@ -24,7 +24,7 @@ let annot e t = E.constraint_ e (Some t) None
 
 
 let rnd = Random.State.make [|0x513511d4|]
-let random_var () = Format.sprintf "a%08Lx" (Random.State.int64 rnd 0x100000000L)
+let random_var () = Format.sprintf "a%08Lx" (Random.State.int64 rnd 0x100000000L : Int64.t)
 let fresh_type () = T.var (random_var ())
 
 let unescape lab =
@@ -48,7 +48,7 @@ let access_object loc e m m_typ f =
   let obj = annot e T.(constr_ "Js.t" [alias (oobject []) obj_type]) in
   let y = random_var () in
   let o = annot (eident y) (T.var obj_type) in
-  let constr = func "" None [pvar y, annot (send o m) m_typ] in
+  let constr = function_ "" None [pvar y, annot (send o m) m_typ] in
   let e = let_ Nonrecursive [pvar x, obj; P.any (), constr] (f (eident x)) in
   (set_loc loc) # expr e
 
@@ -79,17 +79,17 @@ let mapper =
     method! expr e =
       let loc = e.pexp_loc in
       match e.pexp_desc with
-      | Pexp_open ({txt = Lident "JS"}, e) ->
+      | Pexp_open ({txt = Lident "JVS"; loc = _}, e) ->
           {< js = true >} # expr e
 
-      | Pexp_field (o, {txt = Lident meth}) when js ->
+      | Pexp_field (o, {txt = Lident meth; loc = _}) when js ->
           let o = this # expr o in
           let prop_type = fresh_type () in
           let meth_type = constr_ "Js.gen_prop" [oobject ["get", prop_type]] in
           access_object loc o meth meth_type
             (fun x -> annot (apply_ "Js.Unsafe.get" [x; method_literal meth]) prop_type)
 
-      | Pexp_setfield (o, {txt = Lident meth}, e) when js ->
+      | Pexp_setfield (o, {txt = Lident meth; loc = _}, e) when js ->
           let o = this # expr o and e = this # expr e in
           let prop_type = fresh_type () in
           let meth_type = constr_ "Js.gen_prop" [oobject ["set", T.arrow "" prop_type (constr_ "unit" [])]] in
