@@ -97,7 +97,7 @@ let mapper =
             (fun x -> apply_ "Js.Unsafe.set" [x; method_literal meth; annot e prop_type])
 
       | Pexp_apply ({pexp_desc = Pexp_send (o, meth); pexp_loc = loc}, args) when js ->
-          method_call loc o meth (List.map snd args)
+          method_call loc o meth (List.map (this # expr) (List.map snd args))
 
       | Pexp_send (o, meth) when js ->
           method_call loc o meth []
