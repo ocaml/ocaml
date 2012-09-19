@@ -1819,35 +1819,9 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = instance env ty_expected;
         exp_env = env }
   | Pexp_field(sarg, lid) ->
-      if !Clflags.principal then begin_def ();
       let arg = type_exp env sarg in
-      if !Clflags.principal then begin
-        end_def ();
-        generalize_structure arg.exp_type
-      end;
-      let (label_path,label) =
-        let ty_exp = expand_head env arg.exp_type in
-        try
-          let (label_path,label) = Env.lookup_label lid.txt env in
-          match ty_exp.desc, (expand_head env label.lbl_res).desc with
-            Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
-              raise Exit
-          | _ -> (label_path, label)
-        with exn ->
-        let lid =
-          match expand_head env arg.exp_type, lid.txt with
-            {desc=Tconstr(Path.Pdot(mod_path,_,_),_,_)}, Longident.Lident s ->
-              Longident.Ldot (lid_of_path mod_path, s)
-          | _, lid -> lid
-        in
-        let res = Typetexp.find_label env loc lid in
-        if !Clflags.principal && arg.exp_type.level <> generic_level then
-          Location.prerr_warning loc
-            (Warnings.Not_principal "this type-based field selection");
-        res
-      in
+      let (label_path,label) = Typetexp.find_label env loc lid.txt in
       let (_, ty_arg, ty_res) = instance_label false label in
-      let arg = {arg with exp_type = instance env arg.exp_type} in
       unify_exp env arg ty_res;
       rue {
         exp_desc = Texp_field(arg, label_path, lid, label);
