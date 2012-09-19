@@ -53,6 +53,12 @@ let is_absent_pat p = match p.pat_desc with
 | Tpat_variant (tag, _, row) -> is_absent tag row
 | _ -> false
 
+let const_compare x y =
+  match x,y with
+  | Const_float f1, Const_float f2 ->
+      Pervasives.compare (float_of_string f1) (float_of_string f2)
+  | _, _ -> Pervasives.compare x y
+
 let records_args l1 l2 =
   (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
   let rec combine r1 r2 l1 l2 = match l1,l2 with
@@ -77,7 +83,7 @@ let rec compat p q =
   | _,(Tpat_any|Tpat_var _) -> true
   | Tpat_or (p1,p2,_),_     -> compat p1 q || compat p2 q
   | _,Tpat_or (q1,q2,_)     -> compat p q1 || compat p q2
-  | Tpat_constant c1, Tpat_constant c2 -> c1=c2
+  | Tpat_constant c1, Tpat_constant c2 -> const_compare c1 c2 = 0
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_lazy p, Tpat_lazy q -> compat p q
   | Tpat_construct (_, _, c1,ps1, _), Tpat_construct (_, _, c2,ps2, _) ->
@@ -282,9 +288,7 @@ let simple_match p1 p2 =
       c1.cstr_tag = c2.cstr_tag
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
-  | Tpat_constant(Const_float s1), Tpat_constant(Const_float s2) ->
-      float_of_string s1 = float_of_string s2
-  | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
+  | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
   | Tpat_tuple _, Tpat_tuple _ -> true
   | Tpat_lazy _, Tpat_lazy _ -> true
   | Tpat_record _ , Tpat_record _ -> true
@@ -1523,7 +1527,7 @@ let rec le_pat p q =
   | (Tpat_var _|Tpat_any),_ -> true
   | Tpat_alias(p,_,_), _ -> le_pat p q
   | _, Tpat_alias(q,_,_) -> le_pat p q
-  | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
+  | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
   | Tpat_construct(_,_,c1,ps,_), Tpat_construct(_,_,c2,qs,_) ->
       c1.cstr_tag = c2.cstr_tag && le_pats ps qs
   | Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
@@ -1567,7 +1571,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
 | _,(Tpat_any|Tpat_var _) -> p
 | Tpat_or (p1,p2,_),_     -> orlub p1 p2 q
 | _,Tpat_or (q1,q2,_)     -> orlub q1 q2 p (* Thanks god, lub is commutative *)
-| Tpat_constant c1, Tpat_constant c2 when c1=c2 -> p
+| Tpat_constant c1, Tpat_constant c2 when const_compare c1 c2 = 0 -> p
 | Tpat_tuple ps, Tpat_tuple qs ->
     let rs = lubs ps qs in
     make_pat (Tpat_tuple rs) p.pat_type p.pat_env
