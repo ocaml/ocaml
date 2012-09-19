@@ -27,3 +27,17 @@ end;;
 (* path abbreviation is syntactic *)
 let f {M.x; y} = x+y;; (* fails *)
 let r = {M.x=1; y=2};; (* fails *)
+
+(* Use type information *)
+let f (x:Complex.t) = x.re;;
+let f x = ignore (x:Complex.t); x.re;; (* non principal *)
+module M = struct
+  type t = {x:int}
+  module N = struct type s = t = {x:int} end
+  type u = { x:bool}
+end;;
+let f (r:M.u) = r.x;;
+let f (r:M.t) = r.x;; (* fails *)
+open M.N;;
+let f r = r.x;;
+let f (r:M.t) = r.x;; (* ok *)

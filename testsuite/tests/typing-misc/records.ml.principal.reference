@@ -38,7 +38,11 @@ Error: This pattern matches values of type M.u
 Error: The record field label M.y belongs to the type M.u
        but is mixed here with labels of type M.t
 #     val f : Complex.t -> float = <fun>
-# val f : Complex.t -> float = <fun>
+# Characters 32-36:
+  let f x = ignore (x:Complex.t); x.re;; (* non principal *)
+                                  ^^^^
+Warning 18: this type-based field selection is not principal.
+val f : Complex.t -> float = <fun>
 #         module M :
   sig
     type t = { x : int; }
