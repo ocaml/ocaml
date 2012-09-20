@@ -633,9 +633,10 @@ let mark_type_path env path =
   let decl = try find_type path env with Not_found -> assert false in
   mark_type_used (Path.last path) decl
 
-let ty_path = function
+let ty_path t =
+  match repr t with
   | {desc=Tconstr(path, _, _)} -> path
-  | _ -> assert false
+  | t -> assert false
 
 let lookup_constructor lid env =
   let (_,desc) as c = lookup_constructor lid env in
