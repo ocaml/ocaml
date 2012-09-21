@@ -1826,25 +1826,37 @@ and type_expect ?in_function env sexp ty_expected =
         generalize_structure arg.exp_type
       end;
       let (label_path,label) =
-        let ty_exp = expand_head env arg.exp_type in
-        try
-          let (label_path,label) = Env.lookup_label lid.txt env in
-          match ty_exp.desc, (expand_head env label.lbl_res).desc with
-            Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
-              raise Exit
-          | _ -> (label_path, label)
-        with exn ->
-        let lid =
-          match expand_head env arg.exp_type, lid.txt with
-            {desc=Tconstr(Path.Pdot(mod_path,_,_),_,_)}, Longident.Lident s ->
-              Longident.Ldot (lid_of_path mod_path, s)
-          | _, lid -> lid
-        in
-        let res = Typetexp.find_label env loc lid in
-        if !Clflags.principal && arg.exp_type.level <> generic_level then
-          Location.prerr_warning loc
-            (Warnings.Not_principal "this type-based field selection");
-        res
+        match lid.txt with Longident.Lident lab ->
+          let ty_exp = expand_head env arg.exp_type in
+          begin try
+            let (label_path,label) = Env.lookup_label lid.txt env in
+            match ty_exp.desc, (expand_head env label.lbl_res).desc with
+              Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
+                raise Exit
+            | _ -> (label_path, label)
+          with exn ->
+          let label_path =
+            (* Produce a dummy path *)
+            match ty_exp.desc with
+              Tconstr(Path.Pdot(mod_path,_,_),_,_) ->
+                Path.Pdot (mod_path, lab, Path.nopos)
+            | _ -> fst (Typetexp.find_label env loc lid.txt)
+          in
+          let _, labels =
+            match ty_exp.desc with
+              Tconstr(p,_,_) -> Env.find_type_descrs p env
+           | _ -> assert false
+          in
+          try
+            let label = List.find (fun descr -> descr.lbl_name = lab) labels in
+            if !Clflags.principal && arg.exp_type.level <> generic_level then
+              Location.prerr_warning loc
+                (Warnings.Not_principal "this type-based field selection");
+            label_path, label
+          with Not_found ->
+            raise (Error (loc, Apply_wrong_label (lab, arg.exp_type)))
+          end
+        | _ -> Typetexp.find_label env loc lid.txt
       in
       let (_, ty_arg, ty_res) = instance_label false label in
       let arg = {arg with exp_type = instance env arg.exp_type} in

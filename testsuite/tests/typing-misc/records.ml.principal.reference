@@ -50,11 +50,7 @@ val f : Complex.t -> float = <fun>
     type u = { x : bool; }
   end
 # val f : M.u -> bool = <fun>
-# Characters 16-17:
-  let f (r:M.t) = r.x;; (* fails *)
-                  ^
-Error: This expression has type M.t but an expression was expected of type
-         M.u
+# val f : M.t -> int = <fun>
 # # val f : M.N.s -> int = <fun>
 # val f : M.t -> int = <fun>
 # 
