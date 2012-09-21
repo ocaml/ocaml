@@ -1818,57 +1818,19 @@ and type_expect ?in_function env sexp ty_expected =
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_env = env }
-  | Pexp_field(sarg, lid) ->
-      if !Clflags.principal then begin_def ();
-      let arg = type_exp env sarg in
-      if !Clflags.principal then begin
-        end_def ();
-        generalize_structure arg.exp_type
-      end;
-      let (label_path,label) =
-        match lid.txt with Longident.Lident lab ->
-          let ty_exp = expand_head env arg.exp_type in
-          begin try
-            let (label_path,label) = Env.lookup_label lid.txt env in
-            match ty_exp.desc, (expand_head env label.lbl_res).desc with
-              Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
-                raise Exit
-            | _ -> (label_path, label)
-          with exn ->
-          let label_path =
-            (* Produce a dummy path *)
-            match ty_exp.desc with
-              Tconstr(Path.Pdot(mod_path,_,_),_,_) ->
-                Path.Pdot (mod_path, lab, Path.nopos)
-            | _ -> fst (Typetexp.find_label env loc lid.txt)
-          in
-          let _, labels =
-            match ty_exp.desc with
-              Tconstr(p,_,_) -> Env.find_type_descrs p env
-           | _ -> assert false
-          in
-          try
-            let label = List.find (fun descr -> descr.lbl_name = lab) labels in
-            if !Clflags.principal && arg.exp_type.level <> generic_level then
-              Location.prerr_warning loc
-                (Warnings.Not_principal "this type-based field selection");
-            label_path, label
-          with Not_found ->
-            raise (Error (loc, Apply_wrong_label (lab, arg.exp_type)))
-          end
-        | _ -> Typetexp.find_label env loc lid.txt
-      in
+  | Pexp_field(srecord, lid) ->
+      let (record, label_path, label) =
+        type_label_access env loc srecord lid in
       let (_, ty_arg, ty_res) = instance_label false label in
-      let arg = {arg with exp_type = instance env arg.exp_type} in
-      unify_exp env arg ty_res;
+      unify_exp env record ty_res;
       rue {
-        exp_desc = Texp_field(arg, label_path, lid, label);
+        exp_desc = Texp_field(record, label_path, lid, label);
         exp_loc = loc; exp_extra = [];
         exp_type = ty_arg;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
-      let record = type_exp env srecord in
-      let (label_path, label) = Typetexp.find_label env loc lid.txt in
+      let (record, label_path, label) =
+        type_label_access env loc srecord lid in
       let (label_path, label_loc, label, newval) =
         type_label_exp false env loc record.exp_type
           (label_path, lid, label, snewval) in
@@ -1941,7 +1903,6 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = instance_def Predef.type_unit;
         exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
-
       let separate = true (* always separate, 1% slowdown for lablgtk *)
         (* !Clflags.principal || Env.has_local_constraints env *) in
       let (arg, ty',cty,cty') =
@@ -2386,6 +2347,48 @@ and type_expect ?in_function env sexp ty_expected =
       { exp with
         exp_extra = (Texp_open (path, lid, newenv), loc) :: exp.exp_extra;
       }
+
+and type_label_access env loc srecord lid =
+  match lid.txt with Longident.Lident lab ->
+    if !Clflags.principal then begin_def ();
+    let record = type_exp env srecord in
+    if !Clflags.principal then begin
+      end_def ();
+      generalize_structure record.exp_type
+    end;
+    let ty_exp = expand_head env record.exp_type in
+    let record = {record with exp_type = instance env record.exp_type} in
+    begin try
+      let (label_path,label) = Env.lookup_label lid.txt env in
+      match ty_exp.desc, (expand_head env label.lbl_res).desc with
+        Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
+          raise Exit
+      | _ -> (record, label_path, label)
+    with exn ->
+      let label_path =
+        (* Produce a dummy path *)
+        match ty_exp.desc with
+          Tconstr(Path.Pdot(mod_path,_,_),_,_) ->
+            Path.Pdot (mod_path, lab, Path.nopos)
+        | _ -> fst (Typetexp.find_label env lid.loc lid.txt)
+      in
+      let _, labels =
+        match ty_exp.desc with
+          Tconstr(p,_,_) -> Env.find_type_descrs p env
+        | _ -> assert false
+      in
+      try
+        let label = List.find (fun descr -> descr.lbl_name = lab) labels in
+        if !Clflags.principal && ty_exp.level <> generic_level then
+          Location.prerr_warning loc
+            (Warnings.Not_principal "this type-based field selection");
+        (record, label_path, label)
+      with Not_found ->
+        raise (Error (loc, Apply_wrong_label (lab, record.exp_type)))
+    end
+  | _ ->
+      let p, l = Typetexp.find_label env lid.loc lid.txt in
+      (type_exp env srecord, p, l)
 
 and type_label_exp create env loc ty_expected
           (label_path, lid, label, sarg) =
