@@ -3,11 +3,13 @@
 # Characters 5-6:
   {x=3;z=2};;
        ^
-Error: Unbound record field label z
+Error: This record has type t
+       which does not include the label z
 # Characters 9-10:
   fun {x=3;z=2} -> ();;
            ^
-Error: Unbound record field label z
+Error: This record has type t
+       which does not include the label z
 #     Characters 26-34:
   {x=3; contents=2};;
         ^^^^^^^^
@@ -27,16 +29,8 @@ Error: Cannot assign field u of the private type u
 # val r : M.t = {M.x = 1; y = 2}
 # val z : int = 3
 #         module M : sig type t = { x : int; y : int; } type u = { y : bool; } end
-#   Characters 43-51:
-  let f {M.x; y} = x+y;; (* fails *)
-        ^^^^^^^^
-Error: This pattern matches values of type M.u
-       but a pattern was expected which matches values of type M.t
-# Characters 16-17:
-  let r = {M.x=1; y=2};; (* fails *)
-                  ^
-Error: The record field label M.y belongs to the type M.u
-       but is mixed here with labels of type M.t
+#   val f : M.t -> int = <fun>
+# val r : M.t = {M.x = 1; y = 2}
 #     val f : Complex.t -> float = <fun>
 # Characters 32-36:
   let f x = ignore (x:Complex.t); x.re;; (* non principal *)
@@ -53,4 +47,19 @@ val f : Complex.t -> float = <fun>
 # val f : M.t -> int = <fun>
 # # val f : M.N.s -> int = <fun>
 # val f : M.t -> int = <fun>
+#   type u = { x : bool; y : int; z : char; }
+# type t = { x : int; y : bool; }
+# - : u -> char * bool = <fun>
+# Characters 4-9:
+  fun {x;z} -> x,z;; (* fails *)
+      ^^^^^
+Error: This pattern matches values of type u
+       but a pattern was expected which matches values of type t
+# - : u -> bool * char = <fun>
+# - : u -> bool * char = <fun>
+# Characters 36-41:
+  fun r -> ignore (r:u); match r with {x;z} -> x,z;; (* fails for -principal *)
+                                      ^^^^^
+Error: This pattern matches values of type u
+       but a pattern was expected which matches values of type t
 # 

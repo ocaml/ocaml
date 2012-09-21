@@ -37,7 +37,15 @@ module M = struct
   type u = { x:bool}
 end;;
 let f (r:M.u) = r.x;;
-let f (r:M.t) = r.x;; (* fails *)
+let f (r:M.t) = r.x;; (* ok *)
 open M.N;;
 let f r = r.x;;
 let f (r:M.t) = r.x;; (* ok *)
+
+type u = {x:bool;y:int;z:char};;
+type t = {x:int;y:bool};;
+fun {z;x} -> z,x;; (* ok *)
+fun {x;z} -> x,z;; (* fails *)
+fun ({x;z}:u) -> x,z;; (* ok *)
+fun (r:u) -> match r with {x;z} -> x,z;; (* ok *)
+fun r -> ignore (r:u); match r with {x;z} -> x,z;; (* fails for -principal *)
