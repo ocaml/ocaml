@@ -2360,7 +2360,8 @@ and type_label_access env loc srecord lid =
     let record = {record with exp_type = instance env record.exp_type} in
     begin try
       let (label_path,label) = Env.lookup_label lid.txt env in
-      match ty_exp.desc, (expand_head env label.lbl_res).desc with
+      let ty_res = instance Env.empty label.lbl_res in
+      match ty_exp.desc, (expand_head env ty_res).desc with
         Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
           raise Exit
       | _ -> (record, label_path, label)
