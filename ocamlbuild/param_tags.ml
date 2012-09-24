@@ -13,15 +13,11 @@
 (* Original author: Romain Bardou *)
 
 module StringSet = Set.Make(String)
-module SSOSet = Set.Make(struct
-  type t = string * string option
-  let compare = Pervasives.compare
-end)
 
 (* tag name -> tag action (string -> unit) *)
 let declared_tags = Hashtbl.create 17
 
-let acknowledged_tags = ref SSOSet.empty
+let acknowledged_tags = ref []
 
 let only_once f =
   let instances = ref StringSet.empty in
@@ -37,7 +33,8 @@ let declare name action =
 
 let acknowledge tag =
   let tag = Lexers.tag_gen (Lexing.from_string tag) in
-  acknowledged_tags := SSOSet.add tag !acknowledged_tags
+  acknowledged_tags := tag :: !acknowledged_tags
+
 
 let really_acknowledge (name, param) =
   match param with
@@ -51,6 +48,6 @@ let really_acknowledge (name, param) =
         List.iter (fun f -> f param) actions
 
 let init () =
-  SSOSet.iter really_acknowledge !acknowledged_tags
+  List.iter really_acknowledge (My_std.List.ordered_unique !acknowledged_tags)
 
 let make = Printf.sprintf "%s(%s)"

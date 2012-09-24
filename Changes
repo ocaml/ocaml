@@ -3,6 +3,7 @@ OCaml 4.00.1:
 
 Bug fixes:
 - PR#4019: better documentation of Str.matched_string
+- PR#5468: ocamlbuild should preserve order of parametric tags
 - PR#5563: harden Unix.select against file descriptors above FD_SETSIZE
 - PR#5700: crash with native-code stack backtraces under MacOS 10.8 x86-64
 - PR#5707: AMD64 code generator: do not use r10 and r11 for parameter passing,
