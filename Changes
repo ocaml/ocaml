@@ -20,6 +20,7 @@ Bug fixes:
 - PR#5698: remove harcoded limit of 200000 labels in emitaux.ml
 - PR#5708: catch Failure"int_of_string" in ocamldebug
 - PR#5731: instruction scheduling forgot to account for destroyed registers
+- PR#5734: improved Win32 implementation of Unix.gettimeofday
 - PR#5735: %apply and %revapply not first class citizens
 - PR#5738: first class module patterns not handled by ocamldep
 - PR#5747: 'unused open' warning not given when compiling with -annot
