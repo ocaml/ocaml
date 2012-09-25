@@ -38,7 +38,7 @@ are stored in the current directory, or in the directory specified
 with the {\bf\tt -d} option.   You can customize the style of the
 generated pages by editing the generated "style.css" file, or by providing
 your own style sheet using option "-css-style".
-The file "style.css" is not generated if it already exists.
+The file "style.css" is not generated if it already exists or if -css-style is used.
 
 \item["-latex"]
 Generate documentation in \LaTeX\ default format.  The generated
