@@ -1783,7 +1783,7 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~indent: false
+           self#html_of_info ~indent: true
          else
            self#html_of_info_first_sentence
         ) b m.m_info
@@ -1812,7 +1812,7 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~indent: false
+           self#html_of_info ~indent: true
          else
            self#html_of_info_first_sentence
         ) b mt.mt_info
@@ -1969,7 +1969,7 @@ class html =
       print_DEBUG "html#html_of_class : info" ;
       (
        if complete then
-         self#html_of_info ~indent: false
+         self#html_of_info ~indent: true
        else
          self#html_of_info_first_sentence
       ) b c.cl_info
@@ -2012,7 +2012,7 @@ class html =
       bs b "</pre>";
       (
        if complete then
-         self#html_of_info ~indent: false
+         self#html_of_info ~indent: true
        else
          self#html_of_info_first_sentence
       ) b ct.clt_info
