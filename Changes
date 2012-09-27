@@ -17,6 +17,7 @@ Bug fixes:
 - PR#5742: missing bound checks in Array.sub
 - PR#5757: GC compaction bug (crash)
 - PR#5758: Compiler bug when matching on floats
+- PR#5761: Incorrect bigarray custom block size
 
 
 OCaml 4.00.0:
