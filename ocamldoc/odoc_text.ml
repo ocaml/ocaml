@@ -174,6 +174,8 @@ module Texter =
                    | RK_attribute -> "attribute"
                    | RK_method -> "method"
                    | RK_section _ -> "section"
+                   | RK_recfield -> "recfield"
+                   | RK_const -> "const"
                  in
                  s^":"
             )

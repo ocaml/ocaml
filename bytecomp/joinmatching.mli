@@ -27,13 +27,13 @@ type 'a reaction = Location.t * joinpattern list * 'a
 type dispatcher =
   Ident.t * (pattern * Ident.t) list * partial
 
-type ('a, 'b) guard =
-  ('a reaction * 'b) * (* old clause *)
+type 'a guard =
+  'a reaction  * (* old clause *)
   (joinpattern list list * (* new joinpattern *)
   (Ident.t * Typedtree.pattern) list) (* inserted matching *)
 
 val compile :
     Location.t (* location of automaton *)->
-    ('a reaction * 'b) list (* clauses *) ->
-      (dispatcher list * ('a, 'b) guard list) * (* compiled clauses *)
+    'a reaction  list (* clauses *) ->
+      (dispatcher list * 'a guard list) * (* compiled clauses *)
       (Ident.t * Ident.t list) list  (* new channels *)

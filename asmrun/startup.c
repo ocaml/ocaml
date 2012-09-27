@@ -25,6 +25,7 @@
 #include "freelist.h"
 #include "gc.h"
 #include "gc_ctrl.h"
+#include "intext.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -49,6 +50,7 @@ static void init_atoms(void)
 {
   extern struct segment caml_data_segments[], caml_code_segments[];
   int i;
+  struct code_fragment * cf;
 
   for (i = 0; i < 256; i++) {
     caml_atom_table[i] = Make_header(0, i, Caml_white);
@@ -74,6 +76,13 @@ static void init_atoms(void)
     if (caml_code_segments[i].end > caml_code_area_end)
       caml_code_area_end = caml_code_segments[i].end;
   }
+  /* Register the code in the table of code fragments */
+  cf = caml_stat_alloc(sizeof(struct code_fragment));
+  cf->code_start = caml_code_area_start;
+  cf->code_end = caml_code_area_end;
+  cf->digest_computed = 0;
+  caml_ext_table_init(&caml_code_fragments_table, 8);
+  caml_ext_table_add(&caml_code_fragments_table, cf);
 }
 
 /* Configuration parameters and flags */

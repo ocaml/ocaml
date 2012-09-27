@@ -32,7 +32,7 @@ ocamlrun$(EXE): libcamlrun.a prims.o
 		  prims.o libcamlrun.a $(BYTECCLIBS)
 
 ocamlrund$(EXE): libcamlrund.a prims.o
-	$(MKEXE) -g $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
+	$(MKEXE) $(MKEXEDEBUGFLAG) $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
 		  prims.o libcamlrund.a $(BYTECCLIBS)
 
 libcamlrun.a: $(OBJS)

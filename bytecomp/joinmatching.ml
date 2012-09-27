@@ -23,12 +23,14 @@
 open Typedtree
 
 
-(* Nul process *)
+(* Null process *)
 let null_ex = 
   { exp_desc = Texp_null;
     exp_loc = Location.none;
     exp_type = Ctype.none;
-    exp_env = Env.empty ; }
+    exp_env = Env.empty ;
+    exp_extra = []; (* who knows? *)
+  }
 
 (* omega pattern *)
 let null_pat = Parmatch.omega
@@ -55,7 +57,7 @@ let collect cls =
     | Not_found ->
         Hashtbl.add tbl_id_args jid.jident_desc [arg] in
 
-  let collect_clause ((_, jpats, _),_) =  List.iter collect_jpat jpats in
+  let collect_clause (_, jpats, _) =  List.iter collect_jpat jpats in
   List.iter collect_clause cls;
   let f id args ls = (id,args)::ls in
   Hashtbl.fold f tbl_id_args []
@@ -124,8 +126,9 @@ let rewrite_simple_one id reac =
   | None -> reac 
   | Some (rem, found) ->
       let (jid, pat) = found.jpat_desc in
-      let xi = Ident.create ("_"^Ident.name jid.jident_desc) in
-      let xi_pat = {pat with pat_desc = Tpat_var xi} in
+      let xname = "_"^Ident.name jid.jident_desc in
+      let xi = Ident.create xname in
+      let xi_pat = {pat with pat_desc = Tpat_var (xi,mknoloc xname)} in
       old,
       (rem, [{found with jpat_desc = (jid, xi_pat)}]::already_done),
       (xi, pat)::gd
@@ -142,8 +145,9 @@ let rewrite_one id dag node2id reac =
   | None -> reac 
   | Some (rem, found) ->
       let (jid, pat) = found.jpat_desc in
-      let xi = Ident.create ("_"^Ident.name jid.jident_desc) in
-      let xi_pat = {pat with pat_desc = Tpat_var xi} in
+      let xname = "_"^Ident.name jid.jident_desc in
+      let xi = Ident.create xname in
+      let xi_pat = {pat with pat_desc = Tpat_var (xi,mknoloc xname)} in
       let new_or_jpats =
 	let nodes = Agraph.nodes dag in
 	let has_info n = eq_pat (Agraph.info dag n) pat in
@@ -243,7 +247,7 @@ let y auto_loc ((disp, reac, new_names) as auto) id args =
 	  yfinal auto id par dag
       end
   | _ -> 
-      (* Compute all possible lubs of some patterns fromp pats
+      (* Compute all possible lubs of some patterns from pats
          ref. the F function in Step 1
          pattern list -> pattern list *)
       let rec compute_lubs pats =
@@ -276,15 +280,15 @@ type 'a reaction = Location.t * joinpattern list * 'a
 type dispatcher =
   Ident.t * (pattern * Ident.t) list * partial
 
-type ('a, 'b) guard =
-  ('a reaction * 'b) * (* old clause *)
+type 'a guard =
+  'a reaction  * (* old clause *)
   (joinpattern list list * (* new joinpattern *)
   (Ident.t * Typedtree.pattern) list) (* inserted matching *)
 
 let compile auto_loc cls =
   let name_args = collect cls
   and cls =
-    let trivial_clause (((_, jpats, _),_) as cl) =
+    let trivial_clause ((_, jpats, _) as cl) =
       cl, (jpats,[]), [] in
     List.map trivial_clause cls in
 

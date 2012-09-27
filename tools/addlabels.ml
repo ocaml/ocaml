@@ -49,11 +49,11 @@ let rec labels_of_cty cty =
     Pcty_fun (lab, _, rem) ->
       let (labs, meths) = labels_of_cty rem in
       (lab :: labs, meths)
-  | Pcty_signature (_, fields) ->
+  | Pcty_signature { pcsig_fields = fields } ->
       ([],
        List.fold_left fields ~init:[] ~f:
           begin fun meths -> function
-              Pctf_meth (s, _, sty, _) -> (s, labels_of_sty sty)::meths
+          { pctf_desc = Pctf_meth (s, _, sty) } -> (s, labels_of_sty sty)::meths
             | _ -> meths
           end)
   |  _ ->
@@ -61,9 +61,9 @@ let rec labels_of_cty cty =
 
 let rec pattern_vars pat =
   match pat.ppat_desc with
-    Ppat_var s -> [s]
+    Ppat_var s -> [s.txt]
   | Ppat_alias (pat, s) ->
-      s :: pattern_vars pat
+      s.txt :: pattern_vars pat
   | Ppat_tuple l
   | Ppat_array l ->
       List.concat (List.map pattern_vars l)
@@ -124,7 +124,7 @@ let rec insert_labels ~labels ~text expr =
         let start_c = pat.ppat_loc.Location.loc_start.Lexing.pos_cnum in
         let pos = insertion_point start_c ~text in
         match pattern_name pat with
-        | Some name when l = name -> add_insertion pos "~"
+        | Some name when l = name.txt -> add_insertion pos "~"
         | _ -> add_insertion pos ("~" ^ l ^ ":")
       end;
       insert_labels ~labels ~text rem
@@ -164,7 +164,7 @@ let rec insert_labels_class ~labels ~text expr =
         let start_c = pat.ppat_loc.Location.loc_start.Lexing.pos_cnum in
         let pos = insertion_point start_c ~text in
         match pattern_name pat with
-        | Some name when l = name -> add_insertion pos "~"
+        | Some name when l = name.txt -> add_insertion pos "~"
         | _ -> add_insertion pos ("~" ^ l ^ ":")
       end;
       insert_labels_class ~labels ~text rem
@@ -192,7 +192,7 @@ let rec insert_labels_app ~labels ~text args =
         let pos0 = arg.pexp_loc.Location.loc_start.Lexing.pos_cnum in
         let pos = insertion_point pos0 ~text in
         match arg.pexp_desc with
-        | Pexp_ident(Longident.Lident name) when l = name && pos = pos0 ->
+        | Pexp_ident({ txt = Longident.Lident name }) when l = name && pos = pos0 ->
             add_insertion pos "~"
         | _ -> add_insertion pos ("~" ^ l ^ ":")
       end;
@@ -218,7 +218,7 @@ let rec add_labels_expr ~text ~values ~classes expr =
   let add_labels_rec ?(values=values) expr =
     add_labels_expr ~text ~values ~classes expr in
   match expr.pexp_desc with
-    Pexp_apply ({pexp_desc=Pexp_ident(Longident.Lident s)}, args) ->
+    Pexp_apply ({pexp_desc=Pexp_ident({ txt = Longident.Lident s })}, args) ->
       begin try
         let labels = SMap.find s values in
         insert_labels_app ~labels ~text args
@@ -226,14 +226,14 @@ let rec add_labels_expr ~text ~values ~classes expr =
       end;
       List.iter args ~f:(fun (_,e) -> add_labels_rec e)
   | Pexp_apply ({pexp_desc=Pexp_send
-                   ({pexp_desc=Pexp_ident(Longident.Lident s)},meth)}, args) ->
+                   ({pexp_desc=Pexp_ident({ txt = Longident.Lident s })},meth)}, args) ->
       begin try
         if SMap.find s values = ["<object>"] then
           let labels = SMap.find (s ^ "#" ^ meth) values in
           insert_labels_app ~labels ~text args
       with Not_found -> ()
       end
-  | Pexp_apply ({pexp_desc=Pexp_new (Longident.Lident s)}, args) ->
+  | Pexp_apply ({pexp_desc=Pexp_new ({ txt = Longident.Lident s })}, args) ->
       begin try
         let labels = SMap.find s classes in
         insert_labels_app ~labels ~text args
@@ -288,7 +288,7 @@ let rec add_labels_expr ~text ~values ~classes expr =
       add_labels_rec e1; add_labels_rec e2; add_labels_rec e3
   | Pexp_for (s, e1, e2, _, e3) ->
       add_labels_rec e1; add_labels_rec e2;
-      add_labels_rec e3 ~values:(SMap.removes [s] values)
+      add_labels_rec e3 ~values:(SMap.removes [s.txt] values)
   | Pexp_override lst ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e)
   | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
@@ -302,23 +302,23 @@ let rec add_labels_expr ~text ~values ~classes expr =
 let rec add_labels_class ~text ~classes ~values ~methods cl =
   match cl.pcl_desc with
     Pcl_constr _ -> ()
-  | Pcl_structure (p, l) ->
+  | Pcl_structure { pcstr_pat = p; pcstr_fields = l } ->
       let values = SMap.removes (pattern_vars p) values in
       let values =
         match pattern_name p with None -> values
         | Some s ->
             List.fold_left methods
-              ~init:(SMap.add s ["<object>"] values)
-              ~f:(fun m (k,l) -> SMap.add (s^"#"^k) l m)
+              ~init:(SMap.add s.txt ["<object>"] values)
+              ~f:(fun m (k,l) -> SMap.add (s.txt^"#"^k) l m)
       in
       ignore (List.fold_left l ~init:values ~f:
-        begin fun values -> function
-          | Pcf_val (s, _, _, e, _) ->
+        begin fun values -> function e -> match e.pcf_desc with
+          | Pcf_val (s, _, _, e) ->
               add_labels_expr ~text ~classes ~values e;
-              SMap.removes [s] values
-          | Pcf_meth (s, _, _, e, _) ->
+              SMap.removes [s.txt] values
+          | Pcf_meth (s, _, _, e) ->
               begin try
-                let labels = List.assoc s methods in
+                let labels = List.assoc s.txt methods in
                 insert_labels ~labels ~text e
               with Not_found -> ()
               end;
@@ -327,7 +327,7 @@ let rec add_labels_class ~text ~classes ~values ~methods cl =
           | Pcf_init e ->
               add_labels_expr ~text ~classes ~values e;
               values
-          | Pcf_inher _ | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _ -> values
+          | Pcf_inher _ | Pcf_valvirt _ | Pcf_virt _ | Pcf_constr _ -> values
         end)
   | Pcl_fun (_, opt, pat, cl) ->
       begin match opt with None -> ()
@@ -357,12 +357,12 @@ let add_labels ~intf ~impl ~file =
       begin fun (values, classes as acc) item ->
         match item.psig_desc with
           Psig_value (name, {pval_type = sty}) ->
-            (SMap.add name (labels_of_sty sty) values, classes)
+            (SMap.add name.txt (labels_of_sty sty) values, classes)
         | Psig_class l ->
           (values,
            List.fold_left l ~init:classes ~f:
              begin fun classes {pci_name=name; pci_expr=cty} ->
-               SMap.add name (labels_of_cty cty) classes
+               SMap.add name.txt (labels_of_cty cty) classes
              end)
         | _ ->
             acc
@@ -380,7 +380,7 @@ let add_labels ~intf ~impl ~file =
               begin match pattern_name pat with
               | Some s ->
                   begin try
-                    let labels = SMap.find s values in
+                    let labels = SMap.find s.txt values in
                     insert_labels ~labels ~text expr;
                     if !norec then () else
                     let values =
@@ -397,17 +397,17 @@ let add_labels ~intf ~impl ~file =
           (SMap.removes names values, classes)
       | Pstr_primitive (s, {pval_type=sty}) ->
           begin try
-            let labels = SMap.find s values in
+            let labels = SMap.find s.txt values in
             insert_labels_type ~labels ~text sty;
-            (SMap.removes [s] values, classes)
+            (SMap.removes [s.txt] values, classes)
           with Not_found -> acc
           end
       | Pstr_class l ->
-          let names = List.map l ~f:(fun pci -> pci.pci_name) in
+          let names = List.map l ~f:(fun pci -> pci.pci_name.txt) in
           List.iter l ~f:
             begin fun {pci_name=name; pci_expr=expr} ->
               try
-                let (labels, methods) = SMap.find name classes in
+                let (labels, methods) = SMap.find name.txt classes in
                 insert_labels_class ~labels ~text expr;
                 if !norec then () else
                 let classes =

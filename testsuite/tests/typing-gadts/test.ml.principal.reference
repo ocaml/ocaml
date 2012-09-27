@@ -144,7 +144,7 @@ val f : 'a h -> 'a = <fun>
 val f : 'a j -> 'a = <fun>
 #   type (_, _) eq = Eq : ('a, 'a) eq
 #       Characters 5-91:
-  ....f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
+  ....f : type a b. (a,b) eq -> (<m : a; ..> as 'c) -> (<m : b; ..> as 'c) =
     fun Eq o -> o
 Error: The universal type variable 'b cannot be generalized:
        it is already bound to another variable.
@@ -303,4 +303,7 @@ Error: This expression has type < bar : int; foo : int; .. > as 'a
        The type constructor ex#25 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
+#       type 'a ty = Int : int -> int ty
+#     val f : 'a ty -> 'a = <fun>
+#       val g : 'a ty -> 'a = <fun>
 # 

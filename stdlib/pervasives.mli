@@ -508,7 +508,9 @@ val ( @ ) : 'a list -> 'a list -> 'a list
 (** List concatenation. *)
 
 
-(** {6 Input/output} *)
+(** {6 Input/output}
+    Note: all input/output functions can raise [Sys_error] when the system
+    calls they invoke fail. *)
 
 type in_channel
 (** The type of input channel. *)
@@ -926,8 +928,7 @@ val at_exit : (unit -> unit) -> unit
 
 (**/**)
 
-
-(** {6 For system use only, not for the casual user} *)
+(* The following is for system use only. Do not call directly. *)
 
 val valid_float_lexem : string -> string
 

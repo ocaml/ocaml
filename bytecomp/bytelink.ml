@@ -466,6 +466,7 @@ let link_bytecode_as_c ppf tolink outfile =
     close_out outchan
   with x ->
     close_out outchan;
+    remove_file outfile;
     raise x
   end;
   if !Clflags.debug then

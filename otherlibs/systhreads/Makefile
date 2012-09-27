@@ -20,7 +20,7 @@ CAMLOPT=../../ocamlcompopt.sh $(NOJOIN) -I ../unix
 JCC=../../ocamlcomp.sh -I ../unix
 JCOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error A -g
+COMPFLAGS=-warn-error A -annot -g
 OCAMLPP=-pp '../../tools/remove_DEBUG'
 
 
@@ -56,7 +56,7 @@ all: libthreads.a threads.cma
 allopt: libthreadsnat.a threads.cmxa 
 
 libthreads.a: $(BYTECODE_C_OBJS)
-	$(MKLIB) -o threads $(BYTECODE_C_OBJS)
+	$(MKLIB) -o threads $(BYTECODE_C_OBJS) -lpthread
 
 st_stubs_b.o: st_stubs.c st_posix.h
 	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \

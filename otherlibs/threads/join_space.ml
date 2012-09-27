@@ -710,10 +710,20 @@ and import_stub space originator (rspace_id, uid) =
 
 and globalize_rec space v flags =
   let s,t =  do_globalize_message v flags in
-  s, Array.map (export_stub space) t
+  let export space st =
+(*DEBUG*)debug1 "EXPORT" "SPACE=%s" (space_to_string space.space_id) ;    
+    let (s,id as r) = export_stub space st in
+(*DEBUG*)debug1 "EXPORT" "RESULT=%s->%i" (space_to_string s) id ;    
+    r in
+  s, Array.map (export space) t
 
 and localize_rec space originator (s,t) =
-  do_localize_message s (Array.map (import_stub space originator) t)
+  let import space originator v =
+    let r = import_stub space originator v in
+(*DEBUG*)let s,id = v in
+(*DEBUG*)debug1 "IMPORT" "GLOBAL NAME=%s->%i" (space_to_string s) id ;
+    r in
+  do_localize_message s (Array.map (import space originator) t)
 
 (**************************************************)    
 (*  Synchronous message sending is in big let rec *)

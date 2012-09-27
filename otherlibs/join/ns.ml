@@ -12,10 +12,6 @@
 
 (* $Id$ *)
 
-open Unix
-(*DEBUG*)open Printf
-(*DEBUG*)open Join_debug
-
 
 (* Readers/Writer controler, in join *)
 def readers(n) & enter_read() = readers(n+1) & reply to enter_read
@@ -76,5 +72,5 @@ let there sockaddr = of_site (Site.there sockaddr)
 let of_sockaddr = there
 
 
-let lookup {lookup=lookup} key = lookup key
-and register {register=register} key v = register (key, v)
+let lookup {lookup=lookup; _} key = lookup key
+and register {register=register; _} key v = register (key, v)

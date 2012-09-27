@@ -1,4 +1,5 @@
 BASEDIR=../..
+
 CC=$(NATIVECC)
 CFLAGS=$(NATIVECCCOMPOPTS) -g
 
@@ -17,6 +18,8 @@ OTHEROBJS=\
   $(TOPDIR)/utils/ccomp.cmo \
   $(TOPDIR)/utils/warnings.cmo \
   $(TOPDIR)/utils/consistbl.cmo \
+  $(TOPDIR)/utils/extarray.cmo \
+  $(TOPDIR)/utils/agraph.cmo \
   $(TOPDIR)/parsing/location.cmo \
   $(TOPDIR)/parsing/longident.cmo \
   $(TOPDIR)/parsing/syntaxerr.cmo \
@@ -33,6 +36,7 @@ OTHEROBJS=\
   $(TOPDIR)/typing/subst.cmo \
   $(TOPDIR)/typing/predef.cmo \
   $(TOPDIR)/typing/datarepr.cmo \
+  $(TOPDIR)/typing/cmi_format.cmo \
   $(TOPDIR)/typing/env.cmo \
   $(TOPDIR)/typing/typedtree.cmo \
   $(TOPDIR)/typing/ctype.cmo \
@@ -43,7 +47,10 @@ OTHEROBJS=\
   $(TOPDIR)/typing/includemod.cmo \
   $(TOPDIR)/typing/parmatch.cmo \
   $(TOPDIR)/typing/typetexp.cmo \
+  $(TOPDIR)/typing/cmt_format.cmo \
   $(TOPDIR)/typing/stypes.cmo \
+  $(TOPDIR)/typing/joinmatching.cmo \
+  $(TOPDIR)/typing/typejoin.cmo \
   $(TOPDIR)/typing/typecore.cmo \
   $(TOPDIR)/typing/typedecl.cmo \
   $(TOPDIR)/typing/typeclass.cmo \
@@ -54,6 +61,7 @@ OTHEROBJS=\
   $(TOPDIR)/bytecomp/switch.cmo \
   $(TOPDIR)/bytecomp/matching.cmo \
   $(TOPDIR)/bytecomp/translobj.cmo \
+  $(TOPDIR)/bytecomp/transljoin.cmo \
   $(TOPDIR)/bytecomp/translcore.cmo \
   $(TOPDIR)/bytecomp/translclass.cmo \
   $(TOPDIR)/bytecomp/translmod.cmo \
@@ -139,11 +147,11 @@ clean: defaultclean
 	@rm -f parsecmm.ml parsecmm.mli lexcmm.ml
 	@rm -f $(CASES:=.s)
 
+include $(BASEDIR)/makefiles/Makefile.common
+
 power.o: power-$(SYSTEM).o
 	@cp power-$(SYSTEM).o power.o
 
 promote:
-
-include $(BASEDIR)/makefiles/Makefile.common
 
 arch: $(ARCH).o

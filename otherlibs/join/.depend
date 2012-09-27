@@ -7,6 +7,8 @@ joinMapRed.cmi : joinPool.cmi joinHelper.cmi
 joinPool.cmi : join.cmi
 joinProc.cmi :
 joinTextProc.cmi : joinCom.cmi join.cmi
+a.cmo :
+a.cmx :
 join.cmo : site.cmo ns.cmo join.cmi
 join.cmx : site.cmx ns.cmx join.cmi
 joinCom.cmo : join.cmi joinCom.cmi

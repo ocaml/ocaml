@@ -416,6 +416,7 @@ let create_sync (auto:stub) idx =
 
 (* this sync channel creator is shared *)
 let do_create_sync_alone stub name =
+(*DEBUG*)debug2 "CREATE SYNC ALONE" "%s" name ;
   let r a = send_sync_alone stub name a in
   r
 
@@ -432,9 +433,15 @@ let patch_sync_alone (stub:stub) (g:'a -> 'b) =
 
 
 (* HACK :
-   Inform marshaller about one
-   code address and one value that are rebound dynamically
+   Inform marshaller about two
+   code addresses and two values that are rebound dynamically
    by marshalling operations *)
+
+(* NOTICE:
+  - Values are for bytecode, as the code adddress is not sufficienent there:
+    the corresponding closure include other functions in its environement.
+  - For native code code suffices.
+*)
 
 external register_value : 'a -> unit = "caml_register_saved_value"
 external register_code : ('a -> 'b) -> unit = "caml_register_saved_code"

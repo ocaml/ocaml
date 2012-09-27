@@ -356,21 +356,12 @@ static intnat norm_minsize (intnat s)
   return s;
 }
 
-static intnat norm_policy (intnat p)
-{
-  if (p >= 0 && p <= 1){
-    return p;
-  }else{
-    return 1;
-  }
-}
-
 CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf, newpm;
   asize_t newheapincr;
   asize_t newminsize;
-  uintnat newpolicy;
+  uintnat oldpolicy;
 
   caml_verb_gc = Long_val (Field (v, 3));
 
@@ -396,10 +387,11 @@ CAMLprim value caml_gc_set(value v)
     caml_gc_message (0x20, "New heap increment size: %luk bytes\n",
                      caml_major_heap_increment/1024);
   }
-  newpolicy = norm_policy (Long_val (Field (v, 6)));
-  if (newpolicy != caml_allocation_policy){
-    caml_gc_message (0x20, "New allocation policy: %d\n", newpolicy);
-    caml_set_allocation_policy (newpolicy);
+  oldpolicy = caml_allocation_policy;
+  caml_set_allocation_policy (Long_val (Field (v, 6)));
+  if (oldpolicy != caml_allocation_policy){
+    caml_gc_message (0x20, "New allocation policy: %d\n",
+                     caml_allocation_policy);
   }
 
     /* Minor heap size comes last because it will trigger a minor collection

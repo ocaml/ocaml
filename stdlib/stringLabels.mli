@@ -175,6 +175,8 @@ val compare: t -> t -> int
 
 (**/**)
 
+(* The following is for system use only. Do not call directly. *)
+
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit :

@@ -273,14 +273,20 @@ module Make(Ord: OrderedType) = struct
     let rec filter p = function
         Empty -> Empty
       | Node(l, v, d, r, _) ->
-          let l' = filter p l and r' = filter p r in
-          if p v d then join l' v d r' else concat l' r'
+          (* call [p] in the expected left-to-right order *)
+          let l' = filter p l in
+          let pvd = p v d in
+          let r' = filter p r in
+          if pvd then join l' v d r' else concat l' r'
 
     let rec partition p = function
         Empty -> (Empty, Empty)
       | Node(l, v, d, r, _) ->
-          let (lt, lf) = partition p l and (rt, rf) = partition p r in
-          if p v d
+          (* call [p] in the expected left-to-right order *)
+          let (lt, lf) = partition p l in
+          let pvd = p v d in
+          let (rt, rf) = partition p r in
+          if pvd
           then (join lt v d rt, concat lf rf)
           else (concat lt rt, join lf v d rf)
 

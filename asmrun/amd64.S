@@ -22,7 +22,7 @@
 
 #if defined(SYS_macosx)
 
-#define LBL(x) L##x	
+#define LBL(x) L##x
 #define G(r) _##r
 #define GREL(r) _##r@GOTPCREL
 #define GCALL(r) _##r
@@ -35,8 +35,8 @@
         name:
 
 #elif defined(SYS_mingw64)
-	
-#define LBL(x) .L##x	
+
+#define LBL(x) .L##x
 #define G(r) r
 #undef  GREL
 #define GCALL(r) r
@@ -50,7 +50,7 @@
 
 #else
 
-#define LBL(x) .L##x	
+#define LBL(x) .L##x
 #define G(r) r
 #define GREL(r) r@GOTPCREL
 #define GCALL(r) r@PLT
@@ -74,7 +74,7 @@
 #define CFI_ENDPROC
 #define CFI_ADJUST(n)
 #endif
-        
+
 #if defined(__PIC__) && !defined(SYS_mingw64)
 
 /* Position-independent operations on global variables. */
@@ -119,7 +119,7 @@
 	popq    %r11
 
 #else
-        
+
 /* Non-PIC operations on global variables.  Slightly faster. */
 
 #define STORE_VAR(srcreg,dstlabel) \
@@ -148,10 +148,10 @@
 
 #endif
 
-/* Save and restore all callee-save registers on stack.  
+/* Save and restore all callee-save registers on stack.
    Keep the stack 16-aligned. */
 
-#if defined(SYS_mingw64)	
+#if defined(SYS_mingw64)
 
 /* Win64 API: callee-save regs are rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 */
 
@@ -219,11 +219,11 @@
         popq    %rbp; \
         popq    %rbx
 
-#endif	
+#endif
 
 #ifdef SYS_mingw64
    /* Calls from OCaml to C must reserve 32 bytes of extra stack space */
-#  define PREPARE_FOR_C_CALL subq $32, %rsp	
+#  define PREPARE_FOR_C_CALL subq $32, %rsp
 #  define CLEANUP_AFTER_C_CALL addq $32, %rsp
 #else
 #  define PREPARE_FOR_C_CALL
@@ -389,6 +389,7 @@ LBL(caml_c_call):
         popq    %r12
         STORE_VAR(%r12, caml_last_return_address)
         STORE_VAR(%rsp, caml_bottom_of_stack)
+        pushq    %r12
 #ifndef SYS_mingw64
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
@@ -402,12 +403,7 @@ LBL(caml_c_call):
     /* Call the function (address in %rax) */
     /* No need to PREPARE_FOR_C_CALL since the caller already
        reserved the stack space if needed (cf. amd64/proc.ml) */
-        call    *%rax
-    /* Reload alloc ptr */
-	LOAD_VAR(caml_young_ptr, %r15)
-    /* Return to caller */
-	pushq	%r12
-	ret
+        jmp    *%rax
 
 /* Start the OCaml program */
 

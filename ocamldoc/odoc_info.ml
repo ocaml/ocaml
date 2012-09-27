@@ -24,6 +24,8 @@ type ref_kind = Odoc_types.ref_kind =
   | RK_attribute
   | RK_method
   | RK_section of text
+  | RK_recfield
+  | RK_const
 
 and text_element = Odoc_types.text_element =
   | Raw of string
@@ -80,8 +82,8 @@ type info = Odoc_types.info = {
   }
 
 type location = Odoc_types.location = {
-    loc_impl : (string * int) option ;
-    loc_inter : (string * int) option ;
+    loc_impl : Location.t option ;
+    loc_inter : Location.t option ;
   }
 
 let dummy_loc = { loc_impl = None ; loc_inter = None }
@@ -317,6 +319,8 @@ module Search =
         | Res_attribute of Value.t_attribute
         | Res_method of Value.t_method
         | Res_section of string * text
+        | Res_recfield of Type.t_type * Type.record_field
+        | Res_const of Type.t_type * Type.variant_constructor
 
     type search_result = result_element list
 

@@ -231,7 +231,7 @@ is not a subtype of
 #   val c3 : int_comparable3 = <obj>
 # - : unit = ()
 # Characters 25-27:
-  (new sorted_list ())#add c3;;   (* Echec : leq n'est pas binaire *)
+  (new sorted_list ())#add c3;;   (* Error; strange message with -principal *)
                            ^^
 Error: This expression has type
          int_comparable3 =

@@ -25,6 +25,8 @@ type ref_kind = Odoc_types.ref_kind =
   | RK_attribute
   | RK_method
   | RK_section of text
+  | RK_recfield
+  | RK_const
 
 and text_element = Odoc_types.text_element =
   | Raw of string (** Raw text. *)
@@ -97,8 +99,8 @@ type info = Odoc_types.info = {
 
 (** Location of elements in implementation and interface files. *)
 type location = Odoc_types.location = {
-    loc_impl : (string * int) option ; (** implementation file name and position *)
-    loc_inter : (string * int) option ; (** interface file name and position *)
+    loc_impl : Location.t option ; (** implementation location *)
+    loc_inter : Location.t option ; (** interface location *)
   }
 
 (** A dummy location. *)
@@ -786,6 +788,8 @@ module Search :
         | Res_attribute of Value.t_attribute
         | Res_method of Value.t_method
         | Res_section of string  * text
+        | Res_recfield of Type.t_type * Type.record_field
+        | Res_const of Type.t_type * Type.variant_constructor
 
       (** The type representing a research result.*)
       type search_result = result_element list
@@ -830,6 +834,10 @@ module Scan :
       (** Scan of 'leaf elements'. *)
 
         method scan_value : Value.t_value -> unit
+
+        method scan_type_pre : Type.t_type -> bool
+        method scan_type_const : Type.t_type -> Type.variant_constructor -> unit
+        method scan_type_recfield : Type.t_type -> Type.record_field -> unit
         method scan_type : Type.t_type -> unit
         method scan_exception : Exception.t_exception -> unit
         method scan_attribute : Value.t_attribute -> unit

@@ -302,7 +302,7 @@ let f : type a. a j -> a = function
 
 type (_,_) eq = Eq : ('a,'a) eq ;;
 
-let f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
+let f : type a b. (a,b) eq -> (<m : a; ..> as 'c) -> (<m : b; ..> as 'c) =
   fun Eq o -> o
 ;; (* fail *)
 
@@ -501,3 +501,14 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
   let IF_constr, IB_constr = e, e' in
   x, x#foo, x#bar
 ;;
+
+(* PR#5554 *)
+
+type 'a ty = Int : int -> int ty;;
+
+let f : type a. a ty -> a =
+  fun x -> match x with Int y -> y;;
+
+let g : type a. a ty -> a =
+  let () = () in
+  fun x -> match x with Int y -> y;;

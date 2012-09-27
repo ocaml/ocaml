@@ -19,6 +19,8 @@ exception Fatal_error
 
 val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a;;
 
+val as_cons : 'a list -> 'a * 'a list
+        (* [as_cons (x::xs) returns x,xs; fails on [] *)
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)
 val map_left_right: ('a -> 'b) -> 'a list -> 'b list
@@ -65,7 +67,9 @@ val copy_file_chunk: in_channel -> out_channel -> int -> unit
         (* [copy_file_chunk ic oc n] reads [n] bytes from [ic] and copies
            them to [oc]. It raises [End_of_file] when encountering
            EOF on [ic]. *)
-
+val string_of_file: in_channel -> string
+        (* [string_of_file ic] reads the contents of file [ic] and copies
+           them to a string. It stops when encountering EOF on [ic]. *)
 val input_bytes : in_channel -> int -> string;;
         (* [input_bytes ic n] reads [n] bytes from [ic] and returns them
            in a new string.  It raises [End_of_file] if EOF is encountered
@@ -111,3 +115,12 @@ val rev_split_words: string -> string list
 val get_ref: 'a list ref -> 'a list
         (* [get_ref lr] returns the content of the list reference [lr] and reset
            its content to the empty list. *)
+
+
+val fst3: 'a * 'b * 'c -> 'a
+val snd3: 'a * 'b * 'c -> 'b
+val thd3: 'a * 'b * 'c -> 'c
+
+val fst4: 'a * 'b * 'c * 'd -> 'a
+val snd4: 'a * 'b * 'c * 'd -> 'b
+val thd4: 'a * 'b * 'c * 'd -> 'c

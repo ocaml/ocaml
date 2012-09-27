@@ -162,7 +162,7 @@ end
   type subtask_id = int (** Subtask identifier *)
 
   type ('elt,'partial) interruptible_worker =
-      subtask_id * 'elt -> 'partial option (** Workers that can be aborted asynchrnously *)
+      subtask_id * 'elt -> 'partial option (** Workers that can be aborted asynchronously *)
   type kill = subtask_id Join.chan (** To abort given subtask *)
 
 

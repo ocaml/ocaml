@@ -155,8 +155,8 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     if (data == NULL && size != 0) raise_out_of_memory();
     flags |= BIGARRAY_MANAGED;
   }
-  /* PR#5516: use C99's / gcc's flexible array types if possible */
-#if (__STDC_VERSION__ >= 199901L) || defined(__GNUC__)
+  /* PR#5516: use C99's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L)
   asize = sizeof(struct caml_ba_array) + num_dims * sizeof(intnat);
 #else
   asize = sizeof(struct caml_ba_array) + (num_dims - 1) * sizeof(intnat);

@@ -61,6 +61,8 @@ let print_DEBUG s = print_string s; print_newline ()
 %token ATT_REF
 %token MET_REF
 %token SEC_REF
+%token RECF_REF
+%token CONST_REF
 %token MOD_LIST_REF
 %token INDEX_LIST
 
@@ -79,8 +81,9 @@ let print_DEBUG s = print_string s; print_newline ()
 %token <string> Char
 
 /* Start Symbols */
-%start main 
+%start main located_element_list
 %type <Odoc_types.text> main
+%type <(int * int * Odoc_types.text_element) list> located_element_list
 
 %%
 main:
@@ -97,6 +100,16 @@ text_element_list:
 | text_element text_element_list { $1 :: $2 }
 ;
 
+located_element_list:
+  located_element { [ $1 ] }
+| located_element located_element_list { $1 :: $2 }
+;
+
+located_element:
+  text_element { Parsing.symbol_start (), Parsing.symbol_end (), $1}
+;
+
+
 ele_ref_kind:
   ELE_REF { None }
 | VAL_REF { Some RK_value }
@@ -109,6 +122,8 @@ ele_ref_kind:
 | ATT_REF { Some RK_attribute }
 | MET_REF { Some RK_method }
 | SEC_REF { Some (RK_section [])}
+| RECF_REF { Some RK_recfield }
+| CONST_REF { Some RK_const }
 ;
 
 text_element:

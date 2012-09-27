@@ -127,7 +127,7 @@ module C = struct
       close : unit -> unit;
     }
 
-
+(*
   let of_text (chan) =
     def  put(line,k) & alive() =
       let ok = output_line chan line in
@@ -140,7 +140,7 @@ module C = struct
 
     spawn alive() ;
     {put;close;}
-
+*)
 end
 
 

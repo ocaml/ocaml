@@ -19,7 +19,7 @@ CAMLC=../../ocamlcomp.sh $(NOJOIN) -I ../unix
 CAMLOPT=../../ocamlcompopt.sh $(NOJOIN) -I ../unix
 JCC=../../ocamlcomp.sh -I ../unix
 JCOPT=../../ocamlcompopt.sh -I ../unix
-COMPFLAGS=-warn-error A
+COMPFLAGS=-w +a-4 -warn-error +a
 
 STDJOIN_OBJS=joinCom.cmo joinProc.cmo joinTextProc.cmo \
  joinFifo.cmo joinCount.cmo \

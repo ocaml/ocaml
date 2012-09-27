@@ -45,7 +45,7 @@ let preprocess sourcefile =
   match !Clflags.preprocessor with
     None -> sourcefile
   | Some pp ->
-      let tmpfile = Filename.temp_file "camlpp" "" in
+      let tmpfile = Filename.temp_file "ocamldocpp" "" in
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Ccomp.command comm <> 0 then begin
         remove_file tmpfile;
@@ -112,7 +112,10 @@ let process_implementation_file ppf sourcefile =
   let env = initial_env () in
   try
     let parsetree = parse_file inputfile Parse.implementation ast_impl_magic_number in
-    let typedtree = Typemod.type_implementation sourcefile prefixname modulename env parsetree in
+    let typedtree =
+      Typemod.type_implementation
+	sourcefile prefixname modulename env parsetree
+    in
     (Some (parsetree, typedtree), inputfile)
   with
     e ->
@@ -163,6 +166,9 @@ let process_error exn =
   | Env.Error err ->
       Location.print_error_cur_file ppf;
       Env.report_error ppf err
+  | Cmi_format.Error err ->
+      Location.print_error_cur_file ppf;
+      Cmi_format.report_error ppf err
   | Ctype.Tags(l, l') ->
       Location.print_error_cur_file ppf;
       fprintf ppf
@@ -250,8 +256,8 @@ let process_file ppf sourcefile =
        try
          let (ast, signat, input_file) = process_interface_file ppf file in
          let file_module = Sig_analyser.analyse_signature file
-	     !Location.input_name ast signat
-	 in
+             !Location.input_name ast signat.sig_type
+         in
 
          file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;
 
@@ -287,7 +293,7 @@ let process_file ppf sourcefile =
         let m =
           {
             Odoc_module.m_name = mod_name ;
-            Odoc_module.m_type = Types.Tmty_signature [] ;
+            Odoc_module.m_type = Types.Mty_signature [] ;
             Odoc_module.m_info = None ;
             Odoc_module.m_is_interface = true ;
             Odoc_module.m_file = file ;
@@ -295,7 +301,7 @@ let process_file ppf sourcefile =
               [Odoc_module.Element_module_comment txt] ;
             Odoc_module.m_loc =
               { Odoc_types.loc_impl = None ;
-                Odoc_types.loc_inter = Some (file, 0) } ;
+                Odoc_types.loc_inter = Some (Location.in_file file) } ;
             Odoc_module.m_top_deps = [] ;
             Odoc_module.m_code = None ;
             Odoc_module.m_code_intf = None ;

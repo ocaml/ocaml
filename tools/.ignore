@@ -10,6 +10,7 @@ cvt_emit
 cvt_emit.bak
 cvt_emit.ml
 ocamlcp
+ocamloptp
 ocamlmktop
 primreq
 ocamldumpobj
@@ -23,3 +24,6 @@ scrapelabels
 addlabels
 myocamlbuild_config.ml
 objinfo_helper
+objinfo_helper.exe
+read_cmt
+read_cmt.bak

@@ -70,9 +70,9 @@ complex.cmo : complex.cmi
 complex.cmx : complex.cmi
 digest.cmo : string.cmi printf.cmi char.cmi digest.cmi
 digest.cmx : string.cmx printf.cmx char.cmx digest.cmi
-filename.cmo : sys.cmi string.cmi random.cmi printf.cmi buffer.cmi \
+filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
-filename.cmx : sys.cmx string.cmx random.cmx printf.cmx buffer.cmx \
+filename.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
     filename.cmi
 format.cmo : string.cmi printf.cmi pervasives.cmi obj.cmi list.cmi \
     buffer.cmi format.cmi
@@ -82,8 +82,10 @@ gc.cmo : sys.cmi printf.cmi gc.cmi
 gc.cmx : sys.cmx printf.cmx gc.cmi
 genlex.cmo : string.cmi stream.cmi list.cmi hashtbl.cmi char.cmi genlex.cmi
 genlex.cmx : string.cmx stream.cmx list.cmx hashtbl.cmx char.cmx genlex.cmi
-hashtbl.cmo : sys.cmi obj.cmi array.cmi hashtbl.cmi
-hashtbl.cmx : sys.cmx obj.cmx array.cmx hashtbl.cmi
+hashtbl.cmo : sys.cmi string.cmi random.cmi obj.cmi lazy.cmi array.cmi \
+    hashtbl.cmi
+hashtbl.cmx : sys.cmx string.cmx random.cmx obj.cmx lazy.cmx array.cmx \
+    hashtbl.cmi
 int32.cmo : pervasives.cmi int32.cmi
 int32.cmx : pervasives.cmx int32.cmi
 int64.cmo : pervasives.cmi int64.cmi
@@ -178,9 +180,9 @@ complex.cmo : complex.cmi
 complex.p.cmx : complex.cmi
 digest.cmo : string.cmi printf.cmi char.cmi digest.cmi
 digest.p.cmx : string.p.cmx printf.p.cmx char.p.cmx digest.cmi
-filename.cmo : sys.cmi string.cmi random.cmi printf.cmi buffer.cmi \
+filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
-filename.p.cmx : sys.p.cmx string.p.cmx random.p.cmx printf.p.cmx buffer.p.cmx \
+filename.p.cmx : sys.p.cmx string.p.cmx random.p.cmx printf.p.cmx lazy.p.cmx buffer.p.cmx \
     filename.cmi
 format.cmo : string.cmi printf.cmi pervasives.cmi obj.cmi list.cmi \
     buffer.cmi format.cmi
@@ -190,8 +192,10 @@ gc.cmo : sys.cmi printf.cmi gc.cmi
 gc.p.cmx : sys.p.cmx printf.p.cmx gc.cmi
 genlex.cmo : string.cmi stream.cmi list.cmi hashtbl.cmi char.cmi genlex.cmi
 genlex.p.cmx : string.p.cmx stream.p.cmx list.p.cmx hashtbl.p.cmx char.p.cmx genlex.cmi
-hashtbl.cmo : sys.cmi obj.cmi array.cmi hashtbl.cmi
-hashtbl.p.cmx : sys.p.cmx obj.p.cmx array.p.cmx hashtbl.cmi
+hashtbl.cmo : sys.cmi string.cmi random.cmi obj.cmi lazy.cmi array.cmi \
+    hashtbl.cmi
+hashtbl.p.cmx : sys.p.cmx string.p.cmx random.p.cmx obj.p.cmx lazy.p.cmx array.p.cmx \
+    hashtbl.cmi
 int32.cmo : pervasives.cmi int32.cmi
 int32.p.cmx : pervasives.p.cmx int32.cmi
 int64.cmo : pervasives.cmi int64.cmi

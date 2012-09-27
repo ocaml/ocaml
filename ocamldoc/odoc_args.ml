@@ -17,6 +17,96 @@ module M = Odoc_messages
 
 let current_generator = ref (None : Odoc_gen.generator option)
 
+let get_html_generator () =
+  match !current_generator with
+    None -> (module Odoc_html.Generator : Odoc_html.Html_generator)
+  | Some (Odoc_gen.Html m) -> m
+  | Some _ -> failwith (M.current_generator_is_not "html")
+;;
+
+let get_latex_generator () =
+  match !current_generator with
+    None -> (module Odoc_latex.Generator : Odoc_latex.Latex_generator)
+  | Some (Odoc_gen.Latex m) -> m
+  | Some _ -> failwith (M.current_generator_is_not "latex")
+;;
+
+let get_texi_generator () =
+  match !current_generator with
+    None -> (module Odoc_texi.Generator : Odoc_texi.Texi_generator)
+  | Some (Odoc_gen.Texi m) -> m
+  | Some _ -> failwith (M.current_generator_is_not "texi")
+;;
+
+let get_man_generator () =
+  match !current_generator with
+    None -> (module Odoc_man.Generator : Odoc_man.Man_generator)
+  | Some (Odoc_gen.Man m) -> m
+  | Some _ -> failwith (M.current_generator_is_not "man")
+;;
+
+let get_dot_generator () =
+  match !current_generator with
+    None -> (module Odoc_dot.Generator : Odoc_dot.Dot_generator)
+  | Some (Odoc_gen.Dot m) -> m
+  | Some _ -> failwith (M.current_generator_is_not "dot")
+;;
+
+let get_base_generator () =
+  match !current_generator with
+    None -> (module Odoc_gen.Base_generator : Odoc_gen.Base)
+  | Some (Odoc_gen.Base m) -> m
+  | Some _ -> failwith (M.current_generator_is_not "base")
+;;
+
+let extend_html_generator f =
+  let current = get_html_generator () in
+  let module Current = (val current : Odoc_html.Html_generator) in
+  let module F = (val f : Odoc_gen.Html_functor) in
+  let module M = F(Current) in
+  current_generator := Some (Odoc_gen.Html (module M : Odoc_html.Html_generator))
+;;
+
+let extend_latex_generator f =
+  let current = get_latex_generator () in
+  let module Current = (val current : Odoc_latex.Latex_generator) in
+  let module F = (val f : Odoc_gen.Latex_functor) in
+  let module M = F(Current) in
+  current_generator := Some(Odoc_gen.Latex (module M : Odoc_latex.Latex_generator))
+;;
+
+let extend_texi_generator f =
+  let current = get_texi_generator () in
+  let module Current = (val current : Odoc_texi.Texi_generator) in
+  let module F = (val f : Odoc_gen.Texi_functor) in
+  let module M = F(Current) in
+  current_generator := Some(Odoc_gen.Texi (module M : Odoc_texi.Texi_generator))
+;;
+
+let extend_man_generator f =
+  let current = get_man_generator () in
+  let module Current = (val current : Odoc_man.Man_generator) in
+  let module F = (val f : Odoc_gen.Man_functor) in
+  let module M = F(Current) in
+  current_generator := Some(Odoc_gen.Man (module M : Odoc_man.Man_generator))
+;;
+
+let extend_dot_generator f =
+  let current = get_dot_generator () in
+  let module Current = (val current : Odoc_dot.Dot_generator) in
+  let module F = (val f : Odoc_gen.Dot_functor) in
+  let module M = F(Current) in
+  current_generator := Some (Odoc_gen.Dot (module M : Odoc_dot.Dot_generator))
+;;
+
+let extend_base_generator f =
+  let current = get_base_generator () in
+  let module Current = (val current : Odoc_gen.Base) in
+  let module F = (val f : Odoc_gen.Base_functor) in
+  let module M = F(Current) in
+  current_generator := Some (Odoc_gen.Base (module M : Odoc_gen.Base))
+;;
+
 (** Analysis of a string defining options. Return the list of
    options according to the list giving associations between
    [(character, _)] and a list of options. *)
@@ -294,7 +384,7 @@ let help_action () =
   let msg =
     Arg.usage_string
       (!options @ !help_options)
-      (M.usage ^ M.options_are) in 
+      (M.usage ^ M.options_are) in
   print_string msg
 let () =
   help_options := [

@@ -14,8 +14,8 @@
 
 (* Inclusion checks for the core language *)
 
-open Types
 open Typedtree
+open Types
 
 exception Dont_match
 
@@ -26,18 +26,19 @@ type type_mismatch =
   | Constraint
   | Manifest
   | Variance
-  | Field_type of string
-  | Field_mutable of string
-  | Field_arity of string
-  | Field_names of int * string * string
-  | Field_missing of bool * string
+  | Field_type of Ident.t
+  | Field_mutable of Ident.t
+  | Field_arity of Ident.t
+  | Field_names of int * Ident.t * Ident.t
+  | Field_missing of bool * Ident.t
   | Record_representation of bool
 
 val value_descriptions:
     Env.t -> value_description -> value_description -> module_coercion
 val type_declarations:
-    Env.t -> Ident.t ->
-    type_declaration -> type_declaration -> type_mismatch list
+    ?equality:bool ->
+      Env.t -> string ->
+        type_declaration -> Ident.t -> type_declaration -> type_mismatch list
 val exception_declarations:
     Env.t -> exception_declaration -> exception_declaration -> bool
 (*

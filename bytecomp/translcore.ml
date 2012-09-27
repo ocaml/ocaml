@@ -21,6 +21,9 @@ open Primitive
 open Path
 open Types
 open Typedtree
+(*>JOCAML *)
+open Auto
+(*<JOCAML *)
 open Typeopt
 open Lambda
 
@@ -31,6 +34,23 @@ type error =
   | Unknown_builtin_primitive of string
 
 exception Error of Location.t * error
+
+(* Optimisation of channnel send/calls,
+   Done with side effect so as not to distroy code structure *)
+
+let chan_env = ref (Ident.empty)
+
+let add_chan_env ids =
+  chan_env :=
+    List.fold_left
+      (fun k (id,x) -> Ident.add id x k)
+      !chan_env
+      ids
+
+let get_chan_env id =
+  try Some (Ident.find_same id !chan_env)
+  with Not_found -> None
+
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
@@ -294,10 +314,10 @@ let transl_prim loc prim args =
          simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}]
+      [arg1; {exp_desc = Texp_construct(_, _, {cstr_tag = Cstr_constant _}, _, _)}]
       when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2]
+    | [{exp_desc = Texp_construct(_, _, {cstr_tag = Cstr_constant _}, _, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; {exp_desc = Texp_variant(_, None)}]
@@ -489,7 +509,7 @@ let extract_float = function
 
 (*> JOCAML *)
 let name_join_pattern default p = match p.pat_desc with
-  | Tpat_var id   | Tpat_alias (_,id) -> id
+  | Tpat_var (id,_)   | Tpat_alias (_,id,_) -> id
   | _ -> Ident.create default
 (*< JOCAML *)
 
@@ -497,17 +517,17 @@ let rec name_pattern default = function
     [] -> Ident.create default
   | (p, e) :: rem ->
       match p.pat_desc with
-        Tpat_var id -> id
-      | Tpat_alias(p, id) -> id
+        Tpat_var (id, _) -> id
+      | Tpat_alias(p, id, _) -> id
       | _ -> name_pattern default rem
 
 (* Push the default values under the functional abstractions *)
 
 let rec push_defaults loc bindings pat_expr_list partial =
   match pat_expr_list with
-    [pat, ({exp_desc = Texp_function(pl,partial)} as exp)] ->
+    [pat, ({exp_desc = Texp_function(l, pl,partial)} as exp)] ->
       let pl = push_defaults exp.exp_loc bindings pl partial in
-      [pat, {exp with exp_desc = Texp_function(pl, partial)}]
+      [pat, {exp with exp_desc = Texp_function(l, pl, partial)}]
   | [pat, {exp_desc = Texp_let
              (Default, cases, ({exp_desc = Texp_function _} as e2))}] ->
       push_defaults loc (cases :: bindings) [pat, e2] partial
@@ -521,18 +541,19 @@ let rec push_defaults loc bindings pat_expr_list partial =
       [pat, exp]
   | (pat, exp) :: _ when bindings <> [] ->
       let param = name_pattern "param" pat_expr_list in
+      let name = Ident.name param in
       let exp =
         { exp with exp_loc = loc; exp_desc =
           Texp_match
             ({exp with exp_type = pat.pat_type; exp_desc =
-              Texp_ident (Path.Pident param,
+              Texp_ident (Path.Pident param, mknoloc (Longident.Lident name),
                           {val_type = pat.pat_type; val_kind = Val_reg;
-                           val_loc = Location.none;
+                           Types.val_loc = Location.none;
                           })},
              pat_expr_list, partial) }
       in
       push_defaults loc bindings
-        [{pat with pat_desc = Tpat_var param}, exp] Total
+        [{pat with pat_desc = Tpat_var (param, mknoloc name)}, exp] Total
   | _ ->
       pat_expr_list
 
@@ -613,7 +634,7 @@ let rec transl_exp e =
 
 and transl_exp0 e =
   match e.exp_desc with
-    Texp_ident(path, {val_kind = Val_prim p}) ->
+    Texp_ident(path, _, {val_kind = Val_prim p}) ->
       let public_send = p.prim_name = "%send" in
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
@@ -626,11 +647,11 @@ and transl_exp0 e =
                   Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos], e.exp_loc))
       else
         transl_primitive p
-  | Texp_ident(path, {val_kind = Val_anc _}) ->
+  | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident
-      (path,
-       {val_kind = Val_reg|Val_self _|Val_channel (_,_)|Val_alone _}) ->
+      (path, _,
+       {val_kind = Val_reg|Val_self _}) ->
       transl_path path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
@@ -640,10 +661,9 @@ and transl_exp0 e =
         rec_flag pat_expr_list (event_before body (transl_exp body))
 (*> JOCAML *)
   | Texp_def (d,body) ->
-      do_transl_def d (transl_exp body)
-  | Texp_loc (d,body) -> assert false
-(*>JOCAML*)
-  | Texp_function (pat_expr_list, partial) ->
+      do_transl_def d (fun () -> transl_exp body)
+(*<JOCAML*)
+  | Texp_function (_, pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
           (function repr ->
@@ -651,23 +671,9 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-(* two small optimizations *)
-  | Texp_apply
-      ({exp_desc = Texp_ident(path, {val_kind = Val_alone id})},
-       [Some arg,_])
-      ->
-        Lapply (Lvar id,[transl_exp arg],e.exp_loc)
-  | Texp_apply
-      ({exp_desc = Texp_ident(path, {val_kind = Val_channel (auto,idx)})},
-       [Some arg,_])
-      ->
-        Transljoin.local_send_sync
-	  auto idx (transl_exp arg)
-	  e.exp_loc
-(*<JOCAML*)
-  | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, oargs)
+  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})}, oargs)
     when List.length oargs >= p.prim_arity
-    && List.for_all (fun (arg,_) -> arg <> None) oargs ->
+    && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
       let wrap f =
         if args' = []
@@ -676,7 +682,7 @@ and transl_exp0 e =
       in
       let wrap0 f =
         if args' = [] then f else wrap f in
-      let args = List.map (function Some x, _ -> x | _ -> assert false) args in
+      let args = List.map (function _, Some x, _ -> x | _ -> assert false) args in
       let argl = transl_list transl_exp args in
       let public_send = p.prim_name = "%send"
         || not !Clflags.native_code && p.prim_name = "%sendcache"in
@@ -703,7 +709,24 @@ and transl_exp0 e =
             end
       end
   | Texp_apply(funct, oargs) ->
-      event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
+(* two small optimizations *)
+      begin match funct.exp_desc,oargs with
+      | Texp_ident(Pident id, _, {val_kind = Val_reg}),
+         [_,Some arg,_] ->
+           begin match get_chan_env id with
+           | Some (Alone id) ->
+               Lapply (Lvar id,[transl_exp arg],e.exp_loc)
+           | Some (Chan (id,idx)) ->
+               Transljoin.local_send_sync
+	         id idx (transl_exp arg)
+	         e.exp_loc
+           | None ->
+               event_after e
+                 (transl_apply (transl_exp funct) oargs e.exp_loc)
+           end
+      | _,_ ->
+          event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
+      end
   | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
       Matching.for_multiple_match (id_lam,e.exp_loc)
         (transl_list transl_exp argl)
@@ -727,7 +750,7 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(cstr, args) ->
+  | Texp_construct(_, _, cstr, args, _) ->
       let ll = transl_list transl_exp args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
@@ -754,17 +777,17 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable),
                   [Lconst(Const_base(Const_int tag)); lam])
       end
-  | Texp_record ((lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
+  | Texp_record ((_, _, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
   | Texp_record ([], _) ->
       fatal_error "Translcore.transl_exp: bad Texp_record"
-  | Texp_field(arg, lbl) ->
+  | Texp_field(arg, _, _, lbl) ->
       let access =
         match lbl.lbl_repres with
           Record_regular -> Pfield lbl.lbl_pos
         | Record_float -> Pfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp arg])
-  | Texp_setfield(arg, lbl, newval) ->
+  | Texp_setfield(arg, _, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
@@ -801,14 +824,15 @@ and transl_exp0 e =
       Lsequence(transl_exp expr1, event_before expr2 (transl_exp expr2))
   | Texp_while(cond, body) ->
       Lwhile(transl_exp cond, event_before body (transl_exp body))
-  | Texp_for(param, low, high, dir, body) ->
+  | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp low, transl_exp high, dir,
            event_before body (transl_exp body))
   | Texp_when(cond, body) ->
       event_before cond
         (Lifthenelse(transl_exp cond, event_before body (transl_exp body),
                      staticfail))
-  | Texp_send(expr, met) ->
+  | Texp_send(_, _, Some exp) -> transl_exp exp
+  | Texp_send(expr, met, None) ->
       let obj = transl_exp expr in
       let lam =
         match met with
@@ -819,11 +843,11 @@ and transl_exp0 e =
             Lsend (kind, tag, obj, cache, e.exp_loc)
       in
       event_after e lam
-  | Texp_new (cl, _) ->
+  | Texp_new (cl, _, _) ->
       Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit], Location.none)
-  | Texp_instvar(path_self, path) ->
+  | Texp_instvar(path_self, path, _) ->
       Lprim(Parrayrefu Paddrarray, [transl_path path_self; transl_path path])
-  | Texp_setinstvar(path_self, path, expr) ->
+  | Texp_setinstvar(path_self, path, _, expr) ->
       transl_setinstvar (transl_path path_self) path expr
   | Texp_override(path_self, modifs) ->
       let cpy = Ident.create "copy" in
@@ -831,11 +855,11 @@ and transl_exp0 e =
            Lapply(Translobj.oo_prim "copy", [transl_path path_self],
                   Location.none),
            List.fold_right
-             (fun (path, expr) rem ->
+             (fun (path, _, expr) rem ->
                 Lsequence(transl_setinstvar (Lvar cpy) path expr, rem))
              modifs
              (Lvar cpy))
-  | Texp_letmodule(id, modl, body) ->
+  | Texp_letmodule(id, _, modl, body) ->
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
   | Texp_pack modl ->
       !transl_module Tcoerce_none None modl
@@ -853,12 +877,12 @@ and transl_exp0 e =
       | Texp_constant
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
-      | Texp_function(_, _)
-      | Texp_construct ({cstr_arity = 0}, _)
+      | Texp_function(_, _, _)
+      | Texp_construct (_, _, {cstr_arity = 0}, _, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
           Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
-      | Texp_ident(_, _) -> (* according to the type *)
+      | Texp_ident(_, _, _) -> (* according to the type *)
           begin match e.exp_type.desc with
 	  | Tproc _ -> assert false (* By typing *)
           (* the following may represent a float/forward/lazy: need a
@@ -895,12 +919,13 @@ and transl_exp0 e =
           let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
           Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
       end
-  | Texp_object (cs, cty, meths) ->
+  | Texp_object (cs, meths) ->
+      let cty = cs.cstr_type in
       let cl = Ident.create "class" in
       !transl_object cl meths
-        { cl_desc = Tclass_structure cs;
+        { cl_desc = Tcl_structure cs;
           cl_loc = e.exp_loc;
-          cl_type = Tcty_signature cty;
+          cl_type = Cty_signature cty;
           cl_env = e.exp_env }
 (*> JOCAML *)
   | Texp_spawn (e) -> transl_spawn e
@@ -928,8 +953,7 @@ and transl_proc die sync p = match p.exp_desc with
       (fun e -> Transljoin.reply_handler sync p transl_exp e)
       rec_flag pat_expr_list (transl_proc die sync body)
 | Texp_def (d,body) ->
-    do_transl_def d (transl_proc die sync body)
-| Texp_loc (d,body) -> assert false
+    do_transl_def d (fun () -> transl_proc die sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (Transljoin.reply_handler sync p transl_exp cond,
@@ -957,7 +981,7 @@ and transl_proc die sync p = match p.exp_desc with
       None
       (Transljoin.reply_handler sync p transl_exp arg)
       (transl_cases (transl_proc die sync) pat_expr_list) partial
-| Texp_for(param, low, high, dir, body) ->
+| Texp_for(param, _, low, high, dir, body) ->
     assert (sync = None) ;
     let lam_low = transl_exp low
     and lam_high = transl_exp high in
@@ -984,15 +1008,15 @@ and transl_proc die sync p = match p.exp_desc with
             (List.fold_right transl_fork forks
                (transl_proc false sync psync))
       end
-| Texp_asyncsend (_,_) | Texp_reply (_,_) | Texp_null  ->
+| Texp_asyncsend (_,_) | Texp_reply _ | Texp_null  ->
     transl_simple_proc die sync p
-| Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
-  Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
-  Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
-  Texp_while (_, _)|Texp_array _|
-  Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
-  Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
-  Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
+| Texp_spawn _|Texp_object _|Texp_lazy _|Texp_assert _|
+  Texp_letmodule  _|Texp_override _|Texp_setinstvar _|
+  Texp_instvar _|Texp_new _|Texp_send _|
+  Texp_while _|Texp_array _|
+  Texp_setfield _|Texp_field _|Texp_record _|
+  Texp_variant _|Texp_construct _|Texp_tuple _|Texp_try _|
+  Texp_apply _|Texp_function _|Texp_constant _|Texp_ident _|
   Texp_assertfalse | Texp_pack _
   ->
     Location.print_error Format.err_formatter p.exp_loc ;
@@ -1011,8 +1035,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
       transl_exp
       rec_flag pat_expr_list (transl_simple_proc die sync body)
 | Texp_def (d,body) ->
-    do_transl_def d (transl_simple_proc die sync body)
-| Texp_loc (d,body) -> assert false
+    do_transl_def d (fun () -> transl_simple_proc die sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (transl_exp cond,
@@ -1036,7 +1059,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
       (transl_exp arg)
       (transl_cases
          (transl_simple_proc die sync) pat_expr_list) partial
-| Texp_for(param, low, high, dir, body) ->
+| Texp_for(param, _, low, high, dir, body) ->
     assert (sync=None) ;
     Lfor(param, transl_exp low, transl_exp high, dir,
          event_before body (transl_spawn body)) (* loop body should not fail *)
@@ -1045,20 +1068,26 @@ and transl_simple_proc die sync p = match p.exp_desc with
     make_sequence
       (transl_simple_proc false sync p1)
       (transl_simple_proc die sync p2)
-| Texp_asyncsend
-    ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
-      (if die then Transljoin.local_tail_send_async
-      else Transljoin.local_send_async)
-        auto num (transl_exp e2) p.exp_loc
-| Texp_asyncsend
-    ({exp_desc=Texp_ident (_,{val_kind=Val_alone (guard)})},e2) ->
-      (if die then Transljoin.local_tail_send_alone
-      else Transljoin.local_send_alone)
-        guard (transl_exp e2) p.exp_loc
 | Texp_asyncsend (e1,e2) ->
-    (if die then Transljoin.tail_send_async else Transljoin.send_async)
-      (transl_exp e1) (transl_exp e2) p.exp_loc
-| Texp_reply (e, id) ->
+    let default e1 e2 =
+      (if die then Transljoin.tail_send_async else Transljoin.send_async)
+      (transl_exp e1) (transl_exp e2) p.exp_loc in
+    begin match e1.exp_desc with
+    | Texp_ident (Pident id,_,{val_kind=Val_reg}) ->
+        begin match get_chan_env id with
+        | Some (Alone id) ->
+            (if die then Transljoin.local_tail_send_alone
+            else Transljoin.local_send_alone)
+              id (transl_exp e2) p.exp_loc
+        | Some (Chan (id,idx)) ->
+            (if die then Transljoin.local_tail_send_async
+            else Transljoin.local_send_async)
+              id idx (transl_exp e2) p.exp_loc
+        | None -> default e1 e2
+        end
+    | _ -> default e1 e2
+    end
+| Texp_reply (e, id, _) ->
     begin match sync with
     | Some main_id when main_id = id -> transl_exp e
     | _ ->
@@ -1068,19 +1097,19 @@ and transl_simple_proc die sync p = match p.exp_desc with
     end
 | Texp_null -> lambda_unit
 (* Plain expression are errors *)
-| Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
-  Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
-  Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
-  Texp_while (_, _)|Texp_array _|
-  Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
-  Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
-  Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
+| Texp_spawn _|Texp_object _|Texp_lazy _|Texp_assert _|
+  Texp_letmodule _|Texp_override _|Texp_setinstvar _|
+  Texp_instvar _|Texp_new _|Texp_send _|
+  Texp_while _|Texp_array _|
+  Texp_setfield _|Texp_field _|Texp_record _|
+  Texp_variant _|Texp_construct _|Texp_tuple _|Texp_try _|
+  Texp_apply _|Texp_function _|Texp_constant _|Texp_ident _|
   Texp_assertfalse|Texp_pack _
  -> assert false
 
 (* Parameter list for a guarded process *)
 
-and transl_reaction (name,_) (Reac reac) =
+and transl_reaction (name,_) reac =
   let (x, _ , actuals, idpats, p) = reac in
 (* Principal continuation, as computed by typing *)
   let sync = Transljoin.principal p in
@@ -1119,14 +1148,15 @@ and transl_reaction (name,_) (Reac reac) =
   x, sync, lam
 
 and transl_dispatcher disp = 
-  let Disp (d_id, chan, cls, partial) = disp in
+  let d_id, (chan,_) , cls, partial = disp in
   let z = Ident.create "#z#" in
-  let rhs chan =
-    if chan.jchannel_sync then match  chan.jchannel_id with
+
+  let rhs (chan,opt) =
+    if chan.jchannel_sync then match opt with
     | Chan (name, i) ->
         Transljoin.local_send_sync name i (Lvar z) Location.none
     | Alone g -> Lapply (Lvar g, [Lvar z],Location.none)
-    else match chan.jchannel_id with
+    else match opt with
     | Chan (name, i) ->
         Transljoin.local_tail_send_async name i
           (Lvar z)  Location.none
@@ -1136,28 +1166,28 @@ and transl_dispatcher disp =
   let body =
     try
       let allchans =
-          List.map
-            (fun (p, chan) -> match chan.jchannel_id with
-            | Chan (auto,i) -> auto,(p,i)
-            | Alone _ -> raise Exit)
-            cls in
-        match allchans with
-        | [] -> assert false
-        | (auto,_)::_ ->
-            let cls =
-              List.map
-                (fun (_,(p,i)) ->
-                  p,Lconst (Const_base (Const_int i)))
-                allchans in
-            (if chan.jchannel_sync then
-              Transljoin.local_send_sync2
-            else
-              Transljoin.local_tail_send_async2)
-              auto
-              (Matching.for_function
-                 (id_lam,Location.none) None (Lvar z)
-                 cls partial)
-              (Lvar z)
+        List.map
+          (fun (p, (chan,opt)) -> match opt with
+          | Chan (auto,i) -> auto,(p,i)
+          | Alone _ -> raise Exit)
+          cls in
+      match allchans with
+      | [] -> assert false
+      | (auto,_)::_ ->
+          let cls =
+            List.map
+              (fun (_,(p,i)) ->
+                p,Lconst (Const_base (Const_int i)))
+              allchans in
+          (if chan.jchannel_sync then
+            Transljoin.local_send_sync2
+          else
+            Transljoin.local_tail_send_async2)
+            auto
+            (Matching.for_function
+               (id_lam,Location.none) None (Lvar z)
+               cls partial)
+            (Lvar z)
     with Exit ->
       let cls = List.map (fun (p, chan) -> p, rhs chan) cls in
       Matching.for_function
@@ -1166,7 +1196,7 @@ and transl_dispatcher disp =
   let lam =  Lfunction (Curried, params, body) in
   d_id, chan, lam
 
-and transl_forwarder (Fwd reac) =
+and transl_forwarder reac =
   let (x, jpat, _, idpats, p) = reac in
   let sync = Transljoin.principal p in
   let body =
@@ -1266,11 +1296,11 @@ and transl_apply lam sargs loc =
     | [] ->
         lapply lam (List.rev_map fst args)
   in
-  build_apply lam [] (List.map (fun (x,o) -> may_map transl_exp x, o) sargs)
+  build_apply lam [] (List.map (fun (l, x,o) -> may_map transl_exp x, o) sargs)
 
 and transl_function loc untuplify_fn repr partial pat_expr_list =
   match pat_expr_list with
-    [pat, ({exp_desc = Texp_function(pl,partial')} as exp)]
+    [pat, ({exp_desc = Texp_function(_, pl,partial')} as exp)]
     when Parmatch.fluid pat ->
       let param = name_pattern "param" pat_expr_list in
       let ((_, params), body) =
@@ -1314,10 +1344,9 @@ and transl_let reply_handler transl_exp rec_flag pat_expr_list body =
   | Recursive ->
       let idlist =
         List.map
-          (fun (pat, expr) ->
-            match pat.pat_desc with
-              Tpat_var id -> id
-            | Tpat_alias ({pat_desc=Tpat_any}, id) -> id
+          (fun (pat, expr) -> match pat.pat_desc with
+              Tpat_var (id,_) -> id
+            | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
       let transl_case (pat, expr) id =
@@ -1328,16 +1357,27 @@ and transl_let reply_handler transl_exp rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 (*> JOCAML *)
 
-and do_transl_def autos body =
-      
+(* Compile pattern matching in join patterns *)
+
+and do_transl_def autos kbody =
+(* Precompile automata, this includes PM compilation *)
+  let autos = List.map Transljoin.compile_auto autos in
+(* Add info and compile body *)
+  let saved_chan_env = !chan_env in
+  List.iter
+    (fun a ->
+      add_chan_env
+        (List.map (fun (id,(_,opt)) ->id,opt) a.cauto_original))
+    autos ;
+  let body = kbody () in
 (* compile (and name) real guarded processes *)
   let reactions =
     List.map
       (fun auto ->
-        if auto.jauto_nchans = 0 then []
+        if auto.cauto_nchans = 0 then []
         else
-          let _,reacs,_ = auto.jauto_desc in
-          List.map (transl_reaction auto.jauto_name) reacs)
+          let reacs = auto.cauto_reactions in
+          List.map (transl_reaction auto.cauto_name) reacs)
       autos in
 
 (* compile firing of guarded processes (aka automaton table) *)
@@ -1359,13 +1399,13 @@ and do_transl_def autos body =
   let disps =
     List.map
       (fun auto ->
-        let disps,_,_ = auto.jauto_desc in
+        let disps = auto.cauto_dispatchers in
         List.map transl_dispatcher disps)
       autos
   and fwds =
     List.map
       (fun auto ->
-        let _,_,fwds = auto.jauto_desc in
+        let fwds = auto.cauto_forwarders in
         List.map transl_forwarder fwds)
       autos in
   let r =
@@ -1377,11 +1417,11 @@ and do_transl_def autos body =
       Transljoin.create_forwarders autos disps fwds r in
 
 (* create channels structures *)
-  let r =
-    List.fold_right Transljoin.create_channels autos r in
+  let r = List.fold_right Transljoin.create_channels autos r in
 (* create automata structures *)
-  let r =
-    List.fold_right Transljoin.create_auto autos r in
+  let r = List.fold_right Transljoin.create_auto autos r in
+(* Restore channel env *)
+  chan_env := saved_chan_env ;
   r
 
 
@@ -1410,11 +1450,11 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
         done
     end;
     List.iter
-      (fun (lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
+      (fun (_, _, lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
       lbl_expr_list;
     let ll = Array.to_list lv in
     let mut =
-      if List.exists (fun (lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
+      if List.exists (fun (_, _, lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
       then Mutable
       else Immutable in
     let lam =
@@ -1439,7 +1479,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let rec update_field (lbl, expr) cont =
+    let rec update_field (_, _, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
@@ -1456,8 +1496,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 
 (*> JOCAML *)
 (* For external usage *)
-let transl_def d k = do_transl_def d k
-and transl_loc d k = assert false
+let transl_def d k = do_transl_def d (fun () -> k)
 and transl_let = transl_let id_lam transl_exp
 (*< JOCAML *)
 

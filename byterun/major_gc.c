@@ -233,7 +233,11 @@ static void mark_slice (intnat work)
           weak_prev = &Field (cur, 0);
           work -= Whsize_hd (hd);
         }else{
-          /* Subphase_weak1 is done.  Start removing dead weak arrays. */
+          /* Subphase_weak1 is done.
+             Handle finalised values and start removing dead weak arrays. */
+          gray_vals_cur = gray_vals_ptr;
+          caml_final_update ();
+          gray_vals_ptr = gray_vals_cur;
           caml_gc_subphase = Subphase_weak2;
           weak_prev = &caml_weak_list_head;
         }
@@ -254,10 +258,7 @@ static void mark_slice (intnat work)
           }
           work -= 1;
         }else{
-          /* Subphase_weak2 is done.  Handle finalised values. */
-          gray_vals_cur = gray_vals_ptr;
-          caml_final_update ();
-          gray_vals_ptr = gray_vals_cur;
+          /* Subphase_weak2 is done.  Go to Subphase_final. */
           caml_gc_subphase = Subphase_final;
         }
       }

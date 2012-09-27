@@ -33,4 +33,8 @@ Error: Multiple definition of the type name t.
   sig module T : sig type exp type arg end val f : T.exp -> T.arg end
 # module M : sig type exp = string type arg = int end
 # module type S' = sig val f : M.exp -> M.arg end
+#     Characters 41-58:
+  module type S = sig type 'a t end with type 'a t := unit;; (* Fails *)
+                                         ^^^^^^^^^^^^^^^^^
+Error: Only type constructors with identical parameters can be substituted.
 # 

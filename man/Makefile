@@ -18,5 +18,6 @@ DIR=$(MANDIR)/man$(MANEXT)
 
 install:
 	for i in *.m; do cp $$i $(DIR)/`basename $$i .m`.$(MANEXT); done
-	echo '.so man$(MANEXT)/jocamlc.$(MANEXT)' > $(DIR)/jocamlc.opt.$(MANEXT)
-	echo '.so man$(MANEXT)/jocamlopt.$(MANEXT)' > $(DIR)/jocamlopt.opt.$(MANEXT)
+	echo '.so man$(MANEXT)/ocamlc.$(MANEXT)' > $(DIR)/ocamlc.opt.$(MANEXT)
+	echo '.so man$(MANEXT)/ocamlopt.$(MANEXT)' > $(DIR)/ocamlopt.opt.$(MANEXT)
+	echo '.so man$(MANEXT)/ocamlcp.$(MANEXT)' > $(DIR)/ocamloptp.$(MANEXT)

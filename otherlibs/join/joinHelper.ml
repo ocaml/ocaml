@@ -251,6 +251,6 @@ let init_server_with_register cfg id v =
 (* Miscellaneous functions *)
 
 let wait_forever () =
-  def wait() & never_sent() = reply to wait in
+  def wait() & _never_sent() = reply to wait in
   wait ();
   exit 0 (* never reached *)

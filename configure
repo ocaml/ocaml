@@ -303,6 +303,7 @@ esac
 
 bytecc="$cc"
 mkexe="\$(BYTECC)"
+mkexedebugflag="-g"
 bytecccompopts=""
 bytecclinkopts=""
 dllccompopts=""
@@ -320,7 +321,7 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
-    bytecccompopts="-fno-defer-pop -no-cpp-precomp $gcc_warnings"
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
     mathlib=""
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
@@ -367,7 +368,7 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $withsharedlibs = yes; then
-      flexlink="flexlink -chain cygwin -merge-manifest"
+      flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
         echo "flexlink not found: native shared libraries won't be available"
@@ -375,6 +376,7 @@ case "$bytecc,$host" in
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
+        mkexedebugflag="-link -g"
       fi
     fi
     exe=".exe"
@@ -674,6 +676,7 @@ if test $withsharedlibs = "yes"; then
   case "$host" in
     *-*-cygwin*)                  natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
+    i[3456]86-*-gnu*)             natdynlink=true;;
     x86_64-*-linux*)              natdynlink=true;;
     i[3456]86-*-darwin[89].*)     natdynlink=true;;
     i[3456]86-*-darwin*)
@@ -681,8 +684,8 @@ if test $withsharedlibs = "yes"; then
         natdynlink=true
       fi;;
     x86_64-*-darwin*)             natdynlink=true;;
-    powerpc64-*-linux*)           natdynlink=true;;
-    sparc-*-linux*)               natdynlink=true;;
+    powerpc*-*-linux*)            natdynlink=true;;
+    sparc*-*-linux*)              natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
     i[345]86-*-freebsd*)          natdynlink=true;;
@@ -1166,6 +1169,11 @@ if sh ./hasgot -i sys/types.h -i sys/mman.h && sh ./hasgot mmap munmap; then
   echo "#define HAS_MMAP" >> s.h
 fi
 
+if sh ./hasgot pwrite; then
+  echo "pwrite() found"
+  echo "#define HAS_PWRITE" >> s.h
+fi
+
 nargs=none
 for i in 5 6; do
   if sh ./trycompile -DNUM_ARGS=${i} gethostbyname.c; then nargs=$i; break; fi
@@ -1603,11 +1611,14 @@ fi
 
 asm_cfi_supported=false
 
-export aspp
+export as aspp
 
 if sh ./tryassemble cfi.S; then
   echo "#define ASM_CFI_SUPPORTED" >> m.h
   asm_cfi_supported=true
+  echo "Assembler supports CFI"
+else
+  echo "Assembler does not support CFI"
 fi
 
 # Final twiddling of compiler options to work around known bugs
@@ -1677,6 +1688,7 @@ echo "TOOLCHAIN=cc" >> Makefile
 echo "NATDYNLINK=$natdynlink" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
+echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
@@ -1773,8 +1785,8 @@ fi
 if test $has_tk = true; then
 echo "Configuration for the \"labltk\" library:"
 echo "        use tcl/tk version ....... $tcl_version"
-echo "        options for compiling .... $tk_defs $x11_includes"
-echo "        options for linking ...... $tk_libs $x11_link"
+echo "        options for compiling .... $tk_defs $tk_x11_include"
+echo "        options for linking ...... $tk_libs $tk_x11_libs"
 else
 echo "The \"labltk\" library: not supported"
 fi

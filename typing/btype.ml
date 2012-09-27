@@ -57,6 +57,8 @@ let newmarkedgenvar () =
 let is_Tvar = function {desc=Tvar _} -> true | _ -> false
 let is_Tunivar = function {desc=Tunivar _} -> true | _ -> false
 
+let dummy_method = "*dummy method*"
+
 (**** Representative of a type ****)
 
 let rec field_kind_repr =
@@ -123,6 +125,14 @@ let rec row_more row =
   match repr row.row_more with
   | {desc=Tvariant row'} -> row_more row'
   | ty -> ty
+
+let row_fixed row =
+  let row = row_repr row in
+  row.row_fixed ||
+  match (repr row.row_more).desc with
+    Tvar _ | Tnil -> false
+  | Tunivar _ | Tconstr _ -> true
+  | _ -> assert false
 
 let static_row row =
   let row = row_repr row in
@@ -256,8 +266,8 @@ let rec norm_univar ty =
   | Ttuple (ty :: _)   -> norm_univar ty
   | _                  -> assert false
 
-let rec copy_type_desc f = function
-    Tvar _              -> Tvar None (* forget the name *)
+let rec copy_type_desc ?(keep_names=false) f = function
+    Tvar _ as ty        -> if keep_names then ty else Tvar None
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
   | Ttuple l            -> Ttuple (List.map f l)
   | Tconstr (p, l, _)   -> Tconstr (p, List.map f l, ref Mnil)
@@ -270,7 +280,7 @@ let rec copy_type_desc f = function
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f ty.desc
   | Tsubst ty           -> assert false
-  | Tunivar _ as ty     -> ty (* keep the name *)
+  | Tunivar _ as ty     -> ty (* always keep the name *)
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
       Tpoly (f ty, tyl)
@@ -352,11 +362,11 @@ let unmark_class_signature sign =
 
 let rec unmark_class_type =
   function
-    Tcty_constr (p, tyl, cty) ->
+    Cty_constr (p, tyl, cty) ->
       List.iter unmark_type tyl; unmark_class_type cty
-  | Tcty_signature sign ->
+  | Cty_signature sign ->
       unmark_class_signature sign
-  | Tcty_fun (_, ty, cty) ->
+  | Cty_fun (_, ty, cty) ->
       unmark_type ty; unmark_class_type cty
 
 

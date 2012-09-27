@@ -12,7 +12,7 @@
 
 /* $Id$ */
 
-#ifndef SYS_solaris
+#if defined(SYS_solaris) || defined(SYS_elf)
 #define Call_gen_code _call_gen_code
 #define Caml_c_call _caml_c_call
 #else

@@ -300,7 +300,7 @@ and 'a v = 'a u t constraint 'a = int
 Error: Constraints are not satisfied in this type.
        Type 'a u t should be an instance of g t
 # type 'a u = 'a constraint 'a = g
-and 'a v = 'a u t constraint 'a = int
+and 'a v = 'a u t constraint 'a = g
 #     Characters 38-58:
   type 'a u = < m : 'a v > and 'a v = 'a list u;;
       ^^^^^^^^^^^^^^^^^^^^
@@ -620,9 +620,9 @@ val transf_alist : (int -> t) -> ('a * t) list -> ('a * t) list = <fun>
 val l : t = {f = <lazy>}
 #     type t = { f : 'a. 'a -> unit; }
 # - : t = {f = <fun>}
-# Characters 3-16:
-  {f=fun ?x y -> y};; (* fail *)
-     ^^^^^^^^^^^^^
+# Characters 19-20:
+  let f ?x y = y in {f};; (* fail *)
+                     ^
 Error: This field value has type unit -> unit which is less general than
          'a. 'a -> unit
 #               module Polux :
@@ -632,4 +632,11 @@ Error: This field value has type unit -> unit which is less general than
     class alias : object method alias : 'a t -> 'a end
     val f : < m : 'a. 'a t > -> < m : 'a. 'a >
   end
+#       Exception: Pervasives.Exit.
+#   Exception: Pervasives.Exit.
+#   Exception: Pervasives.Exit.
+#       Characters 20-44:
+  type 'x t = < f : 'y. 'y t >;;
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the definition of t, type 'y t should be 'x t
 # 

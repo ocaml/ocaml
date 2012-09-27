@@ -288,8 +288,8 @@ and rw_exp iflag sexp =
 
   | Pexp_poly (sexp, _) -> rewrite_exp iflag sexp
 
-  | Pexp_object (_, fieldl) ->
-      List.iter (rewrite_class_field iflag) fieldl
+  | Pexp_object cl ->
+      List.iter (rewrite_class_field iflag) cl.pcstr_fields
 
   | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
   | Pexp_open (_, e) -> rewrite_exp iflag e
@@ -325,24 +325,25 @@ and rewrite_trymatching l =
 
 (* Rewrite a class definition *)
 
-and rewrite_class_field iflag =
-  function
+and rewrite_class_field iflag cf =
+  match cf.pcf_desc with
     Pcf_inher (_, cexpr, _)     -> rewrite_class_expr iflag cexpr
-  | Pcf_val (_, _, _, sexp, _)  -> rewrite_exp iflag sexp
-  | Pcf_meth (_, _, _, ({pexp_desc = Pexp_function _} as sexp), _) ->
+  | Pcf_val (_, _, _, sexp)  -> rewrite_exp iflag sexp
+  | Pcf_meth (_, _, _, ({pexp_desc = Pexp_function _} as sexp)) ->
       rewrite_exp iflag sexp
-  | Pcf_meth (_, _, _, sexp, loc) ->
+  | Pcf_meth (_, _, _, sexp) ->
+      let loc = cf.pcf_loc in
       if !instr_fun && not loc.loc_ghost then insert_profile rw_exp sexp
       else rewrite_exp iflag sexp
   | Pcf_init sexp ->
       rewrite_exp iflag sexp
-  | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _  -> ()
+  | Pcf_valvirt _ | Pcf_virt _ | Pcf_constr _  -> ()
 
 and rewrite_class_expr iflag cexpr =
   match cexpr.pcl_desc with
     Pcl_constr _ -> ()
-  | Pcl_structure (_, fields) ->
-      List.iter (rewrite_class_field iflag) fields
+  | Pcl_structure st ->
+      List.iter (rewrite_class_field iflag) st.pcstr_fields
   | Pcl_fun (_, _, _, cexpr) ->
       rewrite_class_expr iflag cexpr
   | Pcl_apply (cexpr, exprs) ->

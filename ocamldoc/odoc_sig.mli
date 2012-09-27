@@ -46,7 +46,7 @@ module Signature_search :
       (** This function returns the Types.cltype_declaration  for the class type whose name is given,
          in the given table. 
          @raise Not_found if error.*)
-      val search_class_type : tab -> string -> Types.cltype_declaration
+      val search_class_type : tab -> string -> Types.class_type_declaration
 
       (** This function returns the Types.module_type  for the module whose name is given,
          in the given table. 
@@ -155,8 +155,8 @@ module Analyser :
             Odoc_types.info option
 
       (** Return a module_type_kind from a Parsetree.module_type and a Types.module_type *)
-      val analyse_module_type_kind : 
-          Odoc_env.env -> Odoc_name.t -> 
+      val analyse_module_type_kind :
+          ?erased:Odoc_name.Set.t -> Odoc_env.env -> Odoc_name.t ->
             Parsetree.module_type -> Types.module_type ->
               Odoc_module.module_type_kind
 

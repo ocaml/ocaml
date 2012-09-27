@@ -1,0 +1,25 @@
+
+#   type t = { x : int; y : int; }
+# Characters 5-6:
+  {x=3;z=2};;
+       ^
+Error: Unbound record field label z
+# Characters 9-10:
+  fun {x=3;z=2} -> ();;
+           ^
+Error: Unbound record field label z
+#     Characters 26-34:
+  {x=3; contents=2};;
+        ^^^^^^^^
+Error: The record field label Pervasives.contents belongs to the type 
+       'a ref but is mixed here with labels of type t
+#     type u = private { mutable u : int; }
+# Characters 0-5:
+  {u=3};;
+  ^^^^^
+Error: Cannot create values of the private type u
+# Characters 11-12:
+  fun x -> x.u <- 3;;
+             ^
+Error: Cannot assign field u of the private type u
+# 

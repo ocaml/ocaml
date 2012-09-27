@@ -192,7 +192,6 @@ static void stub_serialize(value v,
     extern_invalid_argument("output_value: stub_value");
   }
   pos = reloc_pointer(v) ;
-  /*  fprintf(stderr, "Reloc -> %i\n", (int)pos) ; */
   caml_serialize_int_4(pos);
   /* 3 values */
   *wsize_32 = 3 * 4 ;
@@ -204,7 +203,6 @@ static uintnat stub_deserialize(void * dst) {
     mlsize_t pos = caml_deserialize_uint_4();
     value *p = dst ;
     value *src = (value *)Field(used_pointers, pos) ;
-    /*    fprintf(stderr, "Found: %i\n", (int)pos) ; */
     /* Only item at index 1 can be a block, cf. alloc_sub below */
     p[0] = src[0] ;
     caml_initialize(p+1,src[1]) ;

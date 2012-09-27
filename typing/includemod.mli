@@ -14,8 +14,8 @@
 
 (* Inclusion checks for the module language *)
 
-open Types
 open Typedtree
+open Types
 open Format
 
 val modtypes: Env.t -> module_type -> module_type -> module_coercion
@@ -36,7 +36,7 @@ type symptom =
   | Modtype_permutation
   | Interface_mismatch of string * string
   | Class_type_declarations of
-      Ident.t * cltype_declaration * cltype_declaration *
+      Ident.t * class_type_declaration * class_type_declaration *
       Ctype.class_match_failure list
   | Class_declarations of
       Ident.t * class_declaration * class_declaration *
