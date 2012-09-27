@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: arg.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 type key = string
 type doc = string
@@ -219,7 +219,7 @@ let parse l f msg =
   | Help msg -> printf "%s" msg; exit 0;
 ;;
 
-let rec second_word s =
+let second_word s =
   let len = String.length s in
   let rec loop n =
     if n >= len then len

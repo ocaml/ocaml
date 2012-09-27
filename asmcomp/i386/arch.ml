@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: arch.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Machine-specific command-line options *)
 
@@ -22,7 +22,6 @@ let command_line_options =
 
 (* Specific operations for the Intel 386 processor *)
 
-open Misc
 open Format
 
 type addressing_mode =

@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: unix.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* An alternate implementation of the Unix module from ../unix
    which is safe in conjunction with bytecode threads. *)
@@ -35,6 +35,11 @@ type resumption_status =
   | Resumed_io
   | Resumed_select of file_descr list * file_descr list * file_descr list
   | Resumed_wait of int * process_status
+
+(* to avoid warning *)
+let _ = [Resumed_wakeup; Resumed_delay; Resumed_join;
+         Resumed_io; Resumed_select ([], [], []);
+         Resumed_wait (0, WEXITED 0)]
 
 external thread_initialize : unit -> unit = "thread_initialize"
 external thread_wait_read : file_descr -> unit = "thread_wait_read"

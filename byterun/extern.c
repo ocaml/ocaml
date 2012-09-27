@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: extern.c 12959 2012-09-27 13:12:51Z maranget $ */
 
 /* Structured output */
 
@@ -69,6 +69,11 @@ static struct extern_item * extern_stack_limit = extern_stack_init
 /* Forward declarations */
 
 static void extern_out_of_memory(void);
+static void extern_failwith(char *msg);
+static void extern_stack_overflow(void);
+static struct code_fragment * extern_find_code(char *addr);
+static void extern_replay_trail(void);
+static void free_extern_output(void);
 static void extern_failwith(char *msg);
 static void extern_stack_overflow(void);
 static struct code_fragment * extern_find_code(char *addr);

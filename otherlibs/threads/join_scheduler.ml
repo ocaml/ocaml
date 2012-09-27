@@ -339,7 +339,7 @@ let from_pool () =
 
   end
 
-let rec exit_hook () =
+let exit_hook () =
 (*DEBUG*)debug1 "HOOK" "enter" ;
 (*DEBUG*)decr_locked nthreads_mutex nthreads ;
   Mutex.lock active_mutex ;

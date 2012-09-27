@@ -10,11 +10,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: arch.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Specific operations for the Sparc processor *)
 
-open Misc
 open Format
 
 (* SPARC V8 adds multiply and divide.

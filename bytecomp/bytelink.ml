@@ -10,14 +10,12 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: bytelink.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Link a set of .cmo files and produce a bytecode executable. *)
 
-open Sys
 open Misc
 open Config
-open Instruct
 open Cmo_format
 
 type error =

@@ -10,9 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: typeclass.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
-open Misc
 open Parsetree
 open Asttypes
 open Path
@@ -134,7 +133,7 @@ let rec class_body cty =
   | Cty_fun (_, ty, cty) ->
       class_body cty
 
-let rec extract_constraints cty =
+let extract_constraints cty =
   let sign = Ctype.signature_of_class_type cty in
   (Vars.fold (fun lab _ vars -> lab :: vars) sign.cty_vars [],
    begin let (fields, _) =
@@ -884,7 +883,7 @@ and class_expr cl_num val_env met_env scl =
           end
           pv
       in
-      let rec not_function = function
+      let not_function = function
           Cty_fun _ -> false
         | _ -> true
       in
@@ -1098,7 +1097,7 @@ let rec approx_description ct =
 
 let temp_abbrev loc env id arity =
   let params = ref [] in
-  for i = 1 to arity do
+  for _i = 1 to arity do
     params := Ctype.newvar () :: !params
   done;
   let ty = Ctype.newobj (Ctype.newvar ()) in
@@ -1117,7 +1116,7 @@ let temp_abbrev loc env id arity =
   in
   (!params, ty, env)
 
-let rec initial_env define_class approx
+let initial_env define_class approx
     (res, env) (cl, id, ty_id, obj_id, cl_id) =
   (* Temporary abbreviations *)
   let arity = List.length (fst cl.pci_params) in

@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: getproto.c 12858 2012-08-10 14:45:51Z maranget $ */
 
 #include <mlvalues.h>
 #include <alloc.h>
@@ -23,8 +23,6 @@
 
 #ifndef _WIN32
 #include <netdb.h>
-#else
-#include <winsock.h>
 #endif
 
 static value alloc_proto_entry(struct protoent *entry)

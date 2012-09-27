@@ -10,11 +10,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: compilenv.mli 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Compilation environments for compilation units *)
 
-open Clambda
 open Cmx_format
 
 val reset: ?packname:string -> string -> unit

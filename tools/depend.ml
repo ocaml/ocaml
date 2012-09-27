@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: depend.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 open Asttypes
 open Format
@@ -300,6 +300,9 @@ and add_struct_item bv item =
 
 and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)
+
+and add_implementation bv l =
+  ignore (add_structure bv l)
 
 and add_top_phrase bv = function
   | Ptop_def str -> add_structure bv str

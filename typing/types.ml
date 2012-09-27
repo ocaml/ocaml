@@ -10,11 +10,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: types.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Representation of types and declarations *)
 
-open Misc
 open Asttypes
 
 (* Type expressions for the core language *)

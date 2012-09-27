@@ -11,7 +11,7 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
+# $Id: Makefile 12959 2012-09-27 13:12:51Z maranget $
 
 include ../../config/Makefile
 NOJOIN=-nojoin
@@ -20,8 +20,9 @@ CAMLOPT=../../ocamlcompopt.sh $(NOJOIN) -I ../unix
 JCC=../../ocamlcomp.sh -I ../unix
 JCOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error A -annot -g
+COMPFLAGS=-w +33..39 -warn-error A -g
 OCAMLPP=-pp '../../tools/remove_DEBUG'
+
 
 
 BYTECODE_JOIN_C_OBJS=join_b.o

@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: big_int.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 open Int_misc
 open Nat
@@ -456,7 +456,7 @@ let power_base_nat base nat off len =
     and l = num_bits_int n - 2 in
     let p = ref (1 lsl l) in
       blit_nat res 0 power_base pmax 1;
-      for i = l downto 0 do
+      for _i = l downto 0 do
         let len = num_digits_nat res 0 n in
         let len2 = min n (2 * len) in
         let succ_len2 = succ len2 in
@@ -501,7 +501,7 @@ let power_big_int_positive_int bi n =
          and l = num_bits_int n - 2 in
          let p = ref (1 lsl l) in
          blit_nat res 0 bi.abs_value 0 bi_len;
-         for i = l downto 0 do
+         for _i = l downto 0 do
            let len = num_digits_nat res 0 res_len in
            let len2 = min res_len (2 * len) in
            set_to_zero_nat res2 0 len2;

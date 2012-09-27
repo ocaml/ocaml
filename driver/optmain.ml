@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: optmain.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 open Config
 open Clflags
@@ -139,6 +139,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _p = set gprofile
   let _pack = set make_package
   let _pp s = preprocessor := Some s
+  let _ppx s = ppx := s :: !ppx
   let _principal = set principal
   let _rectypes = set recursive_types
   let _runtime_variant s = runtime_variant := s

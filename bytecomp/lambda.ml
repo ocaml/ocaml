@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: lambda.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 open Misc
 open Path
@@ -242,7 +242,7 @@ let name_lambda_list args fn =
       Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
-let rec iter f = function
+let iter f = function
     Lvar _
   | Lconst _ -> ()
   | Lapply(fn, args, _) ->

@@ -10,12 +10,11 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: outputbis.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Output the DFA tables and its entry points *)
 
 open Printf
-open Syntax
 open Lexgen
 open Common
 

@@ -9,16 +9,18 @@
 #(*                                                                     *)
 #(***********************************************************************)
 
-# $Id$
+# $Id: Makefile.nt 12959 2012-09-27 13:12:51Z maranget $
 
 include ../config/Makefile
 
-CAMLRUN =../boot/ocamlrun
+# Various commands and dir
+##########################
+CAMLRUN=../boot/ocamlrun
 OCAMLC   = ../ocamlcomp.sh
 OCAMLOPT = ../ocamlcompopt.sh
-OCAMLLEX =$(CAMLRUN) ../boot/ocamllex
-OCAMLYACC=../boot/ocamlyacc
-
+OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
+OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
+OCAMLYACC= ../boot/ocamlyacc
 OCAMLLIB = $(LIBDIR)
 OCAMLBIN = $(BINDIR)
 
@@ -62,7 +64,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES)
+COMPFLAGS=$(INCLUDES) -warn-error A
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \
@@ -104,18 +106,18 @@ CMOFILES= odoc_config.cmo \
 CMXFILES= $(CMOFILES:.cmo=.cmx)
 CMIFILES= $(CMOFILES:.cmo=.cmi)
 
-EXECMOFILES=$(CMOFILES)\
-	odoc_dag2html.cmo\
-	odoc_to_text.cmo\
-	odoc_ocamlhtml.cmo\
-	odoc_html.cmo\
-	odoc_man.cmo\
+EXECMOFILES=$(CMOFILES) \
+	odoc_dag2html.cmo \
+	odoc_to_text.cmo \
+	odoc_ocamlhtml.cmo \
+	odoc_html.cmo \
+	odoc_man.cmo \
 	odoc_latex_style.cmo \
-	odoc_latex.cmo\
-	odoc_texi.cmo\
-	odoc_dot.cmo\
-	odoc_gen.cmo\
-	odoc_args.cmo\
+	odoc_latex.cmo \
+	odoc_texi.cmo \
+	odoc_dot.cmo \
+	odoc_gen.cmo \
+	odoc_args.cmo \
 	odoc.cmo
 
 
@@ -159,6 +161,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/typedtree.cmo \
 	$(OCAMLSRCDIR)/typing/parmatch.cmo \
 	$(OCAMLSRCDIR)/typing/stypes.cmo \
+	$(OCAMLSRCDIR)/typing/typedtreeMap.cmo \
 	$(OCAMLSRCDIR)/typing/cmt_format.cmo \
 	$(OCAMLSRCDIR)/typing/typecore.cmo \
 	$(OCAMLSRCDIR)/typing/includeclass.cmo \
@@ -175,7 +178,8 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translclass.cmo \
-	$(OCAMLSRCDIR)/tools/depend.cmo
+	$(OCAMLSRCDIR)/tools/depend.cmo \
+	$(OCAMLSRCDIR)/driver/pparse.cmo
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
@@ -199,44 +203,55 @@ $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
 
+# Parsers and lexers dependencies :
+###################################
+odoc_text_parser.ml: odoc_text_parser.mly
+odoc_text_parser.mli: odoc_text_parser.mly
+
+odoc_parser.ml:	odoc_parser.mly
+odoc_parser.mli:odoc_parser.mly
+
+odoc_text_lexer.ml: odoc_text_lexer.mll
+
+odoc_lexer.ml:odoc_lexer.mll
+
+odoc_ocamlhtml.ml: odoc_ocamlhtml.mll
+
+odoc_see_lexer.ml: odoc_see_lexer.mll
+
+
 # generic rules :
 #################
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx
-
-.mli.cmi:
-	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
+.SUFFIXES: .mll .mly .ml .mli .cmo .cmi .cmx .cmxs
 
 .ml.cmo:
+	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
+
+.mli.cmi:
 	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
 
 .ml.cmx:
 	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
 
-odoc_text_parser.ml odoc_text_parser.mli: odoc_text_parser.mly
-	$(OCAMLYACC) odoc_text_parser.mly
+.ml.cmxs:
+	$(OCAMLOPT) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
 
-odoc_parser.ml odoc_parser.mli: odoc_parser.mly
-	$(OCAMLYACC) odoc_parser.mly
+.mll.ml:
+	$(OCAMLLEX) $<
 
-odoc_text_lexer.ml: odoc_text_lexer.mll
-	$(OCAMLLEX) odoc_text_lexer.mll
+.mly.ml:
+	$(OCAMLYACC) -v $<
 
-odoc_lexer.ml: odoc_lexer.mll
-	$(OCAMLLEX) odoc_lexer.mll
-
-odoc_ocamlhtml.ml: odoc_ocamlhtml.mll
-	$(OCAMLLEX) odoc_ocamlhtml.mll
-
-odoc_see_lexer.ml: odoc_see_lexer.mll
-	$(OCAMLLEX) odoc_see_lexer.mll
+.mly.mli:
+	$(OCAMLYACC) -v $<
 
 # Installation targets
 ######################
 install: dummy
 	$(MKDIR) -p $(INSTALL_BINDIR)
 	$(MKDIR) -p $(INSTALL_LIBDIR)
-	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC).exe
+	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
 	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
@@ -246,7 +261,7 @@ installopt:
 installopt_really:
 	$(MKDIR) -p $(INSTALL_BINDIR)
 	$(MKDIR) -p $(INSTALL_LIBDIR)
-	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT).exe
+	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)
 	$(CP) ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
@@ -260,13 +275,16 @@ clean:: dummy
 	@rm -f odoc_parser.output odoc_text_parser.output
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
+	@rm -rf stdlib_man
+	@rm -f generators/*.cm[aiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
 
 depend::
-	rm -f .depend
 	$(OCAMLYACC) odoc_text_parser.mly
 	$(OCAMLYACC) odoc_parser.mly
 	$(OCAMLLEX) odoc_text_lexer.mll
 	$(OCAMLLEX) odoc_lexer.mll
+	$(OCAMLLEX) odoc_ocamlhtml.mll
+	$(OCAMLLEX) odoc_see_lexer.mll
 	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
 
 dummy:

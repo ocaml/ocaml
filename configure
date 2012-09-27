@@ -13,7 +13,7 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
+# $Id: configure 12959 2012-09-27 13:12:51Z maranget $
 topdir=`pwd`
 configure_options="$*"
 prefix=/usr/local
@@ -862,7 +862,7 @@ if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *-*-cygwin*)
       echo "We won't use it, though, because of conflicts with .exe extension"
-      echo "under Cygwin"
+      echo "  under Cygwin"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)
       echo "SHARPBANGSCRIPTS=true" >> Makefile;;

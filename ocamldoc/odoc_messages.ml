@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_messages.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** The messages of the application. *)
 
@@ -35,6 +35,7 @@ let verbose_mode = "\t\tverbose mode"
 let include_dirs = "<dir>\tAdd <dir> to the list of include directories"
 let rectypes = "\tAllow arbitrary recursive types"
 let preprocess = "<command>\tPipe sources through preprocessor <command>"
+let ppx = "<command>\n\t\tPipe abstract syntax tree through preprocessor <command>"
 let option_impl ="<file>\tConsider <file> as a .ml file"
 let option_intf ="<file>\tConsider <file> as a .mli file"
 let display_custom_generators_dir = "\tDisplay custom generators standard directory and exit"

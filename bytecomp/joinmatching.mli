@@ -19,7 +19,6 @@
 
   cf. Compiling Pattern Matching in Join-Patterns
 *)
-open Types
 open Typedtree
 
 type 'a reaction = Location.t * joinpattern list * 'a

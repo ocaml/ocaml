@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: env.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Environment handling *)
 
@@ -155,7 +155,6 @@ val summary: t -> summary
 
 val keep_only_summary : t -> t
 val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
-
 
 (* Error report *)
 

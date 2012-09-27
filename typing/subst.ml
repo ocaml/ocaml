@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: subst.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Substitutions *)
 
@@ -45,7 +45,7 @@ let rec module_path s = function
   | Papply(p1, p2) ->
       Papply(module_path s p1, module_path s p2)
 
-let rec modtype_path s = function
+let modtype_path s = function
     Pident id as p ->
       begin try
         match Tbl.find id s.modtypes with

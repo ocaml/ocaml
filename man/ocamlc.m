@@ -10,7 +10,7 @@
 .\"*                                                                     *
 .\"***********************************************************************
 .\"
-.\" $Id$
+.\" $Id: ocamlc.m 12959 2012-09-27 13:12:51Z maranget $
 .\"
 .TH OCAMLC 1
 
@@ -440,6 +440,10 @@ errors, the intermediate file is deleted afterwards. The name of this
 file is built from the basename of the source file with the
 extension .ppi for an interface (.mli) file and .ppo for an
 implementation (.ml) file.
+.TP
+.BI \-ppx \ command
+Pipe abstract syntax tree through preprocessor
+.IR command .
 .TP
 .B \-principal
 Check information path during type-checking, to make sure that all

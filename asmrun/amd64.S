@@ -102,21 +102,21 @@
 /* Push global [label] on stack.  Clobbers %r11. */
 #define PUSH_VAR(srclabel) \
         movq    GREL(srclabel)(%rip), %r11 ; \
-        pushq   (%r11)
+        pushq   (%r11); CFI_ADJUST (8)
 
 /* Pop global [label] off stack.  Clobbers %r11. */
 #define POP_VAR(dstlabel) \
         movq    GREL(dstlabel)(%rip), %r11 ; \
-        popq    (%r11)
+        popq    (%r11);  CFI_ADJUST (-8)
 
 /* Record lowest stack address and return address.  Clobbers %rax. */
 #define RECORD_STACK_FRAME(OFFSET) \
-	pushq   %r11 ; \
+	pushq   %r11 ; CFI_ADJUST(8); \
         movq    8+OFFSET(%rsp), %rax ; \
 	STORE_VAR(%rax,caml_last_return_address) ; \
         leaq    16+OFFSET(%rsp), %rax ; \
 	STORE_VAR(%rax,caml_bottom_of_stack) ; \
-	popq    %r11
+	popq    %r11; CFI_ADJUST(-8)
 
 #else
 
@@ -135,10 +135,10 @@
         testl   imm, G(label)(%rip)
 
 #define PUSH_VAR(srclabel) \
-        pushq   G(srclabel)(%rip)
+        pushq   G(srclabel)(%rip) ; CFI_ADJUST(8)
 
 #define POP_VAR(dstlabel) \
-        popq    G(dstlabel)(%rip)
+        popq    G(dstlabel)(%rip); CFI_ADJUST(-8)
 
 #define RECORD_STACK_FRAME(OFFSET) \
         movq    OFFSET(%rsp), %rax ; \
@@ -156,15 +156,15 @@
 /* Win64 API: callee-save regs are rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 */
 
 #define PUSH_CALLEE_SAVE_REGS \
-        pushq   %rbx; \
-        pushq   %rbp; \
-        pushq   %rsi; \
-        pushq   %rdi; \
-        pushq   %r12; \
-        pushq   %r13; \
-        pushq   %r14; \
-        pushq   %r15; \
-	subq	$(8+10*16), %rsp; \
+        pushq   %rbx; CFI_ADJUST (8); \
+        pushq   %rbp; CFI_ADJUST (8); \
+        pushq   %rsi; CFI_ADJUST (8); \
+        pushq   %rdi; CFI_ADJUST (8); \
+        pushq   %r12; CFI_ADJUST (8); \
+        pushq   %r13; CFI_ADJUST (8); \
+        pushq   %r14; CFI_ADJUST (8); \
+        pushq   %r15; CFI_ADJUST (8); \
+	subq	$(8+10*16), %rsp; CFI_ADJUST (8+10*16); \
 	movupd  %xmm6, 0*16(%rsp); \
         movupd  %xmm7, 1*16(%rsp); \
         movupd  %xmm8, 2*16(%rsp); \
@@ -187,44 +187,44 @@
         movupd  7*16(%rsp), %xmm13; \
         movupd  8*16(%rsp), %xmm14; \
         movupd  9*16(%rsp), %xmm15; \
-        addq    $(8+10*16), %rsp; \
-        popq    %r15; \
-        popq    %r14; \
-        popq    %r13; \
-        popq    %r12; \
-        popq    %rdi; \
-        popq    %rsi; \
-        popq    %rbp; \
-        popq    %rbx
+        addq    $(8+10*16), %rsp; CFI_ADJUST (-8-10*16); \
+        popq    %r15; CFI_ADJUST(-8); \
+        popq    %r14; CFI_ADJUST(-8); \
+        popq    %r13; CFI_ADJUST(-8); \
+        popq    %r12; CFI_ADJUST(-8); \
+        popq    %rdi; CFI_ADJUST(-8); \
+        popq    %rsi; CFI_ADJUST(-8); \
+        popq    %rbp; CFI_ADJUST(-8); \
+        popq    %rbx; CFI_ADJUST(-8)
 
 #else
 
 /* Unix API: callee-save regs are rbx, rbp, r12-r15 */
 
 #define PUSH_CALLEE_SAVE_REGS \
-        pushq   %rbx; \
-        pushq   %rbp; \
-        pushq   %r12; \
-        pushq   %r13; \
-        pushq   %r14; \
-        pushq   %r15; \
-	subq	$8, %rsp
+        pushq   %rbx; CFI_ADJUST(8); \
+        pushq   %rbp; CFI_ADJUST(8); \
+        pushq   %r12; CFI_ADJUST(8); \
+        pushq   %r13; CFI_ADJUST(8); \
+        pushq   %r14; CFI_ADJUST(8); \
+        pushq   %r15; CFI_ADJUST(8); \
+	subq	$8, %rsp; CFI_ADJUST(8)
 
 #define POP_CALLEE_SAVE_REGS \
-	addq	$8, %rsp; \
-        popq    %r15; \
-        popq    %r14; \
-        popq    %r13; \
-        popq    %r12; \
-        popq    %rbp; \
-        popq    %rbx
+	addq	$8, %rsp; CFI_ADJUST(-8); \
+        popq    %r15; CFI_ADJUST(-8); \
+        popq    %r14; CFI_ADJUST(-8); \
+        popq    %r13; CFI_ADJUST(-8); \
+        popq    %r12; CFI_ADJUST(-8); \
+        popq    %rbp; CFI_ADJUST(-8); \
+        popq    %rbx; CFI_ADJUST(-8)
 
 #endif
 
 #ifdef SYS_mingw64
    /* Calls from OCaml to C must reserve 32 bytes of extra stack space */
-#  define PREPARE_FOR_C_CALL subq $32, %rsp
-#  define CLEANUP_AFTER_C_CALL addq $32, %rsp
+#  define PREPARE_FOR_C_CALL subq $32, %rsp; CFI_ADJUST(32)
+#  define CLEANUP_AFTER_C_CALL addq $32, %rsp; CFI_ADJUST(-32)
 #else
 #  define PREPARE_FOR_C_CALL
 #  define CLEANUP_AFTER_C_CALL
@@ -249,26 +249,25 @@ LBL(caml_call_gc):
         addq    $32768, %rsp
 #endif
     /* Build array of registers, save it into caml_gc_regs */
-        pushq   %r13
-        pushq   %r12
-        pushq   %rbp
-        pushq   %r11
-        pushq   %r10
-        pushq   %r9
-        pushq   %r8
-        pushq   %rcx
-        pushq   %rdx
-        pushq   %rsi
-        pushq   %rdi
-        pushq   %rbx
-        pushq   %rax
+        pushq   %r13; CFI_ADJUST (8);
+        pushq   %r12; CFI_ADJUST (8);
+        pushq   %rbp; CFI_ADJUST (8);
+        pushq   %r11; CFI_ADJUST (8);
+        pushq   %r10; CFI_ADJUST (8);
+        pushq   %r9; CFI_ADJUST (8);
+        pushq   %r8; CFI_ADJUST (8);
+        pushq   %rcx; CFI_ADJUST (8);
+        pushq   %rdx; CFI_ADJUST (8);
+        pushq   %rsi; CFI_ADJUST (8);
+        pushq   %rdi; CFI_ADJUST (8);
+        pushq   %rbx; CFI_ADJUST (8);
+        pushq   %rax; CFI_ADJUST (8);
         STORE_VAR(%rsp, caml_gc_regs)
     /* Save caml_young_ptr, caml_exception_pointer */
 	STORE_VAR(%r15, caml_young_ptr)
 	STORE_VAR(%r14, caml_exception_pointer)
     /* Save floating-point registers */
-        subq    $(16*8), %rsp
-        CFI_ADJUST(232)
+        subq    $(16*8), %rsp; CFI_ADJUST (16*8);
         movsd   %xmm0, 0*8(%rsp)
         movsd   %xmm1, 1*8(%rsp)
         movsd   %xmm2, 2*8(%rsp)
@@ -309,26 +308,26 @@ LBL(caml_call_gc):
         movsd   13*8(%rsp), %xmm13
         movsd   14*8(%rsp), %xmm14
         movsd   15*8(%rsp), %xmm15
-        addq    $(16*8), %rsp
-        popq    %rax
-        popq    %rbx
-        popq    %rdi
-        popq    %rsi
-        popq    %rdx
-        popq    %rcx
-        popq    %r8
-        popq    %r9
-        popq    %r10
-        popq    %r11
-        popq    %rbp
-        popq    %r12
-        popq    %r13
-        CFI_ADJUST(-232)
+        addq    $(16*8), %rsp; CFI_ADJUST(-16*8)
+        popq    %rax; CFI_ADJUST(-8)
+        popq    %rbx; CFI_ADJUST(-8)
+        popq    %rdi; CFI_ADJUST(-8)
+        popq    %rsi; CFI_ADJUST(-8)
+        popq    %rdx; CFI_ADJUST(-8)
+        popq    %rcx; CFI_ADJUST(-8)
+        popq    %r8; CFI_ADJUST(-8)
+        popq    %r9; CFI_ADJUST(-8)
+        popq    %r10; CFI_ADJUST(-8)
+        popq    %r11; CFI_ADJUST(-8)
+        popq    %rbp; CFI_ADJUST(-8)
+        popq    %r12; CFI_ADJUST(-8)
+        popq    %r13; CFI_ADJUST(-8)
     /* Return to caller */
         ret
-        CFI_ENDPROC
+CFI_ENDPROC
 
 FUNCTION(G(caml_alloc1))
+CFI_STARTPROC
 LBL(caml_alloc1):
         subq    $16, %r15
         CMP_VAR(caml_young_limit, %r15)
@@ -336,12 +335,14 @@ LBL(caml_alloc1):
         ret
 LBL(100):
         RECORD_STACK_FRAME(0)
-	subq	$8, %rsp
+	subq	$8, %rsp; CFI_ADJUST (8);
         call    LBL(caml_call_gc)
-	addq	$8, %rsp
+	addq	$8, %rsp; CFI_ADJUST (-8);
         jmp     LBL(caml_alloc1)
+CFI_ENDPROC
 
 FUNCTION(G(caml_alloc2))
+CFI_STARTPROC
 LBL(caml_alloc2):
         subq    $24, %r15
         CMP_VAR(caml_young_limit, %r15)
@@ -349,12 +350,14 @@ LBL(caml_alloc2):
         ret
 LBL(101):
         RECORD_STACK_FRAME(0)
-	subq	$8, %rsp
+	subq	$8, %rsp; CFI_ADJUST (8);
         call    LBL(caml_call_gc)
-	addq	$8, %rsp
+	addq	$8, %rsp; CFI_ADJUST (-8);
         jmp     LBL(caml_alloc2)
+CFI_ENDPROC
 
 FUNCTION(G(caml_alloc3))
+CFI_STARTPROC
 LBL(caml_alloc3):
         subq    $32, %r15
         CMP_VAR(caml_young_limit, %r15)
@@ -362,34 +365,38 @@ LBL(caml_alloc3):
         ret
 LBL(102):
         RECORD_STACK_FRAME(0)
-	subq	$8, %rsp
+	subq	$8, %rsp; CFI_ADJUST (8)
         call    LBL(caml_call_gc)
-	addq	$8, %rsp
+	addq	$8, %rsp; CFI_ADJUST (-8)
         jmp     LBL(caml_alloc3)
+CFI_ENDPROC
 
 FUNCTION(G(caml_allocN))
+CFI_STARTPROC
 LBL(caml_allocN):
-        pushq   %rax                       /* save desired size */
+        pushq   %rax; CFI_ADJUST(8)        /* save desired size */
         subq    %rax, %r15
         CMP_VAR(caml_young_limit, %r15)
         jb      LBL(103)
-        addq    $8, %rsp                  /* drop desired size */
+        addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
 LBL(103):
         RECORD_STACK_FRAME(8)
         call    LBL(caml_call_gc)
-        popq    %rax                      /* recover desired size */
+        popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
         jmp     LBL(caml_allocN)
+CFI_ENDPROC
 
 /* Call a C function from OCaml */
 
 FUNCTION(G(caml_c_call))
+CFI_STARTPROC
 LBL(caml_c_call):
     /* Record lowest stack address and return address */
-        popq    %r12
+        popq    %r12; CFI_ADJUST(-8)
         STORE_VAR(%r12, caml_last_return_address)
         STORE_VAR(%rsp, caml_bottom_of_stack)
-        pushq    %r12
+        subq    $8, %rsp; CFI_ADJUST(8) /* equivalent to pushq %r12 */
 #ifndef SYS_mingw64
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
@@ -404,39 +411,38 @@ LBL(caml_c_call):
     /* No need to PREPARE_FOR_C_CALL since the caller already
        reserved the stack space if needed (cf. amd64/proc.ml) */
         jmp    *%rax
+CFI_ENDPROC
 
 /* Start the OCaml program */
 
 FUNCTION(G(caml_start_program))
-        CFI_STARTPROC
+       CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
-        CFI_ADJUST(56)
     /* Initial entry point is G(caml_program) */
         leaq    GCALL(caml_program)(%rip), %r12
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
     /* Build a callback link */
-	subq	$8, %rsp	/* stack 16-aligned */
+	subq	$8, %rsp; CFI_ADJUST (8)	/* stack 16-aligned */
         PUSH_VAR(caml_gc_regs)
         PUSH_VAR(caml_last_return_address)
         PUSH_VAR(caml_bottom_of_stack)
-        CFI_ADJUST(32)
     /* Setup alloc ptr and exception ptr */
 	LOAD_VAR(caml_young_ptr, %r15)
 	LOAD_VAR(caml_exception_pointer, %r14)
     /* Build an exception handler */
         lea     LBL(108)(%rip), %r13
-        pushq   %r13
-        pushq   %r14
+        pushq   %r13; CFI_ADJUST(8)
+        pushq   %r14; CFI_ADJUST(8)
         CFI_ADJUST(16)
         movq    %rsp, %r14
     /* Call the OCaml code */
         call    *%r12
 LBL(107):
     /* Pop the exception handler */
-        popq    %r14
-        popq    %r12    /* dummy register */
+        popq    %r14; CFI_ADJUST(-8)
+        popq    %r12; CFI_ADJUST(-8)   /* dummy register */
         CFI_ADJUST(-16)
 LBL(109):
     /* Update alloc ptr and exception ptr */
@@ -446,7 +452,7 @@ LBL(109):
 	POP_VAR(caml_bottom_of_stack)
         POP_VAR(caml_last_return_address)
         POP_VAR(caml_gc_regs)
-	addq	$8, %rsp
+	addq	$8, %rsp; CFI_ADJUST (-8);
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
     /* Return to caller. */
@@ -456,7 +462,7 @@ LBL(108):
     /* Mark the bucket as an exception result and return it */
         orq     $2, %rax
         jmp     LBL(109)
-        CFI_ENDPROC
+CFI_ENDPROC
 
 /* Registers holding arguments of C functions. */
 
@@ -475,10 +481,11 @@ LBL(108):
 /* Raise an exception from OCaml */
 
 FUNCTION(G(caml_raise_exn))
+CFI_STARTPROC
         TESTL_VAR($1, caml_backtrace_active)
         jne     LBL(110)
         movq    %r14, %rsp
-        popq    %r14
+        popq    %r14; CFI_ADJUST(-8)
         ret
 LBL(110):
         movq    %rax, %r12            /* Save exception bucket */
@@ -490,17 +497,19 @@ LBL(110):
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
         movq    %r14, %rsp
-        popq    %r14
+        popq    %r14; CFI_ADJUST(-8)
         ret
+CFI_ENDPROC
 
 /* Raise an exception from C */
 
 FUNCTION(G(caml_raise_exception))
+CFI_STARTPROC
         TESTL_VAR($1, caml_backtrace_active)
         jne     LBL(111)
         movq    C_ARG_1, %rax
         LOAD_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
-        popq    %r14                  /* Recover previous exception handler */
+        popq    %r14; CFI_ADJUST(-8)   /* Recover previous exception handler */
         LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
 LBL(111):
@@ -513,13 +522,15 @@ LBL(111):
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
 	LOAD_VAR(caml_exception_pointer,%rsp)
-        popq    %r14                  /* Recover previous exception handler */
+        popq    %r14; CFI_ADJUST(-8)   /* Recover previous exception handler */
 	LOAD_VAR(caml_young_ptr,%r15)  /* Reload alloc ptr */
         ret
+CFI_ENDPROC
 
 /* Callback from C to OCaml */
 
 FUNCTION(G(caml_callback_exn))
+CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
@@ -527,8 +538,10 @@ FUNCTION(G(caml_callback_exn))
         movq    C_ARG_2, %rax      /* argument */
         movq    0(%rbx), %r12      /* code pointer */
         jmp     LBL(caml_start_program)
+CFI_ENDPROC
 
 FUNCTION(G(caml_callback2_exn))
+CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
@@ -537,8 +550,10 @@ FUNCTION(G(caml_callback2_exn))
         movq    C_ARG_3, %rbx      /* second argument */
         leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
         jmp     LBL(caml_start_program)
+CFI_ENDPROC
 
 FUNCTION(G(caml_callback3_exn))
+CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
@@ -548,10 +563,13 @@ FUNCTION(G(caml_callback3_exn))
         movq    C_ARG_4, %rdi      /* third argument */
         leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
         jmp     LBL(caml_start_program)
+CFI_ENDPROC
 
 FUNCTION(G(caml_ml_array_bound_error))
+CFI_STARTPROC
         leaq    GCALL(caml_array_bound_error)(%rip), %rax
         jmp     LBL(caml_c_call)
+CFI_ENDPROC
 
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):

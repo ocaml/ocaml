@@ -11,9 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: socketaddr.h 12858 2012-08-10 14:45:51Z maranget $ */
 
-#include <misc.h>
+#include "misc.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>

@@ -14,7 +14,6 @@
 open Format
 open Asttypes
 open Clambda
-open Debuginfo
 
 let rec pr_idents ppf = function
   | [] -> ()

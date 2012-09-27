@@ -10,12 +10,11 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: main.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* The lexer generator. Command-line parsing. *)
 
 open Syntax
-open Lexgen
 
 let ml_automata = ref false
 let source_name = ref None

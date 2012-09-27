@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: ctype.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Operations on core types *)
 
@@ -499,7 +499,7 @@ let free_variables ?env ty =
   unmark_type ty;
   tl
 
-let rec closed_type ty =
+let closed_type ty =
   match free_vars ty with
       []           -> ()
   | (v, real) :: _ -> raise (Non_closed (v, real))
@@ -1237,7 +1237,7 @@ let instance_label fixed lbl =
 let unify' = (* Forward declaration *)
   ref (fun env ty1 ty2 -> raise (Unify []))
 
-let rec subst env level priv abbrev ty params args body =
+let subst env level priv abbrev ty params args body =
   if List.length params <> List.length args then raise (Unify []);
   let old_level = !current_level in
   current_level := level;
@@ -1461,7 +1461,7 @@ let enforce_constraints env ty =
 
 (* Recursively expand the head of a type.
    Also expand #-types. *)
-let rec full_expand env ty =
+let full_expand env ty =
   let ty = repr (expand_head env ty) in
   match ty.desc with
     Tobject (fi, {contents = Some (_, v::_)}) when is_Tvar (repr v) ->
@@ -1673,7 +1673,7 @@ let add_univars =
 
 let get_univar_family univar_pairs univars =
   if univars = [] then TypeSet.empty else
-  let rec insert s = function
+  let insert s = function
       cl1, (_::_ as cl2) ->
         if List.exists (fun (t1,_) -> TypeSet.mem (repr t1) s) cl1 then
           add_univars s cl2
@@ -2542,7 +2542,7 @@ let expand_head_trace env t =
    (2) the original label is not optional
 *)
 
-let rec filter_arrow env t l =
+let filter_arrow env t l =
   let t = expand_head_trace env t in
   match t.desc with
     Tvar _ ->
@@ -2616,7 +2616,7 @@ let rec filter_method_field env name priv ty =
       raise (Unify [])
 
 (* Unify [ty] and [< name : 'a; .. >]. Return ['a]. *)
-let rec filter_method env name priv ty =
+let filter_method env name priv ty =
   let ty = expand_head_trace env ty in
   match ty.desc with
     Tvar _ ->

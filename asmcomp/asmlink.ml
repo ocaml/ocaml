@@ -10,11 +10,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: asmlink.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Link a set of .cmx/.o files and produce an executable *)
 
-open Sys
 open Misc
 open Config
 open Cmx_format

@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: clflags.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Command-line parameters *)
 
@@ -33,6 +33,7 @@ and ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
 and preprocessor = ref(None : string option) (* -pp *)
+and ppx = ref ([] : string list)        (* -ppx *)
 let annotations = ref false             (* -annot *)
 (*> JOCAML *)
 and nojoin = ref false                  (* -nojoin *)

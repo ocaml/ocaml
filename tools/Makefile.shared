@@ -10,7 +10,7 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
+# $Id: Makefile.shared 12959 2012-09-27 13:12:51Z maranget $
 
 include ../config/Makefile
 
@@ -36,7 +36,8 @@ opt.opt: ocamldep.opt
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
-  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
+  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo \
+  ccomp.cmo pparse.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)

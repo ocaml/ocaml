@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: compact.c 12959 2012-09-27 13:12:51Z maranget $ */
 
 #include <string.h>
 
@@ -397,7 +397,7 @@ uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 
 void caml_compact_heap (void)
 {
-  uintnat target_size, live;
+  uintnat target_size;
 
   do_compaction ();
   /* Compaction may fail to shrink the heap to a reasonable size
@@ -416,15 +416,13 @@ void caml_compact_heap (void)
   /* We compute:
      freewords = caml_fl_cur_size          (exact)
      heapsize = caml_heap_size             (exact)
-     live = heap_size - freewords
-     target_size = live * (1 + caml_percent_free / 100)
-                 = live / 100 * (100 + caml_percent_free)
-     We add 1 to live/100 to make sure it isn't 0.
+     usedwords = heap_size - freewords
+     target_size = usedwords * (1 + caml_percent_free / 100)
 
      We recompact if target_size < heap_size / 2
   */
-  live = caml_stat_heap_size - Bsize_wsize (caml_fl_cur_size);
-  target_size = (live / 100 + 1) * (100 + caml_percent_free);
+  target_size = (caml_stat_heap_size - Bsize_wsize (caml_fl_cur_size))
+                * (100 + caml_percent_free) / 100;
   target_size = caml_round_heap_chunk_size (target_size);
   if (target_size < caml_stat_heap_size / 2){
     char *chunk;

@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: clflags.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 val objfiles : string list ref
 val ccobjs : string list ref
@@ -30,6 +30,7 @@ val ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
 val preprocessor : string option ref
+val ppx : string list ref
 val annotations : bool ref
 val nojoin : bool ref
 val binary_annotations : bool ref

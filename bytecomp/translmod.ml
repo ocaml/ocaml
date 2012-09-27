@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: translmod.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Translation from typed abstract syntax to lambda terms,
    for the module language *)
@@ -21,7 +21,6 @@ open Longident
 open Path
 open Types
 open Typedtree
-open Primitive
 open Lambda
 open Translobj
 open Translcore

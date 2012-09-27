@@ -10,13 +10,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: typeopt.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
-open Misc
-open Asttypes
-open Primitive
 open Path
 open Types
 open Typedtree

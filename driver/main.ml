@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: main.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 open Config
 open Clflags
@@ -127,6 +127,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pack = set make_package
   let _pp s = preprocessor := Some s
+  let _ppx s = ppx := s :: !ppx
   let _principal = set principal
   let _rectypes = set recursive_types
   let _runtime_variant s = runtime_variant := s

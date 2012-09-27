@@ -89,7 +89,6 @@ let clear_env_hcons () = Hashtbl.clear env_hcons
 
 module TypedtreeMap : sig
 
-  open Asttypes
   open Typedtree
 
   module type MapArgument = sig
@@ -177,7 +176,6 @@ module TypedtreeMap : sig
 
 end = struct
 
-  open Asttypes
   open Typedtree
 
   module type MapArgument = sig
@@ -950,7 +948,7 @@ module ClearEnv  = TypedtreeMap.MakeMap (struct
 (*<JOCAML *)
 end)
 
-let rec clear_part p = match p with
+let clear_part p = match p with
   | Partial_structure s -> Partial_structure (ClearEnv.map_structure s)
   | Partial_structure_item s ->
     Partial_structure_item (ClearEnv.map_structure_item s)

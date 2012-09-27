@@ -76,6 +76,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _p = option "-p"
   let _pack = option "-pack"
   let _pp s = incompatible "-pp"
+  let _ppx s = incompatible "-ppx"
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
   let _runtime_variant s = option_with_arg "-runtime-variant" s

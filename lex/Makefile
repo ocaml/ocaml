@@ -10,14 +10,14 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
+# $Id: Makefile 12858 2012-08-10 14:45:51Z maranget $
 
 # The lexer generator
 
 NOJOIN=-nojoin
 CAMLC=../boot/ocamlrun ../boot/ocamlc -strict-sequence -nostdlib -I ../boot $(NOJOIN)
 CAMLOPT=../boot/ocamlrun ../ocamlopt -nostdlib -I ../stdlib $(NOJOIN)
-COMPFLAGS=-warn-error A
+COMPFLAGS=-w +33..39 -warn-error A
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=-v
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex

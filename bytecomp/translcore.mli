@@ -10,13 +10,12 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: translcore.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Translation from typed abstract syntax to lambda terms,
    for the core language *)
 
 open Asttypes
-open Types
 open Typedtree
 open Lambda
 

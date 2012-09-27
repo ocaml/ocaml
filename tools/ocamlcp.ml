@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: ocamlcp.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 open Printf
 
@@ -73,6 +73,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _output_obj = option "-output-obj"
   let _pack = option "-pack"
   let _pp s = incompatible "-pp"
+  let _ppx s = incompatible "-ppx"
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
   let _nojoin () = option "-nojoin" ()

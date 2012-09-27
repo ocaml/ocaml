@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: parsing.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* The parsing engine *)
 
@@ -73,6 +73,9 @@ type parser_output =
   | Grow_stacks_2
   | Compute_semantic_action
   | Call_error_function
+
+(* to avoid warnings *)
+let _ = [Read_token; Raise_parse_error; Grow_stacks_1; Grow_stacks_2; Compute_semantic_action; Call_error_function]
 
 external parse_engine :
     parse_tables -> parser_env -> parser_input -> Obj.t -> parser_output

@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: main_args.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 module type Bytecomp_options =
   sig
@@ -45,6 +45,7 @@ module type Bytecomp_options =
     val _output_obj : unit -> unit
     val _pack : unit -> unit
     val _pp : string -> unit
+    val _ppx : string -> unit
     val _principal : unit -> unit
     val _rectypes : unit -> unit
     val _runtime_variant : string -> unit
@@ -136,6 +137,7 @@ module type Optcomp_options = sig
   val _p : unit -> unit
   val _pack : unit -> unit
   val _pp : string -> unit
+  val _ppx : string -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit

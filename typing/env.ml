@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: env.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Environment handling *)
 
@@ -632,7 +632,7 @@ let lookup_type lid env =
   r
 
 (* [path] must be the path to a type, not to a module ! *)
-let rec path_subst_last path id =
+let path_subst_last path id =
   match path with
     Pident _ -> Pident id
   | Pdot (p, name, pos) -> Pdot(p, Ident.name id, pos)
@@ -940,7 +940,7 @@ and store_type id path info env =
   let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in
 
-  if not env.in_signature && not loc.Location.loc_ghost &&
+  if not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_constructor ("", false, false))
   then begin
     let ty = Ident.name id in
@@ -954,7 +954,7 @@ and store_type id path info env =
           if not (ty = "" || ty.[0] = '_')
           then !add_delayed_check_forward
               (fun () ->
-                if not used.cu_positive then
+                if not env.in_signature && not used.cu_positive then
                   Location.prerr_warning loc
                     (Warnings.Unused_constructor
                        (c, used.cu_pattern, used.cu_privatize)))
@@ -993,7 +993,7 @@ and store_type_infos id path info env =
 
 and store_exception id path decl env =
   let loc = decl.exn_loc in
-  if not env.in_signature && not loc.Location.loc_ghost &&
+  if not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_exception ("", false))
   then begin
     let ty = "exn" in
@@ -1004,7 +1004,7 @@ and store_exception id path decl env =
       Hashtbl.add used_constructors k (add_constructor_usage used);
       !add_delayed_check_forward
         (fun () ->
-          if not used.cu_positive then
+          if not env.in_signature && not used.cu_positive then
             Location.prerr_warning loc
               (Warnings.Unused_exception
                  (c, used.cu_pattern)
@@ -1338,6 +1338,13 @@ let keep_only_summary env =
     local_constraints = env.local_constraints;
     in_signature = env.in_signature;
 }
+
+let keep_only_summary env =
+  { empty with
+    summary = env.summary;
+    local_constraints = env.local_constraints;
+    in_signature = env.in_signature;
+  }
 
 let env_of_only_summary env_from_summary env =
   let new_env = env_from_summary env.summary Subst.identity in

@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: array.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Array operations *)
 
@@ -147,7 +147,7 @@ let sort cmp a =
       set a i e;
     end;
   in
-  let rec trickle l i e = try trickledown l i e with Bottom i -> set a i e in
+  let trickle l i e = try trickledown l i e with Bottom i -> set a i e in
   let rec bubbledown l i =
     let j = maxson l i in
     set a i (get a j);

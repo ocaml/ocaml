@@ -10,11 +10,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: emit.mlp 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Emission of x86-64 (AMD 64) assembly code *)
 
-open Misc
 open Cmm
 open Arch
 open Proc

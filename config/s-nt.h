@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: s-nt.h 12858 2012-08-10 14:45:51Z maranget $ */
 
 /* Operating system dependencies, Intel x86 processors, Windows NT */
 
@@ -28,3 +28,4 @@
 #define HAS_PUTENV
 #define HAS_LOCALE
 #define HAS_BROKEN_PRINTF
+#define HAS_IPV6

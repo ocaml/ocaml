@@ -21,7 +21,6 @@ open Typedtree
 (*>JOCAML *)
 open Auto
 (*<JOCAML *)
-open Env
 open Lambda
 
 (* DEBUG stuff *)
@@ -832,7 +831,7 @@ let create_table auto gs r =
     let name,_ = auto.cauto_name       (* wrapped name of automaton *)
     and names = auto.cauto_channels in (* all channels *)
 
-    let rec do_guard reac (_, sync, _) k =
+    let do_guard reac (_, sync, _) k =
       let (g, _, actual, _, _) = reac in
 
       let create_reaction jpats r =

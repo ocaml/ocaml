@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: split.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Renaming of registers at reload points to split live ranges. *)
 
@@ -21,7 +21,7 @@ open Mach
 
 type subst = Reg.t Reg.Map.t
 
-let subst_reg r sub =
+let subst_reg r (sub : subst) =
   try
     Reg.Map.find r sub
   with Not_found ->

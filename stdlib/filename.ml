@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: filename.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 let generic_quote quotequote s =
   let l = String.length s in
@@ -132,7 +132,7 @@ module Win32 = struct
         | '\\' -> loop_bs (n+1) (i+1);
         | c    -> add_bs n; loop i
       end
-    and add_bs n = for j = 1 to n do Buffer.add_char b '\\'; done
+    and add_bs n = for _j = 1 to n do Buffer.add_char b '\\'; done
     in
     loop 0;
     Buffer.contents b

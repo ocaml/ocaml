@@ -10,12 +10,11 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: expunge.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* "Expunge" a toplevel by removing compiler modules from the global List.map.
    Usage: expunge <source file> <dest file> <names of modules to keep> *)
 
-open Sys
 open Misc
 
 module StringSet =

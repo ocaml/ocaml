@@ -11,7 +11,7 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
+# $Id: Makefile 12959 2012-09-27 13:12:51Z maranget $
 
 include ../../config/Makefile
 
@@ -21,8 +21,9 @@ COMPILER=../../ocamlcomp.sh -I ../unix $(NOJOIN)
 CAMLC=../../ocamlcomp.sh -I ../unix $(NOJOIN)
 JCC=../../ocamlcomp.sh -I ../unix 
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error A -annot
+COMPFLAGS=-w +33..39 -warn-error A
 OCAMLPP=-pp '../../tools/remove_DEBUG'
+
 
 JOIN_C_OBJS=join.o
 

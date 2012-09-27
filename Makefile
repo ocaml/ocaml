@@ -11,7 +11,7 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
+# $Id: Makefile 12959 2012-09-27 13:12:51Z maranget $
 
 # The main Makefile
 
@@ -20,9 +20,9 @@ include stdlib/StdlibModules
 include otherlibs/systhreads/JoinModules
 include otherlibs/join/StdJoinModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot  $(NOJOIN)
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink $(NOJOIN)
-COMPFLAGS= -annot -strict-sequence -warn-error A $(INCLUDES)
+CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot $(NOJOIN)
+CAMLOPT=boot/ocamlrun ./ocamlopt  $(NOJOIN) -nostdlib -I stdlib -I otherlibs/dynlink
+COMPFLAGS=-strict-sequence -w +33..39 -warn-error A $(INCLUDES)
 LINKFLAGS=
 
 CAMLYACC=boot/ocamlyacc
@@ -56,10 +56,11 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
   typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
-  typing/mtype.cmo typing/includecore.cmo \
+  typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
   typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
   typing/typejoin.cmo \
-  typing/cmt_format.cmo typing/stypes.cmo typing/typecore.cmo \
+  typing/typedtreeIter.cmo typing/typedtreeMap.cmo typing/cmt_format.cmo \
+  typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
   typing/typemod.cmo
 

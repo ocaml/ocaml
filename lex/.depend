@@ -22,10 +22,10 @@ main.cmo : syntax.cmi parser.cmi outputbis.cmi output.cmi lexgen.cmi \
     lexer.cmi cset.cmi compact.cmi common.cmi
 main.cmx : syntax.cmx parser.cmx outputbis.cmx output.cmx lexgen.cmx \
     lexer.cmx cset.cmx compact.cmx common.cmx
-output.cmo : syntax.cmi lexgen.cmi compact.cmi common.cmi output.cmi
-output.cmx : syntax.cmx lexgen.cmx compact.cmx common.cmx output.cmi
-outputbis.cmo : syntax.cmi lexgen.cmi common.cmi outputbis.cmi
-outputbis.cmx : syntax.cmx lexgen.cmx common.cmx outputbis.cmi
+output.cmo : lexgen.cmi compact.cmi common.cmi output.cmi
+output.cmx : lexgen.cmx compact.cmx common.cmx output.cmi
+outputbis.cmo : lexgen.cmi common.cmi outputbis.cmi
+outputbis.cmx : lexgen.cmx common.cmx outputbis.cmi
 parser.cmo : syntax.cmi cset.cmi parser.cmi
 parser.cmx : syntax.cmx cset.cmx parser.cmi
 syntax.cmo : cset.cmi syntax.cmi

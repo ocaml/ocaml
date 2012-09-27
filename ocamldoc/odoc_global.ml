@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_global.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (** Global variables. *)
 
@@ -46,6 +46,7 @@ let recursive_types = Clflags.recursive_types
 
 (** Optional preprocessor command. *)
 let preprocessor = Clflags.preprocessor
+let ppx = Clflags.ppx
 
 let sort_modules = ref false
 

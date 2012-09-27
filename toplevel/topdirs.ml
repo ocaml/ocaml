@@ -10,14 +10,13 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: topdirs.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Toplevel directives *)
 
 open Format
 open Misc
 open Longident
-open Path
 open Types
 open Cmo_format
 open Trace

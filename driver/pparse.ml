@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: pparse.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 open Format
 
@@ -47,6 +47,48 @@ let remove_preprocessed_if_ast inputfile =
 
 exception Outdated_version
 
+let write_ast magic ast =
+  let fn = Filename.temp_file "camlppx" "" in
+  let oc = open_out_bin fn in
+  output_string oc magic;
+  output_value oc !Location.input_name;
+  output_value oc ast;
+  close_out oc;
+  fn
+
+let apply_rewriter fn_in ppx =
+  let fn_out = Filename.temp_file "camlppx" "" in
+  let comm = Printf.sprintf "%s %s %s" ppx (Filename.quote fn_in) (Filename.quote fn_out) in
+  let ok = Ccomp.command comm = 0 in
+  Misc.remove_file fn_in;
+  if not ok then begin
+    Misc.remove_file fn_out;
+    raise Error;
+  end;
+  if not (Sys.file_exists fn_out) then raise Error;
+  fn_out
+
+let read_ast magic fn =
+  let ic = open_in_bin fn in
+  try
+    let buffer = Misc.input_bytes ic (String.length magic) in
+    if buffer <> magic then
+      Misc.fatal_error "OCaml and preprocessor have incompatible versions";
+    Location.input_name := input_value ic;
+    let ast = input_value ic in
+    close_in ic;
+    Misc.remove_file fn;
+    ast
+  with exn ->
+    close_in ic;
+    Misc.remove_file fn;
+    raise exn
+
+let apply_rewriters magic ast ppxs =
+  if ppxs = [] then ast
+  else let fn = List.fold_left apply_rewriter (write_ast magic ast) ppxs in
+  read_ast magic fn
+
 let file ppf inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
@@ -79,4 +121,4 @@ let file ppf inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
-  ast
+  apply_rewriters ast_magic ast !Clflags.ppx

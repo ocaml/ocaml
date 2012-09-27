@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: translcore.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Translation from typed abstract syntax to lambda terms,
    for the core language *)
@@ -18,7 +18,6 @@
 open Misc
 open Asttypes
 open Primitive
-open Path
 open Types
 open Typedtree
 (*>JOCAML *)
@@ -649,9 +648,7 @@ and transl_exp0 e =
         transl_primitive p
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
-  | Texp_ident
-      (path, _,
-       {val_kind = Val_reg|Val_self _}) ->
+  | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
       transl_path path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
@@ -711,7 +708,7 @@ and transl_exp0 e =
   | Texp_apply(funct, oargs) ->
 (* two small optimizations *)
       begin match funct.exp_desc,oargs with
-      | Texp_ident(Pident id, _, {val_kind = Val_reg}),
+      | Texp_ident(Path.Pident id, _, {val_kind = Val_reg}),
          [_,Some arg,_] ->
            begin match get_chan_env id with
            | Some (Alone id) ->
@@ -1073,7 +1070,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
       (if die then Transljoin.tail_send_async else Transljoin.send_async)
       (transl_exp e1) (transl_exp e2) p.exp_loc in
     begin match e1.exp_desc with
-    | Texp_ident (Pident id,_,{val_kind=Val_reg}) ->
+    | Texp_ident (Path.Pident id,_,{val_kind=Val_reg}) ->
         begin match get_chan_env id with
         | Some (Alone id) ->
             (if die then Transljoin.local_tail_send_alone
@@ -1093,7 +1090,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
     | _ ->
         Transljoin.reply_to
           (Transljoin.reply_handler sync p transl_exp e)
-          (transl_path (Pident id)) p.exp_loc
+          (transl_path (Path.Pident id)) p.exp_loc
     end
 | Texp_null -> lambda_unit
 (* Plain expression are errors *)
@@ -1479,7 +1476,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let rec update_field (_, _, lbl, expr) cont =
+    let update_field (_, _, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr)

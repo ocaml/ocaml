@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_global.mli 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (** Global variables. *)
 
@@ -23,7 +23,8 @@ type source_file =
 val include_dirs : string list ref
 
 (** Optional preprocessor command to pass to ocaml compiler. *)
-val preprocessor : string option ref
+val preprocessor : string option ref (* -pp *)
+val ppx : string list ref (* -ppx *)
 
 (** Recursive types flag to passe to ocaml compiler. *)
 val recursive_types : bool ref

@@ -10,13 +10,12 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: emit.mlp 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Emission of Intel 386 assembly code *)
 
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
-open Location
 open Misc
 open Cmm
 open Arch

@@ -129,7 +129,7 @@ let decr c =
   Mutex.unlock c.cmutex
 
 
-let rec hard_wait_zero c = match c.cval with
+let hard_wait_zero c = match c.cval with
 | 0 -> ()
 | _ -> Condition.wait c.ccond c.cmutex
 

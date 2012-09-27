@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: getserv.c 12858 2012-08-10 14:45:51Z maranget $ */
 
 #include <mlvalues.h>
 #include <alloc.h>
@@ -27,8 +27,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#else
-#include <winsock.h>
 #endif
 
 static value alloc_service_entry(struct servent *entry)

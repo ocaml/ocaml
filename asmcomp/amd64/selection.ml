@@ -10,15 +10,13 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: selection.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Instruction selection for the AMD64 *)
 
-open Misc
 open Arch
 open Proc
 open Cmm
-open Reg
 open Mach
 
 (* Auxiliary for recognizing addressing modes *)

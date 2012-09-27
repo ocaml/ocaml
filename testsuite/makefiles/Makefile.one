@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.one 12959 2012-09-27 13:12:51Z maranget $
 
 CMI_FILES=$(MODULES:=.cmi)
 CMO_FILES=$(MODULES:=.cmo)

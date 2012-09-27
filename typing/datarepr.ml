@@ -10,18 +10,17 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: datarepr.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Compute constructor and label descriptions from type declarations,
    determining their representation. *)
 
-open Misc
 open Asttypes
 open Types
 open Btype
 
 (* Simplified version of Ctype.free_vars *)
-let rec free_vars ty =
+let free_vars ty =
   let ret = ref TypeSet.empty in
   let rec loop ty = 
     let ty = repr ty in

@@ -10,7 +10,7 @@
 .\"*                                                                     *
 .\"***********************************************************************
 .\"
-.\" $Id$
+.\" $Id: ocamldoc.m 12858 2012-08-10 14:45:51Z maranget $
 .\"
 .TH OCAMLDOC 1
 
@@ -237,6 +237,10 @@ options.
 .TP
 .BI \-pp \ command
 Pipe sources through preprocessor
+.IR command .
+.TP
+.BI \-ppx \ command
+Pipe abstract syntax tree through preprocessor
 .IR command .
 .TP
 .B \-sort

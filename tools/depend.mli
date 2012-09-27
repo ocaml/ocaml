@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: depend.mli 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (** Module dependencies. *)
 
@@ -21,3 +21,5 @@ val free_structure_names : StringSet.t ref
 val add_use_file : StringSet.t -> Parsetree.toplevel_phrase list -> unit
 
 val add_signature : StringSet.t -> Parsetree.signature -> unit
+
+val add_implementation : StringSet.t -> Parsetree.structure -> unit

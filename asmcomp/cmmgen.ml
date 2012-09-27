@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: cmmgen.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Translation from closed lambda to C-- *)
 
@@ -18,7 +18,6 @@ open Misc
 open Arch
 open Asttypes
 open Primitive
-open Types
 open Lambda
 open Clambda
 open Cmm
@@ -78,7 +77,10 @@ let int_const n =
           (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
 
 let add_const c n =
-  if n = 0 then c else Cop(Caddi, [c; Cconst_int n])
+  if n = 0 then c
+  else match c with
+  | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+  | c -> Cop(Caddi, [c; Cconst_int n])
 
 let incr_int = function
     Cconst_int n when n < max_int -> Cconst_int(n+1)
@@ -710,8 +712,6 @@ let simplif_primitive p =
 (* constants first *)
 
 let transl_isout h arg = tag_int (Cop(Ccmpa Clt, [h ; arg]))
-
-exception Found of int
 
 let make_switch_gen arg cases acts =
   let lcases = Array.length cases in

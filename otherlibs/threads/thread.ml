@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: thread.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* User-level threads *)
 
@@ -27,6 +27,11 @@ type resumption_status =
   | Resumed_select of
       Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
   | Resumed_wait of int * Unix.process_status
+
+(* to avoid warning *)
+let _ = [Resumed_wakeup; Resumed_delay; Resumed_join;
+         Resumed_io; Resumed_select ([], [], []);
+         Resumed_wait (0, Unix.WEXITED 0)]
 
 (* It is mucho important that the primitives that reschedule are called
    through an ML function call, not directly. That's because when such a

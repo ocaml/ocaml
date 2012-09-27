@@ -16,8 +16,6 @@
   mutable sets with readers/writer protection
 *)
 
-open Join_misc
-
 type 'a t = {
   mutable xs : 'a list ;
   mtx : Mutex.t ;

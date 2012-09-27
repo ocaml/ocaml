@@ -124,7 +124,7 @@ let dump_info chan g s print_info =
   iter g pnode
 
 
-module Bag = struct
+module Bag = (struct
 
   type 'a t = 'a Stack.t
 
@@ -139,7 +139,14 @@ module Bag = struct
       Stack.Empty -> raise Empty
   let is_empty b = Stack.is_empty b
 
-end
+end : sig
+  type 'a t
+  exception Empty
+  val create : unit -> 'a t
+  val put : 'a t -> 'a -> unit
+  val get : 'a t -> 'a
+  val is_empty : 'a t -> bool
+end )
 
 
 let top_sort t =

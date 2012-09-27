@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: matching.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Compilation of pattern matching *)
 
@@ -274,9 +274,9 @@ let ctx_match ctx pss =
         pss)
     ctx
 
-type jumps = (int * ctx ) list
+type jumps = (int * ctx list) list
 
-let pretty_jumps env = match env with
+let pretty_jumps (env : jumps) = match env with
 | [] -> ()
 | _ ->
     List.iter
@@ -342,7 +342,7 @@ let rec jumps_unions envs = match envs with
   | [env] -> env
   | _ -> jumps_unions (merge envs)
 
-let rec jumps_map f env =
+let jumps_map f env =
   List.map
     (fun (i,pss) -> i,f pss)
     env
@@ -530,7 +530,7 @@ let simplify_or p =
   with
   | Var p -> p
 
-let rec simplify_cases args cls = match args with
+let simplify_cases args cls = match args with
 | [] -> assert false
 | (arg,_)::_ ->
     let rec simplify = function
@@ -1761,7 +1761,7 @@ let as_interval_canfail fail low high l =
           (cur_low,i-1,0)::
           nofail_rec i i index rem in
 
-  let rec init_rec = function
+  let init_rec = function
     | [] -> []
     | (i,act_i)::rem ->
         let index = store.act_store act_i in
@@ -2323,7 +2323,7 @@ let bind_check str v arg lam = match str,arg with
 | Alias,_ -> lower_bind v arg lam
 | _,_     -> bind str v arg lam
 
-let rec comp_exit ctx m = match m.default with
+let comp_exit ctx m = match m.default with
 | (_,i)::_ -> Lstaticraise (i,[]), jumps_singleton i ctx
 | _        -> fatal_error "Matching.comp_exit"
 
@@ -2623,7 +2623,7 @@ let flatten_pm size args pm =
      default = flatten_def size pm.default}
 
 
-let rec flatten_precompiled size args  pmh = match pmh with
+let flatten_precompiled size args  pmh = match pmh with
 | Pm pm -> Pm (flatten_pm size args pm)
 | PmOr {body=b ; handlers=hs ; or_matrix=m} ->
     PmOr
@@ -2714,7 +2714,7 @@ let arg_to_var arg cls = match arg with
     v,Lvar v
 
 
-let rec param_to_var param = match param with
+let param_to_var param = match param with
 | Lvar v -> v,None
 | _ -> Ident.create "match",Some param
 

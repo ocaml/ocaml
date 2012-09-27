@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: parmatch.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Detection of partial matches and unused match cases. *)
 
@@ -120,7 +120,7 @@ let get_type_path ty tenv =
   | Tconstr (path,_,_) -> path
   | _ -> fatal_error "Parmatch.get_type_path"
 
-let rec get_type_descr ty tenv =
+let get_type_descr ty tenv =
   match (Ctype.repr ty).desc with
   | Tconstr (path,_,_) -> Env.find_type path tenv
   | _ -> fatal_error "Parmatch.get_type_descr"
@@ -1008,8 +1008,8 @@ type 'a result =
   | Rsome of 'a     (* This matching value *)
 
 let rec orify_many =
-  let rec orify x y =
-    make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
+  let orify x y = 
+    make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env	
   in
   function
     | [] -> assert false
@@ -1024,7 +1024,7 @@ let rec try_many  f = function
       | r -> r
 
 
-let rec try_many_gadt  f = function
+let try_many_gadt  f = function
   | [] -> Rnone
   | (p,pss)::rest ->
       match f (p,pss) with
@@ -1277,7 +1277,7 @@ let pretty_line ps =
       prerr_string ">")
     ps
 
-let pretty_matrix pss =
+let pretty_matrix (pss : matrix) =
   prerr_endline "begin matrix" ;
   List.iter
     (fun ps ->
@@ -2090,7 +2090,6 @@ let rec inactive pat = match pat with
 (* A `fluid' pattern is both irrefutable and inactive *)
 
 let fluid pat =  irrefutable pat && inactive pat.pat_desc
-
 
 
 
