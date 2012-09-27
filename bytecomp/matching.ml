@@ -2409,6 +2409,7 @@ let rec compile_match repr partial ctx m = match m with
 
 
 (* verbose version of do_compile_matching, for debug *)
+
 (*
 and do_compile_matching_pr repr partial ctx arg x =
   prerr_string "COMPILE: " ;
@@ -2422,6 +2423,7 @@ and do_compile_matching_pr repr partial ctx arg x =
   pretty_jumps jumps ;
   r
 *)
+
 and do_compile_matching repr partial ctx arg pmh = match pmh with
 | Pm pm ->
   let pat = what_is_cases pm.cases in

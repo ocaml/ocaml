@@ -17,6 +17,7 @@ open Asttypes
 open Typedtree
 open Types
 
+val pretty_const : constant -> string
 val top_pretty : Format.formatter -> pattern -> unit
 val pretty_pat : pattern -> unit
 val pretty_line : pattern list -> unit

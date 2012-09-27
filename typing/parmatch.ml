@@ -172,6 +172,14 @@ let is_cons tag v  = match get_constr_name tag v.pat_type v.pat_env with
 | "::" -> true
 | _ -> false
 
+let pretty_const c = match c with
+| Const_int i -> Printf.sprintf "%d" i
+| Const_char c -> Printf.sprintf "%C" c
+| Const_string s -> Printf.sprintf "%S" s
+| Const_float f -> Printf.sprintf "%s" f
+| Const_int32 i -> Printf.sprintf "%ldl" i
+| Const_int64 i -> Printf.sprintf "%LdL" i
+| Const_nativeint i -> Printf.sprintf "%ndn" i
 
 let rec pretty_val ppf v =
   match v.pat_extra with
@@ -188,13 +196,7 @@ let rec pretty_val ppf v =
   match v.pat_desc with
   | Tpat_any -> fprintf ppf "_"
   | Tpat_var (x,_) -> Ident.print ppf x
-  | Tpat_constant (Const_int i) -> fprintf ppf "%d" i
-  | Tpat_constant (Const_char c) -> fprintf ppf "%C" c
-  | Tpat_constant (Const_string s) -> fprintf ppf "%S" s
-  | Tpat_constant (Const_float f) -> fprintf ppf "%s" f
-  | Tpat_constant (Const_int32 i) -> fprintf ppf "%ldl" i
-  | Tpat_constant (Const_int64 i) -> fprintf ppf "%LdL" i
-  | Tpat_constant (Const_nativeint i) -> fprintf ppf "%ndn" i
+  | Tpat_constant c -> fprintf ppf "%s" (pretty_const c)
   | Tpat_tuple vs ->
       fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
   | Tpat_construct (_, _, {cstr_tag=tag},[], _) ->
