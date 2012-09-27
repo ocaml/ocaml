@@ -779,7 +779,12 @@ static void caml_ba_serialize(value v,
   }
   /* Compute required size in OCaml heap.  Assumes struct caml_ba_array
      is exactly 4 + num_dims words */
+  /* PR#5516: use C99's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L)
+  Assert(sizeof(struct caml_ba_array) == 4 * sizeof(value));
+#else
   Assert(sizeof(struct caml_ba_array) == 5 * sizeof(value));
+#endif
   *wsize_32 = (4 + b->num_dims) * 4;
   *wsize_64 = (4 + b->num_dims) * 8;
 }
@@ -846,7 +851,12 @@ uintnat caml_ba_deserialize(void * dst)
   case CAML_BA_NATIVE_INT:
     caml_ba_deserialize_longarray(b->data, num_elts); break;
   }
+  /* PR#5516: use C99's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L)
+  return sizeof(struct caml_ba_array) + b->num_dims * sizeof(intnat);
+#else
   return sizeof(struct caml_ba_array) + (b->num_dims - 1) * sizeof(intnat);
+#endif
 }
 
 /* Create / update proxy to indicate that b2 is a sub-array of b1 */
