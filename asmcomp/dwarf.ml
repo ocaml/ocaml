@@ -591,6 +591,7 @@ let emit_debugging_info_epilogue ~source_file_path
       Dwarf_attribute_value.create_high_pc ~address_label:end_of_code_label;
       Dwarf_attribute_value.create_stmt_list
         ~section_offset_label:".Ldebug_line0";
+      Dwarf_attribute_value.create_comp_dir ~directory:(Sys.getcwd ());
     ]
     in
     match source_file_path with
@@ -601,7 +602,6 @@ let emit_debugging_info_epilogue ~source_file_path
   let function_symbol_attribute_values symbol =
     symbol, Dwarf_tag.subprogram, [
       Dwarf_attribute_value.create_name ~source_file_path:symbol;
-      Dwarf_attribute_value.create_comp_dir ~directory:(Sys.getcwd ());
       Dwarf_attribute_value.create_external ~is_visible_externally:true;
     ]
   in
