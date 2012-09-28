@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: opterrors.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* WARNING: if you change something in this file, you must look at
    errors.ml to see if you need to make the same changes there.

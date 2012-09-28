@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: tbl.mli 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Association tables from any ordered type to any type.
    We use the generic ordering to compare keys. *)

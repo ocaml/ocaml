@@ -95,5 +95,6 @@ CAMLBAextern value
     caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim);
 CAMLBAextern value caml_ba_alloc_dims(int flags, int num_dims, void * data,
                                  ... /*dimensions, with type intnat */);
+CAMLBAextern uintnat caml_ba_byte_size(struct caml_ba_array * b);
 
 #endif

@@ -1,7 +1,7 @@
 # This file lists all standard library modules
 # (in the same order as Makefile.shared).
 # It is used in particular to know what to expunge in toplevels.
-# $Id$
+# $Id: stdlib.mllib 9641 2010-03-09 15:46:32Z maranget $
 
 Pervasives
 Array

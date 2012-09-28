@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: gethostbyaddr.c 12858 2012-08-10 14:45:51Z maranget $ */
 
 #ifndef _REENTRANT
 /* This helps detection on Digital Unix... */

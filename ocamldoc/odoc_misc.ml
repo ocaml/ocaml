@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_misc.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 let input_file_as_string nom =
   let chanin = open_in_bin nom in
@@ -487,4 +487,4 @@ let remove_option typ =
   in
   { typ with Types.desc = iter typ.Types.desc }
 
-(* eof $Id$ *)
+(* eof $Id: odoc_misc.ml 12959 2012-09-27 13:12:51Z maranget $ *)

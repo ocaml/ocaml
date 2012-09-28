@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_str.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
@@ -286,4 +286,4 @@ let string_of_method m =
     None -> ""
   | Some i -> Odoc_misc.string_of_info i)
 
-(* eof $Id$ *)
+(* eof $Id: odoc_str.ml 12959 2012-09-27 13:12:51Z maranget $ *)

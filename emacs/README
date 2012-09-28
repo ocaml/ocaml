@@ -1,4 +1,4 @@
-        OCaml emacs mode, snapshot of $Date$
+        OCaml emacs mode, snapshot of $Date: 2012-08-10 16:45:51 +0200 (Fri, 10 Aug 2012) $
 
 The files in this archive define a caml-mode for emacs, for editing
 OCaml and Objective Label programs, as well as an

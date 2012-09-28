@@ -10,7 +10,7 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id$ *)
+;(* $Id: caml-hilit.el 12858 2012-08-10 14:45:51Z maranget $ *)
 
 ; Highlighting patterns for hilit19 under caml-mode
 

@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: typedecl.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Typing of type definitions and primitive definitions *)
 

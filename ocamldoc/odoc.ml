@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc.ml 11010 2011-04-13 09:30:59Z maranget $ *)
 
 (** Main module for bytecode.
 @todo coucou le todo*)
@@ -138,6 +138,6 @@ let _ =
 <<<<<<< .courant
   
 
-(* eof $Id$ *)
+(* eof $Id: odoc.ml 11010 2011-04-13 09:30:59Z maranget $ *)
 =======
 >>>>>>> .fusion-droit.r10497

@@ -1,10 +1,10 @@
-# $Id$
+# $Id: Makefile.toplevel 12858 2012-08-10 14:45:51Z maranget $
 
 default:
 	@for file in *.ml; do \
-	  $(OCAML) < $$file 2>&1 | grep -v '^        OCaml version' > $$file.result; \
+	  $(OCAML) < $$file 2>&1 | grep -v '^        JoCaml version' > $$file.result; \
 	  if [ -f $$file.principal.reference ]; then \
-	    $(OCAML) -principal < $$file 2>&1 | grep -v '^        OCaml version' > $$file.principal.result; \
+	    $(OCAML) -principal < $$file 2>&1 | grep -v '^        JoCaml version' > $$file.principal.result; \
 	  fi; \
 	done
 	@for file in *.reference; do \

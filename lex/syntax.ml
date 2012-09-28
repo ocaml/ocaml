@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: syntax.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* This apparently useless implmentation file is in fact required
    by the pa_ocamllex syntax extension *)

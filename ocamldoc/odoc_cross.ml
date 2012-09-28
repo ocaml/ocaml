@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_cross.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Cross referencing. *)
 
@@ -1126,4 +1126,4 @@ let associate module_list =
   ignore (associate_type_of_elements_in_comments module_list)
         
 
-(* eof $Id$ *)
+(* eof $Id: odoc_cross.ml 12959 2012-09-27 13:12:51Z maranget $ *)

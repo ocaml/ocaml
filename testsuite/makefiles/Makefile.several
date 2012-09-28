@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.several 12959 2012-09-27 13:12:51Z maranget $
 
 CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 FC=$(FORTAN_COMPILER)
@@ -13,27 +13,28 @@ ADD_CFLAGS+=$(CUSTOM_FLAG)
 FORTRAN_LIB=`if [ -z "$(F_FILES)" ]; then true; else echo '$(FORTRAN_LIBRARY)'; fi`
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
+ADD_COMPFLAGS+=-nojoin
 
 check:
 	@if [ -n "$(FORTRAN_COMPILER)" -o -z "$(F_FILES)" ]; then $(MAKE) run-all; fi
 
 run-all:
 	@for file in $(C_FILES); do \
-	  $(CC) -c -I$(PREFIX)/lib/ocaml/caml $$file.c; \
+	  $(CC) -c -I$(PREFIX)/lib/ocaml/jocaml $$file.c; \
 	done;
 	@for file in $(F_FILES); do \
-	  $(FORTRAN_COMPILER) -c -I$(PREFIX)/lib/ocaml/caml $$file.f; \
+	  $(FORTRAN_COMPILER) -c -I$(PREFIX)/lib/ocaml/jocaml $$file.f; \
 	done;
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
-	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) -w a $(CMA_FILES) -I $(BASEDIR)/lib $(CMO_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
+	  $(MAKE) run-file DESC=jocamlc COMP='$(OCAMLC)' COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) -w a $(CMA_FILES) -I $(BASEDIR)/lib $(CMO_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
 	  if [ -z "$(BYTECODE_ONLY)" ]; then \
-	    $(MAKE) run-file DESC=ocamlopt COMP=$(PREFIX)/bin/jocamlopt COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES) -w a $(CMXA_FILES) -I $(BASEDIR)/lib $(CMX_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS); \
+	    $(MAKE) run-file DESC=jocamlopt COMP=$(PREFIX)/bin/jocamlopt COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES) -w a $(CMXA_FILES) -I $(BASEDIR)/lib $(CMX_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS); \
 	  fi && \
 	  if [ ! -z $(UNSAFE) ]; then \
-	    $(MAKE) run-file DESC=ocamlc-unsafe COMP=$(PREFIX)/bin/jocamlc COMPFLAGS='-w a -unsafe -I $(BASEDIR)/lib $(CMO_FILES)' FILE=$$file && \
+	    $(MAKE) run-file DESC=jocamlc-unsafe COMP=$(PREFIX)/bin/jocamlc COMPFLAGS='-w a -unsafe -I $(BASEDIR)/lib $(CMO_FILES)' FILE=$$file && \
 	    if [ -z "$(BYTECODE_ONLY)" ]; then \
-	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP=$(PREFIX)/bin/jocamlopt COMPFLAGS='-w a -unsafe -I $(BASEDIR)/lib $(CMX_FILES)' FILE=$$file; \
+	      $(MAKE) run-file DESC=jocamlopt-unsafe COMP=$(PREFIX)/bin/jocamlopt COMPFLAGS='-w a -unsafe -I $(BASEDIR)/lib $(CMX_FILES)' FILE=$$file; \
 	    fi; \
 	  fi && \
 	  echo " => passed"; \

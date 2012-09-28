@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_comments_global.mli 10519 2010-06-04 19:19:34Z maranget $ *)
 
 (** The global variables used by the special comment parser.*)
 

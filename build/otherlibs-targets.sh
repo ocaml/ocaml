@@ -12,7 +12,7 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
+# $Id: otherlibs-targets.sh 12858 2012-08-10 14:45:51Z maranget $
 
 OTHERLIBS_BYTE=""
 OTHERLIBS_NATIVE=""

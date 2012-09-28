@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_see_lexer.mll 10519 2010-06-04 19:19:34Z maranget $ *)
 
 let print_DEBUG2 s = print_string s ; print_newline ()
 

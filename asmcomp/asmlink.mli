@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: asmlink.mli 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (* Link a set of .cmx/.o files and produce an executable or a plugin *)
 

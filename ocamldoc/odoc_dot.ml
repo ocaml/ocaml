@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_dot.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (** Definition of a class which outputs a dot file showing 
    top modules dependencies.*)

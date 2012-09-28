@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_merge.ml 12845 2012-08-09 12:54:45Z maranget $ *)
 
 (** Merge of information from [.ml] and [.mli] for a module.*)
 
@@ -996,4 +996,4 @@ let merge merge_options modules_list =
   in
   iter modules_list
   
-(* eof $Id$ *)
+(* eof $Id: odoc_merge.ml 12845 2012-08-09 12:54:45Z maranget $ *)

@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: predef.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Predefined type constructors (with special typing rules in typecore) *)
 

@@ -11,6 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: cst2constr.h 12858 2012-08-10 14:45:51Z maranget $ */
 
 extern value cst_to_constr(int n, int * tbl, int size, int deflt);

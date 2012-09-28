@@ -14,7 +14,7 @@ compile:
 	done
 	@$(OCAMLC) -c main.ml
 	@$(OCAMLC) -o main dynlink.cma registry.cmo main.cmo
-	@$(OCAMLC) -o static -linkall registry.cmo plug1.cma plug2.cma -use-runtime $(PREFIX)/bin/ocamlrun
+	@$(OCAMLC) -o static -linkall registry.cmo plug1.cma plug2.cma -use-runtime $(PREFIX)/bin/jocamlrun
 	@$(OCAMLC) -o custom -custom -linkall registry.cmo plug2.cma plug1.cma -I .
 
 run:

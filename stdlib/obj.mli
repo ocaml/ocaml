@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: obj.mli 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (** Operations on internal representations of values.
 

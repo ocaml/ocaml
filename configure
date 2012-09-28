@@ -937,7 +937,7 @@ fi
 
 # Configuration for the libraries
 
-otherlibraries="unix dynlink"
+otherlibraries="unix dynlink bigarray"
 
 # For the Unix library
 

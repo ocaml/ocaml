@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_info.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Interface for analysing documented OCaml source files and to the collected information. *)
 

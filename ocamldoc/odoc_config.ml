@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_config.ml 6336 2004-05-27 09:18:38Z maranget $ *)
 
 let custom_generators_path = 
   Filename.concat Config.standard_library 

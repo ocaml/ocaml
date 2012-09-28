@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: main.c 12858 2012-08-10 14:45:51Z maranget $ */
 
 /* Main entry point (can be overridden by a user-provided main()
    function that calls caml_main() later). */

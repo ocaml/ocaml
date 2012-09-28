@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: graphics.mli 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (** Machine-independent graphics primitives. *)
 

@@ -11,7 +11,7 @@
 ;*                                                                     *
 ;***********************************************************************
 
-; $Id$
+; $Id: amd64nt.asm 12858 2012-08-10 14:45:51Z maranget $
 
 ; Asm part of the runtime system, AMD64 processor, Intel syntax
 

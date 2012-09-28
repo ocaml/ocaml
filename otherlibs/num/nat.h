@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: nat.h 12858 2012-08-10 14:45:51Z maranget $ */
 
 /* Nats are represented as unstructured blocks with tag Custom_tag. */
 

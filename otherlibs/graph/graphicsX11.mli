@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: graphicsX11.mli 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (** Additional graphics primitives for the X Windows system. *)
 

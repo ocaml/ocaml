@@ -50,7 +50,6 @@ OTHEROBJS=\
   $(TOPDIR)/typing/typedtreeMap.cmo \
   $(TOPDIR)/typing/cmt_format.cmo \
   $(TOPDIR)/typing/stypes.cmo \
-  $(TOPDIR)/typing/joinmatching.cmo \
   $(TOPDIR)/typing/typejoin.cmo \
   $(TOPDIR)/typing/typecore.cmo \
   $(TOPDIR)/typing/typedecl.cmo \
@@ -60,6 +59,7 @@ OTHEROBJS=\
   $(TOPDIR)/bytecomp/printlambda.cmo \
   $(TOPDIR)/bytecomp/typeopt.cmo \
   $(TOPDIR)/bytecomp/switch.cmo \
+  $(TOPDIR)/bytecomp/joinmatching.cmo \
   $(TOPDIR)/bytecomp/matching.cmo \
   $(TOPDIR)/bytecomp/translobj.cmo \
   $(TOPDIR)/bytecomp/transljoin.cmo \

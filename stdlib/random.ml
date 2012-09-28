@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: random.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Pseudo-random number generator
    This is a lagged-Fibonacci F(55, 24, +) with a modified addition

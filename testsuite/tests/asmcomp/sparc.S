@@ -10,7 +10,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: sparc.S 12959 2012-09-27 13:12:51Z maranget $ */
 
 #if defined(SYS_solaris) || defined(SYS_elf)
 #define Call_gen_code _call_gen_code

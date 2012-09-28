@@ -1,9 +1,8 @@
-# $Id$
+# $Id: Makefile.common 12959 2012-09-27 13:12:51Z maranget $
 
 TOPDIR=$(BASEDIR)/..
 
 include $(TOPDIR)/config/Makefile
-
 DIFF=diff -q
 BOOTDIR=$(TOPDIR)/boot
 OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)

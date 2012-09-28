@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: warnings.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* When you change this, you need to update the documentation:
    - man/ocamlc.m   in ocaml

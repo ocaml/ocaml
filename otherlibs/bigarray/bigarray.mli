@@ -227,7 +227,7 @@ module Genarray :
      Big arrays returned by [Genarray.create] are not initialized:
      the initial values of array elements is unspecified.
 
-     [Genarray.create] raises [Invalid_arg] if the number of dimensions
+     [Genarray.create] raises [Invalid_argument] if the number of dimensions
      is not in the range 1 to 16 inclusive, or if one of the dimensions
      is negative. *)
 
@@ -243,7 +243,7 @@ module Genarray :
      big array [a].  The first dimension corresponds to [n = 0];
      the second dimension corresponds to [n = 1]; the last dimension,
      to [n = Genarray.num_dims a - 1].
-     Raise [Invalid_arg] if [n] is less than 0 or greater or equal than
+     Raise [Invalid_argument] if [n] is less than 0 or greater or equal than
      [Genarray.num_dims a]. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
@@ -262,7 +262,7 @@ module Genarray :
      and strictly less than the corresponding dimensions of [a].
      If [a] has Fortran layout, the coordinates must be greater or equal
      than 1 and less or equal than the corresponding dimensions of [a].
-     Raise [Invalid_arg] if the array [a] does not have exactly [N]
+     Raise [Invalid_argument] if the array [a] does not have exactly [N]
      dimensions, or if the coordinates are outside the array bounds.
 
      If [N > 3], alternate syntax is provided: you can write
@@ -280,7 +280,7 @@ module Genarray :
 
      The array [a] must have exactly [N] dimensions, and all coordinates
      must lie inside the array bounds, as described for [Genarray.get];
-     otherwise, [Invalid_arg] is raised.
+     otherwise, [Invalid_argument] is raised.
 
      If [N > 3], alternate syntax is provided: you can write
      [a.{i1, i2, ..., iN} <- v] instead of
@@ -304,7 +304,7 @@ module Genarray :
      array [a].
 
      [Genarray.sub_left] applies only to big arrays in C layout.
-     Raise [Invalid_arg] if [ofs] and [len] do not designate
+     Raise [Invalid_argument] if [ofs] and [len] do not designate
      a valid sub-array of [a], that is, if [ofs < 0], or [len < 0],
      or [ofs + len > Genarray.nth_dim a 0]. *)
 
@@ -324,7 +324,7 @@ module Genarray :
      array [a].
 
      [Genarray.sub_right] applies only to big arrays in Fortran layout.
-     Raise [Invalid_arg] if [ofs] and [len] do not designate
+     Raise [Invalid_argument] if [ofs] and [len] do not designate
      a valid sub-array of [a], that is, if [ofs < 1], or [len < 0],
      or [ofs + len > Genarray.nth_dim a (Genarray.num_dims a - 1)]. *)
 
@@ -343,7 +343,7 @@ module Genarray :
      the original array share the same storage space.
 
      [Genarray.slice_left] applies only to big arrays in C layout.
-     Raise [Invalid_arg] if [M >= N], or if [[|i1; ... ; iM|]]
+     Raise [Invalid_argument] if [M >= N], or if [[|i1; ... ; iM|]]
      is outside the bounds of [a]. *)
 
   external slice_right:
@@ -361,7 +361,7 @@ module Genarray :
      the original array share the same storage space.
 
      [Genarray.slice_right] applies only to big arrays in Fortran layout.
-     Raise [Invalid_arg] if [M >= N], or if [[|i1; ... ; iM|]]
+     Raise [Invalid_argument] if [M >= N], or if [[|i1; ... ; iM|]]
      is outside the bounds of [a]. *)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
@@ -391,7 +391,7 @@ module Genarray :
      the file descriptor [fd] (as opened previously with
      [Unix.openfile], for example).  The optional [pos] parameter
      is the byte offset in the file of the data being mapped;
-     it default to 0 (map from the beginning of the file).
+     it defaults to 0 (map from the beginning of the file).
 
      If [shared] is [true], all modifications performed on the array
      are reflected in the file.  This requires that [fd] be opened
@@ -464,14 +464,14 @@ module Array1 : sig
      [x] must be greater or equal than [0] and strictly less than
      [Array1.dim a] if [a] has C layout.  If [a] has Fortran layout,
      [x] must be greater or equal than [1] and less or equal than
-     [Array1.dim a].  Otherwise, [Invalid_arg] is raised. *)
+     [Array1.dim a].  Otherwise, [Invalid_argument] is raised. *)
 
   external set: ('a, 'b, 'c) t -> int -> 'a -> unit = "%caml_ba_set_1"
   (** [Array1.set a x v], also written [a.{x} <- v],
      stores the value [v] at index [x] in [a].
      [x] must be inside the bounds of [a] as described in
      {!Bigarray.Array1.get};
-     otherwise, [Invalid_arg] is raised. *)
+     otherwise, [Invalid_argument] is raised. *)
 
   external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t
       = "caml_ba_sub"
@@ -495,6 +495,18 @@ module Array1 : sig
     bool -> int -> ('a, 'b, 'c) t
   (** Memory mapping of a file as a one-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
+
+  external unsafe_get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
+  (** Like {!Bigarray.Array1.get}, but bounds checking is not always performed.
+      Use with caution and only when the program logic guarantees that
+      the access is within bounds. *)
+
+  external unsafe_set: ('a, 'b, 'c) t -> int -> 'a -> unit
+                     = "%caml_ba_unsafe_set_1"
+  (** Like {!Bigarray.Array1.set}, but bounds checking is not always performed.
+      Use with caution and only when the program logic guarantees that
+      the access is within bounds. *)
+
 end
 
 
@@ -533,14 +545,14 @@ module Array2 :
      returns the element of [a] at coordinates ([x], [y]).
      [x] and [y] must be within the bounds
      of [a], as described for {!Bigarray.Genarray.get};
-     otherwise, [Invalid_arg] is raised. *)
+     otherwise, [Invalid_argument] is raised. *)
 
   external set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit = "%caml_ba_set_2"
   (** [Array2.set a x y v], or alternatively [a.{x,y} <- v],
      stores the value [v] at coordinates ([x], [y]) in [a].
      [x] and [y] must be within the bounds of [a],
      as described for {!Bigarray.Genarray.set};
-     otherwise, [Invalid_arg] is raised. *)
+     otherwise, [Invalid_argument] is raised. *)
 
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
     = "caml_ba_sub"
@@ -589,7 +601,17 @@ module Array2 :
   (** Memory mapping of a file as a two-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
 
-  end
+  external unsafe_get: ('a, 'b, 'c) t -> int -> int -> 'a
+                     = "%caml_ba_unsafe_ref_2"
+  (** Like {!Bigarray.Array2.get}, but bounds checking is not always
+      performed. *)
+
+  external unsafe_set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit
+                     = "%caml_ba_unsafe_set_2"
+  (** Like {!Bigarray.Array2.set}, but bounds checking is not always
+      performed. *)
+
+end
 
 (** {6 Three-dimensional arrays} *)
 
@@ -629,7 +651,7 @@ module Array3 :
      returns the element of [a] at coordinates ([x], [y], [z]).
      [x], [y] and [z] must be within the bounds of [a],
      as described for {!Bigarray.Genarray.get};
-     otherwise, [Invalid_arg] is raised. *)
+     otherwise, [Invalid_argument] is raised. *)
 
   external set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit
     = "%caml_ba_set_3"
@@ -637,7 +659,7 @@ module Array3 :
      stores the value [v] at coordinates ([x], [y], [z]) in [a].
      [x], [y] and [z] must be within the bounds of [a],
      as described for {!Bigarray.Genarray.set};
-     otherwise, [Invalid_arg] is raised. *)
+     otherwise, [Invalid_argument] is raised. *)
 
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
     = "caml_ba_sub"
@@ -706,7 +728,18 @@ module Array3 :
              bool -> int -> int -> int -> ('a, 'b, 'c) t
   (** Memory mapping of a file as a three-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
-  end
+
+  external unsafe_get: ('a, 'b, 'c) t -> int -> int -> int -> 'a
+                     = "%caml_ba_unsafe_ref_3"
+  (** Like {!Bigarray.Array3.get}, but bounds checking is not always
+      performed. *)
+
+  external unsafe_set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit
+                     = "%caml_ba_unsafe_set_3"
+  (** Like {!Bigarray.Array3.set}, but bounds checking is not always
+      performed. *)
+
+end
 
 (** {6 Coercions between generic big arrays and fixed-dimension big arrays} *)
 
@@ -727,17 +760,17 @@ external genarray_of_array3 :
 
 val array1_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array1.t
 (** Return the one-dimensional big array corresponding to the given
-   generic big array.  Raise [Invalid_arg] if the generic big array
+   generic big array.  Raise [Invalid_argument] if the generic big array
    does not have exactly one dimension. *)
 
 val array2_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array2.t
 (** Return the two-dimensional big array corresponding to the given
-   generic big array.  Raise [Invalid_arg] if the generic big array
+   generic big array.  Raise [Invalid_argument] if the generic big array
    does not have exactly two dimensions. *)
 
 val array3_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array3.t
 (** Return the three-dimensional big array corresponding to the given
-   generic big array.  Raise [Invalid_arg] if the generic big array
+   generic big array.  Raise [Invalid_argument] if the generic big array
    does not have exactly three dimensions. *)
 
 
@@ -757,7 +790,7 @@ val reshape : ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
    The returned big array must have exactly the same number of
    elements as the original big array [b].  That is, the product
    of the dimensions of [b] must be equal to [i1 * ... * iN].
-   Otherwise, [Invalid_arg] is raised. *)
+   Otherwise, [Invalid_argument] is raised. *)
 
 val reshape_1 : ('a, 'b, 'c) Genarray.t -> int -> ('a, 'b, 'c) Array1.t
 (** Specialized version of {!Bigarray.reshape} for reshaping to

@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: ia32sse2.c 12858 2012-08-10 14:45:51Z maranget $ */
 
 /* Test whether IA32 assembler supports SSE2 instructions */
 

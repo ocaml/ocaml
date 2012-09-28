@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_comments.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Analysis of comments. *)
 
@@ -322,7 +322,7 @@ module Info_retriever =
 module Basic_info_retriever = Info_retriever (Odoc_text.Texter)
 
 <<<<<<< .courant
-(* eof $Id$ *)
+(* eof $Id: odoc_comments.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 =======
 let info_of_string s =
   let dummy =

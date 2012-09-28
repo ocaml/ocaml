@@ -11,7 +11,7 @@
 ;*                                                                     *
 ;***********************************************************************
 
-; $Id$
+; $Id: i386nt.asm 12858 2012-08-10 14:45:51Z maranget $
 
 ; Asm part of the runtime system, Intel 386 processor, Intel syntax
 

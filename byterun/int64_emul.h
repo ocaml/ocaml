@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: int64_emul.h 12858 2012-08-10 14:45:51Z maranget $ */
 
 /* Software emulation of 64-bit integer arithmetic, for C compilers
    that do not support it.  */

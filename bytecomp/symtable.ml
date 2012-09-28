@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: symtable.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* To assign numbers to globals and primitives *)
 

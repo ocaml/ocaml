@@ -12,7 +12,7 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
-/* $Id$ */
+/* $Id: defs.h 12858 2012-08-10 14:45:51Z maranget $ */
 
 #include <assert.h>
 #include <ctype.h>

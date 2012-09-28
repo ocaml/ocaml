@@ -12,7 +12,7 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id$ *)
+;(* $Id: ocamltags.in 12858 2012-08-10 14:45:51Z maranget $ *)
 
 ;; Copyright (C) 1998 Ian Zimmerman <itz@transbay.net>
 ;;  This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@
 ;;  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ;;  General Public License for more details.
-;; $Id$
+;; $Id: ocamltags.in 12858 2012-08-10 14:45:51Z maranget $
 
 (require 'caml)
 

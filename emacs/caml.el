@@ -10,7 +10,7 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id$ *)
+;(* $Id: caml.el 12858 2012-08-10 14:45:51Z maranget $ *)
 
 ;;; caml.el --- OCaml code editing commands for Emacs
 ;; Luc Maranget, January 2008. A few jocaml additions.

@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: sparc.S 12858 2012-08-10 14:45:51Z maranget $ */
 
 /* Asm part of the runtime system for the Sparc processor.  */
 /* Must be preprocessed by cpp */

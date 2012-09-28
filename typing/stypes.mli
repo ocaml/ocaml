@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: stypes.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (* Recording and dumping (partial) type information *)
 

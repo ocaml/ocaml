@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: odoc_str.mli 10519 2010-06-04 19:19:34Z maranget $ *)
 
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 

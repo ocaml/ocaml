@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: backtrace.c 12858 2012-08-10 14:45:51Z maranget $ */
 
 /* Stack backtrace for uncaught exceptions */
 

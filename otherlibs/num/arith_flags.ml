@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: arith_flags.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 let error_when_null_denominator_flag = ref true;;
 

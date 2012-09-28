@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: gc.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Memory management control and statistics; finalised values. *)
 
