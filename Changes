@@ -11,6 +11,7 @@ Bug fixes:
 - PR#5712: some documentation problems
 - PR#5718: false positive on 'unused constructor' warning
 - PR#5719: ocamlyacc generates code that is not warning 33-compliant
+- PR#5727: emacs caml-mode indents shebang line in toplevel scripts
 - PR#5731: instruction scheduling forgot to account for destroyed registers
 - PR#5735: %apply and %revapply not first class citizens
 - PR#5738: first class module patterns not handled by ocamldep
