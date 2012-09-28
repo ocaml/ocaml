@@ -849,7 +849,7 @@ let rec transl = function
   | Uconst (sc, None) ->
       transl_constant sc
   | Uclosure(fundecls, []) ->
-      let lbl = Compilenv.new_const_symbol() in
+      let lbl = Compilenv.new_const_symbol () in
       constant_closures := (lbl, fundecls) :: !constant_closures;
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl

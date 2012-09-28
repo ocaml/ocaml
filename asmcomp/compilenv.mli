@@ -26,7 +26,7 @@ val current_unit_infos: unit -> unit_infos
 val current_unit_name: unit -> string
         (* Return the name of the unit being compiled *)
 
-val make_symbol: ?unitname:string -> string option -> string
+val make_symbol: ?unitname:string -> ?location:(int * int) -> string option -> string
         (* [make_symbol ~unitname:u None] returns the asm symbol that
            corresponds to the compilation unit [u] (default: the current unit).
            [make_symbol ~unitname:u (Some id)] returns the asm symbol that

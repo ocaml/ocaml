@@ -54,3 +54,6 @@ let from_location kind loc =
 
 let from_call ev = from_location Dinfo_call ev.Lambda.lev_loc
 let from_raise ev = from_location Dinfo_raise ev.Lambda.lev_loc
+
+let line t = t.dinfo_line
+let char_start t = t.dinfo_char_start

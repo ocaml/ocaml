@@ -682,7 +682,10 @@ let emit_profile () =
 
 (* Emission of a function declaration *)
 
+let all_function_symbols = ref []
+
 let fundecl fundecl =
+  all_function_symbols := fundecl.fun_name::!all_function_symbols;
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
@@ -770,6 +773,7 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();                   (* PR#5603 *)
+  Dwarf.emit_debugging_info_prologue ();
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
     if macosx then
@@ -793,7 +797,7 @@ let begin_assembly() =
   `{emit_symbol lbl_begin}:\n`;
   if macosx then `	nop\n` (* PR#4690 *)
 
-let end_assembly() =
+let end_assembly ~source_file_name =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   if macosx then `	nop\n`; (* suppress "ld warning: atom sorting error" *)
@@ -826,6 +830,14 @@ let end_assembly() =
 	end;
       efa_def_label = (fun l -> `{emit_label l}:\n`);
       efa_string = (fun s -> emit_string_directive "	.asciz	" s) };
+  (* CR mshinwell: the symbols for start/end of code aren't quite right---they're not
+     going through the emitaux stuff. *)
+  (* CR mshinwell: think about this None thing *)
+  if source_file_name <> None then
+    Dwarf.emit_debugging_info_epilogue ~source_file_path:source_file_name
+      ~start_of_code_label:(Compilenv.make_symbol (Some "code_begin"))
+      ~end_of_code_label:(Compilenv.make_symbol (Some "code_end"))
+      ~externally_visible_functions:!all_function_symbols;
   if Config.system = "linux" then
     (* Mark stack as non-executable, PR#4564 *)
     `	.section .note.GNU-stack,\"\",%progbits\n`

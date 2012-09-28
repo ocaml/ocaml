@@ -17,8 +17,8 @@
 include config/Makefile
 include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
+CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot -g
+CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -g -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -w +33..39 -warn-error A $(INCLUDES)
 LINKFLAGS=
 
@@ -86,7 +86,7 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/reloadgen.cmo asmcomp/reload.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
-  asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
+  asmcomp/emitaux.cmo asmcomp/dwarf.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
 

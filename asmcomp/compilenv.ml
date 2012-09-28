@@ -78,11 +78,16 @@ let current_unit_infos () =
 let current_unit_name () =
   current_unit.ui_name
 
-let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
+let make_symbol ?(unitname = current_unit.ui_symbol) ?location idopt =
   let prefix = "caml" ^ unitname in
-  match idopt with
-  | None -> prefix
-  | Some id -> prefix ^ "__" ^ id
+  let first_part =
+    match idopt with
+    | None -> prefix
+    | Some id -> prefix ^ "__" ^ id
+  in
+  match location with
+  | None -> first_part
+  | Some (line, char_start) -> Printf.sprintf "%s__%d__%d" first_part line char_start
 
 let read_unit_info filename =
   let ic = open_in_bin filename in
@@ -212,7 +217,7 @@ let new_const_label () =
 
 let new_const_symbol () =
   incr const_label;
-  make_symbol (Some (string_of_int !const_label))
+  make_symbol (Some ("constant__symbol__" ^ (string_of_int !const_label)))
 
 let new_structured_constant cst global =
   let lbl = new_const_symbol() in

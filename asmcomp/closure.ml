@@ -494,7 +494,8 @@ let rec close fenv cenv = function
       | _ -> (Uconst (cst, Some (Compilenv.new_structured_constant cst true)), Value_unknown)
       end
   | Lfunction(kind, params, body) as funct ->
-      close_one_function fenv cenv (Ident.create "fun") funct
+      (* CR mshinwell: do something better for anonymous function identification *)
+      close_one_function fenv cenv (Ident.create "anonfun") funct
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)

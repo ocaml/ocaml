@@ -226,7 +226,7 @@ let make_startup_file ppf filename units_list =
   compile_phrase
     (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
 
-  Emit.end_assembly();
+  Emit.end_assembly ~source_file_name:None;
   close_out oc
 
 let make_shared_startup_file ppf units filename =
@@ -245,7 +245,7 @@ let make_shared_startup_file ppf units filename =
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
 
-  Emit.end_assembly();
+  Emit.end_assembly ~source_file_name:None;
   close_out oc
 
 
