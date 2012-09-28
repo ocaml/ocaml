@@ -1,0 +1,361 @@
+diff -N --exclude nm.h --exclude gdb-gdb.gdb --exclude jit-reader.h --exclude Makefile --exclude observer.h --exclude observer.inc --exclude stamp-h --exclude stamp-xml --exclude version.c --exclude xml-builtin.c --exclude config.status --exclude config.log --exclude config.h --exclude config.cache --exclude configure --exclude init.c -U3 gdb-7.5-clean/gdb/buildsym.c gdb-7.5/gdb/buildsym.c
+--- gdb-7.5-clean/gdb/buildsym.c	2012-07-13 21:26:10.000000000 +0100
++++ gdb-7.5/gdb/buildsym.c	2012-09-27 17:28:44.000000000 +0100
+@@ -446,6 +446,12 @@
+ record_block_range (struct block *block,
+                     CORE_ADDR start, CORE_ADDR end_inclusive)
+ {
++  if (!block) {
++    fprintf(stderr,"warning: block was null for address 0x%p\n", (void*) start);
++    fflush(stderr);
++    return;
++  }
++
+   /* If this is any different from the range recorded in the block's
+      own BLOCK_START and BLOCK_END, then note that the address map has
+      become interesting.  Note that even if this block doesn't have
+diff -N --exclude nm.h --exclude gdb-gdb.gdb --exclude jit-reader.h --exclude Makefile --exclude observer.h --exclude observer.inc --exclude stamp-h --exclude stamp-xml --exclude version.c --exclude xml-builtin.c --exclude config.status --exclude config.log --exclude config.h --exclude config.cache --exclude configure --exclude init.c -U3 gdb-7.5-clean/gdb/defs.h gdb-7.5/gdb/defs.h
+--- gdb-7.5-clean/gdb/defs.h	2012-07-02 11:57:33.000000000 +0100
++++ gdb-7.5/gdb/defs.h	2012-09-26 11:26:16.000000000 +0100
+@@ -206,6 +206,7 @@
+     language_pascal,		/* Pascal */
+     language_ada,		/* Ada */
+     language_opencl,		/* OpenCL */
++    language_ocaml,             /* OCaml */
+     language_minimal,		/* All other languages, minimal support only */
+     nr_languages
+   };
+diff -N --exclude nm.h --exclude gdb-gdb.gdb --exclude jit-reader.h --exclude Makefile --exclude observer.h --exclude observer.inc --exclude stamp-h --exclude stamp-xml --exclude version.c --exclude xml-builtin.c --exclude config.status --exclude config.log --exclude config.h --exclude config.cache --exclude configure --exclude init.c -U3 gdb-7.5-clean/gdb/demangle.c gdb-7.5/gdb/demangle.c
+--- gdb-7.5-clean/gdb/demangle.c	2012-01-04 08:17:00.000000000 +0000
++++ gdb-7.5/gdb/demangle.c	2012-09-27 12:45:23.000000000 +0100
+@@ -51,7 +51,7 @@
+ 	       struct cmd_list_element *c, const char *value)
+ {
+   fprintf_filtered (file,
+-		    _("Demangling of encoded C++/ObjC names "
++		    _("Demangling of encoded C++/ObjC/OCaml names "
+ 		      "when displaying symbols is %s.\n"),
+ 		    value);
+ }
+@@ -64,7 +64,7 @@
+ 		   struct cmd_list_element *c, const char *value)
+ {
+   fprintf_filtered (file,
+-		    _("Demangling of C++/ObjC names in "
++		    _("Demangling of C++/ObjC/OCaml names in "
+ 		      "disassembly listings is %s.\n"),
+ 		    value);
+ }
+@@ -218,15 +218,15 @@
+       xstrdup (libiberty_demanglers[i].demangling_style_name);
+ 
+   add_setshow_boolean_cmd ("demangle", class_support, &demangle, _("\
+-Set demangling of encoded C++/ObjC names when displaying symbols."), _("\
+-Show demangling of encoded C++/ObjC names when displaying symbols."), NULL,
++Set demangling of encoded C++/ObjC/OCaml names when displaying symbols."), _("\
++Show demangling of encoded C++/ObjC/OCaml names when displaying symbols."), NULL,
+ 			   NULL,
+ 			   show_demangle,
+ 			   &setprintlist, &showprintlist);
+ 
+   add_setshow_boolean_cmd ("asm-demangle", class_support, &asm_demangle, _("\
+-Set demangling of C++/ObjC names in disassembly listings."), _("\
+-Show demangling of C++/ObjC names in disassembly listings."), NULL,
++Set demangling of C++/ObjC/OCaml names in disassembly listings."), _("\
++Show demangling of C++/ObjC/OCaml names in disassembly listings."), NULL,
+ 			   NULL,
+ 			   show_asm_demangle,
+ 			   &setprintlist, &showprintlist);
+diff -N --exclude nm.h --exclude gdb-gdb.gdb --exclude jit-reader.h --exclude Makefile --exclude observer.h --exclude observer.inc --exclude stamp-h --exclude stamp-xml --exclude version.c --exclude xml-builtin.c --exclude config.status --exclude config.log --exclude config.h --exclude config.cache --exclude configure --exclude init.c -U3 gdb-7.5-clean/gdb/dwarf2read.c gdb-7.5/gdb/dwarf2read.c
+--- gdb-7.5-clean/gdb/dwarf2read.c	2012-07-20 18:59:04.000000000 +0100
++++ gdb-7.5/gdb/dwarf2read.c	2012-09-27 12:23:24.000000000 +0100
+@@ -65,6 +65,7 @@
+ #include "gdb/gdb-index.h"
+ #include <ctype.h>
+ 
++#include <stdio.h>
+ #include <fcntl.h>
+ #include "gdb_string.h"
+ #include "gdb_assert.h"
+@@ -7659,6 +7660,10 @@
+   if (cu->producer && strstr (cu->producer, "GNU Go ") != NULL)
+     set_cu_language (DW_LANG_Go, cu);
+ 
++  /* Likewise for OCaml.  */
++  if (cu->producer && strstr (cu->producer, "ocamlopt ") != NULL)
++    cu->language = language_ocaml;
++
+   dwarf2_start_symtab (cu, name, comp_dir, lowpc);
+ 
+   /* Decode line number information if present.  We do this before
+diff -N --exclude nm.h --exclude gdb-gdb.gdb --exclude jit-reader.h --exclude Makefile --exclude observer.h --exclude observer.inc --exclude stamp-h --exclude stamp-xml --exclude version.c --exclude xml-builtin.c --exclude config.status --exclude config.log --exclude config.h --exclude config.cache --exclude configure --exclude init.c -U3 gdb-7.5-clean/gdb/eval.c gdb-7.5/gdb/eval.c
+--- gdb-7.5-clean/gdb/eval.c	2012-07-09 15:20:51.000000000 +0100
++++ gdb-7.5/gdb/eval.c	2012-09-26 11:27:21.000000000 +0100
+@@ -599,6 +599,7 @@
+ 	case language_asm:
+ 	case language_objc:
+ 	case language_opencl:
++	case language_ocaml:
+ 	  /* No promotion required.  */
+ 	  break;
+ 
+@@ -667,6 +668,7 @@
+ 	case language_cplus:
+ 	case language_asm:
+ 	case language_objc:
++	case language_ocaml:
+ 	  if (result_len <= TYPE_LENGTH (builtin->builtin_int))
+ 	    {
+ 	      promoted_type = (unsigned_operation
+diff -N --exclude nm.h --exclude gdb-gdb.gdb --exclude jit-reader.h --exclude Makefile --exclude observer.h --exclude observer.inc --exclude stamp-h --exclude stamp-xml --exclude version.c --exclude xml-builtin.c --exclude config.status --exclude config.log --exclude config.h --exclude config.cache --exclude configure --exclude init.c -U3 gdb-7.5-clean/gdb/Makefile.in gdb-7.5/gdb/Makefile.in
+--- gdb-7.5-clean/gdb/Makefile.in	2012-07-02 16:29:33.000000000 +0100
++++ gdb-7.5/gdb/Makefile.in	2012-09-26 11:27:56.000000000 +0100
+@@ -719,6 +719,7 @@
+ 	memrange.c mi/mi-common.c \
+ 	objc-exp.y objc-lang.c \
+ 	objfiles.c osabi.c observer.c osdata.c \
++	ocaml-lang.c \
+ 	opencl-lang.c \
+ 	p-exp.y p-lang.c p-typeprint.c p-valprint.c parse.c printcmd.c \
+ 	proc-service.list progspace.c \
+@@ -895,7 +896,7 @@
+ 	varobj.o vec.o \
+ 	go-lang.o go-valprint.o go-typeprint.o \
+ 	jv-lang.o jv-valprint.o jv-typeprint.o \
+-	m2-lang.o opencl-lang.o p-lang.o p-typeprint.o p-valprint.o \
++	m2-lang.o ocaml-lang.o opencl-lang.o p-lang.o p-typeprint.o p-valprint.o \
+ 	sentinel-frame.o \
+ 	complaints.o typeprint.o \
+ 	ada-typeprint.o c-typeprint.o f-typeprint.o m2-typeprint.o \
+diff -N --exclude nm.h --exclude gdb-gdb.gdb --exclude jit-reader.h --exclude Makefile --exclude observer.h --exclude observer.inc --exclude stamp-h --exclude stamp-xml --exclude version.c --exclude xml-builtin.c --exclude config.status --exclude config.log --exclude config.h --exclude config.cache --exclude configure --exclude init.c -U3 gdb-7.5-clean/gdb/ocaml-lang.c gdb-7.5/gdb/ocaml-lang.c
+--- gdb-7.5-clean/gdb/ocaml-lang.c	1970-01-01 01:00:00.000000000 +0100
++++ gdb-7.5/gdb/ocaml-lang.c	2012-09-27 16:41:51.000000000 +0100
+@@ -0,0 +1,158 @@
++/* OCaml language support for GDB, the GNU debugger.
++   FIX COPYRIGHT NOTICE.
++
++   Contributed by Mark Shinwell <mshinwell@janestreet.com>
++
++   This file is part of GDB.
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 3 of the License, or
++   (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
++
++#include "defs.h"
++#include "gdb_string.h"
++#include "gdbtypes.h"
++#include "symtab.h"
++#include "expression.h"
++#include "parser-defs.h"
++#include "symtab.h"
++#include "language.h"
++#include "c-lang.h"
++#include "gdb_assert.h"
++
++#include <ctype.h>
++
++extern const struct exp_descriptor exp_descriptor_c;
++
++char*
++ocaml_demangle(const char* mangled, int options);
++
++static int
++is_all_digits_after(char* chr)
++{
++  while (*++chr) {
++    if (!isdigit(*chr)) {
++      return 0;
++    }
++  }
++  return 1;
++}
++
++char*
++ocaml_demangle(const char* mangled, int options)
++{
++  char* demangled;
++  int index;
++  int output_index;
++  int mangled_length;
++  char* last_underscore;
++
++  demangled = XNEWVEC(char, strlen(mangled) + 1);
++
++  mangled_length = strlen(mangled);
++
++  output_index = 0;
++  if (strncmp(mangled, "caml", 4) != 0
++        || mangled_length < 5
++        || !isupper(mangled[4])
++        || strstr(mangled, "constant__symbol__")) {
++    strcpy(demangled, mangled);
++  }
++  else {
++    last_underscore = strrchr(mangled, '_');
++    if (last_underscore
++/*          && (*(last_underscore - 1) == '_')*/
++          && (/*!strcmp(last_underscore + 1, "entry")
++                ||*/ !strcmp(last_underscore + 1, "frametable")
++                || !strcmp(last_underscore + 1, "begin")
++                || !strcmp(last_underscore + 1, "end"))) {
++      strcpy(demangled, mangled);
++    }
++    else {
++      for (index = 4; index < mangled_length; index++) {
++        if (index > 4 &&
++              index < mangled_length - 1
++              && mangled[index] == '_' && mangled[index + 1] == '_') {
++          demangled[output_index] = '.';
++          index++;
++        }
++        else {
++          demangled[output_index] = mangled[index];
++        }
++
++        output_index++;
++      }
++
++      demangled[output_index] = '\0';
++    }
++
++    if (!strstr(mangled, "__anonfun_")) {
++      char* last_underscore = strrchr(demangled, '_');
++      if (last_underscore && is_all_digits_after(last_underscore)) {
++        *last_underscore = '\0';
++      }
++    }
++  }
++
++  return demangled;
++}
++
++const struct language_defn ocaml_language_defn =
++{
++  "ocaml",			/* Language name */
++  language_ocaml,
++  range_check_off,
++  type_check_off,
++  case_sensitive_on,
++  array_row_major,
++  macro_expansion_c,
++  &exp_descriptor_c,
++  c_parse,
++  c_error,
++  null_post_parser,
++  c_printchar,			/* Print a character constant */
++  c_printstr,			/* Function to print string constant */
++  c_emit_char,			/* Print a single char */
++  c_print_type,			/* Print a type using appropriate syntax */
++  c_print_typedef,		/* Print a typedef using appropriate syntax */
++  c_val_print,			/* Print a value using appropriate syntax */
++  c_value_print,		/* Print a top-level value */
++  default_read_var_value,	/* la_read_var_value */
++  NULL,				/* Language specific skip_trampoline */
++  NULL,				/* name_of_this */
++  basic_lookup_symbol_nonlocal,	/* lookup_symbol_nonlocal */
++  basic_lookup_transparent_type,/* lookup_transparent_type */
++  ocaml_demangle,               /* Language specific symbol demangler */
++  NULL,				/* Language specific
++				   class_name_from_physname */
++  c_op_print_tab,		/* expression operators for printing */
++  1,				/* c-style arrays */
++  0,				/* String lower bound */
++  default_word_break_characters,
++  default_make_symbol_completion_list,
++  c_language_arch_info,
++  default_print_array_index,
++  default_pass_by_reference,
++  c_get_string,
++  NULL,				/* la_get_symbol_name_cmp */
++  iterate_over_symbols,
++  LANG_MAGIC
++};
++
++/* Provide a prototype to silence -Wmissing-prototypes.  */
++extern initialize_file_ftype _initialize_ocaml_language;
++
++void
++_initialize_ocaml_language (void)
++{
++  add_language (&ocaml_language_defn);
++}
+diff -N --exclude nm.h --exclude gdb-gdb.gdb --exclude jit-reader.h --exclude Makefile --exclude observer.h --exclude observer.inc --exclude stamp-h --exclude stamp-xml --exclude version.c --exclude xml-builtin.c --exclude config.status --exclude config.log --exclude config.h --exclude config.cache --exclude configure --exclude init.c -U3 gdb-7.5-clean/gdb/symtab.c gdb-7.5/gdb/symtab.c
+--- gdb-7.5-clean/gdb/symtab.c	2012-07-16 04:07:01.000000000 +0100
++++ gdb-7.5/gdb/symtab.c	2012-09-27 15:36:50.000000000 +0100
+@@ -63,6 +63,9 @@
+ 
+ #include "psymtab.h"
+ 
++/* CR mshinwell: fixme */
++extern char* ocaml_demangle(const char*, int);
++
+ /* Prototypes for local functions */
+ 
+ static void rbreak_command (char *, int);
+@@ -500,6 +503,7 @@
+   gsymbol->language = language;
+   if (gsymbol->language == language_d
+       || gsymbol->language == language_go
++      || gsymbol->language == language_ocaml
+       || gsymbol->language == language_java
+       || gsymbol->language == language_objc
+       || gsymbol->language == language_fortran)
+@@ -635,6 +639,16 @@
+ 	  return demangled;
+ 	}
+     }
++  if (gsymbol->language == language_ocaml
++      || gsymbol->language == language_auto)
++    {
++      demangled = ocaml_demangle (mangled, 0);
++      if (demangled != NULL)
++	{
++	  gsymbol->language = language_ocaml;
++	  return demangled;
++	}
++    }
+ 
+   /* We could support `gsymbol->language == language_fortran' here to provide
+      module namespaces also for inferiors with only minimal symbol table (ELF
+@@ -825,6 +839,7 @@
+     case language_cplus:
+     case language_d:
+     case language_go:
++    case language_ocaml:
+     case language_java:
+     case language_objc:
+     case language_fortran:
+@@ -856,6 +871,7 @@
+     case language_cplus:
+     case language_d:
+     case language_go:
++    case language_ocaml:
+     case language_java:
+     case language_objc:
+     case language_fortran:
+@@ -1196,6 +1212,15 @@
+ 	  make_cleanup (xfree, demangled_name);
+ 	}
+     }
++  else if (lang == language_ocaml)
++    {
++      demangled_name = ocaml_demangle (name, 0);
++      if (demangled_name)
++	{
++	  modified_name = demangled_name;
++	  make_cleanup (xfree, demangled_name);
++	}
++    }
+ 
+   *result_name = modified_name;
+   return cleanup;
