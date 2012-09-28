@@ -21,7 +21,7 @@ all: $(LIBNAME).cma $(LIBNAME)top$(EXE) $(LIBNAME)
 opt: $(LIBNAME).cmxa
 
 clean:
-	rm -f $(LIBNAME)top$(EXE) $(LIBNAME) *.cm* *.$(A)
+	rm -f $(LIBNAME)top$(EXE) $(LIBNAME) *.cm* *.$(A) *$(EXT_DLL)
 
 superclean:
 	- if test -f tk.cmo; then \
