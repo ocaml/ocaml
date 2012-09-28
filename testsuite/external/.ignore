@@ -5,6 +5,7 @@
 *.zip
 
 log-*
+log_*
 
 advi
 advi-1.10.2
@@ -44,7 +45,7 @@ framac
 geneweb
 gw-6.05-src
 hevea
-hevea-1.10
+hevea-2.00
 lablgtk
 lablgtk-2.14.2
 lablgtkextras
@@ -105,3 +106,4 @@ xmlm
 xmlm-1.1.0
 zen
 zen_2.3.2
+._ZEN_2.3.2

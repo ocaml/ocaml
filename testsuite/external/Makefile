@@ -426,7 +426,7 @@ distclean::
 all: obrowser
 
 # http://hevea.inria.fr/
-HEVEA=hevea-1.10
+HEVEA=hevea-2.00
 ${HEVEA}.tar.gz:
 	${WGET} http://hevea.inria.fr/distri/$@
 hevea: ${HEVEA}.tar.gz
@@ -446,7 +446,7 @@ distclean::
 	rm -f ${HEVEA}.tar.gz
 all: hevea
 
-# http://www.seas.upenn.edu/~bcpierce/unison//download/releases/
+# http://www.seas.upenn.edu/~bcpierce/unison/download/releases/
 UNISON=unison-2.45.4
 ${UNISON}.tar.gz:
 	${WGET} http://www.seas.upenn.edu/~bcpierce/unison/download/releases/unison-2.45.4/$@
