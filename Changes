@@ -44,6 +44,7 @@ Bug fixes:
 - PR#5707: AMD64 code generator: do not use r10 and r11 for parameter passing,
   as these registers can be destroyed by the dynamic loader
 - PR#5712: some documentation problems
+- PR#5715: configuring with -no-shared-libs breaks under cygwin
 - PR#5719: ocamlyacc generates code that is not warning 33-compliant
 - PR#5727: emacs caml-mode indents shebang line in toplevel scripts
 - PR#5731: instruction scheduling forgot to account for destroyed registers
