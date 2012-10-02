@@ -248,9 +248,11 @@ installoptopt:
 	cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE)
 	cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE)
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
-	 compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
-	 compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
-	 $(COMPLIBDIR)
+           compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
+           compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
+           $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
+           $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
+           $(COMPLIBDIR)
 
 clean:: partialclean
 
