@@ -3,8 +3,11 @@ OCaml 4.00.1:
 
 Bug fixes:
 - PR#4019: better documentation of Str.matched_string
+- PR#5111: ocamldoc, heading tags inside spans tags is illegal in html
+- PR#5278: better error message when typing "make"
 - PR#5468: ocamlbuild should preserve order of parametric tags
 - PR#5563: harden Unix.select against file descriptors above FD_SETSIZE
+- PR#5690: "ocamldoc ... -text README" raises exception
 - PR#5700: crash with native-code stack backtraces under MacOS 10.8 x86-64
 - PR#5707: AMD64 code generator: do not use r10 and r11 for parameter passing,
   as these registers can be destroyed by the dynamic loader
@@ -12,11 +15,14 @@ Bug fixes:
 - PR#5715: configuring with -no-shared-libs breaks under cygwin
 - PR#5718: false positive on 'unused constructor' warning
 - PR#5719: ocamlyacc generates code that is not warning 33-compliant
+- PR#5725: ocamldoc output of preformatted code
 - PR#5727: emacs caml-mode indents shebang line in toplevel scripts
+- PR#5729: tools/untypeast.ml creates unary Pexp_tuple
 - PR#5731: instruction scheduling forgot to account for destroyed registers
 - PR#5735: %apply and %revapply not first class citizens
 - PR#5738: first class module patterns not handled by ocamldep
 - PR#5742: missing bound checks in Array.sub
+- PR#5744: ocamldoc error on "val virtual"
 - PR#5757: GC compaction bug (crash)
 - PR#5758: Compiler bug when matching on floats
 - PR#5761: Incorrect bigarray custom block size
