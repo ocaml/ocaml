@@ -14,6 +14,7 @@ let main () =
   print_string "Forking..."; print_newline();
   match Unix.fork() with
   | 0 ->
+      Thread.delay 0.5;
       print_string "In child..."; print_newline();
       Gc.minor();
       print_string "Child did minor GC."; print_newline();
@@ -23,7 +24,7 @@ let main () =
       exit 0
   | pid ->
       print_string "In parent..."; print_newline();
-      Thread.delay 2.0;
+      Thread.delay 4.0;
       print_string "Parent is exiting."; print_newline();
       exit 0
 

@@ -562,8 +562,8 @@ module Analyser =
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let type_exp =
-            try Typedtree_search.search_attribute_type tt_cls label
-            with Not_found ->
+              try Typedtree_search.search_attribute_type tt_cls label
+              with Not_found ->
                 raise (Failure (Odoc_messages.attribute_not_found_in_typedtree complete_name))
           in
           let code =
