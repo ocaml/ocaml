@@ -1056,8 +1056,6 @@ let new_declaration newtype manifest =
   }
 
 let instance_constructor ?in_pattern cstr =
-  let ty_res = copy cstr.cstr_res in
-  let ty_args = List.map copy cstr.cstr_args in
   begin match in_pattern with
   | None -> ()
   | Some (env, newtype_lev) ->
@@ -1072,10 +1070,14 @@ let instance_constructor ?in_pattern cstr =
           Env.enter_type (get_new_abstract_name name) decl !env in
         env := new_env;
         let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
-        link_type (copy existential) to_unify
+	let tv = copy existential in
+	assert (is_Tvar tv);
+        link_type tv to_unify
       in
       List.iter process cstr.cstr_existentials
   end;
+  let ty_res = copy cstr.cstr_res in
+  let ty_args = List.map copy cstr.cstr_args in
   cleanup_types ();
   (ty_args, ty_res)
 
