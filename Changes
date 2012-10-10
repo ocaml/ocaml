@@ -3,6 +3,7 @@ OCaml 4.00.2:
 
 Bug fixes:
 - PR#5240: register exception printers for Unix.Unix_error and Dynlink.Error
+- PR#5300: verbose parameter should implicitly set classic display
 - PR#5772: problem with marshaling of mutually-recursive functions
 
 

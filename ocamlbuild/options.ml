@@ -140,7 +140,7 @@ let spec = ref (
    "-vnum", Unit (fun () -> print_endline Sys.ocaml_version; raise Exit_OK),
             " Display the version number";
    "-quiet", Unit (fun () -> Log.level := 0), " Make as quiet as possible";
-   "-verbose", Int (fun i -> Log.level := i + 2), "<level> Set the verbosity level";
+   "-verbose", Int (fun i -> Log.classic_display := true; Log.level := i + 2), "<level> Set the verbosity level";
    "-documentation", Set show_documentation, " Show rules and flags";
    "-log", Set_string log_file_internal, "<file> Set log file";
    "-no-log", Unit (fun () -> log_file_internal := ""), " No log file";
