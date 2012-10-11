@@ -331,7 +331,11 @@ class virtual text =
 	in
 	fun b s ->
       if !colorize_code then
-         self#html_of_code b (remove_useless_newlines s)
+          (
+           bs b "<pre class=\"codepre\">";
+           self#html_of_code b (remove_useless_newlines s);
+           bs b "</pre>"
+          )
       else
         (
          bs b "<pre class=\"codepre\"><code class=\"";
@@ -399,7 +403,6 @@ class virtual text =
 
     method html_of_Title b n label_opt t =
       let label1 = self#create_title_label (n, label_opt, t) in
-      bp b "<span id=\"%s\">" (Naming.label_target label1);
       let (tag_o, tag_c) =
 	if n > 6 then
 	  (Printf.sprintf "div class=\"h%d\"" n, "div")
@@ -407,13 +410,12 @@ class virtual text =
 	  let t = Printf.sprintf "h%d" n in (t, t)
       in
       bs b "<";
-      bs b tag_o;
+      bp b "%s id=\"%s\"" tag_o (Naming.label_target label1);
       bs b ">";
       self#html_of_text b t;
       bs b "</";
       bs b tag_c;
-      bs b ">";
-      bs b "</span>"
+      bs b ">"
 
     method html_of_Latex b _ = ()
       (* don't care about LaTeX stuff in HTML. *)
@@ -832,9 +834,9 @@ class html =
         "pre.verbatim, pre.codepre { }";
 
         ".indextable {border: 1px #ddd solid; border-collapse: collapse}";
-        ".indextable td, .indextable th {border: 1px #ddd solid;	min-width: 80px}";
+        ".indextable td, .indextable th {border: 1px #ddd solid; min-width: 80px}";
         ".indextable td.module {background-color: #eee ;  padding-left: 2px; padding-right: 2px}";
-        ".indextable td.module a {color: 4E6272;	text-decoration: none; display: block; width: 100%}";
+        ".indextable td.module a {color: 4E6272; text-decoration: none; display: block; width: 100%}";
         ".indextable td.module a:hover {text-decoration: underline; background-color: transparent}";
         ".deprecated {color: #888; font-style: italic}" ;
 
@@ -1506,7 +1508,7 @@ class html =
              | l,Some r ->
                  bs b (" " ^ (self#keyword ":") ^ " ");
                  self#html_of_type_expr_list ~par: false b father " * " l;
-		 bs b (" " ^ (self#keyword "->") ^ " ");
+                 bs b (" " ^ (self#keyword "->") ^ " ");
                  self#html_of_type_expr b father r;
             );
             bs b "</code></td>\n";
@@ -1772,11 +1774,11 @@ class html =
       bs b "</pre>";
       if info then
         (
-	 if complete then
-	   self#html_of_info ~indent: false
-	 else
-	   self#html_of_info_first_sentence
-	) b m.m_info
+         if complete then
+           self#html_of_info ~indent: true
+         else
+           self#html_of_info_first_sentence
+        ) b m.m_info
       else
         ()
 
@@ -1801,11 +1803,11 @@ class html =
       bs b "</pre>";
       if info then
         (
-	 if complete then
-	   self#html_of_info ~indent: false
-	 else
-	   self#html_of_info_first_sentence
-	) b mt.mt_info
+         if complete then
+           self#html_of_info ~indent: true
+         else
+           self#html_of_info_first_sentence
+        ) b mt.mt_info
       else
         ()
 
@@ -1959,7 +1961,7 @@ class html =
       print_DEBUG "html#html_of_class : info" ;
       (
        if complete then
-	 self#html_of_info ~indent: false
+         self#html_of_info ~indent: true
        else
 	 self#html_of_info_first_sentence
       ) b c.cl_info
@@ -2002,7 +2004,7 @@ class html =
       bs b "</pre>";
       (
        if complete then
-	 self#html_of_info ~indent: false
+         self#html_of_info ~indent: true
        else
 	 self#html_of_info_first_sentence
       ) b ct.clt_info

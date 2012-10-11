@@ -4,4 +4,3 @@ module M : sig val x : <m : 'a. 'a> end =
 
 let ident v = v
 class alias = object method alias : 'a . 'a t -> 'a = ident end
-

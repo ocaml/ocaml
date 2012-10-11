@@ -136,7 +136,7 @@ let merge_constraint initial_env loc  sg lid constr =
               List.map (fun (c,n) -> (not n, not c, not c))
               sdecl.ptype_variance;
             type_loc = Location.none;
-	    type_newtype_level = None }
+            type_newtype_level = None }
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let tdecl = Typedecl.transl_with_constraint
@@ -446,7 +446,7 @@ and transl_signature env sg =
     match sg with
       [] -> [], [], env
     | item :: srem ->
-	let loc = item.psig_loc in
+        let loc = item.psig_loc in
         match item.psig_desc with
         | Psig_value(name, sdesc) ->
             let tdesc = Typedecl.transl_value_decl env item.psig_loc sdesc in
@@ -533,9 +533,9 @@ and transl_signature env sg =
             mksig (Tsig_class
                      (List.map2
                         (fun pcl tcl ->
-		          let (_, _, _, _, _, _, _, _, _, _, _, tcl) = tcl in
+                          let (_, _, _, _, _, _, _, _, _, _, _, tcl) = tcl in
                           tcl)
-			cl classes)) env loc
+                        cl classes)) env loc
             :: trem,
             List.flatten
               (map_rec
@@ -554,9 +554,9 @@ and transl_signature env sg =
             let (classes, newenv) = Typeclass.class_type_declarations env cl in
             let (trem,rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_class_type (List.map2 (fun pcl tcl ->
-	      let (_, _, _, _, _, _, _, tcl) = tcl in
-	      tcl
-	    ) cl classes)) env loc :: trem,
+              let (_, _, _, _, _, _, _, tcl) = tcl in
+              tcl
+            ) cl classes)) env loc :: trem,
             List.flatten
               (map_rec
                  (fun rs (i, _, d, i', d', i'', d'', _) ->
@@ -934,13 +934,13 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
       [] ->
         ([], [], env)
       | pstr :: srem ->
-	  let loc = pstr.pstr_loc in
-	    match pstr.pstr_desc with
-	      | Pstr_eval sexpr ->
-		  let expr = Typecore.type_expression env sexpr in
-		  let (str_rem, sig_rem, final_env) = type_struct env srem in
-		    (mkstr (Tstr_eval expr) loc :: str_rem, sig_rem, final_env)
-	      | Pstr_value(rec_flag, sdefs) ->
+          let loc = pstr.pstr_loc in
+            match pstr.pstr_desc with
+              | Pstr_eval sexpr ->
+                  let expr = Typecore.type_expression env sexpr in
+                  let (str_rem, sig_rem, final_env) = type_struct env srem in
+                    (mkstr (Tstr_eval expr) loc :: str_rem, sig_rem, final_env)
+              | Pstr_value(rec_flag, sdefs) ->
         let scope =
           match rec_flag with
           | Recursive -> Some (Annot.Idef {scope with
@@ -1043,9 +1043,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          Sig_modtype(id, Modtype_manifest mty.mty_type) :: sig_rem,
          final_env)
     | Pstr_open (lid) ->
-	let (path, newenv) = type_open ~toplevel env loc lid in
-	let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-	  (mkstr (Tstr_open (path, lid)) loc :: str_rem, sig_rem, final_env)
+        let (path, newenv) = type_open ~toplevel env loc lid in
+        let (str_rem, sig_rem, final_env) = type_struct newenv srem in
+          (mkstr (Tstr_open (path, lid)) loc :: str_rem, sig_rem, final_env)
     | Pstr_class cl ->
          List.iter
            (fun {pci_name = name} -> check "type" loc type_names name.txt)

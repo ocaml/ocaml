@@ -956,4 +956,3 @@ static struct code_fragment * extern_find_code(char *addr)
   }
   return NULL;
 }
-

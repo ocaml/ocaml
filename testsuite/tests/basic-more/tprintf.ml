@@ -42,7 +42,7 @@ test (test1 ());;
 let test2 () = true
 (*  sprintf "%1$d\n" 5 1 = "    1\n" &&
   sprintf "%01$d\n" 5 1 = "00001\n" *);;
-  
+
 test (test2 ());;
 
 (* Testing meta format string printing. *)

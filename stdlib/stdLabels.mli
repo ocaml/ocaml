@@ -117,6 +117,8 @@ module String :
         unit
     val concat : sep:string -> string list -> string
     val iter : f:(char -> unit) -> string -> unit
+    val iteri : f:(int -> char -> unit) -> string -> unit
+    val map : f:(char -> char) -> string -> string
     val trim : string -> string
     val escaped : string -> string
     val index : string -> char -> int

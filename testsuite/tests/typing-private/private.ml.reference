@@ -84,7 +84,7 @@ Error: Signature mismatch:
 #               module M1 : sig type t = M.t val mk : int -> t end
 #             module M2 : sig type t = M.t val mk : int -> t end
 #         module M3 : sig type t = M.t val mk : int -> t end
-#         Characters 29-47:
+#         Characters 26-44:
       type t = M.t = T of int
            ^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M.t

@@ -5,7 +5,7 @@ module TT = struct
 end
 
 let () =
-  let f flag = 
+  let f flag =
     let module T = TT in
     let _ = match flag with `A -> 0 | `B r -> r in
     let _ = match flag with `A -> T.IntSet.mem | `B r -> r in

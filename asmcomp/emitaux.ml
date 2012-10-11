@@ -197,16 +197,16 @@ let is_cfi_enabled () =
 
 let cfi_startproc () =
   if is_cfi_enabled () then
-    emit_string "	.cfi_startproc\n"
+    emit_string "\t.cfi_startproc\n"
 
 let cfi_endproc () =
   if is_cfi_enabled () then
-    emit_string "	.cfi_endproc\n"
+    emit_string "\t.cfi_endproc\n"
 
 let cfi_adjust_cfa_offset n =
   if is_cfi_enabled () then
   begin
-    emit_string "	.cfi_adjust_cfa_offset	"; emit_int n; emit_string "\n";
+    emit_string "\t.cfi_adjust_cfa_offset\t"; emit_int n; emit_string "\n";
   end
 
 (* Emit debug information *)
@@ -236,12 +236,12 @@ let emit_debug_info dbg =
       with Not_found ->
         let file_num = !file_pos_num_cnt in
         incr file_pos_num_cnt;
-        emit_string "	.file	";
-        emit_int file_num; emit_char '	';
+        emit_string "\t.file\t";
+        emit_int file_num; emit_char '\t';
         emit_string_literal file_name; emit_char '\n';
         file_pos_nums := (file_name,file_num) :: !file_pos_nums;
         file_num in
-    emit_string "	.loc	";
-    emit_int file_num; emit_char '	';
+    emit_string "\t.loc\t";
+    emit_int file_num; emit_char '\t';
     emit_int line; emit_char '\n'
   end

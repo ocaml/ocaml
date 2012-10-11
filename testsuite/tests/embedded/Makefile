@@ -13,7 +13,7 @@ run:
 	@./program > program.result
 	@$(DIFF) program.reference program.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
-	
+
 promote: defaultpromote
 
 clean: defaultclean

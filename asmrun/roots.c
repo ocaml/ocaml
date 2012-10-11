@@ -369,5 +369,3 @@ uintnat caml_stack_usage (void)
     sz += (*caml_stack_usage_hook)();
   return sz;
 }
-
-

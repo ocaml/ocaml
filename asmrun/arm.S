@@ -60,7 +60,7 @@ alloc_limit     .req    r11
 
         .globl  caml_system__code_begin
 caml_system__code_begin:
-        
+
         .align  2
         .globl  caml_call_gc
         .type caml_call_gc, %function

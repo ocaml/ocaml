@@ -786,11 +786,11 @@ asmcomp/reloadgen.cmo : asmcomp/reg.cmi utils/misc.cmi asmcomp/mach.cmi \
     asmcomp/reloadgen.cmi
 asmcomp/reloadgen.cmx : asmcomp/reg.cmx utils/misc.cmx asmcomp/mach.cmx \
     asmcomp/reloadgen.cmi
-asmcomp/schedgen.cmo : asmcomp/reg.cmi utils/misc.cmi asmcomp/mach.cmi \
-    asmcomp/linearize.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
+asmcomp/schedgen.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
+    asmcomp/mach.cmi asmcomp/linearize.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
     asmcomp/schedgen.cmi
-asmcomp/schedgen.cmx : asmcomp/reg.cmx utils/misc.cmx asmcomp/mach.cmx \
-    asmcomp/linearize.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
+asmcomp/schedgen.cmx : asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx \
+    asmcomp/mach.cmx asmcomp/linearize.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
     asmcomp/schedgen.cmi
 asmcomp/scheduling.cmo : asmcomp/schedgen.cmi asmcomp/scheduling.cmi
 asmcomp/scheduling.cmx : asmcomp/schedgen.cmx asmcomp/scheduling.cmi

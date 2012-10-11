@@ -13,5 +13,5 @@ module PR_4261 = struct
   end
 
   module rec U : T with module D = U' = U
-  and U' : S with type t = U'.t = U 
+  and U' : S with type t = U'.t = U
 end;;

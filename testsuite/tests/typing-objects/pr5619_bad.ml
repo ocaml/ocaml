@@ -3,7 +3,7 @@ class type foo_t =
     method foo: string
   end
 
-type 'a name = 
+type 'a name =
     Foo: foo_t name
   | Int: int name
 ;;

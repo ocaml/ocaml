@@ -30,7 +30,7 @@ val transl_let:
 (*> JOCAML *)
 val transl_def: joinautomaton list -> lambda -> lambda
 (*< JOCAML *)
-val transl_primitive: Primitive.description -> lambda
+val transl_primitive: Location.t -> Primitive.description -> lambda
 val transl_exception:
       Ident.t -> Path.t option -> exception_declaration -> lambda
 

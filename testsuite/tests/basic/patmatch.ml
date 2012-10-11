@@ -91,7 +91,7 @@ let _ =
   done;
   for i = 0 to 255 do
     let c = Char.chr i in
-    printf "k(%s) = %s\t" (escaped c) (k c)
+    printf "\tk(%s) = %s" (escaped c) (k c)
   done;
   printf "\n";
   printf "p([|\"hello\"|]) = %s\n" (p [|"hello"|]);
@@ -103,6 +103,3 @@ let _ =
   printf "l([|2;3|]) = %d\n" (l [|2;3|]);
   printf "l([|4;5;6|]) = %d\n" (l [|4;5;6|]);
   exit 0
-
-
-

@@ -143,4 +143,3 @@ class dot =
 end
 
 module type Dot_generator = module type of Generator
-

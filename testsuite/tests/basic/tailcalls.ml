@@ -18,7 +18,7 @@ let indtailcall8 fn a b c d e f g h =
   fn a b c d e f g h
 
 let indtailcall16 fn a b c d e f g h i j k l m n o p =
-  fn a b c d e f g h i j k l m n o p 
+  fn a b c d e f g h i j k l m n o p
 
 let _ =
   print_int (tailcall4 10000000 0 0 0); print_newline();

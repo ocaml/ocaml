@@ -14,7 +14,7 @@
 
 open Terms
 
-type rule = 
+type rule =
   { number: int;
     numvars: int;
     lhs: term;

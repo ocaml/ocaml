@@ -98,19 +98,19 @@ class text =
         "}", "\\\\}";
         "\\$", "\\\\$";
         "\\^", "{\\\\textasciicircum}";
-        "à", "\\\\`a";
-        "â", "\\\\^a";
-        "é", "\\\\'e";
-        "è", "\\\\`e";
-        "ê", "\\\\^e";
-        "ë", "\\\\\"e";
-        "ç", "\\\\c{c}";
-        "ô", "\\\\^o";
-        "ö", "\\\\\"o";
-        "î", "\\\\^i";
-        "ï", "\\\\\"i";
-        "ù", "\\\\`u";
-        "û", "\\\\^u";
+        "\xE0", "\\\\`a";
+        "\xE2", "\\\\^a";
+        "\xE9", "\\\\'e";
+        "\xE8", "\\\\`e";
+        "\xEA", "\\\\^e";
+        "\xEB", "\\\\\"e";
+        "\xE7", "\\\\c{c}";
+        "\xF4", "\\\\^o";
+        "\xF6", "\\\\\"o";
+        "\xEE", "\\\\^i";
+        "\xEF", "\\\\\"i";
+        "\xF9", "\\\\`u";
+        "\xFB", "\\\\^u";
         "%", "\\\\%";
         "_", "\\\\_";
         "~", "\\\\~{}";
@@ -585,7 +585,7 @@ class latex =
                            p fmt2 " %s@ %s@ %s@ %s"
                              ":"
                              (self#normal_type_list ~par: false mod_name " * " l)
-			     "->"
+                             "->"
                              (self#normal_type mod_name r)
                       );
                       flush2 ()
@@ -723,7 +723,7 @@ class latex =
 	  self#latex_of_module_kind fmt father k2;
 	  self#latex_of_text fmt [Code ")"]
       | Module_with (k, s) ->
-          (* TODO: à modifier quand Module_with sera plus détaillé *)
+          (* TODO: a modifier quand Module_with sera plus detaille *)
           self#latex_of_module_type_kind fmt father k;
           self#latex_of_text fmt
             [ Code " ";
@@ -752,7 +752,7 @@ class latex =
 	  self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
       | Class_apply capp ->
-          (* TODO: afficher le type final à partir du typedtree *)
+          (* TODO: afficher le type final a partir du typedtree *)
           self#latex_of_text fmt [Raw "class application not handled yet"]
 
       | Class_constr cco ->

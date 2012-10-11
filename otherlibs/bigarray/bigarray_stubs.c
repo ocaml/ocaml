@@ -202,13 +202,8 @@ CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
     invalid_argument("Bigarray.create: bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
-<<<<<<< .courant
-    if (dim[i] < 0 || dim[i] > 0x7FFFFFFFL)
-      invalid_argument("Bigarray.create: negative dimension");
-=======
     if (dim[i] < 0)
       caml_invalid_argument("Bigarray.create: negative dimension");
->>>>>>> .fusion-droit.r10497
   }
   flags = Int_val(vkind) | Int_val(vlayout);
   return caml_ba_alloc(flags, num_dims, NULL, dim);
@@ -723,14 +718,9 @@ static void caml_ba_serialize_longarray(void * data,
     serialize_int_1(1);
     serialize_block_8(data, num_elts);
   } else {
-<<<<<<< .courant
-    serialize_int_1(0);
-    for (n = 0, p = data; n < num_elts; n++, p++) serialize_int_4((int32) *p);
-=======
     caml_serialize_int_1(0);
     for (n = 0, p = data; n < num_elts; n++, p++)
       caml_serialize_int_4((int32) *p);
->>>>>>> .fusion-droit.r10497
   }
 #else
   serialize_int_1(0);
@@ -780,7 +770,12 @@ static void caml_ba_serialize(value v,
   }
   /* Compute required size in OCaml heap.  Assumes struct caml_ba_array
      is exactly 4 + num_dims words */
-  Assert(sizeof(struct caml_bigarray) == 5 * sizeof(value));
+  /* PR#5516: use C99's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L)
+  Assert(sizeof(struct caml_ba_array) == 4 * sizeof(value));
+#else
+  Assert(sizeof(struct caml_ba_array) == 5 * sizeof(value));
+#endif
   *wsize_32 = (4 + b->num_dims) * 4;
   *wsize_64 = (4 + b->num_dims) * 8;
 }
@@ -793,12 +788,8 @@ static void caml_ba_deserialize_longarray(void * dest, intnat num_elts)
     deserialize_block_8(dest, num_elts);
   } else {
     intnat * p, n;
-<<<<<<< .courant
-    for (n = 0, p = dest; n < num_elts; n++, p++) *p = deserialize_sint_4();
-=======
     for (n = 0, p = dest; n < num_elts; n++, p++)
       *p = caml_deserialize_sint_4();
->>>>>>> .fusion-droit.r10497
   }
 #else
   if (sixty)
@@ -851,7 +842,12 @@ uintnat caml_ba_deserialize(void * dst)
   case BIGARRAY_NATIVE_INT:
     caml_ba_deserialize_longarray(b->data, num_elts); break;
   }
-  return sizeof(struct caml_bigarray) + (b->num_dims - 1) * sizeof(intnat);
+  /* PR#5516: use C99's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L)
+  return sizeof(struct caml_ba_array) + b->num_dims * sizeof(intnat);
+#else
+  return sizeof(struct caml_ba_array) + (b->num_dims - 1) * sizeof(intnat);
+#endif
 }
 
 /* Create / update proxy to indicate that b2 is a sub-array of b1 */

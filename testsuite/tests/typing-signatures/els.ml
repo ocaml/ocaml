@@ -45,12 +45,12 @@ module type INTERP = sig
   include EVALUATOR
   module Parser : PARSER with type chunk = Ast.chunk
   val dostring : state -> string -> value list
-  val mk	: unit -> state
+  val mk : unit -> state
 end;;
 
 module type USERTYPE = sig
   type t
-  val eq	: t -> t -> bool
+  val eq : t -> t -> bool
   val to_string : t -> string
 end;;
 

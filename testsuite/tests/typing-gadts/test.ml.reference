@@ -18,16 +18,16 @@
     val tail : ('a * 'b) t -> 'b t
     val length : 'a t -> int
   end
-#                                                         Characters 206-227:
+#                                                         Characters 196-224:
   ......function
-  	| C2 x -> x
+          | C2 x -> x
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 C1 _
-Characters 469-526:
+Characters 458-529:
   ......function
-  	| Foo _ , Foo _ -> true
-  	| Bar _, Bar _ -> true
+          | Foo _ , Foo _ -> true
+          | Bar _, Bar _ -> true
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (Bar _, Foo _)
@@ -47,24 +47,24 @@ module Nonexhaustive :
     type 'a v = Foo : t -> t v | Bar : u -> u v
     val same_type : 's v * 's v -> bool
   end
-#               Characters 119-120:
+#               Characters 118-119:
       let eval (D x) = x
                        ^
 Error: This expression has type ex#16 t
        but an expression was expected of type ex#16 t
        The type constructor ex#16 would escape its scope
-#                       Characters 157-158:
-  	  C ->
-     ^
+#                       Characters 174-175:
+            C ->
+            ^
 Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
-#                         Characters 174-182:
-  	| (IntLit _ | BoolLit _) -> ()
-      ^^^^^^^^
+#                         Characters 178-186:
+          | (IntLit _ | BoolLit _) -> ()
+             ^^^^^^^^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type s t
-#                         Characters 213-226:
-  	| `A, BoolLit _ -> ()
-     ^^^^^^^^^^^^^
+#                         Characters 224-237:
+          | `A, BoolLit _ -> ()
+            ^^^^^^^^^^^^^
 Error: This pattern matches values of type ([? `A ] as 'a) * bool t
        but a pattern was expected which matches values of type 'a * int t
 #                                 module Propagation :

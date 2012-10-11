@@ -1712,7 +1712,7 @@ echo "        standard library.......... $libdir"
 echo "Companion ocaml:"
 if $has_ocaml
 then
-echo "        version: $ocaml_version, library: $ocamllib."
+echo "        version: $ocaml_version, library: $ocamllib"
 else
 echo "        none, JoCaml is alone!"
 fi

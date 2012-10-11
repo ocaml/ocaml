@@ -46,7 +46,7 @@ let rec get_data s d = match d with
  (* Only return a "forced stream", that is either Sempty or
     Scons(a,_). If d is a generator or a buffer, the item a is seen as
     extracted from the generator/buffer.
-    
+
     Forcing also updates the "count" field of the delayed stream,
     in the Sapp and Slazy cases (see slazy/lapp implementation below). *)
    Sempty | Scons (_, _) -> d

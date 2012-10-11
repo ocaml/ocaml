@@ -7,7 +7,7 @@ let x = 1
 
 
 module M = struct
-  let y = 2 
+  let y = 2
 
 end
 

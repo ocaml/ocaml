@@ -102,4 +102,3 @@ let _ =
   test 53 eqtrue (testcmpfloat 0.0 0.0);
   test 54 eqtrue (testcmpfloat 1.0 0.0);
   test 55 eqtrue (testcmpfloat 0.0 1.0)
-

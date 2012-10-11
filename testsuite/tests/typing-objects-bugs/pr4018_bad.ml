@@ -8,7 +8,7 @@ class ['event] subject =
    object (self : 'subject)
      val mutable observers = ([]: (('subject, 'event) observer) list)
      method add_observer obs = observers <- (obs :: observers)
-     method notify_observers (e : 'event) = 
+     method notify_observers (e : 'event) =
          List.iter (fun x -> x#notify self e) observers
    end
 

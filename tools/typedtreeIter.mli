@@ -99,4 +99,3 @@ module MakeIterator :
            end
 
 module DefaultIteratorArgument : IteratorArgument
-

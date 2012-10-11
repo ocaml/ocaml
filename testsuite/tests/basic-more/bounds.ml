@@ -24,5 +24,3 @@ let _ =
   print_string "Trail:";
   List.iter (fun n -> print_string " "; print_int n) !trail;
   print_newline()
-
-

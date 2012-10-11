@@ -1,3 +1,33 @@
+OCaml 4.00.1:
+-------------
+
+Bug fixes:
+- PR#4019: better documentation of Str.matched_string
+- PR#5111: ocamldoc, heading tags inside spans tags is illegal in html
+- PR#5278: better error message when typing "make"
+- PR#5468: ocamlbuild should preserve order of parametric tags
+- PR#5563: harden Unix.select against file descriptors above FD_SETSIZE
+- PR#5690: "ocamldoc ... -text README" raises exception
+- PR#5700: crash with native-code stack backtraces under MacOS 10.8 x86-64
+- PR#5707: AMD64 code generator: do not use r10 and r11 for parameter passing,
+  as these registers can be destroyed by the dynamic loader
+- PR#5712: some documentation problems
+- PR#5715: configuring with -no-shared-libs breaks under cygwin
+- PR#5718: false positive on 'unused constructor' warning
+- PR#5719: ocamlyacc generates code that is not warning 33-compliant
+- PR#5725: ocamldoc output of preformatted code
+- PR#5727: emacs caml-mode indents shebang line in toplevel scripts
+- PR#5729: tools/untypeast.ml creates unary Pexp_tuple
+- PR#5731: instruction scheduling forgot to account for destroyed registers
+- PR#5735: %apply and %revapply not first class citizens
+- PR#5738: first class module patterns not handled by ocamldep
+- PR#5742: missing bound checks in Array.sub
+- PR#5744: ocamldoc error on "val virtual"
+- PR#5757: GC compaction bug (crash)
+- PR#5758: Compiler bug when matching on floats
+- PR#5761: Incorrect bigarray custom block size
+
+
 OCaml 4.00.0:
 -------------
 
@@ -6,7 +36,7 @@ OCaml 4.00.0:
 - The official name of the language is now OCaml.
 
 Language features:
-- Added Generalized Abstract Data Types (GADTs) to the language.
+- Added Generalized Algebraic Data Types (GADTs) to the language.
   See chapter "Language extensions" of the reference manual for documentation.
 - It is now possible to omit type annotations when packing and unpacking
   first-class modules. The type-checker attempts to infer it from the context.
@@ -142,6 +172,7 @@ Bug Fixes:
 - PR#5261, PR#5497: Ocaml source-code examples are not "copy-paste-able"
 * PR#5279: executable name is not initialized properly in caml_startup_code
 - PR#5290: added hash functions for channels, nats, mutexes, conditions
+- PR#5291: undetected loop in class initialization
 - PR#5295: OS threads: problem with caml_c_thread_unregister()
 - PR#5301: camlp4r and exception equal to another one with parameters
 - PR#5305: prevent ocamlbuild from complaining about links to _build/
@@ -208,8 +239,8 @@ Bug Fixes:
 - PR#5518: segfault with lazy empty array
 - PR#5531: Allow ocamlbuild to add ocamldoc flags through -docflag
   and -docflags switches
-- PR#5543: in Bigarray.map_file, try to avoid using lseek() when growing file
 - PR#5538: combining -i and -annot in ocamlc
+- PR#5543: in Bigarray.map_file, try to avoid using lseek() when growing file
 - PR#5648: (probably fixed) test failures in tests/lib-threads
 - PR#5551: repeated calls to find_in_path degrade performance
 - PR#5552: Mac OS X: unrecognized gcc option "-no-cpp-precomp"

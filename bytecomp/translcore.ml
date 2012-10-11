@@ -306,6 +306,12 @@ let prim_obj_dup =
   { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
+let find_primitive loc prim_name =
+  match prim_name with
+      "%revapply" -> Prevapply loc
+    | "%apply" -> Pdirapply loc
+    | name -> Hashtbl.find primitives_table name
+
 let transl_prim loc prim args =
   let prim_name = prim.prim_name in
   try
@@ -344,11 +350,7 @@ let transl_prim loc prim args =
     end
   with Not_found ->
   try
-    let p =
-      match prim_name with
-          "%revapply" -> Prevapply loc
-        | "%apply" -> Pdirapply loc
-        | name -> Hashtbl.find primitives_table name in
+    let p = find_primitive loc prim_name in
     (* Try strength reduction based on the type of the argument *)
     begin match (p, args) with
         (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
@@ -406,7 +408,7 @@ let () = Transljoin.simple_prim := simple_prim
 
 (* Eta-expand a primitive without knowing the types of its arguments *)
 
-let transl_primitive p =
+let transl_primitive loc p =
   let prim =
     try
       let (gencomp, _, _, _, _, _, _, _) =
@@ -414,7 +416,7 @@ let transl_primitive p =
       gencomp
     with Not_found ->
     try
-      Hashtbl.find primitives_table p.prim_name
+      find_primitive loc p.prim_name
     with Not_found ->
       Pccall p in
   match prim with
@@ -646,7 +648,7 @@ and transl_exp0 e =
         Lfunction(Curried, [obj; meth; cache; pos],
                   Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos], e.exp_loc))
       else
-        transl_primitive p
+        transl_primitive e.exp_loc p
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident
