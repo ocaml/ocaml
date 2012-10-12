@@ -329,13 +329,21 @@ let reset_cache () =
   Hashtbl.clear persistent_structures;
   Consistbl.clear crc_units;
   Hashtbl.clear value_declarations;
-  Hashtbl.clear type_declarations
+  Hashtbl.clear type_declarations;
+  Hashtbl.clear used_constructors
 
-let reset_missing_cmis () =
-  let l = Hashtbl.fold
+let reset_cache_toplevel () =
+  (* Delete 'missing cmi' entries from the cache. *)
+  let l =
+    Hashtbl.fold
       (fun name r acc -> if r = None then name :: acc else acc)
-      persistent_structures [] in
-  List.iter (Hashtbl.remove persistent_structures) l
+      persistent_structures []
+  in
+  List.iter (Hashtbl.remove persistent_structures) l;
+  Hashtbl.clear value_declarations;
+  Hashtbl.clear type_declarations;
+  Hashtbl.clear used_constructors
+
 
 let set_unit_name name =
   current_unit := name
