@@ -1844,6 +1844,10 @@ let is_abstract_newtype env p =
     decl.type_kind = Type_abstract
   with Not_found -> false
 
+let non_aliasable p decl =
+  in_pervasives p ||
+  in_current_module p && decl.type_newtype_level = None
+
 (* mcomp type_pairs subst env t1 t2 does not raise an
    exception if it is possible that t1 and t2 are actually
    equal, assuming the types in type_pairs are equal and
@@ -1882,6 +1886,9 @@ let rec mcomp type_pairs subst env t1 t2 =
                   mcomp_list type_pairs subst env tl1 tl2
                 | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
                   mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2
+                | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
+                  let decl = Env.find_type p env in
+                  if non_aliasable p decl then raise (Unify [])
                 | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2))
                   when Path.same p1 p2 && n1 = n2 ->
                   mcomp_list type_pairs subst env tl1 tl2
@@ -1959,15 +1966,11 @@ and mcomp_row type_pairs subst env row1 row2 =
     pairs
 
 and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
-  let non_aliased p decl =
-    in_pervasives p ||
-    in_current_module p && decl.type_newtype_level = None
-  in
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
     if Path.same p1 p2 then
-      (if non_aliased p1 decl then mcomp_list type_pairs subst env tl1 tl2)
+      (if non_aliasable p1 decl then mcomp_list type_pairs subst env tl1 tl2)
     else match decl.type_kind, decl'.type_kind with
     | Type_record (lst,r), Type_record (lst',r') when r = r' ->
         mcomp_list type_pairs subst env tl1 tl2;
@@ -1978,8 +1981,8 @@ and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
     | Type_variant _, Type_record _
     | Type_record _, Type_variant _ -> raise (Unify [])
     | _ ->
-        if non_aliased p1 decl && (non_aliased p2 decl' || is_datatype decl')
-        || is_datatype decl && non_aliased p2 decl' then raise (Unify [])
+        if non_aliasable p1 decl && (non_aliasable p2 decl'||is_datatype decl')
+        || is_datatype decl && non_aliasable p2 decl' then raise (Unify [])
   with Not_found -> ()
 
 and mcomp_type_option type_pairs subst env t t' =
