@@ -67,8 +67,20 @@
 # This program ignores any file that is not under svn control, unless
 # explicitly given on the command line.
 
+# If a directory has the SVN property "ocaml:typo" set to "prune",
+# then it and its contents are ignored.
+
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
+
+# Special case for recursive call from the find command (see IGNORE_DIRS).
+case "$1" in
+  --check-prune)
+    case `svn propget ocaml:typo "$2" 2>/dev/null` in
+      prune) echo "INFO: pruned directory $2 (ocaml:typo=prune)" >&2; exit 0;;
+      *) exit 3;;
+    esac;;
+esac
 
 usage () {
   echo "usage: check-typo {-<rule>} [--] [<file-or-dir> ...]" >&2
@@ -86,10 +98,11 @@ while : ; do
   esac
 done
 
-IGNORE_DIRS='
+IGNORE_DIRS="
   -name .svn -prune -o
   -name _build -prune -o
-'
+  -type d -exec $0 --check-prune {} ; -prune -o
+"
 
 ( case $# in
     0) find . $IGNORE_DIRS -type f -print;;
