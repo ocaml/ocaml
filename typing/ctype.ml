@@ -1068,8 +1068,8 @@ let instance_constructor ?in_pattern cstr =
           Env.enter_type (get_new_abstract_name name) decl !env in
         env := new_env;
         let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
-	let tv = copy existential in
-	assert (is_Tvar tv);
+        let tv = copy existential in
+        assert (is_Tvar tv);
         link_type tv to_unify
       in
       List.iter process cstr.cstr_existentials

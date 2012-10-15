@@ -38,30 +38,30 @@ let () =
   Printexc.register_printer
     (function
       | Error err ->
-	  let msg = match err with
-	  | Not_a_bytecode_file s ->
-	      Printf.sprintf "Not_a_bytecode_file %S" s
-	  | Inconsistent_import s ->
-	      Printf.sprintf "Inconsistent_import %S" s
-	  | Unavailable_unit s ->
-	      Printf.sprintf "Unavailable_unit %S" s
-	  | Unsafe_file ->
-	      "Unsafe_file"
-	  | Linking_error (s, Undefined_global s') ->
-	      Printf.sprintf "Linking_error (%S, Dynlink.Undefined_global %S)" s s'
-	  | Linking_error (s, Unavailable_primitive s') ->
-	      Printf.sprintf "Linking_error (%S, Dynlink.Unavailable_primitive %S)" s s'
-	  | Linking_error (s, Uninitialized_global s') ->
-	      Printf.sprintf "Linking_error (%S, Dynlink.Uninitialized_global %S)" s s'
-	  | Corrupted_interface s ->
-	      Printf.sprintf "Corrupted_interface %S" s
-	  | File_not_found s ->
-	      Printf.sprintf "File_not_found %S" s
-	  | Cannot_open_dll s ->
-	      Printf.sprintf "Cannot_open_dll %S" s
-	  | Inconsistent_implementation s ->
-	      Printf.sprintf "Inconsistent_implementation %S" s in
-	  Some (Printf.sprintf "Dynlink.Error(Dynlink.%s)" msg)
+          let msg = match err with
+          | Not_a_bytecode_file s ->
+              Printf.sprintf "Not_a_bytecode_file %S" s
+          | Inconsistent_import s ->
+              Printf.sprintf "Inconsistent_import %S" s
+          | Unavailable_unit s ->
+              Printf.sprintf "Unavailable_unit %S" s
+          | Unsafe_file ->
+              "Unsafe_file"
+          | Linking_error (s, Undefined_global s') ->
+              Printf.sprintf "Linking_error (%S, Dynlink.Undefined_global %S)" s s'
+          | Linking_error (s, Unavailable_primitive s') ->
+              Printf.sprintf "Linking_error (%S, Dynlink.Unavailable_primitive %S)" s s'
+          | Linking_error (s, Uninitialized_global s') ->
+              Printf.sprintf "Linking_error (%S, Dynlink.Uninitialized_global %S)" s s'
+          | Corrupted_interface s ->
+              Printf.sprintf "Corrupted_interface %S" s
+          | File_not_found s ->
+              Printf.sprintf "File_not_found %S" s
+          | Cannot_open_dll s ->
+              Printf.sprintf "Cannot_open_dll %S" s
+          | Inconsistent_implementation s ->
+              Printf.sprintf "Inconsistent_implementation %S" s in
+          Some (Printf.sprintf "Dynlink.Error(Dynlink.%s)" msg)
       | _ -> None)
 
 (* Management of interface CRCs *)
