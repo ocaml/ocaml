@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Detection of partial matches and unused match cases. *)
 
 open Misc

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Renaming of registers at reload points to split live ranges. *)
 
 open Reg

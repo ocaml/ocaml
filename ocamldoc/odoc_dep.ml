@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Top modules dependencies. *)
 
 module StrS = Depend.StringSet

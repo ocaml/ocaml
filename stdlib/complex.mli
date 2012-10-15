@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Complex numbers.
 
     This module provides arithmetic operations on complex numbers.

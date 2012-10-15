@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* To determine the semantics of signal handlers
    (System V: signal is reset to default behavior on entrance to the handler
     BSD: signal handler remains active). */

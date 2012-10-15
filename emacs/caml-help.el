@@ -10,8 +10,6 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id$ *)
-
 ;; caml-info.el --- contextual completion and help to caml-mode
 
 ;; Didier Remy, November 2001.

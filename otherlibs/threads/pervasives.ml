@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Same as ../../stdlib/pervasives.ml, except that I/O functions have
    been redefined to not block the whole process, but only the calling
    thread. *)

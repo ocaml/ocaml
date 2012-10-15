@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Handling of sections in bytecode executable files *)
 
 (* List of all sections, in reverse order *)

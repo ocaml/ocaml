@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 .PHONY: all byte native profile debug ppcache doc
 
 ifndef INSTALL_PREFIX

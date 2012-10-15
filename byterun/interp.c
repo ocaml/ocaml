@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* The bytecode interpreter */
 #include <stdio.h>
 #include "alloc.h"

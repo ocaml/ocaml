@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Dynamic loading of .cmo files *)
 
 open Dynlinkaux  (* REMOVE_ME for ../../debugger/dynlink.ml *)

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Function declarations for non-Unix user interfaces */
 
 #ifndef CAML_UI_H

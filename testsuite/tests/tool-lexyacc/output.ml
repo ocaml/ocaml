@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Generating a DFA as a set of mutually recursive functions *)
 
 open Syntax

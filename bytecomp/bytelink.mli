@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Link .cmo files and produce a bytecode executable. *)
 
 val link : Format.formatter -> string list -> string -> unit

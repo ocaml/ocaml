@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Print the digests of unit interfaces *)
 
 let load_path = ref []

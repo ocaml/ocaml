@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 # The lexer generator
 CAMLC=../boot/ocamlrun ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
 CAMLOPT=../boot/ocamlrun ../ocamlopt -nostdlib -I ../stdlib

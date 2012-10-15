@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Link a set of .cmo files and produce a bytecode executable. *)
 
 open Misc

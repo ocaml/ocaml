@@ -10,8 +10,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 #define ST8OFF(a,b,d) st8 [a] = b, d
 #define LD8OFF(a,b,d) ld8 a = [b], d
 #define STFDOFF(a,b,d) stfd [a] = b, d

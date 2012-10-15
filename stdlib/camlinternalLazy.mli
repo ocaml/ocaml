@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Run-time support for lazy values.
     All functions in this module are for system use only, not for the
     casual user. *)

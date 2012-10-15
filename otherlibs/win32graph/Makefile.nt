@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 LIBNAME=graphics
 COBJS=open.$(O) draw.$(O) events.$(O) dib.$(O)
 CAMLOBJS=graphics.cmo

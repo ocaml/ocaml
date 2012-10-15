@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Standard labeled libraries.
 
    This meta-module provides labelized version of the {!Array},

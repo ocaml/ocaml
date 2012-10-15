@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 val objfiles : string list ref
 val ccobjs : string list ref
 val dllibs : string list ref

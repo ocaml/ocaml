@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 include Makefile.common
 
 CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS) $(IFLEXDIR)

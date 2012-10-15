@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc

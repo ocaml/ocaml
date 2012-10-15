@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* "Expunge" a toplevel by removing compiler modules from the global List.map.
    Usage: expunge <source file> <dest file> <names of modules to keep> *)
 

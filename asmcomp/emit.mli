@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Generation of assembly code *)
 
 val fundecl: Linearize.fundecl -> unit

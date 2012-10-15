@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 # Makefile for the dynamic link library
 
 include ../../config/Makefile

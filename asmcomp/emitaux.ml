@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Common functions for emitting assembly code *)
 
 open Debuginfo

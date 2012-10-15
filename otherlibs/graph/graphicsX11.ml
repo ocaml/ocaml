@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Module [GraphicsX11]: additional graphics primitives for the X Windows system *)
 
 type window_id = string

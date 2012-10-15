@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Handling of dynamically-linked libraries *)
 
 type dll_handle

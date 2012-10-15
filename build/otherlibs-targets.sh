@@ -12,8 +12,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 OTHERLIBS_BYTE=""
 OTHERLIBS_NATIVE=""
 OTHERLIBS_UNIX_NATIVE=""

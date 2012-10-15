@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Typechecking of type expressions for the core language *)
 
 open Format;;

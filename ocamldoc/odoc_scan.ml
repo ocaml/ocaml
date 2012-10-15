@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Scanning of modules and elements.
 
    The class scanner defined in this module can be used to

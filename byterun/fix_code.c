@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
 #include "config.h"

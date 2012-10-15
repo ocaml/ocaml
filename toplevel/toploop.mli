@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Format
 
 (* Accessors for the table of toplevel value bindings.  These functions

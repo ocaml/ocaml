@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Clflags
 
 let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Research of elements through modules. *)
 
 (** The type for an element of the result of a research. *)

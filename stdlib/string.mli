@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** String operations.
 
   Given a string [s] of length [l], we call character number in [s]

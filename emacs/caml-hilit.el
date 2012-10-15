@@ -10,8 +10,6 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id$ *)
-
 ; Highlighting patterns for hilit19 under caml-mode
 
 ; defined also in caml.el

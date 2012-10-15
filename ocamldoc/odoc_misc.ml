@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 let no_blanks s =
   let len = String.length s in
   let buf = Buffer.create len in

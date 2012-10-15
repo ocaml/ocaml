@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
 #ifndef CAML_FIX_CODE_H

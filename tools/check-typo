@@ -24,7 +24,7 @@
 # - presence of a LF character at the end of the file (missing-lf)
 # - maximum line length of 80 characters (long-line)
 # - presence of a copyright header (missing-header)
-# - absence of a leftover "$Id$" string (svn-keyword)
+# - absence of a leftover "$Id" string (svn-keyword)
 
 # Exceptions are handled with a SVN property: "ocaml:typo".
 # Its value for a given file is a comma-separated list of rule names,
@@ -172,7 +172,7 @@ IGNORE_DIRS="
           err("white-at-eol", "whitespace at end of line");
         }
 
-        match($0, /\$Id\$/) {
+        match($0, /\$Id(: .*)?\$/) {
           err("svn-keyword", "SVN keyword marker");
         }
 

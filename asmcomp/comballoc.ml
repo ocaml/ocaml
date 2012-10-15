@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Combine heap allocations occurring in the same basic block *)
 
 open Mach

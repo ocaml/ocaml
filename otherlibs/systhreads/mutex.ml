@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 type t
 external create: unit -> t = "caml_mutex_new"
 external lock: t -> unit = "caml_mutex_lock"

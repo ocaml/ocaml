@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** The initially opened module.
 
    This module provides the basic operations over the built-in types

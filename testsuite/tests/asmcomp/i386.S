@@ -10,8 +10,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Linux with ELF binaries does not prefix identifiers with _.
    Linux with a.out binaries, FreeBSD, and NextStep do. */
 

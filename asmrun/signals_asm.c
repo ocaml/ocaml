@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Signal handling, code specific to the native-code compiler */
 
 #if defined(TARGET_amd64) && defined (SYS_linux)

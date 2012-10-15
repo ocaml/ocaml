@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Compaction of an automata *)
 type lex_tables =
   { tbl_base: int array;                 (* Perform / Shift *)

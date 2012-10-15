@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 #include <mlvalues.h>
 #include "unixsupport.h"
 #include "socketaddr.h"

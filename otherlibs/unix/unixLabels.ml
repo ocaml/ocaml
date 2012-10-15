@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Module [UnixLabels]: labelled Unix module *)
 
 include Unix

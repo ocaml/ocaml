@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
 val has_base_type : Typedtree.expression -> Path.t -> bool

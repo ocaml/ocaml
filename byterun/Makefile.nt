@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 include Makefile.common
 
 CFLAGS=-DOCAML_STDLIB_DIR='"$(LIBDIR)"' $(IFLEXDIR)

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Analysis of implementation files. *)
 open Misc
 open Asttypes

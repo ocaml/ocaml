@@ -12,8 +12,6 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
-/* $Id$ */
-
 #include "defs.h"
 
 static int nvectors;

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
 open Path

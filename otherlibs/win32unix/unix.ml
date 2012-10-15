@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Initialization *)
 
 external startup: unit -> unit = "win_startup"

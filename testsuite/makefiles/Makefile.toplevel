@@ -1,5 +1,3 @@
-# $Id$
-
 default:
 	@for file in *.ml; do \
 	  $(OCAML) < $$file 2>&1 | grep -v '^        OCaml version' > $$file.result; \

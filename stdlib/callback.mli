@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Registering OCaml values with the C runtime.
 
    This module allows OCaml values to be registered with the C runtime

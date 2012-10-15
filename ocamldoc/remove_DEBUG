@@ -11,8 +11,6 @@
 #(*                                                                     *)
 #(***********************************************************************)
 
-# $Id$
-
 # usage: remove_DEBUG <file>
 # remove from <file> every line that contains the string "DEBUG",
 # respecting the cpp # line annotation conventions
