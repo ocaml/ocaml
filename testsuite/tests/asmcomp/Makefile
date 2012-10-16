@@ -91,6 +91,7 @@ OTHEROBJS=\
   $(TOPDIR)/asmcomp/scheduling.cmo \
   $(TOPDIR)/asmcomp/emitaux.cmo \
   $(TOPDIR)/asmcomp/emit.cmo \
+  $(TOPDIR)/asmcomp/printclambda.cmo \
   $(TOPDIR)/asmcomp/asmgen.cmo
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
