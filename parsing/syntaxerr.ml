@@ -16,9 +16,11 @@ open Format
 
 type error =
     Unclosed of Location.t * string * Location.t * string
+  | Expecting of Location.t * string
   | Applicative_path of Location.t
   | Variable_in_scope of Location.t * string
   | Other of Location.t
+
 
 
 exception Error of error
@@ -36,6 +38,10 @@ let report_error ppf = function
         fprintf ppf "%aThis '%s' might be unmatched"
           Location.print_error opening_loc opening
       end
+  | Expecting (loc, nonterm) ->
+      fprintf ppf
+        "%a@[Syntax error: %s expected.@]"
+        Location.print_error loc nonterm
   | Applicative_path loc ->
       fprintf ppf
         "%aSyntax error: applicative paths of the form F(X).t \
@@ -48,3 +54,11 @@ let report_error ppf = function
         Location.print_error loc var var
   | Other loc ->
       fprintf ppf "%aSyntax error" Location.print_error loc
+
+
+let location_of_error = function
+  | Unclosed(l,_,_,_)
+  | Applicative_path l
+  | Variable_in_scope(l,_)
+  | Other l
+  | Expecting (l, _) -> l
