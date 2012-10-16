@@ -26,6 +26,7 @@ Bug fixes:
 - PR#5747: 'unused open' warning not given when compiling with -annot
 - PR#5758: Compiler bug when matching on floats
 - PR#5763: ocamlbuild does not give correct flags when running menhir
+- PR#5784: -dclambda option is ignored
 - PR#5787: Bad behavior of 'Unused ...' warnings in the toplevel
 
 Internals:
