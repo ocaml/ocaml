@@ -6,6 +6,7 @@ Bug fixes:
 - PR#5240: register exception printers for Unix.Unix_error and Dynlink.Error
 - PR#5300: verbose parameter should implicitly set classic display
 - PR#5772: problem with marshaling of mutually-recursive functions
+- PR#5775: several bug fixes for tools/pprintast.ml
 - PR#5785: misbehaviour with abstracted structural type used as GADT index
 
 
