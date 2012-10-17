@@ -1042,19 +1042,19 @@ and class_type ppf x =
 
       (match l with
       | "" ->
-          core_type ppf co 
+          core_type ppf co
       | s when (String.get s 0 = '?') ->
           (match co.ptyp_desc with
           | Ptyp_constr
               ({txt=
                 Longident.Ldot
                   (Longident.Lident "*predef*", "option")},l)
-            -> begin 
+            -> begin
               fprintf ppf "%s :@ " s ;
               type_constr_list ppf l
-            end 
+            end
           | _ -> core_type ppf co )
-      | s -> begin 
+      | s -> begin
           fprintf ppf "%s :@ "s;
           core_type ppf co ;
       end );
@@ -1316,7 +1316,7 @@ and class_fun_helper ppf e =
       (match (eo, l) with
         | (None, "") -> fprintf ppf "%a@ " pattern p
         | (Some x,_) ->
-            fprintf ppf "%s:(%a=%a)@ " l pattern p expression x 
+            fprintf ppf "%s:(%a=%a)@ " l pattern p expression x
             (* let len =String.length l in *)
             (* if len = 0 then failwith "class_fun_helper" *)
             (* else  *)
@@ -1327,7 +1327,7 @@ and class_fun_helper ppf e =
             (* label 0 ppf l; *)
             (* fprintf ppf " *\)@ " *)
         | (None,_) ->
-            fprintf ppf "%s:(%a)@ " l pattern p 
+            fprintf ppf "%s:(%a)@ " l pattern p
             (* let len = String.length l in *)
             (* if len = 0 then failwith "class_fun_helper" *)
             (* else *)
@@ -2175,7 +2175,7 @@ and pattern_x_expression_case_single ppf (p, e) eo lbl =
   fprintf ppf " ->@ " ;
   expression_sequence ppf ~indent:0 e ;;
 
-let rec toplevel_phrase ppf x =
+let toplevel_phrase ppf x =
   match x with
   | Ptop_def (s) ->
       pp_open_hvbox ppf 0;
@@ -2203,14 +2203,3 @@ let toplevel_phrase ppf x =
   toplevel_phrase ppf x;
   fprintf ppf ";;" ;
   pp_print_newline ppf ();;
-
-let print_structure: Format.formatter ->
-  Parsetree.structure -> unit = structure
-let print_signature : Format.formatter ->
-  Parsetree.signature -> unit = signature
-let print_expression: Format.formatter ->
-  Parsetree.expression -> unit = expression
-let print_pattern: Format.formatter ->
-  Parsetree.pattern -> unit = pattern
-let print_core_type: Format.formatter ->
-  Parsetree.core_type -> unit = core_type
