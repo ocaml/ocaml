@@ -305,6 +305,7 @@ let use_file ppf name =
           List.iter
             (fun ph ->
               if !Clflags.dump_parsetree then Printast.top_phrase ppf ph;
+              if !Clflags.dump_source then Pprintast.top_phrase ppf ph;
               if not (execute_phrase !use_print_results ppf ph) then raise Exit)
             (!parse_use_file lb);
           true
@@ -420,6 +421,7 @@ let loop ppf =
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
+      if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
       Env.reset_cache_toplevel ();
       ignore(execute_phrase true ppf phr)
     with

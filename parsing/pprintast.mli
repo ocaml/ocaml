@@ -15,4 +15,4 @@ val signature: Format.formatter -> Parsetree.signature -> unit
 val expression: Format.formatter -> Parsetree.expression -> unit
 val pattern: Format.formatter -> Parsetree.pattern -> unit
 val core_type: Format.formatter -> Parsetree.core_type -> unit
-
+val top_phrase: Format.formatter -> Parsetree.toplevel_phrase -> unit

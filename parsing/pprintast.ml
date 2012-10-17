@@ -2198,7 +2198,7 @@ let string_of_expression x =
   expression ppf x ;
   flush_str_formatter () ;;
 
-let toplevel_phrase ppf x =
+let top_phrase ppf x =
   pp_print_newline ppf () ;
   toplevel_phrase ppf x;
   fprintf ppf ";;" ;
