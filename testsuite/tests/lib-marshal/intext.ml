@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Test for output_value / input_value *)
 
 let max_data_depth = 500000
@@ -531,7 +543,7 @@ let test_mutual_rec_regression () =
   and test_list q = List.for_all (test_one q) q in
   let g () = () in
   let f q = if test_list q then g () in
-  
+
   test 700 (try ignore (Marshal.to_string f [Marshal.Closures]); true with _ -> false)
 
 let main() =

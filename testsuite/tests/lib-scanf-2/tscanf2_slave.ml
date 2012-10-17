@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2005 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* A very simple slave:
    - read the string " Ping" on stdin,
    - then print the string "-pong" on stderr,

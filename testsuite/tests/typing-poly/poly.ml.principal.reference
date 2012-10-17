@@ -1,5 +1,5 @@
 
-#   * * *       #   type 'a t = { t : 'a; }
+# * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
 # val f : 'a list -> 'a fold = <fun>
 # - : int = 6

@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2005 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* A very simple master:
    - first launch a slave process,
    - then repeat a random number of times:
