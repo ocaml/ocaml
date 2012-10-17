@@ -1733,7 +1733,7 @@ Standard library:
 - Module Printf:
     added %S and %C formats (quoted, escaped strings and characters);
     added kprintf (calls user-specified continuation on formatted string).
-- Module Queue: faster implementation (courtesy of François Pottier).
+- Module Queue: faster implementation (courtesy of Francois Pottier).
 - Module Random: added Random.bool.
 - Module Stack: added Stack.is_empty.
 - Module Pervasives:
