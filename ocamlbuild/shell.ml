@@ -66,9 +66,9 @@ let cp_pf src dest =
   reset_filesys_cache_for_file dest;
   run["cp";"-pf";src;dest] dest
 
-(* L'Arrêté du 2007-03-07 prend en consideration
+(* L'Arrete du 2007-03-07 prend en consideration
    differement les archives. Pour les autres fichiers
-   le décret du 2007-02-01 est toujours valable :-) *)
+   le decret du 2007-02-01 est toujours valable :-) *)
 let cp src dst =
   if Filename.check_suffix src ".a"
   && Filename.check_suffix dst ".a"
