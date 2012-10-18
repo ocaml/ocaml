@@ -564,11 +564,7 @@ let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
                 Location.prerr_warning lid.loc
                   (Warnings.Not_principal "this type-based record selection");
               p1
-          | _, Tconstr _ ->
-	      begin match ty_res.desc with
-		Tconstr (p,_,_) -> p
-	      | _ -> assert false
-	      end
+          | _, Tconstr (p, _, _) -> p
           | _ -> assert false
         in
         path, snd (Env.find_type_descrs path env)
