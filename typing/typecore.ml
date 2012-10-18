@@ -549,7 +549,7 @@ let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
           Longident.Lident s, Some labels when Hashtbl.mem labels s ->
             fst (Hashtbl.find labels s), []
         | _ ->
-        let _, label = Env.lookup_label lid.txt env in
+        let _, label = Typetexp.find_label env lid.loc lid.txt in
         let ty_res = instance Env.empty label.lbl_res in
         let path =
           match opath, (expand_head env ty_res).desc with
