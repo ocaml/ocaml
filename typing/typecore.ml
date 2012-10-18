@@ -245,20 +245,16 @@ let extract_option_type env ty =
     when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
-let rec extract_label_names sexp env ty =
-  let ty = expand_head env ty in
-  match ty.desc with
-  | Tconstr (path, _, _) ->
-      let td = Env.find_type path env in
-      begin match td.type_kind with
-      | Type_record (fields, _) ->
-          List.map (fun (name, _, _) -> name) fields
-      | Type_abstract when td.type_manifest <> None ->
-          extract_label_names sexp env (expand_head env ty)
-      | _ -> assert false
-      end
-  | _ ->
-      assert false
+let extract_label_names sexp env ty =
+  try
+    let (_,td) = extract_concrete_typedecl env ty in
+    begin match td.type_kind with
+    | Type_record (fields, _) ->
+        List.map (fun (name, _, _) -> name) fields
+    | _ -> assert false
+    end
+  with Not_found ->
+    assert false
 
 (* Typing of patterns *)
 
@@ -527,6 +523,15 @@ let rec find_record_qual = function
   | ({ txt = Longident.Ldot _ } as lid, _) :: _ -> Some lid
   | _ :: rest -> find_record_qual rest
 
+let rec expand_path env p =
+  let decl = Env.find_type p env in
+  match decl.type_manifest with
+    None -> p
+  | Some ty ->
+      match repr ty with
+	{desc=Tconstr(p,_,_)} -> expand_path env p
+      | _ -> assert false
+
 let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
   (* Priority order for selecting record type
      1) use first qualified label
@@ -552,13 +557,18 @@ let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
         let _, label = Typetexp.find_label env lid.loc lid.txt in
         let ty_res = instance Env.empty label.lbl_res in
         let path =
-          match opath, (expand_head env ty_res).desc with
-            Some (p1,pr), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
-              if not pr then
+          match opath, ty_res.desc with
+            Some (p1,pr), Tconstr(p2,_,_) ->
+	      if not (Path.same (expand_path env p1) (expand_path env p2))
+	      && not pr then
                 Location.prerr_warning lid.loc
                   (Warnings.Not_principal "this type-based record selection");
               p1
-          | _, Tconstr (p, _, _) -> p
+          | _, Tconstr _ ->
+	      begin match ty_res.desc with
+		Tconstr (p,_,_) -> p
+	      | _ -> assert false
+	      end
           | _ -> assert false
         in
         path, snd (Env.find_type_descrs path env)
@@ -813,9 +823,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         (label_path, label_lid, label, arg)
       in
       let opath =
-        match expand_head !env expected_ty with
-          {desc = Tconstr (p,_,_)} -> Some (p, true)
-        | _ -> None
+        try
+	  let (p,_) = extract_concrete_typedecl !env expected_ty in
+	  Some (p, true)
+	with Not_found -> None
       in
       let lbl_pat_list =
         type_label_a_list ?labels !env type_label_pat opath lid_sp_list in
@@ -1827,10 +1838,11 @@ and type_expect ?in_function env sexp ty_expected =
       in
       let opath =
         let get_path ty =
-          match expand_head env ty with
-            {desc = Tconstr (p, _, _); level} ->
-              Some (p, level = generic_level || not !Clflags.principal)
-          | _ -> None
+	  try
+	    let (p,_) = extract_concrete_typedecl env ty in
+	    (* XXX level may be wrong *)
+            Some (p, ty.level = generic_level || not !Clflags.principal)
+          with Not_found -> None
         in
         match get_path ty_expected with
           None ->
@@ -2432,12 +2444,12 @@ and type_label_access env loc srecord lid =
       end_def ();
       generalize_structure record.exp_type
     end;
-    let ty_exp = expand_head env record.exp_type in
+    let ty_exp = record.exp_type in
     let record = {record with exp_type = instance env record.exp_type} in
     begin try
       let (label_path,label) = Env.lookup_label lid.txt env in
       let ty_res = instance Env.empty label.lbl_res in
-      match ty_exp.desc, (expand_head env ty_res).desc with
+      match (expand_head env ty_exp).desc, (expand_head env ty_res).desc with
         Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
           raise Exit
       | _ -> (record, label_path, label)
@@ -2448,10 +2460,11 @@ and type_label_access env loc srecord lid =
             Path.Pdot (mod_path, lab, Path.nopos)
         | _ -> fst (Typetexp.find_label env lid.loc lid.txt)
       in
-      let _, labels =
-        match ty_exp.desc with
-          Tconstr(p,_,_) -> Env.find_type_descrs p env
-        | _ -> assert false
+      let labels =
+	try
+	  let (p,_) = extract_concrete_typedecl env ty_exp in
+	  snd (Env.find_type_descrs p env)
+	with Not_found -> []
       in
       try
         let label = List.find (fun descr -> descr.lbl_name = lab) labels in
