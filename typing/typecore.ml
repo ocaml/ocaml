@@ -558,16 +558,20 @@ let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
             fst (Hashtbl.find labels s), []
         | _ ->
         let _, label = Typetexp.find_label env lid.loc lid.txt in
+        let lbl_path =
+          match label.lbl_res.desc with
+          | Tconstr(p, _, _) -> p
+          | _ -> assert false
+        in
         let path =
-          match opath, label.lbl_res.desc with
-            Some (p1,pr), Tconstr(p2,_,_) ->
-	      if not (Path.same (expand_path env p1) (expand_path env p2))
+          match opath with
+            Some (p1,pr) ->
+	      if not (Path.same (expand_path env p1) (expand_path env lbl_path))
 	      && not pr then
                 Location.prerr_warning lid.loc
                   (Warnings.Not_principal "this type-based record selection");
               p1
-          | _, Tconstr (p, _, _) -> p
-          | _ -> assert false
+          | _ -> lbl_path
         in
         path, snd (Env.find_type_descrs path env)
   in
