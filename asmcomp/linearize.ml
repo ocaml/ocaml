@@ -53,6 +53,7 @@ let has_fallthrough = function
 
 type fundecl =
   { fun_name: string;
+    fun_args_and_locations: (Ident.t * Reg.location) list;
     fun_body: instruction;
     fun_fast: bool;
     fun_dbg : Debuginfo.t }
@@ -263,7 +264,13 @@ let rec linear i n =
       copy_instr Lraise i (discard_dead_code n)
 
 let fundecl f =
+  let fun_args_and_locations =
+    let fun_args = Array.to_list f.Mach.fun_args in
+    ListLabels.map2 fun_args f.Mach.fun_arg_ids
+      ~f:(fun reg ident -> ident, Reg.location reg)
+  in
   { fun_name = f.Mach.fun_name;
+    fun_args_and_locations;
     fun_body = linear f.Mach.fun_body end_instr;
     fun_fast = f.Mach.fun_fast;
     fun_dbg  = f.Mach.fun_dbg }

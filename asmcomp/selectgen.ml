@@ -818,6 +818,7 @@ method emit_fundecl f =
   self#emit_tail env f.Cmm.fun_body;
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
+    fun_arg_ids = ListLabels.map f.Cmm.fun_args ~f:(fun (id, _ty) -> id);
     fun_body = self#extract;
     fun_fast = f.Cmm.fun_fast;
     fun_dbg  = f.Cmm.fun_dbg }

@@ -78,6 +78,7 @@ and instruction_desc =
 type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
+    fun_arg_ids: Ident.t list;
     fun_body: instruction;
     fun_fast: bool;
     fun_dbg : Debuginfo.t }

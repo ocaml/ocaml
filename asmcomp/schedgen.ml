@@ -375,6 +375,7 @@ method schedule_fundecl f =
     let new_body = schedule f.fun_body in
     clear_code_dag();
     { fun_name = f.fun_name;
+      fun_args_and_locations = f.fun_args_and_locations;
       fun_body = new_body;
       fun_fast = f.fun_fast;
       fun_dbg  = f.fun_dbg }

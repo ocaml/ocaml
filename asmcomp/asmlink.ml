@@ -202,7 +202,7 @@ let make_startup_file ppf filename units_list =
   Emitaux.output_channel := oc;
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup"; (* set the name of the "current" compunit *)
-  Emit.begin_assembly();
+  Emit.begin_assembly ~source_file_name:None;
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
   compile_phrase (Cmmgen.entry_point name_list);
@@ -226,7 +226,7 @@ let make_startup_file ppf filename units_list =
   compile_phrase
     (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
 
-  Emit.end_assembly ~source_file_name:None;
+  Emit.end_assembly ();
   close_out oc
 
 let make_shared_startup_file ppf units filename =
@@ -235,7 +235,7 @@ let make_shared_startup_file ppf units filename =
   Emitaux.output_channel := oc;
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
-  Emit.begin_assembly();
+  Emit.begin_assembly ~source_file_name:None;
   List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));
   compile_phrase (Cmmgen.plugin_header units);
@@ -245,7 +245,7 @@ let make_shared_startup_file ppf units filename =
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
 
-  Emit.end_assembly ~source_file_name:None;
+  Emit.end_assembly ();
   close_out oc
 
 

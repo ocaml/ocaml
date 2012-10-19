@@ -102,7 +102,7 @@ let compile_implementation ?toplevel ?source_file_name prefixname ppf (size, lam
   let oc = open_out asmfile in
   begin try
     Emitaux.output_channel := oc;
-    Emit.begin_assembly();
+    Emit.begin_assembly ~source_file_name;
     Closure.intro size lam
     ++ Cmmgen.compunit size
     ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
@@ -120,7 +120,7 @@ let compile_implementation ?toplevel ?source_file_name prefixname ppf (size, lam
             (List.map Primitive.native_name !Translmod.primitive_declarations))
       );
 
-    Emit.end_assembly ~source_file_name;
+    Emit.end_assembly ();
     close_out oc
   with x ->
     close_out oc;

@@ -148,3 +148,9 @@ let set_of_array v =
   | n -> let rec add_all i =
            if i >= n then Set.empty else Set.add v.(i) (add_all(i+1))
          in add_all 0
+
+let location t =
+  t.loc
+
+let name_for_printing t =
+  t.name

@@ -206,6 +206,7 @@ let fundecl f =
   equiv_classes := Reg.Map.empty;
   { fun_name = f.fun_name;
     fun_args = new_args;
+    fun_arg_ids = f.fun_arg_ids; (* CR mshinwell: fixme *)
     fun_body = new_body;
     fun_fast = f.fun_fast;
     fun_dbg  = f.fun_dbg }
