@@ -162,6 +162,7 @@ module Dwarf_tag : sig
   val subprogram_with_no_children : t
   val formal_parameter : t
   val variable : t
+  val base_type : t
 
   val child_determination : t -> Dwarf_child_determination.t
   val emit : t -> unit
@@ -172,6 +173,7 @@ end = struct
   | `DW_TAG_subprogram__no_children
   | `DW_TAG_formal_parameter
   | `DW_TAG_variable
+  | `DW_TAG_base_type
   ]
 
   let encode = function
@@ -180,6 +182,7 @@ end = struct
     | `DW_TAG_subprogram__no_children -> 0x2e
     | `DW_TAG_formal_parameter -> 0x05
     | `DW_TAG_variable -> 0x34
+    | `DW_TAG_base_type -> 0x35
 
   (* CR mshinwell: "__no_children" is a hack *)
 
@@ -189,12 +192,14 @@ end = struct
     | `DW_TAG_subprogram__no_children -> Dwarf_child_determination.no
     | `DW_TAG_formal_parameter -> Dwarf_child_determination.no
     | `DW_TAG_variable -> Dwarf_child_determination.no
+    | `DW_TAG_base_type -> Dwarf_child_determination.no
 
   let compile_unit = `DW_TAG_compile_unit
   let subprogram = `DW_TAG_subprogram
   let subprogram_with_no_children = `DW_TAG_subprogram__no_children
   let formal_parameter = `DW_TAG_formal_parameter
   let variable = `DW_TAG_variable
+  let base_type = `DW_TAG_base_type
 
   let emit t =
     Dwarf_value.emit (Dwarf_value.as_uleb128 (encode t))
@@ -204,33 +209,41 @@ module Dwarf_form : sig
   type t
 
   val addr : t
+  val data1 : t
   val data4 : t
   val string : t
   val flag : t
   val block : t
+  val ref_addr : t
 
   val emit : t -> unit
 end = struct
   type t = [
   | `DW_FORM_addr
   | `DW_FORM_string
+  | `DW_FORM_data1
   | `DW_FORM_data4
   | `DW_FORM_flag
   | `DW_FORM_block
+  | `DW_FORM_ref_addr
   ]
 
   let encode = function
-    | `DW_FORM_addr -> 0x1
-    | `DW_FORM_data4 -> 0x6
-    | `DW_FORM_string -> 0x8
+    | `DW_FORM_addr -> 0x01
+    | `DW_FORM_data1 -> 0x0b
+    | `DW_FORM_data4 -> 0x06
+    | `DW_FORM_string -> 0x08
     | `DW_FORM_flag -> 0x0c
     | `DW_FORM_block -> 0x09
+    | `DW_FORM_ref_addr -> 0x10
 
   let addr = `DW_FORM_addr
+  let data1 = `DW_FORM_data1
   let data4 = `DW_FORM_data4
   let string = `DW_FORM_string
   let flag = `DW_FORM_flag
   let block = `DW_FORM_block
+  let ref_addr = `DW_FORM_ref_addr
 
   let emit t =
     Dwarf_value.emit (Dwarf_value.as_uleb128 (encode t))
@@ -280,6 +293,29 @@ module Dwarf_block = struct
 end
 *)
 
+module Dwarf_encoding_attribute : sig
+  type t
+
+  val signed : t
+
+  val size : t -> int
+  val as_dwarf_value : t -> Dwarf_value.t
+end = struct
+  type t = [
+  | `DW_ATE_signed
+  ]
+
+  let signed = `DW_ATE_signed
+
+  let encode = function
+    | `DW_ATE_signed -> 0x05
+
+  let size _t = 1
+
+  let as_dwarf_value t =
+    Dwarf_value.as_byte (encode t)
+end
+
 module Dwarf_attribute : sig
   type t
 
@@ -291,6 +327,9 @@ module Dwarf_attribute : sig
   val stmt_list : t
   val extern'l : t
   val location : t
+  val typ' : t
+  val encoding : t
+  val byte_size : t
 
   val emit_followed_by_form : t -> unit
 end = struct
@@ -303,6 +342,9 @@ end = struct
   | `DW_AT_stmt_list
   | `DW_AT_external
   | `DW_AT_location
+  | `DW_AT_type
+  | `DW_AT_encoding
+  | `DW_AT_byte_size
   ]
 
   let encode = function
@@ -314,6 +356,9 @@ end = struct
     | `DW_AT_stmt_list -> 0x10
     | `DW_AT_external -> 0x3f
     | `DW_AT_location -> 0x02
+    | `DW_AT_type -> 0x49
+    | `DW_AT_encoding -> 0x3e
+    | `DW_AT_byte_size -> 0x0b
 
   let form = function
     | `DW_AT_low_pc -> Dwarf_form.addr
@@ -324,6 +369,9 @@ end = struct
     | `DW_AT_stmt_list -> Dwarf_form.data4
     | `DW_AT_external -> Dwarf_form.flag
     | `DW_AT_location -> Dwarf_form.data4
+    | `DW_AT_type -> Dwarf_form.ref_addr
+    | `DW_AT_encoding -> Dwarf_form.data1
+    | `DW_AT_byte_size -> Dwarf_form.data1
 
   let low_pc = `DW_AT_low_pc
   let high_pc = `DW_AT_high_pc
@@ -333,6 +381,9 @@ end = struct
   let stmt_list = `DW_AT_stmt_list
   let extern'l = `DW_AT_external
   let location = `DW_AT_location
+  let typ' = `DW_AT_type
+  let encoding = `DW_AT_encoding
+  let byte_size = `DW_AT_byte_size
 
   let emit_followed_by_form t =
     Dwarf_value.emit (Dwarf_value.as_uleb128 (encode t));
@@ -370,6 +421,17 @@ module Dwarf_attribute_value = struct
   let create_location ~offset_from_start_of_debug_loc =
     Dwarf_attribute.location,
       Dwarf_value.as_four_byte_int offset_from_start_of_debug_loc
+
+  let create_type ~label_name =
+    Dwarf_attribute.typ',
+      Dwarf_value.as_code_address_from_label ("Ldie__" ^ label_name)
+
+  let create_encoding ~encoding =
+    Dwarf_attribute.encoding, Dwarf_encoding_attribute.as_dwarf_value encoding
+
+  let create_byte_size ~byte_size =
+    assert (byte_size >= 1 && byte_size <= 0xff);
+    Dwarf_attribute.byte_size, Dwarf_value.as_byte byte_size
 
   let emit (_attr, value) =
     Dwarf_value.emit value
@@ -858,6 +920,18 @@ end = struct
       debug_loc_table = Dwarf_debug_loc_table.create ();
     }
 
+  let builtin_ocaml_type_label_value = "type_value"
+
+  let build_ocaml_type_tags () = [
+    1, builtin_ocaml_type_label_value, Dwarf_tag.base_type, [
+      Dwarf_attribute_value.create_name ~source_file_path:"value";
+      Dwarf_attribute_value.create_encoding
+        ~encoding:Dwarf_encoding_attribute.signed;
+      Dwarf_attribute_value.create_byte_size
+        ~byte_size:8;
+    ];
+  ]
+
   let start_function t ~function_name ~arguments_and_locations =
     let starting_label = sprintf "Llr_begin_%s" function_name in
     let ending_label = sprintf "Llr_end_%s" function_name in
@@ -887,7 +961,7 @@ end = struct
                 let location_list =
                   Dwarf_location_list.create [location_list_entry]
                 in
-                let debug_loc_table, attribute_value =
+                let debug_loc_table, loclistptr_attribute_value =
                   Dwarf_debug_loc_table.insert debug_loc_table
                     ~location_list
                 in
@@ -897,7 +971,9 @@ end = struct
                     Dwarf_tag.variable,
                     [Dwarf_attribute_value.create_name
                        ~source_file_path:arg_name;
-                     attribute_value;
+                     loclistptr_attribute_value;
+                     Dwarf_attribute_value.create_type
+                       ~label_name:builtin_ocaml_type_label_value;
                     ]
                 in
                 debug_loc_table, tag::tags)
@@ -956,7 +1032,7 @@ end = struct
     in
     let tags_with_attribute_values = [
       0, "compile_unit", Dwarf_tag.compile_unit, compile_unit_attribute_values;
-    ] @ t.function_tags
+    ] @ (build_ocaml_type_tags ()) @ t.function_tags
     in
     let debug_info =
       Dwarf_debug_info_section.create ~tags_with_attribute_values
