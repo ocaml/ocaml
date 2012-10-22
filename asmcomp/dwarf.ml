@@ -182,7 +182,7 @@ end = struct
     | `DW_TAG_subprogram__no_children -> 0x2e
     | `DW_TAG_formal_parameter -> 0x05
     | `DW_TAG_variable -> 0x34
-    | `DW_TAG_base_type -> 0x35
+    | `DW_TAG_base_type -> 0x24
 
   (* CR mshinwell: "__no_children" is a hack *)
 
