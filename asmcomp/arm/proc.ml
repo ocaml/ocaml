@@ -36,7 +36,7 @@ let word_addressed = false
     r13                   stack pointer
     r14                   return address
     r15                   program counter
-   Floatinng-point register map (VFPv3):
+   Floating-point register map (VFPv{2,3}):
     d0 - d7               general purpose (not preserved)
     d8 - d15              general purpose (preserved)
     d16 - d31             generat purpose (not preserved), VFPv3 only
@@ -53,9 +53,9 @@ let float_reg_name =
 
 (* We have three register classes:
     0 for integer registers
-    1 for VFPv3-D16
+    1 for VFPv2 and VFPv3-D16
     2 for VFPv3
-   This way we can choose between VFPv3-D16 and VFPv3
+   This way we can choose between VFPv2/VFPv3-D16 and VFPv3
    at (ocamlopt) runtime using command line switches.
 *)
 
@@ -64,6 +64,7 @@ let num_register_classes = 3
 let register_class r =
   match (r.typ, !fpu) with
     (Int | Addr), _  -> 0
+  | Float, VFPv2     -> 1
   | Float, VFPv3_D16 -> 1
   | Float, _         -> 2
 
@@ -123,7 +124,7 @@ let calling_conventions
         end
     | Float ->
         assert (abi = EABI_VFP);
-        assert (!fpu >= VFPv3_D16);
+        assert (!fpu >= VFPv2);
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
           incr float
