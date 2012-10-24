@@ -207,8 +207,8 @@ and pattern i ppf x =
   | Tpat_tuple (l) ->
       line i ppf "Ppat_tuple\n";
       list i pattern ppf l;
-  | Tpat_construct (li, _, _, po, explicity_arity) ->
-      line i ppf "Ppat_construct %a\n" fmt_path li;
+  | Tpat_construct (li, _, po, explicity_arity) ->
+      line i ppf "Ppat_construct %a\n" fmt_longident li;
       list i pattern ppf po;
       bool i ppf explicity_arity;
   | Tpat_variant (l, po, _) ->
@@ -275,8 +275,8 @@ and expression i ppf x =
   | Texp_tuple (l) ->
       line i ppf "Pexp_tuple\n";
       list i expression ppf l;
-  | Texp_construct (li, _, _, eo, b) ->
-      line i ppf "Pexp_construct %a\n" fmt_path li;
+  | Texp_construct (li, _, eo, b) ->
+      line i ppf "Pexp_construct %a\n" fmt_longident li;
       list i expression ppf eo;
       bool i ppf b;
   | Texp_variant (l, eo) ->
@@ -286,14 +286,14 @@ and expression i ppf x =
       line i ppf "Pexp_record\n";
       list i longident_x_expression ppf l;
       option i expression ppf eo;
-  | Texp_field (e, li, _, _) ->
+  | Texp_field (e, li, _) ->
       line i ppf "Pexp_field\n";
       expression i ppf e;
-      path i ppf li;
-  | Texp_setfield (e1, li, _, _, e2) ->
+      longident i ppf li;
+  | Texp_setfield (e1, li, _, e2) ->
       line i ppf "Pexp_setfield\n";
       expression i ppf e1;
-      path i ppf li;
+      longident i ppf li;
       expression i ppf e2;
   | Texp_array (l) ->
       line i ppf "Pexp_array\n";
@@ -714,8 +714,8 @@ and string_list_x_location i ppf (l, loc) =
   line i ppf "<params> %a\n" fmt_location loc;
   list (i+1) string_loc ppf l;
 
-and longident_x_pattern i ppf (li, _, _, p) =
-  line i ppf "%a\n" fmt_path li;
+and longident_x_pattern i ppf (li, _, p) =
+  line i ppf "%a\n" fmt_longident li;
   pattern (i+1) ppf p;
 
 and pattern_x_expression_case i ppf (p, e) =
@@ -732,8 +732,8 @@ and string_x_expression i ppf (s, _, e) =
   line i ppf "<override> \"%a\"\n" fmt_path s;
   expression (i+1) ppf e;
 
-and longident_x_expression i ppf (li, _, _, e) =
-  line i ppf "%a\n" fmt_path li;
+and longident_x_expression i ppf (li, _, e) =
+  line i ppf "%a\n" fmt_longident li;
   expression (i+1) ppf e;
 
 and label_x_expression i ppf (l, e, _) =

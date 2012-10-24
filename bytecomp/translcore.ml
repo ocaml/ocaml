@@ -297,10 +297,10 @@ let transl_prim loc prim args =
          simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct(_, _, {cstr_tag = Cstr_constant _}, _, _)}]
+      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _, _)}]
       when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct(_, _, {cstr_tag = Cstr_constant _}, _, _)}; arg2]
+    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; {exp_desc = Texp_variant(_, None)}]
@@ -657,7 +657,7 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(_, _, cstr, args, _) ->
+  | Texp_construct(_, cstr, args, _) ->
       let ll = transl_list args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
@@ -684,17 +684,17 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable),
                   [Lconst(Const_base(Const_int tag)); lam])
       end
-  | Texp_record ((_, _, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
+  | Texp_record ((_, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
   | Texp_record ([], _) ->
       fatal_error "Translcore.transl_exp: bad Texp_record"
-  | Texp_field(arg, _, _, lbl) ->
+  | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
           Record_regular -> Pfield lbl.lbl_pos
         | Record_float -> Pfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp arg])
-  | Texp_setfield(arg, _, _, lbl, newval) ->
+  | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
@@ -785,7 +785,7 @@ and transl_exp0 e =
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
       | Texp_function(_, _, _)
-      | Texp_construct (_, _, {cstr_arity = 0}, _, _)
+      | Texp_construct (_, {cstr_arity = 0}, _, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
           Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
@@ -976,11 +976,11 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
         done
     end;
     List.iter
-      (fun (_, _, lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
+      (fun (_, lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
       lbl_expr_list;
     let ll = Array.to_list lv in
     let mut =
-      if List.exists (fun (_, _, lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
+      if List.exists (fun (_, lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
       then Mutable
       else Immutable in
     let lam =
@@ -1005,7 +1005,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let update_field (_, _, lbl, expr) cont =
+    let update_field (_, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr)

@@ -79,9 +79,9 @@ val create_package_mty:
 val find_type:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.type_declaration
 val find_constructor:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.constructor_description
+    Env.t -> Location.t -> Longident.t -> Types.constructor_description
 val find_label:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.label_description
+    Env.t -> Location.t -> Longident.t -> Types.label_description
 val find_value:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.value_description
 val find_class:

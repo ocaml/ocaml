@@ -680,7 +680,7 @@ let spellcheck ppf fold env lid =
       | 5 | 6 -> 2
       | _ -> 3
   in
-  let compare target head _path _descr acc =
+  let compare target head acc =
     let (best_choice, best_dist) = acc in
     match Misc.edit_distance target head cutoff with
       | None -> (best_choice, best_dist)
@@ -712,6 +712,12 @@ let spellcheck ppf fold env lid =
       handle (fold (compare s) None env init)
     | Longident.Ldot (r, s) ->
       handle (fold (compare s) (Some r) env init)
+
+let spellcheck_simple ppf fold extr =
+  spellcheck ppf (fun f -> fold (fun decl x -> f (extr decl) x))
+
+let spellcheck ppf fold =
+  spellcheck ppf (fun f -> fold (fun s _ _ x -> f s x))
 
 let report_error ppf = function
   | Unbound_type_variable name ->
@@ -790,10 +796,10 @@ let report_error ppf = function
       spellcheck ppf Env.fold_modules env lid;
   | Unbound_constructor (env, lid) ->
       fprintf ppf "Unbound constructor %a" longident lid;
-      spellcheck ppf Env.fold_constructors env lid;
+      spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name) env lid;
   | Unbound_label (env, lid) ->
       fprintf ppf "Unbound record field label %a" longident lid;
-      spellcheck ppf Env.fold_labels env lid;
+      spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;
   | Unbound_class (env, lid) ->
       fprintf ppf "Unbound class %a" longident lid;
       spellcheck ppf Env.fold_classs env lid;

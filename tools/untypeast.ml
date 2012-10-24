@@ -150,7 +150,7 @@ and untype_pattern pat =
     | Tpat_constant cst -> Ppat_constant cst
     | Tpat_tuple list ->
         Ppat_tuple (List.map untype_pattern list)
-    | Tpat_construct (path, lid, _, args, explicit_arity) ->
+    | Tpat_construct (lid, _, args, explicit_arity) ->
         Ppat_construct (lid,
           (match args with
               [] -> None
@@ -163,7 +163,7 @@ and untype_pattern pat =
             None -> None
           | Some pat -> Some (untype_pattern pat))
     | Tpat_record (list, closed) ->
-        Ppat_record (List.map (fun (path, lid, _, pat) ->
+        Ppat_record (List.map (fun (lid, _, pat) ->
               lid, untype_pattern pat) list, closed)
     | Tpat_array list -> Ppat_array (List.map untype_pattern list)
     | Tpat_or (p1, p2, _) -> Ppat_or (untype_pattern p1, untype_pattern p2)
@@ -221,7 +221,7 @@ and untype_expression exp =
               untype_pattern pat, untype_expression exp) list)
     | Texp_tuple list ->
         Pexp_tuple (List.map untype_expression list)
-    | Texp_construct (path, lid, _, args, explicit_arity) ->
+    | Texp_construct (lid, _, args, explicit_arity) ->
         Pexp_construct (lid,
           (match args with
               [] -> None
@@ -235,15 +235,15 @@ and untype_expression exp =
             None -> None
           | Some exp -> Some (untype_expression exp))
     | Texp_record (list, expo) ->
-        Pexp_record (List.map (fun (path, lid, _, exp) ->
+        Pexp_record (List.map (fun (lid, _, exp) ->
               lid, untype_expression exp
           ) list,
           match expo with
             None -> None
           | Some exp -> Some (untype_expression exp))
-    | Texp_field (exp, path, lid, label) ->
+    | Texp_field (exp, lid, label) ->
         Pexp_field (untype_expression exp, lid)
-    | Texp_setfield (exp1, path, lid, label, exp2) ->
+    | Texp_setfield (exp1, lid, label, exp2) ->
         Pexp_setfield (untype_expression exp1, lid,
           untype_expression exp2)
     | Texp_array list ->
