@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Transformation of Mach code into a list of pseudo-instructions. *)
 
 open Reg

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Command-line parameters *)
 
 let objfiles = ref ([] : string list)   (* .cmo and .cma files *)
@@ -57,6 +55,7 @@ and dllpaths = ref ([] : string list)   (* -dllpath *)
 and make_package = ref false            (* -pack *)
 and for_package = ref (None: string option) (* -for-pack *)
 and error_size = ref 500                (* -error-size *)
+let dump_source = ref false             (* -dsource *)
 let dump_parsetree = ref false          (* -dparsetree *)
 and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)

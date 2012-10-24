@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Dynamic loading of C primitives. */
 
 #ifndef CAML_DYNLINK_H

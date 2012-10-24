@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Environment handling *)
 
 open Cmi_format
@@ -151,8 +149,8 @@ type type_descriptions =
 type t = {
   values: (Path.t * value_description) EnvTbl.t;
   annotations: (Path.t * Annot.ident) EnvTbl.t;
-  constrs: (Path.t * constructor_description) EnvTbl.t;
-  labels: (Path.t * label_description) EnvTbl.t;
+  constrs: constructor_description EnvTbl.t;
+  labels: label_description EnvTbl.t;
   types: (Path.t * (type_declaration * type_descriptions)) EnvTbl.t;
   modules: (Path.t * module_type) EnvTbl.t;
   modtypes: (Path.t * modtype_declaration) EnvTbl.t;
@@ -225,9 +223,13 @@ let is_ident = function
 
 let is_local (p, _) = is_ident p
 
+let is_local_exn = function
+  | {cstr_tag = Cstr_exception (p, _)} -> is_ident p
+  | _ -> false
+
 let diff env1 env2 =
   diff_keys is_local env1.values env2.values @
-  diff_keys is_local env1.constrs env2.constrs @
+  diff_keys is_local_exn env1.constrs env2.constrs @
   diff_keys is_local env1.modules env2.modules @
   diff_keys is_local env1.classes env2.classes
 
@@ -329,13 +331,21 @@ let reset_cache () =
   Hashtbl.clear persistent_structures;
   Consistbl.clear crc_units;
   Hashtbl.clear value_declarations;
-  Hashtbl.clear type_declarations
+  Hashtbl.clear type_declarations;
+  Hashtbl.clear used_constructors
 
-let reset_missing_cmis () =
-  let l = Hashtbl.fold
+let reset_cache_toplevel () =
+  (* Delete 'missing cmi' entries from the cache. *)
+  let l =
+    Hashtbl.fold
       (fun name r acc -> if r = None then name :: acc else acc)
-      persistent_structures [] in
-  List.iter (Hashtbl.remove persistent_structures) l
+      persistent_structures []
+  in
+  List.iter (Hashtbl.remove persistent_structures) l;
+  Hashtbl.clear value_declarations;
+  Hashtbl.clear type_declarations;
+  Hashtbl.clear used_constructors
+
 
 let set_unit_name name =
   current_unit := name
@@ -569,9 +579,9 @@ let lookup_value =
 let lookup_annot id e =
   lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
 and lookup_constructor =
-  lookup (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
+  lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and lookup_label =
-  lookup (fun env -> env.labels) (fun sc -> sc.comp_labels)
+  lookup_simple (fun env -> env.labels) (fun sc -> sc.comp_labels)
 and lookup_type =
   lookup (fun env -> env.types) (fun sc -> sc.comp_types)
 and lookup_modtype =
@@ -642,9 +652,9 @@ let ty_path t =
   | t -> assert false
 
 let lookup_constructor lid env =
-  let (_,desc) as c = lookup_constructor lid env in
+  let desc = lookup_constructor lid env in
   mark_type_path env (ty_path desc.cstr_res);
-  c
+  desc
 
 let mark_constructor usage env name desc =
   match desc.cstr_tag with
@@ -660,9 +670,9 @@ let mark_constructor usage env name desc =
       mark_constructor_used usage ty_name ty_decl name
 
 let lookup_label lid env =
-  let (_,desc) as c = lookup_label lid env in
+  let desc = lookup_label lid env in
   mark_type_path env (ty_path desc.lbl_res);
-  c
+  desc
 
 let lookup_class lid env =
   let (_, desc) as r = lookup_class lid env in
@@ -830,21 +840,20 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            let constructors = constructors_of_type path decl' in
-            let labels = labels_of_type path decl' in
-            let descr' = List.map snd constructors, List.map snd labels in
+            let constructors = List.map snd (constructors_of_type path decl') in
+            let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
-              Tbl.add (Ident.name id) ((decl', descr'), nopos) c.comp_types;
+              Tbl.add (Ident.name id) ((decl', (constructors, labels)), nopos) c.comp_types;
             List.iter
-              (fun (name, descr) ->
+              (fun descr ->
                 c.comp_constrs <-
-                  Tbl.add (Ident.name name) (descr, nopos) c.comp_constrs)
+                  Tbl.add descr.cstr_name (descr, nopos) c.comp_constrs)
               constructors;
             List.iter
-              (fun (name, descr) ->
+              (fun descr ->
                 c.comp_labels <-
-                  Tbl.add (Ident.name name) (descr, nopos) c.comp_labels)
-              (labels);
+                  Tbl.add descr.lbl_name (descr, nopos) c.comp_labels)
+              labels;
             env := store_type_infos id path decl !env
         | Sig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
@@ -938,8 +947,7 @@ and store_type id path info env =
   then begin
     let ty = Ident.name id in
     List.iter
-      begin fun (c, _) ->
-        let c = Ident.name c in
+      begin fun (_, {cstr_name = c; _}) ->
         let k = (ty, loc, c) in
         if not (Hashtbl.mem used_constructors k) then
           let used = constructor_usages () in
@@ -957,14 +965,12 @@ and store_type id path info env =
   { env with
     constrs =
       List.fold_right
-        (fun (name, descr) constrs ->
-          EnvTbl.add name (path_subst_last path name, descr) constrs)
+        (fun (id, descr) constrs -> EnvTbl.add id descr constrs)
         constructors
         env.constrs;
     labels =
       List.fold_right
-        (fun (name, descr) labels ->
-          EnvTbl.add name (path_subst_last path name, descr) labels)
+        (fun (id, descr) labels -> EnvTbl.add id descr labels)
         labels
         env.labels;
     types = EnvTbl.add id (path, (info, descrs)) env.types;
@@ -1002,8 +1008,7 @@ and store_exception id path decl env =
     end;
   end;
   { env with
-    constrs = EnvTbl.add id (path_subst_last path id,
-                             Datarepr.exception_descr path decl) env.constrs;
+    constrs = EnvTbl.add id (Datarepr.exception_descr path decl) env.constrs;
     summary = Env_exception(env.summary, id, decl) }
 
 and store_module id path mty env =
@@ -1250,6 +1255,23 @@ let find_all proj1 proj2 f lid env acc =
           raise Not_found
       end
 
+let find_all_simple proj1 proj2 f lid env acc =
+  match lid with
+    | None ->
+      ident_tbl_fold
+        (fun _id data acc -> f data acc)
+        (proj1 env) acc
+    | Some l ->
+      let p, desc = lookup_module_descr l env in
+      begin match EnvLazy.force components_of_module_maker desc with
+          Structure_comps c ->
+            Tbl.fold
+              (fun s (data, pos) acc -> f data acc)
+              (proj2 c) acc
+        | Functor_comps _ ->
+          raise Not_found
+      end
+
 let fold_modules f lid env acc =
   match lid with
     | None ->
@@ -1285,9 +1307,9 @@ let fold_modules f lid env acc =
 let fold_values f =
   find_all (fun env -> env.values) (fun sc -> sc.comp_values) f
 and fold_constructors f =
-  find_all (fun env -> env.constrs) (fun sc -> sc.comp_constrs) f
+  find_all_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs) f
 and fold_labels f =
-  find_all (fun env -> env.labels) (fun sc -> sc.comp_labels) f
+  find_all_simple (fun env -> env.labels) (fun sc -> sc.comp_labels) f
 and fold_types f =
   find_all (fun env -> env.types) (fun sc -> sc.comp_types) f
 and fold_modtypes f =

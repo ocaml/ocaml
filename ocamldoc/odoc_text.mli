@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** A module with a function to parse strings to obtain a [Odoc_types.text] value. *)
 
 (** Syntax error in a text. *)

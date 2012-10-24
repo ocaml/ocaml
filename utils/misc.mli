@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Miscellaneous useful types and functions *)
 
 val fatal_error: string -> 'a
@@ -122,3 +120,16 @@ val thd3: 'a * 'b * 'c -> 'c
 val fst4: 'a * 'b * 'c * 'd -> 'a
 val snd4: 'a * 'b * 'c * 'd -> 'b
 val thd4: 'a * 'b * 'c * 'd -> 'c
+
+
+val edit_distance : string -> string -> int -> int option
+(** [edit_distance a b cutoff] computes the edit distance between
+    strings [a] and [b]. To help efficiency, it uses a cutoff: if the
+    distance [d] is smaller than [cutoff], it returns [Some d], else
+    [None].
+
+    The distance algorithm currently used is Damerau-Levenshtein: it
+    computes the number of insertion, deletion, substitution of
+    letters, or swapping of adjacent letters to go from one word to the
+    other. The particular algorithm may change in the future.
+*)

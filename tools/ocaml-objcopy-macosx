@@ -12,9 +12,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
-
 TMP="${TMPDIR=/tmp}"
 TEMP="${TMP}"/ocaml-objcopy-$$.o
 UNDEF="${TMP}"/ocaml-objcopy-$$.sym

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Generation of bytecode for .cmo files *)
 
 open Cmo_format

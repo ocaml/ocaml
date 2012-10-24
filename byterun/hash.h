@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Auxiliary functions for custom hash functions */
 
 #ifndef CAML_HASH_H

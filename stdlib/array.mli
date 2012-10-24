@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Array operations. *)
 
 external length : 'a array -> int = "%array_length"

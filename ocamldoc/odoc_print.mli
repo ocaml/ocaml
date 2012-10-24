@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Printing functions. *)
 
 (** This function takes a Types.type_expr and returns a string.

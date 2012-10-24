@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Machine-specific command-line options *)
 
 let pic_code = ref true

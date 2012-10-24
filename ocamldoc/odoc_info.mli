@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Interface to the information collected in source files. *)
 
 (** The differents kinds of element references. *)

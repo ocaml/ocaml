@@ -11,11 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
+#include <mlvalues.h>
 #include "unixsupport.h"
 #include <windows.h>
-#include <mlvalues.h>
 #include <osdeps.h>
 
 static int win_has_console(void);

@@ -11,15 +11,13 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Specific operations for the ARM processor *)
 
 open Format
 
 type abi = EABI | EABI_VFP
 type arch = ARMv4 | ARMv5 | ARMv5TE | ARMv6 | ARMv6T2 | ARMv7
-type fpu = Soft | VFPv3_D16 | VFPv3
+type fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 
 let abi =
   match Config.system with
@@ -37,6 +35,7 @@ let string_of_arch = function
 
 let string_of_fpu = function
     Soft      -> "soft"
+  | VFPv2     -> "vfpv2"
   | VFPv3_D16 -> "vfpv3-d16"
   | VFPv3     -> "vfpv3"
 
@@ -52,6 +51,7 @@ let (arch, fpu, thumb) =
     | EABI, "armv6t2" -> ARMv6T2, Soft,      false
     | EABI, "armv7"   -> ARMv7,   Soft,      false
     | EABI, _         -> ARMv4,   Soft,      false
+    | EABI_VFP, "armv6" -> ARMv6, VFPv2,     false
     | EABI_VFP, _     -> ARMv7,   VFPv3_D16, true
     end in
   (ref def_arch, ref def_fpu, ref def_thumb)
@@ -71,6 +71,7 @@ let farch spec =
 let ffpu spec =
   fpu := (match spec with
             "soft" when abi <> EABI_VFP     -> Soft
+          | "vfpv2" when abi = EABI_VFP     -> VFPv2
           | "vfpv3-d16" when abi = EABI_VFP -> VFPv3_D16
           | "vfpv3" when abi = EABI_VFP     -> VFPv3
           | spec -> raise (Arg.Bad spec))

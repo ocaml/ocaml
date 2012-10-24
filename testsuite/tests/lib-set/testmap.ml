@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 module M = Map.Make(struct type t = int let compare = compare end)
 
 let img x m = try Some(M.find x m) with Not_found -> None

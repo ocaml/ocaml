@@ -1,3 +1,15 @@
+(*************************************************************************)
+(*                                                                       *)
+(*                                 OCaml                                 *)
+(*                                                                       *)
+(*            Pierre Weis, projet Estime, INRIA Rocquencourt             *)
+(*                                                                       *)
+(*   Copyright 2009 Institut National de Recherche en Informatique et    *)
+(*   en Automatique.  All rights reserved.  This file is distributed     *)
+(*   under the terms of the Q Public License version 1.0.                *)
+(*                                                                       *)
+(*************************************************************************)
+
 (* Dummy substitute function. *)
 
 open Testing;;

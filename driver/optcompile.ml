@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* The batch compiler *)
 
 open Misc
@@ -81,6 +79,7 @@ let interface ppf sourcefile outputprefix =
     let ast =
       Pparse.file ppf inputfile Parse.interface ast_intf_magic_number in
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
+    if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
     let tsg = Typemod.transl_signature initial_env ast in
     let sg = tsg.sig_type in
     if !Clflags.print_types then
@@ -125,10 +124,12 @@ let implementation ppf sourcefile outputprefix =
     if !Clflags.print_types then ignore(
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
+      ++ print_if ppf Clflags.dump_source Pprintast.structure
       ++ Typemod.type_implementation sourcefile outputprefix modulename env)
     else begin
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
+      ++ print_if ppf Clflags.dump_source Pprintast.structure
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
       ++ Translmod.transl_store_implementation modulename
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda

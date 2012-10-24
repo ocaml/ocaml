@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Extensible buffers *)
 
 type t =
@@ -131,12 +129,7 @@ let advance_to_non_alpha s start =
   let rec advance i lim =
     if i >= lim then lim else
     match s.[i] with
-    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' |
-      'é'|'à'|'á'|'è'|'ù'|'â'|'ê'|
-      'î'|'ô'|'û'|'ë'|'ï'|'ü'|'ç'|
-      'É'|'À'|'Á'|'È'|'Ù'|'Â'|'Ê'|
-      'Î'|'Ô'|'Û'|'Ë'|'Ï'|'Ü'|'Ç' ->
-      advance (i + 1) lim
+    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> advance (i + 1) lim
     | _ -> i in
   advance start (String.length s);;
 

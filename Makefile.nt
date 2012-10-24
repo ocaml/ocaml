@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 # The main Makefile
 
 include config/Makefile
@@ -40,18 +38,18 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
-  parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo
+  parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
+  parsing/pprintast.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
-  typing/typedtree.cmo typing/ctype.cmo \
+  typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
-  typing/includemod.cmo typing/parmatch.cmo \
-  typing/typetexp.cmo \
+  typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
   typing/typedtreeIter.cmo typing/typedtreeMap.cmo typing/cmt_format.cmo \
   typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
@@ -75,7 +73,7 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
 ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
-  asmcomp/clambda.cmo asmcomp/compilenv.cmo \
+  asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
   asmcomp/comballoc.cmo asmcomp/liveness.cmo \
@@ -97,7 +95,7 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
-PERVASIVES=$(STDLIB_MODULES) topdirs toploop outcometree
+PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 # For users who don't read the INSTALL file
 defaultentry:
@@ -249,9 +247,11 @@ installoptopt:
 	cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE)
 	cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE)
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
-	 compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
-	 compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
-	 $(COMPLIBDIR)
+           compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
+           compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
+           $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
+           $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
+           $(COMPLIBDIR)
 
 clean:: partialclean
 

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Auxiliary a.s.t. types used by parsetree and typedtree. *)
 
 type constant =

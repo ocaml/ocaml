@@ -11,15 +11,13 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
-#include "unixsupport.h"
-#include <windows.h>
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
-#include <sys/types.h>
 #include <signals.h>
+#include "unixsupport.h"
+#include <windows.h>
+#include <sys/types.h>
 
 static value alloc_process_status(HANDLE pid, int status)
 {

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Formatted output functions. *)
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a

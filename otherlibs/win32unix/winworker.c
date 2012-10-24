@@ -11,15 +11,13 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
-#include "winworker.h"
-#include "winlist.h"
-#include "windbug.h"
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
 #include <signals.h>
+#include "winworker.h"
+#include "winlist.h"
+#include "windbug.h"
 
 typedef enum {
   WORKER_CMD_NONE = 0,

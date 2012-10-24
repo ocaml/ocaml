@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Operating system - specific stuff */
 
 #ifndef CAML_OSDEPS_H

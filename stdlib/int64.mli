@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** 64-bit integers.
 
    This module provides operations on the type [int64] of

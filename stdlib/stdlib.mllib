@@ -1,7 +1,6 @@
 # This file lists all standard library modules
 # (in the same order as Makefile.shared).
 # It is used in particular to know what to expunge in toplevels.
-# $Id$
 
 Pervasives
 Array

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Ocamldoc configuration contants. *)
 
 (** Default path to search for custom generators and to install them. *)

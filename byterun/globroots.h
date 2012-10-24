@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Registration of global memory roots */
 
 #ifndef CAML_GLOBROOTS_H

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Config
 open Clflags
 
@@ -151,6 +149,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _where () = print_standard_library ()
 
   let _nopervasives = set nopervasives
+  let _dsource = set dump_source
   let _dparsetree = set dump_parsetree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda

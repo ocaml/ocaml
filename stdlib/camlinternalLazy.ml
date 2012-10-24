@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Internals of forcing lazy values. *)
 
 exception Undefined;;

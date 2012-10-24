@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 #ifndef CAML_BIGARRAY_H
 #define CAML_BIGARRAY_H
 
@@ -80,6 +78,13 @@ struct caml_ba_array {
   intnat dim[1] /*[num_dims]*/; /* Size in each dimension */
 #endif
 };
+
+/* Size of struct caml_ba_array, in bytes, without dummy first dimension */
+#if (__STDC_VERSION__ >= 199901L)
+#define SIZEOF_BA_ARRAY sizeof(struct caml_ba_array)
+#else
+#define SIZEOF_BA_ARRAY (sizeof(struct caml_ba_array) - sizeof(intnat))
+#endif
 
 #define Caml_ba_array_val(v) ((struct caml_ba_array *) Data_custom_val(v))
 

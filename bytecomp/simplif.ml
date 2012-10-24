@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Elimination of useless Llet(Alias) bindings.
    Also transform let-bound references into variables. *)
 

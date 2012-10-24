@@ -13,8 +13,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Dump info on .cmi, .cmo, .cmx, .cma, .cmxa, .cmxs files
    and on bytecode executables. *)
 

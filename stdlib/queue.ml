@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
-(*        François Pottier, projet Cristal, INRIA Rocquencourt         *)
+(*        Francois Pottier, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -10,8 +10,6 @@
 (*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id$ *)
 
 exception Empty
 

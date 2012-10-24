@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** The module for analysing a signature and source code and creating modules, classes, ..., elements.*)
 
 (** The functions used to retrieve information from a signature. *)

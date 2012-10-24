@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Luc Maranget, projet Moscova, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (**************************************************************)
 (*  This suite tests the pattern-matching compiler            *)
 (*  it should just compile and run.                           *)
@@ -1168,3 +1180,22 @@ let () =
   test "lucexn1" lucexn  (Error "coucou") "coucou" ;
   test "lucexn2" lucexn (Found ("int: ",0)) "int: 0" ;
   ()
+
+(*
+  PR#5758: different representations of floats
+*)
+
+let pr5758 x str =
+  match (x, str) with
+  | (1. , "A") -> "Matched A"
+  | (1.0, "B") -> "Matched B"
+  | (1. , "C") -> "Matched C"
+  | result ->
+    match result with
+    | (1., "A") -> "Failed match A then later matched"
+    | _ -> "Failed twice"
+;;
+
+let () =
+  test "pr5758" (pr5758 1.) "A" "Matched A"
+;;

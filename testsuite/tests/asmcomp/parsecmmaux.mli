@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Auxiliary functions for parsing *)
 
 val bind_ident: string -> Ident.t

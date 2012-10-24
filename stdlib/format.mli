@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Pretty printing.
 
    This module implements a pretty-printing facility to format text
@@ -164,7 +162,7 @@ val set_margin : int -> unit;;
    overflows that leads to split lines.
    Nothing happens if [d] is smaller than 2.
    If [d] is too large, the right margin is set to the maximum
-   admissible value (which is greater than [10^10]). *)
+   admissible value (which is greater than [10^9]). *)
 
 val get_margin : unit -> int;;
 (** Returns the position of the right margin. *)
@@ -178,7 +176,7 @@ val set_max_indent : int -> unit;;
    if they do not fit on the current line.
    Nothing happens if [d] is smaller than 2.
    If [d] is too large, the limit is set to the maximum
-   admissible value (which is greater than [10^10]). *)
+   admissible value (which is greater than [10^9]). *)
 
 val get_max_indent : unit -> int;;
 (** Return the value of the maximum indentation limit (in characters). *)

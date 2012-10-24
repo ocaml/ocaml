@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* exec.h : format of executable bytecode files */
 
 #ifndef CAML_EXEC_H

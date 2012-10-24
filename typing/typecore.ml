@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Typechecking for the core language *)
 
 open Misc
@@ -106,7 +104,6 @@ let rp node =
 
 
 let snd3 (_,x,_) = x
-let thd4 (_,_, x,_) = x
 
 (* Upper approximation of free identifiers on the parse tree *)
 
@@ -230,14 +227,14 @@ let mkexp exp_desc exp_type exp_loc exp_env =
 
 let option_none ty loc =
   let lid = Longident.Lident "None" in
-  let (path, cnone) = Env.lookup_constructor lid Env.initial in
-  mkexp (Texp_construct( path, mknoloc lid, cnone, [], false))
+  let cnone = Env.lookup_constructor lid Env.initial in
+  mkexp (Texp_construct(mknoloc lid, cnone, [], false))
     ty loc Env.initial
 
 let option_some texp =
   let lid = Longident.Lident "Some" in
-  let (path, csome) = Env.lookup_constructor lid Env.initial in
-  mkexp ( Texp_construct(path, mknoloc lid , csome, [texp],false) )
+  let csome = Env.lookup_constructor lid Env.initial in
+  mkexp ( Texp_construct(mknoloc lid , csome, [texp],false) )
     (type_option texp.exp_type) texp.exp_loc texp.exp_env
 
 let extract_option_type env ty =
@@ -423,7 +420,7 @@ let rec build_as_type env p =
   | Tpat_tuple pl ->
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
-  | Tpat_construct(_, _, cstr, pl,_) ->
+  | Tpat_construct(_, cstr, pl,_) ->
       let keep = cstr.cstr_private = Private || cstr.cstr_existentials <> [] in
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
@@ -437,10 +434,10 @@ let rec build_as_type env p =
                       row_bound=(); row_name=None;
                       row_fixed=false; row_closed=false})
   | Tpat_record (lpl,_) ->
-      let lbl = thd4 (List.hd lpl) in
+      let lbl = snd3 (List.hd lpl) in
       if lbl.lbl_private = Private then p.pat_type else
       let ty = newvar () in
-      let ppl = List.map (fun (_, _, l, p) -> l.lbl_pos, p) lpl in
+      let ppl = List.map (fun (_, l, p) -> l.lbl_pos, p) lpl in
       let do_label lbl =
         let _, ty_arg, ty_res = instance_label false lbl in
         unify_pat env {p with pat_type = ty} ty_res;
@@ -543,21 +540,21 @@ let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
      Then type each unqualified field according to the selected
      record type.
    *)
-  let path, labels' =
+  let labels' =
     match find_record_qual lid_a_list with
       Some lid ->
-        let _, label = Typetexp.find_label env lid.loc lid.txt in
+        let label = Typetexp.find_label env lid.loc lid.txt in
         begin match label.lbl_res.desc with
-          Tconstr (p, _, _) -> p, snd (Env.find_type_descrs p env)
+          Tconstr (p, _, _) -> snd (Env.find_type_descrs p env)
         | _ -> assert false
         end
     | None ->
         let lid = fst (List.hd lid_a_list) in
         match lid.txt, labels with
           Longident.Lident s, Some labels when Hashtbl.mem labels s ->
-            fst (Hashtbl.find labels s), []
+            []
         | _ ->
-        let _, label = Typetexp.find_label env lid.loc lid.txt in
+        let label = Typetexp.find_label env lid.loc lid.txt in
         let lbl_path =
           match label.lbl_res.desc with
           | Tconstr(p, _, _) -> p
@@ -566,33 +563,25 @@ let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
         let path =
           match opath with
             Some (p1,pr) ->
-	      if not (Path.same (expand_path env p1) (expand_path env lbl_path))
-	      && not pr then
+              if not (Path.same (expand_path env p1) (expand_path env lbl_path))
+                  && not pr then
                 Location.prerr_warning lid.loc
                   (Warnings.Not_principal "this type-based record selection");
               p1
           | _ -> lbl_path
         in
-        path, snd (Env.find_type_descrs path env)
+        snd (Env.find_type_descrs path env)
   in
   let lbl_a_list =
     List.map
       (fun (lid, a) ->
-        let path, label =
+        let label : Types.label_description =
           match lid.txt, labels with
             Longident.Lident s, Some labels when Hashtbl.mem labels s ->
-              (Hashtbl.find labels s : Path.t * Types.label_description)
+              Hashtbl.find labels s
           | Longident.Lident s, None ->
               begin try
-                let label =
-                  List.find (fun descr -> descr.lbl_name = s) labels' in
-                let path =
-                  match path with
-                    Path.Pdot(mod_path,_,_) ->
-                      Path.Pdot (mod_path, s, Path.nopos)
-                  | _ -> fst (Typetexp.find_label env lid.loc lid.txt)
-                in
-                (path, label)
+                List.find (fun descr -> descr.lbl_name = s) labels'
               with Not_found ->
               try Env.lookup_label lid.txt env with Not_found ->
                 raise (Error (lid.loc, Extra_label
@@ -600,12 +589,12 @@ let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
               end
           | _ -> (* qualified *)
               Typetexp.find_label env lid.loc lid.txt
-        in (path, lid, label, a)
+        in (lid, label, a)
       )  lid_a_list in
   (* Invariant: records are sorted in the typed tree *)
   let lbl_a_list =
     List.sort
-      (fun ( _, _, lbl1,_) ( _,_, lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
+      (fun (_, lbl1,_) (_, lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
       lbl_a_list
   in
   List.map type_lbl_a lbl_a_list
@@ -623,10 +612,10 @@ let lid_of_label label =
 let check_recordpat_labels loc lbl_pat_list closed =
   match lbl_pat_list with
   | [] -> ()                            (* should not happen *)
-  | (_, _, label1, _) :: _ ->
+  | (_, label1, _) :: _ ->
       let all = label1.lbl_all in
       let defined = Array.make (Array.length all) false in
-      let check_defined (_, _, label, _) =
+      let check_defined (_, label, _) =
         if defined.(label.lbl_pos)
         then raise(Error(loc, Label_multiply_defined
                                        (Longident.Lident label.lbl_name)))
@@ -745,7 +734,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_type = expected_ty;
         pat_env = !env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
-      let (constr_path, constr) =
+      let constr =
         match lid.txt, constrs with
           Longident.Lident s, Some constrs when Hashtbl.mem constrs s ->
             Hashtbl.find constrs s
@@ -781,7 +770,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         unify_pat_types loc !env ty_res expected_ty;
       let args = List.map2 (fun p t -> type_pat p t) sargs ty_args in
       rp {
-        pat_desc=Tpat_construct(constr_path, lid, constr, args,explicit_arity);
+        pat_desc=Tpat_construct(lid, constr, args,explicit_arity);
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
         pat_env = !env }
@@ -802,7 +791,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_type =  expected_ty;
         pat_env = !env }
   | Ppat_record(lid_sp_list, closed) ->
-      let type_label_pat (label_path, label_lid, label, sarg) =
+      let type_label_pat (label_lid, label, sarg) =
         begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false label in
         if vars = [] then end_def ();
@@ -822,7 +811,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
           if List.exists instantiated vars then
             raise (Error(loc, Polymorphic_label (lid_of_label label)))
         end;
-        (label_path, label_lid, label, arg)
+        (label_lid, label, arg)
       in
       let opath =
         try
@@ -1079,15 +1068,15 @@ let rec is_nonexpansive exp =
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd3 el)
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
-  | Texp_construct(_, _, _, el,_) ->
+  | Texp_construct( _, _, el,_) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
   | Texp_record(lbl_exp_list, opt_init_exp) ->
       List.for_all
-        (fun (_, _, lbl, exp) -> lbl.lbl_mut = Immutable && is_nonexpansive exp)
+        (fun (_, lbl, exp) -> lbl.lbl_mut = Immutable && is_nonexpansive exp)
         lbl_exp_list
       && is_nonexpansive_opt opt_init_exp
-  | Texp_field(exp, _, lbl, _) -> is_nonexpansive exp
+  | Texp_field(exp, lbl, _) -> is_nonexpansive exp
   | Texp_array [] -> true
   | Texp_ifthenelse(cond, ifso, ifnot) ->
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
@@ -1506,7 +1495,7 @@ let contains_gadt env p =
     match p.ppat_desc with
       Ppat_construct (lid, _, _) ->
         begin try
-                let (_path, cstr) = Env.lookup_constructor lid.txt env in
+          let cstr = Env.lookup_constructor lid.txt env in
           if cstr.cstr_generalized then raise Exit
         with Not_found -> ()
         end; iter_ppat loop p
@@ -1858,7 +1847,7 @@ and type_expect ?in_function env sexp ty_expected =
           opath lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
-          ((lid, _) :: rem1, (_, _, lbl, _) :: rem2) ->
+          ((lid, _) :: rem1, (_, lbl, _) :: rem2) ->
             if List.mem lbl.lbl_pos seen_pos
             then raise(Error(loc, Label_multiply_defined lid.txt))
             else check_duplicates (lbl.lbl_pos :: seen_pos) rem1 rem2
@@ -1867,12 +1856,12 @@ and type_expect ?in_function env sexp ty_expected =
       let opt_exp =
         match opt_exp, lbl_exp_list with
           None, _ -> None
-        | Some exp, (_, _, lbl, _) :: _ ->
+        | Some exp, (_, lbl, _) :: _ ->
             let ty_exp = instance env exp.exp_type in
             let unify_kept lbl =
               (* do not connect overridden labels *)
               if List.for_all
-                  (fun (_, _, lbl',_) -> lbl'.lbl_pos <> lbl.lbl_pos)
+                  (fun (_, lbl',_) -> lbl'.lbl_pos <> lbl.lbl_pos)
                   lbl_exp_list
               then begin
                 let _, ty_arg1, ty_res1 = instance_label false lbl
@@ -1887,10 +1876,10 @@ and type_expect ?in_function env sexp ty_expected =
       in
       let num_fields =
         match lbl_exp_list with [] -> assert false
-        | (_,_, lbl,_)::_ -> Array.length lbl.lbl_all in
+        | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
       if opt_sexp = None && List.length lid_sexp_list <> num_fields then begin
         let present_indices =
-          List.map (fun (_,_, lbl, _) -> lbl.lbl_pos) lbl_exp_list in
+          List.map (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list in
         let label_names = extract_label_names sexp env ty_expected in
         let rec missing_labels n = function
             [] -> []
@@ -1909,25 +1898,25 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = instance env ty_expected;
         exp_env = env }
   | Pexp_field(srecord, lid) ->
-      let (record, label_path, label) =
+      let (record, label) =
         type_label_access env loc srecord lid in
       let (_, ty_arg, ty_res) = instance_label false label in
       unify_exp env record ty_res;
       rue {
-        exp_desc = Texp_field(record, label_path, lid, label);
+        exp_desc = Texp_field(record, lid, label);
         exp_loc = loc; exp_extra = [];
         exp_type = ty_arg;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
-      let (record, label_path, label) =
+      let (record, label) =
         type_label_access env loc srecord lid in
-      let (label_path, label_loc, label, newval) =
+      let (label_loc, label, newval) =
         type_label_exp false env loc record.exp_type
-          (label_path, lid, label, snewval) in
+          (lid, label, snewval) in
       if label.lbl_mut = Immutable then
         raise(Error(loc, Label_not_mutable lid.txt));
       rue {
-        exp_desc = Texp_setfield(record, label_path, label_loc, label, newval);
+        exp_desc = Texp_setfield(record, label_loc, label, newval);
         exp_loc = loc; exp_extra = [];
         exp_type = instance_def Predef.type_unit;
         exp_env = env }
@@ -2449,19 +2438,13 @@ and type_label_access env loc srecord lid =
     let ty_exp = record.exp_type in
     let record = {record with exp_type = instance env record.exp_type} in
     begin try
-      let (label_path,label) = Env.lookup_label lid.txt env in
+      let label = Env.lookup_label lid.txt env in
       let ty_res = instance Env.empty label.lbl_res in
       match (expand_head env ty_exp).desc, (expand_head env ty_res).desc with
         Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
           raise Exit
-      | _ -> (record, label_path, label)
+      | _ -> (record, label)
     with exn ->
-      let label_path =
-        match ty_exp.desc with
-          Tconstr(Path.Pdot(mod_path,_,_),_,_) ->
-            Path.Pdot (mod_path, lab, Path.nopos)
-        | _ -> fst (Typetexp.find_label env lid.loc lid.txt)
-      in
       let labels =
 	try
 	  let (p,_) = extract_concrete_typedecl env ty_exp in
@@ -2473,16 +2456,15 @@ and type_label_access env loc srecord lid =
         if !Clflags.principal && ty_exp.level <> generic_level then
           Location.prerr_warning loc
             (Warnings.Not_principal "this type-based field selection");
-        (record, label_path, label)
+        (record, label)
       with Not_found ->
         raise (Error (loc, Extra_label (lab, record.exp_type)))
     end
   | _ ->
-      let p, l = Typetexp.find_label env lid.loc lid.txt in
-      (type_exp env srecord, p, l)
+      (type_exp env srecord, Typetexp.find_label env lid.loc lid.txt)
 
 and type_label_exp create env loc ty_expected
-          (label_path, lid, label, sarg) =
+          (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   begin_def ();
   let separate = !Clflags.principal || Env.has_local_constraints env in
@@ -2531,7 +2513,7 @@ and type_label_exp create env loc ty_expected
     with Error (_, Less_general _) as e -> raise e
     | _ -> raise exn    (* In case of failure return the first error *)
   in
-  (label_path, lid, label, {arg with exp_type = instance env arg.exp_type})
+  (lid, label, {arg with exp_type = instance env arg.exp_type})
 
 and type_argument env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
@@ -2791,7 +2773,7 @@ and type_application env funct sargs =
         type_args [] [] ty (instance env ty) ty sargs []
 
 and type_construct env loc lid sarg explicit_arity ty_expected =
-  let (path,constr) = Typetexp.find_constructor env loc lid.txt in
+  let constr = Typetexp.find_constructor env loc lid.txt in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) constr;
   let sargs =
     match sarg with
@@ -2807,7 +2789,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
   let (ty_args, ty_res) = instance_constructor constr in
   let texp =
     re {
-      exp_desc = Texp_construct(path, lid, constr, [],explicit_arity);
+      exp_desc = Texp_construct(lid, constr, [],explicit_arity);
       exp_loc = loc; exp_extra = [];
       exp_type = ty_res;
       exp_env = env } in
@@ -2832,7 +2814,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
   if constr.cstr_private = Private then
     raise(Error(loc, Private_type ty_res));
   { texp with
-    exp_desc = Texp_construct(path, lid, constr, args, explicit_arity) }
+    exp_desc = Texp_construct(lid, constr, args, explicit_arity) }
 
 (* Typing of statements (expressions whose values are discarded) *)
 

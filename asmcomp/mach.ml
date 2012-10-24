@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Representation of machine code by sequences of pseudoinstructions *)
 
 type integer_comparison =

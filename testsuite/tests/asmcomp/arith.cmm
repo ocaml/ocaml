@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Regression test for arithmetic instructions *)
 
 (function "testarith" ()

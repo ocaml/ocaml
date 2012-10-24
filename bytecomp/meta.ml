@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 external global_data : unit -> Obj.t array = "caml_get_global_data"
 external realloc_global_data : int -> unit = "caml_realloc_global"
 external static_alloc : int -> string = "caml_static_alloc"

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Compute constructor and label descriptions from type declarations,
    determining their representation. *)
 
@@ -50,7 +48,7 @@ let constructor_descrs ty_res cstrs priv =
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
-    | (name, ty_args, ty_res_opt) :: rem ->
+    | (id, ty_args, ty_res_opt) :: rem ->
         let ty_res =
           match ty_res_opt with
           | Some ty_res' -> ty_res'
@@ -71,7 +69,8 @@ let constructor_descrs ty_res cstrs priv =
               TypeSet.elements (TypeSet.diff arg_vars res_vars)
         in
         let cstr =
-          { cstr_res = ty_res;
+          { cstr_name = Ident.name id;
+            cstr_res = ty_res;
             cstr_existentials = existentials;
             cstr_args = ty_args;
             cstr_arity = List.length ty_args;
@@ -82,11 +81,12 @@ let constructor_descrs ty_res cstrs priv =
             cstr_private = priv;
             cstr_generalized = ty_res_opt <> None
           } in
-        (name, cstr) :: descr_rem in
+        (id, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
 
 let exception_descr path_exc decl =
-  { cstr_res = Predef.type_exn;
+  { cstr_name = Path.last path_exc;
+    cstr_res = Predef.type_exn;
     cstr_existentials = [];
     cstr_args = decl.exn_args;
     cstr_arity = List.length decl.exn_args;
@@ -108,9 +108,9 @@ let label_descrs ty_res lbls repres priv =
   let all_labels = Array.create (List.length lbls) dummy_label in
   let rec describe_labels num = function
       [] -> []
-    | (name, mut_flag, ty_arg) :: rest ->
+    | (id, mut_flag, ty_arg) :: rest ->
         let lbl =
-          { lbl_name = Ident.name name;
+          { lbl_name = Ident.name id;
             lbl_res = ty_res;
             lbl_arg = ty_arg;
             lbl_mut = mut_flag;
@@ -119,7 +119,7 @@ let label_descrs ty_res lbls repres priv =
             lbl_repres = repres;
             lbl_private = priv } in
         all_labels.(num) <- lbl;
-        (name, lbl) :: describe_labels (num+1) rest in
+        (id, lbl) :: describe_labels (num+1) rest in
   describe_labels 0 lbls
 
 exception Constr_not_found

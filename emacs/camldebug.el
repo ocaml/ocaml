@@ -10,8 +10,6 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id$ *)
-
 ;;; Run camldebug under Emacs
 ;;; Derived from gdb.el.
 ;;; gdb.el is Copyright (C) 1988 Free Software Foundation, Inc, and is part

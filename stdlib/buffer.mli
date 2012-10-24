@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Extensible string buffers.
 
    This module implements string buffers that automatically expand

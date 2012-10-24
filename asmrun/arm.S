@@ -12,14 +12,22 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Asm part of the runtime system, ARM processor */
 /* Must be preprocessed by cpp */
 
         .syntax unified
         .text
-#if defined(SYS_linux_eabihf)
+#if defined(SYS_linux_eabihf) && defined(MODEL_armv6)
+        .arch   armv6
+        .fpu    vfpv2
+        .arm
+
+    /* Compatibility macros */
+        .macro  cbz reg, lbl
+        cmp     \reg, #0
+        beq     \lbl
+        .endm
+#elif defined(SYS_linux_eabihf)
         .arch   armv7-a
         .fpu    vfpv3-d16
         .thumb

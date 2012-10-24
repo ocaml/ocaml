@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 let () = let module M = Schedgen in () (* to create a dependency *)
 
 (* Scheduling is turned off because our model does not fit the 486

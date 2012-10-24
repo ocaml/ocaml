@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Miscellaneous macros and variables. */
 
 #ifndef CAML_MISC_H

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 #include <stddef.h>
 #include <stdarg.h>
 #include <string.h>
@@ -160,12 +158,7 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     if (data == NULL && size != 0) caml_raise_out_of_memory();
     flags |= CAML_BA_MANAGED;
   }
-  /* PR#5516: use C99's flexible array types if possible */
-#if (__STDC_VERSION__ >= 199901L)
-  asize = sizeof(struct caml_ba_array) + num_dims * sizeof(intnat);
-#else
-  asize = sizeof(struct caml_ba_array) + (num_dims - 1) * sizeof(intnat);
-#endif
+  asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
   res = caml_alloc_custom(&caml_ba_ops, asize, size, CAML_BA_MAX_MEMORY);
   b = Caml_ba_array_val(res);
   b->data = data;
@@ -779,7 +772,7 @@ static void caml_ba_serialize(value v,
   }
   /* Compute required size in OCaml heap.  Assumes struct caml_ba_array
      is exactly 4 + num_dims words */
-  Assert(sizeof(struct caml_ba_array) == 5 * sizeof(value));
+  Assert(SIZEOF_BA_ARRAY == 4 * sizeof(value));
   *wsize_32 = (4 + b->num_dims) * 4;
   *wsize_64 = (4 + b->num_dims) * 8;
 }
@@ -846,7 +839,8 @@ uintnat caml_ba_deserialize(void * dst)
   case CAML_BA_NATIVE_INT:
     caml_ba_deserialize_longarray(b->data, num_elts); break;
   }
-  return sizeof(struct caml_ba_array) + (b->num_dims - 1) * sizeof(intnat);
+  /* PR#5516: use C99's flexible array types if possible */
+  return SIZEOF_BA_ARRAY + b->num_dims * sizeof(intnat);
 }
 
 /* Create / update proxy to indicate that b2 is a sub-array of b1 */

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Printf
 
 let compargs = ref ([] : string list)
@@ -92,6 +90,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _warn_help = option "-warn-help"
   let _where = option "-where"
   let _nopervasives = option "-nopervasives"
+  let _dsource = option "-dsource"
   let _dparsetree = option "-dparsetree"
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"

@@ -10,7 +10,7 @@
 (*                                                                       *)
 (*************************************************************************)
 
-(* $Id$
+(*
 
 A testbed file for the module Scanf.
 
@@ -187,22 +187,7 @@ let unit fmt s =
 
 let test_fmt fmt s = unit fmt s = s;;
 
-(* The following test9_string is a result for test9 scanning.
-   Test9_string is the string "ï»¿",
-   that is character i tréma, followed by french right guillemet,
-   followed by inverted question mark.
-   It is NOT the string "Ôªø",
-   that is uppercase o with circonflex accent, followed by commercial a,
-   followed by empty set.
-
-   In other words, the string "ï»¿" has the following 3 characters
-   "\239\187\191".
-   It has NOT the characters "\212\170\248"!
-
-   Beware with automatic translation by your own local settings
-   (being your locale or your OS!)
-*)
-let test9_string = "ï»¿";;
+let test9_string = "\239\187\191";;
 
 let test_S = test_fmt "%S";;
 let test9 () =
@@ -245,10 +230,10 @@ let test10 () =
   Scanf.bscanf ib "%S" id in
 
   let res =
-    sscanf "Une chaîne: \"celle-ci\" et \"celle-là\"!"
+    sscanf "Une chaine: \"celle-ci\" et \"celle-la\"!"
            "%s %s %S %s %S %s"
            (fun s1 s2 s3 s4 s5 s6 -> s1 ^ s2 ^ s3 ^ s4 ^ s5 ^ s6) in
-  res = "Unechaîne:celle-cietcelle-là!" &&
+  res = "Unechaine:celle-cietcelle-la!" &&
   (* Testing the result of reading a %S string. *)
   unit "\"a\\\n  b\"" = "ab" &&
   unit "\"\\\n  ab\"" = "ab" &&
@@ -269,9 +254,9 @@ let test11 () =
     (fun prenom nom poids ->
      prenom = "Pierre" && nom = "Weis" && int_of_string poids = 70)
   &&
-  sscanf "Jean-Luc\tde Léage\t68" "%[^\t] %[^\t] %d"
+  sscanf "Jean-Luc\tde Leage\t68" "%[^\t] %[^\t] %d"
     (fun prenom nom poids ->
-     prenom = "Jean-Luc" && nom = "de Léage" && poids = 68)
+     prenom = "Jean-Luc" && nom = "de Leage" && poids = 68)
   &&
   sscanf "Daniel\tde Rauglaudre\t66" "%s@\t %s@\t %d"
     (fun prenom nom poids ->

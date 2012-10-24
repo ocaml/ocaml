@@ -13,8 +13,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 # This file lists all standard library modules.
 # It is used in particular to know what to expunge in toplevels.
 

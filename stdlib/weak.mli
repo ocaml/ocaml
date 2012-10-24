@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Arrays of weak pointers and hash tables of weak pointers. *)
 
 

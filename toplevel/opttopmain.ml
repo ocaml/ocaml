@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Clflags
 
 let usage = "Usage: ocamlnat <options> <object-files> [script-file]\noptions are:"
@@ -88,6 +86,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
 
+  let _dsource = set dump_source
   let _dparsetree = set dump_parsetree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda

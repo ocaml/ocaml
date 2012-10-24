@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 include ../config/Makefile
 
 CC=$(NATIVECC)
@@ -172,7 +170,7 @@ clean::
 .SUFFIXES: .S .d.o .p.o
 
 .S.o:
-	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.S || \
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S || \
 	{ echo "If your assembler produced syntax errors, it is probably unhappy with the"; echo "preprocessor. Check your assembler, or try producing $*.o by hand."; exit 2; }
 
 .S.p.o:

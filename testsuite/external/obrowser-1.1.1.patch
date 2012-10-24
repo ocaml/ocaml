@@ -40,15 +40,6 @@
  (*                                                                     *)
  (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
  (*                                                                     *)
-@@ -11,7 +11,7 @@
- (*                                                                     *)
- (***********************************************************************)
- 
--(* $Id: pervasives.mli 10548 2010-06-09 10:26:19Z weis $ *)
-+(* $Id: pervasives.mli 11922 2011-12-21 15:37:54Z doligez $ *)
- 
- (** The initially opened module.
- 
 @@ -52,24 +52,24 @@
     Equality between cyclic data structures may not terminate. *)
  
@@ -218,15 +209,6 @@
  (*                                                                     *)
  (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
  (*                                                                     *)
-@@ -11,7 +11,7 @@
- (*                                                                     *)
- (***********************************************************************)
- 
--(* $Id: list.ml 7597 2006-09-11 12:18:00Z doligez $ *)
-+(* $Id: list.ml 11156 2011-07-27 14:17:02Z doligez $ *)
- 
- (* List operations *)
- 
 @@ -56,6 +56,12 @@
      [] -> []
    | a::l -> let r = f a in r :: map f l
@@ -263,15 +245,6 @@
  (*                                                                     *)
  (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
  (*                                                                     *)
-@@ -11,7 +11,7 @@
- (*                                                                     *)
- (***********************************************************************)
- 
--(* $Id: list.mli 7597 2006-09-11 12:18:00Z doligez $ *)
-+(* $Id: list.mli 12013 2012-01-11 13:24:58Z doligez $ *)
- 
- (** List operations.
- 
 @@ -75,11 +75,25 @@
     [a1; ...; an]. It is equivalent to
     [begin f a1; f a2; ...; f an; () end]. *)

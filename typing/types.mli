@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Representation of types and declarations *)
 
 open Asttypes
@@ -104,7 +102,8 @@ and value_kind =
 (* Constructor descriptions *)
 
 type constructor_description =
-  { cstr_res: type_expr;                (* Type of the result *)
+  { cstr_name: string;                  (* Constructor name *)
+    cstr_res: type_expr;                (* Type of the result *)
     cstr_existentials: type_expr list;  (* list of existentials *)
     cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)

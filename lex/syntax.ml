@@ -10,9 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
-(* This apparently useless implmentation file is in fact required
+(* This apparently useless implementation file is in fact required
    by the pa_ocamllex syntax extension *)
 
 (* The shallow abstract syntax *)

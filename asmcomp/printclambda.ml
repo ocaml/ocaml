@@ -128,4 +128,5 @@ and sequence ppf ulam = match ulam with
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | _ -> lam ppf ulam
 
-let clambda = lam
+let clambda ppf ulam =
+  fprintf ppf "%a@." lam ulam

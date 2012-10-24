@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Analysis of source files. *)
 
 (** This function builds the top modules from the analysis of the

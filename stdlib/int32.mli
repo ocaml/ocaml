@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** 32-bit integers.
 
    This module provides operations on the type [int32]

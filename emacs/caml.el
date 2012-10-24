@@ -10,8 +10,6 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id$ *)
-
 ;;; caml.el --- OCaml code editing commands for Emacs
 
 ;; Xavier Leroy, july 1993.
@@ -1199,6 +1197,11 @@ Used to distinguish it from toplevel let construct.")
 (defconst caml-kwop-regexps (make-vector 9 nil)
   "Array of regexps representing caml keywords of different priorities.")
 
+(defun caml-in-shebang-line ()
+  (save-excursion
+    (beginning-of-line)
+    (and (= 1 (point)) (looking-at "#!"))))
+
 (defun caml-in-expr-p ()
   (let ((pos (point)) (in-expr t))
     (caml-find-kwop
@@ -1206,6 +1209,8 @@ Used to distinguish it from toplevel let construct.")
              caml-matching-kw-regexp "\\|"
              (aref caml-kwop-regexps caml-max-indent-priority)))
     (cond
+     ; special case for #! at beginning of file
+     ((caml-in-shebang-line) (setq in-expr nil))
      ; special case for ;;
      ((and (> (point) 1) (= (preceding-char) ?\;) (= (following-char) ?\;))
       (setq in-expr nil))

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Module [Bigarray]: large, multi-dimensional, numerical arrays *)
 
 external init : unit -> unit = "caml_ba_init"

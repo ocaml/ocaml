@@ -1,3 +1,14 @@
+(*************************************************************************)
+(*                                                                       *)
+(*                                 OCaml                                 *)
+(*                                                                       *)
+(*            Pierre Weis, projet Estime, INRIA Rocquencourt             *)
+(*                                                                       *)
+(*   Copyright 2008 Institut National de Recherche en Informatique et    *)
+(*   en Automatique.  All rights reserved.  This file is distributed     *)
+(*   under the terms of the Q Public License version 1.0.                *)
+(*                                                                       *)
+(*************************************************************************)
 
 (* Pi digits computed with the sreaming algorithm given on pages 4, 6
    & 7 of "Unbounded Spigot Algorithms for the Digits of Pi", Jeremy

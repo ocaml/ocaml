@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Machine-dependent interface with the asm code */
 
 #ifndef CAML_STACK_H

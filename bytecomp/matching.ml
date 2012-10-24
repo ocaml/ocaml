@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Compilation of pattern matching *)
 
 open Misc
@@ -162,15 +160,15 @@ let make_default matcher env =
 let ctx_matcher p =
   let p = normalize_pat p in
   match p.pat_desc with
-  | Tpat_construct (_, _, cstr,omegas,_) ->
+  | Tpat_construct (_, cstr,omegas,_) ->
       (fun q rem -> match q.pat_desc with
-      | Tpat_construct (_, _, cstr',args,_) when cstr.cstr_tag=cstr'.cstr_tag ->
+      | Tpat_construct (_, cstr',args,_) when cstr.cstr_tag=cstr'.cstr_tag ->
           p,args @ rem
       | Tpat_any -> p,omegas @ rem
       | _ -> raise NoMatch)
   | Tpat_constant cst ->
       (fun q rem -> match q.pat_desc with
-      | Tpat_constant cst' when cst=cst' ->
+      | Tpat_constant cst' when const_compare cst cst' = 0 ->
           p,rem
       | Tpat_any -> p,rem
       | _ -> raise NoMatch)
@@ -201,8 +199,8 @@ let ctx_matcher p =
       (fun q rem -> match q.pat_desc with
       | Tpat_record (l',_) ->
           let l' = all_record_args l' in
-          p, List.fold_right (fun (_, _, _,p) r -> p::r) l' rem
-      | _ -> p,List.fold_right (fun (_, _, _,p) r -> p::r) l rem)
+          p, List.fold_right (fun (_, _,p) r -> p::r) l' rem
+      | _ -> p,List.fold_right (fun (_, _,p) r -> p::r) l rem)
   | Tpat_lazy omega ->
       (fun q rem -> match q.pat_desc with
       | Tpat_lazy arg -> p, (arg::rem)
@@ -321,7 +319,7 @@ let jumps_add i pss jumps = match pss with
     add jumps
 
 
-let rec jumps_union env1 env2 = match env1,env2 with
+let rec jumps_union (env1:(int*ctx list)list) env2 = match env1,env2 with
 | [],_ -> env2
 | _,[] -> env1
 | ((i1,pss1) as x1::rem1), ((i2,pss2) as x2::rem2) ->
@@ -433,7 +431,7 @@ let pretty_precompiled_res first nexts =
 (* A slight attempt to identify semantically equivalent lambda-expressions *)
 exception Not_simple
 
-let rec raw_rec env = function
+let rec raw_rec env : lambda -> lambda = function
   | Llet(Alias,x,ex, body) -> raw_rec ((x,raw_rec env ex)::env) body
   | Lvar id as l ->
       begin try List.assoc id env with
@@ -549,7 +547,8 @@ let simplify_cases args cls = match args with
               simplify rem
           | Tpat_record (lbls, closed) ->
               let all_lbls = all_record_args lbls in
-              let full_pat = {pat with pat_desc=Tpat_record (all_lbls, closed)} in
+              let full_pat =
+                {pat with pat_desc=Tpat_record (all_lbls, closed)} in
               (full_pat::patl,action)::
               simplify rem
           | Tpat_or _ ->
@@ -613,9 +612,9 @@ let rec extract_vars r p = match p.pat_desc with
     List.fold_left extract_vars r pats
 | Tpat_record (lpats,_) ->
     List.fold_left
-      (fun r (_, _, _, p) -> extract_vars r p)
+      (fun r (_, _, p) -> extract_vars r p)
       r lpats
-| Tpat_construct (_, _, _, pats,_) ->
+| Tpat_construct (_, _, pats,_) ->
     List.fold_left extract_vars r pats
 | Tpat_array pats ->
     List.fold_left extract_vars r pats
@@ -665,7 +664,7 @@ let group_constant = function
   | _                           -> false
 
 and group_constructor = function
-  | {pat_desc = Tpat_construct (_, _, _, _,_)} -> true
+  | {pat_desc = Tpat_construct _} -> true
   | _ -> false
 
 and group_variant = function
@@ -695,7 +694,7 @@ and group_lazy = function
 let get_group p = match p.pat_desc with
 | Tpat_any -> group_var
 | Tpat_constant _ -> group_constant
-| Tpat_construct (_, _, _, _, _) -> group_constructor
+| Tpat_construct _ -> group_constructor
 | Tpat_tuple _ -> group_tuple
 | Tpat_record _ -> group_record
 | Tpat_array _ -> group_array
@@ -1023,9 +1022,9 @@ type cell =
   ctx : ctx list ;
   pat : pattern}
 
-let add make_matching_fun division key patl_action args =
+let add make_matching_fun division eq_key key patl_action args =
   try
-    let cell = List.assoc key division in
+    let (_,cell) = List.find (fun (k,_) -> eq_key key k) division in
     cell.pm.cases <- patl_action :: cell.pm.cases;
     division
   with Not_found ->
@@ -1034,14 +1033,14 @@ let add make_matching_fun division key patl_action args =
     (key, cell) :: division
 
 
-let divide make get_key get_args ctx pm =
+let divide make eq_key get_key get_args ctx pm =
 
   let rec divide_rec = function
     | (p::patl,action) :: rem ->
         let this_match = divide_rec rem in
         add
           (make p pm.default ctx)
-          this_match (get_key p) (get_args p patl,action) pm.args
+          this_match eq_key (get_key p) (get_args p patl,action) pm.args
     | _ -> [] in
 
   divide_rec pm.cases
@@ -1084,8 +1083,8 @@ let rec matcher_const cst p rem = match p.pat_desc with
       matcher_const cst p1 rem with
     | NoMatch -> matcher_const cst p2 rem
     end
-| Tpat_constant c1 when c1=cst -> rem
-| Tpat_any                     -> rem
+| Tpat_constant c1 when const_compare c1 cst = 0 -> rem
+| Tpat_any    -> rem
 | _ -> raise NoMatch
 
 let get_key_constant caller = function
@@ -1114,7 +1113,8 @@ let make_constant_matching p def ctx = function
 
 let divide_constant ctx m =
   divide
-    make_constant_matching (get_key_constant "divide")
+    make_constant_matching
+    (fun c d -> const_compare c d = 0) (get_key_constant "divide")
     get_args_constant
     ctx m
 
@@ -1129,15 +1129,15 @@ let make_field_args binding_kind arg first_pos last_pos argl =
   in make_args first_pos
 
 let get_key_constr = function
-  | {pat_desc=Tpat_construct (_, _, cstr,_,_)} -> cstr.cstr_tag
+  | {pat_desc=Tpat_construct (_, cstr,_,_)} -> cstr.cstr_tag
   | _ -> assert false
 
 let get_args_constr p rem = match p with
-| {pat_desc=Tpat_construct (_, _, _, args, _)} -> args @ rem
+| {pat_desc=Tpat_construct (_, _, args, _)} -> args @ rem
 | _ -> assert false
 
 let pat_as_constr = function
-  | {pat_desc=Tpat_construct (_, _, cstr,_,_)} -> cstr
+  | {pat_desc=Tpat_construct (_, cstr,_,_)} -> cstr
   | _ -> fatal_error "Matching.pat_as_constr"
 
 
@@ -1151,7 +1151,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
           with
           | NoMatch -> matcher_rec p2 rem
         end
-    | Tpat_construct (_, _, cstr1, [],_) when cstr.cstr_tag = cstr1.cstr_tag ->
+    | Tpat_construct (_, cstr1, [],_) when cstr.cstr_tag = cstr1.cstr_tag ->
         rem
     | Tpat_any -> rem
     | _ -> raise NoMatch in
@@ -1167,21 +1167,21 @@ let matcher_constr cstr = match cstr.cstr_arity with
         | None, Some r2 -> r2
         | Some (a1::rem1), Some (a2::_) ->
             {a1 with
-pat_loc = Location.none ;
-pat_desc = Tpat_or (a1, a2, None)}::
+             pat_loc = Location.none ;
+             pat_desc = Tpat_or (a1, a2, None)}::
             rem
         | _, _ -> assert false
         end
-    | Tpat_construct (_, _, cstr1, [arg],_) when cstr.cstr_tag = cstr1.cstr_tag ->
-        arg::rem
+    | Tpat_construct (_, cstr1, [arg],_)
+      when cstr.cstr_tag = cstr1.cstr_tag -> arg::rem
     | Tpat_any -> omega::rem
     | _ -> raise NoMatch in
     matcher_rec
 | _ ->
     fun q rem -> match q.pat_desc with
     | Tpat_or (_,_,_) -> raise OrPat
-    | Tpat_construct (_, _, cstr1, args,_)
-        when cstr.cstr_tag = cstr1.cstr_tag -> args @ rem
+    | Tpat_construct (_, cstr1, args,_)
+      when cstr.cstr_tag = cstr1.cstr_tag -> args @ rem
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
     | _        -> raise NoMatch
 
@@ -1205,7 +1205,7 @@ let make_constr_matching p def ctx = function
 let divide_constructor ctx pm =
   divide
     make_constr_matching
-    get_key_constr get_args_constr
+    (=) get_key_constr get_args_constr
     ctx pm
 
 (* Matching against a variant *)
@@ -1269,10 +1269,10 @@ let divide_variant row ctx {cases = cl; args = al; default=def} =
           match pato with
             None ->
               add (make_variant_matching_constant p lab def ctx) variants
-                (Cstr_constant tag) (patl, action) al
+                (=) (Cstr_constant tag) (patl, action) al
           | Some pat ->
               add (make_variant_matching_nonconst p lab def ctx) variants
-                (Cstr_block tag) (pat :: patl, action) al
+                (=) (Cstr_block tag) (pat :: patl, action) al
         end
     | cl -> []
   in
@@ -1446,7 +1446,7 @@ let divide_tuple arity p ctx pm =
 
 let record_matching_line num_fields lbl_pat_list =
   let patv = Array.create num_fields omega in
-  List.iter (fun (_, _, lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
+  List.iter (fun (_, lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
   Array.to_list patv
 
 let get_args_record num_fields p rem = match p with
@@ -1524,20 +1524,12 @@ let make_array_matching kind p def ctx = function
 let divide_array kind ctx pm =
   divide
     (make_array_matching kind)
-    get_key_array get_args_array ctx pm
+    (=) get_key_array get_args_array ctx pm
 
 (* To combine sub-matchings together *)
 
-let float_compare s1 s2 =
-  let f1 = float_of_string s1 and f2 = float_of_string s2 in
-  Pervasives.compare f1 f2
-
 let sort_lambda_list l =
-  List.sort
-    (fun (x,_) (y,_) -> match x,y with
-    | Const_float f1, Const_float f2 -> float_compare f1 f2
-    | _, _ -> Pervasives.compare x y)
-    l
+  List.sort (fun (x,_) (y,_) -> const_compare x y) l
 
 let rec cut n l =
   if n = 0 then [],l
@@ -2329,7 +2321,8 @@ let comp_exit ctx m = match m.default with
 
 
 
-let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs = match next_matchs with
+let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
+  match next_matchs with
   | [] -> comp_fun partial ctx arg first_match
   | rem ->
       let rec c_rec body total_body = function
@@ -2414,6 +2407,7 @@ let rec compile_match repr partial ctx m = match m with
 
 
 (* verbose version of do_compile_matching, for debug *)
+
 (*
 and do_compile_matching_pr repr partial ctx arg x =
   prerr_string "COMPILE: " ;
@@ -2427,6 +2421,7 @@ and do_compile_matching_pr repr partial ctx arg x =
   pretty_jumps jumps ;
   r
 *)
+
 and do_compile_matching repr partial ctx arg pmh = match pmh with
 | Pm pm ->
   let pat = what_is_cases pm.cases in
@@ -2438,7 +2433,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
       compile_no_test
         (divide_tuple (List.length patl) (normalize_pat pat)) ctx_combine
         repr partial ctx pm
-  | Tpat_record ((_, _, lbl,_)::_,_) ->
+  | Tpat_record ((_, lbl,_)::_,_) ->
       compile_no_test
         (divide_record lbl.lbl_all (normalize_pat pat))
         ctx_combine repr partial ctx pm
@@ -2448,7 +2443,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         divide_constant
         (combine_constant arg cst partial)
         ctx pm
-  | Tpat_construct (_, _, cstr, _, _) ->
+  | Tpat_construct (_, cstr, _, _) ->
       compile_test
         (compile_match repr partial) partial
         divide_constructor (combine_constructor arg pat cstr partial)

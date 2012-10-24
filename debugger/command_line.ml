@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (************************ Reading and executing commands ***************)
 
 open Int64ops
@@ -126,7 +124,7 @@ let add_breakpoint_at_pc pc =
     new_breakpoint (any_event_at_pc pc)
   with
   | Not_found ->
-    eprintf "Can't add breakpoint at pc %i : no event there.@." pc;
+    eprintf "Can't add breakpoint at pc %i: no event there.@." pc;
     raise Toplevel
 
 let add_breakpoint_after_pc pc =
@@ -212,7 +210,7 @@ let line_loop ppf line_buffer =
     | Exit ->
         stop_user_input ()
 (*    | Sys_error s ->
-        error ("System error : " ^ s) *)
+        error ("System error: " ^ s) *)
 
 (** Instructions. **)
 let instr_cd ppf lexbuf =
@@ -271,10 +269,10 @@ let instr_dir ppf lexbuf =
           List.iter (function x -> add_path (expand_path x)) new_directory'
     end;
     let print_dirs ppf l = List.iter (function x -> fprintf ppf "@ %s" x) l in
-    fprintf ppf "@[<2>Directories :%a@]@." print_dirs !Config.load_path;
+    fprintf ppf "@[<2>Directories: %a@]@." print_dirs !Config.load_path;
     Hashtbl.iter
       (fun mdl dirs ->
-        fprintf ppf "@[<2>Source directories for %s :%a@]@." mdl print_dirs dirs)
+        fprintf ppf "@[<2>Source directories for %s: %a@]@." mdl print_dirs dirs)
       Debugger_config.load_path_for
 
 let instr_kill ppf lexbuf =
@@ -373,11 +371,11 @@ let instr_quit _ =
 
 let print_variable_list ppf =
   let pr_vars ppf = List.iter (fun v -> fprintf ppf "%s@ " v.var_name) in
-  fprintf ppf "List of variables :%a@." pr_vars !variable_list
+  fprintf ppf "List of variables: %a@." pr_vars !variable_list
 
 let print_info_list ppf =
   let pr_infos ppf = List.iter (fun i -> fprintf ppf "%s@ " i.info_name)  in
-  fprintf ppf "List of info commands :%a@." pr_infos !info_list
+  fprintf ppf "List of info commands: %a@." pr_infos !info_list
 
 let instr_complete ppf lexbuf =
   let ppf = Format.err_formatter in
@@ -433,7 +431,7 @@ let instr_help ppf lexbuf =
   | Some x ->
       let print_help nm hlp =
         eol lexbuf;
-        fprintf ppf "%s : %s@." nm hlp in
+        fprintf ppf "%s: %s@." nm hlp in
       begin match matching_instructions x with
       | [] ->
           eol lexbuf;
@@ -469,10 +467,10 @@ let instr_help ppf lexbuf =
           print_help i.instr_name i.instr_help
       | l ->
           eol lexbuf;
-          fprintf ppf "Ambiguous command \"%s\" : %a@." x pr_instrs l
+          fprintf ppf "Ambiguous command \"%s\": %a@." x pr_instrs l
       end
   | None ->
-      fprintf ppf "List of commands : %a@." pr_instrs !instruction_list
+      fprintf ppf "List of commands: %a@." pr_instrs !instruction_list
 
 (* Printing values *)
 
@@ -555,7 +553,7 @@ let instr_show =
     (function ppf ->
        List.iter
          (function {var_name = nm; var_action = (_, funct)} ->
-              fprintf ppf "%s : " nm;
+              fprintf ppf "%s: " nm;
               funct ppf)
          !variable_list)
 
@@ -850,14 +848,14 @@ let follow_fork_variable =
 
 let pr_modules ppf mods =
  let pr_mods ppf = List.iter (function x -> fprintf ppf "%s@ " x) in
- fprintf ppf "Used modules :@.%a@?" pr_mods mods
+ fprintf ppf "Used modules: @.%a@?" pr_mods mods
 
 let info_modules ppf lexbuf =
   eol lexbuf;
   ensure_loaded ();
   pr_modules ppf !modules
 (********
-  print_endline "Opened modules :";
+  print_endline "Opened modules: ";
   if !opened_modules_names = [] then
     print_endline "(no module opened)."
   else
@@ -900,7 +898,7 @@ let info_breakpoints ppf lexbuf =
 let info_events ppf lexbuf =
   ensure_loaded ();
   let mdle = convert_module (module_of_longident (opt_longident_eol Lexer.lexeme lexbuf)) in
-    print_endline ("Module : " ^ mdle);
+    print_endline ("Module: " ^ mdle);
     print_endline "   Address  Characters        Kind      Repr.";
     List.iter
       (function ev ->
@@ -1107,10 +1105,10 @@ using \"load_printer\"." };
        var_action = loading_mode_variable ppf;
        var_help =
 "mode of loading.\n\
-It can be either :\n\
-  direct : the program is directly called by the debugger.\n\
-  runtime : the debugger execute `ocamlrun programname arguments'.\n\
-  manual : the program is not launched by the debugger,\n\
+It can be either:\n\
+  direct: the program is directly called by the debugger.\n\
+  runtime: the debugger execute `ocamlrun programname arguments'.\n\
+  manual: the program is not launched by the debugger,\n\
     but manually by the user." };
      { var_name = "processcount";
        var_action = integer_variable false 1 "Must be >= 1."
@@ -1154,8 +1152,8 @@ It can be either :\n\
        var_help =
 "process to follow after forking.\n\
 It can be either :
-  child : the newly created process.\n\
-  parent : the process that called fork.\n" }];
+  child: the newly created process.\n\
+  parent: the process that called fork.\n" }];
 
   info_list :=
     (* info name, function, help *)

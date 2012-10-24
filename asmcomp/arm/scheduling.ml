@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Arch
 open Mach
 
@@ -42,7 +40,7 @@ method oper_latency = function
   | Imulf | Ispecific Inegmulf
   | Ispecific(Imuladdf | Inegmuladdf | Imulsubf | Inegmulsubf)
   | Ispecific Isqrtf
-  | Inegf | Iabsf when !fpu >= VFPv3_D16 -> 2
+  | Inegf | Iabsf when !fpu >= VFPv2 -> 2
   (* Everything else *)
   | _ -> 1
 
@@ -72,7 +70,7 @@ method oper_issue_cycles = function
   | Ispecific(Imuladdf | Inegmuladdf | Imulsubf | Inegmulsubf) -> 17
   | Idivf
   | Ispecific Isqrtf -> 27
-  | Inegf | Iabsf | Iconst_float _ when !fpu >= VFPv3_D16 -> 4
+  | Inegf | Iabsf | Iconst_float _ when !fpu >= VFPv2 -> 4
   (* Everything else *)
   | _ -> 1
 

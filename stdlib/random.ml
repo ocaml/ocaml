@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Pseudo-random number generator
    This is a lagged-Fibonacci F(55, 24, +) with a modified addition
    function to enhance the mixing of bits.

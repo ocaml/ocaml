@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* The type of the instructions of the abstract machine *)
 
 open Lambda

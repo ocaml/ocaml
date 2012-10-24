@@ -4,6 +4,7 @@ Next version
 Compilers:
 - PR#5634: parsetree rewriter (-ppx flag)
 - ocamldep now supports -absname
+- PR#5768: On "unbound identifier" errors, use spell-checking to suggest names present in the environment
 
 Bug fixes:
 - PR#4762: ?? is not used at all, but registered as a lexer token
@@ -20,9 +21,15 @@ Bug fixes:
 - PR#5698: remove harcoded limit of 200000 labels in emitaux.ml
 - PR#5708: catch Failure"int_of_string" in ocamldebug
 - PR#5731: instruction scheduling forgot to account for destroyed registers
+- PR#5734: improved Win32 implementation of Unix.gettimeofday
 - PR#5735: %apply and %revapply not first class citizens
 - PR#5738: first class module patterns not handled by ocamldep
 - PR#5747: 'unused open' warning not given when compiling with -annot
+- PR#5758: Compiler bug when matching on floats
+- PR#5763: ocamlbuild does not give correct flags when running menhir
+- PR#5784: -dclambda option is ignored
+- PR#5787: Bad behavior of 'Unused ...' warnings in the toplevel
+- PR#5770: Syntax error messages involving unclosed parens are sometimes incorrect
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
@@ -31,18 +38,47 @@ Internals:
 Feature wishes:
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM
 
+
+OCaml 4.00.2:
+-------------
+
+Bug fixes:
+- PR#5102: ocamlbuild fails when using an unbound variable in rule dependency
+- PR#5240: register exception printers for Unix.Unix_error and Dynlink.Error
+- PR#5300: verbose parameter should implicitly set classic display
+- PR#5772: problem with marshaling of mutually-recursive functions
+- PR#5775: several bug fixes for tools/pprintast.ml
+- PR#5785: misbehaviour with abstracted structural type used as GADT index
+
+
 OCaml 4.00.1:
 -------------
 
 Bug fixes:
 - PR#4019: better documentation of Str.matched_string
+- PR#5111: ocamldoc, heading tags inside spans tags is illegal in html
+- PR#5278: better error message when typing "make"
+- PR#5468: ocamlbuild should preserve order of parametric tags
+- PR#5563: harden Unix.select against file descriptors above FD_SETSIZE
+- PR#5690: "ocamldoc ... -text README" raises exception
 - PR#5700: crash with native-code stack backtraces under MacOS 10.8 x86-64
 - PR#5707: AMD64 code generator: do not use r10 and r11 for parameter passing,
   as these registers can be destroyed by the dynamic loader
 - PR#5712: some documentation problems
+- PR#5715: configuring with -no-shared-libs breaks under cygwin
+- PR#5718: false positive on 'unused constructor' warning
 - PR#5719: ocamlyacc generates code that is not warning 33-compliant
+- PR#5725: ocamldoc output of preformatted code
+- PR#5727: emacs caml-mode indents shebang line in toplevel scripts
+- PR#5729: tools/untypeast.ml creates unary Pexp_tuple
+- PR#5731: instruction scheduling forgot to account for destroyed registers
+- PR#5735: %apply and %revapply not first class citizens
+- PR#5738: first class module patterns not handled by ocamldep
 - PR#5742: missing bound checks in Array.sub
+- PR#5744: ocamldoc error on "val virtual"
 - PR#5757: GC compaction bug (crash)
+- PR#5758: Compiler bug when matching on floats
+- PR#5761: Incorrect bigarray custom block size
 
 
 OCaml 4.00.0:
@@ -53,7 +89,7 @@ OCaml 4.00.0:
 - The official name of the language is now OCaml.
 
 Language features:
-- Added Generalized Abstract Data Types (GADTs) to the language.
+- Added Generalized Algebraic Data Types (GADTs) to the language.
   See chapter "Language extensions" of the reference manual for documentation.
 - It is now possible to omit type annotations when packing and unpacking
   first-class modules. The type-checker attempts to infer it from the context.
@@ -1697,7 +1733,7 @@ Standard library:
 - Module Printf:
     added %S and %C formats (quoted, escaped strings and characters);
     added kprintf (calls user-specified continuation on formatted string).
-- Module Queue: faster implementation (courtesy of François Pottier).
+- Module Queue: faster implementation (courtesy of Francois Pottier).
 - Module Random: added Random.bool.
 - Module Stack: added Stack.is_empty.
 - Module Pervasives:

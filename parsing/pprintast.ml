@@ -321,7 +321,7 @@ let rec core_type ppf x =
         | "" -> core_type ppf ct1;
         | s when (String.get s 0 = '?')  ->
             (match ct1.ptyp_desc with
-              | Ptyp_constr ({ txt = Longident.Lident ("option")}, l) ->
+              | Ptyp_constr ({ txt = Longident.Ldot (Longident.Lident "*predef*", "option")}, l) ->
                   fprintf ppf "%s :@ " s ;
                   type_constr_list ppf l ;
               | _ -> core_type ppf ct1; (* todo: what do we do here? *)
@@ -487,7 +487,7 @@ and simple_pattern ppf x =
   | Ppat_any -> fprintf ppf "_";            (* OXX done *)
   | Ppat_var ({txt = txt}) ->
       if (is_infix (fixity_of_string txt)) || List.mem txt.[0] prefix_symbols then
-        fprintf ppf "(%s)" txt                (* OXX done *)
+        fprintf ppf "( %s )" txt                (* OXX done *) (* fix bug ( *** ) *)
       else
         fprintf ppf "%s" txt;
   | Ppat_alias (p, s) ->                    (* OXX done ... *)
@@ -517,7 +517,7 @@ and simple_pattern ppf x =
       fprintf ppf "{" ;
       list2 longident_x_pattern ppf l ";" ;
       begin match closed with
-          Open -> fprintf ppf "_ ";
+          Open -> fprintf ppf "; _ "; (* bug fix *)
         | Closed -> ()
       end;
       fprintf ppf "}" ;
@@ -578,7 +578,7 @@ and simple_expr ppf x =
       pp_close_box ppf ();
       fprintf ppf ")";
   | Pexp_newtype (lid, e) ->
-      fprintf ppf "fun (type %s)@ " lid;
+      fprintf ppf "fun (type %s)@ ->" lid; (* bug fix *)
       expression ppf e
   | Pexp_tuple (l) ->
       fprintf ppf "@[<hov 1>(";
@@ -587,7 +587,7 @@ and simple_expr ppf x =
   | Pexp_variant (l, eo) ->
       pp_open_hovbox ppf indent ;
       fprintf ppf "`%s" l ;
-      option_quiet expression ppf eo ;
+      option_quiet_p expression ppf eo ; (* bug fix*)
       pp_close_box ppf () ;
   | Pexp_record (l, eo) ->
       pp_open_hovbox ppf indent ; (* maybe just 1? *)
@@ -1039,11 +1039,26 @@ and class_type ppf x =
       pp_close_box ppf () ;
   | Pcty_fun (l, co, cl) ->
       pp_open_hovbox ppf indent ;
-      core_type ppf co ;
-      fprintf ppf " ->@ " ;
+
       (match l with
-        | "" -> () ;
-        | _  -> fprintf ppf "[%s] " l ); (* todo - what's l *)
+      | "" ->
+          core_type ppf co
+      | s when (String.get s 0 = '?') ->
+          (match co.ptyp_desc with
+          | Ptyp_constr
+              ({txt=
+                Longident.Ldot
+                  (Longident.Lident "*predef*", "option")},l)
+            -> begin
+              fprintf ppf "%s :@ " s ;
+              type_constr_list ppf l
+            end
+          | _ -> core_type ppf co )
+      | s -> begin
+          fprintf ppf "%s :@ "s;
+          core_type ppf co ;
+      end );
+      fprintf ppf " ->@ ";
       class_type ppf cl ;
       pp_close_box ppf () ;
 
@@ -1292,19 +1307,33 @@ and class_field ppf x =
       fprintf ppf "initializer@ " ;
       expression_sequence ppf ~indent:0 e ;
       pp_close_box ppf () ;
-
+(* only pretty print [class_fun] *)
 and class_fun_helper ppf e =
   match e.pcl_desc with
   | Pcl_fun (l, eo, p, e) ->
-      pattern ppf p;
-      fprintf ppf "@ ";
+      (* pattern ppf p; *)
+      (* fprintf ppf "@ "; *)
       (match (eo, l) with
-        | (None, "") -> () ;
-        | (_,_) ->
-            fprintf ppf "(* ";
-            option expression ppf eo;
-            label 0 ppf l;
-            fprintf ppf " *)@ "
+        | (None, "") -> fprintf ppf "%a@ " pattern p
+        | (Some x,_) ->
+            fprintf ppf "%s:(%a=%a)@ " l pattern p expression x
+            (* let len =String.length l in *)
+            (* if len = 0 then failwith "class_fun_helper" *)
+            (* else  *)
+            (*   let label = String.sub l 1 (len-1) in  *)
+            (*   fprintf ppf "?(%s=%a)@ " label   expression x *)
+            (* fprintf ppf "(\* "; *)
+            (* option expression ppf eo; *)
+            (* label 0 ppf l; *)
+            (* fprintf ppf " *\)@ " *)
+        | (None,_) ->
+            fprintf ppf "%s:(%a)@ " l pattern p
+            (* let len = String.length l in *)
+            (* if len = 0 then failwith "class_fun_helper" *)
+            (* else *)
+            (*   let label = String.sub l 1 (len - 1) in  *)
+            (*   fprintf ppf "?%s@ "  label   *)
+
       );
       class_fun_helper ppf e;
   | _ ->
@@ -1755,8 +1784,8 @@ and longident_x_with_constraint_list ?(first=true) ppf l =
   | h :: t  ->
       if (first = false) then fprintf ppf "@ and " ;
       longident_x_with_constraint ppf h ;
-      fprintf ppf "@ and " ;
-      longident_x_with_constraint ppf h ;
+      (* fprintf ppf "@ and " ; *) (* duplicated here *)
+      (* longident_x_with_constraint ppf h ; *)
       longident_x_with_constraint_list ~first:false ppf t;
 
 and string_x_core_type_ands ?(first=true) ppf l =
@@ -1771,17 +1800,39 @@ and string_x_core_type_ands ?(first=true) ppf l =
       string_x_core_type_ands ~first:false ppf t;
 
 and string_x_core_type ppf (s, ct) =
-  fprintf ppf "%a@ =@ %a" fmt_longident s core_type ct
+  fprintf ppf "type %a@ =@ %a" fmt_longident s core_type ct (* bug fix *)
 
 and longident_x_with_constraint ppf (li, wc) =
   match wc with
-  | Pwith_type (td) ->
-      fprintf ppf "type@ %a =@ " fmt_longident li;
+  | Pwith_type ({ptype_params= ls } as td) ->
+      fprintf ppf "type@ %a %a =@ "
+        (fun ppf ls ->
+          let len = List.length ls in
+          if len >= 2 then begin
+            fprintf ppf "(";
+            list2 type_var_option_print ppf ls ",";
+            fprintf ppf ")";
+           end
+        else
+            list2 type_var_option_print ppf ls ",";
+        ) ls
+        fmt_longident li;
       type_declaration ppf td ;
   | Pwith_module (li2) ->
       fprintf ppf "module %a =@ %a" fmt_longident li fmt_longident li2;
-  | Pwith_typesubst td ->
-      fprintf ppf "type@ %a :=@ " fmt_longident li;
+  | Pwith_typesubst ({ptype_params=ls} as td) -> (* bug fix *)
+      (* fprintf ppf "type@ %a :=@ " fmt_longident li; *)
+      fprintf ppf "type@ %a %a :=@ "
+        (fun ppf ls ->
+          let len = List.length ls in
+          if len >= 2 then begin
+            fprintf ppf "(";
+            list2 type_var_option_print ppf ls ",";
+            fprintf ppf ")";
+           end
+        else
+            list2 type_var_option_print ppf ls ",";
+        ) ls fmt_longident li;
       type_declaration ppf td ;
   | Pwith_modsubst (li2) ->
       fprintf ppf "module %a :=@ %a" fmt_longident li fmt_longident li2;
@@ -1852,7 +1903,7 @@ and pattern_x_expression_case_list
       pp_close_box ppf () ;
   | (p,e)::r  -> (* not last  *)
       pp_open_hvbox ppf (indent + 2) ;
-      if ((first=true) & (special_first_case=false)) then begin
+      if ((first=true) && (special_first_case=false)) then begin (* fix the convention*)
           pp_print_if_newline ppf () ;
           pp_print_string ppf "  "
         end else
@@ -2124,7 +2175,7 @@ and pattern_x_expression_case_single ppf (p, e) eo lbl =
   fprintf ppf " ->@ " ;
   expression_sequence ppf ~indent:0 e ;;
 
-let rec toplevel_phrase ppf x =
+let toplevel_phrase ppf x =
   match x with
   | Ptop_def (s) ->
       pp_open_hvbox ppf 0;
@@ -2147,11 +2198,8 @@ let string_of_expression x =
   expression ppf x ;
   flush_str_formatter () ;;
 
-let toplevel_phrase ppf x =
+let top_phrase ppf x =
   pp_print_newline ppf () ;
   toplevel_phrase ppf x;
   fprintf ppf ";;" ;
   pp_print_newline ppf ();;
-
-let print_structure = structure
-let print_signature = signature

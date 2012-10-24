@@ -11,10 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 #include <mlvalues.h>
 #include "unixsupport.h"
+#include <mswsock.h>   // for SO_OPENTYPE and SO_SYNCHRONOUS_NONALERT
 
 int socket_domain_table[] = {
   PF_UNIX, PF_INET,

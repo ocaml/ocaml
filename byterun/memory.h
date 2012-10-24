@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Allocation macros and functions */
 
 #ifndef CAML_MEMORY_H

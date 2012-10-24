@@ -20,11 +20,11 @@
 # - absence of non-ASCII characters (non-ascii)
 # - absence of non-printing ASCII characters (non-printing)
 # - absence of white space at end of line (white-at-eol)
-# - absence of white lines at end of file (white-at-eof)
+# - absence of empty lines at end of file (white-at-eof)
 # - presence of a LF character at the end of the file (missing-lf)
 # - maximum line length of 80 characters (long-line)
 # - presence of a copyright header (missing-header)
-# - absence of a leftover "$Id$" string (svn-keyword)
+# - absence of a leftover "$Id" string (svn-keyword)
 
 # Exceptions are handled with a SVN property: "ocaml:typo".
 # Its value for a given file is a comma-separated list of rule names,
@@ -45,9 +45,8 @@
 #     *.mltop
 #     *.odocl
 #     *.clib
-#     */unmaintained/*
-#     */experimental/*
 #     *.reference
+#     */reference
 
 # ASCII characters are bytes from 0 to 127.  Any other byte is
 # flagged as a non-ASCII character.
@@ -67,8 +66,20 @@
 # This program ignores any file that is not under svn control, unless
 # explicitly given on the command line.
 
+# If a directory has the SVN property "ocaml:typo" set to "prune",
+# then it and its contents are ignored.
+
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
+
+# Special case for recursive call from the find command (see IGNORE_DIRS).
+case "$1" in
+  --check-prune)
+    case `svn propget ocaml:typo "$2" 2>/dev/null` in
+      prune) echo "INFO: pruned directory $2 (ocaml:typo=prune)" >&2; exit 0;;
+      *) exit 3;;
+    esac;;
+esac
 
 usage () {
   echo "usage: check-typo {-<rule>} [--] [<file-or-dir> ...]" >&2
@@ -79,17 +90,18 @@ userrules=''
 
 while : ; do
   case "$1" in
+    -help|--help) usage;;
     -*) userrules="${1#-},$userrules"; shift;;
     --) shift; break;;
-    -*) usage;;
     *) break;;
   esac
 done
 
-IGNORE_DIRS='
+IGNORE_DIRS="
   -name .svn -prune -o
   -name _build -prune -o
-'
+  -type d -exec $0 --check-prune {} ; -prune -o
+"
 
 ( case $# in
     0) find . $IGNORE_DIRS -type f -print;;
@@ -123,8 +135,7 @@ IGNORE_DIRS='
     case "$f" in
       */.depend*|*/.ignore) h;;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) h;;
-      */unmaintained/*|*/experimental/*) h;;
-      *.reference) h;;
+      *.reference|*/reference) h;;
     esac
 
     (cat "$f"; echo) \
@@ -159,7 +170,7 @@ IGNORE_DIRS='
           err("white-at-eol", "whitespace at end of line");
         }
 
-        match($0, /\$Id\$/) {
+        match($0, /\$Id(: .*)?\$/) {
           err("svn-keyword", "SVN keyword marker");
         }
 
@@ -193,8 +204,8 @@ IGNORE_DIRS='
           }else{
             empty_file = NR == 1;
           }
-          if (!empty_file && match(prev_line, /^[ \t]*$/)){
-            err("white-at-eof", "white line(s) at EOF");
+          if (!empty_file && match(prev_line, /^$/)){
+            err("white-at-eof", "empty line(s) at EOF");
           }
           NR = 1;
           RSTART = 1;

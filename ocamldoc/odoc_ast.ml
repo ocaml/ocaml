@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Analysis of implementation files. *)
 open Misc
 open Asttypes
@@ -189,6 +187,9 @@ module Typedtree_search =
         | { cf_desc = Typedtree.Tcf_val (_, _, _, ident, Tcfk_concrete exp, _) } :: q
           when Name.from_ident ident = name ->
             exp.Typedtree.exp_type
+        | { cf_desc = Typedtree.Tcf_val (_, _, _, ident, Tcfk_virtual typ, _) } :: q
+          when Name.from_ident ident = name ->
+            typ.Typedtree.ctyp_type
         | _ :: q ->
             iter q
       in
@@ -201,12 +202,6 @@ module Typedtree_search =
       | Types.Cty_fun (_,_, cty) -> iter cty
       in
       fun ct_decl -> iter ct_decl.Types.clty_type
-
-    let search_virtual_attribute_type table ctname name =
-      let ct_decl = search_class_type_declaration table ctname in
-      let cls_sig = class_sig_of_cltype_decl ct_decl.ci_type_decl in
-      let (_,_,texp) = Types.Vars.find name cls_sig.cty_vars in
-      texp
 
    let search_method_expression cls name =
       let rec iter = function
@@ -270,7 +265,7 @@ module Analyser =
               (List.map iter_pattern patlist,
                Odoc_env.subst_type env pat.pat_type)
 
-        | Typedtree.Tpat_construct (_, _, cons_desc, _, _) when
+        | Typedtree.Tpat_construct (_, cons_desc, _, _) when
             (* we give a name to the parameter only if it unit *)
             (match cons_desc.cstr_res.desc with
               Tconstr (p, _, _) ->
@@ -565,13 +560,8 @@ module Analyser =
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let type_exp =
-            try
-              if virt then
-                Typedtree_search.search_virtual_attribute_type table
-                (Name.simple current_class_name) label
-              else
-                Typedtree_search.search_attribute_type tt_cls label
-            with Not_found ->
+              try Typedtree_search.search_attribute_type tt_cls label
+              with Not_found ->
                 raise (Failure (Odoc_messages.attribute_not_found_in_typedtree complete_name))
           in
           let code =

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Hash tables *)
 
 external seeded_hash_param : int -> int -> int -> 'a -> int = "caml_hash" "noalloc"

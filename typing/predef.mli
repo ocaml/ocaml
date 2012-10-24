@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Predefined type constructors (with special typing rules in typecore) *)
 
 open Types

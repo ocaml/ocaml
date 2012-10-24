@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Format of .cmx, .cmxa and .cmxs files *)
 
 (* Each .o file has a matching .cmx file that provides the following infos

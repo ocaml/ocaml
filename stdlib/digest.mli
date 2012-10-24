@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** MD5 message digest.
 
    This module provides functions to compute 128-bit ``digests'' of

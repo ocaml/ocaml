@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Format
 
 type t = { stamp: int; name: string; mutable flags: int }

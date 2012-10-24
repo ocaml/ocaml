@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*          Damien Doligez, projet Moscova, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Test bench for sorting algorithms. *)
 
 
@@ -451,7 +463,7 @@ let bench3c limit name f aux =
   let cmp = aux.prepf compare (<=) in
   table3 limit (f cmp) (fun n -> aux.prepd (mkfloats n));
 ;;
-
+
 (************************************************************************)
 (* merge sort on lists *)
 
@@ -501,7 +513,7 @@ let lmerge_1a cmp l =
   in
   mergeall_rev (init [] l)
 ;;
-
+
 let lmerge_1b cmp l =
   let rec init accu = function
     | [] -> accu
@@ -544,7 +556,7 @@ let lmerge_1b cmp l =
   in
   mergeall_rev (init [] l)
 ;;
-
+
 let lmerge_1c cmp l =
   let rec init accu = function
     | [] -> accu
@@ -591,7 +603,7 @@ let lmerge_1c cmp l =
   in
   mergeall_rev (init [] l)
 ;;
-
+
 let lmerge_1d cmp l =
   let rec init accu = function
     | [] -> accu
@@ -642,7 +654,7 @@ let lmerge_1d cmp l =
   in
   mergeall_rev (init [] l)
 ;;
-
+
 (************************************************************************)
 (* merge sort on lists, user-contributed (NOT STABLE) *)
 
@@ -704,7 +716,7 @@ let lmerge_1d cmp l =
     mergeall false (initlist l [])
 
 (* END code contributed by Yann Coscoy *)
-
+
 (************************************************************************)
 (* merge sort on short lists, Francois Pottier *)
 
@@ -760,7 +772,7 @@ let lmerge_1d cmp l =
         sort (List.length l) l
   ;;
 (* END code contributed by Francois Pottier *)
-
+
 (************************************************************************)
 (* merge sort on short lists, Francois Pottier,
    adapted to new-style interface *)
@@ -817,7 +829,7 @@ let lmerge_1d cmp l =
         sort (List.length l) l
   ;;
 (* END code contributed by Francois Pottier *)
-
+
 (************************************************************************)
 (* merge sort on short lists a la Pottier, modified merge *)
 
@@ -871,7 +883,7 @@ let lmerge_4c cmp l =
   let len = List.length l in
   if len < 2 then l else sort len l
 ;;
-
+
 (************************************************************************)
 (* merge sort on short lists a la Pottier, logarithmic stack space *)
 
@@ -943,7 +955,7 @@ let lmerge_4d cmp l =
   if len < 2 then l else sort len l
 ;;
 
-
+
 (************************************************************************)
 (* merge sort on short lists a la Pottier, logarithmic stack space,
    in place: input list is freed as the output is being computed. *)
@@ -1021,7 +1033,7 @@ let lmerge_4e cmp l =
   let len = List.length l in
   if len < 2 then l else sort len l
 ;;
-
+
 (************************************************************************)
 (* chop-free version of Pottier's code, binary version *)
 
@@ -1055,7 +1067,7 @@ let lmerge_5a cmp l =
   while !len > 0 do incr i; len := !len lsr 1; done;
   sort_prefix !i
 ;;
-
+
 (************************************************************************)
 (* chop-free version of Pottier's code, dichotomic version,
    ground cases 1 & 2 *)
@@ -1086,7 +1098,7 @@ let lmerge_5b cmp l =
   let len = List.length l in
   if len <= 1 then l else sort_prefix len
 ;;
-
+
 (************************************************************************)
 (* chop-free version of Pottier's code, dichotomic version,
    ground cases 2 & 3 *)
@@ -1126,7 +1138,7 @@ let lmerge_5c cmp l =
   let len = List.length l in
   if len <= 1 then l else sort_prefix len
 ;;
-
+
 (************************************************************************)
 (* chop-free, ref-free version of Pottier's code, dichotomic version,
    ground cases 2 & 3, modified merge *)
@@ -1171,7 +1183,7 @@ let lmerge_5d cmp l =
   let len = List.length l in
   if len <= 1 then l else fst (sort_prefix len l)
 ;;
-
+
 (************************************************************************)
 (* merge sort on arrays, merge with tail-rec function *)
 
@@ -1218,7 +1230,7 @@ let amerge_1a cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let amerge_1b cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
     let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
@@ -1276,7 +1288,7 @@ let amerge_1b cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 3;;
 let amerge_1c cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1329,7 +1341,7 @@ let amerge_1c cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 4;;
 let amerge_1d cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1382,7 +1394,7 @@ let amerge_1d cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 5;;
 let amerge_1e cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1435,7 +1447,7 @@ let amerge_1e cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 6;;
 let amerge_1f cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1488,7 +1500,7 @@ let amerge_1f cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 7;;
 let amerge_1g cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1541,7 +1553,7 @@ let amerge_1g cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 8;;
 let amerge_1h cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1594,7 +1606,7 @@ let amerge_1h cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 9;;
 let amerge_1i cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1647,7 +1659,7 @@ let amerge_1i cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 10;;
 let amerge_1j cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1700,13 +1712,13 @@ let amerge_1j cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 (* FIXME a essayer: *)
 (* list->array->list direct et array->list->array direct *)
 (* overhead = 1/3, 1/4, etc. *)
 (* overhead = sqrt (n) *)
 (* overhead = n/3 jusqu'a 30k, 30k jusqu'a 900M, sqrt (n) au-dela *)
-
+
 (************************************************************************)
 (* merge sort on arrays, merge with loop *)
 
@@ -1754,7 +1766,7 @@ let amerge_3a cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let amerge_3b cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
     let i1 = ref src1ofs
@@ -1815,7 +1827,7 @@ let amerge_3b cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 3;;
 let amerge_3c cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1870,7 +1882,7 @@ let amerge_3c cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 4;;
 let amerge_3d cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1925,7 +1937,7 @@ let amerge_3d cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 5;;
 let amerge_3e cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -1980,7 +1992,7 @@ let amerge_3e cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 6;;
 let amerge_3f cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -2035,7 +2047,7 @@ let amerge_3f cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 7;;
 let amerge_3g cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -2090,7 +2102,7 @@ let amerge_3g cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 8;;
 let amerge_3h cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -2145,7 +2157,7 @@ let amerge_3h cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 9;;
 let amerge_3i cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -2200,7 +2212,7 @@ let amerge_3i cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
-
+
 let cutoff = 10;;
 let amerge_3j cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
@@ -2257,7 +2269,7 @@ let amerge_3j cmp a =
 ;;
 
 (* FIXME essayer bottom-up merge on arrays ? *)
-
+
 (************************************************************************)
 (* Shell sort on arrays *)
 
@@ -2281,7 +2293,7 @@ let ashell_1 cmp a =
     step := !step / 3;
   done;
 ;;
-
+
 let ashell_2 cmp a =
   let l = Array.length a in
   let step = ref 1 in
@@ -2300,7 +2312,7 @@ let ashell_2 cmp a =
     step := !step / 3;
   done;
 ;;
-
+
 let ashell_3 cmp a =
   let l = Array.length a in
   let step = ref 1 in
@@ -2326,7 +2338,7 @@ let ashell_3 cmp a =
     step := !step / 3;
   done;
 ;;
-
+
 let force = Lazy.force;;
 
 type iilist = Cons of int * iilist Lazy.t;;
@@ -2367,7 +2379,7 @@ let ashell_4 cmp a =
   in
   loop2 sc;
 ;;
-
+
 (************************************************************************)
 (* Quicksort on arrays *)
 let cutoff = 1;;
@@ -2431,7 +2443,7 @@ let aquick_1a cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 2;;
 let aquick_1b cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2493,7 +2505,7 @@ let aquick_1b cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 3;;
 let aquick_1c cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2555,7 +2567,7 @@ let aquick_1c cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 4;;
 let aquick_1d cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2617,7 +2629,7 @@ let aquick_1d cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 5;;
 let aquick_1e cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2679,7 +2691,7 @@ let aquick_1e cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 6;;
 let aquick_1f cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2741,7 +2753,7 @@ let aquick_1f cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 7;;
 let aquick_1g cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2803,7 +2815,7 @@ let aquick_1g cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 1;;
 let aquick_2a cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2863,7 +2875,7 @@ let aquick_2a cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 2;;
 let aquick_2b cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2923,7 +2935,7 @@ let aquick_2b cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 3;;
 let aquick_2c cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -2983,7 +2995,7 @@ let aquick_2c cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 4;;
 let aquick_2d cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3043,7 +3055,7 @@ let aquick_2d cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 5;;
 let aquick_2e cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3103,7 +3115,7 @@ let aquick_2e cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 6;;
 let aquick_2f cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3163,7 +3175,7 @@ let aquick_2f cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 7;;
 let aquick_2g cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3223,7 +3235,7 @@ let aquick_2g cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 1;;
 let aquick_3a cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3288,7 +3300,7 @@ let aquick_3a cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 2;;
 let aquick_3b cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3353,7 +3365,7 @@ let aquick_3b cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 3;;
 let aquick_3c cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3418,7 +3430,7 @@ let aquick_3c cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 4;;
 let aquick_3d cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3483,7 +3495,7 @@ let aquick_3d cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 5;;
 let aquick_3e cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3548,7 +3560,7 @@ let aquick_3e cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 6;;
 let aquick_3f cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3613,7 +3625,7 @@ let aquick_3f cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 7;;
 let aquick_3g cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3678,7 +3690,7 @@ let aquick_3g cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 8;;
 let aquick_3h cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3743,7 +3755,7 @@ let aquick_3h cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 9;;
 let aquick_3i cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3808,7 +3820,7 @@ let aquick_3i cmp a =
     done;
   end;
 ;;
-
+
 let cutoff = 10;;
 let aquick_3j cmp a =
   let rec qsort l r =     (* ASSUMES r - l >= 2 *)
@@ -3873,7 +3885,7 @@ let aquick_3j cmp a =
     done;
   end;
 ;;
-
+
 (************************************************************************)
 (* Heap sort on arrays (top-down, ternary) *)
 
@@ -3913,7 +3925,7 @@ let aheap_1 cmp a =
   done;
   if !l > 1 then begin let e = a.(1) in a.(1) <- a.(0); a.(0) <- e; end;
 ;;
-
+
 (************************************************************************)
 (* Heap sort on arrays (top-down, binary) *)
 
@@ -3945,7 +3957,7 @@ let aheap_2 cmp a =
     down i 0 e;
   done;
 ;;
-
+
 (************************************************************************)
 (* Heap sort on arrays (bottom-up, ternary) *)
 
@@ -3999,7 +4011,7 @@ let aheap_3 cmp a =
   done;
   if l > 1 then (let e = a.(1) in a.(1) <- a.(0); a.(0) <- e);
 ;;
-
+
 (************************************************************************)
 (* Heap sort on arrays (bottom-up, binary) *)
 
@@ -4045,7 +4057,7 @@ let aheap_4 cmp a =
   done;
   if l > 1 then (let e = a.(1) in a.(1) <- a.(0); a.(0) <- e);
 ;;
-
+
 (************************************************************************)
 (* heap sort, top-down, ternary, recursive final loop *)
 
@@ -4102,7 +4114,7 @@ let aheap_5 cmp a =
     | 2 -> loop1 (l-1) l3;
     | _ -> assert false;
 ;;
-
+
 (************************************************************************)
 (* heap sort, top-down, ternary, with exception *)
 
@@ -4161,7 +4173,7 @@ let ainsertion_1 cmp a =
     a.(j) <- e;
   done;
 ;;
-
+
 (************************************************************************)
 (* merge sort on lists via arrays *)
 
@@ -4231,7 +4243,7 @@ let amerge_0 cmp a =    (* cutoff is not yet used *)
   in
   loop 0 l
 ;;
-
+
 (************************************************************************)
 
 let lold = [
@@ -4475,5 +4487,3 @@ let main () =
 ;;
 
 if not !Sys.interactive then Printexc.catch main ();;
-
-(* $Id$ *)

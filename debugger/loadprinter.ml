@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Loading and installation of user-defined printer functions *)
 
 open Misc

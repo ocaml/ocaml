@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (******************************* Breakpoints ***************************)
 
 open Checkpoints
@@ -169,7 +167,7 @@ let rec new_breakpoint =
            incr breakpoint_number;
            insert_position event.ev_pos;
            breakpoints := (!breakpoint_number, event) :: !breakpoints);
-      printf "Breakpoint %d at %d : %s" !breakpoint_number event.ev_pos
+      printf "Breakpoint %d at %d: %s" !breakpoint_number event.ev_pos
              (Pos.get_desc event);
       print_newline ()
 
@@ -182,7 +180,7 @@ let remove_breakpoint number =
         (function () ->
            breakpoints := List.remove_assoc number !breakpoints;
            remove_position pos;
-           printf "Removed breakpoint %d at %d : %s" number ev.ev_pos
+           printf "Removed breakpoint %d at %d: %s" number ev.ev_pos
                   (Pos.get_desc ev);
            print_newline ()
         )

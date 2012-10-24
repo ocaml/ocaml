@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Translation from closed lambda to C-- *)
 
 val compunit: int -> Clambda.ulambda -> Cmm.phrase list

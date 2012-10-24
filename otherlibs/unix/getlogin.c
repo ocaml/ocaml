@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 #include <mlvalues.h>
 #include <alloc.h>
 #include "unixsupport.h"

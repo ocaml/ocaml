@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Typechecking of type expressions for the core language *)
 
 open Format;;
@@ -38,7 +36,7 @@ exception Already_bound
 
 type error =
     Unbound_type_variable of string
-  | Unbound_type_constructor of Longident.t
+  | Unbound_type_constructor of Env.t * Longident.t
   | Unbound_type_constructor_2 of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
@@ -55,13 +53,13 @@ type error =
   | Cannot_quantify of string * Types.type_expr
   | Multiple_constraints_on_type of Longident.t
   | Repeated_method_label of string
-  | Unbound_value of Longident.t
-  | Unbound_constructor of Longident.t
-  | Unbound_label of Longident.t
-  | Unbound_module of Longident.t
-  | Unbound_class of Longident.t
-  | Unbound_modtype of Longident.t
-  | Unbound_cltype of Longident.t
+  | Unbound_value of Env.t * Longident.t
+  | Unbound_constructor of Env.t * Longident.t
+  | Unbound_label of Env.t * Longident.t
+  | Unbound_module of Env.t * Longident.t
+  | Unbound_class of Env.t * Longident.t
+  | Unbound_modtype of Env.t * Longident.t
+  | Unbound_cltype of Env.t * Longident.t
   | Ill_typed_functor_application of Longident.t
 
 exception Error of Location.t * error
@@ -81,9 +79,9 @@ val create_package_mty:
 val find_type:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.type_declaration
 val find_constructor:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.constructor_description
+    Env.t -> Location.t -> Longident.t -> Types.constructor_description
 val find_label:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.label_description
+    Env.t -> Location.t -> Longident.t -> Types.label_description
 val find_value:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.value_description
 val find_class:
