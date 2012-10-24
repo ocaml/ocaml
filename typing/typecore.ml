@@ -554,21 +554,23 @@ let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
           Longident.Lident s, Some labels when Hashtbl.mem labels s ->
             []
         | _ ->
-        let label = Typetexp.find_label env lid.loc lid.txt in
+        let lbl = try `Some (Typetexp.find_label env lid.loc lid.txt) with exn -> `None exn in
         let lbl_path =
-          match label.lbl_res.desc with
-          | Tconstr(p, _, _) -> p
+          match lbl with
+          | `None exn -> `None exn
+          | `Some {lbl_res={desc=Tconstr(p, _, _)}} -> `Some p
           | _ -> assert false
         in
         let path =
-          match opath with
-            Some (p1,pr) ->
+          match lbl_path, opath with
+          | `Some lbl_path, Some (p1,pr) ->
               if not (Path.same (expand_path env p1) (expand_path env lbl_path))
                   && not pr then
                 Location.prerr_warning lid.loc
                   (Warnings.Not_principal "this type-based record selection");
               p1
-          | _ -> lbl_path
+          | `None _, Some (p, _) | `Some p, None -> p
+          | `None exn, None -> raise exn
         in
         snd (Env.find_type_descrs path env)
   in
