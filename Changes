@@ -9,6 +9,8 @@ Compilers:
 Bug fixes:
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4994: ocaml-mode doesn't work with xemacs21
+* PR#5119: camlp4 now raises a specific exception when 'DELETE_RULE' fails,
+  rather than raising 'Not_found'
 - PR#5327: (Windows) Unix.select blocks if same socket listed in first and
   third arguments
 - PR#5468: ocamlbuild should preserve order of parametric tags

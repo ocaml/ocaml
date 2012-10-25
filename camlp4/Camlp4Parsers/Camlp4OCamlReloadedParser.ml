@@ -40,7 +40,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value revised =
     try
       (DELETE_RULE Gram expr: "if"; SELF; "then"; SELF; "else"; SELF END; True)
-    with [ Not_found -> begin
+    with [ Struct.Grammar.Delete.Rule_not_found _ -> begin
       DELETE_RULE Gram expr: "if"; SELF; "then"; expr LEVEL "top"; "else"; expr LEVEL "top" END;
       DELETE_RULE Gram expr: "if"; SELF; "then"; expr LEVEL "top" END; False
     end ];

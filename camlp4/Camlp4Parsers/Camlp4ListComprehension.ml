@@ -102,7 +102,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     try do {
       DELETE_RULE Gram expr: "["; sem_expr_for_list; "::"; expr; "]" END;
       True
-    } with [ Not_found -> False ];
+    } with [ Struct.Grammar.Delete.Rule_not_found _ -> False ];
 
   value comprehension_or_sem_expr_for_list =
     Gram.Entry.mk "comprehension_or_sem_expr_for_list";
