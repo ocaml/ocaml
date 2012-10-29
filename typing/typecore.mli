@@ -66,7 +66,6 @@ type error =
     Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
-  | Extra_label of label * type_expr
   | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t

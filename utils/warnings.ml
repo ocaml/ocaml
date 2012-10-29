@@ -57,6 +57,8 @@ type t =
   | Unused_constructor of string * bool * bool  (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
+  | Name_out_of_scope of string list * bool (* 40 *)
+  | Ambiguous_name of string list * bool    (* 41 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -105,9 +107,11 @@ let number = function
   | Unused_constructor _ -> 37
   | Unused_exception _ -> 38
   | Unused_rec_flag -> 39
+  | Name_out_of_scope _ -> 40
+  | Ambiguous_name _ -> 41
 ;;
 
-let last_warning_number = 39
+let last_warning_number = 41
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -202,7 +206,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -302,6 +306,18 @@ let message = function
         (However, this constructor appears in patterns.)"
   | Unused_rec_flag ->
       "unused rec flag."
+  | Name_out_of_scope ([s], false) -> 
+      s ^ " is used out of scope."
+  | Name_out_of_scope (_, false) -> assert false
+  | Name_out_of_scope (slist, true) -> 
+      "this record contains fields that are out of scope:\n "
+      ^ String.concat " " slist ^ "."
+  | Ambiguous_name ([s], false) -> 
+      "this use of " ^ s ^ " is ambiguous."
+  | Ambiguous_name (_, false) -> assert false
+  | Ambiguous_name (slist, true) -> 
+      "this record contains fields that are ambiguous:\n "
+      ^ String.concat " " slist ^ "."
 ;;
 
 let nerrors = ref 0;;
@@ -387,6 +403,8 @@ let descriptions =
    37, "Unused constructor.";
    38, "Unused exception constructor.";
    39, "Unused rec flag.";
+   40, "Constructor or label name used out of scope.";
+   41, "Ambiguous constructor or label name.";
   ]
 ;;
 

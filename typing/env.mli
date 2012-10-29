@@ -64,7 +64,11 @@ val add_gadt_instance_chain: t -> int -> type_expr -> unit
 val lookup_value: Longident.t -> t -> Path.t * value_description
 val lookup_annot: Longident.t -> t -> Path.t * Annot.ident
 val lookup_constructor: Longident.t -> t -> constructor_description
+val lookup_all_constructors:
+  Longident.t -> t -> (constructor_description * (unit -> unit)) list
 val lookup_label: Longident.t -> t -> label_description
+val lookup_all_labels:
+  Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
 val lookup_module: Longident.t -> t -> Path.t * module_type
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
@@ -198,10 +202,10 @@ val fold_types:
   (string -> Path.t -> type_declaration * type_descriptions -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_constructors:
-  (Types.constructor_description -> 'a -> 'a) ->
+  (constructor_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_labels:
-  (Types.label_description -> 'a -> 'a) ->
+  (label_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 
 (** Persistent structures are only traversed if they are already loaded. *)

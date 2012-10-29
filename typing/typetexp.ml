@@ -96,8 +96,14 @@ let find_type =
 let find_constructor =
   find_component Env.lookup_constructor
     (fun env lid -> Unbound_constructor (env, lid))
+let find_all_constructors =
+  find_component Env.lookup_all_constructors
+    (fun env lid -> Unbound_constructor (env, lid))
 let find_label =
   find_component Env.lookup_label
+    (fun env lid -> Unbound_label (env, lid))
+let find_all_labels =
+  find_component Env.lookup_all_labels
     (fun env lid -> Unbound_label (env, lid))
 let find_class =
   find_component Env.lookup_class
@@ -114,6 +120,14 @@ let find_modtype =
 let find_class_type =
   find_component Env.lookup_cltype
     (fun env lid -> Unbound_cltype (env, lid))
+
+let unbound_constructor_error env lid =
+  narrow_unbound_lid_error env lid.loc lid.txt
+    (fun env lid -> Unbound_constructor (env, lid))
+
+let unbound_label_error env lid =
+  narrow_unbound_lid_error env lid.loc lid.txt
+    (fun env lid -> Unbound_label (env, lid))
 
 (* Support for first-class modules. *)
 

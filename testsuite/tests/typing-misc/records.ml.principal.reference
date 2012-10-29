@@ -3,13 +3,11 @@
 # Characters 5-6:
   {x=3;z=2};;
        ^
-Error: This record has type t
-       which does not include the label z
+Error: Unbound record field label z
 # Characters 9-10:
   fun {x=3;z=2} -> ();;
            ^
-Error: This record has type t
-       which does not include the label z
+Error: Unbound record field label z
 #     Characters 26-34:
   {x=3; contents=2};;
         ^^^^^^^^
@@ -28,38 +26,46 @@ Error: Cannot assign field u of the private type u
 #   val f : M.t -> int = <fun>
 # val r : M.t = {M.x = 1; y = 2}
 # val z : int = 3
-#         module M : sig type t = { x : int; y : int; } type u = { y : bool; } end
-#   val f : M.t -> int = <fun>
-# val r : M.t = {M.x = 1; y = 2}
-#     val f : Complex.t -> float = <fun>
-# Characters 32-36:
-  let f x = ignore (x:Complex.t); x.re;; (* non principal *)
-                                  ^^^^
-Warning 18: this type-based field selection is not principal.
-val f : Complex.t -> float = <fun>
-#         module M :
+#     type t = { x : int; y : int; }
+# type u = { x : bool; y : bool; }
+#   val f : t -> int = <fun>
+# Characters 26-27:
+  let f r = ignore (r:t); r.x;; (* non principal *)
+                            ^
+Warning 18: this type-based field disambiguation is not principal.
+val f : t -> int = <fun>
+#       val f : t -> int = <fun>
+#     Characters 44-45:
+         {x; y} -> y + y;; (* fails *)
+                   ^
+Error: This expression has type bool but an expression was expected of type
+         int
+#       Characters 53-59:
+         {x; y} -> y + y;; (* fails for -principal *)
+         ^^^^^^
+Error: This pattern matches values of type u
+       but a pattern was expected which matches values of type t
+#           module M : sig type t = { x : int; } type u = { x : bool; } end
+# val f : M.t -> int = <fun>
+# Characters 18-19:
+  let f (r:M.t) = r.x;; (* warning *)
+                    ^
+Warning 40: x is used out of scope.
+val f : M.t -> int = <fun>
+#       module M : sig type t = { x : int; y : int; } end
+#     module N : sig type u = { x : bool; y : bool; } end
+# # # val f : M.t -> int = <fun>
+#           module M :
   sig
     type t = { x : int; }
     module N : sig type s = t = { x : int; } end
     type u = { x : bool; }
   end
-# val f : M.u -> bool = <fun>
-# val f : M.t -> int = <fun>
-# # val f : M.N.s -> int = <fun>
-# val f : M.t -> int = <fun>
-#   type u = { x : bool; y : int; z : char; }
+# # val f : M.t -> int = <fun>
+#     type u = { x : bool; y : int; z : char; }
 # type t = { x : int; y : bool; }
-# - : u -> char * bool = <fun>
-# Characters 4-9:
-  fun {x;z} -> x,z;; (* fails *)
-      ^^^^^
-Error: This pattern matches values of type u
-       but a pattern was expected which matches values of type t
 # - : u -> bool * char = <fun>
-# - : u -> bool * char = <fun>
-# Characters 36-41:
-  fun r -> ignore (r:u); match r with {x;z} -> x,z;; (* fails for -principal *)
-                                      ^^^^^
-Error: This pattern matches values of type u
-       but a pattern was expected which matches values of type t
+#   type u = { x : int; y : bool; }
+# type t = { x : bool; y : int; z : char; }
+# - : u = {x = 3; y = true}
 # 

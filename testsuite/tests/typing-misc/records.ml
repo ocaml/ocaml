@@ -20,32 +20,55 @@ let f {M.x; y} = x+y;;
 let r = {M.x=1; y=2};;
 let z = f r;;
 
+(* Use type information *)
+type t = {x: int; y: int};;
+type u = {x: bool; y: bool};;
+
+let f (r:t) = r.x;; (* ok *)
+let f r = ignore (r:t); r.x;; (* non principal *)
+
+let f (r: t) =
+  match r with
+    {x; y} -> y + y;; (* ok *)
+let f r =
+    match r with
+       {x; y} -> y + y;; (* fails *)
+let f r =
+    ignore (r: t);
+    match r with
+       {x; y} -> y + y;; (* fails for -principal *)
+
+(* Use type information with modules*)
+module M = struct
+  type t = {x:int}
+  type u = {x:bool}
+end;;
+let f (r:M.t) = r.M.x;; (* ok *)
+let f (r:M.t) = r.x;; (* warning *)
+
 module M = struct
   type t = {x: int; y: int}
-  type u = {y: bool}
 end;;
-(* path abbreviation is syntactic *)
-let f {M.x; y} = x+y;; (* fails *)
-let r = {M.x=1; y=2};; (* fails *)
+module N = struct
+  type u = {x: bool; y: bool}
+end;;
+open M;;
+open N;;
+let f (r:M.t) = r.x;; 
 
-(* Use type information *)
-let f (x:Complex.t) = x.re;;
-let f x = ignore (x:Complex.t); x.re;; (* non principal *)
 module M = struct
   type t = {x:int}
   module N = struct type s = t = {x:int} end
-  type u = { x:bool}
+  type u = {x:bool}
 end;;
-let f (r:M.u) = r.x;;
-let f (r:M.t) = r.x;; (* ok *)
 open M.N;;
-let f r = r.x;;
-let f (r:M.t) = r.x;; (* ok *)
+let f (r:M.t) = r.x;; 
 
+(* Use field information *)
 type u = {x:bool;y:int;z:char};;
 type t = {x:int;y:bool};;
-fun {z;x} -> z,x;; (* ok *)
-fun {x;z} -> x,z;; (* fails *)
-fun ({x;z}:u) -> x,z;; (* ok *)
-fun (r:u) -> match r with {x;z} -> x,z;; (* ok *)
-fun r -> ignore (r:u); match r with {x;z} -> x,z;; (* fails for -principal *)
+fun {x;z} -> x,z;;
+
+type u = {x:int;y:bool};;
+type t = {x:bool;y:int;z:char};;
+{x=3; y=true};; 

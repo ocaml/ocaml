@@ -24,7 +24,6 @@ type error =
     Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
-  | Extra_label of label * type_expr
   | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
@@ -513,12 +512,7 @@ let build_or_pat env loc lid =
           pat pats in
       (path, rp { r with pat_loc = loc },ty)
 
-(* Records *)
-
-let rec find_record_qual = function
-  | [] -> None
-  | ({ txt = Longident.Ldot _ } as lid, _) :: _ -> Some lid
-  | _ :: rest -> find_record_qual rest
+(* Type paths *)
 
 let rec expand_path env p =
   let decl =
@@ -532,72 +526,199 @@ let rec expand_path env p =
       end
   | _ -> p
 
-let type_label_a_list ?labels env type_lbl_a opath lid_a_list =
-  (* Priority order for selecting record type
-     1) use first qualified label
-     2) use first label when compatible with expected type
-     3) use expected type (eventually warning if not principal)
-     Then type each unqualified field according to the selected
-     record type.
-   *)
-  let labels' =
-    match find_record_qual lid_a_list with
-      Some lid ->
-        let label = Typetexp.find_label env lid.loc lid.txt in
-        begin match label.lbl_res.desc with
-          Tconstr (p, _, _) -> snd (Env.find_type_descrs p env)
-        | _ -> assert false
-        end
-    | None ->
-        let lid = fst (List.hd lid_a_list) in
-        match lid.txt, labels with
-          Longident.Lident s, Some labels when Hashtbl.mem labels s ->
-            []
-        | _ ->
-        let lbl_path () =
-          match Typetexp.find_label env lid.loc lid.txt with
-          | {lbl_res={desc=Tconstr(p, _, _)}} -> p
-          | _ -> assert false
-        in
-        let path =
-          match opath with
-            Some (p1,pr) ->
-              begin try
-                if not pr && not (Path.same (expand_path env p1)
-                                    (expand_path env (lbl_path ())))
-                then raise Exit
-              with Exit | Typetexp.Error _ ->
-                Location.prerr_warning lid.loc
-                  (Warnings.Not_principal "this type-based record selection")
-              end;
-              p1
-          | None -> lbl_path ()
-        in
-        snd (Env.find_type_descrs path env)
+let get_label_type_path env lbl = 
+  match lbl.lbl_res.desc with
+  | Tconstr(p, _, _) -> p
+  | _ -> assert false
+
+let get_constructor_type_path env cstr = 
+  match cstr.cstr_res.desc with
+  | Tconstr(p, _, _) -> p
+  | _ -> assert false
+
+let compare_type_path env tpath1 tpath2 = 
+  Path.same (expand_path env tpath1) (expand_path env tpath2)
+
+(* Records *)
+
+let lookup_label_from_type env tpath lid =
+  let (_, labels) = Env.find_type_descrs tpath env in
+  Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
+  match lid with
+    Longident.Lident s ->
+      List.find (fun lbl -> lbl.lbl_name = s) labels
+  | _ -> raise Not_found
+
+module NameChoice(Name : sig
+  type t
+  val get_type_path: Env.t -> t -> Path.t
+  val lookup_from_type: Env.t -> Path.t -> Longident.t -> t
+  val unbound_name_error: Env.t -> Longident.t loc -> unit
+end) = struct
+  open Name
+
+  let is_ambiguous env lbl others = 
+    let tpath = get_type_path env lbl in
+    let different_tpath (lbl, _) =
+      let lbl_tpath = get_type_path env lbl in
+      not (compare_type_path env tpath lbl_tpath)
+    in
+    let others = 
+      List.filter different_tpath others 
+    in
+    others <> []
+
+  let disambiguate_by_type env tpath lbls =
+    let check_type (lbl, _) =
+      let lbl_tpath = get_type_path env lbl in
+      compare_type_path env tpath lbl_tpath
+    in
+    List.find check_type lbls
+
+  let disambiguate ?(warn=Location.prerr_warning) lid env opath lbls =
+    try match opath with
+      None -> raise Not_found
+    | Some(tpath, pr) ->
+        try
+          let lbl, use = disambiguate_by_type env tpath lbls in
+          use ();
+          Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
+          if not pr then begin
+            (* Check if non-principal type is affecting result *)
+            match lbls with
+              [] -> assert false
+            | (lbl', use') :: rest -> 
+                let lbl_tpath = get_type_path env lbl' in
+                if not (compare_type_path env tpath lbl_tpath) then 
+                  warn lid.loc
+                    (Warnings.Not_principal 
+                       "this type-based field disambiguation")
+                else 
+                  if is_ambiguous env lbl' rest then 
+                    warn lid.loc 
+                      (Warnings.Ambiguous_name 
+                         ([Longident.last lid.txt], false))
+          end;
+          lbl
+        with Not_found -> 
+          let lbl = lookup_from_type env tpath lid.txt in
+          warn lid.loc 
+            (Warnings.Name_out_of_scope 
+               ([Longident.last lid.txt], false));
+          if not pr then 
+            warn lid.loc
+              (Warnings.Not_principal "this type-based field disambiguation");
+          lbl
+    with Not_found -> 
+      match lbls with
+        [] -> unbound_name_error env lid; assert false
+    | (lbl, use) :: rest -> 
+      use ();
+      if is_ambiguous env lbl rest then 
+        warn lid.loc 
+          (Warnings.Ambiguous_name 
+             ([Longident.last lid.txt], false));
+      lbl
+end
+
+module Label = NameChoice (struct
+  type t = label_description
+  let get_type_path = get_label_type_path
+  let lookup_from_type = lookup_label_from_type
+  let unbound_name_error = Typetexp.unbound_label_error
+end)
+
+let disambiguate_label_by_ids keep env closed ids labels =
+  let check_ids (lbl, _) =
+    let lbls = Hashtbl.create 8 in
+    Array.iter (fun lbl -> Hashtbl.add lbls lbl.lbl_name ()) lbl.lbl_all;
+    List.for_all (Hashtbl.mem lbls) ids
+  and check_closed (lbl, _) =
+    (not closed || List.length ids = Array.length lbl.lbl_all)
   in
-  let lbl_a_list =
+  let labels' = List.filter check_ids labels in
+  if keep && labels' = [] then labels else
+  let labels'' = List.filter check_closed labels' in
+  if keep & labels'' = [] then labels' else labels''
+    
+(* Only issue warnings once per record constructor/pattern *)
+let disambiguate_labels_a_list loc closed env opath lid_a_list =
+  let ids = List.map (fun (lid, _) -> Longident.last lid.txt) lid_a_list in
+  let labels_by_id =
     List.map
-      (fun (lid, a) ->
-        let label : Types.label_description =
-          match lid.txt, labels with
-            Longident.Lident s, Some labels when Hashtbl.mem labels s ->
-              Hashtbl.find labels s
-          | Longident.Lident s, None ->
-              begin try
-                List.find (fun descr -> descr.lbl_name = s) labels'
-              with Not_found ->
-              try Env.lookup_label lid.txt env with Not_found ->
-                raise (Error (lid.loc, Extra_label
-                                (s, (List.hd labels').lbl_res)))
-              end
-          | _ -> (* qualified *)
-              Typetexp.find_label env lid.loc lid.txt
-        in (lid, label, a)
-      )  lid_a_list in
+      (fun (lid,_) ->
+        let labels = Typetexp.find_all_labels env lid.loc lid.txt in
+        if opath = None && labels = [] then
+          Typetexp.unbound_label_error env lid;
+        labels)
+      lid_a_list
+  in
+  let labels =
+    disambiguate_label_by_ids (opath=None) env closed ids
+      (List.hd labels_by_id) in
+  let records =
+    List.map (fun (lbl,use) -> Array.to_list lbl.lbl_all, use) labels in
+  let labels_by_id =
+    List.map2
+      (fun s labels -> List.map
+          (fun (lbls,use) ->
+            try List.find (fun lbl -> lbl.lbl_name = s) lbls, use
+            with Not_found -> List.hd labels)
+          records)
+      ids labels_by_id
+  in
+  let w_pr = ref true and w_amb = ref true and w_scope = ref true in
+  let warn loc msg =
+    let flag =
+      let open Warnings in
+      match msg with
+      | Not_principal _ -> w_pr
+      | Ambiguous_name _ -> w_amb
+      | Name_out_of_scope _ -> w_scope
+      | _ -> ref true
+    in
+    if !flag then begin
+      flag := false;
+      Location.prerr_warning loc msg
+    end
+  in
+  List.map2
+    (fun (lid, a) lbls -> lid, Label.disambiguate lid env opath lbls ~warn, a)
+    lid_a_list labels_by_id
+
+let rec find_record_qual = function
+  | [] -> None
+  | ({ txt = Longident.Ldot (modname, _) }, _) :: _ -> Some modname
+  | _ :: rest -> find_record_qual rest
+
+let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list =
+  let lbl_a_list =
+    match lid_a_list, labels with
+      ({txt=Longident.Lident s}, _)::_, Some labels when Hashtbl.mem labels s ->
+        (* Special case for rebuilt syntax trees *)
+        List.map
+          (function lid, a -> match lid.txt with
+            Longident.Lident s -> lid, Hashtbl.find labels s, a
+          | _ -> assert false)
+          lid_a_list
+    | _ ->
+        let lid_a_list =
+          match find_record_qual lid_a_list with
+            None -> lid_a_list
+          | Some modname ->
+              List.map
+                (fun (lid, a as lid_a) ->
+                  match lid.txt with Longident.Lident s ->
+                    {lid with txt=Longident.Ldot (modname, s)}, a
+                  | _ -> lid_a)
+                lid_a_list
+        in
+        disambiguate_labels_a_list loc closed env opath lid_a_list
+  in
   (* Invariant: records are sorted in the typed tree *)
   let lbl_a_list =
     List.sort
-      (fun (_, lbl1,_) (_, lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
+      (fun (_,lbl1,_) (_,lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
       lbl_a_list
   in
   List.map type_lbl_a lbl_a_list
@@ -609,7 +730,23 @@ let lid_of_label label =
       Longident.Ldot(lid_of_path mpath, label.lbl_name)
   | _ -> Longident.Lident label.lbl_name
 
-(* Checks over the labels mentioned in a record pattern:
+(* Constructors *)
+
+let lookup_constructor_from_type env tpath lid =
+  let (constructors, _) = Env.find_type_descrs tpath env in
+    match lid with
+      Longident.Lident s ->
+        List.find (fun cstr -> cstr.cstr_name = s) constructors
+    | _ -> raise Not_found
+
+module Constructor = NameChoice (struct
+  type t = constructor_description
+  let get_type_path = get_constructor_type_path
+  let lookup_from_type = lookup_constructor_from_type
+  let unbound_name_error = Typetexp.unbound_constructor_error
+end)
+
+(* Checks over the constructors mentioned in a record pattern:
    no duplicate definitions (error); properly closed (warning) *)
 
 let check_recordpat_labels loc lbl_pat_list closed =
@@ -737,12 +874,19 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_type = expected_ty;
         pat_env = !env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
-      let constr =
+      let opath =
+        try
+	  let (p,_) = extract_concrete_typedecl !env expected_ty in
+	  Some (p, true)
+	with Not_found -> None
+      in
+      let constrs =
         match lid.txt, constrs with
           Longident.Lident s, Some constrs when Hashtbl.mem constrs s ->
-            Hashtbl.find constrs s
-        | _ ->  Typetexp.find_constructor !env loc lid.txt
+            [Hashtbl.find constrs s, (fun () -> ())]
+        | _ ->  Typetexp.find_all_constructors !env lid.loc lid.txt
       in
+      let constr = Constructor.disambiguate lid !env opath constrs in
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, Unexpected_existential));
@@ -823,7 +967,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
 	with Not_found -> None
       in
       let lbl_pat_list =
-        type_label_a_list ?labels !env type_label_pat opath lid_sp_list in
+        type_label_a_list ?labels loc false !env type_label_pat opath
+          lid_sp_list in
       check_recordpat_labels loc lbl_pat_list closed;
       rp {
         pat_desc = Tpat_record (lbl_pat_list, closed);
@@ -1845,8 +1990,9 @@ and type_expect ?in_function env sexp ty_expected =
             | Some exp -> get_path exp.exp_type)
         | op -> op
       in
+      let closed = (opt_sexp = None) in
       let lbl_exp_list =
-        type_label_a_list env (type_label_exp true env loc ty_expected)
+        type_label_a_list loc closed env (type_label_exp true env loc ty_expected)
           opath lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
@@ -1911,8 +2057,21 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = ty_arg;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
-      let (record, label) =
-        type_label_access env loc srecord lid in
+      if !Clflags.principal then begin_def ();
+      let record = type_exp env srecord in
+      if !Clflags.principal then begin
+        end_def ();
+        generalize_structure record.exp_type
+      end;
+      let ty_exp = record.exp_type in
+      let opath = 
+	try
+	  let (p,_) = extract_concrete_typedecl env ty_exp in
+	    Some(p, ty_exp.level = generic_level || not !Clflags.principal)
+	with Not_found -> None
+      in
+      let labels = Typetexp.find_all_labels env lid.loc lid.txt in
+      let label = Label.disambiguate lid env opath labels in
       let (label_loc, label, newval) =
         type_label_exp false env loc record.exp_type
           (lid, label, snewval) in
@@ -2431,40 +2590,22 @@ and type_expect ?in_function env sexp ty_expected =
       }
 
 and type_label_access env loc srecord lid =
-  match lid.txt with Longident.Lident lab ->
-    if !Clflags.principal then begin_def ();
-    let record = type_exp env srecord in
-    if !Clflags.principal then begin
-      end_def ();
-      generalize_structure record.exp_type
-    end;
-    let ty_exp = record.exp_type in
-    let record = {record with exp_type = instance env record.exp_type} in
-    begin try
-      let label = Env.lookup_label lid.txt env in
-      let ty_res = instance Env.empty label.lbl_res in
-      match (expand_head env ty_exp).desc, (expand_head env ty_res).desc with
-        Tconstr(p1,_,_), Tconstr(p2,_,_) when not (Path.same p1 p2) ->
-          raise Exit
-      | _ -> (record, label)
-    with exn ->
-      let labels =
-	try
-	  let (p,_) = extract_concrete_typedecl env ty_exp in
-	  snd (Env.find_type_descrs p env)
-	with Not_found -> []
-      in
-      try
-        let label = List.find (fun descr -> descr.lbl_name = lab) labels in
-        if !Clflags.principal && ty_exp.level <> generic_level then
-          Location.prerr_warning loc
-            (Warnings.Not_principal "this type-based field selection");
-        (record, label)
-      with Not_found ->
-        raise (Error (loc, Extra_label (lab, record.exp_type)))
-    end
-  | _ ->
-      (type_exp env srecord, Typetexp.find_label env lid.loc lid.txt)
+  if !Clflags.principal then begin_def ();
+  let record = type_exp env srecord in
+  if !Clflags.principal then begin
+    end_def ();
+    generalize_structure record.exp_type
+  end;
+  let ty_exp = record.exp_type in
+  let opath = 
+    try
+      let (p,_) = extract_concrete_typedecl env ty_exp in
+      Some(p, ty_exp.level = generic_level || not !Clflags.principal)
+    with Not_found -> None
+  in
+  let labels = Typetexp.find_all_labels env lid.loc lid.txt in
+  let label = Label.disambiguate lid env opath labels in
+  (record, label)
 
 and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
@@ -2776,7 +2917,14 @@ and type_application env funct sargs =
         type_args [] [] ty (instance env ty) ty sargs []
 
 and type_construct env loc lid sarg explicit_arity ty_expected =
-  let constr = Typetexp.find_constructor env loc lid.txt in
+  let opath = 
+    try
+      let (p,_) = extract_concrete_typedecl env ty_expected in
+	Some(p, ty_expected.level = generic_level || not !Clflags.principal)
+    with Not_found -> None
+  in
+  let constrs = Typetexp.find_all_constructors env lid.loc lid.txt in
+  let constr = Constructor.disambiguate lid env opath constrs in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) constr;
   let sargs =
     match sarg with
@@ -3180,12 +3328,6 @@ let report_error ppf = function
                    longident lid)
         (function ppf ->
            fprintf ppf "but is mixed here with labels of type")
-  | Extra_label (l, ty) ->
-      reset_and_mark_loops ty;
-      fprintf ppf
-        "@[<v>@[<2>This record has type@ %a@]@ \
-          which does not include the label %s@]"
-        type_expr ty l
   | Pattern_type_clash trace ->
       report_unification_error ppf trace
         (function ppf ->
