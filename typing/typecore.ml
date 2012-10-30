@@ -582,6 +582,7 @@ end) = struct
         try
           let lbl, use = disambiguate_by_type env tpath lbls in
           use ();
+          (* Strange: why do we need to mark type by hand? *)
           Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
           if not pr then begin
             (* Check if non-principal type is affecting result *)
@@ -593,11 +594,10 @@ end) = struct
                   warn lid.loc
                     (Warnings.Not_principal 
                        "this type-based field disambiguation")
-                else 
-                  if is_ambiguous env lbl' rest then 
-                    warn lid.loc 
-                      (Warnings.Ambiguous_name 
-                         ([Longident.last lid.txt], false))
+                else if is_ambiguous env lbl' rest then 
+                  warn lid.loc 
+                    (Warnings.Ambiguous_name 
+                       ([Longident.last lid.txt], false))
           end;
           lbl
         with Not_found -> 
@@ -637,54 +637,56 @@ let disambiguate_label_by_ids keep env closed ids labels =
     (not closed || List.length ids = Array.length lbl.lbl_all)
   in
   let labels' = List.filter check_ids labels in
-  if keep && labels' = [] then labels else
+  if keep && labels' = [] then (false, labels) else
   let labels'' = List.filter check_closed labels' in
-  if keep & labels'' = [] then labels' else labels''
+  if keep & labels'' = [] then (false, labels') else (true, labels'')
     
 (* Only issue warnings once per record constructor/pattern *)
-let disambiguate_labels_a_list loc closed env opath lid_a_list =
+let disambiguate_lid_a_list loc closed env opath lid_a_list =
   let ids = List.map (fun (lid, _) -> Longident.last lid.txt) lid_a_list in
-  let labels_by_id =
-    List.map
-      (fun (lid,_) ->
-        let labels = Typetexp.find_all_labels env lid.loc lid.txt in
-        if opath = None && labels = [] then
-          Typetexp.unbound_label_error env lid;
-        labels)
-      lid_a_list
-  in
-  let labels =
-    disambiguate_label_by_ids (opath=None) env closed ids
-      (List.hd labels_by_id) in
-  let records =
-    List.map (fun (lbl,use) -> Array.to_list lbl.lbl_all, use) labels in
-  let labels_by_id =
-    List.map2
-      (fun s labels -> List.map
-          (fun (lbls,use) ->
-            try List.find (fun lbl -> lbl.lbl_name = s) lbls, use
-            with Not_found -> List.hd labels)
-          records)
-      ids labels_by_id
-  in
-  let w_pr = ref true and w_amb = ref true and w_scope = ref true in
+  let w_pr = ref false and w_amb = ref [] and w_scope = ref [] in
   let warn loc msg =
-    let flag =
-      let open Warnings in
-      match msg with
-      | Not_principal _ -> w_pr
-      | Ambiguous_name _ -> w_amb
-      | Name_out_of_scope _ -> w_scope
-      | _ -> ref true
-    in
-    if !flag then begin
-      flag := false;
-      Location.prerr_warning loc msg
-    end
+    let open Warnings in
+    match msg with
+    | Not_principal _ -> w_pr := true
+    | Ambiguous_name([s], _) -> w_amb := s :: !w_amb
+    | Name_out_of_scope([s], _) -> w_scope := s :: !w_scope
+    | _ -> Location.prerr_warning loc msg
   in
-  List.map2
-    (fun (lid, a) lbls -> lid, Label.disambiguate lid env opath lbls ~warn, a)
-    lid_a_list labels_by_id
+  let process_label lid =
+    (* Strategy for each field:
+       * collect all the labels in scope for that name
+       * if the type is known and principal, just eventually warn
+         if the real label was not in scope
+       * fail if there is no known type and no label found
+       * otherwise use other fields to reduce the list of candidates
+       * if there is no known type reduce it incrementally, so that
+         there is still at least one candidate (for error message)
+       * if the reduced list is valid, call Label.disambiguate
+     *)
+    let labels = Typetexp.find_all_labels env lid.loc lid.txt in
+    if opath = None && labels = [] then
+      Typetexp.unbound_label_error env lid;
+    let (ok, labels) =
+      match opath with
+        Some (_, true) -> (true, labels) (* disambiguate only checks scope *)
+      | _  -> disambiguate_label_by_ids (opath=None) env closed ids labels
+    in
+    if ok then Label.disambiguate lid env opath labels ~warn
+          else fst (List.hd labels) (* will fail later *)
+  in
+  let lbl_a_list =
+    List.map (fun (lid,a) -> lid, process_label lid, a) lid_a_list in
+  if !w_pr then
+    Location.prerr_warning loc
+      (Warnings.Not_principal "this type-based record disambiguation");
+  if !w_amb <> [] then 
+    Location.prerr_warning loc 
+      (Warnings.Ambiguous_name (List.rev !w_amb, true));
+  if !w_scope <> [] then 
+    Location.prerr_warning loc 
+      (Warnings.Name_out_of_scope (List.rev !w_scope, true));
+  lbl_a_list
 
 let rec find_record_qual = function
   | [] -> None
@@ -713,7 +715,7 @@ let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list =
                   | _ -> lid_a)
                 lid_a_list
         in
-        disambiguate_labels_a_list loc closed env opath lid_a_list
+        disambiguate_lid_a_list loc closed env opath lid_a_list
   in
   (* Invariant: records are sorted in the typed tree *)
   let lbl_a_list =
@@ -1992,7 +1994,8 @@ and type_expect ?in_function env sexp ty_expected =
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
-        type_label_a_list loc closed env (type_label_exp true env loc ty_expected)
+        type_label_a_list loc closed env
+          (type_label_exp true env loc ty_expected)
           opath lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with

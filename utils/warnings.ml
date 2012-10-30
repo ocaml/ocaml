@@ -310,13 +310,13 @@ let message = function
       s ^ " is used out of scope."
   | Name_out_of_scope (_, false) -> assert false
   | Name_out_of_scope (slist, true) -> 
-      "this record contains fields that are out of scope:\n "
+      "this record contains fields that are out of scope: "
       ^ String.concat " " slist ^ "."
   | Ambiguous_name ([s], false) -> 
       "this use of " ^ s ^ " is ambiguous."
   | Ambiguous_name (_, false) -> assert false
   | Ambiguous_name (slist, true) -> 
-      "this record contains fields that are ambiguous:\n "
+      "this record contains fields that are ambiguous: "
       ^ String.concat " " slist ^ "."
 ;;
 

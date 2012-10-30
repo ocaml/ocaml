@@ -67,8 +67,23 @@ let f (r:M.t) = r.x;;
 (* Use field information *)
 type u = {x:bool;y:int;z:char};;
 type t = {x:int;y:bool};;
-fun {x;z} -> x,z;;
+fun {x;z} -> x,z;; (* ok *)
+{x=true;z='z'};; (* fail for missing label *)
 
 type u = {x:int;y:bool};;
 type t = {x:bool;y:int;z:char};;
-{x=3; y=true};; 
+{x=3; y=true};; (* ok *)
+
+(* Corner cases *)
+
+type foo = {x:int; y:int};;
+type bar = {x:int};;
+let b : bar = {x=3; y=4};; (* fail but don't warn *)
+
+module M = struct type foo = {x:int;y:int} end;;
+module N = struct type bar = {x:int;y:int} end;;
+let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
+
+module MN = struct include M include N end
+module NM = struct include N include M end;;
+let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
