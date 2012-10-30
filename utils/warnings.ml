@@ -306,16 +306,16 @@ let message = function
         (However, this constructor appears in patterns.)"
   | Unused_rec_flag ->
       "unused rec flag."
-  | Name_out_of_scope ([s], false) -> 
+  | Name_out_of_scope ([s], false) ->
       s ^ " is used out of scope."
   | Name_out_of_scope (_, false) -> assert false
-  | Name_out_of_scope (slist, true) -> 
+  | Name_out_of_scope (slist, true) ->
       "this record contains fields that are out of scope: "
       ^ String.concat " " slist ^ "."
-  | Ambiguous_name ([s], false) -> 
+  | Ambiguous_name ([s], false) ->
       "this use of " ^ s ^ " is ambiguous."
   | Ambiguous_name (_, false) -> assert false
-  | Ambiguous_name (slist, true) -> 
+  | Ambiguous_name (slist, true) ->
       "this record contains fields that are ambiguous: "
       ^ String.concat " " slist ^ "."
 ;;

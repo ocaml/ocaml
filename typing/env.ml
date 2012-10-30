@@ -132,7 +132,7 @@ module EnvTbl =
       slot := true;
       x
 
-    let find_all s tbl = 
+    let find_all s tbl =
       let xs = Ident.find_all s tbl in
         List.map (fun (x, slot) -> (x, (fun () -> slot := true))) xs
 
@@ -580,11 +580,11 @@ let lookup_all_simple proj1 proj2 shadow lid env =
   match lid with
     Lident s ->
       let xl = EnvTbl.find_all s (proj1 env) in
-      let rec do_shadow = 
+      let rec do_shadow =
         function
         | [] -> []
-        | ((x, f) :: xs) -> 
-            (x, f) :: 
+        | ((x, f) :: xs) ->
+            (x, f) ::
               (do_shadow (List.filter (fun (y, g) -> not (shadow x y)) xs))
       in
         do_shadow xl
@@ -595,7 +595,7 @@ let lookup_all_simple proj1 proj2 shadow lid env =
           let comps =
             try Tbl.find s (proj2 c) with Not_found -> []
           in
-          List.map 
+          List.map
             (fun (data, pos) -> (data, (fun () -> ())))
             comps
       | Functor_comps f ->
@@ -695,7 +695,7 @@ let ty_path t =
 let lookup_constructor lid env =
   match lookup_all_constructors lid env with
     [] -> raise Not_found
-  | (desc, use) :: _ -> 
+  | (desc, use) :: _ ->
       mark_type_path env (ty_path desc.cstr_res);
       use ();
       desc
@@ -915,8 +915,8 @@ and components_of_module_maker (env, sub, path, mty) =
             let constructors = List.map snd (constructors_of_type path decl') in
             let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
-              Tbl.add (Ident.name id) 
-                ((decl', (constructors, labels)), nopos) 
+              Tbl.add (Ident.name id)
+                ((decl', (constructors, labels)), nopos)
                   c.comp_types;
             List.iter
               (fun descr ->
@@ -1336,7 +1336,7 @@ let find_all_simple_list proj1 proj2 f lid env acc =
       begin match EnvLazy.force components_of_module_maker desc with
           Structure_comps c ->
             Tbl.fold
-              (fun s comps acc -> 
+              (fun s comps acc ->
                 match comps with
                   [] -> acc
                 | (data, pos) :: _ ->

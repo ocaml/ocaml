@@ -526,17 +526,17 @@ let rec expand_path env p =
       end
   | _ -> p
 
-let get_label_type_path env lbl = 
+let get_label_type_path env lbl =
   match lbl.lbl_res.desc with
   | Tconstr(p, _, _) -> p
   | _ -> assert false
 
-let get_constructor_type_path env cstr = 
+let get_constructor_type_path env cstr =
   match cstr.cstr_res.desc with
   | Tconstr(p, _, _) -> p
   | _ -> assert false
 
-let compare_type_path env tpath1 tpath2 = 
+let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
 
 (* Records *)
@@ -557,14 +557,14 @@ module NameChoice(Name : sig
 end) = struct
   open Name
 
-  let is_ambiguous env lbl others = 
+  let is_ambiguous env lbl others =
     let tpath = get_type_path env lbl in
     let different_tpath (lbl, _) =
       let lbl_tpath = get_type_path env lbl in
       not (compare_type_path env tpath lbl_tpath)
     in
-    let others = 
-      List.filter different_tpath others 
+    let others =
+      List.filter different_tpath others
     in
     others <> []
 
@@ -588,35 +588,35 @@ end) = struct
             (* Check if non-principal type is affecting result *)
             match lbls with
               [] -> assert false
-            | (lbl', use') :: rest -> 
+            | (lbl', use') :: rest ->
                 let lbl_tpath = get_type_path env lbl' in
-                if not (compare_type_path env tpath lbl_tpath) then 
+                if not (compare_type_path env tpath lbl_tpath) then
                   warn lid.loc
-                    (Warnings.Not_principal 
+                    (Warnings.Not_principal
                        "this type-based field disambiguation")
-                else if is_ambiguous env lbl' rest then 
-                  warn lid.loc 
-                    (Warnings.Ambiguous_name 
+                else if is_ambiguous env lbl' rest then
+                  warn lid.loc
+                    (Warnings.Ambiguous_name
                        ([Longident.last lid.txt], false))
           end;
           lbl
-        with Not_found -> 
+        with Not_found ->
           let lbl = lookup_from_type env tpath lid.txt in
-          warn lid.loc 
-            (Warnings.Name_out_of_scope 
+          warn lid.loc
+            (Warnings.Name_out_of_scope
                ([Longident.last lid.txt], false));
-          if not pr then 
+          if not pr then
             warn lid.loc
               (Warnings.Not_principal "this type-based field disambiguation");
           lbl
-    with Not_found -> 
+    with Not_found ->
       match lbls with
         [] -> unbound_name_error env lid; assert false
-    | (lbl, use) :: rest -> 
+    | (lbl, use) :: rest ->
       use ();
-      if is_ambiguous env lbl rest then 
-        warn lid.loc 
-          (Warnings.Ambiguous_name 
+      if is_ambiguous env lbl rest then
+        warn lid.loc
+          (Warnings.Ambiguous_name
              ([Longident.last lid.txt], false));
       lbl
 end
@@ -640,7 +640,7 @@ let disambiguate_label_by_ids keep env closed ids labels =
   if keep && labels' = [] then (false, labels) else
   let labels'' = List.filter check_closed labels' in
   if keep & labels'' = [] then (false, labels') else (true, labels'')
-    
+
 (* Only issue warnings once per record constructor/pattern *)
 let disambiguate_lid_a_list loc closed env opath lid_a_list =
   let ids = List.map (fun (lid, _) -> Longident.last lid.txt) lid_a_list in
@@ -680,11 +680,11 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
   if !w_pr then
     Location.prerr_warning loc
       (Warnings.Not_principal "this type-based record disambiguation");
-  if !w_amb <> [] then 
-    Location.prerr_warning loc 
+  if !w_amb <> [] then
+    Location.prerr_warning loc
       (Warnings.Ambiguous_name (List.rev !w_amb, true));
-  if !w_scope <> [] then 
-    Location.prerr_warning loc 
+  if !w_scope <> [] then
+    Location.prerr_warning loc
       (Warnings.Name_out_of_scope (List.rev !w_scope, true));
   lbl_a_list
 
@@ -2067,7 +2067,7 @@ and type_expect ?in_function env sexp ty_expected =
         generalize_structure record.exp_type
       end;
       let ty_exp = record.exp_type in
-      let opath = 
+      let opath =
 	try
 	  let (p,_) = extract_concrete_typedecl env ty_exp in
 	    Some(p, ty_exp.level = generic_level || not !Clflags.principal)
@@ -2600,7 +2600,7 @@ and type_label_access env loc srecord lid =
     generalize_structure record.exp_type
   end;
   let ty_exp = record.exp_type in
-  let opath = 
+  let opath =
     try
       let (p,_) = extract_concrete_typedecl env ty_exp in
       Some(p, ty_exp.level = generic_level || not !Clflags.principal)
@@ -2920,7 +2920,7 @@ and type_application env funct sargs =
         type_args [] [] ty (instance env ty) ty sargs []
 
 and type_construct env loc lid sarg explicit_arity ty_expected =
-  let opath = 
+  let opath =
     try
       let (p,_) = extract_concrete_typedecl env ty_expected in
 	Some(p, ty_expected.level = generic_level || not !Clflags.principal)
