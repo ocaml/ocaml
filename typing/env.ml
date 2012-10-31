@@ -731,7 +731,7 @@ let lookup_label lid env =
       use ();
       desc
 
-let lookup_all_label lid env =
+let lookup_all_labels lid env =
   try
     let lbls = lookup_all_labels lid env in
     let wrap_use desc use () =
