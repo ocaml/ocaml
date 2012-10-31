@@ -33,6 +33,7 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
+  | Wrong_name of string * Path.t * string
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
@@ -551,6 +552,7 @@ let lookup_label_from_type env tpath lid =
 
 module NameChoice(Name : sig
   type t
+  val type_kind: string
   val get_type_path: Env.t -> t -> Path.t
   val lookup_from_type: Env.t -> Path.t -> Longident.t -> t
   val unbound_name_error: Env.t -> Longident.t loc -> unit
@@ -575,54 +577,57 @@ end) = struct
     in
     List.find check_type lbls
 
-  let disambiguate ?(warn=Location.prerr_warning) lid env opath lbls =
-    try match opath with
-      None -> raise Not_found
+  let disambiguate ?(warn=Location.prerr_warning) ?scope lid env opath lbls =
+    match opath with
+      None ->
+	begin match lbls with
+          [] -> unbound_name_error env lid; assert false
+	| (lbl, use) :: rest ->
+	    use ();
+	    if is_ambiguous env lbl rest then
+	      warn lid.loc
+		(Warnings.Ambiguous_name ([Longident.last lid.txt], false));
+	    lbl
+	end
     | Some(tpath, pr) ->
+	let scope = match scope with None -> lbls | Some l -> l in
+	let warn_pr () =
+	  let kind = if type_kind = "record" then "label" else "constructor" in
+          warn lid.loc
+            (Warnings.Not_principal
+	       ("this type-based " ^ kind ^ " disambiguation"))
+	in
         try
-          let lbl, use = disambiguate_by_type env tpath lbls in
+          let lbl, use = disambiguate_by_type env tpath scope in
           use ();
           (* Strange: why do we need to mark type by hand? *)
           Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
           if not pr then begin
             (* Check if non-principal type is affecting result *)
             match lbls with
-              [] -> assert false
+              [] -> warn_pr ()
             | (lbl', use') :: rest ->
                 let lbl_tpath = get_type_path env lbl' in
-                if not (compare_type_path env tpath lbl_tpath) then
-                  warn lid.loc
-                    (Warnings.Not_principal
-                       "this type-based field disambiguation")
+                if not (compare_type_path env tpath lbl_tpath) then warn_pr ()
                 else if is_ambiguous env lbl' rest then
                   warn lid.loc
-                    (Warnings.Ambiguous_name
-                       ([Longident.last lid.txt], false))
+                    (Warnings.Ambiguous_name ([Longident.last lid.txt], false))
           end;
           lbl
-        with Not_found ->
+        with Not_found -> try
           let lbl = lookup_from_type env tpath lid.txt in
           warn lid.loc
-            (Warnings.Name_out_of_scope
-               ([Longident.last lid.txt], false));
-          if not pr then
-            warn lid.loc
-              (Warnings.Not_principal "this type-based field disambiguation");
+            (Warnings.Name_out_of_scope ([Longident.last lid.txt], false));
+          if not pr then warn_pr ();
           lbl
-    with Not_found ->
-      match lbls with
-        [] -> unbound_name_error env lid; assert false
-    | (lbl, use) :: rest ->
-      use ();
-      if is_ambiguous env lbl rest then
-        warn lid.loc
-          (Warnings.Ambiguous_name
-             ([Longident.last lid.txt], false));
-      lbl
+	with Not_found ->
+	  raise (Error (lid.loc, Wrong_name
+			  (type_kind, tpath, Longident.last lid.txt)))
 end
 
 module Label = NameChoice (struct
   type t = label_description
+  let type_kind = "record"
   let get_type_path = get_label_type_path
   let lookup_from_type = lookup_label_from_type
   let unbound_name_error = Typetexp.unbound_label_error
@@ -664,15 +669,15 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
          there is still at least one candidate (for error message)
        * if the reduced list is valid, call Label.disambiguate
      *)
-    let labels = Typetexp.find_all_labels env lid.loc lid.txt in
-    if opath = None && labels = [] then
+    let scope = Typetexp.find_all_labels env lid.loc lid.txt in
+    if opath = None && scope = [] then
       Typetexp.unbound_label_error env lid;
     let (ok, labels) =
       match opath with
-        Some (_, true) -> (true, labels) (* disambiguate only checks scope *)
-      | _  -> disambiguate_label_by_ids (opath=None) env closed ids labels
+        Some (_, true) -> (true, scope) (* disambiguate only checks scope *)
+      | _  -> disambiguate_label_by_ids (opath=None) env closed ids scope
     in
-    if ok then Label.disambiguate lid env opath labels ~warn
+    if ok then Label.disambiguate lid env opath labels ~warn ~scope
           else fst (List.hd labels) (* will fail later *)
   in
   let lbl_a_list =
@@ -680,7 +685,7 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
   if !w_pr then
     Location.prerr_warning loc
       (Warnings.Not_principal "this type-based record disambiguation");
-  if !w_amb <> [] then
+  if !w_amb <> [] && not !w_pr then
     Location.prerr_warning loc
       (Warnings.Ambiguous_name (List.rev !w_amb, true));
   if !w_scope <> [] then
@@ -743,6 +748,7 @@ let lookup_constructor_from_type env tpath lid =
 
 module Constructor = NameChoice (struct
   type t = constructor_description
+  let type_kind = "variant"
   let get_type_path = get_constructor_type_path
   let lookup_from_type = lookup_constructor_from_type
   let unbound_name_error = Typetexp.unbound_constructor_error
@@ -3378,10 +3384,13 @@ let report_error ppf = function
   | Label_missing labels ->
       let print_labels ppf =
         List.iter (fun lbl -> fprintf ppf "@ %s" (Ident.name lbl)) in
-      fprintf ppf "@[<hov>Some record field labels are undefined:%a@]"
+      fprintf ppf "@[<hov>Some record fields are undefined:%a@]"
         print_labels labels
   | Label_not_mutable lid ->
-      fprintf ppf "The record field label %a is not mutable" longident lid
+      fprintf ppf "The record field %a is not mutable" longident lid
+  | Wrong_name (kind, p, s) ->
+      fprintf ppf "The %s type %a has no %s %s" kind path p
+	(if kind = "record" then "field" else "constructor") s
   | Incomplete_format s ->
       fprintf ppf "Premature end of format string ``%S''" s
   | Bad_conversion (fmt, i, c) ->
