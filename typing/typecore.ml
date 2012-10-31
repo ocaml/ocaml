@@ -33,7 +33,7 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * Path.t * string
+  | Wrong_name of string * Path.t * Longident.t
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
@@ -621,8 +621,7 @@ end) = struct
           if not pr then warn_pr ();
           lbl
 	with Not_found ->
-	  raise (Error (lid.loc, Wrong_name
-			  (type_kind, tpath, Longident.last lid.txt)))
+	  raise (Error (lid.loc, Wrong_name (type_kind, tpath, lid.txt)))
 end
 
 module Label = NameChoice (struct
@@ -3388,9 +3387,10 @@ let report_error ppf = function
         print_labels labels
   | Label_not_mutable lid ->
       fprintf ppf "The record field %a is not mutable" longident lid
-  | Wrong_name (kind, p, s) ->
-      fprintf ppf "The %s type %a has no %s %s" kind path p
-	(if kind = "record" then "field" else "constructor") s
+  | Wrong_name (kind, p, lid) ->
+      fprintf ppf "The %s type %a has no %s %a" kind path p
+	(if kind = "record" then "label" else "constructor")
+	longident lid
   | Incomplete_format s ->
       fprintf ppf "Premature end of format string ``%S''" s
   | Bad_conversion (fmt, i, c) ->

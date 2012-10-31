@@ -58,9 +58,7 @@ module OK : sig val f : M.t -> int end
     module N : sig type s = t = { x : int; } end
     type u = { x : bool; }
   end
-#       Characters 63-78:
-  Warning 34: unused type s.
-module OK : sig val f : M.t -> int end
+#       module OK : sig val f : M.t -> int end
 #           module M :
   sig
     type u = { x : bool; y : int; z : char; }
@@ -72,9 +70,6 @@ module OK : sig val f : M.t -> int end
 Warning 9: the following labels are not bound in this record pattern:
 y
 Either bind these labels explicitly or add '; _' to the pattern.
-Characters 54-79:
-  ......(* ok *)
-  Warning 34: unused type u.
 Characters 87-105:
   Warning 34: unused type t.
 module OK : sig val f : M.u -> bool * char end
@@ -91,7 +86,7 @@ Error: Some record fields are undefined: y
 #               Characters 111-112:
     let b : bar = {x=3; y=4}
                         ^
-Error: The record type bar has no field y
+Error: The record type bar has no label y
 #   module M : sig type foo = { x : int; y : int; } end
 # module N : sig type bar = { x : int; y : int; } end
 # Characters 19-22:
@@ -126,7 +121,7 @@ Error: The record field label NM.y belongs to the type NM.foo = M.foo
 #       Characters 72-73:
     let f r = ignore (r: foo); {r with x = 2; z = 3}
                                               ^
-Error: The record type M.foo has no field z
+Error: The record type M.foo has no label z
 #       module M :
   sig
     type foo = M.foo = { x : int; y : int; }
@@ -136,9 +131,15 @@ Error: The record type M.foo has no field z
 #       Characters 73-74:
     let f r = ignore (r: foo); { r with x = 3; a = 4 }
                                                ^
-Error: The record type M.foo has no field a
+Error: The record type M.foo has no label a
 #         Characters 67-68:
     let r: other = {x=1; y=2}
                     ^
-Error: The record type M.other has no field x
+Error: The record type M.other has no label x
+#     module A : sig type t = { x : int; } end
+module B : sig type t = { x : int; } end
+# Characters 20-23:
+  let f (r : B.t) = r.A.x;; (* fail *)
+                      ^^^
+Error: The record type B.t has no label A.x
 # 

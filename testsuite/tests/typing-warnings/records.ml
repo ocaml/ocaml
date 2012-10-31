@@ -115,3 +115,7 @@ module F7 = struct
   let r = {x=1; y=2}
   let r: other = {x=1; y=2}
 end;;
+
+module A = struct type t = {x: int} end
+module B = struct type t = {x: int} end;;
+let f (r : B.t) = r.A.x;; (* fail *)
