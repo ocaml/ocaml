@@ -142,7 +142,7 @@ class printer  ()= object(self:'self)
         | Some x -> pp f "%(%)%a%(%)" first fu x last
   method paren: 'a . bool -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit =
     fun b fu f x ->
-      if b then pp f "(%a)" fu  x
+      if b then pp f "(@;%a@;)" fu  x
       else fu f x
   method longident f = function
     | Lident s -> pp f "%s" s
@@ -150,7 +150,7 @@ class printer  ()= object(self:'self)
       | 'a'..'z' | 'A' .. 'Z' ->
           pp f "%a.%s" self#longident y s
       | _ ->
-          pp f "%a.(@ %s@ )@ " self#longident y s)
+          pp f "%a.(@;%s@;)@ " self#longident y s)
     | Lapply (y,s)->
         pp f "%a(%a)" self#longident y self#longident s
   method longident_loc f x = pp f "%a" self#longident x.txt
@@ -360,14 +360,18 @@ class printer  ()= object(self:'self)
         pp f "#%a" self#longident_loc li
     | Ppat_record (l, closed) ->
         let longident_x_pattern f (li, p) =
-          pp f "@[<2>%a@;=@;%a@]" self#longident_loc li self#pattern1 p in (* FIXME desugar the syntax sugar*)
+          match (li,p.ppat_desc) with
+          | ({txt=Lident s;_ },Ppat_var {txt;_} ) when s = txt ->
+              pp f "@[<2>%a@]"  self#longident_loc li 
+          | _ -> 
+            pp f "@[<2>%a@;=@;%a@]" self#longident_loc li self#pattern1 p in
         (match closed with
         |Closed -> 
-            pp f "@[<2>{%a}@]"
-              (self#list longident_x_pattern ~sep:";") l
+            pp f "@[<2>{@;%a@;}@]"
+              (self#list longident_x_pattern ~sep:";@:") l
         | _ -> 
-            pp f "@[<2>{%a;_}@]"
-              (self#list longident_x_pattern ~sep:";") l)
+            pp f "@[<2>{@;%a;_}@]"
+              (self#list longident_x_pattern ~sep:";@;") l)
     | Ppat_tuple l -> pp f "@[<1>(%a)@]" (self#list  ~sep:"," self#pattern1)  l (* level1*)
     | Ppat_constant (c) -> pp f "%a" self#constant c
     | Ppat_variant (l,None) ->  pp f "`%s" l
@@ -556,9 +560,13 @@ class printer  ()= object(self:'self)
           (self#option self#core_type ~first:"@ :>") cto2
     | Pexp_variant (l, None) -> pp f "`%s" l 
     | Pexp_record (l, eo) ->
-        let longident_x_expression f (li, e) =
-          pp f "@[<hov2>%a@;=@;%a@]" self#longident_loc li self#simple_expr e in 
-        pp f "@[<hv0>@[<hv2>{%a%a@]@;}@]"(* "@[<hov2>{%a%a}@]" *)
+        let longident_x_expression f ( li, e) =
+          match e.pexp_desc with
+          |  Pexp_ident {txt;_} when li.txt = txt ->
+              pp f "@[<hov2>%a@]" self#longident_loc li
+          | _ -> 
+              pp f "@[<hov2>%a@;=@;%a@]" self#longident_loc li self#simple_expr e in 
+        pp f "@[<hv0>@[<hv2>{@;%a%a@]@;}@]"(* "@[<hov2>{%a%a}@]" *)
           (self#option ~last:" with@;" self#simple_expr) eo
           (self#list longident_x_expression ~sep:";@;")  l
     | Pexp_array (l) ->
