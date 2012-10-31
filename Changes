@@ -5,7 +5,7 @@ Compilers:
 - PR#5634: parsetree rewriter (-ppx flag)
 - ocamldep now supports -absname
 - PR#5768: On "unbound identifier" errors, use spell-checking to suggest names present in the environment
-
+- ocamlc has a new option -dsource which visualize the parsetree
 Bug fixes:
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4994: ocaml-mode doesn't work with xemacs21
