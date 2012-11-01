@@ -33,7 +33,7 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * Path.t * Longident.t
+  | Wrong_name of string * Env.t * Path.t * Longident.t
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
@@ -527,37 +527,40 @@ let rec expand_path env p =
       end
   | _ -> p
 
-let get_label_type_path env lbl =
-  match lbl.lbl_res.desc with
-  | Tconstr(p, _, _) -> p
-  | _ -> assert false
-
-let get_constructor_type_path env cstr =
-  match cstr.cstr_res.desc with
-  | Tconstr(p, _, _) -> p
-  | _ -> assert false
-
 let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
 
 (* Records *)
 
-let lookup_label_from_type env tpath lid =
-  let (_, labels) = Env.find_type_descrs tpath env in
-  Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
-  match lid with
-    Longident.Lident s ->
-      List.find (fun lbl -> lbl.lbl_name = s) labels
-  | _ -> raise Not_found
-
 module NameChoice(Name : sig
   type t
   val type_kind: string
-  val get_type_path: Env.t -> t -> Path.t
-  val lookup_from_type: Env.t -> Path.t -> Longident.t -> t
+  val get_name: t -> string
+  val get_type: t -> type_expr
+  val get_descrs: Env.type_descriptions -> t list
+  val fold: (t -> 'a -> 'a) -> Longident.t option -> Env.t -> 'a -> 'a
   val unbound_name_error: Env.t -> Longident.t loc -> unit
 end) = struct
   open Name
+
+  let get_type_path env d =
+    match (get_type d).desc with
+    | Tconstr(p, _, _) -> p
+    | _ -> assert false
+
+  let spellcheck ppf env p lid =
+    Typetexp.spellcheck_simple ppf fold
+      (fun d ->
+	if compare_type_path env p (get_type_path env d)
+	then get_name d else "") env lid
+
+  let lookup_from_type env tpath lid =
+    let descrs = get_descrs (Env.find_type_descrs tpath env) in
+    Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
+    match lid with
+      Longident.Lident s ->
+	List.find (fun nd -> get_name nd = s) descrs
+    | _ -> raise Not_found
 
   let is_ambiguous env lbl others =
     let tpath = get_type_path env lbl in
@@ -621,14 +624,16 @@ end) = struct
           if not pr then warn_pr ();
           lbl
 	with Not_found ->
-	  raise (Error (lid.loc, Wrong_name (type_kind, tpath, lid.txt)))
+	  raise (Error (lid.loc, Wrong_name (type_kind, env, tpath, lid.txt)))
 end
 
 module Label = NameChoice (struct
   type t = label_description
   let type_kind = "record"
-  let get_type_path = get_label_type_path
-  let lookup_from_type = lookup_label_from_type
+  let get_name lbl = lbl.lbl_name
+  let get_type lbl = lbl.lbl_res
+  let get_descrs = snd
+  let fold = Env.fold_labels
   let unbound_name_error = Typetexp.unbound_label_error
 end)
 
@@ -748,8 +753,10 @@ let lookup_constructor_from_type env tpath lid =
 module Constructor = NameChoice (struct
   type t = constructor_description
   let type_kind = "variant"
-  let get_type_path = get_constructor_type_path
-  let lookup_from_type = lookup_constructor_from_type
+  let get_name cstr = cstr.cstr_name
+  let get_type cstr = cstr.cstr_res
+  let get_descrs = fst
+  let fold = Env.fold_constructors
   let unbound_name_error = Typetexp.unbound_constructor_error
 end)
 
@@ -3387,10 +3394,12 @@ let report_error ppf = function
         print_labels labels
   | Label_not_mutable lid ->
       fprintf ppf "The record field %a is not mutable" longident lid
-  | Wrong_name (kind, p, lid) ->
+  | Wrong_name (kind, env, p, lid) ->
       fprintf ppf "The %s type %a has no %s %a" kind path p
 	(if kind = "record" then "label" else "constructor")
-	longident lid
+	longident lid;
+      if kind = "record" then Label.spellcheck ppf env p lid
+                         else Constructor.spellcheck ppf env p lid
   | Incomplete_format s ->
       fprintf ppf "Premature end of format string ``%S''" s
   | Bad_conversion (fmt, i, c) ->

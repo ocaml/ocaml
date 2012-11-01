@@ -142,4 +142,9 @@ module B : sig type t = { x : int; } end
   let f (r : B.t) = r.A.x;; (* fail *)
                       ^^^
 Error: The record type B.t has no label A.x
+#             Characters 88-91:
+    let a : t = {x=1;yyz=2}
+                     ^^^
+Error: The record type t has no label yyz
+Did you mean yyy?
 # 

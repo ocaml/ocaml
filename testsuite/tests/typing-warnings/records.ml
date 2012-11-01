@@ -119,3 +119,10 @@ end;;
 module A = struct type t = {x: int} end
 module B = struct type t = {x: int} end;;
 let f (r : B.t) = r.A.x;; (* fail *)
+
+(* Spellchecking *)
+
+module F8 = struct
+  type t = {x:int; yyy:int}
+  let a : t = {x=1;yyz=2}
+end;;

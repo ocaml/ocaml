@@ -733,6 +733,8 @@ let spellcheck_simple ppf fold extr =
 let spellcheck ppf fold =
   spellcheck ppf (fun f -> fold (fun s _ _ x -> f s x))
 
+type cd = string list * int
+
 let report_error ppf = function
   | Unbound_type_variable name ->
     fprintf ppf "Unbound type parameter %s@." name
@@ -810,7 +812,8 @@ let report_error ppf = function
       spellcheck ppf Env.fold_modules env lid;
   | Unbound_constructor (env, lid) ->
       fprintf ppf "Unbound constructor %a" longident lid;
-      spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name) env lid;
+      spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name)
+	env lid;
   | Unbound_label (env, lid) ->
       fprintf ppf "Unbound record field label %a" longident lid;
       spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;

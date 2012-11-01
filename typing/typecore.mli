@@ -75,7 +75,7 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * Path.t * Longident.t
+  | Wrong_name of string * Env.t * Path.t * Longident.t
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string

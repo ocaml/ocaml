@@ -101,3 +101,9 @@ val find_class_type:
 
 val unbound_constructor_error: Env.t -> Longident.t Location.loc -> unit
 val unbound_label_error: Env.t -> Longident.t Location.loc -> unit
+
+type cd
+val spellcheck_simple:
+    Format.formatter ->
+    (('a -> cd -> cd) -> Longident.t option -> 'b -> cd -> cd) ->
+    ('a -> string) -> 'b -> Longident.t -> unit
