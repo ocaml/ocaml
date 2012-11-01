@@ -368,7 +368,7 @@ class printer  ()= object(self:'self)
         (match closed with
         |Closed -> 
             pp f "@[<2>{@;%a@;}@]"
-              (self#list longident_x_pattern ~sep:";@:") l
+              (self#list longident_x_pattern ~sep:";@;") l
         | _ -> 
             pp f "@[<2>{@;%a;_}@]"
               (self#list longident_x_pattern ~sep:";@;") l)
