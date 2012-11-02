@@ -71,8 +71,8 @@ class printer :
       (Format.formatter -> 'a -> unit) ->
       Format.formatter -> 'a option -> unit
     method paren :
-      bool ->
-      (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit
+        ?first:space_formatter -> ?last:space_formatter -> bool ->
+          (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit
     method pattern : Format.formatter -> Parsetree.pattern -> unit
     method pattern1 : Format.formatter -> Parsetree.pattern -> unit
     method private_flag : Format.formatter -> Asttypes.private_flag -> unit
@@ -115,8 +115,9 @@ val default : printer
 val toplevel_phrase : Format.formatter -> Parsetree.toplevel_phrase -> unit
 val expression : Format.formatter -> Parsetree.expression -> unit
 val string_of_expression : Parsetree.expression -> string
-val top_phrase : Format.formatter -> Parsetree.toplevel_phrase -> unit
-val core_type : Format.formatter -> Parsetree.core_type -> unit
-val pattern : Format.formatter -> Parsetree.pattern -> unit
-val signature : Format.formatter -> Parsetree.signature -> unit
-val structure : Format.formatter -> Parsetree.structure -> unit
+val top_phrase: Format.formatter -> Parsetree.toplevel_phrase -> unit
+val core_type: Format.formatter -> Parsetree.core_type -> unit
+val pattern: Format.formatter -> Parsetree.pattern -> unit
+val signature: Format.formatter -> Parsetree.signature -> unit
+val structure: Format.formatter -> Parsetree.structure -> unit
+val string_of_structure: Parsetree.structure -> string

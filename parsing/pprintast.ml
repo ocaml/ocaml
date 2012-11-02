@@ -140,14 +140,15 @@ class printer  ()= object(self:'self)
         match a with
         | None -> ()
         | Some x -> pp f "%(%)%a%(%)" first fu x last
-  method paren: 'a . bool -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit =
-    fun b fu f x ->
-      if b then pp f "(@;%a@;)" fu  x
+  method paren: 'a . ?first:space_formatter -> ?last:space_formatter ->
+    bool -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit =
+    fun  ?(first="") ?(last="") b fu f x ->
+      if b then pp f "(%(%)%a%(%))" first fu  x last
       else fu f x
   method longident f = function
     | Lident s -> pp f "%s" s
     | Ldot(y,s) -> (match s.[0] with
-      | 'a'..'z' | 'A' .. 'Z' ->
+      | 'a'..'z' | 'A' .. 'Z' when not(is_infix (fixity_of_string s)) ->
           pp f "%a.%s" self#longident y s
       | _ ->
           pp f "%a.(@;%s@;)@ " self#longident y s)
@@ -155,17 +156,18 @@ class printer  ()= object(self:'self)
         pp f "%a(%a)" self#longident y self#longident s
   method longident_loc f x = pp f "%a" self#longident x.txt
   method constant f  = function
-    | Const_int i -> pp f "%d" i
     | Const_char i -> pp f "%C"  i 
     | Const_string i -> pp f "%S" i
-    | Const_float  i -> pp f "%s" i 
-    | Const_int32 i -> pp f "%ldl" i
-    | Const_int64 i -> pp f "%LdL" i
-    | Const_nativeint i -> pp f "%ndn" i
-          (* trailing space*)        
+    | Const_int i -> self#paren (i<0) (fun f -> pp f "%d") f i
+    | Const_float  i -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i 
+    | Const_int32 i -> self#paren (i<0l) (fun f -> pp f "%ldl") f i
+    | Const_int64 i -> self#paren (i<0L) (fun f -> pp f "%LdL") f i (* pp f "%LdL" i *)
+    | Const_nativeint i -> self#paren (i<0n) (fun f -> pp f "%ndn") f i (* pp f "%ndn" i *)
+
+  (* trailing space*)        
   method mutable_flag f   = function
     | Immutable -> ()
-    | Mutable -> pp f "mutable@ "
+    | Mutable -> pp f "mutable@;"
   method virtual_flag f  = function
     | Concrete -> ()
     | Virtual -> pp f "virtual@;"
@@ -432,8 +434,11 @@ class printer  ()= object(self:'self)
     | _ -> false
   method expression f x =
     match x.pexp_desc with
-    | Pexp_function _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _  when pipe || semi ->
+    | Pexp_function _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
+    | Pexp_let _
+      when pipe || semi ->
         self#paren true self#reset#expression f x
+    
     | Pexp_function (p, eo, l) ->
         ( match l with
         | [(p',e')] ->
@@ -508,8 +513,8 @@ class printer  ()= object(self:'self)
     | Pexp_letmodule (s, me, e) ->
         pp f "@[<hov2>let@ module@ %s@ =@ %a@ in@ %a@]" s.txt
           self#reset#module_expr me  self#expression e
-    | Pexp_assert (e) ->
-        pp f "@[<hov2>assert@ %a@]" self#expression e 
+    | Pexp_assert e ->
+        pp f "@[<hov2>assert@ %a@]" self#simple_expr e 
     | Pexp_assertfalse ->
         pp f "@[<2>assert@;false@]" ;
     | Pexp_lazy (e) ->
@@ -546,7 +551,7 @@ class printer  ()= object(self:'self)
         let flag = is_infix (view_fixity_of_exp x) || (match li.txt with
         | Lident li -> List.mem li.[0] prefix_symbols
         | _ -> false) in 
-        self#paren flag self#longident_loc f li 
+          self#paren flag ~first:" " ~last:" " self#longident_loc f li 
     | Pexp_constant c -> self#constant f c;
     | Pexp_pack me ->
         pp f "(module@;%a)"  self#module_expr me
@@ -831,7 +836,7 @@ class printer  ()= object(self:'self)
     | Pmod_unpack e ->
         pp f "(val@ %a)"  self#expression  e
 
-  method structure f x = self#list ~sep:"@." self#structure_item f x
+  method structure f x = self#list ~sep:"@\n" self#structure_item f x
 
   (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)    
   method binding f ((p:pattern),(x:expression)) =
@@ -863,7 +868,7 @@ class printer  ()= object(self:'self)
   method structure_item f x = begin
     match x.pstr_desc with
     | Pstr_eval (e) ->
-        pp f "@[<hov2>let@ _=@ %a@]" self#expression e 
+        pp f "@[<hov2>let@ _ =@ %a@]" self#expression e 
     | Pstr_type [] -> assert false
     | Pstr_type l  -> self#type_def_list f l 
     | Pstr_value (rf, l) -> pp f "@[<hov2>let %a%a@]"  self#rec_flag rf self#bindings l
@@ -1082,6 +1087,11 @@ let string_of_expression x =
   let f = str_formatter in
   default#expression f x ;
   flush_str_formatter () ;;
+let string_of_structure x =
+  ignore (flush_str_formatter ());
+  let f = str_formatter in
+  default#structure f x;
+  flush_str_formatter ();;
 
 let top_phrase f x =
   pp_print_newline f () ;
