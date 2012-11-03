@@ -77,8 +77,12 @@ class printer :
     method pattern1 : Format.formatter -> Parsetree.pattern -> unit
     method private_flag : Format.formatter -> Asttypes.private_flag -> unit
     method rec_flag : Format.formatter -> Asttypes.rec_flag -> unit
+
     method reset : 'b
     method reset_semi : 'b
+    method reset_ifthenelse : 'b
+    method reset_pipe : 'b
+        
     method signature :
       Format.formatter -> Parsetree.signature_item list -> unit
     method signature_item :
@@ -107,6 +111,7 @@ class printer :
     method tyvar : Format.formatter -> string -> unit
     method under_pipe : 'b
     method under_semi : 'b
+    method under_ifthenelse : 'b
     method value_description :
       Format.formatter -> Parsetree.value_description -> unit
     method virtual_flag : Format.formatter -> Asttypes.virtual_flag -> unit
