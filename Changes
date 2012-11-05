@@ -8,6 +8,7 @@ Bug fixes:
 - PR#5772: problem with marshaling of mutually-recursive functions
 - PR#5775: several bug fixes for tools/pprintast.ml
 - PR#5785: misbehaviour with abstracted structural type used as GADT index
+- PR#5806: ensure that backtrace tests are always run (testsuite)
 
 
 OCaml 4.00.1:
