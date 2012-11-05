@@ -18,9 +18,10 @@ class printer :
     val semi : bool
     method binding :
       Format.formatter -> Parsetree.pattern * Parsetree.expression -> unit
-    method bindings :
-      Format.formatter ->
-      (Parsetree.pattern * Parsetree.expression) list -> unit
+    method bindings:
+        Format.formatter ->
+          Asttypes.rec_flag * (Parsetree.pattern * Parsetree.expression) list ->
+            unit
     method case_list :
       Format.formatter ->
       (Parsetree.pattern * Parsetree.expression) list -> unit
