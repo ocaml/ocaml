@@ -977,6 +977,9 @@ let rec transl = function
             | Pbigarray_native_int -> transl_unbox_int Pnativeint argnewval
             | _ -> untag_int (transl argnewval))
             dbg)
+      | (Pbigarraydim(n), [b]) ->
+          let dim_ofs = 4 + n in
+          tag_int (Cop(Cload Word, [field_address (transl b) dim_ofs]))
       | (p, [arg]) ->
           transl_prim_1 p arg dbg
       | (p, [arg1; arg2]) ->

@@ -374,6 +374,7 @@ let comp_primitive p args =
   | Pbintcomp(bi, Cge) -> Kccall("caml_greaterequal", 2)
   | Pbigarrayref(_, n, _, _) -> Kccall("caml_ba_get_" ^ string_of_int n, n + 1)
   | Pbigarrayset(_, n, _, _) -> Kccall("caml_ba_set_" ^ string_of_int n, n + 2)
+  | Pbigarraydim(n) -> Kccall("caml_ba_dim_" ^ string_of_int n, 1)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max

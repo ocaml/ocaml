@@ -446,7 +446,7 @@ module Array1 : sig
      determine the array element kind and the array layout
      as described for [Genarray.create]. *)
 
-  val dim: ('a, 'b, 'c) t -> int
+  external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the size (dimension) of the given one-dimensional
      big array. *)
 
@@ -526,10 +526,10 @@ module Array2 :
      determine the array element kind and the array layout
      as described for {!Bigarray.Genarray.create}. *)
 
-  val dim1: ('a, 'b, 'c) t -> int
+  external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given two-dimensional big array. *)
 
-  val dim2: ('a, 'b, 'c) t -> int
+  external dim2: ('a, 'b, 'c) t -> int = "%caml_ba_dim_2"
   (** Return the second dimension of the given two-dimensional big array. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
@@ -629,13 +629,13 @@ module Array3 :
      [kind] and [layout] determine the array element kind and
      the array layout as described for {!Bigarray.Genarray.create}. *)
 
-  val dim1: ('a, 'b, 'c) t -> int
+  external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given three-dimensional big array. *)
 
-  val dim2: ('a, 'b, 'c) t -> int
+  external dim2: ('a, 'b, 'c) t -> int = "%caml_ba_dim_2"
   (** Return the second dimension of the given three-dimensional big array. *)
 
-  val dim3: ('a, 'b, 'c) t -> int
+  external dim3: ('a, 'b, 'c) t -> int = "%caml_ba_dim_3"
   (** Return the third dimension of the given three-dimensional big array. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"

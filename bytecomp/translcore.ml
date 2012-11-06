@@ -272,7 +272,10 @@ let primitives_table = create_hashtable 57 [
   "%caml_ba_unsafe_set_2",
     Pbigarrayset(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
   "%caml_ba_unsafe_set_3",
-    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout)
+    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_dim_1", Pbigarraydim(1);
+  "%caml_ba_dim_2", Pbigarraydim(2);
+  "%caml_ba_dim_3", Pbigarraydim(3);
 ]
 
 let prim_makearray =

@@ -84,6 +84,8 @@ type primitive =
   (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
   | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
   | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
+  (* size of the nth dimension of a big array *)
+  | Pbigarraydim of int
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

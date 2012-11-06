@@ -41,6 +41,7 @@ Internals:
 
 Feature wishes:
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM
+- PR#5762: Add primitives for fast access to bigarray dimensions
 
 
 OCaml 4.00.2:

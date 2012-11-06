@@ -475,6 +475,21 @@ CAMLprim value caml_ba_dim(value vb, value vn)
   return Val_long(b->dim[n]);
 }
 
+CAMLprim value caml_ba_dim_1(value vb)
+{
+  return caml_ba_dim(vb, Val_int(0));
+}
+
+CAMLprim value caml_ba_dim_2(value vb)
+{
+  return caml_ba_dim(vb, Val_int(1));
+}
+
+CAMLprim value caml_ba_dim_3(value vb)
+{
+  return caml_ba_dim(vb, Val_int(2));
+}
+
 /* Return the kind of a big array */
 
 CAMLprim value caml_ba_kind(value vb)
