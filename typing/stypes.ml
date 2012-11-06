@@ -71,15 +71,23 @@ let cmp_ti_inner_first ti1 ti2 =
 
 let print_position pp pos =
   if pos = dummy_pos then
-    fprintf pp "--"
-  else
-    fprintf pp "%S %d %d %d" pos.pos_fname pos.pos_lnum pos.pos_bol
-                             pos.pos_cnum;
+    pp_print_string pp "--"
+  else begin
+    pp_print_char pp '\"';
+    pp_print_string pp (String.escaped pos.pos_fname);
+    pp_print_char pp '\"';
+    pp_print_char pp ' ';
+    pp_print_int pp pos.pos_lnum;
+    pp_print_char pp ' ';
+    pp_print_int pp pos.pos_bol;
+    pp_print_char pp ' ';
+    pp_print_int pp pos.pos_cnum;
+  end
 ;;
 
 let print_location pp loc =
   print_position pp loc.loc_start;
-  fprintf pp " ";
+  pp_print_char pp ' ';
   print_position pp loc.loc_end;
 ;;
 
@@ -115,9 +123,22 @@ let call_kind_string k =
 
 let print_ident_annot pp str k =
   match k with
-  | Idef l -> fprintf pp "def %s %a@." str print_location l;
-  | Iref_internal l -> fprintf pp "int_ref %s %a@." str print_location l;
-  | Iref_external -> fprintf pp "ext_ref %s@." str;
+  | Idef l ->
+      pp_print_string pp "def ";
+      pp_print_string pp str;
+      pp_print_char pp ' ';
+      print_location pp l;
+      pp_print_newline pp ()
+  | Iref_internal l ->
+      pp_print_string pp "int_ref ";
+      pp_print_string pp str;
+      pp_print_char pp ' ';
+      print_location pp l;
+      pp_print_newline pp ()
+  | Iref_external ->
+      pp_print_string pp "ext_ref ";
+      pp_print_string pp str;
+      pp_print_newline pp ()
 ;;
 
 (* The format of the annotation file is documented in emacs/caml-types.el. *)
@@ -127,22 +148,44 @@ let print_info pp prev_loc ti =
   | Ti_class _ | Ti_mod _ -> prev_loc
   | Ti_pat  {pat_loc = loc; pat_type = typ}
   | Ti_expr {exp_loc = loc; exp_type = typ} ->
-      if loc <> prev_loc then fprintf pp "%a@." print_location loc;
-      fprintf pp "type(@.  ";
+      if loc <> prev_loc then begin
+        print_location pp loc;
+        pp_print_newline pp ()
+      end;
+      pp_print_string pp "type(";
+      pp_print_newline pp ();
+      pp_print_string pp "  ";
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
       Printtyp.type_sch pp typ;
-      fprintf pp "@.)@.";
+      pp_print_newline pp ();
+      pp_print_char pp ')';
+      pp_print_newline pp ();
       loc
   | An_call (loc, k) ->
-      if loc <> prev_loc then fprintf pp "%a@." print_location loc;
-      fprintf pp "call(@.  %s@.)@." (call_kind_string k);
+      if loc <> prev_loc then begin
+        print_location pp loc;
+        pp_print_newline pp ()
+      end;
+      pp_print_string pp "call(";
+      pp_print_newline pp ();
+      pp_print_string pp "  ";
+      pp_print_string pp (call_kind_string k);
+      pp_print_newline pp ();
+      pp_print_char pp ')';
+      pp_print_newline pp ();
       loc
   | An_ident (loc, str, k) ->
-      if loc <> prev_loc then fprintf pp "%a@." print_location loc;
-      fprintf pp "ident(@.  ";
+      if loc <> prev_loc then begin
+        print_location pp loc;
+        pp_print_newline pp ()
+      end;
+      pp_print_string pp "ident(";
+      pp_print_newline pp ();
+      pp_print_string pp "  ";
       print_ident_annot pp str k;
-      fprintf pp ")@.";
+      pp_print_char pp ')';
+      pp_print_newline pp ();
       loc
 ;;
 
