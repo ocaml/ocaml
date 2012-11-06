@@ -617,10 +617,14 @@ let set_value_used_callback name vd callback =
     Hashtbl.add value_declarations key callback
 
 let set_type_used_callback name td callback =
+  let loc = td.type_loc in
+  if loc.Location.loc_ghost then ()
+  else let key = (name, loc) in
   let old =
-    try Hashtbl.find type_declarations (name, td.type_loc)
-    with Not_found -> assert false in
-  Hashtbl.replace type_declarations (name, td.type_loc) (fun () -> callback old)
+    try Hashtbl.find type_declarations key
+    with Not_found -> assert false
+  in
+  Hashtbl.replace type_declarations key (fun () -> callback old)
 
 let lookup_value lid env =
   let (_, desc) as r = lookup_value lid env in
