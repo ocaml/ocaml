@@ -28,7 +28,7 @@ all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
 
 .PHONY: all
 
-opt.opt: ocamldep.opt
+opt.opt: ocamldep.opt read_cmt.opt
 .PHONY: opt.opt
 
 # The dependency generator
@@ -234,8 +234,11 @@ READ_CMT= \
 read_cmt: $(READ_CMT)
 	$(CAMLC) $(LINKFLAGS) -o read_cmt $(READ_CMT)
 
+read_cmt.opt: $(READ_CMT:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o read_cmt.opt $(READ_CMT:.cmo=.cmx)
+
 clean::
-	rm -f read_cmt
+	rm -f read_cmt read_cmt.opt
 
 beforedepend::
 
