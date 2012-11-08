@@ -1313,12 +1313,25 @@ let initial = Predef.build_initial_env add_type add_exception empty
 
 let summary env = env.summary
 
+let last_env = ref empty
+let last_reduced_env = ref empty
+
 let keep_only_summary env =
-  { empty with
-    summary = env.summary;
-    local_constraints = env.local_constraints;
-    in_signature = env.in_signature;
-  }
+  if !last_env == env then !last_reduced_env
+  else begin
+    let new_env =
+      {
+       empty with
+       summary = env.summary;
+       local_constraints = env.local_constraints;
+       in_signature = env.in_signature;
+      }
+    in
+    last_env := env;
+    last_reduced_env := new_env;
+    new_env
+  end
+
 
 let env_of_only_summary env_from_summary env =
   let new_env = env_from_summary env.summary Subst.identity in
