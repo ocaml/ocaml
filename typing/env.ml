@@ -700,6 +700,10 @@ let lookup_constructor lid env =
       use ();
       desc
 
+let is_lident = function
+    Lident _ -> true
+  | _ -> false
+
 let lookup_all_constructors lid env =
   try
     let cstrs = lookup_all_constructors lid env in
@@ -708,7 +712,8 @@ let lookup_all_constructors lid env =
       use ()
     in
     List.map (fun (cstr, use) -> (cstr, wrap_use cstr use)) cstrs
-  with Not_found -> []
+  with
+    Not_found when is_lident lid -> []
 
 let mark_constructor usage env name desc =
   match desc.cstr_tag with
@@ -739,7 +744,8 @@ let lookup_all_labels lid env =
       use ()
     in
     List.map (fun (lbl, use) -> (lbl, wrap_use lbl use)) lbls
-  with Not_found -> []
+  with
+    Not_found when is_lident lid -> []
 
 let lookup_class lid env =
   let (_, desc) as r = lookup_class lid env in

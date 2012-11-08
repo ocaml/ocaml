@@ -11,8 +11,8 @@ Error: Unbound record field label z
 #     Characters 26-34:
   {x=3; contents=2};;
         ^^^^^^^^
-Error: The record field label Pervasives.contents belongs to the type 
-       'a ref but is mixed here with labels of type t
+Error: The record field label contents belongs to the type 'a ref
+       but is mixed here with labels of type t
 #     type u = private { mutable u : int; }
 # Characters 0-5:
   {u=3};;
@@ -26,4 +26,25 @@ Error: Cannot assign field u of the private type u
 #   val f : M.t -> int = <fun>
 # val r : M.t = {M.x = 1; y = 2}
 # val z : int = 3
+#     type foo = { mutable y : int; }
+# Characters 17-18:
+  let f (r: int) = r.y <- 3;;
+                   ^
+Error: This expression has type int but an expression was expected of type
+         foo
+#     type foo = { y : int; z : int; }
+# type bar = { x : int; }
+#     Characters 20-21:
+  let f (r: bar) = ({ r with z = 3 } : foo)
+                      ^
+Error: This expression has type bar but an expression was expected of type
+         foo
+# Characters 16-21:
+  let r : foo = { ZZZ.x = 2 };;
+                  ^^^^^
+Error: Unbound module ZZZ
+#   Characters 2-7:
+  (ZZZ.X : int option);;
+   ^^^^^
+Error: Unbound module ZZZ
 # 

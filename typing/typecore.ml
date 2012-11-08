@@ -242,14 +242,21 @@ let extract_option_type env ty =
     when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
+let extract_concrete_record env ty =
+  match extract_concrete_typedecl env ty with
+    (p, {type_kind=Type_record (fields, _)}) -> (p, fields)
+  | _ -> raise Not_found
+
+let extract_concrete_variant env ty =
+  match extract_concrete_typedecl env ty with
+    (* exclude exceptions *)
+    (p, {type_kind=Type_variant (_::_ as cstrs)}) -> (p, cstrs)
+  | _ -> raise Not_found
+
 let extract_label_names sexp env ty =
   try
-    let (_,td) = extract_concrete_typedecl env ty in
-    begin match td.type_kind with
-    | Type_record (fields, _) ->
-        List.map (fun (name, _, _) -> name) fields
-    | _ -> assert false
-    end
+    let (_,fields) = extract_concrete_record env ty in
+    List.map (fun (name, _, _) -> name) fields
   with Not_found ->
     assert false
 
@@ -735,12 +742,6 @@ let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list =
   List.map type_lbl_a lbl_a_list
 ;;
 
-let lid_of_label label =
-  match repr label.lbl_res with
-  | {desc = Tconstr(Path.Pdot(mpath,_,_),_,_)} ->
-      Longident.Ldot(lid_of_path mpath, label.lbl_name)
-  | _ -> Longident.Lident label.lbl_name
-
 (* Constructors *)
 
 let lookup_constructor_from_type env tpath lid =
@@ -889,9 +890,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_env = !env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
       let opath =
-        try
-	  let (p,_) = extract_concrete_typedecl !env expected_ty in
-	  Some (p, true)
+        try Some (fst (extract_concrete_variant !env expected_ty), true)
 	with Not_found -> None
       in
       let constrs =
@@ -952,14 +951,20 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_type =  expected_ty;
         pat_env = !env }
   | Ppat_record(lid_sp_list, closed) ->
+      let opath, record_ty =
+        try
+          let (p,_) = extract_concrete_record !env expected_ty in
+          Some (p, true), expected_ty
+	with Not_found -> None, newvar ()
+      in
       let type_label_pat (label_lid, label, sarg) =
         begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false label in
         if vars = [] then end_def ();
         begin try
-          unify_pat_types loc !env ty_res expected_ty
+          unify_pat_types loc !env ty_res record_ty
         with Unify trace ->
-          raise(Error(loc, Label_mismatch(lid_of_label label, trace)))
+          raise(Error(label_lid.loc, Label_mismatch(label_lid.txt, trace)))
         end;
         let arg = type_pat sarg ty_arg in
         if vars <> [] then begin
@@ -970,20 +975,15 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
             let tv = expand_head !env tv in
             not (is_Tvar tv) || tv.level <> generic_level in
           if List.exists instantiated vars then
-            raise (Error(loc, Polymorphic_label (lid_of_label label)))
+            raise (Error(label_lid.loc, Polymorphic_label label_lid.txt))
         end;
         (label_lid, label, arg)
-      in
-      let opath =
-        try
-	  let (p,_) = extract_concrete_typedecl !env expected_ty in
-	  Some (p, true)
-	with Not_found -> None
       in
       let lbl_pat_list =
         type_label_a_list ?labels loc false !env type_label_pat opath
           lid_sp_list in
       check_recordpat_labels loc lbl_pat_list closed;
+      unify_pat_types loc !env record_ty expected_ty;
       rp {
         pat_desc = Tpat_record (lbl_pat_list, closed);
         pat_loc = loc; pat_extra=[];
@@ -1989,26 +1989,31 @@ and type_expect ?in_function env sexp ty_expected =
             end;
             Some exp
       in
-      let opath =
+      let ty_record, opath =
         let get_path ty =
 	  try
-	    let (p,_) = extract_concrete_typedecl env ty in
+	    let (p,_) = extract_concrete_record env ty in
 	    (* XXX level may be wrong *)
             Some (p, ty.level = generic_level || not !Clflags.principal)
           with Not_found -> None
         in
         match get_path ty_expected with
           None ->
-            (match opt_exp with
-              None -> None
-            | Some exp -> get_path exp.exp_type)
-        | op -> op
+            let op = 
+              match opt_exp with
+                None -> None
+              | Some exp -> get_path exp.exp_type
+            in
+            newvar (), op
+        | op -> ty_expected, op
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
         type_label_a_list loc closed env
-          (type_label_exp true env loc ty_expected)
+          (type_label_exp true env loc ty_record)
           opath lid_sexp_list in
+      unify_exp_types loc env ty_record (instance env ty_expected);
+      
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
           ((lid, _) :: rem1, (_, lbl, _) :: rem2) ->
@@ -2020,7 +2025,7 @@ and type_expect ?in_function env sexp ty_expected =
       let opt_exp =
         match opt_exp, lbl_exp_list with
           None, _ -> None
-        | Some exp, (_, lbl, _) :: _ ->
+        | Some exp, (lid, lbl, lbl_exp) :: _ ->
             let ty_exp = instance env exp.exp_type in
             let unify_kept lbl =
               (* do not connect overridden labels *)
@@ -2030,9 +2035,9 @@ and type_expect ?in_function env sexp ty_expected =
               then begin
                 let _, ty_arg1, ty_res1 = instance_label false lbl
                 and _, ty_arg2, ty_res2 = instance_label false lbl in
-                unify env ty_exp ty_res1;
+                unify env ty_arg1 ty_arg2;
                 unify env (instance env ty_expected) ty_res2;
-                unify env ty_arg1 ty_arg2
+                unify_exp_types exp.exp_loc env ty_exp ty_res1;
               end in
             Array.iter unify_kept lbl.lbl_all;
             Some {exp with exp_type = ty_exp}
@@ -2062,8 +2067,7 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = instance env ty_expected;
         exp_env = env }
   | Pexp_field(srecord, lid) ->
-      let (record, label) =
-        type_label_access env loc srecord lid in
+      let (record, label, _) = type_label_access env loc srecord lid in
       let (_, ty_arg, ty_res) = instance_label false label in
       unify_exp env record ty_res;
       rue {
@@ -2072,24 +2076,11 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = ty_arg;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
-      if !Clflags.principal then begin_def ();
-      let record = type_exp env srecord in
-      if !Clflags.principal then begin
-        end_def ();
-        generalize_structure record.exp_type
-      end;
-      let ty_exp = record.exp_type in
-      let opath =
-	try
-	  let (p,_) = extract_concrete_typedecl env ty_exp in
-	    Some(p, ty_exp.level = generic_level || not !Clflags.principal)
-	with Not_found -> None
-      in
-      let labels = Typetexp.find_all_labels env lid.loc lid.txt in
-      let label = Label.disambiguate lid env opath labels in
+      let (record, label, opath) = type_label_access env loc srecord lid in
+      let ty_record = if opath = None then newvar () else record.exp_type in
       let (label_loc, label, newval) =
-        type_label_exp false env loc record.exp_type
-          (lid, label, snewval) in
+        type_label_exp false env loc ty_record (lid, label, snewval) in
+      unify_exp env record ty_record;
       if label.lbl_mut = Immutable then
         raise(Error(loc, Label_not_mutable lid.txt));
       rue {
@@ -2614,15 +2605,15 @@ and type_label_access env loc srecord lid =
   let ty_exp = record.exp_type in
   let opath =
     try
-      let (p,_) = extract_concrete_typedecl env ty_exp in
+      let (p,_) = extract_concrete_record env ty_exp in
       Some(p, ty_exp.level = generic_level || not !Clflags.principal)
     with Not_found -> None
   in
   let labels = Typetexp.find_all_labels env lid.loc lid.txt in
   let label = Label.disambiguate lid env opath labels in
-  (record, label)
+  (record, label, opath)
 
-and type_label_exp create env loc ty_expected
+and type_label_exp create env loc ty_expected 
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   begin_def ();
@@ -2638,7 +2629,7 @@ and type_label_exp create env loc ty_expected
   begin try
     unify env (instance_def ty_res) (instance env ty_expected)
   with Unify trace ->
-    raise (Error(lid.loc, Label_mismatch(lid_of_label label, trace)))
+    raise (Error(lid.loc, Label_mismatch(lid.txt, trace)))
   end;
   (* Instantiate so that we can generalize internal nodes *)
   let ty_arg = instance_def ty_arg in
@@ -2651,7 +2642,7 @@ and type_label_exp create env loc ty_expected
     if create then
       raise (Error(loc, Private_type ty_expected))
     else
-      raise (Error(lid.loc, Private_label(lid_of_label label, ty_expected)));
+      raise (Error(lid.loc, Private_label(lid.txt, ty_expected)));
   let arg =
     let snap = if vars = [] then None else Some (Btype.snapshot ()) in
     let arg = type_argument env sarg ty_arg (instance env ty_arg) in
@@ -2934,8 +2925,8 @@ and type_application env funct sargs =
 and type_construct env loc lid sarg explicit_arity ty_expected =
   let opath =
     try
-      let (p,_) = extract_concrete_typedecl env ty_expected in
-	Some(p, ty_expected.level = generic_level || not !Clflags.principal)
+      let (p,_) = extract_concrete_variant env ty_expected in
+      Some(p, ty_expected.level = generic_level || not !Clflags.principal)
     with Not_found -> None
   in
   let constrs = Typetexp.find_all_constructors env lid.loc lid.txt in
