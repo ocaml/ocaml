@@ -883,12 +883,12 @@ let rec iter3 f lst1 lst2 lst3 =
 let add_pattern_variables ?check ?check_as env =
   let pv = get_ref pattern_variables in
   (List.fold_right
-    (fun (id, ty, name, loc, as_var) env ->
+     (fun (id, ty, name, loc, as_var) env ->
        let check = if as_var then check_as else check in
-       let e1 = Env.add_value ?check id
-           {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env in
-       Env.add_annot id (Annot.Iref_internal loc) e1)
-    pv env,
+       Env.add_value ?check id
+         {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env
+     )
+     pv env,
    get_ref module_variables)
 
 let type_pattern ~lev env spat scope expected_ty =
@@ -1496,14 +1496,16 @@ and type_expect ?in_function env sexp ty_expected =
   match sexp.pexp_desc with
   | Pexp_ident lid ->
       begin
-        if !Clflags.annotations then begin
-          try let (path, annot) = Env.lookup_annot lid.txt env in
-              Stypes.record
-                (Stypes.An_ident (
-                 loc, Path.name ~paren:Oprint.parenthesized_ident path, annot))
-          with _ -> ()
-        end;
         let (path, desc) = Typetexp.find_value env loc lid.txt in
+        if !Clflags.annotations then begin
+          let dloc = desc.Types.val_loc in
+          let annot =
+            if dloc.Location.loc_ghost then Annot.Iref_external
+            else Annot.Iref_internal dloc
+          in
+          let name = Path.name ~paren:Oprint.parenthesized_ident path in
+          Stypes.record (Stypes.An_ident (loc, name, annot))
+        end;
         rue {
           exp_desc =
             begin match desc.val_kind with

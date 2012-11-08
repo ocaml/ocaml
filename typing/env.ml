@@ -145,7 +145,6 @@ module EnvTbl =
 
 type t = {
   values: (Path.t * value_description) EnvTbl.t;
-  annotations: (Path.t * Annot.ident) EnvTbl.t;
   constrs: constructor_description EnvTbl.t;
   labels: label_description EnvTbl.t;
   constrs_by_path: (Path.t * (constructor_description list)) EnvTbl.t;
@@ -170,7 +169,6 @@ and module_components_repr =
 
 and structure_components = {
   mutable comp_values: (string, (value_description * int)) Tbl.t;
-  mutable comp_annotations: (string, (Annot.ident * int)) Tbl.t;
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_constrs_by_path:
@@ -196,7 +194,7 @@ and functor_components = {
 let subst_modtype_maker (subst, mty) = Subst.modtype subst mty
 
 let empty = {
-  values = EnvTbl.empty; annotations = EnvTbl.empty; constrs = EnvTbl.empty;
+  values = EnvTbl.empty; constrs = EnvTbl.empty;
   labels = EnvTbl.empty; types = EnvTbl.empty;
   constrs_by_path = EnvTbl.empty;
   modules = EnvTbl.empty; modtypes = EnvTbl.empty;
@@ -402,8 +400,6 @@ let find proj1 proj2 path env =
 
 let find_value =
   find (fun env -> env.values) (fun sc -> sc.comp_values)
-and find_annot =
-  find (fun env -> env.annotations) (fun sc -> sc.comp_annotations)
 and find_type =
   find (fun env -> env.types) (fun sc -> sc.comp_types)
 and find_constructors =
@@ -573,9 +569,7 @@ let has_local_constraints env = env.local_constraints
 
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
-let lookup_annot id e =
-  lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
-and lookup_constructor =
+let lookup_constructor =
   lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and lookup_label =
   lookup_simple (fun env -> env.labels) (fun sc -> sc.comp_labels)
@@ -815,7 +809,7 @@ and components_of_module_maker (env, sub, path, mty) =
   (match scrape_modtype mty env with
     Mty_signature sg ->
       let c =
-        { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
+        { comp_values = Tbl.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_constrs_by_path = Tbl.empty;
@@ -831,11 +825,6 @@ and components_of_module_maker (env, sub, path, mty) =
             let decl' = Subst.value_description sub decl in
             c.comp_values <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_values;
-            if !Clflags.annotations then begin
-              c.comp_annotations <-
-                Tbl.add (Ident.name id) (Annot.Iref_external, !pos)
-                        c.comp_annotations;
-            end;
             begin match decl.val_kind with
               Val_prim _ -> () | _ -> incr pos
             end
@@ -903,7 +892,7 @@ and components_of_module_maker (env, sub, path, mty) =
           fcomp_cache = Hashtbl.create 17 }
   | Mty_ident p ->
         Structure_comps {
-          comp_values = Tbl.empty; comp_annotations = Tbl.empty;
+          comp_values = Tbl.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty;
           comp_types = Tbl.empty; comp_constrs_by_path = Tbl.empty;
@@ -931,12 +920,6 @@ and store_value ?check id path decl env =
   { env with
     values = EnvTbl.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
-
-and store_annot id path annot env =
-  if !Clflags.annotations then
-    { env with
-      annotations = EnvTbl.add_dont_track id (path, annot) env.annotations }
-  else env
 
 and store_type id path info env =
   let loc = info.type_loc in
@@ -1066,10 +1049,7 @@ let _ =
 let add_value ?check id desc env =
   store_value ?check id (Pident id) desc env
 
-let add_annot id annot env =
-  store_annot id (Pident id) annot env
-
-and add_type id info env =
+let add_type id info env =
   store_type id (Pident id) info env
 
 and add_exception id decl env =
@@ -1137,9 +1117,8 @@ let open_signature root sg env =
       (fun env item p ->
         match item with
           Sig_value(id, decl) ->
-            let e1 = store_value (Ident.hide id) p
+            store_value (Ident.hide id) p
                         (Subst.value_description sub decl) env
-            in store_annot (Ident.hide id) p (Annot.Iref_external) e1
         | Sig_type(id, decl, _) ->
             store_type (Ident.hide id) p
                        (Subst.type_declaration sub decl) env

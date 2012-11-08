@@ -111,28 +111,21 @@ module ForIterator = struct
     let leave_pattern pat =
       Stypes.record (Stypes.Ti_pat pat)
 
-    let rec name_of_path = function
-      | Path.Pident id -> Ident.name id
-      | Path.Pdot(p, s, pos) ->
-          if Oprint.parenthesized_ident s then
-            name_of_path p ^ ".( " ^ s ^ " )"
-          else
-            name_of_path p ^ "." ^ s
-      | Path.Papply(p1, p2) -> name_of_path p1 ^ "(" ^ name_of_path p2 ^ ")"
-
     let enter_expression exp =
       match exp.exp_desc with
         Texp_ident (path, _, _) ->
-          let full_name = name_of_path path in
-          begin
+          let full_name = Path.name ~paren:Oprint.parenthesized_ident path in
+          let annot =
             try
-              let annot = Env.find_annot path exp.exp_env in
-              Stypes.record
-                (Stypes.An_ident (exp.exp_loc, full_name , annot))
+              let desc = Env.find_value path exp.exp_env in
+              let dloc = desc.Types.val_loc in
+              if dloc.Location.loc_ghost then Annot.Iref_external
+              else Annot.Iref_internal dloc
             with Not_found ->
-              Stypes.record
-                (Stypes.An_ident (exp.exp_loc, full_name , Annot.Iref_external))
-          end
+              Annot.Iref_external
+          in
+          Stypes.record
+            (Stypes.An_ident (exp.exp_loc, full_name , annot))
 
       | Texp_let (rec_flag, _, body) ->
           begin
