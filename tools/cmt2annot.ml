@@ -246,25 +246,44 @@ in  *)
 
 module Iterator = MakeIterator(ForIterator)
 
+let binary_part x =
+  let open Iterator in
+  let open Cmt_format in
+  match x with
+  | Partial_structure x -> iter_structure x
+  | Partial_structure_item x -> iter_structure_item x
+  | Partial_expression x -> iter_expression x
+  | Partial_pattern x -> iter_pattern x
+  | Partial_class_expr x -> iter_class_expr x
+  | Partial_signature x -> iter_signature x
+  | Partial_signature_item x -> iter_signature_item x
+  | Partial_module_type x -> iter_module_type x
+
 let gen_annot target_filename filename {Cmt_format.cmt_loadpath; cmt_annots; cmt_use_summaries; _} =
+  let open Cmt_format in
   Envaux.reset_cache ();
   Config.load_path := cmt_loadpath;
   rebuild_env := cmt_use_summaries;
+  let target_filename =
+    match target_filename with
+    | None -> Some (filename ^ ".annot")
+    | Some "-" -> None
+    | Some filename -> target_filename
+  in
   match cmt_annots with
-  | Cmt_format.Implementation typedtree ->
+  | Implementation typedtree ->
       Iterator.iter_structure typedtree;
-      let target_filename =
-        match target_filename with
-        | None -> Some (filename ^ ".annot")
-        | Some "-" -> None
-        | Some filename -> target_filename
-      in
       Stypes.dump target_filename
-  | Cmt_format.Interface _ ->
+  | Interface _ ->
       Printf.fprintf stderr "Cannot generate annotations for interface file\n%!";
       exit 2
+(* this does not work, probably because of the crazy imperative implementation of the traversal *)
+(*
+  | Partial_implementation parts ->
+      Array.iter binary_part parts;
+      Stypes.dump target_filename
+*)
   | _ ->
-      (* TODO: support Partial_implementation... *)
       Printf.fprintf stderr "File was generated with an error\n%!";
       exit 2
 
