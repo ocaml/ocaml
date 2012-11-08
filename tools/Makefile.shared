@@ -24,6 +24,8 @@ LINKFLAGS=$(INCLUDES)
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
      objinfo read_cmt
 
+all: ast_mapper.cmo
+
 # scrapelabels addlabels
 
 .PHONY: all
