@@ -223,6 +223,8 @@ READ_CMT= \
           ../typing/oprint.cmo \
           ../typing/primitive.cmo \
           ../typing/printtyp.cmo \
+          ../typing/mtype.cmo \
+          ../typing/envaux.cmo \
           ../typing/typedtreeMap.cmo \
           ../typing/typedtreeIter.cmo \
           ../typing/cmt_format.cmo \

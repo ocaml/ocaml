@@ -9,9 +9,8 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-(*
-Generate .annot file from a .types files.
-*)
+
+(* Generate an .annot file from a .cmt file. *)
 
 open Typedtree
 open TypedtreeIter
@@ -26,6 +25,8 @@ let pop_scope () =
   match !pattern_scopes with
     [] -> assert false
   | _ :: scopes -> pattern_scopes := scopes
+
+let rebuild_env = ref false
 
 module ForIterator = struct
     open Asttypes
@@ -115,9 +116,19 @@ module ForIterator = struct
       match exp.exp_desc with
         Texp_ident (path, _, _) ->
           let full_name = Path.name ~paren:Oprint.parenthesized_ident path in
+          let env =
+            if !rebuild_env then
+              try
+                Env.env_of_only_summary Envaux.env_from_summary exp.exp_env
+              with Envaux.Error err ->
+                Format.eprintf "%a@." Envaux.report_error err;
+                exit 2
+            else
+              exp.exp_env
+          in
           let annot =
             try
-              let desc = Env.find_value path exp.exp_env in
+              let desc = Env.find_value path env in
               let dloc = desc.Types.val_loc in
               if dloc.Location.loc_ghost then Annot.Iref_external
               else Annot.Iref_internal dloc
@@ -235,20 +246,25 @@ in  *)
 
 module Iterator = MakeIterator(ForIterator)
 
-let gen_annot target_filename filename cmt =
-  match cmt.Cmt_format.cmt_annots with
-      Cmt_format.Implementation typedtree ->
-        Iterator.iter_structure typedtree;
-        let target_filename = match target_filename with
-            None -> Some (filename ^ ".annot")
-          | Some "-" -> None
-          | Some filename -> target_filename
-        in
-        Stypes.dump target_filename
-    | Cmt_format.Interface _ ->
+let gen_annot target_filename filename {Cmt_format.cmt_loadpath; cmt_annots; cmt_use_summaries; _} =
+  Envaux.reset_cache ();
+  Config.load_path := cmt_loadpath;
+  rebuild_env := cmt_use_summaries;
+  match cmt_annots with
+  | Cmt_format.Implementation typedtree ->
+      Iterator.iter_structure typedtree;
+      let target_filename =
+        match target_filename with
+        | None -> Some (filename ^ ".annot")
+        | Some "-" -> None
+        | Some filename -> target_filename
+      in
+      Stypes.dump target_filename
+  | Cmt_format.Interface _ ->
       Printf.fprintf stderr "Cannot generate annotations for interface file\n%!";
       exit 2
-    | _ ->
+  | _ ->
+      (* TODO: support Partial_implementation... *)
       Printf.fprintf stderr "File was generated with an error\n%!";
       exit 2
 
