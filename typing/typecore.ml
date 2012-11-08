@@ -1488,9 +1488,7 @@ and type_expect ?in_function env sexp ty_expected =
   let loc = sexp.pexp_loc in
   (* Record the expression type before unifying it with the expected type *)
   let rue exp =
-    Cmt_format.add_saved_type (Cmt_format.Partial_expression exp);
-    Stypes.record (Stypes.Ti_expr exp);
-    unify_exp env exp (instance env ty_expected);
+    unify_exp env (re exp) (instance env ty_expected);
     exp
   in
   match sexp.pexp_desc with
