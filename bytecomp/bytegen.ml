@@ -330,6 +330,12 @@ let comp_primitive p args =
   | Pstringsets -> Kccall("caml_string_set", 3)
   | Pstringrefu -> Kgetstringchar
   | Pstringsetu -> Ksetstringchar
+  | Pstring_load_16(_) -> Kccall("caml_string_get16", 2)
+  | Pstring_load_32(_) -> Kccall("caml_string_get32", 2)
+  | Pstring_load_64(_) -> Kccall("caml_string_get64", 2)
+  | Pstring_set_16(_) -> Kccall("caml_string_set16", 3)
+  | Pstring_set_32(_) -> Kccall("caml_string_set32", 3)
+  | Pstring_set_64(_) -> Kccall("caml_string_set64", 3)
   | Parraylength kind -> Kvectlength
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
   | Parrayrefs Pfloatarray -> Kccall("caml_array_get_float", 2)
@@ -375,6 +381,12 @@ let comp_primitive p args =
   | Pbigarrayref(_, n, _, _) -> Kccall("caml_ba_get_" ^ string_of_int n, n + 1)
   | Pbigarrayset(_, n, _, _) -> Kccall("caml_ba_set_" ^ string_of_int n, n + 2)
   | Pbigarraydim(n) -> Kccall("caml_ba_dim_" ^ string_of_int n, 1)
+  | Pbigstring_load_16(_) -> Kccall("caml_ba_uint8_get16", 2)
+  | Pbigstring_load_32(_) -> Kccall("caml_ba_uint8_get32", 2)
+  | Pbigstring_load_64(_) -> Kccall("caml_ba_uint8_get64", 2)
+  | Pbigstring_set_16(_) -> Kccall("caml_ba_uint8_set16", 3)
+  | Pbigstring_set_32(_) -> Kccall("caml_ba_uint8_set32", 3)
+  | Pbigstring_set_64(_) -> Kccall("caml_ba_uint8_set64", 3)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
