@@ -537,6 +537,10 @@ let emit_instr fallthrough i =
         `	add	QWORD PTR {emit_addressing addr i.arg 0}, {emit_int n}\n`
     | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
         `	{emit_string(instr_for_floatarithmem op)}	{emit_reg i.res.(0)}, REAL8 PTR {emit_addressing addr i.arg 1}\n`
+    | Lop(Ispecific Isqrtf) ->
+        `	sqrtsd	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Ispecific(Ifloatsqrtf addr)) ->
+        `	sqrtsd	{emit_reg i.res.(0)}, REAL8 PTR {emit_addressing addr i.arg 0}\n`
     | Lreloadretaddr ->
         ()
     | Lreturn ->

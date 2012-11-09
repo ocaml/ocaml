@@ -42,6 +42,7 @@ Internals:
 Feature wishes:
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM
 - PR#5762: Add primitives for fast access to bigarray dimensions
+- PR#5795: Generate sqrtsd opcode instead of external call to sqrt on amd64
 
 
 OCaml 4.00.2:

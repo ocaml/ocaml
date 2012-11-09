@@ -182,6 +182,16 @@ method! select_operation op args =
       self#select_floatarith true Imulf Ifloatmul args
   | Cdivf ->
       self#select_floatarith false Idivf Ifloatdiv args
+  | Cextcall("sqrt", _, false, _) ->
+     begin match args with
+       [Cop(Cload (Double|Double_u as chunk), [loc])] ->
+         let (addr, arg) = self#select_addressing chunk loc in
+         (Ispecific(Ifloatsqrtf addr), [arg])
+     | [arg] ->
+         (Ispecific Isqrtf, [arg])
+     | _ ->
+         assert false
+     end
   (* Recognize store instructions *)
   | Cstore Word ->
       begin match args with
