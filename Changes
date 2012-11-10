@@ -47,6 +47,8 @@ Feature wishes:
 
 Tools:
 - OCamlbuild now features a bin_annot tag to generate .cmt files.
+- OCamlbuild now features a strict_sequence tag to trigger the strict-sequence
+  option.
 
 OCaml 4.00.2:
 -------------

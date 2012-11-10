@@ -573,6 +573,8 @@ let ocaml_warn_flag c =
 
 List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'Y'; 'Z'; 'X'];;
 
+flag ["ocaml"; "compile"; "strict-sequence"] (A "-strict-sequence");;
+
 flag ["ocaml"; "doc"; "docdir"; "extension:html"] (A"-html");;
 flag ["ocaml"; "doc"; "docdir"; "manpage"] (A"-man");;
 flag ["ocaml"; "doc"; "docfile"; "extension:dot"] (A"-dot");;
