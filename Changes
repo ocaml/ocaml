@@ -45,6 +45,9 @@ Feature wishes:
 - PR#5795: Generate sqrtsd opcode instead of external call to sqrt on amd64
 - PR#5771: Add primitives for reading 2, 4, 8 bytes in strings and bigarrays
 
+Tools:
+- OCamlbuild now features a bin_annot tag to generate .cmt files.
+
 OCaml 4.00.2:
 -------------
 
