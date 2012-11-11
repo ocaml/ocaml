@@ -815,7 +815,7 @@ let report_error ppf = function
       spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name)
 	env lid;
   | Unbound_label (env, lid) ->
-      fprintf ppf "Unbound record field label %a" longident lid;
+      fprintf ppf "Unbound record field %a" longident lid;
       spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;
   | Unbound_class (env, lid) ->
       fprintf ppf "Unbound class %a" longident lid;

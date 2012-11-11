@@ -3,16 +3,16 @@
 # Characters 5-6:
   {x=3;z=2};;
        ^
-Error: Unbound record field label z
+Error: Unbound record field z
 # Characters 9-10:
   fun {x=3;z=2} -> ();;
            ^
-Error: Unbound record field label z
+Error: Unbound record field z
 #     Characters 26-34:
   {x=3; contents=2};;
         ^^^^^^^^
-Error: The record field label contents belongs to the type 'a ref
-       but is mixed here with labels of type t
+Error: The record field contents belongs to the type 'a ref
+       but is mixed here with fields of type t
 #     type u = private { mutable u : int; }
 # Characters 0-5:
   {u=3};;

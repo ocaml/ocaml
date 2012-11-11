@@ -34,6 +34,8 @@ type error =
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
   | Wrong_name of string * Env.t * Path.t * Longident.t
+  | Name_type_mismatch of 
+      string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
@@ -244,18 +246,18 @@ let extract_option_type env ty =
 
 let extract_concrete_record env ty =
   match extract_concrete_typedecl env ty with
-    (p, {type_kind=Type_record (fields, _)}) -> (p, fields)
+    (p0, p, {type_kind=Type_record (fields, _)}) -> (p0, p, fields)
   | _ -> raise Not_found
 
 let extract_concrete_variant env ty =
   match extract_concrete_typedecl env ty with
     (* exclude exceptions *)
-    (p, {type_kind=Type_variant (_::_ as cstrs)}) -> (p, cstrs)
+    (p0, p, {type_kind=Type_variant (_::_ as cstrs)}) -> (p0, p, cstrs)
   | _ -> raise Not_found
 
 let extract_label_names sexp env ty =
   try
-    let (_,fields) = extract_concrete_record env ty in
+    let (_, _,fields) = extract_concrete_record env ty in
     List.map (fun (name, _, _) -> name) fields
   with Not_found ->
     assert false
@@ -564,9 +566,13 @@ end) = struct
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
     Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
-    match lid with
-      Longident.Lident s ->
-	List.find (fun nd -> get_name nd = s) descrs
+    match lid.txt with
+      Longident.Lident s -> begin
+        try
+          List.find (fun nd -> get_name nd = s) descrs
+        with Not_found -> 
+          raise (Error (lid.loc, Wrong_name (type_kind, env, tpath, lid.txt)))
+      end
     | _ -> raise Not_found
 
   let is_ambiguous env lbl others =
@@ -599,10 +605,10 @@ end) = struct
 		(Warnings.Ambiguous_name ([Longident.last lid.txt], false));
 	    lbl
 	end
-    | Some(tpath, pr) ->
+    | Some(tpath0, tpath, pr) ->
 	let scope = match scope with None -> lbls | Some l -> l in
 	let warn_pr () =
-	  let kind = if type_kind = "record" then "label" else "constructor" in
+	  let kind = if type_kind = "record" then "field" else "constructor" in
           warn lid.loc
             (Warnings.Not_principal
 	       ("this type-based " ^ kind ^ " disambiguation"))
@@ -610,8 +616,6 @@ end) = struct
         try
           let lbl, use = disambiguate_by_type env tpath scope in
           use ();
-          (* Strange: why do we need to mark type by hand? *)
-          Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
           if not pr then begin
             (* Check if non-principal type is affecting result *)
             match lbls with
@@ -625,13 +629,22 @@ end) = struct
           end;
           lbl
         with Not_found -> try
-          let lbl = lookup_from_type env tpath lid.txt in
+          let lbl = lookup_from_type env tpath lid in
           warn lid.loc
             (Warnings.Name_out_of_scope ([Longident.last lid.txt], false));
           if not pr then warn_pr ();
           lbl
 	with Not_found ->
-	  raise (Error (lid.loc, Wrong_name (type_kind, env, tpath, lid.txt)))
+          let tp = (tpath0, expand_path env tpath) in
+	  let tpl = 
+            List.map 
+              (fun (lbl, _) -> 
+                let tp0 = get_type_path env lbl in
+                let tp = expand_path env tp0 in
+                  (tp0, tp))
+              lbls
+          in
+            raise (Error (lid.loc, Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
 end
 
 module Label = NameChoice (struct
@@ -655,7 +668,7 @@ let disambiguate_label_by_ids keep env closed ids labels =
   let labels' = List.filter check_ids labels in
   if keep && labels' = [] then (false, labels) else
   let labels'' = List.filter check_closed labels' in
-  if keep & labels'' = [] then (false, labels') else (true, labels'')
+  if keep && labels'' = [] then (false, labels') else (true, labels'')
 
 (* Only issue warnings once per record constructor/pattern *)
 let disambiguate_lid_a_list loc closed env opath lid_a_list =
@@ -685,7 +698,7 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
       Typetexp.unbound_label_error env lid;
     let (ok, labels) =
       match opath with
-        Some (_, true) -> (true, scope) (* disambiguate only checks scope *)
+        Some (_, _, true) -> (true, scope) (* disambiguate only checks scope *)
       | _  -> disambiguate_label_by_ids (opath=None) env closed ids scope
     in
     if ok then Label.disambiguate lid env opath labels ~warn ~scope
@@ -890,7 +903,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_env = !env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
       let opath =
-        try Some (fst (extract_concrete_variant !env expected_ty), true)
+        try 
+          let (p0, p, _) = extract_concrete_variant !env expected_ty in
+            Some (p0, p, true)
 	with Not_found -> None
       in
       let constrs =
@@ -953,8 +968,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
   | Ppat_record(lid_sp_list, closed) ->
       let opath, record_ty =
         try
-          let (p,_) = extract_concrete_record !env expected_ty in
-          Some (p, true), expected_ty
+          let (p0, p,_) = extract_concrete_record !env expected_ty in
+          Some (p0, p, true), expected_ty
 	with Not_found -> None, newvar ()
       in
       let type_label_pat (label_lid, label, sarg) =
@@ -1992,9 +2007,9 @@ and type_expect ?in_function env sexp ty_expected =
       let ty_record, opath =
         let get_path ty =
 	  try
-	    let (p,_) = extract_concrete_record env ty in
+	    let (p0, p,_) = extract_concrete_record env ty in
 	    (* XXX level may be wrong *)
-            Some (p, ty.level = generic_level || not !Clflags.principal)
+            Some (p0, p, ty.level = generic_level || not !Clflags.principal)
           with Not_found -> None
         in
         match get_path ty_expected with
@@ -2605,8 +2620,8 @@ and type_label_access env loc srecord lid =
   let ty_exp = record.exp_type in
   let opath =
     try
-      let (p,_) = extract_concrete_record env ty_exp in
-      Some(p, ty_exp.level = generic_level || not !Clflags.principal)
+      let (p0, p,_) = extract_concrete_record env ty_exp in
+      Some(p0, p, ty_exp.level = generic_level || not !Clflags.principal)
     with Not_found -> None
   in
   let labels = Typetexp.find_all_labels env lid.loc lid.txt in
@@ -2925,8 +2940,8 @@ and type_application env funct sargs =
 and type_construct env loc lid sarg explicit_arity ty_expected =
   let opath =
     try
-      let (p,_) = extract_concrete_variant env ty_expected in
-      Some(p, ty_expected.level = generic_level || not !Clflags.principal)
+      let (p0, p,_) = extract_concrete_variant env ty_expected in
+      Some(p0, p, ty_expected.level = generic_level || not !Clflags.principal)
     with Not_found -> None
   in
   let constrs = Typetexp.find_all_constructors env lid.loc lid.txt in
@@ -3320,7 +3335,7 @@ open Printtyp
 
 let report_error ppf = function
   | Polymorphic_label lid ->
-      fprintf ppf "@[The record field label %a is polymorphic.@ %s@]"
+      fprintf ppf "@[The record field %a is polymorphic.@ %s@]"
         longident lid "You cannot instantiate it in a pattern."
   | Constructor_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
@@ -3330,10 +3345,10 @@ let report_error ppf = function
   | Label_mismatch(lid, trace) ->
       report_unification_error ppf trace
         (function ppf ->
-           fprintf ppf "The record field label %a@ belongs to the type"
+           fprintf ppf "The record field %a@ belongs to the type"
                    longident lid)
         (function ppf ->
-           fprintf ppf "but is mixed here with labels of type")
+           fprintf ppf "but is mixed here with fields of type")
   | Pattern_type_clash trace ->
       report_unification_error ppf trace
         (function ppf ->
@@ -3376,7 +3391,7 @@ let report_error ppf = function
           This argument cannot be applied %a@]"
         type_expr ty print_label l
   | Label_multiply_defined lid ->
-      fprintf ppf "The record field label %a is defined several times"
+      fprintf ppf "The record field %a is defined several times"
               longident lid
   | Label_missing labels ->
       let print_labels ppf =
@@ -3387,10 +3402,22 @@ let report_error ppf = function
       fprintf ppf "The record field %a is not mutable" longident lid
   | Wrong_name (kind, env, p, lid) ->
       fprintf ppf "The %s type %a has no %s %a" kind path p
-	(if kind = "record" then "label" else "constructor")
+	(if kind = "record" then "field" else "constructor")
 	longident lid;
       if kind = "record" then Label.spellcheck ppf env p lid
                          else Constructor.spellcheck ppf env p lid
+  | Name_type_mismatch (kind, lid, tp, tpl) ->
+      let name = if kind = "record" then "field" else "constructor" in
+      report_ambiguous_type_error ppf tp tpl
+        (function ppf ->
+           fprintf ppf "The %s %a@ belongs to the %s type"
+             name longident lid kind)
+        (function ppf ->
+           fprintf ppf "The %s %a@ belongs to one of the following %s types:"
+             name longident lid kind)
+        (function ppf ->
+           fprintf ppf "but a %s was expected belonging to the %s type"
+             name kind)
   | Incomplete_format s ->
       fprintf ppf "Premature end of format string ``%S''" s
   | Bad_conversion (fmt, i, c) ->

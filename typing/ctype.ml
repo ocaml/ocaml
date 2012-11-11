@@ -1407,10 +1407,12 @@ let rec extract_concrete_typedecl env ty =
   match ty.desc with
     Tconstr (p, _, _) ->
       let decl = Env.find_type p env in
-      if decl.type_kind <> Type_abstract then (p, decl) else
+      if decl.type_kind <> Type_abstract then (p, p, decl) else
       let ty =
-	try try_expand_once env ty with Cannot_expand -> raise Not_found
-      in extract_concrete_typedecl env ty
+        try try_expand_once env ty with Cannot_expand -> raise Not_found
+      in 
+      let (_, p', decl) = extract_concrete_typedecl env ty in
+        (p, p', decl)
   | _ -> raise Not_found
 
 (* Implementing function [expand_head_opt], the compiler's own version of

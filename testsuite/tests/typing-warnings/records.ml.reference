@@ -82,14 +82,14 @@ Error: Some record fields are undefined: y
 #               Characters 111-112:
     let b : bar = {x=3; y=4}
                         ^
-Error: The record type bar has no label y
+Error: The record type bar has no field y
 #   module M : sig type foo = { x : int; y : int; } end
 # module N : sig type bar = { x : int; y : int; } end
 # Characters 19-22:
   let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
                      ^^^
-Error: The record field label N.y belongs to the type N.bar
-       but is mixed here with labels of type M.foo
+Error: The record field N.y belongs to the type N.bar
+       but is mixed here with fields of type M.foo
 #     module MN :
   sig
     type foo = M.foo = { x : int; y : int; }
@@ -107,8 +107,8 @@ Warning 41: this record contains fields that are ambiguous: x y.
 Characters 19-23:
   let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
                      ^^^^
-Error: The record field label NM.y belongs to the type NM.foo = M.foo
-       but is mixed here with labels of type MN.bar = N.bar
+Error: The record field NM.y belongs to the type NM.foo = M.foo
+       but is mixed here with fields of type MN.bar = N.bar
 #             module M :
   sig
     type foo = { x : int; y : int; }
@@ -117,7 +117,7 @@ Error: The record field label NM.y belongs to the type NM.foo = M.foo
 #       Characters 72-73:
     let f r = ignore (r: foo); {r with x = 2; z = 3}
                                               ^
-Error: The record type M.foo has no label z
+Error: The record type M.foo has no field z
 #       module M :
   sig
     type foo = M.foo = { x : int; y : int; }
@@ -127,20 +127,21 @@ Error: The record type M.foo has no label z
 #       Characters 73-74:
     let f r = ignore (r: foo); { r with x = 3; a = 4 }
                                                ^
-Error: The record type M.foo has no label a
+Error: The record type M.foo has no field a
 #         Characters 67-68:
     let r: other = {x=1; y=2}
                     ^
-Error: The record type M.other has no label x
+Error: The record type M.other has no field x
 #     module A : sig type t = { x : int; } end
 module B : sig type t = { x : int; } end
 # Characters 20-23:
   let f (r : B.t) = r.A.x;; (* fail *)
                       ^^^
-Error: The record type B.t has no label A.x
+Error: The field A.x belongs to the record type A.t
+       but a field was expected belonging to the record type B.t
 #             Characters 88-91:
     let a : t = {x=1;yyz=2}
                      ^^^
-Error: The record type t has no label yyz
+Error: The record type t has no field yyz
 Did you mean yyy?
 # 

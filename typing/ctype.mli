@@ -145,10 +145,11 @@ val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
 val full_expand: Env.t -> type_expr -> type_expr
-val extract_concrete_typedecl: Env.t -> type_expr -> Path.t * type_declaration
-        (* Return the first concrete type declaration found expanding
-	   the type. Raise [Not_found] if none appears or not a type
-	   constructor. *)
+val extract_concrete_typedecl:
+        Env.t -> type_expr -> Path.t * Path.t * type_declaration
+        (* Return the original path of the types, and the first concrete
+           type declaration found expanding it.
+           Raise [Not_found] if none appears or not a type constructor. *)
 
 val enforce_constraints: Env.t -> type_expr -> unit
 
