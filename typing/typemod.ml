@@ -1254,7 +1254,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.set_saved_types [];
   try
   Typecore.reset_delayed_checks ();
-  let (str, sg, finalenv) = type_structure initial_env ast Location.none in
+  let (str, sg, finalenv) =
+    type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
   if !Clflags.print_types then begin
     fprintf std_formatter "%a@." Printtyp.signature simple_sg;
@@ -1267,7 +1268,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         try
           find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
         with Not_found ->
-          raise(Error(Location.none, Interface_not_compiled sourceintf)) in
+          raise(Error(Location.in_file sourcefile,
+                      Interface_not_compiled sourceintf)) in
       let dclsig = Env.read_signature modulename intf_file in
       let coercion = Includemod.compunit sourcefile sg intf_file dclsig in
       Typecore.force_delayed_checks ();
