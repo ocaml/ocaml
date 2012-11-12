@@ -14,7 +14,7 @@
 (* Printing code expressions *)
 (* Authors:  Ed Pizzi, Fabrice Le Fessant *)
 (* Extensivily Rewrite: Hongbo Zhang: University of Pennsylvania*)
-
+(* TODO more fine-grained precedence pretty-printing *)
 open Asttypes
 open Format
 open Location
@@ -154,13 +154,13 @@ class printer  ()= object(self:'self)
           
   method longident f = function
     | Lident s ->
-        let len = String.length s in
+        (* let len = String.length s in *)
         (match s.[0] with
-        | '~' ->
-            if List.mem s ["~+";"~-";"~+.";"~-."] (* = "~+" || s = "~-"  *)then
-              pp f "%s" (String.sub s 1 (len-1))
-            else
-              pp f "%s" s 
+        (* | '~' -> *)
+        (*     if List.mem s ["~+";"~-";"~+.";"~-."] then *)
+        (*       pp f "%s" (String.sub s 1 (len-1)) *)
+        (*     else *)
+        (*       pp f "%s" s  *)
         | 'a' .. 'z' | 'A' .. 'Z' | '_' when not (is_infix (fixity_of_string s)) ->
             pp f "%s" s
         | _ -> pp f "(@;%s@;)" s )
@@ -499,10 +499,18 @@ class printer  ()= object(self:'self)
           | `Infix s ->
             (match l with
             | [ arg1; arg2 ] ->
-                pp f "@[<2>%a@;%s@;%a@]" (* FIXME associativit lable_x_expression_parm*)
-                  self#reset#label_x_expression_param  arg1 s  self#reset#label_x_expression_param arg2
+                pp f "@[<2>%a@;%s@;%a@]" (* FIXME associativity lable_x_expression_parm*)
+                  self#reset#label_x_expression_param  arg1 s  self#label_x_expression_param arg2
             | _ ->
-                pp f "@[<2>%a %a@]" self#simple_expr e  (self#list self#reset#label_x_expression_param)  l)
+                pp f "@[<2>%a %a@]" self#simple_expr e  (self#list self#label_x_expression_param)  l)
+          | `Prefix s ->
+              let s =
+                if List.mem s ["~+";"~-";"~+.";"~-."] then String.sub s 1 (String.length s -1)
+                else s in
+            (match l with
+            |[v] -> pp f "@[<2>%s@;%a@]" s self#label_x_expression_param v
+            | _ -> pp f "@[<2>%s@;%a@]" s (self#list self#label_x_expression_param) l  (*FIXME assert false*)
+            )  
           | _ -> 
             pp f "@[<hov2>%a@]" begin fun f (e,l) -> 
               pp f "%a@ %a" self#expression2 e
@@ -584,6 +592,9 @@ class printer  ()= object(self:'self)
         | _ -> assert false)
     | Pexp_ident li ->
         self#longident_loc f li 
+        (* (match view_fixity_of_exp x with *)
+        (* |`Normal -> self#longident_loc f li *)
+        (* | `Prefix _ | `Infix _ -> pp f "( %a )" self#longident_loc li) *)
     | Pexp_constant c -> self#constant f c;
     | Pexp_pack me ->
         pp f "(module@;%a)"  self#module_expr me
@@ -910,13 +921,24 @@ class printer  ()= object(self:'self)
     | [] -> ()
     | [x] -> pp f "@[<2>let %a%a@]" self#rec_flag rf self#binding x 
     | x::xs ->
-        pp f "@[<hv0>let %a@[<2>%a%a@]"
+        (* pp f "@[<hv0>let %a@[<2>%a%a@]" *)
+        (* FIXME the indentation is not good see [Insert].ml*)
+        pp f "@[<hv0>@[<2>let %a%a%a@]"
           self#rec_flag rf  self#binding x
           (fun f l -> match l with
           | [] -> assert false
-          | [x] -> pp f "@]@;and @[<2>%a@]" self#binding x 
+          | [x] ->
+              pp f
+                (* "@]@;and @[<2>%a@]" *)
+                "@]@;@[<2>and %a@]"
+                self#binding x 
           | xs -> 
-              self#list self#binding ~first:"@]@;and @[<2>" ~sep:"@]@;and @[<2>" ~last:"@]" f xs )  xs
+              self#list self#binding
+                (* ~first:"@]@;and @[<2>" *)
+                ~first:"@]@;@[<2>and "
+                (* ~sep:"@]@;and @[<2>" *)
+                ~sep:"@]@;@[<2>and "
+                ~last:"@]" f xs )  xs
     end
       
   method structure_item f x = begin
