@@ -30,7 +30,7 @@ type error =
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
-  | Label_multiply_defined of Longident.t
+  | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
   | Incomplete_format of string
@@ -564,8 +564,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
       let defined = Array.make (Array.length all) false in
       let check_defined (_, label, _) =
         if defined.(label.lbl_pos)
-        then raise(Error(loc, Label_multiply_defined
-                                       (Longident.Lident label.lbl_name)))
+        then raise(Error(loc, Label_multiply_defined label.lbl_name))
         else defined.(label.lbl_pos) <- true in
       List.iter check_defined lbl_pat_list;
       if closed = Closed
@@ -1765,14 +1764,17 @@ and type_expect_ ?in_function env sexp ty_expected =
       let lbl_exp_list =
         type_label_a_list env (type_label_exp true env loc ty_expected)
           lid_sexp_list in
-      let rec check_duplicates seen_pos lid_sexp lbl_exp =
-        match (lid_sexp, lbl_exp) with
-          ((lid, _) :: rem1, (_, lbl, _) :: rem2) ->
-            if List.mem lbl.lbl_pos seen_pos
-            then raise(Error(loc, Label_multiply_defined lid.txt))
-            else check_duplicates (lbl.lbl_pos :: seen_pos) rem1 rem2
-        | (_, _) -> () in
-      check_duplicates [] lid_sexp_list lbl_exp_list;
+      (* type_label_a_list returns a list of labels sorted by lbl_pos *)
+      (* note: check_duplicates would better be implemented in
+         type_label_a_list directly *)
+      let rec check_duplicates seen_pos = function
+        | (_, lbl, _) :: (_, lbl, _) :: _ when lbl1.lbl_pos = lbl2.lbl_pos ->
+          raise(Error(loc, Label_multiply_defined lbl1.lbl_name))
+        | _ :: rem ->
+            check_duplicates rem
+        | [] -> ()
+      in
+      check_duplicates lbl_exp_list;
       let opt_exp =
         match opt_sexp, lbl_exp_list with
           None, _ -> None
@@ -3107,9 +3109,8 @@ let report_error ppf = function
         "@[<v>@[<2>The function applied to this argument has type@ %a@]@.\
           This argument cannot be applied %a@]"
         type_expr ty print_label l
-  | Label_multiply_defined lid ->
-      fprintf ppf "The record field label %a is defined several times"
-              longident lid
+  | Label_multiply_defined s ->
+      fprintf ppf "The record field label %s is defined several times" s
   | Label_missing labels ->
       let print_labels ppf =
         List.iter (fun lbl -> fprintf ppf "@ %s" (Ident.name lbl)) in
