@@ -1767,8 +1767,8 @@ and type_expect_ ?in_function env sexp ty_expected =
       (* type_label_a_list returns a list of labels sorted by lbl_pos *)
       (* note: check_duplicates would better be implemented in
          type_label_a_list directly *)
-      let rec check_duplicates seen_pos = function
-        | (_, lbl, _) :: (_, lbl, _) :: _ when lbl1.lbl_pos = lbl2.lbl_pos ->
+      let rec check_duplicates = function
+        | (_, lbl1, _) :: (_, lbl2, _) :: _ when lbl1.lbl_pos = lbl2.lbl_pos ->
           raise(Error(loc, Label_multiply_defined lbl1.lbl_name))
         | _ :: rem ->
             check_duplicates rem
