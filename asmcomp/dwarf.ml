@@ -21,6 +21,10 @@ let emit_symbol s =
     if macosx then emit_string "_";
     Emitaux.emit_symbol '$' s
 
+let emit_label_declaration ~label_name =
+  emit_symbol label_name;
+  emit_string ":\n"
+
 module Dwarf_value : sig
   type t
 
@@ -33,7 +37,7 @@ module Dwarf_value : sig
   val as_string : string -> t
   val as_code_address_from_label : string -> t
   val as_code_address_from_label_diff : string -> string -> t
-  val as_code_address : int -> t
+  val as_code_address : Int64.t -> t
 
   val size : t -> int
   val emit : t -> unit
@@ -48,7 +52,7 @@ end = struct
   | `String of string
   | `Code_address_from_label of string
   | `Code_address_from_label_diff of string * string
-  | `Code_address of int
+  | `Code_address of Int64.t
   ]
 
   exception Too_large_for_four_byte_int of int
@@ -127,7 +131,8 @@ end = struct
       emit_string " - ";
       emit_symbol s1;
       emit_string "\n"
-    | `Code_address i -> emit_string (sprintf "\t.quad\t0x%x\n" i)
+    | `Code_address i ->
+      emit_string (sprintf "\t.quad\t0x%Lx\n" i)
 end
 
 module Dwarf_child_determination : sig
@@ -211,6 +216,7 @@ module Dwarf_form : sig
   val addr : t
   val data1 : t
   val data4 : t
+  val data8 : t
   val string : t
   val flag : t
   val block : t
@@ -223,6 +229,7 @@ end = struct
   | `DW_FORM_string
   | `DW_FORM_data1
   | `DW_FORM_data4
+  | `DW_FORM_data8
   | `DW_FORM_flag
   | `DW_FORM_block
   | `DW_FORM_ref_addr
@@ -232,6 +239,7 @@ end = struct
     | `DW_FORM_addr -> 0x01
     | `DW_FORM_data1 -> 0x0b
     | `DW_FORM_data4 -> 0x06
+    | `DW_FORM_data8 -> 0x07
     | `DW_FORM_string -> 0x08
     | `DW_FORM_flag -> 0x0c
     | `DW_FORM_block -> 0x09
@@ -240,6 +248,7 @@ end = struct
   let addr = `DW_FORM_addr
   let data1 = `DW_FORM_data1
   let data4 = `DW_FORM_data4
+  let data8 = `DW_FORM_data8
   let string = `DW_FORM_string
   let flag = `DW_FORM_flag
   let block = `DW_FORM_block
@@ -368,7 +377,7 @@ end = struct
     | `DW_AT_producer -> Dwarf_form.string
     | `DW_AT_stmt_list -> Dwarf_form.data4
     | `DW_AT_external -> Dwarf_form.flag
-    | `DW_AT_location -> Dwarf_form.data4
+    | `DW_AT_location -> Dwarf_form.data8
     | `DW_AT_type -> Dwarf_form.ref_addr
     | `DW_AT_encoding -> Dwarf_form.data1
     | `DW_AT_byte_size -> Dwarf_form.data1
@@ -418,9 +427,14 @@ module Dwarf_attribute_value = struct
     let flag = if is_visible_externally then 1 else 0 in
     Dwarf_attribute.extern'l, Dwarf_value.as_byte flag
 
+(*
   let create_location ~offset_from_start_of_debug_loc =
     Dwarf_attribute.location,
       Dwarf_value.as_four_byte_int offset_from_start_of_debug_loc
+*)
+  let create_location ~location_list_label =
+    Dwarf_attribute.location,
+      Dwarf_value.as_code_address_from_label location_list_label
 
   let create_type ~label_name =
     Dwarf_attribute.typ',
@@ -471,61 +485,128 @@ module Dwarf_location_expression = struct
 end
 
 module Dwarf_location_list_entry = struct
-  type t = {
-    start_of_code_label : string;
-    beginning_address_label : string;
-    ending_address_label : string;
-    expr : Dwarf_location_expression.t;
-  }
-
-  let create ~start_of_code_label
-             ~first_address_when_in_scope
-             ~first_address_when_not_in_scope
-             ~location_expression =
-    { start_of_code_label;
-      beginning_address_label = first_address_when_in_scope;
-      ending_address_label = first_address_when_not_in_scope;
-      expr = location_expression;
+  module Location_list_entry = struct
+    type t = {
+      start_of_code_label : string;
+      beginning_address_label : string;
+      ending_address_label : string;
+      expr : Dwarf_location_expression.t;
     }
 
-  let expr_size t = Dwarf_location_expression.size t.expr
+    let create ~start_of_code_label
+               ~first_address_when_in_scope
+               ~first_address_when_not_in_scope
+               ~location_expression =
+      { start_of_code_label;
+        beginning_address_label = first_address_when_in_scope;
+        ending_address_label = first_address_when_not_in_scope;
+        expr = location_expression;
+      }
 
-  let size t = 8 + 8 + 2 + (expr_size t)
+    let expr_size t = Dwarf_location_expression.size t.expr
 
-  let emit t =
-    Dwarf_value.emit
-      (Dwarf_value.as_code_address_from_label_diff
-        t.beginning_address_label t.start_of_code_label);
-    Dwarf_value.emit
-      (Dwarf_value.as_code_address_from_label_diff
-        t.ending_address_label t.start_of_code_label);
-    Dwarf_value.emit (Dwarf_value.as_two_byte_int (expr_size t));
-    Dwarf_location_expression.emit t.expr
+    let size t = 8 + 8 + 2 + (expr_size t)
+
+    let emit t =
+      Dwarf_value.emit
+        (Dwarf_value.as_code_address_from_label_diff
+          t.beginning_address_label t.start_of_code_label);
+      Dwarf_value.emit
+        (Dwarf_value.as_code_address_from_label_diff
+          t.ending_address_label t.start_of_code_label);
+      Dwarf_value.emit (Dwarf_value.as_two_byte_int (expr_size t));
+      Dwarf_location_expression.emit t.expr
+  end
+
+  module Base_address_selection_entry = struct
+    type t = string
+
+    let create ~base_address_label = base_address_label
+
+    let to_dwarf_values t =
+      let largest_code_address = Int64.minus_one in
+      [Dwarf_value.as_code_address largest_code_address;
+       Dwarf_value.as_code_address_from_label t;
+      ]
+
+    let size t =
+      List.fold (to_dwarf_values t)
+        ~init:0
+        ~f:(fun acc v -> acc + Dwarf_value.size v)
+
+    let emit t =
+      List.iter (to_dwarf_values t) ~f:Dwarf_value.emit
+  end
+
+  type t = [
+  | `Location_list_entry of Location_list_entry.t
+  | `Base_address_selection_entry of Base_address_selection_entry.t
+  ]
+
+  let create_location_list_entry ~start_of_code_label
+                                 ~first_address_when_in_scope
+                                 ~first_address_when_not_in_scope
+                                 ~location_expression =
+    `Location_list_entry (
+      Location_list_entry.create ~start_of_code_label
+        ~first_address_when_in_scope
+        ~first_address_when_not_in_scope
+        ~location_expression)
+
+  let create_base_address_selection_entry ~base_address_label =
+    `Base_address_selection_entry (
+      Base_address_selection_entry.create ~base_address_label)
+
+  let size = function
+    | `Location_list_entry entry ->
+      Location_list_entry.size entry
+    | `Base_address_selection_entry entry ->
+      Base_address_selection_entry.size entry
+
+  let emit = function
+    | `Location_list_entry entry ->
+      Location_list_entry.emit entry
+    | `Base_address_selection_entry entry ->
+      Base_address_selection_entry.emit entry
 end
 
 module Dwarf_location_list : sig
   type t
 
   val create : Dwarf_location_list_entry.t list -> t
+  val label : t -> string
   val size : t -> int
   val emit : t -> unit
 end = struct
-  type t = Dwarf_location_list_entry.t list
+  type t = {
+    name : string;
+    entries : Dwarf_location_list_entry.t list;
+  }
 
-  let create entries = entries
+  let next_id = ref 0
+
+  let create entries =
+    let id = !next_id in
+    next_id := !next_id + 1;
+    { name = Printf.sprintf "location_list%d" id;
+      entries;
+    }
+
+  let label t = t.name
 
   let size t =
     let body_size =
-      List.fold t
+      List.fold t.entries
         ~init:0
         ~f:(fun size entry -> size + Dwarf_location_list_entry.size entry)
     in
     body_size + 8 + 8
 
   let emit t =
-    List.iter t ~f:Dwarf_location_list_entry.emit;
-    Dwarf_value.emit (Dwarf_value.as_code_address 0);
-    Dwarf_value.emit (Dwarf_value.as_code_address 0)
+    emit_label_declaration ~label_name:t.name;
+    List.iter t.entries ~f:Dwarf_location_list_entry.emit;
+    Dwarf_value.emit (Dwarf_value.as_code_address Int64.zero);
+    Dwarf_value.emit (Dwarf_value.as_code_address Int64.zero)
 end
 
 module Dwarf_debug_loc_table : sig
@@ -544,6 +625,7 @@ end = struct
   let create () = []
 
   let insert t ~location_list =
+(*
     let size_so_far =
       List.fold t
         ~init:0
@@ -552,6 +634,11 @@ end = struct
     let attribute_referencing_the_new_list =
       Dwarf_attribute_value.create_location
         ~offset_from_start_of_debug_loc:size_so_far
+    in
+*)
+    let attribute_referencing_the_new_list =
+      Dwarf_attribute_value.create_location
+        ~location_list_label:(Dwarf_location_list.label location_list)
     in
     (location_list::t), attribute_referencing_the_new_list
 
@@ -663,8 +750,8 @@ module Dwarf_aranges_table = struct
       Dwarf_value.as_code_address_from_label start_of_code_label;
       Dwarf_value.as_code_address_from_label_diff
         end_of_code_label start_of_code_label;
-      Dwarf_value.as_code_address 0;
-      Dwarf_value.as_code_address 0;
+      Dwarf_value.as_code_address Int64.zero;
+      Dwarf_value.as_code_address Int64.zero;
     ]
     in
     let size =
@@ -877,10 +964,6 @@ let emit_section_declaration ~section_name =
 let emit_switch_to_section ~section_name =
   emit_string (sprintf "\t.section\t%s\n" section_name)
 
-let emit_label_declaration ~label_name =
-  emit_symbol label_name;
-  emit_string ":\n"
-
 module Compilation_unit_state : sig
   type t
 
@@ -951,24 +1034,29 @@ end = struct
               match location_expression with
               | None -> debug_loc_table, tags
               | Some location_expression ->
+                let base_address_selection_entry =
+                  Dwarf_location_list_entry.create_base_address_selection_entry
+                    ~base_address_label:starting_label
+                in
                 let location_list_entry =
-                  Dwarf_location_list_entry.create
-                    ~start_of_code_label:t.start_of_code_label
+                  Dwarf_location_list_entry.create_location_list_entry
+                    ~start_of_code_label:starting_label
                     ~first_address_when_in_scope:starting_label
                     ~first_address_when_not_in_scope:ending_label  (* fixme *)
                     ~location_expression
                 in
                 let location_list =
-                  Dwarf_location_list.create [location_list_entry]
+                  Dwarf_location_list.create
+                    [base_address_selection_entry; location_list_entry]
                 in
                 let debug_loc_table, loclistptr_attribute_value =
                   Dwarf_debug_loc_table.insert debug_loc_table
                     ~location_list
                 in
-                let arg_name = Ident.unique_name ident in
+                let arg_name = Ident.name ident in
                 let tag =
-                  2, function_name ^ "__arg__" ^ arg_name,
-                    Dwarf_tag.variable,
+                  2, function_name ^ "__arg__" ^ (Ident.unique_name ident),
+                    Dwarf_tag.formal_parameter,
                     [Dwarf_attribute_value.create_name
                        ~source_file_path:arg_name;
                      loclistptr_attribute_value;
