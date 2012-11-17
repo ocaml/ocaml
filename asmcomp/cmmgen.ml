@@ -155,9 +155,23 @@ let lsl_int c1 c2 =
       Cop(Clsl, [c1; c2])
 
 let ignore_low_bit_int = function
-    Cop(Caddi, [(Cop(Clsl, [_; Cconst_int 1]) as c); Cconst_int 1]) -> c
+    Cop(Caddi, [(Cop(Clsl, [_; Cconst_int n]) as c); Cconst_int 1]) when n > 0 -> c
   | Cop(Cor, [c; Cconst_int 1]) -> c
   | c -> c
+
+let lsr_int c1 c2 =
+  match c2 with
+    (Cconst_int n) when n > 0 ->
+    Cop(Clsr, [ignore_low_bit_int c1; c2])
+  | _ ->
+    Cop(Clsr, [c1; c2])
+
+let asr_int c1 c2 =
+  match c2 with
+    (Cconst_int n) when n > 0 ->
+    Cop(Casr, [ignore_low_bit_int c1; c2])
+  | _ ->
+    Cop(Casr, [c1; c2])
 
 (* Division or modulo on tagged integers.  The overflow case min_int / -1
    cannot occur, but we must guard against division by zero. *)
@@ -1374,10 +1388,10 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Plslint ->
       incr_int(lsl_int (decr_int(transl arg1)) (untag_int(transl arg2)))
   | Plsrint ->
-      Cop(Cor, [Cop(Clsr, [transl arg1; untag_int(transl arg2)]);
+      Cop(Cor, [lsr_int (transl arg1) (untag_int(transl arg2));
                 Cconst_int 1])
   | Pasrint ->
-      Cop(Cor, [Cop(Casr, [transl arg1; untag_int(transl arg2)]);
+      Cop(Cor, [asr_int (transl arg1) (untag_int(transl arg2));
                 Cconst_int 1])
   | Pintcomp cmp ->
       tag_int(Cop(Ccmpi(transl_comparison cmp), [transl arg1; transl arg2]))
