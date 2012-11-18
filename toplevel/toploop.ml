@@ -102,6 +102,23 @@ let print_error = Location.print_error
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
+let parse_mod_use_file name lb =
+  let modname =
+    String.capitalize (Filename.chop_extension (Filename.basename name))
+  in
+  let items =
+    List.concat
+      (List.map
+         (function Ptop_def s -> s | Ptop_dir _ -> [])
+         (!parse_use_file lb))
+  in
+  [ Ptop_def
+      [ { pstr_desc =
+            Pstr_module ( Location.mknoloc modname ,
+                          { pmod_desc = Pmod_structure items;
+                            pmod_loc = Location.none } );
+          pstr_loc = Location.none } ] ]
+
 (* Hooks for initialization *)
 
 let toplevel_startup_hook = ref (fun () -> ())
@@ -284,7 +301,7 @@ let protect r newval body =
 
 let use_print_results = ref true
 
-let use_file ppf name =
+let use_file ppf wrap_mod name =
   try
     let (filename, ic, must_close) =
       if name = "" then
@@ -307,7 +324,10 @@ let use_file ppf name =
               if !Clflags.dump_parsetree then Printast.top_phrase ppf ph;
               if !Clflags.dump_source then Pprintast.top_phrase ppf ph;
               if not (execute_phrase !use_print_results ppf ph) then raise Exit)
-            (!parse_use_file lb);
+            (if wrap_mod then
+               parse_mod_use_file name lb
+             else
+               !parse_use_file lb);
           true
         with
         | Exit -> false
@@ -316,6 +336,9 @@ let use_file ppf name =
     if must_close then close_in ic;
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
+
+let mod_use_file ppf name = use_file ppf true name
+let use_file ppf name = use_file ppf false name
 
 let use_silently ppf name =
   protect use_print_results false (fun () -> use_file ppf name)

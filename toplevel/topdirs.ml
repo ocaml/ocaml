@@ -164,8 +164,10 @@ let load_file = load_file false
 (* Load commands from a file *)
 
 let dir_use ppf name = ignore(Toploop.use_file ppf name)
+let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
 
 let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_out))
+let _ = Hashtbl.add directive_table "mod_use" (Directive_string (dir_mod_use std_out))
 
 (* Install, remove a printer *)
 
