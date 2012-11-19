@@ -281,6 +281,11 @@ This is textual inclusion: phrases are processed just as if
 they were typed on standard input. The reading of the file stops at
 the first error encountered.
 
+\item["#mod_use \""\var{file-name}"\";;"]
+Similar to #use but also wrap the code into a top-level module of the
+same name as capitalised file name without extensions, following
+semantics of the compiler.
+
 \item["#install_printer "\var{printer-name}";;"]
 This directive registers the function named \var{printer-name} (a
 value path) as a printer for values whose types match the argument
