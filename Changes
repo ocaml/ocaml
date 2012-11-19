@@ -36,6 +36,7 @@ Bug fixes:
 - PR#5805: Assert failure with warning 34 on pre-processed file
 - PR#5821: Wrong record field is reported as duplicate
 - PR#5824: Generate more efficient code for immediate right shifts.
+- PR#5825: Add a toplevel primitive to use source file wrapped with the coresponding module
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
