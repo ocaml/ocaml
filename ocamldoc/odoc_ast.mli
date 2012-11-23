@@ -31,12 +31,17 @@ module Typedtree_search :
          @raise Not_found if the module was not found.*)
       val search_module : tab -> string -> Typedtree.module_expr
 
-      (** This function returns the [Types.module_type] associated to the given module type name,
+      (** This function returns the [Typedtree.module_type] associated to the given module type name,
          in the given table.
          @raise Not_found if the module type was not found.*)
       val search_module_type : tab -> string -> Typedtree.module_type
 
-      (** This function returns the [Types.exception_declaration] associated to the given exception name,
+      (** This function returns the [Typedtree.type_extension] associated to the given extension name,
+         in the given table.
+         @raise Not_found if the extension was not found.*)
+      val search_extension : tab -> string -> Typedtree.type_extension
+
+      (** This function returns the [Typedtree.exception_declaration] associated to the given exception name,
          in the given table.
          @raise Not_found if the exception was not found.*)
       val search_exception : tab -> string -> Typedtree.exception_declaration
@@ -56,7 +61,7 @@ module Typedtree_search :
          @raise Not_found if the class was not found. *)
       val search_class_exp : tab -> string -> (Typedtree.class_expr * (Types.type_expr list))
 
-      (** This function returns the [Types.cltype_declaration] associated to the given class type name,
+      (** This function returns the [Typedtree.class_type_declaration] associated to the given class type name,
          in the given table.
          @raise Not_found if the class type was not found. *)
       val search_class_type_declaration : tab -> string -> Typedtree.class_type_declaration

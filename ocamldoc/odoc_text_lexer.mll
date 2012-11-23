@@ -153,6 +153,7 @@ let end_verb = blank_nl"v}"
 let begin_ele_ref = "{!"blank_nl | "{!"
 let begin_val_ref = "{!val:"blank_nl | "{!val:"
 let begin_typ_ref = "{!type:"blank_nl | "{!type:"
+let begin_ext_ref = "{!extension:"blank_nl | "{!extension:"
 let begin_exc_ref = "{!exception:"blank_nl | "{!exception:"
 let begin_mod_ref = "{!module:"blank_nl | "{!module:"
 let begin_modt_ref = "{!modtype:"blank_nl | "{!modtype:"
@@ -522,6 +523,23 @@ rule main = parse
           (
            ele_ref_mode := true;
            TYP_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| begin_ext_ref
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !target_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           EXT_REF
           )
         else
           (

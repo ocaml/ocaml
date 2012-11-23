@@ -196,6 +196,7 @@ and structure_item_desc =
   | Tstr_value of rec_flag * (pattern * expression) list
   | Tstr_primitive of Ident.t * string loc * value_description
   | Tstr_type of (Ident.t * string loc * type_declaration) list
+  | Tstr_extension of type_extension
   | Tstr_exception of Ident.t * string loc * exception_declaration
   | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc
   | Tstr_module of Ident.t * string loc * module_expr
@@ -239,6 +240,7 @@ and signature_item =
 and signature_item_desc =
     Tsig_value of Ident.t * string loc * value_description
   | Tsig_type of (Ident.t * string loc * type_declaration) list
+  | Tsig_extension of type_extension
   | Tsig_exception of Ident.t * string loc * exception_declaration
   | Tsig_module of Ident.t * string loc * module_type
   | Tsig_recmodule of (Ident.t * string loc * module_type) list
@@ -305,7 +307,7 @@ and value_description =
     }
 
 and type_declaration =
-  { typ_params: string loc option list;
+  { typ_params: core_type list;
     typ_type : Types.type_declaration;
     typ_cstrs: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
@@ -319,9 +321,29 @@ and type_kind =
   | Ttype_variant of (Ident.t * string loc * core_type list * Location.t) list
   | Ttype_record of
       (Ident.t * string loc * mutable_flag * core_type * Location.t) list
+  | Ttype_open
+
+and type_extension =
+  { tyext_path: Path.t;
+    tyext_path_txt: Longident.t loc;
+    tyext_params: core_type list;
+    tyext_constructors: extension_constructor list;
+    tyext_private: private_flag;
+    tyext_variance: (bool * bool) list }
+
+and extension_constructor =
+  { ext_name: Ident.t;
+    ext_name_txt: string loc;
+    ext_type : Types.extension_constructor;
+    ext_kind : extension_constructor_kind;
+    ext_loc : Location.t }
+
+and extension_constructor_kind =
+    Text_decl of core_type list * core_type option
+  | Text_rebind of Path.t * Longident.t loc
 
 and exception_declaration =
-  { exn_params : core_type list;
+  { exn_args : core_type list;
     exn_exn : Types.exception_declaration;
     exn_loc : Location.t }
 
@@ -366,7 +388,7 @@ and class_type_declaration =
 
 and 'a class_infos =
   { ci_virt: virtual_flag;
-    ci_params: string loc list * Location.t;
+    ci_params: core_type list;
     ci_id_name : string loc;
     ci_id_class: Ident.t;
     ci_id_class_type : Ident.t;

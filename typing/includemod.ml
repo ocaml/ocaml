@@ -24,6 +24,8 @@ type symptom =
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch list
+  | Extension_constructors of
+      Ident.t * extension_constructor * extension_constructor
   | Exception_declarations of
       Ident.t * exception_declaration * exception_declaration
   | Module_types of module_type * module_type
@@ -66,6 +68,14 @@ let type_declarations env cxt subst id decl1 decl2 =
   let err = Includecore.type_declarations env (Ident.name id) decl1 id decl2 in
   if err <> [] then raise(Error[cxt, Type_declarations(id, decl1, decl2, err)])
 
+(* Inclusion between extension constructors *)
+
+let extension_constructors env cxt subst id ext1 ext2 =
+  let ext2 = Subst.extension_constructor subst ext2 in
+  if Includecore.extension_constructors env id ext1 ext2
+  then ()
+  else raise(Error[cxt, Extension_constructors(id, ext1, ext2)])
+
 (* Inclusion between exception declarations *)
 
 let exception_declarations env cxt subst id decl1 decl2 =
@@ -105,6 +115,7 @@ let expand_module_path env cxt path =
 type field_desc =
     Field_value of string
   | Field_type of string
+  | Field_extension of string
   | Field_exception of string
   | Field_module of string
   | Field_modtype of string
@@ -114,6 +125,7 @@ type field_desc =
 let item_ident_name = function
     Sig_value(id, _) -> (id, Field_value(Ident.name id))
   | Sig_type(id, _, _) -> (id, Field_type(Ident.name id))
+  | Sig_extension(id, _, _) -> (id, Field_extension(Ident.name id))
   | Sig_exception(id, _) -> (id, Field_exception(Ident.name id))
   | Sig_module(id, _, _) -> (id, Field_module(Ident.name id))
   | Sig_modtype(id, _) -> (id, Field_modtype(Ident.name id))
@@ -196,6 +208,7 @@ and signatures env cxt subst sig1 sig2 =
           | Sig_modtype(_,_)
           | Sig_class_type(_,_,_) -> pos
           | Sig_value(_,_)
+	  | Sig_extension(_,_,_)
           | Sig_exception(_,_)
           | Sig_module(_,_,_)
           | Sig_class(_, _,_) -> pos+1 in
@@ -236,7 +249,8 @@ and signatures env cxt subst sig1 sig2 =
                 Subst.add_module id2 (Pident id1) subst
             | Sig_modtype _ ->
                 Subst.add_modtype id2 (Mty_ident (Pident id1)) subst
-            | Sig_value _ | Sig_exception _ | Sig_class _ | Sig_class_type _ ->
+            | Sig_value _ | Sig_extension _ 
+            | Sig_exception _ | Sig_class _ | Sig_class_type _ ->
                 subst
           in
           pair_components new_subst
@@ -262,6 +276,10 @@ and signature_components env cxt subst = function
   | (Sig_type(id1, tydecl1, _), Sig_type(id2, tydecl2, _), pos) :: rem ->
       type_declarations env cxt subst id1 tydecl1 tydecl2;
       signature_components env cxt subst rem
+  | (Sig_extension(id1, ext1, _), Sig_extension(id2, ext2, _), pos)
+    :: rem ->
+      extension_constructors env cxt subst id1 ext1 ext2;
+      (pos, Tcoerce_none) :: signature_components env cxt subst rem
   | (Sig_exception(id1, excdecl1), Sig_exception(id2, excdecl2), pos)
     :: rem ->
       exception_declarations env cxt subst id1 excdecl1 excdecl2;
@@ -366,6 +384,13 @@ let include_err ppf = function
         show_locs (d1.type_loc, d2.type_loc)
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration") errs
+  | Extension_constructors(id, x1, x2) ->
+      fprintf ppf
+       "@[<hv 2>Extension declarations do not match:@ \
+        %a@;<1 -2>is not included in@ %a@]"
+      (extension_constructor id) x1
+      (extension_constructor id) x2;
+      show_locs ppf (x1.ext_loc, x2.ext_loc)
   | Exception_declarations(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Exception declarations do not match:@ \

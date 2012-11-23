@@ -668,7 +668,11 @@ and transl_exp0 e =
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable), ll)
           end
-      | Cstr_exception (path, _) ->
+      | Cstr_ext_constant(path, _) ->
+	  transl_path path
+      | Cstr_ext_block(path, _) ->
+          Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
+      | Cstr_exception(path, _) ->
           Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       end
   | Texp_variant(l, arg) ->
@@ -1032,6 +1036,38 @@ let transl_let rec_flag pat_expr_list body =
       Translobj.oo_wrap expr.exp_env false
         (transl_let rec_flag pat_expr_list) body
 *)
+
+(* Compile a type extension *)
+
+let transl_type_extension tyext body = 
+  let (rebinds, body) =
+    List.fold_right
+      (fun ext (rebinds, body) ->
+	 match ext.ext_kind with
+	     Text_decl(args, ret) -> 
+	       let lam =
+		 Lapply ((Translobj.oo_prim "create_extension_tag"),
+			 [Lconst(Const_pointer 0)],
+			 Location.none)
+	       in
+	       let body = Llet(Strict, ext.ext_name, lam, body) in
+		 (rebinds, body)
+	   | Text_rebind(path, lid) ->
+	       let idpath = Ident.create "rebind" in
+	       let rebinds = (idpath, path) :: rebinds in
+	       let lam = Lvar idpath in
+	       let body = Llet(Strict, ext.ext_name, lam, body) in
+		 (rebinds, body))
+      tyext.tyext_constructors
+      ([], body)
+  in
+    List.fold_right
+      (fun (id, path) body ->
+	 let lam = transl_path path in
+	   Llet(Strict, id, lam, body))
+      rebinds
+      body
+
 
 (* Compile an exception definition *)
 

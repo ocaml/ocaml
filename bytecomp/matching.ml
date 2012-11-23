@@ -1193,7 +1193,7 @@ let make_constr_matching p def ctx = function
         match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
             make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
-        | Cstr_exception _ ->
+        | Cstr_ext_constant _ | Cstr_ext_block _ | Cstr_exception _ ->
             make_field_args Alias arg 1 cstr.cstr_arity argl in
       {pm=
         {cases = []; args = newargs;
@@ -2017,32 +2017,61 @@ let split_cases tag_lambda_list =
   sort_int_lambda_list const,
   sort_int_lambda_list nonconst
 
+let split_extension_cases tag_lambda_list =
+  let rec split_rec = function
+      [] -> ([], [])
+    | (cstr, act) :: rem ->
+        let (consts, nonconsts) = split_rec rem in
+        match cstr with
+          Cstr_ext_constant(path, _) -> ((path, act) :: consts, nonconsts)
+        | Cstr_ext_block(path, _) -> (consts, (path, act) :: nonconsts)
+	| Cstr_exception(path, _) -> (consts, (path, act) :: nonconsts)
+        | _ -> assert false in
+  split_rec tag_lambda_list
+  
 
 let combine_constructor arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
-    (* Special cases for exceptions *)
+    (* Special cases for exceptions and extensions *)
     let fail, to_add, local_jumps =
       mk_failaction_neg partial ctx def in
     let tag_lambda_list = to_add@tag_lambda_list in
     let lambda1 =
-      let default, tests =
+      let consts, nonconsts = split_extension_cases tag_lambda_list in
+      let default, consts, nonconsts =
         match fail with
         | None ->
-            begin match tag_lambda_list with
-            | (_, act)::rem -> act,rem
+            begin match consts, nonconsts with
+            | _, (_, act)::rem -> act, consts, rem
+            | (_, act)::rem, _ -> act, rem, nonconsts
             | _ -> assert false
             end
-        | Some fail -> fail, tag_lambda_list in
-      List.fold_right
-        (fun (ex, act) rem ->
-          match ex with
-          | Cstr_exception (path, _) ->
-              Lifthenelse(Lprim(Pintcomp Ceq,
-                                [Lprim(Pfield 0, [arg]); transl_path path]),
-                          act, rem)
-          | _ -> assert false)
-        tests default in
+        | Some fail -> fail, consts, nonconsts in
+      let nonconst_lambda =
+	match nonconsts with
+	    [] -> default
+	  | _ ->
+	      let tag = Ident.create "tag" in
+	      let tests = 
+		List.fold_right
+		  (fun (path, act) rem ->
+		     Lifthenelse(Lprim(Pintcomp Ceq,
+                                       [Lvar tag; transl_path path]),
+				 act, rem))
+		  nonconsts
+		  default
+	      in
+		Llet(Alias, tag, Lprim(Pfield 0, [arg]), tests)
+      in
+	List.fold_right
+          (fun (path, act) rem ->
+             Lifthenelse(Lprim(Pintcomp Ceq,
+                               [arg; transl_path path]),
+                         act, rem))
+	  consts
+	  nonconst_lambda
+    in
     lambda1, jumps_union local_jumps total1
   end else begin
     (* Regular concrete type *)

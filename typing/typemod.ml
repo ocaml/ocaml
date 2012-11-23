@@ -205,15 +205,12 @@ let merge_constraint initial_env loc  sg lid constr =
           try match sdecl.ptype_manifest with
           | Some {ptyp_desc = Ptyp_constr (lid, stl)}
             when List.length stl = List.length sdecl.ptype_params ->
-              let params =
-                List.map
-                  (function {ptyp_desc=Ptyp_var s} -> s | _ -> raise Exit)
-                  stl in
-              List.iter2 (fun x ox ->
-                match ox with
-                    Some y when x = y.txt -> ()
-                  | _ -> raise Exit
-              ) params sdecl.ptype_params;
+              List.iter2 (fun x y ->
+                match x, y with
+                  {ptyp_desc=Ptyp_var sx}, {ptyp_desc=Ptyp_var sy} 
+                    when sx = sy -> ()
+                | _, _ -> raise Exit) 
+                stl sdecl.ptype_params;
               lid
           | _ -> raise Exit
           with Exit -> raise (Error (sdecl.ptype_loc, With_need_typeconstr))
@@ -253,8 +250,14 @@ let rec map_rec' fn decls rem =
 let rec map_rec'' fn decls rem =
   match decls with
   | (id, _,_ as d1) :: dl when Btype.is_row_name (Ident.name id) ->
-      fn Trec_not d1 :: map_rec'' fn dl rem
-  | _ -> map_rec fn decls rem
+    fn Trec_not d1 :: map_rec'' fn dl rem
+  | _ -> map_rec fn decls rem 
+
+(* Add extension flags to extension contructors *)
+let map_ext fn exts rem =
+  match exts with
+  | [] -> rem
+  | d1 :: dl -> fn Text_first d1 :: map_end (fn Text_next) dl rem
 
 (* Auxiliary for translating recursively-defined module types.
    Return a module type that approximates the shape of the given module
@@ -370,16 +373,33 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
-let rec remove_values ids = function
+let rec remove_duplicates val_ids ext_ids exn_ids = function
     [] -> []
   | Sig_value (id, _) :: rem
-    when List.exists (Ident.equal id) ids -> remove_values ids rem
-  | f :: rem -> f :: remove_values ids rem
+    when List.exists (Ident.equal id) val_ids -> 
+      remove_duplicates val_ids ext_ids exn_ids rem
+  | Sig_extension (id, _, _) :: rem
+    when List.exists (Ident.equal id) ext_ids -> 
+      remove_duplicates val_ids ext_ids exn_ids rem
+  | Sig_exception (id, _) :: rem
+    when List.exists (Ident.equal id) exn_ids -> 
+      remove_duplicates val_ids ext_ids exn_ids rem
+  | f :: rem -> f :: remove_duplicates val_ids ext_ids exn_ids rem
 
 let rec get_values = function
     [] -> []
   | Sig_value (id, _) :: rem -> id :: get_values rem
   | f :: rem -> get_values rem
+
+let rec get_extensions = function
+    [] -> []
+  | Sig_extension (id, _, _) :: rem -> id :: get_extensions rem
+  | f :: rem -> get_extensions rem
+
+let rec get_exceptions = function
+    [] -> []
+  | Sig_exception (id, _) :: rem -> id :: get_exceptions rem
+  | f :: rem -> get_exceptions rem
 
 (* Check and translate a module type expression *)
 
@@ -470,12 +490,28 @@ and transl_signature env sg =
             map_rec'' (fun rs (id, _, info) ->
                 Sig_type(id, info.typ_type, rs)) decls rem,
             final_env
+	| Psig_extension styext ->
+	    let (tyext, newenv) = 
+              Typedecl.transl_type_extension false env item.psig_loc styext 
+            in
+            let (trem, rem, final_env) = transl_sig newenv srem in
+            let constructors = 
+              List.filter 
+                (fun ext -> not 
+                  (List.exists (Ident.equal ext.ext_name) (get_extensions rem)))
+                tyext.tyext_constructors
+            in
+              mksig (Tsig_extension tyext) env loc :: trem,
+	      map_ext (fun es ext -> 
+                Sig_extension(ext.ext_name, ext.ext_type, es)) constructors rem,
+              final_env
         | Psig_exception(name, sarg) ->
             let arg = Typedecl.transl_exception env item.psig_loc sarg in
             let (id, newenv) = Env.enter_exception name.txt arg.exn_exn env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_exception (id, name, arg)) env loc :: trem,
-            Sig_exception(id, arg.exn_exn) :: rem,
+            (if List.exists (Ident.equal id) (get_exceptions rem) then rem
+            else Sig_exception(id, arg.exn_exn) :: rem),
             final_env
         | Psig_module(name, smty) ->
             check "module" item.psig_loc module_names name.txt;
@@ -522,7 +558,9 @@ and transl_signature env sg =
             let newenv = Env.add_signature sg env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include (tmty, sg)) env loc :: trem,
-            remove_values (get_values rem) sg @ rem, final_env
+            remove_duplicates (get_values rem) (get_extensions rem) 
+              (get_exceptions rem) sg @ rem, 
+            final_env
         | Psig_class cl ->
             List.iter
               (fun {pci_name = name} ->
@@ -662,6 +700,7 @@ let rec bound_value_identifiers = function
     [] -> []
   | Sig_value(id, {val_kind = Val_reg}) :: rem ->
       id :: bound_value_identifiers rem
+  | Sig_extension(id, ext, _) :: rem -> id :: bound_value_identifiers rem
   | Sig_exception(id, decl) :: rem -> id :: bound_value_identifiers rem
   | Sig_module(id, mty, _) :: rem -> id :: bound_value_identifiers rem
   | Sig_class(id, decl, _) :: rem -> id :: bound_value_identifiers rem
@@ -974,6 +1013,14 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          map_rec'' (fun rs (id, _, info) -> Sig_type(id, info.typ_type, rs))
            decls sig_rem,
          final_env)
+    | Pstr_extension styext ->
+	let (tyext, newenv) = Typedecl.transl_type_extension true env loc styext in
+	let (str_rem, sig_rem, final_env) = type_struct newenv srem in
+	(mkstr (Tstr_extension tyext) loc :: str_rem,
+	 map_ext 
+           (fun es ext -> Sig_extension(ext.ext_name, ext.ext_type, es)) 
+           tyext.tyext_constructors sig_rem,
+	 final_env)
     | Pstr_exception(name, sarg) ->
         let arg = Typedecl.transl_exception env loc sarg in
         let (id, newenv) = Env.enter_exception name.txt arg.exn_exn env in
@@ -1141,25 +1188,30 @@ let rec simplify_modtype mty =
   | Mty_signature sg -> Mty_signature(simplify_signature sg)
 
 and simplify_signature sg =
-  let rec simplif val_names exn_names res = function
+  let rec simplif val_names ext_names exn_names res = function
     [] -> res
   | (Sig_value(id, descr) as component) :: sg ->
       let name = Ident.name id in
-      simplif (StringSet.add name val_names) exn_names
+      simplif (StringSet.add name val_names) ext_names exn_names
               (if StringSet.mem name val_names then res else component :: res)
+              sg
+  | (Sig_extension(id, ext, es) as component) :: sg ->
+      let name = Ident.name id in
+      simplif val_names (StringSet.add name ext_names) exn_names
+              (if StringSet.mem name ext_names then res else component :: res)
               sg
   | (Sig_exception(id, decl) as component) :: sg ->
       let name = Ident.name id in
-      simplif val_names (StringSet.add name exn_names)
+      simplif val_names ext_names (StringSet.add name exn_names)
               (if StringSet.mem name exn_names then res else component :: res)
               sg
   | Sig_module(id, mty, rs) :: sg ->
-      simplif val_names exn_names
+      simplif val_names ext_names exn_names
               (Sig_module(id, simplify_modtype mty, rs) :: res) sg
   | component :: sg ->
-      simplif val_names exn_names (component :: res) sg
+      simplif val_names ext_names exn_names (component :: res) sg
   in
-    simplif StringSet.empty StringSet.empty [] (List.rev sg)
+    simplif StringSet.empty StringSet.empty StringSet.empty [] (List.rev sg)
 
 (* Extract the module type of a module expression *)
 

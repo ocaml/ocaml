@@ -19,6 +19,7 @@ module Naming = Odoc_html.Naming
 open Odoc_info.Value
 open Odoc_info.Module
 open Odoc_info.Type
+open Odoc_info.Extension
 open Odoc_info.Exception
 open Odoc_info.Class
 
@@ -116,6 +117,12 @@ struct
         (Odoc_html.Naming.complete_type_target t)
         t.ty_info
 
+    method scan_extension_constructor x =
+      self#gen_if_tag
+        x.xt_name
+        (Odoc_html.Naming.complete_extension_target x)
+        x.xt_type_extension.te_info
+
     method scan_exception e =
       self#gen_if_tag
         e.ex_name
@@ -145,6 +152,7 @@ struct
           | Odoc_module.Element_class c -> self#scan_class c
           | Odoc_module.Element_class_type ct -> self#scan_class_type ct
           | Odoc_module.Element_value v -> self#scan_value v
+          | Odoc_module.Element_type_extension te -> self#scan_type_extension te
           | Odoc_module.Element_exception e -> self#scan_exception e
           | Odoc_module.Element_type t -> self#scan_type t
           | Odoc_module.Element_module_comment t -> self#scan_module_comment t

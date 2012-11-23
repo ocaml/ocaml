@@ -34,6 +34,8 @@ module Toploop : sig
     ref (formatter -> Outcometree.out_class_type -> unit);
   value print_out_module_type :
     ref (formatter -> Outcometree.out_module_type -> unit);
+  value print_out_type_extension :
+    ref (formatter -> Outcometree.out_type_extension -> unit);
   value print_out_sig_item :
     ref (formatter -> Outcometree.out_sig_item -> unit);
   value print_out_signature :
@@ -46,6 +48,7 @@ end = struct
   value print_out_type = Obj.magic print_out_type;
   value print_out_class_type = Obj.magic print_out_class_type;
   value print_out_module_type = Obj.magic print_out_module_type;
+  value print_out_extension_group = Obj.magic print_out_type_extension;
   value print_out_sig_item = Obj.magic print_out_sig_item;
   value print_out_signature = Obj.magic print_out_signature;
   value print_out_phrase = Obj.magic print_out_phrase;
@@ -229,6 +232,7 @@ and print_simple_out_type ppf =
       fprintf ppf "@[<hv 2>{ %a }@]"
         (print_list print_out_label (fun ppf -> fprintf ppf ";@ ")) lbls
   | Otyp_abstract -> fprintf ppf "<abstract>"
+  | Otyp_open -> fprintf ppf ".."
   | Otyp_module (p, n, tyl) ->
       do {
           fprintf ppf "@[<1>(module %s" p;
@@ -372,6 +376,7 @@ and needs_semi =
   | Osig_class_type _ _ _ _ rs
   | Osig_module _ _ rs
   | Osig_type _ rs -> rs <> Orec_next
+  | Osig_extension _ _
   | Osig_exception _ _
   | Osig_modtype _ _
   | Osig_value _ _ _ -> True ]
@@ -379,6 +384,28 @@ and print_out_signature ppf =
   fun
   [ [] -> ()
   | [item] -> fprintf ppf "%a;" Toploop.print_out_sig_item.val item
+  | [(Osig_extension ext Oext_first) :: items] ->
+      (* Gather together the extension constructors *)
+      let rec gather_extensions acc items =
+	match items with
+	  [ [(Osig_extension ext Oext_next) :: items] ->
+	      gather_extensions 
+                [(ext.oext_name,ext.oext_args,ext.oext_ret_type) :: acc] 
+                items
+	  | _ -> (List.rev acc, items)]
+      in
+      let (exts, items) = 
+        gather_extensions 
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)] 
+          items 
+      in
+      let te = 
+        { otyext_name = ext.oext_type_name;
+          otyext_params = ext.oext_type_params;
+          otyext_constructors = exts;
+          otyext_private = ext.oext_private }
+      in
+	fprintf ppf "%a@ %a" Toploop.print_out_type_extension.val te print_out_signature items
   | [item :: items] ->
       let sep = match items with
       [ [hd :: _] -> if needs_semi hd then ";" else ""
@@ -397,6 +424,8 @@ and print_out_sig_item ppf =
         (if rs = Orec_next then "and" else "class type")
         (if vir_flag then " virtual" else "") print_out_class_params params
         name Toploop.print_out_class_type.val clt
+  | Osig_extension (ext, _) ->
+      print_out_extension_constructor ppf ext
   | Osig_exception id tyl ->
       fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl,None)
   | Osig_modtype name Omty_abstract ->
@@ -460,6 +489,57 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
   | _ ->
       fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@]%a@]" kwd type_defined
 	print_types ty print_constraints constraints ]
+
+and print_out_extension_constructor ppf ext =
+  let print_type_extended ppf =
+    let print_type_parameter ppf ty =
+      fprintf ppf "%s"
+        (if ty = "_" then ty else "'"^ty)
+    in
+      match ext.oext_type_params with
+        [ [] -> fprintf ppf "%s" ty_name
+        | [ty_param] -> 
+          fprintf ppf "%s %a" 
+            ext.oext_ty_name
+            print_type_parameter 
+            ty_param
+        | _ ->
+          fprintf ppf "%s@ %a" 
+            ext.oext_type_name
+            (print_list print_type_parameter (fun ppf -> fprintf ppf "@ ")) 
+            ext.oext_type_params ]
+  in
+  fprintf ppf "@[<hv 2>@[type %t@] +=%s@ %a@]"
+    print_extended_type
+    (if ext.oext_private = Obj.magic Camlp4_import.Asttypes.Private 
+     then " private" else "")
+    print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
+
+and print_out_type_extension ppf te =
+  let print_extended_type ppf =
+    let print_type_parameter ppf ty =
+      fprintf ppf "%s"
+        (if ty = "_" then ty else "'"^ty)
+    in
+      match te.otyext_params with
+        [ [] -> fprintf ppf "%s" ty_name
+        | [ty_param] -> 
+          fprintf ppf "%s %a" 
+            te.otyext_name 
+            print_type_parameter 
+            ty_param
+        | _ ->
+          fprintf ppf "%s %a" 
+            te.otyext_name
+            (print_list print_type_parameter (fun ppf -> fprintf ppf "@ ")) 
+            te.otyext_params ]
+  in
+  fprintf ppf "@[<hv 2>@[type %t@] +=%s@ %a@]"
+    print_extended_type
+    (if te.otyext_private = Obj.magic Camlp4_import.Asttypes.Private 
+     then " private" else "")
+    (print_list print_out_constr (fun ppf -> fprintf ppf "@ | "))
+    te.otyext_constructors
 ;
 
 (* Phrases *)
@@ -477,6 +557,31 @@ value print_out_exception ppf exn outv =
 value rec print_items ppf =
   fun
   [ [] -> ()
+  | [((Osig_extension ext Oext_first), None) :: items] ->
+      (* Gather together extension constructors *)
+      let rec gather_extensions acc items =
+	match items with
+	  [ [((Osig_extension ext Oext_next), None) :: items] ->
+	      gather_extensions 
+                [(ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc] 
+                items
+	  | _ -> (List.rev acc, items) ]
+      in
+      let (exts, items) = 
+        gather_extensions 
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)] 
+          items 
+      in
+      let te =
+        { otyext_name = ext.oext_type_name;
+          otyext_params = ext.oext_type_params;
+          otyext_constructors = exts;
+          otyext_private = ext.oext_private }
+      in
+      do {
+        fprintf ppf "@[%a@]" Toploop.print_out_type_extension.val te;
+        if items <> [] then fprintf ppf "@ %a" print_items items else ()
+      }
   | [(tree, valopt) :: items] ->
       do {
         match valopt with
@@ -502,6 +607,7 @@ Toploop.print_out_value.val := print_out_value;
 Toploop.print_out_type.val := print_out_type;
 Toploop.print_out_class_type.val := print_out_class_type;
 Toploop.print_out_module_type.val := print_out_module_type;
+Toploop.print_out_type_extension.val := print_out_type_extension;
 Toploop.print_out_sig_item.val := print_out_sig_item;
 Toploop.print_out_signature.val := print_out_signature;
 Toploop.print_out_phrase.val := print_out_phrase;

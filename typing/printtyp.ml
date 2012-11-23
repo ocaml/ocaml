@@ -595,6 +595,7 @@ let rec tree_of_type_decl id decl =
 	cstrs
   | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
+  | Type_open -> ()
   end;
 
   let type_param =
@@ -612,6 +613,8 @@ let rec tree_of_type_decl id decl =
       | Type_variant tll ->
           decl.type_private = Private ||
           List.exists (fun (_,_,ret) -> ret <> None) tll
+      | Type_open ->
+	  decl.type_manifest = None
     in
     let vari =
       List.map2
@@ -644,8 +647,15 @@ let rec tree_of_type_decl id decl =
     | Type_record(lbls, rep) ->
         tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
         decl.type_private
+    | Type_open ->
+	tree_of_manifest Otyp_open,
+	Public
   in
-  (name, args, ty, priv, constraints)
+    { otype_name = name;
+      otype_params = args;
+      otype_type = ty;
+      otype_private = priv;
+      otype_cstrs = constraints }
 
 and tree_of_constructor (name, args, ret_type_opt) =
   let name = Ident.name name in
@@ -656,12 +666,7 @@ and tree_of_constructor (name, args, ret_type_opt) =
   let args = tree_of_typlist false args in
   names := nm;
   (name, args, ret)
-
-
-and tree_of_constructor_ret =
-  function
-    | None -> None
-    | Some ret_type -> Some (tree_of_typexp false ret_type)
+    
 
 and tree_of_label (name, mut, arg) =
   (Ident.name name, mut = Mutable, tree_of_typexp false arg)
@@ -671,6 +676,46 @@ let tree_of_type_declaration id decl rs =
 
 let type_declaration id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
+
+(* Print an extension declaration *)
+
+let tree_of_extension_constructor id ext es =
+  reset ();
+  let ty_name = Path.name ext.ext_type_path in
+  let ty_params = filter_params ext.ext_type_params in
+  List.iter add_alias ty_params;
+  List.iter mark_loops ty_params;
+  List.iter check_name_of_type (List.map proxy ty_params);
+  List.iter mark_loops ext.ext_args;
+  may mark_loops ext.ext_ret_type;
+  let type_param =
+    function
+    | Otyp_var (_, id) -> id
+    | _ -> "?"
+  in
+  let ty_params = 
+    List.map (fun ty -> type_param (tree_of_typexp false ty)) ty_params 
+  in
+  let name, args, ret = 
+    tree_of_constructor (id, ext.ext_args, ext.ext_ret_type) 
+  in
+  let ext = 
+    { oext_name = name;
+      oext_type_name = ty_name;
+      oext_type_params = ty_params;
+      oext_args = args;
+      oext_ret_type = ret;
+      oext_private = ext.ext_private }
+  in
+  let es = 
+    match es with
+	Text_first -> Oext_first
+      | Text_next -> Oext_next
+  in
+    Osig_extension (ext, es)
+
+let extension_constructor id ppf ext =
+  !Oprint.out_sig_item ppf (tree_of_extension_constructor id ext Text_first)
 
 (* Print an exception declaration *)
 
@@ -886,6 +931,8 @@ and tree_of_signature = function
   | Sig_type(id, decl, rs) :: rem ->
       Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
       tree_of_signature rem
+  | Sig_extension(id, ext, es) :: rem ->
+      tree_of_extension_constructor id ext es :: tree_of_signature rem
   | Sig_exception(id, decl) :: rem ->
       tree_of_exception_declaration id decl :: tree_of_signature rem
   | Sig_module(id, mty, rs) :: rem ->

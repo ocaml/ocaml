@@ -1119,7 +1119,7 @@ let temp_abbrev loc env id arity =
 let initial_env define_class approx
     (res, env) (cl, id, ty_id, obj_id, cl_id) =
   (* Temporary abbreviations *)
-  let arity = List.length (fst cl.pci_params) in
+  let arity = List.length cl.pci_params in
   let (obj_params, obj_ty, env) = temp_abbrev cl.pci_loc env obj_id arity in
   let (cl_params, cl_ty, env) = temp_abbrev cl.pci_loc env cl_id arity in
 
@@ -1171,12 +1171,15 @@ let class_infos define_class kind
   Ctype.begin_class_def ();
 
   (* Introduce class parameters *)
-  let params =
-    try
-      let params, loc = cl.pci_params in
-      List.map (fun x -> enter_type_variable true loc x.txt) params
-    with Already_bound ->
-      raise(Error(snd cl.pci_params, Repeated_parameter))
+  let ci_params, params =
+    let make_param sty = 
+      try
+        let cty = transl_type_param env true sty in
+          cty, cty.ctyp_type
+      with Already_bound ->
+        raise(Error(sty.ptyp_loc, Repeated_parameter))
+    in
+      List.split (List.map make_param cl.pci_params)
   in
 
   (* Allow self coercions (only for class declarations) *)
@@ -1342,12 +1345,12 @@ let class_infos define_class kind
      type_newtype_level = None;
      type_loc = cl.pci_loc}
   in
-  ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+  ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
     arity, pub_meths, List.rev !coercion_locs, expr) :: res,
    env)
 
 let final_decl env define_class
-    (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+    (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
      arity, pub_meths, coe, expr) =
 
   begin try Ctype.collapse_conj_params env clty.cty_params
@@ -1394,7 +1397,7 @@ let final_decl env define_class
    { ci_variance = cl.pci_variance;
      ci_loc = cl.pci_loc;
      ci_virt = cl.pci_virt;
-      ci_params = cl.pci_params;
+      ci_params = ci_params;
 (* TODO : check that we have the correct use of identifiers *)
       ci_id_name = cl.pci_name;
       ci_id_class = id;

@@ -26,6 +26,10 @@ val string_of_type_list : ?par: bool -> string -> Types.type_expr list -> string
    for the given type. *)
 val string_of_type_param_list : Odoc_type.t_type -> string
 
+(** This function returns a string to represent the list of type parameters
+   for the given type extension. *)
+val string_of_type_extension_param_list : Odoc_extension.t_type_extension -> string
+
 (** This function returns a string to represent the given list of
    type parameters of a class or class type,
    with a given separator. *)
@@ -37,6 +41,9 @@ val string_of_type : Odoc_type.t_type -> string
 (** @return a string to display the parameters of the given class,
    in the same form as the compiler. *)
 val string_of_class_params : Odoc_class.t_class -> string
+
+(** @return a string to describe the given type extension. *)
+val string_of_type_extension : Odoc_extension.t_type_extension -> string
 
 (** @return a string to describe the given exception. *)
 val string_of_exception : Odoc_exception.t_exception -> string

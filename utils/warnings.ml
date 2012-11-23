@@ -59,6 +59,7 @@ type t =
   | Unused_constructor of string * bool * bool  (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
+  | Unused_extension of string * bool * bool  (* 40 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -106,10 +107,11 @@ let number = function
   | Unused_ancestor _ -> 36
   | Unused_constructor _ -> 37
   | Unused_exception _ -> 38
-  | Unused_rec_flag -> 39
+  | Unused_rec_flag -> 39  
+  | Unused_extension _ -> 40
 ;;
 
-let last_warning_number = 39
+let last_warning_number = 40;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -125,7 +127,7 @@ let letter = function
   | 'h' -> []
   | 'i' -> []
   | 'j' -> []
-  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39]
+  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39; 40]
   | 'l' -> [6]
   | 'm' -> [7]
   | 'n' -> []
@@ -204,7 +206,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39";;
+let defaults_w = "+a-4-6-7-9-27-29-32..40";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -304,6 +306,15 @@ let message = function
         (However, this constructor appears in patterns.)"
   | Unused_rec_flag ->
       "unused rec flag."
+  | Unused_extension (s, false, false) -> "unused extension constructor " ^ s ^ "."
+  | Unused_extension (s, true, _) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
+        (However, this constructor appears in patterns.)"
+  | Unused_extension (s, false, true) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
+        It is exported as a private extension."
 ;;
 
 let nerrors = ref 0;;
@@ -389,6 +400,7 @@ let descriptions =
    37, "Unused constructor.";
    38, "Unused exception constructor.";
    39, "Unused rec flag.";
+   40, "Unused extension constructor.";
   ]
 ;;
 

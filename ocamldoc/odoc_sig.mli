@@ -28,7 +28,12 @@ module Signature_search :
          @raise Not_found if error.*)
       val search_value : tab -> string -> Types.type_expr
 
-      (** This function returns the type expression list for the exception whose name is given,
+      (** This function returns the Types.extension_constructor for the extension whose name is given,
+         in the given table.
+         @raise Not_found if error.*)
+      val search_extension : tab -> string -> Types.extension_constructor
+ 
+     (** This function returns the type expression list for the exception whose name is given,
          in the given table.
          @raise Not_found if error.*)
       val search_exception : tab -> string -> Types.exception_declaration
@@ -43,7 +48,7 @@ module Signature_search :
          @raise Not_found if error.*)
       val search_class : tab -> string -> Types.class_declaration
 
-      (** This function returns the Types.cltype_declaration  for the class type whose name is given,
+      (** This function returns the Types.class_type_declaration  for the class type whose name is given,
          in the given table.
          @raise Not_found if error.*)
       val search_class_type : tab -> string -> Types.class_type_declaration

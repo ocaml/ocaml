@@ -377,6 +377,7 @@ let wrap_type_annotation newtypes core_type body =
 /* %token PARSER */
 %token PLUS
 %token PLUSDOT
+%token PLUSEQUAL
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
@@ -453,7 +454,7 @@ The precedences must be listed from low to high.
 %left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
 %right    COLONCOLON                    /* expr (e :: e :: e) */
-%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
+%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQUAL /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
 %nonassoc prec_unary_minus prec_unary_plus /* unary - */
@@ -578,6 +579,8 @@ structure_item:
           pval_loc = symbol_rloc ()})) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
+  | TYPE str_type_extension
+      { mkstr(Pstr_extension $2) }
   | EXCEPTION UIDENT constructor_arguments
       { mkstr(Pstr_exception(mkrhs $2 2, $3)) }
   | EXCEPTION UIDENT EQUAL constr_longident
@@ -648,6 +651,8 @@ signature_item:
           pval_loc = symbol_rloc()})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
+  | TYPE sig_type_extension
+      { mksig(Psig_extension $2) }
   | EXCEPTION UIDENT constructor_arguments
       { mksig(Psig_exception(mkrhs $2 2, $3)) }
   | MODULE UIDENT module_declaration
@@ -690,8 +695,8 @@ class_declarations:
 ;
 class_declaration:
     virtual_flag class_type_parameters LIDENT class_fun_binding
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
+      { let params, variance = List.split $2 in
+        {pci_virt = $1; pci_params = params;
          pci_name = mkrhs $3 3; pci_expr = $4; pci_variance = variance;
          pci_loc = symbol_rloc ()} }
 ;
@@ -704,8 +709,8 @@ class_fun_binding:
       { let (l,o,p) = $1 in mkclass(Pcl_fun(l, o, p, $2)) }
 ;
 class_type_parameters:
-    /*empty*/                                   { [], symbol_gloc () }
-  | LBRACKET type_parameter_list RBRACKET       { List.rev $2, symbol_rloc () }
+    /*empty*/                                   { [] }
+  | LBRACKET type_parameter_list RBRACKET       { List.rev $2 }
 ;
 class_fun_def:
     labeled_simple_pattern MINUSGREATER class_expr
@@ -889,8 +894,8 @@ class_descriptions:
 ;
 class_description:
     virtual_flag class_type_parameters LIDENT COLON class_type
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
+      { let params, variance = List.split $2 in
+        {pci_virt = $1; pci_params = params;
          pci_name = mkrhs $3 3; pci_expr = $5; pci_variance = variance;
          pci_loc = symbol_rloc ()} }
 ;
@@ -900,8 +905,8 @@ class_type_declarations:
 ;
 class_type_declaration:
     virtual_flag class_type_parameters LIDENT EQUAL class_signature
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
+      { let params, variance = List.split $2 in
+        {pci_virt = $1; pci_params = params;
          pci_name = mkrhs $3 3; pci_expr = $5; pci_variance = variance;
          pci_loc = symbol_rloc ()} }
 ;
@@ -1375,27 +1380,33 @@ type_kind:
       { (Ptype_variant(List.rev $3), Private, None) }
   | EQUAL private_flag BAR constructor_declarations
       { (Ptype_variant(List.rev $4), $2, None) }
+  | EQUAL DOTDOT
+      { (Ptype_open, Public, None) }
   | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $4), $2, None) }
   | EQUAL core_type EQUAL private_flag opt_bar constructor_declarations
       { (Ptype_variant(List.rev $6), $4, Some $2) }
+  | EQUAL core_type EQUAL DOTDOT
+      { (Ptype_open, Public, Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $6), $4, Some $2) }
 ;
 optional_type_parameters:
     /*empty*/                                   { [] }
-  | optional_type_parameter                              { [$1] }
+  | optional_type_parameter                     { [$1] }
   | LPAREN optional_type_parameter_list RPAREN  { List.rev $2 }
 ;
 optional_type_parameter:
-    type_variance QUOTE ident                   { Some (mkrhs $3 3), $1 }
-  | type_variance UNDERSCORE                    { None, $1 }
+    type_variance optional_type_variable        { $2, $1 }
 ;
 optional_type_parameter_list:
     optional_type_parameter                              { [$1] }
   | optional_type_parameter_list COMMA optional_type_parameter    { $3 :: $1 }
 ;
-
+optional_type_variable:
+    QUOTE ident                                 { mktyp(Ptyp_var $2) }
+  | UNDERSCORE                                  { mktyp(Ptyp_any) }
+;
 
 
 type_parameters:
@@ -1404,12 +1415,15 @@ type_parameters:
   | LPAREN type_parameter_list RPAREN           { List.rev $2 }
 ;
 type_parameter:
-    type_variance QUOTE ident                   { mkrhs $3 3, $1 }
+    type_variance type_variable                   { $2, $1 }
 ;
 type_variance:
     /* empty */                                 { false, false }
   | PLUS                                        { true, false }
   | MINUS                                       { false, true }
+;
+type_variable:
+    QUOTE ident                                 { mktyp(Ptyp_var $2) }
 ;
 type_parameter_list:
     type_parameter                              { [$1] }
@@ -1449,6 +1463,50 @@ label_declaration:
     mutable_flag label COLON poly_type          { (mkrhs $2 2, $1, $4, symbol_rloc()) }
 ;
 
+/* Type Extensions */
+
+str_type_extension:
+  optional_type_parameters type_longident PLUSEQUAL private_flag str_extension_constructors
+      { let (params, variance) = List.split $1 in
+	  {ptyext_path = mkrhs $2 2;
+	   ptyext_params = params;
+           ptyext_constructors = List.rev $5;
+           ptyext_private = $4;
+	   ptyext_variance = variance} }
+;
+sig_type_extension:
+  optional_type_parameters type_longident PLUSEQUAL private_flag sig_extension_constructors
+      { let (params, variance) = List.split $1 in
+	  {ptyext_path = mkrhs $2 2;
+	   ptyext_params = params;
+           ptyext_constructors = List.rev $5;
+           ptyext_private = $4;
+	   ptyext_variance = variance} }
+;
+str_extension_constructors:
+    extension_constructor_declaration                     { [$1] }
+  | extension_constructor_rebind                          { [$1] }
+  | str_extension_constructors BAR extension_constructor_declaration { $3 :: $1 }
+  | str_extension_constructors BAR extension_constructor_rebind { $3 :: $1 }
+;
+sig_extension_constructors:
+    extension_constructor_declaration                     { [$1] }
+  | sig_extension_constructors BAR extension_constructor_declaration { $3 :: $1 }
+;
+extension_constructor_declaration:
+  | constr_ident generalized_constructor_arguments
+      { let arg_types, ret_type = $2 in
+          {pext_name = mkrhs $1 1;
+           pext_kind = Pext_decl(arg_types, ret_type);
+           pext_loc = symbol_rloc ()} }
+;
+extension_constructor_rebind:
+  | constr_ident EQUAL constr_longident
+      { {pext_name = mkrhs $1 1;
+         pext_kind = Pext_rebind (mkrhs $3 3);
+         pext_loc = symbol_rloc ()} }
+;
+
 /* "with" constraints (additional type equations over signature components) */
 
 with_constraints:
@@ -1458,7 +1516,7 @@ with_constraints:
 with_constraint:
     TYPE type_parameters label_longident with_type_binder core_type constraints
       { let params, variance = List.split $2 in
-        (mkrhs $3 3,  Pwith_type {ptype_params = List.map (fun x -> Some x) params;
+        (mkrhs $3 3,  Pwith_type {ptype_params = params;
                          ptype_cstrs = List.rev $6;
                          ptype_kind = Ptype_abstract;
                          ptype_manifest = Some $5;
@@ -1469,7 +1527,7 @@ with_constraint:
        functor applications in type path */
   | TYPE type_parameters label_longident COLONEQUAL core_type
       { let params, variance = List.split $2 in
-        (mkrhs $3 3, Pwith_typesubst {ptype_params = List.map (fun x -> Some x) params;
+        (mkrhs $3 3, Pwith_typesubst {ptype_params = params;
                               ptype_cstrs = [];
                               ptype_kind = Ptype_abstract;
                               ptype_manifest = Some $5;
@@ -1690,6 +1748,7 @@ operator:
   | AMPERSAND                                   { "&" }
   | AMPERAMPER                                  { "&&" }
   | COLONEQUAL                                  { ":=" }
+  | PLUSEQUAL                                   { "+=" }
 ;
 constr_ident:
     UIDENT                                      { $1 }

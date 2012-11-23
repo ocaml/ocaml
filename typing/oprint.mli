@@ -21,6 +21,7 @@ val out_class_type : (formatter -> out_class_type -> unit) ref
 val out_module_type : (formatter -> out_module_type -> unit) ref
 val out_sig_item : (formatter -> out_sig_item -> unit) ref
 val out_signature : (formatter -> out_sig_item list -> unit) ref
+val out_type_extension : (formatter -> out_type_extension -> unit) ref
 val out_phrase : (formatter -> out_phrase -> unit) ref
 
 val parenthesized_ident : string -> bool

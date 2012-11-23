@@ -173,6 +173,9 @@ let rec pr_item env = function
   | Tsig_type(id, decl, rs) :: rem ->
       let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)
+  | Tsig_extension(id, ext, es) :: rem ->
+      let tree = Printtyp.tree_of_extension_constructor id ext es in
+      Some (tree, None, rem)
   | Tsig_exception(id, decl) :: rem ->
       let tree = Printtyp.tree_of_exception_declaration id decl in
       Some (tree, None, rem)

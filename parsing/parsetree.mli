@@ -54,7 +54,7 @@ and row_field =
 
 type 'a class_infos =
   { pci_virt: virtual_flag;
-    pci_params: string loc list * Location.t;
+    pci_params: core_type list;
     pci_name: string loc;
     pci_expr: 'a;
     pci_variance: (bool * bool) list;
@@ -132,7 +132,7 @@ and value_description =
 (* Type declarations *)
 
 and type_declaration =
-  { ptype_params: string loc option list;
+  { ptype_params: core_type list;
     ptype_cstrs: (core_type * core_type * Location.t) list;
     ptype_kind: type_kind;
     ptype_private: private_flag;
@@ -146,6 +146,23 @@ and type_kind =
       (string loc * core_type list * core_type option * Location.t) list
   | Ptype_record of
       (string loc * mutable_flag * core_type * Location.t) list
+  | Ptype_open
+
+and type_extension = 
+  { ptyext_path: Longident.t loc;
+    ptyext_params: core_type list;
+    ptyext_constructors: extension_constructor list;
+    ptyext_private: private_flag;
+    ptyext_variance: (bool * bool) list; }
+
+and extension_constructor =
+  { pext_name: string loc;
+    pext_kind : extension_constructor_kind;
+    pext_loc : Location.t }
+
+and extension_constructor_kind = 
+    Pext_decl of core_type list * core_type option
+  | Pext_rebind of Longident.t loc
 
 and exception_declaration = core_type list
 
@@ -239,6 +256,7 @@ and signature_item =
 and signature_item_desc =
     Psig_value of string loc * value_description
   | Psig_type of (string loc * type_declaration) list
+  | Psig_extension of type_extension
   | Psig_exception of string loc * exception_declaration
   | Psig_module of string loc * module_type
   | Psig_recmodule of (string loc * module_type) list
@@ -283,6 +301,7 @@ and structure_item_desc =
   | Pstr_value of rec_flag * (pattern * expression) list
   | Pstr_primitive of string loc * value_description
   | Pstr_type of (string loc * type_declaration) list
+  | Pstr_extension of type_extension
   | Pstr_exception of string loc * exception_declaration
   | Pstr_exn_rebind of string loc * Longident.t loc
   | Pstr_module of string loc * module_expr

@@ -580,6 +580,16 @@ let set_methods table methods =
     incr i
   done
 
+(**** Extension Tags ****)
+
+type extension_tag
+
+let create_extension_tag () =
+  let obj = Obj.new_block Obj.object_tag 2 in
+  set_id obj last_id;
+  (Obj.obj obj)
+
+
 (**** Statistics ****)
 
 type stats =

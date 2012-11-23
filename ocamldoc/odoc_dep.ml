@@ -165,6 +165,7 @@ let type_deps t =
           ignore (Str.global_substitute re f s)
         )
         rl
+  | T.Type_open -> ()
   );
 
   (match t.T.ty_manifest with

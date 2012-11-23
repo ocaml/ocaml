@@ -17,6 +17,7 @@ open Odoc_info
 open Parameter
 open Value
 open Type
+open Extension
 open Exception
 open Class
 open Module
@@ -103,6 +104,7 @@ let module_subparts =
 
 type indices = [
   | `Type
+  | `Extension
   | `Exception
   | `Value
   | `Class_att
@@ -115,6 +117,7 @@ type indices = [
 
 let indices = function
   | `Type        -> "ty"
+  | `Extension   -> "xt"
   | `Exception   -> "ex"
   | `Value       -> "va"
   | `Class_att   -> "ca"
@@ -126,6 +129,7 @@ let indices = function
 
 let indices_names = [
   "Types"           , "ty" ;
+  "Extensions"      , "xt" ;
   "Exceptions"      , "ex" ;
   "Values"          , "va" ;
   "Class attributes", "ca" ;
@@ -441,7 +445,7 @@ class texi =
             | Raw s -> Raw (Str.global_replace re "\n" s)
             | List tel -> List (List.map self#fix_linebreaks tel)
             | Enum tel -> Enum (List.map self#fix_linebreaks tel)
-            | te -> te) t
+            | txt -> txt) t
 
     method private soft_fix_linebreaks =
       let re = Str.regexp "\n[ \t]*" in
@@ -451,7 +455,7 @@ class texi =
         List.map
           (function
             | Raw s -> Raw (Str.global_replace re rep s)
-            | te -> te) t
+            | txt -> txt) t
 
     (** {3 [text] values generation}
        Generates [text] values out of description parts.
@@ -698,10 +702,55 @@ class texi =
                            [ Raw " *)" ; Newline ] ) )
                      l ) )
                @  [ Raw " }" ]
+           | Type_open -> [ Raw " = .." ; Newline ]
           ) ) ;
           self#index `Type ty.ty_name ; Newline ] @
         (self#text_of_info ty.ty_info) in
       self#texi_of_text t
+
+    (** Return Texinfo code for a type extension. *)
+    method texi_of_type_extension m_name te =
+      Odoc_info.reset_type_names () ;
+      let t =
+        ( self#fixedblock (
+            [ Newline ; minus ; 
+	      Raw "type " ;
+	      Raw (match te.te_type_parameters with
+		     | [] -> ""
+		     | [ tp ] ->
+			 Printf.sprintf "%s "
+			   (Odoc_info.string_of_type_expr tp)
+		     | l ->
+			 Printf.sprintf "(%s) "
+			   (String.concat ", " 
+                              (List.map Odoc_info.string_of_type_expr l))) ;
+              Raw (self#relative_idents m_name te.te_type_name) ;
+              Raw (" +=" ^ 
+                      (if te.te_private = Asttypes.Private 
+                       then " private" else "")^"\n") ] @
+              (List.flatten
+                 (List.map
+                    (fun x ->
+                       (Raw ("  | " ^ (Name.simple x.xt_name))) ::
+			 (Raw (self#string_of_type_args
+				 x.xt_args x.xt_ret)) ::
+			 (match x.xt_alias with
+			    | None -> []
+			    | Some xa -> 
+				[ Raw " = " ; 
+				  Raw ( match xa.xa_xt with
+					  | None -> xa.xa_name
+					  | Some x -> x.xt_name ) ]) @
+			 (match x.xt_text with
+			    | None -> [ Newline ]
+			    | Some t ->
+				(Raw (indent 5 "\n(* ") ::
+				   self#soft_fix_linebreaks 8 t) @
+				  [ Raw " *)" ; Newline ] ) @
+			 [self#index `Extension x.xt_name ] )
+		    te.te_constructors ) ) ) ) ::
+          (self#text_of_info te.te_info) in
+	self#texi_of_text t
 
     (** Return Texinfo code for an exception. *)
     method texi_of_exception e =
@@ -838,6 +887,7 @@ class texi =
       | Element_class c -> self#texi_of_class c
       | Element_class_type ct -> self#texi_of_class_type ct
       | Element_value v -> self#texi_of_value v
+      | Element_type_extension te -> self#texi_of_type_extension module_name te
       | Element_exception e -> self#texi_of_exception e
       | Element_type t -> self#texi_of_type t
       | Element_module_comment t ->
@@ -1198,6 +1248,7 @@ class texi =
     method scan_for_index_in_mod = function
         (* no recursion *)
       | Element_value _ -> self#do_index `Value
+      | Element_type_extension _ -> self#do_index `Extension
       | Element_exception _ -> self#do_index `Exception
       | Element_type _ -> self#do_index `Type
       | Element_included_module _

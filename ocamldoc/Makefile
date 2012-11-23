@@ -88,6 +88,7 @@ CMOFILES= odoc_config.cmo \
 	odoc_parameter.cmo\
 	odoc_value.cmo\
 	odoc_type.cmo\
+	odoc_extension.cmo\
 	odoc_exception.cmo\
 	odoc_class.cmo\
 	odoc_module.cmo\

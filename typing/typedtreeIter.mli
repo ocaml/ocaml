@@ -18,6 +18,8 @@ module type IteratorArgument = sig
     val enter_structure : structure -> unit
     val enter_value_description : value_description -> unit
     val enter_type_declaration : type_declaration -> unit
+    val enter_type_extension : type_extension -> unit
+    val enter_extension_constructor : extension_constructor -> unit
     val enter_exception_declaration :
       exception_declaration -> unit
     val enter_pattern : pattern -> unit
@@ -46,6 +48,8 @@ module type IteratorArgument = sig
       val leave_structure : structure -> unit
     val leave_value_description : value_description -> unit
     val leave_type_declaration : type_declaration -> unit
+    val leave_type_extension : type_extension -> unit
+    val leave_extension_constructor : extension_constructor -> unit
     val leave_exception_declaration :
       exception_declaration -> unit
     val leave_pattern : pattern -> unit

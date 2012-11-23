@@ -54,6 +54,7 @@ type t =
   | Unused_constructor of string * bool * bool  (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
+  | Unused_extension of string * bool * bool  (* 40 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

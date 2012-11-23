@@ -225,6 +225,7 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         let err = compare_records env decl1 decl2 1 labels1 labels2 in
         if err <> [] || rep1 = rep2 then err else
         [Record_representation (rep2 = Record_float)]
+    | (Type_open, Type_open) -> []
     | (_, _) -> [Kind]
   in
   if err <> [] then err else
@@ -246,24 +247,64 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         else [Constraint]
   in
   if err <> [] then err else
-  if match decl2.type_kind with
-  | Type_record (_,_) | Type_variant _ -> decl2.type_private = Private
-  | Type_abstract ->
-      match decl2.type_manifest with
-      | None -> true
-      | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
+  if decl2.type_kind = Type_open && decl2.type_manifest = None then
+    if List.for_all2
+      (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (co1 = co2)&&(cn1 = cn2))
+      decl1.type_variance decl2.type_variance
+    then [] else [Variance]
+  else if match decl2.type_kind with
+    | Type_record (_,_) | Type_variant _ -> decl2.type_private = Private
+    | Type_open -> false
+    | Type_abstract ->
+	match decl2.type_manifest with
+	  | None -> true
+	  | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
   then
     if List.for_all2
-        (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2)&&(not cn1 || cn2))
-        decl1.type_variance decl2.type_variance
+      (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2)&&(not cn1 || cn2))
+      decl1.type_variance decl2.type_variance
     then [] else [Variance]
   else []
+
+(* Inclusion between extension constructors *)
+
+let extension_constructors env id ext1 ext2 =
+  let usage =
+    if ext1.ext_private = Private || ext2.ext_private = Public
+    then Env.Positive else Env.Privatize
+  in
+  Env.mark_extension_used usage ext1 (Ident.name id);
+  let ty1 =
+    Btype.newgenty (Tconstr(ext1.ext_type_path, ext1.ext_type_params, ref Mnil))
+  in
+  let ty2 =
+    Btype.newgenty (Tconstr(ext2.ext_type_path, ext2.ext_type_params, ref Mnil))
+  in
+  if Ctype.equal env true [ty1] [ty2] then
+    if List.length ext1.ext_args = List.length ext2.ext_args then 
+      if match ext1.ext_ret_type, ext2.ext_ret_type with
+	  Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) -> false
+	| Some _, None | None, Some _ -> false
+	| _ -> 
+	    Misc.for_all2 
+	      (fun ty1 ty2 -> 
+                Ctype.equal env true 
+                  (ty1 :: ext1.ext_type_params) 
+                  (ty2 :: ext2.ext_type_params))
+	      ext1.ext_args ext2.ext_args
+      then
+	match ext1.ext_private, ext2.ext_private with
+	    Private, Public -> false
+	  | _, _ -> true
+      else false
+    else false
+  else false
 
 (* Inclusion between exception declarations *)
 
 let exception_declarations env ed1 ed2 =
   Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2])
-    ed1.exn_args ed2.exn_args
+    ed1.Types.exn_args ed2.Types.exn_args
 
 (* Inclusion between class types *)
 let encode_val (mut, ty) rem =

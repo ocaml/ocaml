@@ -82,9 +82,20 @@ let add_type_declaration bv td =
   | Ptype_variant cstrs ->
       List.iter (fun (c, args, rty, _) -> List.iter (add_type bv) args; Misc.may (add_type bv) rty) cstrs
   | Ptype_record lbls ->
-      List.iter (fun (l, mut, ty, _) -> add_type bv ty) lbls in
+      List.iter (fun (l, mut, ty, _) -> add_type bv ty) lbls
+  | Ptype_open -> () in
   add_tkind td.ptype_kind
 
+let add_extension_constructor bv ext =
+  match ext.pext_kind with
+      Pext_decl(args, rty) -> 
+	List.iter (add_type bv) args; Misc.may (add_type bv) rty
+    | Pext_rebind lid -> add bv lid
+
+let add_type_extension bv te =
+  add bv te.ptyext_path;
+  List.iter (add_extension_constructor bv) te.ptyext_constructors
+  
 let rec add_class_type bv cty =
   match cty.pcty_desc with
     Pcty_constr(l, tyl) ->
@@ -201,6 +212,8 @@ and add_sig_item bv item =
       add_type bv vd.pval_type; bv
   | Psig_type dcls ->
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
+  | Psig_extension te ->
+      add_type_extension bv te; bv
   | Psig_exception(id, args) ->
       List.iter (add_type bv) args; bv
   | Psig_module(id, mty) ->
@@ -251,6 +264,9 @@ and add_struct_item bv item =
       add_type bv vd.pval_type; bv
   | Pstr_type dcls ->
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
+  | Pstr_extension te ->
+      add_type_extension bv te;
+      bv
   | Pstr_exception(id, args) ->
       List.iter (add_type bv) args; bv
   | Pstr_exn_rebind(id, l) ->

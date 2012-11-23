@@ -21,6 +21,7 @@ type ref_kind =
   | RK_class_type
   | RK_value
   | RK_type
+  | RK_extension
   | RK_exception
   | RK_attribute
   | RK_method

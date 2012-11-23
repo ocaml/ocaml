@@ -155,7 +155,9 @@ open Format
 ;;
 
 let get_constr_name tag ty tenv  = match tag with
-| Cstr_exception (path, _) -> Path.name path
+| Cstr_exception(path, _)
+| Cstr_ext_constant(path, _) 
+| Cstr_ext_block(path, _) -> Path.name path
 | _ ->
   try
     let name,_,_ = get_constr tag ty tenv in Ident.name name
@@ -634,16 +636,16 @@ let clean_env env =
   loop env
 
 let full_match ignore_generalized closing env =  match env with
-| ({pat_desc = Tpat_construct (_,_,{cstr_tag=Cstr_exception _},_,_)},_)::_ ->
-    false
-| ({pat_desc = Tpat_construct(_,_,c,_,_);pat_type=typ},_) :: _ ->
-    if ignore_generalized then
-      (* remove generalized constructors;
-         those cases will be handled separately *)
-      let env = clean_env env in
-      List.length env = c.cstr_normal
+| ({pat_desc = Tpat_construct(_,_,c,_,_);pat_type=typ},_) :: _ -> 
+    if c.cstr_consts < 0 then false (* exceptions and extensions *)
     else
-      List.length env = c.cstr_consts + c.cstr_nonconsts
+      if ignore_generalized then
+	(* remove generalized constructors;
+           those cases will be handled separately *)
+	let env = clean_env env in 
+	List.length env = c.cstr_normal
+      else
+	List.length env = c.cstr_consts + c.cstr_nonconsts
 
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
@@ -799,6 +801,16 @@ let build_other_constant proj make first next p env =
 *)
 
 let build_other ext env =  match env with
+| ({pat_desc = Tpat_construct (lid, lid_loc, 
+      ({cstr_tag=(Cstr_ext_constant _|Cstr_ext_block _)} as c),_,_)},_)
+  ::_ ->
+    make_pat
+      (Tpat_construct
+         (lid, lid_loc, {c with
+           cstr_tag=(Cstr_ext_constant
+            (Path.Pident (Ident.create "*extension*"), Location.none))},
+          [], false))
+      Ctype.none Env.empty
 | ({pat_desc =
     Tpat_construct (lid, lid_loc, ({cstr_tag=Cstr_exception _} as c),_,_)},_)
   ::_ ->
@@ -1928,15 +1940,19 @@ let extendable_path path =
     Path.same path Predef.path_option)
 
 let rec collect_paths_from_pat r p = match p.pat_desc with
-| Tpat_construct(_, _, {cstr_tag=(Cstr_constant _|Cstr_block _)},ps,_) ->
-    let path =  get_type_path p.pat_type p.pat_env in
-    List.fold_left
-      collect_paths_from_pat
-      (if extendable_path path then add_path path r else r)
-      ps
+| Tpat_construct(_, _, c, ps, _) -> begin
+    match c.cstr_tag with
+      |	Cstr_ext_constant _ | Cstr_ext_block _ | Cstr_exception _ ->
+	  List.fold_left collect_paths_from_pat r ps
+      | Cstr_constant _ | Cstr_block _ ->
+	  let path =  get_type_path p.pat_type p.pat_env in
+	    List.fold_left
+	      collect_paths_from_pat
+	      (if extendable_path path then add_path path r else r)
+	      ps
+  end
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
-| Tpat_tuple ps | Tpat_array ps
-| Tpat_construct (_, _, {cstr_tag=Cstr_exception _}, ps,_)->
+| Tpat_tuple ps | Tpat_array ps ->
     List.fold_left collect_paths_from_pat r ps
 | Tpat_record (lps,_) ->
     List.fold_left

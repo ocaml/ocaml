@@ -21,6 +21,7 @@ type ref_kind = Odoc_types.ref_kind =
   | RK_class_type
   | RK_value
   | RK_type
+  | RK_extension
   | RK_exception
   | RK_attribute
   | RK_method
@@ -168,6 +169,47 @@ module Parameter :
     val type_by_name : parameter -> string -> Types.type_expr
   end
 
+(** Representation and manipulation of extensions. *)
+module Extension :
+  sig
+    type private_flag = Odoc_extension.private_flag =
+      Private | Public
+
+    (** Used when the extension is a rebind of another extension,
+       when we have [extension Xt = Target_xt].*)
+    type extension_alias = Odoc_extension.extension_alias =
+        {
+          xa_name : Name.t ; (** The complete name of the target extension. *)
+          mutable xa_xt : t_extension_constructor option ; (** The target extension, if we found it.*)
+        }
+
+    and t_extension_constructor = Odoc_extension.t_extension_constructor =
+        {
+	  xt_name : Name.t ;
+	  xt_args: Types.type_expr list ; (** the types of the parameters *)
+	  xt_ret: Types.type_expr option ; (** the optional return type of the extension *)
+          xt_type_extension: t_type_extension ; (** the type extension containing this constructor *)
+	  xt_alias: extension_alias option ; (** [None] when the extension is not a rebind. *)
+	  mutable xt_loc: Odoc_types.location ;
+	  mutable xt_text: Odoc_types.text option ; (** optional user description *)
+	}
+
+    and t_type_extension = Odoc_extension.t_type_extension =
+        {
+          mutable te_info : info option ; (** Information found in the optional associated comment. *)
+	  te_type_name : Name.t ; (** The type of the extension *)
+	  te_type_parameters : Types.type_expr list;
+          te_private : private_flag ;
+	  mutable te_constructors: t_extension_constructor list;
+          mutable te_loc : location ;
+          mutable te_code : string option ;
+        }
+
+    (** Access to the extensions in a group. *)
+    val extension_constructors : t_type_extension -> t_extension_constructor list
+
+  end
+
 (** Representation and manipulation of exceptions. *)
 module Exception :
   sig
@@ -221,6 +263,7 @@ module Type :
                    (** constructors *)
       | Type_record of record_field list
                    (** fields *)
+      | Type_open (** Type is open *)
 
     (** Representation of a type. *)
     type t_type = Odoc_type.t_type =
@@ -409,6 +452,7 @@ module Module :
       | Element_class of Class.t_class
       | Element_class_type of Class.t_class_type
       | Element_value of Value.t_value
+      | Element_type_extension of Extension.t_type_extension
       | Element_exception of Exception.t_exception
       | Element_type of Type.t_type
       | Element_module_comment of text
@@ -516,6 +560,9 @@ module Module :
 
     (** Access to the included modules of a module. *)
     val module_included_modules : ?trans:bool-> t_module -> included_module list
+
+    (** Access to the type extensions of a module. *)
+    val module_type_extensions : ?trans:bool-> t_module -> Extension.t_type_extension list
 
     (** Access to the exceptions of a module. *)
     val module_exceptions : ?trans:bool-> t_module -> Exception.t_exception list
@@ -629,6 +676,10 @@ val string_of_type_list : ?par: bool -> string -> Types.type_expr list -> string
    for the given type. *)
 val string_of_type_param_list : Type.t_type -> string
 
+(** This function returns a string to represent the list of type parameters
+   for the given type extension. *)
+val string_of_type_extension_param_list : Extension.t_type_extension -> string
+
 (** This function returns a string to represent the given list of
    type parameters of a class or class type,
    with a given separator. *)
@@ -657,6 +708,9 @@ val string_of_info : info -> string
 
 (** @return a string to describe the given type. *)
 val string_of_type : Type.t_type -> string
+
+(** @return a string to describe the given type extension. *)
+val string_of_type_extension : Extension.t_type_extension -> string
 
 (** @return a string to describe the given exception. *)
 val string_of_exception : Exception.t_exception -> string
@@ -788,6 +842,7 @@ module Search :
         | Res_class_type of Class.t_class_type
         | Res_value of Value.t_value
         | Res_type of Type.t_type
+        | Res_extension of Extension.t_extension_constructor
         | Res_exception of Exception.t_exception
         | Res_attribute of Value.t_attribute
         | Res_method of Value.t_method
@@ -801,6 +856,9 @@ module Search :
 
       (** A function to search all the values in a list of modules. *)
       val values : Module.t_module list -> Value.t_value list
+
+      (** A function to search all the extensions in a list of modules. *)
+      val extensions : Module.t_module list -> Extension.t_extension_constructor list
 
       (** A function to search all the exceptions in a list of modules. *)
       val exceptions : Module.t_module list -> Exception.t_exception list
@@ -837,10 +895,26 @@ module Scan :
 
         method scan_value : Value.t_value -> unit
         method scan_type : Type.t_type -> unit
+        method scan_extension_constructor : Extension.t_extension_constructor -> unit
         method scan_exception : Exception.t_exception -> unit
         method scan_attribute : Value.t_attribute -> unit
         method scan_method : Value.t_method -> unit
         method scan_included_module : Module.included_module -> unit
+
+      (** Scan of a type extension *)
+    
+	(** Overide this method to perform controls on the extension's type,
+            private and info. This method is called before scanning the
+	    extension's constructors.
+	    @return true if the extension's constructors must be scanned.*)
+	method scan_type_extension_pre : Extension.t_type_extension -> bool
+
+       (** This method scans the constructors of the given type extension. *)
+	method scan_type_extension_constructors : Extension.t_type_extension -> unit
+	    
+	(** Scan of a type extension. Should not be overridden. It calls [scan_type_extension_pre]
+	    and if [scan_type_extension_pre] returns [true], then it calls scan_type_extension_constructors.*)
+	method scan_type_extension : Extension.t_type_extension -> unit 
 
       (** Scan of a class. *)
 

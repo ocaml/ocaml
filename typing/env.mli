@@ -20,6 +20,7 @@ type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
+  | Env_extension of summary * Ident.t * extension_constructor
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type
   | Env_modtype of summary * Ident.t * modtype_declaration
@@ -76,6 +77,7 @@ val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_annot: Ident.t -> Annot.ident -> t -> t
 val add_type: Ident.t -> type_declaration -> t -> t
+val add_extension: Ident.t -> extension_constructor -> t -> t
 val add_exception: Ident.t -> exception_declaration -> t -> t
 val add_module: Ident.t -> module_type -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
@@ -100,6 +102,7 @@ val enter_value:
     ?check:(string -> Warnings.t) ->
     string -> value_description -> t -> Ident.t * t
 val enter_type: string -> type_declaration -> t -> Ident.t * t
+val enter_extension: string -> extension_constructor -> t -> Ident.t * t
 val enter_exception: string -> exception_declaration -> t -> Ident.t * t
 val enter_module: string -> module_type -> t -> Ident.t * t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
@@ -166,11 +169,13 @@ val mark_value_used: string -> value_description -> unit
 val mark_type_used: string -> type_declaration -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
-val mark_constructor_used:
+val mark_constructor_used: 
     constructor_usage -> string -> type_declaration -> string -> unit
-val mark_constructor:
+val mark_constructor: 
     constructor_usage -> t -> string -> constructor_description -> unit
-val mark_exception_used:
+val mark_extension_used: 
+    constructor_usage -> extension_constructor -> string -> unit
+val mark_exception_used: 
     constructor_usage -> exception_declaration -> string -> unit
 
 val in_signature: t -> t

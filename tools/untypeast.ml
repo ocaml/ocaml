@@ -53,6 +53,8 @@ and untype_structure_item item =
     | Tstr_type list ->
         Pstr_type (List.map (fun (id, name, decl) ->
               name, untype_type_declaration decl) list)
+    | Tstr_extension tyext ->
+        Pstr_extension (untype_type_extension tyext)
     | Tstr_exception (id, name, decl) ->
         Pstr_exception (name, untype_exception_declaration decl)
     | Tstr_exn_rebind (id, name, p, lid) ->
@@ -67,26 +69,15 @@ and untype_structure_item item =
         Pstr_modtype (name, untype_module_type mtype)
     | Tstr_open (path, lid) -> Pstr_open (lid)
     | Tstr_class list ->
-        Pstr_class (List.map (fun (ci, _, _) ->
-              { pci_virt = ci.ci_virt;
-                pci_params = ci.ci_params;
-                pci_name = ci.ci_id_name;
-                pci_expr = untype_class_expr ci.ci_expr;
-                pci_variance = ci.ci_variance;
-                pci_loc = ci.ci_loc;
-              }
-          ) list)
+        Pstr_class 
+          (List.map 
+             (fun (ci, _, _) -> untype_class_declaration ci)
+             list)
     | Tstr_class_type list ->
-        Pstr_class_type (List.map (fun (id, name, ct) ->
-              {
-                pci_virt = ct.ci_virt;
-                pci_params = ct.ci_params;
-                pci_name = ct.ci_id_name;
-                pci_expr = untype_class_type ct.ci_expr;
-                pci_variance = ct.ci_variance;
-                pci_loc = ct.ci_loc;
-              }
-          ) list)
+        Pstr_class_type 
+          (List.map 
+             (fun (id, name, ct) -> untype_class_type_declaration ct) 
+             list)
     | Tstr_include (mexpr, _) ->
         Pstr_include (untype_module_expr mexpr)
   in
@@ -100,7 +91,7 @@ and untype_value_description v =
 
 and untype_type_declaration decl =
   {
-    ptype_params = decl.typ_params;
+    ptype_params = List.map untype_core_type decl.typ_params;
     ptype_cstrs = List.map (fun (ct1, ct2, loc) ->
         (untype_core_type ct1,
           untype_core_type ct2, loc)
@@ -124,8 +115,30 @@ and untype_type_declaration decl =
     ptype_loc = decl.typ_loc;
   }
 
+and untype_type_extension tyext = 
+  { 
+    ptyext_path = tyext.tyext_path_txt;
+    ptyext_params = List.map untype_core_type tyext.tyext_params;
+    ptyext_constructors = 
+      List.map untype_extension_constructor tyext.tyext_constructors;
+    ptyext_private = tyext.tyext_private;
+    ptyext_variance = tyext.tyext_variance; 
+  }
+
+and untype_extension_constructor ext =
+  { 
+    pext_name = ext.ext_name_txt;
+    pext_kind = (match ext.ext_kind with
+        Text_decl (args, ret) ->
+          Pext_decl (List.map untype_core_type arg, 
+                     option untype_core_type ret)
+      | Text_rebind (p, lid) -> Pext_rebind lid
+    );
+    pext_loc = ext.ext_loc; 
+  }
+
 and untype_exception_declaration decl =
-  List.map untype_core_type decl.exn_params
+  List.map untype_core_type decl.exn_args
 
 and untype_pattern pat =
   let desc =
@@ -308,6 +321,8 @@ and untype_signature_item item =
         Psig_type (List.map (fun (id, name, decl) ->
               name, untype_type_declaration decl
           ) list)
+    | Tsig_extension tyext ->
+        Psig_extension (untype_type_extension tyext)
     | Tsig_exception (id, name, decl) ->
         Psig_exception (name, untype_exception_declaration decl)
     | Tsig_module (id, name, mtype) ->
@@ -333,10 +348,20 @@ and untype_modtype_declaration mdecl =
     Tmodtype_abstract -> Pmodtype_abstract
   | Tmodtype_manifest mtype -> Pmodtype_manifest (untype_module_type mtype)
 
+and untype_class_declaration cd = 
+  { 
+    pci_virt = cd.ci_virt;
+    pci_params = List.map untype_core_type cd.ci_params;
+    pci_name = cd.ci_id_name;
+    pci_expr = untype_class_expr cd.ci_expr;
+    pci_variance = cd.ci_variance;
+    pci_loc = cd.ci_loc;
+  }
+
 and untype_class_description cd =
   {
     pci_virt = cd.ci_virt;
-    pci_params = cd.ci_params;
+    pci_params = List.map untype_core_type cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
     pci_variance = cd.ci_variance;
@@ -346,7 +371,7 @@ and untype_class_description cd =
 and untype_class_type_declaration cd =
   {
     pci_virt = cd.ci_virt;
-    pci_params = cd.ci_params;
+    pci_params = List.map untype_core_type cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
     pci_variance = cd.ci_variance;

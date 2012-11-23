@@ -405,6 +405,7 @@ rule token = parse
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
   | "+." { PLUSDOT }
+  | "+=" { PLUSEQUAL }
   | "-"  { MINUS }
   | "-." { MINUSDOT }
 

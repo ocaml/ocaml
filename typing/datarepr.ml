@@ -97,6 +97,37 @@ let exception_descr path_exc decl =
     cstr_normal = -1;
     cstr_generalized = false }
 
+let extension_descr path_ext ext =
+  let ty_res = 
+    match ext.ext_ret_type with
+	Some type_ret -> type_ret
+      | None -> 
+          newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
+  in
+  let tag =
+    match ext.ext_args with
+	[] -> Cstr_ext_constant (path_ext, ext.ext_loc)
+      | _ -> Cstr_ext_block (path_ext, ext.ext_loc)
+  in
+  let existentials = 
+    match ext.ext_ret_type with
+      | None -> []
+      | Some type_ret ->
+	  let ret_vars = free_vars type_ret in
+	  let arg_vars = free_vars (newgenty (Ttuple ext.ext_args)) in
+	    TypeSet.elements (TypeSet.diff arg_vars ret_vars)
+  in
+    { cstr_res = ty_res;
+      cstr_existentials = existentials;
+      cstr_args = ext.ext_args;
+      cstr_arity = List.length ext.ext_args;
+      cstr_tag = tag;
+      cstr_consts = -1;
+      cstr_nonconsts = -1;
+      cstr_private = ext.ext_private;
+      cstr_normal = -1;
+      cstr_generalized = ext.ext_ret_type <> None }
+
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =

@@ -233,15 +233,19 @@ let type_var_option_print ppf str =
     | Some str ->
       fprintf ppf "'%s" str.txt ;;
 
-let fmt_class_params ppf (l, loc) =
+let fmt_type_params ppf (l, loc) =
   let length = (List.length l) in
   if (length = 0) then ()
   else if (length = 1) then
-    fprintf ppf "%s@ " (List.hd l)
+    list2 core_type ppf l "" ;
+    fprintf ppf "@ " ;
   else begin
+    pp_open_hovbox ppf indent ;
     fprintf ppf "(" ;
-    list2 string ppf l "," ;
-    fprintf ppf ")@ " ;
+    list2 core_type ppf l "," ;
+    fprintf ppf ")" ;
+    pp_close_box ppf ();
+    fprintf ppf "@ " ;
   end ;;
 
 let fmt_class_params_def ppf (l, loc) =
@@ -249,7 +253,7 @@ let fmt_class_params_def ppf (l, loc) =
   if (length = 0) then ()
   else begin
     fprintf ppf "[" ;
-    list2 type_var_print ppf l "," ;
+    list2 core_type ppf l "," ;
     fprintf ppf "]@ ";
   end ;;
 
@@ -983,7 +987,7 @@ and type_declaration ppf x =
      | Some(y) ->
 	 core_type ppf y;
 	 match x.ptype_kind with
-	   | Ptype_variant _ | Ptype_record _ -> fprintf ppf " = "
+	   | Ptype_variant _ | Ptype_record _ | Ptype_open -> fprintf ppf " = "
 	   | Ptype_abstract -> ());
   (match x.ptype_kind with
     | Ptype_variant (first::rest) ->
@@ -1013,9 +1017,56 @@ and type_declaration ppf x =
         fprintf ppf "}" ;
 
         pp_close_box ppf () ;
+    | Ptype_open -> 
+        fprintf ppf ".." ;
   );
   list2 typedef_constraint ppf x.ptype_cstrs ~breakfirst:true "" ;
   pp_close_box ppf () ;
+
+and type_extension ppf x =
+  fprintf ppf "type %a%a +=" fmt_type_params x.ptyext_params 
+    fmt_longident x.ptyext_name ;
+  pp_print_break ppf 1 indent ;
+  pp_open_hovbox ppf indent ;
+  (match x.ptyext_constructors with
+      [] -> assert false;
+    | first :: rest ->
+        pp_open_hvbox ppf 0 ;
+        extension_constructor ppf first true ;
+        extension_constructor_list ppf rest ;
+        pp_close_box ppf () ;
+  );
+  pp_close_box ppf () ;
+
+and extension_constructor ppf x first =
+  if (first) then begin
+    pp_print_if_newline ppf ();
+    pp_print_string ppf "  ";
+  end else begin
+    pp_print_space ppf ();
+    fprintf ppf "| " ;
+  end ;
+  pp_open_hovbox ppf indent ;
+  fprintf ppf "%s" x.pext_name.txt ;
+  extension_constructor_kind ppf x.pext_kind
+  pp_close_box ppf ();
+
+and extension_constructor_list ppf list =
+  match list with
+  | [] -> ()
+  | first :: rest ->
+      extension_constructor ppf first false ;
+      extension_constructor_list ppf rest ;
+
+and extension_constructor_kind ppf x =
+  match x with
+    Pext_decl(a, r) -> 
+      if ((List.length l) > 0) then begin
+        fprintf ppf "@ of@ " ;
+        list2 core_type ppf x. " *"
+      end ;
+  | Pext_rebind lid ->
+      fprintf ppf "@ = @ %a" fmt_longident lid ;
 
 and exception_declaration ppf x =
   match x with
@@ -1405,6 +1456,10 @@ and signature_item ppf x =
         fprintf ppf "%s %s :@ " intro s.txt;
         value_description ppf vd;
         pp_close_box ppf () ;
+    | Psig_extension te ->
+        pp_open_hvbox ppf 0;
+        type_extension ppf te;
+        pp_close_box ppf ();
     | Psig_exception (s, ed) ->
         pp_open_hovbox ppf indent ;
         fprintf ppf "exception %s" s.txt;
@@ -1628,6 +1683,10 @@ and structure_item ppf x =
         pattern_x_expression_def_list ppf l2;
         pp_close_box ppf () ;
         pp_close_box ppf () ;
+    | Pstr_extension te ->
+        pp_open_hvbox ppf 0;
+        type_extension ppf te;
+        pp_close_box ppf ();
     | Pstr_exception (s, ed) ->
         pp_open_hovbox ppf indent ;
         fprintf ppf "exception@ %s" s.txt;
@@ -1726,18 +1785,7 @@ and type_def_list_helper ppf l =
 
 and string_x_type_declaration ppf (s, td) =
   let l = td.ptype_params in
-  (match (List.length l) with
-    | 0 -> ()
-    | 1 -> list2 type_var_option_print ppf l "" ;
-        fprintf ppf " " ;
-    | _ -> pp_open_hovbox ppf indent ;
-        fprintf ppf "(" ;
-        list2 type_var_option_print ppf l "," ;
-        fprintf ppf ")" ;
-        pp_close_box ppf ();
-        fprintf ppf " " ;
-  );
-  fprintf ppf "%s" s.txt ;
+  fprintf ppf "%a%s" fmt_type_params l s.txt ;
   (match (td.ptype_kind, td.ptype_manifest) with
     | Ptype_abstract, None -> ()
     | Ptype_record _, _ -> fprintf ppf " = " ;

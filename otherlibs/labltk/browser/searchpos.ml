@@ -173,7 +173,8 @@ let search_pos_type_decl td ~pos ~env =
         List.iter dl
           ~f:(fun (_, tl, _, _) -> List.iter tl ~f:(search_pos_type ~pos ~env))
     | Ptype_record dl ->
-        List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env) in
+        List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env) 
+    | Ptype_open -> () in
     search_tkind td.ptype_kind;
     List.iter td.ptype_cstrs ~f:
       begin fun (t1, t2, _) ->
@@ -181,6 +182,12 @@ let search_pos_type_decl td ~pos ~env =
         search_pos_type t2 ~pos ~env
       end
   end
+
+let search_pos_extension_constructor ext ~pos ~env =
+  match ext.pext_kind with
+      Pext_decl(tl, tyo) ->
+	List.iter tl ~f:(search_pos_type ~pos ~env)
+    | Pext_rebind _ -> ()
 
 let rec search_pos_signature l ~pos ~env =
   ignore (
@@ -203,6 +210,9 @@ let rec search_pos_signature l ~pos ~env =
         Psig_value (_, desc) -> search_pos_type desc.pval_type ~pos ~env
       | Psig_type l ->
           List.iter l ~f:(fun (_,desc) -> search_pos_type_decl ~pos desc ~env)
+      | Psig_extension te ->
+          List.iter te.ptyext_constructors ~f:(search_pos_extension_constructor ~pos ~env);
+          add_found_sig (`Type, te.ptyext_path) ~env ~loc:pt.psig_loc
       | Psig_exception (_, l) ->
           List.iter l ~f:(search_pos_type ~pos ~env);
           add_found_sig (`Type, Lident "exn") ~env ~loc:pt.psig_loc
@@ -295,6 +305,7 @@ let edit_source ~file ~path ~sign =
         match item with
           Sig_value (id, _) -> id, Pvalue
         | Sig_type (id, _, _) -> id, Ptype
+        | Sig_extension (id, _, _) -> id, Pconstructor
         | Sig_exception (id, _) -> id, Pconstructor
         | Sig_module (id, _, _) -> id, Pmodule
         | Sig_modtype (id, _) -> id, Pmodtype
@@ -674,6 +685,7 @@ let rec search_pos_structure ~pos str =
       end
   | Tstr_primitive (_, _, vd) ->()
   | Tstr_type _ -> ()
+  | Tstr_extension _ -> ()
   | Tstr_exception _ -> ()
   | Tstr_exn_rebind(_, _, _, _) -> ()
   | Tstr_module (_, _, m) -> search_pos_module_expr m ~pos

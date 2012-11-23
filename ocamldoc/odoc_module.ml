@@ -25,6 +25,7 @@ type module_element =
   | Element_class of Odoc_class.t_class
   | Element_class_type of Odoc_class.t_class_type
   | Element_value of Odoc_value.t_value
+  | Element_type_extension of Odoc_extension.t_type_extension
   | Element_exception of Odoc_exception.t_exception
   | Element_type of Odoc_type.t_type
   | Element_module_comment of Odoc_types.text
@@ -123,6 +124,17 @@ let types l =
     (fun acc -> fun ele ->
       match ele with
         Element_type t -> acc @ [t]
+      | _ -> acc
+    )
+    []
+    l
+
+(** Returns the list of type extensions from a list of module_element. *)
+let type_extensions l =
+  List.fold_left
+    (fun acc -> fun ele ->
+      match ele with
+        Element_type_extension x -> acc @ [x]
       | _ -> acc
     )
     []
@@ -302,7 +314,11 @@ let module_simple_values ?(trans=true) m =
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)
 let module_types ?(trans=true) m = types (module_elements ~trans m)
 
-(** Returns the list of excptions of a module.
+(** Returns the list of type extensions of a module.
+  @param trans indicates if, for aliased modules, we must perform a transitive search.*)
+let module_type_extensions ?(trans=true) m = type_extensions (module_elements ~trans m)
+
+(** Returns the list of exceptions of a module.
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)
 let module_exceptions ?(trans=true) m = exceptions (module_elements ~trans m)
 
@@ -464,7 +480,11 @@ let module_type_values ?(trans=true) m = values (module_type_elements ~trans m)
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)
 let module_type_types ?(trans=true) m = types (module_type_elements ~trans m)
 
-(** Returns the list of excptions of a module.
+(** Returns the list of type extensions of a module.
+  @param trans indicates if, for aliased modules, we must perform a transitive search.*)
+let module_type_type_extensions ?(trans=true) m = type_extensions (module_type_elements ~trans m)
+
+(** Returns the list of exceptions of a module.
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)
 let module_type_exceptions ?(trans=true) m = exceptions (module_type_elements ~trans m)
 

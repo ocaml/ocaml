@@ -20,6 +20,7 @@ type ref_kind = Odoc_types.ref_kind =
   | RK_class_type
   | RK_value
   | RK_type
+  | RK_extension
   | RK_exception
   | RK_attribute
   | RK_method
@@ -89,6 +90,7 @@ let dummy_loc = { loc_impl = None ; loc_inter = None }
 
 module Name = Odoc_name
 module Parameter = Odoc_parameter
+module Extension = Odoc_extension
 module Exception = Odoc_exception
 module Type = Odoc_type
 module Value = Odoc_value
@@ -127,6 +129,8 @@ let string_of_type_list ?par sep type_list = Odoc_str.string_of_type_list ?par s
 
 let string_of_type_param_list t = Odoc_str.string_of_type_param_list t
 
+let string_of_type_extension_param_list te = Odoc_str.string_of_type_extension_param_list te
+
 let string_of_class_type_param_list l = Odoc_str.string_of_class_type_param_list l
 
 let string_of_module_type = Odoc_print.string_of_module_type
@@ -138,6 +142,8 @@ let string_of_text t = Odoc_misc.string_of_text t
 let string_of_info i = Odoc_misc.string_of_info i
 
 let string_of_type t = Odoc_str.string_of_type t
+
+let string_of_type_extension te = Odoc_str.string_of_type_extension te
 
 let string_of_exception e = Odoc_str.string_of_exception e
 
@@ -289,6 +295,7 @@ module Search =
         | Res_class_type of Class.t_class_type
         | Res_value of Value.t_value
         | Res_type of Type.t_type
+        | Res_extension of Extension.t_extension_constructor
         | Res_exception of Exception.t_exception
         | Res_attribute of Value.t_attribute
         | Res_method of Value.t_method
@@ -299,6 +306,7 @@ module Search =
     let search_by_name = Odoc_search.Search_by_name.search
 
     let values = Odoc_search.values
+    let extensions = Odoc_search.extensions
     let exceptions = Odoc_search.exceptions
     let types = Odoc_search.types
     let attributes = Odoc_search.attributes

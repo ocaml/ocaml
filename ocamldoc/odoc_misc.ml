@@ -314,8 +314,8 @@ let get_titles_in_text t =
     | Odoc_types.Index_list -> ()
     | Odoc_types.Custom (_, t) -> iter_text t
     | Odoc_types.Target _ -> ()
-  and iter_text te =
-    List.iter iter_ele te
+  and iter_text txt =
+    List.iter iter_ele txt
   in
   iter_text t;
   List.rev !l

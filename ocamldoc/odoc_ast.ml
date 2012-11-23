@@ -26,6 +26,7 @@ module Name = Odoc_name
 open Odoc_parameter
 open Odoc_value
 open Odoc_type
+open Odoc_extension
 open Odoc_exception
 open Odoc_class
 open Odoc_module
@@ -49,6 +50,7 @@ module Typedtree_search =
       | T of string
       | C of string
       | CT of string
+      | X of string
       | E of string
       | ER of string
       | P of string
@@ -76,6 +78,11 @@ module Typedtree_search =
             mods
       | Typedtree.Tstr_modtype (ident, _, _) ->
           Hashtbl.add table (MT (Name.from_ident ident)) tt
+      | Typedtree.Tstr_extension te -> begin
+          match te.tyext_constructors with
+            [] -> assert false
+          | ext :: _ -> Hashtbl.add table (X (Name.from_ident ext.ext_name)) tt
+        end
       | Typedtree.Tstr_exception (ident, _, _) ->
           Hashtbl.add table (E (Name.from_ident ident)) tt
       | Typedtree.Tstr_exn_rebind (ident, _, _, _) ->
@@ -127,6 +134,11 @@ module Typedtree_search =
     let search_module_type table name =
       match Hashtbl.find table (MT name) with
       | (Typedtree.Tstr_modtype (_, _, module_type)) -> module_type
+      | _ -> assert false
+
+    let search_extension table name =
+      match Hashtbl.find table (X name) with
+      | (Typedtree.Tstr_extension tyext) -> tyext
       | _ -> assert false
 
     let search_exception table name =
@@ -438,7 +450,7 @@ module Analyser =
            | l ->
                match l with
                  [] ->
-                   (* cas impossible, on l'a filtré avant *)
+                   (* cas impossible, on l'a filtrÃ© avant *)
                    assert false
                | (pattern_param, exp) :: second_ele :: q ->
                    (* implicit pattern matching -> anonymous parameter *)
@@ -661,10 +673,10 @@ module Analyser =
               Typedtree.Tcl_ident (p,_,_) -> Name.from_path p
             | _ ->
                 (* we try to get the name from the environment. *)
-                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( même quand on a class tutu = toto *)
+                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( mÃªme quand on a class tutu = toto *)
                 Name.from_longident lid.txt
           in
-          (* On n'a pas ici les paramètres de type sous forme de Types.type_expr,
+          (* On n'a pas ici les paramÃ¨tres de type sous forme de Types.type_expr,
              par contre on peut les trouver dans le class_type *)
           let params =
             match tt_class_exp.Typedtree.cl_type with
@@ -749,7 +761,7 @@ module Analyser =
             match tt_class_expr2.Typedtree.cl_desc with
               Typedtree.Tcl_ident (p,_,_) -> Name.from_path p (* A VOIR : obtenir le nom complet *)
             | _ ->
-                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( même quand on a class tutu = toto *)
+                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( mÃªme quand on a class tutu = toto *)
                 match p_class_expr2.Parsetree.pcl_desc with
                   Parsetree.Pcl_constr (lid, _) ->
                     (* we try to get the name from the environment. *)
@@ -910,69 +922,90 @@ module Analyser =
       let pred ele =
         let f = match ele with
           Element_module m ->
-            (function
+	    (function
                 Types.Sig_module (ident,t,_) ->
-                  let n1 = Name.simple m.m_name
-                  and n2 = Ident.name ident in
-                  (
-                   match n1 = n2 with
-                     true -> filter_module_with_module_type_constraint m t; true
-                   | false -> false
-                  )
-              | _ -> false)
+	          let n1 = Name.simple m.m_name
+		  and n2 = Ident.name ident in
+		  (
+		   match n1 = n2 with
+		     true -> filter_module_with_module_type_constraint m t; true
+		   | false -> false
+		  )
+	    | _ -> false)
         | Element_module_type mt ->
             (function
                 Types.Sig_modtype (ident,Types.Modtype_manifest t) ->
-                  let n1 = Name.simple mt.mt_name
-                  and n2 = Ident.name ident in
-                  (
-                   match n1 = n2 with
-                     true -> filter_module_type_with_module_type_constraint mt t; true
-                   | false -> false
-                  )
-              | _ -> false)
+		  let n1 = Name.simple mt.mt_name
+		  and n2 = Ident.name ident in
+		  (
+		   match n1 = n2 with
+		     true -> filter_module_type_with_module_type_constraint mt t; true
+		   | false -> false
+		  )
+	    | _ -> false)
         | Element_value v ->
-            (function
+	    (function
                 Types.Sig_value (ident,_) ->
-                  let n1 = Name.simple v.val_name
-                  and n2 = Ident.name ident in
-                  n1 = n2
-              | _ -> false)
+		  let n1 = Name.simple v.val_name
+		  and n2 = Ident.name ident in
+		  n1 = n2
+	    | _ -> false)
         | Element_type t ->
-             (function
+	    (function
                 Types.Sig_type (ident,_,_) ->
-                  (* A VOIR: il est possible que le détail du type soit caché *)
-                  let n1 = Name.simple t.ty_name
-                  and n2 = Ident.name ident in
-                  n1 = n2
-               | _ -> false)
+		  (* A VOIR: il est possible que le dÃ©tail du type soit cachÃ© *)
+		  let n1 = Name.simple t.ty_name
+		  and n2 = Ident.name ident in
+		  n1 = n2
+	    | _ -> false)
+        | Element_type_extension te -> 
+            let l = 
+              filter_extension_constructors_with_module_type_constraint 
+                te.te_constructors lsig
+            in
+              te.te_constructors <- l;
+              if l <> [] then (fun _ -> true)
+              else (fun _ -> false)
         | Element_exception e ->
-            (function
+	    (function
                 Types.Sig_exception (ident,_) ->
-                  let n1 = Name.simple e.ex_name
-                  and n2 = Ident.name ident in
-                  n1 = n2
-              | _ -> false)
+		  let n1 = Name.simple e.ex_name
+		  and n2 = Ident.name ident in
+		  n1 = n2
+	    | _ -> false)
         | Element_class c ->
-            (function
+	    (function
                 Types.Sig_class (ident,_,_) ->
-                  let n1 = Name.simple c.cl_name
-                  and n2 = Ident.name ident in
-                  n1 = n2
-              | _ -> false)
+		  let n1 = Name.simple c.cl_name
+		  and n2 = Ident.name ident in
+		  n1 = n2
+	    | _ -> false)
         | Element_class_type ct ->
-            (function
+	    (function
                 Types.Sig_class_type (ident,_,_) ->
-                  let n1 = Name.simple ct.clt_name
-                  and n2 = Ident.name ident in
-                  n1 = n2
-              | _ -> false)
+		  let n1 = Name.simple ct.clt_name
+		  and n2 = Ident.name ident in
+		  n1 = n2
+	    | _ -> false)
         | Element_module_comment _ -> fun _ -> true
         | Element_included_module _ -> fun _ -> true
         in
-        List.exists f lsig
+        List.exists f lsig 
       in
       List.filter pred l
+
+    and filter_extension_constructors_with_module_type_constraint l lsig =
+      let pred xt =
+	List.exists 
+	  (function
+	      Types.Sig_extension (ident, _, _) ->
+		let n1 = Name.simple xt.xt_name
+		and n2 = Ident.name ident in
+		  n1 = n2
+	  | _ -> false)
+	  lsig
+      in
+        List.filter pred l
 
     (** Analysis of a parse tree structure with a typed tree, to return module elements.*)
     let rec analyse_structure env current_module_name last_pos pos_limit parsetree typedtree =
@@ -1193,6 +1226,104 @@ module Analyser =
           let (maybe_more, eles) = f ~first: true 0 loc.Location.loc_start.Lexing.pos_cnum name_typedecl_list in
           (maybe_more, new_env, eles)
 
+      | Parsetree.Pstr_extension tyext ->
+	(* we get the extension declaration in the typed tree *)
+	let tt_tyext = 
+          match tyext.Parsetree.ptyext_constructors with
+            [] -> assert false
+          | ext :: _ ->
+	    try Typedtree_search.search_extension table ext.Parsetree.pext_name.txt
+	    with Not_found ->
+	      raise (Failure 
+                       (Odoc_messages.extension_not_found_in_typedtree 
+                          (Name.concat current_module_name ext.Parsetree.pext_name.txt)))
+	in
+        let new_env =
+          List.fold_left
+            (fun acc_env -> fun {Parsetree.pext_name = { txt = name }} ->
+              let complete_name = Name.concat current_module_name name in
+                Odoc_env.add_extension acc_env complete_name
+            )
+            env
+            tyext.Parsetree.ptyext_constructors
+        in
+        let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
+	let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
+	let new_te =
+	  {
+	    te_info = comment_opt;
+	    te_type_name = 
+              Odoc_env.full_type_name new_env (Name.from_path tt_tyext.tyext_path);
+	    te_type_parameters = 
+              List.map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) tt_tyext.tyext_params;
+	    te_private = tt_tyext.tyext_private;
+	    te_constructors = [];
+	    te_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
+	    te_code =
+	      (
+		if !Odoc_global.keep_code then
+		  Some (get_string_of_file loc_start loc_end)
+		else
+		  None
+	      ) ;
+	  }
+	in
+	let rec analyse_extension_constructors maybe_more exts_acc tt_ext_list =
+	    match tt_ext_list with
+		[] -> (maybe_more, List.rev exts_acc)
+	      | tt_ext :: q ->
+                  let complete_name = Name.concat current_module_name tt_ext.ext_name_txt.txt in
+		  let ext_loc_start = tt_ext.ext_loc.Location.loc_start.Lexing.pos_cnum in
+		  let ext_loc_end =  tt_ext.ext_loc.Location.loc_end.Lexing.pos_cnum in
+		  let new_xt =
+		    match tt_ext.ext_kind with
+			Text_decl(args, ret_type) ->
+			  {
+			    xt_name = complete_name;
+			    xt_args = 
+                              List.map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) args;
+			    xt_ret = 
+                              may_map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) ret_type;
+                            xt_type_extension = new_te;
+			    xt_alias = None;
+			    xt_loc = { loc_impl = Some (!file_name, ext_loc_start) ; loc_inter = None };
+			    xt_text = None;
+			  }
+		      | Text_rebind(path, _) ->
+			  {
+			    xt_name = complete_name;
+			    xt_args = [];
+			    xt_ret = None;
+                            xt_type_extension = new_te;
+			    xt_alias = 
+			      Some { 
+                                xa_name = Odoc_env.full_extension_constructor_name env (Name.from_path path);
+                                xa_xt = None; 
+                              };
+			    xt_loc = { loc_impl = Some (!file_name, ext_loc_start) ; loc_inter = None } ;
+			    xt_text = None;
+			  }
+		  in
+                    let pos_limit2 = 
+                      match q with
+                        [] -> pos_limit
+                      | next :: _ -> 
+                          next.ext_loc.Location.loc_start.Lexing.pos_cnum
+                    in
+		    let s = get_string_of_file ext_loc_end pos_limit2 in
+		    let (maybe_more, com_opt) =  My_ir.just_after_special !file_name s in
+                    let comment_opt = 
+                      match com_opt with
+                        None -> None
+                      | Some d -> d.Odoc_types.i_desc
+                    in
+		      new_xt.xt_text <- comment_opt;
+		      analyse_extension_constructors maybe_more (new_xt :: exts_acc) q
+        in
+	  let (maybe_more, exts) = analyse_extension_constructors 0 [] tt_tyext.tyext_constructors in
+            new_te.te_constructors <- exts;
+            (maybe_more, new_env, [ Element_type_extension new_te ])
+
       | Parsetree.Pstr_exception (name, excep_decl) ->
           (* a new exception is defined *)
           let complete_name = Name.concat current_module_name name.txt in
@@ -1211,7 +1342,7 @@ module Analyser =
               ex_info = comment_opt ;
               ex_args = List.map (fun ctyp ->
                 Odoc_env.subst_type new_env ctyp.ctyp_type)
-                tt_excep_decl.exn_params ;
+                tt_excep_decl.Typedtree.exn_args ;
               ex_alias = None ;
               ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
               ex_code =
@@ -1276,7 +1407,7 @@ module Analyser =
              let new_env = Odoc_env.add_module env new_module.m_name in
              let new_env2 =
                match new_module.m_type with
-                 (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
+                 (* A VOIR : cela peut-il Ãªtre Tmty_ident ? dans ce cas, on aurait pas la signature *)
                  Types.Mty_signature s ->
                    Odoc_env.add_signature new_env new_module.m_name
                      ~rel: (Name.simple new_module.m_name) s
@@ -1375,7 +1506,7 @@ module Analyser =
           let new_env = Odoc_env.add_module_type env mt.mt_name in
           let new_env2 =
             match tt_module_type.mty_type with
-              (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on n'aurait pas la signature *)
+              (* A VOIR : cela peut-il Ãªtre Tmty_ident ? dans ce cas, on n'aurait pas la signature *)
               Types.Mty_signature s ->
                 Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
             | _ ->
@@ -1504,7 +1635,7 @@ module Analyser =
               im_info = comment_opt ;
             }
           in
-          (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
+          (0, env, [ Element_included_module im ]) (* A VOIR : Ã©tendre l'environnement ? avec quoi ? *)
 
      (** Analysis of a [Parsetree.module_expr] and a name to return a [t_module].*)
      and analyse_module env current_module_name module_name comment_opt p_module_expr tt_module_expr =

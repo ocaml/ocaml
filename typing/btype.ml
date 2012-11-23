@@ -347,6 +347,7 @@ let unmark_type_decl decl =
 	cstrs
   | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
+  | Type_open -> ()
   end;
   begin match decl.type_manifest with
     None    -> ()

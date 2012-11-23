@@ -165,6 +165,7 @@ let iter_expression f e =
     | Pstr_value (_, pel) -> List.iter (fun (_, e) -> expr e) pel
     | Pstr_primitive _
     | Pstr_type _
+    | Pstr_extension _
     | Pstr_exception _
     | Pstr_modtype _
     | Pstr_open _
@@ -1068,7 +1069,11 @@ and is_nonexpansive_mod mexp =
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun (_, _, _, m) -> is_nonexpansive_mod m)
                 id_mod_list
-          | Tstr_exception _ -> false (* true would be unsound *)
+	  | Tstr_exception _ -> false (* true would be unsound *)
+          | Tstr_extension te ->
+	      List.for_all 
+		(function {ext_kind = Text_decl _} -> false | {ext_kind = Text_rebind _} -> true)
+		te.tyext_constructors
           | Tstr_class _ -> false (* could be more precise *)
         )
         str.str_items

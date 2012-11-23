@@ -23,6 +23,7 @@ val empty : env
 (** Extending an environment *)
 
 val add_signature : env -> string -> ?rel:string -> Types.signature -> env
+val add_extension : env -> Odoc_name.t -> env
 val add_exception : env -> Odoc_name.t -> env
 val add_type : env -> Odoc_name.t -> env
 val add_value : env -> Odoc_name.t -> env
@@ -48,6 +49,9 @@ val full_type_name : env -> Odoc_name.t -> Odoc_name.t
 
 (** Get the fully qualified value name from a name.*)
 val full_value_name : env -> Odoc_name.t -> Odoc_name.t
+
+(** Get the fully qualified extension name from a name.*)
+val full_extension_constructor_name : env -> Odoc_name.t -> Odoc_name.t
 
 (** Get the fully qualified exception name from a name.*)
 val full_exception_name : env -> Odoc_name.t -> Odoc_name.t

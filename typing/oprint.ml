@@ -212,7 +212,8 @@ and print_simple_out_type ppf =
         print_present tags
   | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
-  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
+  | Otyp_abstract | Otyp_open 
+  | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
   | Otyp_module (p, n, tyl) ->
       fprintf ppf "@[<1>(module %s" p;
       let first = ref true in
@@ -321,6 +322,7 @@ let out_class_type = ref print_out_class_type
 let out_module_type = ref (fun _ -> failwith "Oprint.out_module_type")
 let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
+let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
 
 let rec print_out_module_type ppf =
   function
@@ -335,6 +337,28 @@ and print_out_signature ppf =
   function
     [] -> ()
   | [item] -> !out_sig_item ppf item
+  | Osig_extension(ext, Oext_first) :: items ->
+      (* Gather together the extension constructors *)
+      let rec gather_extensions acc items =
+	match items with
+	    Osig_extension(ext, Oext_next) :: items ->
+              gather_extensions 
+                ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc) 
+                items
+	  | _ -> (List.rev acc, items)
+      in
+      let exts, items = 
+        gather_extensions 
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)] 
+          items 
+      in
+      let te = 
+        { otyext_name = ext.oext_type_name;
+          otyext_params = ext.oext_type_params;
+          otyext_constructors = exts;
+          otyext_private = ext.oext_private }
+      in
+        fprintf ppf "%a@ %a" !out_type_extension te print_out_signature items
   | item :: items ->
       fprintf ppf "%a@ %a" !out_sig_item item print_out_signature items
 and print_out_sig_item ppf =
@@ -349,6 +373,8 @@ and print_out_sig_item ppf =
         (if rs = Orec_next then "and" else "class type")
         (if vir_flag then " virtual" else "") print_out_class_params params
         name !out_class_type clt
+  | Osig_extension (ext, _) ->
+      print_out_extension_constructor ppf ext
   | Osig_exception (id, tyl) ->
       fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl,None)
   | Osig_modtype (name, Omty_abstract) ->
@@ -377,34 +403,36 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
         ty pr_prims prims
 
-and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
-  let print_constraints ppf params =
+and print_out_type_decl kwd ppf td =
+  let print_constraints ppf =
     List.iter
       (fun (ty1, ty2) ->
          fprintf ppf "@ @[<2>constraint %a =@ %a@]" !out_type ty1
            !out_type ty2)
-      params
+      td.otype_cstrs
   in
   let type_defined ppf =
-    match args with
-      [] -> fprintf ppf "%s" name
-    | [arg] -> fprintf ppf "@[%a@ %s@]" type_parameter arg name
+    match td.otype_params with
+      [] -> fprintf ppf "%s" td.otype_name
+    | [param] -> fprintf ppf "@[%a@ %s@]" type_parameter param td.otype_name
     | _ ->
         fprintf ppf "@[(@[%a)@]@ %s@]"
-          (print_list type_parameter (fun ppf -> fprintf ppf ",@ ")) args name
+          (print_list type_parameter (fun ppf -> fprintf ppf ",@ ")) 
+          td.otype_params 
+          td.otype_name
   in
   let print_manifest ppf =
     function
       Otyp_manifest (ty, _) -> fprintf ppf " =@ %a" !out_type ty
     | _ -> ()
   in
-  let print_name_args ppf =
-    fprintf ppf "%s %t%a" kwd type_defined print_manifest ty
+  let print_name_params ppf =
+    fprintf ppf "%s %t%a" kwd type_defined print_manifest td.otype_type
   in
   let ty =
-    match ty with
+    match td.otype_type with
       Otyp_manifest (_, ty) -> ty
-    | _ -> ty
+    | _ -> td.otype_type
   in
   let print_private ppf = function
     Asttypes.Private -> fprintf ppf " private"
@@ -413,21 +441,24 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
       fprintf ppf " =%a {%a@;<1 -2>}"
-        print_private priv
+        print_private td.otype_private
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
   | Otyp_sum constrs ->
       fprintf ppf " =%a@;<1 2>%a"
-        print_private priv
+        print_private td.otype_private
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
+  | Otyp_open ->
+      fprintf ppf " = .."
   | ty ->
       fprintf ppf " =%a@;<1 2>%a"
-        print_private priv
+        print_private td.otype_private
         !out_type ty
   in
-  fprintf ppf "@[<2>@[<hv 2>%t%a@]%a@]"
-    print_name_args
+  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t@]"
+    print_name_params
     print_out_tkind ty
-    print_constraints constraints
+    print_constraints
+
 and print_out_constr ppf (name, tyl,ret_type_opt) =
   match ret_type_opt with
   | None ->
@@ -453,9 +484,58 @@ and print_out_label ppf (name, mut, arg) =
   fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
     !out_type arg
 
+and print_out_extension_constructor ppf ext =
+  let print_extended_type ppf =
+    let print_type_parameter ppf ty =
+      fprintf ppf "%s"
+        (if ty = "_" then ty else "'"^ty)
+    in
+      match ext.oext_type_params with
+        [] -> fprintf ppf "%s" ext.oext_type_name
+      | [ty_param] -> 
+        fprintf ppf "@[%a@ %s@]" 
+          print_type_parameter 
+          ty_param 
+          ext.oext_type_name
+      | _ ->
+        fprintf ppf "@[(@[%a)@]@ %s@]"
+          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ ")) 
+          ext.oext_type_params 
+          ext.oext_type_name
+  in
+  fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
+    print_extended_type
+    (if ext.oext_private = Asttypes.Private then " private" else "")
+    print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
+
+and print_out_type_extension ppf te =
+  let print_extended_type ppf =
+    let print_type_parameter ppf ty =
+      fprintf ppf "%s"
+        (if ty = "_" then ty else "'"^ty)
+    in
+    match te.otyext_params with
+      [] -> fprintf ppf "%s" te.otyext_name
+    | [param] -> 
+      fprintf ppf "@[%a@ %s@]" 
+        print_type_parameter param 
+        te.otyext_name
+    | _ ->
+        fprintf ppf "@[(@[%a)@]@ %s@]"
+          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ ")) 
+          te.otyext_params 
+          te.otyext_name
+  in
+  fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
+    print_extended_type
+    (if te.otyext_private = Asttypes.Private then " private" else "")
+    (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) 
+    te.otyext_constructors
+
 let _ = out_module_type := print_out_module_type
 let _ = out_signature := print_out_signature
 let _ = out_sig_item := print_out_sig_item
+let _ = out_type_extension := print_out_type_extension
 
 (* Phrases *)
 
@@ -470,6 +550,29 @@ let print_out_exception ppf exn outv =
 let rec print_items ppf =
   function
     [] -> ()
+  | (Osig_extension(ext, Oext_first), None) :: items ->
+      (* Gather together extension constructors *)
+      let rec gather_extensions acc items =
+	match items with
+	    (Osig_extension(ext, Oext_next), None) :: items ->
+	      gather_extensions 
+                ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc) 
+                items
+	  | _ -> (List.rev acc, items)
+      in
+      let exts, items = 
+        gather_extensions 
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)] 
+          items 
+      in
+      let te = 
+        { otyext_name = ext.oext_type_name;
+          otyext_params = ext.oext_type_params;
+          otyext_constructors = exts;
+          otyext_private = ext.oext_private }
+      in
+	fprintf ppf "@[%a@]" !out_type_extension te;
+	if items <> [] then fprintf ppf "@ %a" print_items items
   | (tree, valopt) :: items ->
       begin match valopt with
         Some v ->

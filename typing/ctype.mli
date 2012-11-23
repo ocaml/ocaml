@@ -225,6 +225,10 @@ val nondep_type_decl:
         Env.t -> Ident.t -> Ident.t -> bool -> type_declaration ->
         type_declaration
         (* Same for type declarations. *)
+val nondep_extension_constructor:
+        Env.t -> Ident.t -> extension_constructor ->
+        extension_constructor
+	  (* Same for extension constructor *)
 val nondep_class_declaration:
         Env.t -> Ident.t -> class_declaration -> class_declaration
         (* Same for class declarations. *)

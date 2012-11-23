@@ -99,6 +99,7 @@ type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
+  | Env_extension of summary * Ident.t * extension_constructor
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type
   | Env_modtype of summary * Ident.t * modtype_declaration
@@ -586,6 +587,11 @@ let mark_constructor_used usage name vd constr =
   try Hashtbl.find used_constructors (name, vd.type_loc, constr) usage
   with Not_found -> ()
 
+let mark_extension_used usage ext name =
+  let ty_name = Path.last ext.ext_type_path in
+  try Hashtbl.find used_constructors (ty_name, ext.ext_loc, name) usage
+  with Not_found -> ()
+
 let mark_exception_used usage ed constr =
   try Hashtbl.find used_constructors ("exn", ed.exn_loc, constr) usage
   with Not_found -> ()
@@ -643,6 +649,13 @@ let mark_constructor usage env name desc =
   | Cstr_exception (_, loc) ->
       begin
         try Hashtbl.find used_constructors ("exn", loc, name) usage
+        with Not_found -> ()
+      end
+  | Cstr_ext_constant(_, loc) | Cstr_ext_block(_, loc)->
+      begin
+	let ty_path = ty_path desc.cstr_res in
+	let ty_name = Path.last ty_path in
+        try Hashtbl.find used_constructors (ty_name, loc, name) usage
         with Not_found -> ()
       end
   | _ ->
@@ -737,7 +750,7 @@ let constructors_of_type ty_path decl =
   in
   match decl.type_kind with
   | Type_variant cstrs -> handle_variants cstrs
-  | Type_record _ | Type_abstract -> []
+  | Type_record _ | Type_abstract | Type_open -> []
 
 (* Compute label descriptions *)
 
@@ -747,7 +760,7 @@ let labels_of_type ty_path decl =
       Datarepr.label_descrs
         (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep decl.type_private
-  | Type_variant _ | Type_abstract -> []
+  | Type_variant _ | Type_abstract | Type_open -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
@@ -763,6 +776,10 @@ let rec prefix_idents root pos sub = function
       let p = Pdot(root, Ident.name id, nopos) in
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
+      (p::pl, final_sub)
+  | Sig_extension(id, ext, _) :: rem ->
+      let p = Pdot(root, Ident.name id, pos) in
+      let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
       (p::pl, final_sub)
   | Sig_exception(id, decl) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
@@ -841,6 +858,12 @@ and components_of_module_maker (env, sub, path, mty) =
                   Tbl.add (Ident.name name) (descr, nopos) c.comp_labels)
               (labels);
             env := store_type_infos id path decl !env
+        | Sig_extension(id, ext, _) ->
+            let ext' = Subst.extension_constructor sub ext in
+            let descr = Datarepr.extension_descr path ext' in
+            c.comp_constrs <-
+              Tbl.add (Ident.name id) (descr, !pos) c.comp_constrs;
+            incr pos
         | Sig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
             let cstr = Datarepr.exception_descr path decl' in
@@ -978,6 +1001,32 @@ and store_type_infos id path info env =
     types = EnvTbl.add id (path, info) env.types;
     summary = Env_type(env.summary, id, info) }
 
+and store_extension id path ext env =
+  let loc = ext.ext_loc in
+  if not loc.Location.loc_ghost && 
+    Warnings.is_active (Warnings.Unused_extension ("", false, false)) 
+  then begin
+    let ty = Path.last ext.ext_type_path in
+    let n = Ident.name id in
+    let k = (ty, loc, n) in
+    if not (Hashtbl.mem used_constructors k) then begin
+      let used = constructor_usages () in
+      Hashtbl.add used_constructors k (add_constructor_usage used);
+      !add_delayed_check_forward
+        (fun () ->
+          if not env.in_signature && not used.cu_positive then
+            Location.prerr_warning loc 
+	      (Warnings.Unused_extension
+		 (n, used.cu_pattern, used.cu_privatize)
+	      )
+        )
+    end;
+  end;
+  { env with
+    constrs = EnvTbl.add id (path_subst_last path id,
+                             Datarepr.extension_descr path ext) env.constrs;
+    summary = Env_extension(env.summary, id, ext) }
+
 and store_exception id path decl env =
   let loc = decl.exn_loc in
   if not loc.Location.loc_ghost &&
@@ -1059,6 +1108,9 @@ let add_annot id annot env =
 and add_type id info env =
   store_type id (Pident id) info env
 
+and add_extension id ext env =
+  store_extension id (Pident id) ext env
+
 and add_exception id decl env =
   store_exception id (Pident id) decl env
 
@@ -1090,6 +1142,7 @@ let enter store_fun name data env =
 
 let enter_value ?check = enter (store_value ?check)
 and enter_type = enter store_type
+and enter_extension = enter store_extension
 and enter_exception = enter store_exception
 and enter_module = enter store_module
 and enter_modtype = enter store_modtype
@@ -1102,6 +1155,7 @@ let add_item comp env =
   match comp with
     Sig_value(id, decl)     -> add_value id decl env
   | Sig_type(id, decl, _)   -> add_type id decl env
+  | Sig_extension(id, ext, _) -> add_extension id ext env
   | Sig_exception(id, decl) -> add_exception id decl env
   | Sig_module(id, mty, _)  -> add_module id mty env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
@@ -1130,6 +1184,9 @@ let open_signature root sg env =
         | Sig_type(id, decl, _) ->
             store_type (Ident.hide id) p
                        (Subst.type_declaration sub decl) env
+        | Sig_extension(id, ext, _) ->
+            store_extension (Ident.hide id) p
+                            (Subst.extension_constructor sub ext) env
         | Sig_exception(id, decl) ->
             store_exception (Ident.hide id) p
                             (Subst.exception_declaration sub decl) env

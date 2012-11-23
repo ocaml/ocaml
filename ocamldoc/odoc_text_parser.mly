@@ -54,6 +54,7 @@ let print_DEBUG s = print_string s; print_newline ()
 %token ELE_REF
 %token VAL_REF
 %token TYP_REF
+%token EXT_REF
 %token EXC_REF
 %token MOD_REF
 %token MODT_REF
@@ -113,6 +114,7 @@ ele_ref_kind:
   ELE_REF { None }
 | VAL_REF { Some RK_value }
 | TYP_REF { Some RK_type }
+| EXT_REF { Some RK_extension }
 | EXC_REF { Some RK_exception }
 | MOD_REF { Some RK_module }
 | MODT_REF { Some RK_module_type }
