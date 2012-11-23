@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*                  Mark Shinwell, Jane Street Europe                  *)
+(*                                                                     *)
+(*  Copyright and licence information to be added.                     *)
+(*                                                                     *)
+(*                                                                     *)
+(*                                                                     *)
+(***********************************************************************)
+
 module Dwarf_low = struct
   module Abbreviations_table = Abbreviations_table
   module Aranges_table = Aranges_table

@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*                  Mark Shinwell, Jane Street Europe                  *)
+(*                                                                     *)
+(*  Copyright and licence information to be added.                     *)
+(*                                                                     *)
+(*                                                                     *)
+(*                                                                     *)
+(***********************************************************************)
+
 type t
 
 val create : emit_string:(string -> unit)

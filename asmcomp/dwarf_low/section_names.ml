@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*                  Mark Shinwell, Jane Street Europe                  *)
+(*                                                                     *)
+(*  Copyright and licence information to be added.                     *)
+(*                                                                     *)
+(*                                                                     *)
+(*                                                                     *)
+(***********************************************************************)
+
 open Std_internal
 
 let debug_abbrev = ".debug_abbrev"
