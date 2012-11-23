@@ -10,7 +10,11 @@
 (*                                                                     *)
 (***********************************************************************)
 
+open Dwarf_low_dot_std
+open Std_internal
+
 type t = {
+  emitter : Dwarf_low.Emitter.t;
   source_file_path : string option;
   start_of_code_label : string;
   end_of_code_label : string;
@@ -20,8 +24,9 @@ type t = {
   mutable debug_loc_table : Dwarf_low.Debug_loc_table.t;
 }
 
-let create ~source_file_path ~start_of_code_label ~end_of_code_label =
-  { source_file_path;
+let create ~emitter ~source_file_path ~start_of_code_label ~end_of_code_label =
+  { emitter;
+    source_file_path;
     start_of_code_label;
     end_of_code_label;
     externally_visible_functions = [];
@@ -45,10 +50,20 @@ module Function = struct
   type t = string  (* function name, ahem *)
 end
 
+module Reg_location = struct
+  type t = [
+  | `Hard_register of int
+  | `Stack of unit
+  ]
+
+  let hard_register ~reg_num = `Hard_register reg_num
+  let stack () = `Stack ()
+end
+
 let start_function t ~function_name ~arguments_and_locations =
   let starting_label = sprintf "Llr_begin_%s" function_name in
   let ending_label = sprintf "Llr_end_%s" function_name in
-  emit_label_declaration starting_label;
+  Emitter.emit_label_declaration t.emitter starting_label;
   let debug_loc_table, argument_tags =
     List.fold arguments_and_locations
       ~init:(t.debug_loc_table, [])
@@ -119,18 +134,25 @@ let start_function t ~function_name ~arguments_and_locations =
   t.function_tags <- t.function_tags @ this_function's_tags;
   function_name
 
-let end_function _t function_name =
-  emit_label_declaration (sprintf "Llr_end_%s" function_name)
+let end_function t function_name =
+  Dwarf_low.Emitter.emit_label_declaration t.emitter (sprintf "Llr_end_%s" function_name)
 
-let emit_debugging_info_prologue _t =
-  emit_section_declaration ~section_name:".debug_abbrev";
-  emit_label_declaration ~label_name:"Ldebug_abbrev0";
-  emit_section_declaration ~section_name:".debug_line";
-  emit_label_declaration ~label_name:"Ldebug_line0";
-  emit_section_declaration ~section_name:".debug_loc";
-  emit_label_declaration ~label_name:"Ldebug_loc0"
+let emit_debugging_info_prologue t =
+  Dwarf_low.Emitter.emit_section_declaration t.emitter
+    ~section_name:Dwarf_low.Section_names.debug_abbrev;
+  Dwarf_low.Emitter.emit_label_declaration t.emitter
+    ~label_name:"Ldebug_abbrev0";
+  Dwarf_low.Emitter.emit_section_declaration t.emitter
+    ~section_name:Dwarf_low.Section_names.debug_line;
+  Dwarf_low.Emitter.emit_label_declaration t.emitter
+    ~label_name:"Ldebug_line0";
+  Dwarf_low.Emitter.emit_section_declaration t.emitter
+    ~section_name:Dwarf_low.Section_names.debug_loc;
+  Dwarf_low.Emitter.emit_label_declaration t.emitter
+    ~label_name:"Ldebug_loc0"
 
 let emit_debugging_info_epilogue t =
+  let emitter = t.emitter in
   let producer_name = sprintf "ocamlopt %s" Sys.ocaml_version in
   let compile_unit_attribute_values =
     let common = [
@@ -160,17 +182,29 @@ let emit_debugging_info_epilogue t =
   let debug_abbrev =
     Dwarf_low.Debug_info_section.to_abbreviations_table debug_info
   in
-  emit_section_declaration ~section_name:".debug_info";
-  emit_label_declaration "Ldebug_info0";
-  Dwarf_low.Debug_info_section.emit debug_info;
-  emit_switch_to_section ~section_name:".debug_abbrev";
-  Dwarf_low.Abbreviations_table.emit debug_abbrev;
-  emit_section_declaration ~section_name:".debug_pubnames";
-  Dwarf_low.Pubnames_table.emit
-    ~externally_visible_functions:t.externally_visible_functions
-    ~debug_info;
-  emit_section_declaration ~section_name:".debug_aranges";
-  Dwarf_low.Aranges_table.emit ~start_of_code_label:t.start_of_code_label
-    ~end_of_code_label:t.end_of_code_label;
-  emit_switch_to_section ~section_name:".debug_loc";
-  Dwarf_low.Debug_loc_table.emit t.debug_loc_table
+  let pubnames_table =
+    Dwarf_low.Pubnames_table.create
+      ~externally_visible_functions:t.externally_visible_functions
+      ~debug_info
+  in
+  let aranges_table =
+    Dwarf_low.Aranges_table.create ~start_of_code_label:t.start_of_code_label
+      ~end_of_code_label:t.end_of_code_label
+  in
+  Dwarf_low.Emitter.emit_section_declaration emitter
+    ~section_name:Dwarf_low.Section_names.debug_info;
+  Dwarf_low.Emitter.emit_label_declaration emitter
+    ~label_name:"Ldebug_info0";
+  Dwarf_low.Debug_info_section.emit debug_info ~emitter;
+  Dwarf_low.Emitter.emit_switch_to_section emitter
+    ~section_name:Dwarf_low.Section_names.debug_abbrev;
+  Dwarf_low.Abbreviations_table.emit debug_abbrev ~emitter;
+  Dwarf_low.Emitter.emit_section_declaration emitter
+    ~section_name:Dwarf_low.Section_names.debug_pubnames;
+  Dwarf_low.Pubnames_table.emit pubnames_table ~emitter;
+  Dwarf_low.Emitter.emit_section_declaration emitter
+    ~section_name:Dwarf_low.Section_names.debug_aranges;
+  Dwarf_low.Aranges_table.emit aranges_table ~emitter;
+  Dwarf_low.Emitter.emit_switch_to_section emitter
+    ~section_name:Dwarf_low.Section_names.debug_loc;
+  Dwarf_low.Debug_loc_table.emit t.debug_loc_table ~emitter
