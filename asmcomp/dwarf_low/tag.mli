@@ -1,6 +1,6 @@
 type t
 
-include Emittable with type t := t
+include Emittable.S with type t := t
 
 val compile_unit : t
 val subprogram : t

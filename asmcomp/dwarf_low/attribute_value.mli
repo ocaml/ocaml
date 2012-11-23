@@ -1,6 +1,6 @@
 type t
 
-include Emittable with type t := t
+include Emittable.S with type t := t
 
 val create_low_pc : address_label:string -> t
 val create_high_pc : address_label:string -> t

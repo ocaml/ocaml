@@ -1,3 +1,5 @@
+open Std_internal
+
 type t =
   | DW_op_regx of Value.t
 

@@ -1,3 +1,5 @@
+open Std_internal
+
 (* Register name operators only for the moment.  There are other
    cases (p23-24) *)
 type t = Operator.t

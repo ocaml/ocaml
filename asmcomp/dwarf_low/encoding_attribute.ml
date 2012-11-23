@@ -1,6 +1,7 @@
-type t = [
-| DW_ATE_signed
-]
+open Std_internal
+
+type t =
+  | DW_ATE_signed
 
 let signed = DW_ATE_signed
 

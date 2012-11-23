@@ -1,3 +1,5 @@
+open Std_internal
+
 type t =
   | DW_CHILDREN_no
   | DW_CHILDREN_yes

@@ -1,3 +1,5 @@
+open Std_internal
+
 type t = {
   label_name : string;
   abbreviation_code : Abbreviation_code.t;

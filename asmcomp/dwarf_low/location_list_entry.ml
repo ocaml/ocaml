@@ -1,3 +1,5 @@
+open Std_internal
+
 module Location_list_entry = struct
   type t = {
     start_of_code_label : string;
@@ -20,15 +22,17 @@ module Location_list_entry = struct
 
   let size t = 8 + 8 + 2 + (expr_size t)
 
-  let emit t =
+  let emit t ~emitter =
     Value.emit
       (Value.as_code_address_from_label_diff
-        t.beginning_address_label t.start_of_code_label);
+        t.beginning_address_label t.start_of_code_label)
+      ~emitter;
     Value.emit
       (Value.as_code_address_from_label_diff
-        t.ending_address_label t.start_of_code_label);
-    Value.emit (Value.as_two_byte_int (expr_size t));
-    Location_expression.emit t.expr
+        t.ending_address_label t.start_of_code_label)
+      ~emitter;
+    Value.emit (Value.as_two_byte_int (expr_size t)) ~emitter;
+    Location_expression.emit t.expr ~emitter
 end
 
 module Base_address_selection_entry = struct
@@ -47,8 +51,8 @@ module Base_address_selection_entry = struct
       ~init:0
       ~f:(fun acc v -> acc + Value.size v)
 
-  let emit t =
-    List.iter (to_dwarf_values t) ~f:Value.emit
+  let emit t ~emitter =
+    List.iter (to_dwarf_values t) ~f:(Value.emit ~emitter)
 end
 
 type t =

@@ -1,3 +1,5 @@
+open Std_internal
+
 type t =
   | Dwarf_2
   | Dwarf_3
@@ -9,6 +11,7 @@ let four = Dwarf_4
 
 let encode t =
   let code =
+    match t with
     | Dwarf_2 -> 2
     | Dwarf_3 -> 3
     | Dwarf_4 -> 4

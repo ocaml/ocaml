@@ -1,3 +1,5 @@
+open Std_internal
+
 type t = Location_list.t list
 
 let create () = []

@@ -1,6 +1,6 @@
 type t
 
-include Emittable with type t := t
+include Emittable.S with type t := t
 
 val create : label_name:string
   -> abbreviation_code:Abbreviation_code.t

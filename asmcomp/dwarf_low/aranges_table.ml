@@ -1,5 +1,7 @@
+open Std_internal
+
 type t = {
-  size : Value.t;
+  size : int;
   values : Value.t list;
 }
 

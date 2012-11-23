@@ -1,3 +1,5 @@
+open Std_internal
+
 type t = {
   name : string;
   entries : Location_list_entry.t list;
@@ -8,7 +10,7 @@ let next_id = ref 0
 let create entries =
   let id = !next_id in
   next_id := !next_id + 1;
-  { name = Printf.sprintf "location_list%d" id;
+  { name = sprintf "location_list%d" id;
     entries;
   }
 

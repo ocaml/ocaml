@@ -1,3 +1,5 @@
+open Std_internal
+
 type t = Value.t
 
 exception Bad_abbreviation_code of int

@@ -1,3 +1,5 @@
+open Std_internal
+
 type t = Attribute.t * Value.t
 
 let create_low_pc ~address_label =

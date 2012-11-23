@@ -1,13 +1,14 @@
-type t = [
-| DW_FORM_addr
-| DW_FORM_string
-| DW_FORM_data1
-| DW_FORM_data4
-| DW_FORM_data8
-| DW_FORM_flag
-| DW_FORM_block
-| DW_FORM_ref_addr
-]
+open Std_internal
+
+type t =
+  | DW_FORM_addr
+  | DW_FORM_string
+  | DW_FORM_data1
+  | DW_FORM_data4
+  | DW_FORM_data8
+  | DW_FORM_flag
+  | DW_FORM_block
+  | DW_FORM_ref_addr
 
 let encode t =
   let code =

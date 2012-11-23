@@ -1,3 +1,5 @@
+open Std_internal
+
 type t = {
   dies : Debugging_information_entry.t list;
 }
@@ -13,7 +15,7 @@ let create ~tags_with_attribute_values =
             let need_null_entry = depth < current_depth in
             let dies =
               if need_null_entry then
-                (Debugging_information_entry.null ())::dies
+                (Debugging_information_entry.create_null ())::dies
               else
                 dies
             in
@@ -29,7 +31,7 @@ let create ~tags_with_attribute_values =
             in
             depth, (die::dies))
   in
-  { dies = (List.rev dies) @ [Debugging_information_entry.null ()];
+  { dies = (List.rev dies) @ [Debugging_information_entry.create_null ()];
   }
 
 let dwarf_version = Version.two

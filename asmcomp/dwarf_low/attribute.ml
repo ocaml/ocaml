@@ -1,3 +1,5 @@
+open Std_internal
+
 type t =
   | DW_AT_low_pc
   | DW_AT_high_pc

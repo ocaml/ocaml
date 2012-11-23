@@ -1,4 +1,8 @@
-type t
+open Std_internal
 
-val size : t -> int
-val emit : t -> emitter:Emitter.t -> unit
+module type S = sig
+  type t
+
+  val size : t -> int
+  val emit : t -> emitter:Emitter.t -> unit
+end

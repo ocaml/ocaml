@@ -1,6 +1,6 @@
 type t
 
-include Emittable with type t := t
+include Emittable.S with type t := t
 
 val as_four_byte_int : int -> t
 val as_four_byte_int_from_label : string -> t

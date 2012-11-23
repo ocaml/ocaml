@@ -21,6 +21,8 @@ open Reg
 open Mach
 open Linearize
 open Emitaux
+open Dwarf_dot_std
+open Dwarf_low_dot_std
 
 let macosx = (Config.system = "macosx")
 let mingw64 = (Config.system = "mingw64")
@@ -715,9 +717,24 @@ let fundecl fundecl =
   else
     `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
-  Dwarf.Compilation_unit_state.start_function (get_dwarf_comp_unit_state ())
-    ~function_name:fundecl.fun_name
-    ~arguments_and_locations:fundecl.fun_args_and_locations;
+  let fun_args_and_locations =
+    let module Reg_location = Dwarf.Compilation_unit_state.Reg_location in
+    (* CR mshinwell: for goodness' sake, let's have filter_map *)
+    ListLabels.fold_right fundecl.fun_args_and_locations
+      ~init:[]
+      ~f:(fun (ident, reg_loc) acc ->
+            match reg_loc with
+            | Reg.Unknown -> acc
+            | Reg.Reg reg_num ->
+              (ident, Reg_location.hard_register ~reg_num)::acc
+            | Reg.Stack _stack_loc ->
+              (ident, Reg_location.stack ())::acc)
+  in
+  let dwarf_func =
+    Dwarf.Compilation_unit_state.start_function (get_dwarf_comp_unit_state ())
+      ~function_name:fundecl.fun_name
+      ~arguments_and_locations:fun_args_and_locations
+  in
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
@@ -732,7 +749,7 @@ let fundecl fundecl =
   emit_call_bound_errors ();
   cfi_endproc ();
   Dwarf.Compilation_unit_state.end_function (get_dwarf_comp_unit_state ())
-    ~function_name:fundecl.fun_name;
+    dwarf_func;
   begin match Config.system with
     "linux" | "gnu" ->
       `	.type	{emit_symbol fundecl.fun_name},@function\n`;
@@ -787,11 +804,29 @@ let data l =
 
 (* Beginning / end of an assembly file *)
 
+let emit_label_declaration ~label_name =
+  emit_symbol label_name;
+  emit_string ":\n"
+
+let emit_section_declaration ~section_name =
+  emit_string (Printf.sprintf "\t.section\t%s,\"\",@progbits\n" section_name)
+
+let emit_switch_to_section ~section_name =
+  emit_string (Printf.sprintf "\t.section\t%s\n" section_name)
+
+let emitter = lazy (
+  Dwarf_low.Emitter.create ~emit_string
+    ~emit_symbol
+    ~emit_label_declaration
+    ~emit_section_declaration
+    ~emit_switch_to_section)
+
 let begin_assembly ~source_file_name =
   (* CR mshinwell: the symbols for start/end of code aren't quite right---they're not
      going through the emitaux stuff. *)
   dwarf_comp_unit_state := Some (
-    Dwarf.Compilation_unit_state.create ~source_file_path:source_file_name
+    Dwarf.Compilation_unit_state.create ~emitter:(Lazy.force emitter)
+      ~source_file_path:source_file_name
       ~start_of_code_label:(Compilenv.make_symbol (Some "code_begin"))
       ~end_of_code_label:(Compilenv.make_symbol (Some "code_end")));
   reset_debug_info();                   (* PR#5603 *)

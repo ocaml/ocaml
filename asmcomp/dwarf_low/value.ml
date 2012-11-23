@@ -1,3 +1,5 @@
+open Std_internal
+
 type t =
   | Four_byte_int of int
   | Four_byte_int_from_label of string
@@ -68,30 +70,30 @@ let size = function
 let emit t ~emitter =
   match t with
   | Four_byte_int i ->
-    Emitter.emit_string (sprintf "\t.long\t0x%x\n" i) ~emitter
+    Emitter.emit_string emitter (sprintf "\t.long\t0x%x\n" i);
   | Four_byte_int_from_label l ->
-    Emitter.emit_string "\t.long\t" ~emitter;
-    Emitter.emit_symbol l ~emitter;
-    Emitter.emit_string "\n" ~emitter
+    Emitter.emit_string emitter "\t.long\t";
+    Emitter.emit_symbol emitter l;
+    Emitter.emit_string emitter "\n"
   | Two_byte_int i ->
-    Emitter.emit_string (sprintf "\t.value\t0x%x\n" i) ~emitter
+    Emitter.emit_string emitter (sprintf "\t.value\t0x%x\n" i)
   | Byte b ->
-    Emitter.emit_string (sprintf "\t.byte\t0x%x\n" b) ~emitter
+    Emitter.emit_string emitter (sprintf "\t.byte\t0x%x\n" b)
   | Uleb128 i ->
-    Emitter.emit_string (sprintf "\t.uleb128\t0x%x\n" i) ~emitter
+    Emitter.emit_string emitter (sprintf "\t.uleb128\t0x%x\n" i)
   | Leb128 i ->
-    Emitter.emit_string (sprintf "\t.sleb128\t0x%x\n" i) ~emitter
+    Emitter.emit_string emitter (sprintf "\t.sleb128\t0x%x\n" i)
   | String s ->
-    Emitter.emit_string (sprintf "\t.string\t\"%s\"\n" s) ~emitter
+    Emitter.emit_string emitter (sprintf "\t.string\t\"%s\"\n" s)
   | Code_address_from_label s ->
-    Emitter.emit_string "\t.quad\t" ~emitter;
-    Emitter.emit_symbol s ~emitter;
-    Emitter.emit_string "\n" ~emitter
+    Emitter.emit_string emitter "\t.quad\t";
+    Emitter.emit_symbol emitter s;
+    Emitter.emit_string emitter "\n"
   | Code_address_from_label_diff (s2, s1) ->
-    Emitter.emit_string "\t.quad\t" ~emitter;
-    Emitter.emit_symbol s2 ~emitter;
-    Emitter.emit_string " - " ~emitter;
-    Emitter.emit_symbol s1 ~emitter;
-    Emitter.emit_string "\n" ~emitter
+    Emitter.emit_string emitter "\t.quad\t";
+    Emitter.emit_symbol emitter s2;
+    Emitter.emit_string emitter " - ";
+    Emitter.emit_symbol emitter s1;
+    Emitter.emit_string emitter "\n"
   | Code_address i ->
-    Emitter.emit_string (sprintf "\t.quad\t0x%Lx\n" i) ~emitter
+    Emitter.emit_string emitter (sprintf "\t.quad\t0x%Lx\n" i)

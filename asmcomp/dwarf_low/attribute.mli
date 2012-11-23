@@ -1,7 +1,7 @@
 type t
 
 (* [emit] emits the attribute followed by the form. *)
-include Emittable with type t := t
+include Emittable.S with type t := t
 
 val low_pc : t
 val high_pc : t

@@ -1,3 +1,5 @@
+open Std_internal
+
 type t = Simple_location_expression.t  (* will do for the moment *)
 
 let in_register ~reg_number =

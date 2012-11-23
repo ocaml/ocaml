@@ -1,3 +1,5 @@
+open Std_internal
+
 (* http://llvm.org/docs/SourceLevelDebugging.html claims this table
    is a waste of space.  Maybe we don't need to emit it. *)
 
@@ -23,12 +25,12 @@ let size t =
 let emit t ~emitter =
   let write_offset_name_pair function_name =
     (* CR mshinwell: should use [Value.emit], no? *)
-    Emitter.emit_string "\t.long\tLdie__" ~emitter;
-    Emitter.emit_symbol function_name ~emitter;
-    Emitter.emit_string "-Ldie__compile_unit\n" ~emitter;
+    Emitter.emit_string emitter "\t.long\tLdie__";
+    Emitter.emit_symbol emitter function_name;
+    Emitter.emit_string emitter "-Ldie__compile_unit\n";
     Value.emit (Value.as_string function_name) ~emitter
   in
-  Value.emit (Value.as_four_byte_int total_size) ~emitter;
+  Value.emit (Value.as_four_byte_int (size t)) ~emitter;
   Value.emit (Value.as_two_byte_int 2) ~emitter;  (* version number *)
   Value.emit (Value.as_four_byte_int_from_label "Ldebug_info0") ~emitter;
   Value.emit

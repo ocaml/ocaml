@@ -1,6 +1,6 @@
 type t
 
-include Emittable with type t := t
+include Emittable.S with type t := t
 
 val create :
      tags_with_attribute_values:

@@ -1,3 +1,5 @@
+open Std_internal
+
 type t =
   | DW_TAG_compile_unit
   | DW_TAG_subprogram
