@@ -150,6 +150,11 @@ let primitives_table = create_hashtable 57 [
   "%sequand", Psequand;
   "%sequor", Psequor;
   "%boolnot", Pnot;
+  "%big_endian", Pctconst Big_endian;
+  "%word_size", Pctconst Word_size;
+  "%ostype_unix", Pctconst Ostype_unix;
+  "%ostype_win32", Pctconst Ostype_win32;
+  "%ostype_cygwin", Pctconst Ostype_cygwin;
   "%negint", Pnegint;
   "%succint", Poffsetint 1;
   "%predint", Poffsetint(-1);
@@ -300,6 +305,10 @@ let primitives_table = create_hashtable 57 [
   "%caml_bigstring_set32u", Pbigstring_set_32(true);
   "%caml_bigstring_set64", Pbigstring_set_64(false);
   "%caml_bigstring_set64u", Pbigstring_set_64(true);
+  "%bswap16", Pbswap16;
+  "%bswap_int32", Pbbswap(Pint32);
+  "%bswap_int64", Pbbswap(Pint64);
+  "%bswap_native", Pbbswap(Pnativeint);
 ]
 
 let prim_makearray =

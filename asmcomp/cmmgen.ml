@@ -858,6 +858,7 @@ let simplif_primitive_32bits = function
   | Pstring_set_64(_) -> Pccall (default_prim "caml_string_set64")
   | Pbigstring_load_64(_) -> Pccall (default_prim "caml_ba_uint8_get64")
   | Pbigstring_set_64(_) -> Pccall (default_prim "caml_ba_uint8_set64")
+  | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
   | p -> p
 
 let simplif_primitive p =
@@ -974,6 +975,7 @@ let is_unboxed_number = function
         | Pstring_load_64(_) -> Boxed_integer Pint64
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
+        | Pbbswap bi -> Boxed_integer bi
         | _ -> No_unboxing
       end
   | _ -> No_unboxing
@@ -1282,6 +1284,16 @@ and transl_prim_1 p arg dbg =
   (* Integer operations *)
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl arg])
+  | Pctconst c ->
+      let const_of_bool b = tag_int (Cconst_int (if b then 1 else 0)) in
+      begin
+        match c with
+        | Big_endian -> const_of_bool Arch.big_endian
+        | Word_size -> tag_int (Cconst_int (8*Arch.size_int))
+        | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
+        | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
+        | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
+      end
   | Poffsetint n ->
       if no_overflow_lsl n then
         add_const (transl arg) (n lsl 1)
@@ -1337,6 +1349,17 @@ and transl_prim_1 p arg dbg =
       box_int bi2 (transl_unbox_int bi1 arg)
   | Pnegbint bi ->
       box_int bi (Cop(Csubi, [Cconst_int 0; transl_unbox_int bi arg]))
+  | Pbbswap bi ->
+      let prim = match bi with
+        | Pnativeint -> "nativeint"
+        | Pint32 -> "int32"
+        | Pint64 -> "int64" in
+      box_int bi (Cop(Cextcall(Printf.sprintf "caml_%s_direct_bswap" prim,
+                               typ_int, false, Debuginfo.none),
+                      [transl_unbox_int bi arg]))
+  | Pbswap16 ->
+      tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false, Debuginfo.none),
+                      [untag_int (transl arg)]))
   | _ ->
       fatal_error "Cmmgen.transl_prim_1"
 

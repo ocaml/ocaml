@@ -154,6 +154,14 @@ let primitive ppf = function
   | Parraysetu _ -> fprintf ppf "array.unsafe_set"
   | Parrayrefs _ -> fprintf ppf "array.get"
   | Parraysets _ -> fprintf ppf "array.set"
+  | Pctconst c ->
+     let const_name = match c with
+       | Big_endian -> "big_endian"
+       | Word_size -> "word_size"
+       | Ostype_unix -> "ostype_unix"
+       | Ostype_win32 -> "ostype_win32"
+       | Ostype_cygwin -> "ostype_cygwin" in
+     fprintf ppf "sys.constant_%s" const_name
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
   | Pbittest -> fprintf ppf "testbit"
@@ -219,6 +227,8 @@ let primitive ppf = function
   | Pbigstring_set_64(unsafe) ->
      if unsafe then fprintf ppf "bigarray.array1.unsafe_set64"
      else fprintf ppf "bigarray.array1.set64"
+  | Pbswap16 -> fprintf ppf "bswap16"
+  | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
 
 let rec lam ppf = function
   | Lvar id ->

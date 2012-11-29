@@ -537,6 +537,18 @@ let emit_instr fallthrough i =
         `	add	QWORD PTR {emit_addressing addr i.arg 0}, {emit_int n}\n`
     | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
         `	{emit_string(instr_for_floatarithmem op)}	{emit_reg i.res.(0)}, REAL8 PTR {emit_addressing addr i.arg 1}\n`
+    | Lop(Ispecific(Ibswap size)) ->
+       begin match size with
+       | 16 ->
+        `	xchg	%ah, %al\n`;
+        `	movzwq	{emit_reg i.res.(0)}, {emit_reg16 i.res.(0)}\n`
+       | 32 ->
+        `	bswap	{emit_reg32 i.res.(0)}\n`;
+        `	movslq	{emit_reg i.res.(0)}, {emit_reg32 i.res.(0)}\n`
+       | 64 ->
+        `	bswap	{emit_reg i.res.(0)}\n`
+       | _ -> assert false
+       end
     | Lop(Ispecific Isqrtf) ->
         `	sqrtsd	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific(Ifloatsqrtf addr)) ->

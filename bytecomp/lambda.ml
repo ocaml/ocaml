@@ -14,6 +14,13 @@ open Misc
 open Path
 open Asttypes
 
+type compile_time_constant =
+  | Big_endian
+  | Word_size
+  | Ostype_unix
+  | Ostype_win32
+  | Ostype_cygwin
+
 type primitive =
     Pidentity
   | Pignore
@@ -101,6 +108,11 @@ type primitive =
   | Pbigstring_set_16 of bool
   | Pbigstring_set_32 of bool
   | Pbigstring_set_64 of bool
+  (* Compile time constants *)
+  | Pctconst of compile_time_constant
+  (* byte swap *)
+  | Pbswap16
+  | Pbbswap of boxed_integer
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

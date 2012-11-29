@@ -349,6 +349,14 @@ let comp_primitive p args =
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
   | Parraysetu Pfloatarray -> Kccall("caml_array_unsafe_set_float", 3)
   | Parraysetu _ -> Ksetvectitem
+  | Pctconst c ->
+     let const_name = match c with
+       | Big_endian -> "big_endian"
+       | Word_size -> "word_size"
+       | Ostype_unix -> "ostype_unix"
+       | Ostype_win32 -> "ostype_win32"
+       | Ostype_cygwin -> "ostype_cygwin" in
+     Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1)
   | Pisint -> Kisint
   | Pisout -> Kisout
   | Pbittest -> Kccall("caml_bitvect_test", 2)
@@ -387,6 +395,8 @@ let comp_primitive p args =
   | Pbigstring_set_16(_) -> Kccall("caml_ba_uint8_set16", 3)
   | Pbigstring_set_32(_) -> Kccall("caml_ba_uint8_set32", 3)
   | Pbigstring_set_64(_) -> Kccall("caml_ba_uint8_set64", 3)
+  | Pbswap16 -> Kccall("caml_bswap16", 1)
+  | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max

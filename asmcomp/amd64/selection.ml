@@ -84,8 +84,13 @@ let pseudoregs_for_operation op arg res =
       ([|res.(0); arg.(1)|], res)
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
   | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _)
-  | Iabsf | Inegf ->
+  | Iabsf | Inegf
+  | Ispecific(Ibswap (32|64)) ->
       (res, res)
+  (* For xchg, args must be a register allowing access to high 8 bit register
+     (rax, rbx, rcx or rdx). Keep it simple, just force the argument in rax. *)
+  | Ispecific(Ibswap 16) ->
+      ([| rax |], [| rax |])
   | Ispecific(Ifloatarithmem(_,_)) ->
       let arg' = Array.copy arg in
       arg'.(0) <- res.(0);
@@ -107,6 +112,10 @@ let pseudoregs_for_operation op arg res =
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
+let inline_ops =
+  [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
+    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
+
 (* The selector class *)
 
 class selector = object (self)
@@ -116,6 +125,15 @@ inherit Selectgen.selector_generic as super
 method is_immediate n = n <= 0x7FFFFFFF && n >= -0x80000000
 
 method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
+
+method! is_simple_expr e =
+  match e with
+  | Cop(Cextcall(fn, _, _, _), args)
+    when List.mem fn inline_ops ->
+      (* inlined ops are simple if their arguments are *)
+      List.for_all self#is_simple_expr args
+  | _ ->
+      super#is_simple_expr e
 
 method select_addressing chunk exp =
   let (a, d) = select_addr exp in
@@ -202,6 +220,13 @@ method! select_operation op args =
       | _ ->
           super#select_operation op args
       end
+  | Cextcall("caml_bswap16_direct", _, _, _) ->
+      (Ispecific (Ibswap 16), args)
+  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+      (Ispecific (Ibswap 32), args)
+  | Cextcall("caml_int64_direct_bswap", _, _, _)
+  | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
+      (Ispecific (Ibswap 64), args)
   | _ -> super#select_operation op args
 
 (* Recognize float arithmetic with mem *)
