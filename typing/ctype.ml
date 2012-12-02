@@ -1491,7 +1491,7 @@ let rec non_recursive_abbrev env ty0 ty =
           non_recursive_abbrev env ty0 (try_expand_once_opt env ty)
         with Cannot_expand ->
           if !Clflags.recursive_types &&
-            (in_current_module p || in_pervasives p ||
+            (in_pervasives p ||
              try is_datatype (Env.find_type p env) with Not_found -> false)
           then ()
           else iter_type_expr (non_recursive_abbrev env ty0) ty

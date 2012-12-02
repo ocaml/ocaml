@@ -10,25 +10,6 @@
 #                                                                       #
 #########################################################################
 
-default: compile
-
-compile:
-	@for file in *.ml; do \
-	  printf " ... testing '$$file'"; \
-	  if [ `echo $$file | grep bad` ]; then \
-	    if $(OCAMLC) -c -w a $$file 2> /dev/null; then \
-	      echo " => failed" && exit 1; \
-	    else echo " => passed"; \
-	    fi; \
-	  else \
-	    test -f `basename $$file ml`mli && $(OCAMLC) -c -w a `basename $$file ml`mli; \
-	    $(OCAMLC) -c -w a $$file 2> /dev/null || (echo " => failed" && exit 1); \
-	    test -f `basename $$file ml`reference && $(OCAMLC) `basename $$file ml`cmo && ./a.out > `basename $$file ml`result && ($(DIFF) `basename $$file ml`reference `basename $$file ml`result || (echo " => failed" && exit 1)); \
-	    echo " => passed"; \
-	  fi; \
-	done
-
-promote: defaultpromote
-
-clean: defaultclean
-	@rm -f ./a.out *.cm* *.result
+include ../../makefiles/Makefile.okbad
+include ../../makefiles/Makefile.common
+COMPFLAGS = -rectypes

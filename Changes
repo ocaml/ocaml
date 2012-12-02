@@ -14,6 +14,7 @@ Bug fixes:
   rather than raising 'Not_found'
 - PR#5327: (Windows) Unix.select blocks if same socket listed in first and
   third arguments
+- PR#5343: ocaml -rectypes is unsound wrt module subtyping (was still unsound)
 - PR#5468: ocamlbuild should preserve order of parametric tags
 - PR#5551: Avoid repeated lookups for missing cmi files
 - PR#5552: try to use camlp4.opt if it's possible
@@ -270,7 +271,6 @@ Bug Fixes:
 - PR#5331: ocamlmktop is not always a shell script
 - PR#5335: Unix.environment segfaults after a call to clearenv
 - PR#5338: sanitize.sh has windows style end-of-lines (mingw)
-- PR#5343: ocaml -rectypes is unsound wrt module subtyping
 - PR#5344: some predefined exceptions need special printing
 - PR#5349: Hashtbl.replace uses new key instead of reusing old key
 - PR#5356: ocamlbuild handling of 'predicates' for ocamlfind
