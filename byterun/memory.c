@@ -502,7 +502,7 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
    A block value [v] is a shared block if and only if [Is_in_heap (v)]
    is true.
 */
-/* [caml_initialize] never calls the GC, so you may call it while an block is
+/* [caml_initialize] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
 void caml_initialize (value *fp, value val)
 {
