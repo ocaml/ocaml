@@ -321,11 +321,12 @@ static value caml_array_gather(intnat num_arrays,
            count--, src++, pos++) {
         caml_initialize(&Field(res, pos), *src);
       }
-      /* Many caml_initialize in a row can create a lot of old-to-young
-         refs.  Give the minor GC a chance to run if it needs to. */
-      res = caml_check_urgent_gc(res);
     }
     Assert(pos == size);
+
+    /* Many caml_initialize in a row can create a lot of old-to-young
+       refs.  Give the minor GC a chance to run if it needs to. */
+    res = caml_check_urgent_gc(res);
   }
   CAMLreturn (res);
 }
