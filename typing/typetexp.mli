@@ -80,8 +80,14 @@ val find_type:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.type_declaration
 val find_constructor:
     Env.t -> Location.t -> Longident.t -> Types.constructor_description
+val find_all_constructors:
+    Env.t -> Location.t -> Longident.t -> 
+    (Types.constructor_description * (unit -> unit)) list
 val find_label:
     Env.t -> Location.t -> Longident.t -> Types.label_description
+val find_all_labels:
+    Env.t -> Location.t -> Longident.t -> 
+    (Types.label_description * (unit -> unit)) list
 val find_value:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.value_description
 val find_class:
@@ -92,3 +98,12 @@ val find_modtype:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.modtype_declaration
 val find_class_type:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.class_type_declaration
+
+val unbound_constructor_error: Env.t -> Longident.t Location.loc -> unit
+val unbound_label_error: Env.t -> Longident.t Location.loc -> unit
+
+type cd
+val spellcheck_simple:
+    Format.formatter ->
+    (('a -> cd -> cd) -> Longident.t option -> 'b -> cd -> cd) ->
+    ('a -> string) -> 'b -> Longident.t -> unit

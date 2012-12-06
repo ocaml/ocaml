@@ -1400,6 +1400,21 @@ let expand_head env ty =
     Btype.backtrack snap;
     repr ty
 
+(* Expand until we find a non-abstract type declaration *)
+
+let rec extract_concrete_typedecl env ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tconstr (p, _, _) ->
+      let decl = Env.find_type p env in
+      if decl.type_kind <> Type_abstract then (p, p, decl) else
+      let ty =
+        try try_expand_once env ty with Cannot_expand -> raise Not_found
+      in 
+      let (_, p', decl) = extract_concrete_typedecl env ty in
+        (p, p', decl)
+  | _ -> raise Not_found
+
 (* Implementing function [expand_head_opt], the compiler's own version of
    [expand_head] used for type-based optimisations.
    [expand_head_opt] uses [Env.find_type_expansion_opt] to access the

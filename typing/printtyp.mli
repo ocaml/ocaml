@@ -72,3 +72,7 @@ val report_unification_error:
 val report_subtyping_error:
     formatter -> (type_expr * type_expr) list ->
     string -> (type_expr * type_expr) list -> unit
+val report_ambiguous_type_error:
+    formatter -> (Path.t * Path.t) -> (Path.t * Path.t) list -> 
+    (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
+
