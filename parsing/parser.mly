@@ -44,8 +44,9 @@ let mkcf d =
   { pcf_desc = d; pcf_loc = symbol_rloc () }
 let mkrhs rhs pos = mkloc rhs (rhs_loc pos)
 let mkoption d =
-  { ptyp_desc = Ptyp_constr(mknoloc (Ldot (Lident "*predef*", "option")), [d]);
-    ptyp_loc = d.ptyp_loc}
+  let loc = {d.ptyp_loc with loc_ghost = true} in
+  { ptyp_desc = Ptyp_constr(mkloc (Ldot (Lident "*predef*", "option")) loc,[d]);
+    ptyp_loc = loc}
 
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
@@ -77,6 +78,7 @@ let mkpatvar name pos =
 let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc () };;
 let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
 let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc () };;
+let ghloc d = { txt = d; loc = symbol_gloc () };;
 
 let mkassert e =
   match e with
@@ -121,16 +123,16 @@ let mkuplus name arg =
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
 let mkexp_cons args loc =
-  {pexp_desc = Pexp_construct(mkloc (Lident "::") Location.none,
+  {pexp_desc = Pexp_construct(mkloc (Lident "::") {loc with loc_ghost = true},
                               Some args, false); pexp_loc = loc}
 
 let mkpat_cons args loc =
-  {ppat_desc = Ppat_construct(mkloc (Lident "::") Location.none,
+  {ppat_desc = Ppat_construct(mkloc (Lident "::") {loc with loc_ghost = true},
                               Some args, false); ppat_loc = loc}
 
 let rec mktailexp = function
     [] ->
-      ghexp(Pexp_construct(mkloc (Lident "[]") Location.none, None, false))
+      ghexp(Pexp_construct(ghloc (Lident "[]"), None, false))
   | e1 :: el ->
       let exp_el = mktailexp el in
       let l = {loc_start = e1.pexp_loc.loc_start;
@@ -142,7 +144,7 @@ let rec mktailexp = function
 
 let rec mktailpat = function
     [] ->
-      ghpat(Ppat_construct(mkloc (Lident "[]") Location.none, None, false))
+      ghpat(Ppat_construct(ghloc (Lident "[]"), None, false))
   | p1 :: pl ->
       let pat_pl = mktailpat pl in
       let l = {loc_start = p1.ppat_loc.loc_start;
@@ -156,7 +158,7 @@ let ghstrexp e =
   { pstr_desc = Pstr_eval e; pstr_loc = {e.pexp_loc with loc_ghost = true} }
 
 let array_function str name =
-  mknoloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
+  ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
 
 let rec deep_mkrangepat c1 c2 =
   if c1 = c2 then ghpat(Ppat_constant(Const_char c1)) else
@@ -179,7 +181,7 @@ let expecting pos nonterm =
     raise Syntaxerr.(Error(Expecting(rhs_loc pos, nonterm)))
 
 let bigarray_function str name =
-  mkloc (Ldot(Ldot(Lident "Bigarray", str), name)) Location.none
+  ghloc (Ldot(Ldot(Lident "Bigarray", str), name))
 
 let bigarray_untuplify = function
     { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
