@@ -1,0 +1,13 @@
+
+#                 module B :
+  sig type (_, _) t = Eq : ('a, 'a) t val f : 'a -> 'b -> ('a, 'b) t end
+#         Characters 65-67:
+    | Eq -> 5
+      ^^
+Warning 40: Eq is used out of scope.
+Characters 65-67:
+    | Eq -> 5
+      ^^
+Error: The constructor Eq is a GADT constructor.
+       It cannot be resolved by type.
+# 
