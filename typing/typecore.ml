@@ -62,6 +62,7 @@ type error =
   | Not_a_packed_module of type_expr
   | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
+  | Ambiguous_gadt_pattern of Longident.t
 
 exception Error of Location.t * error
 
@@ -644,7 +645,8 @@ end) = struct
                   (tp0, tp))
               lbls
           in
-            raise (Error (lid.loc, Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
+          raise (Error (lid.loc,
+                        Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
 end
 
 module Label = NameChoice (struct
@@ -914,6 +916,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         | _ ->  Typetexp.find_all_constructors !env lid.loc lid.txt
       in
       let constr = Constructor.disambiguate lid !env opath constrs in
+      if constr.cstr_generalized
+      && (constrs = [] || constr != fst (List.hd constrs)) then
+        raise (Error (lid.loc, Ambiguous_gadt_pattern lid.txt));
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, Unexpected_existential));
@@ -3529,6 +3534,10 @@ let report_error ppf = function
   | Unexpected_existential ->
       fprintf ppf
         "Unexpected existential"
+  | Ambiguous_gadt_pattern lid ->
+      fprintf ppf "@[The constructor %a is a GADT constructor.@ %s@]"
+        longident lid
+        "It cannot be resolved by type."
 
 let () =
   Env.add_delayed_check_forward := add_delayed_check

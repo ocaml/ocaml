@@ -104,6 +104,7 @@ type error =
   | Not_a_packed_module of type_expr
   | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
+  | Ambiguous_gadt_pattern of Longident.t
 
 exception Error of Location.t * error
 
