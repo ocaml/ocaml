@@ -122,37 +122,41 @@ let mkuplus name arg =
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
-let mkexp_cons args loc =
-  {pexp_desc = Pexp_construct(mkloc (Lident "::") {loc with loc_ghost = true},
-                              Some args, false); pexp_loc = loc}
+let mkexp_cons consloc args loc =
+  {pexp_desc = Pexp_construct(mkloc (Lident "::") consloc, Some args, false);
+   pexp_loc = loc}
 
-let mkpat_cons args loc =
-  {ppat_desc = Ppat_construct(mkloc (Lident "::") {loc with loc_ghost = true},
-                              Some args, false); ppat_loc = loc}
+let mkpat_cons consloc args loc =
+  {ppat_desc = Ppat_construct(mkloc (Lident "::") consloc, Some args, false);
+   ppat_loc = loc}
 
-let rec mktailexp = function
+let rec mktailexp nilloc = function
     [] ->
-      ghexp(Pexp_construct(ghloc (Lident "[]"), None, false))
+      let loc = { nilloc with loc_ghost = true } in
+      let nil = { txt = Lident "[]"; loc = loc } in
+      { pexp_desc = Pexp_construct (nil, None, false); pexp_loc = loc }
   | e1 :: el ->
-      let exp_el = mktailexp el in
+      let exp_el = mktailexp nilloc el in
       let l = {loc_start = e1.pexp_loc.loc_start;
                loc_end = exp_el.pexp_loc.loc_end;
                loc_ghost = true}
       in
       let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
-      mkexp_cons arg l
+      mkexp_cons {l with loc_ghost = true} arg l
 
-let rec mktailpat = function
+let rec mktailpat nilloc = function
     [] ->
-      ghpat(Ppat_construct(ghloc (Lident "[]"), None, false))
+      let loc = { nilloc with loc_ghost = true } in
+      let nil = { txt = Lident "[]"; loc = loc } in
+      { ppat_desc = Ppat_construct (nil, None, false); ppat_loc = loc }
   | p1 :: pl ->
-      let pat_pl = mktailpat pl in
+      let pat_pl = mktailpat nilloc pl in
       let l = {loc_start = p1.ppat_loc.loc_start;
                loc_end = pat_pl.ppat_loc.loc_end;
                loc_ghost = true}
       in
       let arg = {ppat_desc = Ppat_tuple [p1; pat_pl]; ppat_loc = l} in
-      mkpat_cons arg l
+      mkpat_cons {l with loc_ghost = true} arg l
 
 let ghstrexp e =
   { pstr_desc = Pstr_eval e; pstr_loc = {e.pexp_loc with loc_ghost = true} }
@@ -994,9 +998,9 @@ expr:
   | FOR val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
       { mkexp(Pexp_for(mkrhs $2 2, $4, $6, $5, $8)) }
   | expr COLONCOLON expr
-      { mkexp_cons (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
+      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
   | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
-      { mkexp_cons (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
+      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
@@ -1074,7 +1078,8 @@ simple_expr:
   | BEGIN seq_expr END
       { reloc_exp $2 }
   | BEGIN END
-      { mkexp (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()), None, false)) }
+      { mkexp (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
+                               None, false)) }
   | BEGIN seq_expr error
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
@@ -1110,7 +1115,7 @@ simple_expr:
   | LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_array []) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
-      { reloc_exp (mktailexp (List.rev $2)) }
+      { reloc_exp (mktailexp (rhs_loc 4) (List.rev $2)) }
   | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
@@ -1262,11 +1267,11 @@ pattern:
   | name_tag pattern %prec prec_constr_appl
       { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
-      { mkpat_cons (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
+      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
   | pattern COLONCOLON error
       { expecting 3 "pattern" }
   | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
-      { mkpat_cons (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
+      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
   | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern error
       { unclosed "(" 4 ")" 8 }
   | pattern BAR pattern
@@ -1296,7 +1301,7 @@ simple_pattern:
   | LBRACE lbl_pattern_list error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { reloc_pat (mktailpat (List.rev $2)) }
+      { reloc_pat (mktailpat (rhs_loc 4) (List.rev $2)) }
   | LBRACKET pattern_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
