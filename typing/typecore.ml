@@ -62,7 +62,7 @@ type error =
   | Not_a_packed_module of type_expr
   | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
-  | Ambiguous_gadt_pattern of Longident.t
+  | Unqualified_gadt_pattern of Path.t * string
 
 exception Error of Location.t * error
 
@@ -594,7 +594,8 @@ end) = struct
     in
     List.find check_type lbls
 
-  let disambiguate ?(warn=Location.prerr_warning) ?scope lid env opath lbls =
+  let disambiguate ?(warn=Location.prerr_warning) ?(check_lk=fun _ _ -> ())
+      ?scope lid env opath lbls =
     match opath with
       None ->
 	begin match lbls with
@@ -631,6 +632,7 @@ end) = struct
           lbl
         with Not_found -> try
           let lbl = lookup_from_type env tpath lid in
+          check_lk tpath lbl;
           warn lid.loc
             (Warnings.Name_out_of_scope ([Longident.last lid.txt], false));
           if not pr then warn_pr ();
@@ -915,10 +917,13 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
             [Hashtbl.find constrs s, (fun () -> ())]
         | _ ->  Typetexp.find_all_constructors !env lid.loc lid.txt
       in
-      let constr = Constructor.disambiguate lid !env opath constrs in
-      if constr.cstr_generalized
-      && (constrs = [] || constr != fst (List.hd constrs)) then
-        raise (Error (lid.loc, Ambiguous_gadt_pattern lid.txt));
+      let check_lk tpath constr =
+        if constr.cstr_generalized then 
+          raise (Error (lid.loc,
+                        Unqualified_gadt_pattern (tpath, constr.cstr_name)))
+      in
+      let constr =
+        Constructor.disambiguate lid !env opath constrs ~check_lk in
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, Unexpected_existential));
@@ -1676,8 +1681,9 @@ let contains_gadt env p =
     match p.ppat_desc with
       Ppat_construct (lid, _, _) ->
         begin try
-          let cstr = Env.lookup_constructor lid.txt env in
-          if cstr.cstr_generalized then raise Exit
+          let cstrs = Env.lookup_all_constructors lid.txt env in
+          List.iter (fun (cstr,_) -> if cstr.cstr_generalized then raise Exit)
+            cstrs
         with Not_found -> ()
         end; iter_ppat loop p
     | _ -> iter_ppat loop p
@@ -3534,10 +3540,10 @@ let report_error ppf = function
   | Unexpected_existential ->
       fprintf ppf
         "Unexpected existential"
-  | Ambiguous_gadt_pattern lid ->
-      fprintf ppf "@[The constructor %a is a GADT constructor.@ %s@]"
-        longident lid
-        "It cannot be resolved by type."
+  | Unqualified_gadt_pattern (tpath, name) ->
+      fprintf ppf "@[The GADT constructor %s of type %a@ %s.@]"
+        name path tpath
+        "must be qualified in this pattern"
 
 let () =
   Env.add_delayed_check_forward := add_delayed_check
