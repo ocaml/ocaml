@@ -102,7 +102,8 @@ and expression_desc =
   | Pexp_ifthenelse of expression * expression * expression option
   | Pexp_sequence of expression * expression
   | Pexp_while of expression * expression
-  | Pexp_for of string loc *  expression * expression * direction_flag * expression
+  | Pexp_for of
+      string loc *  expression * expression * direction_flag * expression
   | Pexp_constraint of expression * core_type option * core_type option
   | Pexp_when of expression * expression
   | Pexp_send of expression * string
@@ -208,8 +209,8 @@ and class_field_desc =
     Pcf_inher of override_flag * class_expr * string option
   | Pcf_valvirt of (string loc * mutable_flag * core_type)
   | Pcf_val of (string loc * mutable_flag * override_flag * expression)
-  | Pcf_virt  of (string loc * private_flag * core_type)
-  | Pcf_meth of (string loc * private_flag *override_flag * expression)
+  | Pcf_virt of (string loc * private_flag * core_type)
+  | Pcf_meth of (string loc * private_flag * override_flag * expression)
   | Pcf_constr  of (core_type * core_type)
   | Pcf_init  of expression
 
