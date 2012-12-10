@@ -125,7 +125,7 @@ and expression_desc =
 and value_description =
   { pval_type: core_type;
     pval_prim: string list;
-    pval_loc : Location.t
+    pval_loc: Location.t
     }
 
 (* Type declarations *)
@@ -160,14 +160,14 @@ and class_type_desc =
   | Pcty_fun of label * core_type * class_type
 
 and class_signature = {
-    pcsig_self : core_type;
-    pcsig_fields : class_type_field list;
-    pcsig_loc : Location.t;
+    pcsig_self: core_type;
+    pcsig_fields: class_type_field list;
+    pcsig_loc: Location.t;
   }
 
 and class_type_field = {
-    pctf_desc : class_type_field_desc;
-    pctf_loc : Location.t;
+    pctf_desc: class_type_field_desc;
+    pctf_loc: Location.t;
   }
 
 and class_type_field_desc =
@@ -196,13 +196,13 @@ and class_expr_desc =
   | Pcl_constraint of class_expr * class_type
 
 and class_structure = {
-    pcstr_pat : pattern;
-    pcstr_fields :  class_field list;
+    pcstr_pat: pattern;
+    pcstr_fields: class_field list;
   }
 
 and class_field = {
-    pcf_desc : class_field_desc;
-    pcf_loc : Location.t;
+    pcf_desc: class_field_desc;
+    pcf_loc: Location.t;
   }
 
 and class_field_desc =
@@ -211,8 +211,8 @@ and class_field_desc =
   | Pcf_val of (string loc * mutable_flag * override_flag * expression)
   | Pcf_virt of (string loc * private_flag * core_type)
   | Pcf_meth of (string loc * private_flag * override_flag * expression)
-  | Pcf_constr  of (core_type * core_type)
-  | Pcf_init  of expression
+  | Pcf_constr of (core_type * core_type)
+  | Pcf_init of expression
 
 and class_declaration = class_expr class_infos
 
