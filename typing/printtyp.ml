@@ -191,28 +191,59 @@ let () = Btype.print_raw := raw_type_expr
 
 (* Normalize paths *)
 
+type param_subst = Id | Nth of int | Map of int list
+
+let compose l1 = function
+  | Id -> Map l1
+  | Map l2 -> Map (List.map (List.nth l1) l2)
+  | Nth n  -> Nth (List.nth l1 n)
+
+let apply_subst s1 tyl =
+  match s1 with
+    Nth n1 -> [List.nth tyl n1]
+  | Map l1 -> List.map (List.nth tyl) l1
+  | Id -> tyl
+
 let printing_env = ref Env.empty
 let printing_map = ref (Lazy.lazy_from_val Tbl.empty)
 
 let same_type t t' = repr t == repr t'
 
-let rec normalize_type_path env p =
+let rec index l x =
+  match l with
+    [] -> raise Not_found
+  | a :: l -> if x == a then 0 else 1 + index l x
+
+let rec uniq = function
+    [] -> true
+  | a :: l -> not (List.memq a l) && uniq l
+
+let rec normalize_type_path ?(cache=false) env p =
   try
     let desc = Env.find_type p env in
-    if desc.type_private = Private then p else
-    match desc.type_manifest with
+    if desc.type_private = Private || desc.type_newtype_level <> None then
+      (p, Id)
+    else match desc.type_manifest with
       Some ty ->
+        let params = List.map repr desc.type_params in
         begin match repr ty with
           {desc = Tconstr (p1, tyl, _)} ->
+            let tyl = List.map repr tyl in
             if List.length desc.type_params = List.length tyl
-            && List.for_all2 same_type desc.type_params tyl
-            then normalize_type_path env p1
-            else p
-        | _ -> p
+            && List.for_all2 (==) params tyl
+            then normalize_type_path ~cache env p1
+            else if cache || List.length params <= List.length tyl
+                 || not (uniq tyl) then (p, Id)
+            else
+              let l1 = List.map (index params) tyl in
+              let (p2, s2) = normalize_type_path ~cache env p1 in
+              (p2, compose l1 s2)
+        | ty ->
+            (p, Nth (index params ty))
         end
-    | None -> p
+    | None -> (p, Id)
   with
-    Not_found -> p
+    Not_found -> (p, Id)
 
 let rec path_size = function
     Pident id ->
@@ -233,7 +264,8 @@ let set_printing_env env =
       let map = ref Tbl.empty in
       Env.iter_types
         (fun p (p', decl) ->
-          let p1 = normalize_type_path env p' in
+          let (p1, s1) = normalize_type_path env p' ~cache:true in
+          if s1 = Id then
           try
             let p2 = Tbl.find p1 !map in
             if path_size p < path_size p2 then raise Not_found
@@ -254,10 +286,11 @@ let wrap_printing_env env f =
 
 let best_type_path p =
   if !Clflags.real_paths || !printing_env == Env.empty
-  then p
-  else try
-    Tbl.find (normalize_type_path !printing_env p) (Lazy.force !printing_map)
-  with Not_found -> p
+  then (p, Id)
+  else
+    let (p', s) = normalize_type_path !printing_env p in
+    (try Tbl.find  p' (Lazy.force !printing_map) with Not_found -> p'),
+    s
 
 (* Print a type expression *)
 
@@ -339,7 +372,11 @@ let add_alias ty =
   end
 
 let aliasable ty =
-  match ty.desc with Tvar _ | Tunivar _ | Tpoly _ -> false | _ -> true
+  match ty.desc with
+    Tvar _ | Tunivar _ | Tpoly _ -> false
+  | Tconstr (p, _, _) ->
+      (match best_type_path p with (_, Nth _) -> false | _ -> true)
+  | _ -> true
 
 let namable_row row =
   row.row_name <> None &&
@@ -361,7 +398,10 @@ let rec mark_loops_rec visited ty =
     | Tarrow(_, ty1, ty2, _) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
-    | Tconstr(_, tyl, _) | Tpackage (_, _, tyl) ->
+    | Tconstr(p, tyl, _) ->
+        let (p', s) = best_type_path p in
+        List.iter (mark_loops_rec visited) (apply_subst s tyl)
+    | Tpackage (_, _, tyl) ->
         List.iter (mark_loops_rec visited) tyl
     | Tvariant row ->
         if List.memq px !visited_objects then add_alias px else
@@ -454,8 +494,12 @@ let rec tree_of_typexp sch ty =
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist sch tyl)
     | Tconstr(p, tyl, abbrev) ->
-        let p' = best_type_path p in
-        Otyp_constr (tree_of_path p', tree_of_typlist sch tyl)
+        begin match best_type_path p with
+          (_, Nth n) -> tree_of_typexp sch (List.nth tyl n)
+        | (p', s) ->
+            let tyl' = apply_subst s tyl in
+            Otyp_constr (tree_of_path p', tree_of_typlist sch tyl')
+        end
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -473,7 +517,8 @@ let rec tree_of_typexp sch ty =
         let all_present = List.length present = List.length fields in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
-            let p' = best_type_path p in
+            let (p', s) = best_type_path p in
+            assert (s = Id);
             let id = tree_of_path p' in
             let args = tree_of_typlist sch tyl in
             if row.row_closed && all_present then
@@ -564,7 +609,8 @@ and tree_of_typobject sch fi nm =
   | Some (p, ty :: tyl) ->
       let non_gen = is_non_gen sch (repr ty) in
       let args = tree_of_typlist sch tyl in
-      let p' = best_type_path p in
+      let (p', s) = best_type_path p in
+      assert (s = Id);
       Otyp_class (non_gen, tree_of_path p', args)
   | _ ->
       fatal_error "Printtyp.tree_of_typobject"
@@ -1026,9 +1072,15 @@ let same_path t t' =
   t == t' ||
   match t.desc, t'.desc with
     Tconstr(p,tl,_), Tconstr(p',tl',_) ->
-      Path.same (best_type_path p) (best_type_path p') &&
-      List.length tl = List.length tl' &&
-      List.for_all2 same_type tl tl'
+      let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
+      begin match s1, s2 with
+        Nth n1, Nth n2 when n1 = n2 -> true
+      | (Id | Map _), (Id | Map _) when Path.same p1 p2 ->
+          let tl = apply_subst s1 tl and tl' = apply_subst s2 tl' in
+          List.length tl = List.length tl' &&
+          List.for_all2 same_type tl tl'
+      | _ -> false
+      end
   | _ ->
       false
 
@@ -1179,7 +1231,7 @@ let rec path_same_name p1 p2 =
 let type_same_name t1 t2 =
   match (repr t1).desc, (repr t2).desc with
     Tconstr (p1, _, _), Tconstr (p2, _, _) ->
-      path_same_name (best_type_path p1) (best_type_path p2)
+      path_same_name (fst (best_type_path p1)) (fst (best_type_path p2))
   | _ -> ()
 
 let rec trace_same_names = function
