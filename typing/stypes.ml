@@ -156,6 +156,8 @@ let get_info () =
 
 let dump filename =
   if !Clflags.annotations then begin
+    let real = !Clflags.real_paths in
+    Clflags.real_paths := true;
     let info = get_info () in
     let pp =
       match filename with
@@ -164,6 +166,7 @@ let dump filename =
     sort_filter_phrases ();
     ignore (List.fold_left (print_info pp) Location.none info);
     phrases := [];
+    Clflags.real_paths := real
   end else begin
     annotations := [];
   end;
