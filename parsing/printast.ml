@@ -339,7 +339,7 @@ and expression i ppf x =
       expression i ppf e
 
 and value_description i ppf x =
-  line i ppf "value_description\n";
+  line i ppf "value_description %a\n" fmt_location x.pval_loc;
   core_type (i+1) ppf x.pval_type;
   list (i+1) string ppf x.pval_prim;
 
@@ -391,34 +391,32 @@ and class_type i ppf x =
       core_type i ppf co;
       class_type i ppf cl;
 
-and class_signature i ppf { pcsig_self = ct; pcsig_fields = l } =
-  line i ppf "class_signature\n";
-  core_type (i+1) ppf ct;
-  list (i+1) class_type_field ppf l;
+and class_signature i ppf cs =
+  line i ppf "class_signature %a\n" fmt_location cs.pcsig_loc;
+  core_type (i+1) ppf cs.pcsig_self;
+  list (i+1) class_type_field ppf cs.pcsig_fields;
 
 and class_type_field i ppf x =
-  let loc = x.pctf_loc in
+  line i ppf "class_type_field %a\n" fmt_location x.pctf_loc;
+  let i = i+1 in
   match x.pctf_desc with
   | Pctf_inher (ct) ->
       line i ppf "Pctf_inher\n";
       class_type i ppf ct;
   | Pctf_val (s, mf, vf, ct) ->
-      line i ppf
-        "Pctf_val \"%s\" %a %a %a\n" s
-        fmt_mutable_flag mf fmt_virtual_flag vf fmt_location loc;
+      line i ppf "Pctf_val \"%s\" %a %a\n" s fmt_mutable_flag mf
+           fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
   | Pctf_virt (s, pf, ct) ->
-      line i ppf
-        "Pctf_virt \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+      line i ppf "Pctf_virt \"%s\" %a\n" s fmt_private_flag pf;
       core_type (i+1) ppf ct;
   | Pctf_meth (s, pf, ct) ->
-      line i ppf
-        "Pctf_meth \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+      line i ppf "Pctf_meth \"%s\" %a\n" s fmt_private_flag pf;
       core_type (i+1) ppf ct;
   | Pctf_cstr (ct1, ct2) ->
-      line i ppf "Pctf_cstr %a\n" fmt_location loc;
-      core_type i ppf ct1;
-      core_type i ppf ct2;
+      line i ppf "Pctf_cstr\n";
+      core_type (i+1) ppf ct1;
+      core_type (i+1) ppf ct2;
 
 and class_description i ppf x =
   line i ppf "class_description %a\n" fmt_location x.pci_loc;
@@ -475,32 +473,31 @@ and class_structure i ppf { pcstr_pat = p; pcstr_fields = l } =
   list (i+1) class_field ppf l;
 
 and class_field i ppf x =
-  let loc = x.pcf_loc in
+  line i ppf "class_field %a\n" fmt_location x.pcf_loc;
+  let i = i + 1 in
   match x.pcf_desc with
   | Pcf_inher (ovf, ce, so) ->
       line i ppf "Pcf_inher %a\n" fmt_override_flag ovf;
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
   | Pcf_valvirt (s, mf, ct) ->
-      line i ppf "Pcf_valvirt %a %a\n" fmt_mutable_flag mf fmt_location loc;
+      line i ppf "Pcf_valvirt %a\n" fmt_mutable_flag mf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
       core_type (i+1) ppf ct;
   | Pcf_val (s, mf, ovf, e) ->
-      line i ppf "Pcf_val %a %a %a\n"
-           fmt_mutable_flag mf fmt_override_flag ovf fmt_location loc;
+      line i ppf "Pcf_val %a %a\n" fmt_mutable_flag mf fmt_override_flag ovf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
       expression (i+1) ppf e;
   | Pcf_virt (s, pf, ct) ->
-      line i ppf "Pcf_virt %a %a\n" fmt_private_flag pf fmt_location loc;
+      line i ppf "Pcf_virt %a\n" fmt_private_flag pf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
       core_type (i+1) ppf ct;
   | Pcf_meth (s, pf, ovf, e) ->
-      line i ppf "Pcf_meth %a %a %a\n"
-           fmt_private_flag pf fmt_override_flag ovf fmt_location loc;
+      line i ppf "Pcf_meth %a %a\n" fmt_private_flag pf fmt_override_flag ovf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
       expression (i+1) ppf e;
   | Pcf_constr (ct1, ct2) ->
-      line i ppf "Pcf_constr %a\n" fmt_location loc;
+      line i ppf "Pcf_constr\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
   | Pcf_init (e) ->
@@ -688,7 +685,8 @@ and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) =
   option (i+1) core_type ppf r_opt;
 
 and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
-  line i ppf "%a %a\n" fmt_mutable_flag mf fmt_location loc;
+  line i ppf "%a\n" fmt_location loc;
+  line (i+1) ppf "%a\n" fmt_mutable_flag mf;
   line (i+1) ppf "%a" fmt_string_loc s;
   core_type (i+1) ppf ct;
 
