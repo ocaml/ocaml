@@ -158,8 +158,8 @@ let rec mktailpat nilloc = function
       let arg = {ppat_desc = Ppat_tuple [p1; pat_pl]; ppat_loc = l} in
       mkpat_cons {l with loc_ghost = true} arg l
 
-let ghstrexp e =
-  { pstr_desc = Pstr_eval e; pstr_loc = {e.pexp_loc with loc_ghost = true} }
+let mkstrexp e =
+  { pstr_desc = Pstr_eval e; pstr_loc = e.pexp_loc }
 
 let array_function str name =
   ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
@@ -499,7 +499,7 @@ interface:
 ;
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def $1 }
-  | seq_expr SEMISEMI                    { Ptop_def[ghstrexp $1] }
+  | seq_expr SEMISEMI                    { Ptop_def[mkstrexp $1] }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
@@ -509,12 +509,12 @@ top_structure:
 ;
 use_file:
     use_file_tail                        { $1 }
-  | seq_expr use_file_tail               { Ptop_def[ghstrexp $1] :: $2 }
+  | seq_expr use_file_tail               { Ptop_def[mkstrexp $1] :: $2 }
 ;
 use_file_tail:
     EOF                                         { [] }
   | SEMISEMI EOF                                { [] }
-  | SEMISEMI seq_expr use_file_tail             { Ptop_def[ghstrexp $2] :: $3 }
+  | SEMISEMI seq_expr use_file_tail             { Ptop_def[mkstrexp $2] :: $3 }
   | SEMISEMI structure_item use_file_tail       { Ptop_def[$2] :: $3 }
   | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
   | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
@@ -565,12 +565,12 @@ module_expr:
 ;
 structure:
     structure_tail                              { $1 }
-  | seq_expr structure_tail                     { ghstrexp $1 :: $2 }
+  | seq_expr structure_tail                     { mkstrexp $1 :: $2 }
 ;
 structure_tail:
     /* empty */                                 { [] }
   | SEMISEMI                                    { [] }
-  | SEMISEMI seq_expr structure_tail            { ghstrexp $2 :: $3 }
+  | SEMISEMI seq_expr structure_tail            { mkstrexp $2 :: $3 }
   | SEMISEMI structure_item structure_tail      { $2 :: $3 }
   | structure_item structure_tail               { $1 :: $2 }
 ;
@@ -1212,7 +1212,7 @@ fun_def:
 ;
 match_action:
     MINUSGREATER seq_expr                       { $2 }
-  | WHEN seq_expr MINUSGREATER seq_expr         { mkexp(Pexp_when($2, $4)) }
+  | WHEN seq_expr MINUSGREATER seq_expr         { ghexp(Pexp_when($2, $4)) }
 ;
 expr_comma_list:
     expr_comma_list COMMA expr                  { $3 :: $1 }
