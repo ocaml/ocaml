@@ -154,13 +154,7 @@ class printer  ()= object(self:'self)
           
   method longident f = function
     | Lident s ->
-        (* let len = String.length s in *)
         (match s.[0] with
-        (* | '~' -> *)
-        (*     if List.mem s ["~+";"~-";"~+.";"~-."] then *)
-        (*       pp f "%s" (String.sub s 1 (len-1)) *)
-        (*     else *)
-        (*       pp f "%s" s  *)
         | 'a' .. 'z' | 'A' .. 'Z' | '_' when not (is_infix (fixity_of_string s)) ->
             pp f "%s" s
         | _ -> pp f "(@;%s@;)" s )
@@ -265,18 +259,22 @@ class printer  ()= object(self:'self)
                       (self#list self#core_type ~sep:"&")  ctl) ctl
           | Rinherit ct -> self#core_type f ct in 
         pp f "@[<2>[%a%a]@]"
-          (fun f l -> match l with
-          | [] -> ()
-          | _ ->
+          (fun f l
+            ->
+              match l with
+              | [] -> ()
+              | _ ->
               pp f "%s@;%a"
                 (match (closed,low) with
                 | (true,None) -> ""
                 | (true,Some _) -> "<" (* FIXME desugar the syntax sugar*)
                 | (false,_) -> ">") 
                 (self#list type_variant_helper ~sep:"@;<1 -2>| ") l) l 
-          (fun f low -> match low with
-          |Some [] |None -> ()  
-          |Some xs ->
+          (fun f low
+            ->
+              match low with
+              |Some [] |None -> ()  
+              |Some xs ->
               pp f ">@ %a"
                 (self#list self#string_quot) xs) low
     | Ptyp_object l ->
@@ -451,6 +449,56 @@ class printer  ()= object(self:'self)
         pp f "@[<hov>!%a@]" self#simple_expr e;
         true
     end
+    | Pexp_apply
+        ({pexp_desc=Pexp_ident
+                     {txt= Ldot (Ldot (Lident "Bigarray", array), ("get"|"set" as gs)) ;_};_},
+         label_exprs) ->
+           begin match array,gs with
+           | "Genarray","get"   ->
+               begin match label_exprs with
+               | [(_,a);(_,{pexp_desc=Pexp_array ls;_})]  -> begin 
+                   pp f "@[%a.{%a}@]" self#simple_expr a
+                   (self#list ~sep:"," self#simple_expr ) ls;
+                   true
+               end
+               | _ -> false
+               end
+           | "Genarray","set" ->
+               begin match label_exprs with
+               | [(_,a);(_,{pexp_desc=Pexp_array ls;_});(_,c)]  -> begin 
+                   pp f "@[%a.{%a}@ <-@ %a@]" self#simple_expr a
+                   (self#list ~sep:"," self#simple_expr ) ls self#simple_expr c;
+                   true
+               end
+               | _ -> false
+               end
+           | ("Array1"|"Array2"|"Array3"),"set" ->
+               begin
+                 match label_exprs with
+                 | (_,a)::rest ->
+                     begin match List.rev rest with
+                     | (_,v)::rest ->
+                         let args = List.map snd (List.rev rest) in
+                         pp f "@[%a.{%a}@ <-@ %a@]"
+                           self#simple_expr a (self#list ~sep:"," self#simple_expr)
+                           args self#simple_expr v;
+                         true
+                     | _ -> assert false
+                     end
+                 | _ -> assert false 
+               end
+           | ("Array1"|"Array2"|"Array3"),"get" ->
+               begin match label_exprs with
+               |(_,a)::rest -> 
+                 pp f "@[%a.{%a}@]"
+                     self#simple_expr a (self#list ~sep:"," self#simple_expr)
+                     (List.map snd rest);
+                   true
+               | _ -> assert false
+               end
+           | _ -> false
+           end
+             
     | _ -> false
   method expression f x =
     match x.pexp_desc with
