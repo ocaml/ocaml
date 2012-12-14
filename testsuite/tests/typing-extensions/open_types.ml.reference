@@ -9,10 +9,10 @@
 #     module M_S : S
 #         type foo = ..
 #     type bar = foo
-#     Characters 1-23:
+#     Characters 13-23:
   type bar += Bar of int (* Error: type is not open *)
-  ^^^^^^^^^^^^^^^^^^^^^^
-Error: Type declaration bar is not open
+              ^^^^^^^^^^
+Error: Type declaration bar is not open.
 #     Characters 6-20:
   type baz = bar = .. (* Error: type kinds don't match *)
        ^^^^^^^^^^^^^^
@@ -39,10 +39,10 @@ Error: Syntax error
 #         module M : sig type foo = .. end
 #     module type S = sig type foo end
 #     module M_S : S
-#     Characters 1-20:
+#     Characters 17-20:
   type M_S.foo += Foo (* ERROR: Cannot extend a type that isn't "open" *)
-  ^^^^^^^^^^^^^^^^^^^
-Error: Type declaration M_S.foo is not open
+                  ^^^
+Error: Type declaration M_S.foo is not open.
 #         module M : sig type foo end
 #     module type S = sig type foo = .. end
 #     Characters 15-16:

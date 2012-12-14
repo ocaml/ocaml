@@ -889,10 +889,17 @@ let transl_type_decl env name_sdecl_list =
 
 (* Translating type extensions *)
 
-let transl_extension_constructor env type_decl type_path type_params priv sext =
+let transl_extension_constructor env check_open type_decl type_path type_params priv sext =
   let name = Ident.create sext.pext_name.txt in
     match sext.pext_kind with
       Pext_decl(args, None) ->
+        begin
+          match type_decl.type_kind with
+            Type_open -> ()
+          | Type_abstract ->
+            if check_open then raise (Error(sext.pext_loc, Not_open_type type_path))
+          | _ -> assert false
+        end;
 	let targs = List.map (transl_simple_type env true) args in
         let args = List.map (fun cty -> cty.ctyp_type) targs in
 	let ext =
@@ -910,6 +917,13 @@ let transl_extension_constructor env type_decl type_path type_params priv sext =
             Typedtree.ext_loc = sext.pext_loc }
 	      
     | Pext_decl(args, Some ret_type) ->
+        begin
+          match type_decl.type_kind with
+            Type_open -> ()
+          | Type_abstract ->
+            if check_open then raise (Error(sext.pext_loc, Not_open_type type_path))
+          | _ -> assert false
+        end;
         let z = narrow () in 
 	reset_type_variables ();
 	let targs = List.map (transl_simple_type env false) args in 
@@ -958,9 +972,13 @@ let transl_extension_constructor env type_decl type_path type_params priv sext =
               raise (Error(lid.loc, 
                      Rebind_wrong_type(lid.txt, trace)))
           end;
-          (* Disallow rebinding private constructors *)
-          if cdescr.cstr_private = Private then 
-            raise (Error(lid.loc, Rebind_private lid.txt));
+          (* Disallow rebinding private constructors to non-private *)
+          begin
+            match cdescr.cstr_private, priv with
+              Private, Public ->
+                raise (Error(lid.loc, Rebind_private lid.txt))
+            | _ -> ()
+          end;
           let path = 
             match cdescr.cstr_tag with
               Cstr_ext_constant(path, _) -> path
@@ -989,12 +1007,8 @@ let transl_type_extension check_open env loc styext =
   in 
   begin
     match type_decl.type_kind with
-      Type_open -> ()
-    | Type_abstract ->
-      if check_open then raise (Error(loc, Not_open_type type_path))
-    | _ -> 
-      if check_open then raise (Error(loc, Not_open_type type_path))
-      else raise (Error(loc, Not_extensible_type type_path))
+      Type_open | Type_abstract -> ()
+    | _ -> raise (Error(loc, Not_extensible_type type_path))
   end;
   let type_variance = 
     List.map (fun (c, n, _) -> if c && n then (false, false) else (c, n)) 
@@ -1016,7 +1030,7 @@ let transl_type_extension check_open env loc styext =
     (Ctype.instance_list env type_decl.type_params) 
     type_params;
   let constructors = 
-    List.map (transl_extension_constructor env type_decl
+    List.map (transl_extension_constructor env check_open type_decl
                 type_path type_params styext.ptyext_private)
       styext.ptyext_constructors
   in
@@ -1317,7 +1331,7 @@ let report_error ppf = function
       fprintf ppf "@[%s@ %a@ %s@]"
 	"Type declaration"
 	Printtyp.path path
-	"is not open"
+	"is not open."
   | Not_extensible_type path -> 
       fprintf ppf "@[%s@ %a@ %s@]"
 	"Type declaration"

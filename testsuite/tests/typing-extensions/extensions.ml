@@ -13,7 +13,7 @@ let is_a x =
   | _ -> false
 ;;
 
-(* The type must be open *)
+(* The type must be open to create extension *)
 
 type foo
 ;;
@@ -153,11 +153,21 @@ type bar += A3 = M.A1    (* Error: rebind wrong type *)
 module M = struct type foo += private B1 of int end
 ;;
 
-type foo += B2 = M.B1  (* Error: rebind private extension *)
+type foo += private B2 = M.B1
+;;
+
+type foo += B3 = M.B1  (* Error: rebind private extension *)
 ;;
 
 type foo += C = Unknown  (* Error: unbound extension *)
 ;;
+
+(* Extensions can be rebound even if type is closed *)
+
+module M : sig type foo type foo += A1 of int end
+  = struct type foo = .. type foo += A1 of int end
+
+type M.foo += A2 = M.A1
 
 (* Rebinding handles abbreviations *)
 
