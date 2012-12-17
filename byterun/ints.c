@@ -526,7 +526,7 @@ static value swap64(value x)
            (((x) & 0xFF00000000000000) >> 56)));
 }
 
-CAMLprim value caml_int64_direct_bswap(value v)
+value caml_int64_direct_bswap(value v)
 { return swap64(v); }
 #endif
 
