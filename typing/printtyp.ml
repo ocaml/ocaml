@@ -229,7 +229,7 @@ let rec normalize_type_path ?(cache=false) env p =
         begin match repr ty with
           {desc = Tconstr (p1, tyl, _)} ->
             let tyl = List.map repr tyl in
-            if List.length desc.type_params = List.length tyl
+            if List.length params = List.length tyl
             && List.for_all2 (==) params tyl
             then normalize_type_path ~cache env p1
             else if cache || List.length params <= List.length tyl

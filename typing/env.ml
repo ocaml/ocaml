@@ -692,6 +692,13 @@ let iter_env proj1 proj2 f env =
           comps.comp_components
     | Functor_comps _ -> ()
   in
+  Hashtbl.iter
+    (fun s pso ->
+      match pso with None -> ()
+      | Some ps ->
+          let id = Pident (Ident.create_persistent s) in
+          iter_components id id ps.ps_comps)
+    persistent_structures;
   Ident.iter
     (fun id ((path, comps), _) -> iter_components (Pident id) path comps)
     env.components
