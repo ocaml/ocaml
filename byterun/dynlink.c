@@ -162,8 +162,8 @@ void caml_build_primitive_table(char * lib_path,
 #endif
   for (p = req_prims; *p != 0; p += strlen(p) + 1) {
     c_primitive prim = lookup_primitive(p);
-    /*    if (prim == NULL)
-          caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p); */
+    if (prim == NULL)
+          caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
     caml_ext_table_add(&caml_prim_table, (void *) prim);
 #ifdef DEBUG
     caml_ext_table_add(&caml_prim_name_table, strdup(p));
