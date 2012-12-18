@@ -401,28 +401,28 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value rec type_parameters t acc =
     match t with
     [ <:ctyp< $t1$ $t2$ >> -> type_parameters t1 (type_parameters t2 acc)
-    | <:ctyp< +'$s$ >> -> [(s, (True, False)) :: acc]
-    | <:ctyp< -'$s$ >> -> [(s, (False, True)) :: acc]
-    | <:ctyp< '$s$ >> -> [(s, (False, False)) :: acc]
+    | <:ctyp@loc< +'$s$ >> -> [(mktyp loc (Ptyp_var s), (True, False)) :: acc]
+    | <:ctyp@loc< -'$s$ >> -> [(mktyp loc (Ptyp_var s), (False, True)) :: acc]
+    | <:ctyp@loc< '$s$ >> -> [(mktyp loc (Ptyp_var s), (False, False)) :: acc]
     | _ -> assert False ];
 
   value rec optional_type_parameters t acc =
     match t with
     [ <:ctyp< $t1$ $t2$ >> -> optional_type_parameters t1 (optional_type_parameters t2 acc)
-    | <:ctyp@loc< +'$s$ >> -> [(Some (with_loc s loc), (True, False)) :: acc]
-    | Ast.TyAnP _loc  -> [(None, (True, False)) :: acc]
-    | <:ctyp@loc< -'$s$ >> -> [(Some (with_loc s loc), (False, True)) :: acc]
-    | Ast.TyAnM _loc -> [(None, (False, True)) :: acc]
-    | <:ctyp@loc< '$s$ >> -> [(Some (with_loc s loc), (False, False)) :: acc]
-    | Ast.TyAny _loc -> [(None, (False, False)) :: acc]
+    | <:ctyp@loc< +'$s$ >> -> [(mktyp loc (Ptyp_var s), (True, False)) :: acc]
+    | Ast.TyAnP loc  -> [(mktyp loc Ptyp_any, (True, False)) :: acc]
+    | <:ctyp@loc< -'$s$ >> -> [(mktyp loc (Ptyp_var s), (False, True)) :: acc]
+    | Ast.TyAnM loc -> [(mktyp loc Ptyp_any, (False, True)) :: acc]
+    | <:ctyp@loc< '$s$ >> -> [(mktyp loc (Ptyp_var s), (False, False)) :: acc]
+    | Ast.TyAny loc -> [(mktyp loc Ptyp_any, (False, False)) :: acc]
     | _ -> assert False ];
 
   value rec class_parameters t acc =
     match t with
     [ <:ctyp< $t1$, $t2$ >> -> class_parameters t1 (class_parameters t2 acc)
-    | <:ctyp@loc< +'$s$ >> -> [(with_loc s loc, (True, False)) :: acc]
-    | <:ctyp@loc< -'$s$ >> -> [(with_loc s loc, (False, True)) :: acc]
-    | <:ctyp@loc< '$s$ >> -> [(with_loc s loc, (False, False)) :: acc]
+    | <:ctyp@loc< +'$s$ >> -> [(mktyp loc (Ptyp_var s), (True, False)) :: acc]
+    | <:ctyp@loc< -'$s$ >> -> [(mktyp loc (Ptyp_var s), (False, True)) :: acc]
+    | <:ctyp@loc< '$s$ >> -> [(mktyp loc (Ptyp_var s), (False, False)) :: acc]
     | _ -> assert False ];
 
   value rec type_parameters_and_type_name t acc =
@@ -1108,13 +1108,13 @@ value varify_constructors var_names =
   and class_info_class_expr ci =
     match ci with
     [ CeEq _ (CeCon loc vir (IdLid nloc name) params) ce ->
-      let (loc_params, (params, variance)) =
+      let (params, variance) =
         match params with
-        [ <:ctyp<>> -> (loc, ([], []))
-        | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
+        [ <:ctyp<>> -> ([], [])
+        | t -> List.split (class_parameters t []) ]
       in
       {pci_virt = mkvirtual vir;
-       pci_params = (params, mkloc loc_params);
+       pci_params = params;
        pci_name = with_loc name nloc;
        pci_expr = class_expr ce;
        pci_loc = mkloc loc;
@@ -1124,13 +1124,13 @@ value varify_constructors var_names =
     match ci with
     [ CtEq _ (CtCon loc vir (IdLid nloc name) params) ct |
       CtCol _ (CtCon loc vir (IdLid nloc name) params) ct ->
-      let (loc_params, (params, variance)) =
+      let (params, variance) =
         match params with
-        [ <:ctyp<>> -> (loc, ([], []))
-        | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
+        [ <:ctyp<>> -> ([], [])
+        | t -> List.split (class_parameters t []) ]
       in
       {pci_virt = mkvirtual vir;
-       pci_params = (params, mkloc loc_params);
+       pci_params = params;
        pci_name = with_loc name nloc;
        pci_expr = class_type ct;
        pci_loc = mkloc loc;

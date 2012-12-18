@@ -48,7 +48,7 @@ end = struct
   value print_out_type = Obj.magic print_out_type;
   value print_out_class_type = Obj.magic print_out_class_type;
   value print_out_module_type = Obj.magic print_out_module_type;
-  value print_out_extension_group = Obj.magic print_out_type_extension;
+  value print_out_type_extension = Obj.magic print_out_type_extension;
   value print_out_sig_item = Obj.magic print_out_sig_item;
   value print_out_signature = Obj.magic print_out_signature;
   value print_out_phrase = Obj.magic print_out_phrase;
@@ -457,22 +457,28 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name
         Toploop.print_out_type.val ty pr_prims prims ]
 
-and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
+and print_out_type_decl kwd ppf td =
   let constrain ppf (ty, ty') =
     fprintf ppf "@ @[<2>constraint %a =@ %a@]" Toploop.print_out_type.val ty
       Toploop.print_out_type.val ty'
   in
   let print_constraints ppf params = List.iter (constrain ppf) params in
   let type_defined ppf =
-    match args with
-    [ [] -> fprintf ppf "%s" name
-    | [arg] -> fprintf ppf "%s %a" name type_parameter arg
+    match td.otype_params with
+    [ [] -> fprintf ppf "%s" td.otype_name
+    | [param] -> fprintf ppf "%s %a" td.otype_name type_parameter param
     | _ ->
-        fprintf ppf "%s@ %a" name
-          (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) args ]
-  and print_kind ppf ty =
-    fprintf ppf "%s@ %a"
-      (if priv = Obj.magic Camlp4_import.Asttypes.Private then " private" else "")
+        fprintf ppf "%s@ %a" td.otype_name
+          (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) td.otype_params ]
+  in
+  let print_private ppf priv =
+    if priv = Obj.magic Camlp4_import.Asttypes.Private then 
+      fprintf ppf " private"
+    else ()
+  in
+  let print_kind ppf ty =
+    fprintf ppf "%a@ %a"
+      print_private td.otype_private 
       Toploop.print_out_type.val ty
   in
   let print_types ppf = fun
@@ -482,62 +488,70 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
           print_kind ty2
     | ty -> print_kind ppf ty ]
   in
-  match ty with
+  match td.otype_type with
   [ Otyp_abstract ->
       fprintf ppf "@[<2>@[<hv 2>@[%s %t@]@]%a@]" kwd type_defined
-	print_constraints constraints
+	print_constraints td.otype_cstrs
   | _ ->
       fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@]%a@]" kwd type_defined
-	print_types ty print_constraints constraints ]
+	print_types td.otype_type print_constraints td.otype_cstrs ]
 
 and print_out_extension_constructor ppf ext =
-  let print_type_extended ppf =
-    let print_type_parameter ppf ty =
-      fprintf ppf "%s"
-        (if ty = "_" then ty else "'"^ty)
-    in
-      match ext.oext_type_params with
-        [ [] -> fprintf ppf "%s" ty_name
-        | [ty_param] -> 
-          fprintf ppf "%s %a" 
-            ext.oext_ty_name
-            print_type_parameter 
-            ty_param
-        | _ ->
-          fprintf ppf "%s@ %a" 
-            ext.oext_type_name
-            (print_list print_type_parameter (fun ppf -> fprintf ppf "@ ")) 
-            ext.oext_type_params ]
+  let print_type_parameter ppf ty =
+    fprintf ppf "%s"
+      (if ty = "_" then ty else "'"^ty)
   in
-  fprintf ppf "@[<hv 2>@[type %t@] +=%s@ %a@]"
-    print_extended_type
-    (if ext.oext_private = Obj.magic Camlp4_import.Asttypes.Private 
-     then " private" else "")
+  let type_extended ppf =
+    match ext.oext_type_params with
+      [ [] -> fprintf ppf "%s" ext.oext_type_name
+      | [ty_param] -> 
+        fprintf ppf "%s %a" 
+          ext.oext_type_name
+          print_type_parameter 
+          ty_param
+      | _ ->
+        fprintf ppf "%s@ %a" 
+          ext.oext_type_name
+          (print_list print_type_parameter (fun ppf -> fprintf ppf "@ ")) 
+          ext.oext_type_params ]
+  in
+  let print_private ppf priv =
+    if priv = Obj.magic Camlp4_import.Asttypes.Private then 
+      fprintf ppf " private"
+    else ()
+  in
+  fprintf ppf "@[<hv 2>@[type %t@] +=%a@ %a@]"
+    type_extended
+    print_private ext.oext_private
     print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
 
 and print_out_type_extension ppf te =
-  let print_extended_type ppf =
-    let print_type_parameter ppf ty =
-      fprintf ppf "%s"
-        (if ty = "_" then ty else "'"^ty)
-    in
-      match te.otyext_params with
-        [ [] -> fprintf ppf "%s" ty_name
-        | [ty_param] -> 
-          fprintf ppf "%s %a" 
-            te.otyext_name 
-            print_type_parameter 
-            ty_param
-        | _ ->
-          fprintf ppf "%s %a" 
-            te.otyext_name
-            (print_list print_type_parameter (fun ppf -> fprintf ppf "@ ")) 
-            te.otyext_params ]
+  let print_type_parameter ppf ty =
+    fprintf ppf "%s"
+      (if ty = "_" then ty else "'"^ty)
   in
-  fprintf ppf "@[<hv 2>@[type %t@] +=%s@ %a@]"
-    print_extended_type
-    (if te.otyext_private = Obj.magic Camlp4_import.Asttypes.Private 
-     then " private" else "")
+  let type_extended ppf =
+    match te.otyext_params with
+      [ [] -> fprintf ppf "%s" te.otyext_name
+      | [ty_param] -> 
+        fprintf ppf "%s %a" 
+          te.otyext_name 
+          print_type_parameter 
+          ty_param
+      | _ ->
+        fprintf ppf "%s %a" 
+          te.otyext_name
+          (print_list print_type_parameter (fun ppf -> fprintf ppf "@ ")) 
+          te.otyext_params ]
+  in
+  let print_private ppf priv =
+    if priv = Obj.magic Camlp4_import.Asttypes.Private then 
+      fprintf ppf " private"
+    else ()
+  in
+  fprintf ppf "@[<hv 2>@[type %t@] +=%a@ %a@]"
+    type_extended
+    print_private te.otyext_private
     (print_list print_out_constr (fun ppf -> fprintf ppf "@ | "))
     te.otyext_constructors
 ;

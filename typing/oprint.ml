@@ -436,7 +436,8 @@ and print_out_type_decl kwd ppf td =
   in
   let print_private ppf = function
     Asttypes.Private -> fprintf ppf " private"
-  | Asttypes.Public -> () in
+  | Asttypes.Public -> () 
+  in
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->

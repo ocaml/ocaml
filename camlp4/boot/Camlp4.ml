@@ -14577,9 +14577,12 @@ module Struct =
               match t with
               | Ast.TyApp (_, t1, t2) ->
                   type_parameters t1 (type_parameters t2 acc)
-              | Ast.TyQuP (_, s) -> (s, (true, false)) :: acc
-              | Ast.TyQuM (_, s) -> (s, (false, true)) :: acc
-              | Ast.TyQuo (_, s) -> (s, (false, false)) :: acc
+              | Ast.TyQuP (loc, s) -> 
+                  (mktyp loc (Ptyp_var s), (true, false)) :: acc
+              | Ast.TyQuM (loc, s) -> 
+                  (mktyp loc (Ptyp_var s), (false, true)) :: acc
+              | Ast.TyQuo (loc, s) -> 
+                  (mktyp loc (Ptyp_var s), (false, false)) :: acc
               | _ -> assert false
               
             let rec optional_type_parameters t acc =
@@ -14588,14 +14591,14 @@ module Struct =
                   optional_type_parameters t1
                     (optional_type_parameters t2 acc)
               | Ast.TyQuP (loc, s) ->
-                  ((Some (with_loc s loc)), (true, false)) :: acc
-              | Ast.TyAnP _loc -> (None, (true, false)) :: acc
+                  ((mktyp loc (Ptyp_var s)), (true, false)) :: acc
+              | Ast.TyAnP loc -> ((mktyp loc Ptyp_any), (true, false)) :: acc
               | Ast.TyQuM (loc, s) ->
-                  ((Some (with_loc s loc)), (false, true)) :: acc
-              | Ast.TyAnM _loc -> (None, (false, true)) :: acc
+                  ((mktyp loc (Ptyp_var s)), (false, true)) :: acc
+              | Ast.TyAnM loc -> ((mktyp loc Ptyp_any), (false, true)) :: acc
               | Ast.TyQuo (loc, s) ->
-                  ((Some (with_loc s loc)), (false, false)) :: acc
-              | Ast.TyAny _loc -> (None, (false, false)) :: acc
+                  ((mktyp loc (Ptyp_var s)), (false, false)) :: acc
+              | Ast.TyAny loc -> ((mktyp loc Ptyp_any), (false, false)) :: acc
               | _ -> assert false
               
             let rec class_parameters t acc =
@@ -14603,11 +14606,11 @@ module Struct =
               | Ast.TyCom (_, t1, t2) ->
                   class_parameters t1 (class_parameters t2 acc)
               | Ast.TyQuP (loc, s) ->
-                  ((with_loc s loc), (true, false)) :: acc
+                  ((mktyp loc (Ptyp_var s)), (true, false)) :: acc
               | Ast.TyQuM (loc, s) ->
-                  ((with_loc s loc), (false, true)) :: acc
+                  ((mktyp loc (Ptyp_var s)), (false, true)) :: acc
               | Ast.TyQuo (loc, s) ->
-                  ((with_loc s loc), (false, false)) :: acc
+                  ((mktyp loc (Ptyp_var s)), (false, false)) :: acc
               | _ -> assert false
               
             let rec type_parameters_and_type_name t acc =
@@ -15498,16 +15501,14 @@ module Struct =
               match ci with
               | CeEq (_, (CeCon (loc, vir, (IdLid (nloc, name)), params)),
                   ce) ->
-                  let (loc_params, (params, variance)) =
+                  let (params, variance) =
                     (match params with
-                     | Ast.TyNil _ -> (loc, ([], []))
-                     | t ->
-                         ((loc_of_ctyp t),
-                          (List.split (class_parameters t []))))
+                     | Ast.TyNil _ -> ([], [])
+                     | t -> (List.split (class_parameters t [])))
                   in
                     {
                       pci_virt = mkvirtual vir;
-                      pci_params = (params, (mkloc loc_params));
+                      pci_params = params;
                       pci_name = with_loc name nloc;
                       pci_expr = class_expr ce;
                       pci_loc = mkloc loc;
@@ -15530,7 +15531,7 @@ module Struct =
                   in
                     {
                       pci_virt = mkvirtual vir;
-                      pci_params = (params, (mkloc loc_params));
+                      pci_params = params;
                       pci_name = with_loc name nloc;
                       pci_expr = class_type ct;
                       pci_loc = mkloc loc;
