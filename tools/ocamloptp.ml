@@ -95,6 +95,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nopervasives = option "-nopervasives"
   let _dsource = option "-dsource"
   let _dparsetree = option "-dparsetree"
+  let _dtypedtree = option "-dtypedtree"
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"
   let _dclambda = option "-dclambda"

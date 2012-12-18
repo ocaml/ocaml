@@ -13,7 +13,6 @@
 (* The interactive toplevel loop *)
 
 open Path
-open Lexing
 open Format
 open Config
 open Misc
@@ -21,10 +20,11 @@ open Parsetree
 open Types
 open Typedtree
 open Outcometree
-open Lambda
 
 type res = Ok of Obj.t | Err of string
 type evaluation_outcome = Result of Obj.t | Exception of exn
+
+let _dummy = (Ok (Obj.magic 0), Err "")
 
 external ndl_run_toplevel: string -> string -> res
   = "caml_natdynlink_run_toplevel"
@@ -75,7 +75,7 @@ let rec eval_path = function
 (* To print values *)
 
 module EvalPath = struct
-  type value = Obj.t
+  type valu = Obj.t
   exception Error
   let eval_path p = try eval_path p with _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
@@ -123,8 +123,6 @@ let toplevel_startup_hook = ref (fun () -> ())
 let phrase_seqid = ref 0
 let phrase_name = ref "TOP"
 
-open Lambda
-
 let load_lambda ppf (size, lam) =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
@@ -153,7 +151,7 @@ let load_lambda ppf (size, lam) =
 (* Print the outcome of an evaluation *)
 
 let rec pr_item env = function
-  | Tsig_value(id, decl) :: rem ->
+  | Sig_value(id, decl) :: rem ->
       let tree = Printtyp.tree_of_value_description id decl in
       let valopt =
         match decl.val_kind with
@@ -166,24 +164,24 @@ let rec pr_item env = function
             Some v
       in
       Some (tree, valopt, rem)
-  | Tsig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
+  | Sig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
       pr_item env rem
-  | Tsig_type(id, decl, rs) :: rem ->
+  | Sig_type(id, decl, rs) :: rem ->
       let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)
-  | Tsig_exception(id, decl) :: rem ->
+  | Sig_exception(id, decl) :: rem ->
       let tree = Printtyp.tree_of_exception_declaration id decl in
       Some (tree, None, rem)
-  | Tsig_module(id, mty, rs) :: rem ->
+  | Sig_module(id, mty, rs) :: rem ->
       let tree = Printtyp.tree_of_module id mty rs in
       Some (tree, None, rem)
-  | Tsig_modtype(id, decl) :: rem ->
+  | Sig_modtype(id, decl) :: rem ->
       let tree = Printtyp.tree_of_modtype_declaration id decl in
       Some (tree, None, rem)
-  | Tsig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
+  | Sig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
       let tree = Printtyp.tree_of_class_declaration id decl rs in
       Some (tree, None, rem)
-  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
+  | Sig_class_type(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
       let tree = Printtyp.tree_of_cltype_declaration id decl rs in
       Some (tree, None, rem)
   | _ -> None
@@ -226,6 +224,7 @@ let execute_phrase print_outcome ppf phr =
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
       in
+      if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       Typecore.force_delayed_checks ();
       let res = Translmod.transl_store_phrases !phrase_name str in
       Warnings.check_fatal ();
@@ -237,8 +236,8 @@ let execute_phrase print_outcome ppf phr =
           | Result v ->
               Compilenv.record_global_approx_toplevel ();
               if print_outcome then
-                match str with
-                | [Tstr_eval exp] ->
+                match str.str_items with
+                | [ {str_desc = Tstr_eval exp} ] ->
                     let outv = outval_of_value newenv v exp.exp_type in
                     let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                     Ophr_eval (outv, ty)
@@ -431,7 +430,7 @@ let loop ppf =
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
       if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
-      if !Clflags.dump_source then Pprintast.top_phrase ppf ph;
+      if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
       ignore(execute_phrase true ppf phr)
     with
     | End_of_file -> exit 0
