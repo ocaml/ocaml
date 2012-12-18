@@ -626,8 +626,10 @@ let rec path_subst_last path id =
   | Papply (p1, p2) -> assert false
 
 let mark_type_path env path =
-  let decl = try find_type path env with Not_found -> assert false in
-  mark_type_used (Path.last path) decl
+  try
+    let decl = find_type path env in
+    mark_type_used (Path.last path) decl
+  with Not_found -> ()
 
 let ty_path = function
   | {desc=Tconstr(path, _, _)} -> path
