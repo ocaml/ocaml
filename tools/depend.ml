@@ -11,7 +11,6 @@
 (***********************************************************************)
 
 open Asttypes
-open Format
 open Location
 open Longident
 open Parsetree
@@ -19,8 +18,6 @@ open Parsetree
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 (* Collect free module identifiers in the a.s.t. *)
-
-let fst3 (x, _, _) = x
 
 let free_structure_names = ref StringSet.empty
 
@@ -75,7 +72,7 @@ let add_type_declaration bv td =
     (fun (ty1, ty2, _) -> add_type bv ty1; add_type bv ty2)
     td.ptype_cstrs;
   add_opt add_type bv td.ptype_manifest;
-  let rec add_tkind = function
+  let add_tkind = function
     Ptype_abstract -> ()
   | Ptype_variant cstrs ->
       List.iter (fun (c, args, rty, _) -> List.iter (add_type bv) args; Misc.may (add_type bv) rty) cstrs

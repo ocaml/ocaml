@@ -14,11 +14,9 @@
 
 open Asttypes
 open Config
-open Emitcode
 open Instruct
 open Lambda
 open Location
-open Obj
 open Opcodes
 open Opnames
 open Cmo_format
@@ -450,7 +448,7 @@ let print_instr ic =
         let nvars = inputu ic in
         let orig = currpc ic in
         print_int nvars;
-        for i = 0 to nfuncs - 1 do
+        for _i = 0 to nfuncs - 1 do
           print_string ", ";
           print_int (orig + inputs ic);
         done;
@@ -530,7 +528,7 @@ let dump_exe ic =
   begin try
     ignore (Bytesections.seek_section ic "DBUG");
     let num_eventlists = input_binary_int ic in
-    for i = 1 to num_eventlists do
+    for _i = 1 to num_eventlists do
       let orig = input_binary_int ic in
       let evl = (input_value ic : debug_event list) in
       record_events orig evl
