@@ -14,11 +14,18 @@
 
 open Reg
 
-(* Preallocation of spilled registers in the stack. *)
+(* Preallocate the spilled registers in the stack.
+   Split the remaining registers into two sets:
+   unconstrained (degree < number of available registers)
+   and constrained (degree >= number of available registers). *)
 
-let allocate_spilled reg =
+let unconstrained = ref Reg.Set.empty
+let constrained = ref Reg.Set.empty
+
+let remove_reg reg =
+  let cl = Proc.register_class reg in
   if reg.spill then begin
-    let cl = Proc.register_class reg in
+    (* Preallocate the registers in the stack *)
     let nslots = Proc.num_stack_slots.(cl) in
     let conflict = Array.create nslots false in
     List.iter
@@ -32,44 +39,10 @@ let allocate_spilled reg =
     while !slot < nslots && conflict.(!slot) do incr slot done;
     reg.loc <- Stack(Local !slot);
     if !slot >= nslots then Proc.num_stack_slots.(cl) <- !slot + 1
-  end
-
-(* Compute the degree (= number of neighbours of the same type)
-   of each register, and split them in two sets:
-   unconstrained (degree < number of available registers)
-   and constrained (degree >= number of available registers).
-   Spilled registers are ignored in the process. *)
-
-let unconstrained = ref Reg.Set.empty
-let constrained = ref Reg.Set.empty
-
-let find_degree reg =
-  if reg.spill then () else begin
-    let cl = Proc.register_class reg in
-    let avail_regs = Proc.num_available_registers.(cl) in
-    if reg.degree < avail_regs then
-      unconstrained := Reg.Set.add reg !unconstrained
-    else
-      constrained := Reg.Set.add reg !constrained
-  end
-
-(* Remove a register from the interference graph *)
-
-let remove_reg reg =
-  reg.degree <- 0;   (* 0 means r is no longer part of the graph *)
-  let cl = Proc.register_class reg in
-  List.iter
-    (fun r ->
-      if Proc.register_class r = cl && r.degree > 0 then begin
-        let olddeg = r.degree in
-        r.degree <- olddeg - 1;
-        if olddeg = Proc.num_available_registers.(cl) then begin
-          (* r was constrained and becomes unconstrained *)
-          constrained := Reg.Set.remove r !constrained;
-          unconstrained := Reg.Set.add r !unconstrained
-        end
-      end)
-    reg.interf
+  end else if reg.degree < Proc.num_available_registers.(cl) then
+    unconstrained := Reg.Set.add reg !unconstrained
+  else
+    constrained := Reg.Set.add reg !constrained
 
 (* Remove all registers one by one, unconstrained if possible, otherwise
    constrained with lowest spill cost. Return the list of registers removed
@@ -253,14 +226,12 @@ let assign_location reg =
   reg.prefer <- []
 
 let allocate_registers() =
-  (* First pass: preallocate spill registers
-     Second pass: compute the degrees
-     Third pass: determine coloring order by successive removals of regs
-     Fourth pass: assign registers in that order *)
+  (* First pass: preallocate spill registers and split remaining regs
+     Second pass: determine coloring order by successive removals of regs
+     Third pass: assign registers in that order *)
   for i = 0 to Proc.num_register_classes - 1 do
     Proc.num_stack_slots.(i) <- 0;
     start_register.(i) <- 0
   done;
-  List.iter allocate_spilled (Reg.all_registers());
-  List.iter find_degree (Reg.all_registers());
+  List.iter remove_reg (Reg.all_registers());
   List.iter assign_location (remove_all_regs [])
