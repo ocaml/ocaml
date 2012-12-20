@@ -288,25 +288,25 @@ let emit_float_test cmp neg arg lbl =
       `	jp	{emit_label lbl}\n`;     (* branch taken if unordered *)
       `	jne	{emit_label lbl}\n`      (* branch taken if x<y or x>y *)
   | (Clt, _) ->
-      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
       if not neg then
       `	ja	{emit_label lbl}\n`     (* branch taken if y>x i.e. x<y *)
       else
       `	jbe	{emit_label lbl}\n` (* taken if unordered or y<=x i.e. !(x<y) *)
   | (Cle, _) ->
-      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
       if not neg then
       `	jae	{emit_label lbl}\n`     (* branch taken if y>=x i.e. x<=y *)
       else
       `	jb	{emit_label lbl}\n` (* taken if unordered or y<x i.e. !(x<=y) *)
   | (Cgt, _) ->
-      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
+      `	comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
       if not neg then
       `	ja	{emit_label lbl}\n`     (* branch taken if x>y *)
       else
       `	jbe	{emit_label lbl}\n` (* taken if unordered or x<=y i.e. !(x>y) *)
   | (Cge, _) ->
-      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
       if not neg then
       `	jae	{emit_label lbl}\n`     (* branch taken if x>=y *)
       else
