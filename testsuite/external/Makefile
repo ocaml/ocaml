@@ -1122,6 +1122,29 @@ distclean::
 	rm -f ${OCAMLSCRIPT}.tar.bz2
 all: ocamlscript
 
+# https://forge.ocamlcore.org/projects/kaputt/
+KAPUTT=kaputt-1.2
+${KAPUTT}.tar.gz:
+	${WGET} https://forge.ocamlcore.org/frs/download.php/987/$@
+kaputt: ${KAPUTT}.tar.gz findlib
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${KAPUTT}
+	tar zxf ${KAPUTT}.tar.gz
+	./Patcher.sh ${KAPUTT}
+	( cd ${KAPUTT} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure -ocaml-prefix ${PREFIX} && \
+	  ${MAKE} all && \
+	  ocamlfind remove kaputt && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${KAPUTT} kaputt
+distclean::
+	rm -f ${KAPUTT}.tar.gz
+all: kaputt
+
 # http://pauillac.inria.fr/~ddr/camlp5/
 CAMLP5=camlp5-6.06
 ${CAMLP5}.tgz:
