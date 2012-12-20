@@ -47,20 +47,10 @@ let find_degree reg =
   if reg.spill then () else begin
     let cl = Proc.register_class reg in
     let avail_regs = Proc.num_available_registers.(cl) in
-    if avail_regs = 0 then
-      (* Don't bother computing the degree if there are no regs
-         in this class *)
+    if reg.degree < avail_regs then
       unconstrained := Reg.Set.add reg !unconstrained
-    else begin
-      let deg = ref 0 in
-      List.iter
-        (fun r -> if not r.spill && Proc.register_class r = cl then incr deg)
-        reg.interf;
-      reg.degree <- !deg;
-      if !deg >= avail_regs
-      then constrained := Reg.Set.add reg !constrained
-      else unconstrained := Reg.Set.add reg !unconstrained
-    end
+    else
+      constrained := Reg.Set.add reg !constrained
   end
 
 (* Remove a register from the interference graph *)
