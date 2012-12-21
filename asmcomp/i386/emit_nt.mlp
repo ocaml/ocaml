@@ -359,6 +359,39 @@ let emit_floatspecial = function
   | "tan"   -> `	fptan\n\tfstp st(0)\n`
   | _ -> assert false
 
+(* Floating-point constants *)
+
+let float_constants = ref ([] : (string * int) list)
+
+let add_float_constant cst =
+  try
+    List.assoc cst !float_constants
+  with
+    Not_found ->
+      let lbl = new_label() in
+      float_constants := (cst, lbl) :: !float_constants;
+      lbl
+
+let emit_float s =
+  (* MASM doesn't like floating-point constants such as 2e9.
+     Turn them into 2.0e9. *)
+  let pos_e = ref (-1) and pos_dot = ref (-1) in
+  for i = 0 to String.length s - 1 do
+    match s.[i] with
+      'e'|'E' -> pos_e := i
+    | '.'     -> pos_dot := i
+    | _       -> ()
+  done;
+  if !pos_dot < 0 && !pos_e >= 0 then begin
+    emit_string (String.sub s 0 !pos_e);
+    emit_string ".0";
+    emit_string (String.sub s !pos_e (String.length s - !pos_e))
+  end else
+    emit_string s
+
+let emit_float_constant (cst, lbl) =
+  `{emit_label lbl}     REAL8   {emit_float cst}\n`
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -367,8 +400,6 @@ let function_name = ref ""
 let tailrec_entry_point = ref 0
 (* Label of trap for out-of-range accesses *)
 let range_check_trap = ref 0
-
-let float_constants = ref ([] : (int * string) list)
 
 let emit_instr i =
     match i.desc with
@@ -406,8 +437,7 @@ let emit_instr i =
         | 0xBFF0_0000_0000_0000L ->       (* -1.0 *)
           `	fld1\n	fchs\n`
         | _ ->
-          let lbl = new_label() in
-          float_constants := (lbl, s) :: !float_constants;
+          let lbl = add_float_constant s in
           `	fld	{emit_label lbl}\n`
         end
     | Lop(Iconst_symbol s) ->
@@ -752,28 +782,6 @@ let emit_instr i =
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
 
-(* Emission of the floating-point constants *)
-
-let emit_float s =
-  (* MASM doesn't like floating-point constants such as 2e9.
-     Turn them into 2.0e9. *)
-  let pos_e = ref (-1) and pos_dot = ref (-1) in
-  for i = 0 to String.length s - 1 do
-    match s.[i] with
-      'e'|'E' -> pos_e := i
-    | '.'     -> pos_dot := i
-    | _       -> ()
-  done;
-  if !pos_dot < 0 && !pos_e >= 0 then begin
-    emit_string (String.sub s 0 !pos_e);
-    emit_string ".0";
-    emit_string (String.sub s !pos_e (String.length s - !pos_e))
-  end else
-    emit_string s
-
-let emit_float_constant (lbl, cst) =
-  `{emit_label lbl}     REAL8   {emit_float cst}\n`
-
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -781,7 +789,6 @@ let fundecl fundecl =
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := 0;
-  float_constants := [];
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
@@ -796,14 +803,7 @@ let fundecl fundecl =
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
-  emit_call_bound_errors ();
-  begin match !float_constants with
-    [] -> ()
-  | _  ->
-      `	.DATA\n`;
-      List.iter emit_float_constant !float_constants;
-      float_constants := []
-  end
+  emit_call_bound_errors ()
 
 (* Emission of data *)
 
@@ -846,6 +846,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
+  float_constants := [];
   `.386\n`;
   `	.MODEL	FLAT\n\n`;
   `	EXTERN _caml_young_ptr: DWORD\n`;
@@ -872,6 +873,10 @@ let begin_assembly() =
   `{emit_symbol lbl_begin}	LABEL	DWORD\n`
 
 let end_assembly() =
+  if !float_constants <> [] then begin
+    `	.DATA\n`;
+    List.iter emit_float_constant !float_constants;
+  end;
   `	.CODE\n`;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   add_def_symbol lbl_end;
