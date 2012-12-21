@@ -12,6 +12,15 @@
 
 (* Register allocation by coloring of the interference graph *)
 
+module OrderedRegSet =
+  Set.Make(struct
+    type t = Reg.t
+    let compare r1 r2 =
+      let open Reg in
+      let n = r2.spill_cost * r1.degree - r1.spill_cost * r2.degree in
+      if n <> 0 then n else r1.stamp - r2.stamp
+  end)
+
 open Reg
 
 let allocate_registers() =
@@ -20,7 +29,7 @@ let allocate_registers() =
      sorted by spill cost (highest first).
      The spill cost measure is [r.spill_cost / r.degree].
      [r.spill_cost] estimates the number of accesses to [r]. *)
-  let constrained = ref [] in
+  let constrained = ref OrderedRegSet.empty in
 
   (* Unconstrained regs with degree < number of available registers *)
   let unconstrained = ref [] in
@@ -47,11 +56,7 @@ let allocate_registers() =
     end else if reg.degree < Proc.num_available_registers.(cl) then
       unconstrained := reg :: !unconstrained
     else begin
-      let rec insert_sorted r = function
-          r' :: l when r.spill_cost * r'.degree < r'.spill_cost * r.degree ->
-            r' :: insert_sorted r l
-        | l -> r :: l in
-      constrained := insert_sorted reg !constrained
+      constrained := OrderedRegSet.add reg !constrained
     end in
 
   (* Iterate over all registers preferred by the given register (transitive) *)
@@ -210,5 +215,5 @@ let allocate_registers() =
      Second pass: assign locations to constrained regs
      Third pass: assign locations to unconstrained regs *)
   List.iter remove_reg (Reg.all_registers());
-  List.iter assign_location (!constrained);
-  List.iter assign_location (!unconstrained)
+  OrderedRegSet.iter assign_location !constrained;
+  List.iter assign_location !unconstrained
