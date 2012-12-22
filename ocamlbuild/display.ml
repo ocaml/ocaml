@@ -363,7 +363,11 @@ let event di ?(pretend=false) command target tags =
   match di.di_display_line with
   | Classic ->
       if pretend then
-        (if di.di_log_level >= 2 then Format.fprintf di.di_formatter "[cache hit] %s\n%!" command)
+        begin
+          (* This should work, even on Windows *)
+          let command = Filename.basename command in
+          if di.di_log_level >= 2 then Format.fprintf di.di_formatter "[cache hit] %s\n%!" command
+        end
       else
         (if di.di_log_level >= 1 then Format.fprintf di.di_formatter "%s\n%!" command)
   | Sophisticated ds ->
