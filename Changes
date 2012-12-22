@@ -29,6 +29,7 @@ Bug fixes:
 - PR#5735: %apply and %revapply not first class citizens
 - PR#5738: first class module patterns not handled by ocamldep
 - PR#5747: 'unused open' warning not given when compiling with -annot
+- PR#5752: missing dependencies at byte-code link with mlpack
 - PR#5758: Compiler bug when matching on floats
 - PR#5763: ocamlbuild does not give correct flags when running menhir
 - PR#5784: -dclambda option is ignored
