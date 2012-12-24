@@ -2,6 +2,7 @@ Next version
 ------------
 
 Compilers:
+- PR#5861: raise an error when multiple private keywords are used in type declarations
 - PR#5634: parsetree rewriter (-ppx flag)
 - ocamldep now supports -absname
 - PR#5768: On "unbound identifier" errors, use spell-checking to suggest names present in the environment
