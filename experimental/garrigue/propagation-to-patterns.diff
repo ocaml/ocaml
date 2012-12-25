@@ -1,6 +1,10 @@
+Index: boot/ocamlc
+===================================================================
+Cannot display: file marked as a binary type.
+svn:mime-type = application/octet-stream
 Index: Changes
 ===================================================================
---- Changes	(revision 13146)
+--- Changes	(revision 13157)
 +++ Changes	(working copy)
 @@ -1,6 +1,11 @@
  Next version
@@ -12,11 +16,11 @@ Index: Changes
 +  constructors)
 +
  Compilers:
+ - PR#5861: raise an error when multiple private keywords are used in type declarations
  - PR#5634: parsetree rewriter (-ppx flag)
- - ocamldep now supports -absname
 Index: typing/typecore.ml
 ===================================================================
---- typing/typecore.ml	(revision 13146)
+--- typing/typecore.ml	(revision 13157)
 +++ typing/typecore.ml	(working copy)
 @@ -326,7 +326,7 @@
          | _ -> assert false
@@ -56,36 +60,23 @@ Index: typing/typecore.ml
  let iter_ppat f p =
    match p.ppat_desc with
    | Ppat_any | Ppat_var _ | Ppat_constant _
-@@ -1668,6 +1690,7 @@
-   | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p
-   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args
- 
-+(*
- let contains_polymorphic_variant p =
-   let rec loop p =
-     match p.ppat_desc with
-@@ -1675,6 +1698,7 @@
-     | _ -> iter_ppat loop p
-   in
-   try loop p; false with Exit -> true
-+*)
- 
- let contains_gadt env p =
-   let rec loop p =
-@@ -3037,16 +3061,19 @@
+@@ -3037,16 +3059,20 @@
  
  and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
    (* ty_arg is _fully_ generalized *)
 -  let dont_propagate, has_gadts =
-+  let contains_either = contains_variant_either ty_arg in
-+  let has_gadts =
-     let patterns = List.map fst caselist in
+-    let patterns = List.map fst caselist in
 -    List.exists contains_polymorphic_variant patterns,
-     List.exists (contains_gadt env) patterns in
+-    List.exists (contains_gadt env) patterns in
++  let patterns = List.map fst caselist in
++  let erase_either =
++    List.exists contains_polymorphic_variant patterns
++    && contains_variant_either ty_arg
++  and has_gadts = List.exists (contains_gadt env) patterns in
  (*  prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
 -  let ty_arg, ty_res, env =
 +  let ty_arg =
-+    if (has_gadts || contains_either) && not !Clflags.principal
++    if (has_gadts || erase_either) && not !Clflags.principal
 +    then correct_levels ty_arg else ty_arg
 +  and ty_res, env =
      if has_gadts && not !Clflags.principal then
@@ -98,7 +89,7 @@ Index: typing/typecore.ml
    let lev, env =
      if has_gadts then begin
        (* raise level for existentials *)
-@@ -3072,10 +3099,10 @@
+@@ -3072,10 +3098,10 @@
          let scope = Some (Annot.Idef loc) in
          let (pat, ext_env, force, unpacks) =
            let partial =
@@ -106,7 +97,7 @@ Index: typing/typecore.ml
 -          let ty_arg =
 -            if dont_propagate then newvar () else instance ?partial env ty_arg
 -          in type_pattern ~lev env spat scope ty_arg
-+            if !Clflags.principal || contains_either
++            if !Clflags.principal || erase_either
 +            then Some false else None in
 +          let ty_arg = instance ?partial env ty_arg in
 +          type_pattern ~lev env spat scope ty_arg
@@ -115,7 +106,7 @@ Index: typing/typecore.ml
          let pat =
 Index: typing/ctype.ml
 ===================================================================
---- typing/ctype.ml	(revision 13146)
+--- typing/ctype.ml	(revision 13157)
 +++ typing/ctype.ml	(working copy)
 @@ -981,6 +981,25 @@
                      if keep then more else newty more.desc
@@ -145,7 +136,7 @@ Index: typing/ctype.ml
                (* Return a new copy *)
 Index: testsuite/tests/typing-gadts/test.ml.reference
 ===================================================================
---- testsuite/tests/typing-gadts/test.ml.reference	(revision 13146)
+--- testsuite/tests/typing-gadts/test.ml.reference	(revision 13157)
 +++ testsuite/tests/typing-gadts/test.ml.reference	(working copy)
 @@ -62,11 +62,11 @@
               ^^^^^^^^
@@ -166,7 +157,7 @@ Index: testsuite/tests/typing-gadts/test.ml.reference
      type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
 Index: testsuite/tests/typing-gadts/test.ml.principal.reference
 ===================================================================
---- testsuite/tests/typing-gadts/test.ml.principal.reference	(revision 13146)
+--- testsuite/tests/typing-gadts/test.ml.principal.reference	(revision 13157)
 +++ testsuite/tests/typing-gadts/test.ml.principal.reference	(working copy)
 @@ -62,11 +62,11 @@
               ^^^^^^^^
@@ -185,3 +176,124 @@ Index: testsuite/tests/typing-gadts/test.ml.principal.reference
  #                                 Characters 299-300:
        | BoolLit b -> b
                       ^
+Index: experimental/garrigue/propagation-to-patterns.diff
+===================================================================
+--- experimental/garrigue/propagation-to-patterns.diff	(revision 13157)
++++ experimental/garrigue/propagation-to-patterns.diff	(working copy)
+@@ -1,6 +1,10 @@
++Index: boot/ocamlc
++===================================================================
++Cannot display: file marked as a binary type.
++svn:mime-type = application/octet-stream
+ Index: Changes
+ ===================================================================
+---- Changes	(revision 13146)
++--- Changes	(revision 13157)
+ +++ Changes	(working copy)
+ @@ -1,6 +1,11 @@
+  Next version
+@@ -12,11 +16,11 @@
+ +  constructors)
+ +
+  Compilers:
++ - PR#5861: raise an error when multiple private keywords are used in type declarations
+  - PR#5634: parsetree rewriter (-ppx flag)
+- - ocamldep now supports -absname
+ Index: typing/typecore.ml
+ ===================================================================
+---- typing/typecore.ml	(revision 13146)
++--- typing/typecore.ml	(revision 13157)
+ +++ typing/typecore.ml	(working copy)
+ @@ -326,7 +326,7 @@
+          | _ -> assert false
+@@ -56,36 +60,23 @@
+  let iter_ppat f p =
+    match p.ppat_desc with
+    | Ppat_any | Ppat_var _ | Ppat_constant _
+-@@ -1668,6 +1690,7 @@
+-   | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p
+-   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args
++@@ -3037,16 +3059,20 @@
+  
+-+(*
+- let contains_polymorphic_variant p =
+-   let rec loop p =
+-     match p.ppat_desc with
+-@@ -1675,6 +1698,7 @@
+-     | _ -> iter_ppat loop p
+-   in
+-   try loop p; false with Exit -> true
+-+*)
+- 
+- let contains_gadt env p =
+-   let rec loop p =
+-@@ -3037,16 +3061,19 @@
+- 
+  and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
+    (* ty_arg is _fully_ generalized *)
+ -  let dont_propagate, has_gadts =
+-+  let contains_either = contains_variant_either ty_arg in
+-+  let has_gadts =
+-     let patterns = List.map fst caselist in
++-    let patterns = List.map fst caselist in
+ -    List.exists contains_polymorphic_variant patterns,
+-     List.exists (contains_gadt env) patterns in
++-    List.exists (contains_gadt env) patterns in
+++  let patterns = List.map fst caselist in
+++  let erase_either =
+++    List.exists contains_polymorphic_variant patterns
+++    && contains_variant_either ty_arg
+++  and has_gadts = List.exists (contains_gadt env) patterns in
+  (*  prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
+ -  let ty_arg, ty_res, env =
+ +  let ty_arg =
+-+    if (has_gadts || contains_either) && not !Clflags.principal
+++    if (has_gadts || erase_either) && not !Clflags.principal
+ +    then correct_levels ty_arg else ty_arg
+ +  and ty_res, env =
+      if has_gadts && not !Clflags.principal then
+@@ -98,7 +89,7 @@
+    let lev, env =
+      if has_gadts then begin
+        (* raise level for existentials *)
+-@@ -3072,10 +3099,10 @@
++@@ -3072,10 +3098,10 @@
+          let scope = Some (Annot.Idef loc) in
+          let (pat, ext_env, force, unpacks) =
+            let partial =
+@@ -106,7 +97,7 @@
+ -          let ty_arg =
+ -            if dont_propagate then newvar () else instance ?partial env ty_arg
+ -          in type_pattern ~lev env spat scope ty_arg
+-+            if !Clflags.principal || contains_either
+++            if !Clflags.principal || erase_either
+ +            then Some false else None in
+ +          let ty_arg = instance ?partial env ty_arg in
+ +          type_pattern ~lev env spat scope ty_arg
+@@ -115,7 +106,7 @@
+          let pat =
+ Index: typing/ctype.ml
+ ===================================================================
+---- typing/ctype.ml	(revision 13146)
++--- typing/ctype.ml	(revision 13157)
+ +++ typing/ctype.ml	(working copy)
+ @@ -981,6 +981,25 @@
+                      if keep then more else newty more.desc
+@@ -145,7 +136,7 @@
+                (* Return a new copy *)
+ Index: testsuite/tests/typing-gadts/test.ml.reference
+ ===================================================================
+---- testsuite/tests/typing-gadts/test.ml.reference	(revision 13146)
++--- testsuite/tests/typing-gadts/test.ml.reference	(revision 13157)
+ +++ testsuite/tests/typing-gadts/test.ml.reference	(working copy)
+ @@ -62,11 +62,11 @@
+               ^^^^^^^^
+@@ -166,7 +157,7 @@
+      type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
+ Index: testsuite/tests/typing-gadts/test.ml.principal.reference
+ ===================================================================
+---- testsuite/tests/typing-gadts/test.ml.principal.reference	(revision 13146)
++--- testsuite/tests/typing-gadts/test.ml.principal.reference	(revision 13157)
+ +++ testsuite/tests/typing-gadts/test.ml.principal.reference	(working copy)
+ @@ -62,11 +62,11 @@
+               ^^^^^^^^
