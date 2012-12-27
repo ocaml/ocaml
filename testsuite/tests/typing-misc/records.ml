@@ -33,3 +33,6 @@ type foo = { x: int };;
 let r : foo = { ZZZ.x = 2 };;
 
 (ZZZ.X : int option);;
+
+(* PR#5865 *)
+let f (x : Complex.t) = x.Complex.z;;

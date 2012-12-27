@@ -47,4 +47,8 @@ Error: Unbound module ZZZ
   (ZZZ.X : int option);;
    ^^^^^
 Error: Unbound module ZZZ
+#     Characters 41-50:
+  let f (x : Complex.t) = x.Complex.z;;
+                            ^^^^^^^^^
+Error: Unbound record field Complex.z
 # 
