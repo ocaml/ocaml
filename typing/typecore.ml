@@ -2899,7 +2899,9 @@ and type_application env funct sargs =
                 (l', sarg0, sargs @ sargs1, sargs2)
             in
             sargs, more_sargs,
-            if optional = Required || is_optional l' then
+            if optional = Required && is_optional l' then
+              raise(Error(sarg0.pexp_loc, Apply_wrong_label(l', ty_fun')))
+            else if optional = Required || is_optional l' then
               Some (fun () -> type_argument env sarg0 ty ty0)
             else begin
               may_warn sarg0.pexp_loc
