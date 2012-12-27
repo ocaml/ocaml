@@ -1,0 +1,10 @@
+
+# type ab = [ `A | `B ]
+# val f : [ `A ] -> int = <fun>
+# val f : [ `A ] -> unit = <fun>
+# Characters 34-36:
+  let f x = ignore (match x with `A|`B -> 1); ignore (x : [`A]);;
+                                    ^^
+Warning 12: this sub-pattern is unused.
+val f : [ `A ] -> unit = <fun>
+# 
