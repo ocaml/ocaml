@@ -1,7 +1,3 @@
-Index: boot/ocamlc
-===================================================================
-Cannot display: file marked as a binary type.
-svn:mime-type = application/octet-stream
 Index: Changes
 ===================================================================
 --- Changes	(revision 13157)
@@ -60,7 +56,32 @@ Index: typing/typecore.ml
  let iter_ppat f p =
    match p.ppat_desc with
    | Ppat_any | Ppat_var _ | Ppat_constant _
-@@ -3037,16 +3059,20 @@
+@@ -1690,6 +1712,24 @@
+   in
+   try loop p; false with Exit -> true
+ 
++let check_absent_variant env =
++  iter_pattern
++    (function {pat_desc = Tpat_variant (s, arg, row)} as pat ->
++      let row = row_repr !row in
++      if List.exists (fun (s',fi) -> s = s' && row_field_repr fi <> Rabsent)
++          row.row_fields
++      then () else
++      let ty_arg =
++        match arg with None -> [] | Some p -> [correct_levels p.pat_type] in
++      let row' = {row_fields = [s, Reither(arg=None,ty_arg,true,ref None)];
++                  row_more = newvar (); row_bound = ();
++                  row_closed = false; row_fixed = false; row_name = None} in
++      (* Should fail *)
++      unify_pat env {pat with pat_type = newty (Tvariant row')}
++                    (correct_levels pat.pat_type)
++      | _ -> ())
++      
++
+ let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
+ 
+ (* Duplicate types of values in the environment *)
+@@ -3037,16 +3077,20 @@
  
  and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
    (* ty_arg is _fully_ generalized *)
@@ -89,7 +110,7 @@ Index: typing/typecore.ml
    let lev, env =
      if has_gadts then begin
        (* raise level for existentials *)
-@@ -3072,10 +3098,10 @@
+@@ -3072,10 +3116,10 @@
          let scope = Some (Annot.Idef loc) in
          let (pat, ext_env, force, unpacks) =
            let partial =
@@ -104,6 +125,19 @@ Index: typing/typecore.ml
          in
          pattern_force := force @ !pattern_force;
          let pat =
+@@ -3134,7 +3178,11 @@
+     else
+       Partial
+   in
+-  add_delayed_check (fun () -> Parmatch.check_unused env cases);
++  add_delayed_check
++    (fun () ->
++      List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
++        pat_env_list;
++      Parmatch.check_unused env cases);
+   if has_gadts then begin
+     end_def ();
+     (* Ensure that existential types do not escape *)
 Index: typing/ctype.ml
 ===================================================================
 --- typing/ctype.ml	(revision 13157)
