@@ -21,6 +21,7 @@ Bug fixes:
 - PR#5552: try to use camlp4.opt if it's possible
 - PR#5611: avoid clashes betwen .cmo files and output files during linking
 - PR#5662: typo in md5.c
+- PR#5673: type equality in a polymorphic field
 - PR#5695: remove warnings on sparc code emitter
 - PR#5697: better location for warnings on statement expressions
 - PR#5698: remove harcoded limit of 200000 labels in emitaux.ml

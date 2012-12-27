@@ -1354,6 +1354,11 @@ let expand_abbrev_gen kind find_type_expansion env ty =
 let expand_abbrev ty =
   expand_abbrev_gen Public (fun level -> Env.find_type_expansion ~level) ty
 
+(* Expand once the head of a type *)
+let expand_head_once env ty =
+  try expand_abbrev env (repr ty) with Cannot_expand -> assert false
+
+(* Check whether a type can be expanded *)
 let safe_abbrev env ty =
   let snap = Btype.snapshot () in
   try ignore (expand_abbrev env ty); true
@@ -1361,21 +1366,27 @@ let safe_abbrev env ty =
     Btype.backtrack snap;
     false
 
+(* Expand the head of a type once.
+   Raise Cannot_expand if the type cannot be expanded.
+   May raise Unify, if a recursion was hidden in the type. *)
 let try_expand_once env ty =
   let ty = repr ty in
   match ty.desc with
     Tconstr (p, _, _) -> repr (expand_abbrev env ty)
   | _ -> raise Cannot_expand
 
-let _ = forward_try_expand_once := try_expand_once
+(* This one only raises Cannot_expand *)
+let try_expand_safe env ty =
+  let snap = Btype.snapshot () in
+  try try_expand_once env ty
+  with Unify _ ->
+    Btype.backtrack snap; raise Cannot_expand
 
-(* Fully expand the head of a type.
-   Raise Cannot_expand if the type cannot be expanded.
-   May raise Unify, if a recursion was hidden in the type. *)
-let rec try_expand_head env ty =
-  let ty' = try_expand_once env ty in
+(* Fully expand the head of a type. *)
+let rec try_expand_head try_once env ty =
+  let ty' = try_once env ty in
   let ty'' =
-    try try_expand_head env ty'
+    try try_expand_head try_once env ty'
     with Cannot_expand -> ty'
   in
   if Env.has_local_constraints env then begin
@@ -1385,20 +1396,16 @@ let rec try_expand_head env ty =
   end;
   ty''
 
-(* Expand once the head of a type *)
-let expand_head_once env ty =
-  try expand_abbrev env (repr ty) with Cannot_expand -> assert false
-
-(* Fully expand the head of a type. *)
+(* Unsafe full expansion, may raise Unify. *)
 let expand_head_unif env ty =
-  try try_expand_head env ty with Cannot_expand -> repr ty
+  try try_expand_head try_expand_once env ty with Cannot_expand -> repr ty
 
+(* Safe version of expand_head, never fails *)
 let expand_head env ty =
-  let snap = Btype.snapshot () in
-  try try_expand_head env ty
-  with Cannot_expand | Unify _ -> (* expand_head shall never fail *)
-    Btype.backtrack snap;
-    repr ty
+  try try_expand_head try_expand_safe env ty with Cannot_expand -> repr ty
+
+let _ = forward_try_expand_once := try_expand_safe
+
 
 (* Expand until we find a non-abstract type declaration *)
 
@@ -1542,7 +1549,7 @@ let rec occur_rec env visited ty0 ty =
         if List.memq ty visited || !Clflags.recursive_types then raise Occur;
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
-        let ty' = try_expand_head env ty in
+        let ty' = try_expand_head try_expand_once env ty in
         (* Maybe we could simply make a recursive call here,
            but it seems it could make the occur check loop
            (see change in rev. 1.58) *)
@@ -2666,8 +2673,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head_unif env t1 in
-        let t2' = expand_head_unif env t2 in
+        let t1' = expand_head env t1 in
+        let t2' = expand_head env t2 in
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
@@ -2905,7 +2912,7 @@ let rec get_object_row ty =
 let expand_head_rigid env ty =
   let old = !rigid_variants in
   rigid_variants := true;
-  let ty' = expand_head_unif env ty in
+  let ty' = expand_head env ty in
   rigid_variants := old; ty'
 
 let normalize_subst subst =
