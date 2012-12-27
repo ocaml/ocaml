@@ -17,8 +17,14 @@ module OrderedRegSet =
     type t = Reg.t
     let compare r1 r2 =
       let open Reg in
-      let n = r2.spill_cost * r1.degree - r1.spill_cost * r2.degree in
-      if n <> 0 then n else r1.stamp - r2.stamp
+      let c1 = r1.spill_cost and d1 = r1.degree in
+      let c2 = r2.spill_cost and d2 = r2.degree in
+      let n = c2 * d1 - c1 * d2 in
+      if n <> 0 then n else
+        let n = c2 - c1 in
+        if n <> 0 then n else
+          let n = d1 - d2 in
+          if n <> 0 then n else r1.stamp - r2.stamp
   end)
 
 open Reg
