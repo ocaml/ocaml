@@ -123,7 +123,7 @@ let calling_conventions
           ofs := !ofs + size_int
         end
     | Float ->
-        assert (abi = EABI_VFP);
+        assert (abi = EABI_HF);
         assert (!fpu >= VFPv2);
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
@@ -185,7 +185,7 @@ let destroyed_at_c_call =
                          108;109;110;111;112;113;114;115;
                          116;116;118;119;120;121;122;123;
                          124;125;126;127;128;129;130;131]
-                    | EABI_VFP ->   (* r4-r7, d8-d15 preserved *)
+                    | EABI_HF ->    (* r4-r7, d8-d15 preserved *)
                         [0;1;2;3;8;
                          100;101;102;103;104;105;106;107;
                          116;116;118;119;120;121;122;123;
