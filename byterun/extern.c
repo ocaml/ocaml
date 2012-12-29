@@ -583,13 +583,12 @@ static intnat extern_value(value v, value flags)
 
 void caml_output_val(struct channel *chan, value v, value flags)
 {
-  intnat len;
   struct output_block * blk, * nextblk;
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("output_value: not a binary channel");
   init_extern_output();
-  len = extern_value(v, flags);
+  extern_value(v, flags);
   /* During [caml_really_putblock], concurrent [caml_output_val] operations
      can take place (via signal handlers or context switching in systhreads),
      and [extern_output_first] may change. So, save it in a local variable. */
