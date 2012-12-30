@@ -1,10 +1,10 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                                OCaml                                *)
+(*                             ocamlbuild                              *)
 (*                                                                     *)
 (*                           Wojciech Meyer                            *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -17,7 +17,7 @@ external (|>) :  'a -> ('a -> 'b) -> 'b = "%revapply"
 let print_list ~sep f ppf = function
 | [] -> ()
 | x :: [] -> f ppf x
-| x :: xs -> f ppf x; sep ppf (); List.iter (f ppf) xs
+| x :: xs -> f ppf x; List.iter (fun x -> sep ppf (); f ppf x) xs
 
 let print_list_com f = print_list ~sep:(fun ppf () -> pp_print_string ppf ",") f
 let print_list_blank f = print_list ~sep:(fun ppf () -> pp_print_string ppf " ") f
@@ -25,7 +25,15 @@ let print_string_list = print_list_com pp_print_string
 let print_string_list_com = print_list_com pp_print_string
 let print_string_list_blank = print_list_blank pp_print_string
 
+let execute cmd =
+  let ic = Unix.open_process_in cmd and lst = ref [] in
+  try while true do lst := input_line ic :: !lst done; assert false
+  with End_of_file ->
+    let ret_code = Unix.close_process_in ic
+    in ret_code, List.rev !lst
+
 module Match = struct
+
   type atts = unit
 
   (* File consists of file attribute and name *)
@@ -59,6 +67,7 @@ module Match = struct
       Expected of string
     | Unexpected of string
     | Structure of string * string list
+    | Output of string * string
 
   (* This will print the tree *)
   let print ppf tree =
@@ -81,14 +90,16 @@ module Match = struct
   let f ?(atts=()) name = F (atts, name)
   let d ?(atts=()) name children = D ((atts, name), children)
   let lf ?(atts=()) lst = List.map (fun nm -> F (atts,nm)) lst
+  let x ?(atts=()) name ~output = X ((atts,name), (0,output))
+
   let match_with_fs ~root m =
 
     let errors = ref [] in
 
     let rec visit ~exact path m =
       let file name =
-        List.rev (name :: path)
-        |> String.concat "/"
+        "./" ^ (List.rev (name :: path) |> String.concat "/")
+
       in
 
     let exists filename =
@@ -119,6 +130,11 @@ module Match = struct
       (if exact && lst' <> [] then
         errors := Structure ((file name), lst') :: !errors);
       List.iter (visit ~exact (name :: path)) sub
+    | X (((), name), (retcode, output)) ->
+      let _,output' = execute (file name) in
+      let output' = String.concat "\n" output' in
+      if output <> output' then
+        errors := Output (output, output') :: !errors
     | Exact sub -> visit ~exact:true path sub
     | Contains sub -> visit ~exact:false path sub
     | _ -> assert false
@@ -133,7 +149,7 @@ module Match = struct
   | Expected s -> Printf.sprintf "expected '%s' on a file system" s
   | Unexpected s -> Printf.sprintf "un-expected '%s' on a file system" s
   | Structure (s,l) -> Printf.sprintf  "directory structure '%s' has un-expected files %s" s (String.concat ", " l)
-
+  | Output (e, p) -> Printf.sprintf  "not matching output '%s' expected but got %s" e p
 end
 
 module Option = struct
@@ -145,6 +161,7 @@ module Option = struct
   type file = string
   type command = string
   type _module = string
+  type tag = string
 
   type t =
     [ `version
@@ -343,6 +360,7 @@ module Tree = struct
     Unix.chdir root;
     visit [] f;
     Unix.chdir dir
+
 end
 
 type content = string
@@ -351,8 +369,8 @@ type run = filename * content
 
 type test = { name     : string
             ; description : string
-            ; tree     : Tree.t
-            ; matching : Match.t
+            ; tree     : Tree.t list
+            ; matching : Match.t list
             ; options  : Option.t list
             ; targets  : string * string list
             ; pre_cmd  : string option
@@ -370,18 +388,10 @@ let test ?(options=[]) ?(run=[]) ?pre_cmd
 
 let run ~root =
 
-  let execute cmd =
-    let ic = Unix.open_process_in cmd and lst = ref [] in
-    try while true do lst := input_line ic :: !lst done; assert false
-    with End_of_file ->
-      let ret_code = Unix.close_process_in ic
-      in ret_code, List.rev !lst
-  in
-
   let command opts args =
     let b = Buffer.create 127 in
     let f = Format.formatter_of_buffer b in
-    fprintf f "ocamlbuild %a %a" (print_list_blank Option.print_opt) opts (print_list_blank pp_print_string) args;
+    fprintf f "%s %a %a" ocamlbuild (print_list_blank Option.print_opt) opts (print_list_blank pp_print_string) args;
     Format.pp_print_flush f ();
     Buffer.contents b
   in
@@ -397,13 +407,15 @@ let run ~root =
       ; run } =
 
     let dir = Sys.getcwd () in
+
     Unix.chdir root;
-    Tree.create_on_fs ~root:name tree;
+    List.iter (Tree.create_on_fs ~root:name) tree;
     Unix.chdir name;
 
     (match pre_cmd with
     | None -> ()
     | Some str -> ignore(Sys.command str));
+
     let log_name = name ^ ".log" in
 
     let cmd = command options (fst targets :: snd targets) in
@@ -421,9 +433,9 @@ let run ~root =
     | _ ->
       Unix.chdir dir;
       Unix.chdir root;
-      let errors = Match.match_with_fs ~root:name matching in
+      let errors = List.concat (List.map (Match.match_with_fs ~root:name) matching) in
       begin if errors == [] then
-        Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%s\n" name
+        Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n" name description
         else begin
           let ch = open_out log_name in
           output_string ch ("Run '" ^ cmd ^ "'\n");
@@ -434,5 +446,5 @@ let run ~root =
         end
       end;
       Unix.chdir dir)
-  in
-  List.iter one_test !tests
+
+  in List.iter one_test !tests
