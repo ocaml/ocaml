@@ -205,7 +205,8 @@ then
      fi
   esac
   has_ocaml=false
-  jocaml_version=`cat $topdir/VERSION | ( read version && echo $version )` 
+#  jocaml_version=`cat $topdir/VERSION | ( read version && echo $version )` 
+  jocaml_version=4.00.1
   case "$ocamlc" in
    "") echo "Warning: could not find ocamlc";;
    *)
