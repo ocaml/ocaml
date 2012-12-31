@@ -148,13 +148,6 @@ memory.o: memory.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
  ../byterun/minor_gc.h ../byterun/minor_gc.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/signals.h
-memory.p.o: memory.p.c ../byterun/fail.h ../byterun/misc.h \
- ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h ../byterun/freelist.h ../byterun/gc.h \
- ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
- ../byterun/minor_gc.h ../byterun/minor_gc.h ../byterun/misc.h \
- ../byterun/mlvalues.h ../byterun/signals.h
 meta.o: meta.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/fail.h ../byterun/fix_code.h \
@@ -405,13 +398,6 @@ memory.d.o: memory.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
  ../byterun/minor_gc.h ../byterun/minor_gc.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/signals.h
-memory.p.d.o: memory.p.c ../byterun/fail.h ../byterun/misc.h \
- ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h ../byterun/freelist.h ../byterun/gc.h \
- ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
- ../byterun/minor_gc.h ../byterun/minor_gc.h ../byterun/misc.h \
- ../byterun/mlvalues.h ../byterun/signals.h
 meta.d.o: meta.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/config.h ../byterun/fail.h ../byterun/fix_code.h \
@@ -656,13 +642,6 @@ md5.p.o: md5.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/minor_gc.h ../byterun/mlvalues.h ../byterun/io.h \
  ../byterun/reverse.h
 memory.p.o: memory.c ../byterun/fail.h ../byterun/misc.h \
- ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h ../byterun/freelist.h ../byterun/gc.h \
- ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
- ../byterun/minor_gc.h ../byterun/minor_gc.h ../byterun/misc.h \
- ../byterun/mlvalues.h ../byterun/signals.h
-memory.p.p.o: memory.p.c ../byterun/fail.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/freelist.h ../byterun/gc.h \
  ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/freelist.h \
