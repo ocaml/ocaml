@@ -250,8 +250,10 @@ let ml_file_dependencies source_file =
       let (byt_deps, native_deps) =
         Depend.StringSet.fold (find_dependency ML)
           extracted_deps init_deps in
-      print_dependencies (byte_targets @ extra_targets) byt_deps;
-      print_dependencies (native_targets @ extra_targets) native_deps;
+      (match byte_targets @ extra_targets with
+      | [] -> ()
+      | targets -> print_dependencies targets byt_deps);
+      print_dependencies (native_targets @ extra_targets) native_deps
     end
 
 let mli_file_dependencies source_file =
