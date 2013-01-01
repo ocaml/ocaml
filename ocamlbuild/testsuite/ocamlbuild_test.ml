@@ -25,12 +25,20 @@ let print_string_list = print_list_com pp_print_string
 let print_string_list_com = print_list_com pp_print_string
 let print_string_list_blank = print_list_blank pp_print_string
 
+let exists filename =
+  try ignore(Unix.stat filename); true
+  with Unix.Unix_error ((Unix.ENOENT),_,_) -> false
+
 let execute cmd =
   let ic = Unix.open_process_in cmd and lst = ref [] in
   try while true do lst := input_line ic :: !lst done; assert false
   with End_of_file ->
     let ret_code = Unix.close_process_in ic
     in ret_code, List.rev !lst
+
+let rm f =
+  if exists f then
+    ignore(Sys.command (Printf.sprintf "rm -r ./%s" f))
 
 module Match = struct
 
@@ -102,14 +110,8 @@ module Match = struct
 
       in
 
-    let exists filename =
-      let name = file filename in
-      try ignore(Unix.stat name); true
-      with Unix.Unix_error ((Unix.ENOENT),_,_) -> false
-    in
-
     let exists_assert filename =
-      if not (exists filename) then
+      if not (exists (file filename)) then
         errors := Expected filename :: !errors;
     in
 
@@ -354,8 +356,6 @@ module Tree = struct
       | E -> ()
     in
 
-    ignore(Sys.command (Printf.sprintf "rm -r ./%s" root));
-    Unix.mkdir root 0o750;
     let dir = Sys.getcwd () in
     Unix.chdir root;
     visit [] f;
@@ -409,6 +409,8 @@ let run ~root =
     let dir = Sys.getcwd () in
 
     Unix.chdir root;
+    rm name;
+    Unix.mkdir name 0o750;
     List.iter (Tree.create_on_fs ~root:name) tree;
     Unix.chdir name;
 
