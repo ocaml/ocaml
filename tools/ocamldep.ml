@@ -233,7 +233,7 @@ let ml_file_dependencies source_file =
       print_raw_dependencies source_file extracted_deps
     end else begin
       let basename = Filename.chop_extension source_file in
-      let byte_targets = [ basename ^ ".cmo" ] in
+      let byte_targets = if !native_only then [] else [ basename ^ ".cmo" ] in
       let native_targets =
         if !all_dependencies
         then [ basename ^ ".cmx"; basename ^ ".o" ]
