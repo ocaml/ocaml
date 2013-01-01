@@ -727,9 +727,13 @@ camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
 	./build/camlp4-native-only.sh
 
 # Ocamlbuild
-
+ifeq ($(OCAMLBUILD_NOBOOT),"yes")
+ocamlbuild.byte: ocamlc
+	$(MAKE) -C ocamlbuild -f Makefile.noboot
+else
 ocamlbuild.byte: ocamlc ocamlbuild-mixed-boot
 	./build/ocamlbuild-byte-only.sh
+endif
 
 ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot
 	./build/ocamlbuild-native-only.sh
