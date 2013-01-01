@@ -374,17 +374,19 @@ type test = { name     : string
             ; options  : Option.t list
             ; targets  : string * string list
             ; pre_cmd  : string option
+            ; failing_msg : string option
             ; run      : run list }
 
 let tests = ref []
 
-let test ?(options=[]) ?(run=[]) ?pre_cmd
-    name
+let test name
     ~description
-    ~tree
-    ~matching
-    ~targets =
-  tests := !tests @ [{ name; description; tree; matching; options; targets; pre_cmd; run }]
+    ?(options=[]) ?(run=[]) ?pre_cmd ?failing_msg
+    ?(tree=[])
+    ?(matching=[])
+    ~targets ()
+     =
+  tests := !tests @ [{ name; description; tree; matching; options; targets; pre_cmd; failing_msg; run }]
 
 let run ~root =
 
@@ -403,6 +405,7 @@ let run ~root =
       ; matching
       ; options
       ; targets
+      ; failing_msg
       ; pre_cmd
       ; run } =
 
@@ -421,16 +424,26 @@ let run ~root =
     let log_name = name ^ ".log" in
 
     let cmd = command options (fst targets :: snd targets) in
+    let allow_failure = failing_msg <> None in
 
     Unix.(match execute cmd with
     | WEXITED n,lines
     | WSIGNALED n,lines
-    | WSTOPPED n,lines when n <> 0 ->
-      let ch = open_out log_name in
-      List.iter (fun l -> output_string ch l; output_string ch "\n") lines;
-      close_out ch;
-      Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n" name
-        (Printf.sprintf "Command '%s' with error code %n output written to %s" cmd n log_name);
+    | WSTOPPED n,lines when allow_failure || n <> 0 ->
+      begin match failing_msg with
+      | None ->
+        let ch = open_out log_name in
+        List.iter (fun l -> output_string ch l; output_string ch "\n") lines;
+        close_out ch;
+        Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n" name
+          (Printf.sprintf "Command '%s' with error code %n output written to %s" cmd n log_name);
+      | Some failing_msg ->
+        let msg = String.concat "\n" lines in
+        if failing_msg = msg then
+          Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n" name description
+        else
+          Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n" name ((Printf.sprintf "Failure with not matching message: %s") msg)
+      end;
       Unix.chdir dir;
     | _ ->
       Unix.chdir dir;
