@@ -145,7 +145,7 @@ let read_path_dependencies =
     with_input_file depends begin fun ic ->
       let ocamldep_output =
         try Lexers.ocamldep_output (Lexing.from_channel ic)
-        with Lexers.Error msg -> raise (Ocamldep_error(Printf.sprintf "Ocamldep.ocamldep: bad output (%s)" msg)) in
+        with Lexers.Error (msg,_) -> raise (Ocamldep_error(Printf.sprintf "Ocamldep.ocamldep: bad output (%s)" msg)) in
       let deps =
         List.fold_right begin fun (path, deps) acc ->
           let module_name' = module_name_of_pathname path in

@@ -277,8 +277,9 @@ let main () =
       | Ocaml_utils.Ocamldep_error msg ->
           Log.eprintf "Ocamldep error: %s" msg;
           exit rc_ocamldep_error
-      | Lexers.Error msg ->
-          Log.eprintf "Lexical analysis error: %s" msg;
+      | Lexers.Error (msg,pos) ->
+          let module L = Lexing in
+          Log.eprintf "%s, line %d, column %d: Lexing error: %s." pos.L.pos_fname pos.L.pos_lnum (pos.L.pos_cnum - pos.L.pos_bol) msg;
           exit rc_lexing_error
       | Arg.Bad msg ->
           Log.eprintf "%s" msg;
