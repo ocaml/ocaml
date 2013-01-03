@@ -233,7 +233,7 @@ let ml_file_dependencies source_file =
       print_raw_dependencies source_file extracted_deps
     end else begin
       let basename = Filename.chop_extension source_file in
-      let byte_targets = if !native_only then [] else [ basename ^ ".cmo" ] in
+      let byte_targets = [ basename ^ ".cmo" ] in
       let native_targets =
         if !all_dependencies
         then [ basename ^ ".cmx"; basename ^ ".o" ]
@@ -250,10 +250,8 @@ let ml_file_dependencies source_file =
       let (byt_deps, native_deps) =
         Depend.StringSet.fold (find_dependency ML)
           extracted_deps init_deps in
-      (match byte_targets @ extra_targets with
-      | [] -> ()
-      | targets -> print_dependencies targets byt_deps);
-      print_dependencies (native_targets @ extra_targets) native_deps
+      print_dependencies (byte_targets @ extra_targets) byt_deps;
+      print_dependencies (native_targets @ extra_targets) native_deps;
     end
 
 let mli_file_dependencies source_file =
