@@ -113,7 +113,7 @@ val max_array_length : int
 type signal_behavior =
     Signal_default
   | Signal_ignore
-  | Signal_handle of (int -> unit)
+  | Signal_handle of (int -> unit)   (** *)
 (** What to do when receiving a signal:
    - [Signal_default]: take the default behavior
      (usually: abort the program)
