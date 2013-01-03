@@ -97,8 +97,8 @@ The following environment variables are also consulted:
   This variable must be a sequence of parameter specifications.
   A parameter specification is an option letter followed by an "="
   sign, a decimal number (or an hexadecimal number prefixed by "0x"),
-  and an optional multiplier.  There are
-  nine options, six of which correspond to the fields of the
+  and an optional multiplier.  The options are documented below;
+  the last six correspond to the fields of the
   "control" record documented in
 \ifouthtml
  \ahref{libref/Gc.html}{Module \texttt{Gc}}.
@@ -113,6 +113,15 @@ The following environment variables are also consulted:
         "ocamlyacc"-generated parsers.  When this option is on,
         the pushdown automaton that executes the parsers prints a
         trace of its actions.  This option takes no argument.
+  \item[R] (randomize) Turn on randomization of all hash tables by default
+        (see
+\ifouthtml
+  \ahref{libref/Hashtbl.html}{Module \texttt{Hashtbl}}).
+\else
+  section~\ref{Hashtbl}).
+\fi
+        This option takes no argument.
+  \item[h] The initial size of the major heap (in words).
   \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
   \item[i] ("major_heap_increment")  Default size increment for the
   major heap. (in words)
@@ -133,7 +142,6 @@ The following environment variables are also consulted:
            executable file, resolving shared libraries).
   \end{options}
   \item[l] ("stack_limit") The limit (in words) of the stack size.
-  \item[h] The initial size of the major heap (in words).
   \end{options}
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
   $2^{20}$, and $2^{30}$ respectively.
