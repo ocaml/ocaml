@@ -799,6 +799,7 @@ alldepend:: depend
 
 distclean:
 	./build/distclean.sh
+	rm -f ocaml ocamlcomp.sh testsuite/_log
 
 .PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart

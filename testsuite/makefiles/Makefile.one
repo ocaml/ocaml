@@ -56,4 +56,5 @@ run:
 promote: defaultpromote
 
 clean: defaultclean
-	@rm -f *.result ./program.* $(GENERATED_SOURCES) $(O_FILES)
+	@rm -f *.result ./program.* $(GENERATED_SOURCES) $(O_FILES) \
+	    $(TEST_TEMP_FILES)
