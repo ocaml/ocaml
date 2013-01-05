@@ -492,8 +492,10 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
     [ <:ctyp<>> -> acc
     | <:ctyp< $t1$ and $t2$ >> ->
         tyMap_of_type_decls t1 (tyMap_of_type_decls t2 acc)
-    | Ast.TyDcl _ name tl tk _ ->
+    | Ast.TyDcl _ (Ast.IdLid _ name) tl tk _ ->
         StringMap.add name (name, <:ident< $lid:name$ >>, tl, tk, False) acc
+    | Ast.TyDcl _ _ _ _ _ -> acc
+    | Ast.TyExt _ _ _ _ -> acc
     | _ -> assert False ];
 
   value generate_class_implem mode c tydcl n =

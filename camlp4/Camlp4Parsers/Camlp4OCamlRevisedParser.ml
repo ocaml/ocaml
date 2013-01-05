@@ -462,8 +462,6 @@ New syntax:\
       [ "top"
         [ "exception"; t = constructor_declaration ->
             <:str_item< exception $t$ >>
-        | "exception"; t = constructor_declaration; "="; i = type_longident ->
-            <:str_item< exception $t$ = $i$ >>
         | "external"; i = a_LIDENT; ":"; t = ctyp; "="; sl = string_list ->
             <:str_item< external $i$ : $t$ = $sl$ >>
         | "include"; me = module_expr -> <:str_item< include $me$ >>
@@ -1014,21 +1012,21 @@ New syntax:\
             <:ctyp< $anti:mk_anti ~c:"ctypand" n s$ >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
         | t1 = SELF; "and"; t2 = SELF -> <:ctyp< $t1$ and $t2$ >>
-        | (n, tpl) = type_ident_and_parameters; tk = opt_eq_ctyp;
-          cl = LIST0 constrain -> Ast.TyDcl _loc n tpl tk cl ] ]
+        | (n, tpl) = type_ident_and_parameters; "="; tk = type_kind;
+          cl = LIST0 constrain -> Ast.TyDcl _loc n tpl tk cl 
+        | (n, tpl) = type_ident_and_parameters; "+="; tk = type_kind -> 
+            Ast.TyExt _loc n tpl tk
+        | (n, tpl) = type_ident_and_parameters; cl = LIST0 constrain -> 
+            Ast.TyDcl _loc n tpl <:ctyp<>> cl ] ]
     ;
     constrain:
       [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> (t1, t2) ] ]
-    ;
-    opt_eq_ctyp:
-      [ [ "="; tk = type_kind -> tk
-        | -> <:ctyp<>> ] ]
     ;
     type_kind:
       [ [ t = ctyp -> t ] ]
     ;
     type_ident_and_parameters:
-      [ [ i = a_LIDENT; tpl = LIST0 optional_type_parameter -> (i, tpl) ] ]
+      [ [ i = type_longident; tpl = LIST0 optional_type_parameter -> (i, tpl) ] ]
     ;
     type_longident_and_parameters:
       [ [ i = type_longident; tpl = type_parameters -> tpl <:ctyp< $id:i$ >>
@@ -1122,6 +1120,7 @@ New syntax:\
         | "#"; i = class_longident -> <:ctyp< # $i$ >>
         | "<"; t = opt_meth_list; ">" -> t
         | "("; "module"; p = package_type; ")" -> <:ctyp< (module $p$) >>
+        | ".." -> <:ctyp< .. >>
       ] ]
     ;
     star_ctyp:
@@ -1147,8 +1146,10 @@ New syntax:\
         | s = a_UIDENT; ":"; t = ctyp ->
             let (tl, rt) = generalized_type_of_type t in
             <:ctyp< $uid:s$ : ($Ast.tyAnd_of_list tl$ -> $rt$) >>
+        | s = a_UIDENT; "="; i = type_longident ->
+	    <:ctyp< $uid:s$ = $id:i$ >>
         | s = a_UIDENT ->
-	  <:ctyp< $uid:s$ >>
+	    <:ctyp< $uid:s$ >>
       ] ]
     ;
     constructor_declaration:
@@ -1157,6 +1158,8 @@ New syntax:\
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
         | s = a_UIDENT; "of"; t = constructor_arg_list ->
             <:ctyp< $uid:s$ of $t$ >>
+        | s = a_UIDENT; "="; i = type_longident ->
+	    <:ctyp< $uid:s$ = $id:i$ >>
         | s = a_UIDENT ->
             <:ctyp< $uid:s$ >>
       ] ]
@@ -1768,6 +1771,9 @@ New syntax:\
         | x = more_ctyp; "of"; y = constructor_arg_list -> <:ctyp< $x$ of $y$ >>
         | x = more_ctyp; "of"; y = constructor_arg_list; "|"; z = constructor_declarations ->
             <:ctyp< $ <:ctyp< $x$ of $y$ >> $ | $z$ >>
+        | x = more_ctyp; "="; y = type_longident -> <:ctyp< $x$ = $id:y$ >>
+        | x = more_ctyp; "="; y = type_longident; "|"; z = constructor_declarations ->
+            <:ctyp< $ <:ctyp< $x$ = $id:y$ >> $ | $z$ >>
         | x = more_ctyp; "of"; "&"; y = amp_ctyp -> <:ctyp< $x$ of & $y$ >>
         | x = more_ctyp; "of"; "&"; y = amp_ctyp; "|"; z = row_field ->
             <:ctyp< $ <:ctyp< $x$ of & $y$ >> $ | $z$ >>

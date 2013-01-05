@@ -159,6 +159,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   DELETE_RULE Gram expr: "~"; a_LIDENT; ":"; SELF END;
   DELETE_RULE Gram expr: "?"; a_LIDENT; ":"; SELF END;
   DELETE_RULE Gram constructor_declarations: a_UIDENT; ":"; ctyp END;
+  DELETE_RULE Gram ctyp_quot: more_ctyp; "="; type_longident END;
+  DELETE_RULE Gram ctyp_quot: more_ctyp; "="; type_longident; "|"; constructor_declarations END;
+
   (* Some other DELETE_RULE are after the grammar *)
 
   value clear = Gram.Entry.clear;
@@ -523,6 +526,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "[<"; OPT "|"; rfl = row_field; ">"; ntl = name_tags; "]" ->
             <:ctyp< [ < $rfl$ > $ntl$ ] >>
         | "("; "module"; p = package_type; ")" -> <:ctyp< (module $p$) >>
+        | ".." -> <:ctyp< .. >>
         ] ]
     ;
     meth_list:
@@ -587,9 +591,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
 
     type_ident_and_parameters:
-      [ [ "("; tpl = LIST1 optional_type_parameter SEP ","; ")"; i = a_LIDENT -> (i, tpl)
-        | t = optional_type_parameter; i = a_LIDENT -> (i, [t])
-        | i = a_LIDENT -> (i, [])
+      [ [ "("; tpl = LIST1 optional_type_parameter SEP ","; ")"; i = type_longident -> (i, tpl)
+        | t = optional_type_parameter; i = type_longident -> (i, [t])
+        | i = type_longident -> (i, [])
       ] ]
     ;
     type_kind:
@@ -608,12 +612,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:ctyp< $t1$ == { $t2$ } >>
         | t1 = TRY ctyp; "="; OPT "|"; t2 = constructor_declarations ->
             <:ctyp< $t1$ == [ $t2$ ] >>
+        | t1 = TRY ctyp; "="; ".." ->
+            <:ctyp< $t1$ == .. >>
         | "{"; t = label_declaration_list; "}" ->
             <:ctyp< { $t$ } >> ] ]
     ;
     ctyp_quot:
       [ [ "private"; t = ctyp_quot -> <:ctyp< private $t$ >>
         | "|"; t = constructor_declarations -> <:ctyp< [ $t$ ] >>
+        | x = TRY [i = a_UIDENT; "=" -> i]; 
+            y = type_longident -> <:ctyp< $uid:x$ = $id:y$ >>
+        | x = TRY [i = a_UIDENT; "=" -> i]; 
+            y = type_longident; "|"; z = constructor_declarations ->
+              <:ctyp< $ <:ctyp< $uid:x$ = $id:y$ >> $ | $z$ >>
         | x = more_ctyp; "="; y = ctyp_quot -> <:ctyp< $x$ == $y$ >>
         | "{"; t = label_declaration_list; "}" -> <:ctyp< { $t$ } >>
       ] ]

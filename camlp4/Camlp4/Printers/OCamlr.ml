@@ -182,11 +182,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let () = o#node f t Ast.loc_of_ctyp in
     match t with
     [ Ast.TyDcl _ tn tp te cl -> do {
-        pp f "@[<2>%a%a@]" o#var tn o#type_params tp;
+        pp f "@[<2>%a%a@]" o#ident tn o#type_params tp;
         match te with
         [ <:ctyp<>> -> ()
         | _ -> pp f " =@ %a" o#ctyp te ];
         if cl <> [] then pp f "@ %a" (list o#constrain "@ ") cl else ();
+      }
+    | Ast.TyExt _ tn tp te -> do {
+        pp f "@[<2>%a%a@]" o#ident tn o#type_params tp;
+        pp f " +=@ %a" o#ctyp te;
       }
     | <:ctyp< $t1$ : mutable $t2$ >> ->
         pp f "@[%a :@ mutable %a@]" o#ctyp t1 o#ctyp t2

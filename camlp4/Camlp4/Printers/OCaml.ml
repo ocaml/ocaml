@@ -713,6 +713,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< '$s$ >> -> pp f "'%a" o#var s
     | <:ctyp< { $t$ } >> -> pp f "@[<2>{@ %a@]@ }" o#ctyp t
     | <:ctyp< [ $t$ ] >> -> pp f "@[<0>%a@]" o#sum_type t
+    | <:ctyp< .. >> -> pp f ".."
     | <:ctyp< ( $tup:t$ ) >> -> pp f "@[<1>(%a)@]" o#ctyp t
     | <:ctyp< (module $mt$) >> -> pp f "@[<2>(module@ %a@])" o#module_type mt
     | <:ctyp< [ = $t$ ] >> -> pp f "@[<2>[@ %a@]@ ]" o#sum_type t
@@ -745,17 +746,22 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<h>%a@ @[<3>of@ %a@]@]" o#ctyp t1 o#constructor_type t2
     | <:ctyp< $t1$ of & $t2$ >> ->
         pp f "@[<h>%a@ @[<3>of &@ %a@]@]" o#ctyp t1 o#constructor_type t2
+    | <:ctyp< $t$ = $id:i$ >> -> pp f "@[<h>%a@ @[<3>= %a@]@]" o#ctyp t o#ident i
     | <:ctyp< $t1$ and $t2$ >> -> pp f "%a@ and %a" o#ctyp t1 o#ctyp t2
     | <:ctyp< mutable $t$ >> -> pp f "@[<2>mutable@ %a@]" o#ctyp t
     | <:ctyp< $t1$ & $t2$ >> -> pp f "%a@ &@ %a" o#ctyp t1 o#ctyp t2
     | <:ctyp< $t1$ == $t2$ >> ->
         pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1 o#ctyp t2
     | Ast.TyDcl _ tn tp te cl -> do {
-        pp f "@[<2>%a%a@]" o#type_params tp o#var tn;
+        pp f "@[<2>%a%a@]" o#type_params tp o#ident tn;
         match te with
         [ <:ctyp<>> -> ()
         | _ -> pp f " =@ %a" o#ctyp te ];
         if cl <> [] then pp f "@ %a" (list o#constrain "@ ") cl else ();
+      }
+    | Ast.TyExt _ tn tp te -> do {
+        pp f "@[<2>%a%a@]" o#type_params tp o#ident tn;
+        pp f " +=@ %a" o#ctyp te;
       }
     | t -> o#ctyp1 f t ];
 
@@ -844,8 +850,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             do { o#str_item f st1; cut f; o#str_item f st2 }
       | <:str_item< exception $t$ >> ->
             pp f "@[<2>exception@ %a%(%)@]" o#ctyp t semisep
-      | <:str_item< exception $t$ = $sl$ >> ->
-            pp f "@[<2>exception@ %a =@ %a%(%)@]" o#ctyp t o#ident sl semisep
       | <:str_item< external $s$ : $t$ = $sl$ >> ->
             pp f "@[<2>external@ %a :@ %a =@ %a%(%)@]"
               o#var s o#ctyp t (meta_list o#quoted_string "@ ") sl semisep
@@ -883,8 +887,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:str_item< module rec $mb$ >> ->
             pp f "@[<2>module rec %a%(%)@]" o#module_rec_binding mb semisep
       | <:str_item< # $_$ $_$ >> -> ()
-      | <:str_item< $anti:s$ >> -> pp f "%a%(%)" o#anti s semisep
-      | Ast.StExc _ _ (Ast.OAnt _) -> assert False ];
+      | <:str_item< $anti:s$ >> -> pp f "%a%(%)" o#anti s semisep ];
 
     method module_type f mt =
     let () = o#node f mt Ast.loc_of_module_type in

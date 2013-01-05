@@ -179,8 +179,16 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> error (loc_of_ident id) msg ]
   ;
 
+  value short_lident msg id =
+    match ident_tag id with
+    [ (Lident s, `lident) -> with_loc s (loc_of_ident id)
+    | _ -> error (loc_of_ident id) msg ]
+  ;
+
   value long_type_ident = long_lident "invalid long identifier type";
   value long_class_ident = long_lident "invalid class name";
+
+  value short_type_ident = short_lident "invalid type name";
 
   value long_uident_noloc ?(conv_con = fun x -> x) i =
     match ident_tag i with
@@ -262,8 +270,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | TyQuo loc s -> mktyp loc (Ptyp_var s)
     | TyRec loc _ -> error loc "record type not allowed here"
     | TySum loc _ -> error loc "sum type not allowed here"
+    | TyDot loc -> error loc "open type not allowed here"
     | TyPrv loc _ -> error loc "private type not allowed here"
     | TyMut loc _ -> error loc "mutable type not allowed here"
+    | TyRbd loc _ _ -> error loc "rebind not allowed here"
     | TyOr loc _ _ -> error loc "type1 | type2 not allowed here"
     | TyAnd loc _ _ -> error loc "type1 and type2 not allowed here"
     | TyOf loc _ _ -> error loc "type1 of type2 not allowed here"
@@ -278,7 +288,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mktyp loc (Ptyp_variant (row_field t) True (Some (name_tags t')))
     | TyAnt loc _ -> error loc "antiquotation not allowed here"
     | TyOfAmp _ _ _ |TyAmp _ _ _ |TySta _ _ _ |
-      TyCom _ _ _ |TyVrn _ _ |TyQuM _ _ |TyQuP _ _ |TyDcl _ _ _ _ _ |
+      TyCom _ _ _ |TyVrn _ _ |TyQuM _ _ |TyQuP _ _ |TyDcl _ _ _ _ _ |TyExt _ _ _ _ |
 	  TyAnP _ | TyAnM _ | TyTypePol _ _ _ |
       TyObj _ _ (RvAnt _) | TyNil _ | TyTup _ _ ->
         assert False ]
@@ -360,6 +370,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp< [ $t$ ] >> ->
         mktype loc tl cl
           (Ptype_variant (List.map mkvariant (list_of_ctyp t []))) (mkprivate' pflag) m
+    | <:ctyp< .. >> ->
+        if pflag then error loc "open type cannot be private"
+        else mktype loc tl cl Ptype_open Public m
     | t ->
         if m <> None then
           error loc "only one manifest type allowed by definition" else
@@ -372,6 +385,48 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   ;
 
   value type_decl tl cl t loc = type_decl tl cl loc None False t;
+
+  value mktyext id tl exts tp =
+    let (params, variance) = List.split tl in
+    {ptyext_path = id; ptyext_params = params; 
+     ptyext_constructors = exts; ptyext_private = tp; 
+     ptyext_variance = variance}
+  ;
+  value mkextension =
+    fun
+    [ <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ >> ->
+      {pext_name = with_loc (conv_con s) sloc;
+       pext_kind = Pext_decl [] None;
+       pext_loc = mkloc loc}
+    | <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ of $t$ >> ->
+      {pext_name = with_loc (conv_con s) sloc;
+       pext_kind = Pext_decl (List.map ctyp (list_of_ctyp t [])) None;
+       pext_loc = mkloc loc}
+    | <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ : ($t$ -> $u$) >> ->
+      {pext_name = with_loc (conv_con s) sloc;
+       pext_kind = Pext_decl (List.map ctyp (list_of_ctyp t [])) (Some (ctyp u));
+       pext_loc = mkloc loc}
+    | <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ : $t$ >> ->
+      {pext_name = with_loc (conv_con s) sloc;
+       pext_kind = Pext_decl [] (Some (ctyp t));
+       pext_loc = mkloc loc}
+    | <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ = $id:i$ >> ->
+      {pext_name = with_loc (conv_con s) sloc;
+       pext_kind = Pext_rebind (long_uident ~conv_con i);
+       pext_loc = mkloc loc}
+    | _ -> assert False (*FIXME*) ];
+  value rec type_ext id tl loc pflag =
+    fun
+    [ <:ctyp< private $t$ >> ->
+        type_ext id tl loc True t
+    | <:ctyp< [ $t$ ] >> ->
+        mktyext id tl 
+          (List.map mkextension (list_of_ctyp t []))
+          (mkprivate' pflag)
+    | _ -> error loc "invalid type extension" ]
+  ;
+
+  value type_ext id tl t loc = type_ext id tl loc False t;
 
   value mkvalue_desc loc t p = {pval_type = ctyp t; pval_prim = p; pval_loc = mkloc loc};
 
@@ -950,7 +1005,7 @@ value varify_constructors var_names =
     match x with
     [ <:ctyp< $x$ and $y$ >> ->
          mktype_decl x (mktype_decl y acc)
-    | Ast.TyDcl cloc c tl td cl ->
+    | Ast.TyDcl loc id tl td cl ->
         let cl =
           List.map
             (fun (t1, t2) ->
@@ -958,8 +1013,16 @@ value varify_constructors var_names =
               (ctyp t1, ctyp t2, mkloc loc))
             cl
         in
-        [(with_loc c cloc,
-          type_decl (List.fold_right optional_type_parameters tl []) cl td cloc) :: acc]
+        [(short_type_ident id,
+          type_decl (List.fold_right optional_type_parameters tl []) cl td loc) :: acc]
+    | _ -> assert False ]
+  and mktype_ext x =
+    match x with
+    [ Ast.TyExt loc id tl td ->
+        type_ext 
+          (long_type_ident id)
+          (List.fold_right optional_type_parameters tl []) 
+          td loc
     | _ -> assert False ]
   and module_type =
     fun
@@ -1006,7 +1069,13 @@ value varify_constructors var_names =
         [mksig loc (Psig_modtype (with_loc n loc) si) :: l]
     | SgOpn loc id ->
         [mksig loc (Psig_open (long_uident id)) :: l]
-    | SgTyp loc tdl -> [mksig loc (Psig_type (mktype_decl tdl [])) :: l]
+    | SgTyp loc tdl -> 
+        let si = 
+          match tdl with
+          [ Ast.TyExt _ _ _ _ -> Psig_extension (mktype_ext tdl)
+          | _ -> Psig_type (mktype_decl tdl []) ]
+        in
+          [mksig loc si :: l]
     | SgVal loc n t -> [mksig loc (Psig_value (with_loc n loc) (mkvalue_desc loc t [])) :: l]
     | <:sig_item@loc< $anti:_$ >> -> error loc "antiquotation in sig_item" ]
   and module_sig_binding x acc =
@@ -1061,9 +1130,7 @@ value varify_constructors var_names =
                       (List.map ctyp (list_of_ctyp t []))) :: l ]
     | <:str_item@loc< exception $uid:s$ = $i$ >> ->
         [mkstr loc (Pstr_exn_rebind (with_loc (conv_con s) loc) (ident i)) :: l ]
-    | <:str_item@loc< exception $uid:_$ of $_$ = $_$ >> ->
-        error loc "type in exception alias"
-    | StExc _ _ _ -> assert False (*FIXME*)
+    | StExc _ _ -> assert False (*FIXME*)
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
     | StExt loc n t sl -> [mkstr loc (Pstr_primitive (with_loc n loc) (mkvalue_desc loc t (list_of_meta_list sl))) :: l]
     | StInc loc me -> [mkstr loc (Pstr_include (module_expr me)) :: l]
@@ -1073,7 +1140,13 @@ value varify_constructors var_names =
     | StMty loc n mt -> [mkstr loc (Pstr_modtype (with_loc n loc) (module_type mt)) :: l]
     | StOpn loc id ->
         [mkstr loc (Pstr_open (long_uident id)) :: l]
-    | StTyp loc tdl -> [mkstr loc (Pstr_type (mktype_decl tdl [])) :: l]
+    | StTyp loc tdl ->
+        let si = 
+          match tdl with
+          [ Ast.TyExt _ _ _ _ -> Pstr_extension (mktype_ext tdl)
+          | _ -> Pstr_type (mktype_decl tdl []) ]
+        in
+          [mkstr loc si :: l]
     | StVal loc rf bi ->
         [mkstr loc (Pstr_value (mkrf rf) (binding bi [])) :: l]
     | <:str_item@loc< $anti:_$ >> -> error loc "antiquotation in str_item" ]

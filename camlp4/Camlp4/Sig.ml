@@ -1416,7 +1416,7 @@ module type Camlp4Syntax = sig
   value str_items : Gram.Entry.t Ast.str_item;
   value type_constraint : Gram.Entry.t unit;
   value type_declaration : Gram.Entry.t Ast.ctyp;
-  value type_ident_and_parameters : Gram.Entry.t (string * list Ast.ctyp);
+  value type_ident_and_parameters : Gram.Entry.t (Ast.ident * list Ast.ctyp);
   value type_kind : Gram.Entry.t Ast.ctyp;
   value type_longident : Gram.Entry.t Ast.ident;
   value type_longident_and_parameters : Gram.Entry.t Ast.ctyp;

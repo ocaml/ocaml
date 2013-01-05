@@ -148,7 +148,7 @@ value find_type_decls = object
   method get = accu;
   method ctyp =
     fun
-    [ Ast.TyDcl _ name _ _ _ as t -> {< accu = MapTy.add name t accu >}
+    [ Ast.TyDcl _ (Ast.IdLid _ name) _ _ _ as t -> {< accu = MapTy.add name t accu >}
     | t -> super#ctyp t ];
 end;
 

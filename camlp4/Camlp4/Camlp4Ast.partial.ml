@@ -73,7 +73,7 @@
     | TyId  of loc and ident (* i *) (* Lazy.t *)
     | TyMan of loc and ctyp and ctyp (* t == t *) (* type t = [ A | B ] == Foo.t *)
       (* type t 'a 'b 'c = t constraint t = t constraint t = t *)
-    | TyDcl of loc and string and list ctyp and ctyp and list (ctyp * ctyp)
+    | TyDcl of loc and ident and list ctyp and ctyp and list (ctyp * ctyp)
       (* < (t)? (..)? > *) (* < move : int -> 'a .. > as 'a  *)
     | TyObj of loc and ctyp and row_var_flag
     | TyOlb of loc and string and ctyp (* ?s:t *)
@@ -105,6 +105,10 @@
     | TyOfAmp of loc and ctyp and ctyp (* t of & t *)
     | TyPkg of loc and module_type (* (module S) *)
     | TyAnt of loc and string (* $s$ *)
+    | TyDot of loc (* .. *)
+      (* type t 'a 'b 'c += [ A | B ] *)
+    | TyExt of loc and ident and list ctyp and ctyp
+    | TyRbd of loc and ctyp and ident (* A = M.B *)
     ]
    and patt =
     [ PaNil of loc
@@ -319,8 +323,8 @@
     | StSem of loc and str_item and str_item
       (* # s or # s e *)
     | StDir of loc and string and expr
-      (* exception t or exception t = i *)
-    | StExc of loc and ctyp and meta_option(*FIXME*) ident
+      (* exception t *)
+    | StExc of loc and ctyp
       (* e *)
     | StExp of loc and expr
       (* external s : t = s ... s *)
