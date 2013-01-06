@@ -174,6 +174,12 @@ method! select_operation op args =
   | (Cmodi, args) ->
       (* See above for fix up of return register *)
       (Iextcall("__aeabi_idivmod", false), args)
+  (* Recognize 16-bit bswap instruction (ARMv6T2 because we need movt) *)
+  | (Cextcall("caml_bswap16_direct", _, _, _), args) when !arch >= ARMv6T2 ->
+      (Ispecific(Ibswap 16), args)
+  (* Recognize 32-bit bswap instructions (ARMv6 and above) *)
+  | (Cextcall("caml_int32_direct_bswap", _, _, _), args) when !arch >= ARMv6 ->
+      (Ispecific(Ibswap 32), args)
   (* Turn floating-point operations into runtime ABI calls for softfp *)
   | (op, args) when !fpu = Soft -> self#select_operation_softfp op args
   (* Select operations for VFPv{2,3} *)

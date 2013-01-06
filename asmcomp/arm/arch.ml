@@ -110,14 +110,15 @@ type specific_operation =
     Ishiftarith of arith_operation * int
   | Ishiftcheckbound of int
   | Irevsubimm of int
-  | Imuladd     (* multiply and add *)
-  | Imulsub     (* multiply and subtract *)
-  | Inegmulf    (* floating-point negate and multiply *)
-  | Imuladdf    (* floating-point multiply and add *)
-  | Inegmuladdf (* floating-point negate, multiply and add *)
-  | Imulsubf    (* floating-point multiply and subtract *)
-  | Inegmulsubf (* floating-point negate, multiply and subtract *)
-  | Isqrtf      (* floating-point square root *)
+  | Imuladd       (* multiply and add *)
+  | Imulsub       (* multiply and subtract *)
+  | Inegmulf      (* floating-point negate and multiply *)
+  | Imuladdf      (* floating-point multiply and add *)
+  | Inegmuladdf   (* floating-point negate, multiply and add *)
+  | Imulsubf      (* floating-point multiply and subtract *)
+  | Inegmulsubf   (* floating-point negate, multiply and subtract *)
+  | Isqrtf        (* floating-point square root *)
+  | Ibswap of int (* endianess conversion *)
 
 and arith_operation =
     Ishiftadd
@@ -207,6 +208,9 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(2)
   | Isqrtf ->
       fprintf ppf "sqrtf %a"
+        printreg arg.(0)
+  | Ibswap n ->
+      fprintf ppf "bswap%i %a" n
         printreg arg.(0)
 
 (* Recognize immediate operands *)
