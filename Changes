@@ -55,7 +55,7 @@ Feature wishes:
 - PR#5795: Generate sqrtsd opcode instead of external call to sqrt on amd64
 - PR#5769: Allow propagation of Sys.big_endian in native code
 - PR#5771: Add primitives for reading 2, 4, 8 bytes in strings and bigarrays
-- PR#5774: Add bswap primitives for amd64
+- PR#5774: Add bswap primitives for amd64 and arm
 
 Tools:
 - OCamlbuild now features a bin_annot tag to generate .cmt files.
