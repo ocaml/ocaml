@@ -1318,7 +1318,6 @@ module Analyser =
 		[] -> (maybe_more, List.rev exts_acc)
 	      | tt_ext :: q ->
                   let complete_name = Name.concat current_module_name tt_ext.ext_name_txt.txt in
-		  let ext_loc_start = tt_ext.ext_loc.Location.loc_start.Lexing.pos_cnum in
 		  let ext_loc_end =  tt_ext.ext_loc.Location.loc_end.Lexing.pos_cnum in
 		  let new_xt =
 		    match tt_ext.ext_kind with

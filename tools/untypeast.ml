@@ -106,6 +106,7 @@ and untype_type_declaration decl =
           Ptype_record (List.map (fun (s, name, mut, ct, loc) ->
                 (name, mut, untype_core_type ct, loc)
             ) list)
+      | Ttype_open -> Ptype_open
     );
     ptype_private = decl.typ_private;
     ptype_manifest = (match decl.typ_manifest with
@@ -130,7 +131,7 @@ and untype_extension_constructor ext =
     pext_name = ext.ext_name_txt;
     pext_kind = (match ext.ext_kind with
         Text_decl (args, ret) ->
-          Pext_decl (List.map untype_core_type arg, 
+          Pext_decl (List.map untype_core_type args, 
                      option untype_core_type ret)
       | Text_rebind (p, lid) -> Pext_rebind lid
     );

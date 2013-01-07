@@ -286,6 +286,7 @@ module Analyser =
         let take_item psig_desc = { sig_item with Parsetree.psig_desc } :: acc in
         match sig_item.Parsetree.psig_desc with
         | Parsetree.Psig_value (_, _)
+        | Parsetree.Psig_extension _
         | Parsetree.Psig_exception (_, _)
         | Parsetree.Psig_open _
         | Parsetree.Psig_include _
@@ -613,7 +614,6 @@ module Analyser =
             match types_ext_list with
               [] -> (maybe_more, List.rev exts_acc)
             | (name, types_ext) :: q ->
-              let ext_loc_start = types_ext.Types.ext_loc.Location.loc_start.Lexing.pos_cnum in
               let ext_loc_end =  types_ext.Types.ext_loc.Location.loc_end.Lexing.pos_cnum in
               let new_x =
                 {

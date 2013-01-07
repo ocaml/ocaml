@@ -233,30 +233,6 @@ let type_var_option_print ppf str =
     | Some str ->
       fprintf ppf "'%s" str.txt ;;
 
-let fmt_type_params ppf (l, loc) =
-  let length = (List.length l) in
-  if (length = 0) then ()
-  else if (length = 1) then
-    list2 core_type ppf l "" ;
-    fprintf ppf "@ " ;
-  else begin
-    pp_open_hovbox ppf indent ;
-    fprintf ppf "(" ;
-    list2 core_type ppf l "," ;
-    fprintf ppf ")" ;
-    pp_close_box ppf ();
-    fprintf ppf "@ " ;
-  end ;;
-
-let fmt_class_params_def ppf (l, loc) =
-  let length = (List.length l) in
-  if (length = 0) then ()
-  else begin
-    fprintf ppf "[" ;
-    list2 core_type ppf l "," ;
-    fprintf ppf "]@ ";
-  end ;;
-
 let fmt_rec_flag f x =
   match x with
   | Nonrecursive -> ();
@@ -429,6 +405,30 @@ and type_constr_list ppf ?(space=false) l =
       list2 core_type ppf l "," ;
       fprintf ppf ")" ;
       if (space) then fprintf ppf " " ;
+
+and fmt_type_params ppf l =
+  let length = (List.length l) in
+  if (length = 0) then ()
+  else if (length = 1) then begin
+    list2 core_type ppf l "" ;
+    fprintf ppf "@ "
+  end else begin
+    pp_open_hovbox ppf indent ;
+    fprintf ppf "(" ;
+    list2 core_type ppf l "," ;
+    fprintf ppf ")" ;
+    pp_close_box ppf ();
+    fprintf ppf "@ ";
+  end
+
+and fmt_class_params_def ppf l =
+  let length = (List.length l) in
+  if (length = 0) then ()
+  else begin
+    fprintf ppf "[" ;
+    list2 core_type ppf l "," ;
+    fprintf ppf "]@ ";
+  end
 
 and pattern_with_label ppf x s =
   if (s = "") then simple_pattern ppf x
@@ -1024,8 +1024,8 @@ and type_declaration ppf x =
   pp_close_box ppf () ;
 
 and type_extension ppf x =
-  fprintf ppf "type %a%a +=" fmt_type_params x.ptyext_params 
-    fmt_longident x.ptyext_name ;
+  fprintf ppf "type %a%a +=" fmt_type_params x.ptyext_params
+    fmt_longident x.ptyext_path ;
   pp_print_break ppf 1 indent ;
   pp_open_hovbox ppf indent ;
   (match x.ptyext_constructors with
@@ -1048,7 +1048,7 @@ and extension_constructor ppf x first =
   end ;
   pp_open_hovbox ppf indent ;
   fprintf ppf "%s" x.pext_name.txt ;
-  extension_constructor_kind ppf x.pext_kind
+  extension_constructor_kind ppf x.pext_kind ;
   pp_close_box ppf ();
 
 and extension_constructor_list ppf list =
@@ -1061,9 +1061,9 @@ and extension_constructor_list ppf list =
 and extension_constructor_kind ppf x =
   match x with
     Pext_decl(a, r) -> 
-      if ((List.length l) > 0) then begin
+      if ((List.length a) > 0) then begin
         fprintf ppf "@ of@ " ;
-        list2 core_type ppf x. " *"
+        list2 core_type ppf a " *";
       end ;
   | Pext_rebind lid ->
       fprintf ppf "@ = @ %a" fmt_longident lid ;

@@ -117,6 +117,7 @@ module Search =
                 List.flatten (List.map (fun rf -> search_recfield t rf v) l)
             | Type_variant l ->
                 List.flatten (List.map (fun rf -> search_const t rf v) l)
+            | Type_open -> []
       in
       if ok then (Res_type t) :: l else l
 
@@ -404,7 +405,9 @@ module P_extensions =
     let p_class _ _ = (false, false)
     let p_class_type _ _ = (false, false)
     let p_value _ _ = false
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = true
     let p_exception _ _ = false
     let p_attribute _ _ = false
