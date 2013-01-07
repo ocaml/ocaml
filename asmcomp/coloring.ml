@@ -91,25 +91,22 @@ let allocate_registers() =
     let cl = Proc.register_class reg in
     let first_reg = Proc.first_available_register.(cl) in
     let num_regs = Proc.num_available_registers.(cl) in
-    let last_reg = first_reg + num_regs in
     let score = Array.create num_regs 0 in
     let best_score = ref (-1000000) and best_reg = ref (-1) in
     let start = start_register.(cl) in
-    if num_regs > 0 then begin
+    if num_regs <> 0 then begin
       (* Favor the registers that have been assigned to pseudoregs for which
          we have a preference. If these pseudoregs have not been assigned
          already, avoid the registers with which they conflict. *)
       iter_preferred
         (fun r w ->
           match r.loc with
-            Reg n -> if n >= first_reg && n < last_reg then
-                       score.(n - first_reg) <- score.(n - first_reg) + w
+            Reg n -> let n = n - first_reg in score.(n) <- score.(n) + w
           | Unknown ->
               List.iter
                 (fun neighbour ->
                   match neighbour.loc with
-                    Reg n -> if n >= first_reg && n < last_reg then
-                             score.(n - first_reg) <- score.(n - first_reg) - w
+                    Reg n -> let n = n - first_reg in score.(n) <- score.(n) - w
                   | _ -> ())
                 r.interf
           | _ -> ())
@@ -119,8 +116,7 @@ let allocate_registers() =
           (* Prohibit the registers that have been assigned
              to our neighbours *)
           begin match neighbour.loc with
-            Reg n -> if n >= first_reg && n < last_reg then
-                       score.(n - first_reg) <- (-1000000)
+            Reg n -> let n = n - first_reg in score.(n) <- (-1000000)
           | _ -> ()
           end;
           (* Avoid the registers that have been assigned to pseudoregs
@@ -128,8 +124,7 @@ let allocate_registers() =
           iter_preferred
             (fun r w ->
               match r.loc with
-                Reg n -> if n >= first_reg && n < last_reg then
-                           score.(n - first_reg) <- score.(n - first_reg) - (w - 1)
+                Reg n -> let n = n - first_reg in score.(n) <- score.(n) - (w-1)
                          (* w-1 to break the symmetry when two conflicting regs
                             have the same preference for a third reg. *)
               | _ -> ())
@@ -153,7 +148,8 @@ let allocate_registers() =
     if !best_reg >= 0 then begin
       reg.loc <- Reg(first_reg + !best_reg);
       if Proc.rotate_registers then
-        start_register.(cl) <- (if start+1 >= num_regs then 0 else start+1)
+        start_register.(cl) <- (let start = start + 1 in
+                                if start >= num_regs then 0 else start)
     end else begin
       (* Sorry, we must put the pseudoreg in a stack location *)
       let nslots = Proc.num_stack_slots.(cl) in
@@ -162,15 +158,12 @@ let allocate_registers() =
       List.iter
         (fun (r, w) ->
           match r.loc with
-            Stack(Local n) -> if Proc.register_class r = cl then
-                              score.(n) <- score.(n) + w
+            Stack(Local n) -> score.(n) <- score.(n) + w
           | Unknown ->
               List.iter
                 (fun neighbour ->
                   match neighbour.loc with
-                    Stack(Local n) ->
-                      if Proc.register_class neighbour = cl
-                      then score.(n) <- score.(n) - w
+                    Stack(Local n) -> score.(n) <- score.(n) - w
                   | _ -> ())
                 r.interf
           | _ -> ())
@@ -178,16 +171,13 @@ let allocate_registers() =
       List.iter
         (fun neighbour ->
           begin match neighbour.loc with
-              Stack(Local n) ->
-                if Proc.register_class neighbour = cl then
-                score.(n) <- (-1000000)
+              Stack(Local n) -> score.(n) <- (-1000000)
           | _ -> ()
           end;
           List.iter
             (fun (r, w) ->
               match r.loc with
-                Stack(Local n) -> if Proc.register_class r = cl then
-                                  score.(n) <- score.(n) - w
+                Stack(Local n) -> score.(n) <- score.(n) - w
               | _ -> ())
             neighbour.prefer)
         reg.interf;
