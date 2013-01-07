@@ -29,20 +29,21 @@ let build_graph fundecl =
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
-    let update rs rt =
-      if rs.loc = Unknown then begin
-        rs.interf <- rt :: rs.interf;
-        if not rt.spill
-        && Proc.register_class rs = Proc.register_class rt
-        then rs.degree <- rs.degree + 1
-      end in
-    let i = ri.stamp and j = rj.stamp in
-    if i <> j then begin
-      let p = if i < j then (i, j) else (j, i) in
-      if not(IntPairSet.mem p !mat) then begin
-        mat := IntPairSet.add p !mat;
-        update ri rj;
-        update rj ri
+    if Proc.register_class ri = Proc.register_class rj then begin
+      let i = ri.stamp and j = rj.stamp in
+      if i <> j then begin
+        let p = if i < j then (i, j) else (j, i) in
+        if not(IntPairSet.mem p !mat) then begin
+          mat := IntPairSet.add p !mat;
+          if ri.loc = Unknown then begin
+            ri.interf <- rj :: ri.interf;
+            if not rj.spill then ri.degree <- ri.degree + 1
+          end;
+          if rj.loc = Unknown then begin
+            rj.interf <- ri :: rj.interf;
+            if not ri.spill then rj.degree <- rj.degree + 1
+          end
+        end
       end
     end in
 
