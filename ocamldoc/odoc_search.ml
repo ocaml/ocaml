@@ -34,6 +34,8 @@ type result_element =
   | Res_attribute of t_attribute
   | Res_method of t_method
   | Res_section of string * Odoc_types.text
+  | Res_recfield of t_type * record_field
+  | Res_const of t_type * variant_constructor
 
 type result = result_element list
 
@@ -45,7 +47,9 @@ module type Predicates =
     val p_class : t_class -> t -> bool * bool
     val p_class_type : t_class_type -> t -> bool * bool
     val p_value : t_value -> t -> bool
-    val p_type : t_type -> t -> bool
+    val p_recfield : t_type -> record_field -> t -> bool
+    val p_const : t_type -> variant_constructor -> t -> bool
+    val p_type : t_type -> t -> (bool * bool)
     val p_extension : t_extension_constructor -> t -> bool
     val p_exception : t_exception -> t -> bool
     val p_attribute : t_attribute -> t -> bool
@@ -95,7 +99,26 @@ module Search =
 
     let search_value va v = if P.p_value va v then [Res_value va] else []
 
-    let search_type t v = if P.p_type t v then [Res_type t] else []
+    let search_recfield t f v =
+      if P.p_recfield t f v then [Res_recfield (t,f)] else []
+
+    let search_const t f v =
+      if P.p_const t f v then [Res_const (t,f)] else []
+
+    let search_type t v =
+      let (go_deeper, ok) = P.p_type t v in
+      let l =
+        match go_deeper with
+          false -> []
+        | true ->
+            match t.ty_kind with
+              Type_abstract -> []
+            | Type_record l ->
+                List.flatten (List.map (fun rf -> search_recfield t rf v) l)
+            | Type_variant l ->
+                List.flatten (List.map (fun rf -> search_const t rf v) l)
+      in
+      if ok then (Res_type t) :: l else l
 
     let search_extension_constructor xt v = 
       if P.p_extension xt v then [Res_extension xt] else []
@@ -329,7 +352,13 @@ module P_name =
     let p_class c r = (true, c.cl_name =~ r)
     let p_class_type ct r = (true, ct.clt_name =~ r)
     let p_value v r = v.val_name =~ r
-    let p_type t r = t.ty_name =~ r
+    let p_recfield t f r =
+      let name = Printf.sprintf "%s.%s" t.ty_name f.rf_name in
+      name =~ r
+    let p_const t f r =
+      let name = Printf.sprintf "%s.%s" t.ty_name f.vc_name in
+      name =~ r
+    let p_type t r = (true, t.ty_name =~ r)
     let p_extension x r = x.xt_name =~ r
     let p_exception e r = e.ex_name =~ r
     let p_attribute a r = a.att_value.val_name =~ r
@@ -347,7 +376,9 @@ module P_values =
     let p_class _ _ = (false, false)
     let p_class_type _ _ = (false, false)
     let p_value _ _ = true
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
@@ -399,7 +430,9 @@ module P_exceptions =
     let p_class _ _ = (false, false)
     let p_class_type _ _ = (false, false)
     let p_value _ _ = false
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = false
     let p_exception _ _ = true
     let p_attribute _ _ = false
@@ -425,7 +458,9 @@ module P_types =
     let p_class _ _ = (false, false)
     let p_class_type _ _ = (false, false)
     let p_value _ _ = false
-    let p_type _ _ = true
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, true)
     let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
@@ -451,7 +486,9 @@ module P_attributes =
     let p_class _ _ = (true, false)
     let p_class_type _ _ = (true, false)
     let p_value _ _ = false
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = true
@@ -477,7 +514,9 @@ module P_methods =
     let p_class _ _ = (true, false)
     let p_class_type _ _ = (true, false)
     let p_value _ _ = false
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
@@ -503,7 +542,9 @@ module P_classes =
     let p_class _ _ = (false, true)
     let p_class_type _ _ = (false, false)
     let p_value _ _ = false
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
@@ -529,7 +570,9 @@ module P_class_types =
     let p_class _ _ = (false, false)
     let p_class_type _ _ = (false, true)
     let p_value _ _ = false
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
@@ -555,7 +598,9 @@ module P_modules =
     let p_class _ _ = (false, false)
     let p_class_type _ _ = (false, false)
     let p_value _ _ = false
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
@@ -581,7 +626,9 @@ module P_module_types =
     let p_class _ _ = (false, false)
     let p_class_type _ _ = (false, false)
     let p_value _ _ = false
-    let p_type _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
     let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false

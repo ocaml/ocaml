@@ -26,6 +26,8 @@ type ref_kind =
   | RK_attribute
   | RK_method
   | RK_section of text
+  | RK_recfield
+  | RK_const
 
 and text_element =
   | Raw of string (** Raw text. *)
@@ -95,8 +97,8 @@ val dummy_info : info
 
 (** Location of elements in implementation and interface files. *)
 type location = {
-    loc_impl : (string * int) option ; (** implementation file name and position *)
-    loc_inter : (string * int) option ; (** interface file name and position *)
+    loc_impl : Location.t option ; (** implementation location *)
+    loc_inter : Location.t option ; (** interface location *)
   }
 
 (** A dummy location. *)

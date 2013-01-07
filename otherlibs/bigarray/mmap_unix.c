@@ -13,6 +13,10 @@
 
 /* $Id$ */
 
+/* Needed (under Linux at least) to get pwrite's prototype in unistd.h.
+   Must be defined before the first system .h is included. */
+#define _XOPEN_SOURCE 500
+
 #include <stddef.h>
 #include <string.h>
 #include "bigarray.h"

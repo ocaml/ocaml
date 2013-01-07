@@ -26,6 +26,8 @@ type result_element =
   | Res_attribute of Odoc_value.t_attribute
   | Res_method of Odoc_value.t_method
   | Res_section of string * Odoc_types.text
+  | Res_recfield of  Odoc_type.t_type * Odoc_type.record_field
+  | Res_const of  Odoc_type.t_type * Odoc_type.variant_constructor
 
 (** The type representing a research result.*)
 type result = result_element list
@@ -43,7 +45,9 @@ module type Predicates =
     val p_class : Odoc_class.t_class -> t -> bool * bool
     val p_class_type : Odoc_class.t_class_type -> t -> bool * bool
     val p_value : Odoc_value.t_value -> t -> bool
-    val p_type : Odoc_type.t_type -> t -> bool
+    val p_recfield : Odoc_type.t_type -> Odoc_type.record_field -> t -> bool
+    val p_const : Odoc_type.t_type -> Odoc_type.variant_constructor -> t -> bool
+    val p_type : Odoc_type.t_type -> t -> (bool * bool)
     val p_extension : 
       Odoc_extension.t_extension_constructor -> t -> bool
     val p_exception : Odoc_exception.t_exception -> t -> bool
@@ -61,6 +65,14 @@ module Search :
 
       (** search in a value *)
       val search_value : Odoc_value.t_value -> P.t -> result_element list
+
+      (** search in a record field *)
+      val search_recfield :
+        Odoc_type.t_type -> Odoc_type.record_field -> P.t -> result_element list
+
+      (** search in a variant constructor *)
+      val search_const :
+        Odoc_type.t_type -> Odoc_type.variant_constructor -> P.t -> result_element list
 
       (** search in a type *)
       val search_type : Odoc_type.t_type -> P.t -> result_element list
@@ -113,7 +125,9 @@ module P_name :
     val p_class : Odoc_class.t_class -> Str.regexp -> bool * bool
     val p_class_type : Odoc_class.t_class_type -> Str.regexp -> bool * bool
     val p_value : Odoc_value.t_value -> Str.regexp -> bool
-    val p_type : Odoc_type.t_type -> Str.regexp -> bool
+    val p_recfield : Odoc_type.t_type -> Odoc_type.record_field -> Str.regexp -> bool
+    val p_const : Odoc_type.t_type -> Odoc_type.variant_constructor -> Str.regexp -> bool
+    val p_type : Odoc_type.t_type -> Str.regexp -> (bool * bool)
     val p_extension : 
       Odoc_extension.t_extension_constructor -> Str.regexp -> bool
     val p_exception : Odoc_exception.t_exception -> Str.regexp -> bool
@@ -126,6 +140,8 @@ module Search_by_name :
   sig
     val search_section : Odoc_types.text -> string -> P_name.t -> result_element list
     val search_value : Odoc_value.t_value -> P_name.t -> result_element list
+    val search_recfield : Odoc_type.t_type -> Odoc_type.record_field -> P_name.t -> result_element list
+    val search_const : Odoc_type.t_type -> Odoc_type.variant_constructor -> P_name.t -> result_element list
     val search_type : Odoc_type.t_type -> P_name.t -> result_element list
     val search_extension_constructor :
       Odoc_extension.t_extension_constructor -> P_name.t -> result_element list

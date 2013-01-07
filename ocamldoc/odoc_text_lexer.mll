@@ -22,10 +22,10 @@ let char_number = ref 0
 
 let string_buffer = Buffer.create 32
 
-(** Fonction de remise à zéro de la chaine de caractères tampon *)
+(** Fonction de remise Ã  zÃ©ro de la chaine de caractÃ¨res tampon *)
 let reset_string_buffer () = Buffer.reset string_buffer
 
-(** Fonction d'ajout d'un caractère dans la chaine de caractères tampon *)
+(** Fonction d'ajout d'un caractÃ¨re dans la chaine de caractÃ¨res tampon *)
 let ajout_char_string = Buffer.add_char string_buffer
 
 (** Add a string to the buffer. *)
@@ -162,6 +162,8 @@ let begin_clt_ref = "{!classtype:"blank_nl | "{!classtype:"
 let begin_att_ref = "{!attribute:"blank_nl | "{!attribute:"
 let begin_met_ref = "{!method:"blank_nl | "{!method:"
 let begin_sec_ref = "{!section:"blank_nl | "{!section:"
+let begin_recf_ref = "{!recfield:"blank_nl | "{!recfield:"
+let begin_const_ref = "{!const:"blank_nl | "{!const:"
 let begin_mod_list_ref = "{!modules:"blank_nl | "{!modules:"
 let index_list = "{!indexlist}"
 let begin_custom = "{"['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
@@ -682,7 +684,38 @@ rule main = parse
            Char (Lexing.lexeme lexbuf)
           )
     }
-
+| begin_recf_ref
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !target_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           RECF_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+| begin_const_ref
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !target_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           CONST_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
 | begin_mod_list_ref
     {
       incr_cpts lexbuf ;

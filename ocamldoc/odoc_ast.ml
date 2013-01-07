@@ -370,6 +370,13 @@ module Analyser =
            let name_pre = Name.from_ident ident in
            let name = Name.parens_if_infix name_pre in
            let complete_name = Name.concat current_module_name name in
+           let code =
+              if !Odoc_global.keep_code then
+                Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
+                      loc.Location.loc_end.Lexing.pos_cnum)
+              else
+                None
+            in
            (* create the value *)
            let new_value = {
              val_name = complete_name ;
@@ -377,8 +384,8 @@ module Analyser =
              val_type = Odoc_env.subst_type env pat.Typedtree.pat_type ;
              val_recursive = rec_flag = Asttypes.Recursive ;
              val_parameters = tt_analyse_function_parameters env comment_opt pat_exp_list2 ;
-             val_code = Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum loc.Location.loc_end.Lexing.pos_cnum) ;
-             val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+             val_code = code ;
+             val_loc = { loc_impl = Some loc ; loc_inter = None } ;
            }
            in
            [ new_value ]
@@ -388,14 +395,21 @@ module Analyser =
            let name_pre = Name.from_ident ident in
            let name = Name.parens_if_infix name_pre in
            let complete_name = Name.concat current_module_name name in
+           let code =
+             if !Odoc_global.keep_code then
+                Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
+                      loc.Location.loc_end.Lexing.pos_cnum)
+             else
+               None
+            in
            let new_value = {
              val_name = complete_name ;
              val_info = comment_opt ;
              val_type = Odoc_env.subst_type env pat.Typedtree.pat_type ;
              val_recursive = rec_flag = Asttypes.Recursive ;
              val_parameters = [] ;
-             val_code = Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum loc.Location.loc_end.Lexing.pos_cnum) ;
-             val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+             val_code = code ;
+             val_loc = { loc_impl = Some loc ; loc_inter = None } ;
            }
            in
            [ new_value ]
@@ -565,27 +579,34 @@ module Analyser =
             try
               if virt then
                 Typedtree_search.search_virtual_attribute_type table
-                  (Name.simple current_class_name) label
+                (Name.simple current_class_name) label
               else
                 Typedtree_search.search_attribute_type tt_cls label
             with Not_found ->
                 raise (Failure (Odoc_messages.attribute_not_found_in_typedtree complete_name))
-            in
-            let att =
-              {
-                att_value = { val_name = complete_name ;
-                              val_info = info_opt ;
-                              val_type = Odoc_env.subst_type env type_exp ;
-                              val_recursive = false ;
-                              val_parameters = [] ;
-                              val_code = Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum loc.Location.loc_end.Lexing.pos_cnum) ;
-                              val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
-                            } ;
-                att_mutable = mutable_flag = Asttypes.Mutable ;
-                att_virtual = virt ;
-              }
-            in
-            iter acc_inher (acc_fields @ ele_comments @ [ Class_attribute att ]) loc.Location.loc_end.Lexing.pos_cnum q
+          in
+          let code =
+            if !Odoc_global.keep_code then
+              Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
+                    loc.Location.loc_end.Lexing.pos_cnum)
+            else
+              None
+          in
+          let att =
+            {
+              att_value = { val_name = complete_name ;
+                val_info = info_opt ;
+                val_type = Odoc_env.subst_type env type_exp ;
+                val_recursive = false ;
+                val_parameters = [] ;
+                val_code = code ;
+                val_loc = { loc_impl = Some loc ; loc_inter = None } ;
+              } ;
+              att_mutable = mutable_flag = Asttypes.Mutable ;
+              att_virtual = virt ;
+            }
+          in
+          iter acc_inher (acc_fields @ ele_comments @ [ Class_attribute att ]) loc.Location.loc_end.Lexing.pos_cnum q
 
         | (Parsetree.Pcf_virt  ({ txt = label }, private_flag, _)) ->
             let complete_name = Name.concat current_class_name label in
@@ -596,64 +617,79 @@ module Analyser =
             in
             let real_type =
               match met_type.Types.desc with
-                Tarrow (_, _, t, _) ->
-                  t
-              |  _ ->
+              Tarrow (_, _, t, _) ->
+                t
+            |  _ ->
                 (* ?!? : not an arrow type ! return the original type *)
-                  met_type
-            in
-            let met =
-              {
-                met_value = { val_name = complete_name ;
-                              val_info = info_opt ;
-                              val_type = Odoc_env.subst_type env real_type ;
-                              val_recursive = false ;
-                              val_parameters = [] ;
-                              val_code = Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum loc.Location.loc_end.Lexing.pos_cnum) ;
-                              val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
-                            } ;
-                met_private = private_flag = Asttypes.Private ;
-                met_virtual = true ;
-              }
-            in
-            (* update the parameter description *)
-            Odoc_value.update_value_parameters_text met.met_value;
+                met_type
+          in
+          let code =
+            if !Odoc_global.keep_code then
+              Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
+               loc.Location.loc_end.Lexing.pos_cnum)
+            else
+              None
+          in
+          let met =
+            {
+              met_value = {
+                val_name = complete_name ;
+                val_info = info_opt ;
+                val_type = Odoc_env.subst_type env real_type ;
+                val_recursive = false ;
+                val_parameters = [] ;
+                val_code = code ;
+                val_loc = { loc_impl = Some loc ; loc_inter = None } ;
+              } ;
+              met_private = private_flag = Asttypes.Private ;
+              met_virtual = true ;
+            }
+          in
+          (* update the parameter description *)
+          Odoc_value.update_value_parameters_text met.met_value;
 
-            iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
+          iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
 
         | (Parsetree.Pcf_meth ({ txt = label }, private_flag, _, _)) ->
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let exp =
               try Typedtree_search.search_method_expression tt_cls label
-              with Not_found -> raise (Failure (Odoc_messages.method_not_found_in_typedtree complete_name))
-            in
-            let real_type =
-              match exp.exp_type.desc with
-                Tarrow (_, _, t,_) ->
-                  t
-              |  _ ->
+            with Not_found -> raise (Failure (Odoc_messages.method_not_found_in_typedtree complete_name))
+          in
+          let real_type =
+            match exp.exp_type.desc with
+              Tarrow (_, _, t,_) ->
+                t
+            |  _ ->
                 (* ?!? : not an arrow type ! return the original type *)
-                  exp.Typedtree.exp_type
-            in
-            let met =
-              {
-                met_value = { val_name = complete_name ;
-                              val_info = info_opt ;
-                              val_type = Odoc_env.subst_type env real_type ;
-                              val_recursive = false ;
-                              val_parameters = tt_analyse_method_expression env complete_name info_opt exp ;
-                              val_code = Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum loc.Location.loc_end.Lexing.pos_cnum) ;
-                              val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
-                            } ;
-                met_private = private_flag = Asttypes.Private ;
-                met_virtual = false ;
+                exp.Typedtree.exp_type
+          in
+          let code =
+            if !Odoc_global.keep_code then
+                Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
+               loc.Location.loc_end.Lexing.pos_cnum)
+            else
+              None
+          in
+          let met =
+            {
+              met_value = { val_name = complete_name ;
+                val_info = info_opt ;
+                val_type = Odoc_env.subst_type env real_type ;
+                val_recursive = false ;
+                val_parameters = tt_analyse_method_expression env complete_name info_opt exp ;
+                val_code = code ;
+                val_loc = { loc_impl = Some loc ; loc_inter = None } ;
+              } ;
+              met_private = private_flag = Asttypes.Private ;
+              met_virtual = false ;
               }
-            in
-            (* update the parameter description *)
-            Odoc_value.update_value_parameters_text met.met_value;
+          in
+          (* update the parameter description *)
+          Odoc_value.update_value_parameters_text met.met_value;
 
-            iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
+          iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
 
         | Parsetree.Pcf_constr (_, _) ->
             (* don't give a $*%@ ! *)
@@ -826,7 +862,8 @@ module Analyser =
     let analyse_class env current_module_name comment_opt p_class_decl tt_type_params tt_class_exp table =
       let name = p_class_decl.Parsetree.pci_name in
       let complete_name = Name.concat current_module_name name.txt in
-      let pos_start = p_class_decl.Parsetree.pci_expr.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum in
+      let loc = p_class_decl.Parsetree.pci_expr.Parsetree.pcl_loc in
+      let pos_start = loc.Location.loc_start.Lexing.pos_cnum in
       let type_parameters = tt_type_params in
       let virt = p_class_decl.Parsetree.pci_virt = Asttypes.Virtual in
       let cltype = Odoc_env.subst_class_type env tt_class_exp.Typedtree.cl_type in
@@ -848,7 +885,7 @@ module Analyser =
           cl_type_parameters = type_parameters ;
           cl_kind = kind ;
           cl_parameters = parameters ;
-          cl_loc = { loc_impl = Some (!file_name, pos_start) ; loc_inter = None } ;
+          cl_loc = { loc_impl = Some loc ; loc_inter = None } ;
         }
       in
       cl
@@ -1122,23 +1159,30 @@ module Analyser =
           (0, new_env, l_ele)
 
       | Parsetree.Pstr_primitive ({ txt = name_pre }, val_desc) ->
-          (* of string * value_description *)
-          print_DEBUG ("Parsetree.Pstr_primitive ("^name_pre^", ["^(String.concat ", " val_desc.Parsetree.pval_prim)^"]");
-          let typ = Typedtree_search.search_primitive table name_pre in
-          let name = Name.parens_if_infix name_pre in
-          let complete_name = Name.concat current_module_name name in
-          let new_value = {
-             val_name = complete_name ;
-             val_info = comment_opt ;
-             val_type = Odoc_env.subst_type env typ ;
-             val_recursive = false ;
-             val_parameters = [] ;
-             val_code = Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum loc.Location.loc_end.Lexing.pos_cnum) ;
-             val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
-           }
-           in
-          let new_env = Odoc_env.add_value env new_value.val_name in
-          (0, new_env, [Element_value new_value])
+            (* of string * value_description *)
+            print_DEBUG ("Parsetree.Pstr_primitive ("^name_pre^", ["^(String.concat ", " val_desc.Parsetree.pval_prim)^"]");
+            let typ = Typedtree_search.search_primitive table name_pre in
+            let name = Name.parens_if_infix name_pre in
+            let complete_name = Name.concat current_module_name name in
+            let code =
+              if !Odoc_global.keep_code then
+                Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
+                      loc.Location.loc_end.Lexing.pos_cnum)
+              else
+                None
+            in
+            let new_value = {
+                val_name = complete_name ;
+                val_info = comment_opt ;
+                val_type = Odoc_env.subst_type env typ ;
+                val_recursive = false ;
+                val_parameters = [] ;
+                val_code = code ;
+                val_loc = { loc_impl = Some loc ; loc_inter = None } ;
+              }
+            in
+            let new_env = Odoc_env.add_value env new_value.val_name in
+            (0, new_env, [Element_value new_value])
 
       | Parsetree.Pstr_type name_typedecl_list ->
           (* of (string * type_declaration) list *)
@@ -1157,14 +1201,15 @@ module Analyser =
               [] -> (maybe_more_acc, [])
             | ({ txt = name }, type_decl) :: q ->
                 let complete_name = Name.concat current_module_name name in
-                let loc_start = type_decl.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum in
-                let loc_end =  type_decl.Parsetree.ptype_loc.Location.loc_end.Lexing.pos_cnum in
+                let loc = type_decl.Parsetree.ptype_loc in
+                let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
+                let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
                 let pos_limit2 =
                   match q with
-                    [] -> pos_limit
-                  | (_, td) :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
-                in
-                let (maybe_more, name_comment_list) =
+                      [] -> pos_limit
+                    | (_, td) :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
+                  in
+                  let (maybe_more, name_comment_list) =
                     Sig.name_comment_from_type_kind
                     loc_end
                     pos_limit2
@@ -1184,47 +1229,47 @@ module Analyser =
                   let kind = Sig.get_type_kind
                     new_env name_comment_list
                     tt_type_decl.Types.type_kind
-                in
-                let new_end = loc_end + maybe_more in
-                let t =
-                  {
-                    ty_name = complete_name ;
-                    ty_info = com_opt ;
-                    ty_parameters =
+                  in
+                  let new_end = loc_end + maybe_more in
+                  let t =
+                    {
+                      ty_name = complete_name ;
+                      ty_info = com_opt ;
+                      ty_parameters =
                       List.map2
-                        (fun p (co,cn,_) ->
-                          (Odoc_env.subst_type new_env p,
-                           co, cn)
-                        )
+                      (fun p (co,cn,_) ->
+                         (Odoc_env.subst_type new_env p,
+                          co, cn)
+                      )
                       tt_type_decl.Types.type_params
                       tt_type_decl.Types.type_variance ;
-                    ty_kind = kind ;
-                    ty_private = tt_type_decl.Types.type_private;
-                    ty_manifest =
-                    (match tt_type_decl.Types.type_manifest with
-                      None -> None
-                    | Some t -> Some (Odoc_env.subst_type new_env t));
-                    ty_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
-                    ty_code =
+                      ty_kind = kind ;
+                      ty_private = tt_type_decl.Types.type_private;
+                      ty_manifest =
+                        (match tt_type_decl.Types.type_manifest with
+                           None -> None
+                         | Some t -> Some (Odoc_env.subst_type new_env t));
+                      ty_loc = { loc_impl = Some loc ; loc_inter = None } ;
+                      ty_code =
                       (
                        if !Odoc_global.keep_code then
                          Some (get_string_of_file loc_start new_end)
                        else
                          None
                       ) ;
-                  }
-                in
-                let (maybe_more2, info_after_opt) =
-                  My_ir.just_after_special
+                    }
+                  in
+                  let (maybe_more2, info_after_opt) =
+                    My_ir.just_after_special
                     !file_name
                     (get_string_of_file new_end pos_limit2)
-                in
-                t.ty_info <- Sig.merge_infos t.ty_info info_after_opt ;
-                let (maybe_more3, eles) = f (maybe_more + maybe_more2) (new_end + maybe_more2) q in
-                (maybe_more3, ele_comments @ ((Element_type t) :: eles))
-          in
-          let (maybe_more, eles) = f ~first: true 0 loc.Location.loc_start.Lexing.pos_cnum name_typedecl_list in
-          (maybe_more, new_env, eles)
+                  in
+                  t.ty_info <- Sig.merge_infos t.ty_info info_after_opt ;
+                  let (maybe_more3, eles) = f (maybe_more + maybe_more2) (new_end + maybe_more2) q in
+                  (maybe_more3, ele_comments @ ((Element_type t) :: eles))
+            in
+            let (maybe_more, eles) = f ~first: true 0 loc.Location.loc_start.Lexing.pos_cnum name_typedecl_list in
+            (maybe_more, new_env, eles)
 
       | Parsetree.Pstr_extension tyext ->
 	(* we get the extension declaration in the typed tree *)
@@ -1258,7 +1303,7 @@ module Analyser =
               List.map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) tt_tyext.tyext_params;
 	    te_private = tt_tyext.tyext_private;
 	    te_constructors = [];
-	    te_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
+	    te_loc = { loc_impl = Some loc ; loc_inter = None } ;
 	    te_code =
 	      (
 		if !Odoc_global.keep_code then
@@ -1286,7 +1331,7 @@ module Analyser =
                               may_map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) ret_type;
                             xt_type_extension = new_te;
 			    xt_alias = None;
-			    xt_loc = { loc_impl = Some (!file_name, ext_loc_start) ; loc_inter = None };
+			    xt_loc = { loc_impl = Some tt_ext.ext_loc ; loc_inter = None } ;
 			    xt_text = None;
 			  }
 		      | Text_rebind(path, _) ->
@@ -1300,7 +1345,7 @@ module Analyser =
                                 xa_name = Odoc_env.full_extension_constructor_name env (Name.from_path path);
                                 xa_xt = None; 
                               };
-			    xt_loc = { loc_impl = Some (!file_name, ext_loc_start) ; loc_inter = None } ;
+			    xt_loc = { loc_impl = Some tt_ext.ext_loc ; loc_inter = None } ;
 			    xt_text = None;
 			  }
 		  in
@@ -1344,7 +1389,7 @@ module Analyser =
                 Odoc_env.subst_type new_env ctyp.ctyp_type)
                 tt_excep_decl.Typedtree.exn_args ;
               ex_alias = None ;
-              ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+              ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
               ex_code =
                 (
                  if !Odoc_global.keep_code then
@@ -1373,7 +1418,7 @@ module Analyser =
               ex_args = [] ;
               ex_alias = Some { ea_name = (Odoc_env.full_exception_name env (Name.from_path tt_path)) ;
                                 ea_ex = None ; } ;
-              ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+              ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
               ex_code = None ;
             }
           in
@@ -1500,7 +1545,7 @@ module Analyser =
               mt_is_interface = false ;
               mt_file = !file_name ;
               mt_kind = Some kind ;
-              mt_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+              mt_loc = { loc_impl = Some loc ; loc_inter = None } ;
             }
           in
           let new_env = Odoc_env.add_module_type env mt.mt_name in
@@ -1616,7 +1661,7 @@ module Analyser =
                       clt_type_parameters = List.map (Odoc_env.subst_type new_env) type_params ;
                       clt_virtual = virt ;
                       clt_kind = kind ;
-                      clt_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ;
+                      clt_loc = { loc_impl = Some loc ;
                                   loc_inter = None } ;
                     }
                 in
@@ -1640,8 +1685,9 @@ module Analyser =
      (** Analysis of a [Parsetree.module_expr] and a name to return a [t_module].*)
      and analyse_module env current_module_name module_name comment_opt p_module_expr tt_module_expr =
       let complete_name = Name.concat current_module_name module_name in
-      let pos_start = p_module_expr.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
-      let pos_end = p_module_expr.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
+      let loc = p_module_expr.Parsetree.pmod_loc in
+      let pos_start = loc.Location.loc_start.Lexing.pos_cnum in
+      let pos_end = loc.Location.loc_end.Lexing.pos_cnum in
       let modtype =
         (* A VOIR : Odoc_env.subst_module_type env  ? *)
         tt_module_expr.Typedtree.mod_type
@@ -1663,7 +1709,7 @@ module Analyser =
           m_is_interface = false ;
           m_file = !file_name ;
           m_kind = Module_struct [] ;
-          m_loc = { loc_impl = Some (!file_name, pos_start) ; loc_inter = None } ;
+          m_loc = { loc_impl = Some loc ; loc_inter = None } ;
           m_top_deps = [] ;
           m_code = None ; (* code is set by the caller, after the module is created *)
           m_code_intf = m_code_intf ;
@@ -1863,7 +1909,7 @@ module Analyser =
          m_is_interface = false ;
          m_file = !file_name ;
          m_kind = kind ;
-         m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
+         m_loc = { loc_impl = Some (Location.in_file !file_name) ; loc_inter = None } ;
          m_top_deps = [] ;
          m_code = (if !Odoc_global.keep_code then Some !file else None) ;
          m_code_intf = None ;

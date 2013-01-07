@@ -63,6 +63,8 @@ let print_DEBUG s = print_string s; print_newline ()
 %token ATT_REF
 %token MET_REF
 %token SEC_REF
+%token RECF_REF
+%token CONST_REF
 %token MOD_LIST_REF
 %token INDEX_LIST
 
@@ -123,6 +125,8 @@ ele_ref_kind:
 | ATT_REF { Some RK_attribute }
 | MET_REF { Some RK_method }
 | SEC_REF { Some (RK_section [])}
+| RECF_REF { Some RK_recfield }
+| CONST_REF { Some RK_const }
 ;
 
 text_element:

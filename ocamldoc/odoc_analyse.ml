@@ -251,7 +251,7 @@ let process_file ppf sourcefile =
               [Odoc_module.Element_module_comment txt] ;
             Odoc_module.m_loc =
               { Odoc_types.loc_impl = None ;
-                Odoc_types.loc_inter = Some (file, 0) } ;
+                Odoc_types.loc_inter = Some (Location.in_file file) } ;
             Odoc_module.m_top_deps = [] ;
             Odoc_module.m_code = None ;
             Odoc_module.m_code_intf = None ;

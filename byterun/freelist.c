@@ -532,14 +532,14 @@ void caml_set_allocation_policy (uintnat p)
   switch (p){
   case Policy_next_fit:
     fl_prev = Fl_head;
+    policy = p;
     break;
   case Policy_first_fit:
     flp_size = 0;
     beyond = NULL;
+    policy = p;
     break;
   default:
-    Assert (0);
     break;
   }
-  policy = p;
 }

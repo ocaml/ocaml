@@ -128,6 +128,7 @@ world:
 world.opt:
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
+	$(MAKE) ocamltoolsopt
 
 # Hard bootstrap how-to:
 # (only necessary in some cases, for example if you remove some primitive)
@@ -246,6 +247,7 @@ opt:
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
 	$(MAKE) otherlibrariesopt
+	$(MAKE) ocamltoolsopt
 	$(MAKE) ocamlbuildlib.native
 
 # Native-code versions of the tools
@@ -307,6 +309,7 @@ installopt:
 	for i in $(OTHERLIBRARIES); \
 	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; fi
+	cd tools; $(MAKE) installopt
 
 installoptopt:
 	cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE)
@@ -657,6 +660,9 @@ clean::
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi
 	cd tools; $(MAKE) all
 
+ocamltoolsopt: ocamlopt
+	cd tools; $(MAKE) opt
+
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi
 	cd tools; $(MAKE) opt.opt
 
@@ -798,8 +804,8 @@ distclean:
 .PHONY: coreboot defaultentry depend distclean install installopt
 .PHONY: library library-cross libraryopt ocamlbuild-mixed-boot
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
-.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
-.PHONY: ocamlyacc opt-core opt opt.opt otherlibraries
+.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
+.PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
