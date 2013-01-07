@@ -38,7 +38,6 @@ let copy_compunit ic oc compunit =
 
 (* Add C objects and options and "custom" info from a library descriptor *)
 
-let lib_sharedobjs = ref []
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
 let lib_dllibs = ref []
