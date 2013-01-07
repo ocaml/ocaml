@@ -114,4 +114,4 @@ let _ =
       method generate = inst#generate
     end
   end in
-  Odoc_args.set_generator (Odoc_gen.Other (module My_generator : Odoc_gen.Base))
+  Odoc_args.set_generator (Odoc_gen.Base (module My_generator : Odoc_gen.Base))
