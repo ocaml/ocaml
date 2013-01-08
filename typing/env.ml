@@ -1313,7 +1313,7 @@ let find_all proj1 proj2 f lid env acc =
               (fun s (data, pos) acc -> f s (Pdot (p, s, pos)) data acc)
               (proj2 c) acc
         | Functor_comps _ ->
-          raise Not_found
+            acc
       end
 
 let find_all_simple_list proj1 proj2 f lid env acc =
@@ -1334,7 +1334,7 @@ let find_all_simple_list proj1 proj2 f lid env acc =
                   f data acc)
               (proj2 c) acc
         | Functor_comps _ ->
-          raise Not_found
+            acc
       end
 
 let fold_modules f lid env acc =
@@ -1366,7 +1366,7 @@ let fold_modules f lid env acc =
               c.comp_modules
               acc
         | Functor_comps _ ->
-          raise Not_found
+            acc
       end
 
 let fold_values f =
