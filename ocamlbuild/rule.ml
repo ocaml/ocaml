@@ -161,7 +161,7 @@ let call builder r =
       begin match exists2 List.find Resource.Cache.resource_has_changed r.deps with
       | Some r -> (`cache_miss_changed_dep r, false)
       | _ ->
-        begin match exists2 Resources.find Resource.Cache.resource_has_changed dyndeps with
+        begin match exists2 Resources.find_elt Resource.Cache.resource_has_changed dyndeps with
         | Some r -> (`cache_miss_changed_dyn_dep r, false)
         | _ ->
             begin match cached_digest r with
