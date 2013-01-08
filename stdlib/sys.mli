@@ -80,15 +80,15 @@ val os_type : string
 
 val unix : bool
 (** True if [Sys.os_type = "Unix"].
-    @since patch included *)
+    @since 4.01.0 *)
 
 val win32 : bool
 (** True if [Sys.os_type = "Win32"].
-    @since patch included *)
+    @since 4.01.0 *)
 
 val cygwin : bool
 (** True if [Sys.os_type = "Cygwin"].
-    @since patch included *)
+    @since 4.01.0 *)
 
 val word_size : int
 (** Size of one word on the machine currently executing the OCaml
