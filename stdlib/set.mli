@@ -146,7 +146,9 @@ module type S =
 
     val find: elt -> t -> elt
     (** [find x s] returns the element of [s] equal to [x], or raise
-        [Not_found] if no such element exists. *)
+        [Not_found] if no such element exists.
+        @since 4.01.0
+    *)
   end
 (** Output signature of the functor {!Set.Make}. *)
 
