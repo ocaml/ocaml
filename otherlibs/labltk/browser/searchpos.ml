@@ -212,7 +212,7 @@ let rec search_pos_signature l ~pos ~env =
           List.iter l ~f:(fun (_,desc) -> search_pos_type_decl ~pos desc ~env)
       | Psig_extension te ->
           List.iter te.ptyext_constructors ~f:(search_pos_extension_constructor ~pos ~env);
-          add_found_sig (`Type, te.ptyext_path) ~env ~loc:pt.psig_loc
+          add_found_sig (`Type, te.ptyext_path.txt) ~env ~loc:pt.psig_loc
       | Psig_exception (_, l) ->
           List.iter l ~f:(search_pos_type ~pos ~env);
           add_found_sig (`Type, Lident "exn") ~env ~loc:pt.psig_loc

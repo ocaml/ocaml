@@ -80,7 +80,7 @@ let view_symbol ~kind ~env ?path id =
                 in
 		  view_signature ~title:(string_of_longident id) ~env ?path
 		    [Sig_exception (Ident.create name, exn)]
-	    | Cstr_extension_const _ | Cstr_extension_block _ ->
+	    | Cstr_ext_constant _ | Cstr_ext_block _ ->
 		let ext =
 		  { Types.ext_loc = Location.none;
                     ext_type_path = cpath;
