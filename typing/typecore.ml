@@ -1937,39 +1937,6 @@ and type_expect_ ?in_function env sexp ty_expected =
          exp_type = ty;
          exp_env = env;
         }
-  | Pexp_try(sbody, [{ppat_desc = Ppat_variant(label, arg)}, shandler]) ->
-      let args =
-        match arg with
-        | None -> []
-        | Some {ppat_desc = Ppat_tuple pl} -> pl
-        | Some p -> [p]
-      in
-      let args =
-        List.map
-          (function
-            | {ppat_desc = Ppat_var s} -> s.txt
-            | _ -> failwith "Complex patterns not support for static handlers"
-          ) args
-      in
-      let ids = List.map Ident.create args in
-      let tys = List.map (fun _ -> newvar ()) args in
-      let rid, env' = Env.enter_static_handler label tys env in
-      let body = type_expect env' sbody ty_expected in
-      let handler_env =
-        List.fold_left2
-          (fun env id ty ->
-            Env.add_value id {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env
-          )
-          env ids tys
-      in
-      let handler = type_expect handler_env shandler ty_expected in
-      re
-        {
-         exp_desc = Texp_staticcatch (body, label, rid, ids, handler);
-         exp_loc = loc; exp_extra = [];
-         exp_type = ty_expected;
-         exp_env = env;
-        }
 
   | Pexp_apply(sfunct, sargs) ->
       begin_def (); (* one more level for non-returning functions *)
@@ -2015,14 +1982,61 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = instance env ty_expected;
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
-      let body = type_expect (Env.hide_static_handlers env) sbody ty_expected in
-      let cases, _ =
-        type_cases env Predef.type_exn ty_expected false loc caselist in
-      re {
-        exp_desc = Texp_try(body, cases);
-        exp_loc = loc; exp_extra = [];
-        exp_type = body.exp_type;
-        exp_env = env }
+      begin match List.partition (function {ppat_desc = Ppat_variant _}, _ -> true | _ -> false) caselist with
+      | [], caselist ->
+          let body = type_expect (Env.hide_static_handlers env) sbody ty_expected in
+          let cases, _ =
+            type_cases env Predef.type_exn ty_expected false loc caselist in
+          re {
+          exp_desc = Texp_try(body, cases);
+          exp_loc = loc; exp_extra = [];
+          exp_type = body.exp_type;
+          exp_env = env }
+      | static_handlers, [] ->
+          let env_with_handlers = ref env in
+          let prepare (pat, shandler) =
+            let label, arg = match pat.ppat_desc with Ppat_variant(label, arg) -> label, arg | _ -> assert false in
+            let args =
+              match arg with
+              | None -> []
+              | Some {ppat_desc = Ppat_tuple pl} -> pl
+              | Some p -> [p]
+            in
+            let ids =
+              List.map
+                (function
+                  | {ppat_desc = Ppat_var s} -> Ident.create s.txt
+                  | _ -> failwith "Complex patterns not supported for static handlers"
+                ) args
+            in
+            let tys = List.map (fun _ -> newvar ()) args in
+            let rid, env' = Env.enter_static_handler label tys !env_with_handlers in
+            env_with_handlers := env';
+            let handler_env =
+              List.fold_left2
+                (fun env id ty ->
+                  Env.add_value id {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env
+                )
+                env ids tys
+            in
+            (label, rid, ids, handler_env, shandler)
+          in
+          let cases = List.map prepare static_handlers in
+          let body = type_expect !env_with_handlers sbody ty_expected in
+          let type_handler (label, rid, ids, handler_env, shandler) body =
+            let handler = type_expect handler_env shandler ty_expected in
+            re
+              {
+               exp_desc = Texp_staticcatch (body, label, rid, ids, handler);
+               exp_loc = loc; exp_extra = [];
+               exp_type = ty_expected;
+               exp_env = env;
+              }
+          in
+          List.fold_right type_handler cases body
+      | _, _ ->
+          failwith "Static and regular handlers cannot be mixed."
+      end
   | Pexp_tuple sexpl ->
       let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
       let to_unify = newgenty (Ttuple subtypes) in
