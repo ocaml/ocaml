@@ -108,6 +108,12 @@ val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
 
+(* Static exceptions *)
+
+val enter_static_handler: string -> type_expr list -> t -> int * t
+val lookup_static_handler: string -> t -> (int * type_expr list) option
+val hide_static_handlers: t -> t
+
 (* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit
 

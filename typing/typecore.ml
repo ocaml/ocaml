@@ -66,14 +66,6 @@ type error =
 
 exception Error of Location.t * error
 
-module StringMap = Map.Make(struct
-  type t = string
-  let compare = compare
-end)
-
-let static_handlers = ref StringMap.empty
-let static_raise_count = ref 0
-
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
 let type_module =
@@ -1902,12 +1894,9 @@ and type_expect_ ?in_function env sexp ty_expected =
         generalize_structure ty_arg;
         generalize_structure ty_res
       end;
-      let prev_handlers = !static_handlers in
-      static_handlers := StringMap.empty;
       let cases, partial =
-        type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
+        type_cases ~in_function:(loc_fun,ty_fun) (Env.hide_static_handlers env) ty_arg ty_res
           true loc caselist in
-      static_handlers := prev_handlers;
       let not_function ty =
         let ls, tvar = list_labels env ty in
         ls = [] && not tvar
@@ -1924,9 +1913,13 @@ and type_expect_ ?in_function env sexp ty_expected =
 
       let ty = newvar () in
       let (rid, tys) =
-        try StringMap.find label !static_handlers
+        try
+          match Env.lookup_static_handler label env with
+          | Some x -> x
+          | None ->
+              failwith (Printf.sprintf "Static exception %s is not usable in this scope" label)
         with Not_found ->
-          failwith (Printf.sprintf "Static handler for %s is not available in this context" label)
+          failwith (Printf.sprintf "Unbound static exception %s" label)
       in
       let args =
         match arg with
@@ -1960,12 +1953,8 @@ and type_expect_ ?in_function env sexp ty_expected =
       in
       let ids = List.map Ident.create args in
       let tys = List.map (fun _ -> newvar ()) args in
-      decr static_raise_count;
-      let rid = !static_raise_count in
-      let prev_handlers = !static_handlers in
-      static_handlers := StringMap.add label (rid, tys) prev_handlers;
-      let body = type_expect env sbody ty_expected in
-      static_handlers := prev_handlers;
+      let rid, env' = Env.enter_static_handler label tys env in
+      let body = type_expect env' sbody ty_expected in
       let handler_env =
         List.fold_left2
           (fun env id ty ->
@@ -2026,7 +2015,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = instance env ty_expected;
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
-      let body = type_expect env sbody ty_expected in
+      let body = type_expect (Env.hide_static_handlers env) sbody ty_expected in
       let cases, _ =
         type_cases env Predef.type_exn ty_expected false loc caselist in
       re {
@@ -2575,7 +2564,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       let ty = newgenvar () in
       let to_unify = Predef.type_lazy_t ty in
       unify_exp_types loc env to_unify ty_expected;
-      let arg = type_expect env e ty in
+      let arg = type_expect (Env.hide_static_handlers env) e ty in
       re {
         exp_desc = Texp_lazy arg;
         exp_loc = loc; exp_extra = [];

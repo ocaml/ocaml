@@ -150,6 +150,8 @@ module EnvTbl =
 type type_descriptions =
     constructor_description list * label_description list
 
+module StringMap = Map.Make(struct type t = string let compare = compare end)
+
 type t = {
   values: (Path.t * value_description) EnvTbl.t;
   constrs: constructor_description EnvTbl.t;
@@ -160,6 +162,7 @@ type t = {
   components: (Path.t * module_components) EnvTbl.t;
   classes: (Path.t * class_declaration) EnvTbl.t;
   cltypes: (Path.t * class_type_declaration) EnvTbl.t;
+  static_handlers: (int * Types.type_expr list) option StringMap.t;
   summary: summary;
   local_constraints: bool;
   gadt_instances: (int * TypeSet.t ref) list;
@@ -204,6 +207,7 @@ let empty = {
   modules = EnvTbl.empty; modtypes = EnvTbl.empty;
   components = EnvTbl.empty; classes = EnvTbl.empty;
   cltypes = EnvTbl.empty;
+  static_handlers = StringMap.empty;
   summary = Env_empty; local_constraints = false; gadt_instances = [];
   in_signature = false;
  }
@@ -1419,6 +1423,21 @@ let env_of_only_summary env_from_summary env =
     local_constraints = env.local_constraints;
     in_signature = env.in_signature;
   }
+
+(* Static exceptions *)
+
+let static_handler_count = ref 0
+
+let enter_static_handler label tys env =
+  decr static_handler_count;
+  let id = !static_handler_count in
+  id, {env with static_handlers = StringMap.add label (Some (id, tys)) env.static_handlers}
+
+let lookup_static_handler label env =
+  StringMap.find label env.static_handlers
+
+let hide_static_handlers env =
+  {env with static_handlers = StringMap.map (fun _ -> None) env.static_handlers}
 
 (* Error report *)
 
