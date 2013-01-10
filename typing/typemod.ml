@@ -833,7 +833,7 @@ let rec type_module sttn funct_body anchor env smod =
   | Pmod_functor(name, smty, sbody) ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_module name.txt mty.mty_type env in
-      let body = type_module sttn true None newenv sbody in
+      let body = type_module sttn true None (Env.hide_static_handlers newenv) sbody in
       rm { mod_desc = Tmod_functor(id, name, mty, body);
            mod_type = Mty_functor(id, mty.mty_type, body.mod_type);
            mod_env = env;

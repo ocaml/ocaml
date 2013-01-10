@@ -790,6 +790,8 @@ and class_structure cl_num final val_env met_env loc
     cstr_meths = meths}, sign (* redondant, since already in cstr_type *)
 
 and class_expr cl_num val_env met_env scl =
+  let val_env = Env.hide_static_handlers val_env in
+  let met_env = Env.hide_static_handlers met_env in
   match scl.pcl_desc with
     Pcl_constr (lid, styl) ->
       let (path, decl) = Typetexp.find_class val_env scl.pcl_loc lid.txt in
