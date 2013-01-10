@@ -241,7 +241,7 @@ let simplify_exits lam =
   | Lstaticcatch (l1,(i,[]),(Lstaticraise (j,[]) as l2)) ->
       Hashtbl.add subst i ([],simplif l2) ;
       simplif l1
-  | Lstaticcatch (l1,(i,xs), (Lvar _ as l2)) ->
+  | Lstaticcatch (l1,(i,xs), (Lvar _ as l2)) when i >= 0 ->
       begin match count_exit i with
       | 0 -> simplif l1
       | _ ->
@@ -251,7 +251,7 @@ let simplify_exits lam =
   | Lstaticcatch (l1,(i,xs),l2) ->
       begin match count_exit i with
       | 0 -> simplif l1
-      | 1 ->
+      | 1 when i >= 0 ->
           Hashtbl.add subst i (xs,simplif l2) ;
           simplif l1
       | _ ->

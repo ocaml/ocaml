@@ -286,6 +286,7 @@ and untype_expression exp =
         Pexp_object (untype_class_structure cl)
     | Texp_pack (mexpr) ->
         Pexp_pack (untype_module_expr mexpr)
+    | Texp_staticraise _ | Texp_staticcatch _ -> assert false
   in
   List.fold_right untype_extra exp.exp_extra
     { pexp_loc = exp.exp_loc;

@@ -66,6 +66,14 @@ type error =
 
 exception Error of Location.t * error
 
+module StringMap = Map.Make(struct
+  type t = string
+  let compare = compare
+end)
+
+let static_handlers = ref StringMap.empty
+let static_raise_count = ref 0
+
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
 let type_module =
@@ -1894,9 +1902,12 @@ and type_expect_ ?in_function env sexp ty_expected =
         generalize_structure ty_arg;
         generalize_structure ty_res
       end;
+      let prev_handlers = !static_handlers in
+      static_handlers := StringMap.empty;
       let cases, partial =
         type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
           true loc caselist in
+      static_handlers := prev_handlers;
       let not_function ty =
         let ls, tvar = list_labels env ty in
         ls = [] && not tvar
@@ -1909,6 +1920,68 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_loc = loc; exp_extra = [];
         exp_type = instance env (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
         exp_env = env }
+  | Pexp_apply({pexp_desc = Pexp_ident {txt=Longident.Lident "raise"}}, ["", {pexp_desc = Pexp_variant (label, arg)}]) ->
+
+      let ty = newvar () in
+      let (rid, tys) =
+        try StringMap.find label !static_handlers
+        with Not_found ->
+          failwith (Printf.sprintf "Static handler for %s is not available in this context" label)
+      in
+      let args =
+        match arg with
+        | None -> []
+        | Some {pexp_desc = Pexp_tuple l} when List.length tys > 1 -> l
+        | Some e -> [e]
+      in
+      if List.length args <> List.length tys then
+        failwith (Printf.sprintf "Bad arity for handler %s" label);
+      let args = List.map2 (type_expect env) args tys in
+      re
+        {
+         exp_desc = Texp_staticraise (label, rid, args);
+         exp_loc = loc; exp_extra = [];
+         exp_type = ty;
+         exp_env = env;
+        }
+  | Pexp_try(sbody, [{ppat_desc = Ppat_variant(label, arg)}, shandler]) ->
+      let args =
+        match arg with
+        | None -> []
+        | Some {ppat_desc = Ppat_tuple pl} -> pl
+        | Some p -> [p]
+      in
+      let args =
+        List.map
+          (function
+            | {ppat_desc = Ppat_var s} -> s.txt
+            | _ -> failwith "Complex patterns not support for static handlers"
+          ) args
+      in
+      let ids = List.map Ident.create args in
+      let tys = List.map (fun _ -> newvar ()) args in
+      decr static_raise_count;
+      let rid = !static_raise_count in
+      let prev_handlers = !static_handlers in
+      static_handlers := StringMap.add label (rid, tys) prev_handlers;
+      let body = type_expect env sbody ty_expected in
+      static_handlers := prev_handlers;
+      let handler_env =
+        List.fold_left2
+          (fun env id ty ->
+            Env.add_value id {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env
+          )
+          env ids tys
+      in
+      let handler = type_expect handler_env shandler ty_expected in
+      re
+        {
+         exp_desc = Texp_staticcatch (body, label, rid, ids, handler);
+         exp_loc = loc; exp_extra = [];
+         exp_type = ty_expected;
+         exp_env = env;
+        }
+
   | Pexp_apply(sfunct, sargs) ->
       begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();

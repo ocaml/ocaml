@@ -353,6 +353,13 @@ and expression i ppf x =
   | Texp_pack me ->
       line i ppf "Pexp_pack";
       module_expr i ppf me
+  | Texp_staticraise (s, rid, el) ->
+      line i ppf "Pexp_staticraise %s(%i)\n" s rid;
+      List.iter (expression i ppf) el
+  | Texp_staticcatch (body, s, rid, ids, handler) ->
+      line i ppf "Pexp_staticcatch %s(%i)\n" s rid;
+      expression i ppf body;
+      expression i ppf handler
 
 and value_description i ppf x =
   line i ppf "value_description\n";

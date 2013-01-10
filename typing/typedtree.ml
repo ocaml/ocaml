@@ -101,6 +101,9 @@ and expression_desc =
   | Texp_object of class_structure * string list
   | Texp_pack of module_expr
 
+  | Texp_staticraise of string * int * expression list
+  | Texp_staticcatch of expression * string * int * Ident.t list * expression
+
 and meth =
     Tmeth_name of string
   | Tmeth_val of Ident.t

@@ -870,6 +870,11 @@ and transl_exp0 e =
           cl_type = Cty_signature cty;
           cl_env = e.exp_env }
 
+  | Texp_staticraise (_, rid, el) ->
+      Lstaticraise (rid, List.map transl_exp el)
+  | Texp_staticcatch (body, _, rid, ids, handler) ->
+      Lstaticcatch (transl_exp body, (rid, ids), transl_exp handler)
+
 and transl_list expr_list =
   List.map transl_exp expr_list
 

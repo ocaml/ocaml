@@ -160,6 +160,10 @@ let expression sub exp =
       sub # class_structure cl
   | Texp_pack (mexpr) ->
       sub # module_expr mexpr
+  | Texp_staticraise (_, _, el) ->
+      List.iter (sub # expression) el
+  | Texp_staticcatch (e1, _, _, _, e2) ->
+      sub # expression e1; sub # expression e2
 
 
 let package_type sub pack =
