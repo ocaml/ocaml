@@ -1984,7 +1984,7 @@ and type_expect_ ?in_function env sexp ty_expected =
   | Pexp_try(sbody, caselist) ->
       begin match List.partition (function {ppat_desc = Ppat_variant _}, _ -> true | _ -> false) caselist with
       | [], caselist ->
-          let body = type_expect (Env.hide_static_handlers env) sbody ty_expected in
+          let body = type_expect ((*Env.hide_static_handlers*) env) sbody ty_expected in
           let cases, _ =
             type_cases env Predef.type_exn ty_expected false loc caselist in
           re {
