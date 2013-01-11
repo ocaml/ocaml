@@ -1,10 +1,21 @@
 
 # type ab = [ `A | `B ]
-# val f : [ `A ] -> int = <fun>
-# val f : [ `A ] -> unit = <fun>
+# Characters 32-35:
+  let f (x : [`A]) = match x with #ab -> 1;;
+                                  ^^^
+Error: This pattern matches values of type [? `A | `B ]
+       but a pattern was expected which matches values of type [ `A ]
+       The second variant type does not allow tag(s) `B
+# Characters 31-34:
+  let f x = ignore (match x with #ab -> 1); ignore (x : [`A]);;
+                                 ^^^
+Error: This pattern matches values of type [? `B ]
+       but a pattern was expected which matches values of type [ `A ]
+       Types for tag `B are incompatible
 # Characters 34-36:
   let f x = ignore (match x with `A|`B -> 1); ignore (x : [`A]);;
                                     ^^
-Warning 12: this sub-pattern is unused.
-val f : [ `A ] -> unit = <fun>
+Error: This pattern matches values of type [? `B ]
+       but a pattern was expected which matches values of type [ `A ]
+       Types for tag `B are incompatible
 # 
