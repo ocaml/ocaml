@@ -742,8 +742,13 @@ esac
 asppprofflags='-DPROFILING'
 
 case "$arch,$model,$system" in
-  amd64,*,macosx)   as='as -arch x86_64'
-                    aspp='gcc -arch x86_64 -c';;
+  amd64,*,macosx)   if ./searchpath clang; then
+                      as='clang -arch x86_64 -c'
+                      aspp='clang -arch x86_64 -c'
+                    else
+                      as='as -arch x86_64'
+                      aspp='gcc -arch x86_64 -c'
+                    fi;;
   amd64,*,solaris)  as='as --64'
                     aspp='gcc -m64 -c';;
   amd64,*,*)        as='as'
