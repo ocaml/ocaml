@@ -27,7 +27,7 @@ static value alloc_passwd_entry(struct passwd *entry)
   Begin_roots5 (name, passwd, gecos, dir, shell);
     name = copy_string(entry->pw_name);
     passwd = copy_string(entry->pw_passwd);
-#ifndef __BEOS__
+#if !defined(__BEOS__) && !defined(__ANDROID__)
     gecos = copy_string(entry->pw_gecos);
 #else
     gecos = copy_string("");
