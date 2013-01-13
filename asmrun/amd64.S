@@ -483,7 +483,7 @@ CFI_STARTPROC
         TESTL_VAR($1, caml_backtrace_active)
         jne     LBL(110)
         movq    %r14, %rsp
-        popq    %r14; CFI_ADJUST(-8)
+        popq    %r14
         ret
 LBL(110):
         movq    %rax, %r12            /* Save exception bucket */
@@ -496,7 +496,7 @@ LBL(110):
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
         movq    %r14, %rsp
-        popq    %r14; CFI_ADJUST(-8)
+        popq    %r14
         ret
 CFI_ENDPROC
 
@@ -508,7 +508,7 @@ CFI_STARTPROC
         jne     LBL(111)
         movq    C_ARG_1, %rax
         LOAD_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
-        popq    %r14; CFI_ADJUST(-8)   /* Recover previous exception handler */
+        popq    %r14                   /* Recover previous exception handler */
         LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
 LBL(111):
@@ -522,8 +522,8 @@ LBL(111):
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
         LOAD_VAR(caml_exception_pointer,%rsp)
-        popq    %r14; CFI_ADJUST(-8)   /* Recover previous exception handler */
-        LOAD_VAR(caml_young_ptr,%r15)  /* Reload alloc ptr */
+        popq    %r14                  /* Recover previous exception handler */
+        LOAD_VAR(caml_young_ptr,%r15) /* Reload alloc ptr */
         ret
 CFI_ENDPROC
 
