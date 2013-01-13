@@ -44,22 +44,30 @@
         cmp     \reg, #0
         beq     \lbl
         .endm
-        .macro  vpop regs
-        .endm
-        .macro  vpush regs
-        .endm
 #endif
 
 trap_ptr        .req    r8
 alloc_ptr       .req    r10
 alloc_limit     .req    r11
 
+/* Support for CFI directives */
+
+#if defined(ASM_CFI_SUPPORTED)
+#define CFI_STARTPROC .cfi_startproc
+#define CFI_ENDPROC .cfi_endproc
+#define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
+#else
+#define CFI_STARTPROC
+#define CFI_ENDPROC
+#define CFI_ADJUST(n)
+#endif
+
 /* Support for profiling with gprof */
 
 #if defined(PROFILING) && (defined(SYS_linux_eabihf) || defined(SYS_linux_eabi))
 #define PROFILE \
-        push    {lr}; \
-        bl      __gnu_mcount_nc
+        push    {lr}; CFI_ADJUST(4); \
+        bl      __gnu_mcount_nc; CFI_ADJUST(-4)
 #else
 #define PROFILE
 #endif
@@ -71,8 +79,8 @@ caml_system__code_begin:
 
         .align  2
         .globl  caml_call_gc
-        .type caml_call_gc, %function
 caml_call_gc:
+        CFI_STARTPROC
         PROFILE
     /* Record return address */
         ldr     r12, =caml_last_return_address
@@ -81,10 +89,12 @@ caml_call_gc:
     /* Record lowest stack address */
         ldr     r12, =caml_bottom_of_stack
         str     sp, [r12]
+#if defined(SYS_linux_eabihf)
     /* Save caller floating-point registers on the stack */
-        vpush   {d0-d7}
+        vpush   {d0-d7}; CFI_ADJUST(64)
+#endif
     /* Save integer registers and return address on the stack */
-        push    {r0-r7,r12,lr}
+        push    {r0-r7,r12,lr}; CFI_ADJUST(40)
     /* Store pointer to saved integer registers in caml_gc_regs */
         ldr     r12, =caml_gc_regs
         str     sp, [r12]
@@ -97,9 +107,11 @@ caml_call_gc:
     /* Call the garbage collector */
         bl      caml_garbage_collection
     /* Restore integer registers and return address from the stack */
-        pop     {r0-r7,r12,lr}
+        pop     {r0-r7,r12,lr}; CFI_ADJUST(-40)
+#if defined(SYS_linux_eabihf)
     /* Restore floating-point registers from the stack */
-        vpop    {d0-d7}
+        vpop    {d0-d7}; CFI_ADJUST(-64)
+#endif
     /* Reload new allocation pointer and limit */
     /* alloc_limit still points to caml_young_ptr */
         ldr     r12, =caml_young_limit
@@ -107,13 +119,14 @@ caml_call_gc:
         ldr     alloc_limit, [r12]
     /* Return to caller */
         bx      lr
+        CFI_ENDPROC
         .type   caml_call_gc, %function
         .size   caml_call_gc, .-caml_call_gc
 
         .align  2
         .globl  caml_alloc1
-        .type caml_alloc1, %function
 caml_alloc1:
+        CFI_STARTPROC
         PROFILE
 .Lcaml_alloc1:
         sub     alloc_ptr, alloc_ptr, 8
@@ -129,13 +142,14 @@ caml_alloc1:
         ldr     lr, [r7]
     /* Try again */
         b       .Lcaml_alloc1
+        CFI_ENDPROC
         .type   caml_alloc1, %function
         .size   caml_alloc1, .-caml_alloc1
 
         .align  2
         .globl  caml_alloc2
-        .type caml_alloc2, %function
 caml_alloc2:
+        CFI_STARTPROC
         PROFILE
 .Lcaml_alloc2:
         sub     alloc_ptr, alloc_ptr, 12
@@ -151,6 +165,7 @@ caml_alloc2:
         ldr     lr, [r7]
     /* Try again */
         b       .Lcaml_alloc2
+        CFI_ENDPROC
         .type   caml_alloc2, %function
         .size   caml_alloc2, .-caml_alloc2
 
@@ -158,6 +173,7 @@ caml_alloc2:
         .globl  caml_alloc3
         .type caml_alloc3, %function
 caml_alloc3:
+        CFI_STARTPROC
         PROFILE
 .Lcaml_alloc3:
         sub     alloc_ptr, alloc_ptr, 16
@@ -173,13 +189,14 @@ caml_alloc3:
         ldr     lr, [r7]
     /* Try again */
         b       .Lcaml_alloc3
+        CFI_ENDPROC
         .type   caml_alloc3, %function
         .size   caml_alloc3, .-caml_alloc3
 
         .align  2
         .globl  caml_allocN
-        .type caml_allocN, %function
 caml_allocN:
+        CFI_STARTPROC
         PROFILE
 .Lcaml_allocN:
         sub     alloc_ptr, alloc_ptr, r7
@@ -196,6 +213,7 @@ caml_allocN:
         ldr     lr, [r12]
     /* Try again */
         b       .Lcaml_allocN
+        CFI_ENDPROC
         .type   caml_allocN, %function
         .size   caml_allocN, .-caml_allocN
 
@@ -204,8 +222,8 @@ caml_allocN:
 
         .align  2
         .globl  caml_c_call
-        .type caml_c_call, %function
 caml_c_call:
+        CFI_STARTPROC
         PROFILE
     /* Record lowest stack address and return address */
         ldr     r5, =caml_last_return_address
@@ -227,6 +245,7 @@ caml_c_call:
         ldr     alloc_limit, [r6]
     /* Return */
         bx      r4
+        CFI_ENDPROC
         .type   caml_c_call, %function
         .size   caml_c_call, .-caml_c_call
 
@@ -234,8 +253,8 @@ caml_c_call:
 
         .align  2
         .globl  caml_start_program
-        .type caml_start_program, %function
 caml_start_program:
+        CFI_STARTPROC
         PROFILE
         ldr     r12, =caml_program
 
@@ -244,11 +263,14 @@ caml_start_program:
 /* Arguments to the OCaml code are in r0...r3 */
 
 .Ljump_to_caml:
+#if defined(SYS_linux_eabihf)
+    /* Save callee-save floating-point registers */
+        vpush   {d8-d15}; CFI_ADJUST(64)
+#endif
     /* Save return address and callee-save registers */
-        vpush   {d8-d15}
-        push    {r4-r8,r10,r11,lr}              /* 8-byte alignment */
+        push    {r4-r8,r10,r11,lr}; CFI_ADJUST(32)      /* 8-byte alignment */
     /* Setup a callback link on the stack */
-        sub     sp, sp, 4*4                     /* 8-byte alignment */
+        sub     sp, sp, 16; CFI_ADJUST(16)              /* 8-byte alignment */
         ldr     r4, =caml_bottom_of_stack
         ldr     r5, =caml_last_return_address
         ldr     r6, =caml_gc_regs
@@ -259,7 +281,7 @@ caml_start_program:
         str     r5, [sp, 4]
         str     r6, [sp, 8]
     /* Setup a trap frame to catch exceptions escaping the OCaml code */
-        sub     sp, sp, 2*4
+        sub     sp, sp, 8; CFI_ADJUST(8)
         ldr     r6, =caml_exception_pointer
         ldr     r5, =.Ltrap_handler
         ldr     r4, [r6]
@@ -278,7 +300,7 @@ caml_start_program:
         ldr     r4, =caml_exception_pointer
         ldr     r5, [sp, 0]
         str     r5, [r4]
-        add     sp, sp, 2*4
+        add     sp, sp, 8; CFI_ADJUST(-8)
     /* Pop the callback link, restoring the global variables */
 .Lreturn_result:
         ldr     r4, =caml_bottom_of_stack
@@ -290,14 +312,18 @@ caml_start_program:
         ldr     r4, =caml_gc_regs
         ldr     r5, [sp, 8]
         str     r5, [r4]
-        add     sp, sp, 4*4
+        add     sp, sp, 16; CFI_ADJUST(-16)
     /* Update allocation pointer */
         ldr     r4, =caml_young_ptr
         str     alloc_ptr, [r4]
-    /* Reload callee-save registers and return */
-        pop     {r4-r8,r10,r11,lr}
-        vpop    {d8-d15}
+    /* Reload callee-save registers and return address */
+        pop     {r4-r8,r10,r11,lr}; CFI_ADJUST(-32)
+#if defined(SYS_linux_eabihf)
+    /* Reload callee-save floating-point registers */
+        vpop    {d8-d15}; CFI_ADJUST(-64)
+#endif
         bx      lr
+        CFI_ENDPROC
         .type   .Lcaml_retaddr, %function
         .size   .Lcaml_retaddr, .-.Lcaml_retaddr
         .type   caml_start_program, %function
@@ -307,6 +333,7 @@ caml_start_program:
 
         .align  2
 .Ltrap_handler:
+        CFI_STARTPROC
     /* Save exception pointer */
         ldr     r12, =caml_exception_pointer
         str     trap_ptr, [r12]
@@ -314,6 +341,7 @@ caml_start_program:
         orr     r0, r0, 2
     /* Return it */
         b       .Lreturn_result
+        CFI_ENDPROC
         .type   .Ltrap_handler, %function
         .size   .Ltrap_handler, .-.Ltrap_handler
 
@@ -322,6 +350,7 @@ caml_start_program:
         .align  2
         .globl  caml_raise_exn
 caml_raise_exn:
+        CFI_STARTPROC
         PROFILE
     /* Test if backtrace is active */
         ldr     r1, =caml_backtrace_active
@@ -340,6 +369,7 @@ caml_raise_exn:
         mov     sp, trap_ptr
     /* Pop previous handler and addr of trap, and jump to it */
         pop     {trap_ptr, pc}
+        CFI_ENDPROC
         .type   caml_raise_exn, %function
         .size   caml_raise_exn, .-caml_raise_exn
 
@@ -347,8 +377,8 @@ caml_raise_exn:
 
         .align  2
         .globl  caml_raise_exception
-        .type caml_raise_exception, %function
 caml_raise_exception:
+        CFI_STARTPROC
         PROFILE
     /* Reload trap ptr, alloc ptr and alloc limit */
         ldr     trap_ptr, =caml_exception_pointer
@@ -375,6 +405,7 @@ caml_raise_exception:
         mov     sp, trap_ptr
     /* Pop previous handler and addr of trap, and jump to it */
         pop     {trap_ptr, pc}
+        CFI_ENDPROC
         .type   caml_raise_exception, %function
         .size   caml_raise_exception, .-caml_raise_exception
 
@@ -382,8 +413,8 @@ caml_raise_exception:
 
         .align  2
         .globl  caml_callback_exn
-        .type caml_callback_exn, %function
 caml_callback_exn:
+        CFI_STARTPROC
         PROFILE
     /* Initial shuffling of arguments (r0 = closure, r1 = first arg) */
         mov     r12, r0
@@ -391,13 +422,14 @@ caml_callback_exn:
         mov     r1, r12         /* r1 = closure environment */
         ldr     r12, [r12]      /* code pointer */
         b       .Ljump_to_caml
+        CFI_ENDPROC
         .type   caml_callback_exn, %function
         .size   caml_callback_exn, .-caml_callback_exn
 
         .align  2
         .globl  caml_callback2_exn
-        .type caml_callback2_exn, %function
 caml_callback2_exn:
+        CFI_STARTPROC
         PROFILE
     /* Initial shuffling of arguments (r0 = closure, r1 = arg1, r2 = arg2) */
         mov     r12, r0
@@ -406,13 +438,14 @@ caml_callback2_exn:
         mov     r2, r12         /* r2 = closure environment */
         ldr     r12, =caml_apply2
         b       .Ljump_to_caml
+        CFI_ENDPROC
         .type   caml_callback2_exn, %function
         .size   caml_callback2_exn, .-caml_callback2_exn
 
         .align  2
         .globl  caml_callback3_exn
-        .type caml_callback3_exn, %function
 caml_callback3_exn:
+        CFI_STARTPROC
         PROFILE
     /* Initial shuffling of arguments */
     /* (r0 = closure, r1 = arg1, r2 = arg2, r3 = arg3) */
@@ -423,18 +456,20 @@ caml_callback3_exn:
         mov     r3, r12         /* r3 = closure environment */
         ldr     r12, =caml_apply3
         b       .Ljump_to_caml
+        CFI_ENDPROC
         .type   caml_callback3_exn, %function
         .size   caml_callback3_exn, .-caml_callback3_exn
 
         .align  2
         .globl  caml_ml_array_bound_error
-        .type caml_ml_array_bound_error, %function
 caml_ml_array_bound_error:
+        CFI_STARTPROC
         PROFILE
     /* Load address of [caml_array_bound_error] in r7 */
         ldr     r7, =caml_array_bound_error
     /* Call that function */
         b       caml_c_call
+        CFI_ENDPROC
         .type   caml_ml_array_bound_error, %function
         .size   caml_ml_array_bound_error, .-caml_ml_array_bound_error
 
