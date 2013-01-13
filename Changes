@@ -16,6 +16,8 @@ Compilers:
   present in the environment
 - ocamlc has a new option -dsource which visualize the parsetree
 - tools/eqparsetree compare two parsetree ignoring location
+- ocamlopt now uses clang as assembler on OS X if available, which enables
+  CFI support for OS X.
 Bug fixes:
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4994: ocaml-mode doesn't work with xemacs21
