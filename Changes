@@ -1,6 +1,8 @@
 Next version
 ------------
 
+(Changes that can break existing programs are marked with a "*")
+
 Type system:
 - Propagate type information towards pattern-matching, even in the presence of
   polymorphic variants (discarding only information about possibly-present
@@ -54,7 +56,7 @@ Bug fixes:
 - PR#5824: Generate more efficient code for immediate right shifts.
 - PR#5825: Add a toplevel primitive to use source file wrapped with the
   coresponding module
-- PR#5835: nonoptional labeled arguments can be passed with '?'
+* PR#5835: nonoptional labeled arguments can be passed with '?'
 - PR#5865: assert failure when reporting undefined field label
 - PR#5885: Incorrect rule for compiling C stubs when shared libraries are not supported.
 
