@@ -5,7 +5,7 @@ Type system:
 - Propagate type information towards pattern-matching, even in the presence of
   polymorphic variants (discarding only information about possibly-present
   constructors). As a result, matching against absent constructors is no longer
-  allowed. 
+  allowed.
 
 Compilers:
 - PR#5861: raise an error when multiple private keywords are used in type
@@ -56,6 +56,7 @@ Bug fixes:
   coresponding module
 - PR#5835: nonoptional labeled arguments can be passed with '?'
 - PR#5865: assert failure when reporting undefined field label
+- PR#5885: Incorrect rule for compiling C stubs when shared libraries are not supported.
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary

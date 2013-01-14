@@ -197,8 +197,11 @@ rule "ocaml: cmo* -> cma"
   (Ocaml_compiler.byte_library_link "%.cmo" "%.cma");;
 
 rule "ocaml C stubs: clib & (o|obj)* -> (a|lib) & (so|dll)"
-  ~prods:["%(path:<**/>)lib%(libname:<*> and not <*.*>)"-.-ext_lib;
-          "%(path:<**/>)dll%(libname:<*> and not <*.*>)"-.-ext_dll]
+  ~prods:(["%(path:<**/>)lib%(libname:<*> and not <*.*>)"-.-ext_lib] @
+          if Ocamlbuild_Myocamlbuild_config.supports_shared_libraries then
+            ["%(path:<**/>)dll%(libname:<*> and not <*.*>)"-.-ext_dll]
+          else
+	    [])
   ~dep:"%(path)lib%(libname).clib"
   (C_tools.link_C_library "%(path)lib%(libname).clib" ("%(path)lib%(libname)"-.-ext_lib) "%(path)%(libname)");;
 
