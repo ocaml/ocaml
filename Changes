@@ -59,6 +59,7 @@ Bug fixes:
 * PR#5835: nonoptional labeled arguments can be passed with '?'
 - PR#5865: assert failure when reporting undefined field label
 - PR#5885: Incorrect rule for compiling C stubs when shared libraries are not supported.
+- ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
