@@ -40,6 +40,10 @@ let use_menhir = ref false
 let catch_errors = ref true
 let use_ocamlfind = ref false
 
+(* Currently only ocamlfind and menhir is defined as no-core tool,
+   perhaps later we need something better *)
+let is_core_tool = function "ocamlfind" | "menhir" -> false | _ -> true
+
 let mk_virtual_solvers =
   let dir = Ocamlbuild_where.bindir in
   List.iter begin fun cmd ->
@@ -47,18 +51,30 @@ let mk_virtual_solvers =
     let a_opt = A opt in
     let a_cmd = A cmd in
     let search_in_path = memo Command.search_in_path in
-    let solver () =
+    let solver core_tool () =
       if sys_file_exists !dir then
         let long = filename_concat !dir cmd in
         let long_opt = long ^ ".opt" in
-        if file_or_exe_exists long_opt then A long_opt
-        else if file_or_exe_exists long then A long
-        else try let _ = search_in_path opt in a_opt
-        with Not_found -> a_cmd
+        (* This defines how the command will be found *)
+        let choices =
+          [(fun () -> if file_or_exe_exists long_opt then Some (A long_opt) else None);
+           (fun () -> if file_or_exe_exists long then Some (A long) else None)] in
+        (* For non core tool the preference is too look at PATH first *)
+        let choices' =
+          [fun () ->
+            try let _ = search_in_path opt in Some a_opt
+            with Not_found -> Some a_cmd]
+        in
+        let choices = if core_tool then choices @ choices' else choices' @ choices in
+        try
+          match (List.find (fun choice -> not (choice () = None)) choices) () with
+            Some cmd -> cmd
+          | None -> raise Not_found
+        with Not_found -> failwith (Printf.sprintf "Can't find tool: %s" cmd)
       else
         try let _ = search_in_path opt in a_opt
         with Not_found -> a_cmd
-    in Command.setup_virtual_command_solver (String.uppercase cmd) solver
+    in Command.setup_virtual_command_solver (String.uppercase cmd) (solver (is_core_tool cmd))
   end
 
 let () =
