@@ -18,4 +18,15 @@ Error: This pattern matches values of type [? `B ]
 Error: This pattern matches values of type [? `B ]
        but a pattern was expected which matches values of type [ `A ]
        The second variant type does not allow tag(s) `B
+#   Characters 50-52:
+  let f (x : [< `A | `B]) = match x with `A | `B | `C -> 0;; (* warn *)
+                                                   ^^
+Warning 12: this sub-pattern is unused.
+val f : [< `A | `B ] -> int = <fun>
+# Characters 47-49:
+  let f (x : [`A | `B]) = match x with `A | `B | `C -> 0;; (* fail *)
+                                                 ^^
+Error: This pattern matches values of type [? `C ]
+       but a pattern was expected which matches values of type [ `A | `B ]
+       The second variant type does not allow tag(s) `C
 # 
