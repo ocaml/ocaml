@@ -219,7 +219,7 @@ let spec = ref (
    "-install-lib-dir", Set_string Ocamlbuild_where.libdir, "<path> Set the install library directory";
    "-install-bin-dir", Set_string Ocamlbuild_where.bindir, "<path> Set the install binary directory";
    "-where", Unit (fun () -> print_endline !Ocamlbuild_where.libdir; raise Exit_OK), " Display the install library directory";
-   "-which", String (fun cmd -> print_endline (find_tool cmd); raise Exit_OK), "<cmd> Display path to the tool command";
+   "-which", String (fun cmd -> print_endline (find_tool cmd); raise Exit_OK), "<command> Display path to the tool command";
    "-ocamlc", set_cmd ocamlc, "<command> Set the OCaml bytecode compiler";
    "-ocamlopt", set_cmd ocamlopt, "<command> Set the OCaml native compiler";
    "-ocamldep", set_cmd ocamldep, "<command> Set the OCaml dependency tool";
