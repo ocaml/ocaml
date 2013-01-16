@@ -17,6 +17,7 @@ Bug fixes:
 - PR#5858: Assert failure during typing of class
 - PR#5880: 'Genlex.make_lexer' documention mentions the wrong exception
 - PR#5891: Support rectypes tag for mlpack (ocamlbuild)
+- PR#5892: GADT exhaustiveness check is broken
 
 OCaml 4.00.1:
 -------------
