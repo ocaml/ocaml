@@ -93,6 +93,7 @@ Bug fixes:
 - PR#5798: add ARM VFPv2 support for Raspbian (ocamlopt)
 - PR#5806: ensure that backtrace tests are always run (testsuite)
 - PR#5810: error in switch printing when using -dclambda
+- PR#5840: improved documentation for 'Unix.lseek'
 - PR#5858: Assert failure during typing of class
 - PR#5880: 'Genlex.make_lexer' documention mentions the wrong exception
 - PR#5891: support rectypes tag for mlpack (ocamlbuild)
