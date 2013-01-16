@@ -14,6 +14,7 @@ Bug fixes:
 - PR#5810: error in switch printing when using -dclambda
 - PR#5819: segfault when using [with] on large recursive record (ocamlopt)
 - PR#5858: Assert failure during typing of class
+- PR#5891: Support rectypes tag for mlpack (ocamlbuild)
 
 OCaml 4.00.1:
 -------------
