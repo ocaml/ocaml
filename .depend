@@ -24,6 +24,8 @@ utils/terminfo.cmo : utils/terminfo.cmi
 utils/terminfo.cmx : utils/terminfo.cmi
 utils/warnings.cmo : utils/warnings.cmi
 utils/warnings.cmx : utils/warnings.cmi
+parsing/ast_mapper.cmi : parsing/parsetree.cmi parsing/longident.cmi \
+    parsing/location.cmi parsing/asttypes.cmi
 parsing/asttypes.cmi : parsing/location.cmi
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
 parsing/location.cmi : utils/warnings.cmi
@@ -37,6 +39,12 @@ parsing/pprintast.cmi : parsing/parsetree.cmi parsing/longident.cmi \
     parsing/asttypes.cmi
 parsing/printast.cmi : parsing/parsetree.cmi
 parsing/syntaxerr.cmi : parsing/location.cmi
+parsing/ast_mapper.cmo : parsing/parsetree.cmi parsing/longident.cmi \
+    parsing/location.cmi utils/config.cmi parsing/asttypes.cmi \
+    parsing/ast_mapper.cmi
+parsing/ast_mapper.cmx : parsing/parsetree.cmi parsing/longident.cmx \
+    parsing/location.cmx utils/config.cmx parsing/asttypes.cmi \
+    parsing/ast_mapper.cmi
 parsing/lexer.cmo : utils/warnings.cmi parsing/parser.cmi utils/misc.cmi \
     parsing/location.cmi parsing/lexer.cmi
 parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \

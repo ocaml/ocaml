@@ -445,41 +445,8 @@ end
    and cases of the OCaml grammar.  The default behavior of the mapper
    is the identity. *)
 
-class create =
+class mapper =
   object(this)
-    method run fn_in fn_out =
-      let ic = open_in_bin fn_in in
-      let magic = String.create (String.length ast_impl_magic_number) in
-      really_input ic magic 0 (String.length magic);
-      if magic <> ast_impl_magic_number && magic <> ast_intf_magic_number then
-        failwith "Bad magic";
-      let input_name = input_value ic in
-      let ast = input_value ic in
-      close_in ic;
-
-      let (input_name, ast) =
-        if magic = ast_impl_magic_number
-        then Obj.magic (this # implementation input_name (Obj.magic ast))
-        else Obj.magic (this # interface input_name (Obj.magic ast))
-      in
-      let oc = open_out_bin fn_out in
-      output_string oc magic;
-      output_value oc input_name;
-      output_value oc ast;
-      close_out oc
-
-    method main =
-      try
-        if Array.length Sys.argv > 2 then
-          this # run Sys.argv.(1) Sys.argv.(2)
-        else begin
-          Printf.eprintf "Usage: %s <infile> <outfile>" Sys.executable_name;
-          exit 1
-        end
-      with exn ->
-        prerr_endline (Printexc.to_string exn);
-        exit 2
-
     method implementation (input_name : string) ast = (input_name, this # structure ast)
     method interface (input_name: string) ast = (input_name, this # signature ast)
     method structure l = map_flatten (this # structure_item) l
@@ -522,24 +489,36 @@ class create =
   end
 
 
-let set_loc loc = object
-  inherit create as super
+let apply ~source ~target mapper =
+  let ic = open_in_bin source in
+  let magic = String.create (String.length ast_impl_magic_number) in
+  really_input ic magic 0 (String.length magic);
+  if magic <> ast_impl_magic_number && magic <> ast_intf_magic_number then
+    failwith "Bad magic";
+  let input_name = input_value ic in
+  let ast = input_value ic in
+  close_in ic;
 
-  method! expr x =
-    if x.pexp_loc.loc_ghost then
-      super # expr {x with pexp_loc = loc}
-    else
-      x
+  let (input_name, ast) =
+    if magic = ast_impl_magic_number
+    then Obj.magic (mapper # implementation input_name (Obj.magic ast))
+    else Obj.magic (mapper # interface input_name (Obj.magic ast))
+  in
+  let oc = open_out_bin target in
+  output_string oc magic;
+  output_value oc input_name;
+  output_value oc ast;
+  close_out oc
 
-  method! typ x =
-    if x.ptyp_loc.loc_ghost then
-      super # typ {x with ptyp_loc = loc}
-    else
-      x
+let main mapper =
+  try
+    if Array.length Sys.argv > 2 then
+      apply ~source:Sys.argv.(1) ~target:Sys.argv.(2) mapper
+    else begin
+      Printf.eprintf "Usage: %s <infile> <outfile>" Sys.executable_name;
+      exit 1
+    end
+  with exn ->
+    prerr_endline (Printexc.to_string exn);
+    exit 2
 
-  method! pat x =
-    if x.ppat_loc.loc_ghost then
-      super # pat {x with ppat_loc = loc}
-    else
-      x
-end
