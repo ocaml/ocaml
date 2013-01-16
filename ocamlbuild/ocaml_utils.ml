@@ -65,17 +65,18 @@ let path_importance path x =
   end
   else if ignore_stdlib x then `just_try else `mandatory
 
-let expand_module include_dirs module_name exts =
-  let dirname = Pathname.dirname module_name in
-  let basename = Pathname.basename module_name in
-  let module_name_cap = dirname/(String.capitalize basename) in
-  let module_name_uncap = dirname/(String.uncapitalize basename) in
-  List.fold_right begin fun include_dir ->
-    List.fold_right begin fun ext acc ->
-      include_dir/(module_name_uncap-.-ext) ::
-      include_dir/(module_name_cap-.-ext) :: acc
-    end exts
-  end include_dirs []
+let expand_module =
+  memo3 (fun include_dirs module_name exts ->
+    let dirname = Pathname.dirname module_name in
+    let basename = Pathname.basename module_name in
+    let module_name_cap = dirname/(String.capitalize basename) in
+    let module_name_uncap = dirname/(String.uncapitalize basename) in
+    List.fold_right begin fun include_dir ->
+      List.fold_right begin fun ext acc ->
+        include_dir/(module_name_uncap-.-ext) ::
+          include_dir/(module_name_cap-.-ext) :: acc
+      end exts
+    end include_dirs [])
 
 let string_list_of_file file =
   with_input_file file begin fun ic ->

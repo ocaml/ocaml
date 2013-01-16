@@ -403,3 +403,19 @@ let memo f =
     with Not_found ->
       let res = f x in
       (Hashtbl.add cache x res; res)
+
+let memo2 f =
+  let cache = Hashtbl.create 103 in
+  fun x y ->
+    try Hashtbl.find cache (x,y)
+    with Not_found ->
+      let res = f x y in
+      (Hashtbl.add cache (x,y) res; res)
+
+let memo3 f =
+  let cache = Hashtbl.create 103 in
+  fun x y z ->
+    try Hashtbl.find cache (x,y,z)
+    with Not_found ->
+      let res = f x y z in
+      (Hashtbl.add cache (x,y,z) res; res)

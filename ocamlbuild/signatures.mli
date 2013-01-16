@@ -348,6 +348,10 @@ module type MISC = sig
   val ( @:= ) : 'a list ref -> 'a list -> unit
 
   val memo : ('a -> 'b) -> ('a -> 'b)
+
+  val memo2 : ('a -> 'b -> 'c) -> ('a -> 'b -> 'c)
+
+  val memo3 : ('a -> 'b -> 'c -> 'd) -> ('a -> 'b -> 'c -> 'd)
 end
 
 module type OPTIONS = sig
