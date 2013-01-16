@@ -534,6 +534,7 @@ flag ["ocaml"; "bin_annot"; "compile"] (A "-bin-annot");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "doc"] (A "-rectypes");;
+flag ["ocaml"; "rectypes"; "pack"] (A "-rectypes");;
 flag ["ocaml"; "linkall"; "link"] (A "-linkall");;
 flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
