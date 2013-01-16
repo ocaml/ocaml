@@ -369,7 +369,7 @@ static void extern_rec(value v)
     } else if (n >= -(1 << 15) && n < (1 << 15)) {
       writecode16(CODE_INT16, n);
 #ifdef ARCH_SIXTYFOUR
-    } else if (n < -((intnat)1 << 31) || n >= ((intnat)1 << 31)) {
+    } else if (n < -((intnat)1 << 30) || n >= ((intnat)1 << 30)) {
       writecode64(CODE_INT64, n);
 #endif
     } else
