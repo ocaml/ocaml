@@ -217,8 +217,9 @@ let in_current_module = function
   | Path.Pdot _ | Path.Papply _ -> false
 
 let in_pervasives p =
-    try ignore (Env.find_type p Env.initial); true
-    with Not_found -> false
+  in_current_module p &&
+  try ignore (Env.find_type p Env.initial); true
+  with Not_found -> false
 
 let is_datatype decl=
   match decl.type_kind with
@@ -1884,7 +1885,7 @@ let is_abstract_newtype env p =
   with Not_found -> false
 
 let non_aliasable p decl =
-  in_pervasives p ||
+  (* in_pervasives p ||  (subsumed by in_current_module) *)
   in_current_module p && decl.type_newtype_level = None
 
 (* mcomp type_pairs subst env t1 t2 does not raise an
@@ -2230,7 +2231,7 @@ and unify3 env t1 t1' t2 t2' =
           unify_list env tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
           if !umode = Expression || not !generate_equations
-          || in_current_module p1 || in_pervasives p1
+          || in_current_module p1 (* || in_pervasives p1 *)
           || try is_datatype (Env.find_type p1 !env) with Not_found -> false
           then
             unify_list env tl1 tl2
