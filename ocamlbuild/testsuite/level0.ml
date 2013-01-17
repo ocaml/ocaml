@@ -84,4 +84,10 @@ test "SubtoolOptions"
   ~targets:("parser.native",["parser.byte"])
   ();;
 
+test "Itarget"
+  ~description:".itarget building with dependencies between the modules"
+  ~tree:[T.f "foo.itarget" ~content:"a.cma\nb.byte\n"; T.f "a.ml"; T.f "b.ml" ~content:"open A\n"]
+  ~matching:[M.f "a.cma"; M.f "b.byte"]
+  ~targets:("foo.otarget",[]) ();;
+
 run ~root:"_test";;
