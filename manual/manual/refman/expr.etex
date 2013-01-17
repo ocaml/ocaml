@@ -494,8 +494,12 @@ evaluation order for the subexpressions is not specified.
 
 \subsubsection*{Variants}
 
-The expression @constr expr@ evaluates to the variant value whose
-constructor is @constr@, and whose argument is the value of @expr@.
+The expression @constr expr@ evaluates to the unary variant value
+whose constructor is @constr@, and whose argument is the value of
+@expr@. Similarly, the expression @constr '(' expr_1 ',' \ldots ','
+expr_n ')'@ evaluates to the n-ary variant value whose constructor is
+@constr@ and whose arguments are the values of @expr_1, \ldots,
+expr_n@.
 
 For lists, some syntactic sugar is provided. The expression
 @expr_1 '::' expr_2@ stands for the constructor @'(' '::' ')' @
