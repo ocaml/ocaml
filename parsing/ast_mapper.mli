@@ -47,11 +47,11 @@ class mapper:
     method with_constraint: with_constraint -> with_constraint
   end
 
-val apply: source:string -> target:string -> mapper -> unit
+val apply: source:string -> target:string -> #mapper -> unit
     (** Apply a mapper to a dumped parsetree found in the [source] file
         and put the result in the [target] file. *)
 
-val main: mapper -> unit
+val main: #mapper -> unit
     (** Entry point to call to implement a -ppx rewriter from a mapper object. *)
 
 (** {2 Helpers to build Parsetree fragments} *)
