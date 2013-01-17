@@ -147,6 +147,14 @@ extern value caml_start_program (void);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
+#ifdef _MSC_VER
+
+/* PR 4887: avoid crash box of windows runtime on some system calls */
+extern void caml_install_invalid_parameter_handler();
+
+#endif
+
+
 void caml_main(char **argv)
 {
   char * exe_name;
@@ -157,6 +165,9 @@ void caml_main(char **argv)
   char tos;
 
   caml_init_ieee_floats();
+#ifdef _MSC_VER
+  caml_install_invalid_parameter_handler();
+#endif
   caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;
