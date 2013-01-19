@@ -38,7 +38,7 @@ let execute cmd =
 
 let rm f =
   if exists f then
-    ignore(Sys.command (Printf.sprintf "rm -r ./%s" f))
+    ignore(Sys.command (Printf.sprintf "rm -r %s" f))
 
 module Match = struct
 
@@ -389,6 +389,8 @@ let test name
   tests := !tests @ [{ name; description; tree; matching; options; targets; pre_cmd; failing_msg; run }]
 
 let run ~root =
+  let dir = Sys.getcwd () in
+  let root = dir ^ "/" ^ root in
 
   let command opts args =
     let b = Buffer.create 127 in
@@ -409,19 +411,17 @@ let run ~root =
       ; pre_cmd
       ; run } =
 
-    let dir = Sys.getcwd () in
-
-    Unix.chdir root;
-    rm name;
-    Unix.mkdir name 0o750;
-    List.iter (Tree.create_on_fs ~root:name) tree;
-    Unix.chdir name;
+    let full_name = root ^ "/" ^ name in
+    rm full_name;
+    Unix.mkdir full_name 0o750;
+    List.iter (Tree.create_on_fs ~root:full_name) tree;
+    Unix.chdir full_name;
 
     (match pre_cmd with
     | None -> ()
     | Some str -> ignore(Sys.command str));
 
-    let log_name = name ^ ".log" in
+    let log_name = full_name ^ ".log" in
 
     let cmd = command options (fst targets :: snd targets) in
     let allow_failure = failing_msg <> None in
@@ -444,11 +444,8 @@ let run ~root =
         else
           Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n" name ((Printf.sprintf "Failure with not matching message: %s") msg)
       end;
-      Unix.chdir dir;
     | _ ->
-      Unix.chdir dir;
-      Unix.chdir root;
-      let errors = List.concat (List.map (Match.match_with_fs ~root:name) matching) in
+      let errors = List.concat (List.map (Match.match_with_fs ~root:full_name) matching) in
       begin if errors == [] then
         Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n" name description
         else begin
@@ -459,7 +456,6 @@ let run ~root =
           Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n" name
             (Printf.sprintf "Some system checks failed, output written to %s" log_name)
         end
-      end;
-      Unix.chdir dir)
+      end)
 
   in List.iter one_test !tests
