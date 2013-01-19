@@ -391,6 +391,7 @@ let test name
 let run ~root =
   let dir = Sys.getcwd () in
   let root = dir ^ "/" ^ root in
+  Unix.mkdir root 0o750;
 
   let command opts args =
     let b = Buffer.create 127 in
