@@ -186,6 +186,7 @@ module Option = struct
     |  `pkg of package
     |  `pkgs of package list
     |  `package of package
+    |  `syntax of string
     |  `lflag of flag
     |  `lflags of flag list
     |  `cflag of flag
@@ -273,6 +274,7 @@ module Option = struct
     | `pkg package -> fprintf ppf "pkg %a" print_package package
     | `pkgs packages -> fprintf ppf "pkgs %a" print_packages packages
     | `package package -> fprintf ppf "package %a" print_package package
+    | `syntax syntax -> fprintf ppf "syntax %a" pp_print_string syntax
     | `lflag flag -> fprintf ppf "lflag %a" print_flag flag
     | `lflags flags -> fprintf ppf "lflags %a" print_flags flags
     | `cflag flag -> fprintf ppf "cflag %a" print_flag flag
@@ -391,6 +393,7 @@ let test name
 let run ~root =
   let dir = Sys.getcwd () in
   let root = dir ^ "/" ^ root in
+  rm root;
   Unix.mkdir root 0o750;
 
   let command opts args =
@@ -412,7 +415,7 @@ let run ~root =
       ; pre_cmd
       ; run } =
 
-    let full_name = root ^ "/" ^ name in
+    let full_name = root ^ "^" ^ name in
     rm full_name;
     Unix.mkdir full_name 0o750;
     List.iter (Tree.create_on_fs ~root:full_name) tree;

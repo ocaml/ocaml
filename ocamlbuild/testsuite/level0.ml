@@ -102,4 +102,11 @@ test "PackAcross"
   ~targets:("main.byte", ["main.native"])
   ();;
 
+test "SyntaxFlag"
+  ~description:"-syntax for ocamlbuild"
+  ~options:[`use_ocamlfind; `package "camlp4.macro"; `syntax "camlp4o"]
+  ~tree:[T.f "dummy.ml" ~content:"IFDEF TEST THEN\nprint_endline \"Hello\";;\nENDIF;;"]
+  ~matching:[M.f "dummy.native"]
+  ~targets:("dummy.native",[]) ();;
+
 run ~root:"_test";;
