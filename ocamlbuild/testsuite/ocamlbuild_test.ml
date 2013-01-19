@@ -415,7 +415,7 @@ let run ~root =
       ; pre_cmd
       ; run } =
 
-    let full_name = root ^ "^" ^ name in
+    let full_name = root ^ "/" ^ name in
     rm full_name;
     Unix.mkdir full_name 0o750;
     List.iter (Tree.create_on_fs ~root:full_name) tree;
