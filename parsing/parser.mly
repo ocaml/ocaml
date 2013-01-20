@@ -1299,7 +1299,7 @@ simple_pattern:
   | LBRACE lbl_pattern_list RBRACE
       { let (fields, closed) = $2 in mkpat(Ppat_record(fields, closed)) }
   | LBRACE lbl_pattern_list error
-      { unclosed "{" 1 "}" 4 }
+      { unclosed "{" 1 "}" 3 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
       { reloc_pat (mktailpat (rhs_loc 4) (List.rev $2)) }
   | LBRACKET pattern_semi_list opt_semi error
