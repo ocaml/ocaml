@@ -486,8 +486,6 @@ let camlp4_flags camlp4s =
     flag ["ocaml"; "pp"; camlp4] (A camlp4)
   end camlp4s;;
 
-camlp4_flags ["camlp4o"; "camlp4r"; "camlp4of"; "camlp4rf"; "camlp4orf"; "camlp4oof"];;
-
 let p4_series =  ["camlp4o"; "camlp4r"; "camlp4of"; "camlp4rf"; "camlp4orf"; "camlp4oof"];;
 let p4_opt_series = List.map (fun f -> f ^ ".opt") p4_series;;
 
