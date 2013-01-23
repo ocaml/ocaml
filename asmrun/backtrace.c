@@ -23,15 +23,9 @@
 
 int caml_backtrace_active = 0;
 int caml_backtrace_pos = 0;
-int caml_backtrace_extract = 0;
 code_t * caml_backtrace_buffer = NULL;
 value caml_backtrace_last_exn = Val_unit;
 #define BACKTRACE_BUFFER_SIZE 1024
-
-CAMLprim value caml_set_backtrace_extract(value vflag){
-  caml_backtrace_extract = Int_val(vflag);
-  return Val_unit;
-}
 
 /* Start or stop the backtrace machinery */
 
@@ -110,9 +104,9 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     }
     /* Stop when we reach the current exception handler */
 #ifndef Stack_grows_upwards
-    if (sp > trapsp && !caml_backtrace_extract) return;
+    if (sp > trapsp) return;
 #else
-    if (sp < trapsp && !caml_backtrace_extract) return;
+    if (sp < trapsp) return;
 #endif
   }
 }
