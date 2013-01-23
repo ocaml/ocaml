@@ -82,3 +82,8 @@ val register_printer: (exn -> string option) -> unit
     the backtrace if it has itself raised an exception before.
     @since 3.11.2
 *)
+
+val current_call_stack: unit -> (string * int * int * int) list
+(** [Printexc.current_call_stack ()] returns a suffix of the current
+    call stack (whose length is not specified).  Each item is a tuple
+    (file name, line number, first character, last character). *)

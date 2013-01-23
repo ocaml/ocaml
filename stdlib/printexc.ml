@@ -137,5 +137,28 @@ let get_backtrace () =
 external record_backtrace: bool -> unit = "caml_record_backtrace"
 external backtrace_status: unit -> bool = "caml_backtrace_status"
 
+external set_backtrace_extract: bool -> unit = "caml_set_backtrace_extract"
+
+let current_call_stack () =
+  let rb = backtrace_status () in
+  record_backtrace true;
+  set_backtrace_extract true;
+  (try raise Exit with _ -> ());
+  let bt = get_exception_backtrace () in
+  set_backtrace_extract false;
+  record_backtrace rb;
+  match bt with
+  | None -> []
+  | Some a ->
+      let res = ref [] in
+      for i = Array.length a - 1 downto 0 do
+        match a.(i) with
+        | Known_location (_, fn, lineno, ch1, ch2) when fn <> "printexc.ml" ->
+            res := (fn, lineno, ch1, ch2) :: !res
+        | _ -> ()
+      done;
+      !res
+
+
 let register_printer fn =
   printers := fn :: !printers

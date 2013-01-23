@@ -512,10 +512,11 @@ let apply ~source ~target mapper =
 
 let main mapper =
   try
-    if Array.length Sys.argv > 2 then
-      apply ~source:Sys.argv.(1) ~target:Sys.argv.(2) mapper
+    let n = Array.length Sys.argv in
+    if n > 2 then
+      apply ~source:Sys.argv.(n - 2) ~target:Sys.argv.(n - 1) mapper
     else begin
-      Printf.eprintf "Usage: %s <infile> <outfile>" Sys.executable_name;
+      Printf.eprintf "Usage: %s [extra_args] <infile> <outfile>" Sys.executable_name;
       exit 1
     end
   with exn ->

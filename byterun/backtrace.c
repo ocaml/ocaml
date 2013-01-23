@@ -35,6 +35,7 @@
 
 CAMLexport int caml_backtrace_active = 0;
 CAMLexport int caml_backtrace_pos = 0;
+CAMLexport int caml_backtrace_extract = 0;
 CAMLexport code_t * caml_backtrace_buffer = NULL;
 CAMLexport value caml_backtrace_last_exn = Val_unit;
 CAMLexport char * caml_cds_file = NULL;
@@ -59,6 +60,10 @@ enum {
   POS_CNUM = 3
 };
 
+CAMLprim value caml_set_backtrace_extract(value vflag){
+  caml_backtrace_extract = Int_val(vflag);
+  return Val_unit;
+}
 /* Start or stop the backtrace machinery */
 
 CAMLprim value caml_record_backtrace(value vflag)
@@ -92,6 +97,7 @@ CAMLprim value caml_backtrace_status(value vunit)
 
 void caml_stash_backtrace(value exn, code_t pc, value * sp)
 {
+  value * limit;
   code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
   if (pc != NULL) pc = pc - 1;
   if (exn != caml_backtrace_last_exn) {
@@ -106,7 +112,8 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp)
   if (pc >= caml_start_code && pc < end_code){
     caml_backtrace_buffer[caml_backtrace_pos++] = pc;
   }
-  for (/*nothing*/; sp < caml_trapsp; sp++) {
+  limit = (caml_backtrace_extract ? caml_stack_high : caml_trapsp);
+  for (/*nothing*/; sp < limit; sp++) {
     code_t p = (code_t) *sp;
     if (p >= caml_start_code && p < end_code) {
       if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
