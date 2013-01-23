@@ -912,7 +912,7 @@ class in the module~:
 \item for TeXinfo~: "Odoc_texi.Texi_generator" (class "texi"),
 \item for man pages~: "Odoc_man.Man_generator" (class "man"),
 \item for graphviz (dot)~: "Odoc_dot.Dot_generator" (class "dot"),
-\item for other kinds~: "Odoc_gen.Base" (class "doc_generator").
+\item for other kinds~: "Odoc_gen.Base" (class "generator").
 \end{itemize}
 That is, to define a new generator, one must implement a module with
 the expected signature, and with the given generator class, providing
