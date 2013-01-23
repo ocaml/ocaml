@@ -439,25 +439,25 @@ let run ~root =
         let ch = open_out log_name in
         List.iter (fun l -> output_string ch l; output_string ch "\n") lines;
         close_out ch;
-        Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n" name
+        Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n%!" name
           (Printf.sprintf "Command '%s' with error code %n output written to %s" cmd n log_name);
       | Some failing_msg ->
         let msg = String.concat "\n" lines in
         if failing_msg = msg then
-          Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n" name description
+          Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n%!" name description
         else
-          Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n" name ((Printf.sprintf "Failure with not matching message: %s") msg)
+          Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n%!" name ((Printf.sprintf "Failure with not matching message: %s") msg)
       end;
     | _ ->
       let errors = List.concat (List.map (Match.match_with_fs ~root:full_name) matching) in
       begin if errors == [] then
-        Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n" name description
+        Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n%!" name description
         else begin
           let ch = open_out log_name in
           output_string ch ("Run '" ^ cmd ^ "'\n");
           List.iter (fun e -> output_string ch (Match.string_of_error e); output_string ch ".\n") errors;
           close_out ch;
-          Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n" name
+          Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n%!" name
             (Printf.sprintf "Some system checks failed, output written to %s" log_name)
         end
       end)
