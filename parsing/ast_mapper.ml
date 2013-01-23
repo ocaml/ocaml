@@ -488,6 +488,11 @@ class mapper =
     method location l = l
   end
 
+class type main_entry_points =
+  object
+    method implementation: string -> structure -> string * structure
+    method interface: string -> signature -> string * signature
+  end
 
 let apply ~source ~target mapper =
   let ic = open_in_bin source in
@@ -510,11 +515,12 @@ let apply ~source ~target mapper =
   output_value oc ast;
   close_out oc
 
-let main mapper =
+let run_main mapper =
   try
-    let n = Array.length Sys.argv in
+    let a = Sys.argv in
+    let n = Array.length a in
     if n > 2 then
-      apply ~source:Sys.argv.(n - 2) ~target:Sys.argv.(n - 1) mapper
+      apply ~source:a.(n - 2) ~target:a.(n - 1) (mapper (Array.to_list (Array.sub a 1 (n - 3))))
     else begin
       Printf.eprintf "Usage: %s [extra_args] <infile> <outfile>" Sys.executable_name;
       exit 1
@@ -523,3 +529,14 @@ let main mapper =
     prerr_endline (Printexc.to_string exn);
     exit 2
 
+let main mapper = run_main (fun _ -> mapper)
+
+let standalone_mode = ref true
+
+let registered_mappers = ref []
+
+let register name f =
+  if !standalone_mode then
+    run_main f
+  else
+    registered_mappers := (name, (f :> string list -> mapper)) :: !registered_mappers
