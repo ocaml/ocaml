@@ -61,30 +61,28 @@ val main: #main_entry_points -> unit
     (** Entry point to call to implement a standalone -ppx rewriter
         from a mapper object. *)
 
+val run_main: (string list -> #main_entry_points) -> unit
+    (** Same as [main], but with extra arguments from the command line. *)
+
 (** {2 Registration API} *)
 
-val standalone_mode: bool ref
-val registered_mappers: (string * (string list -> mapper)) list ref
-    (** Get all registered mappers (order is reversed w.r.t. registration
-        time. *)
+val register_function: (string -> (string list -> mapper) -> unit) ref
 
 val register: string -> (string list -> #mapper) -> unit
-    (**
-       If [standalone_mode] is true, the mapper is run immediatly
-       and the arguments are taken from the process command line.
-       This is to support a scenario where a mapper is linked
-       as a stand-alone executable.
 
-       If [standalone_mode] is false, the mapper is registered
-       to a global table, accessible with [get_registered].  This
-       is to support -ppx drivers, which combine several mappers
-       in a single process.  Typically, a driver starts
-       by setting [standalone_mode] to false, then lets ppx rewriters
-       (linked statically or dynamically) register themselves,
-       and then run all or some of them.  It is also possible
-       to have -ppx drivers apply rewriters to only specific parts
-       of an AST.
-     *)
+    (** Apply the [register_function].  The default behavior is to run
+        the mapper immediatly, taking arguments from the process
+        command line.  This is to support a scenario where a mapper is
+        linked as a stand-alone executable.
+
+        It is possible to overwrite the [register_function] to define
+        "-ppx drivers", which combine several mappers in a single
+        process.  Typically, a driver starts by defining
+        [register_function] to a custom implementation, then lets ppx
+        rewriters (linked statically or dynamically) register
+        themselves, and then run all or some of them.  It is also
+        possible to have -ppx drivers apply rewriters to only specific
+        parts of an AST.  *)
 
 
 (** {2 Helpers to build Parsetree fragments} *)

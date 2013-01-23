@@ -522,7 +522,7 @@ let run_main mapper =
     if n > 2 then
       apply ~source:a.(n - 2) ~target:a.(n - 1) (mapper (Array.to_list (Array.sub a 1 (n - 3))))
     else begin
-      Printf.eprintf "Usage: %s [extra_args] <infile> <outfile>" Sys.executable_name;
+      Printf.eprintf "Usage: %s [extra_args] <infile> <outfile>\n%!" Sys.executable_name;
       exit 1
     end
   with exn ->
@@ -531,12 +531,5 @@ let run_main mapper =
 
 let main mapper = run_main (fun _ -> mapper)
 
-let standalone_mode = ref true
-
-let registered_mappers = ref []
-
-let register name f =
-  if !standalone_mode then
-    run_main f
-  else
-    registered_mappers := (name, (f :> string list -> mapper)) :: !registered_mappers
+let register_function = ref (fun _name f -> run_main f)
+let register name f = !register_function name (f :> string list -> mapper)
