@@ -1,0 +1,77 @@
+Index: typing/typemod.ml
+===================================================================
+--- typing/typemod.ml	(revision 13273)
++++ typing/typemod.ml	(working copy)
+@@ -832,7 +832,9 @@
+            mod_loc = smod.pmod_loc }
+   | Pmod_functor(name, smty, sbody) ->
+       let mty = transl_modtype env smty in
+-      let (id, newenv) = Env.enter_module name.txt mty.mty_type env in
++      let (id, newenv) =
++	if name.txt = "*" then (Ident.create "*", env) else 
++	Env.enter_module name.txt mty.mty_type env in
+       let body = type_module sttn true None newenv sbody in
+       rm { mod_desc = Tmod_functor(id, name, mty, body);
+            mod_type = Mty_functor(id, mty.mty_type, body.mod_type);
+@@ -852,10 +854,10 @@
+               raise(Error(sarg.pmod_loc, Not_included msg)) in
+           let mty_appl =
+             match path with
+-              Some path ->
++              Some path when Ident.name param <> "*" ->
+                 Subst.modtype (Subst.add_module param path Subst.identity)
+                               mty_res
+-            | None ->
++            | _ ->
+                 try
+                   Mtype.nondep_supertype
+                     (Env.add_module param arg.mod_type env) param mty_res
+Index: typing/oprint.ml
+===================================================================
+--- typing/oprint.ml	(revision 13273)
++++ typing/oprint.ml	(working copy)
+@@ -343,6 +343,8 @@
+ let rec print_out_module_type ppf =
+   function
+     Omty_abstract -> ()
++  | Omty_functor ("*", _, mty_res) ->
++      fprintf ppf "@[<2>functor@ () ->@ %a@]" print_out_module_type mty_res
+   | Omty_functor (name, mty_arg, mty_res) ->
+       fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
+         print_out_module_type mty_arg print_out_module_type mty_res
+Index: parsing/parser.mly
+===================================================================
+--- parsing/parser.mly	(revision 13273)
++++ parsing/parser.mly	(working copy)
+@@ -532,8 +532,12 @@
+       { unclosed "struct" 1 "end" 3 }
+   | FUNCTOR LPAREN UIDENT COLON module_type RPAREN MINUSGREATER module_expr
+       { mkmod(Pmod_functor(mkrhs $3 3, $5, $8)) }
++  | FUNCTOR LPAREN RPAREN MINUSGREATER module_expr
++      { mkmod(Pmod_functor(mkrhs "*" 3, mkmty (Pmty_signature []), $5)) }
+   | module_expr LPAREN module_expr RPAREN
+       { mkmod(Pmod_apply($1, $3)) }
++  | module_expr LPAREN RPAREN
++      { mkmod(Pmod_apply($1, mkmod (Pmod_structure []))) }
+   | module_expr LPAREN module_expr error
+       { unclosed "(" 2 ")" 4 }
+   | LPAREN module_expr COLON module_type RPAREN
+@@ -610,6 +614,8 @@
+       { mkmod(Pmod_constraint($4, $2)) }
+   | LPAREN UIDENT COLON module_type RPAREN module_binding
+       { mkmod(Pmod_functor(mkrhs $2 2, $4, $6)) }
++  | LPAREN RPAREN module_binding
++      { mkmod(Pmod_functor(mkrhs "*" 1, mkmty(Pmty_signature []), $3)) }
+ ;
+ module_rec_bindings:
+     module_rec_binding                            { [$1] }
+@@ -631,6 +637,9 @@
+   | FUNCTOR LPAREN UIDENT COLON module_type RPAREN MINUSGREATER module_type
+       %prec below_WITH
+       { mkmty(Pmty_functor(mkrhs $3 3, $5, $8)) }
++  | FUNCTOR LPAREN RPAREN MINUSGREATER module_type
++      %prec below_WITH
++      { mkmty(Pmty_functor(mkrhs "*" 2, mkmty(Pmty_signature []), $5)) }
+   | module_type WITH with_constraints
+       { mkmty(Pmty_with($1, List.rev $3)) }
+   | MODULE TYPE OF module_expr
