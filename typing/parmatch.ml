@@ -1027,20 +1027,16 @@ let rec try_many  f = function
       | Rnone -> try_many  f rest
       | r -> r
 
+let rappend r1 r2 =
+  match r1, r2 with
+  | Rnone, _ -> r2
+  | _, Rnone -> r1
+  | Rsome l1, Rsome l2 -> Rsome (l1 @ l2)
 
 let rec try_many_gadt  f = function
   | [] -> Rnone
   | (p,pss)::rest ->
-      match f (p,pss) with
-      | Rnone -> try_many f rest
-      | Rsome sofar ->
-          let others = try_many f rest in
-          match others with
-            Rnone -> Rsome sofar
-          | Rsome sofar' ->
-              Rsome (sofar @ sofar')
-
-
+      rappend (f (p, pss)) (try_many_gadt f rest)
 
 let rec exhaust ext pss n = match pss with
 | []    ->  Rsome (omegas n)
@@ -1171,18 +1167,15 @@ let rec exhaust_gadt (ext:Path.t option) pss n = match pss with
           | Rsome r ->
               try
                 let missing_trailing = build_other_gadt ext constrs in
-                let before =
-                  match before with
-                    Rnone -> []
-                  | Rsome lst -> lst
-                in
                 let dug =
                   combinations
                     (fun head tail -> head :: tail)
                     missing_trailing
                     r
                 in
-                Rsome (dug @ before)
+                match before with
+                | Rnone -> Rsome dug
+                | Rsome x -> Rsome (x @ dug)
               with
       (* cannot occur, since constructors don't make a full signature *)
               | Empty -> fatal_error "Parmatch.exhaust"
