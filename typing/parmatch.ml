@@ -1025,20 +1025,16 @@ let rec try_many  f = function
       | Rnone -> try_many  f rest
       | r -> r
 
+let rappend r1 r2 =
+  match r1, r2 with
+  | Rnone, _ -> r2
+  | _, Rnone -> r1
+  | Rsome l1, Rsome l2 -> Rsome (l1 @ l2)
 
-let try_many_gadt  f = function
+let rec try_many_gadt  f = function
   | [] -> Rnone
   | (p,pss)::rest ->
-      match f (p,pss) with
-      | Rnone -> try_many f rest
-      | Rsome sofar ->
-          let others = try_many f rest in
-          match others with
-            Rnone -> Rsome sofar
-          | Rsome sofar' ->
-              Rsome (sofar @ sofar')
-
-
+      rappend (f (p, pss)) (try_many_gadt f rest)
 
 let rec exhaust ext pss n = match pss with
 | []    ->  Rsome (omegas n)
@@ -1169,18 +1165,15 @@ let rec exhaust_gadt (ext:Path.t option) pss n = match pss with
           | Rsome r ->
               try
                 let missing_trailing = build_other_gadt ext constrs in
-                let before =
-                  match before with
-                    Rnone -> []
-                  | Rsome lst -> lst
-                in
                 let dug =
                   combinations
                     (fun head tail -> head :: tail)
                     missing_trailing
                     r
                 in
-                Rsome (dug @ before)
+                match before with
+                | Rnone -> Rsome dug
+                | Rsome x -> Rsome (x @ dug)
               with
       (* cannot occur, since constructors don't make a full signature *)
               | Empty -> fatal_error "Parmatch.exhaust"
@@ -1758,10 +1751,10 @@ module Conv = struct
       | _ -> []
 
   let name_counter = ref 0
-  let fresh () =
+  let fresh name =
     let current = !name_counter in
     name_counter := !name_counter + 1;
-    "#$%^@*@" ^ string_of_int current
+    "#$" ^ name ^ string_of_int current
 
   let conv (typed: Typedtree.pattern) :
       Parsetree.pattern list *
@@ -1783,7 +1776,7 @@ module Conv = struct
             (fun lst -> mkpat (Ppat_tuple lst))
             results
       | Tpat_construct (cstr_lid, cstr,lst,_) ->
-          let id = fresh () in
+          let id = fresh cstr.cstr_name in
           let lid = { cstr_lid with txt = Longident.Lident id } in
           Hashtbl.add constrs id cstr;
           let results = select (List.map loop lst) in
@@ -1821,7 +1814,7 @@ module Conv = struct
           let label_idents =
             List.map
               (fun (_,lbl,_) ->
-                let id = fresh () in
+                let id = fresh lbl.lbl_name in
                 Hashtbl.add labels id lbl;
                 Longident.Lident id)
               subpatterns
@@ -2087,5 +2080,7 @@ let check_partial_gadt pred loc casel =
   | Partial -> Partial
   | Total ->
       (* checks for missing GADT constructors *)
+      (* let casel =
+        match casel with [] -> [] | a :: l -> a :: l @ [a] in *)
       check_partial_param (do_check_partial_gadt pred)
         do_check_fragile_gadt loc casel
