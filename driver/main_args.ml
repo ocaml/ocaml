@@ -479,6 +479,7 @@ module type Bytetop_options = sig
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
+  val _ppx : string -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _stdin: unit -> unit
@@ -587,6 +588,7 @@ module type Opttop_options = sig
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
   val _nostdlib : unit -> unit
+  val _ppx : string -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _S : unit -> unit
@@ -709,6 +711,7 @@ struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
     mk_stdin F._stdin;
@@ -823,6 +826,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
     mk_S F._S;

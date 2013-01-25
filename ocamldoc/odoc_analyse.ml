@@ -44,8 +44,9 @@ let initial_env () =
 let preprocess sourcefile =
   try
     Pparse.preprocess sourcefile
-  with Pparse.Error ->
-    Printf.eprintf "Preprocessing error\n";
+  with Pparse.Error err ->
+    Format.eprintf "Preprocessing error@.%a@."
+      Pparse.report_error err;
     exit 2
 
 let (++) x f = f x
