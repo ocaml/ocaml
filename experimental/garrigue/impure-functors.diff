@@ -1,47 +1,6 @@
-Index: typing/typemod.ml
-===================================================================
---- typing/typemod.ml	(revision 13273)
-+++ typing/typemod.ml	(working copy)
-@@ -832,7 +832,9 @@
-            mod_loc = smod.pmod_loc }
-   | Pmod_functor(name, smty, sbody) ->
-       let mty = transl_modtype env smty in
--      let (id, newenv) = Env.enter_module name.txt mty.mty_type env in
-+      let (id, newenv) =
-+	if name.txt = "*" then (Ident.create "*", env) else 
-+	Env.enter_module name.txt mty.mty_type env in
-       let body = type_module sttn true None newenv sbody in
-       rm { mod_desc = Tmod_functor(id, name, mty, body);
-            mod_type = Mty_functor(id, mty.mty_type, body.mod_type);
-@@ -852,10 +854,10 @@
-               raise(Error(sarg.pmod_loc, Not_included msg)) in
-           let mty_appl =
-             match path with
--              Some path ->
-+              Some path when Ident.name param <> "*" ->
-                 Subst.modtype (Subst.add_module param path Subst.identity)
-                               mty_res
--            | None ->
-+            | _ ->
-                 try
-                   Mtype.nondep_supertype
-                     (Env.add_module param arg.mod_type env) param mty_res
-Index: typing/oprint.ml
-===================================================================
---- typing/oprint.ml	(revision 13273)
-+++ typing/oprint.ml	(working copy)
-@@ -343,6 +343,8 @@
- let rec print_out_module_type ppf =
-   function
-     Omty_abstract -> ()
-+  | Omty_functor ("*", _, mty_res) ->
-+      fprintf ppf "@[<2>functor@ () ->@ %a@]" print_out_module_type mty_res
-   | Omty_functor (name, mty_arg, mty_res) ->
-       fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
-         print_out_module_type mty_arg print_out_module_type mty_res
 Index: parsing/parser.mly
 ===================================================================
---- parsing/parser.mly	(revision 13273)
+--- parsing/parser.mly	(revision 13274)
 +++ parsing/parser.mly	(working copy)
 @@ -532,8 +532,12 @@
        { unclosed "struct" 1 "end" 3 }
@@ -75,3 +34,91 @@ Index: parsing/parser.mly
    | module_type WITH with_constraints
        { mkmty(Pmty_with($1, List.rev $3)) }
    | MODULE TYPE OF module_expr
+Index: typing/typemod.ml
+===================================================================
+--- typing/typemod.ml	(revision 13274)
++++ typing/typemod.ml	(working copy)
+@@ -37,6 +37,7 @@
+   | Not_a_packed_module of type_expr
+   | Incomplete_packed_module of type_expr
+   | Scoping_pack of Longident.t * type_expr
++  | Apply_impure
+ 
+ exception Error of Location.t * error
+ 
+@@ -832,8 +833,10 @@
+            mod_loc = smod.pmod_loc }
+   | Pmod_functor(name, smty, sbody) ->
+       let mty = transl_modtype env smty in
+-      let (id, newenv) = Env.enter_module name.txt mty.mty_type env in
+-      let body = type_module sttn true None newenv sbody in
++      let (id, newenv), funct_body =
++	if name.txt = "*" then (Ident.create "*", env), false else 
++	Env.enter_module name.txt mty.mty_type env, true in
++      let body = type_module sttn funct_body None newenv sbody in
+       rm { mod_desc = Tmod_functor(id, name, mty, body);
+            mod_type = Mty_functor(id, mty.mty_type, body.mod_type);
+            mod_env = env;
+@@ -845,6 +848,9 @@
+         type_module (sttn && path <> None) funct_body None env sfunct in
+       begin match Mtype.scrape env funct.mod_type with
+         Mty_functor(param, mty_param, mty_res) as mty_functor ->
++          let impure = Ident.name param = "*" in
++          if impure && sarg.pmod_desc <> Pmod_structure [] then
++            raise (Error (sfunct.pmod_loc, Apply_impure));
+           let coercion =
+             try
+               Includemod.modtypes env arg.mod_type mty_param
+@@ -856,6 +862,7 @@
+                 Subst.modtype (Subst.add_module param path Subst.identity)
+                               mty_res
+             | None ->
++                if impure then mty_res else
+                 try
+                   Mtype.nondep_supertype
+                     (Env.add_module param arg.mod_type env) param mty_res
+@@ -1446,3 +1453,5 @@
+         "The type %a in this module cannot be exported.@ " longident lid;
+       fprintf ppf
+         "Its type contains local dependencies:@ %a" type_expr ty
++  | Apply_impure ->
++      fprintf ppf "This functor is impure. It can only be applied to ()"
+Index: typing/typemod.mli
+===================================================================
+--- typing/typemod.mli	(revision 13274)
++++ typing/typemod.mli	(working copy)
+@@ -60,6 +60,7 @@
+   | Not_a_packed_module of type_expr
+   | Incomplete_packed_module of type_expr
+   | Scoping_pack of Longident.t * type_expr
++  | Apply_impure
+ 
+ exception Error of Location.t * error
+ 
+Index: typing/oprint.ml
+===================================================================
+--- typing/oprint.ml	(revision 13274)
++++ typing/oprint.ml	(working copy)
+@@ -343,6 +343,8 @@
+ let rec print_out_module_type ppf =
+   function
+     Omty_abstract -> ()
++  | Omty_functor ("*", _, mty_res) ->
++      fprintf ppf "@[<2>functor@ () ->@ %a@]" print_out_module_type mty_res
+   | Omty_functor (name, mty_arg, mty_res) ->
+       fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
+         print_out_module_type mty_arg print_out_module_type mty_res
+Index: typing/mtype.ml
+===================================================================
+--- typing/mtype.ml	(revision 13274)
++++ typing/mtype.ml	(working copy)
+@@ -34,7 +34,8 @@
+   match scrape env mty with
+     Mty_signature sg ->
+       Mty_signature(strengthen_sig env sg p)
+-  | Mty_functor(param, arg, res) when !Clflags.applicative_functors ->
++  | Mty_functor(param, arg, res)
++    when !Clflags.applicative_functors && Ident.name param <> "*" ->
+       Mty_functor(param, arg, strengthen env res (Papply(p, Pident param)))
+   | mty ->
+       mty
