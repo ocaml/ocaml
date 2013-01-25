@@ -1,6 +1,6 @@
 Index: parsing/parser.mly
 ===================================================================
---- parsing/parser.mly	(revision 13274)
+--- parsing/parser.mly	(revision 13278)
 +++ parsing/parser.mly	(working copy)
 @@ -532,8 +532,12 @@
        { unclosed "struct" 1 "end" 3 }
@@ -36,7 +36,7 @@ Index: parsing/parser.mly
    | MODULE TYPE OF module_expr
 Index: typing/typemod.ml
 ===================================================================
---- typing/typemod.ml	(revision 13274)
+--- typing/typemod.ml	(revision 13278)
 +++ typing/typemod.ml	(working copy)
 @@ -37,6 +37,7 @@
    | Not_a_packed_module of type_expr
@@ -59,17 +59,21 @@ Index: typing/typemod.ml
        rm { mod_desc = Tmod_functor(id, name, mty, body);
             mod_type = Mty_functor(id, mty.mty_type, body.mod_type);
             mod_env = env;
-@@ -845,6 +848,9 @@
+@@ -845,6 +848,13 @@
          type_module (sttn && path <> None) funct_body None env sfunct in
        begin match Mtype.scrape env funct.mod_type with
          Mty_functor(param, mty_param, mty_res) as mty_functor ->
 +          let impure = Ident.name param = "*" in
-+          if impure && sarg.pmod_desc <> Pmod_structure [] then
-+            raise (Error (sfunct.pmod_loc, Apply_impure));
++          if impure then begin
++            if sarg.pmod_desc <> Pmod_structure [] then
++              raise (Error (sfunct.pmod_loc, Apply_impure));
++            if funct_body then
++              raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
++          end;
            let coercion =
              try
                Includemod.modtypes env arg.mod_type mty_param
-@@ -856,6 +862,7 @@
+@@ -856,6 +866,7 @@
                  Subst.modtype (Subst.add_module param path Subst.identity)
                                mty_res
              | None ->
@@ -77,7 +81,16 @@ Index: typing/typemod.ml
                  try
                    Mtype.nondep_supertype
                      (Env.add_module param arg.mod_type env) param mty_res
-@@ -1446,3 +1453,5 @@
+@@ -1429,7 +1440,7 @@
+         Location.print_filename intf_name
+   | Not_allowed_in_functor_body ->
+       fprintf ppf
+-        "This kind of expression is not allowed within the body of a functor."
++        "This kind of expression is only allowed inside impure functors."
+   | With_need_typeconstr ->
+       fprintf ppf
+         "Only type constructors with identical parameters can be substituted."
+@@ -1446,3 +1457,5 @@
          "The type %a in this module cannot be exported.@ " longident lid;
        fprintf ppf
          "Its type contains local dependencies:@ %a" type_expr ty
@@ -85,7 +98,7 @@ Index: typing/typemod.ml
 +      fprintf ppf "This functor is impure. It can only be applied to ()"
 Index: typing/typemod.mli
 ===================================================================
---- typing/typemod.mli	(revision 13274)
+--- typing/typemod.mli	(revision 13278)
 +++ typing/typemod.mli	(working copy)
 @@ -60,6 +60,7 @@
    | Not_a_packed_module of type_expr
@@ -97,7 +110,7 @@ Index: typing/typemod.mli
  
 Index: typing/oprint.ml
 ===================================================================
---- typing/oprint.ml	(revision 13274)
+--- typing/oprint.ml	(revision 13278)
 +++ typing/oprint.ml	(working copy)
 @@ -343,6 +343,8 @@
  let rec print_out_module_type ppf =
@@ -110,7 +123,7 @@ Index: typing/oprint.ml
          print_out_module_type mty_arg print_out_module_type mty_res
 Index: typing/mtype.ml
 ===================================================================
---- typing/mtype.ml	(revision 13274)
+--- typing/mtype.ml	(revision 13278)
 +++ typing/mtype.ml	(working copy)
 @@ -34,7 +34,8 @@
    match scrape env mty with
