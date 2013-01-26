@@ -103,6 +103,7 @@ Bug fixes:
 - PR#5891: support rectypes tag for mlpack (ocamlbuild)
 - PR#5892: GADT exhaustiveness check is broken
 - PR#5906: GADT exhaustiveness check is still broken
+- PR#5907: Undetected cycle during typecheck causes exceptions
 
 OCaml 4.00.1:
 -------------

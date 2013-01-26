@@ -2105,7 +2105,7 @@ let unify_eq env t1 t2 =
 
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
-  if unify_eq !env t1 t2 then () else
+  if t1 == t2 then () else
   let t1 = repr t1 in
   let t2 = repr t2 in
   if unify_eq !env t1 t2 then () else
@@ -2200,11 +2200,11 @@ and unify3 env t1 t1' t2 t2' =
       unify_univar t1' t2' !univar_pairs;
       link_type t1' t2'
   | (Tvar _, _) ->
-      occur !env t1 t2';
+      occur !env t1' t2;
       occur_univar !env t2;
       link_type t1' t2;
   | (_, Tvar _) ->
-      occur !env t2 t1';
+      occur !env t2' t1;
       occur_univar !env t1;
       link_type t2' t1;
   | (Tfield _, Tfield _) -> (* special case for GADTs *)
