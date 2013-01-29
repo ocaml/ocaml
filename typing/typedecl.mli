@@ -62,8 +62,8 @@ type error =
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr * Includecore.type_mismatch list
   | Constraint_failed of type_expr * type_expr
-  | Inconsistent_constraint of (type_expr * type_expr) list
-  | Type_clash of (type_expr * type_expr) list
+  | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
+  | Type_clash of Env.t * (type_expr * type_expr) list
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
   | Missing_native_external

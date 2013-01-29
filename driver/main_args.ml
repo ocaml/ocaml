@@ -215,6 +215,10 @@ let mk_principal f =
   "-principal", Arg.Unit f, " Check principality of type inference"
 ;;
 
+let mk_short_paths f =
+  "-short-paths", Arg.Unit f, " Shorten paths in types"
+;;
+
 let mk_rectypes f =
   "-rectypes", Arg.Unit f, " Allow arbitrary recursive types"
 ;;
@@ -440,6 +444,7 @@ module type Bytecomp_options = sig
   val _pp : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
+  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
   val _strict_sequence : unit -> unit
@@ -481,6 +486,7 @@ module type Bytetop_options = sig
   val _nostdlib : unit -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
+  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _stdin: unit -> unit
   val _strict_sequence : unit -> unit
@@ -535,6 +541,7 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
+  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
   val _S : unit -> unit
@@ -590,6 +597,7 @@ module type Opttop_options = sig
   val _nostdlib : unit -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
+  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _S : unit -> unit
   val _stdin : unit -> unit
@@ -668,6 +676,7 @@ struct
     mk_pp F._pp;
     mk_ppx F._ppx;
     mk_principal F._principal;
+    mk_short_paths F._short_paths;
     mk_rectypes F._rectypes;
     mk_runtime_variant F._runtime_variant;
     mk_strict_sequence F._strict_sequence;
@@ -713,6 +722,7 @@ struct
     mk_nostdlib F._nostdlib;
     mk_ppx F._ppx;
     mk_principal F._principal;
+    mk_short_paths F._short_paths;
     mk_rectypes F._rectypes;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
@@ -771,6 +781,7 @@ struct
     mk_pp F._pp;
     mk_ppx F._ppx;
     mk_principal F._principal;
+    mk_short_paths F._short_paths;
     mk_rectypes F._rectypes;
     mk_runtime_variant F._runtime_variant;
     mk_S F._S;
@@ -828,6 +839,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_nostdlib F._nostdlib;
     mk_ppx F._ppx;
     mk_principal F._principal;
+    mk_short_paths F._short_paths;
     mk_rectypes F._rectypes;
     mk_S F._S;
     mk_stdin F._stdin;

@@ -44,6 +44,7 @@ module type Bytecomp_options =
     val _pp : string -> unit
     val _ppx : string -> unit
     val _principal : unit -> unit
+    val _short_paths : unit -> unit
     val _rectypes : unit -> unit
     val _runtime_variant : string -> unit
     val _strict_sequence : unit -> unit
@@ -86,6 +87,7 @@ module type Bytetop_options = sig
   val _nostdlib : unit -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
+  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _stdin : unit -> unit
   val _strict_sequence : unit -> unit
@@ -140,6 +142,7 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
+  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
   val _S : unit -> unit
@@ -195,6 +198,7 @@ module type Opttop_options = sig
   val _nostdlib : unit -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
+  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _S : unit -> unit
   val _stdin : unit -> unit

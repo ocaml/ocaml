@@ -38,7 +38,7 @@ type error =
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
 
-exception Error of Location.t * error
+exception Error of Location.t * Env.t * error
 
 open Typedtree
 
@@ -55,12 +55,12 @@ let rec path_concat head p =
 let extract_sig env loc mty =
   match Mtype.scrape env mty with
     Mty_signature sg -> sg
-  | _ -> raise(Error(loc, Signature_expected))
+  | _ -> raise(Error(loc, env, Signature_expected))
 
 let extract_sig_open env loc mty =
   match Mtype.scrape env mty with
     Mty_signature sg -> sg
-  | _ -> raise(Error(loc, Structure_expected mty))
+  | _ -> raise(Error(loc, env, Structure_expected mty))
 
 (* Compute the environment after opening a module *)
 
@@ -119,7 +119,7 @@ let merge_constraint initial_env loc  sg lid constr =
   let rec merge env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
-        raise(Error(loc, With_no_component lid.txt))
+        raise(Error(loc, env, With_no_component lid.txt))
     | (Sig_type(id, decl, rs) :: rem, [s],
        Pwith_type ({ptype_kind = Ptype_abstract} as sdecl))
       when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
@@ -214,7 +214,8 @@ let merge_constraint initial_env loc  sg lid constr =
               ) params sdecl.ptype_params;
               lid
           | _ -> raise Exit
-          with Exit -> raise (Error (sdecl.ptype_loc, With_need_typeconstr))
+          with Exit ->
+            raise(Error(sdecl.ptype_loc, initial_env, With_need_typeconstr))
         in
         let (path, _) =
           try Env.lookup_type lid.txt initial_env with Not_found -> assert false
@@ -232,7 +233,7 @@ let merge_constraint initial_env loc  sg lid constr =
     in
     (tcstr, sg)
   with Includemod.Error explanation ->
-    raise(Error(loc, With_mismatch(lid.txt, explanation)))
+    raise(Error(loc, initial_env, With_mismatch(lid.txt, explanation)))
 
 (* Add recursion flags on declarations arising from a mutually recursive
    block. *)
@@ -242,11 +243,14 @@ let map_rec fn decls rem =
   | [] -> rem
   | d1 :: dl -> fn Trec_first d1 :: map_end (fn Trec_next) dl rem
 
+let map_rec' = map_rec
+(*
 let rec map_rec' fn decls rem =
   match decls with
   | (id,_ as d1) :: dl when Btype.is_row_name (Ident.name id) ->
       fn Trec_not d1 :: map_rec' fn dl rem
   | _ -> map_rec fn decls rem
+*)
 
 let rec map_rec'' fn decls rem =
   match decls with
@@ -356,7 +360,7 @@ module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 let check cl loc set_ref name =
   if StringSet.mem name !set_ref
-  then raise(Error(loc, Repeated_name(cl, name)))
+  then raise(Error(loc, Env.empty, Repeated_name(cl, name)))
   else set_ref := StringSet.add name !set_ref
 
 let check_sig_item type_names module_names modtype_names loc = function
@@ -641,11 +645,11 @@ let check_nongen_scheme env str =
       List.iter
         (fun (pat, exp) ->
           if not (Ctype.closed_schema exp.exp_type) then
-            raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
+            raise(Error(exp.exp_loc, env, Non_generalizable exp.exp_type)))
         pat_exp_list
   | Tstr_module(id, _, md) ->
       if not (closed_modtype md.mod_type) then
-        raise(Error(md.mod_loc, Non_generalizable_module md.mod_type))
+        raise(Error(md.mod_loc, env, Non_generalizable_module md.mod_type))
   | _ -> ()
 
 let check_nongen_schemes env str =
@@ -752,7 +756,7 @@ let check_recmodule_inclusion env bindings =
           try
             Includemod.modtypes env mty_actual' mty_decl'
           with Includemod.Error msg ->
-            raise(Error(modl.mod_loc, Not_included msg)) in
+            raise(Error(modl.mod_loc, env, Not_included msg)) in
         let modl' =
             { mod_desc = Tmod_constraint(modl, mty_decl.mty_type,
                 Tmodtype_explicit mty_decl, coercion);
@@ -797,17 +801,17 @@ let modtype_of_package env loc p nl tl =
         (List.combine (List.map Longident.flatten nl) tl)
   | _ ->
       if nl = [] then Mty_ident p
-      else raise(Error(loc, Signature_expected))
+      else raise(Error(loc, env, Signature_expected))
   with Not_found ->
-    let error = Typetexp.Unbound_modtype (env, Ctype.lid_of_path p) in
-    raise(Typetexp.Error(loc, error))
+    let error = Typetexp.Unbound_modtype (Ctype.lid_of_path p) in
+    raise(Typetexp.Error(loc, env, error))
 
 let wrap_constraint env arg mty explicit =
   let coercion =
     try
       Includemod.modtypes env arg.mod_type mty
     with Includemod.Error msg ->
-      raise(Error(arg.mod_loc, Not_included msg)) in
+      raise(Error(arg.mod_loc, env, Not_included msg)) in
   { mod_desc = Tmod_constraint(arg, mty, explicit, coercion);
     mod_type = mty;
     mod_env = env;
@@ -849,7 +853,7 @@ let rec type_module sttn funct_body anchor env smod =
             try
               Includemod.modtypes env arg.mod_type mty_param
             with Includemod.Error msg ->
-              raise(Error(sarg.pmod_loc, Not_included msg)) in
+              raise(Error(sarg.pmod_loc, env, Not_included msg)) in
           let mty_appl =
             match path with
               Some path ->
@@ -860,7 +864,7 @@ let rec type_module sttn funct_body anchor env smod =
                   Mtype.nondep_supertype
                     (Env.add_module param arg.mod_type env) param mty_res
                 with Not_found ->
-                  raise(Error(smod.pmod_loc,
+                  raise(Error(smod.pmod_loc, env,
                               Cannot_eliminate_dependency mty_functor))
           in
           rm { mod_desc = Tmod_apply(funct, arg, coercion);
@@ -868,7 +872,7 @@ let rec type_module sttn funct_body anchor env smod =
                mod_env = env;
                mod_loc = smod.pmod_loc }
       | _ ->
-          raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
+          raise(Error(sfunct.pmod_loc, env, Cannot_apply funct.mod_type))
       end
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module true funct_body anchor env sarg in
@@ -878,7 +882,7 @@ let rec type_module sttn funct_body anchor env smod =
 
   | Pmod_unpack sexp ->
       if funct_body then
-        raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
+        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
       if !Clflags.principal then Ctype.begin_def ();
       let exp = Typecore.type_exp env sexp in
       if !Clflags.principal then begin
@@ -889,7 +893,7 @@ let rec type_module sttn funct_body anchor env smod =
         match Ctype.expand_head env exp.exp_type with
           {desc = Tpackage (p, nl, tl)} ->
             if List.exists (fun t -> Ctype.free_variables t <> []) tl then
-              raise (Error (smod.pmod_loc,
+              raise (Error (smod.pmod_loc, env,
                             Incomplete_packed_module exp.exp_type));
             if !Clflags.principal &&
               not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
@@ -899,9 +903,9 @@ let rec type_module sttn funct_body anchor env smod =
             modtype_of_package env smod.pmod_loc p nl tl
         | {desc = Tvar _} ->
             raise (Typecore.Error
-                     (smod.pmod_loc, Typecore.Cannot_infer_signature))
+                     (smod.pmod_loc, env, Typecore.Cannot_infer_signature))
         | _ ->
-            raise (Error (smod.pmod_loc, Not_a_packed_module exp.exp_type))
+            raise (Error(smod.pmod_loc, env, Not_a_packed_module exp.exp_type))
       in
       rm { mod_desc = Tmod_unpack(exp, mty);
            mod_type = mty;
@@ -1192,7 +1196,7 @@ let type_module_type_of env smod =
   let mty = simplify_modtype mty in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype mty) then
-    raise(Error(smod.pmod_loc, Non_generalizable_module mty));
+    raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
   tmty, mty
 
 (* For Typecore *)
@@ -1235,7 +1239,8 @@ let type_package env m p nl tl =
   List.iter2
     (fun n ty ->
       try Ctype.unify env ty (Ctype.newvar ())
-      with Ctype.Unify _ -> raise (Error(m.pmod_loc, Scoping_pack (n,ty))))
+      with Ctype.Unify _ ->
+        raise (Error(m.pmod_loc, env, Scoping_pack (n,ty))))
     nl tl';
   (wrap_constraint env modl mty Tmodtype_implicit, tl')
 
@@ -1258,7 +1263,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
   if !Clflags.print_types then begin
-    fprintf std_formatter "%a@." Printtyp.signature simple_sg;
+    Printtyp.wrap_printing_env initial_env
+      (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =
@@ -1268,7 +1274,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         try
           find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
         with Not_found ->
-          raise(Error(Location.in_file sourcefile,
+          raise(Error(Location.in_file sourcefile, Env.empty,
                       Interface_not_compiled sourceintf)) in
       let dclsig = Env.read_signature modulename intf_file in
       let coercion = Includemod.compunit sourcefile sg intf_file dclsig in
@@ -1334,7 +1340,8 @@ let package_units objfiles cmifile modulename =
          let sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
             not(Mtype.no_code_needed_sig Env.initial sg)
-         then raise(Error(Location.none, Implementation_is_required f));
+         then raise(Error(Location.none, Env.empty,
+                          Implementation_is_required f));
          (modname, Env.read_signature modname (pref ^ ".cmi")))
       objfiles in
   (* Compute signature of packaged unit *)
@@ -1345,7 +1352,8 @@ let package_units objfiles cmifile modulename =
   let mlifile = prefix ^ !Config.interface_suffix in
   if Sys.file_exists mlifile then begin
     if not (Sys.file_exists cmifile) then begin
-      raise(Error(Location.in_file mlifile, Interface_not_compiled mlifile))
+      raise(Error(Location.in_file mlifile, Env.empty,
+                  Interface_not_compiled mlifile))
     end;
     let dclsig = Env.read_signature modulename cmifile in
     Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
@@ -1446,3 +1454,6 @@ let report_error ppf = function
         "The type %a in this module cannot be exported.@ " longident lid;
       fprintf ppf
         "Its type contains local dependencies:@ %a" type_expr ty
+
+let report_error env ppf err =
+  Printtyp.wrap_printing_env env (fun () -> report_error ppf err)

@@ -437,6 +437,7 @@ Error: This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
          :> <m : 'a. 'a -> ('a * 'foo)> as 'foo)..
 Error: Type < m : 'a. 'a -> ('a * (< m : 'c. 'c -> 'b as 'e > as 'd) as 'b) >
        is not a subtype of < m : 'a. 'a -> ('a * 'f as 'h) as 'g > as 'f 
+       Type 'c. 'e is not a subtype of 'a. 'g 
 #       Characters 88-150:
   = struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -490,6 +491,8 @@ Error: Type p = < x : p > is not a subtype of q = < x : p; .. >
       :> <m:'b. (<p:int;q:int;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
          < m : 'b. (< p : int; q : int; .. > as 'b) -> int > 
+       Type < p : int; q : int; .. > as 'c is not a subtype of
+         < p : int; .. > as 'd 
 #     val f2 :
   < m : 'a. (< p : < a : int >; .. > as 'a) -> int > ->
   < m : 'b. (< p : < a : int; b : int >; .. > as 'b) -> int > = <fun>
@@ -498,12 +501,13 @@ Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
       :> <m:'b. (<p:<a:int>;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int >
        is not a subtype of < m : 'b. (< p : < a : int >; .. > as 'b) -> int > 
+       Type < a : int > is not a subtype of < a : int; b : int > 
 # Characters 11-55:
   let f4 x = (x : <p:<a:int;b:int>;..> :> <p:<a:int>;..>);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type < p : < a : int; b : int >; .. > is not a subtype of
          < p : < a : int >; .. > 
-The second object type has no method b
+       The second object type has no method b
 #   val f5 :
   < m : 'a. [< `A of < p : int > ] as 'a > ->
   < m : 'b. [< `A of <  > ] as 'b > = <fun>
@@ -512,6 +516,7 @@ The second object type has no method b
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
          < m : 'b. [< `A of < p : int > ] as 'b > 
+       Type <  > is not a subtype of < p : int > 
 #     val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
 # - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 # val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>

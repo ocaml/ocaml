@@ -87,15 +87,16 @@ let interface ppf sourcefile outputprefix =
     if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
     let sg = tsg.sig_type in
     if !Clflags.print_types then
-      fprintf std_formatter "%a@." Printtyp.signature
-                                   (Typemod.simplify_signature sg);
+      Printtyp.wrap_printing_env initial_env (fun () ->
+	fprintf std_formatter "%a@."
+	  Printtyp.signature (Typemod.simplify_signature sg));
     ignore (Includemod.signatures initial_env sg sg);
     Typecore.force_delayed_checks ();
     Warnings.check_fatal ();
     if not !Clflags.print_types then begin
       let sg = Env.save_signature sg modulename (outputprefix ^ ".cmi") in
       Typemod.save_signature modulename tsg outputprefix sourcefile
-       initial_env sg ;
+	initial_env sg ;
     end;
     Pparse.remove_preprocessed inputfile
   with e ->
@@ -125,7 +126,8 @@ let implementation ppf sourcefile outputprefix =
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree Printtyped.implementation_with_coercion);
+      ++ print_if ppf Clflags.dump_typedtree
+	   Printtyped.implementation_with_coercion);
       Warnings.check_fatal ();
       Pparse.remove_preprocessed inputfile;
       Stypes.dump (Some (outputprefix ^ ".annot"));

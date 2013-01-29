@@ -12,7 +12,7 @@
 
 (* Typechecking of type expressions for the core language *)
 
-open Format;;
+open Types
 
 val transl_simple_type:
         Env.t -> bool -> Parsetree.core_type -> Typedtree.core_type
@@ -25,8 +25,8 @@ val transl_simple_type_delayed:
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
 val reset_type_variables: unit -> unit
-val enter_type_variable: bool -> Location.t -> string -> Types.type_expr
-val type_variable: Location.t -> string -> Types.type_expr
+val enter_type_variable: bool -> Location.t -> string -> type_expr
+val type_variable: Location.t -> string -> type_expr
 
 type variable_context
 val narrow: unit -> variable_context
@@ -36,35 +36,35 @@ exception Already_bound
 
 type error =
     Unbound_type_variable of string
-  | Unbound_type_constructor of Env.t * Longident.t
+  | Unbound_type_constructor of Longident.t
   | Unbound_type_constructor_2 of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of (Types.type_expr * Types.type_expr) list
-  | Alias_type_mismatch of (Types.type_expr * Types.type_expr) list
+  | Type_mismatch of (type_expr * type_expr) list
+  | Alias_type_mismatch of (type_expr * type_expr) list
   | Present_has_conjunction of string
   | Present_has_no_type of string
-  | Constructor_mismatch of Types.type_expr * Types.type_expr
-  | Not_a_variant of Types.type_expr
+  | Constructor_mismatch of type_expr * type_expr
+  | Not_a_variant of type_expr
   | Variant_tags of string * string
   | Invalid_variable_name of string
-  | Cannot_quantify of string * Types.type_expr
+  | Cannot_quantify of string * type_expr
   | Multiple_constraints_on_type of Longident.t
   | Repeated_method_label of string
-  | Unbound_value of Env.t * Longident.t
-  | Unbound_constructor of Env.t * Longident.t
-  | Unbound_label of Env.t * Longident.t
-  | Unbound_module of Env.t * Longident.t
-  | Unbound_class of Env.t * Longident.t
-  | Unbound_modtype of Env.t * Longident.t
-  | Unbound_cltype of Env.t * Longident.t
+  | Unbound_value of Longident.t
+  | Unbound_constructor of Longident.t
+  | Unbound_label of Longident.t
+  | Unbound_module of Longident.t
+  | Unbound_class of Longident.t
+  | Unbound_modtype of Longident.t
+  | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
 
-exception Error of Location.t * error
+exception Error of Location.t * Env.t * error
 
-val report_error: formatter -> error -> unit
+val report_error: Env.t -> Format.formatter -> error -> unit
 
 (* Support for first-class modules. *)
 val transl_modtype_longident:  (* from Typemod *)
@@ -77,27 +77,27 @@ val create_package_mty:
       Parsetree.module_type
 
 val find_type:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.type_declaration
+    Env.t -> Location.t -> Longident.t -> Path.t * type_declaration
 val find_constructor:
-    Env.t -> Location.t -> Longident.t -> Types.constructor_description
+    Env.t -> Location.t -> Longident.t -> constructor_description
 val find_all_constructors:
     Env.t -> Location.t -> Longident.t -> 
-    (Types.constructor_description * (unit -> unit)) list
+    (constructor_description * (unit -> unit)) list
 val find_label:
-    Env.t -> Location.t -> Longident.t -> Types.label_description
+    Env.t -> Location.t -> Longident.t -> label_description
 val find_all_labels:
     Env.t -> Location.t -> Longident.t -> 
-    (Types.label_description * (unit -> unit)) list
+    (label_description * (unit -> unit)) list
 val find_value:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.value_description
+    Env.t -> Location.t -> Longident.t -> Path.t * value_description
 val find_class:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.class_declaration
+    Env.t -> Location.t -> Longident.t -> Path.t * class_declaration
 val find_module:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.module_type
+    Env.t -> Location.t -> Longident.t -> Path.t * module_type
 val find_modtype:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.modtype_declaration
+    Env.t -> Location.t -> Longident.t -> Path.t * modtype_declaration
 val find_class_type:
-    Env.t -> Location.t -> Longident.t -> Path.t * Types.class_type_declaration
+    Env.t -> Location.t -> Longident.t -> Path.t * class_type_declaration
 
 val unbound_constructor_error: Env.t -> Longident.t Location.loc -> 'a
 val unbound_label_error: Env.t -> Longident.t Location.loc -> 'a

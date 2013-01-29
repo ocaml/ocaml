@@ -62,6 +62,7 @@ Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
              ^^^^^^^^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type s t
+       Type int is not compatible with type s 
 #                         module Polymorphic_variants :
   sig
     type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
@@ -274,6 +275,7 @@ val f : 'a ty -> 'a t -> int = <fun>
                    ^^
 Error: This expression has type (a, a) eq
        but an expression was expected of type (a, b) eq
+       Type a is not compatible with type b 
 #       val f : ('a M.t * 'a, 'b M.t * 'b) eq -> ('a, 'b) eq = <fun>
 #       val f : ('a * 'a M.t, 'b * 'b M.t) eq -> ('a, 'b) eq = <fun>
 #                     type _ t = V1 : [ `A | `B ] t | V2 : [ `C | `D ] t
@@ -295,6 +297,7 @@ Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < bar : int; foo : int >
        Type ex#19 = < bar : int; .. > is not compatible with type
          < bar : int > 
+       The first object type has an abstract row, it cannot be closed
 #         Characters 98-99:
     (x:<foo:int;bar:int;..>)
      ^
