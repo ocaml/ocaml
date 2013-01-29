@@ -1467,9 +1467,10 @@ with_constraint:
                          ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
-  | TYPE type_parameters label_longident COLONEQUAL core_type
+  | TYPE type_parameters label COLONEQUAL core_type
       { let params, variance = List.split $2 in
-        (mkrhs $3 3, Pwith_typesubst {ptype_params = List.map (fun x -> Some x) params;
+        (mkrhs (Lident $3) 3, Pwith_typesubst
+                            { ptype_params = List.map (fun x -> Some x) params;
                               ptype_cstrs = [];
                               ptype_kind = Ptype_abstract;
                               ptype_manifest = Some $5;
@@ -1478,8 +1479,8 @@ with_constraint:
                               ptype_loc = symbol_rloc()}) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { (mkrhs $2 2, Pwith_module (mkrhs $4 4)) }
-  | MODULE mod_longident COLONEQUAL mod_ext_longident
-      { (mkrhs $2 2, Pwith_modsubst (mkrhs $4 4)) }
+  | MODULE UIDENT COLONEQUAL mod_ext_longident
+      { (mkrhs (Lident $2) 2, Pwith_modsubst (mkrhs $4 4)) }
 ;
 with_type_binder:
     EQUAL          { Public }

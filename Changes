@@ -20,6 +20,7 @@ Bug fixes:
 - PR#5892: GADT exhaustiveness check is broken
 - PR#5906: GADT exhaustiveness check is still broken
 - PR#5907: Undetected cycle during typecheck causes exceptions
+- PR#5911: Signature substitutions fail in submodules
 
 OCaml 4.00.1:
 -------------
