@@ -1,6 +1,6 @@
 Index: parsing/parser.mly
 ===================================================================
---- parsing/parser.mly	(revision 13278)
+--- parsing/parser.mly	(revision 13285)
 +++ parsing/parser.mly	(working copy)
 @@ -532,8 +532,12 @@
        { unclosed "struct" 1 "end" 3 }
@@ -36,7 +36,7 @@ Index: parsing/parser.mly
    | MODULE TYPE OF module_expr
 Index: typing/typemod.ml
 ===================================================================
---- typing/typemod.ml	(revision 13278)
+--- typing/typemod.ml	(revision 13285)
 +++ typing/typemod.ml	(working copy)
 @@ -37,6 +37,7 @@
    | Not_a_packed_module of type_expr
@@ -98,7 +98,7 @@ Index: typing/typemod.ml
 +      fprintf ppf "This functor is impure. It can only be applied to ()"
 Index: typing/typemod.mli
 ===================================================================
---- typing/typemod.mli	(revision 13278)
+--- typing/typemod.mli	(revision 13285)
 +++ typing/typemod.mli	(working copy)
 @@ -60,6 +60,7 @@
    | Not_a_packed_module of type_expr
@@ -110,7 +110,7 @@ Index: typing/typemod.mli
  
 Index: typing/oprint.ml
 ===================================================================
---- typing/oprint.ml	(revision 13278)
+--- typing/oprint.ml	(revision 13285)
 +++ typing/oprint.ml	(working copy)
 @@ -343,6 +343,8 @@
  let rec print_out_module_type ppf =
@@ -121,9 +121,51 @@ Index: typing/oprint.ml
    | Omty_functor (name, mty_arg, mty_res) ->
        fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
          print_out_module_type mty_arg print_out_module_type mty_res
+Index: typing/includemod.ml
+===================================================================
+--- typing/includemod.ml	(revision 13285)
++++ typing/includemod.ml	(working copy)
+@@ -35,6 +35,7 @@
+       Ident.t * class_declaration * class_declaration *
+       Ctype.class_match_failure list
+   | Unbound_modtype_path of Path.t
++  | Impure_functor
+ 
+ type pos =
+     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
+@@ -153,6 +154,8 @@
+   | (Mty_signature sig1, Mty_signature sig2) ->
+       signatures env cxt subst sig1 sig2
+   | (Mty_functor(param1, arg1, res1), Mty_functor(param2, arg2, res2)) ->
++      if Ident.name param1 = "*" && Ident.name param2 <> "*" then
++        raise (Error [cxt, Impure_functor]);
+       let arg2' = Subst.modtype subst arg2 in
+       let cc_arg = modtypes env (Arg param1::cxt) Subst.identity arg2' arg1 in
+       let cc_res =
+@@ -404,6 +407,8 @@
+       Includeclass.report_error reason
+   | Unbound_modtype_path path ->
+       fprintf ppf "Unbound module type %a" Printtyp.path path
++  | Impure_functor ->
++      fprintf ppf "An impure functor cannot be made applicative"
+ 
+ let rec context ppf = function
+     Module id :: rem ->
+Index: typing/includemod.mli
+===================================================================
+--- typing/includemod.mli	(revision 13285)
++++ typing/includemod.mli	(working copy)
+@@ -40,6 +40,7 @@
+       Ident.t * class_declaration * class_declaration *
+       Ctype.class_match_failure list
+   | Unbound_modtype_path of Path.t
++  | Impure_functor
+ 
+ type pos =
+     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
 Index: typing/mtype.ml
 ===================================================================
---- typing/mtype.ml	(revision 13278)
+--- typing/mtype.ml	(revision 13285)
 +++ typing/mtype.ml	(working copy)
 @@ -34,7 +34,8 @@
    match scrape env mty with
