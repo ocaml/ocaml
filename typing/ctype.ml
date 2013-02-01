@@ -697,10 +697,9 @@ let get_level env p =
 let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
-    if Env.has_local_constraints env then begin
-      match Env.gadt_instance_level env ty with
-        Some lv -> if level < lv then raise (Unify [(ty, newvar2 level)])
-      | None -> ()
+    begin match Env.gadt_instance_level env ty with
+      Some lv -> if level < lv then raise (Unify [(ty, newvar2 level)])
+    | None -> ()
     end;
     match ty.desc with
       Tconstr(p, tl, abbrev) when level < get_level env p ->
@@ -1354,15 +1353,13 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           | _ -> ()
           end;
           (* For gadts, remember type as non exportable *)
+          (* The ambiguous level registered for ty' should be the highest *)
           if !trace_gadt_instances then begin
-            match lv with
-              Some lv ->
+            match max lv (Env.gadt_instance_level env ty) with
+              None -> ()
+            | Some lv ->
                 if level < lv then raise (Unify [(ty, newvar2 level)]);
                 Env.add_gadt_instances env lv [ty; ty']
-            | None ->
-                match Env.gadt_instance_level env ty with
-                  Some lv -> Env.add_gadt_instances env lv [ty']
-                | None -> ()
           end;
           ty'
       end
@@ -1405,16 +1402,16 @@ let try_expand_safe env ty =
 (* Fully expand the head of a type. *)
 let rec try_expand_head try_once env ty =
   let ty' = try_once env ty in
-  let ty'' =
-    try try_expand_head try_once env ty'
-    with Cannot_expand -> ty'
-  in
-  if Env.has_local_constraints env then begin
-    match Env.gadt_instance_level env ty'' with
-      None    -> ()
-    | Some lv -> Env.add_gadt_instance_chain env lv ty
+  try try_expand_head try_once env ty'
+  with Cannot_expand -> ty'
+
+let try_expand_head try_once env ty =
+  let ty' = try_expand_head try_once env ty in
+  begin match Env.gadt_instance_level env ty' with
+    None -> ()
+  | Some lv -> Env.add_gadt_instance_chain env lv ty
   end;
-  ty''
+  ty'
 
 (* Unsafe full expansion, may raise Unify. *)
 let expand_head_unif env ty =
@@ -2166,13 +2163,12 @@ and unify2 env t1 t2 =
 
   let t1 = repr t1 and t2 = repr t2 in
   if !trace_gadt_instances then begin
-    match Env.gadt_instance_level !env t1',Env.gadt_instance_level !env t2' with
-      Some lv1, Some lv2 ->
-        if lv1 > lv2 then Env.add_gadt_instance_chain !env lv1 t2 else
-        if lv2 > lv2 then Env.add_gadt_instance_chain !env lv2 t1
-    | Some lv1, None -> Env.add_gadt_instance_chain !env lv1 t2
-    | None, Some lv2 -> Env.add_gadt_instance_chain !env lv2 t1
-    | None, None     -> ()
+    (* All types in chains already have the same ambiguity levels *)
+    let ilevel t =
+      match Env.gadt_instance_level !env t with None -> 0 | Some lv -> lv in
+    let lv1 = ilevel t1 and lv2 = ilevel t2 in
+    if lv1 > lv2 then Env.add_gadt_instance_chain !env lv1 t2 else
+    if lv2 > lv1 then Env.add_gadt_instance_chain !env lv2 t1
   end;
   let t1, t2 =
     if !Clflags.principal
