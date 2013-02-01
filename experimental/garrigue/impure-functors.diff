@@ -1,6 +1,38 @@
+Index: parsing/pprintast.ml
+===================================================================
+--- parsing/pprintast.ml	(revision 13286)
++++ parsing/pprintast.ml	(working copy)
+@@ -821,6 +821,8 @@
+     | Pmty_signature (s) ->
+         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
+           (self#list self#signature_item  ) s (* FIXME wrong indentation*)
++    | Pmty_functor ({txt="*"}, mt1, mt2) ->
++        pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2 
+     | Pmty_functor (s, mt1, mt2) ->
+         pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
+           self#module_type mt1  self#module_type mt2 
+@@ -922,6 +924,8 @@
+           self#module_type mt
+     | Pmod_ident (li) ->
+         pp f "%a" self#longident_loc li;
++    | Pmod_functor ({txt="*"}, mt, me) ->
++        pp f "functor ()@;->@;%a" self#module_expr me
+     | Pmod_functor (s, mt, me) ->
+         pp f "functor@ (%s@ :@ %a)@;->@;%a"
+           s.txt  self#module_type mt  self#module_expr me
+@@ -1001,7 +1005,8 @@
+     | Pstr_module (s, me) ->
+         let rec module_helper me = match me.pmod_desc with
+         | Pmod_functor(s,mt,me) ->
+-            pp f "(%s:%a)"  s.txt  self#module_type mt ;
++            if s.txt = "*" then pp f "()"
++            else pp f "(%s:%a)"  s.txt  self#module_type mt ;
+             module_helper me
+         | _ -> me in 
+         pp f "@[<hov2>module %s%a@]"
 Index: parsing/parser.mly
 ===================================================================
---- parsing/parser.mly	(revision 13285)
+--- parsing/parser.mly	(revision 13286)
 +++ parsing/parser.mly	(working copy)
 @@ -532,8 +532,12 @@
        { unclosed "struct" 1 "end" 3 }
@@ -34,9 +66,18 @@ Index: parsing/parser.mly
    | module_type WITH with_constraints
        { mkmty(Pmty_with($1, List.rev $3)) }
    | MODULE TYPE OF module_expr
+@@ -679,6 +688,8 @@
+       { $2 }
+   | LPAREN UIDENT COLON module_type RPAREN module_declaration
+       { mkmty(Pmty_functor(mkrhs $2 2, $4, $6)) }
++  | LPAREN RPAREN module_declaration
++      { mkmty(Pmty_functor(mkrhs "*" 1, mkmty (Pmty_signature []), $3)) }
+ ;
+ module_rec_declarations:
+     module_rec_declaration                              { [$1] }
 Index: typing/typemod.ml
 ===================================================================
---- typing/typemod.ml	(revision 13285)
+--- typing/typemod.ml	(revision 13286)
 +++ typing/typemod.ml	(working copy)
 @@ -37,6 +37,7 @@
    | Not_a_packed_module of type_expr
@@ -98,7 +139,7 @@ Index: typing/typemod.ml
 +      fprintf ppf "This functor is impure. It can only be applied to ()"
 Index: typing/typemod.mli
 ===================================================================
---- typing/typemod.mli	(revision 13285)
+--- typing/typemod.mli	(revision 13286)
 +++ typing/typemod.mli	(working copy)
 @@ -60,6 +60,7 @@
    | Not_a_packed_module of type_expr
@@ -110,7 +151,7 @@ Index: typing/typemod.mli
  
 Index: typing/oprint.ml
 ===================================================================
---- typing/oprint.ml	(revision 13285)
+--- typing/oprint.ml	(revision 13286)
 +++ typing/oprint.ml	(working copy)
 @@ -343,6 +343,8 @@
  let rec print_out_module_type ppf =
@@ -123,7 +164,7 @@ Index: typing/oprint.ml
          print_out_module_type mty_arg print_out_module_type mty_res
 Index: typing/includemod.ml
 ===================================================================
---- typing/includemod.ml	(revision 13285)
+--- typing/includemod.ml	(revision 13286)
 +++ typing/includemod.ml	(working copy)
 @@ -35,6 +35,7 @@
        Ident.t * class_declaration * class_declaration *
@@ -153,7 +194,7 @@ Index: typing/includemod.ml
      Module id :: rem ->
 Index: typing/includemod.mli
 ===================================================================
---- typing/includemod.mli	(revision 13285)
+--- typing/includemod.mli	(revision 13286)
 +++ typing/includemod.mli	(working copy)
 @@ -40,6 +40,7 @@
        Ident.t * class_declaration * class_declaration *
@@ -165,7 +206,7 @@ Index: typing/includemod.mli
      Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
 Index: typing/mtype.ml
 ===================================================================
---- typing/mtype.ml	(revision 13285)
+--- typing/mtype.ml	(revision 13286)
 +++ typing/mtype.ml	(working copy)
 @@ -34,7 +34,8 @@
    match scrape env mty with
