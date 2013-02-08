@@ -71,7 +71,7 @@ val register_function: (string -> (string list -> mapper) -> unit) ref
 val register: string -> (string list -> #mapper) -> unit
 
     (** Apply the [register_function].  The default behavior is to run
-        the mapper immediatly, taking arguments from the process
+        the mapper immediately, taking arguments from the process
         command line.  This is to support a scenario where a mapper is
         linked as a stand-alone executable.
 
