@@ -20,6 +20,10 @@ Compilers:
 - tools/eqparsetree compare two parsetree ignoring location
 - ocamlopt now uses clang as assembler on OS X if available, which enables
   CFI support for OS X.
+- Added a new -short-paths option, which attempts to use the shortest
+  representation for type constructors inside types, taking open modules
+  into account. This can make types much more readable if your code
+  uses lots of functors.
 
 Bug fixes:
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)

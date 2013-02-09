@@ -184,6 +184,12 @@ let is_row_name s =
   let l = String.length s in
   if l < 4 then false else String.sub s (l-4) 4 = "#row"
 
+let is_constr_row t =
+  match t.desc with
+    Tconstr (Path.Pident id, _, _) -> is_row_name (Ident.name id)
+  | Tconstr (Path.Pdot (_, s, _), _, _) -> is_row_name s
+  | _ -> false
+
 
                   (**********************************)
                   (*  Utilities for type traversal  *)

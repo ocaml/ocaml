@@ -146,8 +146,8 @@ let print_ident_annot pp str k =
 let print_info pp ppf prev_loc ti =
   match ti with
   | Ti_class _ | Ti_mod _ -> prev_loc
-  | Ti_pat  {pat_loc = loc; pat_type = typ}
-  | Ti_expr {exp_loc = loc; exp_type = typ} ->
+  | Ti_pat  {pat_loc = loc; pat_type = typ; pat_env = env}
+  | Ti_expr {exp_loc = loc; exp_type = typ; exp_env = env} ->
       if loc <> prev_loc then begin
         print_location pp loc;
         output_char pp '\n'
@@ -157,7 +157,7 @@ let print_info pp ppf prev_loc ti =
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
       Format.pp_print_string ppf "  ";
-      Printtyp.type_sch ppf typ;
+      Printtyp.wrap_printing_env env (fun () -> Printtyp.type_sch ppf typ);
       Format.pp_print_newline ppf ();
       output_string pp ")\n";
       loc

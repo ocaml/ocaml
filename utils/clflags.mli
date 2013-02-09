@@ -41,6 +41,7 @@ val init_file : string option ref
 val use_prims : string ref
 val use_runtime : string ref
 val principal : bool ref
+val real_paths : bool ref
 val recursive_types : bool ref
 val strict_sequence : bool ref
 val applicative_functors : bool ref

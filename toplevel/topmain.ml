@@ -73,6 +73,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _nostdlib = set no_std_include
   let _ppx s = ppx := s :: !ppx
   let _principal = set principal
+  let _short_paths = clear real_paths
   let _rectypes = set recursive_types
   let _stdin () = file_argument ""
   let _strict_sequence = set strict_sequence

@@ -93,7 +93,7 @@ Error: Type
        is not a subtype of
          point circle =
            < center : point; move : int -> unit; set_center : point -> unit > 
-Type point = point is not a subtype of color_point = color_point 
+       Type point is not a subtype of color_point 
 # Characters 9-55:
   fun x -> (x : color_point color_circle :> point circle);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -104,7 +104,7 @@ Error: Type
        is not a subtype of
          point circle =
            < center : point; move : int -> unit; set_center : point -> unit > 
-Type point = point is not a subtype of color_point = color_point 
+       Type point is not a subtype of color_point 
 #         class printable_point :
   int ->
   object
@@ -215,10 +215,10 @@ Error: Type
            < leq : int_comparable2 -> bool; set_x : int -> unit; x : int >
        is not a subtype of
          int_comparable = < leq : int_comparable -> bool; x : int > 
-Type int_comparable = < leq : int_comparable -> bool; x : int >
-is not a subtype of
-  int_comparable2 =
-    < leq : int_comparable2 -> bool; set_x : int -> unit; x : int > 
+       Type int_comparable = < leq : int_comparable -> bool; x : int >
+       is not a subtype of
+         int_comparable2 =
+           < leq : int_comparable2 -> bool; set_x : int -> unit; x : int > 
 # - : unit = ()
 #             class int_comparable3 :
   int ->
