@@ -1547,6 +1547,7 @@ let format_from_string s fmt =
 
 let unescaped s =
   sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
+;;
 
 (*
  Local Variables:
