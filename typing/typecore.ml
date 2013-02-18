@@ -2150,25 +2150,26 @@ and tc_contract_in_sig env c ty =
 
 (* val type_cs : Env.t -> (string option * Parsetree.core_contract) list 
   -> Typedtree.core_conract *)
-and tc_dep_contracts env = function 
+and tc_dep_contracts env xs = match xs with 
   | [] -> [] 
   | (((vo,c),t)::l) -> 
       let (typed_c, env_after_c) = tc_contract_aux env c t in
-      let (id_xop, env_for_rest) = match vo with
+      let val1_desc = {val_type = t; val_kind = Val_reg} in
+      let (id_x, env_for_rest) = match vo with
+          | Some x -> 
+             enter_value x val1_desc env 
           | None -> begin
-              match typed_c.contract_desc with
+              match c.pctr_desc with
                (* we convert {x | x > 0} * {y | y > x} to
                   x:{x | x > 0} * {y | y > x} so that we do not need
                   extra work at transl_contract side. *) 
-              | Tctr_pred(id_x, e, exnop) -> (Some id_x, env_after_c)
-              | _ -> (None, env_after_c)
-              end
-          | Some x -> begin
-             let val1_desc = {val_type = t; val_kind = Val_reg} in
-             let (id_x, new_env) = enter_value x val1_desc env in
-             (Some id_x, new_env)
-             end
-      in (id_xop, typed_c) :: tc_dep_contracts env_for_rest l
+              | Pctr_pred(x, e, exnop) -> 
+	          enter_value x val1_desc env
+              | _ -> 
+	        (* k:({x| true} -> {y | true}) -> {z| true} *)
+	       enter_value "k" val1_desc env 
+	       end
+      in (id_x, typed_c) :: tc_dep_contracts env_for_rest l
             
           
 (* type checking contract 
@@ -2208,29 +2209,30 @@ and tc_contract_aux env c ty =
                 raise(Error(loc,Contract_wrong_type(c,rty))) 
           in
           let (typed_c1, env_after_c1) = tc_contract_aux env c1 ty1 in
-          let (id_xop, env_for_c2) = 
+          let val1_desc = {val_type = ty1; val_kind = Val_reg} in
+          let (id_x, env_for_c2) = 
                 match xop with
-                   Some x -> 
-		     let val1_desc = {val_type = ty1; val_kind = Val_reg} in
-		     let (id_x, new_env) = enter_value x val1_desc env in
+                   Some a -> 
                      (* putting a in the env
                         a:{x | x > 0} -> {y | y > a} 
                         It is ok to write such contract:
                         x:{x | x > 0} -> {y | y > x} *)
-                     (Some id_x, new_env)
+		     enter_value a val1_desc env 
                  | None   -> begin 
-                     match typed_c1.contract_desc with
+                     match c1.pctr_desc with
 		       (* we convert  {x | x > 0} -> {y | y > x} to
 			  x:{x | x > 0} -> {y | y > x} 
 			  so that we do not need
                           extra work at transl_contract side. *)
-                     | Tctr_pred(id_x, e, exnop) -> 
-			 (Some id_x, env_after_c1)
-                     | _ -> (None, env_after_c1)
+                     | Pctr_pred(x, e, exnop) -> 
+		         enter_value x val1_desc env
+                     | _ -> 
+		       (* k:({x| true} -> {y | true}) -> {z| true} *)
+		       enter_value "k" val1_desc env 
                  end
           in
           let typed_c2 = tc_contract env_for_c2 c2 ty2 in
-          (Tctr_arrow (id_xop, typed_c1, typed_c2), env) (* return original env *) 
+          (Tctr_arrow (id_x, typed_c1, typed_c2), env) (* return original env *) 
       | Pctr_tuple cs ->          
           let result = match rty.desc with
                        | Ttuple ts -> 

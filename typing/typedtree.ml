@@ -130,10 +130,10 @@ and core_contract =
 
 and core_contract_desc = 
     Tctr_pred of Ident.t * expression * ((pattern * expression) list) option
-  | Tctr_arrow of Ident.t option * core_contract * core_contract
-  | Tctr_tuple of (Ident.t option * core_contract) list
+  | Tctr_arrow of Ident.t * core_contract * core_contract
+  | Tctr_tuple of (Ident.t * core_contract) list
   | Tctr_constr of Path.t * constructor_description 
-                          * (Ident.t option * core_contract) list
+                          * (Ident.t * core_contract) list
   | Tctr_and of core_contract * core_contract
   | Tctr_or of core_contract * core_contract
   | Tctr_typconstr of Path.t * core_contract list
@@ -625,10 +625,10 @@ and core_contract_to_iface ccntr =
                     Some (List.map (fun (p, e) -> (pattern_to_iface p, 
                                                    expression_to_iface e)) 
                           pat_expr_list)) 
-      | Tctr_arrow (iop, c1, c2) -> Types.Tctr_arrow (iop, f c1, f c2)
-      | Tctr_tuple (cs) -> Types.Tctr_tuple (List.map (fun (vo,c) -> (vo, f c)) cs)
+      | Tctr_arrow (x, c1, c2) -> Types.Tctr_arrow (x, f c1, f c2)
+      | Tctr_tuple (cs) -> Types.Tctr_tuple (List.map (fun (x,c) -> (x, f c)) cs)
       | Tctr_constr (i, cdesc, cs) -> 
-            Types.Tctr_constr (i, cdesc, List.map (fun (vo, c) -> (vo, f c)) cs)
+            Types.Tctr_constr (i, cdesc, List.map (fun (x, c) -> (x, f c)) cs)
       | Tctr_and (c1, c2) -> Types.Tctr_and (f c1, f c2)
       | Tctr_or (c1, c2) -> Types.Tctr_or (f c1, f c2)
       | Tctr_typconstr (i, cs) -> Types.Tctr_typconstr (i, List.map f cs)
@@ -936,10 +936,10 @@ and core_contract_from_iface ccntr =
                     Some (List.map (fun (p, e) -> (pattern_from_iface p, 
                                                    expression_from_iface e)) 
                           pat_expr_list))
-      | Types.Tctr_arrow (iop, c1, c2) -> Tctr_arrow (iop, f c1, f c2)
-      | Types.Tctr_tuple (cs) -> Tctr_tuple (List.map (fun (vo, c) -> (vo, f c)) cs)
+      | Types.Tctr_arrow (x, c1, c2) -> Tctr_arrow (x, f c1, f c2)
+      | Types.Tctr_tuple (cs) -> Tctr_tuple (List.map (fun (x, c) -> (x, f c)) cs)
       | Types.Tctr_constr (i, cdesc, cs) -> 
-          Tctr_constr (i, cdesc, List.map (fun (vo, c) -> (vo, f c)) cs)
+          Tctr_constr (i, cdesc, List.map (fun (x, c) -> (x, f c)) cs)
       | Types.Tctr_and (c1, c2) -> Tctr_and (f c1, f c2)
       | Types.Tctr_or (c1, c2) -> Tctr_or (f c1, f c2)
       | Types.Tctr_typconstr (i, cs) -> Tctr_typconstr (i, List.map f cs)

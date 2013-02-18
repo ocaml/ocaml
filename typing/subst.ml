@@ -274,8 +274,8 @@ and dep_core_contract s = function (vo, c) ->
 
 and core_contract_desc s = function 
     Tctr_pred (id, expr, exnop) -> Tctr_pred (id, expression s expr, exnop)
-  | Tctr_arrow (id_opt, cc1, cc2) -> 
-      Tctr_arrow (id_opt, core_contract s cc1, core_contract s cc2) 
+  | Tctr_arrow (id, cc1, cc2) -> 
+      Tctr_arrow (id, core_contract s cc1, core_contract s cc2) 
   | Tctr_tuple (cs) -> Tctr_tuple (List.map (dep_core_contract s) cs)
   | Tctr_constr(id, cdesc, cs) -> 
       Tctr_constr (id, cdesc, List.map (dep_core_contract s) cs)

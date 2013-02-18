@@ -334,17 +334,11 @@ let rec print_out_core_contract_desc type_decls ppf =
                          (print_out_expression type_decls) e                    
                          (bindings type_decls) exns
     end
-  | Tctr_arrow (xop, c1, c2) -> 
-    begin
-      match xop with
-      | None -> fprintf ppf "@[%a@ -> @ %a@]" 
-                (print_out_core_contract type_decls) c1
-                (print_out_core_contract type_decls) c2
-      | Some x -> fprintf ppf "@[%a:(%a)@ -> @ %a@]" 
+  | Tctr_arrow (x, c1, c2) -> 
+      fprintf ppf "@[%a:(%a)@ -> @ %a@]" 
                 Ident.print x
                 (print_out_core_contract type_decls) c1
                 (print_out_core_contract type_decls) c2
-    end
   | Tctr_tuple (cs) -> fprintf ppf "@[%a@]" 
                        (print_list_init (print_out_dep_core_contract type_decls)
                                   (fun ppf -> fprintf ppf "*@ "))
@@ -375,11 +369,8 @@ let rec print_out_core_contract_desc type_decls ppf =
 and print_out_core_contract type_decls ppf c = 
       print_out_core_contract_desc type_decls ppf c.contract_desc
 
-and print_out_dep_core_contract type_decls ppf = function (vo, c) ->
-      match vo with
-      | None -> fprintf ppf "@[%a@]" 
-                (print_out_core_contract type_decls) c
-      | Some x -> fprintf ppf "@[%s:(%a)@]" (Ident.name x)
+and print_out_dep_core_contract type_decls ppf = function (x, c) ->
+      fprintf ppf "@[%s:(%a)@]" (Ident.name x)
                   (print_out_core_contract type_decls) c
 
 and print_out_contract_declaration type_decls ppf cdecl = 

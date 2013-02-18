@@ -268,10 +268,10 @@ and core_contract =
 
 and core_contract_desc = 
     Tctr_pred of Ident.t * expression * ((pattern * expression) list) option
-  | Tctr_arrow of Ident.t option * core_contract * core_contract
-  | Tctr_tuple of (Ident.t option * core_contract) list
+  | Tctr_arrow of Ident.t * core_contract * core_contract
+  | Tctr_tuple of (Ident.t * core_contract) list
   | Tctr_constr of Path.t * constructor_description 
-                          * (Ident.t option * core_contract) list
+                          * (Ident.t * core_contract) list
   | Tctr_and of core_contract * core_contract
   | Tctr_or of core_contract * core_contract
   | Tctr_typconstr of Path.t * core_contract list
@@ -572,14 +572,9 @@ let rec eqContract_desc c1 c2 =
       eq_exns && (* exception constructors *)
       Ident.name id1 = Ident.name id2 && 
       eqExpression_desc exp1.exp_desc exp2.exp_desc
-  | (Tctr_arrow (id_opt1, cc11, cc12), Tctr_arrow (id_opt2, cc21, cc22)) ->
-      begin
-      match (id_opt1, id_opt2) with
-      | (None, None) -> eqContract cc11 cc21 && eqContract cc12 cc22
-      | (Some id1, Some id2) -> Ident.name id1 = Ident.name id2 && 
+  | (Tctr_arrow (id1, cc11, cc12), Tctr_arrow (id2, cc21, cc22)) ->
+       Ident.name id1 = Ident.name id2 && 
 	                        eqContract cc11 cc21 && eqContract cc12 cc22
-      | (_, _) -> false
-      end
   | (Tctr_tuple (clist1), Tctr_tuple (clist2)) -> 
       List.for_all (fun ((vo1,c1), (vo2,c2)) -> 
           vo1 = vo2 &&  eqContract c1 c2) 
@@ -591,7 +586,7 @@ let rec eqContract_desc c1 c2 =
                    (List.combine cs1 cs2)  
   | (Tctr_and (c1, c2), Tctr_and (c3, c4)) -> 
       eqContract c1 c3 && eqContract c2 c4
-  | (Tctr_or (c1, c2), Tctr_and (c3, c4)) -> 
+  | (Tctr_or (c1, c2), Tctr_or (c3, c4)) -> 
       eqContract c1 c3 && eqContract c2 c4
   | (Tctr_typconstr (p1, cs1), Tctr_typconstr (p2, cs2)) -> 
       p1 = p2 && 
