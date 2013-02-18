@@ -53,7 +53,7 @@ let askmErgo filename tasks n =
   let outchnl = open_out filename in
   out_ergotasks outchnl tasks;
   close_out outchnl;
-  let (cin, cout) as p = open_process (Printf.sprintf "alt-ergo -redondance 4 -stop 2 %s" filename) in
+  let (cin, cout) as p = open_process (Printf.sprintf "alt-ergo -redondance 2 %s" filename) in
   let out = channel_contents cin in
   let _ = close_process p in
   mValid out n

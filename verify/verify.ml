@@ -88,7 +88,7 @@ let rec transl_core_contract env cntr e callee caller =
 	let xe = { e with exp_desc = Texp_ident(Pident new_x, vd) } in
         (* let wrapped_p = contract_id_in_expr env p in 
         let expanded_p = deep_transl_contract env wrapped_p in
-        let cond = Texp_ifthenelse (subst [] [(x, new_x)] p, xe, Some callee) in 
+        let cond = Texp_ifthenelse (subst [] [(x, new_x)] expanded_p, xe, Some callee) in 
         *)
         let cond = Texp_ifthenelse (subst [] [(x, new_x)] p, xe, Some callee) in 
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var new_x) cty, e)], mkexp cond cty) 
@@ -124,18 +124,16 @@ let rec transl_core_contract env cntr e callee caller =
         Texp_ifthenelse (mkexp trycond Predef.type_bool, e, Some callee) 
         end
         *)
-     | Tctr_arrow (xop, c1, c2) -> 
+     | Tctr_arrow (x, c1, c2) -> 
       (* variant of indy version:
          e |>r1,r2<| x:c1 -> c2 = 
 	   \v. (e (v |>r2,r1<| c1)) |>r1,r2<| c2[(v |>r2,r1<| c1)/x]
       *)      
          let c1_type = c1.contract_type in
          let c2_type = c2.contract_type in
-         let res = match xop with
-         | Some x -> 
              let v = Ident.create "v" in
-	     let xvar = mkexp (mkident v c1_type) c1_type in
-             let v_c1 = transl_core_contract env c1 xvar caller callee in
+	     let vvar = mkexp (mkident v c1_type) c1_type in
+             let v_c1 = transl_core_contract env c1 vvar caller callee in
 	     let resarg = Texp_apply (e, [(Some v_c1, Required)]) in
               (* e.g. x:({a | a > 0} -> {b | true}) -> {c | x 0 > c} 
                  we want to blame the x in {c | x 0 > c}  *)	     
@@ -160,27 +158,17 @@ let rec transl_core_contract env cntr e callee caller =
 				     Some (ThmEnv.contract_name env),
 				     Pident x))}
              | _ -> caller in
-	     
 	     let env2 = add_dep_contracts env v c1 in
-          (*   let v_c1_indy = transl_core_contract env2 c1 xvar caller callee in
+          (* let v_c1_indy = transl_core_contract env2 c1 vvar caller callee in
 	     let c2subst = subst_contract x v_c1_indy c2 in 
             
 	     let resfun = transl_core_contract env c2subst 
                               (mkexp resarg c2_type) callee caller in
           *)
-	     let c2subst = subst_contract x xvar c2 in 
+	     let c2subst = subst_contract x vvar c2 in 
 	     let resfun = transl_core_contract env2 c2subst 
                                (mkexp resarg c2_type) new_callee new_caller in
 	     Texp_function ([(mkpat (Tpat_var v) c1_type, resfun)], Partial)
-         | None -> 
-	     let v = Ident.create "v" in
-             let xvar = mkexp (mkident v c1_type) c1_type in
-             let c1x = transl_core_contract env c1 xvar caller callee in
-   	     let resarg = Texp_apply (e, [(Some c1x, Required)]) in
-             let resfun = transl_core_contract env c2 
-		                               (mkexp resarg c2_type) callee caller in
-             Texp_function ([(mkpat (Tpat_var v) c1_type, resfun)], Partial)
-         in res
      | Tctr_tuple cs -> 
       (* e |>r1,r2<| (x:c1, c2) = match e with 
                            (x1, x2) -> (x1 |>r1,r2<| c1, 
@@ -190,20 +178,25 @@ let rec transl_core_contract env cntr e callee caller =
           let typs = match (Ctype.repr cty).desc with
                          | Ttuple ts -> ts
                          | _ -> print_string "verify: not tuple type"; [] in
-          let (ps, es) = List.split (List.map (fun (i, t) -> 
-                                let vd = {val_type = t; val_kind = Val_reg} in
-				let exp = { exp_desc = Texp_ident (Pident i, vd);
-					    exp_loc = e.exp_loc;
-                                            exp_type = t;
-					    exp_env = e.exp_env
-					  } in
-		   	        (mkpat (Tpat_var i) t, exp))
+          let (ps, es) = List.split (List.map (fun (id, t) -> 
+	          		    (mkpat (Tpat_var id) t, id))
                             (List.combine new_ids typs)) in
-          (* similar to dependent function contract, the substitution
-            c2[(x1 |>r2,r1<| c1)/x] is done in transmod.ml *)
-          let ces = List.map (fun ((vo,c), ei) -> 
-                             transl_core_contract env c ei callee caller)
-                             (List.combine cs es) in
+	  let rec do_dep_contract env1 xs = match xs with
+	    | [] -> []
+	    | ((x,c),id)::l -> 
+	      let t = c.contract_type in
+	      let vd = {val_type = t; val_kind = Val_reg} in
+	      let ei = { exp_desc = Texp_ident (Pident id, vd);
+		 	  	     exp_loc = e.exp_loc;
+                                     exp_type = t;
+				     exp_env = e.exp_env
+				   } in
+	      let env2 = add_dep_contracts env1 id c in
+	      let l_subst = List.map (fun ((x2,c2),e2) -> 
+	                               ((x2,subst_contract x ei c2),e2)) l in
+              let wrapped_elem = transl_core_contract env1 c ei callee caller in
+	      wrapped_elem::(do_dep_contract env2 l_subst) in
+          let ces = do_dep_contract env (List.combine cs es) in
           let newpat = { pat_desc = Tpat_tuple ps;
                          pat_loc = e.exp_loc;
                          pat_type = cty;
@@ -214,23 +207,26 @@ let rec transl_core_contract env cntr e callee caller =
         (* this is constructor contract, which is the general case of tuple contract 
            e |>r1,r2<| K ci = match e with 
            | K x1 .. xn -> K (x1 |>r1,r2<| c1, .. ,
-                              xn |>r1,r2<| cn [(xi |>r1,r2<| ci)/xi] )
+                              xn |>r1,r2<| cn [(xi |>r2,r1<| ci)/xi] )
            | _ -> r1 
         *)
-        let ids = Ident.create_idents "px" (List.length cs) in
+        let new_ids = Ident.create_idents "px" (List.length cs) in
         let xi = List.map (fun (i,t) -> mkpat (Tpat_var i) t)
-                          (List.combine ids cdesc.cstr_args) in
-        let xi_rhs = List.map (fun (i,t) -> 
-                          let vd = {val_type = t; val_kind = Val_reg} in
-                          mkexp (Texp_ident (Pident i,vd)) t)
-                          (List.combine ids cdesc.cstr_args) in
-        (* similar to dependent function contract, the substitution
-	   cn [(xi |>r1,r2<| ci)/xi] is done in transmod.ml *)
+                          (List.combine new_ids cdesc.cstr_args) in
+	let rec do_dep_contract env1 xs = match xs with
+	    | [] -> []
+	    | ((x,c),id)::l -> 
+	      let t = c.contract_type in
+	      let vd = {val_type = t; val_kind = Val_reg} in
+              let ei = mkexp (Texp_ident (Pident id,vd)) t in
+	      let env2 = add_dep_contracts env1 id c in
+	      let l_subst = List.map (fun ((xr,cr),er) -> 
+	                               ((xr,subst_contract x ei cr),er)) l in
+              let wrapped_elem = transl_core_contract env1 c ei callee caller in
+	      wrapped_elem::(do_dep_contract env2 l_subst) in
         let kxi = (mkpat (Tpat_construct (p1, cdesc, xi)) cdesc.cstr_res, 
                    mkexp (Texp_construct (p1, cdesc,  
-                      List.map (fun ((vo, c), e) -> 
-		                transl_core_contract env c e callee caller) 
-                      (List.combine cs xi_rhs))) cdesc.cstr_res) in     
+		      do_dep_contract env (List.combine cs new_ids))) cdesc.cstr_res) in     
         Texp_match (e, [kxi; (mkpat Tpat_any cdesc.cstr_res, callee)], Total)
      | Tctr_and (c1, c2) -> 
          (* e |>r1,r2<| c1 and c2 = (e |>r1,r2<| c1) |>r1,r2<| c2 *)
@@ -240,10 +236,11 @@ let rec transl_core_contract env cntr e callee caller =
      | Tctr_or (c1, c2) -> 
          (* e |>r1,r2<| c1 or c2 
              = try e |>r1,r2<| c1 with
-                Contract_exn1 -> try e |>r1,r2<| c2 with
-                                     Contract_exn2 -> raise Contract_exn2
-                                   | _ -> e
-              | _ -> e
+             | Contract_exn1 -> begin try e |>r1,r2<| c2 with
+                | Contract_exn2 -> raise Contract_exn2
+                | _ -> e
+		   end
+             | _ -> e
          *)
          let e1 = transl_core_contract env c1 e callee caller in
          let e2 = transl_core_contract env c2 e callee caller in
@@ -273,7 +270,7 @@ let rec transl_core_contract env cntr e callee caller =
          ce.exp_desc
   in mkexp ce cty
 
-(* Given x:t1 -> t2, the subst_contract computes t2[(v |><| t1)/x] *)
+(* The subst_contract computes cntr[(e/v] *)
 and subst_contract v e cntr = 
   let mkpat var = { pat_desc = Tpat_var var; 
                     pat_loc  = e.exp_loc;
@@ -284,15 +281,14 @@ and subst_contract v e cntr =
                (* {x | p} [e/v]   is expressed as  {x | let v = e in p} *) 
                let subst_p = Texp_let (Nonrecursive, [(mkpat v, e)], p) in
                Tctr_pred (x, { e with exp_desc = subst_p }, exnop) 
-           | Tctr_arrow (xop, c1, c2) -> 
+           | Tctr_arrow (x, c1, c2) -> 
                let sc1 = subst_contract v e c1 in
                let sc2 = subst_contract v e c2 in
-               Tctr_arrow (xop, sc1, sc2)
+               Tctr_arrow (x, sc1, sc2)
            | Tctr_tuple cs -> 
-               Tctr_tuple (List.map (fun (vo,c) -> (vo, subst_contract v e c)) cs)
+               Tctr_tuple (List.map (fun (x,c) -> (x, subst_contract v e c)) cs)
            | Tctr_constr (i, cdesc, cs) -> 
-               Tctr_constr (i, cdesc, 
-                 List.map (fun (vo, c) -> (vo, subst_contract v e c)) cs)
+               Tctr_constr (i, cdesc, List.map (fun (x,c) -> (x, subst_contract v e c)) cs)
            | Tctr_and (c1, c2) -> 
 	       let sc1 = subst_contract v e c1 in
                let sc2 = subst_contract v e c2 in
@@ -426,22 +422,21 @@ let rec contract_id_in_contract env c =
           | Tctr_tuple cs -> 
               let rec sub_dep senv xs = begin match xs with
                 | [] -> []
-                | (vo, c)::l -> 
-                  let new_c = contract_id_in_contract env c in
-                  let senv2 = match vo with
-		  | None -> senv
-                  | Some id -> update_name env (Pident id) in
-                  (vo, new_c) :: sub_dep senv2 l
+                | (x, c)::l -> 
+                  let new_c = contract_id_in_contract senv c in
+		  let senv2 = add_dep_contracts senv x new_c in
+                  (x, new_c) :: sub_dep senv2 l
                 end
              in Tctr_tuple (sub_dep env cs)
 	  | Tctr_constr (i, cdesc, cs) -> 
-              let rec sub_dep xs = begin match xs with
+              let rec sub_dep senv xs = begin match xs with
                 | [] -> []
-                | (vo, c)::l -> 
-                  let new_c = contract_id_in_contract env c
-                  in (vo, new_c) :: sub_dep l 
+                | (x, c)::l -> 
+                  let new_c = contract_id_in_contract senv c in
+		  let senv2 = add_dep_contracts senv x new_c in
+                  (x, new_c) :: sub_dep senv2 l 
                 end
-             in Tctr_constr (i, cdesc, sub_dep cs)
+             in Tctr_constr (i, cdesc, sub_dep env cs)
           | Tctr_and (c1, c2) -> 
                let new_c1 = contract_id_in_contract env c1 in
                let new_c2 = contract_id_in_contract env c2 in

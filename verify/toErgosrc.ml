@@ -21,7 +21,6 @@ type error =
   | Pattern_to_lexpr
 
 exception Error of Location.t * error
-exception Haha
 
 (* make lexpr simper:
    (1) remove redundant existential quantifiers, 
@@ -1433,29 +1432,22 @@ let mlaxiom_to_smtaxiom type_decls decl =
 let rec contract_to_smt type_decls t = match t.contract_desc with
 | Tctr_pred (id, p, _) -> 
      expression_to_eqlexpr type_decls (mklexpr p.exp_loc etrue) p
-| Tctr_arrow(idopt, t1, t2) -> 
-     begin match idopt with
-     | None -> f_implies (contract_to_smt type_decls t1) (contract_to_smt type_decls t2)
-     | Some id -> f_forall [Ident.unique_name id] 
+| Tctr_arrow(id, t1, t2) -> 
+     f_forall [Ident.unique_name id] 
             (type_to_ppure_type t1.contract_loc t1.contract_type) []
             (f_implies (contract_to_smt type_decls t1) (contract_to_smt type_decls t2))
-     end
 | Tctr_tuple(idopt_t_list) -> 
      let rec and_them xs = match xs with
                | [] -> mklexpr t.contract_loc etrue
-               | [(idopt, t)] -> begin match idopt with
-	             | None -> contract_to_smt type_decls t
-		     | Some id -> f_forall [Ident.unique_name id] 
+               | [(id, t)] ->
+	            f_forall [Ident.unique_name id] 
 		        (type_to_ppure_type t.contract_loc t.contract_type) []
 			(contract_to_smt type_decls t)
-                  end
-	       | (idopt, t)::l -> 
-	          begin match idopt with
-	             | None -> contract_to_smt type_decls t
-		     | Some id -> f_forall [Ident.unique_name id] 
+	       | (id, t)::l -> 
+	           f_forall [Ident.unique_name id] 
 		        (type_to_ppure_type t.contract_loc t.contract_type) []
 	            (f_and (contract_to_smt type_decls t) (and_them l))
-	          end in
+	           in
      and_them idopt_t_list
 | _ -> mklexpr t.contract_loc etrue
 

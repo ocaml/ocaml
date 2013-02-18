@@ -124,7 +124,7 @@ let increase_depth env = { env with depth = env.depth + 1 }
 let add_top_defs env ds = { env with top_defs = env.top_defs@ds }
 
 let add_dep_contracts env x c = 
-  { env with dep_contracts = Ident.add x c env.dep_contracts }
+  { env with dep_contracts = Ident.add x c env.dep_contracts}
 
 let add_contract_decl env cdecl = 
   { env with contract_decls = (env.contract_decls)@[cdecl] }

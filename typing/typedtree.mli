@@ -120,10 +120,10 @@ and core_contract =
 
 and core_contract_desc = 
     Tctr_pred of Ident.t * expression * ((pattern * expression) list) option
-  | Tctr_arrow of Ident.t option * core_contract * core_contract
-  | Tctr_tuple of (Ident.t option * core_contract) list
+  | Tctr_arrow of Ident.t * core_contract * core_contract
+  | Tctr_tuple of (Ident.t * core_contract) list
   | Tctr_constr of Path.t * constructor_description 
-                          * (Ident.t option * core_contract) list
+                          * (Ident.t * core_contract) list
   | Tctr_and of core_contract * core_contract
   | Tctr_or of core_contract * core_contract
   | Tctr_typconstr of Path.t * core_contract list
