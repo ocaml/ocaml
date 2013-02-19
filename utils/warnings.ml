@@ -60,6 +60,7 @@ type t =
   | Name_out_of_scope of string list * bool (* 40 *)
   | Ambiguous_name of string list * bool    (* 41 *)
   | Disambiguated_name of string            (* 42 *)
+  | Nonoptional_label of string             (* 43 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -111,9 +112,10 @@ let number = function
   | Name_out_of_scope _ -> 40
   | Ambiguous_name _ -> 41
   | Disambiguated_name _ -> 42
+  | Nonoptional_label _ -> 43
 ;;
 
-let last_warning_number = 42
+let last_warning_number = 43
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -322,6 +324,8 @@ let message = function
       ^ String.concat " " slist ^ "."
   | Disambiguated_name s ->
       "this use of " ^ s ^ " required disambiguation."
+  | Nonoptional_label s ->
+      "the label " ^ s ^ " is not optional."
 ;;
 
 let nerrors = ref 0;;
@@ -409,7 +413,8 @@ let descriptions =
    39, "Unused rec flag.";
    40, "Constructor or label name used out of scope.";
    41, "Ambiguous constructor or label name.";
-   42, "Disambiguated name.";
+   42, "Disambiguated constructor or label name.";
+   43, "Nonoptional label applied as optional.";
   ]
 ;;
 

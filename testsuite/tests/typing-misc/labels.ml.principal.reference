@@ -3,6 +3,6 @@
 # Characters 5-6:
   f ?x:0;;
        ^
-Error: The function applied to this argument has type x:int -> int
-This argument cannot be applied with label ?x
+Warning 43: the label x is not optional.
+- : int = 1
 # 

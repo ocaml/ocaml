@@ -958,8 +958,11 @@ and class_expr cl_num val_env met_env scl =
                       Btype.extract_label name more_sargs
                     in (l', sarg0, sargs @ sargs1, sargs2)
                 in
+                if optional = Required && Btype.is_optional l' then
+                  Location.prerr_warning sarg0.pexp_loc
+                    (Warnings.Nonoptional_label l);
                 sargs, more_sargs,
-                if Btype.is_optional l' || not (Btype.is_optional l) then
+                if optional = Required || Btype.is_optional l' then
                   Some (type_argument val_env sarg0 ty ty)
                 else
                   let ty0 = extract_option_type val_env ty in
