@@ -13,8 +13,8 @@ pattern:
   | pattern '|' pattern
   | constr pattern
   | "`"tag-name pattern
-  | "#"typeconstr-name
-  | pattern { ',' pattern }
+  | "#"typeconstr
+  | pattern {{ ',' pattern }}
   | '{' field '=' pattern { ';' field '=' pattern } [ ';' ] '}'
   | '[' pattern { ';' pattern } [ ';' ] ']'
   | pattern '::' pattern
@@ -27,7 +27,8 @@ operators and non-closed pattern constructions. The constructions with
 higher precedences come first.
 \ikwd{as\@\texttt{as}}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
-\entree{Constructor application}{--}
+\entree{"lazy"}{--}
+\entree{Constructor application, Tag application}{--}
 \entree{"::"}{right}
 \entree{","}{--}
 \entree{"|"}{left}

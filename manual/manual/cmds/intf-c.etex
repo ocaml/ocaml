@@ -8,6 +8,7 @@ be linked with OCaml code and called from OCaml functions.
 \pdfsection{Overview and compilation information}
 
 \subsection{Declaring primitives}
+
 User primitives are declared in an implementation file or
 "struct"\ldots"end" module expression using the "external" keyword:
 \begin{alltt}
@@ -430,7 +431,7 @@ lower than "No_scan_tag" indicates a structured block, containing
 well-formed values, which is recursively traversed by the garbage
 collector. A tag greater than or equal to "No_scan_tag" indicates a
 raw block, whose contents are not scanned by the garbage collector.
-For the benefits of ad-hoc polymorphic primitives such as equality and
+For the benefit of ad-hoc polymorphic primitives such as equality and
 structured input-output, structured and raw blocks are further
 classified according to their tags as follows:
 \begin{tableau}{|l|p{10cm}|}{Tag}{Contents of the block}
@@ -527,7 +528,7 @@ fields contain its arguments. Example:
 \entree{"()"}{"Val_int(0)"}
 \entree{"false"}{"Val_int(0)"}
 \entree{"true"}{"Val_int(1)"}
-\entree{"[]"}{"Val_int(0)".}
+\entree{"[]"}{"Val_int(0)"}
 \entree{"h::t"}{Block with size = 2 and tag = 0; first field
 contains "h", second field "t".}
 \end{tableau}
@@ -643,7 +644,7 @@ $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
 \var{v}, with type "char *". This pointer is a valid C string: there is a
 null character after the last character in the string. However, OCaml
-strings can contain embedded null characters, that will confuse
+strings can contain embedded null characters, which will confuse
 the usual C functions over strings.
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
@@ -1245,7 +1246,7 @@ C functions can apply OCaml function values (closures) to OCaml values.
 The following functions are provided to perform the applications:
 \begin{itemize}
 \item "caml_callback("\var{f, a}")" applies the functional value \var{f} to
-the value \var{a} and return the value returned by~\var{f}.
+the value \var{a} and returns the value returned by~\var{f}.
 \item "caml_callback2("\var{f, a, b}")" applies the functional value \var{f}
 (which is assumed to be a curried OCaml function with two arguments) to
 \var{a} and \var{b}.

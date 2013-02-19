@@ -25,11 +25,11 @@ class-type:
 ;
 class-body-type:
       'object' ['(' typexpr ')'] {class-field-spec} 'end'
-   |  ['[' typexpr {',' typexpr} ']'] class-path
+   |  ['[' typexpr {',' typexpr} ']'] classtype-path
 ;
 %\end{syntax} \begin{syntax}
 class-field-spec:
-      'inherit' class-type
+      'inherit' class-body-type
    |  'val' ['mutable'] ['virtual'] inst-var-name ':' typexpr
    |  'method' ['private'] ['virtual'] method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
@@ -38,10 +38,10 @@ class-field-spec:
 
 \subsubsection*{Simple class expressions}
 
-The expression @class-path@ is equivalent to the class type bound to
-the name @class-path@. Similarly, the expression
-@'[' typexpr_1 ',' \ldots typexpr_n ']' class-path@ is equivalent to
-the parametric class type bound to the name @class-path@, in which
+The expression @classtype-path@ is equivalent to the class type bound to
+the name @classtype-path@. Similarly, the expression
+@'[' typexpr_1 ',' \ldots typexpr_n ']' classtype-path@ is equivalent to
+the parametric class type bound to the name @classtype-path@, in which
 type parameters have been instantiated to respectively @typexpr_1@,
 \ldots @typexpr_n@.
 
@@ -74,9 +74,9 @@ mutable instance variable.
 
 \ikwd{inherit\@\texttt{inherit}}
 
-The inheritance construct @'inherit' class-type@ provides for inclusion of
+The inheritance construct @'inherit' class-body-type@ provides for inclusion of
 methods and instance variables from other class types.
-The instance variable and method types from @class-type@ are added
+The instance variable and method types from @class-body-type@ are added
 into the current class type.
 
 \subsubsection*{Instance variable specification}
@@ -127,7 +127,7 @@ Any non-private specification of a method forces it to be public.
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
 
-Virtual method specification is written @'method' ['private']
+A virtual method specification is written @'method' ['private']
 'virtual' method-name ':' poly-typexpr@, where @method-name@ is the
 name of the method and @poly-typexpr@ its expected type.
 
@@ -455,7 +455,7 @@ constraints.  So that the abbreviations are well-formed, type
 variables of the inferred type of the class must either be type
 parameters or be bound in the constraint clause.
 
-\subsection{Class specification}
+\subsection{Class specifications}
 \label{s:class-spec}
 
 \ikwd{class\@\texttt{class}}

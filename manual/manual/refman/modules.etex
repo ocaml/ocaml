@@ -20,11 +20,14 @@ for the specifications expressed in module types.
 \begin{syntax}
 module-expr:
           module-path
-        | 'struct' { definition [';;'] || expr ';;' } 'end'
+        | 'struct' [ module-items ] 'end'
         | 'functor' '(' module-name ':' module-type ')' '->' module-expr
         | module-expr '(' module-expr ')'
         | '(' module-expr ')'
         | '(' module-expr ':' module-type ')'
+;
+module-items:
+          ( definition || expr ) { [';;'] definition || ';;' expr } [';;']
 ;
 %\end{syntax} \begin{syntax}
 definition:
@@ -177,13 +180,13 @@ components nor perform any bindings. It simply affects the parsing of
 the following items of the structure, allowing components of the
 module denoted by @module-path@ to be referred to by their simple names
 @name@ instead of path accesses @module-path '.' name@.  The scope of
-the "open" stops at the end of the structure expression.
+the @"open"@ stops at the end of the structure expression.
 
 \subsubsection*{Including the components of another structure}
 
 \ikwd{include\@\texttt{include}}
 
-The expression @'include ' module-expr@ in a structure re-exports in
+The expression @'include' module-expr@ in a structure re-exports in
 the current structure all definitions of the structure denoted by
 @module-expr@.  For instance, if the identifier "S" is bound to the
 module

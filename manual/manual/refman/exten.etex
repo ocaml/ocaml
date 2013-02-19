@@ -17,6 +17,7 @@ int64-literal: integer-literal 'L'
 ;
 nativeint-literal: integer-literal 'n'
 \end{syntax}
+
 An integer literal can be followed by one of the letters "l", "L" or "n"
 to indicate that this integer has type "int32", "int64" or "nativeint"
 respectively, instead of the default type "int" for integer literals.
@@ -27,8 +28,7 @@ The library modules "Int32"[\moduleref{Int32}],
 "Int64"[\moduleref{Int64}] and "Nativeint"[\moduleref{Nativeint}]
 provide operations on these integer types.
 
-\section{Streams and stream parsers}
-\label{s:streams}
+\section{Streams and stream parsers} \label{s:streams}
 
 (Removed in Objective Caml 3.03)
 
@@ -47,7 +47,7 @@ followed by the \verb'#load "camlp4o.cma";;' command.
 
 (Introduced in Objective Caml 1.00)
 
-As mentioned in section~\ref{s:localdef}, the @'let rec'@ binding
+As mentioned in section~\ref{s:localdef}, the @'let' 'rec'@ binding
 construct, in addition to the definition of recursive functions,
 also supports a certain class of recursive definitions of
 non-functional values, such as
@@ -132,15 +132,15 @@ instance, the pattern "'0'..'9'" matches all characters that are digits.
 
 (Introduced in Objective Caml 1.06)
 
-OCaml supports the "assert" construct to check debugging assertions.
+OCaml supports the @"assert"@ construct to check debugging assertions.
 The expression @"assert" expr@ evaluates the expression @expr@ and
-returns "()" if @expr@ evaluates to "true".  Otherwise, the exception
+returns @"()"@ if @expr@ evaluates to @"true"@.  Otherwise, the exception
 "Assert_failure" is raised with the source file name and the
 location of @expr@ as arguments.  Assertion
 checking can be turned off with the "-noassert" compiler option.
 
-As a special case, "assert false" is reduced to
-"raise (Assert_failure ...)", which is polymorphic (and
+As a special case, @"assert false"@ is reduced to
+@'raise' '('@"Assert_failure ..."@')'@, which is polymorphic (and
 is not turned off by the "-noassert" option).
 %
 \index{Assertfailure\@\verb`Assert_failure`}
@@ -162,12 +162,12 @@ of "Lazy.force" may be implicit through pattern matching.
 
 The pattern @"lazy" pattern@ matches values \var{v} of type "Lazy.t",
 provided @pattern@ matches the result of forcing \var{v} with
-"Lazy.force". A successful match of a pattern containing "lazy"
+"Lazy.force". A successful match of a pattern containing @"lazy"@
 sub-patterns forces the corresponding parts of the value being matched, even
 those that imply no test such as @"lazy" value-name@ or @"lazy" "_"@.
 Matching a value with a @pattern-matching@ where some patterns
-contain "lazy" sub-patterns may imply forcing parts of the value,
-even when the pattern selected in the end has no "lazy" sub-pattern.
+contain @"lazy"@ sub-patterns may imply forcing parts of the value,
+even when the pattern selected in the end has no @"lazy"@ sub-pattern.
 
 For more information, see the description of module "Lazy" in the
 standard library (see
@@ -182,6 +182,12 @@ standard library (see
 \ikwd{module\@\texttt{module}}
 
 (Introduced in Objective Caml 2.00)
+
+\begin{syntax}
+expr:
+        ...
+      | 'let' 'module' module-name '=' module-expr 'in' expr
+\end{syntax}
 
 The expression
 @"let" "module" module-name "=" module-expr "in" expr@
@@ -207,7 +213,7 @@ It then returns the value of @expr@.  For example:
 definition:
         ...
       | 'module' 'rec' module-name ':' module-type '=' module-expr \\
-        { 'and' module-name':' module-type '=' module-expr }
+        { 'and' module-name ':' module-type '=' module-expr }
 ;
 specification:
         ...
@@ -215,8 +221,8 @@ specification:
                  { 'and' module-name':' module-type }
 \end{syntax}
 
-Recursive module definitions, introduced by the "module rec" \ldots
-"and" \ldots\ construction, generalize regular module definitions
+Recursive module definitions, introduced by the @"module rec"@ \ldots
+@"and"@ \ldots\ construction, generalize regular module definitions
 @'module' module-name '=' module-expr@ and module specifications
 @'module' module-name ':' module-type@ by allowing the defining
 @module-expr@ and the @module-type@ to refer recursively to the module
@@ -258,12 +264,15 @@ the recursively-defined module identifiers go through at least one
 it contains have function types @typexpr_1 '->' typexpr_2@.  Evaluation of a
 recursive module definition proceeds by building initial values for
 the safe modules involved, binding all (functional) values to
-@'fun' '_' '->' 'raise' 'Undefined_recursive_module'@.  The defining
+@'fun' '_' '->' 'raise' @"Undefined_recursive_module".  The defining
 module expressions are then evaluated, and the initial values
 for the safe modules are replaced by the values thus computed.  If a
 function component of a safe module is applied during this computation
 (which corresponds to an ill-founded recursive definition), the
 "Undefined_recursive_module" exception is raised.
+
+Note that, in the @specification@ case, the @module-type@s must be
+parenthesized if they use the @'with' mod-constraint@ construct.
 
 \section{Private types}
 \ikwd{private\@\texttt{private}}
@@ -280,18 +289,18 @@ variant and record types (section~\ref{s-private-types-variant}),
 for type abbreviations (section~\ref{s-private-types-abbrev}),
 and for row types (section~\ref{s-private-rows}).
 
-\subsection{Private variant and record types}
-\label{s-private-types-variant}
+\subsection{Private variant and record types} \label{s-private-types-variant}
 
 (Introduced in Objective Caml 3.07)
 
 \begin{syntax}
 type-representation:
           ...
-        | '=' 'private' constr-decl { '|' constr-decl }
-        | '=' 'private' '{' field-decl { ';' field-decl } '}'
+        | '=' 'private' [ '|' ] constr-decl { '|' constr-decl }
+        | '=' 'private' '{' field-decl { ';' field-decl } [ ';' ] '}'
 \end{syntax}
-Values of a variant or record type declared "private"
+
+Values of a variant or record type declared @"private"@
 can be de-structured normally in pattern-matching or via
 the @expr '.' field@ notation for record accesses.  However, values of
 these types cannot be constructed directly by constructor application
@@ -314,7 +323,7 @@ pattern-matching outside the defining module.  For example:
                      let b n = assert (n > 0); B n
                    end
 \end{verbatim}
-Here, the "private" declaration ensures that in any value of type
+Here, the @"private"@ declaration ensures that in any value of type
 "M.t", the argument to the "B" constructor is always a positive integer.
 
 With respect to the variance of their parameters, private types are
@@ -331,6 +340,7 @@ type-equation:
           ...
         | '=' 'private' typexpr
 \end{syntax}
+
 Unlike a regular type abbreviation, a private type abbreviation
 declares a type that is distinct from its implementation type @typexpr@.
 However, coercions from the type to @typexpr@ are permitted.
@@ -362,11 +372,12 @@ supported: if "l" has type "N.t list", the coercion "(l :> int list)"
 returns the list of underlying integers, like "List.map N.to_int l"
 but without copying the list "l".
 
-Note that the coercion "("@expr@" :> "@typexpr@")" is actually an abbreviated form,
-and will only work in presence of private abbreviations if both the
-type of @expr@ and @typexpr@ contain no type variables. If this is not the
-case, you must use the full form "("@expr@" : "@@typ\_e@@" :> "@typexpr@")" where
-@@typ\_e@@ is the expected type of @expr@. Concretely, this would be "(x :
+Note that the coercion @"(" expr ":>" typexpr ")"@ is actually an abbreviated
+form,
+and will only work in presence of private abbreviations if neither the
+type of @expr@ nor @typexpr@ contain any type variables. If they do,
+you must use the full form @"(" expr ":" typexpr_1 ":>" typexpr_2 ")"@ where
+@typexpr_1@ is the expected type of @expr@. Concretely, this would be "(x :
 N.t :> int)" and "(l : N.t list :> int list)" for the above examples.
 
 \subsection{Private row types} \label{s-private-rows}
@@ -379,6 +390,7 @@ type-equation:
           ...
         | '=' 'private' typexpr
 \end{syntax}
+
 Private row types are type abbreviations where part of the
 structure of the type is left abstract. Concretely @typexpr@ in the
 above should denote either an object type or a polymorphic variant
@@ -424,7 +436,7 @@ With type "u", it is possible to create values of the form "(`A n)",
 but not "(`B b)". With type "v", construction is not restricted but
 pattern-matching must have a default case.
 
-Like for abstract and private types, the variance of type parameters
+Similarly to abstract types, the variance of type parameters
 is not inferred, and must be given explicitly.
 
 
@@ -439,13 +451,12 @@ expr:
        ...
      | "let" "open" module-path "in" expr
      | module-path '.(' expr ')'
-;
 \end{syntax}
 
 The expressions
 @"let" "open" module-path "in" expr@
 and
-@module-path.(expr)@ are strictly equivalent. They
+@module-path'.('expr')'@ are strictly equivalent. They
 locally open the module referred to by the module path @module-path@ in
 the scope of the expression @expr@.
 
@@ -463,18 +474,17 @@ fragment is more self-contained).
 \begin{syntax}
 pattern:
     ...
-  | '{' field ['=' pattern] { ';' field ['=' pattern] } [';' '_' ] '}'
+  | '{' field ['=' pattern] { ';' field ['=' pattern] } [';' '_' ] [';'] '}'
 ;
 expr:
      ...
-  | '{' field ['=' expr] { ';' field ['=' expr] } '}'
-  | '{' expr 'with' field ['=' expr] { ';' field ['=' expr] } '}'
-;
+  | '{' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
+  | '{' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
 \end{syntax}
 
 In a record pattern or a record construction expression, a single
-identifier @id@ stands for @id = id@, and a qualified identifier
-@module-path '.' id@ stands for @module-path '.' id = id@.
+identifier @id@ stands for @id '=' id@, and a qualified identifier
+@module-path '.' id@ stands for @module-path '.' id '=' id@.
 For example, assuming
 the record type
 \begin{verbatim}
@@ -492,12 +502,12 @@ Likewise, the following functions are equivalent:
           fun {x; y} -> x + y
 \end{verbatim}
 
-Optionally, a record pattern can be terminated by "; _" to convey the
+Optionally, a record pattern can be terminated by @';' '_'@ to convey the
 fact that not all fields of the record type are listed in the record
 pattern and that it is intentional.  By default, the compiler ignores
-the "; _" annotation.  If warning 9 is turned on,
+the @';' '_'@ annotation.  If warning 9 is turned on,
 the compiler will warn when a record pattern fails to list all fields of
-the corresponding record type and is not terminated by "; _".
+the corresponding record type and is not terminated by @';' '_'@.
 Continuing the "point" example above,
 \begin{verbatim}
           fun {x} -> x + 1
@@ -521,10 +531,10 @@ let-binding:
         | value-name ':' poly-typexpr '=' expr
 \end{syntax}
 
-Polymorphic type annotations in "let"-definitions behave in a way
+Polymorphic type annotations in @"let"@-definitions behave in a way
 similar to polymorphic methods: they explicitly require the defined
 value to be polymorphic, and allow one to use this polymorphism in
-recursive occurences (when using "let rec"). Note however that this
+recursive occurences (when using @"let" "rec"@). Note however that this
 is a normal  polymorphic type, unifiable with any instance of
 itself.
 
@@ -557,7 +567,6 @@ polymorphic.
 parameter:
        ...
      | '(' "type" typeconstr-name ')'
-;
 \end{syntax}
 
 The expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ introduces a
@@ -602,13 +611,20 @@ It is also extremely useful for first-class modules and GADTs.
 \begin{syntax}
 let-binding:
        ...
-     | value-name ":" "type" { typeconstr } "." typexpr "=" expr;
+     | value-name ":" "type" {{ typeconstr-name }} "." typexpr "=" expr
+;
+class-field:
+          ...
+        | 'method' ['private'] method-name ':' 'type'
+          {{ typeconstr-name }} '.' typexpr '=' expr
+        | 'method!' ['private'] method-name ':' 'type'
+          {{ typeconstr-name }} '.' typexpr '=' expr
 \end{syntax}
-The @("type" @t@)@ syntax construction by itself does not make
+
+The @"(type" typeconstr-name")"@ syntax construction by itself does not make
 polymorphic the type variable it introduces, but it can be combined
-with explicit polymorphic annotations where needed. 
-Some syntactic sugar is provided to make this easier.
-Namely,
+with explicit polymorphic annotations where needed.
+The above rule provided as syntactic sugar to make this easier:
 \begin{verbatim}
         let rec f : type t1 t2. t1 * t2 list -> t1 = ...
 \end{verbatim}
@@ -619,14 +635,17 @@ is automatically expanded into
           fun (type t1) (type t2) -> (... : t1 * t2 list -> t1)
 \end{verbatim}
 
+Note that the @'method!'@ form combines this extension and the
+``explicit overriding'' extension described in
+section~\ref{s:explicit-overriding}.
 
 \section{First-class modules}\label{s-first-class-modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
 
-(Introduced in OCaml 3.12, pattern syntax and package type inference
-since 4.00)
+(Introduced in OCaml 3.12; pattern syntax and package type inference
+introduced in 4.00)
 
 \begin{syntax}
 typexpr:
@@ -689,11 +708,10 @@ constraints.
 The module expression @'(' "val" expr ":" package-type ')'@ cannot be used
 in the
 body of a functor, because this can cause unsoundness in conjunction
-with applicative functors.  It can be used anywhere in the context of a local
-module binding
+with applicative functors.  On the other hand, it can be used anywhere
+in the context of a local module binding
 @'let' 'module' module-name '=' '(' "val" expr_1 ":" package-type ')'
- "in" expr_2@,
-however.
+ "in" expr_2@.
 
 \paragraph{Basic example} A typical use of first-class modules is to
 select at run-time among several implementations of a signature.
@@ -885,18 +903,17 @@ construct again, but this time at the structure level:
 \begin{syntax}
 mod-constraint:
           ...
-        | 'type' [type-parameters] typeconstr-name ':=' [type-parameters] typeconstr
+        | 'type' [type-params] typeconstr-name ':=' typexpr
         | 'module' module-name ':=' extended-module-path
-;
 \end{syntax}
 
-``Destructive'' substitution ("with ... :=") behaves essentially like
-normal signature constraints ("with ... ="), but it additionally removes
+``Destructive'' substitution (@'with' ... ':=' ...@) behaves essentially like
+normal signature constraints (@'with' ... '=' ...@), but it additionally removes
 the redefined type or module from the signature. There are a number of
 restrictions: one can only remove types and modules at the outermost
-level (not inside submodules), and the definition must be either
-another type constructor (with identical type parameters) or a module
-path.
+level (not inside submodules), and in the case of @'with type'@ the
+definition must be another type constructor with the same type
+parameters.
 
 A natural application of destructive substitution is merging two
 signatures sharing a type name.
@@ -938,7 +955,7 @@ same type.
 \:module type CompareInt = sig val compare : int -> int -> int end
 \endcaml
 
-\section{Explicit overriding in class definitions}
+\section{Explicit overriding in class definitions}\label{s:explicit-overriding}
 \ikwd{method.\@\texttt{method\char33}}
 \ikwd{val.\@\texttt{val\char33}}
 \ikwd{inherit.\@\texttt{inherit\char33}}
@@ -952,20 +969,19 @@ class-field:
    |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
    |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
    |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
-;
 \end{syntax}
 
-The keywords "inherit!", "val!" and "method!" have the same semantics
-as "inherit", "val" and "method", but they additionally require the
-definition they introduce to be an overriding. Namely, "method!"
-requires @method-name@ to be already defined in this class, "val!"
+The keywords @"inherit!"@, @"val!"@ and @"method!"@ have the same semantics
+as @"inherit"@, @"val"@ and @"method"@, but they additionally require the
+definition they introduce to be an overriding. Namely, @"method!"@
+requires @method-name@ to be already defined in this class, @"val!"@
 requires @inst-var-name@ to be already defined in this class, and
-"inherit!" requires @class-expr@ to override some definitions.
+@"inherit!"@ requires @class-expr@ to override some definitions.
 If no such overriding occurs, an error is signaled.
 
 As a side-effect, these 3 keywords avoid the warnings~7
 (method override) and~13 (instance variable override).
-Note that warning~9 is disabled by default.
+Note that warning~7 is disabled by default.
 
 \section{Generalized algebraic datatypes}
 \ikwd{type\@\texttt{type}}
@@ -976,12 +992,11 @@ Note that warning~9 is disabled by default.
 \begin{syntax}
 constr-decl:
           ...
-        | constr-name ':' typexpr { '*' typexpr } '->' typexpr
+        | constr-name ':' [ typexpr { '*' typexpr } '->' ] typexpr
 ;
 type-param:
           ...
         | [variance] '_'
-;
 \end{syntax}
 
 Generalized algebraic datatypes, or GADTs, extend usual sum types in
@@ -996,9 +1011,9 @@ defined, and have the same number of parameters.
 Variables are made existential when they appear inside a constructor's
 argument, but not in its return type.
 
-Since the use of a return type often eludes the need to name type
+Since the use of a return type often eliminates the need to name type
 parameters in the left-hand side of a type definition, one can replace
-them with anonymous types ``"_"'' there.
+them with anonymous types @"_"@ in that case.
 
 The constraints associated to each constructor can be recovered
 through pattern-matching.
@@ -1140,3 +1155,31 @@ to implement dynamic types.
           | None -> None
           | Some Eq -> Some x
 \end{verbatim}
+
+\section{Syntax for Bigarray access}
+
+(Introduced in Objective Caml 3.00)
+
+\begin{syntax}
+expr:
+          ...
+        | expr '.{' expr { ',' expr } '}'
+        | expr '.{' expr { ',' expr } '}' '<-' expr
+\end{syntax}
+
+This extension provides a short syntax for getting and setting
+elements in the arrays provided by the
+"Bigarray"[\moduleref{Bigarray}] library.
+
+The expression @expr_0 '.{' expr_1 '}'@ is equivalent to
+@'('@"Bigarray.Array1.get "@expr_0 expr_1')'@, and the expression @expr_0 '.{'
+expr_1 '}' '<-' expr_2@ is equivalent to @'('@"Bigarray.Array1.set "@expr_0
+expr_1 expr_2')'@.
+
+In the same way, @expr_0 '.{' expr_1 ',' expr_2 '}'@ expands to a call to
+"Bigarray.Array2.get", and likewise for "Bigarray.Array2.set" and for
+the functions of "Bigarray.Array3".
+
+Finally, when $n > 3$, the expression @expr_0 '.{' expr_1 ',' \ldots
+',' expr_n '}'@ expands to @'('@"Bigarray.Genarray.get "@'[|' expr_1 ','
+\ldots ',' expr_n '|])'@ and likewise for "Bigarray.Genarray.set".

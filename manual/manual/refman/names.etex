@@ -37,14 +37,14 @@ operator-name:
 ;
 infix-op:
     infix-symbol
-  | '*' || '=' || 'or' || '&' || ':='
+  | '*' || '+' || '-' || '-.' || '=' || '!=' || '<' || '>' || 'or' || '||' || '&' || '&&' || ':='
   | 'mod' || 'land' || 'lor' || 'lxor' || 'lsl' || 'lsr' || 'asr'
 ;
 constr-name:
         capitalized-ident
 ;
 tag-name:
-        ident
+        capitalized-ident
 ;
 typeconstr-name:
         lowercase-ident
@@ -87,7 +87,7 @@ The capitalization rules  are summarized in the table below.
 \end{tableau}
 
 {\it Note on polymorphic variant tags:\/} the current implementation accepts
-lowercase variant tags in addition to uppercase variant tags, but we
+lowercase variant tags in addition to capitalized variant tags, but we
 suggest you avoid lowercase variant tags for portability and
 compatibility with future OCaml versions.
 
@@ -118,6 +118,9 @@ modtype-path:
 ;
 class-path:
         [ module-path '.' ] class-name
+;
+classtype-path:
+        [ extended-module-path '.' ] class-name
 \end{syntax}
 
 A named object can be referred to either by its name (following the

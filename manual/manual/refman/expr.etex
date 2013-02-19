@@ -43,6 +43,8 @@ expr:
   | '{' expr 'with' field '=' expr { ';' field '=' expr } [';'] '}'
   | expr {{ argument }}
   | prefix-symbol expr
+  | '-' expr
+  | '-.' expr
   | expr infix-op expr
   | expr '.' field
   | expr '.' field '<-' expr
@@ -52,7 +54,7 @@ expr:
   | expr '.[' expr ']' '<-' expr
   | 'if' expr 'then' expr [ 'else' expr ]
   | 'while' expr 'do' expr 'done'
-  | 'for' ident '=' expr ( 'to' || 'downto' ) expr 'do' expr 'done'
+  | 'for' value-name '=' expr ( 'to' || 'downto' ) expr 'do' expr 'done'
   | expr ';' expr
   | 'match' expr 'with' pattern-matching
   | 'function' pattern-matching
@@ -66,7 +68,7 @@ expr:
   | inst-var-name '<-' expr
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
-  | '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } [';'] '>}'
+  | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } [';'] ] '>}'
   | 'assert' expr
   | 'lazy' expr
 ;
@@ -117,7 +119,9 @@ precedence come first. For infix and prefix symbols, we write
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(    .["}{--}
-\entree{function application, constructor application, "assert", "lazy"}{left}
+\entree{"#"}{--}
+\entree{function application, constructor application, tag
+        application, "assert", "lazy"}{left}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots"   lsl   lsr   asr"}{right}
 \entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod   land   lor   lxor"}{left}
@@ -125,7 +129,7 @@ precedence come first. For infix and prefix symbols, we write
 \entree{"+"\ldots"   -"\ldots}{left}
 \entree{"::"}{right}
 \entree{{\tt \char64}\ldots "   ^"\ldots}{right}
-\entree{"="\ldots"   <"\ldots"   >"\ldots"   |"\ldots"   &"\ldots"   $"\ldots}{left}
+\entree{"="\ldots"   <"\ldots"   >"\ldots"   |"\ldots"   &"\ldots"   $"\ldots"   !="}{left}
 \entree{"&   &&"}{right}
 \entree{"or  ||"}{right}
 \entree{","}{--}
@@ -139,11 +143,11 @@ precedence come first. For infix and prefix symbols, we write
 
 \subsubsection*{Constants}
 
-Expressions consisting in a constant evaluate to this constant.
+An expression consisting in a constant evaluates to this constant.
 
 \subsubsection*{Value paths} \label{expr:var}
 
-Expressions consisting in an access path evaluate to the value bound to
+An expression consisting in an access path evaluates to the value bound to
 this path in the current evaluation environment. The path can
 be either a value name or an access path to a value component of a module.
 
@@ -174,7 +178,7 @@ Function application is denoted by juxtaposition of (possibly labeled)
 expressions. The expression @expr argument_1 \ldots argument_n@
 evaluates the expression @expr@ and those appearing in @argument_1@
 to @argument_n@. The expression @expr@ must evaluate to a
-functional value $f$, which is then applied to the values of 
+functional value $f$, which is then applied to the values of
 @argument_1, \ldots, argument_n@.
 
 The order in which the expressions @expr, argument_1, \ldots,
@@ -249,13 +253,13 @@ This expression is equivalent to:
 @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" expr@
 \end{center}
 
-The parameter patterns "~var" and @"~(var" [":" typexpr"])"@
-are shorthands for respectively "~var:var" and
-@"~var:(var" [":" typexpr]")"@, and similarly for their optional
+The parameter patterns @"~"var@ and @"~("var [":" typexpr]")"@
+are shorthands for respectively @"~"var":"var@ and
+@"~"var":("var [":" typexpr]")"@, and similarly for their optional
 counterparts.
 
-Functions of the form @"fun" "?lab:(" pattern '=' expr_0 ')' '->'
-expr@ are equivalent to
+A function of the form @"fun" "?"lab":(" pattern '=' expr_0 ')' '->'
+expr@ is equivalent to
 \begin{center}
 @"fun" "?lab:"ident '->'
   "let" pattern '='
@@ -274,9 +278,9 @@ application, this is equivalent to
 \begin{center}
 @"function" pattern_1 "->" \ldots "function" pattern_n "->" expr@
 \end{center}
-That is, the "fun" expression above evaluates to a curried function
+That is, the @"fun"@ expression above evaluates to a curried function
 with \var{n} arguments: after applying this function $n$ times to the
-values \nth{v}{1}~\ldots~\nth{v}{m}, the values will be matched
+values @v_1 \ldots v_n@, the values will be matched
 in parallel against the patterns @pattern_1 \ldots pattern_n@.
 If the matching succeeds, the function returns the value of @expr@ in
 an environment enriched by the bindings performed during the matchings.
@@ -285,11 +289,11 @@ If the matching fails, the exception "Match_failure" is raised.
 \subsubsection*{Guards in pattern-matchings}
 
 \ikwd{when\@\texttt{when}}
-Cases of a pattern matching (in the "function", "fun", "match" and
-"try" constructs) can include guard expressions, which are
+The cases of a pattern matching (in the @"function"@, @"fun"@, @"match"@ and
+@"try"@ constructs) can include guard expressions, which are
 arbitrary boolean expressions that must evaluate to "true" for the
-match case to be selected. Guards occur just before the "->" token and
-are introduced by the "when" keyword:
+match case to be selected. Guards occur just before the @"->"@ token and
+are introduced by the @"when"@ keyword:
 
 $$\begin{array}{rlll}
 \token{function} & \nt{pattern}_1 \; [\token{when} \; \nt{cond}_1] & \token{->} & \nt{expr}_1 \\
@@ -310,16 +314,16 @@ is resumed against the patterns following @pattern_i@.
 
 \ikwd{let\@\texttt{let}}
 
-The {\tt let} and {\tt let rec} constructs bind value names locally.
+The @"let"@ and @"let" "rec"@ constructs bind value names locally.
 The construct
 \begin{center}
 @"let" pattern_1 "=" expr_1 "and" \ldots "and" pattern_n "=" expr_n "in" expr@
 \end{center}
-evaluates @expr_1 \ldots expr_n@ in some unspecified order, then matches
+evaluates @expr_1 \ldots expr_n@ in some unspecified order and matches
 their values against the patterns @pattern_1 \ldots pattern_n@. If the
 matchings succeed, @expr@ is evaluated in the environment enriched by
 the bindings performed during matching, and the value of @expr@ is
-returned as the value of the whole {\tt let} expression. If one of the
+returned as the value of the whole @"let"@ expression. If one of the
 matchings fails, the exception "Match_failure" is raised.
 %
 \index{Matchfailure\@\verb`Match_failure`}
@@ -329,25 +333,25 @@ values: instead of writing
 \begin{center}
 @"let" ident "=" "fun" parameter_1 \ldots parameter_m "->" expr@
 \end{center}
-in a {\tt let} expression, one may instead write
+in a @"let"@ expression, one may instead write
 \begin{center}
 @"let" ident parameter_1 \ldots parameter_m "=" expr@
 \end{center}
 
 \medskip
 \noindent
-Recursive definitions of names are introduced by {\tt let rec}:
+Recursive definitions of names are introduced by @"let" "rec"@:
 \begin{center}
 @"let" "rec" pattern_1 "=" expr_1 "and" \ldots "and" pattern_n "=" expr_n
        "in" expr@
 \end{center}
-The only difference with the {\tt let} construct described above is
+The only difference with the @"let"@ construct described above is
 that the bindings of names to values performed by the
 pattern-matching are considered already performed when the expressions
 @expr_1@ to @expr_n@ are evaluated. That is, the expressions @expr_1@
 to @expr_n@ can reference identifiers that are bound by one of the
 patterns @pattern_1, \ldots, pattern_n@, and expect them to have the
-same value as in @expr@, the body of the {\tt let rec} construct.
+same value as in @expr@, the body of the @"let" "rec"@ construct.
 
 The recursive definition is guaranteed to behave as described above if
 the expressions @expr_1@ to @expr_n@ are function definitions
@@ -360,9 +364,9 @@ the expressions @expr_1@ to @expr_n@ are function definitions
 "in" expr@
 \end{center}
 This defines @name_1 \ldots name_n@ as mutually recursive functions
-local to @expr@. 
+local to @expr@.
 
-The behavior of other forms of {\tt let rec} definitions is
+The behavior of other forms of @"let" "rec"@ definitions is
 implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
@@ -402,7 +406,7 @@ value of the whole @'match'@ expression. The evaluation of
 performed during matching. If several patterns match the value of
 @expr@, the one that occurs first in the @'match'@ expression is
 selected. If none of the patterns match the value of @expr@, the
-exception @'Match_failure'@ is raised.
+exception "Match_failure" is raised.
 %
 \index{Matchfailure\@\verb`Match_failure`}
 
@@ -490,7 +494,7 @@ through'' the @'try'@ construct.
 
 The expression @expr_1 ',' \ldots ',' expr_n@ evaluates to the
 \var{n}-tuple of the values of expressions @expr_1@ to @expr_n@. The
-evaluation order for the subexpressions is not specified.
+evaluation order of the subexpressions is not specified.
 
 \subsubsection*{Variants}
 
@@ -501,9 +505,13 @@ expr_n ')'@ evaluates to the n-ary variant value whose constructor is
 @constr@ and whose arguments are the values of @expr_1, \ldots,
 expr_n@.
 
+The expression @constr '('expr_1, \ldots, expr_n')'@ evaluates to the
+variant value whose constructor is @constr@, and whose arguments are
+the values of @expr_1 \ldots expr_n@.
+
 For lists, some syntactic sugar is provided. The expression
 @expr_1 '::' expr_2@ stands for the constructor @'(' '::' ')' @
-applied to the argument @'(' expr_1 ',' expr_2 ')'@, and therefore
+applied to the arguments @'(' expr_1 ',' expr_2 ')'@, and therefore
 evaluates to the list whose head is the value of @expr_1@ and whose tail
 is the value of @expr_2@. The expression @'[' expr_1 ';' \ldots ';'
 expr_n ']'@ is equivalent to @expr_1 '::' \ldots '::' expr_n '::'
@@ -580,9 +588,12 @@ the access is out of bounds. The value of the whole expression is @'()'@.
 
 \subsection{Operators}
 
-Symbols from the class @'infix-symbols'@, as well as the keywords
-"*", "=", "or" and "&", can appear in infix position (between two
-expressions). Symbols from the class @'prefix-symbols'@
+Symbols from the class @infix-symbol@, as well as the keywords
+@"*"@, @"+"@, @"-"@, @'-.'@, @"="@, @"!="@, @"<"@, @">"@, @"or"@, @"||"@,
+@"&"@, @"&&"@, @":="@, @"mod"@, @"land"@, @"lor"@, @"lxor"@, @"lsl"@, @"lsr"@,
+and @"asr"@ can appear in infix position (between two
+expressions). Symbols from the class @prefix-symbol@, as well as
+the keywords @"-"@ and @"-."@
 can appear in prefix position (in front of an expression).
 
 Infix and prefix symbols do not have a fixed meaning: they are simply
@@ -591,6 +602,10 @@ corresponding to the symbols.  The expression @prefix-symbol expr@ is
 interpreted as the application @'(' prefix-symbol ')'
 expr@. Similarly, the expression @expr_1 infix-symbol expr_2@ is
 interpreted as the application @'(' infix-symbol ')' expr_1 expr_2@.
+
+Note that the keywords @'-'@ and @'-.'@ can appear both as infix and
+prefix operators. When they appear as prefix operators, they are
+interpreted respectively as the functions @'(~-)'@ and @'(~-.)'@.
 
 %% Conversely, a regular function identifier can also be used as an infix
 %% operator by enclosing it in backquotes: @expr_1 '`' ident '`' expr_2@
@@ -602,10 +617,14 @@ library module "Pervasives" in chapter~\ref{c:corelib} for more
 details). Their meaning may be changed at any time using
 @"let" "(" infix-op ")" name_1 name_2 "=" \ldots@
 
+Note: due to the way they are handled by the current implementation,
+it is not advisable to change the meaning of the @'&&'@, @'||'@, and
+@'~-'@ operators.
+
 \begin{tableau}{|l|p{12cm}|}{Operator}{Initial meaning}
 \entree{"+"}{Integer addition.}
 \entree{"-" (infix)}{Integer subtraction.}
-\entree{"-" (prefix)}{Integer negation.}
+\entree{"~-   -" (prefix)}{Integer negation.}
 \entree{"*"}{Integer multiplication.}
 \entree{"/"}{Integer division.
         Raise "Division_by_zero" if second argument is zero.}
@@ -619,7 +638,7 @@ details). Their meaning may be changed at any time using
 \entree{"asr"}{Bitwise arithmetic shift right on integers.}
 \entree{"+."}{Floating-point addition.}
 \entree{"-." (infix)}{Floating-point subtraction.}
-\entree{"-." (prefix)}{Floating-point negation.}
+\entree{"~-.   -." (prefix)}{Floating-point negation.}
 \entree{"*."}{Floating-point multiplication.}
 \entree{"/."}{Floating-point division.}
 \entree{"**"}{Floating-point exponentiation.}
@@ -638,6 +657,8 @@ details). Their meaning may be changed at any time using
 \entree{"<=" }{Test ``less than or equal''.}
 \entree{">" }{Test ``greater than''.}
 \entree{">=" }{Test ``greater than or equal''.}
+\entree{"&&   &"}{Boolean conjunction.}
+\entree{"||   or"}{Boolean disjunction.}
 \end{tableau}
 
 \subsection{Objects}  \label{s:objects}

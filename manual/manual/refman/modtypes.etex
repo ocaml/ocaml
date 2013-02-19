@@ -26,7 +26,7 @@ module-type:
         | '(' module-type ')'
 ;
 mod-constraint:
-          'type' [type-params] typeconstr '=' typexpr
+          'type' [type-params] typeconstr type-equation
         | 'module' module-path '=' extended-module-path
 ;
 %BEGIN LATEX
@@ -70,8 +70,9 @@ structure will match a signature if the structure provides definitions
 possibly more), and these definitions meet the type requirements given
 in the signature.
 
-For compatibility with Caml Light, an optional ";;" is allowed after each
-specification in a signature. The ";;" has no semantic meaning.
+An optional @";;"@ is allowed after each specification in a
+signature. It serves as a syntactic separator with no semantic
+meaning.
 
 \subsubsection*{Value specifications}
 
@@ -97,7 +98,7 @@ written @'type' typedef { 'and' typedef }@ and consists of a sequence
 of mutually recursive definitions of type names.
 
 Each type definition in the signature specifies an optional type
-equation @'=' typexpr@ and an optional type representation 
+equation @'=' typexpr@ and an optional type representation
 @'=' constr-decl \ldots@ or @'=' '{' field-decl \ldots '}'@.
 The implementation of the type name in a matching structure must
 be compatible with the type expression specified in the equation (if
@@ -221,7 +222,7 @@ The expression @'open' module-path@ in a signature does not specify
 any components. It simply affects the parsing of the following items
 of the signature, allowing components of the module denoted by
 @module-path@ to be referred to by their simple names @name@ instead of
-path accesses @module-path '.' name@. The scope of the "open"
+path accesses @module-path '.' name@. The scope of the @"open"@
 stops at the end of the signature expression.
 
 \subsubsection{Including a signature}
@@ -238,8 +239,8 @@ refer to a module type that is a signature, not a functor type.
 
 \ikwd{functor\@\texttt{functor}}
 
-The module type expression 
-@'functor' '(' module-name ':' module-type_1 ')' '->' module-type_2@ 
+The module type expression
+@'functor' '(' module-name ':' module-type_1 ')' '->' module-type_2@
 is the type of functors (functions from modules to modules) that take
 as argument a module of type @module-type_1@ and return as result a
 module of type @module-type_2@. The module type @module-type_2@ can

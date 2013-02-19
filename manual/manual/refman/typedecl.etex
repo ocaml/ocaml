@@ -16,7 +16,7 @@ type-definition:
           'type' typedef { 'and' typedef }
 ;
 typedef:
-          [type-params] typeconstr-name [type-information]
+          [type-params] typeconstr-name type-information
 ;
 type-information:
           [type-equation] [type-representation] { type-constraint }
@@ -65,7 +65,7 @@ constructor being defined.
 
 The optional type parameters are either one type variable @"'" ident@,
 for type constructors with one parameter, or a list of type variables
-@("'"ident_1,\ldots,"'"ident_n)@, for type constructors with several
+@"('"ident_1,\ldots,"'"ident_n")"@, for type constructors with several
 parameters. Each type parameter may be prefixed by a variance
 constraint @"+"@ (resp. @"-"@) indicating that the parameter is
 covariant (resp. contravariant).  These type parameters can appear in
@@ -95,7 +95,7 @@ a record type). If no type representation is given, nothing is
 assumed on the structure of the type besides what is stated in the
 optional type equation.
 
-The type representation @'=' constr-decl { '|' constr-decl }@
+The type representation @'=' ['|'] constr-decl { '|' constr-decl }@
 describes a variant type. The constructor declarations
 @constr-decl_1, \ldots, constr-decl_n@ describe the constructors
 associated to this variant type. The constructor
@@ -106,7 +106,7 @@ The constructor declaration @constr-name@
 declares the name @constr-name@ as a constant
 constructor. Constructor names must be capitalized.
 
-The type representation @'=' '{' field-decl { ';' field-decl } '}'@
+The type representation @'=' '{' field-decl { ';' field-decl } [';'] '}'@
 describes a record type. The field declarations @field-decl_1, \ldots,
 field-decl_n@ describe the fields associated to this record type.
 The field declaration @field-name ':' poly-typexpr@ declares

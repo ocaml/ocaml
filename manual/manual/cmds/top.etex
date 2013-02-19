@@ -1,49 +1,46 @@
 \chapter{The toplevel system (ocaml)} \label{c:camllight}
 \pdfchapter{The toplevel system (ocaml)}
 
-This chapter describes the toplevel system for OCaml, that permits interactive use of the OCaml system
+This chapter describes the toplevel system for OCaml, that permits
+interactive use of the OCaml system
 through a read-eval-print loop. In this mode, the system repeatedly
 reads OCaml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
 any. The system prints a "#" (sharp) prompt before reading each
 phrase.
 
-Input to the toplevel can span several lines. It is terminated by ";;" (a
+Input to the toplevel can span several lines. It is terminated by @";;"@ (a
 double-semicolon). The toplevel input consists in one or several
 toplevel phrases, with the following syntax:
 
 \begin{syntax}
 toplevel-input:
-        { toplevel-phrase } ';;'
-;
-toplevel-phrase:
-          definition
-        | expr
-        | '#' ident directive-argument
+          {{ definition }} ';;'
+        | expr ';;'
+        | '#' ident [ directive-argument ] ';;'
 ;
 directive-argument:
-          epsilon
-        | string-literal
+          string-literal
         | integer-literal
         | value-path
 ;
 \end{syntax}
 
-A phrase can consist of a definition, similar to those found in
+A phrase can consist of a definition, like those found in
 implementations of compilation units or in @'struct' \ldots 'end'@
 module expressions. The definition can bind value names, type names,
 an exception, a module name, or a module type name. The toplevel
 system performs the bindings, then prints the types and values (if
 any) for the names thus defined.
 
-A phrase may also consist in a "open" directive (see
+A phrase may also consist in an @"open"@ directive (see
 section~\ref{s:module-expr}), or a value expression
 (section~\ref{s:value-expr}). Expressions are simply evaluated,
 without performing any bindings, and the value of the expression is
 printed.
 
 Finally, a phrase can also consist in a toplevel directive,
-starting with "#" (the sharp sign). These directives control the
+starting with @"#"@ (the sharp sign). These directives control the
 behavior of the toplevel; they are listed below in
 section~\ref{s:toplevel-directives}.
 
@@ -282,7 +279,7 @@ they were typed on standard input. The reading of the file stops at
 the first error encountered.
 
 \item["#mod_use \""\var{file-name}"\";;"]
-Similar to #use but also wrap the code into a top-level module of the
+Similar to "#use" but also wrap the code into a top-level module of the
 same name as capitalised file name without extensions, following
 semantics of the compiler.
 
