@@ -54,6 +54,7 @@ type t =
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string list * bool (* 40 *)
   | Ambiguous_name of string list * bool    (* 41 *)
+  | Disambiguated_name of string            (* 42 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
