@@ -126,25 +126,21 @@ of @typexpr@ is captured by @"'" ident@, and quantified upon.
 
 \begin{syntax}
 polymorphic-variant-type:
-        '[' tag-spec-list ']'
+        '[' tag-spec-first { '|' tag-spec } ']'
       | '[>' [ tag-spec ] { '|' tag-spec } ']'
       | '[<' [ '|' ] tag-spec-full { '|' tag-spec-full } [ '>' {{ '`'tag-name }} ] ']'
 ;
 %\end{syntax} \begin{syntax}
-tag-spec-list:
-        [ '|' ] tag-spec {{ '|' tag-spec }}
-      | [ '|' ] '`'tag-name [ 'of' typexpr ]
+tag-spec-first:
+        [ '|' ] '`'tag-name [ 'of' typexpr ]
       | '|' typexpr
 ;
 tag-spec:
         '`'tag-name [ "of" typexpr ]
       | typexpr
 ;
-%BEGIN LATEX
-\end{syntax} \begin{syntax}
-%END LATEX
 tag-spec-full:
-        '`'tag-name [ "of" typexpr ] { '&' typexpr }
+        '`'tag-name [ "of" [ '&' ] typexpr { '&' typexpr } ]
       | typexpr
 ;
 \end{syntax}
@@ -185,6 +181,9 @@ Such conjunctive constraints may be unsatisfiable. In such a case the
 corresponding tag may not be used in a value of this type. This
 does not mean that the whole type is not valid: one can still use
 other available tags.
+Conjunctive constraints are mainly intended as output from the type
+checker. When they are used in source programs, unsolvable constraints
+may cause early failures.
 
 \subsubsection*{Object types}
 
