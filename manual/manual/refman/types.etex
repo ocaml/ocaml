@@ -134,6 +134,7 @@ polymorphic-variant-type:
 tag-spec-first:
         [ '|' ] '`'tag-name [ 'of' typexpr ]
       | '|' typexpr
+      | typexpr '|' tag-spec
 ;
 tag-spec:
         '`'tag-name [ "of" typexpr ]
