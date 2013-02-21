@@ -23,7 +23,7 @@ directive-argument:
           string-literal
         | integer-literal
         | value-path
-;
+        | 'true' || 'false'
 \end{syntax}
 
 A phrase can consist of a definition, like those found in
@@ -33,10 +33,9 @@ an exception, a module name, or a module type name. The toplevel
 system performs the bindings, then prints the types and values (if
 any) for the names thus defined.
 
-A phrase may also consist in an @"open"@ directive (see
-section~\ref{s:module-expr}), or a value expression
-(section~\ref{s:value-expr}). Expressions are simply evaluated,
-without performing any bindings, and the value of the expression is
+A phrase may also consist in a value expression
+(section~\ref{s:value-expr}). It is simply evaluated
+without performing any bindings, and its value is
 printed.
 
 Finally, a phrase can also consist in a toplevel directive,
@@ -127,6 +126,8 @@ The following command-line options are recognized by the "ocaml" command.
 
 \begin{options}
 
+%% FIXME This list is incomplete.
+
 \item["-absname"]
 Force error messages to show absolute paths for file names.
 
@@ -171,7 +172,7 @@ Do not include the standard library directory in the list of
 directories searched for source and compiled files.
 
 \item["-principal"]
-Check information path during type-checking, to make sure that all
+Check information paths during type-checking, to make sure that all
 types are derived in a principal way.  When using labelled arguments
 and/or polymorphic methods, this flag is required to ensure future
 versions of the compiler will be able to infer types correctly, even
@@ -250,12 +251,31 @@ Exit the toplevel loop and terminate the "ocaml" command.
 Ignore labels in function types if argument is "false", or switch back
 to default behaviour (commuting style) if argument is "true".
 
+\item["#principal "\var{bool}";;"]
+If the argument is "true", check information paths during
+type-checking, to make sure that all types are derived in a principal
+way. If the argument is "false", do not check information paths.
+
+\item["#rectypes;;"]
+Allow arbitrary recursive types during type-checking. Note: once
+enabled, this option cannot be disabled because that would lead to
+unsoundness of the type system.
+
 \item["#warnings \""\var{warning-list}"\";;"]
 Enable or disable warnings according to the argument.
+
+\item["#warn_error \""\var{warning-list}"\";;"]
+Treat as errors the warnings enabled by the argument and as normal
+warnings the warnings disabled by the argument.
 
 \item["#directory \""\var{dir-name}"\";;"]
 Add the given directory to the list of directories searched for
 source and compiled files.
+
+\item["#remove_directory \""\var{dir-name}"\";;"]
+Remove the given directory from the list of directories searched for
+source and compiled files.  Do nothing if the list does not contain
+the given directory.
 
 \item["#cd \""\var{dir-name}"\";;"]
 Change the current working directory.
