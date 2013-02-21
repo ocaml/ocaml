@@ -47,7 +47,6 @@ field-decl:
 ;
 type-constraint:
     'constraint' "'" ident '=' typexpr
-;
 \end{syntax}
 \ikwd{mutable\@\texttt{mutable}}
 \ikwd{constraint\@\texttt{constraint}}

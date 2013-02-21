@@ -31,7 +31,7 @@ module-items:
 ;
 %\end{syntax} \begin{syntax}
 definition:
-          'let' ['rec'] let-binding  { 'and' let-binding }
+          'let' ['rec'] let-binding { 'and' let-binding }
         | 'external' value-name ':' typexpr '=' external-declaration
         | type-definition
         | exception-definition

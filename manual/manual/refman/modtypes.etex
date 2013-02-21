@@ -47,7 +47,6 @@ specification:
         | 'module' 'type' modtype-name '=' module-type
         | 'open' module-path
         | 'include' module-type
-;
 \end{syntax}
 
 \subsection{Simple module types}

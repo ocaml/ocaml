@@ -92,7 +92,7 @@ multiple-matching:
 ;
 let-binding:
     pattern '=' expr
-  | value-name { parameter } [':' typexpr] '=' expr
+  | value-name { parameter } [':' typexpr] [':>' typexpr] '=' expr
 ;
 parameter:
     pattern
@@ -118,7 +118,7 @@ precedence come first. For infix and prefix symbols, we write
 \ikwd{let\@\texttt{let}}%
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
-\entree{".   .(    .["}{--}
+\entree{".   .(   .["}{--}
 \entree{"#"}{--}
 \entree{function application, constructor application, tag
         application, "assert", "lazy"}{left}
@@ -603,19 +603,19 @@ interpreted as the application @'(' prefix-symbol ')'
 expr@. Similarly, the expression @expr_1 infix-symbol expr_2@ is
 interpreted as the application @'(' infix-symbol ')' expr_1 expr_2@.
 
-Note that the keywords @'-'@ and @'-.'@ can appear both as infix and
+The table below lists the symbols defined in the initial environment
+and their initial meaning. (See the description of the core
+library module "Pervasives" in chapter~\ref{c:corelib} for more
+details). Their meaning may be changed at any time using
+@"let" "(" infix-op ")" name_1 name_2 "=" \ldots@
+
+The keywords @'-'@ and @'-.'@ can appear both as infix and
 prefix operators. When they appear as prefix operators, they are
 interpreted respectively as the functions @'(~-)'@ and @'(~-.)'@.
 
 %% Conversely, a regular function identifier can also be used as an infix
 %% operator by enclosing it in backquotes: @expr_1 '`' ident '`' expr_2@
 %% is interpreted as the application @ident expr_1 expr_2@.
-
-The table below lists the symbols defined in the initial environment
-and their initial meaning. (See the description of the core
-library module "Pervasives" in chapter~\ref{c:corelib} for more
-details). Their meaning may be changed at any time using
-@"let" "(" infix-op ")" name_1 name_2 "=" \ldots@
 
 Note: due to the way they are handled by the current implementation,
 it is not advisable to change the meaning of the @'&&'@, @'||'@, and

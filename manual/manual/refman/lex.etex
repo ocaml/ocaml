@@ -11,8 +11,8 @@ literal or keyword.
 
 \subsubsection*{Comments}
 
-Comments are introduced by the two characters  "(*", with no
-intervening blanks, and terminated by the characters "*)", with
+Comments are introduced by the two characters  @"(*"@, with no
+intervening blanks, and terminated by the characters @"*)"@, with
 no intervening blanks. Comments are treated as blank characters.
 Comments do not occur inside string or character literals. Nested
 comments are handled correctly.
@@ -32,9 +32,10 @@ character), and "'" (the single quote), starting with a
 letter or an underscore.
 Letters contain at least the 52 lowercase and uppercase
 letters from the ASCII set. The current implementation
-also recognizes as letters all accented characters from the ISO
-8859-1 (``ISO Latin 1'') set, but this feature is deprecated and
-should be avoided for future compatibility.
+also recognizes as letters some characters from the ISO
+8859-1 set (characters 192--214 and 216--222 as uppercase letters;
+characters 223--246 and 248--255 as lowercase letters). This
+feature is deprecated and should be avoided for future compatibility.
 
 All characters in an identifier are
 meaningful. The current implementation accepts identifiers up to
@@ -49,9 +50,9 @@ purpose.
 
 \begin{syntax}
 integer-literal:
-          ["-"] "0" \ldots "9" { "0" \ldots "9" || "_" }
+          ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }
         | ["-"] ("0x"||"0X") ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-                             { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+                            { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
         | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
         | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
 \end{syntax}
@@ -103,9 +104,9 @@ char-literal:
 ;
 escape-sequence:
           "\" ( "\" || '"' || "'" || "n" || "t" || "b" || "r" || space )
-        | "\" ( "0" \ldots "9" ) ( "0" \ldots "9" ) ( "0" \ldots "9" )
-        | "\x" ( "0" \ldots "9" || "A" \ldots "F" || "a" \ldots "f" )
-               ( "0" \ldots "9" || "A" \ldots "F" || "a" \ldots "f" )
+        | "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9")
+        | "\x" ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+               ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
 \end{syntax}
 
 Character literals are delimited by @"'"@ (single quote) characters.
@@ -158,8 +159,10 @@ syntactically as the sequence of the three tokens "~", @ident@ and
 ":", and have to be defined at the lexical level.
 
 \begin{syntax}
-label-name: ("a" \ldots "z"||"_") { letter||"0"\ldots"9"||"_"||"'" };
-label: "~" label-name ":" ;
+label-name: lowercase-ident
+;
+label: "~" label-name ":"
+;
 optlabel: "?" label-name ":"
 \end{syntax}
 
@@ -171,7 +174,7 @@ Despite @label@ and @optlabel@ being lexical entities in expressions,
 their expansions @'~' label-name ':'@ and @'?' label-name ':'@ will be
 used in grammars, for the sake of readability. Note also that inside
 type expressions, this expansion can be taken literally, {\em i.e.}
-there are really 3 tokens, with optional spaces beween them.
+there are really 3 tokens, with optional blanks between them.
 
 \subsubsection*{Prefix and infix symbols}
 
@@ -190,7 +193,6 @@ operator-char:
         '!' || '$' || '%' || '&' || '*' || '+' || '-' || '.' ||
         '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
         '^' || '|' || '~'
-;
 \end{syntax}
 
 Sequences of ``operator characters'', such as "<=>" or "!!",
@@ -218,7 +220,11 @@ otherwise:
       with
 \end{verbatim}
 %
+\goodbreak%
+%
 The following character sequences are also keywords:
+%
+%% FIXME the token >] is not used anywhere in the syntax
 %
 \begin{alltt}
 "    !=    #     &     &&    '     (     )     *     +     ,     -"
@@ -231,7 +237,7 @@ Note that the following identifiers are keywords of the Camlp4
 extensions and should be avoided for compatibility reasons.
 %
 \begin{verbatim}
-    parser    value   <<    <:    >>    $     $$    $:
+    parser    value    $     $$    $:    <:    <<    >>    ??
 \end{verbatim}
 
 \subsubsection*{Ambiguities}
@@ -247,17 +253,16 @@ longest first token.
 linenum-directive:
         '#' {{"0" \ldots "9"}}
       | '#' {{"0" \ldots "9"}} '"' { string-character } '"'
-;
 \end{syntax}
 
 Preprocessors that generate OCaml source code can insert line number
 directives in their output so that error messages produced by the
 compiler contain line numbers and file names referring to the source
 file before preprocessing, instead of after preprocessing.
-A line number directive is composed of a "#" (sharp sign), followed by
+A line number directive is composed of a @"#"@ (sharp sign), followed by
 a positive integer (the source line number), optionally followed by a
 character string (the source file name).
-Line number directives are treated as blank characters during lexical
+Line number directives are treated as blanks during lexical
 analysis.
 
 % FIXME spaces and tabs are allowed before and after the number

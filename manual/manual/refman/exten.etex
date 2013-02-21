@@ -186,7 +186,8 @@ standard library (see
 \begin{syntax}
 expr:
         ...
-      | 'let' 'module' module-name '=' module-expr 'in' expr
+      | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
+        [ ':' module-type ] \\ '=' module-expr 'in' expr
 \end{syntax}
 
 The expression
@@ -635,7 +636,8 @@ is automatically expanded into
           fun (type t1) (type t2) -> (... : t1 * t2 list -> t1)
 \end{verbatim}
 
-Note that the @'method!'@ form combines this extension and the
+The same feature is provided for method definitions.
+The @'method!'@ form combines this extension with the
 ``explicit overriding'' extension described in
 section~\ref{s:explicit-overriding}.
 
@@ -670,7 +672,6 @@ package-type:
 ;
 package-constraint:
           'type' typeconstr '=' typexpr
-;
 \end{syntax}
 
 Modules are typically thought of as static components. This extension

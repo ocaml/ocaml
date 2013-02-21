@@ -28,7 +28,7 @@ higher precedences come first.
 \ikwd{as\@\texttt{as}}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
 \entree{"lazy"}{--}
-\entree{Constructor application, Tag application}{--}
+\entree{Constructor application, Tag application}{right}
 \entree{"::"}{right}
 \entree{","}{--}
 \entree{"|"}{left}
@@ -57,6 +57,9 @@ between two parts of a data structure using only a pattern (but
 
 A pattern consisting in a constant matches the values that
 are equal to this constant.
+
+%% FIXME for negative numbers, blanks are allowed between the minus
+%% sign and the first digit.
 
 \subsubsection*{Alias patterns}
 \ikwd{as\@\texttt{as}}

@@ -142,7 +142,6 @@ tag-spec:
 tag-spec-full:
         '`'tag-name [ "of" [ '&' ] typexpr { '&' typexpr } ]
       | typexpr
-;
 \end{syntax}
 
 Polymorphic variant types describe the values a polymorphic variant

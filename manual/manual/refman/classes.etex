@@ -33,7 +33,6 @@ class-field-spec:
    |  'val' ['mutable'] ['virtual'] inst-var-name ':' typexpr
    |  'method' ['private'] ['virtual'] method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
-;
 \end{syntax}
 
 \subsubsection*{Simple class expressions}
@@ -186,7 +185,6 @@ class-field:
    |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
    |  'initializer' expr
-;
 \end{syntax}
 
 \subsubsection*{Simple class expressions}
@@ -263,7 +261,7 @@ A class body is a class value: it is not evaluated at once. Rather,
 its components are evaluated each time an object is created.
 
 In a class body, the pattern @'(' pattern [':' typexpr] ')'@ is
-matched against self, therefore provinding a binding for self and self
+matched against self, therefore providing a binding for self and self
 type.  Self can only be used in method and initializers.
 
 Self type cannot be a closed object type, so that the class remains
@@ -362,8 +360,7 @@ manipulating instance variables and duplicating self:
 expr:
     \ldots
   | inst-var-name '<-' expr
-  | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } ] '>}'
-;
+  | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } ] [';']'>}'
 \end{syntax}
 
 The expression @inst-var-name '<-' expr@ modifies in-place the current
@@ -423,7 +420,6 @@ class-binding:
 ;
 type-parameters:
           "'" ident { "," "'" ident }
-;
 \end{syntax}
 
 A class definition @'class' class-binding { 'and' class-binding }@ is
@@ -469,7 +465,6 @@ class-specification:
 class-spec:
            ['virtual'] ['[' type-parameters ']'] class-name ':'
            class-type
-;
 \end{syntax}
 
 This is the counterpart in signatures of class definitions.
@@ -491,7 +486,6 @@ classtype-definition:
 ;
 classtype-def:
     ['virtual'] ['[' type-parameters ']'] class-name '=' class-body-type
-;
 \end{syntax}
 
 A class type definition @'class' class-name '=' class-body-type@
