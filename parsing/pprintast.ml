@@ -132,7 +132,7 @@ class printer  ()= object(self:'self)
             | xs ->
                 let rec loop  f = function
                   | [x] -> fu f x
-                  | x::xs ->  pp f "%a%(%)%a" fu x sep loop xs 
+                  | x::xs ->  pp f "%a%(%)%a" fu x sep loop xs
                   | _ -> assert false in begin
                       pp f "%(%)%a%(%)" first loop xs last;
                   end in
@@ -328,13 +328,13 @@ class printer  ()= object(self:'self)
             else pp f "%s" s.txt ) s (* RA*)
     | Ppat_or (p1, p2) -> (* *)
         (match p1 with
-        | {ppat_desc=Ppat_constant (Const_char a);_} -> begin 
-            match pattern_or_helper a p2 with
+        | {ppat_desc=Ppat_constant (Const_char a);_} -> 
+            (match pattern_or_helper a p2 with
             |Some b -> pp f "@[<2>%C..%C@]" a b 
             |None ->
-                self#list  ~sep:"|" self#pattern f (list_of_pattern [] x) end
+                pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern ) (list_of_pattern [] x))
         | _ ->
-            self#list ~sep:"|" self#pattern f (list_of_pattern [] x) 
+            pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern) (list_of_pattern [] x)
         )
     | _ -> self#pattern1 f x
   method pattern1 (f:Format.formatter) (x:pattern) :unit =
@@ -914,8 +914,8 @@ class printer  ()= object(self:'self)
   method module_expr f x =
     match x.pmod_desc with
     | Pmod_structure (s) ->
-        pp f "struct@\n%a@\nend"
-          (self#list self#structure_item  ) s;
+        pp f "@[<hv2>struct@;@[<0>%a@]@;<1 -2>end@]"
+          (self#list self#structure_item  ~sep:"@\n") s;
     | Pmod_constraint (me, mt) ->
         pp f "@[<hov2>(%a@ :@ %a)@]"
           self#module_expr  me
@@ -1018,7 +1018,7 @@ class printer  ()= object(self:'self)
                 pp f " =@ %a"  self#module_expr  me 
             )) me 
     | Pstr_open (li) ->
-        pp f "open %a" self#longident_loc li;
+        pp f "@[<2>open@;%a@]" self#longident_loc li;
     | Pstr_modtype (s, mt) ->
         pp f "@[<2>module type %s =@;%a@]" s.txt self#module_type mt 
     | Pstr_class l ->
@@ -1117,6 +1117,7 @@ class printer  ()= object(self:'self)
     pp f "%a%a@ %a"
       (fun f x -> match (x.ptype_manifest,x.ptype_kind,x.ptype_private) with
       | (None,_,Public) ->  pp f "@;"
+      | (None,Ptype_abstract,Private) -> pp f "@;" (* private type without print*)
       | (None,_,Private) -> pp f "private@;"
       | (Some y, Ptype_abstract,Private) -> 
           pp f "private@;%a" self#core_type y;
