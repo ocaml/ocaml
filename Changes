@@ -109,6 +109,7 @@ Bug fixes:
 - PR#5906: GADT exhaustiveness check is still broken
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5911: Signature substitutions fail in submodules
+- PR#5930: ocamldep leaks temporary preprocessing files
 
 OCaml 4.00.1:
 -------------
