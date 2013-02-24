@@ -67,6 +67,7 @@ Bug fixes:
 - PR#5885: Incorrect rule for compiling C stubs when shared libraries are not
   supported.
 - ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
+- PR#5930: ocamldep leaks temporary preprocessing files
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
@@ -109,7 +110,6 @@ Bug fixes:
 - PR#5906: GADT exhaustiveness check is still broken
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5911: Signature substitutions fail in submodules
-- PR#5930: ocamldep leaks temporary preprocessing files
 
 OCaml 4.00.1:
 -------------
