@@ -31,7 +31,7 @@
 #include "signals.h"
 #include "sys.h"
 
-#include "flexdll.h"
+#include <flexdll.h>
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -496,4 +496,4 @@ void caml_install_invalid_parameter_handler()
   _set_invalid_parameter_handler(invalid_parameter_handler);
 }
 
-#endif 
+#endif
