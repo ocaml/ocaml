@@ -139,14 +139,14 @@ int fill_args (char **argv, int where, value v)
       char *merged;
       int i;
       int size = argv_size(Field(v,0));
-      tmpargv = (char **)stat_alloc((size + 1) * sizeof(char *));
+      tmpargv = (char **)caml_stat_alloc((size + 1) * sizeof(char *));
       fill_args(tmpargv,0,Field(v,0));
       tmpargv[size] = NULL;
       merged = Tcl_Merge(size,(const char *const*)tmpargv);
       for(i = 0; i<size; i++){ stat_free(tmpargv[i]); }
       stat_free((char *)tmpargv);
       /* must be freed by stat_free */
-      argv[where] = (char*)stat_alloc(strlen(merged)+1);
+      argv[where] = (char*)caml_stat_alloc(strlen(merged)+1);
       strcpy(argv[where], merged);
       Tcl_Free(merged);
       return (where + 1);
@@ -173,8 +173,8 @@ CAMLprim value camltk_tcl_direct_eval(value v)
 
   /* +2: one slot for NULL
          one slot for "unknown" if command not found */
-  argv = (char **)stat_alloc((size + 2) * sizeof(char *));
-  allocated = (char **)stat_alloc(size * sizeof(char *));
+  argv = (char **)caml_stat_alloc((size + 2) * sizeof(char *));
+  allocated = (char **)caml_stat_alloc(size * sizeof(char *));
 
   /* Copy -- argv[i] must be freed by stat_free */
   {
