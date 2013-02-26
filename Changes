@@ -66,6 +66,7 @@ Bug fixes:
 - PR#5865: assert failure when reporting undefined field label
 - PR#5885: Incorrect rule for compiling C stubs when shared libraries are not
   supported.
+- PR#5928: Missing space between words in manual page for ocamlmktop
 - ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
 - PR#5930: ocamldep leaks temporary preprocessing files
 
