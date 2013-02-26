@@ -79,7 +79,7 @@ distclean::
 all: findlib
 
 # http://lablgtk.forge.ocamlcore.org/
-LABLGTK=lablgtk-2.14.2
+LABLGTK=lablgtk-2.16.0
 ${LABLGTK}.tar.gz:
 	${WGET} https://forge.ocamlcore.org/frs/download.php/561/$@
 lablgtk: ${LABLGTK}.tar.gz findlib # TODO: add lablgl
@@ -92,10 +92,10 @@ lablgtk: ${LABLGTK}.tar.gz findlib # TODO: add lablgl
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ./configure -prefix ${PREFIX} && \
 	  ${MAKE} world && \
-	  ${MAKE} install && \
 	  ocamlfind remove lablgtk2 && \
-	  mkdir ${PREFIX}/lib/ocaml/site-lib/lablgtk2 && \
-	  cp META ${PREFIX}/lib/ocaml/site-lib/lablgtk2/META )
+	  ${MAKE} install && \
+	  ln -h -f -s ${PREFIX}/lib/ocaml/site-lib/lablgtk2 \
+	              ${PREFIX}/lib/ocaml/lablgtk2 )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${LABLGTK} lablgtk
@@ -195,25 +195,233 @@ distclean::
 	rm -f ${PCRE}.tar.gz
 all: pcre
 
-# https://bitbucket.org/yminsky/ocaml-core/downloads
-CORE=core-suite-108.00.02
+###########################################################################
+
+## Jane Street Core
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+TYPECONV=type_conv-109.09.00
+${TYPECONV}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+typeconv: ${TYPECONV}.tar.gz findlib
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${TYPECONV}
+	tar zxf ${TYPECONV}.tar.gz
+	./Patcher.sh ${TYPECONV}
+	( cd ${TYPECONV} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${TYPECONV} core
+distclean::
+	rm -f ${TYPECONV}.tar.gz
+all: typeconv
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+VARIANTSLIB=variantslib-109.09.00
+${VARIANTSLIB}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+variantslib: ${VARIANTSLIB}.tar.gz findlib typeconv
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${VARIANTSLIB}
+	tar zxf ${VARIANTSLIB}.tar.gz
+	./Patcher.sh ${VARIANTSLIB}
+	( cd ${VARIANTSLIB} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${VARIANTSLIB} core
+distclean::
+	rm -f ${VARIANTSLIB}.tar.gz
+all: variantslib
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+PIPEBANG=pipebang-109.09.00
+${PIPEBANG}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+pipebang: ${PIPEBANG}.tar.gz findlib typeconv
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${PIPEBANG}
+	tar zxf ${PIPEBANG}.tar.gz
+	./Patcher.sh ${PIPEBANG}
+	( cd ${PIPEBANG} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${PIPEBANG} core
+distclean::
+	rm -f ${PIPEBANG}.tar.gz
+all: pipebang
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+PAOUNIT=pa_ounit-109.09.00
+${PAOUNIT}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+paounit: ${PAOUNIT}.tar.gz findlib typeconv
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${PAOUNIT}
+	tar zxf ${PAOUNIT}.tar.gz
+	./Patcher.sh ${PAOUNIT}
+	( cd ${PAOUNIT} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${PAOUNIT} core
+distclean::
+	rm -f ${PAOUNIT}.tar.gz
+all: paounit
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+COMPARELIB=comparelib-109.09.00
+${COMPARELIB}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+comparelib: ${COMPARELIB}.tar.gz findlib typeconv
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${COMPARELIB}
+	tar zxf ${COMPARELIB}.tar.gz
+	./Patcher.sh ${COMPARELIB}
+	( cd ${COMPARELIB} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${COMPARELIB} core
+distclean::
+	rm -f ${COMPARELIB}.tar.gz
+all: comparelib
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+BINPROT=bin_prot-109.09.00
+${BINPROT}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+binprot: ${BINPROT}.tar.gz findlib typeconv ounit
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${BINPROT}
+	tar zxf ${BINPROT}.tar.gz
+	./Patcher.sh ${BINPROT}
+	( cd ${BINPROT} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${BINPROT} core
+distclean::
+	rm -f ${BINPROT}.tar.gz
+all: binprot
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+FIELDSLIB=fieldslib-109.09.00
+${FIELDSLIB}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+fieldslib: ${FIELDSLIB}.tar.gz findlib typeconv
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${FIELDSLIB}
+	tar zxf ${FIELDSLIB}.tar.gz
+	./Patcher.sh ${FIELDSLIB}
+	( cd ${FIELDSLIB} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${FIELDSLIB} core
+distclean::
+	rm -f ${FIELDSLIB}.tar.gz
+all: fieldslib
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+SEXPLIB=sexplib-109.09.00
+${SEXPLIB}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+sexplib: ${SEXPLIB}.tar.gz findlib typeconv
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${SEXPLIB}
+	tar zxf ${SEXPLIB}.tar.gz
+	./Patcher.sh ${SEXPLIB}
+	( cd ${SEXPLIB} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${SEXPLIB} core
+distclean::
+	rm -f ${SEXPLIB}.tar.gz
+all: sexplib
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+CORE=core-109.09.00
 ${CORE}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/108.00.02/$@
-core: ${CORE}.tar.gz findlib pcre res ounit
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+core: ${CORE}.tar.gz findlib variantslib sexplib fieldslib binprot comparelib \
+      paounit pipebang res ounit
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${CORE}
-	tar zxf ${CORE}.tar.gz && mv ocaml-core-* ${CORE}
+	tar zxf ${CORE}.tar.gz
 	./Patcher.sh ${CORE}
 	( cd ${CORE} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
-	  ./build-and-install )
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${CORE} core
 distclean::
 	rm -f ${CORE}.tar.gz
 all: core
+
+# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
+COREEXTENDED=core_extended-109.09.00
+${COREEXTENDED}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+coreextended: ${COREEXTENDED}.tar.gz findlib sexplib fieldslib binprot paounit \
+              pipebang core pcre res comparelib ounit
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${COREEXTENDED}
+	tar zxf ${COREEXTENDED}.tar.gz
+	./Patcher.sh ${COREEXTENDED}
+	( cd ${COREEXTENDED} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+          ocaml setup.ml -build && \
+          ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${COREEXTENDED} coreextended
+distclean::
+	rm -f ${COREEXTENDED}.tar.gz
+all: coreextended
+
+###########################################################################
 
 # http://erratique.ch/software/react
 REACT=react-0.9.3
@@ -585,9 +793,9 @@ distclean::
 all: xmlm
 
 # http://forge.ocamlcore.org/projects/gtk-extras/
-LABLGTKEXTRAS=lablgtkextras-1.1
+LABLGTKEXTRAS=lablgtkextras-1.3
 ${LABLGTKEXTRAS}.tar.gz:
-	${WGET} http://forge.ocamlcore.org/frs/download.php/848/$@
+	${WGET} http://forge.ocamlcore.org/frs/download.php/1072/$@
 lablgtkextras: ${LABLGTKEXTRAS}.tar.gz lablgtk configfile xmlm
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -652,10 +860,10 @@ distclean::
 	rm -f ${OMAKE}-0.rc1.tar.gz
 all: omake
 
-# http://ergo.lri.fr/
-ALTERGO=alt-ergo-0.94
+# http://alt-ergo.lri.fr/
+ALTERGO=alt-ergo-0.95
 ${ALTERGO}.tar.gz:
-	${WGET} http://ergo.lri.fr/http/$@
+	${WGET} http://alt-ergo.lri.fr/http/$(ALTERGO)/$@
 altergo: ${ALTERGO}.tar.gz ocamlgraph
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -844,9 +1052,9 @@ distclean::
 all: fileutils
 
 # http://forge.ocamlcore.org/projects/odn
-ODN=ocaml-data-notation-0.0.9
+ODN=ocaml-data-notation-0.0.10
 ${ODN}.tar.gz:
-	${WGET} http://forge.ocamlcore.org/frs/download.php/881/$@
+	${WGET} http://forge.ocamlcore.org/frs/download.php/1029/$@
 odn: ${ODN}.tar.gz findlib core ounit fileutils
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -1100,15 +1308,15 @@ distclean::
 	rm -f ${MLDONKEY}.tar.bz2
 all: mldonkey
 
-# http://mjambon.com/ocamlscript.html
-OCAMLSCRIPT=ocamlscript-2.0.2
-${OCAMLSCRIPT}.tar.bz2:
-	${WGET} http://mjambon.com/$@
-ocamlscript: ${OCAMLSCRIPT}.tar.bz2 findlib
+# http://mjambon.com/releases/ocamlscript
+OCAMLSCRIPT=ocamlscript-2.0.3
+${OCAMLSCRIPT}.tar.gz:
+	${WGET} http://mjambon.com/releases/ocamlscript/$@
+ocamlscript: ${OCAMLSCRIPT}.tar.gz findlib
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OCAMLSCRIPT}
-	tar jxf ${OCAMLSCRIPT}.tar.bz2
+	tar xf ${OCAMLSCRIPT}.tar.gz
 	./Patcher.sh ${OCAMLSCRIPT}
 	( cd ${OCAMLSCRIPT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
@@ -1189,9 +1397,9 @@ distclean::
 all: geneweb
 
 # http://coq.inria.fr/download
-COQ=coq-8.3pl4
+COQ=coq-8.4pl1
 ${COQ}.tar.gz:
-	${WGET} http://coq.inria.fr/distrib/V8.3pl4/files/$@
+	${WGET} http://coq.inria.fr/distrib/V8.4pl1/files/$@
 coq: ${COQ}.tar.gz camlp5
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -1211,7 +1419,7 @@ distclean::
 all: coq
 
 # http://frama-c.com/
-FRAMAC=frama-c-Nitrogen-20111001
+FRAMAC=frama-c-Oxygen-20120901
 ${FRAMAC}.tar.gz:
 	${WGET} http://frama-c.com/download/$@
 framac: ${FRAMAC}.tar.gz lablgtk ocamlgraph altergo coq

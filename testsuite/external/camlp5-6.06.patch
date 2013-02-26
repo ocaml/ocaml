@@ -1114,3 +1114,16 @@ diff -r -u -N camlp5-6.06.orig/ocaml_stuff/4.00.1/utils/warnings.mli camlp5-6.06
 +val check_fatal : unit -> unit;;
 +
 +val help_warnings: unit -> unit
+--- camlp5-6.06/ocaml_stuff/4.01.0/utils/warnings.mli.orig	2013-02-18 15:14:16.000000000 +0100
++++ camlp5-6.06/ocaml_stuff/4.01.0/utils/warnings.mli	2013-02-18 15:14:31.000000000 +0100
+@@ -54,6 +54,10 @@
+   | Unused_constructor of string * bool * bool  (* 37 *)
+   | Unused_exception of string * bool       (* 38 *)
+   | Unused_rec_flag                         (* 39 *)
++  | Name_out_of_scope of string list * bool (* 40 *)
++  | Ambiguous_name of string list * bool    (* 41 *)
++  | Disambiguated_name of string            (* 42 *)
++  | Nonoptional_label of string             (* 43 *)
+ ;;
+ 
+ val parse_options : bool -> string -> unit;;
