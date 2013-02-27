@@ -17,52 +17,102 @@
 include ../support/Makefile.common
 
 # We are using the non-installed library !
-COMPFLAGS=-I ../lib -I ../camltk -I ../support -I $(OTHERS)/unix -w s -dllpath ../support
+BYT_COMPFLAGS=-I ../lib -I ../camltk -I ../support -I $(OTHERS)/unix -w s -dllpath ../support
+BIN_COMPFLAGS=-I ../lib -I ../camltk -I ../support -I $(OTHERS)/unix -w s
+
+WITH_BYT_CAMLTK=labltk.cma camltk.cmo
+WITH_BIN_CAMLTK=labltk.cmxa camltk.cmx
+
+BYT_EXECS =\
+  addition.byt helloworld.byt winskel.byt fileinput.byt\
+  eyes.byt tetris.byt mytext.byt fileopen.byt\
+
+BIN_EXECS=$(BYT_EXECS:.byt=.bin)
+
+EXECS=$(BYT_EXECS:.byt=$(EXE))
+
+all: byt bin
+
+byt: $(BYT_EXECS)
+
+#opt: hello.opt demo.opt eyes.opt calc.opt clock.opt tetris.opt
+
+bin: opt
+
+opt: $(BIN_EXECS)
+
+addition.bin: addition.cmx
+	echo $(BIN_EXECS);
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ $(WITH_BIN_CAMLTK) addition.cmx
+
+helloworld.bin: helloworld.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ $(WITH_BIN_CAMLTK) helloworld.cmx
+
+winskel.bin: winskel.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ $(WITH_BIN_CAMLTK) winskel.cmx
+
+fileinput.bin: fileinput.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ $(WITH_BIN_CAMLTK) unix.cmxa fileinput.cmx
+
+socketinput.bin: socketinput.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ unix.cmxa $(WITH_BIN_CAMLTK) socketinput.cmx
+
+eyes.bin: eyes.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ unix.cmxa $(WITH_BIN_CAMLTK) eyes.cmx
+
+tetris.bin: tetris.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ unix.cmxa $(WITH_BIN_CAMLTK) tetris.cmx
+
+mytext.bin: mytext.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ unix.cmxa $(WITH_BIN_CAMLTK) mytext.cmx
+
+fileopen.bin: fileopen.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ unix.cmxa $(WITH_BIN_CAMLTK) fileopen.cmx
 
 
-all: addition$(EXE) helloworld$(EXE) winskel$(EXE) fileinput$(EXE) \
-	eyes$(EXE) tetris$(EXE) mytext$(EXE) fileopen$(EXE)
+addition.byt: addition.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ $(LIBNAME).cma addition.cmo
 
-addition$(EXE): addition.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma addition.cmo
+helloworld.byt: helloworld.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ $(LIBNAME).cma helloworld.cmo
 
-helloworld$(EXE): helloworld.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma helloworld.cmo
+winskel.byt: winskel.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ $(LIBNAME).cma winskel.cmo
 
-winskel$(EXE): winskel.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma winskel.cmo
+fileinput.byt: fileinput.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma fileinput.cmo
 
-fileinput$(EXE): fileinput.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma fileinput.cmo
+socketinput.byt: socketinput.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma socketinput.cmo
 
-socketinput$(EXE): socketinput.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma socketinput.cmo
+eyes.byt: eyes.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma eyes.cmo
 
-eyes$(EXE): eyes.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma eyes.cmo
+tetris.byt: tetris.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma tetris.cmo
 
-tetris$(EXE): tetris.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma tetris.cmo
+mytext.byt: mytext.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma mytext.cmo
 
-mytext$(EXE): mytext.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma mytext.cmo
-
-# graph$(EXE): graphics.cmo graphics_test.cmo
+# graph.byt: graphics.cmo graphics_test.cmo
 # 	  $(CAMLC) -o $@ graphics.cmo graphics_test.cmo
 #
 # graphics_test.cmo: graphics.cmo
 
-fileopen$(EXE): fileopen.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma fileopen.cmo
+fileopen.byt: fileopen.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ $(LIBNAME).cma fileopen.cmo
 
 clean :
-	rm -f *.cm? $(EXECS) addition eyes fileinput fileopen helloworld jptest mytext tetris winskel
+	rm -f *.cm? *.o a.out $(EXECS) $(BYT_EXECS) $(BIN_EXECS)
 
 .SUFFIXES :
-.SUFFIXES : .mli .ml .cmi .cmo
+.SUFFIXES : .mli .ml .cmi .cmo .cmx .cma .cmxa
 
 .mli.cmi:
-	$(CAMLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(BYT_COMPFLAGS) -c $<
 
 .ml.cmo:
-	$(CAMLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(BYT_COMPFLAGS) -c $<
+
+.ml.cmx:
+	$(CAMLOPT) $(BIN_COMPFLAGS) -c $<

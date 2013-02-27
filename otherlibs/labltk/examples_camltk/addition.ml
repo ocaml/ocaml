@@ -13,7 +13,8 @@
 (*  described in file LICENSE found in the OCaml source tree.          *)
 (*                                                                     *)
 (***********************************************************************)
-open Camltk
+
+open Camltk;;
 
 let main () =
   let top = opentk ()  in
@@ -50,4 +51,5 @@ let main () =
   mainLoop ()
 ;;
 
-let _ = Printexc.catch main () ;;
+Printexc.catch main ()
+;;
