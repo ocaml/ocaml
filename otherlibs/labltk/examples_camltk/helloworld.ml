@@ -13,25 +13,38 @@
 (*  described in file LICENSE found in the OCaml source tree.          *)
 (*                                                                     *)
 (***********************************************************************)
-open Camltk;;            (* Make interface functions available *)
 
-let top = opentk ();;   (* Initialisation of the interface *)
-(* top is now the toplevel widget *)
+(* Make interface functions available *)
+open Camltk;;
+
+(* Initialisation of the interface. *)
+let top = opentk ();;
+(* top is now the toplevel widget. *)
 
 (* Widget initialisation *)
-let b = Button.create top
-          [Text "foobar";
-           Command (function () ->
-                      print_string "foobar";
-                      print_newline();
-                      flush stdout)];;
-(* b exists but is not yet visible *)
+let b =
+  Button.create top [
+    Text "foobar";
+    Command
+      (function () ->
+       print_string "foobar";
+       print_newline ();
+       flush stdout);
+  ]
+;;
+(* Now button [b] exists but is not yet visible. *)
 
-let q = Button.create top
-          [Text "quit";
-           Command closeTk];;
-(* q exists but is not yet visible *)
+let q =
+  Button.create top [
+    Text "quit";
+    Command closeTk;
+  ]
+;;
+(* Button [q] also exists but is not yet visible. *)
 
-pack [b; q][] ;;           (* Make b visible *)
-mainLoop() ;;           (* User interaction*)
-(* You can quit this program by deleting its main window *)
+(* Make b and q visible. *)
+pack [b; q] [];;
+
+(* Start user interaction. *)
+mainLoop ();;
+(* You can also quit this program by deleting its main window. *)
