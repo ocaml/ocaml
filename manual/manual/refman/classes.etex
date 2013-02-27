@@ -31,7 +31,9 @@ class-body-type:
 class-field-spec:
       'inherit' class-body-type
    |  'val' ['mutable'] ['virtual'] inst-var-name ':' typexpr
+   |  'val' 'virtual' 'mutable' inst-var-name ':' typexpr
    |  'method' ['private'] ['virtual'] method-name ':' poly-typexpr
+   |  'method' 'virtual' 'private' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
 \end{syntax}
 
@@ -180,9 +182,11 @@ class-field:
       'inherit' class-expr ['as' value-name]
    |  'val' ['mutable'] inst-var-name [':' typexpr] '=' expr
    |  'val' ['mutable'] 'virtual' inst-var-name ':' typexpr
+   |  'val' 'virtual' 'mutable' inst-var-name ':' typexpr
    |  'method' ['private'] method-name {parameter} [':' typexpr] '=' expr
    |  'method' ['private'] method-name ':' poly-typexpr '=' expr
    |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
+   |  'method' 'virtual' 'private' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
    |  'initializer' expr
 \end{syntax}
@@ -381,10 +385,10 @@ been replaced by the values of the corresponding expressions @expr_1,
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
 
-Method specification is written @'method' ['private'] 'virtual'
+A method specification is written @'method' ['private'] 'virtual'
 method-name ':' poly-typexpr@.  It specifies whether the method is
 public or private, and gives its type. If the method is intended to be
-polymorphic, the type should be explicit.
+polymorphic, the type must be explicitly polymorphic.
 
 \subsubsection*{Constraints on type parameters}
 
@@ -392,16 +396,16 @@ polymorphic, the type should be explicit.
 
 The construct @'constraint' typexpr_1 '=' typexpr_2@ forces the two
 type expressions to be equals. This is typically used to specify type
-parameters: they can be that way be bound to a specified type
-expression.
+parameters: in that way they can be bound to specific type
+expressions.
 
 \subsubsection*{Initializers}
 
 \ikwd{initializer\@\texttt{initializer}}
 
 A class initializer @'initializer' expr@ specifies an expression that
-will be evaluated when an object will be created from the class, once
-all the instance variables have been initialized.
+will be evaluated whenever an object is created from the class, once
+all its instance variables have been initialized.
 
 \subsection{Class definitions}
 \label{s:classdef}

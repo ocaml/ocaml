@@ -22,4 +22,4 @@ base types (integers, floating-point numbers, characters, character
 strings), and constant constructors from both normal and polymorphic
 variants, as well as the special constants @"false"@, @"true"@, @"("")"@,
 @"[""]"@, and @"[|""|]"@, which behave like constant constructors, and
-@"begin""end"@, which is equivalent to @'('')'@.
+@"begin" "end"@, which is equivalent to @'('')'@.

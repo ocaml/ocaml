@@ -60,7 +60,7 @@ expr:
   | 'function' pattern-matching
   | 'fun' multiple-matching
   | 'try' expr 'with' pattern-matching
-  | 'let' ['rec'] let-binding  { 'and' let-binding } 'in' expr
+  | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
   | 'new' class-path
   | 'object' class-body 'end'
   | expr '#' method-name
