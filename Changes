@@ -3,6 +3,9 @@ Next version
 
 (Changes that can break existing programs are marked with a "*")
 
+Other libraries:
+- Labltk: updated to Tcl/Tk 8.6.
+
 Type system:
 * Propagate type information towards pattern-matching, even in the presence of
   polymorphic variants (discarding only information about possibly-present

@@ -27,10 +27,13 @@
 #define CONST84
 #endif
 
+/*Tcl_GetResult(), Tcl_GetStringResult(), Tcl_SetResult(), */
+  /*Tcl_SetStringResult(), Tcl_GetErrorLine() */
+
 /* if Tcl_GetStringResult is not defined, we use interp->result */
-#ifndef Tcl_GetStringResult
-#  define Tcl_GetStringResult(interp) (interp->result)
-#endif
+/*#ifndef Tcl_GetStringResult*/
+/*#  define Tcl_GetStringResult(interp) (interp->result)*/
+/*#endif*/
 
 /* cltkMisc.c */
 /* copy an OCaml string to the C heap. Must be deallocated with stat_free */
