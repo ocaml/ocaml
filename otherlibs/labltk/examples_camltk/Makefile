@@ -25,7 +25,7 @@ WITH_BIN_CAMLTK=labltk.cmxa camltk.cmx
 
 BYT_EXECS =\
   addition.byt helloworld.byt winskel.byt fileinput.byt\
-  eyes.byt tetris.byt mytext.byt fileopen.byt\
+  eyes.byt taquin.byt tetris.byt mytext.byt fileopen.byt\
 
 BIN_EXECS=$(BYT_EXECS:.byt=.bin)
 
@@ -35,14 +35,13 @@ all: byt bin
 
 byt: $(BYT_EXECS)
 
-#opt: hello.opt demo.opt eyes.opt calc.opt clock.opt tetris.opt
+#opt: hello.opt demo.opt calc.opt clock.opt tetris.opt
 
 bin: opt
 
 opt: $(BIN_EXECS)
 
 addition.bin: addition.cmx
-	echo $(BIN_EXECS);
 	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ $(WITH_BIN_CAMLTK) addition.cmx
 
 helloworld.bin: helloworld.cmx
@@ -59,6 +58,9 @@ socketinput.bin: socketinput.cmx
 
 eyes.bin: eyes.cmx
 	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ unix.cmxa $(WITH_BIN_CAMLTK) eyes.cmx
+
+taquin.bin: taquin.cmx
+	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ unix.cmxa $(WITH_BIN_CAMLTK) taquin.cmx
 
 tetris.bin: tetris.cmx
 	$(CAMLOPT) $(BIN_COMPFLAGS) -o $@ unix.cmxa $(WITH_BIN_CAMLTK) tetris.cmx
@@ -88,16 +90,14 @@ socketinput.byt: socketinput.cmo
 eyes.byt: eyes.cmo
 	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma eyes.cmo
 
+taquin.byt: taquin.cmo
+	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma taquin.cmo
+
 tetris.byt: tetris.cmo
 	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma tetris.cmo
 
 mytext.byt: mytext.cmo
 	$(CAMLC) $(BYT_COMPFLAGS) -o $@ unix.cma $(LIBNAME).cma mytext.cmo
-
-# graph.byt: graphics.cmo graphics_test.cmo
-# 	  $(CAMLC) -o $@ graphics.cmo graphics_test.cmo
-#
-# graphics_test.cmo: graphics.cmo
 
 fileopen.byt: fileopen.cmo
 	$(CAMLC) $(BYT_COMPFLAGS) -o $@ $(LIBNAME).cma fileopen.cmo
