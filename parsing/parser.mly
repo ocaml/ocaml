@@ -80,6 +80,9 @@ let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
 let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc () };;
 let ghloc d = { txt = d; loc = symbol_gloc () };;
 
+let ghunit () =
+  ghexp (Pexp_construct (mknoloc (Lident "()"), None, false))
+
 let mkassert e =
   match e with
   | {pexp_desc = Pexp_construct ({ txt = Lident "false" }, None , false);
@@ -270,6 +273,10 @@ let varify_constructors var_names t =
           Ptyp_poly(string_lst, loop core_type)
       | Ptyp_package(longident,lst) ->
           Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
+      | Ptyp_attribute (s, arg, t) ->
+          Ptyp_attribute (s, arg, loop t)
+      | Ptyp_extension (s, arg) ->
+          Ptyp_extension (s, arg)
     in
     {t with ptyp_desc = desc}
   and loop_core_field t =
@@ -602,6 +609,12 @@ structure_item:
       { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr
       { mkstr(Pstr_include $2) }
+  | structure_item COLONCOLON LIDENT expr %prec below_SEMI
+      { mkstr(Pstr_attribute ($3, $4, $1)) }
+  | structure_item COLONCOLON LIDENT %prec below_SEMI
+      { mkstr(Pstr_attribute ($3, ghunit (), $1)) }
+  | AMPERSAND LPAREN LIDENT opt_expr RPAREN
+      { mkstr (Pstr_extension($3, $4)) }
 ;
 module_binding:
     EQUAL module_expr
@@ -1061,6 +1074,15 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
+/*
+  | LPAREN INFIXOP1 LIDENT opt_expr RPAREN expr %prec below_SEMI
+      { if $2 = "@" then mkexp (Pexp_attribute($3, $4, $6))
+        else expecting 2 "@" }
+*/
+;
+opt_expr:
+    expr { $1 }
+  |      { ghunit () }
 ;
 simple_expr:
     val_longident
@@ -1139,6 +1161,13 @@ simple_expr:
                                 Some (ghtyp (Ptyp_package $5)), None)) }
   | LPAREN MODULE module_expr COLON error
       { unclosed "(" 1 ")" 5 }
+  | LPAREN AMPERSAND LIDENT opt_expr RPAREN
+      { mkexp (Pexp_extension($3, $4)) }
+/*
+  | simple_expr LPAREN INFIXOP3 LIDENT opt_expr RPAREN %prec below_SEMI
+      { if $3 = "/" then mkexp (Pexp_attribute($4, $5, $1))
+        else expecting 3 "/" }
+*/
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
@@ -1525,6 +1554,11 @@ core_type:
       { $1 }
   | core_type2 AS QUOTE ident
       { mktyp(Ptyp_alias($1, $4)) }
+/*
+  | LPAREN INFIXOP1 LIDENT opt_expr RPAREN core_type %prec below_SEMI
+      { if $2 = "@" then mktyp (Ptyp_attribute($3, $4, $6))
+        else expecting 2 "@" }
+*/
 ;
 core_type2:
     simple_core_type_or_tuple
@@ -1586,6 +1620,11 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
   | LPAREN MODULE package_type RPAREN
       { mktyp(Ptyp_package $3) }
+  | LPAREN AMPERSAND LIDENT opt_expr RPAREN
+      { mktyp (Ptyp_extension($3, $4)) }
+  | simple_core_type2 LPAREN INFIXOP3 LIDENT opt_expr RPAREN %prec below_SEMI
+      { if $3 = "/" then mktyp (Ptyp_attribute($4, $5, $1))
+        else expecting 3 "/" }
 ;
 package_type:
     mty_longident { (mkrhs $1 1, []) }

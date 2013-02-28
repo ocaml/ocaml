@@ -63,6 +63,7 @@ type error =
   | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
   | Unqualified_gadt_pattern of Path.t * string
+  | Extension of string
 
 exception Error of Location.t * Env.t * error
 
@@ -115,6 +116,7 @@ let iter_expression f e =
   let rec expr e =
     f e;
     match e.pexp_desc with
+    | Pexp_extension _ (* we don't iterate under extension point *)
     | Pexp_ident _
     | Pexp_assertfalse
     | Pexp_new _
@@ -138,6 +140,7 @@ let iter_expression f e =
     | Pexp_assert e
     | Pexp_setinstvar (_, e)
     | Pexp_send (e, _)
+    | Pexp_attribute (_, _, e) (* we don't iterate on the attribute argument *)
     | Pexp_constraint (e, _, _)
     | Pexp_field (e, _) -> expr e
     | Pexp_when (e1, e2)
@@ -170,11 +173,14 @@ let iter_expression f e =
     | Pstr_modtype _
     | Pstr_open _
     | Pstr_class_type _
+    | Pstr_extension _
     | Pstr_exn_rebind _ -> ()
     | Pstr_include me
     | Pstr_module (_, me) -> module_expr me
     | Pstr_recmodule l -> List.iter (fun (_, _, me) -> module_expr me) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
+    | Pstr_attribute (_, _, e) -> structure_item e
+
 
   and class_expr ce =
     match ce.pcl_desc with
@@ -2680,6 +2686,16 @@ and type_expect_ ?in_function env sexp ty_expected =
       { exp with
         exp_extra = (Texp_open (path, lid, newenv), loc) :: exp.exp_extra;
       }
+  | Pexp_attribute (_s, _arg, body) ->
+      let exp = type_expect env body ty_expected in
+      (*
+      { exp with
+        exp_extra = (Texp_attribute (s, arg), loc) :: exp.exp_extra
+       }
+      *)
+      exp
+  | Pexp_extension (s, _arg) ->
+      raise (Error (loc, env, Extension s))
 
 and type_label_access env loc srecord lid =
   if !Clflags.principal then begin_def ();
@@ -3611,6 +3627,8 @@ let report_error env ppf = function
       fprintf ppf "@[The GADT constructor %s of type %a@ %s.@]"
         name path tpath
         "must be qualified in this pattern"
+  | Extension s ->
+      fprintf ppf "Uninterpreted extension '%s'." s
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

@@ -41,6 +41,8 @@ module T = struct
   let variant ?loc a b c = mk ?loc (Ptyp_variant (a, b, c))
   let poly ?loc a b = mk ?loc (Ptyp_poly (a, b))
   let package ?loc a b = mk ?loc (Ptyp_package (a, b))
+  let attribute ?loc a b c = mk ?loc (Ptyp_attribute (a, b, c))
+  let extension ?loc a b = mk ?loc (Ptyp_extension (a, b))
 
   let field_type ?(loc = Location.none) x = {pfield_desc = x; pfield_loc = loc}
   let field ?loc s t =
@@ -78,6 +80,8 @@ module T = struct
     | Ptyp_variant (rl, b, ll) -> variant ~loc (List.map (row_field sub) rl) b ll
     | Ptyp_poly (sl, t) -> poly ~loc sl (sub # typ t)
     | Ptyp_package (lid, l) -> package ~loc (map_loc sub lid) (List.map (map_tuple (map_loc sub) (sub # typ)) l)
+    | Ptyp_attribute (s, arg, body) -> attribute ~loc s (sub # expr arg) (sub # typ body)
+    | Ptyp_extension (s, arg) -> extension ~loc s (sub # expr arg)
 
   let map_type_declaration sub td =
     {td with
@@ -231,8 +235,10 @@ module M = struct
   let class_ ?loc a = mk_item ?loc (Pstr_class a)
   let class_type ?loc a = mk_item ?loc (Pstr_class_type a)
   let include_ ?loc a = mk_item ?loc (Pstr_include a)
+  let attribute ?loc a b c = mk_item ?loc (Pstr_attribute (a, b, c))
+  let extension ?loc a b = mk_item ?loc (Pstr_extension (a, b))
 
-  let map_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
+  let rec map_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
     let loc = sub # location loc in
     match desc with
     | Pstr_eval x -> eval ~loc (sub # expr x)
@@ -248,6 +254,8 @@ module M = struct
     | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
     | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
     | Pstr_include e -> include_ ~loc (sub # module_expr e)
+    | Pstr_attribute (s, arg, body) -> attribute ~loc s (sub # expr arg) (map_structure_item sub body) (* not very nice, because sub # structure_item can return a list  -- to be cleaned up *)
+    | Pstr_extension (s, arg) -> extension ~loc s (sub # expr arg)
 end
 
 module E = struct
@@ -288,6 +296,8 @@ module E = struct
   let newtype ?loc a b = mk ?loc (Pexp_newtype (a, b))
   let pack ?loc a = mk ?loc (Pexp_pack a)
   let open_ ?loc a b = mk ?loc (Pexp_open (a, b))
+  let attribute ?loc a b c = mk ?loc (Pexp_attribute (a, b, c))
+  let extension ?loc a b = mk ?loc (Pexp_extension (a, b))
 
   let lid ?(loc = Location.none) lid = ident ~loc (mkloc (Longident.parse lid) loc)
   let apply_nolabs ?loc f el = apply ?loc f (List.map (fun e -> ("", e)) el)
@@ -329,6 +339,8 @@ module E = struct
     | Pexp_newtype (s, e) -> newtype ~loc s (sub # expr e)
     | Pexp_pack me -> pack ~loc (sub # module_expr me)
     | Pexp_open (lid, e) -> open_ ~loc (map_loc sub lid) (sub # expr e)
+    | Pexp_attribute (s, arg, body) -> attribute ~loc s (sub # expr arg) (sub # expr body)
+    | Pexp_extension (s, arg) -> extension ~loc s (sub # expr arg)
 end
 
 module P = struct

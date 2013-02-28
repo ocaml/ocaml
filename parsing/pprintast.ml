@@ -299,6 +299,10 @@ class printer  ()= object(self:'self)
         |_ ->  
             pp f "@[<hov2>(module@ %a@ with@ %a)@]" self#longident_loc lid
               (self#list aux  ~sep:"@ and@ ")  cstrs)
+    | Ptyp_attribute (s, arg, body) ->
+      pp f "@[<2>(@@%s@ %a)@ %a@]" s self#expression arg self#core_type body
+    | Ptyp_extension (s, arg) ->
+      pp f "@[<2>(&%s@ %a)@]" s self#expression arg
     | _ -> self#paren true self#core_type f x
           (********************pattern********************)
           (* be cautious when use [pattern], [pattern1] is preferred *)         
@@ -617,6 +621,10 @@ class printer  ()= object(self:'self)
           self#expression  e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
+    | Pexp_attribute (s, arg, body) ->
+      pp f "@[<2>(@@%s@ %a)@ %a@]" s self#expression arg self#expression body
+    | Pexp_extension (s, arg) ->
+      pp f "@[<2>(&%s@ %a)@]" s self#expression arg
     | _ -> self#expression1 f x
   method expression1 f x =
     match x.pexp_desc with
@@ -1074,7 +1082,7 @@ class printer  ()= object(self:'self)
         let text_x_modtype_x_module f (s, mt, me) =
           pp f "@[<hov2>and@ %s:%a@ =@ %a@]"
             s.txt self#module_type mt self#module_expr me
-        in match decls with
+        in begin match decls with
         | (s,mt,me):: l2 ->
             pp f "@[<hv>@[<hov2>module@ rec@ %s:%a@ =@ %a@]@ %a@]"
               s.txt
@@ -1082,6 +1090,12 @@ class printer  ()= object(self:'self)
               self#module_expr me 
               (fun f l2 -> List.iter (text_x_modtype_x_module f) l2) l2 
         | _ -> assert false
+        end
+    | Pstr_attribute (s, arg, body) ->
+      pp f "@[<2>%a@ ::%s@ %a@]" self#structure_item body s self#expression arg
+    | Pstr_extension (s, arg) ->
+      pp f "@[<2>&(%s@ %a)@]" s self#expression arg
+
   end
   method type_param f  = function
     | (a,opt) -> pp f "%s%a" (type_variance a ) self#type_var_option opt 

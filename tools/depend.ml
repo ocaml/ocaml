@@ -53,6 +53,8 @@ let rec add_type bv ty =
         fl
   | Ptyp_poly(_, t) -> add_type bv t
   | Ptyp_package pt -> add_package_type bv pt
+  | Ptyp_attribute (_, _, e) -> add_type bv e
+  | Ptyp_extension _ -> ()
 
 and add_package_type bv (lid, l) =
   add bv lid;
@@ -175,6 +177,8 @@ let rec add_expr bv exp =
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module bv m
   | Pexp_open (m, e) -> addmodule bv m; add_expr bv e
+  | Pexp_attribute (_, _, e) -> add_expr bv e
+  | Pexp_extension _ -> ()
 
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> let bv = add_pattern bv p in add_expr bv e) pel
@@ -285,6 +289,8 @@ and add_struct_item bv item =
       List.iter (add_class_type_declaration bv) cdtl; bv
   | Pstr_include modl ->
       add_module bv modl; bv
+  | Pstr_attribute (_, _, e) -> add_struct_item bv e
+  | Pstr_extension _ -> bv
 
 and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)

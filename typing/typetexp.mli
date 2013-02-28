@@ -61,6 +61,7 @@ type error =
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
+  | Extension of string
 
 exception Error of Location.t * Env.t * error
 

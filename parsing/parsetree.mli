@@ -14,9 +14,15 @@
 
 open Asttypes
 
+(* Extension points *)
+
+type 'a attribute = string * expression * 'a
+
+and extension = string * expression
+
 (* Type expressions for the core language *)
 
-type core_type =
+and core_type =
   { ptyp_desc: core_type_desc;
     ptyp_loc: Location.t }
 
@@ -32,6 +38,8 @@ and core_type_desc =
   | Ptyp_variant of row_field list * bool * label list option
   | Ptyp_poly of string list * core_type
   | Ptyp_package of package_type
+  | Ptyp_attribute of core_type attribute
+  | Ptyp_extension of extension
 
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
@@ -50,7 +58,7 @@ and row_field =
 
 (* Type expressions for the class language *)
 
-type 'a class_infos =
+and 'a class_infos =
   { pci_virt: virtual_flag;
     pci_params: string loc list * Location.t;
     pci_name: string loc;
@@ -60,7 +68,7 @@ type 'a class_infos =
 
 (* Value expressions for the core language *)
 
-type pattern =
+and pattern =
   { ppat_desc: pattern_desc;
     ppat_loc: Location.t }
 
@@ -80,7 +88,7 @@ and pattern_desc =
   | Ppat_lazy of pattern
   | Ppat_unpack of string loc
 
-type expression =
+and expression =
   { pexp_desc: expression_desc;
     pexp_loc: Location.t }
 
@@ -119,6 +127,8 @@ and expression_desc =
   | Pexp_newtype of string * expression
   | Pexp_pack of module_expr
   | Pexp_open of Longident.t loc * expression
+  | Pexp_attribute of expression attribute
+  | Pexp_extension of extension
 
 (* Value descriptions *)
 
@@ -291,6 +301,8 @@ and structure_item_desc =
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr
+  | Pstr_attribute of structure_item attribute
+  | Pstr_extension of extension
 
 (* Toplevel phrases *)
 

@@ -37,6 +37,7 @@ type error =
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
+  | Extension of string
 
 exception Error of Location.t * Env.t * error
 
@@ -1118,6 +1119,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          sg @ sig_rem,
          final_env)
+    | Pstr_attribute (_, _, st) ->
+        type_struct env srem (* keep attribute in the typedtree? *)
+    | Pstr_extension (s, _arg) ->
+        raise (Error (loc, env, Extension s))
   in
   if !Clflags.annotations then
     (* moved to genannot *)
@@ -1454,6 +1459,8 @@ let report_error ppf = function
         "The type %a in this module cannot be exported.@ " longident lid;
       fprintf ppf
         "Its type contains local dependencies:@ %a" type_expr ty
+  | Extension s ->
+      fprintf ppf "Uninterpreted extension '%s'." s
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error ppf err)

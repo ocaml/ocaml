@@ -50,6 +50,7 @@ type error =
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
+  | Extension of string
 
 exception Error of Location.t * Env.t * error
 
@@ -559,6 +560,10 @@ let rec transl_type env policy styp =
                 pack_fields = ptys;
                 pack_txt = p;
               }) ty env loc
+  | Ptyp_attribute (_, _, st) ->
+      transl_type env policy st  (* keep attribute in the typedtree? *)
+  | Ptyp_extension (s, _arg) ->
+      raise (Error (loc, env, Extension s))
 
 and transl_fields env policy seen =
   function
@@ -819,3 +824,5 @@ let report_error env ppf = function
       spellcheck ppf Env.fold_cltypes env lid;
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
+  | Extension s ->
+      fprintf ppf "Uninterpreted extension '%s'." s

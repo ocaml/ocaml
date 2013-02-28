@@ -163,6 +163,13 @@ let rec core_type i ppf x =
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
       list i package_with ppf l;
+  | Ptyp_attribute (s, arg, body) ->
+      line i ppf "Ptyp_attribute \"%s\"\n" s;
+      expression i ppf arg;
+      core_type i ppf body
+  | Ptyp_extension (s, arg) ->
+      line i ppf "Ptyp_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident_loc s;
@@ -337,6 +344,13 @@ and expression i ppf x =
   | Pexp_open (m, e) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_longident_loc m;
       expression i ppf e
+  | Pexp_attribute (s, arg, body) ->
+      line i ppf "Pexp_attribute \"%s\"\n" s;
+      expression i ppf arg;
+      expression i ppf body
+  | Pexp_extension (s, arg) ->
+      line i ppf "Pexp_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and value_description i ppf x =
   line i ppf "value_description %a\n" fmt_location x.pval_loc;
@@ -655,6 +669,13 @@ and structure_item i ppf x =
   | Pstr_include me ->
       line i ppf "Pstr_include";
       module_expr i ppf me
+  | Pstr_attribute (s, arg, body) ->
+      line i ppf "Pstr_attribute \"%s\"\n" s;
+      expression i ppf arg;
+      structure_item i ppf body
+  | Pstr_extension (s, arg) ->
+      line i ppf "Pstr_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and string_x_type_declaration i ppf (s, td) =
   string_loc i ppf s;
