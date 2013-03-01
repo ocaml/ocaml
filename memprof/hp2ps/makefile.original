@@ -1,0 +1,42 @@
+OBJS= 	\
+	AuxFile.o	\
+	Axes.o		\
+	AreaBelow.o	\
+	Curves.o 	\
+	Deviation.o	\
+	Dimensions.o	\
+	Error.o 	\
+	HpFile.o	\
+	Key.o		\
+	Main.o 		\
+	Marks.o		\
+	TopTwenty.o	\
+	TraceElement.o	\
+	PsFile.o 	\
+	Reorder.o	\
+	Scale.o		\
+	Shade.o 	\
+	Utilities.o
+
+# Please set MATHLIB and BIN appropriately. I don't need MATHLIB on my machine,
+# but you may.
+
+MATHLIB = -lm
+
+DSTBIN = /n/Numbers/usr/lml/lml-0.997.4hp/sun3/bin
+
+CC= cc # gcc -Wall
+CFLAGS= -g
+LDFLAGS= ${STATICFLAG}
+
+TARGET=hp2ps
+
+${TARGET}: ${OBJS}
+	${CC} -o ${TARGET} ${CCFLAGS} ${LDFLAGS} ${OBJS} ${MATHLIB}
+
+install: ${TARGET}
+	mv ${TARGET} ${DSTBIN}/${TARGET}
+	chmod 555 ${DSTBIN}/${TARGET} 
+
+clean:
+	rm -f core *.o ${TARGET}

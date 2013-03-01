@@ -1,0 +1,37 @@
+1.
+
+When generating PostScript to show strings, '(' and ')' may need to be escaped. 
+These characters are now escaped when the JOB string is shown.
+
+2.
+
+Manually deleting samples from a .hp file now does what you would expect.
+
+3.
+
+The -t flag for setting the threshold percentage has been scrapped. No one
+ever used it.
+
+4.
+
+Long JOB strings cause hp2ps to use a big title box. Big and small boxes
+can be forced with -b and -s flag. 
+
+5.
+
+MARKS now print as small triangles which remain below the x axis.
+
+6. 
+
+There is an updated manual page.
+
+7.
+
+-m flag for setting maximum no of bands (default 20, cant be more than 20).
+-t flag for setting threshold (between 0% and 5%, default 1%).
+
+8.
+
+Axes scaling rounding errors removed.
+
+
