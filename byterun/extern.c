@@ -351,6 +351,15 @@ static void writecode64(int code, intnat val)
   *extern_ptr ++ = code;
   for (i = 64 - 8; i >= 0; i -= 8) *extern_ptr++ = val >> i;
 }
+
+/* CAGO: Write profiling information during serialization */
+static void writeprof(profiling_t val) {
+  if (extern_ptr + 4 > extern_limit) grow_extern_output(4);
+  extern_ptr[0] = val >> 16;
+  extern_ptr[1] = val >> 8;
+  extern_ptr[2] = val;
+  extern_ptr += 3;
+}
 #endif
 
 /* Marshal the given value in the output buffer */
@@ -382,6 +391,7 @@ static void extern_rec(value v)
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
+    profiling_t prof = Prof_hd(hd);
 
     if (tag == Forward_tag) {
       value f = Forward_val (v);
@@ -428,6 +438,8 @@ static void extern_rec(value v)
       } else {
         writecode32(CODE_STRING32, len);
       }
+      /* CAGO: writeprof() */
+      writeprof(prof);
       writeblock(String_val(v), len);
       size_32 += 1 + (len + 4) / 4;
       size_64 += 1 + (len + 8) / 8;
@@ -438,6 +450,8 @@ static void extern_rec(value v)
       if (sizeof(double) != 8)
         extern_invalid_argument("output_value: non-standard floats");
       Write(CODE_DOUBLE_NATIVE);
+      /* CAGO: writeprof() */
+      writeprof(prof);
       writeblock_float8((double *) v, 1);
       size_32 += 1 + 2;
       size_64 += 1 + 1;
@@ -454,6 +468,8 @@ static void extern_rec(value v)
       } else {
         writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
       }
+      /* CAGO: writeprof() */
+      writeprof(prof);
       writeblock_float8((double *) v, nfloats);
       size_32 += 1 + nfloats * 2;
       size_64 += 1 + nfloats;
@@ -478,6 +494,8 @@ static void extern_rec(value v)
       Write(CODE_CUSTOM);
       writeblock(ident, strlen(ident) + 1);
       Custom_ops_val(v)->serialize(v, &sz_32, &sz_64);
+      /* CAGO: writeprof() */
+      writeprof(prof);
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */
       size_64 += 2 + ((sz_64 + 7) >> 3);
       extern_record_location(v);
@@ -487,6 +505,8 @@ static void extern_rec(value v)
       value field0;
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
+      /* CAGO: writeprof() */
+	writeprof(prof);
 #ifdef ARCH_SIXTYFOUR
       } else if (hd >= ((uintnat)1 << 32)) {
         writecode64(CODE_BLOCK64, Whitehd_hd (hd));
@@ -534,6 +554,8 @@ static void extern_rec(value v)
 
 enum { NO_SHARING = 1, CLOSURES = 2 };
 static int extern_flags[] = { NO_SHARING, CLOSURES };
+/* CAGO: FIX THIS new magic number, must be different old one */
+#define NEW_INTEXT_MAGIC_NUMBER (0x42)
 
 static intnat extern_value(value v, value flags)
 {
@@ -549,7 +571,9 @@ static intnat extern_value(value v, value flags)
   size_32 = 0;
   size_64 = 0;
   /* Write magic number */
-  write32(Intext_magic_number);
+  // write32(Intext_magic_number);
+  /* CAGO: write new magic number */
+  write32(NEW_INTEXT_MAGIC_NUMBER);
   /* Set aside space for the sizes */
   extern_ptr += 4*4;
   /* Marshal the object */
@@ -626,7 +650,7 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
   /* PR#4030: it is prudent to save extern_output_first before allocating
      the result, as in caml_output_val */
   blk = extern_output_first;
-  res = caml_alloc_string(len);
+  res = caml_alloc_string_loc(len, PROF_CAML_OUTPUT_VAL_TO_STR);
   ofs = 0;
   while (blk != NULL) {
     int n = blk->end - blk->data;

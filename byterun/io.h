@@ -78,7 +78,7 @@ CAMLextern struct channel * caml_open_descriptor_in (int);
 CAMLextern struct channel * caml_open_descriptor_out (int);
 CAMLextern void caml_close_channel (struct channel *);
 CAMLextern int caml_channel_binary_mode (struct channel *);
-CAMLextern value caml_alloc_channel(struct channel *chan);
+/* CAMLextern value caml_alloc_channel(struct channel *chan); */
 
 CAMLextern int caml_flush_partial (struct channel *);
 CAMLextern void caml_flush (struct channel *);

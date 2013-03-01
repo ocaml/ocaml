@@ -30,7 +30,7 @@ CAMLprim value caml_md5_string(value str, value ofs, value len)
   value res;
   caml_MD5Init(&ctx);
   caml_MD5Update(&ctx, &Byte_u(str, Long_val(ofs)), Long_val(len));
-  res = caml_alloc_string(16);
+  res = caml_alloc_string_loc(16, PROF_MD5);
   caml_MD5Final(&Byte_u(res, 0), &ctx);
   return res;
 }
@@ -62,7 +62,7 @@ CAMLprim value caml_md5_chan(value vchan, value len)
       toread -= read;
     }
   }
-  res = caml_alloc_string(16);
+  res = caml_alloc_string_loc(16, PROF_MD5);
   caml_MD5Final(&Byte_u(res, 0), &ctx);
   Unlock(chan);
   CAMLreturn (res);

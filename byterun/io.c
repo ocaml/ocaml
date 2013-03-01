@@ -455,20 +455,40 @@ CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
   chan->refcount++;             /* prevent finalization during next alloc */
-  res = caml_alloc_custom(&channel_operations, sizeof(struct channel *),
-                          1, 1000);
+  res = caml_alloc_custom_loc(&channel_operations, sizeof(struct channel *),
+			      1, 1000, PROF_IO);
+  Channel(res) = chan;
+  return res;
+}
+
+CAMLexport value caml_alloc_channel_loc(struct channel *chan, profiling_t id)
+{
+  value res;
+  chan->refcount++;             /* prevent finalization during next alloc */
+  res = caml_alloc_custom_loc(&channel_operations, sizeof(struct channel *),
+			      1, 1000, id);
   Channel(res) = chan;
   return res;
 }
 
 CAMLprim value caml_ml_open_descriptor_in(value fd)
 {
-  return caml_alloc_channel(caml_open_descriptor_in(Int_val(fd)));
+  return caml_alloc_channel_loc(caml_open_descriptor_in(Int_val(fd)), PROF_IO);
+}
+
+CAMLprim value caml_ml_open_descriptor_in_loc(value fd, profiling_t id)
+{
+  return caml_alloc_channel_loc(caml_open_descriptor_in(Int_val(fd)), id);
 }
 
 CAMLprim value caml_ml_open_descriptor_out(value fd)
 {
-  return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
+  return caml_alloc_channel_loc(caml_open_descriptor_out(Int_val(fd)), PROF_IO);
+}
+
+CAMLprim value caml_ml_open_descriptor_out_loc(value fd, profiling_t id)
+{
+  return caml_alloc_channel_loc(caml_open_descriptor_out(Int_val(fd)), id);
 }
 
 #define Pair_tag 0
@@ -486,9 +506,31 @@ CAMLprim value caml_ml_out_channels_list (value unit)
     /* Testing channel->fd >= 0 looks unnecessary, as
        caml_ml_close_channel changes max when setting fd to -1. */
     if (channel->max == NULL) {
-      chan = caml_alloc_channel (channel);
+      chan = caml_alloc_channel_loc (channel, PROF_IO);
       tail = res;
-      res = caml_alloc_small (2, Pair_tag);
+      res = caml_alloc_small_loc (2, Pair_tag, PROF_PAIR);
+      Field (res, 0) = chan;
+      Field (res, 1) = tail;
+    }
+  CAMLreturn (res);
+}
+
+CAMLprim value caml_ml_out_channels_list_loc (value unit, profiling_t id)
+{
+  CAMLparam0 ();
+  CAMLlocal3 (res, tail, chan);
+  struct channel * channel;
+
+  res = Val_emptylist;
+  for (channel = caml_all_opened_channels;
+       channel != NULL;
+       channel = channel->next)
+    /* Testing channel->fd >= 0 looks unnecessary, as
+       caml_ml_close_channel changes max when setting fd to -1. */
+    if (channel->max == NULL) {
+      chan = caml_alloc_channel_loc (channel, id);
+      tail = res;
+      res = caml_alloc_small_loc (2, Pair_tag, id);
       Field (res, 0) = chan;
       Field (res, 1) = tail;
     }

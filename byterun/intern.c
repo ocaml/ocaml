@@ -76,6 +76,10 @@ static void intern_bad_code_pointer(unsigned char digest[16]) Noreturn;
 
 static void intern_free_stack(void);
 
+/* CAGO: Global value to make difference between old and new way to serialize/deserialize
+   with the new header representation (important for bootstraping) */
+static int intern_old_mode;
+
 #define Sign_extend_shift ((sizeof(intnat) - 1) * 8)
 #define Sign_extend(x) (((intnat)(x) << Sign_extend_shift) >> Sign_extend_shift)
 
@@ -95,6 +99,10 @@ static void intern_free_stack(void);
   (intern_src += 4, \
    (Sign_extend(intern_src[-4]) << 24) + (intern_src[-3] << 16) + \
    (intern_src[-2] << 8) + intern_src[-1])
+/* CAGO: function which read profiling section in header during deserialization */
+#define readprof() \
+  (intern_old_mode ? PROF_INPUT_VALUES : (intern_src += 3,   \
+    ((intern_src[-3] << 16) + (intern_src[-2] << 8) + intern_src[-1])))
 
 #ifdef ARCH_SIXTYFOUR
 static intnat read64s(void)
@@ -275,6 +283,7 @@ static void intern_rec(value *dest)
   asize_t ofs;
   header_t header;
   unsigned char digest[16];
+  profiling_t prof;
   struct custom_operations * ops;
   char * codeptr;
   struct intern_item * sp;
@@ -322,13 +331,16 @@ static void intern_rec(value *dest)
       /* Small block */
       tag = code & 0xF;
       size = (code >> 4) & 0x7;
+      /* CAGO: add readprof() */
+      if (size != 0) prof = readprof();
     read_block:
       if (size == 0) {
         v = Atom(tag);
       } else {
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header(size, tag, intern_color);
+	/* CAGO: patch Make_header */
+        *intern_dest = Make_header(size, tag, intern_color, prof);
         intern_dest += 1 + size;
         /* For objects, we need to freshen the oid */
         if (tag == Object_tag) {
@@ -355,10 +367,13 @@ static void intern_rec(value *dest)
       /* Small string */
       len = (code & 0x1F);
     read_string:
+      /* CAGO: add readprof() */
+      prof = readprof();
       size = (len + sizeof(value)) / sizeof(value);
       v = Val_hp(intern_dest);
       if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-      *intern_dest = Make_header(size, String_tag, intern_color);
+      /* CAGO: patch Make_header */
+      *intern_dest = Make_header(size, String_tag, intern_color, prof);
       intern_dest += 1 + size;
       Field(v, size - 1) = 0;
       ofs_ind = Bsize_wsize(size) - 1;
@@ -402,12 +417,14 @@ static void intern_rec(value *dest)
         header = (header_t) read32u();
         tag = Tag_hd(header);
         size = Wosize_hd(header);
+	prof = Prof_hd(header);
         goto read_block;
       case CODE_BLOCK64:
 #ifdef ARCH_SIXTYFOUR
         header = (header_t) read64s();
         tag = Tag_hd(header);
         size = Wosize_hd(header);
+	prof = Prof_hd(header);
         goto read_block;
 #else
         intern_cleanup();
@@ -422,27 +439,35 @@ static void intern_rec(value *dest)
         goto read_string;
       case CODE_DOUBLE_LITTLE:
       case CODE_DOUBLE_BIG:
+	/* CAGO: add readprof() */
+	prof = readprof();
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header(Double_wosize, Double_tag, intern_color);
+	/* CAGO: patch Make_header */
+        *intern_dest = Make_header(Double_wosize, Double_tag, intern_color, prof);
         intern_dest += 1 + Double_wosize;
         readfloat((double *) v, code);
         break;
       case CODE_DOUBLE_ARRAY8_LITTLE:
       case CODE_DOUBLE_ARRAY8_BIG:
         len = read8u();
+	/* CAGO: add readprof() */	
+	prof = readprof();
       read_double_array:
         size = len * Double_wosize;
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header(size, Double_array_tag, intern_color);
+	/* CAGO: patch Make_header */
+        *intern_dest = Make_header(size, Double_array_tag, intern_color, prof);
         intern_dest += 1 + size;
         readfloats((double *) v, len, code);
         break;
       case CODE_DOUBLE_ARRAY32_LITTLE:
       case CODE_DOUBLE_ARRAY32_BIG:
         len = read32u();
-        goto read_double_array;
+ 	/* CAGO: add readprof() */
+	prof = readprof();
+       goto read_double_array;
       case CODE_CODEPOINTER:
         ofs = read32u();
         readblock(digest, 16);
@@ -480,7 +505,10 @@ static void intern_rec(value *dest)
         size = 1 + (size + sizeof(value) - 1) / sizeof(value);
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header(size, Custom_tag, intern_color);
+	/* CAGO: add readprof() */
+        prof = readprof();
+	/* CAGO: patch Make_header */
+        *intern_dest = Make_header(size, Custom_tag, intern_color, prof);
         Custom_ops_val(v) = ops;
         intern_dest += 1 + size;
         break;
@@ -501,7 +529,7 @@ static void intern_rec(value *dest)
   intern_free_stack();
 }
 
-static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
+static void intern_alloc_loc(mlsize_t whsize, mlsize_t num_objects, profiling_t id)
 {
   mlsize_t wosize;
 
@@ -527,9 +555,9 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     if (wosize == 0){
       intern_block = Atom (String_tag);
     }else if (wosize <= Max_young_wosize){
-      intern_block = caml_alloc_small (wosize, String_tag);
+      intern_block = caml_alloc_small_loc (wosize, String_tag, id);
     }else{
-      intern_block = caml_alloc_shr (wosize, String_tag);
+      intern_block = caml_alloc_shr_loc (wosize, String_tag, id);
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the Assert 3 lines down */
     }
@@ -546,6 +574,51 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_obj_table = NULL;
 }
 
+/* static void intern_alloc(mlsize_t whsize, mlsize_t num_objects) */
+/* { */
+/*   mlsize_t wosize; */
+
+/*   if (camlinternaloo_last_id == (value*)-1) */
+/*     camlinternaloo_last_id = NULL; /\* Reset ignore flag *\/ */
+/*   if (whsize == 0) { */
+/*     intern_obj_table = NULL; */
+/*     intern_extra_block = NULL; */
+/*     intern_block = 0; */
+/*     return; */
+/*   } */
+/*   wosize = Wosize_whsize(whsize); */
+/*   if (wosize > Max_wosize) { */
+/*     /\* Round desired size up to next page *\/ */
+/*     asize_t request = */
+/*       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log; */
+/*     intern_extra_block = caml_alloc_for_heap(request); */
+/*     if (intern_extra_block == NULL) caml_raise_out_of_memory(); */
+/*     intern_color = caml_allocation_color(intern_extra_block); */
+/*     intern_dest = (header_t *) intern_extra_block; */
+/*   } else { */
+/*     /\* this is a specialised version of caml_alloc from alloc.c *\/ */
+/*     if (wosize == 0){ */
+/*       intern_block = Atom (String_tag); */
+/*     }else if (wosize <= Max_young_wosize){ */
+/*       intern_block = caml_alloc_small (wosize, String_tag); */
+/*     }else{ */
+/*       intern_block = caml_alloc_shr_loc (wosize, String_tag, PROF_STRING); */
+/*       /\* do not do the urgent_gc check here because it might darken */
+/*          intern_block into gray and break the Assert 3 lines down *\/ */
+/*     } */
+/*     intern_header = Hd_val(intern_block); */
+/*     intern_color = Color_hd(intern_header); */
+/*     Assert (intern_color == Caml_white || intern_color == Caml_black); */
+/*     intern_dest = (header_t *) Hp_val(intern_block); */
+/*     intern_extra_block = NULL; */
+/*   } */
+/*   obj_counter = 0; */
+/*   if (num_objects > 0) */
+/*     intern_obj_table = (value *) caml_stat_alloc(num_objects * sizeof(value)); */
+/*   else */
+/*     intern_obj_table = NULL; */
+/* } */
+
 static void intern_add_to_heap(mlsize_t whsize)
 {
   /* Add new heap chunk to heap if needed */
@@ -557,8 +630,9 @@ static void intern_add_to_heap(mlsize_t whsize)
       (header_t *) intern_extra_block + Wsize_bsize(request);
     Assert(intern_dest <= end_extra_block);
     if (intern_dest < end_extra_block){
-      caml_make_free_blocks ((value *) intern_dest,
-                             end_extra_block - intern_dest, 0, Caml_white);
+      /* CAGO: patch caml_make_free_blocks */
+      caml_make_free_blocks_loc ((value *) intern_dest,
+				 end_extra_block - intern_dest, 0, Caml_white, PROF_INTERN_TOHEAP);
     }
     caml_allocated_words +=
       Wsize_bsize ((char *) intern_dest - intern_extra_block);
@@ -576,7 +650,8 @@ value caml_input_val(struct channel *chan)
   if (! caml_channel_binary_mode(chan))
     caml_failwith("input_value: not a binary channel");
   magic = caml_getword(chan);
-  if (magic != Intext_magic_number) caml_failwith("input_value: bad object");
+  intern_old_mode = (magic == Intext_magic_number);
+  //if (magic != Intext_magic_number) caml_failwith("input_value: bad object");
   block_len = caml_getword(chan);
   num_objects = caml_getword(chan);
   size_32 = caml_getword(chan);
@@ -600,7 +675,7 @@ value caml_input_val(struct channel *chan)
 #else
   whsize = size_32;
 #endif
-  intern_alloc(whsize, num_objects);
+  intern_alloc_loc(whsize, num_objects, PROF_INPUT_VALUES);
   /* Fill it in */
   intern_rec(&res);
   intern_add_to_heap(whsize);
@@ -622,7 +697,8 @@ CAMLprim value caml_input_value(value vchan)
   CAMLreturn (res);
 }
 
-CAMLexport value caml_input_val_from_string(value str, intnat ofs)
+
+CAMLexport value caml_input_val_from_string_loc(value str, intnat ofs, profiling_t id)
 {
   CAMLparam1 (str);
   mlsize_t num_objects, size_32, size_64, whsize;
@@ -639,7 +715,7 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
 #else
   whsize = size_32;
 #endif
-  intern_alloc(whsize, num_objects);
+  intern_alloc_loc(whsize, num_objects, id);
   intern_src = &Byte_u(str, ofs + 5*4); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&obj);
@@ -651,10 +727,38 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
 
 CAMLprim value caml_input_value_from_string(value str, value ofs)
 {
-  return caml_input_val_from_string(str, Long_val(ofs));
+  return caml_input_val_from_string_loc(str, Long_val(ofs), PROF_CAML_INP_VAL_FROM_STRING);
 }
 
-static value input_val_from_block(void)
+CAMLprim value caml_input_value_from_string_loc(value str, value ofs, profiling_t id)
+{
+  return caml_input_val_from_string_loc(str, Long_val(ofs), id);
+}
+
+/* static value input_val_from_block_loc(profiling_t id) */
+/* { */
+/*   mlsize_t num_objects, size_32, size_64, whsize; */
+/*   value obj; */
+
+/*   num_objects = read32u(); */
+/*   size_32 = read32u(); */
+/*   size_64 = read32u(); */
+/*   /\* Allocate result *\/ */
+/* #ifdef ARCH_SIXTYFOUR */
+/*   whsize = size_64; */
+/* #else */
+/*   whsize = size_32; */
+/* #endif */
+/*   intern_alloc_loc(whsize, num_objects, 344); */
+/*   /\* Fill it in *\/ */
+/*   intern_rec(&obj); */
+/*   intern_add_to_heap(whsize); */
+/*   /\* Free internal data structures *\/ */
+/*   if (intern_obj_table != NULL) caml_stat_free(intern_obj_table); */
+/*   return obj; */
+/* } */
+
+static value input_val_from_block_loc(profiling_t id)
 {
   mlsize_t num_objects, size_32, size_64, whsize;
   value obj;
@@ -668,7 +772,7 @@ static value input_val_from_block(void)
 #else
   whsize = size_32;
 #endif
-  intern_alloc(whsize, num_objects);
+  intern_alloc_loc(whsize, num_objects, id);
   /* Fill it in */
   intern_rec(&obj);
   intern_add_to_heap(whsize);
@@ -687,10 +791,11 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
   intern_src = intern_input + ofs;
   intern_input_malloced = 1;
   magic = read32u();
-  if (magic != Intext_magic_number)
-    caml_failwith("input_value_from_malloc: bad object");
+  intern_old_mode = (magic == Intext_magic_number);
+//  if (magic != Intext_magic_number)
+//    caml_failwith("input_value_from_malloc: bad object");
   block_len = read32u();
-  obj = input_val_from_block();
+  obj = input_val_from_block_loc(PROF_CAML_INP_VAL_FROM_MALLOC);
   /* Free the input */
   caml_stat_free(intern_input);
   return obj;
@@ -706,12 +811,13 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   intern_src = intern_input;
   intern_input_malloced = 0;
   magic = read32u();
-  if (magic != Intext_magic_number)
-    caml_failwith("input_value_from_block: bad object");
+  intern_old_mode = (magic == Intext_magic_number);
+//  if (magic != Intext_magic_number)
+//    caml_failwith("input_value_from_block: bad object");
   block_len = read32u();
   if (5*4 + block_len > len)
     caml_failwith("input_value_from_block: bad block length");
-  obj = input_val_from_block();
+  obj = input_val_from_block_loc(PROF_CAML_INP_VAL_FROM_BLOCK);
   return obj;
 }
 
@@ -723,9 +829,10 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
   intern_src = &Byte_u(buff, Long_val(ofs));
   intern_input_malloced = 0;
   magic = read32u();
-  if (magic != Intext_magic_number){
-    caml_failwith("Marshal.data_size: bad object");
-  }
+  intern_old_mode = (magic == Intext_magic_number);
+//  if (magic != Intext_magic_number){
+//    caml_failwith("Marshal.data_size: bad object");
+//  }
   block_len = read32u();
   return Val_long(block_len);
 }

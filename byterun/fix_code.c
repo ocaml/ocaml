@@ -123,8 +123,14 @@ void caml_thread_code (code_t code, asize_t len)
   /* Instructions with two operands */
   l[APPTERM] = l[CLOSURE] = l[PUSHGETGLOBALFIELD] =
   l[GETGLOBALFIELD] = l[MAKEBLOCK] = l[C_CALLN] =
+  l[MAKEBLOCK1_WITH_LOC] = l[MAKEBLOCK2_WITH_LOC] = l[MAKEBLOCK3_WITH_LOC] =    
+  l[MAKEFLOATBLOCK_WITH_LOC] = l[GETFLOATFIELD_WITH_LOC] = l[GRAB_WITH_LOC] =
   l[BEQ] = l[BNEQ] = l[BLTINT] = l[BLEINT] = l[BGTINT] = l[BGEINT] =
   l[BULTINT] = l[BUGEINT] = l[GETPUBMET] = 2;
+
+  /* Instructions with three operands */
+  l[MAKEBLOCK_WITH_LOC] = l[CLOSURE_WITH_LOC] = 3;
+
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
@@ -144,6 +150,11 @@ void caml_thread_code (code_t code, asize_t len)
     } else if (instr == CLOSUREREC) {
       uint32 nfuncs = *p++;
       p++;                      /* skip nvars */
+      p += nfuncs;
+    } else if (instr == CLOSUREREC_WITH_LOC) {
+      uint32 nfuncs = *p++;
+      p++;                      /* skip nvars */
+      p++;			/* skip id */
       p += nfuncs;
     } else {
       p += l[instr];

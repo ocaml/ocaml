@@ -35,7 +35,7 @@ CAMLprim value caml_weak_create (value len)
 
   size = Long_val (len) + 1;
   if (size <= 0 || size > Max_wosize) caml_invalid_argument ("Weak.create");
-  res = caml_alloc_shr (size, Abstract_tag);
+  res = caml_alloc_shr_loc (size, Abstract_tag, PROF_WEAK);
   for (i = 1; i < size; i++) Field (res, i) = caml_weak_none;
   Field (res, 0) = caml_weak_list_head;
   caml_weak_list_head = res;
@@ -98,7 +98,7 @@ CAMLprim value caml_weak_get (value ar, value n)
     if (caml_gc_phase == Phase_mark && Is_block (elt) && Is_in_heap (elt)){
       caml_darken (elt, NULL);
     }
-    res = caml_alloc_small (1, Some_tag);
+    res = caml_alloc_small_loc (1, Some_tag, PROF_WEAK);
     Field (res, 0) = elt;
   }
   CAMLreturn (res);
@@ -121,7 +121,7 @@ CAMLprim value caml_weak_get_copy (value ar, value n)
   v = Field (ar, offset);
   if (v == caml_weak_none) CAMLreturn (None_val);
   if (Is_block (v) && Is_in_heap_or_young(v)) {
-    elt = caml_alloc (Wosize_val (v), Tag_val (v));
+    elt = caml_alloc_loc (Wosize_val (v), Tag_val (v), Prof_val(v));
           /* The GC may erase or move v during this call to caml_alloc. */
     v = Field (ar, offset);
     if (v == caml_weak_none) CAMLreturn (None_val);
@@ -140,7 +140,7 @@ CAMLprim value caml_weak_get_copy (value ar, value n)
   }else{
     elt = v;
   }
-  res = caml_alloc_small (1, Some_tag);
+  res = caml_alloc_small_loc (1, Some_tag, Prof_val(v));
   Field (res, 0) = elt;
 
   CAMLreturn (res);

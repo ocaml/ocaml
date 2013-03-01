@@ -57,6 +57,7 @@ void caml_darken (value, value *);
 intnat caml_major_collection_slice (intnat);
 void major_collection (void);
 void caml_finish_major_cycle (void);
+void really_dump_heap (void);
 
 
 #endif /* CAML_MAJOR_GC_H */

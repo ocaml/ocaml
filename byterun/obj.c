@@ -91,7 +91,7 @@ CAMLprim value caml_obj_block(value tag, value size)
   sz = Long_val(size);
   tg = Long_val(tag);
   if (sz == 0) return Atom(tg);
-  res = caml_alloc(sz, tg);
+  res = caml_alloc_loc(sz, tg, PROF_OBJ);
   for (i = 0; i < sz; i++)
     Field(res, i) = Val_long(0);
 
@@ -104,18 +104,20 @@ CAMLprim value caml_obj_dup(value arg)
   CAMLlocal1 (res);
   mlsize_t sz, i;
   tag_t tg;
+  profiling_t id;
 
   sz = Wosize_val(arg);
   if (sz == 0) CAMLreturn (arg);
   tg = Tag_val(arg);
+  id = Prof_val(arg);
   if (tg >= No_scan_tag) {
-    res = caml_alloc(sz, tg);
+    res = caml_alloc_loc(sz, tg, id);
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
-    res = caml_alloc_small(sz, tg);
+    res = caml_alloc_small_loc(sz, tg, id);
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
-    res = caml_alloc_shr(sz, tg);
+    res = caml_alloc_shr_loc(sz, tg, id);
     for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
   }
   CAMLreturn (res);
@@ -160,8 +162,10 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
      look like a pointer because there may be some references to it in
      ref_table. */
   Field (v, new_wosize) =
-    Make_header (Wosize_whsize (wosize-new_wosize), 1, Caml_white);
-  Hd_val (v) = Make_header (new_wosize, tag, color);
+       /* CAGO: patch Make_header */
+       Make_header(Wosize_whsize (wosize-new_wosize), 1, Caml_white, PROF_OBJ);
+  /* CAGO: patch Make_header */
+  Hd_val (v) = Make_header(new_wosize, tag, color, PROF_OBJ);
   return Val_unit;
 }
 
@@ -190,7 +194,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLparam1 (v);
   CAMLlocal1 (res);
 
-  res = caml_alloc_small (1, Forward_tag);
+  res = caml_alloc_small_loc (1, Forward_tag, PROF_OBJ);
   Field (res, 0) = v;
   CAMLreturn (res);
 }

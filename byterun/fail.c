@@ -82,7 +82,7 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
   CAMLparam1 (tag);
   CAMLlocal1 (vmsg);
 
-  vmsg = caml_copy_string(msg);
+  vmsg = caml_copy_string_loc(msg, PROF_RAISE_WITH_STRING);
   caml_raise_with_arg(tag, vmsg);
   CAMLnoreturn;
 }
@@ -164,7 +164,8 @@ CAMLexport void caml_raise_sys_blocked_io(void)
 
 void caml_init_exceptions(void)
 {
-  out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
+     /* CAGO: patch Make_header */
+     out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white, PROF_FAIL_EXN);
   out_of_memory_bucket.exn = Field(caml_global_data, OUT_OF_MEMORY_EXN);
   caml_register_global_root(&out_of_memory_bucket.exn);
 }

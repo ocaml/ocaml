@@ -34,7 +34,7 @@ PRIMS=\
 
 PUBLIC_INCLUDES=\
   alloc.h callback.h config.h custom.h fail.h hash.h intext.h \
-  memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h
+  memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h profiling_ids.h
 
 
 all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED)

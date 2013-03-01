@@ -210,7 +210,7 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
                   (uintnat) String_val(filename));
   handle = caml_dlopen(String_val(filename), Int_val(mode), 1);
   if (handle == NULL) caml_failwith(caml_dlerror());
-  result = caml_alloc_small(1, Abstract_tag);
+  result = caml_alloc_small_loc(1, Abstract_tag, PROF_DYNLINK);
   Handle_val(result) = handle;
   return result;
 }
@@ -230,7 +230,7 @@ CAMLprim value caml_dynlink_lookup_symbol(value handle, value symbolname)
   /* printf("%s = 0x%lx\n", String_val(symbolname), symb);
      fflush(stdout); */
   if (symb == NULL) return Val_unit /*caml_failwith(caml_dlerror())*/;
-  result = caml_alloc_small(1, Abstract_tag);
+  result = caml_alloc_small_loc(1, Abstract_tag, PROF_DYNLINK);
   Handle_val(result) = symb;
   return result;
 }
@@ -248,9 +248,9 @@ CAMLprim value caml_dynlink_get_current_libs(value unit)
   CAMLlocal1(res);
   int i;
 
-  res = caml_alloc_tuple(shared_libs.size);
+  res = caml_alloc_tuple_loc(shared_libs.size, PROF_TUPLE);
   for (i = 0; i < shared_libs.size; i++) {
-    value v = caml_alloc_small(1, Abstract_tag);
+    value v = caml_alloc_small_loc(1, Abstract_tag, PROF_DYNLINK);
     Handle_val(v) = shared_libs.contents[i];
     Store_field(res, i, v);
   }

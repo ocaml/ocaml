@@ -457,6 +457,13 @@ CAMLprim value caml_gc_major_slice (value v)
   return Val_long (caml_major_collection_slice (Long_val (v)));
 }
 
+CAMLprim value dump_heap (value unit)
+{
+  caml_minor_collection();
+  really_dump_heap();
+  return Val_unit;
+}
+
 CAMLprim value caml_gc_compaction(value v)
 {                                                    Assert (v == Val_unit);
   caml_gc_message (0x10, "Heap compaction requested\n", 0);
@@ -495,3 +502,28 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_gc_message (0x20, "Initial allocation policy: %d\n",
                    caml_allocation_policy);
 }
+
+#include <stdio.h>
+#include <stdlib.h>
+CAMLprim value loc_from_block(value v, value *ptr) {
+  if (Is_in_heap (v)) {
+    profiling_t profiling_info = Prof_val(v);
+    /* CAGO: Get location from  profiling_info => Mapping 
+       (int -> int) <=> (profiling_info -> location) */
+    printf("  -- debug information -- %lu\n", profiling_info);
+  }
+  /* return Val_long (location); */
+  return Val_unit;
+}
+
+CAMLprim value caml_gc_iter_heap () {
+     caml_scan_global_roots (loc_from_block);
+     return Val_unit;
+}
+
+/* Check the extra-table which contains profiling information about types in 
+   the heap */
+CAMLprim value get_profiling_information () {
+     return Val_unit;
+}
+

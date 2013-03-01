@@ -125,10 +125,15 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
 
-type lambda =
-    Lvar of Ident.t
+type lambda = {
+  l_desc : lambda_desc;
+  l_loc  : Location.t;
+}
+
+and lambda_desc =
+  | Lvar of Ident.t
   | Lconst of structured_constant
-  | Lapply of lambda * lambda list * Location.t
+  | Lapply of lambda * lambda list
   | Lfunction of function_kind * Ident.t list * lambda
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
@@ -142,7 +147,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
-  | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
+  | Lsend of meth_kind * lambda * lambda * lambda list
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
@@ -153,28 +158,35 @@ and lambda_switch =
     sw_blocks: (int * lambda) list;
     sw_failaction : lambda option}
 
-and lambda_event =
-  { lev_loc: Location.t;
-    lev_kind: lambda_event_kind;
-    lev_repr: int ref option;
-    lev_env: Env.summary }
+and lambda_event = {
+  lev_loc: Location.t;
+  lev_kind: lambda_event_kind;
+  lev_repr: int ref option;
+  lev_env: Env.summary;
+}
 
 and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
 
+let mk_lam l_desc =
+  { l_loc = Location.none; l_desc }
+
+let mk_loc_lam l_loc l_desc =
+  { l_loc; l_desc }
+
 let const_unit = Const_pointer 0
 
-let lambda_unit = Lconst const_unit
+let lambda_unit = mk_lam (Lconst const_unit)
 
 let rec same l1 l2 =
-  match (l1, l2) with
+  match l1.l_desc, l2.l_desc with
   | Lvar v1, Lvar v2 ->
       Ident.same v1 v2
   | Lconst c1, Lconst c2 ->
       c1 = c2
-  | Lapply(a1, bl1, _), Lapply(a2, bl2, _) ->
+  | Lapply(a1, bl1), Lapply(a2, bl2) ->
       same a1 a2 && samelist same bl1 bl2
   | Lfunction(k1, idl1, a1), Lfunction(k2, idl2, a2) ->
       k1 = k2 && samelist Ident.same idl1 idl2 && same a1 a2
@@ -203,7 +215,7 @@ let rec same l1 l2 =
       same b1 b2 && df1 = df2 && same c1 c2
   | Lassign(id1, a1), Lassign(id2, a2) ->
       Ident.same id1 id2 && same a1 a2
-  | Lsend(k1, a1, b1, cl1, _), Lsend(k2, a2, b2, cl2, _) ->
+  | Lsend(k1, a1, b1, cl1), Lsend(k2, a2, b2, cl2) ->
       k1 = k2 && same a1 a2 && same b1 b2 && samelist same cl1 cl2
   | Levent(a1, ev1), Levent(a2, ev2) ->
       same a1 a2 && ev1.lev_loc = ev2.lev_loc
@@ -227,24 +239,16 @@ and sameswitch sw1 sw2 =
     | _ -> false)
 
 let name_lambda arg fn =
-  match arg with
-    Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(Strict, id, arg, fn id)
+  match arg.l_desc with
+  | Lvar id -> fn id
+  | _ ->
+    let id = Ident.create "let" in
+    mk_loc_lam arg.l_loc (Llet(Strict, id, arg, fn id))
 
-let name_lambda_list args fn =
-  let rec name_list names = function
-    [] -> fn (List.rev names)
-  | (Lvar id as arg) :: rem ->
-      name_list (arg :: names) rem
-  | arg :: rem ->
-      let id = Ident.create "let" in
-      Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
-  name_list [] args
-
-let rec iter f = function
-    Lvar _
+let rec iter f l = match l.l_desc with
+  | Lvar _
   | Lconst _ -> ()
-  | Lapply(fn, args, _) ->
+  | Lapply(fn, args) ->
       f fn; List.iter f args
   | Lfunction(kind, params, body) ->
       f body
@@ -279,7 +283,7 @@ let rec iter f = function
       f e1; f e2; f e3
   | Lassign(id, e) ->
       f e
-  | Lsend (k, met, obj, args, _) ->
+  | Lsend (k, met, obj, args) ->
       List.iter f (met::obj::args)
   | Levent (lam, evt) ->
       f lam
@@ -296,8 +300,8 @@ let free_ids get l =
   let fv = ref IdentSet.empty in
   let rec free l =
     iter free l;
-    fv := List.fold_right IdentSet.add (get l) !fv;
-    match l with
+    fv := List.fold_right IdentSet.add (get l.l_desc) !fv;
+    match l.l_desc with
       Lfunction(kind, params, body) ->
         List.iter (fun param -> fv := IdentSet.remove param !fv) params
     | Llet(str, id, arg, body) ->
@@ -322,7 +326,7 @@ let free_variables l =
   free_ids (function Lvar id -> [id] | _ -> []) l
 
 let free_methods l =
-  free_ids (function Lsend(Self, Lvar meth, obj, _, _) -> [meth] | _ -> []) l
+  free_ids (function Lsend(Self, {l_desc=Lvar meth}, obj, _) -> [meth] | _ -> []) l
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0
@@ -332,32 +336,32 @@ let next_raise_count () =
   !raise_count
 
 (* Anticipated staticraise, for guards *)
-let staticfail = Lstaticraise (0,[])
+let staticfail = mk_lam (Lstaticraise (0,[]))
 
-let rec is_guarded = function
-  | Lifthenelse( cond, body, Lstaticraise (0,[])) -> true
+let rec is_guarded l = match l.l_desc with
+  | Lifthenelse( cond, body, {l_desc=Lstaticraise (0,[])}) -> true
   | Llet(str, id, lam, body) -> is_guarded body
   | Levent(lam, ev) -> is_guarded lam
   | _ -> false
 
-let rec patch_guarded patch = function
-  | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
-      Lifthenelse (cond, body, patch)
+let rec patch_guarded patch l = match l.l_desc with
+  | Lifthenelse (cond, body, {l_desc=Lstaticraise (0,[])}) ->
+      mk_loc_lam l.l_loc (Lifthenelse (cond, body, patch))
   | Llet(str, id, lam, body) ->
-      Llet (str, id, lam, patch_guarded patch body)
+      mk_loc_lam l.l_loc (Llet (str, id, lam, patch_guarded patch body))
   | Levent(lam, ev) ->
-      Levent (patch_guarded patch lam, ev)
+      mk_loc_lam l.l_loc (Levent (patch_guarded patch lam, ev))
   | _ -> fatal_error "Lambda.patch_guarded"
 
 (* Translate an access path *)
 
 let rec transl_path = function
     Pident id ->
-      if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
+      mk_lam (if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id)
   | Pdot(p, s, pos) ->
-      Lprim(Pfield pos, [transl_path p])
+    mk_lam (Lprim(Pfield pos, [transl_path p]))
   | Papply(p1, p2) ->
-      fatal_error "Lambda.transl_path"
+    fatal_error "Lambda.transl_path"
 
 (* Compile a sequence of expressions *)
 
@@ -365,7 +369,8 @@ let rec make_sequence fn = function
     [] -> lambda_unit
   | [x] -> fn x
   | x::rem ->
-      let lam = fn x in Lsequence(lam, make_sequence fn rem)
+      let lam = fn x in
+      mk_loc_lam lam.l_loc (Lsequence(lam, make_sequence fn rem))
 
 (* Apply a substitution to a lambda-term.
    Assumes that the bound variables of the lambda-term do not
@@ -374,36 +379,40 @@ let rec make_sequence fn = function
    of the bound variables of the lambda-term (no capture). *)
 
 let subst_lambda s lam =
-  let rec subst = function
-    Lvar id as l ->
-      begin try Ident.find_same id s with Not_found -> l end
-  | Lconst sc as l -> l
-  | Lapply(fn, args, loc) -> Lapply(subst fn, List.map subst args, loc)
-  | Lfunction(kind, params, body) -> Lfunction(kind, params, subst body)
-  | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
-  | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
-  | Lprim(p, args) -> Lprim(p, List.map subst args)
-  | Lswitch(arg, sw) ->
-      Lswitch(subst arg,
-              {sw with sw_consts = List.map subst_case sw.sw_consts;
-                       sw_blocks = List.map subst_case sw.sw_blocks;
-                       sw_failaction =
-                         match sw.sw_failaction with
-                         | None -> None
-                         | Some l -> Some (subst l)})
-
-  | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
-  | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
-  | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
-  | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
-  | Lsequence(e1, e2) -> Lsequence(subst e1, subst e2)
-  | Lwhile(e1, e2) -> Lwhile(subst e1, subst e2)
-  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3)
-  | Lassign(id, e) -> Lassign(id, subst e)
-  | Lsend (k, met, obj, args, loc) ->
-      Lsend (k, subst met, subst obj, List.map subst args, loc)
-  | Levent (lam, evt) -> Levent (subst lam, evt)
-  | Lifused (v, e) -> Lifused (v, subst e)
+  let rec subst l =
+    let make d = mk_loc_lam l.l_loc d in
+    match l.l_desc with
+      | Lvar id ->
+        begin try Ident.find_same id s with Not_found -> l end
+      | Lconst _ -> l
+      | Lapply(fn, args) -> make (Lapply(subst fn, List.map subst args))
+      | Lfunction(kind, params, body) ->
+        make (Lfunction(kind, params, subst body))
+      | Llet(str, id, arg, body) ->
+        make (Llet(str, id, subst arg, subst body))
+      | Lletrec(decl, body) ->
+        make (Lletrec(List.map subst_decl decl, subst body))
+      | Lprim(p, args) -> make (Lprim(p, List.map subst args))
+      | Lswitch(arg, sw) ->
+        make (Lswitch(subst arg,
+                      {sw with sw_consts = List.map subst_case sw.sw_consts;
+                        sw_blocks = List.map subst_case sw.sw_blocks;
+                        sw_failaction =
+                          match sw.sw_failaction with
+                            | None -> None
+                            | Some l -> Some (subst l)}))
+      | Lstaticraise (i,args) ->  make (Lstaticraise (i, List.map subst args))
+      | Lstaticcatch(e1, io, e2) -> make (Lstaticcatch(subst e1, io, subst e2))
+      | Ltrywith(e1, exn, e2) -> make (Ltrywith(subst e1, exn, subst e2))
+      | Lifthenelse(e1, e2, e3) -> make (Lifthenelse(subst e1, subst e2, subst e3))
+      | Lsequence(e1, e2) -> make (Lsequence(subst e1, subst e2))
+      | Lwhile(e1, e2) -> make (Lwhile(subst e1, subst e2))
+      | Lfor(v, e1, e2, dir, e3) -> make (Lfor(v, subst e1, subst e2, dir, subst e3))
+      | Lassign(id, e) -> make (Lassign(id, subst e))
+      | Lsend (k, met, obj, args) ->
+        make (Lsend (k, subst met, subst obj, List.map subst args))
+      | Levent (lam, evt) -> make (Levent (subst lam, evt))
+      | Lifused (v, e) -> make (Lifused (v, subst e))
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   in subst lam
@@ -412,9 +421,9 @@ let subst_lambda s lam =
 (* To let-bind expressions to variables *)
 
 let bind str var exp body =
-  match exp with
+  match exp.l_desc with
     Lvar var' when Ident.same var var' -> body
-  | _ -> Llet(str, var, exp, body)
+  | _ -> mk_loc_lam exp.l_loc (Llet(str, var, exp, body))
 
 and commute_comparison = function
 | Ceq -> Ceq| Cneq -> Cneq

@@ -71,11 +71,11 @@ CAMLexport void caml_sys_error(value arg)
 
   err = error_message();
   if (arg == NO_ARG) {
-    str = caml_copy_string(err);
+    str = caml_copy_string_loc(err, PROF_CAML_SYS_ERROR);
   } else {
     int err_len = strlen(err);
     int arg_len = caml_string_length(arg);
-    str = caml_alloc_string(arg_len + 2 + err_len);
+    str = caml_alloc_string_loc(arg_len + 2 + err_len, PROF_CAML_SYS_ERROR);
     memmove(&Byte(str, 0), String_val(arg), arg_len);
     memmove(&Byte(str, arg_len), ": ", 2);
     memmove(&Byte(str, arg_len + 2), err, err_len);
@@ -197,7 +197,7 @@ CAMLprim value caml_sys_getcwd(value unit)
 #else
   if (getwd(buff) == 0) caml_sys_error(NO_ARG);
 #endif /* HAS_GETCWD */
-  return caml_copy_string(buff);
+  return caml_copy_string_loc(buff, PROF_CAML_SYS_GETCWD);
 }
 
 CAMLprim value caml_sys_getenv(value var)
@@ -206,7 +206,7 @@ CAMLprim value caml_sys_getenv(value var)
 
   res = getenv(String_val(var));
   if (res == 0) caml_raise_not_found();
-  return caml_copy_string(res);
+  return caml_copy_string_loc(res, PROF_GETENV);
 }
 
 char * caml_exe_name;
@@ -216,7 +216,7 @@ CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
-  exe_name = caml_copy_string(caml_exe_name);
+  exe_name = caml_copy_string_loc(caml_exe_name, PROF_CAML_SYS_GETARGV);
   argv = caml_copy_string_array((char const **) caml_main_argv);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = exe_name;
@@ -341,7 +341,7 @@ CAMLprim value caml_sys_get_config(value unit)
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal2 (result, ostype);
 
-  ostype = caml_copy_string(OCAML_OS_TYPE);
+  ostype = caml_copy_string_loc(OCAML_OS_TYPE, PROF_CAML_SYS_GETCONFIG);
   result = caml_alloc_small (3, 0);
   Field(result, 0) = ostype;
   Field(result, 1) = Val_long (8 * sizeof(value));

@@ -21,6 +21,7 @@
 #endif
 #include "config.h"
 #include "misc.h"
+#include "profiling_ids.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,6 +64,7 @@ typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef uintnat color_t;
 typedef uintnat mark_t;
+typedef uintnat profiling_t; 	/* CAGO: profiling informatin in header */
 
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
@@ -89,15 +91,29 @@ bits  31    10 9     8 7   0
 
 For 64-bit architectures:
 
-     +--------+-------+-----+
-     | wosize | color | tag |
-     +--------+-------+-----+
 bits  63    10 9     8 7   0
+     +------------+-------+-----+
+     |   wosize   | color | tag |
+     +------------+-------+-----+  
+     +------+-----+-------+-----+     Custom header for profiling
+     |info|wosize | color | tag |
+     +----+-------+-------+-----+
+bits 63 43 42   10 9     8 7    0
 
 */
 
+#define Val(hd) (hd)
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
-#define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
+
+/* CAGO: patch add Prof_info_hd/Wosize */
+#ifdef ARCH_SIXTYFOUR
+#define Prof_hd(hd) ((profiling_t) ((hd) >> 43) & (((profiling_t)1 << 21) - 1))
+#define Prof_val(val) (Prof_hd (Hd_val(val)))
+#define Prof_hp(hp) (Prof_hd (Hd_hp (hp)))
+#define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10)  & (((profiling_t)1 << 33) - 1))
+#else
+#define Wosize_hd(hd) ((mlsize_t) (hd) >> 10)
+#endif
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
 #define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
@@ -113,7 +129,9 @@ bits  63    10 9     8 7   0
 
 #define Num_tags (1 << 8)
 #ifdef ARCH_SIXTYFOUR
-#define Max_wosize (((intnat)1 << 54) - 1)
+/* CAGO: patch Max_wosize */
+/* #define Max_wosize (((intnat)1 << 54) - 1) */
+#define Max_wosize (((intnat)1 << 33) - 1) /* 64GB */
 #else
 #define Max_wosize ((1 << 22) - 1)
 #endif

@@ -1,0 +1,80 @@
+#ifndef __PROFILING_IDS__
+#define __PROFILING_IDS__
+
+#define PROF_DUMMY 1
+#define PROF_ATOM 2
+
+#define PROF_CONS 9
+
+#define PROF_STRING 10
+#define PROF_CAML_OUTPUT_VAL_TO_STR 11
+
+#define PROF_MD5 13
+
+#define PROF_INT32 20
+#define PROF_INT64 30
+#define PROF_INT_NATIVE 40
+
+#define PROF_FLOAT 50
+#define PROF_ABSTRACT 60
+
+#define PROF_ARRAYS 70
+#define PROF_TUPLE 71
+#define PROF_DOUBLE_ARRAYS 80
+#define PROF_INT_ARRAY 90
+#define PROF_BIG_ARRAY 100
+
+#define PROF_OBJ 101
+#define PROF_WEAK 102
+
+/* ints.c */
+#define PROF_CAML_FORMAT_INT 103
+#define PROF_CAML_FORMAT_INT32 104
+#define PROF_CAML_FORMAT_INT64 105
+#define PROF_CAML_FORMAT_NATIVEINT 106
+
+/* floats.c */
+#define PROF_FORMATFLOAT 107
+
+/* fail.c */
+#define PROF_RAISE_WITH_STRING 108
+#define PROF_FAIL_EXN 109
+
+/* sys.c */
+#define PROF_CAML_SYS_ERROR 110
+#define PROF_CAML_SYS_GETCWD 111
+#define PROF_CAML_SYS_GETARGV 112
+#define PROF_CAML_SYS_GETCONFIG 113
+
+/* intern.c */
+#define PROF_CAML_INP_VAL_FROM_MALLOC 115
+#define PROF_CAML_INP_VAL_FROM_BLOCK 116
+#define PROF_INTERN_TOHEAP 117
+#define PROF_CAML_INP_VAL_FROM_STRING 118
+
+/* meta.c */
+#define PROF_REALLOC_GLOBAL 119
+
+/* major.c */
+#define PROF_SWEEP_SLICE 120
+#define PROF_INIT_MAJ_HEAP 121
+
+/* terminfo.c */
+#define PROF_TERMINFO_SETUP 122
+
+#define PROF_COMPACTION 123
+
+/* TO REMOVE */
+/* #define PROF_EXPAND_HEAP 130 */
+#define PROF_CAML_ALLOC 135
+#define PROF_INPUT_VALUES 140
+#define PROF_IO 150
+#define PROF_SIGNALS 151
+#define PROF_BACKTRACE 152
+#define PROF_PAIR 153
+#define PROF_GETENV 154
+#define PROF_FREELIST 170
+#define PROF_REIFY_BYTECODE 171
+#define PROF_DYNLINK 172
+
+#endif

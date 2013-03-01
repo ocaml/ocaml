@@ -29,6 +29,9 @@
 #include "roots.h"
 #include "weak.h"
 
+int heap_profiling = 0;
+void really_dump_heap();
+
 uintnat caml_percent_free;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
@@ -274,6 +277,7 @@ static void mark_slice (intnat work)
         limit = chunk + Chunk_size (chunk);
         work = 0;
         caml_fl_size_at_phase_change = caml_fl_cur_size;
+	if(heap_profiling) really_dump_heap();
       }
         break;
       default: Assert (0);
@@ -301,7 +305,7 @@ static void sweep_slice (intnat work)
           void (*final_fun)(value) = Custom_ops_val(Val_hp(hp))->finalize;
           if (final_fun != NULL) final_fun(Val_hp(hp));
         }
-        caml_gc_sweep_hp = caml_fl_merge_block (Bp_hp (hp));
+        caml_gc_sweep_hp = caml_fl_merge_block_loc (Bp_hp (hp), PROF_SWEEP_SLICE);
         break;
       case Caml_blue:
         /* Only the blocks of the free-list are blue.  See [freelist.c]. */
@@ -379,7 +383,6 @@ intnat caml_major_collection_slice (intnat howmuch)
 
      This slice will either mark MS words or sweep SS words.
   */
-
   if (caml_gc_phase == Phase_idle) start_cycle ();
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
@@ -495,8 +498,11 @@ void caml_init_major_heap (asize_t heap_size)
   }
 
   caml_fl_init_merge ();
-  caml_make_free_blocks ((value *) caml_heap_start,
-                         Wsize_bsize (caml_stat_heap_size), 1, Caml_white);
+  /* caml_make_free_blocks ((value *) caml_heap_start, */
+  /*                        Wsize_bsize (caml_stat_heap_size), 1, Caml_white); */
+  caml_make_free_blocks_loc ((value *) caml_heap_start,
+			     Wsize_bsize (caml_stat_heap_size), 1, Caml_white, PROF_INIT_MAJ_HEAP);
+
   caml_gc_phase = Phase_idle;
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
@@ -507,4 +513,243 @@ void caml_init_major_heap (asize_t heap_size)
   heap_is_pure = 1;
   caml_allocated_words = 0;
   caml_extra_heap_resources = 0.0;
+}
+
+
+
+/* CAGO: Dump heap */
+#include "intext.h"
+#include "instruct.h"
+#include <stdio.h>
+
+#ifndef NATIVE_CODE
+#include "stacks.h"
+#endif
+
+#include <unistd.h>
+#include <string.h>
+
+#define Next(hp) ((hp) + Bhsize_hp (hp))
+
+static FILE *file_oc;
+
+static void store_value(value v)
+{
+  if(sizeof(value) == 4){
+    fputc( (v & 0xff), file_oc);
+    fputc( ( (v >> 8) & 0xff), file_oc);
+    fputc( ( (v >> 16) & 0xff), file_oc);
+    fputc( ( (v >> 24) & 0xff), file_oc);
+  } else {
+    fputc( (v & 0xff), file_oc);
+    fputc( ( (v >> 8) & 0xff), file_oc);
+    fputc( ( (v >> 16) & 0xff), file_oc);
+    fputc( ( (v >> 24) & 0xff), file_oc);
+    fputc( ( (v >> 32) & 0xff), file_oc); 
+    fputc( ( (v >> 40) & 0xff), file_oc);
+    fputc( ( (v >> 48) & 0xff), file_oc);
+    fputc( ( (v >> 56) & 0xff), file_oc);
+  }
+}
+
+static void check_block (char *hp)
+{
+  mlsize_t nfields = Wosize_hp (hp);
+  mlsize_t i;
+  value v = Val_hp (hp);
+  value f;
+  /* mlsize_t lastbyte; */
+  int tag = Tag_hp (hp);
+  long locid = Prof_hp(hp);
+  
+  fputc(1, file_oc); /* 1, a block */
+  store_value( v); /* the pointer */
+  fputc(tag, file_oc); /* the tag */
+  store_value(nfields); /* the size */
+  store_value(locid);  /* id which will allow us to find the location ! */
+  /* printf(" ## dumping LOCID: %d  -- tag %d\n", locid, tag); */
+  
+  /* if tag < No_scan_tag only, the contents of the block */
+  switch(tag){
+    case String_tag:
+    case Double_tag:
+    case Double_array_tag:
+    case Custom_tag: break;
+    
+    default:
+    if(Tag_hp (hp) < No_scan_tag){
+      for (i = 0; i < Wosize_hp (hp); i++){
+        f = Field (v, i);
+#ifndef NATIVE_CODE
+        if ((char *) f >= code_area_start && (char *) f < code_area_end) {
+#ifdef THREADED_CODE
+        if ( *(code_t)f == (opcode_t)(caml_instr_table[RESTART] - caml_instr_base) ){
+#else
+        if ( *(code_t)f == RESTART ){
+#endif
+            store_value( (value)code_area_end);
+          } else {
+            store_value( (value)code_area_start);
+          }
+        } else
+#endif
+        {
+          store_value( f);
+        }
+/*
+        if (Is_block (f) && Is_in_heap (f)) {
+          fprintf( " %x", f);
+        }
+*/
+      }
+    }
+  }
+}
+
+void store_root(value v, value *useless)
+{
+  if(Is_block(v) && Is_in_heap(v)) store_value(v);
+}
+
+extern char *caml_exe_name;
+
+#ifdef NATIVE_CODE
+extern char globals_map[];
+extern value caml_globals[];
+extern value caml_globals_info[];
+#endif
+
+static int heap_number = 0;
+void really_dump_heap (void)
+{
+  char *chunk = caml_heap_start, *chunk_end;
+  char *cur_hp;
+  header_t cur_hd;
+  char filename[256];
+  sprintf(filename, "heap.dump.%d.%d", getpid(), heap_number++);
+
+  file_oc = fopen(filename, "w");  
+
+  fputc(sizeof(value), file_oc);
+
+{ 
+  int size = strlen(caml_exe_name);
+  store_value( size);
+  fwrite(caml_exe_name, 1, size, file_oc);
+}
+
+  while (chunk != NULL){
+    chunk_end = chunk + Chunk_size (chunk);
+
+    fputc(0, file_oc); /* 0: a chunk */
+    store_value( (value) chunk); /* chunk start */
+    store_value( (value) chunk_end); /* chunk end */
+
+    cur_hp = chunk;
+    while (cur_hp < chunk_end){
+      cur_hd = Hd_hp (cur_hp);
+                                           Assert (Next (cur_hp) <= chunk_end);
+      switch (Color_hd (cur_hd)){
+      case Caml_white:
+        if ((Wosize_hd (cur_hd) == 0)
+            || (caml_gc_phase == Phase_sweep && cur_hp >= caml_gc_sweep_hp)){
+            /* free block */
+          }else{
+            check_block ( cur_hp);
+        }
+        break;
+      case Caml_gray: case Caml_black:
+        check_block ( cur_hp);
+        break;
+      case Caml_blue:
+        /* free block */
+        break;
+      }
+      cur_hp = Next (cur_hp);
+    }                                          Assert (cur_hp == chunk_end);
+    chunk = Chunk_next (chunk);
+  }
+  fputc(255, file_oc); /* 255: end of the file */
+
+/* All CLOSURE Codepointers have this value */
+  store_value( (value)code_area_start); 
+/* All RESTART Codepointers have this value */
+  store_value( (value)code_area_end);
+
+#ifdef NATIVE_CODE
+  store_value( 0); /* We are in native code */
+
+/* We need to store the globals_map */
+{
+    value s = globals_map;
+    int len = string_length(s);
+    store_value( len );
+    fwrite(s, 1, len, file_oc);    
+}
+
+/* We need to store the caml_globals, and their corresponding pointers */
+{
+  value* s = caml_globals;
+  int pos = 0;
+  while(s[pos] != 0) {
+    value m = s[pos];
+    pos++;
+
+    if(!(Is_block(m))){
+      store_value(1); /* Another module */
+      store_value(0);
+    } else {
+      int size = Wosize_val(m);
+      int i;
+      
+      store_value(1); /* Another module */
+      store_value(m);
+      store_value(size);
+      for(i=0; i<size; i++)
+        store_value(Field(m,i));
+    }
+  }
+  store_value(0); /* End of the table */
+}
+
+/* We need to store the caml_globals, and their corresponding pointers */
+{
+  value* s = caml_globals_info;
+  int pos = 0;
+  while(s[pos] != 0) {
+    value m = s[pos];
+    pos++;
+
+    store_value(1); /* Another module */
+    int len = string_length(m);
+    store_value( len );
+    fwrite(m, 1, len, file_oc);    
+  }
+  store_value(0); /* End of the table */
+}
+
+
+#else  /* ####### BYTECODE ####### */
+  store_value( Val_int(1));
+  store_value( caml_global_data); /* global table */
+{
+  register value * sp;
+  int values = 0;
+  for (sp = caml_extern_sp; sp < caml_stack_high; sp++) {
+    value v = *sp;
+    if(Is_block(v) && Is_in_heap(v)) values++;   
+  }
+  store_value( Val_int(values));  /* number of entries in the stack */
+  for (sp = caml_extern_sp; sp < caml_stack_high; sp++) {
+    value v = *sp;
+    if(Is_block(v) && Is_in_heap(v)) { store_value(1); store_value (v);}
+  }
+  store_value(0);  /* End */
+}
+#endif
+
+  caml_do_roots(store_root);
+
+  store_value(Val_int(0)); /* a 0 value at the end */
+  fclose(file_oc);
 }

@@ -53,6 +53,13 @@ CAMLextern value caml_alloc_custom(struct custom_operations * ops,
                                    mlsize_t mem, /*resources consumed*/
                                    mlsize_t max  /*max resources*/);
 
+/* CAGO: add extra identifier  */
+CAMLextern value caml_alloc_custom_loc(struct custom_operations * ops,
+                                   uintnat size, /*size in bytes*/
+                                   mlsize_t mem, /*resources consumed*/
+                                   mlsize_t max  /*max resources*/,
+				   profiling_t id);
+
 CAMLextern void caml_register_custom_operations(struct custom_operations * ops);
 
 CAMLextern int caml_compare_unordered;

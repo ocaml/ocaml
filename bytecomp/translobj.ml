@@ -35,13 +35,13 @@ let share c =
   match c with
     Const_block (n, l) when l <> [] ->
       begin try
-        Lvar (Hashtbl.find consts c)
+        mk_lam (Lvar (Hashtbl.find consts c))
       with Not_found ->
         let id = Ident.create "shared" in
         Hashtbl.add consts c id;
-        Lvar id
+        mk_lam (Lvar id)
       end
-  | _ -> Lconst c
+  | _ -> mk_lam (Lconst c)
 
 (* Collect labels *)
 
@@ -50,14 +50,14 @@ let method_cache = ref lambda_unit
 let method_count = ref 0
 let method_table = ref []
 
-let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
+let meth_tag s = mk_lam (Lconst(Const_base(Const_int(Btype.hash_variant s))))
 
 let next_cache tag =
   let n = !method_count in
   incr method_count;
-  (tag, [!method_cache; Lconst(Const_base(Const_int n))])
+  (tag, [!method_cache; mk_lam (Lconst(Const_base(Const_int n)))])
 
-let rec is_path = function
+let rec is_path l = match l.l_desc with
     Lvar _ | Lprim (Pgetglobal _, []) | Lconst _ -> true
   | Lprim (Pfield _, [lam]) -> is_path lam
   | Lprim ((Parrayrefu _ | Parrayrefs _), [lam1; lam2]) ->
@@ -69,9 +69,13 @@ let meth obj lab =
   if not (!cache_required && !Clflags.native_code) then (tag, []) else
   if not (is_path obj) then next_cache tag else
   try
-    let r = List.assoc obj !method_table in
+    (* let r = List.assoc obj.l_desc !method_table in *)
+    let rec find obj = function
+      | [] -> raise Not_found
+      | (lam, lams) :: tl ->  if same lam obj then lams else find obj tl in
+    let r = find obj !method_table in
     try
-      (tag, List.assoc tag !r)
+      (tag, find tag !r)(* List.assoc tag !r *)
     with Not_found ->
       let p = next_cache tag in
       r := p :: !r;
@@ -88,8 +92,8 @@ let reset_labels () =
 
 (* Insert labels *)
 
-let string s = Lconst (Const_base (Const_string s))
-let int n = Lconst (Const_base (Const_int n))
+let string s = mk_lam (Lconst (Const_base (Const_string s)))
+let int n = mk_lam (Lconst (Const_base (Const_int n)))
 
 let prim_makearray =
   { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
@@ -98,23 +102,23 @@ let prim_makearray =
 let transl_label_init expr =
   let expr =
     Hashtbl.fold
-      (fun c id expr -> Llet(Alias, id, Lconst c, expr))
+      (fun c id expr -> mk_lam (Llet(Alias, id, mk_lam (Lconst c), expr)))
       consts expr
   in
   reset_labels ();
   expr
 
 let transl_store_label_init glob size f arg =
-  method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
+  method_cache := mk_lam (Lprim(Pfield size, [mk_lam (Lprim(Pgetglobal glob, []))]));
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else
-    (size+1,
-     Lsequence(
-     Lprim(Psetfield(size, false),
-           [Lprim(Pgetglobal glob, []);
-            Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
-     expr))
+      (size+1,
+       mk_lam (Lsequence(
+         mk_lam (Lprim(Psetfield(size, false),
+                       [mk_lam (Lprim(Pgetglobal glob, []));
+                        mk_lam (Lprim (Pccall prim_makearray, [int !method_count; int 0]))])),
+         expr)))
   in
   (size, transl_label_init expr)
 
@@ -132,28 +136,28 @@ let oo_add_class id =
 let oo_wrap env req f x =
   if !wrapping then
     if !cache_required then f x else
-    try cache_required := true; let lam = f x in cache_required := false; lam
-    with exn -> cache_required := false; raise exn
+      try cache_required := true; let lam = f x in cache_required := false; lam
+      with exn -> cache_required := false; raise exn
   else try
-    wrapping := true;
-    cache_required := req;
-    top_env := env;
-    classes := [];
-    method_ids := IdentSet.empty;
-    let lambda = f x in
-    let lambda =
-      List.fold_left
-        (fun lambda id ->
-          Llet(StrictOpt, id,
-               Lprim(Pmakeblock(0, Mutable),
-                     [lambda_unit; lambda_unit; lambda_unit]),
-               lambda))
-        lambda !classes
-    in
-    wrapping := false;
-    top_env := Env.empty;
-    lambda
-  with exn ->
-    wrapping := false;
-    top_env := Env.empty;
-    raise exn
+         wrapping := true;
+         cache_required := req;
+         top_env := env;
+         classes := [];
+         method_ids := IdentSet.empty;
+         let l = f x in
+         let lambda =
+           List.fold_left
+             (fun expr id ->
+               mk_lam (Llet(StrictOpt, id,
+                            mk_lam (Lprim(Pmakeblock(0, Mutable),
+                                          [lambda_unit; lambda_unit; lambda_unit])),
+                            expr)))
+             l !classes
+         in
+         wrapping := false;
+         top_env := Env.empty;
+         lambda
+    with exn ->
+      wrapping := false;
+      top_env := Env.empty;
+      raise exn

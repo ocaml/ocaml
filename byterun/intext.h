@@ -161,6 +161,13 @@ struct code_fragment {
 
 struct ext_table caml_code_fragments_table;
 
+#ifndef NATIVE_CODE
+#include "fix_code.h"
+#define code_area_start ((char *) caml_start_code)
+#define code_area_end ((char *) caml_start_code + caml_code_size)
+#else
+extern char * code_area_start, * code_area_end;
+#endif
 /* </private> */
 
 #ifdef __cplusplus

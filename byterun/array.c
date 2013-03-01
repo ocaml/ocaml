@@ -53,7 +53,7 @@ CAMLprim value caml_array_get_float(value array, value index)
   d = Double_field(array, idx);
 #define Setup_for_gc
 #define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
+  Alloc_small(res, Double_wosize, Double_tag, PROF_FLOAT);
 #undef Setup_for_gc
 #undef Restore_after_gc
   Store_double_val(res, d);
@@ -101,7 +101,7 @@ CAMLprim value caml_array_unsafe_get_float(value array, value index)
   d = Double_field(array, Long_val(index));
 #define Setup_for_gc
 #define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
+  Alloc_small(res, Double_wosize, Double_tag, PROF_FLOAT);
 #undef Setup_for_gc
 #undef Restore_after_gc
   Store_double_val(res, d);
@@ -154,24 +154,24 @@ CAMLprim value caml_make_vect(value len, value init)
     d = Double_val(init);
     wsize = size * Double_wosize;
     if (wsize > Max_wosize) caml_invalid_argument("Array.make");
-    res = caml_alloc(wsize, Double_array_tag);
+    res = caml_alloc_loc(wsize, Double_array_tag, PROF_DOUBLE_ARRAYS);
     for (i = 0; i < size; i++) {
       Store_double_field(res, i, d);
     }
   } else {
     if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size < Max_young_wosize) {
-      res = caml_alloc_small(size, 0);
+      res = caml_alloc_small_loc(size, 0, PROF_ARRAYS);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young(init)) {
       caml_minor_collection();
-      res = caml_alloc_shr(size, 0);
+      res = caml_alloc_shr_loc(size, 0, PROF_ARRAYS);
       for (i = 0; i < size; i++) Field(res, i) = init;
       res = caml_check_urgent_gc (res);
     }
     else {
-      res = caml_alloc_shr(size, 0);
+      res = caml_alloc_shr_loc(size, 0, PROF_ARRAYS);
       for (i = 0; i < size; i++) caml_initialize(&Field(res, i), init);
       res = caml_check_urgent_gc (res);
     }
@@ -197,7 +197,7 @@ CAMLprim value caml_make_array(value init)
     } else {
       Assert(size < Max_young_wosize);
       wsize = size * Double_wosize;
-      res = caml_alloc_small(wsize, Double_array_tag);
+      res = caml_alloc_small_loc(wsize, Double_array_tag, PROF_DOUBLE_ARRAYS);
       for (i = 0; i < size; i++) {
         Store_double_field(res, i, Double_val(Field(init, i)));
       }
@@ -286,7 +286,7 @@ static value caml_array_gather(intnat num_arrays,
     /* This is an array of floats.  We can use memcpy directly. */
     wsize = size * Double_wosize;
     if (wsize > Max_wosize) caml_invalid_argument("Array.concat");
-    res = caml_alloc(wsize, Double_array_tag);
+    res = caml_alloc_loc(wsize, Double_array_tag, PROF_DOUBLE_ARRAYS);
     for (i = 0, pos = 0; i < num_arrays; i++) {
       memcpy((double *)res + pos,
              (double *)arrays[i] + offsets[i],
@@ -302,7 +302,7 @@ static value caml_array_gather(intnat num_arrays,
   else if (size < Max_young_wosize) {
     /* Array of values, small enough to fit in young generation.
        We can use memcpy directly. */
-    res = caml_alloc_small(size, 0);
+    res = caml_alloc_small_loc(size, 0, PROF_ARRAYS);
     for (i = 0, pos = 0; i < num_arrays; i++) {
       memcpy(&Field(res, pos),
              &Field(arrays[i], offsets[i]),
@@ -313,7 +313,7 @@ static value caml_array_gather(intnat num_arrays,
   } else {
     /* Array of values, must be allocated in old generation and filled
        using caml_initialize. */
-    res = caml_alloc_shr(size, 0);
+    res = caml_alloc_shr_loc(size, 0, PROF_ARRAYS);
     pos = 0;
     for (i = 0, pos = 0; i < num_arrays; i++) {
       for (src = &Field(arrays[i], offsets[i]), count = lengths[i];

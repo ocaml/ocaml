@@ -45,10 +45,17 @@ extern void caml_shrink_heap (char *);              /* memory.c */
   XXX (see [caml_register_global_roots] and [caml_init_exceptions])
   XXX Should be able to fix it to only assume 2-byte alignment.
 */
-#define Make_ehd(s,t,c) (((s) << 10) | (t) << 2 | (c))
+/* CAGO: patch Make_ehd */
+#ifdef ARCH_SIXTYFOUR
+#define Make_ehd(s,t,c,p) ((((profiling_t) p) << 43) | ((s) << 10) | (t) << 2 | (c))
+#else
+#define Make_ehd(s,t,c,_) ((((profiling_t) s) << 10) | (t) << 2 | (c))
+#endif
+
 #define Whsize_ehd(h) Whsize_hd (h)
 #define Wosize_ehd(h) Wosize_hd (h)
 #define Tag_ehd(h) (((h) >> 2) & 0xFF)
+#define Prof_ehd(h) (((h) >> 43))
 #define Ecolor(w) ((w) & 3)
 
 typedef uintnat word;
@@ -76,9 +83,10 @@ static void invert_pointer_at (word *p)
         value val = (value) q - Infix_offset_val (q);
         /* Get the block header. */
         word *hp = (word *) Hp_val (val);
+        profiling_t id = Prof_hp (hp);
 
         while (Ecolor (*hp) == 0) hp = (word *) *hp;
-                                                   Assert (Ecolor (*hp) == 3);
+                                                   Assert (Ecolor (*hp) == 3);	  
         if (Tag_ehd (*hp) == Closure_tag){
           /* This is the first infix found in this block. */
           /* Save original header. */
@@ -87,7 +95,8 @@ static void invert_pointer_at (word *p)
           Hd_val (q) = (header_t) ((word) p | 2);
           /* Change block header's tag to Infix_tag, and change its size
              to point to the infix list. */
-          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
+	  /* CAGO: patch Make_ehd */
+          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3, id);
         }else{                            Assert (Tag_ehd (*hp) == Infix_tag);
           /* Point the last of this infix list to the current first infix
              list of the block. */
@@ -95,7 +104,8 @@ static void invert_pointer_at (word *p)
           /* Point the head of this infix list to the above. */
           Hd_val (q) = (header_t) ((word) p | 2);
           /* Change block header's size to point to this infix list. */
-          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
+	  /* CAGO: patch Make_ehd */
+          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3, id);
         }
       }
       break;
@@ -164,13 +174,15 @@ static void do_compaction (void)
       while ((char *) p < chend){
         header_t hd = Hd_hp (p);
         mlsize_t sz = Wosize_hd (hd);
+	profiling_t id = Prof_hd (hd);
 
         if (Is_blue_hd (hd)){
           /* Free object.  Give it a string tag. */
-          Hd_hp (p) = Make_ehd (sz, String_tag, 3);
+	     Hd_hp (p) = Make_ehd (sz, String_tag, 3, id);
         }else{                                      Assert (Is_white_hd (hd));
           /* Live object.  Keep its tag. */
-          Hd_hp (p) = Make_ehd (sz, Tag_hd (hd), 3);
+	  /* CAGO: patch Make_ehd */	     
+	     Hd_hp (p) = Make_ehd (sz, Tag_hd (hd), 3, id);
         }
         p += Whsize_wosize (sz);
       }
@@ -261,12 +273,14 @@ static void do_compaction (void)
           /* There were (normal or infix) pointers to this block. */
           size_t sz;
           tag_t t;
+	  profiling_t id;
           char *newadr;
           word *infixes = NULL;
 
           while (Ecolor (q) == 0) q = * (word *) q;
           sz = Whsize_ehd (q);
           t = Tag_ehd (q);
+	  id = Prof_ehd(q);
 
           if (t == Infix_tag){
             /* Get the original header of this block. */
@@ -284,7 +298,8 @@ static void do_compaction (void)
             * (word *) q = (word) Val_hp (newadr);
             q = next;
           }
-          *p = Make_header (Wosize_whsize (sz), t, Caml_white);
+	  /* CAGO: patch Make_header */
+          *p = Make_header(Wosize_whsize (sz), t, Caml_white, id);
 
           if (infixes != NULL){
             /* Rebuild the infix headers and revert the infix pointers. */
@@ -298,7 +313,8 @@ static void do_compaction (void)
                 * (word *) q = (word) Val_hp ((word *) newadr + (infixes - p));
                 q = next;
               }                    Assert (Ecolor (q) == 1 || Ecolor (q) == 3);
-              *infixes = Make_header (infixes - p, Infix_tag, Caml_white);
+              /* CAGO: patch Make_header */
+              *infixes = Make_header(infixes - p, Infix_tag, Caml_white, id);
               infixes = (word *) q;
             }
           }
@@ -309,7 +325,9 @@ static void do_compaction (void)
           */
           /* No pointers to the header and no infix header:
              the object was free. */
-          *p = Make_header (Wosize_ehd (q), Tag_ehd (q), Caml_blue);
+             /* CAGO: patch Make_header */
+	  profiling_t id =  id = Prof_ehd(q);
+	  *p = Make_header(Wosize_ehd (q), Tag_ehd (q), Caml_blue, id);
           p += Whsize_ehd (q);
         }
       }
@@ -383,9 +401,10 @@ static void do_compaction (void)
     caml_fl_reset ();
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
-        caml_make_free_blocks ((value *) (ch + Chunk_alloc (ch)),
+	/* CAGO: patch caml_make_free_blocks */
+        caml_make_free_blocks_loc ((value *) (ch + Chunk_alloc (ch)),
                                Wsize_bsize (Chunk_size(ch)-Chunk_alloc(ch)), 1,
-                               Caml_white);
+                               Caml_white, PROF_COMPACTION);
       }
       ch = Chunk_next (ch);
     }
@@ -440,8 +459,9 @@ void caml_compact_heap (void)
     if (chunk == NULL) return;
     /* PR#5757: we need to make the new blocks blue, or they won't be
        recognized as free by the recompaction. */
-    caml_make_free_blocks ((value *) chunk,
-                           Wsize_bsize (Chunk_size (chunk)), 0, Caml_blue);
+    /* CAGO: patch caml_make_free_blocks */
+    caml_make_free_blocks_loc ((value *) chunk,
+			       Wsize_bsize (Chunk_size (chunk)), 0, Caml_blue, PROF_DUMMY);
     if (caml_page_table_add (In_heap, chunk, chunk + Chunk_size (chunk)) != 0){
       caml_free_for_heap (chunk);
       return;

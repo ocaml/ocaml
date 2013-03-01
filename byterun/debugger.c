@@ -165,7 +165,7 @@ void caml_debugger_init(void)
   int n;
 
   caml_register_global_root(&marshal_flags);
-  marshal_flags = caml_alloc(2, Tag_cons);
+  marshal_flags = caml_alloc_loc(2, Tag_cons, PROF_CONS);
   Store_field(marshal_flags, 0, Val_int(1)); /* Marshal.Closures */
   Store_field(marshal_flags, 1, Val_emptylist);
 

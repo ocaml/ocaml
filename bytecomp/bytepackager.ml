@@ -221,7 +221,8 @@ let package_object_files ppf files targetfile targetname coercion =
         cu_primitives = !primitives;
         cu_force_link = !force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
-        cu_debugsize = pos_final - pos_debug } in
+        cu_debugsize = pos_final - pos_debug;
+        cu_profiling = Hashtbl.create 0} in
     output_value oc compunit;
     seek_out oc pos_depl;
     output_binary_int oc pos_final;

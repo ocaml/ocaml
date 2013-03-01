@@ -43,7 +43,6 @@
 sp is a local copy of the global variable caml_extern_sp. */
 
 /* Instruction decoding */
-
 #ifdef THREADED_CODE
 #  define Instruct(name) lbl_##name
 #  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
@@ -510,7 +509,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       } else {
         mlsize_t num_args, i;
         num_args = 1 + extra_args; /* arg1 + extra args */
-        Alloc_small(accu, num_args + 2, Closure_tag);
+        Alloc_small(accu, num_args + 2, Closure_tag, PROF_DUMMY);
         Field(accu, 1) = env;
         for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
         Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
@@ -527,7 +526,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nvars = *pc++;
       int i;
       if (nvars > 0) *--sp = accu;
-      Alloc_small(accu, 1 + nvars, Closure_tag);
+      Alloc_small(accu, 1 + nvars, Closure_tag, PROF_DUMMY);
       Code_val(accu) = pc + *pc;
       pc++;
       for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
@@ -541,7 +540,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int i;
       value * p;
       if (nvars > 0) *--sp = accu;
-      Alloc_small(accu, nfuncs * 2 - 1 + nvars, Closure_tag);
+      Alloc_small(accu, nfuncs * 2 - 1 + nvars, Closure_tag, PROF_DUMMY);
       p = &Field(accu, nfuncs * 2 - 1);
       for (i = 0; i < nvars; i++) {
         *p++ = sp[i];
@@ -552,7 +551,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       p++;
       for (i = 1; i < nfuncs; i++) {
-        *p = Make_header(i * 2, Infix_tag, Caml_white);  /* color irrelevant. */
+	   /* CAGO: patch Make_header */
+	   *p = Make_header(i * 2, Infix_tag, Caml_white, PROF_DUMMY);  /* color irrelevant. */
         p++;
         *p = (value) (pc + pc[i]);
         *--sp = (value) p;
@@ -628,11 +628,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t i;
       value block;
       if (wosize <= Max_young_wosize) {
-        Alloc_small(block, wosize, tag);
+	   Alloc_small(block, wosize, tag, PROF_DUMMY);
         Field(block, 0) = accu;
         for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
       } else {
-        block = caml_alloc_shr(wosize, tag);
+        block = caml_alloc_shr_loc(wosize, tag, PROF_DUMMY);
         caml_initialize(&Field(block, 0), accu);
         for (i = 1; i < wosize; i++) caml_initialize(&Field(block, i), *sp++);
       }
@@ -642,7 +642,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(MAKEBLOCK1): {
       tag_t tag = *pc++;
       value block;
-      Alloc_small(block, 1, tag);
+      Alloc_small(block, 1, tag, PROF_DUMMY);
       Field(block, 0) = accu;
       accu = block;
       Next;
@@ -650,7 +650,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(MAKEBLOCK2): {
       tag_t tag = *pc++;
       value block;
-      Alloc_small(block, 2, tag);
+      Alloc_small(block, 2, tag, PROF_DUMMY);
       Field(block, 0) = accu;
       Field(block, 1) = sp[0];
       sp += 1;
@@ -660,7 +660,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(MAKEBLOCK3): {
       tag_t tag = *pc++;
       value block;
-      Alloc_small(block, 3, tag);
+      Alloc_small(block, 3, tag, PROF_DUMMY);
       Field(block, 0) = accu;
       Field(block, 1) = sp[0];
       Field(block, 2) = sp[1];
@@ -673,9 +673,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t i;
       value block;
       if (size <= Max_young_wosize / Double_wosize) {
-        Alloc_small(block, size * Double_wosize, Double_array_tag);
+	   Alloc_small(block, size * Double_wosize, Double_array_tag, PROF_DUMMY);
       } else {
-        block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
+        block = caml_alloc_shr_loc(size * Double_wosize, Double_array_tag, PROF_DUMMY);
       }
       Store_double_field(block, 0, Double_val(accu));
       for (i = 1; i < size; i++){
@@ -683,6 +683,152 @@ value caml_interprete(code_t prog, asize_t prog_size)
         ++ sp;
       }
       accu = block;
+      Next;
+    }
+
+    Instruct(MAKEBLOCK_WITH_LOC): {
+      mlsize_t wosize = *pc++;
+      tag_t tag = *pc++;
+      mlsize_t id = *pc++;
+      mlsize_t i;
+      value block;   
+      if (wosize <= Max_young_wosize) {
+    	   Alloc_small(block, wosize, tag, id);
+        Field(block, 0) = accu;
+        for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
+      } else {
+        block = caml_alloc_shr_loc(wosize, tag, id);
+        caml_initialize(&Field(block, 0), accu);
+        for (i = 1; i < wosize; i++) caml_initialize(&Field(block, i), *sp++);
+      }
+      accu = block;
+      Next;
+    }
+
+    Instruct(MAKEBLOCK1_WITH_LOC): {
+      tag_t tag = *pc++;
+      mlsize_t id = *pc++;
+      value block;
+      Alloc_small(block, 1, tag, id);
+      Field(block, 0) = accu;
+      accu = block;
+      Next;
+    }
+
+    Instruct(MAKEBLOCK2_WITH_LOC): {
+      tag_t tag = *pc++;
+      tag_t id = *pc++;
+      value block;
+      Alloc_small(block, 2, tag, id);
+      Field(block, 0) = accu;
+      Field(block, 1) = sp[0];
+      sp += 1;
+      accu = block;
+      Next;
+    }
+
+    Instruct(MAKEBLOCK3_WITH_LOC): {
+      tag_t tag = *pc++;
+      tag_t id = *pc++;
+      value block;
+      Alloc_small(block, 3, tag, id);
+      Field(block, 0) = accu;
+      Field(block, 1) = sp[0];
+      Field(block, 2) = sp[1];
+      sp += 2;
+      accu = block;
+      Next;
+    }
+
+    Instruct(MAKEFLOATBLOCK_WITH_LOC): {
+      mlsize_t size = *pc++;
+      mlsize_t id = *pc++;
+      mlsize_t i;
+      value block;
+      if (size <= Max_young_wosize / Double_wosize) {
+	   Alloc_small(block, size * Double_wosize, Double_array_tag, id);
+      } else {
+        block = caml_alloc_shr_loc(size * Double_wosize, Double_array_tag, id);
+      }
+      Store_double_field(block, 0, Double_val(accu));
+      for (i = 1; i < size; i++){
+        Store_double_field(block, i, Double_val(*sp));
+        ++ sp;
+      }
+      accu = block;
+      Next;
+    }
+
+    Instruct(GETFLOATFIELD_WITH_LOC): {
+      double d = Double_field(accu, *pc);
+      pc++;
+      mlsize_t id = *pc++;
+      Alloc_small(accu, Double_wosize, Double_tag, id);
+      Store_double_val(accu, d);
+      
+      Next;
+    }
+
+    Instruct(CLOSURE_WITH_LOC): {
+      int nvars = *pc++; 
+      mlsize_t id = *(pc + 1);
+      int i; 
+      if (nvars > 0) *--sp = accu;
+      Alloc_small(accu, 1 + nvars, Closure_tag, id); 
+      Code_val(accu) = pc + *pc;
+      pc = pc + 2; 
+      for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
+      sp += nvars;
+      Next;
+    }
+
+    Instruct(CLOSUREREC_WITH_LOC): {
+      int nfuncs = *pc++;
+      int nvars = *pc++;
+      mlsize_t id = *pc++;
+      int i;
+      value * p;
+      if (nvars > 0) *--sp = accu;
+      Alloc_small(accu, nfuncs * 2 - 1 + nvars, Closure_tag, id);
+      p = &Field(accu, nfuncs * 2 - 1);
+      for (i = 0; i < nvars; i++) {
+        *p++ = sp[i];
+      }
+      sp += nvars;
+      p = &Field(accu, 0);
+      *p = (value) (pc + pc[0]);
+      *--sp = accu;
+      p++;
+      for (i = 1; i < nfuncs; i++) {
+	   /* CAGO: patch Make_header */
+	   *p = Make_header(i * 2, Infix_tag, Caml_white, id);  /* color irrelevant. */
+        p++;
+        *p = (value) (pc + pc[i]);
+        *--sp = (value) p;
+        p++;
+      }
+      pc += nfuncs;
+      Next;
+    }
+
+    Instruct(GRAB_WITH_LOC): {
+      mlsize_t id = *pc++;
+      int required = *pc++;
+      if (extra_args >= required) {
+        extra_args -= required;
+      } else {
+        mlsize_t num_args, i;
+        num_args = 1 + extra_args; /* arg1 + extra args */
+        Alloc_small(accu, num_args + 2, Closure_tag, id);
+        Field(accu, 1) = env;
+        for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
+        Code_val(accu) = pc - 4; /* Point to the preceding RESTART instr. */
+        sp += num_args;
+        pc = (code_t)(sp[0]);
+        env = sp[1];
+        extra_args = Long_val(sp[2]);
+        sp += 3;
+      }      
       Next;
     }
 
@@ -700,7 +846,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu = Field(accu, *pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
       double d = Double_field(accu, *pc);
-      Alloc_small(accu, Double_wosize, Double_tag);
+      Alloc_small(accu, Double_wosize, Double_tag, PROF_DUMMY);
       Store_double_val(accu, d);
       pc++;
       Next;

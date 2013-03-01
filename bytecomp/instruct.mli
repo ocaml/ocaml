@@ -80,18 +80,18 @@ type instruction =
   | Kappterm of int * int               (* number of arguments, slot size *)
   | Kreturn of int                      (* slot size *)
   | Krestart
-  | Kgrab of int                        (* number of arguments *)
-  | Kclosure of label * int
-  | Kclosurerec of label list * int
+  | Kgrab of int * Location.t           (* number of arguments *) (* CAGO: add location*)
+  | Kclosure of label * int * Location.t (* CAGO: add location *)
+  | Kclosurerec of label list * int * Location.t (* CAGO: add location *)
   | Koffsetclosure of int
   | Kgetglobal of Ident.t
   | Ksetglobal of Ident.t
   | Kconst of structured_constant
-  | Kmakeblock of int * int             (* size, tag *)
-  | Kmakefloatblock of int
+  | Kmakeblock of int * int * Location.t      (* size, tag, loc, id *) (* CAGO: add location*)
+  | Kmakefloatblock of int * Location.t       (* CAGO: add location *)
   | Kgetfield of int
   | Ksetfield of int
-  | Kgetfloatfield of int
+  | Kgetfloatfield of int * Location.t  (* CAGO: add location *)
   | Ksetfloatfield of int
   | Kvectlength
   | Kgetvectitem

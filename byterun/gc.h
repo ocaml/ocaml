@@ -19,6 +19,10 @@
 
 #include "mlvalues.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+
 #define Caml_white (0 << 8)
 #define Caml_gray  (1 << 8)
 #define Caml_blue  (2 << 8)
@@ -39,12 +43,38 @@
 #define Bluehd_hd(hd)  (((hd)  & ~Caml_black)  | Caml_blue)
 
 /* This depends on the layout of the header.  See [mlvalues.h]. */
-#define Make_header(wosize, tag, color)                                       \
+/* CAGO: patch Make_header */
+/* 
+   Special header for profiling heap (64bits only):
+   DEFAULT HEADER:
+     +-------------------+--------+----------+
+     |      WOSIZE       | COLOR  |    TAG   |
+     +-------------------+--------+----------+
+bits 63                10 9      8 7         0
+
+   CUSTOM HEADER:
+     +-----------------+-----------------+--------+----------+
+     | PROFILING INFO  |     WOSIZE      | COLOR  |    TAG   |
+     +-----------------+-----------------+--------+----------+
+bits 63              43 42             10 9      8 7         0
+     +-----------------+-----------------+--------+----------+
+     +	   21bits      +      33bits     +  2bits +  10bits  +
+*/
+#ifdef ARCH_SIXTYFOUR
+#define Make_header(wosize, tag, color, prof)	                              \
+     (((header_t) (((profiling_t) (prof) << 43)		                      \
+		 + ((header_t) (wosize) << 10)	                              \
+		 + (color)					 	      \
+		 + (tag_t) (tag)))                                            \
+     )                                      
+#else
+#define Make_header(wosize, tag, color, _)    				      \
       (/*Assert ((wosize) <= Max_wosize),*/                                   \
        ((header_t) (((header_t) (wosize) << 10)                               \
                     + (color)                                                 \
                     + (tag_t) (tag)))                                         \
       )
+#endif
 
 #define Is_white_val(val) (Color_val(val) == Caml_white)
 #define Is_gray_val(val) (Color_val(val) == Caml_gray)

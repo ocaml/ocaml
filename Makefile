@@ -17,9 +17,9 @@
 include config/Makefile
 include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
+CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot -g
 CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS= -strict-sequence -warn-error A $(INCLUDES)
+COMPFLAGS=-bin-annot -strict-sequence -warn-error A $(INCLUDES)
 LINKFLAGS=
 
 CAMLYACC=boot/ocamlyacc
@@ -340,7 +340,7 @@ partialclean::
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -o ocamlc \
            compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlc|' \
+	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlc -bin-annot|' \
 	  driver/ocamlcomp.sh.in > ocamlcomp.sh
 	@chmod +x ocamlcomp.sh
 

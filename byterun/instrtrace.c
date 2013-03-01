@@ -58,10 +58,16 @@ void caml_disasm_instr(pc)
     printf(" %d\n", pc[0]); break;
     /* Instructions with two operands */
   case APPTERM: case CLOSURE: case CLOSUREREC: case PUSHGETGLOBALFIELD:
-  case GETGLOBALFIELD: case MAKEBLOCK:
+  case GETGLOBALFIELD: case MAKEBLOCK: 
+  case MAKEBLOCK1_WITH_LOC: case MAKEBLOCK2_WITH_LOC: case MAKEBLOCK3_WITH_LOC:
   case BEQ: case BNEQ: case BLTINT: case BLEINT: case BGTINT: case BGEINT:
   case BULTINT: case BUGEINT:
     printf(" %d, %d\n", pc[0], pc[1]); break;
+
+    /* Instructions with three operands */
+  case MAKEBLOCK_WITH_LOC:
+    printf(" %d, %d, %d\n", pc[0], pc[1], pc[2]); break;
+
     /* Instructions with a C primitive as operand */
   case C_CALLN:
     printf(" %d,", pc[0]); pc++;
@@ -135,6 +141,9 @@ char * caml_instr_string (code_t pc)
   case CLOSUREREC:
   case PUSHGETGLOBALFIELD:
   case GETGLOBALFIELD:
+  case MAKEBLOCK1_WITH_LOC:
+  case MAKEBLOCK2_WITH_LOC:
+  case MAKEBLOCK3_WITH_LOC:
   case MAKEBLOCK:
   case BEQ:
   case BNEQ:
@@ -145,6 +154,9 @@ char * caml_instr_string (code_t pc)
   case BULTINT:
   case BUGEINT:
     sprintf(buf, "%s %d, %d", nam, pc[0], pc[1]);
+    break;
+  case MAKEBLOCK_WITH_LOC:
+    sprintf(buf, "%s %d, %d, %d", nam, pc[0], pc[1], pc[2]);
     break;
   case SWITCH:
     sprintf(buf, "SWITCH sz%#lx=%ld::ntag%ld nint%ld",

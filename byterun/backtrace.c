@@ -150,7 +150,7 @@ static value read_debug_info(void)
   }
   chan = caml_open_descriptor_in(fd);
   num_events = caml_getword(chan);
-  events = caml_alloc(num_events, 0);
+  events = caml_alloc_loc(num_events, 0, PROF_BACKTRACE);
   for (i = 0; i < num_events; i++) {
     orig = caml_getword(chan);
     evl = caml_input_val(chan);
@@ -287,24 +287,24 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   if (events == Val_false) {
     res = Val_int(0);           /* None */
   } else {
-    arr = caml_alloc(caml_backtrace_pos, 0);
+    arr = caml_alloc_loc(caml_backtrace_pos, 0, PROF_BACKTRACE);
     for (i = 0; i < caml_backtrace_pos; i++) {
       extract_location_info(events, caml_backtrace_buffer[i], &li);
       if (li.loc_valid) {
-        fname = caml_copy_string(li.loc_filename);
-        p = caml_alloc_small(5, 0);
+        fname = caml_copy_string_loc(li.loc_filename, PROF_BACKTRACE);
+        p = caml_alloc_small_loc(5, 0, PROF_BACKTRACE);
         Field(p, 0) = Val_bool(li.loc_is_raise);
         Field(p, 1) = fname;
         Field(p, 2) = Val_int(li.loc_lnum);
         Field(p, 3) = Val_int(li.loc_startchr);
         Field(p, 4) = Val_int(li.loc_endchr);
       } else {
-        p = caml_alloc_small(1, 1);
+        p = caml_alloc_small_loc(1, 1, PROF_BACKTRACE);
         Field(p, 0) = Val_bool(li.loc_is_raise);
       }
       caml_modify(&Field(arr, i), p);
     }
-    res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
+    res = caml_alloc_small_loc(1, 0, PROF_BACKTRACE); Field(res, 0) = arr; /* Some */
   }
   CAMLreturn(res);
 }

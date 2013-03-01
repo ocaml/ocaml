@@ -185,12 +185,15 @@ let primitive ppf = function
   | Pbigarrayset(unsafe, n, kind, layout) ->
       print_bigarray "set" unsafe kind ppf layout
 
-let rec lam ppf = function
+let rec lam ppf l =
+  lam_desc ppf l.l_desc
+
+and lam_desc ppf = function
   | Lvar id ->
       Ident.print ppf id
   | Lconst cst ->
       struct_const ppf cst
-  | Lapply(lfun, largs, _) ->
+  | Lapply(lfun, largs) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
@@ -213,11 +216,11 @@ let rec lam ppf = function
       let rec letbody = function
         | Llet(str, id, arg, body) ->
             fprintf ppf "@ @[<2>%a@ %a@]" Ident.print id lam arg;
-            letbody body
+            letbody body.l_desc
         | expr -> expr in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" Ident.print id lam arg;
-      let expr = letbody body in
-      fprintf ppf ")@]@ %a)@]" lam expr
+      let expr = letbody body.l_desc in
+      fprintf ppf ")@]@ %a)@]" lam_desc expr
   | Lletrec(id_arg_list, body) ->
       let bindings ppf id_arg_list =
         let spc = ref false in
@@ -287,7 +290,7 @@ let rec lam ppf = function
        lam hi lam body
   | Lassign(id, expr) ->
       fprintf ppf "@[<2>(assign@ %a@ %a)@]" Ident.print id lam expr
-  | Lsend (k, met, obj, largs, _) ->
+  | Lsend (k, met, obj, largs) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let kind =
@@ -309,11 +312,11 @@ let rec lam ppf = function
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
 
-and sequence ppf = function
+and sequence ppf l = match l.l_desc with
   | Lsequence(l1, l2) ->
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | l ->
-      lam ppf l
+      lam_desc ppf l
 
 let structured_constant = struct_const
 

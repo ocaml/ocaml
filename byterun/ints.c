@@ -189,7 +189,7 @@ CAMLprim value caml_format_int(value fmt, value arg)
     sprintf(buffer, format_string, Long_val(arg));
     break;
   }
-  res = caml_copy_string(buffer);
+  res = caml_copy_string_loc(buffer, PROF_CAML_FORMAT_INT);
   if (buffer != default_format_buffer) caml_stat_free(buffer);
   return res;
 }
@@ -233,7 +233,7 @@ CAMLexport struct custom_operations caml_int32_ops = {
 
 CAMLexport value caml_copy_int32(int32 i)
 {
-  value res = caml_alloc_custom(&caml_int32_ops, 4, 0, 1);
+  value res = caml_alloc_custom_loc(&caml_int32_ops, 4, 0, 1, PROF_INT32);
   Int32_val(res) = i;
   return res;
 }
@@ -329,7 +329,7 @@ CAMLprim value caml_int32_format(value fmt, value arg)
   buffer = parse_format(fmt, ARCH_INT32_PRINTF_FORMAT,
                         format_string, default_format_buffer, &conv);
   sprintf(buffer, format_string, Int32_val(arg));
-  res = caml_copy_string(buffer);
+  res = caml_copy_string_loc(buffer, PROF_CAML_FORMAT_INT32);
   if (buffer != default_format_buffer) caml_stat_free(buffer);
   return res;
 }
@@ -421,7 +421,7 @@ CAMLexport struct custom_operations caml_int64_ops = {
 
 CAMLexport value caml_copy_int64(int64 i)
 {
-  value res = caml_alloc_custom(&caml_int64_ops, 8, 0, 1);
+  value res = caml_alloc_custom_loc(&caml_int64_ops, 8, 0, 1, PROF_INT64);
 #ifndef ARCH_ALIGN_INT64
   Int64_val(res) = i;
 #else
@@ -540,7 +540,7 @@ CAMLprim value caml_int64_format(value fmt, value arg)
   buffer = parse_format(fmt, ARCH_INT64_PRINTF_FORMAT,
                         format_string, default_format_buffer, &conv);
   I64_format(buffer, format_string, Int64_val(arg));
-  res = caml_copy_string(buffer);
+  res = caml_copy_string_loc(buffer, PROF_CAML_FORMAT_INT64);
   if (buffer != default_format_buffer) caml_stat_free(buffer);
   return res;
 }
@@ -673,7 +673,7 @@ CAMLexport struct custom_operations caml_nativeint_ops = {
 
 CAMLexport value caml_copy_nativeint(intnat i)
 {
-  value res = caml_alloc_custom(&caml_nativeint_ops, sizeof(intnat), 0, 1);
+  value res = caml_alloc_custom_loc(&caml_nativeint_ops, sizeof(intnat), 0, 1, PROF_INT_NATIVE);
   Nativeint_val(res) = i;
   return res;
 }
@@ -777,7 +777,7 @@ CAMLprim value caml_nativeint_format(value fmt, value arg)
   buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
                         format_string, default_format_buffer, &conv);
   sprintf(buffer, format_string, Nativeint_val(arg));
-  res = caml_copy_string(buffer);
+  res = caml_copy_string_loc(buffer, PROF_CAML_FORMAT_NATIVEINT);
   if (buffer != default_format_buffer) caml_stat_free(buffer);
   return res;
 }

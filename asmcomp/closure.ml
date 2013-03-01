@@ -33,7 +33,7 @@ let rec split_list n l =
 let rec build_closure_env env_param pos = function
     [] -> Tbl.empty
   | id :: rem ->
-      Tbl.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none))
+      Tbl.add id (Uprim(Pfield pos, [Uvar env_param]))
               (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
@@ -43,7 +43,7 @@ let rec build_closure_env env_param pos = function
 
 let getglobal id =
   Uprim(Pgetglobal (Ident.create_persistent (Compilenv.symbol_for_global id)),
-        [], Debuginfo.none)
+        [])
 
 (* Check if a variable occurs in a [clambda] term. *)
 

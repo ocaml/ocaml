@@ -114,6 +114,7 @@ void caml_oldify_one (value v, value *p)
   header_t hd;
   mlsize_t sz, i;
   tag_t tag;
+  profiling_t id;
 
  tail_call:
   if (Is_block (v) && Is_young (v)){
@@ -123,11 +124,12 @@ void caml_oldify_one (value v, value *p)
       *p = Field (v, 0);  /*  then forward pointer is first field. */
     }else{
       tag = Tag_hd (hd);
+      id = Prof_hd(hd);
       if (tag < Infix_tag){
         value field0;
 
-        sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        sz = Wosize_hd (hd);	
+        result = caml_alloc_shr_loc (sz, tag, id);
         *p = result;
         field0 = Field (v, 0);
         Hd_val (v) = 0;            /* Set forward flag */
@@ -144,7 +146,7 @@ void caml_oldify_one (value v, value *p)
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        result = caml_alloc_shr_loc (sz, tag, id);
         for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
         Hd_val (v) = 0;            /* Set forward flag */
         Field (v, 0) = result;     /*  and forward pointer. */
@@ -173,7 +175,7 @@ void caml_oldify_one (value v, value *p)
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
-          result = caml_alloc_shr (1, Forward_tag);
+          result = caml_alloc_shr_loc (1, Forward_tag, id);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Field (v, 0) = result;      /*  and forward pointer. */

@@ -320,7 +320,8 @@ static char *expand_heap (mlsize_t request)
   prev = hp = mem;
   /* FIXME find a way to do this with a call to caml_make_free_blocks */
   while (Wosize_bhsize (remain) > Max_wosize){
-    Hd_hp (hp) = Make_header (Max_wosize, 0, Caml_blue);
+       /* CAGO: patch Make_header */
+      Hd_hp (hp) = Make_header(Max_wosize, 0, Caml_blue, Prof_hp (hp));
 #ifdef DEBUG
     caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
 #endif
@@ -330,7 +331,8 @@ static char *expand_heap (mlsize_t request)
     prev = hp;
   }
   if (remain > 1){
-    Hd_hp (hp) = Make_header (Wosize_bhsize (remain), 0, Caml_blue);
+       /* CAGO: patch Make_header */
+       Hd_hp (hp) = Make_header(Wosize_bhsize (remain), 0, Caml_blue, Prof_hp (hp));
 #ifdef DEBUG
     caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
 #endif
@@ -338,7 +340,8 @@ static char *expand_heap (mlsize_t request)
     Field (Op_hp (hp), 0) = (value) NULL;
   }else{
     Field (Op_hp (prev), 0) = (value) NULL;
-    if (remain == 1) Hd_hp (hp) = Make_header (0, 0, Caml_white);
+    /* CAGO: patch Make_header */
+    if (remain == 1) Hd_hp (hp) = Make_header(0, 0, Caml_white, Prof_hp (hp));
   }
   Assert (Wosize_hp (mem) >= request);
   if (caml_add_to_heap (mem) != 0){
@@ -426,14 +429,66 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   /* Inline expansion of caml_allocation_color. */
   if (caml_gc_phase == Phase_mark
       || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
-    Hd_hp (hp) = Make_header (wosize, tag, Caml_black);
+       /* CAGO: patch Make_header */
+      Hd_hp (hp) = Make_header(wosize, tag, Caml_black, Prof_hp (hp));
   }else{
     Assert (caml_gc_phase == Phase_idle
             || (caml_gc_phase == Phase_sweep
                 && (addr)hp < (addr)caml_gc_sweep_hp));
-    Hd_hp (hp) = Make_header (wosize, tag, Caml_white);
+    /* CAGO: patch Make_header */
+    Hd_hp (hp) = Make_header(wosize, tag, Caml_white, Prof_hp (hp));
   }
-  Assert (Hd_hp (hp) == Make_header (wosize, tag, caml_allocation_color (hp)));
+  /* CAGO: patch Make_header */
+  Assert (Hd_hp (hp) == Make_header(wosize, tag, caml_allocation_color (hp), Prof_hp (hp)));
+  caml_allocated_words += Whsize_wosize (wosize);
+  if (caml_allocated_words > Wsize_bsize (caml_minor_heap_size)){
+    caml_urge_major_slice ();
+  }
+#ifdef DEBUG
+  {
+    uintnat i;
+    for (i = 0; i < wosize; i++){
+      Field (Val_hp (hp), i) = Debug_uninit_major;
+    }
+  }
+#endif
+  return Val_hp (hp);
+}
+
+CAMLexport value caml_alloc_shr_loc (mlsize_t wosize, tag_t tag, profiling_t id)
+{
+  char *hp, *new_block;
+
+  if (wosize > Max_wosize) caml_raise_out_of_memory ();
+  hp = caml_fl_allocate_loc (wosize, id);
+  if (hp == NULL){
+    new_block = expand_heap (wosize);
+    if (new_block == NULL) {
+      if (caml_in_minor_collection)
+        caml_fatal_error ("Fatal error: out of memory.\n");
+      else
+        caml_raise_out_of_memory ();
+    }
+    caml_fl_add_blocks (new_block);
+    hp = caml_fl_allocate_loc (wosize, id);
+  }
+
+  Assert (Is_in_heap (Val_hp (hp)));
+
+  /* Inline expansion of caml_allocation_color. */
+  if (caml_gc_phase == Phase_mark
+      || (caml_gc_phase == Phase_sweep && (addr)hp >= (addr)caml_gc_sweep_hp)){
+       /* CAGO: patch Make_header */
+       Hd_hp (hp) = Make_header(wosize, tag, Caml_black, id);
+  }else{
+    Assert (caml_gc_phase == Phase_idle
+            || (caml_gc_phase == Phase_sweep
+                && (addr)hp < (addr)caml_gc_sweep_hp));
+    /* CAGO: patch Make_header */
+    Hd_hp (hp) = Make_header(wosize, tag, Caml_white, id);
+  }
+  /* CAGO: patch Make_header */
+  Assert (Hd_hp (hp) == Make_header(wosize, tag, caml_allocation_color (hp), id));
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > Wsize_bsize (caml_minor_heap_size)){
     caml_urge_major_slice ();

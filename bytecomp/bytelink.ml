@@ -20,6 +20,13 @@ open Config
 open Instruct
 open Cmo_format
 
+(* CAGO: big hashtbl which will contain all id->loc mapping *)
+let locs : (int, Location.t) Hashtbl.t = Hashtbl.create 43
+let dump filename =
+  let file = open_out (Printf.sprintf "%s.prof" (String.lowercase filename)) in
+  Marshal.to_channel file locs [];
+  close_out file
+
 type error =
     File_not_found of string
   | Not_an_object_file of string
@@ -124,6 +131,8 @@ let scan_file obj_name tolink =
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
+      (* CAGO: concatenate all locations in one hashtable *)
+      Hashtbl.iter (fun id loc -> Hashtbl.replace locs id loc) compunit.cu_profiling;
       close_in ic;
       List.iter add_required compunit.cu_reloc;
       Link_object(file_name, compunit) :: tolink
@@ -145,6 +154,8 @@ let scan_file obj_name tolink =
             then begin
               List.iter remove_required compunit.cu_reloc;
               List.iter add_required compunit.cu_reloc;
+              Hashtbl.iter (fun id loc -> Hashtbl.replace locs id loc) compunit.cu_profiling;
+              close_in ic;
               compunit :: reqd
             end else
               reqd)
@@ -506,6 +517,8 @@ let link ppf objfiles output_name =
     else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
     else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
+  (* CAGO: dump the file which contain id->loc mapping *)
+  dump output_name;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
   Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)

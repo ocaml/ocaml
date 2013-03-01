@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 
-CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
+/* CAMLextern value caml_alloc_shr (mlsize_t, tag_t); */
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
@@ -49,6 +49,9 @@ char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 void caml_free_for_heap (char *mem);
 int caml_add_to_heap (char *mem);
 color_t caml_allocation_color (void *hp);
+
+/* CAGO: add extra arg for unique identifier in header */
+CAMLextern value caml_alloc_shr_loc (mlsize_t, tag_t, profiling_t);
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
@@ -103,7 +106,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
+#define Alloc_small(result, wosize, tag, prof) do{    CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Bhsize_wosize (wosize);                                 \
@@ -114,7 +117,8 @@ int caml_page_table_initialize(mlsize_t bytesize);
     Restore_after_gc;                                                       \
     caml_young_ptr -= Bhsize_wosize (wosize);                               \
   }                                                                         \
-  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);       \
+  /* CAGO: patch Make_header */                                             \
+  Hd_hp (caml_young_ptr) = Make_header((wosize), (tag), Caml_black, prof); \
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)

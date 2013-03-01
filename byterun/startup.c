@@ -54,6 +54,8 @@
 #include "sys.h"
 #include "startup.h"
 #include "version.h"
+#include "gc.h"
+#include <signal.h>
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -72,7 +74,8 @@ CAMLexport header_t caml_atom_table[256];
 static void init_atoms(void)
 {
   int i;
-  for(i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
+  /* CAGO: patch Make_header */
+  for(i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white, PROF_ATOM);
   if (caml_page_table_add(In_static_data,
                           caml_atom_table, caml_atom_table + 256) != 0) {
     caml_fatal_error("Fatal error: not enough memory for the initial page table");
@@ -299,6 +302,7 @@ static void scanmult (char *opt, uintnat *var)
   }
 }
 
+extern int heap_profiling;
 static void parse_camlrunparam(void)
 {
   char *opt = getenv ("OCAMLRUNPARAM");
@@ -319,6 +323,7 @@ static void parse_camlrunparam(void)
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
+      case 'm': heap_profiling = 1; break;
       }
     }
   }
@@ -329,6 +334,17 @@ extern void caml_init_ieee_floats (void);
 #ifdef _WIN32
 extern void caml_signal_thread(void * lpParam);
 #endif
+
+/* Signal handler to dump heap image */
+void handle_signal(int signal) {
+  switch (signal) {
+  case SIGHUP:
+    really_dump_heap();
+    break;
+  default:
+    return;
+  }
+}
 
 /* Main entry point when loading code from a file */
 
@@ -343,6 +359,14 @@ CAMLexport void caml_main(char **argv)
 #ifdef __linux__
   static char proc_self_exe[256];
 #endif
+   struct sigaction sa;
+   sa.sa_handler = &handle_signal;
+   sa.sa_flags = SA_RESTART;
+   signal(SIGHUP, handle_signal);
+   sigfillset(&sa.sa_mask);
+   if (sigaction(SIGHUP, &sa, NULL) == -1) {
+     perror("Error: cannot handle SIGHUP");
+   }
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
