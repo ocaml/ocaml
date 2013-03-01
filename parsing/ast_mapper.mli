@@ -37,14 +37,16 @@ class mapper:
     method module_type: module_type -> module_type
     method pat: pattern -> pattern
     method signature: signature -> signature
-    method signature_item: signature_item -> signature_item list
+    method signature_item: signature_item -> signature_item
     method structure: structure -> structure
-    method structure_item: structure_item -> structure_item list
+    method structure_item: structure_item -> structure_item
     method typ: core_type -> core_type
     method type_declaration: type_declaration -> type_declaration
     method type_kind: type_kind -> type_kind
     method value_description: value_description -> value_description
     method with_constraint: with_constraint -> with_constraint
+    method attribute: attribute -> attribute
+    method extension: extension -> extension
   end
 
 class type main_entry_points =

@@ -16,7 +16,7 @@ open Asttypes
 
 (* Extension points *)
 
-type 'a attribute = string * expression * 'a
+type attribute = string * expression
 
 and extension = string * expression
 
@@ -38,7 +38,7 @@ and core_type_desc =
   | Ptyp_variant of row_field list * bool * label list option
   | Ptyp_poly of string list * core_type
   | Ptyp_package of package_type
-  | Ptyp_attribute of core_type attribute
+  | Ptyp_attribute of (core_type * attribute)
   | Ptyp_extension of extension
 
 
@@ -127,7 +127,7 @@ and expression_desc =
   | Pexp_newtype of string * expression
   | Pexp_pack of module_expr
   | Pexp_open of Longident.t loc * expression
-  | Pexp_attribute of expression attribute
+  | Pexp_attribute of (expression * attribute)
   | Pexp_extension of extension
 
 (* Value descriptions *)
@@ -147,6 +147,7 @@ and type_declaration =
     ptype_private: private_flag;
     ptype_manifest: core_type option;
     ptype_variance: (bool * bool) list;
+    ptype_attributes: attribute list;
     ptype_loc: Location.t }
 
 and type_kind =
@@ -301,7 +302,7 @@ and structure_item_desc =
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr
-  | Pstr_attribute of structure_item attribute
+  | Pstr_attribute of structure_item * attribute
   | Pstr_extension of extension
 
 (* Toplevel phrases *)

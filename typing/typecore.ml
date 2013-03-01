@@ -140,7 +140,7 @@ let iter_expression f e =
     | Pexp_assert e
     | Pexp_setinstvar (_, e)
     | Pexp_send (e, _)
-    | Pexp_attribute (_, _, e) (* we don't iterate on the attribute argument *)
+    | Pexp_attribute (e, _) (* we don't iterate on the attribute argument *)
     | Pexp_constraint (e, _, _)
     | Pexp_field (e, _) -> expr e
     | Pexp_when (e1, e2)
@@ -179,7 +179,7 @@ let iter_expression f e =
     | Pstr_module (_, me) -> module_expr me
     | Pstr_recmodule l -> List.iter (fun (_, _, me) -> module_expr me) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
-    | Pstr_attribute (_, _, e) -> structure_item e
+    | Pstr_attribute (i, _) -> structure_item i
 
 
   and class_expr ce =
@@ -2686,7 +2686,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       { exp with
         exp_extra = (Texp_open (path, lid, newenv), loc) :: exp.exp_extra;
       }
-  | Pexp_attribute (_s, _arg, body) ->
+  | Pexp_attribute (body, (_s, _arg)) ->
       let exp = type_expect env body ty_expected in
       (*
       { exp with

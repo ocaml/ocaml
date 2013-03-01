@@ -1119,7 +1119,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          sg @ sig_rem,
          final_env)
-    | Pstr_attribute (_, _, st) ->
+    | Pstr_attribute (st, _) ->
         type_struct env srem (* keep attribute in the typedtree? *)
     | Pstr_extension (s, _arg) ->
         raise (Error (loc, env, Extension s))

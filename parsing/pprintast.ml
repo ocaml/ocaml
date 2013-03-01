@@ -299,8 +299,8 @@ class printer  ()= object(self:'self)
         |_ ->  
             pp f "@[<hov2>(module@ %a@ with@ %a)@]" self#longident_loc lid
               (self#list aux  ~sep:"@ and@ ")  cstrs)
-    | Ptyp_attribute (s, arg, body) ->
-      pp f "@[<2>(@@%s@ %a)@ %a@]" s self#expression arg self#core_type body
+    | Ptyp_attribute (body, (s, arg)) ->
+      pp f "@[<2>%a@ (:%s@ %a)@]" self#core_type body s self#expression arg
     | Ptyp_extension (s, arg) ->
       pp f "@[<2>(&%s@ %a)@]" s self#expression arg
     | _ -> self#paren true self#core_type f x
@@ -621,8 +621,8 @@ class printer  ()= object(self:'self)
           self#expression  e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
-    | Pexp_attribute (s, arg, body) ->
-      pp f "@[<2>(@@%s@ %a)@ %a@]" s self#expression arg self#expression body
+    | Pexp_attribute (body, (s, arg)) ->
+      pp f "@[<2>%a@ (:%s@ %a)@]" self#expression body s self#expression arg
     | Pexp_extension (s, arg) ->
       pp f "@[<2>(&%s@ %a)@]" s self#expression arg
     | _ -> self#expression1 f x
@@ -1091,8 +1091,8 @@ class printer  ()= object(self:'self)
               (fun f l2 -> List.iter (text_x_modtype_x_module f) l2) l2 
         | _ -> assert false
         end
-    | Pstr_attribute (s, arg, body) ->
-      pp f "@[<2>%a@ ::%s@ %a@]" self#structure_item body s self#expression arg
+    | Pstr_attribute (body, (s, arg)) ->
+      pp f "@[<2>%a@ (:%s@ %a)@]" self#structure_item body s self#expression arg
     | Pstr_extension (s, arg) ->
       pp f "@[<2>&(%s@ %a)@]" s self#expression arg
 
@@ -1157,6 +1157,7 @@ class printer  ()= object(self:'self)
          (fun f (ct1,ct2,_) ->
            pp f "@[<hov2>constraint@ %a@ =@ %a@]"
              self#core_type ct1 self#core_type ct2 ))  x.ptype_cstrs  ;
+      (* TODO: attributes *)
   end
   method case_list f (l:(pattern * expression) list) :unit=
     let aux f (p,e) =

@@ -19,7 +19,6 @@ open Asttypes
 
 (* First, some helpers to build AST fragments *)
 
-let map_flatten f l = List.flatten (List.map f l)
 let map_snd f (x, y) = (x, f y)
 let map_tuple f1 f2 (x, y) = (f1 x, f2 y)
 let map_opt f = function None -> None | Some x -> Some (f x)
@@ -41,8 +40,8 @@ module T = struct
   let variant ?loc a b c = mk ?loc (Ptyp_variant (a, b, c))
   let poly ?loc a b = mk ?loc (Ptyp_poly (a, b))
   let package ?loc a b = mk ?loc (Ptyp_package (a, b))
-  let attribute ?loc a b c = mk ?loc (Ptyp_attribute (a, b, c))
-  let extension ?loc a b = mk ?loc (Ptyp_extension (a, b))
+  let attribute ?loc a b = mk ?loc (Ptyp_attribute (a, b))
+  let extension ?loc a = mk ?loc (Ptyp_extension a)
 
   let field_type ?(loc = Location.none) x = {pfield_desc = x; pfield_loc = loc}
   let field ?loc s t =
@@ -80,8 +79,8 @@ module T = struct
     | Ptyp_variant (rl, b, ll) -> variant ~loc (List.map (row_field sub) rl) b ll
     | Ptyp_poly (sl, t) -> poly ~loc sl (sub # typ t)
     | Ptyp_package (lid, l) -> package ~loc (map_loc sub lid) (List.map (map_tuple (map_loc sub) (sub # typ)) l)
-    | Ptyp_attribute (s, arg, body) -> attribute ~loc s (sub # expr arg) (sub # typ body)
-    | Ptyp_extension (s, arg) -> extension ~loc s (sub # expr arg)
+    | Ptyp_attribute (body, x) -> attribute ~loc (sub # typ body) (sub # attribute x)
+    | Ptyp_extension x -> extension ~loc (sub # extension x)
 
   let map_type_declaration sub td =
     {td with
@@ -92,6 +91,7 @@ module T = struct
      ptype_kind = sub # type_kind td.ptype_kind;
      ptype_manifest = map_opt (sub # typ) td.ptype_manifest;
      ptype_loc = sub # location td.ptype_loc;
+     ptype_attributes = List.map (sub # attribute) td.ptype_attributes;
     }
 
   let map_type_kind sub = function
@@ -235,10 +235,10 @@ module M = struct
   let class_ ?loc a = mk_item ?loc (Pstr_class a)
   let class_type ?loc a = mk_item ?loc (Pstr_class_type a)
   let include_ ?loc a = mk_item ?loc (Pstr_include a)
-  let attribute ?loc a b c = mk_item ?loc (Pstr_attribute (a, b, c))
-  let extension ?loc a b = mk_item ?loc (Pstr_extension (a, b))
+  let attribute ?loc a b = mk_item ?loc (Pstr_attribute (a, b))
+  let extension ?loc a = mk_item ?loc (Pstr_extension a)
 
-  let rec map_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
+  let map_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
     let loc = sub # location loc in
     match desc with
     | Pstr_eval x -> eval ~loc (sub # expr x)
@@ -254,8 +254,8 @@ module M = struct
     | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
     | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
     | Pstr_include e -> include_ ~loc (sub # module_expr e)
-    | Pstr_attribute (s, arg, body) -> attribute ~loc s (sub # expr arg) (map_structure_item sub body) (* not very nice, because sub # structure_item can return a list  -- to be cleaned up *)
-    | Pstr_extension (s, arg) -> extension ~loc s (sub # expr arg)
+    | Pstr_attribute (body, x) -> attribute ~loc (sub # structure_item body) (sub # attribute x)
+    | Pstr_extension x -> extension ~loc (sub # extension x)
 end
 
 module E = struct
@@ -296,8 +296,8 @@ module E = struct
   let newtype ?loc a b = mk ?loc (Pexp_newtype (a, b))
   let pack ?loc a = mk ?loc (Pexp_pack a)
   let open_ ?loc a b = mk ?loc (Pexp_open (a, b))
-  let attribute ?loc a b c = mk ?loc (Pexp_attribute (a, b, c))
-  let extension ?loc a b = mk ?loc (Pexp_extension (a, b))
+  let attribute ?loc a b = mk ?loc (Pexp_attribute (a, b))
+  let extension ?loc a = mk ?loc (Pexp_extension a)
 
   let lid ?(loc = Location.none) lid = ident ~loc (mkloc (Longident.parse lid) loc)
   let apply_nolabs ?loc f el = apply ?loc f (List.map (fun e -> ("", e)) el)
@@ -339,8 +339,8 @@ module E = struct
     | Pexp_newtype (s, e) -> newtype ~loc s (sub # expr e)
     | Pexp_pack me -> pack ~loc (sub # module_expr me)
     | Pexp_open (lid, e) -> open_ ~loc (map_loc sub lid) (sub # expr e)
-    | Pexp_attribute (s, arg, body) -> attribute ~loc s (sub # expr arg) (sub # expr body)
-    | Pexp_extension (s, arg) -> extension ~loc s (sub # expr arg)
+    | Pexp_attribute (body, x) -> attribute ~loc (sub # expr body) (sub # attribute x)
+    | Pexp_extension x -> extension ~loc (sub # extension x)
 end
 
 module P = struct
@@ -461,12 +461,12 @@ class mapper =
   object(this)
     method implementation (input_name : string) ast = (input_name, this # structure ast)
     method interface (input_name: string) ast = (input_name, this # signature ast)
-    method structure l = map_flatten (this # structure_item) l
-    method structure_item si = [ M.map_structure_item this si ]
+    method structure l = List.map (this # structure_item) l
+    method structure_item si = M.map_structure_item this si
     method module_expr = M.map this
 
-    method signature l = map_flatten (this # signature_item) l
-    method signature_item si = [ MT.map_signature_item this si ]
+    method signature l = List.map (this # signature_item) l
+    method signature_item si = MT.map_signature_item this si
     method module_type = MT.map this
     method with_constraint c = MT.map_with_constraint this c
 
@@ -498,6 +498,9 @@ class mapper =
     method exception_declaration tl = List.map (this # typ) tl
 
     method location l = l
+
+    method extension (s, e) = (s, this # expr e)
+    method attribute (s, e) = (s, this # expr e)
   end
 
 class type main_entry_points =

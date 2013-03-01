@@ -273,8 +273,8 @@ let varify_constructors var_names t =
           Ptyp_poly(string_lst, loop core_type)
       | Ptyp_package(longident,lst) ->
           Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
-      | Ptyp_attribute (s, arg, t) ->
-          Ptyp_attribute (s, arg, loop t)
+      | Ptyp_attribute (t, x) ->
+          Ptyp_attribute (loop t, x)
       | Ptyp_extension (s, arg) ->
           Ptyp_extension (s, arg)
     in
@@ -612,7 +612,7 @@ structure_item:
   | DOTDOT extension
       { mkstr (Pstr_extension $2) }
   | structure_item DOTDOT attribute
-      { mkstr(Pstr_attribute (fst $3, snd $3, $1)) }
+      { mkstr(Pstr_attribute ($1, $3)) }
 ;
 module_binding:
     EQUAL module_expr
@@ -1073,7 +1073,7 @@ expr:
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
   | simple_expr attribute
-      { mkexp (Pexp_attribute(fst $2, snd $2, $1)) }
+      { mkexp (Pexp_attribute($1, $2)) }
 ;
 opt_expr:
     expr { $1 }
@@ -1384,7 +1384,7 @@ type_declarations:
 ;
 
 type_declaration:
-    optional_type_parameters LIDENT type_kind constraints
+    optional_type_parameters LIDENT type_kind constraints type_declaration_attribute
       { let (params, variance) = List.split $1 in
         let (kind, private_flag, manifest) = $3 in
         (mkrhs $2 2, {ptype_params = params;
@@ -1393,7 +1393,13 @@ type_declaration:
               ptype_private = private_flag;
               ptype_manifest = manifest;
               ptype_variance = variance;
-              ptype_loc = symbol_rloc() }) }
+              ptype_attributes = $5;
+              ptype_loc = symbol_rloc();
+                     }) }
+;
+type_declaration_attribute:
+    WITH attributes { $2 }
+  | { [] }
 ;
 constraints:
         constraints CONSTRAINT constrain        { $3 :: $1 }
@@ -1501,6 +1507,7 @@ with_constraint:
                          ptype_manifest = Some $5;
                          ptype_private = $4;
                          ptype_variance = variance;
+                         ptype_attributes = [];
                          ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
@@ -1513,6 +1520,7 @@ with_constraint:
                               ptype_manifest = Some $5;
                               ptype_private = Public;
                               ptype_variance = variance;
+                              ptype_attributes = [];
                               ptype_loc = symbol_rloc()}) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { (mkrhs $2 2, Pwith_module (mkrhs $4 4)) }
@@ -1564,7 +1572,7 @@ simple_core_type:
   | LPAREN core_type_comma_list RPAREN %prec below_SHARP
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
   | simple_core_type attribute
-      { mktyp (Ptyp_attribute(fst $2, snd $2, $1)) }
+      { mktyp (Ptyp_attribute($1, $2)) }
 ;
 simple_core_type2:
     QUOTE ident
@@ -1615,6 +1623,10 @@ extension:
 ;
 attribute:
   | LPAREN COLON LIDENT opt_expr RPAREN      { ($3, $4) }
+;
+attributes:
+  | { [] }
+  | attribute attributes { $1 :: $2 }
 ;
 package_type:
     mty_longident { (mkrhs $1 1, []) }

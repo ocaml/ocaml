@@ -120,6 +120,7 @@ and untype_type_declaration decl =
         None -> None
       | Some ct -> Some (untype_core_type ct));
     ptype_variance = decl.typ_variance;
+    ptype_attributes = []; (* TODO *)
     ptype_loc = decl.typ_loc;
   }
 

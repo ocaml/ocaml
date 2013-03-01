@@ -14480,6 +14480,7 @@ module Struct =
                   ptype_manifest = tm;
                   ptype_loc = mkloc loc;
                   ptype_variance = variance;
+                  ptype_attributes = [];
                 }
               
             let mkprivate' m = if m then Private else Public
@@ -14633,6 +14634,7 @@ module Struct =
                       ptype_manifest = Some ct;
                       ptype_loc = mkloc loc;
                       ptype_variance = variance;
+                      ptype_attributes = [];
                     }))
               
             let rec mkwithc wc acc =

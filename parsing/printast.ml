@@ -163,7 +163,7 @@ let rec core_type i ppf x =
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
       list i package_with ppf l;
-  | Ptyp_attribute (s, arg, body) ->
+  | Ptyp_attribute (body, (s, arg)) ->
       line i ppf "Ptyp_attribute \"%s\"\n" s;
       expression i ppf arg;
       core_type i ppf body
@@ -344,7 +344,7 @@ and expression i ppf x =
   | Pexp_open (m, e) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_longident_loc m;
       expression i ppf e
-  | Pexp_attribute (s, arg, body) ->
+  | Pexp_attribute (body, (s, arg)) ->
       line i ppf "Pexp_attribute \"%s\"\n" s;
       expression i ppf arg;
       expression i ppf body
@@ -376,6 +376,13 @@ and type_declaration i ppf x =
   line i ppf "ptype_private = %a\n" fmt_private_flag x.ptype_private;
   line i ppf "ptype_manifest =\n";
   option (i+1) core_type ppf x.ptype_manifest;
+  line i ppf "ptype_attributes = \n";
+  List.iter
+    (fun (s, arg) ->
+      line (i + 1) ppf "attribute \"%s\"\n" s;
+      expression (i + 1) ppf arg;
+    )
+    x.ptype_attributes
 
 and type_kind i ppf x =
   match x with
@@ -669,7 +676,7 @@ and structure_item i ppf x =
   | Pstr_include me ->
       line i ppf "Pstr_include";
       module_expr i ppf me
-  | Pstr_attribute (s, arg, body) ->
+  | Pstr_attribute (body, (s, arg)) ->
       line i ppf "Pstr_attribute \"%s\"\n" s;
       expression i ppf arg;
       structure_item i ppf body

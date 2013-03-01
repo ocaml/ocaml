@@ -322,7 +322,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     let (params, variance) = List.split tl in
     {ptype_params = params; ptype_cstrs = cl; ptype_kind = tk;
      ptype_private = tp; ptype_manifest = tm; ptype_loc = mkloc loc;
-     ptype_variance = variance}
+     ptype_variance = variance; ptype_attributes = []}
   ;
   value mkprivate' m = if m then Private else Public;
   value mkprivate = fun
@@ -445,7 +445,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         ptype_kind = kind;
         ptype_private = priv;
         ptype_manifest = Some ct;
-        ptype_loc = mkloc loc; ptype_variance = variance});
+        ptype_loc = mkloc loc; ptype_variance = variance;
+        ptype_attributes = [];
+      });
 
   value rec mkwithc wc acc =
     match wc with
@@ -656,8 +658,8 @@ value varify_constructors var_names =
           Ptyp_poly(string_lst, loop core_type)
       | Ptyp_package longident lst ->
           Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
-      | Ptyp_attribute (s, e, t) ->
-          Ptyp_attribute (s, e, loop t)
+      | Ptyp_attribute (t, x) ->
+          Ptyp_attribute (loop t, x)
       | Ptyp_extension x ->
           Ptyp_extension x
 ]
