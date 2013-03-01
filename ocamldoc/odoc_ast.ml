@@ -1054,6 +1054,10 @@ module Analyser =
         Parsetree.Pstr_eval _ ->
           (* don't care *)
           (0, env, [])
+      | Parsetree.Pstr_attribute (_, _, x) ->
+          analyse_structure_item env current_module_name loc pos_limit comment_opt x.Parsetree.pstr_desc typedtree table table_values
+      | Parsetree.Pstr_extension _ ->
+          (0, env, [])
       | Parsetree.Pstr_value (rec_flag, pat_exp_list) ->
           (* of rec_flag * (pattern * expression) list *)
           (* For each value, look for the value name, then look in the

@@ -656,6 +656,10 @@ value varify_constructors var_names =
           Ptyp_poly(string_lst, loop core_type)
       | Ptyp_package longident lst ->
           Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
+      | Ptyp_attribute (s, e, t) ->
+          Ptyp_attribute (s, e, loop t)
+      | Ptyp_extension x ->
+          Ptyp_extension x
 ]
     in
     {(t) with ptyp_desc = desc}

@@ -609,12 +609,10 @@ structure_item:
       { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr
       { mkstr(Pstr_include $2) }
-  | structure_item COLONCOLON LIDENT expr %prec below_SEMI
-      { mkstr(Pstr_attribute ($3, $4, $1)) }
-  | structure_item COLONCOLON LIDENT %prec below_SEMI
-      { mkstr(Pstr_attribute ($3, ghunit (), $1)) }
-  | AMPERSAND LPAREN LIDENT opt_expr RPAREN
-      { mkstr (Pstr_extension($3, $4)) }
+  | DOTDOT extension
+      { mkstr (Pstr_extension $2) }
+  | structure_item DOTDOT attribute
+      { mkstr(Pstr_attribute (fst $3, snd $3, $1)) }
 ;
 module_binding:
     EQUAL module_expr
@@ -1074,11 +1072,8 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
-/*
-  | LPAREN INFIXOP1 LIDENT opt_expr RPAREN expr %prec below_SEMI
-      { if $2 = "@" then mkexp (Pexp_attribute($3, $4, $6))
-        else expecting 2 "@" }
-*/
+  | simple_expr attribute
+      { mkexp (Pexp_attribute(fst $2, snd $2, $1)) }
 ;
 opt_expr:
     expr { $1 }
@@ -1161,13 +1156,8 @@ simple_expr:
                                 Some (ghtyp (Ptyp_package $5)), None)) }
   | LPAREN MODULE module_expr COLON error
       { unclosed "(" 1 ")" 5 }
-  | LPAREN AMPERSAND LIDENT opt_expr RPAREN
-      { mkexp (Pexp_extension($3, $4)) }
-/*
-  | simple_expr LPAREN INFIXOP3 LIDENT opt_expr RPAREN %prec below_SEMI
-      { if $3 = "/" then mkexp (Pexp_attribute($4, $5, $1))
-        else expecting 3 "/" }
-*/
+  | extension
+      { mkexp (Pexp_extension $1) }
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
@@ -1554,11 +1544,6 @@ core_type:
       { $1 }
   | core_type2 AS QUOTE ident
       { mktyp(Ptyp_alias($1, $4)) }
-/*
-  | LPAREN INFIXOP1 LIDENT opt_expr RPAREN core_type %prec below_SEMI
-      { if $2 = "@" then mktyp (Ptyp_attribute($3, $4, $6))
-        else expecting 2 "@" }
-*/
 ;
 core_type2:
     simple_core_type_or_tuple
@@ -1578,6 +1563,8 @@ simple_core_type:
       { $1 }
   | LPAREN core_type_comma_list RPAREN %prec below_SHARP
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
+  | simple_core_type attribute
+      { mktyp (Ptyp_attribute(fst $2, snd $2, $1)) }
 ;
 simple_core_type2:
     QUOTE ident
@@ -1620,11 +1607,14 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
   | LPAREN MODULE package_type RPAREN
       { mktyp(Ptyp_package $3) }
-  | LPAREN AMPERSAND LIDENT opt_expr RPAREN
-      { mktyp (Ptyp_extension($3, $4)) }
-  | simple_core_type2 LPAREN INFIXOP3 LIDENT opt_expr RPAREN %prec below_SEMI
-      { if $3 = "/" then mktyp (Ptyp_attribute($4, $5, $1))
-        else expecting 3 "/" }
+  | extension
+      { mktyp (Ptyp_extension $1) }
+;
+extension:
+  | LPAREN AMPERSAND LIDENT opt_expr RPAREN  { ($3, $4) }
+;
+attribute:
+  | LPAREN COLON LIDENT opt_expr RPAREN      { ($3, $4) }
 ;
 package_type:
     mty_longident { (mkrhs $1 1, []) }
