@@ -377,6 +377,7 @@ let wrap_type_annotation newtypes core_type body =
 %token LPAREN
 %token LBRACKETAT
 %token LBRACKETATAT
+%token LBRACKETHAT
 %token MATCH
 %token METHOD
 %token MINUS
@@ -471,6 +472,7 @@ The precedences must be listed from low to high.
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
 %nonassoc LBRACKETATAT
+%nonassoc LBRACKETHAT
 %nonassoc LBRACKETSHARP
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
@@ -578,6 +580,8 @@ module_expr:
       { unclosed "(" 1 ")" 4 }
   | module_expr attribute
       { mkmod(Pmod_attribute ($1, $2)) }
+  | pre_attribute module_expr %prec below_LBRACKETAT
+      { mkmod(Pmod_attribute ($2, $1)) }
   | extension
       { mkmod(Pmod_extension $1) }
 ;
@@ -661,6 +665,8 @@ module_type:
       { mkmty(Pmty_extension $1) }
   | module_type attribute
       { mkmty(Pmty_attribute ($1, $2)) }
+  | pre_attribute module_type %prec below_LBRACKETAT
+      { mkmty(Pmty_attribute ($2, $1)) }
 ;
 signature:
     /* empty */                                 { [] }
@@ -1085,6 +1091,8 @@ expr:
       { unclosed "object" 1 "end" 3 }
   | expr attribute
       { mkexp (Pexp_attribute($1, $2)) }
+  | pre_attribute seq_expr %prec below_LBRACKETAT
+      { mkexp(Pexp_attribute ($2, $1)) }
 ;
 simple_expr:
     val_longident
@@ -1307,7 +1315,9 @@ pattern:
   | LAZY simple_pattern
       { mkpat(Ppat_lazy $2) }
   | pattern attribute
-      { mkpat(Ppat_attribute($1, $2)) }
+      { mkpat(Ppat_attribute ($1, $2)) }
+  | pre_attribute simple_pattern
+      { mkpat(Ppat_attribute ($2, $1)) }
 ;
 simple_pattern:
     val_ident %prec below_EQUAL
@@ -1585,6 +1595,8 @@ simple_core_type:
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
   | simple_core_type attribute
       { mktyp (Ptyp_attribute($1, $2)) }
+  | pre_attribute simple_core_type %prec below_LBRACKETAT
+      { mktyp (Ptyp_attribute($2, $1)) }
 ;
 
 simple_core_type_no_attr:
@@ -1892,6 +1904,9 @@ additive:
 
 /* Attributes */
 
+pre_attribute:
+  LBRACKETHAT LIDENT opt_expr RBRACKET { ($2, $3) }
+;
 attribute:
   LBRACKETAT LIDENT opt_expr RBRACKET { ($2, $3) }
 ;

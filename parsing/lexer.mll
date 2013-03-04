@@ -399,6 +399,7 @@ rule token = parse
   | ">}" { GREATERRBRACE }
   | "[@" { LBRACKETAT }
   | "[#" { LBRACKETSHARP }
+  | "[^" { LBRACKETHAT }
   | "[@@" { LBRACKETATAT }
   | "!"  { BANG }
   | "!=" { INFIXOP0 "!=" }
