@@ -108,6 +108,7 @@ let rec is_irrefut_patt x =
   | Ppat_or (l,r) -> is_irrefut_patt l || is_irrefut_patt r
   | Ppat_record (ls,_) -> List.for_all (fun (_,x) -> is_irrefut_patt x) ls
   | Ppat_lazy p -> is_irrefut_patt p 
+  | Ppat_extension _ | Ppat_attribute _ -> assert false
   | Ppat_constant _ | Ppat_construct _  | Ppat_variant _ | Ppat_array _ | Ppat_type _-> false (*conservative*)
 class printer  ()= object(self:'self)
   val pipe = false

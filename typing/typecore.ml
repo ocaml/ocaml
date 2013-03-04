@@ -1099,6 +1099,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let (path, p,ty) = build_or_pat !env loc lid.txt in
       unify_pat_types loc !env ty expected_ty;
       { p with pat_extra = (Tpat_type (path, lid), loc) :: p.pat_extra }
+  | Ppat_attribute (p, _attrs) ->
+      type_pat p expected_ty
+  | Ppat_extension (s, _arg) ->
+      raise (Error (loc, !env, Extension s))
 
 let type_pat ?(allow_existentials=false) ?constrs ?labels
     ?(lev=get_current_level()) env sp expected_ty =
@@ -1699,11 +1703,13 @@ let contains_variant_either ty =
 let iter_ppat f p =
   match p.ppat_desc with
   | Ppat_any | Ppat_var _ | Ppat_constant _
+  | Ppat_extension _
   | Ppat_type _ | Ppat_unpack _ -> ()
   | Ppat_array pats -> List.iter f pats
   | Ppat_or (p1,p2) -> f p1; f p2
   | Ppat_variant (_, arg) | Ppat_construct (_, arg, _) -> may f arg
   | Ppat_tuple lst ->  List.iter f lst
+  | Ppat_attribute (p, _)
   | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p
   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args
 

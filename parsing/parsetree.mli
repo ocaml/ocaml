@@ -87,6 +87,8 @@ and pattern_desc =
   | Ppat_type of Longident.t loc
   | Ppat_lazy of pattern
   | Ppat_unpack of string loc
+  | Ppat_attribute of (pattern * attribute)
+  | Ppat_extension of extension
 
 and expression =
   { pexp_desc: expression_desc;

@@ -362,6 +362,8 @@ module P = struct
   let type_ ?loc a = mk ?loc (Ppat_type a)
   let lazy_ ?loc a = mk ?loc (Ppat_lazy a)
   let unpack ?loc a = mk ?loc (Ppat_unpack a)
+  let attribute ?loc a b = mk ?loc (Ppat_attribute (a, b))
+  let extension ?loc a = mk ?loc (Ppat_extension a)
 
   let map sub {ppat_desc = desc; ppat_loc = loc} =
     let loc = sub # location loc in
@@ -381,6 +383,8 @@ module P = struct
     | Ppat_type s -> type_ ~loc (map_loc sub s)
     | Ppat_lazy p -> lazy_ ~loc (sub # pat p)
     | Ppat_unpack s -> unpack ~loc (map_loc sub s)
+    | Ppat_attribute (body, x) -> attribute ~loc (sub # pat body) (sub # attribute x)
+    | Ppat_extension x -> extension ~loc (sub # extension x)
 end
 
 module CE = struct

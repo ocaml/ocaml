@@ -124,6 +124,8 @@ let rec add_pattern bv pat =
   | Ppat_type li -> add bv li
   | Ppat_lazy p -> add_pattern bv p
   | Ppat_unpack id -> pattern_bv := StringSet.add id.txt !pattern_bv
+  | Ppat_attribute (p, _) -> add_pattern bv p
+  | Ppat_extension _ -> ()
 
 let add_pattern bv pat =
   pattern_bv := bv;

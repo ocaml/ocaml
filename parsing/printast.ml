@@ -226,6 +226,13 @@ and pattern i ppf x =
       longident_loc i ppf li
   | Ppat_unpack s ->
       line i ppf "Ppat_unpack %a\n" fmt_string_loc s;
+  | Ppat_attribute (body, (s, arg)) ->
+      line i ppf "Ppat_attribute \"%s\"\n" s;
+      expression i ppf arg;
+      pattern i ppf body
+  | Ppat_extension (s, arg) ->
+      line i ppf "Ppat_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;

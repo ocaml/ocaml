@@ -1079,10 +1079,6 @@ expr:
   | expr attribute
       { mkexp (Pexp_attribute($1, $2)) }
 ;
-opt_expr:
-    expr { $1 }
-  |      { ghunit () }
-;
 simple_expr:
     val_longident
       { mkexp(Pexp_ident (mkrhs $1 1)) }
@@ -1303,6 +1299,8 @@ pattern:
       { expecting 3 "pattern" }
   | LAZY simple_pattern
       { mkpat(Ppat_lazy $2) }
+  | pattern attribute
+      { mkpat(Ppat_attribute($1, $2)) }
 ;
 simple_pattern:
     val_ident %prec below_EQUAL
@@ -1349,6 +1347,8 @@ simple_pattern:
       { mkpat(Ppat_constraint(mkpat(Ppat_unpack (mkrhs $3 3)),ghtyp(Ptyp_package $5))) }
   | LPAREN MODULE UIDENT COLON package_type error
       { unclosed "(" 1 ")" 6 }
+  | extension
+      { mkpat(Ppat_extension $1) }
 ;
 
 pattern_comma_list:
@@ -1899,5 +1899,9 @@ with_attribute:
 ;
 extension:
   LPARENCOLON LIDENT opt_expr RPAREN { ($2, $3) }
+;
+opt_expr:
+    expr { $1 }
+  |      { ghunit () }
 ;
 %%
