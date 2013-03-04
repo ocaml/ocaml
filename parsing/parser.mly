@@ -605,7 +605,8 @@ structure_item:
         | _ -> mkstr(Pstr_value($2, List.rev $3)) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
       { mkstr(Pstr_primitive(mkrhs $2 2, {pval_type = $4; pval_prim = $6;
-          pval_loc = symbol_rloc ()})) }
+                                          pval_attributes = [];
+                                          pval_loc = symbol_rloc ()})) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
@@ -676,12 +677,14 @@ signature:
   | signature signature_item SEMISEMI           { $2 :: $1 }
 ;
 signature_item:
-    VAL val_ident COLON core_type
-      { mksig(Psig_value(mkrhs $2 2, {pval_type = $4; pval_prim = [];
-          pval_loc = symbol_rloc()})) }
-  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-      { mksig(Psig_value(mkrhs $2 2, {pval_type = $4; pval_prim = $6;
-          pval_loc = symbol_rloc()})) }
+    opt_with_pre_attributes VAL val_ident COLON core_type opt_with_attributes
+      { mksig(Psig_value(mkrhs $3 3, {pval_type = $5; pval_prim = [];
+                                      pval_attributes = $1 @ $6;
+                                      pval_loc = symbol_rloc()})) }
+  | opt_with_pre_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration opt_with_attributes
+      { mksig(Psig_value(mkrhs $3 3, {pval_type = $5; pval_prim = $7;
+                                      pval_attributes = $1 @ $8;
+                                      pval_loc = symbol_rloc()})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments

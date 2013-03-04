@@ -92,7 +92,7 @@ module T = struct
      ptype_kind = sub # type_kind td.ptype_kind;
      ptype_manifest = map_opt (sub # typ) td.ptype_manifest;
      ptype_loc = sub # location td.ptype_loc;
-     ptype_attributes = List.map (sub # attribute) td.ptype_attributes;
+     ptype_attributes = map_attributes sub td.ptype_attributes;
     }
 
   let constructor_decl ?res ?(loc = Location.none) ?(attributes = []) name args =
@@ -110,7 +110,7 @@ module T = struct
       (List.map (sub # typ) pcd_args)
       ?res:(map_opt (sub # typ) pcd_res)
       ~loc:(sub # location pcd_loc)
-      ~attributes:(List.map (sub # attribute) pcd_attributes)
+      ~attributes:(map_attributes sub pcd_attributes)
 
   let map_type_kind sub = function
     | Ptype_abstract -> Ptype_abstract
@@ -512,11 +512,12 @@ class mapper =
     method type_kind = T.map_type_kind this
     method typ = T.map this
 
-    method value_description {pval_type; pval_prim; pval_loc} =
+    method value_description {pval_type; pval_prim; pval_loc; pval_attributes} =
       {
        pval_type = this # typ pval_type;
        pval_prim;
        pval_loc = this # location pval_loc;
+       pval_attributes = map_attributes this pval_attributes;
       }
     method pat = P.map this
     method expr = E.map this

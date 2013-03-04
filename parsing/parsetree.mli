@@ -137,6 +137,7 @@ and expression_desc =
 and value_description =
   { pval_type: core_type;
     pval_prim: string list;
+    pval_attributes: attribute list;
     pval_loc: Location.t
     }
 

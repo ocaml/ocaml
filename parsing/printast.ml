@@ -363,6 +363,7 @@ and value_description i ppf x =
   line i ppf "value_description %a\n" fmt_location x.pval_loc;
   core_type (i+1) ppf x.pval_type;
   list (i+1) string ppf x.pval_prim;
+  attributes (i+1) ppf x.pval_attributes
 
 and string_option_underscore i ppf =
   function
