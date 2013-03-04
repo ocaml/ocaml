@@ -378,6 +378,7 @@ let wrap_type_annotation newtypes core_type body =
 %token LBRACKETAT
 %token LBRACKETATAT
 %token LBRACKETHAT
+%token LBRACKETHATHAT
 %token MATCH
 %token METHOD
 %token MINUS
@@ -473,6 +474,7 @@ The precedences must be listed from low to high.
 %nonassoc LBRACKETAT
 %nonassoc LBRACKETATAT
 %nonassoc LBRACKETHAT
+%nonassoc LBRACKETHATHAT
 %nonassoc LBRACKETSHARP
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
@@ -616,14 +618,14 @@ structure_item:
       { mkstr(Pstr_recmodule(List.rev $3)) }
   | MODULE TYPE ident EQUAL module_type
       { mkstr(Pstr_modtype(mkrhs $3 3, $5)) }
-  | OPEN mod_longident opt_with_attributes
-      { mkstr(Pstr_open (mkrhs $2 2, $3)) }
+  | opt_with_pre_attributes OPEN mod_longident opt_with_attributes
+      { mkstr(Pstr_open (mkrhs $3 3, $1 @ $4)) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
-  | INCLUDE module_expr opt_with_attributes
-      { mkstr(Pstr_include ($2, $3)) }
+  | opt_with_pre_attributes INCLUDE module_expr opt_with_attributes
+      { mkstr(Pstr_include ($3, $1 @ $4)) }
 ;
 module_binding:
     EQUAL module_expr
@@ -1405,16 +1407,16 @@ type_declarations:
 ;
 
 type_declaration:
-    optional_type_parameters LIDENT type_kind constraints opt_with_attributes
-      { let (params, variance) = List.split $1 in
-        let (kind, private_flag, manifest) = $3 in
-        (mkrhs $2 2, {ptype_params = params;
-              ptype_cstrs = List.rev $4;
+    opt_with_pre_attributes optional_type_parameters LIDENT type_kind constraints opt_with_attributes
+      { let (params, variance) = List.split $2 in
+        let (kind, private_flag, manifest) = $4 in
+        (mkrhs $3 3, {ptype_params = params;
+              ptype_cstrs = List.rev $5;
               ptype_kind = kind;
               ptype_private = private_flag;
               ptype_manifest = manifest;
               ptype_variance = variance;
-              ptype_attributes = $5;
+              ptype_attributes = $1 @ $6;
               ptype_loc = symbol_rloc() }) }
 ;
 constraints:
@@ -1913,6 +1915,11 @@ attribute:
 opt_with_attributes:
       { [] }
   | LBRACKETATAT LIDENT opt_expr RBRACKET opt_with_attributes
+            { ($2, $3) :: $5 }
+;
+opt_with_pre_attributes:
+      { [] }
+  | LBRACKETHATHAT LIDENT opt_expr RBRACKET opt_with_pre_attributes
             { ($2, $3) :: $5 }
 ;
 attributes:

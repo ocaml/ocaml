@@ -400,6 +400,7 @@ rule token = parse
   | "[@" { LBRACKETAT }
   | "[#" { LBRACKETSHARP }
   | "[^" { LBRACKETHAT }
+  | "[^^" { LBRACKETHATHAT }
   | "[@@" { LBRACKETATAT }
   | "!"  { BANG }
   | "!=" { INFIXOP0 "!=" }
