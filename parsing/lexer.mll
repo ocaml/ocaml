@@ -397,22 +397,10 @@ rule token = parse
   | ">]" { GREATERRBRACKET }
   | "}"  { RBRACE }
   | ">}" { GREATERRBRACE }
-  | "(:="
-      { lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 2;
-        let curpos = lexbuf.lex_curr_p in
-        lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 2 };
-          LPAREN 
-      }
-  | "(::"
-      { lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 2;
-        let curpos = lexbuf.lex_curr_p in
-        lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 2 };
-          LPAREN 
-      }
-  | "(:" { LPARENCOLON }
-  | "[:" { LBRACKETCOLON }
+  | "[@" { LBRACKETAT }
+  | "[#" { LBRACKETSHARP }
+  | "[@@" { LBRACKETATAT }
   | "!"  { BANG }
-
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
   | "+." { PLUSDOT }

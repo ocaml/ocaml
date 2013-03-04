@@ -369,13 +369,14 @@ let wrap_type_annotation newtypes core_type body =
 %token LBRACKETBAR
 %token LBRACKETLESS
 %token LBRACKETGREATER
-%token LBRACKETCOLON
+%token LBRACKETSHARP
 %token LESS
 %token LESSMINUS
 %token LET
 %token <string> LIDENT
 %token LPAREN
-%token LPARENCOLON
+%token LBRACKETAT
+%token LBRACKETATAT
 %token MATCH
 %token METHOD
 %token MINUS
@@ -467,8 +468,10 @@ The precedences must be listed from low to high.
 %nonassoc below_EQUAL
 %left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
-%nonassoc below_LBRACKETCOLON
-%nonassoc LBRACKETCOLON                 /* expr [:extn] */
+%nonassoc below_LBRACKETAT
+%nonassoc LBRACKETAT
+%nonassoc LBRACKETATAT
+%nonassoc LBRACKETSHARP
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -483,7 +486,7 @@ The precedences must be listed from low to high.
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
-          LPARENCOLON NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
 
 
 /* Entry points */
@@ -648,7 +651,7 @@ module_type:
       { mkmty(Pmty_functor(mkrhs $3 3, $5, $8)) }
   | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
-  | MODULE TYPE OF module_expr %prec below_LBRACKETCOLON
+  | MODULE TYPE OF module_expr %prec below_LBRACKETAT
       { mkmty(Pmty_typeof $4) }
   | LPAREN module_type RPAREN
       { $2 }
@@ -1482,7 +1485,7 @@ generalized_constructor_arguments:
   | OF core_type_list                           { (List.rev $2,None) }
   | COLON core_type_list MINUSGREATER simple_core_type
                                                 { (List.rev $2,Some $4) }
-  | COLON simple_core_type %prec below_LBRACKETCOLON
+  | COLON simple_core_type %prec below_LBRACKETAT
                                                 { ([],Some $2) }
 ;
 
@@ -1672,7 +1675,7 @@ name_tag_list:
   | name_tag_list name_tag                      { $2 :: $1 }
 ;
 simple_core_type_or_tuple:
-    simple_core_type %prec below_LBRACKETCOLON  { $1 }
+    simple_core_type %prec below_LBRACKETAT  { $1 }
   | simple_core_type STAR core_type_list
       { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
 ;
@@ -1687,7 +1690,7 @@ core_type_comma_list:
   | core_type_comma_list COMMA core_type        { $3 :: $1 }
 ;
 core_type_list:
-    simple_core_type %prec below_LBRACKETCOLON  { [$1] }
+    simple_core_type %prec below_LBRACKETAT  { [$1] }
   | core_type_list STAR simple_core_type        { $3 :: $1 }
 ;
 core_type_list_no_attr:
@@ -1885,24 +1888,15 @@ additive:
 /* Attributes */
 
 attribute:
-  LBRACKETCOLON LIDENT opt_expr RBRACKET { ($2, $3) }
+  LBRACKETAT LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
 opt_with_attributes:
       { [] }
-  | WITH with_attributes { $2 }
-;
-with_attributes:
-     with_attribute
-      { [$1] }
-  | with_attribute COMMA with_attributes
-      { $1 :: $3 }
-;
-with_attribute:
-    LIDENT                                      { $1, ghunit () }
-  | LIDENT LPAREN expr RPAREN                   { $1, $3 }
+  | LBRACKETATAT LIDENT opt_expr RBRACKET opt_with_attributes
+            { ($2, $3) :: $5 }
 ;
 extension:
-  LPARENCOLON LIDENT opt_expr RPAREN { ($2, $3) }
+  LBRACKETSHARP LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
 opt_expr:
     expr { $1 }
