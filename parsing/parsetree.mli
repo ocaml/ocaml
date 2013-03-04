@@ -267,13 +267,20 @@ and signature_item_desc =
     Psig_value of string loc * value_description
   | Psig_type of (string loc * type_declaration) list
   | Psig_exception of string loc * exception_declaration
-  | Psig_module of string loc * module_type
-  | Psig_recmodule of (string loc * module_type) list
-  | Psig_modtype of string loc * modtype_declaration
+  | Psig_module of module_declaration
+  | Psig_recmodule of module_declaration list
+  | Psig_modtype of string loc * modtype_declaration * attribute list
   | Psig_open of Longident.t loc * attribute list
   | Psig_include of module_type * attribute list
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
+
+and module_declaration =
+    {
+     pmd_name: string loc;
+     pmd_type: module_type;
+     pmd_attributes: attribute list;
+    }
 
 and modtype_declaration =
     Pmodtype_abstract

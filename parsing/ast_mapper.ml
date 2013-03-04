@@ -21,6 +21,7 @@ open Asttypes
 
 let map_snd f (x, y) = (x, f y)
 let map_tuple f1 f2 (x, y) = (f1 x, f2 y)
+let map_tuple3 f1 f2 f3 (x, y, z) = (f1 x, f2 y, f3 z)
 let map_opt f = function None -> None | Some x -> Some (f x)
 
 let map_loc sub {loc; txt} = {loc = sub # location loc; txt}
@@ -196,9 +197,9 @@ module MT = struct
   let value ?loc a b = mk_item ?loc (Psig_value (a, b))
   let type_ ?loc a = mk_item ?loc (Psig_type a)
   let exception_ ?loc a b = mk_item ?loc (Psig_exception (a, b))
-  let module_ ?loc a b = mk_item ?loc (Psig_module (a, b))
+  let module_ ?loc a = mk_item ?loc (Psig_module a)
   let rec_module ?loc a = mk_item ?loc (Psig_recmodule a)
-  let modtype ?loc a b = mk_item ?loc (Psig_modtype (a, b))
+  let modtype ?loc ?(attributes = []) a b = mk_item ?loc (Psig_modtype (a, b, attributes))
   let open_ ?loc ?(attributes = []) a = mk_item ?loc (Psig_open (a, attributes))
   let include_ ?loc ?(attributes = []) a = mk_item ?loc (Psig_include (a, attributes))
   let class_ ?loc a = mk_item ?loc (Psig_class a)
@@ -210,10 +211,10 @@ module MT = struct
     | Psig_value (s, vd) -> value ~loc (map_loc sub s) (sub # value_description vd)
     | Psig_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
     | Psig_exception (s, ed) -> exception_ ~loc (map_loc sub s) (sub # exception_declaration ed)
-    | Psig_module (s, mt) -> module_ ~loc (map_loc sub s) (sub # module_type mt)
-    | Psig_recmodule l -> rec_module ~loc (List.map (map_tuple (map_loc sub) (sub # module_type)) l)
-    | Psig_modtype (s, Pmodtype_manifest mt) -> modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt))
-    | Psig_modtype (s, Pmodtype_abstract) -> modtype ~loc (map_loc sub s) Pmodtype_abstract
+    | Psig_module x -> module_ ~loc (sub # module_declaration x)
+    | Psig_recmodule l -> rec_module ~loc (List.map (sub # module_declaration) l)
+    | Psig_modtype (s, Pmodtype_manifest mt, attrs) -> modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt)) ~attributes:(map_attributes sub attrs)
+    | Psig_modtype (s, Pmodtype_abstract, attrs) -> modtype ~loc (map_loc sub s) Pmodtype_abstract ~attributes:(map_attributes sub attrs)
     | Psig_open (lid, attrs) -> open_ ~loc ~attributes:(map_attributes sub attrs) (map_loc sub lid)
     | Psig_include (mt, attrs) -> include_ ~loc (sub # module_type mt) ~attributes:(map_attributes sub attrs)
     | Psig_class l -> class_ ~loc (List.map (sub # class_description) l)
@@ -526,6 +527,12 @@ class mapper =
       {
        ped_args = List.map (this # typ) ped.ped_args;
        ped_attributes = map_attributes this ped.ped_attributes;
+      }
+    method module_declaration pmd =
+      {
+       pmd_name = pmd.pmd_name;
+       pmd_type = pmd.pmd_type;
+       pmd_attributes = map_attributes this pmd.pmd_attributes;
       }
 
     method location l = l

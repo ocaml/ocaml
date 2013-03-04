@@ -316,12 +316,13 @@ and untype_signature_item item =
     | Tsig_exception (_id, name, decl) ->
         Psig_exception (name, untype_exception_declaration decl)
     | Tsig_module (_id, name, mtype) ->
-        Psig_module (name, untype_module_type mtype)
+        Psig_module {pmd_name = name; pmd_type = untype_module_type mtype; pmd_attributes = []}
     | Tsig_recmodule list ->
         Psig_recmodule (List.map (fun (_id, name, mtype) ->
-              name, untype_module_type mtype) list)
+              {pmd_name = name; pmd_type = untype_module_type mtype;
+               pmd_attributes = []}) list)
     | Tsig_modtype (_id, name, mdecl) ->
-        Psig_modtype (name, untype_modtype_declaration mdecl)
+        Psig_modtype (name, untype_modtype_declaration mdecl, [])
     | Tsig_open (_path, lid) -> Psig_open (lid, [])
     | Tsig_include (mty, _lid) -> Psig_include (untype_module_type mty, [])
     | Tsig_class list ->

@@ -500,9 +500,9 @@ let search_signature sign ~name ~kind ~prefix =
           List.fold_left ~init:[] sign ~f:
             begin fun acc item ->
               match item.psig_desc with
-                Psig_module (s, mtyp) when s.txt = modu ->
-                  loc := mtyp.pmty_loc.loc_start.Lexing.pos_cnum;
-                  begin match mtyp.pmty_desc with
+                Psig_module pmd when pmd.pmd_name.txt = modu ->
+                  loc := pmd.pmd_type.pmty_loc.loc_start.Lexing.pos_cnum;
+                  begin match pmd.pmd_type.pmty_desc with
                     Pmty_signature sign -> sign
                   | _ -> []
                   end
@@ -521,8 +521,8 @@ let search_signature sign ~name ~kind ~prefix =
             end;
           false
       | Psig_exception (s, _) when kind = Pconstructor -> name = s.txt
-      | Psig_module (s, _) when kind = Pmodule -> name = s.txt
-      | Psig_modtype (s, _) when kind = Pmodtype -> name = s.txt
+      | Psig_module pmd when kind = Pmodule -> name = pmd.pmd_name.txt
+      | Psig_modtype (s, _, _) when kind = Pmodtype -> name = s.txt
       | Psig_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
           List.iter l ~f:
             begin fun c ->

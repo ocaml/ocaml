@@ -887,16 +887,16 @@ class printer  ()= object(self:'self)
             |[x] -> pp f "@[<2>class %a@]" class_description x 
             |_ -> self#list ~first:"@[<v0>class @[<2>" ~sep:"@]@;and @[" ~last:"@]@]"
                   class_description f l) l 
-    | Psig_module (s, mt) ->
+    | Psig_module pmd ->
         pp f "@[<hov>module@ %s@ :@ %a@]"
-          s.txt
-          self#module_type  mt
+          pmd.pmd_name.txt
+          self#module_type  pmd.pmd_type
     | Psig_open (li, _attrs) ->
         pp f "@[<hov2>open@ %a@]" self#longident_loc li
     | Psig_include (mt, _attrs) ->
         pp f "@[<hov2>include@ %a@]"
           self#module_type  mt
-    | Psig_modtype (s, md) ->
+    | Psig_modtype (s, md, _attrs) ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
           (fun f md -> match md with
@@ -911,13 +911,13 @@ class printer  ()= object(self:'self)
         let rec  string_x_module_type_list f ?(first=true) l =
           match l with
           | [] -> () ;
-          | (s,mty) :: tl ->
+          | pmd :: tl ->
               if not first then
                 pp f "@ @[<hov2>and@ %s:@ %a@]"
-                  s.txt self#module_type mty
+                  pmd.pmd_name.txt self#module_type pmd.pmd_type
               else
                 pp f "@ @[<hov2>module@ rec@ %s:@ %a@]"
-                  s.txt self#module_type mty;
+                  pmd.pmd_name.txt self#module_type pmd.pmd_type;
               string_x_module_type_list f ~first:false tl  in
         string_x_module_type_list f decls
   end

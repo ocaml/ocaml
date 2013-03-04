@@ -590,15 +590,17 @@ and signature_item i ppf x =
   | Psig_exception (s, ed) ->
       line i ppf "Psig_exception %a\n" fmt_string_loc s;
       exception_declaration i ppf ed;
-  | Psig_module (s, mt) ->
-      line i ppf "Psig_module %a\n" fmt_string_loc s;
-      module_type i ppf mt;
+  | Psig_module pmd ->
+      line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
+      module_type i ppf pmd.pmd_type;
+      attributes i ppf pmd.pmd_attributes
   | Psig_recmodule decls ->
       line i ppf "Psig_recmodule\n";
-      list i string_x_module_type ppf decls;
-  | Psig_modtype (s, md) ->
+      list i module_declaration ppf decls;
+  | Psig_modtype (s, md, attrs) ->
       line i ppf "Psig_modtype %a\n" fmt_string_loc s;
       modtype_declaration i ppf md;
+      attributes i ppf attrs
   | Psig_open (li, attrs) ->
       line i ppf "Psig_open %a\n" fmt_longident_loc li;
       attributes i ppf attrs
@@ -714,9 +716,10 @@ and string_x_type_declaration i ppf (s, td) =
   string_loc i ppf s;
   type_declaration (i+1) ppf td;
 
-and string_x_module_type i ppf (s, mty) =
-  string_loc i ppf s;
-  module_type (i+1) ppf mty;
+and module_declaration i ppf pmd =
+  string_loc i ppf pmd.pmd_name;
+  module_type (i+1) ppf pmd.pmd_type;
+  attributes (i+1) ppf pmd.pmd_attributes
 
 and string_x_modtype_x_module i ppf (s, mty, modl) =
   string_loc i ppf s;

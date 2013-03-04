@@ -223,13 +223,13 @@ and add_sig_item bv item =
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
   | Psig_exception(id, ped) ->
       List.iter (add_type bv) ped.ped_args; bv
-  | Psig_module(id, mty) ->
-      add_modtype bv mty; StringSet.add id.txt bv
+  | Psig_module pmd ->
+      add_modtype bv pmd.pmd_type; StringSet.add pmd.pmd_name.txt bv
   | Psig_recmodule decls ->
-      let bv' = List.fold_right StringSet.add (List.map (fun (x,_) -> x.txt) decls) bv in
-      List.iter (fun (id, mty) -> add_modtype bv' mty) decls;
+      let bv' = List.fold_right StringSet.add (List.map (fun pmd -> pmd.pmd_name.txt) decls) bv in
+      List.iter (fun pmd -> add_modtype bv' pmd.pmd_type) decls;
       bv'
-  | Psig_modtype(id,mtyd) ->
+  | Psig_modtype(id,mtyd, _attrs) ->
       begin match mtyd with
         Pmodtype_abstract -> ()
       | Pmodtype_manifest mty -> add_modtype bv mty

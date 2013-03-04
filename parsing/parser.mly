@@ -609,9 +609,9 @@ structure_item:
                                           pval_loc = symbol_rloc ()})) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
-  | opt_with_pre_attributes EXCEPTION UIDENT constructor_arguments opt_with_attributes
+  | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
       { mkstr(Pstr_exception(mkrhs $3 3, {ped_args=$4;ped_attributes=$1 @ $5})) }
-  | opt_with_pre_attributes EXCEPTION UIDENT EQUAL constr_longident opt_with_attributes
+  | pre_item_attributes EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
       { mkstr(Pstr_exn_rebind(mkrhs $3 3, mkloc $5 (rhs_loc 5))) (* todo: keep attributes *) }
   | MODULE UIDENT module_binding
       { mkstr(Pstr_module(mkrhs $2 2, $3)) }
@@ -619,13 +619,13 @@ structure_item:
       { mkstr(Pstr_recmodule(List.rev $3)) }
   | MODULE TYPE ident EQUAL module_type
       { mkstr(Pstr_modtype(mkrhs $3 3, $5)) }
-  | opt_with_pre_attributes OPEN mod_longident opt_with_attributes
+  | pre_item_attributes OPEN mod_longident post_item_attributes
       { mkstr(Pstr_open (mkrhs $3 3, $1 @ $4)) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
-  | opt_with_pre_attributes INCLUDE module_expr opt_with_attributes
+  | pre_item_attributes INCLUDE module_expr post_item_attributes
       { mkstr(Pstr_include ($3, $1 @ $4)) }
 ;
 module_binding:
@@ -677,29 +677,29 @@ signature:
   | signature signature_item SEMISEMI           { $2 :: $1 }
 ;
 signature_item:
-    opt_with_pre_attributes VAL val_ident COLON core_type opt_with_attributes
+    pre_item_attributes VAL val_ident COLON core_type post_item_attributes
       { mksig(Psig_value(mkrhs $3 3, {pval_type = $5; pval_prim = [];
                                       pval_attributes = $1 @ $6;
                                       pval_loc = symbol_rloc()})) }
-  | opt_with_pre_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration opt_with_attributes
+  | pre_item_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
       { mksig(Psig_value(mkrhs $3 3, {pval_type = $5; pval_prim = $7;
                                       pval_attributes = $1 @ $8;
                                       pval_loc = symbol_rloc()})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
-  | opt_with_pre_attributes EXCEPTION UIDENT constructor_arguments opt_with_attributes
+  | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
       { mksig(Psig_exception(mkrhs $3 3, {ped_args = $4; ped_attributes = $1 @ $5})) }
-  | MODULE UIDENT module_declaration
-      { mksig(Psig_module(mkrhs $2 2, $3)) }
-  | MODULE REC module_rec_declarations
-      { mksig(Psig_recmodule(List.rev $3)) }
-  | MODULE TYPE ident
-      { mksig(Psig_modtype(mkrhs $3 3, Pmodtype_abstract)) }
-  | MODULE TYPE ident EQUAL module_type
-      { mksig(Psig_modtype(mkrhs $3 3, Pmodtype_manifest $5)) }
-  | opt_with_pre_attributes OPEN mod_longident opt_with_attributes
+  | pre_item_attributes MODULE UIDENT module_declaration post_item_attributes
+      { mksig(Psig_module{pmd_name=mkrhs $3 3;pmd_type=$4;pmd_attributes=$1 @ $5}) }
+  | pre_item_attributes MODULE REC module_rec_declarations
+      { mksig(Psig_recmodule(List.rev $4)) (* what to do with pre_attributes? *) }
+  | pre_item_attributes MODULE TYPE ident post_item_attributes
+      { mksig(Psig_modtype(mkrhs $4 4, Pmodtype_abstract, $1 @ $5)) }
+  | pre_item_attributes MODULE TYPE ident EQUAL module_type post_item_attributes
+      { mksig(Psig_modtype(mkrhs $4 4, Pmodtype_manifest $6, $1 @ $7)) }
+  | pre_item_attributes OPEN mod_longident post_item_attributes
       { mksig(Psig_open (mkrhs $3 3, $1 @ $4)) }
-  | opt_with_pre_attributes INCLUDE module_type opt_with_attributes %prec below_WITH
+  | pre_item_attributes INCLUDE module_type post_item_attributes %prec below_WITH
       { mksig(Psig_include ($3, $1 @ $4)) }
   | CLASS class_descriptions
       { mksig(Psig_class (List.rev $2)) }
@@ -718,7 +718,7 @@ module_rec_declarations:
   | module_rec_declarations AND module_rec_declaration  { $3 :: $1 }
 ;
 module_rec_declaration:
-    UIDENT COLON module_type %prec below_WITH           { (mkrhs $1 1, $3) }
+    pre_item_attributes UIDENT COLON module_type post_item_attributes %prec below_WITH           { {pmd_name=mkrhs $2 2; pmd_type=$4; pmd_attributes=$1 @ $5} }
 ;
 
 /* Class expressions */
@@ -1410,7 +1410,7 @@ type_declarations:
 ;
 
 type_declaration:
-    opt_with_pre_attributes optional_type_parameters LIDENT type_kind constraints opt_with_attributes
+    pre_item_attributes optional_type_parameters LIDENT type_kind constraints post_item_attributes
       { let (params, variance) = List.split $2 in
         let (kind, private_flag, manifest) = $4 in
         (mkrhs $3 3, {ptype_params = params;
@@ -1914,14 +1914,14 @@ pre_attribute:
 attribute:
   LBRACKETAT LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
-opt_with_attributes:
+post_item_attributes:
       { [] }
-  | LBRACKETATAT LIDENT opt_expr RBRACKET opt_with_attributes
+  | LBRACKETATAT LIDENT opt_expr RBRACKET post_item_attributes
             { ($2, $3) :: $5 }
 ;
-opt_with_pre_attributes:
+pre_item_attributes:
       { [] }
-  | LBRACKETHATHAT LIDENT opt_expr RBRACKET opt_with_pre_attributes
+  | LBRACKETHATHAT LIDENT opt_expr RBRACKET pre_item_attributes
             { ($2, $3) :: $5 }
 ;
 attributes:

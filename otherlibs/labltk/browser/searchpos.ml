@@ -208,11 +208,11 @@ let rec search_pos_signature l ~pos ~env =
       | Psig_exception (_, ped) ->
           List.iter ped.ped_args ~f:(search_pos_type ~pos ~env);
           add_found_sig (`Type, Lident "exn") ~env ~loc:pt.psig_loc
-      | Psig_module (_, t) ->
-          search_pos_module t ~pos ~env
+      | Psig_module pmd ->
+          search_pos_module pmd.pmd_type ~pos ~env
       | Psig_recmodule decls ->
-          List.iter decls ~f:(fun (_, t) -> search_pos_module t ~pos ~env)
-      | Psig_modtype (_, Pmodtype_manifest t) ->
+          List.iter decls ~f:(fun pmd -> search_pos_module pmd.pmd_type ~pos ~env)
+      | Psig_modtype (_, Pmodtype_manifest t, _attrs) ->
           search_pos_module t ~pos ~env
       | Psig_modtype _ -> ()
       | Psig_class l ->

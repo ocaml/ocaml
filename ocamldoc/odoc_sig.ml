@@ -278,11 +278,11 @@ module Analyser =
           (match List.filter (fun (name, _) -> not (Name.Set.mem name.txt erased)) types with
           | [] -> acc
           | types -> take_item (Parsetree.Psig_type types))
-        | Parsetree.Psig_module (name, _)
-        | Parsetree.Psig_modtype (name, _) as m ->
+        | Parsetree.Psig_module {Parsetree.pmd_name=name}
+        | Parsetree.Psig_modtype (name, _, _) as m ->
           if Name.Set.mem name.txt erased then acc else take_item m
         | Parsetree.Psig_recmodule mods ->
-          (match List.filter (fun (name, _) -> not (Name.Set.mem name.txt erased)) mods with
+          (match List.filter (fun pmd -> not (Name.Set.mem pmd.Parsetree.pmd_name.txt erased)) mods with
           | [] -> acc
           | mods -> take_item (Parsetree.Psig_recmodule mods)))
         signature []
@@ -685,7 +685,7 @@ module Analyser =
             in
             (0, env, ele_comments)
 
-        | Parsetree.Psig_module (name, module_type) ->
+        | Parsetree.Psig_module {Parsetree.pmd_name=name; pmd_type=module_type} ->
             let complete_name = Name.concat current_module_name name.txt in
             (* get the the module type in the signature by the module name *)
             let sig_module_type =
@@ -736,7 +736,7 @@ module Analyser =
             (* we start by extending the environment *)
             let new_env =
               List.fold_left
-                (fun acc_env -> fun ({ txt = name }, _) ->
+                (fun acc_env {Parsetree.pmd_name={txt=name}} ->
                   let complete_name = Name.concat current_module_name name in
                   let e = Odoc_env.add_module acc_env complete_name in
                   (* get the information for the module in the signature *)
@@ -760,7 +760,7 @@ module Analyser =
               match name_mtype_list with
                 [] ->
                   (acc_maybe_more, [])
-              | (name, modtype) :: q ->
+              | {Parsetree.pmd_name=name; pmd_type=modtype} :: q ->
                   let complete_name = Name.concat current_module_name name.txt in
                   let loc = modtype.Parsetree.pmty_loc in
                   let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
@@ -776,7 +776,7 @@ module Analyser =
                   let pos_limit2 =
                     match q with
                       [] -> pos_limit
-                    | (_, mty) :: _ -> loc.Location.loc_start.Lexing.pos_cnum
+                    | _ :: _ -> loc.Location.loc_start.Lexing.pos_cnum
                   in
                   (* get the information for the module in the signature *)
                   let sig_module_type =
@@ -826,7 +826,7 @@ module Analyser =
             let (maybe_more, mods) = f ~first: true 0 pos_start_ele decls in
             (maybe_more, new_env, mods)
 
-        | Parsetree.Psig_modtype (name, pmodtype_decl) ->
+        | Parsetree.Psig_modtype (name, pmodtype_decl, _) ->
             let complete_name = Name.concat current_module_name name.txt in
             let sig_mtype =
               try Signature_search.search_module_type table name.txt

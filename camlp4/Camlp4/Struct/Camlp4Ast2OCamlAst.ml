@@ -1002,7 +1002,7 @@ value varify_constructors var_names =
     | SgExc _ _ -> assert False (*FIXME*)
     | SgExt loc n t sl -> [mksig loc (Psig_value (with_loc n loc) (mkvalue_desc loc t (list_of_meta_list sl))) :: l]
     | SgInc loc mt -> [mksig loc (Psig_include (module_type mt) []) :: l]
-    | SgMod loc n mt -> [mksig loc (Psig_module (with_loc n loc) (module_type mt)) :: l]
+    | SgMod loc n mt -> [mksig loc (Psig_module {pmd_name=with_loc n loc; pmd_type=module_type mt; pmd_attributes=[]}) :: l]
     | SgRecMod loc mb ->
         [mksig loc (Psig_recmodule (module_sig_binding mb [])) :: l]
     | SgMty loc n mt ->
@@ -1011,7 +1011,7 @@ value varify_constructors var_names =
           [ MtQuo _ _ -> Pmodtype_abstract
           | _ -> Pmodtype_manifest (module_type mt) ]
         in
-        [mksig loc (Psig_modtype (with_loc n loc) si) :: l]
+        [mksig loc (Psig_modtype (with_loc n loc) si []) :: l]
     | SgOpn loc id ->
         [mksig loc (Psig_open (long_uident id) []) :: l]
     | SgTyp loc tdl -> [mksig loc (Psig_type (mktype_decl tdl [])) :: l]
@@ -1022,7 +1022,7 @@ value varify_constructors var_names =
     [ <:module_binding< $x$ and $y$ >> ->
         module_sig_binding x (module_sig_binding y acc)
     | <:module_binding@loc< $s$ : $mt$ >> ->
-        [(with_loc s loc, module_type mt) :: acc]
+        [{pmd_name=with_loc s loc; pmd_type=module_type mt; pmd_attributes=[]} :: acc]
     | _ -> assert False ]
   and module_str_binding x acc =
     match x with
