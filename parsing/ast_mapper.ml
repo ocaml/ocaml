@@ -154,6 +154,8 @@ module MT = struct
   let functor_ ?loc a b c = mk ?loc (Pmty_functor (a, b, c))
   let with_ ?loc a b = mk ?loc (Pmty_with (a, b))
   let typeof_ ?loc a = mk ?loc (Pmty_typeof a)
+  let attribute ?loc a b = mk ?loc (Pmty_attribute (a, b))
+  let extension ?loc a = mk ?loc (Pmty_extension a)
 
   let map sub {pmty_desc = desc; pmty_loc = loc} =
     let loc = sub # location loc in
@@ -163,6 +165,8 @@ module MT = struct
     | Pmty_functor (s, mt1, mt2) -> functor_ ~loc (map_loc sub s) (sub # module_type mt1) (sub # module_type mt2)
     | Pmty_with (mt, l) -> with_ ~loc (sub # module_type mt) (List.map (map_tuple (map_loc sub) (sub # with_constraint)) l)
     | Pmty_typeof me -> typeof_ ~loc (sub # module_expr me)
+    | Pmty_attribute (body, x) -> attribute ~loc (sub # module_type body) (sub # attribute x)
+    | Pmty_extension x -> extension ~loc (sub # extension x)
 
   let map_with_constraint sub = function
     | Pwith_type d -> Pwith_type (sub # type_declaration d)

@@ -206,6 +206,10 @@ and add_modtype bv mty =
                 | (_, Pwith_modsubst (lid)) -> addmodule bv lid)
         cstrl
   | Pmty_typeof m -> add_module bv m
+  | Pmty_attribute(modl, _) ->
+      add_modtype bv modl
+  | Pmty_extension _ ->
+      ()
 
 and add_signature bv = function
     [] -> ()

@@ -856,6 +856,8 @@ class printer  ()= object(self:'self)
     | Pmty_typeof me ->
         pp f "@[<hov2>module@ type@ of@ %a@]"
           self#module_expr me 
+    | Pmty_extension _ | Pmty_attribute _ -> assert false
+
   method signature f x =  self#list ~sep:"@\n" self#signature_item f x
 
   method signature_item f x :unit= begin

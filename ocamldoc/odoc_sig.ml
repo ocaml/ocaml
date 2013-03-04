@@ -879,9 +879,12 @@ module Analyser =
               | Parsetree.Pmty_with (mt, _) ->
                   f mt.Parsetree.pmty_desc
               | Parsetree.Pmty_typeof mexpr ->
-                  match mexpr.Parsetree.pmod_desc with
+                  begin match mexpr.Parsetree.pmod_desc with
                     Parsetree.Pmod_ident longident -> Name.from_longident longident.txt
                   | _ -> "??"
+                  end
+              | Parsetree.Pmty_attribute _
+              | Parsetree.Pmty_extension _ -> assert false
             in
             let name = f module_type.Parsetree.pmty_desc in
             let full_name = Odoc_env.full_module_or_module_type_name env name in
@@ -1120,6 +1123,9 @@ module Analyser =
           let s = get_string_of_file loc_start loc_end in
           Module_type_typeof s
 
+      | Parsetree.Pmty_attribute _
+      | Parsetree.Pmty_extension _ -> assert false
+
     (** analyse of a Parsetree.module_type and a Types.module_type.*)
     and analyse_module_kind
         ?(erased = Name.Set.empty) env current_module_name module_type sig_module_type =
@@ -1191,6 +1197,10 @@ module Analyser =
           let loc_end = module_expr.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
           let s = get_string_of_file loc_start loc_end in
           Module_typeof s
+
+      | Parsetree.Pmty_attribute _
+      | Parsetree.Pmty_extension _ -> assert false
+
 
     (** Analyse of a Parsetree.class_type and a Types.class_type to return a couple
        (class parameters, class_kind).*)

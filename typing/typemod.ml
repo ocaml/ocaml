@@ -282,6 +282,10 @@ let rec approx_modtype env smty =
   | Pmty_typeof smod ->
       let (_, mty) = !type_module_type_of_fwd env smod in
       mty
+  | Pmty_attribute (smty, _attrs) ->
+      approx_modtype env smty
+  | Pmty_extension (s, _arg) ->
+      raise (Error (smty.pmty_loc, env, Extension s))
 
 and approx_sig env ssg =
   match ssg with
@@ -438,6 +442,10 @@ let rec transl_modtype env smty =
   | Pmty_typeof smod ->
       let tmty, mty = !type_module_type_of_fwd env smod in
       mkmty (Tmty_typeof tmty) mty env loc
+  | Pmty_attribute (smty, _attrs) ->
+      transl_modtype env smty
+  | Pmty_extension (s, _arg) ->
+      raise (Error (smty.pmty_loc, env, Extension s))
 
 
 and transl_signature env sg =

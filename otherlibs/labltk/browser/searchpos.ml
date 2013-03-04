@@ -245,6 +245,8 @@ and search_pos_module m ~pos ~env =
           end
     | Pmty_typeof md ->
         ()   (* TODO? *)
+    | Pmty_attribute (m, _) -> search_pos_module m ~pos ~env
+    | Pmty_extension _ -> ()
     end
   end
 

@@ -241,6 +241,8 @@ and module_type_desc =
   | Pmty_functor of string loc * module_type * module_type
   | Pmty_with of module_type * (Longident.t loc * with_constraint) list
   | Pmty_typeof of module_expr
+  | Pmty_attribute of (module_type * attribute)
+  | Pmty_extension of extension
 
 and signature = signature_item list
 

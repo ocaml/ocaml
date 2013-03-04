@@ -573,10 +573,10 @@ module_expr:
       { unclosed "(" 1 ")" 5 }
   | LPAREN VAL expr error
       { unclosed "(" 1 ")" 4 }
-  | extension
-      { mkmod(Pmod_extension $1) }
   | module_expr attribute
       { mkmod(Pmod_attribute ($1, $2)) }
+  | extension
+      { mkmod(Pmod_extension $1) }
 ;
 structure:
     structure_tail                              { $1 }
@@ -648,12 +648,16 @@ module_type:
       { mkmty(Pmty_functor(mkrhs $3 3, $5, $8)) }
   | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
-  | MODULE TYPE OF module_expr
+  | MODULE TYPE OF module_expr %prec below_LBRACKETCOLON
       { mkmty(Pmty_typeof $4) }
   | LPAREN module_type RPAREN
       { $2 }
   | LPAREN module_type error
       { unclosed "(" 1 ")" 3 }
+  | extension
+      { mkmty(Pmty_extension $1) }
+  | module_type attribute
+      { mkmty(Pmty_attribute ($1, $2)) }
 ;
 signature:
     /* empty */                                 { [] }
