@@ -15446,7 +15446,7 @@ module Struct =
                         (mkvalue_desc loc t (list_of_meta_list sl))))) ::
                     l
               | StInc (loc, me) ->
-                  (mkstr loc (Pstr_include (module_expr me))) :: l
+                  (mkstr loc (Pstr_include (module_expr me, []))) :: l
               | StMod (loc, n, me) ->
                   (mkstr loc
                      (Pstr_module ((with_loc n loc), (module_expr me)))) ::
@@ -15459,7 +15459,7 @@ module Struct =
                      (Pstr_modtype ((with_loc n loc), (module_type mt)))) ::
                     l
               | StOpn (loc, id) ->
-                  (mkstr loc (Pstr_open (long_uident id))) :: l
+                  (mkstr loc (Pstr_open (long_uident id, []))) :: l
               | StTyp (loc, tdl) ->
                   (mkstr loc (Pstr_type (mktype_decl tdl []))) :: l
               | StVal (loc, rf, bi) ->

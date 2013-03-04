@@ -174,10 +174,10 @@ module M:
     val module_: ?loc:Location.t -> string loc -> module_expr -> structure_item
     val rec_module: ?loc:Location.t -> (string loc * module_type * module_expr)      list -> structure_item
     val modtype: ?loc:Location.t -> string loc -> module_type -> structure_item
-    val open_: ?loc:Location.t -> Longident.t loc -> structure_item
+    val open_: ?loc:Location.t -> ?attributes:attribute list -> Longident.t loc -> structure_item
     val class_: ?loc:Location.t -> class_declaration list -> structure_item
     val class_type: ?loc:Location.t -> class_type_declaration list -> structure_item
-    val include_: ?loc:Location.t -> module_expr -> structure_item
+    val include_: ?loc:Location.t -> ?attributes:attribute list -> module_expr -> structure_item
     val map_structure_item: mapper -> structure_item -> structure_item
   end
 

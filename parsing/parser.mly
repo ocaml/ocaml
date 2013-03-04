@@ -369,11 +369,13 @@ let wrap_type_annotation newtypes core_type body =
 %token LBRACKETBAR
 %token LBRACKETLESS
 %token LBRACKETGREATER
+%token LBRACKETCOLON
 %token LESS
 %token LESSMINUS
 %token LET
 %token <string> LIDENT
 %token LPAREN
+%token LPARENCOLON
 %token MATCH
 %token METHOD
 %token MINUS
@@ -465,6 +467,8 @@ The precedences must be listed from low to high.
 %nonassoc below_EQUAL
 %left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
+%nonassoc below_LBRACKETCOLON
+%nonassoc LBRACKETCOLON                 /* expr [:extn] */
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -479,7 +483,7 @@ The precedences must be listed from low to high.
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
-          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          LPARENCOLON NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
 
 
 /* Entry points */
@@ -569,6 +573,10 @@ module_expr:
       { unclosed "(" 1 ")" 5 }
   | LPAREN VAL expr error
       { unclosed "(" 1 ")" 4 }
+  | extension
+      { mkmod(Pmod_extension $1) }
+  | module_expr attribute
+      { mkmod(Pmod_attribute ($1, $2)) }
 ;
 structure:
     structure_tail                              { $1 }
@@ -601,18 +609,14 @@ structure_item:
       { mkstr(Pstr_recmodule(List.rev $3)) }
   | MODULE TYPE ident EQUAL module_type
       { mkstr(Pstr_modtype(mkrhs $3 3, $5)) }
-  | OPEN mod_longident
-      { mkstr(Pstr_open (mkrhs $2 2)) }
+  | OPEN mod_longident opt_with_attributes
+      { mkstr(Pstr_open (mkrhs $2 2, $3)) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
-  | INCLUDE module_expr
-      { mkstr(Pstr_include $2) }
-  | DOTDOT extension
-      { mkstr (Pstr_extension $2) }
-  | structure_item DOTDOT attribute
-      { mkstr(Pstr_attribute ($1, $3)) }
+  | INCLUDE module_expr opt_with_attributes
+      { mkstr(Pstr_include ($2, $3)) }
 ;
 module_binding:
     EQUAL module_expr
@@ -677,7 +681,7 @@ signature_item:
       { mksig(Psig_modtype(mkrhs $3 3, Pmodtype_manifest $5)) }
   | OPEN mod_longident
       { mksig(Psig_open (mkrhs $2 2)) }
-  | INCLUDE module_type
+  | INCLUDE module_type %prec below_WITH
       { mksig(Psig_include $2) }
   | CLASS class_descriptions
       { mksig(Psig_class (List.rev $2)) }
@@ -686,7 +690,7 @@ signature_item:
 ;
 
 module_declaration:
-    COLON module_type
+    COLON module_type %prec below_WITH
       { $2 }
   | LPAREN UIDENT COLON module_type RPAREN module_declaration
       { mkmty(Pmty_functor(mkrhs $2 2, $4, $6)) }
@@ -696,7 +700,7 @@ module_rec_declarations:
   | module_rec_declarations AND module_rec_declaration  { $3 :: $1 }
 ;
 module_rec_declaration:
-    UIDENT COLON module_type                            { (mkrhs $1 1, $3) }
+    UIDENT COLON module_type %prec below_WITH           { (mkrhs $1 1, $3) }
 ;
 
 /* Class expressions */
@@ -731,11 +735,11 @@ class_fun_def:
       { let (l,o,p) = $1 in mkclass(Pcl_fun(l, o, p, $2)) }
 ;
 class_expr:
-    class_simple_expr
+    class_simple_expr %prec below_SHARP
       { $1 }
   | FUN class_fun_def
       { $2 }
-  | class_simple_expr simple_labeled_expr_list
+  | class_simple_expr simple_labeled_expr_list %prec below_SHARP
       { mkclass(Pcl_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN class_expr
       { mkclass(Pcl_let ($2, List.rev $3, $5)) }
@@ -835,13 +839,13 @@ concrete_method :
 class_type:
     class_signature
       { $1 }
-  | QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
+  | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_fun("?" ^ $2 , mkoption $4, $6)) }
-  | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
+  | OPTLABEL simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_fun("?" ^ $1, mkoption $2, $4)) }
-  | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
+  | LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_fun($1, $3, $5)) }
-  | simple_core_type_or_tuple MINUSGREATER class_type
+  | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_fun("", $1, $3)) }
 ;
 class_signature:
@@ -974,7 +978,7 @@ let_pattern:
 expr:
     simple_expr %prec below_SHARP
       { $1 }
-  | simple_expr simple_labeled_expr_list
+  | simple_expr simple_labeled_expr_list %prec below_SHARP
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN seq_expr
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
@@ -1072,7 +1076,7 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
-  | simple_expr attribute
+  | expr attribute
       { mkexp (Pexp_attribute($1, $2)) }
 ;
 opt_expr:
@@ -1156,8 +1160,8 @@ simple_expr:
                                 Some (ghtyp (Ptyp_package $5)), None)) }
   | LPAREN MODULE module_expr COLON error
       { unclosed "(" 1 ")" 5 }
-  | extension
-      { mkexp (Pexp_extension $1) }
+  | LPARENCOLON extension
+      { mkexp (Pexp_extension $2) }
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
@@ -1384,7 +1388,7 @@ type_declarations:
 ;
 
 type_declaration:
-    optional_type_parameters LIDENT type_kind constraints type_declaration_attribute
+    optional_type_parameters LIDENT type_kind constraints opt_with_attributes
       { let (params, variance) = List.split $1 in
         let (kind, private_flag, manifest) = $3 in
         (mkrhs $2 2, {ptype_params = params;
@@ -1394,12 +1398,7 @@ type_declaration:
               ptype_manifest = manifest;
               ptype_variance = variance;
               ptype_attributes = $5;
-              ptype_loc = symbol_rloc();
-                     }) }
-;
-type_declaration_attribute:
-    WITH attributes { $2 }
-  | { [] }
+              ptype_loc = symbol_rloc() }) }
 ;
 constraints:
         constraints CONSTRAINT constrain        { $3 :: $1 }
@@ -1479,7 +1478,8 @@ generalized_constructor_arguments:
   | OF core_type_list                           { (List.rev $2,None) }
   | COLON core_type_list MINUSGREATER simple_core_type
                                                 { (List.rev $2,Some $4) }
-  | COLON simple_core_type                      { ([],Some $2) }
+  | COLON simple_core_type %prec below_LBRACKETCOLON
+                                                { ([],Some $2) }
 ;
 
 
@@ -1574,6 +1574,14 @@ simple_core_type:
   | simple_core_type attribute
       { mktyp (Ptyp_attribute($1, $2)) }
 ;
+
+simple_core_type_no_attr:
+    simple_core_type2  %prec below_SHARP
+      { $1 }
+  | LPAREN core_type_comma_list RPAREN %prec below_SHARP
+      { match $2 with [sty] -> sty | _ -> raise Parse_error }
+;
+
 simple_core_type2:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
@@ -1615,18 +1623,8 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
   | LPAREN MODULE package_type RPAREN
       { mktyp(Ptyp_package $3) }
-  | extension
-      { mktyp (Ptyp_extension $1) }
-;
-extension:
-  | LPAREN AMPERSAND LIDENT opt_expr RPAREN  { ($3, $4) }
-;
-attribute:
-  | LPAREN COLON LIDENT opt_expr RPAREN      { ($3, $4) }
-;
-attributes:
-  | { [] }
-  | attribute attributes { $1 :: $2 }
+  | LPARENCOLON extension
+      { mktyp (Ptyp_extension $2) }
 ;
 package_type:
     mty_longident { (mkrhs $1 1, []) }
@@ -1670,8 +1668,14 @@ name_tag_list:
   | name_tag_list name_tag                      { $2 :: $1 }
 ;
 simple_core_type_or_tuple:
-    simple_core_type                            { $1 }
+    simple_core_type %prec below_LBRACKETCOLON  { $1 }
   | simple_core_type STAR core_type_list
+      { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
+;
+simple_core_type_or_tuple_no_attr:
+    simple_core_type_no_attr
+      { $1 }
+  | simple_core_type_no_attr STAR core_type_list_no_attr
       { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
 ;
 core_type_comma_list:
@@ -1679,8 +1683,12 @@ core_type_comma_list:
   | core_type_comma_list COMMA core_type        { $3 :: $1 }
 ;
 core_type_list:
-    simple_core_type                            { [$1] }
+    simple_core_type %prec below_LBRACKETCOLON  { [$1] }
   | core_type_list STAR simple_core_type        { $3 :: $1 }
+;
+core_type_list_no_attr:
+    simple_core_type_no_attr                     { [$1] }
+  | core_type_list STAR simple_core_type_no_attr { $3 :: $1 }
 ;
 meth_list:
     field SEMI meth_list                        { $1 :: $3 }
@@ -1868,5 +1876,28 @@ subtractive:
 additive:
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
+;
+
+/* Attributes */
+
+attribute:
+  LBRACKETCOLON LIDENT opt_expr RBRACKET { ($2, $3) }
+;
+opt_with_attributes:
+      { [] }
+  | WITH with_attributes { $2 }
+;
+with_attributes:
+     with_attribute
+      { [$1] }
+  | with_attribute COMMA with_attributes
+      { $1 :: $3 }
+;
+with_attribute:
+    LIDENT                                      { $1, ghunit () }
+  | LIDENT LPAREN expr RPAREN                   { $1, $3 }
+;
+extension:
+  LPARENCOLON LIDENT opt_expr RPAREN { ($2, $3) }
 ;
 %%

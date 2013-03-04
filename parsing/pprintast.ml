@@ -937,6 +937,7 @@ class printer  ()= object(self:'self)
         pp f "%a(%a)" self#module_expr me1  self#module_expr  me2
     | Pmod_unpack e ->
         pp f "(val@ %a)"  self#expression  e
+    | Pmod_extension _ | Pmod_attribute _ -> assert false
 
   method structure f x = self#list ~sep:"@\n" self#structure_item f x
 
@@ -1025,7 +1026,7 @@ class printer  ()= object(self:'self)
             | _ ->
                 pp f " =@ %a"  self#module_expr  me 
             )) me 
-    | Pstr_open (li) ->
+    | Pstr_open (li, _attrs) ->
         pp f "@[<2>open@;%a@]" self#longident_loc li;
     | Pstr_modtype (s, mt) ->
         pp f "@[<2>module type %s =@;%a@]" s.txt self#module_type mt 
@@ -1074,7 +1075,7 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>external@ %s@ :@ %a@]"
           (if need_parens then "( "^s.txt^" )" else s.txt)
           self#value_description  vd
-    | Pstr_include me ->
+    | Pstr_include (me, _attrs) ->
         pp f "@[<hov2>include@ %a@]"  self#module_expr  me 
     | Pstr_exn_rebind (s, li) ->        (* todo: check this *)
         pp f "@[<hov2>exception@ %s@ =@ %a@]" s.txt self#longident_loc li 
@@ -1091,11 +1092,6 @@ class printer  ()= object(self:'self)
               (fun f l2 -> List.iter (text_x_modtype_x_module f) l2) l2 
         | _ -> assert false
         end
-    | Pstr_attribute (body, (s, arg)) ->
-      pp f "@[<2>%a@ (:%s@ %a)@]" self#structure_item body s self#expression arg
-    | Pstr_extension (s, arg) ->
-      pp f "@[<2>&(%s@ %a)@]" s self#expression arg
-
   end
   method type_param f  = function
     | (a,opt) -> pp f "%s%a" (type_variance a ) self#type_var_option opt 

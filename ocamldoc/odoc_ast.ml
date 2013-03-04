@@ -1054,10 +1054,6 @@ module Analyser =
         Parsetree.Pstr_eval _ ->
           (* don't care *)
           (0, env, [])
-      | Parsetree.Pstr_attribute (x, _) ->
-          analyse_structure_item env current_module_name loc pos_limit comment_opt x.Parsetree.pstr_desc typedtree table table_values
-      | Parsetree.Pstr_extension _ ->
-          (0, env, [])
       | Parsetree.Pstr_value (rec_flag, pat_exp_list) ->
           (* of rec_flag * (pattern * expression) list *)
           (* For each value, look for the value name, then look in the
@@ -1423,7 +1419,7 @@ module Analyser =
           in
           (0, new_env2, [ Element_module_type mt ])
 
-      | Parsetree.Pstr_open longident ->
+      | Parsetree.Pstr_open (longident, _attrs) ->
           (* A VOIR : enrichir l'environnement quand open ? *)
           let ele_comments = match comment_opt with
             None -> []
@@ -1533,7 +1529,7 @@ module Analyser =
           in
           (0, new_env, f ~first: true loc.Location.loc_start.Lexing.pos_cnum class_type_decl_list)
 
-      | Parsetree.Pstr_include module_expr ->
+      | Parsetree.Pstr_include (module_expr, _attrs) ->
           (* we add a dummy included module which will be replaced by a correct
              one at the end of the module analysis,
              to use the Path.t of the included modules in the typdtree. *)

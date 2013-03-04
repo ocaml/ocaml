@@ -156,12 +156,15 @@ let iter_expression f e =
 
   and module_expr me =
     match me.pmod_desc with
+    | Pmod_extension _
     | Pmod_ident _ -> ()
     | Pmod_structure str -> List.iter structure_item str
     | Pmod_constraint (me, _)
+    | Pmod_attribute (me, _)
     | Pmod_functor (_, _, me) -> module_expr me
     | Pmod_apply (me1, me2) -> module_expr me1; module_expr me2
     | Pmod_unpack e -> expr e
+
 
   and structure_item str =
     match str.pstr_desc with
@@ -173,14 +176,11 @@ let iter_expression f e =
     | Pstr_modtype _
     | Pstr_open _
     | Pstr_class_type _
-    | Pstr_extension _
     | Pstr_exn_rebind _ -> ()
-    | Pstr_include me
+    | Pstr_include (me, _)
     | Pstr_module (_, me) -> module_expr me
     | Pstr_recmodule l -> List.iter (fun (_, _, me) -> module_expr me) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
-    | Pstr_attribute (i, _) -> structure_item i
-
 
   and class_expr ce =
     match ce.pcl_desc with

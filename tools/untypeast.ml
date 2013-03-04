@@ -64,7 +64,7 @@ and untype_structure_item item =
               untype_module_expr mexpr) list)
     | Tstr_modtype (_id, name, mtype) ->
         Pstr_modtype (name, untype_module_type mtype)
-    | Tstr_open (_path, lid) -> Pstr_open (lid)
+    | Tstr_open (_path, lid) -> Pstr_open (lid, [])
     | Tstr_class list ->
         Pstr_class (List.map (fun (ci, _, _) ->
               { pci_virt = ci.ci_virt;
@@ -87,7 +87,7 @@ and untype_structure_item item =
               }
           ) list)
     | Tstr_include (mexpr, _) ->
-        Pstr_include (untype_module_expr mexpr)
+        Pstr_include (untype_module_expr mexpr, [])
   in
   { pstr_desc = desc; pstr_loc = item.str_loc; }
 

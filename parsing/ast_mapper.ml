@@ -24,6 +24,7 @@ let map_tuple f1 f2 (x, y) = (f1 x, f2 y)
 let map_opt f = function None -> None | Some x -> Some (f x)
 
 let map_loc sub {loc; txt} = {loc = sub # location loc; txt}
+let map_attributes sub attrs = List.map (sub # attribute) attrs
 
 module T = struct
   (* Type expressions for the core language *)
@@ -210,6 +211,8 @@ module M = struct
   let apply ?loc m1 m2 = mk ?loc (Pmod_apply (m1, m2))
   let constraint_ ?loc m mty = mk ?loc (Pmod_constraint (m, mty))
   let unpack ?loc e = mk ?loc (Pmod_unpack e)
+  let attribute ?loc a b = mk ?loc (Pmod_attribute (a, b))
+  let extension ?loc a = mk ?loc (Pmod_extension a)
 
   let map sub {pmod_loc = loc; pmod_desc = desc} =
     let loc = sub # location loc in
@@ -220,6 +223,8 @@ module M = struct
     | Pmod_apply (m1, m2) -> apply ~loc (sub # module_expr m1) (sub # module_expr m2)
     | Pmod_constraint (m, mty) -> constraint_ ~loc (sub # module_expr m) (sub # module_type mty)
     | Pmod_unpack e -> unpack ~loc (sub # expr e)
+    | Pmod_attribute (body, x) -> attribute ~loc (sub # module_expr body) (sub # attribute x)
+    | Pmod_extension x -> extension ~loc (sub # extension x)
 
   let mk_item ?(loc = Location.none) x = {pstr_desc = x; pstr_loc = loc}
   let eval ?loc a = mk_item ?loc (Pstr_eval a)
@@ -231,12 +236,10 @@ module M = struct
   let module_ ?loc a b = mk_item ?loc (Pstr_module (a, b))
   let rec_module ?loc a = mk_item ?loc (Pstr_recmodule a)
   let modtype ?loc a b = mk_item ?loc (Pstr_modtype (a, b))
-  let open_ ?loc a = mk_item ?loc (Pstr_open a)
+  let open_ ?loc ?(attributes = []) a = mk_item ?loc (Pstr_open (a, attributes))
   let class_ ?loc a = mk_item ?loc (Pstr_class a)
   let class_type ?loc a = mk_item ?loc (Pstr_class_type a)
-  let include_ ?loc a = mk_item ?loc (Pstr_include a)
-  let attribute ?loc a b = mk_item ?loc (Pstr_attribute (a, b))
-  let extension ?loc a = mk_item ?loc (Pstr_extension a)
+  let include_ ?loc ?(attributes = []) a = mk_item ?loc (Pstr_include (a, attributes))
 
   let map_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
     let loc = sub # location loc in
@@ -250,12 +253,10 @@ module M = struct
     | Pstr_module (s, m) -> module_ ~loc (map_loc sub s) (sub # module_expr m)
     | Pstr_recmodule l -> rec_module ~loc (List.map (fun (s, mty, me) -> (map_loc sub s, sub # module_type mty, sub # module_expr me)) l)
     | Pstr_modtype (s, mty) -> modtype ~loc (map_loc sub s) (sub # module_type mty)
-    | Pstr_open lid -> open_ ~loc (map_loc sub lid)
+    | Pstr_open (lid, attrs) -> open_ ~loc ~attributes:(map_attributes sub attrs) (map_loc sub lid)
     | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
     | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
-    | Pstr_include e -> include_ ~loc (sub # module_expr e)
-    | Pstr_attribute (body, x) -> attribute ~loc (sub # structure_item body) (sub # attribute x)
-    | Pstr_extension x -> extension ~loc (sub # extension x)
+    | Pstr_include (e, attrs) -> include_ ~loc (sub # module_expr e) ~attributes:(map_attributes sub attrs)
 end
 
 module E = struct

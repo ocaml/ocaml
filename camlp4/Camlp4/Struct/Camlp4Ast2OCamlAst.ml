@@ -1075,13 +1075,13 @@ value varify_constructors var_names =
     | StExc _ _ _ -> assert False (*FIXME*)
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
     | StExt loc n t sl -> [mkstr loc (Pstr_primitive (with_loc n loc) (mkvalue_desc loc t (list_of_meta_list sl))) :: l]
-    | StInc loc me -> [mkstr loc (Pstr_include (module_expr me)) :: l]
+    | StInc loc me -> [mkstr loc (Pstr_include (module_expr me, [])) :: l]
     | StMod loc n me -> [mkstr loc (Pstr_module (with_loc n loc) (module_expr me)) :: l]
     | StRecMod loc mb ->
         [mkstr loc (Pstr_recmodule (module_str_binding mb [])) :: l]
     | StMty loc n mt -> [mkstr loc (Pstr_modtype (with_loc n loc) (module_type mt)) :: l]
     | StOpn loc id ->
-        [mkstr loc (Pstr_open (long_uident id)) :: l]
+        [mkstr loc (Pstr_open (long_uident id, [])) :: l]
     | StTyp loc tdl -> [mkstr loc (Pstr_type (mktype_decl tdl [])) :: l]
     | StVal loc rf bi ->
         [mkstr loc (Pstr_value (mkrf rf) (binding bi [])) :: l]

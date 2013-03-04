@@ -251,6 +251,10 @@ and add_module bv modl =
       add_module bv modl; add_modtype bv mty
   | Pmod_unpack(e) ->
       add_expr bv e
+  | Pmod_attribute(modl, _) ->
+      add_module bv modl
+  | Pmod_extension _ ->
+      ()
 
 and add_structure bv item_list =
   List.fold_left add_struct_item bv item_list
@@ -281,16 +285,14 @@ and add_struct_item bv item =
       bv'
   | Pstr_modtype(id, mty) ->
       add_modtype bv mty; bv
-  | Pstr_open l ->
+  | Pstr_open (l, _attrs) ->
       addmodule bv l; bv
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; bv
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; bv
-  | Pstr_include modl ->
+  | Pstr_include (modl, _attrs) ->
       add_module bv modl; bv
-  | Pstr_attribute (e, _) -> add_struct_item bv e
-  | Pstr_extension _ -> bv
 
 and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)

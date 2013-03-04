@@ -281,6 +281,8 @@ and module_expr_desc =
   | Pmod_apply of module_expr * module_expr
   | Pmod_constraint of module_expr * module_type
   | Pmod_unpack of expression
+  | Pmod_attribute of (module_expr * attribute)
+  | Pmod_extension of extension
 
 and structure = structure_item list
 
@@ -298,12 +300,10 @@ and structure_item_desc =
   | Pstr_module of string loc * module_expr
   | Pstr_recmodule of (string loc * module_type * module_expr) list
   | Pstr_modtype of string loc * module_type
-  | Pstr_open of Longident.t loc
+  | Pstr_open of Longident.t loc * attribute list
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
-  | Pstr_include of module_expr
-  | Pstr_attribute of structure_item * attribute
-  | Pstr_extension of extension
+  | Pstr_include of module_expr * attribute list
 
 (* Toplevel phrases *)
 

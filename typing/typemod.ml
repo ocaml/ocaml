@@ -912,6 +912,10 @@ let rec type_module sttn funct_body anchor env smod =
            mod_type = mty;
            mod_env = env;
            mod_loc = smod.pmod_loc }
+  | Pmod_attribute (me, _attrs) ->
+      type_module sttn funct_body anchor env me
+  | Pmod_extension (s, _arg) ->
+      raise (Error (smod.pmod_loc, env, Extension s))
 
 and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_names = ref StringSet.empty
@@ -1044,7 +1048,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          Sig_modtype(id, Modtype_manifest mty.mty_type) :: sig_rem,
          final_env)
-    | Pstr_open (lid) ->
+    | Pstr_open (lid, _attrs) ->
         let (path, newenv) = type_open ~toplevel env loc lid in
         let item = mk (Tstr_open (path, lid)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
@@ -1106,7 +1110,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                   Sig_type(i'', d'', rs)])
               classes [sig_rem]),
          final_env)
-    | Pstr_include smodl ->
+    | Pstr_include (smodl, _attrs) ->
         let modl = type_module true funct_body None env smodl in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
@@ -1119,10 +1123,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          sg @ sig_rem,
          final_env)
-    | Pstr_attribute (st, _) ->
-        type_struct env srem (* keep attribute in the typedtree? *)
-    | Pstr_extension (s, _arg) ->
-        raise (Error (loc, env, Extension s))
   in
   if !Clflags.annotations then
     (* moved to genannot *)

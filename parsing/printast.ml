@@ -377,12 +377,15 @@ and type_declaration i ppf x =
   line i ppf "ptype_manifest =\n";
   option (i+1) core_type ppf x.ptype_manifest;
   line i ppf "ptype_attributes = \n";
+  attributes (i+1) ppf x.ptype_attributes
+
+and attributes i ppf l =
   List.iter
     (fun (s, arg) ->
-      line (i + 1) ppf "attribute \"%s\"\n" s;
-      expression (i + 1) ppf arg;
+      line i ppf "attribute \"%s\"\n" s;
+      expression i ppf arg;
     )
-    x.ptype_attributes
+    l
 
 and type_kind i ppf x =
   match x with
@@ -631,6 +634,13 @@ and module_expr i ppf x =
   | Pmod_unpack (e) ->
       line i ppf "Pmod_unpack\n";
       expression i ppf e;
+  | Pmod_attribute (body, (s, arg)) ->
+      line i ppf "Pmod_attribute \"%s\"\n" s;
+      expression i ppf arg;
+      module_expr i ppf body
+  | Pmod_extension (s, arg) ->
+      line i ppf "Pmod_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and structure i ppf x = list i structure_item ppf x
 
@@ -666,23 +676,19 @@ and structure_item i ppf x =
   | Pstr_modtype (s, mt) ->
       line i ppf "Pstr_modtype %a\n" fmt_string_loc s;
       module_type i ppf mt;
-  | Pstr_open li -> line i ppf "Pstr_open %a\n" fmt_longident_loc li;
+  | Pstr_open (li, attrs) ->
+      line i ppf "Pstr_open %a\n" fmt_longident_loc li;
+      attributes i ppf attrs
   | Pstr_class (l) ->
       line i ppf "Pstr_class\n";
       list i class_declaration ppf l;
   | Pstr_class_type (l) ->
       line i ppf "Pstr_class_type\n";
       list i class_type_declaration ppf l;
-  | Pstr_include me ->
+  | Pstr_include (me, attrs) ->
       line i ppf "Pstr_include";
-      module_expr i ppf me
-  | Pstr_attribute (body, (s, arg)) ->
-      line i ppf "Pstr_attribute \"%s\"\n" s;
-      expression i ppf arg;
-      structure_item i ppf body
-  | Pstr_extension (s, arg) ->
-      line i ppf "Pstr_extension \"%s\"\n" s;
-      expression i ppf arg
+      module_expr i ppf me;
+      attributes i ppf attrs
 
 and string_x_type_declaration i ppf (s, td) =
   string_loc i ppf s;
