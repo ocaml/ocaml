@@ -599,10 +599,13 @@ and signature_item i ppf x =
   | Psig_modtype (s, md) ->
       line i ppf "Psig_modtype %a\n" fmt_string_loc s;
       modtype_declaration i ppf md;
-  | Psig_open li -> line i ppf "Psig_open %a\n" fmt_longident_loc li;
-  | Psig_include (mt) ->
+  | Psig_open (li, attrs) ->
+      line i ppf "Psig_open %a\n" fmt_longident_loc li;
+      attributes i ppf attrs
+  | Psig_include (mt, attrs) ->
       line i ppf "Psig_include\n";
       module_type i ppf mt;
+      attributes i ppf attrs
   | Psig_class (l) ->
       line i ppf "Psig_class\n";
       list i class_description ppf l;

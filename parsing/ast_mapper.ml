@@ -199,8 +199,8 @@ module MT = struct
   let module_ ?loc a b = mk_item ?loc (Psig_module (a, b))
   let rec_module ?loc a = mk_item ?loc (Psig_recmodule a)
   let modtype ?loc a b = mk_item ?loc (Psig_modtype (a, b))
-  let open_ ?loc a = mk_item ?loc (Psig_open a)
-  let include_ ?loc a = mk_item ?loc (Psig_include a)
+  let open_ ?loc ?(attributes = []) a = mk_item ?loc (Psig_open (a, attributes))
+  let include_ ?loc ?(attributes = []) a = mk_item ?loc (Psig_include (a, attributes))
   let class_ ?loc a = mk_item ?loc (Psig_class a)
   let class_type ?loc a = mk_item ?loc (Psig_class_type a)
 
@@ -214,8 +214,8 @@ module MT = struct
     | Psig_recmodule l -> rec_module ~loc (List.map (map_tuple (map_loc sub) (sub # module_type)) l)
     | Psig_modtype (s, Pmodtype_manifest mt) -> modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt))
     | Psig_modtype (s, Pmodtype_abstract) -> modtype ~loc (map_loc sub s) Pmodtype_abstract
-    | Psig_open s -> open_ ~loc (map_loc sub s)
-    | Psig_include mt -> include_ ~loc (sub # module_type mt)
+    | Psig_open (lid, attrs) -> open_ ~loc ~attributes:(map_attributes sub attrs) (map_loc sub lid)
+    | Psig_include (mt, attrs) -> include_ ~loc (sub # module_type mt) ~attributes:(map_attributes sub attrs)
     | Psig_class l -> class_ ~loc (List.map (sub # class_description) l)
     | Psig_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
 

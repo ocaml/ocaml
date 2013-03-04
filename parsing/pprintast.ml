@@ -891,9 +891,9 @@ class printer  ()= object(self:'self)
         pp f "@[<hov>module@ %s@ :@ %a@]"
           s.txt
           self#module_type  mt
-    | Psig_open li ->
+    | Psig_open (li, _attrs) ->
         pp f "@[<hov2>open@ %a@]" self#longident_loc li
-    | Psig_include (mt) ->
+    | Psig_include (mt, _attrs) ->
         pp f "@[<hov2>include@ %a@]"
           self#module_type  mt
     | Psig_modtype (s, md) ->

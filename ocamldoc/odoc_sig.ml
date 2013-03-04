@@ -867,7 +867,7 @@ module Analyser =
             in
             (maybe_more, new_env2, [ Element_module_type mt ])
 
-        | Parsetree.Psig_include module_type ->
+        | Parsetree.Psig_include (module_type, _attrs) ->
             let rec f = function
                 Parsetree.Pmty_ident longident ->
                   Name.from_longident longident.txt

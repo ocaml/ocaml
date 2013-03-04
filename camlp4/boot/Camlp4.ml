@@ -15332,7 +15332,7 @@ module Struct =
                         (mkvalue_desc loc t (list_of_meta_list sl))))) ::
                     l
               | SgInc (loc, mt) ->
-                  (mksig loc (Psig_include (module_type mt))) :: l
+                  (mksig loc (Psig_include (module_type mt, []))) :: l
               | SgMod (loc, n, mt) ->
                   (mksig loc
                      (Psig_module ((with_loc n loc), (module_type mt)))) ::
@@ -15347,7 +15347,7 @@ module Struct =
                      | _ -> Pmodtype_manifest (module_type mt))
                   in (mksig loc (Psig_modtype ((with_loc n loc), si))) :: l
               | SgOpn (loc, id) ->
-                  (mksig loc (Psig_open (long_uident id))) :: l
+                  (mksig loc (Psig_open (long_uident id, []))) :: l
               | SgTyp (loc, tdl) ->
                   (mksig loc (Psig_type (mktype_decl tdl []))) :: l
               | SgVal (loc, n, t) ->

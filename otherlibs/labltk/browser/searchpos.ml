@@ -189,7 +189,7 @@ let rec search_pos_signature l ~pos ~env =
   List.fold_left l ~init:env ~f:
   begin fun env pt ->
     let env = match pt.psig_desc with
-      Psig_open id ->
+      Psig_open (id, _) ->
         let path, mt = lookup_module id.txt env in
         begin match mt with
           Mty_signature sign -> open_signature path sign env
@@ -222,8 +222,8 @@ let rec search_pos_signature l ~pos ~env =
           List.iter l
             ~f:(fun ci -> search_pos_class_type ci.pci_expr ~pos ~env)
       (* The last cases should not happen in generated interfaces *)
-      | Psig_open lid -> add_found_sig (`Module, lid.txt) ~env ~loc:pt.psig_loc
-      | Psig_include t -> search_pos_module t ~pos ~env
+      | Psig_open (lid, _) -> add_found_sig (`Module, lid.txt) ~env ~loc:pt.psig_loc
+      | Psig_include (t, _) -> search_pos_module t ~pos ~env
       end;
     env
   end)

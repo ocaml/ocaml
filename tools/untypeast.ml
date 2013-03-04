@@ -322,8 +322,8 @@ and untype_signature_item item =
               name, untype_module_type mtype) list)
     | Tsig_modtype (_id, name, mdecl) ->
         Psig_modtype (name, untype_modtype_declaration mdecl)
-    | Tsig_open (_path, lid) -> Psig_open (lid)
-    | Tsig_include (mty, _lid) -> Psig_include (untype_module_type mty)
+    | Tsig_open (_path, lid) -> Psig_open (lid, [])
+    | Tsig_include (mty, _lid) -> Psig_include (untype_module_type mty, [])
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->

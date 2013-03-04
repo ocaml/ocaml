@@ -1001,7 +1001,7 @@ value varify_constructors var_names =
                                    {ped_args=List.map ctyp (list_of_ctyp t []); ped_attributes=[]}) :: l]
     | SgExc _ _ -> assert False (*FIXME*)
     | SgExt loc n t sl -> [mksig loc (Psig_value (with_loc n loc) (mkvalue_desc loc t (list_of_meta_list sl))) :: l]
-    | SgInc loc mt -> [mksig loc (Psig_include (module_type mt)) :: l]
+    | SgInc loc mt -> [mksig loc (Psig_include (module_type mt) []) :: l]
     | SgMod loc n mt -> [mksig loc (Psig_module (with_loc n loc) (module_type mt)) :: l]
     | SgRecMod loc mb ->
         [mksig loc (Psig_recmodule (module_sig_binding mb [])) :: l]
@@ -1013,7 +1013,7 @@ value varify_constructors var_names =
         in
         [mksig loc (Psig_modtype (with_loc n loc) si) :: l]
     | SgOpn loc id ->
-        [mksig loc (Psig_open (long_uident id)) :: l]
+        [mksig loc (Psig_open (long_uident id) []) :: l]
     | SgTyp loc tdl -> [mksig loc (Psig_type (mktype_decl tdl [])) :: l]
     | SgVal loc n t -> [mksig loc (Psig_value (with_loc n loc) (mkvalue_desc loc t [])) :: l]
     | <:sig_item@loc< $anti:_$ >> -> error loc "antiquotation in sig_item" ]

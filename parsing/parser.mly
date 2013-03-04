@@ -609,10 +609,10 @@ structure_item:
                                           pval_loc = symbol_rloc ()})) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
-  | EXCEPTION UIDENT constructor_arguments
-      { mkstr(Pstr_exception(mkrhs $2 2, {ped_args=$3;ped_attributes=[]})) }
-  | EXCEPTION UIDENT EQUAL constr_longident
-      { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4))) }
+  | opt_with_pre_attributes EXCEPTION UIDENT constructor_arguments opt_with_attributes
+      { mkstr(Pstr_exception(mkrhs $3 3, {ped_args=$4;ped_attributes=$1 @ $5})) }
+  | opt_with_pre_attributes EXCEPTION UIDENT EQUAL constr_longident opt_with_attributes
+      { mkstr(Pstr_exn_rebind(mkrhs $3 3, mkloc $5 (rhs_loc 5))) (* todo: keep attributes *) }
   | MODULE UIDENT module_binding
       { mkstr(Pstr_module(mkrhs $2 2, $3)) }
   | MODULE REC module_rec_bindings
@@ -697,10 +697,10 @@ signature_item:
       { mksig(Psig_modtype(mkrhs $3 3, Pmodtype_abstract)) }
   | MODULE TYPE ident EQUAL module_type
       { mksig(Psig_modtype(mkrhs $3 3, Pmodtype_manifest $5)) }
-  | OPEN mod_longident
-      { mksig(Psig_open (mkrhs $2 2)) }
-  | INCLUDE module_type %prec below_WITH
-      { mksig(Psig_include $2) }
+  | opt_with_pre_attributes OPEN mod_longident opt_with_attributes
+      { mksig(Psig_open (mkrhs $3 3, $1 @ $4)) }
+  | opt_with_pre_attributes INCLUDE module_type opt_with_attributes %prec below_WITH
+      { mksig(Psig_include ($3, $1 @ $4)) }
   | CLASS class_descriptions
       { mksig(Psig_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations

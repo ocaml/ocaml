@@ -270,8 +270,8 @@ and signature_item_desc =
   | Psig_module of string loc * module_type
   | Psig_recmodule of (string loc * module_type) list
   | Psig_modtype of string loc * modtype_declaration
-  | Psig_open of Longident.t loc
-  | Psig_include of module_type
+  | Psig_open of Longident.t loc * attribute list
+  | Psig_include of module_type * attribute list
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
 

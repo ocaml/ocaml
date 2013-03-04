@@ -149,8 +149,8 @@ module MT:
     val module_: ?loc:Location.t -> string loc -> module_type -> signature_item
     val rec_module: ?loc:Location.t -> (string loc * module_type) list -> signature_item
     val modtype: ?loc:Location.t -> string loc -> modtype_declaration -> signature_item
-    val open_: ?loc:Location.t -> Longident.t loc -> signature_item
-    val include_: ?loc:Location.t -> module_type -> signature_item
+    val open_: ?loc:Location.t -> ?attributes:Parsetree.attribute list -> Longident.t loc -> signature_item
+    val include_: ?loc:Location.t -> ?attributes:Parsetree.attribute list -> module_type -> signature_item
     val class_: ?loc:Location.t -> class_description list -> signature_item
     val class_type: ?loc:Location.t -> class_type_declaration list -> signature_item
     val map_signature_item: mapper -> signature_item -> signature_item

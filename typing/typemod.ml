@@ -315,10 +315,10 @@ and approx_sig env ssg =
           let info = approx_modtype_info env sinfo in
           let (id, newenv) = Env.enter_modtype name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
-      | Psig_open lid ->
+      | Psig_open (lid, _attrs) ->
           let (path, mty) = type_open env item.psig_loc lid in
           approx_sig mty srem
-      | Psig_include smty ->
+      | Psig_include (smty, _attrs) ->
           let mty = approx_modtype env smty in
           let sg = Subst.signature Subst.identity
                      (extract_sig env smty.pmty_loc mty) in
@@ -517,11 +517,11 @@ and transl_signature env sg =
             mksig (Tsig_modtype (id, name, tinfo)) env loc :: trem,
             Sig_modtype(id, info) :: rem,
             final_env
-        | Psig_open lid ->
+        | Psig_open (lid, _attrs) ->
             let (path, newenv) = type_open env item.psig_loc lid in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_open (path,lid)) env loc :: trem, rem, final_env
-        | Psig_include smty ->
+        | Psig_include (smty, _attrs) ->
             let tmty = transl_modtype env smty in
             let mty = tmty.mty_type in
             let sg = Subst.signature Subst.identity

@@ -235,9 +235,9 @@ and add_sig_item bv item =
       | Pmodtype_manifest mty -> add_modtype bv mty
       end;
       bv
-  | Psig_open lid ->
+  | Psig_open (lid, _) ->
       addmodule bv lid; bv
-  | Psig_include mty ->
+  | Psig_include (mty, _) ->
       add_modtype bv mty; bv
   | Psig_class cdl ->
       List.iter (add_class_description bv) cdl; bv
