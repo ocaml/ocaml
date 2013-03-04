@@ -93,9 +93,11 @@ and untype_structure_item item =
 
 and untype_value_description v =
   {
-    pval_prim = v.val_prim;
-    pval_type = untype_core_type v.val_desc;
-    pval_loc = v.val_loc }
+   pval_prim = v.val_prim;
+   pval_type = untype_core_type v.val_desc;
+   pval_loc = v.val_loc;
+   pval_attributes = [];
+  }
 
 and untype_type_declaration decl =
   {
@@ -124,7 +126,10 @@ and untype_type_declaration decl =
   }
 
 and untype_exception_declaration decl =
-  List.map untype_core_type decl.exn_params
+  {
+   ped_args = List.map untype_core_type decl.exn_params;
+   ped_attributes = [];
+  }
 
 and untype_pattern pat =
   let desc =

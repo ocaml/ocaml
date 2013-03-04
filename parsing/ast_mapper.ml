@@ -522,7 +522,11 @@ class mapper =
     method pat = P.map this
     method expr = E.map this
 
-    method exception_declaration tl = List.map (this # typ) tl
+    method exception_declaration ped =
+      {
+       ped_args = List.map (this # typ) ped.ped_args;
+       ped_attributes = map_attributes this ped.ped_attributes;
+      }
 
     method location l = l
 

@@ -610,7 +610,7 @@ structure_item:
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
-      { mkstr(Pstr_exception(mkrhs $2 2, $3)) }
+      { mkstr(Pstr_exception(mkrhs $2 2, {ped_args=$3;ped_attributes=[]})) }
   | EXCEPTION UIDENT EQUAL constr_longident
       { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4))) }
   | MODULE UIDENT module_binding
@@ -687,8 +687,8 @@ signature_item:
                                       pval_loc = symbol_rloc()})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
-  | EXCEPTION UIDENT constructor_arguments
-      { mksig(Psig_exception(mkrhs $2 2, $3)) }
+  | opt_with_pre_attributes EXCEPTION UIDENT constructor_arguments opt_with_attributes
+      { mksig(Psig_exception(mkrhs $3 3, {ped_args = $4; ped_attributes = $1 @ $5})) }
   | MODULE UIDENT module_declaration
       { mksig(Psig_module(mkrhs $2 2, $3)) }
   | MODULE REC module_rec_declarations
@@ -1499,7 +1499,6 @@ constructor_arguments:
     /*empty*/                                   { [] }
   | OF core_type_list                           { List.rev $2 }
 ;
-
 generalized_constructor_arguments:
     /*empty*/                                   { ([],None) }
   | OF core_type_list                           { (List.rev $2,None) }

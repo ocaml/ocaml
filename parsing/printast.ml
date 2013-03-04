@@ -406,7 +406,9 @@ and type_kind i ppf x =
       line i ppf "Ptype_record\n";
       list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
 
-and exception_declaration i ppf x = list i core_type ppf x
+and exception_declaration i ppf x =
+  list i core_type ppf x.ped_args;
+  attributes i ppf x.ped_attributes
 
 and class_type i ppf x =
   line i ppf "class_type %a\n" fmt_location x.pcty_loc;

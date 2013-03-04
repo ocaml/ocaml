@@ -221,8 +221,8 @@ and add_sig_item bv item =
       add_type bv vd.pval_type; bv
   | Psig_type dcls ->
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
-  | Psig_exception(id, args) ->
-      List.iter (add_type bv) args; bv
+  | Psig_exception(id, ped) ->
+      List.iter (add_type bv) ped.ped_args; bv
   | Psig_module(id, mty) ->
       add_modtype bv mty; StringSet.add id.txt bv
   | Psig_recmodule decls ->
@@ -275,8 +275,8 @@ and add_struct_item bv item =
       add_type bv vd.pval_type; bv
   | Pstr_type dcls ->
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
-  | Pstr_exception(id, args) ->
-      List.iter (add_type bv) args; bv
+  | Pstr_exception(id, ped) ->
+      List.iter (add_type bv) ped.ped_args; bv
   | Pstr_exn_rebind(id, l) ->
       add bv l; bv
   | Pstr_module(id, modl) ->

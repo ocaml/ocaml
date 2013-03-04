@@ -881,7 +881,7 @@ let transl_closed_type env sty =
 let transl_exception env loc excdecl =
   reset_type_variables();
   Ctype.begin_def();
-  let ttypes = List.map (transl_closed_type env) excdecl in
+  let ttypes = List.map (transl_closed_type env) excdecl.ped_args in
   Ctype.end_def();
   let types = List.map (fun cty -> cty.ctyp_type) ttypes in
   List.iter Ctype.generalize types;

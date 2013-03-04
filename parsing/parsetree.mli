@@ -168,7 +168,11 @@ and constructor_declaration =
      pcd_attributes: attribute list;
     }
 
-and exception_declaration = core_type list
+and exception_declaration =
+    {
+     ped_args: core_type list;
+     ped_attributes: attribute list;
+    }
 
 (* Type expressions for the class language *)
 

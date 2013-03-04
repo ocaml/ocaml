@@ -701,8 +701,7 @@ class printer  ()= object(self:'self)
     pp f "@[<hov2>exception@ %s%a@]" s
       (fun f ed -> match ed with
       |[] -> ()
-      |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) ed
-
+      |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) ed.ped_args
 
   method class_signature f { pcsig_self = ct; pcsig_fields = l ;_} =
     let class_type_field f x =
