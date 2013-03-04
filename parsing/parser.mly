@@ -1160,8 +1160,8 @@ simple_expr:
                                 Some (ghtyp (Ptyp_package $5)), None)) }
   | LPAREN MODULE module_expr COLON error
       { unclosed "(" 1 ")" 5 }
-  | LPARENCOLON extension
-      { mkexp (Pexp_extension $2) }
+  | extension
+      { mkexp (Pexp_extension $1) }
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
@@ -1623,8 +1623,8 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
   | LPAREN MODULE package_type RPAREN
       { mktyp(Ptyp_package $3) }
-  | LPARENCOLON extension
-      { mktyp (Ptyp_extension $2) }
+  | extension
+      { mktyp (Ptyp_extension $1) }
 ;
 package_type:
     mty_longident { (mkrhs $1 1, []) }
