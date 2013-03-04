@@ -1118,15 +1118,15 @@ class printer  ()= object(self:'self)
           (self#list aux ~sep:"@]@,@[<2>and " ~last:"@]@]") xs 
           (* called by type_def_list *)        
   method type_declaration f x = begin
-    let  type_variant_leaf f  (s, l,gadt, _loc)  = match gadt with
+    let  type_variant_leaf f  {pcd_name; pcd_args; pcd_res; pcd_loc=_; pcd_attributes=_} = match pcd_res with
     |None -> 
-        pp f "@\n|@;%s%a" s.txt
+        pp f "@\n|@;%s%a" pcd_name.txt
           (fun f l -> match l with
           | [] -> ()
-          | _ -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) l
+          | _ -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) pcd_args
     |Some x ->
-        pp f "@\n|@;%s:@;%a" s.txt
-          (self#list self#core_type1 ~sep:"@;->@;") (l@[x]) in
+        pp f "@\n|@;%s:@;%a" pcd_name.txt
+          (self#list self#core_type1 ~sep:"@;->@;") (pcd_args@[x]) in
     pp f "%a%a@ %a"
       (fun f x -> match (x.ptype_manifest,x.ptype_kind,x.ptype_private) with
       | (None,_,Public) ->  pp f "@;"

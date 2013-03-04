@@ -154,10 +154,18 @@ and type_declaration =
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of
-      (string loc * core_type list * core_type option * Location.t) list
+  | Ptype_variant of constructor_declaration list
   | Ptype_record of
       (string loc * mutable_flag * core_type * Location.t) list
+
+and constructor_declaration =
+    {
+     pcd_name: string loc;
+     pcd_args: core_type list;
+     pcd_res: core_type option;
+     pcd_loc: Location.t;
+     pcd_attributes: attribute list;
+    }
 
 and exception_declaration = core_type list
 

@@ -111,6 +111,8 @@ module T:
     val map: mapper -> core_type -> core_type
     val map_type_declaration: mapper -> type_declaration -> type_declaration
     val map_type_kind: mapper -> type_kind -> type_kind
+
+    val constructor_decl: ?res:Parsetree.core_type -> ?loc:Location.t -> ?attributes:Parsetree.attribute list -> string Asttypes.loc -> Parsetree.core_type list -> Parsetree.constructor_declaration
   end
 
 module CT:

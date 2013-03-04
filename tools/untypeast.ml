@@ -108,8 +108,7 @@ and untype_type_declaration decl =
         Ttype_abstract -> Ptype_abstract
       | Ttype_variant list ->
           Ptype_variant (List.map (fun (_s, name, cts, loc) ->
-                (name, List.map untype_core_type cts, None, loc)
-            ) list)
+                {pcd_name = name; pcd_args = List.map untype_core_type cts; pcd_res = None; pcd_loc = loc; pcd_attributes = []}) list)
       | Ttype_record list ->
           Ptype_record (List.map (fun (_s, name, mut, ct, loc) ->
                 (name, mut, untype_core_type ct, loc)

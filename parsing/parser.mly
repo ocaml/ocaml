@@ -1470,9 +1470,14 @@ constructor_declarations:
 ;
 constructor_declaration:
 
-  | constr_ident generalized_constructor_arguments
-      { let arg_types,ret_type = $2 in
-        (mkrhs $1 1, arg_types,ret_type, symbol_rloc()) }
+  | constr_ident attributes generalized_constructor_arguments
+      { let arg_types,ret_type = $3 in
+        {pcd_name = mkrhs $1 1;
+         pcd_args = arg_types;
+         pcd_res = ret_type;
+         pcd_loc = symbol_rloc();
+         pcd_attributes = $2}
+       }
 ;
 
 constructor_arguments:
@@ -1894,6 +1899,10 @@ opt_with_attributes:
       { [] }
   | LBRACKETATAT LIDENT opt_expr RBRACKET opt_with_attributes
             { ($2, $3) :: $5 }
+;
+attributes:
+    { [] }
+  | attribute attributes { $1 :: $2 }
 ;
 extension:
   LBRACKETSHARP LIDENT opt_expr RBRACKET { ($2, $3) }

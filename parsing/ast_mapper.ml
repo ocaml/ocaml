@@ -95,9 +95,26 @@ module T = struct
      ptype_attributes = List.map (sub # attribute) td.ptype_attributes;
     }
 
+  let constructor_decl ?res ?(loc = Location.none) ?(attributes = []) name args =
+    {
+     pcd_name = name;
+     pcd_args = args;
+     pcd_res = res;
+     pcd_loc = loc;
+     pcd_attributes = attributes;
+    }
+
+  let map_constructor_decl sub {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
+    constructor_decl
+      (map_loc sub pcd_name)
+      (List.map (sub # typ) pcd_args)
+      ?res:(map_opt (sub # typ) pcd_res)
+      ~loc:(sub # location pcd_loc)
+      ~attributes:(List.map (sub # attribute) pcd_attributes)
+
   let map_type_kind sub = function
     | Ptype_abstract -> Ptype_abstract
-    | Ptype_variant l -> Ptype_variant (List.map (fun (s, tl, t, loc) -> (map_loc sub s, List.map (sub # typ) tl, map_opt (sub # typ) t, sub # location loc)) l)
+    | Ptype_variant l -> Ptype_variant (List.map (map_constructor_decl sub) l)
     | Ptype_record l -> Ptype_record (List.map (fun (s, flags, t, loc) -> (map_loc sub s, flags, sub # typ t, sub # location loc)) l)
 end
 

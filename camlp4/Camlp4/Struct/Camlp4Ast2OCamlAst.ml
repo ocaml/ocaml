@@ -339,14 +339,13 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value mkvariant =
     fun
     [ <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ >> ->
-      (with_loc (conv_con s) sloc, [], None, mkloc loc)
+      {pcd_name = with_loc (conv_con s) sloc; pcd_args = []; pcd_res = None; pcd_loc = mkloc loc; pcd_attributes = []}
     | <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ of $t$ >> ->
-      (with_loc (conv_con s) sloc, List.map ctyp (list_of_ctyp t []), None, mkloc loc)
+        {pcd_name = with_loc (conv_con s) sloc; pcd_args = List.map ctyp (list_of_ctyp t []); pcd_res = None; pcd_loc = mkloc loc; pcd_attributes = []}
     | <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ : ($t$ -> $u$) >> ->
-      (with_loc (conv_con s) sloc, List.map ctyp (list_of_ctyp t []), Some (ctyp u), mkloc loc)
+        {pcd_name = with_loc (conv_con s) sloc; pcd_args = List.map ctyp (list_of_ctyp t []); pcd_res = Some (ctyp u); pcd_loc = mkloc loc; pcd_attributes = []}
     | <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ : $t$ >> ->
-      (with_loc (conv_con s) sloc, [], Some (ctyp t), mkloc loc)
-
+        {pcd_name = with_loc (conv_con s) sloc; pcd_args = []; pcd_res = Some (ctyp t); pcd_loc = mkloc loc; pcd_attributes = []}
     | _ -> assert False (*FIXME*) ];
   value rec type_decl tl cl loc m pflag =
     fun

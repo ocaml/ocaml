@@ -175,24 +175,23 @@ module Analyser =
           (0, [])
       | Parsetree.Ptype_variant cons_core_type_list_list ->
           let rec f acc cons_core_type_list_list =
+            let open Parsetree in
             match cons_core_type_list_list with
               [] ->
                 (0, acc)
-            | (name, _, _, loc) :: [] ->
+            | pcd :: [] ->
                 let s = get_string_of_file
-                    loc.Location.loc_end.Lexing.pos_cnum
+                    pcd.pcd_loc.Location.loc_end.Lexing.pos_cnum
                     pos_limit
                 in
                 let (len, comment_opt) =  My_ir.just_after_special !file_name s in
-                (len, acc @ [ (name.txt, comment_opt) ])
-            | (name, _, _, loc) :: (name2, core_type_list2, ret_type2, loc2)
-              :: q ->
-                let pos_end_first = loc.Location.loc_end.Lexing.pos_cnum in
-                let pos_start_second = loc2.Location.loc_start.Lexing.pos_cnum in
+                (len, acc @ [ (pcd.pcd_name.txt, comment_opt) ])
+            | pcd :: (pcd2 :: _ as q) ->
+                let pos_end_first = pcd.pcd_loc.Location.loc_end.Lexing.pos_cnum in
+                let pos_start_second = pcd2.pcd_loc.Location.loc_start.Lexing.pos_cnum in
                 let s = get_string_of_file pos_end_first pos_start_second in
                 let (_,comment_opt) = My_ir.just_after_special !file_name  s in
-                f (acc @ [name.txt, comment_opt])
-                  ((name2, core_type_list2, ret_type2, loc2) :: q)
+                f (acc @ [pcd.pcd_name.txt, comment_opt]) q
           in
           f [] cons_core_type_list_list
 

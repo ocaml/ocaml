@@ -150,16 +150,16 @@ let transl_declaration env (name, sdecl) id =
       | Ptype_variant cstrs ->
         let all_constrs = ref StringSet.empty in
         List.iter
-          (fun ({ txt = name}, _, _, loc) ->
+          (fun {pcd_name = {txt = name}} ->
             if StringSet.mem name !all_constrs then
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
             all_constrs := StringSet.add name !all_constrs)
           cstrs;
         if List.length
-          (List.filter (fun (_, args, _, _) -> args <> []) cstrs)
+          (List.filter (fun cd -> cd.pcd_args <> []) cstrs)
           > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
-        let make_cstr (lid, args, ret_type, loc) =
+        let make_cstr {pcd_name = lid; pcd_args = args; pcd_res = ret_type; pcd_loc = loc} =
           let name = Ident.create lid.txt in
           match ret_type with
             | None ->
@@ -327,9 +327,8 @@ let check_constraints env (_, sdecl) (_, decl) =
         (fun (name, tyl, ret_type) ->
           let (styl, sret_type) =
             try
-              let (_, sty, sret_type, _) =
-                List.find (fun (n,_,_,_) -> n.txt = Ident.name name)  pl
-              in (sty, sret_type)
+              let pcd = List.find (fun pcd -> pcd.pcd_name.txt = Ident.name name)  pl in
+              pcd.pcd_args, pcd.pcd_res
             with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
@@ -718,13 +717,13 @@ let check_duplicates name_sdecl_list =
     (fun (name, sdecl) -> match sdecl.ptype_kind with
       Ptype_variant cl ->
         List.iter
-          (fun (cname, _, _, loc) ->
+          (fun pcd ->
             try
-              let name' = Hashtbl.find constrs cname.txt in
-              Location.prerr_warning loc
+              let name' = Hashtbl.find constrs pcd.pcd_name.txt in
+              Location.prerr_warning pcd.pcd_loc
                 (Warnings.Duplicate_definitions
-                   ("constructor", cname.txt, name', name.txt))
-            with Not_found -> Hashtbl.add constrs cname.txt name.txt)
+                   ("constructor", pcd.pcd_name.txt, name', name.txt))
+            with Not_found -> Hashtbl.add constrs pcd.pcd_name.txt name.txt)
           cl
     | Ptype_record fl ->
         List.iter

@@ -400,7 +400,7 @@ and type_kind i ppf x =
       line i ppf "Ptype_abstract\n"
   | Ptype_variant l ->
       line i ppf "Ptype_variant\n";
-      list (i+1) string_x_core_type_list_x_location ppf l;
+      list (i+1) constructor_decl ppf l;
   | Ptype_record l ->
       line i ppf "Ptype_record\n";
       list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
@@ -726,11 +726,12 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) =
-  line i ppf "%a\n" fmt_location loc;
-  line (i+1) ppf "%a\n" fmt_string_loc s;
-  list (i+1) core_type ppf l;
-  option (i+1) core_type ppf r_opt;
+and constructor_decl i ppf {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
+  line i ppf "%a\n" fmt_location pcd_loc;
+  line (i+1) ppf "%a\n" fmt_string_loc pcd_name;
+  list (i+1) core_type ppf pcd_args;
+  option (i+1) core_type ppf pcd_res;
+  attributes (i+1) ppf pcd_attributes
 
 and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
   line i ppf "%a\n" fmt_location loc;
