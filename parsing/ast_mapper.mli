@@ -173,7 +173,7 @@ module M:
     val primitive: ?loc:Location.t -> string loc -> value_description -> structure_item
     val type_: ?loc:Location.t -> (string loc * type_declaration) list -> structure_item
     val exception_: ?loc:Location.t -> exception_declaration -> structure_item
-    val exn_rebind: ?loc:Location.t -> string loc -> Longident.t loc -> structure_item
+    val exn_rebind: ?loc:Location.t -> ?attributes:attribute list -> string loc -> Longident.t loc -> structure_item
     val module_: ?loc:Location.t -> string loc -> module_expr -> structure_item
     val rec_module: ?loc:Location.t -> (string loc * module_type * module_expr)      list -> structure_item
     val modtype: ?loc:Location.t -> string loc -> module_type -> structure_item

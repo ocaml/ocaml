@@ -1080,7 +1080,7 @@ class printer  ()= object(self:'self)
           self#value_description  vd
     | Pstr_include (me, _attrs) ->
         pp f "@[<hov2>include@ %a@]"  self#module_expr  me 
-    | Pstr_exn_rebind (s, li) ->        (* todo: check this *)
+    | Pstr_exn_rebind (s, li, _attrs) ->        (* todo: check this *)
         pp f "@[<hov2>exception@ %s@ =@ %a@]" s.txt self#longident_loc li 
     | Pstr_recmodule decls -> (* 3.07 *)
         let text_x_modtype_x_module f (s, mt, me) =

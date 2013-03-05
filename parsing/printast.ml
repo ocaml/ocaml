@@ -689,10 +689,11 @@ and structure_item i ppf x =
       list i string_x_type_declaration ppf l;
   | Pstr_exception ed ->
       exception_declaration i ppf ed
-  | Pstr_exn_rebind (s, li) ->
+  | Pstr_exn_rebind (s, li, attrs) ->
       line i ppf "Pstr_exn_rebind\n";
       line (i+1) ppf "%a\n" fmt_string_loc s;
       line (i+1) ppf "%a\n" fmt_longident_loc li;
+      attributes (i+1) ppf attrs
   | Pstr_module (s, me) ->
       line i ppf "Pstr_module %a\n" fmt_string_loc s;
       module_expr i ppf me;

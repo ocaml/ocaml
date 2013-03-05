@@ -55,7 +55,7 @@ and untype_structure_item item =
     | Tstr_exception (_id, name, decl) ->
         Pstr_exception (untype_exception_declaration name decl)
     | Tstr_exn_rebind (_id, name, _p, lid) ->
-        Pstr_exn_rebind (name, lid)
+        Pstr_exn_rebind (name, lid, [])
     | Tstr_module (_id, name, mexpr) ->
         Pstr_module (name, untype_module_expr mexpr)
     | Tstr_recmodule list ->

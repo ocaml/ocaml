@@ -1002,7 +1002,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          Sig_exception(id, arg.exn_exn) :: sig_rem,
          final_env)
-    | Pstr_exn_rebind(name, longid) ->
+    | Pstr_exn_rebind(name, longid, _attrs) ->
         let (path, arg) = Typedecl.transl_exn_rebind env loc longid.txt in
         let (id, newenv) = Env.enter_exception name.txt arg env in
         let item = mk (Tstr_exn_rebind(id, name, path, longid)) in

@@ -15430,7 +15430,7 @@ module Struct =
                   (Ast.OSome i)) ->
                   (mkstr loc
                      (Pstr_exn_rebind ((with_loc (conv_con s) loc),
-                        (ident i)))) ::
+                        (ident i), []))) ::
                     l
               | Ast.StExc (loc,
                   (Ast.TyOf (_, (Ast.TyId (_, (Ast.IdUid (_, _)))), _)),

@@ -622,7 +622,7 @@ structure_item:
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
       { mkstr(Pstr_exception {ped_name=mkrhs $3 3; ped_args=$4;ped_attributes=$1 @ $5}) }
   | pre_item_attributes EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
-      { mkstr(Pstr_exn_rebind(mkrhs $3 3, mkloc $5 (rhs_loc 5))) (* todo: keep attributes *) }
+      { mkstr(Pstr_exn_rebind(mkrhs $3 3, mkloc $5 (rhs_loc 5), $1 @ $6)) }
   | MODULE UIDENT module_binding
       { mkstr(Pstr_module(mkrhs $2 2, $3)) }
   | MODULE REC module_rec_bindings

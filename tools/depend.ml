@@ -279,7 +279,7 @@ and add_struct_item bv item =
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
   | Pstr_exception ped ->
       List.iter (add_type bv) ped.ped_args; bv
-  | Pstr_exn_rebind(id, l) ->
+  | Pstr_exn_rebind(id, l, _attrs) ->
       add bv l; bv
   | Pstr_module(id, modl) ->
       add_module bv modl; StringSet.add id.txt bv

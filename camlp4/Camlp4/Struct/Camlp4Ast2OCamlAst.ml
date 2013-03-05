@@ -1066,7 +1066,7 @@ value varify_constructors var_names =
     | <:str_item@loc< exception $uid:s$ of $t$ >> ->
         [mkstr loc (Pstr_exception {ped_name=with_loc (conv_con s) loc; ped_args=List.map ctyp (list_of_ctyp t []);ped_attributes=[]}) :: l ]
     | <:str_item@loc< exception $uid:s$ = $i$ >> ->
-        [mkstr loc (Pstr_exn_rebind (with_loc (conv_con s) loc) (long_uident ~conv_con i)) :: l ]
+        [mkstr loc (Pstr_exn_rebind (with_loc (conv_con s) loc) (long_uident ~conv_con i) []) :: l ]
     | <:str_item@loc< exception $uid:_$ of $_$ = $_$ >> ->
         error loc "type in exception alias"
     | StExc _ _ _ -> assert False (*FIXME*)

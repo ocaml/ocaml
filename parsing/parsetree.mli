@@ -324,7 +324,7 @@ and structure_item_desc =
   | Pstr_primitive of string loc * value_description
   | Pstr_type of (string loc * type_declaration) list
   | Pstr_exception of exception_declaration
-  | Pstr_exn_rebind of string loc * Longident.t loc
+  | Pstr_exn_rebind of string loc * Longident.t loc * attribute list
   | Pstr_module of string loc * module_expr
   | Pstr_recmodule of (string loc * module_type * module_expr) list
   | Pstr_modtype of string loc * module_type

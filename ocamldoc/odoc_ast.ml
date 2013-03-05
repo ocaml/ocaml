@@ -1264,7 +1264,7 @@ module Analyser =
           in
           (0, new_env, [ Element_exception new_ex ])
 
-      | Parsetree.Pstr_exn_rebind (name,  _) ->
+      | Parsetree.Pstr_exn_rebind (name,  _, _) ->
           (* a new exception is defined *)
           let complete_name = Name.concat current_module_name name.txt in
           (* we get the exception rebind in the typed tree *)
