@@ -609,10 +609,10 @@ structure_item:
     LET rec_flag let_bindings
       { match $3 with
           [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
-        | _ -> mkstr(Pstr_value($2, List.rev $3)) }
-  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-      { mkstr(Pstr_primitive(mkrhs $2 2, {pval_type = $4; pval_prim = $6;
-                                          pval_attributes = [];
+        | l -> mkstr(Pstr_value($2, List.rev l)) }
+  | pre_item_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
+      { mkstr(Pstr_primitive(mkrhs $3 3, {pval_type = $5; pval_prim = $7;
+                                          pval_attributes = $1 @ $8;
                                           pval_loc = symbol_rloc ()})) }
   | pre_item_attributes TYPE type_declarations
       {
