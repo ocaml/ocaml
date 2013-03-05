@@ -369,7 +369,7 @@ let wrap_type_annotation newtypes core_type body =
 %token LBRACKETBAR
 %token LBRACKETLESS
 %token LBRACKETGREATER
-%token LBRACKETSHARP
+%token LBRACKETPERCENT
 %token LESS
 %token LESSMINUS
 %token LET
@@ -475,7 +475,7 @@ The precedences must be listed from low to high.
 %nonassoc LBRACKETATAT
 %nonassoc LBRACKETHAT
 %nonassoc LBRACKETHATHAT
-%nonassoc LBRACKETSHARP
+%nonassoc LBRACKETPERCENT
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -1929,7 +1929,7 @@ attributes:
   | attribute attributes { $1 :: $2 }
 ;
 extension:
-  LBRACKETSHARP LIDENT opt_expr RBRACKET { ($2, $3) }
+  LBRACKETPERCENT LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
 opt_expr:
     expr { $1 }
