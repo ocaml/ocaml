@@ -58,6 +58,11 @@ let mkoperator name pos =
 let mkpatvar name pos =
   { ppat_desc = Ppat_var (mkrhs name pos); ppat_loc = rhs_loc pos }
 
+let patch_first_rev l f =
+  match l with
+  | [] -> assert false
+  | hd :: tl -> f hd :: tl
+
 (*
   Ghost expressions and patterns:
   expressions and patterns that do not appear explicitly in the
@@ -611,10 +616,8 @@ structure_item:
                                           pval_loc = symbol_rloc ()})) }
   | pre_item_attributes TYPE type_declarations
       {
-        match List.rev $3 with
-        | [] -> assert false
-        | (name, td) :: tl ->
-              mkstr(Pstr_type((name, {td with ptype_attributes = $1 @ td.ptype_attributes}) :: tl))
+       let l = patch_first_rev $3 (fun (name, td) -> (name, {td with ptype_attributes = $1 @ td.ptype_attributes})) in
+       mkstr(Pstr_type l)
        }
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
       { mkstr(Pstr_exception(mkrhs $3 3, {ped_args=$4;ped_attributes=$1 @ $5})) }
@@ -628,10 +631,16 @@ structure_item:
       { mkstr(Pstr_modtype(mkrhs $3 3, $5)) }
   | pre_item_attributes OPEN mod_longident post_item_attributes
       { mkstr(Pstr_open (mkrhs $3 3, $1 @ $4)) }
-  | CLASS class_declarations
-      { mkstr(Pstr_class (List.rev $2)) }
-  | CLASS TYPE class_type_declarations
-      { mkstr(Pstr_class_type (List.rev $3)) }
+  | pre_item_attributes CLASS class_declarations
+      {
+       let l = patch_first_rev $3 (fun x -> {x with pci_attributes = $1 @ x.pci_attributes}) in
+       mkstr(Pstr_class l)
+      }
+  | pre_item_attributes CLASS TYPE class_type_declarations
+      {
+       let l = patch_first_rev $4 (fun x -> {x with pci_attributes = $1 @ x.pci_attributes}) in
+       mkstr(Pstr_class_type l)
+      }
   | pre_item_attributes INCLUDE module_expr post_item_attributes
       { mkstr(Pstr_include ($3, $1 @ $4)) }
   | pre_item_attributes item_extension post_item_attributes
@@ -696,10 +705,8 @@ signature_item:
                                       pval_loc = symbol_rloc()})) }
   | pre_item_attributes TYPE type_declarations
       {
-        match List.rev $3 with
-        | [] -> assert false
-        | (name, td) :: tl ->
-              mksig(Psig_type((name, {td with ptype_attributes = $1 @ td.ptype_attributes}) :: tl))
+       let l = patch_first_rev $3 (fun (name, td) -> (name, {td with ptype_attributes = $1 @ td.ptype_attributes})) in
+       mksig(Psig_type l)
        }
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
       { mksig(Psig_exception(mkrhs $3 3, {ped_args = $4; ped_attributes = $1 @ $5})) }
@@ -707,10 +714,8 @@ signature_item:
       { mksig(Psig_module{pmd_name=mkrhs $3 3;pmd_type=$4;pmd_attributes=$1 @ $5}) }
   | pre_item_attributes MODULE REC module_rec_declarations
       {
-       match List.rev $4 with
-        | [] -> assert false
-        | pmd :: tl ->
-              mksig(Psig_recmodule({pmd with pmd_attributes = $1 @ pmd.pmd_attributes} :: tl))
+       let l = patch_first_rev $4 (fun pmd -> {pmd with pmd_attributes = $1 @ pmd.pmd_attributes}) in
+       mksig(Psig_recmodule l)
       }
   | pre_item_attributes MODULE TYPE ident post_item_attributes
       { mksig(Psig_modtype(mkrhs $4 4, Pmodtype_abstract, $1 @ $5)) }
@@ -720,10 +725,16 @@ signature_item:
       { mksig(Psig_open (mkrhs $3 3, $1 @ $4)) }
   | pre_item_attributes INCLUDE module_type post_item_attributes %prec below_WITH
       { mksig(Psig_include ($3, $1 @ $4)) }
-  | CLASS class_descriptions
-      { mksig(Psig_class (List.rev $2)) }
-  | CLASS TYPE class_type_declarations
-      { mksig(Psig_class_type (List.rev $3)) }
+  | pre_item_attributes CLASS class_descriptions
+      {
+        let l = patch_first_rev $3 (fun x -> {x with pci_attributes = $1 @ x.pci_attributes}) in
+        mksig(Psig_class l)
+       }
+  | pre_item_attributes CLASS TYPE class_type_declarations
+      {
+        let l = patch_first_rev $4 (fun x -> {x with pci_attributes = $1 @ x.pci_attributes}) in
+        mksig(Psig_class_type l)
+       }
   | pre_item_attributes item_extension post_item_attributes
       { mksig(Psig_extension ($2, $1 @ $3)) }
 ;
@@ -749,10 +760,11 @@ class_declarations:
   | class_declaration                           { [$1] }
 ;
 class_declaration:
-    virtual_flag class_type_parameters LIDENT class_fun_binding
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
-         pci_name = mkrhs $3 3; pci_expr = $4; pci_variance = variance;
+    pre_item_attributes virtual_flag class_type_parameters LIDENT class_fun_binding post_item_attributes
+      { let params, variance = List.split (fst $3) in
+        {pci_virt = $2; pci_params = params, snd $3;
+         pci_name = mkrhs $4 4; pci_expr = $5; pci_variance = variance;
+         pci_attributes = $1 @ $6;
          pci_loc = symbol_rloc ()} }
 ;
 class_fun_binding:
@@ -948,10 +960,11 @@ class_descriptions:
   | class_description                           { [$1] }
 ;
 class_description:
-    virtual_flag class_type_parameters LIDENT COLON class_type
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
-         pci_name = mkrhs $3 3; pci_expr = $5; pci_variance = variance;
+    pre_item_attributes virtual_flag class_type_parameters LIDENT COLON class_type post_item_attributes
+      { let params, variance = List.split (fst $3) in
+        {pci_virt = $2; pci_params = params, snd $3;
+         pci_name = mkrhs $4 4; pci_expr = $6; pci_variance = variance;
+         pci_attributes = $1 @ $7;
          pci_loc = symbol_rloc ()} }
 ;
 class_type_declarations:
@@ -959,10 +972,11 @@ class_type_declarations:
   | class_type_declaration                              { [$1] }
 ;
 class_type_declaration:
-    virtual_flag class_type_parameters LIDENT EQUAL class_signature
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
-         pci_name = mkrhs $3 3; pci_expr = $5; pci_variance = variance;
+    pre_item_attributes virtual_flag class_type_parameters LIDENT EQUAL class_signature post_item_attributes
+      { let params, variance = List.split (fst $3) in
+        {pci_virt = $2; pci_params = params, snd $3;
+         pci_name = mkrhs $4 4; pci_expr = $6; pci_variance = variance;
+         pci_attributes = $1 @ $7;
          pci_loc = symbol_rloc ()} }
 ;
 

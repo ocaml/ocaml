@@ -64,7 +64,9 @@ and 'a class_infos =
     pci_name: string loc;
     pci_expr: 'a;
     pci_variance: (bool * bool) list;
-    pci_loc: Location.t }
+    pci_loc: Location.t;
+    pci_attributes: attribute list;
+   }
 
 (* Value expressions for the core language *)
 

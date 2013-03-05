@@ -472,7 +472,7 @@ module CE = struct
      pcstr_fields = List.map (sub # class_field) pcstr_fields;
     }
 
-  let class_infos sub f {pci_virt; pci_params = (pl, ploc); pci_name; pci_expr; pci_variance; pci_loc} =
+  let class_infos sub f {pci_virt; pci_params = (pl, ploc); pci_name; pci_expr; pci_variance; pci_loc; pci_attributes} =
     {
      pci_virt;
      pci_params = List.map (map_loc sub) pl, sub # location ploc;
@@ -480,6 +480,7 @@ module CE = struct
      pci_expr = f pci_expr;
      pci_variance;
      pci_loc = sub # location pci_loc;
+     pci_attributes = map_attributes sub pci_attributes;
     }
 end
 

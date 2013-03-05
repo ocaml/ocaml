@@ -73,6 +73,7 @@ and untype_structure_item item =
                 pci_expr = untype_class_expr ci.ci_expr;
                 pci_variance = ci.ci_variance;
                 pci_loc = ci.ci_loc;
+                pci_attributes = [];
               }
           ) list)
     | Tstr_class_type list ->
@@ -84,6 +85,7 @@ and untype_structure_item item =
                 pci_expr = untype_class_type ct.ci_expr;
                 pci_variance = ct.ci_variance;
                 pci_loc = ct.ci_loc;
+                pci_attributes = [];
               }
           ) list)
     | Tstr_include (mexpr, _) ->
@@ -347,6 +349,7 @@ and untype_class_description cd =
     pci_expr = untype_class_type cd.ci_expr;
     pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
+   pci_attributes = [];
   }
 
 and untype_class_type_declaration cd =
@@ -357,6 +360,7 @@ and untype_class_type_declaration cd =
     pci_expr = untype_class_type cd.ci_expr;
     pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
+    pci_attributes = [];
   }
 
 and untype_module_type mty =

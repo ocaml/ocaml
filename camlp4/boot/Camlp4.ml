@@ -15512,6 +15512,7 @@ module Struct =
                       pci_expr = class_expr ce;
                       pci_loc = mkloc loc;
                       pci_variance = variance;
+                      pci_attributes = [];
                     }
               | ce -> error (loc_of_class_expr ce) "bad class definition"
             and class_info_class_type ci =
@@ -15535,6 +15536,7 @@ module Struct =
                       pci_expr = class_type ct;
                       pci_loc = mkloc loc;
                       pci_variance = variance;
+                      pci_attributes = [];
                     }
               | ct ->
                   error (loc_of_class_type ct)
