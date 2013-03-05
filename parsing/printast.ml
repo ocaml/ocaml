@@ -407,6 +407,7 @@ and type_kind i ppf x =
       list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
 
 and exception_declaration i ppf x =
+  string_loc i ppf x.ped_name;
   list i core_type ppf x.ped_args;
   attributes i ppf x.ped_attributes
 
@@ -587,8 +588,8 @@ and signature_item i ppf x =
   | Psig_type (l) ->
       line i ppf "Psig_type\n";
       list i string_x_type_declaration ppf l;
-  | Psig_exception (s, ed) ->
-      line i ppf "Psig_exception %a\n" fmt_string_loc s;
+  | Psig_exception ed ->
+      line i ppf "Psig_exception\n";
       exception_declaration i ppf ed;
   | Psig_module pmd ->
       line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
@@ -686,9 +687,8 @@ and structure_item i ppf x =
   | Pstr_type l ->
       line i ppf "Pstr_type\n";
       list i string_x_type_declaration ppf l;
-  | Pstr_exception (s, ed) ->
-      line i ppf "Pstr_exception %a\n" fmt_string_loc s;
-      exception_declaration i ppf ed;
+  | Pstr_exception ed ->
+      exception_declaration i ppf ed
   | Pstr_exn_rebind (s, li) ->
       line i ppf "Pstr_exn_rebind\n";
       line (i+1) ppf "%a\n" fmt_string_loc s;

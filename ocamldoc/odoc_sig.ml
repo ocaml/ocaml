@@ -270,7 +270,7 @@ module Analyser =
         match sig_item.Parsetree.psig_desc with
         | Parsetree.Psig_extension _
         | Parsetree.Psig_value (_, _)
-        | Parsetree.Psig_exception (_, _)
+        | Parsetree.Psig_exception _
         | Parsetree.Psig_open _
         | Parsetree.Psig_include _
         | Parsetree.Psig_class _
@@ -553,7 +553,8 @@ module Analyser =
             let new_env = Odoc_env.add_value env v.val_name in
             (maybe_more, new_env, [ Element_value v ])
 
-        | Parsetree.Psig_exception (name, exception_decl) ->
+        | Parsetree.Psig_exception exception_decl ->
+            let name = exception_decl.Parsetree.ped_name in
             let types_excep_decl =
               try Signature_search.search_exception table name.txt
               with Not_found ->

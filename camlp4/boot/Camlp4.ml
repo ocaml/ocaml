@@ -15317,14 +15317,14 @@ module Struct =
               | SgDir (_, _, _) -> l
               | Ast.SgExc (loc, (Ast.TyId (_, (Ast.IdUid (_, s))))) ->
                   (mksig loc
-                     (Psig_exception ((with_loc (conv_con s) loc), {ped_args=[];ped_attributes=[]}))) ::
+                     (Psig_exception {ped_name=with_loc (conv_con s) loc; ped_args=[];ped_attributes=[]})) ::
                     l
               | Ast.SgExc (loc,
                   (Ast.TyOf (_, (Ast.TyId (_, (Ast.IdUid (_, s)))), t))) ->
                   (mksig loc
-                     (Psig_exception ((with_loc (conv_con s) loc),
-                                      {ped_args=List.map ctyp (list_of_ctyp t []);
-                                       ped_attributes = []}))) :: l
+                     (Psig_exception {ped_name=with_loc (conv_con s) loc;
+                                      ped_args=List.map ctyp (list_of_ctyp t []);
+                                      ped_attributes = []})) :: l
               | SgExc (_, _) -> assert false
               | SgExt (loc, n, t, sl) ->
                   (mksig loc
@@ -15418,14 +15418,13 @@ module Struct =
               | Ast.StExc (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), Ast.
                   ONone) ->
                   (mkstr loc
-                     (Pstr_exception ((with_loc (conv_con s) loc), {ped_args=[];ped_attributes=[]}))) ::
+                     (Pstr_exception {ped_name=with_loc (conv_con s) loc;ped_args=[];ped_attributes=[]})) ::
                     l
               | Ast.StExc (loc,
                   (Ast.TyOf (_, (Ast.TyId (_, (Ast.IdUid (_, s)))), t)), Ast.
                   ONone) ->
                   (mkstr loc
-                     (Pstr_exception ((with_loc (conv_con s) loc),
-                        {ped_args=List.map ctyp (list_of_ctyp t []);ped_attributes=[]}))) ::
+                     (Pstr_exception {ped_name=with_loc (conv_con s) loc; ped_args=List.map ctyp (list_of_ctyp t []);ped_attributes=[]})) ::
                     l
               | Ast.StExc (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))),
                   (Ast.OSome i)) ->

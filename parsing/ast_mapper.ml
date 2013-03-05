@@ -196,7 +196,7 @@ module MT = struct
 
   let value ?loc a b = mk_item ?loc (Psig_value (a, b))
   let type_ ?loc a = mk_item ?loc (Psig_type a)
-  let exception_ ?loc a b = mk_item ?loc (Psig_exception (a, b))
+  let exception_ ?loc a = mk_item ?loc (Psig_exception a)
   let module_ ?loc a = mk_item ?loc (Psig_module a)
   let rec_module ?loc a = mk_item ?loc (Psig_recmodule a)
   let modtype ?loc ?(attributes = []) a b = mk_item ?loc (Psig_modtype (a, b, attributes))
@@ -211,7 +211,7 @@ module MT = struct
     match desc with
     | Psig_value (s, vd) -> value ~loc (map_loc sub s) (sub # value_description vd)
     | Psig_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
-    | Psig_exception (s, ed) -> exception_ ~loc (map_loc sub s) (sub # exception_declaration ed)
+    | Psig_exception ed -> exception_ ~loc (sub # exception_declaration ed)
     | Psig_module x -> module_ ~loc (sub # module_declaration x)
     | Psig_recmodule l -> rec_module ~loc (List.map (sub # module_declaration) l)
     | Psig_modtype (s, Pmodtype_manifest mt, attrs) -> modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt)) ~attributes:(map_attributes sub attrs)
@@ -254,7 +254,7 @@ module M = struct
   let value ?loc a b = mk_item ?loc (Pstr_value (a, b))
   let primitive ?loc a b = mk_item ?loc (Pstr_primitive (a, b))
   let type_ ?loc a = mk_item ?loc (Pstr_type a)
-  let exception_ ?loc a b = mk_item ?loc (Pstr_exception (a, b))
+  let exception_ ?loc a = mk_item ?loc (Pstr_exception a)
   let exn_rebind ?loc a b = mk_item ?loc (Pstr_exn_rebind (a, b))
   let module_ ?loc a b = mk_item ?loc (Pstr_module (a, b))
   let rec_module ?loc a = mk_item ?loc (Pstr_recmodule a)
@@ -272,7 +272,7 @@ module M = struct
     | Pstr_value (r, pel) -> value ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
     | Pstr_primitive (name, vd) -> primitive ~loc (map_loc sub name) (sub # value_description vd)
     | Pstr_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
-    | Pstr_exception (name, ed) -> exception_ ~loc (map_loc sub name) (sub # exception_declaration ed)
+    | Pstr_exception ed -> exception_ ~loc (sub # exception_declaration ed)
     | Pstr_exn_rebind (s, lid) -> exn_rebind ~loc (map_loc sub s) (map_loc sub lid)
     | Pstr_module (s, m) -> module_ ~loc (map_loc sub s) (sub # module_expr m)
     | Pstr_recmodule l -> rec_module ~loc (List.map (fun (s, mty, me) -> (map_loc sub s, sub # module_type mty, sub # module_expr me)) l)
@@ -529,13 +529,14 @@ class mapper =
 
     method exception_declaration ped =
       {
+       ped_name = map_loc this ped.ped_name;
        ped_args = List.map (this # typ) ped.ped_args;
        ped_attributes = map_attributes this ped.ped_attributes;
       }
     method module_declaration pmd =
       {
-       pmd_name = pmd.pmd_name;
-       pmd_type = pmd.pmd_type;
+       pmd_name = map_loc this pmd.pmd_name;
+       pmd_type = this # module_type pmd.pmd_type;
        pmd_attributes = map_attributes this pmd.pmd_attributes;
       }
 

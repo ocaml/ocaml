@@ -467,7 +467,7 @@ let search_structure str ~name ~kind ~prefix =
               if s.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
             end;
           false
-      | Pstr_exception (s, _) when kind = Pconstructor -> name = s.txt
+      | Pstr_exception ped when kind = Pconstructor -> name = ped.ped_name.txt
       | Pstr_module (s, _) when kind = Pmodule -> name = s.txt
       | Pstr_modtype (s, _) when kind = Pmodtype -> name = s.txt
       | Pstr_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
@@ -520,7 +520,7 @@ let search_signature sign ~name ~kind ~prefix =
               if s.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
             end;
           false
-      | Psig_exception (s, _) when kind = Pconstructor -> name = s.txt
+      | Psig_exception ped when kind = Pconstructor -> name = ped.ped_name.txt
       | Psig_module pmd when kind = Pmodule -> name = pmd.pmd_name.txt
       | Psig_modtype (s, _, _) when kind = Pmodtype -> name = s.txt
       | Psig_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->

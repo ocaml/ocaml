@@ -53,7 +53,7 @@ and untype_structure_item item =
         Pstr_type (List.map (fun (_id, name, decl) ->
               name, untype_type_declaration decl) list)
     | Tstr_exception (_id, name, decl) ->
-        Pstr_exception (name, untype_exception_declaration decl)
+        Pstr_exception (untype_exception_declaration name decl)
     | Tstr_exn_rebind (_id, name, _p, lid) ->
         Pstr_exn_rebind (name, lid)
     | Tstr_module (_id, name, mexpr) ->
@@ -127,8 +127,9 @@ and untype_type_declaration decl =
     ptype_loc = decl.typ_loc;
   }
 
-and untype_exception_declaration decl =
+and untype_exception_declaration name decl =
   {
+   ped_name = name;
    ped_args = List.map untype_core_type decl.exn_params;
    ped_attributes = [];
   }
@@ -316,7 +317,7 @@ and untype_signature_item item =
               name, untype_type_declaration decl
           ) list)
     | Tsig_exception (_id, name, decl) ->
-        Psig_exception (name, untype_exception_declaration decl)
+        Psig_exception (untype_exception_declaration name decl)
     | Tsig_module (_id, name, mtype) ->
         Psig_module {pmd_name = name; pmd_type = untype_module_type mtype; pmd_attributes = []}
     | Tsig_recmodule list ->
@@ -349,7 +350,7 @@ and untype_class_description cd =
     pci_expr = untype_class_type cd.ci_expr;
     pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
-   pci_attributes = [];
+    pci_attributes = [];
   }
 
 and untype_class_type_declaration cd =

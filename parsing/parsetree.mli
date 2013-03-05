@@ -172,6 +172,7 @@ and constructor_declaration =
 
 and exception_declaration =
     {
+     ped_name: string loc;
      ped_args: core_type list;
      ped_attributes: attribute list;
     }
@@ -268,7 +269,7 @@ and signature_item =
 and signature_item_desc =
     Psig_value of string loc * value_description
   | Psig_type of (string loc * type_declaration) list
-  | Psig_exception of string loc * exception_declaration
+  | Psig_exception of exception_declaration
   | Psig_module of module_declaration
   | Psig_recmodule of module_declaration list
   | Psig_modtype of string loc * modtype_declaration * attribute list
@@ -322,7 +323,7 @@ and structure_item_desc =
   | Pstr_value of rec_flag * (pattern * expression) list
   | Pstr_primitive of string loc * value_description
   | Pstr_type of (string loc * type_declaration) list
-  | Pstr_exception of string loc * exception_declaration
+  | Pstr_exception of exception_declaration
   | Pstr_exn_rebind of string loc * Longident.t loc
   | Pstr_module of string loc * module_expr
   | Pstr_recmodule of (string loc * module_type * module_expr) list

@@ -697,8 +697,8 @@ class printer  ()= object(self:'self)
         end) x
 
 
-  method exception_declaration f (s,ed) =
-    pp f "@[<hov2>exception@ %s%a@]" s
+  method exception_declaration f ed =
+    pp f "@[<hov2>exception@ %s%a@]" ed.ped_name.txt
       (fun f ed -> match ed with
       |[] -> ()
       |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) ed.ped_args
@@ -872,8 +872,8 @@ class printer  ()= object(self:'self)
             else
               pp f "%s@ %s@ :@ " intro s.txt;
             self#value_description f vd;) (s,vd)
-    | Psig_exception (s, ed) ->
-        self#exception_declaration f (s.txt,ed)
+    | Psig_exception ed ->
+        self#exception_declaration f ed
     | Psig_class l ->
         let class_description f ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
           pp f "%a%a%s@;:@;%a" (* "@[<2>class %a%a%s@;:@;%a@]" *)
@@ -1009,7 +1009,7 @@ class printer  ()= object(self:'self)
     | Pstr_type l  -> self#type_def_list f l 
     | Pstr_value (rf, l) -> (* pp f "@[<hov2>let %a%a@]"  self#rec_flag rf self#bindings l *)
         pp f "@[<2>%a@]" self#bindings (rf,l)
-    | Pstr_exception (s, ed) -> self#exception_declaration f (s.txt,ed)
+    | Pstr_exception ed -> self#exception_declaration f ed
     | Pstr_module (s, me) ->
         let rec module_helper me = match me.pmod_desc with
         | Pmod_functor(s,mt,me) ->

@@ -620,7 +620,7 @@ structure_item:
        mkstr(Pstr_type l)
        }
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
-      { mkstr(Pstr_exception(mkrhs $3 3, {ped_args=$4;ped_attributes=$1 @ $5})) }
+      { mkstr(Pstr_exception {ped_name=mkrhs $3 3; ped_args=$4;ped_attributes=$1 @ $5}) }
   | pre_item_attributes EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
       { mkstr(Pstr_exn_rebind(mkrhs $3 3, mkloc $5 (rhs_loc 5))) (* todo: keep attributes *) }
   | MODULE UIDENT module_binding
@@ -709,7 +709,7 @@ signature_item:
        mksig(Psig_type l)
        }
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
-      { mksig(Psig_exception(mkrhs $3 3, {ped_args = $4; ped_attributes = $1 @ $5})) }
+      { mksig(Psig_exception {ped_name=mkrhs $3 3; ped_args = $4; ped_attributes = $1 @ $5}) }
   | pre_item_attributes MODULE UIDENT module_declaration post_item_attributes
       { mksig(Psig_module{pmd_name=mkrhs $3 3;pmd_type=$4;pmd_attributes=$1 @ $5}) }
   | pre_item_attributes MODULE REC module_rec_declarations
