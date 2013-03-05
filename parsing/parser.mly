@@ -623,12 +623,12 @@ structure_item:
       { mkstr(Pstr_exception {ped_name=mkrhs $3 3; ped_args=$4;ped_attributes=$1 @ $5}) }
   | pre_item_attributes EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
       { mkstr(Pstr_exn_rebind(mkrhs $3 3, mkloc $5 (rhs_loc 5), $1 @ $6)) }
-  | MODULE UIDENT module_binding
-      { mkstr(Pstr_module(mkrhs $2 2, $3)) }
-  | MODULE REC module_rec_bindings
-      { mkstr(Pstr_recmodule(List.rev $3)) }
-  | MODULE TYPE ident EQUAL module_type
-      { mkstr(Pstr_modtype(mkrhs $3 3, $5)) }
+  | pre_item_attributes MODULE UIDENT module_binding post_item_attributes
+      { mkstr(Pstr_module(mkrhs $3 3, $4)) (* keep attrs *) }
+  | pre_item_attributes MODULE REC module_rec_bindings post_item_attributes
+      { mkstr(Pstr_recmodule(List.rev $4)) (* keep attrs *) }
+  | pre_item_attributes MODULE TYPE ident EQUAL module_type post_item_attributes
+      { mkstr(Pstr_modtype(mkrhs $4 4, $6)) (* keep attrs *) }
   | pre_item_attributes OPEN mod_longident post_item_attributes
       { mkstr(Pstr_open (mkrhs $3 3, $1 @ $4)) }
   | pre_item_attributes CLASS class_declarations
