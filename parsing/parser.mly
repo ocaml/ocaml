@@ -370,6 +370,7 @@ let wrap_type_annotation newtypes core_type body =
 %token LBRACKETLESS
 %token LBRACKETGREATER
 %token LBRACKETPERCENT
+%token LBRACKETPERCENTPERCENT
 %token LESS
 %token LESSMINUS
 %token LET
@@ -476,6 +477,7 @@ The precedences must be listed from low to high.
 %nonassoc LBRACKETHAT
 %nonassoc LBRACKETHATHAT
 %nonassoc LBRACKETPERCENT
+%nonassoc LBRACKETPERCENTPERCENT
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -627,6 +629,8 @@ structure_item:
       { mkstr(Pstr_class_type (List.rev $3)) }
   | pre_item_attributes INCLUDE module_expr post_item_attributes
       { mkstr(Pstr_include ($3, $1 @ $4)) }
+  | pre_item_attributes item_extension post_item_attributes
+      { mkstr(Pstr_extension ($2, $1 @ $3)) }
 ;
 module_binding:
     EQUAL module_expr
@@ -705,6 +709,8 @@ signature_item:
       { mksig(Psig_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mksig(Psig_class_type (List.rev $3)) }
+  | pre_item_attributes item_extension post_item_attributes
+      { mksig(Psig_extension ($2, $1 @ $3)) }
 ;
 
 module_declaration:
@@ -1906,7 +1912,7 @@ additive:
   | PLUSDOT                                     { "+." }
 ;
 
-/* Attributes */
+/* Attributes and extensions */
 
 pre_attribute:
   LBRACKETHAT LIDENT opt_expr RBRACKET { ($2, $3) }
@@ -1930,6 +1936,9 @@ attributes:
 ;
 extension:
   LBRACKETPERCENT LIDENT opt_expr RBRACKET { ($2, $3) }
+;
+item_extension:
+  LBRACKETPERCENTPERCENT LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
 opt_expr:
     expr { $1 }

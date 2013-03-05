@@ -224,6 +224,7 @@ let rec search_pos_signature l ~pos ~env =
       (* The last cases should not happen in generated interfaces *)
       | Psig_open (lid, _) -> add_found_sig (`Module, lid.txt) ~env ~loc:pt.psig_loc
       | Psig_include (t, _) -> search_pos_module t ~pos ~env
+      | Psig_extension _ -> ()
       end;
     env
   end)

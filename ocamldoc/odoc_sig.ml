@@ -268,6 +268,7 @@ module Analyser =
       else List.fold_right (fun sig_item acc ->
         let take_item psig_desc = { sig_item with Parsetree.psig_desc } :: acc in
         match sig_item.Parsetree.psig_desc with
+        | Parsetree.Psig_extension _
         | Parsetree.Psig_value (_, _)
         | Parsetree.Psig_exception (_, _)
         | Parsetree.Psig_open _
@@ -1044,6 +1045,8 @@ module Analyser =
               f ~first: true 0 pos_start_ele class_type_declaration_list
             in
             (maybe_more, new_env, eles)
+        | Parsetree.Psig_extension _ ->
+            (0, env, [])
 
     (** Return a module_type_kind from a Parsetree.module_type and a Types.module_type *)
     and analyse_module_type_kind

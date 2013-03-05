@@ -920,6 +920,7 @@ class printer  ()= object(self:'self)
                   pmd.pmd_name.txt self#module_type pmd.pmd_type;
               string_x_module_type_list f ~first:false tl  in
         string_x_module_type_list f decls
+    | Psig_extension _ -> assert false
   end
   method module_expr f x =
     match x.pmod_desc with
@@ -1094,6 +1095,7 @@ class printer  ()= object(self:'self)
               (fun f l2 -> List.iter (text_x_modtype_x_module f) l2) l2 
         | _ -> assert false
         end
+    | Pstr_extension _ -> assert false
   end
   method type_param f  = function
     | (a,opt) -> pp f "%s%a" (type_variance a ) self#type_var_option opt 

@@ -576,6 +576,8 @@ and transl_signature env sg =
                     Sig_type(i'', d'', rs)])
                  classes [rem]),
             final_env
+        | Psig_extension ((s, _), _) ->
+            raise (Error (loc, env, Extension s))
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
   let (trem, rem, final_env) = transl_sig (Env.in_signature env) sg in
@@ -1131,6 +1133,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          sg @ sig_rem,
          final_env)
+    | Pstr_extension ((s, _), _) ->
+        raise (Error (loc, env, Extension s))
   in
   if !Clflags.annotations then
     (* moved to genannot *)

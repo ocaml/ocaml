@@ -243,6 +243,8 @@ and add_sig_item bv item =
       List.iter (add_class_description bv) cdl; bv
   | Psig_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; bv
+  | Psig_extension _ ->
+      bv
 
 and add_module bv modl =
   match modl.pmod_desc with
@@ -299,6 +301,8 @@ and add_struct_item bv item =
       List.iter (add_class_type_declaration bv) cdtl; bv
   | Pstr_include (modl, _attrs) ->
       add_module bv modl; bv
+  | Pstr_extension _ ->
+      bv
 
 and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)

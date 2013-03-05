@@ -399,6 +399,7 @@ rule token = parse
   | ">}" { GREATERRBRACE }
   | "[@" { LBRACKETAT }
   | "[%" { LBRACKETPERCENT }
+  | "[%%" { LBRACKETPERCENTPERCENT }
   | "[^" { LBRACKETHAT }
   | "[^^" { LBRACKETHATHAT }
   | "[@@" { LBRACKETATAT }

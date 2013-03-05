@@ -274,6 +274,7 @@ and signature_item_desc =
   | Psig_include of module_type * attribute list
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
+  | Psig_extension of extension * attribute list
 
 and module_declaration =
     {
@@ -328,6 +329,7 @@ and structure_item_desc =
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr * attribute list
+  | Pstr_extension of extension * attribute list
 
 (* Toplevel phrases *)
 

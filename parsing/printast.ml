@@ -614,6 +614,10 @@ and signature_item i ppf x =
   | Psig_class_type (l) ->
       line i ppf "Psig_class_type\n";
       list i class_type_declaration ppf l;
+  | Psig_extension ((s, arg), attrs) ->
+      line i ppf "Psig_extension \"%s\"\n" s;
+      expression i ppf arg;
+      attributes i ppf attrs
 
 and modtype_declaration i ppf x =
   match x with
@@ -710,6 +714,10 @@ and structure_item i ppf x =
   | Pstr_include (me, attrs) ->
       line i ppf "Pstr_include";
       module_expr i ppf me;
+      attributes i ppf attrs
+  | Pstr_extension ((s, arg), attrs) ->
+      line i ppf "Pstr_extension \"%s\"\n" s;
+      expression i ppf arg;
       attributes i ppf attrs
 
 and string_x_type_declaration i ppf (s, td) =
