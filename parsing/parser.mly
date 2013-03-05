@@ -609,8 +609,13 @@ structure_item:
       { mkstr(Pstr_primitive(mkrhs $2 2, {pval_type = $4; pval_prim = $6;
                                           pval_attributes = [];
                                           pval_loc = symbol_rloc ()})) }
-  | TYPE type_declarations
-      { mkstr(Pstr_type(List.rev $2)) }
+  | pre_item_attributes TYPE type_declarations
+      {
+        match List.rev $3 with
+        | [] -> assert false
+        | (name, td) :: tl ->
+              mkstr(Pstr_type((name, {td with ptype_attributes = $1 @ td.ptype_attributes}) :: tl))
+       }
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
       { mkstr(Pstr_exception(mkrhs $3 3, {ped_args=$4;ped_attributes=$1 @ $5})) }
   | pre_item_attributes EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
@@ -689,14 +694,24 @@ signature_item:
       { mksig(Psig_value(mkrhs $3 3, {pval_type = $5; pval_prim = $7;
                                       pval_attributes = $1 @ $8;
                                       pval_loc = symbol_rloc()})) }
-  | TYPE type_declarations
-      { mksig(Psig_type(List.rev $2)) }
+  | pre_item_attributes TYPE type_declarations
+      {
+        match List.rev $3 with
+        | [] -> assert false
+        | (name, td) :: tl ->
+              mksig(Psig_type((name, {td with ptype_attributes = $1 @ td.ptype_attributes}) :: tl))
+       }
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
       { mksig(Psig_exception(mkrhs $3 3, {ped_args = $4; ped_attributes = $1 @ $5})) }
   | pre_item_attributes MODULE UIDENT module_declaration post_item_attributes
       { mksig(Psig_module{pmd_name=mkrhs $3 3;pmd_type=$4;pmd_attributes=$1 @ $5}) }
   | pre_item_attributes MODULE REC module_rec_declarations
-      { mksig(Psig_recmodule(List.rev $4)) (* what to do with pre_attributes? *) }
+      {
+       match List.rev $4 with
+        | [] -> assert false
+        | pmd :: tl ->
+              mksig(Psig_recmodule({pmd with pmd_attributes = $1 @ pmd.pmd_attributes} :: tl))
+      }
   | pre_item_attributes MODULE TYPE ident post_item_attributes
       { mksig(Psig_modtype(mkrhs $4 4, Pmodtype_abstract, $1 @ $5)) }
   | pre_item_attributes MODULE TYPE ident EQUAL module_type post_item_attributes
