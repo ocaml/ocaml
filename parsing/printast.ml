@@ -694,12 +694,12 @@ and structure_item i ppf x =
       line (i+1) ppf "%a\n" fmt_string_loc s;
       line (i+1) ppf "%a\n" fmt_longident_loc li;
       attributes (i+1) ppf attrs
-  | Pstr_module (s, me) ->
-      line i ppf "Pstr_module %a\n" fmt_string_loc s;
-      module_expr i ppf me;
+  | Pstr_module x ->
+      line i ppf "Pstr_module\n";
+      module_binding i ppf x
   | Pstr_recmodule bindings ->
       line i ppf "Pstr_recmodule\n";
-      list i string_x_modtype_x_module ppf bindings;
+      list i module_binding ppf bindings;
   | Pstr_modtype (s, mt) ->
       line i ppf "Pstr_modtype %a\n" fmt_string_loc s;
       module_type i ppf mt;
@@ -730,10 +730,10 @@ and module_declaration i ppf pmd =
   module_type (i+1) ppf pmd.pmd_type;
   attributes (i+1) ppf pmd.pmd_attributes
 
-and string_x_modtype_x_module i ppf (s, mty, modl) =
-  string_loc i ppf s;
-  module_type (i+1) ppf mty;
-  module_expr (i+1) ppf modl;
+and module_binding i ppf x =
+  string_loc i ppf x.pmb_name;
+  module_expr (i+1) ppf x.pmb_expr;
+  attributes (i+1) ppf x.pmb_attributes
 
 and longident_x_with_constraint i ppf (li, wc) =
   line i ppf "%a\n" fmt_longident_loc li;

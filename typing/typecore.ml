@@ -179,8 +179,8 @@ let iter_expression f e =
     | Pstr_extension _
     | Pstr_exn_rebind _ -> ()
     | Pstr_include (me, _)
-    | Pstr_module (_, me) -> module_expr me
-    | Pstr_recmodule l -> List.iter (fun (_, _, me) -> module_expr me) l
+    | Pstr_module {pmb_expr = me} -> module_expr me
+    | Pstr_recmodule l -> List.iter (fun x -> module_expr x.pmb_expr) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
 
   and class_expr ce =

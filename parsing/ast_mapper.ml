@@ -256,7 +256,7 @@ module M = struct
   let type_ ?loc a = mk_item ?loc (Pstr_type a)
   let exception_ ?loc a = mk_item ?loc (Pstr_exception a)
   let exn_rebind ?loc ?(attributes = []) a b = mk_item ?loc (Pstr_exn_rebind (a, b, attributes))
-  let module_ ?loc a b = mk_item ?loc (Pstr_module (a, b))
+  let module_ ?loc a = mk_item ?loc (Pstr_module a)
   let rec_module ?loc a = mk_item ?loc (Pstr_recmodule a)
   let modtype ?loc a b = mk_item ?loc (Pstr_modtype (a, b))
   let open_ ?loc ?(attributes = []) a = mk_item ?loc (Pstr_open (a, attributes))
@@ -274,8 +274,8 @@ module M = struct
     | Pstr_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
     | Pstr_exception ed -> exception_ ~loc (sub # exception_declaration ed)
     | Pstr_exn_rebind (s, lid, attrs) -> exn_rebind ~loc (map_loc sub s) (map_loc sub lid) ~attributes:(map_attributes sub attrs)
-    | Pstr_module (s, m) -> module_ ~loc (map_loc sub s) (sub # module_expr m)
-    | Pstr_recmodule l -> rec_module ~loc (List.map (fun (s, mty, me) -> (map_loc sub s, sub # module_type mty, sub # module_expr me)) l)
+    | Pstr_module x -> module_ ~loc (sub # module_binding x)
+    | Pstr_recmodule l -> rec_module ~loc (List.map (sub # module_binding) l)
     | Pstr_modtype (s, mty) -> modtype ~loc (map_loc sub s) (sub # module_type mty)
     | Pstr_open (lid, attrs) -> open_ ~loc ~attributes:(map_attributes sub attrs) (map_loc sub lid)
     | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
@@ -538,6 +538,12 @@ class mapper =
        pmd_name = map_loc this pmd.pmd_name;
        pmd_type = this # module_type pmd.pmd_type;
        pmd_attributes = map_attributes this pmd.pmd_attributes;
+      }
+    method module_binding x =
+      {
+       pmb_name = map_loc this x.pmb_name;
+       pmb_expr = this # module_expr x.pmb_expr;
+       pmb_attributes = map_attributes this x.pmb_attributes;
       }
 
     method location l = l

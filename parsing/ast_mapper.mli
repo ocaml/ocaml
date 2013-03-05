@@ -33,6 +33,7 @@ class mapper:
     method implementation: string -> structure -> string * structure
     method interface: string -> signature -> string * signature
     method location: Location.t -> Location.t
+    method module_binding: module_binding -> module_binding
     method module_declaration: module_declaration -> module_declaration
     method module_expr: module_expr -> module_expr
     method module_type: module_type -> module_type
@@ -174,8 +175,8 @@ module M:
     val type_: ?loc:Location.t -> (string loc * type_declaration) list -> structure_item
     val exception_: ?loc:Location.t -> exception_declaration -> structure_item
     val exn_rebind: ?loc:Location.t -> ?attributes:attribute list -> string loc -> Longident.t loc -> structure_item
-    val module_: ?loc:Location.t -> string loc -> module_expr -> structure_item
-    val rec_module: ?loc:Location.t -> (string loc * module_type * module_expr)      list -> structure_item
+    val module_: ?loc:Location.t -> module_binding -> structure_item
+    val rec_module: ?loc:Location.t -> module_binding list -> structure_item
     val modtype: ?loc:Location.t -> string loc -> module_type -> structure_item
     val open_: ?loc:Location.t -> ?attributes:attribute list -> Longident.t loc -> structure_item
     val class_: ?loc:Location.t -> class_declaration list -> structure_item

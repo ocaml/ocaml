@@ -38,6 +38,7 @@ type error =
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
   | Extension of string
+  | Recursive_module_require_explicit_type
 
 exception Error of Location.t * Env.t * error
 
@@ -1010,7 +1011,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          Sig_exception(id, arg) :: sig_rem,
          final_env)
-    | Pstr_module(name, smodl) ->
+    | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = _} ->
         check "module" loc module_names name.txt;
         let modl =
           type_module true funct_body (anchor_submodule name.txt anchor) env
@@ -1023,6 +1024,16 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          Sig_module(id, modl.mod_type, Trec_not) :: sig_rem,
          final_env)
     | Pstr_recmodule sbind ->
+        let sbind =
+          List.map
+            (function
+              | {pmb_name = name; pmb_expr = {pmod_desc=Pmod_constraint(expr, typ)}; pmb_attributes = _} ->
+              name, typ, expr
+              | mb ->
+                  raise (Error (mb.pmb_expr.pmod_loc, env, Recursive_module_require_explicit_type))
+            )
+            sbind
+        in
         List.iter
           (fun (name, _, _) -> check "module" loc module_names name.txt)
           sbind;
@@ -1473,6 +1484,8 @@ let report_error ppf = function
         "Its type contains local dependencies:@ %a" type_expr ty
   | Extension s ->
       fprintf ppf "Uninterpreted extension '%s'." s
+  | Recursive_module_require_explicit_type ->
+      fprintf ppf "Recursive modules require an explicit module type."
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error ppf err)

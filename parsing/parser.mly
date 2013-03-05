@@ -624,8 +624,8 @@ structure_item:
   | pre_item_attributes EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
       { mkstr(Pstr_exn_rebind(mkrhs $3 3, mkloc $5 (rhs_loc 5), $1 @ $6)) }
   | pre_item_attributes MODULE UIDENT module_binding post_item_attributes
-      { mkstr(Pstr_module(mkrhs $3 3, $4)) (* keep attrs *) }
-  | pre_item_attributes MODULE REC module_rec_bindings post_item_attributes
+      { mkstr(Pstr_module{pmb_name=mkrhs $3 3; pmb_expr=$4; pmb_attributes=$1 @ $5}) }
+  | pre_item_attributes MODULE REC module_rec_bindings
       { mkstr(Pstr_recmodule(List.rev $4)) (* keep attrs *) }
   | pre_item_attributes MODULE TYPE ident EQUAL module_type post_item_attributes
       { mkstr(Pstr_modtype(mkrhs $4 4, $6)) (* keep attrs *) }
@@ -659,7 +659,7 @@ module_rec_bindings:
   | module_rec_bindings AND module_rec_binding    { $3 :: $1 }
 ;
 module_rec_binding:
-    UIDENT COLON module_type EQUAL module_expr    { (mkrhs $1 1, $3, $5) }
+    UIDENT module_binding    { {pmb_name=mkrhs $1 1; pmb_expr=$2; pmb_attributes=[]} (* todo: attrs *) }
 ;
 
 /* Module types */

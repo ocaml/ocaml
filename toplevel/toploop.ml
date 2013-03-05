@@ -114,9 +114,12 @@ let parse_mod_use_file name lb =
   in
   [ Ptop_def
       [ { pstr_desc =
-            Pstr_module ( Location.mknoloc modname ,
-                          { pmod_desc = Pmod_structure items;
-                            pmod_loc = Location.none } );
+            Pstr_module ( {pmb_name =Location.mknoloc modname;
+                           pmb_expr =
+                           { pmod_desc = Pmod_structure items;
+                             pmod_loc = Location.none };
+                           pmb_attributes = []}
+                          );
           pstr_loc = Location.none } ] ]
 
 (* Hooks for initialization *)

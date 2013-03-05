@@ -325,14 +325,21 @@ and structure_item_desc =
   | Pstr_type of (string loc * type_declaration) list
   | Pstr_exception of exception_declaration
   | Pstr_exn_rebind of string loc * Longident.t loc * attribute list
-  | Pstr_module of string loc * module_expr
-  | Pstr_recmodule of (string loc * module_type * module_expr) list
+  | Pstr_module of module_binding
+  | Pstr_recmodule of module_binding list
   | Pstr_modtype of string loc * module_type
   | Pstr_open of Longident.t loc * attribute list
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr * attribute list
   | Pstr_extension of extension * attribute list
+
+and module_binding =
+    {
+     pmb_name: string loc;
+     pmb_expr: module_expr;
+     pmb_attributes: attribute list;
+    }
 
 (* Toplevel phrases *)
 

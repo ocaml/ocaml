@@ -1010,14 +1010,14 @@ class printer  ()= object(self:'self)
     | Pstr_value (rf, l) -> (* pp f "@[<hov2>let %a%a@]"  self#rec_flag rf self#bindings l *)
         pp f "@[<2>%a@]" self#bindings (rf,l)
     | Pstr_exception ed -> self#exception_declaration f ed
-    | Pstr_module (s, me) ->
+    | Pstr_module x ->
         let rec module_helper me = match me.pmod_desc with
         | Pmod_functor(s,mt,me) ->
             pp f "(%s:%a)"  s.txt  self#module_type mt ;
             module_helper me
         | _ -> me in 
         pp f "@[<hov2>module %s%a@]"
-          s.txt
+          x.pmb_name.txt
           (fun f me ->
             let me = module_helper me  in
             (match me.pmod_desc with
@@ -1028,7 +1028,7 @@ class printer  ()= object(self:'self)
                 pp f " :@;%a@;=@;%a@;"  self#module_type mt self#module_expr  me 
             | _ ->
                 pp f " =@ %a"  self#module_expr  me 
-            )) me 
+            )) x.pmb_expr
     | Pstr_open (li, _attrs) ->
         pp f "@[<2>open@;%a@]" self#longident_loc li;
     | Pstr_modtype (s, mt) ->
@@ -1083,16 +1083,19 @@ class printer  ()= object(self:'self)
     | Pstr_exn_rebind (s, li, _attrs) ->        (* todo: check this *)
         pp f "@[<hov2>exception@ %s@ =@ %a@]" s.txt self#longident_loc li 
     | Pstr_recmodule decls -> (* 3.07 *)
-        let text_x_modtype_x_module f (s, mt, me) =
-          pp f "@[<hov2>and@ %s:%a@ =@ %a@]"
-            s.txt self#module_type mt self#module_expr me
-        in begin match decls with
-        | (s,mt,me):: l2 ->
+        let aux f = function
+          | {pmb_name = s; pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} ->
+              pp f "@[<hov2>and@ %s:%a@ =@ %a@]"
+              s.txt self#module_type typ self#module_expr expr
+          | _ -> assert false
+        in
+        begin match decls with
+        | {pmb_name = s; pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} :: l2 ->
             pp f "@[<hv>@[<hov2>module@ rec@ %s:%a@ =@ %a@]@ %a@]"
               s.txt
-              self#module_type mt
-              self#module_expr me 
-              (fun f l2 -> List.iter (text_x_modtype_x_module f) l2) l2 
+              self#module_type typ
+              self#module_expr expr
+              (fun f l2 -> List.iter (aux f) l2) l2 
         | _ -> assert false
         end
     | Pstr_extension _ -> assert false
