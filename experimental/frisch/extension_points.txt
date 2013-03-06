@@ -1,0 +1,167 @@
+This file describes the changes on the extension_points branch.
+
+
+=== Attributes
+
+Attributes are "decorations" of the syntax tree which are ignored by
+the type-checker.  An attribute is made of an identifier (an "LIDENT", written
+id below) and an optional expression (written expr below).
+
+Four syntaxes exist for attributes, according to the kind of component
+the attribute applies to, and whether the attribute is written before
+or after the component.
+
+On expressions, type expressions, module expressions, module type expressions,
+patterns (TODO: class expressions, class type expressions):
+ 
+  Prefix syntax:   [^id expr] ...
+  Postfix syntax:  ... [@id expr]
+
+The postfix syntax [@id expr] is also available to add attributes on
+constructors in variant type declarations:
+
+  type t =
+    | A [@id1]
+    | B [@id2] of int [@id3]
+
+Here, id1 (resp. id2) is attached to the constructor A (resp. B)
+and id3 is attached to the int type expression.
+
+(TODO: attributes on record fields.)
+
+On items:
+
+  Prefix syntax: [^^id expr] ...
+  Postfix syntax: ... [@@id expr]
+
+  Items designates signature and structure items, and also individual
+  components of multiple declaration (type declarations, recursive modules,
+  class declarations, class type declarations). (TODO: class fields?)
+
+  For multiple declarations:
+
+    - prefix attributes written before the first keyword of the item
+      are attached to the first declared component
+
+    - postfix attributes written after the item are attached to the
+      last declared component
+
+    - more prefix attributes can be inserted after the opening keyword
+      (for the first component) and after the "and" keyword (for other
+      components)
+
+    - more postfix attributes can be inserted before the "and" keyword
+
+  For instance, consider:
+
+    [^^id1] type [^^id2] t1 = ... [@@id3] and [^^id4] t2 = ... [@@id5]
+
+  Here, the attributes on t1 are id1, id2 and id3; the attributes on
+  t2 are id4 and id5.
+
+  Note: item attributes are currently not supported on Pstr_eval
+  and Pstr_value structure items.
+
+A fifth syntax exists for attributes which stands as signature or
+structure item on their own (i.e. they are not attached to any other
+component):
+
+   [*id expr]
+
+([^^] and [@@] attributes cannot be attached to such a standalone attribute.)
+
+
+=== Extension nodes
+
+Extension nodes replace valid components in the syntax tree.  They are
+normally interpreted and expanded by AST mapper.  The type-checker
+fails when it encounters such an extension node.  An extension node is
+made of an identifier (an "LIDENT", written id below) and an optional
+expression (written expr below).
+
+Two syntaxes exist for extension node:
+
+As expressions, type expressions, module expressions, module type expressions,
+patterns (TODO: class expressions, class type expressions):
+
+  [%id expr]
+
+As structure or signature item (TODO: class fields?):
+ 
+  [%%id expr]
+
+As other structure or signature items, attributes can be attached to a
+[%%id expr] extension node.
+
+
+=== Other changes to the parser and Parsetree
+
+--- Relaxing the syntax for recursive modules.
+
+Before:
+   module X1 : MT1 = M1 and ... and Xn : MTn = Mn
+
+Now:
+   module X1 = M1 and ... and Xn = Mn
+   (with the usual sugar that Xi = (Mi : MTi) can be written as Xi : MTi = Mi
+   which gives the old syntax)
+
+   The type-checker fails when a module expression is not of
+   the form (M : MT)
+   
+
+Rationale:
+
+1. More uniform representation in the Parsetree.
+
+2. The type-checker can be made more clever in the future to support
+   other forms of module expressions (e.g. functions with an explicit
+   constraint on its result; or a structure with only type-level
+   components).
+    
+      
+--- Turning some tuple or n-ary constructors into records
+
+Before:
+
+  | Pstr_module of string loc * module_expr
+
+After:
+
+  | Pstr_module of module_binding
+...
+  and module_binding =
+    {
+     pmb_name: string loc;
+     pmb_expr: module_expr;
+     pmb_attributes: attribute list;
+    }
+
+
+
+Rationale:
+
+More self-documented, more robust to future additions (such as
+attributes), simplifies some code.
+
+
+--- Keeping names inside value_description and type_declaration
+
+Before:
+
+  | Psig_type of (string loc * type_declaration) list
+
+
+After:
+
+  | Psig_type of type_declaration list
+
+....
+and type_declaration =
+  { ptype_name: string loc;
+    ...
+  }
+
+Rationale:
+
+More self-documented, simplifies some code.
