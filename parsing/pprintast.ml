@@ -1031,8 +1031,8 @@ class printer  ()= object(self:'self)
             )) x.pmb_expr
     | Pstr_open (li, _attrs) ->
         pp f "@[<2>open@;%a@]" self#longident_loc li;
-    | Pstr_modtype (s, mt) ->
-        pp f "@[<2>module type %s =@;%a@]" s.txt self#module_type mt 
+    | Pstr_modtype x ->
+        pp f "@[<2>module type %s =@;%a@]" x.pmtb_name.txt self#module_type x.pmtb_type
     | Pstr_class l ->
         let class_declaration f  (* for the second will be changed to and FIXME*)
             ({pci_params=(ls,_);

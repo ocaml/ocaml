@@ -1390,7 +1390,7 @@ module Analyser =
           let eles = f ~first: true loc.Location.loc_start.Lexing.pos_cnum mods in
           (0, new_env, eles)
 
-      | Parsetree.Pstr_modtype (name, modtype) ->
+      | Parsetree.Pstr_modtype {Parsetree.pmtb_name=name; pmtb_type=modtype} ->
           let complete_name = Name.concat current_module_name name.txt in
           let tt_module_type =
             try Typedtree_search.search_module_type table name.txt

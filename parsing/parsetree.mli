@@ -327,7 +327,7 @@ and structure_item_desc =
   | Pstr_exn_rebind of string loc * Longident.t loc * attribute list
   | Pstr_module of module_binding
   | Pstr_recmodule of module_binding list
-  | Pstr_modtype of string loc * module_type
+  | Pstr_modtype of module_type_binding
   | Pstr_open of Longident.t loc * attribute list
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
@@ -339,6 +339,13 @@ and module_binding =
      pmb_name: string loc;
      pmb_expr: module_expr;
      pmb_attributes: attribute list;
+    }
+
+and module_type_binding =
+    {
+     pmtb_name: string loc;
+     pmtb_type: module_type;
+     pmtb_attributes: attribute list;
     }
 
 (* Toplevel phrases *)

@@ -70,7 +70,8 @@ and untype_structure_item item =
                 pmb_attributes = []})
              list)
     | Tstr_modtype (_id, name, mtype) ->
-        Pstr_modtype (name, untype_module_type mtype)
+        Pstr_modtype {pmtb_name=name; pmtb_type=untype_module_type mtype;
+                      pmtb_attributes=[]}
     | Tstr_open (_path, lid) -> Pstr_open (lid, [])
     | Tstr_class list ->
         Pstr_class (List.map (fun (ci, _, _) ->

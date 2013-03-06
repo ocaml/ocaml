@@ -291,8 +291,8 @@ and add_struct_item bv item =
         (fun x -> add_module bv' x.pmb_expr)
         bindings;
       bv'
-  | Pstr_modtype(id, mty) ->
-      add_modtype bv mty; bv
+  | Pstr_modtype x ->
+      add_modtype bv x.pmtb_type; bv
   | Pstr_open (l, _attrs) ->
       addmodule bv l; bv
   | Pstr_class cdl ->

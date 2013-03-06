@@ -15461,7 +15461,9 @@ module Struct =
                     l
               | StMty (loc, n, mt) ->
                   (mkstr loc
-                     (Pstr_modtype ((with_loc n loc), (module_type mt)))) ::
+                     (Pstr_modtype {pmtb_name=with_loc n loc;
+                                    pmtb_type=module_type mt;
+                                    pmtb_attributes=[]})) ::
                     l
               | StOpn (loc, id) ->
                   (mkstr loc (Pstr_open (long_uident id, []))) :: l

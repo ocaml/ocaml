@@ -469,7 +469,7 @@ let search_structure str ~name ~kind ~prefix =
           false
       | Pstr_exception ped when kind = Pconstructor -> name = ped.ped_name.txt
       | Pstr_module x when kind = Pmodule -> name = x.pmb_name.txt
-      | Pstr_modtype (s, _) when kind = Pmodtype -> name = s.txt
+      | Pstr_modtype x when kind = Pmodtype -> name = x.pmtb_name.txt
       | Pstr_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
           List.iter l ~f:
             begin fun c ->

@@ -1059,7 +1059,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          map_rec (fun rs (id, _, _, modl) -> Sig_module(id, modl.mod_type, rs))
                  bindings2 sig_rem,
          final_env)
-    | Pstr_modtype(name, smty) ->
+    | Pstr_modtype{pmtb_name=name; pmtb_type=smty} ->
         check "module type" loc modtype_names name.txt;
         let mty = transl_modtype env smty in
         let (id, newenv) =

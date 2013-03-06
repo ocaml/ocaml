@@ -37,6 +37,7 @@ class mapper:
     method module_declaration: module_declaration -> module_declaration
     method module_expr: module_expr -> module_expr
     method module_type: module_type -> module_type
+    method module_type_binding: module_type_binding -> module_type_binding
     method pat: pattern -> pattern
     method signature: signature -> signature
     method signature_item: signature_item -> signature_item
@@ -177,7 +178,7 @@ module M:
     val exn_rebind: ?loc:Location.t -> ?attributes:attribute list -> string loc -> Longident.t loc -> structure_item
     val module_: ?loc:Location.t -> module_binding -> structure_item
     val rec_module: ?loc:Location.t -> module_binding list -> structure_item
-    val modtype: ?loc:Location.t -> string loc -> module_type -> structure_item
+    val modtype: ?loc:Location.t -> module_type_binding -> structure_item
     val open_: ?loc:Location.t -> ?attributes:attribute list -> Longident.t loc -> structure_item
     val class_: ?loc:Location.t -> class_declaration list -> structure_item
     val class_type: ?loc:Location.t -> class_type_declaration list -> structure_item

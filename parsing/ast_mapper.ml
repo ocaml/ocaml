@@ -258,7 +258,7 @@ module M = struct
   let exn_rebind ?loc ?(attributes = []) a b = mk_item ?loc (Pstr_exn_rebind (a, b, attributes))
   let module_ ?loc a = mk_item ?loc (Pstr_module a)
   let rec_module ?loc a = mk_item ?loc (Pstr_recmodule a)
-  let modtype ?loc a b = mk_item ?loc (Pstr_modtype (a, b))
+  let modtype ?loc a = mk_item ?loc (Pstr_modtype a)
   let open_ ?loc ?(attributes = []) a = mk_item ?loc (Pstr_open (a, attributes))
   let class_ ?loc a = mk_item ?loc (Pstr_class a)
   let class_type ?loc a = mk_item ?loc (Pstr_class_type a)
@@ -276,7 +276,7 @@ module M = struct
     | Pstr_exn_rebind (s, lid, attrs) -> exn_rebind ~loc (map_loc sub s) (map_loc sub lid) ~attributes:(map_attributes sub attrs)
     | Pstr_module x -> module_ ~loc (sub # module_binding x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub # module_binding) l)
-    | Pstr_modtype (s, mty) -> modtype ~loc (map_loc sub s) (sub # module_type mty)
+    | Pstr_modtype x -> modtype ~loc (sub # module_type_binding x)
     | Pstr_open (lid, attrs) -> open_ ~loc ~attributes:(map_attributes sub attrs) (map_loc sub lid)
     | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
     | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
@@ -544,6 +544,12 @@ class mapper =
        pmb_name = map_loc this x.pmb_name;
        pmb_expr = this # module_expr x.pmb_expr;
        pmb_attributes = map_attributes this x.pmb_attributes;
+      }
+    method module_type_binding x =
+      {
+       pmtb_name = map_loc this x.pmtb_name;
+       pmtb_type = this # module_type x.pmtb_type;
+       pmtb_attributes = map_attributes this x.pmtb_attributes;
       }
 
     method location l = l
