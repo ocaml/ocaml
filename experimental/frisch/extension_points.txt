@@ -67,13 +67,47 @@ On items:
   Note: item attributes are currently not supported on Pstr_eval
   and Pstr_value structure items.
 
-A fifth syntax exists for attributes which stands as signature or
+A fifth syntax exists for attributes which stand as signature or
 structure item on their own (i.e. they are not attached to any other
 component):
 
    [*id expr]
 
 ([^^] and [@@] attributes cannot be attached to such a standalone attribute.)
+
+
+=== Representation of attributes in the Parsetree
+
+For attributes on expressions and similar categories, attributes are
+just another possible constructor (one single attribute per node):
+
+and expression_desc =
+  ....
+  | Pexp_attribute of (expression * attribute)
+
+Note: we currently don't distinguish between prefix and postfix attributes.
+
+Similarly, attributes as standalone signature/structure items are represented
+by a new constructor:
+  | Psig_attribute of attribute
+  | Pstr_attribute of attribute
+
+For "declarations"-like items (type declarations, module declarations,
+..., but also constructors and record labels), all attributes are stored
+in an extra field in their record (again, without making the distinction
+between prefix and postfix attributes):
+
+and type_declaration = {
+   ...
+   ptype_attributes: attribute list;
+   ...
+
+For other kinds of items (currently: open/include stataments,
+exception rebind), the attributes are stored directly in the
+constructor of the item:
+
+  | Pstr_open of Longident.t loc * attribute list
+
 
 
 === Extension nodes
@@ -178,4 +212,5 @@ More self-documented, simplifies some code.
 - Adapt Camlp4 (both its parser(s) and its internal representation of OCaml ASTs).
 - Propagate attributes to the Typedtree (so that they can be retrieved in .cmt/.cmti).
 - Consider adding hooks to the type-checker so that custom extension expanders can be registered (a la OCaml Templates).
-
+- Quotations (i.e. string literals with custom delimiters and without any interpretation of special characters in them), and a syntax which combines extension nodes and quotations.
+- More cleanups to the Parsetree + documentation.
