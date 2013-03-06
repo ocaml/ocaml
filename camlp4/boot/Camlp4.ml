@@ -14496,11 +14496,19 @@ module Struct =
               function
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (sloc, s)))),
                   (Ast.TyMut (_, t))) ->
-                  ((with_loc s sloc), Mutable, (mkpolytype (ctyp t)),
-                   (mkloc loc))
+                    {pld_name=with_loc s sloc;
+                     pld_mutable=Mutable;
+                     pld_type=mkpolytype (ctyp t);
+                     pld_loc=mkloc loc;
+                     pld_attributes=[];
+                    }
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (sloc, s)))), t) ->
-                  ((with_loc s sloc), Immutable, (mkpolytype (ctyp t)),
-                   (mkloc loc))
+                  {pld_name=with_loc s sloc;
+                   pld_mutable=Immutable;
+                   pld_type=mkpolytype (ctyp t);
+                   pld_loc=mkloc loc;
+                   pld_attributes=[];
+                  }
               | _ -> assert false
               
             let mkvariant =

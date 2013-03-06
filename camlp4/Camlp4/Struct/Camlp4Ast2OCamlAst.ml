@@ -333,9 +333,19 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value mktrecord =
     fun
     [ <:ctyp@loc< $id:(<:ident@sloc< $lid:s$ >>)$ : mutable $t$ >> ->
-        (with_loc s sloc, Mutable, mkpolytype (ctyp t), mkloc loc)
+      {pld_name=with_loc s sloc;
+       pld_mutable=Mutable;
+       pld_type=mkpolytype (ctyp t);
+       pld_loc=mkloc loc;
+       pld_attributes=[];
+      }
     | <:ctyp@loc< $id:(<:ident@sloc< $lid:s$ >>)$ : $t$ >> ->
-        (with_loc s sloc, Immutable, mkpolytype (ctyp t), mkloc loc)
+      {pld_name=with_loc s sloc;
+       pld_mutable=Immutable;
+       pld_type=mkpolytype (ctyp t);
+       pld_loc=mkloc loc;
+       pld_attributes=[];
+      }
     | _ -> assert False (*FIXME*) ];
   value mkvariant =
     fun

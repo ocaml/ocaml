@@ -1153,8 +1153,8 @@ class printer  ()= object(self:'self)
             (self#list ~sep:"" type_variant_leaf) xs
       | Ptype_abstract -> ()
       | Ptype_record l ->
-          let type_record_field f (s, mf, ct,_) =
-            pp f "@[<2>%a%s:@;%a@]" self#mutable_flag mf s.txt self#core_type ct in
+          let type_record_field f pld =
+            pp f "@[<2>%a%s:@;%a@]" self#mutable_flag pld.pld_mutable pld.pld_name.txt self#core_type pld.pld_type in
           pp f "{@\n%a}"
             (self#list type_record_field ~sep:";@\n" )  l ;
       ) x

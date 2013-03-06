@@ -125,7 +125,11 @@ and untype_type_declaration name decl =
                 {pcd_name = name; pcd_args = List.map untype_core_type cts; pcd_res = None; pcd_loc = loc; pcd_attributes = []}) list)
       | Ttype_record list ->
           Ptype_record (List.map (fun (_s, name, mut, ct, loc) ->
-                (name, mut, untype_core_type ct, loc)
+                {pld_name=name;
+                 pld_mutable=mut;
+                 pld_type=untype_core_type ct;
+                 pld_loc=loc;
+                 pld_attributes=[]}
             ) list)
     );
     ptype_private = decl.typ_private;

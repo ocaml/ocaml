@@ -18,16 +18,21 @@ patterns (TODO: class expressions, class type expressions):
   Postfix syntax:  ... [@id expr]
 
 The postfix syntax [@id expr] is also available to add attributes on
-constructors in variant type declarations:
+constructors and labels in type declarations:
 
   type t =
     | A [@id1]
     | B [@id2] of int [@id3]
 
 Here, id1 (resp. id2) is attached to the constructor A (resp. B)
-and id3 is attached to the int type expression.
+and id3 is attached to the int type expression.  Example on records:
 
-(TODO: attributes on record fields.)
+ type t =
+   {
+      x [@id1]: int;
+      mutable y [@id2] [@id3]: string [@id4];
+   }  
+
 
 On items:
 
@@ -165,3 +170,12 @@ and type_declaration =
 Rationale:
 
 More self-documented, simplifies some code.
+
+
+=== More TODOs
+
+- Adapt pprintast.
+- Adapt Camlp4 (both its parser(s) and its internal representation of OCaml ASTs).
+- Propagate attributes to the Typedtree (so that they can be retrieved in .cmt/.cmti).
+- Consider adding hooks to the type-checker so that custom extension expanders can be registered (a la OCaml Templates).
+

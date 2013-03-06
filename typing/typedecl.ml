@@ -193,12 +193,12 @@ let transl_declaration env sdecl id =
       | Ptype_record lbls ->
         let all_labels = ref StringSet.empty in
         List.iter
-          (fun ({ txt = name }, mut, arg, loc) ->
+          (fun {pld_name = {txt=name}} ->
             if StringSet.mem name !all_labels then
               raise(Error(sdecl.ptype_loc, Duplicate_label name));
             all_labels := StringSet.add name !all_labels)
           lbls;
-        let lbls = List.map (fun (name, mut, arg, loc) ->
+        let lbls = List.map (fun {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc} ->
           let cty = transl_simple_type env true arg in
           (Ident.create name.txt, name, mut, cty, loc)
         ) lbls in
@@ -348,8 +348,8 @@ let check_constraints env sdecl (_, decl) =
       let pl = find_pl sdecl.ptype_kind in
       let rec get_loc name = function
           [] -> assert false
-        | (name', _, sty, _) :: tl ->
-            if name = name'.txt then sty.ptyp_loc else get_loc name tl
+        | pld :: tl ->
+            if name = pld.pld_name.txt then pld.pld_type.ptyp_loc else get_loc name tl
       in
       List.iter
         (fun (name, _, ty) ->
@@ -727,7 +727,7 @@ let check_duplicates sdecl_list =
           cl
     | Ptype_record fl ->
         List.iter
-          (fun (cname, _, _, loc) ->
+          (fun {pld_name=cname;pld_loc=loc} ->
             try
               let name' = Hashtbl.find labels cname.txt in
               Location.prerr_warning loc

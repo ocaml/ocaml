@@ -404,7 +404,7 @@ and type_kind i ppf x =
       list (i+1) constructor_decl ppf l;
   | Ptype_record l ->
       line i ppf "Ptype_record\n";
-      list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
+      list (i+1) label_decl ppf l;
 
 and exception_declaration i ppf x =
   string_loc i ppf x.ped_name;
@@ -752,11 +752,12 @@ and constructor_decl i ppf {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes
   option (i+1) core_type ppf pcd_res;
   attributes (i+1) ppf pcd_attributes
 
-and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
-  line i ppf "%a\n" fmt_location loc;
-  line (i+1) ppf "%a\n" fmt_mutable_flag mf;
-  line (i+1) ppf "%a" fmt_string_loc s;
-  core_type (i+1) ppf ct;
+and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes} =
+  line i ppf "%a\n" fmt_location pld_loc;
+  line (i+1) ppf "%a\n" fmt_mutable_flag pld_mutable;
+  line (i+1) ppf "%a" fmt_string_loc pld_name;
+  core_type (i+1) ppf pld_type;
+  attributes (i+1) ppf pld_attributes
 
 and string_list_x_location i ppf (l, loc) =
   line i ppf "<params> %a\n" fmt_location loc;

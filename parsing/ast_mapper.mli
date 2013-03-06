@@ -51,6 +51,8 @@ class mapper:
     method with_constraint: with_constraint -> with_constraint
     method attribute: attribute -> attribute
     method extension: extension -> extension
+    method constructor_declaration: constructor_declaration -> constructor_declaration
+    method label_declaration: label_declaration -> label_declaration
   end
 
 class type main_entry_points =

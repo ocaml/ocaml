@@ -196,15 +196,16 @@ module Analyser =
           f [] cons_core_type_list_list
 
       | Parsetree.Ptype_record name_mutable_type_list (* of (string * mutable_flag * core_type) list*) ->
+          let open Parsetree in
           let rec f = function
               [] ->
                 []
-            | (name, _, ct, xxloc) :: [] ->
+            | {pld_name=name; pld_type=ct} :: [] ->
                 let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
                 let s = get_string_of_file pos pos_end in
                 let (_,comment_opt) =  My_ir.just_after_special !file_name s in
                 [name.txt, comment_opt]
-            | (name,_,ct,xxloc) :: ((name2,_,ct2,xxloc2) as ele2) :: q ->
+            | {pld_name=name; pld_type=ct} :: ({pld_name=name2; pld_type=ct2} as ele2) :: q ->
                 let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
                 let pos2 = ct2.Parsetree.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
                 let s = get_string_of_file pos pos2 in

@@ -160,8 +160,16 @@ and type_declaration =
 and type_kind =
     Ptype_abstract
   | Ptype_variant of constructor_declaration list
-  | Ptype_record of
-      (string loc * mutable_flag * core_type * Location.t) list
+  | Ptype_record of label_declaration list
+
+and label_declaration =
+    {
+     pld_name: string loc;
+     pld_mutable: mutable_flag;
+     pld_type: core_type;
+     pld_loc: Location.t;
+     pld_attributes: attribute list;
+    }
 
 and constructor_declaration =
     {

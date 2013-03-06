@@ -1529,7 +1529,6 @@ constructor_declarations:
   | constructor_declarations BAR constructor_declaration { $3 :: $1 }
 ;
 constructor_declaration:
-
   | constr_ident attributes generalized_constructor_arguments
       { let arg_types,ret_type = $3 in
         {pcd_name = mkrhs $1 1;
@@ -1560,7 +1559,15 @@ label_declarations:
   | label_declarations SEMI label_declaration   { $3 :: $1 }
 ;
 label_declaration:
-    mutable_flag label COLON poly_type          { (mkrhs $2 2, $1, $4, symbol_rloc()) }
+    mutable_flag label attributes COLON poly_type
+      {
+       {pld_name = mkrhs $2 2;
+        pld_mutable = $1;
+        pld_type = $5;
+        pld_loc = symbol_rloc();
+        pld_attributes = $3;
+       }
+      }
 ;
 
 /* "with" constraints (additional type equations over signature components) */

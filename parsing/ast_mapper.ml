@@ -115,18 +115,19 @@ module T = struct
      pcd_attributes = attributes;
     }
 
-  let map_constructor_decl sub {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
-    constructor_decl
-      (map_loc sub pcd_name)
-      (List.map (sub # typ) pcd_args)
-      ?res:(map_opt (sub # typ) pcd_res)
-      ~loc:(sub # location pcd_loc)
-      ~attributes:(map_attributes sub pcd_attributes)
+  let label_decl ?(loc = Location.none) ?(mut = Immutable) ?(attributes = []) name typ =
+    {
+     pld_name = name;
+     pld_type = typ;
+     pld_loc = loc;
+     pld_mutable = mut;
+     pld_attributes = attributes;
+    }
 
   let map_type_kind sub = function
     | Ptype_abstract -> Ptype_abstract
-    | Ptype_variant l -> Ptype_variant (List.map (map_constructor_decl sub) l)
-    | Ptype_record l -> Ptype_record (List.map (fun (s, flags, t, loc) -> (map_loc sub s, flags, sub # typ t, sub # location loc)) l)
+    | Ptype_variant l -> Ptype_variant (List.map (sub # constructor_declaration) l)
+    | Ptype_record l -> Ptype_record (List.map (sub # label_declaration) l)
 end
 
 module CT = struct
@@ -571,6 +572,23 @@ class mapper =
        pmtb_type = this # module_type x.pmtb_type;
        pmtb_attributes = map_attributes this x.pmtb_attributes;
       }
+
+    method constructor_declaration {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
+      T.constructor_decl
+        (map_loc this pcd_name)
+        (List.map (this # typ) pcd_args)
+        ?res:(map_opt (this # typ) pcd_res)
+        ~loc:(this # location pcd_loc)
+        ~attributes:(map_attributes this pcd_attributes)
+
+    method label_declaration {pld_name; pld_type; pld_loc; pld_mutable; pld_attributes} =
+      T.label_decl
+        (map_loc this pld_name)
+        (this # typ pld_type)
+        ~mut:pld_mutable
+        ~loc:(this # location pld_loc)
+        ~attributes:(map_attributes this pld_attributes)
+
 
     method location l = l
 
