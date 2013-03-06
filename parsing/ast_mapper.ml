@@ -209,7 +209,7 @@ module MT = struct
   let exception_ ?loc a = mk_item ?loc (Psig_exception a)
   let module_ ?loc a = mk_item ?loc (Psig_module a)
   let rec_module ?loc a = mk_item ?loc (Psig_recmodule a)
-  let modtype ?loc ?(attributes = []) a b = mk_item ?loc (Psig_modtype (a, b, attributes))
+  let modtype ?loc a = mk_item ?loc (Psig_modtype a)
   let open_ ?loc ?(attributes = []) a = mk_item ?loc (Psig_open (a, attributes))
   let include_ ?loc ?(attributes = []) a = mk_item ?loc (Psig_include (a, attributes))
   let class_ ?loc a = mk_item ?loc (Psig_class a)
@@ -224,8 +224,7 @@ module MT = struct
     | Psig_exception ed -> exception_ ~loc (sub # exception_declaration ed)
     | Psig_module x -> module_ ~loc (sub # module_declaration x)
     | Psig_recmodule l -> rec_module ~loc (List.map (sub # module_declaration) l)
-    | Psig_modtype (s, Pmodtype_manifest mt, attrs) -> modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt)) ~attributes:(map_attributes sub attrs)
-    | Psig_modtype (s, Pmodtype_abstract, attrs) -> modtype ~loc (map_loc sub s) Pmodtype_abstract ~attributes:(map_attributes sub attrs)
+    | Psig_modtype x -> modtype ~loc (sub # module_type_declaration x)
     | Psig_open (lid, attrs) -> open_ ~loc ~attributes:(map_attributes sub attrs) (map_loc sub lid)
     | Psig_include (mt, attrs) -> include_ ~loc (sub # module_type mt) ~attributes:(map_attributes sub attrs)
     | Psig_class l -> class_ ~loc (List.map (sub # class_description) l)
@@ -549,6 +548,12 @@ class mapper =
        pmd_name = map_loc this pmd.pmd_name;
        pmd_type = this # module_type pmd.pmd_type;
        pmd_attributes = map_attributes this pmd.pmd_attributes;
+      }
+    method module_type_declaration {pmtd_name; pmtd_type; pmtd_attributes} =
+      {
+       pmtd_name = map_loc this pmtd_name;
+       pmtd_type = map_opt (this # module_type) pmtd_type;
+       pmtd_attributes = map_attributes this pmtd_attributes;
       }
     method module_binding x =
       {

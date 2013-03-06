@@ -1008,10 +1008,10 @@ value varify_constructors var_names =
     | SgMty loc n mt ->
         let si =
           match mt with
-          [ MtQuo _ _ -> Pmodtype_abstract
-          | _ -> Pmodtype_manifest (module_type mt) ]
+          [ MtQuo _ _ -> None
+          | _ -> Some (module_type mt) ]
         in
-        [mksig loc (Psig_modtype (with_loc n loc) si []) :: l]
+        [mksig loc (Psig_modtype {pmtd_name=with_loc n loc; pmtd_type=si; pmtd_attributes=[]}) :: l]
     | SgOpn loc id ->
         [mksig loc (Psig_open (long_uident id) []) :: l]
     | SgTyp loc tdl -> [mksig loc (Psig_type (mktype_decl tdl [])) :: l]

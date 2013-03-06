@@ -229,10 +229,10 @@ and add_sig_item bv item =
       let bv' = List.fold_right StringSet.add (List.map (fun pmd -> pmd.pmd_name.txt) decls) bv in
       List.iter (fun pmd -> add_modtype bv' pmd.pmd_type) decls;
       bv'
-  | Psig_modtype(id,mtyd, _attrs) ->
-      begin match mtyd with
-        Pmodtype_abstract -> ()
-      | Pmodtype_manifest mty -> add_modtype bv mty
+  | Psig_modtype x ->
+      begin match x.pmtd_type with
+        None -> ()
+      | Some mty -> add_modtype bv mty
       end;
       bv
   | Psig_open (lid, _) ->

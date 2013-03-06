@@ -522,7 +522,7 @@ let search_signature sign ~name ~kind ~prefix =
           false
       | Psig_exception ped when kind = Pconstructor -> name = ped.ped_name.txt
       | Psig_module pmd when kind = Pmodule -> name = pmd.pmd_name.txt
-      | Psig_modtype (s, _, _) when kind = Pmodtype -> name = s.txt
+      | Psig_modtype pmtd when kind = Pmodtype -> name = pmtd.pmtd_name.txt
       | Psig_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
           List.iter l ~f:
             begin fun c ->

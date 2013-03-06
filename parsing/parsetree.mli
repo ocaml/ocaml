@@ -274,7 +274,7 @@ and signature_item_desc =
   | Psig_exception of exception_declaration
   | Psig_module of module_declaration
   | Psig_recmodule of module_declaration list
-  | Psig_modtype of string loc * modtype_declaration * attribute list
+  | Psig_modtype of module_type_declaration
   | Psig_open of Longident.t loc * attribute list
   | Psig_include of module_type * attribute list
   | Psig_class of class_description list
@@ -288,9 +288,12 @@ and module_declaration =
      pmd_attributes: attribute list;
     }
 
-and modtype_declaration =
-    Pmodtype_abstract
-  | Pmodtype_manifest of module_type
+and module_type_declaration =
+    {
+     pmtd_name: string loc;
+     pmtd_type: module_type option;
+     pmtd_attributes: attribute list;
+    }
 
 and with_constraint =
     Pwith_type of type_declaration

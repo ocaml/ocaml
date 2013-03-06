@@ -896,12 +896,12 @@ class printer  ()= object(self:'self)
     | Psig_include (mt, _attrs) ->
         pp f "@[<hov2>include@ %a@]"
           self#module_type  mt
-    | Psig_modtype (s, md, _attrs) ->
+    | Psig_modtype {pmtd_name=s; pmtd_type=md} ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
           (fun f md -> match md with
-          | Pmodtype_abstract -> ()
-          | Pmodtype_manifest (mt) ->
+          | None -> ()
+          | Some mt ->
               pp_print_space f () ;
               pp f "@ =@ %a"  self#module_type mt
           ) md 

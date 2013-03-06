@@ -312,9 +312,9 @@ and approx_sig env ssg =
             env decls in
           map_rec (fun rs (id, mty) -> Sig_module(id, mty, rs)) decls
                   (approx_sig newenv srem)
-      | Psig_modtype(name, sinfo, _attrs) ->
-          let info = approx_modtype_info env sinfo in
-          let (id, newenv) = Env.enter_modtype name.txt info env in
+      | Psig_modtype d ->
+          let info = approx_modtype_info env d.pmtd_type in
+          let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
       | Psig_open (lid, _attrs) ->
           let (path, mty) = type_open env item.psig_loc lid in
@@ -340,9 +340,9 @@ and approx_sig env ssg =
 
 and approx_modtype_info env sinfo =
   match sinfo with
-    Pmodtype_abstract ->
+    None ->
       Modtype_abstract
-  | Pmodtype_manifest smty ->
+  | Some smty ->
       Modtype_manifest(approx_modtype env smty)
 
 (* Additional validity checks on type definitions arising from
@@ -510,7 +510,7 @@ and transl_signature env sg =
             map_rec (fun rs (id, _, tmty) -> Sig_module(id, tmty.mty_type, rs))
               decls rem,
             final_env
-        | Psig_modtype(name, sinfo, _attrs) ->
+        | Psig_modtype {pmtd_name=name; pmtd_type=sinfo} ->
             check "module type" item.psig_loc modtype_names name.txt;
             let (tinfo, info) = transl_modtype_info env sinfo in
             let (id, newenv) = Env.enter_modtype name.txt info env in
@@ -589,9 +589,9 @@ and transl_signature env sg =
 
 and transl_modtype_info env sinfo =
   match sinfo with
-    Pmodtype_abstract ->
+    None ->
       Tmodtype_abstract, Modtype_abstract
-  | Pmodtype_manifest smty ->
+  | Some smty ->
       let tmty = transl_modtype env smty in
       Tmodtype_manifest tmty, Modtype_manifest tmty.mty_type
 

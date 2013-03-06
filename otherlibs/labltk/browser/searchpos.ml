@@ -212,7 +212,7 @@ let rec search_pos_signature l ~pos ~env =
           search_pos_module pmd.pmd_type ~pos ~env
       | Psig_recmodule decls ->
           List.iter decls ~f:(fun pmd -> search_pos_module pmd.pmd_type ~pos ~env)
-      | Psig_modtype (_, Pmodtype_manifest t, _attrs) ->
+      | Psig_modtype {pmtd_type=Some t} ->
           search_pos_module t ~pos ~env
       | Psig_modtype _ -> ()
       | Psig_class l ->

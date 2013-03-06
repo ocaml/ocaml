@@ -598,10 +598,10 @@ and signature_item i ppf x =
   | Psig_recmodule decls ->
       line i ppf "Psig_recmodule\n";
       list i module_declaration ppf decls;
-  | Psig_modtype (s, md, attrs) ->
-      line i ppf "Psig_modtype %a\n" fmt_string_loc s;
-      modtype_declaration i ppf md;
-      attributes i ppf attrs
+  | Psig_modtype x ->
+      line i ppf "Psig_modtype %a\n" fmt_string_loc x.pmtd_name;
+      modtype_declaration i ppf x.pmtd_type;
+      attributes i ppf x.pmtd_attributes
   | Psig_open (li, attrs) ->
       line i ppf "Psig_open %a\n" fmt_longident_loc li;
       attributes i ppf attrs
@@ -622,10 +622,8 @@ and signature_item i ppf x =
 
 and modtype_declaration i ppf x =
   match x with
-  | Pmodtype_abstract -> line i ppf "Pmodtype_abstract\n";
-  | Pmodtype_manifest (mt) ->
-      line i ppf "Pmodtype_manifest\n";
-      module_type (i+1) ppf mt;
+  | None -> line i ppf "#abstract\n";
+  | Some mt -> module_type (i+1) ppf mt;
 
 and with_constraint i ppf x =
   match x with

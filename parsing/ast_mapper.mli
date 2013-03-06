@@ -38,6 +38,7 @@ class mapper:
     method module_expr: module_expr -> module_expr
     method module_type: module_type -> module_type
     method module_type_binding: module_type_binding -> module_type_binding
+    method module_type_declaration: module_type_declaration -> module_type_declaration
     method pat: pattern -> pattern
     method signature: signature -> signature
     method signature_item: signature_item -> signature_item
@@ -151,7 +152,7 @@ module MT:
     val exception_: ?loc:Location.t -> exception_declaration -> signature_item
     val module_: ?loc:Location.t -> module_declaration -> signature_item
     val rec_module: ?loc:Location.t -> module_declaration list -> signature_item
-    val modtype: ?loc:Location.t -> ?attributes:Parsetree.attribute list -> string loc -> modtype_declaration -> signature_item
+    val modtype: ?loc:Location.t -> module_type_declaration -> signature_item
     val open_: ?loc:Location.t -> ?attributes:Parsetree.attribute list -> Longident.t loc -> signature_item
     val include_: ?loc:Location.t -> ?attributes:Parsetree.attribute list -> module_type -> signature_item
     val class_: ?loc:Location.t -> class_description list -> signature_item

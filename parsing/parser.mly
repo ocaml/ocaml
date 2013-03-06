@@ -721,9 +721,9 @@ signature_item:
        mksig(Psig_recmodule l)
       }
   | pre_item_attributes MODULE TYPE ident post_item_attributes
-      { mksig(Psig_modtype(mkrhs $4 4, Pmodtype_abstract, $1 @ $5)) }
+      { mksig(Psig_modtype {pmtd_name=mkrhs $4 4; pmtd_type=None; pmtd_attributes=$1 @ $5}) }
   | pre_item_attributes MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mksig(Psig_modtype(mkrhs $4 4, Pmodtype_manifest $6, $1 @ $7)) }
+      { mksig(Psig_modtype {pmtd_name=mkrhs $4 4; pmtd_type=Some $6; pmtd_attributes=$1 @ $7}) }
   | pre_item_attributes OPEN mod_longident post_item_attributes
       { mksig(Psig_open (mkrhs $3 3, $1 @ $4)) }
   | pre_item_attributes INCLUDE module_type post_item_attributes %prec below_WITH

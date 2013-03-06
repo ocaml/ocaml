@@ -335,7 +335,7 @@ and untype_signature_item item =
               {pmd_name = name; pmd_type = untype_module_type mtype;
                pmd_attributes = []}) list)
     | Tsig_modtype (_id, name, mdecl) ->
-        Psig_modtype (name, untype_modtype_declaration mdecl, [])
+        Psig_modtype {pmtd_name=name; pmtd_type=untype_modtype_declaration mdecl; pmtd_attributes=[]}
     | Tsig_open (_path, lid) -> Psig_open (lid, [])
     | Tsig_include (mty, _lid) -> Psig_include (untype_module_type mty, [])
     | Tsig_class list ->
@@ -349,8 +349,8 @@ and untype_signature_item item =
 
 and untype_modtype_declaration mdecl =
   match mdecl with
-    Tmodtype_abstract -> Pmodtype_abstract
-  | Tmodtype_manifest mtype -> Pmodtype_manifest (untype_module_type mtype)
+    Tmodtype_abstract -> None
+  | Tmodtype_manifest mtype -> Some (untype_module_type mtype)
 
 and untype_class_description cd =
   {
