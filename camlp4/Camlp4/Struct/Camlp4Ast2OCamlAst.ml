@@ -1028,7 +1028,11 @@ value varify_constructors var_names =
     [ <:module_binding< $x$ and $y$ >> ->
         module_str_binding x (module_str_binding y acc)
     | <:module_binding@loc< $s$ : $mt$ = $me$ >> ->
-        [(with_loc s loc, module_type mt, module_expr me) :: acc]
+        [{pmb_name=with_loc s loc;
+          pmb_expr=
+          {pmod_loc=Camlp4_import.Location.none;
+           pmod_desc=Pmod_constraint(module_expr me,module_type mt)};
+          pmb_attributes=[]} :: acc]
     | _ -> assert False ]
   and module_expr =
     fun
@@ -1073,7 +1077,7 @@ value varify_constructors var_names =
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
     | StExt loc n t sl -> [mkstr loc (Pstr_primitive (with_loc n loc) (mkvalue_desc loc t (list_of_meta_list sl))) :: l]
     | StInc loc me -> [mkstr loc (Pstr_include (module_expr me, [])) :: l]
-    | StMod loc n me -> [mkstr loc (Pstr_module (with_loc n loc) (module_expr me)) :: l]
+    | StMod loc n me -> [mkstr loc (Pstr_module {pmb_name=with_loc n loc;pmb_expr=module_expr me;pmb_attributes=[]}) :: l]
     | StRecMod loc mb ->
         [mkstr loc (Pstr_recmodule (module_str_binding mb [])) :: l]
     | StMty loc n mt -> [mkstr loc (Pstr_modtype (with_loc n loc) (module_type mt)) :: l]

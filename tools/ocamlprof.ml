@@ -367,7 +367,8 @@ and rewrite_str_item iflag item =
     Pstr_eval exp -> rewrite_exp iflag exp
   | Pstr_value(_, exps)
      -> List.iter (function (_,exp) -> rewrite_exp iflag exp) exps
-  | Pstr_module(name, smod) -> rewrite_mod iflag smod
+  | Pstr_module x -> rewrite_mod iflag x.pmb_expr
+        (* todo: Pstr_recmodule?? *)
   | Pstr_class classes -> List.iter (rewrite_class_declaration iflag) classes
   | _ -> ()
 

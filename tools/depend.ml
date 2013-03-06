@@ -281,14 +281,14 @@ and add_struct_item bv item =
       List.iter (add_type bv) ped.ped_args; bv
   | Pstr_exn_rebind(id, l, _attrs) ->
       add bv l; bv
-  | Pstr_module(id, modl) ->
-      add_module bv modl; StringSet.add id.txt bv
+  | Pstr_module x ->
+      add_module bv x.pmb_expr; StringSet.add x.pmb_name.txt bv
   | Pstr_recmodule bindings ->
       let bv' =
         List.fold_right StringSet.add
-          (List.map (fun (id,_,_) -> id.txt) bindings) bv in
+          (List.map (fun x -> x.pmb_name.txt) bindings) bv in
       List.iter
-        (fun (id, mty, modl) -> add_modtype bv' mty; add_module bv' modl)
+        (fun x -> add_module bv' x.pmb_expr)
         bindings;
       bv'
   | Pstr_modtype(id, mty) ->

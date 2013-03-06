@@ -440,9 +440,9 @@ let search_structure str ~name ~kind ~prefix =
           List.fold_left ~init:[] str ~f:
             begin fun acc item ->
               match item.pstr_desc with
-                Pstr_module (s, mexp) when s.txt = modu ->
-                  loc := mexp.pmod_loc.loc_start.Lexing.pos_cnum;
-                  begin match mexp.pmod_desc with
+                Pstr_module x when x.pmb_name.txt = modu ->
+                  loc := x.pmb_expr.pmod_loc.loc_start.Lexing.pos_cnum;
+                  begin match x.pmb_expr.pmod_desc with
                     Pmod_structure str -> str
                   | _ -> []
                   end
@@ -468,7 +468,7 @@ let search_structure str ~name ~kind ~prefix =
             end;
           false
       | Pstr_exception ped when kind = Pconstructor -> name = ped.ped_name.txt
-      | Pstr_module (s, _) when kind = Pmodule -> name = s.txt
+      | Pstr_module x when kind = Pmodule -> name = x.pmb_name.txt
       | Pstr_modtype (s, _) when kind = Pmodtype -> name = s.txt
       | Pstr_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
           List.iter l ~f:

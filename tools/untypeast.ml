@@ -57,11 +57,18 @@ and untype_structure_item item =
     | Tstr_exn_rebind (_id, name, _p, lid) ->
         Pstr_exn_rebind (name, lid, [])
     | Tstr_module (_id, name, mexpr) ->
-        Pstr_module (name, untype_module_expr mexpr)
+        Pstr_module {pmb_name = name; pmb_expr = untype_module_expr mexpr; pmb_attributes = []}
     | Tstr_recmodule list ->
-        Pstr_recmodule (List.map (fun (_id, name, mtype, mexpr) ->
-              name, untype_module_type mtype,
-              untype_module_expr mexpr) list)
+        Pstr_recmodule
+          (List.map
+             (fun (_id, name, mtype, mexpr) ->
+               {pmb_name = name;
+                pmb_expr = {pmod_loc = Location.none;
+                            pmod_desc = Pmod_constraint(
+                            untype_module_expr mexpr,
+                            untype_module_type mtype)};
+                pmb_attributes = []})
+             list)
     | Tstr_modtype (_id, name, mtype) ->
         Pstr_modtype (name, untype_module_type mtype)
     | Tstr_open (_path, lid) -> Pstr_open (lid, [])

@@ -1287,7 +1287,7 @@ module Analyser =
           in
           (0, new_env, [ Element_exception new_ex ])
 
-      | Parsetree.Pstr_module (name, module_expr) ->
+      | Parsetree.Pstr_module {Parsetree.pmb_name=name; pmb_expr=module_expr} ->
           (
            (* of string * module_expr *)
            try
@@ -1334,7 +1334,7 @@ module Analyser =
              dans les contraintes sur les modules *)
           let new_env =
             List.fold_left
-              (fun acc_env (name, _, mod_exp) ->
+              (fun acc_env {Parsetree.pmb_name=name;pmb_expr=mod_exp} ->
                 let complete_name = Name.concat current_module_name name.txt in
                 let e = Odoc_env.add_module acc_env complete_name in
                 let tt_mod_exp =
@@ -1362,7 +1362,7 @@ module Analyser =
           let rec f ?(first=false) last_pos name_mod_exp_list =
             match name_mod_exp_list with
               [] -> []
-            | (name, _, mod_exp) :: q ->
+            | {Parsetree.pmb_name=name;pmb_expr=mod_exp} :: q ->
                 let complete_name = Name.concat current_module_name name.txt in
                 let loc_start = mod_exp.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
                 let loc_end =  mod_exp.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
