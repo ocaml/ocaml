@@ -176,6 +176,7 @@ let iter_expression f e =
     | Pstr_modtype _
     | Pstr_open _
     | Pstr_class_type _
+    | Pstr_attribute _
     | Pstr_extension _
     | Pstr_exn_rebind _ -> ()
     | Pstr_include (me, _)

@@ -243,7 +243,7 @@ and add_sig_item bv item =
       List.iter (add_class_description bv) cdl; bv
   | Psig_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; bv
-  | Psig_extension _ ->
+  | Psig_attribute _ | Psig_extension _ ->
       bv
 
 and add_module bv modl =
@@ -301,7 +301,7 @@ and add_struct_item bv item =
       List.iter (add_class_type_declaration bv) cdtl; bv
   | Pstr_include (modl, _attrs) ->
       add_module bv modl; bv
-  | Pstr_extension _ ->
+  | Pstr_attribute _ | Pstr_extension _ ->
       bv
 
 and add_use_file bv top_phrs =

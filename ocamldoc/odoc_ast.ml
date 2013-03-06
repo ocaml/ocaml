@@ -1054,6 +1054,7 @@ module Analyser =
         Parsetree.Pstr_eval _ ->
           (* don't care *)
           (0, env, [])
+      | Parsetree.Pstr_attribute _
       | Parsetree.Pstr_extension _ ->
           (0, env, [])
       | Parsetree.Pstr_value (rec_flag, pat_exp_list) ->

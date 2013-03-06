@@ -376,6 +376,7 @@ let wrap_type_annotation newtypes core_type body =
 %token LBRACKETGREATER
 %token LBRACKETPERCENT
 %token LBRACKETPERCENTPERCENT
+%token LBRACKETSTAR
 %token LESS
 %token LESSMINUS
 %token LET
@@ -483,6 +484,7 @@ The precedences must be listed from low to high.
 %nonassoc LBRACKETHATHAT
 %nonassoc LBRACKETPERCENT
 %nonassoc LBRACKETPERCENTPERCENT
+%nonassoc LBRACKETSTAR
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -646,6 +648,8 @@ structure_item:
       { mkstr(Pstr_include ($3, $1 @ $4)) }
   | pre_item_attributes item_extension post_item_attributes
       { mkstr(Pstr_extension ($2, $1 @ $3)) }
+  | item_attribute
+      { mkstr(Pstr_attribute $1) }
 ;
 module_binding:
     EQUAL module_expr
@@ -740,6 +744,8 @@ signature_item:
        }
   | pre_item_attributes item_extension post_item_attributes
       { mksig(Psig_extension ($2, $1 @ $3)) }
+  | item_attribute
+      { mksig(Psig_attribute $1) }
 ;
 
 module_declaration:
@@ -1975,6 +1981,9 @@ extension:
 ;
 item_extension:
   LBRACKETPERCENTPERCENT LIDENT opt_expr RBRACKET { ($2, $3) }
+;
+item_attribute:
+  LBRACKETSTAR LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
 opt_expr:
     expr { $1 }

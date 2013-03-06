@@ -619,6 +619,9 @@ and signature_item i ppf x =
       line i ppf "Psig_extension \"%s\"\n" s;
       expression i ppf arg;
       attributes i ppf attrs
+  | Psig_attribute (s, arg) ->
+      line i ppf "Psig_attribute \"%s\"\n" s;
+      expression i ppf arg
 
 and modtype_declaration i ppf x =
   match x with
@@ -719,6 +722,9 @@ and structure_item i ppf x =
       line i ppf "Pstr_extension \"%s\"\n" s;
       expression i ppf arg;
       attributes i ppf attrs
+  | Pstr_attribute (s, arg) ->
+      line i ppf "Pstr_attribute \"%s\"\n" s;
+      expression i ppf arg
 
 and module_declaration i ppf pmd =
   string_loc i ppf pmd.pmd_name;

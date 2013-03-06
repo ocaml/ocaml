@@ -215,6 +215,7 @@ module MT = struct
   let class_ ?loc a = mk_item ?loc (Psig_class a)
   let class_type ?loc a = mk_item ?loc (Psig_class_type a)
   let extension ?loc ?(attributes = []) a = mk_item ?loc (Psig_extension (a, attributes))
+  let attribute ?loc a = mk_item ?loc (Psig_attribute a)
 
   let map_signature_item sub {psig_desc = desc; psig_loc = loc} =
     let loc = sub # location loc in
@@ -230,6 +231,7 @@ module MT = struct
     | Psig_class l -> class_ ~loc (List.map (sub # class_description) l)
     | Psig_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
     | Psig_extension (x, attrs) -> extension ~loc (sub # extension x) ~attributes:(map_attributes sub attrs)
+    | Psig_attribute x -> attribute ~loc (sub # attribute x)
 end
 
 
@@ -273,6 +275,7 @@ module M = struct
   let class_type ?loc a = mk_item ?loc (Pstr_class_type a)
   let include_ ?loc ?(attributes = []) a = mk_item ?loc (Pstr_include (a, attributes))
   let extension ?loc ?(attributes = []) a = mk_item ?loc (Pstr_extension (a, attributes))
+  let attribute ?loc a = mk_item ?loc (Pstr_attribute a)
 
   let map_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
     let loc = sub # location loc in
@@ -291,6 +294,7 @@ module M = struct
     | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
     | Pstr_include (e, attrs) -> include_ ~loc (sub # module_expr e) ~attributes:(map_attributes sub attrs)
     | Pstr_extension (x, attrs) -> extension ~loc (sub # extension x) ~attributes:(map_attributes sub attrs)
+    | Pstr_attribute x -> attribute ~loc (sub # attribute x)
 end
 
 module E = struct

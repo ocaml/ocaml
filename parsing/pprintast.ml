@@ -920,6 +920,7 @@ class printer  ()= object(self:'self)
                   pmd.pmd_name.txt self#module_type pmd.pmd_type;
               string_x_module_type_list f ~first:false tl  in
         string_x_module_type_list f decls
+    | Psig_attribute _
     | Psig_extension _ -> assert false
   end
   method module_expr f x =
@@ -1098,6 +1099,7 @@ class printer  ()= object(self:'self)
               (fun f l2 -> List.iter (aux f) l2) l2 
         | _ -> assert false
         end
+    | Pstr_attribute _
     | Pstr_extension _ -> assert false
   end
   method type_param f  = function

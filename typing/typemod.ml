@@ -577,6 +577,8 @@ and transl_signature env sg =
                     Sig_type(i'', d'', rs)])
                  classes [rem]),
             final_env
+        | Psig_attribute _ ->
+            transl_sig env srem
         | Psig_extension ((s, _), _) ->
             raise (Error (loc, env, Extension s))
   in
@@ -1146,6 +1148,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          final_env)
     | Pstr_extension ((s, _), _) ->
         raise (Error (loc, env, Extension s))
+    | Pstr_attribute _ ->
+        type_struct env srem
   in
   if !Clflags.annotations then
     (* moved to genannot *)
