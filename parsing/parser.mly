@@ -310,6 +310,16 @@ let wrap_type_annotation newtypes core_type body =
   in
   (exp, ghtyp(Ptyp_poly(newtypes,varify_constructors newtypes core_type)))
 
+let wrap_exp_attrs body attrs =
+  (* todo: keep exact location for the entire attribute *)
+  List.fold_left
+    (fun body attr -> ghexp(Pexp_attribute(body, attr)))
+    body
+    attrs
+
+let mkexp_attrs d attrs =
+  wrap_exp_attrs (mkexp d) attrs
+
 %}
 
 /* Tokens */
@@ -608,10 +618,11 @@ structure_tail:
   | structure_item structure_tail               { $1 :: $2 }
 ;
 structure_item:
-    LET rec_flag let_bindings
-      { match $3 with
+    LET attributes rec_flag let_bindings
+      { (* todo: keep attributes *)
+        match $4 with
           [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
-        | l -> mkstr(Pstr_value($2, List.rev l)) }
+        | l -> mkstr(Pstr_value($3, List.rev l)) }
   | pre_item_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
       { mkstr(Pstr_primitive {pval_name = mkrhs $3 3;
                               pval_type = $5; pval_prim = $7;
@@ -1042,23 +1053,23 @@ expr:
       { $1 }
   | simple_expr simple_labeled_expr_list %prec below_SHARP
       { mkexp(Pexp_apply($1, List.rev $2)) }
-  | LET rec_flag let_bindings IN seq_expr
-      { mkexp(Pexp_let($2, List.rev $3, $5)) }
+  | LET attributes rec_flag let_bindings IN seq_expr
+      { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
   | LET MODULE UIDENT module_binding IN seq_expr
       { mkexp(Pexp_letmodule(mkrhs $3 3, $4, $6)) }
   | LET OPEN mod_longident IN seq_expr
       { mkexp(Pexp_open(mkrhs $3 3, $5)) }
-  | FUNCTION opt_bar match_cases
-      { mkexp(Pexp_function("", None, List.rev $3)) }
-  | FUN labeled_simple_pattern fun_def
-      { let (l,o,p) = $2 in mkexp(Pexp_function(l, o, [p, $3])) }
-  | FUN LPAREN TYPE LIDENT RPAREN fun_def
-      { mkexp(Pexp_newtype($4, $6)) }
-  | MATCH seq_expr WITH opt_bar match_cases
-      { mkexp(Pexp_match($2, List.rev $5)) }
-  | TRY seq_expr WITH opt_bar match_cases
-      { mkexp(Pexp_try($2, List.rev $5)) }
-  | TRY seq_expr WITH error
+  | FUNCTION attributes opt_bar match_cases
+      { mkexp_attrs (Pexp_function("", None, List.rev $4)) $2 }
+  | FUN attributes labeled_simple_pattern fun_def
+      { let (l,o,p) = $3 in mkexp_attrs (Pexp_function(l, o, [p, $4])) $2 }
+  | FUN attributes LPAREN TYPE LIDENT RPAREN fun_def
+      { mkexp_attrs (Pexp_newtype($5, $7)) $2 }
+  | MATCH attributes seq_expr WITH opt_bar match_cases
+      { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
+  | TRY attributes seq_expr WITH opt_bar match_cases
+      { mkexp_attrs (Pexp_try($3, List.rev $6)) $2 }
+  | TRY attributes seq_expr WITH error
       { syntax_error() }
   | expr_comma_list %prec below_COMMA
       { mkexp(Pexp_tuple(List.rev $1)) }
@@ -1156,12 +1167,12 @@ simple_expr:
       { reloc_exp $2 }
   | LPAREN seq_expr error
       { unclosed "(" 1 ")" 3 }
-  | BEGIN seq_expr END
-      { reloc_exp $2 }
-  | BEGIN END
-      { mkexp (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
-                               None, false)) }
-  | BEGIN seq_expr error
+  | BEGIN attributes seq_expr END
+      { wrap_exp_attrs (reloc_exp $3) $2 (* check location *) }
+  | BEGIN attributes END
+      { mkexp_attrs (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
+                               None, false)) $2 }
+  | BEGIN attributes seq_expr error
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
       { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
