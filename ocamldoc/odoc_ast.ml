@@ -1118,7 +1118,8 @@ module Analyser =
           let (new_env, l_ele) = iter ~first: true loc.Location.loc_start.Lexing.pos_cnum env [] pat_exp_list in
           (0, new_env, l_ele)
 
-      | Parsetree.Pstr_primitive ({ txt = name_pre }, val_desc) ->
+      | Parsetree.Pstr_primitive val_desc ->
+            let name_pre = val_desc.Parsetree.pval_name.txt in
             (* of string * value_description *)
             print_DEBUG ("Parsetree.Pstr_primitive ("^name_pre^", ["^(String.concat ", " val_desc.Parsetree.pval_prim)^"]");
             let typ = Typedtree_search.search_primitive table name_pre in

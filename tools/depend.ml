@@ -217,7 +217,7 @@ and add_signature bv = function
 
 and add_sig_item bv item =
   match item.psig_desc with
-    Psig_value(id, vd) ->
+    Psig_value vd ->
       add_type bv vd.pval_type; bv
   | Psig_type dcls ->
       List.iter (add_type_declaration bv) dcls; bv
@@ -273,7 +273,7 @@ and add_struct_item bv item =
       add_expr bv e; bv
   | Pstr_value(rf, pel) ->
       let bv = add_bindings rf bv pel in bv
-  | Pstr_primitive(id, vd) ->
+  | Pstr_primitive vd ->
       add_type bv vd.pval_type; bv
   | Pstr_type dcls ->
       List.iter (add_type_declaration bv) dcls; bv

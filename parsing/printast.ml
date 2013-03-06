@@ -360,7 +360,7 @@ and expression i ppf x =
       expression i ppf arg
 
 and value_description i ppf x =
-  line i ppf "value_description %a\n" fmt_location x.pval_loc;
+  line i ppf "value_description %a %a\n" fmt_string_loc x.pval_name fmt_location x.pval_loc;
   core_type (i+1) ppf x.pval_type;
   list (i+1) string ppf x.pval_prim;
   attributes (i+1) ppf x.pval_attributes
@@ -582,8 +582,8 @@ and signature_item i ppf x =
   line i ppf "signature_item %a\n" fmt_location x.psig_loc;
   let i = i+1 in
   match x.psig_desc with
-  | Psig_value (s, vd) ->
-      line i ppf "Psig_value %a\n" fmt_string_loc s;
+  | Psig_value vd ->
+      line i ppf "Psig_value\n";
       value_description i ppf vd;
   | Psig_type (l) ->
       line i ppf "Psig_type\n";
@@ -681,8 +681,8 @@ and structure_item i ppf x =
   | Pstr_value (rf, l) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
       list i pattern_x_expression_def ppf l;
-  | Pstr_primitive (s, vd) ->
-      line i ppf "Pstr_primitive %a\n" fmt_string_loc s;
+  | Pstr_primitive vd ->
+      line i ppf "Pstr_primitive\n";
       value_description i ppf vd;
   | Pstr_type l ->
       line i ppf "Pstr_type\n";

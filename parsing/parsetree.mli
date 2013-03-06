@@ -137,7 +137,8 @@ and expression_desc =
 (* Value descriptions *)
 
 and value_description =
-  { pval_type: core_type;
+  { pval_name: string loc;
+    pval_type: core_type;
     pval_prim: string list;
     pval_attributes: attribute list;
     pval_loc: Location.t
@@ -268,7 +269,7 @@ and signature_item =
     psig_loc: Location.t }
 
 and signature_item_desc =
-    Psig_value of string loc * value_description
+    Psig_value of value_description
   | Psig_type of type_declaration list
   | Psig_exception of exception_declaration
   | Psig_module of module_declaration
@@ -322,7 +323,7 @@ and structure_item =
 and structure_item_desc =
     Pstr_eval of expression
   | Pstr_value of rec_flag * (pattern * expression) list
-  | Pstr_primitive of string loc * value_description
+  | Pstr_primitive of value_description
   | Pstr_type of type_declaration list
   | Pstr_exception of exception_declaration
   | Pstr_exn_rebind of string loc * Longident.t loc * attribute list

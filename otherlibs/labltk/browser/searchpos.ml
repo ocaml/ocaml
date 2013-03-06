@@ -202,7 +202,7 @@ let rec search_pos_signature l ~pos ~env =
     in
     if in_loc ~pos pt.psig_loc then
       begin match pt.psig_desc with
-        Psig_value (_, desc) -> search_pos_type desc.pval_type ~pos ~env
+        Psig_value desc -> search_pos_type desc.pval_type ~pos ~env
       | Psig_type l ->
           List.iter l ~f:(search_pos_type_decl ~pos ~env)
       | Psig_exception ped ->

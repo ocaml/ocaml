@@ -376,7 +376,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value type_decl name tl cl t loc = type_decl name tl cl loc None False t;
 
-  value mkvalue_desc loc t p = {pval_type = ctyp t; pval_prim = p; pval_loc = mkloc loc; pval_attributes = []};
+  value mkvalue_desc loc name t p = {pval_name = name; pval_type = ctyp t; pval_prim = p; pval_loc = mkloc loc; pval_attributes = []};
 
   value rec list_of_meta_list =
     fun
@@ -1000,7 +1000,7 @@ value varify_constructors var_names =
     | <:sig_item@loc< exception $uid:s$ of $t$ >> ->
         [mksig loc (Psig_exception {ped_name=with_loc (conv_con s) loc; ped_args=List.map ctyp (list_of_ctyp t []); ped_attributes=[]}) :: l]
     | SgExc _ _ -> assert False (*FIXME*)
-    | SgExt loc n t sl -> [mksig loc (Psig_value (with_loc n loc) (mkvalue_desc loc t (list_of_meta_list sl))) :: l]
+    | SgExt loc n t sl -> [mksig loc (Psig_value (mkvalue_desc loc (with_loc n loc) t (list_of_meta_list sl))) :: l]
     | SgInc loc mt -> [mksig loc (Psig_include (module_type mt) []) :: l]
     | SgMod loc n mt -> [mksig loc (Psig_module {pmd_name=with_loc n loc; pmd_type=module_type mt; pmd_attributes=[]}) :: l]
     | SgRecMod loc mb ->
@@ -1015,7 +1015,7 @@ value varify_constructors var_names =
     | SgOpn loc id ->
         [mksig loc (Psig_open (long_uident id) []) :: l]
     | SgTyp loc tdl -> [mksig loc (Psig_type (mktype_decl tdl [])) :: l]
-    | SgVal loc n t -> [mksig loc (Psig_value (with_loc n loc) (mkvalue_desc loc t [])) :: l]
+    | SgVal loc n t -> [mksig loc (Psig_value (mkvalue_desc loc (with_loc n loc) t [])) :: l]
     | <:sig_item@loc< $anti:_$ >> -> error loc "antiquotation in sig_item" ]
   and module_sig_binding x acc =
     match x with
@@ -1076,7 +1076,7 @@ value varify_constructors var_names =
         error loc "type in exception alias"
     | StExc _ _ _ -> assert False (*FIXME*)
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
-    | StExt loc n t sl -> [mkstr loc (Pstr_primitive (with_loc n loc) (mkvalue_desc loc t (list_of_meta_list sl))) :: l]
+    | StExt loc n t sl -> [mkstr loc (Pstr_primitive (mkvalue_desc loc (with_loc n loc) t (list_of_meta_list sl))) :: l]
     | StInc loc me -> [mkstr loc (Pstr_include (module_expr me, [])) :: l]
     | StMod loc n me -> [mkstr loc (Pstr_module {pmb_name=with_loc n loc;pmb_expr=module_expr me;pmb_attributes=[]}) :: l]
     | StRecMod loc mb ->

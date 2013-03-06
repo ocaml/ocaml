@@ -14542,8 +14542,9 @@ module Struct =
               
             let type_decl name tl cl t loc = type_decl name tl cl loc None false t
               
-            let mkvalue_desc loc t p =
-              { pval_type = ctyp t; pval_prim = p; pval_loc = mkloc loc;
+            let mkvalue_desc loc name t p =
+              { pval_name = name;
+                pval_type = ctyp t; pval_prim = p; pval_loc = mkloc loc;
                 pval_attributes = [];
                }
               
@@ -15329,8 +15330,8 @@ module Struct =
               | SgExc (_, _) -> assert false
               | SgExt (loc, n, t, sl) ->
                   (mksig loc
-                     (Psig_value ((with_loc n loc),
-                        (mkvalue_desc loc t (list_of_meta_list sl))))) ::
+                     (Psig_value
+                        (mkvalue_desc loc (with_loc n loc) t (list_of_meta_list sl)))) ::
                     l
               | SgInc (loc, mt) ->
                   (mksig loc (Psig_include (module_type mt, []))) :: l
@@ -15353,7 +15354,7 @@ module Struct =
                   (mksig loc (Psig_type (mktype_decl tdl []))) :: l
               | SgVal (loc, n, t) ->
                   (mksig loc
-                     (Psig_value ((with_loc n loc), (mkvalue_desc loc t [])))) ::
+                     (Psig_value (mkvalue_desc loc (with_loc n loc) t []))) ::
                     l
               | Ast.SgAnt (loc, _) -> error loc "antiquotation in sig_item"
             and module_sig_binding x acc =
@@ -15443,8 +15444,8 @@ module Struct =
               | StExp (loc, e) -> (mkstr loc (Pstr_eval (expr e))) :: l
               | StExt (loc, n, t, sl) ->
                   (mkstr loc
-                     (Pstr_primitive ((with_loc n loc),
-                        (mkvalue_desc loc t (list_of_meta_list sl))))) ::
+                     (Pstr_primitive
+                        (mkvalue_desc loc (with_loc n loc) t (list_of_meta_list sl)))) ::
                     l
               | StInc (loc, me) ->
                   (mkstr loc (Pstr_include (module_expr me, []))) :: l

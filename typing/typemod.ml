@@ -460,14 +460,14 @@ and transl_signature env sg =
     | item :: srem ->
         let loc = item.psig_loc in
         match item.psig_desc with
-        | Psig_value(name, sdesc) ->
+        | Psig_value sdesc ->
             let tdesc = Typedecl.transl_value_decl env item.psig_loc sdesc in
             let desc = tdesc.val_val in
             let (id, newenv) =
-              Env.enter_value name.txt desc env
+              Env.enter_value sdesc.pval_name.txt desc env
                 ~check:(fun s -> Warnings.Unused_value_declaration s)  in
             let (trem,rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_value (id, name, tdesc)) env loc :: trem,
+            mksig (Tsig_value (id, sdesc.pval_name, tdesc)) env loc :: trem,
             (if List.exists (Ident.equal id) (get_values rem) then rem
             else Sig_value(id, desc) :: rem),
               final_env
@@ -975,11 +975,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          map_end make_sig_value bound_idents sig_rem,
          final_env)
-    | Pstr_primitive(name, sdesc) ->
+    | Pstr_primitive sdesc ->
         let desc = Typedecl.transl_value_decl env loc sdesc in
-        let (id, newenv) = Env.enter_value name.txt desc.val_val env
+        let (id, newenv) = Env.enter_value sdesc.pval_name.txt desc.val_val env
             ~check:(fun s -> Warnings.Unused_value_declaration s) in
-        let item = mk (Tstr_primitive(id, name, desc)) in
+        let item = mk (Tstr_primitive(id, sdesc.pval_name, desc)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (item :: str_rem, Sig_value(id, desc.val_val) :: sig_rem, final_env)
     | Pstr_type sdecls ->

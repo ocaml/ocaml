@@ -204,7 +204,7 @@ module MT = struct
 
   let mk_item ?(loc = Location.none) x = {psig_desc = x; psig_loc = loc}
 
-  let value ?loc a b = mk_item ?loc (Psig_value (a, b))
+  let value ?loc a = mk_item ?loc (Psig_value a)
   let type_ ?loc a = mk_item ?loc (Psig_type a)
   let exception_ ?loc a = mk_item ?loc (Psig_exception a)
   let module_ ?loc a = mk_item ?loc (Psig_module a)
@@ -219,7 +219,7 @@ module MT = struct
   let map_signature_item sub {psig_desc = desc; psig_loc = loc} =
     let loc = sub # location loc in
     match desc with
-    | Psig_value (s, vd) -> value ~loc (map_loc sub s) (sub # value_description vd)
+    | Psig_value vd -> value ~loc (sub # value_description vd)
     | Psig_type l -> type_ ~loc (List.map (sub # type_declaration) l)
     | Psig_exception ed -> exception_ ~loc (sub # exception_declaration ed)
     | Psig_module x -> module_ ~loc (sub # module_declaration x)
@@ -262,7 +262,7 @@ module M = struct
   let mk_item ?(loc = Location.none) x = {pstr_desc = x; pstr_loc = loc}
   let eval ?loc a = mk_item ?loc (Pstr_eval a)
   let value ?loc a b = mk_item ?loc (Pstr_value (a, b))
-  let primitive ?loc a b = mk_item ?loc (Pstr_primitive (a, b))
+  let primitive ?loc a = mk_item ?loc (Pstr_primitive a)
   let type_ ?loc a = mk_item ?loc (Pstr_type a)
   let exception_ ?loc a = mk_item ?loc (Pstr_exception a)
   let exn_rebind ?loc ?(attributes = []) a b = mk_item ?loc (Pstr_exn_rebind (a, b, attributes))
@@ -280,7 +280,7 @@ module M = struct
     match desc with
     | Pstr_eval x -> eval ~loc (sub # expr x)
     | Pstr_value (r, pel) -> value ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
-    | Pstr_primitive (name, vd) -> primitive ~loc (map_loc sub name) (sub # value_description vd)
+    | Pstr_primitive vd -> primitive ~loc (sub # value_description vd)
     | Pstr_type l -> type_ ~loc (List.map (sub # type_declaration) l)
     | Pstr_exception ed -> exception_ ~loc (sub # exception_declaration ed)
     | Pstr_exn_rebind (s, lid, attrs) -> exn_rebind ~loc (map_loc sub s) (map_loc sub lid) ~attributes:(map_attributes sub attrs)
@@ -527,8 +527,9 @@ class mapper =
     method type_kind = T.map_type_kind this
     method typ = T.map this
 
-    method value_description {pval_type; pval_prim; pval_loc; pval_attributes} =
+    method value_description {pval_name; pval_type; pval_prim; pval_loc; pval_attributes} =
       {
+       pval_name = map_loc this pval_name;
        pval_type = this # typ pval_type;
        pval_prim;
        pval_loc = this # location pval_loc;

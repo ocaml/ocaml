@@ -863,15 +863,15 @@ class printer  ()= object(self:'self)
     match x.psig_desc with
     | Psig_type l ->
         self#type_def_list f l
-    | Psig_value (s, vd) ->
+    | Psig_value vd ->
         pp f "@[<2>%a@]"
-          (fun f (s,vd) -> 
+          (fun f vd -> 
             let intro = if vd.pval_prim = [] then "val" else "external" in
-            if (is_infix (fixity_of_string s.txt)) || List.mem s.txt.[0] prefix_symbols then
-              pp f "%s@ (@ %s@ )@ :@ " intro s.txt                
+            if (is_infix (fixity_of_string vd.pval_name.txt)) || List.mem vd.pval_name.txt.[0] prefix_symbols then
+              pp f "%s@ (@ %s@ )@ :@ " intro vd.pval_name.txt                
             else
-              pp f "%s@ %s@ :@ " intro s.txt;
-            self#value_description f vd;) (s,vd)
+              pp f "%s@ %s@ :@ " intro vd.pval_name.txt;
+            self#value_description f vd;) vd
     | Psig_exception ed ->
         self#exception_declaration f ed
     | Psig_class l ->
@@ -1069,14 +1069,14 @@ class printer  ()= object(self:'self)
               ~last:"@]@]" class_declaration f xs)
     | Pstr_class_type (l) ->
         self#class_type_declaration_list f l ;
-    | Pstr_primitive (s, vd) ->
+    | Pstr_primitive vd ->
         let need_parens =
-          match s.txt with
+          match vd.pval_name.txt with
           | "or" | "mod" | "land"| "lor" | "lxor" | "lsl" | "lsr" | "asr" -> true
-          | _ -> match s.txt.[0] with
+          | _ -> match vd.pval_name.txt.[0] with
               'a'..'z' -> false | _ -> true in
         pp f "@[<hov2>external@ %s@ :@ %a@]"
-          (if need_parens then "( "^s.txt^" )" else s.txt)
+          (if need_parens then "( "^vd.pval_name.txt^" )" else vd.pval_name.txt)
           self#value_description  vd
     | Pstr_include (me, _attrs) ->
         pp f "@[<hov2>include@ %a@]"  self#module_expr  me 

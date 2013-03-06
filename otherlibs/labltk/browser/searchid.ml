@@ -460,7 +460,7 @@ let search_structure str ~name ~kind ~prefix =
               then loc := pat.ppat_loc.loc_start.Lexing.pos_cnum
             end;
           false
-      | Pstr_primitive (s, _) when kind = Pvalue -> name = s.txt
+      | Pstr_primitive vd when kind = Pvalue -> name = vd.pval_name.txt
       | Pstr_type l when kind = Ptype ->
           List.iter l ~f:
             begin fun td ->
@@ -513,7 +513,7 @@ let search_signature sign ~name ~kind ~prefix =
   List.iter (search_module_type sign ~prefix) ~f:
     begin fun item ->
       if match item.psig_desc with
-        Psig_value (s, _) when kind = Pvalue -> name = s.txt
+        Psig_value vd when kind = Pvalue -> name = vd.pval_name.txt
       | Psig_type l when kind = Ptype ->
           List.iter l ~f:
             begin fun td ->

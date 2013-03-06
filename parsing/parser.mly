@@ -611,9 +611,10 @@ structure_item:
           [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
         | l -> mkstr(Pstr_value($2, List.rev l)) }
   | pre_item_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
-      { mkstr(Pstr_primitive(mkrhs $3 3, {pval_type = $5; pval_prim = $7;
-                                          pval_attributes = $1 @ $8;
-                                          pval_loc = symbol_rloc ()})) }
+      { mkstr(Pstr_primitive {pval_name = mkrhs $3 3;
+                              pval_type = $5; pval_prim = $7;
+                              pval_attributes = $1 @ $8;
+                              pval_loc = symbol_rloc ()}) }
   | pre_item_attributes TYPE type_declarations
       {
        let l = patch_first_rev $3 (fun td -> {td with ptype_attributes = $1 @ td.ptype_attributes}) in
@@ -696,13 +697,15 @@ signature:
 ;
 signature_item:
     pre_item_attributes VAL val_ident COLON core_type post_item_attributes
-      { mksig(Psig_value(mkrhs $3 3, {pval_type = $5; pval_prim = [];
-                                      pval_attributes = $1 @ $6;
-                                      pval_loc = symbol_rloc()})) }
+      { mksig(Psig_value {pval_name = mkrhs $3 3;
+                          pval_type = $5; pval_prim = [];
+                          pval_attributes = $1 @ $6;
+                          pval_loc = symbol_rloc()}) }
   | pre_item_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
-      { mksig(Psig_value(mkrhs $3 3, {pval_type = $5; pval_prim = $7;
-                                      pval_attributes = $1 @ $8;
-                                      pval_loc = symbol_rloc()})) }
+      { mksig(Psig_value {pval_name = mkrhs $3 3;
+                          pval_type = $5; pval_prim = $7;
+                          pval_attributes = $1 @ $8;
+                          pval_loc = symbol_rloc()}) }
   | pre_item_attributes TYPE type_declarations
       {
        let l = patch_first_rev $3 (fun td -> {td with ptype_attributes = $1 @ td.ptype_attributes}) in
