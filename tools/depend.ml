@@ -134,6 +134,8 @@ let rec add_expr bv exp =
   | Pexp_constant _ -> ()
   | Pexp_let(rf, pel, e) ->
       let bv = add_bindings rf bv pel in add_expr bv e
+  | Pexp_monadic(pel, e) ->
+      let bv = add_bindings Default bv pel in add_expr bv e
   | Pexp_function (_, opte, pel) ->
       add_opt add_expr bv opte; add_pat_expr_list bv pel
   | Pexp_apply(e, el) ->

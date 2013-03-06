@@ -116,9 +116,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
       iter_expression exp;
       Iter.leave_binding pat exp
 
+    and iter_bindings_norec list =
+      List.iter iter_binding list;
+
     and iter_bindings rec_flag list =
       Iter.enter_bindings rec_flag;
-      List.iter iter_binding list;
+      iter_bindings_norec list;
       Iter.leave_bindings rec_flag
 
     and iter_structure_item item =
@@ -239,6 +242,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_constant cst -> ()
         | Texp_let (rec_flag, list, exp) ->
             iter_bindings rec_flag list;
+            iter_expression exp
+        | Texp_monadic (list, exp) ->
+            iter_bindings_norec list;
             iter_expression exp
         | Texp_function (label, cases, _) ->
             iter_bindings Nonrecursive cases

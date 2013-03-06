@@ -90,6 +90,9 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_binding (pat, exp) = (map_pattern pat, map_expression exp)
 
+  and map_bindings_norec list =
+    List.map map_binding list
+
   and map_bindings rec_flag list =
     List.map map_binding list
 
@@ -233,6 +236,9 @@ module MakeMap(Map : MapArgument) = struct
           Texp_let (rec_flag,
                     map_bindings rec_flag list,
                     map_expression exp)
+        | Texp_monadic (list, exp) ->
+          Texp_monadic (map_bindings_norec list,
+                        map_expression exp)
         | Texp_function (label, cases, partial) ->
           Texp_function (label, map_bindings Nonrecursive cases, partial)
         | Texp_apply (exp, list) ->

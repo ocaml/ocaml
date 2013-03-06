@@ -745,6 +745,13 @@ and search_pos_expr ~pos exp =
         search_pos_expr exp' ~pos
       end;
       search_pos_expr exp ~pos
+  | Texp_monadic (expl, exp) ->
+      List.iter expl ~f:
+      begin fun (pat, exp') ->
+        search_pos_pat pat ~pos ~env:exp.exp_env;
+        search_pos_expr exp' ~pos
+      end;
+      search_pos_expr exp ~pos
   | Texp_function (_, l, _) ->
       List.iter l ~f:
       begin fun (pat, exp) ->

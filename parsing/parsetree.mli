@@ -88,6 +88,7 @@ and expression_desc =
     Pexp_ident of Longident.t loc
   | Pexp_constant of constant
   | Pexp_let of rec_flag * (pattern * expression) list * expression
+  | Pexp_monadic of (pattern * expression) list * expression
   | Pexp_function of label * expression option * (pattern * expression) list
   | Pexp_apply of expression * (label * expression) list
   | Pexp_match of expression * (pattern * expression) list

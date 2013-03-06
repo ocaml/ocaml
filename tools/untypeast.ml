@@ -199,6 +199,10 @@ and untype_expression exp =
           List.map (fun (pat, exp) ->
               untype_pattern pat, untype_expression exp) list,
           untype_expression exp)
+    | Texp_monadic (list, exp) ->
+        Pexp_monadic (List.map (fun (pat, exp) ->
+              untype_pattern pat, untype_expression exp) list,
+          untype_expression exp)
     | Texp_function (label, cases, _) ->
         Pexp_function (label, None,
           List.map (fun (pat, exp) ->

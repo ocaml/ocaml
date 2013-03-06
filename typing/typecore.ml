@@ -34,7 +34,7 @@ type error =
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
   | Wrong_name of string * Path.t * Longident.t
-  | Name_type_mismatch of 
+  | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Incomplete_format of string
   | Bad_conversion of string * int * char
@@ -123,6 +123,7 @@ let iter_expression f e =
         may expr eo; List.iter (fun (_, e) -> expr e) pel
     | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
     | Pexp_let (_, pel, e)
+    | Pexp_monadic (pel, e)
     | Pexp_match (e, pel)
     | Pexp_try (e, pel) -> expr e; List.iter (fun (_, e) -> expr e) pel
     | Pexp_array el
@@ -572,7 +573,7 @@ end) = struct
       Longident.Lident s -> begin
         try
           List.find (fun nd -> get_name nd = s) descrs
-        with Not_found -> 
+        with Not_found ->
           raise (Error (lid.loc, env, Wrong_name (type_kind, tpath, lid.txt)))
       end
     | _ -> raise Not_found
@@ -641,9 +642,9 @@ end) = struct
 	with Not_found ->
           if lbls = [] then unbound_name_error env lid else
           let tp = (tpath0, expand_path env tpath) in
-	  let tpl = 
-            List.map 
-              (fun (lbl, _) -> 
+	  let tpl =
+            List.map
+              (fun (lbl, _) ->
                 let tp0 = get_type_path env lbl in
                 let tp = expand_path env tp0 in
                   (tp0, tp))
@@ -916,7 +917,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_env = !env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
       let opath =
-        try 
+        try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
             Some (p0, p, true)
 	with Not_found -> None
@@ -928,7 +929,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         | _ ->  Typetexp.find_all_constructors !env lid.loc lid.txt
       in
       let check_lk tpath constr =
-        if constr.cstr_generalized then 
+        if constr.cstr_generalized then
           raise (Error (lid.loc, !env,
                         Unqualified_gadt_pattern (tpath, constr.cstr_name)))
       in
@@ -1670,7 +1671,7 @@ let create_package_type loc env (p, l) =
 (* Helpers for type_cases *)
 
 let contains_variant_either ty =
-  let rec loop ty = 
+  let rec loop ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       mark_type_node ty;
@@ -1740,7 +1741,7 @@ let check_absent_variant env =
       unify_pat env {pat with pat_type = newty (Tvariant row')}
                     (correct_levels pat.pat_type)
       | _ -> ())
-      
+
 
 let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
 
@@ -1871,6 +1872,54 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_loc = loc; exp_extra = [];
         exp_type = body.exp_type;
         exp_env = env }
+  | Pexp_monadic(spat_sexp_list, sbody) ->
+      let default_loc = loc in
+      let scases = [
+         {ppat_loc = default_loc;
+          ppat_desc =
+            Ppat_construct
+              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))),
+               Some {ppat_loc = default_loc;
+                     ppat_desc = Ppat_var (mknoloc "*sth*")},
+               false)},
+         {pexp_loc = default_loc;
+          pexp_desc = Pexp_ident(mknoloc (Longident.Lident "*sth*"))};
+         {ppat_loc = default_loc;
+          ppat_desc = Ppat_construct
+             (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))),
+              None, false)},
+         {pexp_loc = default_loc;
+          pexp_desc = Pexp_ident(mknoloc (Longident.Lident "*predef*"))};
+      ] in
+      let smatch = {
+        pexp_loc = loc;
+        pexp_desc =
+          Pexp_match ({
+            pexp_loc = loc;
+            pexp_desc = Pexp_ident(mknoloc (Longident.Lident "*opt*"))
+            },
+            scases
+          )
+      } in
+      let spat =
+        {ppat_loc = default_loc;
+         ppat_desc = Ppat_construct
+             (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))),
+              None, false)} in
+      let sfun = {
+        pexp_loc = loc;
+        pexp_desc =
+         Pexp_function (
+           "**l**", None,
+           [ {ppat_loc = loc;
+              ppat_desc = Ppat_var (mknoloc "*opt*")},
+             {pexp_loc = loc;
+              pexp_desc = Pexp_let(Default, [spat, smatch], sbody);
+             }
+           ]
+         )
+      } in
+      type_expect ?in_function env sfun ty_expected
   | Pexp_function (l, Some default, [spat, sbody]) ->
       let default_loc = default.pexp_loc in
       let scases = [
@@ -1913,53 +1962,7 @@ and type_expect_ ?in_function env sexp ty_expected =
          )
       } in
       type_expect ?in_function env sfun ty_expected
-  | Pexp_function (l, _, caselist) ->
-      let (loc_fun, ty_fun) =
-        match in_function with Some p -> p
-        | None -> (loc, instance env ty_expected)
-      in
-      let separate = !Clflags.principal || Env.has_local_constraints env in
-      if separate then begin_def ();
-      let (ty_arg, ty_res) =
-        try filter_arrow env (instance env ty_expected) l
-        with Unify _ ->
-          match expand_head env ty_expected with
-            {desc = Tarrow _} as ty ->
-              raise(Error(loc, env, Abstract_wrong_label(l, ty)))
-          | _ ->
-              raise(Error(loc_fun, env,
-                          Too_many_arguments (in_function <> None, ty_fun)))
-      in
-      let ty_arg =
-        if is_optional l then
-          let tv = newvar() in
-          begin
-            try unify env ty_arg (type_option tv)
-            with Unify _ -> assert false
-          end;
-          type_option tv
-        else ty_arg
-      in
-      if separate then begin
-        end_def ();
-        generalize_structure ty_arg;
-        generalize_structure ty_res
-      end;
-      let cases, partial =
-        type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
-          true loc caselist in
-      let not_function ty =
-        let ls, tvar = list_labels env ty in
-        ls = [] && not tvar
-      in
-      if is_optional l && not_function ty_res then
-        Location.prerr_warning (fst (List.hd cases)).pat_loc
-          Warnings.Unerasable_optional_argument;
-      re {
-        exp_desc = Texp_function(l,cases, partial);
-        exp_loc = loc; exp_extra = [];
-        exp_type = instance env (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
-        exp_env = env }
+  | Pexp_function (lab, _, caselist) -> type_function loc env ty_expected in_function lab caselist
   | Pexp_apply(sfunct, sargs) ->
       begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
@@ -1972,7 +1975,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         let ty = expand_head env ty_fun in
         if List.memq ty seen then () else
         match ty.desc with
-          Tarrow (l, ty_arg, ty_fun, com) ->
+          Tarrow (lab, ty_arg, ty_fun, com) ->
             (try unify_var env (newvar()) ty_arg with Unify _ -> assert false);
             lower_args (ty::seen) ty_fun
         | _ -> ()
@@ -2082,7 +2085,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         in
         match get_path ty_expected with
           None ->
-            let op = 
+            let op =
               match opt_exp with
                 None -> None
               | Some exp -> get_path exp.exp_type
@@ -2096,7 +2099,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           (type_label_exp true env loc ty_record)
           opath lid_sexp_list in
       unify_exp_types loc env ty_record (instance env ty_expected);
-      
+
       (* type_label_a_list returns a list of labels sorted by lbl_pos *)
       (* note: check_duplicates would better be implemented in
          type_label_a_list directly *)
@@ -2699,7 +2702,7 @@ and type_label_access env loc srecord lid =
   let label = Label.disambiguate lid env opath labels in
   (record, label, opath)
 
-and type_label_exp create env loc ty_expected 
+and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   begin_def ();
@@ -3367,6 +3370,201 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   && Warnings.is_active Warnings.Unused_rec_flag then
     Location.prerr_warning (fst (List.hd spat_sexp_list)).ppat_loc
       Warnings.Unused_rec_flag;
+  List.iter2
+    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
+    pat_list exp_list;
+  end_def();
+  List.iter2
+    (fun pat exp ->
+       if not (is_nonexpansive exp) then
+         iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
+    pat_list exp_list;
+  List.iter
+    (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
+    pat_list;
+  (List.combine pat_list exp_list, new_env, unpacks)
+
+and type_function loc env ty_expected in_function lab caselist =
+      let (loc_fun, ty_fun) =
+        match in_function with Some p -> p
+        | None -> (loc, instance env ty_expected)
+      in
+      let separate = !Clflags.principal || Env.has_local_constraints env in
+      if separate then begin_def ();
+      let (ty_arg, ty_res) =
+        try filter_arrow env (instance env ty_expected) lab
+        with Unify _ ->
+          match expand_head env ty_expected with
+            {desc = Tarrow _} as ty ->
+              raise(Error(loc, env, Abstract_wrong_label(lab, ty)))
+          | _ ->
+              raise(Error(loc_fun, env,
+                          Too_many_arguments (in_function <> None, ty_fun)))
+      in
+      let ty_arg =
+        if is_optional lab then
+          let tv = newvar() in
+          begin
+            try unify env ty_arg (type_option tv)
+            with Unify _ -> assert false
+          end;
+          type_option tv
+        else ty_arg
+      in
+      if separate then begin
+        end_def ();
+        generalize_structure ty_arg;
+        generalize_structure ty_res
+      end;
+      let cases, partial =
+        type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
+          true loc caselist in
+      let not_function ty =
+        let ls, tvar = list_labels env ty in
+        ls = [] && not tvar
+      in
+      if is_optional lab && not_function ty_res then
+        Location.prerr_warning (fst (List.hd cases)).pat_loc
+          Warnings.Unerasable_optional_argument;
+      re {
+        exp_desc = Texp_function(lab,cases, partial);
+        exp_loc = loc; exp_extra = [];
+        exp_type = instance env (newgenty (Tarrow(lab, ty_arg, ty_res, Cok)));
+        exp_env = env }
+
+and type_monadic ?(check = fun s -> Warnings.Unused_var s)
+             ?(check_strict = fun s -> Warnings.Unused_var_strict s)
+    env spat_sexp_list scope allow =
+  begin_def();
+  if !Clflags.principal then begin_def ();
+
+  let is_fake_let =
+    match spat_sexp_list with
+    | [_, {pexp_desc=Pexp_match(
+           {pexp_desc=Pexp_ident({ txt = Longident.Lident "*opt*"})},_)}] ->
+        true (* the fake let-declaration introduced by fun ?(x = e) -> ... *)
+    | _ ->
+        false
+  in
+  let check = if is_fake_let then check_strict else check in
+
+  let spatl =
+    List.map
+      (fun (spat, sexp) ->
+        match spat.ppat_desc, sexp.pexp_desc with
+          (Ppat_any | Ppat_constraint _), _ -> spat
+        | _, Pexp_constraint (_, _, Some sty)
+        | _, Pexp_constraint (_, Some sty, None) when !Clflags.principal ->
+            (* propagate type annotation to pattern,
+               to allow it to be generalized in -principal mode *)
+            {ppat_desc = Ppat_constraint (spat, sty);
+             ppat_loc = {spat.ppat_loc with Location.loc_ghost=true}}
+        | _ -> spat)
+      spat_sexp_list in
+  let nvs = List.map (fun _ -> newvar ()) spatl in
+  let (pat_list, new_env, force, unpacks) =
+    type_pattern_list env spatl scope nvs allow in
+  (* Polymorphic variant processing *)
+  List.iter
+    (fun pat ->
+      if has_variants pat then begin
+        Parmatch.pressure_variants env [pat];
+        iter_pattern finalize_variant pat
+      end)
+    pat_list;
+  (* Generalize the structure *)
+  let pat_list =
+    if !Clflags.principal then begin
+      end_def ();
+      List.map
+        (fun pat ->
+          iter_pattern (fun pat -> generalize_structure pat.pat_type) pat;
+          {pat with pat_type = instance env pat.pat_type})
+        pat_list
+    end else pat_list in
+  (* Only bind pattern variables after generalizing *)
+  List.iter (fun f -> f()) force;
+  let exp_env = env in
+  let current_slot = ref None in
+  let rec_needed = ref false in
+  let warn_unused =
+    Warnings.is_active (check "") || Warnings.is_active (check_strict "")
+  in
+  let pat_slot_list =
+    (* Algorithm to detect unused declarations in recursive bindings:
+       - During type checking of the definitions, we capture the 'value_used'
+         events on the bound identifiers and record them in a slot corresponding
+         to the current definition (!current_slot).
+         In effect, this creates a dependency graph between definitions.
+
+       - After type checking the definition (!current_slot = None),
+         when one of the bound identifier is effectively used, we trigger
+         again all the events recorded in the corresponding slot.
+         The effect is to traverse the transitive closure of the graph created
+         in the first step.
+
+       We also keep track of whether *all* variables in a given pattern
+       are unused. If this is the case, for local declarations, the issued
+       warning is 26, not 27.
+     *)
+    List.map
+      (fun pat ->
+        if not warn_unused then pat, None
+        else
+          let some_used = ref false in
+            (* has one of the identifier of this pattern been used? *)
+          let slot = ref [] in
+          List.iter
+            (fun (id,_) ->
+              let vd = Env.find_value (Path.Pident id) new_env in
+              (* note: Env.find_value does not trigger the value_used event *)
+              let name = Ident.name id in
+              let used = ref false in
+              if not (name = "" || name.[0] = '_' || name.[0] = '#') then
+                add_delayed_check
+                  (fun () ->
+                    if not !used then
+                      Location.prerr_warning vd.Types.val_loc
+                        ((if !some_used then check_strict else check) name)
+                  );
+              Env.set_value_used_callback
+                name vd
+                (fun () ->
+                  match !current_slot with
+                  | Some slot ->
+                      slot := (name, vd) :: !slot; rec_needed := true
+                  | None ->
+                      List.iter
+                        (fun (name, vd) -> Env.mark_value_used name vd)
+                        (get_ref slot);
+                      used := true;
+                      some_used := true
+                )
+            )
+            (Typedtree.pat_bound_idents pat);
+          pat, Some slot
+        )
+      pat_list
+  in
+  let exp_list =
+    List.map2
+      (fun (spat, sexp) (pat, slot) ->
+        match pat.pat_type.desc with
+        | Tpoly (ty, tl) ->
+            begin_def ();
+            if !Clflags.principal then begin_def ();
+            let vars, ty' = instance_poly ~keep_names:true true tl ty in
+            if !Clflags.principal then begin
+              end_def ();
+              generalize_structure ty'
+            end;
+            let exp = type_expect exp_env sexp ty' in
+            end_def ();
+            check_univars env true "definition" exp pat.pat_type vars;
+            {exp with exp_type = instance env exp.exp_type}
+        | _ -> type_expect exp_env sexp pat.pat_type)
+      spat_sexp_list pat_slot_list in
+  current_slot := None;
   List.iter2
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
     pat_list exp_list;

@@ -230,6 +230,10 @@ and expression i ppf x =
       line i ppf "Pexp_let %a\n" fmt_rec_flag rf;
       list i pattern_x_expression_def ppf l;
       expression i ppf e;
+  | Pexp_monadic (l, e) ->
+      line i ppf "Pexp_monadic\n" ;
+      list i pattern_x_expression_def ppf l;
+      expression i ppf e;
   | Pexp_function (p, eo, l) ->
       line i ppf "Pexp_function \"%s\"\n" p;
       option i expression ppf eo;

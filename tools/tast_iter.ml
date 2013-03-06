@@ -97,6 +97,9 @@ let expression sub exp =
   | Texp_let (rec_flag, list, exp) ->
       sub # bindings (rec_flag, list);
       sub # expression exp
+  | Texp_monadic (list, exp) ->
+      sub # bindings (Default, list);
+      sub # expression exp
   | Texp_function (_, cases, _) ->
       sub # bindings (Nonrecursive, cases)
   | Texp_apply (exp, list) ->

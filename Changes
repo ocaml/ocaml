@@ -160,6 +160,11 @@ Language features:
   Using the -principal option guarantees forward compatibility.
 - New (module M) and (module M : S) syntax in patterns, for immediate
   unpacking of a first-class module.
+- Monadic notation with let! syntax. Expects standard `bind', `ret'
+  and `fail' bound in current environment. Supports irrefutable
+  patterns with default fail interface, where failing argument can be
+  defined in with clause. Supports direct optimisations of the created
+  closures.
 
 Compilers:
 - Revised simplification of let-alias (PR#5205, PR#5288)
