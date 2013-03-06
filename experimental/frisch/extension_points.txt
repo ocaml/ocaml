@@ -39,7 +39,7 @@ On items:
   Prefix syntax: [^^id expr] ...
   Postfix syntax: ... [@@id expr]
 
-  Items designates signature and structure items, and also individual
+  Items designate signature and structure items, and also individual
   components of multiple declaration (type declarations, recursive modules,
   class declarations, class type declarations). (TODO: class fields?)
 
