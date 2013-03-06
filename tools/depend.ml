@@ -220,7 +220,7 @@ and add_sig_item bv item =
     Psig_value(id, vd) ->
       add_type bv vd.pval_type; bv
   | Psig_type dcls ->
-      List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
+      List.iter (add_type_declaration bv) dcls; bv
   | Psig_exception ped ->
       List.iter (add_type bv) ped.ped_args; bv
   | Psig_module pmd ->
@@ -276,7 +276,7 @@ and add_struct_item bv item =
   | Pstr_primitive(id, vd) ->
       add_type bv vd.pval_type; bv
   | Pstr_type dcls ->
-      List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
+      List.iter (add_type_declaration bv) dcls; bv
   | Pstr_exception ped ->
       List.iter (add_type bv) ped.ped_args; bv
   | Pstr_exn_rebind(id, l, _attrs) ->

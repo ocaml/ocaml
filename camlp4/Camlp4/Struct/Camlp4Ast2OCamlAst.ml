@@ -318,9 +318,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | mt -> error (loc_of_module_type mt) "unexpected package type" ]
   ;
 
-  value mktype loc tl cl tk tp tm =
+  value mktype loc name tl cl tk tp tm =
     let (params, variance) = List.split tl in
-    {ptype_params = params; ptype_cstrs = cl; ptype_kind = tk;
+    {ptype_name = name;
+     ptype_params = params; ptype_cstrs = cl; ptype_kind = tk;
      ptype_private = tp; ptype_manifest = tm; ptype_loc = mkloc loc;
      ptype_variance = variance; ptype_attributes = []}
   ;
@@ -347,20 +348,20 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp@loc< $id:(<:ident@sloc< $uid:s$ >>)$ : $t$ >> ->
         {pcd_name = with_loc (conv_con s) sloc; pcd_args = []; pcd_res = Some (ctyp t); pcd_loc = mkloc loc; pcd_attributes = []}
     | _ -> assert False (*FIXME*) ];
-  value rec type_decl tl cl loc m pflag =
+  value rec type_decl name tl cl loc m pflag =
     fun
     [ <:ctyp< $t1$ == $t2$ >> ->
-        type_decl tl cl loc (Some (ctyp t1)) pflag t2
+        type_decl name tl cl loc (Some (ctyp t1)) pflag t2
     | <:ctyp@_loc< private $t$ >> ->
         if pflag then
           error _loc "multiple private keyword used, use only one instead"
         else
-          type_decl tl cl loc m True t
+          type_decl name tl cl loc m True t
     | <:ctyp< { $t$ } >> ->
-        mktype loc tl cl
+        mktype loc name tl cl
           (Ptype_record (List.map mktrecord (list_of_ctyp t []))) (mkprivate' pflag) m
     | <:ctyp< [ $t$ ] >> ->
-        mktype loc tl cl
+        mktype loc name tl cl
           (Ptype_variant (List.map mkvariant (list_of_ctyp t []))) (mkprivate' pflag) m
     | t ->
         if m <> None then
@@ -370,10 +371,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           [ <:ctyp<>> -> None
           | _ -> Some (ctyp t) ]
         in
-        mktype loc tl cl Ptype_abstract (mkprivate' pflag) m ]
+        mktype loc name tl cl Ptype_abstract (mkprivate' pflag) m ]
   ;
 
-  value type_decl tl cl t loc = type_decl tl cl loc None False t;
+  value type_decl name tl cl t loc = type_decl name tl cl loc None False t;
 
   value mkvalue_desc loc t p = {pval_type = ctyp t; pval_prim = p; pval_loc = mkloc loc; pval_attributes = []};
 
@@ -440,7 +441,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     let (params, variance) = List.split tpl in
     let (kind, priv, ct) = opt_private_ctyp ct in
     (id, pwith_type
-      {ptype_params = params; ptype_cstrs = [];
+      { ptype_name = Camlp4_import.Location.mkloc (Camlp4_import.Longident.last id.txt) id.loc;
+        ptype_params = params; ptype_cstrs = [];
         ptype_kind = kind;
         ptype_private = priv;
         ptype_manifest = Some ct;
@@ -966,8 +968,7 @@ value varify_constructors var_names =
               (ctyp t1, ctyp t2, mkloc loc))
             cl
         in
-        [(with_loc c cloc,
-          type_decl (List.fold_right optional_type_parameters tl []) cl td cloc) :: acc]
+        [type_decl (with_loc c cloc) (List.fold_right optional_type_parameters tl []) cl td cloc :: acc]
     | _ -> assert False ]
   and module_type =
     fun

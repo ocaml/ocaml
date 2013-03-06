@@ -146,7 +146,8 @@ and value_description =
 (* Type declarations *)
 
 and type_declaration =
-  { ptype_params: string loc option list;
+  { ptype_name: string loc;
+    ptype_params: string loc option list;
     ptype_cstrs: (core_type * core_type * Location.t) list;
     ptype_kind: type_kind;
     ptype_private: private_flag;
@@ -268,7 +269,7 @@ and signature_item =
 
 and signature_item_desc =
     Psig_value of string loc * value_description
-  | Psig_type of (string loc * type_declaration) list
+  | Psig_type of type_declaration list
   | Psig_exception of exception_declaration
   | Psig_module of module_declaration
   | Psig_recmodule of module_declaration list
@@ -322,7 +323,7 @@ and structure_item_desc =
     Pstr_eval of expression
   | Pstr_value of rec_flag * (pattern * expression) list
   | Pstr_primitive of string loc * value_description
-  | Pstr_type of (string loc * type_declaration) list
+  | Pstr_type of type_declaration list
   | Pstr_exception of exception_declaration
   | Pstr_exn_rebind of string loc * Longident.t loc * attribute list
   | Pstr_module of module_binding

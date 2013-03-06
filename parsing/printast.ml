@@ -373,7 +373,7 @@ and string_option_underscore i ppf =
         string i ppf "_"
 
 and type_declaration i ppf x =
-  line i ppf "type_declaration %a\n" fmt_location x.ptype_loc;
+  line i ppf "type_declaration %a %a\n" fmt_string_loc x.ptype_name fmt_location x.ptype_loc;
   let i = i+1 in
   line i ppf "ptype_params =\n";
   list (i+1) string_option_underscore ppf x.ptype_params;
@@ -587,7 +587,7 @@ and signature_item i ppf x =
       value_description i ppf vd;
   | Psig_type (l) ->
       line i ppf "Psig_type\n";
-      list i string_x_type_declaration ppf l;
+      list i type_declaration ppf l;
   | Psig_exception ed ->
       line i ppf "Psig_exception\n";
       exception_declaration i ppf ed;
@@ -686,7 +686,7 @@ and structure_item i ppf x =
       value_description i ppf vd;
   | Pstr_type l ->
       line i ppf "Pstr_type\n";
-      list i string_x_type_declaration ppf l;
+      list i type_declaration ppf l;
   | Pstr_exception ed ->
       exception_declaration i ppf ed
   | Pstr_exn_rebind (s, li, attrs) ->
@@ -721,10 +721,6 @@ and structure_item i ppf x =
       line i ppf "Pstr_extension \"%s\"\n" s;
       expression i ppf arg;
       attributes i ppf attrs
-
-and string_x_type_declaration i ppf (s, td) =
-  string_loc i ppf s;
-  type_declaration (i+1) ppf td;
 
 and module_declaration i ppf pmd =
   string_loc i ppf pmd.pmd_name;

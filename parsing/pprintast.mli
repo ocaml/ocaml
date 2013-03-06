@@ -101,8 +101,7 @@ class printer :
     method type_declaration :
       Format.formatter -> Parsetree.type_declaration -> unit
     method type_def_list :
-      Format.formatter ->
-      (string Asttypes.loc * Parsetree.type_declaration) list -> unit
+      Format.formatter -> Parsetree.type_declaration list -> unit
     method type_param :
       Format.formatter -> (bool * bool) * string Asttypes.loc option -> unit
     method type_var_option :

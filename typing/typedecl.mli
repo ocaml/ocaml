@@ -12,12 +12,11 @@
 
 (* Typing of type definitions and primitive definitions *)
 
-open Asttypes
 open Types
 open Format
 
 val transl_type_decl:
-    Env.t -> (string loc * Parsetree.type_declaration) list ->
+    Env.t -> Parsetree.type_declaration list ->
     (Ident.t * string Asttypes.loc * Typedtree.type_declaration) list * Env.t
 
 val transl_exception:
@@ -37,7 +36,7 @@ val transl_with_constraint:
 
 val abstract_type_decl: int -> type_declaration
 val approx_type_decl:
-    Env.t -> (string loc * Parsetree.type_declaration) list ->
+    Env.t -> Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit

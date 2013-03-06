@@ -147,7 +147,7 @@ module MT:
     val map_with_constraint: mapper -> with_constraint -> with_constraint
     val mk_item: ?loc:Location.t -> signature_item_desc -> signature_item
     val value: ?loc:Location.t -> string loc -> value_description -> signature_item
-    val type_: ?loc:Location.t -> (string loc * type_declaration) list -> signature_item
+    val type_: ?loc:Location.t -> type_declaration list -> signature_item
     val exception_: ?loc:Location.t -> exception_declaration -> signature_item
     val module_: ?loc:Location.t -> module_declaration -> signature_item
     val rec_module: ?loc:Location.t -> module_declaration list -> signature_item
@@ -173,7 +173,7 @@ module M:
     val eval: ?loc:Location.t -> expression -> structure_item
     val value: ?loc:Location.t -> rec_flag -> (pattern * expression) list -> structure_item
     val primitive: ?loc:Location.t -> string loc -> value_description -> structure_item
-    val type_: ?loc:Location.t -> (string loc * type_declaration) list -> structure_item
+    val type_: ?loc:Location.t -> type_declaration list -> structure_item
     val exception_: ?loc:Location.t -> exception_declaration -> structure_item
     val exn_rebind: ?loc:Location.t -> ?attributes:attribute list -> string loc -> Longident.t loc -> structure_item
     val module_: ?loc:Location.t -> module_binding -> structure_item

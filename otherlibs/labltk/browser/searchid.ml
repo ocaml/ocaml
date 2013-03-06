@@ -463,8 +463,8 @@ let search_structure str ~name ~kind ~prefix =
       | Pstr_primitive (s, _) when kind = Pvalue -> name = s.txt
       | Pstr_type l when kind = Ptype ->
           List.iter l ~f:
-            begin fun (s, td) ->
-              if s.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
+            begin fun td ->
+              if td.ptype_name.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
             end;
           false
       | Pstr_exception ped when kind = Pconstructor -> name = ped.ped_name.txt
@@ -516,8 +516,8 @@ let search_signature sign ~name ~kind ~prefix =
         Psig_value (s, _) when kind = Pvalue -> name = s.txt
       | Psig_type l when kind = Ptype ->
           List.iter l ~f:
-            begin fun (s, td) ->
-              if s.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
+            begin fun td ->
+              if td.ptype_name.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
             end;
           false
       | Psig_exception ped when kind = Pconstructor -> name = ped.ped_name.txt

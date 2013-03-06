@@ -84,16 +84,26 @@ module T = struct
     | Ptyp_attribute (body, x) -> attribute ~loc (sub # typ body) (sub # attribute x)
     | Ptyp_extension x -> extension ~loc (sub # extension x)
 
-  let map_type_declaration sub td =
-    {td with
+  let map_type_declaration sub
+      {ptype_name; ptype_params; ptype_cstrs;
+       ptype_kind;
+       ptype_private;
+       ptype_manifest;
+       ptype_variance;
+       ptype_attributes;
+       ptype_loc} =
+    {ptype_name = map_loc sub ptype_name;
+     ptype_params = List.map (map_opt (map_loc sub)) ptype_params;
+     ptype_private;
+     ptype_variance;
      ptype_cstrs =
      List.map
        (fun (ct1, ct2, loc) -> sub # typ ct1, sub # typ ct2, sub # location loc)
-       td.ptype_cstrs;
-     ptype_kind = sub # type_kind td.ptype_kind;
-     ptype_manifest = map_opt (sub # typ) td.ptype_manifest;
-     ptype_loc = sub # location td.ptype_loc;
-     ptype_attributes = map_attributes sub td.ptype_attributes;
+       ptype_cstrs;
+     ptype_kind = sub # type_kind ptype_kind;
+     ptype_manifest = map_opt (sub # typ) ptype_manifest;
+     ptype_loc = sub # location ptype_loc;
+     ptype_attributes = map_attributes sub ptype_attributes;
     }
 
   let constructor_decl ?res ?(loc = Location.none) ?(attributes = []) name args =
@@ -210,7 +220,7 @@ module MT = struct
     let loc = sub # location loc in
     match desc with
     | Psig_value (s, vd) -> value ~loc (map_loc sub s) (sub # value_description vd)
-    | Psig_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
+    | Psig_type l -> type_ ~loc (List.map (sub # type_declaration) l)
     | Psig_exception ed -> exception_ ~loc (sub # exception_declaration ed)
     | Psig_module x -> module_ ~loc (sub # module_declaration x)
     | Psig_recmodule l -> rec_module ~loc (List.map (sub # module_declaration) l)
@@ -271,7 +281,7 @@ module M = struct
     | Pstr_eval x -> eval ~loc (sub # expr x)
     | Pstr_value (r, pel) -> value ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
     | Pstr_primitive (name, vd) -> primitive ~loc (map_loc sub name) (sub # value_description vd)
-    | Pstr_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
+    | Pstr_type l -> type_ ~loc (List.map (sub # type_declaration) l)
     | Pstr_exception ed -> exception_ ~loc (sub # exception_declaration ed)
     | Pstr_exn_rebind (s, lid, attrs) -> exn_rebind ~loc (map_loc sub s) (map_loc sub lid) ~attributes:(map_attributes sub attrs)
     | Pstr_module x -> module_ ~loc (sub # module_binding x)

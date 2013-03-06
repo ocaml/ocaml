@@ -51,7 +51,7 @@ and untype_structure_item item =
         Pstr_primitive (name, untype_value_description v)
     | Tstr_type list ->
         Pstr_type (List.map (fun (_id, name, decl) ->
-              name, untype_type_declaration decl) list)
+              untype_type_declaration name decl) list)
     | Tstr_exception (_id, name, decl) ->
         Pstr_exception (untype_exception_declaration name decl)
     | Tstr_exn_rebind (_id, name, _p, lid) ->
@@ -109,8 +109,9 @@ and untype_value_description v =
    pval_attributes = [];
   }
 
-and untype_type_declaration decl =
+and untype_type_declaration name decl =
   {
+    ptype_name = name;
     ptype_params = decl.typ_params;
     ptype_cstrs = List.map (fun (ct1, ct2, loc) ->
         (untype_core_type ct1,
@@ -322,7 +323,7 @@ and untype_signature_item item =
         Psig_value (name, untype_value_description v)
     | Tsig_type list ->
         Psig_type (List.map (fun (_id, name, decl) ->
-              name, untype_type_declaration decl
+              untype_type_declaration name decl
           ) list)
     | Tsig_exception (_id, name, decl) ->
         Psig_exception (untype_exception_declaration name decl)
@@ -382,7 +383,7 @@ and untype_module_type mty =
     | Tmty_with (mtype, list) ->
         Pmty_with (untype_module_type mtype,
           List.map (fun (_path, lid, withc) ->
-              lid, untype_with_constraint withc
+              lid, untype_with_constraint lid withc
           ) list)
     | Tmty_typeof mexpr ->
         Pmty_typeof (untype_module_expr mexpr)
@@ -392,11 +393,11 @@ and untype_module_type mty =
     pmty_loc = mty.mty_loc;
   }
 
-and untype_with_constraint cstr =
+and untype_with_constraint lid cstr =
   match cstr with
-    Twith_type decl -> Pwith_type (untype_type_declaration decl)
+    Twith_type decl -> Pwith_type (untype_type_declaration (mkloc (Longident.last lid.txt) lid.loc) decl)
   | Twith_module (_path, lid) -> Pwith_module (lid)
-  | Twith_typesubst decl -> Pwith_typesubst (untype_type_declaration decl)
+  | Twith_typesubst decl -> Pwith_typesubst (untype_type_declaration (mkloc (Longident.last lid.txt) lid.loc) decl)
   | Twith_modsubst (_path, lid) -> Pwith_modsubst (lid)
 
 and untype_module_expr mexpr =

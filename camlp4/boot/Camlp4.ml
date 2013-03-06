@@ -14469,10 +14469,11 @@ module Struct =
               | Ast.MtId (_, i) -> ((long_uident i), [])
               | mt -> error (loc_of_module_type mt) "unexpected package type"
               
-            let mktype loc tl cl tk tp tm =
+            let mktype loc name tl cl tk tp tm =
               let (params, variance) = List.split tl
               in
                 {
+                  ptype_name = name;
                   ptype_params = params;
                   ptype_cstrs = cl;
                   ptype_kind = tk;
@@ -14515,17 +14516,17 @@ module Struct =
                   {pcd_name = with_loc (conv_con s) sloc; pcd_args = []; pcd_res = Some (ctyp t); pcd_loc = mkloc loc; pcd_attributes = []}
               | _ -> assert false
               
-            let rec type_decl tl cl loc m pflag =
+            let rec type_decl name tl cl loc m pflag =
               function
               | Ast.TyMan (_, t1, t2) ->
-                  type_decl tl cl loc (Some (ctyp t1)) pflag t2
-              | Ast.TyPrv (_, t) -> type_decl tl cl loc m true t
+                  type_decl name tl cl loc (Some (ctyp t1)) pflag t2
+              | Ast.TyPrv (_, t) -> type_decl name tl cl loc m true t
               | Ast.TyRec (_, t) ->
-                  mktype loc tl cl
+                  mktype loc name tl cl
                     (Ptype_record (List.map mktrecord (list_of_ctyp t [])))
                     (mkprivate' pflag) m
               | Ast.TySum (_, t) ->
-                  mktype loc tl cl
+                  mktype loc name tl cl
                     (Ptype_variant (List.map mkvariant (list_of_ctyp t [])))
                     (mkprivate' pflag) m
               | t ->
@@ -14537,9 +14538,9 @@ module Struct =
                        match t with
                        | Ast.TyNil _ -> None
                        | _ -> Some (ctyp t)
-                     in mktype loc tl cl Ptype_abstract (mkprivate' pflag) m)
+                     in mktype loc name tl cl Ptype_abstract (mkprivate' pflag) m)
               
-            let type_decl tl cl t loc = type_decl tl cl loc None false t
+            let type_decl name tl cl t loc = type_decl name tl cl loc None false t
               
             let mkvalue_desc loc t p =
               { pval_type = ctyp t; pval_prim = p; pval_loc = mkloc loc;
@@ -14625,6 +14626,7 @@ module Struct =
                 (id,
                  (pwith_type
                     {
+                      ptype_name = Camlp4_import.Location.mkloc (Camlp4_import.Longident.last id.txt) id.loc;
                       ptype_params = params;
                       ptype_cstrs = [];
                       ptype_kind = kind;
@@ -15274,11 +15276,10 @@ module Struct =
                          in ((ctyp t1), (ctyp t2), (mkloc loc)))
                       cl
                   in
-                    ((with_loc c cloc),
-                     (type_decl
-                        (List.fold_right optional_type_parameters tl []) cl
-                        td cloc)) ::
-                      acc
+                  (type_decl (with_loc c cloc)
+                     (List.fold_right optional_type_parameters tl []) cl
+                     td cloc) ::
+                  acc
               | _ -> assert false
             and module_type =
               function

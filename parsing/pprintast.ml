@@ -1104,7 +1104,7 @@ class printer  ()= object(self:'self)
     | (a,opt) -> pp f "%s%a" (type_variance a ) self#type_var_option opt 
           (* shared by [Pstr_type,Psig_type]*)    
   method  type_def_list f  l =
-    let aux f (s, ({ptype_params;ptype_kind;ptype_manifest;ptype_variance;_} as td )) =
+    let aux f ({ptype_name = s; ptype_params;ptype_kind;ptype_manifest;ptype_variance;_} as td) =
       let ptype_params = List.combine  ptype_variance ptype_params in 
       pp f "%a%s%a"
         (fun f l -> match l with

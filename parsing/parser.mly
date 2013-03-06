@@ -616,7 +616,7 @@ structure_item:
                                           pval_loc = symbol_rloc ()})) }
   | pre_item_attributes TYPE type_declarations
       {
-       let l = patch_first_rev $3 (fun (name, td) -> (name, {td with ptype_attributes = $1 @ td.ptype_attributes})) in
+       let l = patch_first_rev $3 (fun td -> {td with ptype_attributes = $1 @ td.ptype_attributes}) in
        mkstr(Pstr_type l)
        }
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
@@ -705,7 +705,7 @@ signature_item:
                                       pval_loc = symbol_rloc()})) }
   | pre_item_attributes TYPE type_declarations
       {
-       let l = patch_first_rev $3 (fun (name, td) -> (name, {td with ptype_attributes = $1 @ td.ptype_attributes})) in
+       let l = patch_first_rev $3 (fun td -> {td with ptype_attributes = $1 @ td.ptype_attributes}) in
        mksig(Psig_type l)
        }
   | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
@@ -1448,14 +1448,15 @@ type_declaration:
     pre_item_attributes optional_type_parameters LIDENT type_kind constraints post_item_attributes
       { let (params, variance) = List.split $2 in
         let (kind, private_flag, manifest) = $4 in
-        (mkrhs $3 3, {ptype_params = params;
-              ptype_cstrs = List.rev $5;
-              ptype_kind = kind;
-              ptype_private = private_flag;
-              ptype_manifest = manifest;
-              ptype_variance = variance;
-              ptype_attributes = $1 @ $6;
-              ptype_loc = symbol_rloc() }) }
+        {ptype_name = mkrhs $3 3;
+         ptype_params = params;
+         ptype_cstrs = List.rev $5;
+         ptype_kind = kind;
+         ptype_private = private_flag;
+         ptype_manifest = manifest;
+         ptype_variance = variance;
+         ptype_attributes = $1 @ $6;
+         ptype_loc = symbol_rloc() } }
 ;
 constraints:
         constraints CONSTRAINT constrain        { $3 :: $1 }
@@ -1562,27 +1563,30 @@ with_constraints:
 with_constraint:
     TYPE type_parameters label_longident with_type_binder core_type constraints
       { let params, variance = List.split $2 in
-        (mkrhs $3 3,  Pwith_type {ptype_params = List.map (fun x -> Some x) params;
-                         ptype_cstrs = List.rev $6;
-                         ptype_kind = Ptype_abstract;
-                         ptype_manifest = Some $5;
-                         ptype_private = $4;
-                         ptype_variance = variance;
-                         ptype_attributes = [];
-                         ptype_loc = symbol_rloc()}) }
+        (mkrhs $3 3,  Pwith_type
+           {ptype_name = mkrhs (Longident.last $3) 3;
+            ptype_params = List.map (fun x -> Some x) params;
+            ptype_cstrs = List.rev $6;
+            ptype_kind = Ptype_abstract;
+            ptype_manifest = Some $5;
+            ptype_private = $4;
+            ptype_variance = variance;
+            ptype_attributes = [];
+            ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
   | TYPE type_parameters label COLONEQUAL core_type
       { let params, variance = List.split $2 in
         (mkrhs (Lident $3) 3, Pwith_typesubst
-                            { ptype_params = List.map (fun x -> Some x) params;
-                              ptype_cstrs = [];
-                              ptype_kind = Ptype_abstract;
-                              ptype_manifest = Some $5;
-                              ptype_private = Public;
-                              ptype_variance = variance;
-                              ptype_attributes = [];
-                              ptype_loc = symbol_rloc()}) }
+           {ptype_name = mkrhs $3 3;
+             ptype_params = List.map (fun x -> Some x) params;
+             ptype_cstrs = [];
+             ptype_kind = Ptype_abstract;
+             ptype_manifest = Some $5;
+             ptype_private = Public;
+             ptype_variance = variance;
+             ptype_attributes = [];
+             ptype_loc = symbol_rloc()}) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { (mkrhs $2 2, Pwith_module (mkrhs $4 4)) }
   | MODULE UIDENT COLONEQUAL mod_ext_longident

@@ -276,7 +276,7 @@ module Analyser =
         | Parsetree.Psig_class _
         | Parsetree.Psig_class_type _ as tp -> take_item tp
         | Parsetree.Psig_type types ->
-          (match List.filter (fun (name, _) -> not (Name.Set.mem name.txt erased)) types with
+          (match List.filter (fun td -> not (Name.Set.mem td.Parsetree.ptype_name.txt erased)) types with
           | [] -> acc
           | types -> take_item (Parsetree.Psig_type types))
         | Parsetree.Psig_module {Parsetree.pmd_name=name}
@@ -589,8 +589,8 @@ module Analyser =
             (* we start by extending the environment *)
             let new_env =
               List.fold_left
-                (fun acc_env -> fun (name, _) ->
-                  let complete_name = Name.concat current_module_name name.txt in
+                (fun acc_env td ->
+                  let complete_name = Name.concat current_module_name td.Parsetree.ptype_name.txt in
                   Odoc_env.add_type acc_env complete_name
                 )
                 env
@@ -600,7 +600,8 @@ module Analyser =
               match name_type_decl_list with
                 [] ->
                   (acc_maybe_more, [])
-              | (name, type_decl) :: q ->
+              | type_decl :: q ->
+                  let name = type_decl.Parsetree.ptype_name in
                   let (assoc_com, ele_comments) =
                     if first then
                       (comment_opt, [])
@@ -612,7 +613,7 @@ module Analyser =
                   let pos_limit2 =
                     match q with
                       [] -> pos_limit
-                    | ( _, td) :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
+                    | td :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
                   in
                   let (maybe_more, name_comment_list) =
                     name_comment_from_type_kind

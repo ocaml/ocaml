@@ -1149,7 +1149,7 @@ module Analyser =
           (* we start by extending the environment *)
           let new_env =
             List.fold_left
-              (fun acc_env -> fun ({ txt = name }, _) ->
+              (fun acc_env {Parsetree.ptype_name = { txt = name }} ->
                 let complete_name = Name.concat current_module_name name in
                 Odoc_env.add_type acc_env complete_name
               )
@@ -1159,7 +1159,8 @@ module Analyser =
           let rec f ?(first=false) maybe_more_acc last_pos name_type_decl_list =
             match name_type_decl_list with
               [] -> (maybe_more_acc, [])
-            | ({ txt = name }, type_decl) :: q ->
+            | type_decl :: q ->
+                let name = type_decl.Parsetree.ptype_name.txt in
                 let complete_name = Name.concat current_module_name name in
                 let loc = type_decl.Parsetree.ptype_loc in
                 let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
@@ -1167,7 +1168,7 @@ module Analyser =
                 let pos_limit2 =
                   match q with
                       [] -> pos_limit
-                    | (_, td) :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
+                    | td :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
                   in
                   let (maybe_more, name_comment_list) =
                     Sig.name_comment_from_type_kind
