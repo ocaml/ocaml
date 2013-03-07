@@ -727,7 +727,7 @@ signature_item:
 ;
 
 module_declaration:
-    COLON module_type %prec below_WITH
+    COLON module_type
       { $2 }
   | LPAREN UIDENT COLON module_type RPAREN module_declaration
       { mkmty(Pmty_functor(mkrhs $2 2, $4, $6)) }
@@ -737,7 +737,8 @@ module_rec_declarations:
   | module_rec_declarations AND module_rec_declaration  { $3 :: $1 }
 ;
 module_rec_declaration:
-    UIDENT COLON module_type post_item_attributes %prec below_WITH           { {pmd_name=mkrhs $1 1; pmd_type=$3; pmd_attributes=$4} }
+    UIDENT COLON module_type post_item_attributes
+    { {pmd_name=mkrhs $1 1; pmd_type=$3; pmd_attributes=$4} }
 ;
 
 /* Class expressions */
@@ -773,11 +774,11 @@ class_fun_def:
       { let (l,o,p) = $1 in mkclass(Pcl_fun(l, o, p, $2)) }
 ;
 class_expr:
-    class_simple_expr %prec below_SHARP
+    class_simple_expr
       { $1 }
   | FUN class_fun_def
       { $2 }
-  | class_simple_expr simple_labeled_expr_list %prec below_SHARP
+  | class_simple_expr simple_labeled_expr_list
       { mkclass(Pcl_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN class_expr
       { mkclass(Pcl_let ($2, List.rev $3, $5)) }
@@ -1018,7 +1019,7 @@ let_pattern:
 expr:
     simple_expr %prec below_SHARP
       { $1 }
-  | simple_expr simple_labeled_expr_list %prec below_SHARP
+  | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET attributes rec_flag let_bindings IN seq_expr
       { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
@@ -1517,12 +1518,13 @@ constructor_arguments:
     /*empty*/                                   { [] }
   | OF core_type_list                           { List.rev $2 }
 ;
+
 generalized_constructor_arguments:
     /*empty*/                                   { ([],None) }
   | OF core_type_list                           { (List.rev $2,None) }
   | COLON core_type_list MINUSGREATER simple_core_type
                                                 { (List.rev $2,Some $4) }
-  | COLON simple_core_type %prec below_LBRACKETAT
+  | COLON simple_core_type
                                                 { ([],Some $2) }
 ;
 
