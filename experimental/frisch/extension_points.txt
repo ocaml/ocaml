@@ -269,7 +269,7 @@ val stats : ('a, 'b) t -> statistics
 ]
 [@@since "4.00.0"]
 
-;;[@@doc section 6 "Functorial interface" *)
+;;[@@doc section 6 "Functorial interface"]
 
 module type HashedType =
   sig
