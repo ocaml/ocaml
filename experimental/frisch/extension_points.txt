@@ -47,12 +47,25 @@ Attributes on items:
   Note: item attributes are currently not supported on Pstr_eval
   and Pstr_value structure items.
 
-Attributes as stand-alone signature/structure items:
+  The [@@id expr] form, when used at the beginning of a signature or
+  structure, or after a double semi-colon (;;), defines an attribute
+  which stands as a stand-alone signature or structure item (not
+  attached to another item).
 
-   [*id expr]
+  Example:
 
-([@@] attributes cannot be attached to such a standalone attribute.)
+  module type S = sig
+    [@@id1]
+    type t
+    [@@id2]
+    ;; [@@id3] [@@id4]
+    ;; [@@id5]
+    type s
+    [@@id6]
+  end
 
+  Here, id1, id3, id4, id5 are stand-alone attributes, while
+  id2 is attached to the type t and id6 is attached to the type s.
 
 === Alternative syntax for attributes on specific kinds of nodes
 

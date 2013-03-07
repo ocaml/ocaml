@@ -381,7 +381,6 @@ let mkexp_attrs d attrs =
 %token LBRACKETGREATER
 %token LBRACKETPERCENT
 %token LBRACKETPERCENTPERCENT
-%token LBRACKETSTAR
 %token LESS
 %token LESSMINUS
 %token LET
@@ -485,7 +484,6 @@ The precedences must be listed from low to high.
 %nonassoc LBRACKETATAT
 %nonassoc LBRACKETPERCENT
 %nonassoc LBRACKETPERCENTPERCENT
-%nonassoc LBRACKETSTAR
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -523,7 +521,7 @@ implementation:
     structure EOF                        { $1 }
 ;
 interface:
-    signature EOF                        { List.rev $1 }
+    signature EOF                        { $1 }
 ;
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def $1 }
@@ -598,10 +596,19 @@ module_expr:
 structure:
     structure_tail                              { $1 }
   | seq_expr structure_tail                     { mkstrexp $1 :: $2 }
+  | str_attributes structure_tail               { $1 @ $2 }
+;
+str_attribute:
+    post_item_attribute { mkstr(Pstr_attribute $1) }
+;
+str_attributes:
+    str_attribute str_attributes { $1 :: $2 }
+  | str_attribute                { [$1] }
 ;
 structure_tail:
     /* empty */                                 { [] }
   | SEMISEMI                                    { [] }
+  | SEMISEMI str_attributes structure_tail      { $2 @ $3 }
   | SEMISEMI seq_expr structure_tail            { mkstrexp $2 :: $3 }
   | SEMISEMI structure_item structure_tail      { $2 :: $3 }
   | structure_item structure_tail               { $1 :: $2 }
@@ -639,8 +646,6 @@ structure_item:
       { mkstr(Pstr_include ($2, $3)) }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, $2)) }
-  | item_attribute
-      { mkstr(Pstr_attribute $1) }
 ;
 module_binding_body:
     EQUAL module_expr
@@ -665,7 +670,7 @@ module_type:
     mty_longident
       { mkmty(Pmty_ident (mkrhs $1 1)) }
   | SIG signature END
-      { mkmty(Pmty_signature(List.rev $2)) }
+      { mkmty(Pmty_signature $2) }
   | SIG signature error
       { unclosed "sig" 1 "end" 3 }
   | FUNCTOR LPAREN UIDENT COLON module_type RPAREN MINUSGREATER module_type
@@ -685,9 +690,21 @@ module_type:
       { mkmty(Pmty_attribute ($1, $2)) }
 ;
 signature:
+    signature_tail { $1 }
+  | sig_attributes signature_tail { $1 @ $2 }
+signature_tail:
     /* empty */                                 { [] }
-  | signature signature_item                    { $2 :: $1 }
-  | signature signature_item SEMISEMI           { $2 :: $1 }
+  | SEMISEMI                                    { [] }
+  | signature_item signature_tail               { $1 :: $2 }
+  | SEMISEMI signature_item signature_tail      { $2 :: $3 }
+  | SEMISEMI sig_attributes signature_tail      { $2 @ $3 }
+;
+sig_attribute:
+    post_item_attribute { mksig(Psig_attribute $1) }
+;
+sig_attributes:
+    sig_attribute sig_attributes { $1 :: $2 }
+  | sig_attribute                { [$1] }
 ;
 signature_item:
     VAL val_ident COLON core_type post_item_attributes
@@ -722,8 +739,6 @@ signature_item:
       { mksig(Psig_class_type (List.rev $3)) }
   | item_extension post_item_attributes
       { mksig(Psig_extension ($1, $2)) }
-  | item_attribute
-      { mksig(Psig_attribute $1) }
 ;
 
 module_declaration:
@@ -1940,13 +1955,15 @@ additive:
 attribute:
   LBRACKETAT LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
+post_item_attribute:
+  LBRACKETATAT LIDENT opt_expr RBRACKET { ($2, $3) }
+;
 post_item_attributes:
-      { [] }
-  | LBRACKETATAT LIDENT opt_expr RBRACKET post_item_attributes
-            { ($2, $3) :: $5 }
+    /* empty */  { [] }
+  | post_item_attribute post_item_attributes { $1 :: $2 }
 ;
 attributes:
-    { [] }
+    /* empty */{ [] }
   | attribute attributes { $1 :: $2 }
 ;
 extension:
@@ -1954,9 +1971,6 @@ extension:
 ;
 item_extension:
   LBRACKETPERCENTPERCENT LIDENT opt_expr RBRACKET { ($2, $3) }
-;
-item_attribute:
-  LBRACKETSTAR LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
 opt_expr:
     expr { $1 }

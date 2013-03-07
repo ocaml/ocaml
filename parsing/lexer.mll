@@ -401,7 +401,6 @@ rule token = parse
   | "[%" { LBRACKETPERCENT }
   | "[%%" { LBRACKETPERCENTPERCENT }
   | "[@@" { LBRACKETATAT }
-  | "[*" { LBRACKETSTAR }
   | "!"  { BANG }
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
