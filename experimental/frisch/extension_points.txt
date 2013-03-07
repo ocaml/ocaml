@@ -4,8 +4,9 @@ This file describes the changes on the extension_points branch.
 === Attributes
 
 Attributes are "decorations" of the syntax tree which are ignored by
-the type-checker.  An attribute is made of an identifier (an "LIDENT", written
-id below) and an optional expression (written expr below).
+the type-checker.  An attribute is made of an identifier (an "LIDENT"
+or "UIDENT", written id below) and an optional expression (written
+expr below).
 
 Attributes on expressions, type expressions, module expressions, module type expressions,
 patterns (TODO: class expressions, class type expressions):
