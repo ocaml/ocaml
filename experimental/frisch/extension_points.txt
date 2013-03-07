@@ -7,17 +7,12 @@ Attributes are "decorations" of the syntax tree which are ignored by
 the type-checker.  An attribute is made of an identifier (an "LIDENT", written
 id below) and an optional expression (written expr below).
 
-Four syntaxes exist for attributes, according to the kind of component
-the attribute applies to, and whether the attribute is written before
-or after the component.
-
-On expressions, type expressions, module expressions, module type expressions,
+Attributes on expressions, type expressions, module expressions, module type expressions,
 patterns (TODO: class expressions, class type expressions):
  
-  Prefix syntax:   [^id expr] ...
-  Postfix syntax:  ... [@id expr]
+  ... [@id expr]
 
-The postfix syntax [@id expr] is also available to add attributes on
+The same syntax [@id expr] is also available to add attributes on
 constructors and labels in type declarations:
 
   type t =
@@ -34,46 +29,29 @@ and id3 is attached to the int type expression.  Example on records:
    }  
 
 
-On items:
+Attributes on items:
 
-  Prefix syntax: [^^id expr] ...
-  Postfix syntax: ... [@@id expr]
+  ... [@@id expr]
 
   Items designate signature and structure items, and also individual
   components of multiple declaration (type declarations, recursive modules,
   class declarations, class type declarations). (TODO: class fields?)
 
-  For multiple declarations:
-
-    - prefix attributes written before the first keyword of the item
-      are attached to the first declared component
-
-    - postfix attributes written after the item are attached to the
-      last declared component
-
-    - more prefix attributes can be inserted after the opening keyword
-      (for the first component) and after the "and" keyword (for other
-      components)
-
-    - more postfix attributes can be inserted before the "and" keyword
-
   For instance, consider:
 
-    [^^id1] type [^^id2] t1 = ... [@@id3] and [^^id4] t2 = ... [@@id5]
+    type t1 = ... [@@id1] [@@id2] and t2 = ... [@@id3] [@@id4]
 
-  Here, the attributes on t1 are id1, id2 and id3; the attributes on
-  t2 are id4 and id5.
+  Here, the attributes on t1 are id1, id23; the attributes on
+  t2 are id3 and id4.
 
   Note: item attributes are currently not supported on Pstr_eval
   and Pstr_value structure items.
 
-A fifth syntax exists for attributes which stand as signature or
-structure item on their own (i.e. they are not attached to any other
-component):
+Attributes as stand-alone signature/structure items:
 
    [*id expr]
 
-([^^] and [@@] attributes cannot be attached to such a standalone attribute.)
+([@@] attributes cannot be attached to such a standalone attribute.)
 
 
 === Alternative syntax for attributes on specific kinds of nodes
@@ -92,10 +70,6 @@ let[@foo] x = 2 in x + 1
 is equivalent to:
 
 (let x = 2 in x + 1)[@foo]
-
-and also to:
-
-[^foo](let x = 2 in x + 1)
 
 Supported constructions:
 

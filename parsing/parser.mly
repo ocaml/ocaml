@@ -58,11 +58,6 @@ let mkoperator name pos =
 let mkpatvar name pos =
   { ppat_desc = Ppat_var (mkrhs name pos); ppat_loc = rhs_loc pos }
 
-let patch_first_rev l f =
-  match l with
-  | [] -> assert false
-  | hd :: tl -> f hd :: tl
-
 (*
   Ghost expressions and patterns:
   expressions and patterns that do not appear explicitly in the
@@ -394,8 +389,6 @@ let mkexp_attrs d attrs =
 %token LPAREN
 %token LBRACKETAT
 %token LBRACKETATAT
-%token LBRACKETHAT
-%token LBRACKETHATHAT
 %token MATCH
 %token METHOD
 %token MINUS
@@ -490,8 +483,6 @@ The precedences must be listed from low to high.
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
 %nonassoc LBRACKETATAT
-%nonassoc LBRACKETHAT
-%nonassoc LBRACKETHATHAT
 %nonassoc LBRACKETPERCENT
 %nonassoc LBRACKETPERCENTPERCENT
 %nonassoc LBRACKETSTAR
@@ -601,8 +592,6 @@ module_expr:
       { unclosed "(" 1 ")" 4 }
   | module_expr attribute
       { mkmod(Pmod_attribute ($1, $2)) }
-  | pre_attribute module_expr %prec below_LBRACKETAT
-      { mkmod(Pmod_attribute ($2, $1)) }
   | extension
       { mkmod(Pmod_extension $1) }
 ;
@@ -623,42 +612,33 @@ structure_item:
         match $4 with
           [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
         | l -> mkstr(Pstr_value($3, List.rev l)) }
-  | pre_item_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
-      { mkstr(Pstr_primitive {pval_name = mkrhs $3 3;
-                              pval_type = $5; pval_prim = $7;
-                              pval_attributes = $1 @ $8;
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
+      { mkstr(Pstr_primitive {pval_name = mkrhs $2 2;
+                              pval_type = $4; pval_prim = $6;
+                              pval_attributes = $7;
                               pval_loc = symbol_rloc ()}) }
-  | pre_item_attributes TYPE type_declarations
-      {
-       let l = patch_first_rev $3 (fun td -> {td with ptype_attributes = $1 @ td.ptype_attributes}) in
-       mkstr(Pstr_type l)
-       }
-  | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
-      { mkstr(Pstr_exception {ped_name=mkrhs $3 3; ped_args=$4;ped_attributes=$1 @ $5}) }
-  | pre_item_attributes EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
-      { mkstr(Pstr_exn_rebind(mkrhs $3 3, mkloc $5 (rhs_loc 5), $1 @ $6)) }
-  | pre_item_attributes MODULE UIDENT module_binding post_item_attributes
-      { mkstr(Pstr_module{pmb_name=mkrhs $3 3; pmb_expr=$4; pmb_attributes=$1 @ $5}) }
-  | pre_item_attributes MODULE REC module_rec_bindings
-      { mkstr(Pstr_recmodule(List.rev $4)) (* keep attrs *) }
-  | pre_item_attributes MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mkstr(Pstr_modtype{pmtb_name=mkrhs $4 4; pmtb_type=$6; pmtb_attributes=$1 @ $7}) }
-  | pre_item_attributes OPEN mod_longident post_item_attributes
-      { mkstr(Pstr_open (mkrhs $3 3, $1 @ $4)) }
-  | pre_item_attributes CLASS class_declarations
-      {
-       let l = patch_first_rev $3 (fun x -> {x with pci_attributes = $1 @ x.pci_attributes}) in
-       mkstr(Pstr_class l)
-      }
-  | pre_item_attributes CLASS TYPE class_type_declarations
-      {
-       let l = patch_first_rev $4 (fun x -> {x with pci_attributes = $1 @ x.pci_attributes}) in
-       mkstr(Pstr_class_type l)
-      }
-  | pre_item_attributes INCLUDE module_expr post_item_attributes
-      { mkstr(Pstr_include ($3, $1 @ $4)) }
-  | pre_item_attributes item_extension post_item_attributes
-      { mkstr(Pstr_extension ($2, $1 @ $3)) }
+  | TYPE type_declarations
+      { mkstr(Pstr_type (List.rev $2) ) }
+  | EXCEPTION UIDENT constructor_arguments post_item_attributes
+      { mkstr(Pstr_exception {ped_name=mkrhs $2 2; ped_args=$3;ped_attributes=$4}) }
+  | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
+      { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4), $5)) }
+  | MODULE UIDENT module_binding post_item_attributes
+      { mkstr(Pstr_module{pmb_name=mkrhs $2 2; pmb_expr=$3; pmb_attributes=$4}) }
+  | MODULE REC module_rec_bindings
+      { mkstr(Pstr_recmodule(List.rev $3)) }
+  | MODULE TYPE ident EQUAL module_type post_item_attributes
+      { mkstr(Pstr_modtype{pmtb_name=mkrhs $3 3; pmtb_type=$5; pmtb_attributes=$6}) }
+  | OPEN mod_longident post_item_attributes
+      { mkstr(Pstr_open (mkrhs $2 2, $3)) }
+  | CLASS class_declarations
+      { mkstr(Pstr_class (List.rev $2)) }
+  | CLASS TYPE class_type_declarations
+      { mkstr(Pstr_class_type (List.rev $3)) }
+  | INCLUDE module_expr post_item_attributes
+      { mkstr(Pstr_include ($2, $3)) }
+  | item_extension post_item_attributes
+      { mkstr(Pstr_extension ($1, $2)) }
   | item_attribute
       { mkstr(Pstr_attribute $1) }
 ;
@@ -702,8 +682,6 @@ module_type:
       { mkmty(Pmty_extension $1) }
   | module_type attribute
       { mkmty(Pmty_attribute ($1, $2)) }
-  | pre_attribute module_type %prec below_LBRACKETAT
-      { mkmty(Pmty_attribute ($2, $1)) }
 ;
 signature:
     /* empty */                                 { [] }
@@ -711,50 +689,38 @@ signature:
   | signature signature_item SEMISEMI           { $2 :: $1 }
 ;
 signature_item:
-    pre_item_attributes VAL val_ident COLON core_type post_item_attributes
-      { mksig(Psig_value {pval_name = mkrhs $3 3;
-                          pval_type = $5; pval_prim = [];
-                          pval_attributes = $1 @ $6;
+    VAL val_ident COLON core_type post_item_attributes
+      { mksig(Psig_value {pval_name = mkrhs $2 2;
+                          pval_type = $4; pval_prim = [];
+                          pval_attributes = $5;
                           pval_loc = symbol_rloc()}) }
-  | pre_item_attributes EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
-      { mksig(Psig_value {pval_name = mkrhs $3 3;
-                          pval_type = $5; pval_prim = $7;
-                          pval_attributes = $1 @ $8;
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
+      { mksig(Psig_value {pval_name = mkrhs $2 2;
+                          pval_type = $4; pval_prim = $6;
+                          pval_attributes = $7;
                           pval_loc = symbol_rloc()}) }
-  | pre_item_attributes TYPE type_declarations
-      {
-       let l = patch_first_rev $3 (fun td -> {td with ptype_attributes = $1 @ td.ptype_attributes}) in
-       mksig(Psig_type l)
-       }
-  | pre_item_attributes EXCEPTION UIDENT constructor_arguments post_item_attributes
-      { mksig(Psig_exception {ped_name=mkrhs $3 3; ped_args = $4; ped_attributes = $1 @ $5}) }
-  | pre_item_attributes MODULE UIDENT module_declaration post_item_attributes
-      { mksig(Psig_module{pmd_name=mkrhs $3 3;pmd_type=$4;pmd_attributes=$1 @ $5}) }
-  | pre_item_attributes MODULE REC module_rec_declarations
-      {
-       let l = patch_first_rev $4 (fun pmd -> {pmd with pmd_attributes = $1 @ pmd.pmd_attributes}) in
-       mksig(Psig_recmodule l)
-      }
-  | pre_item_attributes MODULE TYPE ident post_item_attributes
-      { mksig(Psig_modtype {pmtd_name=mkrhs $4 4; pmtd_type=None; pmtd_attributes=$1 @ $5}) }
-  | pre_item_attributes MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mksig(Psig_modtype {pmtd_name=mkrhs $4 4; pmtd_type=Some $6; pmtd_attributes=$1 @ $7}) }
-  | pre_item_attributes OPEN mod_longident post_item_attributes
-      { mksig(Psig_open (mkrhs $3 3, $1 @ $4)) }
-  | pre_item_attributes INCLUDE module_type post_item_attributes %prec below_WITH
-      { mksig(Psig_include ($3, $1 @ $4)) }
-  | pre_item_attributes CLASS class_descriptions
-      {
-        let l = patch_first_rev $3 (fun x -> {x with pci_attributes = $1 @ x.pci_attributes}) in
-        mksig(Psig_class l)
-       }
-  | pre_item_attributes CLASS TYPE class_type_declarations
-      {
-        let l = patch_first_rev $4 (fun x -> {x with pci_attributes = $1 @ x.pci_attributes}) in
-        mksig(Psig_class_type l)
-       }
-  | pre_item_attributes item_extension post_item_attributes
-      { mksig(Psig_extension ($2, $1 @ $3)) }
+  | TYPE type_declarations
+      { mksig(Psig_type (List.rev $2)) }
+  | EXCEPTION UIDENT constructor_arguments post_item_attributes
+      { mksig(Psig_exception {ped_name=mkrhs $2 2; ped_args = $3; ped_attributes = $4}) }
+  | MODULE UIDENT module_declaration post_item_attributes
+      { mksig(Psig_module{pmd_name=mkrhs $2 2;pmd_type=$3;pmd_attributes=$4}) }
+  | MODULE REC module_rec_declarations
+      { mksig(Psig_recmodule (List.rev $3)) }
+  | MODULE TYPE ident post_item_attributes
+      { mksig(Psig_modtype {pmtd_name=mkrhs $3 3; pmtd_type=None; pmtd_attributes=$4}) }
+  | MODULE TYPE ident EQUAL module_type post_item_attributes
+      { mksig(Psig_modtype {pmtd_name=mkrhs $3 3; pmtd_type=Some $5; pmtd_attributes=$6}) }
+  | OPEN mod_longident post_item_attributes
+      { mksig(Psig_open (mkrhs $2 2, $3)) }
+  | INCLUDE module_type post_item_attributes %prec below_WITH
+      { mksig(Psig_include ($2, $3)) }
+  | CLASS class_descriptions
+      { mksig(Psig_class (List.rev $2)) }
+  | CLASS TYPE class_type_declarations
+      { mksig(Psig_class_type (List.rev $3)) }
+  | item_extension post_item_attributes
+      { mksig(Psig_extension ($1, $2)) }
   | item_attribute
       { mksig(Psig_attribute $1) }
 ;
@@ -770,7 +736,7 @@ module_rec_declarations:
   | module_rec_declarations AND module_rec_declaration  { $3 :: $1 }
 ;
 module_rec_declaration:
-    pre_item_attributes UIDENT COLON module_type post_item_attributes %prec below_WITH           { {pmd_name=mkrhs $2 2; pmd_type=$4; pmd_attributes=$1 @ $5} }
+    UIDENT COLON module_type post_item_attributes %prec below_WITH           { {pmd_name=mkrhs $1 1; pmd_type=$3; pmd_attributes=$4} }
 ;
 
 /* Class expressions */
@@ -780,11 +746,11 @@ class_declarations:
   | class_declaration                           { [$1] }
 ;
 class_declaration:
-    pre_item_attributes virtual_flag class_type_parameters LIDENT class_fun_binding post_item_attributes
-      { let params, variance = List.split (fst $3) in
-        {pci_virt = $2; pci_params = params, snd $3;
-         pci_name = mkrhs $4 4; pci_expr = $5; pci_variance = variance;
-         pci_attributes = $1 @ $6;
+    virtual_flag class_type_parameters LIDENT class_fun_binding post_item_attributes
+      { let params, variance = List.split (fst $2) in
+        {pci_virt = $1; pci_params = params, snd $2;
+         pci_name = mkrhs $3 3; pci_expr = $4; pci_variance = variance;
+         pci_attributes = $5;
          pci_loc = symbol_rloc ()} }
 ;
 class_fun_binding:
@@ -980,11 +946,11 @@ class_descriptions:
   | class_description                           { [$1] }
 ;
 class_description:
-    pre_item_attributes virtual_flag class_type_parameters LIDENT COLON class_type post_item_attributes
-      { let params, variance = List.split (fst $3) in
-        {pci_virt = $2; pci_params = params, snd $3;
-         pci_name = mkrhs $4 4; pci_expr = $6; pci_variance = variance;
-         pci_attributes = $1 @ $7;
+    virtual_flag class_type_parameters LIDENT COLON class_type post_item_attributes
+      { let params, variance = List.split (fst $2) in
+        {pci_virt = $1; pci_params = params, snd $2;
+         pci_name = mkrhs $3 3; pci_expr = $5; pci_variance = variance;
+         pci_attributes = $6;
          pci_loc = symbol_rloc ()} }
 ;
 class_type_declarations:
@@ -992,11 +958,11 @@ class_type_declarations:
   | class_type_declaration                              { [$1] }
 ;
 class_type_declaration:
-    pre_item_attributes virtual_flag class_type_parameters LIDENT EQUAL class_signature post_item_attributes
-      { let params, variance = List.split (fst $3) in
-        {pci_virt = $2; pci_params = params, snd $3;
-         pci_name = mkrhs $4 4; pci_expr = $6; pci_variance = variance;
-         pci_attributes = $1 @ $7;
+    virtual_flag class_type_parameters LIDENT EQUAL class_signature post_item_attributes
+      { let params, variance = List.split (fst $2) in
+        {pci_virt = $1; pci_params = params, snd $2;
+         pci_name = mkrhs $3 3; pci_expr = $5; pci_variance = variance;
+         pci_attributes = $6;
          pci_loc = symbol_rloc ()} }
 ;
 
@@ -1151,8 +1117,6 @@ expr:
       { unclosed "object" 1 "end" 3 }
   | expr attribute
       { mkexp (Pexp_attribute($1, $2)) }
-  | pre_attribute seq_expr %prec below_LBRACKETAT
-      { mkexp(Pexp_attribute ($2, $1)) }
 ;
 simple_expr:
     val_longident
@@ -1376,8 +1340,6 @@ pattern:
       { mkpat(Ppat_lazy $2) }
   | pattern attribute
       { mkpat(Ppat_attribute ($1, $2)) }
-  | pre_attribute simple_pattern
-      { mkpat(Ppat_attribute ($2, $1)) }
 ;
 simple_pattern:
     val_ident %prec below_EQUAL
@@ -1465,17 +1427,17 @@ type_declarations:
 ;
 
 type_declaration:
-    pre_item_attributes optional_type_parameters LIDENT type_kind constraints post_item_attributes
-      { let (params, variance) = List.split $2 in
-        let (kind, private_flag, manifest) = $4 in
-        {ptype_name = mkrhs $3 3;
+    optional_type_parameters LIDENT type_kind constraints post_item_attributes
+      { let (params, variance) = List.split $1 in
+        let (kind, private_flag, manifest) = $3 in
+        {ptype_name = mkrhs $2 2;
          ptype_params = params;
-         ptype_cstrs = List.rev $5;
+         ptype_cstrs = List.rev $4;
          ptype_kind = kind;
          ptype_private = private_flag;
          ptype_manifest = manifest;
          ptype_variance = variance;
-         ptype_attributes = $1 @ $6;
+         ptype_attributes = $5;
          ptype_loc = symbol_rloc() } }
 ;
 constraints:
@@ -1665,8 +1627,6 @@ simple_core_type:
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
   | simple_core_type attribute
       { mktyp (Ptyp_attribute($1, $2)) }
-  | pre_attribute simple_core_type %prec below_LBRACKETAT
-      { mktyp (Ptyp_attribute($2, $1)) }
 ;
 
 simple_core_type_no_attr:
@@ -1974,20 +1934,12 @@ additive:
 
 /* Attributes and extensions */
 
-pre_attribute:
-  LBRACKETHAT LIDENT opt_expr RBRACKET { ($2, $3) }
-;
 attribute:
   LBRACKETAT LIDENT opt_expr RBRACKET { ($2, $3) }
 ;
 post_item_attributes:
       { [] }
   | LBRACKETATAT LIDENT opt_expr RBRACKET post_item_attributes
-            { ($2, $3) :: $5 }
-;
-pre_item_attributes:
-      { [] }
-  | LBRACKETHATHAT LIDENT opt_expr RBRACKET pre_item_attributes
             { ($2, $3) :: $5 }
 ;
 attributes:
