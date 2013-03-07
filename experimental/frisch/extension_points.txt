@@ -241,3 +241,175 @@ More self-documented, simplifies some code.
 - Consider adding hooks to the type-checker so that custom extension expanders can be registered (a la OCaml Templates).
 - Quotations (i.e. string literals with custom delimiters and without any interpretation of special characters in them), and a syntax which combines extension nodes and quotations.
 - More cleanups to the Parsetree + documentation.
+
+
+=== Use cases
+
+From https://github.com/gasche/ocaml-syntax-extension-discussion/wiki/Use-Cases
+
+-- Bisect
+
+  let f x =
+  match List.map foo [x; a x; b x] with
+  | [y1; y2; y3] -> tata
+  | _ -> assert false [@bisect VISIT]
+
+;;[@@bisect IGNORE-BEGIN]
+let unused = ()
+;;[@@bisect IGNORE-END]
+
+-- OCamldoc
+
+val stats : ('a, 'b) t -> statistics
+[@@doc
+ "[Hashtbl.stats tbl] returns statistics about the table [tbl]:
+  number of buckets, size of the biggest bucket, distribution of
+  buckets by size."
+]
+[@@since "4.00.0"]
+
+;;[@@doc section 6 "Functorial interface" *)
+
+module type HashedType =
+  sig
+    type t
+      [@@doc "The type of the hashtable keys."]
+    val equal : t -> t -> bool
+      [@@doc "The equality predicate used to compare keys."]
+  end
+
+
+-- type-conv, deriving
+
+type t = {
+  x : int [@default 42];
+  y : int [@default 3] @[sexp_drop_default];
+  z : int [@default 3] @[sexp_drop_if z_test];
+} [@@sexp]
+
+
+type r1 = {
+  r1_l1 : int;
+  r1_l2 : int;
+} [@@deriving (Dump, Eq, Show, Typeable, Pickle, Functor)]
+
+-- camlp4 map/fold generators
+
+type variable = string
+ and term =
+  | Var of variable
+  | Lam of variable * term
+  | App of term * term
+
+
+class map = [%generate_map term]
+or:
+[%%generate_map map term]
+
+
+-- ocaml-rpc
+
+type t = { foo [@rpc "type"]: int; bar [@rpc "let"]: int }
+[@@ rpc]
+
+or:
+
+type t = { foo: int; bar: int }
+[@@ rpc ("foo" > "type"), ("bar" > "let")]
+
+
+
+-- pa_monad
+
+begin[@monad]
+  a <-- [1; 2; 3];
+  b <-- [3; 4; 5];
+  return (a + b)
+end
+
+-- pa_lwt
+
+let[@lwt] x = start_thread foo
+and y = start_other_thread foo in
+try[@lwt]
+  for[@lwt] (x, y) in waiting_threads do
+    compute blah
+  done
+with Killed -> bar
+
+-- Bolt
+
+let funct n =
+  [%log "funct(%d)" n LEVEL DEBUG];
+  for i = 1 to n do
+    print_endline "..."
+  done
+
+
+-- pre-polyrecord
+
+let r = ({ x = 1; y = ref None } [@polyrec])
+let () = (r.y <- Some 2) [@polyrec]
+
+or maybe:
+
+let r = {[@polyrec] x = 1; y = ref None }
+let () = r.y <-[@polyrec] Some 2
+
+
+-- orakuda
+
+[%regexp function
+  | "$/^[0-9]+$/" as v -> `Int (int_of_string v#_0)
+  | "$/^[a-z][A-Za-z0-9_]*$" as v -> `Variable v#_0
+  | _ -> failwith "parse error"
+]
+-- bitstring
+
+let bits = Bitstring.bitstring_of_file "/bin/ls" in
+[%bit match bits with
+| [ 0x7f, 8; "ELF", 24, string;  (* ELF magic number *)
+    e_ident, Mul(12,8), bitstring;    (* ELF identifier *)
+    e_type, 16, littleendian;    (* object file type *)
+    e_machine, 16, littleendian  (* architecture *)
+  ] ->
+  printf "This is an ELF binary, type %d, arch %d\n"
+    e_type e_machine
+]
+
+-- sedlex
+
+let rec token buf =
+  [%sedlex
+    let Regexp ('a'..'z'|'A'..'Z') = letter in
+    match buf with
+    | number -> Printf.printf "Number %s\n" (Sedlexing.Latin1.lexeme buf); token buf
+    | letter, Star ('A'..'Z' | 'a'..'z' | digit) -> Printf.printf "Ident %s\n" (Sedlexing.Latin1.lexeme buf); token buf
+    | Plus xml_blank -> token buf
+    | Plus (Chars "+*-/") -> Printf.printf "Op %s\n" (Sedlexing.Latin1.lexeme buf); token buf
+    | Range(128,255) -> print_endline "Non ASCII"
+    | eof -> print_endline "EOF"
+    | _ -> failwith "Unexpected character"
+  ]
+
+
+-- cppo
+
+[%%ifdef DEBUG]
+[%%define debug(s) = Printf.eprintf "[%S %i] %s\n%!" __FILE__ __LINE__ s]
+[%%else]
+[%%define debug(s) = ()]
+[%%endif]
+
+debug("test")
+
+
+-- PG'OCaml
+
+let fetch_users dbh =
+  [%pgsql dbh "select id, name from users"]
+
+
+-- Macaque
+
+let names view = [%view {name = t.name}, t <- !view]

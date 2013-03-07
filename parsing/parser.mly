@@ -1941,11 +1941,18 @@ additive:
 
 /* Attributes and extensions */
 
+attr_id:
+    LIDENT { $1 }
+  | UIDENT { $1 }
+  | ELSE   { "else" }
+/* TODO: other keywords */
+;
+
 attribute:
-  LBRACKETAT LIDENT opt_expr RBRACKET { ($2, $3) }
+  LBRACKETAT attr_id opt_expr RBRACKET { ($2, $3) }
 ;
 post_item_attribute:
-  LBRACKETATAT LIDENT opt_expr RBRACKET { ($2, $3) }
+  LBRACKETATAT attr_id opt_expr RBRACKET { ($2, $3) }
 ;
 post_item_attributes:
     /* empty */  { [] }
@@ -1956,10 +1963,10 @@ attributes:
   | attribute attributes { $1 :: $2 }
 ;
 extension:
-  LBRACKETPERCENT LIDENT opt_expr RBRACKET { ($2, $3) }
+  LBRACKETPERCENT attr_id opt_expr RBRACKET { ($2, $3) }
 ;
 item_extension:
-  LBRACKETPERCENTPERCENT LIDENT opt_expr RBRACKET { ($2, $3) }
+  LBRACKETPERCENTPERCENT attr_id opt_expr RBRACKET { ($2, $3) }
 ;
 opt_expr:
     expr { $1 }
