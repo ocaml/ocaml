@@ -623,9 +623,9 @@ structure_item:
       { mkstr(Pstr_exception {ped_name=mkrhs $2 2; ped_args=$3;ped_attributes=$4}) }
   | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
       { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4), $5)) }
-  | MODULE UIDENT module_binding post_item_attributes
-      { mkstr(Pstr_module{pmb_name=mkrhs $2 2; pmb_expr=$3; pmb_attributes=$4}) }
-  | MODULE REC module_rec_bindings
+  | MODULE module_binding
+      { mkstr(Pstr_module $2) }
+  | MODULE REC module_bindings
       { mkstr(Pstr_recmodule(List.rev $3)) }
   | MODULE TYPE ident EQUAL module_type post_item_attributes
       { mkstr(Pstr_modtype{pmtb_name=mkrhs $3 3; pmtb_type=$5; pmtb_attributes=$6}) }
@@ -642,20 +642,21 @@ structure_item:
   | item_attribute
       { mkstr(Pstr_attribute $1) }
 ;
-module_binding:
+module_binding_body:
     EQUAL module_expr
       { $2 }
   | COLON module_type EQUAL module_expr
       { mkmod(Pmod_constraint($4, $2)) }
-  | LPAREN UIDENT COLON module_type RPAREN module_binding
+  | LPAREN UIDENT COLON module_type RPAREN module_binding_body
       { mkmod(Pmod_functor(mkrhs $2 2, $4, $6)) }
 ;
-module_rec_bindings:
-    module_rec_binding                            { [$1] }
-  | module_rec_bindings AND module_rec_binding    { $3 :: $1 }
+module_bindings:
+    module_binding                        { [$1] }
+  | module_bindings AND module_binding    { $3 :: $1 }
 ;
-module_rec_binding:
-    UIDENT module_binding    { {pmb_name=mkrhs $1 1; pmb_expr=$2; pmb_attributes=[]} (* todo: attrs *) }
+module_binding:
+    UIDENT module_binding_body post_item_attributes
+    { {pmb_name=mkrhs $1 1; pmb_expr=$2; pmb_attributes=$3} }
 ;
 
 /* Module types */
@@ -1021,7 +1022,7 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET attributes rec_flag let_bindings IN seq_expr
       { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
-  | LET MODULE UIDENT module_binding IN seq_expr
+  | LET MODULE UIDENT module_binding_body IN seq_expr
       { mkexp(Pexp_letmodule(mkrhs $3 3, $4, $6)) }
   | LET OPEN mod_longident IN seq_expr
       { mkexp(Pexp_open(mkrhs $3 3, $5)) }
