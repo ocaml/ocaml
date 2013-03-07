@@ -153,6 +153,15 @@ As other structure or signature items, attributes can be attached to a
 
 === Other changes to the parser and Parsetree
 
+--- Relaxing the syntax for signatures and structures
+
+It is now possible to start a signature or a structure with a ";;" token and to have two successive ";;" tokens.
+
+Rationale:
+   It makes it possible to always prefix a "standalone" attribute by ";;" independently
+   from its context (this will work at the beginning of the signature/structure and after
+   another item finished with ";;").
+
 --- Relaxing the syntax for recursive modules.
 
 Before:
