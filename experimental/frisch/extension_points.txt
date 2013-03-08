@@ -68,14 +68,23 @@ Attributes on items:
   Here, id1, id3, id4, id5 are stand-alone attributes, while
   id2 is attached to the type t and id6 is attached to the type s.
 
-=== Alternative syntax for attributes on specific kinds of nodes
+=== Alternative syntax for attributes and extensions on specific kinds of nodes
 
 All expression constructions starting with a keyword, a combination of
-keywords or a delimiter supports an alternative syntax for attributes:
+keywords or a delimiter supports an alternative syntax for attributes and/or extensions:
 
   KW[@id expr]...[@id expr] REST
   ---->
   (KW REST)[@id expr]...[@id expr]
+
+  KW%id REST
+  ---->
+  [%id (KW REST)]
+
+  KW%id[@id expr]...[@id expr] REST
+  ---->
+  ([%id (KW REST)])[@id expr]...[@id expr]
+
 
 where KW can stand for:
  (
@@ -106,6 +115,7 @@ For instance:
 let[@foo] x = 2 in x + 1   ====   (let x = 2 in x + 1)[@foo]
 ([@foo] 3 + 4)             ====   (3 + 4)[@foo]
 begin[@foo] ... end        ====   (begin ... end)[@foo]
+match%foo e with ...       ====   [%foo match e with ...]
 
 
 === Representation of attributes in the Parsetree

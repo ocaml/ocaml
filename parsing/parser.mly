@@ -305,8 +305,12 @@ let wrap_type_annotation newtypes core_type body =
   in
   (exp, ghtyp(Ptyp_poly(newtypes,varify_constructors newtypes core_type)))
 
-let wrap_exp_attrs body attrs =
+let wrap_exp_attrs body (ext, attrs) =
   (* todo: keep exact location for the entire attribute *)
+  let body = match ext with
+  | None -> body
+  | Some id -> ghexp(Pexp_extension (id, body))
+  in
   List.fold_left
     (fun body attr -> ghexp(Pexp_attribute(body, attr)))
     body
@@ -403,6 +407,7 @@ let mkexp_attrs d attrs =
 %token <string> OPTLABEL
 %token OR
 /* %token PARSER */
+%token PERCENT
 %token PLUS
 %token PLUSDOT
 %token <string> PREFIXOP
@@ -486,7 +491,7 @@ The precedences must be listed from low to high.
 %nonassoc LBRACKETPERCENTPERCENT
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
-%left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
+%left     PERCENT INFIXOP3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
 %nonassoc prec_unary_minus prec_unary_plus /* unary - */
 %nonassoc prec_constant_constructor     /* cf. simple_expr (C versus C x) */
@@ -608,7 +613,7 @@ str_attribute:
     post_item_attribute { mkstr(Pstr_attribute $1) }
 ;
 structure_item:
-    LET attributes rec_flag let_bindings
+    LET ext_attributes rec_flag let_bindings
       { (* todo: keep attributes *)
         match $4 with
           [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
@@ -1025,23 +1030,23 @@ expr:
       { $1 }
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
-  | LET attributes rec_flag let_bindings IN seq_expr
+  | LET ext_attributes rec_flag let_bindings IN seq_expr
       { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
-  | LET MODULE attributes UIDENT module_binding_body IN seq_expr
+  | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
-  | LET OPEN attributes mod_longident IN seq_expr
+  | LET OPEN ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open(mkrhs $4 4, $6)) $3 }
-  | FUNCTION attributes opt_bar match_cases
+  | FUNCTION ext_attributes opt_bar match_cases
       { mkexp_attrs (Pexp_function("", None, List.rev $4)) $2 }
-  | FUN attributes labeled_simple_pattern fun_def
+  | FUN ext_attributes labeled_simple_pattern fun_def
       { let (l,o,p) = $3 in mkexp_attrs (Pexp_function(l, o, [p, $4])) $2 }
-  | FUN attributes LPAREN TYPE LIDENT RPAREN fun_def
+  | FUN ext_attributes LPAREN TYPE LIDENT RPAREN fun_def
       { mkexp_attrs (Pexp_newtype($5, $7)) $2 }
-  | MATCH attributes seq_expr WITH opt_bar match_cases
+  | MATCH ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
-  | TRY attributes seq_expr WITH opt_bar match_cases
+  | TRY ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_try($3, List.rev $6)) $2 }
-  | TRY attributes seq_expr WITH error
+  | TRY ext_attributes seq_expr WITH error
       { syntax_error() }
   | expr_comma_list %prec below_COMMA
       { mkexp(Pexp_tuple(List.rev $1)) }
@@ -1049,13 +1054,13 @@ expr:
       { mkexp(Pexp_construct(mkrhs $1 1, Some $2, false)) }
   | name_tag simple_expr %prec below_SHARP
       { mkexp(Pexp_variant($1, Some $2)) }
-  | IF attributes seq_expr THEN expr ELSE expr
+  | IF ext_attributes seq_expr THEN expr ELSE expr
       { mkexp_attrs(Pexp_ifthenelse($3, $5, Some $7)) $2 }
-  | IF attributes seq_expr THEN expr
+  | IF ext_attributes seq_expr THEN expr
       { mkexp_attrs (Pexp_ifthenelse($3, $5, None)) $2 }
-  | WHILE attributes seq_expr DO seq_expr DONE
+  | WHILE ext_attributes seq_expr DO seq_expr DONE
       { mkexp_attrs (Pexp_while($3, $5)) $2 }
-  | FOR attributes val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
+  | FOR ext_attributes val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
       { mkexp_attrs(Pexp_for(mkrhs $3 3, $5, $7, $6, $9)) $2 }
   | expr COLONCOLON expr
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
@@ -1081,6 +1086,8 @@ expr:
       { mkinfix $1 "-." $3 }
   | expr STAR expr
       { mkinfix $1 "*" $3 }
+  | expr PERCENT expr
+      { mkinfix $1 "%" $3 }
   | expr EQUAL expr
       { mkinfix $1 "=" $3 }
   | expr LESS expr
@@ -1113,13 +1120,13 @@ expr:
       { bigarray_set $1 $4 $7 }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar(mkrhs $1 1, $3)) }
-  | ASSERT attributes simple_expr %prec below_SHARP
+  | ASSERT ext_attributes simple_expr %prec below_SHARP
       { wrap_exp_attrs (mkassert $3) $2 }
-  | LAZY attributes simple_expr %prec below_SHARP
+  | LAZY ext_attributes simple_expr %prec below_SHARP
       { mkexp_attrs (Pexp_lazy $3) $2 }
-  | OBJECT attributes class_structure END
+  | OBJECT ext_attributes class_structure END
       { mkexp_attrs (Pexp_object $3) $2 }
-  | OBJECT attributes class_structure error
+  | OBJECT ext_attributes class_structure error
       { unclosed "object" 1 "end" 3 }
   | expr attribute
       { mkexp (Pexp_attribute($1, $2)) }
@@ -1133,22 +1140,22 @@ simple_expr:
       { mkexp(Pexp_construct(mkrhs $1 1, None, false)) }
   | name_tag %prec prec_constant_constructor
       { mkexp(Pexp_variant($1, None)) }
-  | LPAREN non_empty_attributes seq_expr RPAREN
+  | LPAREN non_empty_ext_attributes seq_expr RPAREN
       { wrap_exp_attrs (reloc_exp $3) $2 }
   | LPAREN seq_expr RPAREN
       { reloc_exp $2 }
-  | LPAREN non_empty_attributes seq_expr error
+  | LPAREN non_empty_ext_attributes seq_expr error
       { unclosed "(" 1 ")" 3 }
-  | BEGIN attributes seq_expr END
+  | BEGIN ext_attributes seq_expr END
       { wrap_exp_attrs (reloc_exp $3) $2 (* check location *) }
-  | BEGIN attributes END
+  | BEGIN ext_attributes END
       { mkexp_attrs (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
                                None, false)) $2 }
-  | BEGIN attributes seq_expr error
+  | BEGIN ext_attributes seq_expr error
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
       { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
-  | LPAREN non_empty_attributes seq_expr type_constraint RPAREN
+  | LPAREN non_empty_ext_attributes seq_expr type_constraint RPAREN
       { let (t, t') = $4 in mkexp_attrs (Pexp_constraint($3, t, t')) $2 }
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, mkrhs $3 3)) }
@@ -1170,40 +1177,40 @@ simple_expr:
       { bigarray_get $1 $4 }
   | simple_expr DOT LBRACE expr_comma_list error
       { unclosed "{" 3 "}" 5 }
-  | LBRACE attributes record_expr RBRACE
+  | LBRACE ext_attributes record_expr RBRACE
       { let (exten, fields) = $3 in mkexp_attrs (Pexp_record(fields, exten)) $2 }
-  | LBRACE attributes record_expr error
+  | LBRACE ext_attributes record_expr error
       { unclosed "{" 1 "}" 3 }
-  | LBRACKETBAR attributes expr_semi_list opt_semi BARRBRACKET
+  | LBRACKETBAR ext_attributes expr_semi_list opt_semi BARRBRACKET
       { mkexp_attrs (Pexp_array(List.rev $3)) $2 }
-  | LBRACKETBAR attributes expr_semi_list opt_semi error
+  | LBRACKETBAR ext_attributes expr_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
-  | LBRACKETBAR attributes BARRBRACKET
+  | LBRACKETBAR ext_attributes BARRBRACKET
       { mkexp_attrs (Pexp_array []) $2 }
-  | LBRACKET attributes expr_semi_list opt_semi RBRACKET
+  | LBRACKET ext_attributes expr_semi_list opt_semi RBRACKET
       { wrap_exp_attrs (reloc_exp (mktailexp (rhs_loc 5) (List.rev $3))) $2 }
-  | LBRACKET attributes expr_semi_list opt_semi error
+  | LBRACKET ext_attributes expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
       { mkexp(Pexp_apply(mkoperator $1 1, ["",$2])) }
   | BANG simple_expr
       { mkexp(Pexp_apply(mkoperator "!" 1, ["",$2])) }
-  | NEW attributes class_longident
+  | NEW ext_attributes class_longident
       { mkexp_attrs (Pexp_new(mkrhs $3 3)) $2 }
-  | LBRACELESS attributes field_expr_list opt_semi GREATERRBRACE
+  | LBRACELESS ext_attributes field_expr_list opt_semi GREATERRBRACE
       { mkexp_attrs (Pexp_override(List.rev $3)) $2 }
-  | LBRACELESS attributes field_expr_list opt_semi error
+  | LBRACELESS ext_attributes field_expr_list opt_semi error
       { unclosed "{<" 1 ">}" 4 }
-  | LBRACELESS attributes GREATERRBRACE
+  | LBRACELESS ext_attributes GREATERRBRACE
       { mkexp_attrs (Pexp_override []) $2 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
-  | LPAREN MODULE attributes module_expr RPAREN
+  | LPAREN MODULE ext_attributes module_expr RPAREN
       { mkexp_attrs (Pexp_pack $4) $3 }
-  | LPAREN MODULE attributes module_expr COLON package_type RPAREN
+  | LPAREN MODULE ext_attributes module_expr COLON package_type RPAREN
       { mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $4),
                                 Some (ghtyp (Ptyp_package $6)), None)) $3 }
-  | LPAREN MODULE attributes module_expr COLON error
+  | LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" 1 ")" 5 }
   | extension
       { mkexp (Pexp_extension $1) }
@@ -1825,6 +1832,7 @@ operator:
   | AMPERSAND                                   { "&" }
   | AMPERAMPER                                  { "&&" }
   | COLONEQUAL                                  { ":=" }
+  | PERCENT                                     { "%" }
 ;
 constr_ident:
     UIDENT                                      { $1 }
@@ -1966,8 +1974,14 @@ attributes:
     /* empty */{ [] }
   | attribute attributes { $1 :: $2 }
 ;
-non_empty_attributes:
-    attribute attributes { $1 :: $2 }
+ext_attributes:
+    /* empty */  { None, [] }
+  | attribute attributes { None, $1 :: $2 }
+  | PERCENT attr_id attributes { Some $2, $3 }
+;
+non_empty_ext_attributes:
+    attribute attributes { None, $1 :: $2 }
+  | PERCENT attr_id attributes { Some $2, $3 }
 ;
 extension:
   LBRACKETPERCENT attr_id opt_expr RBRACKET { ($2, $3) }
