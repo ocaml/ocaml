@@ -364,7 +364,7 @@ with Killed -> bar
 -- Bolt
 
 let funct n =
-  [%log "funct(%d)" n LEVEL DEBUG];
+  (%log "funct(%d)" n LEVEL DEBUG);
   for i = 1 to n do
     print_endline "..."
   done
@@ -372,26 +372,20 @@ let funct n =
 
 -- pre-polyrecord
 
-let r = ({ x = 1; y = ref None } [@polyrec])
-let () = (r.y <- Some 2) [@polyrec]
-
-or maybe:
-
-let r = {[@polyrec] x = 1; y = ref None }
-let () = r.y <-[@polyrec] Some 2
-
+let r = {%polyrec x = 1; y = ref None }
+let () = (%polyrec r.y <- Some 2)
 
 -- orakuda
 
-[%regexp function
+function%regexp
   | "$/^[0-9]+$/" as v -> `Int (int_of_string v#_0)
   | "$/^[a-z][A-Za-z0-9_]*$" as v -> `Variable v#_0
   | _ -> failwith "parse error"
-]
+
 -- bitstring
 
 let bits = Bitstring.bitstring_of_file "/bin/ls" in
-[%bit match bits with
+match%bitstring bits with
 | [ 0x7f, 8; "ELF", 24, string;  (* ELF magic number *)
     e_ident, Mul(12,8), bitstring;    (* ELF identifier *)
     e_type, 16, littleendian;    (* object file type *)
@@ -399,22 +393,19 @@ let bits = Bitstring.bitstring_of_file "/bin/ls" in
   ] ->
   printf "This is an ELF binary, type %d, arch %d\n"
     e_type e_machine
-]
 
 -- sedlex
 
 let rec token buf =
-  [%sedlex
-    let Regexp ('a'..'z'|'A'..'Z') = letter in
-    match buf with
-    | number -> Printf.printf "Number %s\n" (Sedlexing.Latin1.lexeme buf); token buf
-    | letter, Star ('A'..'Z' | 'a'..'z' | digit) -> Printf.printf "Ident %s\n" (Sedlexing.Latin1.lexeme buf); token buf
-    | Plus xml_blank -> token buf
-    | Plus (Chars "+*-/") -> Printf.printf "Op %s\n" (Sedlexing.Latin1.lexeme buf); token buf
-    | Range(128,255) -> print_endline "Non ASCII"
-    | eof -> print_endline "EOF"
-    | _ -> failwith "Unexpected character"
-  ]
+  let%regexp ('a'..'z'|'A'..'Z') = letter in
+  match%sedlex buf with
+  | number -> Printf.printf "Number %s\n" (Sedlexing.Latin1.lexeme buf); token buf
+  | letter, Star ('A'..'Z' | 'a'..'z' | digit) -> Printf.printf "Ident %s\n" (Sedlexing.Latin1.lexeme buf); token buf
+  | Plus xml_blank -> token buf
+  | Plus (Chars "+*-/") -> Printf.printf "Op %s\n" (Sedlexing.Latin1.lexeme buf); token buf
+  | Range(128,255) -> print_endline "Non ASCII"
+  | eof -> print_endline "EOF"
+  | _ -> failwith "Unexpected character"
 
 
 -- cppo
@@ -431,9 +422,9 @@ debug("test")
 -- PG'OCaml
 
 let fetch_users dbh =
-  [%pgsql dbh "select id, name from users"]
+  (%pgsql dbh "select id, name from users")
 
 
 -- Macaque
 
-let names view = [%view {name = t.name}, t <- !view]
+let names view = (%view {name = t.name}, t <- !view)
