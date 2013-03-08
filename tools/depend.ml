@@ -53,7 +53,6 @@ let rec add_type bv ty =
         fl
   | Ptyp_poly(_, t) -> add_type bv t
   | Ptyp_package pt -> add_package_type bv pt
-  | Ptyp_attribute (e, _) -> add_type bv e
   | Ptyp_extension _ -> ()
 
 and add_package_type bv (lid, l) =
@@ -124,7 +123,6 @@ let rec add_pattern bv pat =
   | Ppat_type li -> add bv li
   | Ppat_lazy p -> add_pattern bv p
   | Ppat_unpack id -> pattern_bv := StringSet.add id.txt !pattern_bv
-  | Ppat_attribute (p, _) -> add_pattern bv p
   | Ppat_extension _ -> ()
 
 let add_pattern bv pat =
@@ -179,7 +177,6 @@ let rec add_expr bv exp =
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module bv m
   | Pexp_open (m, e) -> addmodule bv m; add_expr bv e
-  | Pexp_attribute (e, _) -> add_expr bv e
   | Pexp_extension _ -> ()
 
 and add_pat_expr_list bv pel =
@@ -206,10 +203,7 @@ and add_modtype bv mty =
                 | (_, Pwith_modsubst (lid)) -> addmodule bv lid)
         cstrl
   | Pmty_typeof m -> add_module bv m
-  | Pmty_attribute(modl, _) ->
-      add_modtype bv modl
-  | Pmty_extension _ ->
-      ()
+  | Pmty_extension _ -> ()
 
 and add_signature bv = function
     [] -> ()
@@ -259,8 +253,6 @@ and add_module bv modl =
       add_module bv modl; add_modtype bv mty
   | Pmod_unpack(e) ->
       add_expr bv e
-  | Pmod_attribute(modl, _) ->
-      add_module bv modl
   | Pmod_extension _ ->
       ()
 

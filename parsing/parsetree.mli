@@ -24,7 +24,9 @@ and extension = string * expression
 
 and core_type =
   { ptyp_desc: core_type_desc;
-    ptyp_loc: Location.t }
+    ptyp_loc: Location.t;
+    ptyp_attributes: attribute list;
+   }
 
 and core_type_desc =
     Ptyp_any
@@ -38,7 +40,6 @@ and core_type_desc =
   | Ptyp_variant of row_field list * bool * label list option
   | Ptyp_poly of string list * core_type
   | Ptyp_package of package_type
-  | Ptyp_attribute of (core_type * attribute)
   | Ptyp_extension of extension
 
 
@@ -72,7 +73,9 @@ and 'a class_infos =
 
 and pattern =
   { ppat_desc: pattern_desc;
-    ppat_loc: Location.t }
+    ppat_loc: Location.t;
+    ppat_attributes: attribute list;
+   }
 
 and pattern_desc =
     Ppat_any
@@ -89,12 +92,13 @@ and pattern_desc =
   | Ppat_type of Longident.t loc
   | Ppat_lazy of pattern
   | Ppat_unpack of string loc
-  | Ppat_attribute of (pattern * attribute)
   | Ppat_extension of extension
 
 and expression =
   { pexp_desc: expression_desc;
-    pexp_loc: Location.t }
+    pexp_loc: Location.t;
+    pexp_attributes: attribute list;
+   }
 
 and expression_desc =
     Pexp_ident of Longident.t loc
@@ -131,7 +135,6 @@ and expression_desc =
   | Pexp_newtype of string * expression
   | Pexp_pack of module_expr
   | Pexp_open of Longident.t loc * expression
-  | Pexp_attribute of (expression * attribute)
   | Pexp_extension of extension
 
 (* Value descriptions *)
@@ -259,7 +262,9 @@ and class_declaration = class_expr class_infos
 
 and module_type =
   { pmty_desc: module_type_desc;
-    pmty_loc: Location.t }
+    pmty_loc: Location.t;
+    pmty_attributes: attribute list;
+   }
 
 and module_type_desc =
     Pmty_ident of Longident.t loc
@@ -267,7 +272,6 @@ and module_type_desc =
   | Pmty_functor of string loc * module_type * module_type
   | Pmty_with of module_type * (Longident.t loc * with_constraint) list
   | Pmty_typeof of module_expr
-  | Pmty_attribute of (module_type * attribute)
   | Pmty_extension of extension
 
 and signature = signature_item list
@@ -314,7 +318,9 @@ and with_constraint =
 
 and module_expr =
   { pmod_desc: module_expr_desc;
-    pmod_loc: Location.t }
+    pmod_loc: Location.t;
+    pmod_attributes: attribute list;
+ }
 
 and module_expr_desc =
     Pmod_ident of Longident.t loc
@@ -323,7 +329,6 @@ and module_expr_desc =
   | Pmod_apply of module_expr * module_expr
   | Pmod_constraint of module_expr * module_type
   | Pmod_unpack of expression
-  | Pmod_attribute of (module_expr * attribute)
   | Pmod_extension of extension
 
 and structure = structure_item list

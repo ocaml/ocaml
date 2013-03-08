@@ -428,7 +428,6 @@ let rec bound_variables pat =
       bound_variables pat1 @ bound_variables pat2
   | Ppat_constraint (pat,_) -> bound_variables pat
   | Ppat_lazy pat -> bound_variables pat
-  | Ppat_attribute (pat, _) ->  bound_variables pat
   | Ppat_extension _ -> []
 
 let search_structure str ~name ~kind ~prefix =

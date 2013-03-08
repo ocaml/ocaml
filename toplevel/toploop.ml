@@ -20,6 +20,7 @@ open Parsetree
 open Types
 open Typedtree
 open Outcometree
+open Ast_helper
 
 type directive_fun =
    | Directive_none of (unit -> unit)
@@ -113,14 +114,13 @@ let parse_mod_use_file name lb =
          (!parse_use_file lb))
   in
   [ Ptop_def
-      [ { pstr_desc =
-            Pstr_module ( {pmb_name =Location.mknoloc modname;
-                           pmb_expr =
-                           { pmod_desc = Pmod_structure items;
-                             pmod_loc = Location.none };
-                           pmb_attributes = []}
-                          );
-          pstr_loc = Location.none } ] ]
+      [ Str.module_
+          (Mb.mk
+             (Location.mknoloc modname)
+             (Mod.structure items)
+          )
+       ]
+   ]
 
 (* Hooks for initialization *)
 

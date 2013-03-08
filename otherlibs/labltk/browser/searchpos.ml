@@ -130,7 +130,6 @@ let rec search_pos_type t ~pos ~env =
       List.iter tl ~f:(search_pos_type ~pos ~env);
       add_found_sig (`Type, lid.txt) ~env ~loc:t.ptyp_loc
   | Ptyp_alias (t, _)
-  | Ptyp_attribute (t, _)
   | Ptyp_poly (_, t) -> search_pos_type ~pos ~env t
   | Ptyp_package (_, stl) ->
      List.iter stl ~f:(fun (_, ty) -> search_pos_type ty ~pos ~env)
@@ -246,7 +245,6 @@ and search_pos_module m ~pos ~env =
           end
     | Pmty_typeof md ->
         ()   (* TODO? *)
-    | Pmty_attribute (m, _) -> search_pos_module m ~pos ~env
     | Pmty_extension _ -> ()
     end
   end

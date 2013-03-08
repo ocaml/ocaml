@@ -127,6 +127,7 @@ let label i ppf x = line i ppf "label=\"%s\"\n" x;;
 
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ptyp_loc;
+  attributes i ppf x.ptyp_attributes;
   let i = i+1 in
   match x.ptyp_desc with
   | Ptyp_any -> line i ppf "Ptyp_any\n";
@@ -163,10 +164,6 @@ let rec core_type i ppf x =
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
       list i package_with ppf l;
-  | Ptyp_attribute (body, (s, arg)) ->
-      line i ppf "Ptyp_attribute \"%s\"\n" s;
-      expression i ppf arg;
-      core_type i ppf body
   | Ptyp_extension (s, arg) ->
       line i ppf "Ptyp_extension \"%s\"\n" s;
       expression i ppf arg
@@ -186,6 +183,7 @@ and core_field_type i ppf x =
 
 and pattern i ppf x =
   line i ppf "pattern %a\n" fmt_location x.ppat_loc;
+  attributes i ppf x.ppat_attributes;
   let i = i+1 in
   match x.ppat_desc with
   | Ppat_any -> line i ppf "Ppat_any\n";
@@ -226,16 +224,13 @@ and pattern i ppf x =
       longident_loc i ppf li
   | Ppat_unpack s ->
       line i ppf "Ppat_unpack %a\n" fmt_string_loc s;
-  | Ppat_attribute (body, (s, arg)) ->
-      line i ppf "Ppat_attribute \"%s\"\n" s;
-      expression i ppf arg;
-      pattern i ppf body
   | Ppat_extension (s, arg) ->
       line i ppf "Ppat_extension \"%s\"\n" s;
       expression i ppf arg
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;
+  attributes i ppf x.pexp_attributes;
   let i = i+1 in
   match x.pexp_desc with
   | Pexp_ident (li) -> line i ppf "Pexp_ident %a\n" fmt_longident_loc li;
@@ -351,19 +346,15 @@ and expression i ppf x =
   | Pexp_open (m, e) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_longident_loc m;
       expression i ppf e
-  | Pexp_attribute (body, (s, arg)) ->
-      line i ppf "Pexp_attribute \"%s\"\n" s;
-      expression i ppf arg;
-      expression i ppf body
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s;
       expression i ppf arg
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc x.pval_name fmt_location x.pval_loc;
+  attributes i ppf x.pval_attributes;
   core_type (i+1) ppf x.pval_type;
-  list (i+1) string ppf x.pval_prim;
-  attributes (i+1) ppf x.pval_attributes
+  list (i+1) string ppf x.pval_prim
 
 and string_option_underscore i ppf =
   function
@@ -374,6 +365,7 @@ and string_option_underscore i ppf =
 
 and type_declaration i ppf x =
   line i ppf "type_declaration %a %a\n" fmt_string_loc x.ptype_name fmt_location x.ptype_loc;
+  attributes i ppf x.ptype_attributes;
   let i = i+1 in
   line i ppf "ptype_params =\n";
   list (i+1) string_option_underscore ppf x.ptype_params;
@@ -383,9 +375,7 @@ and type_declaration i ppf x =
   type_kind (i+1) ppf x.ptype_kind;
   line i ppf "ptype_private = %a\n" fmt_private_flag x.ptype_private;
   line i ppf "ptype_manifest =\n";
-  option (i+1) core_type ppf x.ptype_manifest;
-  line i ppf "ptype_attributes = \n";
-  attributes (i+1) ppf x.ptype_attributes
+  option (i+1) core_type ppf x.ptype_manifest
 
 and attributes i ppf l =
   List.iter
@@ -408,8 +398,8 @@ and type_kind i ppf x =
 
 and exception_declaration i ppf x =
   string_loc i ppf x.ped_name;
-  list i core_type ppf x.ped_args;
-  attributes i ppf x.ped_attributes
+  attributes i ppf x.ped_attributes;
+  list i core_type ppf x.ped_args
 
 and class_type i ppf x =
   line i ppf "class_type %a\n" fmt_location x.pcty_loc;
@@ -551,6 +541,7 @@ and class_declaration i ppf x =
 
 and module_type i ppf x =
   line i ppf "module_type %a\n" fmt_location x.pmty_loc;
+  attributes i ppf x.pmty_attributes;
   let i = i+1 in
   match x.pmty_desc with
   | Pmty_ident li -> line i ppf "Pmty_ident %a\n" fmt_longident_loc li;
@@ -568,10 +559,6 @@ and module_type i ppf x =
   | Pmty_typeof m ->
       line i ppf "Pmty_typeof\n";
       module_expr i ppf m;
-  | Pmty_attribute (body, (s, arg)) ->
-      line i ppf "Pmod_attribute \"%s\"\n" s;
-      expression i ppf arg;
-      module_type i ppf body
   | Pmty_extension (s, arg) ->
       line i ppf "Pmod_extension \"%s\"\n" s;
       expression i ppf arg
@@ -593,15 +580,15 @@ and signature_item i ppf x =
       exception_declaration i ppf ed;
   | Psig_module pmd ->
       line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
-      module_type i ppf pmd.pmd_type;
-      attributes i ppf pmd.pmd_attributes
+      attributes i ppf pmd.pmd_attributes;
+      module_type i ppf pmd.pmd_type
   | Psig_recmodule decls ->
       line i ppf "Psig_recmodule\n";
       list i module_declaration ppf decls;
   | Psig_modtype x ->
       line i ppf "Psig_modtype %a\n" fmt_string_loc x.pmtd_name;
-      modtype_declaration i ppf x.pmtd_type;
-      attributes i ppf x.pmtd_attributes
+      attributes i ppf x.pmtd_attributes;
+      modtype_declaration i ppf x.pmtd_type
   | Psig_open (li, attrs) ->
       line i ppf "Psig_open %a\n" fmt_longident_loc li;
       attributes i ppf attrs
@@ -617,8 +604,8 @@ and signature_item i ppf x =
       list i class_type_declaration ppf l;
   | Psig_extension ((s, arg), attrs) ->
       line i ppf "Psig_extension \"%s\"\n" s;
-      expression i ppf arg;
-      attributes i ppf attrs
+      attributes i ppf attrs;
+      expression i ppf arg
   | Psig_attribute (s, arg) ->
       line i ppf "Psig_attribute \"%s\"\n" s;
       expression i ppf arg
@@ -641,6 +628,7 @@ and with_constraint i ppf x =
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.pmod_loc;
+  attributes i ppf x.pmod_attributes;
   let i = i+1 in
   match x.pmod_desc with
   | Pmod_ident (li) -> line i ppf "Pmod_ident %a\n" fmt_longident_loc li;
@@ -662,10 +650,6 @@ and module_expr i ppf x =
   | Pmod_unpack (e) ->
       line i ppf "Pmod_unpack\n";
       expression i ppf e;
-  | Pmod_attribute (body, (s, arg)) ->
-      line i ppf "Pmod_attribute \"%s\"\n" s;
-      expression i ppf arg;
-      module_expr i ppf body
   | Pmod_extension (s, arg) ->
       line i ppf "Pmod_extension \"%s\"\n" s;
       expression i ppf arg
@@ -692,9 +676,9 @@ and structure_item i ppf x =
       exception_declaration i ppf ed
   | Pstr_exn_rebind (s, li, attrs) ->
       line i ppf "Pstr_exn_rebind\n";
+      attributes i ppf attrs;
       line (i+1) ppf "%a\n" fmt_string_loc s;
-      line (i+1) ppf "%a\n" fmt_longident_loc li;
-      attributes (i+1) ppf attrs
+      line (i+1) ppf "%a\n" fmt_longident_loc li
   | Pstr_module x ->
       line i ppf "Pstr_module\n";
       module_binding i ppf x
@@ -703,8 +687,8 @@ and structure_item i ppf x =
       list i module_binding ppf bindings;
   | Pstr_modtype x ->
       line i ppf "Pstr_modtype %a\n" fmt_string_loc x.pmtb_name;
-      module_type i ppf x.pmtb_type;
-      attributes i ppf x.pmtb_attributes
+      attributes i ppf x.pmtb_attributes;
+      module_type i ppf x.pmtb_type
   | Pstr_open (li, attrs) ->
       line i ppf "Pstr_open %a\n" fmt_longident_loc li;
       attributes i ppf attrs
@@ -716,25 +700,25 @@ and structure_item i ppf x =
       list i class_type_declaration ppf l;
   | Pstr_include (me, attrs) ->
       line i ppf "Pstr_include";
-      module_expr i ppf me;
-      attributes i ppf attrs
+      attributes i ppf attrs;
+      module_expr i ppf me
   | Pstr_extension ((s, arg), attrs) ->
       line i ppf "Pstr_extension \"%s\"\n" s;
-      expression i ppf arg;
-      attributes i ppf attrs
+      attributes i ppf attrs;
+      expression i ppf arg
   | Pstr_attribute (s, arg) ->
       line i ppf "Pstr_attribute \"%s\"\n" s;
       expression i ppf arg
 
 and module_declaration i ppf pmd =
   string_loc i ppf pmd.pmd_name;
+  attributes i ppf pmd.pmd_attributes;
   module_type (i+1) ppf pmd.pmd_type;
-  attributes (i+1) ppf pmd.pmd_attributes
 
 and module_binding i ppf x =
   string_loc i ppf x.pmb_name;
-  module_expr (i+1) ppf x.pmb_expr;
-  attributes (i+1) ppf x.pmb_attributes
+  attributes i ppf x.pmb_attributes;
+  module_expr (i+1) ppf x.pmb_expr
 
 and longident_x_with_constraint i ppf (li, wc) =
   line i ppf "%a\n" fmt_longident_loc li;
@@ -747,17 +731,17 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
 
 and constructor_decl i ppf {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
   line i ppf "%a\n" fmt_location pcd_loc;
+  attributes i ppf pcd_attributes;
   line (i+1) ppf "%a\n" fmt_string_loc pcd_name;
   list (i+1) core_type ppf pcd_args;
-  option (i+1) core_type ppf pcd_res;
-  attributes (i+1) ppf pcd_attributes
+  option (i+1) core_type ppf pcd_res
 
 and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes} =
   line i ppf "%a\n" fmt_location pld_loc;
+  attributes i ppf pld_attributes;
   line (i+1) ppf "%a\n" fmt_mutable_flag pld_mutable;
   line (i+1) ppf "%a" fmt_string_loc pld_name;
-  core_type (i+1) ppf pld_type;
-  attributes (i+1) ppf pld_attributes
+  core_type (i+1) ppf pld_type
 
 and string_list_x_location i ppf (l, loc) =
   line i ppf "<params> %a\n" fmt_location loc;

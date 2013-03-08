@@ -140,7 +140,6 @@ let iter_expression f e =
     | Pexp_assert e
     | Pexp_setinstvar (_, e)
     | Pexp_send (e, _)
-    | Pexp_attribute (e, _) (* we don't iterate on the attribute argument *)
     | Pexp_constraint (e, _, _)
     | Pexp_field (e, _) -> expr e
     | Pexp_when (e1, e2)
@@ -160,7 +159,6 @@ let iter_expression f e =
     | Pmod_ident _ -> ()
     | Pmod_structure str -> List.iter structure_item str
     | Pmod_constraint (me, _)
-    | Pmod_attribute (me, _)
     | Pmod_functor (_, _, me) -> module_expr me
     | Pmod_apply (me1, me2) -> module_expr me1; module_expr me2
     | Pmod_unpack e -> expr e
@@ -1101,8 +1099,6 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let (path, p,ty) = build_or_pat !env loc lid.txt in
       unify_pat_types loc !env ty expected_ty;
       { p with pat_extra = (Tpat_type (path, lid), loc) :: p.pat_extra }
-  | Ppat_attribute (p, _attrs) ->
-      type_pat p expected_ty
   | Ppat_extension (s, _arg) ->
       raise (Error (loc, !env, Extension s))
 
@@ -1204,12 +1200,11 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   let val_env, _ = add_pattern_variables val_env in
   (pat, pv, val_env, met_env)
 
-let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
-
 let type_self_pattern cl_num privty val_env met_env par_env spat =
+  let open Ast_helper in
   let spat =
-    mkpat (Ppat_alias (mkpat(Ppat_alias (spat, mknoloc "selfpat-*")),
-                       mknoloc ("selfpat-" ^ cl_num)))
+    Pat.mk (Ppat_alias (Pat.mk(Ppat_alias (spat, mknoloc "selfpat-*")),
+                        mknoloc ("selfpat-" ^ cl_num)))
   in
   reset_pattern None false;
   let nv = newvar() in
@@ -1669,14 +1664,15 @@ let create_package_type loc env (p, l) =
    (s, fields, ty)
 
  let wrap_unpacks sexp unpacks =
+   let open Ast_helper in
    List.fold_left
      (fun sexp (name, loc) ->
-       {pexp_loc = sexp.pexp_loc; pexp_desc = Pexp_letmodule (
-        name,
-        {pmod_loc = loc; pmod_desc = Pmod_unpack
-           {pexp_desc=Pexp_ident(mkloc (Longident.Lident name.txt) name.loc);
-            pexp_loc=name.loc}},
-       sexp)})
+       Exp.letmodule ~loc:sexp.pexp_loc
+         name
+         (Mod.unpack ~loc
+            (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt) name.loc)))
+         sexp
+     )
     sexp unpacks
 
 (* Helpers for type_cases *)
@@ -1711,7 +1707,6 @@ let iter_ppat f p =
   | Ppat_or (p1,p2) -> f p1; f p2
   | Ppat_variant (_, arg) | Ppat_construct (_, arg, _) -> may f arg
   | Ppat_tuple lst ->  List.iter f lst
-  | Ppat_attribute (p, _)
   | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p
   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args
 
@@ -1755,8 +1750,6 @@ let check_absent_variant env =
                     (correct_levels pat.pat_type)
       | _ -> ())
       
-
-let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
 
 (* Duplicate types of values in the environment *)
 (* XXX Should we do something about global type variables too? *)
@@ -1887,45 +1880,33 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_env = env }
   | Pexp_function (l, Some default, [spat, sbody]) ->
       let default_loc = default.pexp_loc in
+      let open Ast_helper in
       let scases = [
-         {ppat_loc = default_loc;
-          ppat_desc =
-            Ppat_construct
-              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))),
-               Some {ppat_loc = default_loc;
-                     ppat_desc = Ppat_var (mknoloc "*sth*")},
-               false)},
-         {pexp_loc = default_loc;
-          pexp_desc = Pexp_ident(mknoloc (Longident.Lident "*sth*"))};
-         {ppat_loc = default_loc;
-          ppat_desc = Ppat_construct
-             (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))),
-              None, false)},
-         default;
-      ] in
-      let smatch = {
-        pexp_loc = loc;
-        pexp_desc =
-          Pexp_match ({
-            pexp_loc = loc;
-            pexp_desc = Pexp_ident(mknoloc (Longident.Lident "*opt*"))
-            },
-            scases
-          )
-      } in
-      let sfun = {
-        pexp_loc = loc;
-        pexp_desc =
-         Pexp_function (
-           l, None,
-           [ {ppat_loc = loc;
-              ppat_desc = Ppat_var (mknoloc "*opt*")},
-             {pexp_loc = loc;
-              pexp_desc = Pexp_let(Default, [spat, smatch], sbody);
-             }
-           ]
-         )
-      } in
+        Pat.construct ~loc:default_loc
+          (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
+          (Some (Pat.var ~loc:default_loc (mknoloc "*sth*")))
+          false,
+        Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*"));
+
+        Pat.construct ~loc:default_loc
+          (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
+          None
+          false,
+        default;
+       ]
+      in
+      let smatch =
+        Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+          scases
+      in
+      let sfun =
+        Exp.function_ ~loc
+          l None
+          [
+           Pat.var ~loc (mknoloc "*opt*"),
+           Exp.let_ ~loc Default [spat, smatch] sbody;
+          ]
+      in
       type_expect ?in_function env sfun ty_expected
   | Pexp_function (l, _, caselist) ->
       let (loc_fun, ty_fun) =
@@ -2694,14 +2675,6 @@ and type_expect_ ?in_function env sexp ty_expected =
       { exp with
         exp_extra = (Texp_open (path, lid, newenv), loc) :: exp.exp_extra;
       }
-  | Pexp_attribute (body, (_s, _arg)) ->
-      let exp = type_expect env body ty_expected in
-      (*
-      { exp with
-        exp_extra = (Texp_attribute (s, arg), loc) :: exp.exp_extra
-       }
-      *)
-      exp
   | Pexp_extension (s, _arg) ->
       raise (Error (loc, env, Extension s))
 
@@ -3238,6 +3211,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
 and type_let ?(check = fun s -> Warnings.Unused_var s)
              ?(check_strict = fun s -> Warnings.Unused_var_strict s)
     env rec_flag spat_sexp_list scope allow =
+  let open Ast_helper in
   begin_def();
   if !Clflags.principal then begin_def ();
 
@@ -3260,8 +3234,10 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
         | _, Pexp_constraint (_, Some sty, None) when !Clflags.principal ->
             (* propagate type annotation to pattern,
                to allow it to be generalized in -principal mode *)
-            {ppat_desc = Ppat_constraint (spat, sty);
-             ppat_loc = {spat.ppat_loc with Location.loc_ghost=true}}
+            Pat.constraint_
+              ~loc:{spat.ppat_loc with Location.loc_ghost=true}
+              spat
+              sty
         | _ -> spat)
       spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in

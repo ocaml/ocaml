@@ -17,46 +17,35 @@ open Location
 open Asttypes
 open Longident
 open Parsetree
+open Ast_helper
 
-let mktyp d =
-  { ptyp_desc = d; ptyp_loc = symbol_rloc() }
-let mkpat d =
-  { ppat_desc = d; ppat_loc = symbol_rloc() }
-let mkexp d =
-  { pexp_desc = d; pexp_loc = symbol_rloc() }
-let mkmty d =
-  { pmty_desc = d; pmty_loc = symbol_rloc() }
-let mksig d =
-  { psig_desc = d; psig_loc = symbol_rloc() }
-let mkmod d =
-  { pmod_desc = d; pmod_loc = symbol_rloc() }
-let mkstr d =
-  { pstr_desc = d; pstr_loc = symbol_rloc() }
-let mkfield d =
-  { pfield_desc = d; pfield_loc = symbol_rloc() }
-let mkclass d =
-  { pcl_desc = d; pcl_loc = symbol_rloc() }
-let mkcty d =
-  { pcty_desc = d; pcty_loc = symbol_rloc() }
-let mkctf d =
-  { pctf_desc = d; pctf_loc = symbol_rloc () }
-let mkcf d =
-  { pcf_desc = d; pcf_loc = symbol_rloc () }
+let mktyp d = Typ.mk ~loc:(symbol_rloc()) d
+let mkpat d = Pat.mk ~loc:(symbol_rloc()) d
+let mkexp d = Exp.mk ~loc:(symbol_rloc()) d
+let mkmty d = Mty.mk ~loc:(symbol_rloc()) d
+let mksig d = Sig.mk ~loc:(symbol_rloc()) d
+let mkmod d = Mod.mk ~loc:(symbol_rloc()) d
+let mkstr d = Str.mk ~loc:(symbol_rloc()) d
+let mkfield d = Field.mk ~loc: (symbol_rloc()) d
+let mkclass d = Cl.mk ~loc:(symbol_rloc()) d
+let mkcty d = Cty.mk ~loc:(symbol_rloc()) d
+let mkctf d = Ctf.mk ~loc:(symbol_rloc()) d
+let mkcf d = Cf.mk ~loc:(symbol_rloc()) d
+
 let mkrhs rhs pos = mkloc rhs (rhs_loc pos)
 let mkoption d =
   let loc = {d.ptyp_loc with loc_ghost = true} in
-  { ptyp_desc = Ptyp_constr(mkloc (Ldot (Lident "*predef*", "option")) loc,[d]);
-    ptyp_loc = loc}
+  Typ.mk ~loc (Ptyp_constr(mkloc (Ldot (Lident "*predef*", "option")) loc,[d]))
 
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
 
 let mkoperator name pos =
   let loc = rhs_loc pos in
-  { pexp_desc = Pexp_ident(mkloc (Lident name) loc); pexp_loc = loc }
+  Exp.mk ~loc (Pexp_ident(mkloc (Lident name) loc))
 
 let mkpatvar name pos =
-  { ppat_desc = Ppat_var (mkrhs name pos); ppat_loc = rhs_loc pos }
+  Pat.mk ~loc:(rhs_loc pos) (Ppat_var (mkrhs name pos))
 
 (*
   Ghost expressions and patterns:
@@ -75,10 +64,10 @@ let mkpatvar name pos =
   AST node, then the location must be real; in all other cases,
   it must be ghost.
 *)
-let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc () };;
-let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
-let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc () };;
-let ghloc d = { txt = d; loc = symbol_gloc () };;
+let ghexp d = Exp.mk ~loc:(symbol_gloc ()) d
+let ghpat d = Pat.mk ~loc:(symbol_gloc ()) d
+let ghtyp d = Typ.mk ~loc:(symbol_gloc ()) d
+let ghloc d = { txt = d; loc = symbol_gloc () }
 
 let ghunit () =
   ghexp (Pexp_construct (mknoloc (Lident "()"), None, false))
@@ -126,40 +115,38 @@ let mkuplus name arg =
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
 let mkexp_cons consloc args loc =
-  {pexp_desc = Pexp_construct(mkloc (Lident "::") consloc, Some args, false);
-   pexp_loc = loc}
+  Exp.mk ~loc (Pexp_construct(mkloc (Lident "::") consloc, Some args, false))
 
 let mkpat_cons consloc args loc =
-  {ppat_desc = Ppat_construct(mkloc (Lident "::") consloc, Some args, false);
-   ppat_loc = loc}
+  Pat.mk ~loc (Ppat_construct(mkloc (Lident "::") consloc, Some args, false))
 
 let rec mktailexp nilloc = function
     [] ->
       let loc = { nilloc with loc_ghost = true } in
       let nil = { txt = Lident "[]"; loc = loc } in
-      { pexp_desc = Pexp_construct (nil, None, false); pexp_loc = loc }
+      Exp.mk ~loc (Pexp_construct (nil, None, false))
   | e1 :: el ->
       let exp_el = mktailexp nilloc el in
-      let l = {loc_start = e1.pexp_loc.loc_start;
+      let loc = {loc_start = e1.pexp_loc.loc_start;
                loc_end = exp_el.pexp_loc.loc_end;
                loc_ghost = true}
       in
-      let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
-      mkexp_cons {l with loc_ghost = true} arg l
+      let arg = Exp.mk ~loc (Pexp_tuple [e1; exp_el]) in
+      mkexp_cons {loc with loc_ghost = true} arg loc
 
 let rec mktailpat nilloc = function
     [] ->
       let loc = { nilloc with loc_ghost = true } in
       let nil = { txt = Lident "[]"; loc = loc } in
-      { ppat_desc = Ppat_construct (nil, None, false); ppat_loc = loc }
+      Pat.mk ~loc (Ppat_construct (nil, None, false))
   | p1 :: pl ->
       let pat_pl = mktailpat nilloc pl in
-      let l = {loc_start = p1.ppat_loc.loc_start;
+      let loc = {loc_start = p1.ppat_loc.loc_start;
                loc_end = pat_pl.ppat_loc.loc_end;
                loc_ghost = true}
       in
-      let arg = {ppat_desc = Ppat_tuple [p1; pat_pl]; ppat_loc = l} in
-      mkpat_cons {l with loc_ghost = true} arg l
+      let arg = Pat.mk ~loc (Ppat_tuple [p1; pat_pl]) in
+      mkpat_cons {loc with loc_ghost = true} arg loc
 
 let mkstrexp e =
   { pstr_desc = Pstr_eval e; pstr_loc = e.pexp_loc }
@@ -273,8 +260,6 @@ let varify_constructors var_names t =
           Ptyp_poly(string_lst, loop core_type)
       | Ptyp_package(longident,lst) ->
           Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
-      | Ptyp_attribute (t, x) ->
-          Ptyp_attribute (loop t, x)
       | Ptyp_extension (s, arg) ->
           Ptyp_extension (s, arg)
     in
@@ -311,10 +296,7 @@ let wrap_exp_attrs body (ext, attrs) =
   | None -> body
   | Some id -> ghexp(Pexp_extension (id, body))
   in
-  List.fold_left
-    (fun body attr -> ghexp(Pexp_attribute(body, attr)))
-    body
-    attrs
+  {body with pexp_attributes = attrs @ body.pexp_attributes}
 
 let mkexp_attrs d attrs =
   wrap_exp_attrs (mkexp d) attrs
@@ -594,7 +576,7 @@ module_expr:
   | LPAREN VAL expr error
       { unclosed "(" 1 ")" 4 }
   | module_expr attribute
-      { mkmod(Pmod_attribute ($1, $2)) }
+      { Mod.attr $1 $2 }
   | extension
       { mkmod(Pmod_extension $1) }
 ;
@@ -619,14 +601,13 @@ structure_item:
           [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
         | l -> mkstr(Pstr_value($3, List.rev l)) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
-      { mkstr(Pstr_primitive {pval_name = mkrhs $2 2;
-                              pval_type = $4; pval_prim = $6;
-                              pval_attributes = $7;
-                              pval_loc = symbol_rloc ()}) }
+      { mkstr
+          (Pstr_primitive (Val.mk (mkrhs $2 2) $4
+                             ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
   | TYPE type_declarations
       { mkstr(Pstr_type (List.rev $2) ) }
   | EXCEPTION UIDENT constructor_arguments post_item_attributes
-      { mkstr(Pstr_exception {ped_name=mkrhs $2 2; ped_args=$3;ped_attributes=$4}) }
+      { mkstr(Pstr_exception (Ed.mk (mkrhs $2 2) $3 ~attrs:$4)) }
   | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
       { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4), $5)) }
   | MODULE module_binding
@@ -634,7 +615,7 @@ structure_item:
   | MODULE REC module_bindings
       { mkstr(Pstr_recmodule(List.rev $3)) }
   | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mkstr(Pstr_modtype{pmtb_name=mkrhs $3 3; pmtb_type=$5; pmtb_attributes=$6}) }
+      { mkstr(Pstr_modtype (Mtb.mk (mkrhs $3 3) $5 ~attrs:$6)) }
   | OPEN mod_longident post_item_attributes
       { mkstr(Pstr_open (mkrhs $2 2, $3)) }
   | CLASS class_declarations
@@ -660,7 +641,7 @@ module_bindings:
 ;
 module_binding:
     UIDENT module_binding_body post_item_attributes
-    { {pmb_name=mkrhs $1 1; pmb_expr=$2; pmb_attributes=$3} }
+    { Mb.mk (mkrhs $1 1) $2 ~attrs:$3 }
 ;
 
 /* Module types */
@@ -686,7 +667,7 @@ module_type:
   | extension
       { mkmty(Pmty_extension $1) }
   | module_type attribute
-      { mkmty(Pmty_attribute ($1, $2)) }
+      { Mty.attr $1 $2 }
 ;
 signature:
     sig_attribute signature { $1 :: $2 }
@@ -702,27 +683,24 @@ sig_attribute:
 ;
 signature_item:
     VAL val_ident COLON core_type post_item_attributes
-      { mksig(Psig_value {pval_name = mkrhs $2 2;
-                          pval_type = $4; pval_prim = [];
-                          pval_attributes = $5;
-                          pval_loc = symbol_rloc()}) }
+      { mksig(Psig_value
+                (Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()))) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
-      { mksig(Psig_value {pval_name = mkrhs $2 2;
-                          pval_type = $4; pval_prim = $6;
-                          pval_attributes = $7;
-                          pval_loc = symbol_rloc()}) }
+      { mksig(Psig_value
+                (Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7
+                   ~loc:(symbol_rloc()))) }
   | TYPE type_declarations
       { mksig(Psig_type (List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments post_item_attributes
-      { mksig(Psig_exception {ped_name=mkrhs $2 2; ped_args = $3; ped_attributes = $4}) }
+      { mksig(Psig_exception (Ed.mk (mkrhs $2 2) $3 ~attrs:$4)) }
   | MODULE UIDENT module_declaration post_item_attributes
-      { mksig(Psig_module{pmd_name=mkrhs $2 2;pmd_type=$3;pmd_attributes=$4}) }
+      { mksig(Psig_module (Md.mk (mkrhs $2 2) $3 ~attrs:$4)) }
   | MODULE REC module_rec_declarations
       { mksig(Psig_recmodule (List.rev $3)) }
   | MODULE TYPE ident post_item_attributes
-      { mksig(Psig_modtype {pmtd_name=mkrhs $3 3; pmtd_type=None; pmtd_attributes=$4}) }
+      { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3) ~attrs:$4)) }
   | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mksig(Psig_modtype {pmtd_name=mkrhs $3 3; pmtd_type=Some $5; pmtd_attributes=$6}) }
+      { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3) ~typ:$5 ~attrs:$6)) }
   | OPEN mod_longident post_item_attributes
       { mksig(Psig_open (mkrhs $2 2, $3)) }
   | INCLUDE module_type post_item_attributes %prec below_WITH
@@ -747,7 +725,7 @@ module_rec_declarations:
 ;
 module_rec_declaration:
     UIDENT COLON module_type post_item_attributes
-    { {pmd_name=mkrhs $1 1; pmd_type=$3; pmd_attributes=$4} }
+    { Md.mk (mkrhs $1 1) $3 ~attrs:$4 }
 ;
 
 /* Class expressions */
@@ -758,11 +736,12 @@ class_declarations:
 ;
 class_declaration:
     virtual_flag class_type_parameters LIDENT class_fun_binding post_item_attributes
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
-         pci_name = mkrhs $3 3; pci_expr = $4; pci_variance = variance;
-         pci_attributes = $5;
-         pci_loc = symbol_rloc ()} }
+      {
+       let params, variance = List.split (fst $2) in
+       Ci.mk (mkrhs $3 3) $4
+         ~virt:$1 ~params:(params, snd $2)
+         ~variance ~attrs:$5 ~loc:(symbol_rloc ())
+      }
 ;
 class_fun_binding:
     EQUAL class_expr
@@ -958,11 +937,12 @@ class_descriptions:
 ;
 class_description:
     virtual_flag class_type_parameters LIDENT COLON class_type post_item_attributes
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
-         pci_name = mkrhs $3 3; pci_expr = $5; pci_variance = variance;
-         pci_attributes = $6;
-         pci_loc = symbol_rloc ()} }
+      {
+       let params, variance = List.split (fst $2) in
+       Ci.mk (mkrhs $3 3) $5
+         ~virt:$1 ~params:(params, snd $2)
+         ~variance ~attrs:$6 ~loc:(symbol_rloc ())
+      }
 ;
 class_type_declarations:
     class_type_declarations AND class_type_declaration  { $3 :: $1 }
@@ -970,11 +950,12 @@ class_type_declarations:
 ;
 class_type_declaration:
     virtual_flag class_type_parameters LIDENT EQUAL class_signature post_item_attributes
-      { let params, variance = List.split (fst $2) in
-        {pci_virt = $1; pci_params = params, snd $2;
-         pci_name = mkrhs $3 3; pci_expr = $5; pci_variance = variance;
-         pci_attributes = $6;
-         pci_loc = symbol_rloc ()} }
+      {
+       let params, variance = List.split (fst $2) in
+       Ci.mk (mkrhs $3 3) $5
+         ~virt:$1 ~params:(params, snd $2)
+         ~variance ~attrs:$6 ~loc:(symbol_rloc ())
+      }
 ;
 
 /* Core expressions */
@@ -1129,7 +1110,7 @@ expr:
   | OBJECT ext_attributes class_structure error
       { unclosed "object" 1 "end" 3 }
   | expr attribute
-      { mkexp (Pexp_attribute($1, $2)) }
+      { Exp.attr $1 $2 }
 ;
 simple_expr:
     val_longident
@@ -1356,7 +1337,7 @@ pattern:
   | LAZY simple_pattern
       { mkpat(Ppat_lazy $2) }
   | pattern attribute
-      { mkpat(Ppat_attribute ($1, $2)) }
+      { Pat.attr $1 $2 }
 ;
 simple_pattern:
     val_ident %prec below_EQUAL
@@ -1446,16 +1427,11 @@ type_declarations:
 type_declaration:
     optional_type_parameters LIDENT type_kind constraints post_item_attributes
       { let (params, variance) = List.split $1 in
-        let (kind, private_flag, manifest) = $3 in
-        {ptype_name = mkrhs $2 2;
-         ptype_params = params;
-         ptype_cstrs = List.rev $4;
-         ptype_kind = kind;
-         ptype_private = private_flag;
-         ptype_manifest = manifest;
-         ptype_variance = variance;
-         ptype_attributes = $5;
-         ptype_loc = symbol_rloc() } }
+        let (kind, priv, manifest) = $3 in
+        Type.mk (mkrhs $2 2)
+          ~params ~cstrs:(List.rev $4)
+          ~kind ~priv ?manifest ~variance ~attrs:$5 ~loc:(symbol_rloc())
+       }
 ;
 constraints:
         constraints CONSTRAINT constrain        { $3 :: $1 }
@@ -1520,13 +1496,10 @@ constructor_declarations:
 ;
 constructor_declaration:
   | constr_ident attributes generalized_constructor_arguments
-      { let arg_types,ret_type = $3 in
-        {pcd_name = mkrhs $1 1;
-         pcd_args = arg_types;
-         pcd_res = ret_type;
-         pcd_loc = symbol_rloc();
-         pcd_attributes = $2}
-       }
+      {
+       let args,res = $3 in
+       Cd.mk (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2
+      }
 ;
 
 constructor_arguments:
@@ -1552,12 +1525,7 @@ label_declarations:
 label_declaration:
     mutable_flag label attributes COLON poly_type
       {
-       {pld_name = mkrhs $2 2;
-        pld_mutable = $1;
-        pld_type = $5;
-        pld_loc = symbol_rloc();
-        pld_attributes = $3;
-       }
+       Ld.mk (mkrhs $2 2) $5 ~mut:$1 ~attrs:$3 ~loc:(symbol_rloc())
       }
 ;
 
@@ -1571,29 +1539,23 @@ with_constraint:
     TYPE type_parameters label_longident with_type_binder core_type constraints
       { let params, variance = List.split $2 in
         (mkrhs $3 3,  Pwith_type
-           {ptype_name = mkrhs (Longident.last $3) 3;
-            ptype_params = List.map (fun x -> Some x) params;
-            ptype_cstrs = List.rev $6;
-            ptype_kind = Ptype_abstract;
-            ptype_manifest = Some $5;
-            ptype_private = $4;
-            ptype_variance = variance;
-            ptype_attributes = [];
-            ptype_loc = symbol_rloc()}) }
+           (Type.mk (mkrhs (Longident.last $3) 3)
+              ~params:(List.map (fun x -> Some x) params)
+              ~cstrs:(List.rev $6)
+              ~manifest:$5
+              ~priv:$4
+              ~variance
+              ~loc:(symbol_rloc()))) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
   | TYPE type_parameters label COLONEQUAL core_type
       { let params, variance = List.split $2 in
         (mkrhs (Lident $3) 3, Pwith_typesubst
-           {ptype_name = mkrhs $3 3;
-             ptype_params = List.map (fun x -> Some x) params;
-             ptype_cstrs = [];
-             ptype_kind = Ptype_abstract;
-             ptype_manifest = Some $5;
-             ptype_private = Public;
-             ptype_variance = variance;
-             ptype_attributes = [];
-             ptype_loc = symbol_rloc()}) }
+           (Type.mk (mkrhs $3 3)
+              ~params:(List.map (fun x -> Some x) params)
+              ~manifest:$5
+              ~variance
+              ~loc:(symbol_rloc()))) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { (mkrhs $2 2, Pwith_module (mkrhs $4 4)) }
   | MODULE UIDENT COLONEQUAL mod_ext_longident
@@ -1644,7 +1606,7 @@ simple_core_type:
   | LPAREN core_type_comma_list RPAREN %prec below_SHARP
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
   | simple_core_type attribute
-      { mktyp (Ptyp_attribute($1, $2)) }
+      { Typ.attr $1 $2 }
 ;
 
 simple_core_type_no_attr:

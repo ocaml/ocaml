@@ -108,7 +108,7 @@ let rec is_irrefut_patt x =
   | Ppat_or (l,r) -> is_irrefut_patt l || is_irrefut_patt r
   | Ppat_record (ls,_) -> List.for_all (fun (_,x) -> is_irrefut_patt x) ls
   | Ppat_lazy p -> is_irrefut_patt p 
-  | Ppat_extension _ | Ppat_attribute _ -> assert false
+  | Ppat_extension _ -> assert false
   | Ppat_constant _ | Ppat_construct _  | Ppat_variant _ | Ppat_array _ | Ppat_type _-> false (*conservative*)
 class printer  ()= object(self:'self)
   val pipe = false
@@ -300,8 +300,6 @@ class printer  ()= object(self:'self)
         |_ ->  
             pp f "@[<hov2>(module@ %a@ with@ %a)@]" self#longident_loc lid
               (self#list aux  ~sep:"@ and@ ")  cstrs)
-    | Ptyp_attribute (body, (s, arg)) ->
-      pp f "@[<2>%a@ (:%s@ %a)@]" self#core_type body s self#expression arg
     | Ptyp_extension (s, arg) ->
       pp f "@[<2>(&%s@ %a)@]" s self#expression arg
     | _ -> self#paren true self#core_type f x
@@ -622,8 +620,6 @@ class printer  ()= object(self:'self)
           self#expression  e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
-    | Pexp_attribute (body, (s, arg)) ->
-      pp f "@[<2>%a@ (:%s@ %a)@]" self#expression body s self#expression arg
     | Pexp_extension (s, arg) ->
       pp f "@[<2>(&%s@ %a)@]" s self#expression arg
     | _ -> self#expression1 f x
@@ -780,7 +776,7 @@ class printer  ()= object(self:'self)
               pp f "%s :@;%a=@;%a"
                 s.txt (self#core_type) ct self#expression e
           | Pexp_poly (e,None) ->
-              self#binding f ({ppat_desc=Ppat_var s;ppat_loc=Location.none} ,e)
+              self#binding f ({ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]} ,e)
           | _ ->
               self#expression f e ) e 
     | Pcf_constr (ct1, ct2) ->
@@ -855,7 +851,7 @@ class printer  ()= object(self:'self)
     | Pmty_typeof me ->
         pp f "@[<hov2>module@ type@ of@ %a@]"
           self#module_expr me 
-    | Pmty_extension _ | Pmty_attribute _ -> assert false
+    | Pmty_extension _ -> assert false
 
   method signature f x =  self#list ~sep:"@\n" self#signature_item f x
 
@@ -941,7 +937,7 @@ class printer  ()= object(self:'self)
         pp f "%a(%a)" self#module_expr me1  self#module_expr  me2
     | Pmod_unpack e ->
         pp f "(val@ %a)"  self#expression  e
-    | Pmod_extension _ | Pmod_attribute _ -> assert false
+    | Pmod_extension _ -> assert false
 
   method structure f x = self#list ~sep:"@\n" self#structure_item f x
 
@@ -1124,7 +1120,7 @@ class printer  ()= object(self:'self)
           (self#list aux ~sep:"@]@,@[<2>and " ~last:"@]@]") xs 
           (* called by type_def_list *)        
   method type_declaration f x = begin
-    let  type_variant_leaf f  {pcd_name; pcd_args; pcd_res; pcd_loc=_; pcd_attributes=_} = match pcd_res with
+    let  type_variant_leaf f  {pcd_name; pcd_args; pcd_res; pcd_loc=_} = match pcd_res with
     |None -> 
         pp f "@\n|@;%s%a" pcd_name.txt
           (fun f l -> match l with

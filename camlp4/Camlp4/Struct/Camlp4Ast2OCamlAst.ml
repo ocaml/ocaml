@@ -59,13 +59,13 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value with_loc txt loc = Camlp4_import.Location.mkloc txt (mkloc loc);
 
-  value mktyp loc d = {ptyp_desc = d; ptyp_loc = mkloc loc};
-  value mkpat loc d = {ppat_desc = d; ppat_loc = mkloc loc};
-  value mkghpat loc d = {ppat_desc = d; ppat_loc = mkghloc loc};
-  value mkexp loc d = {pexp_desc = d; pexp_loc = mkloc loc};
-  value mkmty loc d = {pmty_desc = d; pmty_loc = mkloc loc};
+  value mktyp loc d = {ptyp_desc = d; ptyp_loc = mkloc loc; ptyp_attributes = []};
+  value mkpat loc d = {ppat_desc = d; ppat_loc = mkloc loc; ppat_attributes = []};
+  value mkghpat loc d = {ppat_desc = d; ppat_loc = mkghloc loc; ppat_attributes = []};
+  value mkexp loc d = {pexp_desc = d; pexp_loc = mkloc loc; pexp_attributes = []};
+  value mkmty loc d = {pmty_desc = d; pmty_loc = mkloc loc; pmty_attributes = []};
   value mksig loc d = {psig_desc = d; psig_loc = mkloc loc};
-  value mkmod loc d = {pmod_desc = d; pmod_loc = mkloc loc};
+  value mkmod loc d = {pmod_desc = d; pmod_loc = mkloc loc; pmod_attributes = []};
   value mkstr loc d = {pstr_desc = d; pstr_loc = mkloc loc};
   value mkfield loc d = {pfield_desc = d; pfield_loc = mkloc loc};
   value mkcty loc d = {pcty_desc = d; pcty_loc = mkloc loc};
@@ -669,8 +669,6 @@ value varify_constructors var_names =
           Ptyp_poly(string_lst, loop core_type)
       | Ptyp_package longident lst ->
           Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
-      | Ptyp_attribute (t, x) ->
-          Ptyp_attribute (loop t, x)
       | Ptyp_extension x ->
           Ptyp_extension x
 ]
@@ -1042,7 +1040,9 @@ value varify_constructors var_names =
         [{pmb_name=with_loc s loc;
           pmb_expr=
           {pmod_loc=Camlp4_import.Location.none;
-           pmod_desc=Pmod_constraint(module_expr me,module_type mt)};
+           pmod_desc=Pmod_constraint(module_expr me,module_type mt);
+           pmod_attributes=[];
+          };
           pmb_attributes=[]} :: acc]
     | _ -> assert False ]
   and module_expr =

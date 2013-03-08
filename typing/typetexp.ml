@@ -145,10 +145,9 @@ let create_package_mty fake loc env (p, l) =
                ptype_variance = [];
                ptype_attributes = [];
                ptype_loc = loc} in
-      {pmty_desc=Pmty_with (mty, [ { txt = s.txt; loc }, Pwith_type d ]);
-       pmty_loc=loc}
+      Ast_helper.Mty.mk ~loc (Pmty_with (mty, [ { txt = s.txt; loc }, Pwith_type d ]))
     )
-    {pmty_desc=Pmty_ident p; pmty_loc=loc}
+    (Ast_helper.Mty.mk ~loc (Pmty_ident p))
     l
 
 (* Translation of type expressions *)
@@ -562,8 +561,6 @@ let rec transl_type env policy styp =
                 pack_fields = ptys;
                 pack_txt = p;
               }) ty env loc
-  | Ptyp_attribute (st, _) ->
-      transl_type env policy st  (* keep attribute in the typedtree? *)
   | Ptyp_extension (s, _arg) ->
       raise (Error (loc, env, Extension s))
 

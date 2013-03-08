@@ -888,7 +888,6 @@ module Analyser =
                     Parsetree.Pmod_ident longident -> Name.from_longident longident.txt
                   | _ -> "??"
                   end
-              | Parsetree.Pmty_attribute _
               | Parsetree.Pmty_extension _ -> assert false
             in
             let name = f module_type.Parsetree.pmty_desc in
@@ -1131,7 +1130,6 @@ module Analyser =
           let s = get_string_of_file loc_start loc_end in
           Module_type_typeof s
 
-      | Parsetree.Pmty_attribute _
       | Parsetree.Pmty_extension _ -> assert false
 
     (** analyse of a Parsetree.module_type and a Types.module_type.*)
@@ -1206,7 +1204,6 @@ module Analyser =
           let s = get_string_of_file loc_start loc_end in
           Module_typeof s
 
-      | Parsetree.Pmty_attribute _
       | Parsetree.Pmty_extension _ -> assert false
 
 

@@ -1735,9 +1735,7 @@ let check_partial_all v casel =
 (* conversion from Typedtree.pattern to Parsetree.pattern list *)
 module Conv = struct
   open Parsetree
-  let mkpat desc =
-    {ppat_desc = desc;
-     ppat_loc = Location.none}
+  let mkpat desc = Ast_helper.Pat.mk desc
 
   let rec select : 'a list list -> 'a list list =
     function

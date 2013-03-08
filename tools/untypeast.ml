@@ -13,6 +13,7 @@
 open Asttypes
 open Typedtree
 open Parsetree
+open Ast_helper
 
 (*
 Some notes:
@@ -57,17 +58,17 @@ and untype_structure_item item =
     | Tstr_exn_rebind (_id, name, _p, lid) ->
         Pstr_exn_rebind (name, lid, [])
     | Tstr_module (_id, name, mexpr) ->
-        Pstr_module {pmb_name = name; pmb_expr = untype_module_expr mexpr; pmb_attributes = []}
+        Pstr_module (Mb.mk name (untype_module_expr mexpr))
     | Tstr_recmodule list ->
         Pstr_recmodule
           (List.map
              (fun (_id, name, mtype, mexpr) ->
-               {pmb_name = name;
-                pmb_expr = {pmod_loc = Location.none;
-                            pmod_desc = Pmod_constraint(
-                            untype_module_expr mexpr,
-                            untype_module_type mtype)};
-                pmb_attributes = []})
+               Mb.mk name
+                 (Mod.constraint_
+                    (untype_module_expr mexpr)
+                    (untype_module_type mtype)
+                 )
+             )
              list)
     | Tstr_modtype (_id, name, mtype) ->
         Pstr_modtype {pmtb_name=name; pmtb_type=untype_module_type mtype;
@@ -175,9 +176,11 @@ and untype_pattern pat =
         Ppat_construct (lid,
           (match args with
               [] -> None
-            | args -> Some
-                  { ppat_desc = Ppat_tuple (List.map untype_pattern args);
-                  ppat_loc = pat.pat_loc; }
+            | args ->
+                Some
+                  (Pat.tuple ~loc:pat.pat_loc
+                     (List.map untype_pattern args)
+                  )
           ), explicit_arity)
     | Tpat_variant (label, pato, _) ->
         Ppat_variant (label, match pato with
@@ -190,10 +193,7 @@ and untype_pattern pat =
     | Tpat_or (p1, p2, _) -> Ppat_or (untype_pattern p1, untype_pattern p2)
     | Tpat_lazy p -> Ppat_lazy (untype_pattern p)
   in
-  {
-    ppat_desc = desc;
-    ppat_loc = pat.pat_loc;
-  }
+  Pat.mk ~loc:pat.pat_loc desc
 
 and option f x = match x with None -> None | Some e -> Some (f e)
 
@@ -208,8 +208,7 @@ and untype_extra (extra, loc) sexp =
     | Texp_poly cto -> Pexp_poly (sexp, option untype_core_type cto)
     | Texp_newtype s -> Pexp_newtype (s, sexp)
   in
-  { pexp_desc = desc;
-    pexp_loc = loc }
+  Exp.mk ~loc desc
 
 and untype_expression exp =
   let desc =
@@ -247,9 +246,9 @@ and untype_expression exp =
           (match args with
               [] -> None
           | [ arg ] -> Some (untype_expression arg)
-          | args -> Some
-            { pexp_desc = Pexp_tuple (List.map untype_expression args);
-              pexp_loc = exp.exp_loc; }
+          | args ->
+              Some
+                (Exp.tuple ~loc:exp.exp_loc (List.map untype_expression args))
           ), explicit_arity)
     | Texp_variant (label, expo) ->
         Pexp_variant (label, match expo with
@@ -310,8 +309,7 @@ and untype_expression exp =
         Pexp_pack (untype_module_expr mexpr)
   in
   List.fold_right untype_extra exp.exp_extra
-    { pexp_loc = exp.exp_loc;
-      pexp_desc = desc }
+    (Exp.mk ~loc:exp.exp_loc desc)
 
 and untype_package_type pack =
   (pack.pack_txt,
@@ -393,10 +391,7 @@ and untype_module_type mty =
     | Tmty_typeof mexpr ->
         Pmty_typeof (untype_module_expr mexpr)
   in
-  {
-    pmty_desc = desc;
-    pmty_loc = mty.mty_loc;
-  }
+  Mty.mk ~loc:mty.mty_loc desc
 
 and untype_with_constraint lid cstr =
   match cstr with
@@ -428,10 +423,7 @@ and untype_module_expr mexpr =
         (* TODO , untype_package_type pack) *)
 
   in
-  {
-    pmod_desc = desc;
-    pmod_loc = mexpr.mod_loc;
-  }
+  Mod.mk ~loc:mexpr.mod_loc desc
 
 and untype_class_expr cexpr =
   let desc = match cexpr.cl_desc with
@@ -524,7 +516,7 @@ and untype_core_type ct =
     | Ttyp_poly (list, ct) -> Ptyp_poly (list, untype_core_type ct)
     | Ttyp_package pack -> Ptyp_package (untype_package_type pack)
   in
-  { ptyp_desc = desc; ptyp_loc = ct.ctyp_loc }
+  Typ.mk ~loc:ct.ctyp_loc desc
 
 and untype_core_field_type cft =
   { pfield_desc = (match cft.field_desc with

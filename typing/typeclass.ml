@@ -342,15 +342,15 @@ let type_constraint val_env sty sty' loc =
   end;
   (cty, cty')
 
-let make_method self_loc cl_num expr =
-  let mkpat d = { ppat_desc = d; ppat_loc = self_loc } in
-  let mkid s = mkloc s self_loc in
-  { pexp_desc =
-      Pexp_function ("", None,
-                     [mkpat (Ppat_alias (mkpat (Ppat_var (mkid "self-*")),
-                                         mkid ("self-" ^ cl_num))),
-                      expr]);
-    pexp_loc = expr.pexp_loc }
+let make_method loc cl_num expr =
+  let open Ast_helper in
+  let mkid s = mkloc s loc in
+  Exp.function_ ~loc:expr.pexp_loc "" None
+    [
+     Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num)),
+     expr
+    ]
+
 
 (*******************************)
 
@@ -837,28 +837,30 @@ and class_expr cl_num val_env met_env scl =
           cl_env = val_env}
   | Pcl_fun (l, Some default, spat, sbody) ->
       let loc = default.pexp_loc in
-      let scases =
-        [{ppat_loc = loc; ppat_desc = Ppat_construct (
-          mknoloc (Longident.(Ldot (Lident"*predef*", "Some"))),
-          Some{ppat_loc = loc; ppat_desc = Ppat_var (mknoloc "*sth*")},
-          false)},
-         {pexp_loc = loc; pexp_desc =
-          Pexp_ident(mknoloc (Longident.Lident"*sth*"))};
-         {ppat_loc = loc; ppat_desc =
-          Ppat_construct(mknoloc (Longident.(Ldot (Lident"*predef*", "None"))),
-                         None, false)},
-         default] in
+      let open Ast_helper in
+      let scases = [
+        Pat.construct ~loc
+          (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
+          (Some (Pat.var ~loc (mknoloc "*sth*")))
+          false,
+        Exp.ident ~loc (mknoloc (Longident.Lident "*sth*"));
+
+        Pat.construct ~loc
+          (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
+          None
+          false,
+        default;
+       ]
+      in
       let smatch =
-        {pexp_loc = loc; pexp_desc =
-         Pexp_match({pexp_loc = loc; pexp_desc =
-                     Pexp_ident(mknoloc (Longident.Lident"*opt*"))},
-                    scases)} in
+        Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+          scases
+      in
       let sfun =
-        {pcl_loc = scl.pcl_loc; pcl_desc =
-         Pcl_fun(l, None,
-                 {ppat_loc = loc; ppat_desc = Ppat_var (mknoloc "*opt*")},
-                 {pcl_loc = scl.pcl_loc; pcl_desc =
-                  Pcl_let(Default, [spat, smatch], sbody)})}
+        Cl.fun_ ~loc:scl.pcl_loc
+          l None
+          (Pat.var ~loc (mknoloc "*opt*"))
+          (Cl.let_ ~loc:scl.pcl_loc Default [spat, smatch] sbody)
       in
       class_expr cl_num val_env met_env sfun
   | Pcl_fun (l, None, spat, scl') ->
@@ -1559,12 +1561,9 @@ let () =
 
 (* Approximate the class declaration as class ['params] id = object end *)
 let approx_class sdecl =
-  let self' =
-    { ptyp_desc = Ptyp_any; ptyp_loc = Location.none } in
-  let clty' =
-    { pcty_desc = Pcty_signature { pcsig_self = self';
-        pcsig_fields = []; pcsig_loc = Location.none };
-      pcty_loc = sdecl.pci_expr.pcty_loc } in
+  let open Ast_helper in
+  let self' = Typ.any () in
+  let clty' = Cty.signature ~loc:sdecl.pci_expr.pcty_loc (Csig.mk self' []) in
   { sdecl with pci_expr = clty' }
 
 let approx_class_declarations env sdecls =

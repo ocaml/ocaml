@@ -100,8 +100,6 @@ let rec make_params n = function
     [] -> []
   | _ :: l -> ("a" ^ string_of_int n) :: make_params (n+1) l
 
-let wrap_param s = {ptyp_desc=Ptyp_var s; ptyp_loc=Location.none}
-
 let make_next_first rs rem =
   if rs = Trec_first then
     match rem with
@@ -283,8 +281,6 @@ let rec approx_modtype env smty =
   | Pmty_typeof smod ->
       let (_, mty) = !type_module_type_of_fwd env smod in
       mty
-  | Pmty_attribute (smty, _attrs) ->
-      approx_modtype env smty
   | Pmty_extension (s, _arg) ->
       raise (Error (smty.pmty_loc, env, Extension s))
 
@@ -443,8 +439,6 @@ let rec transl_modtype env smty =
   | Pmty_typeof smod ->
       let tmty, mty = !type_module_type_of_fwd env smod in
       mkmty (Tmty_typeof tmty) mty env loc
-  | Pmty_attribute (smty, _attrs) ->
-      transl_modtype env smty
   | Pmty_extension (s, _arg) ->
       raise (Error (smty.pmty_loc, env, Extension s))
 
@@ -925,8 +919,6 @@ let rec type_module sttn funct_body anchor env smod =
            mod_type = mty;
            mod_env = env;
            mod_loc = smod.pmod_loc }
-  | Pmod_attribute (me, _attrs) ->
-      type_module sttn funct_body anchor env me
   | Pmod_extension (s, _arg) ->
       raise (Error (smod.pmod_loc, env, Extension s))
 

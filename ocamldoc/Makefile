@@ -150,6 +150,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/parsing/location.cmo\
 	$(OCAMLSRCDIR)/parsing/longident.cmo \
 	$(OCAMLSRCDIR)/parsing/syntaxerr.cmo \
+	$(OCAMLSRCDIR)/parsing/ast_helper.cmo \
 	$(OCAMLSRCDIR)/parsing/parser.cmo \
 	$(OCAMLSRCDIR)/parsing/lexer.cmo \
 	$(OCAMLSRCDIR)/parsing/parse.cmo \

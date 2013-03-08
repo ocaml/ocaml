@@ -68,6 +68,29 @@ Attributes on items:
   Here, id1, id3, id4, id5 are stand-alone attributes, while
   id2 is attached to the type t and id6 is attached to the type s.
 
+=== Extension nodes
+
+Extension nodes replace valid components in the syntax tree.  They are
+normally interpreted and expanded by AST mapper.  The type-checker
+fails when it encounters such an extension node.  An extension node is
+made of an identifier (an "LIDENT", written id below) and an optional
+expression (written expr below).
+
+Two syntaxes exist for extension node:
+
+As expressions, type expressions, module expressions, module type expressions,
+patterns (TODO: class expressions, class type expressions):
+
+  [%id expr]
+
+As structure or signature item (TODO: class fields?):
+ 
+  [%%id expr]
+
+As other structure or signature items, attributes can be attached to a
+[%%id expr] extension node.
+
+
 === Alternative syntax for attributes and extensions on specific kinds of nodes
 
 All expression constructions starting with a keyword, a combination of
@@ -120,62 +143,46 @@ match%foo e with ...       ====   [%foo match e with ...]
 
 === Representation of attributes in the Parsetree
 
-For attributes on expressions and similar categories, attributes are
-just another possible constructor (one single attribute per node):
-
-and expression_desc =
-  ....
-  | Pexp_attribute of (expression * attribute)
-
-Note: we currently don't distinguish between prefix and postfix attributes.
-
-Similarly, attributes as standalone signature/structure items are represented
+Attributes as standalone signature/structure items are represented
 by a new constructor:
+
   | Psig_attribute of attribute
   | Pstr_attribute of attribute
 
-For "declarations"-like items (type declarations, module declarations,
-..., but also constructors and record labels), all attributes are stored
-in an extra field in their record (again, without making the distinction
-between prefix and postfix attributes):
+Most other attributes are stored in an extra field in their record:
 
+and expression =  {
+  ...
+  pexp_attributes: attribute list;
+  ...
+}
 and type_declaration = {
-   ...
-   ptype_attributes: attribute list;
-   ...
+  ...
+  ptype_attributes: attribute list;
+  ...
+}
 
-For other kinds of items (currently: open/include stataments,
-exception rebind), the attributes are stored directly in the
-constructor of the item:
+In a previous version, attributes on expressions (and types, patterns,
+etc) used to be stored as a new constructor.  The current choice makes
+it easier to pattern match on structured AST fragments while ignoring
+attributes.
+
+For open/include signature/structure items and exception rebind
+structure item, the attributes are stored directly in the constructor
+of the item:
 
   | Pstr_open of Longident.t loc * attribute list
 
 
 
-=== Extension nodes
-
-Extension nodes replace valid components in the syntax tree.  They are
-normally interpreted and expanded by AST mapper.  The type-checker
-fails when it encounters such an extension node.  An extension node is
-made of an identifier (an "LIDENT", written id below) and an optional
-expression (written expr below).
-
-Two syntaxes exist for extension node:
-
-As expressions, type expressions, module expressions, module type expressions,
-patterns (TODO: class expressions, class type expressions):
-
-  [%id expr]
-
-As structure or signature item (TODO: class fields?):
- 
-  [%%id expr]
-
-As other structure or signature items, attributes can be attached to a
-[%%id expr] extension node.
-
-
 === Other changes to the parser and Parsetree
+
+--- Introducing Ast_helper module
+
+This module simplifies the creation of AST fragments, without having to
+touch the concrete type definitions of Parsetree. Record and sum types
+are encapsulated in builder functions, with some optional arguments, e.g.
+to represent attributes.
 
 --- Relaxing the syntax for signatures and structures
 

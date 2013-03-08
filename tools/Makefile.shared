@@ -38,7 +38,7 @@ opt.opt: ocamldep.opt read_cmt.opt
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
-  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo \
+  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
   ccomp.cmo pparse.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
@@ -64,7 +64,7 @@ install::
 CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
-  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
+  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
@@ -165,7 +165,7 @@ clean::
 
 ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
-  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
+  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 addlabels: addlabels.cmo
 	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
@@ -211,6 +211,7 @@ READ_CMT= \
           ../parsing/longident.cmo \
           ../parsing/lexer.cmo \
           ../parsing/pprintast.cmo \
+          ../parsing/ast_helper.cmo \
           ../typing/ident.cmo \
           ../typing/path.cmo \
           ../typing/types.cmo \

@@ -14169,19 +14169,19 @@ module Struct =
             let with_loc txt loc =
               Camlp4_import.Location.mkloc txt (mkloc loc)
               
-            let mktyp loc d = { ptyp_desc = d; ptyp_loc = mkloc loc; }
+            let mktyp loc d = { ptyp_desc = d; ptyp_loc = mkloc loc; ptyp_attributes = []}
               
-            let mkpat loc d = { ppat_desc = d; ppat_loc = mkloc loc; }
+            let mkpat loc d = { ppat_desc = d; ppat_loc = mkloc loc; ppat_attributes = []}
               
-            let mkghpat loc d = { ppat_desc = d; ppat_loc = mkghloc loc; }
+            let mkghpat loc d = { ppat_desc = d; ppat_loc = mkghloc loc; ppat_attributes = []}
               
-            let mkexp loc d = { pexp_desc = d; pexp_loc = mkloc loc; }
+            let mkexp loc d = { pexp_desc = d; pexp_loc = mkloc loc; pexp_attributes = []}
               
-            let mkmty loc d = { pmty_desc = d; pmty_loc = mkloc loc; }
+            let mkmty loc d = { pmty_desc = d; pmty_loc = mkloc loc; pmty_attributes = []}
               
             let mksig loc d = { psig_desc = d; psig_loc = mkloc loc; }
               
-            let mkmod loc d = { pmod_desc = d; pmod_loc = mkloc loc; }
+            let mkmod loc d = { pmod_desc = d; pmod_loc = mkloc loc; pmod_attributes = []}
               
             let mkstr loc d = { pstr_desc = d; pstr_loc = mkloc loc; }
               
@@ -15380,7 +15380,9 @@ module Struct =
                   {pmb_name=with_loc s loc;
                    pmb_expr=
                    {pmod_loc=Camlp4_import.Location.none;
-                    pmod_desc=Pmod_constraint(module_expr me,module_type mt)};
+                    pmod_desc=Pmod_constraint(module_expr me,module_type mt);
+                    pmod_attributes=[];
+                   };
                    pmb_attributes=[]} :: acc
               | _ -> assert false
             and module_expr =
