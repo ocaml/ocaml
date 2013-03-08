@@ -1969,7 +1969,7 @@ item_extension:
   LBRACKETPERCENTPERCENT attr_id opt_expr RBRACKET { ($2, $3) }
 ;
 opt_expr:
-    expr { $1 }
+    seq_expr { $1 }
   |      { ghunit () }
 ;
 %%
