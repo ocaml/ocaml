@@ -345,7 +345,7 @@ type t = { foo: int; bar: int }
 
 -- pa_monad
 
-begin[@monad]
+begin%monad
   a <-- [1; 2; 3];
   b <-- [3; 4; 5];
   return (a + b)
@@ -353,12 +353,11 @@ end
 
 -- pa_lwt
 
-let[@lwt] x = start_thread foo
+let%lwt x = start_thread foo
 and y = start_other_thread foo in
-try[@lwt]
-  for[@lwt] (x, y) in waiting_threads do
-    compute blah
-  done
+try%lwt
+  let%for_lwt (x, y) = waiting_threads in
+  compute blah
 with Killed -> bar
 
 -- Bolt
