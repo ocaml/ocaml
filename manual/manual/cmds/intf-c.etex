@@ -9,8 +9,15 @@ be linked with OCaml code and called from OCaml functions.
 
 \subsection{Declaring primitives}
 
+\begin{syntax}
+definition: ...
+            | 'external' value-name ':' typexpr '=' external-declaration
+;
+external-declaration: string-literal [ string-literal [ string-literal ] ]
+\end{syntax}
+
 User primitives are declared in an implementation file or
-"struct"\ldots"end" module expression using the "external" keyword:
+@"struct"\ldots"end"@ module expression using the @"external"@ keyword:
 \begin{alltt}
         external \var{name} : \var{type} = \var{C-function-name}
 \end{alltt}
@@ -26,7 +33,7 @@ Primitives with several arguments are always curried. The C function
 does not necessarily have the same name as the ML function.
 
 External functions thus defined can be specified in interface files or
-"sig"\ldots"end" signatures either as regular values
+@"sig"\ldots"end"@ signatures either as regular values
 \begin{alltt}
         val \var{name} : \var{type}
 \end{alltt}
@@ -60,6 +67,10 @@ primitive.  For instance,
 "f" has arity 1, but "g" has arity 2.  This allows a primitive to
 return a functional value (as in the "f" example above): just remember
 to name the functional return type in a type abbreviation.
+
+Note that the language accepts external declarations with one or two
+flag strings in addition to the C function's name.  These flags are
+reserved for the implementation of the standard library.
 
 \subsection{Implementing primitives}
 
@@ -633,18 +644,18 @@ $\hbox{"Wosize_val"}(v)-1$.
 \var{v} in the field number \var{n} of value \var{b}, which must be a
 structured block.
 \item "Code_val("\var{v}")" returns the code part of the closure \var{v}.
-\item "caml_string_length("\var{v}")" returns the length (number of characters)
+\item "caml_string_length("\var{v}")" returns the length (number of bytes)
 of the string \var{v}.
-\item "Byte("\var{v}", "\var{n}")" returns the $n\th$ character of the string
+\item "Byte("\var{v}", "\var{n}")" returns the $n\th$ byte of the string
 \var{v}, with type "char". Characters are numbered from 0 to
 $\hbox{"string_length"}(v)-1$.
-\item "Byte_u("\var{v}", "\var{n}")" returns the $n\th$ character of the string
+\item "Byte_u("\var{v}", "\var{n}")" returns the $n\th$ byte of the string
 \var{v}, with type "unsigned char". Characters are numbered from 0 to
 $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
 \var{v}, with type "char *". This pointer is a valid C string: there is a
-null character after the last character in the string. However, OCaml
-strings can contain embedded null characters, which will confuse
+null byte after the last byte in the string. However, OCaml
+strings can contain embedded null bytes, which will confuse
 the usual C functions over strings.
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
@@ -692,7 +703,7 @@ satisfy the GC constraints.
 "caml_alloc_tuple("\var{n}")" returns a fresh block of size
 \var{n} words, with tag 0.
 \item
-"caml_alloc_string("\var{n}")" returns a string value of length \var{n} characters.
+"caml_alloc_string("\var{n}")" returns a string value of length \var{n} bytes.
 The string initially contains garbage.
 \item
 "caml_copy_string("\var{s}")" returns a string value containing a copy of
@@ -1641,7 +1652,7 @@ The "compare" field can be set to "custom_compare_default"; this
 default comparison function simply raises "Failure".
 
 \item "int (*compare_ext)(value v1, value v2)" \\
-(Since 3.12.1.)  
+(Since 3.12.1)
 The "compare_ext" field contains a pointer to a C function that is
 called whenever one custom block and one unboxed integer are compared using OCaml's generic
 comparison operators ("=", "<>", "<=", ">=", "<", ">" and

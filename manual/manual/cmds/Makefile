@@ -24,6 +24,9 @@ ocamldoc.tex: ocamldoc.etex $(TRANSF)
 top.tex: top.etex $(TRANSF)
 	$(TRANSF) < top.etex | $(TEXQUOTE) > top.tex
 
+intf-c.tex: intf-c.etex $(TRANSF)
+	$(TRANSF) < intf-c.etex | $(TEXQUOTE) > intf-c.tex
+
 lexyacc.tex: lexyacc.etex $(TRANSF)
 	$(TRANSF) < lexyacc.etex | $(TEXQUOTE) > lexyacc.tex
 
