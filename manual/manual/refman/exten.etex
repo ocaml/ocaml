@@ -11,6 +11,11 @@ OCaml reference manual.
 (Introduced in Objective Caml 3.07)
 
 \begin{syntax}
+constant: ...
+          | int32-literal
+          | int64-literal
+          | nativeint-literal
+;
 int32-literal: integer-literal 'l'
 ;
 int64-literal: integer-literal 'L'
@@ -112,55 +117,82 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
    is immediately linked to @name@.
 \end{itemize}
 
-\section{Range patterns}
+\section{Range patterns} \label{s:range-patterns}
 
 (Introduced in Objective Caml 1.00)
 
+\begin{syntax}
+pattern: ...
+         | char-literal '..' char-literal
+\end{syntax}
+
 In patterns, OCaml recognizes the form
-@"'" @c@ "'" ".." "'" @d@ "'"@
-(two character literals separated by~"..") as shorthand for the pattern
+@"'" @c@ "'" ".." "'" @d@ "'"@ as shorthand for the pattern
 \begin{center}
 @"'" @c@ "'" "|" "'" @c@_1 "'" "|" "'" @c@_2 "'" "|" \ldots
         "|" "'" @c@_n "'" "|" "'" @d@ "'"@
 \end{center}
 where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
 that occur between \var{c} and \var{d} in the ASCII character set. For
-instance, the pattern "'0'..'9'" matches all characters that are digits.
+instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
 
-\section{Assertion checking}
+\section{Assertion checking}\label{s:assert}
 \ikwd{assert\@\texttt{assert}}
 
 (Introduced in Objective Caml 1.06)
 
+\begin{syntax}
+expr: ...
+      | 'assert' expr
+\end{syntax}
+
 OCaml supports the @"assert"@ construct to check debugging assertions.
 The expression @"assert" expr@ evaluates the expression @expr@ and
-returns @"()"@ if @expr@ evaluates to @"true"@.  Otherwise, the exception
+returns @"()"@ if @expr@ evaluates to @"true"@.  If it evaluates to
+@"false"@ the exception
 "Assert_failure" is raised with the source file name and the
 location of @expr@ as arguments.  Assertion
-checking can be turned off with the "-noassert" compiler option.
+checking can be turned off with the "-noassert" compiler option.  In
+this case, @expr@ is not evaluated at all.
 
 As a special case, @"assert false"@ is reduced to
-@'raise' '('@"Assert_failure ..."@')'@, which is polymorphic (and
-is not turned off by the "-noassert" option).
+@'raise' '('@"Assert_failure ..."@')'@, which gives it a polymorphic
+type.  This means that it can be used in place of any expression (for
+example as a branch of any pattern-matching).  It also means that
+the @"assert false"@ ``assertions'' cannot be turned off by the
+"-noassert" option.
 %
 \index{Assertfailure\@\verb`Assert_failure`}
 
 
-\section{Lazy evaluation}
+\section{Lazy evaluation} \label{s:lazy}
 \ikwd{lazy\@\texttt{lazy}}
 
-(Introduced in Objective Caml 1.06 for expressions;
- in Objective Caml 3.11 for patterns)
+\subsection{Lazy expressions}
+(Introduced in Objective Caml 1.06)
+
+\begin{syntax}
+expr: ...
+      | 'lazy' expr
+\end{syntax}
 
 The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
 encapsulates the computation of @expr@.  The argument @expr@ is not
 evaluated at this point in the program.  Instead, its evaluation will
-be performed the first time "Lazy.force" is applied to the value
+be performed the first time the function "Lazy.force" is applied to the value
 \var{v}, returning the actual value of @expr@. Subsequent applications
 of "Lazy.force" to \var{v} do not evaluate @expr@ again. Applications
-of "Lazy.force" may be implicit through pattern matching.
+of "Lazy.force" may be implicit through pattern matching (see below).
 
-The pattern @"lazy" pattern@ matches values \var{v} of type "Lazy.t",
+\subsection{Lazy patterns}
+(Introduced in Objective Caml 3.11)
+
+\begin{syntax}
+pattern: ...
+         | 'lazy' pattern
+\end{syntax}
+
+The pattern @"lazy" pattern@ matches a value \var{v} of type "Lazy.t",
 provided @pattern@ matches the result of forcing \var{v} with
 "Lazy.force". A successful match of a pattern containing @"lazy"@
 sub-patterns forces the corresponding parts of the value being matched, even
@@ -170,7 +202,7 @@ contain @"lazy"@ sub-patterns may imply forcing parts of the value,
 even when the pattern selected in the end has no @"lazy"@ sub-pattern.
 
 For more information, see the description of module "Lazy" in the
-standard library (see
+standard library (
 \ifouthtml
 \ahref{libref/Lazy.html}{Module \texttt{Lazy}}\else section~\ref{Lazy}\fi).
 %
@@ -625,7 +657,7 @@ class-field:
 The @"(type" typeconstr-name")"@ syntax construction by itself does not make
 polymorphic the type variable it introduces, but it can be combined
 with explicit polymorphic annotations where needed.
-The above rule provided as syntactic sugar to make this easier:
+The above rule is provided as syntactic sugar to make this easier:
 \begin{verbatim}
         let rec f : type t1 t2. t1 * t2 list -> t1 = ...
 \end{verbatim}
@@ -1157,7 +1189,7 @@ to implement dynamic types.
           | Some Eq -> Some x
 \end{verbatim}
 
-\section{Syntax for Bigarray access}
+\section{Syntax for Bigarray access}\label{s:bigarray-access}
 
 (Introduced in Objective Caml 3.00)
 
@@ -1168,19 +1200,32 @@ expr:
         | expr '.{' expr { ',' expr } '}' '<-' expr
 \end{syntax}
 
-This extension provides a short syntax for getting and setting
+This extension provides syntactic sugar for getting and setting
 elements in the arrays provided by the
 "Bigarray"[\moduleref{Bigarray}] library.
 
-The expression @expr_0 '.{' expr_1 '}'@ is equivalent to
-@'('@"Bigarray.Array1.get "@expr_0 expr_1')'@, and the expression @expr_0 '.{'
-expr_1 '}' '<-' expr_2@ is equivalent to @'('@"Bigarray.Array1.set "@expr_0
-expr_1 expr_2')'@.
+The short expressions are translated into calls to functions of the
+"Bigarray" module as described in the following table.
 
-In the same way, @expr_0 '.{' expr_1 ',' expr_2 '}'@ expands to a call to
-"Bigarray.Array2.get", and likewise for "Bigarray.Array2.set" and for
-the functions of "Bigarray.Array3".
+\begin{tableau}{|l|l|}{expression}{translation}
+\entree{@expr_0'.{'expr_1'}'@}
+       {"Bigarray.Array1.get "@expr_0 expr_1@}
+\entree{@expr_0'.{'expr_1'}' '<-'expr@}
+       {"Bigarray.Array1.set "@expr_0 expr_1 expr@}
+\entree{@expr_0'.{'expr_1',' expr_2'}'@}
+       {"Bigarray.Array2.get "@expr_0 expr_1 expr_2@}
+\entree{@expr_0'.{'expr_1',' expr_2'}' '<-'expr@}
+       {"Bigarray.Array2.set "@expr_0 expr_1 expr_2 expr@}
+\entree{@expr_0'.{'expr_1',' expr_2',' expr_3'}'@}
+       {"Bigarray.Array3.get "@expr_0 expr_1 expr_2 expr_3@}
+\entree{@expr_0'.{'expr_1',' expr_2',' expr_3'}' '<-'expr@}
+       {"Bigarray.Array3.set "@expr_0 expr_1 expr_2 expr_3 expr@}
+\entree{@expr_0'.{'expr_1',' \ldots',' expr_n'}'@}
+       {"Bigarray.Genarray.get "@ expr_0 '[|' expr_1',' \ldots ','
+        expr_n '|]'@}
+\entree{@expr_0'.{'expr_1',' \ldots',' expr_n'}' '<-'expr@}
+       {"Bigarray.Genarray.set "@ expr_0 '[|' expr_1',' \ldots ','
+        expr_n '|]' expr@}
+\end{tableau}
 
-Finally, when $n > 3$, the expression @expr_0 '.{' expr_1 ',' \ldots
-',' expr_n '}'@ expands to @'('@"Bigarray.Genarray.get "@'[|' expr_1 ','
-\ldots ',' expr_n '|])'@ and likewise for "Bigarray.Genarray.set".
+The last two entries are valid for any $n > 3$.

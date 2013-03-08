@@ -69,8 +69,6 @@ expr:
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
   | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } [';'] ] '>}'
-  | 'assert' expr
-  | 'lazy' expr
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
@@ -118,10 +116,11 @@ precedence come first. For infix and prefix symbols, we write
 \ikwd{let\@\texttt{let}}%
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
-\entree{".   .(   .["}{--}
+\entree{".   .(   .[   .{" (see section~\ref{s:bigarray-access})}{--}
 \entree{"#"}{--}
 \entree{function application, constructor application, tag
-        application, "assert", "lazy"}{left}
+        application, "assert" (see~\ref{s:assert}),
+        "lazy" (see~\ref{s:lazy})}{left}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots"   lsl   lsr   asr"}{right}
 \entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod   land   lor   lxor"}{left}
@@ -609,6 +608,9 @@ library module "Pervasives" in chapter~\ref{c:corelib} for more
 details). Their meaning may be changed at any time using
 @"let" "(" infix-op ")" name_1 name_2 "=" \ldots@
 
+Note: the operators @'&&'@, @'||'@, and @'~-'@ are handled specially
+and it is not advisable to change their meaning.
+
 The keywords @'-'@ and @'-.'@ can appear both as infix and
 prefix operators. When they appear as prefix operators, they are
 interpreted respectively as the functions @'(~-)'@ and @'(~-.)'@.
@@ -616,10 +618,6 @@ interpreted respectively as the functions @'(~-)'@ and @'(~-.)'@.
 %% Conversely, a regular function identifier can also be used as an infix
 %% operator by enclosing it in backquotes: @expr_1 '`' ident '`' expr_2@
 %% is interpreted as the application @ident expr_1 expr_2@.
-
-Note: due to the way they are handled by the current implementation,
-it is not advisable to change the meaning of the @'&&'@, @'||'@, and
-@'~-'@ operators.
 
 \begin{tableau}{|l|p{12cm}|}{Operator}{Initial meaning}
 \entree{"+"}{Integer addition.}

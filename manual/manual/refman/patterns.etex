@@ -19,7 +19,6 @@ pattern:
   | '[' pattern { ';' pattern } [ ';' ] ']'
   | pattern '::' pattern
   | '[|' pattern { ';' pattern } [ ';' ] '|]'
-  | "lazy" pattern
 \end{syntax}
 
 The table below shows the relative precedences and associativity of
@@ -27,7 +26,8 @@ operators and non-closed pattern constructions. The constructions with
 higher precedences come first.
 \ikwd{as\@\texttt{as}}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
-\entree{"lazy"}{--}
+\entree{".." (see section~\ref{s:range-patterns})}{--}
+\entree{"lazy" (see section~\ref{s:lazy})}{--}
 \entree{Constructor application, Tag application}{right}
 \entree{"::"}{right}
 \entree{","}{--}
