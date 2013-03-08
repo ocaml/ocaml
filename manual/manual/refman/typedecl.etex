@@ -25,8 +25,8 @@ type-equation:
           '=' typexpr
 ;
 type-representation:
-          '=' [ '|' ] constr-decl { '|' constr-decl }
-        | '=' '{' field-decl { ';' field-decl } [ ';' ] '}'
+          '=' ['|'] constr-decl { '|' constr-decl }
+        | '=' '{' field-decl { ';' field-decl } [';'] '}'
 ;
 type-params:
           type-param
@@ -43,7 +43,7 @@ constr-decl:
           constr-name [ 'of' typexpr { '*' typexpr } ]
 ;
 field-decl:
-          [ 'mutable' ] field-name ':' poly-typexpr
+          ['mutable'] field-name ':' poly-typexpr
 ;
 type-constraint:
     'constraint' "'" ident '=' typexpr

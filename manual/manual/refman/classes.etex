@@ -283,13 +283,13 @@ into the current class.  The addition of a method will override any
 previously defined method of the same name.
 
 \ikwd{as\@\texttt{as}}
-An ancestor can be bound by prepending the construct @'as' value-name@
-to the inheritance construct above.  @value-name@ is not a true
+An ancestor can be bound by appending @'as' value-name@
+to the inheritance construct.  @value-name@ is not a true
 variable and can only be used to select a method, i.e. in an expression
 @value-name '#' method-name@.  This gives access to the
 method @method-name@ as it was defined in the parent class even if it is
 redefined in the current class.
-The scope of an ancestor binding is limited to the current class.
+The scope of this ancestor binding is limited to the current class.
 The ancestor method may be called from a subclass but only indirectly.
 
 \subsubsection*{Instance variable definition}
@@ -304,8 +304,8 @@ expression @expr@.
 The flag @'mutable'@ allows physical modification of this variable by
 methods.
 
-An instance variables can only be used in the following methods and
-initializers of the class.
+An instance variable can only be used in the methods and
+initializers that follow its definition.
 
 Since version 3.10, redefinitions of a visible instance variable with
 the same name do not create a new variable, but are merged, using the
@@ -321,7 +321,7 @@ other instance variables with the same name.
 \ikwd{val\@\texttt{val}}
 \ikwd{mutable\@\texttt{mutable}}
 
-Variable specification is written @'val' ['mutable'] 'virtual'
+A variable specification is written @'val' ['mutable'] 'virtual'
 inst-var-name ':' typexpr@.  It specifies whether the variable is
 modifiable, and gives its type.
 
@@ -332,7 +332,7 @@ Virtual instance variables were added in version 3.10.
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
 
-Method definition is written @'method' method-name '=' expr@.  The
+A method definition is written @'method' method-name '=' expr@.  The
 definition of a method overrides any previous definition of this
 method.  The method will be public (that is, not private) if any of
 the definition states so.
@@ -364,7 +364,7 @@ manipulating instance variables and duplicating self:
 expr:
     \ldots
   | inst-var-name '<-' expr
-  | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } ] [';']'>}'
+  | '{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } [';'] ] '>}'
 \end{syntax}
 
 The expression @inst-var-name '<-' expr@ modifies in-place the current
@@ -373,7 +373,7 @@ value of @expr@. Of course, this instance variable must have been
 declared mutable.
 
 The expression
-@'{<' [ inst-var-name '=' expr { ';' inst-var-name '=' expr } ] '>}'@
+@'{<' inst-var-name_1 '=' expr_1 ';' \ldots ';' inst-var-name_n '=' expr_n '>}'@
 evaluates to a copy of the current object in which the values of
 instance variables @inst-var-name_1, \ldots, inst-var-name_n@ have
 been replaced by the values of the corresponding expressions @expr_1,
@@ -500,4 +500,4 @@ be parameterized by some type parameters. If any method in the class
 type body is virtual, the definition must be flagged @'virtual'@.
 
 Two class type definitions match if they have the same type parameters
-and the types they expand to match.
+and they expand to matching types.
