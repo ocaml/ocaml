@@ -243,7 +243,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_let (rec_flag, list, exp) ->
             iter_bindings rec_flag list;
             iter_expression exp
-        | Texp_monadic (list, exp) ->
+        | Texp_bind (list, exp) ->
             iter_bindings_norec list;
             iter_expression exp
         | Texp_function (label, cases, _) ->

@@ -172,7 +172,7 @@ and rw_exp iflag sexp =
     rewrite_patexp_list iflag spat_sexp_list;
     rewrite_exp iflag sbody
 
-  | Pexp_monadic(spat_sexp_list, sbody) ->
+  | Pexp_bind(spat_sexp_list, sbody) ->
     rewrite_patexp_list iflag spat_sexp_list;
     rewrite_exp iflag sbody
 

@@ -123,7 +123,7 @@ let iter_expression f e =
         may expr eo; List.iter (fun (_, e) -> expr e) pel
     | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
     | Pexp_let (_, pel, e)
-    | Pexp_monadic (pel, e)
+    | Pexp_bind (pel, e)
     | Pexp_match (e, pel)
     | Pexp_try (e, pel) -> expr e; List.iter (fun (_, e) -> expr e) pel
     | Pexp_array el
@@ -1872,13 +1872,13 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_loc = loc; exp_extra = [];
         exp_type = body.exp_type;
         exp_env = env }
-  | Pexp_monadic(spat_sexp_list, sbody) ->
+  | Pexp_bind(spat_sexp_list, sbody) ->
       let (pat_exp_list, new_env, unpacks) =
         type_let env Default spat_sexp_list None true in
       let body =
         type_expect new_env (wrap_unpacks sbody unpacks) ty_expected in
       re {
-        exp_desc = Texp_monadic(pat_exp_list, body);
+        exp_desc = Texp_bind(pat_exp_list, body);
         exp_loc = loc; exp_extra = [];
         exp_type = body.exp_type;
         exp_env = env }
@@ -3394,7 +3394,7 @@ and type_function loc env ty_expected in_function lab caselist =
         exp_type = instance env (newgenty (Tarrow(lab, ty_arg, ty_res, Cok)));
         exp_env = env }
 
-and type_monadic ?(check = fun s -> Warnings.Unused_var s)
+and type_bind ?(check = fun s -> Warnings.Unused_var s)
              ?(check_strict = fun s -> Warnings.Unused_var_strict s)
     env spat_sexp_list scope allow =
   begin_def();

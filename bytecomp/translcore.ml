@@ -629,8 +629,8 @@ and transl_exp0 e =
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
-  | Texp_monadic(pat_expr_list, body) ->
-    transl_monadic pat_expr_list (event_before body (transl_exp body))
+  | Texp_bind(pat_expr_list, body) ->
+    transl_bind pat_expr_list (event_before body (transl_exp body))
   | Texp_function (_, pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
@@ -989,7 +989,7 @@ and transl_let rec_flag pat_expr_list body =
         (id, lam) in
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
-and transl_monadic pat_expr_list body =
+and transl_bind pat_expr_list body =
   let rec transl = function
         [] ->
           body

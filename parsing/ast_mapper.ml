@@ -258,7 +258,7 @@ module E = struct
   let ident ?loc a = mk ?loc (Pexp_ident a)
   let constant ?loc a = mk ?loc (Pexp_constant a)
   let let_ ?loc a b c = mk ?loc (Pexp_let (a, b, c))
-  let monadic ?loc a b = mk ?loc (Pexp_monadic (a, b))
+  let bind ?loc a b = mk ?loc (Pexp_bind (a, b))
   let function_ ?loc a b c = mk ?loc (Pexp_function (a, b, c))
   let apply ?loc a b = mk ?loc (Pexp_apply (a, b))
   let match_ ?loc a b = mk ?loc (Pexp_match (a, b))
@@ -300,7 +300,7 @@ module E = struct
     | Pexp_ident x -> ident ~loc (map_loc sub x)
     | Pexp_constant x -> constant ~loc x
     | Pexp_let (r, pel, e) -> let_ ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
-    | Pexp_monadic (pel, e) -> monadic ~loc (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
+    | Pexp_bind (pel, e) -> bind ~loc (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
     | Pexp_function (lab, def, pel) -> function_ ~loc lab (map_opt (sub # expr) def) (List.map (map_tuple (sub # pat) (sub # expr)) pel)
     | Pexp_apply (e, l) -> apply ~loc (sub # expr e) (List.map (map_snd (sub # expr)) l)
     | Pexp_match (e, l) -> match_ ~loc (sub # expr e) (List.map (map_tuple (sub # pat) (sub # expr)) l)
