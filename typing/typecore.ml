@@ -1873,53 +1873,15 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_monadic(spat_sexp_list, sbody) ->
-      let default_loc = loc in
-      let scases = [
-         {ppat_loc = default_loc;
-          ppat_desc =
-            Ppat_construct
-              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))),
-               Some {ppat_loc = default_loc;
-                     ppat_desc = Ppat_var (mknoloc "*sth*")},
-               false)},
-         {pexp_loc = default_loc;
-          pexp_desc = Pexp_ident(mknoloc (Longident.Lident "*sth*"))};
-         {ppat_loc = default_loc;
-          ppat_desc = Ppat_construct
-             (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))),
-              None, false)},
-         {pexp_loc = default_loc;
-          pexp_desc = Pexp_ident(mknoloc (Longident.Lident "*predef*"))};
-      ] in
-      let smatch = {
-        pexp_loc = loc;
-        pexp_desc =
-          Pexp_match ({
-            pexp_loc = loc;
-            pexp_desc = Pexp_ident(mknoloc (Longident.Lident "*opt*"))
-            },
-            scases
-          )
-      } in
-      let spat =
-        {ppat_loc = default_loc;
-         ppat_desc = Ppat_construct
-             (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))),
-              None, false)} in
-      let sfun = {
-        pexp_loc = loc;
-        pexp_desc =
-         Pexp_function (
-           "**l**", None,
-           [ {ppat_loc = loc;
-              ppat_desc = Ppat_var (mknoloc "*opt*")},
-             {pexp_loc = loc;
-              pexp_desc = Pexp_let(Default, [spat, smatch], sbody);
-             }
-           ]
-         )
-      } in
-      type_expect ?in_function env sfun ty_expected
+      let (pat_exp_list, new_env, unpacks) =
+        type_let env Default spat_sexp_list None true in
+      let body =
+        type_expect new_env (wrap_unpacks sbody unpacks) ty_expected in
+      re {
+        exp_desc = Texp_monadic(pat_exp_list, body);
+        exp_loc = loc; exp_extra = [];
+        exp_type = body.exp_type;
+        exp_env = env }
   | Pexp_function (l, Some default, [spat, sbody]) ->
       let default_loc = default.pexp_loc in
       let scases = [
