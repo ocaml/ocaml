@@ -27,11 +27,15 @@ module type T = sig
 end;;
 
 (* associativity rules for patterns *)
-match Some (Some 1) with Some Some x -> x;;
-match Some (`Tag 1) with Some `Tag x -> x;;
-match `Tag (Some 1) with `Tag Some x -> x;;
-match `Tag (`Tag 1) with `Tag `Tag x -> x;;
+match Some (Some 1) with Some Some x -> x | _ -> 0;;
+match Some (`Tag 1) with Some `Tag x -> x | _ -> 0;;
+match `Tag (Some 1) with `Tag Some x -> x | _ -> 0;;
+match `Tag (`Tag 1) with `Tag `Tag x -> x | _ -> 0;;
 
+(* negative int32, int64, nativeint constants in patterns *)
+match -1l with -1l -> () | _ -> ();;
+match -1L with -1L -> () | _ -> ();;
+match -1n with -1n -> () | _ -> ();;
 
 (* Even more exotic: not even found in the manual, but used in some *)
 (* programs in testsuite/external/. *)
@@ -45,3 +49,17 @@ let f x : int :> int = x + 1;;
 
 (* "begin end" as an alias for "()" *)
 let x = begin end;;
+
+(* putting "virtual" before "mutable" or "private" *)
+class type virtual ct = object
+  val mutable virtual x : int
+  val virtual mutable y : int
+  method private virtual f : int
+  method virtual private g : int
+end;;
+class virtual c = object
+  val mutable virtual x : int
+  val virtual mutable y : int
+  method private virtual f : int
+  method virtual private g : int
+end;;
