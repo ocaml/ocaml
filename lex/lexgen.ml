@@ -506,7 +506,7 @@ let encode_lexdef def =
   chars_count := 0;
   let entry_list =
     List.map
-      (fun {name=entry_name ; args=args ; shortest=shortest ; clauses= casedef} ->
+      (fun {name=entry_name; args=args; shortest=shortest; clauses=casedef} ->
         let (re,actions,_,ntags) = encode_casedef casedef in
         { lex_name = entry_name;
           lex_regexp = re;
@@ -604,7 +604,8 @@ let followpos size entry_list =
         fill s r2
     | Star r ->
         fill (TransSet.union (firstpos r) s) r in
-  List.iter (fun (entry,_,_) -> fill TransSet.empty entry.lex_regexp) entry_list ;
+  List.iter (fun (entry,_,_) -> fill TransSet.empty entry.lex_regexp)
+            entry_list;
   v
 
 (************************)

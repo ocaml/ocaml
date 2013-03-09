@@ -73,7 +73,7 @@ static void init_atoms(void)
   for(i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
   if (caml_page_table_add(In_static_data,
                           caml_atom_table, caml_atom_table + 256) != 0) {
-    caml_fatal_error("Fatal error: not enough memory for the initial page table");
+    caml_fatal_error("Fatal error: not enough memory for initial page table");
   }
 }
 
@@ -333,7 +333,7 @@ extern void caml_signal_thread(void * lpParam);
 #endif
 
 #ifdef _MSC_VER
- 
+
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler();
 

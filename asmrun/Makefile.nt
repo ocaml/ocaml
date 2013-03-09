@@ -14,9 +14,10 @@
 include ../config/Makefile
 
 CC=$(NATIVECC)
-CFLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(NATIVECCCOMPOPTS)
+CFLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) \
+       $(NATIVECCCOMPOPTS)
 
-COBJS=startup.$(O) main.$(O) fail.$(O) roots.$(O) signals.$(O) signals_asm.$(O) \
+COBJS=startup.$(O) main.$(O) fail.$(O) roots.$(O) signals.$(O) signals_asm.$(O)\
   misc.$(O) freelist.$(O) major_gc.$(O) minor_gc.$(O) memory.$(O) alloc.$(O) \
   compare.$(O) ints.$(O) floats.$(O) str.$(O) array.$(O) io.$(O) extern.$(O) \
   intern.$(O) hash.$(O) sys.$(O) parsing.$(O) gc_ctrl.$(O) terminfo.$(O) \

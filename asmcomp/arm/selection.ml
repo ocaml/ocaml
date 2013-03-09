@@ -96,7 +96,7 @@ method! is_simple_expr = function
   (* inlined byte-swap ops are simple if their arguments are *)
   | Cop(Cextcall("caml_bswap16_direct", _, _, _), args) when !arch >= ARMv6T2 ->
       List.for_all self#is_simple_expr args
-  | Cop(Cextcall("caml_int32_direct_bswap", _, _, _), args) when !arch >= ARMv6 ->
+  | Cop(Cextcall("caml_int32_direct_bswap", _,_,_), args) when !arch >= ARMv6 ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 

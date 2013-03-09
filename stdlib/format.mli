@@ -380,7 +380,7 @@ type formatter_out_functions = {
 
 val set_formatter_out_functions: formatter_out_functions -> unit;;
 (** [set_formatter_out_functions out_funs]
-   redirects the pretty-printer output to the functions [out_funs.out_string] and
+   Redirect the pretty-printer output to the functions [out_funs.out_string] and
    [out_funs.out_flush] as described in [set_formatter_output_functions]. In
    addition, the pretty-printer function that outputs a newline is set
    to the function [out_funs.out_newline] and the function that outputs

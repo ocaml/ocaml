@@ -65,7 +65,8 @@ let rec breakpoints_at_pc pc =
    []
   end
     @
-  List.map fst (List.filter (function (_, {ev_pos = pos}) -> pos = pc) !breakpoints)
+  List.map fst (List.filter (function (_, {ev_pos = pos}) -> pos = pc)
+                            !breakpoints)
 
 (* Is there a breakpoint at `pc' ? *)
 let breakpoint_at_pc pc =

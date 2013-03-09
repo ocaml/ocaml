@@ -39,8 +39,8 @@ type specific_operation =
   | Ifloatarithmem of float_operation * addressing_mode
                                        (* Float arith operation with memory *)
   | Ibswap of int                      (* endiannes conversion *)
-  | Isqrtf                             (* floating-point square root *)
-  | Ifloatsqrtf of addressing_mode     (* floating-point square root from memory *)
+  | Isqrtf                             (* Float square root *)
+  | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatmul | Ifloatdiv
 
@@ -110,7 +110,8 @@ let print_specific_operation printreg op ppf arg =
   | Isqrtf ->
       fprintf ppf "sqrtf %a" printreg arg.(0)
   | Ifloatsqrtf addr ->
-     fprintf ppf "sqrtf float64[%a]" (print_addressing printreg addr) [|arg.(0)|]
+     fprintf ppf "sqrtf float64[%a]"
+             (print_addressing printreg addr) [|arg.(0)|]
   | Ifloatarithmem(op, addr) ->
       let op_name = function
       | Ifloatadd -> "+f"

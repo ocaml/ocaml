@@ -194,7 +194,8 @@ char *caml_fl_allocate (mlsize_t wo_sz)
 #if FREELIST_DEBUG
         if (i > 5) fprintf (stderr, "FLP: found at %d  size=%d\n", i, wo_sz);
 #endif
-        result = allocate_block (Whsize_wosize (wo_sz), i, flp[i], Next(flp[i]));
+        result = allocate_block (Whsize_wosize (wo_sz), i, flp[i],
+                                 Next (flp[i]));
         goto update_flp;
       }
     }

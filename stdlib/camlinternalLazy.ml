@@ -23,7 +23,8 @@ let force_lazy_block (blk : 'arg lazy_t) =
   Obj.set_field (Obj.repr blk) 0 raise_undefined;
   try
     let result = closure () in
-    Obj.set_field (Obj.repr blk) 0 (Obj.repr result);  (* do set_field BEFORE set_tag *)
+    (* do set_field BEFORE set_tag *)
+    Obj.set_field (Obj.repr blk) 0 (Obj.repr result);
     Obj.set_tag (Obj.repr blk) Obj.forward_tag;
     result
   with e ->
@@ -36,7 +37,8 @@ let force_val_lazy_block (blk : 'arg lazy_t) =
   let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
   Obj.set_field (Obj.repr blk) 0 raise_undefined;
   let result = closure () in
-  Obj.set_field (Obj.repr blk) 0 (Obj.repr result);  (* do set_field BEFORE set_tag *)
+  (* do set_field BEFORE set_tag *)
+  Obj.set_field (Obj.repr blk) 0 (Obj.repr result);
   Obj.set_tag (Obj.repr blk) (Obj.forward_tag);
   result
 ;;

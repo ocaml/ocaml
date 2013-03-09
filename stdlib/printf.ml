@@ -77,7 +77,8 @@ let incomplete_format fmt =
      Sformat.to_string fmt ^ "''")
 ;;
 
-(* Parses a string conversion to return the specified length and the padding direction. *)
+(* Parses a string conversion to return the specified length and the
+   padding direction. *)
 let parse_string_conversion sfmt =
   let rec parse neg i =
     if i >= String.length sfmt then (0, neg) else

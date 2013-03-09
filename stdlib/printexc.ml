@@ -58,7 +58,8 @@ let to_string x =
             sprintf locfmt file line char (char+6) "Undefined recursive module"
         | _ ->
             let x = Obj.repr x in
-            let constructor = (Obj.magic(Obj.field (Obj.field x 0) 0) : string) in
+            let constructor =
+              (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
             constructor ^ (fields x) in
   conv !printers
 

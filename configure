@@ -471,9 +471,9 @@ case "$host" in
       1) echo "Doubles must be doubleword-aligned."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
       *) echo "Something went wrong during alignment determination for doubles."
-         echo "I'm going to assume this architecture has alignment constraints over doubles."
+         echo "We will assume alignment constraints over doubles."
          echo "That's a safe bet: OCaml will work even if"
-         echo "this architecture has actually no alignment constraints."
+         echo "this architecture actually has no alignment constraints."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
     esac;;
 esac

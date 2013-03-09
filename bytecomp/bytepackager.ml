@@ -121,7 +121,8 @@ let read_member_info file =
    Accumulate relocs, debug info, etc.
    Return size of bytecode. *)
 
-let rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst objfile compunit =
+let rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst
+                           objfile compunit =
   let ic = open_in_bin objfile in
   try
     Bytelink.check_consistency ppf objfile compunit;
@@ -145,22 +146,27 @@ let rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst o
 (* Same, for a list of .cmo and .cmi files.
    Return total size of bytecode. *)
 
-let rec rename_append_bytecode_list ppf packagename oc mapping defined ofs prefix subst = function
+let rec rename_append_bytecode_list ppf packagename oc mapping defined ofs
+                                    prefix subst =
+  function
     [] ->
       ofs
   | m :: rem ->
       match m.pm_kind with
       | PM_intf ->
-          rename_append_bytecode_list ppf packagename oc mapping defined ofs prefix subst rem
+          rename_append_bytecode_list ppf packagename oc mapping defined ofs
+                                      prefix subst rem
       | PM_impl compunit ->
           let size =
-            rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst
-                                   m.pm_file compunit in
+            rename_append_bytecode ppf packagename oc mapping defined ofs
+                                   prefix subst m.pm_file compunit in
           let id = Ident.create_persistent m.pm_name in
           let root = Path.Pident (Ident.create_persistent prefix) in
-          rename_append_bytecode_list ppf packagename
-            oc mapping (id :: defined)
-            (ofs + size) prefix (Subst.add_module id (Path.Pdot (root, Ident.name id, Path.nopos)) subst) rem
+          rename_append_bytecode_list ppf packagename oc mapping (id :: defined)
+            (ofs + size) prefix
+            (Subst.add_module id (Path.Pdot (root, Ident.name id, Path.nopos))
+                              subst)
+            rem
 
 (* Generate the code that builds the tuple representing the package module *)
 
@@ -200,7 +206,8 @@ let package_object_files ppf files targetfile targetname coercion =
     let pos_depl = pos_out oc in
     output_binary_int oc 0;
     let pos_code = pos_out oc in
-    let ofs = rename_append_bytecode_list ppf targetname oc mapping [] 0 targetname Subst.identity members in
+    let ofs = rename_append_bytecode_list ppf targetname oc mapping [] 0
+                                          targetname Subst.identity members in
     build_global_target oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then

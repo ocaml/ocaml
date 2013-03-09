@@ -337,13 +337,14 @@ module Scanning : SCANNING = struct
   let from_ic_close_at_end = from_ic scan_close_at_end;;
 
   (* The scanning buffer reading from [Pervasives.stdin].
-     One could try to define [stdib] as a scanning buffer reading a character at a
-     time (no bufferization at all), but unfortunately the top-level
-     interaction would be wrong.
-     This is due to some kind of ``race condition'' when reading from [Pervasives.stdin],
+     One could try to define [stdib] as a scanning buffer reading a character
+     at a time (no bufferization at all), but unfortunately the top-level
+     interaction would be wrong. This is due to some kind of
+     ``race condition'' when reading from [Pervasives.stdin],
      since the interactive compiler and [scanf] will simultaneously read the
-     material they need from [Pervasives.stdin]; then, confusion will result from what should
-     be read by the top-level and what should be read by [scanf].
+     material they need from [Pervasives.stdin]; then, confusion will result
+     from what should be read by the top-level and what should be read
+     by [scanf].
      This is even more complicated by the one character lookahead that [scanf]
      is sometimes obliged to maintain: the lookahead character will be available
      for the next ([scanf]) entry, seemingly coming from nowhere.
@@ -1349,7 +1350,8 @@ let scan_format ib ef fmt rv f =
         if i > lim then incomplete_format fmt else
         match Sformat.get fmt i with
         | '0' .. '9' as conv ->
-          let width, i = read_int_literal (decimal_value_of_char conv) (succ i) in
+          let width, i =
+            read_int_literal (decimal_value_of_char conv) (succ i) in
           Some width, i
         | _ -> None, i
 

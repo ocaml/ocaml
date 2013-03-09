@@ -489,7 +489,8 @@ void caml_init_major_heap (asize_t heap_size)
 
   if (caml_page_table_add(In_heap, caml_heap_start,
                           caml_heap_start + caml_stat_heap_size) != 0) {
-    caml_fatal_error ("Fatal error: not enough memory for the initial page table.\n");
+    caml_fatal_error ("Fatal error: not enough memory "
+                      "for the initial page table.\n");
   }
 
   caml_fl_init_merge ();

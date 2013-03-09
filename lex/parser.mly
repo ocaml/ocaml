@@ -48,7 +48,8 @@ let as_cset = function
 %token <int> Tchar
 %token <string> Tstring
 %token <Syntax.location> Taction
-%token Trule Tparse Tparse_shortest Tand Tequal Tend Tor Tunderscore Teof Tlbracket Trbracket
+%token Trule Tparse Tparse_shortest Tand Tequal Tend Tor Tunderscore Teof
+       Tlbracket Trbracket
 %token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet Tas Tsharp
 
 %right Tas

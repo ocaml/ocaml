@@ -91,7 +91,8 @@ let create_archive ppf file_list lib_name =
     output_string outchan cma_magic_number;
     let ofs_pos_toc = pos_out outchan in
     output_binary_int outchan 0;
-    let units = List.flatten(List.map (copy_object_file ppf outchan) file_list) in
+    let units =
+      List.flatten(List.map (copy_object_file ppf outchan) file_list) in
     let toc =
       { lib_units = units;
         lib_custom = !Clflags.custom_runtime;
