@@ -1875,14 +1875,17 @@ and type_expect_ ?in_function env sexp ty_expected =
   | Pexp_bind(spat_sexp_list, sbody) ->
       let (pat_exp, new_env, unpacks) =
         type_let env Default spat_sexp_list None true in
-      let pat_exp = List.hd pat_exp in
-      let exp = type_function loc env ty_expected in_function "" spat_sexp_list in
-      let body =
+      let body0 =
         type_expect new_env (wrap_unpacks sbody unpacks) ty_expected in
+      let body = match body0.exp_type.desc with
+        | Tarrow (_,_,body,_) -> body
+        | _ -> assert false
+      in
+      let pat_exp0 = List.hd pat_exp in
       re {
-        exp_desc = Texp_bind((fst pat_exp, exp), body);
+        exp_desc = Texp_bind(pat_exp0, body0);
         exp_loc = loc; exp_extra = [];
-        exp_type = body.exp_type;
+        exp_type = body;
         exp_env = env }
   | Pexp_function (l, Some default, [spat, sbody]) ->
       let default_loc = default.pexp_loc in
