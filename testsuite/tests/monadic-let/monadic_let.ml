@@ -13,13 +13,13 @@
 module IdentityMonad = struct
   let bind x f = f x
   let ret x = x
-  let fail x = ret
+  let fail s = failwith s
 end
 
 module ListMonad = struct
   let bind x f = f x
   let ret x = x
-  let fail x = ret
+  let fail s = failwith s
 end
 
 module ExceptionMonad = struct
