@@ -989,13 +989,8 @@ and transl_let rec_flag pat_expr_list body =
         (id, lam) in
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
-and transl_bind pat_expr_list body =
-  let rec transl = function
-        [] ->
-          body
-      | (pat, expr) :: rem ->
-          Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
-      in transl pat_expr_list
+and transl_bind (pat, expr) body =
+  Lapply (Lvar (Ident.create "bind"), [Lfunction (Curried, [Ident.create "**x**"], body)], pat.pat_loc)
 
 and transl_setinstvar self var expr =
   Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),

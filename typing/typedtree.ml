@@ -66,7 +66,7 @@ and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
   | Texp_constant of constant
   | Texp_let of rec_flag * (pattern * expression) list * expression
-  | Texp_bind of (pattern * expression) list * expression
+  | Texp_bind of (pattern * expression) * expression
   | Texp_function of label * (pattern * expression) list * partial
   | Texp_apply of expression * (label * expression option * optional) list
   | Texp_match of expression * (pattern * expression) list * partial

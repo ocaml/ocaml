@@ -256,9 +256,9 @@ and expression i ppf x =
       line i ppf "Pexp_let %a\n" fmt_rec_flag rf;
       list i pattern_x_expression_def ppf l;
       expression i ppf e;
-  | Texp_bind (l, e) ->
+  | Texp_bind (b, e) ->
       line i ppf "Pexp_bind\n";
-      list i pattern_x_expression_def ppf l;
+      list i pattern_x_expression_def ppf [b];
       expression i ppf e;
   | Texp_function (p, l, _partial) ->
       line i ppf "Pexp_function \"%s\"\n" p;

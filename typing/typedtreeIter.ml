@@ -243,8 +243,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Texp_let (rec_flag, list, exp) ->
             iter_bindings rec_flag list;
             iter_expression exp
-        | Texp_bind (list, exp) ->
-            iter_bindings_norec list;
+        | Texp_bind (b, exp) ->
+            iter_bindings_norec [b];
             iter_expression exp
         | Texp_function (label, cases, _) ->
             iter_bindings Nonrecursive cases

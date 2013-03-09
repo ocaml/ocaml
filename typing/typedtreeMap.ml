@@ -236,9 +236,8 @@ module MakeMap(Map : MapArgument) = struct
           Texp_let (rec_flag,
                     map_bindings rec_flag list,
                     map_expression exp)
-        | Texp_bind (list, exp) ->
-          Texp_bind (map_bindings_norec list,
-                        map_expression exp)
+        | Texp_bind (b, exp) ->
+          Texp_bind (map_binding b, map_expression exp)
         | Texp_function (label, cases, partial) ->
           Texp_function (label, map_bindings Nonrecursive cases, partial)
         | Texp_apply (exp, list) ->
