@@ -14,6 +14,7 @@
 /* Stack backtrace for uncaught exceptions */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "alloc.h"
 #include "backtrace.h"
 #include "memory.h"
@@ -191,18 +192,17 @@ void caml_print_exception_backtrace(void)
   }
 }
 
-/* Convert the backtrace to a data structure usable from OCaml */
+/* Convert the raw backtrace to a data structure usable from OCaml */
 
-CAMLprim value caml_get_exception_backtrace(value unit)
-{
-  CAMLparam0();
+CAMLprim value caml_convert_raw_backtrace(value backtrace) {
+  CAMLparam1(backtrace);
   CAMLlocal4(res, arr, p, fname);
   int i;
   struct loc_info li;
 
-  arr = caml_alloc(caml_backtrace_pos, 0);
-  for (i = 0; i < caml_backtrace_pos; i++) {
-    extract_location_info((frame_descr *) (caml_backtrace_buffer[i]), &li);
+  arr = caml_alloc(Wosize_val(backtrace), 0);
+  for (i = 0; i < Wosize_val(backtrace); i++) {
+    extract_location_info((frame_descr *) Field(backtrace, i), &li);
     if (li.loc_valid) {
       fname = caml_copy_string(li.loc_filename);
       p = caml_alloc_small(5, 0);
@@ -218,5 +218,36 @@ CAMLprim value caml_get_exception_backtrace(value unit)
     caml_modify(&Field(arr, i), p);
   }
   res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
+  CAMLreturn(res);
+}
+
+/* Get a copy of the latest backtrace */
+
+CAMLprim value caml_get_exception_raw_backtrace(value unit)
+{
+  CAMLparam0();
+  CAMLlocal1(res);
+  res = caml_alloc(caml_backtrace_pos, Abstract_tag);
+  if(caml_backtrace_buffer != NULL)
+    memcpy(&Field(res, 0), caml_backtrace_buffer, caml_backtrace_pos * sizeof(code_t));
+  CAMLreturn(res);
+}
+
+/* the function below is deprecated: we previously returned directly
+   the OCaml-usable representation, instead of the raw backtrace as an
+   abstract type, but this has a large performance overhead if you
+   store a lot of backtraces and print only some of them.
+   
+   It is not used by the Printexc library anymore, or anywhere else in
+   the compiler, but we have kept it in case some user still depends
+   on it as an external.
+*/
+
+CAMLprim value caml_get_exception_backtrace(value unit)
+{
+  CAMLparam0();
+  CAMLlocal2(raw,res);
+  raw = caml_get_exception_raw_backtrace(unit);
+  res = caml_convert_raw_backtrace(raw);
   CAMLreturn(res);
 }

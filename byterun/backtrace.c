@@ -274,9 +274,9 @@ CAMLexport void caml_print_exception_backtrace(void)
 
 /* Convert the backtrace to a data structure usable from OCaml */
 
-CAMLprim value caml_get_exception_backtrace(value unit)
+CAMLprim value caml_convert_raw_backtrace(value backtrace)
 {
-  CAMLparam0();
+  CAMLparam1(backtrace);
   CAMLlocal5(events, res, arr, p, fname);
   int i;
   struct loc_info li;
@@ -285,9 +285,9 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   if (events == Val_false) {
     res = Val_int(0);           /* None */
   } else {
-    arr = caml_alloc(caml_backtrace_pos, 0);
-    for (i = 0; i < caml_backtrace_pos; i++) {
-      extract_location_info(events, caml_backtrace_buffer[i], &li);
+    arr = caml_alloc(Wosize_val(backtrace), 0);
+    for (i = 0; i < Wosize_val(backtrace); i++) {
+      extract_location_info(events, (code_t)Field(backtrace, i), &li);
       if (li.loc_valid) {
         fname = caml_copy_string(li.loc_filename);
         p = caml_alloc_small(5, 0);
@@ -304,5 +304,28 @@ CAMLprim value caml_get_exception_backtrace(value unit)
     }
     res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
   }
+  CAMLreturn(res);
+}
+
+/* Get a copy of the latest backtrace */
+
+CAMLprim value caml_get_exception_raw_backtrace(value unit)
+{
+  CAMLparam0();
+  CAMLlocal1(res);
+  res = caml_alloc(caml_backtrace_pos, Abstract_tag);
+  if(caml_backtrace_buffer != NULL)
+    memcpy(&Field(res, 0), caml_backtrace_buffer, caml_backtrace_pos * sizeof(code_t));
+  CAMLreturn(res);
+}
+
+/* the function below is deprecated: see asmrun/backtrace.c */
+
+CAMLprim value caml_get_exception_backtrace(value unit)
+{
+  CAMLparam0();
+  CAMLlocal2(raw, res);
+  raw = caml_get_exception_raw_backtrace(unit);
+  res = caml_convert_raw_backtrace(raw);
   CAMLreturn(res);
 }

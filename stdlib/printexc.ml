@@ -79,6 +79,11 @@ let catch fct arg =
     eprintf "Uncaught exception: %s\n" (to_string x);
     exit 2
 
+type raw_backtrace
+
+external get_raw_backtrace:
+  unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
+
 type loc_info =
   | Known_location of bool   (* is_raise *)
                     * string (* filename *)
@@ -90,8 +95,10 @@ type loc_info =
 (* to avoid warning *)
 let _ = [Known_location (false, "", 0, 0, 0); Unknown_location false]
 
-external get_exception_backtrace:
-  unit -> loc_info array option = "caml_get_exception_backtrace"
+type backtrace = loc_info array
+
+external convert_raw_backtrace:
+  raw_backtrace -> backtrace option = "caml_convert_raw_backtrace"
 
 let format_loc_info pos li =
   let is_raise =
@@ -112,8 +119,8 @@ let format_loc_info pos li =
       sprintf "%s unknown location"
               info
 
-let print_backtrace outchan =
-  match get_exception_backtrace() with
+let print_exception_backtrace outchan backtrace =
+  match backtrace with
   | None ->
       fprintf outchan
         "(Program not linked with -g, cannot print stack backtrace)\n"
@@ -123,8 +130,15 @@ let print_backtrace outchan =
           fprintf outchan "%s\n" (format_loc_info i a.(i))
       done
 
-let get_backtrace () =
-  match get_exception_backtrace() with
+let print_raw_backtrace outchan raw_backtrace =
+  print_exception_backtrace outchan (convert_raw_backtrace raw_backtrace)
+
+(* confusingly named: prints the global current backtrace *)
+let print_backtrace outchan =
+  print_raw_backtrace outchan (get_raw_backtrace ())
+
+let backtrace_to_string backtrace =
+  match backtrace with
   | None ->
      "(Program not linked with -g, cannot print stack backtrace)\n"
   | Some a ->
@@ -134,6 +148,17 @@ let get_backtrace () =
           bprintf b "%s\n" (format_loc_info i a.(i))
       done;
       Buffer.contents b
+
+let raw_backtrace_to_string raw_backtrace =
+  backtrace_to_string (convert_raw_backtrace raw_backtrace)
+
+(* confusingly named:
+   returns the *string* corresponding to the global current backtrace *)
+let get_backtrace () =
+  (* we could use the caml_get_exception_backtrace primitive here, but
+     we hope to deprecate it so it's better to just compose the
+     raw stuff *)
+  backtrace_to_string (convert_raw_backtrace (get_raw_backtrace ()))
 
 external record_backtrace: bool -> unit = "caml_record_backtrace"
 external backtrace_status: unit -> bool = "caml_backtrace_status"
