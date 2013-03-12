@@ -30,7 +30,8 @@ module OK :
 #         Characters 55-61:
     let f r = match r with {x; y} -> y + y
                            ^^^^^^
-Warning 41: this record contains fields that are ambiguous: x y.
+Warning 41: these field labels belong to several types: M1.u M1.t
+The first one was selected. Please disambiguate if this is wrong.
 Characters 65-66:
     let f r = match r with {x; y} -> y + y
                                      ^
@@ -151,7 +152,13 @@ module NM :
 # Characters 8-28:
   let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
           ^^^^^^^^^^^^^^^^^^^^
-Warning 41: this record contains fields that are ambiguous: x y.
+Warning 41: x belongs to several types: MN.bar MN.foo
+The first one was selected. Please disambiguate if this is wrong.
+Characters 8-28:
+  let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
+          ^^^^^^^^^^^^^^^^^^^^
+Warning 41: y belongs to several types: NM.foo NM.bar
+The first one was selected. Please disambiguate if this is wrong.
 Characters 19-23:
   let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
                      ^^^^

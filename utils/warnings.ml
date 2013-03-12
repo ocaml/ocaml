@@ -58,7 +58,7 @@ type t =
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string list * bool (* 40 *)
-  | Ambiguous_name of string list * bool    (* 41 *)
+  | Ambiguous_name of string list * string list *  bool    (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
 ;;
@@ -316,12 +316,14 @@ let message = function
   | Name_out_of_scope (slist, true) ->
       "this record contains fields that are out of scope: "
       ^ String.concat " " slist ^ "."
-  | Ambiguous_name ([s], false) ->
-      "this use of " ^ s ^ " is ambiguous."
-  | Ambiguous_name (_, false) -> assert false
-  | Ambiguous_name (slist, true) ->
-      "this record contains fields that are ambiguous: "
-      ^ String.concat " " slist ^ "."
+  | Ambiguous_name ([s], tl, false) ->
+      s ^ " belongs to several types: " ^ String.concat " " tl ^
+      "\nThe first one was selected. Please disambiguate if this is wrong."
+  | Ambiguous_name (_, _, false) -> assert false
+  | Ambiguous_name (slist, tl, true) ->
+      "these field labels belong to several types: " ^
+      String.concat " " tl ^
+      "\nThe first one was selected. Please disambiguate if this is wrong."
   | Disambiguated_name s ->
       "this use of " ^ s ^ " required disambiguation."
   | Nonoptional_label s ->
