@@ -1825,7 +1825,19 @@ let reify env t =
           let t = create_fresh_constr ty.level name in
           link_type ty t
       | Tvariant r ->
-          if not (static_row r) then iterator (row_more r);
+	  let r = row_repr r in
+          if not (static_row r) then begin
+	    if r.row_fixed then iterator (row_more r) else
+	    let m = r.row_more in
+	    match m.desc with
+	      Tvar o ->
+		let name = match o with Some s -> s | _ -> "ex" in
+		let t = create_fresh_constr m.level name in
+		let row =
+		  {r with row_fields=[]; row_fixed=true; row_more = t} in
+		link_type m (newty2 m.level (Tvariant row))
+	    | _ -> assert false
+	  end;
           iter_row iterator r
       | Tconstr (p, _, _) when is_object_type p ->
           iter_type_expr iterator (full_expand !env ty)

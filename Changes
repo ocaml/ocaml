@@ -21,6 +21,7 @@ Bug fixes:
 - PR#5906: GADT exhaustiveness check is still broken
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5911: Signature substitutions fail in submodules
+- PR#5948: GADT with polymorphic variants bug
 
 OCaml 4.00.1:
 -------------
