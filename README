@@ -29,7 +29,7 @@ a simple graph.
         > git clone https://github.com/cago/ocaml/
         > git checkout 4.00.1+memprof-bytecode
   With OPAM:
-       > opam remote add memprof https://github.com/cago/opam-repository
+       > opam remote add memprof https://github.com/cago/opam-repository --kind=git
        > opam switch 4.00.1+memprof-bytecode
 
 2- Compile OCaml and install: bytecode only !
