@@ -30,12 +30,12 @@ open Printf
 
 
 (*
-   Many functions on the various data structures ofthe algorithm :
+   Many functions on the various data structures of the algorithm :
      - Pattern matrices.
      - Default environments: mapping from matrices to exit numbers.
      - Contexts:  matrices whose column are partitioned into
        left and right.
-     - Jump sumaries: mapping from exit numbers to contexts
+     - Jump summaries: mapping from exit numbers to contexts
 *)
 
 type matrix = pattern list list
