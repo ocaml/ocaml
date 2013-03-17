@@ -1340,7 +1340,7 @@ let get_lines fname =
     failwith (Printf.sprintf "in file %s, unexpected end of file" fname)
 ;;
 
-(* Simpy test that the list of lines read from the file are the list of lines
+(* Simply test that the list of lines read from the file is the list of lines
    written to it!. *)
 let test54 () =
   get_lines tscanf_data_file = tscanf_data_file_lines
