@@ -96,7 +96,7 @@ let interface ppf sourcefile outputprefix =
     Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"))
   with e ->
-    Pparse.remove_preprocessed_if_ast inputfile;
+    Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"));
     raise e
 
@@ -147,7 +147,7 @@ let implementation ppf sourcefile outputprefix =
   with x ->
     remove_file objfile;
     remove_file cmxfile;
-    Pparse.remove_preprocessed_if_ast inputfile;
+    Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"));
     raise x
 

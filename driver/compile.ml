@@ -100,7 +100,7 @@ let interface ppf sourcefile outputprefix =
     end;
     Pparse.remove_preprocessed inputfile
   with e ->
-    Pparse.remove_preprocessed_if_ast inputfile;
+    Pparse.remove_preprocessed inputfile;
     raise e
 
 (* Compile a .ml file *)
@@ -132,7 +132,7 @@ let implementation ppf sourcefile outputprefix =
       Pparse.remove_preprocessed inputfile;
       Stypes.dump (Some (outputprefix ^ ".annot"));
     with x ->
-      Pparse.remove_preprocessed_if_ast inputfile;
+      Pparse.remove_preprocessed inputfile;
       Stypes.dump (Some (outputprefix ^ ".annot"));
       raise x
   end else begin
@@ -158,7 +158,7 @@ let implementation ppf sourcefile outputprefix =
     with x ->
       close_out oc;
       remove_file objfile;
-      Pparse.remove_preprocessed_if_ast inputfile;
+      Pparse.remove_preprocessed inputfile;
       Stypes.dump (Some (outputprefix ^ ".annot"));
       raise x
   end

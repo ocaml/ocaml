@@ -214,7 +214,7 @@ let read_parse_and_extract parse_function extract_function magic source_file =
       Pparse.remove_preprocessed input_file;
       !Depend.free_structure_names
     with x ->
-      Pparse.remove_preprocessed_if_ast input_file;
+      Pparse.remove_preprocessed input_file;
       raise x
     end
   with x ->
