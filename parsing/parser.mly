@@ -1576,7 +1576,7 @@ simple_core_type2:
   | LBRACKET tag_field RBRACKET
       { mktyp(Ptyp_variant([$2], true, None)) }
 /* PR#3835: this is not LR(1), would need lookahead=2
-  | LBRACKET simple_core_type2 RBRACKET
+  | LBRACKET simple_core_type RBRACKET
       { mktyp(Ptyp_variant([$2], true, None)) }
 */
   | LBRACKET BAR row_field_list RBRACKET
@@ -1611,7 +1611,7 @@ row_field_list:
 ;
 row_field:
     tag_field                                   { $1 }
-  | simple_core_type2                           { Rinherit $1 }
+  | simple_core_type                            { Rinherit $1 }
 ;
 tag_field:
     name_tag OF opt_ampersand amper_type_list
