@@ -551,7 +551,7 @@ val pp_get_formatter_tag_functions :
 val pp_set_formatter_out_functions :
   formatter -> formatter_out_functions -> unit
 ;;
-val get_formatter_out_functions :
+val pp_get_formatter_out_functions :
   formatter -> unit -> formatter_out_functions
 ;;
 (** These functions are the basic ones: usual functions
@@ -624,12 +624,14 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
     print_int 1; close_box (); print_newline ()].
    It prints [x = 1] within a pretty-printing box.
 
-   Note: the old [@@] ``pretty-printing indication'' is now deprecated, since
-   it had no pretty-printing indication semantics. If you need to prevent
-   the pretty-printing indication interpretation of a [@] character, simply
-   use the regular way to escape a character in format string: write [%@].
+   Note: If you need to prevent the interpretation of a [@] character as a
+   pretty-printing indication, escape it with a [%] character, as usual in
+   format strings.
    @since 3.12.2.
 
+   Old [@@] ``pretty-printing indication'' is deprecated, since it had no
+   pretty-printing indication semantics.
+   @since 3.12.2.
 *)
 
 val printf : ('a, formatter, unit) format -> 'a;;
@@ -638,7 +640,7 @@ val printf : ('a, formatter, unit) format -> 'a;;
 val eprintf : ('a, formatter, unit) format -> 'a;;
 (** Same as [fprintf] above, but output on [err_formatter]. *)
 
-val sprintf : ('a, formatter, unit, string) format4 -> 'a;
+val sprintf : ('a, formatter, unit, string) format4 -> 'a;;
 (** Same as [printf] above, but instead of printing on a formatter,
    returns a string containing the result of formatting the arguments.
    Note that the pretty-printer queue is flushed at the end of {e each
