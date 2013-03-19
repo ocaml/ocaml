@@ -1909,7 +1909,7 @@ let transl_function f =
 module StringSet =
   Set.Make(struct
     type t = string
-    let compare = compare
+    let compare (x:t) y = compare x y
   end)
 
 let rec transl_all_functions already_translated cont =
@@ -2396,7 +2396,7 @@ let curry_function arity =
 module IntSet = Set.Make(
   struct
     type t = int
-    let compare = compare
+    let compare (x:t) y = compare x y
   end)
 
 let default_apply = IntSet.add 2 (IntSet.add 3 IntSet.empty)

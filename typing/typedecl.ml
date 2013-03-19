@@ -120,7 +120,7 @@ let set_fixed_row env loc p decl =
 module StringSet =
   Set.Make(struct
     type t = string
-    let compare = compare
+    let compare (x:t) y = compare x y
   end)
 
 let make_params sdecl =

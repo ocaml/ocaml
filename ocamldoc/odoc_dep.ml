@@ -36,7 +36,10 @@ module Dep =
   struct
     type id = string
 
-    module S = Set.Make (struct type t = string let compare = compare end)
+    module S = Set.Make (struct
+      type t = string
+      let compare (x:t) y = compare x y
+    end)
 
     let set_to_list s =
       let l = ref [] in

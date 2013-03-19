@@ -13,7 +13,7 @@
 (* Emission of x86-64 (AMD 64) assembly code, MASM syntax *)
 
 module StringSet =
-  Set.Make(struct type t = string let compare = compare end)
+  Set.Make(struct type t = string let compare (x:t) y = compare x y end)
 
 open Misc
 open Cmm

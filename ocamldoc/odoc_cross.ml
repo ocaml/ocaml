@@ -155,7 +155,7 @@ let name_alias =
 module Map_ord =
   struct
     type t = string
-    let compare = Pervasives.compare
+    let compare (x:t) y = Pervasives.compare x y
   end
 
 module Ele_map = Map.Make (Map_ord)

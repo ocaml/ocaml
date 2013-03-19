@@ -348,7 +348,7 @@ let rec get_block t i j =
 ;;
 
 let group_by_common_children d list =
-  let module O = struct type t = idag;; let compare = compare;; end
+  let module O = struct type t = idag;; let compare (x:t) y = compare x y;; end
   in
   let module S = Set.Make (O)
   in
@@ -604,7 +604,7 @@ let group_children t =
    if A and B have common children *)
 
 let group_span_by_common_children d t =
-  let module O = struct type t = idag;; let compare = compare;; end
+  let module O = struct type t = idag;; let compare (x:t) y = compare x y;; end
   in
   let module S = Set.Make (O)
   in

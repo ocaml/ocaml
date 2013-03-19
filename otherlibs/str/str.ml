@@ -210,7 +210,8 @@ let fold_case_table =
   for i = 0 to 255 do t.[i] <- Char.lowercase(Char.chr i) done;
   t
 
-module StringMap = Map.Make(struct type t = string let compare = compare end)
+module StringMap =
+  Map.Make(struct type t = string let compare (x:t) y = compare x y end)
 
 (* Compilation of a regular expression *)
 
