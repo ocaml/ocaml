@@ -149,21 +149,21 @@ let extract_format fmt start stop widths =
 ;;
 
 let extract_format_int conv fmt start stop widths =
-   let sfmt = extract_format fmt start stop widths in
-   match conv with
-   | 'n' | 'N' ->
-     sfmt.[String.length sfmt - 1] <- 'u';
-     sfmt
-   | _ -> sfmt
+  let sfmt = extract_format fmt start stop widths in
+  match conv with
+  | 'n' | 'N' ->
+    sfmt.[String.length sfmt - 1] <- 'u';
+    sfmt
+  | _ -> sfmt
 ;;
 
 let extract_format_float conv fmt start stop widths =
-   let sfmt = extract_format fmt start stop widths in
-   match conv with
-   | 'F' ->
-     sfmt.[String.length sfmt - 1] <- 'g';
-     sfmt
-   | _ -> sfmt
+  let sfmt = extract_format fmt start stop widths in
+  match conv with
+  | 'F' ->
+    sfmt.[String.length sfmt - 1] <- 'g';
+    sfmt
+  | _ -> sfmt
 ;;
 
 (* Returns the position of the next character following the meta format
