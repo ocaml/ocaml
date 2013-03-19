@@ -24,25 +24,26 @@ opt: camltkobjsx
 
 include ./modules
 
-CAMLTKOBJS= $(CWIDGETOBJS) cTk.cmo camltk.cmo
+CAMLTKOBJS = $(CWIDGETOBJS) cTk.cmo camltk.cmo
 CAMLTKOBJSX = $(CAMLTKOBJS:.cmo=.cmx)
 
 camltkobjs: $(CAMLTKOBJS)
 
 camltkobjsx: $(CAMLTKOBJSX)
 
-clean:
-	$(MAKE) -f Makefile.gen clean
-
 install:
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
-	cp $(CAMLTKOBJS:.cmo=.cmi) $(CWIDGETOBJS:.cmo=.mli) $(INSTALLDIR)
+	cp $(CAMLTKOBJS:.cmo=.cmi) $(INSTALLDIR)
+	cp $(CWIDGETOBJS:.cmo=.mli) $(INSTALLDIR)
 	chmod 644 $(INSTALLDIR)/*.cmi
 
 installopt:
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(CAMLTKOBJSX) $(INSTALLDIR)
 	chmod 644 $(INSTALLDIR)/*.cmx
+
+clean:
+	$(MAKE) -f Makefile.gen clean
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
