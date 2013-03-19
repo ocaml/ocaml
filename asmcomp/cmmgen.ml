@@ -2284,14 +2284,21 @@ let tuplify_function arity =
                clos clos1.vars[1])
            (app clos.direct
                 clos1.vars[0] ... closN-2.vars[0] clos.vars[0] arg clos)))
+
     Special "shortcut" functions are also generated to handle the
     case where a partially applied function is applied to all remaining
     arguments in one go.  For instance:
       (defun caml_curry_N_1_app (arg2 ... argN clos)
         (let clos' clos.vars[1]
            (app clos'.direct clos.vars[0] arg2 ... argN clos')))
+
+    Those shortcuts may lead to a quadratic number of application
+    primitives being generated in the worst case, which resulted in
+    linking time blowup in practice (PR#5933), so we only generate and
+    use them when below a fixed arity 'max_arity_optimized'.
 *)
 
+let max_arity_optimized = 15
 let final_curry_function arity =
   let last_arg = Ident.create "arg" in
   let last_clos = Ident.create "clos" in
@@ -2301,7 +2308,7 @@ let final_curry_function arity =
           get_field (Cvar clos) 2 ::
           args @ [Cvar last_arg; Cvar clos])
     else
-      if n = arity - 1 then
+      if n = arity - 1 || arity > max_arity_optimized then
         begin
       let newclos = Ident.create "clos" in
       Clet(newclos,
@@ -2333,7 +2340,7 @@ let rec intermediate_curry_functions arity num =
      {fun_name = name2;
       fun_args = [arg, typ_addr; clos, typ_addr];
       fun_body =
-         if arity - num > 2 then
+         if arity - num > 2 && arity <= max_arity_optimized then
            Cop(Calloc,
                [alloc_closure_header 5;
                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
@@ -2348,7 +2355,7 @@ let rec intermediate_curry_functions arity num =
       fun_fast = true;
       fun_dbg  = Debuginfo.none }
     ::
-      (if arity - num > 2 then
+      (if arity <= max_arity_optimized && arity - num > 2 then
           let rec iter i =
             if i <= arity then
               let arg = Ident.create (Printf.sprintf "arg%d" i) in
