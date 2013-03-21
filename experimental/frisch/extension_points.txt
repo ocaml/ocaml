@@ -314,8 +314,8 @@ module type HashedType =
 
 type t = {
   x : int [@default 42];
-  y : int [@default 3] @[sexp_drop_default];
-  z : int [@default 3] @[sexp_drop_if z_test];
+  y : int [@default 3] [@sexp_drop_default];
+  z : int [@default 3] [@sexp_drop_if z_test];
 } [@@sexp]
 
 
