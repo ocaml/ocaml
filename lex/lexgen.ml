@@ -78,7 +78,8 @@ type ('args,'action) automata_entry =
 
 (* A lot of sets and map structures *)
 
-module Ints = Set.Make(struct type t = int let compare (x:t) y = compare x y end)
+module Ints =
+  Set.Make(struct type t = int let compare (x:t) y = compare x y end)
 
 let id_compare (id1,_) (id2,_) = String.compare id1 id2
 
@@ -619,7 +620,8 @@ module StateSet =
 
 
 module MemMap =
-  Map.Make (struct type t = int let compare (x:t) y = Pervasives.compare x y end)
+  Map.Make (struct type t = int
+                   let compare (x:t) y = Pervasives.compare x y end)
 
 type 'a dfa_state =
   {final : int * ('a * int TagMap.t) ;
