@@ -89,7 +89,8 @@ let rec pattern_matching pattern obj ty =
          | P_nth (n, patt) ->
              if n >= List.length ty_list then
                (prerr_endline "Out of range."; raise Toplevel);
-             pattern_matching patt (Debugcom.get_field obj n) (List.nth ty_list n)
+             pattern_matching patt (Debugcom.get_field obj n)
+                              (List.nth ty_list n)
          | _ ->
              error_matching ())
     | Tconstr(cstr, [ty_arg],_) when same_type_constr cstr constr_type_list ->
@@ -221,7 +222,8 @@ and match_concrete_type pattern obj cstr ty ty_list =
                filter (ty_res, ty)
              with Unify ->
                fatal_error "pattern_matching: types should match");
-            pattern_matching patt (Debugcom.get_field obj lbl.info.lbl_pos) ty_arg
+            pattern_matching patt (Debugcom.get_field obj lbl.info.lbl_pos)
+                             ty_arg
       in
         (match pattern with
            P_record pattern_label_list ->
