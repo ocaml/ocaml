@@ -292,11 +292,10 @@ let wrap_type_annotation newtypes core_type body =
 
 let wrap_exp_attrs body (ext, attrs) =
   (* todo: keep exact location for the entire attribute *)
-  let body = match ext with
+  let body = {body with pexp_attributes = attrs @ body.pexp_attributes} in
+  match ext with
   | None -> body
   | Some id -> ghexp(Pexp_extension (id, body))
-  in
-  {body with pexp_attributes = attrs @ body.pexp_attributes}
 
 let mkexp_attrs d attrs =
   wrap_exp_attrs (mkexp d) attrs
@@ -1121,11 +1120,9 @@ simple_expr:
       { mkexp(Pexp_construct(mkrhs $1 1, None, false)) }
   | name_tag %prec prec_constant_constructor
       { mkexp(Pexp_variant($1, None)) }
-  | LPAREN non_empty_ext_attributes seq_expr RPAREN
-      { wrap_exp_attrs (reloc_exp $3) $2 }
   | LPAREN seq_expr RPAREN
       { reloc_exp $2 }
-  | LPAREN non_empty_ext_attributes seq_expr error
+  | LPAREN seq_expr error
       { unclosed "(" 1 ")" 3 }
   | BEGIN ext_attributes seq_expr END
       { wrap_exp_attrs (reloc_exp $3) $2 (* check location *) }
@@ -1136,8 +1133,6 @@ simple_expr:
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
       { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
-  | LPAREN non_empty_ext_attributes seq_expr type_constraint RPAREN
-      { let (t, t') = $4 in mkexp_attrs (Pexp_constraint($3, t, t')) $2 }
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, mkrhs $3 3)) }
   | mod_longident DOT LPAREN seq_expr RPAREN
@@ -1158,19 +1153,19 @@ simple_expr:
       { bigarray_get $1 $4 }
   | simple_expr DOT LBRACE expr_comma_list error
       { unclosed "{" 3 "}" 5 }
-  | LBRACE ext_attributes record_expr RBRACE
-      { let (exten, fields) = $3 in mkexp_attrs (Pexp_record(fields, exten)) $2 }
-  | LBRACE ext_attributes record_expr error
+  | LBRACE record_expr RBRACE
+      { let (exten, fields) = $2 in mkexp (Pexp_record(fields, exten)) }
+  | LBRACE record_expr error
       { unclosed "{" 1 "}" 3 }
-  | LBRACKETBAR ext_attributes expr_semi_list opt_semi BARRBRACKET
-      { mkexp_attrs (Pexp_array(List.rev $3)) $2 }
-  | LBRACKETBAR ext_attributes expr_semi_list opt_semi error
+  | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
+      { mkexp (Pexp_array(List.rev $2)) }
+  | LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
-  | LBRACKETBAR ext_attributes BARRBRACKET
-      { mkexp_attrs (Pexp_array []) $2 }
-  | LBRACKET ext_attributes expr_semi_list opt_semi RBRACKET
-      { wrap_exp_attrs (reloc_exp (mktailexp (rhs_loc 5) (List.rev $3))) $2 }
-  | LBRACKET ext_attributes expr_semi_list opt_semi error
+  | LBRACKETBAR BARRBRACKET
+      { mkexp (Pexp_array []) }
+  | LBRACKET expr_semi_list opt_semi RBRACKET
+      { reloc_exp (mktailexp (rhs_loc 4) (List.rev $2)) }
+  | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
       { mkexp(Pexp_apply(mkoperator $1 1, ["",$2])) }
@@ -1178,12 +1173,12 @@ simple_expr:
       { mkexp(Pexp_apply(mkoperator "!" 1, ["",$2])) }
   | NEW ext_attributes class_longident
       { mkexp_attrs (Pexp_new(mkrhs $3 3)) $2 }
-  | LBRACELESS ext_attributes field_expr_list opt_semi GREATERRBRACE
-      { mkexp_attrs (Pexp_override(List.rev $3)) $2 }
-  | LBRACELESS ext_attributes field_expr_list opt_semi error
+  | LBRACELESS field_expr_list opt_semi GREATERRBRACE
+      { mkexp (Pexp_override(List.rev $2)) }
+  | LBRACELESS field_expr_list opt_semi error
       { unclosed "{<" 1 ">}" 4 }
-  | LBRACELESS ext_attributes GREATERRBRACE
-      { mkexp_attrs (Pexp_override []) $2 }
+  | LBRACELESS GREATERRBRACE
+      { mkexp (Pexp_override [])}
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
   | LPAREN MODULE ext_attributes module_expr RPAREN
@@ -1939,10 +1934,6 @@ attributes:
 ext_attributes:
     /* empty */  { None, [] }
   | attribute attributes { None, $1 :: $2 }
-  | PERCENT attr_id attributes { Some $2, $3 }
-;
-non_empty_ext_attributes:
-    attribute attributes { None, $1 :: $2 }
   | PERCENT attr_id attributes { Some $2, $3 }
 ;
 extension:
