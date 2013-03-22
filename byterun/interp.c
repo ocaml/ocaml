@@ -1122,7 +1122,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #else
       caml_fatal_error_arg("Fatal error: bad opcode (%"
                            ARCH_INTNAT_PRINTF_FORMAT "x)\n",
-                           *(pc-1));
+                           (char *) (intnat) *(pc-1));
 #endif
     }
   }

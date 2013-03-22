@@ -17,10 +17,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
-#include "config.h"
+
 #include "mlvalues.h"
 #include "alloc.h"
 #include "io.h"

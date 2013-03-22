@@ -194,7 +194,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
     int l = 0;
     switch (tg) {
     case Closure_tag:
-      fprintf (f, "=closure[s%ld,cod%ld]", s, (code_t) (Code_val (v)) - prog);
+      fprintf (f, "=closure[s%d,cod%ld]", s, (code_t) (Code_val (v)) - prog);
       goto displayfields;
     case String_tag:
       l = caml_string_length (v);
@@ -249,11 +249,11 @@ caml_trace_accu_sp_file (value accu, value * sp, code_t prog, int proglen,
   value *p;
   fprintf (f, "accu=");
   caml_trace_value_file (accu, prog, proglen, f);
-  fprintf (f, "\n sp=%#" ARCH_INTNAT_PRINTF_FORMAT "x @%d:",
+  fprintf (f, "\n sp=%#" ARCH_INTNAT_PRINTF_FORMAT "x @%ld:",
            (intnat) sp, caml_stack_high - sp);
   for (p = sp, i = 0; i < 12 + (1 << caml_trace_flag) && p < caml_stack_high;
        p++, i++) {
-    fprintf (f, "\n[%d] ", caml_stack_high - p);
+    fprintf (f, "\n[%ld] ", caml_stack_high - p);
     caml_trace_value_file (*p, prog, proglen, f);
   };
   putc ('\n', f);
