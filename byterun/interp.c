@@ -111,7 +111,8 @@ sp is a local copy of the global variable caml_extern_sp. */
    For GCC, I have hand-assigned hardware registers for several architectures.
 */
 
-#if defined(__GNUC__) && !defined(DEBUG) && !defined(__INTEL_COMPILER) && !defined(__llvm__)
+#if defined(__GNUC__) && !defined(DEBUG) && !defined(__INTEL_COMPILER) \
+    && !defined(__llvm__)
 #ifdef __mips__
 #define PC_REG asm("$16")
 #define SP_REG asm("$17")

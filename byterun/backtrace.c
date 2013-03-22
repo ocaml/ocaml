@@ -13,13 +13,14 @@
 
 /* Stack backtrace for uncaught exceptions */
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include "config.h"
+#include <string.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
+#include "config.h"
 #include "mlvalues.h"
 #include "alloc.h"
 #include "io.h"
@@ -315,7 +316,8 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLlocal1(res);
   res = caml_alloc(caml_backtrace_pos, Abstract_tag);
   if(caml_backtrace_buffer != NULL)
-    memcpy(&Field(res, 0), caml_backtrace_buffer, caml_backtrace_pos * sizeof(code_t));
+    memcpy(&Field(res, 0), caml_backtrace_buffer,
+           caml_backtrace_pos * sizeof(code_t));
   CAMLreturn(res);
 }
 
