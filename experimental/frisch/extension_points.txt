@@ -110,7 +110,6 @@ alternative syntax for attributes and/or extensions:
 
 
 where KW can stand for:
- (module
  assert
  begin
  for
@@ -427,4 +426,4 @@ let fetch_users dbh =
 
 -- Macaque
 
-let names view = [%view {name = t.name}, t <- !view]
+let names view = [%view {name = t.name}, t <- !view]" 

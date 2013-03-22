@@ -1181,12 +1181,12 @@ simple_expr:
       { mkexp (Pexp_override [])}
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
-  | LPAREN MODULE ext_attributes module_expr RPAREN
-      { mkexp_attrs (Pexp_pack $4) $3 }
-  | LPAREN MODULE ext_attributes module_expr COLON package_type RPAREN
-      { mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $4),
-                                Some (ghtyp (Ptyp_package $6)), None)) $3 }
-  | LPAREN MODULE ext_attributes module_expr COLON error
+  | LPAREN MODULE module_expr RPAREN
+      { mkexp (Pexp_pack $3) }
+  | LPAREN MODULE module_expr COLON package_type RPAREN
+      { mkexp (Pexp_constraint (ghexp (Pexp_pack $3),
+                                Some (ghtyp (Ptyp_package $5)), None)) }
+  | LPAREN MODULE module_expr COLON error
       { unclosed "(" 1 ")" 5 }
   | extension
       { mkexp (Pexp_extension $1) }
