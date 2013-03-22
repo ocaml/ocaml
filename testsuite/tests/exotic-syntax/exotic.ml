@@ -1,10 +1,11 @@
 (* Exotic OCaml syntax constructs found in the manual that are not *)
 (* used in the source of the OCaml distribution (even in the tests). *)
 
-(* Spaces between the parts of the ?label: token in a typexpr. *)
-type t = ? label : int -> int -> int;;
+(* Spaces between the parts of the ?label: token in a typexpr.
+   (used in bin-prot) *)
+type t1 = ? label : int -> int -> int;;
 
-(* Lazy in a pattern. *)
+(* Lazy in a pattern. (used in advi) *)
 function lazy y -> y;;
 
 (* Spaces between the parts of the ?label: token in a class-type. *)
@@ -68,11 +69,46 @@ class virtual c = object
   method virtual private g : int
 end;;
 
+(* access a class-type through an extended-module-path *)
+module F (X : sig end) = struct
+  class type t = object end
+end;;
+module X = struct end;;
+class type u = F(X).t;;
+
+(* conjunctive constraints on tags (used by the compiler to print some
+   inferred types *)
+type 'a t2 = [< `A of int & int & int ] as 'a;;
+
+(* same for a parameterless tag (triggers a very strange error message) *)
+(*type ('a, 'b) t3 = [< `A of & 'b ] as 'a;;*)
+
+(* negative float constant in a pattern *)
+function -1.0 -> 1 | _ -> 2;;
+
+(* combining language extensions (sec. 7.13 and 7.17) *)
+object
+  method f = 1
+  method! f : type t . int = 2
+end;;
+
+(* private polymorphic method with local type *)
+object method private f : type t . int = 1 end;;
+
 
 (**********************
 
 (* Most exotic: not found in the manual (up to 4.00) and not used by anyone,
    but still implemented by the compiler. *)
+
+(* whitespace inside val!, method!, inherit! *)
+object
+  val x = 1
+  val ! x = 2
+  method m = 1
+  method ! m = 2
+  inherit ! object val x = 3 end
+end;;
 
 (* Using :: as a constructor name *)
 type t = :: of int * int;;
