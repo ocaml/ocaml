@@ -229,7 +229,8 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLlocal1(res);
   res = caml_alloc(caml_backtrace_pos, Abstract_tag);
   if(caml_backtrace_buffer != NULL)
-    memcpy(&Field(res, 0), caml_backtrace_buffer, caml_backtrace_pos * sizeof(code_t));
+    memcpy(&Field(res, 0), caml_backtrace_buffer,
+           caml_backtrace_pos * sizeof(code_t));
   CAMLreturn(res);
 }
 
@@ -237,7 +238,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
    the OCaml-usable representation, instead of the raw backtrace as an
    abstract type, but this has a large performance overhead if you
    store a lot of backtraces and print only some of them.
-   
+
    It is not used by the Printexc library anymore, or anywhere else in
    the compiler, but we have kept it in case some user still depends
    on it as an external.
