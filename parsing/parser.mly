@@ -1696,6 +1696,7 @@ val_ident:
   | LPAREN operator RPAREN                      { $2 }
   | LPAREN operator error                       { unclosed "(" 1 ")" 3 }
   | LPAREN error                                { expecting 2 "operator" }
+  | LPAREN MODULE error                         { expecting 3 "module-expr" }
 ;
 operator:
     PREFIXOP                                    { $1 }
