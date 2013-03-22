@@ -839,6 +839,10 @@ external setsid : unit -> int = "unix_setsid"
 
 (* High-level process management (system, popen) *)
 
+let rec waitpid_non_intr pid =
+  try waitpid [] pid
+  with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
+
 let system cmd =
   match fork() with
      0 -> begin try
@@ -846,7 +850,7 @@ let system cmd =
           with _ ->
             exit 127
           end
-  | id -> snd(waitpid [] id)
+  | id -> snd(waitpid_non_intr id)
 
 let rec safe_dup fd =
   let new_fd = dup fd in
@@ -998,10 +1002,6 @@ let find_proc_id fun_name proc =
     pid
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
-
-let rec waitpid_non_intr pid =
-  try waitpid [] pid
-  with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
 
 let close_process_in inchan =
   let pid = find_proc_id "close_process_in" (Process_in inchan) in
