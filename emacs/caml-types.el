@@ -54,6 +54,8 @@ The current list of keywords is:
 type call ident"
 )
 
+(defvar caml-types-position-re nil)
+
 (let* ((caml-types-filename-re "\"\\(\\([^\\\"]\\|\\\\.\\)*\\)\"")
        (caml-types-number-re "\\([0-9]*\\)"))
   (setq caml-types-position-re
