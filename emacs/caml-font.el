@@ -140,11 +140,13 @@
 
 
 (defconst caml-font-ident-re
-  "[A-Za-z_\300-\326\330-\366\370-\377][A-Za-z_\300-\326\330-\366\370-\377'0-9]*"
+  (concat "[A-Za-z_\300-\326\330-\366\370-\377]"
+          "[A-Za-z_\300-\326\330-\366\370-\377'0-9]*")
 )
 
 (defconst caml-font-int-re
-  "\\(0[xX][0-9A-Fa-f][0-9A-Fa-f_]*\\|0[oO][0-7][0-7_]*\\|0[bB][01][01_]*\\)[lLn]?"
+  (concat "\\(0[xX][0-9A-Fa-f][0-9A-Fa-f_]*\\|0[oO][0-7][0-7_]*"
+          "\\|0[bB][01][01_]*\\)[lLn]?")
 )
 
 ; decimal integers are folded into the RE for floats to get longest-match
@@ -160,7 +162,9 @@
 
 ; match any char token
 (defconst caml-font-char-re
-  "'\\(\015\012\\|[^\\']\\|\\(\\\\\\([\\'\"ntbr ]\\|[0-9][0-9][0-9]\\|x[0-9A-Fa-f][0-9A-Fa-f]\\)\\)\\)'"
+  (concat "'\\(\015\012\\|[^\\']\\|"
+          "\\(\\\\\\([\\'\"ntbr ]\\|[0-9][0-9][0-9]"
+                    "\\|x[0-9A-Fa-f][0-9A-Fa-f]\\)\\)\\)'")
 )
 
 ; match a quote followed by a newline

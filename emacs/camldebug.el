@@ -96,8 +96,8 @@ The following commands are available:
 \\[camldebug-display-frame] displays in the other window
 the last line referred to in the camldebug buffer.
 
-\\[camldebug-step], \\[camldebug-back] and \\[camldebug-next], in the camldebug window,
-call camldebug to step, backstep or next and then update the other window
+\\[camldebug-step], \\[camldebug-back] and \\[camldebug-next], in the camldebug
+window,call camldebug to step, backstep or next and then update the other window
 with the current file and position.
 
 If you are in a source file, you may select a point to break
@@ -250,7 +250,8 @@ representation is simply concatenated with the COMMAND."
                                      camldebug-goto-position
                                      "-[0-9]+[ \t]*\\(before\\).*\n")
                              camldebug-filter-accumulator)
-               (string-match (concat "\\(\n\\|\\`\\)[ \t]*\\([0-9]+\\)[ \t]+[0-9]+-"
+               (string-match (concat "\\(\n\\|\\`\\)[ \t]*\\([0-9]+\\)"
+                                     "[ \t]+[0-9]+-"
                                      camldebug-goto-position
                                      "[ \t]*\\(after\\).*\n")
                              camldebug-filter-accumulator)))
@@ -710,7 +711,8 @@ Obeying it means displaying in another window the specified file and line."
 ;;; Miscellaneous.
 
 (defun camldebug-module-name (filename)
-  (substring filename (string-match "\\([^/]*\\)\\.ml$" filename) (match-end 1)))
+  (substring filename (string-match "\\([^/]*\\)\\.ml$" filename)
+             (match-end 1)))
 
 ;;; The camldebug-call function must do the right thing whether its
 ;;; invoking keystroke is from the camldebug buffer itself (via
