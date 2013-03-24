@@ -72,6 +72,7 @@ Bug fixes:
 - PR#5928: Missing space between words in manual page for ocamlmktop
 - ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
 - PR#5930: ocamldep leaks temporary preprocessing files
+- PR#5934: integer shift by negative amount (in otherlibs/num)
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
