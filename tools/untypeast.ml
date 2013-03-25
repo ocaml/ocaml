@@ -324,14 +324,14 @@ and untype_signature_item item =
           ) list)
     | Tsig_exception (_id, name, decl) ->
         Psig_exception (untype_exception_declaration name decl)
-    | Tsig_module (_id, name, mtype) ->
-        Psig_module {pmd_name = name; pmd_type = untype_module_type mtype; pmd_attributes = []}
+    | Tsig_module md ->
+        Psig_module {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type; pmd_attributes = md.md_attributes}
     | Tsig_recmodule list ->
-        Psig_recmodule (List.map (fun (_id, name, mtype) ->
-              {pmd_name = name; pmd_type = untype_module_type mtype;
-               pmd_attributes = []}) list)
-    | Tsig_modtype (_id, name, mdecl) ->
-        Psig_modtype {pmtd_name=name; pmtd_type=untype_modtype_declaration mdecl; pmtd_attributes=[]}
+        Psig_recmodule (List.map (fun md ->
+              {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
+               pmd_attributes = md.md_attributes}) list)
+    | Tsig_modtype mtd ->
+        Psig_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
     | Tsig_open (_path, lid, attrs) -> Psig_open (lid, attrs)
     | Tsig_include (mty, _lid, attrs) -> Psig_include (untype_module_type mty, attrs)
     | Tsig_class list ->
@@ -344,11 +344,6 @@ and untype_signature_item item =
   { psig_desc = desc;
     psig_loc = item.sig_loc;
   }
-
-and untype_modtype_declaration mdecl =
-  match mdecl with
-    Tmodtype_abstract -> None
-  | Tmodtype_manifest mtype -> Some (untype_module_type mtype)
 
 and untype_class_description cd =
   {

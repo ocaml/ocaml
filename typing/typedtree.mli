@@ -167,7 +167,9 @@ and module_expr =
   { mod_desc: module_expr_desc;
     mod_loc: Location.t;
     mod_type: Types.module_type;
-    mod_env: Env.t }
+    mod_env: Env.t;
+    mod_attributes: attribute list;
+   }
 
 and module_type_constraint =
   Tmodtype_implicit
@@ -246,18 +248,30 @@ and signature_item_desc =
     Tsig_value of Ident.t * string loc * value_description
   | Tsig_type of (Ident.t * string loc * type_declaration) list
   | Tsig_exception of Ident.t * string loc * exception_declaration
-  | Tsig_module of Ident.t * string loc * module_type
-  | Tsig_recmodule of (Ident.t * string loc * module_type) list
-  | Tsig_modtype of Ident.t * string loc * modtype_declaration
+  | Tsig_module of module_declaration
+  | Tsig_recmodule of module_declaration list
+  | Tsig_modtype of module_type_declaration
   | Tsig_open of Path.t * Longident.t loc * attribute list
   | Tsig_include of module_type * Types.signature * attribute list
   | Tsig_class of class_description list
   | Tsig_class_type of class_type_declaration list
   | Tsig_attribute of attribute
 
-and modtype_declaration =
-    Tmodtype_abstract
-  | Tmodtype_manifest of module_type
+and module_declaration =
+    {
+     md_id: Ident.t;
+     md_name: string loc;
+     md_type: module_type;
+     md_attributes: attribute list;
+    }
+
+and module_type_declaration =
+    {
+     mtd_id: Ident.t;
+     mtd_name: string loc;
+     mtd_type: module_type option;
+     mtd_attributes: attribute list;
+    }
 
 and with_constraint =
     Twith_type of type_declaration

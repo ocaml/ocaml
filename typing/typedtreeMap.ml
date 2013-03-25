@@ -23,7 +23,7 @@ module type MapArgument = sig
   val enter_package_type : package_type -> package_type
   val enter_signature : signature -> signature
   val enter_signature_item : signature_item -> signature_item
-  val enter_modtype_declaration : modtype_declaration -> modtype_declaration
+  val enter_module_type_declaration : module_type_declaration -> module_type_declaration
   val enter_module_type : module_type -> module_type
   val enter_module_expr : module_expr -> module_expr
   val enter_with_constraint : with_constraint -> with_constraint
@@ -51,7 +51,7 @@ module type MapArgument = sig
   val leave_package_type : package_type -> package_type
   val leave_signature : signature -> signature
   val leave_signature_item : signature_item -> signature_item
-  val leave_modtype_declaration : modtype_declaration -> modtype_declaration
+  val leave_module_type_declaration : module_type_declaration -> module_type_declaration
   val leave_module_type : module_type -> module_type
   val leave_module_expr : module_expr -> module_expr
   val leave_with_constraint : with_constraint -> with_constraint
@@ -402,14 +402,16 @@ module MakeMap(Map : MapArgument) = struct
         )
         | Tsig_exception (id, name, decl) ->
           Tsig_exception (id, name, map_exception_declaration decl)
-        | Tsig_module (id, name, mtype) ->
-          Tsig_module (id, name, map_module_type mtype)
+        | Tsig_module md ->
+          Tsig_module {md with md_type = map_module_type md.md_type}
         | Tsig_recmodule list ->
-          Tsig_recmodule (List.map (
-            fun (id, name, mtype) ->
-              (id, name, map_module_type mtype) ) list)
-        | Tsig_modtype (id, name, mdecl) ->
-          Tsig_modtype (id, name, map_modtype_declaration mdecl)
+          Tsig_recmodule
+              (List.map
+                 (fun md -> {md with md_type = map_module_type md.md_type})
+                 list
+              )
+        | Tsig_modtype mtd ->
+          Tsig_modtype (map_module_type_declaration mtd)
         | Tsig_open (path, lid, _attrs) -> item.sig_desc
         | Tsig_include (mty, lid, attrs) -> Tsig_include (map_module_type mty, lid, attrs)
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
@@ -419,15 +421,10 @@ module MakeMap(Map : MapArgument) = struct
     in
     Map.leave_signature_item { item with sig_desc = sig_desc }
 
-  and map_modtype_declaration mdecl =
-    let mdecl = Map.enter_modtype_declaration mdecl in
-    let mdecl =
-      match mdecl with
-          Tmodtype_abstract -> Tmodtype_abstract
-        | Tmodtype_manifest mtype ->
-          Tmodtype_manifest (map_module_type mtype)
-    in
-    Map.leave_modtype_declaration mdecl
+  and map_module_type_declaration mtd =
+    let mtd = Map.enter_module_type_declaration mtd in
+    let mtd = {mtd with mtd_type = may_map map_module_type mtd.mtd_type} in
+    Map.leave_module_type_declaration mtd
 
 
   and map_class_description cd =
@@ -645,7 +642,7 @@ module DefaultMapArgument = struct
   let enter_package_type t = t
   let enter_signature t = t
   let enter_signature_item t = t
-  let enter_modtype_declaration t = t
+  let enter_module_type_declaration t = t
   let enter_module_type t = t
   let enter_module_expr t = t
   let enter_with_constraint t = t
@@ -672,7 +669,7 @@ module DefaultMapArgument = struct
   let leave_package_type t = t
   let leave_signature t = t
   let leave_signature_item t = t
-  let leave_modtype_declaration t = t
+  let leave_module_type_declaration t = t
   let leave_module_type t = t
   let leave_module_expr t = t
   let leave_with_constraint t = t

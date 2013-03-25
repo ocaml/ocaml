@@ -31,7 +31,7 @@ module type IteratorArgument = sig
     val enter_package_type : package_type -> unit
     val enter_signature : signature -> unit
     val enter_signature_item : signature_item -> unit
-    val enter_modtype_declaration : modtype_declaration -> unit
+    val enter_module_type_declaration : module_type_declaration -> unit
     val enter_module_type : module_type -> unit
     val enter_module_expr : module_expr -> unit
     val enter_with_constraint : with_constraint -> unit
@@ -59,7 +59,7 @@ module type IteratorArgument = sig
     val leave_package_type : package_type -> unit
     val leave_signature : signature -> unit
     val leave_signature_item : signature_item -> unit
-    val leave_modtype_declaration : modtype_declaration -> unit
+    val leave_module_type_declaration : module_type_declaration -> unit
     val leave_module_type : module_type -> unit
     val leave_module_expr : module_expr -> unit
     val leave_with_constraint : with_constraint -> unit
@@ -352,12 +352,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ) list
         | Tsig_exception (id, _, decl) ->
             iter_exception_declaration decl
-        | Tsig_module (id, _, mtype) ->
-            iter_module_type mtype
+        | Tsig_module md ->
+            iter_module_type md.md_type
         | Tsig_recmodule list ->
-            List.iter (fun (id, _, mtype) -> iter_module_type mtype) list
-        | Tsig_modtype (id, _, mdecl) ->
-            iter_modtype_declaration mdecl
+            List.iter (fun md -> iter_module_type md.md_type) list
+        | Tsig_modtype mtd ->
+            iter_module_type_declaration mtd
         | Tsig_open _ -> ()
         | Tsig_include (mty, _, _attrs) -> iter_module_type mty
         | Tsig_class list ->
@@ -368,14 +368,14 @@ module MakeIterator(Iter : IteratorArgument) : sig
       end;
       Iter.leave_signature_item item;
 
-    and iter_modtype_declaration mdecl =
-      Iter.enter_modtype_declaration mdecl;
+    and iter_module_type_declaration mtd =
+      Iter.enter_module_type_declaration mtd;
       begin
-        match mdecl with
-          Tmodtype_abstract -> ()
-        | Tmodtype_manifest mtype -> iter_module_type mtype
+        match mtd.mtd_type with
+        | None -> ()
+        | Some mtype -> iter_module_type mtype
       end;
-      Iter.leave_modtype_declaration mdecl;
+      Iter.leave_module_type_declaration mtd
 
 
     and iter_class_description cd =
@@ -595,7 +595,7 @@ module DefaultIteratorArgument = struct
       let enter_package_type _ = ()
       let enter_signature _ = ()
       let enter_signature_item _ = ()
-      let enter_modtype_declaration _ = ()
+      let enter_module_type_declaration _ = ()
       let enter_module_type _ = ()
       let enter_module_expr _ = ()
       let enter_with_constraint _ = ()
@@ -622,7 +622,7 @@ module DefaultIteratorArgument = struct
       let leave_package_type _ = ()
       let leave_signature _ = ()
       let leave_signature_item _ = ()
-      let leave_modtype_declaration _ = ()
+      let leave_module_type_declaration _ = ()
       let leave_module_type _ = ()
       let leave_module_expr _ = ()
       let leave_with_constraint _ = ()

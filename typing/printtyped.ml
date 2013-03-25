@@ -596,15 +596,17 @@ and signature_item i ppf x =
   | Tsig_exception (s, _, ed) ->
       line i ppf "Psig_exception \"%a\"\n" fmt_ident s;
       exception_declaration i ppf ed;
-  | Tsig_module (s, _, mt) ->
-      line i ppf "Psig_module \"%a\"\n" fmt_ident s;
-      module_type i ppf mt;
+  | Tsig_module md ->
+      line i ppf "Psig_module \"%a\"\n" fmt_ident md.md_id;
+      attributes i ppf md.md_attributes;
+      module_type i ppf md.md_type
   | Tsig_recmodule decls ->
       line i ppf "Psig_recmodule\n";
-      list i string_x_module_type ppf decls;
-  | Tsig_modtype (s, _, md) ->
-      line i ppf "Psig_modtype \"%a\"\n" fmt_ident s;
-      modtype_declaration i ppf md;
+      list i module_declaration ppf decls;
+  | Tsig_modtype x ->
+      line i ppf "Psig_modtype \"%a\"\n" fmt_ident x.mtd_id;
+      attributes i ppf x.mtd_attributes;
+      modtype_declaration i ppf x.mtd_type
   | Tsig_open (li,_,attrs) ->
       line i ppf "Psig_open %a\n" fmt_path li;
       attributes i ppf attrs
@@ -622,12 +624,14 @@ and signature_item i ppf x =
       line i ppf "Psig_attribute \"%s\"\n" s;
       Printast.expression i ppf arg
 
-and modtype_declaration i ppf x =
-  match x with
-  | Tmodtype_abstract -> line i ppf "Pmodtype_abstract\n";
-  | Tmodtype_manifest (mt) ->
-      line i ppf "Pmodtype_manifest\n";
-      module_type (i+1) ppf mt;
+and module_declaration i ppf md =
+  line i ppf "%a" fmt_ident md.md_id;
+  attributes i ppf md.md_attributes;
+  module_type (i+1) ppf md.md_type;
+
+and modtype_declaration i ppf = function
+  | None -> line i ppf "#abstract"
+  | Some mt -> module_type (i + 1) ppf mt
 
 and with_constraint i ppf x =
   match x with
@@ -642,6 +646,7 @@ and with_constraint i ppf x =
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.mod_loc;
+  attributes i ppf x.mod_attributes;
   let i = i+1 in
   match x.mod_desc with
   | Tmod_ident (li,_) -> line i ppf "Pmod_ident %a\n" fmt_path li;

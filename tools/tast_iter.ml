@@ -177,12 +177,12 @@ let signature_item sub item =
       List.iter (fun (_id, _, decl) -> sub # type_declaration decl) list
   | Tsig_exception (_id, _, decl) ->
       sub # exception_declaration decl
-  | Tsig_module (_id, _, mtype) ->
-      sub # module_type mtype
+  | Tsig_module md ->
+      sub # module_type md.md_type
   | Tsig_recmodule list ->
-      List.iter (fun (_id, _, mtype) -> sub # module_type mtype) list
-  | Tsig_modtype (_id, _, mdecl) ->
-      sub # modtype_declaration mdecl
+      List.iter (fun md -> sub # module_type md.md_type) list
+  | Tsig_modtype mtd ->
+      opt (sub # module_type) mtd.mtd_type
   | Tsig_open _ -> ()
   | Tsig_include (mty,_,_) -> sub # module_type mty
   | Tsig_class list ->
@@ -190,11 +190,6 @@ let signature_item sub item =
   | Tsig_class_type list ->
       List.iter (sub # class_type_declaration) list
   | Tsig_attribute _ -> ()
-
-let modtype_declaration sub mdecl =
-  match mdecl with
-  | Tmodtype_abstract -> ()
-  | Tmodtype_manifest mtype -> sub # module_type mtype
 
 let class_description sub cd =
   sub # class_type cd.ci_expr
@@ -362,7 +357,6 @@ class iter = object(this)
   method core_type = core_type this
   method exception_declaration = exception_declaration this
   method expression = expression this
-  method modtype_declaration = modtype_declaration this
   method module_expr = module_expr this
   method module_type = module_type this
   method package_type = package_type this

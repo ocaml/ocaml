@@ -25,7 +25,7 @@ module type IteratorArgument = sig
     val enter_package_type : package_type -> unit
     val enter_signature : signature -> unit
     val enter_signature_item : signature_item -> unit
-    val enter_modtype_declaration : modtype_declaration -> unit
+    val enter_module_type_declaration : module_type_declaration -> unit
     val enter_module_type : module_type -> unit
     val enter_module_expr : module_expr -> unit
     val enter_with_constraint : with_constraint -> unit
@@ -53,7 +53,7 @@ module type IteratorArgument = sig
     val leave_package_type : package_type -> unit
     val leave_signature : signature -> unit
     val leave_signature_item : signature_item -> unit
-    val leave_modtype_declaration : modtype_declaration -> unit
+    val leave_module_type_declaration : module_type_declaration -> unit
     val leave_module_type : module_type -> unit
     val leave_module_expr : module_expr -> unit
     val leave_with_constraint : with_constraint -> unit

@@ -607,10 +607,9 @@ and signature_item i ppf x =
       line i ppf "Psig_attribute \"%s\"\n" s;
       expression i ppf arg
 
-and modtype_declaration i ppf x =
-  match x with
-  | None -> line i ppf "#abstract\n";
-  | Some mt -> module_type (i+1) ppf mt;
+and modtype_declaration i ppf = function
+  | None -> line i ppf "#abstract"
+  | Some mt -> module_type (i+1) ppf mt
 
 and with_constraint i ppf x =
   match x with
