@@ -387,7 +387,7 @@ and string_option_underscore i ppf =
         string i ppf "_"
 
 and type_declaration i ppf x =
-  line i ppf "type_declaration %a\n" fmt_location x.typ_loc;
+  line i ppf "type_declaration %a %a\n" fmt_ident x.typ_id fmt_location x.typ_loc;
   attributes i ppf x.typ_attributes;
   let i = i+1 in
   line i ppf "ptype_params =\n";
@@ -590,9 +590,9 @@ and signature_item i ppf x =
   | Tsig_value vd ->
       line i ppf "Psig_value\n";
       value_description i ppf vd;
-  | Tsig_type (l) ->
+  | Tsig_type l ->
       line i ppf "Psig_type\n";
-      list i string_x_type_declaration ppf l;
+      list i type_declaration ppf l;
   | Tsig_exception (s, _, ed) ->
       line i ppf "Psig_exception \"%a\"\n" fmt_ident s;
       exception_declaration i ppf ed;
@@ -690,7 +690,7 @@ and structure_item i ppf x =
       value_description i ppf vd;
   | Tstr_type l ->
       line i ppf "Pstr_type\n";
-      list i string_x_type_declaration ppf l;
+      list i type_declaration ppf l;
   | Tstr_exception (s, _, ed) ->
       line i ppf "Pstr_exception \"%a\"\n" fmt_ident s;
       exception_declaration i ppf ed;
@@ -722,10 +722,6 @@ and structure_item i ppf x =
   | Tstr_attribute (s, arg) ->
       line i ppf "Pstr_attribute \"%s\"\n" s;
       Printast.expression i ppf arg
-
-and string_x_type_declaration i ppf (s, _, td) =
-  ident i ppf s;
-  type_declaration (i+1) ppf td;
 
 and string_x_module_type i ppf (s, _, mty) =
   ident i ppf s;

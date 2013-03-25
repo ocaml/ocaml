@@ -17,7 +17,7 @@ open Format
 
 val transl_type_decl:
     Env.t -> Parsetree.type_declaration list ->
-    (Ident.t * string Asttypes.loc * Typedtree.type_declaration) list * Env.t
+    Typedtree.type_declaration list * Env.t
 
 val transl_exception:
     Env.t ->

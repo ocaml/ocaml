@@ -254,7 +254,7 @@ let rec map_rec' fn decls rem =
 
 let rec map_rec'' fn decls rem =
   match decls with
-  | (id, _,_ as d1) :: dl when Btype.is_row_name (Ident.name id) ->
+  | d1 :: dl when Btype.is_row_name (Ident.name d1.typ_id) ->
       fn Trec_not d1 :: map_rec'' fn dl rem
   | _ -> map_rec fn decls rem
 
@@ -474,8 +474,8 @@ and transl_signature env sg =
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_type decls) env loc :: trem,
-            map_rec'' (fun rs (id, _, info) ->
-                Sig_type(id, info.typ_type, rs)) decls rem,
+            map_rec'' (fun rs td ->
+                Sig_type(td.typ_id, td.typ_type, rs)) decls rem,
             final_env
         | Psig_exception sarg ->
             let arg = Typedecl.transl_exception env sarg in
@@ -697,7 +697,8 @@ let enrich_type_decls anchor decls oldenv newenv =
     None -> newenv
   | Some p ->
       List.fold_left
-        (fun e (id, _, info) ->
+        (fun e info ->
+          let id = info.typ_id in
           let info' =
             Mtype.enrich_typedecl oldenv (Pdot(p, Ident.name id, nopos))
               info.typ_type
@@ -1002,7 +1003,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           enrich_type_decls anchor decls env newenv in
         let (str_rem, sig_rem, final_env) = type_struct newenv' srem in
         (item :: str_rem,
-         map_rec'' (fun rs (id, _, info) -> Sig_type(id, info.typ_type, rs))
+         map_rec'' (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
            decls sig_rem,
          final_env)
     | Pstr_exception sarg ->

@@ -103,9 +103,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_primitive vd ->
           Tstr_primitive (map_value_description vd)
         | Tstr_type list ->
-          Tstr_type (List.map (
-            fun (id, name, decl) ->
-              (id, name, map_type_declaration decl) ) list)
+          Tstr_type (List.map map_type_declaration list)
         | Tstr_exception (id, name, decl) ->
           Tstr_exception (id, name, map_exception_declaration decl)
         | Tstr_exn_rebind (id, name, path, lid, attrs) ->
@@ -395,11 +393,7 @@ module MakeMap(Map : MapArgument) = struct
       match item.sig_desc with
           Tsig_value vd ->
             Tsig_value (map_value_description vd)
-        | Tsig_type list -> Tsig_type (
-          List.map (fun (id, name, decl) ->
-            (id, name, map_type_declaration decl)
-          ) list
-        )
+        | Tsig_type list -> Tsig_type (List.map map_type_declaration list)
         | Tsig_exception (id, name, decl) ->
           Tsig_exception (id, name, map_exception_declaration decl)
         | Tsig_module md ->

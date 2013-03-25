@@ -81,9 +81,9 @@ module Typedtree_search =
           Hashtbl.add table (ER (Name.from_ident ident)) tt
       | Typedtree.Tstr_type ident_type_decl_list ->
           List.iter
-            (fun (id, id_loc, e) ->
-              Hashtbl.add table (T (Name.from_ident id))
-                (Typedtree.Tstr_type [(id,id_loc,e)]))
+            (fun td ->
+              Hashtbl.add table (T (Name.from_ident td.typ_id))
+                (Typedtree.Tstr_type [td]))
             ident_type_decl_list
       | Typedtree.Tstr_class info_list ->
           List.iter
@@ -141,7 +141,7 @@ module Typedtree_search =
 
     let search_type_declaration table name =
       match Hashtbl.find table (T name) with
-      | (Typedtree.Tstr_type [(_,_, decl)]) -> decl
+      | (Typedtree.Tstr_type [td]) -> td
       | _ -> assert false
 
     let search_class_exp table name =

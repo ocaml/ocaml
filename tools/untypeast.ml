@@ -53,8 +53,7 @@ and untype_structure_item item =
     | Tstr_primitive vd ->
         Pstr_primitive (untype_value_description vd)
     | Tstr_type list ->
-        Pstr_type (List.map (fun (_id, name, decl) ->
-              untype_type_declaration name decl) list)
+        Pstr_type (List.map untype_type_declaration list)
     | Tstr_exception (_id, name, decl) ->
         Pstr_exception (untype_exception_declaration name decl)
     | Tstr_exn_rebind (_id, name, _p, lid, attrs) ->
@@ -115,9 +114,9 @@ and untype_value_description v =
    pval_attributes = v.val_attributes;
   }
 
-and untype_type_declaration name decl =
+and untype_type_declaration decl =
   {
-    ptype_name = name;
+    ptype_name = decl.typ_name;
     ptype_params = decl.typ_params;
     ptype_cstrs = List.map (fun (ct1, ct2, loc) ->
         (untype_core_type ct1,
@@ -319,9 +318,7 @@ and untype_signature_item item =
       Tsig_value v ->
         Psig_value (untype_value_description v)
     | Tsig_type list ->
-        Psig_type (List.map (fun (_id, name, decl) ->
-              untype_type_declaration name decl
-          ) list)
+        Psig_type (List.map untype_type_declaration list)
     | Tsig_exception (_id, name, decl) ->
         Psig_exception (untype_exception_declaration name decl)
     | Tsig_module md ->
@@ -386,9 +383,9 @@ and untype_module_type mty =
 
 and untype_with_constraint lid cstr =
   match cstr with
-    Twith_type decl -> Pwith_type (untype_type_declaration (mkloc (Longident.last lid.txt) lid.loc) decl)
+    Twith_type decl -> Pwith_type (untype_type_declaration decl)
   | Twith_module (_path, lid) -> Pwith_module (lid)
-  | Twith_typesubst decl -> Pwith_typesubst (untype_type_declaration (mkloc (Longident.last lid.txt) lid.loc) decl)
+  | Twith_typesubst decl -> Pwith_typesubst (untype_type_declaration decl)
   | Twith_modsubst (_path, lid) -> Pwith_modsubst (lid)
 
 and untype_module_expr mexpr =

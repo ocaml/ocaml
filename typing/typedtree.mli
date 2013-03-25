@@ -200,7 +200,7 @@ and structure_item_desc =
     Tstr_eval of expression
   | Tstr_value of rec_flag * (pattern * expression) list
   | Tstr_primitive of value_description
-  | Tstr_type of (Ident.t * string loc * type_declaration) list
+  | Tstr_type of type_declaration list
   | Tstr_exception of Ident.t * string loc * exception_declaration
   | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attribute list
   | Tstr_module of Ident.t * string loc * module_expr
@@ -246,7 +246,7 @@ and signature_item =
 
 and signature_item_desc =
     Tsig_value of value_description
-  | Tsig_type of (Ident.t * string loc * type_declaration) list
+  | Tsig_type of type_declaration list
   | Tsig_exception of Ident.t * string loc * exception_declaration
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
@@ -331,8 +331,11 @@ and value_description =
     }
 
 and type_declaration =
-  { typ_params: string loc option list;
-    typ_type : Types.type_declaration;
+  {
+    typ_id: Ident.t;
+    typ_name: string loc;
+    typ_params: string loc option list;
+    typ_type: Types.type_declaration;
     typ_cstrs: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
     typ_private: private_flag;

@@ -257,7 +257,9 @@ let transl_declaration env sdecl id =
         if Ctype.cyclic_abbrev env id ty then
           raise(Error(sdecl.ptype_loc, Recursive_abbrev sdecl.ptype_name.txt));
     end;
-    let tdecl = {
+    {
+      typ_id = id;
+      typ_name = sdecl.ptype_name;
       typ_params = sdecl.ptype_params;
       typ_type = decl;
       typ_cstrs = cstrs;
@@ -267,8 +269,7 @@ let transl_declaration env sdecl id =
       typ_variance = sdecl.ptype_variance;
       typ_private = sdecl.ptype_private;
       typ_attributes = sdecl.ptype_attributes;
-    } in
-    (id, sdecl.ptype_name, tdecl)
+    }
 
 (* Generalize a type declaration *)
 
@@ -472,8 +473,9 @@ let check_recursion env loc path decl to_check =
       check_regular path args [] body)
     decl.type_manifest
 
-let check_abbrev_recursion env id_loc_list (id, _, tdecl) =
+let check_abbrev_recursion env id_loc_list tdecl =
   let decl = tdecl.typ_type in
+  let id = tdecl.typ_id in
   check_recursion env (List.assoc id id_loc_list) (Path.Pident id) decl
     (function Path.Pident id -> List.mem_assoc id id_loc_list | _ -> false)
 
@@ -811,7 +813,7 @@ let transl_type_decl env sdecl_list =
   let tdecls =
     List.map2 transl_declaration sdecl_list (List.map id_slots id_list) in
   let decls =
-    List.map (fun (id, name_loc, tdecl) -> (id, tdecl.typ_type)) tdecls in
+    List.map (fun tdecl -> (tdecl.typ_id, tdecl.typ_type)) tdecls in
   current_slot := None;
   (* Check for duplicates *)
   check_duplicates sdecl_list;
@@ -839,7 +841,7 @@ let transl_type_decl env sdecl_list =
   List.iter (check_abbrev_recursion newenv id_loc_list) tdecls;
   (* Check that all type variable are closed *)
   List.iter2
-    (fun sdecl (id, _, tdecl) ->
+    (fun sdecl tdecl ->
       let decl = tdecl.typ_type in
        match Ctype.closed_type_decl decl with
          Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
@@ -862,9 +864,12 @@ let transl_type_decl env sdecl_list =
   let final_decls, final_env =
     compute_variance_fixpoint env decls required (List.map init_variance decls)
   in
-  let final_decls = List.map2 (fun (id, name_loc, tdecl) (id2, decl) ->
-        (id, name_loc, { tdecl with typ_type = decl })
-    ) tdecls final_decls in
+  let final_decls =
+    List.map2
+      (fun tdecl (id2, decl) ->
+        { tdecl with typ_type = decl }
+      ) tdecls final_decls
+  in
   (* Done *)
   (final_decls, final_env)
 
@@ -995,6 +1000,8 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   Ctype.end_def();
   generalize_decl decl;
   {
+    typ_id = id;
+    typ_name = sdecl.ptype_name;
     typ_params = sdecl.ptype_params;
     typ_type = decl;
     typ_cstrs = constraints;

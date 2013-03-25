@@ -129,8 +129,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_value (rec_flag, list) ->
             iter_bindings rec_flag list
         | Tstr_primitive vd -> iter_value_description vd
-        | Tstr_type list ->
-            List.iter (fun (id, _, decl) -> iter_type_declaration decl) list
+        | Tstr_type list -> List.iter iter_type_declaration list
         | Tstr_exception (id, _, decl) -> iter_exception_declaration decl
         | Tstr_exn_rebind _ -> ()
         | Tstr_module (id, _, mexpr) ->
@@ -347,9 +346,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           Tsig_value vd ->
             iter_value_description vd
         | Tsig_type list ->
-            List.iter (fun (id, _, decl) ->
-                iter_type_declaration decl
-            ) list
+            List.iter iter_type_declaration list
         | Tsig_exception (id, _, decl) ->
             iter_exception_declaration decl
         | Tsig_module md ->

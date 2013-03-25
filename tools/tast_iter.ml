@@ -23,8 +23,7 @@ let structure_item sub x =
   | Tstr_eval exp -> sub # expression exp
   | Tstr_value (rec_flag, list) -> sub # bindings (rec_flag, list)
   | Tstr_primitive v -> sub # value_description v
-  | Tstr_type list ->
-      List.iter (fun (_id, _, decl) -> sub # type_declaration decl) list
+  | Tstr_type list -> List.iter (sub # type_declaration) list
   | Tstr_exception (_id, _, decl) -> sub # exception_declaration decl
   | Tstr_exn_rebind (_id, _, _p, _, _) -> ()
   | Tstr_module (_id, _, mexpr) -> sub # module_expr mexpr
@@ -174,7 +173,7 @@ let signature_item sub item =
   | Tsig_value v ->
       sub # value_description v
   | Tsig_type list ->
-      List.iter (fun (_id, _, decl) -> sub # type_declaration decl) list
+      List.iter (sub # type_declaration) list
   | Tsig_exception (_id, _, decl) ->
       sub # exception_declaration decl
   | Tsig_module md ->
