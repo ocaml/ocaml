@@ -200,7 +200,7 @@ and structure_item =
 and structure_item_desc =
     Tstr_eval of expression
   | Tstr_value of rec_flag * (pattern * expression) list
-  | Tstr_primitive of Ident.t * string loc * value_description
+  | Tstr_primitive of value_description
   | Tstr_type of (Ident.t * string loc * type_declaration) list
   | Tstr_exception of Ident.t * string loc * exception_declaration
   | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attribute list
@@ -246,7 +246,7 @@ and signature_item =
     sig_loc: Location.t }
 
 and signature_item_desc =
-    Tsig_value of Ident.t * string loc * value_description
+    Tsig_value of value_description
   | Tsig_type of (Ident.t * string loc * type_declaration) list
   | Tsig_exception of Ident.t * string loc * exception_declaration
   | Tsig_module of module_declaration
@@ -322,10 +322,12 @@ and row_field =
   | Tinherit of core_type
 
 and value_description =
-  { val_desc : core_type;
-    val_val : Types.value_description;
-    val_prim : string list;
-    val_loc : Location.t;
+  { val_id: Ident.t;
+    val_name: string loc;
+    val_desc: core_type;
+    val_val: Types.value_description;
+    val_prim: string list;
+    val_loc: Location.t;
     val_attributes: attribute list;
     }
 

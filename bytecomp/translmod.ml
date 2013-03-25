@@ -290,7 +290,7 @@ and transl_structure fields cc rootpath = function
       let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
       transl_let rec_flag pat_expr_list
                  (transl_structure ext_fields cc rootpath rem)
-  | Tstr_primitive(id, _, descr) ->
+  | Tstr_primitive descr ->
       record_primitive descr.val_val;
       transl_structure fields cc rootpath rem
   | Tstr_type(decls) ->
@@ -363,7 +363,7 @@ let rec defined_idents = function
     | Tstr_eval expr -> defined_idents rem
     | Tstr_value(rec_flag, pat_expr_list) ->
       let_bound_idents pat_expr_list @ defined_idents rem
-    | Tstr_primitive(id, _, descr) -> defined_idents rem
+    | Tstr_primitive desc -> defined_idents rem
     | Tstr_type decls -> defined_idents rem
     | Tstr_exception(id, _, decl) -> id :: defined_idents rem
     | Tstr_exn_rebind(id, _, path, _, _) -> id :: defined_idents rem
@@ -385,7 +385,7 @@ let rec more_idents = function
     match item.str_desc with
     | Tstr_eval expr -> more_idents rem
     | Tstr_value(rec_flag, pat_expr_list) -> more_idents rem
-    | Tstr_primitive(id, _, descr) -> more_idents rem
+    | Tstr_primitive _ -> more_idents rem
     | Tstr_type decls -> more_idents rem
     | Tstr_exception(id, _, decl) -> more_idents rem
     | Tstr_exn_rebind(id, _, path, _, _) -> more_idents rem
@@ -407,7 +407,7 @@ and all_idents = function
     | Tstr_eval expr -> all_idents rem
     | Tstr_value(rec_flag, pat_expr_list) ->
       let_bound_idents pat_expr_list @ all_idents rem
-    | Tstr_primitive(id, _, descr) -> all_idents rem
+    | Tstr_primitive _ -> all_idents rem
     | Tstr_type decls -> all_idents rem
     | Tstr_exception(id, _, decl) -> id :: all_idents rem
     | Tstr_exn_rebind(id, _, path, _, _) -> id :: all_idents rem
@@ -460,7 +460,7 @@ let transl_store_structure glob map prims str =
       let lam = transl_let rec_flag pat_expr_list (store_idents ids) in
       Lsequence(subst_lambda subst lam,
                 transl_store rootpath (add_idents false ids subst) rem)
-  | Tstr_primitive(id, _, descr) ->
+  | Tstr_primitive descr ->
       record_primitive descr.val_val;
       transl_store rootpath subst rem
   | Tstr_type(decls) ->

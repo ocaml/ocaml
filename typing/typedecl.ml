@@ -923,11 +923,21 @@ let transl_value_decl env loc valdecl =
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc }
   in
-  { val_desc = cty; val_val = v;
-    val_prim = valdecl.pval_prim;
-    val_loc = valdecl.pval_loc;
-    val_attributes = valdecl.pval_attributes;
-   }
+  let (id, newenv) =
+    Env.enter_value valdecl.pval_name.txt v env
+      ~check:(fun s -> Warnings.Unused_value_declaration s)
+  in
+  let desc =
+    {
+     val_id = id;
+     val_name = valdecl.pval_name;
+     val_desc = cty; val_val = v;
+     val_prim = valdecl.pval_prim;
+     val_loc = valdecl.pval_loc;
+     val_attributes = valdecl.pval_attributes;
+    }
+  in
+  desc, newenv
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)

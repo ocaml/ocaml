@@ -50,8 +50,8 @@ and untype_structure_item item =
     | Tstr_value (rec_flag, list) ->
         Pstr_value (rec_flag, List.map (fun (pat, exp) ->
               untype_pattern pat, untype_expression exp) list)
-    | Tstr_primitive (_id, name, v) ->
-        Pstr_primitive (untype_value_description name v)
+    | Tstr_primitive vd ->
+        Pstr_primitive (untype_value_description vd)
     | Tstr_type list ->
         Pstr_type (List.map (fun (_id, name, decl) ->
               untype_type_declaration name decl) list)
@@ -106,9 +106,9 @@ and untype_structure_item item =
   in
   { pstr_desc = desc; pstr_loc = item.str_loc; }
 
-and untype_value_description name v =
+and untype_value_description v =
   {
-   pval_name = name;
+   pval_name = v.val_name;
    pval_prim = v.val_prim;
    pval_type = untype_core_type v.val_desc;
    pval_loc = v.val_loc;
@@ -316,8 +316,8 @@ and untype_signature sg =
 and untype_signature_item item =
   let desc =
     match item.sig_desc with
-      Tsig_value (_id, name, v) ->
-        Psig_value (untype_value_description name v)
+      Tsig_value v ->
+        Psig_value (untype_value_description v)
     | Tsig_type list ->
         Psig_type (List.map (fun (_id, name, decl) ->
               untype_type_declaration name decl

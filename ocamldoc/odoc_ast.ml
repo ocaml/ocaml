@@ -106,8 +106,8 @@ module Typedtree_search =
               | Some n -> Hashtbl.add table_values n (pat,exp)
             )
             pat_exp_list
-      | Typedtree.Tstr_primitive (ident, _, _) ->
-          Hashtbl.add table (P (Name.from_ident ident)) tt
+      | Typedtree.Tstr_primitive vd ->
+          Hashtbl.add table (P (Name.from_ident vd.val_id)) tt
       | Typedtree.Tstr_open _ -> ()
       | Typedtree.Tstr_include _ -> ()
       | Typedtree.Tstr_eval _ -> ()
@@ -167,7 +167,7 @@ module Typedtree_search =
 
     let search_primitive table name =
       match Hashtbl.find table (P name) with
-        Tstr_primitive (ident, _, val_desc) -> val_desc.val_val.Types.val_type
+        Tstr_primitive vd -> vd.val_val.Types.val_type
       | _ -> assert false
 
     let get_nth_inherit_class_expr cls n =

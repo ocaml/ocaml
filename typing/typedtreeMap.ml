@@ -100,8 +100,8 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_eval exp -> Tstr_eval (map_expression exp)
         | Tstr_value (rec_flag, list) ->
           Tstr_value (rec_flag, map_bindings rec_flag list)
-        | Tstr_primitive (id, name, v) ->
-          Tstr_primitive (id, name, map_value_description v)
+        | Tstr_primitive vd ->
+          Tstr_primitive (map_value_description vd)
         | Tstr_type list ->
           Tstr_type (List.map (
             fun (id, name, decl) ->
@@ -393,8 +393,8 @@ module MakeMap(Map : MapArgument) = struct
     let item = Map.enter_signature_item item in
     let sig_desc =
       match item.sig_desc with
-          Tsig_value (id, name, v) ->
-            Tsig_value (id, name, map_value_description v)
+          Tsig_value vd ->
+            Tsig_value (map_value_description vd)
         | Tsig_type list -> Tsig_type (
           List.map (fun (id, name, decl) ->
             (id, name, map_type_declaration decl)

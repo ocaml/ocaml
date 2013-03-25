@@ -374,7 +374,7 @@ and expression i ppf x =
       module_expr i ppf me
 
 and value_description i ppf x =
-  line i ppf "value_description\n";
+  line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location x.val_loc;
   attributes i ppf x.val_attributes;
   core_type (i+1) ppf x.val_desc;
   list (i+1) string ppf x.val_prim;
@@ -587,8 +587,8 @@ and signature_item i ppf x =
   line i ppf "signature_item %a\n" fmt_location x.sig_loc;
   let i = i+1 in
   match x.sig_desc with
-  | Tsig_value (s, _, vd) ->
-      line i ppf "Psig_value \"%a\"\n" fmt_ident s;
+  | Tsig_value vd ->
+      line i ppf "Psig_value\n";
       value_description i ppf vd;
   | Tsig_type (l) ->
       line i ppf "Psig_type\n";
@@ -685,8 +685,8 @@ and structure_item i ppf x =
   | Tstr_value (rf, l) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
       list i pattern_x_expression_def ppf l;
-  | Tstr_primitive (s, _, vd) ->
-      line i ppf "Pstr_primitive \"%a\"\n" fmt_ident s;
+  | Tstr_primitive vd ->
+      line i ppf "Pstr_primitive\n";
       value_description i ppf vd;
   | Tstr_type l ->
       line i ppf "Pstr_type\n";

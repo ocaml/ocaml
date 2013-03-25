@@ -128,7 +128,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           Tstr_eval exp -> iter_expression exp
         | Tstr_value (rec_flag, list) ->
             iter_bindings rec_flag list
-        | Tstr_primitive (id, _, v) -> iter_value_description v
+        | Tstr_primitive vd -> iter_value_description vd
         | Tstr_type list ->
             List.iter (fun (id, _, decl) -> iter_type_declaration decl) list
         | Tstr_exception (id, _, decl) -> iter_exception_declaration decl
@@ -344,8 +344,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_signature_item item;
       begin
         match item.sig_desc with
-          Tsig_value (id, _, v) ->
-            iter_value_description v
+          Tsig_value vd ->
+            iter_value_description vd
         | Tsig_type list ->
             List.iter (fun (id, _, decl) ->
                 iter_type_declaration decl
