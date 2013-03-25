@@ -295,8 +295,9 @@ and transl_structure fields cc rootpath = function
       transl_structure fields cc rootpath rem
   | Tstr_type(decls) ->
       transl_structure fields cc rootpath rem
-  | Tstr_exception( id, _, decl) ->
-      Llet(Strict, id, transl_exception id (field_path rootpath id) decl,
+  | Tstr_exception decl ->
+      let id = decl.cd_id in
+      Llet(Strict, id, transl_exception (field_path rootpath id) decl,
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_exn_rebind( id, _, path, _, _) ->
       Llet(Strict, id, transl_path path,
@@ -365,7 +366,7 @@ let rec defined_idents = function
       let_bound_idents pat_expr_list @ defined_idents rem
     | Tstr_primitive desc -> defined_idents rem
     | Tstr_type decls -> defined_idents rem
-    | Tstr_exception(id, _, decl) -> id :: defined_idents rem
+    | Tstr_exception decl -> decl.cd_id :: defined_idents rem
     | Tstr_exn_rebind(id, _, path, _, _) -> id :: defined_idents rem
     | Tstr_module(id, _, modl) -> id :: defined_idents rem
     | Tstr_recmodule decls ->
@@ -387,7 +388,7 @@ let rec more_idents = function
     | Tstr_value(rec_flag, pat_expr_list) -> more_idents rem
     | Tstr_primitive _ -> more_idents rem
     | Tstr_type decls -> more_idents rem
-    | Tstr_exception(id, _, decl) -> more_idents rem
+    | Tstr_exception _ -> more_idents rem
     | Tstr_exn_rebind(id, _, path, _, _) -> more_idents rem
     | Tstr_recmodule decls -> more_idents rem
     | Tstr_modtype(id, _, decl) -> more_idents rem
@@ -409,7 +410,7 @@ and all_idents = function
       let_bound_idents pat_expr_list @ all_idents rem
     | Tstr_primitive _ -> all_idents rem
     | Tstr_type decls -> all_idents rem
-    | Tstr_exception(id, _, decl) -> id :: all_idents rem
+    | Tstr_exception decl -> decl.cd_id :: all_idents rem
     | Tstr_exn_rebind(id, _, path, _, _) -> id :: all_idents rem
     | Tstr_recmodule decls ->
       List.map (fun (id, _, _, _) -> id) decls @ all_idents rem
@@ -465,8 +466,9 @@ let transl_store_structure glob map prims str =
       transl_store rootpath subst rem
   | Tstr_type(decls) ->
       transl_store rootpath subst rem
-  | Tstr_exception( id, _, decl) ->
-      let lam = transl_exception id (field_path rootpath id) decl in
+  | Tstr_exception decl ->
+      let id = decl.cd_id in
+      let lam = transl_exception (field_path rootpath id) decl in
       Lsequence(Llet(Strict, id, lam, store_ident id),
                 transl_store rootpath (add_ident false id subst) rem)
   | Tstr_exn_rebind( id, _, path, _, _) ->
@@ -671,8 +673,8 @@ let transl_toplevel_item item =
       let idents = let_bound_idents pat_expr_list in
       transl_let rec_flag pat_expr_list
                  (make_sequence toploop_setvalue_id idents)
-  | Tstr_exception(id, _, decl) ->
-      toploop_setvalue id (transl_exception id None decl)
+  | Tstr_exception decl ->
+      toploop_setvalue decl.cd_id (transl_exception None decl)
   | Tstr_exn_rebind(id, _, path, _, _) ->
       toploop_setvalue id (transl_path path)
   | Tstr_module(id, _, modl) ->

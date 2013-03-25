@@ -201,11 +201,11 @@ and structure_item_desc =
   | Tstr_value of rec_flag * (pattern * expression) list
   | Tstr_primitive of value_description
   | Tstr_type of type_declaration list
-  | Tstr_exception of Ident.t * string loc * exception_declaration
+  | Tstr_exception of constructor_declaration
   | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attribute list
-  | Tstr_module of Ident.t * string loc * module_expr
+  | Tstr_module of Ident.t * string loc * module_expr (* todo: module_binding *)
   | Tstr_recmodule of (Ident.t * string loc * module_type * module_expr) list
-  | Tstr_modtype of Ident.t * string loc * module_type
+  | Tstr_modtype of Ident.t * string loc * module_type (* todo: module_type_binding *)
   | Tstr_open of Path.t * Longident.t loc * attribute list
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
@@ -247,7 +247,7 @@ and signature_item =
 and signature_item_desc =
     Tsig_value of value_description
   | Tsig_type of type_declaration list
-  | Tsig_exception of Ident.t * string loc * exception_declaration
+  | Tsig_exception of constructor_declaration
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
@@ -369,13 +369,6 @@ and constructor_declaration =
      cd_loc: Location.t;
      cd_attributes: attribute list;
     }
-
-and exception_declaration =
-  { exn_params : core_type list;
-    exn_exn : Types.exception_declaration;
-    exn_loc : Location.t;
-    exn_attributes: attribute list;
-   }
 
 and class_type =
   { cltyp_desc: class_type_desc;

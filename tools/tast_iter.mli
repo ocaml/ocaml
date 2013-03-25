@@ -26,7 +26,6 @@ class iter: object
   method class_type_field: class_type_field -> unit
   method core_field_type: core_field_type -> unit
   method core_type: core_type -> unit
-  method exception_declaration: exception_declaration -> unit
   method expression: expression -> unit
   method module_expr: module_expr -> unit
   method module_type: module_type -> unit
@@ -62,7 +61,6 @@ val class_type_declaration: iter -> class_type_declaration -> unit
 val class_type_field: iter -> class_type_field -> unit
 val core_field_type: iter -> core_field_type -> unit
 val core_type: iter -> core_type -> unit
-val exception_declaration: iter -> exception_declaration -> unit
 val expression: iter -> expression -> unit
 val module_expr: iter -> module_expr -> unit
 val module_type: iter -> module_type -> unit

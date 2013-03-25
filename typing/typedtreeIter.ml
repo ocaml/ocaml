@@ -24,8 +24,6 @@ module type IteratorArgument = sig
     val enter_structure : structure -> unit
     val enter_value_description : value_description -> unit
     val enter_type_declaration : type_declaration -> unit
-    val enter_exception_declaration :
-      exception_declaration -> unit
     val enter_pattern : pattern -> unit
     val enter_expression : expression -> unit
     val enter_package_type : package_type -> unit
@@ -52,8 +50,6 @@ module type IteratorArgument = sig
     val leave_structure : structure -> unit
     val leave_value_description : value_description -> unit
     val leave_type_declaration : type_declaration -> unit
-    val leave_exception_declaration :
-      exception_declaration -> unit
     val leave_pattern : pattern -> unit
     val leave_expression : expression -> unit
     val leave_package_type : package_type -> unit
@@ -130,7 +126,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_bindings rec_flag list
         | Tstr_primitive vd -> iter_value_description vd
         | Tstr_type list -> List.iter iter_type_declaration list
-        | Tstr_exception (id, _, decl) -> iter_exception_declaration decl
+        | Tstr_exception cd -> iter_constructor_declaration cd
         | Tstr_exn_rebind _ -> ()
         | Tstr_module (id, _, mexpr) ->
             iter_module_expr mexpr
@@ -165,6 +161,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
       iter_core_type v.val_desc;
       Iter.leave_value_description v
 
+    and iter_constructor_declaration cd =
+      List.iter iter_core_type cd.cd_args;
+      option iter_core_type cd.cd_res;
+
     and iter_type_declaration decl =
       Iter.enter_type_declaration decl;
       List.iter (fun (ct1, ct2, loc) ->
@@ -174,11 +174,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
       begin match decl.typ_kind with
           Ttype_abstract -> ()
         | Ttype_variant list ->
-            List.iter
-              (fun cd ->
-                List.iter iter_core_type cd.cd_args;
-                option iter_core_type cd.cd_res;
-              ) list
+            List.iter iter_constructor_declaration list
         | Ttype_record list ->
             List.iter
               (fun ld ->
@@ -190,11 +186,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Some ct -> iter_core_type ct
       end;
       Iter.leave_type_declaration decl
-
-    and iter_exception_declaration decl =
-      Iter.enter_exception_declaration decl;
-      List.iter iter_core_type decl.exn_params;
-      Iter.leave_exception_declaration decl;
 
     and iter_pattern pat =
       Iter.enter_pattern pat;
@@ -347,8 +338,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_value_description vd
         | Tsig_type list ->
             List.iter iter_type_declaration list
-        | Tsig_exception (id, _, decl) ->
-            iter_exception_declaration decl
+        | Tsig_exception cd ->
+            iter_constructor_declaration cd
         | Tsig_module md ->
             iter_module_type md.md_type
         | Tsig_recmodule list ->

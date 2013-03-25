@@ -411,11 +411,6 @@ and type_kind i ppf x =
       line i ppf "Ptype_record\n";
       list (i+1) label_decl ppf l;
 
-and exception_declaration i ppf x =
-(*  string_loc i ppf x.ped_name; *)
-  attributes i ppf x.exn_attributes;
-  list i core_type ppf x.exn_params
-
 and class_type i ppf x =
   line i ppf "class_type %a\n" fmt_location x.cltyp_loc;
   let i = i+1 in
@@ -593,9 +588,9 @@ and signature_item i ppf x =
   | Tsig_type l ->
       line i ppf "Psig_type\n";
       list i type_declaration ppf l;
-  | Tsig_exception (s, _, ed) ->
-      line i ppf "Psig_exception \"%a\"\n" fmt_ident s;
-      exception_declaration i ppf ed;
+  | Tsig_exception cd ->
+      line i ppf "Psig_exception\n";
+      constructor_decl i ppf cd
   | Tsig_module md ->
       line i ppf "Psig_module \"%a\"\n" fmt_ident md.md_id;
       attributes i ppf md.md_attributes;
@@ -691,9 +686,9 @@ and structure_item i ppf x =
   | Tstr_type l ->
       line i ppf "Pstr_type\n";
       list i type_declaration ppf l;
-  | Tstr_exception (s, _, ed) ->
-      line i ppf "Pstr_exception \"%a\"\n" fmt_ident s;
-      exception_declaration i ppf ed;
+  | Tstr_exception cd ->
+      line i ppf "Pstr_exception\n";
+      constructor_decl i ppf cd;
   | Tstr_exn_rebind (s, _, li, _, attrs) ->
       line i ppf "Pstr_exn_rebind \"%a\" %a\n" fmt_ident s fmt_path li;
       attributes i ppf attrs

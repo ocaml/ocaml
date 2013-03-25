@@ -894,7 +894,17 @@ let transl_exception env excdecl =
   let types = List.map (fun cty -> cty.ctyp_type) ttypes in
   List.iter Ctype.generalize types;
   let exn_decl = { exn_args = types; Types.exn_loc = loc } in
-  { exn_params = ttypes; exn_exn = exn_decl; Typedtree.exn_loc = loc; exn_attributes = excdecl.pcd_attributes }
+  let (id, newenv) = Env.enter_exception excdecl.pcd_name.txt exn_decl env in
+  let cd =
+    { cd_id = id;
+      cd_name = excdecl.pcd_name;
+      cd_args = ttypes;
+      cd_loc = loc;
+      cd_res = None;
+      cd_attributes = excdecl.pcd_attributes;
+     }
+  in
+  cd, exn_decl, newenv
 
 (* Translate an exception rebinding *)
 let transl_exn_rebind env loc lid =

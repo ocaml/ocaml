@@ -16,8 +16,6 @@ module type MapArgument = sig
   val enter_structure : structure -> structure
   val enter_value_description : value_description -> value_description
   val enter_type_declaration : type_declaration -> type_declaration
-  val enter_exception_declaration :
-    exception_declaration -> exception_declaration
   val enter_pattern : pattern -> pattern
   val enter_expression : expression -> expression
   val enter_package_type : package_type -> package_type
@@ -44,8 +42,6 @@ module type MapArgument = sig
   val leave_structure : structure -> structure
   val leave_value_description : value_description -> value_description
   val leave_type_declaration : type_declaration -> type_declaration
-  val leave_exception_declaration :
-    exception_declaration -> exception_declaration
   val leave_pattern : pattern -> pattern
   val leave_expression : expression -> expression
   val leave_package_type : package_type -> package_type
@@ -104,8 +100,8 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_primitive (map_value_description vd)
         | Tstr_type list ->
           Tstr_type (List.map map_type_declaration list)
-        | Tstr_exception (id, name, decl) ->
-          Tstr_exception (id, name, map_exception_declaration decl)
+        | Tstr_exception cd ->
+          Tstr_exception (map_constructor_declaration cd)
         | Tstr_exn_rebind (id, name, path, lid, attrs) ->
           Tstr_exn_rebind (id, name, path, lid, attrs)
         | Tstr_module (id, name, mexpr) ->
@@ -158,14 +154,7 @@ module MakeMap(Map : MapArgument) = struct
     let typ_kind = match decl.typ_kind with
         Ttype_abstract -> Ttype_abstract
       | Ttype_variant list ->
-          let list =
-            List.map
-              (fun cd ->
-                {cd with cd_args = List.map map_core_type cd.cd_args;
-                 cd_res = may_map map_core_type cd.cd_res
-                }
-              ) list
-          in
+          let list = List.map map_constructor_declaration list in
           Ttype_variant list
       | Ttype_record list ->
         let list =
@@ -184,15 +173,10 @@ module MakeMap(Map : MapArgument) = struct
     Map.leave_type_declaration { decl with typ_cstrs = typ_cstrs;
       typ_kind = typ_kind; typ_manifest = typ_manifest }
 
-  and map_exception_declaration decl =
-    let decl = Map.enter_exception_declaration decl in
-    let exn_params = List.map map_core_type decl.exn_params in
-    let decl =       { exn_params = exn_params;
-                       exn_exn = decl.exn_exn;
-                       exn_loc = decl.exn_loc;
-                       exn_attributes = decl.exn_attributes;
-                      } in
-    Map.leave_exception_declaration decl;
+  and map_constructor_declaration cd =
+    {cd with cd_args = List.map map_core_type cd.cd_args;
+     cd_res = may_map map_core_type cd.cd_res
+    }
 
   and map_pattern pat =
     let pat = Map.enter_pattern pat in
@@ -394,8 +378,8 @@ module MakeMap(Map : MapArgument) = struct
           Tsig_value vd ->
             Tsig_value (map_value_description vd)
         | Tsig_type list -> Tsig_type (List.map map_type_declaration list)
-        | Tsig_exception (id, name, decl) ->
-          Tsig_exception (id, name, map_exception_declaration decl)
+        | Tsig_exception cd ->
+          Tsig_exception (map_constructor_declaration cd)
         | Tsig_module md ->
           Tsig_module {md with md_type = map_module_type md.md_type}
         | Tsig_recmodule list ->

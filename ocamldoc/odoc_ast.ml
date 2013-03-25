@@ -75,8 +75,8 @@ module Typedtree_search =
             mods
       | Typedtree.Tstr_modtype (ident, _, _) ->
           Hashtbl.add table (MT (Name.from_ident ident)) tt
-      | Typedtree.Tstr_exception (ident, _, _) ->
-          Hashtbl.add table (E (Name.from_ident ident)) tt
+      | Typedtree.Tstr_exception decl ->
+          Hashtbl.add table (E (Name.from_ident decl.cd_id)) tt
       | Typedtree.Tstr_exn_rebind (ident, _, _, _, _) ->
           Hashtbl.add table (ER (Name.from_ident ident)) tt
       | Typedtree.Tstr_type ident_type_decl_list ->
@@ -131,7 +131,7 @@ module Typedtree_search =
 
     let search_exception table name =
       match Hashtbl.find table (E name) with
-      | (Typedtree.Tstr_exception (_, _, excep_decl)) -> excep_decl
+      | (Typedtree.Tstr_exception decl) -> decl
       | _ -> assert false
 
     let search_exception_rebind table name =
@@ -1254,7 +1254,7 @@ module Analyser =
               ex_info = comment_opt ;
               ex_args = List.map (fun ctyp ->
                 Odoc_env.subst_type new_env ctyp.ctyp_type)
-                tt_excep_decl.exn_params ;
+                tt_excep_decl.cd_args;
               ex_alias = None ;
               ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
               ex_code =

@@ -54,8 +54,8 @@ and untype_structure_item item =
         Pstr_primitive (untype_value_description vd)
     | Tstr_type list ->
         Pstr_type (List.map untype_type_declaration list)
-    | Tstr_exception (_id, name, decl) ->
-        Pstr_exception (untype_exception_declaration name decl)
+    | Tstr_exception decl ->
+        Pstr_exception (untype_constructor_declaration decl)
     | Tstr_exn_rebind (_id, name, _p, lid, attrs) ->
         Pstr_exn_rebind (name, lid, attrs)
     | Tstr_module (_id, name, mexpr) ->
@@ -125,8 +125,7 @@ and untype_type_declaration decl =
     ptype_kind = (match decl.typ_kind with
         Ttype_abstract -> Ptype_abstract
       | Ttype_variant list ->
-          Ptype_variant (List.map (fun cd ->
-                {pcd_name = cd.cd_name; pcd_args = List.map untype_core_type cd.cd_args; pcd_res = option untype_core_type cd.cd_res; pcd_loc = cd.cd_loc; pcd_attributes = cd.cd_attributes}) list)
+          Ptype_variant (List.map untype_constructor_declaration list)
       | Ttype_record list ->
           Ptype_record (List.map (fun ld ->
                 {pld_name=ld.ld_name;
@@ -143,13 +142,13 @@ and untype_type_declaration decl =
     ptype_loc = decl.typ_loc;
   }
 
-and untype_exception_declaration name decl =
+and untype_constructor_declaration cd = 
   {
-   pcd_name = name;
-   pcd_args = List.map untype_core_type decl.exn_params;
-   pcd_attributes = decl.exn_attributes;
-   pcd_res = None;
-   pcd_loc = decl.exn_loc;
+   pcd_name = cd.cd_name;
+   pcd_args = List.map untype_core_type cd.cd_args;
+   pcd_res = option untype_core_type cd.cd_res;
+   pcd_loc = cd.cd_loc;
+   pcd_attributes = cd.cd_attributes;
   }
 
 and untype_pattern pat =
@@ -319,8 +318,8 @@ and untype_signature_item item =
         Psig_value (untype_value_description v)
     | Tsig_type list ->
         Psig_type (List.map untype_type_declaration list)
-    | Tsig_exception (_id, name, decl) ->
-        Psig_exception (untype_exception_declaration name decl)
+    | Tsig_exception decl ->
+        Psig_exception (untype_constructor_declaration decl)
     | Tsig_module md ->
         Psig_module {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type; pmd_attributes = md.md_attributes}
     | Tsig_recmodule list ->

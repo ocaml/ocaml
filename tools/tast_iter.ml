@@ -18,13 +18,17 @@ let opt f = function None -> () | Some x -> f x
 let structure sub str =
   List.iter (sub # structure_item) str.str_items
 
+let constructor_decl sub cd =
+  List.iter (sub # core_type) cd.cd_args;
+  opt (sub # core_type) cd.cd_res
+
 let structure_item sub x =
   match x.str_desc with
   | Tstr_eval exp -> sub # expression exp
   | Tstr_value (rec_flag, list) -> sub # bindings (rec_flag, list)
   | Tstr_primitive v -> sub # value_description v
   | Tstr_type list -> List.iter (sub # type_declaration) list
-  | Tstr_exception (_id, _, decl) -> sub # exception_declaration decl
+  | Tstr_exception decl -> constructor_decl sub decl
   | Tstr_exn_rebind (_id, _, _p, _, _) -> ()
   | Tstr_module (_id, _, mexpr) -> sub # module_expr mexpr
   | Tstr_recmodule list ->
@@ -53,14 +57,11 @@ let type_declaration sub decl =
   begin match decl.typ_kind with
   | Ttype_abstract -> ()
   | Ttype_variant list ->
-      List.iter (fun cd -> List.iter (sub # core_type) cd.cd_args; opt (sub # core_type) cd.cd_res) list
+      List.iter (constructor_decl sub) list
   | Ttype_record list ->
       List.iter (fun ld -> sub # core_type ld.ld_type) list
   end;
   opt (sub # core_type) decl.typ_manifest
-
-let exception_declaration sub decl =
-  List.iter (sub # core_type) decl.exn_params
 
 let pattern sub pat =
   let extra = function
@@ -174,8 +175,8 @@ let signature_item sub item =
       sub # value_description v
   | Tsig_type list ->
       List.iter (sub # type_declaration) list
-  | Tsig_exception (_id, _, decl) ->
-      sub # exception_declaration decl
+  | Tsig_exception decl ->
+      constructor_decl sub decl
   | Tsig_module md ->
       sub # module_type md.md_type
   | Tsig_recmodule list ->
@@ -354,7 +355,6 @@ class iter = object(this)
   method class_type_field = class_type_field this
   method core_field_type = core_field_type this
   method core_type = core_type this
-  method exception_declaration = exception_declaration this
   method expression = expression this
   method module_expr = module_expr this
   method module_type = module_type this
