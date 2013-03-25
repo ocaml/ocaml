@@ -138,7 +138,7 @@ module MT = struct
     match desc with
     | Psig_value vd -> value ~loc (sub # value_description vd)
     | Psig_type l -> type_ ~loc (List.map (sub # type_declaration) l)
-    | Psig_exception ed -> exception_ ~loc (sub # exception_declaration ed)
+    | Psig_exception ed -> exception_ ~loc (sub # constructor_declaration ed)
     | Psig_module x -> module_ ~loc (sub # module_declaration x)
     | Psig_recmodule l -> rec_module ~loc (List.map (sub # module_declaration) l)
     | Psig_modtype x -> modtype ~loc (sub # module_type_declaration x)
@@ -175,7 +175,7 @@ module M = struct
     | Pstr_value (r, pel) -> value ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
     | Pstr_primitive vd -> primitive ~loc (sub # value_description vd)
     | Pstr_type l -> type_ ~loc (List.map (sub # type_declaration) l)
-    | Pstr_exception ed -> exception_ ~loc (sub # exception_declaration ed)
+    | Pstr_exception ed -> exception_ ~loc (sub # constructor_declaration ed)
     | Pstr_exn_rebind (s, lid, attrs) -> exn_rebind ~loc (map_loc sub s) (map_loc sub lid) ~attrs:(sub # attributes attrs)
     | Pstr_module x -> module_ ~loc (sub # module_binding x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub # module_binding) l)
@@ -359,12 +359,6 @@ class mapper =
 
     method pat = P.map this
     method expr = E.map this
-
-    method exception_declaration {ped_name; ped_args; ped_attributes} =
-      Ed.mk
-        (map_loc this ped_name)
-        (List.map (this # typ) ped_args)
-        ~attrs:(this # attributes ped_attributes)
 
     method module_declaration {pmd_name; pmd_type; pmd_attributes} =
       Md.mk

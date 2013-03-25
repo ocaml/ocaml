@@ -557,7 +557,7 @@ module Analyser =
             (maybe_more, new_env, [ Element_value v ])
 
         | Parsetree.Psig_exception exception_decl ->
-            let name = exception_decl.Parsetree.ped_name in
+            let name = exception_decl.Parsetree.pcd_name in
             let types_excep_decl =
               try Signature_search.search_exception table name.txt
               with Not_found ->

@@ -146,9 +146,11 @@ and untype_type_declaration name decl =
 
 and untype_exception_declaration name decl =
   {
-   ped_name = name;
-   ped_args = List.map untype_core_type decl.exn_params;
-   ped_attributes = decl.exn_attributes;
+   pcd_name = name;
+   pcd_args = List.map untype_core_type decl.exn_params;
+   pcd_attributes = decl.exn_attributes;
+   pcd_res = None;
+   pcd_loc = decl.exn_loc;
   }
 
 and untype_pattern pat =

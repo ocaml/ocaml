@@ -1004,9 +1004,9 @@ value varify_constructors var_names =
     | <:sig_item< $sg1$; $sg2$ >> -> sig_item sg1 (sig_item sg2 l)
     | SgDir _ _ _ -> l
     | <:sig_item@loc< exception $uid:s$ >> ->
-        [mksig loc (Psig_exception {ped_name=with_loc (conv_con s) loc; ped_args=[]; ped_attributes=[]}) :: l]
+        [mksig loc (Psig_exception {pcd_name=with_loc (conv_con s) loc; pcd_args=[]; pcd_attributes=[]; pcd_res=None; pcd_loc=mkloc loc}) :: l]
     | <:sig_item@loc< exception $uid:s$ of $t$ >> ->
-        [mksig loc (Psig_exception {ped_name=with_loc (conv_con s) loc; ped_args=List.map ctyp (list_of_ctyp t []); ped_attributes=[]}) :: l]
+        [mksig loc (Psig_exception {pcd_name=with_loc (conv_con s) loc; pcd_args=List.map ctyp (list_of_ctyp t []); pcd_attributes=[]; pcd_res=None; pcd_loc=mkloc loc}) :: l]
     | SgExc _ _ -> assert False (*FIXME*)
     | SgExt loc n t sl -> [mksig loc (Psig_value (mkvalue_desc loc (with_loc n loc) t (list_of_meta_list sl))) :: l]
     | SgInc loc mt -> [mksig loc (Psig_include (module_type mt) []) :: l]
@@ -1077,9 +1077,9 @@ value varify_constructors var_names =
     | <:str_item< $st1$; $st2$ >> -> str_item st1 (str_item st2 l)
     | StDir _ _ _ -> l
     | <:str_item@loc< exception $uid:s$ >> ->
-        [mkstr loc (Pstr_exception {ped_name=with_loc (conv_con s) loc; ped_args=[]; ped_attributes=[]}) :: l ]
+        [mkstr loc (Pstr_exception {pcd_name=with_loc (conv_con s) loc; pcd_args=[]; pcd_attributes=[]; pcd_res=None; pcd_loc=mkloc loc}) :: l ]
     | <:str_item@loc< exception $uid:s$ of $t$ >> ->
-        [mkstr loc (Pstr_exception {ped_name=with_loc (conv_con s) loc; ped_args=List.map ctyp (list_of_ctyp t []);ped_attributes=[]}) :: l ]
+        [mkstr loc (Pstr_exception {pcd_name=with_loc (conv_con s) loc; pcd_args=List.map ctyp (list_of_ctyp t []);pcd_attributes=[]; pcd_res=None; pcd_loc=mkloc loc}) :: l ]
     | <:str_item@loc< exception $uid:s$ = $i$ >> ->
         [mkstr loc (Pstr_exn_rebind (with_loc (conv_con s) loc) (long_uident ~conv_con i) []) :: l ]
     | <:str_item@loc< exception $uid:_$ of $_$ = $_$ >> ->

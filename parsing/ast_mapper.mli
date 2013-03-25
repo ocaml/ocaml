@@ -27,7 +27,6 @@ class mapper:
     method class_type: class_type -> class_type
     method class_type_declaration: class_type_declaration -> class_type_declaration
     method class_type_field: class_type_field -> class_type_field
-    method exception_declaration: exception_declaration -> exception_declaration
     method expr: expression -> expression
     method implementation: string -> structure -> string * structure
     method interface: string -> signature -> string * signature

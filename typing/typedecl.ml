@@ -40,6 +40,7 @@ type error =
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
   | Varying_anonymous
+  | Exception_constructor_with_result
 
 open Typedtree
 
@@ -878,15 +879,17 @@ let transl_closed_type env sty =
   in
   { cty with ctyp_type = ty }
 
-let transl_exception env loc excdecl =
+let transl_exception env excdecl =
+  let loc = excdecl.pcd_loc in
+  if excdecl.pcd_res <> None then raise (Error (loc, Exception_constructor_with_result));
   reset_type_variables();
   Ctype.begin_def();
-  let ttypes = List.map (transl_closed_type env) excdecl.ped_args in
+  let ttypes = List.map (transl_closed_type env) excdecl.pcd_args in
   Ctype.end_def();
   let types = List.map (fun cty -> cty.ctyp_type) ttypes in
   List.iter Ctype.generalize types;
   let exn_decl = { exn_args = types; Types.exn_loc = loc } in
-  { exn_params = ttypes; exn_exn = exn_decl; Typedtree.exn_loc = loc; exn_attributes = excdecl.ped_attributes }
+  { exn_params = ttypes; exn_exn = exn_decl; Typedtree.exn_loc = loc; exn_attributes = excdecl.pcd_attributes }
 
 (* Translate an exception rebinding *)
 let transl_exn_rebind env loc lid =
@@ -1173,3 +1176,5 @@ let report_error ppf = function
       fprintf ppf "@[%s@ %s@ %s@]"
         "In this GADT definition," "the variance of some parameter"
         "cannot be checked"
+  | Exception_constructor_with_result ->
+      fprintf ppf "Exception constructors cannot specify a result type"

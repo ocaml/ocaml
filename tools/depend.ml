@@ -68,6 +68,9 @@ let add_opt add_fn bv = function
     None -> ()
   | Some x -> add_fn bv x
 
+let add_constructor_decl bv pcd =
+  List.iter (add_type bv) pcd.pcd_args; Misc.may (add_type bv) pcd.pcd_res
+
 let add_type_declaration bv td =
   List.iter
     (fun (ty1, ty2, _) -> add_type bv ty1; add_type bv ty2)
@@ -76,7 +79,7 @@ let add_type_declaration bv td =
   let add_tkind = function
     Ptype_abstract -> ()
   | Ptype_variant cstrs ->
-      List.iter (fun pcd -> List.iter (add_type bv) pcd.pcd_args; Misc.may (add_type bv) pcd.pcd_res) cstrs
+      List.iter (add_constructor_decl bv) cstrs
   | Ptype_record lbls ->
       List.iter (fun pld -> add_type bv pld.pld_type) lbls in
   add_tkind td.ptype_kind
@@ -215,8 +218,8 @@ and add_sig_item bv item =
       add_type bv vd.pval_type; bv
   | Psig_type dcls ->
       List.iter (add_type_declaration bv) dcls; bv
-  | Psig_exception ped ->
-      List.iter (add_type bv) ped.ped_args; bv
+  | Psig_exception pcd ->
+      add_constructor_decl bv pcd; bv
   | Psig_module pmd ->
       add_modtype bv pmd.pmd_type; StringSet.add pmd.pmd_name.txt bv
   | Psig_recmodule decls ->
@@ -269,8 +272,8 @@ and add_struct_item bv item =
       add_type bv vd.pval_type; bv
   | Pstr_type dcls ->
       List.iter (add_type_declaration bv) dcls; bv
-  | Pstr_exception ped ->
-      List.iter (add_type bv) ped.ped_args; bv
+  | Pstr_exception pcd ->
+      add_constructor_decl bv pcd; bv
   | Pstr_exn_rebind(id, l, _attrs) ->
       add bv l; bv
   | Pstr_module x ->

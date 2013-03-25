@@ -693,11 +693,11 @@ class printer  ()= object(self:'self)
         end) x
 
 
-  method exception_declaration f ed =
-    pp f "@[<hov2>exception@ %s%a@]" ed.ped_name.txt
+  method exception_declaration f cd =
+    pp f "@[<hov2>exception@ %s%a@]" cd.pcd_name.txt
       (fun f ed -> match ed with
       |[] -> ()
-      |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) ed.ped_args
+      |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) cd.pcd_args
 
   method class_signature f { pcsig_self = ct; pcsig_fields = l ;_} =
     let class_type_field f x =

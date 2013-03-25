@@ -223,15 +223,6 @@ module Val = struct
     }
 end
 
-module Ed = struct
-  let mk ?(attrs = []) name args =
-    {
-     ped_name = name;
-     ped_args = args;
-     ped_attributes = attrs;
-    }
-end
-
 module Mtb = struct
   let mk ?(attrs = []) name typ =
     {

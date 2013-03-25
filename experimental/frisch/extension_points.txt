@@ -186,7 +186,25 @@ Rationale:
    from its context (this will work at the beginning of the signature/structure and after
    another item finished with ";;").
 
---- Relaxing the syntax for recursive modules.
+-- Relaxing the syntax for exception declarations
+
+The parser now accepts the same syntax for exceptioon declarations as for constructor declarations,
+which permits the GADT syntax:
+
+ exception A : int -> foo
+
+The type-checker rejects this form.  Note that it is also possible to
+define exception whose name is () or ::.
+
+Attributes can be put on the constructor or on the whole declaration:
+
+ exception A[@foo] of int [@@bar]
+
+Rationale:
+  One less notion in the Parsetree, more uniform parsing.  Also
+  open the door to existentials in exception constructors.
+
+--- Relaxing the syntax for recursive modules
 
 Before:
    module X1 : MT1 = M1 and ... and Xn : MTn = Mn

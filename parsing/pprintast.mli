@@ -45,7 +45,7 @@ class printer :
     method directive_argument :
       Format.formatter -> Parsetree.directive_argument -> unit
     method exception_declaration :
-      Format.formatter -> Parsetree.exception_declaration -> unit
+      Format.formatter -> Parsetree.constructor_declaration -> unit
     method expression : Format.formatter -> Parsetree.expression -> unit
     method expression1 : Format.formatter -> Parsetree.expression -> unit
     method expression2 : Format.formatter -> Parsetree.expression -> unit

@@ -605,8 +605,8 @@ structure_item:
                              ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
   | TYPE type_declarations
       { mkstr(Pstr_type (List.rev $2) ) }
-  | EXCEPTION UIDENT constructor_arguments post_item_attributes
-      { mkstr(Pstr_exception (Ed.mk (mkrhs $2 2) $3 ~attrs:$4)) }
+  | EXCEPTION exception_declaration
+      { mkstr(Pstr_exception $2) }
   | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
       { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4), $5)) }
   | MODULE module_binding
@@ -690,8 +690,8 @@ signature_item:
                    ~loc:(symbol_rloc()))) }
   | TYPE type_declarations
       { mksig(Psig_type (List.rev $2)) }
-  | EXCEPTION UIDENT constructor_arguments post_item_attributes
-      { mksig(Psig_exception (Ed.mk (mkrhs $2 2) $3 ~attrs:$4)) }
+  | EXCEPTION exception_declaration
+      { mksig(Psig_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
       { mksig(Psig_module (Md.mk (mkrhs $2 2) $3 ~attrs:$4)) }
   | MODULE REC module_rec_declarations
@@ -1496,12 +1496,13 @@ constructor_declaration:
        Cd.mk (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2
       }
 ;
-
-constructor_arguments:
-    /*empty*/                                   { [] }
-  | OF core_type_list                           { List.rev $2 }
+exception_declaration:
+  | constructor_declaration post_item_attributes
+      {
+        let cd = $1 in
+        {cd with pcd_attributes = cd.pcd_attributes @ $2}
+      }
 ;
-
 generalized_constructor_arguments:
     /*empty*/                                   { ([],None) }
   | OF core_type_list                           { (List.rev $2,None) }

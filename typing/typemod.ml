@@ -482,10 +482,10 @@ and transl_signature env sg =
                 Sig_type(id, info.typ_type, rs)) decls rem,
             final_env
         | Psig_exception sarg ->
-            let arg = Typedecl.transl_exception env item.psig_loc sarg in
-            let (id, newenv) = Env.enter_exception sarg.ped_name.txt arg.exn_exn env in
+            let arg = Typedecl.transl_exception env sarg in
+            let (id, newenv) = Env.enter_exception sarg.pcd_name.txt arg.exn_exn env in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_exception (id, sarg.ped_name, arg)) env loc :: trem,
+            mksig (Tsig_exception (id, sarg.pcd_name, arg)) env loc :: trem,
             Sig_exception(id, arg.exn_exn) :: rem,
             final_env
         | Psig_module pmd ->
@@ -996,9 +996,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
            decls sig_rem,
          final_env)
     | Pstr_exception sarg ->
-        let arg = Typedecl.transl_exception env loc sarg in
-        let (id, newenv) = Env.enter_exception sarg.ped_name.txt arg.exn_exn env in
-        let item = mk (Tstr_exception(id, sarg.ped_name, arg)) in
+        let arg = Typedecl.transl_exception env sarg in
+        let (id, newenv) = Env.enter_exception sarg.pcd_name.txt arg.exn_exn env in
+        let item = mk (Tstr_exception(id, sarg.pcd_name, arg)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (item :: str_rem,
          Sig_exception(id, arg.exn_exn) :: sig_rem,

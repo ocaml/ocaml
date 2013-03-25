@@ -20,8 +20,8 @@ val transl_type_decl:
     (Ident.t * string Asttypes.loc * Typedtree.type_declaration) list * Env.t
 
 val transl_exception:
-    Env.t -> Location.t ->
-    Parsetree.exception_declaration -> Typedtree.exception_declaration
+    Env.t ->
+    Parsetree.constructor_declaration -> Typedtree.exception_declaration
 
 val transl_exn_rebind:
     Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
@@ -74,6 +74,7 @@ type error =
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
   | Varying_anonymous
+  | Exception_constructor_with_result
 
 exception Error of Location.t * error
 

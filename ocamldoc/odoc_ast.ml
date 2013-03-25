@@ -1236,7 +1236,7 @@ module Analyser =
             (maybe_more, new_env, eles)
 
       | Parsetree.Pstr_exception excep_decl ->
-          let name = excep_decl.Parsetree.ped_name in
+          let name = excep_decl.Parsetree.pcd_name in
           (* a new exception is defined *)
           let complete_name = Name.concat current_module_name name.txt in
           (* we get the exception declaration in the typed tree *)

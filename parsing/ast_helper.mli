@@ -120,7 +120,7 @@ module Sig:
     val mk: ?loc:Location.t -> signature_item_desc -> signature_item
     val value: ?loc:Location.t -> value_description -> signature_item
     val type_: ?loc:Location.t -> type_declaration list -> signature_item
-    val exception_: ?loc:Location.t -> exception_declaration -> signature_item
+    val exception_: ?loc:Location.t -> constructor_declaration -> signature_item
     val module_: ?loc:Location.t -> module_declaration -> signature_item
     val rec_module: ?loc:Location.t -> module_declaration list -> signature_item
     val modtype: ?loc:Location.t -> module_type_declaration -> signature_item
@@ -138,7 +138,7 @@ module Str:
     val value: ?loc:Location.t -> rec_flag -> (pattern * expression) list -> structure_item
     val primitive: ?loc:Location.t -> value_description -> structure_item
     val type_: ?loc:Location.t -> type_declaration list -> structure_item
-    val exception_: ?loc:Location.t -> exception_declaration -> structure_item
+    val exception_: ?loc:Location.t -> constructor_declaration -> structure_item
     val exn_rebind: ?loc:Location.t -> ?attrs:attribute list -> string loc -> Longident.t loc -> structure_item
     val module_: ?loc:Location.t -> module_binding -> structure_item
     val rec_module: ?loc:Location.t -> module_binding list -> structure_item
@@ -196,10 +196,6 @@ module Cf:
 module Val:
   sig
     val mk: ?attrs:attribute list -> ?loc:Location.t -> ?prim:string list -> string loc -> core_type -> value_description
-  end
-module Ed:
-  sig
-    val mk: ?attrs:attribute list -> string loc -> core_type list -> exception_declaration
   end
 module Mtb:
   sig

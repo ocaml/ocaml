@@ -397,11 +397,6 @@ and type_kind i ppf x =
       line i ppf "Ptype_record\n";
       list (i+1) label_decl ppf l;
 
-and exception_declaration i ppf x =
-  string_loc i ppf x.ped_name;
-  attributes i ppf x.ped_attributes;
-  list i core_type ppf x.ped_args
-
 and class_type i ppf x =
   line i ppf "class_type %a\n" fmt_location x.pcty_loc;
   let i = i+1 in
@@ -577,9 +572,9 @@ and signature_item i ppf x =
   | Psig_type (l) ->
       line i ppf "Psig_type\n";
       list i type_declaration ppf l;
-  | Psig_exception ed ->
+  | Psig_exception cd ->
       line i ppf "Psig_exception\n";
-      exception_declaration i ppf ed;
+      constructor_decl i ppf cd;
   | Psig_module pmd ->
       line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
       attributes i ppf pmd.pmd_attributes;
@@ -674,8 +669,9 @@ and structure_item i ppf x =
   | Pstr_type l ->
       line i ppf "Pstr_type\n";
       list i type_declaration ppf l;
-  | Pstr_exception ed ->
-      exception_declaration i ppf ed
+  | Pstr_exception cd ->
+      line i ppf "Pstr_exception\n";
+      constructor_decl i ppf cd;
   | Pstr_exn_rebind (s, li, attrs) ->
       line i ppf "Pstr_exn_rebind\n";
       attributes i ppf attrs;
