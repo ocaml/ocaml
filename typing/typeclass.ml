@@ -51,7 +51,7 @@ exception Error of Location.t * Env.t * error
 open Typedtree
 
 let ctyp desc typ env loc =
-  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env }
+  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env; ctyp_attributes = [] }
 let cltyp desc typ env loc =
   { cltyp_desc = desc; cltyp_type = typ; cltyp_loc = loc; cltyp_env = env }
 let mkcf desc loc = { cf_desc = desc; cf_loc = loc }
@@ -883,6 +883,7 @@ and class_expr cl_num val_env met_env scl =
               Texp_ident(path, mknoloc (Longident.Lident (Ident.name id)), vd);
               exp_loc = Location.none; exp_extra = [];
               exp_type = Ctype.instance val_env' vd.val_type;
+              exp_attributes = []; (* check *)
               exp_env = val_env'})
           end
           pv
@@ -897,6 +898,7 @@ and class_expr cl_num val_env met_env scl =
            {exp_desc = Texp_constant (Asttypes.Const_int 1);
             exp_loc = Location.none; exp_extra = [];
             exp_type = Ctype.none;
+            exp_attributes = [];
             exp_env = Env.empty }]
       in
       Ctype.raise_nongen_level ();
@@ -1022,6 +1024,7 @@ and class_expr cl_num val_env met_env scl =
                 Texp_ident(path, mknoloc(Longident.Lident (Ident.name id)),vd);
                 exp_loc = Location.none; exp_extra = [];
                 exp_type = Ctype.instance val_env vd.val_type;
+                exp_attributes = [];
                 exp_env = val_env;
                }
              in
@@ -1402,16 +1405,17 @@ let final_decl env define_class
    { ci_variance = cl.pci_variance;
      ci_loc = cl.pci_loc;
      ci_virt = cl.pci_virt;
-      ci_params = cl.pci_params;
+     ci_params = cl.pci_params;
 (* TODO : check that we have the correct use of identifiers *)
-      ci_id_name = cl.pci_name;
-      ci_id_class = id;
-      ci_id_class_type = ty_id;
-      ci_id_object = obj_id;
-      ci_id_typesharp = cl_id;
+     ci_id_name = cl.pci_name;
+     ci_id_class = id;
+     ci_id_class_type = ty_id;
+     ci_id_object = obj_id;
+     ci_id_typesharp = cl_id;
      ci_expr = expr;
      ci_decl = clty;
      ci_type_decl = cltydef;
+     ci_attributes = cl.pci_attributes;
  })
 (*   (cl.pci_variance, cl.pci_loc)) *)
 

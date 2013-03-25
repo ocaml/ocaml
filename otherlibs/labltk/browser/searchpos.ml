@@ -673,19 +673,21 @@ let rec search_pos_structure ~pos str =
         search_pos_pat pat ~pos ~env;
         search_pos_expr exp ~pos
       end
-  | Tstr_primitive (_, _, vd) ->()
-  | Tstr_type _ -> ()
-  | Tstr_exception _ -> ()
-  | Tstr_exn_rebind(_, _, _, _) -> ()
   | Tstr_module (_, _, m) -> search_pos_module_expr m ~pos
   | Tstr_recmodule bindings ->
       List.iter bindings ~f:(fun (_, _, _, m) -> search_pos_module_expr m ~pos)
-  | Tstr_modtype _ -> ()
-  | Tstr_open _ -> ()
   | Tstr_class l ->
       List.iter l ~f:(fun (cl, _, _) -> search_pos_class_expr cl.ci_expr ~pos)
-  | Tstr_class_type _ -> ()
-  | Tstr_include (m, _) -> search_pos_module_expr m ~pos
+  | Tstr_include (m, _, _) -> search_pos_module_expr m ~pos
+  | Tstr_primitive _
+  | Tstr_type _
+  | Tstr_exception _
+  | Tstr_modtype _
+  | Tstr_open _
+  | Tstr_class_type _
+  | Tstr_exn_rebind _
+  | Tstr_attribute _
+    -> ()
   end
 
 and search_pos_class_structure ~pos cls =

@@ -108,8 +108,8 @@ module MakeMap(Map : MapArgument) = struct
               (id, name, map_type_declaration decl) ) list)
         | Tstr_exception (id, name, decl) ->
           Tstr_exception (id, name, map_exception_declaration decl)
-        | Tstr_exn_rebind (id, name, path, lid) ->
-          Tstr_exn_rebind (id, name, path, lid)
+        | Tstr_exn_rebind (id, name, path, lid, attrs) ->
+          Tstr_exn_rebind (id, name, path, lid, attrs)
         | Tstr_module (id, name, mexpr) ->
           Tstr_module (id, name, map_module_expr mexpr)
         | Tstr_recmodule list ->
@@ -121,7 +121,7 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_recmodule list
         | Tstr_modtype (id, name, mtype) ->
           Tstr_modtype (id, name, map_module_type mtype)
-        | Tstr_open (path, lid) -> Tstr_open (path, lid)
+        | Tstr_open (path, lid, attrs) -> Tstr_open (path, lid, attrs)
         | Tstr_class list ->
           let list =
             List.map (fun (ci, string_list, virtual_flag) ->
@@ -139,8 +139,9 @@ module MakeMap(Map : MapArgument) = struct
             (id, name, Map.leave_class_infos { ct with ci_expr = ci_expr})
           ) list in
           Tstr_class_type list
-        | Tstr_include (mexpr, idents) ->
-          Tstr_include (map_module_expr mexpr, idents)
+        | Tstr_include (mexpr, idents, attrs) ->
+          Tstr_include (map_module_expr mexpr, idents, attrs)
+        | Tstr_attribute x -> Tstr_attribute x
     in
     Map.leave_structure_item { item with str_desc = str_desc}
 
@@ -183,7 +184,9 @@ module MakeMap(Map : MapArgument) = struct
     let exn_params = List.map map_core_type decl.exn_params in
     let decl =       { exn_params = exn_params;
                        exn_exn = decl.exn_exn;
-                       exn_loc = decl.exn_loc } in
+                       exn_loc = decl.exn_loc;
+                       exn_attributes = decl.exn_attributes;
+                      } in
     Map.leave_exception_declaration decl;
 
   and map_pattern pat =
@@ -220,8 +223,8 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_pat_extra pat_extra =
     match pat_extra with
-      | Tpat_constraint ct, loc -> (Tpat_constraint (map_core_type  ct), loc)
-      | (Tpat_type _ | Tpat_unpack), _ -> pat_extra
+      | Tpat_constraint ct, loc, attrs -> (Tpat_constraint (map_core_type  ct), loc, attrs)
+      | (Tpat_type _ | Tpat_unpack), _, _ -> pat_extra
 
   and map_expression exp =
     let exp = Map.enter_expression exp in
@@ -349,20 +352,19 @@ module MakeMap(Map : MapArgument) = struct
     Map.leave_expression {
       exp with
         exp_desc = exp_desc;
-        exp_extra = exp_extra }
+        exp_extra = exp_extra; }
 
-  and map_exp_extra exp_extra =
-    let loc = snd exp_extra in
-    match fst exp_extra with
+  and map_exp_extra ((desc, loc, attrs) as exp_extra) =
+    match desc with
       | Texp_constraint (Some ct, None) ->
-        Texp_constraint (Some (map_core_type ct), None), loc
+        Texp_constraint (Some (map_core_type ct), None), loc, attrs
       | Texp_constraint (None, Some ct) ->
-        Texp_constraint (None, Some (map_core_type ct)), loc
+        Texp_constraint (None, Some (map_core_type ct)), loc, attrs
       | Texp_constraint (Some ct1, Some ct2) ->
         Texp_constraint (Some (map_core_type ct1),
-                         Some (map_core_type ct2)), loc
+                         Some (map_core_type ct2)), loc, attrs
       | Texp_poly (Some ct) ->
-        Texp_poly (Some ( map_core_type ct )), loc
+        Texp_poly (Some ( map_core_type ct )), loc, attrs
       | Texp_newtype _
       | Texp_constraint (None, None)
       | Texp_open _
@@ -401,11 +403,12 @@ module MakeMap(Map : MapArgument) = struct
               (id, name, map_module_type mtype) ) list)
         | Tsig_modtype (id, name, mdecl) ->
           Tsig_modtype (id, name, map_modtype_declaration mdecl)
-        | Tsig_open (path, lid) -> item.sig_desc
-        | Tsig_include (mty, lid) -> Tsig_include (map_module_type mty, lid)
+        | Tsig_open (path, lid, _attrs) -> item.sig_desc
+        | Tsig_include (mty, lid, attrs) -> Tsig_include (map_module_type mty, lid, attrs)
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
         | Tsig_class_type list ->
           Tsig_class_type (List.map map_class_type_declaration list)
+        | Tsig_attribute _ as x -> x
     in
     Map.leave_signature_item { item with sig_desc = sig_desc }
 

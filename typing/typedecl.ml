@@ -263,6 +263,7 @@ let transl_declaration env sdecl id =
       typ_kind = tkind;
       typ_variance = sdecl.ptype_variance;
       typ_private = sdecl.ptype_private;
+      typ_attributes = sdecl.ptype_attributes;
     } in
     (id, sdecl.ptype_name, tdecl)
 
@@ -883,7 +884,7 @@ let transl_exception env loc excdecl =
   let types = List.map (fun cty -> cty.ctyp_type) ttypes in
   List.iter Ctype.generalize types;
   let exn_decl = { exn_args = types; Types.exn_loc = loc } in
-  { exn_params = ttypes; exn_exn = exn_decl; Typedtree.exn_loc = loc }
+  { exn_params = ttypes; exn_exn = exn_decl; Typedtree.exn_loc = loc; exn_attributes = excdecl.ped_attributes }
 
 (* Translate an exception rebinding *)
 let transl_exn_rebind env loc lid =
@@ -919,7 +920,9 @@ let transl_value_decl env loc valdecl =
   in
   { val_desc = cty; val_val = v;
     val_prim = valdecl.pval_prim;
-    val_loc = valdecl.pval_loc; }
+    val_loc = valdecl.pval_loc;
+    val_attributes = valdecl.pval_attributes;
+   }
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
@@ -985,6 +988,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     typ_kind = Ttype_abstract;
     typ_variance = sdecl.ptype_variance;
     typ_private = sdecl.ptype_private;
+    typ_attributes = sdecl.ptype_attributes;
   }
 
 (* Approximate a type declaration: just make all types abstract *)

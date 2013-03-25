@@ -26,7 +26,7 @@ let structure_item sub x =
   | Tstr_type list ->
       List.iter (fun (_id, _, decl) -> sub # type_declaration decl) list
   | Tstr_exception (_id, _, decl) -> sub # exception_declaration decl
-  | Tstr_exn_rebind (_id, _, _p, _) -> ()
+  | Tstr_exn_rebind (_id, _, _p, _, _) -> ()
   | Tstr_module (_id, _, mexpr) -> sub # module_expr mexpr
   | Tstr_recmodule list ->
       List.iter
@@ -41,7 +41,8 @@ let structure_item sub x =
       List.iter (fun (ci, _, _) -> sub # class_expr ci.ci_expr) list
   | Tstr_class_type list ->
       List.iter (fun (_id, _, ct) -> sub # class_type ct.ci_expr) list
-  | Tstr_include (mexpr, _) -> sub # module_expr mexpr
+  | Tstr_include (mexpr, _, _) -> sub # module_expr mexpr
+  | Tstr_attribute _ -> ()
 
 let value_description sub x =
   sub # core_type x.val_desc
@@ -68,7 +69,7 @@ let pattern sub pat =
     | Tpat_unpack -> ()
     | Tpat_constraint ct -> sub # core_type ct
   in
-  List.iter (fun (c, _) -> extra c) pat.pat_extra;
+  List.iter (fun (c, _, _) -> extra c) pat.pat_extra;
   match pat.pat_desc with
   | Tpat_any
   | Tpat_var _
@@ -90,7 +91,7 @@ let expression sub exp =
     | Texp_newtype _ -> ()
     | Texp_poly cto -> opt (sub # core_type) cto
   in
-  List.iter (function (c, _) -> extra c) exp.exp_extra;
+  List.iter (fun (c, _, _) -> extra c) exp.exp_extra;
   match exp.exp_desc with
   | Texp_ident _
   | Texp_constant _ -> ()
@@ -183,11 +184,12 @@ let signature_item sub item =
   | Tsig_modtype (_id, _, mdecl) ->
       sub # modtype_declaration mdecl
   | Tsig_open _ -> ()
-  | Tsig_include (mty,_) -> sub # module_type mty
+  | Tsig_include (mty,_,_) -> sub # module_type mty
   | Tsig_class list ->
       List.iter (sub # class_description) list
   | Tsig_class_type list ->
       List.iter (sub # class_type_declaration) list
+  | Tsig_attribute _ -> ()
 
 let modtype_declaration sub mdecl =
   match mdecl with

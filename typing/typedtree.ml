@@ -21,12 +21,16 @@ open Types
 type partial = Partial | Total
 type optional = Required | Optional
 
+type attribute = string * Parsetree.expression
+
 type pattern =
   { pat_desc: pattern_desc;
     pat_loc: Location.t;
-    pat_extra : (pat_extra * Location.t) list;
+    pat_extra : (pat_extra * Location.t * attribute list) list;
     pat_type: type_expr;
-    mutable pat_env: Env.t }
+    mutable pat_env: Env.t;
+    pat_attributes: attribute list;
+   }
 
 and pat_extra =
   | Tpat_constraint of core_type
@@ -52,9 +56,11 @@ and pattern_desc =
 and expression =
   { exp_desc: expression_desc;
     exp_loc: Location.t;
-    exp_extra : (exp_extra * Location.t) list;
+    exp_extra: (exp_extra * Location.t * attribute list) list;
     exp_type: type_expr;
-    exp_env: Env.t }
+    exp_env: Env.t;
+    exp_attributes: attribute list;
+   }
 
 and exp_extra =
   | Texp_constraint of core_type option * core_type option
@@ -114,7 +120,7 @@ and class_expr =
     cl_env: Env.t }
 
 and class_expr_desc =
-    Tcl_ident of Path.t * Longident.t loc * core_type list (* Pcl_constr *)
+    Tcl_ident of Path.t * Longident.t loc * core_type list
   | Tcl_structure of class_structure
   | Tcl_fun of
       label * pattern * (Ident.t * string loc * expression) list * class_expr *
@@ -195,14 +201,15 @@ and structure_item_desc =
   | Tstr_primitive of Ident.t * string loc * value_description
   | Tstr_type of (Ident.t * string loc * type_declaration) list
   | Tstr_exception of Ident.t * string loc * exception_declaration
-  | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc
+  | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attribute list
   | Tstr_module of Ident.t * string loc * module_expr
   | Tstr_recmodule of (Ident.t * string loc * module_type * module_expr) list
   | Tstr_modtype of Ident.t * string loc * module_type
-  | Tstr_open of Path.t * Longident.t loc
+  | Tstr_open of Path.t * Longident.t loc * attribute list
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
-  | Tstr_include of module_expr * Ident.t list
+  | Tstr_include of module_expr * Ident.t list * attribute list
+  | Tstr_attribute of attribute
 
 and module_coercion =
     Tcoerce_none
@@ -213,8 +220,10 @@ and module_coercion =
 and module_type =
   { mty_desc: module_type_desc;
     mty_type : Types.module_type;
-    mty_env : Env.t; (* BINANNOT ADDED *)
-    mty_loc: Location.t }
+    mty_env : Env.t;
+    mty_loc: Location.t;
+    mty_attributes: attribute list;
+   }
 
 and module_type_desc =
     Tmty_ident of Path.t * Longident.t loc
@@ -241,10 +250,11 @@ and signature_item_desc =
   | Tsig_module of Ident.t * string loc * module_type
   | Tsig_recmodule of (Ident.t * string loc * module_type) list
   | Tsig_modtype of Ident.t * string loc * modtype_declaration
-  | Tsig_open of Path.t * Longident.t loc
-  | Tsig_include of module_type * Types.signature
+  | Tsig_open of Path.t * Longident.t loc * attribute list
+  | Tsig_include of module_type * Types.signature * attribute list
   | Tsig_class of class_description list
   | Tsig_class_type of class_type_declaration list
+  | Tsig_attribute of attribute
 
 and modtype_declaration =
     Tmodtype_abstract
@@ -261,7 +271,9 @@ and core_type =
   { mutable ctyp_desc : core_type_desc;
     mutable ctyp_type : type_expr;
     ctyp_env : Env.t; (* BINANNOT ADDED *)
-    ctyp_loc : Location.t }
+    ctyp_loc : Location.t;
+    ctyp_attributes: attribute list;
+   }
 
 and core_type_desc =
     Ttyp_any
@@ -300,6 +312,7 @@ and value_description =
     val_val : Types.value_description;
     val_prim : string list;
     val_loc : Location.t;
+    val_attributes: attribute list;
     }
 
 and type_declaration =
@@ -310,7 +323,9 @@ and type_declaration =
     typ_private: private_flag;
     typ_manifest: core_type option;
     typ_variance: (bool * bool) list;
-    typ_loc: Location.t }
+    typ_loc: Location.t;
+    typ_attributes: attribute list;
+   }
 
 and type_kind =
     Ttype_abstract
@@ -321,7 +336,9 @@ and type_kind =
 and exception_declaration =
   { exn_params : core_type list;
     exn_exn : Types.exception_declaration;
-    exn_loc : Location.t }
+    exn_loc : Location.t;
+    exn_attributes: attribute list;
+   }
 
 and class_type =
   { cltyp_desc: class_type_desc;
@@ -374,7 +391,9 @@ and 'a class_infos =
     ci_decl: Types.class_declaration;
     ci_type_decl : Types.class_type_declaration;
     ci_variance: (bool * bool) list;
-    ci_loc: Location.t }
+    ci_loc: Location.t;
+    ci_attributes: attribute list;
+   }
 
 (* Auxiliary functions over the a.s.t. *)
 

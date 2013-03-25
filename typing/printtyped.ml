@@ -130,6 +130,15 @@ let string_loc i ppf s = line i ppf "\"%s\"\n" s.txt;;
 let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
 let label i ppf x = line i ppf "label=\"%s\"\n" x;;
 
+let attributes i ppf l =
+  let i = i + 1 in
+  List.iter
+    (fun (s, arg) ->
+      line i ppf "attribute \"%s\"\n" s;
+      Printast.expression (i + 1) ppf arg;
+    )
+    l
+
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ctyp_loc;
   let i = i+1 in
@@ -184,17 +193,21 @@ and core_field_type i ppf x =
 
 and pattern i ppf x =
   line i ppf "pattern %a\n" fmt_location x.pat_loc;
+  attributes i ppf x.pat_attributes;
   let i = i+1 in
   match x.pat_extra with
-    | (Tpat_unpack, _) :: rem ->
+    | (Tpat_unpack, _, attrs) :: rem ->
         line i ppf "Tpat_unpack\n";
+        attributes i ppf attrs;
         pattern i ppf { x with pat_extra = rem }
-    | (Tpat_constraint cty, _) :: rem ->
+    | (Tpat_constraint cty, _, attrs) :: rem ->
         line i ppf "Tpat_constraint\n";
+        attributes i ppf attrs;
         core_type i ppf cty;
         pattern i ppf { x with pat_extra = rem }
-    | (Tpat_type (id, _), _) :: rem ->
+    | (Tpat_type (id, _), _, attrs) :: rem ->
         line i ppf "Tpat_type %a\n" fmt_path id;
+        attributes i ppf attrs;
         pattern i ppf { x with pat_extra = rem }
     | [] ->
   match x.pat_desc with
@@ -228,24 +241,29 @@ and pattern i ppf x =
       line i ppf "Ppat_lazy\n";
       pattern i ppf p;
 
-and expression_extra i ppf x =
+and expression_extra i ppf x attrs =
   match x with
   | Texp_constraint (cto1, cto2) ->
       line i ppf "Pexp_constraint\n";
+      attributes i ppf attrs;
       option i core_type ppf cto1;
       option i core_type ppf cto2;
   | Texp_open (m, _, _) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_path m;
+      attributes i ppf attrs;
   | Texp_poly cto ->
       line i ppf "Pexp_poly\n";
+      attributes i ppf attrs;
       option i core_type ppf cto;
   | Texp_newtype s ->
       line i ppf "Pexp_newtype \"%s\"\n" s;
+      attributes i ppf attrs;
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.exp_loc;
+  attributes i ppf x.exp_attributes;
   let i =
-    List.fold_left (fun i (extra,_) -> expression_extra i ppf extra; i+1)
+    List.fold_left (fun i (extra,_,attrs) -> expression_extra i ppf extra attrs; i+1)
       (i+1) x.exp_extra
   in
   match x.exp_desc with
@@ -579,16 +597,22 @@ and signature_item i ppf x =
   | Tsig_modtype (s, _, md) ->
       line i ppf "Psig_modtype \"%a\"\n" fmt_ident s;
       modtype_declaration i ppf md;
-  | Tsig_open (li,_) -> line i ppf "Psig_open %a\n" fmt_path li;
-  | Tsig_include (mt, _) ->
+  | Tsig_open (li,_,attrs) ->
+      line i ppf "Psig_open %a\n" fmt_path li;
+      attributes i ppf attrs
+  | Tsig_include (mt, _, attrs) ->
       line i ppf "Psig_include\n";
       module_type i ppf mt;
+      attributes i ppf attrs
   | Tsig_class (l) ->
       line i ppf "Psig_class\n";
       list i class_description ppf l;
   | Tsig_class_type (l) ->
       line i ppf "Psig_class_type\n";
       list i class_type_declaration ppf l;
+  | Tsig_attribute (s, arg) ->
+      line i ppf "Psig_attribute \"%s\"\n" s;
+      Printast.expression i ppf arg
 
 and modtype_declaration i ppf x =
   match x with
@@ -657,8 +681,9 @@ and structure_item i ppf x =
   | Tstr_exception (s, _, ed) ->
       line i ppf "Pstr_exception \"%a\"\n" fmt_ident s;
       exception_declaration i ppf ed.exn_params;
-  | Tstr_exn_rebind (s, _, li, _) ->
+  | Tstr_exn_rebind (s, _, li, _, attrs) ->
       line i ppf "Pstr_exn_rebind \"%a\" %a\n" fmt_ident s fmt_path li;
+      attributes i ppf attrs
   | Tstr_module (s, _, me) ->
       line i ppf "Pstr_module \"%a\"\n" fmt_ident s;
       module_expr i ppf me;
@@ -668,16 +693,22 @@ and structure_item i ppf x =
   | Tstr_modtype (s, _, mt) ->
       line i ppf "Pstr_modtype \"%a\"\n" fmt_ident s;
       module_type i ppf mt;
-  | Tstr_open (li, _) -> line i ppf "Pstr_open %a\n" fmt_path li;
+  | Tstr_open (li, _, attrs) ->
+      line i ppf "Pstr_open %a\n" fmt_path li;
+      attributes i ppf attrs
   | Tstr_class (l) ->
       line i ppf "Pstr_class\n";
       list i class_declaration ppf (List.map (fun (cl, _,_) -> cl) l);
   | Tstr_class_type (l) ->
       line i ppf "Pstr_class_type\n";
       list i class_type_declaration ppf (List.map (fun (_, _, cl) -> cl) l);
-  | Tstr_include (me, _) ->
+  | Tstr_include (me, _, attrs) ->
       line i ppf "Pstr_include";
-      module_expr i ppf me
+      module_expr i ppf me;
+      attributes i ppf attrs
+  | Tstr_attribute (s, arg) ->
+      line i ppf "Pstr_attribute \"%s\"\n" s;
+      Printast.expression i ppf arg
 
 and string_x_type_declaration i ppf (s, _, td) =
   ident i ppf s;

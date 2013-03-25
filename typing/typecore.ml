@@ -232,7 +232,7 @@ let type_option ty =
   newty (Tconstr(Predef.path_option,[ty], ref Mnil))
 
 let mkexp exp_desc exp_type exp_loc exp_env =
-  { exp_desc; exp_type; exp_loc; exp_env; exp_extra = [] }
+  { exp_desc; exp_type; exp_loc; exp_env; exp_extra = []; exp_attributes = [] }
 
 let option_none ty loc =
   let lid = Longident.Lident "None" in
@@ -503,7 +503,7 @@ let build_or_pat env loc lid =
             (l, Reither(true,[], true, ref None)) :: fields
         | Rpresent (Some ty) ->
             (l, Some {pat_desc=Tpat_any; pat_loc=Location.none; pat_env=env;
-                      pat_type=ty; pat_extra=[];})
+                      pat_type=ty; pat_extra=[]; pat_attributes=[]})
             :: pats,
             (l, Reither(false, [ty], true, ref None)) :: fields
         | _ -> pats, fields)
@@ -517,7 +517,7 @@ let build_or_pat env loc lid =
   let row' = ref {row with row_more=newvar()} in
   let pats =
     List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row'); pat_loc=gloc;
-                            pat_env=env; pat_type=ty; pat_extra=[];})
+                            pat_env=env; pat_type=ty; pat_extra=[]; pat_attributes=[]})
       pats
   in
   match pats with
@@ -526,7 +526,7 @@ let build_or_pat env loc lid =
       let r =
         List.fold_left
           (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some row0); pat_extra=[];
-                            pat_loc=gloc; pat_env=env; pat_type=ty})
+                            pat_loc=gloc; pat_env=env; pat_type=ty; pat_attributes=[]})
           pat pats in
       (path, rp { r with pat_loc = loc },ty)
 
@@ -852,6 +852,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_any;
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_var name ->
       let id = enter_variable loc name expected_ty in
@@ -859,14 +860,16 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_var (id, name);
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_unpack name ->
       let id = enter_variable loc name expected_ty ~is_module:true in
       rp {
         pat_desc = Tpat_var (id, name);
         pat_loc = sp.ppat_loc;
-        pat_extra=[Tpat_unpack, loc];
+        pat_extra=[Tpat_unpack, loc, sp.ppat_attributes];
         pat_type = expected_ty;
+        pat_attributes = [];
         pat_env = !env }
   | Ppat_constraint({ppat_desc=Ppat_var name; ppat_loc=lloc},
                     ({ptyp_desc=Ptyp_poly _} as sty)) ->
@@ -885,8 +888,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
           rp {
             pat_desc = Tpat_var (id, name);
             pat_loc = lloc;
-            pat_extra = [Tpat_constraint cty, loc];
+            pat_extra = [Tpat_constraint cty, loc, sp.ppat_attributes];
             pat_type = ty;
+            pat_attributes = [];
             pat_env = !env
           }
       | _ -> assert false
@@ -902,6 +906,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_alias(q, id, name);
         pat_loc = loc; pat_extra=[];
         pat_type = q.pat_type;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_constant cst ->
       unify_pat_types loc !env (type_constant cst) expected_ty;
@@ -909,6 +914,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_constant cst;
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_tuple spl ->
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in
@@ -919,6 +925,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_tuple pl;
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
       let opath =
@@ -973,6 +980,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc=Tpat_construct(lid, constr, args,explicit_arity);
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_variant(l, sarg) ->
       let arg = may_map (fun p -> type_pat p (newvar())) sarg in
@@ -989,6 +997,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
         pat_loc = loc; pat_extra=[];
         pat_type =  expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_record(lid_sp_list, closed) ->
       let opath, record_ty =
@@ -1029,6 +1038,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_record (lbl_pat_list, closed);
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_array spl ->
       let ty_elt = newvar() in
@@ -1040,6 +1050,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_array pl;
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_or(sp1, sp2) ->
       let initial_pattern_variables = !pattern_variables in
@@ -1055,6 +1066,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_lazy sp1 ->
       let nv = newvar () in
@@ -1065,6 +1077,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_desc = Tpat_lazy p1;
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
+        pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_constraint(sp, sty) ->
       (* Separate when not already separated by !principal *)
@@ -1085,20 +1098,21 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         Printtyp.raw_type_expr ty
         Printtyp.raw_type_expr p.pat_type;*)
       pattern_force := force :: !pattern_force;
+      let extra = (Tpat_constraint cty, loc, sp.ppat_attributes) in
       if separate then
         match p.pat_desc with
           Tpat_var (id,s) ->
             {p with pat_type = ty;
-             pat_desc = Tpat_alias ({p with pat_desc = Tpat_any}, id,s);
-             pat_extra = [Tpat_constraint cty, loc];
+             pat_desc = Tpat_alias ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s);
+             pat_extra = [extra];
             }
         | _ -> {p with pat_type = ty;
-                pat_extra = (Tpat_constraint cty,loc) :: p.pat_extra}
+                pat_extra = extra :: p.pat_extra}
       else p
   | Ppat_type lid ->
       let (path, p,ty) = build_or_pat !env loc lid.txt in
       unify_pat_types loc !env ty expected_ty;
-      { p with pat_extra = (Tpat_type (path, lid), loc) :: p.pat_extra }
+      { p with pat_extra = (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
   | Ppat_extension (s, _arg) ->
       raise (Error (loc, !env, Extension s))
 
@@ -1324,12 +1338,13 @@ and is_nonexpansive_mod mexp =
           | Tstr_open _ | Tstr_class_type _ | Tstr_exn_rebind _ -> true
           | Tstr_value (_, pat_exp_list) ->
               List.for_all (fun (_, exp) -> is_nonexpansive exp) pat_exp_list
-          | Tstr_module (_, _, m) | Tstr_include (m, _) -> is_nonexpansive_mod m
+          | Tstr_module (_, _, m) | Tstr_include (m, _, _) -> is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun (_, _, _, m) -> is_nonexpansive_mod m)
                 id_mod_list
           | Tstr_exception _ -> false (* true would be unsound *)
           | Tstr_class _ -> false (* could be more precise *)
+          | Tstr_attribute _ -> true
         )
         str.str_items
   | Tmod_apply _ -> false
@@ -1838,6 +1853,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           end;
           exp_loc = loc; exp_extra = [];
           exp_type = instance env desc.val_type;
+          exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
   | Pexp_constant(Const_string s as cst) ->
@@ -1851,12 +1867,14 @@ and type_expect_ ?in_function env sexp ty_expected =
                type_format loc s
            | _ -> instance_def Predef.type_string
            end;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_constant cst ->
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
         exp_type = type_constant cst;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_let(Nonrecursive, [spat, sval], sbody) when contains_gadt env spat ->
       type_expect ?in_function env
@@ -1877,6 +1895,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
         exp_loc = loc; exp_extra = [];
         exp_type = body.exp_type;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_function (l, Some default, [spat, sbody]) ->
       let default_loc = default.pexp_loc in
@@ -1954,6 +1973,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_function(l,cases, partial);
         exp_loc = loc; exp_extra = [];
         exp_type = instance env (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_apply(sfunct, sargs) ->
       begin_def (); (* one more level for non-returning functions *)
@@ -1983,6 +2003,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_apply(funct, args);
         exp_loc = loc; exp_extra = [];
         exp_type = ty_res;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_match(sarg, caselist) ->
       begin_def ();
@@ -1997,6 +2018,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_match(arg, cases, partial);
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
       let body = type_expect env sbody ty_expected in
@@ -2006,6 +2028,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_try(body, cases);
         exp_loc = loc; exp_extra = [];
         exp_type = body.exp_type;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_tuple sexpl ->
       let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
@@ -2019,9 +2042,10 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_loc = loc; exp_extra = [];
         (* Keep sharing *)
         exp_type = newty (Ttuple (List.map (fun e -> e.exp_type) expl));
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_construct(lid, sarg, explicit_arity) ->
-      type_construct env loc lid sarg explicit_arity ty_expected
+      type_construct env loc lid sarg explicit_arity ty_expected sexp.pexp_attributes
   | Pexp_variant(l, sarg) ->
       (* Keep sharing *)
       let ty_expected0 = instance env ty_expected in
@@ -2036,6 +2060,7 @@ and type_expect_ ?in_function env sexp ty_expected =
               re { exp_desc = Texp_variant(l, Some arg);
                    exp_loc = loc; exp_extra = [];
                    exp_type = ty_expected0;
+                   exp_attributes = sexp.pexp_attributes;
                    exp_env = env }
           | _ -> raise Not_found
           end
@@ -2052,6 +2077,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                                     row_closed = false;
                                     row_fixed = false;
                                     row_name = None});
+          exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
@@ -2146,6 +2172,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_record(lbl_exp_list, opt_exp);
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_field(srecord, lid) ->
       let (record, label, _) = type_label_access env loc srecord lid in
@@ -2155,6 +2182,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_field(record, lid, label);
         exp_loc = loc; exp_extra = [];
         exp_type = ty_arg;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
       let (record, label, opath) = type_label_access env loc srecord lid in
@@ -2168,6 +2196,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_setfield(record, label_loc, label, newval);
         exp_loc = loc; exp_extra = [];
         exp_type = instance_def Predef.type_unit;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_array(sargl) ->
       let ty = newgenvar() in
@@ -2178,6 +2207,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_array argl;
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_ifthenelse(scond, sifso, sifnot) ->
       let cond = type_expect env scond Predef.type_bool in
@@ -2188,6 +2218,7 @@ and type_expect_ ?in_function env sexp ty_expected =
             exp_desc = Texp_ifthenelse(cond, ifso, None);
             exp_loc = loc; exp_extra = [];
             exp_type = ifso.exp_type;
+            exp_attributes = sexp.pexp_attributes;
             exp_env = env }
       | Some sifnot ->
           let ifso = type_expect env sifso ty_expected in
@@ -2198,6 +2229,7 @@ and type_expect_ ?in_function env sexp ty_expected =
             exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
             exp_loc = loc; exp_extra = [];
             exp_type = ifso.exp_type;
+            exp_attributes = sexp.pexp_attributes;
             exp_env = env }
       end
   | Pexp_sequence(sexp1, sexp2) ->
@@ -2207,6 +2239,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_sequence(exp1, exp2);
         exp_loc = loc; exp_extra = [];
         exp_type = exp2.exp_type;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_while(scond, sbody) ->
       let cond = type_expect env scond Predef.type_bool in
@@ -2215,6 +2248,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_while(cond, body);
         exp_loc = loc; exp_extra = [];
         exp_type = instance_def Predef.type_unit;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
       let low = type_expect env slow Predef.type_int in
@@ -2229,6 +2263,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_for(id, param, low, high, dir, body);
         exp_loc = loc; exp_extra = [];
         exp_type = instance_def Predef.type_unit;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
       let separate = true (* always separate, 1% slowdown for lablgtk *)
@@ -2328,8 +2363,9 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
         exp_type = ty';
+        exp_attributes = arg.exp_attributes;
         exp_env = env;
-        exp_extra = (Texp_constraint (cty, cty'), loc) :: arg.exp_extra;
+        exp_extra = (Texp_constraint (cty, cty'), loc, sexp.pexp_attributes) :: arg.exp_extra;
       }
   | Pexp_when(scond, sbody) ->
       let cond = type_expect env scond Predef.type_bool in
@@ -2338,6 +2374,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_when(cond, body);
         exp_loc = loc; exp_extra = [];
         exp_type = body.exp_type;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_send (e, met) ->
       if !Clflags.principal then begin_def ();
@@ -2380,17 +2417,20 @@ and type_expect_ ?in_function env sexp ty_expected =
                                             Types.val_loc = Location.none});
                                 exp_loc = loc; exp_extra = [];
                                 exp_type = method_type;
+                                exp_attributes = []; (* check *)
                                 exp_env = env},
                           ["",
                             Some {exp_desc = Texp_ident(path, lid, desc);
                                   exp_loc = obj.exp_loc; exp_extra = [];
                                   exp_type = desc.val_type;
+                                  exp_attributes = []; (* check *)
                                   exp_env = env},
                                Required])
                   in
                   (Tmeth_name met, Some (re {exp_desc = exp;
                                              exp_loc = loc; exp_extra = [];
                                              exp_type = typ;
+                                             exp_attributes = []; (* check *)
                                              exp_env = env}), typ)
               |  _ ->
                   assert false
@@ -2425,6 +2465,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_desc = Texp_send(obj, meth, exp);
           exp_loc = loc; exp_extra = [];
           exp_type = typ;
+          exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       with Unify _ ->
         raise(Error(e.pexp_loc, env, Undefined_method (obj.exp_type, met)))
@@ -2439,6 +2480,7 @@ and type_expect_ ?in_function env sexp ty_expected =
               exp_desc = Texp_new (cl_path, cl, cl_decl);
               exp_loc = loc; exp_extra = [];
               exp_type = instance_def ty;
+              exp_attributes = sexp.pexp_attributes;
               exp_env = env }
         end
   | Pexp_setinstvar (lab, snewval) ->
@@ -2455,6 +2497,7 @@ and type_expect_ ?in_function env sexp ty_expected =
               exp_desc = Texp_setinstvar(path_self, path, lab, newval);
               exp_loc = loc; exp_extra = [];
               exp_type = instance_def Predef.type_unit;
+              exp_attributes = sexp.pexp_attributes;
               exp_env = env }
         | Val_ivar _ ->
             raise(Error(loc, env, Instance_variable_not_mutable(true,lab.txt)))
@@ -2497,6 +2540,7 @@ and type_expect_ ?in_function env sexp ty_expected =
             exp_desc = Texp_override(path_self, modifs);
             exp_loc = loc; exp_extra = [];
             exp_type = self_ty;
+            exp_attributes = sexp.pexp_attributes;
             exp_env = env }
       | _ ->
           assert false
@@ -2528,6 +2572,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_letmodule(id, name, modl, body);
         exp_loc = loc; exp_extra = [];
         exp_type = ty;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_assert (e) ->
       let cond = type_expect env e Predef.type_bool in
@@ -2535,6 +2580,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_assert (cond);
         exp_loc = loc; exp_extra = [];
         exp_type = instance_def Predef.type_unit;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
   | Pexp_assertfalse ->
@@ -2542,6 +2588,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_assertfalse;
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
   | Pexp_lazy e ->
@@ -2553,6 +2600,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_lazy arg;
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
   | Pexp_object s ->
@@ -2561,6 +2609,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_object (desc, (*sign,*) meths);
         exp_loc = loc; exp_extra = [];
         exp_type = sign.cty_self;
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
   | Pexp_poly(sbody, sty) ->
@@ -2602,7 +2651,7 @@ and type_expect_ ?in_function env sexp ty_expected =
             exp
         | _ -> assert false
       in
-      re { exp with exp_extra = (Texp_poly cty, loc) :: exp.exp_extra }
+      re { exp with exp_extra = (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
   | Pexp_newtype(name, sbody) ->
       let ty = newvar () in
       (* remember original level *)
@@ -2647,7 +2696,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       (* non-expansive if the body is non-expansive, so we don't introduce
          any new extra node in the typed AST. *)
       rue { body with exp_loc = loc; exp_type = ety;
-            exp_extra = (Texp_newtype name, loc) :: body.exp_extra }
+            exp_extra = (Texp_newtype name, loc, sexp.pexp_attributes) :: body.exp_extra }
   | Pexp_pack m ->
       let (p, nl, tl) =
         match Ctype.expand_head env (instance env ty_expected) with
@@ -2668,12 +2717,13 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_desc = Texp_pack modl;
         exp_loc = loc; exp_extra = [];
         exp_type = newty (Tpackage (p, nl, tl'));
+        exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_open (lid, e) ->
       let (path, newenv) = !type_open env sexp.pexp_loc lid in
       let exp = type_expect newenv e ty_expected in
       { exp with
-        exp_extra = (Texp_open (path, lid, newenv), loc) :: exp.exp_extra;
+        exp_extra = (Texp_open (path, lid, newenv), loc, sexp.pexp_attributes) :: exp.exp_extra;
       }
   | Pexp_extension (s, _arg) ->
       raise (Error (loc, env, Extension s))
@@ -2795,9 +2845,10 @@ and type_argument env sarg ty_expected' ty_expected =
       let var_pair name ty =
         let id = Ident.create name in
         {pat_desc = Tpat_var (id, mknoloc name); pat_type = ty;pat_extra=[];
+         pat_attributes = [];
          pat_loc = Location.none; pat_env = env},
         {exp_type = ty; exp_loc = Location.none; exp_env = env;
-         exp_extra = [];
+         exp_extra = []; exp_attributes = [];
          exp_desc =
          Texp_ident(Path.Pident id, mknoloc (Longident.Lident name),
                     {val_type = ty; val_kind = Val_reg;
@@ -3012,7 +3063,7 @@ and type_application env funct sargs =
       else
         type_args [] [] ty (instance env ty) ty sargs []
 
-and type_construct env loc lid sarg explicit_arity ty_expected =
+and type_construct env loc lid sarg explicit_arity ty_expected attrs =
   let opath =
     try
       let (p0, p,_) = extract_concrete_variant env ty_expected in
@@ -3039,6 +3090,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
       exp_desc = Texp_construct(lid, constr, [],explicit_arity);
       exp_loc = loc; exp_extra = [];
       exp_type = ty_res;
+      exp_attributes = attrs;
       exp_env = env } in
   if separate then begin
     end_def ();

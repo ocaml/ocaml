@@ -55,8 +55,8 @@ and untype_structure_item item =
               untype_type_declaration name decl) list)
     | Tstr_exception (_id, name, decl) ->
         Pstr_exception (untype_exception_declaration name decl)
-    | Tstr_exn_rebind (_id, name, _p, lid) ->
-        Pstr_exn_rebind (name, lid, [])
+    | Tstr_exn_rebind (_id, name, _p, lid, attrs) ->
+        Pstr_exn_rebind (name, lid, attrs)
     | Tstr_module (_id, name, mexpr) ->
         Pstr_module (Mb.mk name (untype_module_expr mexpr))
     | Tstr_recmodule list ->
@@ -73,7 +73,7 @@ and untype_structure_item item =
     | Tstr_modtype (_id, name, mtype) ->
         Pstr_modtype {pmtb_name=name; pmtb_type=untype_module_type mtype;
                       pmtb_attributes=[]}
-    | Tstr_open (_path, lid) -> Pstr_open (lid, [])
+    | Tstr_open (_path, lid, attrs) -> Pstr_open (lid, attrs)
     | Tstr_class list ->
         Pstr_class (List.map (fun (ci, _, _) ->
               { pci_virt = ci.ci_virt;
@@ -82,7 +82,7 @@ and untype_structure_item item =
                 pci_expr = untype_class_expr ci.ci_expr;
                 pci_variance = ci.ci_variance;
                 pci_loc = ci.ci_loc;
-                pci_attributes = [];
+                pci_attributes = ci.ci_attributes;
               }
           ) list)
     | Tstr_class_type list ->
@@ -94,11 +94,13 @@ and untype_structure_item item =
                 pci_expr = untype_class_type ct.ci_expr;
                 pci_variance = ct.ci_variance;
                 pci_loc = ct.ci_loc;
-                pci_attributes = [];
+                pci_attributes = ct.ci_attributes;
               }
           ) list)
-    | Tstr_include (mexpr, _) ->
-        Pstr_include (untype_module_expr mexpr, [])
+    | Tstr_include (mexpr, _, attrs) ->
+        Pstr_include (untype_module_expr mexpr, attrs)
+    | Tstr_attribute x ->
+        Pstr_attribute x
   in
   { pstr_desc = desc; pstr_loc = item.str_loc; }
 
@@ -108,7 +110,7 @@ and untype_value_description name v =
    pval_prim = v.val_prim;
    pval_type = untype_core_type v.val_desc;
    pval_loc = v.val_loc;
-   pval_attributes = [];
+   pval_attributes = v.val_attributes;
   }
 
 and untype_type_declaration name decl =
@@ -138,7 +140,7 @@ and untype_type_declaration name decl =
         None -> None
       | Some ct -> Some (untype_core_type ct));
     ptype_variance = decl.typ_variance;
-    ptype_attributes = []; (* TODO *)
+    ptype_attributes = decl.typ_attributes;
     ptype_loc = decl.typ_loc;
   }
 
@@ -146,15 +148,15 @@ and untype_exception_declaration name decl =
   {
    ped_name = name;
    ped_args = List.map untype_core_type decl.exn_params;
-   ped_attributes = [];
+   ped_attributes = decl.exn_attributes;
   }
 
 and untype_pattern pat =
   let desc =
   match pat with
-      { pat_extra=[Tpat_unpack, _]; pat_desc = Tpat_var (_,name); _ } -> Ppat_unpack name
-    | { pat_extra=[Tpat_type (_path, lid), _]; _ } -> Ppat_type lid
-    | { pat_extra= (Tpat_constraint ct, _) :: rem; _ } ->
+      { pat_extra=[Tpat_unpack, _, _attrs]; pat_desc = Tpat_var (_,name); _ } -> Ppat_unpack name
+    | { pat_extra=[Tpat_type (_path, lid), _, _attrs]; _ } -> Ppat_type lid
+    | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
         Ppat_constraint (untype_pattern { pat with pat_extra=rem }, untype_core_type ct)
     | _ ->
     match pat.pat_desc with
@@ -193,11 +195,11 @@ and untype_pattern pat =
     | Tpat_or (p1, p2, _) -> Ppat_or (untype_pattern p1, untype_pattern p2)
     | Tpat_lazy p -> Ppat_lazy (untype_pattern p)
   in
-  Pat.mk ~loc:pat.pat_loc desc
+  Pat.mk ~loc:pat.pat_loc ~attrs:pat.pat_attributes desc (* todo: fix attributes on extras *)
 
 and option f x = match x with None -> None | Some e -> Some (f e)
 
-and untype_extra (extra, loc) sexp =
+and untype_extra (extra, loc, attrs) sexp =
   let desc =
     match extra with
       Texp_constraint (cty1, cty2) ->
@@ -208,7 +210,7 @@ and untype_extra (extra, loc) sexp =
     | Texp_poly cto -> Pexp_poly (sexp, option untype_core_type cto)
     | Texp_newtype s -> Pexp_newtype (s, sexp)
   in
-  Exp.mk ~loc desc
+  Exp.mk ~loc ~attrs desc
 
 and untype_expression exp =
   let desc =
@@ -309,7 +311,7 @@ and untype_expression exp =
         Pexp_pack (untype_module_expr mexpr)
   in
   List.fold_right untype_extra exp.exp_extra
-    (Exp.mk ~loc:exp.exp_loc desc)
+    (Exp.mk ~loc:exp.exp_loc ~attrs:exp.exp_attributes desc)
 
 and untype_package_type pack =
   (pack.pack_txt,
@@ -338,12 +340,14 @@ and untype_signature_item item =
                pmd_attributes = []}) list)
     | Tsig_modtype (_id, name, mdecl) ->
         Psig_modtype {pmtd_name=name; pmtd_type=untype_modtype_declaration mdecl; pmtd_attributes=[]}
-    | Tsig_open (_path, lid) -> Psig_open (lid, [])
-    | Tsig_include (mty, _lid) -> Psig_include (untype_module_type mty, [])
+    | Tsig_open (_path, lid, attrs) -> Psig_open (lid, attrs)
+    | Tsig_include (mty, _lid, attrs) -> Psig_include (untype_module_type mty, attrs)
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->
         Psig_class_type (List.map untype_class_type_declaration list)
+    | Tsig_attribute x ->
+        Psig_attribute x
   in
   { psig_desc = desc;
     psig_loc = item.sig_loc;
@@ -362,7 +366,7 @@ and untype_class_description cd =
     pci_expr = untype_class_type cd.ci_expr;
     pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
-    pci_attributes = [];
+    pci_attributes = cd.ci_attributes;
   }
 
 and untype_class_type_declaration cd =
@@ -373,7 +377,7 @@ and untype_class_type_declaration cd =
     pci_expr = untype_class_type cd.ci_expr;
     pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
-    pci_attributes = [];
+    pci_attributes = cd.ci_attributes;
   }
 
 and untype_module_type mty =

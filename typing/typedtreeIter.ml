@@ -132,7 +132,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_type list ->
             List.iter (fun (id, _, decl) -> iter_type_declaration decl) list
         | Tstr_exception (id, _, decl) -> iter_exception_declaration decl
-        | Tstr_exn_rebind (id, _, p, _) -> ()
+        | Tstr_exn_rebind _ -> ()
         | Tstr_module (id, _, mexpr) ->
             iter_module_expr mexpr
         | Tstr_recmodule list ->
@@ -154,8 +154,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 iter_class_type ct.ci_expr;
                 Iter.leave_class_type_declaration ct;
             ) list
-        | Tstr_include (mexpr, _) ->
+        | Tstr_include (mexpr, _, _attrs) ->
             iter_module_expr mexpr
+        | Tstr_attribute _ ->
+            ()
       end;
       Iter.leave_structure_item item
 
@@ -194,7 +196,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_pattern pat =
       Iter.enter_pattern pat;
-      List.iter (fun (cstr, _) -> match cstr with
+      List.iter (fun (cstr, _, _attrs) -> match cstr with
               | Tpat_type _ -> ()
               | Tpat_unpack -> ()
               | Tpat_constraint ct -> iter_core_type ct) pat.pat_extra;
@@ -225,7 +227,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_expression exp =
       Iter.enter_expression exp;
-      List.iter (function (cstr, _) ->
+      List.iter (function (cstr, _, _attrs) ->
         match cstr with
           Texp_constraint (cty1, cty2) ->
             option iter_core_type cty1; option iter_core_type cty2
@@ -354,11 +356,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tsig_modtype (id, _, mdecl) ->
             iter_modtype_declaration mdecl
         | Tsig_open _ -> ()
-        | Tsig_include (mty,_) -> iter_module_type mty
+        | Tsig_include (mty, _, _attrs) -> iter_module_type mty
         | Tsig_class list ->
             List.iter iter_class_description list
         | Tsig_class_type list ->
             List.iter iter_class_type_declaration list
+        | Tsig_attribute _ -> ()
       end;
       Iter.leave_signature_item item;
 

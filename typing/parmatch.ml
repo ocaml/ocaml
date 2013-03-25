@@ -23,7 +23,9 @@ open Typedtree
 
 let make_pat desc ty tenv =
   {pat_desc = desc; pat_loc = Location.none; pat_extra = [];
-   pat_type = ty ; pat_env = tenv }
+   pat_type = ty ; pat_env = tenv;
+   pat_attributes = [];
+  }
 
 let omega = make_pat Tpat_any Ctype.none Env.empty
 
@@ -181,7 +183,7 @@ let pretty_const c = match c with
 
 let rec pretty_val ppf v =
   match v.pat_extra with
-      (cstr,_) :: rem ->
+      (cstr, _loc, _attrs) :: rem ->
         begin match cstr with
           | Tpat_unpack ->
             fprintf ppf "@[(module %a)@]" pretty_val { v with pat_extra = rem }

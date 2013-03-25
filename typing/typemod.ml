@@ -391,12 +391,13 @@ let transl_modtype_longident loc env lid =
   let (path, info) = Typetexp.find_modtype env loc lid in
   path
 
-let mkmty desc typ env loc =
+let mkmty desc typ env loc attrs =
   let mty = {
     mty_desc = desc;
     mty_type = typ;
     mty_loc = loc;
     mty_env = env;
+    mty_attributes = attrs;
     } in
   Cmt_format.add_saved_type (Cmt_format.Partial_module_type mty);
   mty
@@ -414,15 +415,18 @@ let rec transl_modtype env smty =
     Pmty_ident lid ->
       let path = transl_modtype_longident loc env lid.txt in
       mkmty (Tmty_ident (path, lid)) (Mty_ident path) env loc
+        smty.pmty_attributes
   | Pmty_signature ssg ->
       let sg = transl_signature env ssg in
       mkmty (Tmty_signature sg) (Mty_signature sg.sig_type) env loc
+        smty.pmty_attributes
   | Pmty_functor(param, sarg, sres) ->
       let arg = transl_modtype env sarg in
       let (id, newenv) = Env.enter_module param.txt arg.mty_type env in
       let res = transl_modtype newenv sres in
       mkmty (Tmty_functor (id, param, arg, res))
       (Mty_functor(id, arg.mty_type, res.mty_type)) env loc
+        smty.pmty_attributes
   | Pmty_with(sbody, constraints) ->
       let body = transl_modtype env sbody in
       let init_sg = extract_sig env sbody.pmty_loc body.mty_type in
@@ -435,10 +439,11 @@ let rec transl_modtype env smty =
         )
         ([],init_sg) constraints in
       mkmty (Tmty_with ( body, tcstrs))
-      (Mtype.freshen (Mty_signature final_sg)) env loc
+        (Mtype.freshen (Mty_signature final_sg)) env loc
+        smty.pmty_attributes
   | Pmty_typeof smod ->
       let tmty, mty = !type_module_type_of_fwd env smod in
-      mkmty (Tmty_typeof tmty) mty env loc
+      mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
   | Pmty_extension (s, _arg) ->
       raise (Error (smty.pmty_loc, env, Extension s))
 
@@ -512,11 +517,11 @@ and transl_signature env sg =
             mksig (Tsig_modtype (id, name, tinfo)) env loc :: trem,
             Sig_modtype(id, info) :: rem,
             final_env
-        | Psig_open (lid, _attrs) ->
+        | Psig_open (lid, attrs) ->
             let (path, newenv) = type_open env item.psig_loc lid in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_open (path,lid)) env loc :: trem, rem, final_env
-        | Psig_include (smty, _attrs) ->
+            mksig (Tsig_open (path,lid,attrs)) env loc :: trem, rem, final_env
+        | Psig_include (smty, attrs) ->
             let tmty = transl_modtype env smty in
             let mty = tmty.mty_type in
             let sg = Subst.signature Subst.identity
@@ -527,7 +532,7 @@ and transl_signature env sg =
               sg;
             let newenv = Env.add_signature sg env in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_include (tmty, sg)) env loc :: trem,
+            mksig (Tsig_include (tmty, sg, attrs)) env loc :: trem,
             remove_values (get_values rem) sg @ rem, final_env
         | Psig_class cl ->
             List.iter
@@ -571,8 +576,9 @@ and transl_signature env sg =
                     Sig_type(i'', d'', rs)])
                  classes [rem]),
             final_env
-        | Psig_attribute _ ->
-            transl_sig env srem
+        | Psig_attribute x ->
+            let (trem,rem, final_env) = transl_sig env srem in
+            mksig (Tsig_attribute x) env loc :: trem, rem, final_env
         | Psig_extension ((s, _), _) ->
             raise (Error (loc, env, Extension s))
   in
@@ -997,10 +1003,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          Sig_exception(id, arg.exn_exn) :: sig_rem,
          final_env)
-    | Pstr_exn_rebind(name, longid, _attrs) ->
+    | Pstr_exn_rebind(name, longid, attrs) ->
         let (path, arg) = Typedecl.transl_exn_rebind env loc longid.txt in
         let (id, newenv) = Env.enter_exception name.txt arg env in
-        let item = mk (Tstr_exn_rebind(id, name, path, longid)) in
+        let item = mk (Tstr_exn_rebind(id, name, path, longid, attrs)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (item :: str_rem,
          Sig_exception(id, arg) :: sig_rem,
@@ -1063,9 +1069,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          Sig_modtype(id, Modtype_manifest mty.mty_type) :: sig_rem,
          final_env)
-    | Pstr_open (lid, _attrs) ->
+    | Pstr_open (lid, attrs) ->
         let (path, newenv) = type_open ~toplevel env loc lid in
-        let item = mk (Tstr_open (path, lid)) in
+        let item = mk (Tstr_open (path, lid, attrs)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (item :: str_rem, sig_rem, final_env)
     | Pstr_class cl ->
@@ -1125,7 +1131,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                   Sig_type(i'', d'', rs)])
               classes [sig_rem]),
          final_env)
-    | Pstr_include (smodl, _attrs) ->
+    | Pstr_include (smodl, attrs) ->
         let modl = type_module true funct_body None env smodl in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
@@ -1133,15 +1139,16 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         List.iter
           (check_sig_item type_names module_names modtype_names loc) sg;
         let new_env = Env.add_signature sg env in
-        let item = mk (Tstr_include (modl, bound_value_identifiers sg)) in
+        let item = mk (Tstr_include (modl, bound_value_identifiers sg, attrs)) in
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
         (item :: str_rem,
          sg @ sig_rem,
          final_env)
     | Pstr_extension ((s, _), _) ->
         raise (Error (loc, env, Extension s))
-    | Pstr_attribute _ ->
-        type_struct env srem
+    | Pstr_attribute x ->
+        let (str_rem, sig_rem, final_env) = type_struct env srem in
+        mk (Tstr_attribute x) :: str_rem, sig_rem, final_env
   in
   if !Clflags.annotations then
     (* moved to genannot *)

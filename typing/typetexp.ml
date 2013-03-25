@@ -212,11 +212,11 @@ let rec swap_list = function
 
 type policy = Fixed | Extensible | Univars
 
-let ctyp ctyp_desc ctyp_type ctyp_env ctyp_loc =
-  { ctyp_desc; ctyp_type; ctyp_env; ctyp_loc }
-
 let rec transl_type env policy styp =
   let loc = styp.ptyp_loc in
+  let ctyp ctyp_desc ctyp_type =
+    { ctyp_desc; ctyp_type; ctyp_env = env; ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes }
+  in
   match styp.ptyp_desc with
     Ptyp_any ->
       let ty =
@@ -225,7 +225,7 @@ let rec transl_type env policy styp =
             raise (Error (styp.ptyp_loc, env, Unbound_type_variable "_"))
           else newvar ()
       in
-      ctyp Ttyp_any ty env loc
+      ctyp Ttyp_any ty
   | Ptyp_var name ->
     let ty =
       if name <> "" && name.[0] = '_' then
@@ -242,16 +242,16 @@ let rec transl_type env policy styp =
         v
       end
     in
-    ctyp (Ttyp_var name) ty env loc
+    ctyp (Ttyp_var name) ty
   | Ptyp_arrow(l, st1, st2) ->
     let cty1 = transl_type env policy st1 in
     let cty2 = transl_type env policy st2 in
     let ty = newty (Tarrow(l, cty1.ctyp_type, cty2.ctyp_type, Cok)) in
-    ctyp (Ttyp_arrow (l, cty1, cty2)) ty env loc
+    ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
     let ctys = List.map (transl_type env policy) stl in
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
-    ctyp (Ttyp_tuple ctys) ty env loc
+    ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
       let (path, decl) = find_type env styp.ptyp_loc lid.txt in
       if List.length stl <> decl.type_arity then
@@ -278,7 +278,7 @@ let rec transl_type env policy styp =
       with Unify trace ->
         raise (Error(styp.ptyp_loc, env, Type_mismatch trace))
       end;
-        ctyp (Ttyp_constr (path, lid, args)) constr env loc
+      ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object fields ->
       let fields = List.map
           (fun pf ->
@@ -292,7 +292,7 @@ let rec transl_type env policy styp =
             { field_desc = desc; field_loc = pf.pfield_loc })
           fields in
       let ty = newobj (transl_fields env policy [] fields) in
-        ctyp (Ttyp_object fields) ty env loc
+      ctyp (Ttyp_object fields) ty
   | Ptyp_class(lid, stl, present) ->
       let (path, decl, is_variant) =
         try
@@ -375,7 +375,7 @@ let rec transl_type env policy styp =
       | _ ->
           assert false
       in
-        ctyp (Ttyp_class (path, lid, args, present)) ty env loc
+      ctyp (Ttyp_class (path, lid, args, present)) ty
   | Ptyp_alias(st, alias) ->
       let cty =
         try
@@ -412,7 +412,7 @@ let rec transl_type env policy styp =
           end;
           { ty with ctyp_type = t }
       in
-      ctyp (Ttyp_alias (cty, alias)) cty.ctyp_type env loc
+      ctyp (Ttyp_alias (cty, alias)) cty.ctyp_type
   | Ptyp_variant(fields, closed, present) ->
       let name = ref None in
       let mkfield l f =
@@ -514,7 +514,7 @@ let rec transl_type env policy styp =
         else { row with row_more = new_pre_univar () }
       in
       let ty = newty (Tvariant row) in
-      ctyp (Ttyp_variant (tfields, closed, present)) ty env loc
+      ctyp (Ttyp_variant (tfields, closed, present)) ty
    | Ptyp_poly(vars, st) ->
       begin_def();
       let new_univars = List.map (fun name -> name, newvar ~name ()) vars in
@@ -541,7 +541,7 @@ let rec transl_type env policy styp =
       in
       let ty' = Btype.newgenty (Tpoly(ty, List.rev ty_list)) in
       unify_var env (newvar()) ty';
-      ctyp (Ttyp_poly (vars, cty)) ty' env loc
+      ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
       let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
       let z = narrow () in
@@ -555,12 +555,12 @@ let rec transl_type env policy styp =
                        List.map (fun (s, pty) -> s.txt) l,
                        List.map (fun (_,cty) -> cty.ctyp_type) ptys))
       in
-        ctyp (Ttyp_package {
-                pack_name = path;
-                pack_type = mty.mty_type;
-                pack_fields = ptys;
-                pack_txt = p;
-              }) ty env loc
+      ctyp (Ttyp_package {
+            pack_name = path;
+            pack_type = mty.mty_type;
+            pack_fields = ptys;
+            pack_txt = p;
+           }) ty
   | Ptyp_extension (s, _arg) ->
       raise (Error (loc, env, Extension s))
 

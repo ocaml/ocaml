@@ -378,10 +378,11 @@ and type_declaration i ppf x =
   option (i+1) core_type ppf x.ptype_manifest
 
 and attributes i ppf l =
+  let i = i + 1 in
   List.iter
     (fun (s, arg) ->
       line i ppf "attribute \"%s\"\n" s;
-      expression i ppf arg;
+      expression (i + 1) ppf arg;
     )
     l
 

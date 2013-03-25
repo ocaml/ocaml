@@ -77,7 +77,7 @@ module Typedtree_search =
           Hashtbl.add table (MT (Name.from_ident ident)) tt
       | Typedtree.Tstr_exception (ident, _, _) ->
           Hashtbl.add table (E (Name.from_ident ident)) tt
-      | Typedtree.Tstr_exn_rebind (ident, _, _, _) ->
+      | Typedtree.Tstr_exn_rebind (ident, _, _, _, _) ->
           Hashtbl.add table (ER (Name.from_ident ident)) tt
       | Typedtree.Tstr_type ident_type_decl_list ->
           List.iter
@@ -111,6 +111,7 @@ module Typedtree_search =
       | Typedtree.Tstr_open _ -> ()
       | Typedtree.Tstr_include _ -> ()
       | Typedtree.Tstr_eval _ -> ()
+      | Typedtree.Tstr_attribute _ -> ()
 
     let tables typedtree =
       let t = Hashtbl.create 13 in
@@ -135,7 +136,7 @@ module Typedtree_search =
 
     let search_exception_rebind table name =
       match Hashtbl.find table (ER name) with
-      | (Typedtree.Tstr_exn_rebind (_, _, p, _)) -> p
+      | (Typedtree.Tstr_exn_rebind (_, _, p, _, _)) -> p
       | _ -> assert false
 
     let search_type_declaration table name =
@@ -885,7 +886,7 @@ module Analyser =
     let tt_get_included_module_list tt_structure =
       let f acc item =
         match item.str_desc with
-          Typedtree.Tstr_include (mod_expr, _) ->
+          Typedtree.Tstr_include (mod_expr, _, _) ->
             acc @ [
                   { (* A VOIR : chercher dans les modules et les module types, avec quel env ? *)
                     im_name = tt_name_from_module_expr mod_expr ;
