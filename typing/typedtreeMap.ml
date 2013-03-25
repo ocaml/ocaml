@@ -160,15 +160,22 @@ module MakeMap(Map : MapArgument) = struct
     let typ_kind = match decl.typ_kind with
         Ttype_abstract -> Ttype_abstract
       | Ttype_variant list ->
-        let list = List.map (fun (s, name, cts, loc) ->
-          (s, name, List.map map_core_type cts, loc)
-        ) list in
-        Ttype_variant list
+          let list =
+            List.map
+              (fun cd ->
+                {cd with cd_args = List.map map_core_type cd.cd_args;
+                 cd_res = may_map map_core_type cd.cd_res
+                }
+              ) list
+          in
+          Ttype_variant list
       | Ttype_record list ->
         let list =
-          List.map (fun (s, name, mut, ct, loc) ->
-            (s, name, mut, map_core_type ct, loc)
-          ) list in
+          List.map
+            (fun ld ->
+              {ld with ld_type = map_core_type ld.ld_type}
+            ) list
+        in
         Ttype_record list
     in
     let typ_manifest =

@@ -329,9 +329,28 @@ and type_declaration =
 
 and type_kind =
     Ttype_abstract
-  | Ttype_variant of (Ident.t * string loc * core_type list * Location.t) list
-  | Ttype_record of
-      (Ident.t * string loc * mutable_flag * core_type * Location.t) list
+  | Ttype_variant of constructor_declaration list
+  | Ttype_record of label_declaration list
+
+and label_declaration =
+    {
+     ld_id: Ident.t;
+     ld_name: string loc;
+     ld_mutable: mutable_flag;
+     ld_type: core_type;
+     ld_loc: Location.t;
+     ld_attributes: attribute list;
+    }
+
+and constructor_declaration =
+    {
+     cd_id: Ident.t;
+     cd_name: string loc;
+     cd_args: core_type list;
+     cd_res: core_type option;
+     cd_loc: Location.t;
+     cd_attributes: attribute list;
+    }
 
 and exception_declaration =
   { exn_params : core_type list;

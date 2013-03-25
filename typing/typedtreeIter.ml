@@ -175,12 +175,15 @@ module MakeIterator(Iter : IteratorArgument) : sig
       begin match decl.typ_kind with
           Ttype_abstract -> ()
         | Ttype_variant list ->
-            List.iter (fun (s, _, cts, loc) ->
-                List.iter iter_core_type cts
-            ) list
+            List.iter
+              (fun cd ->
+                List.iter iter_core_type cd.cd_args;
+                option iter_core_type cd.cd_res;
+              ) list
         | Ttype_record list ->
-            List.iter (fun (s, _, mut, ct, loc) ->
-                iter_core_type ct
+            List.iter
+              (fun ld ->
+                iter_core_type ld.ld_type
             ) list
       end;
       begin match decl.typ_manifest with

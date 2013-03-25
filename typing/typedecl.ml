@@ -159,19 +159,19 @@ let transl_declaration env sdecl id =
           (List.filter (fun cd -> cd.pcd_args <> []) cstrs)
           > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
-        let make_cstr {pcd_name = lid; pcd_args = args; pcd_res = ret_type; pcd_loc = loc} =
+        let make_cstr {pcd_name = lid; pcd_args = args; pcd_res = ret_type; pcd_loc = loc; pcd_attributes = attrs} =
           let name = Ident.create lid.txt in
           match ret_type with
             | None ->
-              (name, lid, List.map (transl_simple_type env true) args, None, loc)
+              (name, lid, List.map (transl_simple_type env true) args, None, None, loc, attrs)
             | Some sty ->
               (* if it's a generalized constructor we must first narrow and
                  then widen so as to not introduce any new constraints *)
               let z = narrow () in
               reset_type_variables ();
               let args = List.map (transl_simple_type env false) args in
+              let cty = transl_simple_type env false sty in
               let ret_type =
-                let cty = transl_simple_type env false sty in
                 let ty = cty.ctyp_type in
                 let p = Path.Pident id in
                 match (Ctype.repr ty).desc with
@@ -181,13 +181,14 @@ let transl_declaration env sdecl id =
                                     (ty, Ctype.newconstr p params)))
               in
               widen z;
-              (name, lid, args, Some ret_type, loc)
+              (name, lid, args, Some cty, Some ret_type, loc, attrs)
         in
         let cstrs = List.map make_cstr cstrs in
-        Ttype_variant (List.map (fun (name, lid, ctys, _, loc) ->
-          name, lid, ctys, loc
+        Ttype_variant (List.map (fun (name, lid, ctys, res, _, loc, attrs) ->
+          {cd_id = name; cd_name = lid; cd_args = ctys; cd_res = res;
+           cd_loc = loc; cd_attributes = attrs}
         ) cstrs),
-        Type_variant (List.map (fun (name, name_loc, ctys, option, loc) ->
+        Type_variant (List.map (fun (name, name_loc, ctys, _, option, loc, _attrs) ->
           name, List.map (fun cty -> cty.ctyp_type) ctys, option) cstrs)
 
       | Ptype_record lbls ->
@@ -198,15 +199,16 @@ let transl_declaration env sdecl id =
               raise(Error(sdecl.ptype_loc, Duplicate_label name));
             all_labels := StringSet.add name !all_labels)
           lbls;
-        let lbls = List.map (fun {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc} ->
+        let lbls = List.map (fun {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;pld_attributes=attrs} ->
           let cty = transl_simple_type env true arg in
-          (Ident.create name.txt, name, mut, cty, loc)
-        ) lbls in
+          {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut; ld_type = cty;
+           ld_loc = loc; ld_attributes = attrs}
+          ) lbls in
         let lbls' =
           List.map
-            (fun (name, name_loc, mut, cty, loc) ->
-              let ty = cty.ctyp_type in
-              name, mut, match ty.desc with Tpoly(t,[]) -> t | _ -> ty)
+            (fun ld ->
+              let ty = ld.ld_type.ctyp_type in
+              ld.ld_id, ld.ld_mutable, match ty.desc with Tpoly(t,[]) -> t | _ -> ty)
             lbls in
         let rep =
           if List.for_all (fun (name, mut, arg) -> is_float env arg) lbls'

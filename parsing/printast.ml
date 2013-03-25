@@ -446,6 +446,7 @@ and class_type_field i ppf x =
 
 and class_description i ppf x =
   line i ppf "class_description %a\n" fmt_location x.pci_loc;
+  attributes i ppf x.pci_attributes;
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";

@@ -31,6 +31,8 @@ Some notes:
 *)
 
 
+let option f = function None -> None | Some e -> Some (f e)
+
 let rec lident_of_path path =
   match path with
       Path.Pident id -> Longident.Lident (Ident.name id)
@@ -124,21 +126,19 @@ and untype_type_declaration name decl =
     ptype_kind = (match decl.typ_kind with
         Ttype_abstract -> Ptype_abstract
       | Ttype_variant list ->
-          Ptype_variant (List.map (fun (_s, name, cts, loc) ->
-                {pcd_name = name; pcd_args = List.map untype_core_type cts; pcd_res = None; pcd_loc = loc; pcd_attributes = []}) list)
+          Ptype_variant (List.map (fun cd ->
+                {pcd_name = cd.cd_name; pcd_args = List.map untype_core_type cd.cd_args; pcd_res = option untype_core_type cd.cd_res; pcd_loc = cd.cd_loc; pcd_attributes = cd.cd_attributes}) list)
       | Ttype_record list ->
-          Ptype_record (List.map (fun (_s, name, mut, ct, loc) ->
-                {pld_name=name;
-                 pld_mutable=mut;
-                 pld_type=untype_core_type ct;
-                 pld_loc=loc;
-                 pld_attributes=[]}
+          Ptype_record (List.map (fun ld ->
+                {pld_name=ld.ld_name;
+                 pld_mutable=ld.ld_mutable;
+                 pld_type=untype_core_type ld.ld_type;
+                 pld_loc=ld.ld_loc;
+                 pld_attributes=ld.ld_attributes}
             ) list)
     );
     ptype_private = decl.typ_private;
-    ptype_manifest = (match decl.typ_manifest with
-        None -> None
-      | Some ct -> Some (untype_core_type ct));
+    ptype_manifest = option untype_core_type decl.typ_manifest;
     ptype_variance = decl.typ_variance;
     ptype_attributes = decl.typ_attributes;
     ptype_loc = decl.typ_loc;
@@ -185,9 +185,7 @@ and untype_pattern pat =
                   )
           ), explicit_arity)
     | Tpat_variant (label, pato, _) ->
-        Ppat_variant (label, match pato with
-            None -> None
-          | Some pat -> Some (untype_pattern pat))
+        Ppat_variant (label, option untype_pattern pato)
     | Tpat_record (list, closed) ->
         Ppat_record (List.map (fun (lid, _, pat) ->
               lid, untype_pattern pat) list, closed)
@@ -196,8 +194,6 @@ and untype_pattern pat =
     | Tpat_lazy p -> Ppat_lazy (untype_pattern p)
   in
   Pat.mk ~loc:pat.pat_loc ~attrs:pat.pat_attributes desc (* todo: fix attributes on extras *)
-
-and option f x = match x with None -> None | Some e -> Some (f e)
 
 and untype_extra (extra, loc, attrs) sexp =
   let desc =
@@ -253,16 +249,12 @@ and untype_expression exp =
                 (Exp.tuple ~loc:exp.exp_loc (List.map untype_expression args))
           ), explicit_arity)
     | Texp_variant (label, expo) ->
-        Pexp_variant (label, match expo with
-            None -> None
-          | Some exp -> Some (untype_expression exp))
+        Pexp_variant (label, option untype_expression expo)
     | Texp_record (list, expo) ->
         Pexp_record (List.map (fun (lid, _, exp) ->
               lid, untype_expression exp
           ) list,
-          match expo with
-            None -> None
-          | Some exp -> Some (untype_expression exp))
+          option untype_expression expo)
     | Texp_field (exp, lid, _label) ->
         Pexp_field (untype_expression exp, lid)
     | Texp_setfield (exp1, lid, _label, exp2) ->
@@ -273,9 +265,7 @@ and untype_expression exp =
     | Texp_ifthenelse (exp1, exp2, expo) ->
         Pexp_ifthenelse (untype_expression exp1,
           untype_expression exp2,
-          match expo with
-            None -> None
-          | Some exp -> Some (untype_expression exp))
+          option untype_expression expo)
     | Texp_sequence (exp1, exp2) ->
         Pexp_sequence (untype_expression exp1, untype_expression exp2)
     | Texp_while (exp1, exp2) ->

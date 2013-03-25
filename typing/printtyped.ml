@@ -141,6 +141,7 @@ let attributes i ppf l =
 
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ctyp_loc;
+  attributes i ppf x.ctyp_attributes;
   let i = i+1 in
   match x.ctyp_desc with
   | Ttyp_any -> line i ppf "Ptyp_any\n";
@@ -374,6 +375,7 @@ and expression i ppf x =
 
 and value_description i ppf x =
   line i ppf "value_description\n";
+  attributes i ppf x.val_attributes;
   core_type (i+1) ppf x.val_desc;
   list (i+1) string ppf x.val_prim;
 
@@ -386,6 +388,7 @@ and string_option_underscore i ppf =
 
 and type_declaration i ppf x =
   line i ppf "type_declaration %a\n" fmt_location x.typ_loc;
+  attributes i ppf x.typ_attributes;
   let i = i+1 in
   line i ppf "ptype_params =\n";
   list (i+1) string_option_underscore ppf x.typ_params;
@@ -403,12 +406,15 @@ and type_kind i ppf x =
       line i ppf "Ptype_abstract\n"
   | Ttype_variant l ->
       line i ppf "Ptype_variant\n";
-      list (i+1) string_x_core_type_list_x_location ppf l;
+      list (i+1) constructor_decl ppf l;
   | Ttype_record l ->
       line i ppf "Ptype_record\n";
-      list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
+      list (i+1) label_decl ppf l;
 
-and exception_declaration i ppf x = list i core_type ppf x
+and exception_declaration i ppf x =
+(*  string_loc i ppf x.ped_name; *)
+  attributes i ppf x.exn_attributes;
+  list i core_type ppf x.exn_params
 
 and class_type i ppf x =
   line i ppf "class_type %a\n" fmt_location x.cltyp_loc;
@@ -456,6 +462,7 @@ and class_type_field i ppf x =
 
 and class_description i ppf x =
   line i ppf "class_description %a\n" fmt_location x.ci_loc;
+  attributes i ppf x.ci_attributes;
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.ci_virt;
   line i ppf "pci_params =\n";
@@ -555,6 +562,7 @@ and class_declaration i ppf x =
 
 and module_type i ppf x =
   line i ppf "module_type %a\n" fmt_location x.mty_loc;
+  attributes i ppf x.mty_attributes;
   let i = i+1 in
   match x.mty_desc with
   | Tmty_ident (li,_) -> line i ppf "Pmty_ident %a\n" fmt_path li;
@@ -587,7 +595,7 @@ and signature_item i ppf x =
       list i string_x_type_declaration ppf l;
   | Tsig_exception (s, _, ed) ->
       line i ppf "Psig_exception \"%a\"\n" fmt_ident s;
-      exception_declaration i ppf ed.exn_params;
+      exception_declaration i ppf ed;
   | Tsig_module (s, _, mt) ->
       line i ppf "Psig_module \"%a\"\n" fmt_ident s;
       module_type i ppf mt;
@@ -602,8 +610,8 @@ and signature_item i ppf x =
       attributes i ppf attrs
   | Tsig_include (mt, _, attrs) ->
       line i ppf "Psig_include\n";
-      module_type i ppf mt;
-      attributes i ppf attrs
+      attributes i ppf attrs;
+      module_type i ppf mt
   | Tsig_class (l) ->
       line i ppf "Psig_class\n";
       list i class_description ppf l;
@@ -680,7 +688,7 @@ and structure_item i ppf x =
       list i string_x_type_declaration ppf l;
   | Tstr_exception (s, _, ed) ->
       line i ppf "Pstr_exception \"%a\"\n" fmt_ident s;
-      exception_declaration i ppf ed.exn_params;
+      exception_declaration i ppf ed;
   | Tstr_exn_rebind (s, _, li, _, attrs) ->
       line i ppf "Pstr_exn_rebind \"%a\" %a\n" fmt_ident s fmt_path li;
       attributes i ppf attrs
@@ -704,8 +712,8 @@ and structure_item i ppf x =
       list i class_type_declaration ppf (List.map (fun (_, _, cl) -> cl) l);
   | Tstr_include (me, _, attrs) ->
       line i ppf "Pstr_include";
+      attributes i ppf attrs;
       module_expr i ppf me;
-      attributes i ppf attrs
   | Tstr_attribute (s, arg) ->
       line i ppf "Pstr_attribute \"%s\"\n" s;
       Printast.expression i ppf arg
@@ -732,14 +740,19 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and string_x_core_type_list_x_location i ppf (s, _, l, r_opt) =
-  line i ppf "\"%a\"\n" fmt_ident s;
-  list (i+1) core_type ppf l;
-(*  option (i+1) core_type ppf r_opt; *)
+and constructor_decl i ppf {cd_id; cd_name = _; cd_args; cd_res; cd_loc; cd_attributes} =
+  line i ppf "%a\n" fmt_location cd_loc;
+  attributes i ppf cd_attributes;
+  line (i+1) ppf "%a\n" fmt_ident cd_id;
+  list (i+1) core_type ppf cd_args;
+  option (i+1) core_type ppf cd_res
 
-and string_x_mutable_flag_x_core_type_x_location i ppf (s, _, mf, ct, loc) =
-  line i ppf "\"%a\" %a %a\n" fmt_ident s fmt_mutable_flag mf fmt_location loc;
-  core_type (i+1) ppf ct;
+and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc; ld_attributes} =
+  line i ppf "%a\n" fmt_location ld_loc;
+  attributes i ppf ld_attributes;
+  line (i+1) ppf "%a\n" fmt_mutable_flag ld_mutable;
+  line (i+1) ppf "%a" fmt_ident ld_id;
+  core_type (i+1) ppf ld_type
 
 and string_list_x_location i ppf (l, loc) =
   line i ppf "<params> %a\n" fmt_location loc;

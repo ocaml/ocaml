@@ -54,9 +54,9 @@ let type_declaration sub decl =
   begin match decl.typ_kind with
   | Ttype_abstract -> ()
   | Ttype_variant list ->
-      List.iter (fun (_s, _, cts, _loc) -> List.iter (sub # core_type) cts) list
+      List.iter (fun cd -> List.iter (sub # core_type) cd.cd_args; opt (sub # core_type) cd.cd_res) list
   | Ttype_record list ->
-      List.iter (fun (_s, _, _mut, ct, _loc) -> sub # core_type ct) list
+      List.iter (fun ld -> sub # core_type ld.ld_type) list
   end;
   opt (sub # core_type) decl.typ_manifest
 
