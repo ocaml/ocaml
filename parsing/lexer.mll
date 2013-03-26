@@ -563,14 +563,7 @@ and quoted_string delim = parse
         let edelim = Lexing.lexeme lexbuf in
         let edelim = String.sub edelim 1 (String.length edelim - 2) in
         if delim = edelim then ()
-        else begin
-          lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1;
-          let curpos = lexbuf.lex_curr_p in
-          lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 1 };
-          store_string_char '|';
-          store_string edelim;
-          quoted_string delim lexbuf
-        end
+        else (store_lexeme lexbuf; quoted_string delim lexbuf)
       }
   | _
       { store_string_char(Lexing.lexeme_char lexbuf 0);
