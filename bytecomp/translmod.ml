@@ -108,7 +108,7 @@ let mod_prim name =
 let undefined_location loc =
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lconst(Const_block(0,
-                     [Const_base(Const_string fname);
+                     [Const_base(Const_string (fname, None));
                       Const_base(Const_int line);
                       Const_base(Const_int char)]))
 
@@ -653,13 +653,13 @@ let toplevel_name id =
 let toploop_getvalue id =
   Lapply(Lprim(Pfield toploop_getvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id)))],
+         [Lconst(Const_base(Const_string (toplevel_name id, None)))],
          Location.none)
 
 let toploop_setvalue id lam =
   Lapply(Lprim(Pfield toploop_setvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id))); lam],
+         [Lconst(Const_base(Const_string (toplevel_name id, None))); lam],
          Location.none)
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)

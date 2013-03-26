@@ -583,7 +583,7 @@ let assert_failed exp =
     (Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
            Lconst(Const_block(0,
-              [Const_base(Const_string fname);
+              [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
                Const_base(Const_int char)]))]))])
 ;;
@@ -1076,7 +1076,8 @@ let transl_exception path decl =
     match path with
       None -> Ident.name decl.cd_id
     | Some p -> Path.name p in
-  Lprim(Pmakeblock(0, Immutable), [Lconst(Const_base(Const_string name))])
+  Lprim(Pmakeblock(0, Immutable),
+        [Lconst(Const_base(Const_string (name,None)))])
 
 (* Error report *)
 

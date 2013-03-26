@@ -193,7 +193,7 @@ module E = struct
 
   let lid ?(loc = Location.none) ?attrs lid = Exp.ident ~loc ?attrs (mkloc (Longident.parse lid) loc)
   let apply_nolabs ?loc ?attrs f el = Exp.apply ?loc ?attrs f (List.map (fun e -> ("", e)) el)
-  let strconst ?loc ?attrs x = Exp.constant ?loc ?attrs (Const_string x)
+  let strconst ?loc ?attrs x = Exp.constant ?loc ?attrs (Const_string (x, None))
 
   let map sub {pexp_loc = loc; pexp_desc = desc; pexp_attributes = attrs} =
     let open Exp in

@@ -404,7 +404,7 @@ let mkexp_attrs d attrs =
 %token SHARP
 %token SIG
 %token STAR
-%token <string> STRING
+%token <string * string option> STRING
 %token STRUCT
 %token THEN
 %token TILDE
@@ -1408,8 +1408,8 @@ lbl_pattern:
 /* Primitive declarations */
 
 primitive_declaration:
-    STRING                                      { [$1] }
-  | STRING primitive_declaration                { $1 :: $2 }
+    STRING                                      { [fst $1] }
+  | STRING primitive_declaration                { fst $1 :: $2 }
 ;
 
 /* Type declarations */
@@ -1737,7 +1737,7 @@ label:
 constant:
     INT                                         { Const_int $1 }
   | CHAR                                        { Const_char $1 }
-  | STRING                                      { Const_string $1 }
+  | STRING                                      { let (s, d) = $1 in Const_string (s, d) }
   | FLOAT                                       { Const_float $1 }
   | INT32                                       { Const_int32 $1 }
   | INT64                                       { Const_int64 $1 }
@@ -1856,7 +1856,7 @@ any_longident:
 
 toplevel_directive:
     SHARP ident                 { Ptop_dir($2, Pdir_none) }
-  | SHARP ident STRING          { Ptop_dir($2, Pdir_string $3) }
+  | SHARP ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
   | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
   | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }

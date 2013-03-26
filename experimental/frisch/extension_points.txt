@@ -134,6 +134,35 @@ begin[@foo] ... end        ====   (begin ... end)[@foo]
 match%foo e with ...       ====   [%foo match e with ...]
 
 
+=== Quoted strings
+
+Quoted strings gives a different syntax to write string literals in
+OCaml code.  This will typically be used to support embedding pieces
+of foreign syntax fragments (to be interpret by a -ppx filter or just
+a library) in OCaml code.
+
+The opening delimiter has the form {id| where id is a (possibly empty)
+sequence of lowercase letters.  The corresponding closing delimiter is
+|id} (the same identifier).  Contrary to regular OCaml string
+literals, quoted strings don't interpret any character in a special
+way.
+
+Example:
+
+String.length {|\"|}   (* returns 2 *)
+String.length {foo|\"|foo}   (* returns 2 *)
+
+
+The fact that a string literal comes from a quoted string is kept in
+the Parsetree representation.  The Astypes.Const_string constructor is
+now defined as:
+
+  | Const_string of string * string option
+
+where the "string option" represents the delimiter (None for a string
+literal with the regular syntax).
+
+
 === Representation of attributes in the Parsetree
 
 Attributes as standalone signature/structure items are represented

@@ -111,11 +111,13 @@ let store_string_char c =
   String.unsafe_set (!string_buff) (!string_index) c;
   incr string_index
 
-let store_lexeme lexbuf =
-  let s = Lexing.lexeme lexbuf in
+let store_string s =
   for i = 0 to String.length s - 1 do
     store_string_char s.[i];
   done
+
+let store_lexeme lexbuf =
+  store_string (Lexing.lexeme lexbuf)
 
 let get_stored_string () =
   let s = String.sub (!string_buff) 0 (!string_index) in
@@ -311,7 +313,18 @@ rule token = parse
         string lexbuf;
         is_in_string := false;
         lexbuf.lex_start_p <- string_start;
-        STRING (get_stored_string()) }
+        STRING (get_stored_string(), None) }
+  | "{" lowercase* "|"
+      { reset_string_buffer();
+        let delim = Lexing.lexeme lexbuf in
+        let delim = String.sub delim 1 (String.length delim - 2) in
+        is_in_string := true;
+        let string_start = lexbuf.lex_start_p in
+        string_start_loc := Location.curr lexbuf;
+        quoted_string delim lexbuf;
+        is_in_string := false;
+        lexbuf.lex_start_p <- string_start;
+        STRING (get_stored_string(), Some delim) }
   | "'" newline "'"
       { update_loc lexbuf None 1 false 1;
         CHAR (Lexing.lexeme_char lexbuf 1) }
@@ -535,6 +548,33 @@ and string = parse
   | _
       { store_string_char(Lexing.lexeme_char lexbuf 0);
         string lexbuf }
+
+and quoted_string delim = parse
+  | newline
+      { update_loc lexbuf None 1 false 0;
+        store_lexeme lexbuf;
+        quoted_string delim lexbuf
+      }
+  | eof
+      { is_in_string := false;
+        raise (Error (Unterminated_string, !string_start_loc)) }
+  | "|" lowercase* "}"
+      {
+        let edelim = Lexing.lexeme lexbuf in
+        let edelim = String.sub edelim 1 (String.length edelim - 2) in
+        if delim = edelim then ()
+        else begin
+          lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1;
+          let curpos = lexbuf.lex_curr_p in
+          lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 1 };
+          store_string_char '|';
+          store_string edelim;
+          quoted_string delim lexbuf
+        end
+      }
+  | _
+      { store_string_char(Lexing.lexeme_char lexbuf 0);
+        quoted_string delim lexbuf }
 
 and skip_sharp_bang = parse
   | "#!" [^ '\n']* '\n' [^ '\n']* "\n!#\n"

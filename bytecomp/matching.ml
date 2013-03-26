@@ -2541,7 +2541,7 @@ let partial_function loc () =
   Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_match_failure;
            Lconst(Const_block(0,
-              [Const_base(Const_string fname);
+              [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
                Const_base(Const_int char)]))])])
 

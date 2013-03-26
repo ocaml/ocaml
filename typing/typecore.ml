@@ -1856,7 +1856,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(Const_string s as cst) ->
+  | Pexp_constant(Const_string (s, _) as cst) ->
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];

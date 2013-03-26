@@ -86,7 +86,7 @@ let reset_labels () =
 
 (* Insert labels *)
 
-let string s = Lconst (Const_base (Const_string s))
+let string s = Lconst (Const_base (Const_string (s, None)))
 let int n = Lconst (Const_base (Const_int n))
 
 let prim_makearray =
