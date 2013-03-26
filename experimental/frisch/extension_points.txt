@@ -196,6 +196,14 @@ of the item:
   | Pstr_open of Longident.t loc * attribute list
 
 
+=== Attributes in the Typedtree
+
+The Typedtree representation has been updated to follow closely the
+Parsetree, and attributes are kept exactly as in the Parsetree.  This
+can allow external tools to process .cmt/.cmti files and process
+attributes in them.  An example of a mini-ocamldoc based on this
+technique is in experimental/frisch/minidoc.ml.
+
 
 === Other changes to the parser and Parsetree
 
