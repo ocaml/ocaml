@@ -482,3 +482,16 @@ let fetch_users dbh =
 -- Macaque
 
 let names view = [%view {name = t.name}, t <- !view]" 
+
+
+-- Cass
+
+let color1 = [%css{| black |}]
+let color2 = [%css{| gray |}]
+ 
+let button = [%css{|
+   .button {
+     $Css.gradient ~low:color2 ~high:color1$;
+     color: white;
+     $Css.top_rounded$;
+ |}]
