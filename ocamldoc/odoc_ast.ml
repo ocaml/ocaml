@@ -73,8 +73,8 @@ module Typedtree_search =
                 (Typedtree.Tstr_module mb)
             )
             mods
-      | Typedtree.Tstr_modtype (ident, _, _) ->
-          Hashtbl.add table (MT (Name.from_ident ident)) tt
+      | Typedtree.Tstr_modtype mtb ->
+          Hashtbl.add table (MT (Name.from_ident mtb.mtb_id)) tt
       | Typedtree.Tstr_exception decl ->
           Hashtbl.add table (E (Name.from_ident decl.cd_id)) tt
       | Typedtree.Tstr_exn_rebind (ident, _, _, _, _) ->
@@ -126,7 +126,7 @@ module Typedtree_search =
 
     let search_module_type table name =
       match Hashtbl.find table (MT name) with
-      | (Typedtree.Tstr_modtype (_, _, module_type)) -> module_type
+      | (Typedtree.Tstr_modtype mtb) -> mtb
       | _ -> assert false
 
     let search_exception table name =
@@ -1401,14 +1401,15 @@ module Analyser =
             with Not_found ->
               raise (Failure (Odoc_messages.module_type_not_found_in_typedtree complete_name))
           in
+          let mty_type = tt_module_type.mtb_type.mty_type in
           let kind = Sig.analyse_module_type_kind env complete_name
-              modtype tt_module_type.mty_type
+              modtype mty_type
           in
           let mt =
             {
               mt_name = complete_name ;
               mt_info = comment_opt ;
-              mt_type = Some tt_module_type.mty_type ;
+              mt_type = Some mty_type ;
               mt_is_interface = false ;
               mt_file = !file_name ;
               mt_kind = Some kind ;
@@ -1417,7 +1418,7 @@ module Analyser =
           in
           let new_env = Odoc_env.add_module_type env mt.mt_name in
           let new_env2 =
-            match tt_module_type.mty_type with
+            match mty_type with
               (* A VOIR : cela peut-il etre Tmty_ident ? dans ce cas, on n'aurait pas la signature *)
               Types.Mty_signature s ->
                 Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s

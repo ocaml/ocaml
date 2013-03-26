@@ -374,7 +374,7 @@ let rec defined_idents = function
     | Tstr_module mb -> mb.mb_id :: defined_idents rem
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ defined_idents rem
-    | Tstr_modtype(id, _, decl) -> defined_idents rem
+    | Tstr_modtype _ -> defined_idents rem
     | Tstr_open (path, _, _) -> defined_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ defined_idents rem
@@ -394,7 +394,7 @@ let rec more_idents = function
     | Tstr_exception _ -> more_idents rem
     | Tstr_exn_rebind(id, _, path, _, _) -> more_idents rem
     | Tstr_recmodule decls -> more_idents rem
-    | Tstr_modtype(id, _, decl) -> more_idents rem
+    | Tstr_modtype _ -> more_idents rem
     | Tstr_open (path, _, _) -> more_idents rem
     | Tstr_class cl_list -> more_idents rem
     | Tstr_class_type cl_list -> more_idents rem
@@ -417,7 +417,7 @@ and all_idents = function
     | Tstr_exn_rebind(id, _, path, _, _) -> id :: all_idents rem
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ all_idents rem
-    | Tstr_modtype(id, _, decl) -> all_idents rem
+    | Tstr_modtype _ -> all_idents rem
     | Tstr_open (path, _, _) -> all_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ all_idents rem

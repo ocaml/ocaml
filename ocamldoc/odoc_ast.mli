@@ -33,7 +33,7 @@ module Typedtree_search :
       (** This function returns the [Types.module_type] associated to the given module type name,
          in the given table.
          @raise Not_found if the module type was not found.*)
-      val search_module_type : tab -> string -> Typedtree.module_type
+      val search_module_type : tab -> string -> Typedtree.module_type_binding
 
       (** This function returns the [Types.exception_declaration] associated to the given exception name,
          in the given table.

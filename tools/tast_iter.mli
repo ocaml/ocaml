@@ -29,6 +29,7 @@ class iter: object
   method expression: expression -> unit
   method module_binding: module_binding -> unit
   method module_expr: module_expr -> unit
+  method module_type_binding: module_type_binding -> unit
   method module_type: module_type -> unit
   method package_type: package_type -> unit
   method pattern: pattern -> unit
@@ -65,6 +66,7 @@ val core_type: iter -> core_type -> unit
 val expression: iter -> expression -> unit
 val module_binding: iter -> module_binding -> unit
 val module_expr: iter -> module_expr -> unit
+val module_type_binding: iter -> module_type_binding -> unit
 val module_type: iter -> module_type -> unit
 val package_type: iter -> package_type -> unit
 val pattern: iter -> pattern -> unit

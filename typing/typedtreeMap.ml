@@ -109,8 +109,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_recmodule list ->
           let list = List.map map_module_binding list in
           Tstr_recmodule list
-        | Tstr_modtype (id, name, mtype) ->
-          Tstr_modtype (id, name, map_module_type mtype)
+        | Tstr_modtype x ->
+          Tstr_modtype (map_module_type_binding x)
         | Tstr_open (path, lid, attrs) -> Tstr_open (path, lid, attrs)
         | Tstr_class list ->
           let list =
@@ -137,6 +137,9 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_module_binding x =
     {x with mb_expr = map_module_expr x.mb_expr}
+
+  and map_module_type_binding x =
+    {x with mtb_type = map_module_type x.mtb_type}
 
   and map_value_description v =
     let v = Map.enter_value_description v in

@@ -130,8 +130,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_exn_rebind _ -> ()
         | Tstr_module x -> iter_module_binding x
         | Tstr_recmodule list -> List.iter iter_module_binding list
-        | Tstr_modtype (id, _, mtype) ->
-            iter_module_type mtype
+        | Tstr_modtype x -> iter_module_type_binding x
         | Tstr_open _ -> ()
         | Tstr_class list ->
             List.iter (fun (ci, _, _) ->
@@ -154,6 +153,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_module_binding x =
       iter_module_expr x.mb_expr
+
+    and iter_module_type_binding x =
+      iter_module_type x.mtb_type
 
     and iter_value_description v =
       Iter.enter_value_description v;
