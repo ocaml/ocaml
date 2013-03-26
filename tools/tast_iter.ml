@@ -30,14 +30,8 @@ let structure_item sub x =
   | Tstr_type list -> List.iter (sub # type_declaration) list
   | Tstr_exception decl -> constructor_decl sub decl
   | Tstr_exn_rebind (_id, _, _p, _, _) -> ()
-  | Tstr_module (_id, _, mexpr) -> sub # module_expr mexpr
-  | Tstr_recmodule list ->
-      List.iter
-        (fun (_id, _, mtype, mexpr) ->
-          sub # module_type mtype;
-          sub # module_expr mexpr
-        )
-        list
+  | Tstr_module mb -> sub # module_binding mb
+  | Tstr_recmodule list -> List.iter (sub # module_binding) list
   | Tstr_modtype (_id, _, mtype) -> sub # module_type mtype
   | Tstr_open _ -> ()
   | Tstr_class list ->
@@ -235,6 +229,9 @@ let module_expr sub mexpr =
       sub # expression exp
 (*          sub # module_type mty *)
 
+let module_binding sub mb =
+  module_expr sub mb.mb_expr
+
 let class_expr sub cexpr =
   match cexpr.cl_desc with
   | Tcl_constraint (cl, None, _, _, _ ) ->
@@ -356,6 +353,7 @@ class iter = object(this)
   method core_field_type = core_field_type this
   method core_type = core_type this
   method expression = expression this
+  method module_binding = module_binding this
   method module_expr = module_expr this
   method module_type = module_type this
   method package_type = package_type this

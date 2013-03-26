@@ -1338,9 +1338,9 @@ and is_nonexpansive_mod mexp =
           | Tstr_open _ | Tstr_class_type _ | Tstr_exn_rebind _ -> true
           | Tstr_value (_, pat_exp_list) ->
               List.for_all (fun (_, exp) -> is_nonexpansive exp) pat_exp_list
-          | Tstr_module (_, _, m) | Tstr_include (m, _, _) -> is_nonexpansive_mod m
+          | Tstr_module {mb_expr=m;_} | Tstr_include (m, _, _) -> is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->
-              List.for_all (fun (_, _, _, m) -> is_nonexpansive_mod m)
+              List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
                 id_mod_list
           | Tstr_exception _ -> false (* true would be unsound *)
           | Tstr_class _ -> false (* could be more precise *)

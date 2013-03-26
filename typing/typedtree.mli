@@ -203,14 +203,22 @@ and structure_item_desc =
   | Tstr_type of type_declaration list
   | Tstr_exception of constructor_declaration
   | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attribute list
-  | Tstr_module of Ident.t * string loc * module_expr (* todo: module_binding *)
-  | Tstr_recmodule of (Ident.t * string loc * module_type * module_expr) list
+  | Tstr_module of module_binding
+  | Tstr_recmodule of module_binding list
   | Tstr_modtype of Ident.t * string loc * module_type (* todo: module_type_binding *)
   | Tstr_open of Path.t * Longident.t loc * attribute list
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of module_expr * Ident.t list * attribute list
   | Tstr_attribute of attribute
+
+and module_binding =
+    {
+     mb_id: Ident.t;
+     mb_name: string loc;
+     mb_expr: module_expr;
+     mb_attributes: attribute list;
+    }
 
 and module_coercion =
     Tcoerce_none

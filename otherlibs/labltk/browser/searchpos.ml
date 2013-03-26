@@ -673,9 +673,9 @@ let rec search_pos_structure ~pos str =
         search_pos_pat pat ~pos ~env;
         search_pos_expr exp ~pos
       end
-  | Tstr_module (_, _, m) -> search_pos_module_expr m ~pos
+  | Tstr_module mb -> search_pos_module_expr mb.mb_expr ~pos
   | Tstr_recmodule bindings ->
-      List.iter bindings ~f:(fun (_, _, _, m) -> search_pos_module_expr m ~pos)
+      List.iter bindings ~f:(fun mb -> search_pos_module_expr mb.mb_expr ~pos)
   | Tstr_class l ->
       List.iter l ~f:(fun (cl, _, _) -> search_pos_class_expr cl.ci_expr ~pos)
   | Tstr_include (m, _, _) -> search_pos_module_expr m ~pos

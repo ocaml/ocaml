@@ -624,6 +624,11 @@ and module_declaration i ppf md =
   attributes i ppf md.md_attributes;
   module_type (i+1) ppf md.md_type;
 
+and module_binding i ppf x =
+  line i ppf "%a\n" fmt_ident x.mb_id;
+  attributes i ppf x.mb_attributes;
+  module_expr (i+1) ppf x.mb_expr
+
 and modtype_declaration i ppf = function
   | None -> line i ppf "#abstract"
   | Some mt -> module_type (i + 1) ppf mt
@@ -692,12 +697,12 @@ and structure_item i ppf x =
   | Tstr_exn_rebind (s, _, li, _, attrs) ->
       line i ppf "Pstr_exn_rebind \"%a\" %a\n" fmt_ident s fmt_path li;
       attributes i ppf attrs
-  | Tstr_module (s, _, me) ->
-      line i ppf "Pstr_module \"%a\"\n" fmt_ident s;
-      module_expr i ppf me;
+  | Tstr_module x ->
+      line i ppf "Pstr_module\n";
+      module_binding i ppf x
   | Tstr_recmodule bindings ->
       line i ppf "Pstr_recmodule\n";
-      list i string_x_modtype_x_module ppf bindings;
+      list i module_binding ppf bindings
   | Tstr_modtype (s, _, mt) ->
       line i ppf "Pstr_modtype \"%a\"\n" fmt_ident s;
       module_type i ppf mt;

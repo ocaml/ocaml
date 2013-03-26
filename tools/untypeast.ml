@@ -58,19 +58,10 @@ and untype_structure_item item =
         Pstr_exception (untype_constructor_declaration decl)
     | Tstr_exn_rebind (_id, name, _p, lid, attrs) ->
         Pstr_exn_rebind (name, lid, attrs)
-    | Tstr_module (_id, name, mexpr) ->
-        Pstr_module (Mb.mk name (untype_module_expr mexpr))
+    | Tstr_module mb ->
+        Pstr_module (untype_module_binding mb)
     | Tstr_recmodule list ->
-        Pstr_recmodule
-          (List.map
-             (fun (_id, name, mtype, mexpr) ->
-               Mb.mk name
-                 (Mod.constraint_
-                    (untype_module_expr mexpr)
-                    (untype_module_type mtype)
-                 )
-             )
-             list)
+        Pstr_recmodule (List.map untype_module_binding list)
     | Tstr_modtype (_id, name, mtype) ->
         Pstr_modtype {pmtb_name=name; pmtb_type=untype_module_type mtype;
                       pmtb_attributes=[]}
@@ -112,6 +103,13 @@ and untype_value_description v =
    pval_type = untype_core_type v.val_desc;
    pval_loc = v.val_loc;
    pval_attributes = v.val_attributes;
+  }
+
+and untype_module_binding mb =
+  {
+   pmb_name = mb.mb_name;
+   pmb_expr = untype_module_expr mb.mb_expr;
+   pmb_attributes = mb.mb_attributes;
   }
 
 and untype_type_declaration decl =

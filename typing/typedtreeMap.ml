@@ -104,14 +104,10 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_exception (map_constructor_declaration cd)
         | Tstr_exn_rebind (id, name, path, lid, attrs) ->
           Tstr_exn_rebind (id, name, path, lid, attrs)
-        | Tstr_module (id, name, mexpr) ->
-          Tstr_module (id, name, map_module_expr mexpr)
+        | Tstr_module x ->
+          Tstr_module (map_module_binding x)
         | Tstr_recmodule list ->
-          let list =
-            List.map (fun (id, name, mtype, mexpr) ->
-              (id, name, map_module_type mtype, map_module_expr mexpr)
-            ) list
-          in
+          let list = List.map map_module_binding list in
           Tstr_recmodule list
         | Tstr_modtype (id, name, mtype) ->
           Tstr_modtype (id, name, map_module_type mtype)
@@ -138,6 +134,9 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_attribute x -> Tstr_attribute x
     in
     Map.leave_structure_item { item with str_desc = str_desc}
+
+  and map_module_binding x =
+    {x with mb_expr = map_module_expr x.mb_expr}
 
   and map_value_description v =
     let v = Map.enter_value_description v in

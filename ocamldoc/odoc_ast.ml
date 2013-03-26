@@ -64,13 +64,13 @@ module Typedtree_search =
 
     let add_to_hashes table table_values tt =
       match tt with
-      | Typedtree.Tstr_module (ident, _, _) ->
-          Hashtbl.add table (M (Name.from_ident ident)) tt
+      | Typedtree.Tstr_module mb ->
+          Hashtbl.add table (M (Name.from_ident mb.mb_id)) tt
       | Typedtree.Tstr_recmodule mods ->
           List.iter
-            (fun (ident,ident_loc, _, mod_expr) ->
-              Hashtbl.add table (M (Name.from_ident ident))
-                (Typedtree.Tstr_module (ident,ident_loc, mod_expr))
+            (fun mb ->
+              Hashtbl.add table (M (Name.from_ident mb.mb_id))
+                (Typedtree.Tstr_module mb)
             )
             mods
       | Typedtree.Tstr_modtype (ident, _, _) ->
@@ -121,7 +121,7 @@ module Typedtree_search =
 
     let search_module table name =
       match Hashtbl.find table (M name) with
-        (Typedtree.Tstr_module (_, _, module_expr)) -> module_expr
+        (Typedtree.Tstr_module mb) -> mb.mb_expr
       | _ -> assert false
 
     let search_module_type table name =

@@ -128,12 +128,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_type list -> List.iter iter_type_declaration list
         | Tstr_exception cd -> iter_constructor_declaration cd
         | Tstr_exn_rebind _ -> ()
-        | Tstr_module (id, _, mexpr) ->
-            iter_module_expr mexpr
-        | Tstr_recmodule list ->
-            List.iter (fun (id, _, mtype, mexpr) ->
-                iter_module_type mtype;
-                iter_module_expr mexpr) list
+        | Tstr_module x -> iter_module_binding x
+        | Tstr_recmodule list -> List.iter iter_module_binding list
         | Tstr_modtype (id, _, mtype) ->
             iter_module_type mtype
         | Tstr_open _ -> ()
@@ -155,6 +151,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ()
       end;
       Iter.leave_structure_item item
+
+    and iter_module_binding x =
+      iter_module_expr x.mb_expr
 
     and iter_value_description v =
       Iter.enter_value_description v;
