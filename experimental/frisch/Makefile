@@ -1,5 +1,5 @@
 ROOT=../..
-OCAMLC=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlc -I $(ROOT)/stdlib -I $(ROOT)/parsing -I $(ROOT)/utils -I $(ROOT)/tools -w A-4-9
+OCAMLC=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlc -I $(ROOT)/stdlib -I $(ROOT)/parsing -I $(ROOT)/utils -I $(ROOT)/tools -I $(ROOT)/typing -w A-4-9
 
 tracer.exe: tracer.ml
 	$(OCAMLC) -o $@ $(ROOT)/compilerlibs/ocamlcommon.cma $(ROOT)/tools/ast_mapper.cmo tracer.ml
@@ -22,3 +22,10 @@ test_js.exe: js_syntax.exe test_js.ml
 
 clean:
 	rm -f *.exe *.cm*
+
+
+.PHONY: minidoc
+minidoc: minidoc.ml
+	$(OCAMLC) -custom -o minidoc.exe $(ROOT)/compilerlibs/ocamlcommon.cma minidoc.ml
+	$(OCAMLC) -c -bin-annot testdoc.mli
+	./minidoc.exe testdoc.cmti
