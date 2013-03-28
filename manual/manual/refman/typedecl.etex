@@ -40,7 +40,7 @@ variance:
         | '-'
 ;
 constr-decl:
-          constr-name [ 'of' typexpr { '*' typexpr } ]
+          (constr-name || '()') [ 'of' typexpr { '*' typexpr } ]
 ;
 field-decl:
           ['mutable'] field-name ':' poly-typexpr
@@ -187,7 +187,7 @@ appear in the type equation and the type declaration.
 
 \begin{syntax}
 exception-definition:
-        'exception' constr-name ['of' typexpr { '*' typexpr }]
+        'exception' constr-name [ 'of' typexpr { '*' typexpr } ]
       | 'exception' constr-name '=' constr
 \end{syntax}
 
@@ -195,7 +195,7 @@ Exception definitions add new constructors to the built-in variant
 type \verb"exn" of exception values. The constructors are declared as
 for a definition of a variant type.
 
-The form @'exception' constr-name ['of' typexpr { '*' typexpr }]@
+The form @'exception' constr-name ['of' typexpr {'*' typexpr}]@
 generates a new exception, distinct from all other exceptions in the system.
 The form @'exception' constr-name '=' constr@
 gives an alternate name to an existing exception.
