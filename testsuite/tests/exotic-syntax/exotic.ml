@@ -45,8 +45,8 @@ for (+) = 0 to 1 do () done;;
 module F (X : sig end) = struct
   class type t = object end
 end;;
-module X = struct end;;
-class type u = F(X).t;;
+module M1 = struct end;;
+class type u = F(M1).t;;
 
 (* conjunctive constraints on tags (used by the compiler to print some
    inferred types *)
@@ -97,7 +97,7 @@ class virtual c = object
 end;;
 
 (* Double-semicolon at the beginning of a module body [ocp-indent] *)
-module X = struct ;; end;;
+module M2 = struct ;; end;;
 
 
 (**********************
