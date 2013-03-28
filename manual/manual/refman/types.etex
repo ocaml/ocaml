@@ -128,7 +128,8 @@ of @typexpr@ is captured by @"'" ident@, and quantified upon.
 polymorphic-variant-type:
         '[' tag-spec-first { '|' tag-spec } ']'
       | '[>' [ tag-spec ] { '|' tag-spec } ']'
-      | '[<' [ '|' ] tag-spec-full { '|' tag-spec-full } [ '>' {{ '`'tag-name }} ] ']'
+      | '[<' ['|'] tag-spec-full { '|' tag-spec-full }
+             [ '>' {{ '`'tag-name }} ] ']'
 ;
 %\end{syntax} \begin{syntax}
 tag-spec-first:
@@ -140,7 +141,7 @@ tag-spec:
       | typexpr
 ;
 tag-spec-full:
-        '`'tag-name [ "of" [ '&' ] typexpr { '&' typexpr } ]
+        '`'tag-name [ "of" ['&'] typexpr { '&' typexpr } ]
       | typexpr
 \end{syntax}
 
