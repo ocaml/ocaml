@@ -211,11 +211,11 @@ and pattern i ppf x =
       line i ppf "Ppat_lazy\n";
       pattern i ppf p;
   | Ppat_constraint (p, ct) ->
-      line i ppf "Ppat_constraint";
+      line i ppf "Ppat_constraint\n";
       pattern i ppf p;
       core_type i ppf ct;
   | Ppat_type (li) ->
-      line i ppf "Ppat_type";
+      line i ppf "Ppat_type\n";
       longident_loc i ppf li
   | Ppat_unpack s ->
       line i ppf "Ppat_unpack %a\n" fmt_string_loc s;
@@ -314,25 +314,25 @@ and expression i ppf x =
       module_expr i ppf me;
       expression i ppf e;
   | Pexp_assert (e) ->
-      line i ppf "Pexp_assert";
+      line i ppf "Pexp_assert\n";
       expression i ppf e;
   | Pexp_assertfalse ->
-      line i ppf "Pexp_assertfalse";
+      line i ppf "Pexp_assertfalse\n";
   | Pexp_lazy (e) ->
-      line i ppf "Pexp_lazy";
+      line i ppf "Pexp_lazy\n";
       expression i ppf e;
   | Pexp_poly (e, cto) ->
       line i ppf "Pexp_poly\n";
       expression i ppf e;
       option i core_type ppf cto;
   | Pexp_object s ->
-      line i ppf "Pexp_object";
+      line i ppf "Pexp_object\n";
       class_structure i ppf s
   | Pexp_newtype (s, e) ->
       line i ppf "Pexp_newtype \"%s\"\n" s;
       expression i ppf e
   | Pexp_pack me ->
-      line i ppf "Pexp_pack";
+      line i ppf "Pexp_pack\n";
       module_expr i ppf me
   | Pexp_open (m, e) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_longident_loc m;
