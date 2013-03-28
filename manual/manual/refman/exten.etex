@@ -998,7 +998,7 @@ same type.
 \begin{syntax}
 class-field:
       ...
-   |  'inherit!' class-expr ['as' value-name]
+   |  'inherit!' class-expr ['as' lowercase-ident]
    |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
    |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
    |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
