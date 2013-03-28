@@ -49,7 +49,8 @@ all: libs
 libs: $(FILES)
 
 $(INTF): $(MLIS)
-	$(CSLDIR)/ocamldoc/ocamldoc -latex -I $(CSLDIR)/stdlib  \
+	$(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc -latex \
+	-I $(CSLDIR)/stdlib \
 	-I $(CSLDIR)/otherlibs/bigarray \
 	-I $(CSLDIR)/otherlibs/dynlink \
 	-I $(CSLDIR)/otherlibs/graph \
