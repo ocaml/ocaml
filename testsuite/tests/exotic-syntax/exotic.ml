@@ -41,34 +41,6 @@ function (+) -> (+);;
 function _ as (+) -> (+);;
 for (+) = 0 to 1 do () done;;
 
-
-(* More exotic: not even found in the manual (up to version 4.00),
-   but used in some programs in testsuite/external/. *)
-
-(* local functor *)
-let module M (M1 : sig end) = struct end in ();;
-
-(* let-binding with a type coercion *)
-let x :> int = 1;;
-let x : int :> int = 1;;
-
-(* "begin end" as an alias for "()" *)
-begin end;;
-
-(* putting "virtual" before "mutable" or "private" *)
-class type virtual ct = object
-  val mutable virtual x : int
-  val virtual mutable y : int
-  method private virtual f : int
-  method virtual private g : int
-end;;
-class virtual c = object
-  val mutable virtual x : int
-  val virtual mutable y : int
-  method private virtual f : int
-  method virtual private g : int
-end;;
-
 (* access a class-type through an extended-module-path *)
 module F (X : sig end) = struct
   class type t = object end
@@ -96,12 +68,44 @@ end;;
 object method private f : type t . int = 1 end;;
 
 
+(* More exotic: not even found in the manual (up to version 4.00),
+   but used in some programs found in the wild.
+*)
+
+(* local functor *)
+let module M (M1 : sig end) = struct end in ();;
+
+(* let-binding with a type coercion *)
+let x :> int = 1;;
+let x : int :> int = 1;;
+
+(* "begin end" as an alias for "()" *)
+begin end;;
+
+(* putting "virtual" before "mutable" or "private" *)
+class type virtual ct = object
+  val mutable virtual x : int
+  val virtual mutable y : int
+  method private virtual f : int
+  method virtual private g : int
+end;;
+class virtual c = object
+  val mutable virtual x : int
+  val virtual mutable y : int
+  method private virtual f : int
+  method virtual private g : int
+end;;
+
+(* Double-semicolon at the beginning of a module body [ocp-indent] *)
+module X = struct ;; end;;
+
+
 (**********************
 
-(* Most exotic: not found in the manual (up to 4.00) and not used by anyone,
-   but still implemented by the compiler. *)
+(* Most exotic: not found in the manual (up to 4.00) and not used
+   deliberately by anyone, but still implemented by the compiler. *)
 
-(* whitespace inside val!, method!, inherit! *)
+(* whitespace inside val!, method!, inherit! [found in ocamlspot] *)
 object
   val x = 1
   val ! x = 2
@@ -109,6 +113,10 @@ object
   method ! m = 2
   inherit ! object val x = 3 end
 end;;
+
+(* Using () as a constructor name [found in gettext] *)
+type t = ();;
+let x : t = ();;
 
 (* Using :: as a constructor name *)
 type t = :: of int * int;;
