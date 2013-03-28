@@ -179,7 +179,7 @@ class-expr:
 \end{syntax} \begin{syntax}
 %END LATEX
 class-field:
-      'inherit' class-expr ['as' value-name]
+      'inherit' class-expr ['as' lowercase-ident]
    |  'val' ['mutable'] inst-var-name [':' typexpr] '=' expr
    |  'val' ['mutable'] 'virtual' inst-var-name ':' typexpr
    |  'val' 'virtual' 'mutable' inst-var-name ':' typexpr
@@ -283,10 +283,10 @@ into the current class.  The addition of a method will override any
 previously defined method of the same name.
 
 \ikwd{as\@\texttt{as}}
-An ancestor can be bound by appending @'as' value-name@
-to the inheritance construct.  @value-name@ is not a true
+An ancestor can be bound by appending @'as' lowercase-ident@
+to the inheritance construct.  @lowercase-ident@ is not a true
 variable and can only be used to select a method, i.e. in an expression
-@value-name '#' method-name@.  This gives access to the
+@lowercase-ident '#' method-name@.  This gives access to the
 method @method-name@ as it was defined in the parent class even if it is
 redefined in the current class.
 The scope of this ancestor binding is limited to the current class.
