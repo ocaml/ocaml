@@ -27,7 +27,7 @@ module-expr:
         | '(' module-expr ':' module-type ')'
 ;
 module-items:
-          ( definition || expr ) { [';;'] definition || ';;' expr } [';;']
+        [';;'] ( definition || expr ) { [';;'] definition || ';;' expr } [';;']
 ;
 %\end{syntax} \begin{syntax}
 definition:
@@ -70,17 +70,18 @@ longer be accessed.
 Structures @'struct' \ldots 'end'@ are collections of definitions for
 value names, type names, exceptions, module names and module type
 names. The definitions are evaluated in the order in which they appear
-in the structure. The scope of the bindings performed by the
+in the structure. The scopes of the bindings performed by the
 definitions extend to the end of the structure. As a consequence, a
 definition may refer to names bound by earlier definitions in the same
 structure.
 
-For compatibility with toplevel phrases (chapter~\ref{c:camllight})
-and with Caml Light, an optional ";;" is allowed after each
-definition in a structure. The ";;" has no semantic meaning. Also for
-compatibility, @expr ';;'@ is allowed as a component of a structure,
+For compatibility with toplevel phrases (chapter~\ref{c:camllight}),
+an optional @";;"@ is allowed after each
+definition in a structure. The @";;"@ has no semantic meaning. Also for
+compatibility, @expr@ is allowed as a component of a structure,
 meaning @'let' '_' '=' expr@, i.e. evaluate @expr@ for its side-effects.
-In this case, the ";;" of the previous component is not optional.
+In this case, the @";;"@ of the previous component (if any) is not
+optional.
 
 \subsubsection*{Value definitions}
 
