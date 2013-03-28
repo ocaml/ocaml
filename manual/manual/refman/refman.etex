@@ -28,7 +28,7 @@ symbols are set in typewriter font (@'like' 'this'@).
 Non-terminal symbols are set in italic font (@like that@).
 Square brackets @[\ldots]@ denote optional components. Curly brackets
 @{\ldots}@ denotes zero, one or several repetitions of the enclosed
-components. Curly bracket with a trailing plus sign @{{\ldots}}@
+components. Curly brackets with a trailing plus sign @{{\ldots}}@
 denote one or several repetitions of the enclosed components.
 Parentheses @(\ldots)@ denote grouping.
 
