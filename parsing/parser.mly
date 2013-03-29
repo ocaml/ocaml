@@ -497,8 +497,6 @@ The precedences must be listed from low to high.
 %type <Parsetree.toplevel_phrase> toplevel_phrase
 %start use_file                         /* for the #use directive */
 %type <Parsetree.toplevel_phrase list> use_file
-%start any_longident
-%type <Longident.t> any_longident
 %%
 
 /* Entry points */
@@ -1841,15 +1839,6 @@ clty_longident:
 class_longident:
     LIDENT                                      { Lident $1 }
   | mod_longident DOT LIDENT                    { Ldot($1, $3) }
-;
-any_longident:
-    val_ident                                   { Lident $1 }
-  | mod_ext_longident DOT val_ident             { Ldot ($1, $3) }
-  | mod_ext_longident                           { $1 }
-  | LBRACKET RBRACKET                           { Lident "[]" }
-  | LPAREN RPAREN                               { Lident "()" }
-  | FALSE                                       { Lident "false" }
-  | TRUE                                        { Lident "true" }
 ;
 
 /* Toplevel directives */
