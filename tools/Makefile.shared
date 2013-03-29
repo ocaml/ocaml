@@ -17,12 +17,12 @@ CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
-	 -I ../driver
+	 -I ../driver -I ../toplevel
 COMPFLAGS= -w +32+33+34+35+36+37+38+39 -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt
+     objinfo read_cmt ocamlast
 
 all: tast_iter.cmo
 
@@ -307,6 +307,19 @@ primreq: $(PRIMREQ)
 
 clean::
 	rm -f primreq
+
+# Dump the Parsetree representation of OCaml code, in OCaml syntax
+
+OCAMLAST=dump_ast.cmo
+
+ocamlast: $(OCAMLAST)
+	$(CAMLC) $(LINKFLAGS) -o ocamlast ../compilerlibs/ocamlcommon.cma ../compilerlibs/ocamlbytecomp.cma ../compilerlibs/ocamltoplevel.cma $(OCAMLAST)
+
+clean::
+	rm -rf ocamlast
+
+install::
+	cp ocamlast $(BINDIR)/ocamlast$(EXE)
 
 # Common stuff
 
