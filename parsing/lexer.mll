@@ -473,6 +473,28 @@ and comment = parse
         is_in_string := false;
         store_string_char '"';
         comment lexbuf }
+  | "{" lowercase* "|"
+      {
+        let delim = Lexing.lexeme lexbuf in
+        let delim = String.sub delim 1 (String.length delim - 2) in
+        string_start_loc := Location.curr lexbuf;
+        store_lexeme lexbuf;
+        is_in_string := true;
+        begin try quoted_string delim lexbuf
+        with Error (Unterminated_string, _) ->
+          match !comment_start_loc with
+          | [] -> assert false
+          | loc :: _ ->
+            let start = List.hd (List.rev !comment_start_loc) in
+            comment_start_loc := [];
+            raise (Error (Unterminated_string_in_comment start, loc))
+        end;
+        is_in_string := false;
+        store_string_char '|';
+        store_string delim;
+        store_string_char '}';
+        comment lexbuf }
+
   | "''"
       { store_lexeme lexbuf; comment lexbuf }
   | "'" newline "'"
