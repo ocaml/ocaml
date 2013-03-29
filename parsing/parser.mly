@@ -497,6 +497,12 @@ The precedences must be listed from low to high.
 %type <Parsetree.toplevel_phrase> toplevel_phrase
 %start use_file                         /* for the #use directive */
 %type <Parsetree.toplevel_phrase list> use_file
+%start parse_core_type
+%type <Parsetree.core_type> parse_core_type
+%start parse_expression
+%type <Parsetree.expression> parse_expression
+%start parse_pattern
+%type <Parsetree.pattern> parse_pattern
 %%
 
 /* Entry points */
@@ -529,6 +535,15 @@ use_file_tail:
   | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
   | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
   | toplevel_directive use_file_tail            { $1 :: $2 }
+;
+parse_core_type:
+    core_type EOF { $1 }
+;
+parse_expression:
+    seq_expr EOF { $1 }
+;
+parse_pattern:
+    pattern EOF { $1 }
 ;
 
 /* Module expressions */

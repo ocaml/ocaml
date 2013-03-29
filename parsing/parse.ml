@@ -59,3 +59,6 @@ let implementation = wrap Parser.implementation
 and interface = wrap Parser.interface
 and toplevel_phrase = wrap Parser.toplevel_phrase
 and use_file = wrap Parser.use_file
+and core_type = wrap Parser.parse_core_type
+and expression = wrap Parser.parse_expression
+and pattern = wrap Parser.parse_pattern
