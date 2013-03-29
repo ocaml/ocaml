@@ -29,3 +29,6 @@ minidoc: minidoc.ml
 	$(OCAMLC) -custom -o minidoc.exe $(ROOT)/compilerlibs/ocamlcommon.cma minidoc.ml
 	$(OCAMLC) -c -bin-annot testdoc.mli
 	./minidoc.exe testdoc.cmti
+
+print_gen.exe: print_gen.ml
+	$(OCAMLC) -custom -o print_gen.exe $(ROOT)/compilerlibs/ocamlcommon.cma print_gen.ml
