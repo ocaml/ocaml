@@ -712,7 +712,7 @@ the null-terminated C string \var{s} (a "char *").
 "caml_copy_double("\var{d}")" returns a floating-point value initialized
 with the "double" \var{d}.
 \item
-"caml_copy_int32("\var{i}")", "copy_int64("\var{i}")" and
+"caml_copy_int32("\var{i}")", "caml_copy_int64("\var{i}")" and
 "caml_copy_nativeint("\var{i}")" return a value of OCaml type "int32",
 "int64" and "nativeint", respectively, initialized with the integer
 \var{i}.
@@ -2106,5 +2106,3 @@ support libraries ("-lz") and the corresponding options
 ("-L/usr/local/zlib") must be given on all three invocations of "ocamlmklib",
 because they are needed at different times depending on whether shared
 libraries are supported.
-
-
