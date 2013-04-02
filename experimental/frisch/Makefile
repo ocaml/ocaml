@@ -30,5 +30,8 @@ minidoc: minidoc.ml
 	$(OCAMLC) -c -bin-annot testdoc.mli
 	./minidoc.exe testdoc.cmti
 
-print_gen.exe: print_gen.ml
+.PHONY: lifter
+lifter: print_gen.ml
 	$(OCAMLC) -custom -o print_gen.exe $(ROOT)/compilerlibs/ocamlcommon.cma print_gen.ml
+	./print_gen.exe > lifter.ml
+	$(OCAMLC) -c -w -17 lifter.ml

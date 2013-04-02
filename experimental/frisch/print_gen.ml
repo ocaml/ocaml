@@ -37,6 +37,7 @@ let pvar s = Pat.var (mknoloc s)
 let evar s = Exp.ident (lid s)
 let pair x y = Exp.tuple [x; y]
 let let_in b body = Exp.let_ Nonrecursive b body
+let selfcall m args = app (Exp.send (evar "this") m) args
 
 let rec gen ty =
   if Hashtbl.mem printed ty then ()
@@ -58,7 +59,7 @@ let rec gen ty =
       let l = List.map field l in
       lam
         (Pat.record (List.map fst l) Closed)
-        (constr "Record" (list (List.map snd l)))
+        (selfcall "mk_record" [list (List.map snd l)])
   | Type_variant l, _ ->
       let case (c, tyl, _) =
         let c = Ident.name c in
@@ -73,7 +74,7 @@ let rec gen ty =
               let p, e = tuple env l in
               pconstr c p, e
         in
-        pat, constr "Constructor" (pair (str c) (list args))
+        pat, selfcall "mk_constr" [pair (str c) (list args)]
       in
       func (List.map case l)
   | Type_abstract, Some t ->
@@ -84,11 +85,11 @@ let rec gen ty =
   in
   let e = List.fold_right lam (List.map pvar params) e in
   let tyargs = List.map Typ.var params in
-  let t = Typ.(arrow "" (constr (lid ty) tyargs) (constr (lid "variant") [])) in
+  let t = Typ.(arrow "" (constr (lid ty) tyargs) (var "res")) in
   let t =
     List.fold_right
       (fun s t ->
-        Typ.(arrow "" (arrow "" (var s) (constr (lid "variant") [])) t))
+        Typ.(arrow "" (arrow "" (var s) (var "res")) t))
       params t
   in
   let t = Typ.poly params t in
@@ -115,50 +116,36 @@ and tyexpr env ty x =
       app f [x]
   | Ttuple tl ->
       let p, e = tuple env tl in
-      let_in [p, x] (constr "Tuple" (list e))
+      let_in [p, x] (selfcall "mk_tuple" [list e])
   | Tconstr (path, [t], _) when Path.same path Predef.path_list ->
-      constr "List" (app (evar "List.map") [tyexpr_fun env t; x])
+      selfcall "mk_list" [app (evar "List.map") [tyexpr_fun env t; x]]
   | Tconstr (path, [], _) when Path.same path Predef.path_string ->
-      constr "String" x
+      selfcall "mk_string" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_int ->
-      constr "Int" x
+      selfcall "mk_int" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_char ->
-      constr "Char" x
+      selfcall "mk_char" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_int32 ->
-      constr "Int32" x
+      selfcall "mk_int32" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_int64 ->
-      constr "Int64" x
+      selfcall "mk_int64" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_nativeint ->
-      constr "Nativeint" x
+      selfcall "mk_nativeint" [x]
   | Tconstr (path, [], _) when Path.name path = "Location.t" ->
-      constr "Location" x
+      selfcall "mk_location" [x]
   | Tconstr (path, tl, _) ->
       let ty = Path.name path in
       gen ty;
-      app (Exp.send (evar "this") (print_fun ty))
-        (List.map (tyexpr_fun env) tl @ [x])
+      selfcall (print_fun ty) (List.map (tyexpr_fun env) tl @ [x])
    | _ ->
+       assert false
+(*
        Printtyp.type_expr Format.str_formatter ty;
        constr "UNKNOWN" (str (Format.flush_str_formatter ()))
+*)
 
 and tyexpr_fun env ty =
   lam (pvar "x") (tyexpr env ty (evar "x"))
-
-
-let prefix =
-"type variant =
-  | Record of (string * variant) list
-  | Constructor of string * variant list
-  | List of variant list
-  | Tuple of variant list
-  | Int of int
-  | String of string
-  | Char of char
-  | Int32 of int32
-  | Int64 of int64
-  | Nativeint of nativeint
-  | Location of Location.t
-"
 
 let simplify =
   object
@@ -178,9 +165,8 @@ let () =
   Config.load_path := ["../../parsing"];
   gen "Parsetree.expression";
   let cl = {Parsetree.pcstr_pat = pvar "this"; pcstr_fields = !meths} in
-  let params = [mknoloc "res"], Location.none in
-  let cl = Ci.mk ~params (mknoloc "variantizer") (Cl.structure cl) in
-  print_endline prefix;
+  let params = [mknoloc "res", Invariant], Location.none in
+  let cl = Ci.mk ~virt:Virtual ~params (mknoloc "variantizer") (Cl.structure cl) in
   let s = Str.([
                open_ (lid "Asttypes");
                open_ (lid "Longident");
@@ -188,5 +174,4 @@ let () =
                Str.class_ [cl]
         ])
   in
-  prerr_endline "XXX";
   Format.printf "%a@." Pprintast.structure (simplify # structure s)
