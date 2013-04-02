@@ -16,16 +16,10 @@ let clean s =
   done;
   s
 
-let print_fun s =
-  "variantize_" ^ clean s
+let print_fun s = "variantize_" ^ clean s
 
 let printed = Hashtbl.create 16
 let funs = ref []
-
-let ignored_types =
-  [
-   "Location.t";
-  ]
 
 let lid s = mknoloc (Longident.parse s)
 let constr s x = Exp.construct (lid s) (Some x) true
@@ -45,22 +39,15 @@ let pair x y = Exp.tuple [x; y]
 let let_in b body = Exp.let_ Nonrecursive b body
 
 let rec gen ty =
-  if Hashtbl.mem printed ty || List.mem ty ignored_types then ()
+  if Hashtbl.mem printed ty then ()
   else let (_, td) =
     try Env.lookup_type (Longident.parse ty) env
     with Not_found ->
       failwith (Printf.sprintf "Cannot resolve type %s" ty)
   in
   Hashtbl.add printed ty ();
-  let params =
-    List.mapi
-      (fun i t ->
-        let s = Printf.sprintf "f%i" i in
-        (t.id, evar s), pvar s
-      )
-      td.type_params
-  in
-  let env = List.map fst params in
+  let params = List.mapi (fun i _ -> Printf.sprintf "f%i" i) td.type_params in
+  let env = List.map2 (fun s t -> t.id, evar s) params td.type_params in
   let e = match td.type_kind, td.type_manifest with
   | Type_record (l, _), _ ->
       let field (s, _, t) =
@@ -92,10 +79,21 @@ let rec gen ty =
   | Type_abstract, Some t ->
       tyexpr_fun env t
   | _ ->
-      constr "Abstract" (str ty)
+      assert false
+(*      lam (Pat.any ()) (constr "Abstract" (str ty)) *)
   in
-  let e = List.fold_right lam (List.map snd params) e in
-  funs := (Pat.var (mknoloc (print_fun ty)), e) :: !funs
+  let e = List.fold_right lam (List.map pvar params) e in
+  let tyargs = List.map Typ.var params in
+  let t = Typ.(arrow "" (constr (lid ty) tyargs) (constr (lid "variant") [])) in
+  let t =
+    List.fold_right
+      (fun s t ->
+        Typ.(arrow "" (arrow "" (var s) (constr (lid "variant") [])) t))
+      params t
+  in
+  let t = Typ.poly params t in
+  let p = Pat.(constraint_ (var (mknoloc (print_fun ty))) t) in
+  funs := (p, e) :: !funs
 
 
 and tuple env tl =
@@ -117,15 +115,23 @@ and tyexpr env ty x =
       app f [x]
   | Ttuple tl ->
       let p, e = tuple env tl in
-      let_in [p, x] (list e)
+      let_in [p, x] (constr "Tuple" (list e))
   | Tconstr (path, [t], _) when Path.same path Predef.path_list ->
       constr "List" (app (evar "List.map") [tyexpr_fun env t; x])
-  | Tconstr (path, [t], _) when Path.same path Predef.path_option ->
-      constr "Option" (app (evar "option_map") [tyexpr_fun env t; x])
   | Tconstr (path, [], _) when Path.same path Predef.path_string ->
       constr "String" x
   | Tconstr (path, [], _) when Path.same path Predef.path_int ->
       constr "Int" x
+  | Tconstr (path, [], _) when Path.same path Predef.path_char ->
+      constr "Char" x
+  | Tconstr (path, [], _) when Path.same path Predef.path_int32 ->
+      constr "Int32" x
+  | Tconstr (path, [], _) when Path.same path Predef.path_int64 ->
+      constr "Int64" x
+  | Tconstr (path, [], _) when Path.same path Predef.path_nativeint ->
+      constr "Nativeint" x
+  | Tconstr (path, [], _) when Path.name path = "Location.t" ->
+      constr "Location" x
   | Tconstr (path, tl, _) ->
       let ty = Path.name path in
       gen ty;
@@ -138,9 +144,46 @@ and tyexpr_fun env ty =
   lam (pvar "x") (tyexpr env ty (evar "x"))
 
 
+let prefix =
+"type variant =
+  | Record of (string * variant) list
+  | Constructor of string * variant list
+  | List of variant list
+  | Tuple of variant list
+  | Int of int
+  | String of string
+  | Char of char
+  | Int32 of int32
+  | Int64 of int64
+  | Nativeint of nativeint
+  | Location of Location.t
+"
+
+let simplify =
+  object
+    inherit Ast_mapper.mapper as super
+    method! expr e =
+      let e = super # expr e in
+      let open Longident in
+      let open Parsetree in
+      match e.pexp_desc with
+      | Pexp_function ("", None, [{ppat_desc = Ppat_var{txt=id}},
+                                  {pexp_desc = Pexp_apply(f,
+                                                          ["",{pexp_desc=Pexp_ident{txt=Lident id2}}])}]) when id = id2 -> f
+      | _ -> e
+  end
+
 let () =
   Config.load_path := ["../../parsing"];
   gen "Parsetree.expression";
   let i = Str.value Recursive !funs in
-  Format.printf "%a@." Pprintast.structure [i]
+  print_endline prefix;
+  let s = Str.([
+         open_ (lid "Asttypes");
+         open_ (lid "Longident");
+         open_ (lid "Parsetree");
+         i
+        ])
 
+  in
+  Format.printf "%a@." Pprintast.structure (simplify # structure s)
