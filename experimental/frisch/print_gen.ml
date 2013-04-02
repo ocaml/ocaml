@@ -16,7 +16,7 @@ let clean s =
   done;
   s
 
-let print_fun s = "variantize_" ^ clean s
+let print_fun s = "lift_" ^ clean s
 
 let printed = Hashtbl.create 16
 let meths = ref []
@@ -166,7 +166,7 @@ let () =
   gen "Parsetree.expression";
   let cl = {Parsetree.pcstr_pat = pvar "this"; pcstr_fields = !meths} in
   let params = [mknoloc "res", Invariant], Location.none in
-  let cl = Ci.mk ~virt:Virtual ~params (mknoloc "variantizer") (Cl.structure cl) in
+  let cl = Ci.mk ~virt:Virtual ~params (mknoloc "lifter") (Cl.structure cl) in
   let s = Str.([
                open_ (lid "Asttypes");
                open_ (lid "Longident");
