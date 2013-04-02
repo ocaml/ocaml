@@ -22,13 +22,15 @@ COMPFLAGS= -w +32+33+34+35+36+37+38+39 -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt ocamlast
+     objinfo read_cmt
+
+moretools: ocamlast
 
 all: tast_iter.cmo
 
 # scrapelabels addlabels
 
-.PHONY: all
+.PHONY: all moretools
 
 opt.opt: ocamldep.opt read_cmt.opt
 .PHONY: opt.opt

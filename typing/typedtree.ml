@@ -350,13 +350,12 @@ and value_description =
 and type_declaration =
   { typ_id: Ident.t;
     typ_name: string loc;
-    typ_params: string loc option list;
+    typ_params: (string loc option * variance) list;
     typ_type: Types.type_declaration;
     typ_cstrs: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
     typ_private: private_flag;
     typ_manifest: core_type option;
-    typ_variance: (bool * bool) list;
     typ_loc: Location.t;
     typ_attributes: attribute list;
    }
@@ -427,7 +426,7 @@ and class_type_declaration =
 
 and 'a class_infos =
   { ci_virt: virtual_flag;
-    ci_params: string loc list * Location.t;
+    ci_params: (string loc * variance) list * Location.t;
     ci_id_name : string loc;
     ci_id_class: Ident.t;
     ci_id_class_type : Ident.t;
@@ -436,7 +435,6 @@ and 'a class_infos =
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
     ci_type_decl : Types.class_type_declaration;
-    ci_variance: (bool * bool) list;
     ci_loc: Location.t;
     ci_attributes: attribute list;
    }

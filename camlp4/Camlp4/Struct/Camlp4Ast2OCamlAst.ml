@@ -319,11 +319,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   ;
 
   value mktype loc name tl cl tk tp tm =
-    let (params, variance) = List.split tl in
     {ptype_name = name;
-     ptype_params = params; ptype_cstrs = cl; ptype_kind = tk;
+     ptype_params = tl; ptype_cstrs = cl; ptype_kind = tk;
      ptype_private = tp; ptype_manifest = tm; ptype_loc = mkloc loc;
-     ptype_variance = variance; ptype_attributes = []}
+     ptype_attributes = []}
   ;
   value mkprivate' m = if m then Private else Public;
   value mkprivate = fun
@@ -414,28 +413,28 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value rec type_parameters t acc =
     match t with
     [ <:ctyp< $t1$ $t2$ >> -> type_parameters t1 (type_parameters t2 acc)
-    | <:ctyp< +'$s$ >> -> [(s, (True, False)) :: acc]
-    | <:ctyp< -'$s$ >> -> [(s, (False, True)) :: acc]
-    | <:ctyp< '$s$ >> -> [(s, (False, False)) :: acc]
+    | <:ctyp< +'$s$ >> -> [(s, Covariant) :: acc]
+    | <:ctyp< -'$s$ >> -> [(s, Contravariant) :: acc]
+    | <:ctyp< '$s$ >> -> [(s, Invariant) :: acc]
     | _ -> assert False ];
 
   value rec optional_type_parameters t acc =
     match t with
     [ <:ctyp< $t1$ $t2$ >> -> optional_type_parameters t1 (optional_type_parameters t2 acc)
-    | <:ctyp@loc< +'$s$ >> -> [(Some (with_loc s loc), (True, False)) :: acc]
-    | Ast.TyAnP _loc  -> [(None, (True, False)) :: acc]
-    | <:ctyp@loc< -'$s$ >> -> [(Some (with_loc s loc), (False, True)) :: acc]
-    | Ast.TyAnM _loc -> [(None, (False, True)) :: acc]
-    | <:ctyp@loc< '$s$ >> -> [(Some (with_loc s loc), (False, False)) :: acc]
-    | Ast.TyAny _loc -> [(None, (False, False)) :: acc]
+    | <:ctyp@loc< +'$s$ >> -> [(Some (with_loc s loc), Covariant) :: acc]
+    | Ast.TyAnP _loc  -> [(None, Covariant) :: acc]
+    | <:ctyp@loc< -'$s$ >> -> [(Some (with_loc s loc), Contravariant) :: acc]
+    | Ast.TyAnM _loc -> [(None, Contravariant) :: acc]
+    | <:ctyp@loc< '$s$ >> -> [(Some (with_loc s loc), Invariant) :: acc]
+    | Ast.TyAny _loc -> [(None, Invariant) :: acc]
     | _ -> assert False ];
 
   value rec class_parameters t acc =
     match t with
     [ <:ctyp< $t1$, $t2$ >> -> class_parameters t1 (class_parameters t2 acc)
-    | <:ctyp@loc< +'$s$ >> -> [(with_loc s loc, (True, False)) :: acc]
-    | <:ctyp@loc< -'$s$ >> -> [(with_loc s loc, (False, True)) :: acc]
-    | <:ctyp@loc< '$s$ >> -> [(with_loc s loc, (False, False)) :: acc]
+    | <:ctyp@loc< +'$s$ >> -> [(with_loc s loc, Covariant) :: acc]
+    | <:ctyp@loc< -'$s$ >> -> [(with_loc s loc, Contravariant) :: acc]
+    | <:ctyp@loc< '$s$ >> -> [(with_loc s loc, Invariant) :: acc]
     | _ -> assert False ];
 
   value rec type_parameters_and_type_name t acc =
@@ -448,15 +447,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value mkwithtyp pwith_type loc id_tpl ct =
     let (id, tpl) = type_parameters_and_type_name id_tpl [] in
-    let (params, variance) = List.split tpl in
     let (kind, priv, ct) = opt_private_ctyp ct in
     (id, pwith_type
       { ptype_name = Camlp4_import.Location.mkloc (Camlp4_import.Longident.last id.txt) id.loc;
-        ptype_params = params; ptype_cstrs = [];
+        ptype_params = tpl; ptype_cstrs = [];
         ptype_kind = kind;
         ptype_private = priv;
         ptype_manifest = Some ct;
-        ptype_loc = mkloc loc; ptype_variance = variance;
+        ptype_loc = mkloc loc;
         ptype_attributes = [];
       });
 
@@ -1131,35 +1129,35 @@ value varify_constructors var_names =
   and class_info_class_expr ci =
     match ci with
     [ CeEq _ (CeCon loc vir (IdLid nloc name) params) ce ->
-      let (loc_params, (params, variance)) =
+      let (loc_params, params) =
         match params with
-        [ <:ctyp<>> -> (loc, ([], []))
-        | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
+        [ <:ctyp<>> -> (loc, [])
+        | t -> (loc_of_ctyp t, class_parameters t []) ]
       in
       {pci_virt = mkvirtual vir;
        pci_params = (params, mkloc loc_params);
        pci_name = with_loc name nloc;
        pci_expr = class_expr ce;
        pci_loc = mkloc loc;
-       pci_attributes = [];
-       pci_variance = variance}
+       pci_attributes = []
+      }
     | ce -> error (loc_of_class_expr ce) "bad class definition" ]
   and class_info_class_type ci =
     match ci with
     [ CtEq _ (CtCon loc vir (IdLid nloc name) params) ct |
       CtCol _ (CtCon loc vir (IdLid nloc name) params) ct ->
-      let (loc_params, (params, variance)) =
+      let (loc_params, params) =
         match params with
-        [ <:ctyp<>> -> (loc, ([], []))
-        | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
+        [ <:ctyp<>> -> (loc, [])
+        | t -> (loc_of_ctyp t, class_parameters t []) ]
       in
       {pci_virt = mkvirtual vir;
        pci_params = (params, mkloc loc_params);
        pci_name = with_loc name nloc;
        pci_expr = class_type ct;
        pci_attributes = [];
-       pci_loc = mkloc loc;
-       pci_variance = variance}
+       pci_loc = mkloc loc
+      }
     | ct -> error (loc_of_class_type ct)
               "bad class/class type declaration/definition" ]
   and class_sig_item c l =

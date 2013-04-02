@@ -260,13 +260,12 @@ module Mb = struct
 end
 
 module Ci = struct
-  let mk ?(attrs = []) ?(loc = Location.none) ?(virt = Concrete) ?(params = [], Location.none) ?(variance = []) name expr =
+  let mk ?(attrs = []) ?(loc = Location.none) ?(virt = Concrete) ?(params = [], Location.none) name expr =
     {
      pci_virt = virt;
      pci_params = params;
      pci_name = name;
      pci_expr = expr;
-     pci_variance = variance;
      pci_attributes = attrs;
      pci_loc = loc;
     }
@@ -275,7 +274,6 @@ end
 module Type = struct
   let mk ?(attrs = []) ?(loc = Location.none)
       ?(params = [])
-      ?(variance = [])
       ?(cstrs = [])
       ?(kind = Ptype_abstract)
       ?(priv = Public)
@@ -288,7 +286,6 @@ module Type = struct
      ptype_kind = kind;
      ptype_private = priv;
      ptype_manifest = manifest;
-     ptype_variance = variance;
      ptype_attributes = attrs;
      ptype_loc = loc;
     }

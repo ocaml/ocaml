@@ -117,7 +117,8 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc
+  otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc \
+  moretools
 
 # Compile everything the first time
 world:
@@ -660,6 +661,9 @@ clean::
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi
 	cd tools; $(MAKE) all
 
+moretools: ocamlc compilerlibs/ocamltoplevel.cma
+	cd tools; $(MAKE) moretools
+
 ocamltoolsopt: ocamlopt
 	cd tools; $(MAKE) opt
 
@@ -809,7 +813,7 @@ distclean:
 .PHONY: coreboot defaultentry depend distclean install installopt
 .PHONY: library library-cross libraryopt
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
-.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
+.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt moretools
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt

@@ -1185,7 +1185,7 @@ let class_infos define_class kind
   let params =
     try
       let params, loc = cl.pci_params in
-      List.map (fun x -> enter_type_variable true loc x.txt) params
+      List.map (fun (x, _v) -> enter_type_variable true loc x.txt) params
     with Already_bound ->
       raise(Error(snd cl.pci_params, env, Repeated_parameter))
   in
@@ -1402,8 +1402,7 @@ let final_decl env define_class
 
   (id, cl.pci_name, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
    arity, pub_meths, coe, expr,
-   { ci_variance = cl.pci_variance;
-     ci_loc = cl.pci_loc;
+   { ci_loc = cl.pci_loc;
      ci_virt = cl.pci_virt;
      ci_params = cl.pci_params;
 (* TODO : check that we have the correct use of identifiers *)

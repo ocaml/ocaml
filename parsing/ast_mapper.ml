@@ -18,6 +18,7 @@ open Parsetree
 open Asttypes
 open Ast_helper
 
+let map_fst f (x, y) = (f x, y)
 let map_snd f (x, y) = (x, f y)
 let map_tuple f1 f2 (x, y) = (f1 x, f2 y)
 let map_tuple3 f1 f2 f3 (x, y, z) = (f1 x, f2 y, f3 z)
@@ -61,13 +62,11 @@ module T = struct
        ptype_kind;
        ptype_private;
        ptype_manifest;
-       ptype_variance;
        ptype_attributes;
        ptype_loc} =
     Type.mk (map_loc sub ptype_name)
-      ~params:(List.map (map_opt (map_loc sub)) ptype_params)
+      ~params:(List.map (map_fst (map_opt (map_loc sub))) ptype_params)
       ~priv:ptype_private
-      ~variance:ptype_variance
       ~cstrs:(List.map (map_tuple3 (sub # typ) (sub # typ) (sub # location)) ptype_cstrs)
       ~kind:(sub # type_kind ptype_kind)
       ?manifest:(map_opt (sub # typ) ptype_manifest)
@@ -305,13 +304,12 @@ module CE = struct
      pcstr_fields = List.map (sub # class_field) pcstr_fields;
     }
 
-  let class_infos sub f {pci_virt; pci_params = (pl, ploc); pci_name; pci_expr; pci_variance; pci_loc; pci_attributes} =
+  let class_infos sub f {pci_virt; pci_params = (pl, ploc); pci_name; pci_expr; pci_loc; pci_attributes} =
     Ci.mk
      ~virt:pci_virt
-     ~params:(List.map (map_loc sub) pl, sub # location ploc)
+     ~params:(List.map (map_fst (map_loc sub)) pl, sub # location ploc)
       (map_loc sub pci_name)
       (f pci_expr)
-      ~variance:pci_variance
       ~loc:(sub # location pci_loc)
       ~attrs:(sub # attributes pci_attributes)
 end

@@ -749,10 +749,9 @@ class_declarations:
 class_declaration:
     virtual_flag class_type_parameters LIDENT class_fun_binding post_item_attributes
       {
-       let params, variance = List.split (fst $2) in
        Ci.mk (mkrhs $3 3) $4
-         ~virt:$1 ~params:(params, snd $2)
-         ~variance ~attrs:$5 ~loc:(symbol_rloc ())
+         ~virt:$1 ~params:$2
+         ~attrs:$5 ~loc:(symbol_rloc ())
       }
 ;
 class_fun_binding:
@@ -950,10 +949,9 @@ class_descriptions:
 class_description:
     virtual_flag class_type_parameters LIDENT COLON class_type post_item_attributes
       {
-       let params, variance = List.split (fst $2) in
        Ci.mk (mkrhs $3 3) $5
-         ~virt:$1 ~params:(params, snd $2)
-         ~variance ~attrs:$6 ~loc:(symbol_rloc ())
+         ~virt:$1 ~params:$2
+         ~attrs:$6 ~loc:(symbol_rloc ())
       }
 ;
 class_type_declarations:
@@ -963,10 +961,9 @@ class_type_declarations:
 class_type_declaration:
     virtual_flag class_type_parameters LIDENT EQUAL class_signature post_item_attributes
       {
-       let params, variance = List.split (fst $2) in
        Ci.mk (mkrhs $3 3) $5
-         ~virt:$1 ~params:(params, snd $2)
-         ~variance ~attrs:$6 ~loc:(symbol_rloc ())
+         ~virt:$1 ~params:$2
+         ~attrs:$6 ~loc:(symbol_rloc ())
       }
 ;
 
@@ -1434,11 +1431,10 @@ type_declarations:
 
 type_declaration:
     optional_type_parameters LIDENT type_kind constraints post_item_attributes
-      { let (params, variance) = List.split $1 in
-        let (kind, priv, manifest) = $3 in
+      { let (kind, priv, manifest) = $3 in
         Type.mk (mkrhs $2 2)
-          ~params ~cstrs:(List.rev $4)
-          ~kind ~priv ?manifest ~variance ~attrs:$5 ~loc:(symbol_rloc())
+          ~params:$1 ~cstrs:(List.rev $4)
+          ~kind ~priv ?manifest ~attrs:$5 ~loc:(symbol_rloc())
        }
 ;
 constraints:
@@ -1490,9 +1486,9 @@ type_parameter:
     type_variance QUOTE ident                   { mkrhs $3 3, $1 }
 ;
 type_variance:
-    /* empty */                                 { false, false }
-  | PLUS                                        { true, false }
-  | MINUS                                       { false, true }
+    /* empty */                                 { Invariant }
+  | PLUS                                        { Covariant }
+  | MINUS                                       { Contravariant }
 ;
 type_parameter_list:
     type_parameter                              { [$1] }
@@ -1546,24 +1542,20 @@ with_constraints:
 ;
 with_constraint:
     TYPE type_parameters label_longident with_type_binder core_type constraints
-      { let params, variance = List.split $2 in
-        (mkrhs $3 3,  Pwith_type
+      { (mkrhs $3 3,  Pwith_type
            (Type.mk (mkrhs (Longident.last $3) 3)
-              ~params:(List.map (fun x -> Some x) params)
+              ~params:(List.map (fun (x, v) -> Some x, v) $2)
               ~cstrs:(List.rev $6)
               ~manifest:$5
               ~priv:$4
-              ~variance
               ~loc:(symbol_rloc()))) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
   | TYPE type_parameters label COLONEQUAL core_type
-      { let params, variance = List.split $2 in
-        (mkrhs (Lident $3) 3, Pwith_typesubst
+      { (mkrhs (Lident $3) 3, Pwith_typesubst
            (Type.mk (mkrhs $3 3)
-              ~params:(List.map (fun x -> Some x) params)
+              ~params:(List.map (fun (x, v) -> Some x, v) $2)
               ~manifest:$5
-              ~variance
               ~loc:(symbol_rloc()))) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { (mkrhs $2 2, Pwith_module (mkrhs $4 4)) }

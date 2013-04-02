@@ -61,10 +61,9 @@ and row_field =
 
 and 'a class_infos =
   { pci_virt: virtual_flag;
-    pci_params: string loc list * Location.t;
+    pci_params: (string loc * variance) list * Location.t;
     pci_name: string loc;
     pci_expr: 'a;
-    pci_variance: (bool * bool) list;
     pci_loc: Location.t;
     pci_attributes: attribute list;
    }
@@ -151,12 +150,11 @@ and value_description =
 
 and type_declaration =
   { ptype_name: string loc;
-    ptype_params: string loc option list;
+    ptype_params: (string loc option * variance) list;
     ptype_cstrs: (core_type * core_type * Location.t) list;
     ptype_kind: type_kind;
     ptype_private: private_flag;
     ptype_manifest: core_type option;
-    ptype_variance: (bool * bool) list;
     ptype_attributes: attribute list;
     ptype_loc: Location.t }
 

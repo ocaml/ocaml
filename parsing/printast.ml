@@ -358,19 +358,19 @@ and value_description i ppf x =
   core_type (i+1) ppf x.pval_type;
   list (i+1) string ppf x.pval_prim
 
-and string_option_underscore i ppf =
-  function
-    | Some x ->
-        string_loc i ppf x
-    | None ->
-        string i ppf "_"
+and type_parameter i ppf (x, _variance) =
+  match x with
+  | Some x ->
+      string_loc i ppf x
+  | None ->
+      string i ppf "_"
 
 and type_declaration i ppf x =
   line i ppf "type_declaration %a %a\n" fmt_string_loc x.ptype_name fmt_location x.ptype_loc;
   attributes i ppf x.ptype_attributes;
   let i = i+1 in
   line i ppf "ptype_params =\n";
-  list (i+1) string_option_underscore ppf x.ptype_params;
+  list (i+1) type_parameter ppf x.ptype_params;
   line i ppf "ptype_cstrs =\n";
   list (i+1) core_type_x_core_type_x_location ppf x.ptype_cstrs;
   line i ppf "ptype_kind =\n";
@@ -447,7 +447,7 @@ and class_description i ppf x =
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
-  string_list_x_location (i+1) ppf x.pci_params;
+  cl_type_parameters (i+1) ppf x.pci_params;
   line i ppf "pci_name = %a\n" fmt_string_loc x.pci_name;
   line i ppf "pci_expr =\n";
   class_type (i+1) ppf x.pci_expr;
@@ -457,7 +457,7 @@ and class_type_declaration i ppf x =
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
-  string_list_x_location (i+1) ppf x.pci_params;
+  cl_type_parameters (i+1) ppf x.pci_params;
   line i ppf "pci_name = %a\n" fmt_string_loc x.pci_name;
   line i ppf "pci_expr =\n";
   class_type (i+1) ppf x.pci_expr;
@@ -533,7 +533,7 @@ and class_declaration i ppf x =
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
-  string_list_x_location (i+1) ppf x.pci_params;
+  cl_type_parameters (i+1) ppf x.pci_params;
   line i ppf "pci_name = %a\n" fmt_string_loc x.pci_name;
   line i ppf "pci_expr =\n";
   class_expr (i+1) ppf x.pci_expr;
@@ -742,9 +742,12 @@ and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes} 
   line (i+1) ppf "%a" fmt_string_loc pld_name;
   core_type (i+1) ppf pld_type
 
-and string_list_x_location i ppf (l, loc) =
+and cl_type_parameters i ppf (l, loc) =
   line i ppf "<params> %a\n" fmt_location loc;
-  list (i+1) string_loc ppf l;
+  list (i+1) cl_type_parameter ppf l;
+
+and cl_type_parameter i ppf (x, _variance) =
+  string_loc i ppf x
 
 and longident_x_pattern i ppf (li, p) =
   line i ppf "%a\n" fmt_longident_loc li;

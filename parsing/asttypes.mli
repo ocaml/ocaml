@@ -41,3 +41,9 @@ type 'a loc = 'a Location.loc = {
   txt : 'a;
   loc : Location.t;
 }
+
+
+type variance =
+  | Covariant
+  | Contravariant
+  | Invariant

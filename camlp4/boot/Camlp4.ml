@@ -14470,17 +14470,14 @@ module Struct =
               | mt -> error (loc_of_module_type mt) "unexpected package type"
               
             let mktype loc name tl cl tk tp tm =
-              let (params, variance) = List.split tl
-              in
                 {
                   ptype_name = name;
-                  ptype_params = params;
+                  ptype_params = tl;
                   ptype_cstrs = cl;
                   ptype_kind = tk;
                   ptype_private = tp;
                   ptype_manifest = tm;
                   ptype_loc = mkloc loc;
-                  ptype_variance = variance;
                   ptype_attributes = [];
                 }
               
@@ -14597,14 +14594,14 @@ module Struct =
                   optional_type_parameters t1
                     (optional_type_parameters t2 acc)
               | Ast.TyQuP (loc, s) ->
-                  ((Some (with_loc s loc)), (true, false)) :: acc
-              | Ast.TyAnP _loc -> (None, (true, false)) :: acc
+                  ((Some (with_loc s loc)), Covariant) :: acc
+              | Ast.TyAnP _loc -> (None, Covariant) :: acc
               | Ast.TyQuM (loc, s) ->
-                  ((Some (with_loc s loc)), (false, true)) :: acc
-              | Ast.TyAnM _loc -> (None, (false, true)) :: acc
+                  ((Some (with_loc s loc)), Contravariant) :: acc
+              | Ast.TyAnM _loc -> (None, Contravariant) :: acc
               | Ast.TyQuo (loc, s) ->
-                  ((Some (with_loc s loc)), (false, false)) :: acc
-              | Ast.TyAny _loc -> (None, (false, false)) :: acc
+                  ((Some (with_loc s loc)), Invariant) :: acc
+              | Ast.TyAny _loc -> (None, Invariant) :: acc
               | _ -> assert false
               
             let rec class_parameters t acc =
@@ -14612,11 +14609,11 @@ module Struct =
               | Ast.TyCom (_, t1, t2) ->
                   class_parameters t1 (class_parameters t2 acc)
               | Ast.TyQuP (loc, s) ->
-                  ((with_loc s loc), (true, false)) :: acc
+                  ((with_loc s loc), Covariant) :: acc
               | Ast.TyQuM (loc, s) ->
-                  ((with_loc s loc), (false, true)) :: acc
+                  ((with_loc s loc), Contravariant) :: acc
               | Ast.TyQuo (loc, s) ->
-                  ((with_loc s loc), (false, false)) :: acc
+                  ((with_loc s loc), Invariant) :: acc
               | _ -> assert false
               
             let rec type_parameters_and_type_name t acc =
@@ -14629,20 +14626,18 @@ module Struct =
               
             let mkwithtyp pwith_type loc id_tpl ct =
               let (id, tpl) = type_parameters_and_type_name id_tpl [] in
-              let (params, variance) = List.split tpl in
               let (kind, priv, ct) = opt_private_ctyp ct
               in
                 (id,
                  (pwith_type
                     {
                       ptype_name = Camlp4_import.Location.mkloc (Camlp4_import.Longident.last id.txt) id.loc;
-                      ptype_params = params;
+                      ptype_params = tpl;
                       ptype_cstrs = [];
                       ptype_kind = kind;
                       ptype_private = priv;
                       ptype_manifest = Some ct;
                       ptype_loc = mkloc loc;
-                      ptype_variance = variance;
                       ptype_attributes = [];
                     }))
               
@@ -15521,12 +15516,12 @@ module Struct =
               match ci with
               | CeEq (_, (CeCon (loc, vir, (IdLid (nloc, name)), params)),
                   ce) ->
-                  let (loc_params, (params, variance)) =
+                  let (loc_params, params) =
                     (match params with
-                     | Ast.TyNil _ -> (loc, ([], []))
+                     | Ast.TyNil _ -> (loc, [])
                      | t ->
                          ((loc_of_ctyp t),
-                          (List.split (class_parameters t []))))
+                          (class_parameters t [])))
                   in
                     {
                       pci_virt = mkvirtual vir;
@@ -15534,7 +15529,6 @@ module Struct =
                       pci_name = with_loc name nloc;
                       pci_expr = class_expr ce;
                       pci_loc = mkloc loc;
-                      pci_variance = variance;
                       pci_attributes = [];
                     }
               | ce -> error (loc_of_class_expr ce) "bad class definition"
@@ -15545,12 +15539,12 @@ module Struct =
                   CtCol (_, (CtCon (loc, vir, (IdLid (nloc, name)), params)),
                     ct)
                   ->
-                  let (loc_params, (params, variance)) =
+                  let (loc_params, params) =
                     (match params with
-                     | Ast.TyNil _ -> (loc, ([], []))
+                     | Ast.TyNil _ -> (loc, [])
                      | t ->
                          ((loc_of_ctyp t),
-                          (List.split (class_parameters t []))))
+                          (class_parameters t [])))
                   in
                     {
                       pci_virt = mkvirtual vir;
@@ -15558,7 +15552,6 @@ module Struct =
                       pci_name = with_loc name nloc;
                       pci_expr = class_type ct;
                       pci_loc = mkloc loc;
-                      pci_variance = variance;
                       pci_attributes = [];
                     }
               | ct ->

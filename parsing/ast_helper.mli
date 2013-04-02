@@ -215,11 +215,11 @@ module Mb:
   end
 module Ci:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?virt:virtual_flag -> ?params:string loc list * Location.t -> ?variance:(bool * bool) list -> string loc -> 'a -> 'a class_infos
+    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?virt:virtual_flag -> ?params:(string loc * variance) list * Location.t -> string loc -> 'a -> 'a class_infos
   end
 module Type:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?params:string loc option list -> ?variance:(bool * bool) list -> ?cstrs:(core_type * core_type * Location.t) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> string loc -> type_declaration
+    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?params:(string loc option * variance) list -> ?cstrs:(core_type * core_type * Location.t) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> string loc -> type_declaration
   end
 module Cd:
   sig

@@ -127,8 +127,9 @@ module StringSet =
 let make_params sdecl =
   try
     List.map
-      (function
-          None -> Ctype.new_global_var ~name:"_" ()
+      (fun (x, _) ->
+        match x with
+        | None -> Ctype.new_global_var ~name:"_" ()
         | Some x -> enter_type_variable true sdecl.ptype_loc x.txt)
       sdecl.ptype_params
   with Already_bound ->
@@ -266,7 +267,6 @@ let transl_declaration env sdecl id =
       typ_loc = sdecl.ptype_loc;
       typ_manifest = tman;
       typ_kind = tkind;
-      typ_variance = sdecl.ptype_variance;
       typ_private = sdecl.ptype_private;
       typ_attributes = sdecl.ptype_attributes;
     }
@@ -576,7 +576,12 @@ let compute_variance_type env check (required, loc) decl tyl =
   let tvl = tvl0 @ tvl1 in
   List.iter (fun (cn,ty) -> compute_variance env tvl true cn cn ty) tyl;
   let required =
-    List.map (fun (c,n as r) -> if c || n then r else (true,true))
+    List.map
+      (function
+        | Covariant -> (true, false)
+        | Contravariant -> (false, true)
+        | Invariant -> (true, true)
+      )
       required
   in
   List.iter2
@@ -624,11 +629,11 @@ let compute_variance_gadt env check (required, loc as rloc) decl
           let fvl = List.map Ctype.free_variables tyl in
           let _ =
             List.fold_left2
-              (fun (fv1,fv2) ty (c,n) ->
+              (fun (fv1,fv2) ty variance ->
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
-                    if (c||n) && constrained env (fv1 @ fv2) ty then
+                    if (variance <> Invariant) && constrained env (fv1 @ fv2) ty then
                       raise (Error(loc, Varying_anonymous));
                     (fv :: fv1, fv2))
               ([], fvl) tyl required
@@ -640,7 +645,12 @@ let compute_variance_gadt env check (required, loc as rloc) decl
 
 let compute_variance_decl env check decl (required, loc as rloc) =
   if decl.type_kind = Type_abstract && decl.type_manifest = None then
-    List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
+    List.map
+      (function
+        | Covariant -> (true, false, false)
+        | Contravariant -> (false, true, true)
+        | Invariant -> (true, true, true)
+      )
       required
   else match decl.type_kind with
   | Type_abstract ->
@@ -702,7 +712,8 @@ let compute_variance_decls env cldecls =
   let decls, required =
     List.fold_right
       (fun (obj_id, obj_abbr, cl_abbr, clty, cltydef, ci) (decls, req) ->
-        (obj_id, obj_abbr) :: decls, (ci.ci_variance, ci.ci_loc) :: req)
+        let variance = List.map snd (fst ci.ci_params) in
+        (obj_id, obj_abbr) :: decls, (variance, ci.ci_loc) :: req)
       cldecls ([],[])
   in
   let variances = List.map init_variance decls in
@@ -858,7 +869,7 @@ let transl_type_decl env sdecl_list =
   in
   (* Add variances to the environment *)
   let required =
-    List.map (fun sdecl -> sdecl.ptype_variance, sdecl.ptype_loc)
+    List.map (fun sdecl -> List.map snd sdecl.ptype_params, sdecl.ptype_loc)
       sdecl_list
   in
   let final_decls, final_env =
@@ -1006,7 +1017,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   let decl =
     {decl with type_variance =
      compute_variance_decl env false decl
-       (sdecl.ptype_variance, sdecl.ptype_loc)} in
+       (List.map snd sdecl.ptype_params, sdecl.ptype_loc)} in
   Ctype.end_def();
   generalize_decl decl;
   {
@@ -1018,7 +1029,6 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     typ_loc = sdecl.ptype_loc;
     typ_manifest = tman;
     typ_kind = Ttype_abstract;
-    typ_variance = sdecl.ptype_variance;
     typ_private = sdecl.ptype_private;
     typ_attributes = sdecl.ptype_attributes;
   }

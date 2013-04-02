@@ -71,7 +71,6 @@ and untype_structure_item item =
                 pci_params = ci.ci_params;
                 pci_name = ci.ci_id_name;
                 pci_expr = untype_class_expr ci.ci_expr;
-                pci_variance = ci.ci_variance;
                 pci_loc = ci.ci_loc;
                 pci_attributes = ci.ci_attributes;
               }
@@ -83,7 +82,6 @@ and untype_structure_item item =
                 pci_params = ct.ci_params;
                 pci_name = ct.ci_id_name;
                 pci_expr = untype_class_type ct.ci_expr;
-                pci_variance = ct.ci_variance;
                 pci_loc = ct.ci_loc;
                 pci_attributes = ct.ci_attributes;
               }
@@ -142,7 +140,6 @@ and untype_type_declaration decl =
     );
     ptype_private = decl.typ_private;
     ptype_manifest = option untype_core_type decl.typ_manifest;
-    ptype_variance = decl.typ_variance;
     ptype_attributes = decl.typ_attributes;
     ptype_loc = decl.typ_loc;
   }
@@ -352,7 +349,6 @@ and untype_class_description cd =
     pci_params = cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
-    pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
     pci_attributes = cd.ci_attributes;
   }
@@ -363,7 +359,6 @@ and untype_class_type_declaration cd =
     pci_params = cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
-    pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
     pci_attributes = cd.ci_attributes;
   }

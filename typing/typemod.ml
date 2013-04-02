@@ -131,8 +131,14 @@ let merge_constraint initial_env loc  sg lid constr =
             type_private = Private;
             type_manifest = None;
             type_variance =
-              List.map (fun (c,n) -> (not n, not c, not c))
-              sdecl.ptype_variance;
+              List.map
+              (fun (_, v) ->
+                match v with
+                | Covariant -> true, false, false
+                | Contravariant -> false, true, true
+                | Invariant -> true, true, true
+              )
+              sdecl.ptype_params;
             type_loc = Location.none;
             type_newtype_level = None }
         and id_row = Ident.create (s^"#row") in
@@ -207,7 +213,7 @@ let merge_constraint initial_env loc  sg lid constr =
                 List.map
                   (function {ptyp_desc=Ptyp_var s} -> s | _ -> raise Exit)
                   stl in
-              List.iter2 (fun x ox ->
+              List.iter2 (fun x (ox, _) ->
                 match ox with
                     Some y when x = y.txt -> ()
                   | _ -> raise Exit

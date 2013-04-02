@@ -19,7 +19,7 @@ let clean s =
 let print_fun s = "variantize_" ^ clean s
 
 let printed = Hashtbl.create 16
-let funs = ref []
+let meths = ref []
 
 let lid s = mknoloc (Longident.parse s)
 let constr s x = Exp.construct (lid s) (Some x) true
@@ -92,8 +92,8 @@ let rec gen ty =
       params t
   in
   let t = Typ.poly params t in
-  let p = Pat.(constraint_ (var (mknoloc (print_fun ty))) t) in
-  funs := (p, e) :: !funs
+  let body = Exp.poly e (Some t) in
+  meths := Cf.meth (mknoloc (print_fun ty)) Public Fresh body :: !meths
 
 
 and tuple env tl =
@@ -135,7 +135,8 @@ and tyexpr env ty x =
   | Tconstr (path, tl, _) ->
       let ty = Path.name path in
       gen ty;
-      app (evar (print_fun ty)) (List.map (tyexpr_fun env) tl @ [x])
+      app (Exp.send (evar "this") (print_fun ty))
+        (List.map (tyexpr_fun env) tl @ [x])
    | _ ->
        Printtyp.type_expr Format.str_formatter ty;
        constr "UNKNOWN" (str (Format.flush_str_formatter ()))
@@ -176,14 +177,16 @@ let simplify =
 let () =
   Config.load_path := ["../../parsing"];
   gen "Parsetree.expression";
-  let i = Str.value Recursive !funs in
+  let cl = {Parsetree.pcstr_pat = pvar "this"; pcstr_fields = !meths} in
+  let params = [mknoloc "res"], Location.none in
+  let cl = Ci.mk ~params (mknoloc "variantizer") (Cl.structure cl) in
   print_endline prefix;
   let s = Str.([
-         open_ (lid "Asttypes");
-         open_ (lid "Longident");
-         open_ (lid "Parsetree");
-         i
+               open_ (lid "Asttypes");
+               open_ (lid "Longident");
+               open_ (lid "Parsetree");
+               Str.class_ [cl]
         ])
-
   in
+  prerr_endline "XXX";
   Format.printf "%a@." Pprintast.structure (simplify # structure s)

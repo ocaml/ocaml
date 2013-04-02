@@ -62,10 +62,9 @@ let override = function
 
 (* variance encoding: need to sync up with the [parser.mly] *)        
 let type_variance = function
-  | (false,false) -> ""
-  | (true,false) -> "+"
-  | (false,true) -> "-"
-  | (_,_) -> assert false
+  | Invariant -> ""
+  | Covariant -> "+"
+  | Contravariant -> "-"
 
 type construct = 
   [ `cons of expression list
@@ -740,9 +739,9 @@ class printer  ()= object(self:'self)
     
   (* [class type a = object end] *)  
   method class_type_declaration_list f  l =
-    let class_type_declaration f ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
+    let class_type_declaration f ({pci_params=(ls,_);pci_name={txt;_};_} as x) =
       pp f "%a%a%s@ =@ %a" self#virtual_flag x.pci_virt
-        self#class_params_def (List.combine ls pci_variance) txt
+        self#class_params_def ls txt
         self#class_type x.pci_expr in 
     match l with
     | [] -> () 
@@ -833,12 +832,14 @@ class printer  ()= object(self:'self)
         let longident_x_with_constraint f (li, wc) =
           match wc with
           | Pwith_type ({ptype_params= ls ;_} as td) ->
+              let ls = List.map fst ls in
               pp f "type@ %a %a =@ %a"
                 (self#list self#type_var_option ~sep:"," ~first:"(" ~last:")")
                 ls self#longident_loc li  self#type_declaration  td 
           | Pwith_module (li2) ->
               pp f "module %a =@ %a" self#longident_loc li self#longident_loc li2;
           | Pwith_typesubst ({ptype_params=ls;_} as td) ->
+              let ls = List.map fst ls in
               pp f "type@ %a %a :=@ %a"
                 (self#list self#type_var_option ~sep:"," ~first:"(" ~last:")")
                 ls self#longident_loc li
@@ -872,11 +873,11 @@ class printer  ()= object(self:'self)
     | Psig_exception ed ->
         self#exception_declaration f ed
     | Psig_class l ->
-        let class_description f ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
+        let class_description f ({pci_params=(ls,_);pci_name={txt;_};_} as x) =
           pp f "%a%a%s@;:@;%a" (* "@[<2>class %a%a%s@;:@;%a@]" *)
             self#virtual_flag x.pci_virt
             self#class_params_def
-            (List.combine ls pci_variance)
+            ls
             txt  self#class_type x.pci_expr in 
         pp f  "@[<0>%a@]"
           (fun f l ->  match l with
@@ -1037,8 +1038,7 @@ class printer  ()= object(self:'self)
               pci_name={txt;_};
               pci_virt;
               pci_expr={pcl_desc;_};
-              pci_variance;_ } as x) =
-          let ls = List.combine ls pci_variance in
+              _ } as x) =
           let rec  class_fun_helper f e = match e.pcl_desc with
           | Pcl_fun (l, eo, p, e) ->
               self#label_exp f (l,eo,p);
@@ -1100,11 +1100,10 @@ class printer  ()= object(self:'self)
     | Pstr_extension _ -> assert false
   end
   method type_param f  = function
-    | (a,opt) -> pp f "%s%a" (type_variance a ) self#type_var_option opt 
+    | (opt, a) -> pp f "%s%a" (type_variance a ) self#type_var_option opt 
           (* shared by [Pstr_type,Psig_type]*)    
   method  type_def_list f  l =
-    let aux f ({ptype_name = s; ptype_params;ptype_kind;ptype_manifest;ptype_variance;_} as td) =
-      let ptype_params = List.combine  ptype_variance ptype_params in 
+    let aux f ({ptype_name = s; ptype_params;ptype_kind;ptype_manifest;_} as td) =
       pp f "%a%s%a"
         (fun f l -> match l with
         |[] -> ()
