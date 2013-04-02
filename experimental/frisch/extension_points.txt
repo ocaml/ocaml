@@ -316,9 +316,7 @@ More self-documented, simplifies some code.
 
 - Adapt pprintast.
 - Adapt Camlp4 (both its parser(s) and its internal representation of OCaml ASTs).
-- Propagate attributes to the Typedtree (so that they can be retrieved in .cmt/.cmti).
 - Consider adding hooks to the type-checker so that custom extension expanders can be registered (a la OCaml Templates).
-- Quotations (i.e. string literals with custom delimiters and without any interpretation of special characters in them), and a syntax which combines extension nodes and quotations.
 - More cleanups to the Parsetree + documentation.
 
 
