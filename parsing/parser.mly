@@ -1910,8 +1910,56 @@ additive:
 attr_id:
     LIDENT { $1 }
   | UIDENT { $1 }
-  | ELSE   { "else" }
-/* TODO: other keywords */
+  | AND { "and" }
+  | AS { "as" }
+  | ASSERT { "assert" }
+  | BEGIN { "begin" }
+  | CLASS { "class" }
+  | CONSTRAINT { "constraint" }
+  | DO { "do" }
+  | DONE { "done" }
+  | DOWNTO { "downto" }
+  | ELSE { "else" }
+  | END { "end" }
+  | EXCEPTION { "exception" }
+  | EXTERNAL { "external" }
+  | FALSE { "false" }
+  | FOR { "for" }
+  | FUN { "fun" }
+  | FUNCTION { "function" }
+  | FUNCTOR { "functor" }
+  | IF { "if" }
+  | IN { "in" }
+  | INCLUDE { "include" }
+  | INHERIT { "inherit" }
+  | INITIALIZER { "initializer" }
+  | LAZY { "lazy" }
+  | LET { "let" }
+  | MATCH { "match" }
+  | METHOD { "method" }
+  | MODULE { "module" }
+  | MUTABLE { "mutable" }
+  | NEW { "new" }
+  | OBJECT { "object" }
+  | OF { "of" }
+  | OPEN { "open" }
+  | OR { "or" }
+  | PRIVATE { "private" }
+  | REC { "rec" }
+  | SIG { "sig" }
+  | STRUCT { "struct" }
+  | THEN { "then" }
+  | TO { "to" }
+  | TRUE { "true" }
+  | TRY { "try" }
+  | TYPE { "type" }
+  | VAL { "val" }
+  | VIRTUAL { "virtual" }
+  | WHEN { "when" }
+  | WHILE { "while" }
+  | WITH { "with" }
+/* mod/land/lor/lxor/lsl/lsr/asr are not supported for now,
+   and so are keywords followed by digits */
 ;
 
 attribute:
