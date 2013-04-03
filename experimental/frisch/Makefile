@@ -31,10 +31,10 @@ minidoc: minidoc.ml
 	./minidoc.exe testdoc.cmti
 
 .PHONY: lifter
-lifter: print_gen.ml
-	$(OCAMLC) -w +A-4 -custom -o print_gen.exe $(ROOT)/compilerlibs/ocamlcommon.cma print_gen.ml
-	./print_gen.exe -I ../../parsing -I ../../stdlib Parsetree.expression > lifter.ml
-	$(OCAMLC) -c -w +A-17 lifter.ml
-	$(OCAMLC) -c lifter_ex.ml
-	$(OCAMLC) -o lifter_ex.exe $(ROOT)/compilerlibs/ocamlcommon.cma lifter.cmo lifter_ex.cmo
-	./lifter_ex.exe
+lifter: genlifter.ml printast.ml
+	$(OCAMLC) -w +A-4 -custom -o genlifter.exe $(ROOT)/compilerlibs/ocamlcommon.cma genlifter.ml
+	./genlifter.exe -I ../../parsing -I ../../stdlib Parsetree.expression > ast_lifter.ml
+	$(OCAMLC) -c -w +A-17 ast_lifter.ml
+	$(OCAMLC) -c printast.ml
+	$(OCAMLC) -o printast.exe $(ROOT)/compilerlibs/ocamlcommon.cma ast_lifter.cmo printast.cmo
+	./printast.exe "fun x -> 1 + 3 * x" -p "x as y"

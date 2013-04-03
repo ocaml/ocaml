@@ -19,17 +19,33 @@ class out_value_builder =
 
 let lift =
   object
-    inherit [_] Lifter.lifter
+    inherit [_] Ast_lifter.lifter
     inherit out_value_builder
     method! lift_Location_t _ = Oval_ellipsis
         (* Special mapping for the Location.t type *)
   end
 
-let e =
-  Parse.expression (Lexing.from_string "fun x -> 1 + 3 * x")
+let show lifter parse s =
+  let v = lifter (parse (Lexing.from_string s)) in
+  Format.printf "%s@.==>@.%a@.=========@." s !Oprint.out_value v
+
+let show_expr = show (lift # lift_Parsetree_expression) Parse.expression
+let show_pat = show (lift # lift_Parsetree_pattern) Parse.pattern
+
+let args =
+  let open Arg in
+  [
+   "-e", String show_expr,
+   "<expr> Dump AST for expression <expr>.";
+
+   "-p", String show_pat,
+   "<pat> Dump AST for pattern <pat>."
+  ]
+
+let usage =
+  Printf.sprintf "%s [options]\n" Sys.argv.(0)
 
 let () =
-  Format.printf "%a@." !Oprint.out_value
-    (lift # lift_Parsetree_expression e)
+  Arg.parse (Arg.align args) show_expr usage
 
 
