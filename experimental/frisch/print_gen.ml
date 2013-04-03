@@ -1,4 +1,4 @@
-(* Generate code to print values of a certain type as OCaml constants.
+(* Generate code to lift values of a certain type.
    This illustrates how to build fragments of Parsetree through
    Ast_helper and more local helper functions. *)
 
@@ -41,49 +41,22 @@ let selfcall m args = app (Exp.send (evar "this") m) args
 
 let rec gen ty =
   if Hashtbl.mem printed ty then ()
-  else let (_, td) =
-    try Env.lookup_type (Longident.parse ty) env
+  else let tylid = Longident.parse ty in
+  let (_, td) =
+    try Env.lookup_type tylid env
     with Not_found ->
       failwith (Printf.sprintf "Cannot resolve type %s" ty)
+  in
+  let prefix =
+    let open Longident in
+    match tylid with
+    | Ldot (m, _) -> String.concat "." (Longident.flatten m) ^ "."
+    | Lident _ -> ""
+    | Lapply _ -> assert false
   in
   Hashtbl.add printed ty ();
   let params = List.mapi (fun i _ -> Printf.sprintf "f%i" i) td.type_params in
   let env = List.map2 (fun s t -> t.id, evar s) params td.type_params in
-  let e = match td.type_kind, td.type_manifest with
-  | Type_record (l, _), _ ->
-      let field (s, _, t) =
-        let s = Ident.name s in
-        (lid s, pvar s),
-        pair (str s) (tyexpr env t (evar s))
-      in
-      let l = List.map field l in
-      lam
-        (Pat.record (List.map fst l) Closed)
-        (selfcall "mk_record" [list (List.map snd l)])
-  | Type_variant l, _ ->
-      let case (c, tyl, _) =
-        let c = Ident.name c in
-        let pat, args =
-          match tyl with
-          | [] ->
-              pconstr0 c, []
-          | [t] ->
-              pconstr c (pvar "x"),
-              [ tyexpr env t (evar "x") ]
-          | l ->
-              let p, e = tuple env l in
-              pconstr c p, e
-        in
-        pat, selfcall "mk_constr" [pair (str c) (list args)]
-      in
-      func (List.map case l)
-  | Type_abstract, Some t ->
-      tyexpr_fun env t
-  | _ ->
-      assert false
-(*      lam (Pat.any ()) (constr "Abstract" (str ty)) *)
-  in
-  let e = List.fold_right lam (List.map pvar params) e in
   let tyargs = List.map Typ.var params in
   let t = Typ.(arrow "" (constr (lid ty) tyargs) (var "res")) in
   let t =
@@ -93,9 +66,46 @@ let rec gen ty =
       params t
   in
   let t = Typ.poly params t in
-  let body = Exp.poly e (Some t) in
-  meths := Cf.meth (mknoloc (print_fun ty)) Public Fresh body :: !meths
-
+  let concrete e =
+    let e = List.fold_right lam (List.map pvar params) e in
+    let body = Exp.poly e (Some t) in
+    meths := Cf.meth (mknoloc (print_fun ty)) Public Fresh body :: !meths
+  in
+  match td.type_kind, td.type_manifest with
+  | Type_record (l, _), _ ->
+      let field (s, _, t) =
+        let s = Ident.name s in
+        (lid (prefix ^ s), pvar s),
+        pair (str s) (tyexpr env t (evar s))
+      in
+      let l = List.map field l in
+      concrete
+        (lam
+           (Pat.record (List.map fst l) Closed)
+           (selfcall "record" [str ty; list (List.map snd l)]))
+  | Type_variant l, _ ->
+      let case (c, tyl, _) =
+        let c = Ident.name c in
+        let qc = prefix ^ c in
+        let pat, args =
+          match tyl with
+          | [] ->
+              pconstr0 qc, []
+          | [t] ->
+              pconstr qc (pvar "x"),
+              [ tyexpr env t (evar "x") ]
+          | l ->
+              let p, e = tuple env l in
+              pconstr qc p, e
+        in
+        pat, selfcall "constr" [str ty; pair (str c) (list args)]
+      in
+      concrete (func (List.map case l))
+  | Type_abstract, Some t ->
+      concrete (tyexpr_fun env t)
+  | Type_abstract, None ->
+      (* Generate an abstract method to lift abstract types *)
+      meths := Cf.virt (mknoloc (print_fun ty)) Public t :: !meths
 
 and tuple env tl =
   let arg i t =
@@ -116,33 +126,30 @@ and tyexpr env ty x =
       app f [x]
   | Ttuple tl ->
       let p, e = tuple env tl in
-      let_in [p, x] (selfcall "mk_tuple" [list e])
+      let_in [p, x] (selfcall "tuple" [list e])
   | Tconstr (path, [t], _) when Path.same path Predef.path_list ->
-      selfcall "mk_list" [app (evar "List.map") [tyexpr_fun env t; x]]
+      selfcall "list" [app (evar "List.map") [tyexpr_fun env t; x]]
+  | Tconstr (path, [t], _) when Path.same path Predef.path_array ->
+      selfcall "array" [app (evar "Array.map") [tyexpr_fun env t; x]]
   | Tconstr (path, [], _) when Path.same path Predef.path_string ->
-      selfcall "mk_string" [x]
+      selfcall "string" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_int ->
-      selfcall "mk_int" [x]
+      selfcall "int" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_char ->
-      selfcall "mk_char" [x]
+      selfcall "char" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_int32 ->
-      selfcall "mk_int32" [x]
+      selfcall "int32" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_int64 ->
-      selfcall "mk_int64" [x]
+      selfcall "int64" [x]
   | Tconstr (path, [], _) when Path.same path Predef.path_nativeint ->
-      selfcall "mk_nativeint" [x]
-  | Tconstr (path, [], _) when Path.name path = "Location.t" ->
-      selfcall "mk_location" [x]
+      selfcall "nativeint" [x]
   | Tconstr (path, tl, _) ->
       let ty = Path.name path in
       gen ty;
       selfcall (print_fun ty) (List.map (tyexpr_fun env) tl @ [x])
-   | _ ->
-       assert false
-(*
-       Printtyp.type_expr Format.str_formatter ty;
-       constr "UNKNOWN" (str (Format.flush_str_formatter ()))
-*)
+  | _ ->
+      Format.eprintf "Cannot deal with type %a@." Printtyp.type_expr ty;
+      exit 2
 
 and tyexpr_fun env ty =
   lam (pvar "x") (tyexpr env ty (evar "x"))
@@ -155,23 +162,27 @@ let simplify =
       let open Longident in
       let open Parsetree in
       match e.pexp_desc with
-      | Pexp_function ("", None, [{ppat_desc = Ppat_var{txt=id}},
+      | Pexp_function ("", None, [{ppat_desc = Ppat_var{txt=id;_};_},
                                   {pexp_desc = Pexp_apply(f,
-                                                          ["",{pexp_desc=Pexp_ident{txt=Lident id2}}])}]) when id = id2 -> f
+                                                          ["",{pexp_desc=Pexp_ident{txt=Lident id2;_};_}]);_}]) when id = id2 -> f
       | _ -> e
   end
 
+let args =
+  let open Arg in
+  [
+   "-I", String (fun s -> Config.load_path := s :: !Config.load_path),
+   "<dir> Add <dir> to the list of include directories";
+  ]
+
+let usage =
+  Printf.sprintf "%s [options] <type names>\n" Sys.argv.(0)
+
 let () =
-  Config.load_path := ["../../parsing"];
-  gen "Parsetree.expression";
+  Config.load_path := [];
+  Arg.parse (Arg.align args) gen usage;
   let cl = {Parsetree.pcstr_pat = pvar "this"; pcstr_fields = !meths} in
   let params = [mknoloc "res", Invariant], Location.none in
   let cl = Ci.mk ~virt:Virtual ~params (mknoloc "lifter") (Cl.structure cl) in
-  let s = Str.([
-               open_ (lid "Asttypes");
-               open_ (lid "Longident");
-               open_ (lid "Parsetree");
-               Str.class_ [cl]
-        ])
-  in
+  let s = [Str.class_ [cl]] in
   Format.printf "%a@." Pprintast.structure (simplify # structure s)

@@ -32,8 +32,9 @@ minidoc: minidoc.ml
 
 .PHONY: lifter
 lifter: print_gen.ml
-	$(OCAMLC) -custom -o print_gen.exe $(ROOT)/compilerlibs/ocamlcommon.cma print_gen.ml
-	./print_gen.exe > lifter.ml
-	$(OCAMLC) -c -w -17 lifter.ml
+	$(OCAMLC) -w +A-4 -custom -o print_gen.exe $(ROOT)/compilerlibs/ocamlcommon.cma print_gen.ml
+	./print_gen.exe -I ../../parsing -I ../../stdlib Parsetree.expression > lifter.ml
+	$(OCAMLC) -c -w +A-17 lifter.ml
 	$(OCAMLC) -c lifter_ex.ml
 	$(OCAMLC) -o lifter_ex.exe $(ROOT)/compilerlibs/ocamlcommon.cma lifter.cmo lifter_ex.cmo
+	./lifter_ex.exe
