@@ -96,7 +96,6 @@ let iterator rebuild_env =
           let open Location in
           let doit loc_start = bind_bindings {scope with loc_start} bindings in
           begin match rec_flag, rem with
-          | Default, _ -> ()
           | Recursive, _ -> doit loc.loc_start
           | Nonrecursive, [] -> doit loc.loc_end
           | Nonrecursive,  {str_loc = loc2} :: _ -> doit loc2.loc_start

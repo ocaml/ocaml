@@ -1882,10 +1882,10 @@ and type_expect_ ?in_function env sexp ty_expected =
         ty_expected
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let scp =
-        match rec_flag with
-        | Recursive -> Some (Annot.Idef loc)
-        | Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
-        | Default -> None
+        match sexp.pexp_attributes, rec_flag with
+        | ["#default",_], _ -> None
+        | _, Recursive -> Some (Annot.Idef loc)
+        | _, Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
       in
       let (pat_exp_list, new_env, unpacks) =
         type_let env rec_flag spat_sexp_list scp true in
@@ -1923,7 +1923,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           l None
           [
            Pat.var ~loc (mknoloc "*opt*"),
-           Exp.let_ ~loc Default [spat, smatch] sbody;
+           Exp.let_ ~loc Nonrecursive ~attrs:["#default",Exp.constant (Const_int 0)] [spat, smatch] sbody;
           ]
       in
       type_expect ?in_function env sfun ty_expected

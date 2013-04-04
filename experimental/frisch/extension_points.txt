@@ -332,6 +332,20 @@ directly to the parameters fields:
      ptype_loc: Location.t }
 
 
+--- Getting rid of 'Default' case in Astypes.rec_flag
+
+This constructor was used internally only during the compilation of
+default expression for optional arguments, in order to trigger a
+subsequent optimization (see PR#5975).  This behavior is now
+implemented by creating an attribute internally (whose name "#default"
+cannot be used in real programs).
+
+Rationale:
+
+ - Attributes give a way to encode information local to the
+   type-checker without polluting the definition of the Parsetree.
+
+
 === More TODOs
 
 - Adapt pprintast.

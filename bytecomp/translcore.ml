@@ -506,8 +506,9 @@ let rec push_defaults loc bindings pat_expr_list partial =
     [pat, ({exp_desc = Texp_function(l, pl,partial)} as exp)] ->
       let pl = push_defaults exp.exp_loc bindings pl partial in
       [pat, {exp with exp_desc = Texp_function(l, pl, partial)}]
-  | [pat, {exp_desc = Texp_let
-             (Default, cases, ({exp_desc = Texp_function _} as e2))}] ->
+  | [pat, {exp_attributes=["#default",_];
+           exp_desc = Texp_let
+             (Nonrecursive, cases, ({exp_desc = Texp_function _} as e2))}] ->
       push_defaults loc (cases :: bindings) [pat, e2] partial
   | [pat, exp] ->
       let exp =
@@ -965,7 +966,7 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
-    Nonrecursive | Default ->
+    Nonrecursive ->
       let rec transl = function
         [] ->
           body

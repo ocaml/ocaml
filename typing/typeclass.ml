@@ -860,7 +860,9 @@ and class_expr cl_num val_env met_env scl =
         Cl.fun_ ~loc:scl.pcl_loc
           l None
           (Pat.var ~loc (mknoloc "*opt*"))
-          (Cl.let_ ~loc:scl.pcl_loc Default [spat, smatch] sbody)
+          (Cl.let_ ~loc:scl.pcl_loc Nonrecursive [spat, smatch] sbody)
+          (* Note: we don't put the '#default' attribute, as it
+             is not detected for class-level let bindings.  See #5975.*)
       in
       class_expr cl_num val_env met_env sfun
   | Pcl_fun (l, None, spat, scl') ->

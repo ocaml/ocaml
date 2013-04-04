@@ -985,7 +985,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                 | [] -> loc.Location.loc_end
                 | {pstr_loc = loc2} :: _ -> loc2.Location.loc_start
               in Some (Annot.Idef {scope with Location.loc_start = start})
-          | Default -> None
         in
         let (defs, newenv) =
           Typecore.type_binding env rec_flag sdefs scope in
