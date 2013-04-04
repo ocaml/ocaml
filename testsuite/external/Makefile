@@ -1418,6 +1418,28 @@ distclean::
 	rm -f ${COQ}.tar.gz
 all: coq
 
+# http://compcert.inria.fr
+COMPCERT=compcert-1.13
+${COMPCERT}.tgz:
+	${WGET} http://compcert.inria.fr/release/$@
+compcert: ${COMPCERT}.tgz coq #bitstring FIXME
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${COMPCERT}
+	tar zxf ${COMPCERT}.tgz
+	./Patcher.sh ${COMPCERT}
+	( cd ${COMPCERT} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure -prefix ${PREFIX} ia32-macosx && \
+	  ${MAKE} all && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${COMPCERT} compcert
+distclean::
+	rm -f ${COMPCERT}.tgz
+all: compcert
+
 # http://frama-c.com/
 FRAMAC=frama-c-Oxygen-20120901
 ${FRAMAC}.tar.gz:
