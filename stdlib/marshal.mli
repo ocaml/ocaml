@@ -31,7 +31,17 @@
    type of the returned value, using the following syntax:
    - [(Marshal.from_channel chan : type)].
    Anything can happen at run-time if the object in the file does not
-   belong to the given type.
+   belong to the given type. Apart from that marshaling is not
+   type-safe, it's also risky to marshal exception or any OCaml values
+   of type that contains exception in it's defininition or in dependent
+   definitions. Although it's possible to marshal and unmarshal these
+   OCaml values, it's not possible anymore to match the exception
+   contained in it using match construct. The same principle applies
+   to code that raises and catches OCaml values of type exn that has
+   been unmarshaled before . This limitation comes from the fact that
+   the exceptions have no defined run-time tag, therefore the system
+   is unable to asses the exception clause and match it. Other means
+   of using marshalled exceptions in OCaml code are not affected.
 
    The representation of marshaled values is not human-readable,
    and uses bytes that are not printable characters. Therefore,
