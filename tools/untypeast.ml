@@ -540,4 +540,4 @@ and untype_class_field cf =
 *)
   | Tcf_init exp -> Pcf_init (untype_expression exp)
   in
-  { pcf_desc = desc; pcf_loc = cf.cf_loc }
+  { pcf_desc = desc; pcf_loc = cf.cf_loc; pcf_attributes = cf.cf_attributes }

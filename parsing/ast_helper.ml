@@ -191,15 +191,21 @@ module Ctf = struct
 end
 
 module Cf = struct
-  let mk ?(loc = Location.none) d = {pcf_desc = d; pcf_loc = loc}
+  let mk ?(attrs = []) ?(loc = Location.none) d =
+    {
+     pcf_desc = d;
+     pcf_loc = loc;
+     pcf_attributes = attrs;
+    }
+  let attr d a = {d with pcf_attributes = d.pcf_attributes @ [a]}
 
-  let inher ?loc a b c = mk ?loc (Pcf_inher (a, b, c))
-  let valvirt ?loc a b c = mk ?loc (Pcf_valvirt (a, b, c))
-  let val_ ?loc a b c d = mk ?loc (Pcf_val (a, b, c, d))
-  let virt ?loc a b c = mk ?loc (Pcf_virt (a, b, c))
-  let meth ?loc a b c d = mk ?loc (Pcf_meth (a, b, c, d))
-  let constr ?loc a b = mk ?loc (Pcf_constr (a, b))
-  let init ?loc a = mk ?loc (Pcf_init a)
+  let inher ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_inher (a, b, c))
+  let valvirt ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_valvirt (a, b, c))
+  let val_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pcf_val (a, b, c, d))
+  let virt ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_virt (a, b, c))
+  let meth ?loc ?attrs a b c d = mk ?loc ?attrs (Pcf_meth (a, b, c, d))
+  let constr ?loc ?attrs a b = mk ?loc ?attrs (Pcf_constr (a, b))
+  let init ?loc ?attrs a = mk ?loc ?attrs (Pcf_init a)
 end
 
 module Val = struct

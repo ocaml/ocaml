@@ -823,6 +823,8 @@ class_field:
       { mkcf (Pcf_constr $2) }
   | INITIALIZER seq_expr
       { mkcf (Pcf_init $2) }
+  | class_field post_item_attribute
+      { Cf.attr $1 $2 }
 ;
 parent_binder:
     AS LIDENT

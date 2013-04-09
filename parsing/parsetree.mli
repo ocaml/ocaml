@@ -228,6 +228,7 @@ and class_structure = {
 and class_field = {
     pcf_desc: class_field_desc;
     pcf_loc: Location.t;
+    pcf_attributes: attribute list;
   }
 
 and class_field_desc =

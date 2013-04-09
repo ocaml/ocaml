@@ -180,14 +180,16 @@ module Ctf:
   end
 module Cf:
   sig
-    val mk: ?loc:Location.t -> class_field_desc -> class_field
-    val inher: ?loc:Location.t -> override_flag -> class_expr -> string option -> class_field
-    val valvirt: ?loc:Location.t -> string loc -> mutable_flag -> core_type -> class_field
-    val val_: ?loc:Location.t -> string loc -> mutable_flag -> override_flag -> expression -> class_field
-    val virt: ?loc:Location.t -> string loc -> private_flag -> core_type -> class_field
-    val meth: ?loc:Location.t -> string loc -> private_flag -> override_flag -> expression -> class_field
-    val constr: ?loc:Location.t -> core_type -> core_type -> class_field
-    val init: ?loc:Location.t -> expression -> class_field
+    val mk: ?attrs:attribute list -> ?loc:Location.t -> class_field_desc -> class_field
+    val attr: class_field -> attribute -> class_field
+
+    val inher: ?loc:Location.t -> ?attrs:attribute list -> override_flag -> class_expr -> string option -> class_field
+    val valvirt: ?loc:Location.t -> ?attrs:attribute list -> string loc -> mutable_flag -> core_type -> class_field
+    val val_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> mutable_flag -> override_flag -> expression -> class_field
+    val virt: ?loc:Location.t -> ?attrs:attribute list -> string loc -> private_flag -> core_type -> class_field
+    val meth: ?loc:Location.t -> ?attrs:attribute list -> string loc -> private_flag -> override_flag -> expression -> class_field
+    val constr: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_field
+    val init: ?loc:Location.t -> ?attrs:attribute list -> expression -> class_field
   end
 module Val:
   sig

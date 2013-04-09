@@ -54,7 +54,6 @@ let ctyp desc typ env loc =
   { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env; ctyp_attributes = [] }
 let cltyp desc typ env loc =
   { cltyp_desc = desc; cltyp_type = typ; cltyp_loc = loc; cltyp_env = env }
-let mkcf desc loc = { cf_desc = desc; cf_loc = loc }
 let mkctf desc loc = { ctf_desc = desc; ctf_loc = loc }
 
 
@@ -498,6 +497,7 @@ let rec class_field self_loc cl_num self_type meths vars
     (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher)
   cf =
   let loc = cf.pcf_loc in
+  let mkcf desc loc = { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes } in
   match cf.pcf_desc with
     Pcf_inher (ovf, sparent, super) ->
       let parent = class_expr cl_num val_env par_env sparent in

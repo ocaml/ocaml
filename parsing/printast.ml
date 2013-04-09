@@ -500,6 +500,7 @@ and class_structure i ppf { pcstr_pat = p; pcstr_fields = l } =
 and class_field i ppf x =
   line i ppf "class_field %a\n" fmt_location x.pcf_loc;
   let i = i + 1 in
+  attributes i ppf x.pcf_attributes;
   match x.pcf_desc with
   | Pcf_inher (ovf, ce, so) ->
       line i ppf "Pcf_inher %a\n" fmt_override_flag ovf;

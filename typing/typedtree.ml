@@ -140,8 +140,9 @@ and class_structure =
 
 and class_field =
    {
-    cf_desc : class_field_desc;
-    cf_loc : Location.t;
+    cf_desc: class_field_desc;
+    cf_loc: Location.t;
+    cf_attributes: attribute list;
   }
 
 and class_field_kind =

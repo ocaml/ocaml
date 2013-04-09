@@ -34,9 +34,10 @@ Attributes on items:
 
   ... [@@id expr]
 
-  Items designate signature and structure items, and also individual
-  components of multiple declaration (type declarations, recursive modules,
-  class declarations, class type declarations). (TODO: class fields?)
+  Items designate class field, signature and structure items, and also
+  individual components of multiple declaration (type declarations,
+  recursive modules, class declarations, class type
+  declarations). (TODO: class type fields?)
 
   For instance, consider:
 
@@ -83,7 +84,7 @@ patterns (TODO: class expressions, class type expressions):
 
   [%id expr]
 
-As structure or signature item (TODO: class fields?):
+As structure or signature item (TODO: class fields, class type fields?):
  
   [%%id expr]
 
