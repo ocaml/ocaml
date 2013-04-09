@@ -6,11 +6,11 @@ open Longident
 let pendings = ref []
 
 let doc ppf = function
-  | ("doc", {pexp_desc=Pexp_constant(Const_string s)}) ->
+  | ("doc", {pexp_desc=Pexp_constant(Const_string (s, _))}) ->
       Format.fprintf ppf "    --> %s@." s
   | ("doc",
      {pexp_desc=Pexp_apply({pexp_desc=Pexp_ident{txt=Lident "section"}},
-                           ["", {pexp_desc=Pexp_constant(Const_string s)}])}
+                           ["", {pexp_desc=Pexp_constant(Const_string (s, _))}])}
     ) ->
       Format.fprintf ppf "  ==== %s ====@." s
   | _ -> ()
