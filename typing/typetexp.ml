@@ -280,7 +280,7 @@ let rec transl_type env policy styp =
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
       let fields =
-        List.map (fun (s, t) -> (s, transl_type env policy t))
+        List.map (fun (s, t) -> (s, transl_poly_type env policy t))
           fields
       in
       let ty = newobj (transl_fields loc env policy [] o fields) in
@@ -555,6 +555,9 @@ let rec transl_type env policy styp =
            }) ty
   | Ptyp_extension (s, _arg) ->
       raise (Error (loc, env, Extension s))
+
+and transl_poly_type env policy t =
+  transl_type env policy (Ast_helper.Typ.force_poly t)
 
 and transl_fields loc env policy seen o =
   function

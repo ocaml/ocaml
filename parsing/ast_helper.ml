@@ -24,24 +24,18 @@ module Typ = struct
   let arrow ?loc ?attrs a b c = mk ?loc ?attrs (Ptyp_arrow (a, b, c))
   let tuple ?loc ?attrs a = mk ?loc ?attrs (Ptyp_tuple a)
   let constr ?loc ?attrs a b = mk ?loc ?attrs (Ptyp_constr (a, b))
-  let poly ?loc ?attrs a b = mk ?loc ?attrs (Ptyp_poly (a, b))
-  let object_ ?loc ?attrs a b =
-    (* The type-checker expects the field to be a Ptyp_poly. Maybe
-       it should wrap the type automatically... *)
-    let a =
-      List.map
-        (fun (s, t) ->
-          match t.ptyp_desc with
-          | Ptyp_poly _ -> s, t
-          | _ -> s, poly ~loc:t.ptyp_loc [] t
-        )  a
-    in
-    mk ?loc ?attrs (Ptyp_object (a, b))
+  let object_ ?loc ?attrs a b = mk ?loc ?attrs (Ptyp_object (a, b))
   let class_ ?loc ?attrs a b c = mk ?loc ?attrs (Ptyp_class (a, b, c))
   let alias ?loc ?attrs a b = mk ?loc ?attrs (Ptyp_alias (a, b))
   let variant ?loc ?attrs a b c = mk ?loc ?attrs (Ptyp_variant (a, b, c))
+  let poly ?loc ?attrs a b = mk ?loc ?attrs (Ptyp_poly (a, b))
   let package ?loc ?attrs a b = mk ?loc ?attrs (Ptyp_package (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Ptyp_extension a)
+
+  let force_poly t =
+    match t.ptyp_desc with
+    | Ptyp_poly _ -> t
+    | _ -> poly ~loc:t.ptyp_loc [] t (* -> ghost? *)
 end
 
 module Pat = struct

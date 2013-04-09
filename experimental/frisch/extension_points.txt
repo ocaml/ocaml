@@ -355,6 +355,18 @@ Rationale:
 And same in the Typedtree.
 
 
+--- Do not require empty Ptyp_poly nodes in the Parsetree
+
+The type-checker automatically inserts Ptyp_poly node (with no
+variable) where needed.  It is still allowed to put empty
+Ptyp_poly nodes in the Parsetree. 
+
+Rationale:
+
+ - Less chance that Ast-related code forget to insert those nodes.
+
+
+
 Rationale:
 
  - More faithful representation of the syntax really supported

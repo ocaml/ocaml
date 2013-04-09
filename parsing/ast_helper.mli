@@ -32,6 +32,8 @@ module Typ :
     val poly: ?loc:Location.t -> ?attrs:attribute list -> string list -> core_type -> core_type
     val package: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> (Longident.t loc * core_type) list -> core_type
     val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> core_type
+
+    val force_poly: core_type -> core_type
   end
 module Pat:
   sig

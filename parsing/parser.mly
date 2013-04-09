@@ -851,7 +851,7 @@ virtual_method:
       { if $2 = Override then syntax_error ();
         mkloc $5 (rhs_loc 5), $4, $7 }
 ;
-concrete_method :
+concrete_method:
     METHOD override_flag private_flag label strict_binding
       { mkloc $4 (rhs_loc 4), $3, $2, ghexp(Pexp_poly ($5, None)) }
   | METHOD override_flag private_flag label COLON poly_type EQUAL seq_expr
@@ -1565,7 +1565,7 @@ typevar_list:
 ;
 poly_type:
         core_type
-          { mktyp(Ptyp_poly([], $1)) }
+          { $1 }
       | typevar_list DOT core_type
           { mktyp(Ptyp_poly(List.rev $1, $3)) }
 ;
@@ -1721,7 +1721,7 @@ meth_list:
   | DOTDOT                                      { [], Open }
 ;
 field:
-    label COLON poly_type                       { ($1, $3) }
+    label COLON poly_type /* ok */              { ($1, $3) }
 ;
 label:
     LIDENT                                      { $1 }

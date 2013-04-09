@@ -2617,6 +2617,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       let ty, cty =
         match sty with None -> repr ty_expected, None
         | Some sty ->
+            let sty = Ast_helper.Typ.force_poly sty in
             let cty = Typetexp.transl_simple_type env false sty in
             repr cty.ctyp_type, Some cty
       in

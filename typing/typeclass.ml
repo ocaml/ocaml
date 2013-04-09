@@ -292,6 +292,7 @@ let virtual_method val_env meths self_type lab priv sty loc =
   let (_, ty') =
      Ctype.filter_self_method val_env lab priv meths self_type
   in
+  let sty = Ast_helper.Typ.force_poly sty in
   let cty = transl_simple_type val_env false sty in
   let ty = cty.ctyp_type in
   begin
@@ -310,6 +311,7 @@ let declare_method val_env meths self_type lab priv sty loc =
     try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
       raise(Error(loc, val_env, Field_type_mismatch ("method", lab, trace)))
   in
+  let sty = Ast_helper.Typ.force_poly sty in
   match sty.ptyp_desc, priv with
     Ptyp_poly ([],sty'), Public ->
 (* TODO: we moved the [transl_simple_type_univars] outside of the lazy,
@@ -612,6 +614,7 @@ let rec class_field self_loc cl_num self_type meths vars
         Pexp_poly (sbody, sty) ->
           begin match sty with None -> ()
                 | Some sty ->
+                    let sty = Ast_helper.Typ.force_poly sty in
                     let cty' = Typetexp.transl_simple_type val_env false sty in
                     let ty' = cty'.ctyp_type in
               Ctype.unify val_env ty' ty
