@@ -491,8 +491,8 @@ and untype_core_type ct =
     | Ttyp_constr (_path, lid, list) ->
         Ptyp_constr (lid,
           List.map untype_core_type list)
-    | Ttyp_object list ->
-        Ptyp_object (List.map untype_core_field_type list)
+    | Ttyp_object (list, o) ->
+        Ptyp_object (List.map (fun (s, t) -> (s, untype_core_type t)) list, o)
     | Ttyp_class (_path, lid, list, labels) ->
         Ptyp_class (lid,
           List.map untype_core_type list, labels)
@@ -504,12 +504,6 @@ and untype_core_type ct =
     | Ttyp_package pack -> Ptyp_package (untype_package_type pack)
   in
   Typ.mk ~loc:ct.ctyp_loc desc
-
-and untype_core_field_type cft =
-  { pfield_desc = (match cft.field_desc with
-        Tcfield_var -> Pfield_var
-      | Tcfield (s, ct) -> Pfield (s, untype_core_type ct));
-    pfield_loc = cft.field_loc; }
 
 and untype_class_structure cs =
   { pcstr_pat = untype_pattern cs.cstr_pat;

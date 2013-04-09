@@ -34,7 +34,6 @@ module type MapArgument = sig
   val enter_class_type : class_type -> class_type
   val enter_class_type_field : class_type_field -> class_type_field
   val enter_core_type : core_type -> core_type
-  val enter_core_field_type : core_field_type -> core_field_type
   val enter_class_structure : class_structure -> class_structure
   val enter_class_field : class_field -> class_field
   val enter_structure_item : structure_item -> structure_item
@@ -60,7 +59,6 @@ module type MapArgument = sig
   val leave_class_type : class_type -> class_type
   val leave_class_type_field : class_type_field -> class_type_field
   val leave_core_type : core_type -> core_type
-  val leave_core_field_type : core_field_type -> core_field_type
   val leave_class_structure : class_structure -> class_structure
   val leave_class_field : class_field -> class_field
   val leave_structure_item : structure_item -> structure_item
@@ -553,7 +551,8 @@ module MakeMap(Map : MapArgument) = struct
         | Ttyp_tuple list -> Ttyp_tuple (List.map map_core_type list)
         | Ttyp_constr (path, lid, list) ->
           Ttyp_constr (path, lid, List.map map_core_type list)
-        | Ttyp_object list -> Ttyp_object (List.map map_core_field_type list)
+        | Ttyp_object (list, o) ->
+          Ttyp_object (List.map (fun (s, t) -> (s, map_core_type t)) list, o)
         | Ttyp_class (path, lid, list, labels) ->
           Ttyp_class (path, lid, List.map map_core_type list, labels)
         | Ttyp_alias (ct, s) -> Ttyp_alias (map_core_type ct, s)
@@ -563,14 +562,6 @@ module MakeMap(Map : MapArgument) = struct
         | Ttyp_package pack -> Ttyp_package (map_package_type pack)
     in
     Map.leave_core_type { ct with ctyp_desc = ctyp_desc }
-
-  and map_core_field_type cft =
-    let cft = Map.enter_core_field_type cft in
-    let field_desc = match cft.field_desc with
-        Tcfield_var -> Tcfield_var
-      | Tcfield (s, ct) -> Tcfield (s, map_core_type ct)
-    in
-    Map.leave_core_field_type { cft with field_desc = field_desc }
 
   and map_class_structure cs =
     let cs = Map.enter_class_structure cs in
@@ -634,7 +625,6 @@ module DefaultMapArgument = struct
   let enter_class_type t = t
   let enter_class_type_field t = t
   let enter_core_type t = t
-  let enter_core_field_type t = t
   let enter_class_structure t = t
   let enter_class_field t = t
   let enter_structure_item t = t
@@ -661,7 +651,6 @@ module DefaultMapArgument = struct
   let leave_class_type t = t
   let leave_class_type_field t = t
   let leave_core_type t = t
-  let leave_core_field_type t = t
   let leave_class_structure t = t
   let leave_class_field t = t
   let leave_structure_item t = t

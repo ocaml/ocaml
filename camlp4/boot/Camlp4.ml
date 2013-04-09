@@ -14185,8 +14185,6 @@ module Struct =
               
             let mkstr loc d = { pstr_desc = d; pstr_loc = mkloc loc; }
               
-            let mkfield loc d = { pfield_desc = d; pfield_loc = mkloc loc; }
-              
             let mkcty loc d = { pcty_desc = d; pcty_loc = mkloc loc; }
               
             let mkcl loc d = { pcl_desc = d; pcl_loc = mkloc loc; }
@@ -14377,10 +14375,10 @@ module Struct =
               | TyArr (loc, t1, t2) ->
                   mktyp loc (Ptyp_arrow ("", (ctyp t1), (ctyp t2)))
               | Ast.TyObj (loc, fl, Ast.RvNil) ->
-                  mktyp loc (Ptyp_object (meth_list fl []))
+                  mktyp loc (Ptyp_object (meth_list fl [], Closed))
               | Ast.TyObj (loc, fl, Ast.RvRowVar) ->
                   mktyp loc
-                    (Ptyp_object (meth_list fl [ mkfield loc Pfield_var ]))
+                    (Ptyp_object (meth_list fl [], Open))
               | TyCls (loc, id) ->
                   mktyp loc (Ptyp_class ((ident id), [], []))
               | Ast.TyPkg (loc, pt) ->
@@ -14449,7 +14447,7 @@ module Struct =
               | Ast.TyNil _ -> acc
               | Ast.TySem (_, t1, t2) -> meth_list t1 (meth_list t2 acc)
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, lab)))), t) ->
-                  (mkfield loc (Pfield (lab, (mkpolytype (ctyp t))))) :: acc
+                  (lab, (mkpolytype (ctyp t))) :: acc
               | _ -> assert false
             and package_type_constraints wc acc =
               match wc with
@@ -14881,8 +14879,8 @@ module Struct =
                       List.mem s var_names -> Ptyp_var ("&" ^ s)
                   | Ptyp_constr (longident, lst) ->
                       Ptyp_constr (longident, (List.map loop lst))
-                  | Ptyp_object lst ->
-                      Ptyp_object (List.map loop_core_field lst)
+                  | Ptyp_object (lst, o) ->
+                      Ptyp_object (List.map (fun (s, t) -> (s, loop t)) lst, o)
                   | Ptyp_class (longident, lst, lbl_list) ->
                       Ptyp_class ((longident, (List.map loop lst), lbl_list))
                   | Ptyp_alias (core_type, string) ->
@@ -14898,12 +14896,6 @@ module Struct =
                         ((longident,
                           (List.map (fun (n, typ) -> (n, (loop typ))) lst)))
                 in { (t) with ptyp_desc = desc; }
-              and loop_core_field t =
-                let desc =
-                  match t.pfield_desc with
-                  | Pfield ((n, typ)) -> Pfield ((n, (loop typ)))
-                  | Pfield_var -> Pfield_var
-                in { (t) with pfield_desc = desc; }
               and loop_row_field x =
                 match x with
                 | Rtag ((label, flag, lst)) ->

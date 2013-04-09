@@ -67,7 +67,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value mksig loc d = {psig_desc = d; psig_loc = mkloc loc};
   value mkmod loc d = {pmod_desc = d; pmod_loc = mkloc loc; pmod_attributes = []};
   value mkstr loc d = {pstr_desc = d; pstr_loc = mkloc loc};
-  value mkfield loc d = {pfield_desc = d; pfield_loc = mkloc loc};
   value mkcty loc d = {pcty_desc = d; pcty_loc = mkloc loc};
   value mkcl loc d = {pcl_desc = d; pcl_loc = mkloc loc};
   value mkcf loc d = { pcf_desc = d; pcf_loc = mkloc loc; };
@@ -247,9 +246,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let t1 = TyApp loc1 (predef_option loc1) t1 in
         mktyp loc (Ptyp_arrow ("?" ^ lab) (ctyp t1) (ctyp t2))
     | TyArr loc t1 t2 -> mktyp loc (Ptyp_arrow "" (ctyp t1) (ctyp t2))
-    | <:ctyp@loc< < $fl$ > >> -> mktyp loc (Ptyp_object (meth_list fl []))
+    | <:ctyp@loc< < $fl$ > >> -> mktyp loc (Ptyp_object (meth_list fl []) Closed)
     | <:ctyp@loc< < $fl$ .. > >> ->
-        mktyp loc (Ptyp_object (meth_list fl [mkfield loc Pfield_var]))
+        mktyp loc (Ptyp_object (meth_list fl []) Open)
     | TyCls loc id ->
         mktyp loc (Ptyp_class (ident id) [] [])
     | <:ctyp@loc< (module $pt$) >> ->
@@ -297,8 +296,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     match fl with
     [ <:ctyp<>> -> acc
     | <:ctyp< $t1$; $t2$ >> -> meth_list t1 (meth_list t2 acc)
-    | <:ctyp@loc< $lid:lab$ : $t$ >> ->
-        [mkfield loc (Pfield lab (mkpolytype (ctyp t))) :: acc]
+    | <:ctyp< $lid:lab$ : $t$ >> -> [(lab, mkpolytype (ctyp t)) :: acc]
     | _ -> assert False ]
 
   and package_type_constraints wc acc =
@@ -655,8 +653,8 @@ value varify_constructors var_names =
           Ptyp_var ("&" ^ s)
       | Ptyp_constr longident lst ->
           Ptyp_constr longident (List.map loop lst)
-      | Ptyp_object lst ->
-          Ptyp_object (List.map loop_core_field lst)
+      | Ptyp_object (lst, o) ->
+          Ptyp_object (List.map (fun (s, t) -> (s, loop t)) lst, o)
       | Ptyp_class longident lst lbl_list ->
           Ptyp_class (longident, List.map loop lst, lbl_list)
       | Ptyp_alias core_type string ->
@@ -672,15 +670,6 @@ value varify_constructors var_names =
 ]
     in
     {(t) with ptyp_desc = desc}
-  and loop_core_field t =
-    let desc =
-      match t.pfield_desc with
-      [ Pfield(n,typ) ->
-          Pfield(n,loop typ)
-      | Pfield_var ->
-          Pfield_var]
-    in
-    { (t) with pfield_desc=desc}
   and loop_row_field x  =
     match x with
       [ Rtag(label,flag,lst) ->

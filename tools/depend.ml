@@ -43,7 +43,7 @@ let rec add_type bv ty =
   | Ptyp_arrow(_, t1, t2) -> add_type bv t1; add_type bv t2
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
-  | Ptyp_object fl -> List.iter (add_field_type bv) fl
+  | Ptyp_object (fl, _) -> List.iter (fun (_, t) -> add_type bv t) fl
   | Ptyp_class(c, tl, _) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, s) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
@@ -58,11 +58,6 @@ let rec add_type bv ty =
 and add_package_type bv (lid, l) =
   add bv lid;
   List.iter (add_type bv) (List.map (fun (_, e) -> e) l)
-
-and add_field_type bv ft =
-  match ft.pfield_desc with
-    Pfield(name, ty) -> add_type bv ty
-  | Pfield_var -> ()
 
 let add_opt add_fn bv = function
     None -> ()

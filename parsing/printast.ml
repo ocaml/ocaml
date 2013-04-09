@@ -80,6 +80,11 @@ let fmt_override_flag f x =
   | Fresh -> fprintf f "Fresh";
 ;;
 
+let fmt_closed_flag f x =
+  match x with
+  | Closed -> fprintf f "Closed"
+  | Open -> fprintf f "Open"
+
 let fmt_rec_flag f x =
   match x with
   | Nonrecursive -> fprintf f "Nonrec";
@@ -148,9 +153,15 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_variant closed=%s\n" (string_of_bool closed);
       list i label_x_bool_x_core_type_list ppf l;
       option i (fun i -> list i string) ppf low
-  | Ptyp_object (l) ->
-      line i ppf "Ptyp_object\n";
-      list i core_field_type ppf l;
+  | Ptyp_object (l, c) ->
+      line i ppf "Ptyp_object %a\n" fmt_closed_flag c;
+      let i = i + 1 in
+      List.iter
+        (fun (s, t) ->
+          line i ppf "method %s" s;
+          core_type (i + 1) ppf t
+        )
+        l
   | Ptyp_class (li, l, low) ->
       line i ppf "Ptyp_class %a\n" fmt_longident_loc li;
       list i core_type ppf l;
@@ -172,15 +183,6 @@ let rec core_type i ppf x =
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident_loc s;
   core_type i ppf t
-
-and core_field_type i ppf x =
-  line i ppf "core_field_type %a\n" fmt_location x.pfield_loc;
-  let i = i+1 in
-  match x.pfield_desc with
-  | Pfield (s, ct) ->
-      line i ppf "Pfield \"%s\"\n" s;
-      core_type i ppf ct;
-  | Pfield_var -> line i ppf "Pfield_var\n";
 
 and pattern i ppf x =
   line i ppf "pattern %a\n" fmt_location x.ppat_loc;
@@ -204,7 +206,7 @@ and pattern i ppf x =
       line i ppf "Ppat_variant \"%s\"\n" l;
       option i pattern ppf po;
   | Ppat_record (l, c) ->
-      line i ppf "Ppat_record\n";
+      line i ppf "Ppat_record %a\n" fmt_closed_flag c;
       list i longident_x_pattern ppf l;
   | Ppat_array (l) ->
       line i ppf "Ppat_array\n";

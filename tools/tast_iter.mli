@@ -24,7 +24,6 @@ class iter: object
   method class_type: class_type -> unit
   method class_type_declaration: class_type_declaration -> unit
   method class_type_field: class_type_field -> unit
-  method core_field_type: core_field_type -> unit
   method core_type: core_type -> unit
   method expression: expression -> unit
   method module_binding: module_binding -> unit
@@ -61,7 +60,6 @@ val class_structure: iter -> class_structure -> unit
 val class_type: iter -> class_type -> unit
 val class_type_declaration: iter -> class_type_declaration -> unit
 val class_type_field: iter -> class_type_field -> unit
-val core_field_type: iter -> core_field_type -> unit
 val core_type: iter -> core_type -> unit
 val expression: iter -> expression -> unit
 val module_binding: iter -> module_binding -> unit

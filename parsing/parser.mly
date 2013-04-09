@@ -26,7 +26,6 @@ let mkmty d = Mty.mk ~loc:(symbol_rloc()) d
 let mksig d = Sig.mk ~loc:(symbol_rloc()) d
 let mkmod d = Mod.mk ~loc:(symbol_rloc()) d
 let mkstr d = Str.mk ~loc:(symbol_rloc()) d
-let mkfield d = Field.mk ~loc: (symbol_rloc()) d
 let mkclass d = Cl.mk ~loc:(symbol_rloc()) d
 let mkcty d = Cty.mk ~loc:(symbol_rloc()) d
 let mkctf d = Ctf.mk ~loc:(symbol_rloc()) d
@@ -245,8 +244,8 @@ let varify_constructors var_names t =
           Ptyp_var s
       | Ptyp_constr(longident, lst) ->
           Ptyp_constr(longident, List.map loop lst)
-      | Ptyp_object lst ->
-          Ptyp_object (List.map loop_core_field lst)
+      | Ptyp_object (lst, o) ->
+          Ptyp_object (List.map (fun (s, t) -> (s, loop t)) lst, o)
       | Ptyp_class (longident, lst, lbl_list) ->
           Ptyp_class (longident, List.map loop lst, lbl_list)
       | Ptyp_alias(core_type, string) ->
@@ -264,15 +263,6 @@ let varify_constructors var_names t =
           Ptyp_extension (s, arg)
     in
     {t with ptyp_desc = desc}
-  and loop_core_field t =
-    let desc =
-      match t.pfield_desc with
-      | Pfield(n,typ) ->
-          Pfield(n,loop typ)
-      | Pfield_var ->
-          Pfield_var
-    in
-    { t with pfield_desc=desc}
   and loop_row_field  =
     function
       | Rtag(label,flag,lst) ->
@@ -1629,9 +1619,9 @@ simple_core_type2:
   | LPAREN core_type_comma_list RPAREN type_longident
       { mktyp(Ptyp_constr(mkrhs $4 4, List.rev $2)) }
   | LESS meth_list GREATER
-      { mktyp(Ptyp_object $2) }
+      { let (f, c) = $2 in mktyp(Ptyp_object (f, c)) }
   | LESS GREATER
-      { mktyp(Ptyp_object []) }
+      { mktyp(Ptyp_object ([], Closed)) }
   | SHARP class_longident opt_present
       { mktyp(Ptyp_class(mkrhs $2 2, [], $3)) }
   | simple_core_type2 SHARP class_longident opt_present
@@ -1726,12 +1716,12 @@ core_type_list_no_attr:
   | core_type_list STAR simple_core_type_no_attr { $3 :: $1 }
 ;
 meth_list:
-    field SEMI meth_list                        { $1 :: $3 }
-  | field opt_semi                              { [$1] }
-  | DOTDOT                                      { [mkfield Pfield_var] }
+    field SEMI meth_list                        { let (f, c) = $3 in ($1 :: f, c) }
+  | field opt_semi                              { [$1], Closed }
+  | DOTDOT                                      { [], Open }
 ;
 field:
-    label COLON poly_type                       { mkfield(Pfield($1, $3)) }
+    label COLON poly_type                       { ($1, $3) }
 ;
 label:
     LIDENT                                      { $1 }

@@ -278,20 +278,13 @@ let rec transl_type env policy styp =
         raise (Error(styp.ptyp_loc, env, Type_mismatch trace))
       end;
       ctyp (Ttyp_constr (path, lid, args)) constr
-  | Ptyp_object fields ->
-      let fields = List.map
-          (fun pf ->
-            let desc =
-              match pf.pfield_desc with
-              | Pfield_var -> Tcfield_var
-              | Pfield (s,e) ->
-                  let ty1 = transl_type env policy e in
-                  Tcfield (s, ty1)
-            in
-            { field_desc = desc; field_loc = pf.pfield_loc })
-          fields in
-      let ty = newobj (transl_fields env policy [] fields) in
-      ctyp (Ttyp_object fields) ty
+  | Ptyp_object (fields, o) ->
+      let fields =
+        List.map (fun (s, t) -> (s, transl_type env policy t))
+          fields
+      in
+      let ty = newobj (transl_fields loc env policy [] o fields) in
+      ctyp (Ttyp_object (fields, o)) ty
   | Ptyp_class(lid, stl, present) ->
       let (path, decl, is_variant) =
         try
@@ -563,16 +556,18 @@ let rec transl_type env policy styp =
   | Ptyp_extension (s, _arg) ->
       raise (Error (loc, env, Extension s))
 
-and transl_fields env policy seen =
+and transl_fields loc env policy seen o =
   function
     [] ->
-      newty Tnil
-  | {field_desc = Tcfield_var}::_ ->
-      if policy = Univars then new_pre_univar () else newvar ()
-  | {field_desc = Tcfield(s, ty1); field_loc = loc}::l ->
+      begin match o, policy with
+      | Closed, _ -> newty Tnil
+      | Open, Univars -> new_pre_univar ()
+      | Open, _ -> newvar ()
+      end
+  | (s, ty1) :: l ->
       if List.mem s seen then raise (Error (loc, env, Repeated_method_label s));
-      let ty2 = transl_fields env policy (s::seen) l in
-        newty (Tfield (s, Fpresent, ty1.ctyp_type, ty2))
+      let ty2 = transl_fields loc env policy (s :: seen) o l in
+      newty (Tfield (s, Fpresent, ty1.ctyp_type, ty2))
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars ty =

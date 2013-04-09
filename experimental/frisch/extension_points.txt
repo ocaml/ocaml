@@ -345,6 +345,21 @@ Rationale:
  - Attributes give a way to encode information local to the
    type-checker without polluting the definition of the Parsetree.
 
+--- Simpler and more faithful representation of object types
+
+-  | Ptyp_object of core_field_type list
++  | Ptyp_object of (string * core_type) list * closed_flag
+
+(and get rid of Parsetree.core_field_type)
+
+And same in the Typedtree.
+
+
+Rationale:
+
+ - More faithful representation of the syntax really supported
+   (i.e. the ".." can only be the last field).
+ - One less "concept" in the Parsetree.
 
 === More TODOs
 

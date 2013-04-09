@@ -41,7 +41,6 @@ module type IteratorArgument = sig
     val enter_class_type : class_type -> unit
     val enter_class_type_field : class_type_field -> unit
     val enter_core_type : core_type -> unit
-    val enter_core_field_type : core_field_type -> unit
     val enter_class_structure : class_structure -> unit
     val enter_class_field : class_field -> unit
     val enter_structure_item : structure_item -> unit
@@ -67,7 +66,6 @@ module type IteratorArgument = sig
     val leave_class_type : class_type -> unit
     val leave_class_type_field : class_type_field -> unit
     val leave_core_type : core_type -> unit
-    val leave_core_field_type : core_field_type -> unit
     val leave_class_structure : class_structure -> unit
     val leave_class_field : class_field -> unit
     val leave_structure_item : structure_item -> unit
@@ -512,8 +510,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Ttyp_tuple list -> List.iter iter_core_type list
         | Ttyp_constr (path, _, list) ->
             List.iter iter_core_type list
-        | Ttyp_object list ->
-            List.iter iter_core_field_type list
+        | Ttyp_object (list, o) ->
+            List.iter (fun (_, t) -> iter_core_type t) list
         | Ttyp_class (path, _, list, labels) ->
             List.iter iter_core_type list
         | Ttyp_alias (ct, s) ->
@@ -523,15 +521,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Ttyp_poly (list, ct) -> iter_core_type ct
         | Ttyp_package pack -> iter_package_type pack
       end;
-      Iter.leave_core_type ct;
-
-    and iter_core_field_type cft =
-      Iter.enter_core_field_type cft;
-      begin match cft.field_desc with
-          Tcfield_var -> ()
-        | Tcfield (s, ct) -> iter_core_type ct
-      end;
-      Iter.leave_core_field_type cft;
+      Iter.leave_core_type ct
 
     and iter_class_structure cs =
       Iter.enter_class_structure cs;

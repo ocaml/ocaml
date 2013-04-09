@@ -34,7 +34,6 @@ module type MapArgument = sig
   val enter_class_type : class_type -> class_type
   val enter_class_type_field : class_type_field -> class_type_field
   val enter_core_type : core_type -> core_type
-  val enter_core_field_type : core_field_type -> core_field_type
   val enter_class_structure : class_structure -> class_structure
   val enter_class_field : class_field -> class_field
   val enter_structure_item : structure_item -> structure_item
@@ -60,7 +59,6 @@ module type MapArgument = sig
   val leave_class_type : class_type -> class_type
   val leave_class_type_field : class_type_field -> class_type_field
   val leave_core_type : core_type -> core_type
-  val leave_core_field_type : core_field_type -> core_field_type
   val leave_class_structure : class_structure -> class_structure
   val leave_class_field : class_field -> class_field
   val leave_structure_item : structure_item -> structure_item

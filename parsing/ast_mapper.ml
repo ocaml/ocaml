@@ -29,12 +29,6 @@ let map_loc sub {loc; txt} = {loc = sub # location loc; txt}
 module T = struct
   (* Type expressions for the core language *)
 
-  let core_field_type sub {pfield_desc = desc; pfield_loc = loc} =
-    let loc = sub # location loc in
-    match desc with
-    | Pfield (s, d) -> Field.field ~loc:(sub # location loc) s (sub # typ d)
-    | Pfield_var -> Field.var ~loc ()
-
   let row_field sub = function
     | Rtag (l, b, tl) -> Rtag (l, b, List.map (sub # typ) tl)
     | Rinherit t -> Rinherit (sub # typ t)
@@ -49,7 +43,7 @@ module T = struct
     | Ptyp_arrow (lab, t1, t2) -> arrow ~loc ~attrs lab (sub # typ t1) (sub # typ t2)
     | Ptyp_tuple tyl -> tuple ~loc ~attrs (List.map (sub # typ) tyl)
     | Ptyp_constr (lid, tl) -> constr ~loc ~attrs (map_loc sub lid) (List.map (sub # typ) tl)
-    | Ptyp_object l -> object_ ~loc ~attrs (List.map (core_field_type sub) l)
+    | Ptyp_object (l, o) -> object_ ~loc ~attrs (List.map (map_snd (sub # typ)) l) o
     | Ptyp_class (lid, tl, ll) -> class_ ~loc ~attrs (map_loc sub lid) (List.map (sub # typ) tl) ll
     | Ptyp_alias (t, s) -> alias ~loc ~attrs (sub # typ t) s
     | Ptyp_variant (rl, b, ll) -> variant ~loc ~attrs (List.map (row_field sub) rl) b ll

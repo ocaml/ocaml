@@ -292,8 +292,8 @@ let core_type sub ct =
   | Ttyp_tuple list -> List.iter (sub # core_type) list
   | Ttyp_constr (_path, _, list) ->
       List.iter (sub # core_type) list
-  | Ttyp_object list ->
-      List.iter (sub # core_field_type) list
+  | Ttyp_object (list, _o) ->
+      List.iter (fun (_, t) -> sub # core_type t) list
   | Ttyp_class (_path, _, list, _labels) ->
       List.iter (sub # core_type) list
   | Ttyp_alias (ct, _s) ->
@@ -302,11 +302,6 @@ let core_type sub ct =
       List.iter (sub # row_field) list
   | Ttyp_poly (_list, ct) -> sub # core_type ct
   | Ttyp_package pack -> sub # package_type pack
-
-let core_field_type sub cft =
-  match cft.field_desc with
-  | Tcfield_var -> ()
-  | Tcfield (_s, ct) -> sub # core_type ct
 
 let class_structure sub cs =
   sub # pattern cs.cstr_pat;
@@ -353,7 +348,6 @@ class iter = object(this)
   method class_type = class_type this
   method class_type_declaration = class_type_declaration this
   method class_type_field = class_type_field this
-  method core_field_type = core_field_type this
   method core_type = core_type this
   method expression = expression this
   method module_binding = module_binding this

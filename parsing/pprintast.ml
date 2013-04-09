@@ -278,13 +278,19 @@ class printer  ()= object(self:'self)
               |Some xs ->
               pp f ">@ %a"
                 (self#list self#string_quot) xs) low
-    | Ptyp_object l ->
-        let  core_field_type f {pfield_desc;_} =
-          match pfield_desc with
-          | Pfield (s, ct) ->
-              pp f "@[<hov2>%s@ :%a@ @]" s self#core_type ct 
-          | Pfield_var -> pp f ".." in
-        pp f "@[<hov2><@ %a@ >@]" (self#list core_field_type ~sep:";") l
+    | Ptyp_object (l, o) ->
+        let core_field_type f (s, ct) =
+          pp f "@[<hov2>%s@ :%a@ @]" s self#core_type ct
+        in
+        let field_var f = function
+          | Asttypes.Closed -> ()
+          | Asttypes.Open ->
+              match l with
+              | [] -> pp f ".."
+              | _ -> pp f " ;.."
+        in
+        pp f "@[<hov2><@ %a%a@ >@]" (self#list core_field_type ~sep:";") l
+          field_var o
     | Ptyp_class (li, l, low) ->   (*FIXME*)
         pp f "@[<hov2>%a#%a%a@]"
           (self#list self#core_type ~sep:"," ~first:"(" ~last:")") l

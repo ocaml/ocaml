@@ -35,7 +35,6 @@ module type IteratorArgument = sig
     val enter_class_type : class_type -> unit
     val enter_class_type_field : class_type_field -> unit
     val enter_core_type : core_type -> unit
-    val enter_core_field_type : core_field_type -> unit
     val enter_class_structure : class_structure -> unit
     val enter_class_field : class_field -> unit
     val enter_structure_item : structure_item -> unit
@@ -61,7 +60,6 @@ module type IteratorArgument = sig
     val leave_class_type : class_type -> unit
     val leave_class_type_field : class_type_field -> unit
     val leave_core_type : core_type -> unit
-    val leave_core_field_type : core_field_type -> unit
     val leave_class_structure : class_structure -> unit
     val leave_class_field : class_field -> unit
     val leave_structure_item : structure_item -> unit

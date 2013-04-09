@@ -34,7 +34,7 @@ and core_type_desc =
   | Ptyp_arrow of label * core_type * core_type
   | Ptyp_tuple of core_type list
   | Ptyp_constr of Longident.t loc * core_type list
-  | Ptyp_object of core_field_type list
+  | Ptyp_object of (string * core_type) list * closed_flag
   | Ptyp_class of Longident.t loc * core_type list * label list
   | Ptyp_alias of core_type * string
   | Ptyp_variant of row_field list * bool * label list option
@@ -44,14 +44,6 @@ and core_type_desc =
 
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
-
-and core_field_type =
-  { pfield_desc: core_field_desc;
-    pfield_loc: Location.t }
-
-and core_field_desc =
-    Pfield of string * core_type
-  | Pfield_var
 
 and row_field =
     Rtag of label * bool * core_type list

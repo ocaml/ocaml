@@ -25,7 +25,7 @@ module Typ :
     val arrow: ?loc:Location.t -> ?attrs:attribute list -> label -> core_type -> core_type -> core_type
     val tuple: ?loc:Location.t -> ?attrs:attribute list -> core_type list -> core_type
     val constr: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> core_type list -> core_type
-    val object_: ?loc:Location.t -> ?attrs:attribute list -> core_field_type list -> core_type
+    val object_: ?loc:Location.t -> ?attrs:attribute list -> (string * core_type) list -> closed_flag -> core_type
     val class_: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> core_type list -> label list -> core_type
     val alias: ?loc:Location.t -> ?attrs:attribute list -> core_type -> string -> core_type
     val variant: ?loc:Location.t -> ?attrs:attribute list -> row_field list -> bool -> label list option -> core_type
@@ -149,12 +149,6 @@ module Str:
     val include_: ?loc:Location.t -> ?attrs:attribute list -> module_expr -> structure_item
     val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> structure_item
     val attribute: ?loc:Location.t -> attribute -> structure_item
-  end
-module Field:
-  sig
-    val mk: ?loc:Location.t -> core_field_desc -> core_field_type
-    val field: ?loc:Location.t -> string -> core_type -> core_field_type
-    val var:?loc:Location.t -> unit -> core_field_type
   end
 module Cl:
   sig
