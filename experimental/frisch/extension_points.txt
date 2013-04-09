@@ -354,6 +354,12 @@ Rationale:
 
 And same in the Typedtree.
 
+Rationale:
+
+ - More faithful representation of the syntax really supported
+   (i.e. the ".." can only be the last field).
+ - One less "concept" in the Parsetree.
+
 
 --- Do not require empty Ptyp_poly nodes in the Parsetree
 
@@ -365,13 +371,9 @@ Rationale:
 
  - Less chance that Ast-related code forget to insert those nodes.
 
+To be discussed: should we segrate simple_poly_type from core_type in the
+Parsetree to prevent Ptyp_poly nodes to be inserted in the wrong place?
 
-
-Rationale:
-
- - More faithful representation of the syntax really supported
-   (i.e. the ".." can only be the last field).
- - One less "concept" in the Parsetree.
 
 === More TODOs
 
