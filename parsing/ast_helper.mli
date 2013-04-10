@@ -190,6 +190,7 @@ module Ctf:
     val val_: ?loc:Location.t -> ?attrs:attribute list -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
     val method_: ?loc:Location.t -> ?attrs:attribute list -> string -> private_flag -> virtual_flag -> core_type -> class_type_field
     val constraint_: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_type_field
+    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> class_type_field
   end
 module Cf:
   sig
@@ -201,6 +202,7 @@ module Cf:
     val method_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> private_flag -> class_field_kind -> class_field
     val constraint_: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_field
     val initializer_: ?loc:Location.t -> ?attrs:attribute list -> expression -> class_field
+    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> class_field
 
     val virtual_: core_type -> class_field_kind
     val concrete: override_flag -> expression -> class_field_kind

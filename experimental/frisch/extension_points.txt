@@ -88,12 +88,12 @@ patterns, class expressions, class type expressions:
 
   [%id expr]
 
-As structure or signature item (TODO: class fields, class type fields?):
+As structure item, signature item, class field, class type field:
  
   [%%id expr]
 
-As other structure or signature items, attributes can be attached to a
-[%%id expr] extension node.
+As other structure item, signature item, class field or class type
+field, attributes can be attached to a [%%id expr] extension node.
 
 
 === Alternative syntax for attributes and extensions on specific kinds of nodes

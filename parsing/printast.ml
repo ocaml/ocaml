@@ -443,6 +443,9 @@ and class_type_field i ppf x =
       line i ppf "Pctf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
+  | Pctf_extension (s, arg) ->
+      line i ppf "Pctf_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and class_description i ppf x =
   line i ppf "class_description %a\n" fmt_location x.pci_loc;
@@ -527,6 +530,9 @@ and class_field i ppf x =
   | Pcf_initializer (e) ->
       line i ppf "Pcf_initializer\n";
       expression (i+1) ppf e;
+  | Pcf_extension (s, arg) ->
+      line i ppf "Pcf_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and class_field_kind i ppf = function
   | Cfk_concrete (o, e) ->

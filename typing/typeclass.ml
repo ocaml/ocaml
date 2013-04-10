@@ -403,6 +403,9 @@ let rec class_type_field env self_type meths
       (mkctf (Tctf_constraint (cty, cty')) :: fields,
         val_sig, concr_meths, inher)
 
+  | Pctf_extension (s, _arg) ->
+      raise (Error (ctf.pctf_loc, env, Extension s))
+
 and class_signature env sty sign loc =
   let meths = ref Meths.empty in
   let self_cty = transl_simple_type env false sty in
@@ -678,6 +681,9 @@ let rec class_field self_loc cl_num self_type meths vars
           mkcf (Tcf_initializer texp)
         end in
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals, inher)
+
+  | Pcf_extension (s, _arg) ->
+      raise (Error (loc, val_env, Extension s))
 
 and class_structure cl_num final val_env met_env loc
   { pcstr_self = spat; pcstr_fields = str } =

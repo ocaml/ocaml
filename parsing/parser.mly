@@ -825,6 +825,7 @@ class_field:
       { mkcf (Pcf_initializer $2) }
   | class_field post_item_attribute
       { Cf.attr $1 $2 }
+  | item_extension { mkcf(Pcf_extension $1) }
 ;
 parent_binder:
     AS LIDENT
@@ -919,6 +920,7 @@ class_sig_field:
       }
   | CONSTRAINT constrain_field        { mkctf (Pctf_constraint $2) }
   | class_sig_field post_item_attribute { Ctf.attr $1 $2 }
+  | item_extension { mkctf(Pctf_extension $1) }
 ;
 value_type:
     VIRTUAL mutable_flag label COLON core_type

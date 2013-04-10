@@ -96,6 +96,7 @@ module CT = struct
     | Pctf_val (s, m, v, t) -> val_ ~loc ~attrs s m v (sub # typ t)
     | Pctf_method (s, p, v, t) -> method_ ~loc ~attrs s p v (sub # typ t)
     | Pctf_constraint (t1, t2) -> constraint_ ~loc ~attrs (sub # typ t1) (sub # typ t2)
+    | Pctf_extension x -> extension ~loc ~attrs (sub # extension x)
 
   let map_signature sub {pcsig_self; pcsig_fields; pcsig_loc} =
     Csig.mk
@@ -293,6 +294,7 @@ module CE = struct
     | Pcf_method (s, p, k) -> method_ ~loc ~attrs (map_loc sub s) p (map_kind sub k)
     | Pcf_constraint (t1, t2) -> constraint_ ~loc ~attrs (sub # typ t1) (sub # typ t2)
     | Pcf_initializer e -> initializer_ ~loc ~attrs (sub # expr e)
+    | Pcf_extension x -> extension ~loc ~attrs (sub # extension x)
 
   let map_structure sub {pcstr_self; pcstr_fields} =
     {

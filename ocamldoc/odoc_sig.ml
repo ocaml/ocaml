@@ -305,6 +305,7 @@ module Analyser =
             | Parsetree.Pctf_constraint (_, _) -> loc.Location.loc_start.Lexing.pos_cnum
             | Parsetree.Pctf_inherit class_type ->
                 class_type.Parsetree.pcty_loc.Location.loc_start.Lexing.pos_cnum
+            | Parsetree.Pctf_extension _ -> assert false
       in
       let get_method name comment_opt private_flag loc q =
         let complete_name = Name.concat current_class_name name in
@@ -460,6 +461,7 @@ module Analyser =
             in
             let (inher_l, eles) = f (pos_end + maybe_more) q in
             (inh :: inher_l , eles_comments @ eles)
+        | Parsetree.Pctf_extension _ -> assert false
       in
       f last_pos class_type_field_list
 

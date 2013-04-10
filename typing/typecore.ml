@@ -202,6 +202,7 @@ let iter_expression f e =
     | Pcf_val (_, _, Cfk_concrete (_, e))
     | Pcf_method (_, _, Cfk_concrete (_, e)) -> expr e
     | Pcf_initializer e -> expr e
+    | Pcf_extension _ -> ()
 
   in
   expr e

@@ -205,6 +205,7 @@ and class_type_field_desc =
   | Pctf_val of (string * mutable_flag * virtual_flag * core_type)
   | Pctf_method  of (string * private_flag * virtual_flag * core_type)
   | Pctf_constraint  of (core_type * core_type)
+  | Pctf_extension of extension
 
 and class_description = class_type class_infos
 
@@ -245,6 +246,7 @@ and class_field_desc =
   | Pcf_method of (string loc * private_flag * class_field_kind)
   | Pcf_constraint of (core_type * core_type)
   | Pcf_initializer of expression
+  | Pcf_extension of extension
 
 and class_field_kind =
   | Cfk_virtual of core_type
