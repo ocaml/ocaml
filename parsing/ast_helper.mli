@@ -15,235 +15,240 @@
 open Parsetree
 open Asttypes
 
+type lid = Longident.t loc
+type str = string loc
+type loc = Location.t
+type attrs = attribute list
+
 module Typ :
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> core_type_desc -> core_type
+    val mk: ?loc:loc -> ?attrs:attrs -> core_type_desc -> core_type
     val attr: core_type -> attribute -> core_type
 
-    val any: ?loc:Location.t -> ?attrs:attribute list -> unit -> core_type
-    val var: ?loc:Location.t -> ?attrs:attribute list -> string -> core_type
-    val arrow: ?loc:Location.t -> ?attrs:attribute list -> label -> core_type -> core_type -> core_type
-    val tuple: ?loc:Location.t -> ?attrs:attribute list -> core_type list -> core_type
-    val constr: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> core_type list -> core_type
-    val object_: ?loc:Location.t -> ?attrs:attribute list -> (string * core_type) list -> closed_flag -> core_type
-    val class_: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> core_type list -> label list -> core_type
-    val alias: ?loc:Location.t -> ?attrs:attribute list -> core_type -> string -> core_type
-    val variant: ?loc:Location.t -> ?attrs:attribute list -> row_field list -> bool -> label list option -> core_type
-    val poly: ?loc:Location.t -> ?attrs:attribute list -> string list -> core_type -> core_type
-    val package: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> (Longident.t loc * core_type) list -> core_type
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> core_type
+    val any: ?loc:loc -> ?attrs:attrs -> unit -> core_type
+    val var: ?loc:loc -> ?attrs:attrs -> string -> core_type
+    val arrow: ?loc:loc -> ?attrs:attrs -> label -> core_type -> core_type -> core_type
+    val tuple: ?loc:loc -> ?attrs:attrs -> core_type list -> core_type
+    val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
+    val object_: ?loc:loc -> ?attrs:attrs -> (string * core_type) list -> closed_flag -> core_type
+    val class_: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> label list -> core_type
+    val alias: ?loc:loc -> ?attrs:attrs -> core_type -> string -> core_type
+    val variant: ?loc:loc -> ?attrs:attrs -> row_field list -> bool -> label list option -> core_type
+    val poly: ?loc:loc -> ?attrs:attrs -> string list -> core_type -> core_type
+    val package: ?loc:loc -> ?attrs:attrs -> lid -> (lid * core_type) list -> core_type
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> core_type
 
     val force_poly: core_type -> core_type
   end
 module Pat:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> pattern_desc -> pattern
+    val mk: ?loc:loc -> ?attrs:attrs -> pattern_desc -> pattern
     val attr:pattern -> attribute -> pattern
 
-    val any: ?loc:Location.t -> ?attrs:attribute list -> unit -> pattern
-    val var: ?loc:Location.t -> ?attrs:attribute list -> string loc -> pattern
-    val alias: ?loc:Location.t -> ?attrs:attribute list -> pattern -> string loc -> pattern
-    val constant: ?loc:Location.t -> ?attrs:attribute list -> constant -> pattern
-    val tuple: ?loc:Location.t -> ?attrs:attribute list -> pattern list -> pattern
-    val construct: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> pattern option -> bool -> pattern
-    val variant: ?loc:Location.t -> ?attrs:attribute list -> label -> pattern option -> pattern
-    val record: ?loc:Location.t -> ?attrs:attribute list -> (Longident.t loc * pattern) list -> closed_flag -> pattern
-    val array: ?loc:Location.t -> ?attrs:attribute list -> pattern list -> pattern
-    val or_: ?loc:Location.t -> ?attrs:attribute list -> pattern -> pattern -> pattern
-    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> pattern -> core_type -> pattern
-    val type_: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> pattern
-    val lazy_: ?loc:Location.t -> ?attrs:attribute list -> pattern -> pattern
-    val unpack: ?loc:Location.t -> ?attrs:attribute list -> string loc -> pattern
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> pattern
+    val any: ?loc:loc -> ?attrs:attrs -> unit -> pattern
+    val var: ?loc:loc -> ?attrs:attrs -> str -> pattern
+    val alias: ?loc:loc -> ?attrs:attrs -> pattern -> str -> pattern
+    val constant: ?loc:loc -> ?attrs:attrs -> constant -> pattern
+    val tuple: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
+    val construct: ?loc:loc -> ?attrs:attrs -> lid -> pattern option -> bool -> pattern
+    val variant: ?loc:loc -> ?attrs:attrs -> label -> pattern option -> pattern
+    val record: ?loc:loc -> ?attrs:attrs -> (lid * pattern) list -> closed_flag -> pattern
+    val array: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
+    val or_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern -> pattern
+    val constraint_: ?loc:loc -> ?attrs:attrs -> pattern -> core_type -> pattern
+    val type_: ?loc:loc -> ?attrs:attrs -> lid -> pattern
+    val lazy_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
+    val unpack: ?loc:loc -> ?attrs:attrs -> str -> pattern
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> pattern
   end
 module Exp:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> expression_desc -> expression
+    val mk: ?loc:loc -> ?attrs:attrs -> expression_desc -> expression
     val attr: expression -> attribute -> expression
 
-    val ident: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> expression
-    val constant: ?loc:Location.t -> ?attrs:attribute list -> constant -> expression
-    val let_: ?loc:Location.t -> ?attrs:attribute list -> rec_flag -> (pattern * expression) list -> expression -> expression
-    val function_: ?loc:Location.t -> ?attrs:attribute list -> label -> expression option -> (pattern * expression) list -> expression
-    val apply: ?loc:Location.t -> ?attrs:attribute list -> expression -> (label * expression) list -> expression
-    val match_: ?loc:Location.t -> ?attrs:attribute list -> expression -> (pattern * expression) list -> expression
-    val try_: ?loc:Location.t -> ?attrs:attribute list -> expression -> (pattern * expression) list -> expression
-    val tuple: ?loc:Location.t -> ?attrs:attribute list -> expression list -> expression
-    val construct: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> expression option -> bool -> expression
-    val variant: ?loc:Location.t -> ?attrs:attribute list -> label -> expression option -> expression
-    val record: ?loc:Location.t -> ?attrs:attribute list -> (Longident.t loc * expression) list -> expression option -> expression
-    val field: ?loc:Location.t -> ?attrs:attribute list -> expression -> Longident.t loc -> expression
-    val setfield: ?loc:Location.t -> ?attrs:attribute list -> expression -> Longident.t loc -> expression -> expression
-    val array: ?loc:Location.t -> ?attrs:attribute list -> expression list -> expression
-    val ifthenelse: ?loc:Location.t -> ?attrs:attribute list -> expression -> expression -> expression option -> expression
-    val sequence: ?loc:Location.t -> ?attrs:attribute list -> expression -> expression -> expression
-    val while_: ?loc:Location.t -> ?attrs:attribute list -> expression -> expression -> expression
-    val for_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> expression -> expression -> direction_flag -> expression -> expression
-    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> expression -> core_type option -> core_type option -> expression
-    val when_: ?loc:Location.t -> ?attrs:attribute list -> expression -> expression -> expression
-    val send: ?loc:Location.t -> ?attrs:attribute list -> expression -> string -> expression
-    val new_: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> expression
-    val setinstvar: ?loc:Location.t -> ?attrs:attribute list -> string loc -> expression -> expression
-    val override: ?loc:Location.t -> ?attrs:attribute list -> (string loc * expression) list -> expression
-    val letmodule: ?loc:Location.t -> ?attrs:attribute list -> string loc -> module_expr -> expression -> expression
-    val assert_: ?loc:Location.t -> ?attrs:attribute list -> expression -> expression
-    val assertfalse: ?loc:Location.t -> ?attrs:attribute list -> unit -> expression
-    val lazy_: ?loc:Location.t -> ?attrs:attribute list -> expression -> expression
-    val poly: ?loc:Location.t -> ?attrs:attribute list -> expression -> core_type option -> expression
-    val object_: ?loc:Location.t -> ?attrs:attribute list -> class_structure -> expression
-    val newtype: ?loc:Location.t -> ?attrs:attribute list -> string -> expression -> expression
-    val pack: ?loc:Location.t -> ?attrs:attribute list -> module_expr -> expression
-    val open_: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> expression -> expression
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> expression
+    val ident: ?loc:loc -> ?attrs:attrs -> lid -> expression
+    val constant: ?loc:loc -> ?attrs:attrs -> constant -> expression
+    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> expression -> expression
+    val function_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> (pattern * expression) list -> expression
+    val apply: ?loc:loc -> ?attrs:attrs -> expression -> (label * expression) list -> expression
+    val match_: ?loc:loc -> ?attrs:attrs -> expression -> (pattern * expression) list -> expression
+    val try_: ?loc:loc -> ?attrs:attrs -> expression -> (pattern * expression) list -> expression
+    val tuple: ?loc:loc -> ?attrs:attrs -> expression list -> expression
+    val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option -> bool -> expression
+    val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option -> expression
+    val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list -> expression option -> expression
+    val field: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
+    val setfield: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression -> expression
+    val array: ?loc:loc -> ?attrs:attrs -> expression list -> expression
+    val ifthenelse: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression option -> expression
+    val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
+    val while_: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
+    val for_: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression -> direction_flag -> expression -> expression
+    val constraint_: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> core_type option -> expression
+    val when_: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
+    val send: ?loc:loc -> ?attrs:attrs -> expression -> string -> expression
+    val new_: ?loc:loc -> ?attrs:attrs -> lid -> expression
+    val setinstvar: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression
+    val override: ?loc:loc -> ?attrs:attrs -> (str * expression) list -> expression
+    val letmodule: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression -> expression
+    val assert_: ?loc:loc -> ?attrs:attrs -> expression -> expression
+    val assertfalse: ?loc:loc -> ?attrs:attrs -> unit -> expression
+    val lazy_: ?loc:loc -> ?attrs:attrs -> expression -> expression
+    val poly: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> expression
+    val object_: ?loc:loc -> ?attrs:attrs -> class_structure -> expression
+    val newtype: ?loc:loc -> ?attrs:attrs -> string -> expression -> expression
+    val pack: ?loc:loc -> ?attrs:attrs -> module_expr -> expression
+    val open_: ?loc:loc -> ?attrs:attrs -> lid -> expression -> expression
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
   end
 module Mty:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> module_type_desc -> module_type
+    val mk: ?loc:loc -> ?attrs:attrs -> module_type_desc -> module_type
     val attr: module_type -> attribute -> module_type
 
-    val ident: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> module_type
-    val signature: ?loc:Location.t -> ?attrs:attribute list -> signature -> module_type
-    val functor_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> module_type -> module_type -> module_type
-    val with_: ?loc:Location.t -> ?attrs:attribute list -> module_type -> (Longident.t loc * with_constraint) list -> module_type
-    val typeof_: ?loc:Location.t -> ?attrs:attribute list -> module_expr -> module_type
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> module_type
+    val ident: ?loc:loc -> ?attrs:attrs -> lid -> module_type
+    val signature: ?loc:loc -> ?attrs:attrs -> signature -> module_type
+    val functor_: ?loc:loc -> ?attrs:attrs -> str -> module_type -> module_type -> module_type
+    val with_: ?loc:loc -> ?attrs:attrs -> module_type -> (lid * with_constraint) list -> module_type
+    val typeof_: ?loc:loc -> ?attrs:attrs -> module_expr -> module_type
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> module_type
   end
 module Mod:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> module_expr_desc -> module_expr
+    val mk: ?loc:loc -> ?attrs:attrs -> module_expr_desc -> module_expr
     val attr: module_expr -> attribute -> module_expr
 
-    val ident: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> module_expr
-    val structure: ?loc:Location.t -> ?attrs:attribute list -> structure -> module_expr
-    val functor_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> module_type -> module_expr -> module_expr
-    val apply: ?loc:Location.t -> ?attrs:attribute list -> module_expr -> module_expr -> module_expr
-    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> module_expr -> module_type -> module_expr
-    val unpack: ?loc:Location.t -> ?attrs:attribute list -> expression -> module_expr
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> module_expr
+    val ident: ?loc:loc -> ?attrs:attrs -> lid -> module_expr
+    val structure: ?loc:loc -> ?attrs:attrs -> structure -> module_expr
+    val functor_: ?loc:loc -> ?attrs:attrs -> str -> module_type -> module_expr -> module_expr
+    val apply: ?loc:loc -> ?attrs:attrs -> module_expr -> module_expr -> module_expr
+    val constraint_: ?loc:loc -> ?attrs:attrs -> module_expr -> module_type -> module_expr
+    val unpack: ?loc:loc -> ?attrs:attrs -> expression -> module_expr
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> module_expr
   end
 module Sig:
   sig
-    val mk: ?loc:Location.t -> signature_item_desc -> signature_item
+    val mk: ?loc:loc -> signature_item_desc -> signature_item
 
-    val value: ?loc:Location.t -> value_description -> signature_item
-    val type_: ?loc:Location.t -> type_declaration list -> signature_item
-    val exception_: ?loc:Location.t -> constructor_declaration -> signature_item
-    val module_: ?loc:Location.t -> module_declaration -> signature_item
-    val rec_module: ?loc:Location.t -> module_declaration list -> signature_item
-    val modtype: ?loc:Location.t -> module_type_declaration -> signature_item
-    val open_: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> signature_item
-    val include_: ?loc:Location.t -> ?attrs:attribute list -> module_type -> signature_item
-    val class_: ?loc:Location.t -> class_description list -> signature_item
-    val class_type: ?loc:Location.t -> class_type_declaration list -> signature_item
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> signature_item
-    val attribute: ?loc:Location.t -> attribute -> signature_item
+    val value: ?loc:loc -> value_description -> signature_item
+    val type_: ?loc:loc -> type_declaration list -> signature_item
+    val exception_: ?loc:loc -> constructor_declaration -> signature_item
+    val module_: ?loc:loc -> module_declaration -> signature_item
+    val rec_module: ?loc:loc -> module_declaration list -> signature_item
+    val modtype: ?loc:loc -> module_type_declaration -> signature_item
+    val open_: ?loc:loc -> ?attrs:attrs -> lid -> signature_item
+    val include_: ?loc:loc -> ?attrs:attrs -> module_type -> signature_item
+    val class_: ?loc:loc -> class_description list -> signature_item
+    val class_type: ?loc:loc -> class_type_declaration list -> signature_item
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> signature_item
+    val attribute: ?loc:loc -> attribute -> signature_item
   end
 module Str:
   sig
-    val mk: ?loc:Location.t -> structure_item_desc -> structure_item
+    val mk: ?loc:loc -> structure_item_desc -> structure_item
 
-    val eval: ?loc:Location.t -> expression -> structure_item
-    val value: ?loc:Location.t -> rec_flag -> (pattern * expression) list -> structure_item
-    val primitive: ?loc:Location.t -> value_description -> structure_item
-    val type_: ?loc:Location.t -> type_declaration list -> structure_item
-    val exception_: ?loc:Location.t -> constructor_declaration -> structure_item
-    val exn_rebind: ?loc:Location.t -> ?attrs:attribute list -> string loc -> Longident.t loc -> structure_item
-    val module_: ?loc:Location.t -> module_binding -> structure_item
-    val rec_module: ?loc:Location.t -> module_binding list -> structure_item
-    val modtype: ?loc:Location.t -> module_type_binding -> structure_item
-    val open_: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> structure_item
-    val class_: ?loc:Location.t -> class_declaration list -> structure_item
-    val class_type: ?loc:Location.t -> class_type_declaration list -> structure_item
-    val include_: ?loc:Location.t -> ?attrs:attribute list -> module_expr -> structure_item
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> structure_item
-    val attribute: ?loc:Location.t -> attribute -> structure_item
+    val eval: ?loc:loc -> expression -> structure_item
+    val value: ?loc:loc -> rec_flag -> (pattern * expression) list -> structure_item
+    val primitive: ?loc:loc -> value_description -> structure_item
+    val type_: ?loc:loc -> type_declaration list -> structure_item
+    val exception_: ?loc:loc -> constructor_declaration -> structure_item
+    val exn_rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> structure_item
+    val module_: ?loc:loc -> module_binding -> structure_item
+    val rec_module: ?loc:loc -> module_binding list -> structure_item
+    val modtype: ?loc:loc -> module_type_binding -> structure_item
+    val open_: ?loc:loc -> ?attrs:attrs -> lid -> structure_item
+    val class_: ?loc:loc -> class_declaration list -> structure_item
+    val class_type: ?loc:loc -> class_type_declaration list -> structure_item
+    val include_: ?loc:loc -> ?attrs:attrs -> module_expr -> structure_item
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> structure_item
+    val attribute: ?loc:loc -> attribute -> structure_item
   end
 module Cl:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> class_expr_desc -> class_expr
+    val mk: ?loc:loc -> ?attrs:attrs -> class_expr_desc -> class_expr
     val attr: class_expr -> attribute -> class_expr
 
-    val constr: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> core_type list -> class_expr
-    val structure: ?loc:Location.t -> ?attrs:attribute list -> class_structure -> class_expr
-    val fun_: ?loc:Location.t -> ?attrs:attribute list -> label -> expression option -> pattern -> class_expr -> class_expr
-    val apply: ?loc:Location.t -> ?attrs:attribute list -> class_expr -> (label * expression) list -> class_expr
-    val let_: ?loc:Location.t -> ?attrs:attribute list -> rec_flag -> (pattern * expression) list -> class_expr -> class_expr
-    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> class_expr -> class_type -> class_expr
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> class_expr
+    val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> class_expr
+    val structure: ?loc:loc -> ?attrs:attrs -> class_structure -> class_expr
+    val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern -> class_expr -> class_expr
+    val apply: ?loc:loc -> ?attrs:attrs -> class_expr -> (label * expression) list -> class_expr
+    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> class_expr -> class_expr
+    val constraint_: ?loc:loc -> ?attrs:attrs -> class_expr -> class_type -> class_expr
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_expr
   end
 module Cty:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> class_type_desc -> class_type
+    val mk: ?loc:loc -> ?attrs:attrs -> class_type_desc -> class_type
     val attr: class_type -> attribute -> class_type
 
-    val constr: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> core_type list -> class_type
-    val signature: ?loc:Location.t -> ?attrs:attribute list -> class_signature -> class_type
-    val fun_: ?loc:Location.t -> ?attrs:attribute list -> label -> core_type -> class_type -> class_type
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> class_type
+    val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> class_type
+    val signature: ?loc:loc -> ?attrs:attrs -> class_signature -> class_type
+    val fun_: ?loc:loc -> ?attrs:attrs -> label -> core_type -> class_type -> class_type
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type
   end
 module Ctf:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> class_type_field_desc -> class_type_field
+    val mk: ?loc:loc -> ?attrs:attrs -> class_type_field_desc -> class_type_field
     val attr: class_type_field -> attribute -> class_type_field
 
-    val inherit_: ?loc:Location.t -> ?attrs:attribute list -> class_type -> class_type_field
-    val val_: ?loc:Location.t -> ?attrs:attribute list -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
-    val method_: ?loc:Location.t -> ?attrs:attribute list -> string -> private_flag -> virtual_flag -> core_type -> class_type_field
-    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_type_field
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> class_type_field
+    val inherit_: ?loc:loc -> ?attrs:attrs -> class_type -> class_type_field
+    val val_: ?loc:loc -> ?attrs:attrs -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
+    val method_: ?loc:loc -> ?attrs:attrs -> string -> private_flag -> virtual_flag -> core_type -> class_type_field
+    val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_type_field
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type_field
   end
 module Cf:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> class_field_desc -> class_field
+    val mk: ?loc:loc -> ?attrs:attrs -> class_field_desc -> class_field
     val attr: class_field -> attribute -> class_field
 
-    val inherit_: ?loc:Location.t -> ?attrs:attribute list -> override_flag -> class_expr -> string option -> class_field
-    val val_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> mutable_flag -> class_field_kind -> class_field
-    val method_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> private_flag -> class_field_kind -> class_field
-    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_field
-    val initializer_: ?loc:Location.t -> ?attrs:attribute list -> expression -> class_field
-    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> class_field
+    val inherit_: ?loc:loc -> ?attrs:attrs -> override_flag -> class_expr -> string option -> class_field
+    val val_: ?loc:loc -> ?attrs:attrs -> str -> mutable_flag -> class_field_kind -> class_field
+    val method_: ?loc:loc -> ?attrs:attrs -> str -> private_flag -> class_field_kind -> class_field
+    val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_field
+    val initializer_: ?loc:loc -> ?attrs:attrs -> expression -> class_field
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_field
 
     val virtual_: core_type -> class_field_kind
     val concrete: override_flag -> expression -> class_field_kind
   end
 module Val:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?prim:string list -> string loc -> core_type -> value_description
+    val mk: ?loc:loc -> ?attrs:attrs -> ?prim:string list -> str -> core_type -> value_description
   end
 module Mtb:
   sig
-    val mk: ?attrs:attribute list -> string loc -> module_type -> module_type_binding
+    val mk: ?attrs:attrs -> str -> module_type -> module_type_binding
   end
 module Md:
   sig
-    val mk: ?attrs:attribute list -> string loc -> module_type -> module_declaration
+    val mk: ?attrs:attrs -> str -> module_type -> module_declaration
   end
 module Mtd:
   sig
-    val mk: ?attrs:attribute list -> ?typ:module_type -> string loc -> module_type_declaration
+    val mk: ?attrs:attrs -> ?typ:module_type -> str -> module_type_declaration
   end
 module Mb:
   sig
-    val mk: ?attrs:attribute list -> string loc -> module_expr -> module_binding
+    val mk: ?attrs:attrs -> str -> module_expr -> module_binding
   end
 module Ci:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?virt:virtual_flag -> ?params:(string loc * variance) list * Location.t -> string loc -> 'a -> 'a class_infos
+    val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(str * variance) list * loc -> str -> 'a -> 'a class_infos
   end
 module Type:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?params:(string loc option * variance) list -> ?cstrs:(core_type * core_type * Location.t) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> string loc -> type_declaration
+    val mk: ?loc:loc -> ?attrs:attrs -> ?params:(str option * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
   end
 module Cd:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?args:core_type list -> ?res:core_type -> string loc -> constructor_declaration
+    val mk: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> constructor_declaration
   end
 module Ld:
   sig
-    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?mut:mutable_flag -> string loc -> core_type -> label_declaration
+    val mk: ?loc:loc -> ?attrs:attrs -> ?mut:mutable_flag -> str -> core_type -> label_declaration
   end
 module Csig:
   sig
-    val mk: ?loc:Location.t -> core_type -> class_type_field list -> class_signature
+    val mk: ?loc:loc -> core_type -> class_type_field list -> class_signature
   end

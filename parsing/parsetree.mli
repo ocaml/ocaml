@@ -20,12 +20,14 @@ type attribute = string * expression
 
 and extension = string * expression
 
+and attributes = attribute list
+
 (* Type expressions for the core language *)
 
 and core_type =
   { ptyp_desc: core_type_desc;
     ptyp_loc: Location.t;
-    ptyp_attributes: attribute list;
+    ptyp_attributes: attributes;
    }
 
 and core_type_desc =
@@ -57,7 +59,7 @@ and 'a class_infos =
     pci_name: string loc;
     pci_expr: 'a;
     pci_loc: Location.t;
-    pci_attributes: attribute list;
+    pci_attributes: attributes;
    }
 
 (* Value expressions for the core language *)
@@ -65,7 +67,7 @@ and 'a class_infos =
 and pattern =
   { ppat_desc: pattern_desc;
     ppat_loc: Location.t;
-    ppat_attributes: attribute list;
+    ppat_attributes: attributes;
    }
 
 and pattern_desc =
@@ -88,7 +90,7 @@ and pattern_desc =
 and expression =
   { pexp_desc: expression_desc;
     pexp_loc: Location.t;
-    pexp_attributes: attribute list;
+    pexp_attributes: attributes;
    }
 
 and expression_desc =
@@ -134,7 +136,7 @@ and value_description =
   { pval_name: string loc;
     pval_type: core_type;
     pval_prim: string list;
-    pval_attributes: attribute list;
+    pval_attributes: attributes;
     pval_loc: Location.t
     }
 
@@ -147,7 +149,7 @@ and type_declaration =
     ptype_kind: type_kind;
     ptype_private: private_flag;
     ptype_manifest: core_type option;
-    ptype_attributes: attribute list;
+    ptype_attributes: attributes;
     ptype_loc: Location.t }
 
 and type_kind =
@@ -161,7 +163,7 @@ and label_declaration =
      pld_mutable: mutable_flag;
      pld_type: core_type;
      pld_loc: Location.t;
-     pld_attributes: attribute list;
+     pld_attributes: attributes;
     }
 
 and constructor_declaration =
@@ -170,7 +172,7 @@ and constructor_declaration =
      pcd_args: core_type list;
      pcd_res: core_type option;
      pcd_loc: Location.t;
-     pcd_attributes: attribute list;
+     pcd_attributes: attributes;
     }
 
 (* Type expressions for the class language *)
@@ -179,7 +181,7 @@ and class_type =
     {
      pcty_desc: class_type_desc;
      pcty_loc: Location.t;
-     pcty_attributes: attribute list;
+     pcty_attributes: attributes;
     }
 
 and class_type_desc =
@@ -197,7 +199,7 @@ and class_signature = {
 and class_type_field = {
     pctf_desc: class_type_field_desc;
     pctf_loc: Location.t;
-    pctf_attributes: attribute list;
+    pctf_attributes: attributes;
   }
 
 and class_type_field_desc =
@@ -217,7 +219,7 @@ and class_expr =
   {
    pcl_desc: class_expr_desc;
    pcl_loc: Location.t;
-   pcl_attributes: attribute list;
+   pcl_attributes: attributes;
   }
 
 and class_expr_desc =
@@ -237,7 +239,7 @@ and class_structure = {
 and class_field = {
     pcf_desc: class_field_desc;
     pcf_loc: Location.t;
-    pcf_attributes: attribute list;
+    pcf_attributes: attributes;
   }
 
 and class_field_desc =
@@ -259,7 +261,7 @@ and class_declaration = class_expr class_infos
 and module_type =
   { pmty_desc: module_type_desc;
     pmty_loc: Location.t;
-    pmty_attributes: attribute list;
+    pmty_attributes: attributes;
    }
 
 and module_type_desc =
@@ -283,25 +285,25 @@ and signature_item_desc =
   | Psig_module of module_declaration
   | Psig_recmodule of module_declaration list
   | Psig_modtype of module_type_declaration
-  | Psig_open of Longident.t loc * attribute list
-  | Psig_include of module_type * attribute list
+  | Psig_open of Longident.t loc * attributes
+  | Psig_include of module_type * attributes
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
   | Psig_attribute of attribute
-  | Psig_extension of extension * attribute list
+  | Psig_extension of extension * attributes
 
 and module_declaration =
     {
      pmd_name: string loc;
      pmd_type: module_type;
-     pmd_attributes: attribute list;
+     pmd_attributes: attributes;
     }
 
 and module_type_declaration =
     {
      pmtd_name: string loc;
      pmtd_type: module_type option;
-     pmtd_attributes: attribute list;
+     pmtd_attributes: attributes;
     }
 
 and with_constraint =
@@ -315,7 +317,7 @@ and with_constraint =
 and module_expr =
   { pmod_desc: module_expr_desc;
     pmod_loc: Location.t;
-    pmod_attributes: attribute list;
+    pmod_attributes: attributes;
  }
 
 and module_expr_desc =
@@ -339,29 +341,29 @@ and structure_item_desc =
   | Pstr_primitive of value_description
   | Pstr_type of type_declaration list
   | Pstr_exception of constructor_declaration
-  | Pstr_exn_rebind of string loc * Longident.t loc * attribute list
+  | Pstr_exn_rebind of string loc * Longident.t loc * attributes
   | Pstr_module of module_binding
   | Pstr_recmodule of module_binding list
   | Pstr_modtype of module_type_binding
-  | Pstr_open of Longident.t loc * attribute list
+  | Pstr_open of Longident.t loc * attributes
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
-  | Pstr_include of module_expr * attribute list
+  | Pstr_include of module_expr * attributes
   | Pstr_attribute of attribute
-  | Pstr_extension of extension * attribute list
+  | Pstr_extension of extension * attributes
 
 and module_binding =
     {
      pmb_name: string loc;
      pmb_expr: module_expr;
-     pmb_attributes: attribute list;
+     pmb_attributes: attributes;
     }
 
 and module_type_binding =
     {
      pmtb_name: string loc;
      pmtb_type: module_type;
-     pmtb_attributes: attribute list;
+     pmtb_attributes: attributes;
     }
 
 (* Toplevel phrases *)

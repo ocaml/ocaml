@@ -22,6 +22,7 @@ type partial = Partial | Total
 type optional = Required | Optional
 
 type attribute = string * Parsetree.expression
+type attributes = attribute list
 
 type pattern =
   { pat_desc: pattern_desc;

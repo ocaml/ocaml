@@ -15,6 +15,11 @@
 open Asttypes
 open Parsetree
 
+type lid = Longident.t loc
+type str = string loc
+type loc = Location.t
+type attrs = attribute list
+
 module Typ = struct
   let mk ?(loc = Location.none) ?(attrs = []) d = {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
   let attr d a = {d with ptyp_attributes = d.ptyp_attributes @ [a]}

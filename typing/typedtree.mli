@@ -21,14 +21,15 @@ type partial = Partial | Total
 type optional = Required | Optional
 
 type attribute = string * Parsetree.expression
+type attributes = attribute list
 
 type pattern =
   { pat_desc: pattern_desc;
     pat_loc: Location.t;
-    pat_extra : (pat_extra * Location.t * attribute list) list;
+    pat_extra : (pat_extra * Location.t * attributes) list;
     pat_type: type_expr;
     mutable pat_env: Env.t;
-    pat_attributes: attribute list;
+    pat_attributes: attributes;
    }
 
 and pat_extra =
@@ -55,10 +56,10 @@ and pattern_desc =
 and expression =
   { exp_desc: expression_desc;
     exp_loc: Location.t;
-    exp_extra: (exp_extra * Location.t * attribute list) list;
+    exp_extra: (exp_extra * Location.t * attributes) list;
     exp_type: type_expr;
     exp_env: Env.t;
-    exp_attributes: attribute list;
+    exp_attributes: attributes;
    }
 
 and exp_extra =
@@ -118,7 +119,7 @@ and class_expr =
      cl_loc: Location.t;
      cl_type: Types.class_type;
      cl_env: Env.t;
-     cl_attributes: attribute list;
+     cl_attributes: attributes;
     }
 
 and class_expr_desc =
@@ -146,7 +147,7 @@ and class_field =
    {
     cf_desc: class_field_desc;
     cf_loc: Location.t;
-    cf_attributes: attribute list;
+    cf_attributes: attributes;
   }
 
 and class_field_kind =
@@ -170,7 +171,7 @@ and module_expr =
     mod_loc: Location.t;
     mod_type: Types.module_type;
     mod_env: Env.t;
-    mod_attributes: attribute list;
+    mod_attributes: attributes;
    }
 
 and module_type_constraint =
@@ -204,14 +205,14 @@ and structure_item_desc =
   | Tstr_primitive of value_description
   | Tstr_type of type_declaration list
   | Tstr_exception of constructor_declaration
-  | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attribute list
+  | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attributes
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_binding
-  | Tstr_open of Path.t * Longident.t loc * attribute list
+  | Tstr_open of Path.t * Longident.t loc * attributes
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
-  | Tstr_include of module_expr * Ident.t list * attribute list
+  | Tstr_include of module_expr * Ident.t list * attributes
   | Tstr_attribute of attribute
 
 and module_binding =
@@ -219,7 +220,7 @@ and module_binding =
      mb_id: Ident.t;
      mb_name: string loc;
      mb_expr: module_expr;
-     mb_attributes: attribute list;
+     mb_attributes: attributes;
     }
 
 and module_type_binding =
@@ -227,7 +228,7 @@ and module_type_binding =
      mtb_id: Ident.t;
      mtb_name: string loc;
      mtb_type: module_type;
-     mtb_attributes: attribute list;
+     mtb_attributes: attributes;
     }
 
 and module_coercion =
@@ -241,7 +242,7 @@ and module_type =
     mty_type : Types.module_type;
     mty_env : Env.t;
     mty_loc: Location.t;
-    mty_attributes: attribute list;
+    mty_attributes: attributes;
    }
 
 and module_type_desc =
@@ -269,8 +270,8 @@ and signature_item_desc =
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
-  | Tsig_open of Path.t * Longident.t loc * attribute list
-  | Tsig_include of module_type * Types.signature * attribute list
+  | Tsig_open of Path.t * Longident.t loc * attributes
+  | Tsig_include of module_type * Types.signature * attributes
   | Tsig_class of class_description list
   | Tsig_class_type of class_type_declaration list
   | Tsig_attribute of attribute
@@ -280,7 +281,7 @@ and module_declaration =
      md_id: Ident.t;
      md_name: string loc;
      md_type: module_type;
-     md_attributes: attribute list;
+     md_attributes: attributes;
     }
 
 and module_type_declaration =
@@ -288,7 +289,7 @@ and module_type_declaration =
      mtd_id: Ident.t;
      mtd_name: string loc;
      mtd_type: module_type option;
-     mtd_attributes: attribute list;
+     mtd_attributes: attributes;
     }
 
 and with_constraint =
@@ -303,7 +304,7 @@ and core_type =
     mutable ctyp_type : type_expr;
     ctyp_env : Env.t; (* BINANNOT ADDED *)
     ctyp_loc : Location.t;
-    ctyp_attributes: attribute list;
+    ctyp_attributes: attributes;
    }
 
 and core_type_desc =
@@ -337,7 +338,7 @@ and value_description =
     val_val: Types.value_description;
     val_prim: string list;
     val_loc: Location.t;
-    val_attributes: attribute list;
+    val_attributes: attributes;
     }
 
 and type_declaration =
@@ -351,7 +352,7 @@ and type_declaration =
     typ_private: private_flag;
     typ_manifest: core_type option;
     typ_loc: Location.t;
-    typ_attributes: attribute list;
+    typ_attributes: attributes;
    }
 
 and type_kind =
@@ -366,7 +367,7 @@ and label_declaration =
      ld_mutable: mutable_flag;
      ld_type: core_type;
      ld_loc: Location.t;
-     ld_attributes: attribute list;
+     ld_attributes: attributes;
     }
 
 and constructor_declaration =
@@ -376,7 +377,7 @@ and constructor_declaration =
      cd_args: core_type list;
      cd_res: core_type option;
      cd_loc: Location.t;
-     cd_attributes: attribute list;
+     cd_attributes: attributes;
     }
 
 and class_type =
@@ -385,7 +386,7 @@ and class_type =
      cltyp_type: Types.class_type;
      cltyp_env: Env.t;
      cltyp_loc: Location.t;
-     cltyp_attributes: attribute list;
+     cltyp_attributes: attributes;
     }
 
 and class_type_desc =
@@ -403,7 +404,7 @@ and class_signature = {
 and class_type_field = {
     ctf_desc: class_type_field_desc;
     ctf_loc: Location.t;
-    ctf_attributes: attribute list;
+    ctf_attributes: attributes;
   }
 
 and class_type_field_desc =
@@ -433,7 +434,7 @@ and 'a class_infos =
     ci_decl: Types.class_declaration;
     ci_type_decl : Types.class_type_declaration;
     ci_loc: Location.t;
-    ci_attributes: attribute list;
+    ci_attributes: attributes;
    }
 
 (* Auxiliary functions over the a.s.t. *)
