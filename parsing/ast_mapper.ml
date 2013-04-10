@@ -292,9 +292,9 @@ module CE = struct
     | Pcf_constr (t1, t2) -> constr ~loc (sub # typ t1) (sub # typ t2)
     | Pcf_init e -> init ~loc (sub # expr e)
 
-  let map_structure sub {pcstr_pat; pcstr_fields} =
+  let map_structure sub {pcstr_self; pcstr_fields} =
     {
-     pcstr_pat = sub # pat pcstr_pat;
+     pcstr_self = sub # pat pcstr_self;
      pcstr_fields = List.map (sub # class_field) pcstr_fields;
     }
 

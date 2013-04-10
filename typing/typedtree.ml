@@ -133,10 +133,12 @@ and class_expr_desc =
     (* Visible instance variables, methods and concretes methods *)
 
 and class_structure =
-  { cstr_pat : pattern;
-    cstr_fields: class_field list;
-    cstr_type : Types.class_signature;
-    cstr_meths: Ident.t Meths.t }
+  {
+   cstr_self: pattern;
+   cstr_fields: class_field list;
+   cstr_type: Types.class_signature;
+   cstr_meths: Ident.t Meths.t;
+  }
 
 and class_field =
    {

@@ -565,10 +565,9 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_class_structure cs =
     let cs = Map.enter_class_structure cs in
-    let cstr_pat = map_pattern cs.cstr_pat in
+    let cstr_self = map_pattern cs.cstr_self in
     let cstr_fields = List.map map_class_field cs.cstr_fields in
-    Map.leave_class_structure { cs with cstr_pat = cstr_pat;
-      cstr_fields = cstr_fields }
+    Map.leave_class_structure { cs with cstr_self; cstr_fields }
 
   and map_row_field rf =
     match rf with

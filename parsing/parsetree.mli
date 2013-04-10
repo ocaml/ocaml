@@ -222,7 +222,7 @@ and class_expr_desc =
   | Pcl_constraint of class_expr * class_type
 
 and class_structure = {
-    pcstr_pat: pattern;
+    pcstr_self: pattern;
     pcstr_fields: class_field list;
   }
 

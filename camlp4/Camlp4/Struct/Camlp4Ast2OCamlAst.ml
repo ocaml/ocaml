@@ -820,7 +820,7 @@ value varify_constructors var_names =
           | p -> p ]
         in
         let cil = class_str_item cfl [] in
-        mkexp loc (Pexp_object { pcstr_pat = patt p; pcstr_fields = cil })
+        mkexp loc (Pexp_object { pcstr_self = patt p; pcstr_fields = cil })
     | ExOlb loc _ _ -> error loc "labeled expression not allowed here"
     | ExOvr loc iel -> mkexp loc (Pexp_override (mkideexp iel []))
     | ExRec loc lel eo ->
@@ -1193,7 +1193,7 @@ value varify_constructors var_names =
         in
         let cil = class_str_item cfl [] in
         mkcl loc (Pcl_structure {
-          pcstr_pat = patt p;
+          pcstr_self = patt p;
           pcstr_fields = cil;
         })
     | CeTyc loc ce ct ->

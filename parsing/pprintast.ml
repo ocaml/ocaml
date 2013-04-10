@@ -790,7 +790,7 @@ class printer  ()= object(self:'self)
     | Pcf_init (e) ->
         pp f "@[<2>initializer@ %a@]" self#expression e 
 
-  method class_structure f { pcstr_pat = p; pcstr_fields =  l } =
+  method class_structure f { pcstr_self = p; pcstr_fields =  l } =
     pp f "@[<hv0>@[<hv2>object %a@;%a@]@;end@]" 
       (fun f p -> match p.ppat_desc with
       | Ppat_any -> ()

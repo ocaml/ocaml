@@ -471,8 +471,8 @@ and eq_class_field : (class_field * class_field) -> 'result =
 and eq_class_structure :
   (class_structure * class_structure) -> 'result =
   fun
-    ({ pcstr_pat = a0; pcstr_fields = a1 },
-     { pcstr_pat = b0; pcstr_fields = b1 })
+    ({ pcstr_self = a0; pcstr_fields = a1 },
+     { pcstr_self = b0; pcstr_fields = b1 })
     -> (eq_pattern (a0, b0)) && (eq_list eq_class_field (a1, b1))
 and eq_class_expr_desc :
   (class_expr_desc * class_expr_desc) -> 'result =

@@ -15106,7 +15106,7 @@ module Struct =
                   in
                     mkexp loc
                       (Pexp_object
-                         { pcstr_pat = patt p; pcstr_fields = cil; })
+                         { pcstr_self = patt p; pcstr_fields = cil; })
               | ExOlb (loc, _, _) ->
                   error loc "labeled expression not allowed here"
               | ExOvr (loc, iel) ->
@@ -15609,7 +15609,7 @@ module Struct =
                   in
                     mkcl loc
                       (Pcl_structure
-                         { pcstr_pat = patt p; pcstr_fields = cil; })
+                         { pcstr_self = patt p; pcstr_fields = cil; })
               | CeTyc (loc, ce, ct) ->
                   mkcl loc
                     (Pcl_constraint ((class_expr ce), (class_type ct)))

@@ -792,7 +792,7 @@ class_simple_expr:
 ;
 class_structure:
     class_self_pattern class_fields
-      { { pcstr_pat = $1; pcstr_fields = List.rev $2 } }
+      { { pcstr_self = $1; pcstr_fields = List.rev $2 } }
 ;
 class_self_pattern:
     LPAREN pattern RPAREN

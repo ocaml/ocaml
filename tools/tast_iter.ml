@@ -304,7 +304,7 @@ let core_type sub ct =
   | Ttyp_package pack -> sub # package_type pack
 
 let class_structure sub cs =
-  sub # pattern cs.cstr_pat;
+  sub # pattern cs.cstr_self;
   List.iter (sub # class_field) cs.cstr_fields
 
 let row_field sub rf =

@@ -678,7 +678,7 @@ let rec class_field self_loc cl_num self_type meths vars
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals, inher)
 
 and class_structure cl_num final val_env met_env loc
-  { pcstr_pat = spat; pcstr_fields = str } =
+  { pcstr_self = spat; pcstr_fields = str } =
   (* Environment for substructures *)
   let par_env = met_env in
 
@@ -790,7 +790,7 @@ and class_structure cl_num final val_env met_env loc
   let sign = if final then sign else
       {sign with cty_self = Ctype.expand_head val_env public_self} in
   {
-    cstr_pat = pat;
+    cstr_self = pat;
     cstr_fields = fields;
     cstr_type = sign;
     cstr_meths = meths}, sign (* redondant, since already in cstr_type *)

@@ -493,7 +493,7 @@ and class_expr i ppf x =
       class_expr i ppf ce;
       class_type i ppf ct;
 
-and class_structure i ppf { pcstr_pat = p; pcstr_fields = l } =
+and class_structure i ppf { pcstr_self = p; pcstr_fields = l } =
   line i ppf "class_structure\n";
   pattern (i+1) ppf p;
   list (i+1) class_field ppf l;

@@ -525,7 +525,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_class_structure cs =
       Iter.enter_class_structure cs;
-      iter_pattern cs.cstr_pat;
+      iter_pattern cs.cstr_self;
       List.iter iter_class_field cs.cstr_fields;
       Iter.leave_class_structure cs;
 

@@ -511,7 +511,7 @@ and class_expr i ppf x =
   | Tcl_constraint (_, None, _, _, _) -> assert false
         (* TODO : is it possible ? see parsetree *)
 
-and class_structure i ppf { cstr_pat = p; cstr_fields = l } =
+and class_structure i ppf { cstr_self = p; cstr_fields = l } =
   line i ppf "class_structure\n";
   pattern (i+1) ppf p;
   list (i+1) class_field ppf l;

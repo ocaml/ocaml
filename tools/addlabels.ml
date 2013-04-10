@@ -296,7 +296,7 @@ let rec add_labels_expr ~text ~values ~classes expr =
 let rec add_labels_class ~text ~classes ~values ~methods cl =
   match cl.pcl_desc with
     Pcl_constr _ -> ()
-  | Pcl_structure { pcstr_pat = p; pcstr_fields = l } ->
+  | Pcl_structure { pcstr_self = p; pcstr_fields = l } ->
       let values = SMap.removes (pattern_vars p) values in
       let values =
         match pattern_name p with None -> values

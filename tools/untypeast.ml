@@ -507,7 +507,7 @@ and untype_core_type ct =
   Typ.mk ~loc:ct.ctyp_loc desc
 
 and untype_class_structure cs =
-  { pcstr_pat = untype_pattern cs.cstr_pat;
+  { pcstr_self = untype_pattern cs.cstr_self;
     pcstr_fields = List.map untype_class_field cs.cstr_fields;
   }
 
