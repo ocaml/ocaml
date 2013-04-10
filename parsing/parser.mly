@@ -1900,7 +1900,7 @@ additive:
 
 /* Attributes and extensions */
 
-attr_id:
+single_attr_id:
     LIDENT { $1 }
   | UIDENT { $1 }
   | AND { "and" }
@@ -1954,6 +1954,10 @@ attr_id:
 /* mod/land/lor/lxor/lsl/lsr/asr are not supported for now */
 ;
 
+attr_id:
+    single_attr_id { $1 }
+  | single_attr_id DOT attr_id { $1 ^ "." ^ $3 }
+;
 attribute:
   LBRACKETAT attr_id opt_expr RBRACKET { ($2, $3) }
 ;
