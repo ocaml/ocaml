@@ -33,6 +33,7 @@ OTHEROBJS=\
   $(TOPDIR)/parsing/location.cmo \
   $(TOPDIR)/parsing/longident.cmo \
   $(TOPDIR)/parsing/syntaxerr.cmo \
+  $(TOPDIR)/parsing/ast_helper.cmo \
   $(TOPDIR)/parsing/parser.cmo \
   $(TOPDIR)/parsing/lexer.cmo \
   $(TOPDIR)/parsing/parse.cmo \
