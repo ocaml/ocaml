@@ -197,11 +197,10 @@ and class_type_field = {
   }
 
 and class_type_field_desc =
-    Pctf_inher of class_type
+    Pctf_inherit of class_type
   | Pctf_val of (string * mutable_flag * virtual_flag * core_type)
-  | Pctf_virt  of (string * private_flag * core_type)
-  | Pctf_meth  of (string * private_flag * core_type)
-  | Pctf_cstr  of (core_type * core_type)
+  | Pctf_method  of (string * private_flag * virtual_flag * core_type)
+  | Pctf_constraint  of (core_type * core_type)
 
 and class_description = class_type class_infos
 
@@ -233,13 +232,15 @@ and class_field = {
   }
 
 and class_field_desc =
-    Pcf_inher of override_flag * class_expr * string option
-  | Pcf_valvirt of (string loc * mutable_flag * core_type)
-  | Pcf_val of (string loc * mutable_flag * override_flag * expression)
-  | Pcf_virt of (string loc * private_flag * core_type)
-  | Pcf_meth of (string loc * private_flag * override_flag * expression)
-  | Pcf_constr of (core_type * core_type)
-  | Pcf_init of expression
+    Pcf_inherit of override_flag * class_expr * string option
+  | Pcf_val of (string loc * mutable_flag * class_field_kind)
+  | Pcf_method of (string loc * private_flag * class_field_kind)
+  | Pcf_constraint of (core_type * core_type)
+  | Pcf_initializer of expression
+
+and class_field_kind =
+  | Cfk_virtual of core_type
+  | Cfk_concrete of override_flag * expression
 
 and class_declaration = class_expr class_infos
 

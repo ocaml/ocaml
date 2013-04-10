@@ -380,6 +380,31 @@ To be discussed: should we segrate simple_poly_type from core_type in the
 Parsetree to prevent Ptyp_poly nodes to be inserted in the wrong place?
 
 
+--- Use constructor names closer to concrete syntax
+
+E.g. Pcf_cstr -> Pcf_constraint.
+
+Rationale:
+
+ - Make the Parsetree more self-documented.
+
+--- Merge concrete/virtual val and method constructors
+
+As in the Typedtree.
+
+-  | Pcf_valvirt of (string loc * mutable_flag * core_type)
+-  | Pcf_val of (string loc * mutable_flag * override_flag * expression)
+-  | Pcf_virt of (string loc * private_flag * core_type)
+-  | Pcf_meth of (string loc * private_flag * override_flag * expression)
++  | Pcf_val of (string loc * mutable_flag * class_field_kind)
++  | Pcf_method of (string loc * private_flag * class_field_kind
+...
++and class_field_kind =
++  | Cfk_virtual of core_type
++  | Cfk_concrete of override_flag * expression
++
+
+
 === More TODOs
 
 - Adapt pprintast.

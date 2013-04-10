@@ -189,11 +189,10 @@ module Ctf = struct
     }
   let attr d a = {d with pctf_attributes = d.pctf_attributes @ [a]}
 
-  let inher ?loc ?attrs a = mk ?loc ?attrs (Pctf_inher a)
+  let inherit_ ?loc ?attrs a = mk ?loc ?attrs (Pctf_inherit a)
   let val_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pctf_val (a, b, c, d))
-  let virt ?loc ?attrs a b c = mk ?loc ?attrs (Pctf_virt (a, b, c))
-  let meth ?loc ?attrs a b c = mk ?loc ?attrs (Pctf_meth (a, b, c))
-  let cstr ?loc ?attrs a b = mk ?loc ?attrs (Pctf_cstr (a, b))
+  let method_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pctf_method (a, b, c, d))
+  let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pctf_constraint (a, b))
 end
 
 module Cf = struct
@@ -205,13 +204,14 @@ module Cf = struct
     }
   let attr d a = {d with pcf_attributes = d.pcf_attributes @ [a]}
 
-  let inher ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_inher (a, b, c))
-  let valvirt ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_valvirt (a, b, c))
-  let val_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pcf_val (a, b, c, d))
-  let virt ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_virt (a, b, c))
-  let meth ?loc ?attrs a b c d = mk ?loc ?attrs (Pcf_meth (a, b, c, d))
-  let constr ?loc ?attrs a b = mk ?loc ?attrs (Pcf_constr (a, b))
-  let init ?loc ?attrs a = mk ?loc ?attrs (Pcf_init a)
+  let inherit_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_inherit (a, b, c))
+  let val_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_val (a, b, c))
+  let method_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcf_method (a, b, c))
+  let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pcf_constraint (a, b))
+  let initializer_ ?loc ?attrs a = mk ?loc ?attrs (Pcf_initializer a)
+
+  let virtual_ ct = Cfk_virtual ct
+  let concrete o e = Cfk_concrete (o, e)
 end
 
 module Val = struct

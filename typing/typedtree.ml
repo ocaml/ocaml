@@ -148,22 +148,18 @@ and class_field =
   }
 
 and class_field_kind =
-  Tcfk_virtual of core_type
-| Tcfk_concrete of expression
+  | Tcfk_virtual of core_type
+  | Tcfk_concrete of override_flag * expression
 
 and class_field_desc =
-    Tcf_inher of
+    Tcf_inherit of
       override_flag * class_expr * string option * (string * Ident.t) list *
         (string * Ident.t) list
     (* Inherited instance variables and concrete methods *)
-  | Tcf_val of
-      string * string loc * mutable_flag * Ident.t * class_field_kind * bool
-        (* None = virtual, true = override *)
-  | Tcf_meth of string * string loc * private_flag * class_field_kind * bool
-  | Tcf_constr of core_type * core_type
-(*  | Tcf_let of rec_flag * (pattern * expression) list *
-              (Ident.t * string loc * expression) list *)
-  | Tcf_init of expression
+  | Tcf_val of string loc * mutable_flag * Ident.t * class_field_kind * bool
+  | Tcf_method of string loc * private_flag * class_field_kind
+  | Tcf_constraint of core_type * core_type
+  | Tcf_initializer of expression
 
 (* Value expressions for the module language *)
 
@@ -405,11 +401,10 @@ and class_type_field = {
   }
 
 and class_type_field_desc =
-    Tctf_inher of class_type
+  | Tctf_inherit of class_type
   | Tctf_val of (string * mutable_flag * virtual_flag * core_type)
-  | Tctf_virt  of (string * private_flag * core_type)
-  | Tctf_meth  of (string * private_flag * core_type)
-  | Tctf_cstr  of (core_type * core_type)
+  | Tctf_method of (string * private_flag * virtual_flag * core_type)
+  | Tctf_constraint of (core_type * core_type)
 
 and class_declaration =
   class_expr class_infos

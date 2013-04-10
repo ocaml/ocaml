@@ -91,11 +91,10 @@ let rec add_class_type bv cty =
 
 and add_class_type_field bv pctf =
   match pctf.pctf_desc with
-    Pctf_inher cty -> add_class_type bv cty
+    Pctf_inherit cty -> add_class_type bv cty
   | Pctf_val(_, _, _, ty) -> add_type bv ty
-  | Pctf_virt(_, _, ty) -> add_type bv ty
-  | Pctf_meth(_, _, ty) -> add_type bv ty
-  | Pctf_cstr(ty1, ty2) -> add_type bv ty1; add_type bv ty2
+  | Pctf_method(_, _, _, ty) -> add_type bv ty
+  | Pctf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
 
 let add_class_description bv infos =
   add_class_type bv infos.pci_expr
@@ -322,13 +321,13 @@ and add_class_expr bv ce =
 
 and add_class_field bv pcf =
   match pcf.pcf_desc with
-    Pcf_inher(_, ce, _) -> add_class_expr bv ce
-  | Pcf_val(_, _, _, e) -> add_expr bv e
-  | Pcf_valvirt(_, _, ty)
-  | Pcf_virt(_, _, ty) -> add_type bv ty
-  | Pcf_meth(_, _, _, e) -> add_expr bv e
-  | Pcf_constr(ty1, ty2) -> add_type bv ty1; add_type bv ty2
-  | Pcf_init e -> add_expr bv e
+    Pcf_inherit(_, ce, _) -> add_class_expr bv ce
+  | Pcf_val(_, _, Cfk_concrete (_, e))
+  | Pcf_method(_, _, Cfk_concrete (_, e)) -> add_expr bv e
+  | Pcf_val(_, _, Cfk_virtual ty)
+  | Pcf_method(_, _, Cfk_virtual ty) -> add_type bv ty
+  | Pcf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
+  | Pcf_initializer e -> add_expr bv e
 
 and add_class_declaration bv decl =
   add_class_expr bv decl.pci_expr

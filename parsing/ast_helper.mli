@@ -174,24 +174,24 @@ module Ctf:
     val mk: ?attrs:attribute list -> ?loc:Location.t -> class_type_field_desc -> class_type_field
     val attr: class_type_field -> attribute -> class_type_field
 
-    val inher: ?loc:Location.t -> ?attrs:attribute list -> class_type -> class_type_field
+    val inherit_: ?loc:Location.t -> ?attrs:attribute list -> class_type -> class_type_field
     val val_: ?loc:Location.t -> ?attrs:attribute list -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
-    val virt: ?loc:Location.t -> ?attrs:attribute list -> string -> private_flag -> core_type -> class_type_field
-    val meth: ?loc:Location.t -> ?attrs:attribute list -> string -> private_flag -> core_type -> class_type_field
-    val cstr: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_type_field
+    val method_: ?loc:Location.t -> ?attrs:attribute list -> string -> private_flag -> virtual_flag -> core_type -> class_type_field
+    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_type_field
   end
 module Cf:
   sig
     val mk: ?attrs:attribute list -> ?loc:Location.t -> class_field_desc -> class_field
     val attr: class_field -> attribute -> class_field
 
-    val inher: ?loc:Location.t -> ?attrs:attribute list -> override_flag -> class_expr -> string option -> class_field
-    val valvirt: ?loc:Location.t -> ?attrs:attribute list -> string loc -> mutable_flag -> core_type -> class_field
-    val val_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> mutable_flag -> override_flag -> expression -> class_field
-    val virt: ?loc:Location.t -> ?attrs:attribute list -> string loc -> private_flag -> core_type -> class_field
-    val meth: ?loc:Location.t -> ?attrs:attribute list -> string loc -> private_flag -> override_flag -> expression -> class_field
-    val constr: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_field
-    val init: ?loc:Location.t -> ?attrs:attribute list -> expression -> class_field
+    val inherit_: ?loc:Location.t -> ?attrs:attribute list -> override_flag -> class_expr -> string option -> class_field
+    val val_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> mutable_flag -> class_field_kind -> class_field
+    val method_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> private_flag -> class_field_kind -> class_field
+    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_field
+    val initializer_: ?loc:Location.t -> ?attrs:attribute list -> expression -> class_field
+
+    val virtual_: core_type -> class_field_kind
+    val concrete: override_flag -> expression -> class_field_kind
   end
 module Val:
   sig

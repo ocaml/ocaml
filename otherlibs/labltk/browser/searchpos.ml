@@ -140,14 +140,11 @@ let rec search_pos_class_type cl ~pos ~env =
     | Pcty_signature  cl ->
         List.iter cl.pcsig_fields ~f: (fun fl ->
           begin match fl.pctf_desc with
-              Pctf_inher cty -> search_pos_class_type cty ~pos ~env
-            | Pctf_val (_, _, _, ty) ->
+              Pctf_inherit cty -> search_pos_class_type cty ~pos ~env
+            | Pctf_val (_, _, _, ty)
+            | Pctf_method (_, _, _, ty) ->
                 if in_loc fl.pctf_loc ~pos then search_pos_type ty ~pos ~env
-            | Pctf_virt (_, _, ty) ->
-                if in_loc fl.pctf_loc ~pos then search_pos_type ty ~pos ~env
-            | Pctf_meth (_, _, ty) ->
-                if in_loc fl.pctf_loc ~pos then search_pos_type ty ~pos ~env
-            | Pctf_cstr (ty1, ty2) ->
+            | Pctf_constraint (ty1, ty2) ->
                 if in_loc fl.pctf_loc ~pos then begin
                   search_pos_type ty1 ~pos ~env;
                   search_pos_type ty2 ~pos ~env
@@ -689,14 +686,14 @@ let rec search_pos_structure ~pos str =
 and search_pos_class_structure ~pos cls =
   List.iter cls.cstr_fields ~f:
     begin function cf -> match cf.cf_desc with
-        Tcf_inher (_, cl, _, _, _) ->
+        Tcf_inherit (_, cl, _, _, _) ->
           search_pos_class_expr cl ~pos
-      | Tcf_val (_, _, _, _, Tcfk_concrete exp, _) -> search_pos_expr exp ~pos
+      | Tcf_val (_, _, _, Tcfk_concrete (_, exp), _) -> search_pos_expr exp ~pos
       | Tcf_val _ -> ()
-      | Tcf_meth (_, _, _, Tcfk_concrete exp, _) -> search_pos_expr exp ~pos
-      | Tcf_init exp -> search_pos_expr exp ~pos
-      | Tcf_constr _
-      | Tcf_meth _
+      | Tcf_method (_, _, Tcfk_concrete (_, exp)) -> search_pos_expr exp ~pos
+      | Tcf_initializer exp -> search_pos_expr exp ~pos
+      | Tcf_constraint _
+      | Tcf_method _
         -> assert false (* TODO !!!!!!!!!!!!!!!!! *)
     end
 

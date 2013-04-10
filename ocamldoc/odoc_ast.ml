@@ -174,7 +174,7 @@ module Typedtree_search =
       let rec iter cpt = function
         | [] ->
             raise Not_found
-        | { cf_desc = Typedtree.Tcf_inher (_, clexp, _, _, _) } :: q ->
+        | { cf_desc = Typedtree.Tcf_inherit (_, clexp, _, _, _) } :: q ->
             if n = cpt then clexp else iter (cpt+1) q
         | _ :: q ->
             iter cpt q
@@ -185,10 +185,10 @@ module Typedtree_search =
       let rec iter = function
         | [] ->
             raise Not_found
-        | { cf_desc = Typedtree.Tcf_val (_, _, _, ident, Tcfk_concrete exp, _) } :: q
+        | { cf_desc = Typedtree.Tcf_val (_, _, ident, Tcfk_concrete (_, exp), _) } :: q
           when Name.from_ident ident = name ->
             exp.Typedtree.exp_type
-        | { cf_desc = Typedtree.Tcf_val (_, _, _, ident, Tcfk_virtual typ, _) } :: q
+        | { cf_desc = Typedtree.Tcf_val (_, _, ident, Tcfk_virtual typ, _) } :: q
           when Name.from_ident ident = name ->
             typ.Typedtree.ctyp_type
         | _ :: q ->
@@ -208,7 +208,7 @@ module Typedtree_search =
       let rec iter = function
         | [] ->
             raise Not_found
-        | { cf_desc = Typedtree.Tcf_meth (label, _, _, Tcfk_concrete exp, _) } :: q when label = name ->
+        | { cf_desc = Typedtree.Tcf_method (label, _, Tcfk_concrete (_, exp)) } :: q when label.txt = name ->
             exp
         | _ :: q ->
             iter q
@@ -528,7 +528,7 @@ module Analyser =
           | item :: q ->
               let loc = item.Parsetree.pcf_loc in
               match item.Parsetree.pcf_desc with
-        | (Parsetree.Pcf_inher (_, p_clexp, _))  ->
+        | (Parsetree.Pcf_inherit (_, p_clexp, _))  ->
             let tt_clexp =
               let n = List.length acc_inher in
               try Typedtree_search.get_nth_inherit_class_expr tt_cls n
@@ -555,9 +555,8 @@ module Analyser =
               p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
               q
 
-      | ((Parsetree.Pcf_val ({ txt = label }, mutable_flag, _, _) |
-          Parsetree.Pcf_valvirt ({ txt = label }, mutable_flag, _) ) as x) ->
-            let virt = match x with Parsetree.Pcf_val _ -> false | _ -> true in
+      | Parsetree.Pcf_val ({ txt = label }, mutable_flag, k) ->
+            let virt = match k with Parsetree.Cfk_virtual _ -> true | Parsetree.Cfk_concrete _ -> false in
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let type_exp =
@@ -588,7 +587,7 @@ module Analyser =
           in
           iter acc_inher (acc_fields @ ele_comments @ [ Class_attribute att ]) loc.Location.loc_end.Lexing.pos_cnum q
 
-        | (Parsetree.Pcf_virt  ({ txt = label }, private_flag, _)) ->
+        | (Parsetree.Pcf_method  ({ txt = label }, private_flag, Parsetree.Cfk_virtual _)) ->
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let met_type =
@@ -630,7 +629,7 @@ module Analyser =
 
           iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
 
-        | (Parsetree.Pcf_meth ({ txt = label }, private_flag, _, _)) ->
+        | (Parsetree.Pcf_method ({ txt = label }, private_flag, Parsetree.Cfk_concrete _)) ->
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let exp =
@@ -671,11 +670,11 @@ module Analyser =
 
           iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
 
-        | Parsetree.Pcf_constr (_, _) ->
+        | Parsetree.Pcf_constraint (_, _) ->
             (* don't give a $*%@ ! *)
             iter acc_inher acc_fields loc.Location.loc_end.Lexing.pos_cnum q
 
-        | (Parsetree.Pcf_init exp) ->
+        | (Parsetree.Pcf_initializer exp) ->
             iter acc_inher acc_fields exp.Parsetree.pexp_loc.Location.loc_end.Lexing.pos_cnum q
       in
       iter [] [] last_pos (p_cls.Parsetree.pcstr_fields)

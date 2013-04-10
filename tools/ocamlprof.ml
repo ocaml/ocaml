@@ -317,17 +317,20 @@ and rewrite_trymatching l =
 
 and rewrite_class_field iflag cf =
   match cf.pcf_desc with
-    Pcf_inher (_, cexpr, _)     -> rewrite_class_expr iflag cexpr
-  | Pcf_val (_, _, _, sexp)  -> rewrite_exp iflag sexp
-  | Pcf_meth (_, _, _, ({pexp_desc = Pexp_function _} as sexp)) ->
+    Pcf_inherit (_, cexpr, _)     -> rewrite_class_expr iflag cexpr
+  | Pcf_val (_, _, Cfk_concrete (_, sexp))  -> rewrite_exp iflag sexp
+  | Pcf_method (_, _,
+                Cfk_concrete (_, ({pexp_desc = Pexp_function _} as sexp))) ->
       rewrite_exp iflag sexp
-  | Pcf_meth (_, _, _, sexp) ->
+  | Pcf_method (_, _, Cfk_concrete(_, sexp)) ->
       let loc = cf.pcf_loc in
       if !instr_fun && not loc.loc_ghost then insert_profile rw_exp sexp
       else rewrite_exp iflag sexp
-  | Pcf_init sexp ->
+  | Pcf_initializer sexp ->
       rewrite_exp iflag sexp
-  | Pcf_valvirt _ | Pcf_virt _ | Pcf_constr _  -> ()
+  | Pcf_method (_, _, Cfk_virtual _)
+  | Pcf_val (_, _, Cfk_virtual _)
+  | Pcf_constraint _  -> ()
 
 and rewrite_class_expr iflag cexpr =
   match cexpr.pcl_desc with

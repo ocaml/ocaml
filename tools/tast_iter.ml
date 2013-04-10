@@ -271,14 +271,12 @@ let class_signature sub cs =
 
 let class_type_field sub ctf =
   match ctf.ctf_desc with
-  | Tctf_inher ct -> sub # class_type ct
+  | Tctf_inherit ct -> sub # class_type ct
   | Tctf_val (_s, _mut, _virt, ct) ->
       sub # core_type ct
-  | Tctf_virt  (_s, _priv, ct) ->
+  | Tctf_method (_s, _priv, _virt, ct) ->
       sub # core_type ct
-  | Tctf_meth  (_s, _priv, ct) ->
-      sub # core_type ct
-  | Tctf_cstr  (ct1, ct2) ->
+  | Tctf_constraint  (ct1, ct2) ->
       sub # core_type ct1;
       sub # core_type ct2
 
@@ -314,20 +312,20 @@ let row_field sub rf =
 
 let class_field sub cf =
   match cf.cf_desc with
-  | Tcf_inher (_ovf, cl, _super, _vals, _meths) ->
+  | Tcf_inherit (_ovf, cl, _super, _vals, _meths) ->
       sub # class_expr cl
-  | Tcf_constr (cty, cty') ->
+  | Tcf_constraint (cty, cty') ->
       sub # core_type cty;
       sub # core_type cty'
-  | Tcf_val (_lab, _, _, _mut, Tcfk_virtual cty, _override) ->
+  | Tcf_val (_, _, _mut, Tcfk_virtual cty, _override) ->
       sub # core_type cty
-  | Tcf_val (_lab, _, _, _mut, Tcfk_concrete exp, _override) ->
+  | Tcf_val (_, _, _mut, Tcfk_concrete (_, exp), _override) ->
       sub # expression exp
-  | Tcf_meth (_lab, _, _priv, Tcfk_virtual cty, _override) ->
+  | Tcf_method (_, _priv, Tcfk_virtual cty) ->
       sub # core_type cty
-  | Tcf_meth (_lab, _, _priv, Tcfk_concrete exp, _override) ->
+  | Tcf_method (_, _priv, Tcfk_concrete (_, exp)) ->
       sub # expression exp
-  | Tcf_init exp ->
+  | Tcf_initializer exp ->
       sub # expression exp
 
 let bindings sub (_rec_flag, list) =

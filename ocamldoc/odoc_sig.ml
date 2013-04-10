@@ -301,10 +301,9 @@ module Analyser =
               let loc = ele2.Parsetree.pctf_loc in
             match ele2.Parsetree.pctf_desc with
               Parsetree.Pctf_val (_, _, _, _)
-            | Parsetree.Pctf_virt (_, _, _)
-            | Parsetree.Pctf_meth (_, _, _)
-            | Parsetree.Pctf_cstr (_, _) -> loc.Location.loc_start.Lexing.pos_cnum
-            | Parsetree.Pctf_inher class_type ->
+            | Parsetree.Pctf_method (_, _, _, _)
+            | Parsetree.Pctf_constraint (_, _) -> loc.Location.loc_start.Lexing.pos_cnum
+            | Parsetree.Pctf_inherit class_type ->
                 class_type.Parsetree.pcty_loc.Location.loc_start.Lexing.pos_cnum
       in
       let get_method name comment_opt private_flag loc q =
@@ -402,29 +401,26 @@ module Analyser =
             let (inher_l, eles) = f (pos_end + maybe_more) q in
             (inher_l, eles_comments @ ((Class_attribute att) :: eles))
 
-        | Parsetree.Pctf_virt (name, private_flag, _) ->
-            (* of (string * private_flag * core_type * Location.t) *)
+        | Parsetree.Pctf_method (name, private_flag, virtual_flag, _) ->
+            (* of (string * private_flag * virtual_flag * core_type) *)
             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let (met, maybe_more) = get_method name comment_opt private_flag loc q in
-            let met2 = { met with met_virtual = true } in
+            let met2 =
+              match virtual_flag with
+              | Concrete -> met
+              | Virtual -> { met with met_virtual = true }
+            in
             let (inher_l, eles) = f (loc.Location.loc_end.Lexing.pos_cnum + maybe_more) q in
             (inher_l, eles_comments @ ((Class_method met2) :: eles))
 
-        | Parsetree.Pctf_meth (name, private_flag, _) ->
-            (* of (string * private_flag * core_type * Location.t) *)
-            let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
-            let (met, maybe_more) = get_method name comment_opt private_flag loc q in
-            let (inher_l, eles) = f (loc.Location.loc_end.Lexing.pos_cnum + maybe_more) q in
-            (inher_l, eles_comments @ ((Class_method met) :: eles))
-
-        | (Parsetree.Pctf_cstr (_, _)) ->
-            (* of (core_type * core_type * Location.t) *)
+        | (Parsetree.Pctf_constraint (_, _)) ->
+            (* of (core_type * core_type) *)
             (* A VOIR : cela correspond aux contraintes, non ? on ne les garde pas pour l'instant *)
             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let (inher_l, eles) = f loc.Location.loc_end.Lexing.pos_cnum q in
             (inher_l, eles_comments @ eles)
 
-        | Parsetree.Pctf_inher class_type ->
+        | Parsetree.Pctf_inherit class_type ->
             let loc = class_type.Parsetree.pcty_loc in
             let (comment_opt, eles_comments) =
               get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum

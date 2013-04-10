@@ -810,19 +810,15 @@ class_fields:
 ;
 class_field:
   | INHERIT override_flag class_expr parent_binder
-      { mkcf (Pcf_inher ($2, $3, $4)) }
-  | VAL virtual_value
-      { mkcf (Pcf_valvirt $2) }
+      { mkcf (Pcf_inherit ($2, $3, $4)) }
   | VAL value
       { mkcf (Pcf_val $2) }
-  | virtual_method
-      { mkcf (Pcf_virt $1) }
-  | concrete_method
-      { mkcf (Pcf_meth $1) }
+  | METHOD method_
+      { mkcf (Pcf_method $2) }
   | CONSTRAINT constrain_field
-      { mkcf (Pcf_constr $2) }
+      { mkcf (Pcf_constraint $2) }
   | INITIALIZER seq_expr
-      { mkcf (Pcf_init $2) }
+      { mkcf (Pcf_initializer $2) }
   | class_field post_item_attribute
       { Cf.attr $1 $2 }
 ;
@@ -832,36 +828,38 @@ parent_binder:
   | /* empty */
           { None }
 ;
-virtual_value:
+value:
+/* TODO: factorize these rules (also with method): */
     override_flag MUTABLE VIRTUAL label COLON core_type
       { if $1 = Override then syntax_error ();
-        mkloc $4 (rhs_loc 4), Mutable, $6 }
+        mkloc $4 (rhs_loc 4), Mutable, Cfk_virtual $6 }
   | VIRTUAL mutable_flag label COLON core_type
-      { mkrhs $3 3, $2, $5 }
-;
-value:
-    override_flag mutable_flag label EQUAL seq_expr
-      { mkrhs $3 3, $2, $1, $5 }
+      { mkrhs $3 3, $2, Cfk_virtual $5 }
+  | override_flag mutable_flag label EQUAL seq_expr
+      { mkrhs $3 3, $2, Cfk_concrete ($1, $5) }
   | override_flag mutable_flag label type_constraint EQUAL seq_expr
-      { mkrhs $3 3, $2, $1, (let (t, t') = $4 in ghexp(Pexp_constraint($6, t, t'))) }
+      {
+       let (t, t') = $4 in
+       let e = ghexp(Pexp_constraint($6, t, t')) in
+       mkrhs $3 3, $2, Cfk_concrete ($1, e)
+      }
 ;
-virtual_method:
-    METHOD override_flag PRIVATE VIRTUAL label COLON poly_type
-      { if $2 = Override then syntax_error ();
-        mkloc $5 (rhs_loc 5), Private, $7 }
-  | METHOD override_flag VIRTUAL private_flag label COLON poly_type
-      { if $2 = Override then syntax_error ();
-        mkloc $5 (rhs_loc 5), $4, $7 }
-;
-concrete_method:
-    METHOD override_flag private_flag label strict_binding
-      { mkloc $4 (rhs_loc 4), $3, $2, ghexp(Pexp_poly ($5, None)) }
-  | METHOD override_flag private_flag label COLON poly_type EQUAL seq_expr
-      { mkloc $4 (rhs_loc 4), $3, $2, ghexp(Pexp_poly($8,Some $6)) }
-  | METHOD override_flag private_flag label COLON TYPE lident_list
+method_:
+/* TODO: factorize those rules... */
+    override_flag PRIVATE VIRTUAL label COLON poly_type
+      { if $1 = Override then syntax_error ();
+        mkloc $4 (rhs_loc 4), Private, Cfk_virtual $6 }
+  | override_flag VIRTUAL private_flag label COLON poly_type
+      { if $1 = Override then syntax_error ();
+        mkloc $4 (rhs_loc 4), $3, Cfk_virtual $6 }
+  | override_flag private_flag label strict_binding
+      { mkloc $3 (rhs_loc 3), $2, Cfk_concrete ($1, ghexp(Pexp_poly ($4, None))) }
+  | override_flag private_flag label COLON poly_type EQUAL seq_expr
+      { mkloc $3 (rhs_loc 3), $2, Cfk_concrete ($1, ghexp(Pexp_poly($7, Some $5))) }
+  | override_flag private_flag label COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
-      { let exp, poly = wrap_type_annotation $7 $9 $11 in
-        mkloc $4 (rhs_loc 4), $3, $2, ghexp(Pexp_poly(exp, Some poly)) }
+      { let exp, poly = wrap_type_annotation $6 $8 $10 in
+        mkloc $3 (rhs_loc 3), $2, Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly))) }
 ;
 
 /* Class types */
@@ -904,11 +902,14 @@ class_sig_fields:
 | class_sig_fields class_sig_field     { $2 :: $1 }
 ;
 class_sig_field:
-    INHERIT class_signature       { mkctf (Pctf_inher $2) }
+    INHERIT class_signature       { mkctf (Pctf_inherit $2) }
   | VAL value_type              { mkctf (Pctf_val $2) }
-  | virtual_method_type         { mkctf (Pctf_virt $1) }
-  | method_type                 { mkctf (Pctf_meth $1) }
-  | CONSTRAINT constrain_field        { mkctf (Pctf_cstr $2) }
+  | METHOD private_virtual_flags label COLON poly_type
+      {
+       let (p, v) = $2 in
+       mkctf (Pctf_method ($3, p, v, $5))
+      }
+  | CONSTRAINT constrain_field        { mkctf (Pctf_constraint $2) }
   | class_sig_field post_item_attribute { Ctf.attr $1 $2 }
 ;
 value_type:
@@ -918,16 +919,6 @@ value_type:
       { $3, Mutable, $2, $5 }
   | label COLON core_type
       { $1, Immutable, Concrete, $3 }
-;
-method_type:
-    METHOD private_flag label COLON poly_type
-      { $3, $2, $5 }
-;
-virtual_method_type:
-    METHOD PRIVATE VIRTUAL label COLON poly_type
-      { $4, Private, $6 }
-  | METHOD VIRTUAL private_flag label COLON poly_type
-      { $4, $3, $6 }
 ;
 constrain:
         core_type EQUAL core_type          { $1, $3, symbol_rloc() }
@@ -1876,6 +1867,13 @@ mutable_flag:
 virtual_flag:
     /* empty */                                 { Concrete }
   | VIRTUAL                                     { Virtual }
+;
+private_virtual_flags:
+    /* empty */  { Public, Concrete }
+  | PRIVATE { Private, Concrete }
+  | VIRTUAL { Public, Virtual }
+  | PRIVATE VIRTUAL { Private, Virtual }
+  | VIRTUAL PRIVATE { Private, Virtual }
 ;
 override_flag:
     /* empty */                                 { Fresh }

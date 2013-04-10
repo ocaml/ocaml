@@ -466,15 +466,13 @@ and untype_class_signature cs =
 
 and untype_class_type_field ctf =
   let desc = match ctf.ctf_desc with
-      Tctf_inher ct -> Pctf_inher (untype_class_type ct)
+      Tctf_inherit ct -> Pctf_inherit (untype_class_type ct)
     | Tctf_val (s, mut, virt, ct) ->
         Pctf_val (s, mut, virt, untype_core_type ct)
-    | Tctf_virt  (s, priv, ct) ->
-        Pctf_virt (s, priv, untype_core_type ct)
-    | Tctf_meth  (s, priv, ct) ->
-        Pctf_meth  (s, priv, untype_core_type ct)
-    | Tctf_cstr  (ct1, ct2) ->
-        Pctf_cstr (untype_core_type ct1, untype_core_type ct2)
+    | Tctf_method  (s, priv, virt, ct) ->
+        Pctf_method  (s, priv, virt, untype_core_type ct)
+    | Tctf_constraint  (ct1, ct2) ->
+        Pctf_constraint (untype_core_type ct1, untype_core_type ct2)
   in
   {
     pctf_desc = desc;
@@ -519,26 +517,18 @@ and untype_row_field rf =
 
 and untype_class_field cf =
   let desc = match cf.cf_desc with
-      Tcf_inher (ovf, cl, super, _vals, _meths) ->
-        Pcf_inher (ovf, untype_class_expr cl, super)
-    | Tcf_constr (cty, cty') ->
-        Pcf_constr (untype_core_type cty, untype_core_type cty')
-    | Tcf_val (_lab, name, mut, _, Tcfk_virtual cty, _override) ->
-        Pcf_valvirt (name, mut, untype_core_type cty)
-    | Tcf_val (_lab, name, mut, _, Tcfk_concrete exp, override) ->
-        Pcf_val (name, mut,
-          (if override then Override else Fresh),
-          untype_expression exp)
-    | Tcf_meth (_lab, name, priv, Tcfk_virtual cty, _override) ->
-        Pcf_virt (name, priv, untype_core_type cty)
-    | Tcf_meth (_lab, name, priv, Tcfk_concrete exp, override) ->
-        Pcf_meth (name, priv,
-          (if override then Override else Fresh),
-          untype_expression exp)
-(*    | Tcf_let (rec_flag, bindings, _) ->
-        Pcf_let (rec_flag, List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) bindings)
-*)
-  | Tcf_init exp -> Pcf_init (untype_expression exp)
+      Tcf_inherit (ovf, cl, super, _vals, _meths) ->
+        Pcf_inherit (ovf, untype_class_expr cl, super)
+    | Tcf_constraint (cty, cty') ->
+        Pcf_constraint (untype_core_type cty, untype_core_type cty')
+    | Tcf_val (lab, mut, _, Tcfk_virtual cty, _) ->
+        Pcf_val (lab, mut, Cfk_virtual (untype_core_type cty))
+    | Tcf_val (lab, mut, _, Tcfk_concrete (o, exp), _) ->
+        Pcf_val (lab, mut, Cfk_concrete (o, untype_expression exp))
+    | Tcf_method (lab, priv, Tcfk_virtual cty) ->
+        Pcf_method (lab, priv, Cfk_virtual (untype_core_type cty))
+    | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
+        Pcf_method (lab, priv, Cfk_concrete (o, untype_expression exp))
+    | Tcf_initializer exp -> Pcf_initializer (untype_expression exp)
   in
   { pcf_desc = desc; pcf_loc = cf.cf_loc; pcf_attributes = cf.cf_attributes }

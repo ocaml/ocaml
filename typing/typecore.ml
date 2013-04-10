@@ -195,10 +195,12 @@ let iter_expression f e =
 
   and class_field cf =
     match cf.pcf_desc with
-    | Pcf_inher (_, ce, _) -> class_expr ce
-    | Pcf_valvirt _ | Pcf_virt _ | Pcf_constr _ -> ()
-    | Pcf_val (_,_,_,e) | Pcf_meth (_,_,_,e) -> expr e
-    | Pcf_init e -> expr e
+    | Pcf_inherit (_, ce, _) -> class_expr ce
+    | Pcf_val (_, _, Cfk_virtual _)
+    | Pcf_method (_, _, Cfk_virtual _ ) | Pcf_constraint _ -> ()
+    | Pcf_val (_, _, Cfk_concrete (_, e))
+    | Pcf_method (_, _, Cfk_concrete (_, e)) -> expr e
+    | Pcf_initializer e -> expr e
 
   in
   expr e
@@ -1307,14 +1309,14 @@ let rec is_nonexpansive exp =
       let count = ref 0 in
       List.for_all
         (fun field -> match field.cf_desc with
-            Tcf_meth _ -> true
-          | Tcf_val (_,_, _, _, Tcfk_concrete e,_) ->
+            Tcf_method _ -> true
+          | Tcf_val (_, _, _, Tcfk_concrete (_, e), _) ->
               incr count; is_nonexpansive e
-          | Tcf_val (_,_, _, _, Tcfk_virtual _,_) ->
+          | Tcf_val (_, _, _, Tcfk_virtual _, _) ->
               incr count; true
-          | Tcf_init e -> is_nonexpansive e
-          | Tcf_constr _ -> true
-          | Tcf_inher _ -> false)
+          | Tcf_initializer e -> is_nonexpansive e
+          | Tcf_constraint _ -> true
+          | Tcf_inherit _ -> false)
         fields &&
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&

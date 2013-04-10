@@ -425,21 +425,18 @@ and class_type_field i ppf x =
   let i = i+1 in
   attributes i ppf x.pctf_attributes;
   match x.pctf_desc with
-  | Pctf_inher (ct) ->
-      line i ppf "Pctf_inher\n";
+  | Pctf_inherit (ct) ->
+      line i ppf "Pctf_inherit\n";
       class_type i ppf ct;
   | Pctf_val (s, mf, vf, ct) ->
       line i ppf "Pctf_val \"%s\" %a %a\n" s fmt_mutable_flag mf
            fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
-  | Pctf_virt (s, pf, ct) ->
-      line i ppf "Pctf_virt \"%s\" %a\n" s fmt_private_flag pf;
+  | Pctf_method (s, pf, vf, ct) ->
+      line i ppf "Pctf_method \"%s\" %a %a\n" s fmt_private_flag pf fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
-  | Pctf_meth (s, pf, ct) ->
-      line i ppf "Pctf_meth \"%s\" %a\n" s fmt_private_flag pf;
-      core_type (i+1) ppf ct;
-  | Pctf_cstr (ct1, ct2) ->
-      line i ppf "Pctf_cstr\n";
+  | Pctf_constraint (ct1, ct2) ->
+      line i ppf "Pctf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
 
@@ -503,33 +500,33 @@ and class_field i ppf x =
   let i = i + 1 in
   attributes i ppf x.pcf_attributes;
   match x.pcf_desc with
-  | Pcf_inher (ovf, ce, so) ->
-      line i ppf "Pcf_inher %a\n" fmt_override_flag ovf;
+  | Pcf_inherit (ovf, ce, so) ->
+      line i ppf "Pcf_inherit %a\n" fmt_override_flag ovf;
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
-  | Pcf_valvirt (s, mf, ct) ->
-      line i ppf "Pcf_valvirt %a\n" fmt_mutable_flag mf;
+  | Pcf_val (s, mf, k) ->
+      line i ppf "Pcf_val %a\n" fmt_mutable_flag mf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
-      core_type (i+1) ppf ct;
-  | Pcf_val (s, mf, ovf, e) ->
-      line i ppf "Pcf_val %a %a\n" fmt_mutable_flag mf fmt_override_flag ovf;
+      class_field_kind (i+1) ppf k
+  | Pcf_method (s, pf, k) ->
+      line i ppf "Pcf_method %a\n" fmt_private_flag pf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
-      expression (i+1) ppf e;
-  | Pcf_virt (s, pf, ct) ->
-      line i ppf "Pcf_virt %a\n" fmt_private_flag pf;
-      line (i+1) ppf "%a\n" fmt_string_loc s;
-      core_type (i+1) ppf ct;
-  | Pcf_meth (s, pf, ovf, e) ->
-      line i ppf "Pcf_meth %a %a\n" fmt_private_flag pf fmt_override_flag ovf;
-      line (i+1) ppf "%a\n" fmt_string_loc s;
-      expression (i+1) ppf e;
-  | Pcf_constr (ct1, ct2) ->
-      line i ppf "Pcf_constr\n";
+      class_field_kind (i+1) ppf k
+  | Pcf_constraint (ct1, ct2) ->
+      line i ppf "Pcf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
-  | Pcf_init (e) ->
-      line i ppf "Pcf_init\n";
+  | Pcf_initializer (e) ->
+      line i ppf "Pcf_initializer\n";
       expression (i+1) ppf e;
+
+and class_field_kind i ppf = function
+  | Cfk_concrete (o, e) ->
+      line i ppf "Concrete %a\n" fmt_override_flag o;
+      expression i ppf e
+  | Cfk_virtual t ->
+      line i ppf "Virtual\n";
+      core_type i ppf t
 
 and class_declaration i ppf x =
   line i ppf "class_declaration %a\n" fmt_location x.pci_loc;

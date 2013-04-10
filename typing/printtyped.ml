@@ -435,28 +435,24 @@ and class_signature i ppf { csig_self = ct; csig_fields = l } =
   list (i+1) class_type_field ppf l;
 
 and class_type_field i ppf x =
-  let loc = x.ctf_loc in
+  line i ppf "class_type_field %a\n" fmt_location x.ctf_loc;
+  let i = i+1 in
+  attributes i ppf x.ctf_attributes;
   match x.ctf_desc with
-  | Tctf_inher (ct) ->
-      line i ppf "Pctf_inher\n";
+  | Tctf_inherit (ct) ->
+      line i ppf "Pctf_inherit\n";
       class_type i ppf ct;
   | Tctf_val (s, mf, vf, ct) ->
-      line i ppf
-        "Pctf_val \"%s\" %a %a %a\n" s
-        fmt_mutable_flag mf fmt_virtual_flag vf fmt_location loc;
+      line i ppf "Pctf_val \"%s\" %a %a\n" s fmt_mutable_flag mf
+           fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
-  | Tctf_virt (s, pf, ct) ->
-      line i ppf
-        "Pctf_virt \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+  | Tctf_method (s, pf, vf, ct) ->
+      line i ppf "Pctf_method \"%s\" %a %a\n" s fmt_private_flag pf fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
-  | Tctf_meth (s, pf, ct) ->
-      line i ppf
-        "Pctf_meth \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
-      core_type (i+1) ppf ct;
-  | Tctf_cstr (ct1, ct2) ->
-      line i ppf "Pctf_cstr %a\n" fmt_location loc;
-      core_type i ppf ct1;
-      core_type i ppf ct2;
+  | Tctf_constraint (ct1, ct2) ->
+      line i ppf "Pctf_constraint\n";
+      core_type (i+1) ppf ct1;
+      core_type (i+1) ppf ct2;
 
 and class_description i ppf x =
   line i ppf "class_description %a\n" fmt_location x.ci_loc;

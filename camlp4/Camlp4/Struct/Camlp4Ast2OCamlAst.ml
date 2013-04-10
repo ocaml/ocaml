@@ -1152,16 +1152,16 @@ value varify_constructors var_names =
   and class_sig_item c l =
     match c with
     [ <:class_sig_item<>> -> l
-    | CgCtr loc t1 t2 -> [mkctf loc (Pctf_cstr (ctyp t1, ctyp t2)) :: l]
+    | CgCtr loc t1 t2 -> [mkctf loc (Pctf_constraint (ctyp t1, ctyp t2)) :: l]
     | <:class_sig_item< $csg1$; $csg2$ >> ->
         class_sig_item csg1 (class_sig_item csg2 l)
-    | CgInh loc ct -> [mkctf loc (Pctf_inher (class_type ct)) :: l]
+    | CgInh loc ct -> [mkctf loc (Pctf_inherit (class_type ct)) :: l]
     | CgMth loc s pf t ->
-        [mkctf loc (Pctf_meth (s, mkprivate pf, mkpolytype (ctyp t))) :: l]
+        [mkctf loc (Pctf_method (s, mkprivate pf, Concrete, mkpolytype (ctyp t))) :: l]
     | CgVal loc s b v t ->
         [mkctf loc (Pctf_val (s, mkmutable b, mkvirtual v, ctyp t)) :: l]
     | CgVir loc s b t ->
-        [mkctf loc (Pctf_virt (s, mkprivate b, mkpolytype (ctyp t))) :: l]
+        [mkctf loc (Pctf_method (s, mkprivate b, Virtual, mkpolytype (ctyp t))) :: l]
     | CgAnt _ _ -> assert False ]
   and class_expr =
     fun
@@ -1204,26 +1204,26 @@ value varify_constructors var_names =
   and class_str_item c l =
     match c with
     [ CrNil _ -> l
-    | CrCtr loc t1 t2 -> [mkcf loc (Pcf_constr (ctyp t1, ctyp t2)) :: l]
+    | CrCtr loc t1 t2 -> [mkcf loc (Pcf_constraint (ctyp t1, ctyp t2)) :: l]
     | <:class_str_item< $cst1$; $cst2$ >> ->
         class_str_item cst1 (class_str_item cst2 l)
     | CrInh loc ov ce pb ->
         let opb = if pb = "" then None else Some pb in
-        [mkcf loc (Pcf_inher (override_flag loc ov) (class_expr ce) opb) :: l]
-    | CrIni loc e -> [mkcf loc (Pcf_init (expr e)) :: l]
+        [mkcf loc (Pcf_inherit (override_flag loc ov) (class_expr ce) opb) :: l]
+    | CrIni loc e -> [mkcf loc (Pcf_initializer (expr e)) :: l]
     | CrMth loc s ov pf e t ->
         let t =
           match t with
           [ <:ctyp<>> -> None
           | t -> Some (mkpolytype (ctyp t)) ] in
         let e = mkexp loc (Pexp_poly (expr e) t) in
-        [mkcf loc (Pcf_meth (with_loc s loc, mkprivate pf, override_flag loc ov, e)) :: l]
+        [mkcf loc (Pcf_method (with_loc s loc, mkprivate pf, Cfk_concrete (override_flag loc ov, e))) :: l]
     | CrVal loc s ov mf e ->
-        [mkcf loc (Pcf_val (with_loc s loc, mkmutable mf, override_flag loc ov, expr e)) :: l]
+        [mkcf loc (Pcf_val (with_loc s loc, mkmutable mf, Cfk_concrete (override_flag loc ov, expr e))) :: l]
     | CrVir loc s pf t ->
-        [mkcf loc (Pcf_virt (with_loc s loc, mkprivate pf, mkpolytype (ctyp t))) :: l]
+        [mkcf loc (Pcf_method (with_loc s loc, mkprivate pf, Cfk_virtual (mkpolytype (ctyp t)))) :: l]
     | CrVvr loc s mf t ->
-        [mkcf loc (Pcf_valvirt (with_loc s loc, mkmutable mf, ctyp t)) :: l]
+        [mkcf loc (Pcf_val (with_loc s loc, mkmutable mf, Cfk_virtual (ctyp t))) :: l]
     | CrAnt _ _ -> assert False ];
 
   value sig_item ast = sig_item ast [];

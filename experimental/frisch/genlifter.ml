@@ -80,7 +80,7 @@ let rec gen ty =
   let concrete e =
     let e = List.fold_right lam (List.map pvar params) e in
     let body = Exp.poly e (Some t) in
-    meths := Cf.meth (mknoloc (print_fun ty)) Public Fresh body :: !meths
+    meths := Cf.(method_ (mknoloc (print_fun ty)) Public (concrete Fresh body)) :: !meths
   in
   match td.type_kind, td.type_manifest with
   | Type_record (l, _), _ ->
@@ -106,7 +106,7 @@ let rec gen ty =
       concrete (tyexpr_fun env t)
   | Type_abstract, None ->
       (* Generate an abstract method to lift abstract types *)
-      meths := Cf.virt (mknoloc (print_fun ty)) Public t :: !meths
+      meths := Cf.(method_ (mknoloc (print_fun ty)) Public (virtual_ t)) :: !meths
 
 and tuple env tl =
   let arg i t =
@@ -185,7 +185,7 @@ let usage =
 let () =
   Config.load_path := [];
   Arg.parse (Arg.align args) gen usage;
-  let cl = {Parsetree.pcstr_pat = pvar "this"; pcstr_fields = !meths} in
+  let cl = {Parsetree.pcstr_self = pvar "this"; pcstr_fields = !meths} in
   let params = [mknoloc "res", Invariant], Location.none in
   let cl = Ci.mk ~virt:Virtual ~params (mknoloc "lifter") (Cl.structure cl) in
   let s = [Str.class_ [cl]] in

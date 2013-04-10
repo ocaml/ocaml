@@ -485,14 +485,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_class_type_field ctf;
       begin
         match ctf.ctf_desc with
-          Tctf_inher ct -> iter_class_type ct
-        | Tctf_val (s, mut, virt, ct) ->
+          Tctf_inherit ct -> iter_class_type ct
+        | Tctf_val (s, _mut, _virt, ct) ->
             iter_core_type ct
-        | Tctf_virt  (s, priv, ct) ->
+        | Tctf_method (s, _priv, _virt, ct) ->
             iter_core_type ct
-        | Tctf_meth  (s, priv, ct) ->
-            iter_core_type ct
-        | Tctf_cstr  (ct1, ct2) ->
+        | Tctf_constraint  (ct1, ct2) ->
             iter_core_type ct1;
             iter_core_type ct2
       end;
@@ -540,27 +538,23 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_class_field cf;
       begin
         match cf.cf_desc with
-          Tcf_inher (ovf, cl, super, _vals, _meths) ->
+          Tcf_inherit (ovf, cl, super, _vals, _meths) ->
           iter_class_expr cl
-      | Tcf_constr (cty, cty') ->
+      | Tcf_constraint (cty, cty') ->
           iter_core_type cty;
           iter_core_type cty'
-      | Tcf_val (lab, _, _, mut, Tcfk_virtual cty, override) ->
+      | Tcf_val (lab, _, _, Tcfk_virtual cty, _) ->
           iter_core_type cty
-      | Tcf_val (lab, _, _, mut, Tcfk_concrete exp, override) ->
+      | Tcf_val (lab, _, _, Tcfk_concrete (_, exp), _) ->
           iter_expression exp
-      | Tcf_meth (lab, _, priv, Tcfk_virtual cty, override) ->
+      | Tcf_method (lab, _, Tcfk_virtual cty) ->
           iter_core_type cty
-      | Tcf_meth (lab, _, priv, Tcfk_concrete exp, override) ->
+      | Tcf_method (lab, _, Tcfk_concrete (_, exp)) ->
           iter_expression exp
-(*      | Tcf_let (rec_flag, bindings, exps) ->
-          iter_bindings rec_flag bindings;
-        List.iter (fun (id, _, exp) -> iter_expression exp) exps; *)
-      | Tcf_init exp ->
+      | Tcf_initializer exp ->
           iter_expression exp
       end;
       Iter.leave_class_field cf;
-
   end
 
 module DefaultIteratorArgument = struct

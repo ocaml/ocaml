@@ -91,11 +91,10 @@ module CT = struct
     let open Ctf in
     let loc = sub # location loc in
     match desc with
-    | Pctf_inher ct -> inher ~loc (sub # class_type ct)
+    | Pctf_inherit ct -> inherit_ ~loc (sub # class_type ct)
     | Pctf_val (s, m, v, t) -> val_ ~loc s m v (sub # typ t)
-    | Pctf_virt (s, p, t) -> virt ~loc s p (sub # typ t)
-    | Pctf_meth (s, p, t) -> meth ~loc s p (sub # typ t)
-    | Pctf_cstr (t1, t2) -> cstr ~loc (sub # typ t1) (sub # typ t2)
+    | Pctf_method (s, p, v, t) -> method_ ~loc s p v (sub # typ t)
+    | Pctf_constraint (t1, t2) -> constraint_ ~loc (sub # typ t1) (sub # typ t2)
 
   let map_signature sub {pcsig_self; pcsig_fields; pcsig_loc} =
     Csig.mk
@@ -279,18 +278,19 @@ module CE = struct
     | Pcl_constraint (ce, ct) ->
         constraint_ ~loc (sub # class_expr ce) (sub # class_type ct)
 
+  let map_kind sub = function
+    | Cfk_concrete (o, e) -> Cfk_concrete (o, sub # expr e)
+    | Cfk_virtual t -> Cfk_virtual (sub # typ t)
 
   let map_field sub {pcf_desc = desc; pcf_loc = loc} =
     let open Cf in
     let loc = sub # location loc in
     match desc with
-    | Pcf_inher (o, ce, s) -> inher ~loc o (sub # class_expr ce) s
-    | Pcf_valvirt (s, m, t) -> valvirt ~loc (map_loc sub s) m (sub # typ t)
-    | Pcf_val (s, m, o, e) -> val_ ~loc (map_loc sub s) m o (sub # expr e)
-    | Pcf_virt (s, p, t) -> virt ~loc (map_loc sub s) p (sub # typ t)
-    | Pcf_meth (s, p, o, e) -> meth ~loc (map_loc sub s) p o (sub # expr e)
-    | Pcf_constr (t1, t2) -> constr ~loc (sub # typ t1) (sub # typ t2)
-    | Pcf_init e -> init ~loc (sub # expr e)
+    | Pcf_inherit (o, ce, s) -> inherit_ ~loc o (sub # class_expr ce) s
+    | Pcf_val (s, m, k) -> val_ ~loc (map_loc sub s) m (map_kind sub k)
+    | Pcf_method (s, p, k) -> method_ ~loc (map_loc sub s) p (map_kind sub k)
+    | Pcf_constraint (t1, t2) -> constraint_ ~loc (sub # typ t1) (sub # typ t2)
+    | Pcf_initializer e -> initializer_ ~loc (sub # expr e)
 
   let map_structure sub {pcstr_self; pcstr_fields} =
     {

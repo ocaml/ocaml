@@ -708,18 +708,15 @@ class printer  ()= object(self:'self)
   method class_signature f { pcsig_self = ct; pcsig_fields = l ;_} =
     let class_type_field f x =
       match x.pctf_desc with
-      | Pctf_inher (ct) ->  
+      | Pctf_inherit (ct) ->  
           pp f "@[<2>inherit@ %a@]" self#class_type ct 
       | Pctf_val (s, mf, vf, ct) ->
           pp f "@[<2>val @ %a%a%s@ :@ %a@]"
             self#mutable_flag mf self#virtual_flag vf s  self#core_type  ct 
-      | Pctf_virt (s, pf, ct) ->    (* todo: test this *)
-          pp f "@[<2>method@ %a@ virtual@ %s@ :@ %a@]"
-            self#private_flag pf s  self#core_type ct 
-      | Pctf_meth (s, pf, ct) ->
-          pp f "@[<2>method %a%s :@;%a@]"
-            self#private_flag pf s self#core_type ct 
-      | Pctf_cstr (ct1, ct2) ->
+      | Pctf_method (s, pf, vf, ct) ->
+          pp f "@[<2>method %a %a%s :@;%a@]"
+            self#private_flag pf self#virtual_flag vf s self#core_type ct 
+      | Pctf_constraint (ct1, ct2) ->
           pp f "@[<2>constraint@ %a@ =@ %a@]"
             self#core_type ct1 self#core_type ct2 in 
     pp f "@[<hv0>@[<hv2>object @[<1>%a@]@ %a@]@ end@]"
@@ -758,22 +755,22 @@ class printer  ()= object(self:'self)
 
   method class_field f x =
     match x.pcf_desc with
-    | Pcf_inher (ovf, ce, so) ->
+    | Pcf_inherit (ovf, ce, so) ->
         pp f "@[<2>inherit@ %s@ %a%a@]"  (override ovf) self#class_expr ce
           (fun f so -> match so with
           | None -> ();
           | Some (s) -> pp f "@ as %s" s ) so 
-    | Pcf_val (s, mf, ovf, e) ->
+    | Pcf_val (s, mf, Cfk_concrete (ovf, e)) ->
         pp f "@[<2>val%s %a%s =@;%a@]" (override ovf)  self#mutable_flag mf
           s.txt  self#expression  e 
-    | Pcf_virt (s, pf, ct) ->
+    | Pcf_method (s, pf, Cfk_virtual ct) ->
         pp f "@[<2>method virtual %a %s :@;%a@]"
           self#private_flag pf s.txt self#core_type  ct
-    | Pcf_valvirt (s, mf, ct) ->
+    | Pcf_val (s, mf, Cfk_virtual ct) ->
         pp f "@[<2>val virtual %a%s :@ %a@]"
           self#mutable_flag mf s.txt
           self#core_type  ct
-    | Pcf_meth (s, pf, ovf, e) ->
+    | Pcf_method (s, pf, Cfk_concrete (ovf, e)) ->
         pp f "@[<2>method%s %a%a@]"
           (override ovf)
           self#private_flag pf
@@ -785,9 +782,9 @@ class printer  ()= object(self:'self)
               self#binding f ({ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]} ,e)
           | _ ->
               self#expression f e ) e 
-    | Pcf_constr (ct1, ct2) ->
+    | Pcf_constraint (ct1, ct2) ->
         pp f "@[<2>constraint %a =@;%a@]" self#core_type  ct1 self#core_type  ct2
-    | Pcf_init (e) ->
+    | Pcf_initializer (e) ->
         pp f "@[<2>initializer@ %a@]" self#expression e 
 
   method class_structure f { pcstr_self = p; pcstr_fields =  l } =

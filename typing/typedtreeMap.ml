@@ -528,15 +528,13 @@ module MakeMap(Map : MapArgument) = struct
     let ctf = Map.enter_class_type_field ctf in
     let ctf_desc =
       match ctf.ctf_desc with
-          Tctf_inher ct -> Tctf_inher (map_class_type ct)
+          Tctf_inherit ct -> Tctf_inherit (map_class_type ct)
         | Tctf_val (s, mut, virt, ct) ->
           Tctf_val (s, mut, virt, map_core_type ct)
-        | Tctf_virt  (s, priv, ct) ->
-          Tctf_virt (s, priv, map_core_type ct)
-        | Tctf_meth  (s, priv, ct) ->
-          Tctf_meth (s, priv, map_core_type ct)
-        | Tctf_cstr  (ct1, ct2) ->
-          Tctf_cstr (map_core_type ct1, map_core_type ct2)
+        | Tctf_method (s, priv, virt, ct) ->
+          Tctf_method (s, priv, virt, map_core_type ct)
+        | Tctf_constraint (ct1, ct2) ->
+          Tctf_constraint (map_core_type ct1, map_core_type ct2)
     in
     Map.leave_class_type_field { ctf with ctf_desc = ctf_desc }
 
@@ -579,23 +577,19 @@ module MakeMap(Map : MapArgument) = struct
     let cf = Map.enter_class_field cf in
     let cf_desc =
       match cf.cf_desc with
-          Tcf_inher (ovf, cl, super, vals, meths) ->
-            Tcf_inher (ovf, map_class_expr cl, super, vals, meths)
-        | Tcf_constr (cty, cty') ->
-          Tcf_constr (map_core_type cty, map_core_type cty')
-        | Tcf_val (lab, name, mut, ident, Tcfk_virtual cty, override) ->
-          Tcf_val (lab, name, mut, ident, Tcfk_virtual (map_core_type cty),
-                   override)
-        | Tcf_val (lab, name, mut, ident, Tcfk_concrete exp, override) ->
-          Tcf_val (lab, name, mut, ident, Tcfk_concrete (map_expression exp),
-                   override)
-        | Tcf_meth (lab, name, priv, Tcfk_virtual cty, override) ->
-          Tcf_meth (lab, name, priv, Tcfk_virtual (map_core_type cty),
-                    override)
-        | Tcf_meth (lab, name, priv, Tcfk_concrete exp, override) ->
-          Tcf_meth (lab, name, priv, Tcfk_concrete (map_expression exp),
-                    override)
-        | Tcf_init exp -> Tcf_init (map_expression exp)
+          Tcf_inherit (ovf, cl, super, vals, meths) ->
+            Tcf_inherit (ovf, map_class_expr cl, super, vals, meths)
+        | Tcf_constraint (cty, cty') ->
+          Tcf_constraint (map_core_type cty, map_core_type cty')
+        | Tcf_val (lab, mut, ident, Tcfk_virtual cty, b) ->
+          Tcf_val (lab, mut, ident, Tcfk_virtual (map_core_type cty), b)
+        | Tcf_val (lab, mut, ident, Tcfk_concrete (o, exp), b) ->
+          Tcf_val (lab, mut, ident, Tcfk_concrete (o, map_expression exp), b)
+        | Tcf_method (lab, priv, Tcfk_virtual cty) ->
+          Tcf_method (lab, priv, Tcfk_virtual (map_core_type cty))
+        | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
+          Tcf_method (lab, priv, Tcfk_concrete (o, map_expression exp))
+        | Tcf_initializer exp -> Tcf_initializer (map_expression exp)
     in
     Map.leave_class_field { cf with cf_desc = cf_desc }
 end
