@@ -16,7 +16,7 @@ open Asttypes
 open Parsetree
 
 module Typ = struct
-  let mk ?(attrs = []) ?(loc = Location.none) d = {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
+  let mk ?(loc = Location.none) ?(attrs = []) d = {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
   let attr d a = {d with ptyp_attributes = d.ptyp_attributes @ [a]}
 
   let any ?loc ?attrs () = mk ?loc ?attrs Ptyp_any
@@ -39,7 +39,7 @@ module Typ = struct
 end
 
 module Pat = struct
-  let mk ?(attrs = []) ?(loc = Location.none) d = {ppat_desc = d; ppat_loc = loc; ppat_attributes = attrs}
+  let mk ?(loc = Location.none) ?(attrs = []) d = {ppat_desc = d; ppat_loc = loc; ppat_attributes = attrs}
   let attr d a = {d with ppat_attributes = d.ppat_attributes @ [a]}
 
   let any ?loc ?attrs () = mk ?loc ?attrs Ppat_any
@@ -60,7 +60,7 @@ module Pat = struct
 end
 
 module Exp = struct
-  let mk ?(attrs = []) ?(loc = Location.none) d = {pexp_desc = d; pexp_loc = loc; pexp_attributes = attrs}
+  let mk ?(loc = Location.none) ?(attrs = []) d = {pexp_desc = d; pexp_loc = loc; pexp_attributes = attrs}
   let attr d a = {d with pexp_attributes = d.pexp_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pexp_ident a)
@@ -100,7 +100,7 @@ module Exp = struct
 end
 
 module Mty = struct
-  let mk ?(attrs = []) ?(loc = Location.none) d = {pmty_desc = d; pmty_loc = loc; pmty_attributes = attrs}
+  let mk ?(loc = Location.none) ?(attrs = []) d = {pmty_desc = d; pmty_loc = loc; pmty_attributes = attrs}
   let attr d a = {d with pmty_attributes = d.pmty_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pmty_ident a)
@@ -112,7 +112,7 @@ module Mty = struct
 end
 
 module Mod = struct
-let mk ?(attrs = []) ?(loc = Location.none) d = {pmod_desc = d; pmod_loc = loc; pmod_attributes = attrs}
+let mk ?(loc = Location.none) ?(attrs = []) d = {pmod_desc = d; pmod_loc = loc; pmod_attributes = attrs}
   let attr d a = {d with pmod_attributes = d.pmod_attributes @ [a]}
 
   let ident ?loc ?attrs x = mk ?loc ?attrs (Pmod_ident x)
@@ -181,7 +181,7 @@ module Cty = struct
 end
 
 module Ctf = struct
-  let mk ?(attrs = []) ?(loc = Location.none) d =
+  let mk ?(loc = Location.none) ?(attrs = []) d =
     {
      pctf_desc = d;
      pctf_loc = loc;
@@ -196,7 +196,7 @@ module Ctf = struct
 end
 
 module Cf = struct
-  let mk ?(attrs = []) ?(loc = Location.none) d =
+  let mk ?(loc = Location.none) ?(attrs = []) d =
     {
      pcf_desc = d;
      pcf_loc = loc;
@@ -215,7 +215,7 @@ module Cf = struct
 end
 
 module Val = struct
-  let mk ?(attrs = []) ?(loc = Location.none) ?(prim = []) name typ =
+  let mk ?(loc = Location.none) ?(attrs = []) ?(prim = []) name typ =
     {
      pval_name = name;
      pval_type = typ;
@@ -262,7 +262,7 @@ module Mb = struct
 end
 
 module Ci = struct
-  let mk ?(attrs = []) ?(loc = Location.none) ?(virt = Concrete) ?(params = [], Location.none) name expr =
+  let mk ?(loc = Location.none) ?(attrs = []) ?(virt = Concrete) ?(params = [], Location.none) name expr =
     {
      pci_virt = virt;
      pci_params = params;
@@ -274,7 +274,7 @@ module Ci = struct
 end
 
 module Type = struct
-  let mk ?(attrs = []) ?(loc = Location.none)
+  let mk ?(loc = Location.none) ?(attrs = [])
       ?(params = [])
       ?(cstrs = [])
       ?(kind = Ptype_abstract)
@@ -295,7 +295,7 @@ end
 
 
 module Cd = struct
-  let mk ?(attrs = []) ?(loc = Location.none) ?(args = []) ?res name =
+  let mk ?(loc = Location.none) ?(attrs = []) ?(args = []) ?res name =
     {
      pcd_name = name;
      pcd_args = args;
@@ -307,7 +307,7 @@ end
 
 
 module Ld = struct
-  let mk ?(attrs = []) ?(loc = Location.none) ?(mut = Immutable) name typ =
+  let mk ?(loc = Location.none) ?(attrs = []) ?(mut = Immutable) name typ =
     {
      pld_name = name;
      pld_mutable = mut;

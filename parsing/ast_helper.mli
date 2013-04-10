@@ -17,7 +17,7 @@ open Asttypes
 
 module Typ :
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> core_type_desc -> core_type
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> core_type_desc -> core_type
     val attr: core_type -> attribute -> core_type
 
     val any: ?loc:Location.t -> ?attrs:attribute list -> unit -> core_type
@@ -37,8 +37,9 @@ module Typ :
   end
 module Pat:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> pattern_desc -> pattern
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> pattern_desc -> pattern
     val attr:pattern -> attribute -> pattern
+
     val any: ?loc:Location.t -> ?attrs:attribute list -> unit -> pattern
     val var: ?loc:Location.t -> ?attrs:attribute list -> string loc -> pattern
     val alias: ?loc:Location.t -> ?attrs:attribute list -> pattern -> string loc -> pattern
@@ -57,8 +58,9 @@ module Pat:
   end
 module Exp:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> expression_desc -> expression
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> expression_desc -> expression
     val attr: expression -> attribute -> expression
+
     val ident: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> expression
     val constant: ?loc:Location.t -> ?attrs:attribute list -> constant -> expression
     val let_: ?loc:Location.t -> ?attrs:attribute list -> rec_flag -> (pattern * expression) list -> expression -> expression
@@ -96,8 +98,9 @@ module Exp:
   end
 module Mty:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> module_type_desc -> module_type
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> module_type_desc -> module_type
     val attr: module_type -> attribute -> module_type
+
     val ident: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> module_type
     val signature: ?loc:Location.t -> ?attrs:attribute list -> signature -> module_type
     val functor_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> module_type -> module_type -> module_type
@@ -107,8 +110,9 @@ module Mty:
   end
 module Mod:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> module_expr_desc -> module_expr
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> module_expr_desc -> module_expr
     val attr: module_expr -> attribute -> module_expr
+
     val ident: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> module_expr
     val structure: ?loc:Location.t -> ?attrs:attribute list -> structure -> module_expr
     val functor_: ?loc:Location.t -> ?attrs:attribute list -> string loc -> module_type -> module_expr -> module_expr
@@ -120,6 +124,7 @@ module Mod:
 module Sig:
   sig
     val mk: ?loc:Location.t -> signature_item_desc -> signature_item
+
     val value: ?loc:Location.t -> value_description -> signature_item
     val type_: ?loc:Location.t -> type_declaration list -> signature_item
     val exception_: ?loc:Location.t -> constructor_declaration -> signature_item
@@ -136,6 +141,7 @@ module Sig:
 module Str:
   sig
     val mk: ?loc:Location.t -> structure_item_desc -> structure_item
+
     val eval: ?loc:Location.t -> expression -> structure_item
     val value: ?loc:Location.t -> rec_flag -> (pattern * expression) list -> structure_item
     val primitive: ?loc:Location.t -> value_description -> structure_item
@@ -155,6 +161,7 @@ module Str:
 module Cl:
   sig
     val mk: ?loc:Location.t -> class_expr_desc -> class_expr
+
     val constr: ?loc:Location.t -> Longident.t loc -> core_type list -> class_expr
     val structure: ?loc:Location.t -> class_structure -> class_expr
     val fun_: ?loc:Location.t -> label -> expression option -> pattern -> class_expr -> class_expr
@@ -165,13 +172,14 @@ module Cl:
 module Cty:
   sig
     val mk: ?loc:Location.t -> class_type_desc -> class_type
+
     val constr: ?loc:Location.t -> Longident.t loc -> core_type list -> class_type
     val signature: ?loc:Location.t -> class_signature -> class_type
     val fun_: ?loc:Location.t -> label -> core_type -> class_type -> class_type
   end
 module Ctf:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> class_type_field_desc -> class_type_field
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> class_type_field_desc -> class_type_field
     val attr: class_type_field -> attribute -> class_type_field
 
     val inherit_: ?loc:Location.t -> ?attrs:attribute list -> class_type -> class_type_field
@@ -181,7 +189,7 @@ module Ctf:
   end
 module Cf:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> class_field_desc -> class_field
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> class_field_desc -> class_field
     val attr: class_field -> attribute -> class_field
 
     val inherit_: ?loc:Location.t -> ?attrs:attribute list -> override_flag -> class_expr -> string option -> class_field
@@ -195,7 +203,7 @@ module Cf:
   end
 module Val:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?prim:string list -> string loc -> core_type -> value_description
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?prim:string list -> string loc -> core_type -> value_description
   end
 module Mtb:
   sig
@@ -215,19 +223,19 @@ module Mb:
   end
 module Ci:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?virt:virtual_flag -> ?params:(string loc * variance) list * Location.t -> string loc -> 'a -> 'a class_infos
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?virt:virtual_flag -> ?params:(string loc * variance) list * Location.t -> string loc -> 'a -> 'a class_infos
   end
 module Type:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?params:(string loc option * variance) list -> ?cstrs:(core_type * core_type * Location.t) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> string loc -> type_declaration
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?params:(string loc option * variance) list -> ?cstrs:(core_type * core_type * Location.t) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> string loc -> type_declaration
   end
 module Cd:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?args:core_type list -> ?res:core_type -> string loc -> constructor_declaration
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?args:core_type list -> ?res:core_type -> string loc -> constructor_declaration
   end
 module Ld:
   sig
-    val mk: ?attrs:attribute list -> ?loc:Location.t -> ?mut:mutable_flag -> string loc -> core_type -> label_declaration
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> ?mut:mutable_flag -> string loc -> core_type -> label_declaration
   end
 module Csig:
   sig
