@@ -171,12 +171,14 @@ module Cty:
   end
 module Ctf:
   sig
-    val mk: ?loc:Location.t -> class_type_field_desc -> class_type_field
-    val inher: ?loc:Location.t -> class_type -> class_type_field
-    val val_: ?loc:Location.t -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
-    val virt: ?loc:Location.t -> string -> private_flag -> core_type -> class_type_field
-    val meth: ?loc:Location.t -> string -> private_flag -> core_type -> class_type_field
-    val cstr: ?loc:Location.t -> core_type -> core_type -> class_type_field
+    val mk: ?attrs:attribute list -> ?loc:Location.t -> class_type_field_desc -> class_type_field
+    val attr: class_type_field -> attribute -> class_type_field
+
+    val inher: ?loc:Location.t -> ?attrs:attribute list -> class_type -> class_type_field
+    val val_: ?loc:Location.t -> ?attrs:attribute list -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
+    val virt: ?loc:Location.t -> ?attrs:attribute list -> string -> private_flag -> core_type -> class_type_field
+    val meth: ?loc:Location.t -> ?attrs:attribute list -> string -> private_flag -> core_type -> class_type_field
+    val cstr: ?loc:Location.t -> ?attrs:attribute list -> core_type -> core_type -> class_type_field
   end
 module Cf:
   sig

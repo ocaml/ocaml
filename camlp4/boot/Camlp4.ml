@@ -14191,7 +14191,7 @@ module Struct =
               
             let mkcf loc d = { pcf_desc = d; pcf_loc = mkloc loc; pcf_attributes = [] }
               
-            let mkctf loc d = { pctf_desc = d; pctf_loc = mkloc loc; }
+            let mkctf loc d = { pctf_desc = d; pctf_loc = mkloc loc; pctf_attributes = [] }
               
             let mkpolytype t =
               match t.ptyp_desc with

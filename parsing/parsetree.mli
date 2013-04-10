@@ -193,6 +193,7 @@ and class_signature = {
 and class_type_field = {
     pctf_desc: class_type_field_desc;
     pctf_loc: Location.t;
+    pctf_attributes: attribute list;
   }
 
 and class_type_field_desc =

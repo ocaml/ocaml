@@ -423,6 +423,7 @@ and class_signature i ppf cs =
 and class_type_field i ppf x =
   line i ppf "class_type_field %a\n" fmt_location x.pctf_loc;
   let i = i+1 in
+  attributes i ppf x.pctf_attributes;
   match x.pctf_desc with
   | Pctf_inher (ct) ->
       line i ppf "Pctf_inher\n";

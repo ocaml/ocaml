@@ -54,8 +54,6 @@ let ctyp desc typ env loc =
   { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env; ctyp_attributes = [] }
 let cltyp desc typ env loc =
   { cltyp_desc = desc; cltyp_type = typ; cltyp_loc = loc; cltyp_env = env }
-let mkctf desc loc = { ctf_desc = desc; ctf_loc = loc }
-
 
 
                        (**********************)
@@ -367,6 +365,7 @@ let add_val env loc lab (mut, virt, ty) val_sig =
 let rec class_type_field env self_type meths
     (fields, val_sig, concr_meths, inher) ctf =
   let loc = ctf.pctf_loc in
+  let mkctf desc = { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes } in
   match ctf.pctf_desc with
     Pctf_inher sparent ->
       let parent = class_type env sparent in
@@ -381,31 +380,31 @@ let rec class_type_field env self_type meths
       in
       let val_sig =
         Vars.fold (add_val env sparent.pcty_loc) cl_sig.cty_vars val_sig in
-      (mkctf (Tctf_inher parent) loc :: fields,
+      (mkctf (Tctf_inher parent) :: fields,
        val_sig, concr_meths, inher)
 
   | Pctf_val (lab, mut, virt, sty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
-      (mkctf (Tctf_val (lab, mut, virt, cty)) loc :: fields,
+      (mkctf (Tctf_val (lab, mut, virt, cty)) :: fields,
       add_val env ctf.pctf_loc lab (mut, virt, ty) val_sig, concr_meths, inher)
 
   | Pctf_virt (lab, priv, sty) ->
         let cty =
           declare_method env meths self_type lab priv sty  ctf.pctf_loc
         in
-        (mkctf (Tctf_virt (lab, priv, cty)) loc :: fields,
+        (mkctf (Tctf_virt (lab, priv, cty)) :: fields,
       val_sig, concr_meths, inher)
 
   | Pctf_meth (lab, priv, sty)  ->
       let cty =
         declare_method env meths self_type lab priv sty  ctf.pctf_loc in
-      (mkctf (Tctf_meth (lab, priv, cty)) loc :: fields,
+      (mkctf (Tctf_meth (lab, priv, cty)) :: fields,
         val_sig, Concr.add lab concr_meths, inher)
 
   | Pctf_cstr (sty, sty') ->
       let (cty, cty') = type_constraint env sty sty'  ctf.pctf_loc in
-      (mkctf (Tctf_cstr (cty, cty')) loc :: fields,
+      (mkctf (Tctf_cstr (cty, cty')) :: fields,
         val_sig, concr_meths, inher)
 
 and class_signature env sty sign loc =
@@ -497,7 +496,7 @@ let rec class_field self_loc cl_num self_type meths vars
     (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher)
   cf =
   let loc = cf.pcf_loc in
-  let mkcf desc loc = { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes } in
+  let mkcf desc = { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes } in
   match cf.pcf_desc with
     Pcf_inher (ovf, sparent, super) ->
       let parent = class_expr cl_num val_env par_env sparent in
@@ -541,7 +540,7 @@ let rec class_field self_loc cl_num self_type meths vars
             (val_env, met_env, par_env)
       in
       (val_env, met_env, par_env,
-       lazy (mkcf (Tcf_inher (ovf, parent, super, inh_vars, inh_meths)) loc)
+       lazy (mkcf (Tcf_inher (ovf, parent, super, inh_vars, inh_meths)))
        :: fields,
        concr_meths, warn_vals, inher)
 
@@ -559,7 +558,7 @@ let rec class_field self_loc cl_num self_type meths vars
       in
       (val_env, met_env', par_env,
        lazy (mkcf (Tcf_val (lab.txt, lab, mut, id, Tcfk_virtual cty,
-                            met_env' == met_env)) loc)
+                            met_env' == met_env)))
        :: fields,
        concr_meths, warn_vals, inher)
 
@@ -588,14 +587,14 @@ let rec class_field self_loc cl_num self_type meths vars
       in
       (val_env, met_env', par_env,
        lazy (mkcf (Tcf_val (lab.txt, lab, mut, id,
-                            Tcfk_concrete exp, met_env' == met_env)) loc)
+                            Tcfk_concrete exp, met_env' == met_env)))
        :: fields,
        concr_meths, Concr.add lab.txt warn_vals, inher)
 
   | Pcf_virt (lab, priv, sty) ->
       let cty = virtual_method val_env meths self_type lab.txt priv sty loc in
       (val_env, met_env, par_env,
-        lazy (mkcf(Tcf_meth (lab.txt, lab, priv, Tcfk_virtual cty, true)) loc)
+        lazy (mkcf(Tcf_meth (lab.txt, lab, priv, Tcfk_virtual cty, true)))
        ::fields,
         concr_meths, warn_vals, inher)
 
@@ -650,7 +649,7 @@ let rec class_field self_loc cl_num self_type meths vars
           mkcf (Tcf_meth (lab.txt, lab, priv, Tcfk_concrete texp,
               match ovf with
                 Override -> true
-              | Fresh -> false)) loc
+              | Fresh -> false))
         end in
       (val_env, met_env, par_env, field::fields,
        Concr.add lab.txt concr_meths, warn_vals, inher)
@@ -658,7 +657,7 @@ let rec class_field self_loc cl_num self_type meths vars
   | Pcf_constr (sty, sty') ->
       let (cty, cty') = type_constraint val_env sty sty' loc in
       (val_env, met_env, par_env,
-        lazy (mkcf (Tcf_constr (cty, cty')) loc) :: fields,
+        lazy (mkcf (Tcf_constr (cty, cty'))) :: fields,
         concr_meths, warn_vals, inher)
 
   | Pcf_init expr ->
@@ -674,7 +673,7 @@ let rec class_field self_loc cl_num self_type meths vars
           vars := vars_local;
           let texp = type_expect met_env expr meth_type in
           Ctype.end_def ();
-          mkcf (Tcf_init texp) loc
+          mkcf (Tcf_init texp)
         end in
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals, inher)
 

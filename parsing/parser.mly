@@ -909,6 +909,7 @@ class_sig_field:
   | virtual_method_type         { mkctf (Pctf_virt $1) }
   | method_type                 { mkctf (Pctf_meth $1) }
   | CONSTRAINT constrain_field        { mkctf (Pctf_cstr $2) }
+  | class_sig_field post_item_attribute { Ctf.attr $1 $2 }
 ;
 value_type:
     VIRTUAL mutable_flag label COLON core_type
@@ -1950,8 +1951,7 @@ attr_id:
   | WHEN { "when" }
   | WHILE { "while" }
   | WITH { "with" }
-/* mod/land/lor/lxor/lsl/lsr/asr are not supported for now,
-   and so are keywords followed by digits */
+/* mod/land/lor/lxor/lsl/lsr/asr are not supported for now */
 ;
 
 attribute:

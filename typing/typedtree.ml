@@ -397,8 +397,9 @@ and class_signature = {
   }
 
 and class_type_field = {
-    ctf_desc : class_type_field_desc;
-    ctf_loc : Location.t;
+    ctf_desc: class_type_field_desc;
+    ctf_loc: Location.t;
+    ctf_attributes: attribute list;
   }
 
 and class_type_field_desc =

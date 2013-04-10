@@ -181,13 +181,19 @@ module Cty = struct
 end
 
 module Ctf = struct
-  let mk ?(loc = Location.none) d = {pctf_desc = d; pctf_loc = loc}
+  let mk ?(attrs = []) ?(loc = Location.none) d =
+    {
+     pctf_desc = d;
+     pctf_loc = loc;
+     pctf_attributes = attrs;
+    }
+  let attr d a = {d with pctf_attributes = d.pctf_attributes @ [a]}
 
-  let inher ?loc a = mk ?loc (Pctf_inher a)
-  let val_ ?loc a b c d = mk ?loc (Pctf_val (a, b, c, d))
-  let virt ?loc a b c = mk ?loc (Pctf_virt (a, b, c))
-  let meth ?loc a b c = mk ?loc (Pctf_meth (a, b, c))
-  let cstr ?loc a b = mk ?loc (Pctf_cstr (a, b))
+  let inher ?loc ?attrs a = mk ?loc ?attrs (Pctf_inher a)
+  let val_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pctf_val (a, b, c, d))
+  let virt ?loc ?attrs a b c = mk ?loc ?attrs (Pctf_virt (a, b, c))
+  let meth ?loc ?attrs a b c = mk ?loc ?attrs (Pctf_meth (a, b, c))
+  let cstr ?loc ?attrs a b = mk ?loc ?attrs (Pctf_cstr (a, b))
 end
 
 module Cf = struct

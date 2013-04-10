@@ -479,6 +479,7 @@ and untype_class_type_field ctf =
   {
     pctf_desc = desc;
     pctf_loc = ctf.ctf_loc;
+    pctf_attributes = ctf.ctf_attributes;
   }
 
 and untype_core_type ct =

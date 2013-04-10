@@ -34,10 +34,10 @@ Attributes on items:
 
   ... [@@id expr]
 
-  Items designate class field, signature and structure items, and also
-  individual components of multiple declaration (type declarations,
-  recursive modules, class declarations, class type
-  declarations). (TODO: class type fields?)
+  Items designate signature items, structure items, class fields,
+  class type fields and also individual components of multiple
+  declaration in structures and signatures (type declarations, recursive modules, class
+  declarations, class type declarations).
 
   For instance, consider:
 
