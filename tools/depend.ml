@@ -88,6 +88,7 @@ let rec add_class_type bv cty =
       List.iter (add_class_type_field bv) fieldl
   | Pcty_fun(_, ty1, cty2) ->
       add_type bv ty1; add_class_type bv cty2
+  | Pcty_extension _ -> ()
 
 and add_class_type_field bv pctf =
   match pctf.pctf_desc with

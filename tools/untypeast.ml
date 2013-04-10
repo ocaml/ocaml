@@ -456,7 +456,9 @@ and untype_class_type ct =
         Pcty_fun (label, untype_core_type ct, untype_class_type cl)
   in
   { pcty_desc = desc;
-    pcty_loc = ct.cltyp_loc }
+    pcty_loc = ct.cltyp_loc;
+    pcty_attributes = ct.cltyp_attributes;
+   }
 
 and untype_class_signature cs =
   {

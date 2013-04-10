@@ -76,16 +76,17 @@ end
 module CT = struct
   (* Type expressions for the class language *)
 
-  let map sub {pcty_loc = loc; pcty_desc = desc} =
+  let map sub {pcty_loc = loc; pcty_desc = desc; pcty_attributes = attrs} =
     let open Cty in
     let loc = sub # location loc in
     match desc with
-    | Pcty_constr (lid, tys) -> constr ~loc (map_loc sub lid) (List.map (sub # typ) tys)
-    | Pcty_signature x -> signature ~loc (sub # class_signature x)
+    | Pcty_constr (lid, tys) -> constr ~loc ~attrs (map_loc sub lid) (List.map (sub # typ) tys)
+    | Pcty_signature x -> signature ~loc ~attrs (sub # class_signature x)
     | Pcty_fun (lab, t, ct) ->
-        fun_ ~loc lab
+        fun_ ~loc ~attrs lab
           (sub # typ t)
           (sub # class_type ct)
+    | Pcty_extension x -> extension ~loc ~attrs (sub # extension x)
 
   let map_field sub {pctf_desc = desc; pctf_loc = loc; pctf_attributes = attrs} =
     let open Ctf in

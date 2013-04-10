@@ -402,6 +402,7 @@ and type_kind i ppf x =
 
 and class_type i ppf x =
   line i ppf "class_type %a\n" fmt_location x.pcty_loc;
+  attributes i ppf x.pcty_attributes;
   let i = i+1 in
   match x.pcty_desc with
   | Pcty_constr (li, l) ->
@@ -414,6 +415,9 @@ and class_type i ppf x =
       line i ppf "Pcty_fun \"%s\"\n" l;
       core_type i ppf co;
       class_type i ppf cl;
+  | Pcty_extension (s, arg) ->
+      line i ppf "Pcty_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and class_signature i ppf cs =
   line i ppf "class_signature %a\n" fmt_location cs.pcsig_loc;

@@ -456,6 +456,7 @@ module Analyser =
                     ic_class = None ;
                     ic_text = text_opt ;
                   }
+              | Parsetree.Pcty_extension _ -> assert false
             in
             let (inher_l, eles) = f (pos_end + maybe_more) q in
             (inh :: inher_l , eles_comments @ eles)

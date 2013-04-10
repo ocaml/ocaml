@@ -53,9 +53,6 @@ open Typedtree
 
 let ctyp desc typ env loc =
   { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env; ctyp_attributes = [] }
-let cltyp desc typ env loc =
-  { cltyp_desc = desc; cltyp_type = typ; cltyp_loc = loc; cltyp_env = env }
-
 
                        (**********************)
                        (*  Useful constants  *)
@@ -442,7 +439,15 @@ and class_signature env sty sign loc =
     }
 
 and class_type env scty =
-  let loc = scty.pcty_loc in
+  let cltyp desc typ =
+    {
+     cltyp_desc = desc;
+     cltyp_type = typ;
+     cltyp_loc = scty.pcty_loc;
+     cltyp_env = env;
+     cltyp_attributes = scty.pcty_attributes;
+    }
+  in
   match scty.pcty_desc with
     Pcty_constr (lid, styl) ->
       let (path, decl) = Typetexp.find_class_type env scty.pcty_loc lid.txt in
@@ -467,20 +472,22 @@ and class_type env scty =
         )       styl params
       in
       let typ = Cty_constr (path, params, clty) in
-      cltyp (Tcty_constr ( path, lid , ctys)) typ env loc
+      cltyp (Tcty_constr ( path, lid , ctys)) typ
 
   | Pcty_signature pcsig ->
       let clsig = class_signature env
         pcsig.pcsig_self pcsig.pcsig_fields pcsig.pcsig_loc in
       let typ = Cty_signature clsig.csig_type in
-      cltyp (Tcty_signature clsig) typ env loc
+      cltyp (Tcty_signature clsig) typ
 
   | Pcty_fun (l, sty, scty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
       let clty = class_type env scty in
       let typ = Cty_fun (l, ty, clty.cltyp_type) in
-      cltyp (Tcty_fun (l, cty, clty)) typ env loc
+      cltyp (Tcty_fun (l, cty, clty)) typ
+  | Pcty_extension (s, _arg) ->
+      raise (Error (scty.pcty_loc, env, Extension s))
 
 let class_type env scty =
   delayed_meth_specs := [];
@@ -827,7 +834,7 @@ and class_expr cl_num val_env met_env scl =
           cl_loc = scl.pcl_loc;
           cl_type = clty';
           cl_env = val_env;
-          cl_attributes = scl.pcl_attributes;
+          cl_attributes = []; (* attributes are kept on the inner cl node *)
          }
   | Pcl_structure cl_str ->
       let (desc, ty) =

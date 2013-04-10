@@ -416,6 +416,7 @@ and type_kind i ppf x =
 
 and class_type i ppf x =
   line i ppf "class_type %a\n" fmt_location x.cltyp_loc;
+  attributes i ppf x.cltyp_attributes;
   let i = i+1 in
   match x.cltyp_desc with
   | Tcty_constr (li, _, l) ->

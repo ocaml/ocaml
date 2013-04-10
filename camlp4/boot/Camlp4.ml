@@ -14185,7 +14185,7 @@ module Struct =
               
             let mkstr loc d = { pstr_desc = d; pstr_loc = mkloc loc; }
               
-            let mkcty loc d = { pcty_desc = d; pcty_loc = mkloc loc; }
+            let mkcty loc d = { pcty_desc = d; pcty_loc = mkloc loc; pcty_attributes = []}
               
             let mkcl loc d = { pcl_desc = d; pcl_loc = mkloc loc; pcl_attributes = []}
               

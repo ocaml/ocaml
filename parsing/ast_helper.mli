@@ -173,11 +173,13 @@ module Cl:
   end
 module Cty:
   sig
-    val mk: ?loc:Location.t -> class_type_desc -> class_type
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> class_type_desc -> class_type
+    val attr: class_type -> attribute -> class_type
 
-    val constr: ?loc:Location.t -> Longident.t loc -> core_type list -> class_type
-    val signature: ?loc:Location.t -> class_signature -> class_type
-    val fun_: ?loc:Location.t -> label -> core_type -> class_type -> class_type
+    val constr: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> core_type list -> class_type
+    val signature: ?loc:Location.t -> ?attrs:attribute list -> class_signature -> class_type
+    val fun_: ?loc:Location.t -> ?attrs:attribute list -> label -> core_type -> class_type -> class_type
+    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> class_type
   end
 module Ctf:
   sig

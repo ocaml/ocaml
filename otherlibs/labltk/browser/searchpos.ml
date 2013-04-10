@@ -153,6 +153,7 @@ let rec search_pos_class_type cl ~pos ~env =
     | Pcty_fun (_, ty, cty) ->
         search_pos_type ty ~pos ~env;
         search_pos_class_type cty ~pos ~env
+    | Pcty_extension _ -> ()
     end
 
 let search_pos_type_decl td ~pos ~env =

@@ -380,10 +380,13 @@ and constructor_declaration =
     }
 
 and class_type =
-  { cltyp_desc: class_type_desc;
-    cltyp_type : Types.class_type;
-    cltyp_env : Env.t; (* BINANNOT ADDED *)
-    cltyp_loc: Location.t }
+    {
+     cltyp_desc: class_type_desc;
+     cltyp_type: Types.class_type;
+     cltyp_env: Env.t;
+     cltyp_loc: Location.t;
+     cltyp_attributes: attribute list;
+    }
 
 and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list

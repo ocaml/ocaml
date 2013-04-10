@@ -176,13 +176,17 @@ and constructor_declaration =
 (* Type expressions for the class language *)
 
 and class_type =
-  { pcty_desc: class_type_desc;
-    pcty_loc: Location.t }
+    {
+     pcty_desc: class_type_desc;
+     pcty_loc: Location.t;
+     pcty_attributes: attribute list;
+    }
 
 and class_type_desc =
     Pcty_constr of Longident.t loc * core_type list
   | Pcty_signature of class_signature
   | Pcty_fun of label * core_type * class_type
+  | Pcty_extension of extension
 
 and class_signature = {
     pcsig_self: core_type;

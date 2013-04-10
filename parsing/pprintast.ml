@@ -738,6 +738,7 @@ class printer  ()= object(self:'self)
     | Pcty_fun (l, co, cl) ->
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
           self#type_with_label (l,co) self#class_type cl
+    | Pcty_extension _ -> assert false
 
     
   (* [class type a = object end] *)  

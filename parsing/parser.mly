@@ -773,6 +773,8 @@ class_expr:
       { mkclass(Pcl_let ($2, List.rev $3, $5)) }
   | class_expr attribute
       { Cl.attr $1 $2 }
+  | extension
+      { mkclass(Pcl_extension $1) }
 ;
 class_simple_expr:
     LBRACKET core_type_comma_list RBRACKET class_longident
@@ -877,6 +879,10 @@ class_type:
       { mkcty(Pcty_fun($1, $3, $5)) }
   | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_fun("", $1, $3)) }
+  | class_type attribute
+      { Cty.attr $1 $2 }
+  | extension
+      { mkcty(Pcty_extension $1) }
 ;
 class_signature:
     LBRACKET core_type_comma_list RBRACKET clty_longident

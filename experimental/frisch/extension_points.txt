@@ -13,7 +13,7 @@ a dots (whitespaces are allowed around the dots).  In the Parsetree,
 the identifier is represented as a single string (without spaces).
 
 Attributes on expressions, type expressions, module expressions, module type expressions,
-patterns, class expressions (TODO: class type expressions):
+patterns, class expressions, class type expressions:
  
   ... [@id expr]
 
@@ -84,7 +84,7 @@ expression (written expr below).
 Two syntaxes exist for extension node:
 
 As expressions, type expressions, module expressions, module type expressions,
-patterns, class expressions (TODO: class type expressions):
+patterns, class expressions, class type expressions:
 
   [%id expr]
 

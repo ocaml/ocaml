@@ -180,11 +180,18 @@ module Cl = struct
 end
 
 module Cty = struct
-  let mk ?(loc = Location.none) d = {pcty_desc = d; pcty_loc = loc}
+  let mk ?(loc = Location.none) ?(attrs = []) d =
+    {
+     pcty_desc = d;
+     pcty_loc = loc;
+     pcty_attributes = attrs;
+    }
+  let attr d a = {d with pcty_attributes = d.pcty_attributes @ [a]}
 
-  let constr ?loc a b = mk ?loc (Pcty_constr (a, b))
-  let signature ?loc a = mk ?loc (Pcty_signature a)
-  let fun_ ?loc a b c = mk ?loc (Pcty_fun (a, b, c))
+  let constr ?loc ?attrs a b = mk ?loc ?attrs (Pcty_constr (a, b))
+  let signature ?loc ?attrs a = mk ?loc ?attrs (Pcty_signature a)
+  let fun_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_fun (a, b, c))
+  let extension ?loc ?attrs a = mk ?loc ?attrs (Pcty_extension a)
 end
 
 module Ctf = struct
