@@ -114,10 +114,13 @@ and meth =
 (* Value expressions for the class language *)
 
 and class_expr =
-  { cl_desc: class_expr_desc;
-    cl_loc: Location.t;
-    cl_type: Types.class_type;
-    cl_env: Env.t }
+    {
+     cl_desc: class_expr_desc;
+     cl_loc: Location.t;
+     cl_type: Types.class_type;
+     cl_env: Env.t;
+     cl_attributes: attribute list;
+    }
 
 and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list

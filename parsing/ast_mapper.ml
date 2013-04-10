@@ -87,14 +87,14 @@ module CT = struct
           (sub # typ t)
           (sub # class_type ct)
 
-  let map_field sub {pctf_desc = desc; pctf_loc = loc} =
+  let map_field sub {pctf_desc = desc; pctf_loc = loc; pctf_attributes = attrs} =
     let open Ctf in
     let loc = sub # location loc in
     match desc with
-    | Pctf_inherit ct -> inherit_ ~loc (sub # class_type ct)
-    | Pctf_val (s, m, v, t) -> val_ ~loc s m v (sub # typ t)
-    | Pctf_method (s, p, v, t) -> method_ ~loc s p v (sub # typ t)
-    | Pctf_constraint (t1, t2) -> constraint_ ~loc (sub # typ t1) (sub # typ t2)
+    | Pctf_inherit ct -> inherit_ ~loc ~attrs (sub # class_type ct)
+    | Pctf_val (s, m, v, t) -> val_ ~loc ~attrs s m v (sub # typ t)
+    | Pctf_method (s, p, v, t) -> method_ ~loc ~attrs s p v (sub # typ t)
+    | Pctf_constraint (t1, t2) -> constraint_ ~loc ~attrs (sub # typ t1) (sub # typ t2)
 
   let map_signature sub {pcsig_self; pcsig_fields; pcsig_loc} =
     Csig.mk
@@ -257,40 +257,41 @@ end
 module CE = struct
   (* Value expressions for the class language *)
 
-  let map sub {pcl_loc = loc; pcl_desc = desc} =
+  let map sub {pcl_loc = loc; pcl_desc = desc; pcl_attributes = attrs} =
     let open Cl in
     let loc = sub # location loc in
     match desc with
-    | Pcl_constr (lid, tys) -> constr ~loc (map_loc sub lid) (List.map (sub # typ) tys)
+    | Pcl_constr (lid, tys) -> constr ~loc ~attrs (map_loc sub lid) (List.map (sub # typ) tys)
     | Pcl_structure s ->
-        structure ~loc (sub # class_structure s)
+        structure ~loc ~attrs (sub # class_structure s)
     | Pcl_fun (lab, e, p, ce) ->
-        fun_ ~loc lab
+        fun_ ~loc ~attrs lab
           (map_opt (sub # expr) e)
           (sub # pat p)
           (sub # class_expr ce)
     | Pcl_apply (ce, l) ->
-        apply ~loc (sub # class_expr ce) (List.map (map_snd (sub # expr)) l)
+        apply ~loc ~attrs (sub # class_expr ce) (List.map (map_snd (sub # expr)) l)
     | Pcl_let (r, pel, ce) ->
-        let_ ~loc r
+        let_ ~loc ~attrs r
           (List.map (map_tuple (sub # pat) (sub # expr)) pel)
           (sub # class_expr ce)
     | Pcl_constraint (ce, ct) ->
-        constraint_ ~loc (sub # class_expr ce) (sub # class_type ct)
+        constraint_ ~loc ~attrs (sub # class_expr ce) (sub # class_type ct)
+    | Pcl_extension x -> extension ~loc ~attrs (sub # extension x)
 
   let map_kind sub = function
     | Cfk_concrete (o, e) -> Cfk_concrete (o, sub # expr e)
     | Cfk_virtual t -> Cfk_virtual (sub # typ t)
 
-  let map_field sub {pcf_desc = desc; pcf_loc = loc} =
+  let map_field sub {pcf_desc = desc; pcf_loc = loc; pcf_attributes = attrs} =
     let open Cf in
     let loc = sub # location loc in
     match desc with
-    | Pcf_inherit (o, ce, s) -> inherit_ ~loc o (sub # class_expr ce) s
-    | Pcf_val (s, m, k) -> val_ ~loc (map_loc sub s) m (map_kind sub k)
-    | Pcf_method (s, p, k) -> method_ ~loc (map_loc sub s) p (map_kind sub k)
-    | Pcf_constraint (t1, t2) -> constraint_ ~loc (sub # typ t1) (sub # typ t2)
-    | Pcf_initializer e -> initializer_ ~loc (sub # expr e)
+    | Pcf_inherit (o, ce, s) -> inherit_ ~loc ~attrs o (sub # class_expr ce) s
+    | Pcf_val (s, m, k) -> val_ ~loc ~attrs (map_loc sub s) m (map_kind sub k)
+    | Pcf_method (s, p, k) -> method_ ~loc ~attrs (map_loc sub s) p (map_kind sub k)
+    | Pcf_constraint (t1, t2) -> constraint_ ~loc ~attrs (sub # typ t1) (sub # typ t2)
+    | Pcf_initializer e -> initializer_ ~loc ~attrs (sub # expr e)
 
   let map_structure sub {pcstr_self; pcstr_fields} =
     {

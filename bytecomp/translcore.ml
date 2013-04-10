@@ -869,7 +869,9 @@ and transl_exp0 e =
         { cl_desc = Tcl_structure cs;
           cl_loc = e.exp_loc;
           cl_type = Cty_signature cty;
-          cl_env = e.exp_env }
+          cl_env = e.exp_env;
+          cl_attributes = [];
+         }
 
 and transl_list expr_list =
   List.map transl_exp expr_list

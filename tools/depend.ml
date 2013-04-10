@@ -318,6 +318,7 @@ and add_class_expr bv ce =
       let bv = add_bindings rf bv pel in add_class_expr bv ce
   | Pcl_constraint(ce, ct) ->
       add_class_expr bv ce; add_class_type bv ct
+  | Pcl_extension _ -> ()
 
 and add_class_field bv pcf =
   match pcf.pcf_desc with

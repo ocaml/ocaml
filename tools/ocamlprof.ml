@@ -347,6 +347,7 @@ and rewrite_class_expr iflag cexpr =
       rewrite_class_expr iflag cexpr
   | Pcl_constraint (cexpr, _) ->
       rewrite_class_expr iflag cexpr
+  | Pcl_extension _ -> ()
 
 and rewrite_class_declaration iflag cl =
   rewrite_class_expr iflag cl.pci_expr

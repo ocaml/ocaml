@@ -68,7 +68,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value mkmod loc d = {pmod_desc = d; pmod_loc = mkloc loc; pmod_attributes = []};
   value mkstr loc d = {pstr_desc = d; pstr_loc = mkloc loc};
   value mkcty loc d = {pcty_desc = d; pcty_loc = mkloc loc};
-  value mkcl loc d = {pcl_desc = d; pcl_loc = mkloc loc};
+  value mkcl loc d = {pcl_desc = d; pcl_loc = mkloc loc; pcl_attributes = []};
   value mkcf loc d = { pcf_desc = d; pcf_loc = mkloc loc; pcf_attributes = []};
   value mkctf loc d = { pctf_desc = d; pctf_loc = mkloc loc; pctf_attributes = []};
 

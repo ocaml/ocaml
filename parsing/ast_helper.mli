@@ -160,14 +160,16 @@ module Str:
   end
 module Cl:
   sig
-    val mk: ?loc:Location.t -> class_expr_desc -> class_expr
+    val mk: ?loc:Location.t -> ?attrs:attribute list -> class_expr_desc -> class_expr
+    val attr: class_expr -> attribute -> class_expr
 
-    val constr: ?loc:Location.t -> Longident.t loc -> core_type list -> class_expr
-    val structure: ?loc:Location.t -> class_structure -> class_expr
-    val fun_: ?loc:Location.t -> label -> expression option -> pattern -> class_expr -> class_expr
-    val apply: ?loc:Location.t -> class_expr -> (label * expression) list -> class_expr
-    val let_: ?loc:Location.t -> rec_flag -> (pattern * expression) list -> class_expr -> class_expr
-    val constraint_: ?loc:Location.t -> class_expr -> class_type -> class_expr
+    val constr: ?loc:Location.t -> ?attrs:attribute list -> Longident.t loc -> core_type list -> class_expr
+    val structure: ?loc:Location.t -> ?attrs:attribute list -> class_structure -> class_expr
+    val fun_: ?loc:Location.t -> ?attrs:attribute list -> label -> expression option -> pattern -> class_expr -> class_expr
+    val apply: ?loc:Location.t -> ?attrs:attribute list -> class_expr -> (label * expression) list -> class_expr
+    val let_: ?loc:Location.t -> ?attrs:attribute list -> rec_flag -> (pattern * expression) list -> class_expr -> class_expr
+    val constraint_: ?loc:Location.t -> ?attrs:attribute list -> class_expr -> class_type -> class_expr
+    val extension: ?loc:Location.t -> ?attrs:attribute list -> extension -> class_expr
   end
 module Cty:
   sig

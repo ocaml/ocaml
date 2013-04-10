@@ -45,6 +45,7 @@ type error =
   | Final_self_clash of (type_expr * type_expr) list
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
+  | Extension of string
 
 exception Error of Location.t * Env.t * error
 
@@ -817,20 +818,26 @@ and class_expr cl_num val_env met_env scl =
         rc {cl_desc = Tcl_ident (path, lid, tyl);
             cl_loc = scl.pcl_loc;
             cl_type = clty';
-            cl_env = val_env}
+            cl_env = val_env;
+            cl_attributes = scl.pcl_attributes;
+           }
       in
       let (vals, meths, concrs) = extract_constraints clty in
       rc {cl_desc = Tcl_constraint (cl, None, vals, meths, concrs);
           cl_loc = scl.pcl_loc;
           cl_type = clty';
-          cl_env = val_env}
+          cl_env = val_env;
+          cl_attributes = scl.pcl_attributes;
+         }
   | Pcl_structure cl_str ->
       let (desc, ty) =
         class_structure cl_num false val_env met_env scl.pcl_loc cl_str in
       rc {cl_desc = Tcl_structure desc;
           cl_loc = scl.pcl_loc;
           cl_type = Cty_signature ty;
-          cl_env = val_env}
+          cl_env = val_env;
+          cl_attributes = scl.pcl_attributes;
+         }
   | Pcl_fun (l, Some default, spat, sbody) ->
       let loc = default.pexp_loc in
       let open Ast_helper in
@@ -909,7 +916,9 @@ and class_expr cl_num val_env met_env scl =
           cl_loc = scl.pcl_loc;
           cl_type = Cty_fun
             (l, Ctype.instance_def pat.pat_type, cl.cl_type);
-          cl_env = val_env}
+          cl_env = val_env;
+          cl_attributes = scl.pcl_attributes;
+         }
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
       let rec nonopt_labels ls ty_fun =
@@ -1002,7 +1011,9 @@ and class_expr cl_num val_env met_env scl =
       rc {cl_desc = Tcl_apply (cl, args);
           cl_loc = scl.pcl_loc;
           cl_type = cty;
-          cl_env = val_env}
+          cl_env = val_env;
+          cl_attributes = scl.pcl_attributes;
+         }
   | Pcl_let (rec_flag, sdefs, scl') ->
       let (defs, val_env) =
         try
@@ -1045,7 +1056,9 @@ and class_expr cl_num val_env met_env scl =
       rc {cl_desc = Tcl_let (rec_flag, defs, vals, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
-          cl_env = val_env}
+          cl_env = val_env;
+          cl_attributes = scl.pcl_attributes;
+         }
   | Pcl_constraint (scl', scty) ->
       Ctype.begin_class_def ();
       let context = Typetexp.narrow () in
@@ -1071,7 +1084,11 @@ and class_expr cl_num val_env met_env scl =
       rc {cl_desc = Tcl_constraint (cl, Some clty, vals, meths, concrs);
           cl_loc = scl.pcl_loc;
           cl_type = snd (Ctype.instance_class [] clty.cltyp_type);
-          cl_env = val_env}
+          cl_env = val_env;
+          cl_attributes = scl.pcl_attributes;
+         }
+  | Pcl_extension (s, _arg) ->
+      raise (Error (scl.pcl_loc, val_env, Extension s))
 
 (*******************************)
 
@@ -1727,6 +1744,8 @@ let report_error env ppf = function
         "instance variable"
   | No_overriding (kind, name) ->
       fprintf ppf "@[The %s `%s'@ has no previous definition@]" kind name
-	
+  | Extension s ->
+      fprintf ppf "Uninterpreted extension '%s'." s
+
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)

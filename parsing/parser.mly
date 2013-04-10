@@ -771,6 +771,8 @@ class_expr:
       { mkclass(Pcl_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN class_expr
       { mkclass(Pcl_let ($2, List.rev $3, $5)) }
+  | class_expr attribute
+      { Cl.attr $1 $2 }
 ;
 class_simple_expr:
     LBRACKET core_type_comma_list RBRACKET class_longident

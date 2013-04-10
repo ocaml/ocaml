@@ -192,6 +192,7 @@ let iter_expression f e =
     | Pcl_let (_, pel, ce) ->
         List.iter (fun (_, e) -> expr e) pel; class_expr ce
     | Pcl_constraint (ce, _) -> class_expr ce
+    | Pcl_extension _ -> ()
 
   and class_field cf =
     match cf.pcf_desc with

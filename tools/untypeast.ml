@@ -444,6 +444,7 @@ and untype_class_expr cexpr =
   in
   { pcl_desc = desc;
     pcl_loc = cexpr.cl_loc;
+    pcl_attributes = cexpr.cl_attributes;
   }
 
 and untype_class_type ct =

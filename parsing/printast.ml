@@ -463,6 +463,7 @@ and class_type_declaration i ppf x =
 
 and class_expr i ppf x =
   line i ppf "class_expr %a\n" fmt_location x.pcl_loc;
+  attributes i ppf x.pcl_attributes;
   let i = i+1 in
   match x.pcl_desc with
   | Pcl_constr (li, l) ->
@@ -489,6 +490,9 @@ and class_expr i ppf x =
       line i ppf "Pcl_constraint\n";
       class_expr i ppf ce;
       class_type i ppf ct;
+  | Pcl_extension (s, arg) ->
+      line i ppf "Pcl_extension \"%s\"\n" s;
+      expression i ppf arg
 
 and class_structure i ppf { pcstr_self = p; pcstr_fields = l } =
   line i ppf "class_structure\n";

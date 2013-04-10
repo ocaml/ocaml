@@ -209,8 +209,11 @@ and class_type_declaration = class_type class_infos
 (* Value expressions for the class language *)
 
 and class_expr =
-  { pcl_desc: class_expr_desc;
-    pcl_loc: Location.t }
+  {
+   pcl_desc: class_expr_desc;
+   pcl_loc: Location.t;
+   pcl_attributes: attribute list;
+  }
 
 and class_expr_desc =
     Pcl_constr of Longident.t loc * core_type list
@@ -219,6 +222,7 @@ and class_expr_desc =
   | Pcl_apply of class_expr * (label * expression) list
   | Pcl_let of rec_flag * (pattern * expression) list * class_expr
   | Pcl_constraint of class_expr * class_type
+  | Pcl_extension of extension
 
 and class_structure = {
     pcstr_self: pattern;

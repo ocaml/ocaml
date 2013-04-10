@@ -818,8 +818,7 @@ class printer  ()= object(self:'self)
         pp f "(%a@ :@ %a)"
           self#class_expr ce
           self#class_type ct
-          
-
+    | Pcl_extension _ -> assert false
 
   method module_type f x =
     match x.pmty_desc with

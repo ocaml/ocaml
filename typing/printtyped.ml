@@ -477,6 +477,7 @@ and class_type_declaration i ppf x =
 
 and class_expr i ppf x =
   line i ppf "class_expr %a\n" fmt_location x.cl_loc;
+  attributes i ppf x.cl_attributes;
   let i = i+1 in
   match x.cl_desc with
   | Tcl_ident (li, _, l) ->

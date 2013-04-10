@@ -162,14 +162,21 @@ module Str = struct
 end
 
 module Cl = struct
-  let mk ?(loc = Location.none) d = {pcl_desc = d; pcl_loc = loc}
+  let mk ?(loc = Location.none) ?(attrs = []) d =
+    {
+     pcl_desc = d;
+     pcl_loc = loc;
+     pcl_attributes = attrs;
+    }
+  let attr d a = {d with pcl_attributes = d.pcl_attributes @ [a]}
 
-  let constr ?loc a b = mk ?loc (Pcl_constr (a, b))
-  let structure ?loc a = mk ?loc (Pcl_structure a)
-  let fun_ ?loc a b c d = mk ?loc (Pcl_fun (a, b, c, d))
-  let apply ?loc a b = mk ?loc (Pcl_apply (a, b))
-  let let_ ?loc a b c = mk ?loc (Pcl_let (a, b, c))
-  let constraint_ ?loc a b = mk ?loc (Pcl_constraint (a, b))
+  let constr ?loc ?attrs a b = mk ?loc ?attrs (Pcl_constr (a, b))
+  let structure ?loc ?attrs a = mk ?loc ?attrs (Pcl_structure a)
+  let fun_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pcl_fun (a, b, c, d))
+  let apply ?loc ?attrs a b = mk ?loc ?attrs (Pcl_apply (a, b))
+  let let_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcl_let (a, b, c))
+  let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pcl_constraint (a, b))
+  let extension ?loc ?attrs a = mk ?loc ?attrs (Pcl_extension a)
 end
 
 module Cty = struct
