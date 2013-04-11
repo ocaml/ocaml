@@ -460,6 +460,7 @@ and class_description i ppf x =
 
 and class_type_declaration i ppf x =
   line i ppf "class_type_declaration %a\n" fmt_location x.pci_loc;
+  attributes i ppf x.pci_attributes;
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
@@ -544,6 +545,7 @@ and class_field_kind i ppf = function
 
 and class_declaration i ppf x =
   line i ppf "class_declaration %a\n" fmt_location x.pci_loc;
+  attributes i ppf x.pci_attributes;
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
