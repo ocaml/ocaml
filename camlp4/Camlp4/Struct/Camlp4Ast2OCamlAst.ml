@@ -1085,7 +1085,7 @@ value varify_constructors var_names =
         [mkstr loc (Pstr_open (long_uident id, [])) :: l]
     | StTyp loc tdl -> [mkstr loc (Pstr_type (mktype_decl tdl [])) :: l]
     | StVal loc rf bi ->
-        [mkstr loc (Pstr_value (mkrf rf) (binding bi [])) :: l]
+        [mkstr loc (Pstr_value (mkrf rf) (binding bi []) []) :: l]
     | <:str_item@loc< $anti:_$ >> -> error loc "antiquotation in str_item" ]
   and class_type =
     fun

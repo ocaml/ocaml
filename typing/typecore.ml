@@ -167,7 +167,7 @@ let iter_expression f e =
   and structure_item str =
     match str.pstr_desc with
     | Pstr_eval e -> expr e
-    | Pstr_value (_, pel) -> List.iter (fun (_, e) -> expr e) pel
+    | Pstr_value (_, pel, _) -> List.iter (fun (_, e) -> expr e) pel
     | Pstr_primitive _
     | Pstr_type _
     | Pstr_exception _
@@ -1340,7 +1340,7 @@ and is_nonexpansive_mod mexp =
         (fun item -> match item.str_desc with
           | Tstr_eval _ | Tstr_primitive _ | Tstr_type _ | Tstr_modtype _
           | Tstr_open _ | Tstr_class_type _ | Tstr_exn_rebind _ -> true
-          | Tstr_value (_, pat_exp_list) ->
+          | Tstr_value (_, pat_exp_list, _) ->
               List.for_all (fun (_, exp) -> is_nonexpansive exp) pat_exp_list
           | Tstr_module {mb_expr=m;_} | Tstr_include (m, _, _) -> is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->

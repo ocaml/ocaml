@@ -173,6 +173,9 @@ let unclosed opening_name opening_num closing_name closing_num =
 let expecting pos nonterm =
     raise Syntaxerr.(Error(Expecting(rhs_loc pos, nonterm)))
 
+let not_expecting pos nonterm =
+    raise Syntaxerr.(Error(Not_expecting(rhs_loc pos, nonterm)))
+
 let bigarray_function str name =
   ghloc (Ldot(Ldot(Lident "Bigarray", str), name))
 
@@ -597,11 +600,18 @@ str_attribute:
     post_item_attribute { mkstr(Pstr_attribute $1) }
 ;
 structure_item:
-    LET ext_attributes rec_flag let_bindings
-      { (* todo: keep attributes *)
+    LET ext_attributes rec_flag let_bindings post_item_attributes
+      {
         match $4 with
           [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
-        | l -> mkstr(Pstr_value($3, List.rev l)) }
+              (* todo: keep attributes, support extension *)
+        | l ->
+            begin match $2 with
+            | None, [] -> mkstr(Pstr_value($3, List.rev l, $5))
+            | Some _, _ -> not_expecting 2 "extension"
+            | None, _ :: _ -> not_expecting 2 "attribute"
+            end
+      }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
       { mkstr
           (Pstr_primitive (Val.mk (mkrhs $2 2) $4

@@ -154,7 +154,7 @@ module Str:
     val mk: ?loc:loc -> structure_item_desc -> structure_item
 
     val eval: ?loc:loc -> expression -> structure_item
-    val value: ?loc:loc -> rec_flag -> (pattern * expression) list -> structure_item
+    val value: ?loc:loc -> ?attrs:attributes -> rec_flag -> (pattern * expression) list -> structure_item
     val primitive: ?loc:loc -> value_description -> structure_item
     val type_: ?loc:loc -> type_declaration list -> structure_item
     val exception_: ?loc:loc -> constructor_declaration -> structure_item

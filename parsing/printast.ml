@@ -677,8 +677,9 @@ and structure_item i ppf x =
   | Pstr_eval (e) ->
       line i ppf "Pstr_eval\n";
       expression i ppf e;
-  | Pstr_value (rf, l) ->
+  | Pstr_value (rf, l, attrs) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
+      attributes i ppf attrs;
       list i pattern_x_expression_def ppf l;
   | Pstr_primitive vd ->
       line i ppf "Pstr_primitive\n";

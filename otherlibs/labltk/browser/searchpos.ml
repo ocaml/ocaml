@@ -660,7 +660,7 @@ let rec search_pos_structure ~pos str =
   List.iter str ~f:
   begin function str -> match str.str_desc with
     Tstr_eval exp -> search_pos_expr exp ~pos
-  | Tstr_value (rec_flag, l) ->
+  | Tstr_value (rec_flag, l, _) ->
       List.iter l ~f:
       begin fun (pat, exp) ->
         let env =

@@ -25,7 +25,7 @@ let constructor_decl sub cd =
 let structure_item sub x =
   match x.str_desc with
   | Tstr_eval exp -> sub # expression exp
-  | Tstr_value (rec_flag, list) -> sub # bindings (rec_flag, list)
+  | Tstr_value (rec_flag, list, _) -> sub # bindings (rec_flag, list)
   | Tstr_primitive v -> sub # value_description v
   | Tstr_type list -> List.iter (sub # type_declaration) list
   | Tstr_exception decl -> constructor_decl sub decl

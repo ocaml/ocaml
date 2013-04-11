@@ -337,7 +337,7 @@ and structure_item =
 
 and structure_item_desc =
     Pstr_eval of expression
-  | Pstr_value of rec_flag * (pattern * expression) list
+  | Pstr_value of rec_flag * (pattern * expression) list * attributes
   | Pstr_primitive of value_description
   | Pstr_type of type_declaration list
   | Pstr_exception of constructor_declaration

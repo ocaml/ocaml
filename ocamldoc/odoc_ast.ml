@@ -98,7 +98,7 @@ module Typedtree_search =
                 (CT (Name.from_ident id))
                 (Typedtree.Tstr_class_type [ci]))
             info_list
-      | Typedtree.Tstr_value (_, pat_exp_list) ->
+      | Typedtree.Tstr_value (_, pat_exp_list, _) ->
           List.iter
             (fun (pat,exp) ->
               match iter_val_pattern pat.Typedtree.pat_desc with
@@ -1059,7 +1059,7 @@ module Analyser =
       | Parsetree.Pstr_attribute _
       | Parsetree.Pstr_extension _ ->
           (0, env, [])
-      | Parsetree.Pstr_value (rec_flag, pat_exp_list) ->
+      | Parsetree.Pstr_value (rec_flag, pat_exp_list, _) ->
           (* of rec_flag * (pattern * expression) list *)
           (* For each value, look for the value name, then look in the
              typedtree for the corresponding information,

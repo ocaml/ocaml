@@ -15471,7 +15471,7 @@ module Struct =
               | StTyp (loc, tdl) ->
                   (mkstr loc (Pstr_type (mktype_decl tdl []))) :: l
               | StVal (loc, rf, bi) ->
-                  (mkstr loc (Pstr_value ((mkrf rf), (binding bi [])))) :: l
+                  (mkstr loc (Pstr_value ((mkrf rf), (binding bi []), []))) :: l
               | Ast.StAnt (loc, _) -> error loc "antiquotation in str_item"
             and class_type =
               function

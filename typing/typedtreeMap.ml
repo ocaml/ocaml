@@ -92,8 +92,8 @@ module MakeMap(Map : MapArgument) = struct
     let str_desc =
       match item.str_desc with
           Tstr_eval exp -> Tstr_eval (map_expression exp)
-        | Tstr_value (rec_flag, list) ->
-          Tstr_value (rec_flag, map_bindings rec_flag list)
+        | Tstr_value (rec_flag, list, attrs) ->
+          Tstr_value (rec_flag, map_bindings rec_flag list, attrs)
         | Tstr_primitive vd ->
           Tstr_primitive (map_value_description vd)
         | Tstr_type list ->

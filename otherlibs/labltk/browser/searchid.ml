@@ -452,7 +452,7 @@ let search_structure str ~name ~kind ~prefix =
   List.iter (search_module str ~prefix) ~f:
     begin fun item ->
       if match item.pstr_desc with
-        Pstr_value (_, l) when kind = Pvalue ->
+        Pstr_value (_, l, _) when kind = Pvalue ->
           List.iter l ~f:
             begin fun (pat,_) ->
               if List.mem name (bound_variables pat)

@@ -166,7 +166,7 @@ module M = struct
     let loc = sub # location loc in
     match desc with
     | Pstr_eval x -> eval ~loc (sub # expr x)
-    | Pstr_value (r, pel) -> value ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
+    | Pstr_value (r, pel, attrs) -> value ~loc ~attrs:(sub # attributes attrs) r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
     | Pstr_primitive vd -> primitive ~loc (sub # value_description vd)
     | Pstr_type l -> type_ ~loc (List.map (sub # type_declaration) l)
     | Pstr_exception ed -> exception_ ~loc (sub # constructor_declaration ed)

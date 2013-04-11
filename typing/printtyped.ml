@@ -683,8 +683,9 @@ and structure_item i ppf x =
   | Tstr_eval (e) ->
       line i ppf "Pstr_eval\n";
       expression i ppf e;
-  | Tstr_value (rf, l) ->
+  | Tstr_value (rf, l, attrs) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
+      attributes i ppf attrs;
       list i pattern_x_expression_def ppf l;
   | Tstr_primitive vd ->
       line i ppf "Pstr_primitive\n";
