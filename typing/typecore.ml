@@ -166,7 +166,7 @@ let iter_expression f e =
 
   and structure_item str =
     match str.pstr_desc with
-    | Pstr_eval e -> expr e
+    | Pstr_eval (e, _) -> expr e
     | Pstr_value (_, pel, _) -> List.iter (fun (_, e) -> expr e) pel
     | Pstr_primitive _
     | Pstr_type _

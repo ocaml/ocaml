@@ -674,8 +674,9 @@ and structure_item i ppf x =
   line i ppf "structure_item %a\n" fmt_location x.pstr_loc;
   let i = i+1 in
   match x.pstr_desc with
-  | Pstr_eval (e) ->
+  | Pstr_eval (e, attrs) ->
       line i ppf "Pstr_eval\n";
+      attributes i ppf attrs;
       expression i ppf e;
   | Pstr_value (rf, l, attrs) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;

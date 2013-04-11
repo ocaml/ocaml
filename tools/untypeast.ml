@@ -46,7 +46,7 @@ let rec untype_structure str =
 and untype_structure_item item =
   let desc =
     match item.str_desc with
-      Tstr_eval exp -> Pstr_eval (untype_expression exp)
+      Tstr_eval (exp, attrs) -> Pstr_eval (untype_expression exp, attrs)
     | Tstr_value (rec_flag, list, attrs) ->
         Pstr_value (rec_flag, List.map (fun (pat, exp) ->
               untype_pattern pat, untype_expression exp) list, attrs)

@@ -367,7 +367,7 @@ and rewrite_mod iflag smod =
 
 and rewrite_str_item iflag item =
   match item.pstr_desc with
-    Pstr_eval exp -> rewrite_exp iflag exp
+    Pstr_eval (exp, _attrs) -> rewrite_exp iflag exp
   | Pstr_value(_, exps, _attrs)
      -> List.iter (function (_,exp) -> rewrite_exp iflag exp) exps
   | Pstr_module x -> rewrite_mod iflag x.pmb_expr

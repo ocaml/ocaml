@@ -201,7 +201,7 @@ and structure_item =
   }
 
 and structure_item_desc =
-    Tstr_eval of expression
+    Tstr_eval of expression * attributes
   | Tstr_value of rec_flag * (pattern * expression) list * attributes
   | Tstr_primitive of value_description
   | Tstr_type of type_declaration list

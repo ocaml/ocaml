@@ -147,8 +147,8 @@ let rec mktailpat nilloc = function
       let arg = Pat.mk ~loc (Ppat_tuple [p1; pat_pl]) in
       mkpat_cons {loc with loc_ghost = true} arg loc
 
-let mkstrexp e =
-  { pstr_desc = Pstr_eval e; pstr_loc = e.pexp_loc }
+let mkstrexp e attrs =
+  { pstr_desc = Pstr_eval (e, attrs); pstr_loc = e.pexp_loc }
 
 let array_function str name =
   ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
@@ -508,7 +508,7 @@ interface:
 ;
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def $1 }
-  | seq_expr SEMISEMI                    { Ptop_def[mkstrexp $1] }
+  | seq_expr post_item_attributes SEMISEMI                    { Ptop_def[mkstrexp $1 $2] }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
@@ -518,12 +518,12 @@ top_structure:
 ;
 use_file:
     use_file_tail                        { $1 }
-  | seq_expr use_file_tail               { Ptop_def[mkstrexp $1] :: $2 }
+  | seq_expr post_item_attributes use_file_tail               { Ptop_def[mkstrexp $1 $2] :: $3 }
 ;
 use_file_tail:
     EOF                                         { [] }
   | SEMISEMI EOF                                { [] }
-  | SEMISEMI seq_expr use_file_tail             { Ptop_def[mkstrexp $2] :: $3 }
+  | SEMISEMI seq_expr post_item_attributes use_file_tail             { Ptop_def[mkstrexp $2 $3] :: $4 }
   | SEMISEMI structure_item use_file_tail       { Ptop_def[$2] :: $3 }
   | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
   | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
@@ -588,7 +588,7 @@ module_expr:
 
 structure:
     str_attribute structure { $1 :: $2 }
-  | seq_expr structure_tail { mkstrexp $1 :: $2 }
+  | seq_expr post_item_attributes structure_tail { mkstrexp $1 $2 :: $3 }
   | structure_tail { $1 }
 ;
 structure_tail:
@@ -603,8 +603,9 @@ structure_item:
     LET ext_attributes rec_flag let_bindings post_item_attributes
       {
         match $4 with
-          [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
-              (* todo: keep attributes, support extension *)
+          [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] ->
+            let exp = wrap_exp_attrs exp $2 in
+            mkstr(Pstr_eval (exp, $5))
         | l ->
             begin match $2 with
             | None, [] -> mkstr(Pstr_value($3, List.rev l, $5))

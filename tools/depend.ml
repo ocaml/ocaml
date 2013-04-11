@@ -260,7 +260,7 @@ and add_structure bv item_list =
 
 and add_struct_item bv item =
   match item.pstr_desc with
-    Pstr_eval e ->
+    Pstr_eval (e, _attrs) ->
       add_expr bv e; bv
   | Pstr_value(rf, pel, _attrs) ->
       let bv = add_bindings rf bv pel in bv

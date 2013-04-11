@@ -15440,7 +15440,7 @@ module Struct =
                   (Ast.TyOf (_, (Ast.TyId (_, (Ast.IdUid (_, _)))), _)),
                   (Ast.OSome _)) -> error loc "type in exception alias"
               | StExc (_, _, _) -> assert false
-              | StExp (loc, e) -> (mkstr loc (Pstr_eval (expr e))) :: l
+              | StExp (loc, e) -> (mkstr loc (Pstr_eval (expr e, []))) :: l
               | StExt (loc, n, t, sl) ->
                   (mkstr loc
                      (Pstr_primitive

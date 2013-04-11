@@ -119,7 +119,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_structure_item item;
       begin
         match item.str_desc with
-          Tstr_eval exp -> iter_expression exp
+          Tstr_eval (exp, _attrs) -> iter_expression exp
         | Tstr_value (rec_flag, list, _attrs) ->
             iter_bindings rec_flag list
         | Tstr_primitive vd -> iter_value_description vd

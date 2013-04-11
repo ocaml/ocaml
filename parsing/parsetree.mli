@@ -336,7 +336,7 @@ and structure_item =
     pstr_loc: Location.t }
 
 and structure_item_desc =
-    Pstr_eval of expression
+    Pstr_eval of expression * attributes
   | Pstr_value of rec_flag * (pattern * expression) list * attributes
   | Pstr_primitive of value_description
   | Pstr_type of type_declaration list

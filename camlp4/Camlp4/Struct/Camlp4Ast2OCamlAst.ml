@@ -1072,7 +1072,7 @@ value varify_constructors var_names =
     | <:str_item@loc< exception $uid:_$ of $_$ = $_$ >> ->
         error loc "type in exception alias"
     | StExc _ _ _ -> assert False (*FIXME*)
-    | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
+    | StExp loc e -> [mkstr loc (Pstr_eval (expr e) []) :: l]
     | StExt loc n t sl -> [mkstr loc (Pstr_primitive (mkvalue_desc loc (with_loc n loc) t (list_of_meta_list sl))) :: l]
     | StInc loc me -> [mkstr loc (Pstr_include (module_expr me, [])) :: l]
     | StMod loc n me -> [mkstr loc (Pstr_module {pmb_name=with_loc n loc;pmb_expr=module_expr me;pmb_attributes=[]}) :: l]

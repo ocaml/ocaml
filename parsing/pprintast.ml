@@ -1034,7 +1034,7 @@ class printer  ()= object(self:'self)
       
   method structure_item f x = begin
     match x.pstr_desc with
-    | Pstr_eval (e) ->
+    | Pstr_eval (e, _attrs) ->
         pp f "@[<hov2>let@ _ =@ %a@]" self#expression e 
     | Pstr_type [] -> assert false
     | Pstr_type l  -> self#type_def_list f l 

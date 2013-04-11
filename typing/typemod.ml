@@ -970,9 +970,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             str
           in
             match pstr.pstr_desc with
-              | Pstr_eval sexpr ->
+              | Pstr_eval (sexpr, attrs) ->
                   let expr = Typecore.type_expression env sexpr in
-                  let item = mk (Tstr_eval expr) in
+                  let item = mk (Tstr_eval (expr, attrs)) in
                   let (str_rem, sig_rem, final_env) = type_struct env srem in
                   (item :: str_rem, sig_rem, final_env)
               | Pstr_value(rec_flag, sdefs, attrs) ->
