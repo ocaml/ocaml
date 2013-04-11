@@ -366,9 +366,10 @@ module Convenience = struct
   let lid s = mkloc (Longident.parse s) !default_loc
   let tuple l = Exp.tuple l
   let constr s args = Exp.construct (lid s) (may_tuple Exp.tuple args) false
-  let nil = constr "[]" []
+  let nil () = constr "[]" []
+  let unit () = constr "()" []
   let cons hd tl = constr "::" [hd; tl]
-  let list l = List.fold_right cons l nil
+  let list l = List.fold_right cons l (nil ())
   let str s = Exp.constant (Const_string (s, None))
   let int x = Exp.constant (Const_int x)
   let char x = Exp.constant (Const_char x)
@@ -376,7 +377,7 @@ module Convenience = struct
   let record ?over l =
     Exp.record (List.map (fun (s, e) -> (lid s, e)) l) over
   let func l = Exp.function_ "" None l
-  let lam pat exp = func [pat, exp]
+  let lam ?(label = "") ?default pat exp = Exp.function_ label default [pat, exp]
   let app f l = Exp.apply f (List.map (fun a -> "", a) l)
   let evar s = Exp.ident (lid s)
   let let_in ?(recursive = false) b body =
@@ -384,6 +385,7 @@ module Convenience = struct
 
   let pvar s = Pat.var (mkloc s !default_loc)
   let pconstr s args = Pat.construct (lid s) (may_tuple Pat.tuple args) true
+  let punit () = pconstr "()" []
 
 
   let get_str = function
@@ -394,4 +396,10 @@ module Convenience = struct
     | {pexp_desc=Pexp_ident{txt=id;_};_} ->
         Some (String.concat "." (Longident.flatten id))
     | _ -> None
+
+  let has_attr s attrs = List.mem_assoc s attrs
+
+  let find_attr s attrs =
+    try Some (List.assoc s attrs)
+    with Not_found -> None
 end

@@ -273,12 +273,14 @@ module Convenience :
     val record: ?over:expression -> (string * expression) list -> expression
     val tuple: expression list -> expression
 
-    val nil: expression
+    val nil: unit -> expression
     val cons: expression -> expression -> expression
     val list: expression list -> expression
 
+    val unit: unit -> expression
+
     val func: (pattern * expression) list -> expression
-    val lam: pattern -> expression -> expression
+    val lam: ?label:string -> ?default:expression -> pattern -> expression -> expression
     val app: expression -> expression list -> expression
 
     val str: string -> expression
@@ -288,7 +290,11 @@ module Convenience :
 
     val pvar: string -> pattern
     val pconstr: string -> pattern list -> pattern
+    val punit: unit -> pattern
 
     val get_str: expression -> string option
     val get_lid: expression -> string option
+
+    val has_attr: string -> attributes -> bool
+    val find_attr: string -> attributes -> expression option
   end

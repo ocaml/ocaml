@@ -49,3 +49,8 @@ lifter:
 eval:
 	$(OCAMLC) -linkall -o eval.exe -w +A-4 $(COMMON) $(BYTECMP) $(TOPLVL) eval.ml
 	$(OCAMLC) -o test_eval.exe -w +A -ppx ./eval.exe test_eval.ml
+
+.PHONY: ppx_builder
+ppx_builder:
+	$(OCAMLC) -linkall -o ppx_builder.exe -w +A-4 $(COMMON) ppx_builder.ml
+	$(OCAMLC) -o test_builder.exe -w +A -ppx ./ppx_builder.exe -dsource test_builder.ml
