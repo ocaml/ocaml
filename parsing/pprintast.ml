@@ -1128,7 +1128,7 @@ class printer  ()= object(self:'self)
               (fun f l2 -> List.iter (aux f) l2) l2 
         | _ -> assert false
         end
-    | Pstr_attribute _
+    | Pstr_attribute _ -> ()
     | Pstr_extension _ -> assert false
   end
   method type_param f  = function

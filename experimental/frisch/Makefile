@@ -1,6 +1,8 @@
 ROOT=../..
-OCAMLC=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlc -I $(ROOT)/stdlib -I $(ROOT)/parsing -I $(ROOT)/utils -I $(ROOT)/tools -I $(ROOT)/typing -w A-4-9
+OCAMLC=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlc -I $(ROOT)/stdlib -I $(ROOT)/parsing -I $(ROOT)/utils -I $(ROOT)/tools -I $(ROOT)/typing -I $(ROOT)/driver -I $(ROOT)/toplevel -w A-4-9
 COMMON=$(ROOT)/compilerlibs/ocamlcommon.cma
+BYTECMP=$(ROOT)/compilerlibs/ocamlbytecomp.cma
+TOPLVL=$(ROOT)/compilerlibs/ocamltoplevel.cma
 
 tracer.exe: tracer.ml
 	$(OCAMLC) -o $@ $(COMMON) $(ROOT)/tools/ast_mapper.cmo tracer.ml
@@ -42,3 +44,8 @@ lifter:
 	$(OCAMLC) -custom -o metaquot.exe -w +A-4 $(COMMON) ast_lifter.cmo metaquot.ml
 	$(OCAMLC) -custom -o metaquot_test.exe -w +A -ppx ./metaquot.exe $(COMMON) metaquot_test.ml
 	./metaquot_test.exe
+
+.PHONY: eval
+eval:
+	$(OCAMLC) -linkall -o eval.exe -w +A-4 $(COMMON) $(BYTECMP) $(TOPLVL) eval.ml
+	$(OCAMLC) -o test_eval.exe -w +A -ppx ./eval.exe test_eval.ml
