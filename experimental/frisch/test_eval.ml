@@ -1,10 +1,13 @@
 [%%eval.load "unix.cma"]
 
 [%%eval.start both]
+(* This type definition will be evaluated at compile time,
+   but it will be kept in the compiled unit as well. *)
 type t = A | B of string
 [%%eval.stop]
 
 [%%eval.start]
+(* This is going to be executed at compile time only. *)
 let () = print_endline "Now compiling..."
 [%%eval.stop]
 
