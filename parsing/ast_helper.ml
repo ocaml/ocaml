@@ -20,8 +20,16 @@ type str = string loc
 type loc = Location.t
 type attrs = attribute list
 
+let default_loc = ref Location.none
+
+let with_default_loc l f =
+  let old = !default_loc in
+  default_loc := l;
+  try let r = f () in default_loc := old; r
+  with exn -> default_loc := old; raise exn
+
 module Typ = struct
-  let mk ?(loc = Location.none) ?(attrs = []) d = {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
+  let mk ?(loc = !default_loc) ?(attrs = []) d = {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
   let attr d a = {d with ptyp_attributes = d.ptyp_attributes @ [a]}
 
   let any ?loc ?attrs () = mk ?loc ?attrs Ptyp_any
@@ -44,7 +52,7 @@ module Typ = struct
 end
 
 module Pat = struct
-  let mk ?(loc = Location.none) ?(attrs = []) d = {ppat_desc = d; ppat_loc = loc; ppat_attributes = attrs}
+  let mk ?(loc = !default_loc) ?(attrs = []) d = {ppat_desc = d; ppat_loc = loc; ppat_attributes = attrs}
   let attr d a = {d with ppat_attributes = d.ppat_attributes @ [a]}
 
   let any ?loc ?attrs () = mk ?loc ?attrs Ppat_any
@@ -65,7 +73,7 @@ module Pat = struct
 end
 
 module Exp = struct
-  let mk ?(loc = Location.none) ?(attrs = []) d = {pexp_desc = d; pexp_loc = loc; pexp_attributes = attrs}
+  let mk ?(loc = !default_loc) ?(attrs = []) d = {pexp_desc = d; pexp_loc = loc; pexp_attributes = attrs}
   let attr d a = {d with pexp_attributes = d.pexp_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pexp_ident a)
@@ -105,7 +113,7 @@ module Exp = struct
 end
 
 module Mty = struct
-  let mk ?(loc = Location.none) ?(attrs = []) d = {pmty_desc = d; pmty_loc = loc; pmty_attributes = attrs}
+  let mk ?(loc = !default_loc) ?(attrs = []) d = {pmty_desc = d; pmty_loc = loc; pmty_attributes = attrs}
   let attr d a = {d with pmty_attributes = d.pmty_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pmty_ident a)
@@ -117,7 +125,7 @@ module Mty = struct
 end
 
 module Mod = struct
-let mk ?(loc = Location.none) ?(attrs = []) d = {pmod_desc = d; pmod_loc = loc; pmod_attributes = attrs}
+let mk ?(loc = !default_loc) ?(attrs = []) d = {pmod_desc = d; pmod_loc = loc; pmod_attributes = attrs}
   let attr d a = {d with pmod_attributes = d.pmod_attributes @ [a]}
 
   let ident ?loc ?attrs x = mk ?loc ?attrs (Pmod_ident x)
@@ -130,7 +138,7 @@ let mk ?(loc = Location.none) ?(attrs = []) d = {pmod_desc = d; pmod_loc = loc; 
 end
 
 module Sig = struct
-  let mk ?(loc = Location.none) d = {psig_desc = d; psig_loc = loc}
+  let mk ?(loc = !default_loc) d = {psig_desc = d; psig_loc = loc}
 
   let value ?loc a = mk ?loc (Psig_value a)
   let type_ ?loc a = mk ?loc (Psig_type a)
@@ -147,7 +155,7 @@ module Sig = struct
 end
 
 module Str = struct
-  let mk ?(loc = Location.none) d = {pstr_desc = d; pstr_loc = loc}
+  let mk ?(loc = !default_loc) d = {pstr_desc = d; pstr_loc = loc}
 
   let eval ?loc a = mk ?loc (Pstr_eval a)
   let value ?loc a b = mk ?loc (Pstr_value (a, b))
@@ -167,7 +175,7 @@ module Str = struct
 end
 
 module Cl = struct
-  let mk ?(loc = Location.none) ?(attrs = []) d =
+  let mk ?(loc = !default_loc) ?(attrs = []) d =
     {
      pcl_desc = d;
      pcl_loc = loc;
@@ -185,7 +193,7 @@ module Cl = struct
 end
 
 module Cty = struct
-  let mk ?(loc = Location.none) ?(attrs = []) d =
+  let mk ?(loc = !default_loc) ?(attrs = []) d =
     {
      pcty_desc = d;
      pcty_loc = loc;
@@ -200,7 +208,7 @@ module Cty = struct
 end
 
 module Ctf = struct
-  let mk ?(loc = Location.none) ?(attrs = []) d =
+  let mk ?(loc = !default_loc) ?(attrs = []) d =
     {
      pctf_desc = d;
      pctf_loc = loc;
@@ -216,7 +224,7 @@ module Ctf = struct
 end
 
 module Cf = struct
-  let mk ?(loc = Location.none) ?(attrs = []) d =
+  let mk ?(loc = !default_loc) ?(attrs = []) d =
     {
      pcf_desc = d;
      pcf_loc = loc;
@@ -236,7 +244,7 @@ module Cf = struct
 end
 
 module Val = struct
-  let mk ?(loc = Location.none) ?(attrs = []) ?(prim = []) name typ =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(prim = []) name typ =
     {
      pval_name = name;
      pval_type = typ;
@@ -283,7 +291,7 @@ module Mb = struct
 end
 
 module Ci = struct
-  let mk ?(loc = Location.none) ?(attrs = []) ?(virt = Concrete) ?(params = [], Location.none) name expr =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(virt = Concrete) ?(params = [], !default_loc) name expr =
     {
      pci_virt = virt;
      pci_params = params;
@@ -295,7 +303,7 @@ module Ci = struct
 end
 
 module Type = struct
-  let mk ?(loc = Location.none) ?(attrs = [])
+  let mk ?(loc = !default_loc) ?(attrs = [])
       ?(params = [])
       ?(cstrs = [])
       ?(kind = Ptype_abstract)
@@ -316,7 +324,7 @@ end
 
 
 module Cd = struct
-  let mk ?(loc = Location.none) ?(attrs = []) ?(args = []) ?res name =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(args = []) ?res name =
     {
      pcd_name = name;
      pcd_args = args;
@@ -328,7 +336,7 @@ end
 
 
 module Ld = struct
-  let mk ?(loc = Location.none) ?(attrs = []) ?(mut = Immutable) name typ =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(mut = Immutable) name typ =
     {
      pld_name = name;
      pld_mutable = mut;
@@ -339,10 +347,49 @@ module Ld = struct
 end
 
 module Csig = struct
-  let mk ?(loc = Location.none) self fields =
+  let mk ?(loc = !default_loc) self fields =
     {
      pcsig_self = self;
      pcsig_fields = fields;
      pcsig_loc = loc;
     }
+end
+
+module Convenience = struct
+  open Location
+
+  let may_tuple tup = function
+    | [] -> None
+    | [x] -> Some x
+    | l -> Some (tup l)
+
+  let lid s = mkloc (Longident.parse s) !default_loc
+  let tuple l = Exp.tuple l
+  let constr s args = Exp.construct (lid s) (may_tuple Exp.tuple args) false
+  let nil = constr "[]" []
+  let cons hd tl = constr "::" [hd; tl]
+  let list l = List.fold_right cons l nil
+  let str s = Exp.constant (Const_string (s, None))
+  let int x = Exp.constant (Const_int x)
+  let char x = Exp.constant (Const_char x)
+  let float x = Exp.constant (Const_float (string_of_float x))
+  let record ?over l =
+    Exp.record (List.map (fun (s, e) -> (lid s, e)) l) over
+  let func l = Exp.function_ "" None l
+  let lam pat exp = func [pat, exp]
+  let app f l = Exp.apply f (List.map (fun a -> "", a) l)
+  let evar s = Exp.ident (lid s)
+  let let_in ?(recursive = false) b body =
+    Exp.let_ (if recursive then Recursive else Nonrecursive) b body
+
+  let pvar s = Pat.var (mkloc s !default_loc)
+  let pconstr s args = Pat.construct (lid s) (may_tuple Pat.tuple args) true
+
+
+  let get_str = function
+    | {pexp_desc=Pexp_constant (Const_string (s, _)); _} -> s
+    | e ->
+        Location.print_error Format.err_formatter e.pexp_loc;
+        Format.eprintf "string literal expected";
+        exit 2
 end

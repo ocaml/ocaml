@@ -8,28 +8,8 @@ open Location
 open Types
 open Asttypes
 open Ast_helper
+open Ast_helper.Convenience
 
-(* Convenience AST builders, to be moved to Ast_helper at some point *)
-
-let may_tuple tup = function
-  | [] -> None
-  | [x] -> Some x
-  | l -> Some (tup l)
-
-let lid s = mknoloc (Longident.parse s)
-let constr s args = Exp.construct (lid s) (may_tuple Exp.tuple args) true
-let pconstr s args = Pat.construct (lid s) (may_tuple Pat.tuple args) true
-let nil = constr "[]" []
-let cons hd tl = constr "::" [hd; tl]
-let list l = List.fold_right cons l nil
-let func l = Exp.function_ "" None l
-let lam pat exp = func [pat, exp]
-let str s = Exp.constant (Const_string (s, None))
-let app f l = Exp.apply f (List.map (fun a -> "", a) l)
-let pvar s = Pat.var (mknoloc s)
-let evar s = Exp.ident (lid s)
-let pair x y = Exp.tuple [x; y]
-let let_in b body = Exp.let_ Nonrecursive b body
 let selfcall ?(this = "this") m args = app (Exp.send (evar this) m) args
 
 (*************************************************************************)
@@ -87,7 +67,7 @@ let rec gen ty =
       let field (s, _, t) =
         let s = Ident.name s in
         (lid (prefix ^ s), pvar s),
-        pair (str s) (tyexpr env t (evar s))
+        tuple[str s; tyexpr env t (evar s)]
       in
       let l = List.map field l in
       concrete
@@ -98,8 +78,8 @@ let rec gen ty =
       let case (c, tyl, _) =
         let c = Ident.name c in
         let qc = prefix ^ c in
-        let p, args = tuple env tyl in
-        pconstr qc p, selfcall "constr" [str ty; pair (str c) (list args)]
+        let p, args = gentuple env tyl in
+        pconstr qc p, selfcall "constr" [str ty; tuple[str c; list args]]
       in
       concrete (func (List.map case l))
   | Type_abstract, Some t ->
@@ -108,7 +88,7 @@ let rec gen ty =
       (* Generate an abstract method to lift abstract types *)
       meths := Cf.(method_ (mknoloc (print_fun ty)) Public (virtual_ t)) :: !meths
 
-and tuple env tl =
+and gentuple env tl =
   let arg i t =
     let x = Printf.sprintf "x%i" i in
     pvar x, tyexpr env t (evar x)
@@ -124,7 +104,7 @@ and tyexpr env ty x =
       in
       app f [x]
   | Ttuple tl ->
-      let p, e = tuple env tl in
+      let p, e = gentuple env tl in
       let_in [Pat.tuple p, x] (selfcall "tuple" [list e])
   | Tconstr (path, [t], _) when Path.same path Predef.path_list ->
       selfcall "list" [app (evar "List.map") [tyexpr_fun env t; x]]

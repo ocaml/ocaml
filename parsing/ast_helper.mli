@@ -20,6 +20,12 @@ type str = string loc
 type loc = Location.t
 type attrs = attribute list
 
+val default_loc: loc ref
+    (** Default value for all optional location arguments. *)
+val with_default_loc: loc -> (unit -> 'a) -> 'a
+    (** Set the [default_loc] within the scope of the execution
+        of the provided function. *)
+
 module Typ :
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> core_type_desc -> core_type
@@ -251,4 +257,37 @@ module Ld:
 module Csig:
   sig
     val mk: ?loc:loc -> core_type -> class_type_field list -> class_signature
+  end
+
+
+module Convenience :
+  sig
+    (** Convenience function to help build and deconstruct AST fragments. *)
+
+    val lid: string -> lid
+
+    val evar: string -> expression
+    val let_in: ?recursive:bool -> (pattern * expression) list -> expression -> expression
+
+    val constr: string -> expression list -> expression
+    val record: ?over:expression -> (string * expression) list -> expression
+    val tuple: expression list -> expression
+
+    val nil: expression
+    val cons: expression -> expression -> expression
+    val list: expression list -> expression
+
+    val func: (pattern * expression) list -> expression
+    val lam: pattern -> expression -> expression
+    val app: expression -> expression list -> expression
+
+    val str: string -> expression
+    val int: int -> expression
+    val char: char -> expression
+    val float: float -> expression
+
+    val pvar: string -> pattern
+    val pconstr: string -> pattern list -> pattern
+
+    val get_str: expression -> string
   end

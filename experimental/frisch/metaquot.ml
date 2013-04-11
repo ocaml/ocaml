@@ -40,25 +40,10 @@
 *)
 
 module Main : sig end = struct
-  open Location
   open Asttypes
   open Parsetree
   open Ast_helper
-
-(* Convenience AST builders, to be moved to Ast_helper at some point *)
-  let may_tuple tup = function
-    | [] -> None
-    | [x] -> Some x
-    | l -> Some (tup l)
-
-  let lid s = mknoloc (Longident.parse s)
-  let constr s args = Exp.construct (lid s) (may_tuple Exp.tuple args) false
-  let nil = constr "[]" []
-  let cons hd tl = constr "::" [hd; tl]
-  let list l = List.fold_right cons l nil
-  let str s = Exp.constant (Const_string (s, None))
-  let evar s = Exp.ident (lid s)
-(*************************************************************************)
+  open Ast_helper.Convenience
 
   let prefix ty s =
     let open Longident in

@@ -1902,8 +1902,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_function (l, Some default, [spat, sbody]) ->
-      let default_loc = default.pexp_loc in
       let open Ast_helper in
+      let default_loc = default.pexp_loc in
       let scases = [
         Pat.construct ~loc:default_loc
           (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))

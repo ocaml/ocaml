@@ -23,35 +23,12 @@
 
 module Main : sig end = struct
 
-  open Location
   open Longident
   open Asttypes
   open Parsetree
   open Ast_helper
   open Outcometree
-
-(* Convenience AST builders, to be moved to Ast_helper at some point *)
-  let may_tuple tup = function
-    | [] -> None
-    | [x] -> Some x
-    | l -> Some (tup l)
-
-  let lid s = mknoloc (Longident.parse s)
-  let constr s args = Exp.construct (lid s) (may_tuple Exp.tuple args) false
-  let nil = constr "[]" []
-  let cons hd tl = constr "::" [hd; tl]
-  let list l = List.fold_right cons l nil
-  let str s = Exp.constant (Const_string (s, None))
-  let int x = Exp.constant (Const_int x)
-  let char x = Exp.constant (Const_char x)
-  let float x = Exp.constant (Const_float (string_of_float x))
-
-  let get_str = function
-    | {pexp_desc=Pexp_constant (Const_string (s, _)); _} -> s
-    | e ->
-        Location.print_error Format.err_formatter e.pexp_loc;
-        Format.eprintf "string literal expected";
-        exit 2
+  open Ast_helper.Convenience
 
   let rec lid_of_out_ident = function
     | Oide_apply _ -> assert false
@@ -67,20 +44,14 @@ module Main : sig end = struct
     | Oval_array l -> Exp.array (List.map exp_of_out_value l)
     | Oval_constr (c, args) -> constr (lid_of_out_ident c) (List.map exp_of_out_value args)
     | Oval_record l ->
-        Exp.record
-          (List.map (fun (s, v) -> (lid (lid_of_out_ident s),
-                                    exp_of_out_value v)) l)
-          None
+        record
+          (List.map
+             (fun (s, v) -> lid_of_out_ident s, exp_of_out_value v) l)
     | v ->
         Format.eprintf "[%%eval] cannot map value to expression:@.%a@."
           !Toploop.print_out_value
           v;
         exit 2
-
-  let set_loc loc = object
-    inherit Ast_mapper.mapper
-    method! location _ = loc
-  end
 
   let empty_str_item = Str.include_ (Mod.structure [])
 
@@ -139,12 +110,10 @@ module Main : sig end = struct
                   r;
                 exit 2
           end;
-          run (Ptop_def [Str.eval e0]);
+          assert (run (Ptop_def [Str.eval e0]));
           Toploop.print_out_phrase := pop;
-          begin match !last_result with
-          | None -> assert false
-          | Some v -> (set_loc e0.pexp_loc) # expr (exp_of_out_value v)
-          end
+          let v = match !last_result with None -> assert false | Some v -> v in
+          with_default_loc e0.pexp_loc (fun () -> exp_of_out_value v)
       | _ ->
           super # expr e
 
