@@ -53,7 +53,13 @@ let is_infix  = function  | `Infix _ -> true | _  -> false
 let is_predef_option = function
   | (Ldot (Lident "*predef*","option")) -> true
   | _ -> false
-        
+
+let is_unit = function
+  | {pexp_desc=Pexp_construct ( {txt= Lident "()"; _},_,_);
+     pexp_attributes = []
+    } -> true
+  | _ -> false
+
 type space_formatter = (unit, Format.formatter, unit) format
 
 let override = function
@@ -430,7 +436,9 @@ class printer  ()= object(self:'self)
             pp f "~%s@;" l 
         | _ ->  pp f "~%s:%a@;" l self#simple_pattern p )
   method sugar_expr f e =
-    match e.pexp_desc with 
+    if e.pexp_attributes <> [] then false
+      (* should also check attributes underneath *)
+    else match e.pexp_desc with 
     | Pexp_apply
         ({pexp_desc=
           Pexp_ident
@@ -510,7 +518,11 @@ class printer  ()= object(self:'self)
              
     | _ -> false
   method expression f x =
-    match x.pexp_desc with
+    if x.pexp_attributes <> [] then begin
+      pp f "((%a)%a)" self#expression {x with pexp_attributes=[]}
+        self#attributes x.pexp_attributes
+    end
+    else match x.pexp_desc with
     | Pexp_function _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
       when pipe || semi ->
         self#paren true self#reset#expression f x
@@ -630,18 +642,21 @@ class printer  ()= object(self:'self)
       pp f "@[<2>(&%s@ %a)@]" s self#expression arg
     | _ -> self#expression1 f x
   method expression1 f x =
-    match x.pexp_desc with
+    if x.pexp_attributes <> [] then self#expression f x
+    else match x.pexp_desc with
     | Pexp_object cs -> pp f "%a" self#class_structure cs
     | _ -> self#expression2 f x
   (* used in [Pexp_apply] *)        
   method expression2 f x =
-    match x.pexp_desc with
+    if x.pexp_attributes <> [] then self#expression f x
+    else match x.pexp_desc with
     | Pexp_field (e, li) -> pp f "@[<hov2>%a.%a@]" self#simple_expr e self#longident_loc li
     | Pexp_send (e, s) ->  pp f "@[<hov2>%a#%s@]" self#simple_expr e  s 
 
     | _ -> self#simple_expr f x 
   method simple_expr f x =
-    match x.pexp_desc with
+    if x.pexp_attributes <> [] then self#expression f x
+    else match x.pexp_desc with
     | Pexp_construct _  when is_simple_construct (view_expr x) ->
         (match view_expr x with
         | `nil -> pp f "[]"
@@ -688,7 +703,15 @@ class printer  ()= object(self:'self)
         pp f fmt s.txt self#expression e1 self#direction_flag df self#expression e2  self#expression e3
     | _ ->  self#paren true self#expression f x 
 
-          
+  method attributes f l =
+    List.iter (self # attribute f) l
+
+  method attribute f (s, e) =
+    if is_unit e then
+      pp f "[@@%s]" s
+    else
+      pp f "[@@%s %a]" s self#expression e
+
   method value_description f x =
     pp f "@[<hov2>%a%a@]" self#core_type x.pval_type
       (fun f x ->
@@ -952,7 +975,8 @@ class printer  ()= object(self:'self)
   (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)    
   method binding f ((p:pattern),(x:expression)) =
     let rec pp_print_pexp_function f x =
-      match x.pexp_desc with 
+      if x.pexp_attributes <> [] then pp f "=@;%a" self#expression x
+      else match x.pexp_desc with 
       | Pexp_function (label,eo,[(p,e)]) ->
           if label="" then 
             match e.pexp_desc with
@@ -964,7 +988,9 @@ class printer  ()= object(self:'self)
       | Pexp_newtype (str,e) ->
           pp f "(type@ %s)@ %a" str pp_print_pexp_function e
       | _ -> pp f "=@;%a" self#expression x in 
-    match (x.pexp_desc,p.ppat_desc) with
+    if x.pexp_attributes <> [] then
+      pp f "%a@;=@;%a" self#pattern p self#expression x 
+    else match (x.pexp_desc,p.ppat_desc) with
     | (Pexp_when (e1,e2),_) ->
         pp f "=@[<2>fun@ %a@ when@ %a@ ->@ %a@]"
           self#simple_pattern p self#expression e1 self#expression e2

@@ -115,6 +115,8 @@ class printer :
     method value_description :
       Format.formatter -> Parsetree.value_description -> unit
     method virtual_flag : Format.formatter -> Asttypes.virtual_flag -> unit
+    method attribute : Format.formatter -> Parsetree.attribute -> unit
+    method attributes : Format.formatter -> Parsetree.attributes -> unit
   end
 val default : printer
 val toplevel_phrase : Format.formatter -> Parsetree.toplevel_phrase -> unit
