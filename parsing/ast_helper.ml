@@ -387,9 +387,11 @@ module Convenience = struct
 
 
   let get_str = function
-    | {pexp_desc=Pexp_constant (Const_string (s, _)); _} -> s
-    | e ->
-        Location.print_error Format.err_formatter e.pexp_loc;
-        Format.eprintf "string literal expected";
-        exit 2
+    | {pexp_desc=Pexp_constant (Const_string (s, _)); _} -> Some s
+    | e -> None
+
+  let get_lid = function
+    | {pexp_desc=Pexp_ident{txt=id;_};_} ->
+        Some (String.concat "." (Longident.flatten id))
+    | _ -> None
 end

@@ -53,14 +53,13 @@ module Main : sig end = struct
 
   class exp_builder =
     object
-      method record ty x =
-        Exp.record (List.map (fun (l, e) -> lid (prefix ty l), e) x) None
+      method record ty x = record (List.map (fun (l, e) -> prefix ty l, e) x)
       method constr ty (c, args) = constr (prefix ty c) args
       method list = list
-      method tuple l = Exp.tuple l
-      method int x = Exp.constant (Const_int x)
+      method tuple = tuple
+      method int = int
       method string = str
-      method char x = Exp.constant (Const_char x)
+      method char = char
       method int32 x = Exp.constant (Const_int32 x)
       method int64 x = Exp.constant (Const_int64 x)
       method nativeint x = Exp.constant (Const_nativeint x)

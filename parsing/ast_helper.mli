@@ -289,5 +289,6 @@ module Convenience :
     val pvar: string -> pattern
     val pconstr: string -> pattern list -> pattern
 
-    val get_str: expression -> string
+    val get_str: expression -> string option
+    val get_lid: expression -> string option
   end

@@ -23,8 +23,6 @@
 
 module Main : sig end = struct
 
-  open Longident
-  open Asttypes
   open Parsetree
   open Ast_helper
   open Outcometree
@@ -69,13 +67,20 @@ module Main : sig end = struct
     method! structure_item i =
       match i.pstr_desc with
       | Pstr_extension(("eval.load", e0), _) ->
-          let s = get_str e0 in
+          let s =
+            match get_str e0 with
+            | Some s -> s
+            | None ->
+                Location.print_error Format.err_formatter e0.pexp_loc;
+                Format.eprintf "string literal expected";
+                exit 2
+          in
           if not (Topdirs.load_file Format.err_formatter s) then begin
             Location.print Format.err_formatter e0.pexp_loc;
             exit 2;
           end;
           empty_str_item
-      | Pstr_extension(("eval.start", {pexp_desc=Pexp_ident{txt=Lident"both";_};_}), _) ->
+      | Pstr_extension(("eval.start", e), _) when get_lid e = Some "both" ->
           eval_str_items <- Some true;
           empty_str_item
       | Pstr_extension(("eval.start", _), _) ->
