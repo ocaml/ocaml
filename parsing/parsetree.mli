@@ -120,14 +120,14 @@ and pattern =
   {
    ppat_desc: pattern_desc;
    ppat_loc: Location.t;
-   ppat_attributes: attributes;
+   ppat_attributes: attributes; (* P [@id1 E1] [@id2 E2] ... *)
   }
 
 and pattern_desc =
   | Ppat_any
         (* _ *)
   | Ppat_var of string loc
-        (* 'a *)
+        (* x *)
   | Ppat_alias of pattern * string loc
         (* P as 'a *)
   | Ppat_constant of constant
@@ -177,47 +177,130 @@ and pattern_desc =
         (* [%id E] *)
 
 and expression =
-  { pexp_desc: expression_desc;
-    pexp_loc: Location.t;
-    pexp_attributes: attributes;
-   }
+    {
+     pexp_desc: expression_desc;
+     pexp_loc: Location.t;
+     pexp_attributes: attributes; (* E [@id1 E1] [@id2 E2] ... *)
+    }
 
 and expression_desc =
-    Pexp_ident of Longident.t loc
+  | Pexp_ident of Longident.t loc
+        (* x
+           M.x
+         *)
   | Pexp_constant of constant
+        (* 1, 'a', "true", 1.0, 1l, 1L, 1n *)
   | Pexp_let of rec_flag * (pattern * expression) list * expression
-  | Pexp_function of label * expression option * (pattern * expression) list
+        (* let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
+           let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
+         *)
+  | Pexp_function of label * expression option *
+        (pattern * guarded_expression) list
+        (* function P1 -> E1 | ... | Pn -> En    (lab = "", None)
+           fun P1 -> E1                          (lab = "", None)
+           fun ~l:P1 -> E1                       (lab = "l", None)
+           fun ?l:P -> E1                        (lab = "?l", None)
+           fun ?l:(P1 = E0) -> E1                (lab = "?l", Some E0)
+
+           Notes:
+           - n >= 1
+           - There is no concrete syntax if n >= 2 and lab <> ""
+           - If E0 is provided, lab must start with '?'
+         *)
   | Pexp_apply of expression * (label * expression) list
-  | Pexp_match of expression * (pattern * expression) list
-  | Pexp_try of expression * (pattern * expression) list
+        (* E0 ~l1:E1 ... ~ln:En
+           li can be empty (non labeled argument) or start with '?'
+           (optional argument).
+         *)
+  | Pexp_match of expression * (pattern * guarded_expression) list
+        (* match E0 with P1 -> E1 | ... | Pn -> En *)
+  | Pexp_try of expression * (pattern * guarded_expression) list
+        (* try E0 with P1 -> E1 | ... | Pn -> En *)
   | Pexp_tuple of expression list
+        (* (E1, ..., En)   (n >= 2) *)
   | Pexp_construct of Longident.t loc * expression option * bool
+        (* C                (None, false)
+           C E              (Some E, false)
+
+           Constructors with multiple arguments are represented
+           by storing a Pexp_tuple in E.
+        *)
   | Pexp_variant of label * expression option
+        (* `A             (None)
+           `A of E        (Some E)
+         *)
   | Pexp_record of (Longident.t loc * expression) list * expression option
+        (* { l1=P1; ...; ln=Pn }     (None)
+           { E0 with l1=P1; ...; ln=Pn }   (Some E0)
+         *)
   | Pexp_field of expression * Longident.t loc
+        (* E.l *)
   | Pexp_setfield of expression * Longident.t loc * expression
+        (* E1.l <- E2 *)
   | Pexp_array of expression list
+        (* [| E1; ...; En |] *)
   | Pexp_ifthenelse of expression * expression * expression option
+        (* if E1 then E2 else E3 *)
   | Pexp_sequence of expression * expression
+        (* E1; E2 *)
   | Pexp_while of expression * expression
+        (* while E1 do E2 done *)
   | Pexp_for of
       string loc *  expression * expression * direction_flag * expression
+        (* for i = E1 to E2 do E3 done      (flag = Upto)
+           for i = E1 downto E2 do E3 done  (flag = Downto)
+         *)
   | Pexp_constraint of expression * core_type option * core_type option
+        (* (E : T1)         (Some T1, None)
+           (E :> T2)        (None, Some T2)
+           (E : T1 :> T2)   (Some T1, Some T2)
+
+           Invariant: one of the two types must be provided
+           (otherwise this is currently accepted as equivalent to just E).
+         *)
   | Pexp_when of expression * expression
+        (* ... when E1 -> E2
+           This node can occur only in contexts marked as guarded_expression.
+         *)
   | Pexp_send of expression * string
+        (*  E # m *)
   | Pexp_new of Longident.t loc
+        (* new M.c *)
   | Pexp_setinstvar of string loc * expression
+        (* x <- 2 *)
   | Pexp_override of (string loc * expression) list
+        (* {< x1 = E1; ...; Xn = En >} *)
   | Pexp_letmodule of string loc * module_expr * expression
+        (* let module M = ME in E *)
   | Pexp_assert of expression
+        (* assert E
+           Note: "assert false" is represented in a specific way
+           (see below).
+         *)
   | Pexp_assertfalse
+        (* assert false *)
   | Pexp_lazy of expression
+        (* lazy E *)
   | Pexp_poly of expression * core_type option
+        (* Used for method bodies.
+           TODO: this must probably be cleaned up. *)
   | Pexp_object of class_structure
+        (* object ... end *)
   | Pexp_newtype of string * expression
+        (* fun (type t) -> E *)
   | Pexp_pack of module_expr
+        (* (module ME)
+
+           (module ME : S) is represented as
+           Pexp_constraint(Pexp_pack, Some (Ptyp_package S), None) *)
   | Pexp_open of Longident.t loc * expression
+        (* let open M in E *)
   | Pexp_extension of extension
+        (* [%id E] *)
+
+and guarded_expression = expression
+   (* This type abbreviation is used to mark contexts where Pexp_when
+      can be used. *)
 
 (* Value descriptions *)
 
