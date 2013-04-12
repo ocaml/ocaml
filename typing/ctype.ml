@@ -2244,7 +2244,14 @@ and unify3 env t1 t1' t2 t2' =
           then
             unify_list env tl1 tl2
           else
-            set_mode Pattern ~generate:false (fun () -> unify_list env tl1 tl2)
+            set_mode Pattern ~generate:false
+              begin fun () ->
+                let snap = snapshot () in
+                try unify_list env tl1 tl2 with Unify _ ->
+                  backtrack snap;
+                  List.iter (reify env) (tl1 @ tl2)
+              end
+        (*set_mode Pattern ~generate:false (fun () -> unify_list env tl1 tl2)*)
       | (Tconstr ((Path.Pident p) as path,[],_),
          Tconstr ((Path.Pident p') as path',[],_))
         when is_abstract_newtype !env path && is_abstract_newtype !env path'
@@ -2267,7 +2274,7 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (_,[],_), _) | (_, Tconstr (_,[],_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
-          mcomp !env t1' t2'
+          if !generate_equations then mcomp !env t1' t2'
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
           unify_fields env fi1 fi2;
           (* Type [t2'] may have been instantiated by [unify_fields] *)
