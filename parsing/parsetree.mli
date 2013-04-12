@@ -117,27 +117,64 @@ and 'a class_infos =
 (* Value expressions for the core language *)
 
 and pattern =
-  { ppat_desc: pattern_desc;
-    ppat_loc: Location.t;
-    ppat_attributes: attributes;
-   }
+  {
+   ppat_desc: pattern_desc;
+   ppat_loc: Location.t;
+   ppat_attributes: attributes;
+  }
 
 and pattern_desc =
-    Ppat_any
+  | Ppat_any
+        (* _ *)
   | Ppat_var of string loc
+        (* 'a *)
   | Ppat_alias of pattern * string loc
+        (* P as 'a *)
   | Ppat_constant of constant
+        (* 1, 'a', "true", 1.0, 1l, 1L, 1n *)
   | Ppat_tuple of pattern list
+        (* (P1, ..., Pn)   (n >= 2) *)
   | Ppat_construct of Longident.t loc * pattern option * bool
+        (* C                (None, false)
+           C P              (Some P, false)
+
+           Constructors with multiple arguments are represented
+           by storing a Ppat_tuple in P.
+
+           bool = true is never created by the standard parser.
+           It can be used when P is a Ppat_tuple to inform the
+           type-checker that the length of that tuple corresponds
+           to the number of parameters for that constructor (otherwise
+           this is inferred from the definition of the constructor).
+           This can be useful with a different concrete syntax
+           which distinguishes n-ary constructors from constructors
+           with a tuple argument in patterns.
+         *)
+
   | Ppat_variant of label * pattern option
+        (* `A             (None)
+           `A of P        (Some P)
+         *)
   | Ppat_record of (Longident.t loc * pattern) list * closed_flag
+        (* { l1=P1; ...; ln=Pn }     (flag = Closed)
+           { l1=P1; ...; ln=Pn; _}   (flag = Open)
+         *)
   | Ppat_array of pattern list
+        (* [| P1; ...; Pn |] *)
   | Ppat_or of pattern * pattern
+        (* P1 | P2 *)
   | Ppat_constraint of pattern * core_type
+        (* (P : T) *)
   | Ppat_type of Longident.t loc
+        (* #tconst *)
   | Ppat_lazy of pattern
+        (* lazy P *)
   | Ppat_unpack of string loc
+        (* (module P)
+           Note: (module P : S) is represented as Ppat_constraint(Ppat_unpack, Ptyp_package)
+         *)
   | Ppat_extension of extension
+        (* [%id E] *)
 
 and expression =
   { pexp_desc: expression_desc;
