@@ -150,7 +150,7 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_constr %a\n" fmt_longident_loc li;
       list i core_type ppf l;
   | Ptyp_variant (l, closed, low) ->
-      line i ppf "Ptyp_variant closed=%s\n" (string_of_bool closed);
+      line i ppf "Ptyp_variant closed=%a\n" fmt_closed_flag closed;
       list i label_x_bool_x_core_type_list ppf l;
       option i (fun i -> list i string) ppf low
   | Ptyp_object (l, c) ->

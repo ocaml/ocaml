@@ -1644,23 +1644,23 @@ simple_core_type2:
   | LPAREN core_type_comma_list RPAREN SHARP class_longident opt_present
       { mktyp(Ptyp_class(mkrhs $5 5, List.rev $2, $6)) }
   | LBRACKET tag_field RBRACKET
-      { mktyp(Ptyp_variant([$2], true, None)) }
+      { mktyp(Ptyp_variant([$2], Closed, None)) }
 /* PR#3835: this is not LR(1), would need lookahead=2
   | LBRACKET simple_core_type2 RBRACKET
-      { mktyp(Ptyp_variant([$2], true, None)) }
+      { mktyp(Ptyp_variant([$2], Closed, None)) }
 */
   | LBRACKET BAR row_field_list RBRACKET
-      { mktyp(Ptyp_variant(List.rev $3, true, None)) }
+      { mktyp(Ptyp_variant(List.rev $3, Closed, None)) }
   | LBRACKET row_field BAR row_field_list RBRACKET
-      { mktyp(Ptyp_variant($2 :: List.rev $4, true, None)) }
+      { mktyp(Ptyp_variant($2 :: List.rev $4, Closed, None)) }
   | LBRACKETGREATER opt_bar row_field_list RBRACKET
-      { mktyp(Ptyp_variant(List.rev $3, false, None)) }
+      { mktyp(Ptyp_variant(List.rev $3, Open, None)) }
   | LBRACKETGREATER RBRACKET
-      { mktyp(Ptyp_variant([], false, None)) }
+      { mktyp(Ptyp_variant([], Open, None)) }
   | LBRACKETLESS opt_bar row_field_list RBRACKET
-      { mktyp(Ptyp_variant(List.rev $3, true, Some [])) }
+      { mktyp(Ptyp_variant(List.rev $3, Closed, Some [])) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
-      { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
+      { mktyp(Ptyp_variant(List.rev $3, Closed, Some (List.rev $5))) }
   | LPAREN MODULE package_type RPAREN
       { mktyp(Ptyp_package $3) }
   | extension

@@ -14412,14 +14412,14 @@ module Struct =
                     (Ptyp_tuple
                        (List.map ctyp (list_of_ctyp t1 (list_of_ctyp t2 []))))
               | Ast.TyVrnEq (loc, t) ->
-                  mktyp loc (Ptyp_variant ((row_field t), true, None))
+                  mktyp loc (Ptyp_variant ((row_field t), Closed, None))
               | Ast.TyVrnSup (loc, t) ->
-                  mktyp loc (Ptyp_variant ((row_field t), false, None))
+                  mktyp loc (Ptyp_variant ((row_field t), Open, None))
               | Ast.TyVrnInf (loc, t) ->
-                  mktyp loc (Ptyp_variant ((row_field t), true, (Some [])))
+                  mktyp loc (Ptyp_variant ((row_field t), Closed, (Some [])))
               | Ast.TyVrnInfSup (loc, t, t') ->
                   mktyp loc
-                    (Ptyp_variant ((row_field t), true,
+                    (Ptyp_variant ((row_field t), Closed,
                        (Some (name_tags t'))))
               | TyAnt (loc, _) -> error loc "antiquotation not allowed here"
               | TyOfAmp (_, _, _) | TyAmp (_, _, _) | TySta (_, _, _) |

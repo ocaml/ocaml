@@ -39,7 +39,7 @@ module Typ :
     val object_: ?loc:loc -> ?attrs:attrs -> (string * core_type) list -> closed_flag -> core_type
     val class_: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> label list -> core_type
     val alias: ?loc:loc -> ?attrs:attrs -> core_type -> string -> core_type
-    val variant: ?loc:loc -> ?attrs:attrs -> row_field list -> bool -> label list option -> core_type
+    val variant: ?loc:loc -> ?attrs:attrs -> row_field list -> closed_flag -> label list option -> core_type
     val poly: ?loc:loc -> ?attrs:attrs -> string list -> core_type -> core_type
     val package: ?loc:loc -> ?attrs:attrs -> lid -> (lid * core_type) list -> core_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> core_type

@@ -270,11 +270,11 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | TySem loc _ _ -> error loc "type1 ; type2 not allowed here"
     | <:ctyp@loc< ($t1$ * $t2$) >> ->
          mktyp loc (Ptyp_tuple (List.map ctyp (list_of_ctyp t1 (list_of_ctyp t2 []))))
-    | <:ctyp@loc< [ = $t$ ] >> -> mktyp loc (Ptyp_variant (row_field t) True None)
-    | <:ctyp@loc< [ > $t$ ] >> -> mktyp loc (Ptyp_variant (row_field t) False None)
-    | <:ctyp@loc< [ < $t$ ] >> -> mktyp loc (Ptyp_variant (row_field t) True (Some []))
+    | <:ctyp@loc< [ = $t$ ] >> -> mktyp loc (Ptyp_variant (row_field t) Closed None)
+    | <:ctyp@loc< [ > $t$ ] >> -> mktyp loc (Ptyp_variant (row_field t) Open None)
+    | <:ctyp@loc< [ < $t$ ] >> -> mktyp loc (Ptyp_variant (row_field t) Closed (Some []))
     | <:ctyp@loc< [ < $t$ > $t'$ ] >> ->
-        mktyp loc (Ptyp_variant (row_field t) True (Some (name_tags t')))
+        mktyp loc (Ptyp_variant (row_field t) Closed (Some (name_tags t')))
     | TyAnt loc _ -> error loc "antiquotation not allowed here"
     | TyOfAmp _ _ _ |TyAmp _ _ _ |TySta _ _ _ |
       TyCom _ _ _ |TyVrn _ _ |TyQuM _ _ |TyQuP _ _ |TyDcl _ _ _ _ _ |

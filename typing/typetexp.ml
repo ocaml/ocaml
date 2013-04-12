@@ -497,7 +497,7 @@ let rec transl_type env policy styp =
       end;
       let row =
         { row_fields = List.rev fields; row_more = newvar ();
-          row_bound = (); row_closed = closed;
+          row_bound = (); row_closed = (closed = Closed);
           row_fixed = false; row_name = !name } in
       let static = Btype.static_row row in
       let row =

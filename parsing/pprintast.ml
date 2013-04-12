@@ -273,9 +273,9 @@ class printer  ()= object(self:'self)
               | _ ->
               pp f "%s@;%a"
                 (match (closed,low) with
-                | (true,None) -> ""
-                | (true,Some _) -> "<" (* FIXME desugar the syntax sugar*)
-                | (false,_) -> ">") 
+                | (Closed,None) -> ""
+                | (Closed,Some _) -> "<" (* FIXME desugar the syntax sugar*)
+                | (Open,_) -> ">") 
                 (self#list type_variant_helper ~sep:"@;<1 -2>| ") l) l 
           (fun f low
             ->

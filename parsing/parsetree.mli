@@ -17,39 +17,91 @@ open Asttypes
 (* Extension points *)
 
 type attribute = string * expression
+      (* [@id E]
+         [@id]     (expr = ())
+
+         [@@id EXPR]
+         [@@id]    (expr = ())
+       *)
 
 and extension = string * expression
+      (* [%id E]
+         [%id]     (expr = ())
+
+         [%%id EXPR]
+         [%%id]    (expr = ())
+       *)
 
 and attributes = attribute list
 
 (* Type expressions for the core language *)
 
 and core_type =
-  { ptyp_desc: core_type_desc;
-    ptyp_loc: Location.t;
-    ptyp_attributes: attributes;
-   }
+    {
+     ptyp_desc: core_type_desc;
+     ptyp_loc: Location.t;
+     ptyp_attributes: attributes; (* T [@id1 E1] [@id2 E2] ... *)
+    }
 
 and core_type_desc =
-    Ptyp_any
+  | Ptyp_any
+        (*  _ *)
   | Ptyp_var of string
+        (* 'a *)
   | Ptyp_arrow of label * core_type * core_type
+        (* T1 -> T2       (label = "")
+           ~l:T1 -> T2    (label = "l")
+           ?l:T1 -> T2    (label = "?l")
+         *)
   | Ptyp_tuple of core_type list
+        (* T1 * ... * Tn   (n >= 2) *)
   | Ptyp_constr of Longident.t loc * core_type list
+        (* tconstr
+           T tconstr
+           (T1, ..., Tn) tconstr
+         *)
   | Ptyp_object of (string * core_type) list * closed_flag
+        (* < l1:T1; ...; ln:Tn >     (flag = Closed)
+           < l1:T1; ...; ln:Tn; .. > (flag = Open)
+         *)
   | Ptyp_class of Longident.t loc * core_type list * label list
-  | Ptyp_alias of core_type * string
-  | Ptyp_variant of row_field list * bool * label list option
-  | Ptyp_poly of string list * core_type
-  | Ptyp_package of package_type
-  | Ptyp_extension of extension
+        (* #tconstr
+           T #tconstr
+           (T1, ..., Tn) tconstr
 
+           The label list is used for the deprecated syntax:
+           #tconstr [> `A1 ... `An]
+         *)
+  | Ptyp_alias of core_type * string
+        (* T as 'a *)
+  | Ptyp_variant of row_field list * closed_flag * label list option
+        (* [ `A|`B ]         (flag = Closed; labels = None)
+           [> `A|`B ]        (flag = Open;   labels = None)
+           [< `A|`B ]        (flag = Closed; labels = Some [])
+           [< `A|`B > `X `Y ](flag = Closed; labels = Some ["X";"Y"])
+         *)
+  | Ptyp_poly of string list * core_type
+        (* 'a1 ... 'an. T *)
+  | Ptyp_package of package_type
+        (* (module S) *)
+  | Ptyp_extension of extension
+        (* [%id EXPR] *)
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
+      (*
+        (module S)
+        (module S with type t1 = T1 and ... and tn = Tn)
+       *)
 
 and row_field =
-    Rtag of label * bool * core_type list
+  | Rtag of label * bool * core_type list
+        (* [`A]                   ( true,  [] )
+           [`A of T]              ( false, [T] )
+           [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
+           [`A of & T1 & .. & Tn] ( true,  [T1;...Tn] )
+         *)
   | Rinherit of core_type
+        (* [ T ] *)
 
 (* Type expressions for the class language *)
 
