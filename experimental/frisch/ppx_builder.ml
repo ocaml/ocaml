@@ -1,8 +1,8 @@
 (*
-  An toy -ppx rewriter which illustrates typed-based code generation.
-  Here, we create builder function from record and sum type declarations
-  annotated with attribute [@@builder]:  one function per record type,
-  one function per constructor of a sum type.
+  A toy -ppx rewriter which illustrates code generation based on type
+  declarations.  Here, we create builder function from record and sum
+  type declarations annotated with attribute [@@builder]: one function
+  per record type, one function per constructor of a sum type.
 
   We recognize some special attributes on record fields (or their associated
   type) and on constructor argument types:
