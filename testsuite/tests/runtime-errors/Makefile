@@ -19,8 +19,8 @@ compile:
 	  $(OCAMLC) -w a -o `basename $$f ml`bytecode $$f; \
 	  test -z "$(BYTECODE_ONLY)" && $(OCAMLOPT) -w a -o `basename $$f ml`native $$f || true; \
 	done
-	@if [ ! `grep -c HAS_STACK_OVERFLOW_DETECTION ../../../config/s.h` ]; then \
-	  test -z "$(BYTECODE_ONLY)" && rm -f stackoverflow.byte stackoverflow.native || true; \
+	@if [ `grep -c HAS_STACK_OVERFLOW_DETECTION ../../../config/s.h` -eq 0 ]; then \
+	  rm -f stackoverflow.native || true; \
 	fi
 
 run:
