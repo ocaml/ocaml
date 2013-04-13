@@ -1418,11 +1418,37 @@ distclean::
 	rm -f ${COQ}.tar.gz
 all: coq
 
+# http://code.google.com/p/bitstring/
+
+BITSTRING=ocaml-bitstring-2.0.3
+${BITSTRING}.tar.gz:
+	${WGET} http://bitstring.googlecode.com/files/$@
+bitstring: ${BITSTRING}.tar.gz findlib # cil FIXME ?
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${BITSTRING}
+	tar zxf ${BITSTRING}.tar.gz
+	./Patcher.sh ${BITSTRING}
+	( cd ${BITSTRING} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure --prefix ${PREFIX} && \
+	  ${MAKE} && \
+	  ${MAKE} check && \
+	  ${MAKE} examples && \
+	  ocamlfind remove bitstring && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${BITSTRING} bitstring
+distclean::
+	rm -f ${BITSTRING}.tar.gz
+all: bitstring
+
 # http://compcert.inria.fr
 COMPCERT=compcert-1.13
 ${COMPCERT}.tgz:
 	${WGET} http://compcert.inria.fr/release/$@
-compcert: ${COMPCERT}.tgz coq #bitstring FIXME
+compcert: ${COMPCERT}.tgz coq bitstring
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${COMPCERT}
@@ -1430,7 +1456,7 @@ compcert: ${COMPCERT}.tgz coq #bitstring FIXME
 	./Patcher.sh ${COMPCERT}
 	( cd ${COMPCERT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
-	  sh ./configure -prefix ${PREFIX} ia32-macosx && \
+	  sh ./configure -prefix ${PREFIX} ppc-linux && \
 	  ${MAKE} all && \
 	  ${MAKE} install )
 	echo ${VERSION} >$@
