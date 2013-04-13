@@ -61,7 +61,7 @@ module M1 = struct end;;
 class type u = F(M1).t;;
 
 (* conjunctive constraints on tags (used by the compiler to print some
-   inferred types *)
+   inferred types) *)
 type 'a t2 = [< `A of int & int & int ] as 'a;;
 
 (* same for a parameterless tag (triggers a very strange error message) *)
