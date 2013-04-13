@@ -1,5 +1,9 @@
 let edit_distance = Misc.edit_distance
 
+let show_cutoff n =
+  if n = max_int then "max_int" else Printf.sprintf "%d" n
+;;
+
 let test =
   let counter = ref 0 in
   fun a b cutoff expected ->
@@ -7,8 +11,8 @@ let test =
       | None -> "None"
       | Some d -> "Some " ^ string_of_int d in
     incr counter;
-    Printf.printf "[%02d] (edit_distance %S %S %d), expected %s\n"
-      !counter a b cutoff (show_result expected);
+    Printf.printf "[%02d] (edit_distance %S %S %s), expected %s\n"
+      !counter a b (show_cutoff cutoff) (show_result expected);
     let result = edit_distance a b cutoff in
     if result = expected
     then print_endline "OK"
