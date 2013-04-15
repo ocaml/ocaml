@@ -608,6 +608,11 @@ let rec class_field self_loc cl_num self_type meths vars
         concr_meths, warn_vals, inher)
 
   | Pcf_method (lab, priv, Cfk_concrete (ovf, expr))  ->
+      let expr =
+        match expr.pexp_desc with
+        | Pexp_poly _ -> expr
+        | _ -> Ast_helper.Exp.poly ~loc:expr.pexp_loc expr None
+      in
       if Concr.mem lab.txt concr_meths then begin
         if ovf = Fresh then
           Location.prerr_warning loc (Warnings.Method_override [lab.txt])

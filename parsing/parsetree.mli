@@ -297,7 +297,9 @@ and expression_desc =
         (* lazy E *)
   | Pexp_poly of expression * core_type option
         (* Used for method bodies.
-           TODO: this must probably be cleaned up. *)
+
+           Can only be used as the expression under Cfk_concrete
+           for methods (not values). *)
   | Pexp_object of class_structure
         (* object ... end *)
   | Pexp_newtype of string * expression
