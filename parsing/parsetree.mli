@@ -81,7 +81,25 @@ and core_type_desc =
            [< `A|`B > `X `Y ](flag = Closed; labels = Some ["X";"Y"])
          *)
   | Ptyp_poly of string list * core_type
-        (* 'a1 ... 'an. T *)
+        (* 'a1 ... 'an. T
+
+           Can only appear in the following context:
+
+           - As the core_type of a Ppat_constraint node corresponding
+             to a constraint on a let-binding: let x : 'a1 ... 'an. T
+             = e ...
+
+           - Under Cfk_virtual for methods (not values).
+
+           - As the core_type of a Pctf_method node.
+
+           - As the core_type of a Pexp_poly node.
+
+           - As the pld_type field of a label_declaration.
+
+           - As a core_type of a Ptyp_object node.
+         *)
+
   | Ptyp_package of package_type
         (* (module S) *)
   | Ptyp_extension of extension
