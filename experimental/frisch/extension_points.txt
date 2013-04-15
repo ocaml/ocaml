@@ -404,6 +404,23 @@ As in the Typedtree.
 +  | Cfk_concrete of override_flag * expression
 +
 
+--- Explicit representation of "when" guards
+
+Replaced the "(pattern * expression) list" argument of Pexp_function, Pexp_match, Pexp_try 
+with "case list", with case defined as:
+
+  {
+   pc_lhs: pattern;
+   pc_guard: expression option;
+   pc_rhs: expression;
+  }
+
+and get rid of Pexp_when. Idem in the Typedtree.
+
+Rationale:
+
+  - Make it explicit when the guard can appear.
+
 
 === More TODOs
 

@@ -15035,21 +15035,21 @@ module Struct =
                   ->
                   mkexp loc
                     (Pexp_function (lab, None,
-                       [ ((patt_of_lab loc lab po), (when_expr e w)) ]))
+                       [ when_expr (patt_of_lab loc lab po) e w ]))
               | Ast.ExFun (loc,
                   (Ast.McArr (_, (PaOlbi (_, lab, p, e1)), w, e2))) ->
                   let lab = paolab lab p
                   in
                     mkexp loc
                       (Pexp_function (("?" ^ lab), (Some (expr e1)),
-                         [ ((patt p), (when_expr e2 w)) ]))
+                         [ when_expr (patt p) e2 w ]))
               | Ast.ExFun (loc, (Ast.McArr (_, (PaOlb (_, lab, p)), w, e)))
                   ->
                   let lab = paolab lab p
                   in
                     mkexp loc
                       (Pexp_function (("?" ^ lab), None,
-                         [ ((patt_of_lab loc lab p), (when_expr e w)) ]))
+                         [ when_expr (patt_of_lab loc lab p) e w ]))
               | ExFun (loc, a) ->
                   mkexp loc (Pexp_function ("", None, (match_case a [])))
               | ExIfe (loc, e1, e2, e3) ->
@@ -15240,13 +15240,16 @@ module Struct =
             and match_case x acc =
               match x with
               | Ast.McOr (_, x, y) -> match_case x (match_case y acc)
-              | Ast.McArr (_, p, w, e) -> ((patt p), (when_expr e w)) :: acc
+              | Ast.McArr (_, p, w, e) -> when_expr (patt p) e w :: acc
               | Ast.McNil _ -> acc
               | _ -> assert false
-            and when_expr e w =
-              match w with
-              | Ast.ExNil _ -> expr e
-              | w -> mkexp (loc_of_expr w) (Pexp_when ((expr w), (expr e)))
+            and when_expr p e w =
+              let g =
+                match w with
+                | Ast.ExNil _ -> None
+                | w -> Some (expr w)
+              in
+              {pc_lhs = p; pc_guard = g; pc_rhs = expr e}
             and mklabexp x acc =
               match x with
               | Ast.RbSem (_, x, y) -> mklabexp x (mklabexp y acc)

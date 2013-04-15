@@ -96,8 +96,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
       | Some x -> f x
 
 
-    open Asttypes
-
     let rec iter_structure str =
       Iter.enter_structure str;
       List.iter iter_structure_item str.str_items;
@@ -114,6 +112,14 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_bindings rec_flag;
       List.iter iter_binding list;
       Iter.leave_bindings rec_flag
+
+    and iter_case {c_lhs; c_guard; c_rhs} =
+      iter_pattern c_lhs;
+      may_iter iter_expression c_guard;
+      iter_expression c_rhs
+
+    and iter_cases cases =
+      List.iter iter_case cases
 
     and iter_structure_item item =
       Iter.enter_structure_item item;
@@ -235,7 +241,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_bindings rec_flag list;
             iter_expression exp
         | Texp_function (label, cases, _) ->
-            iter_bindings Nonrecursive cases
+            iter_cases cases
         | Texp_apply (exp, list) ->
             iter_expression exp;
             List.iter (fun (label, expo, _) ->
@@ -245,10 +251,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ) list
         | Texp_match (exp, list, _) ->
             iter_expression exp;
-            iter_bindings Nonrecursive list
+            iter_cases list
         | Texp_try (exp, list) ->
             iter_expression exp;
-            iter_bindings Nonrecursive list
+            iter_cases list
         | Texp_tuple list ->
             List.iter iter_expression list
         | Texp_construct (_, _, args, _) ->
@@ -288,9 +294,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_expression exp1;
             iter_expression exp2;
             iter_expression exp3
-        | Texp_when (exp1, exp2) ->
-            iter_expression exp1;
-            iter_expression exp2
         | Texp_send (exp, meth, expo) ->
             iter_expression exp;
           begin

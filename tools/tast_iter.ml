@@ -10,7 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Asttypes
 open Typedtree
 
 let opt f = function None -> () | Some x -> f x
@@ -93,16 +92,16 @@ let expression sub exp =
       sub # bindings (rec_flag, list);
       sub # expression exp
   | Texp_function (_, cases, _) ->
-      sub # bindings (Nonrecursive, cases)
+      sub # cases cases
   | Texp_apply (exp, list) ->
       sub # expression exp;
       List.iter (fun (_, expo, _) -> opt (sub # expression) expo) list
-  | Texp_match (exp, list, _) ->
+  | Texp_match (exp, cases, _) ->
       sub # expression exp;
-      sub # bindings (Nonrecursive, list)
-  | Texp_try (exp, list) ->
+      sub # cases cases
+  | Texp_try (exp, cases) ->
       sub # expression exp;
-      sub # bindings (Nonrecursive, list)
+      sub # cases cases
   | Texp_tuple list ->
       List.iter (sub # expression) list
   | Texp_construct (_, _, args, _) ->
@@ -133,9 +132,6 @@ let expression sub exp =
       sub # expression exp1;
       sub # expression exp2;
       sub # expression exp3
-  | Texp_when (exp1, exp2) ->
-      sub # expression exp1;
-      sub # expression exp2
   | Texp_send (exp, _meth, expo) ->
       sub # expression exp;
       opt (sub # expression) expo
@@ -331,6 +327,14 @@ let class_field sub cf =
 let bindings sub (_rec_flag, list) =
   List.iter (sub # binding) list
 
+let cases sub l =
+  List.iter (sub # case) l
+
+let case sub {c_lhs; c_guard; c_rhs} =
+  sub # pattern c_lhs;
+  opt (sub # expression) c_guard;
+  sub # expression c_rhs
+
 let binding sub (pat, exp) =
   sub # pattern pat;
   sub # expression exp
@@ -338,6 +342,8 @@ let binding sub (pat, exp) =
 class iter = object(this)
   method binding = binding this
   method bindings = bindings this
+  method case = case this
+  method cases = cases this
   method class_description = class_description this
   method class_expr = class_expr this
   method class_field = class_field this

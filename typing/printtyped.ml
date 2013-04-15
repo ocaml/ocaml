@@ -281,7 +281,7 @@ and expression i ppf x =
   | Texp_function (p, l, _partial) ->
       line i ppf "Pexp_function \"%s\"\n" p;
 (*      option i expression ppf eo; *)
-      list i pattern_x_expression_case ppf l;
+      list i case ppf l;
   | Texp_apply (e, l) ->
       line i ppf "Pexp_apply\n";
       expression i ppf e;
@@ -289,11 +289,11 @@ and expression i ppf x =
   | Texp_match (e, l, partial) ->
       line i ppf "Pexp_match\n";
       expression i ppf e;
-      list i pattern_x_expression_case ppf l;
+      list i case ppf l;
   | Texp_try (e, l) ->
       line i ppf "Pexp_try\n";
       expression i ppf e;
-      list i pattern_x_expression_case ppf l;
+      list i case ppf l;
   | Texp_tuple (l) ->
       line i ppf "Pexp_tuple\n";
       list i expression ppf l;
@@ -338,10 +338,6 @@ and expression i ppf x =
       expression i ppf e1;
       expression i ppf e2;
       expression i ppf e3;
-  | Texp_when (e1, e2) ->
-      line i ppf "Pexp_when\n";
-      expression i ppf e1;
-      expression i ppf e2;
   | Texp_send (e, Tmeth_name s, eo) ->
       line i ppf "Pexp_send \"%s\"\n" s;
       expression i ppf e;
@@ -770,10 +766,14 @@ and longident_x_pattern i ppf (li, _, p) =
   line i ppf "%a\n" fmt_longident li;
   pattern (i+1) ppf p;
 
-and pattern_x_expression_case i ppf (p, e) =
+and case i ppf {c_lhs; c_guard; c_rhs} =
   line i ppf "<case>\n";
-  pattern (i+1) ppf  p;
-  expression (i+1) ppf e;
+  pattern (i+1) ppf c_lhs;
+  begin match c_guard with
+  | None -> ()
+  | Some g -> line (i+1) ppf "<when>\n"; expression (i + 2) ppf g
+  end;
+  expression (i+1) ppf c_rhs;
 
 and pattern_x_expression_def i ppf (p, e) =
   line i ppf "<def>\n";

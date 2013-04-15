@@ -72,10 +72,10 @@ and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
   | Texp_constant of constant
   | Texp_let of rec_flag * (pattern * expression) list * expression
-  | Texp_function of label * (pattern * expression) list * partial
+  | Texp_function of label * case list * partial
   | Texp_apply of expression * (label * expression option * optional) list
-  | Texp_match of expression * (pattern * expression) list * partial
-  | Texp_try of expression * (pattern * expression) list
+  | Texp_match of expression * case list * partial
+  | Texp_try of expression * case list
   | Texp_tuple of expression list
   | Texp_construct of
       Longident.t loc * constructor_description * expression list *
@@ -94,7 +94,6 @@ and expression_desc =
   | Texp_for of
       Ident.t * string loc * expression * expression * direction_flag *
         expression
-  | Texp_when of expression * expression
   | Texp_send of expression * meth * expression option
   | Texp_new of Path.t * Longident.t loc * Types.class_declaration
   | Texp_instvar of Path.t * Path.t * string loc
@@ -110,6 +109,13 @@ and expression_desc =
 and meth =
     Tmeth_name of string
   | Tmeth_val of Ident.t
+
+and case =
+    {
+     c_lhs: pattern;
+     c_guard: expression option;
+     c_rhs: expression;
+    }
 
 (* Value expressions for the class language *)
 

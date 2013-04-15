@@ -23,8 +23,7 @@ class printer :
           Asttypes.rec_flag * (Parsetree.pattern * Parsetree.expression) list ->
             unit
     method case_list :
-      Format.formatter ->
-      (Parsetree.pattern * Parsetree.expression) list -> unit
+      Format.formatter -> Parsetree.case list -> unit
     method class_expr : Format.formatter -> Parsetree.class_expr -> unit
     method class_field : Format.formatter -> Parsetree.class_field -> unit
     method class_params_def :

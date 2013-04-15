@@ -1034,7 +1034,8 @@ expr:
   | FUNCTION ext_attributes opt_bar match_cases
       { mkexp_attrs (Pexp_function("", None, List.rev $4)) $2 }
   | FUN ext_attributes labeled_simple_pattern fun_def
-      { let (l,o,p) = $3 in mkexp_attrs (Pexp_function(l, o, [p, $4])) $2 }
+      { let (l,o,p) = $3 in
+        mkexp_attrs (Pexp_function(l, o, [Exp.case p $4])) $2 }
   | FUN ext_attributes LPAREN TYPE LIDENT RPAREN fun_def
       { mkexp_attrs (Pexp_newtype($5, $7)) $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
@@ -1261,24 +1262,31 @@ strict_binding:
     EQUAL seq_expr
       { $2 }
   | labeled_simple_pattern fun_binding
-      { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
+      { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [Exp.case p $2])) }
   | LPAREN TYPE LIDENT RPAREN fun_binding
       { mkexp(Pexp_newtype($3, $5)) }
 ;
 match_cases:
-    pattern match_action                        { [$1, $2] }
-  | match_cases BAR pattern match_action        { ($3, $4) :: $1 }
+    match_case { [$1] }
+  | match_cases BAR match_case { $3 :: $1 }
+;
+match_case:
+    pattern MINUSGREATER seq_expr
+      { Exp.case $1 $3 }
+  | pattern WHEN seq_expr MINUSGREATER seq_expr
+      { Exp.case $1 ~guard:$3 $5 }
 ;
 fun_def:
-    match_action                                { $1 }
+    MINUSGREATER seq_expr                       { $2 }
+/* Cf #5939: we used to accept (fun p when e0 -> e) */
   | labeled_simple_pattern fun_def
-      { let (l,o,p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
+      {
+       let (l,o,p) = $1 in
+       let case = Exp.case p $2 in
+       ghexp(Pexp_function(l, o, [case]))
+      }
   | LPAREN TYPE LIDENT RPAREN fun_def
       { mkexp(Pexp_newtype($3, $5)) }
-;
-match_action:
-    MINUSGREATER seq_expr                       { $2 }
-  | WHEN seq_expr MINUSGREATER seq_expr         { ghexp(Pexp_when($2, $4)) }
 ;
 expr_comma_list:
     expr_comma_list COMMA expr                  { $3 :: $1 }

@@ -1641,19 +1641,10 @@ let pressure_variants tdefs patl =
   about guarded patterns
 *)
 
-let has_guard act =   match act.exp_desc with
-| Texp_when(_, _) -> true
-| _ -> false
-
-
 let rec initial_matrix = function
     [] -> []
-  | (pat, act) :: rem ->
-      if has_guard act
-      then
-        initial_matrix rem
-      else
-        [pat] :: initial_matrix rem
+  | {c_guard=Some _} :: rem -> initial_matrix rem
+  | {c_guard=None; c_lhs=p} :: rem -> [p] :: initial_matrix rem
 
 (******************************************)
 (* Look for a row that matches some value *)
@@ -1675,8 +1666,8 @@ let rec initial_all no_guard = function
         raise NoGuard
       else
         []
-  | (pat, act) :: rem ->
-      ([pat], pat.pat_loc) :: initial_all (no_guard && not (has_guard act)) rem
+  | {c_lhs=pat; c_guard; _} :: rem ->
+      ([pat], pat.pat_loc) :: initial_all (no_guard && c_guard = None) rem
 
 
 let rec do_filter_var = function
@@ -1957,7 +1948,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 let do_check_fragile_param exhaust loc casel pss =
   let exts =
     List.fold_left
-      (fun r (p,_) -> collect_paths_from_pat r p)
+      (fun r c -> collect_paths_from_pat r c.c_lhs)
       [] casel in
   match exts with
   | [] -> ()
@@ -1985,7 +1976,7 @@ let check_unused tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
       | [] -> ()
-      | (q,act)::rem ->
+      | {c_lhs=q; c_guard} :: rem ->
           let qs = [q] in
             begin try
               let pss =
@@ -2005,7 +1996,7 @@ let check_unused tdefs casel =
             with Empty | Not_an_adt | Not_found | NoGuard -> assert false
             end ;
 
-          if has_guard act then
+          if c_guard <> None then
             do_rec pref rem
           else
             do_rec ([q]::pref) rem in

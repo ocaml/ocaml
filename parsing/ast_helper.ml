@@ -95,7 +95,6 @@ module Exp = struct
   let while_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_while (a, b))
   let for_ ?loc ?attrs a b c d e = mk ?loc ?attrs (Pexp_for (a, b, c, d, e))
   let constraint_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_constraint (a, b, c))
-  let when_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_when (a, b))
   let send ?loc ?attrs a b = mk ?loc ?attrs (Pexp_send (a, b))
   let new_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_new a)
   let setinstvar ?loc ?attrs a b = mk ?loc ?attrs (Pexp_setinstvar (a, b))
@@ -110,6 +109,13 @@ module Exp = struct
   let pack ?loc ?attrs a = mk ?loc ?attrs (Pexp_pack a)
   let open_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_open (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
+
+  let case lhs ?guard rhs =
+    {
+     pc_lhs = lhs;
+     pc_guard = guard;
+     pc_rhs = rhs;
+    }
 end
 
 module Mty = struct
@@ -376,8 +382,8 @@ module Convenience = struct
   let float x = Exp.constant (Const_float (string_of_float x))
   let record ?over l =
     Exp.record (List.map (fun (s, e) -> (lid s, e)) l) over
-  let func l = Exp.function_ "" None l
-  let lam ?(label = "") ?default pat exp = Exp.function_ label default [pat, exp]
+  let func l = Exp.function_ "" None (List.map (fun (p, e) -> Exp.case p e) l)
+  let lam ?(label = "") ?default pat exp = Exp.function_ label default [{pc_lhs=pat; pc_guard=None; pc_rhs=exp}]
   let app f l = Exp.apply f (List.map (fun a -> "", a) l)
   let evar s = Exp.ident (lid s)
   let let_in ?(recursive = false) b body =

@@ -109,6 +109,12 @@ let create_object cl obj init =
                            [obj; Lvar obj'; Lvar cl]))))
   end
 
+let name_pattern default p =
+  match p.pat_desc with
+  | Tpat_var (id, _) -> id
+  | Tpat_alias(p, id, _) -> id
+  | _ -> Ident.create default
+
 let rec build_object_init cl_table obj params inh_init obj_init cl =
   match cl.cl_desc with
     Tcl_ident ( path, _, _) ->
@@ -156,7 +162,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
       in
       (inh_init,
        let build params rem =
-         let param = name_pattern "param" [pat, ()] in
+         let param = name_pattern "param" pat in
          Lfunction (Curried, param::params,
                     Matching.for_function
                       pat.pat_loc None (Lvar param) [pat, rem] partial)
@@ -396,7 +402,7 @@ let rec transl_class_rebind obj_init cl vf =
   | Tcl_fun (_, pat, _, cl, partial) ->
       let path, obj_init = transl_class_rebind obj_init cl vf in
       let build params rem =
-        let param = name_pattern "param" [pat, ()] in
+        let param = name_pattern "param" pat in
         Lfunction (Curried, param::params,
                    Matching.for_function
                      pat.pat_loc None (Lvar param) [pat, rem] partial)

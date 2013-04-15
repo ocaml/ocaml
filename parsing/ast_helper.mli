@@ -75,10 +75,10 @@ module Exp:
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> expression
     val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> expression -> expression
-    val function_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> (pattern * expression) list -> expression
+    val function_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> case list -> expression
     val apply: ?loc:loc -> ?attrs:attrs -> expression -> (label * expression) list -> expression
-    val match_: ?loc:loc -> ?attrs:attrs -> expression -> (pattern * expression) list -> expression
-    val try_: ?loc:loc -> ?attrs:attrs -> expression -> (pattern * expression) list -> expression
+    val match_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
+    val try_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
     val tuple: ?loc:loc -> ?attrs:attrs -> expression list -> expression
     val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option -> bool -> expression
     val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option -> expression
@@ -91,7 +91,6 @@ module Exp:
     val while_: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
     val for_: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression -> direction_flag -> expression -> expression
     val constraint_: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> core_type option -> expression
-    val when_: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
     val send: ?loc:loc -> ?attrs:attrs -> expression -> string -> expression
     val new_: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val setinstvar: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression
@@ -106,6 +105,8 @@ module Exp:
     val pack: ?loc:loc -> ?attrs:attrs -> module_expr -> expression
     val open_: ?loc:loc -> ?attrs:attrs -> lid -> expression -> expression
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
+
+    val case: pattern -> ?guard:expression -> expression -> case
   end
 module Mty:
   sig

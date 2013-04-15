@@ -729,6 +729,14 @@ and search_pos_class_expr ~pos cl =
       ~env:!start_env ~loc:cl.cl_loc
   end
 
+and search_case ~pos {c_lhs; c_guard; c_rhs} =
+  search_pos_pat c_lhs ~pos ~env:c_rhs.exp_env;
+  begin match c_guard with
+  | None -> ()
+  | Some g -> search_pos_expr g ~pos
+  end;
+  search_pos_expr c_rhs ~pos
+
 and search_pos_expr ~pos exp =
   if in_loc exp.exp_loc ~pos then begin
   begin match exp.exp_desc with
@@ -746,28 +754,16 @@ and search_pos_expr ~pos exp =
       end;
       search_pos_expr exp ~pos
   | Texp_function (_, l, _) ->
-      List.iter l ~f:
-      begin fun (pat, exp) ->
-        search_pos_pat pat ~pos ~env:exp.exp_env;
-        search_pos_expr exp ~pos
-      end
+      List.iter l ~f:(search_case ~pos)
   | Texp_apply (exp, l) ->
       List.iter l ~f:(fun (_, x,_) -> Misc.may (search_pos_expr ~pos) x);
       search_pos_expr exp ~pos
   | Texp_match (exp, l, _) ->
       search_pos_expr exp ~pos;
-      List.iter l ~f:
-      begin fun (pat, exp) ->
-        search_pos_pat pat ~pos ~env:exp.exp_env;
-        search_pos_expr exp ~pos
-      end
+      List.iter l ~f:(search_case ~pos)
   | Texp_try (exp, l) ->
       search_pos_expr exp ~pos;
-      List.iter l ~f:
-      begin fun (pat, exp) ->
-        search_pos_pat pat ~pos ~env:exp.exp_env;
-        search_pos_expr exp ~pos
-      end
+      List.iter l ~f:(search_case ~pos)
   | Texp_tuple l -> List.iter l ~f:(search_pos_expr ~pos)
   | Texp_construct (_, _, l,_) -> List.iter l ~f:(search_pos_expr ~pos)
   | Texp_variant (_, None) -> ()
@@ -790,8 +786,6 @@ and search_pos_expr ~pos exp =
       search_pos_expr a ~pos; search_pos_expr b ~pos
   | Texp_for (_, _, a, b, _, c) ->
       List.iter [a;b;c] ~f:(search_pos_expr ~pos)
-  | Texp_when (a, b) ->
-      search_pos_expr a ~pos; search_pos_expr b ~pos
   | Texp_send (exp, _, _) -> search_pos_expr exp ~pos
   | Texp_new (path, _, _) ->
       add_found_str (`Exp(`New path, exp.exp_type))

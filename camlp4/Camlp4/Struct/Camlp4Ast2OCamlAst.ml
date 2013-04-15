@@ -778,15 +778,15 @@ value varify_constructors var_names =
     | <:expr@loc< fun [ $PaLab _ lab po$ when $w$ -> $e$ ] >> ->
         mkexp loc
           (Pexp_function lab None
-            [(patt_of_lab loc lab po, when_expr e w)])
+            [when_expr (patt_of_lab loc lab po) e w])
     | <:expr@loc< fun [ $PaOlbi _ lab p e1$ when $w$ -> $e2$ ] >> ->
         let lab = paolab lab p in
         mkexp loc
-          (Pexp_function ("?" ^ lab) (Some (expr e1)) [(patt p, when_expr e2 w)])
+          (Pexp_function ("?" ^ lab) (Some (expr e1)) [when_expr (patt p) e2 w])
     | <:expr@loc< fun [ $PaOlb _ lab p$ when $w$ -> $e$ ] >> ->
         let lab = paolab lab p in
         mkexp loc
-          (Pexp_function ("?" ^ lab) None [(patt_of_lab loc lab p, when_expr e w)])
+          (Pexp_function ("?" ^ lab) None [when_expr (patt_of_lab loc lab p) e w])
     | ExFun loc a -> mkexp loc (Pexp_function "" None (match_case a []))
     | ExIfe loc e1 e2 e3 ->
         mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
@@ -931,13 +931,15 @@ value varify_constructors var_names =
     match x with
     [ <:match_case< $x$ | $y$ >> -> match_case x (match_case y acc)
     | <:match_case< $pat:p$ when $w$ -> $e$ >> ->
-        [(patt p, when_expr e w) :: acc]
+        [when_expr (patt p) e w :: acc]
     | <:match_case<>> -> acc
     | _ -> assert False ]
-  and when_expr e w =
-    match w with
-    [ <:expr<>> -> expr e
-    | w -> mkexp (loc_of_expr w) (Pexp_when (expr w) (expr e)) ]
+  and when_expr p e w =
+    let g = match w with
+    [ <:expr<>> -> None
+    | g -> Some (expr g) ]
+    in
+    {pc_lhs = p; pc_guard = g; pc_rhs = expr e}
   and mklabexp x acc =
     match x with
     [ <:rec_binding< $x$; $y$ >> ->

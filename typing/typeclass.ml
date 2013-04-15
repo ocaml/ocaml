@@ -344,8 +344,9 @@ let make_method loc cl_num expr =
   let mkid s = mkloc s loc in
   Exp.function_ ~loc:expr.pexp_loc "" None
     [
-     Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num)),
-     expr
+     Exp.case
+       (Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num)))
+       expr
     ]
 
 
@@ -855,17 +856,19 @@ and class_expr cl_num val_env met_env scl =
       let loc = default.pexp_loc in
       let open Ast_helper in
       let scases = [
-        Pat.construct ~loc
-          (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
-          (Some (Pat.var ~loc (mknoloc "*sth*")))
-          false,
-        Exp.ident ~loc (mknoloc (Longident.Lident "*sth*"));
+        Exp.case
+          (Pat.construct ~loc
+             (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
+             (Some (Pat.var ~loc (mknoloc "*sth*")))
+             false)
+          (Exp.ident ~loc (mknoloc (Longident.Lident "*sth*")));
 
-        Pat.construct ~loc
-          (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
-          None
-          false,
-        default;
+        Exp.case
+          (Pat.construct ~loc
+             (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
+             None
+             false)
+          default;
        ]
       in
       let smatch =
@@ -912,12 +915,14 @@ and class_expr cl_num val_env met_env scl =
       in
       let partial =
         Parmatch.check_partial pat.pat_loc
-          [pat, (* Dummy expression *)
-           {exp_desc = Texp_constant (Asttypes.Const_int 1);
-            exp_loc = Location.none; exp_extra = [];
-            exp_type = Ctype.none;
-            exp_attributes = [];
-            exp_env = Env.empty }]
+          [{c_lhs=pat;
+            c_guard=None;
+            c_rhs = (* Dummy expression *)
+            {exp_desc = Texp_constant (Asttypes.Const_int 1);
+             exp_loc = Location.none; exp_extra = [];
+             exp_type = Ctype.none;
+             exp_attributes = [];
+             exp_env = Env.empty }}]
       in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in

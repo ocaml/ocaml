@@ -189,6 +189,13 @@ module E = struct
   let apply_nolabs ?loc ?attrs f el = Exp.apply ?loc ?attrs f (List.map (fun e -> ("", e)) el)
   let strconst ?loc ?attrs x = Exp.constant ?loc ?attrs (Const_string (x, None))
 
+  let map_case sub {pc_lhs; pc_guard; pc_rhs} =
+    {
+     pc_lhs = sub # pat pc_lhs;
+     pc_guard = map_opt (sub # expr) pc_guard;
+     pc_rhs = sub # expr pc_rhs;
+    }
+
   let map sub {pexp_loc = loc; pexp_desc = desc; pexp_attributes = attrs} =
     let open Exp in
     let loc = sub # location loc in
@@ -197,10 +204,10 @@ module E = struct
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
     | Pexp_constant x -> constant ~loc ~attrs x
     | Pexp_let (r, pel, e) -> let_ ~loc ~attrs r (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
-    | Pexp_function (lab, def, pel) -> function_ ~loc ~attrs lab (map_opt (sub # expr) def) (List.map (map_tuple (sub # pat) (sub # expr)) pel)
+    | Pexp_function (lab, def, pel) -> function_ ~loc ~attrs lab (map_opt (sub # expr) def) (List.map (map_case sub) pel)
     | Pexp_apply (e, l) -> apply ~loc ~attrs (sub # expr e) (List.map (map_snd (sub # expr)) l)
-    | Pexp_match (e, l) -> match_ ~loc ~attrs (sub # expr e) (List.map (map_tuple (sub # pat) (sub # expr)) l)
-    | Pexp_try (e, l) -> try_ ~loc ~attrs (sub # expr e) (List.map (map_tuple (sub # pat) (sub # expr)) l)
+    | Pexp_match (e, l) -> match_ ~loc ~attrs (sub # expr e) (List.map (map_case sub) l)
+    | Pexp_try (e, l) -> try_ ~loc ~attrs (sub # expr e) (List.map (map_case sub) l)
     | Pexp_tuple el -> tuple ~loc ~attrs (List.map (sub # expr) el)
     | Pexp_construct (lid, arg, b) -> construct ~loc ~attrs (map_loc sub lid) (map_opt (sub # expr) arg) b
     | Pexp_variant (lab, eo) -> variant ~loc ~attrs lab (map_opt (sub # expr) eo)
@@ -213,7 +220,6 @@ module E = struct
     | Pexp_while (e1, e2) -> while_ ~loc ~attrs (sub # expr e1) (sub # expr e2)
     | Pexp_for (id, e1, e2, d, e3) -> for_ ~loc ~attrs (map_loc sub id) (sub # expr e1) (sub # expr e2) d (sub # expr e3)
     | Pexp_constraint (e, t1, t2) -> constraint_ ~loc ~attrs (sub # expr e) (map_opt (sub # typ) t1) (map_opt (sub # typ) t2)
-    | Pexp_when (e1, e2) -> when_ ~loc ~attrs (sub # expr e1) (sub # expr e2)
     | Pexp_send (e, s) -> send ~loc ~attrs (sub # expr e) s
     | Pexp_new lid -> new_ ~loc ~attrs (map_loc sub lid)
     | Pexp_setinstvar (s, e) -> setinstvar ~loc ~attrs (map_loc sub s) (sub # expr e)

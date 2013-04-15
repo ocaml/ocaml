@@ -297,13 +297,13 @@ module Analyser =
           (* This case means we have a 'function' without pattern, that's impossible *)
           raise (Failure "tt_analyse_function_parameters: 'function' without pattern")
 
-      | (pattern_param, exp) :: second_ele :: q ->
+      | {c_lhs=pattern_param} :: second_ele :: q ->
           (* implicit pattern matching -> anonymous parameter and no more parameter *)
           (* A VOIR : le label ? *)
           let parameter = Odoc_parameter.Tuple ([], Odoc_env.subst_type env pattern_param.pat_type) in
           [ parameter ]
 
-      | (pattern_param, func_body) :: [] ->
+      | {c_lhs=pattern_param; c_rhs=func_body} :: [] ->
           let parameter =
             tt_param_info_from_pattern
               env
@@ -451,7 +451,7 @@ module Analyser =
                  [] ->
                    (* cas impossible, on l'a filtre avant *)
                    assert false
-               | (pattern_param, exp) :: second_ele :: q ->
+               | {c_lhs=pattern_param} :: second_ele :: q ->
                    (* implicit pattern matching -> anonymous parameter *)
                    (* Note : We can't match this pattern if it is the first call to the function. *)
                    let new_param = Simple_name
@@ -460,7 +460,7 @@ module Analyser =
                    in
                    [ new_param ]
 
-               | (pattern_param, body) :: [] ->
+               | {c_lhs=pattern_param; c_rhs=body} :: [] ->
                    (* if this is the first call to the function, this is the first parameter and we skip it *)
                    if not first then
                      (

@@ -32,7 +32,15 @@ let bind_bindings scope bindings =
   List.iter (fun (p, _) -> o # pattern p) bindings
 
 let bind_cases l =
-  List.iter (fun (p, e) -> (bind_variables e.exp_loc) # pattern p) l
+  List.iter
+    (fun {c_lhs; c_guard; c_rhs} ->
+      let loc =
+        let open Location in
+        match c_guard with
+        | None -> c_rhs.exp_loc
+        | Some g -> {c_rhs.exp_loc with loc_start=g.exp_loc.loc_start}
+      in
+      (bind_variables loc) # pattern c_lhs) l
 
 let iterator rebuild_env =
   object(this)

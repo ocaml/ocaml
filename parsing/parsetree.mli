@@ -194,8 +194,7 @@ and expression_desc =
         (* let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
            let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
          *)
-  | Pexp_function of label * expression option *
-        (pattern * guarded_expression) list
+  | Pexp_function of label * expression option * case list
         (* function P1 -> E1 | ... | Pn -> En    (lab = "", None)
            fun P1 -> E1                          (lab = "", None)
            fun ~l:P1 -> E1                       (lab = "l", None)
@@ -203,18 +202,19 @@ and expression_desc =
            fun ?l:(P1 = E0) -> E1                (lab = "?l", Some E0)
 
            Notes:
-           - n >= 1
-           - There is no concrete syntax if n >= 2 and lab <> ""
-           - If E0 is provided, lab must start with '?'
+           - n >= 1.
+           - There is no concrete syntax if n >= 2 and lab <> "".
+           - If E0 is provided, lab must start with '?'.
+           - Guards are only possible if lab = "".
          *)
   | Pexp_apply of expression * (label * expression) list
         (* E0 ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
          *)
-  | Pexp_match of expression * (pattern * guarded_expression) list
+  | Pexp_match of expression * case list
         (* match E0 with P1 -> E1 | ... | Pn -> En *)
-  | Pexp_try of expression * (pattern * guarded_expression) list
+  | Pexp_try of expression * case list
         (* try E0 with P1 -> E1 | ... | Pn -> En *)
   | Pexp_tuple of expression list
         (* (E1, ..., En)   (n >= 2) *)
@@ -258,10 +258,6 @@ and expression_desc =
            Invariant: one of the two types must be provided
            (otherwise this is currently accepted as equivalent to just E).
          *)
-  | Pexp_when of expression * expression
-        (* ... when E1 -> E2
-           This node can occur only in contexts marked as guarded_expression.
-         *)
   | Pexp_send of expression * string
         (*  E # m *)
   | Pexp_new of Longident.t loc
@@ -298,9 +294,12 @@ and expression_desc =
   | Pexp_extension of extension
         (* [%id E] *)
 
-and guarded_expression = expression
-   (* This type abbreviation is used to mark contexts where Pexp_when
-      can be used. *)
+and case =   (* (P -> E) or (P when E0 -> E) *)
+  {
+   pc_lhs: pattern;
+   pc_guard: expression option;
+   pc_rhs: expression;
+  }
 
 (* Value descriptions *)
 

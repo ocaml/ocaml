@@ -210,6 +210,15 @@ and untype_extra (extra, loc, attrs) sexp =
   in
   Exp.mk ~loc ~attrs desc
 
+and untype_cases l = List.map untype_case l
+
+and untype_case {c_lhs; c_guard; c_rhs} =
+  {
+   pc_lhs = untype_pattern c_lhs;
+   pc_guard = option untype_expression c_guard;
+   pc_rhs = untype_expression c_rhs;
+  }
+
 and untype_expression exp =
   let desc =
     match exp.exp_desc with
@@ -221,9 +230,7 @@ and untype_expression exp =
               untype_pattern pat, untype_expression exp) list,
           untype_expression exp)
     | Texp_function (label, cases, _) ->
-        Pexp_function (label, None,
-          List.map (fun (pat, exp) ->
-              (untype_pattern pat, untype_expression exp)) cases)
+        Pexp_function (label, None, untype_cases cases)
     | Texp_apply (exp, list) ->
         Pexp_apply (untype_expression exp,
           List.fold_right (fun (label, expo, _) list ->
@@ -231,14 +238,10 @@ and untype_expression exp =
                 None -> list
               | Some exp -> (label, untype_expression exp) :: list
           ) list [])
-    | Texp_match (exp, list, _) ->
-        Pexp_match (untype_expression exp,
-          List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) list)
-    | Texp_try (exp, list) ->
-        Pexp_try (untype_expression exp,
-          List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) list)
+    | Texp_match (exp, cases, _) ->
+        Pexp_match (untype_expression exp, untype_cases cases)
+    | Texp_try (exp, cases) ->
+        Pexp_try (untype_expression exp, untype_cases cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map untype_expression list)
     | Texp_construct (lid, _, args, explicit_arity) ->
@@ -276,8 +279,6 @@ and untype_expression exp =
         Pexp_for (name,
           untype_expression exp1, untype_expression exp2,
           dir, untype_expression exp3)
-    | Texp_when (exp1, exp2) ->
-        Pexp_when (untype_expression exp1, untype_expression exp2)
     | Texp_send (exp, meth, _) ->
         Pexp_send (untype_expression exp, match meth with
             Tmeth_name name -> name

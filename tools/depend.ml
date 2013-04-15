@@ -136,11 +136,11 @@ let rec add_expr bv exp =
   | Pexp_let(rf, pel, e) ->
       let bv = add_bindings rf bv pel in add_expr bv e
   | Pexp_function (_, opte, pel) ->
-      add_opt add_expr bv opte; add_pat_expr_list bv pel
+      add_opt add_expr bv opte; add_cases bv pel
   | Pexp_apply(e, el) ->
       add_expr bv e; List.iter (fun (_,e) -> add_expr bv e) el
-  | Pexp_match(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
-  | Pexp_try(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
+  | Pexp_match(e, pel) -> add_expr bv e; add_cases bv pel
+  | Pexp_try(e, pel) -> add_expr bv e; add_cases bv pel
   | Pexp_tuple el -> List.iter (add_expr bv) el
   | Pexp_construct(c, opte, _) -> add bv c; add_opt add_expr bv opte
   | Pexp_variant(_, opte) -> add_opt add_expr bv opte
@@ -160,7 +160,6 @@ let rec add_expr bv exp =
       add_expr bv e1;
       add_opt add_type bv oty2;
       add_opt add_type bv oty3
-  | Pexp_when(e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_send(e, m) -> add_expr bv e
   | Pexp_new li -> add bv li
   | Pexp_setinstvar(v, e) -> add_expr bv e
@@ -178,8 +177,13 @@ let rec add_expr bv exp =
   | Pexp_open (m, e) -> addmodule bv m; add_expr bv e
   | Pexp_extension _ -> ()
 
-and add_pat_expr_list bv pel =
-  List.iter (fun (p, e) -> let bv = add_pattern bv p in add_expr bv e) pel
+and add_cases bv cases =
+  List.iter (add_case bv) cases
+
+and add_case bv {pc_lhs; pc_guard; pc_rhs} =
+  let bv = add_pattern bv pc_lhs in
+  add_opt add_expr bv pc_guard;
+  add_expr bv pc_rhs
 
 and add_bindings recf bv pel =
   let bv' = List.fold_left (fun bv (p, _) -> add_pattern bv p) bv pel in

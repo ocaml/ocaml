@@ -109,6 +109,9 @@ let rp node =
 
 let snd3 (_,x,_) = x
 
+let case lhs rhs =
+  {c_lhs = lhs; c_guard = None; c_rhs = rhs}
+
 (* Upper approximation of free identifiers on the parse tree *)
 
 let iter_expression f e =
@@ -122,11 +125,11 @@ let iter_expression f e =
     | Pexp_new _
     | Pexp_constant _ -> ()
     | Pexp_function (_, eo, pel) ->
-        may expr eo; List.iter (fun (_, e) -> expr e) pel
+        may expr eo; List.iter case pel
     | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
-    | Pexp_let (_, pel, e)
+    | Pexp_let (_, pel, e) ->  expr e; List.iter (fun (_, e) -> expr e) pel
     | Pexp_match (e, pel)
-    | Pexp_try (e, pel) -> expr e; List.iter (fun (_, e) -> expr e) pel
+    | Pexp_try (e, pel) -> expr e; List.iter case pel
     | Pexp_array el
     | Pexp_tuple el -> List.iter expr el
     | Pexp_construct (_, eo, _)
@@ -142,7 +145,6 @@ let iter_expression f e =
     | Pexp_send (e, _)
     | Pexp_constraint (e, _, _)
     | Pexp_field (e, _) -> expr e
-    | Pexp_when (e1, e2)
     | Pexp_while (e1, e2)
     | Pexp_sequence (e1, e2)
     | Pexp_setfield (e1, _, e2) -> expr e1; expr e2
@@ -152,6 +154,10 @@ let iter_expression f e =
     | Pexp_letmodule (_, me, e) -> expr e; module_expr me
     | Pexp_object { pcstr_fields = fs } -> List.iter class_field fs
     | Pexp_pack me -> module_expr me
+
+  and case {pc_lhs = _; pc_guard; pc_rhs} =
+    may expr pc_guard;
+    expr pc_rhs
 
   and module_expr me =
     match me.pmod_desc with
@@ -208,14 +214,19 @@ let iter_expression f e =
   expr e
 
 
-let all_idents el =
+let all_idents_cases el =
   let idents = Hashtbl.create 8 in
   let f = function
     | {pexp_desc=Pexp_ident { txt = Longident.Lident id; _ }; _} ->
         Hashtbl.replace idents id ()
     | _ -> ()
   in
-  List.iter (iter_expression f) el;
+  List.iter
+    (fun cp ->
+      may (iter_expression f) cp.pc_guard;
+      iter_expression f cp.pc_rhs
+    )
+    el;
   Hashtbl.fold (fun x () rest -> x :: rest) idents []
 
 
@@ -1272,7 +1283,7 @@ let rec final_subexpression sexp =
   | Pexp_sequence (_, e)
   | Pexp_try (e, _)
   | Pexp_ifthenelse (_, e, _)
-  | Pexp_match (_, (_, e) :: _)
+  | Pexp_match (_, {pc_rhs=e} :: _)
     -> final_subexpression e
   | _ -> sexp
 
@@ -1586,11 +1597,11 @@ let rec approx_type env sty =
 let rec type_approx env sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_function (p,_,(_,e)::_) when is_optional p ->
+  | Pexp_function (p,_,{pc_rhs=e}::_) when is_optional p ->
        newty (Tarrow(p, type_option (newvar ()), type_approx env e, Cok))
-  | Pexp_function (p,_,(_,e)::_) ->
+  | Pexp_function (p,_,{pc_rhs=e}::_) ->
        newty (Tarrow(p, newvar (), type_approx env e, Cok))
-  | Pexp_match (_, (_,e)::_) -> type_approx env e
+  | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
@@ -1775,8 +1786,8 @@ let check_absent_variant env =
 
 let duplicate_ident_types loc caselist env =
   let caselist =
-    List.filter (fun (pat, _) -> contains_gadt env pat) caselist in
-  let idents = all_idents (List.map snd caselist) in
+    List.filter (fun {pc_lhs} -> contains_gadt env pc_lhs) caselist in
+  let idents = all_idents_cases caselist in
   List.fold_left
     (fun env s ->
       try
@@ -1882,7 +1893,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_env = env }
   | Pexp_let(Nonrecursive, [spat, sval], sbody) when contains_gadt env spat ->
       type_expect ?in_function env
-        {sexp with pexp_desc = Pexp_match (sval, [spat, sbody])}
+        {sexp with pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
         ty_expected
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let scp =
@@ -1901,21 +1912,24 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = body.exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_function (l, Some default, [spat, sbody]) ->
+  | Pexp_function (l, Some default, [{pc_lhs;pc_guard;pc_rhs}]) ->
+      assert(pc_guard = None); (* fun ~l:p when e0 -> e is no longer allowed *)
       let open Ast_helper in
       let default_loc = default.pexp_loc in
       let scases = [
-        Pat.construct ~loc:default_loc
-          (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
-          (Some (Pat.var ~loc:default_loc (mknoloc "*sth*")))
-          false,
-        Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*"));
+        Exp.case
+          (Pat.construct ~loc:default_loc
+             (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
+             (Some (Pat.var ~loc:default_loc (mknoloc "*sth*")))
+             false)
+          (Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*")));
 
-        Pat.construct ~loc:default_loc
-          (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
-          None
-          false,
-        default;
+        Exp.case
+          (Pat.construct ~loc:default_loc
+             (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
+             None
+             false)
+          default;
        ]
       in
       let smatch =
@@ -1926,8 +1940,9 @@ and type_expect_ ?in_function env sexp ty_expected =
         Exp.function_ ~loc
           l None
           [
-           Pat.var ~loc (mknoloc "*opt*"),
-           Exp.let_ ~loc Nonrecursive ~attrs:["#default",Exp.constant (Const_int 0)] [spat, smatch] sbody;
+           Exp.case
+             (Pat.var ~loc (mknoloc "*opt*"))
+             (Exp.let_ ~loc Nonrecursive ~attrs:["#default",Exp.constant (Const_int 0)] [pc_lhs, smatch] pc_rhs)
           ]
       in
       type_expect ?in_function env sfun ty_expected
@@ -1971,7 +1986,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         ls = [] && not tvar
       in
       if is_optional l && not_function ty_res then
-        Location.prerr_warning (fst (List.hd cases)).pat_loc
+        Location.prerr_warning (List.hd cases).c_lhs.pat_loc
           Warnings.Unerasable_optional_argument;
       re {
         exp_desc = Texp_function(l,cases, partial);
@@ -2371,15 +2386,6 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_env = env;
         exp_extra = (Texp_constraint (cty, cty'), loc, sexp.pexp_attributes) :: arg.exp_extra;
       }
-  | Pexp_when(scond, sbody) ->
-      let cond = type_expect env scond Predef.type_bool in
-      let body = type_expect env sbody ty_expected in
-      re {
-        exp_desc = Texp_when(cond, body);
-        exp_loc = loc; exp_extra = [];
-        exp_type = body.exp_type;
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env }
   | Pexp_send (e, met) ->
       if !Clflags.principal then begin_def ();
       let obj = type_exp env e in
@@ -2861,11 +2867,15 @@ and type_argument env sarg ty_expected' ty_expected =
       in
       let eta_pat, eta_var = var_pair "eta" ty_arg in
       let func texp =
+        let e =
+          {texp with exp_type = ty_res; exp_desc =
+           Texp_apply
+             (texp,
+              List.rev args @ ["", Some eta_var, Required])}
+        in
         { texp with exp_type = ty_fun; exp_desc =
-          Texp_function("", [eta_pat, {texp with exp_type = ty_res; exp_desc =
-                    Texp_apply (texp,
-                                List.rev args @ ["", Some eta_var, Required])}],
-                        Total) } in
+          Texp_function("", [case eta_pat e], Total) }
+      in
       if warn then Location.prerr_warning texp.exp_loc
           (Warnings.Without_principality "eliminated optional argument");
       if is_nonexpansive texp then func texp else
@@ -3148,9 +3158,9 @@ and type_statement env sexp =
 
 (* Typing of match cases *)
 
-and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
+and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist : Typedtree.case list * _ =
   (* ty_arg is _fully_ generalized *)
-  let patterns = List.map fst caselist in
+  let patterns = List.map (fun {pc_lhs=p} -> p) caselist in
   let erase_either =
     List.exists contains_polymorphic_variant patterns
     && contains_variant_either ty_arg
@@ -3183,8 +3193,13 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     Printtyp.raw_type_expr ty_arg; *)
   let pat_env_list =
     List.map
-      (fun (spat, sexp) ->
-        let loc = sexp.pexp_loc in
+      (fun {pc_lhs; pc_guard; pc_rhs} ->
+        let loc =
+          let open Location in
+          match pc_guard with
+          | None -> pc_rhs.pexp_loc
+          | Some g -> {pc_rhs.pexp_loc with loc_start=g.pexp_loc.loc_start}
+        in
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) =
@@ -3192,7 +3207,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             if !Clflags.principal || erase_either
             then Some false else None in
           let ty_arg = instance ?partial env ty_arg in
-          type_pattern ~lev env spat scope ty_arg
+          type_pattern ~lev env pc_lhs scope ty_arg
         in
         pattern_force := force @ !pattern_force;
         let pat =
@@ -3224,8 +3239,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map2
-      (fun (pat, (ext_env, unpacks)) (spat, sexp) ->
-        let sexp = wrap_unpacks sexp unpacks in
+      (fun (pat, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
+        let sexp = wrap_unpacks pc_rhs unpacks in
         let ty_res' =
           if !Clflags.principal then begin
             begin_def ();
@@ -3233,17 +3248,30 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             end_def ();
             generalize_structure ty; ty
           end
-          else if contains_gadt env spat then correct_levels ty_res
+          else if contains_gadt env pc_lhs then correct_levels ty_res
           else ty_res in
 (*        Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
           Printtyp.raw_type_expr ty_res'; *)
+        let guard =
+          match pc_guard with
+          | None -> None
+          | Some scond ->
+              Some
+                (type_expect ext_env (wrap_unpacks scond unpacks)
+                   Predef.type_bool)
+        in
         let exp = type_expect ?in_function ext_env sexp ty_res' in
-        (pat, {exp with exp_type = instance env ty_res'}))
+        {
+         c_lhs = pat;
+         c_guard = guard;
+         c_rhs = {exp with exp_type = instance env ty_res'}
+        }
+      )
       pat_env_list caselist
   in
   if !Clflags.principal || has_gadts then begin
     let ty_res' = instance env ty_res in
-    List.iter (fun (_,exp) -> unify_exp env exp ty_res') cases
+    List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
   let partial =
     if partial_flag then
@@ -3425,7 +3453,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
     Location.prerr_warning (fst (List.hd spat_sexp_list)).ppat_loc
       Warnings.Unused_rec_flag;
   List.iter2
-    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
+    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [case pat exp]))
     pat_list exp_list;
   end_def();
   List.iter2

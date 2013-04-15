@@ -16,6 +16,8 @@ open Typedtree
 class iter: object
   method binding: (pattern * expression) -> unit
   method bindings: (rec_flag * (pattern * expression) list) -> unit
+  method case: case -> unit
+  method cases: case list -> unit
   method class_description: class_description -> unit
   method class_expr: class_expr -> unit
   method class_field: class_field -> unit

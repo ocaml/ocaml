@@ -531,6 +531,9 @@ class printer  ()= object(self:'self)
     | Pexp_let _ | Pexp_letmodule _ when semi ->
         self#paren true self#reset#expression f x
     | Pexp_function _(* (p, eo, l) *) ->
+        assert false
+          (* TODO *)
+(*
         let rec aux acc = function
           | {pexp_desc = Pexp_function (l,eo, [(p',e')]);_}
               -> aux ((l,eo,p')::acc) e'
@@ -550,6 +553,8 @@ class printer  ()= object(self:'self)
                  (fun f (l,eo,p) ->
                    self#label_exp f (l,eo,p))) ls
               self#expression e end
+*)
+
     | Pexp_match (e, l) ->
         pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]" self#reset#expression e self#case_list l 
 
@@ -612,7 +617,6 @@ class printer  ()= object(self:'self)
         let lst = sequence_helper [] x in
         pp f "@[<hv>%a@]"
           (self#list self#under_semi#expression ~sep:";@;") lst
-    | Pexp_when (_e1, _e2) ->  assert false (*FIXME handled already in pattern *)
     | Pexp_new (li) ->
         pp f "@[<hov2>new@ %a@]" self#longident_loc li;
     | Pexp_setinstvar (s, e) ->
@@ -977,23 +981,20 @@ class printer  ()= object(self:'self)
     let rec pp_print_pexp_function f x =
       if x.pexp_attributes <> [] then pp f "=@;%a" self#expression x
       else match x.pexp_desc with 
-      | Pexp_function (label,eo,[(p,e)]) ->
+(*      | Pexp_function (label,eo,[(p,e)]) -> (* TODO *)
           if label="" then 
             match e.pexp_desc with
             | Pexp_when _  -> pp f "=@;%a" self#expression x
             | _ -> 
                 pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function e
           else
-            pp f "%a@ %a" self#label_exp (label,eo,p) pp_print_pexp_function e
+            pp f "%a@ %a" self#label_exp (label,eo,p) pp_print_pexp_function e *)
       | Pexp_newtype (str,e) ->
           pp f "(type@ %s)@ %a" str pp_print_pexp_function e
       | _ -> pp f "=@;%a" self#expression x in 
     if x.pexp_attributes <> [] then
       pp f "%a@;=@;%a" self#pattern p self#expression x 
     else match (x.pexp_desc,p.ppat_desc) with
-    | (Pexp_when (e1,e2),_) ->
-        pp f "=@[<2>fun@ %a@ when@ %a@ ->@ %a@]"
-          self#simple_pattern p self#expression e1 self#expression e2
     | ( _ , Ppat_constraint( p ,ty)) -> (* special case for the first*)
         (match ty.ptyp_desc with
         | Ptyp_poly _ -> 
@@ -1192,14 +1193,10 @@ class printer  ()= object(self:'self)
              self#core_type ct1 self#core_type ct2 ))  x.ptype_cstrs  ;
       (* TODO: attributes *)
   end
-  method case_list f (l:(pattern * expression) list) :unit=
-    let aux f (p,e) =
-      let (e,w) =
-        (match e with
-        | {pexp_desc = Pexp_when (e1, e2);_} -> (e2, Some (e1))
-        | _ -> (e, None)) in
+  method case_list f l : unit =
+    let aux f {pc_lhs; pc_guard; pc_rhs} =
       pp f "@;| @[<2>%a%a@;->@;%a@]"
-        self#pattern p (self#option self#expression ~first:"@;when@;") w self#under_pipe#expression e in
+        self#pattern pc_lhs (self#option self#expression ~first:"@;when@;") pc_guard self#under_pipe#expression pc_rhs in
     self#list aux f l ~sep:""
   method label_x_expression_param f (l,e) =
     match l with

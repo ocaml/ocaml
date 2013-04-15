@@ -75,7 +75,6 @@ module MakeMap(Map : MapArgument) = struct
 
 
   open Misc
-  open Asttypes
 
   let rec map_structure str =
     let str = Map.enter_structure str in
@@ -86,6 +85,16 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_bindings rec_flag list =
     List.map map_binding list
+
+  and map_case {c_lhs; c_guard; c_rhs} =
+    {
+     c_lhs = map_pattern c_lhs;
+     c_guard = may_map map_expression c_guard;
+     c_rhs = map_expression c_rhs;
+    }
+
+  and map_cases list =
+    List.map map_case list
 
   and map_structure_item item =
     let item = Map.enter_structure_item item in
@@ -226,7 +235,7 @@ module MakeMap(Map : MapArgument) = struct
                     map_bindings rec_flag list,
                     map_expression exp)
         | Texp_function (label, cases, partial) ->
-          Texp_function (label, map_bindings Nonrecursive cases, partial)
+          Texp_function (label, map_cases cases, partial)
         | Texp_apply (exp, list) ->
           Texp_apply (map_expression exp,
                       List.map (fun (label, expo, optional) ->
@@ -240,13 +249,13 @@ module MakeMap(Map : MapArgument) = struct
         | Texp_match (exp, list, partial) ->
           Texp_match (
             map_expression exp,
-            map_bindings Nonrecursive list,
+            map_cases list,
             partial
           )
         | Texp_try (exp, list) ->
           Texp_try (
             map_expression exp,
-            map_bindings Nonrecursive list
+            map_cases list
           )
         | Texp_tuple list ->
           Texp_tuple (List.map map_expression list)
@@ -304,11 +313,6 @@ module MakeMap(Map : MapArgument) = struct
             map_expression exp2,
             dir,
             map_expression exp3
-          )
-        | Texp_when (exp1, exp2) ->
-          Texp_when (
-            map_expression exp1,
-            map_expression exp2
           )
         | Texp_send (exp, meth, expo) ->
           Texp_send (map_expression exp, meth, may_map map_expression expo)
