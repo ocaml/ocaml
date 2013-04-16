@@ -1,7 +1,7 @@
 
 # * * * * *                       type ('a, 'b) sum = Inl of 'a | Inr of 'b
 type zero = Zero
-type _ succ
+type 'a succ = Succ of 'a
 type _ nat = NZ : zero nat | NS : 'a nat -> 'a succ nat
 #             type (_, _) seq =
     Snil : ('a, zero) seq
@@ -16,7 +16,7 @@ type _ nat = NZ : zero nat | NS : 'a nat -> 'a succ nat
 val app : ('a, 'n) seq -> ('a, 'm) seq -> ('a, 'n, 'm) app = <fun>
 # *                           type tp
 type nd
-type (_, _) fk
+type ('a, 'b) fk = Fk of 'a * 'b
 type _ shape =
     Tp : tp shape
   | Nd : nd shape
@@ -176,7 +176,7 @@ val ex4 : int term =
    Const 3)
 val v4 : int = 6
 #                                             type rnil
-type (_, _, _) rcons
+type ('a, 'b, 'c) rcons = RCons of 'a * 'b * 'c
 type _ is_row =
     Rnil : rnil is_row
   | Rcons : 'c is_row -> ('a, 'b, 'c) rcons is_row
@@ -280,7 +280,7 @@ val ex1 : term = Ab ("x", I, Ap (Ap (V "+", V "x"), V "x"))
 #                                             type pexp
 type pval
 type _ mode = Pexp : pexp mode | Pval : pval mode
-type (_, _) tarr
+type ('a, 'b) tarr = Tarr of 'a * 'b
 type tint
 type (_, _) rel =
     IntR : (tint, int) rel

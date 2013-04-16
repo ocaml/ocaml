@@ -83,6 +83,9 @@ val merge_row_fields:
 val filter_row_fields:
         bool -> (label * row_field) list -> (label * row_field) list
 
+val in_current_module: Path.t -> bool
+val in_pervasives: Path.t -> bool
+
 val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
 val iterative_generalization: int -> type_expr list -> type_expr list

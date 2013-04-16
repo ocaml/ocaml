@@ -1,0 +1,36 @@
+
+#         Characters 92-115:
+    type _ t = T : 'a -> 'a s t
+        ^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
+# Characters 11-12:
+  module M = F (struct type 'a s = int end) ;;
+             ^
+Error: Unbound module F
+#           Characters 95-173:
+  ........['a] c x =
+      object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
+#     type (_, _) eq = Eq
+# val eq : 'a = <poly>
+# val eq : ('a Queue.t, 'b Queue.t) eq = Eq
+# type _ t = T : 'a -> 'a Queue.t t
+# val x : int Queue.t t = T 3
+#   Characters 69-70:
+    let Eq = eq in (x : a Queue.t t);; (* fails (PR#5981) *)
+                    ^
+Error: This expression has type int Queue.t t
+       but an expression was expected of type a Queue.t t
+       Type int is not compatible with type a 
+#           Characters 92-115:
+    type _ t = T : 'a -> 'a s t
+        ^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
+#   Characters 59-60:
+  module rec M : (S with type 'a s = unit) = M;;
+                  ^
+Error: Unbound module type S
+# * *   

@@ -476,11 +476,22 @@ let check_abbrev_recursion env id_loc_list (id, _, tdecl) =
 
 (* Compute variance *)
 
-let compute_variance env tvl nega posi cntr ty =
+(* membership robust to unification *)
+let rec mem_repr ty s =
+  TypeSet.mem ty s ||
+  match ty.desc with
+    Tlink ty' -> mem_repr ty' s
+  | _ -> false    
+
+(* widen = assume abstract types not accessibke from the initial
+           environment to be bivariant *)
+let compute_variance widen env tvl nega posi cntr ty =
   let pvisited = ref TypeSet.empty
   and nvisited = ref TypeSet.empty
   and cvisited = ref TypeSet.empty in
   let rec compute_variance_rec posi nega cntr ty =
+    (* Is expand_head really safe here? In theory, unification always
+       keeps nodes from the right hand term... *)
     let ty = Ctype.repr ty in
     if (not posi || TypeSet.mem ty !pvisited)
     && (not nega || TypeSet.mem ty !nvisited)
@@ -501,16 +512,24 @@ let compute_variance env tvl nega posi cntr ty =
           if tl = [] then () else begin
             try
               let decl = Env.find_type path env in
-              List.iter2
-                (fun ty (co,cn,ct) ->
-                  compute_variance_rec
-                    (posi && co || nega && cn)
-                    (posi && cn || nega && co)
-                    (cntr || ct)
-                    ty)
-                tl decl.type_variance
+              if widen && decl.type_manifest <> None then
+                compute_variance_rec posi nega cntr (Ctype.expand_head env ty)
+              else if widen
+                && decl.type_kind = Type_abstract
+                && not (Ctype.in_pervasives path)
+                then ()
+              else
+                List.iter2
+                  (fun ty (co,cn,ct) ->
+                    compute_variance_rec
+                      (posi && co || nega && cn)
+                      (posi && cn || nega && co)
+                      (cntr || ct)
+                      ty)
+                  tl decl.type_variance
             with Not_found ->
-              List.iter (compute_variance_rec true true true) tl
+              if not widen then
+                List.iter (compute_variance_rec true true true) tl
           end
       | Tobject (ty, _) ->
           compute_same ty
@@ -541,9 +560,9 @@ let compute_variance env tvl nega posi cntr ty =
   compute_variance_rec nega posi cntr ty;
   List.iter
     (fun (ty, covar, convar, ctvar) ->
-      if TypeSet.mem ty !pvisited then covar := true;
-      if TypeSet.mem ty !nvisited then convar := true;
-      if TypeSet.mem ty !cvisited then ctvar := true)
+      if mem_repr ty !pvisited then covar := true;
+      if mem_repr ty !nvisited then convar := true;
+      if mem_repr ty !cvisited then ctvar := true)
     tvl
 
 let make_variance ty = (ty, ref false, ref false, ref false)
@@ -569,7 +588,7 @@ let compute_variance_type env check (required, loc) decl tyl =
   let tvl1 = List.map make_variance fvl in
   let tvl2 = List.map make_variance fvl in
   let tvl = tvl0 @ tvl1 in
-  List.iter (fun (cn,ty) -> compute_variance env tvl true cn cn ty) tyl;
+  List.iter (fun (cn,ty) -> compute_variance false env tvl true cn cn ty) tyl;
   let required =
     List.map (fun (c,n as r) -> if c || n then r else (true,true))
       required
@@ -578,17 +597,18 @@ let compute_variance_type env check (required, loc) decl tyl =
     (fun (ty, co, cn, ct) (c, n) ->
       if not (Btype.is_Tvar ty) then begin
         co := c; cn := n; ct := n;
-        compute_variance env tvl2 c n n ty
+        compute_variance true env tvl2 c n n ty
       end)
     tvl0 required;
   List.iter2
     (fun (ty, c1, n1, t1) (_, c2, n2, t2) ->
-      if !c1 && not !c2 || !n1 && not !n2
-      then raise (Error(loc, Bad_variance (0, (!c1,!n1), (!c2,!n2)))))
+      if !c1 && not !c2 || !n1 && not !n2 then
+        let code = if !c2 || !n2 then -1 else -2 in
+        raise (Error(loc, Bad_variance (code, (!c1,!n1), (!c2,!n2)))))
     tvl1 tvl2;
   let pos = ref 0 in
   List.map2
-    (fun (_, co, cn, ct) (c, n) ->
+    (fun (ty, co, cn, ct) (c, n) ->
       incr pos;
       if !co && not c || !cn && not n
       then raise (Error(loc, Bad_variance (!pos, (!co,!cn), (c,n))));
@@ -1152,10 +1172,14 @@ let report_error ppf = function
         | 3 when not teen -> "rd"
         | _ -> "th"
       in
-      if n < 1 then
+      if n = -1 then
         fprintf ppf "@[%s@ %s@]"
           "In this definition, a type variable has a variance that"
           "is not reflected by its occurrence in type parameters."
+      else if n = -2 then
+        fprintf ppf "@[%s@ %s@]"
+          "In this definition, a type variable cannot be deduced"
+          "from the type parameters."
       else
         fprintf ppf "@[%s@ %s@ %s %d%s %s %s,@ %s %s@]"
           "In this definition, expected parameter"

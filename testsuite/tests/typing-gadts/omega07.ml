@@ -10,7 +10,7 @@
 type ('a,'b) sum = Inl of 'a | Inr of 'b
 
 type zero = Zero
-type _ succ
+type 'a succ = Succ of 'a
 type _ nat =
   | NZ : zero nat
   | NS : 'a nat -> 'a succ nat
@@ -60,7 +60,7 @@ let rec app : type a n m. (a,n) seq -> (a,m) seq -> (a,n,m) app =
 
 type tp
 type nd
-type (_,_) fk
+type ('a,'b) fk = Fk of 'a * 'b
 type _ shape =
   | Tp : tp shape
   | Nd : nd shape
@@ -559,7 +559,7 @@ let v4 = eval_term [] ex4
 (* 5.9/5.10 Language with binding *)
 
 type rnil
-type (_,_,_) rcons
+type ('a,'b,'c) rcons = RCons of 'a * 'b * 'c
 
 type _ is_row =
   | Rnil  : rnil is_row
@@ -714,7 +714,7 @@ type _ mode =
   | Pexp : pexp mode
   | Pval : pval mode
 
-type (_,_) tarr
+type ('a,'b) tarr = Tarr of 'a * 'b
 type tint
 
 type (_,_) rel =
