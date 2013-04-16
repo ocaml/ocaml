@@ -326,8 +326,8 @@ and value_description =
     }
 
 (*
-  val x: t                            (prim = [])
-  external x: t = "s1" ... "sn"       (prim = ["s1";..."sn"])
+  val x: T                            (prim = [])
+  external x: T = "s1" ... "sn"       (prim = ["s1";..."sn"])
 
   Note: when used under Pstr_primitive, prim cannot be empty
 *)
@@ -368,7 +368,7 @@ and label_declaration =
      pld_mutable: mutable_flag;
      pld_type: core_type;
      pld_loc: Location.t;
-     pld_attributes: attributes; (* l [@id1 E1] [@id2 E2] : t *)
+     pld_attributes: attributes; (* l [@id1 E1] [@id2 E2] : T *)
     }
 
 (*  { ...; l: T; ... }            (mutable=Immutable)
@@ -520,11 +520,25 @@ and class_field =
 
 and class_field_desc =
   | Pcf_inherit of override_flag * class_expr * string option
+        (* inherit CE
+           inherit CE as x
+           inherit! CE
+           inherit! CE as x
+         *)
   | Pcf_val of (string loc * mutable_flag * class_field_kind)
+        (* val x = E
+           val virtual x: T
+         *)
   | Pcf_method of (string loc * private_flag * class_field_kind)
+        (* method x = E            (E can be a Pexp_poly)
+           method virtual x: T     (T can be a Ptyp_poly)
+         *)
   | Pcf_constraint of (core_type * core_type)
+        (* constraint T1 = T2 *)
   | Pcf_initializer of expression
+        (* initializer E *)
   | Pcf_extension of extension
+        (* [%id E] *)
 
 and class_field_kind =
   | Cfk_virtual of core_type
@@ -540,16 +554,22 @@ and module_type =
     {
      pmty_desc: module_type_desc;
      pmty_loc: Location.t;
-     pmty_attributes: attributes;
+     pmty_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
     }
 
 and module_type_desc =
   | Pmty_ident of Longident.t loc
+        (* X *)
   | Pmty_signature of signature
+        (* sig ... end *)
   | Pmty_functor of string loc * module_type * module_type
+        (* functor(X : MT1) -> MT2 *)
   | Pmty_with of module_type * (Longident.t loc * with_constraint) list
+        (* MT with ... *)
   | Pmty_typeof of module_expr
+        (* module type of ME *)
   | Pmty_extension of extension
+        (* [%id E] *)
 
 and signature = signature_item list
 
@@ -561,31 +581,50 @@ and signature_item =
 
 and signature_item_desc =
   | Psig_value of value_description
+        (*
+          val x: T
+          external x: T = "s1" ... "sn"
+         *)
   | Psig_type of type_declaration list
+        (* type t1 = ... and ... and tn = ... *)
   | Psig_exception of constructor_declaration
+        (* exception C of T *)
   | Psig_module of module_declaration
+        (* module X : MT *)
   | Psig_recmodule of module_declaration list
+        (* module rec X1 : MT1 and ... and Xn : MTn *)
   | Psig_modtype of module_type_declaration
+        (* module type S = MT1 *)
   | Psig_open of Longident.t loc * attributes
+        (* open X *)
   | Psig_include of module_type * attributes
+        (* include MT *)
   | Psig_class of class_description list
+        (* class c1 = ... and ... and cn = ... *)
   | Psig_class_type of class_type_declaration list
+        (* class type ct1 = ... and ... and ctn = ... *)
   | Psig_attribute of attribute
+        (* [@@id E]
+           (not attached to another item, i.e. after ";;" or at the beginning
+           of the signature) *)
   | Psig_extension of extension * attributes
+        (* [%%id E] *)
 
 and module_declaration =
     {
      pmd_name: string loc;
      pmd_type: module_type;
-     pmd_attributes: attributes;
+     pmd_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
     }
+(* X : MT *)
 
 and module_type_declaration =
     {
      pmtd_name: string loc;
      pmtd_type: module_type option;
-     pmtd_attributes: attributes;
+     pmtd_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
     }
+(* S = MT *)
 
 and with_constraint =
   | Pwith_type of type_declaration
