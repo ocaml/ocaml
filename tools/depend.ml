@@ -110,6 +110,7 @@ let rec add_pattern bv pat =
     Ppat_any -> ()
   | Ppat_var _ -> ()
   | Ppat_alias(p, _) -> add_pattern bv p
+  | Ppat_interval _
   | Ppat_constant _ -> ()
   | Ppat_tuple pl -> List.iter (add_pattern bv) pl
   | Ppat_construct(c, op, _) -> add bv c; add_opt add_pattern bv op

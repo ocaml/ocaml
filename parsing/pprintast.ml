@@ -114,6 +114,7 @@ let rec is_irrefut_patt x =
   | Ppat_record (ls,_) -> List.for_all (fun (_,x) -> is_irrefut_patt x) ls
   | Ppat_lazy p -> is_irrefut_patt p 
   | Ppat_extension _ -> assert false
+  | Ppat_interval _
   | Ppat_constant _ | Ppat_construct _  | Ppat_variant _ | Ppat_array _ | Ppat_type _-> false (*conservative*)
 class printer  ()= object(self:'self)
   val pipe = false
@@ -315,18 +316,6 @@ class printer  ()= object(self:'self)
           (********************pattern********************)
           (* be cautious when use [pattern], [pattern1] is preferred *)         
   method pattern f x =
-    let rec pattern_or_helper  cur = function
-      |{ppat_desc = Ppat_constant (Const_char a);_}
-        -> 
-          if Char.code a = Char.code cur + 1 then
-            Some a
-          else None
-      |{ppat_desc =
-        Ppat_or({ppat_desc=Ppat_constant (Const_char a);_}, p2);_} -> 
-          if Char.code a = Char.code cur + 1 then
-            pattern_or_helper a p2
-          else None
-      | _ -> None in
     let rec list_of_pattern acc = function (* only consider ((A|B)|C)*)
       | {ppat_desc= Ppat_or (p1,p2);_} ->
           list_of_pattern  (p2::acc) p1
@@ -339,15 +328,7 @@ class printer  ()= object(self:'self)
             then pp f "( %s )" s.txt
             else pp f "%s" s.txt ) s (* RA*)
     | Ppat_or (p1, p2) -> (* *)
-        (match p1 with
-        | {ppat_desc=Ppat_constant (Const_char a);_} -> 
-            (match pattern_or_helper a p2 with
-            |Some b -> pp f "@[<2>%C..%C@]" a b 
-            |None ->
-                pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern ) (list_of_pattern [] x))
-        | _ ->
-            pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern) (list_of_pattern [] x)
-        )
+        pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern) (list_of_pattern [] x)
     | _ -> self#pattern1 f x
   method pattern1 (f:Format.formatter) (x:pattern) :unit =
     let rec pattern_list_helper f  =  function
@@ -404,6 +385,7 @@ class printer  ()= object(self:'self)
               (self#list longident_x_pattern ~sep:";@;") l)
     | Ppat_tuple l -> pp f "@[<1>(%a)@]" (self#list  ~sep:"," self#pattern1)  l (* level1*)
     | Ppat_constant (c) -> pp f "%a" self#constant c
+    | Ppat_interval (c1, c2) -> pp f "%a..%a" self#constant c1 self#constant c2
     | Ppat_variant (l,None) ->  pp f "`%s" l
     | Ppat_constraint (p, ct) ->
         pp f "@[<2>(%a@;:@;%a)@]" self#pattern1 p self#core_type ct

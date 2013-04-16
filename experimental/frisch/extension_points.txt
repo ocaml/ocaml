@@ -442,19 +442,25 @@ which can be LIDENT or UIDENT.
 
 --- Get rid of the "#c [> `A]" syntax
 
-
 See #5936, #5983.
+
+--- Keep interval patterns in the Parsetree
+
+They used to be expanded into or-patterns by the parser.  It is better to do
+the expansion in the type-checker to allow -ppx rewriters to see the interval
+patterns.
+
+Note: Camlp4 parsers still expand interval patterns themselves (TODO?).
+
 
 === More TODOs
 
 - Adapt pprintast to print attributes and extension nodes.
 - Adapt Camlp4 (both its parser(s) and its internal representation of OCaml ASTs).
 - Consider adding hooks to the type-checker so that custom extension expanders can be registered (a la OCaml Templates).
-- More cleanups to the Parsetree.
 - Make the Ast_helper module more user-friendly (e.g. with optional arguments and good default values) and/or
-  expose higher-level convenience functions.  Maybe give a way to set the location in a given scope without
-  having to pass it explicitly to each constructor.
-- Document the Parsetree and Ast_helper modules.
+  expose higher-level convenience functions.
+- Document Ast_helper modules.
 
 === Use cases
 

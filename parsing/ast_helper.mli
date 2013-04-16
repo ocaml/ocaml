@@ -62,6 +62,7 @@ module Pat:
     val var: ?loc:loc -> ?attrs:attrs -> str -> pattern
     val alias: ?loc:loc -> ?attrs:attrs -> pattern -> str -> pattern
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> pattern
+    val interval: ?loc:loc -> ?attrs:attrs -> constant -> constant -> pattern
     val tuple: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
     val construct: ?loc:loc -> ?attrs:attrs -> lid -> pattern option -> bool -> pattern
     val variant: ?loc:loc -> ?attrs:attrs -> label -> pattern option -> pattern

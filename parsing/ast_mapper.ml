@@ -250,6 +250,7 @@ module P = struct
     | Ppat_var s -> var ~loc ~attrs (map_loc sub s)
     | Ppat_alias (p, s) -> alias ~loc ~attrs (sub # pat p) (map_loc sub s)
     | Ppat_constant c -> constant ~loc ~attrs c
+    | Ppat_interval (c1, c2) -> interval ~loc ~attrs c1 c2
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub # pat) pl)
     | Ppat_construct (l, p, b) -> construct ~loc ~attrs (map_loc sub l) (map_opt (sub # pat) p) b
     | Ppat_variant (l, p) -> variant ~loc ~attrs l (map_opt (sub # pat) p)

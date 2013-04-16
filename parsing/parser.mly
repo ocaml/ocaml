@@ -153,16 +153,6 @@ let mkstrexp e attrs =
 let array_function str name =
   ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
 
-let rec deep_mkrangepat c1 c2 =
-  if c1 = c2 then ghpat(Ppat_constant(Const_char c1)) else
-  ghpat(Ppat_or(ghpat(Ppat_constant(Const_char c1)),
-                deep_mkrangepat (Char.chr(Char.code c1 + 1)) c2))
-
-let rec mkrangepat c1 c2 =
-  if c1 > c2 then mkrangepat c2 c1 else
-  if c1 = c2 then mkpat(Ppat_constant(Const_char c1)) else
-  reloc_pat (deep_mkrangepat c1 c2)
-
 let syntax_error () =
   raise Syntaxerr.Escape_error
 
@@ -1363,8 +1353,8 @@ simple_pattern:
       { mkpat(Ppat_any) }
   | signed_constant
       { mkpat(Ppat_constant $1) }
-  | CHAR DOTDOT CHAR
-      { mkrangepat $1 $3 }
+  | signed_constant DOTDOT signed_constant
+      { mkpat(Ppat_interval ($1, $3)) }
   | constr_longident
       { mkpat(Ppat_construct(mkrhs $1 1, None, false)) }
   | name_tag

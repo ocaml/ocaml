@@ -63,6 +63,7 @@ type error =
   | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
   | Unqualified_gadt_pattern of Path.t * string
+  | Invalid_interval
   | Extension of string
 
 exception Error of Location.t * Env.t * error
@@ -931,6 +932,19 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_type = expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
+  | Ppat_interval (Const_char c1, Const_char c2) ->
+      let open Ast_helper.Pat in
+      let rec loop c1 c2 =
+        if c1 = c2 then constant ~loc (Const_char c1)
+        else
+          or_ ~loc
+            (constant ~loc (Const_char c1))
+            (loop (Char.chr(Char.code c1 + 1)) c2)
+      in
+      let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
+      type_pat p expected_ty (* TODO: record 'extra' to remember about interval *)
+  | Ppat_interval _ ->
+      raise (Error (loc, !env, Invalid_interval))
   | Ppat_tuple spl ->
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in
       let ty = newty (Ttuple(List.map snd spl_ann)) in
@@ -944,7 +958,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_env = !env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
       let opath =
-        try 
+        try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
             Some (p0, p, true)
 	with Not_found -> None
@@ -1730,7 +1744,7 @@ let contains_variant_either ty =
 
 let iter_ppat f p =
   match p.ppat_desc with
-  | Ppat_any | Ppat_var _ | Ppat_constant _
+  | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_interval _
   | Ppat_extension _
   | Ppat_type _ | Ppat_unpack _ -> ()
   | Ppat_array pats -> List.iter f pats
@@ -3696,6 +3710,8 @@ let report_error env ppf = function
       fprintf ppf "@[The GADT constructor %s of type %a@ %s.@]"
         name path tpath
         "must be qualified in this pattern"
+  | Invalid_interval ->
+      fprintf ppf "@[Only character intervals are supported in patterns.@]"
   | Extension s ->
       fprintf ppf "Uninterpreted extension '%s'." s
 
