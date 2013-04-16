@@ -559,7 +559,7 @@ and module_type =
 
 and module_type_desc =
   | Pmty_ident of Longident.t loc
-        (* X *)
+        (* S *)
   | Pmty_signature of signature
         (* sig ... end *)
   | Pmty_functor of string loc * module_type * module_type
@@ -594,13 +594,14 @@ and signature_item_desc =
   | Psig_recmodule of module_declaration list
         (* module rec X1 : MT1 and ... and Xn : MTn *)
   | Psig_modtype of module_type_declaration
-        (* module type S = MT1 *)
+        (* module type S = MT1
+           module type S *)
   | Psig_open of Longident.t loc * attributes
         (* open X *)
   | Psig_include of module_type * attributes
         (* include MT *)
   | Psig_class of class_description list
-        (* class c1 = ... and ... and cn = ... *)
+        (* class c1 : ... and ... and cn : ... *)
   | Psig_class_type of class_type_declaration list
         (* class type ct1 = ... and ... and ctn = ... *)
   | Psig_attribute of attribute
@@ -616,7 +617,9 @@ and module_declaration =
      pmd_type: module_type;
      pmd_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
     }
-(* X : MT *)
+(* S : MT
+   S       (abstract module declaration, pmd_type = None)
+*)
 
 and module_type_declaration =
     {
@@ -645,17 +648,24 @@ and module_expr =
     {
      pmod_desc: module_expr_desc;
      pmod_loc: Location.t;
-     pmod_attributes: attributes;
+     pmod_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
     }
 
 and module_expr_desc =
   | Pmod_ident of Longident.t loc
+        (* X *)
   | Pmod_structure of structure
+        (* struct ... end *)
   | Pmod_functor of string loc * module_type * module_expr
+        (* functor(X : MT1) -> ME *)
   | Pmod_apply of module_expr * module_expr
+        (* ME1(ME2) *)
   | Pmod_constraint of module_expr * module_type
+        (* (ME : MT) *)
   | Pmod_unpack of expression
+        (* (val E) *)
   | Pmod_extension of extension
+        (* [%id E] *)
 
 and structure = structure_item list
 
@@ -667,20 +677,39 @@ and structure_item =
 
 and structure_item_desc =
   | Pstr_eval of expression * attributes
+        (* E *)
   | Pstr_value of rec_flag * (pattern * expression) list * attributes
+        (* let P1 = E1 and ... and Pn = EN       (flag = Nonrecursive)
+           let rec P1 = E1 and ... and Pn = EN   (flag = Recursive)
+         *)
   | Pstr_primitive of value_description
+        (* external x: T = "s1" ... "sn" *)
   | Pstr_type of type_declaration list
+        (* type t1 = ... and ... and tn = ... *)
   | Pstr_exception of constructor_declaration
+        (* exception C of T *)
   | Pstr_exn_rebind of string loc * Longident.t loc * attributes
+        (* exception C = M.X *)
   | Pstr_module of module_binding
+        (* module X = ME *)
   | Pstr_recmodule of module_binding list
+        (* module rec X1 = ME1 and ... and Xn = MEn *)
   | Pstr_modtype of module_type_binding
+        (* module type S = MT *)
   | Pstr_open of Longident.t loc * attributes
+        (* open X *)
   | Pstr_class of class_declaration list
+        (* class c1 = ... and ... and cn = ... *)
   | Pstr_class_type of class_type_declaration list
+        (* class type ct1 = ... and ... and ctn = ... *)
   | Pstr_include of module_expr * attributes
+        (* include ME *)
   | Pstr_attribute of attribute
+        (* [@@id E]
+           (not attached to another item, i.e. after ";;" or at the beginning
+           of the structure) *)
   | Pstr_extension of extension * attributes
+        (* [%%id E] *)
 
 and module_binding =
     {
@@ -688,6 +717,7 @@ and module_binding =
      pmb_expr: module_expr;
      pmb_attributes: attributes;
     }
+(* X = ME *)
 
 and module_type_binding =
     {
@@ -695,6 +725,7 @@ and module_type_binding =
      pmtb_type: module_type;
      pmtb_attributes: attributes;
     }
+(* S = MT *)
 
 (** {2 Toplevel} *)
 
