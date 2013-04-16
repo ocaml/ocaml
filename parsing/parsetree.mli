@@ -159,7 +159,7 @@ and pattern_desc =
 
   | Ppat_variant of label * pattern option
         (* `A             (None)
-           `A of P        (Some P)
+           `A P           (Some P)
          *)
   | Ppat_record of (Longident.t loc * pattern) list * closed_flag
         (* { l1=P1; ...; ln=Pn }     (flag = Closed)
@@ -235,7 +235,7 @@ and expression_desc =
         *)
   | Pexp_variant of label * expression option
         (* `A             (None)
-           `A of E        (Some E)
+           `A E           (Some E)
          *)
   | Pexp_record of (Longident.t loc * expression) list * expression option
         (* { l1=P1; ...; ln=Pn }     (None)
