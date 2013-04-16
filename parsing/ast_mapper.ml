@@ -98,11 +98,10 @@ module CT = struct
     | Pctf_constraint (t1, t2) -> constraint_ ~loc ~attrs (sub # typ t1) (sub # typ t2)
     | Pctf_extension x -> extension ~loc ~attrs (sub # extension x)
 
-  let map_signature sub {pcsig_self; pcsig_fields; pcsig_loc} =
+  let map_signature sub {pcsig_self; pcsig_fields} =
     Csig.mk
       (sub # typ pcsig_self)
       (List.map (sub # class_type_field) pcsig_fields)
-      ~loc:(sub # location pcsig_loc)
 end
 
 module MT = struct

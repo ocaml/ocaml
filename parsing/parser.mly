@@ -807,7 +807,7 @@ class_simple_expr:
 ;
 class_structure:
     class_self_pattern class_fields
-      { { pcstr_self = $1; pcstr_fields = List.rev $2 } }
+      { Cstr.mk $1 (List.rev $2) }
 ;
 class_self_pattern:
     LPAREN pattern RPAREN
@@ -908,8 +908,7 @@ class_signature:
 ;
 class_sig_body:
     class_self_type class_sig_fields
-    { { pcsig_self = $1; pcsig_fields = List.rev $2;
-      pcsig_loc = symbol_rloc(); } }
+    { Csig.mk $1 (List.rev $2) }
 ;
 class_self_type:
     LPAREN core_type RPAREN

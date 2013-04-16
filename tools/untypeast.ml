@@ -465,7 +465,6 @@ and untype_class_signature cs =
   {
     pcsig_self = untype_core_type cs.csig_self;
     pcsig_fields = List.map untype_class_type_field cs.csig_fields;
-    pcsig_loc = cs.csig_loc;
   }
 
 and untype_class_type_field ctf =

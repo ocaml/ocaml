@@ -1110,7 +1110,6 @@ value varify_constructors var_names =
         mkcty loc (Pcty_signature {
           pcsig_self = ctyp t;
           pcsig_fields = cil;
-          pcsig_loc = mkloc loc;
         })
     | CtCon loc _ _ _ ->
         error loc "invalid virtual class inside a class type"

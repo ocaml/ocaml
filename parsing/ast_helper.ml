@@ -353,11 +353,18 @@ module Ld = struct
 end
 
 module Csig = struct
-  let mk ?(loc = !default_loc) self fields =
+  let mk self fields =
     {
      pcsig_self = self;
      pcsig_fields = fields;
-     pcsig_loc = loc;
+    }
+end
+
+module Cstr = struct
+  let mk self fields =
+    {
+     pcstr_self = self;
+     pcstr_fields = fields;
     }
 end
 

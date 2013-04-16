@@ -404,7 +404,6 @@ and class_signature = {
     csig_self : core_type;
     csig_fields : class_type_field list;
     csig_type : Types.class_signature;
-    csig_loc : Location.t;
   }
 
 and class_type_field = {

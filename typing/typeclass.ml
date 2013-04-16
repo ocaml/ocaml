@@ -407,7 +407,7 @@ let rec class_type_field env self_type meths
   | Pctf_extension (s, _arg) ->
       raise (Error (ctf.pctf_loc, env, Extension s))
 
-and class_signature env sty sign loc =
+and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   let meths = ref Meths.empty in
   let self_cty = transl_simple_type env false sty in
   let self_cty = { self_cty with
@@ -439,7 +439,6 @@ and class_signature env sty sign loc =
   { csig_self = self_cty;
     csig_fields = fields;
     csig_type = cty;
-    csig_loc = loc;
     }
 
 and class_type env scty =
@@ -479,8 +478,7 @@ and class_type env scty =
       cltyp (Tcty_constr ( path, lid , ctys)) typ
 
   | Pcty_signature pcsig ->
-      let clsig = class_signature env
-        pcsig.pcsig_self pcsig.pcsig_fields pcsig.pcsig_loc in
+      let clsig = class_signature env pcsig in
       let typ = Cty_signature clsig.csig_type in
       cltyp (Tcty_signature clsig) typ
 

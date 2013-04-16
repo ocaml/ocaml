@@ -420,9 +420,10 @@ and class_signature =
     {
      pcsig_self: core_type;
      pcsig_fields: class_type_field list;
-     pcsig_loc: Location.t;
     }
-(* object('selfpat) ... end *)
+(* object('selfpat) ... end
+   object ... end             (self = Ptyp_any)
+ *)
 
 and class_type_field =
     {
@@ -506,13 +507,15 @@ and class_structure =
      pcstr_self: pattern;
      pcstr_fields: class_field list;
     }
-(* object(selfpat) ... end *)
+(* object(selfpat) ... end
+   object ... end           (self = Ppat_any)
+ *)
 
 and class_field =
     {
      pcf_desc: class_field_desc;
      pcf_loc: Location.t;
-     pcf_attributes: attributes;
+     pcf_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
     }
 
 and class_field_desc =
