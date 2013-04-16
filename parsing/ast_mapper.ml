@@ -308,10 +308,10 @@ module CE = struct
      pcstr_fields = List.map (sub # class_field) pcstr_fields;
     }
 
-  let class_infos sub f {pci_virt; pci_params = (pl, ploc); pci_name; pci_expr; pci_loc; pci_attributes} =
+  let class_infos sub f {pci_virt; pci_params = pl; pci_name; pci_expr; pci_loc; pci_attributes} =
     Ci.mk
      ~virt:pci_virt
-     ~params:(List.map (map_fst (map_loc sub)) pl, sub # location ploc)
+     ~params:(List.map (map_fst (map_loc sub)) pl)
       (map_loc sub pci_name)
       (f pci_expr)
       ~loc:(sub # location pci_loc)

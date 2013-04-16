@@ -422,6 +422,11 @@ Rationale:
   - Make it explicit when the guard can appear.
 
 
+--- Get rid of the location argument on pci_params
+
+It was only used for error messages, and we get better location using
+the location of each parameter variable.
+
 === More TODOs
 
 - Adapt pprintast to print attributes and extension nodes.

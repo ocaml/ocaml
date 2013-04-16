@@ -764,8 +764,8 @@ class_fun_binding:
       { let (l,o,p) = $1 in mkclass(Pcl_fun(l, o, p, $2)) }
 ;
 class_type_parameters:
-    /*empty*/                                   { [], symbol_gloc () }
-  | LBRACKET type_parameter_list RBRACKET       { List.rev $2, symbol_rloc () }
+    /*empty*/                                   { [] }
+  | LBRACKET type_parameter_list RBRACKET       { List.rev $2 }
 ;
 class_fun_def:
     labeled_simple_pattern MINUSGREATER class_expr

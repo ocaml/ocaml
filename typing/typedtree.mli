@@ -430,7 +430,7 @@ and class_type_declaration =
 
 and 'a class_infos =
   { ci_virt: virtual_flag;
-    ci_params: (string loc * variance) list * Location.t;
+    ci_params: (string loc * variance) list;
     ci_id_name : string loc;
     ci_id_class: Ident.t;
     ci_id_class_type : Ident.t;

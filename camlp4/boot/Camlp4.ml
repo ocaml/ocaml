@@ -15511,16 +15511,14 @@ module Struct =
               match ci with
               | CeEq (_, (CeCon (loc, vir, (IdLid (nloc, name)), params)),
                   ce) ->
-                  let (loc_params, params) =
+                  let params =
                     (match params with
-                     | Ast.TyNil _ -> (loc, [])
-                     | t ->
-                         ((loc_of_ctyp t),
-                          (class_parameters t [])))
+                     | Ast.TyNil _ -> []
+                     | t -> class_parameters t [])
                   in
                     {
                       pci_virt = mkvirtual vir;
-                      pci_params = (params, (mkloc loc_params));
+                      pci_params = params;
                       pci_name = with_loc name nloc;
                       pci_expr = class_expr ce;
                       pci_loc = mkloc loc;
@@ -15534,16 +15532,15 @@ module Struct =
                   CtCol (_, (CtCon (loc, vir, (IdLid (nloc, name)), params)),
                     ct)
                   ->
-                  let (loc_params, params) =
+                  let params =
                     (match params with
-                     | Ast.TyNil _ -> (loc, [])
+                     | Ast.TyNil _ -> []
                      | t ->
-                         ((loc_of_ctyp t),
-                          (class_parameters t [])))
+                          class_parameters t [])
                   in
                     {
                       pci_virt = mkvirtual vir;
-                      pci_params = (params, (mkloc loc_params));
+                      pci_params = params;
                       pci_name = with_loc name nloc;
                       pci_expr = class_type ct;
                       pci_loc = mkloc loc;

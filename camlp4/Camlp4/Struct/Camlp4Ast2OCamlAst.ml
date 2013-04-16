@@ -1120,13 +1120,13 @@ value varify_constructors var_names =
   and class_info_class_expr ci =
     match ci with
     [ CeEq _ (CeCon loc vir (IdLid nloc name) params) ce ->
-      let (loc_params, params) =
+      let params =
         match params with
-        [ <:ctyp<>> -> (loc, [])
-        | t -> (loc_of_ctyp t, class_parameters t []) ]
+        [ <:ctyp<>> -> []
+        | t -> class_parameters t [] ]
       in
       {pci_virt = mkvirtual vir;
-       pci_params = (params, mkloc loc_params);
+       pci_params = params;
        pci_name = with_loc name nloc;
        pci_expr = class_expr ce;
        pci_loc = mkloc loc;
@@ -1137,13 +1137,13 @@ value varify_constructors var_names =
     match ci with
     [ CtEq _ (CtCon loc vir (IdLid nloc name) params) ct |
       CtCol _ (CtCon loc vir (IdLid nloc name) params) ct ->
-      let (loc_params, params) =
+      let params =
         match params with
-        [ <:ctyp<>> -> (loc, [])
-        | t -> (loc_of_ctyp t, class_parameters t []) ]
+        [ <:ctyp<>> -> []
+        | t -> class_parameters t [] ]
       in
       {pci_virt = mkvirtual vir;
-       pci_params = (params, mkloc loc_params);
+       pci_params = params;
        pci_name = with_loc name nloc;
        pci_expr = class_type ct;
        pci_attributes = [];

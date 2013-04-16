@@ -772,7 +772,7 @@ class printer  ()= object(self:'self)
     
   (* [class type a = object end] *)  
   method class_type_declaration_list f  l =
-    let class_type_declaration f ({pci_params=(ls,_);pci_name={txt;_};_} as x) =
+    let class_type_declaration f ({pci_params=ls;pci_name={txt;_};_} as x) =
       pp f "%a%a%s@ =@ %a" self#virtual_flag x.pci_virt
         self#class_params_def ls txt
         self#class_type x.pci_expr in 
@@ -906,7 +906,7 @@ class printer  ()= object(self:'self)
     | Psig_exception ed ->
         self#exception_declaration f ed
     | Psig_class l ->
-        let class_description f ({pci_params=(ls,_);pci_name={txt;_};_} as x) =
+        let class_description f ({pci_params=ls;pci_name={txt;_};_} as x) =
           pp f "%a%a%s@;:@;%a" (* "@[<2>class %a%a%s@;:@;%a@]" *)
             self#virtual_flag x.pci_virt
             self#class_params_def
@@ -1067,7 +1067,7 @@ class printer  ()= object(self:'self)
         pp f "@[<2>module type %s =@;%a@]" x.pmtb_name.txt self#module_type x.pmtb_type
     | Pstr_class l ->
         let class_declaration f  (* for the second will be changed to and FIXME*)
-            ({pci_params=(ls,_);
+            ({pci_params=ls;
               pci_name={txt;_};
               pci_virt;
               pci_expr={pcl_desc;_};

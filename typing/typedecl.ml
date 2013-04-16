@@ -130,10 +130,10 @@ let make_params sdecl =
       (fun (x, _) ->
         match x with
         | None -> Ctype.new_global_var ~name:"_" ()
-        | Some x -> enter_type_variable true sdecl.ptype_loc x.txt)
+        | Some x -> enter_type_variable x)
       sdecl.ptype_params
-  with Already_bound ->
-    raise(Error(sdecl.ptype_loc, Repeated_parameter))
+  with Already_bound loc ->
+    raise(Error(loc, Repeated_parameter))
 
 let transl_declaration env sdecl id =
   (* Bind type parameters *)
@@ -713,7 +713,7 @@ let compute_variance_decls env cldecls =
   let decls, required =
     List.fold_right
       (fun (obj_id, obj_abbr, cl_abbr, clty, cltydef, ci) (decls, req) ->
-        let variance = List.map snd (fst ci.ci_params) in
+        let variance = List.map snd ci.ci_params in
         (obj_id, obj_abbr) :: decls, (variance, ci.ci_loc) :: req)
       cldecls ([],[])
   in

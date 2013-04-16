@@ -755,8 +755,8 @@ and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc; ld_attrib
   line (i+1) ppf "%a" fmt_ident ld_id;
   core_type (i+1) ppf ld_type
 
-and cl_type_parameters i ppf (l, loc) =
-  line i ppf "<params> %a\n" fmt_location loc;
+and cl_type_parameters i ppf l =
+  line i ppf "<params>\n";
   list (i+1) cl_type_parameter ppf l;
 
 and cl_type_parameter i ppf (x, _variance) =

@@ -21,7 +21,7 @@ open Typedtree
 open Types
 open Ctype
 
-exception Already_bound
+exception Already_bound of Location.t
 
 type error =
     Unbound_type_variable of string
@@ -179,12 +179,12 @@ let new_global_var ?name () =
 let newvar ?name () =
   newvar ?name:(validate_name name) ()
 
-let enter_type_variable strict loc name =
+let enter_type_variable {Location.txt=name; loc} =
   try
     if name <> "" && name.[0] = '_' then
       raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
     let v = Tbl.find name !type_variables in
-    if strict then raise Already_bound;
+    raise (Already_bound loc);
     v
   with Not_found ->
     let v = new_global_var ~name () in

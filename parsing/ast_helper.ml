@@ -297,7 +297,7 @@ module Mb = struct
 end
 
 module Ci = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) ?(virt = Concrete) ?(params = [], !default_loc) name expr =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(virt = Concrete) ?(params = []) name expr =
     {
      pci_virt = virt;
      pci_params = params;

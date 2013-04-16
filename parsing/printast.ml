@@ -756,8 +756,8 @@ and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes} 
   line (i+1) ppf "%a" fmt_string_loc pld_name;
   core_type (i+1) ppf pld_type
 
-and cl_type_parameters i ppf (l, loc) =
-  line i ppf "<params> %a\n" fmt_location loc;
+and cl_type_parameters i ppf l =
+  line i ppf "<params>\n";
   list (i+1) cl_type_parameter ppf l;
 
 and cl_type_parameter i ppf (x, _variance) =

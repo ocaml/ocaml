@@ -241,7 +241,7 @@ module Mb:
   end
 module Ci:
   sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(str * variance) list * loc -> str -> 'a -> 'a class_infos
+    val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(str * variance) list -> str -> 'a -> 'a class_infos
   end
 module Type:
   sig

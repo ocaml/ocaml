@@ -126,7 +126,7 @@ and row_field =
 and 'a class_infos =
     {
      pci_virt: virtual_flag;
-     pci_params: (string loc * variance) list * Location.t;
+     pci_params: (string loc * variance) list;
      pci_name: string loc;
      pci_expr: 'a;
      pci_loc: Location.t;

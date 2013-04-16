@@ -1168,7 +1168,7 @@ let temp_abbrev loc env id arity =
 let initial_env define_class approx
     (res, env) (cl, id, ty_id, obj_id, cl_id) =
   (* Temporary abbreviations *)
-  let arity = List.length (fst cl.pci_params) in
+  let arity = List.length cl.pci_params in
   let (obj_params, obj_ty, env) = temp_abbrev cl.pci_loc env obj_id arity in
   let (cl_params, cl_ty, env) = temp_abbrev cl.pci_loc env cl_id arity in
 
@@ -1222,10 +1222,9 @@ let class_infos define_class kind
   (* Introduce class parameters *)
   let params =
     try
-      let params, loc = cl.pci_params in
-      List.map (fun (x, _v) -> enter_type_variable true loc x.txt) params
-    with Already_bound ->
-      raise(Error(snd cl.pci_params, env, Repeated_parameter))
+      List.map (fun (x, _v) -> enter_type_variable x) cl.pci_params
+    with Already_bound loc ->
+      raise(Error(loc, env, Repeated_parameter))
   in
 
   (* Allow self coercions (only for class declarations) *)
