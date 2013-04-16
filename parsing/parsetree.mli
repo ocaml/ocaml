@@ -14,7 +14,7 @@
 
 open Asttypes
 
-(* Extension points *)
+(** {2 Extension points} *)
 
 type attribute = string * expression
       (* [@id E]
@@ -34,7 +34,9 @@ and extension = string * expression
 
 and attributes = attribute list
 
-(* Type expressions for the core language *)
+(** {2 Core language} *)
+
+(* Type expressions *)
 
 and core_type =
     {
@@ -121,19 +123,7 @@ and row_field =
   | Rinherit of core_type
         (* [ T ] *)
 
-(* Type expressions for the class language *)
-
-and 'a class_infos =
-    {
-     pci_virt: virtual_flag;
-     pci_params: (string loc * variance) list;
-     pci_name: string loc;
-     pci_expr: 'a;
-     pci_loc: Location.t;
-     pci_attributes: attributes;
-    }
-
-(* Value expressions for the core language *)
+(* Patterns *)
 
 and pattern =
     {
@@ -194,6 +184,8 @@ and pattern_desc =
          *)
   | Ppat_extension of extension
         (* [%id E] *)
+
+(* Value expressions *)
 
 and expression =
     {
@@ -370,6 +362,8 @@ and constructor_declaration =
      pcd_attributes: attributes;
     }
 
+(** {2 Class language} *)
+
 (* Type expressions for the class language *)
 
 and class_type =
@@ -405,6 +399,16 @@ and class_type_field_desc =
   | Pctf_method  of (string * private_flag * virtual_flag * core_type)
   | Pctf_constraint  of (core_type * core_type)
   | Pctf_extension of extension
+
+and 'a class_infos =
+    {
+     pci_virt: virtual_flag;
+     pci_params: (string loc * variance) list;
+     pci_name: string loc;
+     pci_expr: 'a;
+     pci_loc: Location.t;
+     pci_attributes: attributes;
+    }
 
 and class_description = class_type class_infos
 
@@ -454,6 +458,8 @@ and class_field_kind =
   | Cfk_concrete of override_flag * expression
 
 and class_declaration = class_expr class_infos
+
+(** {2 Module language} *)
 
 (* Type expressions for the module language *)
 
@@ -570,6 +576,8 @@ and module_type_binding =
      pmtb_type: module_type;
      pmtb_attributes: attributes;
     }
+
+(** {2 Toplevel} *)
 
 (* Toplevel phrases *)
 
