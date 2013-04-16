@@ -326,11 +326,8 @@ module Type = struct
      ptype_attributes = attrs;
      ptype_loc = loc;
     }
-end
 
-
-module Cd = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) ?(args = []) ?res name =
+  let constructor ?(loc = !default_loc) ?(attrs = []) ?(args = []) ?res name =
     {
      pcd_name = name;
      pcd_args = args;
@@ -338,11 +335,8 @@ module Cd = struct
      pcd_loc = loc;
      pcd_attributes = attrs;
     }
-end
 
-
-module Ld = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) ?(mut = Immutable) name typ =
+  let field ?(loc = !default_loc) ?(attrs = []) ?(mut = Immutable) name typ =
     {
      pld_name = name;
      pld_mutable = mut;

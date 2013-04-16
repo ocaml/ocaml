@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Abstract syntax tree produced by parsing *)
+(** Abstract syntax tree produced by parsing *)
 
 open Asttypes
 

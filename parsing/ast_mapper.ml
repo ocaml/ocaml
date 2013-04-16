@@ -386,7 +386,7 @@ class mapper =
         ~attrs:(this # attributes pmtb_attributes)
 
     method constructor_declaration {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
-      Cd.mk
+      Type.constructor
         (map_loc this pcd_name)
         ~args:(List.map (this # typ) pcd_args)
         ?res:(map_opt (this # typ) pcd_res)
@@ -394,7 +394,7 @@ class mapper =
         ~attrs:(this # attributes pcd_attributes)
 
     method label_declaration {pld_name; pld_type; pld_loc; pld_mutable; pld_attributes} =
-      Ld.mk
+      Type.field
         (map_loc this pld_name)
         (this # typ pld_type)
         ~mut:pld_mutable

@@ -20,12 +20,17 @@ type str = string loc
 type loc = Location.t
 type attrs = attribute list
 
+(** {2 Default locations} *)
+
 val default_loc: loc ref
     (** Default value for all optional location arguments. *)
 val with_default_loc: loc -> (unit -> 'a) -> 'a
     (** Set the [default_loc] within the scope of the execution
         of the provided function. *)
 
+(** {2 Core language} *)
+
+(** Type expressions *)
 module Typ :
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> core_type_desc -> core_type
@@ -46,6 +51,8 @@ module Typ :
 
     val force_poly: core_type -> core_type
   end
+
+(** Patterns *)
 module Pat:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> pattern_desc -> pattern
@@ -67,6 +74,8 @@ module Pat:
     val unpack: ?loc:loc -> ?attrs:attrs -> str -> pattern
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> pattern
   end
+
+(** Expressions *)
 module Exp:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> expression_desc -> expression
@@ -108,6 +117,25 @@ module Exp:
 
     val case: pattern -> ?guard:expression -> expression -> case
   end
+
+(** Value descriptions *)
+module Val:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs -> ?prim:string list -> str -> core_type -> value_description
+  end
+
+(** Type declarations *)
+module Type:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs -> ?params:(str option * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
+
+    val constructor: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> constructor_declaration
+    val field: ?loc:loc -> ?attrs:attrs -> ?mut:mutable_flag -> str -> core_type -> label_declaration
+  end
+
+(** {2 Module language} *)
+
+(** Module type expressions *)
 module Mty:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> module_type_desc -> module_type
@@ -120,6 +148,8 @@ module Mty:
     val typeof_: ?loc:loc -> ?attrs:attrs -> module_expr -> module_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> module_type
   end
+
+(** Module expressions *)
 module Mod:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> module_expr_desc -> module_expr
@@ -133,6 +163,8 @@ module Mod:
     val unpack: ?loc:loc -> ?attrs:attrs -> expression -> module_expr
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> module_expr
   end
+
+(** Signature items *)
 module Sig:
   sig
     val mk: ?loc:loc -> signature_item_desc -> signature_item
@@ -150,6 +182,8 @@ module Sig:
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> signature_item
     val attribute: ?loc:loc -> attribute -> signature_item
   end
+
+(** Structure items *)
 module Str:
   sig
     val mk: ?loc:loc -> structure_item_desc -> structure_item
@@ -170,59 +204,6 @@ module Str:
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> structure_item
     val attribute: ?loc:loc -> attribute -> structure_item
   end
-module Cl:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> class_expr_desc -> class_expr
-    val attr: class_expr -> attribute -> class_expr
-
-    val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> class_expr
-    val structure: ?loc:loc -> ?attrs:attrs -> class_structure -> class_expr
-    val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern -> class_expr -> class_expr
-    val apply: ?loc:loc -> ?attrs:attrs -> class_expr -> (label * expression) list -> class_expr
-    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> class_expr -> class_expr
-    val constraint_: ?loc:loc -> ?attrs:attrs -> class_expr -> class_type -> class_expr
-    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_expr
-  end
-module Cty:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> class_type_desc -> class_type
-    val attr: class_type -> attribute -> class_type
-
-    val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> class_type
-    val signature: ?loc:loc -> ?attrs:attrs -> class_signature -> class_type
-    val arrow: ?loc:loc -> ?attrs:attrs -> label -> core_type -> class_type -> class_type
-    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type
-  end
-module Ctf:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> class_type_field_desc -> class_type_field
-    val attr: class_type_field -> attribute -> class_type_field
-
-    val inherit_: ?loc:loc -> ?attrs:attrs -> class_type -> class_type_field
-    val val_: ?loc:loc -> ?attrs:attrs -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
-    val method_: ?loc:loc -> ?attrs:attrs -> string -> private_flag -> virtual_flag -> core_type -> class_type_field
-    val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_type_field
-    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type_field
-  end
-module Cf:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> class_field_desc -> class_field
-    val attr: class_field -> attribute -> class_field
-
-    val inherit_: ?loc:loc -> ?attrs:attrs -> override_flag -> class_expr -> string option -> class_field
-    val val_: ?loc:loc -> ?attrs:attrs -> str -> mutable_flag -> class_field_kind -> class_field
-    val method_: ?loc:loc -> ?attrs:attrs -> str -> private_flag -> class_field_kind -> class_field
-    val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_field
-    val initializer_: ?loc:loc -> ?attrs:attrs -> expression -> class_field
-    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_field
-
-    val virtual_: core_type -> class_field_kind
-    val concrete: override_flag -> expression -> class_field_kind
-  end
-module Val:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?prim:string list -> str -> core_type -> value_description
-  end
 module Mtb:
   sig
     val mk: ?attrs:attrs -> str -> module_type -> module_type_binding
@@ -239,21 +220,68 @@ module Mb:
   sig
     val mk: ?attrs:attrs -> str -> module_expr -> module_binding
   end
+
+(** {2 Class language} *)
+
+(** Class type expressions *)
+module Cty:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs -> class_type_desc -> class_type
+    val attr: class_type -> attribute -> class_type
+
+    val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> class_type
+    val signature: ?loc:loc -> ?attrs:attrs -> class_signature -> class_type
+    val arrow: ?loc:loc -> ?attrs:attrs -> label -> core_type -> class_type -> class_type
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type
+  end
+
+(** Class type fields *)
+module Ctf:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs -> class_type_field_desc -> class_type_field
+    val attr: class_type_field -> attribute -> class_type_field
+
+    val inherit_: ?loc:loc -> ?attrs:attrs -> class_type -> class_type_field
+    val val_: ?loc:loc -> ?attrs:attrs -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
+    val method_: ?loc:loc -> ?attrs:attrs -> string -> private_flag -> virtual_flag -> core_type -> class_type_field
+    val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_type_field
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type_field
+  end
+
+(** Class expressions *)
+module Cl:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs -> class_expr_desc -> class_expr
+    val attr: class_expr -> attribute -> class_expr
+
+    val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> class_expr
+    val structure: ?loc:loc -> ?attrs:attrs -> class_structure -> class_expr
+    val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern -> class_expr -> class_expr
+    val apply: ?loc:loc -> ?attrs:attrs -> class_expr -> (label * expression) list -> class_expr
+    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> class_expr -> class_expr
+    val constraint_: ?loc:loc -> ?attrs:attrs -> class_expr -> class_type -> class_expr
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_expr
+  end
+
+(** Class fields *)
+module Cf:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs -> class_field_desc -> class_field
+    val attr: class_field -> attribute -> class_field
+
+    val inherit_: ?loc:loc -> ?attrs:attrs -> override_flag -> class_expr -> string option -> class_field
+    val val_: ?loc:loc -> ?attrs:attrs -> str -> mutable_flag -> class_field_kind -> class_field
+    val method_: ?loc:loc -> ?attrs:attrs -> str -> private_flag -> class_field_kind -> class_field
+    val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_field
+    val initializer_: ?loc:loc -> ?attrs:attrs -> expression -> class_field
+    val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_field
+
+    val virtual_: core_type -> class_field_kind
+    val concrete: override_flag -> expression -> class_field_kind
+  end
 module Ci:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(str * variance) list -> str -> 'a -> 'a class_infos
-  end
-module Type:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?params:(str option * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
-  end
-module Cd:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> constructor_declaration
-  end
-module Ld:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?mut:mutable_flag -> str -> core_type -> label_declaration
   end
 module Csig:
   sig
@@ -265,9 +293,11 @@ module Cstr:
   end
 
 
+(** {2 Convenience functions} *)
+
+(** Convenience functions to help build and deconstruct AST fragments. *)
 module Convenience :
   sig
-    (** Convenience function to help build and deconstruct AST fragments. *)
 
     val lid: string -> lid
 

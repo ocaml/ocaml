@@ -1514,7 +1514,7 @@ constructor_declaration:
   | constr_ident attributes generalized_constructor_arguments
       {
        let args,res = $3 in
-       Cd.mk (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2
+       Type.constructor (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2
       }
 ;
 exception_declaration:
@@ -1542,7 +1542,7 @@ label_declarations:
 label_declaration:
     mutable_flag label attributes COLON poly_type
       {
-       Ld.mk (mkrhs $2 2) $5 ~mut:$1 ~attrs:$3 ~loc:(symbol_rloc())
+       Type.field (mkrhs $2 2) $5 ~mut:$1 ~attrs:$3 ~loc:(symbol_rloc())
       }
 ;
 
