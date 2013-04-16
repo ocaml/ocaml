@@ -118,7 +118,7 @@ module Exp:
     val case: pattern -> ?guard:expression -> expression -> case
   end
 
-(** Value descriptions *)
+(** Value declarations *)
 module Val:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> ?prim:string list -> str -> core_type -> value_description
@@ -204,18 +204,26 @@ module Str:
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> structure_item
     val attribute: ?loc:loc -> attribute -> structure_item
   end
+
+(** Module type bindings *)
 module Mtb:
   sig
     val mk: ?attrs:attrs -> str -> module_type -> module_type_binding
   end
+
+(** Module declarations *)
 module Md:
   sig
     val mk: ?attrs:attrs -> str -> module_type -> module_declaration
   end
+
+(** Module type declarations *)
 module Mtd:
   sig
     val mk: ?attrs:attrs -> ?typ:module_type -> str -> module_type_declaration
   end
+
+(** Module bindings *)
 module Mb:
   sig
     val mk: ?attrs:attrs -> str -> module_expr -> module_binding
@@ -279,14 +287,20 @@ module Cf:
     val virtual_: core_type -> class_field_kind
     val concrete: override_flag -> expression -> class_field_kind
   end
+
+(** Classes *)
 module Ci:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(str * variance) list -> str -> 'a -> 'a class_infos
   end
+
+(** Class signatures *)
 module Csig:
   sig
     val mk: core_type -> class_type_field list -> class_signature
   end
+
+(** Class structures *)
 module Cstr:
   sig
     val mk: pattern -> class_field list -> class_structure
@@ -299,7 +313,11 @@ module Cstr:
 module Convenience :
   sig
 
+    (** {2 Misc} *)
+
     val lid: string -> lid
+
+    (** {2 Expressions} *)
 
     val evar: string -> expression
     val let_in: ?recursive:bool -> (pattern * expression) list -> expression -> expression
@@ -323,9 +341,13 @@ module Convenience :
     val char: char -> expression
     val float: float -> expression
 
+    (** {2 Patterns} *)
+
     val pvar: string -> pattern
     val pconstr: string -> pattern list -> pattern
     val punit: unit -> pattern
+
+    (** {2 AST deconstruction} *)
 
     val get_str: expression -> string option
     val get_lid: expression -> string option
