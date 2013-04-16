@@ -374,7 +374,7 @@ and untype_module_type mty =
     | Tmty_with (mtype, list) ->
         Pmty_with (untype_module_type mtype,
           List.map (fun (_path, lid, withc) ->
-              lid, untype_with_constraint lid withc
+              untype_with_constraint lid withc
           ) list)
     | Tmty_typeof mexpr ->
         Pmty_typeof (untype_module_expr mexpr)
@@ -383,10 +383,11 @@ and untype_module_type mty =
 
 and untype_with_constraint lid cstr =
   match cstr with
-    Twith_type decl -> Pwith_type (untype_type_declaration decl)
-  | Twith_module (_path, lid) -> Pwith_module (lid)
+    Twith_type decl -> Pwith_type (lid, untype_type_declaration decl)
+  | Twith_module (_path, lid2) -> Pwith_module (lid, lid2)
   | Twith_typesubst decl -> Pwith_typesubst (untype_type_declaration decl)
-  | Twith_modsubst (_path, lid) -> Pwith_modsubst (lid)
+  | Twith_modsubst (_path, lid2) ->
+      Pwith_modsubst ({loc = lid.loc; txt=Longident.last lid.txt}, lid2)
 
 and untype_module_expr mexpr =
   match mexpr.mod_desc with

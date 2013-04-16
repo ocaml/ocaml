@@ -14626,8 +14626,7 @@ module Struct =
               let (id, tpl) = type_parameters_and_type_name id_tpl [] in
               let (kind, priv, ct) = opt_private_ctyp ct
               in
-                (id,
-                 (pwith_type
+                 pwith_type id
                     {
                       ptype_name = Camlp4_import.Location.mkloc (Camlp4_import.Longident.last id.txt) id.loc;
                       ptype_params = tpl;
@@ -14637,21 +14636,25 @@ module Struct =
                       ptype_manifest = Some ct;
                       ptype_loc = mkloc loc;
                       ptype_attributes = [];
-                    }))
+                    }
               
             let rec mkwithc wc acc =
               match wc with
               | Ast.WcNil _ -> acc
               | Ast.WcTyp (loc, id_tpl, ct) ->
-                  (mkwithtyp (fun x -> Pwith_type x) loc id_tpl ct) :: acc
+                  (mkwithtyp (fun lid x -> Pwith_type (lid, x)) loc id_tpl ct) :: acc
               | Ast.WcMod (_, i1, i2) ->
-                  ((long_uident i1), (Pwith_module (long_uident i2))) :: acc
+                  (Pwith_module (long_uident i1, long_uident i2)) :: acc
               | Ast.WcTyS (loc, id_tpl, ct) ->
-                  (mkwithtyp (fun x -> Pwith_typesubst x) loc id_tpl ct) ::
+                  (mkwithtyp (fun _ x -> Pwith_typesubst x) loc id_tpl ct) ::
                     acc
-              | Ast.WcMoS (_, i1, i2) ->
-                  ((long_uident i1), (Pwith_modsubst (long_uident i2))) ::
-                    acc
+              | Ast.WcMoS (loc, i1, i2) ->
+                  begin match long_uident i1 with
+                  | {txt=Lident s; loc} ->
+                      (Pwith_modsubst ({txt=s;loc},long_uident i2)) ::
+                      acc
+                  | _ -> error loc "bad 'with module :=' constraint"
+                  end
               | Ast.WcAnd (_, wc1, wc2) -> mkwithc wc1 (mkwithc wc2 acc)
               | Ast.WcAnt (loc, _) ->
                   error loc "bad with constraint (antiquotation)"

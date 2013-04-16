@@ -566,7 +566,7 @@ and module_type i ppf x =
   | Pmty_with (mt, l) ->
       line i ppf "Pmty_with\n";
       module_type i ppf mt;
-      list i longident_x_with_constraint ppf l;
+      list i with_constraint ppf l;
   | Pmty_typeof m ->
       line i ppf "Pmty_typeof\n";
       module_expr i ppf m;
@@ -627,14 +627,20 @@ and modtype_declaration i ppf = function
 
 and with_constraint i ppf x =
   match x with
-  | Pwith_type (td) ->
-      line i ppf "Pwith_type\n";
+  | Pwith_type (lid, td) ->
+      line i ppf "Pwith_type %a\n" fmt_longident_loc lid;
       type_declaration (i+1) ppf td;
   | Pwith_typesubst (td) ->
       line i ppf "Pwith_typesubst\n";
       type_declaration (i+1) ppf td;
-  | Pwith_module li -> line i ppf "Pwith_module %a\n" fmt_longident_loc li;
-  | Pwith_modsubst li -> line i ppf "Pwith_modsubst %a\n" fmt_longident_loc li;
+  | Pwith_module (lid1, lid2) ->
+      line i ppf "Pwith_module %a = %a\n"
+        fmt_longident_loc lid1
+        fmt_longident_loc lid2;
+  | Pwith_modsubst (s, li) ->
+      line i ppf "Pwith_modsubst %a = %a\n"
+        fmt_string_loc s
+        fmt_longident_loc li;
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.pmod_loc;
@@ -732,10 +738,6 @@ and module_binding i ppf x =
   string_loc i ppf x.pmb_name;
   attributes i ppf x.pmb_attributes;
   module_expr (i+1) ppf x.pmb_expr
-
-and longident_x_with_constraint i ppf (li, wc) =
-  line i ppf "%a\n" fmt_longident_loc li;
-  with_constraint (i+1) ppf wc;
 
 and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   line i ppf "<constraint> %a\n" fmt_location l;

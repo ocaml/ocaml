@@ -564,7 +564,7 @@ and module_type_desc =
         (* sig ... end *)
   | Pmty_functor of string loc * module_type * module_type
         (* functor(X : MT1) -> MT2 *)
-  | Pmty_with of module_type * (Longident.t loc * with_constraint) list
+  | Pmty_with of module_type * with_constraint list
         (* MT with ... *)
   | Pmty_typeof of module_expr
         (* module type of ME *)
@@ -627,10 +627,17 @@ and module_type_declaration =
 (* S = MT *)
 
 and with_constraint =
-  | Pwith_type of type_declaration
-  | Pwith_module of Longident.t loc
+  | Pwith_type of Longident.t loc * type_declaration
+        (* with type X.t = ...
+
+           Note: the last component of the longident must match
+           the name of the type_declaration. *)
+  | Pwith_module of Longident.t loc * Longident.t loc
+        (* with module X.Y = Z *)
   | Pwith_typesubst of type_declaration
-  | Pwith_modsubst of Longident.t loc
+        (* with type t := ... *)
+  | Pwith_modsubst of string loc * Longident.t loc
+        (* with module X := Z *)
 
 (* Value expressions for the module language *)
 

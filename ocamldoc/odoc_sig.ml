@@ -257,11 +257,12 @@ module Analyser =
           Odoc_type.Type_record (List.map f l)
 
     let erased_names_of_constraints constraints acc =
-      List.fold_right (fun (longident, constraint_) acc ->
+      List.fold_right (fun constraint_ acc ->
         match constraint_ with
         | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ -> acc
-        | Parsetree.Pwith_typesubst _ | Parsetree.Pwith_modsubst _ ->
-          Name.Set.add (Name.from_longident longident.txt) acc)
+        | Parsetree.Pwith_typesubst {Parsetree.ptype_name=s}
+        | Parsetree.Pwith_modsubst (s, _) ->
+          Name.Set.add s.txt acc)
         constraints acc
 
     let filter_out_erased_items_from_signature erased signature =

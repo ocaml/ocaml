@@ -427,6 +427,16 @@ Rationale:
 It was only used for error messages, and we get better location using
 the location of each parameter variable.
 
+--- More faithful representation of "with constraint"
+
+All kinds of "with constraints" used to be represented together with a
+Longident.t denoting the constrained identifier.  Now, each constraint
+keeps its own constrainted identifier, which allows us to express more
+invariants in the Parsetree (such as: := constraints cannot be on qualified
+identifiers).  Also, we avoid mixing in a single Longident.t identifier
+which can be LIDENT or UIDENT.
+
+
 === More TODOs
 
 - Adapt pprintast to print attributes and extension nodes.

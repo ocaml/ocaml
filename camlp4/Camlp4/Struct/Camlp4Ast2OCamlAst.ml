@@ -446,7 +446,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value mkwithtyp pwith_type loc id_tpl ct =
     let (id, tpl) = type_parameters_and_type_name id_tpl [] in
     let (kind, priv, ct) = opt_private_ctyp ct in
-    (id, pwith_type
+    pwith_type id
       { ptype_name = Camlp4_import.Location.mkloc (Camlp4_import.Longident.last id.txt) id.loc;
         ptype_params = tpl; ptype_cstrs = [];
         ptype_kind = kind;
@@ -454,19 +454,24 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         ptype_manifest = Some ct;
         ptype_loc = mkloc loc;
         ptype_attributes = [];
-      });
+      };
 
   value rec mkwithc wc acc =
     match wc with
     [ <:with_constr<>> -> acc
     | <:with_constr@loc< type $id_tpl$ = $ct$ >> ->
-        [mkwithtyp (fun x -> Pwith_type x) loc id_tpl ct :: acc]
+        [mkwithtyp (fun lid x -> Pwith_type lid x) loc id_tpl ct :: acc]
     | <:with_constr< module $i1$ = $i2$ >> ->
-        [(long_uident i1, Pwith_module (long_uident i2)) :: acc]
+        [(Pwith_module (long_uident i1) (long_uident i2)) :: acc]
     | <:with_constr@loc< type $id_tpl$ := $ct$ >> ->
-        [mkwithtyp (fun x -> Pwith_typesubst x) loc id_tpl ct :: acc]
-    | <:with_constr< module $i1$ := $i2$ >> (*WcMoS _ i1 i2*) ->
-        [(long_uident i1, Pwith_modsubst (long_uident i2)) :: acc]
+        [mkwithtyp (fun _ x -> Pwith_typesubst x) loc id_tpl ct :: acc]
+    | <:with_constr@loc< module $i1$ := $i2$ >> (*WcMoS _ i1 i2*) ->
+        match long_uident i1 with
+        [ {txt=Lident s; loc} ->
+          [(Pwith_modsubst {txt=s;loc} (long_uident i2)) ::
+           acc]
+        | _ -> error loc "bad 'with module :=' constraint"
+        ]
     | <:with_constr< $wc1$ and $wc2$ >> -> mkwithc wc1 (mkwithc wc2 acc)
     | <:with_constr@loc< $anti:_$ >> ->
          error loc "bad with constraint (antiquotation)" ];

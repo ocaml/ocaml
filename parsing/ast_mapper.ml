@@ -115,15 +115,18 @@ module MT = struct
     | Pmty_ident s -> ident ~loc ~attrs (map_loc sub s)
     | Pmty_signature sg -> signature ~loc ~attrs (sub # signature sg)
     | Pmty_functor (s, mt1, mt2) -> functor_ ~loc ~attrs (map_loc sub s) (sub # module_type mt1) (sub # module_type mt2)
-    | Pmty_with (mt, l) -> with_ ~loc ~attrs (sub # module_type mt) (List.map (map_tuple (map_loc sub) (sub # with_constraint)) l)
+    | Pmty_with (mt, l) -> with_ ~loc ~attrs (sub # module_type mt) (List.map (sub # with_constraint) l)
     | Pmty_typeof me -> typeof_ ~loc ~attrs (sub # module_expr me)
     | Pmty_extension x -> extension ~loc ~attrs (sub # extension x)
 
   let map_with_constraint sub = function
-    | Pwith_type d -> Pwith_type (sub # type_declaration d)
-    | Pwith_module s -> Pwith_module (map_loc sub s)
+    | Pwith_type (lid, d) ->
+        Pwith_type (map_loc sub lid, sub # type_declaration d)
+    | Pwith_module (lid, lid2) ->
+        Pwith_module (map_loc sub lid, map_loc sub lid2)
     | Pwith_typesubst d -> Pwith_typesubst (sub # type_declaration d)
-    | Pwith_modsubst s -> Pwith_modsubst (map_loc sub s)
+    | Pwith_modsubst (s, lid) ->
+        Pwith_modsubst (map_loc sub s, map_loc sub lid)
 
   let map_signature_item sub {psig_desc = desc; psig_loc = loc} =
     let open Sig in

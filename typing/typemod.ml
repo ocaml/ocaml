@@ -114,14 +114,20 @@ let sig_item desc typ env loc = {
   Typedtree.sig_desc = desc; sig_loc = loc; sig_env = env
 }
 
-let merge_constraint initial_env loc  sg lid constr =
+let merge_constraint initial_env loc sg constr =
+  let lid =
+    match constr with
+    | Pwith_type (lid, _) | Pwith_module (lid, _) -> lid
+    | Pwith_typesubst {ptype_name=s} | Pwith_modsubst (s, _) ->
+        {loc = s.loc; txt=Lident s.txt}
+  in
   let real_id = ref None in
   let rec merge env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
         raise(Error(loc, env, With_no_component lid.txt))
     | (Sig_type(id, decl, rs) :: rem, [s],
-       Pwith_type ({ptype_kind = Ptype_abstract} as sdecl))
+       Pwith_type (_, ({ptype_kind = Ptype_abstract} as sdecl)))
       when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
         let decl_row =
           { type_params =
@@ -151,7 +157,7 @@ let merge_constraint initial_env loc  sg lid constr =
         let rs' = if rs = Trec_first then Trec_not else rs in
         (Pident id, lid, Twith_type tdecl),
         Sig_type(id_row, decl_row, rs') :: Sig_type(id, newdecl, rs) :: rem
-    | (Sig_type(id, decl, rs) :: rem , [s], Pwith_type sdecl)
+    | (Sig_type(id, decl, rs) :: rem , [s], Pwith_type (_, sdecl))
       when Ident.name id = s ->
         let tdecl =
           Typedecl.transl_with_constraint initial_env id None decl sdecl in
@@ -171,14 +177,14 @@ let merge_constraint initial_env loc  sg lid constr =
         real_id := Some id;
         (Pident id, lid, Twith_typesubst tdecl),
         make_next_first rs rem
-    | (Sig_module(id, mty, rs) :: rem, [s], Pwith_module (lid))
+    | (Sig_module(id, mty, rs) :: rem, [s], Pwith_module (_, lid))
       when Ident.name id = s ->
         let (path, mty') = Typetexp.find_module initial_env loc lid.txt in
         let newmty = Mtype.strengthen env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         (Pident id, lid, Twith_module (path, lid)),
         Sig_module(id, newmty, rs) :: rem
-    | (Sig_module(id, mty, rs) :: rem, [s], Pwith_modsubst (lid))
+    | (Sig_module(id, mty, rs) :: rem, [s], Pwith_modsubst (_, lid))
       when Ident.name id = s ->
         let (path, mty') = Typetexp.find_module initial_env loc lid.txt in
         let newmty = Mtype.strengthen env mty' path in
@@ -228,7 +234,7 @@ let merge_constraint initial_env loc  sg lid constr =
         in
         let sub = Subst.add_type id path Subst.identity in
         Subst.signature sub sg
-    | [s], Pwith_modsubst (lid) ->
+    | [s], Pwith_modsubst (_, lid) ->
         let id =
           match !real_id with None -> assert false | Some id -> id in
         let (path, _) = Typetexp.find_module initial_env loc lid.txt in
@@ -438,8 +444,8 @@ let rec transl_modtype env smty =
       let init_sg = extract_sig env sbody.pmty_loc body.mty_type in
       let (tcstrs, final_sg) =
         List.fold_left
-          (fun (tcstrs,sg) (lid, sdecl) ->
-            let (tcstr, sg) = merge_constraint env smty.pmty_loc sg lid sdecl
+          (fun (tcstrs,sg) sdecl ->
+            let (tcstr, sg) = merge_constraint env smty.pmty_loc sg sdecl
             in
             (tcstr :: tcstrs, sg)
         )

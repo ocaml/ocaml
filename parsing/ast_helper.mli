@@ -116,7 +116,7 @@ module Mty:
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> module_type
     val signature: ?loc:loc -> ?attrs:attrs -> signature -> module_type
     val functor_: ?loc:loc -> ?attrs:attrs -> str -> module_type -> module_type -> module_type
-    val with_: ?loc:loc -> ?attrs:attrs -> module_type -> (lid * with_constraint) list -> module_type
+    val with_: ?loc:loc -> ?attrs:attrs -> module_type -> with_constraint list -> module_type
     val typeof_: ?loc:loc -> ?attrs:attrs -> module_expr -> module_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> module_type
   end

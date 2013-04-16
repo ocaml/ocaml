@@ -1554,7 +1554,8 @@ with_constraints:
 ;
 with_constraint:
     TYPE type_parameters label_longident with_type_binder core_type constraints
-      { (mkrhs $3 3,  Pwith_type
+      { Pwith_type
+          (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
               ~params:(List.map (fun (x, v) -> Some x, v) $2)
               ~cstrs:(List.rev $6)
@@ -1564,15 +1565,15 @@ with_constraint:
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
   | TYPE type_parameters label COLONEQUAL core_type
-      { (mkrhs (Lident $3) 3, Pwith_typesubst
-           (Type.mk (mkrhs $3 3)
-              ~params:(List.map (fun (x, v) -> Some x, v) $2)
-              ~manifest:$5
-              ~loc:(symbol_rloc()))) }
+      { Pwith_typesubst
+          (Type.mk (mkrhs $3 3)
+             ~params:(List.map (fun (x, v) -> Some x, v) $2)
+             ~manifest:$5
+             ~loc:(symbol_rloc())) }
   | MODULE mod_longident EQUAL mod_ext_longident
-      { (mkrhs $2 2, Pwith_module (mkrhs $4 4)) }
+      { Pwith_module (mkrhs $2 2, mkrhs $4 4) }
   | MODULE UIDENT COLONEQUAL mod_ext_longident
-      { (mkrhs (Lident $2) 2, Pwith_modsubst (mkrhs $4 4)) }
+      { Pwith_modsubst (mkrhs $2 2, mkrhs $4 4) }
 ;
 with_type_binder:
     EQUAL          { Public }

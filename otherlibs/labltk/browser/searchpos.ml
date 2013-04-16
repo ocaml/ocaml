@@ -235,7 +235,7 @@ and search_pos_module m ~pos ~env =
         search_pos_module m ~pos ~env;
         List.iter l ~f:
           begin function
-              _, Pwith_type t -> search_pos_type_decl t ~pos ~env
+              Pwith_type (_, t) -> search_pos_type_decl t ~pos ~env
             | _ -> ()
           end
     | Pmty_typeof md ->
