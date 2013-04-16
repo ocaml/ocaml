@@ -42,7 +42,7 @@ and core_type =
     {
      ptyp_desc: core_type_desc;
      ptyp_loc: Location.t;
-     ptyp_attributes: attributes; (* T [@id1 E1] [@id2 E2] ... *)
+     ptyp_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
     }
 
 and core_type_desc =
@@ -129,7 +129,7 @@ and pattern =
     {
      ppat_desc: pattern_desc;
      ppat_loc: Location.t;
-     ppat_attributes: attributes; (* P [@id1 E1] [@id2 E2] ... *)
+     ppat_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
     }
 
 and pattern_desc =
@@ -191,7 +191,7 @@ and expression =
     {
      pexp_desc: expression_desc;
      pexp_loc: Location.t;
-     pexp_attributes: attributes; (* E [@id1 E1] [@id2 E2] ... *)
+     pexp_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
     }
 
 and expression_desc =
@@ -209,7 +209,7 @@ and expression_desc =
         (* function P1 -> E1 | ... | Pn -> En    (lab = "", None)
            fun P1 -> E1                          (lab = "", None)
            fun ~l:P1 -> E1                       (lab = "l", None)
-           fun ?l:P -> E1                        (lab = "?l", None)
+           fun ?l:P1 -> E1                       (lab = "?l", None)
            fun ?l:(P1 = E0) -> E1                (lab = "?l", Some E0)
 
            Notes:
@@ -321,7 +321,7 @@ and value_description =
      pval_name: string loc;
      pval_type: core_type;
      pval_prim: string list;
-     pval_attributes: attributes;  (* .... [@@id1 E1] [@@id2 E2] *)
+     pval_attributes: attributes;  (* ... [@@id1 E1] [@@id2 E2] *)
      pval_loc: Location.t;
     }
 
@@ -344,7 +344,7 @@ and type_declaration =
      ptype_kind: type_kind;
      ptype_private: private_flag;   (* = private ... *)
      ptype_manifest: core_type option;  (* = T *)
-     ptype_attributes: attributes;   (* .... [@@id1 E1] [@@id2 E2] *)
+     ptype_attributes: attributes;   (* ... [@@id1 E1] [@@id2 E2] *)
      ptype_loc: Location.t;
     }
 
@@ -368,7 +368,7 @@ and label_declaration =
      pld_mutable: mutable_flag;
      pld_type: core_type;
      pld_loc: Location.t;
-     pld_attributes: attributes;
+     pld_attributes: attributes; (* l [@id1 E1] [@id2 E2] : t *)
     }
 
 (*  { ...; l: T; ... }            (mutable=Immutable)
@@ -383,7 +383,7 @@ and constructor_declaration =
      pcd_args: core_type list;
      pcd_res: core_type option;
      pcd_loc: Location.t;
-     pcd_attributes: attributes;
+     pcd_attributes: attributes; (* C [@id1 E1] [@id2 E2] of ... *)
     }
 (*
   | C of T1 * ... * Tn     (res = None)
@@ -399,13 +399,13 @@ and class_type =
     {
      pcty_desc: class_type_desc;
      pcty_loc: Location.t;
-     pcty_attributes: attributes; (* CT [@id1 E1] [@id2 E2] ... *)
+     pcty_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
     }
 
 and class_type_desc =
   | Pcty_constr of Longident.t loc * core_type list
-        (* tconstr
-           ['a1, ..., 'an] tconstr *)
+        (* c
+           ['a1, ..., 'an] c *)
   | Pcty_signature of class_signature
         (* object ... end *)
   | Pcty_arrow of label * core_type * class_type
@@ -422,20 +422,29 @@ and class_signature =
      pcsig_fields: class_type_field list;
      pcsig_loc: Location.t;
     }
+(* object('selfpat) ... end *)
 
 and class_type_field =
     {
      pctf_desc: class_type_field_desc;
      pctf_loc: Location.t;
-     pctf_attributes: attributes;
+     pctf_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
     }
 
 and class_type_field_desc =
   | Pctf_inherit of class_type
+        (* inherit CT *)
   | Pctf_val of (string * mutable_flag * virtual_flag * core_type)
+        (* val x: T *)
   | Pctf_method  of (string * private_flag * virtual_flag * core_type)
+        (* method x: T
+
+           Note: T can be a Pexp_poly.
+         *)
   | Pctf_constraint  of (core_type * core_type)
+        (* constraint T1 = T2 *)
   | Pctf_extension of extension
+        (* [%%id E] *)
 
 and 'a class_infos =
     {
@@ -444,8 +453,14 @@ and 'a class_infos =
      pci_name: string loc;
      pci_expr: 'a;
      pci_loc: Location.t;
-     pci_attributes: attributes;
+     pci_attributes: attributes;  (* ... [@@id1 E1] [@@id2 E2] *)
     }
+(* class c = ...
+   class ['a1,...,'an] c = ...
+   class virtual c = ...
+
+   Also used for "class type" declaration.
+*)
 
 and class_description = class_type class_infos
 
@@ -457,23 +472,41 @@ and class_expr =
     {
      pcl_desc: class_expr_desc;
      pcl_loc: Location.t;
-     pcl_attributes: attributes;
+     pcl_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
     }
 
 and class_expr_desc =
   | Pcl_constr of Longident.t loc * core_type list
+        (* c
+           ['a1, ..., 'an] c *)
   | Pcl_structure of class_structure
+        (* object ... end *)
   | Pcl_fun of label * expression option * pattern * class_expr
+        (* fun P -> CE                          (lab = "", None)
+           fun ~l:P -> CE                       (lab = "l", None)
+           fun ?l:P -> CE                       (lab = "?l", None)
+           fun ?l:(P = E0) -> CE                (lab = "?l", Some E0)
+         *)
   | Pcl_apply of class_expr * (label * expression) list
+        (* CE ~l1:E1 ... ~ln:En
+           li can be empty (non labeled argument) or start with '?'
+           (optional argument).
+         *)
   | Pcl_let of rec_flag * (pattern * expression) list * class_expr
+        (* let P1 = E1 and ... and Pn = EN in CE      (flag = Nonrecursive)
+           let rec P1 = E1 and ... and Pn = EN in CE  (flag = Recursive)
+         *)
   | Pcl_constraint of class_expr * class_type
+        (* (CE : CT) *)
   | Pcl_extension of extension
+        (* [%id E] *)
 
 and class_structure =
     {
      pcstr_self: pattern;
      pcstr_fields: class_field list;
     }
+(* object(selfpat) ... end *)
 
 and class_field =
     {
