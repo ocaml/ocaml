@@ -249,8 +249,8 @@ let varify_constructors var_names t =
           Ptyp_constr(longident, List.map loop lst)
       | Ptyp_object (lst, o) ->
           Ptyp_object (List.map (fun (s, t) -> (s, loop t)) lst, o)
-      | Ptyp_class (longident, lst, lbl_list) ->
-          Ptyp_class (longident, List.map loop lst, lbl_list)
+      | Ptyp_class (longident, lst) ->
+          Ptyp_class (longident, List.map loop lst)
       | Ptyp_alias(core_type, string) ->
           check_variable var_names t.ptyp_loc string;
           Ptyp_alias(loop core_type, string)
@@ -1645,12 +1645,12 @@ simple_core_type2:
       { let (f, c) = $2 in mktyp(Ptyp_object (f, c)) }
   | LESS GREATER
       { mktyp(Ptyp_object ([], Closed)) }
-  | SHARP class_longident opt_present
-      { mktyp(Ptyp_class(mkrhs $2 2, [], $3)) }
-  | simple_core_type2 SHARP class_longident opt_present
-      { mktyp(Ptyp_class(mkrhs $3 3, [$1], $4)) }
-  | LPAREN core_type_comma_list RPAREN SHARP class_longident opt_present
-      { mktyp(Ptyp_class(mkrhs $5 5, List.rev $2, $6)) }
+  | SHARP class_longident
+      { mktyp(Ptyp_class(mkrhs $2 2, [])) }
+  | simple_core_type2 SHARP class_longident
+      { mktyp(Ptyp_class(mkrhs $3 3, [$1])) }
+  | LPAREN core_type_comma_list RPAREN SHARP class_longident
+      { mktyp(Ptyp_class(mkrhs $5 5, List.rev $2)) }
   | LBRACKET tag_field RBRACKET
       { mktyp(Ptyp_variant([$2], Closed, None)) }
 /* PR#3835: this is not LR(1), would need lookahead=2
@@ -1706,10 +1706,6 @@ opt_ampersand:
 amper_type_list:
     core_type                                   { [$1] }
   | amper_type_list AMPERSAND core_type         { $3 :: $1 }
-;
-opt_present:
-    LBRACKETGREATER name_tag_list RBRACKET      { List.rev $2 }
-  | /* empty */                                 { [] }
 ;
 name_tag_list:
     name_tag                                    { [$1] }

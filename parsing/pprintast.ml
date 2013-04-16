@@ -297,13 +297,10 @@ class printer  ()= object(self:'self)
         in
         pp f "@[<hov2><@ %a%a@ >@]" (self#list core_field_type ~sep:";") l
           field_var o
-    | Ptyp_class (li, l, low) ->   (*FIXME*)
-        pp f "@[<hov2>%a#%a%a@]"
+    | Ptyp_class (li, l) ->   (*FIXME*)
+        pp f "@[<hov2>%a#%a@]"
           (self#list self#core_type ~sep:"," ~first:"(" ~last:")") l
           self#longident_loc li
-          (fun f low -> match low with
-          | [] -> ()
-          | _ -> pp f "@ [>@ %a]" (self#list self#string_quot) low) low
     | Ptyp_package (lid, cstrs) ->
         let aux f (s, ct) =
           pp f "type %a@ =@ %a" self#longident_loc s self#core_type ct  in

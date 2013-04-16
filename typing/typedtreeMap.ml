@@ -555,8 +555,8 @@ module MakeMap(Map : MapArgument) = struct
           Ttyp_constr (path, lid, List.map map_core_type list)
         | Ttyp_object (list, o) ->
           Ttyp_object (List.map (fun (s, t) -> (s, map_core_type t)) list, o)
-        | Ttyp_class (path, lid, list, labels) ->
-          Ttyp_class (path, lid, List.map map_core_type list, labels)
+        | Ttyp_class (path, lid, list) ->
+          Ttyp_class (path, lid, List.map map_core_type list)
         | Ttyp_alias (ct, s) -> Ttyp_alias (map_core_type ct, s)
         | Ttyp_variant (list, bool, labels) ->
           Ttyp_variant (List.map map_row_field list, bool, labels)

@@ -162,10 +162,9 @@ let rec core_type i ppf x =
           core_type (i + 1) ppf t
         )
         l
-  | Ptyp_class (li, l, low) ->
+  | Ptyp_class (li, l) ->
       line i ppf "Ptyp_class %a\n" fmt_longident_loc li;
-      list i core_type ppf l;
-      list i string ppf low
+      list i core_type ppf l
   | Ptyp_alias (ct, s) ->
       line i ppf "Ptyp_alias \"%s\"\n" s;
       core_type i ppf ct;

@@ -44,7 +44,7 @@ let rec add_type bv ty =
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_object (fl, _) -> List.iter (fun (_, t) -> add_type bv t) fl
-  | Ptyp_class(c, tl, _) -> add bv c; List.iter (add_type bv) tl
+  | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, s) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
       List.iter

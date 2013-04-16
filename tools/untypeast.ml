@@ -496,9 +496,8 @@ and untype_core_type ct =
           List.map untype_core_type list)
     | Ttyp_object (list, o) ->
         Ptyp_object (List.map (fun (s, t) -> (s, untype_core_type t)) list, o)
-    | Ttyp_class (_path, lid, list, labels) ->
-        Ptyp_class (lid,
-          List.map untype_core_type list, labels)
+    | Ttyp_class (_path, lid, list) ->
+        Ptyp_class (lid, List.map untype_core_type list)
     | Ttyp_alias (ct, s) ->
         Ptyp_alias (untype_core_type ct, s)
     | Ttyp_variant (list, bool, labels) ->

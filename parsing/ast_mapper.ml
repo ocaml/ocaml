@@ -44,7 +44,7 @@ module T = struct
     | Ptyp_tuple tyl -> tuple ~loc ~attrs (List.map (sub # typ) tyl)
     | Ptyp_constr (lid, tl) -> constr ~loc ~attrs (map_loc sub lid) (List.map (sub # typ) tl)
     | Ptyp_object (l, o) -> object_ ~loc ~attrs (List.map (map_snd (sub # typ)) l) o
-    | Ptyp_class (lid, tl, ll) -> class_ ~loc ~attrs (map_loc sub lid) (List.map (sub # typ) tl) ll
+    | Ptyp_class (lid, tl) -> class_ ~loc ~attrs (map_loc sub lid) (List.map (sub # typ) tl)
     | Ptyp_alias (t, s) -> alias ~loc ~attrs (sub # typ t) s
     | Ptyp_variant (rl, b, ll) -> variant ~loc ~attrs (List.map (row_field sub) rl) b ll
     | Ptyp_poly (sl, t) -> poly ~loc ~attrs sl (sub # typ t)

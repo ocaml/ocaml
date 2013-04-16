@@ -285,7 +285,7 @@ let rec transl_type env policy styp =
       in
       let ty = newobj (transl_fields loc env policy [] o fields) in
       ctyp (Ttyp_object (fields, o)) ty
-  | Ptyp_class(lid, stl, present) ->
+  | Ptyp_class(lid, stl) ->
       let (path, decl, is_variant) =
         try
           let (path, decl) = Env.lookup_type lid.txt env in
@@ -302,7 +302,6 @@ let rec transl_type env policy styp =
           Location.prerr_warning styp.ptyp_loc Warnings.Deprecated;
           (path, decl,true)
         with Not_found -> try
-          if present <> [] then raise Not_found;
           let lid2 =
             match lid.txt with
               Longident.Lident s     -> Longident.Lident ("#" ^ s)
@@ -334,14 +333,9 @@ let rec transl_type env policy styp =
       let ty = match ty.desc with
         Tvariant row ->
           let row = Btype.row_repr row in
-          List.iter
-            (fun l -> if not (List.mem_assoc l row.row_fields) then
-              raise(Error(styp.ptyp_loc, env, Present_has_no_type l)))
-            present;
           let fields =
             List.map
               (fun (l,f) -> l,
-                if List.mem l present then f else
                 match Btype.row_field_repr f with
                 | Rpresent (Some ty) ->
                     Reither(false, [ty], false, ref None)
@@ -367,7 +361,7 @@ let rec transl_type env policy styp =
       | _ ->
           assert false
       in
-      ctyp (Ttyp_class (path, lid, args, present)) ty
+      ctyp (Ttyp_class (path, lid, args)) ty
   | Ptyp_alias(st, alias) ->
       let cty =
         try

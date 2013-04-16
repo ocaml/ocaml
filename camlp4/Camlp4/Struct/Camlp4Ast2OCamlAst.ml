@@ -238,7 +238,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | TyApp loc _ _ as f ->
         let (f, al) = ctyp_fa [] f in
         let (is_cls, li) = ctyp_long_id f in
-        if is_cls then mktyp loc (Ptyp_class li (List.map ctyp al) [])
+        if is_cls then mktyp loc (Ptyp_class li (List.map ctyp al))
         else mktyp loc (Ptyp_constr li (List.map ctyp al))
     | TyArr loc (TyLab _ lab t1) t2 ->
         mktyp loc (Ptyp_arrow lab (ctyp t1) (ctyp t2))
@@ -250,7 +250,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp@loc< < $fl$ .. > >> ->
         mktyp loc (Ptyp_object (meth_list fl []) Open)
     | TyCls loc id ->
-        mktyp loc (Ptyp_class (ident id) [] [])
+        mktyp loc (Ptyp_class (ident id) [])
     | <:ctyp@loc< (module $pt$) >> ->
         let (i, cs) = package_type pt in
         mktyp loc (Ptyp_package i cs)
@@ -660,8 +660,8 @@ value varify_constructors var_names =
           Ptyp_constr longident (List.map loop lst)
       | Ptyp_object (lst, o) ->
           Ptyp_object (List.map (fun (s, t) -> (s, loop t)) lst, o)
-      | Ptyp_class longident lst lbl_list ->
-          Ptyp_class (longident, List.map loop lst, lbl_list)
+      | Ptyp_class longident lst ->
+          Ptyp_class (longident, List.map loop lst)
       | Ptyp_alias core_type string ->
           Ptyp_alias(loop core_type, string)
       | Ptyp_variant row_field_list flag lbl_lst_option ->

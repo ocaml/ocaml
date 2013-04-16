@@ -176,10 +176,9 @@ let rec core_type i ppf x =
           core_type (i + 1) ppf t
         )
         l
-  | Ttyp_class (li, _, l, low) ->
+  | Ttyp_class (li, _, l) ->
       line i ppf "Ptyp_class %a\n" fmt_path li;
       list i core_type ppf l;
-      list i string ppf low
   | Ttyp_alias (ct, s) ->
       line i ppf "Ptyp_alias \"%s\"\n" s;
       core_type i ppf ct;

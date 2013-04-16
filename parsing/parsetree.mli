@@ -66,13 +66,10 @@ and core_type_desc =
         (* < l1:T1; ...; ln:Tn >     (flag = Closed)
            < l1:T1; ...; ln:Tn; .. > (flag = Open)
          *)
-  | Ptyp_class of Longident.t loc * core_type list * label list
+  | Ptyp_class of Longident.t loc * core_type list
         (* #tconstr
            T #tconstr
-           (T1, ..., Tn) tconstr
-
-           The label list is used for the deprecated syntax:
-           #tconstr [> `A1 ... `An]
+           (T1, ..., Tn) #tconstr
          *)
   | Ptyp_alias of core_type * string
         (* T as 'a *)

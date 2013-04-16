@@ -421,6 +421,10 @@ Rationale:
 
   - Make it explicit when the guard can appear.
 
+--- Get rid of "fun p when guard -> e"
+
+See #5939, #5936.
+
 
 --- Get rid of the location argument on pci_params
 
@@ -436,6 +440,10 @@ invariants in the Parsetree (such as: := constraints cannot be on qualified
 identifiers).  Also, we avoid mixing in a single Longident.t identifier
 which can be LIDENT or UIDENT.
 
+--- Get rid of the "#c [> `A]" syntax
+
+
+See #5936, #5983.
 
 === More TODOs
 

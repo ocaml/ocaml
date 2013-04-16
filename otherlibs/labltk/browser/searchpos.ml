@@ -122,7 +122,7 @@ let rec search_pos_type t ~pos ~env =
       add_found_sig (`Type, lid.txt) ~env ~loc:t.ptyp_loc
   | Ptyp_object (fl, _) ->
       List.iter fl ~f:(fun (_, ty) -> search_pos_type ty ~pos ~env)
-  | Ptyp_class (lid, tl, _) ->
+  | Ptyp_class (lid, tl) ->
       List.iter tl ~f:(search_pos_type ~pos ~env);
       add_found_sig (`Type, lid.txt) ~env ~loc:t.ptyp_loc
   | Ptyp_alias (t, _)

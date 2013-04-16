@@ -288,7 +288,7 @@ let core_type sub ct =
       List.iter (sub # core_type) list
   | Ttyp_object (list, _o) ->
       List.iter (fun (_, t) -> sub # core_type t) list
-  | Ttyp_class (_path, _, list, _labels) ->
+  | Ttyp_class (_path, _, list) ->
       List.iter (sub # core_type) list
   | Ttyp_alias (ct, _s) ->
       sub # core_type ct
