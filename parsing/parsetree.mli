@@ -321,9 +321,16 @@ and value_description =
      pval_name: string loc;
      pval_type: core_type;
      pval_prim: string list;
-     pval_attributes: attributes;
+     pval_attributes: attributes;  (* .... [@@id1 E1] [@@id2 E2] *)
      pval_loc: Location.t;
     }
+
+(*
+  val x: t                            (prim = [])
+  external x: t = "s1" ... "sn"       (prim = ["s1";..."sn"])
+
+  Note: when used under Pstr_primitive, prim cannot be empty
+*)
 
 (* Type declarations *)
 
@@ -331,13 +338,24 @@ and type_declaration =
     {
      ptype_name: string loc;
      ptype_params: (string loc option * variance) list;
+           (* ('a1,...'an) t; None represents  _*)
      ptype_cstrs: (core_type * core_type * Location.t) list;
+           (* ... constraint T1=T1'  ... constraint Tn=Tn' *)
      ptype_kind: type_kind;
-     ptype_private: private_flag;
-     ptype_manifest: core_type option;
-     ptype_attributes: attributes;
+     ptype_private: private_flag;   (* = private ... *)
+     ptype_manifest: core_type option;  (* = T *)
+     ptype_attributes: attributes;   (* .... [@@id1 E1] [@@id2 E2] *)
      ptype_loc: Location.t;
     }
+
+(*
+  type t                     (abstract, no manifest)
+  type t = T0                (abstract, manifest=T0)
+  type t = C of T | ...      (variant,  no manifest)
+  type t = T0 = C of T | ... (variant,  manifest=T0)
+  type t = {l: T; ...}       (record,   no manifest)
+  type t = T0 = {l : T; ...} (record,   manifest=T0)
+*)
 
 and type_kind =
   | Ptype_abstract
@@ -353,6 +371,12 @@ and label_declaration =
      pld_attributes: attributes;
     }
 
+(*  { ...; l: T; ... }            (mutable=Immutable)
+    { ...; mutable l: T; ... }    (mutable=Mutable)
+
+    Note: T can be a Pexp_poly.
+*)
+
 and constructor_declaration =
     {
      pcd_name: string loc;
@@ -361,6 +385,11 @@ and constructor_declaration =
      pcd_loc: Location.t;
      pcd_attributes: attributes;
     }
+(*
+  | C of T1 * ... * Tn     (res = None)
+  | C: T0                  (args = [], res = Some T0)
+  | C: T1 * ... * Tn -> T0 (res = Some T0)
+*)
 
 (** {2 Class language} *)
 
@@ -370,14 +399,22 @@ and class_type =
     {
      pcty_desc: class_type_desc;
      pcty_loc: Location.t;
-     pcty_attributes: attributes;
+     pcty_attributes: attributes; (* CT [@id1 E1] [@id2 E2] ... *)
     }
 
 and class_type_desc =
   | Pcty_constr of Longident.t loc * core_type list
+        (* tconstr
+           ['a1, ..., 'an] tconstr *)
   | Pcty_signature of class_signature
-  | Pcty_fun of label * core_type * class_type
+        (* object ... end *)
+  | Pcty_arrow of label * core_type * class_type
+        (* T -> CT       (label = "")
+           ~l:T -> CT    (label = "l")
+           ?l:T -> CT    (label = "?l")
+         *)
   | Pcty_extension of extension
+        (* [%id E] *)
 
 and class_signature =
     {

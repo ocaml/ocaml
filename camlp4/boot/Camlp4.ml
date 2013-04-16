@@ -15483,14 +15483,14 @@ module Struct =
                     (Pcty_constr ((long_class_ident id),
                        (List.map ctyp (list_of_opt_ctyp tl []))))
               | CtFun (loc, (TyLab (_, lab, t)), ct) ->
-                  mkcty loc (Pcty_fun (lab, (ctyp t), (class_type ct)))
+                  mkcty loc (Pcty_arrow (lab, (ctyp t), (class_type ct)))
               | CtFun (loc, (TyOlb (loc1, lab, t)), ct) ->
                   let t = TyApp (loc1, (predef_option loc1), t)
                   in
                     mkcty loc
-                      (Pcty_fun (("?" ^ lab), (ctyp t), (class_type ct)))
+                      (Pcty_arrow (("?" ^ lab), (ctyp t), (class_type ct)))
               | CtFun (loc, t, ct) ->
-                  mkcty loc (Pcty_fun ("", (ctyp t), (class_type ct)))
+                  mkcty loc (Pcty_arrow ("", (ctyp t), (class_type ct)))
               | CtSig (loc, t_o, ctfl) ->
                   let t =
                     (match t_o with | Ast.TyNil _ -> Ast.TyAny loc | t -> t) in

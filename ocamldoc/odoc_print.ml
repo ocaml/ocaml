@@ -90,9 +90,9 @@ let simpl_class_type t =
                                Types.cty_concr = Types.Concr.empty ;
                                Types.cty_inher = []
                              }
-    | Types.Cty_fun (l, texp, ct) ->
+    | Types.Cty_arrow (l, texp, ct) ->
         let new_ct = iter ct in
-        Types.Cty_fun (l, texp, new_ct)
+        Types.Cty_arrow (l, texp, new_ct)
   in
   iter t
 

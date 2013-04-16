@@ -82,8 +82,8 @@ module CT = struct
     match desc with
     | Pcty_constr (lid, tys) -> constr ~loc ~attrs (map_loc sub lid) (List.map (sub # typ) tys)
     | Pcty_signature x -> signature ~loc ~attrs (sub # class_signature x)
-    | Pcty_fun (lab, t, ct) ->
-        fun_ ~loc ~attrs lab
+    | Pcty_arrow (lab, t, ct) ->
+        arrow ~loc ~attrs lab
           (sub # typ t)
           (sub # class_type ct)
     | Pcty_extension x -> extension ~loc ~attrs (sub # extension x)

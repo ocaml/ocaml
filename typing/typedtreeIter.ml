@@ -471,7 +471,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           Tcty_signature csg -> iter_class_signature csg
         | Tcty_constr (path, _, list) ->
             List.iter iter_core_type list
-        | Tcty_fun (label, ct, cl) ->
+        | Tcty_arrow (label, ct, cl) ->
             iter_core_type ct;
             iter_class_type cl
       end;

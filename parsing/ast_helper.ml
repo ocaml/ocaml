@@ -209,7 +209,7 @@ module Cty = struct
 
   let constr ?loc ?attrs a b = mk ?loc ?attrs (Pcty_constr (a, b))
   let signature ?loc ?attrs a = mk ?loc ?attrs (Pcty_signature a)
-  let fun_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_fun (a, b, c))
+  let arrow ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_arrow (a, b, c))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcty_extension a)
 end
 

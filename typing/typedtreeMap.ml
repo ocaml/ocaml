@@ -515,8 +515,8 @@ module MakeMap(Map : MapArgument) = struct
           Tcty_signature csg -> Tcty_signature (map_class_signature csg)
         | Tcty_constr (path, lid, list) ->
           Tcty_constr (path, lid, List.map map_core_type list)
-        | Tcty_fun (label, ct, cl) ->
-          Tcty_fun (label, map_core_type ct, map_class_type cl)
+        | Tcty_arrow (label, ct, cl) ->
+          Tcty_arrow (label, map_core_type ct, map_class_type cl)
     in
     Map.leave_class_type { ct with cltyp_desc = cltyp_desc }
 

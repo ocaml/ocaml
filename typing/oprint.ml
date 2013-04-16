@@ -305,7 +305,7 @@ let rec print_out_class_type ppf =
             fprintf ppf "@[<1>[%a]@]@ " (print_typlist !out_type ",") tyl
       in
       fprintf ppf "@[%a%a@]" pr_tyl tyl print_ident id
-  | Octy_fun (lab, ty, cty) ->
+  | Octy_arrow (lab, ty, cty) ->
       fprintf ppf "@[%s%a ->@ %a@]" (if lab <> "" then lab ^ ":" else "")
         print_out_type_2 ty print_out_class_type cty
   | Octy_signature (self_ty, csil) ->

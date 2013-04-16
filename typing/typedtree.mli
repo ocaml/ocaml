@@ -398,7 +398,7 @@ and class_type =
 and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
-  | Tcty_fun of label * core_type * class_type
+  | Tcty_arrow of label * core_type * class_type
 
 and class_signature = {
     csig_self : core_type;

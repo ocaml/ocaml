@@ -450,7 +450,7 @@ module Analyser =
                   ic
 
               | Parsetree.Pcty_signature _
-              | Parsetree.Pcty_fun _ ->
+              | Parsetree.Pcty_arrow _ ->
                     (* we don't have a name for the class signature, so we call it "object ... end"  *)
                   {
                     ic_name = Odoc_messages.object_end ;
@@ -1235,7 +1235,7 @@ module Analyser =
           in
           ([], Class_structure (inher_l, ele))
 
-      | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Cty_fun (label, type_expr, class_type)) ->
+      | (Parsetree.Pcty_arrow (parse_label, _, pclass_type), Types.Cty_arrow (label, type_expr, class_type)) ->
           (* label = string. Dans les signatures, pas de nom de parametres a l'interieur des tuples *)
           (* si label = "", pas de label. ici on a l'information pour savoir si on a un label explicite. *)
           if parse_label = label then
@@ -1252,7 +1252,7 @@ module Analyser =
             )
           else
             (
-             raise (Failure "Parsetree.Pcty_fun (parse_label, _, pclass_type), labels differents")
+             raise (Failure "Parsetree.Pcty_arrow (parse_label, _, pclass_type), labels differents")
             )
 
       | _ ->
@@ -1286,8 +1286,8 @@ module Analyser =
           in
           Class_signature (inher_l, ele)
 
-      | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Cty_fun (label, type_expr, class_type)) ->
-          raise (Failure "analyse_class_type_kind : Parsetree.Pcty_fun (...) with Types.Cty_fun (...)")
+      | (Parsetree.Pcty_arrow (parse_label, _, pclass_type), Types.Cty_arrow (label, type_expr, class_type)) ->
+          raise (Failure "analyse_class_type_kind : Parsetree.Pcty_arrow (...) with Types.Cty_arrow (...)")
 (*
       | (Parsetree.Pcty_constr (longident, _) (*of Longident.t * core_type list *),
          Types.Cty_signature class_signature) ->

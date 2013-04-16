@@ -884,13 +884,13 @@ class_type:
     class_signature
       { $1 }
   | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
-      { mkcty(Pcty_fun("?" ^ $2 , mkoption $4, $6)) }
+      { mkcty(Pcty_arrow("?" ^ $2 , mkoption $4, $6)) }
   | OPTLABEL simple_core_type_or_tuple_no_attr MINUSGREATER class_type
-      { mkcty(Pcty_fun("?" ^ $1, mkoption $2, $4)) }
+      { mkcty(Pcty_arrow("?" ^ $1, mkoption $2, $4)) }
   | LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
-      { mkcty(Pcty_fun($1, $3, $5)) }
+      { mkcty(Pcty_arrow($1, $3, $5)) }
   | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
-      { mkcty(Pcty_fun("", $1, $3)) }
+      { mkcty(Pcty_arrow("", $1, $3)) }
   | class_type attribute
       { Cty.attr $1 $2 }
   | extension

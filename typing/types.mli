@@ -166,7 +166,7 @@ module Concr : Set.S with type elt = string
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type
   | Cty_signature of class_signature
-  | Cty_fun of label * type_expr * class_type
+  | Cty_arrow of label * type_expr * class_type
 
 and class_signature =
   { cty_self: type_expr;

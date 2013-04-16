@@ -421,8 +421,8 @@ and class_type i ppf x =
   | Tcty_signature (cs) ->
       line i ppf "Pcty_signature\n";
       class_signature i ppf cs;
-  | Tcty_fun (l, co, cl) ->
-      line i ppf "Pcty_fun \"%s\"\n" l;
+  | Tcty_arrow (l, co, cl) ->
+      line i ppf "Pcty_arrow \"%s\"\n" l;
       core_type i ppf co;
       class_type i ppf cl;
 

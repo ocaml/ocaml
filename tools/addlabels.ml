@@ -44,7 +44,7 @@ let rec labels_of_sty sty =
 
 let rec labels_of_cty cty =
   match cty.pcty_desc with
-    Pcty_fun (lab, _, rem) ->
+    Pcty_arrow (lab, _, rem) ->
       let (labs, meths) = labels_of_cty rem in
       (lab :: labs, meths)
   | Pcty_signature { pcsig_fields = fields } ->

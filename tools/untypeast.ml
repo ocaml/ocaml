@@ -453,8 +453,8 @@ and untype_class_type ct =
       Tcty_signature csg -> Pcty_signature (untype_class_signature csg)
     | Tcty_constr (_path, lid, list) ->
         Pcty_constr (lid, List.map untype_core_type list)
-    | Tcty_fun (label, ct, cl) ->
-        Pcty_fun (label, untype_core_type ct, untype_class_type cl)
+    | Tcty_arrow (label, ct, cl) ->
+        Pcty_arrow (label, untype_core_type ct, untype_class_type cl)
   in
   { pcty_desc = desc;
     pcty_loc = ct.cltyp_loc;

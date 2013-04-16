@@ -565,7 +565,7 @@ and eq_class_type_desc :
         (eq_list eq_core_type (a1, b1))
   | (Pcty_signature a0, Pcty_signature b0) ->
       eq_class_signature (a0, b0)
-  | (Pcty_fun (a0, a1, a2), Pcty_fun (b0, b1, b2)) ->
+  | (Pcty_arrow (a0, a1, a2), Pcty_arrow (b0, b1, b2)) ->
       ((Asttypes.eq_label (a0, b0)) && (eq_core_type (a1, b1))) &&
         (eq_class_type (a2, b2))
   | (_, _) -> false

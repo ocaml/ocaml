@@ -764,7 +764,7 @@ class printer  ()= object(self:'self)
           | [] -> ()
           | _  -> pp f "[%a]@ " (self#list self#core_type ~sep:"," ) l) l 
           self#longident_loc li 
-    | Pcty_fun (l, co, cl) ->
+    | Pcty_arrow (l, co, cl) ->
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
           self#type_with_label (l,co) self#class_type cl
     | Pcty_extension _ -> assert false

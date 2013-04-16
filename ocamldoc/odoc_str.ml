@@ -125,7 +125,7 @@ let string_of_class_type_param_list l =
 let string_of_class_params c =
   let b = Buffer.create 256 in
   let rec iter = function
-      Types.Cty_fun (label, t, ctype) ->
+      Types.Cty_arrow (label, t, ctype) ->
         let parent = is_arrow_type t in
         Printf.bprintf b "%s%s%s%s -> "
           (

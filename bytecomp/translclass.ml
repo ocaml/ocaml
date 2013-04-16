@@ -422,7 +422,7 @@ let rec transl_class_rebind obj_init cl vf =
       let path, obj_init = transl_class_rebind obj_init cl' vf in
       let rec check_constraint = function
           Cty_constr(path', _, _) when Path.same path path' -> ()
-        | Cty_fun (_, _, cty) -> check_constraint cty
+        | Cty_arrow (_, _, cty) -> check_constraint cty
         | _ -> raise Exit
       in
       check_constraint cl.cl_type;

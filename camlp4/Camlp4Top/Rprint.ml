@@ -329,7 +329,7 @@ value rec print_out_class_type ppf =
               (print_typlist Toploop.print_out_type.val ",") tyl ]
       in
       fprintf ppf "@[%a%a@]" pr_tyl tyl print_ident id
-  | Octy_fun lab ty cty ->
+  | Octy_arrow lab ty cty ->
       fprintf ppf "@[%a[ %a ] ->@ %a@]" print_ty_label lab
         Toploop.print_out_type.val ty print_out_class_type cty
   | Octy_signature self_ty csil ->

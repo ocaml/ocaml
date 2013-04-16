@@ -257,7 +257,7 @@ let class_type sub ct =
   match ct.cltyp_desc with
   | Tcty_signature csg -> sub # class_signature csg
   | Tcty_constr (_path, _, list) -> List.iter (sub # core_type) list
-  | Tcty_fun (_label, ct, cl) ->
+  | Tcty_arrow (_label, ct, cl) ->
       sub # core_type ct;
       sub # class_type cl
 

@@ -238,9 +238,9 @@ let subst_class_type env t =
     | Types.Cty_signature cs ->
         (* on ne s'occupe pas des vals et methods *)
         t
-    | Types.Cty_fun (l, texp, ct) ->
+    | Types.Cty_arrow (l, texp, ct) ->
         let new_texp = subst_type env texp in
         let new_ct = iter ct in
-        Types.Cty_fun (l, new_texp, new_ct)
+        Types.Cty_arrow (l, new_texp, new_ct)
   in
   iter t

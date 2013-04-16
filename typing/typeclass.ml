@@ -93,7 +93,7 @@ let rec generalize_class_type =
       Ctype.generalize sty;
       Vars.iter (fun _ (_, _, ty) -> Ctype.generalize ty) vars;
       List.iter (fun (_,tl) -> List.iter Ctype.generalize tl) inher
-  | Cty_fun (_, ty, cty) ->
+  | Cty_arrow (_, ty, cty) ->
       Ctype.generalize ty;
       generalize_class_type cty
 
@@ -114,7 +114,7 @@ let rec constructor_type constr cty =
       constructor_type constr cty
   | Cty_signature sign ->
       constr
-  | Cty_fun (l, ty, cty) ->
+  | Cty_arrow (l, ty, cty) ->
       Ctype.newty (Tarrow (l, ty, constructor_type constr cty, Cok))
 
 let rec class_body cty =
@@ -123,7 +123,7 @@ let rec class_body cty =
       cty (* Only class bodies can be abbreviated *)
   | Cty_signature sign ->
       cty
-  | Cty_fun (_, ty, cty) ->
+  | Cty_arrow (_, ty, cty) ->
       class_body cty
 
 let extract_constraints cty =
@@ -143,8 +143,8 @@ let rec abbreviate_class_type path params cty =
   match cty with
     Cty_constr (_, _, _) | Cty_signature _ ->
       Cty_constr (path, params, cty)
-  | Cty_fun (l, ty, cty) ->
-      Cty_fun (l, ty, abbreviate_class_type path params cty)
+  | Cty_arrow (l, ty, cty) ->
+      Cty_arrow (l, ty, abbreviate_class_type path params cty)
 
 let rec closed_class_type =
   function
@@ -156,7 +156,7 @@ let rec closed_class_type =
       Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema ty && cc)
         sign.cty_vars
         true
-  | Cty_fun (_, ty, cty) ->
+  | Cty_arrow (_, ty, cty) ->
       Ctype.closed_schema ty
         &&
       closed_class_type cty
@@ -177,7 +177,7 @@ let rec limited_generalize rv =
         sign.cty_vars;
       List.iter (fun (_, tl) -> List.iter (Ctype.limited_generalize rv) tl)
         sign.cty_inher
-  | Cty_fun (_, ty, cty) ->
+  | Cty_arrow (_, ty, cty) ->
       Ctype.limited_generalize rv ty;
       limited_generalize rv cty
 
@@ -484,12 +484,12 @@ and class_type env scty =
       let typ = Cty_signature clsig.csig_type in
       cltyp (Tcty_signature clsig) typ
 
-  | Pcty_fun (l, sty, scty) ->
+  | Pcty_arrow (l, sty, scty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
       let clty = class_type env scty in
-      let typ = Cty_fun (l, ty, clty.cltyp_type) in
-      cltyp (Tcty_fun (l, cty, clty)) typ
+      let typ = Cty_arrow (l, ty, clty.cltyp_type) in
+      cltyp (Tcty_arrow (l, cty, clty)) typ
   | Pcty_extension (s, _arg) ->
       raise (Error (scty.pcty_loc, env, Extension s))
 
@@ -915,7 +915,7 @@ and class_expr cl_num val_env met_env scl =
           pv
       in
       let not_function = function
-          Cty_fun _ -> false
+          Cty_arrow _ -> false
         | _ -> true
       in
       let partial =
@@ -937,7 +937,7 @@ and class_expr cl_num val_env met_env scl =
           Warnings.Unerasable_optional_argument;
       rc {cl_desc = Tcl_fun (l, pat, pv, cl, partial);
           cl_loc = scl.pcl_loc;
-          cl_type = Cty_fun
+          cl_type = Cty_arrow
             (l, Ctype.instance_def pat.pat_type, cl.cl_type);
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
@@ -946,7 +946,7 @@ and class_expr cl_num val_env met_env scl =
       let cl = class_expr cl_num val_env met_env scl' in
       let rec nonopt_labels ls ty_fun =
         match ty_fun with
-        | Cty_fun (l, _, ty_res) ->
+        | Cty_arrow (l, _, ty_res) ->
             if Btype.is_optional l then nonopt_labels ls ty_res
             else nonopt_labels (l::ls) ty_res
         | _    -> ls
@@ -964,7 +964,7 @@ and class_expr cl_num val_env met_env scl =
       in
       let rec type_args args omitted ty_fun sargs more_sargs =
         match ty_fun with
-        | Cty_fun (l, ty, ty_fun) when sargs <> [] || more_sargs <> [] ->
+        | Cty_arrow (l, ty, ty_fun) when sargs <> [] || more_sargs <> [] ->
             let name = Btype.label_name l
             and optional =
               if Btype.is_optional l then Optional else Required in
@@ -1022,7 +1022,7 @@ and class_expr cl_num val_env met_env scl =
             | [] ->
                 (List.rev args,
                  List.fold_left
-                   (fun ty_fun (l,ty) -> Cty_fun(l,ty,ty_fun))
+                   (fun ty_fun (l,ty) -> Cty_arrow(l,ty,ty_fun))
                    ty_fun omitted)
       in
       let (args, cty) =
@@ -1135,7 +1135,7 @@ let rec approx_declaration cl =
 
 let rec approx_description ct =
   match ct.pcty_desc with
-    Pcty_fun (l, _, ct) ->
+    Pcty_arrow (l, _, ct) ->
       let arg =
         if Btype.is_optional l then Ctype.instance_def var_option
         else Ctype.newvar () in

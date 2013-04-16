@@ -367,7 +367,7 @@ let rec unmark_class_type =
       List.iter unmark_type tyl; unmark_class_type cty
   | Cty_signature sign ->
       unmark_class_signature sign
-  | Cty_fun (_, ty, cty) ->
+  | Cty_arrow (_, ty, cty) ->
       unmark_type ty; unmark_class_type cty
 
 

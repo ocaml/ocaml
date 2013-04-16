@@ -86,7 +86,7 @@ let rec add_class_type bv cty =
   | Pcty_signature { pcsig_self = ty; pcsig_fields = fieldl } ->
       add_type bv ty;
       List.iter (add_class_type_field bv) fieldl
-  | Pcty_fun(_, ty1, cty2) ->
+  | Pcty_arrow(_, ty1, cty2) ->
       add_type bv ty1; add_class_type bv cty2
   | Pcty_extension _ -> ()
 

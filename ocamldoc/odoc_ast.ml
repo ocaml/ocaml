@@ -200,7 +200,7 @@ module Typedtree_search =
       let rec iter = function
         Types.Cty_constr (_, _, cty) -> iter cty
       | Types.Cty_signature s -> s
-      | Types.Cty_fun (_,_, cty) -> iter cty
+      | Types.Cty_arrow (_,_, cty) -> iter cty
       in
       fun ct_decl -> iter ct_decl.Types.clty_type
 
