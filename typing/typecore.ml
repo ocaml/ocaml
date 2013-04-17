@@ -122,7 +122,6 @@ let iter_expression f e =
     match e.pexp_desc with
     | Pexp_extension _ (* we don't iterate under extension point *)
     | Pexp_ident _
-    | Pexp_assertfalse
     | Pexp_new _
     | Pexp_constant _ -> ()
     | Pexp_function (_, eo, pel) ->
@@ -2600,18 +2599,17 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_env = env }
   | Pexp_assert (e) ->
       let cond = type_expect env e Predef.type_bool in
+      let exp_type =
+        match cond.exp_desc with
+        | Texp_construct(_, {cstr_name="false"}, _, _) ->
+            instance env ty_expected
+        | _ ->
+            instance_def Predef.type_unit
+      in
       rue {
-        exp_desc = Texp_assert (cond);
+        exp_desc = Texp_assert cond;
         exp_loc = loc; exp_extra = [];
-        exp_type = instance_def Predef.type_unit;
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env;
-      }
-  | Pexp_assertfalse ->
-      re {
-        exp_desc = Texp_assertfalse;
-        exp_loc = loc; exp_extra = [];
-        exp_type = instance env ty_expected;
+        exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }

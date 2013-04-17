@@ -452,6 +452,24 @@ patterns.
 
 Note: Camlp4 parsers still expand interval patterns themselves (TODO?).
 
+--- Get rid of Pexp_assertfalse
+
+Do not treat specially "assert false" in the parser any more, but
+instead in the type-checker.  This simplifies the Parsetree and avoids
+a potential source of confusion.  Moreove, this ensures that
+attributes can be put (and used by ppx rewriters) on the "false"
+expressions.  This is also more robust, since it checks that the
+condition is the constructor "false" after type-checking the condition:
+
+ - if "false" is redefined (as a constructor of a different sum type),
+   an error will be reported;
+
+ - "extra" layers which are represented as exp_extra in the typedtree
+   won't break the detection of the "false", e.g. the following will
+   be recognized as "assert false":
+
+     assert(false : bool)
+     assert(let open X in false)
 
 === More TODOs
 

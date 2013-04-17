@@ -324,8 +324,6 @@ and expression i ppf x =
   | Pexp_assert (e) ->
       line i ppf "Pexp_assert";
       expression i ppf e;
-  | Pexp_assertfalse ->
-      line i ppf "Pexp_assertfalse";
   | Pexp_lazy (e) ->
       line i ppf "Pexp_lazy";
       expression i ppf e;

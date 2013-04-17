@@ -802,7 +802,6 @@ and search_pos_expr ~pos exp =
   | Texp_letmodule (id, _, modexp, exp) ->
       search_pos_module_expr modexp ~pos;
       search_pos_expr exp ~pos
-  | Texp_assertfalse -> ()
   | Texp_assert exp ->
       search_pos_expr exp ~pos
   | Texp_lazy exp ->

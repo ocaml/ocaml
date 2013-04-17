@@ -334,7 +334,6 @@ module MakeMap(Map : MapArgument) = struct
             map_expression exp
           )
         | Texp_assert exp -> Texp_assert (map_expression exp)
-        | Texp_assertfalse -> exp.exp_desc
         | Texp_lazy exp -> Texp_lazy (map_expression exp)
         | Texp_object (cl, string_list) ->
           Texp_object (map_class_structure cl, string_list)

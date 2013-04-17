@@ -14985,7 +14985,7 @@ module Struct =
                        [ ("", (expr e1)); ("", (expr e2)) ]))
               | ExArr (loc, e) ->
                   mkexp loc (Pexp_array (List.map expr (list_of_expr e [])))
-              | ExAsf loc -> mkexp loc Pexp_assertfalse
+              | ExAsf loc -> mkexp loc (Pexp_assert (mkexp loc (Pexp_construct ({txt=Lident "false"; loc=mkloc loc}, None, false))))
               | ExAss (loc, e, v) ->
                   let e =
                     (match e with

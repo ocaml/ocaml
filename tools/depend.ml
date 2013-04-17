@@ -168,7 +168,6 @@ let rec add_expr bv exp =
   | Pexp_letmodule(id, m, e) ->
       add_module bv m; add_expr (StringSet.add id.txt bv) e
   | Pexp_assert (e) -> add_expr bv e
-  | Pexp_assertfalse -> ()
   | Pexp_lazy (e) -> add_expr bv e
   | Pexp_poly (e, t) -> add_expr bv e; add_opt add_type bv t
   | Pexp_object { pcstr_self = pat; pcstr_fields = fieldl } ->

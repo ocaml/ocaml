@@ -102,7 +102,6 @@ module Exp = struct
   let override ?loc ?attrs a = mk ?loc ?attrs (Pexp_override a)
   let letmodule ?loc ?attrs a b c= mk ?loc ?attrs (Pexp_letmodule (a, b, c))
   let assert_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_assert a)
-  let assertfalse ?loc ?attrs () = mk ?loc ?attrs Pexp_assertfalse
   let lazy_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_lazy a)
   let poly ?loc ?attrs a b = mk ?loc ?attrs (Pexp_poly (a, b))
   let object_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_object a)

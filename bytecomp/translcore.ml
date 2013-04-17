@@ -805,11 +805,12 @@ and transl_exp0 e =
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
   | Texp_pack modl ->
       !transl_module Tcoerce_none None modl
+  | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _, _)} ->
+      assert_failed e
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e)
-  | Texp_assertfalse -> assert_failed e
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would

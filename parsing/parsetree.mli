@@ -283,11 +283,7 @@ and expression_desc =
         (* let module M = ME in E *)
   | Pexp_assert of expression
         (* assert E
-           Note: "assert false" is represented in a specific way
-           (see below).
-         *)
-  | Pexp_assertfalse
-        (* assert false *)
+           Note: "assert false" is treated in a special way by the type-checker. *)
   | Pexp_lazy of expression
         (* lazy E *)
   | Pexp_poly of expression * core_type option

@@ -145,7 +145,6 @@ let expression sub exp =
       sub # module_expr mexpr;
       sub # expression exp
   | Texp_assert exp -> sub # expression exp
-  | Texp_assertfalse -> ()
   | Texp_lazy exp -> sub # expression exp
   | Texp_object (cl, _) ->
       sub # class_structure cl

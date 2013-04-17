@@ -313,7 +313,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_module_expr mexpr;
             iter_expression exp
         | Texp_assert exp -> iter_expression exp
-        | Texp_assertfalse -> ()
         | Texp_lazy exp -> iter_expression exp
         | Texp_object (cl, _) ->
             iter_class_structure cl

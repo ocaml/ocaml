@@ -296,7 +296,6 @@ and untype_expression exp =
         Pexp_letmodule (name, untype_module_expr mexpr,
           untype_expression exp)
     | Texp_assert exp -> Pexp_assert (untype_expression exp)
-    | Texp_assertfalse -> Pexp_assertfalse
     | Texp_lazy exp -> Pexp_lazy (untype_expression exp)
     | Texp_object (cl, _) ->
         Pexp_object (untype_class_structure cl)

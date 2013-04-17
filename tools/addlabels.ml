@@ -290,7 +290,7 @@ let rec add_labels_expr ~text ~values ~classes expr =
   | Pexp_override lst ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e)
   | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
-  | Pexp_new _ | Pexp_assertfalse | Pexp_object _ | Pexp_pack _ ->
+  | Pexp_new _ | Pexp_object _ | Pexp_pack _ ->
       ()
 
 let rec add_labels_class ~text ~classes ~values ~methods cl =

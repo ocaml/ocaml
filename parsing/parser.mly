@@ -71,14 +71,6 @@ let ghloc d = { txt = d; loc = symbol_gloc () }
 let ghunit () =
   ghexp (Pexp_construct (mknoloc (Lident "()"), None, false))
 
-let mkassert e =
-  match e with
-  | {pexp_desc = Pexp_construct ({ txt = Lident "false" }, None , false);
-     pexp_loc = _ } ->
-         mkexp (Pexp_assertfalse)
-  | _ -> mkexp (Pexp_assert (e))
-;;
-
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, ["", arg1; "", arg2]))
 
@@ -1106,7 +1098,7 @@ expr:
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar(mkrhs $1 1, $3)) }
   | ASSERT ext_attributes simple_expr %prec below_SHARP
-      { wrap_exp_attrs (mkassert $3) $2 }
+      { mkexp_attrs (Pexp_assert $3) $2 }
   | LAZY ext_attributes simple_expr %prec below_SHARP
       { mkexp_attrs (Pexp_lazy $3) $2 }
   | OBJECT ext_attributes class_structure END

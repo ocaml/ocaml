@@ -610,8 +610,6 @@ class printer  ()= object(self:'self)
           self#reset#module_expr me  self#expression e
     | Pexp_assert e ->
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e 
-    | Pexp_assertfalse ->
-        pp f "@[<2>assert@;false@]" ;
     | Pexp_lazy (e) ->
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e 
     | Pexp_poly _ -> 

@@ -359,8 +359,6 @@ and expression i ppf x =
   | Texp_assert (e) ->
       line i ppf "Pexp_assert";
       expression i ppf e;
-  | Texp_assertfalse ->
-      line i ppf "Pexp_assertfalse";
   | Texp_lazy (e) ->
       line i ppf "Pexp_lazy";
       expression i ppf e;
