@@ -283,7 +283,7 @@ and expression_desc =
         (* (module ME)
 
            (module ME : S) is represented as
-           Pexp_constraint(Pexp_pack, Some (Ptyp_package S), None) *)
+           Pexp_constraint(Pexp_pack, Ptyp_package S) *)
   | Pexp_open of Longident.t loc * expression
         (* let open M in E *)
   | Pexp_extension of extension
