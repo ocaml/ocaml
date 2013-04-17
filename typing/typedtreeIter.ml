@@ -227,8 +227,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_expression exp;
       List.iter (function (cstr, _, _attrs) ->
         match cstr with
-          Texp_constraint (cty1, cty2) ->
-            option iter_core_type cty1; option iter_core_type cty2
+          Texp_constraint ct ->
+            iter_core_type ct
+        | Texp_coerce (cty1, cty2) ->
+            option iter_core_type cty1; iter_core_type cty2
         | Texp_open (path, _, _) -> ()
         | Texp_poly cto -> option iter_core_type cto
         | Texp_newtype s -> ())

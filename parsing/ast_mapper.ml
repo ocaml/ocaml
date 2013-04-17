@@ -222,7 +222,8 @@ module E = struct
     | Pexp_sequence (e1, e2) -> sequence ~loc ~attrs (sub # expr e1) (sub # expr e2)
     | Pexp_while (e1, e2) -> while_ ~loc ~attrs (sub # expr e1) (sub # expr e2)
     | Pexp_for (id, e1, e2, d, e3) -> for_ ~loc ~attrs (map_loc sub id) (sub # expr e1) (sub # expr e2) d (sub # expr e3)
-    | Pexp_constraint (e, t1, t2) -> constraint_ ~loc ~attrs (sub # expr e) (map_opt (sub # typ) t1) (map_opt (sub # typ) t2)
+    | Pexp_coerce (e, t1, t2) -> coerce ~loc ~attrs (sub # expr e) (map_opt (sub # typ) t1) (sub # typ t2)
+    | Pexp_constraint (e, t) -> constraint_ ~loc ~attrs (sub # expr e) (sub # typ t)
     | Pexp_send (e, s) -> send ~loc ~attrs (sub # expr e) s
     | Pexp_new lid -> new_ ~loc ~attrs (map_loc sub lid)
     | Pexp_setinstvar (s, e) -> setinstvar ~loc ~attrs (map_loc sub s) (sub # expr e)

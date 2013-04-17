@@ -142,6 +142,12 @@ let rec mktailpat nilloc = function
 let mkstrexp e attrs =
   { pstr_desc = Pstr_eval (e, attrs); pstr_loc = e.pexp_loc }
 
+let mkexp_constraint e (t1, t2) =
+  match t1, t2 with
+  | Some t, None -> ghexp(Pexp_constraint(e, t))
+  | _, Some t -> ghexp(Pexp_coerce(e, t1, t))
+  | None, None -> assert false
+
 let array_function str name =
   ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
 
@@ -258,7 +264,7 @@ let varify_constructors var_names t =
   loop t
 
 let wrap_type_annotation newtypes core_type body =
-  let exp = mkexp(Pexp_constraint(body,Some core_type,None)) in
+  let exp = mkexp(Pexp_constraint(body,core_type)) in
   let exp =
     List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
       newtypes exp
@@ -548,14 +554,14 @@ module_expr:
       { mkmod(Pmod_unpack $3) }
   | LPAREN VAL expr COLON package_type RPAREN
       { mkmod(Pmod_unpack(
-              ghexp(Pexp_constraint($3, Some(ghtyp(Ptyp_package $5)), None)))) }
+              ghexp(Pexp_constraint($3, ghtyp(Ptyp_package $5))))) }
   | LPAREN VAL expr COLON package_type COLONGREATER package_type RPAREN
       { mkmod(Pmod_unpack(
-              ghexp(Pexp_constraint($3, Some(ghtyp(Ptyp_package $5)),
-                                    Some(ghtyp(Ptyp_package $7)))))) }
+              ghexp(Pexp_coerce($3, Some(ghtyp(Ptyp_package $5)),
+                                    ghtyp(Ptyp_package $7))))) }
   | LPAREN VAL expr COLONGREATER package_type RPAREN
       { mkmod(Pmod_unpack(
-              ghexp(Pexp_constraint($3, None, Some(ghtyp(Ptyp_package $5)))))) }
+              ghexp(Pexp_coerce($3, None, ghtyp(Ptyp_package $5))))) }
   | LPAREN VAL expr COLON error
       { unclosed "(" 1 ")" 5 }
   | LPAREN VAL expr COLONGREATER error
@@ -837,8 +843,7 @@ value:
       { mkrhs $3 3, $2, Cfk_concrete ($1, $5) }
   | override_flag mutable_flag label type_constraint EQUAL seq_expr
       {
-       let (t, t') = $4 in
-       let e = ghexp(Pexp_constraint($6, t, t')) in
+       let e = mkexp_constraint $6 $4 in
        mkrhs $3 3, $2, Cfk_concrete ($1, e)
       }
 ;
@@ -1129,7 +1134,7 @@ simple_expr:
   | BEGIN ext_attributes seq_expr error
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
-      { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
+      { mkexp_constraint $2 $3 }
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, mkrhs $3 3)) }
   | mod_longident DOT LPAREN seq_expr RPAREN
@@ -1182,7 +1187,7 @@ simple_expr:
       { mkexp (Pexp_pack $3) }
   | LPAREN MODULE module_expr COLON package_type RPAREN
       { mkexp (Pexp_constraint (ghexp (Pexp_pack $3),
-                                Some (ghtyp (Ptyp_package $5)), None)) }
+                                ghtyp (Ptyp_package $5))) }
   | LPAREN MODULE module_expr COLON error
       { unclosed "(" 1 ")" 5 }
   | extension
@@ -1237,7 +1242,7 @@ fun_binding:
     strict_binding
       { $1 }
   | type_constraint EQUAL seq_expr
-      { let (t, t') = $1 in ghexp(Pexp_constraint($3, t, t')) }
+      { mkexp_constraint $3 $1 }
 ;
 strict_binding:
     EQUAL seq_expr

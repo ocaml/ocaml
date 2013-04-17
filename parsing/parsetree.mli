@@ -249,13 +249,11 @@ and expression_desc =
         (* for i = E1 to E2 do E3 done      (flag = Upto)
            for i = E1 downto E2 do E3 done  (flag = Downto)
          *)
-  | Pexp_constraint of expression * core_type option * core_type option
-        (* (E : T1)         (Some T1, None)
-           (E :> T2)        (None, Some T2)
-           (E : T1 :> T2)   (Some T1, Some T2)
-
-           Invariant: one of the two types must be provided
-           (otherwise this is currently accepted as equivalent to just E).
+  | Pexp_constraint of expression * core_type
+        (* (E : T) *)
+  | Pexp_coerce of expression * core_type option * core_type
+        (* (E :> T)        (None, T)
+           (E : T0 :> T)   (Some T0, T)
          *)
   | Pexp_send of expression * string
         (*  E # m *)

@@ -143,7 +143,8 @@ let iter_expression f e =
     | Pexp_assert e
     | Pexp_setinstvar (_, e)
     | Pexp_send (e, _)
-    | Pexp_constraint (e, _, _)
+    | Pexp_constraint (e, _)
+    | Pexp_coerce (e, _, _)
     | Pexp_field (e, _) -> expr e
     | Pexp_while (e1, e2)
     | Pexp_sequence (e1, e2)
@@ -1620,18 +1621,25 @@ let rec type_approx env sexp =
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
   | Pexp_sequence (_,e) -> type_approx env e
-  | Pexp_constraint (e, sty1, sty2) ->
+  | Pexp_constraint (e, sty) ->
+      let ty = type_approx env e in
+      let ty1 = approx_type env sty in
+      begin try unify env ty ty1 with Unify trace ->
+        raise(Error(sexp.pexp_loc, env, Expr_type_clash trace))
+      end;
+      ty1
+  | Pexp_coerce (e, sty1, sty2) ->
       let approx_ty_opt = function
         | None -> newvar ()
         | Some sty -> approx_type env sty
       in
       let ty = type_approx env e
       and ty1 = approx_ty_opt sty1
-      and ty2 = approx_ty_opt sty2 in
+      and ty2 = approx_type env sty2 in
       begin try unify env ty ty1 with Unify trace ->
         raise(Error(sexp.pexp_loc, env, Expr_type_clash trace))
       end;
-      if sty2 = None then ty1 else ty2
+      ty2
   | _ -> newvar ()
 
 (* List labels in a function type, and whether return type is a variable *)
@@ -2252,26 +2260,33 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = instance_def Predef.type_unit;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_constraint(sarg, sty, sty') ->
+  | Pexp_constraint (sarg, sty) ->
+      let separate = true in (* always separate, 1% slowdown for lablgtk *)
+      if separate then begin_def ();
+      let cty = Typetexp.transl_simple_type env false sty in
+      let ty = cty.ctyp_type in
+      let (arg, ty') =
+        if separate then begin
+          end_def ();
+          generalize_structure ty;
+          (type_argument env sarg ty (instance env ty), instance env ty)
+        end else
+          (type_argument env sarg ty ty, ty)
+      in
+      rue {
+        exp_desc = arg.exp_desc;
+        exp_loc = arg.exp_loc;
+        exp_type = ty';
+        exp_attributes = arg.exp_attributes;
+        exp_env = env;
+        exp_extra = (Texp_constraint cty, loc, sexp.pexp_attributes) :: arg.exp_extra;
+      }
+  | Pexp_coerce(sarg, sty, sty') ->
       let separate = true (* always separate, 1% slowdown for lablgtk *)
         (* !Clflags.principal || Env.has_local_constraints env *) in
       let (arg, ty',cty,cty') =
-        match (sty, sty') with
-          (None, None) ->               (* Case actually unused *)
-            let arg = type_exp env sarg in
-            (arg, arg.exp_type,None,None)
-        | (Some sty, None) ->
-            if separate then begin_def ();
-            let cty = Typetexp.transl_simple_type env false sty in
-            let ty = cty.ctyp_type in
-            if separate then begin
-              end_def ();
-              generalize_structure ty;
-              (type_argument env sarg ty (instance env ty),
-               instance env ty, Some cty, None)
-            end else
-              (type_argument env sarg ty ty, ty, Some cty, None)
-        | (None, Some sty') ->
+        match sty with
+        | None ->
             let (cty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
@@ -2321,8 +2336,8 @@ and type_expect_ ?in_function env sexp ty_expected =
                         Coercion_failure(ty', full_expand env ty', trace, b)))
                 end
             end;
-            (arg, ty', None, Some cty')
-        | (Some sty, Some sty') ->
+            (arg, ty', None, cty')
+        | Some sty ->
             if separate then begin_def ();
             let (cty, force) =
               Typetexp.transl_simple_type_delayed env sty
@@ -2342,9 +2357,9 @@ and type_expect_ ?in_function env sexp ty_expected =
               generalize_structure ty;
               generalize_structure ty';
               (type_argument env sarg ty (instance env ty),
-               instance env ty', Some cty, Some cty')
+               instance env ty', Some cty, cty')
             end else
-              (type_argument env sarg ty ty, ty', Some cty, Some cty')
+              (type_argument env sarg ty ty, ty', Some cty, cty')
       in
       rue {
         exp_desc = arg.exp_desc;
@@ -2352,7 +2367,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = ty';
         exp_attributes = arg.exp_attributes;
         exp_env = env;
-        exp_extra = (Texp_constraint (cty, cty'), loc, sexp.pexp_attributes) :: arg.exp_extra;
+        exp_extra = (Texp_coerce (cty, cty'), loc, sexp.pexp_attributes) ::
+                       arg.exp_extra;
       }
   | Pexp_send (e, met) ->
       if !Clflags.principal then begin_def ();
@@ -3332,8 +3348,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
       (fun (spat, sexp) ->
         match spat.ppat_desc, sexp.pexp_desc with
           (Ppat_any | Ppat_constraint _), _ -> spat
-        | _, Pexp_constraint (_, _, Some sty)
-        | _, Pexp_constraint (_, Some sty, None) when !Clflags.principal ->
+        | _, Pexp_coerce (_, _, sty)
+        | _, Pexp_constraint (_, sty) when !Clflags.principal ->
             (* propagate type annotation to pattern,
                to allow it to be generalized in -principal mode *)
             Pat.constraint_

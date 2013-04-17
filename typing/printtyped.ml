@@ -245,11 +245,15 @@ and pattern i ppf x =
 
 and expression_extra i ppf x attrs =
   match x with
-  | Texp_constraint (cto1, cto2) ->
+  | Texp_constraint ct ->
+      line i ppf "Pexp_constraint\n";
+      attributes i ppf attrs;
+      core_type i ppf ct;
+  | Texp_coerce (cto1, cto2) ->
       line i ppf "Pexp_constraint\n";
       attributes i ppf attrs;
       option i core_type ppf cto1;
-      option i core_type ppf cto2;
+      core_type i ppf cto2;
   | Texp_open (m, _, _) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_path m;
       attributes i ppf attrs;

@@ -101,7 +101,8 @@ module Exp:
     val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
     val while_: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
     val for_: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression -> direction_flag -> expression -> expression
-    val constraint_: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> core_type option -> expression
+    val coerce: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> core_type -> expression
+    val constraint_: ?loc:loc -> ?attrs:attrs -> expression -> core_type -> expression
     val send: ?loc:loc -> ?attrs:attrs -> expression -> string -> expression
     val new_: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val setinstvar: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression

@@ -348,17 +348,16 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_exp_extra ((desc, loc, attrs) as exp_extra) =
     match desc with
-      | Texp_constraint (Some ct, None) ->
-        Texp_constraint (Some (map_core_type ct), None), loc, attrs
-      | Texp_constraint (None, Some ct) ->
-        Texp_constraint (None, Some (map_core_type ct)), loc, attrs
-      | Texp_constraint (Some ct1, Some ct2) ->
-        Texp_constraint (Some (map_core_type ct1),
-                         Some (map_core_type ct2)), loc, attrs
+      | Texp_constraint ct ->
+        Texp_constraint (map_core_type ct), loc, attrs
+      | Texp_coerce (None, ct) ->
+        Texp_coerce (None, map_core_type ct), loc, attrs
+      | Texp_coerce (Some ct1, ct2) ->
+        Texp_coerce (Some (map_core_type ct1),
+                         map_core_type ct2), loc, attrs
       | Texp_poly (Some ct) ->
         Texp_poly (Some ( map_core_type ct )), loc, attrs
       | Texp_newtype _
-      | Texp_constraint (None, None)
       | Texp_open _
       | Texp_poly None -> exp_extra
 

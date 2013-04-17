@@ -15001,7 +15001,7 @@ module Struct =
                     (match t1 with | Ast.TyNil _ -> None | t -> Some (ctyp t))
                   in
                     mkexp loc
-                      (Pexp_constraint ((expr e), t1, (Some (ctyp t2))))
+                      (Pexp_coerce ((expr e), t1, ctyp t2))
               | ExFlo (loc, s) ->
                   mkexp loc
                     (Pexp_constant (Const_float (remove_underscores s)))
@@ -15123,7 +15123,7 @@ module Struct =
               | Ast.ExTup (loc, _) -> error loc "singleton tuple"
               | ExTyc (loc, e, t) ->
                   mkexp loc
-                    (Pexp_constraint ((expr e), (Some (ctyp t)), None))
+                    (Pexp_constraint ((expr e), (ctyp t)))
               | Ast.ExId (loc, (Ast.IdUid (_, "()"))) ->
                   mkexp loc
                     (Pexp_construct ((lident_with_loc "()" loc), None))
@@ -15143,9 +15143,8 @@ module Struct =
               | Ast.ExPkg (loc, (Ast.MeTyc (_, me, pt))) ->
                   mkexp loc
                     (Pexp_constraint
-                       (((mkexp loc (Pexp_pack (module_expr me))),
-                         (Some (mktyp loc (Ptyp_package (package_type pt)))),
-                         None)))
+                       (mkexp loc (Pexp_pack (module_expr me)),
+                        mktyp loc (Ptyp_package (package_type pt))))
               | Ast.ExPkg (loc, me) -> mkexp loc (Pexp_pack (module_expr me))
               | ExFUN (loc, i, e) -> mkexp loc (Pexp_newtype (i, (expr e)))
               | Ast.ExCom (loc, _, _) ->
@@ -15190,7 +15189,7 @@ module Struct =
                   let mkpat = mkpat _loc in
                   let e =
                     mkexp
-                      (Pexp_constraint ((expr e), (Some (ctyp ty)), None)) in
+                      (Pexp_constraint ((expr e), (ctyp ty))) in
                   let rec mk_newtypes x =
                     (match x with
                      | [ newtype ] -> mkexp (Pexp_newtype ((newtype, e)))
@@ -15379,9 +15378,7 @@ module Struct =
                        (mkexp loc
                           (Pexp_constraint
                              (((expr e),
-                               (Some
-                                  (mktyp loc (Ptyp_package (package_type pt)))),
-                               None)))))
+                               mktyp loc (Ptyp_package (package_type pt)))))))
               | Ast.MePkg (loc, e) -> mkmod loc (Pmod_unpack (expr e))
               | Ast.MeAnt (loc, _) ->
                   error loc "antiquotation in module_expr"

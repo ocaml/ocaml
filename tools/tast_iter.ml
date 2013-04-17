@@ -78,8 +78,10 @@ let pattern sub pat =
 
 let expression sub exp =
   let extra = function
-    | Texp_constraint (cty1, cty2) ->
-        opt (sub # core_type) cty1; opt (sub # core_type) cty2
+    | Texp_constraint cty ->
+        sub # core_type cty
+    | Texp_coerce (cty1, cty2) ->
+        opt (sub # core_type) cty1; sub # core_type cty2
     | Texp_open _
     | Texp_newtype _ -> ()
     | Texp_poly cto -> opt (sub # core_type) cto

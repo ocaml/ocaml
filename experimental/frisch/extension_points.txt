@@ -491,6 +491,16 @@ order to avoid polluting the official Parsetree.
 This reflects more closely the concrete syntax and removes cases of
 Parsetree fragments which don't correspond to concrete syntax.
 
+Typedtree has not been changed.
+
+Note: Camlp4's AST has not been adapted.
+
+--- Split Pexp_constraint into Pexp_constraint/Pexp_coerce
+
+Idem in the Typedtree.
+
+This reflects more closely the concrete syntax.
+
 Note: Camlp4's AST has not been adapted.
 
 === More TODOs

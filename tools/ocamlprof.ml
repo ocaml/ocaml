@@ -263,7 +263,7 @@ and rw_exp iflag sexp =
     then insert_profile rw_exp sbody
     else rewrite_exp iflag sbody
 
-  | Pexp_constraint(sarg, _, _) ->
+  | Pexp_constraint(sarg, _) | Pexp_coerce(sarg, _, _) ->
     rewrite_exp iflag sarg
 
   | Pexp_send (sobj, _) ->
@@ -308,7 +308,7 @@ and rewrite_annotate_exp_list l =
      | {pc_guard=Some scond; pc_rhs=sbody} ->
          insert_profile rw_exp scond;
          insert_profile rw_exp sbody;
-     | {pc_rhs={pexp_desc = Pexp_constraint(sbody, _, _)}} (* let f x : t = e *)
+     | {pc_rhs={pexp_desc = Pexp_constraint(sbody, _)}} (* let f x : t = e *)
         -> insert_profile rw_exp sbody
      | {pc_rhs=sexp} -> insert_profile rw_exp sexp)
     l

@@ -638,10 +638,12 @@ class printer  ()= object(self:'self)
         pp f "fun@;(type@;%s)@;->@;%a"  lid  self#expression  e
     | Pexp_tuple l ->
         pp f "@[<hov2>(%a)@]"  (self#list self#simple_expr  ~sep:",@;")  l
-    | Pexp_constraint (e, cto1, cto2) ->
-        pp f "(%a%a%a)" self#expression e
+    | Pexp_constraint (e, ct) ->
+        pp f "(%a : %a)" self#expression e self#core_type ct
+    | Pexp_coerce (e, cto1, ct) ->
+        pp f "(%a%a :> %a)" self#expression e
           (self#option self#core_type ~first:" : " ~last:" ") cto1 (* no sep hint*)
-          (self#option self#core_type ~first:" :>") cto2
+          self#core_type ct
     | Pexp_variant (l, None) -> pp f "`%s" l 
     | Pexp_record (l, eo) ->
         let longident_x_expression f ( li, e) =
@@ -955,7 +957,7 @@ class printer  ()= object(self:'self)
             pp f "%a@;:@;%a=@;%a" self#simple_pattern p  self#core_type ty self#expression x
         | _ ->
             pp f "(%a@;:%a)=@;%a" self#simple_pattern p  self#core_type ty self#expression x)
-    | Pexp_constraint (e,Some t1,None),Ppat_var {txt;_} ->
+    | Pexp_constraint (e,t1),Ppat_var {txt;_} ->
         pp f "%s:@ %a@;=@;%a" txt self#core_type t1  self#expression e
     | (_, Ppat_var _) ->
         pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function x

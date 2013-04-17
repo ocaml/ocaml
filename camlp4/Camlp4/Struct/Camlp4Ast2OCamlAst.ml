@@ -758,7 +758,7 @@ value varify_constructors var_names =
           match t1 with
           [ <:ctyp<>> -> None
           | t -> Some (ctyp t) ] in
-        mkexp loc (Pexp_constraint (expr e) t1 (Some (ctyp t2)))
+        mkexp loc (Pexp_coerce (expr e) t1 (ctyp t2))
     | ExFlo loc s -> mkexp loc (Pexp_constant (Const_float (remove_underscores s)))
     | ExFor loc i e1 e2 df el ->
         let e3 = ExSeq loc el in
@@ -837,7 +837,7 @@ value varify_constructors var_names =
     | <:expr@loc< ($e1$, $e2$) >> ->
          mkexp loc (Pexp_tuple (List.map expr (list_of_expr e1 (list_of_expr e2 []))))
     | <:expr@loc< ($tup:_$) >> -> error loc "singleton tuple"
-    | ExTyc loc e t -> mkexp loc (Pexp_constraint (expr e) (Some (ctyp t)) None)
+    | ExTyc loc e t -> mkexp loc (Pexp_constraint (expr e) (ctyp t))
     | <:expr@loc< () >> ->
         mkexp loc (Pexp_construct (lident_with_loc "()" loc) None)
     | <:expr@loc< $lid:s$ >> ->
@@ -852,7 +852,7 @@ value varify_constructors var_names =
         mkexp loc (Pexp_open (long_uident i) (expr e))
     | <:expr@loc< (module $me$ : $pt$) >> ->
         mkexp loc (Pexp_constraint (mkexp loc (Pexp_pack (module_expr me)),
-                    Some (mktyp loc (Ptyp_package (package_type pt))), None))
+                    mktyp loc (Ptyp_package (package_type pt))))
     | <:expr@loc< (module $me$) >> ->
         mkexp loc (Pexp_pack (module_expr me))
     | ExFUN loc i e ->
@@ -891,7 +891,7 @@ value varify_constructors var_names =
       let ty' = varify_constructors vars (ctyp ty) in
       let mkexp = mkexp _loc in
       let mkpat = mkpat _loc in
-      let e = mkexp (Pexp_constraint (expr e) (Some (ctyp ty)) None) in
+      let e = mkexp (Pexp_constraint (expr e) (ctyp ty)) in
       let rec mk_newtypes x =
         match x with
           [ [newtype :: []] -> mkexp (Pexp_newtype(newtype, e))
@@ -1039,8 +1039,7 @@ value varify_constructors var_names =
     | <:module_expr@loc< (value $e$ : $pt$) >> ->
         mkmod loc (Pmod_unpack (
                    mkexp loc (Pexp_constraint (expr e,
-                              Some (mktyp loc (Ptyp_package (package_type pt))),
-                              None))))
+                              mktyp loc (Ptyp_package (package_type pt))))))
     | <:module_expr@loc< (value $e$) >> ->
         mkmod loc (Pmod_unpack (expr e))
     | <:module_expr@loc< $anti:_$ >> -> error loc "antiquotation in module_expr" ]

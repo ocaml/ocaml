@@ -159,10 +159,13 @@ let rec add_expr bv exp =
   | Pexp_while(e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_for( _, e1, e2, _, e3) ->
       add_expr bv e1; add_expr bv e2; add_expr bv e3
-  | Pexp_constraint(e1, oty2, oty3) ->
+  | Pexp_coerce(e1, oty2, ty3) ->
       add_expr bv e1;
       add_opt add_type bv oty2;
-      add_opt add_type bv oty3
+      add_type bv ty3
+  | Pexp_constraint(e1, ty2) ->
+      add_expr bv e1;
+      add_type bv ty2
   | Pexp_send(e, m) -> add_expr bv e
   | Pexp_new li -> add bv li
   | Pexp_setinstvar(v, e) -> add_expr bv e

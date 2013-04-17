@@ -304,11 +304,15 @@ and expression i ppf x =
       expression i ppf e1;
       expression i ppf e2;
       expression i ppf e3;
-  | Pexp_constraint (e, cto1, cto2) ->
+  | Pexp_constraint (e, ct) ->
       line i ppf "Pexp_constraint\n";
       expression i ppf e;
+      core_type i ppf ct;
+  | Pexp_coerce (e, cto1, cto2) ->
+      line i ppf "Pexp_coerce\n";
+      expression i ppf e;
       option i core_type ppf cto1;
-      option i core_type ppf cto2;
+      core_type i ppf cto2;
   | Pexp_send (e, s) ->
       line i ppf "Pexp_send \"%s\"\n" s;
       expression i ppf e;

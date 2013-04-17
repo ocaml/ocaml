@@ -200,10 +200,12 @@ and untype_pattern pat =
 and untype_extra (extra, loc, attrs) sexp =
   let desc =
     match extra with
-      Texp_constraint (cty1, cty2) ->
-        Pexp_constraint (sexp,
-                         option untype_core_type cty1,
-                         option untype_core_type cty2)
+      Texp_coerce (cty1, cty2) ->
+        Pexp_coerce (sexp,
+                     option untype_core_type cty1,
+                     untype_core_type cty2)
+    | Texp_constraint cty ->
+        Pexp_constraint (sexp, untype_core_type cty)
     | Texp_open (_path, lid, _) -> Pexp_open (lid, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, option untype_core_type cto)
     | Texp_newtype s -> Pexp_newtype (s, sexp)
