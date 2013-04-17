@@ -1924,7 +1924,13 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = body.exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_function (l, Some default, [{pc_lhs;pc_guard;pc_rhs}]) ->
+  | Pexp_function (l, Some default, cases) ->
+      assert(is_optional l); (* default allowed only with optional argument *)
+      let {pc_lhs;pc_guard;pc_rhs} =
+        match cases with
+        | [c] -> c
+        | _ -> assert false
+      in
       assert(pc_guard = None); (* fun ~l:p when e0 -> e is no longer allowed *)
       let open Ast_helper in
       let default_loc = default.pexp_loc in
@@ -1957,6 +1963,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       in
       type_expect ?in_function env sfun ty_expected
   | Pexp_function (l, _, caselist) ->
+      assert(l = "" || List.length caselist = 1);
       let (loc_fun, ty_fun) =
         match in_function with Some p -> p
         | None -> (loc, instance env ty_expected)

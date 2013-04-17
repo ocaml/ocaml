@@ -205,7 +205,7 @@ and expression_desc =
            Notes:
            - n >= 1.
            - There is no concrete syntax if n >= 2 and lab <> "".
-           - If E0 is provided, lab must start with '?'.
+           - If E0 is provided, lab must start with '?' (and so n = 1).
            - Guards are only possible if lab = "".
          *)
   | Pexp_apply of expression * (label * expression) list
