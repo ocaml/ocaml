@@ -471,6 +471,8 @@ condition is the constructor "false" after type-checking the condition:
      assert(false : bool)
      assert(let open X in false)
 
+Note: Camlp4's AST still has a special representation for "assert false".
+
 --- Get rid of the "explicit arity" flag on Pexp_construct/Ppat_construct
 
 This Boolean was used (only by camlp5?) to indicate that the tuple
@@ -484,6 +486,12 @@ If really required, the same feature could be restored by storing the
 flag as an attribute (with very light support in the type-checker), in
 order to avoid polluting the official Parsetree.
 
+--- Split Pexp_function into Pexp_function/Pexp_fun
+
+This reflects more closely the concrete syntax and removes cases of
+Parsetree fragments which don't correspond to concrete syntax.
+
+Note: Camlp4's AST has not been adapted.
 
 === More TODOs
 

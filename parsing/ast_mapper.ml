@@ -206,7 +206,8 @@ module E = struct
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
     | Pexp_constant x -> constant ~loc ~attrs x
     | Pexp_let (r, pel, e) -> let_ ~loc ~attrs r (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
-    | Pexp_function (lab, def, pel) -> function_ ~loc ~attrs lab (map_opt (sub # expr) def) (List.map (map_case sub) pel)
+    | Pexp_fun (lab, def, p, e) -> fun_ ~loc ~attrs lab (map_opt (sub # expr) def) (sub # pat p) (sub # expr e)
+    | Pexp_function pel -> function_ ~loc ~attrs (List.map (map_case sub) pel)
     | Pexp_apply (e, l) -> apply ~loc ~attrs (sub # expr e) (List.map (map_snd (sub # expr)) l)
     | Pexp_match (e, l) -> match_ ~loc ~attrs (sub # expr e) (List.map (map_case sub) l)
     | Pexp_try (e, l) -> try_ ~loc ~attrs (sub # expr e) (List.map (map_case sub) l)

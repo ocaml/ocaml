@@ -180,11 +180,18 @@ and rw_exp iflag sexp =
     rewrite_patexp_list iflag spat_sexp_list;
     rewrite_exp iflag sbody
 
-  | Pexp_function (_, _, caselist) ->
+  | Pexp_function caselist ->
     if !instr_fun then
       rewrite_function iflag caselist
     else
       rewrite_cases iflag caselist
+
+  | Pexp_fun (_, _, p, e) ->
+      let l = [{pc_lhs=p; pc_guard=None; pc_rhs=e}] in
+      if !instr_fun then
+        rewrite_function iflag l
+      else
+        rewrite_cases iflag l
 
   | Pexp_match(sarg, caselist) ->
     rewrite_exp iflag sarg;
@@ -308,7 +315,8 @@ and rewrite_annotate_exp_list l =
 
 and rewrite_function iflag = function
   | [{pc_lhs=spat; pc_guard=None;
-      pc_rhs={pexp_desc = Pexp_function _} as sexp}] -> rewrite_exp iflag sexp
+      pc_rhs={pexp_desc = (Pexp_function _|Pexp_fun _)} as sexp}] ->
+        rewrite_exp iflag sexp
   | l -> rewrite_funmatching l
 
 and rewrite_funmatching l =
@@ -324,7 +332,8 @@ and rewrite_class_field iflag cf =
     Pcf_inherit (_, cexpr, _)     -> rewrite_class_expr iflag cexpr
   | Pcf_val (_, _, Cfk_concrete (_, sexp))  -> rewrite_exp iflag sexp
   | Pcf_method (_, _,
-                Cfk_concrete (_, ({pexp_desc = Pexp_function _} as sexp))) ->
+                Cfk_concrete (_, ({pexp_desc = (Pexp_function _|Pexp_fun _)}
+                                    as sexp))) ->
       rewrite_exp iflag sexp
   | Pcf_method (_, _, Cfk_concrete(_, sexp)) ->
       let loc = cf.pcf_loc in

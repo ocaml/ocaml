@@ -656,14 +656,17 @@ and eq_expression_desc :
                (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
             (a1, b1)))
         && (eq_expression (a2, b2))
-  | (Pexp_function (a0, a1, a2), Pexp_function (b0, b1, b2)) ->
+  | Pexp_fun (a1, a1, a2, a3), Pexp_function (b0, b1, b2, b3) ->
       ((Asttypes.eq_label (a0, b0)) &&
-         (eq_option eq_expression (a1, b1)))
-        &&
-        (eq_list
-           (fun ((a0, a1), (b0, b1)) ->
-              (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
-           (a2, b2))
+       (eq_option eq_expression (a1, b1)) &&
+       (eq_pattern a2 b2) &&
+       (eq_expression (a3, b3)))
+  | (Pexp_function (a0, a1, a2), Pexp_function (b0, b1, b2)) ->
+      (* FIX *)
+      eq_list
+        (fun ((a0, a1), (b0, b1)) ->
+          (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
+        (a2, b2))
   | (Pexp_apply (a0, a1), Pexp_apply (b0, b1)) ->
       (eq_expression (a0, b0)) &&
         (eq_list

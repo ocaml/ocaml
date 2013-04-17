@@ -80,7 +80,8 @@ module Exp = struct
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pexp_ident a)
   let constant ?loc ?attrs a = mk ?loc ?attrs (Pexp_constant a)
   let let_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_let (a, b, c))
-  let function_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_function (a, b, c))
+  let fun_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pexp_fun (a, b, c, d))
+  let function_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_function a)
   let apply ?loc ?attrs a b = mk ?loc ?attrs (Pexp_apply (a, b))
   let match_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_match (a, b))
   let try_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_try (a, b))
@@ -383,8 +384,8 @@ module Convenience = struct
   let float x = Exp.constant (Const_float (string_of_float x))
   let record ?over l =
     Exp.record (List.map (fun (s, e) -> (lid s, e)) l) over
-  let func l = Exp.function_ "" None (List.map (fun (p, e) -> Exp.case p e) l)
-  let lam ?(label = "") ?default pat exp = Exp.function_ label default [{pc_lhs=pat; pc_guard=None; pc_rhs=exp}]
+  let func l = Exp.function_ (List.map (fun (p, e) -> Exp.case p e) l)
+  let lam ?(label = "") ?default pat exp = Exp.fun_ label default pat exp
   let app f l = Exp.apply f (List.map (fun a -> "", a) l)
   let evar s = Exp.ident (lid s)
   let let_in ?(recursive = false) b body =

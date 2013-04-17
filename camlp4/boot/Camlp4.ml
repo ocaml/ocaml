@@ -15013,25 +15013,19 @@ module Struct =
                          (mkdirection df), (expr e3)))
               | Ast.ExFun (loc, (Ast.McArr (_, (PaLab (_, lab, po)), w, e)))
                   ->
-                  mkexp loc
-                    (Pexp_function (lab, None,
-                       [ when_expr (patt_of_lab loc lab po) e w ]))
+                  mkfun loc lab None (patt_of_lab loc lab po) e w
               | Ast.ExFun (loc,
                   (Ast.McArr (_, (PaOlbi (_, lab, p, e1)), w, e2))) ->
                   let lab = paolab lab p
                   in
-                    mkexp loc
-                      (Pexp_function (("?" ^ lab), (Some (expr e1)),
-                         [ when_expr (patt p) e2 w ]))
+                  mkfun loc ("?" ^ lab) (Some (expr e1)) (patt p) e2 w
               | Ast.ExFun (loc, (Ast.McArr (_, (PaOlb (_, lab, p)), w, e)))
                   ->
                   let lab = paolab lab p
                   in
-                    mkexp loc
-                      (Pexp_function (("?" ^ lab), None,
-                         [ when_expr (patt_of_lab loc lab p) e w ]))
+                  mkfun loc ("?" ^ lab) None (patt_of_lab loc lab p) e w
               | ExFun (loc, a) ->
-                  mkexp loc (Pexp_function ("", None, (match_case a [])))
+                  mkexp loc (Pexp_function (match_case a []))
               | ExIfe (loc, e1, e2, e3) ->
                   mkexp loc
                     (Pexp_ifthenelse ((expr e1), (expr e2), (Some (expr e3))))
@@ -15230,6 +15224,12 @@ module Struct =
                 | w -> Some (expr w)
               in
               {pc_lhs = p; pc_guard = g; pc_rhs = expr e}
+            and mkfun loc lab def p e w =
+              begin match w with
+              | Ast.ExNil _ -> ()
+              | _ -> assert false
+              end;
+              mkexp loc (Pexp_fun (lab, def, p, expr e))
             and mklabexp x acc =
               match x with
               | Ast.RbSem (_, x, y) -> mklabexp x (mklabexp y acc)

@@ -85,7 +85,8 @@ module Exp:
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> expression
     val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> expression -> expression
-    val function_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> case list -> expression
+    val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern -> expression -> expression
+    val function_: ?loc:loc -> ?attrs:attrs -> case list -> expression
     val apply: ?loc:loc -> ?attrs:attrs -> expression -> (label * expression) list -> expression
     val match_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
     val try_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression

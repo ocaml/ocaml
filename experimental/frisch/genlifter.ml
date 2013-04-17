@@ -141,14 +141,14 @@ let simplify =
       let open Longident in
       let open Parsetree in
       match e.pexp_desc with
-      | Pexp_function
+      | Pexp_fun
           ("", None,
-           [{ppat_desc = Ppat_var{txt=id;_};_},
-            {pexp_desc =
-             Pexp_apply
-               (f,
-                ["",{pexp_desc=
-                     Pexp_ident{txt=Lident id2;_};_}]);_}]) when id = id2 -> f
+           {ppat_desc = Ppat_var{txt=id;_};_},
+           {pexp_desc =
+            Pexp_apply
+              (f,
+               ["",{pexp_desc=
+                    Pexp_ident{txt=Lident id2;_};_}]);_}) when id = id2 -> f
       | _ -> e
   end
 
@@ -166,7 +166,7 @@ let () =
   Config.load_path := [];
   Arg.parse (Arg.align args) gen usage;
   let cl = {Parsetree.pcstr_self = pvar "this"; pcstr_fields = !meths} in
-  let params = [mknoloc "res", Invariant], Location.none in
+  let params = [mknoloc "res", Invariant] in
   let cl = Ci.mk ~virt:Virtual ~params (mknoloc "lifter") (Cl.structure cl) in
   let s = [Str.class_ [cl]] in
   Format.printf "%a@." Pprintast.structure (simplify # structure s)

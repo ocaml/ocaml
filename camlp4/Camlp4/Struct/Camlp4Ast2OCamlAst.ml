@@ -764,18 +764,14 @@ value varify_constructors var_names =
         let e3 = ExSeq loc el in
         mkexp loc (Pexp_for (with_loc i loc) (expr e1) (expr e2) (mkdirection df) (expr e3))
     | <:expr@loc< fun [ $PaLab _ lab po$ when $w$ -> $e$ ] >> ->
-        mkexp loc
-          (Pexp_function lab None
-            [when_expr (patt_of_lab loc lab po) e w])
+        mkfun loc lab None (patt_of_lab loc lab po) e w
     | <:expr@loc< fun [ $PaOlbi _ lab p e1$ when $w$ -> $e2$ ] >> ->
         let lab = paolab lab p in
-        mkexp loc
-          (Pexp_function ("?" ^ lab) (Some (expr e1)) [when_expr (patt p) e2 w])
+        mkfun loc ("?" ^ lab) (Some (expr e1)) (patt p) e2 w
     | <:expr@loc< fun [ $PaOlb _ lab p$ when $w$ -> $e$ ] >> ->
         let lab = paolab lab p in
-        mkexp loc
-          (Pexp_function ("?" ^ lab) None [when_expr (patt_of_lab loc lab p) e w])
-    | ExFun loc a -> mkexp loc (Pexp_function "" None (match_case a []))
+        mkfun loc ("?" ^ lab) None (patt_of_lab loc lab p) e w
+    | ExFun loc a -> mkexp loc (Pexp_function (match_case a []))
     | ExIfe loc e1 e2 e3 ->
         mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
     | ExInt loc s ->
@@ -927,6 +923,13 @@ value varify_constructors var_names =
     | g -> Some (expr g) ]
     in
     {pc_lhs = p; pc_guard = g; pc_rhs = expr e}
+  and mkfun loc lab def p e w =
+     let () =
+       match w with
+         [ <:expr<>> -> ()
+       | _ -> assert False ]
+     in
+     mkexp loc (Pexp_fun lab def p (expr e))
   and mklabexp x acc =
     match x with
     [ <:rec_binding< $x$; $y$ >> ->

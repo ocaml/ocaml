@@ -241,10 +241,14 @@ and expression i ppf x =
       line i ppf "Pexp_let %a\n" fmt_rec_flag rf;
       list i pattern_x_expression_def ppf l;
       expression i ppf e;
-  | Pexp_function (p, eo, l) ->
-      line i ppf "Pexp_function \"%s\"\n" p;
-      option i expression ppf eo;
+  | Pexp_function l ->
+      line i ppf "Pexp_function\n";
       list i case ppf l;
+  | Pexp_fun (l, eo, p, e) ->
+      line i ppf "Pexp_fun \"%s\"\n" l;
+      option i expression ppf eo;
+      pattern i ppf p;
+      expression i ppf e;
   | Pexp_apply (e, l) ->
       line i ppf "Pexp_apply\n";
       expression i ppf e;

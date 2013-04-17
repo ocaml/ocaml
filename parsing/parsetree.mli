@@ -195,18 +195,18 @@ and expression_desc =
         (* let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
            let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
          *)
-  | Pexp_function of label * expression option * case list
-        (* function P1 -> E1 | ... | Pn -> En    (lab = "", None)
-           fun P1 -> E1                          (lab = "", None)
-           fun ~l:P1 -> E1                       (lab = "l", None)
-           fun ?l:P1 -> E1                       (lab = "?l", None)
-           fun ?l:(P1 = E0) -> E1                (lab = "?l", Some E0)
+  | Pexp_function of case list
+        (* function P1 -> E1 | ... | Pn -> En *)
+  | Pexp_fun of label * expression option * pattern * expression
+        (* fun P -> E1                          (lab = "", None)
+           fun ~l:P -> E1                       (lab = "l", None)
+           fun ?l:P -> E1                       (lab = "?l", None)
+           fun ?l:(P = E0) -> E1                (lab = "?l", Some E0)
 
            Notes:
-           - n >= 1.
-           - There is no concrete syntax if n >= 2 and lab <> "".
-           - If E0 is provided, lab must start with '?' (and so n = 1).
-           - Guards are only possible if lab = "".
+           - If E0 is provided, lab must start with '?'.
+           - "fun P1 P2 .. Pn -> E1" is represented as nested Pexp_fun.
+           - "let f P = E" is represented using Pexp_fun.
          *)
   | Pexp_apply of expression * (label * expression) list
         (* E0 ~l1:E1 ... ~ln:En

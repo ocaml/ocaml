@@ -1013,10 +1013,10 @@ expr:
   | LET OPEN ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open(mkrhs $4 4, $6)) $3 }
   | FUNCTION ext_attributes opt_bar match_cases
-      { mkexp_attrs (Pexp_function("", None, List.rev $4)) $2 }
+      { mkexp_attrs (Pexp_function(List.rev $4)) $2 }
   | FUN ext_attributes labeled_simple_pattern fun_def
       { let (l,o,p) = $3 in
-        mkexp_attrs (Pexp_function(l, o, [Exp.case p $4])) $2 }
+        mkexp_attrs (Pexp_fun(l, o, p, $4)) $2 }
   | FUN ext_attributes LPAREN TYPE LIDENT RPAREN fun_def
       { mkexp_attrs (Pexp_newtype($5, $7)) $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
@@ -1243,7 +1243,7 @@ strict_binding:
     EQUAL seq_expr
       { $2 }
   | labeled_simple_pattern fun_binding
-      { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [Exp.case p $2])) }
+      { let (l, o, p) = $1 in ghexp(Pexp_fun(l, o, p, $2)) }
   | LPAREN TYPE LIDENT RPAREN fun_binding
       { mkexp(Pexp_newtype($3, $5)) }
 ;
@@ -1263,8 +1263,7 @@ fun_def:
   | labeled_simple_pattern fun_def
       {
        let (l,o,p) = $1 in
-       let case = Exp.case p $2 in
-       ghexp(Pexp_function(l, o, [case]))
+       ghexp(Pexp_fun(l, o, p, $2))
       }
   | LPAREN TYPE LIDENT RPAREN fun_def
       { mkexp(Pexp_newtype($3, $5)) }

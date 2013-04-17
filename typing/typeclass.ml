@@ -342,13 +342,9 @@ let type_constraint val_env sty sty' loc =
 let make_method loc cl_num expr =
   let open Ast_helper in
   let mkid s = mkloc s loc in
-  Exp.function_ ~loc:expr.pexp_loc "" None
-    [
-     Exp.case
-       (Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num)))
-       expr
-    ]
-
+  Exp.fun_ ~loc:expr.pexp_loc "" None
+    (Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num)))
+    expr
 
 (*******************************)
 

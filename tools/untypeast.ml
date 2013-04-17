@@ -229,8 +229,12 @@ and untype_expression exp =
           List.map (fun (pat, exp) ->
               untype_pattern pat, untype_expression exp) list,
           untype_expression exp)
-    | Texp_function (label, cases, _) ->
-        Pexp_function (label, None, untype_cases cases)
+    | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
+        Pexp_fun (label, None, untype_pattern p, untype_expression e)
+    | Texp_function ("", cases, _) ->
+        Pexp_function (untype_cases cases)
+    | Texp_function _ ->
+        assert false
     | Texp_apply (exp, list) ->
         Pexp_apply (untype_expression exp,
           List.fold_right (fun (label, expo, _) list ->

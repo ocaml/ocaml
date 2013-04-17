@@ -124,8 +124,8 @@ let iter_expression f e =
     | Pexp_ident _
     | Pexp_new _
     | Pexp_constant _ -> ()
-    | Pexp_function (_, eo, pel) ->
-        may expr eo; List.iter case pel
+    | Pexp_function pel -> List.iter case pel
+    | Pexp_fun (_, eo, _, e) -> may expr eo; expr e
     | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
     | Pexp_let (_, pel, e) ->  expr e; List.iter (fun (_, e) -> expr e) pel
     | Pexp_match (e, pel)
@@ -1609,10 +1609,12 @@ let rec approx_type env sty =
 let rec type_approx env sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_function (p,_,{pc_rhs=e}::_) when is_optional p ->
+  | Pexp_fun (p, _, _, e) when is_optional p ->
        newty (Tarrow(p, type_option (newvar ()), type_approx env e, Cok))
-  | Pexp_function (p,_,{pc_rhs=e}::_) ->
+  | Pexp_fun (p,_,_, e) ->
        newty (Tarrow(p, newvar (), type_approx env e, Cok))
+  | Pexp_function ({pc_rhs=e}::_) ->
+       newty (Tarrow("", newvar (), type_approx env e, Cok))
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
@@ -1924,14 +1926,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = body.exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_function (l, Some default, cases) ->
+  | Pexp_fun (l, Some default, spat, sexp) ->
       assert(is_optional l); (* default allowed only with optional argument *)
-      let {pc_lhs;pc_guard;pc_rhs} =
-        match cases with
-        | [c] -> c
-        | _ -> assert false
-      in
-      assert(pc_guard = None); (* fun ~l:p when e0 -> e is no longer allowed *)
       let open Ast_helper in
       let default_loc = default.pexp_loc in
       let scases = [
@@ -1953,64 +1949,19 @@ and type_expect_ ?in_function env sexp ty_expected =
           scases
       in
       let sfun =
-        Exp.function_ ~loc
+        Exp.fun_ ~loc
           l None
-          [
-           Exp.case
-             (Pat.var ~loc (mknoloc "*opt*"))
-             (Exp.let_ ~loc Nonrecursive ~attrs:["#default",Exp.constant (Const_int 0)] [pc_lhs, smatch] pc_rhs)
-          ]
+          (Pat.var ~loc (mknoloc "*opt*"))
+          (Exp.let_ ~loc Nonrecursive ~attrs:["#default",Exp.constant (Const_int 0)] [spat, smatch] sexp)
       in
       type_expect ?in_function env sfun ty_expected
-  | Pexp_function (l, _, caselist) ->
-      assert(l = "" || List.length caselist = 1);
-      let (loc_fun, ty_fun) =
-        match in_function with Some p -> p
-        | None -> (loc, instance env ty_expected)
-      in
-      let separate = !Clflags.principal || Env.has_local_constraints env in
-      if separate then begin_def ();
-      let (ty_arg, ty_res) =
-        try filter_arrow env (instance env ty_expected) l
-        with Unify _ ->
-          match expand_head env ty_expected with
-            {desc = Tarrow _} as ty ->
-              raise(Error(loc, env, Abstract_wrong_label(l, ty)))
-          | _ ->
-              raise(Error(loc_fun, env,
-                          Too_many_arguments (in_function <> None, ty_fun)))
-      in
-      let ty_arg =
-        if is_optional l then
-          let tv = newvar() in
-          begin
-            try unify env ty_arg (type_option tv)
-            with Unify _ -> assert false
-          end;
-          type_option tv
-        else ty_arg
-      in
-      if separate then begin
-        end_def ();
-        generalize_structure ty_arg;
-        generalize_structure ty_res
-      end;
-      let cases, partial =
-        type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
-          true loc caselist in
-      let not_function ty =
-        let ls, tvar = list_labels env ty in
-        ls = [] && not tvar
-      in
-      if is_optional l && not_function ty_res then
-        Location.prerr_warning (List.hd cases).c_lhs.pat_loc
-          Warnings.Unerasable_optional_argument;
-      re {
-        exp_desc = Texp_function(l,cases, partial);
-        exp_loc = loc; exp_extra = [];
-        exp_type = instance env (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env }
+        (* TODO: keep attributes, call type_function directly *)
+  | Pexp_fun (l, None, spat, sexp) ->
+      type_function ?in_function loc sexp.pexp_attributes env ty_expected
+        l [{pc_lhs=spat; pc_guard=None; pc_rhs=sexp}]
+  | Pexp_function caselist ->
+      type_function ?in_function
+        loc sexp.pexp_attributes env ty_expected "" caselist
   | Pexp_apply(sfunct, sargs) ->
       begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
@@ -2754,6 +2705,56 @@ and type_expect_ ?in_function env sexp ty_expected =
       }
   | Pexp_extension (s, _arg) ->
       raise (Error (loc, env, Extension s))
+
+and type_function ?in_function loc attrs env ty_expected l caselist =
+  let (loc_fun, ty_fun) =
+    match in_function with Some p -> p
+    | None -> (loc, instance env ty_expected)
+  in
+  let separate = !Clflags.principal || Env.has_local_constraints env in
+  if separate then begin_def ();
+  let (ty_arg, ty_res) =
+    try filter_arrow env (instance env ty_expected) l
+    with Unify _ ->
+      match expand_head env ty_expected with
+        {desc = Tarrow _} as ty ->
+          raise(Error(loc, env, Abstract_wrong_label(l, ty)))
+      | _ ->
+          raise(Error(loc_fun, env,
+                      Too_many_arguments (in_function <> None, ty_fun)))
+  in
+  let ty_arg =
+    if is_optional l then
+      let tv = newvar() in
+      begin
+        try unify env ty_arg (type_option tv)
+        with Unify _ -> assert false
+      end;
+      type_option tv
+    else ty_arg
+  in
+  if separate then begin
+    end_def ();
+    generalize_structure ty_arg;
+    generalize_structure ty_res
+  end;
+  let cases, partial =
+    type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
+      true loc caselist in
+  let not_function ty =
+    let ls, tvar = list_labels env ty in
+    ls = [] && not tvar
+  in
+  if is_optional l && not_function ty_res then
+    Location.prerr_warning (List.hd cases).c_lhs.pat_loc
+      Warnings.Unerasable_optional_argument;
+  re {
+  exp_desc = Texp_function(l,cases, partial);
+    exp_loc = loc; exp_extra = [];
+    exp_type = instance env (newgenty (Tarrow(l, ty_arg, ty_res, Cok)));
+    exp_attributes = attrs;
+    exp_env = env }
+
 
 and type_label_access env loc srecord lid =
   if !Clflags.principal then begin_def ();

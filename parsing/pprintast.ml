@@ -502,38 +502,19 @@ class printer  ()= object(self:'self)
         self#attributes x.pexp_attributes
     end
     else match x.pexp_desc with
-    | Pexp_function _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
+    | Pexp_function _ | Pexp_fun _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
       when pipe || semi ->
         self#paren true self#reset#expression f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ifthenelse ->
         self#paren true self#reset#expression f x
     | Pexp_let _ | Pexp_letmodule _ when semi ->
         self#paren true self#reset#expression f x
-    | Pexp_function _(* (p, eo, l) *) ->
-        assert false
-          (* TODO *)
-(*
-        let rec aux acc = function
-          | {pexp_desc = Pexp_function (l,eo, [(p',e')]);_}
-              -> aux ((l,eo,p')::acc) e'
-          | x -> (List.rev acc,x)  in
-        begin match aux [] x with
-        | [], {pexp_desc=Pexp_function(_label,_eo,l);_} -> (* label should be "" *)
-            pp f "@[<hv>function%a@]" self#case_list l
-        | ls, {pexp_desc=Pexp_when(e1,e2);_}->
-            pp f "@[<2>fun@;%a@;when@;%a@;->@;%a@]"
-            (self#list
-               (fun f (l,eo,p) ->
-                 self#label_exp  f (l,eo,p) )) ls
-              self#reset#expression e1 self#expression e2
-        | ls, e ->
-            pp f "@[<2>fun@;%a@;->@;%a@]"
-              (self#list
-                 (fun f (l,eo,p) ->
-                   self#label_exp f (l,eo,p))) ls
-              self#expression e end
-*)
-
+    | Pexp_fun (l, e0, p, e) ->
+        pp f "@[<2>fun@;%a@;->@;%a@]"
+          self#label_exp (l, e0, p)
+          self#expression e
+    | Pexp_function l ->
+        pp f "@[<hv>function%a@]" self#case_list l
     | Pexp_match (e, l) ->
         pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]" self#reset#expression e self#case_list l 
 
@@ -957,14 +938,11 @@ class printer  ()= object(self:'self)
     let rec pp_print_pexp_function f x =
       if x.pexp_attributes <> [] then pp f "=@;%a" self#expression x
       else match x.pexp_desc with 
-(*      | Pexp_function (label,eo,[(p,e)]) -> (* TODO *)
+      | Pexp_fun (label, eo, p, e) ->
           if label="" then 
-            match e.pexp_desc with
-            | Pexp_when _  -> pp f "=@;%a" self#expression x
-            | _ -> 
-                pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function e
+            pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function e
           else
-            pp f "%a@ %a" self#label_exp (label,eo,p) pp_print_pexp_function e *)
+            pp f "%a@ %a" self#label_exp (label,eo,p) pp_print_pexp_function e
       | Pexp_newtype (str,e) ->
           pp f "(type@ %s)@ %a" str pp_print_pexp_function e
       | _ -> pp f "=@;%a" self#expression x in 
