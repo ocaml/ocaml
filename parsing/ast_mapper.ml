@@ -211,7 +211,7 @@ module E = struct
     | Pexp_match (e, l) -> match_ ~loc ~attrs (sub # expr e) (List.map (map_case sub) l)
     | Pexp_try (e, l) -> try_ ~loc ~attrs (sub # expr e) (List.map (map_case sub) l)
     | Pexp_tuple el -> tuple ~loc ~attrs (List.map (sub # expr) el)
-    | Pexp_construct (lid, arg, b) -> construct ~loc ~attrs (map_loc sub lid) (map_opt (sub # expr) arg) b
+    | Pexp_construct (lid, arg) -> construct ~loc ~attrs (map_loc sub lid) (map_opt (sub # expr) arg)
     | Pexp_variant (lab, eo) -> variant ~loc ~attrs lab (map_opt (sub # expr) eo)
     | Pexp_record (l, eo) -> record ~loc ~attrs (List.map (map_tuple (map_loc sub) (sub # expr)) l) (map_opt (sub # expr) eo)
     | Pexp_field (e, lid) -> field ~loc ~attrs (sub # expr e) (map_loc sub lid)
@@ -251,7 +251,7 @@ module P = struct
     | Ppat_constant c -> constant ~loc ~attrs c
     | Ppat_interval (c1, c2) -> interval ~loc ~attrs c1 c2
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub # pat) pl)
-    | Ppat_construct (l, p, b) -> construct ~loc ~attrs (map_loc sub l) (map_opt (sub # pat) p) b
+    | Ppat_construct (l, p) -> construct ~loc ~attrs (map_loc sub l) (map_opt (sub # pat) p)
     | Ppat_variant (l, p) -> variant ~loc ~attrs l (map_opt (sub # pat) p)
     | Ppat_record (lpl, cf) ->
         record ~loc ~attrs (List.map (map_tuple (map_loc sub) (sub # pat)) lpl) cf

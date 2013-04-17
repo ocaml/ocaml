@@ -333,10 +333,10 @@ let transl_prim loc prim args =
          simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _, _)}]
+      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _, _)}; arg2]
+    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; {exp_desc = Texp_variant(_, None)}]
@@ -696,7 +696,7 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(_, cstr, args, _) ->
+  | Texp_construct(_, cstr, args) ->
       let ll = transl_list args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
@@ -805,7 +805,7 @@ and transl_exp0 e =
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
   | Texp_pack modl ->
       !transl_module Tcoerce_none None modl
-  | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _, _)} ->
+  | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _)} ->
       assert_failed e
   | Texp_assert (cond) ->
       if !Clflags.noassert
@@ -821,7 +821,7 @@ and transl_exp0 e =
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
       | Texp_function(_, _, _)
-      | Texp_construct (_, {cstr_arity = 0}, _, _)
+      | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
           Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])

@@ -471,6 +471,20 @@ condition is the constructor "false" after type-checking the condition:
      assert(false : bool)
      assert(let open X in false)
 
+--- Get rid of the "explicit arity" flag on Pexp_construct/Ppat_construct
+
+This Boolean was used (only by camlp5?) to indicate that the tuple
+(expression/pattern) used as the argument was intended to correspond
+to the arity of an n-ary constructor.  In particular, this allowed
+the revised syntax to distinguish "A x y" from "A (x, y)" (the second one
+being wrapped in an extra fake tuple) and get a proper error message
+if "A (x, y)" was used with a constructor expecting two arguments.
+
+If really required, the same feature could be restored by storing the
+flag as an attribute (with very light support in the type-checker), in
+order to avoid polluting the official Parsetree.
+
+
 === More TODOs
 
 - Adapt pprintast to print attributes and extension nodes.

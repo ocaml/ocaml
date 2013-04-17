@@ -145,23 +145,11 @@ and pattern_desc =
            but rejected by the type-checker. *)
   | Ppat_tuple of pattern list
         (* (P1, ..., Pn)   (n >= 2) *)
-  | Ppat_construct of Longident.t loc * pattern option * bool
-        (* C                (None, false)
-           C P              (Some P, false)
-
-           Constructors with multiple arguments are represented
-           by storing a Ppat_tuple in P.
-
-           bool = true is never created by the standard parser.
-           It can be used when P is a Ppat_tuple to inform the
-           type-checker that the length of that tuple corresponds
-           to the number of parameters for that constructor (otherwise
-           this is inferred from the definition of the constructor).
-           This can be useful with a different concrete syntax
-           which distinguishes n-ary constructors from constructors
-           with a tuple argument in patterns.
+  | Ppat_construct of Longident.t loc * pattern option
+        (* C                None
+           C P              Some P
+           C (P1, ..., Pn)  Some (Ppat_tuple [P1; ...; Pn])
          *)
-
   | Ppat_variant of label * pattern option
         (* `A             (None)
            `A P           (Some P)
@@ -231,12 +219,10 @@ and expression_desc =
         (* try E0 with P1 -> E1 | ... | Pn -> En *)
   | Pexp_tuple of expression list
         (* (E1, ..., En)   (n >= 2) *)
-  | Pexp_construct of Longident.t loc * expression option * bool
-        (* C                (None, false)
-           C E              (Some E, false)
-
-           Constructors with multiple arguments are represented
-           by storing a Pexp_tuple in E.
+  | Pexp_construct of Longident.t loc * expression option
+        (* C                None
+           C E              Some E
+           C (E1, ..., En)  Some (Pexp_tuple[E1;...;En])
         *)
   | Pexp_variant of label * expression option
         (* `A             (None)

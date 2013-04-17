@@ -14139,8 +14139,6 @@ module Struct =
               
             open Ast
               
-            let constructors_arity () = !Camlp4_config.constructors_arity
-              
             let error loc str = Loc.raise loc (Failure str)
               
             let char_of_char_token loc s =
@@ -14690,8 +14688,7 @@ module Struct =
                   mkpat loc (Ppat_var (with_loc s sloc))
               | Ast.PaId (loc, i) ->
                   let p =
-                    Ppat_construct ((long_uident ~conv_con i), None,
-                      (constructors_arity ()))
+                    Ppat_construct ((long_uident ~conv_con i), None)
                   in mkpat loc p
               | PaAli (loc, p1, p2) ->
                   let (p, i) =
@@ -14708,34 +14705,25 @@ module Struct =
                   (Ast.PaTup (_, (Ast.PaAny loc_any)))) ->
                   mkpat loc
                     (Ppat_construct ((lident_with_loc (conv_con s) sloc),
-                       (Some (mkpat loc_any Ppat_any)), false))
+                       (Some (mkpat loc_any Ppat_any))))
               | (PaApp (loc, _, _) as f) ->
                   let (f, al) = patt_fa [] f in
                   let al = List.map patt al
                   in
                     (match (patt f).ppat_desc with
-                     | Ppat_construct (li, None, _) ->
-                         if constructors_arity ()
-                         then
-                           mkpat loc
-                             (Ppat_construct (li,
-                                (Some (mkpat loc (Ppat_tuple al))), true))
-                         else
-                           (let a =
+                     | Ppat_construct (li, None) ->
+                           let a =
                               match al with
                               | [ a ] -> a
                               | _ -> mkpat loc (Ppat_tuple al)
-                            in
+                           in
                               mkpat loc
-                                (Ppat_construct (li, (Some a), false)))
+                                (Ppat_construct (li, (Some a)))
                      | Ppat_variant (s, None) ->
                          let a =
-                           if constructors_arity ()
-                           then mkpat loc (Ppat_tuple al)
-                           else
-                             (match al with
-                              | [ a ] -> a
-                              | _ -> mkpat loc (Ppat_tuple al))
+                             match al with
+                             | [ a ] -> a
+                             | _ -> mkpat loc (Ppat_tuple al)
                          in mkpat loc (Ppat_variant (s, (Some a)))
                      | _ ->
                          error (loc_of_patt f)
@@ -14918,11 +14906,9 @@ module Struct =
                   let (e, l) =
                     (match sep_expr_acc [] e with
                      | (loc, ml, Ast.ExId (sloc, (Ast.IdUid (_, s)))) :: l ->
-                         let ca = constructors_arity ()
-                         in
                            ((mkexp loc
                                (Pexp_construct ((mkli sloc (conv_con s) ml),
-                                  None, ca))),
+                                  None))),
                             l)
                      | (loc, ml, Ast.ExId (sloc, (Ast.IdLid (_, s)))) :: l ->
                          ((mkexp loc (Pexp_ident (mkli sloc s ml))), l)
@@ -14950,31 +14936,22 @@ module Struct =
                   let al = List.map label_expr al
                   in
                     (match (expr f).pexp_desc with
-                     | Pexp_construct (li, None, _) ->
+                     | Pexp_construct (li, None) ->
                          let al = List.map snd al
                          in
-                           if constructors_arity ()
-                           then
-                             mkexp loc
-                               (Pexp_construct (li,
-                                  (Some (mkexp loc (Pexp_tuple al))), true))
-                           else
-                             (let a =
+                             let a =
                                 match al with
                                 | [ a ] -> a
                                 | _ -> mkexp loc (Pexp_tuple al)
-                              in
+                             in
                                 mkexp loc
-                                  (Pexp_construct (li, (Some a), false)))
+                                  (Pexp_construct (li, (Some a)))
                      | Pexp_variant (s, None) ->
                          let al = List.map snd al in
                          let a =
-                           if constructors_arity ()
-                           then mkexp loc (Pexp_tuple al)
-                           else
-                             (match al with
-                              | [ a ] -> a
-                              | _ -> mkexp loc (Pexp_tuple al))
+                             match al with
+                             | [ a ] -> a
+                             | _ -> mkexp loc (Pexp_tuple al)
                          in mkexp loc (Pexp_variant (s, (Some a)))
                      | _ -> mkexp loc (Pexp_apply ((expr f), al)))
               | ExAre (loc, e1, e2) ->
@@ -14985,7 +14962,7 @@ module Struct =
                        [ ("", (expr e1)); ("", (expr e2)) ]))
               | ExArr (loc, e) ->
                   mkexp loc (Pexp_array (List.map expr (list_of_expr e [])))
-              | ExAsf loc -> mkexp loc (Pexp_assert (mkexp loc (Pexp_construct ({txt=Lident "false"; loc=mkloc loc}, None, false))))
+              | ExAsf loc -> mkexp loc (Pexp_assert (mkexp loc (Pexp_construct ({txt=Lident "false"; loc=mkloc loc}, None))))
               | ExAss (loc, e, v) ->
                   let e =
                     (match e with
@@ -15155,13 +15132,13 @@ module Struct =
                     (Pexp_constraint ((expr e), (Some (ctyp t)), None))
               | Ast.ExId (loc, (Ast.IdUid (_, "()"))) ->
                   mkexp loc
-                    (Pexp_construct ((lident_with_loc "()" loc), None, true))
+                    (Pexp_construct ((lident_with_loc "()" loc), None))
               | Ast.ExId (loc, (Ast.IdLid (_, s))) ->
                   mkexp loc (Pexp_ident (lident_with_loc s loc))
               | Ast.ExId (loc, (Ast.IdUid (_, s))) ->
                   mkexp loc
                     (Pexp_construct ((lident_with_loc (conv_con s) loc),
-                       None, true))
+                       None))
               | ExVrn (loc, s) ->
                   mkexp loc (Pexp_variant ((conv_con s), None))
               | ExWhi (loc, e1, el) ->

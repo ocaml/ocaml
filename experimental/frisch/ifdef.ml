@@ -46,10 +46,8 @@ let ifdef =
          {txt = Lident "GETENV"},
          Some {pexp_loc = loc; pexp_desc = Pexp_construct (
                {txt = Lident sym},
-               None,
-               _
-              )},
-         _
+               None
+              )}
         )} ->
           E.strconst ~loc (getenv sym)
       | x -> super # expr x

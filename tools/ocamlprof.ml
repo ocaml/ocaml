@@ -207,8 +207,8 @@ and rw_exp iflag sexp =
   | Pexp_tuple sexpl ->
     rewrite_exp_list iflag sexpl
 
-  | Pexp_construct(_, None, _) -> ()
-  | Pexp_construct(_, Some sarg, _) ->
+  | Pexp_construct(_, None) -> ()
+  | Pexp_construct(_, Some sarg) ->
     rewrite_exp iflag sarg
 
   | Pexp_variant(_, None) -> ()

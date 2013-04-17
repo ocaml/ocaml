@@ -176,7 +176,7 @@ and untype_pattern pat =
     | Tpat_constant cst -> Ppat_constant cst
     | Tpat_tuple list ->
         Ppat_tuple (List.map untype_pattern list)
-    | Tpat_construct (lid, _, args, explicit_arity) ->
+    | Tpat_construct (lid, _, args) ->
         Ppat_construct (lid,
           (match args with
               [] -> None
@@ -185,7 +185,7 @@ and untype_pattern pat =
                   (Pat.tuple ~loc:pat.pat_loc
                      (List.map untype_pattern args)
                   )
-          ), explicit_arity)
+          ))
     | Tpat_variant (label, pato, _) ->
         Ppat_variant (label, option untype_pattern pato)
     | Tpat_record (list, closed) ->
@@ -244,7 +244,7 @@ and untype_expression exp =
         Pexp_try (untype_expression exp, untype_cases cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map untype_expression list)
-    | Texp_construct (lid, _, args, explicit_arity) ->
+    | Texp_construct (lid, _, args) ->
         Pexp_construct (lid,
           (match args with
               [] -> None
@@ -252,7 +252,7 @@ and untype_expression exp =
           | args ->
               Some
                 (Exp.tuple ~loc:exp.exp_loc (List.map untype_expression args))
-          ), explicit_arity)
+          ))
     | Texp_variant (label, expo) ->
         Pexp_variant (label, option untype_expression expo)
     | Texp_record (list, expo) ->

@@ -223,10 +223,9 @@ and pattern i ppf x =
   | Tpat_tuple (l) ->
       line i ppf "Ppat_tuple\n";
       list i pattern ppf l;
-  | Tpat_construct (li, _, po, explicity_arity) ->
+  | Tpat_construct (li, _, po) ->
       line i ppf "Ppat_construct %a\n" fmt_longident li;
       list i pattern ppf po;
-      bool i ppf explicity_arity;
   | Tpat_variant (l, po, _) ->
       line i ppf "Ppat_variant \"%s\"\n" l;
       option i pattern ppf po;
@@ -296,10 +295,9 @@ and expression i ppf x =
   | Texp_tuple (l) ->
       line i ppf "Pexp_tuple\n";
       list i expression ppf l;
-  | Texp_construct (li, _, eo, b) ->
+  | Texp_construct (li, _, eo) ->
       line i ppf "Pexp_construct %a\n" fmt_longident li;
       list i expression ppf eo;
-      bool i ppf b;
   | Texp_variant (l, eo) ->
       line i ppf "Pexp_variant \"%s\"\n" l;
       option i expression ppf eo;

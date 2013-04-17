@@ -68,7 +68,7 @@ let pattern sub pat =
   | Tpat_var _
   | Tpat_constant _ -> ()
   | Tpat_tuple l
-  | Tpat_construct (_, _, l, _) -> List.iter (sub # pattern) l
+  | Tpat_construct (_, _, l) -> List.iter (sub # pattern) l
   | Tpat_variant (_, po, _) -> opt (sub # pattern) po
   | Tpat_record (l, _) -> List.iter (fun (_, _, pat) -> sub # pattern pat) l
   | Tpat_array l -> List.iter (sub # pattern) l
@@ -104,7 +104,7 @@ let expression sub exp =
       sub # cases cases
   | Texp_tuple list ->
       List.iter (sub # expression) list
-  | Texp_construct (_, _, args, _) ->
+  | Texp_construct (_, _, args) ->
       List.iter (sub # expression) args
   | Texp_variant (_, expo) ->
       opt (sub # expression) expo

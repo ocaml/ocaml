@@ -132,7 +132,7 @@ let iter_expression f e =
     | Pexp_try (e, pel) -> expr e; List.iter case pel
     | Pexp_array el
     | Pexp_tuple el -> List.iter expr el
-    | Pexp_construct (_, eo, _)
+    | Pexp_construct (_, eo)
     | Pexp_variant (_, eo) -> may expr eo
     | Pexp_record (iel, eo) ->
         may expr eo; List.iter (fun (_, e) -> expr e) iel
@@ -252,13 +252,13 @@ let mkexp exp_desc exp_type exp_loc exp_env =
 let option_none ty loc =
   let lid = Longident.Lident "None" in
   let cnone = Env.lookup_constructor lid Env.initial in
-  mkexp (Texp_construct(mknoloc lid, cnone, [], false))
+  mkexp (Texp_construct(mknoloc lid, cnone, []))
     ty loc Env.initial
 
 let option_some texp =
   let lid = Longident.Lident "Some" in
   let csome = Env.lookup_constructor lid Env.initial in
-  mkexp ( Texp_construct(mknoloc lid , csome, [texp],false) )
+  mkexp ( Texp_construct(mknoloc lid , csome, [texp]) )
     (type_option texp.exp_type) texp.exp_loc texp.exp_env
 
 let extract_option_type env ty =
@@ -452,7 +452,7 @@ let rec build_as_type env p =
   | Tpat_tuple pl ->
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
-  | Tpat_construct(_, cstr, pl,_) ->
+  | Tpat_construct(_, cstr, pl) ->
       let keep = cstr.cstr_private = Private || cstr.cstr_existentials <> [] in
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
@@ -955,7 +955,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_type = expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
-  | Ppat_construct(lid, sarg, explicit_arity) ->
+  | Ppat_construct(lid, sarg) ->
       let opath =
         try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
@@ -985,7 +985,6 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let sargs =
         match sarg with
           None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when explicit_arity -> spl
         | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
         | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
             if constr.cstr_arity = 0 then
@@ -1005,7 +1004,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         unify_pat_types loc !env ty_res expected_ty;
       let args = List.map2 (fun p t -> type_pat p t) sargs ty_args in
       rp {
-        pat_desc=Tpat_construct(lid, constr, args,explicit_arity);
+        pat_desc=Tpat_construct(lid, constr, args);
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
         pat_attributes = sp.ppat_attributes;
@@ -1314,7 +1313,7 @@ let rec is_nonexpansive exp =
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd3 el)
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
-  | Texp_construct( _, _, el,_) ->
+  | Texp_construct( _, _, el) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
   | Texp_record(lbl_exp_list, opt_init_exp) ->
@@ -1748,7 +1747,7 @@ let iter_ppat f p =
   | Ppat_type _ | Ppat_unpack _ -> ()
   | Ppat_array pats -> List.iter f pats
   | Ppat_or (p1,p2) -> f p1; f p2
-  | Ppat_variant (_, arg) | Ppat_construct (_, arg, _) -> may f arg
+  | Ppat_variant (_, arg) | Ppat_construct (_, arg) -> may f arg
   | Ppat_tuple lst ->  List.iter f lst
   | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p
   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args
@@ -1764,7 +1763,7 @@ let contains_polymorphic_variant p =
 let contains_gadt env p =
   let rec loop p =
     match p.ppat_desc with
-      Ppat_construct (lid, _, _) ->
+      Ppat_construct (lid, _) ->
         begin try
           let cstrs = Env.lookup_all_constructors lid.txt env in
           List.iter (fun (cstr,_) -> if cstr.cstr_generalized then raise Exit)
@@ -1933,15 +1932,13 @@ and type_expect_ ?in_function env sexp ty_expected =
         Exp.case
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
-             (Some (Pat.var ~loc:default_loc (mknoloc "*sth*")))
-             false)
+             (Some (Pat.var ~loc:default_loc (mknoloc "*sth*"))))
           (Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*")));
 
         Exp.case
           (Pat.construct ~loc:default_loc
              (mknoloc (Longident.(Ldot (Lident "*predef*", "None"))))
-             None
-             false)
+             None)
           default;
        ]
       in
@@ -2076,8 +2073,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = newty (Ttuple (List.map (fun e -> e.exp_type) expl));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_construct(lid, sarg, explicit_arity) ->
-      type_construct env loc lid sarg explicit_arity ty_expected sexp.pexp_attributes
+  | Pexp_construct(lid, sarg) ->
+      type_construct env loc lid sarg ty_expected sexp.pexp_attributes
   | Pexp_variant(l, sarg) ->
       (* Keep sharing *)
       let ty_expected0 = instance env ty_expected in
@@ -2601,7 +2598,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       let cond = type_expect env e Predef.type_bool in
       let exp_type =
         match cond.exp_desc with
-        | Texp_construct(_, {cstr_name="false"}, _, _) ->
+        | Texp_construct(_, {cstr_name="false"}, _) ->
             instance env ty_expected
         | _ ->
             instance_def Predef.type_unit
@@ -3090,7 +3087,7 @@ and type_application env funct sargs =
       else
         type_args [] [] ty (instance env ty) ty sargs []
 
-and type_construct env loc lid sarg explicit_arity ty_expected attrs =
+and type_construct env loc lid sarg ty_expected attrs =
   let opath =
     try
       let (p0, p,_) = extract_concrete_variant env ty_expected in
@@ -3103,7 +3100,6 @@ and type_construct env loc lid sarg explicit_arity ty_expected attrs =
   let sargs =
     match sarg with
       None -> []
-    | Some {pexp_desc = Pexp_tuple sel} when explicit_arity -> sel
     | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then
@@ -3114,7 +3110,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected attrs =
   let (ty_args, ty_res) = instance_constructor constr in
   let texp =
     re {
-      exp_desc = Texp_construct(lid, constr, [],explicit_arity);
+      exp_desc = Texp_construct(lid, constr, []);
       exp_loc = loc; exp_extra = [];
       exp_type = ty_res;
       exp_attributes = attrs;
@@ -3139,8 +3135,9 @@ and type_construct env loc lid sarg explicit_arity ty_expected attrs =
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
     raise(Error(loc, env, Private_type ty_res));
+  (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
   { texp with
-    exp_desc = Texp_construct(lid, constr, args, explicit_arity) }
+    exp_desc = Texp_construct(lid, constr, args) }
 
 (* Typing of statements (expressions whose values are discarded) *)
 

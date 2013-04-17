@@ -69,7 +69,7 @@ let ghtyp d = Typ.mk ~loc:(symbol_gloc ()) d
 let ghloc d = { txt = d; loc = symbol_gloc () }
 
 let ghunit () =
-  ghexp (Pexp_construct (mknoloc (Lident "()"), None, false))
+  ghexp (Pexp_construct (mknoloc (Lident "()"), None))
 
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, ["", arg1; "", arg2]))
@@ -106,16 +106,16 @@ let mkuplus name arg =
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
 let mkexp_cons consloc args loc =
-  Exp.mk ~loc (Pexp_construct(mkloc (Lident "::") consloc, Some args, false))
+  Exp.mk ~loc (Pexp_construct(mkloc (Lident "::") consloc, Some args))
 
 let mkpat_cons consloc args loc =
-  Pat.mk ~loc (Ppat_construct(mkloc (Lident "::") consloc, Some args, false))
+  Pat.mk ~loc (Ppat_construct(mkloc (Lident "::") consloc, Some args))
 
 let rec mktailexp nilloc = function
     [] ->
       let loc = { nilloc with loc_ghost = true } in
       let nil = { txt = Lident "[]"; loc = loc } in
-      Exp.mk ~loc (Pexp_construct (nil, None, false))
+      Exp.mk ~loc (Pexp_construct (nil, None))
   | e1 :: el ->
       let exp_el = mktailexp nilloc el in
       let loc = {loc_start = e1.pexp_loc.loc_start;
@@ -129,7 +129,7 @@ let rec mktailpat nilloc = function
     [] ->
       let loc = { nilloc with loc_ghost = true } in
       let nil = { txt = Lident "[]"; loc = loc } in
-      Pat.mk ~loc (Ppat_construct (nil, None, false))
+      Pat.mk ~loc (Ppat_construct (nil, None))
   | p1 :: pl ->
       let pat_pl = mktailpat nilloc pl in
       let loc = {loc_start = p1.ppat_loc.loc_start;
@@ -1028,7 +1028,7 @@ expr:
   | expr_comma_list %prec below_COMMA
       { mkexp(Pexp_tuple(List.rev $1)) }
   | constr_longident simple_expr %prec below_SHARP
-      { mkexp(Pexp_construct(mkrhs $1 1, Some $2, false)) }
+      { mkexp(Pexp_construct(mkrhs $1 1, Some $2)) }
   | name_tag simple_expr %prec below_SHARP
       { mkexp(Pexp_variant($1, Some $2)) }
   | IF ext_attributes seq_expr THEN expr ELSE expr
@@ -1114,7 +1114,7 @@ simple_expr:
   | constant
       { mkexp(Pexp_constant $1) }
   | constr_longident %prec prec_constant_constructor
-      { mkexp(Pexp_construct(mkrhs $1 1, None, false)) }
+      { mkexp(Pexp_construct(mkrhs $1 1, None)) }
   | name_tag %prec prec_constant_constructor
       { mkexp(Pexp_variant($1, None)) }
   | LPAREN seq_expr RPAREN
@@ -1125,7 +1125,7 @@ simple_expr:
       { wrap_exp_attrs (reloc_exp $3) $2 (* check location *) }
   | BEGIN ext_attributes END
       { mkexp_attrs (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
-                               None, false)) $2 }
+                               None)) $2 }
   | BEGIN ext_attributes seq_expr error
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
@@ -1318,7 +1318,7 @@ pattern:
   | pattern_comma_list  %prec below_COMMA
       { mkpat(Ppat_tuple(List.rev $1)) }
   | constr_longident pattern %prec prec_constr_appl
-      { mkpat(Ppat_construct(mkrhs $1 1, Some $2, false)) }
+      { mkpat(Ppat_construct(mkrhs $1 1, Some $2)) }
   | name_tag pattern %prec prec_constr_appl
       { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
@@ -1348,7 +1348,7 @@ simple_pattern:
   | signed_constant DOTDOT signed_constant
       { mkpat(Ppat_interval ($1, $3)) }
   | constr_longident
-      { mkpat(Ppat_construct(mkrhs $1 1, None, false)) }
+      { mkpat(Ppat_construct(mkrhs $1 1, None)) }
   | name_tag
       { mkpat(Ppat_variant($1, None)) }
   | SHARP type_longident

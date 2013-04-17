@@ -44,7 +44,7 @@ and pattern_desc =
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
   | Tpat_construct of
-      Longident.t loc * constructor_description * pattern list * bool
+      Longident.t loc * constructor_description * pattern list
   | Tpat_variant of label * pattern option * row_desc ref
   | Tpat_record of
       (Longident.t loc * label_description * pattern) list *
@@ -78,8 +78,7 @@ and expression_desc =
   | Texp_try of expression * case list
   | Texp_tuple of expression list
   | Texp_construct of
-      Longident.t loc * constructor_description * expression list *
-        bool
+      Longident.t loc * constructor_description * expression list
   | Texp_variant of label * expression option
   | Texp_record of
       (Longident.t loc * label_description * expression) list *

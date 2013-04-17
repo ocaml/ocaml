@@ -195,9 +195,9 @@ module MakeMap(Map : MapArgument) = struct
           let pat1 = map_pattern pat1 in
           Tpat_alias (pat1, p, text)
         | Tpat_tuple list -> Tpat_tuple (List.map map_pattern list)
-        | Tpat_construct (lid, cstr_decl, args, arity) ->
+        | Tpat_construct (lid, cstr_decl, args) ->
           Tpat_construct (lid, cstr_decl,
-                          List.map map_pattern args, arity)
+                          List.map map_pattern args)
         | Tpat_variant (label, pato, rowo) ->
           let pato = match pato with
               None -> pato
@@ -259,9 +259,9 @@ module MakeMap(Map : MapArgument) = struct
           )
         | Texp_tuple list ->
           Texp_tuple (List.map map_expression list)
-        | Texp_construct (lid, cstr_desc, args, arity) ->
+        | Texp_construct (lid, cstr_desc, args) ->
           Texp_construct (lid, cstr_desc,
-                          List.map map_expression args, arity )
+                          List.map map_expression args )
         | Texp_variant (label, expo) ->
           let expo =match expo with
               None -> expo

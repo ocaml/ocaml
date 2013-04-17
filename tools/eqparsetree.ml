@@ -231,10 +231,9 @@ let rec eq_pattern_desc : (pattern_desc * pattern_desc) -> 'result =
   | (Ppat_constant a0, Ppat_constant b0) ->
       Asttypes.eq_constant (a0, b0)
   | (Ppat_tuple a0, Ppat_tuple b0) -> eq_list eq_pattern (a0, b0)
-  | (Ppat_construct (a0, a1, a2), Ppat_construct (b0, b1, b2)) ->
+  | (Ppat_construct (a0, a1), Ppat_construct (b0, b1)) ->
       ((Asttypes.eq_loc Longident.eq_t (a0, b0)) &&
          (eq_option eq_pattern (a1, b1)))
-        && (eq_bool (a2, b2))
   | (Ppat_variant (a0, a1), Ppat_variant (b0, b1)) ->
       (Asttypes.eq_label (a0, b0)) && (eq_option eq_pattern (a1, b1))
   | (Ppat_record (a0, a1), Ppat_record (b0, b1)) ->
@@ -685,10 +684,9 @@ and eq_expression_desc :
               (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
            (a1, b1))
   | (Pexp_tuple a0, Pexp_tuple b0) -> eq_list eq_expression (a0, b0)
-  | (Pexp_construct (a0, a1, a2), Pexp_construct (b0, b1, b2)) ->
+  | (Pexp_construct (a0, a1), Pexp_construct (b0, b1)) ->
       ((Asttypes.eq_loc Longident.eq_t (a0, b0)) &&
          (eq_option eq_expression (a1, b1)))
-        && (eq_bool (a2, b2))
   | (Pexp_variant (a0, a1), Pexp_variant (b0, b1)) ->
       (Asttypes.eq_label (a0, b0)) &&
         (eq_option eq_expression (a1, b1))

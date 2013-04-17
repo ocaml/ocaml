@@ -27,10 +27,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   open Camlp4_import.Asttypes;
   open Ast;
 
-  value constructors_arity () =
-    debug ast2pt "constructors_arity: %b@." Camlp4_config.constructors_arity.val in
-    Camlp4_config.constructors_arity.val;
-
   value error loc str = Loc.raise loc (Failure str);
 
   value char_of_char_token loc s =
@@ -504,8 +500,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     [ <:patt@loc< $id:(<:ident@sloc< $lid:s$ >>)$ >> ->
       mkpat loc (Ppat_var (with_loc s sloc))
     | <:patt@loc< $id:i$ >> ->
-        let p = Ppat_construct (long_uident ~conv_con i)
-                  None (constructors_arity ())
+        let p = Ppat_construct (long_uident ~conv_con i) None
         in mkpat loc p
     | PaAli loc p1 p2 ->
         let (p, i) =
@@ -519,26 +514,20 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | PaAny loc -> mkpat loc Ppat_any
     | <:patt@loc< $id:(<:ident@sloc< $uid:s$ >>)$ ($tup:<:patt@loc_any< _ >>$) >> ->
         mkpat loc (Ppat_construct (lident_with_loc (conv_con s) sloc)
-              (Some (mkpat loc_any Ppat_any)) False)
+              (Some (mkpat loc_any Ppat_any)))
     | PaApp loc _ _ as f ->
         let (f, al) = patt_fa [] f in
         let al = List.map patt al in
         match (patt f).ppat_desc with
-        [ Ppat_construct li None _ ->
-            if constructors_arity () then
-              mkpat loc (Ppat_construct li (Some (mkpat loc (Ppat_tuple al))) True)
-            else
+        [ Ppat_construct li None ->
               let a =
                 match al with
                 [ [a] -> a
                 | _ -> mkpat loc (Ppat_tuple al) ]
               in
-              mkpat loc (Ppat_construct li (Some a) False)
+              mkpat loc (Ppat_construct li (Some a))
         | Ppat_variant s None ->
             let a =
-              if constructors_arity () then
-                mkpat loc (Ppat_tuple al)
-              else
                 match al with
                 [ [a] -> a
                 | _ -> mkpat loc (Ppat_tuple al) ]
@@ -695,8 +684,7 @@ value varify_constructors var_names =
         let (e, l) =
           match sep_expr_acc [] e with
           [ [(loc, ml, <:expr@sloc< $uid:s$ >>) :: l] ->
-              let ca = constructors_arity () in
-              (mkexp loc (Pexp_construct (mkli sloc (conv_con s) ml) None ca), l)
+              (mkexp loc (Pexp_construct (mkli sloc (conv_con s) ml) None), l)
           | [(loc, ml, <:expr@sloc< $lid:s$ >>) :: l] ->
               (mkexp loc (Pexp_ident (mkli sloc s ml)), l)
           | [(_, [], e) :: l] -> (expr e, l)
@@ -718,23 +706,17 @@ value varify_constructors var_names =
         let (f, al) = expr_fa [] f in
         let al = List.map label_expr al in
         match (expr f).pexp_desc with
-        [ Pexp_construct li None _ ->
+        [ Pexp_construct li None ->
             let al = List.map snd al in
-            if constructors_arity () then
-              mkexp loc (Pexp_construct li (Some (mkexp loc (Pexp_tuple al))) True)
-            else
               let a =
                 match al with
                 [ [a] -> a
                 | _ -> mkexp loc (Pexp_tuple al) ]
               in
-              mkexp loc (Pexp_construct li (Some a) False)
+              mkexp loc (Pexp_construct li (Some a))
         | Pexp_variant s None ->
             let al = List.map snd al in
             let a =
-              if constructors_arity () then
-                mkexp loc (Pexp_tuple al)
-              else
                 match al with
                 [ [a] -> a
                 | _ -> mkexp loc (Pexp_tuple al) ]
@@ -746,7 +728,7 @@ value varify_constructors var_names =
             [("", expr e1); ("", expr e2)])
     | ExArr loc e -> mkexp loc (Pexp_array (List.map expr (list_of_expr e [])))
     | ExAsf loc -> 
-        mkexp loc (Pexp_assert (mkexp loc (Pexp_construct {txt=Lident "false"; loc=mkloc loc} None false)))
+        mkexp loc (Pexp_assert (mkexp loc (Pexp_construct {txt=Lident "false"; loc=mkloc loc} None)))
     | ExAss loc e v ->
         let e =
           match e with
@@ -861,12 +843,11 @@ value varify_constructors var_names =
     | <:expr@loc< ($tup:_$) >> -> error loc "singleton tuple"
     | ExTyc loc e t -> mkexp loc (Pexp_constraint (expr e) (Some (ctyp t)) None)
     | <:expr@loc< () >> ->
-        mkexp loc (Pexp_construct (lident_with_loc "()" loc) None True)
+        mkexp loc (Pexp_construct (lident_with_loc "()" loc) None)
     | <:expr@loc< $lid:s$ >> ->
         mkexp loc (Pexp_ident (lident_with_loc s loc))
     | <:expr@loc< $uid:s$ >> ->
-        (* let ca = constructors_arity () in *)
-        mkexp loc (Pexp_construct (lident_with_loc (conv_con s) loc) None True)
+        mkexp loc (Pexp_construct (lident_with_loc (conv_con s) loc) None)
     | ExVrn loc s -> mkexp loc (Pexp_variant (conv_con s) None)
     | ExWhi loc e1 el ->
         let e2 = ExSeq loc el in

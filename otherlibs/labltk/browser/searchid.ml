@@ -417,8 +417,8 @@ let rec bound_variables pat =
   | Ppat_var s -> [s.txt]
   | Ppat_alias (pat,s) -> s.txt :: bound_variables pat
   | Ppat_tuple l -> List2.flat_map l ~f:bound_variables
-  | Ppat_construct (_,None,_) -> []
-  | Ppat_construct (_,Some pat,_) -> bound_variables pat
+  | Ppat_construct (_,None) -> []
+  | Ppat_construct (_,Some pat) -> bound_variables pat
   | Ppat_variant (_,None) -> []
   | Ppat_variant (_,Some pat) -> bound_variables pat
   | Ppat_record (l, _) ->

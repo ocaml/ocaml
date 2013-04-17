@@ -65,7 +65,7 @@ let rec pattern_vars pat =
   | Ppat_tuple l
   | Ppat_array l ->
       List.concat (List.map pattern_vars l)
-  | Ppat_construct (_, Some pat, _)
+  | Ppat_construct (_, Some pat)
   | Ppat_variant (_, Some pat)
   | Ppat_constraint (pat, _) ->
       pattern_vars pat
@@ -260,7 +260,7 @@ let rec add_labels_expr ~text ~values ~classes expr =
       List.iter add_labels_rec (e :: List.map snd args)
   | Pexp_tuple l | Pexp_array l ->
       List.iter add_labels_rec l
-  | Pexp_construct (_, Some e, _)
+  | Pexp_construct (_, Some e)
   | Pexp_variant (_, Some e)
   | Pexp_field (e, _)
   | Pexp_constraint (e, _, _)

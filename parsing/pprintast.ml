@@ -55,7 +55,7 @@ let is_predef_option = function
   | _ -> false
 
 let is_unit = function
-  | {pexp_desc=Pexp_construct ( {txt= Lident "()"; _},_,_);
+  | {pexp_desc=Pexp_construct ( {txt= Lident "()"; _},_);
      pexp_attributes = []
     } -> true
   | _ -> false
@@ -82,20 +82,20 @@ type construct =
       
 let view_expr x = 
   match x.pexp_desc with
-  | Pexp_construct ( {txt= Lident "()"; _},_,_) -> `tuple
-  | Pexp_construct ( {txt= Lident "[]";_},_,_) -> `nil
-  | Pexp_construct ( {txt= Lident"::";_},Some _,_) ->
+  | Pexp_construct ( {txt= Lident "()"; _},_) -> `tuple
+  | Pexp_construct ( {txt= Lident "[]";_},_) -> `nil
+  | Pexp_construct ( {txt= Lident"::";_},Some _) ->
       let rec loop exp acc = match exp with
-          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_,_);_} -> (List.rev acc,true)
+          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_);_} -> (List.rev acc,true)
           | {pexp_desc=
-             Pexp_construct ({txt=Lident "::";_},Some ({pexp_desc= Pexp_tuple([e1;e2]);_}),_);_} ->
+             Pexp_construct ({txt=Lident "::";_},Some ({pexp_desc= Pexp_tuple([e1;e2]);_}));_} ->
               loop e2 (e1::acc)
           | e -> (List.rev (e::acc),false) in
       let (ls,b) = loop x []  in
       if b then
         `list ls
       else `cons ls
-  | Pexp_construct (x,None,_) -> `simple (x.txt)
+  | Pexp_construct (x,None) -> `simple (x.txt)
   | _ -> `normal
         
 let is_simple_construct :construct -> bool = function
@@ -335,14 +335,14 @@ class printer  ()= object(self:'self)
       | {ppat_desc =
          Ppat_construct
            ({ txt = Lident("::") ;_},
-            Some ({ppat_desc = Ppat_tuple([pat1; pat2]);_}),
-            _);_} ->
+            Some ({ppat_desc = Ppat_tuple([pat1; pat2]);_})); _}
+            ->
               pp f "%a::%a"  self#simple_pattern  pat1  pattern_list_helper pat2 (*RA*)
       | p -> self#pattern1 f p in
     match x.ppat_desc with 
     | Ppat_variant (l, Some p) ->  pp f "@[<2>`%s@;%a@]" l self#pattern1 p (*RA*)
-    | Ppat_construct (({txt=Lident("()"|"[]");_}), _, _) -> self#simple_pattern f x 
-    | Ppat_construct (({txt;_} as li), po, _) -> (* FIXME The third field always false *)
+    | Ppat_construct (({txt=Lident("()"|"[]");_}), _) -> self#simple_pattern f x 
+    | Ppat_construct (({txt;_} as li), po) -> (* FIXME The third field always false *)
         if txt = Lident "::" then
           pp f "%a" pattern_list_helper x
         else
@@ -353,7 +353,7 @@ class printer  ()= object(self:'self)
     | _ -> self#simple_pattern f x 
   method simple_pattern (f:Format.formatter) (x:pattern) :unit = 
     match x.ppat_desc with
-    | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), _, _) -> pp f  "%s" x
+    | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), _) -> pp f  "%s" x
     | Ppat_any -> pp f "_";           
     | Ppat_var ({txt = txt;_}) ->
         if (is_infix (fixity_of_string txt)) || List.mem txt.[0] prefix_symbols then
@@ -571,7 +571,7 @@ class printer  ()= object(self:'self)
                (*reset here only because [function,match,try,sequence] are lower priority*)
             end (e,l))
             
-    | Pexp_construct (li, Some eo, _)
+    | Pexp_construct (li, Some eo)
       when not (is_simple_construct (view_expr x))-> (* Not efficient FIXME*)
         (match view_expr x with
         | `cons ls -> self#list self#simple_expr f ls ~sep:"@;::@;"

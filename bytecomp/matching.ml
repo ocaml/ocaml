@@ -160,9 +160,9 @@ let make_default matcher env =
 let ctx_matcher p =
   let p = normalize_pat p in
   match p.pat_desc with
-  | Tpat_construct (_, cstr,omegas,_) ->
+  | Tpat_construct (_, cstr,omegas) ->
       (fun q rem -> match q.pat_desc with
-      | Tpat_construct (_, cstr',args,_) when cstr.cstr_tag=cstr'.cstr_tag ->
+      | Tpat_construct (_, cstr',args) when cstr.cstr_tag=cstr'.cstr_tag ->
           p,args @ rem
       | Tpat_any -> p,omegas @ rem
       | _ -> raise NoMatch)
@@ -614,7 +614,7 @@ let rec extract_vars r p = match p.pat_desc with
     List.fold_left
       (fun r (_, _, p) -> extract_vars r p)
       r lpats
-| Tpat_construct (_, _, pats,_) ->
+| Tpat_construct (_, _, pats) ->
     List.fold_left extract_vars r pats
 | Tpat_array pats ->
     List.fold_left extract_vars r pats
@@ -1129,15 +1129,15 @@ let make_field_args binding_kind arg first_pos last_pos argl =
   in make_args first_pos
 
 let get_key_constr = function
-  | {pat_desc=Tpat_construct (_, cstr,_,_)} -> cstr.cstr_tag
+  | {pat_desc=Tpat_construct (_, cstr,_)} -> cstr.cstr_tag
   | _ -> assert false
 
 let get_args_constr p rem = match p with
-| {pat_desc=Tpat_construct (_, _, args, _)} -> args @ rem
+| {pat_desc=Tpat_construct (_, _, args)} -> args @ rem
 | _ -> assert false
 
 let pat_as_constr = function
-  | {pat_desc=Tpat_construct (_, cstr,_,_)} -> cstr
+  | {pat_desc=Tpat_construct (_, cstr,_)} -> cstr
   | _ -> fatal_error "Matching.pat_as_constr"
 
 
@@ -1151,7 +1151,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
           with
           | NoMatch -> matcher_rec p2 rem
         end
-    | Tpat_construct (_, cstr1, [],_) when cstr.cstr_tag = cstr1.cstr_tag ->
+    | Tpat_construct (_, cstr1, []) when cstr.cstr_tag = cstr1.cstr_tag ->
         rem
     | Tpat_any -> rem
     | _ -> raise NoMatch in
@@ -1172,7 +1172,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
             rem
         | _, _ -> assert false
         end
-    | Tpat_construct (_, cstr1, [arg],_)
+    | Tpat_construct (_, cstr1, [arg])
       when cstr.cstr_tag = cstr1.cstr_tag -> arg::rem
     | Tpat_any -> omega::rem
     | _ -> raise NoMatch in
@@ -1180,7 +1180,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
 | _ ->
     fun q rem -> match q.pat_desc with
     | Tpat_or (_,_,_) -> raise OrPat
-    | Tpat_construct (_, cstr1, args,_)
+    | Tpat_construct (_, cstr1, args)
       when cstr.cstr_tag = cstr1.cstr_tag -> args @ rem
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
     | _        -> raise NoMatch
@@ -2443,7 +2443,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         divide_constant
         (combine_constant arg cst partial)
         ctx pm
-  | Tpat_construct (_, cstr, _, _) ->
+  | Tpat_construct (_, cstr, _) ->
       compile_test
         (compile_match repr partial) partial
         divide_constructor (combine_constructor arg pat cstr partial)

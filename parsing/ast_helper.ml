@@ -61,7 +61,7 @@ module Pat = struct
   let constant ?loc ?attrs a = mk ?loc ?attrs (Ppat_constant a)
   let interval ?loc ?attrs a b = mk ?loc ?attrs (Ppat_interval (a, b))
   let tuple ?loc ?attrs a = mk ?loc ?attrs (Ppat_tuple a)
-  let construct ?loc ?attrs a b c = mk ?loc ?attrs (Ppat_construct (a, b, c))
+  let construct ?loc ?attrs a b = mk ?loc ?attrs (Ppat_construct (a, b))
   let variant ?loc ?attrs a b = mk ?loc ?attrs (Ppat_variant (a, b))
   let record ?loc ?attrs a b = mk ?loc ?attrs (Ppat_record (a, b))
   let array ?loc ?attrs a = mk ?loc ?attrs (Ppat_array a)
@@ -85,7 +85,7 @@ module Exp = struct
   let match_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_match (a, b))
   let try_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_try (a, b))
   let tuple ?loc ?attrs a = mk ?loc ?attrs (Pexp_tuple a)
-  let construct ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_construct (a, b, c))
+  let construct ?loc ?attrs a b = mk ?loc ?attrs (Pexp_construct (a, b))
   let variant ?loc ?attrs a b = mk ?loc ?attrs (Pexp_variant (a, b))
   let record ?loc ?attrs a b = mk ?loc ?attrs (Pexp_record (a, b))
   let field ?loc ?attrs a b = mk ?loc ?attrs (Pexp_field (a, b))
@@ -372,7 +372,7 @@ module Convenience = struct
 
   let lid s = mkloc (Longident.parse s) !default_loc
   let tuple l = Exp.tuple l
-  let constr s args = Exp.construct (lid s) (may_tuple Exp.tuple args) false
+  let constr s args = Exp.construct (lid s) (may_tuple Exp.tuple args)
   let nil () = constr "[]" []
   let unit () = constr "()" []
   let cons hd tl = constr "::" [hd; tl]
@@ -391,7 +391,7 @@ module Convenience = struct
     Exp.let_ (if recursive then Recursive else Nonrecursive) b body
 
   let pvar s = Pat.var (mkloc s !default_loc)
-  let pconstr s args = Pat.construct (lid s) (may_tuple Pat.tuple args) true
+  let pconstr s args = Pat.construct (lid s) (may_tuple Pat.tuple args)
   let punit () = pconstr "()" []
 
 

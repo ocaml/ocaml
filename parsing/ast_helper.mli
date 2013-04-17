@@ -64,7 +64,7 @@ module Pat:
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> pattern
     val interval: ?loc:loc -> ?attrs:attrs -> constant -> constant -> pattern
     val tuple: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
-    val construct: ?loc:loc -> ?attrs:attrs -> lid -> pattern option -> bool -> pattern
+    val construct: ?loc:loc -> ?attrs:attrs -> lid -> pattern option -> pattern
     val variant: ?loc:loc -> ?attrs:attrs -> label -> pattern option -> pattern
     val record: ?loc:loc -> ?attrs:attrs -> (lid * pattern) list -> closed_flag -> pattern
     val array: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
@@ -90,7 +90,7 @@ module Exp:
     val match_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
     val try_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
     val tuple: ?loc:loc -> ?attrs:attrs -> expression list -> expression
-    val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option -> bool -> expression
+    val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option -> expression
     val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option -> expression
     val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list -> expression option -> expression
     val field: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
