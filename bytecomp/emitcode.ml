@@ -22,21 +22,21 @@ open Cmo_format
 
 (* Buffering of bytecode *)
 
-let out_buffer = ref(String.create 1024)
+let out_buffer = ref(LongString.create 1024)
 and out_position = ref 0
 
 let out_word b1 b2 b3 b4 =
   let p = !out_position in
-  if p >= String.length !out_buffer then begin
-    let len = String.length !out_buffer in
-    let new_buffer = String.create (2 * len) in
-    String.blit !out_buffer 0 new_buffer 0 len;
+  if p >= LongString.length !out_buffer then begin
+    let len = LongString.length !out_buffer in
+    let new_buffer = LongString.create (2 * len) in
+    LongString.blit !out_buffer 0 new_buffer 0 len;
     out_buffer := new_buffer
   end;
-  String.unsafe_set !out_buffer p (Char.unsafe_chr b1);
-  String.unsafe_set !out_buffer (p+1) (Char.unsafe_chr b2);
-  String.unsafe_set !out_buffer (p+2) (Char.unsafe_chr b3);
-  String.unsafe_set !out_buffer (p+3) (Char.unsafe_chr b4);
+  LongString.set !out_buffer p (Char.unsafe_chr b1);
+  LongString.set !out_buffer (p+1) (Char.unsafe_chr b2);
+  LongString.set !out_buffer (p+2) (Char.unsafe_chr b3);
+  LongString.set !out_buffer (p+3) (Char.unsafe_chr b4);
   out_position := p + 4
 
 let out opcode =
@@ -86,10 +86,10 @@ let extend_label_table needed =
 
 let backpatch (pos, orig) =
   let displ = (!out_position - orig) asr 2 in
-  !out_buffer.[pos] <- Char.unsafe_chr displ;
-  !out_buffer.[pos+1] <- Char.unsafe_chr (displ asr 8);
-  !out_buffer.[pos+2] <- Char.unsafe_chr (displ asr 16);
-  !out_buffer.[pos+3] <- Char.unsafe_chr (displ asr 24)
+  LongString.set !out_buffer pos (Char.unsafe_chr displ);
+  LongString.set !out_buffer (pos+1) (Char.unsafe_chr (displ asr 8));
+  LongString.set !out_buffer (pos+2) (Char.unsafe_chr (displ asr 16));
+  LongString.set !out_buffer (pos+3) (Char.unsafe_chr (displ asr 24))
 
 let define_label lbl =
   if lbl >= Array.length !label_table then extend_label_table lbl;
@@ -358,7 +358,7 @@ let to_file outchan unit_name code =
   output_binary_int outchan 0;
   let pos_code = pos_out outchan in
   emit code;
-  output outchan !out_buffer 0 !out_position;
+  LongString.output outchan !out_buffer 0 !out_position;
   let (pos_debug, size_debug) =
     if !Clflags.debug then begin
       let p = pos_out outchan in
@@ -392,7 +392,7 @@ let to_memory init_code fun_code =
   emit init_code;
   emit fun_code;
   let code = Meta.static_alloc !out_position in
-  String.unsafe_blit !out_buffer 0 code 0 !out_position;
+  LongString.unsafe_blit_to_string !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info
   and code_size = !out_position in
   init();
@@ -403,7 +403,7 @@ let to_memory init_code fun_code =
 let to_packed_file outchan code =
   init();
   emit code;
-  output outchan !out_buffer 0 !out_position;
+  LongString.output outchan !out_buffer 0 !out_position;
   let reloc = !reloc_info in
   init();
   reloc
