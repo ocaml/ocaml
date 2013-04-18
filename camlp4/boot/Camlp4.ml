@@ -15441,11 +15441,11 @@ module Struct =
                   (mkstr loc (Pstr_recmodule (module_str_binding mb []))) ::
                     l
               | StMty (loc, n, mt) ->
-                  (mkstr loc
-                     (Pstr_modtype {pmtb_name=with_loc n loc;
-                                    pmtb_type=module_type mt;
-                                    pmtb_attributes=[]})) ::
-                    l
+                  let si =
+                    (match mt with
+                     | MtQuo (_, _) -> None
+                     | _ -> Some (module_type mt))
+                  in (mkstr loc (Pstr_modtype {pmtd_name=with_loc n loc; pmtd_type=si; pmtd_attributes=[]})) :: l
               | StOpn (loc, id) ->
                   (mkstr loc (Pstr_open (long_uident id, []))) :: l
               | StTyp (loc, tdl) ->

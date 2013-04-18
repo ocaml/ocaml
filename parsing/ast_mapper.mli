@@ -35,7 +35,6 @@ class mapper:
     method module_declaration: module_declaration -> module_declaration
     method module_expr: module_expr -> module_expr
     method module_type: module_type -> module_type
-    method module_type_binding: module_type_binding -> module_type_binding
     method module_type_declaration: module_type_declaration -> module_type_declaration
     method pat: pattern -> pattern
     method signature: signature -> signature

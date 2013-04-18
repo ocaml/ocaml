@@ -615,8 +615,10 @@ structure_item:
       { mkstr(Pstr_module $2) }
   | MODULE REC module_bindings
       { mkstr(Pstr_recmodule(List.rev $3)) }
+  | MODULE TYPE ident post_item_attributes
+      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3) ~attrs:$4)) }
   | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mkstr(Pstr_modtype (Mtb.mk (mkrhs $3 3) $5 ~attrs:$6)) }
+      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3) ~typ:$5 ~attrs:$6)) }
   | OPEN mod_longident post_item_attributes
       { mkstr(Pstr_open (mkrhs $2 2, $3)) }
   | CLASS class_declarations

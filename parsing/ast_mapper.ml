@@ -175,7 +175,7 @@ module M = struct
     | Pstr_exn_rebind (s, lid, attrs) -> exn_rebind ~loc (map_loc sub s) (map_loc sub lid) ~attrs:(sub # attributes attrs)
     | Pstr_module x -> module_ ~loc (sub # module_binding x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub # module_binding) l)
-    | Pstr_modtype x -> modtype ~loc (sub # module_type_binding x)
+    | Pstr_modtype x -> modtype ~loc (sub # module_type_declaration x)
     | Pstr_open (lid, attrs) -> open_ ~loc ~attrs:(sub # attributes attrs) (map_loc sub lid)
     | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
     | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
@@ -382,10 +382,6 @@ class mapper =
     method module_binding {pmb_name; pmb_expr; pmb_attributes} =
       Mb.mk (map_loc this pmb_name) (this # module_expr pmb_expr)
         ~attrs:(this # attributes pmb_attributes)
-
-    method module_type_binding {pmtb_name; pmtb_type; pmtb_attributes} =
-      Mtb.mk (map_loc this pmtb_name) (this # module_type pmtb_type)
-        ~attrs:(this # attributes pmtb_attributes)
 
     method constructor_declaration {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
       Type.constructor

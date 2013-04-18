@@ -516,13 +516,13 @@ and transl_signature env sg =
             map_rec (fun rs md -> Sig_module(md.md_id, md.md_type.mty_type, rs))
               decls rem,
             final_env
-        | Psig_modtype {pmtd_name=name; pmtd_type=sinfo; pmtd_attributes=attrs} ->
-            check "module type" item.psig_loc modtype_names name.txt;
-            let (tinfo, info) = transl_modtype_info env sinfo in
-            let (id, newenv) = Env.enter_modtype name.txt info env in
+        | Psig_modtype pmtd ->
+            let newenv, mtd, sg =
+              transl_modtype_decl modtype_names env item.psig_loc pmtd
+            in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_modtype {mtd_id=id; mtd_name=name; mtd_type=tinfo; mtd_attributes=attrs}) env loc :: trem,
-            Sig_modtype(id, info) :: rem,
+            mksig (Tsig_modtype mtd) env loc :: trem,
+            sg :: rem,
             final_env
         | Psig_open (lid, attrs) ->
             let (path, newenv) = type_open env item.psig_loc lid in
@@ -595,6 +595,21 @@ and transl_signature env sg =
   Cmt_format.set_saved_types
     ((Cmt_format.Partial_signature sg) :: previous_saved_types);
   sg
+
+and transl_modtype_decl modtype_names env loc
+    {pmtd_name; pmtd_type; pmtd_attributes} =
+  check "module type" loc modtype_names pmtd_name.txt;
+  let (tinfo, info) = transl_modtype_info env pmtd_type in
+  let (id, newenv) = Env.enter_modtype pmtd_name.txt info env in
+  let mtd =
+    {
+     mtd_id=id;
+     mtd_name=pmtd_name;
+     mtd_type=tinfo;
+     mtd_attributes=pmtd_attributes;
+    }
+  in
+  newenv, mtd, Sig_modtype(id, info)
 
 and transl_modtype_info env sinfo =
   match sinfo with
@@ -1094,25 +1109,15 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          map_rec (fun rs mb -> Sig_module(mb.mb_id, mb.mb_expr.mod_type, rs))
                  bindings2 sig_rem,
          final_env)
-    | Pstr_modtype{pmtb_name=name; pmtb_type=smty; pmtb_attributes=attrs} ->
-        check "module type" loc modtype_names name.txt;
-        let mty = transl_modtype env smty in
-        let (id, newenv) =
-          Env.enter_modtype name.txt (Modtype_manifest mty.mty_type) env in
-        let item = mk
-            (Tstr_modtype
-               {
-                mtb_id=id;
-                mtb_name=name;
-                mtb_type=mty;
-                mtb_attributes=attrs;
-               }
-            )
+    | Pstr_modtype pmtd ->
+        (* check that it is non-abstract *)
+        let newenv, mtd, sg =
+          transl_modtype_decl modtype_names env loc pmtd
         in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (item :: str_rem,
-         Sig_modtype(id, Modtype_manifest mty.mty_type) :: sig_rem,
-         final_env)
+        mk (Tstr_modtype mtd) :: str_rem,
+        sg :: sig_rem,
+        final_env
     | Pstr_open (lid, attrs) ->
         let (path, newenv) = type_open ~toplevel env loc lid in
         let item = mk (Tstr_open (path, lid, attrs)) in

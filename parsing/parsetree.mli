@@ -576,7 +576,7 @@ and signature_item_desc =
   | Psig_recmodule of module_declaration list
         (* module rec X1 : MT1 and ... and Xn : MTn *)
   | Psig_modtype of module_type_declaration
-        (* module type S = MT1
+        (* module type S = MT
            module type S *)
   | Psig_open of Longident.t loc * attributes
         (* open X *)
@@ -599,9 +599,7 @@ and module_declaration =
      pmd_type: module_type;
      pmd_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
     }
-(* S : MT
-   S       (abstract module declaration, pmd_type = None)
-*)
+(* S : MT *)
 
 and module_type_declaration =
     {
@@ -609,7 +607,9 @@ and module_type_declaration =
      pmtd_type: module_type option;
      pmtd_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
     }
-(* S = MT *)
+(* S = MT
+   S       (abstract module type declaration, pmtd_type = None)
+*)
 
 and with_constraint =
   | Pwith_type of Longident.t loc * type_declaration
@@ -676,7 +676,7 @@ and structure_item_desc =
         (* module X = ME *)
   | Pstr_recmodule of module_binding list
         (* module rec X1 = ME1 and ... and Xn = MEn *)
-  | Pstr_modtype of module_type_binding
+  | Pstr_modtype of module_type_declaration
         (* module type S = MT *)
   | Pstr_open of Longident.t loc * attributes
         (* open X *)
@@ -700,14 +700,6 @@ and module_binding =
      pmb_attributes: attributes;
     }
 (* X = ME *)
-
-and module_type_binding =
-    {
-     pmtb_name: string loc;
-     pmtb_type: module_type;
-     pmtb_attributes: attributes;
-    }
-(* S = MT *)
 
 (** {2 Toplevel} *)
 

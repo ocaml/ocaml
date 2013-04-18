@@ -198,19 +198,13 @@ module Str:
     val exn_rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> structure_item
     val module_: ?loc:loc -> module_binding -> structure_item
     val rec_module: ?loc:loc -> module_binding list -> structure_item
-    val modtype: ?loc:loc -> module_type_binding -> structure_item
+    val modtype: ?loc:loc -> module_type_declaration -> structure_item
     val open_: ?loc:loc -> ?attrs:attrs -> lid -> structure_item
     val class_: ?loc:loc -> class_declaration list -> structure_item
     val class_type: ?loc:loc -> class_type_declaration list -> structure_item
     val include_: ?loc:loc -> ?attrs:attrs -> module_expr -> structure_item
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> structure_item
     val attribute: ?loc:loc -> attribute -> structure_item
-  end
-
-(** Module type bindings *)
-module Mtb:
-  sig
-    val mk: ?attrs:attrs -> str -> module_type -> module_type_binding
   end
 
 (** Module declarations *)

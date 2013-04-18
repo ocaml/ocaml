@@ -1069,9 +1069,13 @@ value varify_constructors var_names =
     | StMod loc n me -> [mkstr loc (Pstr_module {pmb_name=with_loc n loc;pmb_expr=module_expr me;pmb_attributes=[]}) :: l]
     | StRecMod loc mb ->
         [mkstr loc (Pstr_recmodule (module_str_binding mb [])) :: l]
-    | StMty loc n mt -> [mkstr loc (Pstr_modtype {pmtb_name=with_loc n loc;
-                                    pmtb_type=module_type mt;
-                                    pmtb_attributes=[]}) :: l]
+    | StMty loc n mt ->
+        let si =
+          match mt with
+          [ MtQuo _ _ -> None
+          | _ -> Some (module_type mt) ]
+        in
+        [mkstr loc (Pstr_modtype {pmtd_name=with_loc n loc; pmtd_type=si; pmtd_attributes=[]}) :: l]
     | StOpn loc id ->
         [mkstr loc (Pstr_open (long_uident id, [])) :: l]
     | StTyp loc tdl -> [mkstr loc (Pstr_type (mktype_decl tdl [])) :: l]

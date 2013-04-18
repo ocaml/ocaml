@@ -213,7 +213,7 @@ and structure_item_desc =
   | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attributes
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
-  | Tstr_modtype of module_type_binding
+  | Tstr_modtype of module_type_declaration
   | Tstr_open of Path.t * Longident.t loc * attributes
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
@@ -226,14 +226,6 @@ and module_binding =
      mb_name: string loc;
      mb_expr: module_expr;
      mb_attributes: attributes;
-    }
-
-and module_type_binding =
-    {
-     mtb_id: Ident.t;
-     mtb_name: string loc;
-     mtb_type: module_type;
-     mtb_attributes: attributes;
     }
 
 and module_coercion =

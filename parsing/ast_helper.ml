@@ -262,15 +262,6 @@ module Val = struct
     }
 end
 
-module Mtb = struct
-  let mk ?(attrs = []) name typ =
-    {
-     pmtb_name = name;
-     pmtb_type = typ;
-     pmtb_attributes = attrs;
-    }
-end
-
 module Md = struct
   let mk ?(attrs = []) name typ =
     {

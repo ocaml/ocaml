@@ -702,9 +702,9 @@ and structure_item i ppf x =
       line i ppf "Pstr_recmodule\n";
       list i module_binding ppf bindings
   | Tstr_modtype x ->
-      line i ppf "Pstr_modtype \"%a\"\n" fmt_ident x.mtb_id;
-      attributes i ppf x.mtb_attributes;
-      module_type i ppf x.mtb_type;
+      line i ppf "Pstr_modtype \"%a\"\n" fmt_ident x.mtd_id;
+      attributes i ppf x.mtd_attributes;
+      modtype_declaration i ppf x.mtd_type
   | Tstr_open (li, _, attrs) ->
       line i ppf "Pstr_open %a\n" fmt_path li;
       attributes i ppf attrs

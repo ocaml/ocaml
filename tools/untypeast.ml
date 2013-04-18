@@ -62,8 +62,8 @@ and untype_structure_item item =
         Pstr_module (untype_module_binding mb)
     | Tstr_recmodule list ->
         Pstr_recmodule (List.map untype_module_binding list)
-    | Tstr_modtype x ->
-        Pstr_modtype (untype_module_type_binding x)
+    | Tstr_modtype mtd ->
+        Pstr_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
     | Tstr_open (_path, lid, attrs) -> Pstr_open (lid, attrs)
     | Tstr_class list ->
         Pstr_class (List.map (fun (ci, _, _) ->
@@ -108,14 +108,6 @@ and untype_module_binding mb =
    pmb_expr = untype_module_expr mb.mb_expr;
    pmb_attributes = mb.mb_attributes;
   }
-
-and untype_module_type_binding mtb =
-  {
-   pmtb_name=mtb.mtb_name;
-   pmtb_type=untype_module_type mtb.mtb_type;
-   pmtb_attributes=mtb.mtb_attributes;
-  }
-
 
 and untype_type_declaration decl =
   {

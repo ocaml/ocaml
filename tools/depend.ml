@@ -294,7 +294,11 @@ and add_struct_item bv item =
         bindings;
       bv'
   | Pstr_modtype x ->
-      add_modtype bv x.pmtb_type; bv
+      begin match x.pmtd_type with
+        None -> ()
+      | Some mty -> add_modtype bv mty
+      end;
+      bv
   | Pstr_open (l, _attrs) ->
       addmodule bv l; bv
   | Pstr_class cdl ->

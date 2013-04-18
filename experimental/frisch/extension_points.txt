@@ -503,6 +503,16 @@ This reflects more closely the concrete syntax.
 
 Note: Camlp4's AST has not been adapted.
 
+--- Accept abstract module type declaration in structures
+
+Previously, we could declare:
+
+ module type S
+
+in signatures, but not implementations.  To make the syntax, the Parsetree
+and the type-checker more uniform, this is now also allowed in structures
+(altough this is probably useless in practice).
+
 === More TODOs
 
 - Adapt pprintast to print attributes and extension nodes.

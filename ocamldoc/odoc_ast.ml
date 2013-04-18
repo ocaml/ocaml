@@ -73,8 +73,8 @@ module Typedtree_search =
                 (Typedtree.Tstr_module mb)
             )
             mods
-      | Typedtree.Tstr_modtype mtb ->
-          Hashtbl.add table (MT (Name.from_ident mtb.mtb_id)) tt
+      | Typedtree.Tstr_modtype mtd ->
+          Hashtbl.add table (MT (Name.from_ident mtd.mtd_id)) tt
       | Typedtree.Tstr_exception decl ->
           Hashtbl.add table (E (Name.from_ident decl.cd_id)) tt
       | Typedtree.Tstr_exn_rebind (ident, _, _, _, _) ->
@@ -126,7 +126,7 @@ module Typedtree_search =
 
     let search_module_type table name =
       match Hashtbl.find table (MT name) with
-      | (Typedtree.Tstr_modtype mtb) -> mtb
+      | (Typedtree.Tstr_modtype mtd) -> mtd
       | _ -> assert false
 
     let search_exception table name =
@@ -1395,33 +1395,37 @@ module Analyser =
           let eles = f ~first: true loc.Location.loc_start.Lexing.pos_cnum mods in
           (0, new_env, eles)
 
-      | Parsetree.Pstr_modtype {Parsetree.pmtb_name=name; pmtb_type=modtype} ->
+      | Parsetree.Pstr_modtype {Parsetree.pmtd_name=name; pmtd_type=modtype} ->
           let complete_name = Name.concat current_module_name name.txt in
           let tt_module_type =
             try Typedtree_search.search_module_type table name.txt
             with Not_found ->
               raise (Failure (Odoc_messages.module_type_not_found_in_typedtree complete_name))
           in
-          let mty_type = tt_module_type.mtb_type.mty_type in
-          let kind = Sig.analyse_module_type_kind env complete_name
-              modtype mty_type
+          let kind, sig_mtype =
+            match modtype, tt_module_type.mtd_type with
+            | Some modtype, Some mty_type ->
+                Some (Sig.analyse_module_type_kind env complete_name
+                        modtype mty_type.mty_type),
+                Some mty_type.mty_type
+            | _ -> None, None
           in
           let mt =
             {
               mt_name = complete_name ;
               mt_info = comment_opt ;
-              mt_type = Some mty_type ;
+              mt_type = sig_mtype ;
               mt_is_interface = false ;
               mt_file = !file_name ;
-              mt_kind = Some kind ;
+              mt_kind = kind ;
               mt_loc = { loc_impl = Some loc ; loc_inter = None } ;
             }
           in
           let new_env = Odoc_env.add_module_type env mt.mt_name in
           let new_env2 =
-            match mty_type with
+            match sig_mtype with
               (* A VOIR : cela peut-il etre Tmty_ident ? dans ce cas, on n'aurait pas la signature *)
-              Types.Mty_signature s ->
+              Some (Types.Mty_signature s) ->
                 Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
             | _ ->
                 new_env
