@@ -110,7 +110,7 @@ module Main : sig end = struct
         try Hashtbl.find mtypes (path, name)
         with Not_found ->
           failwith
-            (Printf.sprintf "Cannot find type %s in file %s\n%!"
+            (Printf.sprintf "Cannot find module type %s in file %s\n%!"
                (String.concat "." (List.rev (name :: path))) file)
     end
 
@@ -139,7 +139,7 @@ module Main : sig end = struct
           | name :: path -> file, path, name
           end
       | _ ->
-          failwith "Cannot parse argument" (* TODO: loc *)
+          failwith "Cannot parse argument"
 
     method! tydecl = function
       | {ptype_kind = Ptype_abstract;
