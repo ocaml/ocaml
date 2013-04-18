@@ -343,6 +343,10 @@ module Convenience :
     val pconstr: string -> pattern list -> pattern
     val punit: unit -> pattern
 
+    (** {2 Types} *)
+
+    val tconstr: string -> core_type list -> core_type
+
     (** {2 AST deconstruction} *)
 
     val get_str: expression -> string option

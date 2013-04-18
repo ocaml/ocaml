@@ -5,13 +5,15 @@ BYTECMP=$(ROOT)/compilerlibs/ocamlbytecomp.cma
 TOPLVL=$(ROOT)/compilerlibs/ocamltoplevel.cma
 
 tracer.exe: tracer.ml
-	$(OCAMLC) -o $@ $(COMMON) $(ROOT)/tools/ast_mapper.cmo tracer.ml
+	$(OCAMLC) -o $@ -w +A-4 $(COMMON) tracer.ml
 
 ifdef.exe: ifdef.ml
-	$(OCAMLC) -o $@ $(COMMON) $(ROOT)/tools/ast_mapper.cmo ifdef.ml
+	$(OCAMLC) -o $@ -w +A-4 $(COMMON) ifdef.ml
 
-js_syntax.exe: js_syntax.ml
-	$(OCAMLC) -o $@ $(COMMON) $(ROOT)/tools/ast_mapper.cmo js_syntax.ml
+.PHONY: js_syntax
+js_syntax:
+	$(OCAMLC) -o js_syntax.exe -w +A-4 $(COMMON) js_syntax.ml
+	$(OCAMLC) -o test_ifdef.exe -i -ppx ./js_syntax.exe test_js.ml
 
 
 test_trace.exe: tracer.exe test_trace.ml
@@ -20,15 +22,12 @@ test_trace.exe: tracer.exe test_trace.ml
 test_ifdef.exe: ifdef.exe test_ifdef.ml
 	$(OCAMLC) -o test_ifdef.exe -ppx ./ifdef.exe test_ifdef.ml
 
-test_js.exe: js_syntax.exe test_js.ml
-	$(OCAMLC) -o test_ifdef.exe -i -ppx ./js_syntax.exe test_js.ml
-
 clean:
 	rm -f *.exe *.cm*
 
 
 .PHONY: minidoc
-minidoc: minidoc.ml
+minidoc:
 	$(OCAMLC) -custom -o minidoc.exe $(COMMON) minidoc.ml
 	$(OCAMLC) -c -bin-annot testdoc.mli
 	./minidoc.exe testdoc.cmti

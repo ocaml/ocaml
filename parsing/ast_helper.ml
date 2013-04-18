@@ -388,6 +388,8 @@ module Convenience = struct
   let punit () = pconstr "()" []
 
 
+  let tconstr c l = Typ.constr (lid c) l
+
   let get_str = function
     | {pexp_desc=Pexp_constant (Const_string (s, _)); _} -> Some s
     | e -> None
