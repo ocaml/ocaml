@@ -1,56 +1,65 @@
-(* This filter implements the following rewriting on module expressions:
+(* This filter implements the following extensions:
 
-   IFDEF(X)(<m1>)(<m2>)
-               ---> <m1>      if the environment variable X is defined
-               ---> <m2>      otherwise
+   In structures:
 
-   And, on expressions:
+   [%%IFDEF X]
+   ...             --> included if the environment variable X is defined
+   [%%ELSE]
+   ...             --> included if the environment variable X is undefined
+   [%%END]
 
-   GETENV X    ---> the string literal representing the compile-time value
+
+   In expressions:
+
+   [%GETENV X]    ---> the string literal representing the compile-time value
                     of environment variable X
 *)
 
-open Ast_mapper
+open Ast_helper
+open Asttypes
 open Parsetree
 open Longident
 open Location
 
-let getenv s = try Sys.getenv s with Not_found -> ""
+let getenv arg =
+  match arg with
+  | {pexp_desc = Pexp_construct ({txt = Lident sym; _}, None); _} ->
+      (try Sys.getenv sym with Not_found -> "")
+  | {pexp_loc = loc; _} ->
+      Format.eprintf "%a** IFDEF: bad syntax."
+        Location.print_error loc;
+      exit 2
+
+let empty_str_item = Str.include_ (Mod.structure [])
 
 let ifdef =
-  object(this)
-    inherit Ast_mapper.create as super
+  object
+    inherit Ast_mapper.mapper as super
 
-    method! module_expr = function
-      | {pmod_desc = Pmod_apply(
-         {pmod_desc = Pmod_apply(
-          {pmod_desc = Pmod_apply(
-           {pmod_desc = Pmod_ident {txt = Lident "IFDEF"}},
-           {pmod_desc = Pmod_ident {txt = Lident sym}}
-          )},
-          body_def)},
-         body_not_def)} ->
-           if getenv sym <> "" then
-             this # module_expr body_def
-           else
-             this # module_expr body_not_def
+    val mutable stack = []
 
-      | {pmod_desc = Pmod_ident {txt = Lident "IFDEF"}; pmod_loc = loc} ->
-          Format.printf "%a@.Improper use of IFDEF. The correct form is: IFDEF(<var_name:uident>)(<then:modtype>)(<body:modtype>)@."
-            Location.print_loc loc;
+    method! structure_item i =
+      match i.pstr_desc, stack with
+      | Pstr_extension(("IFDEF", arg), _), _ ->
+          stack <- (getenv arg <> "") :: stack;
+          empty_str_item
+      | Pstr_extension(("ELSE", _), _), (hd :: tl) ->
+          stack <- not hd :: tl;
+          empty_str_item
+      | Pstr_extension(("END", _), _), _ :: tl ->
+          stack <- tl;
+          empty_str_item
+      | Pstr_extension((("ELSE"|"END"), _), _), [] ->
+          Format.printf "%a** IFDEF: mo matching [%%%%IFDEF]"
+            Location.print_error i.pstr_loc;
           exit 2
-      | x -> super # module_expr x
+      | _, (true :: _ | []) -> super # structure_item i
+      | _, false :: _ -> empty_str_item
 
     method! expr = function
-      | {pexp_desc = Pexp_construct (
-         {txt = Lident "GETENV"},
-         Some {pexp_loc = loc; pexp_desc = Pexp_construct (
-               {txt = Lident sym},
-               None
-              )}
-        )} ->
-          E.strconst ~loc (getenv sym)
+      | {pexp_desc = Pexp_extension("GETENV", arg); pexp_loc = loc; _} ->
+          Exp.constant ~loc (Const_string (getenv arg, None))
       | x -> super # expr x
   end
 
-let () = ifdef # main
+let () = Ast_mapper.main ifdef

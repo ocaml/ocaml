@@ -4,11 +4,12 @@ COMMON=$(ROOT)/compilerlibs/ocamlcommon.cma
 BYTECMP=$(ROOT)/compilerlibs/ocamlbytecomp.cma
 TOPLVL=$(ROOT)/compilerlibs/ocamltoplevel.cma
 
-tracer.exe: tracer.ml
-	$(OCAMLC) -o $@ -w +A-4 $(COMMON) tracer.ml
+.PHONY: ifdef
 
-ifdef.exe: ifdef.ml
-	$(OCAMLC) -o $@ -w +A-4 $(COMMON) ifdef.ml
+ifdef:
+	$(OCAMLC) -o ifdef.exe -w +A-4 $(COMMON) ifdef.ml
+	$(OCAMLC) -o test_ifdef.exe -ppx ./ifdef.exe test_ifdef.ml
+	./test_ifdef.exe
 
 .PHONY: js_syntax
 js_syntax:
@@ -16,11 +17,11 @@ js_syntax:
 	$(OCAMLC) -o test_ifdef.exe -i -ppx ./js_syntax.exe test_js.ml
 
 
+tracer.exe: tracer.ml
+	$(OCAMLC) -o $@ -w +A-4 $(COMMON) tracer.ml
+
 test_trace.exe: tracer.exe test_trace.ml
 	$(OCAMLC) -o test_trace.exe -ppx ./tracer.exe test_trace.ml
-
-test_ifdef.exe: ifdef.exe test_ifdef.ml
-	$(OCAMLC) -o test_ifdef.exe -ppx ./ifdef.exe test_ifdef.ml
 
 clean:
 	rm -f *.exe *.cm*
