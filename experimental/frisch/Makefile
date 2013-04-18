@@ -4,8 +4,9 @@ COMMON=$(ROOT)/compilerlibs/ocamlcommon.cma
 BYTECMP=$(ROOT)/compilerlibs/ocamlbytecomp.cma
 TOPLVL=$(ROOT)/compilerlibs/ocamltoplevel.cma
 
-.PHONY: ifdef
+## Conditional compilation based on environment variables
 
+.PHONY: ifdef
 ifdef:
 	$(OCAMLC) -o ifdef.exe -w +A-4 $(COMMON) ifdef.ml
 	$(OCAMLC) -o test_ifdef.exe -ppx ./ifdef.exe -dsource test_ifdef.ml
@@ -18,14 +19,20 @@ js_syntax:
 
 
 clean:
-	rm -f *.exe *.cm*
+	rm -f *.exe *.cm* *~
 
+
+## A "toy" ocamldoc clone based on .cmti files
 
 .PHONY: minidoc
 minidoc:
 	$(OCAMLC) -custom -o minidoc.exe $(COMMON) minidoc.ml
 	$(OCAMLC) -c -bin-annot testdoc.mli
 	./minidoc.exe testdoc.cmti
+
+## Lifting the OCaml AST, used for:
+## (i)   creating a printer for Parsetree values
+## (ii)  quasi-quotations
 
 .PHONY: lifter
 lifter:
@@ -39,15 +46,22 @@ lifter:
 	$(OCAMLC) -custom -o metaquot_test.exe -w +A -ppx ./metaquot.exe $(COMMON) metaquot_test.ml
 	./metaquot_test.exe
 
+## Using the OCaml toplevel to evaluate expression during compilation
+
 .PHONY: eval
 eval:
 	$(OCAMLC) -linkall -o eval.exe -w +A-4 $(COMMON) $(BYTECMP) $(TOPLVL) eval.ml
 	$(OCAMLC) -o test_eval.exe -w +A -ppx ./eval.exe test_eval.ml
 
+## Example of code generation based on type declarations
+
 .PHONY: ppx_builder
 ppx_builder:
 	$(OCAMLC) -linkall -o ppx_builder.exe -w +A-4 $(COMMON) ppx_builder.ml
 	$(OCAMLC) -o test_builder.exe -w +A -ppx ./ppx_builder.exe -dsource test_builder.ml
+
+## Import type definitions from other source files (e.g. to avoid code
+## duplication between the .ml and .mli files)
 
 .PHONY: copy_typedef
 copy_typedef:
