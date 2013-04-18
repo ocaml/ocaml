@@ -4,6 +4,10 @@ COMMON=$(ROOT)/compilerlibs/ocamlcommon.cma
 BYTECMP=$(ROOT)/compilerlibs/ocamlbytecomp.cma
 TOPLVL=$(ROOT)/compilerlibs/ocamltoplevel.cma
 
+clean:
+	rm -f *.exe *.cm* *~
+
+
 ## Conditional compilation based on environment variables
 
 .PHONY: ifdef
@@ -12,14 +16,13 @@ ifdef:
 	$(OCAMLC) -o test_ifdef.exe -ppx ./ifdef.exe -dsource test_ifdef.ml
 	./test_ifdef.exe
 
+## A proposal for replacing js_of_ocaml Camlp4 syntax extension with
+## a -ppx filter
+
 .PHONY: js_syntax
 js_syntax:
 	$(OCAMLC) -o js_syntax.exe -w +A-4 $(COMMON) js_syntax.ml
 	$(OCAMLC) -o test_ifdef.exe -i -ppx ./js_syntax.exe test_js.ml
-
-
-clean:
-	rm -f *.exe *.cm* *~
 
 
 ## A "toy" ocamldoc clone based on .cmti files
