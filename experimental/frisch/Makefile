@@ -17,12 +17,6 @@ js_syntax:
 	$(OCAMLC) -o test_ifdef.exe -i -ppx ./js_syntax.exe test_js.ml
 
 
-tracer.exe: tracer.ml
-	$(OCAMLC) -o $@ -w +A-4 $(COMMON) tracer.ml
-
-test_trace.exe: tracer.exe test_trace.ml
-	$(OCAMLC) -o test_trace.exe -ppx ./tracer.exe test_trace.ml
-
 clean:
 	rm -f *.exe *.cm*
 
