@@ -13,6 +13,20 @@
 
    [%GETENV X]    ---> the string literal representing the compile-time value
                     of environment variable X
+
+
+   In variant type declarations:
+
+   type t =
+      ..
+     | C [@IFDEF X] of ...   --> the constructor is kept only if X is defined
+
+
+   In match clauses (function/match...with/try...with):
+
+
+   P when [%IFDEF X] -> E    --> the case is kept only if X is defined
+
 *)
 
 open Ast_helper
@@ -33,10 +47,34 @@ let getenv arg =
 let empty_str_item = Str.include_ (Mod.structure [])
 
 let ifdef =
-  object
+  object(this)
     inherit Ast_mapper.mapper as super
 
     val mutable stack = []
+
+    method eval_attributes =
+      List.for_all
+        (function
+          | "IFDEF", arg -> getenv arg <> ""
+          | "IFNDEF", arg -> getenv arg = ""
+          | _ -> true)
+
+    method filter_constr cd = this # eval_attributes cd.pcd_attributes
+
+    method! type_declaration = function
+      | {ptype_kind = Ptype_variant cstrs; _} as td ->
+          {td with ptype_kind =
+           Ptype_variant(List.filter (this # filter_constr) cstrs)}
+      | td -> td
+
+    method! cases l =
+      List.fold_right
+        (fun c rest ->
+          match c with
+          | {pc_guard=Some {pexp_desc=Pexp_extension("IFDEF", arg); _}; _} ->
+              if getenv arg = "" then rest else {c with pc_guard=None} :: rest
+          | c -> c :: rest
+        ) l []
 
     method! structure_item i =
       match i.pstr_desc, stack with

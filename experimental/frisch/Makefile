@@ -8,7 +8,7 @@ TOPLVL=$(ROOT)/compilerlibs/ocamltoplevel.cma
 
 ifdef:
 	$(OCAMLC) -o ifdef.exe -w +A-4 $(COMMON) ifdef.ml
-	$(OCAMLC) -o test_ifdef.exe -ppx ./ifdef.exe test_ifdef.ml
+	$(OCAMLC) -o test_ifdef.exe -ppx ./ifdef.exe -dsource test_ifdef.ml
 	./test_ifdef.exe
 
 .PHONY: js_syntax
