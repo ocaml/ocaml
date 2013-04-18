@@ -27,6 +27,12 @@ Compilers:
   representation for type constructors inside types, taking open modules
   into account. This can make types much more readable if your code
   uses lots of functors.
+- PR#5986: added flag -compat-32 to ocamlc, ensuring that the generated
+  bytecode executable can be loaded on 32-bit hosts.
+
+Standard library:
+- PR#5986: new flag Marshal.Compat_32 for the serialization functions
+  (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 
 Bug fixes:
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)

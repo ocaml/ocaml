@@ -31,9 +31,11 @@
    type of the returned value, using the following syntax:
    - [(Marshal.from_channel chan : type)].
    Anything can happen at run-time if the object in the file does not
-   belong to the given type. Apart from that marshaling is not
-   type-safe, it's also risky to marshal exception or any OCaml values
-   of type that contains exception in it's defininition or in dependent
+   belong to the given type.
+
+   Apart from that marshaling is not type-safe, it's also risky to
+   marshal exception or any OCaml values of type that contains
+   exception in it's defininition or in dependent
    definitions. Although it's possible to marshal and unmarshal these
    OCaml values, it's not possible anymore to match the exception
    contained in it using match construct. The same principle applies
@@ -55,20 +57,22 @@
 type extern_flags =
     No_sharing                          (** Don't preserve sharing *)
   | Closures                            (** Send function closures *)
+  | Compat_32                           (** Ensure 32-bit compatibility *)
 (** The flags to the [Marshal.to_*] functions below. *)
 
 val to_channel : out_channel -> 'a -> extern_flags list -> unit
 (** [Marshal.to_channel chan v flags] writes the representation
    of [v] on channel [chan]. The [flags] argument is a
    possibly empty list of flags that governs the marshaling
-   behavior with respect to sharing and functional values.
+   behavior with respect to sharing, functional values, and compatibility
+   between 32- and 64-bit platforms.
 
    If [flags] does not contain [Marshal.No_sharing], circularities
    and sharing inside the value [v] are detected and preserved
    in the sequence of bytes produced. In particular, this
    guarantees that marshaling always terminates. Sharing
    between values marshaled by successive calls to
-   [Marshal.to_channel] is not detected, though.
+   [Marshal.to_channel] is neither detected nor preserved, though.
    If [flags] contains [Marshal.No_sharing], sharing is ignored.
    This results in faster marshaling if [v] contains no shared
    substructures, but may cause slower marshaling and larger
@@ -85,7 +89,20 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    only be read back in processes that run exactly the same program,
    with exactly the same compiled code. (This is checked
    at un-marshaling time, using an MD5 digest of the code
-   transmitted along with the code position.) *)
+   transmitted along with the code position.)
+
+   If [flags] contains [Marshal.Compat_32], marshaling fails when
+   it encounters an integer value outside the range [[-2{^30}, 2{^30}-1]]
+   of integers that are representable on a 32-bit platform.  This
+   ensures that marshaled data generated on a 64-bit platform can be
+   safely read back on a 32-bit platform.  If [flags] does not
+   contain [Marshal.Compat_32], integer values outside the
+   range [[-2{^30}, 2{^30}-1]] are marshaled, and can be read back on
+   a 64-bit platform, but will cause an error at un-marshaling time
+   when read back on a 32-bit platform.  The [Mashal.Compat_32] flag
+   only matters when marshaling is performed on a 64-bit platform;
+   it has no effect if marshaling is performed on a 32-bit platform.
+ *)
 
 external to_string :
   'a -> extern_flags list -> string = "caml_output_value_to_string"
