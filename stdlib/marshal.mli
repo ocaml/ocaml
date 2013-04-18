@@ -35,7 +35,7 @@
 
    Apart from that marshaling is not type-safe, it's also risky to
    marshal exception or any OCaml values of type that contains
-   exception in it's defininition or in dependent
+   exception in its defininition or in dependent
    definitions. Although it's possible to marshal and unmarshal these
    OCaml values, it's not possible anymore to match the exception
    contained in it using match construct. The same principle applies
