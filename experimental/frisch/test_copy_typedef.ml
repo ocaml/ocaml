@@ -12,8 +12,6 @@ end
 
 type t = [%copy_typedef]
 
-type y = [%copy_typedef "bla.ml" t]
-
 let _x = M.A
 let _y : t = [1; 2]
 
