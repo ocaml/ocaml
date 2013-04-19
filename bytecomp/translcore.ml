@@ -508,7 +508,7 @@ let rec push_defaults loc bindings cases partial =
       let pl = push_defaults exp.exp_loc bindings pl partial in
       [{c_lhs=pat; c_guard=None; c_rhs={exp with exp_desc = Texp_function(l, pl, partial)}}]
   | [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_attributes=["#default",_];
+      c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
       push_defaults loc (binds :: bindings) [{c_lhs=pat;c_guard=None;c_rhs=e2}] partial

@@ -16,20 +16,14 @@ open Asttypes
 
 (** {2 Extension points} *)
 
-type attribute = string * expression
-      (* [@id E]
-         [@id]     (expr = ())
-
-         [@@id EXPR]
-         [@@id]    (expr = ())
+type attribute = string loc * structure
+      (* [@id STRUCTURE]
+         [@@id STRUCTURE]
        *)
 
-and extension = string * expression
-      (* [%id E]
-         [%id]     (expr = ())
-
-         [%%id EXPR]
-         [%%id]    (expr = ())
+and extension = string loc * structure
+      (* [%id STRUCTURE]
+         [%%id STRUCTURE]
        *)
 
 and attributes = attribute list
@@ -42,7 +36,7 @@ and core_type =
     {
      ptyp_desc: core_type_desc;
      ptyp_loc: Location.t;
-     ptyp_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
+     ptyp_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and core_type_desc =
@@ -102,7 +96,7 @@ and core_type_desc =
   | Ptyp_package of package_type
         (* (module S) *)
   | Ptyp_extension of extension
-        (* [%id E] *)
+        (* [%id] *)
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
       (*
@@ -126,7 +120,7 @@ and pattern =
     {
      ppat_desc: pattern_desc;
      ppat_loc: Location.t;
-     ppat_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
+     ppat_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and pattern_desc =
@@ -173,7 +167,7 @@ and pattern_desc =
            Note: (module P : S) is represented as Ppat_constraint(Ppat_unpack, Ptyp_package)
          *)
   | Ppat_extension of extension
-        (* [%id E] *)
+        (* [%id] *)
 
 (* Value expressions *)
 
@@ -181,7 +175,7 @@ and expression =
     {
      pexp_desc: expression_desc;
      pexp_loc: Location.t;
-     pexp_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
+     pexp_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and expression_desc =
@@ -287,7 +281,7 @@ and expression_desc =
   | Pexp_open of Longident.t loc * expression
         (* let open M in E *)
   | Pexp_extension of extension
-        (* [%id E] *)
+        (* [%id] *)
 
 and case =   (* (P -> E) or (P when E0 -> E) *)
     {
@@ -303,7 +297,7 @@ and value_description =
      pval_name: string loc;
      pval_type: core_type;
      pval_prim: string list;
-     pval_attributes: attributes;  (* ... [@@id1 E1] [@@id2 E2] *)
+     pval_attributes: attributes;  (* ... [@@id1] [@@id2] *)
      pval_loc: Location.t;
     }
 
@@ -326,7 +320,7 @@ and type_declaration =
      ptype_kind: type_kind;
      ptype_private: private_flag;   (* = private ... *)
      ptype_manifest: core_type option;  (* = T *)
-     ptype_attributes: attributes;   (* ... [@@id1 E1] [@@id2 E2] *)
+     ptype_attributes: attributes;   (* ... [@@id1] [@@id2] *)
      ptype_loc: Location.t;
     }
 
@@ -350,7 +344,7 @@ and label_declaration =
      pld_mutable: mutable_flag;
      pld_type: core_type;
      pld_loc: Location.t;
-     pld_attributes: attributes; (* l [@id1 E1] [@id2 E2] : T *)
+     pld_attributes: attributes; (* l [@id1] [@id2] : T *)
     }
 
 (*  { ...; l: T; ... }            (mutable=Immutable)
@@ -365,7 +359,7 @@ and constructor_declaration =
      pcd_args: core_type list;
      pcd_res: core_type option;
      pcd_loc: Location.t;
-     pcd_attributes: attributes; (* C [@id1 E1] [@id2 E2] of ... *)
+     pcd_attributes: attributes; (* C [@id1] [@id2] of ... *)
     }
 (*
   | C of T1 * ... * Tn     (res = None)
@@ -381,7 +375,7 @@ and class_type =
     {
      pcty_desc: class_type_desc;
      pcty_loc: Location.t;
-     pcty_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
+     pcty_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and class_type_desc =
@@ -396,7 +390,7 @@ and class_type_desc =
            ?l:T -> CT    (label = "?l")
          *)
   | Pcty_extension of extension
-        (* [%id E] *)
+        (* [%id] *)
 
 and class_signature =
     {
@@ -411,7 +405,7 @@ and class_type_field =
     {
      pctf_desc: class_type_field_desc;
      pctf_loc: Location.t;
-     pctf_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
+     pctf_attributes: attributes; (* ... [@@id1] [@@id2] *)
     }
 
 and class_type_field_desc =
@@ -427,7 +421,7 @@ and class_type_field_desc =
   | Pctf_constraint  of (core_type * core_type)
         (* constraint T1 = T2 *)
   | Pctf_extension of extension
-        (* [%%id E] *)
+        (* [%%id] *)
 
 and 'a class_infos =
     {
@@ -436,7 +430,7 @@ and 'a class_infos =
      pci_name: string loc;
      pci_expr: 'a;
      pci_loc: Location.t;
-     pci_attributes: attributes;  (* ... [@@id1 E1] [@@id2 E2] *)
+     pci_attributes: attributes;  (* ... [@@id1] [@@id2] *)
     }
 (* class c = ...
    class ['a1,...,'an] c = ...
@@ -455,7 +449,7 @@ and class_expr =
     {
      pcl_desc: class_expr_desc;
      pcl_loc: Location.t;
-     pcl_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
+     pcl_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and class_expr_desc =
@@ -482,7 +476,7 @@ and class_expr_desc =
   | Pcl_constraint of class_expr * class_type
         (* (CE : CT) *)
   | Pcl_extension of extension
-        (* [%id E] *)
+        (* [%id] *)
 
 and class_structure =
     {
@@ -497,7 +491,7 @@ and class_field =
     {
      pcf_desc: class_field_desc;
      pcf_loc: Location.t;
-     pcf_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
+     pcf_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and class_field_desc =
@@ -520,7 +514,7 @@ and class_field_desc =
   | Pcf_initializer of expression
         (* initializer E *)
   | Pcf_extension of extension
-        (* [%id E] *)
+        (* [%id] *)
 
 and class_field_kind =
   | Cfk_virtual of core_type
@@ -536,7 +530,7 @@ and module_type =
     {
      pmty_desc: module_type_desc;
      pmty_loc: Location.t;
-     pmty_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
+     pmty_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and module_type_desc =
@@ -551,7 +545,7 @@ and module_type_desc =
   | Pmty_typeof of module_expr
         (* module type of ME *)
   | Pmty_extension of extension
-        (* [%id E] *)
+        (* [%id] *)
 
 and signature = signature_item list
 
@@ -587,17 +581,17 @@ and signature_item_desc =
   | Psig_class_type of class_type_declaration list
         (* class type ct1 = ... and ... and ctn = ... *)
   | Psig_attribute of attribute
-        (* [@@id E]
+        (* [@@id]
            (not attached to another item, i.e. after ";;" or at the beginning
            of the signature) *)
   | Psig_extension of extension * attributes
-        (* [%%id E] *)
+        (* [%%id] *)
 
 and module_declaration =
     {
      pmd_name: string loc;
      pmd_type: module_type;
-     pmd_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
+     pmd_attributes: attributes; (* ... [@@id1] [@@id2] *)
     }
 (* S : MT *)
 
@@ -605,7 +599,7 @@ and module_type_declaration =
     {
      pmtd_name: string loc;
      pmtd_type: module_type option;
-     pmtd_attributes: attributes; (* ... [@@id1 E1] [@@id2 E2] *)
+     pmtd_attributes: attributes; (* ... [@@id1] [@@id2] *)
     }
 (* S = MT
    S       (abstract module type declaration, pmtd_type = None)
@@ -630,7 +624,7 @@ and module_expr =
     {
      pmod_desc: module_expr_desc;
      pmod_loc: Location.t;
-     pmod_attributes: attributes; (* ... [@id1 E1] [@id2 E2] *)
+     pmod_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
 and module_expr_desc =
@@ -647,7 +641,7 @@ and module_expr_desc =
   | Pmod_unpack of expression
         (* (val E) *)
   | Pmod_extension of extension
-        (* [%id E] *)
+        (* [%id] *)
 
 and structure = structure_item list
 
@@ -687,11 +681,11 @@ and structure_item_desc =
   | Pstr_include of module_expr * attributes
         (* include ME *)
   | Pstr_attribute of attribute
-        (* [@@id E]
+        (* [@@id]
            (not attached to another item, i.e. after ";;" or at the beginning
            of the structure) *)
   | Pstr_extension of extension * attributes
-        (* [%%id E] *)
+        (* [%%id] *)
 
 and module_binding =
     {

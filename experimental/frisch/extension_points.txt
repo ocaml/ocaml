@@ -5,19 +5,22 @@ This file describes the changes on the extension_points branch.
 
 Attributes are "decorations" of the syntax tree which are ignored by
 the type-checker.  An attribute is made of an identifier (written id)
-and an optional expression (written expr below).
+and a argument, which is an OCaml structure (i.e. a list of structure
+items), written s below.
 
 The identifier can be a lowercase or uppercase identifier (including
 OCaml keywords) or a sequence of such atomic identifiers separated with
 a dots (whitespaces are allowed around the dots).  In the Parsetree,
 the identifier is represented as a single string (without spaces).
 
+Note: a structure can be empty, or reduced to a single expression.
+
 Attributes on expressions, type expressions, module expressions, module type expressions,
 patterns, class expressions, class type expressions:
  
-  ... [@id expr]
+  ... [@id s]
 
-The same syntax [@id expr] is also available to add attributes on
+The same syntax [@id s] is also available to add attributes on
 constructors and labels in type declarations:
 
   type t =
@@ -36,7 +39,7 @@ and id3 is attached to the int type expression.  Example on records:
 
 Attributes on items:
 
-  ... [@@id expr]
+  ... [@@id s]
 
   Items designate signature items, structure items, class fields,
   class type fields and also individual components of multiple
@@ -53,7 +56,7 @@ Attributes on items:
   Note: item attributes are currently not supported on Pstr_eval
   and Pstr_value structure items.
 
-  The [@@id expr] form, when used at the beginning of a signature or
+  The [@@id s] form, when used at the beginning of a signature or
   structure, or after a double semi-colon (;;), defines an attribute
   which stands as a stand-alone signature or structure item (not
   attached to another item).
@@ -86,14 +89,14 @@ Two syntaxes exist for extension node:
 As expressions, type expressions, module expressions, module type expressions,
 patterns, class expressions, class type expressions:
 
-  [%id expr]
+  [%id s]
 
 As structure item, signature item, class field, class type field:
  
-  [%%id expr]
+  [%%id s]
 
 As other structure item, signature item, class field or class type
-field, attributes can be attached to a [%%id expr] extension node.
+field, attributes can be attached to a [%%id s] extension node.
 
 
 === Alternative syntax for attributes and extensions on specific kinds of nodes
@@ -101,17 +104,17 @@ field, attributes can be attached to a [%%id expr] extension node.
 All expression constructions starting with a keyword (EXPR = KW REST) support an
 alternative syntax for attributes and/or extensions:
 
-  KW[@id expr]...[@id expr] REST
+  KW[@id s]...[@id s] REST
   ---->
-  EXPR[@id expr]...[@id expr]
+  EXPR[@id s]...[@id s]
 
   KW%id REST
   ---->
   [%id EXPR]
 
-  KW%id[@id expr]...[@id expr] REST
+  KW%id[@id s]...[@id s] REST
   ---->
-  [%id EXPR[@id expr]...[@id expr]]
+  [%id EXPR[@id s]...[@id s]]
 
 
 where KW can stand for:

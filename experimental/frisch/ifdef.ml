@@ -35,11 +35,11 @@ open Parsetree
 open Longident
 open Location
 
-let getenv arg =
+let getenv loc arg =
   match arg with
-  | {pexp_desc = Pexp_construct ({txt = Lident sym; _}, None); _} ->
+  | [{pstr_desc=Pstr_eval({pexp_desc = Pexp_construct ({txt = Lident sym; _}, None); _}, _); _}] ->
       (try Sys.getenv sym with Not_found -> "")
-  | {pexp_loc = loc; _} ->
+  | _ ->
       Format.eprintf "%a** IFDEF: bad syntax."
         Location.print_error loc;
       exit 2
@@ -55,8 +55,8 @@ let ifdef =
     method eval_attributes =
       List.for_all
         (function
-          | "IFDEF", arg -> getenv arg <> ""
-          | "IFNDEF", arg -> getenv arg = ""
+          | {txt="IFDEF"; loc}, arg -> getenv loc arg <> ""
+          | {txt="IFNDEF"; loc}, arg -> getenv loc arg = ""
           | _ -> true)
 
     method filter_constr cd = this # eval_attributes cd.pcd_attributes
@@ -71,32 +71,32 @@ let ifdef =
       List.fold_right
         (fun c rest ->
           match c with
-          | {pc_guard=Some {pexp_desc=Pexp_extension("IFDEF", arg); _}; _} ->
-              if getenv arg = "" then rest else {c with pc_guard=None} :: rest
+          | {pc_guard=Some {pexp_desc=Pexp_extension({txt="IFDEF";loc}, arg); _}; _} ->
+              if getenv loc arg = "" then rest else {c with pc_guard=None} :: rest
           | c -> c :: rest
         ) l []
 
     method! structure_item i =
       match i.pstr_desc, stack with
-      | Pstr_extension(("IFDEF", arg), _), _ ->
-          stack <- (getenv arg <> "") :: stack;
+      | Pstr_extension(({txt="IFDEF";loc}, arg), _), _ ->
+          stack <- (getenv loc arg <> "") :: stack;
           empty_str_item
-      | Pstr_extension(("ELSE", _), _), (hd :: tl) ->
+      | Pstr_extension(({txt="ELSE";loc=_}, _), _), (hd :: tl) ->
           stack <- not hd :: tl;
           empty_str_item
-      | Pstr_extension(("END", _), _), _ :: tl ->
+      | Pstr_extension(({txt="END";loc=_}, _), _), _ :: tl ->
           stack <- tl;
           empty_str_item
-      | Pstr_extension((("ELSE"|"END"), _), _), [] ->
+      | Pstr_extension(({txt="ELSE"|"END";loc}, _), _), [] ->
           Format.printf "%a** IFDEF: mo matching [%%%%IFDEF]"
-            Location.print_error i.pstr_loc;
+            Location.print_error loc;
           exit 2
       | _, (true :: _ | []) -> super # structure_item i
       | _, false :: _ -> empty_str_item
 
     method! expr = function
-      | {pexp_desc = Pexp_extension("GETENV", arg); pexp_loc = loc; _} ->
-          Exp.constant ~loc (Const_string (getenv arg, None))
+      | {pexp_desc = Pexp_extension({txt="GETENV";loc=l}, arg); pexp_loc = loc; _} ->
+          Exp.constant ~loc (Const_string (getenv l arg, None))
       | x -> super # expr x
   end
 

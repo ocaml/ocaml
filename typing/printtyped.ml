@@ -140,8 +140,8 @@ let attributes i ppf l =
   let i = i + 1 in
   List.iter
     (fun (s, arg) ->
-      line i ppf "attribute \"%s\"\n" s;
-      Printast.expression (i + 1) ppf arg;
+      line i ppf "attribute \"%s\"\n" s.txt;
+      Printast.structure (i + 1) ppf arg;
     )
     l
 
@@ -612,8 +612,8 @@ and signature_item i ppf x =
       line i ppf "Psig_class_type\n";
       list i class_type_declaration ppf l;
   | Tsig_attribute (s, arg) ->
-      line i ppf "Psig_attribute \"%s\"\n" s;
-      Printast.expression i ppf arg
+      line i ppf "Psig_attribute \"%s\"\n" s.txt;
+      Printast.structure i ppf arg
 
 and module_declaration i ppf md =
   line i ppf "%a" fmt_ident md.md_id;
@@ -719,8 +719,8 @@ and structure_item i ppf x =
       attributes i ppf attrs;
       module_expr i ppf me;
   | Tstr_attribute (s, arg) ->
-      line i ppf "Pstr_attribute \"%s\"\n" s;
-      Printast.expression i ppf arg
+      line i ppf "Pstr_attribute \"%s\"\n" s.txt;
+      Printast.structure i ppf arg
 
 and string_x_module_type i ppf (s, _, mty) =
   ident i ppf s;

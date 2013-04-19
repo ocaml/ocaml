@@ -31,10 +31,10 @@ module Main : sig end = struct
     exit 2
 
   let param named name loc attrs =
-    let default = find_attr "default" attrs in
+    let default = find_attr_expr "default" attrs in
     let opt = has_attr "opt" attrs in
     let label =
-      match find_attr "label" attrs with
+      match find_attr_expr "label" attrs with
       | None -> if named then name else ""
       | Some e ->
           match get_lid e with

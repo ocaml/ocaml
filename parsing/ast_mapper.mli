@@ -18,6 +18,8 @@ open Parsetree
 
 class mapper:
   object
+    method case: case -> case
+    method cases: case list -> case list
     method class_declaration: class_declaration -> class_declaration
     method class_description: class_description -> class_description
     method class_expr: class_expr -> class_expr

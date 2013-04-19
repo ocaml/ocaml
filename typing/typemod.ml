@@ -294,7 +294,7 @@ let rec approx_modtype env smty =
       let (_, mty) = !type_module_type_of_fwd env smod in
       mty
   | Pmty_extension (s, _arg) ->
-      raise (Error (smty.pmty_loc, env, Extension s))
+      raise (Error (s.loc, env, Extension s.txt))
 
 and approx_sig env ssg =
   match ssg with
@@ -457,7 +457,7 @@ let rec transl_modtype env smty =
       let tmty, mty = !type_module_type_of_fwd env smod in
       mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
   | Pmty_extension (s, _arg) ->
-      raise (Error (smty.pmty_loc, env, Extension s))
+      raise (Error (s.loc, env, Extension s.txt))
 
 
 and transl_signature env sg =
@@ -587,7 +587,7 @@ and transl_signature env sg =
             let (trem,rem, final_env) = transl_sig env srem in
             mksig (Tsig_attribute x) env loc :: trem, rem, final_env
         | Psig_extension ((s, _), _) ->
-            raise (Error (loc, env, Extension s))
+            raise (Error (s.loc, env, Extension s.txt))
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
   let (trem, rem, final_env) = transl_sig (Env.in_signature env) sg in
@@ -971,7 +971,7 @@ let rec type_module sttn funct_body anchor env smod =
            mod_attributes = smod.pmod_attributes;
            mod_loc = smod.pmod_loc }
   | Pmod_extension (s, _arg) ->
-      raise (Error (smod.pmod_loc, env, Extension s))
+      raise (Error (s.loc, env, Extension s.txt))
 
 and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_names = ref StringSet.empty
@@ -1194,7 +1194,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          sg @ sig_rem,
          final_env)
     | Pstr_extension ((s, _), _) ->
-        raise (Error (loc, env, Extension s))
+        raise (Error (s.loc, env, Extension s.txt))
     | Pstr_attribute x ->
         let (str_rem, sig_rem, final_env) = type_struct env srem in
         mk (Tstr_attribute x) :: str_rem, sig_rem, final_env

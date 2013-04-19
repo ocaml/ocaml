@@ -401,7 +401,7 @@ let rec class_type_field env self_type meths
         val_sig, concr_meths, inher)
 
   | Pctf_extension (s, _arg) ->
-      raise (Error (ctf.pctf_loc, env, Extension s))
+      raise (Error (s.loc, env, Extension s.txt))
 
 and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   let meths = ref Meths.empty in
@@ -485,7 +485,7 @@ and class_type env scty =
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ
   | Pcty_extension (s, _arg) ->
-      raise (Error (scty.pcty_loc, env, Extension s))
+      raise (Error (s.loc, env, Extension s.txt))
 
 let class_type env scty =
   delayed_meth_specs := [];
@@ -683,7 +683,7 @@ let rec class_field self_loc cl_num self_type meths vars
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals, inher)
 
   | Pcf_extension (s, _arg) ->
-      raise (Error (loc, val_env, Extension s))
+      raise (Error (s.loc, val_env, Extension s.txt))
 
 and class_structure cl_num final val_env met_env loc
   { pcstr_self = spat; pcstr_fields = str } =
@@ -1103,7 +1103,7 @@ and class_expr cl_num val_env met_env scl =
           cl_attributes = scl.pcl_attributes;
          }
   | Pcl_extension (s, _arg) ->
-      raise (Error (scl.pcl_loc, val_env, Extension s))
+      raise (Error (s.loc, val_env, Extension s.txt))
 
 (*******************************)
 

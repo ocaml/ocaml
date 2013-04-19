@@ -8,10 +8,10 @@
    [%expr ...]  maps to code which creates the expression represented by ...
    [%pat "..."] maps to code which creates the pattern represented by ...
    [%pat "..."] maps to code which creates the pattern represented by ...
-   [%str "..."] maps to code which creates the structure represented by ...
+   [%str ...] maps to code which creates the structure represented by ...
    [type "..."] maps to code which creates the core type represented by ...
 
-   Note that except for the expr expander, the argument needs to be
+   Note that except for the expr and str expander, the argument needs to be
    a string literal (it can also be a quoted string, of course), which
    will be re-parse by the expander (in case of a parsing error,
    the location will be relative to the parsed string).
@@ -66,6 +66,13 @@ module Main : sig end = struct
     end
 
 
+  let get_exp loc = function
+    | [ {pstr_desc=Pstr_eval (e, _); _} ] -> e
+    | _ ->
+        Format.eprintf "%aExpression expected"
+          Location.print_error loc;
+        exit 2
+
   let lifter loc =
     object
       inherit [_] Ast_lifter.lifter as super
@@ -76,21 +83,21 @@ module Main : sig end = struct
 
           (* Support for antiquotations *)
       method! lift_Parsetree_expression = function
-        | {pexp_desc=Pexp_extension("e", e); _} -> e
+        | {pexp_desc=Pexp_extension({txt="e";loc}, e); _} -> get_exp loc e
         | x -> super # lift_Parsetree_expression x
 
       method! lift_Parsetree_pattern = function
-        | {ppat_desc=Ppat_extension("p", e); _} -> e
+        | {ppat_desc=Ppat_extension({txt="p";loc}, e); _} -> get_exp loc e
         | x -> super # lift_Parsetree_pattern x
 
       method! lift_Parsetree_core_type = function
-        | {ptyp_desc=Ptyp_extension("t", e); _} -> e
+        | {ptyp_desc=Ptyp_extension({txt="t";loc}, e); _} -> get_exp loc e
         | x -> super # lift_Parsetree_core_type x
     end
 
   let loc = ref (evar "Location.none")
   let handle_attr = function
-    | "metaloc", l -> loc := l
+    | {txt="metaloc";loc=l}, e -> loc := get_exp l e
     | _ -> ()
 
   let with_loc ?(attrs = []) f =
@@ -134,16 +141,15 @@ module Main : sig end = struct
       with_loc ~attrs:e.pexp_attributes
         (fun () ->
           match e.pexp_desc with
-          | Pexp_extension("expr", e) ->
-              (lifter !loc) # lift_Parsetree_expression e
-          | Pexp_extension("pat", e) ->
-              let p = extract_str Parse.pattern "pattern" e in
+          | Pexp_extension({txt="expr";loc=l}, e) ->
+              (lifter !loc) # lift_Parsetree_expression (get_exp l e)
+          | Pexp_extension({txt="pat";loc=l}, e) ->
+              let p = extract_str Parse.pattern "pattern" (get_exp l e) in
               (lifter !loc) # lift_Parsetree_pattern p
-          | Pexp_extension("str", e) ->
-              let p = extract_str Parse.implementation "structure" e in
-              (lifter !loc) # lift_Parsetree_structure p
-          | Pexp_extension("type", e) ->
-              let p = extract_str Parse.core_type "type" e in
+          | Pexp_extension({txt="str";_}, e) ->
+              (lifter !loc) # lift_Parsetree_structure e
+          | Pexp_extension({txt="type";loc=l}, e) ->
+              let p = extract_str Parse.core_type "type" (get_exp l e) in
               (lifter !loc) # lift_Parsetree_core_type p
           | _ ->
               super # expr e

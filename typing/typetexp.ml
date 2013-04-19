@@ -548,7 +548,7 @@ let rec transl_type env policy styp =
             pack_txt = p;
            }) ty
   | Ptyp_extension (s, _arg) ->
-      raise (Error (loc, env, Extension s))
+      raise (Error (s.loc, env, Extension s.txt))
 
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)

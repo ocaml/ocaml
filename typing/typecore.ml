@@ -1142,7 +1142,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       unify_pat_types loc !env ty expected_ty;
       { p with pat_extra = (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
   | Ppat_extension (s, _arg) ->
-      raise (Error (loc, !env, Extension s))
+      raise (Error (s.loc, !env, Extension s.txt))
 
 let type_pat ?(allow_existentials=false) ?constrs ?labels
     ?(lev=get_current_level()) env sp expected_ty =
@@ -1920,7 +1920,7 @@ and type_expect_ ?in_function env sexp ty_expected =
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let scp =
         match sexp.pexp_attributes, rec_flag with
-        | ["#default",_], _ -> None
+        | [{txt="#default"},_], _ -> None
         | _, Recursive -> Some (Annot.Idef loc)
         | _, Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
       in
@@ -1960,7 +1960,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         Exp.fun_ ~loc
           l None
           (Pat.var ~loc (mknoloc "*opt*"))
-          (Exp.let_ ~loc Nonrecursive ~attrs:["#default",Exp.constant (Const_int 0)] [spat, smatch] sexp)
+          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",[]] [spat, smatch] sexp)
       in
       type_expect ?in_function env sfun ty_expected
         (* TODO: keep attributes, call type_function directly *)
@@ -2720,7 +2720,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_extra = (Texp_open (path, lid, newenv), loc, sexp.pexp_attributes) :: exp.exp_extra;
       }
   | Pexp_extension (s, _arg) ->
-      raise (Error (loc, env, Extension s))
+      raise (Error (s.loc, env, Extension s.txt))
 
 and type_function ?in_function loc attrs env ty_expected l caselist =
   let (loc_fun, ty_fun) =

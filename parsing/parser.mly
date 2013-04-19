@@ -276,7 +276,7 @@ let wrap_exp_attrs body (ext, attrs) =
   let body = {body with pexp_attributes = attrs @ body.pexp_attributes} in
   match ext with
   | None -> body
-  | Some id -> ghexp(Pexp_extension (id, body))
+  | Some id -> ghexp(Pexp_extension (id, [mkstrexp body []]))
 
 let mkexp_attrs d attrs =
   wrap_exp_attrs (mkexp d) attrs
@@ -1966,14 +1966,14 @@ single_attr_id:
 ;
 
 attr_id:
-    single_attr_id { $1 }
-  | single_attr_id DOT attr_id { $1 ^ "." ^ $3 }
+    single_attr_id { mkloc $1 (symbol_rloc()) }
+  | single_attr_id DOT attr_id { mkloc ($1 ^ "." ^ $3.txt) (symbol_rloc())}
 ;
 attribute:
-  LBRACKETAT attr_id opt_expr RBRACKET { ($2, $3) }
+  LBRACKETAT attr_id ext_arg RBRACKET { ($2, $3) }
 ;
 post_item_attribute:
-  LBRACKETATAT attr_id opt_expr RBRACKET { ($2, $3) }
+  LBRACKETATAT attr_id ext_arg RBRACKET { ($2, $3) }
 ;
 post_item_attributes:
     /* empty */  { [] }
@@ -1989,13 +1989,12 @@ ext_attributes:
   | PERCENT attr_id attributes { Some $2, $3 }
 ;
 extension:
-  LBRACKETPERCENT attr_id opt_expr RBRACKET { ($2, $3) }
+  LBRACKETPERCENT attr_id ext_arg RBRACKET { ($2, $3) }
 ;
 item_extension:
-  LBRACKETPERCENTPERCENT attr_id opt_expr RBRACKET { ($2, $3) }
+  LBRACKETPERCENTPERCENT attr_id ext_arg RBRACKET { ($2, $3) }
 ;
-opt_expr:
-    seq_expr { $1 }
-  |      { ghunit () }
+ext_arg:
+  structure { $1 }
 ;
 %%

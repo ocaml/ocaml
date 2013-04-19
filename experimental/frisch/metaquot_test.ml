@@ -17,5 +17,5 @@ let () = Format.printf "%a@." (Printast.expression 0) e
 
 
 let mytype = [%type "int list"]
-let s = [%str {|type t = A of [%t mytype] | B of string|}]
+let s = [%str type t = A of [%t mytype] | B of string]
 let () = Format.printf "%a@." Printast.implementation s

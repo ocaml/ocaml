@@ -122,7 +122,7 @@ module Main : sig end = struct
     val mutable file = ""
 
     method source name = function
-      | {pexp_desc=Pexp_construct({txt=Lident "()";_},None); _} ->
+      | [] ->
           let file =
             if Filename.check_suffix file ".ml"
             then (Filename.chop_suffix file ".ml") ^ ".mli"
@@ -131,9 +131,10 @@ module Main : sig end = struct
             else failwith "Unknown source extension"
           in
           file, path, name
-      | {pexp_desc=Pexp_apply
-           ({pexp_desc=Pexp_constant(Const_string (file, _)); _},
-            ["", {pexp_desc=Pexp_ident{txt=lid;_}; _}]); _} ->
+      | [{pstr_desc=Pstr_eval
+            ({pexp_desc=Pexp_apply
+                ({pexp_desc=Pexp_constant(Const_string (file, _)); _},
+                 ["", {pexp_desc=Pexp_ident{txt=lid;_}; _}]); _}, _); _}] ->
           begin match List.rev (Longident.flatten lid) with
           | [] -> assert false
           | name :: path -> file, path, name
@@ -144,7 +145,7 @@ module Main : sig end = struct
     method! tydecl = function
       | {ptype_kind = Ptype_abstract;
          ptype_manifest =
-         Some{ptyp_desc=Ptyp_extension("copy_typedef", arg); _};
+         Some{ptyp_desc=Ptyp_extension({txt="copy_typedef";_}, arg); _};
          ptype_name = name; ptype_loc = loc; _
         } ->
           begin try
@@ -156,7 +157,7 @@ module Main : sig end = struct
       | td -> td
 
     method! mtydecl = function
-      | {pmtd_type = Some{pmty_desc=Pmty_extension("copy_typedef", arg);
+      | {pmtd_type = Some{pmty_desc=Pmty_extension({txt="copy_typedef";_}, arg);
                           pmty_loc=loc; _};
          pmtd_name = name; _
         } ->

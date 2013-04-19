@@ -23,6 +23,7 @@
 
 module Main : sig end = struct
 
+  open Location
   open Parsetree
   open Ast_helper
   open Outcometree
@@ -59,6 +60,13 @@ module Main : sig end = struct
       Errors.report_error Format.err_formatter exn;
       exit 2
 
+  let get_exp loc = function
+    | [ {pstr_desc=Pstr_eval (e, _); _} ] -> e
+    | _ ->
+        Format.eprintf "%aExpression expected"
+          Location.print_error loc;
+        exit 2
+
   let eval = object
     inherit Ast_mapper.mapper as super
 
@@ -66,7 +74,8 @@ module Main : sig end = struct
 
     method! structure_item i =
       match i.pstr_desc with
-      | Pstr_extension(("eval.load", e0), _) ->
+      | Pstr_extension(({txt="eval.load";loc}, e0), _) ->
+          let e0 = get_exp loc e0 in
           let s =
             match get_str e0 with
             | Some s -> s
@@ -80,13 +89,15 @@ module Main : sig end = struct
             exit 2;
           end;
           empty_str_item
-      | Pstr_extension(("eval.start", e), _) when get_lid e = Some "both" ->
+      | Pstr_extension(({txt="eval.start";_},
+                        [{pstr_desc=Pstr_eval (e, _);_}]
+                       ), _) when get_lid e = Some "both" ->
           eval_str_items <- Some true;
           empty_str_item
-      | Pstr_extension(("eval.start", _), _) ->
+      | Pstr_extension(({txt="eval.start";_}, []), _) ->
           eval_str_items <- Some false;
           empty_str_item
-      | Pstr_extension(("eval.stop", _), _) ->
+      | Pstr_extension(({txt="eval.stop";_}, []), _) ->
           eval_str_items <- None;
           empty_str_item
       | _ ->
@@ -103,7 +114,8 @@ module Main : sig end = struct
 
     method! expr e =
       match e.pexp_desc with
-      | Pexp_extension("eval", e0) ->
+      | Pexp_extension({txt="eval";loc}, e0) ->
+          let e0 = get_exp loc e0 in
           let last_result = ref None in
           let pop = !Toploop.print_out_phrase in
           Toploop.print_out_phrase := begin fun _ppf -> function

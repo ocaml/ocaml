@@ -191,13 +191,6 @@ module E = struct
   let apply_nolabs ?loc ?attrs f el = Exp.apply ?loc ?attrs f (List.map (fun e -> ("", e)) el)
   let strconst ?loc ?attrs x = Exp.constant ?loc ?attrs (Const_string (x, None))
 
-  let map_case sub {pc_lhs; pc_guard; pc_rhs} =
-    {
-     pc_lhs = sub # pat pc_lhs;
-     pc_guard = map_opt (sub # expr) pc_guard;
-     pc_rhs = sub # expr pc_rhs;
-    }
-
   let map sub {pexp_loc = loc; pexp_desc = desc; pexp_attributes = attrs} =
     let open Exp in
     let loc = sub # location loc in
@@ -207,10 +200,10 @@ module E = struct
     | Pexp_constant x -> constant ~loc ~attrs x
     | Pexp_let (r, pel, e) -> let_ ~loc ~attrs r (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
     | Pexp_fun (lab, def, p, e) -> fun_ ~loc ~attrs lab (map_opt (sub # expr) def) (sub # pat p) (sub # expr e)
-    | Pexp_function pel -> function_ ~loc ~attrs (List.map (map_case sub) pel)
+    | Pexp_function pel -> function_ ~loc ~attrs (sub # cases pel)
     | Pexp_apply (e, l) -> apply ~loc ~attrs (sub # expr e) (List.map (map_snd (sub # expr)) l)
-    | Pexp_match (e, l) -> match_ ~loc ~attrs (sub # expr e) (List.map (map_case sub) l)
-    | Pexp_try (e, l) -> try_ ~loc ~attrs (sub # expr e) (List.map (map_case sub) l)
+    | Pexp_match (e, pel) -> match_ ~loc ~attrs (sub # expr e) (sub # cases pel)
+    | Pexp_try (e, pel) -> try_ ~loc ~attrs (sub # expr e) (sub # cases pel)
     | Pexp_tuple el -> tuple ~loc ~attrs (List.map (sub # expr) el)
     | Pexp_construct (lid, arg) -> construct ~loc ~attrs (map_loc sub lid) (map_opt (sub # expr) arg)
     | Pexp_variant (lab, eo) -> variant ~loc ~attrs lab (map_opt (sub # expr) eo)
@@ -399,11 +392,20 @@ class mapper =
         ~loc:(this # location pld_loc)
         ~attrs:(this # attributes pld_attributes)
 
+    method cases l = List.map (this # case) l
+    method case {pc_lhs; pc_guard; pc_rhs} =
+      {
+       pc_lhs = this # pat pc_lhs;
+       pc_guard = map_opt (this # expr) pc_guard;
+       pc_rhs = this # expr pc_rhs;
+    }
+
+
 
     method location l = l
 
-    method extension (s, e) = (s, this # expr e)
-    method attribute (s, e) = (s, this # expr e)
+    method extension (s, e) = (map_loc this s, this # structure e)
+    method attribute (s, e) = (map_loc this s, this # structure e)
     method attributes l = List.map (this # attribute) l
   end
 

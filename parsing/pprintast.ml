@@ -54,12 +54,6 @@ let is_predef_option = function
   | (Ldot (Lident "*predef*","option")) -> true
   | _ -> false
 
-let is_unit = function
-  | {pexp_desc=Pexp_construct ( {txt= Lident "()"; _},_);
-     pexp_attributes = []
-    } -> true
-  | _ -> false
-
 type space_formatter = (unit, Format.formatter, unit) format
 
 let override = function
@@ -311,7 +305,7 @@ class printer  ()= object(self:'self)
             pp f "@[<hov2>(module@ %a@ with@ %a)@]" self#longident_loc lid
               (self#list aux  ~sep:"@ and@ ")  cstrs)
     | Ptyp_extension (s, arg) ->
-      pp f "@[<2>(&%s@ %a)@]" s self#expression arg
+      pp f "@[<2>(&%s@ %a)@]" s.txt self#structure arg
     | _ -> self#paren true self#core_type f x
           (********************pattern********************)
           (* be cautious when use [pattern], [pattern1] is preferred *)         
@@ -601,7 +595,7 @@ class printer  ()= object(self:'self)
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
     | Pexp_extension (s, arg) ->
-      pp f "@[<2>(&%s@ %a)@]" s self#expression arg
+      pp f "@[<2>(&%s@ %a)@]" s.txt self#structure arg
     | _ -> self#expression1 f x
   method expression1 f x =
     if x.pexp_attributes <> [] then self#expression f x
@@ -671,10 +665,7 @@ class printer  ()= object(self:'self)
     List.iter (self # attribute f) l
 
   method attribute f (s, e) =
-    if is_unit e then
-      pp f "[@@%s]" s
-    else
-      pp f "[@@%s %a]" s self#expression e
+    pp f "[@@%s %a]" s.txt self#structure e
 
   method value_description f x =
     pp f "@[<hov2>%a%a@]" self#core_type x.pval_type
