@@ -80,6 +80,7 @@ Bug fixes:
 - PR#5930: ocamldep leaks temporary preprocessing files
 - PR#5934: integer shift by negative amount (in otherlibs/num)
 - PR#5920, PR#2957: linking failure for big bytecodes on 32bit architectures
+- PR#5981: Incompatibility check assumes abstracted types are injective
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
@@ -123,8 +124,8 @@ Bug fixes:
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5911: Signature substitutions fail in submodules
 - PR#5948: GADT with polymorphic variants bug
-- PR#5981: Incompatibility check assumes abstracted types are injective
 - PR#5989: Assumed inequalities involving private rows
+- PR#5993: Variance of private type abbreviations not checked for modules
 
 OCaml 4.00.1:
 -------------

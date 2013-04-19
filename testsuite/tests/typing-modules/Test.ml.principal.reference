@@ -8,4 +8,17 @@ class type c = object method m : [ `A ] t end
 #   module M : sig val v : (#c as 'a) -> 'a end
 #       val id : 'a -> 'a = <fun>
 #       val ko : 'a -> unit = <fun>
+#           Characters 64-99:
+    struct type +'a t = private int end
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type +'a t = private int end
+       is not included in
+         sig type -'a t = private int end
+       Type declarations do not match:
+         type +'a t = private int
+       is not included in
+         type -'a t = private int
+       Their variances do not agree.
 # 
