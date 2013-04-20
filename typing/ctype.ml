@@ -2243,7 +2243,17 @@ and unify3 env t1 t1' t2 t2' =
           | _ -> ()
           end
       | (Tvariant row1, Tvariant row2) ->
-          unify_row env row1 row2
+          if !umode = Expression then
+            unify_row env row1 row2
+          else begin
+            let snap = snapshot () in
+            try unify_row env row1 row2
+            with Unify _ ->
+              backtrack snap;
+              reify env t1';
+              reify env t2';
+              if !generate_equations then mcomp !env t1' t2'
+          end
       | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
           begin match field_kind_repr kind with
             Fvar r when f <> dummy_method ->
