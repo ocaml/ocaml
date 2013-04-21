@@ -307,8 +307,9 @@ and type_declaration =
     typ_cstrs: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
     typ_private: private_flag;
+    typ_new: bool;
     typ_manifest: core_type option;
-    typ_variance: (bool * bool) list;
+    typ_variance: (bool * bool * bool) list;
     typ_loc: Location.t }
 
 and type_kind =

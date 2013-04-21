@@ -12,7 +12,6 @@
 
 (* Operations on module types *)
 
-open Asttypes
 open Path
 open Types
 
@@ -46,15 +45,16 @@ and strengthen_sig env sg p =
       sigelt :: strengthen_sig env rem p
   | Sig_type(id, decl, rs) :: rem ->
       let newdecl =
-        match decl.type_manifest, decl.type_private, decl.type_kind with
-          Some _, Public, _ -> decl
-        | Some _, Private, (Type_record _ | Type_variant _) -> decl
+        match decl.type_manifest, decl.type_transparence, decl.type_kind with
+          Some _, Type_public, _ -> decl
+        | Some _, Type_private, (Type_record _ | Type_variant _) -> decl
         | _ ->
             let manif =
               Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
                                           decl.type_params, ref Mnil))) in
             if decl.type_kind = Type_abstract then
-              { decl with type_private = Public; type_manifest = manif }
+              { decl with
+		type_transparence = Type_public; type_manifest = manif }
             else
               { decl with type_manifest = manif }
       in

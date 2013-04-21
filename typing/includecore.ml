@@ -12,7 +12,6 @@
 
 (* Inclusion checks for the core language *)
 
-open Asttypes
 open Path
 open Types
 open Typedtree
@@ -34,12 +33,15 @@ let value_descriptions env vd1 vd2 =
 
 (* Inclusion between "private" annotations *)
 
-let private_flags decl1 decl2 =
-  match decl1.type_private, decl2.type_private with
-  | Private, Public ->
+let transparence_flags decl1 decl2 =
+  match decl1.type_transparence, decl2.type_transparence with
+    Type_public, Type_public -> true
+  | (Type_private | Type_new), Type_public ->
       decl2.type_kind = Type_abstract &&
       (decl2.type_manifest = None || decl1.type_kind <> Type_abstract)
-  | _, _ -> true
+  | _, Type_private    -> true
+  | Type_new, Type_new -> true
+  | _, _ -> false
 
 (* Inclusion between manifest types (particularly for private row types) *)
 
@@ -100,7 +102,7 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
   | _ ->
       let rec check_super ty1 =
         Ctype.equal env true (ty1 :: params1) (ty2 :: params2) ||
-        priv2 = Private &&
+        priv2 <> Type_public &&
         try check_super
               (Ctype.try_expand_once_opt env (Ctype.expand_head env ty1))
         with Ctype.Cannot_expand -> false
@@ -132,7 +134,7 @@ let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match err with
     Arity -> pr "They have different arities"
-  | Privacy -> pr "A private type would be revealed"
+  | Privacy -> pr "A private or new type would be made transparent"
   | Kind -> pr "Their kinds differ"
   | Constraint -> pr "Their constraints differ"
   | Manifest -> ()
@@ -202,7 +204,7 @@ let rec compare_records env decl1 decl2 n labels1 labels2 =
 
 let type_declarations ?(equality = false) env name decl1 id decl2 =
   if decl1.type_arity <> decl2.type_arity then [Arity] else
-  if not (private_flags decl1 decl2) then [Privacy] else
+  if not (transparence_flags decl1 decl2) then [Privacy] else
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> []
     | (Type_variant cstrs1, Type_variant cstrs2) ->
@@ -213,8 +215,9 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
             cstrs
         in
         let usage =
-          if decl1.type_private = Private || decl2.type_private = Public
-          then Env.Positive else Env.Privatize
+          if decl1.type_transparence = Type_public
+	  && decl2.type_transparence = Type_private
+          then Env.Privatize else Env.Positive
         in
         mark cstrs1 usage name decl1;
         if equality then mark cstrs2 Env.Positive (Ident.name id) decl2;
@@ -232,7 +235,7 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         then [] else [Constraint]
     | (Some ty1, Some ty2) ->
         if type_manifest env ty1 decl1.type_params ty2 decl2.type_params
-            decl2.type_private
+            decl2.type_transparence
         then [] else [Manifest]
     | (None, Some ty2) ->
         let ty1 =
@@ -244,13 +247,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         else [Constraint]
   in
   if err <> [] then err else
-  if match decl2.type_kind with
-  | Type_record (_,_) | Type_variant _ -> decl2.type_private = Private
-  | Type_abstract ->
-      match decl2.type_manifest with
-      | None -> true
-      | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
-  then
+  if decl2.type_transparence <> Type_public
+  || decl2.type_kind = Type_abstract && decl2.type_manifest = None then
     if List.for_all2
         (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2)&&(not cn1 || cn2))
         decl1.type_variance decl2.type_variance

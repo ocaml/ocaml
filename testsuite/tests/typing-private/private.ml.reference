@@ -88,7 +88,7 @@ Error: Signature mismatch:
       type t = M.t = T of int
            ^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type M.t
-       A private type would be revealed.
+       A private or new type would be made transparent.
 #           module M5 : sig type t = M.t = private T of int val mk : int -> t end
 #         module M6 : sig type t = private T of int val mk : int -> t end
 #                   module M' :

@@ -1065,7 +1065,7 @@ let new_declaration newtype manifest =
     type_params = [];
     type_arity = 0;
     type_kind = Type_abstract;
-    type_private = Public;
+    type_transparence = Type_public;
     type_manifest = manifest;
     type_variance = [];
     type_newtype_level = newtype;
@@ -2018,9 +2018,13 @@ and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if Path.same p1 p2 then
+    if Path.same p1 p2 then begin
+      Format.eprintf "@[%a@ %a@]@."
+	!print_raw (newconstr p1 tl2) !print_raw (newconstr p2 tl2);
+      if non_aliasable p1 decl then Format.eprintf "non_aliasable@."
+      else Format.eprintf "aliasable@.";
       (if non_aliasable p1 decl then mcomp_list type_pairs subst env tl1 tl2)
-    else match decl.type_kind, decl'.type_kind with
+    end else match decl.type_kind, decl'.type_kind with
     | Type_record (lst,r), Type_record (lst',r') when r = r' ->
         mcomp_list type_pairs subst env tl1 tl2;
         mcomp_record_description type_pairs subst env lst lst'
@@ -3654,10 +3658,15 @@ let subtypes = TypePairs.create 17
 let subtype_error env trace =
   raise (Subtype (expand_trace env (List.rev trace), []))
 
-let private_abbrev env path =
+let new_generic_abbrev priv_ok env path =
   try
-    let decl = Env.find_type path env in
-    decl.type_private = Private && decl.type_manifest <> None
+    match Env.find_type path env with
+      {type_kind = Type_abstract;
+       type_transparence = (Type_private | Type_new as t);
+       type_manifest = Some body} ->
+         (priv_ok || t = Type_new) &&
+         (repr body).level = generic_level
+    | _ -> false
   with Not_found -> false
 
 (* check list inclusion, assuming lists are ordered *)
@@ -3721,8 +3730,10 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Not_found ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
-    | (Tconstr(p1, tl1, _), _) when private_abbrev env p1 ->
+    | (Tconstr(p1, _, _), _) when new_generic_abbrev true env p1 ->
         subtype_rec env trace (expand_abbrev_opt env t1) t2 cstrs
+    | (_, Tconstr(p2, _, _)) when new_generic_abbrev false env p2 ->
+        subtype_rec env trace t1 (expand_abbrev_opt env t2) cstrs
     | (Tobject (f1, _), Tobject (f2, _))
       when is_Tvar (object_row f1) && is_Tvar (object_row f2) ->
         (* Same row variable implies same object. *)
@@ -4095,14 +4106,14 @@ let nondep_type_decl env mid id is_covariant decl =
     clear_hash ();
     let priv =
       match tm with
-      | Some ty when Btype.has_constr_row ty -> Private
-      | _ -> decl.type_private
+      | Some ty when Btype.has_constr_row ty -> Type_private
+      | _ -> decl.type_transparence
     in
     { type_params = params;
       type_arity = decl.type_arity;
       type_kind = tk;
       type_manifest = tm;
-      type_private = priv;
+      type_transparence = priv;
       type_variance = decl.type_variance;
       type_newtype_level = None;
       type_loc = decl.type_loc;

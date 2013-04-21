@@ -1112,7 +1112,7 @@ let temp_abbrev loc env id arity =
       {type_params = !params;
        type_arity = arity;
        type_kind = Type_abstract;
-       type_private = Public;
+       type_transparence = Type_public;
        type_manifest = Some ty;
        type_variance = List.map (fun _ -> true, true, true) !params;
        type_newtype_level = None;
@@ -1327,7 +1327,7 @@ let class_infos define_class kind
     {type_params = obj_params;
      type_arity = List.length obj_params;
      type_kind = Type_abstract;
-     type_private = Public;
+     type_transparence = Type_public;
      type_manifest = Some obj_ty;
      type_variance = List.map (fun _ -> true, true, true) obj_params;
      type_newtype_level = None;
@@ -1342,7 +1342,7 @@ let class_infos define_class kind
     {type_params = cl_params;
      type_arity = List.length cl_params;
      type_kind = Type_abstract;
-     type_private = Public;
+     type_transparence = Type_public;
      type_manifest = Some cl_ty;
      type_variance = List.map (fun _ -> true, true, true) cl_params;
      type_newtype_level = None;
@@ -1397,7 +1397,7 @@ let final_decl env define_class
 
   (id, cl.pci_name, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
    arity, pub_meths, coe, expr,
-   { ci_variance = cl.pci_variance;
+   { ci_variance = List.map (fun (c,n,i) -> c,n) cl.pci_variance;
      ci_loc = cl.pci_loc;
      ci_virt = cl.pci_virt;
       ci_params = cl.pci_params;

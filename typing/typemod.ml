@@ -128,10 +128,10 @@ let merge_constraint initial_env loc  sg lid constr =
               List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
             type_arity = List.length sdecl.ptype_params;
             type_kind = Type_abstract;
-            type_private = Private;
+            type_transparence = Type_private;
             type_manifest = None;
             type_variance =
-              List.map (fun (c,n) -> (not n, not c, not c))
+              List.map (fun (c,n,i) -> (not n, not c, not c))
               sdecl.ptype_variance;
             type_loc = Location.none;
             type_newtype_level = None }

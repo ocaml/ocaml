@@ -45,6 +45,12 @@ open Typedtree
 
 exception Error of Location.t * error
 
+let type_transparence sdecl =
+  if sdecl.ptype_new then Type_new else
+  match sdecl.ptype_private with
+    Public  -> Type_public
+  | Private -> Type_private
+
 (* Enter all declared types in the environment as abstract types *)
 
 let enter_type env (name, sdecl) id =
@@ -53,7 +59,7 @@ let enter_type env (name, sdecl) id =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
       type_arity = List.length sdecl.ptype_params;
       type_kind = Type_abstract;
-      type_private = sdecl.ptype_private;
+      type_transparence = type_transparence sdecl;
       type_manifest =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
@@ -225,7 +231,7 @@ let transl_declaration env (name, sdecl) id =
       { type_params = params;
         type_arity = List.length params;
         type_kind = kind;
-        type_private = sdecl.ptype_private;
+        type_transparence = type_transparence sdecl;
         type_manifest = man;
         type_variance = List.map (fun _ -> true, true, true) params;
         type_newtype_level = None;
@@ -263,6 +269,7 @@ let transl_declaration env (name, sdecl) id =
       typ_kind = tkind;
       typ_variance = sdecl.ptype_variance;
       typ_private = sdecl.ptype_private;
+      typ_new = sdecl.ptype_new;
     } in
     (id, name, tdecl)
 
@@ -590,7 +597,7 @@ let compute_variance_type env check (required, loc) decl tyl =
   let tvl = tvl0 @ tvl1 in
   List.iter (fun (cn,ty) -> compute_variance false env tvl true cn cn ty) tyl;
   let required =
-    List.map (fun (c,n as r) -> if c || n then r else (true,true))
+    List.map (fun (c,n,i) -> if c || n then (c,n) else (true,true))
       required
   in
   List.iter2
@@ -612,7 +619,7 @@ let compute_variance_type env check (required, loc) decl tyl =
       incr pos;
       if !co && not c || !cn && not n
       then raise (Error(loc, Bad_variance (!pos, (!co,!cn), (c,n))));
-      if decl.type_private = Private then (c,n,n) else
+      if decl.type_transparence = Type_private then (c,n,n) else
       let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl0 required
@@ -631,7 +638,8 @@ let compute_variance_gadt env check (required, loc as rloc) decl
     (_, tl, ret_type_opt) =
   match ret_type_opt with
   | None ->
-      compute_variance_type env check rloc {decl with type_private = Private}
+      compute_variance_type env check rloc
+        {decl with type_transparence = Type_private}
         (add_false tl)
   | Some ret_type ->
       match Ctype.repr ret_type with
@@ -639,7 +647,7 @@ let compute_variance_gadt env check (required, loc as rloc) decl
           let fvl = List.map Ctype.free_variables tyl in
           let _ =
             List.fold_left2
-              (fun (fv1,fv2) ty (c,n) ->
+              (fun (fv1,fv2) ty (c,n,i) ->
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
@@ -649,13 +657,13 @@ let compute_variance_gadt env check (required, loc as rloc) decl
               ([], fvl) tyl required
           in
           compute_variance_type env check rloc
-            {decl with type_params = tyl; type_private = Private}
+            {decl with type_params = tyl; type_transparence = Type_private}
             (add_false tl)
       | _ -> assert false
 
 let compute_variance_decl env check decl (required, loc as rloc) =
   if decl.type_kind = Type_abstract && decl.type_manifest = None then
-    List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
+    List.map (fun (c, n, i) -> if c || n then (c, n, n) else (true, true, true))
       required
   else match decl.type_kind with
   | Type_abstract ->
@@ -717,7 +725,9 @@ let compute_variance_decls env cldecls =
   let decls, required =
     List.fold_right
       (fun (obj_id, obj_abbr, cl_abbr, clty, cltydef, ci) (decls, req) ->
-        (obj_id, obj_abbr) :: decls, (ci.ci_variance, ci.ci_loc) :: req)
+        (obj_id, obj_abbr) :: decls,
+        (List.map (fun (cn,cv) -> cn,cv,false) ci.ci_variance, ci.ci_loc)
+        :: req)
       cldecls ([],[])
   in
   let variances = List.map init_variance decls in
@@ -764,7 +774,7 @@ let name_recursion sdecl id decl =
   match decl with
   | { type_kind = Type_abstract;
       type_manifest = Some ty;
-      type_private = Private; } when is_fixed_type sdecl ->
+      type_transparence = Type_private; } when is_fixed_type sdecl ->
     let ty = Ctype.repr ty in
     let ty' = Btype.newty2 ty.level ty.desc in
     if Ctype.deep_occur ty ty' then
@@ -980,7 +990,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     { type_params = params;
       type_arity = List.length params;
       type_kind = if arity_ok then orig_decl.type_kind else Type_abstract;
-      type_private = sdecl.ptype_private;
+      type_transparence = type_transparence sdecl;
       type_manifest = man;
       type_variance = [];
       type_newtype_level = None;
@@ -1009,6 +1019,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     typ_kind = Ttype_abstract;
     typ_variance = sdecl.ptype_variance;
     typ_private = sdecl.ptype_private;
+    typ_new = sdecl.ptype_new;
   }
 
 (* Approximate a type declaration: just make all types abstract *)
@@ -1021,7 +1032,7 @@ let abstract_type_decl arity =
     { type_params = make_params arity;
       type_arity = arity;
       type_kind = Type_abstract;
-      type_private = Public;
+      type_transparence = Type_public;
       type_manifest = None;
       type_variance = replicate_list (true, true, true) arity;
       type_newtype_level = None;

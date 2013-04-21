@@ -1,6 +1,3 @@
-#directory "+compiler-libs";;
-Clflags.real_paths := false;;
-
 module Core = struct
   module Int = struct
     module T = struct

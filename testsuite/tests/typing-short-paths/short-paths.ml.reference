@@ -1,9 +1,5 @@
 
-# # Characters -1--1:
-  Clflags.real_paths := false;;
-  
-Error: Reference to undefined global `Clflags'
-#                                 module Core :
+#                               module Core :
   sig
     module Int :
       sig

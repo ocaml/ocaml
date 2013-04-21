@@ -61,7 +61,9 @@ let override = function
   | Fresh -> ""
 
 (* variance encoding: need to sync up with the [parser.mly] *)
-let type_variance = function
+let type_variance (cv,cn,inj) =
+  (if inj then "#" else "") ^
+  match cv, cn with
   | (false,false) -> ""
   | (true,false) -> "+"
   | (false,true) -> "-"
@@ -735,7 +737,8 @@ class printer  ()= object(self:'self)
 
   (* [class type a = object end] *)
   method class_type_declaration_list f  l =
-    let class_type_declaration f ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
+    let class_type_declaration f
+        ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
       pp f "%a%a%s@ =@ %a" self#virtual_flag x.pci_virt
         self#class_params_def (List.combine ls pci_variance) txt
         self#class_type x.pci_expr in

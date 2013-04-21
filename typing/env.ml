@@ -427,17 +427,16 @@ let find_type_descrs p env =
   snd (find_type_full p env)
 
 (* Find the manifest type associated to a type when appropriate:
-   - the type should be public or should have a private row,
-   - the type should have an associated manifest type. *)
+   - the type should be an alias or should have a private row *)
 let find_type_expansion ?level path env =
   let decl = find_type path env in
   match decl.type_manifest with
-  | Some body when decl.type_private = Public
-              || decl.type_kind <> Type_abstract
-              || Btype.has_constr_row body ->
-                  (decl.type_params, body, may_map snd decl.type_newtype_level)
-  (* The manifest type of Private abstract data types without
-     private row are still considered unknown to the type system.
+  | Some body when decl.type_transparence = Type_public
+                || decl.type_kind <> Type_abstract
+                || Btype.has_constr_row body ->
+      (decl.type_params, body, may_map snd decl.type_newtype_level)
+  (* The manifest type of Private abstract data types are still considered
+     unknown to the type system.
      Hence, this case is caught by the following clause that also handles
      purely abstract data types without manifest type definition. *)
   | _ -> raise Not_found
@@ -449,9 +448,10 @@ let find_type_expansion ?level path env =
 let find_type_expansion_opt path env =
   let decl = find_type path env in
   match decl.type_manifest with
-  (* The manifest type of Private abstract data types can still get
-     an approximation using their manifest type. *)
-  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
+  (* Private or new types can still get an approximation using
+     their manifest type. *)
+  | Some body ->
+      (decl.type_params, body, may_map snd decl.type_newtype_level)
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =
@@ -859,11 +859,14 @@ let rec scrape_modtype mty env =
 
 (* Compute constructor descriptions *)
 
+let privacy decl =
+  if decl.type_transparence = Type_private then Private else Public
+
 let constructors_of_type ty_path decl =
   let handle_variants cstrs =
     Datarepr.constructor_descrs
       (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-      cstrs decl.type_private
+      cstrs (privacy decl)
   in
   match decl.type_kind with
   | Type_variant cstrs -> handle_variants cstrs
@@ -876,7 +879,7 @@ let labels_of_type ty_path decl =
     Type_record(labels, rep) ->
       Datarepr.label_descrs
         (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        labels rep decl.type_private
+        labels rep (privacy decl)
   | Type_variant _ | Type_abstract -> []
 
 (* Given a signature and a root path, prefix all idents in the signature

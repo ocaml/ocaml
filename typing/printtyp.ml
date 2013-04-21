@@ -221,7 +221,8 @@ let rec uniq = function
 let rec normalize_type_path ?(cache=false) env p =
   try
     let desc = Env.find_type p env in
-    if desc.type_private = Private || desc.type_newtype_level <> None then
+    if desc.type_transparence <> Type_public
+    || desc.type_newtype_level <> None then
       (p, Id)
     else match desc.type_manifest with
       Some ty ->
@@ -723,19 +724,20 @@ let rec tree_of_type_decl id decl =
   in
   let type_defined decl =
     let abstr =
+      decl.type_kind = Type_abstract && decl.type_transparence = Type_private ||
+      decl.type_manifest = None &&
       match decl.type_kind with
-        Type_abstract ->
-          decl.type_manifest = None || decl.type_private = Private
-      | Type_record _ ->
-          decl.type_private = Private
+        Type_abstract -> true
+      | Type_record _ -> decl.type_transparence = Type_private
       | Type_variant tll ->
-          decl.type_private = Private ||
+          decl.type_transparence = Type_private ||
           List.exists (fun (_,_,ret) -> ret <> None) tll
     in
     let vari =
       List.map2
-        (fun ty (co,cn,ct) ->
-          if abstr || not (is_Tvar (repr ty)) then (co,cn) else (true,true))
+        (fun ty (co,cn,ct) ->  (* check injectivity *)
+          if abstr || not (is_Tvar (repr ty))
+          then (co,cn,false) else (true,true,false))
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -749,22 +751,25 @@ let rec tree_of_type_decl id decl =
   in
   let (name, args) = type_defined decl in
   let constraints = tree_of_constraints params in
-  let ty, priv =
+  let ty =
     match decl.type_kind with
     | Type_abstract ->
         begin match ty_manifest with
-        | None -> (Otyp_abstract, Public)
-        | Some ty ->
-            tree_of_typexp false ty, decl.type_private
+        | None -> Otyp_abstract
+        | Some ty -> tree_of_typexp false ty
         end
     | Type_variant cstrs ->
-        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),
-        decl.type_private
+        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs))
     | Type_record(lbls, rep) ->
-        tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
-        decl.type_private
+        tree_of_manifest (Otyp_record (List.map tree_of_label lbls))
   in
-  (name, args, ty, priv, constraints)
+  let transp =
+    match decl.type_transparence with
+    | Type_public -> Otr_public
+    | Type_new -> Otr_new
+    | Type_private -> Otr_private
+  in
+  (name, args, ty, transp, constraints)
 
 and tree_of_constructor (name, args, ret_type_opt) =
   let name = Ident.name name in
@@ -920,11 +925,11 @@ let class_type ppf cty =
   prepare_class_type [] cty;
   !Oprint.out_class_type ppf (tree_of_class_type false [] cty)
 
-let tree_of_class_param param variance =
+let tree_of_class_param param (cv, cn) =
   (match tree_of_typexp true param with
     Otyp_var (_, s) -> s
   | _ -> "?"),
-  if is_Tvar (repr param) then (true, true) else variance
+  if is_Tvar (repr param) then (true, true, false) else (cv, cn, false)
 
 let tree_of_class_params params =
   let tyl = tree_of_typlist true params in

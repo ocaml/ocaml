@@ -1372,11 +1372,12 @@ type_declarations:
 type_declaration:
     optional_type_parameters LIDENT type_kind constraints
       { let (params, variance) = List.split $1 in
-        let (kind, private_flag, manifest) = $3 in
+        let (kind, private_flag, new_flag, manifest) = $3 in
         (mkrhs $2 2, {ptype_params = params;
               ptype_cstrs = List.rev $4;
               ptype_kind = kind;
               ptype_private = private_flag;
+              ptype_new = new_flag;
               ptype_manifest = manifest;
               ptype_variance = variance;
               ptype_loc = symbol_rloc() }) }
@@ -1387,23 +1388,25 @@ constraints:
 ;
 type_kind:
     /*empty*/
-      { (Ptype_abstract, Public, None) }
+      { (Ptype_abstract, Public, false, None) }
   | EQUAL core_type
-      { (Ptype_abstract, Public, Some $2) }
+      { (Ptype_abstract, Public, false, Some $2) }
   | EQUAL PRIVATE core_type
-      { (Ptype_abstract, Private, Some $3) }
+      { (Ptype_abstract, Private, false, Some $3) }
+  | EQUAL NEW core_type
+      { (Ptype_abstract, Private, true, Some $3) }
   | EQUAL constructor_declarations
-      { (Ptype_variant(List.rev $2), Public, None) }
+      { (Ptype_variant(List.rev $2), Public, false, None) }
   | EQUAL PRIVATE constructor_declarations
-      { (Ptype_variant(List.rev $3), Private, None) }
+      { (Ptype_variant(List.rev $3), Private, false, None) }
   | EQUAL private_flag BAR constructor_declarations
-      { (Ptype_variant(List.rev $4), $2, None) }
+      { (Ptype_variant(List.rev $4), $2, false, None) }
   | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $4), $2, None) }
+      { (Ptype_record(List.rev $4), $2, false, None) }
   | EQUAL core_type EQUAL private_flag opt_bar constructor_declarations
-      { (Ptype_variant(List.rev $6), $4, Some $2) }
+      { (Ptype_variant(List.rev $6), $4, false, Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $6), $4, Some $2) }
+      { (Ptype_record(List.rev $6), $4, false, Some $2) }
 ;
 optional_type_parameters:
     /*empty*/                                   { [] }
@@ -1427,12 +1430,16 @@ type_parameters:
   | LPAREN type_parameter_list RPAREN           { List.rev $2 }
 ;
 type_parameter:
-    type_variance QUOTE ident                   { mkrhs $3 3, $1 }
+    type_variance QUOTE ident
+      { mkrhs $3 3, $1 }
 ;
 type_variance:
-    /* empty */                                 { false, false }
-  | PLUS                                        { true, false }
-  | MINUS                                       { false, true }
+    /* empty */                                 { false, false, false }
+  | PLUS                                        { true, false, false }
+  | MINUS                                       { false, true, false }
+  | SHARP                                       { false, false, true }
+  | SHARP PLUS                                  { true, false, true }
+  | SHARP MINUS                                 { false, true, true }
 ;
 type_parameter_list:
     type_parameter                              { [$1] }
@@ -1488,6 +1495,7 @@ with_constraint:
                      ptype_kind = Ptype_abstract;
                      ptype_manifest = Some $5;
                      ptype_private = $4;
+                     ptype_new = false;
                      ptype_variance = variance;
                      ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow
@@ -1500,6 +1508,7 @@ with_constraint:
                            ptype_kind = Ptype_abstract;
                            ptype_manifest = Some $5;
                            ptype_private = Public;
+                           ptype_new = false;
                            ptype_variance = variance;
                            ptype_loc = symbol_rloc()}) }
   | MODULE mod_longident EQUAL mod_ext_longident

@@ -282,8 +282,9 @@ let out_type = ref print_out_type
 
 (* Class types *)
 
-let type_parameter ppf (ty, (co, cn)) =
-  fprintf ppf "%s%s"
+let type_parameter ppf (ty, (co, cn, ij)) =
+  fprintf ppf "%s%s%s"
+    (if ij then "#" else "")
     (if not cn then "+" else if not co then "-" else "")
     (if ty = "_" then ty else "'"^ty)
 
@@ -425,8 +426,9 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
     | _ -> ty
   in
   let print_private ppf = function
-    Asttypes.Private -> fprintf ppf " private"
-  | Asttypes.Public -> () in
+    Otr_private -> fprintf ppf " private"
+  | Otr_new -> fprintf ppf " new"
+  | Otr_public -> () in
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->

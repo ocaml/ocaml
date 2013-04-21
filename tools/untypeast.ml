@@ -71,7 +71,8 @@ and untype_structure_item item =
                 pci_params = ci.ci_params;
                 pci_name = ci.ci_id_name;
                 pci_expr = untype_class_expr ci.ci_expr;
-                pci_variance = ci.ci_variance;
+                pci_variance =
+                  List.map (fun (c,n) -> (c,n,false)) ci.ci_variance;
                 pci_loc = ci.ci_loc;
               }
           ) list)
@@ -82,7 +83,8 @@ and untype_structure_item item =
                 pci_params = ct.ci_params;
                 pci_name = ct.ci_id_name;
                 pci_expr = untype_class_type ct.ci_expr;
-                pci_variance = ct.ci_variance;
+                pci_variance =
+                  List.map (fun (c,n) -> (c,n,false)) ct.ci_variance;
                 pci_loc = ct.ci_loc;
               }
           ) list)
@@ -116,6 +118,7 @@ and untype_type_declaration decl =
             ) list)
     );
     ptype_private = decl.typ_private;
+    ptype_new = decl.typ_new;
     ptype_manifest = (match decl.typ_manifest with
         None -> None
       | Some ct -> Some (untype_core_type ct));
@@ -339,7 +342,7 @@ and untype_class_description cd =
     pci_params = cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
-    pci_variance = cd.ci_variance;
+    pci_variance = List.map (fun (c,n) -> (c,n,false)) cd.ci_variance;
     pci_loc = cd.ci_loc;
   }
 
@@ -349,7 +352,7 @@ and untype_class_type_declaration cd =
     pci_params = cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
-    pci_variance = cd.ci_variance;
+    pci_variance = List.map (fun (c,n) -> (c,n,false)) cd.ci_variance;
     pci_loc = cd.ci_loc;
   }
 
