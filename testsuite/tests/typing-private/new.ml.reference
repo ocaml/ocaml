@@ -1,0 +1,45 @@
+
+#   module M1 : sig type 'a t val f : int t -> bool t end
+#     module M2 : sig type 'a t = new int val f : int -> int val r : int ref end
+#   module M3 : sig type 'a t val f : int t -> bool t end
+#   Characters 52-54:
+  module M4 : sig type 'a t  val r : int t ref end = M2;; (* should fail *)
+                                                     ^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a t = new int val f : int -> int val r : int ref end
+       is not included in
+         sig type 'a t val r : int t ref end
+       Values do not match:
+         val r : int ref
+       is not included in
+         val r : int t ref
+#     module M5 : sig type 'a t val f : int t -> bool t val r : int t ref end
+#   module M6 : sig type 'a t = private int val f : int t -> bool t end
+#     Characters 57-83:
+    struct type 'a t = int end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a t = int end
+       is not included in
+         sig type 'a t = new int end
+       Type declarations do not match:
+         type 'a t = int
+       is not included in
+         type 'a t = new int
+       A private or new type would be made transparent.
+#     module M8 : sig type 'a t val f : int t ref -> int end
+#     Characters 61-108:
+    struct type 'a t = new int  let f x = ref x end;; (* should be ok *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a t = new int val f : 'a -> 'a ref end
+       is not included in
+         sig type 'a t val f : int -> int t ref end
+       Values do not match:
+         val f : 'a -> 'a ref
+       is not included in
+         val f : int -> int t ref
+# 

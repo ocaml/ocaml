@@ -46,7 +46,7 @@ and strengthen_sig env sg p =
   | Sig_type(id, decl, rs) :: rem ->
       let newdecl =
         match decl.type_manifest, decl.type_transparence, decl.type_kind with
-          Some _, Type_public, _ -> decl
+          Some _, (Type_public|Type_new), _ -> decl
         | Some _, Type_private, (Type_record _ | Type_variant _) -> decl
         | _ ->
             let manif =
