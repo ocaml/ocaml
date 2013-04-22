@@ -4,6 +4,17 @@ module F (S : sig type 'a s end) = struct
   type _ t = T : 'a -> 'a s t
 end;; (* fail *)
 module M = F (struct type 'a s = int end) ;;
+let M.T x = M.T 3 in x = true;;
+
+(* Fix it using #-annotations *)
+module F (S : sig type #'a s end) = struct
+  include S
+  type _ t = T : 'a -> 'a s t
+end;; (* ok *)
+module M = F (struct type 'a s = int end) ;; (* fail *)
+module M = F (struct type 'a s = new int end) ;; (* ok *)
+let M.T x = M.T 3 in x = true;; (* fail *)
+let M.T x = M.T 3 in x = 3;; (* ok *)
 
 (* Another version using OCaml 2.00 objects *)
 module F(T:sig type 'a t end) = struct

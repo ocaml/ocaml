@@ -3,16 +3,45 @@
     type _ t = T : 'a -> 'a s t
         ^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
-       from the type parameters.
+       from the type parameters. It was expected to be unrestricted,
+       but it is injective invariant.
 # Characters 11-12:
   module M = F (struct type 'a s = int end) ;;
              ^
 Error: Unbound module F
+# Characters 4-7:
+  let M.T x = M.T 3 in x = true;;
+      ^^^
+Error: Unbound module M
+#           module F :
+  functor (S : sig type #'a s end) ->
+    sig type 'a s = 'a S.s type _ t = T : 'a -> 'a s t end
+# Characters 14-40:
+  module M = F (struct type 'a s = int end) ;; (* fail *)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a s = int end
+       is not included in
+         sig type #'a s end
+       Type declarations do not match:
+         type 'a s = int
+       is not included in
+         type #'a s
+       Their variances do not agree.
+# module M : sig type #'a s type _ t = T : 'a -> 'a s t end
+# Characters 25-29:
+  let M.T x = M.T 3 in x = true;; (* fail *)
+                           ^^^^
+Error: This expression has type bool but an expression was expected of type
+         int
+# - : bool = true
 #           Characters 95-173:
   ........['a] c x =
       object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
 Error: In this definition, a type variable cannot be deduced
-       from the type parameters.
+       from the type parameters. It was expected to be unrestricted,
+       but it is injective invariant.
 #     type (_, _) eq = Eq : ('a, 'a) eq
 # val eq : 'a = <poly>
 # val eq : ('a Queue.t, 'b Queue.t) eq = Eq
@@ -20,7 +49,8 @@ Error: In this definition, a type variable cannot be deduced
   type _ t = T : 'a -> 'a Queue.t t;; (* fail *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
-       from the type parameters.
+       from the type parameters. It was expected to be unrestricted,
+       but it is injective invariant.
 #   Characters 33-36:
   let castT (type a) (type b) (x : a t) (e: (a, b) eq) : b t =
                                    ^^^
@@ -33,7 +63,8 @@ Error: Unbound value castT
     type _ t = T : 'a -> 'a s t
         ^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
-       from the type parameters.
+       from the type parameters. It was expected to be unrestricted,
+       but it is injective invariant.
 #   Characters 59-60:
   module rec M : (S with type 'a s = unit) = M;;
                   ^

@@ -58,16 +58,16 @@ let rec app : type a n m. (a,n) seq -> (a,m) seq -> (a,n,m) app =
 
 (* We do not have kinds, but we can encode them as predicates *)
 
-type tp
-type nd
-type ('a,'b) fk = Fk of 'a * 'b
+type tp = TP
+type nd = ND
+type ('a,'b) fk = FK
 type _ shape =
   | Tp : tp shape
   | Nd : nd shape
   | Fk : 'a shape * 'b shape -> ('a,'b) fk shape
 ;;
-type tt
-type ff
+type tt = TT
+type ff = FF
 type _ boolean =
   | BT : tt boolean
   | BF : ff boolean
@@ -388,8 +388,8 @@ let delete x (Avl t) =
 
 (* Exercise 22: Red-black trees *)
 
-type red
-type black
+type red = RED
+type black = BLACK
 type (_,_) sub_tree =
   | Bleaf : (black, zero) sub_tree
   | Rnode :
@@ -558,7 +558,7 @@ let v4 = eval_term [] ex4
 
 (* 5.9/5.10 Language with binding *)
 
-type rnil
+type rnil = RNIL
 type ('a,'b,'c) rcons = RCons of 'a * 'b * 'c
 
 type _ is_row =
@@ -708,14 +708,14 @@ let v2 = eval_checked env0 c2 ;;
 
 (* 5.12 Soundness *)
 
-type pexp
-type pval
+type pexp = PEXP
+type pval = PEXP
 type _ mode =
   | Pexp : pexp mode
   | Pval : pval mode
 
-type ('a,'b) tarr = Tarr of 'a * 'b
-type tint
+type ('a,'b) tarr = TARR
+type tint = TINT
 
 type (_,_) rel =
   | IntR : (tint, int) rel
