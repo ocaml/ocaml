@@ -126,6 +126,7 @@ Bug fixes:
 - PR#5948: GADT with polymorphic variants bug
 - PR#5989: Assumed inequalities involving private rows
 - PR#5993: Variance of private type abbreviations not checked for modules
+- PR#5997: Non-compatibility assumed for concrete types with same constructor
 
 OCaml 4.00.1:
 -------------
