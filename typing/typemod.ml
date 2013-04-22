@@ -131,7 +131,7 @@ let merge_constraint initial_env loc  sg lid constr =
             type_transparence = Type_private;
             type_manifest = None;
             type_variance =
-              List.map (fun (c,n,i) -> (not n, not c, not c))
+              List.map (fun (c,n,i) -> (not n, not c, not c, i))
               sdecl.ptype_variance;
             type_loc = Location.none;
             type_newtype_level = None }

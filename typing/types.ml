@@ -146,7 +146,7 @@ type type_declaration =
     type_kind: type_kind;
     type_transparence: type_transparence;
     type_manifest: type_expr option;
-    type_variance: (bool * bool * bool) list;
+    type_variance: (bool * bool * bool * bool) list;
     (* covariant, contravariant, weakly contravariant, injective *)
     type_newtype_level: (int * int) option;
     type_loc: Location.t }

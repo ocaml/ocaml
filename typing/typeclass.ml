@@ -1114,7 +1114,7 @@ let temp_abbrev loc env id arity =
        type_kind = Type_abstract;
        type_transparence = Type_public;
        type_manifest = Some ty;
-       type_variance = List.map (fun _ -> true, true, true) !params;
+       type_variance = List.map (fun _ -> true, true, true, true) !params;
        type_newtype_level = None;
        type_loc = loc;
       }
@@ -1329,7 +1329,7 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_transparence = Type_public;
      type_manifest = Some obj_ty;
-     type_variance = List.map (fun _ -> true, true, true) obj_params;
+     type_variance = List.map (fun _ -> true, true, true, true) obj_params;
      type_newtype_level = None;
      type_loc = cl.pci_loc}
   in
@@ -1344,7 +1344,7 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_transparence = Type_public;
      type_manifest = Some cl_ty;
-     type_variance = List.map (fun _ -> true, true, true) cl_params;
+     type_variance = List.map (fun _ -> true, true, true, true) cl_params;
      type_newtype_level = None;
      type_loc = cl.pci_loc}
   in

@@ -723,7 +723,7 @@ let rec tree_of_type_decl id decl =
     | _ -> "?"
   in
   let type_defined decl =
-    let abstr =
+    let abstr = (* abstract, private abbreviation, private type, or GADT *)
       decl.type_kind = Type_abstract && decl.type_transparence = Type_private ||
       decl.type_manifest = None &&
       match decl.type_kind with
@@ -733,11 +733,14 @@ let rec tree_of_type_decl id decl =
           decl.type_transparence = Type_private ||
           List.exists (fun (_,_,ret) -> ret <> None) tll
     in
+    let abstr' = (* abstract type or private abbreviation *)
+      abstr && decl.type_kind = Type_abstract in 
     let vari =
       List.map2
-        (fun ty (co,cn,ct) ->  (* check injectivity *)
+        (fun ty (co,cn,ct,i) ->
+          let i = if abstr' then i else false in
           if abstr || not (is_Tvar (repr ty))
-          then (co,cn,false) else (true,true,false))
+          then (co,cn,i) else (true,true,i))
         decl.type_params decl.type_variance
     in
     (Ident.name id,

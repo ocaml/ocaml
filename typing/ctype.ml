@@ -753,10 +753,10 @@ let rec generalize_expansive env var_level ty =
         Tconstr (path, tyl, abbrev) ->
           let variance =
             try (Env.find_type path env).type_variance
-            with Not_found -> List.map (fun _ -> (true,true,true)) tyl in
+            with Not_found -> List.map (fun _ -> (true,true,true,false)) tyl in
           abbrev := Mnil;
           List.iter2
-            (fun (co,cn,ct) t ->
+            (fun (co,cn,ct,_) t ->
               if ct then generalize_contravariant env var_level t
               else generalize_expansive env var_level t)
             variance tyl
@@ -1692,7 +1692,7 @@ let occur_univar env ty =
           begin try
             let td = Env.find_type p env in
             List.iter2
-              (fun t (pos,neg,_) -> if pos || neg then occur_rec bound t)
+              (fun t (pos,neg,_,_) -> if pos || neg then occur_rec bound t)
               tl td.type_variance
           with Not_found ->
             List.iter (occur_rec bound) tl
@@ -1738,7 +1738,7 @@ let univars_escape env univar_pairs vl ty =
       | Tconstr (p, tl, _) ->
           begin try
             let td = Env.find_type p env in
-            List.iter2 (fun t (pos,neg,_) -> if pos || neg then occur t)
+            List.iter2 (fun t (pos,neg,_,_) -> if pos || neg then occur t)
               tl td.type_variance
           with Not_found ->
             List.iter occur tl
@@ -2030,11 +2030,17 @@ and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
     if Path.same p1 p2 then begin
-      Format.eprintf "@[%a@ %a@]@."
+      (* Format.eprintf "@[%a@ %a@]@."
 	!print_raw (newconstr p1 tl2) !print_raw (newconstr p2 tl2);
       if non_aliasable p1 decl then Format.eprintf "non_aliasable@."
-      else Format.eprintf "aliasable@.";
-      (if non_aliasable p1 decl then mcomp_list type_pairs subst env tl1 tl2)
+      else Format.eprintf "aliasable@."; *)
+      let inj =
+        try List.map for4 (Env.find_type p1 env).type_variance
+        with Not_found -> List.map (fun _ -> false) tl1
+      in
+      List.iter2
+        (fun i (t1,t2) -> if i then mcomp type_pairs subst env t1 t2)
+        inj (List.combine tl1 tl2)
     end else match decl.type_kind, decl'.type_kind with
     | Type_record (lst,r), Type_record (lst',r') when r = r' ->
         mcomp_list type_pairs subst env tl1 tl2;
@@ -2254,19 +2260,25 @@ and unify3 env t1 t1' t2 t2' =
           unify_list env tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
           if !umode = Expression || not !generate_equations
-          || in_current_module p1 (* || in_pervasives p1 *)
           || try is_datatype (Env.find_type p1 !env) with Not_found -> false
           then
             unify_list env tl1 tl2
           else
-            set_mode Pattern ~generate:false
-              begin fun () ->
-                let snap = snapshot () in
-                try unify_list env tl1 tl2 with Unify _ ->
-                  backtrack snap;
-                  List.iter (reify env) (tl1 @ tl2)
-              end
-        (*set_mode Pattern ~generate:false (fun () -> unify_list env tl1 tl2)*)
+            let inj =
+              try List.map for4 (Env.find_type p1 !env).type_variance
+              with Not_found -> List.map (fun _ -> false) tl1
+            in
+            List.iter2
+              (fun i (t1, t2) ->
+                if i then unify env t1 t2 else
+                set_mode Pattern ~generate:false
+                  begin fun () ->
+                    let snap = snapshot () in
+                    try unify env t1 t2 with Unify _ ->
+                      backtrack snap;
+                      reify env t1; reify env t2
+                  end)
+              inj (List.combine tl1 tl2)
       | (Tconstr ((Path.Pident p) as path,[],_),
          Tconstr ((Path.Pident p') as path',[],_))
         when is_abstract_newtype !env path && is_abstract_newtype !env path'
@@ -2750,7 +2762,7 @@ let rec moregen inst_nongen var type_pairs env t1 t2 =
                 if not var then raise Not_found;
                 let decl = Env.find_type p1 env in
                 List.iter2
-                  (fun (p,n,_) (t1, t2) ->
+                  (fun (p,n,_,_) (t1, t2) ->
                       moregen inst_nongen (not(p&&n)) type_pairs env t1 t2)
                   decl.type_variance (List.combine tl1 tl2)
               with Not_found ->
@@ -3582,7 +3594,7 @@ let rec build_subtype env visited loops posi level t =
         then warn := true;
         let tl' =
           List.map2
-            (fun (co,cn,_) t ->
+            (fun (co,cn,_,_) t ->
               if cn then
                 if co then (t, Unchanged)
                 else build_subtype env visited loops (not posi) level t
@@ -3735,7 +3747,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
         begin try
           let decl = Env.find_type p1 env in
           List.fold_left2
-            (fun cstrs (co, cn, _) (t1, t2) ->
+            (fun cstrs (co, cn, _, _) (t1, t2) ->
               if co then
                 if cn then
                   (trace, newty2 t1.level (Ttuple[t1]),

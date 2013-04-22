@@ -123,7 +123,7 @@ let build_initial_env add_type add_exception empty_env =
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
-     type_variance = [true, true, true]}
+     type_variance = [true, true, true, true]}
   and decl_list =
     let tvar = newgenvar() in
     {decl_abstr with
@@ -132,26 +132,26 @@ let build_initial_env add_type add_exception empty_env =
      type_kind =
      Type_variant([ident_nil, [], None; ident_cons, [tvar; type_list tvar],
                    None]);
-     type_variance = [true, false, false]}
+     type_variance = [true, false, false, true]}
   and decl_format6 =
     let params = List.map newgenvar [();();();();();()] in
     {decl_abstr with
      type_params = params;
      type_arity = 6;
-     type_variance = List.map (fun _ -> true, true, true) params}
+     type_variance = List.map (fun _ -> true, true, true, true) params}
   and decl_option =
     let tvar = newgenvar() in
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
      type_kind = Type_variant([ident_none, [], None; ident_some, [tvar], None]);
-     type_variance = [true, false, false]}
+     type_variance = [true, false, false, true]}
   and decl_lazy_t =
     let tvar = newgenvar() in
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
-     type_variance = [true, false, false]}
+     type_variance = [true, false, false, true]}
   in
 
   let add_exception id l =
