@@ -44,21 +44,10 @@ Error: In this definition, a type variable cannot be deduced
        but it is injective invariant.
 #     type (_, _) eq = Eq : ('a, 'a) eq
 # val eq : 'a = <poly>
-# val eq : ('a Queue.t, 'b Queue.t) eq = Eq
-# Characters 4-33:
-  type _ t = T : 'a -> 'a Queue.t t;; (* fail *)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, a type variable cannot be deduced
-       from the type parameters. It was expected to be unrestricted,
-       but it is injective invariant.
-#   Characters 33-36:
-  let castT (type a) (type b) (x : a t) (e: (a, b) eq) : b t =
-                                   ^^^
-Error: Unbound type constructor t
-# Characters 8-13:
-  let x = castT (T 3) eq;;
-          ^^^^^
-Error: Unbound value castT
+#   val eq : ('a Queue.t, 'b Queue.t) eq = Eq
+# type _ t = T : 'a -> 'a Queue.t t
+#   val castT : 'a t -> ('a, 'b) eq -> 'b t = <fun>
+# val x : bool = <unknown constructor>
 #           Characters 92-115:
     type _ t = T : 'a -> 'a s t
         ^^^^^^^^^^^^^^^^^^^^^^^
