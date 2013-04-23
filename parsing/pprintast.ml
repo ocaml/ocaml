@@ -224,7 +224,11 @@ class printer  ()= object(self:'self)
           | _ -> failwith "invalid input in print_type_with_label"
         else pp f "%s:%a" s self#core_type1 c
   method core_type f x =
-    match x.ptyp_desc with
+    if x.ptyp_attributes <> [] then begin
+      pp f "((%a)%a)" self#core_type {x with ptyp_attributes=[]}
+        self#attributes x.ptyp_attributes
+    end
+    else match x.ptyp_desc with
     | Ptyp_arrow (l, ct1, ct2) ->
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
           self#type_with_label (l,ct1) self#core_type ct2
@@ -241,7 +245,8 @@ class printer  ()= object(self:'self)
                     (self#list self#tyvar ~sep:"@;")  l) l) sl  self#core_type ct
     | _ -> pp f "@[<2>%a@]" self#core_type1 x
   method core_type1 f x =
-    match x.ptyp_desc with
+    if x.ptyp_attributes <> [] then self#core_type f x
+    else match x.ptyp_desc with
     | Ptyp_any -> pp f "_";       
     | Ptyp_var s -> self#tyvar f  s; 
     | Ptyp_tuple l ->  pp f "(%a)" (self#list self#core_type1 ~sep:"*@;") l 
@@ -314,7 +319,11 @@ class printer  ()= object(self:'self)
       | {ppat_desc= Ppat_or (p1,p2);_} ->
           list_of_pattern  (p2::acc) p1
       | x -> x::acc in
-    match x.ppat_desc with
+    if x.ppat_attributes <> [] then begin
+      pp f "((%a)%a)" self#pattern {x with ppat_attributes=[]}
+        self#attributes x.ppat_attributes
+    end
+    else match x.ppat_desc with
     | Ppat_alias (p, s) -> pp f "@[<2>%a@;as@;%a@]"
           self#pattern p
           (fun f s->
@@ -333,7 +342,8 @@ class printer  ()= object(self:'self)
             ->
               pp f "%a::%a"  self#simple_pattern  pat1  pattern_list_helper pat2 (*RA*)
       | p -> self#pattern1 f p in
-    match x.ppat_desc with 
+    if x.ppat_attributes <> [] then self#pattern f x
+    else match x.ppat_desc with 
     | Ppat_variant (l, Some p) ->  pp f "@[<2>`%s@;%a@]" l self#pattern1 p (*RA*)
     | Ppat_construct (({txt=Lident("()"|"[]");_}), _) -> self#simple_pattern f x 
     | Ppat_construct (({txt;_} as li), po) -> (* FIXME The third field always false *)
