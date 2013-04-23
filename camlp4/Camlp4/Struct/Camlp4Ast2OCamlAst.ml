@@ -217,6 +217,11 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value predef_option loc =
     TyId (loc, IdAcc (loc, IdLid (loc, "*predef*"), IdLid (loc, "option")));
 
+  value attribute_fwd = ref (fun _ _ _ -> assert False);
+
+  value attribute loc s str =
+    !attribute_fwd loc s str;
+
   value rec ctyp =
     fun
     [ TyId loc i ->
@@ -250,6 +255,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp@loc< (module $pt$) >> ->
         let (i, cs) = package_type pt in
         mktyp loc (Ptyp_package i cs)
+    | TyAtt loc s str e ->
+        let e = ctyp e in
+        {(e) with ptyp_attributes = e.ptyp_attributes @ [attribute loc s str]}
     | TyLab loc _ _ -> error loc "labelled type not allowed here"
     | TyMan loc _ _ -> error loc "manifest type not allowed here"
     | TyOlb loc _ _ -> error loc "labelled type not allowed here"
@@ -582,6 +590,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | PaVrn loc s -> mkpat loc (Ppat_variant (conv_con s) None)
     | PaLaz loc p -> mkpat loc (Ppat_lazy (patt p))
     | PaMod loc m -> mkpat loc (Ppat_unpack (with_loc m loc))
+    | PaAtt loc s str e ->
+        let e = patt e in
+        {(e) with ppat_attributes = e.ppat_attributes @ [attribute loc s str]}
     | PaEq _ _ _ | PaSem _ _ _ | PaCom _ _ _ | PaNil _ as p ->
         error (loc_of_patt p) "invalid pattern" ]
   and mklabpat =
@@ -862,7 +873,7 @@ value varify_constructors var_names =
         error loc "expr; expr: not allowed here, use do {...} or [|...|] to surround them"
     | ExAtt loc s str e ->
         let e = expr e in
-        {(e) with pexp_attributes = [(with_loc s loc, str_item str []) :: e.pexp_attributes]}
+        {(e) with pexp_attributes = e.pexp_attributes @ [attribute loc s str]}
     | ExId _ _ | ExNil _ as e -> error (loc_of_expr e) "invalid expr" ]
   and patt_of_lab _loc lab =
     fun
@@ -973,6 +984,9 @@ value varify_constructors var_names =
         mkmty loc (Pmty_with (module_type mt) (mkwithc wc []))
     | <:module_type@loc< module type of $me$ >> ->
         mkmty loc (Pmty_typeof (module_expr me))
+    | MtAtt loc s str e ->
+        let e = module_type e in
+        {(e) with pmty_attributes = e.pmty_attributes @ [attribute loc s str]}
     | <:module_type< $anti:_$ >> -> assert False ]
   and sig_item s l =
     match s with
@@ -1045,6 +1059,9 @@ value varify_constructors var_names =
                               mktyp loc (Ptyp_package (package_type pt))))))
     | <:module_expr@loc< (value $e$) >> ->
         mkmod loc (Pmod_unpack (expr e))
+    | MeAtt loc s str e ->
+        let e = module_expr e in
+        {(e) with pmod_attributes = e.pmod_attributes @ [attribute loc s str]}
     | <:module_expr@loc< $anti:_$ >> -> error loc "antiquotation in module_expr" ]
   and str_item s l =
     match s with
@@ -1107,6 +1124,9 @@ value varify_constructors var_names =
           pcsig_self = ctyp t;
           pcsig_fields = cil;
         })
+    | CtAtt loc s str e ->
+        let e = class_type e in
+        {(e) with pcty_attributes = e.pcty_attributes @ [attribute loc s str]}
     | CtCon loc _ _ _ ->
         error loc "invalid virtual class inside a class type"
     | CtAnt _ _ | CtEq _ _ _ | CtCol _ _ _ | CtAnd _ _ _ | CtNil _ ->
@@ -1195,6 +1215,9 @@ value varify_constructors var_names =
         })
     | CeTyc loc ce ct ->
         mkcl loc (Pcl_constraint (class_expr ce) (class_type ct))
+    | CeAtt loc s str e ->
+        let e = class_expr e in
+        {(e) with pcl_attributes = e.pcl_attributes @ [attribute loc s str]}
     | CeCon loc _ _ _ ->
         error loc "invalid virtual class inside a class expression"
     | CeAnt _ _ | CeEq _ _ _ | CeAnd _ _ _ | CeNil _ -> assert False ]
@@ -1241,4 +1264,10 @@ value varify_constructors var_names =
     [ StDir _ d dp -> Ptop_dir d (directive dp)
     | si -> Ptop_def (str_item si) ]
   ;
+
+  value attribute loc s str =
+    (with_loc s loc, str_item str);
+
+  value () =
+    attribute_fwd.val := attribute;
 end;

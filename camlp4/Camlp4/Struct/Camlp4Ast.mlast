@@ -122,6 +122,7 @@ module Make (Loc : Sig.Loc)
     | <:patt< ~ $_$ >> -> True
     | <:patt< ~ $_$ : $p$ >> -> is_irrefut_patt p
     | <:patt< lazy $p$ >> -> is_irrefut_patt p
+    | Ast.PaAtt _loc _s _str p -> is_irrefut_patt p
     | <:patt< $id:_$ >> -> False (* here one need to know the arity of constructors *)
     | <:patt< (module $_$) >> -> True
     | <:patt< `$_$ >> | <:patt< $str:_$ >> | <:patt< $_$ .. $_$ >> |

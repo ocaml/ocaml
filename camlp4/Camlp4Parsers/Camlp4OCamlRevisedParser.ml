@@ -870,7 +870,10 @@ New syntax:\
         | "->"; e = expr -> e ] ]
     ;
     patt:
-      [ "|" LEFTA
+      [ "attribute"
+        [ e = SELF; "[@"; s = a_LIDENT; str = str_items; "]" ->
+            Ast.PaAtt _loc s str e ]
+      | "|" LEFTA
         [ p1 = SELF; "|"; p2 = SELF -> <:patt< $p1$ | $p2$ >> ]
       | ".." NONA
         [ p1 = SELF; ".."; p2 = SELF -> <:patt< $p1$ .. $p2$ >> ]
@@ -1091,6 +1094,9 @@ New syntax:\
         [ t1 = SELF; "."; t2 = SELF ->
             try <:ctyp< $id:Ast.ident_of_ctyp t1$.$id:Ast.ident_of_ctyp t2$ >>
             with [ Invalid_argument s -> raise (Stream.Error s) ] ]
+      | "attribute"
+        [ e = SELF; "[@"; s = a_LIDENT; str = str_items; "]" ->
+            Ast.TyAtt _loc s str e ]
       | "simple"
         [ "'"; i = a_ident -> <:ctyp< '$i$ >>
         | "_" -> <:ctyp< _ >>
