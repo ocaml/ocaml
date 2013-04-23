@@ -734,8 +734,7 @@ let rec tree_of_type_decl id decl =
           List.exists (fun (_,_,ret) -> ret <> None) tll
     in
     let abstr' = (* abstract type or private abbreviation *)
-      abstr && decl.type_kind = Type_abstract
-      && decl.type_transparence <> Type_new in 
+      abstr && decl.type_kind = Type_abstract in 
     let vari =
       List.map2
         (fun ty (co,cn,ct,i) ->
