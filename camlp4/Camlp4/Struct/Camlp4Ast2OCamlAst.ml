@@ -860,6 +860,9 @@ value varify_constructors var_names =
     | <:expr@loc< $_$,$_$ >> -> error loc "expr, expr: not allowed here"
     | <:expr@loc< $_$;$_$ >> ->
         error loc "expr; expr: not allowed here, use do {...} or [|...|] to surround them"
+    | ExAtt loc s str e ->
+        let e = expr e in
+        {(e) with pexp_attributes = [(with_loc s loc, str_item str []) :: e.pexp_attributes]}
     | ExId _ _ | ExNil _ as e -> error (loc_of_expr e) "invalid expr" ]
   and patt_of_lab _loc lab =
     fun

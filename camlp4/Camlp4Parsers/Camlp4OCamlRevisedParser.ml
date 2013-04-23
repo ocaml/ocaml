@@ -619,7 +619,10 @@ New syntax:\
         | "while"; e = sequence; "do"; seq = do_sequence ->
             <:expr< while $mksequence' _loc e$ do { $seq$ } >>
         | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
-            <:expr< object ($csp$) $cst$ end >> ]
+            <:expr< object ($csp$) $cst$ end >>
+        | e = SELF; "[@"; s = a_LIDENT; str = str_items; "]" ->
+            Ast.ExAtt _loc s str e
+             ]
       | "where"
         [ e = SELF; "where"; rf = opt_rec; lb = let_binding ->
             <:expr< let $rec:rf$ $lb$ in $e$ >> ]

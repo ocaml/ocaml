@@ -205,7 +205,10 @@
       (* let f x (type t) y z = e *)
     | ExFUN of loc and string and expr
       (* (module ME : S) which is represented as (module (ME : S)) *)
-    | ExPkg of loc and module_expr ]
+    | ExPkg of loc and module_expr
+      (* e [@attr] *)
+    | ExAtt of loc and string and str_item and expr
+  ]
   and module_type =
     [ MtNil of loc
       (* i *) (* A.B.C *)

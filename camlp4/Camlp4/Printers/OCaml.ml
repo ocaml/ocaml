@@ -586,6 +586,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
            o#module_expr me o#module_type mt
     | <:expr< (module $me$) >> ->
         pp f "@[<hv0>@[<hv2>(module %a@])@]" o#module_expr me
+    | Ast.ExAtt _loc s str e ->
+        pp f "((%a)[@@%s %a])" o#expr e s o#str_item str
     | <:expr< $_$ $_$ >> | <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
       <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
       <:expr< $_$ # $_$ >> |
