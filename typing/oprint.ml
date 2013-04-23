@@ -430,7 +430,9 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
   | Otr_new -> fprintf ppf " new"
   | Otr_public -> () in
   let print_out_tkind ppf = function
-  | Otyp_abstract -> ()
+  | Otyp_abstract ->
+      if priv <> Otr_public then
+        fprintf ppf " =%a" print_private priv
   | Otyp_record lbls ->
       fprintf ppf " =%a {%a@;<1 -2>}"
         print_private priv

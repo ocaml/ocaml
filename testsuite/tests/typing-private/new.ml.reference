@@ -1,5 +1,5 @@
 
-#   module M1 : sig type 'a t val f : int t -> bool t end
+#     module M1 : sig type 'a t val f : int t -> bool t end
 #     module M2 : sig type 'a t = new int val f : int -> int val r : int ref end
 #   module M3 : sig type 'a t val f : int t -> bool t end
 #   Characters 52-54:
@@ -42,4 +42,65 @@ Error: Signature mismatch:
          val f : 'a -> 'a ref
        is not included in
          val f : int -> int t ref
+#       module M : sig type t = new type u = new end
+# type (_, _) comp = Eq : ('a, 'a) comp | Diff : ('a, 'b) comp
+# - : (M.t, M.u) comp -> bool = <fun>
+#     Characters 61-70:
+  module M = struct type t = new T   type u = t = T end;; (* fail *)
+                                          ^^^^^^^^^
+Error: This variant or record definition does not match that of type t
+       A private or new type would be made transparent.
+#                       module M :
+  sig
+    type t = new
+    type t' = new
+    type u = new T
+    type u' = new T
+    type v = T
+    type v' = T
+    type v2 = V
+    type z
+    type z'
+  end
+# - : (M.t, M.t') comp -> bool = <fun>
+# - : (M.t, M.u) comp -> bool = <fun>
+# - : (M.t, M.v) comp -> bool = <fun>
+# Characters 29-55:
+  fun (x : (M.t,M.z) comp)  -> match x with Diff -> false;; (* warn *)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Eq
+- : (M.t, M.z) comp -> bool = <fun>
+# - : (M.u, M.u') comp -> bool = <fun>
+# - : (M.u, M.v) comp -> bool = <fun>
+# Characters 29-55:
+  fun (x : (M.u,M.z) comp)  -> match x with Diff -> false;; (* warn *)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Eq
+- : (M.u, M.z) comp -> bool = <fun>
+# Characters 29-55:
+  fun (x : (M.v,M.v') comp) -> match x with Diff -> false;; (* warn *)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Eq
+- : (M.v, M.v') comp -> bool = <fun>
+# - : (M.v, M.v2) comp -> bool = <fun>
+# Characters 29-55:
+  fun (x : (M.v,M.z) comp)  -> match x with Diff -> false;; (* warn *)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Eq
+- : (M.v, M.z) comp -> bool = <fun>
+# Characters 29-55:
+  fun (x : (M.z,M.z') comp) -> match x with Diff -> false;; (* warn *)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Eq
+- : (M.z, M.z') comp -> bool = <fun>
 # 

@@ -1906,6 +1906,7 @@ let is_abstract_newtype env p =
 
 let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
+  decl.type_transparence = Type_new ||
   in_current_module p && decl.type_newtype_level = None
 
 (* mcomp type_pairs subst env t1 t2 does not raise an
@@ -2041,7 +2042,10 @@ and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs subst env t1 t2)
         inj (List.combine tl1 tl2)
-    end else match decl.type_kind, decl'.type_kind with
+    end
+    else if non_aliasable p1 decl && (non_aliasable p2 decl'||is_datatype decl')
+         || is_datatype decl && non_aliasable p2 decl' then raise (Unify [])
+    else match decl.type_kind, decl'.type_kind with
     | Type_record (lst,r), Type_record (lst',r') when r = r' ->
         mcomp_list type_pairs subst env tl1 tl2;
         mcomp_record_description type_pairs subst env lst lst'
@@ -2050,9 +2054,7 @@ and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
         mcomp_variant_description type_pairs subst env v1 v2
     | Type_variant _, Type_record _
     | Type_record _, Type_variant _ -> raise (Unify [])
-    | _ ->
-        if non_aliasable p1 decl && (non_aliasable p2 decl'||is_datatype decl')
-        || is_datatype decl && non_aliasable p2 decl' then raise (Unify [])
+    | _ -> ()
   with Not_found -> ()
 
 and mcomp_type_option type_pairs subst env t t' =

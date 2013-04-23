@@ -1394,7 +1394,15 @@ type_kind:
   | EQUAL PRIVATE core_type
       { (Ptype_abstract, Private, false, Some $3) }
   | EQUAL NEW core_type
-      { (Ptype_abstract, Private, true, Some $3) }
+      { (Ptype_abstract, Public, true, Some $3) }
+  | EQUAL NEW
+      { (Ptype_abstract, Public, true, None) }
+  | EQUAL NEW constructor_declarations
+      { (Ptype_variant(List.rev $3), Public, true, None) }
+  | EQUAL NEW BAR constructor_declarations
+      { (Ptype_variant(List.rev $4), Public, true, None) }
+  | EQUAL NEW LBRACE label_declarations opt_semi RBRACE
+      { (Ptype_record(List.rev $4), Public, true, None) }
   | EQUAL constructor_declarations
       { (Ptype_variant(List.rev $2), Public, false, None) }
   | EQUAL PRIVATE constructor_declarations

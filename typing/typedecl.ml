@@ -691,6 +691,7 @@ let compute_variance_decl env check decl (required, loc as rloc) =
   if decl.type_kind = Type_abstract && decl.type_manifest = None then
     List.map
       (fun (c, n, i) ->
+        let i = i || decl.type_transparence = Type_new in
         if c || n then (c, n, n, i) else (true, true, true, i))
       required
   else match decl.type_kind with
