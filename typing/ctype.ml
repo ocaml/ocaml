@@ -2061,25 +2061,26 @@ and mcomp_type_option type_pairs subst env t t' =
   | Some t, Some t' -> mcomp type_pairs subst env t t'
   | _ -> raise (Unify [])
 
-and mcomp_variant_description type_pairs subst env =
+and mcomp_variant_description type_pairs subst env xs ys =
   let rec iter = fun x y ->
     match x, y with
-    (name,mflag,t) :: xs, (name', mflag', t') :: ys   ->
+    (id, tl, t) :: xs, (id', tl', t') :: ys   ->
       mcomp_type_option type_pairs subst env t t';
-      if name = name' && mflag = mflag'
+      mcomp_list type_pairs subst env tl tl';
+      if Ident.name id = Ident.name id'
       then iter xs ys
       else raise (Unify [])
     | [],[] -> ()
     | _ -> raise (Unify [])
   in
-  iter
+  iter xs ys
 
 and mcomp_record_description type_pairs subst env =
   let rec iter = fun x y ->
     match x, y with
-      (name, mutable_flag, t) :: xs, (name', mutable_flag', t') :: ys ->
+      (id, mutable_flag, t) :: xs, (id', mutable_flag', t') :: ys ->
         mcomp type_pairs subst env t t';
-        if name = name' && mutable_flag = mutable_flag'
+        if Ident.name id = Ident.name id' && mutable_flag = mutable_flag'
         then iter xs ys
         else raise (Unify [])
     | [], [] -> ()
@@ -2298,7 +2299,7 @@ and unify3 env t1 t1' t2 t2' =
           reify env t1' ;
           local_non_recursive_abbrev !env (Path.Pident p) t1';
           add_gadt_equation env p t1'
-      | (Tconstr (_,[],_), _) | (_, Tconstr (_,[],_)) when !umode = Pattern ->
+      | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
           if !generate_equations then mcomp !env t1' t2'
@@ -2314,7 +2315,17 @@ and unify3 env t1 t1' t2 t2' =
           | _ -> ()
           end
       | (Tvariant row1, Tvariant row2) ->
-          unify_row env row1 row2
+          if !umode = Expression then
+            unify_row env row1 row2
+          else begin
+            let snap = snapshot () in
+            try unify_row env row1 row2
+            with Unify _ ->
+              backtrack snap;
+              reify env t1';
+              reify env t2';
+              if !generate_equations then mcomp !env t1' t2'
+          end
       | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
           begin match field_kind_repr kind with
             Fvar r when f <> dummy_method ->

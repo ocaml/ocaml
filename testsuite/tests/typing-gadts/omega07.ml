@@ -709,7 +709,7 @@ let v2 = eval_checked env0 c2 ;;
 (* 5.12 Soundness *)
 
 type pexp = PEXP
-type pval = PEXP
+type pval = PVAL
 type _ mode =
   | Pexp : pexp mode
   | Pval : pval mode
