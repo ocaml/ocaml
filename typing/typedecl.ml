@@ -313,6 +313,8 @@ let rec check_constraints_rec env loc visited ty =
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
   end
 
+module SMap = Map.Make(String)
+
 let check_constraints env (_, sdecl) (_, decl) =
   let visited = ref TypeSet.empty in
   begin match decl.type_kind with
@@ -323,13 +325,16 @@ let check_constraints env (_, sdecl) (_, decl) =
         | Ptype_record _ | Ptype_abstract -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
+      let pl_index =
+        let foldf acc (name, styl, sret_type, _) =
+          SMap.add name.txt (styl, sret_type) acc
+        in
+        List.fold_left foldf SMap.empty pl
+      in
       List.iter
         (fun (name, tyl, ret_type) ->
           let (styl, sret_type) =
-            try
-              let (_, sty, sret_type, _) =
-                List.find (fun (n,_,_,_) -> n.txt = Ident.name name)  pl
-              in (sty, sret_type)
+            try SMap.find (Ident.name name) pl_index
             with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
