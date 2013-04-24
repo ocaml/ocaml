@@ -306,7 +306,7 @@ let ac_of_format fmt =
   ac
 ;;
 
-let count_arguments_of_format fmt =
+let count_printing_arguments_of_format fmt =
   let ac = ac_of_format fmt in
   (* For printing, only the regular arguments have to be counted. *)
   ac.ac_rglr
@@ -325,7 +325,7 @@ let list_iter_i f l =
    Note: in the following, we are careful not to be badly caught
    by the compiler optimizations for the representation of arrays. *)
 let kapr kpr fmt =
-  match count_arguments_of_format fmt with
+  match count_printing_arguments_of_format fmt with
   | 0 -> kpr fmt [||]
   | 1 -> Obj.magic (fun x ->
       let a = Array.make 1 (Obj.repr 0) in
@@ -578,15 +578,15 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
     | '{' | '(' as conv (* ')' '}' *) ->
       let (xf : ('a, 'b, 'c, 'd, 'e, 'f) format6) = get_arg spec n in
       let i = succ i in
-      let j = sub_format_for_printf conv fmt i in
+      let i = sub_format_for_printf conv fmt i in
       if conv = '{' (* '}' *) then
         (* Just print the format argument as a specification. *)
         cont_s
           (next_index spec n)
           (summarize_format_type xf)
-          j else
+          i else
         (* Use the format argument instead of the format specification. *)
-        cont_m (next_index spec n) xf j
+        cont_m (next_index spec n) xf i
     | (* '(' *) ')' ->
       cont_s n "" (succ i)
     | conv ->
@@ -600,6 +600,8 @@ let mkprintf to_s get_out outc outs flush k fmt =
   (* [out] is global to this definition of [pr], and must be shared by all its
      recursive calls (if any). *)
   let out = get_out fmt in
+  let outc c = outc out c in
+  let outs s = outs out s in
 
   let rec pr k n fmt v =
 
@@ -609,25 +611,26 @@ let mkprintf to_s get_out outc outs flush k fmt =
        if i >= len then Obj.magic (k out) else
        match Sformat.unsafe_get fmt i with
        | '%' -> scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
-       |  c  -> outc out c; doprn n (succ i)
+       |  c  -> outc c; doprn n (succ i)
+
     and cont_s n s i =
-      outs out s; doprn n i
+      outs s; doprn n i
     and cont_a n printer arg i =
       if to_s then
-        outs out ((Obj.magic printer : unit -> _ -> string) () arg)
+        outs ((Obj.magic printer : unit -> _ -> string) () arg)
       else
         printer out arg;
       doprn n i
     and cont_t n printer i =
       if to_s then
-        outs out ((Obj.magic printer : unit -> string) ())
+        outs ((Obj.magic printer : unit -> string) ())
       else
         printer out;
       doprn n i
     and cont_f n i =
       flush out; doprn n i
     and cont_m n xf i =
-      let m = Sformat.add_int_index (count_arguments_of_format xf) n in
+      let m = Sformat.add_int_index (count_printing_arguments_of_format xf) n in
       pr (Obj.magic (fun _ -> doprn m i)) n xf v in
 
     doprn n 0 in
@@ -703,6 +706,9 @@ module CamlinternalPr = struct
     ;;
 
     let ac_of_format = ac_of_format;;
+
+    let count_printing_arguments_of_format =
+      count_printing_arguments_of_format;;
 
     let sub_format = sub_format;;
 
