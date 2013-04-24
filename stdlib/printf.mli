@@ -178,6 +178,7 @@ module CamlinternalPr : sig
     external unsafe_index_of_int : int -> index = "%identity";;
 
     val succ_index : index -> index;;
+    val add_int_index : int -> index -> index;;
 
     val sub : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> index -> int -> string;;
     val to_string : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string;;
@@ -201,6 +202,8 @@ module CamlinternalPr : sig
     };;
 
     val ac_of_format : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> ac;;
+    val count_printing_arguments_of_format :
+      ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int;;
 
     val sub_format :
         (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int) ->
