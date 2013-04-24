@@ -29,42 +29,52 @@ let rec scrape env mty =
 let freshen mty =
   Subst.modtype Subst.identity mty
 
-let rec strengthen env mty p =
+type strength = Copy | InPlace | NoPath
+
+let rec strengthen st env mty p =
   match scrape env mty with
     Mty_signature sg ->
-      Mty_signature(strengthen_sig env sg p)
+      Mty_signature(strengthen_sig st env sg p)
   | Mty_functor(param, arg, res) when !Clflags.applicative_functors ->
-      Mty_functor(param, arg, strengthen env res (Papply(p, Pident param)))
+      Mty_functor(param, arg,
+                  strengthen st env res (Papply(p, Pident param)))
   | mty ->
       mty
 
-and strengthen_sig env sg p =
+and strengthen_sig st env sg p =
   match sg with
     [] -> []
   | (Sig_value(id, desc) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p
+      sigelt :: strengthen_sig st env rem p
   | Sig_type(id, decl, rs) :: rem ->
       let newdecl =
         match decl.type_manifest, decl.type_transparence, decl.type_kind with
           Some _, Type_public, _ -> decl
         | Some _, Type_private, (Type_record _ | Type_variant _) -> decl
-        | _, Type_new, _ -> decl
+        | _, Type_new, _ when st = InPlace -> decl
+        | _, Type_new, _ when st = NoPath ->
+            { decl with type_kind = Type_abstract;
+              type_transparence = Type_public; type_manifest = None }
         | _ ->
+            if st = NoPath then decl else
             let manif =
               Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
                                           decl.type_params, ref Mnil))) in
-            if decl.type_kind = Type_abstract then
+            if decl.type_transparence = Type_new then
+              { decl with type_kind = Type_abstract;
+		type_transparence = Type_public; type_manifest = manif }
+            else if decl.type_kind = Type_abstract then
               { decl with
 		type_transparence = Type_public; type_manifest = manif }
             else
               { decl with type_manifest = manif }
       in
-      Sig_type(id, newdecl, rs) :: strengthen_sig env rem p
+      Sig_type(id, newdecl, rs) :: strengthen_sig st env rem p
   | (Sig_exception(id, d) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p
+      sigelt :: strengthen_sig st env rem p
   | Sig_module(id, mty, rs) :: rem ->
-      Sig_module(id, strengthen env mty (Pdot(p, Ident.name id, nopos)), rs)
-      :: strengthen_sig (Env.add_module id mty env) rem p
+      Sig_module(id, strengthen st env mty (Pdot(p, Ident.name id, nopos)), rs)
+      :: strengthen_sig st (Env.add_module id mty env) rem p
       (* Need to add the module in case it defines manifest module types *)
   | Sig_modtype(id, decl) :: rem ->
       let newdecl =
@@ -74,12 +84,12 @@ and strengthen_sig env sg p =
         | Modtype_manifest _ ->
             decl in
       Sig_modtype(id, newdecl) ::
-      strengthen_sig (Env.add_modtype id decl env) rem p
+      strengthen_sig st (Env.add_modtype id decl env) rem p
       (* Need to add the module type in case it is manifest *)
   | (Sig_class(id, decl, rs) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p
+      sigelt :: strengthen_sig st env rem p
   | (Sig_class_type(id, decl, rs) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p
+      sigelt :: strengthen_sig st env rem p
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings

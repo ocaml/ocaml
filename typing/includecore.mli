@@ -20,6 +20,7 @@ exception Dont_match
 type type_mismatch =
     Arity
   | Privacy
+  | New
   | Kind
   | Constraint
   | Manifest

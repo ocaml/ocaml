@@ -7,7 +7,7 @@
                                                      ^^
 Error: Signature mismatch:
        Modules do not match:
-         sig type 'a t = new int val f : int -> int val r : int ref end
+         sig type 'a t = 'a M2.t val f : int -> int val r : int ref end
        is not included in
          sig type 'a t val r : int t ref end
        Values do not match:
@@ -28,7 +28,7 @@ Error: Signature mismatch:
          type 'a t = int
        is not included in
          type 'a t = new int
-       A private or new type would be made transparent.
+       A normal type would be made new.
 #     module M8 : sig type 'a t val f : int t ref -> int end
 #     Characters 61-108:
     struct type 'a t = new int  let f x = ref x end;; (* should be ok *)
@@ -103,4 +103,32 @@ Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 Eq
 - : (M.z, M.z') comp -> bool = <fun>
-# 
+#       module M : sig type t = new type _ is_t = I : ('a, t) comp -> 'a is_t end
+#   module N :
+  sig type t = M.t type _ is_t = '_ M.is_t = I : ('a, t) comp -> 'a is_t end
+#   val e : M.t M.is_t = M.I Eq
+# val e' : (M.t, N.t) comp = Eq
+# Characters 0-27:
+  match e' with Diff -> false;; (* warn *)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Eq
+Exception: Match_failure ("//toplevel//", 37, -1).
+#     module M : sig type t = new int end
+# module F : functor (X : sig type t = new end) -> sig  end
+# Characters 14-15:
+  module FM = F(M);; (* must fail *)
+                ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = M.t end
+       is not included in
+         sig type t = new end
+       Type declarations do not match:
+         type t = M.t
+       is not included in
+         type t = new
+       A normal type would be made new.
+# module FM' : sig  end
+#   

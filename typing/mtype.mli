@@ -21,9 +21,13 @@ val scrape: Env.t -> module_type -> module_type
 val freshen: module_type -> module_type
         (* Return an alpha-equivalent copy of the given module type
            where bound identifiers are fresh. *)
-val strengthen: Env.t -> module_type -> Path.t -> module_type
+type strength = Copy | InPlace | NoPath
+val strengthen: strength -> Env.t -> module_type -> Path.t -> module_type
         (* Strengthen abstract type components relative to the
-           given path. *)
+           given path. [strengthen InPlace] if strengthening the module
+           definition itself, otherwise [strengthen Copy], which makes
+           abstract (and strengthens) all new types. [strengthen NoPath]
+           does no strengthening. *)
 val nondep_supertype: Env.t -> Ident.t -> module_type -> module_type
         (* Return the smallest supertype of the given type
            in which the given ident does not appear.

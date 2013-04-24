@@ -113,6 +113,7 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
 type type_mismatch =
     Arity
   | Privacy
+  | New
   | Kind
   | Constraint
   | Manifest
@@ -135,6 +136,7 @@ let report_type_mismatch0 first second decl ppf err =
   match err with
     Arity -> pr "They have different arities"
   | Privacy -> pr "A private or new type would be made transparent"
+  | New -> pr "A normal type would be made new"
   | Kind -> pr "Their kinds differ"
   | Constraint -> pr "Their constraints differ"
   | Manifest -> ()
@@ -204,7 +206,11 @@ let rec compare_records env decl1 decl2 n labels1 labels2 =
 
 let type_declarations ?(equality = false) env name decl1 id decl2 =
   if decl1.type_arity <> decl2.type_arity then [Arity] else
-  if not (transparence_flags decl1 decl2) then [Privacy] else
+  let err =
+    if transparence_flags decl1 decl2 then [] else
+    if decl2.type_transparence = Type_new then [New] else [Privacy]
+  in
+  if err <> [] then err else
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> []
     | (Type_variant cstrs1, Type_variant cstrs2) ->

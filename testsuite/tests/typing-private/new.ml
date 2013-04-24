@@ -55,7 +55,7 @@ fun (x : (M.v,M.v2) comp) -> match x with Diff -> false;; (* ok *)
 fun (x : (M.v,M.z) comp)  -> match x with Diff -> false;; (* warn *)
 fun (x : (M.z,M.z') comp) -> match x with Diff -> false;; (* warn *)
 
-(* Actually, this is broken *)
+(* Now works *)
 module M : sig type t = new type _ is_t = I : ('a,t) comp -> 'a is_t end =
   struct type t = new int  type _ is_t = I : ('a,t) comp -> 'a is_t end;;
 
@@ -63,4 +63,11 @@ module N = M;;
 
 let e = M.I Eq;;
 let N.I e' = e;;
-match e' with Diff -> false;; (* Should warn! *)
+match e' with Diff -> false;; (* warn *)
+
+(* functors *)
+module M = struct type t = new int end;;
+module F(X : sig type t = new end) = struct end;;
+module FM = F(M);; (* must fail *)
+module FM' = F(struct type t = new int end);; (* ok *)
+

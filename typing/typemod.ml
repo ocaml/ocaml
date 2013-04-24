@@ -168,14 +168,14 @@ let merge_constraint initial_env loc  sg lid constr =
     | (Sig_module(id, mty, rs) :: rem, [s], Pwith_module (lid))
       when Ident.name id = s ->
         let (path, mty') = Typetexp.find_module initial_env loc lid.txt in
-        let newmty = Mtype.strengthen env mty' path in
+        let newmty = Mtype.strengthen Mtype.Copy env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         (Pident id, lid, Twith_module (path, lid)),
         Sig_module(id, newmty, rs) :: rem
     | (Sig_module(id, mty, rs) :: rem, [s], Pwith_modsubst (lid))
       when Ident.name id = s ->
         let (path, mty') = Typetexp.find_module initial_env loc lid.txt in
-        let newmty = Mtype.strengthen env mty' path in
+        let newmty = Mtype.strengthen Mtype.Copy env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         real_id := Some id;
         (Pident id, lid, Twith_modsubst (path, lid)),
@@ -717,7 +717,7 @@ let check_recmodule_inclusion env bindings =
      the number of mutually recursive declarations. *)
 
   let subst_and_strengthen env s id mty =
-    Mtype.strengthen env (Subst.modtype s mty)
+    Mtype.strengthen Mtype.InPlace env (Subst.modtype s mty)
                          (Subst.module_path s (Pident id)) in
 
   let rec check_incl first_time n env s =
@@ -825,7 +825,8 @@ let rec type_module sttn funct_body anchor env smod =
     Pmod_ident lid ->
       let (path, mty) = Typetexp.find_module env smod.pmod_loc lid.txt in
       rm { mod_desc = Tmod_ident (path, lid);
-           mod_type = if sttn then Mtype.strengthen env mty path else mty;
+           mod_type =
+             Mtype.(strengthen (if sttn then Copy else NoPath) env mty path);
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
