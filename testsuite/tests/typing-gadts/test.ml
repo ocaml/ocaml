@@ -512,3 +512,9 @@ let f : type a. a ty -> a =
 let g : type a. a ty -> a =
   let () = () in
   fun x -> match x with Int y -> y;;
+
+(* Printing of anonymous variables *)
+
+module M = struct type _ t = int end;;
+module M = struct type _ t = T : int t end;;
+module N = M;;
