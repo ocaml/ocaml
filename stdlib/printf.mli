@@ -45,7 +45,8 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [s]: insert a string argument.
    - [S]: convert a string argument to OCaml syntax (double quotes, escapes).
    - [c]: insert a character argument.
-   - [C]: convert a character argument to OCaml syntax (single quotes, escapes).
+   - [C]: convert a character argument to OCaml syntax
+     (single quotes, escapes).
    - [f]: convert a floating-point argument to decimal notation,
      in the style [dddd.ddd].
    - [F]: convert a floating-point argument to OCaml syntax ([dddd.]

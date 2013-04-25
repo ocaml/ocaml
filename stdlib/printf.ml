@@ -630,7 +630,9 @@ let mkprintf to_s get_out outc outs flush k fmt =
     and cont_f n i =
       flush out; doprn n i
     and cont_m n xf i =
-      let m = Sformat.add_int_index (count_printing_arguments_of_format xf) n in
+      let m =
+        Sformat.add_int_index
+          (count_printing_arguments_of_format xf) n in
       pr (Obj.magic (fun _ -> doprn m i)) n xf v in
 
     doprn n 0 in
