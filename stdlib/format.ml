@@ -1354,10 +1354,19 @@ let eprintf fmt = fprintf err_formatter fmt;;
 let ksprintf k =
   let b = Buffer.create 512 in
   let k ppf = k (string_out b ppf) in
-  mkprintf true (fun _ -> formatter_of_buffer b) k
+  let ppf = formatter_of_buffer b in
+  let get_out _ = ppf in
+  mkprintf true get_out k
 ;;
 
 let sprintf fmt = ksprintf (fun s -> s) fmt;;
+
+let asprintf fmt =
+  let b = Buffer.create 512 in
+  let k ppf = string_out b ppf in
+  let ppf = formatter_of_buffer b in
+  let get_out _ = ppf in
+  mkprintf false get_out k fmt;;
 
 (**************************************************************
 

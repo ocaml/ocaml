@@ -645,7 +645,7 @@ val printf : ('a, formatter, unit) format -> 'a;;
 val eprintf : ('a, formatter, unit) format -> 'a;;
 (** Same as [fprintf] above, but output on [err_formatter]. *)
 
-val sprintf : ('a, formatter, unit, string) format4 -> 'a;;
+val sprintf : ('a, unit, string) format -> 'a;;
 (** Same as [printf] above, but instead of printing on a formatter,
    returns a string containing the result of formatting the arguments.
    Note that the pretty-printer queue is flushed at the end of {e each
@@ -659,8 +659,12 @@ val sprintf : ('a, formatter, unit, string) format4 -> 'a;;
    Alternatively, you can use [Format.fprintf] with a formatter writing to a
    buffer of your own: flushing the formatter and the buffer at the end of
    pretty-printing returns the desired string.
+*)
 
-   The type of [sprintf] is general enough to interact nicely with [%a]
+val asprintf : ('a, formatter, unit, string) format4 -> 'a;;
+(** Same as [printf] above, but instead of printing on a formatter,
+   returns a string containing the result of formatting the arguments.
+   The type of [asprintf] is general enough to interact nicely with [%a]
    conversions.
    @since 4.01.0
  *)
