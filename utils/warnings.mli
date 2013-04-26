@@ -52,8 +52,8 @@ type t =
   | Unused_constructor of string * bool * bool (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
-  | Name_out_of_scope of string list * bool (* 40 *)
-  | Ambiguous_name of string list * string list * bool    (* 41 *)
+  | Name_out_of_scope of string * string list * bool   (* 40 *)
+  | Ambiguous_name of string list * string list * bool (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
 ;;

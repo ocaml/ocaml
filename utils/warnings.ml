@@ -57,7 +57,7 @@ type t =
   | Unused_constructor of string * bool * bool  (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
-  | Name_out_of_scope of string list * bool (* 40 *)
+  | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
@@ -310,12 +310,16 @@ let message = function
         (However, this constructor appears in patterns.)"
   | Unused_rec_flag ->
       "unused rec flag."
-  | Name_out_of_scope ([s], false) ->
-      s ^ " is used out of scope."
-  | Name_out_of_scope (_, false) -> assert false
-  | Name_out_of_scope (slist, true) ->
-      "this record contains fields that are out of scope: "
-      ^ String.concat " " slist ^ "."
+  | Name_out_of_scope (ty, [nm], false) ->
+      nm ^ " was selected from type " ^ ty ^
+      ".\nIt is not visible in the current scope, and will not \n\
+       be selected if the type becomes unknown."
+  | Name_out_of_scope (_, _, false) -> assert false
+  | Name_out_of_scope (ty, slist, true) ->
+      "this record of type "^ ty ^" contains fields that are \n\
+       not visible in the current scope: "
+      ^ String.concat " " slist ^ ".\n\
+       They will not be selected if the type becomes unknown."
   | Ambiguous_name ([s], tl, false) ->
       s ^ " belongs to several types: " ^ String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
