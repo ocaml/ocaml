@@ -25,11 +25,11 @@ compile: tscanf2_io.cmo
 
 run:
 	@printf " ... testing with ocamlc"
-	@./master.byte ./slave.byte > result.byte 2>&1
+	@./master.byte "`$(CYGPATH) ./slave.byte`" > result.byte 2>&1
 	@$(DIFF) reference result.byte > /dev/null || (echo " => failed" && exit 1)
 	@if [ -z "$(BYTECODE_ONLY)" ]; then \
 	  printf " ocamlopt" && \
-	  ./master.native ./slave.native > result.native 2>&1 && \
+	  ./master.native "`$(CYGPATH) ./slave.native`" > result.native 2>&1 && \
 	  $(DIFF) reference result.native > /dev/null || (echo " => failed" && exit 1) \
 	fi
 	@echo " => passed"

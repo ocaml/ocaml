@@ -119,7 +119,7 @@ let main() =
   test "0...8192 byte chunks"
        (copy_random 8192) (copy_random 8192) ifile ofile;
   test "line per line, short lines"
-       copy_line copy_line "/etc/hosts" ofile;
+       copy_line copy_line "test-file-short-lines" ofile;
   let linesfile = Filename.temp_file "lines" "" in
   make_lines linesfile;
   test "line per line, short and long lines"

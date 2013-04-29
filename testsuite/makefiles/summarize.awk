@@ -83,11 +83,11 @@ END {
         printf("  %3d unexpected error(s)\n", unexped);
         if (failed != 0){
             printf("\nList of failed tests:\n");
-            for (i in fail) printf("    %s\n", fail[i]);
+            for (i=0; i < failed; i++) printf("    %s\n", fail[i]);
         }
         if (unexped != 0){
             printf("\nList of unexpected errors:\n");
-            for (i in unexp) printf("    %s\n", unexp[i]);
+            for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
         }
         printf("\n");
         exit (failed || unexped ? 4 : 0);
