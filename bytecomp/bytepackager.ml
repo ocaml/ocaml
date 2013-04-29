@@ -21,7 +21,7 @@ type error =
     Forward_reference of string * Ident.t
   | Multiple_definition of string * Ident.t
   | Not_an_object_file of string
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
   | File_not_found of string
 
 exception Error of error
@@ -91,7 +91,7 @@ type pack_member =
     pm_name: string;
     pm_kind: pack_member_kind }
 
-let read_member_info file =
+let read_member_info file = (
   let name =
     String.capitalize(Filename.basename(chop_extensions file)) in
   let kind =
@@ -105,7 +105,7 @@ let read_member_info file =
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
       if compunit.cu_name <> name
-      then raise(Error(Illegal_renaming(file, compunit.cu_name)));
+      then raise(Error(Illegal_renaming(name, file, compunit.cu_name)));
       close_in ic;
       PM_impl compunit
     with x ->
@@ -114,6 +114,7 @@ let read_member_info file =
     end else
       PM_intf in
   { pm_file = file; pm_name = name; pm_kind = kind }
+)
 
 (* Read the bytecode from a .cmo file.
    Write bytecode to channel [oc].
@@ -269,8 +270,8 @@ let report_error ppf = function
   | Not_an_object_file file ->
       fprintf ppf "%a is not a bytecode object file"
         Location.print_filename file
-  | Illegal_renaming(file, id) ->
-      fprintf ppf "Wrong file naming: %a@ contains the code for@ %s"
-        Location.print_filename file id
+  | Illegal_renaming(name, file, id) ->
+      fprintf ppf "Wrong file naming: %a@ contains the code for @ %s when %s was expected"
+        Location.print_filename file name id 
   | File_not_found file ->
       fprintf ppf "File %s not found" file

@@ -20,7 +20,7 @@ open Cmx_format
 type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
 
 exception Error of error
 
@@ -114,7 +114,7 @@ let read_library_info filename =
 let cmx_not_found_crc =
   "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
 
-let get_global_info global_ident =
+let get_global_info global_ident = (
   let modname = Ident.name global_ident in
   if modname = current_unit.ui_name then
     Some current_unit
@@ -128,7 +128,7 @@ let get_global_info global_ident =
             find_in_path_uncap !load_path (modname ^ ".cmx") in
           let (ui, crc) = read_unit_info filename in
           if ui.ui_name <> modname then
-            raise(Error(Illegal_renaming(ui.ui_name, filename)));
+            raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
           (Some ui, crc)
         with Not_found ->
           (None, cmx_not_found_crc) in
@@ -137,6 +137,7 @@ let get_global_info global_ident =
       Hashtbl.add global_infos_table modname infos;
       infos
   end
+)
 
 let cache_unit_info ui =
   Hashtbl.add global_infos_table ui.ui_name (Some ui)
@@ -231,6 +232,6 @@ let report_error ppf = function
   | Corrupted_unit_info filename ->
       fprintf ppf "Corrupted compilation unit description@ %a"
         Location.print_filename filename
-  | Illegal_renaming(modname, filename) ->
-      fprintf ppf "%a@ contains the description for unit@ %s"
-        Location.print_filename filename modname
+  | Illegal_renaming(name, modname, filename) ->
+      fprintf ppf "%a@ contains the description for unit @ %s when %s was expected"
+        Location.print_filename filename name modname

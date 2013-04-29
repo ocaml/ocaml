@@ -54,7 +54,7 @@ let used_constructors :
 let prefixed_sg = Hashtbl.create 113
 
 type error =
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
 
@@ -289,7 +289,7 @@ let check_consistency filename crcs =
 
 (* Reading persistent structures from .cmi files *)
 
-let read_pers_struct modname filename =
+let read_pers_struct modname filename = (
   let cmi = read_cmi filename in
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
@@ -304,9 +304,9 @@ let read_pers_struct modname filename =
                ps_comps = comps;
                ps_crcs = crcs;
                ps_filename = filename;
-               ps_flags = flags } in
+               ps_flags = flags } in 
     if ps.ps_name <> modname then
-      raise(Error(Illegal_renaming(ps.ps_name, filename)));
+      raise(Error(Illegal_renaming(modname, ps.ps_name, filename)));
     check_consistency filename ps.ps_crcs;
     List.iter
       (function Rectypes ->
@@ -315,6 +315,7 @@ let read_pers_struct modname filename =
       ps.ps_flags;
     Hashtbl.add persistent_structures modname (Some ps);
     ps
+)
 
 let find_pers_struct name =
   if name = "*predef*" then raise Not_found;
@@ -1507,9 +1508,9 @@ let env_of_only_summary env_from_summary env =
 open Format
 
 let report_error ppf = function
-  | Illegal_renaming(modname, filename) -> fprintf ppf
-      "Wrong file naming: %a@ contains the compiled interface for@ %s"
-      Location.print_filename filename modname
+  | Illegal_renaming(name, modname, filename) -> fprintf ppf
+      "Wrong file naming: %a@ contains the compiled interface for @ %s when %s was expected"
+      Location.print_filename filename name modname 
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"

@@ -159,7 +159,7 @@ val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 (* Error report *)
 
 type error =
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
 
