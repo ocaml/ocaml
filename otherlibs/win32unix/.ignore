@@ -12,9 +12,11 @@ execv.c
 execve.c
 execvp.c
 exit.c
+getaddrinfo.c
 getcwd.c
 gethost.c
 gethostname.c
+getnameinfo.c
 getproto.c
 getserv.c
 gmtime.c
