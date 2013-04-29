@@ -84,7 +84,7 @@ defaultclean:
 
 .cmm.o:
 	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
-	@$(AS) $(ASFLAGS) -o $*.o $*.s
+	@$(ASM) -o $*.o $*.s
 
 .S.o:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.S
