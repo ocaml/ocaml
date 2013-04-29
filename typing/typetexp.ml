@@ -50,6 +50,7 @@ type error =
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
+  | Illegal_reference_to_recursive_module
 
 exception Error of Location.t * Env.t * error
 
@@ -87,6 +88,8 @@ let find_component lookup make_error env loc lid =
     | _ -> lookup lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
+  | Env.Recmodule ->
+    raise (Error (loc, env, Illegal_reference_to_recursive_module))
 
 let find_type =
   find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
@@ -819,3 +822,5 @@ let report_error env ppf = function
       spellcheck ppf Env.fold_cltypes env lid;
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
+  | Illegal_reference_to_recursive_module ->
+      fprintf ppf "Illegal recursive module reference"

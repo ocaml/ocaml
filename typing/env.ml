@@ -487,6 +487,8 @@ let find_module path env =
 
 (* Lookup by name *)
 
+exception Recmodule
+
 let rec lookup_module_descr lid env =
   match lid with
     Lident s ->
@@ -521,7 +523,14 @@ and lookup_module lid env =
   match lid with
     Lident s ->
       begin try
-        EnvTbl.find_name s env.modules
+        let (_, ty) as r = EnvTbl.find_name s env.modules in
+        begin match ty with
+        | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
+          (* see #5965 *)
+          raise Recmodule
+        | _ -> ()
+        end;
+        r
       with Not_found ->
         if s = !current_unit then raise Not_found;
         let ps = find_pers_struct s in
