@@ -90,6 +90,9 @@ END {
             for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
         }
         printf("\n");
-        exit (failed || unexped ? 4 : 0);
+        if (failed || unexped){
+            printf("#### Some tests failed. Exiting with error status.\n\n");
+            exit 4;
+        }
     }
 }
