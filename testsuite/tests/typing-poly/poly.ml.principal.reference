@@ -118,7 +118,7 @@
 val p1 : point = <obj>
 val cp : color_point = <obj>
 val c : circle = <obj>
-val d : float = 11.4536240470737098
+val d : float = 11.
 #   val f : < m : 'a. 'a -> 'a > -> < m : 'b. 'b -> 'b > = <fun>
 #   Characters 41-42:
   let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
