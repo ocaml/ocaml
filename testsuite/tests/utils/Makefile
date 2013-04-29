@@ -1,7 +1,6 @@
 BASEDIR=../..
 MODULES=testing misc
-INCLUDES=\
-  -I $(TOPDIR)/utils
+INCLUDES= -I $(TTOP)/utils
 ADD_COMPFLAGS=$(INCLUDES)
 CMO_FILES+="misc.cmo"
 
