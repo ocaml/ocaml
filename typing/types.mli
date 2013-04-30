@@ -143,8 +143,8 @@ type type_declaration =
     type_kind: type_kind;
     type_private: private_flag;
     type_manifest: type_expr option;
-    type_variance: (bool * bool * bool) list;
-    (* covariant, contravariant, weakly contravariant *)
+    type_variance: (bool * bool * bool * bool) list;
+    (* covariant, contravariant, weakly contravariant, injective *)
     type_newtype_level: (int * int) option;
     (* definition level * expansion level *)
     type_loc: Location.t }
@@ -154,6 +154,11 @@ and type_kind =
   | Type_record of
       (Ident.t * mutable_flag * type_expr) list * record_representation
   | Type_variant of (Ident.t * type_expr list * type_expr option) list
+
+and type_transparence =
+    Type_public      (* unrestricted expansion *)
+  | Type_new         (* "new" type *)
+  | Type_private     (* private type *)
 
 type exception_declaration =
     { exn_args: type_expr list;

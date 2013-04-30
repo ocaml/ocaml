@@ -70,7 +70,7 @@ type error =
   | Unbound_type_var of type_expr * type_declaration
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
-  | Bad_variance of int * (bool*bool) * (bool*bool)
+  | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr

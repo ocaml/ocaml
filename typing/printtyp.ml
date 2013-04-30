@@ -754,7 +754,7 @@ let rec tree_of_type_decl id decl =
     in
     let vari =
       List.map2
-        (fun ty (co,cn,ct) ->
+        (fun ty (co,cn,ct,_) ->
           if abstr || not (is_Tvar (repr ty)) then (co,cn) else (true,true))
         decl.type_params decl.type_variance
     in
