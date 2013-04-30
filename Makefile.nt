@@ -661,6 +661,11 @@ ocamlbuild-mixed-boot:
 partialclean::
 	rm -rf _build
 
+# Make clean in the test suite
+
+clean::
+	cd testsuite; $(MAKE) clean
+
 # Default rules
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
