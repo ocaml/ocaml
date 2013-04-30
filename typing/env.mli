@@ -37,6 +37,7 @@ type type_descriptions =
 val iter_types:
     (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
     t -> unit
+val find_shadowed_types: Path.t -> t -> Path.t list
 
 (* Lookup by paths *)
 

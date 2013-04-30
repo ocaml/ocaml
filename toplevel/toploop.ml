@@ -163,7 +163,9 @@ let load_lambda ppf lam =
 
 (* Print the outcome of an evaluation *)
 
-let rec pr_item env = function
+let rec pr_item env items =
+  Printtyp.hide_rec_items items;
+  match items with
   | Sig_value(id, decl) :: rem ->
       let tree = Printtyp.tree_of_value_description id decl in
       let valopt =

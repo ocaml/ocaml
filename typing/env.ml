@@ -810,6 +810,42 @@ let iter_env proj1 proj2 f env =
 
 let iter_types f = iter_env (fun env -> env.types) (fun sc -> sc.comp_types) f
 
+let find_all_comps proj s (p,mcomps) =
+  match EnvLazy.force !components_of_module_maker' mcomps with
+    Functor_comps _ -> []
+  | Structure_comps comps ->
+      try let (c,n) = Tbl.find s (proj comps) in [Pdot(p,s,n), c]
+      with Not_found -> []
+
+let rec find_shadowed_comps path env =
+  match path with
+    Pident id ->
+      List.map fst (Ident.find_all (Ident.name id) env.components)
+  | Pdot (p, s, _) ->
+      let l = find_shadowed_comps p env in
+      let l' =
+	List.map (find_all_comps (fun comps -> comps.comp_components) s) l in
+      List.flatten l'
+  | Papply _ -> []
+
+let find_shadowed proj1 proj2 path env =
+  match path with
+    Pident id ->
+      List.map fst (Ident.find_all (Ident.name id) (proj1 env))
+  | Pdot (p, s, _) ->
+      let l = find_shadowed_comps p env in
+      let l' = List.map (find_all_comps proj2 s) l in
+      List.flatten l'
+  | Papply _ -> []
+
+let find_shadowed_types path env =
+  let l =
+    find_shadowed
+      (fun env -> env.types) (fun comps -> comps.comp_types) path env
+  in
+  List.map fst l
+
+
 (* GADT instance tracking *)
 
 let add_gadt_instance_level lv env =
