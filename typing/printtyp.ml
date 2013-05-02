@@ -216,6 +216,8 @@ let apply_subst s1 tyl =
 type best_path = Paths of Path.t list | Best of Path.t
 
 let printing_env = ref Env.empty
+let printing_old = ref Env.empty
+let printing_pers = ref Concr.empty
 let printing_map = ref (Lazy.lazy_from_val Tbl.empty)
 
 let same_type t t' = repr t == repr t'
@@ -266,12 +268,19 @@ let rec path_size = function
       let (l, b) = path_size p1 in
       (l + fst (path_size p2), b)
 
+let same_printing_env env =
+  let used_pers = Env.used_persistent () in
+  Env.same_types !printing_old env && Concr.equal !printing_pers used_pers
+
 let set_printing_env env =
-  if not !Clflags.real_paths && env != !printing_env then begin
+  printing_env := if !Clflags.real_paths then Env.empty else env;
+  if !printing_env == Env.empty || same_printing_env env then () else
+  begin
     (* printf "Reset printing_map@."; *)
-    printing_env := env;
     printing_map := lazy begin
       (* printf "Recompute printing_map.@."; *)
+      printing_old := env;
+      printing_pers := Env.used_persistent ();
       let map = ref Tbl.empty in
       Env.iter_types
         (fun p (p', decl) ->
@@ -290,11 +299,8 @@ let set_printing_env env =
   end
 
 let wrap_printing_env env f =
-  if env == !printing_env then f () else
-  begin
-    set_printing_env env;
-    try_finally f (fun () -> set_printing_env Env.empty)
-  end
+  set_printing_env env;
+  try_finally f (fun () -> set_printing_env Env.empty)
 
 let is_unambiguous path env =
   let l = Env.find_shadowed_types path env in
