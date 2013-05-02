@@ -277,10 +277,10 @@ let set_printing_env env =
   if !printing_env == Env.empty || same_printing_env env then () else
   begin
     (* printf "Reset printing_map@."; *)
+    printing_old := env;
+    printing_pers := Env.used_persistent ();
     printing_map := lazy begin
       (* printf "Recompute printing_map.@."; *)
-      printing_old := env;
-      printing_pers := Env.used_persistent ();
       let map = ref Tbl.empty in
       Env.iter_types
         (fun p (p', decl) ->
