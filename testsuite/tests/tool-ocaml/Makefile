@@ -17,9 +17,11 @@ compile: lib.cmo
 	@for file in t*.ml; do \
 	  printf " ... testing '$$file'"; \
 	  if [ `echo $(SHOULD_FAIL) | grep $$file` ]; then \
-	    $(OCAML) -w a lib.cmo $$file 2> /dev/null && (echo " => failed" && exit 1) || echo " => passed"; \
+	    $(OCAML) -w a lib.cmo $$file 2>/dev/null \
+	    && echo " => failed" || echo " => passed"; \
 	  else \
-	    $(OCAML) -w a lib.cmo $$file 2> /dev/null && echo " => passed" || (echo " => failed" && exit 1); \
+	    $(OCAML) -w a lib.cmo $$file 2>/dev/null \
+	    && echo " => passed" || echo " => failed"; \
 	  fi; \
 	done
 

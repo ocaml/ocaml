@@ -25,14 +25,14 @@ compile: tscanf2_io.cmo
 
 run:
 	@printf " ... testing with ocamlc"
-	@./master.byte "`$(CYGPATH) ./slave.byte`" > result.byte 2>&1
-	@$(DIFF) reference result.byte > /dev/null || (echo " => failed" && exit 1)
-	@if [ -z "$(BYTECODE_ONLY)" ]; then \
-	  printf " ocamlopt" && \
-	  ./master.native "`$(CYGPATH) ./slave.native`" > result.native 2>&1 && \
-	  $(DIFF) reference result.native > /dev/null || (echo " => failed" && exit 1) \
-	fi
-	@echo " => passed"
+	@./master.byte "`$(CYGPATH) ./slave.byte`" >result.byte 2>&1
+	@$(DIFF) reference result.byte >/dev/null \
+	&& if [ -z "$(BYTECODE_ONLY)" ]; then \
+	     printf " ocamlopt"; \
+	     ./master.native "`$(CYGPATH) ./slave.native`" >result.native 2>&1;\
+	     $(DIFF) reference result.native >/dev/null; \
+	   fi \
+	&& echo " => passed" || echo " => failed"
 
 promote:
 	@cp result.byte reference

@@ -17,8 +17,10 @@ EXECNAME=./program
 run-all:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
-	  $(OCAMLC) $(FLAGS) -o $(EXECNAME) $$file 2> `basename $$file ml`result; \
-	  $(DIFF) `basename $$file ml`reference `basename $$file ml`result > /dev/null && echo " => passed" || echo " => failed"; \
+	  F="`basename $$file .ml`"; \
+	  $(OCAMLC) $(FLAGS) -o $(EXECNAME) $$file 2>$$F.result; \
+	  $(DIFF) $$F.reference $$F.result >/dev/null \
+	  && echo " => passed" || echo " => failed"; \
 	done;
 
 promote: defaultpromote

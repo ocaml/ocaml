@@ -26,18 +26,18 @@ run-byte: common
 	@printf " ... testing 'bytecode':"
 	@$(OCAMLC) -c tcallback.ml
 	@$(OCAMLC) -o ./program -custom unix.cma callbackprim.$(O) tcallback.cmo
-	@./program > bytecode.result
-	@$(DIFF) reference bytecode.result || (echo " => failed" && exit 1)
-	@echo " => passed"
+	@./program >bytecode.result
+	@$(DIFF) reference bytecode.result \
+	&& echo " => passed" || echo " => failed"
 
 run-opt: common
 	@if [ -z "$(BYTECODE_ONLY)" ]; then \
 	  printf " ... testing 'native':"; \
 	  $(OCAMLOPT) -c tcallback.ml; \
 	  $(OCAMLOPT) -o ./program unix.cmxa callbackprim.$(O) tcallback.cmx; \
-	  ./program > native.result; \
-	  $(DIFF) reference native.result || (echo " => failed" && exit 1); \
-	  echo " => passed"; \
+	  ./program >native.result; \
+	  $(DIFF) reference native.result \
+	  && echo " => passed" || echo " => failed"; \
 	fi
 
 promote: defaultpromote

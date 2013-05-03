@@ -18,8 +18,11 @@ run-all:
 	  $(OCAMLC) -g -o $(EXECNAME) $$file; \
 	  for arg in a b c d ''; do \
 	    printf " ... testing '$$file' (with argument '$$arg'):"; \
-	    (OCAMLRUNPARAM=b=1 $(EXECNAME) $$arg || true) > `basename $$file ml`$$arg.result 2>&1; \
-	    $(DIFF) `basename $$file ml`$$arg.reference `basename $$file ml`$$arg.result > /dev/null && echo " => passed" || (echo " => failed" && exit 1); \
+	    F="`basename $$file .ml`"; \
+	    (OCAMLRUNPARAM=b=1 $(EXECNAME) $$arg || true) \
+	         >$$F.$$arg.result 2>&1; \
+	    $(DIFF) $$F.$$arg.reference $$F.$$arg.result >/dev/null \
+	    && echo " => passed" || echo " => failed"; \
 	  done; \
 	done
 

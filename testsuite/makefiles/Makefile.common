@@ -24,7 +24,7 @@ CANKILL=true
 
 include $(TOPDIR)/config/Makefile
 
-TTOP = "`$(CYGPATH) $(TOPDIR)`"
+TTOP="`$(CYGPATH) $(TOPDIR)`"
 
 OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
 OCAML=$(OCAMLRUN) $(TTOP)/ocaml -I $(TTOP)/stdlib $(COMPFLAGS)
