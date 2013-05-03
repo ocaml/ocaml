@@ -3,8 +3,10 @@ module F (S : sig type 'a s end) = struct
   include S
   type _ t = T : 'a -> 'a s t
 end;; (* fail *)
+(*
 module M = F (struct type 'a s = int end) ;;
 let M.T x = M.T 3 in x = true;;
+*)
 
 (* Fix it using #-annotations *)
 module F (S : sig type #'a s end) = struct
@@ -30,7 +32,7 @@ let eq : ('a Queue.t, 'b Queue.t) eq = eq;;
 type _ t = T : 'a -> 'a Queue.t t;; (* ok, since Queue.t is injective *)
 let castT (type a) (type b) (x : a t) (e: (a, b) eq) : b t =
   let Eq = e in (x : b t);;
-let T (x : bool) = castT (T 3) eq;;
+let T (x : bool) = castT (T 3) eq;; (* we found a contradiction *)
 
 (* The following signature should not be accepted *)
 module type S = sig
@@ -42,3 +44,27 @@ module rec M : (S with type 'a s = unit) = M;;
 (* For the above reason, we cannot allow the abstract declaration
    of s and the definition of t to be in the same module, as
    we could create the signature using [module type of ...] *)
+
+
+(* Another problem with variance *)
+module M = struct type 'a t = 'a -> unit end;;
+module F(X:sig type #'a t end) =
+  struct type +'a s = S of 'b constraint 'a = 'b X.t end;; (* fail *)
+(*
+module N = F(M);;
+let o = N.S (object end);;
+let N.S o' = (o :> <m : int> M.t N.s);; (* unsound! *)
+*)
+
+(* And yet another *)
+type +'a t = 'b constraint 'a = 'b Queue.t;;
+(* shoud fail: we do not know for sure the variance of Queue.t *)
+
+type +'a t = T of 'a;;
+type +'a s = 'b constraint 'a = 'b t;; (* ok *)
+type -'a s = 'b constraint 'a = 'b t;; (* fail *)
+type +'a u = 'a t;;
+type 'a t = T of ('a -> 'a);;
+type -'a s = 'b constraint 'a = 'b t;; (* ok *)
+type +'a s = 'b constraint 'a = 'b Queue.t t;; (* ok *)
+type +'a s = 'b constraint 'a = 'b t Queue.t;; (* fail *)

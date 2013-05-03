@@ -138,6 +138,35 @@ and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
 
+(* Variance *)
+
+module Variance = struct
+  type t = int
+  type f = int
+  let lub v1 v2 = v1 lor v2
+  let glb v1 v2 = v1 land v2
+  let subset v1 v2 = (v1 land v2 = v1)
+  let set f b v =
+    if b then v lor f else  v land (lnot f)
+  let check = subset
+  let may_pos = 1
+  let may_neg = 2
+  let may_weak = 4
+  let inj = 8
+  let pos = 16
+  let neg = 32
+  let inv = 64
+  let null = 0
+  let may_inv = 7
+  let full = 127
+  let covariant = may_pos lor pos lor inj
+  let swap f1 f2 v =
+    let v' = set f1 (check f2 v) v in set f2 (check f1 v) v'
+  let exchange v = swap may_pos may_neg (swap pos neg v)
+  let get_upper v = (check may_pos v, check may_neg v, check may_weak v)
+  let get_lower v = (check pos v, check neg v, check inv v, check inj v)
+end 
+
 (* Type definitions *)
 
 type type_declaration =
@@ -146,8 +175,7 @@ type type_declaration =
     type_kind: type_kind;
     type_transparence: type_transparence;
     type_manifest: type_expr option;
-    type_variance: (bool * bool * bool * bool) list;
-    (* covariant, contravariant, weakly contravariant, injective *)
+    type_variance: Variance.t list;
     type_newtype_level: (int * int) option;
     type_loc: Location.t }
 
@@ -187,13 +215,13 @@ type class_declaration =
     mutable cty_type: class_type;
     cty_path: Path.t;
     cty_new: type_expr option;
-    cty_variance: (bool * bool) list }
+    cty_variance: Variance.t list }
 
 type class_type_declaration =
   { clty_params: type_expr list;
     clty_type: class_type;
     clty_path: Path.t;
-    clty_variance: (bool * bool) list }
+    clty_variance: Variance.t list }
 
 (* Type expressions for the module language *)
 
