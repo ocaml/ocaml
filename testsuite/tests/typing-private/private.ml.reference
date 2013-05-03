@@ -94,4 +94,6 @@ Error: This variant or record definition does not match that of type M.t
 #                   module M' :
   sig type t_priv = private T of int type t = t_priv val mk : int -> t end
 #         module M3' : sig type t = M'.t val mk : int -> t end
+#     module M : sig type 'a t = private T of 'a end
+#     module M1 : sig type 'a t = 'a M.t = private T of 'a end
 # 

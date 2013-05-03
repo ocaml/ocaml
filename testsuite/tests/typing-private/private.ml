@@ -87,3 +87,9 @@ module M3' : sig
   type t = M'.t
   val mk : int -> t
 end = M';;
+
+module M : sig type 'a t = private T of 'a end =
+  struct type 'a t = T of 'a end;;
+
+module M1 : sig type 'a t = 'a M.t = private T of 'a end =
+  struct type 'a t = 'a M.t = private T of 'a end;;

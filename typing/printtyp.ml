@@ -793,8 +793,9 @@ let rec tree_of_type_decl id decl =
     in
     let vari =
       List.map2
-        (fun ty (co,cn,ct,_) ->
-          if abstr || not (is_Tvar (repr ty)) then (co,cn) else (true,true))
+        (fun ty v ->
+          if abstr || not (is_Tvar (repr ty)) then Variance.get_upper v
+          else (true,true))
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -989,6 +990,9 @@ let tree_of_class_params params =
   let tyl = tree_of_typlist true params in
   List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
 
+let class_variance =
+  List.map Variance.(fun v -> mem May_pos v, mem May_neg v)
+
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in
 
@@ -1004,7 +1008,7 @@ let tree_of_class_declaration id cl rs =
   let vir_flag = cl.cty_new = None in
   Osig_class
     (vir_flag, Ident.name id,
-     List.map2 tree_of_class_param params cl.cty_variance,
+     List.map2 tree_of_class_param params (class_variance cl.cty_variance),
      tree_of_class_type true params cl.cty_type,
      tree_of_rec rs)
 
@@ -1037,7 +1041,7 @@ let tree_of_cltype_declaration id cl rs =
 
   Osig_class_type
     (virt, Ident.name id,
-     List.map2 tree_of_class_param params cl.clty_variance,
+     List.map2 tree_of_class_param params (class_variance cl.clty_variance),
      tree_of_class_type true params cl.clty_type,
      tree_of_rec rs)
 
