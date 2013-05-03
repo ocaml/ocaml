@@ -44,3 +44,9 @@ let ko = let module M = struct end in fun _ -> ();;
 module M : sig type -'a t = private int end =
   struct type +'a t = private int end
 ;;
+
+(* PR#6005 *)
+
+module type A = sig type t = X of int end;;
+type u = X of bool;;
+module type B = A with type t = u;; (* fail *)

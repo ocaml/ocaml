@@ -21,4 +21,11 @@ Error: Signature mismatch:
        is not included in
          type -'a t = private int
        Their variances do not agree.
+#       module type A = sig type t = X of int end
+# type u = X of bool
+# Characters 23-33:
+  module type B = A with type t = u;; (* fail *)
+                         ^^^^^^^^^^
+Error: This variant or record definition does not match that of type u
+       The types for field X are not equal.
 # 
