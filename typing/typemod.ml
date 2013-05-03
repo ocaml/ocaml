@@ -116,7 +116,7 @@ let sig_item desc typ env loc = {
 
 let make p n i =
   let open Variance in
-  set may_pos p (set may_neg n (set may_weak n (set inj i null)))
+  set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
 
 let merge_constraint initial_env loc  sg lid constr =
   let real_id = ref None in

@@ -139,25 +139,18 @@ and record_representation =
 
 module Variance : sig
   type t
+  type f = May_pos | May_neg | May_weak | Inj | Pos | Neg | Inv
   val null : t                          (* no occurence *)
   val full : t                          (* strictly invariant *)
   val covariant : t                     (* strictly covariant *)
   val may_inv : t                       (* maybe invariant *)
-  val lub : t -> t -> t
-  val glb : t -> t -> t
+  val union  : t -> t -> t
+  val inter  : t -> t -> t
   val subset : t -> t -> bool
-  type f
   val set : f -> bool -> t -> t
-  val check : f -> t -> bool
-  val exchange : t -> t                 (* exchange positive and negative *)
-  val may_pos : f
-  val may_neg : f
-  val may_weak : f
-  val inj : f
-  val pos : f
-  val neg : f
-  val inv : f
-  val get_upper : t -> bool * bool * bool   (* may_pos, may_neg, may_weak *)
+  val mem : f -> t -> bool
+  val conjugate : t -> t                (* exchange positive and negative *)
+  val get_upper : t -> bool * bool                  (* may_pos, may_neg   *)
   val get_lower : t -> bool * bool * bool * bool    (* pos, neg, inv, inj *)
 end 
 

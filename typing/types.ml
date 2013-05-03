@@ -142,29 +142,30 @@ and record_representation =
 
 module Variance = struct
   type t = int
-  type f = int
-  let lub v1 v2 = v1 lor v2
-  let glb v1 v2 = v1 land v2
+  type f = May_pos | May_neg | May_weak | Inj | Pos | Neg | Inv
+  let single = function
+    | May_pos -> 1
+    | May_neg -> 2
+    | May_weak -> 4
+    | Inj -> 8
+    | Pos -> 16
+    | Neg -> 32
+    | Inv -> 64
+  let union v1 v2 = v1 lor v2
+  let inter v1 v2 = v1 land v2
   let subset v1 v2 = (v1 land v2 = v1)
-  let set f b v =
-    if b then v lor f else  v land (lnot f)
-  let check = subset
-  let may_pos = 1
-  let may_neg = 2
-  let may_weak = 4
-  let inj = 8
-  let pos = 16
-  let neg = 32
-  let inv = 64
+  let set x b v =
+    if b then v lor single x else  v land (lnot (single x))
+  let mem x = subset (single x)
   let null = 0
   let may_inv = 7
   let full = 127
-  let covariant = may_pos lor pos lor inj
+  let covariant = single May_pos lor single Pos lor single Inj
   let swap f1 f2 v =
-    let v' = set f1 (check f2 v) v in set f2 (check f1 v) v'
-  let exchange v = swap may_pos may_neg (swap pos neg v)
-  let get_upper v = (check may_pos v, check may_neg v, check may_weak v)
-  let get_lower v = (check pos v, check neg v, check inv v, check inj v)
+    let v' = set f1 (mem f2 v) v in set f2 (mem f1 v) v'
+  let conjugate v = swap May_pos May_neg (swap Pos Neg v)
+  let get_upper v = (mem May_pos v, mem May_neg v)
+  let get_lower v = (mem Pos v, mem Neg v, mem Inv v, mem Inj v)
 end 
 
 (* Type definitions *)

@@ -260,7 +260,7 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
       (fun ty (v1,v2) ->
         let open Variance in
         let imp a b = not a || b in
-        let (co1,cn1,ct1) = get_upper v1 and (co2,cn2,ct2) = get_upper v2 in
+        let (co1,cn1) = get_upper v1 and (co2,cn2) = get_upper v2 in
         imp abstr (imp co1 co2 && imp cn1 cn2) &&
         (abstr || Btype.(is_Tvar (repr ty)) || co1 = co2 && cn1 = cn2) && 
         let (p1,n1,i1,j1) = get_lower v1 and (p2,n2,i2,j2) = get_lower v2 in
