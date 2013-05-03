@@ -377,7 +377,7 @@ let check_constraints env (_, sdecl) (_, decl) =
    need to check that the equation refers to a type of the same kind
    with the same constructors and labels.
 *)
-let check_abbrev env (_, sdecl) (id, decl) =
+let check_coherence env loc id decl =
   match decl with
     {type_kind = (Type_variant _ | Type_record _); type_manifest = Some ty} ->
       begin match (Ctype.repr ty).desc with
@@ -398,13 +398,16 @@ let check_abbrev env (_, sdecl) (id, decl) =
                      (Subst.add_type id path Subst.identity) decl)
             in
             if err <> [] then
-              raise(Error(sdecl.ptype_loc, Definition_mismatch (ty, err)))
+              raise(Error(loc, Definition_mismatch (ty, err)))
           with Not_found ->
-            raise(Error(sdecl.ptype_loc, Unavailable_type_constructor path))
+            raise(Error(loc, Unavailable_type_constructor path))
           end
-      | _ -> raise(Error(sdecl.ptype_loc, Definition_mismatch (ty, [])))
+      | _ -> raise(Error(loc, Definition_mismatch (ty, [])))
       end
   | _ -> ()
+
+let check_abbrev env (_, sdecl) (id, decl) =
+  check_coherence env sdecl.ptype_loc id decl
 
 (* Check that recursion is well-founded *)
 
