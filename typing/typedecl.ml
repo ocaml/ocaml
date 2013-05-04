@@ -485,13 +485,15 @@ let check_abbrev_recursion env id_loc_list (id, _, tdecl) =
 
 (* Compute variance *)
 
-let compute_variance env tvl vari ty =
-  let open Btype in
-  let visited = ref TypeMap.empty in
+module TypeMap = Btype.TypeMap
+
+let get_variance ty visited =
+  try TypeMap.find ty !visited with Not_found -> Variance.null
+
+let compute_variance env visited vari ty =
   let rec compute_variance_rec vari ty =
     let ty = Ctype.repr ty in
-    let vari' =
-      try TypeMap.find ty !visited with Not_found -> Variance.null in
+    let vari' = get_variance ty visited in
     if Variance.subset vari vari' then () else
     let vari = Variance.union vari vari' in
     visited := TypeMap.add ty vari !visited;
@@ -564,12 +566,7 @@ let compute_variance env tvl vari ty =
         in
         List.iter (compute_variance_rec v) tyl
   in
-  compute_variance_rec vari ty;
-  List.iter
-    (fun (ty, var) ->
-      try var := Variance.union !var (TypeMap.find ty !visited)
-      with Not_found -> ())
-    tvl
+  compute_variance_rec vari ty
 
 let make_variance ty = (ty, ref Variance.null)
 let whole_type decl =
@@ -597,13 +594,7 @@ let compute_variance_type env check (required, loc) decl tyl =
   in
   (* Prepare *)
   let params = List.map Btype.repr decl.type_params in
-  let tvl0 = List.map make_variance params in
-  let args = Btype.newgenty (Ttuple params) in
-  let fvl = if check then Ctype.free_variables args else [] in
-  let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
-  let tvl1 = List.map make_variance fvl in
-  let tvl2 = List.map make_variance fvl in
-  let tvl = tvl0 @ tvl1 in
+  let tvl = ref TypeMap.empty in
   (* Compute occurences in body *)
   let open Variance in
   List.iter
@@ -614,30 +605,52 @@ let compute_variance_type env check (required, loc) decl tyl =
     (* Check variance of parameters *)
     let pos = ref 0 in
     List.iter2
-      (fun (ty, var) (c, n, i) ->
+      (fun ty (c, n, i) ->
         incr pos;
-        let (co,cn) = get_upper !var and ij = mem Inj !var in
+        let var = get_variance ty tvl in
+        let (co,cn) = get_upper var and ij = mem Inj var in
         if Btype.is_Tvar ty && (co && not c || cn && not n || not ij && i)
         then raise (Error(loc, Bad_variance (!pos, (co,cn,ij), (c,n,i)))))
-      tvl0 required;
+      params required;
     (* Check propagation from constrained parameters *)
+    let args = Btype.newgenty (Ttuple params) in
+    let fvl = if check then Ctype.free_variables args else [] in
+    let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
+    (* If there are no extra variables there is nothing to do *)
+    if fvl = [] then () else
+    let tvl2 = ref TypeMap.empty in
     List.iter2
-      (fun (p,n,i) ty ->
+      (fun ty (p,n,i) ->
+        if Btype.is_Tvar ty then () else
         let v =
-          if Btype.is_Tvar ty then full else
           if p then if n then full else covariant else conjugate covariant in
         compute_variance env tvl2 v ty)
-      required params;
-    List.iter2
-      (fun (ty, v1) (_, v2) ->
-        let (c1,n1) = get_upper !v1 and (c2,n2,_,i2) = get_lower !v2 in
-        if c1 && not c2 || n1 && not n2 then
-        let code = if not i2 then -2 else if c2 || n2 then -1 else -3 in
-        raise (Error (loc, Bad_variance (code, (c1,n1,false), (c2,n2,false)))))
-      tvl1 tvl2;
+      params required;
+    let visited = ref TypeSet.empty in
+    let rec check ty =
+      let ty = Ctype.repr ty in
+      if TypeSet.mem ty !visited then () else
+      let visited' = TypeSet.add ty !visited in
+      visited := visited';
+      let v1 = get_variance ty tvl in
+      let v2 =
+        TypeMap.fold
+          (fun t vt v ->
+            if Ctype.equal env false [ty] [t] then union vt v else v)
+          !tvl2 null in
+      let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
+      if c1 && not c2 || n1 && not n2 then
+        if List.memq ty fvl then 
+          let code = if not i2 then -2 else if c2 || n2 then -1 else -3 in
+          raise (Error (loc, Bad_variance (code, (c1,n1,false), (c2,n2,false))))
+        else
+          Btype.iter_type_expr check ty
+    in
+    List.iter (fun (_,ty) -> check ty) tyl;
   end;
   List.map2
-    (fun (ty, {contents=v}) (p, n, i) ->
+    (fun ty (p, n, i) ->
+      let v = get_variance ty tvl in
       let tr = decl.type_private in
       (* Use required variance where relevant *)
       let concr = decl.type_kind <> Type_abstract (*|| tr = Type_new*) in
@@ -655,7 +668,7 @@ let compute_variance_type env check (required, loc) decl tyl =
       in
       if decl.type_kind = Type_abstract && tr = Public then v else
       set May_weak (mem May_neg v) v)
-    tvl0 required
+    params required
 
 let add_false = List.map (fun ty -> false, ty)
 

@@ -60,4 +60,10 @@ Error: In this definition, a type variable has a variance that
 Error: In this definition, a type variable has a variance that
        cannot be deduced from the type parameters.
        It was expected to be unrestricted, but it is covariant.
+#               module Gobject : sig type -'a obj end
+#           class virtual ['a] item_container :
+  object
+    constraint 'a = < as_item : [> `widget ] Gobject.obj; .. >
+    method virtual add : 'a -> unit
+  end
 # 
