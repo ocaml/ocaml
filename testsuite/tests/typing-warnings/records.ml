@@ -127,3 +127,14 @@ module F8 = struct
   type t = {x:int; yyy:int}
   let a : t = {x=1;yyz=2}
 end;;
+
+(* PR#6004 *)
+
+type t = A
+type s = A
+
+class f (_ : t) = object end;;
+class g = f A;; (* ok *)
+
+class f (_ : 'a) (_ : 'a) = object end;;
+class g = f (A : t) A;; (* warn with -principal *)

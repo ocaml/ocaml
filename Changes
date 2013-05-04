@@ -85,6 +85,7 @@ Bug fixes:
 - PR#5965: disallow auto-reference to a recursive module in its definition
 - PR#5981: Incompatibility check assumes abstracted types are injective
 - PR#5985: Unexpected interaction between variance and GADTs
+- PR#6004: Type information does not flow to "inherit" parameters
 - PR#6005: Obj.magic with recursive modules
 
 Internals:
