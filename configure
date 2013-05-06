@@ -1650,6 +1650,10 @@ echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
 echo "CAMLP4=${withcamlp4}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
+if [ "$ostype" = Cygwin ]; then
+  echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
+fi
+
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
