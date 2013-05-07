@@ -11,7 +11,10 @@
 #########################################################################
 
 BASEDIR=${PWD}
-NO_PRINT=`($(MAKE) empty --no-print-directory > /dev/null 2>&1) && echo '--no-print-directory' || echo ''`
+NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 && echo '--no-print-directory'`
+
+FIND=find
+include ../config/Makefile
 
 default:
 	@echo "Available targets:"
@@ -30,16 +33,24 @@ all: lib
 	@$(MAKE) report
 
 list: lib
-	@if [ -z $(FILE) ]; then echo "No value set for variable 'FILE'."; exit 1; fi
-	@if [ ! -f $(FILE) ]; then echo "File '$(FILE)' does not exist."; exit 1; fi
+	@if [ -z "$(FILE)" ]; \
+	  then echo "No value set for variable 'FILE'."; \
+	  exit 1; \
+	fi
 	@while read LINE; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE; \
-	done < $(FILE) 2>&1 | tee _log
+	done <$(FILE) 2>&1 | tee _log
 	@$(MAKE) report
 
 one: lib
-	@if [ -z $(DIR) ]; then echo "No value set for variable 'DIR'."; exit 1; fi
-	@if [ ! -d $(DIR) ]; then echo "Directory '$(DIR)' does not exist."; exit 1; fi
+	@if [ -z "$(DIR)" ]; then \
+	  echo "No value set for variable 'DIR'."; \
+	  exit 1; \
+	fi
+	@if [ ! -d $(DIR) ]; then \
+	  echo "Directory '$(DIR)' does not exist."; \
+	  exit 1; \
+	fi
 	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
 
 exec-one:
@@ -55,24 +66,33 @@ exec-one:
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
 	fi
 
-promote: FORCE
-	@if [ -z $(DIR) ]; then echo "No value set for variable 'DIR'."; exit 1; fi
-	@if [ ! -d $(DIR) ]; then echo "Directory '$(DIR)' does not exist."; exit 1; fi
-	@(cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote)
+.PHONY: promote
+promote:
+	@if [ -z "$(DIR)" ]; then \
+	  echo "No value set for variable 'DIR'."; \
+	  exit 1; \
+	fi
+	@if [ ! -d $(DIR) ]; then \
+	  echo "Directory '$(DIR)' does not exist."; \
+	  exit 1; \
+	fi
+	@cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote
 
-lib: FORCE
-	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR))
+.PHONY: lib
+lib:
+	@cd lib && $(MAKE) -s BASEDIR=$(BASEDIR)
 
-clean: FORCE
-	@(cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean)
-	@for file in `find interactive tests -name Makefile`; do \
+.PHONY: clean
+clean:
+	@cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean
+	@for file in `$(FIND) interactive tests -name Makefile`; do \
 	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done
 
-report: FORCE
+.PHONY: report
+report:
 	@if [ ! -f _log ]; then echo "No '_log' file."; exit 1; fi
 	@awk -f makefiles/summarize.awk <_log
 
-empty: FORCE
-
-FORCE:
+.PHONY: empty
+empty:

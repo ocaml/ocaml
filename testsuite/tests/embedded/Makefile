@@ -15,14 +15,14 @@ BASEDIR=../..
 default: compile run
 
 compile:
-	@$(OCAMLC) -ccopt -I -ccopt $(TOPDIR)/byterun cmstub.c
-	@$(OCAMLC) -ccopt -I -ccopt $(TOPDIR)/byterun cmmain.c
+	@$(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun cmstub.c
+	@$(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun cmmain.c
 	@$(OCAMLC) -c cmcaml.ml
-	@$(OCAMLC) -custom -o program cmstub.o cmcaml.cmo cmmain.o
+	@$(OCAMLC) -custom -o program cmstub.$(O) cmcaml.cmo cmmain.$(O)
 
 run:
 	@printf " ... testing 'cmmain':"
-	@./program > program.result
+	@./program >program.result
 	@$(DIFF) program.reference program.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
 

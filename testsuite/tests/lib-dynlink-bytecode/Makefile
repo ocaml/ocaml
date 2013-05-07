@@ -19,7 +19,7 @@ compile:
 	@for file in stub*.c; do \
 	  $(OCAMLC) -c $$file; \
 	  $(OCAMLMKLIB) -o `echo $$file | sed -e 's/stub/plug/' -e 's/\.c//'` \
-	                `basename $$file c`o; \
+	                `basename $$file c`$(O); \
 	done
 	@for file in plug*.ml; do \
 	  $(OCAMLC) -c $$file; \
@@ -28,9 +28,9 @@ compile:
 	@$(OCAMLC) -c main.ml
 	@$(OCAMLC) -o main dynlink.cma registry.cmo main.cmo
 	@$(OCAMLC) -o static -linkall registry.cmo plug1.cma plug2.cma \
-	           -use-runtime $(PREFIX)/bin/ocamlrun
-	@$(OCAMLC) -o custom -custom -linkall registry.cmo plug2.cma plug1.cma \
-	           -I .
+	           -use-runtime $(OTOPDIR)/byterun/ocamlrun
+	@$(OCAMLC) -o custom -custom -linkall registry.cmo plug2.cma \
+	           plug1.cma -I .
 
 run:
 	@printf " ... testing 'main'"

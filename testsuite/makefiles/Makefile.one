@@ -19,7 +19,7 @@ ML_LEX_FILES=$(LEX_MODULES:=.ml)
 ML_YACC_FILES=$(YACC_MODULES:=.ml)
 MLI_YACC_FILES=$(YACC_MODULES:=.mli)
 ML_FILES=$(ML_LEX_FILES) $(ML_YACC_FILES)
-O_FILES=$(C_FILES:=.o)
+O_FILES=$(C_FILES:=.$(O))
 ADD_CMO_FILES=$(ADD_MODULES:=.cmo)
 ADD_CMX_FILES=$(ADD_MODULES:=.cmx)
 
@@ -32,7 +32,7 @@ default: compile run
 
 compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
 	@for file in $(C_FILES); do \
-	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(TOPDIR)/byterun $$file.c; \
+	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(CTOPDIR)/byterun $$file.c; \
 	done;
 	@rm -f program.byte program.byte.exe
 	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte $(O_FILES) \

@@ -12,7 +12,7 @@
 
 BASEDIR=../..
 
-CC=$(NATIVECC) -I $(TOPDIR)/byterun
+CC=$(NATIVECC) -I $(CTOPDIR)/byterun
 
 default:
 	@case " $(OTHERLIBRARIES) " in \

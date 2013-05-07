@@ -11,32 +11,44 @@
 #########################################################################
 
 TOPDIR=$(BASEDIR)/..
+WINTOPDIR=`cygpath -m "$(TOPDIR)"`
 
+# TOPDIR is the root directory of the OCaml sources, in Unix syntax.
+# WINTOPDIR is the same directory, in Windows syntax.
+
+OTOPDIR=$(TOPDIR)
+CTOPDIR=$(TOPDIR)
 CYGPATH=echo
 DIFF=diff -q
 CANKILL=true
+SORT=sort
 
 # The variables above may be overridden by .../config/Makefile
-# CYGPATH is the command that translates TOPDIR to the target system's syntax.
+# OTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
+#   arguments given to the OCaml compiler.
+# CTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
+#   arguments given to the C and Fortran compilers.
+# CYGPATH is the command that translates unix-style file names into
+#   whichever syntax is appropriate for arguments of OCaml programs.
 # DIFF is a "diff -q" command that ignores trailing CRs under Windows.
-# CANKILL is true if a script launched by the makefile can kill an OCaml
-#   process, and false for the mingw and MSVC ports.
+# CANKILL is true if a script launched by Make can kill an OCaml process,
+#   and false for the mingw and MSVC ports.
+# SORT is the Unix "sort" command. Usually a simple command, but may be an
+#   absolute name if the Windows "sort" command is in the PATH.
 
 include $(TOPDIR)/config/Makefile
 
-TTOP="`$(CYGPATH) $(TOPDIR)`"
-
 OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
-OCAML=$(OCAMLRUN) $(TTOP)/ocaml -I $(TTOP)/stdlib $(COMPFLAGS)
-OCAMLC=$(OCAMLRUN) $(TTOP)/ocamlc -I $(TTOP)/stdlib $(COMPFLAGS)
-OCAMLOPT=$(OCAMLRUN) $(TTOP)/ocamlopt -I $(TTOP)/stdlib $(COMPFLAGS)
-OCAMLDOC=$(OCAMLRUN) $(TTOP)/ocamldoc/ocamldoc
-OCAMLLEX=$(OCAMLRUN) $(TTOP)/lex/ocamllex
-OCAMLMKLIB=$(OCAMLRUN) $(TTOP)/tools/ocamlmklib
+OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml -I $(OTOPDIR)/stdlib $(COMPFLAGS)
+OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc -I $(OTOPDIR)/stdlib $(COMPFLAGS)
+OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt -I $(OTOPDIR)/stdlib $(COMPFLAGS)
+OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
+OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
+OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
-DUMPOBJ=$(OCAMLRUN) $(TTOP)/tool/dumpobj
-BYTECODE_ONLY=`if [ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]; then echo 'YES'; else echo ''; fi`
+DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tool/dumpobj
+BYTECODE_ONLY=`if [ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]; then echo 'YES'; fi`
 #COMPFLAGS=
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=
