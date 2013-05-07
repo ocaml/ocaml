@@ -170,3 +170,13 @@ TK_LINK=tk85.lib tcl85.lib ws2_32.lib
 
 MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)
+
+############# for the testsuite makefiles
+#ml let topdir = "" and wintopdir = "";;
+OTOPDIR=$(WINTOPDIR)
+CTOPDIR=$(WINTOPDIR)
+CYGPATH=cygpath -m
+DIFF=diff -q --strip-trailing-cr
+CANKILL=false
+FIND=/usr/bin/find
+SORT=/usr/bin/sort
