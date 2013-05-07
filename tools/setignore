@@ -18,6 +18,7 @@
 *.a
 *.so
 *.obj
+*.lib
 *.dll
 
 *.cm[ioxat]
