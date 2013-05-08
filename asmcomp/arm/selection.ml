@@ -174,7 +174,7 @@ method! select_operation op args =
   | (Cdivi, args) ->
       (Iextcall("__aeabi_idiv", false), args)
   | (Cmodi, [arg; Cconst_int n])
-    when n = 1 lsl Misc.log2 n ->
+    when n > 1 && n = 1 lsl Misc.log2 n ->
       (Iintop_imm(Imod, n), [arg])
   | (Cmodi, args) ->
       (* See above for fix up of return register *)

@@ -35,6 +35,7 @@ Standard library:
   (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 
 Bug fixes:
+- PR#5910: Fix code generation bug for "mod 1" on ARM.
 - PR#5973: Format module incorrectly parses format string
 - PR#5121: %( %) in Format module seems to be broken
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
