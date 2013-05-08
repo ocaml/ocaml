@@ -739,7 +739,13 @@ let extract_big_int bi ofs n =
     if bi.sign < 0 then begin
       (* Two's complement *)
       complement_nat res 0 size_res;
-      ignore (incr_nat res 0 size_res 1)
+      (* PR#6010: need to increment res iff digits 0...ndigits-1 of bi are 0.
+         In this case, digits 0...ndigits-1 of not(bi) are all 0xFF...FF,
+         and adding 1 to them produces a carry out at ndigits. *)
+      let rec carry_incr i =
+        i >= ndigits || i >= size_bi ||
+          (is_digit_zero bi.abs_value i && carry_incr (i + 1)) in
+      if carry_incr 0 then ignore (incr_nat res 0 size_res 1)
     end;
     if nbits > 0 then begin
       let tmp = create_nat 1 in

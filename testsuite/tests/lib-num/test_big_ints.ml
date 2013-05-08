@@ -932,8 +932,14 @@ test 5 eq_big_int
   (extract_big_int (big_int_of_int64 0x123456789ABCDEFL) 0 32,
    big_int_of_int64 2309737967L);;
 test 6 eq_big_int
-  (extract_big_int (big_int_of_int (-1)) 2048 254,
-   zero_big_int);;
+  (extract_big_int (big_int_of_int (-1)) 0 16,
+   big_int_of_int 0xFFFF);;
+test 7 eq_big_int
+  (extract_big_int (big_int_of_int (-1)) 1027 12,
+   big_int_of_int 0xFFF);;
+test 8 eq_big_int
+  (extract_big_int (big_int_of_int (-1234567)) 0 16,
+   big_int_of_int 10617);;
 
 testing_function "hashing of big integers";;
 
