@@ -940,6 +940,12 @@ test 7 eq_big_int
 test 8 eq_big_int
   (extract_big_int (big_int_of_int (-1234567)) 0 16,
    big_int_of_int 10617);;
+test 9 eq_big_int
+  (extract_big_int (minus_big_int (power_int_positive_int 2 64)) 64 20,
+   big_int_of_int 0xFFFFF);;
+test 10 eq_big_int
+  (extract_big_int (pred_big_int (minus_big_int (power_int_positive_int 2 64))) 64 20,
+   big_int_of_int 0xFFFFE);;
 
 testing_function "hashing of big integers";;
 
