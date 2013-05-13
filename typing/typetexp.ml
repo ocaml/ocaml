@@ -69,6 +69,8 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
     with Not_found ->
       narrow_unbound_lid_error env loc mlid
         (fun lid -> Unbound_module lid)
+       | Env.Recmodule ->
+         raise (Error (loc, env, Illegal_reference_to_recursive_module))
   in
   begin match lid with
   | Longident.Lident _ -> ()
