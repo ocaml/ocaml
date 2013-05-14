@@ -11,13 +11,14 @@
 #########################################################################
 
 BASEDIR=../..
-EXECNAME=./program
+EXECNAME=./program$(EXE)
 
+.PHONY: run-all
 run-all:
 	@for file in *.ml; do \
 	  $(OCAMLC) -g -o $(EXECNAME) $$file; \
 	  for arg in a b c d ''; do \
-	    printf " ... testing '$$file' (with argument '$$arg'):"; \
+	    printf " ... testing '$$file' with argument '$$arg':"; \
 	    F="`basename $$file .ml`"; \
 	    (OCAMLRUNPARAM=b=1 $(EXECNAME) $$arg || true) \
 	         >$$F.$$arg.result 2>&1; \
@@ -26,8 +27,10 @@ run-all:
 	  done; \
 	done
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.result $(EXECNAME)
 
