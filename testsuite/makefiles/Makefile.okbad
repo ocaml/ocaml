@@ -31,7 +31,9 @@ compile:
 	  fi; \
 	done
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f ./a.out *.cm* *.result

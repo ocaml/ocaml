@@ -67,7 +67,7 @@ defaultclean:
 	done
 
 .SUFFIXES:
-.SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so
+.SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so .c .f
 
 .mli.cmi:
 	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
@@ -103,3 +103,9 @@ defaultclean:
 
 .s.o:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.s
+
+.c.o:
+	@$(CC) -c -I$(CTOPDIR)/byterun $*.c -o $*.$(O)
+
+.f.o:
+	@$(FORTRAN_COMPILER) -c -I$(CTOPDIR)/byterun $*.f -o $*.$(O)

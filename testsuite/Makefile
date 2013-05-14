@@ -16,22 +16,25 @@ NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 && echo '--no-print
 FIND=find
 include ../config/Makefile
 
+.PHONY: default
 default:
 	@echo "Available targets:"
-	@echo "  all             launches all tests"
-	@echo "  list FILE=f     launches the tests referenced in file f (one path per line)"
-	@echo "  one DIR=p       launches the tests located in path p"
-	@echo "  promote DIR=p   promotes the reference files for the tests located in path p"
-	@echo "  lib             builds library modules"
-	@echo "  clean           deletes generated files"
-	@echo "  report          prints the report for the last execution, if any"
+	@echo "  all             launche all tests"
+	@echo "  list FILE=f     launche the tests referenced in file f (one path per line)"
+	@echo "  one DIR=p       launche the tests located in path p"
+	@echo "  promote DIR=p   promote the reference files for the tests located in path p"
+	@echo "  lib             build library modules"
+	@echo "  clean           delete generated files"
+	@echo "  report          print the report for the last execution, if any"
 
+.PHONY: all
 all: lib
 	@for dir in tests/*; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
 	@$(MAKE) report
 
+.PHONY: list
 list: lib
 	@if [ -z "$(FILE)" ]; \
 	  then echo "No value set for variable 'FILE'."; \
@@ -42,6 +45,7 @@ list: lib
 	done <$(FILE) 2>&1 | tee _log
 	@$(MAKE) report
 
+.PHONY: one
 one: lib
 	@if [ -z "$(DIR)" ]; then \
 	  echo "No value set for variable 'DIR'."; \
@@ -53,6 +57,7 @@ one: lib
 	fi
 	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
 
+.PHONY: exec-one
 exec-one:
 	@if [ ! -f $(DIR)/Makefile ]; then \
 	  for dir in $(DIR)/*; do \

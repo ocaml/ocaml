@@ -25,11 +25,15 @@ ADD_CMX_FILES=$(ADD_MODULES:=.cmx)
 
 GENERATED_SOURCES=$(ML_LEX_FILES) $(ML_YACC_FILES) $(MLI_YACC_FILES)
 
-CUSTOM_FLAG=`if [ -z "$(C_FILES)" ]; then true; else echo '-custom'; fi`
+CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
 
+CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
+
+.PHONY: default
 default: compile run
 
+.PHONY: compile
 compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
 	@for file in $(C_FILES); do \
 	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(CTOPDIR)/byterun $$file.c; \
@@ -45,6 +49,7 @@ compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
 	              $(MAIN_MODULE).cmx; \
 	fi
 
+.PHONY: run
 run:
 	@printf " ... testing with ocamlc"
 	@./program.byte $(EXEC_ARGS) >$(MAIN_MODULE).result \
@@ -58,8 +63,10 @@ run:
 	&& echo " => passed" || echo " => failed"
 
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
-	@rm -f *.result ./program.* $(GENERATED_SOURCES) $(O_FILES) \
+	@rm -f *.result program program.exe $(GENERATED_SOURCES) $(O_FILES) \
 	       $(TEST_TEMP_FILES)
