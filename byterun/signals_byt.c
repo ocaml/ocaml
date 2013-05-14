@@ -14,6 +14,7 @@
 /* Signal handling, code specific to the bytecode interpreter */
 
 #include <signal.h>
+#include <errno.h>
 #include "config.h"
 #include "memory.h"
 #include "osdeps.h"
@@ -49,6 +50,9 @@ void caml_process_event(void)
 
 static void handle_signal(int signal_number)
 {
+  int saved_errno;
+  /* Save the value of errno (PR#5982). */
+  saved_errno = errno;
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(signal_number, handle_signal);
 #endif
@@ -58,7 +62,8 @@ static void handle_signal(int signal_number)
     caml_enter_blocking_section_hook();
   }else{
     caml_record_signal(signal_number);
- }
+  }
+  errno = saved_errno;
 }
 
 int caml_set_signal_action(int signo, int action)

@@ -17,6 +17,7 @@
 #define _GNU_SOURCE
 #endif
 #include <signal.h>
+#include <errno.h>
 #include <stdio.h>
 #include "fail.h"
 #include "memory.h"
@@ -73,6 +74,9 @@ void caml_garbage_collection(void)
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
 {
+  int saved_errno;
+  /* Save the value of errno (PR#5982). */
+  saved_errno = errno;
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(sig, handle_signal);
 #endif
@@ -90,6 +94,7 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
       CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
 #endif
   }
+  errno = saved_errno;
 }
 
 int caml_set_signal_action(int signo, int action)
