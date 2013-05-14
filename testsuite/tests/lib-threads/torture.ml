@@ -12,29 +12,31 @@
 
 (* Torture test - lots of GC *)
 
+let finished = ref false;;
+
 let gc_thread () =
-  while true do
+  while not !finished do
 (*    print_string "gc"; print_newline(); *)
     Gc.minor();
     Thread.yield()
   done
 
 let stdin_thread () =
-  while true do
+  while not !finished do
     print_string ">"; flush stdout;
     let s = read_line() in
     print_string " >>> "; print_string s; print_newline()
   done
 
 let writer_thread (oc, size) =
-  while true do
+  while not !finished do
 (*    print_string "writer "; print_int size; print_newline(); *)
     let buff = String.make size 'a' in
     Unix.write oc buff 0 size
   done
 
 let reader_thread (ic, size) =
-  while true do
+  while not !finished do
 (*    print_string "reader "; print_int size; print_newline(); *)
     let buff = String.create size in
     let n = Unix.read ic buff 0 size in
@@ -45,13 +47,19 @@ let reader_thread (ic, size) =
   done
 
 let main() =
-  Thread.create gc_thread ();
+  let t1 = Thread.create gc_thread () in
   let (out1, in1) = Unix.pipe() in
-  Thread.create writer_thread (in1, 4096);
-  Thread.create reader_thread (out1, 4096);
+  let t2 = Thread.create writer_thread (in1, 4096) in
+  let t3 = Thread.create reader_thread (out1, 4096) in
   let (out2, in2) = Unix.pipe() in
-  Thread.create writer_thread (in2, 16);
-  Thread.create reader_thread (out2, 16);
-  stdin_thread()
+  let t4 = Thread.create writer_thread (in2, 16) in
+  let t5 = Thread.create reader_thread (out2, 16) in
+  try
+    stdin_thread()
+  with _ ->
+    finished := true;
+    Unix.close out1;
+    Unix.close out2;
+    List.iter Thread.join [t1; t2; t3; t4; t5]
 
 let _ = main()
