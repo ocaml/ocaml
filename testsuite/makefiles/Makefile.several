@@ -49,7 +49,7 @@ run-all:
 	                     $(CMO_FILES)' \
 	          FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) \
 	  && \
-	  if [ -z "$(BYTECODE_ONLY)" ]; then \
+	  if $(BYTECODE_ONLY); then : ; else \
 	    $(MAKE) run-file DESC=ocamlopt COMP='$(OCAMLOPT)' \
 	            COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES)\
 	                       $(CMXA_FILES) -I $(OTOPDIR)/testsuite/lib \
@@ -64,7 +64,7 @@ run-all:
 	                       -I $(OTOPDIR)/testsuite/lib $(CMO_FILES)' \
 	            FILE=$$file \
 	    && \
-	    if [ -z "$(BYTECODE_ONLY)" ]; then \
+	    if $(BYTECODE_ONLY); then : ; else \
 	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP='$(OCAMLOPT)' \
 	              COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_OPTFLAGS) \
 	              $(O_FILES) $(CMXA_FILES) -I $(OTOPDIR)/testsuite/lib \

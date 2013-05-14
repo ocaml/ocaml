@@ -17,11 +17,12 @@ default: compile run
 compile:
 	@for f in *.ml; do \
 	  $(OCAMLC) -w a -o `basename $$f ml`bytecode $$f; \
-	  test -z "$(BYTECODE_ONLY)" && $(OCAMLOPT) -w a -o `basename $$f ml`native $$f || true; \
+	  if $(BYTECODE_ONLY); then : ; else \
+	    $(OCAMLOPT) -w a -o `basename $$f ml`native $$f; \
+	  fi; \
 	done
-	@if [ `grep -c HAS_STACK_OVERFLOW_DETECTION ../../../config/s.h` -eq 0 ]; then \
-	  rm -f stackoverflow.native || true; \
-	fi
+	@grep -q HAS_STACK_OVERFLOW_DETECTION $(TOPDIR)/config/s.h \
+	  || rm -f stackoverflow.native
 
 run:
 	@ulimit -s 1024; \
@@ -31,7 +32,7 @@ run:
 	  DIFF="$(DIFF)" sh $$f.checker \
 	  && echo " => passed" || echo " => failed"; \
 	  fn=`basename $$f bytecode`native; \
-	  if [ -z "$(BYTECODE_ONLY)" -a -f "$$fn" ]; then \
+	  if $(BYTECODE_ONLY) || [ ! -f "$$fn" ] ; then : ; else \
 	    printf " ... testing '$$fn':"; \
 	    (./$$fn > $$fn.result 2>&1 || true); \
 	    DIFF="$(DIFF)" sh $$fn.checker \

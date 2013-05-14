@@ -48,7 +48,8 @@ OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tool/dumpobj
-BYTECODE_ONLY=`if [ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]; then echo 'YES'; fi`
+BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
+
 #COMPFLAGS=
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=

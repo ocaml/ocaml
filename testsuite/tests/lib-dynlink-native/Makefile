@@ -14,7 +14,7 @@ BASEDIR=../..
 
 
 default:
-	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	@if $(BYTECODE_ONLY); then : ; else \
 	  $(MAKE) all; \
 	fi
 
