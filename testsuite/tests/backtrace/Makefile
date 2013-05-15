@@ -32,6 +32,6 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result $(EXECNAME)
+	@rm -f *.result program program.exe
 
 include $(BASEDIR)/makefiles/Makefile.common
