@@ -14,8 +14,7 @@ let main () =
   let (rd, wr) = Unix.pipe() in
   let t = Thread.create
     (fun () ->
-      ignore (Unix.write wr "0123456789" 0 10);
-      Thread.delay 3.0;
+      Thread.delay 1.0;
       print_endline "closing fd...";
       Unix.close rd;
     )
