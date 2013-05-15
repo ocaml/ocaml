@@ -16,7 +16,7 @@ let main () =
     (fun () ->
       Thread.delay 1.0;
       print_endline "closing fd...";
-      Unix.close rd;
+      Unix.close wr;
     )
     () in
   let buf = String.create 10 in
