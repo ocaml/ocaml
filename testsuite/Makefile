@@ -19,9 +19,9 @@ include ../config/Makefile
 .PHONY: default
 default:
 	@echo "Available targets:"
-	@echo "  all             launche all tests"
-	@echo "  list FILE=f     launche the tests referenced in file f (one path per line)"
-	@echo "  one DIR=p       launche the tests located in path p"
+	@echo "  all             launch all tests"
+	@echo "  list FILE=f     launch the tests referenced in file f (one path per line)"
+	@echo "  one DIR=p       launch the tests located in path p"
 	@echo "  promote DIR=p   promote the reference files for the tests located in path p"
 	@echo "  lib             build library modules"
 	@echo "  clean           delete generated files"
