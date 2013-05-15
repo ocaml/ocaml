@@ -21,7 +21,7 @@ let main () =
     () in
   let buf = String.create 10 in
   print_endline "reading...";
-  ignore (Unix.read rd buf 0 10);
+  begin try ignore (Unix.read rd buf 0 10) with Unix.Unix_error _ -> () end;
   print_endline "read returned";
   t
 

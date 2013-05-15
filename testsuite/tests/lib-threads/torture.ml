@@ -33,7 +33,8 @@ let writer_thread (oc, size) =
 (*    print_string "writer "; print_int size; print_newline(); *)
     let buff = String.make size 'a' in
     Unix.write oc buff 0 size
-  done
+  done;
+  Unix.close oc
 
 let reader_thread (ic, size) =
   while not !finished do
@@ -58,8 +59,6 @@ let main() =
     stdin_thread()
   with _ ->
     finished := true;
-    Unix.close out1;
-    Unix.close out2;
     List.iter Thread.join [t1; t2; t3; t4; t5]
 
 let _ = main()

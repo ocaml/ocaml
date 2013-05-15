@@ -19,24 +19,18 @@ let niter = ref 0
 let token = ref 0
 
 let process (n, ins, outs, nprocs) =
-  let buf = String.create 1 in
-  try while true do
+  let buf = String.make 1 '.' in
+  while buf <> "-" do
     Unix.read ins.(n) buf 0 1;
     (* Printf.printf "Thread %d got the token\n" n; *)
     if n = 0 then begin
       decr niter;
-      if !niter <= 0 then begin
-        for i = 0 to nprocs - 1 do
-          Unix.close ins.(i); Unix.close outs.(i)
-        done;
-        Thread.exit ()
-      end
+      if !niter <= 0 then buf.[0] <- '-';
     end;
     let next = if n + 1 >= nprocs then 0 else n + 1 in
     (* Printf.printf "Thread %d sending token to thread %d\n" n next; *)
     Unix.write outs.(next) buf 0 1
   done
-  with Unix.Unix_error _ -> ()
 
 let main() =
   let nprocs = try int_of_string Sys.argv.(1) with _ -> 100 in
