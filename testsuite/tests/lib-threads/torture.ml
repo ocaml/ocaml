@@ -34,16 +34,18 @@ let writer_thread (oc, size) =
     let buff = String.make size 'a' in
     Unix.write oc buff 0 size
   done;
-  Unix.close oc
+  let buff = String.make size 'b' in
+  Unix.write oc buff 0 size
 
 let reader_thread (ic, size) =
-  while not !finished do
+  while true do
 (*    print_string "reader "; print_int size; print_newline(); *)
     let buff = String.create size in
     let n = Unix.read ic buff 0 size in
 (*    print_string "reader "; print_int n; print_newline(); *)
     for i = 0 to n-1 do
-      if buff.[i] <> 'a' then prerr_endline "error in reader_thread"
+      if buff.[i] = 'b' then raise Exit
+      else if buff.[i] <> 'a' then prerr_endline "error in reader_thread"
     done
   done
 
