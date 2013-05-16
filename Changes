@@ -29,6 +29,7 @@ Compilers:
   uses lots of functors.
 - PR#5986: added flag -compat-32 to ocamlc, ensuring that the generated
   bytecode executable can be loaded on 32-bit hosts.
+- PR#5980: warning on open statement which shadow an existing identifier (which turns out to be actually used in the scope of the open)
 
 Standard library:
 - PR#5986: new flag Marshal.Compat_32 for the serialization functions

@@ -56,6 +56,7 @@ type t =
   | Ambiguous_name of string list * string list * bool (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
+  | Open_shadow_identifier of string * string (* 44 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
