@@ -16,6 +16,7 @@ EXECNAME=./program$(EXE)
 .PHONY: run-all
 run-all:
 	@for file in *.ml; do \
+	  rm -f program program.exe; \
 	  $(OCAMLC) -g -o $(EXECNAME) $$file; \
 	  for arg in a b c d ''; do \
 	    printf " ... testing '$$file' with argument '$$arg':"; \
