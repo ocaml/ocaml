@@ -173,7 +173,7 @@ module MT = struct
   let module_ ?loc a b = mk_item ?loc (Psig_module (a, b))
   let rec_module ?loc a = mk_item ?loc (Psig_recmodule a)
   let modtype ?loc a b = mk_item ?loc (Psig_modtype (a, b))
-  let open_ ?loc a = mk_item ?loc (Psig_open a)
+  let open_ ?loc a b = mk_item ?loc (Psig_open (a, b))
   let include_ ?loc a = mk_item ?loc (Psig_include a)
   let class_ ?loc a = mk_item ?loc (Psig_class a)
   let class_type ?loc a = mk_item ?loc (Psig_class_type a)
@@ -188,7 +188,7 @@ module MT = struct
     | Psig_recmodule l -> rec_module ~loc (List.map (map_tuple (map_loc sub) (sub # module_type)) l)
     | Psig_modtype (s, Pmodtype_manifest mt) -> modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt))
     | Psig_modtype (s, Pmodtype_abstract) -> modtype ~loc (map_loc sub s) Pmodtype_abstract
-    | Psig_open s -> open_ ~loc (map_loc sub s)
+    | Psig_open (ovf, s) -> open_ ~loc ovf (map_loc sub s)
     | Psig_include mt -> include_ ~loc (sub # module_type mt)
     | Psig_class l -> class_ ~loc (List.map (sub # class_description) l)
     | Psig_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
@@ -227,7 +227,7 @@ module M = struct
   let module_ ?loc a b = mk_item ?loc (Pstr_module (a, b))
   let rec_module ?loc a = mk_item ?loc (Pstr_recmodule a)
   let modtype ?loc a b = mk_item ?loc (Pstr_modtype (a, b))
-  let open_ ?loc a = mk_item ?loc (Pstr_open a)
+  let open_ ?loc a b = mk_item ?loc (Pstr_open (a, b))
   let class_ ?loc a = mk_item ?loc (Pstr_class a)
   let class_type ?loc a = mk_item ?loc (Pstr_class_type a)
   let include_ ?loc a = mk_item ?loc (Pstr_include a)
@@ -244,7 +244,7 @@ module M = struct
     | Pstr_module (s, m) -> module_ ~loc (map_loc sub s) (sub # module_expr m)
     | Pstr_recmodule l -> rec_module ~loc (List.map (fun (s, mty, me) -> (map_loc sub s, sub # module_type mty, sub # module_expr me)) l)
     | Pstr_modtype (s, mty) -> modtype ~loc (map_loc sub s) (sub # module_type mty)
-    | Pstr_open lid -> open_ ~loc (map_loc sub lid)
+    | Pstr_open (ovf, lid) -> open_ ~loc ovf (map_loc sub lid)
     | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
     | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
     | Pstr_include e -> include_ ~loc (sub # module_expr e)
@@ -287,7 +287,7 @@ module E = struct
   let object_ ?loc a = mk ?loc (Pexp_object a)
   let newtype ?loc a b = mk ?loc (Pexp_newtype (a, b))
   let pack ?loc a = mk ?loc (Pexp_pack a)
-  let open_ ?loc a b = mk ?loc (Pexp_open (a, b))
+  let open_ ?loc a b c = mk ?loc (Pexp_open (a, b, c))
 
   let lid ?(loc = Location.none) lid = ident ~loc (mkloc (Longident.parse lid) loc)
   let apply_nolabs ?loc f el = apply ?loc f (List.map (fun e -> ("", e)) el)
@@ -328,7 +328,7 @@ module E = struct
     | Pexp_object cls -> object_ ~loc (sub # class_structure cls)
     | Pexp_newtype (s, e) -> newtype ~loc s (sub # expr e)
     | Pexp_pack me -> pack ~loc (sub # module_expr me)
-    | Pexp_open (lid, e) -> open_ ~loc (map_loc sub lid) (sub # expr e)
+    | Pexp_open (ovf, lid, e) -> open_ ~loc ovf (map_loc sub lid) (sub # expr e)
 end
 
 module P = struct

@@ -612,8 +612,8 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e
     | Pexp_poly _ ->
         assert false
-    | Pexp_open (lid, e) ->
-        pp f "@[<2>let open %a in@;%a@]" self#longident_loc lid
+    | Pexp_open (ovf, lid, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) self#longident_loc lid
           self#expression  e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
@@ -881,8 +881,8 @@ class printer  ()= object(self:'self)
         pp f "@[<hov>module@ %s@ :@ %a@]"
           s.txt
           self#module_type  mt
-    | Psig_open li ->
-        pp f "@[<hov2>open@ %a@]" self#longident_loc li
+    | Psig_open (ovf, li) ->
+        pp f "@[<hov2>open%s@ %a@]" (override ovf) self#longident_loc li
     | Psig_include (mt) ->
         pp f "@[<hov2>include@ %a@]"
           self#module_type  mt
@@ -1017,8 +1017,8 @@ class printer  ()= object(self:'self)
             | _ ->
                 pp f " =@ %a"  self#module_expr  me
             )) me
-    | Pstr_open (li) ->
-        pp f "@[<2>open@;%a@]" self#longident_loc li;
+    | Pstr_open (ovf, li) ->
+        pp f "@[<2>open%s@;%a@]" (override ovf) self#longident_loc li;
     | Pstr_modtype (s, mt) ->
         pp f "@[<2>module type %s =@;%a@]" s.txt self#module_type mt
     | Pstr_class l ->

@@ -118,7 +118,7 @@ and expression_desc =
   | Pexp_object of class_structure
   | Pexp_newtype of string * expression
   | Pexp_pack of module_expr
-  | Pexp_open of Longident.t loc * expression
+  | Pexp_open of override_flag * Longident.t loc * expression
 
 (* Value descriptions *)
 
@@ -242,7 +242,7 @@ and signature_item_desc =
   | Psig_module of string loc * module_type
   | Psig_recmodule of (string loc * module_type) list
   | Psig_modtype of string loc * modtype_declaration
-  | Psig_open of Longident.t loc
+  | Psig_open of override_flag * Longident.t loc
   | Psig_include of module_type
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
@@ -287,7 +287,7 @@ and structure_item_desc =
   | Pstr_module of string loc * module_expr
   | Pstr_recmodule of (string loc * module_type * module_expr) list
   | Pstr_modtype of string loc * module_type
-  | Pstr_open of Longident.t loc
+  | Pstr_open of override_flag * Longident.t loc
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr

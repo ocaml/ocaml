@@ -1367,8 +1367,8 @@ let open_pers_signature name env =
   let ps = find_pers_struct name in
   open_signature None (Pident(Ident.create_persistent name)) ps.ps_sig env
 
-let open_signature ?(loc = Location.none) ?(toplevel = false) root sg env =
-  if not toplevel && not loc.Location.loc_ghost && (Warnings.is_active (Warnings.Unused_open "") || Warnings.is_active (Warnings.Open_shadow_identifier ("", "")))
+let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
+  if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost && (Warnings.is_active (Warnings.Unused_open "") || Warnings.is_active (Warnings.Open_shadow_identifier ("", "")))
   then begin
     let used = ref false in
     !add_delayed_check_forward

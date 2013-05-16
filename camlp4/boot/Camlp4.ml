@@ -15167,7 +15167,7 @@ module Struct =
                   let e2 = ExSeq (loc, el)
                   in mkexp loc (Pexp_while ((expr e1), (expr e2)))
               | Ast.ExOpI (loc, i, e) ->
-                  mkexp loc (Pexp_open ((long_uident i), (expr e)))
+                  mkexp loc (Pexp_open (Fresh, (long_uident i), (expr e)))
               | Ast.ExPkg (loc, (Ast.MeTyc (_, me, pt))) ->
                   mkexp loc
                     (Pexp_constraint
@@ -15347,7 +15347,7 @@ module Struct =
                      | _ -> Pmodtype_manifest (module_type mt))
                   in (mksig loc (Psig_modtype ((with_loc n loc), si))) :: l
               | SgOpn (loc, id) ->
-                  (mksig loc (Psig_open (long_uident id))) :: l
+                  (mksig loc (Psig_open (Fresh, long_uident id))) :: l
               | SgTyp (loc, tdl) ->
                   (mksig loc (Psig_type (mktype_decl tdl []))) :: l
               | SgVal (loc, n, t) ->
@@ -15457,7 +15457,7 @@ module Struct =
                      (Pstr_modtype ((with_loc n loc), (module_type mt)))) ::
                     l
               | StOpn (loc, id) ->
-                  (mkstr loc (Pstr_open (long_uident id))) :: l
+                  (mkstr loc (Pstr_open (Fresh, long_uident id))) :: l
               | StTyp (loc, tdl) ->
                   (mkstr loc (Pstr_type (mktype_decl tdl []))) :: l
               | StVal (loc, rf, bi) ->

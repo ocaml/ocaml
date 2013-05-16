@@ -145,7 +145,7 @@ module MT:
     val module_: ?loc:Location.t -> string loc -> module_type -> signature_item
     val rec_module: ?loc:Location.t -> (string loc * module_type) list -> signature_item
     val modtype: ?loc:Location.t -> string loc -> modtype_declaration -> signature_item
-    val open_: ?loc:Location.t -> Longident.t loc -> signature_item
+    val open_: ?loc:Location.t -> override_flag -> Longident.t loc -> signature_item
     val include_: ?loc:Location.t -> module_type -> signature_item
     val class_: ?loc:Location.t -> class_description list -> signature_item
     val class_type: ?loc:Location.t -> class_type_declaration list -> signature_item
@@ -172,7 +172,7 @@ module M:
     val module_: ?loc:Location.t -> string loc -> module_expr -> structure_item
     val rec_module: ?loc:Location.t -> (string loc * module_type * module_expr)      list -> structure_item
     val modtype: ?loc:Location.t -> string loc -> module_type -> structure_item
-    val open_: ?loc:Location.t -> Longident.t loc -> structure_item
+    val open_: ?loc:Location.t -> override_flag -> Longident.t loc -> structure_item
     val class_: ?loc:Location.t -> class_declaration list -> structure_item
     val class_type: ?loc:Location.t -> class_type_declaration list -> structure_item
     val include_: ?loc:Location.t -> module_expr -> structure_item
@@ -214,7 +214,7 @@ module E:
     val object_: ?loc:Location.t -> class_structure -> expression
     val newtype: ?loc:Location.t -> string -> expression -> expression
     val pack: ?loc:Location.t -> module_expr -> expression
-    val open_: ?loc:Location.t -> Longident.t loc -> expression -> expression
+    val open_: ?loc:Location.t -> override_flag -> Longident.t loc -> expression -> expression
     val lid: ?loc:Location.t -> string -> expression
     val apply_nolabs: ?loc:Location.t -> expression -> expression list -> expression
     val strconst: ?loc:Location.t -> string -> expression

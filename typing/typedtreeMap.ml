@@ -121,7 +121,7 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_recmodule list
         | Tstr_modtype (id, name, mtype) ->
           Tstr_modtype (id, name, map_module_type mtype)
-        | Tstr_open (path, lid) -> Tstr_open (path, lid)
+        | Tstr_open (ovf, path, lid) -> Tstr_open (ovf, path, lid)
         | Tstr_class list ->
           let list =
             List.map (fun (ci, string_list, virtual_flag) ->
@@ -401,7 +401,7 @@ module MakeMap(Map : MapArgument) = struct
               (id, name, map_module_type mtype) ) list)
         | Tsig_modtype (id, name, mdecl) ->
           Tsig_modtype (id, name, map_modtype_declaration mdecl)
-        | Tsig_open (path, lid) -> item.sig_desc
+        | Tsig_open _ -> item.sig_desc
         | Tsig_include (mty, lid) -> Tsig_include (map_module_type mty, lid)
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
         | Tsig_class_type list ->
