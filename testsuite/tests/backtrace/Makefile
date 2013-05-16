@@ -11,7 +11,7 @@
 #########################################################################
 
 BASEDIR=../..
-EXECNAME=./program$(EXE)
+EXECNAME=program$(EXE)
 
 .PHONY: run-all
 run-all:
@@ -21,7 +21,7 @@ run-all:
 	  for arg in a b c d ''; do \
 	    printf " ... testing '$$file' with argument '$$arg':"; \
 	    F="`basename $$file .ml`"; \
-	    (OCAMLRUNPARAM=b=1 $(EXECNAME) $$arg || true) \
+	    (OCAMLRUNPARAM=b=1 $(OCAMLRUN) $(EXECNAME) $$arg || true) \
 	         >$$F.$$arg.result 2>&1; \
 	    $(DIFF) $$F.$$arg.reference $$F.$$arg.result >/dev/null \
 	    && echo " => passed" || echo " => failed"; \
