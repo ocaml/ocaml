@@ -23,8 +23,9 @@ compile:
 	    test -f $$F.mli && $(OCAMLC) -c -w a $$F.mli; \
 	    $(OCAMLC) -c -w a $$file 2>/dev/null \
 	    && if [ -f $$F.reference ]; then \
-	         $(OCAMLC) $$F.cmo \
-	         && ./a.out >$$F.result \
+	         rm -f program.byte; \
+	         $(OCAMLC) $$F.cmo -o program.byte \
+	         && $(OCAMLRUN) program.byte >$$F.result \
 	         && $(DIFF) $$F.reference $$F.result >/dev/null; \
 	       fi \
 	    && echo " => passed" || echo " => failed"; \
@@ -36,4 +37,4 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f ./a.out *.cm* *.result
+	@rm -f program.byte *.cm* *.result

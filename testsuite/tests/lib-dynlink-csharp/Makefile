@@ -13,17 +13,23 @@
 BASEDIR=../..
 CSC=csc
 
+COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray
+
+.PHONY: default
 default:
 	@if $(BYTECODE_ONLY); then : ; else \
-	  $(MAKE) all; \
+	  LD_LIBRARY_PATH='$(OTOPDIR)/otherlibs/bigarray' $(MAKE) all; \
 	fi
 
+.PHONY: all
 all: prepare bytecode bytecode-dll native native-dll
 
+.PHONY: prepare
 prepare:
 	@$(OCAMLC) -c plugin.ml
 	@$(OCAMLOPT) -o plugin.cmxs -shared plugin.ml
 
+.PHONY: bytecode
 bytecode:
 	@printf " ... testing 'bytecode':"
 	@if [ ! `which $(CSC) >/dev/null 2>&1` ]; then \
@@ -36,6 +42,7 @@ bytecode:
 	  && echo " => passed" || echo " => failed"; \
 	fi
 
+.PHONY: bytecode-dll
 bytecode-dll:
 	@printf " ... testing 'bytecode-dll':"
 	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
@@ -50,6 +57,7 @@ bytecode-dll:
 	  && echo " => passed" || echo " => failed"; \
 	fi
 
+.PHONY: native
 native:
 	@printf " ... testing 'native':"
 	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
@@ -62,6 +70,7 @@ native:
 	  && echo " => passed" || echo " => failed"; \
 	fi
 
+.PHONY: native-dll
 native-dll:
 	@printf " ... testing 'native-dll':"
 	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
@@ -77,8 +86,10 @@ native-dll:
 	  && echo " => passed" || echo " => failed"; \
 	fi
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.result *.exe *.dll
 

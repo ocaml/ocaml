@@ -12,8 +12,11 @@
 
 BASEDIR=../..
 
+COMPFLAGS=-I $(OTOPDIR)/otherlibs/dynlink
+
 .PHONY: default
-default: compile run
+default:
+	@LD_LIBRARY_PATH='$(OTOPDIR)/otherlibs/dynlink' $(MAKE) compile run
 
 .PHONY: compile
 compile:

@@ -12,6 +12,8 @@
 
 BASEDIR=../..
 LIBRARIES=str
+ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/str
+LD_LIBRARY_PATH=$(OTOPDIR)/otherlibs/str
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common

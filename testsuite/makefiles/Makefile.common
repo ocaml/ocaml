@@ -39,18 +39,24 @@ SORT=sort
 include $(TOPDIR)/config/Makefile
 
 OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
-OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml -I $(OTOPDIR)/stdlib $(COMPFLAGS)
-OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc -I $(OTOPDIR)/stdlib $(COMPFLAGS)
-OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt -I $(OTOPDIR)/stdlib $(COMPFLAGS)
+
+OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
+
+OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS)
+OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(OCFLAGS)
+OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
-OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib
+OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
+		       -ocamlc '$(OTOPDIR)/boot/ocamlrun$(EXE) \
+		                $(OTOPDIR)/ocamlc $(OCFLAGS)' \
+		       -ocamlopt '$(OTOPDIR)/boot/ocamlrun$(EXE) \
+		                  $(OTOPDIR)/ocamlopt $(OCFLAGS)'
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tool/dumpobj
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
 
-#COMPFLAGS=
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=
 
@@ -71,23 +77,23 @@ defaultclean:
 .SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so .c .f
 
 .mli.cmi:
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmi:
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmo:
-	@if [ -f $<i ]; then $(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<i; fi
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@if [ -f $<i ]; then $(OCAMLC) -c $(ADD_COMPFLAGS) $<i; fi
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmx:
-	@$(OCAMLOPT) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -c $(ADD_COMPFLAGS) $<
 
 .cmx.so:
-	@$(OCAMLOPT) -o $@ -shared $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -o $@ -shared $(ADD_COMPFLAGS) $<
 
 .cmxa.so:
-	@$(OCAMLOPT) -o $@ -shared -linkall $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -o $@ -shared -linkall $(ADD_COMPFLAGS) $<
 
 .mly.ml:
 	@$(OCAMLYACC) -q $< 2> /dev/null
