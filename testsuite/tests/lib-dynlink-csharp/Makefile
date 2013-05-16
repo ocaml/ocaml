@@ -18,7 +18,7 @@ COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray
 .PHONY: default
 default:
 	@if $(BYTECODE_ONLY); then : ; else \
-	  LD_LIBRARY_PATH='$(OTOPDIR)/otherlibs/bigarray' $(MAKE) all; \
+	  $(MAKE) all LD_LIBRARY_PATH="$(OTOPDIR)/otherlibs/bigarray"; \
 	fi
 
 .PHONY: all

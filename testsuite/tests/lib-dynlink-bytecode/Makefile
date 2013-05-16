@@ -16,13 +16,13 @@ COMPFLAGS=-I $(OTOPDIR)/otherlibs/dynlink
 
 .PHONY: default
 default:
-	@LD_LIBRARY_PATH='$(OTOPDIR)/otherlibs/dynlink' $(MAKE) compile run
+	@$(MAKE) compile run LD_LIBRARY_PATH="$(OTOPDIR)/otherlibs/dynlink"
 
 .PHONY: compile
-compile:
+compile: caml
 	@$(OCAMLC) -c registry.ml
 	@for file in stub*.c; do \
-	  $(OCAMLC) -c $$file; \
+	  $(OCAMLC) -ccopt -I -ccopt . -c $$file; \
 	  $(OCAMLMKLIB) -o `echo $$file | sed -e 's/stub/plug/' -e 's/\.c//'` \
 	                `basename $$file c`$(O); \
 	done
@@ -37,6 +37,10 @@ compile:
 	           -use-runtime $(OTOPDIR)/boot/ocamlrun$(EXE)
 	@$(OCAMLC) -o custom$(EXE) -custom -linkall registry.cmo plug2.cma \
 	           plug1.cma -I .
+
+caml:
+	@mkdir -p caml || :
+	@cp -f $(TOPDIR)/byterun/*.h caml/
 
 .PHONY: run
 run:
@@ -62,5 +66,6 @@ promote: defaultpromote
 .PHONY: clean
 clean: defaultclean
 	@rm -f main static custom custom.exe *.result marshal.data
+	@rm -rf caml
 
 include $(BASEDIR)/makefiles/Makefile.common

@@ -42,16 +42,17 @@ OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
 
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 
-OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS)
+OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
+      -init $(OTOPDIR)/testsuite/lib/empty
 OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(OCFLAGS)
 OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
-		       -ocamlc '$(OTOPDIR)/boot/ocamlrun$(EXE) \
-		                $(OTOPDIR)/ocamlc $(OCFLAGS)' \
-		       -ocamlopt '$(OTOPDIR)/boot/ocamlrun$(EXE) \
-		                  $(OTOPDIR)/ocamlopt $(OCFLAGS)'
+		       -ocamlc "$(OTOPDIR)/boot/ocamlrun$(EXE) \
+		                $(OTOPDIR)/ocamlc $(OCFLAGS)" \
+		       -ocamlopt "$(OTOPDIR)/boot/ocamlrun$(EXE) \
+		                  $(OTOPDIR)/ocamlopt $(OCFLAGS)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tool/dumpobj
@@ -59,6 +60,8 @@ BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
 
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=
+
+UNIXLIBVAR=`case "$(OTHERLIBRARIES)" in *win32unix*) echo win32;; esac`
 
 defaultpromote:
 	@for file in *.reference; do \

@@ -12,14 +12,15 @@
 
 BASEDIR=../..
 
-COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix -I $(OTOPDIR)/otherlibs/systhreads \
+COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
+	  -I $(OTOPDIR)/otherlibs/systhreads \
           -I $(OTOPDIR)/otherlibs/dynlink
-LD_LIBRARY_PATH=$(OTOPDIR)/otherlibs/unix:$(OTOPDIR)/otherlibs/systhreads:$(OTOPDIR)/otherlibs/dynlink
+LD_LIBRARY_PATH=$(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(OTOPDIR)/otherlibs/systhreads:$(OTOPDIR)/otherlibs/dynlink
 
 .PHONY: default
 default:
 	@if $(BYTECODE_ONLY); then : ; else \
-	   LD_LIBRARY_PATH='$(LD_LIBRARY_PATH)' $(MAKE) all; \
+	   $(MAKE) all LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)"; \
 	fi
 
 .PHONY: all
@@ -34,6 +35,7 @@ ADD_COMPFLAGS=-thread
 
 .PHONY: compile
 compile: $(PLUGINS) main$(EXE) mylib.so
+	@$(MAKE) $(PLUGINS)
 
 .PHONY: run
 run:
@@ -97,8 +99,13 @@ mypack.cmx: packed1.cmx
 mylib.cmxa: plugin.cmx plugin2.cmx
 	@$(OCAMLOPT) $(COMPFLAGS) -a -o mylib.cmxa plugin.cmx plugin2.cmx
 
-factorial.$(O): factorial.c
-	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" factorial.c
+factorial.$(O): factorial.c caml
+	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" -ccopt -I -ccopt . \
+	             factorial.c
+
+caml:
+	@mkdir -p caml || :
+	@cp $(TOPDIR)/byterun/*.h caml/
 
 .PHONY: promote
 promote:
@@ -110,5 +117,6 @@ clean: defaultclean
 	@rm -f *.a *.lib
 	@rm -f sub/*.so sub/*.o sub/*.cm* sub/*.s sub/*.asm sub/*.obj
 	@rm -f marshal.data
+	@rm -rf caml
 
 include $(BASEDIR)/makefiles/Makefile.common

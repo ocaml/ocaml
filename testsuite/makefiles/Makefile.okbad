@@ -10,8 +10,10 @@
 #                                                                       #
 #########################################################################
 
+.PHONY: default
 default: compile
 
+.PHONY: compile
 compile:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file'"; \

@@ -12,8 +12,9 @@
 
 BASEDIR=../..
 LIBRARIES=unix bigarray
-ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix -I $(OTOPDIR)/otherlibs/bigarray
-LD_LIBRARY_PATH=$(OTOPDIR)/otherlibs/unix:$(OTOPDIR)/otherlibs/bigarray
+ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
+              -I $(OTOPDIR)/otherlibs/bigarray
+LD_LIBRARY_PATH=$(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(OTOPDIR)/otherlibs/bigarray
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common

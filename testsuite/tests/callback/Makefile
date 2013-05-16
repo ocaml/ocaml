@@ -19,8 +19,8 @@ COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix
 .PHONY: default
 default:
 	@case " $(OTHERLIBRARIES) " in \
-	  *' unix '*) LD_LIBRARY_PATH='$(OTOPDIR)/otherlibs/unix' \
-	                $(MAKE) run-byte run-opt;; \
+	  *' unix '*) $(MAKE) run-byte run-opt \
+	                      LD_LIBRARY_PATH="$(OTOPDIR)/otherlibs/unix";; \
 	esac
 
 .PHONY: common
