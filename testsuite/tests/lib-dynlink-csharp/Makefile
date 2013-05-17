@@ -14,11 +14,12 @@ BASEDIR=../..
 CSC=csc
 
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray
+LD_PATH=$(TOPDIR)/otherlibs/bigarray
 
 .PHONY: default
 default:
 	@if $(BYTECODE_ONLY); then : ; else \
-	  $(MAKE) all LD_LIBRARY_PATH="$(OTOPDIR)/otherlibs/bigarray"; \
+	  $(SET_LD_PATH) $(MAKE) all; \
 	fi
 
 .PHONY: all

@@ -33,7 +33,7 @@ CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 
 .PHONY: default
 default:
-	@$(MAKE) compile run LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)"
+	@$(SET_LD_PATH) $(MAKE) compile run
 
 .PHONY: compile
 compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo

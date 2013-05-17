@@ -15,12 +15,12 @@ BASEDIR=../..
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
 	  -I $(OTOPDIR)/otherlibs/systhreads \
           -I $(OTOPDIR)/otherlibs/dynlink
-LD_LIBRARY_PATH=$(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(OTOPDIR)/otherlibs/systhreads:$(OTOPDIR)/otherlibs/dynlink
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads:$(TOPDIR)/otherlibs/dynlink
 
 .PHONY: default
 default:
 	@if $(BYTECODE_ONLY); then : ; else \
-	   $(MAKE) all LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)"; \
+	   $(SET_LD_PATH) $(MAKE) all; \
 	fi
 
 .PHONY: all

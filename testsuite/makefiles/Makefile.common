@@ -22,6 +22,7 @@ CYGPATH=echo
 DIFF=diff -q
 CANKILL=true
 SORT=sort
+SET_LD_PATH=LD_LIBRARY_PATH="$(LD_PATH)"
 
 # The variables above may be overridden by .../config/Makefile
 # OTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
@@ -35,6 +36,10 @@ SORT=sort
 #   and false for the mingw and MSVC ports.
 # SORT is the Unix "sort" command. Usually a simple command, but may be an
 #   absolute name if the Windows "sort" command is in the PATH.
+# SET_LD_PATH is a command prefix that sets the path for dynamic libraries
+#   (LD_LIBRARY_PATH for Unix, PATH for Windows) using the LD_PATH shell
+#   variable. Note that for Windows we add Unix-syntax directory names in
+#   PATH, and Cygwin will translate it to Windows syntax.
 
 include $(TOPDIR)/config/Makefile
 

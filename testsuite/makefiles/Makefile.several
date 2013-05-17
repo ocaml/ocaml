@@ -28,7 +28,7 @@ ADD_OPTFLAGS+=$(FORTRAN_LIB)
 .PHONY: check
 check:
 	@if [ -n "$(FORTRAN_COMPILER)" -o -z "$(F_FILES)" ]; then \
-	  $(MAKE) run-all LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)"; \
+	  $(SET_LD_PATH) $(MAKE) run-all; \
 	fi
 
 .PHONY: run-all

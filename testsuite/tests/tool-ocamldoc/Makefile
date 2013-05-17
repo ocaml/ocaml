@@ -13,11 +13,11 @@
 BASEDIR=../..
 CUSTOM_MODULE=odoc_test
 COMPFLAGS=-I $(OTOPDIR)/ocamldoc
-LD_LIBRARY_PATH=$(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(OTOPDIR)/otherlibs/str
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/str
 DOCFLAGS=-I $(OTOPDIR)/stdlib $(COMPFLAGS)
 
 default:
-	@$(MAKE) run LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)"
+	@$(SET_LD_PATH) $(MAKE) run
 
 run: $(CUSTOM_MODULE).cmo
 	@for file in t*.ml; do \

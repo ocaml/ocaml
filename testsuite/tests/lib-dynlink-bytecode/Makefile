@@ -13,10 +13,11 @@
 BASEDIR=../..
 
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/dynlink
+LD_PATH=.:$(TOPDIR)/otherlibs/dynlink
 
 .PHONY: default
 default:
-	@$(MAKE) compile run LD_LIBRARY_PATH="$(OTOPDIR)/otherlibs/dynlink"
+	@$(SET_LD_PATH) $(MAKE) compile run
 
 .PHONY: compile
 compile: caml
@@ -45,18 +46,17 @@ caml:
 .PHONY: run
 run:
 	@printf " ... testing 'main'"
-	@LD_LIBRARY_PATH="`pwd`" $(OCAMLRUN) ./main plug1.cma plug2.cma \
-	                                     >main.result
+	@$(OCAMLRUN) ./main plug1.cma plug2.cma >main.result
 	@$(DIFF) main.reference main.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
 
 	@printf " ... testing 'static'"
-	@LD_LIBRARY_PATH="`pwd`" $(OCAMLRUN) ./static >static.result
+	@$(OCAMLRUN) ./static >static.result
 	@$(DIFF) static.reference static.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
 
 	@printf " ... testing 'custom'"
-	@LD_LIBRARY_PATH="`pwd`" ./custom$(EXE) > custom.result
+	@./custom$(EXE) >custom.result
 	@$(DIFF) custom.reference custom.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
 

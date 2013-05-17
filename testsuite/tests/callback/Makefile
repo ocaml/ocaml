@@ -13,14 +13,13 @@
 BASEDIR=../..
 
 CC=$(NATIVECC) -I $(CTOPDIR)/byterun
-
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix
+LD_PATH=$(TOPDIR)/otherlibs/unix
 
 .PHONY: default
 default:
 	@case " $(OTHERLIBRARIES) " in \
-	  *' unix '*) $(MAKE) run-byte run-opt \
-	                      LD_LIBRARY_PATH="$(OTOPDIR)/otherlibs/unix";; \
+	  *' unix '*) $(SET_LD_PATH) $(MAKE) run-byte run-opt;; \
 	esac
 
 .PHONY: common
