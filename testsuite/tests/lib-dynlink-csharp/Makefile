@@ -34,7 +34,7 @@ prepare:
 bytecode:
 	@printf " ... testing 'bytecode':"
 	@if [ ! `which $(CSC) >/dev/null 2>&1` ]; then \
-	  echo " => passed"; \
+	  echo " => skipped"; \
 	else \
 	  $(OCAMLC) -output-obj -o main.dll dynlink.cma main.ml entry.c; \
 	  $(CSC) /out:main.exe main.cs; \
@@ -47,7 +47,7 @@ bytecode:
 bytecode-dll:
 	@printf " ... testing 'bytecode-dll':"
 	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
-	  echo " => passed"; \
+	  echo " => skipped"; \
 	else \
 	  $(OCAMLC) -output-obj -o main_obj.$(O) dynlink.cma entry.c main.ml; \
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) \
@@ -62,7 +62,7 @@ bytecode-dll:
 native:
 	@printf " ... testing 'native':"
 	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
-	  echo " => passed"; \
+	  echo " => skipped"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main.dll dynlink.cmxa entry.c main.ml; \
 	  $(CSC) /out:main.exe main.cs; \
@@ -75,7 +75,7 @@ native:
 native-dll:
 	@printf " ... testing 'native-dll':"
 	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
-	  echo " => passed"; \
+	  echo " => skipped"; \
 	else \
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c \
 	              main.ml; \
@@ -92,6 +92,6 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result *.exe *.dll
+	@rm -f *.result *.exe *.dll *.so *.obj *.o
 
 include $(BASEDIR)/makefiles/Makefile.common
