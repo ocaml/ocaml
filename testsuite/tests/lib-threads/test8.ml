@@ -12,23 +12,29 @@
 
 open Event
 
-type 'a buffer_channel = { input: 'a channel; output: 'a channel }
+type 'a buffer_channel = {
+  input: 'a channel;
+  output: 'a channel;
+  thread: Thread.t;
+  finished: bool ref;
+}
 
 let new_buffer_channel() =
   let ic = new_channel() in
   let oc = new_channel() in
-  let buff = Queue.create() in
+  let finished = ref false in
   let rec buffer_process front rear =
+    if !finished then Thread.exit ();
     match (front, rear) with
-      ([], []) -> buffer_process [sync(receive ic)] []
+    | ([], []) -> buffer_process [sync(receive ic)] []
     | (hd::tl, _) ->
         select [
           wrap (receive ic) (fun x -> buffer_process front (x::rear));
           wrap (send oc hd) (fun () -> buffer_process tl rear)
         ]
     | ([], _) -> buffer_process (List.rev rear) [] in
-  Thread.create (buffer_process []) [];
-  { input = ic; output = oc }
+  let t = Thread.create (buffer_process []) [] in
+  { input = ic; output = oc; thread = t; finished = finished }
 
 let buffer_send bc data =
   sync(send bc.input data)
@@ -52,5 +58,8 @@ let g () =
   print_string (sync(buffer_receive box)); print_newline()
 
 let _ =
-  Thread.create f ();
-  g()
+  let t = Thread.create f () in
+  g();
+  box.finished := true; buffer_send box "";
+  Thread.join box.thread;
+  Thread.join t
