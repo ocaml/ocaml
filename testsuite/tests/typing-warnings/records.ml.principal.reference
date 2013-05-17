@@ -31,15 +31,7 @@ Characters 148-149:
 Warning 27: unused variable x.
 module OK :
   sig val f1 : M1.t -> int val f2 : M1.t -> int val f3 : M1.t -> int end
-#         Characters 22-29:
-    open M1
-    ^^^^^^^
-Warning 44: this open statement shadows the label identifier x (which is later used)
-Characters 22-29:
-    open M1
-    ^^^^^^^
-Warning 44: this open statement shadows the label identifier y (which is later used)
-Characters 55-61:
+#         Characters 55-61:
     let f r = match r with {x; y} -> y + y
                            ^^^^^^
 Warning 41: these field labels belong to several types: M1.u M1.t
@@ -49,15 +41,7 @@ Characters 65-66:
                                      ^
 Error: This expression has type bool but an expression was expected of type
          int
-#               Characters 22-29:
-    open M1
-    ^^^^^^^
-Warning 44: this open statement shadows the label identifier x (which is later used)
-Characters 22-29:
-    open M1
-    ^^^^^^^
-Warning 44: this open statement shadows the label identifier y (which is later used)
-Characters 85-91:
+#               Characters 85-91:
          {x; y} -> y + y
          ^^^^^^
 Warning 41: these field labels belong to several types: M1.u M1.t
