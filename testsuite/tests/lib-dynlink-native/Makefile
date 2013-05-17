@@ -35,7 +35,6 @@ ADD_COMPFLAGS=-thread
 
 .PHONY: compile
 compile: $(PLUGINS) main$(EXE) mylib.so
-	@$(MAKE) $(PLUGINS)
 
 .PHONY: run
 run:

@@ -13,7 +13,7 @@
 BASEDIR=../..
 
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
-LD_PATH=$(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
 .PHONY: default
 default:
