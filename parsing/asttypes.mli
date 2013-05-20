@@ -21,6 +21,8 @@ type constant =
   | Const_int64 of int64
   | Const_nativeint of nativeint
 
+type raw_constant = constant * string
+
 type rec_flag = Nonrecursive | Recursive
 
 type direction_flag = Upto | Downto

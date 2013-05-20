@@ -49,7 +49,7 @@ let fmt_string_loc f x =
   fprintf f "\"%s\" %a" x.txt fmt_location x.loc;
 ;;
 
-let fmt_constant f x =
+let fmt_constant f (x, _) =
   match x with
   | Const_int (i) -> fprintf f "Const_int %d" i;
   | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);

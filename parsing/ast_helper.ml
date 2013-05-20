@@ -28,6 +28,15 @@ let with_default_loc l f =
   try let r = f () in default_loc := old; r
   with exn -> default_loc := old; raise exn
 
+let string_of_constant = function
+  | Const_int x -> string_of_int x
+  | Const_char x -> Char.escaped x
+  | Const_string (x, _) -> String.escaped x
+  | Const_float x -> x
+  | Const_int32 x -> Int32.to_string x
+  | Const_int64 x -> Int64.to_string x
+  | Const_nativeint x -> Nativeint.to_string x
+
 module Typ = struct
   let mk ?(loc = !default_loc) ?(attrs = []) d = {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
   let attr d a = {d with ptyp_attributes = d.ptyp_attributes @ [a]}
@@ -58,8 +67,10 @@ module Pat = struct
   let any ?loc ?attrs () = mk ?loc ?attrs Ppat_any
   let var ?loc ?attrs a = mk ?loc ?attrs (Ppat_var a)
   let alias ?loc ?attrs a b = mk ?loc ?attrs (Ppat_alias (a, b))
-  let constant ?loc ?attrs a = mk ?loc ?attrs (Ppat_constant a)
-  let interval ?loc ?attrs a b = mk ?loc ?attrs (Ppat_interval (a, b))
+  let raw_constant ?loc ?attrs a = mk ?loc ?attrs (Ppat_constant a)
+  let raw_interval ?loc ?attrs a b = mk ?loc ?attrs (Ppat_interval (a, b))
+  let constant ?loc ?attrs a = raw_constant ?loc ?attrs (a, string_of_constant a)
+  let interval ?loc ?attrs a b = raw_interval ?loc ?attrs (a, string_of_constant a) (b, string_of_constant b)
   let tuple ?loc ?attrs a = mk ?loc ?attrs (Ppat_tuple a)
   let construct ?loc ?attrs a b = mk ?loc ?attrs (Ppat_construct (a, b))
   let variant ?loc ?attrs a b = mk ?loc ?attrs (Ppat_variant (a, b))
@@ -78,7 +89,8 @@ module Exp = struct
   let attr d a = {d with pexp_attributes = d.pexp_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pexp_ident a)
-  let constant ?loc ?attrs a = mk ?loc ?attrs (Pexp_constant a)
+  let raw_constant ?loc ?attrs a = mk ?loc ?attrs (Pexp_constant a)
+  let constant ?loc ?attrs a = raw_constant ?loc ?attrs (a, string_of_constant a)
   let let_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_let (a, b, c))
   let fun_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pexp_fun (a, b, c, d))
   let function_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_function a)
@@ -391,7 +403,7 @@ module Convenience = struct
   let tconstr c l = Typ.constr (lid c) l
 
   let get_str = function
-    | {pexp_desc=Pexp_constant (Const_string (s, _)); _} -> Some s
+    | {pexp_desc=Pexp_constant (Const_string (s, _), _); _} -> Some s
     | e -> None
 
   let get_lid = function

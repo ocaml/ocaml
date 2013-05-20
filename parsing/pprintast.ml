@@ -167,7 +167,8 @@ class printer  ()= object(self:'self)
     | Lapply (y,s)->
         pp f "%a(%a)" self#longident y self#longident s
   method longident_loc f x = pp f "%a" self#longident x.txt
-  method constant f  = function
+  method constant f (c, _) =
+    match c with
     | Const_char i -> pp f "%C"  i 
     | Const_string (i, None) -> pp f "%S" i
     | Const_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
