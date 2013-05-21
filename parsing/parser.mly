@@ -1747,11 +1747,11 @@ constant:
 ;
 signed_constant:
     constant                                    { $1 }
-  | MINUS INT                                   { let x, l = $2 in (Const_int(- x), l) }
-  | MINUS FLOAT                                 { let x, l = $2 in (Const_float("-" ^ x), l) }
-  | MINUS INT32                                 { let x, l = $2 in (Const_int32(Int32.neg x), l) }
-  | MINUS INT64                                 { let x, l = $2 in (Const_int64(Int64.neg x), l) }
-  | MINUS NATIVEINT                             { let x, l = $2 in (Const_nativeint(Nativeint.neg x), l) }
+  | MINUS INT                                   { let x, l = $2 in (Const_int(- x), "-" ^ l) }
+  | MINUS FLOAT                                 { let x, l = $2 in (Const_float("-" ^ x), "-" ^ l) }
+  | MINUS INT32                                 { let x, l = $2 in (Const_int32(Int32.neg x), "-" ^ l) }
+  | MINUS INT64                                 { let x, l = $2 in (Const_int64(Int64.neg x), "-" ^ l) }
+  | MINUS NATIVEINT                             { let x, l = $2 in (Const_nativeint(Nativeint.neg x), "-" ^ l) }
   | PLUS INT                                    { let x, l = $2 in (Const_int x, l) }
   | PLUS FLOAT                                  { let x, l = $2 in (Const_float x, l) }
   | PLUS INT32                                  { let x, l = $2 in (Const_int32 x, l) }
