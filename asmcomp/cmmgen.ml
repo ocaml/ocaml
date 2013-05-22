@@ -438,21 +438,27 @@ type rhs_kind =
   | RHS_floatblock of int
   | RHS_nonrec
 ;;
-let rec expr_size = function
+let rec expr_size env = function
+  | Uvar id ->
+      begin try Ident.find_same id env with Not_found -> RHS_nonrec end
   | Uclosure(fundecls, clos_vars) ->
       RHS_block (fundecls_size fundecls + List.length clos_vars)
   | Ulet(id, exp, body) ->
-      expr_size body
+      expr_size (Ident.add id (expr_size env exp) env) body
   | Uletrec(bindings, body) ->
-      expr_size body
+      expr_size env body
   | Uprim(Pmakeblock(tag, mut), args, _) ->
       RHS_block (List.length args)
   | Uprim(Pmakearray(Paddrarray | Pintarray), args, _) ->
       RHS_block (List.length args)
   | Uprim(Pmakearray(Pfloatarray), args, _) ->
       RHS_floatblock (List.length args)
+  | Uprim (Pduprecord (Record_regular, sz), _, _) ->
+      RHS_block sz
+  | Uprim (Pduprecord (Record_float, sz), _, _) ->
+      RHS_floatblock sz
   | Usequence(exp, exp') ->
-      expr_size exp'
+      expr_size env exp'
   | _ -> RHS_nonrec
 
 (* Record application and currying functions *)
@@ -1867,7 +1873,8 @@ and transl_switch arg index cases = match Array.length cases with
           (Array.of_list !inters) actions)
 
 and transl_letrec bindings cont =
-  let bsz = List.map (fun (id, exp) -> (id, exp, expr_size exp)) bindings in
+  let bsz =
+    List.map (fun (id, exp) -> (id, exp, expr_size Ident.empty exp)) bindings in
   let op_alloc prim sz =
     Cop(Cextcall(prim, typ_addr, true, Debuginfo.none), [int_const sz]) in
   let rec init_blocks = function

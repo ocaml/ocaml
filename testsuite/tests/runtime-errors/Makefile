@@ -28,6 +28,7 @@ compile:
 	@grep -q HAS_STACK_OVERFLOW_DETECTION $(TOPDIR)/config/s.h \
 	  || rm -f stackoverflow.native$(EXE)
 
+.PHONY: run
 run:
 	@ulimit -s 1024; \
 	 for f in *.bytecode; do \

@@ -16,9 +16,11 @@ COMPFLAGS=-I $(OTOPDIR)/ocamldoc
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/str
 DOCFLAGS=-I $(OTOPDIR)/stdlib $(COMPFLAGS)
 
+.PHONY: default
 default:
 	@$(SET_LD_PATH) $(MAKE) run
 
+.PHONY: run
 run: $(CUSTOM_MODULE).cmo
 	@for file in t*.ml; do \
 	  printf " ... testing '$$file'"; \
@@ -33,8 +35,10 @@ run: $(CUSTOM_MODULE).cmo
 	@$(OCAMLDOC) $(DOCFLAGS) -hide-warnings -latex t*.ml 2>&1 \
 	  | grep -v test_types_display || true
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.result *.html *.tex *.log *.out *.sty *.toc *.css *.aux
 
