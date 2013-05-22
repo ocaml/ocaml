@@ -16,16 +16,14 @@ type 'a buffer_channel = {
   input: 'a channel;
   output: 'a channel;
   thread: Thread.t;
-  finished: bool ref;
 }
 
 let new_buffer_channel() =
   let ic = new_channel() in
   let oc = new_channel() in
-  let finished = ref false in
   let rec buffer_process front rear =
-    if !finished then Thread.exit ();
     match (front, rear) with
+    | (["EOF"], []) -> Thread.exit ()
     | ([], []) -> buffer_process [sync(receive ic)] []
     | (hd::tl, _) ->
         select [
@@ -34,7 +32,7 @@ let new_buffer_channel() =
         ]
     | ([], _) -> buffer_process (List.rev rear) [] in
   let t = Thread.create (buffer_process []) [] in
-  { input = ic; output = oc; thread = t; finished = finished }
+  { input = ic; output = oc; thread = t }
 
 let buffer_send bc data =
   sync(send bc.input data)
@@ -60,6 +58,6 @@ let g () =
 let _ =
   let t = Thread.create f () in
   g();
-  box.finished := true; buffer_send box "";
+  buffer_send box "EOF";
   Thread.join box.thread;
   Thread.join t
