@@ -133,7 +133,7 @@ module Main : sig end = struct
           file, path, name
       | [{pstr_desc=Pstr_eval
             ({pexp_desc=Pexp_apply
-                ({pexp_desc=Pexp_constant(Const_string (file, _), _); _},
+                ({pexp_desc=Pexp_constant(Const_string (file, _)); _},
                  ["", {pexp_desc=Pexp_ident{txt=lid;_}; _}]); _}, _); _}] ->
           begin match List.rev (Longident.flatten lid) with
           | [] -> assert false

@@ -124,36 +124,6 @@ let get_stored_string () =
   string_buff := initial_string_buffer;
   s
 
-let initial_raw_string_buffer = String.create 256
-let raw_string_buff = ref initial_raw_string_buffer
-let raw_string_index = ref 0
-
-let reset_raw_string_buffer () =
-  raw_string_buff := initial_raw_string_buffer;
-  raw_string_index := 0
-
-let store_raw_string_char c =
-  if !raw_string_index >= String.length (!raw_string_buff) then begin
-    let new_buff = String.create (String.length (!raw_string_buff) * 2) in
-    String.blit (!raw_string_buff) 0 new_buff 0 (String.length (!raw_string_buff));
-    raw_string_buff := new_buff
-  end;
-  String.unsafe_set (!raw_string_buff) (!raw_string_index) c;
-  incr raw_string_index
-
-let store_raw_string s =
-  for i = 0 to String.length s - 1 do
-    store_raw_string_char s.[i];
-  done
-
-let store_raw_lexeme lexbuf =
-  store_raw_string (Lexing.lexeme lexbuf)
-
-let get_stored_raw_string () =
-  let s = String.sub (!raw_string_buff) 0 (!raw_string_index) in
-  raw_string_buff := initial_raw_string_buffer;
-  s
-
 (* To store the position of the beginning of a string and comment *)
 let string_start_loc = ref Location.none;;
 let comment_start_loc = ref [];;
@@ -200,11 +170,11 @@ let char_for_hexadecimal_code lexbuf i =
 let cvt_int_literal s =
   - int_of_string ("-" ^ s)
 let cvt_int32_literal s =
-  Int32.neg (Int32.of_string ("-" ^ s))
+  Int32.neg (Int32.of_string ("-" ^ String.sub s 0 (String.length s - 1)))
 let cvt_int64_literal s =
-  Int64.neg (Int64.of_string ("-" ^ s))
+  Int64.neg (Int64.of_string ("-" ^ String.sub s 0 (String.length s - 1)))
 let cvt_nativeint_literal s =
-  Nativeint.neg (Nativeint.of_string ("-" ^ s))
+  Nativeint.neg (Nativeint.of_string ("-" ^ String.sub s 0 (String.length s - 1)))
 
 (* Remove underscores from float literals *)
 
@@ -312,39 +282,38 @@ rule token = parse
             LIDENT s }
   | uppercase identchar *
       { UIDENT(Lexing.lexeme lexbuf) }       (* No capitalized keywords *)
-  | int_literal as lit
+  | int_literal
       { try
-          INT (cvt_int_literal lit, lit)
+          INT (cvt_int_literal (Lexing.lexeme lexbuf))
         with Failure _ ->
           raise (Error(Literal_overflow "int", Location.curr lexbuf))
       }
-  | float_literal as lit
-      { FLOAT (remove_underscores lit, lit) }
-  | int_literal as lit "l"
+  | float_literal
+      { FLOAT (remove_underscores(Lexing.lexeme lexbuf)) }
+  | int_literal "l"
       { try
-          INT32 (cvt_int32_literal lit, lit)
+          INT32 (cvt_int32_literal (Lexing.lexeme lexbuf))
         with Failure _ ->
           raise (Error(Literal_overflow "int32", Location.curr lexbuf)) }
-  | int_literal as lit "L"
+  | int_literal "L"
       { try
-          INT64 (cvt_int64_literal lit, lit)
+          INT64 (cvt_int64_literal (Lexing.lexeme lexbuf))
         with Failure _ ->
           raise (Error(Literal_overflow "int64", Location.curr lexbuf)) }
-  | int_literal as lit "n"
+  | int_literal "n"
       { try
-          NATIVEINT (cvt_nativeint_literal lit, lit)
+          NATIVEINT (cvt_nativeint_literal (Lexing.lexeme lexbuf))
         with Failure _ ->
           raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
   | "\""
       { reset_string_buffer();
-        reset_raw_string_buffer();
         is_in_string := true;
         let string_start = lexbuf.lex_start_p in
         string_start_loc := Location.curr lexbuf;
-        string true lexbuf;
+        string lexbuf;
         is_in_string := false;
         lexbuf.lex_start_p <- string_start;
-        STRING (get_stored_string(), get_stored_raw_string(), None) }
+        STRING (get_stored_string(), None) }
   | "{" lowercase* "|"
       { reset_string_buffer();
         let delim = Lexing.lexeme lexbuf in
@@ -355,19 +324,18 @@ rule token = parse
         quoted_string delim lexbuf;
         is_in_string := false;
         lexbuf.lex_start_p <- string_start;
-        let s = get_stored_string() in
-        STRING (s, s, Some delim) }
-  | "'" (newline as lit) "'"
+        STRING (get_stored_string(), Some delim) }
+  | "'" newline "'"
       { update_loc lexbuf None 1 false 1;
-        CHAR(lit.[0], lit) }
-  | "'" ([^ '\\' '\'' '\010' '\013'] as lit) "'"
-      { CHAR(lit, String.make 1 lit) }
-  | "'" ("\\" ['\\' '\'' '"' 'n' 't' 'b' 'r' ' '] as lit) "'"
-      { CHAR(char_for_backslash lit.[1], lit) }
-  | "'" ("\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] as lit) "'"
-      { CHAR(char_for_decimal_code lexbuf 2, lit) }
-  | "'" ("\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] as lit) "'"
-      { CHAR(char_for_hexadecimal_code lexbuf 3, lit) }
+        CHAR (Lexing.lexeme_char lexbuf 1) }
+  | "'" [^ '\\' '\'' '\010' '\013'] "'"
+      { CHAR(Lexing.lexeme_char lexbuf 1) }
+  | "'\\" ['\\' '\'' '"' 'n' 't' 'b' 'r' ' '] "'"
+      { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
+  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+      { CHAR(char_for_decimal_code lexbuf 2) }
+  | "'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
+      { CHAR(char_for_hexadecimal_code lexbuf 3) }
   | "'\\" _
       { let l = Lexing.lexeme lexbuf in
         let esc = String.sub l 1 (String.length l - 1) in
@@ -493,7 +461,7 @@ and comment = parse
         string_start_loc := Location.curr lexbuf;
         store_string_char '"';
         is_in_string := true;
-        begin try string false lexbuf
+        begin try string lexbuf
         with Error (Unterminated_string, _) ->
           match !comment_start_loc with
           | [] -> assert false
@@ -558,29 +526,25 @@ and comment = parse
   | _
       { store_lexeme lexbuf; comment lexbuf }
 
-and string save_raw  = parse
+and string = parse
     '"'
       { () }
   | '\\' newline ([' ' '\t'] * as space)
       { update_loc lexbuf None 1 false (String.length space);
-        if save_raw then store_raw_lexeme lexbuf;
-        string save_raw lexbuf
+        string lexbuf
       }
   | '\\' ['\\' '\'' '"' 'n' 't' 'b' 'r' ' ']
       { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
-        if save_raw then store_raw_lexeme lexbuf;
-        string save_raw lexbuf }
+        string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
       { store_string_char(char_for_decimal_code lexbuf 1);
-        if save_raw then store_raw_lexeme lexbuf;
-        string save_raw lexbuf }
+         string lexbuf }
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
       { store_string_char(char_for_hexadecimal_code lexbuf 2);
-        if save_raw then store_raw_lexeme lexbuf;
-        string save_raw lexbuf }
+         string lexbuf }
   | '\\' _
       { if in_comment ()
-        then string save_raw lexbuf
+        then string lexbuf
         else begin
 (*  Should be an error, but we are very lax.
           raise (Error (Illegal_escape (Lexing.lexeme lexbuf),
@@ -590,26 +554,22 @@ and string save_raw  = parse
           Location.prerr_warning loc Warnings.Illegal_backslash;
           store_string_char (Lexing.lexeme_char lexbuf 0);
           store_string_char (Lexing.lexeme_char lexbuf 1);
-          string save_raw lexbuf
+          string lexbuf
         end
       }
   | newline
       { if not (in_comment ()) then
           Location.prerr_warning (Location.curr lexbuf) Warnings.Eol_in_string;
         update_loc lexbuf None 1 false 0;
-        let s = Lexing.lexeme lexbuf in
-        store_string s;
-        if save_raw then store_raw_string s;
-        string save_raw lexbuf
+        store_lexeme lexbuf;
+        string lexbuf
       }
   | eof
       { is_in_string := false;
         raise (Error (Unterminated_string, !string_start_loc)) }
   | _
-      { let c = Lexing.lexeme_char lexbuf 0 in
-        store_string_char c;
-        if save_raw then store_raw_string_char c;
-        string save_raw lexbuf }
+      { store_string_char(Lexing.lexeme_char lexbuf 0);
+        string lexbuf }
 
 and quoted_string delim = parse
   | newline

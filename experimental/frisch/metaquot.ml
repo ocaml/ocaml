@@ -120,7 +120,7 @@ module Main : sig end = struct
     Format.fprintf ppf "@[%a@]@." report exn
 
   let extract_str parse kind = function
-    | {pexp_desc = Pexp_constant (Const_string (s, _), _); pexp_loc = loc; _} ->
+    | {pexp_desc = Pexp_constant (Const_string (s, _)); pexp_loc = loc; _} ->
         begin try parse (Lexing.from_string s)
         with exn ->
           Location.print_error Format.std_formatter loc;

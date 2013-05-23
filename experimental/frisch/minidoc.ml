@@ -8,10 +8,10 @@ let pendings = ref []
 let doc ppf = function
   | ({txt="doc";_}, [{pstr_desc=Pstr_eval(e, _); _}]) ->
       begin match e.pexp_desc with
-      | Pexp_constant(Const_string (s, _), _) ->
+      | Pexp_constant(Const_string (s, _)) ->
           Format.fprintf ppf "    --> %s@." s
       | Pexp_apply({pexp_desc=Pexp_ident{txt=Lident "section"}},
-                   ["", {pexp_desc=Pexp_constant(Const_string (s, _), _)}]) ->
+                   ["", {pexp_desc=Pexp_constant(Const_string (s, _))}]) ->
                      Format.fprintf ppf "  ==== %s ====@." s
       | _ -> ()
       end

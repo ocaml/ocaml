@@ -233,8 +233,7 @@ let all_idents_cases el =
 
 (* Typing of constants *)
 
-let type_constant (c, _) =
-  match c with
+let type_constant = function
     Const_int _ -> instance_def Predef.type_int
   | Const_char _ -> instance_def Predef.type_char
   | Const_string _ -> instance_def Predef.type_string
@@ -928,12 +927,12 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
   | Ppat_constant cst ->
       unify_pat_types loc !env (type_constant cst) expected_ty;
       rp {
-        pat_desc = Tpat_constant (fst cst);
+        pat_desc = Tpat_constant cst;
         pat_loc = loc; pat_extra=[];
         pat_type = expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
-  | Ppat_interval ((Const_char c1, _), (Const_char c2, _)) ->
+  | Ppat_interval (Const_char c1, Const_char c2) ->
       let open Ast_helper.Pat in
       let rec loop c1 c2 =
         if c1 = c2 then constant ~loc (Const_char c1)
@@ -1894,9 +1893,9 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(Const_string (s, _), _ as cst) ->
+  | Pexp_constant(Const_string (s, _) as cst) ->
       rue {
-        exp_desc = Texp_constant (fst cst);
+        exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
         exp_type =
         (* Terrible hack for format strings *)
@@ -1909,7 +1908,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_env = env }
   | Pexp_constant cst ->
       rue {
-        exp_desc = Texp_constant (fst cst);
+        exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
         exp_type = type_constant cst;
         exp_attributes = sexp.pexp_attributes;

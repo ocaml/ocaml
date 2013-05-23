@@ -130,9 +130,9 @@ and pattern_desc =
         (* x *)
   | Ppat_alias of pattern * string loc
         (* P as 'a *)
-  | Ppat_constant of raw_constant
+  | Ppat_constant of constant
         (* 1, 'a', "true", 1.0, 1l, 1L, 1n *)
-  | Ppat_interval of raw_constant * raw_constant
+  | Ppat_interval of constant * constant
         (* 'a'..'z'
 
            Other forms of interval are recognized by the parser
@@ -183,7 +183,7 @@ and expression_desc =
         (* x
            M.x
          *)
-  | Pexp_constant of raw_constant
+  | Pexp_constant of constant
         (* 1, 'a', "true", 1.0, 1l, 1L, 1n *)
   | Pexp_let of rec_flag * (pattern * expression) list * expression
         (* let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)

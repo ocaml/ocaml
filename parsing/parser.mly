@@ -81,27 +81,27 @@ let neg_float_string f =
 
 let mkuminus name arg =
   match name, arg.pexp_desc with
-  | "-", Pexp_constant(Const_int n, lit) ->
-      mkexp(Pexp_constant(Const_int(-n), "-"^lit))
-  | "-", Pexp_constant(Const_int32 n, lit) ->
-      mkexp(Pexp_constant(Const_int32(Int32.neg n), "-"^lit))
-  | "-", Pexp_constant(Const_int64 n, lit) ->
-      mkexp(Pexp_constant(Const_int64(Int64.neg n), "-"^lit))
-  | "-", Pexp_constant(Const_nativeint n, lit) ->
-      mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n), "-"^lit))
-  | ("-" | "-."), Pexp_constant(Const_float f, lit) ->
-      mkexp(Pexp_constant(Const_float(neg_float_string f), "-"^lit))
+  | "-", Pexp_constant(Const_int n) ->
+      mkexp(Pexp_constant(Const_int(-n)))
+  | "-", Pexp_constant(Const_int32 n) ->
+      mkexp(Pexp_constant(Const_int32(Int32.neg n)))
+  | "-", Pexp_constant(Const_int64 n) ->
+      mkexp(Pexp_constant(Const_int64(Int64.neg n)))
+  | "-", Pexp_constant(Const_nativeint n) ->
+      mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
+  | ("-" | "-."), Pexp_constant(Const_float f) ->
+      mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
 let mkuplus name arg =
   let desc = arg.pexp_desc in
   match name, desc with
-  | "+", Pexp_constant(Const_int _, _)
-  | "+", Pexp_constant(Const_int32 _, _)
-  | "+", Pexp_constant(Const_int64 _, _)
-  | "+", Pexp_constant(Const_nativeint _, _)
-  | ("+" | "+."), Pexp_constant(Const_float _, _) -> mkexp desc
+  | "+", Pexp_constant(Const_int _)
+  | "+", Pexp_constant(Const_int32 _)
+  | "+", Pexp_constant(Const_int64 _)
+  | "+", Pexp_constant(Const_nativeint _)
+  | ("+" | "+."), Pexp_constant(Const_float _) -> mkexp desc
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
@@ -296,7 +296,7 @@ let mkexp_attrs d attrs =
 %token BARBAR
 %token BARRBRACKET
 %token BEGIN
-%token <char * string> CHAR
+%token <char> CHAR
 %token CLASS
 %token COLON
 %token COLONCOLON
@@ -316,7 +316,7 @@ let mkexp_attrs d attrs =
 %token EXCEPTION
 %token EXTERNAL
 %token FALSE
-%token <string * string> FLOAT
+%token <string> FLOAT
 %token FOR
 %token FUN
 %token FUNCTION
@@ -334,9 +334,9 @@ let mkexp_attrs d attrs =
 %token <string> INFIXOP4
 %token INHERIT
 %token INITIALIZER
-%token <int * string> INT
-%token <int32 * string> INT32
-%token <int64 * string> INT64
+%token <int> INT
+%token <int32> INT32
+%token <int64> INT64
 %token <string> LABEL
 %token LAZY
 %token LBRACE
@@ -361,7 +361,7 @@ let mkexp_attrs d attrs =
 %token MINUSGREATER
 %token MODULE
 %token MUTABLE
-%token <nativeint * string> NATIVEINT
+%token <nativeint> NATIVEINT
 %token NEW
 %token OBJECT
 %token OF
@@ -385,7 +385,7 @@ let mkexp_attrs d attrs =
 %token SHARP
 %token SIG
 %token STAR
-%token <string * string * string option> STRING
+%token <string * string option> STRING
 %token STRUCT
 %token THEN
 %token TILDE
@@ -1418,8 +1418,8 @@ lbl_pattern:
 /* Primitive declarations */
 
 primitive_declaration:
-    STRING                                      { let s, _, _ = $1 in [s] }
-  | STRING primitive_declaration                { let s, _, _ = $1 in s :: $2 }
+    STRING                                      { [fst $1] }
+  | STRING primitive_declaration                { fst $1 :: $2 }
 ;
 
 /* Type declarations */
@@ -1737,26 +1737,26 @@ label:
 /* Constants */
 
 constant:
-    INT                                         { let x, l = $1 in (Const_int x, l) }
-  | CHAR                                        { let x, l = $1 in (Const_char x, l) }
-  | STRING                                      { let (s, l, d) = $1 in (Const_string (s, d), l) }
-  | FLOAT                                       { let x, l = $1 in (Const_float x, l) }
-  | INT32                                       { let x, l = $1 in (Const_int32 x, l) }
-  | INT64                                       { let x, l = $1 in (Const_int64 x, l) }
-  | NATIVEINT                                   { let x, l = $1 in (Const_nativeint x, l) }
+    INT                                         { Const_int $1 }
+  | CHAR                                        { Const_char $1 }
+  | STRING                                      { let (s, d) = $1 in Const_string (s, d) }
+  | FLOAT                                       { Const_float $1 }
+  | INT32                                       { Const_int32 $1 }
+  | INT64                                       { Const_int64 $1 }
+  | NATIVEINT                                   { Const_nativeint $1 }
 ;
 signed_constant:
     constant                                    { $1 }
-  | MINUS INT                                   { let x, l = $2 in (Const_int(- x), "-" ^ l) }
-  | MINUS FLOAT                                 { let x, l = $2 in (Const_float("-" ^ x), "-" ^ l) }
-  | MINUS INT32                                 { let x, l = $2 in (Const_int32(Int32.neg x), "-" ^ l) }
-  | MINUS INT64                                 { let x, l = $2 in (Const_int64(Int64.neg x), "-" ^ l) }
-  | MINUS NATIVEINT                             { let x, l = $2 in (Const_nativeint(Nativeint.neg x), "-" ^ l) }
-  | PLUS INT                                    { let x, l = $2 in (Const_int x, l) }
-  | PLUS FLOAT                                  { let x, l = $2 in (Const_float x, l) }
-  | PLUS INT32                                  { let x, l = $2 in (Const_int32 x, l) }
-  | PLUS INT64                                  { let x, l = $2 in (Const_int64 x, l) }
-  | PLUS NATIVEINT                              { let x, l = $2 in (Const_nativeint x, l) }
+  | MINUS INT                                   { Const_int(- $2) }
+  | MINUS FLOAT                                 { Const_float("-" ^ $2) }
+  | MINUS INT32                                 { Const_int32(Int32.neg $2) }
+  | MINUS INT64                                 { Const_int64(Int64.neg $2) }
+  | MINUS NATIVEINT                             { Const_nativeint(Nativeint.neg $2) }
+  | PLUS INT                                    { Const_int $2 }
+  | PLUS FLOAT                                  { Const_float $2 }
+  | PLUS INT32                                  { Const_int32 $2 }
+  | PLUS INT64                                  { Const_int64 $2 }
+  | PLUS NATIVEINT                              { Const_nativeint $2 }
 ;
 
 /* Identifiers and long identifiers */
@@ -1849,8 +1849,8 @@ class_longident:
 
 toplevel_directive:
     SHARP ident                 { Ptop_dir($2, Pdir_none) }
-  | SHARP ident STRING          { Ptop_dir($2, Pdir_string (let s, _, _ = $3 in s)) }
-  | SHARP ident INT             { Ptop_dir($2, Pdir_int (fst $3)) }
+  | SHARP ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
+  | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
   | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }
   | SHARP ident TRUE            { Ptop_dir($2, Pdir_bool true) }

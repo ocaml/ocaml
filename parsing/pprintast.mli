@@ -35,7 +35,7 @@ class printer :
     method class_type : Format.formatter -> Parsetree.class_type -> unit
     method class_type_declaration_list :
       Format.formatter -> Parsetree.class_type_declaration list -> unit
-    method constant : Format.formatter -> Asttypes.raw_constant -> unit
+    method constant : Format.formatter -> Asttypes.constant -> unit
     method constant_string : Format.formatter -> string -> unit
     method core_type : Format.formatter -> Parsetree.core_type -> unit
     method core_type1 : Format.formatter -> Parsetree.core_type -> unit

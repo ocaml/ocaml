@@ -12,6 +12,7 @@
 
 (* A generic Parsetree mapping class *)
 
+open Location
 open Config
 open Parsetree
 open Asttypes
@@ -186,13 +187,17 @@ end
 module E = struct
   (* Value expressions for the core language *)
 
+  let lid ?(loc = Location.none) ?attrs lid = Exp.ident ~loc ?attrs (mkloc (Longident.parse lid) loc)
+  let apply_nolabs ?loc ?attrs f el = Exp.apply ?loc ?attrs f (List.map (fun e -> ("", e)) el)
+  let strconst ?loc ?attrs x = Exp.constant ?loc ?attrs (Const_string (x, None))
+
   let map sub {pexp_loc = loc; pexp_desc = desc; pexp_attributes = attrs} =
     let open Exp in
     let loc = sub # location loc in
     let attrs = sub # attributes attrs in
     match desc with
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
-    | Pexp_constant x -> raw_constant ~loc ~attrs x
+    | Pexp_constant x -> constant ~loc ~attrs x
     | Pexp_let (r, pel, e) -> let_ ~loc ~attrs r (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
     | Pexp_fun (lab, def, p, e) -> fun_ ~loc ~attrs lab (map_opt (sub # expr) def) (sub # pat p) (sub # expr e)
     | Pexp_function pel -> function_ ~loc ~attrs (sub # cases pel)
@@ -238,8 +243,8 @@ module P = struct
     | Ppat_any -> any ~loc ~attrs ()
     | Ppat_var s -> var ~loc ~attrs (map_loc sub s)
     | Ppat_alias (p, s) -> alias ~loc ~attrs (sub # pat p) (map_loc sub s)
-    | Ppat_constant c -> raw_constant ~loc ~attrs c
-    | Ppat_interval (c1, c2) -> raw_interval ~loc ~attrs c1 c2
+    | Ppat_constant c -> constant ~loc ~attrs c
+    | Ppat_interval (c1, c2) -> interval ~loc ~attrs c1 c2
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub # pat) pl)
     | Ppat_construct (l, p) -> construct ~loc ~attrs (map_loc sub l) (map_opt (sub # pat) p)
     | Ppat_variant (l, p) -> variant ~loc ~attrs l (map_opt (sub # pat) p)

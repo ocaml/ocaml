@@ -63,8 +63,6 @@ module Pat:
     val alias: ?loc:loc -> ?attrs:attrs -> pattern -> str -> pattern
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> pattern
     val interval: ?loc:loc -> ?attrs:attrs -> constant -> constant -> pattern
-    val raw_constant: ?loc:loc -> ?attrs:attrs -> raw_constant -> pattern
-    val raw_interval: ?loc:loc -> ?attrs:attrs -> raw_constant -> raw_constant -> pattern
     val tuple: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
     val construct: ?loc:loc -> ?attrs:attrs -> lid -> pattern option -> pattern
     val variant: ?loc:loc -> ?attrs:attrs -> label -> pattern option -> pattern
@@ -86,7 +84,6 @@ module Exp:
 
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> expression
-    val raw_constant: ?loc:loc -> ?attrs:attrs -> raw_constant -> expression
     val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> expression -> expression
     val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern -> expression -> expression
     val function_: ?loc:loc -> ?attrs:attrs -> case list -> expression
@@ -307,9 +304,6 @@ module Cstr:
 
 
 (** {2 Convenience functions} *)
-
-val string_of_constant: constant -> string
-    (** Return the canonical literal representation of a constant. *)
 
 (** Convenience functions to help build and deconstruct AST fragments. *)
 module Convenience :

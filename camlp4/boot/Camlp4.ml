@@ -14664,10 +14664,10 @@ module Struct =
               
             let rec deep_mkrangepat loc c1 c2 =
               if c1 = c2
-              then mkghpat loc (Ppat_constant (Const_char c1, Char.escaped c1))
+              then mkghpat loc (Ppat_constant (Const_char c1))
               else
                 mkghpat loc
-                  (Ppat_or ((mkghpat loc (Ppat_constant (Const_char c1, Char.escaped c1))),
+                  (Ppat_or ((mkghpat loc (Ppat_constant (Const_char c1))),
                      (deep_mkrangepat loc (Char.chr ((Char.code c1) + 1)) c2)))
               
             let rec mkrangepat loc c1 c2 =
@@ -14675,10 +14675,10 @@ module Struct =
               then mkrangepat loc c2 c1
               else
                 if c1 = c2
-                then mkpat loc (Ppat_constant (Const_char c1, Char.escaped c1))
+                then mkpat loc (Ppat_constant (Const_char c1))
                 else
                   mkpat loc
-                    (Ppat_or ((mkghpat loc (Ppat_constant (Const_char c1, Char.escaped c1))),
+                    (Ppat_or ((mkghpat loc (Ppat_constant (Const_char c1))),
                        (deep_mkrangepat loc (Char.chr ((Char.code c1) + 1))
                           c2)))
               
@@ -14732,7 +14732,7 @@ module Struct =
                   mkpat loc (Ppat_array (List.map patt (list_of_patt p [])))
               | PaChr (loc, s) ->
                   mkpat loc
-                    (Ppat_constant (Const_char (char_of_char_token loc s), s))
+                    (Ppat_constant (Const_char (char_of_char_token loc s)))
               | PaInt (loc, s) ->
                   let i =
                     (try int_of_string s
@@ -14740,7 +14740,7 @@ module Struct =
                      | Failure _ ->
                          error loc
                            "Integer literal exceeds the range of representable integers of type int")
-                  in mkpat loc (Ppat_constant (Const_int i, s))
+                  in mkpat loc (Ppat_constant (Const_int i))
               | PaInt32 (loc, s) ->
                   let i32 =
                     (try Int32.of_string s
@@ -14748,7 +14748,7 @@ module Struct =
                      | Failure _ ->
                          error loc
                            "Integer literal exceeds the range of representable integers of type int32")
-                  in mkpat loc (Ppat_constant (Const_int32 i32, s))
+                  in mkpat loc (Ppat_constant (Const_int32 i32))
               | PaInt64 (loc, s) ->
                   let i64 =
                     (try Int64.of_string s
@@ -14756,7 +14756,7 @@ module Struct =
                      | Failure _ ->
                          error loc
                            "Integer literal exceeds the range of representable integers of type int64")
-                  in mkpat loc (Ppat_constant (Const_int64 i64, s))
+                  in mkpat loc (Ppat_constant (Const_int64 i64))
               | PaNativeInt (loc, s) ->
                   let nati =
                     (try Nativeint.of_string s
@@ -14764,10 +14764,10 @@ module Struct =
                      | Failure _ ->
                          error loc
                            "Integer literal exceeds the range of representable integers of type nativeint")
-                  in mkpat loc (Ppat_constant (Const_nativeint nati, s))
+                  in mkpat loc (Ppat_constant (Const_nativeint nati))
               | PaFlo (loc, s) ->
                   mkpat loc
-                    (Ppat_constant (Const_float (remove_underscores s), s))
+                    (Ppat_constant (Const_float (remove_underscores s)))
               | PaLab (loc, _, _) ->
                   error loc "labeled pattern not allowed here"
               | PaOlb (loc, _, _) | PaOlbi (loc, _, _, _) ->
@@ -14794,7 +14794,7 @@ module Struct =
               | PaStr (loc, s) ->
                   mkpat loc
                     (Ppat_constant
-                       (Const_string (string_of_string_token loc s, None), s))
+                       (Const_string (string_of_string_token loc s, None)))
               | Ast.PaTup (loc, (Ast.PaCom (_, p1, p2))) ->
                   mkpat loc
                     (Ppat_tuple
@@ -14995,7 +14995,7 @@ module Struct =
               | ExAsr (loc, e) -> mkexp loc (Pexp_assert (expr e))
               | ExChr (loc, s) ->
                   mkexp loc
-                    (Pexp_constant (Const_char (char_of_char_token loc s), s))
+                    (Pexp_constant (Const_char (char_of_char_token loc s)))
               | ExCoe (loc, e, t1, t2) ->
                   let t1 =
                     (match t1 with | Ast.TyNil _ -> None | t -> Some (ctyp t))
@@ -15004,7 +15004,7 @@ module Struct =
                       (Pexp_coerce ((expr e), t1, ctyp t2))
               | ExFlo (loc, s) ->
                   mkexp loc
-                    (Pexp_constant (Const_float (remove_underscores s), s))
+                    (Pexp_constant (Const_float (remove_underscores s)))
               | ExFor (loc, i, e1, e2, df, el) ->
                   let e3 = ExSeq (loc, el)
                   in
@@ -15036,7 +15036,7 @@ module Struct =
                      | Failure _ ->
                          error loc
                            "Integer literal exceeds the range of representable integers of type int")
-                  in mkexp loc (Pexp_constant (Const_int i, s))
+                  in mkexp loc (Pexp_constant (Const_int i))
               | ExInt32 (loc, s) ->
                   let i32 =
                     (try Int32.of_string s
@@ -15044,7 +15044,7 @@ module Struct =
                      | Failure _ ->
                          error loc
                            "Integer literal exceeds the range of representable integers of type int32")
-                  in mkexp loc (Pexp_constant (Const_int32 i32, s))
+                  in mkexp loc (Pexp_constant (Const_int32 i32))
               | ExInt64 (loc, s) ->
                   let i64 =
                     (try Int64.of_string s
@@ -15052,7 +15052,7 @@ module Struct =
                      | Failure _ ->
                          error loc
                            "Integer literal exceeds the range of representable integers of type int64")
-                  in mkexp loc (Pexp_constant (Const_int64 i64, s))
+                  in mkexp loc (Pexp_constant (Const_int64 i64))
               | ExNativeInt (loc, s) ->
                   let nati =
                     (try Nativeint.of_string s
@@ -15060,7 +15060,7 @@ module Struct =
                      | Failure _ ->
                          error loc
                            "Integer literal exceeds the range of representable integers of type nativeint")
-                  in mkexp loc (Pexp_constant (Const_nativeint nati, s))
+                  in mkexp loc (Pexp_constant (Const_nativeint nati))
               | ExLab (loc, _, _) ->
                   error loc "labeled expression not allowed here"
               | ExLaz (loc, e) -> mkexp loc (Pexp_lazy (expr e))
@@ -15113,7 +15113,7 @@ module Struct =
               | ExStr (loc, s) ->
                   mkexp loc
                     (Pexp_constant
-                       (Const_string (string_of_string_token loc s, None), s))
+                       (Const_string (string_of_string_token loc s, None)))
               | ExTry (loc, e, a) ->
                   mkexp loc (Pexp_try ((expr e), (match_case a [])))
               | Ast.ExTup (loc, (Ast.ExCom (_, e1, e2))) ->

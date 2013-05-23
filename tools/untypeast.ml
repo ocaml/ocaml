@@ -165,7 +165,7 @@ and untype_pattern pat =
         end
     | Tpat_alias (pat, _id, name) ->
         Ppat_alias (untype_pattern pat, name)
-    | Tpat_constant cst -> Ppat_constant (cst, string_of_constant cst)
+    | Tpat_constant cst -> Ppat_constant cst
     | Tpat_tuple list ->
         Ppat_tuple (List.map untype_pattern list)
     | Tpat_construct (lid, _, args) ->
@@ -217,7 +217,7 @@ and untype_expression exp =
   let desc =
     match exp.exp_desc with
       Texp_ident (_path, lid, _) -> Pexp_ident (lid)
-    | Texp_constant cst -> Pexp_constant (cst, string_of_constant cst)
+    | Texp_constant cst -> Pexp_constant cst
     | Texp_let (rec_flag, list, exp) ->
         Pexp_let (rec_flag,
           List.map (fun (pat, exp) ->
