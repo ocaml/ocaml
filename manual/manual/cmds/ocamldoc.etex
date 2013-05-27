@@ -960,11 +960,11 @@ To know which methods to override and/or which methods are available,
 have a look at the different base implementations, depending on the
 kind of generator you are extending~:
 \begin{itemize}
-\item for HTML~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_html.ml?view=markup}{"odoc_html.ml"},
-\item for \LaTeX~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_latex.ml?view=markup}{"odoc_latex.ml"},
-\item for TeXinfo~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_texi.ml?view=markup}{"odoc_texi.ml"},
-\item for man pages~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_man.ml?view=markup}{"odoc_man.ml"},
-\item for graphviz (dot)~: \url{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_dot.ml?view=markup}{"odoc_dot.ml"}.
+\item for HTML~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_html.ml?view=markup}{"odoc_html.ml"},
+\item for \LaTeX~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_latex.ml?view=markup}{"odoc_latex.ml"},
+\item for TeXinfo~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_texi.ml?view=markup}{"odoc_texi.ml"},
+\item for man pages~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_man.ml?view=markup}{"odoc_man.ml"},
+\item for graphviz (dot)~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_dot.ml?view=markup}{"odoc_dot.ml"}.
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
