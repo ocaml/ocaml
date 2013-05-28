@@ -327,7 +327,7 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
                None -> (acc_b, (Name.head m.m_name) :: acc_inc,
                         (* we don't want to output warning messages for
                            "sig ... end" or "struct ... end" modules not found *)
-                        (if ma.ma_name = Odoc_messages.struct_end or
+                        (if ma.ma_name = Odoc_messages.struct_end ||
                           ma.ma_name = Odoc_messages.sig_end then
                           acc_names
                         else
@@ -375,7 +375,7 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
                 None -> (acc_b, (Name.head m.m_name) :: acc_inc,
                    (* we don't want to output warning messages for
                       "sig ... end" or "struct ... end" modules not found *)
-                   (if mta.mta_name = Odoc_messages.struct_end or
+                   (if mta.mta_name = Odoc_messages.struct_end ||
                       mta.mta_name = Odoc_messages.sig_end then
                       acc_names
                     else
@@ -417,7 +417,7 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
                 None -> (acc_b, (Name.head mt.mt_name) :: acc_inc,
                    (* we don't want to output warning messages for
                       "sig ... end" or "struct ... end" modules not found *)
-                   (if mta.mta_name = Odoc_messages.struct_end or
+                   (if mta.mta_name = Odoc_messages.struct_end ||
                       mta.mta_name = Odoc_messages.sig_end then
                       acc_names
                     else
@@ -453,7 +453,7 @@ and associate_in_module_element module_list m_name (acc_b_modif, acc_incomplete_
               None -> (acc_b_modif, (Name.head m_name) :: acc_incomplete_top_module_names,
                        (* we don't want to output warning messages for
                            "sig ... end" or "struct ... end" modules not found *)
-                        (if im.im_name = Odoc_messages.struct_end or
+                        (if im.im_name = Odoc_messages.struct_end ||
                           im.im_name = Odoc_messages.sig_end then
                           acc_names_not_found
                         else
