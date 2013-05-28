@@ -31,6 +31,9 @@ Compilers:
   bytecode executable can be loaded on 32-bit hosts.
 - PR#5980: warning on open statements which shadow an existing identifier
   (if it is actually used in the scope of the open)
+* warning 3 is extended to warn about other deprecated features:
+  - ISO-latin1 characters in identifiers
+  - uses of the (&) and (or) operators instead of (&&) and (||)
 
 Standard library:
 - PR#5986: new flag Marshal.Compat_32 for the serialization functions

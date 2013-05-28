@@ -188,6 +188,16 @@ let remove_underscores s =
       |  c  -> s.[dst] <- c; remove (src + 1) (dst + 1)
   in remove 0 0
 
+(* recover the name from a LABEL or OPTLABEL token *)
+
+let get_label_name lexbuf =
+  let s = Lexing.lexeme lexbuf in
+  let name = String.sub s 1 (String.length s - 2) in
+  if Hashtbl.mem keyword_table name then
+    raise (Error(Keyword_as_label name, Location.curr lexbuf));
+  name
+;;
+
 (* Update the current location with file name and line number. *)
 
 let update_loc lexbuf file line absolute chars =
@@ -201,6 +211,13 @@ let update_loc lexbuf file line absolute chars =
     pos_lnum = if absolute then line else pos.pos_lnum + line;
     pos_bol = pos.pos_cnum - chars;
   }
+;;
+
+(* Warn about Latin-1 characters used in idents *)
+
+let warn_latin1 lexbuf =
+  Location.prerr_warning (Location.curr lexbuf)
+    (Warnings.Deprecated "ISO-Latin1 characters in identifiers")
 ;;
 
 (* Error report *)
@@ -229,9 +246,12 @@ let report_error ppf = function
 
 let newline = ('\010' | "\013\010" )
 let blank = [' ' '\009' '\012']
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar =
+let lowercase = ['a'-'z' '_']
+let uppercase = ['A'-'Z']
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
@@ -262,26 +282,25 @@ rule token = parse
   | "~"
       { TILDE }
   | "~" lowercase identchar * ':'
-      { let s = Lexing.lexeme lexbuf in
-        let name = String.sub s 1 (String.length s - 2) in
-        if Hashtbl.mem keyword_table name then
-          raise (Error(Keyword_as_label name, Location.curr lexbuf));
-        LABEL name }
-  | "?"  { QUESTION }
+      { LABEL (get_label_name lexbuf) }
+  | "~" lowercase_latin1 identchar_latin1 * ':'
+      { warn_latin1 lexbuf; LABEL (get_label_name lexbuf) }
+  | "?"
+      { QUESTION }
   | "?" lowercase identchar * ':'
-      { let s = Lexing.lexeme lexbuf in
-        let name = String.sub s 1 (String.length s - 2) in
-        if Hashtbl.mem keyword_table name then
-          raise (Error(Keyword_as_label name, Location.curr lexbuf));
-        OPTLABEL name }
+      { OPTLABEL (get_label_name lexbuf) }
+  | "?" lowercase_latin1 identchar_latin1 * ':'
+      { warn_latin1 lexbuf; OPTLABEL (get_label_name lexbuf) }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
-          try
-            Hashtbl.find keyword_table s
-          with Not_found ->
-            LIDENT s }
+        try Hashtbl.find keyword_table s
+        with Not_found -> LIDENT s }
+  | lowercase_latin1 identchar_latin1 *
+      { warn_latin1 lexbuf; LIDENT (Lexing.lexeme lexbuf) }
   | uppercase identchar *
       { UIDENT(Lexing.lexeme lexbuf) }       (* No capitalized keywords *)
+  | uppercase_latin1 identchar_latin1 *
+      { warn_latin1 lexbuf; UIDENT(Lexing.lexeme lexbuf) }
   | int_literal
       { try
           INT (cvt_int_literal (Lexing.lexeme lexbuf))

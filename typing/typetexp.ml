@@ -310,7 +310,8 @@ let rec transl_type env policy styp =
                     check (Env.find_type path env)
                 | _ -> raise Not_found
           in check decl;
-          Location.prerr_warning styp.ptyp_loc Warnings.Deprecated;
+          Location.prerr_warning styp.ptyp_loc
+            (Warnings.Deprecated "old syntax for polymorphic variant type");
           (path, decl,true)
         with Not_found -> try
           if present <> [] then raise Not_found;
@@ -327,7 +328,7 @@ let rec transl_type env policy styp =
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
-		    Type_arity_mismatch(lid.txt, decl.type_arity,
+                    Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
       let args = List.map (transl_type env policy) stl in
       let params = instance_list decl.type_params in
