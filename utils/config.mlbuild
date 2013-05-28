@@ -130,5 +130,16 @@ let print_config oc =
   p "os_type" Sys.os_type;
   p "default_executable_name" default_executable_name;
   p_bool "systhread_supported" systhread_supported;
+  p "exec_magic_number" exec_magic_number;
+  p "cmi_magic_number" cmi_magic_number;
+  p "cmo_magic_number" cmo_magic_number;
+  p "cma_magic_number" cma_magic_number;
+  p "cmx_magic_number" cmx_magic_number;
+  p "cmxa_magic_number" cmxa_magic_number;
+  p "ast_impl_magic_number" ast_impl_magic_number;
+  p "ast_intf_magic_number" ast_intf_magic_number;
+  p "cmxs_magic_number" cmxs_magic_number;
+  p "cmt_magic_number" cmt_magic_number;
+
   flush oc;
 ;;
