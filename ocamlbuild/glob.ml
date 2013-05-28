@@ -257,7 +257,7 @@ module Brute =
         | Word v   ->
             String.length v = n &&
             begin
-              let rec check j = j = n or (v.[j] = u.[i + j] && check (j + 1))
+              let rec check j = j = n || (v.[j] = u.[i + j] && check (j + 1))
               in
               check 0
             end
