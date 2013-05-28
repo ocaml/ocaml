@@ -1,5 +1,6 @@
 \chapter{The num library: arbitrary-precision rational arithmetic}
 \pdfchapterfold{-3}{The num library: arbitrary-precision integer and rational arithmetic}
+%HEVEA\cutname{libnum.html}
 
 The "num" library implements integer arithmetic and rational
 arithmetic in arbitrary precision.

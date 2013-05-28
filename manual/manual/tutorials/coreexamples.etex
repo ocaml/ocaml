@@ -1,5 +1,6 @@
 \chapter{The core language} \label{c:core-xamples}
 \pdfchapterfold{-9}{Tutorial: The core language}
+%HEVEA\cutname{coreexamples.html}
 
 This part of the manual is a tutorial introduction to the
 OCaml language. A good familiarity with programming in a conventional

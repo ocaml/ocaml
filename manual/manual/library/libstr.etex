@@ -1,5 +1,6 @@
 \chapter{The str library: regular expressions and string processing}
 \pdfchapterfold{-1}{The str library: regular expressions and string processing}
+%HEVEA\cutname{libstr.html}
 
 The "str" library provides high-level string processing functions,
 some based on regular expressions. It is intended to support the kind

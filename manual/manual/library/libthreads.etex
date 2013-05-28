@@ -1,6 +1,7 @@
 \chapter{The threads library}
 \label{c:threads}\cutname{threads.html}
 \pdfchapterfold{-5}{The threads library}
+%HEVEA\cutname{libthreads.html}
 
 The "threads" library allows concurrent programming in OCaml.
 It provides multiple threads of control (also called lightweight

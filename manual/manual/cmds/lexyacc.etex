@@ -1,6 +1,7 @@
 \chapter{Lexer and parser generators (ocamllex, ocamlyacc)}
 \label{c:ocamlyacc}
 \pdfchapter{Lexer and parser generators (ocamllex, ocamlyacc)}
+%HEVEA\cutname{lexyacc.html}
 
 This chapter describes two program generators: "ocamllex", that
 produces a lexical analyzer from a set of regular expressions with

@@ -1,5 +1,6 @@
 \section{Names} \label{s:names}
 \pdfsection{Names}
+%HEVEA\cutname{names.html}
 
 Identifiers are used to give names to several classes of language
 objects and refer to these objects by name later:

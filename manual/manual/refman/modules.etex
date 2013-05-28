@@ -1,5 +1,6 @@
 \section{Module\label{s:module-expr} expressions (module implementations)}
 \pdfsection{Module expressions (module implementations)}
+%HEVEA\cutname{modules.html}
 
 Module expressions are the module-level equivalent of value
 expressions: they evaluate to modules, thus providing implementations

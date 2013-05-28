@@ -1,5 +1,6 @@
 \section{Compilation units}
 \pdfsection{Compilation units}
+%HEVEA\cutname{compunit.html}
 
 \begin{syntax}
 unit-interface: { specification [';;'] }

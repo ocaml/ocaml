@@ -19,6 +19,7 @@
 %(*** title
 \chapter{The ocamlbuild compilation manager} \label{c:ocamlbuild}
 \pdfchapter{The ocamlbuild compilation manager}
+%HEVEA\cutname{ocamlbuild.html}
 
 {\it (Chapter written by Berke Durak and Nicolas Pouillard)}
 

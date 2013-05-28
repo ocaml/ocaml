@@ -1,5 +1,6 @@
 \chapter{Native-code compilation (ocamlopt)} \label{c:nativecomp}
 \pdfchapter{Native-code compilation (ocamlopt)}
+%HEVEA\cutname{native.html}
 
 This chapter describes the OCaml high-performance
 native-code compiler "ocamlopt", which compiles OCaml source files to

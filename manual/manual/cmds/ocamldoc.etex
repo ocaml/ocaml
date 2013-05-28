@@ -1,5 +1,6 @@
 \chapter{The documentation generator (ocamldoc)} \label{c:ocamldoc}
 \pdfchapter{The documentation generator (ocamldoc)}
+%HEVEA\cutname{ocamldoc.html}
 
 This chapter describes OCamldoc, a tool that generates documentation from
 special comments embedded in source files.  The comments used by OCamldoc

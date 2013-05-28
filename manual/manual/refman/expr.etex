@@ -252,15 +252,15 @@ This expression is equivalent to:
 @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" expr@
 \end{center}
 
-The parameter patterns @"~"var@ and @"~("var [":" typexpr]")"@
-are shorthands for respectively @"~"var":"var@ and
-@"~"var":("var [":" typexpr]")"@, and similarly for their optional
+The parameter patterns @"~"lab@ and @"~("lab [":" typ]")"@
+are shorthands for respectively @"~"lab":"lab@ and
+@"~"lab":("lab [":" typ]")"@, and similarly for their optional
 counterparts.
 
-A function of the form @"fun" "?"lab":(" pattern '=' expr_0 ')' '->'
+A function of the form @"fun" "?" lab ":(" pattern '=' expr_0 ')' '->'
 expr@ is equivalent to
 \begin{center}
-@"fun" "?lab:"ident '->'
+@"fun" "?" lab ":" ident '->'
   "let" pattern '='
     "match" ident "with" "Some" ident "->" ident '|' "None" '->' expr_0
   "in" expr@
@@ -279,7 +279,7 @@ application, this is equivalent to
 \end{center}
 That is, the @"fun"@ expression above evaluates to a curried function
 with \var{n} arguments: after applying this function $n$ times to the
-values @v_1 \ldots v_n@, the values will be matched
+values @@v@_1 \ldots @v@_n@, the values will be matched
 in parallel against the patterns @pattern_1 \ldots pattern_n@.
 If the matching succeeds, the function returns the value of @expr@ in
 an environment enriched by the bindings performed during the matchings.
@@ -734,26 +734,27 @@ The expression @'('expr ':' typexpr_1 ':>' typexpr_2')'@ coerces the
 expression @expr@ from type @typexpr_1@ to type @typexpr_2@.
 
 The former operator will sometimes fail to coerce an expression @expr@
-from a type @t_1@ to a type @t_2@ even if type @t_1@ is a subtype of type
-@t_2@: in the current implementation it only expands two levels of
+from a type @typ_1@ to a type @typ_2@
+even if type @typ_1@ is a subtype of type
+@typ_2@: in the current implementation it only expands two levels of
 type abbreviations containing objects and/or polymorphic variants,
 keeping only recursion when it is explicit in the class type (for objects).
 As an exception to the above algorithm, if both the inferred type of @expr@
-and @typexpr@ are ground ({\em i.e.} do not contain type variables), the
+and @typ@ are ground ({\em i.e.} do not contain type variables), the
 former operator behaves as the latter one, taking the inferred type of
-@expr@ as @typexpr_1@. In case of failure with the former operator,
+@expr@ as @typ_1@. In case of failure with the former operator,
 the latter one should be used.
 
 It is only possible to coerce an expression @expr@ from type
-@typexpr_1@ to type @typexpr_2@, if the type of @expr@ is an instance of
-@typexpr_1@ (like for a type annotation), and @typexpr_1@ is a subtype
-of @typexpr_2@. The type of the coerced expression is an
-instance of @typexpr_2@. If the types contain variables,
+@typ_1@ to type @typ_2@, if the type of @expr@ is an instance of
+@typ_1@ (like for a type annotation), and @typ_1@ is a subtype
+of @typ_2@. The type of the coerced expression is an
+instance of @typ_2@. If the types contain variables,
 they may be instantiated by the subtyping algorithm, but this is only
-done after determining whether @typexpr_1@ is a potential subtype of
-@typexpr_2@. This means that typing may fail during this latter
-unification step, even if some instance of @typexpr_1@ is a subtype of
-some instance of @typexpr_2@.
+done after determining whether @typ_1@ is a potential subtype of
+@typ_2@. This means that typing may fail during this latter
+unification step, even if some instance of @typ_1@ is a subtype of
+some instance of @typ_2@.
 %
 In the following paragraphs we describe the subtyping relation used.
 
@@ -775,8 +776,8 @@ which may contain an ellipsis ".." if every @typ_i@ is a supertype of
 the corresponding @typ@$'_i$.
 
 A monomorphic method type can be a supertype of a polymorphic method
-type. Namely, if @typ@ is an instance of @typ@$'$, then @ "'"a_1
-\dots "'"a_n '.' typ@$'$ is a subtype of @typ@.
+type. Namely, if @typ@ is an instance of @typ@$'$, then @ "'"@a@_1
+\dots "'"@a@_n '.' typ@$'$ is a subtype of @typ@.
 
 Inside a class definition, newly defined types are not available for
 subtyping, as the type abbreviations are not yet completely
@@ -787,11 +788,11 @@ there are no binary methods.
 
 \subsubsection*{Polymorphic variant types}
 
-A polymorphic variant type @@typ@@ is a subtype of another polymorphic
-variant type @typ@$'$ if the upper bound of @@typ@@ ({\em i.e.} the
-maximum set of constructors that may appear in an instance of @@typ@@)
+A polymorphic variant type @typ@ is a subtype of another polymorphic
+variant type @typ@$'$ if the upper bound of @typ@ ({\em i.e.} the
+maximum set of constructors that may appear in an instance of @typ@)
 is included in the lower bound of @typ@$'$, and the types of arguments
-for the constructors of @@typ@@ are subtypes of those in
+for the constructors of @typ@ are subtypes of those in
 @typ@$'$. Namely,
 \begin{center}
 @ "["["<"] "'"C_1 "of" typ_1 "|" \dots "|" "'"C_n "of" typ_n "]" @

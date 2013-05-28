@@ -1,5 +1,6 @@
 \chapter{Dependency generator (ocamldep)} \label{c:camldep}
 \pdfchapter{Dependency generator (ocamldep)}
+%HEVEA\cutname{depend.html}
 
 The "ocamldep" command scans a set of OCaml source files
 (".ml" and ".mli" files) for references to external compilation units,

@@ -1,5 +1,6 @@
 \chapter{Profiling (ocamlprof)} \label{c:profiler}
 \pdfchapter{Profiling (ocamlprof)}
+%HEVEA\cutname{profil.html}
 
 This chapter describes how the execution of OCaml
 programs can be profiled, by recording how many times functions are

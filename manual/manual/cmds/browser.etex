@@ -1,5 +1,6 @@
 \chapter{The browser/editor (ocamlbrowser)} \label{c:browser}
 \pdfchapter{The browser/editor (ocamlbrowser)}
+%HEVEA\cutname{browser.html}
 
 This chapter describes OCamlBrowser, a source and compiled interface
 browser, written using LablTk. This is a useful companion to the

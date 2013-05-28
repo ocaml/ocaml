@@ -1,7 +1,7 @@
 \chapter{Objects in OCaml}
 \label{c:objectexamples}
 \pdfchapterfold{-15}{Tutorial: Objects in OCaml}
-
+%HEVEA\cutname{objectexamples.html}
 {\it (Chapter written by Jérôme Vouillon, Didier Rémy and Jacques Garrigue)}
 
 \bigskip

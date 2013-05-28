@@ -1,5 +1,6 @@
 \chapter*{Foreword}
 \markboth{Foreword}{}
+%HEVEA\cutname{foreword.html}
 
 This manual documents the release \ocamlversion\ of the OCaml
 system. It is organized as follows.

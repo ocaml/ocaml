@@ -1,5 +1,6 @@
 \chapter{The dynlink library: dynamic loading and linking of object files}
 \pdfchapterfold{-1}{The dynlink library: dynamic loading and linking of object files}
+%HEVEA\cutname{libdynlink.html}
 
 The "dynlink" library supports type-safe dynamic loading and linking
 of bytecode object files (".cmo" and ".cma" files) in a running

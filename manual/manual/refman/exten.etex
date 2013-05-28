@@ -1,5 +1,6 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
+%HEVEA\cutname{extn.html}
 
 This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the

@@ -221,9 +221,9 @@ type @('#' class-path 'as' "'" ident) '->' "'" ident@.
 %
 
 Use of \#-types to abbreviate polymorphic variant types is deprecated.
-If @t@ is an exact variant type then @"#"t@ translates to @"[<" t"]"@,
-and @"#"t"[>" "`"tag_1 \dots"`"tag_k"]"@ translates to
-@"[<" t ">" "`"tag_1 \dots"`"tag_k"]"@
+If @@t@@ is an exact variant type then @"#"@t@@ translates to @"[<" @t@"]"@,
+and @"#"@t@"[>" "`"tag_1 \dots"`"tag_k"]"@ translates to
+@"[<" @t@ ">" "`"tag_1 \dots"`"tag_k"]"@
 
 \subsubsection*{Variant and record types}
 

@@ -1,5 +1,6 @@
 \chapter{The graphics library}
 \pdfchapterfold{-1}{The graphics library}
+%HEVEA\cutname{libgraph.html}
 
 The "graphics" library provides a set of portable drawing primitives.
 Drawing takes place

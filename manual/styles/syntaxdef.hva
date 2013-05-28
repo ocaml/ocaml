@@ -19,6 +19,11 @@
 %  - For multiple definitions of the same non-terminal
 % Warnings can be avoided for a given non-terminal 'expr' by issuing
 % the command \stx@silent{'expr'}
+%
+%It is also possible to alias a nonterminal:
+%\stx@alias{name}{othername}
+%will make reference to 'name' point to teh definition of non-terminal
+%'othername'
 \newif\ifspace
 \def\addspace{\ifspace\;\spacefalse\fi}
 \ifhtml
@@ -30,11 +35,17 @@
 \def\stx@warning#1#2{\@ifundefined{stx@#1@silent}{\hva@warn{#2}}{}}
 \def\stx@silent#1{\def\csname stx@#1@silent\endcsname{}}
 %%% Do not warn about those
+%initial example
+\stx@silent{like}\stx@silent{that}%
 %Not defined
 \stx@silent{regular-char}%
-\stx@silent{regular-char-str}%
+\stx@silent{regular-string-char}%
+%\stx@silent{regular-char-str}%
 \stx@silent{lowercase-ident}%
 \stx@silent{capitalized-ident}%
+\stx@silent{space}%
+\stx@silent{tab}%
+\stx@silent{newline}%
 %Used in many places
 \stx@silent{prefix}%
 \stx@silent{name}%
@@ -58,6 +69,7 @@
 \stx@silent{class-field}%
 \stx@silent{mod-constraint}%
 \stx@silent{module-type}%
+\stx@silent{constant}%
 %%Redefined in names.etex
 \stx@silent{label-name}%
 %%Not really defined in lexyacc.etex
@@ -70,6 +82,15 @@
 \stx@silent{id}
 \stx@silent{Exc}
 \stx@silent{URL}
+%%%%%%%%%%%%%
+%% Aliases %%
+%%%%%%%%%%%%%
+\newcommand{\stx@alias}[2]{\def\csname stx@#1@alias\endcsname{#2}}
+\stx@alias{typ}{typexpr}%
+\stx@alias{met}{method-name}%
+\stx@alias{tag}{tag-name}%
+\stx@alias{lab}{label-name}%
+\stx@alias{C}{constr-name}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%special anchor
 \newstyle{a.syntax:link}{color:maroon;text-decoration:underline}
@@ -83,11 +104,17 @@
 {\@aelement{href="\@print{#}\@tr@url{#1}" class="syntax"}{#2}}
 \newcommand{\@syntaxaname}[2]
 {\@aelement{\stx@id="#1" class="syntax"}{#2}}
+%%Refer to anchor, internal :
+%#1 -> anchor #2 -> visible tag
+\def\@ref@anchor#1#2{%
+\@ifundefined{stx@#1@exists}
+{\stx@warning{#1}{Undefined non-terminal: '#1'}#2}
+{\@syntaxlocref{#1}{#2}}}
 %%Refer to anchor
 \def\ref@anchor#1{%
-\@ifundefined{stx@#1@exists}
-{\stx@warning{#1}{Undefined non-terminal: '#1'}#1}
-{\@syntaxlocref{#1}{#1}}}
+\ifu\csname stx@#1@alias\endcsname
+\@ref@anchor{#1}{#1}\else
+\@ref@anchor{\csname stx@#1@alias\endcsname}{#1}\fi}
 \def\stx@exists#1{\def\csname stx@#1@exists\endcsname{}}
 %%Define anachor
 \def\def@anchor#1{%

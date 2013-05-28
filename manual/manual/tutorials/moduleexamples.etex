@@ -1,5 +1,6 @@
 \chapter{The module system} \label{c:moduleexamples}
 \pdfchapterfold{-5}{Tutorial: The module system}
+%HEVEA\cutname{moduleexamples.html}
 
 This chapter introduces the module system of OCaml.
 

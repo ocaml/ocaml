@@ -1,5 +1,6 @@
 \chapter{Interfacing\label{c:intf-c} C with OCaml}
 \pdfchapterfold{-9}{Interfacing C with OCaml}
+%HEVEA\cutname{intfc.html}
 
 This chapter describes how user-defined primitives, written in C, can
 be linked with OCaml code and called from OCaml functions.

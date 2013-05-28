@@ -1,5 +1,6 @@
 \chapter{The bigarray library}
 \pdfchapterfold{-1}{The bigarray library}
+%HEVEA\cutname{libbigarray.html}
 
 The "bigarray" library implements large, multi-dimensional, numerical
 arrays.  These arrays are called ``big arrays'' to distinguish them

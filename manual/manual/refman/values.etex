@@ -1,5 +1,6 @@
 \section{Values}
 \pdfsection{Values}
+%HEVEA\cutname{values.html}
 
 This section describes the kinds of values that are manipulated by
 OCaml programs.
@@ -36,15 +37,15 @@ $2^{57} - 9$.
 
 \subsection{Tuples}
 
-Tuples of values are written @'('v_1',' \ldots',' v_n')'@, standing for the
-$n$-tuple of values @v_1@ to @v_n@. The current implementation
+Tuples of values are written @'('@v@_1',' \ldots',' @v@_n')'@, standing for the
+$n$-tuple of values @@v@_1@ to @@v@_n@. The current implementation
 supports tuple of up to $2^{22} - 1$ elements (4194303 elements).
 
 \subsection{Records}
 
 Record values are labeled tuples of values. The record value written
-@'{' field_1 '=' v_1';' \ldots';' field_n '=' v_n '}'@ associates the value
-@v_i@ to the record field @field_i@, for $i = 1 \ldots n$. The current
+@'{' field_1 '=' @v@_1';' \ldots';' field_n '=' @v@_n '}'@ associates the value
+@@v@_i@ to the record field @field_i@, for $i = 1 \ldots n$. The current
 implementation supports records with up to $2^{22} - 1$ fields
 (4194303 fields).
 
@@ -82,7 +83,7 @@ The current implementation limits each variant type to have at most
 Polymorphic variants are an alternate form of variant values, not
 belonging explicitly to a predefined variant type, and following
 specific typing rules. They can be either constant, written
-@"`"tag-name@, or non-constant, written @"`"tag-name'('v')'@.
+@"`"tag-name@, or non-constant, written @"`"tag-name'('@v@')'@.
 
 \subsection{Functions}
 
