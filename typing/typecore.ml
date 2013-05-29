@@ -533,7 +533,7 @@ let rec expand_path env p =
   match decl with
     Some {type_manifest = Some ty} ->
       begin match repr ty with
-	{desc=Tconstr(p,_,_)} -> expand_path env p
+        {desc=Tconstr(p,_,_)} -> expand_path env p
       | _ -> assert false
       end
   | _ -> p
@@ -562,8 +562,8 @@ end) = struct
   let spellcheck ppf env p lid =
     Typetexp.spellcheck_simple ppf fold
       (fun d ->
-	if compare_type_path env p (get_type_path env d)
-	then get_name d else "") env lid
+       if compare_type_path env p (get_type_path env d)
+       then get_name d else "") env lid
 
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
@@ -572,7 +572,7 @@ end) = struct
       Longident.Lident s -> begin
         try
           List.find (fun nd -> get_name nd = s) descrs
-        with Not_found -> 
+        with Not_found ->
           raise (Error (lid.loc, env, Wrong_name (type_kind, tpath, lid.txt)))
       end
     | _ -> raise Not_found
@@ -604,24 +604,24 @@ end) = struct
     let scope = match scope with None -> lbls | Some l -> l in
     let lbl = match opath with
       None ->
-	begin match lbls with
+        begin match lbls with
           [] -> unbound_name_error env lid
-	| (lbl, use) :: rest ->
-	    use ();
+        | (lbl, use) :: rest ->
+            use ();
             let paths = ambiguous_types env lbl rest in
-	    if paths <> [] then
-	      warn lid.loc
-		(Warnings.Ambiguous_name ([Longident.last lid.txt],
-                                          paths, false));
-	    lbl
-	end
+            if paths <> [] then
+              warn lid.loc
+                (Warnings.Ambiguous_name
+                   ([Longident.last lid.txt], paths, false));
+            lbl
+        end
     | Some(tpath0, tpath, pr) ->
-	let warn_pr () =
-	  let kind = if type_kind = "record" then "field" else "constructor" in
+        let warn_pr () =
+          let kind = if type_kind = "record" then "field" else "constructor" in
           warn lid.loc
             (Warnings.Not_principal
-	       ("this type-based " ^ kind ^ " disambiguation"))
-	in
+               ("this type-based " ^ kind ^ " disambiguation"))
+        in
         try
           let lbl, use = disambiguate_by_type env tpath scope in
           use ();
@@ -648,12 +648,12 @@ end) = struct
             (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
           if not pr then warn_pr ();
           lbl
-	with Not_found ->
+        with Not_found ->
           if lbls = [] then unbound_name_error env lid else
           let tp = (tpath0, expand_path env tpath) in
-	  let tpl = 
-            List.map 
-              (fun (lbl, _) -> 
+          let tpl =
+            List.map
+              (fun (lbl, _) ->
                 let tp0 = get_type_path env lbl in
                 let tp = expand_path env tp0 in
                   (tp0, tp))
@@ -941,10 +941,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_env = !env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
       let opath =
-        try 
+        try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
             Some (p0, p, true)
-	with Not_found -> None
+        with Not_found -> None
       in
       let constrs =
         match lid.txt, constrs with
@@ -953,7 +953,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         | _ ->  Typetexp.find_all_constructors !env lid.loc lid.txt
       in
       let check_lk tpath constr =
-        if constr.cstr_generalized then 
+        if constr.cstr_generalized then
           raise (Error (lid.loc, !env,
                         Unqualified_gadt_pattern (tpath, constr.cstr_name)))
       in
@@ -1014,7 +1014,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
           Some (p0, p, true), expected_ty
-	with Not_found -> None, newvar ()
+        with Not_found -> None, newvar ()
       in
       let type_label_pat (label_lid, label, sarg) =
         begin_def ();
@@ -1024,7 +1024,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
           unify_pat_types loc !env ty_res record_ty
         with Unify trace ->
           raise(Error(label_lid.loc, !env,
-		      Label_mismatch(label_lid.txt, trace)))
+              Label_mismatch(label_lid.txt, trace)))
         end;
         let arg = type_pat sarg ty_arg in
         if vars <> [] then begin
@@ -1371,6 +1371,7 @@ external format_to_string :
 let type_format loc fmt =
 
   let ty_arrow gty ty = newty (Tarrow ("", instance_def gty, ty, Cok)) in
+  let ty_tuple tys = newty (Ttuple tys) in
 
   let bad_conversion fmt i c =
     raise (Error (loc, Env.empty, Bad_conversion (fmt, i, c))) in
@@ -1380,6 +1381,12 @@ let type_format loc fmt =
   let rec type_in_format fmt =
 
     let len = String.length fmt in
+
+    let rec scan_decimal_string scan i j =
+      if j >= len then incomplete_format fmt else
+      match fmt.[j] with
+      | '0' .. '9' -> scan_decimal_string scan i (j + 1)
+      | _ -> scan i j in
 
     let ty_input = newvar ()
     and ty_result = newvar ()
@@ -1396,24 +1403,50 @@ let type_format loc fmt =
       match fmt.[i] with
       | '%' -> scan_opts i (i + 1)
       | _ -> scan_format (i + 1)
+
     and scan_opts i j =
       if j >= len then incomplete_format fmt else
       match fmt.[j] with
       | '_' -> scan_rest true i (j + 1)
       | _ -> scan_rest false i j
+
     and scan_rest skip i j =
+
       let rec scan_flags i j =
+        (* A flag is:
+           alternate_form
+           zero_padded
+           left_adjusted
+           blank_positive
+           plus_positive *)
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
-        | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
-        | _ -> scan_width i j
-      and scan_width i j = scan_width_or_prec_value scan_precision i j
-      and scan_decimal_string scan i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '0' .. '9' -> scan_decimal_string scan i (j + 1)
-        | _ -> scan i j
-      and scan_width_or_prec_value scan i j =
+        | '#' (* alternate form for numerical conversions
+                 o -> 0o, x -> 0x, X -> 0X,
+                 e, E, f, F, g, G, -> a decimal point in the result,
+                 even if no digits follow it... *)
+        | '0' (* zero padded value for numerical conversions diouxXeEfFgG.
+                 If 0 and - are given 0 is ignored. For other conversions
+                 undefined behaviour. *)
+        | '-' (* left adjusted value: pad on the right with blanks.
+                 A - overrides a 0. *)
+        | ' ' (* a space should be left before a positive number for
+                 signed numerical conversions *)
+        | '+'  (* a sign (+ or -) should be prepend to a number for signed
+                  conversions. A + overrides a space if both are given. *) ->
+          scan_flags i (j + 1)
+        | _ -> scan_field_width i j
+
+      and scan_field_width i j =
+         (* An optional decimal digit string with nonzero first digit,
+            or * (or *m$).
+            A negative field width is taken as a - flag followed by a
+            positive width.
+            If a result is wider than the field width the field is extended
+            to contain the result. *)
+         scan_field_width_or_precision_value scan_precision i j
+
+      and scan_field_width_or_precision_value scan i j =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '*' ->
@@ -1421,11 +1454,25 @@ let type_format loc fmt =
           ty_uresult, ty_arrow Predef.type_int ty_result
         | '-' | '+' -> scan_decimal_string scan i (j + 1)
         | _ -> scan_decimal_string scan i j
+
       and scan_precision i j =
+        (* A . followed by an optional decimal digit string.
+           If the precision is just . or is negative it is 0.
+           It gives
+           - the minimum number of digit for diouxX,
+           - the number of digits after the radix for eEfF,
+           - the maximum number of significant digits for gG,
+           - the maximum number of characters for sS,
+            *)
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
-        | '.' -> scan_width_or_prec_value scan_conversion i (j + 1)
+        | '.' -> scan_field_width_or_precision_value scan_conversion i (j + 1)
         | _ -> scan_conversion i j
+
+     (* The length modifier:
+        hh, h, l, ll, L, q, j, z, t.
+     *)
+
       and scan_indication j =
         if j >= len then j - 1 else
         match fmt.[j] with
@@ -1443,6 +1490,7 @@ let type_format loc fmt =
           | _c -> k
           end
         | _c -> j - 1
+
       and scan_range j =
         let rec scan_closing j =
           if j >= len then incomplete_format fmt else
@@ -1469,6 +1517,39 @@ let type_format loc fmt =
 
         scan_first_neg j
 
+      and scan_elem_indication j =
+        let rec scan_closing j =
+          if j >= len then incomplete_format fmt else
+          match fmt.[j] with
+          | '@' ->
+            let j = j + 1 in
+            if j >= len then incomplete_format fmt else
+            begin match fmt.[j] with
+            | ')' -> j + 1
+            | c -> bad_conversion fmt j c
+            end
+          | '%' ->
+            let j = j + 1 in
+            if j >= len then incomplete_format fmt else
+            begin match fmt.[j] with
+            | '@' -> scan_closing (j + 1)
+            | c -> bad_conversion fmt j c
+            end
+          | c -> scan_closing (j + 1) in
+        let scan_first j =
+          if j >= len then incomplete_format fmt else
+          match fmt.[j] with
+          | '@' ->
+            let j = j + 1 in
+            if j >= len then incomplete_format fmt else
+            begin match fmt.[j] with
+            | '(' -> scan_closing (j + 1)
+            | c -> bad_conversion fmt j c
+            end
+          | c -> j in
+
+        scan_first j
+
       and conversion j ty_arg =
         let ty_uresult, ty_result = scan_format (j + 1) in
         ty_uresult,
@@ -1479,48 +1560,31 @@ let type_format loc fmt =
         let ty_a = ty_arrow ty_input (ty_arrow ty_e ty_aresult) in
         ty_uresult, ty_arrow ty_a ty_result
 
+      and conversion_a2 j ty_e ty_f ty_arg =
+        let ty_uresult, ty_result = conversion j ty_arg in
+        let ty_a = ty_arrow ty_input (ty_arrow ty_e ty_aresult) in
+        let ty_b = ty_arrow ty_input (ty_arrow ty_f ty_aresult) in
+        ty_uresult, ty_arrow ty_a (ty_arrow ty_b ty_result)
+
       and conversion_r j ty_e ty_arg =
         let ty_uresult, ty_result = conversion j ty_arg in
         let ty_r = ty_arrow ty_input ty_e in
         ty_arrow ty_r ty_uresult, ty_result
 
+      and conversion_r2 j ty_e ty_f ty_arg =
+        let ty_uresult, ty_result = conversion j ty_arg in
+        let ty_a = ty_arrow ty_input ty_e in
+        let ty_b = ty_arrow ty_input ty_f in
+        ty_arrow ty_a (ty_arrow ty_b ty_uresult), ty_result
+
       and scan_conversion i j =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '%' | '@' | '!' | ',' -> scan_format (j + 1)
-        | 's' | 'S' ->
-          let j = scan_indication (j + 1) in
-          conversion j Predef.type_string
-        | '[' ->
-          let j = scan_range (j + 1) in
-          let j = scan_indication (j + 1) in
-          conversion j Predef.type_string
-        | 'c' | 'C' -> conversion j Predef.type_char
-        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' | 'N' ->
+        | 'd' | 'i' (* *)
+        | 'o' | 'u' | 'x' | 'X' (* *)
+        | 'N' ->
           conversion j Predef.type_int
-        | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
-        | 'B' | 'b' -> conversion j Predef.type_bool
-        | 'a' | 'r' as conv ->
-          let conversion =
-            if conv = 'a' then conversion_a else conversion_r in
-          let ty_e = newvar () in
-          let j = j + 1 in
-          if j >= len then conversion (j - 1) ty_e ty_e else begin
-            match fmt.[j] with
-(*            | 'a' | 'A' -> conversion j ty_e (Predef.type_array ty_e)
-            | 'l' | 'L' -> conversion j ty_e (Predef.type_list ty_e)
-            | 'o' | 'O' -> conversion j ty_e (Predef.type_option ty_e)*)
-            | _ -> conversion (j - 1) ty_e ty_e end
-(*        | 'r' ->
-          let ty_e = newvar () in
-          let j = j + 1 in
-          if j >= len then conversion_r (j - 1) ty_e ty_e else begin
-            match fmt.[j] with
-            | 'a' | 'A' -> conversion_r j ty_e (Pref.type_array ty_e)
-            | 'l' | 'L' -> conversion_r j ty_e (Pref.type_list ty_e)
-            | 'o' | 'O' -> conversion_r j ty_e (Pref.type_option ty_e)
-            | _ -> conversion_r (j - 1) ty_e ty_e end *)
-        | 't' -> conversion j (ty_arrow ty_input ty_aresult)
         | 'l' | 'n' | 'L' as c ->
           let j = j + 1 in
           if j >= len then conversion (j - 1) Predef.type_int else begin
@@ -1534,6 +1598,44 @@ let type_format loc fmt =
               conversion j ty_arg
             | c -> conversion (j - 1) Predef.type_int
           end
+        | 'e' | 'E' (* *)
+        | 'f' | 'F' (* *)
+        | 'g' | 'G' (* *)
+        (* In C99 | 'a' | 'A' is used for
+           [-]0xh.hhhp+- style for floating point numbers *)
+          -> conversion j Predef.type_float
+        | 'c' | 'C' -> conversion j Predef.type_char
+        | 's' | 'S' ->
+          let j = scan_indication (j + 1) in
+          conversion j Predef.type_string
+        | '[' ->
+          let j = scan_range (j + 1) in
+          let j = scan_indication (j + 1) in
+          conversion j Predef.type_string
+        | 'B' | 'b' -> conversion j Predef.type_bool
+        | 'a' | 'r' as conv ->
+          let conversion =
+            if conv = 'a' then conversion_a else conversion_r in
+          let ty_e = newvar () in
+          conversion j ty_e ty_e
+        | 'A' | 'R' as conv ->
+          let j = scan_elem_indication (j + 1) in
+          let conversion =
+            if conv = 'A' then conversion_a else conversion_r in
+          if j >= len then incomplete_format fmt else begin
+            let ty_e = newvar () in
+            match fmt.[j] with
+            | 'a' | 'A' -> conversion j ty_e (Predef.type_array ty_e)
+            | 'l' | 'L' -> conversion j ty_e (Predef.type_list ty_e)
+            | 'o' | 'O' -> conversion j ty_e (Predef.type_option ty_e)
+            | 'c' | 'C' ->
+              let ty_f = newvar () in
+              let conversion2 =
+                if conv = 'A' then conversion_a2 else conversion_r2 in
+              conversion2 j ty_e ty_f (ty_tuple [ty_e; ty_f])
+            | c -> bad_conversion fmt j c
+          end
+        | 't' -> conversion j (ty_arrow ty_input ty_aresult)
         | '{' | '(' as c ->
           let j = j + 1 in
           if j >= len then incomplete_format fmt else
@@ -1555,7 +1657,7 @@ let type_format loc fmt =
     newty
       (Tconstr
         (Predef.path_format6,
-         [ ty_args; ty_input; ty_aresult;
+         [ ty_args;    ty_input;   ty_aresult;
            ty_ureader; ty_uresult; ty_result; ],
          ref Mnil)) in
 
@@ -1695,7 +1797,7 @@ let create_package_type loc env (p, l) =
 (* Helpers for type_cases *)
 
 let contains_variant_either ty =
-  let rec loop ty = 
+  let rec loop ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       mark_type_node ty;
@@ -1765,7 +1867,7 @@ let check_absent_variant env =
       unify_pat env {pat with pat_type = newty (Tvariant row')}
                     (correct_levels pat.pat_type)
       | _ -> ())
-      
+
 
 let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
 
@@ -2099,15 +2201,15 @@ and type_expect_ ?in_function env sexp ty_expected =
       in
       let ty_record, opath =
         let get_path ty =
-	  try
-	    let (p0, p,_) = extract_concrete_record env ty in
-	    (* XXX level may be wrong *)
+          try
+            let (p0, p,_) = extract_concrete_record env ty in
+            (* XXX level may be wrong *)
             Some (p0, p, ty.level = generic_level || not !Clflags.principal)
           with Not_found -> None
         in
         match get_path ty_expected with
           None ->
-            let op = 
+            let op =
               match opt_exp with
                 None -> None
               | Some exp -> get_path exp.exp_type
@@ -2121,7 +2223,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           (type_label_exp true env loc ty_record)
           opath lid_sexp_list in
       unify_exp_types loc env ty_record (instance env ty_expected);
-      
+
       (* type_label_a_list returns a list of labels sorted by lbl_pos *)
       (* note: check_duplicates would better be implemented in
          type_label_a_list directly *)
@@ -2725,7 +2827,7 @@ and type_label_access env loc srecord lid =
   let label = Label.disambiguate lid env opath labels in
   (record, label, opath)
 
-and type_label_exp create env loc ty_expected 
+and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   begin_def ();
@@ -3231,7 +3333,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   if has_gadts then begin
     end_def ();
     (* Ensure that existential types do not escape *)
-    unify_exp_types loc env (instance env ty_res) (newvar ()) ;
+    unify_exp_types loc env (instance env ty_res) (newvar ());
   end;
   cases, partial
 
@@ -3513,8 +3615,8 @@ let report_error env ppf = function
       fprintf ppf "The record field %a is not mutable" longident lid
   | Wrong_name (kind, p, lid) ->
       fprintf ppf "The %s type %a has no %s %a" kind path p
-	(if kind = "record" then "field" else "constructor")
-	longident lid;
+        (if kind = "record" then "field" else "constructor")
+        longident lid;
       if kind = "record" then Label.spellcheck ppf env p lid
                          else Constructor.spellcheck ppf env p lid
   | Name_type_mismatch (kind, lid, tp, tpl) ->
@@ -3530,11 +3632,11 @@ let report_error env ppf = function
            fprintf ppf "but a %s was expected belonging to the %s type"
              name kind)
   | Incomplete_format s ->
-      fprintf ppf "Premature end of format string ``%S''" s
+      fprintf ppf "Premature end of format string \'%S\'" s
   | Bad_conversion (fmt, i, c) ->
       fprintf ppf
         "Bad conversion %%%c, at char number %d \
-         in format string ``%s''" c i fmt
+         in format string \'%S\'" c i fmt
   | Undefined_method (ty, me) ->
       reset_and_mark_loops ty;
       fprintf ppf
