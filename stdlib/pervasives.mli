@@ -120,7 +120,7 @@ external not : bool -> bool = "%boolnot"
 (** The boolean negation. *)
 
 external ( && ) : bool -> bool -> bool = "%sequand"
-(** The boolean ``and''. Evaluation is sequential, left-to-right:
+(** The boolean 'and'. Evaluation is sequential, left-to-right:
    in [e1 && e2], [e1] is evaluated first, and if it returns [false],
    [e2] is not evaluated at all. *)
 
@@ -128,7 +128,7 @@ external ( & ) : bool -> bool -> bool = "%sequand"
 (** @deprecated {!Pervasives.( && )} should be used instead. *)
 
 external ( || ) : bool -> bool -> bool = "%sequor"
-(** The boolean ``or''. Evaluation is sequential, left-to-right:
+(** The boolean 'or'. Evaluation is sequential, left-to-right:
    in [e1 || e2], [e1] is evaluated first, and if it returns [true],
    [e2] is not evaluated at all. *)
 
@@ -232,7 +232,7 @@ external ( asr ) : int -> int -> int = "%asrint"
    Floating-point operations never raise an exception on overflow,
    underflow, division by zero, etc.  Instead, special IEEE numbers
    are returned as appropriate, such as [infinity] for [1.0 /. 0.0],
-   [neg_infinity] for [-1.0 /. 0.0], and [nan] (``not a number'')
+   [neg_infinity] for [-1.0 /. 0.0], and [nan] ('not a number')
    for [0.0 /. 0.0].  These special numbers then propagate through
    floating-point computations as expected: for instance,
    [1.0 /. infinity] is [0.0], and any arithmetic operation with [nan]
@@ -393,7 +393,7 @@ val neg_infinity : float
 val nan : float
 (** A special floating-point value denoting the result of an
    undefined operation such as [0.0 /. 0.0].  Stands for
-   ``not a number''.  Any floating-point operation with [nan] as
+   'not a number'.  Any floating-point operation with [nan] as
    argument returns [nan] as result.  As for floating-point comparisons,
    [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
    if one or both of their arguments is [nan]. *)
@@ -948,7 +948,7 @@ val at_exit : (unit -> unit) -> unit
    termination time. The functions registered with [at_exit]
    will be called when the program executes {!Pervasives.exit},
    or terminates, either normally or because of an uncaught exception.
-   The functions are called in ``last in, first out'' order:
+   The functions are called in 'last in, first out' order:
    the function most recently added with [at_exit] is called first. *)
 
 (**/**)

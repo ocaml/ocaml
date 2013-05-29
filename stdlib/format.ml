@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* A pretty-printing facility and definition of formatters for ``parallel''
+(* A pretty-printing facility and definition of formatters for 'parallel'
    (i.e. unrelated or independent) pretty-printing on multiple out channels. *)
 
 (**************************************************************
@@ -217,7 +217,7 @@ let pp_clear_queue state =
 (* Pp_infinity: large value for default tokens size.
 
    Pp_infinity is documented as being greater than 1e10; to avoid
-   confusion about the word ``greater'', we choose pp_infinity greater
+   confusion about the word 'greater', we choose pp_infinity greater
    than 1e10 + 1; for correct handling of tests in the algorithm,
    pp_infinity must be even one more than 1e10 + 1; let's stand on the
    safe side by choosing 1.e10+10.
@@ -1051,7 +1051,7 @@ module Tformat = Printf.CamlinternalPr.Tformat;;
 (* Trailer: giving up at character number ... *)
 let giving_up mess fmt i =
   Printf.sprintf
-    "Format.fprintf: %s ``%s'', giving up at character number %d%s"
+    "Format.fprintf: %s \'%s\', giving up at character number %d%s"
     mess (Sformat.to_string fmt) i
     (if i < Sformat.length fmt
      then Printf.sprintf " (%c)." (Sformat.get fmt i)

@@ -76,7 +76,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
 
    If [flags] does not contain [Marshal.Closures],
    marshaling fails when it encounters a functional value
-   inside [v]: only ``pure'' data structures, containing neither
+   inside [v]: only 'pure' data structures, containing neither
    functions nor objects, can safely be transmitted between
    different programs. If [flags] contains [Marshal.Closures],
    functional values will be marshaled as a position in the code

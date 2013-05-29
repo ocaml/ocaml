@@ -14,7 +14,7 @@
 (** Pretty printing.
 
    This module implements a pretty-printing facility to format text
-   within ``pretty-printing boxes''. The pretty-printer breaks lines
+   within 'pretty-printing boxes'. The pretty-printer breaks lines
    at specified break hints, and indents lines according to the box
    structure.
 
@@ -78,7 +78,7 @@ val open_box : int -> unit;;
 (** [open_box d] opens a new pretty-printing box
    with offset [d].
    This box is the general purpose pretty-printing box.
-   Material in this box is displayed ``horizontal or vertical'':
+   Material in this box is displayed 'horizontal or vertical':
    break hints inside the box may lead to a new line, if there
    is no more room on the line to print the remainder of the box,
    or if a new line may lead to a new indentation
@@ -200,13 +200,13 @@ val over_max_boxes : unit -> bool;;
 
 val open_hbox : unit -> unit;;
 (** [open_hbox ()] opens a new pretty-printing box.
-   This box is ``horizontal'': the line is not split in this box
+   This box is 'horizontal': the line is not split in this box
    (new lines may still occur inside boxes nested deeper). *)
 
 val open_vbox : int -> unit;;
 (** [open_vbox d] opens a new pretty-printing box
    with offset [d].
-   This box is ``vertical'': every break hint inside this
+   This box is 'vertical': every break hint inside this
    box leads to a new line.
    When a new line is printed in the box, [d] is added to the
    current indentation. *)
@@ -214,16 +214,16 @@ val open_vbox : int -> unit;;
 val open_hvbox : int -> unit;;
 (** [open_hvbox d] opens a new pretty-printing box
    with offset [d].
-   This box is ``horizontal-vertical'': it behaves as an
-   ``horizontal'' box if it fits on a single line,
-   otherwise it behaves as a ``vertical'' box.
+   This box is 'horizontal-vertical': it behaves as an
+   'horizontal' box if it fits on a single line,
+   otherwise it behaves as a 'vertical' box.
    When a new line is printed in the box, [d] is added to the
    current indentation. *)
 
 val open_hovbox : int -> unit;;
 (** [open_hovbox d] opens a new pretty-printing box
    with offset [d].
-   This box is ``horizontal or vertical'': break hints
+   This box is 'horizontal or vertical': break hints
    inside this box may lead to a new line, if there is no more room
    on the line to print the remainder of the box.
    When a new line is printed in the box, [d] is added to the
@@ -274,13 +274,13 @@ type tag = string;;
    entities (e.g. HTML or TeX elements or terminal escape sequences).
 
    By default, those tags do not influence line breaking calculation:
-   the tag ``markers'' are not considered as part of the printing
+   the tag 'markers' are not considered as part of the printing
    material that drives line breaking (in other words, the length of
    those strings is considered as zero for line breaking).
 
    Thus, tag handling is in some sense transparent to pretty-printing
    and does not interfere with usual indentation. Hence, a single
-   pretty printing routine can output both simple ``verbatim''
+   pretty printing routine can output both simple 'verbatim'
    material or richer decorated output depending on the treatment of
    tags. By default, tags are not active, hence the output is not
    decorated with tag information. Once [set_tags] is set to [true],
@@ -288,14 +288,14 @@ type tag = string;;
    accordingly.
 
    When a tag has been opened (or closed), it is both and successively
-   ``printed'' and ``marked''. Printing a tag means calling a
+   'printed' and 'marked'. Printing a tag means calling a
    formatter specific function with the name of the tag as argument:
-   that ``tag printing'' function can then print any regular material
+   that 'tag printing' function can then print any regular material
    to the formatter (so that this material is enqueued as usual in the
    formatter queue for further line-breaking computation). Marking a
-   tag means to output an arbitrary string (the ``tag marker''),
+   tag means to output an arbitrary string (the 'tag marker'),
    directly into the output device of the formatter. Hence, the
-   formatter specific ``tag marking'' function must return the tag
+   formatter specific 'tag marking' function must return the tag
    marker string associated to its tag argument. Being flushed
    directly into the output device of the formatter, tag marker
    strings are not considered as part of the printing material that
@@ -412,10 +412,10 @@ type formatter_tag_functions = {
 }
 ;;
 (** The tag handling functions specific to a formatter:
-   [mark] versions are the ``tag marking'' functions that associate a string
+   [mark] versions are the 'tag marking' functions that associate a string
    marker to a tag in order for the pretty-printing engine to flush
    those markers as 0 length tokens in the output device of the formatter.
-   [print] versions are the ``tag printing'' functions that can perform
+   [print] versions are the 'tag printing' functions that can perform
    regular printing when a tag is closed or opened. *)
 
 val set_formatter_tag_functions : formatter_tag_functions -> unit;;
@@ -585,11 +585,11 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
      then an optional integer offset, and the closing [>] character.
      Box type is one of [h], [v], [hv], [b], or [hov],
      which stand respectively for an horizontal box, a vertical box,
-     an ``horizontal-vertical'' box, or an ``horizontal or
-     vertical'' box ([b] standing for an ``horizontal or
-     vertical'' box demonstrating indentation and [hov] standing
-     for a regular``horizontal or vertical'' box).
-     For instance, [@\[<hov 2>] opens an ``horizontal or vertical''
+     an 'horizontal-vertical' box, or an 'horizontal or
+     vertical' box ([b] standing for an 'horizontal or
+     vertical' box demonstrating indentation and [hov] standing
+     for a regular'horizontal or vertical' box).
+     For instance, [@\[<hov 2>] opens an 'horizontal or vertical'
      box with indentation 2 as obtained with [open_hovbox 2].
      For more details about boxes, see the various box opening
      functions [open_*box].

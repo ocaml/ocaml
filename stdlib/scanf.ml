@@ -258,7 +258,7 @@ module Scanning : SCANNING = struct
 
      We cannot prevent the scanning mechanism to use one lookahead character,
      if needed by the semantics of the format string specifications (e.g. a
-     trailing ``skip space'' specification in the format string); in this case,
+     trailing 'skip space' specification in the format string); in this case,
      the mandatory lookahead character is indeed read from the input and not
      used to return the token read. It is thus mandatory to be able to store
      an unused lookahead character somewhere to get it as the first character
@@ -292,8 +292,8 @@ module Scanning : SCANNING = struct
      This phenomenon of reading mess is even worse when one defines more than
      one scanning buffer reading from the same input channel
      [ic]. Unfortunately, we have no simple way to get rid of this problem
-     (unless the basic input channel API is modified to offer a ``consider this
-     char as unread'' procedure to keep back the unused lookahead character as
+     (unless the basic input channel API is modified to offer a 'consider this
+     char as unread' procedure to keep back the unused lookahead character as
      available in the input channel for further reading).
 
      To prevent some of the confusion the scanning buffer allocation function
@@ -340,14 +340,14 @@ module Scanning : SCANNING = struct
      One could try to define [stdib] as a scanning buffer reading a character
      at a time (no bufferization at all), but unfortunately the top-level
      interaction would be wrong. This is due to some kind of
-     ``race condition'' when reading from [Pervasives.stdin],
+     'race condition' when reading from [Pervasives.stdin],
      since the interactive compiler and [scanf] will simultaneously read the
      material they need from [Pervasives.stdin]; then, confusion will result
      from what should be read by the top-level and what should be read
      by [scanf].
      This is even more complicated by the one character lookahead that [scanf]
-     is sometimes obliged to maintain: the lookahead character will be available
-     for the next ([scanf]) entry, seemingly coming from nowhere.
+     is sometimes obliged to maintain: the lookahead character will be
+     available for the next ([scanf]) entry, seemingly coming from nowhere.
      Also no [End_of_file] is raised when reading from stdin: if not enough
      characters have been read, we simply ask to read more. *)
   let stdin =
@@ -448,12 +448,12 @@ let bad_conversion fmt i c =
   invalid_arg
     (Printf.sprintf
        "scanf: bad conversion %%%C, at char number %i \
-        in format string ``%s''" c i (Sformat.to_string fmt))
+        in format string \'%s\'" c i (Sformat.to_string fmt))
 ;;
 
 let incomplete_format fmt =
   invalid_arg
-    (Printf.sprintf "scanf: premature end of format string ``%s''"
+    (Printf.sprintf "scanf: premature end of format string \'%s\'"
        (Sformat.to_string fmt))
 ;;
 
@@ -471,7 +471,7 @@ let character_mismatch c ci =
 
 let format_mismatch_err fmt1 fmt2 =
   Printf.sprintf
-    "format read ``%s'' does not match specification ``%s''" fmt1 fmt2
+    "format read \'%s\' does not match specification \'%s\'" fmt1 fmt2
 ;;
 
 let format_mismatch fmt1 fmt2 = bad_input (format_mismatch_err fmt1 fmt2);;
@@ -493,8 +493,8 @@ let compatible_format_type fmt1 fmt2 =
    to complete scanning"!)
 
    That's why, waiting for a better solution, we use checked_peek_char here.
-   We are also careful to treat "\r\n" in the input as an end of line marker: it
-   always matches a '\n' specification in the input format string. *)
+   We are also careful to treat "\r\n" in the input as an end of line marker:
+   it always matches a '\n' specification in the input format string. *)
 let rec check_char ib c =
   let ci = Scanning.checked_peek_char ib in
   if ci = c then Scanning.invalidate_current_char ib else begin
@@ -934,8 +934,10 @@ let scan_Char width ib =
 
   and find_char width =
     match check_next_char_for_char width ib with
-    | '\\' -> find_stop (scan_backslash_char (Scanning.ignore_char width ib) ib)
-    | c -> find_stop (Scanning.store_char width ib c)
+    | '\\' ->
+      find_stop (scan_backslash_char (Scanning.ignore_char width ib) ib)
+    | c ->
+      find_stop (Scanning.store_char width ib c)
 
   and find_stop width =
     match check_next_char_for_char width ib with
@@ -1263,7 +1265,7 @@ let rec skip_whites ib =
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
     let i = Scanning.char_count ib in
-    bad_input (Printf.sprintf "scanf: bad input at char number %i: ``%s''" i s)
+    bad_input (Printf.sprintf "scanf: bad input at char number %i: \'%s\'" i s)
   | x -> raise x
 ;;
 

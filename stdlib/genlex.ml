@@ -19,7 +19,6 @@ type token =
   | String of string
   | Char of char
 
-
 (* The string buffering machinery *)
 
 let initial_buffer = String.create 32
@@ -79,7 +78,7 @@ let make_lexer keywords =
           Some '\'' -> Stream.junk strm__; Some (Char c)
         | _ -> raise (Stream.Error "")
         end
-    | Some '"' ->
+    | Some '\"' ->
         Stream.junk strm__;
         let s = strm__ in reset_buffer (); Some (String (string s))
     | Some '-' -> Stream.junk strm__; neg_number strm__
@@ -133,7 +132,7 @@ let make_lexer keywords =
     | _ -> Some (Float (float_of_string (get_string ())))
   and string (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
-      Some '"' -> Stream.junk strm__; get_string ()
+      Some '\"' -> Stream.junk strm__; get_string ()
     | Some '\\' ->
         Stream.junk strm__;
         let c =
