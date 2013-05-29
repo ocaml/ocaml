@@ -187,10 +187,10 @@ Arguments and parameters are matched according to their respective
 labels. Argument order is irrelevant, except among arguments with the
 same label, or no label.
 
-If a parameter is specified as optional (label prefixed by "?") in the
+If a parameter is specified as optional (label prefixed by @"?"@) in the
 type of @expr@, the corresponding argument will be automatically
 wrapped with the constructor "Some", except if the argument itself is
-also prefixed by "?", in which case it is passed as is.
+also prefixed by @"?"@, in which case it is passed as is.
 %
 If a non-labeled argument is passed, and its corresponding parameter
 is preceded by one or several optional parameters, then these
@@ -795,12 +795,12 @@ is included in the lower bound of @typ@$'$, and the types of arguments
 for the constructors of @typ@ are subtypes of those in
 @typ@$'$. Namely,
 \begin{center}
-@ "["["<"] "'"C_1 "of" typ_1 "|" \dots "|" "'"C_n "of" typ_n "]" @
+@ "["["<"] "`"C_1 "of" typ_1 "|" \dots "|" "`"C_n "of" typ_n "]" @
 \end{center}
 which may be a shrinkable type, is a subtype of
 \begin{center}
-@ "["[">"] "'"C_1 "of" typ@$'_1$@ "|" \dots "|" "'"C_n "of" typ@$'_n$@
- "|" "'"C@$_{n+1}$@ "of" typ@$'_{n+1}$@ "|" \dots "|" "'"C@$_{n+m}$@ "of"
+@ "["[">"] "`"C_1 "of" typ@$'_1$@ "|" \dots "|" "`"C_n "of" typ@$'_n$@
+ "|" "`"C@$_{n+1}$@ "of" typ@$'_{n+1}$@ "|" \dots "|" "`"C@$_{n+m}$@ "of"
   typ@$'_{n+m}$@ "]" @
 \end{center}
 which may be an extensible type, if every @typ_i@ is a subtype of @typ@$'_i$.
