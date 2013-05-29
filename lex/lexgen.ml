@@ -523,8 +523,8 @@ let encode_lexdef def =
    Extension to tagged automata.
      Confer
        Ville Larikari
-      ``NFAs with Tagged Transitions, their Conversion to Deterministic
-        Automata and Application to Regular Expressions''.
+       'NFAs with Tagged Transitions, their Conversion to Deterministic
+        Automata and Application to Regular Expressions'.
        Symposium on String Processing and Information Retrieval (SPIRE 2000),
      http://kouli.iki.fi/~vlaurika/spire2000-tnfa.ps
 (See also)

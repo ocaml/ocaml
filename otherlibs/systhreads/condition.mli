@@ -14,8 +14,8 @@
 (** Condition variables to synchronize between threads.
 
    Condition variables are used when one thread wants to wait until another
-   thread has finished doing something: the former thread ``waits'' on the
-   condition variable, the latter thread ``signals'' the condition when it
+   thread has finished doing something: the former thread 'waits' on the
+   condition variable, the latter thread 'signals' the condition when it
    is done. Condition variables should always be protected by a mutex.
    The typical use is (if [D] is a shared data structure, [m] its mutex,
    and [c] is a condition variable):
