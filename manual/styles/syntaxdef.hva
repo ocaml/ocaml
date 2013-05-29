@@ -22,7 +22,7 @@
 %
 %It is also possible to alias a nonterminal:
 %\stx@alias{name}{othername}
-%will make reference to 'name' point to teh definition of non-terminal
+%will make reference to 'name' point to the definition of non-terminal
 %'othername'
 \newif\ifspace
 \def\addspace{\ifspace\;\spacefalse\fi}
