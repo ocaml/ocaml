@@ -1181,6 +1181,9 @@ let mkprintf to_s get_out k fmt =
             print_as := Some size;
             doprn n (skip_gt i) in
           get_int n (succ i) got_size
+        | '@' ->
+          outc '@';
+          doprn n (succ i)
         | _ -> invalid_format fmt i
         end
       | c -> outc c; doprn n (succ i)

@@ -623,6 +623,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    - [@?]: flush the pretty printer as with [print_flush ()].
      This is equivalent to the conversion [%!].
    - [@\n]: force a newline, as with [force_newline ()].
+   - [@@]: print a single [@] character.
 
    Example: [printf "@[%s@ %d@]@." "x =" 1] is equivalent to
    [open_box (); print_string "x ="; print_space ();
@@ -634,9 +635,6 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    format strings.
    @since 3.12.2
 
-   Old [\@\@] pretty-printing indication is deprecated, since it had no
-   pretty-printing indication semantics.
-   @since 3.12.2
 *)
 
 val printf : ('a, formatter, unit) format -> 'a;;
