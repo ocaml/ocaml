@@ -65,7 +65,7 @@ exec-one:
 	      $(MAKE) exec-one DIR=$$dir; \
 	    fi; \
 	  done; \
-        else \
+	else \
 	  echo "Running tests from '$$DIR' ..."; \
 	  cd $(DIR) && \
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
