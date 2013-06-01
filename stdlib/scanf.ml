@@ -612,7 +612,7 @@ let scan_decimal_digits_plus width ib =
     bad_input (Printf.sprintf "character %C is not a decimal digit" c)
 ;;
 
-let scan_digits_plus digitp width ib =
+let scan_digits_plus basis digitp width ib =
   (* To scan numbers from other bases, we use a predicate argument to
      scan_digits. *)
   let rec scan_digits width =
@@ -637,7 +637,7 @@ let scan_digits_plus digitp width ib =
     let width = Scanning.store_char width ib c in
     scan_digits width
   else
-    bad_input (Printf.sprintf "character %C is not a digit" c)
+    bad_input (Printf.sprintf "character %C is not a valid %s digit" basis)
 ;;
 
 let is_binary_digit = function
@@ -645,21 +645,21 @@ let is_binary_digit = function
   | _ -> false
 ;;
 
-let scan_binary_int = scan_digits_plus is_binary_digit;;
+let scan_binary_int = scan_digits_plus "binary" is_binary_digit;;
 
 let is_octal_digit = function
   | '0' .. '7' -> true
   | _ -> false
 ;;
 
-let scan_octal_int = scan_digits_plus is_octal_digit;;
+let scan_octal_int = scan_digits_plus "octal" is_octal_digit;;
 
 let is_hexa_digit = function
   | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' -> true
   | _ -> false
 ;;
 
-let scan_hexadecimal_int = scan_digits_plus is_hexa_digit;;
+let scan_hexadecimal_int = scan_digits_plus "hexadecimal" is_hexa_digit;;
 
 (* Scan a decimal integer. *)
 let scan_unsigned_decimal_int = scan_decimal_digits_plus;;
