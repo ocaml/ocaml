@@ -39,6 +39,13 @@ Standard library:
 - PR#5986: new flag Marshal.Compat_32 for the serialization functions
   (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 
+Runtime system:
+* PR#6019: more efficient implementation of caml_modify() and caml_initialize().
+  The new implementations are less lenient than the old ones: now,
+  the destination pointer of caml_modify() must point within the minor or
+  major heaps, and the destination pointer of caml_initialize() must
+  point within the major heap.
+
 Bug fixes:
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
