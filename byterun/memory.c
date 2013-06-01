@@ -538,7 +538,7 @@ CAMLexport void caml_modify (value *fp, value val)
   */
   value old;
 
-  if (Is_young(fp)) {
+  if (Is_young((value)fp)) {
     /* The modified object resides in the minor heap.
        Conditions 1 and 2 cannot occur. */
     *fp = val;
