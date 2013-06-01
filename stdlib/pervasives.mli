@@ -883,30 +883,53 @@ external decr : int ref -> unit = "%decr"
     conventions. Plain characters specify string literals to be read in the
     input or printed in the output.
 
-  There is an additional lexical rule to escape the special characters in
-  format strings: if a special character follows a ['%'] character, it is
-  treated as a plain character. In other words, ["%%"] is considered as a
-  plain ['%'] and ["%@"] as a plain ['@'].
+  There is an additional lexical rule to escape the special characters ['%']
+  and ['@'] in format strings: if a special character follows a ['%']
+  character, it is treated as a plain character. In other words, ["%%"] is
+  considered as a plain ['%'] and ["%@"] as a plain ['@'].
 
-  For more information about conversion indications and formatting
+  For more information about conversion specifications and formatting
   indications available, read the documentation of modules {!Scanf},
   {!Printf} and {!Format}.
-
 *)
 
 (** Format strings have a general and highly polymorphic type
-    [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
-    The two simplified types, [format] and [format4] below are
-    included for backward compatibility with earlier releases of OCaml.
-    ['a] is the type of the parameters of the format,
-    ['b] is the type of the first argument given to
-         [%a] and [%t] printing functions,
-    ['c] is the type of the result of the [%a] and [%t] functions, and
-         also the type of the argument transmitted to the first argument
-         of [kprintf]-style functions,
-    ['d] is the result type for the [scanf]-style functions,
-    ['e] is the type of the receiver function for the [scanf]-style functions,
-    ['f] is the result type for the [printf]-style function.
+    [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.  The two simplified
+    types, [format] and [format4] below are included for backward
+    compatibility with earlier releases of OCaml.
+
+    The meaning of format string type parameters is as follows:
+
+    - ['a] is the type of the parameters of the format for formatted output
+      functions ([printf]-style functions);
+      ['a] is the type of the values read by the format for formatted input
+      functions ([scanf]-style functions).
+
+    - ['b] is the type of input source for formatted input functions and the
+      type of output target for formatted output functions.
+      For [printf]-style functions from module [Printf], ['b] is typically
+      [out_channel];
+      for [printf]-style functions from module [Format], ['b] is typically
+      [Format.formatter];
+      for [scanf]-style functions from module [Scanf], ['b] is typically
+      [Scanf.Scanning.in_channel].
+
+      Type argument ['b] is also the type of the first argument given to
+      user's defined printing functions for [%a] and [%t] conversions,
+      and user's defined reading functions for [%r] conversion.
+
+    - ['c] is the type of the result of the [%a] and [%t] printing functions, and
+      also the type of the argument transmitted to the first argument
+      of [kprintf]-style functions or to the [kscanf]-style functions.
+
+    - ['d] is the type of parameters for the [scanf]-style functions.
+
+    - ['e] is the type of the receiver function for the [scanf]-style functions.
+
+    - ['f] is the final result type of a formatted input/output function
+      invocation: for the [printf]-style functions, it is typically [unit];
+      for the [scanf]-style functions, it is typically the target type of the
+      receiver function.
 *)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
@@ -922,14 +945,19 @@ external format_of_string :
     literal [s].
     Note: [format_of_string] can not convert a string argument that is not a
     literal. If you need this functionality, use the more general
-    {!Scanf.format_from_string} function. *)
+    {!Scanf.format_from_string} function.
+*)
 
 val ( ^^ ) :
       ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
       ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
       ('a, 'b, 'c, 'd, 'g, 'h) format6
-(** [f1 ^^ f2] catenates format strings [f1] and [f2].  The result is a
-  format string that accepts arguments from [f1], then arguments from [f2]. *)
+(** [f1 ^^ f2] catenates format strings [f1] and [f2]. The result is a
+  format string that behaves as the concatenation of format strings [f1] and
+  [f2]: in case of formatted output, it accepts arguments from [f1], then
+  arguments from [f2]; in case of formatted input, it returns results from
+  [f1], then results from [f2].
+*)
 
 
 (** {6 Program termination} *)
