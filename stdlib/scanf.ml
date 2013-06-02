@@ -637,7 +637,7 @@ let scan_digits_plus basis digitp width ib =
     let width = Scanning.store_char width ib c in
     scan_digits width
   else
-    bad_input (Printf.sprintf "character %C is not a valid %s digit" basis)
+    bad_input (Printf.sprintf "character %C is not a valid %s digit" c basis)
 ;;
 
 let is_binary_digit = function
