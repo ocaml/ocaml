@@ -81,9 +81,9 @@
         popq    %rbp; CFI_ADJUST(-8);
 #else
 #define ENTER_FUNCTION \
-	subl	$8, %rsp; CFI_ADJUST(8)
+	subq	$8, %rsp; CFI_ADJUST(8)
 #define LEAVE_FUNCTION \
-	addl	$8, %rsp; CFI_ADJUST(-8)
+	addq	$8, %rsp; CFI_ADJUST(-8)
 #endif
 
 #if defined(__PIC__) && !defined(SYS_mingw64)
@@ -213,8 +213,8 @@
 /* Unix API: callee-save regs are rbx, rbp, r12-r15 */
 
 #define PUSH_CALLEE_SAVE_REGS \
-	ENTER_FUNCTION; \
         pushq   %rbx; CFI_ADJUST(8); \
+        pushq   %rbp; CFI_ADJUST(8); \
         pushq   %r12; CFI_ADJUST(8); \
         pushq   %r13; CFI_ADJUST(8); \
         pushq   %r14; CFI_ADJUST(8); \
@@ -227,8 +227,8 @@
         popq    %r14; CFI_ADJUST(-8); \
         popq    %r13; CFI_ADJUST(-8); \
         popq    %r12; CFI_ADJUST(-8); \
-        popq    %rbx; CFI_ADJUST(-8); \
-	LEAVE_FUNCTION
+        popq    %rbp; CFI_ADJUST(-8); \
+        popq    %rbx; CFI_ADJUST(-8);
 
 #endif
 
