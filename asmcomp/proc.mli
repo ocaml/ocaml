@@ -46,6 +46,3 @@ val contains_calls: bool ref
 
 (* Calling the assembler *)
 val assemble_file: string -> string -> int
-
-(* Called before translating a fundecl. *)
-val init : unit -> unit

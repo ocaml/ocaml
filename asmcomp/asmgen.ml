@@ -57,7 +57,6 @@ let rec regalloc ppf round fd =
 let (++) x f = f x
 
 let compile_fundecl (ppf : formatter) fd_cmm =
-  Proc.init ();
   Reg.reset();
   fd_cmm
   ++ Selection.fundecl

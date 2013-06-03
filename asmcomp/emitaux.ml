@@ -220,8 +220,7 @@ let reset_debug_info () =
    display .loc for every instruction. *)
 let emit_debug_info dbg =
   if is_cfi_enabled () &&
-    (!Clflags.debug || Config.with_frame_pointers)
-     && not (Debuginfo.is_none dbg) then begin
+    !Clflags.debug && not (Debuginfo.is_none dbg) then begin
     let line = dbg.Debuginfo.dinfo_line in
     assert (line <> 0); (* clang errors out on zero line numbers *)
     let file_name = dbg.Debuginfo.dinfo_file in

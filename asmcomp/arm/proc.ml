@@ -233,6 +233,3 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   Ccomp.command (Config.asm ^ " -o " ^
                  Filename.quote outfile ^ " " ^ Filename.quote infile)
-
-
-let init () = ()

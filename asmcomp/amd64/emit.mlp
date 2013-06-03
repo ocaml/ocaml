@@ -23,8 +23,6 @@ open Emitaux
 let macosx = (Config.system = "macosx")
 let mingw64 = (Config.system = "mingw64")
 
-let fp() = Config.with_frame_pointers
-
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -34,13 +32,12 @@ let stack_offset = ref 0
 (* Layout of the stack frame *)
 
 let frame_required () =
-  fp() || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
+  !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
     let sz =
-      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
-      + (if fp() then 8 else 0) )
+      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8)
     in Misc.align sz 16
   end else
     !stack_offset + 8
@@ -110,13 +107,13 @@ let emit_reg = function
 
 let reg_low_8_name =
   [| "%al"; "%bl"; "%dil"; "%sil"; "%dl"; "%cl"; "%r8b"; "%r9b";
-     "%r12b"; "%r13b"; "%r10b"; "%r11b"; "%bpl" |]
+     "%r12b"; "%r13b"; "%bpl"; "%r10b"; "%r11b" |]
 let reg_low_16_name =
   [| "%ax"; "%bx"; "%di"; "%si"; "%dx"; "%cx"; "%r8w"; "%r9w";
-     "%r12w"; "%r13w"; "%r10w"; "%r11w"; "%bp" |]
+     "%r12w"; "%r13w"; "%bp"; "%r10w"; "%r11w" |]
 let reg_low_32_name =
   [| "%eax"; "%ebx"; "%edi"; "%esi"; "%edx"; "%ecx"; "%r8d"; "%r9d";
-     "%r12d"; "%r13d"; "%r10d"; "%r11d"; "%ebp" |]
+     "%r12d"; "%r13d"; "%ebp"; "%r10d"; "%r11d" |]
 
 let emit_subreg tbl r =
   match r.loc with
@@ -319,12 +316,9 @@ let emit_float_test cmp neg arg lbl =
 
 let output_epilogue f =
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp() then 8 else 0) in
+    let n = frame_size() - 8 in
     `	addq	${emit_int n}, %rsp\n`;
     cfi_adjust_cfa_offset (-n);
-    if fp() then begin
-       `	popq	%rbp\n`
-    end;
     f ();
     (* reset CFA back cause function body may continue *)
     cfi_adjust_cfa_offset n
@@ -702,8 +696,7 @@ let emit_profile () =
          need to preserve other regs.  We do need to initialize rbp
          like mcount expects it, though. *)
       `	pushq	%r10\n`;
-      if not Config.with_frame_pointers then
-        `	movq	%rsp, %rbp\n`;
+      `	movq	%rsp, %rbp\n`;
       `	{emit_call "mcount"}\n`;
       `	popq	%r10\n`
   | _ ->
@@ -731,14 +724,9 @@ let fundecl fundecl =
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
-  if fp() then begin
-       `	pushq	%rbp\n`;
-       cfi_adjust_cfa_offset 8;
-       `	movq	%rsp, %rbp\n`;
-  end;
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp() then 8 else 0) in
+    let n = frame_size() - 8 in
     `	subq	${emit_int n}, %rsp\n`;
     cfi_adjust_cfa_offset n;
   end;

@@ -237,5 +237,3 @@ let assemble_file infile outfile =
 
 open Clflags;;
 open Config;;
-
-let init () = ()
