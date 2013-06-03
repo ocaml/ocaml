@@ -133,6 +133,7 @@ Internals:
 
 Feature wishes:
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM
+- PR#5721: configure -with-frame-pointers for Linux perf profiling
 - PR#5762: Add primitives for fast access to bigarray dimensions
 - PR#5795: Generate sqrtsd opcode instead of external call to sqrt on amd64
 - PR#5769: Allow propagation of Sys.big_endian in native code

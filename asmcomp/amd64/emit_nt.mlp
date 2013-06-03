@@ -108,13 +108,13 @@ let emit_reg = function
 
 let reg_low_8_name =
   [| "al"; "bl"; "dil"; "sil"; "dl"; "cl"; "r8b"; "r9b";
-     "r12b"; "r13b"; "bpl"; "r10b"; "r11b" |]
+     "r12b"; "r13b"; "r10b"; "r11b"; "bpl" |]
 let reg_low_16_name =
   [| "ax"; "bx"; "di"; "si"; "dx"; "cx"; "r8w"; "r9w";
-     "r12w"; "r13w"; "bp"; "r10w"; "r11w" |]
+     "r12w"; "r13w"; "r10w"; "r11w"; "bp" |]
 let reg_low_32_name =
   [| "eax"; "ebx"; "edi"; "esi"; "edx"; "ecx"; "r8d"; "r9d";
-     "r12d"; "r13d"; "ebp"; "r10d"; "r11d" |]
+     "r12d"; "r13d"; "r10d"; "r11d"; "ebp" |]
 
 let emit_subreg tbl pref r =
   match r.loc with
