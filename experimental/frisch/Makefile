@@ -78,3 +78,4 @@ copy_typedef:
 .PHONY: nomli
 nomli:
 	$(OCAMLC) -linkall -o nomli.exe -w +A-4-9 $(COMMON) $(BYTECMP) ../../tools/untypeast.cmo ../../tools/tast_iter.cmo nomli.ml
+	./nomli.exe test_nomli.ml
