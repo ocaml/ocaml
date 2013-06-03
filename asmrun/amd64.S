@@ -73,6 +73,19 @@
 #define CFI_ADJUST(n)
 #endif
 
+#ifdef WITH_FRAME_POINTERS
+#define ENTER_FUNCTION \
+        pushq   %rbp; CFI_ADJUST(8); \
+        movq    %rsp, %rbp
+#define LEAVE_FUNCTION \
+        popq    %rbp; CFI_ADJUST(-8);
+#else
+#define ENTER_FUNCTION \
+	subl	$8, %rsp; CFI_ADJUST(8)
+#define LEAVE_FUNCTION \
+	addl	$8, %rsp; CFI_ADJUST(-8)
+#endif
+
 #if defined(__PIC__) && !defined(SYS_mingw64)
 
 /* Position-independent operations on global variables. */
@@ -200,8 +213,8 @@
 /* Unix API: callee-save regs are rbx, rbp, r12-r15 */
 
 #define PUSH_CALLEE_SAVE_REGS \
+	ENTER_FUNCTION; \
         pushq   %rbx; CFI_ADJUST(8); \
-        pushq   %rbp; CFI_ADJUST(8); \
         pushq   %r12; CFI_ADJUST(8); \
         pushq   %r13; CFI_ADJUST(8); \
         pushq   %r14; CFI_ADJUST(8); \
@@ -214,8 +227,8 @@
         popq    %r14; CFI_ADJUST(-8); \
         popq    %r13; CFI_ADJUST(-8); \
         popq    %r12; CFI_ADJUST(-8); \
-        popq    %rbp; CFI_ADJUST(-8); \
-        popq    %rbx; CFI_ADJUST(-8)
+        popq    %rbx; CFI_ADJUST(-8); \
+	LEAVE_FUNCTION
 
 #endif
 
@@ -232,6 +245,8 @@
 
         .globl  G(caml_system__code_begin)
 G(caml_system__code_begin):
+        ret  /* just one instruction, so that debuggers don't display
+        caml_system__code_begin instead of caml_call_gc */
 
 /* Allocation */
 
@@ -247,9 +262,9 @@ LBL(caml_call_gc):
         addq    $32768, %rsp
 #endif
     /* Build array of registers, save it into caml_gc_regs */
+	ENTER_FUNCTION		;
         pushq   %r11; CFI_ADJUST (8);
         pushq   %r10; CFI_ADJUST (8);
-        pushq   %rbp; CFI_ADJUST (8);
         pushq   %r13; CFI_ADJUST (8);
         pushq   %r12; CFI_ADJUST (8);
         pushq   %r9; CFI_ADJUST (8);
@@ -317,9 +332,9 @@ LBL(caml_call_gc):
         popq    %r9; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)
         popq    %r13; CFI_ADJUST(-8)
-        popq    %rbp; CFI_ADJUST(-8)
         popq    %r10; CFI_ADJUST(-8)
         popq    %r11; CFI_ADJUST(-8)
+	LEAVE_FUNCTION		
     /* Return to caller */
         ret
 CFI_ENDPROC
@@ -333,9 +348,11 @@ LBL(caml_alloc1):
         ret
 LBL(100):
         RECORD_STACK_FRAME(0)
+	ENTER_FUNCTION
         subq    $8, %rsp; CFI_ADJUST (8);
         call    LBL(caml_call_gc)
         addq    $8, %rsp; CFI_ADJUST (-8);
+	LEAVE_FUNCTION
         jmp     LBL(caml_alloc1)
 CFI_ENDPROC
 
@@ -348,9 +365,11 @@ LBL(caml_alloc2):
         ret
 LBL(101):
         RECORD_STACK_FRAME(0)
+	ENTER_FUNCTION
         subq    $8, %rsp; CFI_ADJUST (8);
         call    LBL(caml_call_gc)
         addq    $8, %rsp; CFI_ADJUST (-8);
+	LEAVE_FUNCTION
         jmp     LBL(caml_alloc2)
 CFI_ENDPROC
 
@@ -363,9 +382,11 @@ LBL(caml_alloc3):
         ret
 LBL(102):
         RECORD_STACK_FRAME(0)
+	ENTER_FUNCTION
         subq    $8, %rsp; CFI_ADJUST (8)
         call    LBL(caml_call_gc)
         addq    $8, %rsp; CFI_ADJUST (-8)
+	LEAVE_FUNCTION
         jmp     LBL(caml_alloc3)
 CFI_ENDPROC
 
@@ -380,8 +401,10 @@ LBL(caml_allocN):
         ret
 LBL(103):
         RECORD_STACK_FRAME(8)
+	ENTER_FUNCTION
         call    LBL(caml_call_gc)
         popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
+	LEAVE_FUNCTION
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
 
@@ -486,12 +509,14 @@ CFI_STARTPROC
         popq    %r14
         ret
 LBL(110):
+	ENTER_FUNCTION
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
-        popq    C_ARG_2               /* arg 2: pc of raise */
-        movq    %rsp, C_ARG_3         /* arg 3: sp at raise */
+        movq	8(%rsp), C_ARG_2      /* arg 2: pc of raise */
+        leaq    16(%rsp), C_ARG_3     /* arg 3: sp at raise */
         movq    %r14, C_ARG_4         /* arg 4: sp of handler */
         /* PR#5700: thanks to popq above, stack is now 16-aligned */
+	/* Thanks to ENTER_FUNCTION, stack is now 16-aligned */
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
@@ -512,6 +537,7 @@ CFI_STARTPROC
         LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
 LBL(111):
+        ENTER_FUNCTION
         movq    C_ARG_1, %r12            /* Save exception bucket */
                                       /* arg 1: exception bucket */
         LOAD_VAR(caml_last_return_address,C_ARG_2)   /* arg 2: pc of raise */
