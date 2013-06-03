@@ -1353,6 +1353,27 @@ distclean::
 	rm -f ${KAPUTT}.tar.gz
 all: kaputt
 
+#http://www.coherentpdf.com/ocaml-libraries.html
+CAMLPDF=camlpdf-0.5
+${CAMLPDF}.tar.bz2:
+	${WGET} http://www.coherentpdf.com/$@
+camlpdf: ${CAMLPDF}.tar.bz2
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${CAMLPDF}
+	tar zxf ${CAMLPDF}.tar.bz2
+	./Patcher.sh ${CAMLPDF}
+	( cd ${CAMLPDF} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ${MAKE} all && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${CAMLPDF} foo
+distclean::
+	rm -f ${CAMLPDF}.tar.gz
+all: camlpdf
+
 # http://pauillac.inria.fr/~ddr/camlp5/
 CAMLP5=camlp5-6.08
 ${CAMLP5}.tgz:
