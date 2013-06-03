@@ -136,6 +136,20 @@ external ( or ) : bool -> bool -> bool = "%sequor"
 (** @deprecated {!Pervasives.( || )} should be used instead.*)
 
 
+(** {6 Composition operators} *)
+
+external (|>) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+(** Reverse-application operator: [x |> f |> g] is exactly equivalent
+ to [g (f (x))].
+   @since 4.01
+*)
+
+external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+(** Application operator: [g @@ f @@ x] is exactly equivalent to
+ [g (f (x))].
+   @since 4.01
+*)
+
 (** {6 Integer arithmetic} *)
 
 (** Integers are 31 bits wide (or 63 bits on 64-bit processors).
