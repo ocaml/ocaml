@@ -83,12 +83,55 @@ let default_output = function
   | Some s -> s
   | None -> Config.default_executable_name
 
+let readenv () = (* A copy is in main.ml *)
+  try
+    let s = Sys.getenv "OCAMLCOMPPARAM" in
+    List.iter (fun s ->
+      match Misc.split s '=' with
+(* debugging *)
+      | [ "g" ]
+      | [ "g"; "1" ] -> Clflags.debug := true
+      | [ "g"; "0" ] -> Clflags.debug := false
+(* profiling *)
+      | [ "p" ]
+      | [ "p"; "1" ] -> Clflags.gprofile := true
+      | [ "p"; "0" ] -> Clflags.gprofile := false
+(* sources *)
+      | [ "s" ]
+      | [ "s"; "1" ] ->
+        Clflags.keep_asm_file := true;
+        Clflags.keep_startup_file := true
+      | [ "s"; "0" ] ->
+        Clflags.keep_asm_file := false;
+        Clflags.keep_startup_file := false
+(* warn-errors *)
+      | [ "we" ] -> Warnings.parse_options true "A"
+      | [ "we"; warnings ] -> Warnings.parse_options true warnings
+(* warnings *)
+      | [ "w" ] -> Warnings.parse_options false "A"
+      | [ "w"; warnings ] -> Warnings.parse_options false warnings
+(* warn-errors *)
+      | [ "wwe" ] ->
+        Warnings.parse_options false "A";
+        Warnings.parse_options true "A"
+      | [ "wwe"; warnings ] ->
+        Warnings.parse_options false warnings;
+        Warnings.parse_options true warnings
+      | _ -> ()
+    ) (Misc.split s ';')
+  with Not_found -> ()
+
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
+let ppf = Format.err_formatter
+
 (* Error messages to standard error formatter *)
-let anonymous = process_file Format.err_formatter;;
-let impl = process_implementation_file Format.err_formatter;;
-let intf = process_interface_file Format.err_formatter;;
+let anonymous filename =
+  readenv(); process_file ppf filename;;
+let impl filename =
+  readenv(); process_implementation_file ppf filename;;
+let intf filename =
+  readenv(); process_interface_file ppf filename;;
 
 let show_config () =
   Config.print_config stdout;
@@ -178,6 +221,7 @@ let main () =
   let ppf = Format.err_formatter in
   try
     Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
+    readenv ();
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;

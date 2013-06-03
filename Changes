@@ -34,6 +34,7 @@ Compilers:
 * warning 3 is extended to warn about other deprecated features:
   - ISO-latin1 characters in identifiers
   - uses of the (&) and (or) operators instead of (&&) and (||)
+- Experimental OCAMLCOMPPARAM for ocamlc and ocamlopt
 
 Standard library:
 - PR#5986: new flag Marshal.Compat_32 for the serialization functions
