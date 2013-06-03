@@ -278,7 +278,7 @@ and expression i ppf x =
   | Texp_constant (c) -> line i ppf "Pexp_constant %a\n" fmt_constant c;
   | Texp_let (rf, l, e) ->
       line i ppf "Pexp_let %a\n" fmt_rec_flag rf;
-      list i pattern_x_expression_def ppf l;
+      list i value_binding ppf l;
       expression i ppf e;
   | Texp_function (p, l, _partial) ->
       line i ppf "Pexp_function \"%s\"\n" p;
@@ -494,7 +494,7 @@ and class_expr i ppf x =
       list i label_x_expression ppf l;
   | Tcl_let (rf, l1, l2, ce) ->
       line i ppf "Pcl_let %a\n" fmt_rec_flag rf;
-      list i pattern_x_expression_def ppf l1;
+      list i value_binding ppf l1;
       list i ident_x_loc_x_expression_def ppf l2;
       class_expr i ppf ce;
   | Tcl_constraint (ce, Some ct, _, _, _) ->
@@ -679,10 +679,9 @@ and structure_item i ppf x =
       line i ppf "Pstr_eval\n";
       attributes i ppf attrs;
       expression i ppf e;
-  | Tstr_value (rf, l, attrs) ->
+  | Tstr_value (rf, l) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
-      attributes i ppf attrs;
-      list i pattern_x_expression_def ppf l;
+      list i value_binding ppf l;
   | Tstr_primitive vd ->
       line i ppf "Pstr_primitive\n";
       value_description i ppf vd;
@@ -774,10 +773,11 @@ and case i ppf {c_lhs; c_guard; c_rhs} =
   end;
   expression (i+1) ppf c_rhs;
 
-and pattern_x_expression_def i ppf (p, e) =
+and value_binding i ppf x =
   line i ppf "<def>\n";
-  pattern (i+1) ppf p;
-  expression (i+1) ppf e;
+  attributes (i+1) ppf x.vb_attributes;
+  pattern (i+1) ppf x.vb_pat;
+  expression (i+1) ppf x.vb_expr
 
 and string_x_expression i ppf (s, _, e) =
   line i ppf "<override> \"%a\"\n" fmt_path s;

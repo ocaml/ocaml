@@ -84,7 +84,7 @@ module Exp:
 
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> expression
-    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> expression -> expression
+    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> value_binding list -> expression -> expression
     val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern -> expression -> expression
     val function_: ?loc:loc -> ?attrs:attrs -> case list -> expression
     val apply: ?loc:loc -> ?attrs:attrs -> expression -> (label * expression) list -> expression
@@ -191,7 +191,7 @@ module Str:
     val mk: ?loc:loc -> structure_item_desc -> structure_item
 
     val eval: ?loc:loc -> ?attrs:attributes -> expression -> structure_item
-    val value: ?loc:loc -> ?attrs:attributes -> rec_flag -> (pattern * expression) list -> structure_item
+    val value: ?loc:loc -> rec_flag -> value_binding list -> structure_item
     val primitive: ?loc:loc -> value_description -> structure_item
     val type_: ?loc:loc -> type_declaration list -> structure_item
     val exception_: ?loc:loc -> constructor_declaration -> structure_item
@@ -224,6 +224,14 @@ module Mb:
   sig
     val mk: ?attrs:attrs -> str -> module_expr -> module_binding
   end
+
+(** Value bindings *)
+
+module Vb:
+  sig
+    val mk: ?attrs:attrs -> pattern -> expression -> value_binding
+  end
+
 
 (** {2 Class language} *)
 
@@ -262,7 +270,7 @@ module Cl:
     val structure: ?loc:loc -> ?attrs:attrs -> class_structure -> class_expr
     val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern -> class_expr -> class_expr
     val apply: ?loc:loc -> ?attrs:attrs -> class_expr -> (label * expression) list -> class_expr
-    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> (pattern * expression) list -> class_expr -> class_expr
+    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> value_binding list -> class_expr -> class_expr
     val constraint_: ?loc:loc -> ?attrs:attrs -> class_expr -> class_type -> class_expr
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_expr
   end
@@ -316,7 +324,7 @@ module Convenience :
     (** {2 Expressions} *)
 
     val evar: string -> expression
-    val let_in: ?recursive:bool -> (pattern * expression) list -> expression -> expression
+    val let_in: ?recursive:bool -> value_binding list -> expression -> expression
 
     val constr: string -> expression list -> expression
     val record: ?over:expression -> (string * expression) list -> expression

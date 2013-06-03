@@ -148,7 +148,7 @@ let final_rewrite add_function =
 ;;
 
 let rec rewrite_patexp_list iflag l =
-  rewrite_exp_list iflag (List.map snd l)
+  rewrite_exp_list iflag (List.map (fun x -> x.pvb_expr) l)
 
 and rewrite_cases iflag l =
   List.iter
@@ -381,8 +381,8 @@ and rewrite_mod iflag smod =
 and rewrite_str_item iflag item =
   match item.pstr_desc with
     Pstr_eval (exp, _attrs) -> rewrite_exp iflag exp
-  | Pstr_value(_, exps, _attrs)
-     -> List.iter (function (_,exp) -> rewrite_exp iflag exp) exps
+  | Pstr_value(_, exps)
+     -> List.iter (fun x -> rewrite_exp iflag x.pvb_expr) exps
   | Pstr_module x -> rewrite_mod iflag x.pmb_expr
         (* todo: Pstr_recmodule?? *)
   | Pstr_class classes -> List.iter (rewrite_class_declaration iflag) classes

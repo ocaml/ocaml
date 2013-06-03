@@ -14,8 +14,8 @@ open Asttypes
 open Typedtree
 
 class iter: object
-  method binding: (pattern * expression) -> unit
-  method bindings: (rec_flag * (pattern * expression) list) -> unit
+  method binding: value_binding -> unit
+  method bindings: (rec_flag * value_binding list) -> unit
   method case: case -> unit
   method cases: case list -> unit
   method class_description: class_description -> unit
@@ -51,8 +51,8 @@ end
 (** The following functions apply the provided iterator to each
     sub-component of the argument. *)
 
-val binding: iter -> (pattern * expression) -> unit
-val bindings: iter -> (rec_flag * (pattern * expression) list) -> unit
+val binding: iter -> value_binding -> unit
+val bindings: iter -> (rec_flag * value_binding list) -> unit
 val class_description: iter -> class_description -> unit
 val class_expr: iter -> class_expr -> unit
 val class_field: iter -> class_field -> unit

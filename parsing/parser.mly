@@ -588,15 +588,15 @@ str_attribute:
     post_item_attribute { mkstr(Pstr_attribute $1) }
 ;
 structure_item:
-    LET ext_attributes rec_flag let_bindings post_item_attributes
+    LET ext_attributes rec_flag let_bindings
       {
         match $4 with
-          [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] ->
+          [ {pvb_pat = { ppat_desc = Ppat_any; ppat_loc = _ }; pvb_expr = exp; pvb_attributes = attrs}] ->
             let exp = wrap_exp_attrs exp $2 in
-            mkstr(Pstr_eval (exp, $5))
+            mkstr(Pstr_eval (exp, attrs))
         | l ->
             begin match $2 with
-            | None, [] -> mkstr(Pstr_value($3, List.rev l, $5))
+            | None, [] -> mkstr(Pstr_value($3, List.rev l))
             | Some _, _ -> not_expecting 2 "extension"
             | None, _ :: _ -> not_expecting 2 "attribute"
             end
@@ -1230,6 +1230,9 @@ lident_list:
   | LIDENT lident_list                { $1 :: $2 }
 ;
 let_binding:
+    let_binding_ post_item_attributes { let (p, e) = $1 in Vb.mk ~attrs:$2 p e }
+;
+let_binding_:
     val_ident fun_binding
       { (mkpatvar $1 1, $2) }
   | val_ident COLON typevar_list DOT core_type EQUAL seq_expr

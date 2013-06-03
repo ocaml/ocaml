@@ -918,10 +918,12 @@ value varify_constructors var_names =
                                 mktyp _loc (Ptyp_poly ampersand_vars ty')))
       in
       let e = mk_newtypes vars in
-      [( pat, e) :: acc]
+      [{pvb_pat=pat; pvb_expr=e; pvb_attributes=[]} :: acc]
     | <:binding@_loc< $p$ = ($e$ : ! $vs$ . $ty$) >> ->
-        [(patt <:patt< ($p$ : ! $vs$ . $ty$ ) >>, expr e) :: acc]
-    | <:binding< $p$ = $e$ >> -> [(patt p, expr e) :: acc]
+        [{pvb_pat=patt <:patt< ($p$ : ! $vs$ . $ty$ ) >>;
+          pvb_expr=expr e;
+          pvb_attributes=[]} :: acc]
+    | <:binding< $p$ = $e$ >> -> [{pvb_pat=patt p; pvb_expr=expr e; pvb_attributes=[]} :: acc]
     | <:binding<>> -> acc
     | _ -> assert False ]
   and match_case x acc =
@@ -1100,7 +1102,7 @@ value varify_constructors var_names =
         [mkstr loc (Pstr_open (long_uident id, [])) :: l]
     | StTyp loc tdl -> [mkstr loc (Pstr_type (mktype_decl tdl [])) :: l]
     | StVal loc rf bi ->
-        [mkstr loc (Pstr_value (mkrf rf) (binding bi []) []) :: l]
+        [mkstr loc (Pstr_value (mkrf rf) (binding bi [])) :: l]
     | <:str_item@loc< $anti:_$ >> -> error loc "antiquotation in str_item" ]
   and class_type =
     fun

@@ -168,7 +168,7 @@ module M = struct
     let loc = sub # location loc in
     match desc with
     | Pstr_eval (x, attrs) -> eval ~loc ~attrs:(sub # attributes attrs) (sub # expr x)
-    | Pstr_value (r, pel, attrs) -> value ~loc ~attrs:(sub # attributes attrs) r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
+    | Pstr_value (r, vbs) -> value ~loc r (List.map (sub # value_binding) vbs)
     | Pstr_primitive vd -> primitive ~loc (sub # value_description vd)
     | Pstr_type l -> type_ ~loc (List.map (sub # type_declaration) l)
     | Pstr_exception ed -> exception_ ~loc (sub # constructor_declaration ed)
@@ -198,7 +198,7 @@ module E = struct
     match desc with
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
     | Pexp_constant x -> constant ~loc ~attrs x
-    | Pexp_let (r, pel, e) -> let_ ~loc ~attrs r (List.map (map_tuple (sub # pat) (sub # expr)) pel) (sub # expr e)
+    | Pexp_let (r, vbs, e) -> let_ ~loc ~attrs r (List.map (sub # value_binding) vbs) (sub # expr e)
     | Pexp_fun (lab, def, p, e) -> fun_ ~loc ~attrs lab (map_opt (sub # expr) def) (sub # pat p) (sub # expr e)
     | Pexp_function pel -> function_ ~loc ~attrs (sub # cases pel)
     | Pexp_apply (e, l) -> apply ~loc ~attrs (sub # expr e) (List.map (map_snd (sub # expr)) l)
@@ -276,10 +276,8 @@ module CE = struct
           (sub # class_expr ce)
     | Pcl_apply (ce, l) ->
         apply ~loc ~attrs (sub # class_expr ce) (List.map (map_snd (sub # expr)) l)
-    | Pcl_let (r, pel, ce) ->
-        let_ ~loc ~attrs r
-          (List.map (map_tuple (sub # pat) (sub # expr)) pel)
-          (sub # class_expr ce)
+    | Pcl_let (r, vbs, ce) ->
+      let_ ~loc ~attrs r (List.map (sub # value_binding) vbs) (sub # class_expr ce)
     | Pcl_constraint (ce, ct) ->
         constraint_ ~loc ~attrs (sub # class_expr ce) (sub # class_type ct)
     | Pcl_extension x -> extension ~loc ~attrs (sub # extension x)
@@ -375,6 +373,13 @@ class mapper =
     method module_binding {pmb_name; pmb_expr; pmb_attributes} =
       Mb.mk (map_loc this pmb_name) (this # module_expr pmb_expr)
         ~attrs:(this # attributes pmb_attributes)
+
+    method value_binding {pvb_pat; pvb_expr; pvb_attributes} =
+      Vb.mk
+        (this # pat pvb_pat)
+        (this # expr pvb_expr)
+        ~attrs:(this # attributes pvb_attributes)
+
 
     method constructor_declaration {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
       Type.constructor

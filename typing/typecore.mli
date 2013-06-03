@@ -20,14 +20,14 @@ val is_nonexpansive: Typedtree.expression -> bool
 
 val type_binding:
         Env.t -> rec_flag ->
-          (Parsetree.pattern * Parsetree.expression) list ->
+          Parsetree.value_binding list ->
           Annot.ident option ->
-          (Typedtree.pattern * Typedtree.expression) list * Env.t
+          Typedtree.value_binding list * Env.t
 val type_let:
         Env.t -> rec_flag ->
-          (Parsetree.pattern * Parsetree.expression) list ->
+          Parsetree.value_binding list ->
           Annot.ident option ->
-          (Typedtree.pattern * Typedtree.expression) list * Env.t
+          Typedtree.value_binding list * Env.t
 val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_class_arg_pattern:

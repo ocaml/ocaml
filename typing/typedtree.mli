@@ -72,7 +72,7 @@ and exp_extra =
 and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
   | Texp_constant of constant
-  | Texp_let of rec_flag * (pattern * expression) list * expression
+  | Texp_let of rec_flag * value_binding list * expression
   | Texp_function of label * case list * partial
   | Texp_apply of expression * (label * expression option * optional) list
   | Texp_match of expression * case list * partial
@@ -134,7 +134,7 @@ and class_expr_desc =
       label * pattern * (Ident.t * string loc * expression) list * class_expr *
         partial
   | Tcl_apply of class_expr * (label * expression option * optional) list
-  | Tcl_let of rec_flag *  (pattern * expression) list *
+  | Tcl_let of rec_flag * value_binding list *
                   (Ident.t * string loc * expression) list * class_expr
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
@@ -206,7 +206,7 @@ and structure_item =
 
 and structure_item_desc =
     Tstr_eval of expression * attributes
-  | Tstr_value of rec_flag * (pattern * expression) list * attributes
+  | Tstr_value of rec_flag * value_binding list
   | Tstr_primitive of value_description
   | Tstr_type of type_declaration list
   | Tstr_exception of constructor_declaration
@@ -227,6 +227,13 @@ and module_binding =
      mb_expr: module_expr;
      mb_attributes: attributes;
     }
+
+and value_binding =
+  {
+    vb_pat: pattern;
+    vb_expr: expression;
+    vb_attributes: attributes;
+  }
 
 and module_coercion =
     Tcoerce_none
@@ -438,13 +445,11 @@ and 'a class_infos =
 val iter_pattern_desc: (pattern -> unit) -> pattern_desc -> unit
 val map_pattern_desc: (pattern -> pattern) -> pattern_desc -> pattern_desc
 
-val let_bound_idents: (pattern * expression) list -> Ident.t list
-val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
+val let_bound_idents: value_binding list -> Ident.t list
+val rev_let_bound_idents: value_binding list -> Ident.t list
 
 val let_bound_idents_with_loc:
-    (pattern * expression) list -> (Ident.t * string loc) list
-val rev_let_bound_idents_with_loc:
-    (pattern * expression) list -> (Ident.t * string loc) list
+    value_binding list -> (Ident.t * string loc) list
 
 (* Alpha conversion of patterns *)
 val alpha_pat: (Ident.t * Ident.t) list -> pattern -> pattern

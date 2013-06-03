@@ -81,7 +81,12 @@ module MakeMap(Map : MapArgument) = struct
     let str_items = List.map map_structure_item str.str_items in
     Map.leave_structure { str with str_items = str_items }
 
-  and map_binding (pat, exp) = (map_pattern pat, map_expression exp)
+  and map_binding vb =
+    {
+      vb_pat = map_pattern vb.vb_pat;
+      vb_expr = map_expression vb.vb_expr;
+      vb_attributes = vb.vb_attributes;
+    }
 
   and map_bindings rec_flag list =
     List.map map_binding list
@@ -101,8 +106,8 @@ module MakeMap(Map : MapArgument) = struct
     let str_desc =
       match item.str_desc with
           Tstr_eval (exp, attrs) -> Tstr_eval (map_expression exp, attrs)
-        | Tstr_value (rec_flag, list, attrs) ->
-          Tstr_value (rec_flag, map_bindings rec_flag list, attrs)
+        | Tstr_value (rec_flag, list) ->
+          Tstr_value (rec_flag, map_bindings rec_flag list)
         | Tstr_primitive vd ->
           Tstr_primitive (map_value_description vd)
         | Tstr_type list ->

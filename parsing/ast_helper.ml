@@ -166,7 +166,7 @@ module Str = struct
   let mk ?(loc = !default_loc) d = {pstr_desc = d; pstr_loc = loc}
 
   let eval ?loc ?(attrs = []) a = mk ?loc (Pstr_eval (a, attrs))
-  let value ?loc ?(attrs = []) a b = mk ?loc (Pstr_value (a, b, attrs))
+  let value ?loc a b = mk ?loc (Pstr_value (a, b))
   let primitive ?loc a = mk ?loc (Pstr_primitive a)
   let type_ ?loc a = mk ?loc (Pstr_type a)
   let exception_ ?loc a = mk ?loc (Pstr_exception a)
@@ -286,6 +286,15 @@ module Mb = struct
      pmb_name = name;
      pmb_expr = expr;
      pmb_attributes = attrs;
+    }
+end
+
+module Vb = struct
+  let mk ?(attrs = []) pat expr =
+    {
+     pvb_pat = pat;
+     pvb_expr = expr;
+     pvb_attributes = attrs;
     }
 end
 

@@ -105,7 +105,7 @@ and tyexpr env ty x =
       app f [x]
   | Ttuple tl ->
       let p, e = gentuple env tl in
-      let_in [Pat.tuple p, x] (selfcall "tuple" [list e])
+      let_in [Vb.mk (Pat.tuple p) x] (selfcall "tuple" [list e])
   | Tconstr (path, [t], _) when Path.same path Predef.path_list ->
       selfcall "list" [app (evar "List.map") [tyexpr_fun env t; x]]
   | Tconstr (path, [t], _) when Path.same path Predef.path_array ->

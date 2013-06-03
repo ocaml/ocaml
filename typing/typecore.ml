@@ -127,7 +127,7 @@ let iter_expression f e =
     | Pexp_function pel -> List.iter case pel
     | Pexp_fun (_, eo, _, e) -> may expr eo; expr e
     | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
-    | Pexp_let (_, pel, e) ->  expr e; List.iter (fun (_, e) -> expr e) pel
+    | Pexp_let (_, pel, e) ->  expr e; List.iter binding pel
     | Pexp_match (e, pel)
     | Pexp_try (e, pel) -> expr e; List.iter case pel
     | Pexp_array el
@@ -160,6 +160,9 @@ let iter_expression f e =
     may expr pc_guard;
     expr pc_rhs
 
+  and binding x =
+    expr x.pvb_expr
+
   and module_expr me =
     match me.pmod_desc with
     | Pmod_extension _
@@ -174,7 +177,7 @@ let iter_expression f e =
   and structure_item str =
     match str.pstr_desc with
     | Pstr_eval (e, _) -> expr e
-    | Pstr_value (_, pel, _) -> List.iter (fun (_, e) -> expr e) pel
+    | Pstr_value (_, pel) -> List.iter binding pel
     | Pstr_primitive _
     | Pstr_type _
     | Pstr_exception _
@@ -197,7 +200,7 @@ let iter_expression f e =
     | Pcl_apply (ce, lel) ->
         class_expr ce; List.iter (fun (_, e) -> expr e) lel
     | Pcl_let (_, pel, ce) ->
-        List.iter (fun (_, e) -> expr e) pel; class_expr ce
+        List.iter binding pel; class_expr ce
     | Pcl_constraint (ce, _) -> class_expr ce
     | Pcl_extension _ -> ()
 
@@ -1307,7 +1310,7 @@ let rec is_nonexpansive exp =
     Texp_ident(_,_,_) -> true
   | Texp_constant _ -> true
   | Texp_let(rec_flag, pat_exp_list, body) ->
-      List.for_all (fun (pat, exp) -> is_nonexpansive exp) pat_exp_list &&
+      List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
       is_nonexpansive body
   | Texp_function _ -> true
   | Texp_apply(e, (_,None,_)::el) ->
@@ -1364,8 +1367,8 @@ and is_nonexpansive_mod mexp =
         (fun item -> match item.str_desc with
           | Tstr_eval _ | Tstr_primitive _ | Tstr_type _ | Tstr_modtype _
           | Tstr_open _ | Tstr_class_type _ | Tstr_exn_rebind _ -> true
-          | Tstr_value (_, pat_exp_list, _) ->
-              List.for_all (fun (_, exp) -> is_nonexpansive exp) pat_exp_list
+          | Tstr_value (_, pat_exp_list) ->
+              List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
           | Tstr_module {mb_expr=m;_} | Tstr_include (m, _, _) -> is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
@@ -1913,7 +1916,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = type_constant cst;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_let(Nonrecursive, [spat, sval], sbody) when contains_gadt env spat ->
+  | Pexp_let(Nonrecursive, [{pvb_pat=spat; pvb_expr=sval; pvb_attributes=[]}], sbody) when contains_gadt env spat ->
+    (* TODO: allow non-empty attributes? *)
       type_expect ?in_function env
         {sexp with pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
         ty_expected
@@ -1960,7 +1964,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         Exp.fun_ ~loc
           l None
           (Pat.var ~loc (mknoloc "*opt*"))
-          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",[]] [spat, smatch] sexp)
+          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",[]] [Vb.mk spat smatch] sexp)
       in
       type_expect ?in_function env sfun ty_expected
         (* TODO: keep attributes, call type_function directly *)
@@ -2915,7 +2919,7 @@ and type_argument env sarg ty_expected' ty_expected =
       (* let-expand to have side effects *)
       let let_pat, let_var = var_pair "let" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
-           Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
+           Texp_let (Nonrecursive, [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[]}], func let_var) }
       end
   | _ ->
       let texp = type_expect env sarg ty_expected' in
@@ -3335,8 +3339,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   let is_fake_let =
     match spat_sexp_list with
-    | [_, {pexp_desc=Pexp_match(
-           {pexp_desc=Pexp_ident({ txt = Longident.Lident "*opt*"})},_)}] ->
+    | [{pvb_expr={pexp_desc=Pexp_match(
+           {pexp_desc=Pexp_ident({ txt = Longident.Lident "*opt*"})},_)}}] ->
         true (* the fake let-declaration introduced by fun ?(x = e) -> ... *)
     | _ ->
         false
@@ -3345,7 +3349,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   let spatl =
     List.map
-      (fun (spat, sexp) ->
+      (fun {pvb_pat=spat; pvb_expr=sexp; pvb_attributes=_} ->
         match spat.ppat_desc, sexp.pexp_desc with
           (Ppat_any | Ppat_constraint _), _ -> spat
         | _, Pexp_coerce (_, _, sty)
@@ -3365,14 +3369,14 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   (* If recursive, first unify with an approximation of the expression *)
   if is_recursive then
     List.iter2
-      (fun pat (_, sexp) ->
+      (fun pat binding ->
         let pat =
           match pat.pat_type.desc with
           | Tpoly (ty, tl) ->
               {pat with pat_type =
                snd (instance_poly ~keep_names:true false tl ty)}
           | _ -> pat
-        in unify_pat env pat (type_approx env sexp))
+        in unify_pat env pat (type_approx env binding.pvb_expr))
       pat_list spat_sexp_list;
   (* Polymorphic variant processing *)
   List.iter
@@ -3461,7 +3465,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   in
   let exp_list =
     List.map2
-      (fun (spat, sexp) (pat, slot) ->
+      (fun {pvb_expr=sexp; _} (pat, slot) ->
         let sexp =
           if rec_flag = Recursive then wrap_unpacks sexp unpacks else sexp in
         if is_recursive then current_slot := slot;
@@ -3483,7 +3487,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   current_slot := None;
   if is_recursive && not !rec_needed
   && Warnings.is_active Warnings.Unused_rec_flag then
-    Location.prerr_warning (fst (List.hd spat_sexp_list)).ppat_loc
+    Location.prerr_warning (List.hd spat_sexp_list).pvb_pat.ppat_loc
       Warnings.Unused_rec_flag;
   List.iter2
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [case pat exp]))
@@ -3497,7 +3501,13 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   List.iter
     (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
     pat_list;
-  (List.combine pat_list exp_list, new_env, unpacks)
+  let l = List.combine pat_list exp_list in
+  let l =
+    List.map2
+      (fun (p, e) pvb -> {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes})
+      l spat_sexp_list
+  in
+  (l, new_env, unpacks)
 
 (* Typing of toplevel bindings *)
 

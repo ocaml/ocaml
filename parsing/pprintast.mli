@@ -17,10 +17,10 @@ class printer :
     val pipe : bool
     val semi : bool
     method binding :
-      Format.formatter -> Parsetree.pattern * Parsetree.expression -> unit
+      Format.formatter -> Parsetree.value_binding -> unit
     method bindings:
         Format.formatter ->
-          Asttypes.rec_flag * (Parsetree.pattern * Parsetree.expression) list ->
+          Asttypes.rec_flag * Parsetree.value_binding list ->
             unit
     method case_list :
       Format.formatter -> Parsetree.case list -> unit

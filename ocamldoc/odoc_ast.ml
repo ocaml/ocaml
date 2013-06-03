@@ -98,9 +98,9 @@ module Typedtree_search =
                 (CT (Name.from_ident id))
                 (Typedtree.Tstr_class_type [ci]))
             info_list
-      | Typedtree.Tstr_value (_, pat_exp_list, _) ->
+      | Typedtree.Tstr_value (_, pat_exp_list) ->
           List.iter
-            (fun (pat,exp) ->
+            (fun {vb_pat=pat; vb_expr=exp} ->
               match iter_val_pattern pat.Typedtree.pat_desc with
                 None -> ()
               | Some n -> Hashtbl.add table_values n (pat,exp)
@@ -320,7 +320,8 @@ module Analyser =
                 (
                  (
                   match func_body.exp_desc with
-                    Typedtree.Texp_let (_, ({pat_desc = Typedtree.Tpat_var (id, _) } , exp) :: _, func_body2) ->
+                    Typedtree.Texp_let (_, {vb_pat={pat_desc = Typedtree.Tpat_var (id, _) };
+                                            vb_expr=exp} :: _, func_body2) ->
                       let name = Name.from_ident id in
                       let new_param = Simple_name
                           { sn_name = name ;
@@ -479,7 +480,8 @@ module Analyser =
                             (
                              (
                               match body.exp_desc with
-                                Typedtree.Texp_let (_, ({pat_desc = Typedtree.Tpat_var (id, _) } , exp) :: _, body2) ->
+                                Typedtree.Texp_let (_, {vb_pat={pat_desc = Typedtree.Tpat_var (id, _) };
+                                                        vb_expr=exp} :: _, body2) ->
                                   let name = Name.from_ident id in
                                   let new_param = Simple_name
                                       { sn_name = name ;
@@ -741,7 +743,8 @@ module Analyser =
                  (
                   (* there must be a Tcl_let just after *)
                   match tt_class_expr2.Typedtree.cl_desc with
-                    Typedtree.Tcl_let (_, ({pat_desc = Typedtree.Tpat_var (id,_) } , exp) :: _, _, tt_class_expr3) ->
+                    Typedtree.Tcl_let (_, {vb_pat={pat_desc = Typedtree.Tpat_var (id,_) };
+                                           vb_expr=exp} :: _, _, tt_class_expr3) ->
                       let name = Name.from_ident id in
                       let new_param = Simple_name
                           { sn_name = name ;
@@ -1059,7 +1062,7 @@ module Analyser =
       | Parsetree.Pstr_attribute _
       | Parsetree.Pstr_extension _ ->
           (0, env, [])
-      | Parsetree.Pstr_value (rec_flag, pat_exp_list, _) ->
+      | Parsetree.Pstr_value (rec_flag, pat_exp_list) ->
           (* of rec_flag * (pattern * expression) list *)
           (* For each value, look for the value name, then look in the
              typedtree for the corresponding information,
@@ -1075,7 +1078,7 @@ module Analyser =
             match p_e_list with
               [] ->
                 (acc_env, acc)
-            | (pat, exp) :: q ->
+            | {Parsetree.pvb_pat=pat; pvb_expr=exp} :: q ->
                 let value_name_opt = iter_pat pat.Parsetree.ppat_desc in
                 let new_last_pos = exp.Parsetree.pexp_loc.Location.loc_end.Lexing.pos_cnum in
                 match value_name_opt with

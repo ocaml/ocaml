@@ -982,18 +982,18 @@ and transl_let rec_flag pat_expr_list body =
       let rec transl = function
         [] ->
           body
-      | (pat, expr) :: rem ->
+      | {vb_pat=pat; vb_expr=expr} :: rem ->
           Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
         List.map
-          (fun (pat, expr) -> match pat.pat_desc with
+          (fun {vb_pat=pat} -> match pat.pat_desc with
               Tpat_var (id,_) -> id
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
-      let transl_case (pat, expr) id =
+      let transl_case {vb_pat=pat; vb_expr=expr} id =
         let lam = transl_exp expr in
         if not (check_recursive_lambda idlist lam) then
           raise(Error(expr.exp_loc, Illegal_letrec_expr));

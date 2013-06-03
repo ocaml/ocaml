@@ -41,10 +41,12 @@ Attributes on items:
 
   ... [@@id s]
 
-  Items designate signature items, structure items, class fields,
-  class type fields and also individual components of multiple
-  declaration in structures and signatures (type declarations, recursive modules, class
-  declarations, class type declarations).
+  Items designate:
+    - structure and signature items (for type declarations, recursive modules, class
+  declarations and class type declarations, each component has its own attributes)
+    - class fields and class type fields
+    - each binding in a let declaration (for let structure item, local let-bindings in 
+      expression and class expressions)
 
   For instance, consider:
 
@@ -53,8 +55,10 @@ Attributes on items:
   Here, the attributes on t1 are id1, id23; the attributes on
   t2 are id3 and id4.
 
-  Note: item attributes are currently not supported on Pstr_eval
-  and Pstr_value structure items.
+  Similarly for:
+
+    let x1 = ... [@@id1] [@@id2] and x2 = ... [@@id3] [@@id4]
+
 
   The [@@id s] form, when used at the beginning of a signature or
   structure, or after a double semi-colon (;;), defines an attribute

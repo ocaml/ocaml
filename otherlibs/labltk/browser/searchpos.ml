@@ -660,9 +660,9 @@ let rec search_pos_structure ~pos str =
   List.iter str ~f:
   begin function str -> match str.str_desc with
     Tstr_eval (exp, _) -> search_pos_expr exp ~pos
-  | Tstr_value (rec_flag, l, _) ->
+  | Tstr_value (rec_flag, l) ->
       List.iter l ~f:
-      begin fun (pat, exp) ->
+      begin fun {vb_pat=pat;vb_expr=exp} ->
         let env =
           if rec_flag = Asttypes.Recursive then exp.exp_env else Env.empty in
         search_pos_pat pat ~pos ~env;
@@ -716,7 +716,7 @@ and search_pos_class_expr ~pos cl =
         List.iter el ~f:(fun (_, x,_) -> Misc.may (search_pos_expr ~pos) x)
     | Tcl_let (_, pel, iel, cl) ->
         List.iter pel ~f:
-          begin fun (pat, exp) ->
+          begin fun {vb_pat=pat; vb_expr=exp} ->
             search_pos_pat pat ~pos ~env:exp.exp_env;
             search_pos_expr exp ~pos
           end;
@@ -748,7 +748,7 @@ and search_pos_expr ~pos exp =
         ~env:exp.exp_env ~loc:exp.exp_loc
   | Texp_let (_, expl, exp) ->
       List.iter expl ~f:
-      begin fun (pat, exp') ->
+      begin fun {vb_pat=pat; vb_expr=exp'} ->
         search_pos_pat pat ~pos ~env:exp.exp_env;
         search_pos_expr exp' ~pos
       end;

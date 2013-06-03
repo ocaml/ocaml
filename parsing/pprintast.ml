@@ -770,7 +770,9 @@ class printer  ()= object(self:'self)
               pp f "%s :@;%a=@;%a"
                 s.txt (self#core_type) ct self#expression e
           | Pexp_poly (e,None) ->
-              self#binding f ({ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]} ,e)
+              self#binding f {pvb_pat={ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]};
+                              pvb_expr=e;
+                              pvb_attributes=[]}
           | _ ->
               self#expression f e ) e 
     | Pcf_constraint (ct1, ct2) ->
@@ -937,7 +939,7 @@ class printer  ()= object(self:'self)
   method structure f x = self#list ~sep:"@\n" self#structure_item f x
 
   (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)    
-  method binding f ((p:pattern),(x:expression)) =
+  method binding f {pvb_pat=p; pvb_expr=x; pvb_attributes=_} = (* TODO: print attributes *)
     let rec pp_print_pexp_function f x =
       if x.pexp_attributes <> [] then pp f "=@;%a" self#expression x
       else match x.pexp_desc with 
@@ -996,7 +998,7 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>let@ _ =@ %a@]" self#expression e 
     | Pstr_type [] -> assert false
     | Pstr_type l  -> self#type_def_list f l 
-    | Pstr_value (rf, l, _attrs) -> (* pp f "@[<hov2>let %a%a@]"  self#rec_flag rf self#bindings l *)
+    | Pstr_value (rf, l) -> (* pp f "@[<hov2>let %a%a@]"  self#rec_flag rf self#bindings l *)
         pp f "@[<2>%a@]" self#bindings (rf,l)
     | Pstr_exception ed -> self#exception_declaration f ed
     | Pstr_module x ->

@@ -47,9 +47,8 @@ and untype_structure_item item =
   let desc =
     match item.str_desc with
       Tstr_eval (exp, attrs) -> Pstr_eval (untype_expression exp, attrs)
-    | Tstr_value (rec_flag, list, attrs) ->
-        Pstr_value (rec_flag, List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) list, attrs)
+    | Tstr_value (rec_flag, list) ->
+        Pstr_value (rec_flag, List.map untype_binding list)
     | Tstr_primitive vd ->
         Pstr_primitive (untype_value_description vd)
     | Tstr_type list ->
@@ -213,6 +212,13 @@ and untype_case {c_lhs; c_guard; c_rhs} =
    pc_rhs = untype_expression c_rhs;
   }
 
+and untype_binding {vb_pat; vb_expr; vb_attributes} =
+  {
+    pvb_pat = untype_pattern vb_pat;
+    pvb_expr = untype_expression vb_expr;
+    pvb_attributes = vb_attributes;
+  }
+
 and untype_expression exp =
   let desc =
     match exp.exp_desc with
@@ -220,8 +226,7 @@ and untype_expression exp =
     | Texp_constant cst -> Pexp_constant cst
     | Texp_let (rec_flag, list, exp) ->
         Pexp_let (rec_flag,
-          List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) list,
+          List.map untype_binding list,
           untype_expression exp)
     | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
         Pexp_fun (label, None, untype_pattern p, untype_expression e)
@@ -431,8 +436,7 @@ and untype_class_expr cexpr =
 
     | Tcl_let (rec_flat, bindings, _ivars, cl) ->
         Pcl_let (rec_flat,
-          List.map (fun (pat, exp) ->
-              (untype_pattern pat, untype_expression exp)) bindings,
+          List.map untype_binding bindings,
           untype_class_expr cl)
 
     | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->

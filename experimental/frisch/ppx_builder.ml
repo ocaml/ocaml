@@ -59,7 +59,7 @@ module Main : sig end = struct
           let fields = List.map field fields in
           let body = lam (punit()) (record (List.map snd fields)) in
           let f = List.fold_right (fun (f, _) k -> f k) fields body in
-          let s = Str.value Nonrecursive [pvar tdecl.ptype_name.txt, f] in
+          let s = Str.value Nonrecursive [Vb.mk (pvar tdecl.ptype_name.txt) f] in
           [s]
       | Ptype_variant constrs ->
           let constr {pcd_name={txt=name;_}; pcd_args=args; _} =
@@ -67,7 +67,7 @@ module Main : sig end = struct
             let args = List.mapi arg args in
             let body = lam (punit()) (constr name (List.map (fun (_, (_, e)) -> e) args)) in
             let f = List.fold_right (fun (f, _) k -> f k) args body in
-            let s = Str.value Nonrecursive [pvar (tdecl.ptype_name.txt ^ "_" ^ name), f] in
+            let s = Str.value Nonrecursive [Vb.mk (pvar (tdecl.ptype_name.txt ^ "_" ^ name)) f] in
             s
           in
           List.map constr constrs

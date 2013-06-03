@@ -51,7 +51,7 @@ let access_object loc e m m_typ f =
       let y = random_var () in
       let o = annot (evar y) (Typ.var obj_type) in
       let constr = lam (pvar y) (annot (send o m) m_typ) in
-      let_in [pvar x, obj; Pat.any (), constr] (f (evar x))
+      let_in [Vb.mk (pvar x) obj; Vb.mk (Pat.any ()) constr] (f (evar x))
     )
 
 let method_call loc obj meth args =

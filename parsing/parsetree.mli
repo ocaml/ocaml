@@ -185,7 +185,7 @@ and expression_desc =
          *)
   | Pexp_constant of constant
         (* 1, 'a', "true", 1.0, 1l, 1L, 1n *)
-  | Pexp_let of rec_flag * (pattern * expression) list * expression
+  | Pexp_let of rec_flag * value_binding list * expression
         (* let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
            let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
          *)
@@ -469,7 +469,7 @@ and class_expr_desc =
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
          *)
-  | Pcl_let of rec_flag * (pattern * expression) list * class_expr
+  | Pcl_let of rec_flag * value_binding list * class_expr
         (* let P1 = E1 and ... and Pn = EN in CE      (flag = Nonrecursive)
            let rec P1 = E1 and ... and Pn = EN in CE  (flag = Recursive)
          *)
@@ -654,7 +654,7 @@ and structure_item =
 and structure_item_desc =
   | Pstr_eval of expression * attributes
         (* E *)
-  | Pstr_value of rec_flag * (pattern * expression) list * attributes
+  | Pstr_value of rec_flag * value_binding list
         (* let P1 = E1 and ... and Pn = EN       (flag = Nonrecursive)
            let rec P1 = E1 and ... and Pn = EN   (flag = Recursive)
          *)
@@ -686,6 +686,13 @@ and structure_item_desc =
            of the structure) *)
   | Pstr_extension of extension * attributes
         (* [%%id] *)
+
+and value_binding =
+  {
+    pvb_pat: pattern;
+    pvb_expr: expression;
+    pvb_attributes: attributes;
+  }
 
 and module_binding =
     {

@@ -24,7 +24,7 @@ let constructor_decl sub cd =
 let structure_item sub x =
   match x.str_desc with
   | Tstr_eval (exp, _attrs) -> sub # expression exp
-  | Tstr_value (rec_flag, list, _) -> sub # bindings (rec_flag, list)
+  | Tstr_value (rec_flag, list) -> sub # bindings (rec_flag, list)
   | Tstr_primitive v -> sub # value_description v
   | Tstr_type list -> List.iter (sub # type_declaration) list
   | Tstr_exception decl -> constructor_decl sub decl
@@ -333,9 +333,9 @@ let case sub {c_lhs; c_guard; c_rhs} =
   opt (sub # expression) c_guard;
   sub # expression c_rhs
 
-let binding sub (pat, exp) =
-  sub # pattern pat;
-  sub # expression exp
+let binding sub vb =
+  sub # pattern vb.vb_pat;
+  sub # expression vb.vb_expr
 
 class iter = object(this)
   method binding = binding this

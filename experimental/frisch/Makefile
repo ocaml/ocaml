@@ -71,3 +71,10 @@ copy_typedef:
 	$(OCAMLC) -linkall -o copy_typedef.exe -w +A-4 $(COMMON) copy_typedef.ml
 	$(OCAMLC) -c -ppx ./copy_typedef.exe test_copy_typedef.mli
 	$(OCAMLC) -o test_copy_typedef.exe -w +A -ppx ./copy_typedef.exe -dsource test_copy_typedef.ml
+
+
+## Create mli files from ml files
+
+.PHONY: nomli
+nomli:
+	$(OCAMLC) -linkall -o nomli.exe -w +A-4-9 $(COMMON) $(BYTECMP) ../../tools/untypeast.cmo ../../tools/tast_iter.cmo nomli.ml

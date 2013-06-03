@@ -191,9 +191,9 @@ and add_case bv {pc_lhs; pc_guard; pc_rhs} =
   add_expr bv pc_rhs
 
 and add_bindings recf bv pel =
-  let bv' = List.fold_left (fun bv (p, _) -> add_pattern bv p) bv pel in
+  let bv' = List.fold_left (fun bv x -> add_pattern bv x.pvb_pat) bv pel in
   let bv = if recf = Recursive then bv' else bv in
-  List.iter (fun (_, e) -> add_expr bv e) pel;
+  List.iter (fun x -> add_expr bv x.pvb_expr) pel;
   bv'
 
 and add_modtype bv mty =
@@ -273,7 +273,7 @@ and add_struct_item bv item =
   match item.pstr_desc with
     Pstr_eval (e, _attrs) ->
       add_expr bv e; bv
-  | Pstr_value(rf, pel, _attrs) ->
+  | Pstr_value(rf, pel) ->
       let bv = add_bindings rf bv pel in bv
   | Pstr_primitive vd ->
       add_type bv vd.pval_type; bv

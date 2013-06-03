@@ -71,8 +71,8 @@ module type IteratorArgument = sig
     val leave_structure_item : structure_item -> unit
 
     val enter_bindings : rec_flag -> unit
-    val enter_binding : pattern -> expression -> unit
-    val leave_binding : pattern -> expression -> unit
+    val enter_binding : value_binding -> unit
+    val leave_binding : value_binding -> unit
     val leave_bindings : rec_flag -> unit
 
       end
@@ -102,11 +102,11 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.leave_structure str
 
 
-    and iter_binding (pat, exp) =
-      Iter.enter_binding pat exp;
-      iter_pattern pat;
-      iter_expression exp;
-      Iter.leave_binding pat exp
+    and iter_binding vb =
+      Iter.enter_binding vb;
+      iter_pattern vb.vb_pat;
+      iter_expression vb.vb_expr;
+      Iter.leave_binding vb
 
     and iter_bindings rec_flag list =
       Iter.enter_bindings rec_flag;
@@ -126,7 +126,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
       begin
         match item.str_desc with
           Tstr_eval (exp, _attrs) -> iter_expression exp
-        | Tstr_value (rec_flag, list, _attrs) ->
+        | Tstr_value (rec_flag, list) ->
             iter_bindings rec_flag list
         | Tstr_primitive vd -> iter_value_description vd
         | Tstr_type list -> List.iter iter_type_declaration list
@@ -613,8 +613,8 @@ module DefaultIteratorArgument = struct
     let leave_class_field _ = ()
     let leave_structure_item _ = ()
 
-    let enter_binding _ _ = ()
-    let leave_binding _ _ = ()
+    let enter_binding _ = ()
+    let leave_binding _ = ()
 
     let enter_bindings _ = ()
     let leave_bindings _ = ()

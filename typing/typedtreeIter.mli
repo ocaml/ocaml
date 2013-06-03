@@ -65,8 +65,8 @@ module type IteratorArgument = sig
     val leave_structure_item : structure_item -> unit
 
     val enter_bindings : rec_flag -> unit
-    val enter_binding : pattern -> expression -> unit
-    val leave_binding : pattern -> expression -> unit
+    val enter_binding : value_binding -> unit
+    val leave_binding : value_binding -> unit
     val leave_bindings : rec_flag -> unit
 
       end

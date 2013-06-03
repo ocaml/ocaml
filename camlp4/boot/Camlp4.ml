@@ -15202,12 +15202,13 @@ module Struct =
                       (Ppat_constraint
                          (((mkpat (Ppat_var (with_loc bind_name sloc))),
                            (mktyp _loc (Ptyp_poly (ampersand_vars, ty')))))) in
-                  let e = mk_newtypes vars in (pat, e) :: acc
+                  let e = mk_newtypes vars in {pvb_pat=pat; pvb_expr=e; pvb_attributes=[]} :: acc
               | Ast.BiEq (_loc, p,
                   (Ast.ExTyc (_, e, (Ast.TyPol (_, vs, ty))))) ->
-                  ((patt (Ast.PaTyc (_loc, p, (Ast.TyPol (_loc, vs, ty))))),
-                   (expr e)) :: acc
-              | Ast.BiEq (_, p, e) -> ((patt p), (expr e)) :: acc
+                  {pvb_pat=patt (Ast.PaTyc (_loc, p, (Ast.TyPol (_loc, vs, ty))));
+                   pvb_expr=expr e;
+                   pvb_attributes=[]} :: acc
+              | Ast.BiEq (_, p, e) -> {pvb_pat=patt p; pvb_expr=expr e; pvb_attributes=[]} :: acc
               | Ast.BiNil _ -> acc
               | _ -> assert false
             and match_case x acc =
@@ -15451,7 +15452,7 @@ module Struct =
               | StTyp (loc, tdl) ->
                   (mkstr loc (Pstr_type (mktype_decl tdl []))) :: l
               | StVal (loc, rf, bi) ->
-                  (mkstr loc (Pstr_value ((mkrf rf), (binding bi []), []))) :: l
+                  (mkstr loc (Pstr_value ((mkrf rf), (binding bi [])))) :: l
               | Ast.StAnt (loc, _) -> error loc "antiquotation in str_item"
             and class_type =
               function

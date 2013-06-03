@@ -53,6 +53,7 @@ class mapper:
     method extension: extension -> extension
     method constructor_declaration: constructor_declaration -> constructor_declaration
     method label_declaration: label_declaration -> label_declaration
+    method value_binding: value_binding -> value_binding
   end
 
 class type main_entry_points =

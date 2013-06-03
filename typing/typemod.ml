@@ -683,9 +683,9 @@ and closed_signature_item = function
 
 let check_nongen_scheme env str =
   match str.str_desc with
-    Tstr_value(rec_flag, pat_exp_list, _attrs) ->
+    Tstr_value(rec_flag, pat_exp_list) ->
       List.iter
-        (fun (pat, exp) ->
+        (fun {vb_expr=exp} ->
           if not (Ctype.closed_schema exp.exp_type) then
             raise(Error(exp.exp_loc, env, Non_generalizable exp.exp_type)))
         pat_exp_list
@@ -996,7 +996,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                   let item = mk (Tstr_eval (expr, attrs)) in
                   let (str_rem, sig_rem, final_env) = type_struct env srem in
                   (item :: str_rem, sig_rem, final_env)
-              | Pstr_value(rec_flag, sdefs, attrs) ->
+              | Pstr_value(rec_flag, sdefs) ->
         let scope =
           match rec_flag with
           | Recursive -> Some (Annot.Idef {scope with
@@ -1009,7 +1009,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         let (defs, newenv) =
           Typecore.type_binding env rec_flag sdefs scope in
-        let item = mk (Tstr_value(rec_flag, defs, attrs)) in
+        let item = mk (Tstr_value(rec_flag, defs)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         let bound_idents = let_bound_idents defs in
         (* Note: Env.find_value does not trigger the value_used event. Values
