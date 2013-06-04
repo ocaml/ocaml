@@ -150,6 +150,7 @@ Tools:
   option.
 - OCamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
 - PR#5884: Misc minor fixes and cleanup for emacs mode
+- PR#6030: Improve performance of -annot
 
 
 OCaml 4.00.1:
