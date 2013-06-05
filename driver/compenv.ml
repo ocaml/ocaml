@@ -159,7 +159,7 @@ let parse_args s =
 *)
 
 let parse_args s =
-  let args = String.split s ',' in
+  let args = Misc.split s ',' in
   let rec iter is_after args before after =
     match args with
       [] ->
@@ -171,7 +171,7 @@ let parse_args s =
     | "_" :: tail -> iter true tail before after
     | arg :: tail ->
       let binding = try
-        String.cut_at arg '='
+        Misc.cut_at arg '='
       with Not_found ->
         raise (SyntaxError ("missing '=' in " ^ arg))
       in
@@ -239,7 +239,7 @@ let read_OCAMLPARAM position =
 
       | "pp" -> preprocessor := Some v
       | "runtime-variant" -> runtime_variant := v
-      | "open" -> implicit_modules := String.split v ','
+      | "open" -> implicit_modules := Misc.split v ','
       | "cc" -> c_compiler := Some v
 
       (* assembly sources *)

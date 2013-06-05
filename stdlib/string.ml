@@ -203,23 +203,3 @@ let rcontains_from s i c =
 type t = string
 
 let compare (x: t) (y: t) = Pervasives.compare x y
-
-(* split a string [s] at every char [c], and return the list of sub-strings *)
-let split s c =
-  let len = length s in
-  let rec iter pos to_rev =
-    if pos = len then List.rev ("" :: to_rev) else
-      match try
-              Some ( index_from s pos c )
-        with Not_found -> None
-      with
-          Some pos2 ->
-            if pos2 = pos then iter (pos+1) ("" :: to_rev) else
-              iter (pos2+1) ((sub s pos (pos2-pos)) :: to_rev)
-        | None -> List.rev ( sub s pos (len-pos) :: to_rev )
-  in
-  iter 0 []
-
-let cut_at s c =
-  let pos = index s c in
-  sub s 0 pos, sub s (pos+1) (length s - pos - 1)
