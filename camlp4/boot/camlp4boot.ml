@@ -15201,7 +15201,7 @@ module L =
                  Gram.Snterm (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
                  Gram.Skeyword "]" ];
              true)
-          with | Not_found -> false
+          with | Struct.Grammar.Delete.Rule_not_found _ -> false
           
         let comprehension_or_sem_expr_for_list =
           Gram.Entry.mk "comprehension_or_sem_expr_for_list"
