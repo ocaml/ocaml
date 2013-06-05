@@ -64,7 +64,8 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
-  driver/pparse.cmo driver/main_args.cmo
+  driver/pparse.cmo driver/main_args.cmo \
+  driver/compenv.cmo driver/compmisc.cmo
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
 

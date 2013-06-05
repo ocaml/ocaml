@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*      Fabrice Le Fessant, équipe Gallium, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -10,10 +10,24 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Compile a .ml or .mli file *)
+val check_unit_name : Format.formatter -> string -> string -> unit
 
-open Format
+val output_prefix : string -> string
+val extract_output : string option -> string
+val default_output : string option -> string
 
-val interface: formatter -> string -> string -> unit
-val implementation: formatter -> string -> string -> unit
-val c_file: string -> unit
+val print_version_and_library : string -> 'a
+val print_version_string : unit -> 'a
+val print_standard_library : unit -> 'a
+val fatal : string -> 'a
+
+val first_ccopts : string list ref
+val first_ppx : string list ref
+val first_include_dirs : string list ref
+val last_include_dirs : string list ref
+val implicit_modules : string list ref
+
+type readenv_position =
+  Before_args | Before_compile | Before_link
+
+val readenv : readenv_position -> unit

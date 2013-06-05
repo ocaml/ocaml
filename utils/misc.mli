@@ -122,9 +122,6 @@ val snd4: 'a * 'b * 'c * 'd -> 'b
 val thd4: 'a * 'b * 'c * 'd -> 'c
 val for4: 'a * 'b * 'c * 'd -> 'd
 
-(* split a string [s] at every char [c], and return the list of sub-strings *)
-val split : string -> char -> string list
-
 module LongString :
   sig
     type t = string array

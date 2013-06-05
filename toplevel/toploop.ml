@@ -408,7 +408,7 @@ let refill_lexbuf buffer len =
 let _ =
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
-  Compile.init_path();
+  Compmisc.init_path false;
   List.iter
     (fun (name, crc) ->
       Consistbl.set Env.crc_units name crc Sys.executable_name)
@@ -435,7 +435,7 @@ let set_paths () =
   Dll.add_path !load_path
 
 let initialize_toplevel_env () =
-  toplevel_env := Compile.initial_env()
+  toplevel_env := Compmisc.initial_env()
 
 (* The interactive loop *)
 
@@ -475,7 +475,7 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Compile.init_path();
-  toplevel_env := Compile.initial_env();
+  Compmisc.init_path false;
+  toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
   use_silently ppf name

@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*      Fabrice Le Fessant, équipe Gallium, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -10,10 +10,5 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Compile a .ml or .mli file *)
-
-open Format
-
-val interface: formatter -> string -> string -> unit
-val implementation: formatter -> string -> string -> unit
-val c_file: string -> unit
+val init_path : bool -> unit
+val initial_env : unit -> Env.t
