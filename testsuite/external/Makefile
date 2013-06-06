@@ -38,7 +38,7 @@ default:
 .PHONY: all-cygwin
 all-cygwin: findlib ounit res pcre react ocamltext ocamlssl camlzip cryptokit \
             sqlite ocgi xmllight configfile xmlm omake \
-	    camomile zen vsyml extlib fileutils ocamlify ocamlmod \
+            camomile zen vsyml extlib fileutils ocamlify ocamlmod \
             calendar dbm ocamlscript camlp5 geneweb coq
 
 all-macos: findlib lablgtk ocamlgraph ounit res pcre core react ocamltext \
@@ -212,8 +212,9 @@ typeconv: ${TYPECONV}.tar.gz findlib
 	( cd ${TYPECONV} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove type_conv && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${TYPECONV} typeconv
@@ -234,8 +235,9 @@ variantslib: ${VARIANTSLIB}.tar.gz findlib typeconv
 	( cd ${VARIANTSLIB} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove variantslib && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${VARIANTSLIB} variantslib
@@ -256,8 +258,9 @@ pipebang: ${PIPEBANG}.tar.gz findlib typeconv
 	( cd ${PIPEBANG} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove pa_pipebang && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${PIPEBANG} pipebang
@@ -278,8 +281,9 @@ paounit: ${PAOUNIT}.tar.gz findlib typeconv
 	( cd ${PAOUNIT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove pa_ounit && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${PAOUNIT} paounit
@@ -300,8 +304,9 @@ comparelib: ${COMPARELIB}.tar.gz findlib typeconv
 	( cd ${COMPARELIB} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove comparelib && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${COMPARELIB} comparelib
@@ -322,8 +327,9 @@ binprot: ${BINPROT}.tar.gz findlib typeconv ounit
 	( cd ${BINPROT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove bin_prot && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${BINPROT} binprot
@@ -344,8 +350,9 @@ fieldslib: ${FIELDSLIB}.tar.gz findlib typeconv
 	( cd ${FIELDSLIB} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove fieldslib && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${FIELDSLIB} fieldslib
@@ -366,8 +373,9 @@ sexplib: ${SEXPLIB}.tar.gz findlib typeconv
 	( cd ${SEXPLIB} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove sexplib && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${SEXPLIB} sexplib
@@ -389,8 +397,9 @@ core: ${CORE}.tar.gz findlib variantslib sexplib fieldslib binprot comparelib \
 	( cd ${CORE} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove core && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${CORE} core
@@ -412,8 +421,8 @@ coreextended: ${COREEXTENDED}.tar.gz findlib sexplib fieldslib binprot paounit \
 	( cd ${COREEXTENDED} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${COREEXTENDED} coreextended
