@@ -908,9 +908,10 @@ external decr : int ref -> unit = "%decr"
 *)
 
 (** Format strings have a general and highly polymorphic type
-    [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.  The two simplified
-    types, [format] and [format4] below are included for backward
-    compatibility with earlier releases of OCaml.
+    [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
+    The two simplified types, [format] and [format4] below are
+    included for backward compatibility with earlier releases of
+    OCaml.
 
     The meaning of format string type parameters is as follows:
 
@@ -932,9 +933,10 @@ external decr : int ref -> unit = "%decr"
       user's defined printing functions for [%a] and [%t] conversions,
       and user's defined reading functions for [%r] conversion.
 
-    - ['c] is the type of the result of the [%a] and [%t] printing functions, and
-      also the type of the argument transmitted to the first argument
-      of [kprintf]-style functions or to the [kscanf]-style functions.
+    - ['c] is the type of the result of the [%a] and [%t] printing
+      functions, and also the type of the argument transmitted to the
+      first argument of [kprintf]-style functions or to the
+      [kscanf]-style functions.
 
     - ['d] is the type of parameters for the [scanf]-style functions.
 
@@ -942,7 +944,7 @@ external decr : int ref -> unit = "%decr"
 
     - ['f] is the final result type of a formatted input/output function
       invocation: for the [printf]-style functions, it is typically [unit];
-      for the [scanf]-style functions, it is typically the target type of the
+      for the [scanf]-style functions, it is typically the result type of the
       receiver function.
 *)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
