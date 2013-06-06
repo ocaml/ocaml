@@ -129,6 +129,7 @@ Bug fixes:
 - PR#6005: Type unsoundness with recursive modules
 - PR#6010: Big_int.extract_big_int gives wrong results on negative arguments
 - PR#6024: Format syntax for printing @ is incompatible with 3.12.1
+- PR#6001: Reduce the memory used by compiling Camlp4
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
