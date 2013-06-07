@@ -11,6 +11,8 @@ Type system:
   polymorphic variants (discarding only information about possibly-present
   constructors). As a result, matching against absent constructors is no longer
   allowed for exact and fixed polymorphic variant types.
+* PR#6035: Reject multiple declarations of the same method or instance variable
+  in an object
 
 Compilers:
 - PR#5861: raise an error when multiple private keywords are used in type
