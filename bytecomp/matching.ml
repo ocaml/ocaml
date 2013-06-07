@@ -1387,14 +1387,14 @@ let inline_lazy_force_switch arg loc =
                     Lapply(force_fun, [varg], loc)) ];
                sw_failaction = Some varg } ))))
 
-let inline_lazy_force =
+let inline_lazy_force arg loc =
   if !Clflags.native_code then
     (* Lswitch generates compact and efficient native code *)
-    inline_lazy_force_switch
+    inline_lazy_force_switch arg loc
   else
     (* generating bytecode: Lswitch would generate too many rather big
        tables (~ 250 elts); conditionals are better *)
-    inline_lazy_force_cond
+    inline_lazy_force_cond arg loc
 
 let make_lazy_matching def = function
     [] -> fatal_error "Matching.make_lazy_matching"
