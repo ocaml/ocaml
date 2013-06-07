@@ -604,7 +604,7 @@ value caml_input_val(struct channel *chan)
   /* Free everything */
   caml_stat_free(intern_input);
   if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
-  return res;
+  return caml_check_urgent_gc(res);
 }
 
 CAMLprim value caml_input_value(value vchan)
@@ -643,7 +643,7 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
   intern_add_to_heap(whsize);
   /* Free everything */
   if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
-  CAMLreturn (obj);
+  CAMLreturn (caml_check_urgent_gc(obj));
 }
 
 CAMLprim value caml_input_value_from_string(value str, value ofs)
@@ -671,7 +671,7 @@ static value input_val_from_block(void)
   intern_add_to_heap(whsize);
   /* Free internal data structures */
   if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
-  return obj;
+  return caml_check_urgent_gc(obj);
 }
 
 CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
