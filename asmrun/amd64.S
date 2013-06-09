@@ -127,6 +127,10 @@
         STORE_VAR(%rax,caml_bottom_of_stack) ; \
         popq    %r11; CFI_ADJUST(-8)
 
+/* Load address of global [label] in register [dst]. */
+#define LEA_VAR(label,dst) \
+	movq	GREL(label)(%rip), dst
+
 #else
 
 /* Non-PIC operations on global variables.  Slightly faster. */
@@ -155,6 +159,8 @@
         leaq    8+OFFSET(%rsp), %rax ; \
         STORE_VAR(%rax,caml_bottom_of_stack)
 
+#define LEA_VAR(label,dst) \
+	leaq	G(label)(%rip), dst
 #endif
 
 /* Save and restore all callee-save registers on stack.
@@ -565,6 +571,18 @@ LBL(111):
         LOAD_VAR(caml_young_ptr,%r15) /* Reload alloc ptr */
         ret
 CFI_ENDPROC
+
+/* Raise a Stack_overflow exception on return from segv_handler()
+   (in asmrun/signals_asm.c).  On entry, the stack is full, so we
+   cannot record a backtrace. 
+   No CFI information here since this function disrupts the stack
+   backtrace anyway. */
+
+FUNCTION(G(caml_stack_overflow))
+        LEA_VAR(caml_bucket_Stack_overflow, %rax)
+        movq    %r14, %rsp            /* cut the stack */
+        popq    %r14                  /* recover previous exn handler */
+        ret                           /* jump to handler's code */
 
 /* Callback from C to OCaml */
 
