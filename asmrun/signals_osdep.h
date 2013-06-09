@@ -158,12 +158,9 @@
     #define CONTEXT_REG(r) __##r
   #endif
 
-  typedef unsigned long context_reg;
   #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->CONTEXT_REG(ss))
   #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(eip))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
-
-  #define RETURN_AFTER_STACK_OVERFLOW
 
 /****************** I386, Solaris x86 */
 
