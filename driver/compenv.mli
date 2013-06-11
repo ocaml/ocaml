@@ -27,6 +27,9 @@ val first_include_dirs : string list ref
 val last_include_dirs : string list ref
 val implicit_modules : string list ref
 
+(* return the list of objfiles, after OCAMLPARAM and List.rev *)
+val get_objfiles : unit -> string list
+
 type readenv_position =
   Before_args | Before_compile | Before_link
 
