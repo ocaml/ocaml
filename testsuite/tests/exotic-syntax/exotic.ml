@@ -71,8 +71,9 @@ type 'a t2 = [< `A of int & int & int ] as 'a;;
 function -1.0 -> 1 | _ -> 2;;
 
 (* combining language extensions (sec. 7.13 and 7.17) *)
+class c5 = object method f = 1 end;;
 object
-  method f = 1
+  inherit c5
   method! f : type t . int = 2
 end;;
 
