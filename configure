@@ -1584,6 +1584,13 @@ if test "$with_frame_pointers" = "true"; then
   nativecccompopts="$nativecccompopts -g"
   nativecclinkopts="$nativecclinkopts -g"
   echo "#define WITH_FRAME_POINTERS" >> m.h
+
+  case "$cc" in
+    gcc*)
+      bytecccompopts="$bytecccompopts -fno-omit-frame-pointer"
+      nativecccompopts="$nativecccompopts -fno-omit-frame-pointer";;
+  esac
+
 fi
 
 
