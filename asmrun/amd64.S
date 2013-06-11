@@ -74,16 +74,22 @@
 #endif
 
 #ifdef WITH_FRAME_POINTERS
+	
 #define ENTER_FUNCTION \
         pushq   %rbp; CFI_ADJUST(8); \
         movq    %rsp, %rbp
 #define LEAVE_FUNCTION \
         popq    %rbp; CFI_ADJUST(-8);
-#else
-#define ENTER_FUNCTION 		;
-#define LEAVE_FUNCTION 		;
-#endif
 
+#else
+
+#define ENTER_FUNCTION \
+        subq    $8, %rsp; CFI_ADJUST (8);
+#define LEAVE_FUNCTION \
+        addq    $8, %rsp; CFI_ADJUST (-8);
+
+#endif
+	
 #if defined(__PIC__) && !defined(SYS_mingw64)
 
 /* Position-independent operations on global variables. */
@@ -361,9 +367,9 @@ LBL(caml_alloc1):
 LBL(100):
         RECORD_STACK_FRAME(0)
 	ENTER_FUNCTION
-        subq    $8, %rsp; CFI_ADJUST (8);
+/*        subq    $8, %rsp; CFI_ADJUST (8); */
         call    LBL(caml_call_gc)
-        addq    $8, %rsp; CFI_ADJUST (-8);
+/*        addq    $8, %rsp; CFI_ADJUST (-8); */
 	LEAVE_FUNCTION
         jmp     LBL(caml_alloc1)
 CFI_ENDPROC
@@ -377,10 +383,10 @@ LBL(caml_alloc2):
         ret
 LBL(101):
         RECORD_STACK_FRAME(0)
-	ENTER_FUNCTION
-        subq    $8, %rsp; CFI_ADJUST (8);
+	ENTER_FUNCTION 
+/*        subq    $8, %rsp; CFI_ADJUST (8); */
         call    LBL(caml_call_gc)
-        addq    $8, %rsp; CFI_ADJUST (-8);
+/*        addq    $8, %rsp; CFI_ADJUST (-8); */
 	LEAVE_FUNCTION
         jmp     LBL(caml_alloc2)
 CFI_ENDPROC
@@ -395,9 +401,9 @@ LBL(caml_alloc3):
 LBL(102):
         RECORD_STACK_FRAME(0)
 	ENTER_FUNCTION
-        subq    $8, %rsp; CFI_ADJUST (8)
+/*        subq    $8, %rsp; CFI_ADJUST (8) */
         call    LBL(caml_call_gc)
-        addq    $8, %rsp; CFI_ADJUST (-8)
+/*        addq    $8, %rsp; CFI_ADJUST (-8) */
 	LEAVE_FUNCTION
         jmp     LBL(caml_alloc3)
 CFI_ENDPROC
@@ -413,10 +419,15 @@ LBL(caml_allocN):
         ret
 LBL(103):
         RECORD_STACK_FRAME(8)
+#ifdef WITH_FRAME_POINTERS
+	/* Do we need 16-byte alignment here ? */
 	ENTER_FUNCTION
+#endif
         call    LBL(caml_call_gc)
-        popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
+#ifdef WITH_FRAME_POINTERS
 	LEAVE_FUNCTION
+#endif
+        popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
 
@@ -521,10 +532,10 @@ CFI_STARTPROC
         popq    %r14
         ret
 LBL(110):
-	ENTER_FUNCTION
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
 #ifdef WITH_FRAME_POINTERS
+	ENTER_FUNCTION
         movq	8(%rsp), C_ARG_2      /* arg 2: pc of raise */
         leaq    16(%rsp), C_ARG_3     /* arg 3: sp at raise */
 #else
@@ -554,7 +565,9 @@ CFI_STARTPROC
         LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
 LBL(111):
+#ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION		;
+#endif
         movq    C_ARG_1, %r12            /* Save exception bucket */
                                       /* arg 1: exception bucket */
         LOAD_VAR(caml_last_return_address,C_ARG_2)   /* arg 2: pc of raise */

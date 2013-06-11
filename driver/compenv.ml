@@ -199,7 +199,6 @@ let set name options s =
 let clear name options s =
   setter (fun b -> not b) name options s
 
-
 let read_OCAMLPARAM position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
