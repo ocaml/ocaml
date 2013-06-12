@@ -51,6 +51,7 @@ Runtime system:
   point within the major heap.
 
 Bug fixes:
+- PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)

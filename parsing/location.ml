@@ -137,17 +137,17 @@ let highlight_dumb ppf lb loc =
       if !line = !line_start && !line = !line_end then
         (* loc is on one line: print whole line *)
         Format.pp_print_char ppf c
-      else if !line = !line_start then
+      else if !line = !line_start then begin
         (* first line of multiline loc: print ... before loc_start *)
-        if pos < loc.loc_start.pos_cnum
-        then Format.pp_print_char ppf '.'
-        else Format.pp_print_char ppf c
-      else if !line = !line_end then
+        if pos = loc.loc_start.pos_cnum then
+          Format.pp_print_string ppf "...";
+        Format.pp_print_char ppf c
+      end else if !line = !line_end then begin
         (* last line of multiline loc: print ... after loc_end *)
-        if pos < loc.loc_end.pos_cnum
-        then Format.pp_print_char ppf c
-        else Format.pp_print_char ppf '.'
-      else if !line > !line_start && !line < !line_end then
+        Format.pp_print_char ppf c;
+        if pos = loc.loc_end.pos_cnum then
+           Format.pp_print_string ppf "...";
+      end else if !line > !line_start && !line < !line_end then
         (* intermediate line of multiline loc: print whole line *)
         Format.pp_print_char ppf c
     end else begin
