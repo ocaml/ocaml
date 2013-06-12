@@ -382,7 +382,7 @@ let refill_lexbuf buffer len =
 let _ =
   Sys.interactive := true;
   Dynlink.init ();
-  Optcompile.init_path();
+  Compmisc.init_path true;
   Clflags.dlcode := true;
   ()
 
@@ -407,7 +407,7 @@ let set_paths () =
   ()
 
 let initialize_toplevel_env () =
-  toplevel_env := Optcompile.initial_env()
+  toplevel_env := Compmisc.initial_env()
 
 (* The interactive loop *)
 
@@ -447,7 +447,7 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Optcompile.init_path();
-  toplevel_env := Optcompile.initial_env();
+  Compmisc.init_path true;
+  toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
   use_silently ppf name
