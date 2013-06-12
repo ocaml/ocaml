@@ -271,6 +271,9 @@ type.  Self can only be used in method and initializers.
 Self type cannot be a closed object type, so that the class remains
 extensible.
 
+Since OCaml 4.01, it is an error if the same method or instance
+variable name is defined several times in the same class body.
+
 \subsubsection*{Inheritance}
 
 \ikwd{inherit\@\texttt{inherit}}
