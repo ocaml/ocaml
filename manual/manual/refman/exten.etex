@@ -1017,8 +1017,32 @@ As a side-effect, these 3 keywords avoid the warnings~7
 (method override) and~13 (instance variable override).
 Note that warning~7 is disabled by default.
 
-\section{Generalized algebraic datatypes}
-\ikwd{type\@\texttt{type}}
+\section{Overriding in open statements}\label{s:explicit-overriding-open}
+\ikwd{open.\@\texttt{open\char33}}
+
+(Introduced in OCaml 4.01)
+
+\begin{syntax}
+definition:
+      ...
+   |  'open!' module-path
+;
+specification:
+      ...
+   |  'open!' module-path
+;
+expr:
+       ...
+     | 'let' 'open!' module-path 'in' expr
+\end{syntax}
+
+Since OCaml 4.01, @"open"@ statements shadowing an existing identifier
+(which is later used) trigger the warning 44.  Adding a @"!"@
+character after the @"open"@ keyword indicates that such a shadowing is
+intentional and should not trigger the warning.
+
+
+\section{Generalized algebraic datatypes} \ikwd{type\@\texttt{type}}
 \ikwd{match\@\texttt{match}}
 
 (Introduced in OCaml 4.00)
