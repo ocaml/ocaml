@@ -152,6 +152,7 @@ Feature wishes:
 - PR#5769: Allow propagation of Sys.big_endian in native code
 - PR#5771: Add primitives for reading 2, 4, 8 bytes in strings and bigarrays
 - PR#5774: Add bswap primitives for amd64 and arm
+- PR#5827: provide a dynamic command line parsing mechanism
 - PR#5864: Add a find operation to Set
 
 Tools:
