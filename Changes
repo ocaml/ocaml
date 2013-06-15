@@ -1,4 +1,7 @@
-Next version
+Next version:
+-------------
+
+OCaml 4.01:
 ------------
 
 (Changes that can break existing programs are marked with a "*")
@@ -61,6 +64,7 @@ Bug fixes:
 * PR#5119: camlp4 now raises a specific exception when 'DELETE_RULE' fails,
   rather than raising 'Not_found'
 - PR#5121: %( %) in Format module seems to be broken
+- PR#5178: document in INSTALL how to build a 32-bit version under Linux x86-64
 - PR#5212: Improve ocamlbuild error messages of _tags parser
 - PR#5240: register exception printers for Unix.Unix_error and Dynlink.Error
 - PR#5300: ocamlbuild: verbose parameter should implicitly set classic display
