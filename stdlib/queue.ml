@@ -107,14 +107,15 @@ let copy q =
       next = tail'
     } in
 
-    let rec copy cell =
-      if cell == tail then tail'
-      else {
+    let rec copy prev cell =
+      if cell != tail
+      then let res = {
         content = cell.content;
-        next = copy cell.next
-      } in
+        next = tail'
+      } in prev.next <- res;
+      copy res cell.next in
 
-    tail'.next <- copy tail.next;
+    copy tail' tail.next;
     {
       length = q.length;
       tail = tail'
