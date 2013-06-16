@@ -26,6 +26,7 @@ val ocamlopt_p : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlmklib : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlmktop : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val prepare_compile : Rule.builder -> Pathname.t -> unit
+val compile_ocaml_interf : string -> string -> Rule.action
 val byte_compile_ocaml_interf : string -> string -> Rule.action
 val byte_compile_ocaml_implem : ?tag:string -> string -> string -> Rule.action
 val prepare_link :

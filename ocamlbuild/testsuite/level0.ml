@@ -131,4 +131,11 @@ test "SyntaxFlag"
   ~matching:[M.f "dummy.native"]
   ~targets:("dummy.native",[]) ();;
 
+test "NativeMliCmi"
+  ~description:"check that ocamlopt is used for .mli->.cmi when tag 'native' is set"
+  ~tree:[T.f "foo.mli" ~content:"val bar : int"]
+  ~options:[`ocamlc "toto";(*using ocamlc would fail*)  `tags["native"]]
+  ~matching:[M.f "_build/foo.cmi"]
+  ~targets:("foo.cmi",[]) ();;
+
 run ~root:"_test";;

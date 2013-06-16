@@ -128,6 +128,18 @@ let byte_compile_ocaml_interf mli cmi env build =
   prepare_compile build mli;
   ocamlc_c (tags_of_pathname mli++"interf") mli cmi
 
+(* given that .cmi can be built from either ocamlc and ocamlopt, this
+   "agnostic" rule chooses either compilers depending on whether the
+   "native" tag is present. This was requested during PR#4613 as way
+   to enable using ocamlbuild in environments where only ocamlopt is
+   available, not ocamlc. *)
+let compile_ocaml_interf mli cmi env build =
+  let mli = env mli and cmi = env cmi in
+  prepare_compile build mli;
+  let tags = tags_of_pathname mli++"interf" in 
+  let comp_c = if Tags.mem "native" tags then ocamlopt_c else ocamlc_c in
+  comp_c tags mli cmi
+
 let byte_compile_ocaml_implem ?tag ml cmo env build =
   let ml = env ml and cmo = env cmo in
   prepare_compile build ml;
