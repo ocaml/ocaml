@@ -131,4 +131,35 @@ test "SyntaxFlag"
   ~matching:[M.f "dummy.native"]
   ~targets:("dummy.native",[]) ();;
 
+test "NoIncludeNoHygiene1"
+  ~description:"check that hygiene checks are only done in traversed directories\
+                (PR#4502)"
+  ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
+         T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:"<must_ignore>: -traverse"]
+  ~pre_cmd:"ocamlc -c must_ignore/dirty.mli"
+            (* will make hygiene fail if must_ignore/ is checked *)
+  ~targets:("hello.byte",[]) ();;
+
+test "NoIncludeNoHygiene2"
+  ~description:"check that hygiene checks are not done on the -build-dir \
+                (PR#4502)"
+  ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
+         T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:""]
+  ~options:[`build_dir "must_ignore"]
+  ~pre_cmd:"ocamlc -c must_ignore/dirty.mli"
+            (* will make hygiene fail if must_ignore/ is checked *)
+  ~targets:("hello.byte",[]) ();;
+
+test "NoIncludeNoHygiene3"
+  ~description:"check that hygiene checks are not done on excluded dirs (PR#4502)"
+  ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
+         T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:""]
+  ~options:[`X "must_ignore"]
+  ~pre_cmd:"ocamlc -c must_ignore/dirty.mli"
+            (* will make hygiene fail if must_ignore/ is checked *)
+  ~targets:("hello.byte",[]) ();;
+
 run ~root:"_test";;

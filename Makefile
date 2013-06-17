@@ -746,9 +746,9 @@ ocamlbuild.byte: ocamlc ocamlbuild-mixed-boot
 	./build/ocamlbuild-byte-only.sh
 #endif
 
-ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot
+ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
 	./build/ocamlbuild-native-only.sh
-ocamlbuildlib.native: ocamlopt ocamlbuild-mixed-boot
+ocamlbuildlib.native: ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
 	./build/ocamlbuildlib-native-only.sh
 
 ocamlbuild-mixed-boot: ocamlc
