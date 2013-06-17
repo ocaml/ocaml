@@ -100,6 +100,8 @@ Bug fixes:
 - PR#5805: Assert failure with warning 34 on pre-processed file
 - PR#5806: ensure that backtrace tests are always run (testsuite)
 - PR#5810: error in switch printing when using -dclambda
+- PR#5811: Untypeast produces singleton tuples for constructor patterns
+  with only one argument
 - PR#5813: GC not called when unmarshaling repeatedly in a tight loop (ocamlopt)
 - PR#5815: Multiple exceptions in signatures gives an error
 - PR#5819: segfault when using [with] on large recursive record (ocamlopt)
