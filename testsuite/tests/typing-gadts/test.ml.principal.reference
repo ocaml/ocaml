@@ -312,4 +312,6 @@ Error: This expression has type < bar : int; foo : int; .. > as 'a
 #       module M : sig type _ t = int end
 # module M : sig type _ t = T : int t end
 # module N : sig type 'a t = 'a M.t = T : int t end
+#                     val f : ('a, 'b) eq -> ('a, int) eq -> 'a -> 'b -> unit = <fun>
+#               val f : ('a, 'b) eq -> ('b, int) eq -> 'a -> 'b -> unit = <fun>
 # 
