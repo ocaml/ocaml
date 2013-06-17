@@ -518,3 +518,22 @@ let g : type a. a ty -> a =
 module M = struct type _ t = int end;;
 module M = struct type _ t = T : int t end;;
 module N = M;;
+
+(* Principality *)
+
+(* adding a useless equation should not break inference *)
+let f : type a b. (a,b) eq -> (a,int) eq -> a -> b -> _ = fun ab aint a b ->
+  let Eq = ab in
+  let x =
+    let Eq = aint in
+    if true then a else b
+  in ignore x
+;; (* ok *)
+
+let f : type a b. (a,b) eq -> (b,int) eq -> a -> b -> _ = fun ab bint a b ->
+  let Eq = ab in
+  let x =
+    let Eq = bint in
+    if true then a else b
+  in ignore x
+;; (* ok *)
