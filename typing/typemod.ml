@@ -378,16 +378,24 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
-let rec remove_values ids = function
+let rec remove_duplicates val_ids exn_ids  = function
     [] -> []
   | Sig_value (id, _) :: rem
-    when List.exists (Ident.equal id) ids -> remove_values ids rem
-  | f :: rem -> f :: remove_values ids rem
+    when List.exists (Ident.equal id) val_ids -> remove_duplicates val_ids exn_ids rem
+  | Sig_exception(id, _) :: rem
+    when List.exists (Ident.equal id) exn_ids -> remove_duplicates val_ids exn_ids rem
+  | f :: rem -> f :: remove_duplicates val_ids exn_ids rem
 
 let rec get_values = function
     [] -> []
   | Sig_value (id, _) :: rem -> id :: get_values rem
   | f :: rem -> get_values rem
+
+let rec get_exceptions = function
+    [] -> []
+  | Sig_exception (id, _) :: rem -> id :: get_exceptions rem
+  | f :: rem -> get_exceptions rem
+
 
 (* Check and translate a module type expression *)
 
@@ -483,7 +491,8 @@ and transl_signature env sg =
             let (id, newenv) = Env.enter_exception name.txt arg.exn_exn env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_exception (id, name, arg)) env loc :: trem,
-            Sig_exception(id, arg.exn_exn) :: rem,
+            (if List.exists (Ident.equal id) (get_exceptions rem) then rem
+            else Sig_exception(id, arg.exn_exn) :: rem),
             final_env
         | Psig_module(name, smty) ->
             check "module" item.psig_loc module_names name.txt;
@@ -531,7 +540,8 @@ and transl_signature env sg =
             let newenv = Env.add_signature sg env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include (tmty, sg)) env loc :: trem,
-            remove_values (get_values rem) sg @ rem, final_env
+            remove_duplicates (get_values rem) (get_exceptions rem) sg @ rem,
+            final_env
         | Psig_class cl ->
             List.iter
               (fun {pci_name = name} ->

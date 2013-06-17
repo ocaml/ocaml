@@ -28,4 +28,5 @@ Error: Signature mismatch:
                          ^^^^^^^^^^
 Error: This variant or record definition does not match that of type u
        The types for field X are not equal.
+#       module type S = sig exception Foo of bool end
 # 

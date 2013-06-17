@@ -101,6 +101,7 @@ Bug fixes:
 - PR#5806: ensure that backtrace tests are always run (testsuite)
 - PR#5810: error in switch printing when using -dclambda
 - PR#5813: GC not called when unmarshaling repeatedly in a tight loop (ocamlopt)
+- PR#5815: Multiple exceptions in signatures gives an error
 - PR#5819: segfault when using [with] on large recursive record (ocamlopt)
 - PR#5821: Wrong record field is reported as duplicate
 - PR#5824: Generate more efficient code for immediate right shifts.
