@@ -57,6 +57,7 @@ type t =
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
+  | Open_shadow_label_constructor of string * string (* 45 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
