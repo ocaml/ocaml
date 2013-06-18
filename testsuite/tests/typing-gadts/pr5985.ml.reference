@@ -66,4 +66,10 @@ Error: In this definition, a type variable has a variance that
     constraint 'a = < as_item : [> `widget ] Gobject.obj; .. >
     method virtual add : 'a -> unit
   end
+#       type +'a t = unit constraint 'a = 'b list
+# Characters 4-27:
+  type _ g = G : 'a -> 'a t g;; (* fail *)
+      ^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
 # 
