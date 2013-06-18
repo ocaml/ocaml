@@ -60,15 +60,15 @@ let mkexe = C.mkexe
 let mkmaindll = C.mkmaindll
 
 let exec_magic_number = "Caml1999X008"
-and cmi_magic_number = "Caml1999I014"
+and cmi_magic_number = "Caml1999I015"
 and cmo_magic_number = "Caml1999O007"
 and cma_magic_number = "Caml1999A008"
 and cmx_magic_number = "Caml1999Y011"
 and cmxa_magic_number = "Caml1999Z010"
-and ast_impl_magic_number = "Caml1999M015"
-and ast_intf_magic_number = "Caml1999N014"
+and ast_impl_magic_number = "Caml1999M016"
+and ast_intf_magic_number = "Caml1999N015"
 and cmxs_magic_number = "Caml2007D001"
-and cmt_magic_number = "Caml2012T001"
+and cmt_magic_number = "Caml2012T002"
 
 let load_path = ref ([] : string list)
 
