@@ -87,3 +87,8 @@ class virtual ['a] item_container =
    constraint 'a = < as_item : [>`widget] obj; .. >
    method virtual add : 'a -> unit
  end;;
+
+
+(* Another variance anomaly, should not expand t in g before checking *)
+type +'a t = unit constraint 'a = 'b list;;
+type _ g = G : 'a -> 'a t g;; (* fail *)
