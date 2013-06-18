@@ -511,7 +511,6 @@ int caml_executable_name(char * name, int name_len)
   int retcode;
 
   int ret = GetModuleFileName(NULL, name, name_len);
-  printf("ret = %d, name = %s\n", ret, name); fflush(stdout);
   if (0 == ret || ret >= name_len) return -1;
   return 0;
 }
