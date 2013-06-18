@@ -366,10 +366,18 @@ CAMLexport void caml_main(char **argv)
 #endif
   parse_camlrunparam();
   pos = 0;
+
+  /* First, try argv[0] (when ocamlrun is called by a bytecode program) */
   exe_name = argv[0];
-  if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
-    exe_name = proc_self_exe;
   fd = caml_attempt_open(&exe_name, &trail, 0);
+
+  /* Should we really do that at all?  The current executable is ocamlrun
+     itself, it's never a bytecode program. */
+  if (fd < 0 && caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0) {
+    exe_name = proc_self_exe;
+    fd = caml_attempt_open(&exe_name, &trail, 0);
+  }
+
   if (fd < 0) {
     pos = parse_command_line(argv);
     if (argv[pos] == 0)
