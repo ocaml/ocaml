@@ -225,7 +225,7 @@ static void extract_location_info(value events, code_t pc,
     - Int_val (Field (ev_start, POS_BOL));
 }
 
-/* Print location information */
+/* Print location information -- same behavior as in Printexc */
 
 static void print_location(struct loc_info * li, int index)
 {
