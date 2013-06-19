@@ -34,7 +34,7 @@ byte:
 	    && echo " => passed" || echo " => failed"; \
 	  done; \
 	done
-	@for file in $(OTHERFILES); do\
+	@for file in $(OTHERFILES); do \
 	  rm -f program program.exe; \
 	  $(OCAMLC) -g -o $(EXECNAME) $$file; \
 	  printf " ... testing '$$file' with ocamlc:"; \
@@ -43,7 +43,6 @@ byte:
 	       >$$F.byte.result 2>&1; \
 	  $(DIFF) $$F.reference $$F.byte.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
-	  done; \
 	done
 
 .PHONY: native
@@ -60,7 +59,7 @@ native:
 	    && echo " => passed" || echo " => failed"; \
 	  done; \
 	done
-	@for file in $(OTHERFILES); do\
+	@for file in $(OTHERFILES); do \
 	  rm -f program program.exe; \
 	  $(OCAMLOPT) -g -o $(EXECNAME) $$file; \
 	  printf " ... testing '$$file' with ocamlc:"; \
@@ -69,7 +68,6 @@ native:
 	       >$$F.native.result 2>&1; \
 	  $(DIFF) $$F.reference $$F.native.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
-	  done; \
 	done
 
 .PHONY: promote
