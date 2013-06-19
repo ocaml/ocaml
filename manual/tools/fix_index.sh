@@ -24,6 +24,11 @@
 # of the argument, so we cannot recover the correct string from its
 # output.
 
+# Note 2013-06-19:
+# The above was for the || operator in the stdlib's Pervasives module.
+# Now we have the same problem with the |> operator that was added
+# to the same module in commit 13739, hence the second special case.
+
 usage(){
   echo "usage: fix_index.sh <file>.idx" >&2
   exit 2
@@ -34,12 +39,14 @@ case $# in
   *) usage;;
 esac
 
-ed "$1" <<'EOF' >/dev/null
+ed "$1" <<'EOF'
 /-pipe-pipe/s/verb`("|hyperindexformat{\\"}/verb`("|"|)`|hyperpage/
+/-pipe-gt/s/verb`("|hyperindexformat{\\>)`}/verb`("|>)`|hyperpage/
 w
 q
 EOF
 
 case $? in
   0) echo "fix_index.sh: fixed $1 successfully.";;
+  *) echo "fix_index.sh: some error occurred."; exit 2;;
 esac
