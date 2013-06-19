@@ -24,7 +24,7 @@ exception Exit
 
 (* Composition operators *)
 
-external (|>) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
 (* Comparisons *)

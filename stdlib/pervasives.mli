@@ -138,7 +138,7 @@ external ( or ) : bool -> bool -> bool = "%sequor"
 
 (** {6 Composition operators} *)
 
-external (|>) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 (** Reverse-application operator: [x |> f |> g] is exactly equivalent
  to [g (f (x))].
    @since 4.01
