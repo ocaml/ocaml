@@ -131,6 +131,7 @@ Bug fixes:
 - PR#5948: GADT with polymorphic variants bug
 - PR#5965: disallow auto-reference to a recursive module in its definition
 - PR#5973: Format module incorrectly parses format string
+- PR#5974: better documentation for Str.regexp
 - PR#5976: crash after recovering from two stack overflows (ocamlopt on MacOS X)
 - PR#5981: Incompatibility check assumes abstracted types are injective
 - PR#5985: Unexpected interaction between variance and GADTs
