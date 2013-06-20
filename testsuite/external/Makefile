@@ -1384,7 +1384,7 @@ distclean::
 all: camlpdf
 
 # http://pauillac.inria.fr/~ddr/camlp5/
-CAMLP5=camlp5-6.08
+CAMLP5=camlp5-6.10
 ${CAMLP5}.tgz:
 	${WGET} http://pauillac.inria.fr/~ddr/camlp5/distrib/src/$@
 camlp5: ${CAMLP5}.tgz
