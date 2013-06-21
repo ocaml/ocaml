@@ -12,7 +12,6 @@
 
 (* Specific operations for the PowerPC processor *)
 
-open Misc
 open Format
 
 (* Machine-specific command-line options *)
