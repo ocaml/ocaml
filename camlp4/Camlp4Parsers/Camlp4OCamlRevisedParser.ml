@@ -608,10 +608,9 @@ New syntax:\
             <:expr< let module $m$ = $mb$ in $e$ >>
 
         | "let"; "open"; "!"; i = module_longident; "in"; e = SELF ->
-            Ast.ExOpI _loc i Ast.OvOverride e 
+            <:expr< let open! $id:i$ in $e$>>
         | "let"; "open"; i = module_longident; "in"; e = SELF ->
-            Ast.ExOpI _loc i Ast.OvNil e 
-            (* <:expr< let open $id:i$ in $e$ >> *)
+            <:expr< let open $id:i$ in $e$ >>
         | "fun"; "["; a = LIST0 match_case0 SEP "|"; "]" ->
             <:expr< fun [ $list:a$ ] >>
         | "fun"; e = fun_def -> e
@@ -705,7 +704,7 @@ New syntax:\
         | s = a_STRING -> <:expr< $str:s$ >>
         | s = a_CHAR -> <:expr< $chr:s$ >>
         | i = TRY module_longident_dot_lparen; e = sequence; ")" ->
-            (* <:expr< let open $i$ in $e$ >> *) Ast.ExOpI _loc i Ast.OvNil e
+            <:expr< let open $i$ in $e$ >> 
         | i = TRY val_longident -> <:expr< $id:i$ >>
         | "`"; s = a_ident -> <:expr< ` $s$ >>
         | "["; "]" -> <:expr< [] >>
@@ -780,10 +779,9 @@ New syntax:\
             <:expr< let module $m$ = $mb$ in $mksequence _loc el$ >>
 
         | "let"; "open"; "!"; i = module_longident; "in"; e = SELF ->
-            Ast.ExOpI _loc i Ast.OvOverride e 
+            <:expr< let open! $id:i$ in $e$ >>
         | "let"; "open"; i = module_longident; "in"; e = SELF ->
-            Ast.ExOpI _loc i Ast.OvNil e
-            (* <:expr< let open $id:i$ in $e$ >> *)
+            <:expr< let open $id:i$ in $e$ >>
         | `ANTIQUOT ("list" as n) s -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
         | e = expr; k = sequence' -> k e ] ]
     ;

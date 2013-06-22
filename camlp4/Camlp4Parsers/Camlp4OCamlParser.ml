@@ -256,11 +256,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = expr ->
               <:str_item< let module $m$ = $mb$ in $e$ >>
           | "let"; "open"; "!"; i = module_longident; "in"; e = expr ->
-              Ast.StExp _loc (Ast.ExOpI _loc i Ast.OvOverride  e)
+              <:str_item< let open! $id:i$ in $e$ >>
           | "let"; "open"; i = module_longident; "in"; e = expr ->
-              (* <:str_item< let open! $id:i$ in $e$ >> *)
-              Ast.StExp _loc (Ast.ExOpI _loc i Ast.OvNil  e )
-              (* <:str_item< let open $id:i$ in $e$ >> *)
+              <:str_item< let open $id:i$ in $e$ >>
       ] ]
     ;
     seq_expr:
@@ -278,9 +276,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           e = expr LEVEL ";" ->
             <:expr< let module $m$ = $mb$ in $e$ >>
         | "let"; "open"; "!"; i = module_longident; "in"; e = expr LEVEL ";" ->
-            Ast.ExOpI _loc i Ast.OvOverride e 
+            <:expr< let open! $id:i$ in $e$ >>
+            (* Ast.ExOpI _loc i Ast.OvOverride e  *)
         | "let"; "open"; i = module_longident; "in"; e = expr LEVEL ";" ->
-            Ast.ExOpI _loc i Ast.OvNil e 
+            <:expr< let open $id:i$ in $e$ >>
+            (* Ast.ExOpI _loc i Ast.OvNil e  *)
             (* <:expr< let open $id:i$ in $e$ >> *)
         | "function"; a = match_case ->
             <:expr< fun [ $a$ ] >>
