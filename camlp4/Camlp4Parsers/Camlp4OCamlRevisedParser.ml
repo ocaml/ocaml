@@ -473,7 +473,11 @@ New syntax:\
             <:str_item< module rec $mb$ >>
         | "module"; "type"; i = a_ident; "="; mt = module_type ->
             <:str_item< module type $i$ = $mt$ >>
-        | "open"; i = module_longident -> <:str_item< open $i$ >>
+        | "open"; "!"; i = module_longident -> Ast.StOpn _loc Ast.OvOverride i                 
+        | "open"; i = module_longident ->
+            Ast.StOpn _loc Ast.OvNil i 
+            (* <:str_item< open $i$ >> *)
+
         | "type"; td = type_declaration ->
             <:str_item< type $td$ >>
         | value_let; r = opt_rec; bi = binding ->
@@ -551,7 +555,8 @@ New syntax:\
             <:sig_item< module type $i$ = $mt$ >>
         | "module"; "type"; i = a_ident ->
             <:sig_item< module type $i$ >>
-        | "open"; i = module_longident -> <:sig_item< open $i$ >>
+        | "open"; i = module_longident ->
+            <:sig_item< open $i$ >>
         | "type"; t = type_declaration ->
             <:sig_item< type $t$ >>
         | value_val; i = a_LIDENT; ":"; t = ctyp ->
@@ -601,8 +606,12 @@ New syntax:\
             <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = SELF ->
             <:expr< let module $m$ = $mb$ in $e$ >>
+
+        | "let"; "open"; "!"; i = module_longident; "in"; e = SELF ->
+            Ast.ExOpI _loc i Ast.OvOverride e 
         | "let"; "open"; i = module_longident; "in"; e = SELF ->
-            <:expr< let open $id:i$ in $e$ >>
+            Ast.ExOpI _loc i Ast.OvNil e 
+            (* <:expr< let open $id:i$ in $e$ >> *)
         | "fun"; "["; a = LIST0 match_case0 SEP "|"; "]" ->
             <:expr< fun [ $list:a$ ] >>
         | "fun"; e = fun_def -> e
@@ -696,7 +705,7 @@ New syntax:\
         | s = a_STRING -> <:expr< $str:s$ >>
         | s = a_CHAR -> <:expr< $chr:s$ >>
         | i = TRY module_longident_dot_lparen; e = sequence; ")" ->
-            <:expr< let open $i$ in $e$ >>
+            (* <:expr< let open $i$ in $e$ >> *) Ast.ExOpI _loc i Ast.OvNil e
         | i = TRY val_longident -> <:expr< $id:i$ >>
         | "`"; s = a_ident -> <:expr< ` $s$ >>
         | "["; "]" -> <:expr< [] >>
@@ -769,8 +778,12 @@ New syntax:\
             k <:expr< let module $m$ = $mb$ in $e$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; ";"; el = SELF ->
             <:expr< let module $m$ = $mb$ in $mksequence _loc el$ >>
+
+        | "let"; "open"; "!"; i = module_longident; "in"; e = SELF ->
+            Ast.ExOpI _loc i Ast.OvOverride e 
         | "let"; "open"; i = module_longident; "in"; e = SELF ->
-            <:expr< let open $id:i$ in $e$ >>
+            Ast.ExOpI _loc i Ast.OvNil e
+            (* <:expr< let open $id:i$ in $e$ >> *)
         | `ANTIQUOT ("list" as n) s -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
         | e = expr; k = sequence' -> k e ] ]
     ;
