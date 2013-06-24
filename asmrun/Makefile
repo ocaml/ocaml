@@ -81,6 +81,9 @@ install-prof:
 	cp libasmrunp.a $(LIBDIR)/libasmrunp.a
 	cd $(LIBDIR); $(RANLIB) libasmrunp.a
 
+power-bsd_elf.S: power-elf.S
+	cp power-elf.S power-bsd_elf.S
+
 power.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.o
 

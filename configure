@@ -690,6 +690,7 @@ case "$host" in
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
   powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
+  powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
                                 if $arch64; then model=ppc64; else model=ppc; fi;;
@@ -767,7 +768,7 @@ case "$arch,$model,$system" in
                     aspp='gcc -c';;
   power,*,elf)      as='as -u -m ppc'
                     aspp='gcc -c';;
-  power,*,bsd)      as='as'
+  power,*,bsd*)     as='as'
                     aspp='gcc -c';;
   power,*,rhapsody) as="as -arch $model"
                     aspp="$bytecc -c";;
