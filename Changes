@@ -4,6 +4,7 @@ Next version:
 (Changes that can break existing programs are marked with a "*")
 
 Bug fixes:
+- PR#4719: Sys.executable_name is wrong if executable name contains dots (Windows)
 
 Features wishes:
 
