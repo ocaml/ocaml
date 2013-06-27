@@ -393,7 +393,15 @@ esac
 # Check the sizes of data types
 
 inf "Checking the sizes of integers and pointers..."
-set `sh ./runtest sizes.c`
+ret=`sh ./runtest sizes.c`
+
+if test "$?" -ne 0; then
+  err "Unable to compile the test program.\n" \
+      "Make sure the C compiler '$cc' is properly installed."
+fi
+
+set $ret
+
 case "$2,$3" in
   4,4) inf "OK, this is a regular 32 bit architecture."
        echo "#undef ARCH_SIXTYFOUR" >> m.h
@@ -403,8 +411,6 @@ case "$2,$3" in
        arch64=true;;
   *,*) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
            "OCaml won't run on this architecture.";;
-    *) err "Unable to compile the test program.\n" \
-           "Make sure the C compiler $cc is properly installed.";;
 esac
 if test $1 != 4 && test $2 != 4 && test $4 != 4; then
   err "Sorry, we can't find a 32-bit integer type\n" \
