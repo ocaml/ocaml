@@ -83,6 +83,10 @@ exec 3>&1
 
 # Parse command-line arguments
 
+if echo "$configure_options" | grep -q -e '--\?[a-zA-Z0-9-]\+='; then
+  err "Arguments to this script look like '-prefix /foo/bar', not '-prefix=/foo/bar' (note the '=')."
+fi
+
 while : ; do
   case "$1" in
     "") break;;
