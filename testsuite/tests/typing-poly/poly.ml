@@ -654,3 +654,16 @@ let (A x) = (raise Exit : s);;
 (* PR#5224 *)
 
 type 'x t = < f : 'y. 'y t >;;
+
+(* PR#6056, PR#6057 *)
+let using_match b =
+  let f =
+    match b with
+    | true -> fun x -> x
+    | false -> fun x -> x
+  in
+  f 0,f
+;;
+
+match (fun x -> x), fun x -> x with x, y -> x, y;;
+match fun x -> x with x -> x, x;;
