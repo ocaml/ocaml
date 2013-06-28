@@ -644,4 +644,7 @@ Error: This field value has type unit -> unit which is less general than
   type 'x t = < f : 'y. 'y t >;;
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of t, type 'y t should be 'x t
+#                   val using_match : bool -> int * ('a -> 'a) = <fun>
+#   - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
+# - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
 # 
