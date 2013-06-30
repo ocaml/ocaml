@@ -390,6 +390,30 @@ case $? in
          "Make sure the C compiler $cc is properly installed.";;
 esac
 
+# Determine which ocamlrun executable to use; for cross-compilation, a native
+# "ocamlrun" executable must be available on the system.
+if test x"$target" != x"$host"; then
+  if ! sh ./searchpath ocamlrun; then
+    err "Cross-compilation requires an ocaml runtime environment\n" \
+        "(the ocamlrun binary). Moreover, its version must be the same\n" \
+        "as the one you're trying to build (`cut -f1 -d+ < ../../VERSION`)."
+  else
+    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]\+\).*/\1/'`
+    ocaml_source_version=`sed -n '1 s/\([0-9\.]\+\).*/\1/ p' < ../../VERSION`
+    if test x"$ocaml_system_version" != x"$ocaml_source_version"; then
+      err "While you have an ocaml runtime environment, its version\n" \
+          "($ocaml_system_version) doesn't match the version of these sources\n" \
+          "($ocaml_source_version)."
+    else
+      CAMLRUN="ocamlrun"
+    fi
+  fi
+else
+  CAMLRUN=`cd ../.. && pwd`/boot/ocamlrun
+fi
+
+echo "CAMLRUN=$CAMLRUN" >> Makefile
+
 # Check the sizes of data types
 
 inf "Checking the sizes of integers and pointers..."
