@@ -162,4 +162,9 @@ test "NoIncludeNoHygiene3"
             (* will make hygiene fail if must_ignore/ is checked *)
   ~targets:("hello.byte",[]) ();;
 
+test "OutputObj"
+  ~description:"output_obj targets for native and bytecode (PR #6049)"
+  ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\""]
+  ~targets:("hello.byte.o",["hello.byte.c";"hello.native.o"]) ();;
+
 run ~root:"_test";;

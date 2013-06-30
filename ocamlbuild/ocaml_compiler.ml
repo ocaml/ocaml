@@ -231,6 +231,9 @@ let byte_link_gen = link_gen "cmo" "cma" "cma" ["cmo"; "cmi"]
 let byte_link = byte_link_gen ocamlc_link_prog
   (fun tags -> tags++"ocaml"++"link"++"byte"++"program")
 
+let byte_output_obj = byte_link_gen ocamlc_link_prog
+  (fun tags -> tags++"ocaml"++"link"++"byte"++"output_obj")
+
 let byte_library_link = byte_link_gen byte_lib_linker byte_lib_linker_tags
 
 let byte_debug_link_gen =
@@ -247,6 +250,9 @@ let native_link_gen linker =
 
 let native_link x = native_link_gen ocamlopt_link_prog
   (fun tags -> tags++"ocaml"++"link"++"native"++"program") x
+
+let native_output_obj x = native_link_gen ocamlopt_link_prog
+  (fun tags -> tags++"ocaml"++"link"++"native"++"output_obj") x
 
 let native_library_link x =
   native_link_gen native_lib_linker native_lib_linker_tags x

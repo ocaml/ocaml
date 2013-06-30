@@ -41,10 +41,12 @@ val link_gen :
   (Tags.t -> Tags.t) ->
   string -> string -> Rule.action
 val byte_link : string -> string -> Rule.action
+val byte_output_obj : string -> string -> Rule.action
 val byte_library_link : string -> string -> Rule.action
 val byte_debug_link : string -> string -> Rule.action
 val byte_debug_library_link : string -> string -> Rule.action
 val native_link : string -> string -> Rule.action
+val native_output_obj : string -> string -> Rule.action
 val native_library_link : string -> string -> Rule.action
 val native_shared_library_link : ?tags:(string list) -> string -> string -> Rule.action
 val native_profile_link : string -> string -> Rule.action
