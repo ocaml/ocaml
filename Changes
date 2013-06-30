@@ -65,7 +65,7 @@ Bug fixes:
 - PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4079: Queue.copy is now tail-recursive
-- PR#4502: ocamlbuild now reliably excludes the build-dir from hygiene check 
+- PR#4502: ocamlbuild now reliably excludes the build-dir from hygiene check
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
 - PR#4994: ocaml-mode doesn't work with xemacs21
@@ -158,6 +158,7 @@ Bug fixes:
 - PR#6032: better Random.self_init under Windows
 - PR#6033: Matching.inline_lazy_force needs eta-expansion (command-line flags)
 - PR#6056: Using 'match' prevents generalization of values
+- PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
   as part of compilerlibs, to be used on bin-annot files.

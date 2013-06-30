@@ -175,4 +175,23 @@ test "OutputObj"
   ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\""]
   ~targets:("hello.byte.o",["hello.byte.c";"hello.native.o"]) ();;
 
+test "StrictSequenceFlag"
+  ~description:"-strict_sequence tag"
+  ~tree:[T.f "hello.ml" ~content:"let () = 1; ()";
+         T.f "_tags" ~content:"true: strict_sequence\n"]
+  ~options:[`quiet]
+  ~failing_msg:"File \"hello.ml\", line 1, characters 9-10:
+Error: This expression has type int but an expression was expected of type
+         unit\nCommand exited with code 2."
+  ~targets:("hello.byte",[]) ();;
+
+test "PrincipalFlag" 
+  ~description:"-principal tag"
+  ~tree:[T.f "hello.ml" ~content:"type s={foo:int;bar:unit} type t={foo:int} let f x = x.bar;x.foo";
+         T.f "_tags" ~content:"true: principal\n"]
+  ~options:[`quiet]
+  ~failing_msg:"File \"hello.ml\", line 1, characters 61-64:
+Warning 18: this type-based field disambiguation is not principal."
+  ~targets:("hello.byte",["hello.native"]) ();;
+
 run ~root:"_test";;
