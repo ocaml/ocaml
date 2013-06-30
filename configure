@@ -783,28 +783,28 @@ case "$arch,$system" in
                       aspp='gcc -arch x86_64 -c'
                     fi;;
   amd64,solaris)  as='as --64'
-                    aspp='gcc -m64 -c';;
+                  aspp='gcc -m64 -c';;
   amd64,*)        as='as'
-                    aspp='gcc -c';;
+                  aspp='gcc -c';;
   arm,*)          as='as';
-                    aspp='gcc -c';;
+                  aspp='gcc -c';;
   i386,solaris)   as='as'
-                    aspp='/usr/ccs/bin/as -P';;
+                  aspp='/usr/ccs/bin/as -P';;
   i386,*)         as='as'
-                    aspp='gcc -c';;
+                  aspp='gcc -c';;
   power,elf)      as='as -u -m ppc'
-                    aspp='gcc -c';;
+                  aspp='gcc -c';;
   power,bsd*)     as='as'
-                    aspp='gcc -c';;
+                  aspp='gcc -c';;
   power,rhapsody) as="as -arch $model"
-                    aspp="$bytecc -c";;
+                  aspp="$bytecc -c";;
   sparc,solaris)  as='as'
-                    case "$cc" in
-                      gcc*) aspp='gcc -c';;
-                         *) aspp='as -P';;
-                    esac;;
+                  case "$cc" in
+                    gcc*) aspp='gcc -c';;
+                       *) aspp='as -P';;
+                  esac;;
   sparc,*)        as='as'
-                    aspp='gcc -c';;
+                  aspp='gcc -c';;
 esac
 
 if test -n "$asoption"; then as="$asoption"; fi
@@ -847,11 +847,11 @@ if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
   inf "#! appears to work in shell scripts."
   case "$host" in
     *-*-sunos*|*-*-unicos*)
-      wrn "We won't use it, though, because under SunOS and Unicos it breaks" \
+      wrn "We won't use it, though, because under SunOS and Unicos it breaks " \
           "on pathnames longer than 30 characters"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *-*-cygwin*)
-      wrn "We won't use it, though, because of conflicts with .exe extension" \
+      wrn "We won't use it, though, because of conflicts with .exe extension " \
           "under Cygwin"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)
