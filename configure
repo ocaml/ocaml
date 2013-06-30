@@ -20,6 +20,7 @@ libdir=''
 mandir=''
 manext=1
 host_type=unknown
+target_type=""
 ccoption=''
 asoption=''
 asppoption=''
@@ -108,6 +109,8 @@ while : ; do
         shift;;
     -host*|--host*)
         host_type=$2; shift;;
+    -target*|--target*)
+        target_type=$2; shift;;
     -cc*)
         ccoption="$2"; shift;;
     -as)
@@ -222,7 +225,14 @@ fi
 if host=`../gnu/config.sub $host_type`; then :; else
   err "Please specify the correct host type with the -host option"
 fi
-inf "Configuring for a $host ..."
+inf "Configuring for host $host ..."
+
+if test -n "$target_type"; then
+  target="$target_type"
+else
+  target="$host"
+fi
+inf "Configuring for target $target ..."
 
 # Do we have gcc?
 
@@ -241,7 +251,7 @@ fi
 
 buggycc="no"
 
-case "$host,$cc" in
+case "$target,$cc" in
   i[3456]86-*-*,gcc*)
     case `$cc --version` in
       2.7.2.1) cat <<'EOF'
@@ -292,7 +302,7 @@ ostype="Unix"
 exe=""
 iflexdir=""
 
-case "$bytecc,$host" in
+case "$bytecc,$target" in
   cc,*-*-nextstep*)
     # GNU C extensions disabled, but __GNUC__ still defined!
     bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
@@ -500,7 +510,7 @@ esac
 
 # Determine alignment constraints
 
-case "$host" in
+case "$target" in
   sparc*-*-*|hppa*-*-*|arm*-*-*|mips*-*-*)
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
@@ -533,7 +543,7 @@ case "$host" in
 esac
 
 if $int64_native; then
-  case "$host" in
+  case "$target" in
     # PR#5088: autodetection is unreliable on ARM.  PR#5280: also on MIPS.
     sparc*-*-*|hppa*-*-*|arm*-*-*|mips*-*-*)
       if test $2 = 8; then
@@ -584,7 +594,7 @@ mksharedlibrpath=''
 natdynlinkopts=""
 
 if test $withsharedlibs = "yes"; then
-  case "$host" in
+  case "$target" in
     *-*-cygwin*)
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
@@ -678,7 +688,7 @@ fi
 natdynlink=false
 
 if test $withsharedlibs = "yes"; then
-  case "$host" in
+  case "$target" in
     *-*-cygwin*)                  natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
     i[3456]86-*-gnu*)             natdynlink=true;;
@@ -717,7 +727,7 @@ arch=none
 model=default
 system=unknown
 
-case "$host" in
+case "$target" in
   sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
   sparc*-*-linux*)              arch=sparc; system=linux;;
@@ -761,7 +771,7 @@ case "$host" in
 esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
-# by $host.  Turn off native code compilation on platforms where 64-bit mode
+# by $target.  Turn off native code compilation on platforms where 64-bit mode
 # is not supported.  (PR#4441)
 
 if $arch64; then
@@ -783,7 +793,7 @@ nativecclinkopts=''
 # ld (for shared libs), not for cc
 nativeccrpath="$byteccrpath"
 
-case "$arch,$nativecc,$system,$host_type" in
+case "$arch,$nativecc,$system,$target" in
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
   *,*,rhapsody,*darwin[1-5].*)
@@ -869,7 +879,7 @@ echo "ARCMD=ar" >> Makefile
 
 if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
   inf "#! appears to work in shell scripts."
-  case "$host" in
+  case "$target" in
     *-*-sunos*|*-*-unicos*)
       wrn "We won't use it, though, because under SunOS and Unicos it breaks " \
           "on pathnames longer than 30 characters"
@@ -1139,7 +1149,7 @@ if sh ./hasgot mktime; then
   echo "#define HAS_MKTIME" >> s.h
 fi
 
-case "$host" in
+case "$target" in
   *-*-cygwin*) ;;  # setsid emulation under Cygwin breaks the debugger
   *) if sh ./hasgot setsid; then
        inf "setsid() found."
@@ -1245,7 +1255,7 @@ echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
 systhread_support=false
 
 if test "$pthread_wanted" = "yes"; then
-  case "$host" in
+  case "$target" in
     *-*-solaris*)  pthread_link="-lpthread -lposix4"
                    pthread_caml_link="-cclib -lpthread -cclib -lposix4";;
     *-*-freebsd*)  pthread_link="-pthread"
@@ -1261,7 +1271,7 @@ if test "$pthread_wanted" = "yes"; then
     otherlibraries="$otherlibraries systhreads"
     bytecccompopts="$bytecccompopts -D_REENTRANT"
     nativecccompopts="$nativecccompopts -D_REENTRANT"
-    case "$host" in
+    case "$target" in
       *-*-freebsd*)
           bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
           nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
@@ -1430,7 +1440,7 @@ if test "$x11_include" = "not found"; then
         x11_link="-lX11"
       else
         x11_libs="-L$dir"
-        case "$host" in
+        case "$target" in
           *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
           *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
           *) x11_link="-L$dir -lX11";;
@@ -1557,7 +1567,7 @@ if test $has_tk = true; then
         -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs \
                    Tcl_DoOneEvent
   then
-    case "$host" in
+    case "$target" in
       *-*-*bsd*) tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs";;
       *) tk_libs="-L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs";;
     esac
@@ -1571,14 +1581,14 @@ if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
     inf "Tcl/Tk libraries found."
   elif sh ./hasgot -L/sw/lib $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
-    case "$host" in
+    case "$target" in
       *-*-*bsd*) tk_libs="-R/sw/lib -L/sw/lib $tk_libs";;
       *) tk_libs="-L/sw/lib $tk_libs";;
     esac
     inf "Tcl/Tk libraries found."
   elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs $tkauxlibs \
                    Tk_SetGrid; then
-    case "$host" in
+    case "$target" in
       *-*-*bsd*) tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs";;
       *) tk_libs="-L/usr/pkg/lib $tk_libs";;
     esac
@@ -1632,7 +1642,7 @@ else
 fi
 
 if test "$with_frame_pointers" = "true"; then
-  case "$host,$cc" in
+  case "$target,$cc" in
     x86_64-*-linux*,gcc*)
        nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
        bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
