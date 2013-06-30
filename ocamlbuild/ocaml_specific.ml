@@ -160,6 +160,18 @@ rule "ocaml: cmo* -> byte"
   ~dep:"%.cmo"
   (Ocaml_compiler.byte_link "%.cmo" "%.byte");;
 
+rule "ocaml: cmo* -> byte.o"
+  ~tags:["ocaml"; "byte"; "link"; "output_obj" ]
+  ~prod:"%.byte.o"
+  ~dep:"%.cmo"
+  (Ocaml_compiler.byte_output_obj "%.cmo" "%.byte.o");;
+
+rule "ocaml: cmo* -> byte.c"
+  ~tags:["ocaml"; "byte"; "link"; "output_obj" ]
+  ~prod:"%.byte.c"
+  ~dep:"%.cmo"
+  (Ocaml_compiler.byte_output_obj "%.cmo" "%.byte.c");;
+
 rule "ocaml: p.cmx* & p.o* -> p.native"
   ~tags:["ocaml"; "native"; "profile"; "program"]
   ~prod:"%.p.native"
@@ -171,6 +183,12 @@ rule "ocaml: cmx* & o* -> native"
   ~prod:"%.native"
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_link "%.cmx" "%.native");;
+
+rule "ocaml: cmx* & o* -> native.o"
+  ~tags:["ocaml"; "native"; "output_obj" ]
+  ~prod:"%.native.o"
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_output_obj "%.cmx" "%.native.o");;
 
 rule "ocaml: mllib & d.cmo* -> d.cma"
   ~tags:["ocaml"; "byte"; "debug"; "library"]
