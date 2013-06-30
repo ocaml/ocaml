@@ -85,6 +85,9 @@ let ext_asm = "%%EXT_ASM%%"
 let ext_lib = "%%EXT_LIB%%"
 let ext_dll = "%%EXT_DLL%%"
 
+let host = "%%HOST%%"
+let target = "%%TARGET%%"
+
 let default_executable_name =
   match Sys.os_type with
     "Unix" -> "a.out"
@@ -121,6 +124,8 @@ let print_config oc =
   p "os_type" Sys.os_type;
   p "default_executable_name" default_executable_name;
   p_bool "systhread_supported" systhread_supported;
+  p "host" host;
+  p "target" target;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;
