@@ -45,6 +45,7 @@ gcc_warnings="-Wall"
 partialld="ld -r"
 withcamlp4=camlp4
 with_frame_pointers=false
+TOOLPREF=""
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -229,6 +230,7 @@ inf "Configuring for host $host ..."
 
 if test -n "$target_type"; then
   target="$target_type"
+  TOOLPREF="${target}-"
 else
   target="$host"
 fi
@@ -237,17 +239,26 @@ inf "Configuring for target $target ..."
 # Do we have gcc?
 
 if test -z "$ccoption"; then
-  if sh ./searchpath gcc; then
-    inf "gcc found"
-    cc=gcc
+  if sh ./searchpath "${TOOLPREF}gcc"; then
+    cc="${TOOLPREF}gcc"
   else
-    cc=cc
+    if test x"$host" = x"$target"; then
+      cc="cc"
+    else
+      err "No cross-compiler found for ${target}.\n" \
+          "It should be named ${TOOLPREF}gcc and be in the PATH."
+    fi
   fi
 else
   cc="$ccoption"
 fi
 
+inf "Using compiler $cc."
+
 # Check for buggy versions of GCC
+# These checks are not done for cross-compilation (yet at least) because after
+# 15 years, I doubt someone will try to use an experimental (2.96) or
+# known-unstable (2.7.2.1) version for cross-compilation.
 
 buggycc="no"
 
@@ -301,6 +312,8 @@ dllccompopts=""
 ostype="Unix"
 exe=""
 iflexdir=""
+SO=".so"
+TOOLCHAIN="cc"
 
 case "$bytecc,$target" in
   cc,*-*-nextstep*)
@@ -324,7 +337,7 @@ case "$bytecc,$target" in
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
     mathlib="";;
-  gcc,alpha*-*-osf*)
+  *gcc,alpha*-*-osf*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
@@ -335,7 +348,7 @@ case "$bytecc,$target" in
     echo "#define ARCH_CODE32" >> m.h;;
   cc,alpha*-*-osf*)
     bytecccompopts="-std1 -ieee";;
-  gcc,alpha*-*-linux*)
+  *gcc*,alpha*-*-linux*)
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
     fi;;
@@ -351,12 +364,12 @@ case "$bytecc,$target" in
   *,alpha*-*-unicos*)
     # For the Cray T3E
     bytecccompopts="-DUMK";;
-  gcc*,powerpc-*-aix*)
+  *gcc*,powerpc-*-aix*)
     # Avoid name-space pollution by requiring Unix98-conformant includes
     bytecccompopts="-fno-defer-pop $gcc_warnings -D_XOPEN_SOURCE=500";;
   *,powerpc-*-aix*)
     bytecccompopts="-D_XOPEN_SOURCE=500";;
-  gcc*,*-*-cygwin*)
+  *gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $withsharedlibs = yes; then
@@ -373,14 +386,38 @@ case "$bytecc,$target" in
     fi
     exe=".exe"
     ostype="Cygwin";;
-  gcc*,x86_64-*-linux*)
+  *gcc*,*-*-mingw*)
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
+    dllccompopt="-DCAML_DLL"
+    if test $withsharedlibs = yes; then
+      case "$target" in
+        i686-*-*)   flexlink_chain="mingw";;
+        x86_64-*-*) flexlink_chain="mingw64";;
+      esac
+      flexlink="flexlink -chain $flexlink_chain -merge-manifest -stack 16777216"
+      flexdir=`$flexlink -where`
+      if test -z "$flexdir"; then
+        wrn "flexlink not found: native shared libraries won't be available."
+        withsharedlibs=no
+      else
+        iflexdir="-I\"$flexdir\""
+        mkexe="$flexlink -exe"
+        mkexedebugflag="-link -g"
+      fi
+    fi
+    exe=".exe"
+    ostype="Win32"
+    TOOLCHAIN="mingw"
+    SO=".dll"
+    ;;
+  *gcc*,x86_64-*-linux*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
     echo "#ifndef __PIC__" >> m.h
     echo "#  define ARCH_CODE32" >> m.h
     echo "#endif" >> m.h;;
-  gcc*)
+  *gcc*)
     bytecccompopts="-fno-defer-pop $gcc_warnings";;
 esac
 
@@ -396,8 +433,15 @@ case $? in
   0) inf "The C compiler is ANSI-compliant." ;;
   1) err "The C compiler $cc is not ANSI-compliant.\n" \
          "You need an ANSI C compiler to build OCaml.";;
-  *) err "Unable to compile the test program.\n" \
-         "Make sure the C compiler $cc is properly installed.";;
+  *)
+     if test x"$host" != x"$target"; then
+       wrn "Unable to compile the test program.\n" \
+           "This failure is expected for cross-compilation:\n" \
+           "we will assume the C compiler is ANSI-compliant."
+     else
+       err "Unable to compile the test program.\n" \
+           "Make sure the C compiler $cc is properly installed."
+     fi;;
 esac
 
 # Determine which ocamlrun executable to use; for cross-compilation, a native
@@ -425,31 +469,44 @@ fi
 echo "CAMLRUN=$CAMLRUN" >> Makefile
 
 # Check the sizes of data types
+# OCaml needs a 32 or 64bit architectue and a 32-bit integer type.
 
 inf "Checking the sizes of integers and pointers..."
 ret=`sh ./runtest sizes.c`
 
-if test "$?" -ne 0; then
-  err "Unable to compile the test program.\n" \
-      "Make sure the C compiler '$cc' is properly installed."
-fi
-
-set $ret
-
-case "$2,$3" in
-  4,4) inf "OK, this is a regular 32 bit architecture."
-       echo "#undef ARCH_SIXTYFOUR" >> m.h
-       arch64=false;;
-  *,8) inf "Wow! A 64 bit architecture!"
-       echo "#define ARCH_SIXTYFOUR" >> m.h
-       arch64=true;;
-  *,*) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
-           "OCaml won't run on this architecture.";;
-esac
-if test $1 != 4 && test $2 != 4 && test $4 != 4; then
-  err "Sorry, we can't find a 32-bit integer type\n" \
-      "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)\n" \
-      "OCaml won't run on this architecture."
+if test "$?" -eq 0; then
+  set $ret
+  case "$2,$3" in
+    4,4) inf "OK, this is a regular 32 bit architecture."
+         echo "#undef ARCH_SIXTYFOUR" >> m.h
+         arch64=false;;
+    *,8) inf "Wow! A 64 bit architecture!"
+         echo "#define ARCH_SIXTYFOUR" >> m.h
+         arch64=true
+         if test $1 != 4 && test $2 != 4 && test $4 != 4; then
+           err "Sorry, we can't find a 32-bit integer type\n" \
+               "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)\n" \
+               "OCaml won't run on this architecture."
+         fi;;
+    *,*) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
+             "OCaml won't run on this architecture.";;
+  esac
+else
+  # For cross-compilation, runtest always fails: add special handling.
+  case "$target" in
+    i686-*-mingw*) inf "OK, this is a regular 32 bit architecture."
+                   echo "#undef ARCH_SIXTYFOUR" >> m.h
+                   set 4 4 4 2
+                   arch64=false;;
+    x86_64-*-mingw*) inf "Wow! A 64 bit architecture!"
+                     echo "#define ARCH_SIXTYFOUR" >> m.h
+                     set 4 4 8 2
+                     arch64=true;;
+    *) err "Since datatype sizes cannot be guessed when cross-compiling,\n" \
+           "a hardcoded list is used but your architecture isn't known yet.\n" \
+           "You need to determine the sizes yourself.\n" \
+           "Please submit a bug report in order to expand the list." ;;
+  esac
 fi
 
 echo "#define SIZEOF_INT $1" >> m.h
@@ -480,11 +537,21 @@ else
      echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
      echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
      int64_native=true;;
-  *) wrn "No suitable 64-bit integer type found, will use software emulation."
-     echo "#undef ARCH_INT64_TYPE" >> m.h
-     echo "#undef ARCH_UINT64_TYPE" >> m.h
-     echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
-     int64_native=false;;
+  *)
+     case "$target" in
+       *-*-mingw*)
+         inf "No suitable 64-bit integer type found, will use software emulation."
+         echo "#define ARCH_INT64_TYPE long long" >> m.h
+         echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
+         echo '#define ARCH_INT64_PRINTF_FORMAT "I64"' >> m.h
+         int64_native=true;;
+       *)
+         wrn "No suitable 64-bit integer type found, will use software emulation."
+         echo "#undef ARCH_INT64_TYPE" >> m.h
+         echo "#undef ARCH_UINT64_TYPE" >> m.h
+         echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
+         int64_native=false;;
+     esac;;
   esac
 fi
 
@@ -503,9 +570,12 @@ case $? in
      echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
   2) err "This architecture seems to be neither big endian nor little endian.\n" \
          "OCaml won't run on this architecture.";;
-  *) wrn "Something went wrong during endianness determination.\n" \
-         "You will have to figure out endianness yourself\n" \
-         "(option ARCH_BIG_ENDIAN in m.h).";;
+  *) case $target in
+       *-*-mingw*) inf "This is a little-endian architecture."
+                   echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
+       *) wrn "Something went wrong during endianness determination.\n" \
+              "You will have to figure out endianness yourself (option ARCH_BIG_ENDIAN in m.h).";;
+     esac;;
 esac
 
 # Determine alignment constraints
@@ -534,11 +604,15 @@ case "$target" in
          echo "#undef ARCH_ALIGN_DOUBLE" >> m.h;;
       1) inf "Doubles must be doubleword-aligned."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
-      *) wrn "Something went wrong during alignment determination for doubles.\n" \
-             "We will assume alignment constraints over doubles.\n" \
-             "That's a safe bet: OCaml will work even if\n" \
-             "this architecture actually has no alignment constraints."
-         echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+      *) case "$target" in
+           *-*-mingw*) inf "Doubles can be word-aligned."
+                       echo "#undef ARCH_ALIGN_DOUBLE" >> m.h;;
+           *) wrn "Something went wrong during alignment determination for doubles.\n" \
+                  "We will assume alignment constraints over doubles.\n" \
+                  "That's a safe bet: OCaml will work even if\n" \
+                  "this architecture actually has no alignment constraints."
+              echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+         esac;;
     esac;;
 esac
 
@@ -553,6 +627,7 @@ if $int64_native; then
         inf "64-bit integers must be doubleword-aligned."
         echo "#define ARCH_ALIGN_INT64" >> m.h
       fi;;
+    *-*-mingw*) true;; # Nothing is in config/m-nt.h so don't add anything.
     *)
       sh ./runtest int64align.c
       case $? in
@@ -579,8 +654,12 @@ case $? in
      echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
   1) inf "Native division and modulus do not have round-towards-zero semantics, will use software emulation."
      echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
-  *) wrn "Something went wrong while checking native division and modulus, please report it."
-     echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
+  *) case $target in
+       *-*-mingw*) inf "Native division and modulus have round-towards-zero semantics, will use them."
+                   echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
+       *) wrn "Something went wrong while checking native division and modulus, please report it."
+          echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
+     esac;;
 esac
 
 # Shared library support
@@ -599,6 +678,10 @@ if test $withsharedlibs = "yes"; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
+    *-*-mingw*)
+      mksharedlib="$flexlink"
+      mkmaindll="$flexlink -maindll"
+      shared_libraries_supported=true;;
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
@@ -609,7 +692,7 @@ if test $withsharedlibs = "yes"; then
       shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
-        gcc*)
+        *gcc*)
           sharedcccompopts="-fPIC"
           mksharedlib="$bytecc -shared"
           byteccrpath="-Wl,-rpath,"
@@ -624,7 +707,7 @@ if test $withsharedlibs = "yes"; then
       esac;;
     *-*-solaris2*)
       case "$bytecc" in
-        gcc*)
+        *gcc*)
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
             mksharedlib="$bytecc -shared"
@@ -648,7 +731,7 @@ if test $withsharedlibs = "yes"; then
     mips*-*-irix[56]*)
       case "$bytecc" in
         cc*) sharedcccompopts="";;
-        gcc*) sharedcccompopts="-fPIC";;
+        *gcc*) sharedcccompopts="-fPIC";;
       esac
       mksharedlib="ld -shared -rdata_shared"
       byteccrpath="-Wl,-rpath,"
@@ -688,6 +771,7 @@ fi
 natdynlink=false
 
 if test $withsharedlibs = "yes"; then
+  # TODO: handle *-*-mingw* (it has $withsharedlibs=no currently)
   case "$target" in
     *-*-cygwin*)                  natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
@@ -748,6 +832,7 @@ case "$target" in
                                   arch=i386; system=macosx
                                 fi;;
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
+  i[3456]86-*-mingw*)           arch=i386; system=mingw;;
   powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
@@ -768,6 +853,7 @@ case "$target" in
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
   x86_64-*-darwin*)             arch=amd64; system=macosx;;
+  x86_64-*-mingw*)              arch=amd64; system=mingw;;
 esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
@@ -813,32 +899,25 @@ case "$arch,$system" in
                       as='clang -arch x86_64 -c'
                       aspp='clang -arch x86_64 -c'
                     else
-                      as='as -arch x86_64'
-                      aspp='gcc -arch x86_64 -c'
+                      as="${TOOLPREF}as -arch x86_64"
+                      aspp="${TOOLPREF}gcc -arch x86_64 -c"
                     fi;;
-  amd64,solaris)  as='as --64'
-                  aspp='gcc -m64 -c';;
-  amd64,*)        as='as'
-                  aspp='gcc -c';;
-  arm,*)          as='as';
-                  aspp='gcc -c';;
-  i386,solaris)   as='as'
-                  aspp='/usr/ccs/bin/as -P';;
-  i386,*)         as='as'
-                  aspp='gcc -c';;
-  power,elf)      as='as -u -m ppc'
-                  aspp='gcc -c';;
-  power,bsd*)     as='as'
-                  aspp='gcc -c';;
-  power,rhapsody) as="as -arch $model"
+  amd64,solaris)  as="${TOOLPREF}as --64"
+                  aspp="${TOOLPREF}gcc -m64 -c";;
+  i386,solaris)   as="${TOOLPREF}as"
+                  aspp="/usr/ccs/bin/${TOOLPREF}as -P";;
+  power,elf)      as="${TOOLPREF}as -u -m ppc"
+                  aspp="${TOOLPREF}gcc -c";;
+  power,rhapsody) as="${TOOLPREF}as -arch $model"
                   aspp="$bytecc -c";;
-  sparc,solaris)  as='as'
+  sparc,solaris)  as="${TOOLPREF}as"
                   case "$cc" in
-                    gcc*) aspp='gcc -c';;
-                       *) aspp='as -P';;
+                    *gcc*) aspp="${TOOLPREF}gcc -c";;
+                              *) aspp="${TOOLPREF}as -P";;
                   esac;;
-  sparc,*)        as='as'
-                  aspp='gcc -c';;
+  amd64,*|arm,*|i386,*|power,bsd|sparc,*)
+                  as="${TOOLPREF}as"
+                  aspp="${TOOLPREF}gcc -c";;
 esac
 
 if test -n "$asoption"; then as="$asoption"; fi
@@ -862,18 +941,23 @@ esac
 
 # Where is ranlib?
 
-if sh ./searchpath ranlib; then
+if sh ./searchpath ${TOOLPREF}ranlib; then
   inf "ranlib found"
-  echo "RANLIB=ranlib" >> Makefile
-  echo "RANLIBCMD=ranlib" >> Makefile
+  echo "RANLIB=${TOOLPREF}ranlib" >> Makefile
+  echo "RANLIBCMD=${TOOLPREF}ranlib" >> Makefile
 else
   inf "ranlib not used"
-  echo "RANLIB=ar rs" >> Makefile
+  echo "RANLIB=${TOOLPREF}ar rs" >> Makefile
   echo "RANLIBCMD=" >> Makefile
 fi
 
-echo "ARCMD=ar" >> Makefile
+echo "ARCMD=${TOOLPREF}ar" >> Makefile
 
+
+# Write the OS type (Unix or Cygwin)
+
+echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
+echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Do #! scripts work?
 
@@ -888,6 +972,9 @@ if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
       wrn "We won't use it, though, because of conflicts with .exe extension " \
           "under Cygwin"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+    *-*-mingw*)
+      inf "We won't use it, though, because it's on the target platform it would be used and windows doesn't support it."
+      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)
       echo "SHARPBANGSCRIPTS=true" >> Makefile;;
   esac
@@ -895,11 +982,6 @@ else
   inf "No support for #! in shell scripts"
   echo "SHARPBANGSCRIPTS=false" >> Makefile
 fi
-
-# Write the OS type (Unix or Cygwin)
-
-echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
-echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Use 64-bit file offset if possible
 
@@ -1174,7 +1256,10 @@ elif sh ./hasgot $dllib -ldl dlopen; then
   inf "dlopen() found in -ldl."
   dllib="$dllib -ldl"
 else
-  shared_libraries_supported=false
+  case "$target" in
+    *-*-mingw*) ;;
+    *) shared_libraries_supported=false
+  esac
 fi
 
 if $shared_libraries_supported; then
@@ -1711,14 +1796,14 @@ echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
-echo "SO=so" >> Makefile
+echo "SO=$SO" >> Makefile
 echo "EXT_OBJ=.o" >> Makefile
 echo "EXT_ASM=.s" >> Makefile
 echo "EXT_LIB=.a" >> Makefile
-echo "EXT_DLL=.so" >> Makefile
+echo "EXT_DLL=$SO" >> Makefile
 echo "EXTRALIBS=" >> Makefile
 echo "CCOMPTYPE=cc" >> Makefile
-echo "TOOLCHAIN=cc" >> Makefile
+echo "TOOLCHAIN=$TOOLCHAIN" >> Makefile
 echo "NATDYNLINK=$natdynlink" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
