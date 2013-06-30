@@ -1054,6 +1054,15 @@ elif sh ./hasgot -lnsl -lsocket socket socketpair bind listen accept connect; th
   cclibs="$cclibs -lnsl -lsocket"
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
+else
+  case "$target" in
+    *-*-mingw*)
+      inf "You have BSD sockets (with libraries '-lws2_32')"
+      cclibs="$cclibs -lws2_32"
+      echo "#define HAS_SOCKETS" >> s.h
+      has_sockets=yes ;;
+    *) ;;
+  esac
 fi
 
 if sh ./hasgot -i sys/socket.h -t socklen_t; then
