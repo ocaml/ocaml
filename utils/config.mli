@@ -120,10 +120,4 @@ val default_executable_name: string
 val systhread_supported : bool
         (* Whether the system thread library is implemented *)
 
-val host : string
-        (* Whether the compiler is a cross-compiler *)
-
-val target : string
-        (* Whether the compiler is a cross-compiler *)
-
 val print_config : out_channel -> unit;;

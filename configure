@@ -1832,8 +1832,6 @@ echo "RUNTIMED=${debugruntime}" >>Makefile
 echo "CAMLP4=${withcamlp4}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
-echo "TARGET=$target" >> Makefile
-echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi

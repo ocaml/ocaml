@@ -95,9 +95,6 @@ let ext_asm = C.ext_asm
 let ext_lib = C.ext_lib
 let ext_dll = C.ext_dll
 
-let host = C.host
-let target = C.target
-
 let default_executable_name =
   match Sys.os_type with
     "Unix" -> "a.out"
@@ -133,8 +130,6 @@ let print_config oc =
   p "os_type" Sys.os_type;
   p "default_executable_name" default_executable_name;
   p_bool "systhread_supported" systhread_supported;
-  p "host" host;
-  p "target" target;
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;
   p "cmo_magic_number" cmo_magic_number;

@@ -307,8 +307,7 @@ let link_bytecode ppf tolink exec_name standalone =
     Symtable.init();
     Consistbl.clear crc_interfaces;
     let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
-    let check_dlls = standalone && Config.target = Config.host in
-    if check_dlls then begin
+    if standalone then begin
       (* Initialize the DLL machinery *)
       Dll.init_compile !Clflags.no_std_include;
       Dll.add_path !load_path;
@@ -318,7 +317,7 @@ let link_bytecode ppf tolink exec_name standalone =
     let output_fun = output_string outchan
     and currpos_fun () = pos_out outchan - start_code in
     List.iter (link_file ppf output_fun currpos_fun) tolink;
-    if check_dlls then Dll.close_all_dlls();
+    if standalone then Dll.close_all_dlls();
     (* The final STOP instruction *)
     output_byte outchan Opcodes.opSTOP;
     output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
