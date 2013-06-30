@@ -16,7 +16,11 @@ include Makefile.common
 CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS) $(IFLEXDIR)
 DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS) $(IFLEXDIR)
 
+ifeq ($(SYSTEM),mingw)
+OBJS=$(COMMONOBJS) win32.o main.o
+else
 OBJS=$(COMMONOBJS) unix.o main.o
+endif
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 PICOBJS=$(OBJS:.o=.pic.o)
 

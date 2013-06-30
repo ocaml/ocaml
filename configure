@@ -1040,7 +1040,16 @@ fi
 
 # Configuration for the libraries
 
-otherlibraries="unix str num dynlink bigarray"
+case "$system" in
+  mingw) unix_or_win32="win32"; unixlib="win32unix"; graphlib="win32graph";;
+  *) unix_or_win32="unix"; unixlib="unix"; graphlib="graph";;
+esac
+
+echo "UNIX_OR_WIN32=$unix_or_win32" >> Makefile
+echo "UNIXLIB=$unixlib" >> Makefile
+echo "GRAPHLIB=$graphlib" >> Makefile
+
+otherlibraries="$unixlib str num dynlink bigarray"
 
 # For the Unix library
 
