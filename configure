@@ -44,9 +44,6 @@ withsharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
 withcamlp4=camlp4
-withdebugger=debugger
-withocamldoc=ocamldoc
-withocamlbuild=ocamlbuild
 with_frame_pointers=false
 TOOLPREF=""
 
@@ -156,12 +153,6 @@ while : ; do
         debugruntime=runtimed;;
     -no-camlp4|--no-camlp4)
         withcamlp4="";;
-    -no-debugger|--no-debugger)
-        withdebugger="";;
-    -no-ocamldoc|--no-ocamldoc)
-        withocamldoc="";;
-    -no-ocamlbuild|--no-ocamlbuild)
-        withocamlbuild="";;
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
     *) err "Unknown option \"$1\".";;
@@ -193,10 +184,6 @@ case "$mandir" in
   '$(PREFIX)/'*) ;;
    *) err 'The -mandir directory must be absolute or relative to $(PREFIX).';;
 esac
-
-if test -n "$withcamlp4" -a -z "$withocamlbuild"; then
-  err "Camlp4 is enabled but not ocamlbuild; building camlp4 is not possible without building ocamlbuild."
-fi
 
 # Generate the files
 
@@ -1262,15 +1249,13 @@ if sh ./hasgot mktime; then
   echo "#define HAS_MKTIME" >> s.h
 fi
 
-if test -n "$debugger"; then
-  case "$target" in
-    *-*-cygwin*) ;;  # setsid emulation under Cygwin breaks the debugger
-    *) if sh ./hasgot setsid; then
-         inf "setsid() found."
-         echo "#define HAS_SETSID" >> s.h
-       fi;;
-  esac
-fi
+case "$target" in
+  *-*-cygwin*) ;;  # setsid emulation under Cygwin breaks the debugger
+  *) if sh ./hasgot setsid; then
+       inf "setsid() found."
+       echo "#define HAS_SETSID" >> s.h
+     fi;;
+esac
 
 if sh ./hasgot putenv; then
   inf "putenv() found."
@@ -1844,10 +1829,7 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
-echo "WITH_CAMLP4=${withcamlp4}" >>Makefile
-echo "WITH_DEBUGGER=${withdebugger}" >>Makefile
-echo "WITH_OCAMLDOC=${withocamldoc}" >>Makefile
-echo "WITH_OCAMLBUILD=${withocamlbuild}" >>Makefile
+echo "CAMLP4=${withcamlp4}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "TARGET=$target" >> Makefile
