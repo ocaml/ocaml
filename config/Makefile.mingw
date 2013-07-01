@@ -18,7 +18,7 @@
 PREFIX=C:/ocamlmgw
 
 ### Remove this to disable compiling camlp4
-CAMLP4=camlp4
+WITH_CAMLP4=camlp4
 
 ### Where to install the binaries
 BINDIR=$(PREFIX)/bin

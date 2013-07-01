@@ -143,6 +143,15 @@ The "configure" script accepts the following options:
 -no-camlp4
         Do not compile Camlp4.
 
+-no-debugger
+        Do not build ocamldebug.
+
+-no-ocamldoc
+        Do not build ocamldoc.
+
+-no-ocamlbuild
+        Do not build ocamlbuild.
+
 -no-graph
         Do not compile the Graphics library.
 

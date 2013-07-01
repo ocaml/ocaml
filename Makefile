@@ -32,6 +32,11 @@ MKDIR=mkdir -p
 CAMLP4OUT=$(CAMLP4:=out)
 CAMLP4OPT=$(CAMLP4:=opt)
 
+OCAMLBUILDBYTE=$(OCAMLBUILD:=.byte)
+OCAMLBUILDNATIVE=$(OCAMLBUILD:=.native)
+
+WITH_OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
+
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
 
@@ -117,7 +122,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc
+  otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
 
 # Compile everything the first time
 world:
@@ -251,14 +256,14 @@ opt:
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 $(DEBUGGER) ocamldoc ocamlbuild.byte $(CAMLP4OUT) \
+	 $(WITH_DEBUGGER) $(WITH_OCAMLDOC) $(OCAMLBUILDBYTE) $(CAMLP4OUT) \
 	 ocamlopt.opt otherlibrariesopt ocamllex.opt \
-	 ocamltoolsopt ocamltoolsopt.opt ocamldoc.opt ocamlbuild.native \
+	 ocamltoolsopt ocamltoolsopt.opt $(WITH_OCAMLDOC_OPT) $(OCAMLBUILDNATIVE) \
 	 $(CAMLP4OPT)
 
 base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
-	 otherlibrariesopt
+	 $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
+	 ocamlopt.opt otherlibrariesopt
 
 # Installation
 
@@ -731,22 +736,22 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc ocamlbuild.byte
+camlp4out: ocamlc $(OCAMLBUILDBYTE)
 	./build/camlp4-byte-only.sh
 
-camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
+camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot $(OCAMLBUILDNATIVE)
 	./build/camlp4-native-only.sh
 
 # Ocamlbuild
-#ifeq ($(OCAMLBUILD_NOBOOT),"yes")
-#ocamlbuild.byte: ocamlc
-#	$(MAKE) -C ocamlbuild -f Makefile.noboot
-#else
-ocamlbuild.byte: ocamlc ocamlbuild-mixed-boot
+ifeq ($(OCAMLBUILD_NOBOOT),"yes")
+$(OCAMLBUILDBYTE): ocamlc
+	$(MAKE) -C ocamlbuild -f Makefile.noboot
+else
+$(OCAMLBUILDBYTE): ocamlc ocamlbuild-mixed-boot
 	./build/ocamlbuild-byte-only.sh
-#endif
+endif
 
-ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
+$(OCAMLBUILDNATIVE): ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
 	./build/ocamlbuild-native-only.sh
 ocamlbuildlib.native: ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
 	./build/ocamlbuildlib-native-only.sh
@@ -817,7 +822,7 @@ distclean:
 .PHONY: compare core coreall
 .PHONY: coreboot defaultentry depend distclean install installopt
 .PHONY: library library-cross libraryopt
-.PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
+.PHONY: $(OCAMLBUILDBYTE) $(OCAMLBUILDNATIVE) ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
