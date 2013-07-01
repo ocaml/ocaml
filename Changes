@@ -378,8 +378,6 @@ Bug Fixes:
 - PR#5318: segfault on stack overflow when reading marshaled data
 - PR#5319: %r11 clobbered by Lswitch in Windows AMD64 native-code compilation
 - PR#5322: type abbreviations expanding to a universal type variable
-- PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in
-  another thread
 - PR#5328: under Windows, Unix.select leaves sockets in non-blocking mode
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5331: ocamlmktop is not always a shell script
