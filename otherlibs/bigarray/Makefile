@@ -14,8 +14,7 @@
 LIBNAME=bigarray
 EXTRACFLAGS=-I../$(UNIXLIB) -DIN_OCAML_BIGARRAY -DCAML_NAME_SPACE
 EXTRACAMLFLAGS=-I ../$(UNIXLIB)
-mmap_impl=mmap_$(UNIX_OR_WIN32)
-COBJS=bigarray_stubs.$(O) $(mmap_impl).$(O)
+COBJS=bigarray_stubs.$(O) mmap_$(UNIX_OR_WIN32).$(O)
 CAMLOBJS=bigarray.cmo
 HEADERS=bigarray.h
 
