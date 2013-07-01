@@ -553,10 +553,14 @@ flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
 flag ["ocaml"; "bin_annot"; "compile"] (A "-bin-annot");;
+flag ["ocaml"; "short_paths"; "compile"] (A "-short-paths");;
+flag ["ocaml"; "short_paths"; "infer_interface"] (A "-short_paths");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "doc"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "pack"] (A "-rectypes");;
+flag ["ocaml"; "principal"; "compile"] (A "-principal");;
+flag ["ocaml"; "principal"; "infer_interface"] (A "-principal");;
 flag ["ocaml"; "linkall"; "link"] (A "-linkall");;
 flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
@@ -594,6 +598,7 @@ let ocaml_warn_flag c =
 List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'K'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'X'; 'Y'; 'Z'];;
 
 flag ["ocaml"; "compile"; "strict-sequence"] (A "-strict-sequence");;
+flag ["ocaml"; "compile"; "strict_sequence"] (A "-strict-sequence");;
 
 flag ["ocaml"; "doc"; "docdir"; "extension:html"] (A"-html");;
 flag ["ocaml"; "doc"; "docdir"; "manpage"] (A"-man");;
