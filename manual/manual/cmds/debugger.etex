@@ -197,7 +197,7 @@ execution starts. There are several ways to start execution:
 \begin{options}
 \item["run"] Run the program until a breakpoint is hit, or the program
 terminates.
-\item["step 0"] Load the program and stop on the first event.
+\item["goto 0"] Load the program and stop on the first event.
 \item["goto "\var{time}] Load the program and execute it until the
 given time. Useful when you already know approximately at what time
 the problem appears. Also useful to set breakpoints on function values
@@ -224,8 +224,9 @@ next breakpoint or when the program terminates.
 \item["reverse"] Execute the program backward from current time.
 Mostly useful to go to the last breakpoint encountered before the
 current time.
-\item["step "\optvar{count}] Run the program and stop at the next event. With
-an argument, do it \var{count} times.
+\item["step "\optvar{count}] Run the program and stop at the next
+event. With an argument, do it \var{count} times. If \var{count} is 0,
+run until the program terminates or a breakpoint is hit.
 \item["backstep "\optvar{count}] Run the program backward and stop at
 the previous event. With an argument, do it \var{count} times.
 \item["next "\optvar{count}] Run the program and stop at the next
