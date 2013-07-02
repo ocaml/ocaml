@@ -303,6 +303,14 @@ external wait_next_event : event list -> status = "caml_gr_wait_event"
    are queued, and dequeued one by one when the [Key_pressed]
    event is specified. *)
 
+val loop_at_exit : event list -> (status -> unit) -> unit
+(** Loop before exiting the program, the list given as argument is the
+    list of handlers and the events on which these handlers are called.
+    To exit cleanly the loop, the handler should raise Exit. Any other
+    exception will be propagated outside of the loop.
+    @since 4.01
+*)
+
 (** {6 Mouse and keyboard polling} *)
 
 val mouse_pos : unit -> int * int
