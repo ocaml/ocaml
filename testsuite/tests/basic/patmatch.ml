@@ -131,3 +131,28 @@ let () =
   printf "PR#5992=Ok\n"
 
 
+(* PR #5788, was giving wrong result 3 *)
+exception Foo
+exception Bar = Foo
+
+let test e b =
+  match e, b with
+  | Foo, true -> 1
+  | Bar, false -> 2
+  | _, _ -> 3
+
+let () =
+  let r = test Bar false in
+  if r = 2 then printf "PR#5788=Ok\n"
+
+let test e b =
+  match e, b with
+  | Bar, false -> 0
+  | (Foo|Bar), true -> 1
+  | Foo, false -> 2
+  | _, _ -> 3
+
+
+let () =
+  let r = test Foo false in
+  if r = 0 then printf "PR#5788=Ok\n"
