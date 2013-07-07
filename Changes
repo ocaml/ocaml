@@ -62,6 +62,7 @@ Runtime system:
   point within the major heap.
 
 Bug fixes:
+- PR#6062: Fix a regression bug caused by commit 13047
 - PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4079: Queue.copy is now tail-recursive

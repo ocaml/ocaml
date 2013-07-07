@@ -34,7 +34,7 @@ for target in $TARGETS camlp4/boot/Camlp4Ast.ml; do
 done
 
 if [ -x ./boot/myocamlbuild.native ]; then
-  OCAMLBUILD=./boot/myocamlbuild.native
+  OCAMLBUILD=./boot/myocamlbuild.native 
 else
   OCAMLBUILD="./boot/ocamlrun boot/myocamlbuild"
 fi
