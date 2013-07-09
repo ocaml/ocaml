@@ -278,6 +278,9 @@ val fast_sort : ('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!List.sort} or {!List.stable_sort}, whichever is faster
     on typical input. *)
 
+val sort_uniq : ('a -> 'a -> int) -> 'a list -> 'a list
+(** Same as {!List.sort}, but also remove duplicates. *)
+
 val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:
     Assuming that [l1] and [l2] are sorted according to the

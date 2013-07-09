@@ -6,6 +6,9 @@ Next version:
 Bug fixes:
 - PR#4719: Sys.executable_name is wrong if executable name contains dots (Windows)
 
+Standard library:
+- PR#4986: add List.sort_uniq and Set.of_list
+
 Features wishes:
 
 
