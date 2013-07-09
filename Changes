@@ -56,6 +56,7 @@ Bug fixes:
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4079: Queue.copy is now tail-recursive
 - PR#4469: emacs mode: caml-set-compile-command is annoying with ocamlbuild
+- PR#4485: Graphics: Keyboard events incorrectly delivered in native code
 - PR#4502: ocamlbuild now reliably excludes the build-dir from hygiene check
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)

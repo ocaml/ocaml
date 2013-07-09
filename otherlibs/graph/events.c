@@ -153,6 +153,7 @@ static value caml_gr_wait_event_poll(void)
   unsigned int modifiers;
   unsigned int i;
 
+  caml_process_pending_signals ();
   if (XQueryPointer(caml_gr_display, caml_gr_window.win,
                     &rootwin, &childwin,
                     &root_x, &root_y, &win_x, &win_y,
@@ -175,7 +176,8 @@ static value caml_gr_wait_event_poll(void)
       break;
     }
   }
-  return caml_gr_wait_allocate_result(mouse_x, mouse_y, button, keypressed, key);
+  return
+    caml_gr_wait_allocate_result(mouse_x, mouse_y, button, keypressed, key);
 }
 
 static value caml_gr_wait_event_in_queue(long mask)
