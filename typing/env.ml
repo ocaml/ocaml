@@ -308,7 +308,7 @@ let read_pers_struct modname filename = (
                ps_comps = comps;
                ps_crcs = crcs;
                ps_filename = filename;
-               ps_flags = flags } in 
+               ps_flags = flags } in
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(modname, ps.ps_name, filename)));
     check_consistency filename ps.ps_crcs;
@@ -1581,7 +1581,7 @@ open Format
 let report_error ppf = function
   | Illegal_renaming(name, modname, filename) -> fprintf ppf
       "Wrong file naming: %a@ contains the compiled interface for @ %s when %s was expected"
-      Location.print_filename filename name modname 
+      Location.print_filename filename name modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"
