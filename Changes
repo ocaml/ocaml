@@ -95,6 +95,7 @@ Bug fixes:
 - PR#5752: missing dependencies at byte-code link with mlpack
 - PR#5758: Compiler bug when matching on floats
 - PR#5763: ocamlbuild does not give correct flags when running menhir
+- PR#5765: ocamllex doesn't preserve line directives
 - PR#5772: problem with marshaling of mutually-recursive functions
 - PR#5775: several bug fixes for tools/pprintast.ml
 - PR#5784: -dclambda option is ignored

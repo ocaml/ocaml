@@ -165,8 +165,8 @@ let output_entry sourcefile ic oc tr e =
     (fun (num, env, loc) ->
       fprintf oc "  | ";
       fprintf oc "%d ->\n" num;
-      output_env sourcefile ic oc tr env ;
-      copy_chunk sourcefile ic oc tr loc true;
+      output_env ic oc tr env ;
+      copy_chunk ic oc tr loc true;
       fprintf oc "\n")
     e.auto_actions;
   fprintf oc "  | _ -> raise (Failure \"lexing: empty token\")\n\n\n"
@@ -176,7 +176,7 @@ let output_entry sourcefile ic oc tr e =
 
 let output_lexdef sourcefile ic oc tr header entry_points transitions trailer =
 
-  copy_chunk sourcefile ic oc tr header false;
+  copy_chunk ic oc tr header false;
   output_automata oc transitions ;
   begin match entry_points with
     [] -> ()
@@ -187,4 +187,4 @@ let output_lexdef sourcefile ic oc tr header entry_points transitions trailer =
         entries;
       output_string oc ";;\n\n";
   end;
-  copy_chunk sourcefile ic oc tr trailer false
+  copy_chunk ic oc tr trailer false

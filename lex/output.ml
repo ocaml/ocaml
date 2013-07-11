@@ -92,8 +92,8 @@ let output_entry sourcefile ic oc oci e =
     (fun (num, env, loc) ->
       fprintf oc "  | ";
       fprintf oc "%d ->\n" num;
-      output_env sourcefile ic oc oci env;
-      copy_chunk sourcefile ic oc oci loc true;
+      output_env ic oc oci env;
+      copy_chunk ic oc oci loc true;
       fprintf oc "\n")
     e.auto_actions;
   fprintf oc "  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; \
@@ -123,7 +123,7 @@ let output_lexdef sourcefile ic oc oci header tables entry_points trailer =
     Printf.printf "%d additional bytes used for bindings\n" size_groups ;
   flush stdout;
   if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;
-  copy_chunk sourcefile ic oc oci header false;
+  copy_chunk ic oc oci header false;
   output_tables oc tables;
   begin match entry_points with
     [] -> ()
@@ -134,4 +134,4 @@ let output_lexdef sourcefile ic oc oci header tables entry_points trailer =
         entries;
       output_string oc ";;\n\n";
   end;
-  copy_chunk sourcefile ic oc oci trailer false
+  copy_chunk ic oc oci trailer false

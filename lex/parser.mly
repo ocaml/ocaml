@@ -74,7 +74,8 @@ header:
     Taction
         { $1 }
   | /*epsilon*/
-        { { start_pos = 0; end_pos = 0; start_line = 1; start_col = 0 } }
+        { { loc_file = ""; start_pos = 0; end_pos = 0; start_line = 1;
+            start_col = 0 } }
 ;
 named_regexps:
     named_regexps Tlet Tident Tequal regexp
@@ -162,6 +163,7 @@ regexp:
         {let p1 = Parsing.rhs_start_pos 3
          and p2 = Parsing.rhs_end_pos 3 in
          let p = {
+           loc_file = p1.Lexing.pos_fname ;
            start_pos = p1.Lexing.pos_cnum ;
            end_pos = p2.Lexing.pos_cnum ;
            start_line = p1.Lexing.pos_lnum ;
