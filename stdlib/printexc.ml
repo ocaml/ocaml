@@ -165,3 +165,6 @@ external backtrace_status: unit -> bool = "caml_backtrace_status"
 
 let register_printer fn =
   printers := fn :: !printers
+
+
+external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"

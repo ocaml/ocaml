@@ -54,9 +54,12 @@ Compilers:
 - PR#5571: incorrect ordinal number in error message
 
 Standard library:
+- PR#5899: expose a way to inspect the current call stack
+  (Printexc.get_callstack)
 - PR#5986: new flag Marshal.Compat_32 for the serialization functions
   (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 - Add optimized composition operators |> and @@ in Pervasives
+
 
 Runtime system:
 * PR#6019: more efficient implementation of caml_modify() and caml_initialize().
