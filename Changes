@@ -121,6 +121,7 @@ Bug fixes:
 - PR#5840: improved documentation for 'Unix.lseek'
 - PR#5858: Assert failure during typing of class
 - PR#5865: assert failure when reporting undefined field label
+- PR#5872: Performance: Buffer.add_char is not inlined
 - PR#5880: 'Genlex.make_lexer' documention mentions the wrong exception
 - PR#5885: Incorrect rule for compiling C stubs when shared libraries are not
   supported.
