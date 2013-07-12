@@ -754,7 +754,9 @@ text: {{text-element}}
 @||@&@ '{[' string ']}' @ & set the given @string@ in preformatted
 				source code style.\\
 @||@&@ '{v' string 'v}' @ & set the given @string@ in verbatim style. \\
-@||@&@ '{%' string '%}' @ & take the given @string@ as raw \LaTeX\ code.\\
+@||@&@ '{%' string '%}' @ & target-specific content
+        (\LaTeX\ code by default, see details
+        in \ref{sss:target-specific-syntax}) \\
 @||@&@ '{!' string '}' @ & insert a reference to the element named
 @string@. @string@ must be a fully qualified element name,
 for example "Foo.Bar.t". The kind of the referenced element can be forced
@@ -820,6 +822,15 @@ outside of the following text formatting :
 @ '{!' string '}' @,
 @ '{^' text '}' @,
 @ '{_' text '}' @.
+
+\subsubsection*{Target-specific formatting}
+\label{sss:target-specific-syntax}
+
+The content inside "{%foo: ... %}" is target-specific and will only be
+interpreted by the backend "foo", and ignored by the others. The
+backends of the distribution are "latex", "html", "texi" and "man". If
+no target is specified (syntax "{% ... %}"), "latex" is chosen by
+default. Custom generators may support their own target prefix.
 
 %%%%%%%%%%%%%
 \subsection{Documentation tags (\@-tags)}
