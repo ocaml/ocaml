@@ -757,13 +757,8 @@ text: {{text-element}}
 @||@&@ '{%' string '%}' @ & target-specific content
         (\LaTeX\ code by default, see details
         in \ref{sss:target-specific-syntax}) \\
-@||@&@ '{!' string '}' @ & insert a reference to the element named
-@string@. @string@ must be a fully qualified element name,
-for example "Foo.Bar.t". The kind of the referenced element can be forced
-(useful when various elements have the same qualified name) with the following
-syntax: @ '{!' @ \nt{kind} @ ':' string '}' @ where \nt{kind} can be
-"module", "modtype", "class", "classtype", "val",
-"type", "exception", "attribute", "method" or "section".\\
+@||@&@ '{!' string '}' @ & insert a cross-reference to an element
+        (see below \ref{sss:crossref} for the syntax of cross-references).\\
 @||@&@ '{!modules:' string string ... '}' @ & insert an index table
 for the given module names. Used in HTML only.\\
 @||@&@ '{!indexlist}' @ & insert a table of links to the various indexes
@@ -775,6 +770,8 @@ special characters ('"{"', '"}"', '"["', '"]"' and '"\@"')
 must be	escaped by a '"\\"'\\
 @||@& \nt{blank-line} & force a new line.
 \end{tabular} \\
+
+\subsubsection*{List formatting}
 
 \begin{syntax}
 list:
@@ -803,6 +800,40 @@ The list is ended by the blank line.*)
 The same shortcut is available for enumerated lists, using '"+"'
 instead of '"-"'.
 Note that only one list can be defined by this shortcut in nested lists.
+
+\subsubsection*{Cross-reference formatting}
+\label{sss:crossref}
+
+Cross-references are fully qualified element names, as in the example
+"{!Foo.Bar.t}". This is an ambiguous reference as it may designate
+a type name, a value name, a class name, etc. It is possible to make
+explicit the intended syntactic class, using "{!type:Foo.Bar.t}" to
+designate a type, and "{!val:Foo.Bar.t}" a value of the same name.
+
+The list of possible syntactic class is as follows:
+\begin{itemize}
+        \item["module:"] module
+        \item["modtype:"] module type
+        \item["class:"] class
+        \item["classtype:"] class type
+        \item["val:"] value
+        \item["type:"] type
+        \item["exception:"] exception
+        \item["attribute:"] attribute
+        \item["method:"] class method
+        \item["section:"] ocamldoc section
+        \item["const:"] variant constructor
+        \item["recfield:"] record field
+\end{itemize}
+
+In the case of variant constructors or record field, the constructor
+or field name should be preceded by the name of the correspond type --
+to avoid the ambiguity of several types having the same constructor
+names. For example, the constructor "Node" of the type "tree" will be
+referenced as "{!tree.Node}" or "{!const:tree.Node}", or possibly
+"{!Mod1.Mod2.tree.Node}" from outside the module.
+
+\subsubsection*{First sentence}
 
 In the description of a value, type, exception, module, module type, class
 or class type, the {\em first sentence} is sometimes used in indexes, or
