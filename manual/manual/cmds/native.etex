@@ -183,6 +183,10 @@ If the given directory starts with "+", it is taken relative to the
 standard library directory.  For instance, "-I +labltk" adds the
 subdirectory "labltk" of the standard library to the search path.
 
+\item["-impl" \var{filename}]
+Compile the file \var{filename} as an implementation file, even if its
+extension is not ".ml".
+
 \item["-inline" \var{n}]
 Set aggressiveness of inlining to \var{n}, where \var{n} is a positive
 integer. Specifying "-inline 0" prevents all functions from being
