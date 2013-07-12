@@ -254,6 +254,11 @@ adds the subdirectory
 .B labltk
 of the standard library to the search path.
 .TP
+.BI \-impl \ filename
+Compile the file
+.I filename
+as an implementation file, even if its extension is not .ml.
+.TP
 .BI \-inline \ n
 Set aggressiveness of inlining to
 .IR n ,
