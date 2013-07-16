@@ -16,103 +16,103 @@ CC=$(NATIVECC)
 CFLAGS=$(NATIVECCCOMPOPTS) -g
 
 INCLUDES=\
-  -I $(TOPDIR)/utils \
-  -I $(TOPDIR)/typing \
-  -I $(TOPDIR)/bytecomp \
-  -I $(TOPDIR)/asmcomp
+  -I $(OTOPDIR)/utils \
+  -I $(OTOPDIR)/typing \
+  -I $(OTOPDIR)/bytecomp \
+  -I $(OTOPDIR)/asmcomp
 
 OTHEROBJS=\
-  $(TOPDIR)/utils/misc.cmo \
-  $(TOPDIR)/utils/tbl.cmo \
-  $(TOPDIR)/utils/config.cmo \
-  $(TOPDIR)/utils/clflags.cmo \
-  $(TOPDIR)/utils/terminfo.cmo \
-  $(TOPDIR)/utils/ccomp.cmo \
-  $(TOPDIR)/utils/warnings.cmo \
-  $(TOPDIR)/utils/consistbl.cmo \
-  $(TOPDIR)/parsing/location.cmo \
-  $(TOPDIR)/parsing/longident.cmo \
-  $(TOPDIR)/parsing/syntaxerr.cmo \
-  $(TOPDIR)/parsing/ast_helper.cmo \
-  $(TOPDIR)/parsing/parser.cmo \
-  $(TOPDIR)/parsing/lexer.cmo \
-  $(TOPDIR)/parsing/parse.cmo \
-  $(TOPDIR)/parsing/printast.cmo \
-  $(TOPDIR)/typing/ident.cmo \
-  $(TOPDIR)/typing/path.cmo \
-  $(TOPDIR)/typing/primitive.cmo \
-  $(TOPDIR)/typing/types.cmo \
-  $(TOPDIR)/typing/btype.cmo \
-  $(TOPDIR)/typing/oprint.cmo \
-  $(TOPDIR)/typing/subst.cmo \
-  $(TOPDIR)/typing/predef.cmo \
-  $(TOPDIR)/typing/datarepr.cmo \
-  $(TOPDIR)/typing/cmi_format.cmo \
-  $(TOPDIR)/typing/env.cmo \
-  $(TOPDIR)/typing/typedtree.cmo \
-  $(TOPDIR)/typing/ctype.cmo \
-  $(TOPDIR)/typing/printtyp.cmo \
-  $(TOPDIR)/typing/includeclass.cmo \
-  $(TOPDIR)/typing/mtype.cmo \
-  $(TOPDIR)/typing/includecore.cmo \
-  $(TOPDIR)/typing/includemod.cmo \
-  $(TOPDIR)/typing/parmatch.cmo \
-  $(TOPDIR)/typing/typetexp.cmo \
-  $(TOPDIR)/typing/typedtreeMap.cmo \
-  $(TOPDIR)/typing/cmt_format.cmo \
-  $(TOPDIR)/typing/stypes.cmo \
-  $(TOPDIR)/typing/typecore.cmo \
-  $(TOPDIR)/typing/typedecl.cmo \
-  $(TOPDIR)/typing/typeclass.cmo \
-  $(TOPDIR)/typing/typemod.cmo \
-  $(TOPDIR)/bytecomp/lambda.cmo \
-  $(TOPDIR)/bytecomp/printlambda.cmo \
-  $(TOPDIR)/bytecomp/typeopt.cmo \
-  $(TOPDIR)/bytecomp/switch.cmo \
-  $(TOPDIR)/bytecomp/matching.cmo \
-  $(TOPDIR)/bytecomp/translobj.cmo \
-  $(TOPDIR)/bytecomp/translcore.cmo \
-  $(TOPDIR)/bytecomp/translclass.cmo \
-  $(TOPDIR)/bytecomp/translmod.cmo \
-  $(TOPDIR)/bytecomp/simplif.cmo \
-  $(TOPDIR)/bytecomp/runtimedef.cmo \
-  $(TOPDIR)/asmcomp/arch.cmo \
-  $(TOPDIR)/asmcomp/debuginfo.cmo \
-  $(TOPDIR)/asmcomp/cmm.cmo \
-  $(TOPDIR)/asmcomp/printcmm.cmo \
-  $(TOPDIR)/asmcomp/reg.cmo \
-  $(TOPDIR)/asmcomp/mach.cmo \
-  $(TOPDIR)/asmcomp/proc.cmo \
-  $(TOPDIR)/asmcomp/clambda.cmo \
-  $(TOPDIR)/asmcomp/compilenv.cmo \
-  $(TOPDIR)/asmcomp/closure.cmo \
-  $(TOPDIR)/asmcomp/cmmgen.cmo \
-  $(TOPDIR)/asmcomp/printmach.cmo \
-  $(TOPDIR)/asmcomp/selectgen.cmo \
-  $(TOPDIR)/asmcomp/selection.cmo \
-  $(TOPDIR)/asmcomp/comballoc.cmo \
-  $(TOPDIR)/asmcomp/liveness.cmo \
-  $(TOPDIR)/asmcomp/spill.cmo \
-  $(TOPDIR)/asmcomp/split.cmo \
-  $(TOPDIR)/asmcomp/interf.cmo \
-  $(TOPDIR)/asmcomp/coloring.cmo \
-  $(TOPDIR)/asmcomp/reloadgen.cmo \
-  $(TOPDIR)/asmcomp/reload.cmo \
-  $(TOPDIR)/asmcomp/printlinear.cmo \
-  $(TOPDIR)/asmcomp/linearize.cmo \
-  $(TOPDIR)/asmcomp/schedgen.cmo \
-  $(TOPDIR)/asmcomp/scheduling.cmo \
-  $(TOPDIR)/asmcomp/emitaux.cmo \
-  $(TOPDIR)/asmcomp/emit.cmo \
-  $(TOPDIR)/asmcomp/printclambda.cmo \
-  $(TOPDIR)/asmcomp/asmgen.cmo
+  $(OTOPDIR)/utils/misc.cmo \
+  $(OTOPDIR)/utils/tbl.cmo \
+  $(OTOPDIR)/utils/config.cmo \
+  $(OTOPDIR)/utils/clflags.cmo \
+  $(OTOPDIR)/utils/terminfo.cmo \
+  $(OTOPDIR)/utils/ccomp.cmo \
+  $(OTOPDIR)/utils/warnings.cmo \
+  $(OTOPDIR)/utils/consistbl.cmo \
+  $(OTOPDIR)/parsing/location.cmo \
+  $(OTOPDIR)/parsing/longident.cmo \
+  $(OTOPDIR)/parsing/syntaxerr.cmo \
+  $(OTOPDIR)/parsing/ast_helper.cmo \
+  $(OTOPDIR)/parsing/parser.cmo \
+  $(OTOPDIR)/parsing/lexer.cmo \
+  $(OTOPDIR)/parsing/parse.cmo \
+  $(OTOPDIR)/parsing/printast.cmo \
+  $(OTOPDIR)/typing/ident.cmo \
+  $(OTOPDIR)/typing/path.cmo \
+  $(OTOPDIR)/typing/primitive.cmo \
+  $(OTOPDIR)/typing/types.cmo \
+  $(OTOPDIR)/typing/btype.cmo \
+  $(OTOPDIR)/typing/oprint.cmo \
+  $(OTOPDIR)/typing/subst.cmo \
+  $(OTOPDIR)/typing/predef.cmo \
+  $(OTOPDIR)/typing/datarepr.cmo \
+  $(OTOPDIR)/typing/cmi_format.cmo \
+  $(OTOPDIR)/typing/env.cmo \
+  $(OTOPDIR)/typing/typedtree.cmo \
+  $(OTOPDIR)/typing/ctype.cmo \
+  $(OTOPDIR)/typing/printtyp.cmo \
+  $(OTOPDIR)/typing/includeclass.cmo \
+  $(OTOPDIR)/typing/mtype.cmo \
+  $(OTOPDIR)/typing/includecore.cmo \
+  $(OTOPDIR)/typing/includemod.cmo \
+  $(OTOPDIR)/typing/parmatch.cmo \
+  $(OTOPDIR)/typing/typetexp.cmo \
+  $(OTOPDIR)/typing/typedtreeMap.cmo \
+  $(OTOPDIR)/typing/cmt_format.cmo \
+  $(OTOPDIR)/typing/stypes.cmo \
+  $(OTOPDIR)/typing/typecore.cmo \
+  $(OTOPDIR)/typing/typedecl.cmo \
+  $(OTOPDIR)/typing/typeclass.cmo \
+  $(OTOPDIR)/typing/typemod.cmo \
+  $(OTOPDIR)/bytecomp/lambda.cmo \
+  $(OTOPDIR)/bytecomp/printlambda.cmo \
+  $(OTOPDIR)/bytecomp/typeopt.cmo \
+  $(OTOPDIR)/bytecomp/switch.cmo \
+  $(OTOPDIR)/bytecomp/matching.cmo \
+  $(OTOPDIR)/bytecomp/translobj.cmo \
+  $(OTOPDIR)/bytecomp/translcore.cmo \
+  $(OTOPDIR)/bytecomp/translclass.cmo \
+  $(OTOPDIR)/bytecomp/translmod.cmo \
+  $(OTOPDIR)/bytecomp/simplif.cmo \
+  $(OTOPDIR)/bytecomp/runtimedef.cmo \
+  $(OTOPDIR)/asmcomp/arch.cmo \
+  $(OTOPDIR)/asmcomp/debuginfo.cmo \
+  $(OTOPDIR)/asmcomp/cmm.cmo \
+  $(OTOPDIR)/asmcomp/printcmm.cmo \
+  $(OTOPDIR)/asmcomp/reg.cmo \
+  $(OTOPDIR)/asmcomp/mach.cmo \
+  $(OTOPDIR)/asmcomp/proc.cmo \
+  $(OTOPDIR)/asmcomp/clambda.cmo \
+  $(OTOPDIR)/asmcomp/compilenv.cmo \
+  $(OTOPDIR)/asmcomp/closure.cmo \
+  $(OTOPDIR)/asmcomp/cmmgen.cmo \
+  $(OTOPDIR)/asmcomp/printmach.cmo \
+  $(OTOPDIR)/asmcomp/selectgen.cmo \
+  $(OTOPDIR)/asmcomp/selection.cmo \
+  $(OTOPDIR)/asmcomp/comballoc.cmo \
+  $(OTOPDIR)/asmcomp/liveness.cmo \
+  $(OTOPDIR)/asmcomp/spill.cmo \
+  $(OTOPDIR)/asmcomp/split.cmo \
+  $(OTOPDIR)/asmcomp/interf.cmo \
+  $(OTOPDIR)/asmcomp/coloring.cmo \
+  $(OTOPDIR)/asmcomp/reloadgen.cmo \
+  $(OTOPDIR)/asmcomp/reload.cmo \
+  $(OTOPDIR)/asmcomp/printlinear.cmo \
+  $(OTOPDIR)/asmcomp/linearize.cmo \
+  $(OTOPDIR)/asmcomp/schedgen.cmo \
+  $(OTOPDIR)/asmcomp/scheduling.cmo \
+  $(OTOPDIR)/asmcomp/emitaux.cmo \
+  $(OTOPDIR)/asmcomp/emit.cmo \
+  $(OTOPDIR)/asmcomp/printclambda.cmo \
+  $(OTOPDIR)/asmcomp/asmgen.cmo
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 
 ADD_COMPFLAGS=$(INCLUDES) -g
 
 default:
-	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	@if $(BYTECODE_ONLY) || [ -z "$(ASPP)" ]; then : ; else \
 	  $(MAKE) all; \
 	fi
 
@@ -149,8 +149,8 @@ tests: $(CASES:=.o)
 	done
 
 one:
-	@$(CC) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).o $(ARCH).o || (echo " => failed" && exit 1)
-	@echo " => passed"
+	@$(CC) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).o $(ARCH).o \
+	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
 	@rm -f ./codegen *.out

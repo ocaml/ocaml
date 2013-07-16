@@ -75,7 +75,8 @@ let show_listing pos mdle start stop point before =
     let buffer = get_buffer pos mdle in
       let rec aff (line_start, line_number) =
         if line_number <= stop then
-          aff (print_line buffer line_number line_start point before + 1, line_number + 1)
+          aff (print_line buffer line_number line_start point before + 1,
+               line_number + 1)
       in
         aff (pos_of_line buffer start)
   with

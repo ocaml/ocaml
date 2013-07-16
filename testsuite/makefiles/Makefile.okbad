@@ -10,25 +10,33 @@
 #                                                                       #
 #########################################################################
 
+.PHONY: default
 default: compile
 
+.PHONY: compile
 compile:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file'"; \
 	  if [ `echo $$file | grep bad` ]; then \
-	    if $(OCAMLC) -c -w a $$file 2> /dev/null; then \
-	      echo " => failed" && exit 1; \
-	    else echo " => passed"; \
-	    fi; \
+	    $(OCAMLC) -c -w a $$file 2>/dev/null \
+            && echo " => failed" || echo " => passed"; \
 	  else \
-	    test -f `basename $$file ml`mli && $(OCAMLC) -c -w a `basename $$file ml`mli; \
-	    $(OCAMLC) -c -w a $$file 2> /dev/null || (echo " => failed" && exit 1); \
-	    test -f `basename $$file ml`reference && $(OCAMLC) `basename $$file ml`cmo && ./a.out > `basename $$file ml`result && ($(DIFF) `basename $$file ml`reference `basename $$file ml`result || (echo " => failed" && exit 1)); \
-	    echo " => passed"; \
+	    F="`basename $$file .ml`"; \
+	    test -f $$F.mli && $(OCAMLC) -c -w a $$F.mli; \
+	    $(OCAMLC) -c -w a $$file 2>/dev/null \
+	    && if [ -f $$F.reference ]; then \
+	         rm -f program.byte; \
+	         $(OCAMLC) $$F.cmo -o program.byte \
+	         && $(OCAMLRUN) program.byte >$$F.result \
+	         && $(DIFF) $$F.reference $$F.result >/dev/null; \
+	       fi \
+	    && echo " => passed" || echo " => failed"; \
 	  fi; \
 	done
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
-	@rm -f ./a.out *.cm* *.result
+	@rm -f program.byte *.cm* *.result

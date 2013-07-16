@@ -23,12 +23,13 @@ val debug : bool ref
 val fast : bool ref
 val link_everything : bool ref
 val custom_runtime : bool ref
+val bytecode_compatible_32: bool ref
 val output_c_object : bool ref
-val ccopts : string list ref
+val all_ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
 val preprocessor : string option ref
-val ppx : string list ref
+val all_ppx : string list ref
 val annotations : bool ref
 val binary_annotations : bool ref
 val use_threads : bool ref
@@ -83,3 +84,4 @@ val std_include_dir : unit -> string list
 val shared : bool ref
 val dlcode : bool ref
 val runtime_variant : string ref
+val force_slash : bool ref

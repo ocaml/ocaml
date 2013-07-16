@@ -109,7 +109,7 @@ module Exp = struct
   let object_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_object a)
   let newtype ?loc ?attrs a b = mk ?loc ?attrs (Pexp_newtype (a, b))
   let pack ?loc ?attrs a = mk ?loc ?attrs (Pexp_pack a)
-  let open_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_open (a, b))
+  let open_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_open (a, b, c))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
 
   let case lhs ?guard rhs =
@@ -154,7 +154,7 @@ module Sig = struct
   let module_ ?loc a = mk ?loc (Psig_module a)
   let rec_module ?loc a = mk ?loc (Psig_recmodule a)
   let modtype ?loc a = mk ?loc (Psig_modtype a)
-  let open_ ?loc ?(attrs = []) a = mk ?loc (Psig_open (a, attrs))
+  let open_ ?loc ?(attrs = []) a b = mk ?loc (Psig_open (a, b, attrs))
   let include_ ?loc ?(attrs = []) a = mk ?loc (Psig_include (a, attrs))
   let class_ ?loc a = mk ?loc (Psig_class a)
   let class_type ?loc a = mk ?loc (Psig_class_type a)
@@ -174,7 +174,7 @@ module Str = struct
   let module_ ?loc a = mk ?loc (Pstr_module a)
   let rec_module ?loc a = mk ?loc (Pstr_recmodule a)
   let modtype ?loc a = mk ?loc (Pstr_modtype a)
-  let open_ ?loc ?(attrs = []) a = mk ?loc (Pstr_open (a, attrs))
+  let open_ ?loc ?(attrs = []) a b = mk ?loc (Pstr_open (a, b, attrs))
   let class_ ?loc a = mk ?loc (Pstr_class a)
   let class_type ?loc a = mk ?loc (Pstr_class_type a)
   let include_ ?loc ?(attrs = []) a = mk ?loc (Pstr_include (a, attrs))

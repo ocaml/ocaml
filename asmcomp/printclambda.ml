@@ -120,7 +120,9 @@ let rec lam ppf = function
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let kind =
-        if k = Lambda.Self then "self" else if k = Lambda.Cached then "cache" else "" in
+        if k = Lambda.Self then "self"
+        else if k = Lambda.Cached then "cache"
+        else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
 
 and sequence ppf ulam = match ulam with

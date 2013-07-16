@@ -13,7 +13,7 @@
 (* Emission of x86-64 (AMD 64) assembly code, MASM syntax *)
 
 module StringSet =
-  Set.Make(struct type t = string let compare = compare end)
+  Set.Make(struct type t = string let compare (x:t) y = compare x y end)
 
 open Misc
 open Cmm
@@ -108,13 +108,13 @@ let emit_reg = function
 
 let reg_low_8_name =
   [| "al"; "bl"; "dil"; "sil"; "dl"; "cl"; "r8b"; "r9b";
-     "r12b"; "r13b"; "bpl"; "r10b"; "r11b" |]
+     "r12b"; "r13b"; "r10b"; "r11b"; "bpl" |]
 let reg_low_16_name =
   [| "ax"; "bx"; "di"; "si"; "dx"; "cx"; "r8w"; "r9w";
-     "r12w"; "r13w"; "bp"; "r10w"; "r11w" |]
+     "r12w"; "r13w"; "r10w"; "r11w"; "bp" |]
 let reg_low_32_name =
   [| "eax"; "ebx"; "edi"; "esi"; "edx"; "ecx"; "r8d"; "r9d";
-     "r12d"; "r13d"; "ebp"; "r10d"; "r11d" |]
+     "r12d"; "r13d"; "r10d"; "r11d"; "ebp" |]
 
 let emit_subreg tbl pref r =
   match r.loc with
@@ -570,11 +570,11 @@ let emit_instr fallthrough i =
     | Lop(Ispecific(Ibswap size)) ->
        begin match size with
        | 16 ->
-        `	xchg	%ah, %al\n`;
-        `	movzwq	{emit_reg i.res.(0)}, {emit_reg16 i.res.(0)}\n`
+        `	xchg	ah, al\n`;
+        `	movzx	{emit_reg i.res.(0)}, {emit_reg16 i.res.(0)}\n`
        | 32 ->
         `	bswap	{emit_reg32 i.res.(0)}\n`;
-        `	movslq	{emit_reg i.res.(0)}, {emit_reg32 i.res.(0)}\n`
+        `	movsxd	{emit_reg i.res.(0)}, {emit_reg32 i.res.(0)}\n`
        | 64 ->
         `	bswap	{emit_reg i.res.(0)}\n`
        | _ -> assert false

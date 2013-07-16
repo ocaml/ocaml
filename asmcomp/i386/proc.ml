@@ -198,3 +198,6 @@ let assemble_file infile outfile =
   else
     Ccomp.command (Config.asm ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
+
+let init () = ()
+

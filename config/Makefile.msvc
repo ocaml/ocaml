@@ -35,6 +35,14 @@ MANDIR=$(PREFIX)/man
 ########## Toolchain and OS dependencies
 
 TOOLCHAIN=msvc
+
+# It doesn't make much sense to set "TARGET" and "HOST" for msvc but it's needed
+# for the myocamlbuild config.
+# The only case these will be used currently is to check whether we're
+# cross-compiling or not so setting them to the same value is what matters.
+HOST=msvc
+TARGET=$(HOST)
+
 CCOMPTYPE=msvc
 O=obj
 A=lib
@@ -170,3 +178,14 @@ TK_LINK=tk85.lib tcl85.lib ws2_32.lib
 
 MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)
+
+############# for the testsuite makefiles
+#ml let topdir = "" and wintopdir = "";;
+OTOPDIR=$(WINTOPDIR)
+CTOPDIR=$(WINTOPDIR)
+CYGPATH=cygpath -m
+DIFF=diff -q --strip-trailing-cr
+CANKILL=false
+FIND=/usr/bin/find
+SORT=/usr/bin/sort
+SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"

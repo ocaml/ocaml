@@ -1068,7 +1068,7 @@ module Sig =
           | (* while e do { e } *)
           ExWhi of loc * expr * expr
           | (* let open i in e *)
-          ExOpI of loc * ident * expr
+          ExOpI of loc * ident * override_flag * expr
           | (* fun (type t) -> e *)
           (* let f x (type t) y z = e *)
           ExFUN of loc * string * expr
@@ -1214,7 +1214,7 @@ module Sig =
           | (* module type s = mt *)
           StMty of loc * string * module_type
           | (* open i *)
-          StOpn of loc * ident
+          StOpn of loc * override_flag * ident
           | (* type t *)
           StTyp of loc * ctyp
           | (* value (rec)? bi *)
@@ -1878,7 +1878,7 @@ module Sig =
           | ExTyc of loc * expr * ctyp
           | ExVrn of loc * string
           | ExWhi of loc * expr * expr
-          | ExOpI of loc * ident * expr
+          | ExOpI of loc * ident * override_flag * expr
           | ExFUN of loc * string * expr
           | ExPkg of loc * module_expr
           and module_type =
@@ -1957,7 +1957,7 @@ module Sig =
           | StMod of loc * string * module_expr
           | StRecMod of loc * module_binding
           | StMty of loc * string * module_type
-          | StOpn of loc * ident
+          | StOpn of loc * override_flag * ident
           | StTyp of loc * ctyp
           | StVal of loc * rec_flag * binding
           | StAnt of loc * string
@@ -8281,17 +8281,19 @@ module Struct =
                                       (meta_loc _loc x0))),
                                    (meta_string _loc x1))),
                                 (meta_expr _loc x2))
-                          | Ast.ExOpI (x0, x1, x2) ->
+                          | Ast.ExOpI (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
                                    (Ast.ExApp (_loc,
-                                      (Ast.ExId (_loc,
-                                         (Ast.IdAcc (_loc,
-                                            (Ast.IdUid (_loc, "Ast")),
-                                            (Ast.IdUid (_loc, "ExOpI")))))),
-                                      (meta_loc _loc x0))),
-                                   (meta_ident _loc x1))),
-                                (meta_expr _loc x2))
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExOpI")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_ident _loc x1))),
+                                   (meta_override_flag _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.ExWhi (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
@@ -9537,15 +9539,17 @@ module Struct =
                                          (Ast.IdUid (_loc, "StTyp")))))),
                                    (meta_loc _loc x0))),
                                 (meta_ctyp _loc x1))
-                          | Ast.StOpn (x0, x1) ->
+                          | Ast.StOpn (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
-                                   (Ast.ExId (_loc,
-                                      (Ast.IdAcc (_loc,
-                                         (Ast.IdUid (_loc, "Ast")),
-                                         (Ast.IdUid (_loc, "StOpn")))))),
-                                   (meta_loc _loc x0))),
-                                (meta_ident _loc x1))
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StOpn")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_override_flag _loc x1))),
+                                (meta_ident _loc x2))
                           | Ast.StMty (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
@@ -10612,17 +10616,19 @@ module Struct =
                                       (meta_loc _loc x0))),
                                    (meta_string _loc x1))),
                                 (meta_expr _loc x2))
-                          | Ast.ExOpI (x0, x1, x2) ->
+                          | Ast.ExOpI (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
                                    (Ast.PaApp (_loc,
-                                      (Ast.PaId (_loc,
-                                         (Ast.IdAcc (_loc,
-                                            (Ast.IdUid (_loc, "Ast")),
-                                            (Ast.IdUid (_loc, "ExOpI")))))),
-                                      (meta_loc _loc x0))),
-                                   (meta_ident _loc x1))),
-                                (meta_expr _loc x2))
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExOpI")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_ident _loc x1))),
+                                   (meta_override_flag _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.ExWhi (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
@@ -11868,15 +11874,17 @@ module Struct =
                                          (Ast.IdUid (_loc, "StTyp")))))),
                                    (meta_loc _loc x0))),
                                 (meta_ctyp _loc x1))
-                          | Ast.StOpn (x0, x1) ->
+                          | Ast.StOpn (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
-                                   (Ast.PaId (_loc,
-                                      (Ast.IdAcc (_loc,
-                                         (Ast.IdUid (_loc, "Ast")),
-                                         (Ast.IdUid (_loc, "StOpn")))))),
-                                   (meta_loc _loc x0))),
-                                (meta_ident _loc x1))
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StOpn")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_override_flag _loc x1))),
+                                (meta_ident _loc x2))
                           | Ast.StMty (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
@@ -12173,9 +12181,10 @@ module Struct =
                       let _x_i1 = o#string _x_i1 in
                       let _x_i2 = o#module_type _x_i2
                       in StMty (_x, _x_i1, _x_i2)
-                  | StOpn (_x, _x_i1) ->
+                  | StOpn (_x, _x_i1, _x_i2) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#ident _x_i1 in StOpn (_x, _x_i1)
+                      let _x_i1 = o#override_flag _x_i1 in
+                      let _x_i2 = o#ident _x_i2 in StOpn (_x, _x_i1, _x_i2)
                   | StTyp (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#ctyp _x_i1 in StTyp (_x, _x_i1)
@@ -12683,10 +12692,12 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#expr _x_i1 in
                       let _x_i2 = o#expr _x_i2 in ExWhi (_x, _x_i1, _x_i2)
-                  | ExOpI (_x, _x_i1, _x_i2) ->
+                  | ExOpI (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#ident _x_i1 in
-                      let _x_i2 = o#expr _x_i2 in ExOpI (_x, _x_i1, _x_i2)
+                      let _x_i2 = o#override_flag _x_i2 in
+                      let _x_i3 = o#expr _x_i3
+                      in ExOpI (_x, _x_i1, _x_i2, _x_i3)
                   | ExFUN (_x, _x_i1, _x_i2) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
@@ -13107,8 +13118,10 @@ module Struct =
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
                       let o = o#module_type _x_i2 in o
-                  | StOpn (_x, _x_i1) ->
-                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | StOpn (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#override_flag _x_i1 in
+                      let o = o#ident _x_i2 in o
                   | StTyp (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#ctyp _x_i1 in o
                   | StVal (_x, _x_i1, _x_i2) ->
@@ -13497,9 +13510,11 @@ module Struct =
                   | ExWhi (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
-                  | ExOpI (_x, _x_i1, _x_i2) ->
+                  | ExOpI (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
-                      let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
+                      let o = o#ident _x_i1 in
+                      let o = o#override_flag _x_i2 in
+                      let o = o#expr _x_i3 in o
                   | ExFUN (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in let o = o#expr _x_i2 in o
@@ -14521,7 +14536,12 @@ module Struct =
               function
               | Ast.TyMan (_, t1, t2) ->
                   type_decl name tl cl loc (Some (ctyp t1)) pflag t2
-              | Ast.TyPrv (_, t) -> type_decl name tl cl loc m true t
+              | Ast.TyPrv (_loc, t) ->
+                  if pflag
+                  then
+                    error _loc
+                      "multiple private keyword used, use only one instead"
+                  else type_decl name tl cl loc m true t
               | Ast.TyRec (_, t) ->
                   mktype loc name tl cl
                     (Ptype_record (List.map mktrecord (list_of_ctyp t [])))
@@ -15138,8 +15158,9 @@ module Struct =
               | ExWhi (loc, e1, el) ->
                   let e2 = ExSeq (loc, el)
                   in mkexp loc (Pexp_while ((expr e1), (expr e2)))
-              | Ast.ExOpI (loc, i, e) ->
-                  mkexp loc (Pexp_open ((long_uident i), (expr e)))
+              | ExOpI (loc, i, ov, e) ->
+                  let fresh = override_flag loc ov
+                  in mkexp loc (Pexp_open (fresh, (long_uident i), (expr e)))
               | Ast.ExPkg (loc, (Ast.MeTyc (_, me, pt))) ->
                   mkexp loc
                     (Pexp_constraint
@@ -15329,7 +15350,7 @@ module Struct =
                      | _ -> Some (module_type mt))
                   in (mksig loc (Psig_modtype {pmtd_name=with_loc n loc; pmtd_type=si; pmtd_attributes=[]})) :: l
               | SgOpn (loc, id) ->
-                  (mksig loc (Psig_open (long_uident id, []))) :: l
+                  (mksig loc (Psig_open (Fresh, (long_uident id), []))) :: l
               | SgTyp (loc, tdl) ->
                   (mksig loc (Psig_type (mktype_decl tdl []))) :: l
               | SgVal (loc, n, t) ->
@@ -15415,7 +15436,7 @@ module Struct =
                   (Ast.OSome i)) ->
                   (mkstr loc
                      (Pstr_exn_rebind ((with_loc (conv_con s) loc),
-                        (ident i), []))) ::
+                        (long_uident ~conv_con i), []))) ::
                     l
               | Ast.StExc (loc,
                   (Ast.TyOf (_, (Ast.TyId (_, (Ast.IdUid (_, _)))), _)),
@@ -15447,8 +15468,9 @@ module Struct =
                      | MtQuo (_, _) -> None
                      | _ -> Some (module_type mt))
                   in (mkstr loc (Pstr_modtype {pmtd_name=with_loc n loc; pmtd_type=si; pmtd_attributes=[]})) :: l
-              | StOpn (loc, id) ->
-                  (mkstr loc (Pstr_open (long_uident id, []))) :: l
+              | StOpn (loc, ov, id) ->
+                  let fresh = override_flag loc ov in
+                  (mkstr loc (Pstr_open (fresh, (long_uident id), []))) :: l
               | StTyp (loc, tdl) ->
                   (mkstr loc (Pstr_type (mktype_decl tdl []))) :: l
               | StVal (loc, rf, bi) ->
@@ -17961,13 +17983,42 @@ module Struct =
           
         module Delete =
           struct
+            exception Rule_not_found of (string * string)
+              
+            let _ =
+              let () =
+                Printexc.register_printer
+                  (function
+                   | Rule_not_found ((symbols, entry)) ->
+                       let msg =
+                         Printf.sprintf
+                           "rule %S cannot be found in entry\n%s" symbols
+                           entry
+                       in Some msg
+                   | _ -> None)
+              in ()
+              
             module Make (Structure : Structure.S) =
               struct
                 module Tools = Tools.Make(Structure)
                   
                 module Parser = Parser.Make(Structure)
                   
+                module Print = Print.Make(Structure)
+                  
                 open Structure
+                  
+                let raise_rule_not_found entry symbols =
+                  let to_string f x =
+                    let buff = Buffer.create 128 in
+                    let ppf = Format.formatter_of_buffer buff
+                    in
+                      (f ppf x;
+                       Format.pp_print_flush ppf ();
+                       Buffer.contents buff) in
+                  let entry = to_string Print.entry entry in
+                  let symbols = to_string Print.print_rule symbols
+                  in raise (Rule_not_found ((symbols, entry)))
                   
                 let delete_rule_in_tree entry =
                   let rec delete_in_tree symbols tree =
@@ -18067,7 +18118,7 @@ module Struct =
                            let levs =
                              delete_rule_in_suffix entry symbols levs
                            in lev :: levs)
-                  | [] -> raise Not_found
+                  | [] -> raise_rule_not_found entry symbols
                   
                 let rec delete_rule_in_prefix entry symbols =
                   function
@@ -18094,7 +18145,7 @@ module Struct =
                            let levs =
                              delete_rule_in_prefix entry symbols levs
                            in lev :: levs)
-                  | [] -> raise Not_found
+                  | [] -> raise_rule_not_found entry symbols
                   
                 let rec delete_rule_in_level_list entry symbols levs =
                   match symbols with
@@ -19392,9 +19443,9 @@ module Printers =
                                  "@[<hv0>@[<2>let %a%a@]@ @[<hv2>in@ %a@]@]"
                                  o#rec_flag r o#binding bi o#reset_semi#expr
                                  e)
-                      | Ast.ExOpI (_, i, e) ->
-                          pp f "@[<2>let open %a@]@ @[<2>in@ %a@]" o#ident i
-                            o#reset_semi#expr e
+                      | Ast.ExOpI (_loc, i, ov, e) ->
+                          pp f "@[<2>let open%a %a@]@ @[<2>in@ %a@]"
+                            o#override_flag ov o#ident i o#reset_semi#expr e
                       | Ast.ExMat (_, e, a) ->
                           pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]"
                             o#expr e o#match_case a
@@ -19512,7 +19563,7 @@ module Printers =
                           Ast.ExFun (_, _) | Ast.ExFUN (_, _, _) |
                           Ast.ExMat (_, _, _) | Ast.ExTry (_, _, _) |
                           Ast.ExIfe (_, _, _, _) | Ast.ExLet (_, _, _, _) |
-                          Ast.ExLmd (_, _, _, _) | Ast.ExOpI (_, _, _) |
+                          Ast.ExLmd (_, _, _, _) | Ast.ExOpI (_, _, _, _) |
                           Ast.ExAsr (_, _) | Ast.ExAsf _ | Ast.ExLaz (_, _) |
                           Ast.ExNew (_, _) | Ast.ExObj (_, _, _) ->
                           pp f "(%a)" o#reset#expr e
@@ -19867,8 +19918,9 @@ module Printers =
                       | Ast.StMty (_, s, mt) ->
                           pp f "@[<2>module type %a =@ %a%(%)@]" o#var s
                             o#module_type mt semisep
-                      | Ast.StOpn (_, sl) ->
-                          pp f "@[<2>open@ %a%(%)@]" o#ident sl semisep
+                      | Ast.StOpn (_loc, ov, sl) ->
+                          pp f "@[<2>open%a@ %a%(%)@]" o#override_flag ov
+                            o#ident sl semisep
                       | Ast.StTyp (_, t) ->
                           pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t
                             semisep

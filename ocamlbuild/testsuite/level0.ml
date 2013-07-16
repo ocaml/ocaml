@@ -131,4 +131,67 @@ test "SyntaxFlag"
   ~matching:[M.f "dummy.native"]
   ~targets:("dummy.native",[]) ();;
 
+test "NativeMliCmi"
+  ~description:"check that ocamlopt is used for .mli->.cmi when tag 'native' is set \
+                (part of PR#4613)"
+  ~tree:[T.f "foo.mli" ~content:"val bar : int"]
+  ~options:[`ocamlc "toto";(*using ocamlc would fail*)  `tags["native"]]
+  ~matching:[M.f "_build/foo.cmi"]
+  ~targets:("foo.cmi",[]) ();;
+
+test "NoIncludeNoHygiene1"
+  ~description:"check that hygiene checks are only done in traversed directories\
+                (PR#4502)"
+  ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
+         T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:"<must_ignore>: -traverse"]
+  ~pre_cmd:"ocamlc -c must_ignore/dirty.mli"
+            (* will make hygiene fail if must_ignore/ is checked *)
+  ~targets:("hello.byte",[]) ();;
+
+test "NoIncludeNoHygiene2"
+  ~description:"check that hygiene checks are not done on the -build-dir \
+                (PR#4502)"
+  ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
+         T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:""]
+  ~options:[`build_dir "must_ignore"]
+  ~pre_cmd:"ocamlc -c must_ignore/dirty.mli"
+            (* will make hygiene fail if must_ignore/ is checked *)
+  ~targets:("hello.byte",[]) ();;
+
+test "NoIncludeNoHygiene3"
+  ~description:"check that hygiene checks are not done on excluded dirs (PR#4502)"
+  ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
+         T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:""]
+  ~options:[`X "must_ignore"]
+  ~pre_cmd:"ocamlc -c must_ignore/dirty.mli"
+            (* will make hygiene fail if must_ignore/ is checked *)
+  ~targets:("hello.byte",[]) ();;
+
+test "OutputObj"
+  ~description:"output_obj targets for native and bytecode (PR #6049)"
+  ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\""]
+  ~targets:("hello.byte.o",["hello.byte.c";"hello.native.o"]) ();;
+
+test "StrictSequenceFlag"
+  ~description:"-strict_sequence tag"
+  ~tree:[T.f "hello.ml" ~content:"let () = 1; ()";
+         T.f "_tags" ~content:"true: strict_sequence\n"]
+  ~options:[`quiet]
+  ~failing_msg:"File \"hello.ml\", line 1, characters 9-10:
+Error: This expression has type int but an expression was expected of type
+         unit\nCommand exited with code 2."
+  ~targets:("hello.byte",[]) ();;
+
+test "PrincipalFlag" 
+  ~description:"-principal tag"
+  ~tree:[T.f "hello.ml" ~content:"type s={foo:int;bar:unit} type t={foo:int} let f x = x.bar;x.foo";
+         T.f "_tags" ~content:"true: principal\n"]
+  ~options:[`quiet]
+  ~failing_msg:"File \"hello.ml\", line 1, characters 61-64:
+Warning 18: this type-based field disambiguation is not principal."
+  ~targets:("hello.byte",["hello.native"]) ();;
+
 run ~root:"_test";;

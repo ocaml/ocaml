@@ -40,6 +40,8 @@ val approx_type_decl:
                                   (Ident.t * type_declaration) list
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
+val check_coherence:
+    Env.t -> Location.t -> Ident.t -> type_declaration -> unit
 
 (* for fixed types *)
 val is_fixed_type : Parsetree.type_declaration -> bool
@@ -69,7 +71,7 @@ type error =
   | Unbound_type_var of type_expr * type_declaration
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
-  | Bad_variance of int * (bool*bool) * (bool*bool)
+  | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr

@@ -68,9 +68,9 @@ INCLUDES_DEP=-I $(OCAMLSRCDIR)/parsing \
 INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 	-I $(OCAMLSRCDIR)/otherlibs/str \
 	-I $(OCAMLSRCDIR)/otherlibs/dynlink \
-	-I $(OCAMLSRCDIR)/otherlibs/unix \
+	-I $(OCAMLSRCDIR)/otherlibs/$(UNIXLIB) \
 	-I $(OCAMLSRCDIR)/otherlibs/num \
-	-I $(OCAMLSRCDIR)/otherlibs/graph
+	-I $(OCAMLSRCDIR)/otherlibs/$(GRAPHLIB)
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
@@ -194,7 +194,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
 STDLIB_MLIS=../stdlib/*.mli \
-	../otherlibs/unix/unix.mli \
+	../otherlibs/$(UNIXLIB)/unix.mli \
 	../otherlibs/str/str.mli \
 	../otherlibs/bigarray/bigarray.mli \
 	../otherlibs/num/num.mli
@@ -308,14 +308,14 @@ test_stdlib: dummy
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
 	../stdlib/pervasives.ml ../stdlib/*.mli \
-	../otherlibs/unix/unix.mli \
+	../otherlibs/$(UNIXLIB)/unix.mli \
 	../otherlibs/str/str.mli
 
 test_stdlib_code: dummy
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
 	`ls ../stdlib/*.ml | grep -v Labels` \
-	../otherlibs/unix/unix.ml \
+	../otherlibs/$(UNIXLIB)/unix.ml \
 	../otherlibs/str/str.ml
 
 test_framed: dummy
@@ -332,7 +332,7 @@ test_latex_simple: dummy
 	-latextitle 6,subsection -latextitle 7,subsubection \
 	../stdlib/hashtbl.mli \
 	../stdlib/arg.mli \
-	../otherlibs/unix/unix.mli \
+	../otherlibs/$(UNIXLIB)/unix.mli \
 	../stdlib/map.mli
 
 test_man: dummy
@@ -354,7 +354,7 @@ autotest_stdlib: dummy
 	$(OCAMLDOC_RUN) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
 	../stdlib/pervasives.ml ../stdlib/*.mli \
-	../otherlibs/unix/unix.mli \
+	../otherlibs/$(UNIXLIB)/unix.mli \
 	../otherlibs/str/str.mli
 
 # backup, clean and depend :

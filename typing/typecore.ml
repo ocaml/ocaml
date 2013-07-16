@@ -34,7 +34,7 @@ type error =
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
   | Wrong_name of string * Path.t * Longident.t
-  | Name_type_mismatch of 
+  | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Incomplete_format of string
   | Bad_conversion of string * int * char
@@ -108,6 +108,7 @@ let rp node =
 ;;
 
 
+let fst3 (x, _, _) = x
 let snd3 (_,x,_) = x
 
 let case lhs rhs =
@@ -136,7 +137,7 @@ let iter_expression f e =
     | Pexp_variant (_, eo) -> may expr eo
     | Pexp_record (iel, eo) ->
         may expr eo; List.iter (fun (_, e) -> expr e) iel
-    | Pexp_open (_, e)
+    | Pexp_open (_, _, e)
     | Pexp_newtype (_, e)
     | Pexp_poly (e, _)
     | Pexp_lazy e
@@ -602,16 +603,20 @@ end) = struct
       end
     | _ -> raise Not_found
 
-  let is_ambiguous env lbl others =
+  let rec unique eq acc = function
+      [] -> List.rev acc
+    | x :: rem ->
+        if List.exists (eq x) acc then unique eq acc rem
+        else unique eq (x :: acc) rem
+
+  let ambiguous_types env lbl others =
     let tpath = get_type_path env lbl in
-    let different_tpath (lbl, _) =
-      let lbl_tpath = get_type_path env lbl in
-      not (compare_type_path env tpath lbl_tpath)
-    in
     let others =
-      List.filter different_tpath others
-    in
-    others <> []
+      List.map (fun (lbl, _) -> get_type_path env lbl) others in
+    let tpaths = unique (compare_type_path env) [tpath] others in
+    match tpaths with
+      [_] -> []
+    | _ -> List.map Printtyp.string_of_path tpaths
 
   let disambiguate_by_type env tpath lbls =
     let check_type (lbl, _) =
@@ -629,9 +634,11 @@ end) = struct
           [] -> unbound_name_error env lid
 	| (lbl, use) :: rest ->
 	    use ();
-	    if is_ambiguous env lbl rest then
+            let paths = ambiguous_types env lbl rest in
+	    if paths <> [] then
 	      warn lid.loc
-		(Warnings.Ambiguous_name ([Longident.last lid.txt], false));
+		(Warnings.Ambiguous_name ([Longident.last lid.txt],
+                                          paths, false));
 	    lbl
 	end
     | Some(tpath0, tpath, pr) ->
@@ -651,16 +658,20 @@ end) = struct
             | (lbl', use') :: rest ->
                 let lbl_tpath = get_type_path env lbl' in
                 if not (compare_type_path env tpath lbl_tpath) then warn_pr ()
-                else if is_ambiguous env lbl' rest then
-                  warn lid.loc
-                    (Warnings.Ambiguous_name ([Longident.last lid.txt], false))
+                else
+                  let paths = ambiguous_types env lbl rest in
+                  if paths <> [] then
+                    warn lid.loc
+                      (Warnings.Ambiguous_name ([Longident.last lid.txt],
+                                                paths, false))
           end;
           lbl
         with Not_found -> try
           let lbl = lookup_from_type env tpath lid in
           check_lk tpath lbl;
+          let s = Printtyp.string_of_path tpath in
           warn lid.loc
-            (Warnings.Name_out_of_scope ([Longident.last lid.txt], false));
+            (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
           if not pr then warn_pr ();
           lbl
 	with Not_found ->
@@ -712,13 +723,15 @@ let disambiguate_label_by_ids keep env closed ids labels =
 (* Only issue warnings once per record constructor/pattern *)
 let disambiguate_lid_a_list loc closed env opath lid_a_list =
   let ids = List.map (fun (lid, _) -> Longident.last lid.txt) lid_a_list in
-  let w_pr = ref false and w_amb = ref [] and w_scope = ref [] in
+  let w_pr = ref false and w_amb = ref []
+  and w_scope = ref [] and w_scope_ty = ref "" in
   let warn loc msg =
     let open Warnings in
     match msg with
     | Not_principal _ -> w_pr := true
-    | Ambiguous_name([s], _) -> w_amb := s :: !w_amb
-    | Name_out_of_scope([s], _) -> w_scope := s :: !w_scope
+    | Ambiguous_name([s], l, _) -> w_amb := (s, l) :: !w_amb
+    | Name_out_of_scope(ty, [s], _) ->
+        w_scope := s :: !w_scope; w_scope_ty := ty
     | _ -> Location.prerr_warning loc msg
   in
   let process_label lid =
@@ -747,13 +760,26 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
     List.map (fun (lid,a) -> lid, process_label lid, a) lid_a_list in
   if !w_pr then
     Location.prerr_warning loc
-      (Warnings.Not_principal "this type-based record disambiguation");
-  if !w_amb <> [] && not !w_pr then
-    Location.prerr_warning loc
-      (Warnings.Ambiguous_name (List.rev !w_amb, true));
+      (Warnings.Not_principal "this type-based record disambiguation")
+  else begin
+    match List.rev !w_amb with
+      (_,types)::others as amb ->
+        let paths =
+          List.map (fun (_,lbl,_) -> Label.get_type_path env lbl) lbl_a_list in
+        let path = List.hd paths in
+        if List.for_all (compare_type_path env path) (List.tl paths) then
+          Location.prerr_warning loc
+            (Warnings.Ambiguous_name (List.map fst amb, types, true))
+        else
+          List.iter
+            (fun (s,l) -> Location.prerr_warning loc
+                (Warnings.Ambiguous_name ([s],l,false)))
+            amb
+    | _ -> ()
+  end;
   if !w_scope <> [] then
     Location.prerr_warning loc
-      (Warnings.Name_out_of_scope (List.rev !w_scope, true));
+      (Warnings.Name_out_of_scope (!w_scope_ty, List.rev !w_scope, true));
   lbl_a_list
 
 let rec find_record_qual = function
@@ -1290,9 +1316,6 @@ let force_delayed_checks () =
   reset_delayed_checks ();
   Btype.backtrack snap
 
-let fst3 (x, _, _) = x
-let snd3 (_, x, _) = x
-
 let rec final_subexpression sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e)
@@ -1315,6 +1338,12 @@ let rec is_nonexpansive exp =
   | Texp_function _ -> true
   | Texp_apply(e, (_,None,_)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd3 el)
+  | Texp_match(e, cases, _) ->
+      is_nonexpansive e &&
+      List.for_all
+        (fun {c_lhs = _; c_guard; c_rhs} ->
+           is_nonexpansive_opt c_guard && is_nonexpansive c_rhs
+        ) cases
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
   | Texp_construct( _, _, el) ->
@@ -2717,11 +2746,13 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = newty (Tpackage (p, nl, tl'));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_open (lid, e) ->
-      let (path, newenv) = !type_open env sexp.pexp_loc lid in
+  | Pexp_open (ovf, lid, e) ->
+      let (path, newenv) = !type_open ovf env sexp.pexp_loc lid in
       let exp = type_expect newenv e ty_expected in
       { exp with
-        exp_extra = (Texp_open (path, lid, newenv), loc, sexp.pexp_attributes) :: exp.exp_extra;
+        exp_extra = (Texp_open (ovf, path, lid, newenv), loc,
+                     sexp.pexp_attributes) ::
+                      exp.exp_extra;
       }
   | Pexp_extension (s, _arg) ->
       raise (Error (s.loc, env, Extension s.txt))
@@ -2855,7 +2886,7 @@ and type_argument env sarg ty_expected' ty_expected =
   let rec is_inferred sexp =
     match sexp.pexp_desc with
       Pexp_ident _ | Pexp_apply _ | Pexp_send _ | Pexp_field _ -> true
-    | Pexp_open (_, e) -> is_inferred e
+    | Pexp_open (_, _, e) -> is_inferred e
     | _ -> false
   in
   match expand_head env ty_expected' with

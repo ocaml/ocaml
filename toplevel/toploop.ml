@@ -166,7 +166,9 @@ let load_lambda ppf lam =
 
 (* Print the outcome of an evaluation *)
 
-let rec pr_item env = function
+let rec pr_item env items =
+  Printtyp.hide_rec_items items;
+  match items with
   | Sig_value(id, decl) :: rem ->
       let tree = Printtyp.tree_of_value_description id decl in
       let valopt =
@@ -409,7 +411,7 @@ let refill_lexbuf buffer len =
 let _ =
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
-  Compile.init_path();
+  Compmisc.init_path false;
   List.iter
     (fun (name, crc) ->
       Consistbl.set Env.crc_units name crc Sys.executable_name)
@@ -436,7 +438,7 @@ let set_paths () =
   Dll.add_path !load_path
 
 let initialize_toplevel_env () =
-  toplevel_env := Compile.initial_env()
+  toplevel_env := Compmisc.initial_env()
 
 (* The interactive loop *)
 
@@ -476,7 +478,7 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Compile.init_path();
-  toplevel_env := Compile.initial_env();
+  Compmisc.init_path false;
+  toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
   use_silently ppf name

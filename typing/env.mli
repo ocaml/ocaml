@@ -34,9 +34,13 @@ val diff: t -> t -> Ident.t list
 type type_descriptions =
     constructor_description list * label_description list
 
+(* For short-paths *)
 val iter_types:
     (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
     t -> unit
+val same_types: t -> t -> bool
+val used_persistent: unit -> Concr.t
+val find_shadowed_types: Path.t -> t -> Path.t list
 
 (* Lookup by paths *)
 
@@ -77,6 +81,11 @@ val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class: Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
 
+exception Recmodule
+  (* Raise by lookup_module when the identifier refers
+     to one of the modules of a recursive definition
+     during the computation of its approximation (see #5965). *)
+
 (* Insertion by identifier *)
 
 val add_value:
@@ -97,7 +106,7 @@ val add_signature: signature -> t -> t
 (* Insertion of all fields of a signature, relative to the given path.
    Used to implement open. *)
 
-val open_signature: ?loc:Location.t -> ?toplevel:bool -> Path.t -> signature -> t -> t
+val open_signature: ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t -> signature -> t -> t
 val open_pers_signature: string -> t -> t
 
 (* Insertion by name *)
@@ -159,7 +168,7 @@ val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 (* Error report *)
 
 type error =
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
 

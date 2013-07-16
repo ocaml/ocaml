@@ -61,6 +61,7 @@ type error =
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
+  | Illegal_reference_to_recursive_module
   | Extension of string
 
 exception Error of Location.t * Env.t * error

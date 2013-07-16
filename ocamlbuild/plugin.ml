@@ -51,8 +51,8 @@ module Make(U:sig end) =
 
     let rebuild_plugin_if_needed () =
       let a = up_to_date_or_copy plugin_file in
-      let b = (not we_have_a_config_file) or up_to_date_or_copy plugin_config_file in
-      let c = (not we_have_a_config_file_interface) or up_to_date_or_copy plugin_config_file_interface in
+      let b = (not we_have_a_config_file) || up_to_date_or_copy plugin_config_file in
+      let c = (not we_have_a_config_file_interface) || up_to_date_or_copy plugin_config_file_interface in
       if a && b && c && we_have_a_plugin then
         () (* Up to date *)
            (* FIXME: remove ocamlbuild_config.ml in _build/ if removed in parent *)

@@ -10,4 +10,4 @@
 #                                                                       #
 #########################################################################
 
-LC_ALL=C sort -u test4.result | diff -q test4.reference -
+LC_ALL=C $SORT -u test4.result | $DIFF test4.reference -

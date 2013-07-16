@@ -130,7 +130,7 @@ let pseudoregs_for_operation op arg res =
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iload((Single | Double | Double_u), _)
-  | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _, _) | Ifloatspecial _) ->
+  | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem _ | Ifloatspecial _) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* For storing a byte, the argument must be in eax...edx.
      (But for a short, any reg will do!)
@@ -220,11 +220,13 @@ method! select_operation op args =
   | Caddf ->
       self#select_floatarith Iaddf Iaddf Ifloatadd Ifloatadd args
   | Csubf ->
-      self#select_floatarith Isubf (Ispecific Isubfrev) Ifloatsub Ifloatsubrev args
+      self#select_floatarith Isubf (Ispecific Isubfrev) Ifloatsub Ifloatsubrev
+                             args
   | Cmulf ->
       self#select_floatarith Imulf Imulf Ifloatmul Ifloatmul args
   | Cdivf ->
-      self#select_floatarith Idivf (Ispecific Idivfrev) Ifloatdiv Ifloatdivrev args
+      self#select_floatarith Idivf (Ispecific Idivfrev) Ifloatdiv Ifloatdivrev
+                             args
   (* Recognize store instructions *)
   | Cstore Word ->
       begin match args with

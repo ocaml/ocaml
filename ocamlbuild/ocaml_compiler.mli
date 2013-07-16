@@ -26,6 +26,7 @@ val ocamlopt_p : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlmklib : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlmktop : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val prepare_compile : Rule.builder -> Pathname.t -> unit
+val compile_ocaml_interf : string -> string -> Rule.action
 val byte_compile_ocaml_interf : string -> string -> Rule.action
 val byte_compile_ocaml_implem : ?tag:string -> string -> string -> Rule.action
 val prepare_link :
@@ -41,10 +42,12 @@ val link_gen :
   (Tags.t -> Tags.t) ->
   string -> string -> Rule.action
 val byte_link : string -> string -> Rule.action
+val byte_output_obj : string -> string -> Rule.action
 val byte_library_link : string -> string -> Rule.action
 val byte_debug_link : string -> string -> Rule.action
 val byte_debug_library_link : string -> string -> Rule.action
 val native_link : string -> string -> Rule.action
+val native_output_obj : string -> string -> Rule.action
 val native_library_link : string -> string -> Rule.action
 val native_shared_library_link : ?tags:(string list) -> string -> string -> Rule.action
 val native_profile_link : string -> string -> Rule.action

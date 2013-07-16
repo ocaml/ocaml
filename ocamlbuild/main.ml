@@ -121,16 +121,20 @@ let proceed () =
         (List.mem name ["_oasis"] || (String.length name > 0 && name.[0] <> '_'))
         && (name <> !Options.build_dir && not (List.mem name !Options.exclude_dirs))
         && begin
-          if path_name <> Filename.current_dir_name && Pathname.is_directory path_name then
+          not (path_name <> Filename.current_dir_name && Pathname.is_directory path_name)
+          || begin
             let tags = tags_of_pathname path_name in
-            if Tags.mem "include" tags
-            || List.mem path_name !Options.include_dirs then
+            (if Tags.mem "include" tags
+              || List.mem path_name !Options.include_dirs then
               (entry_include_dirs := path_name :: !entry_include_dirs; true)
             else
               Tags.mem "traverse" tags
               || List.exists (Pathname.is_prefix path_name) !Options.include_dirs
-              || List.exists (Pathname.is_prefix path_name) target_dirs
-          else true
+              || List.exists (Pathname.is_prefix path_name) target_dirs)
+            && ((* beware: !Options.build_dir is an absolute directory *)
+                Pathname.normalize !Options.build_dir
+                <> Pathname.normalize (Pathname.pwd/path_name))
+          end
         end
       end
       (Slurp.slurp Filename.current_dir_name)

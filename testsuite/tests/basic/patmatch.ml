@@ -113,5 +113,46 @@ let _ =
   printf "l([||]) = %d\n" (l [||]);
   printf "l([|1|]) = %d\n" (l [|1|]);
   printf "l([|2;3|]) = %d\n" (l [|2;3|]);
-  printf "l([|4;5;6|]) = %d\n" (l [|4;5;6|]);
-  exit 0
+  printf "l([|4;5;6|]) = %d\n" (l [|4;5;6|])
+
+(* PR #5992 *)
+(* Was segfaulting *)
+
+let f = function
+ | lazy (), _, {contents=None} -> 0 
+ | _, lazy (), {contents=Some x} -> 1
+
+let s = ref None
+let set_true = lazy (s := Some 1)
+let set_false = lazy (s := None)
+
+let () =
+  let _r = try f (set_true, set_false, s) with Match_failure _ -> 2 in
+  printf "PR#5992=Ok\n"
+
+
+(* PR #5788, was giving wrong result 3 *)
+exception Foo
+exception Bar = Foo
+
+let test e b =
+  match e, b with
+  | Foo, true -> 1
+  | Bar, false -> 2
+  | _, _ -> 3
+
+let () =
+  let r = test Bar false in
+  if r = 2 then printf "PR#5788=Ok\n"
+
+let test e b =
+  match e, b with
+  | Bar, false -> 0
+  | (Foo|Bar), true -> 1
+  | Foo, false -> 2
+  | _, _ -> 3
+
+
+let () =
+  let r = test Foo false in
+  if r = 0 then printf "PR#5788=Ok\n"

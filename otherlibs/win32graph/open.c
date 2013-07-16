@@ -99,6 +99,7 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
                 // End application
         case WM_DESTROY:
                 ResetForClose(hwnd);
+		gr_check_open();
                 break;
         }
         caml_gr_handle_event(msg, wParam, lParam);

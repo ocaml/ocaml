@@ -12,6 +12,8 @@
 
 BASEDIR=../..
 LIBRARIES=nums
+ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/num
+LD_PATH=$(TOPDIR)/otherlibs/num
 PROGRAM_ARGS=1000
 
 include $(BASEDIR)/makefiles/Makefile.several

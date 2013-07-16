@@ -40,7 +40,10 @@ MANDIR=$(PREFIX)/man
 TOOLCHAIN=mingw
 
 ### Toolchain prefix
-TOOLPREF=i686-w64-mingw32-
+TARGET=i686-w64-mingw32
+HOST=i686-w64-mingw32
+
+TOOLPREF=$(TARGET)-
 
 CCOMPTYPE=cc
 O=o
@@ -65,7 +68,7 @@ MKSHAREDLIBRPATH=
 NATIVECCPROFOPTS=
 NATIVECCRPATH=
 ASM=$(TOOLPREF)as
-ASPP=gcc
+ASPP=$(TOOLPREF)gcc -c
 ASPPPROFFLAGS=
 PROFILING=noprof
 DYNLINKOPTS=
@@ -143,7 +146,7 @@ NATIVECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
 NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
-PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o #there must be a space after this '-o'
+PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o # must have a space after '-o'
 
 ############# Configuration for the contributed libraries
 
@@ -164,3 +167,12 @@ TK_LINK=$(TK_ROOT)/bin/tk85.dll $(TK_ROOT)/bin/tcl85.dll -lws2_32
 
 MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)
+
+############# for the testsuite makefiles
+#ml let topdir = "" and wintopdir = "";;
+OTOPDIR=$(WINTOPDIR)
+CTOPDIR=$(TOPDIR)
+CYGPATH=cygpath -m
+DIFF=diff -q --strip-trailing-cr
+CANKILL=false
+SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"

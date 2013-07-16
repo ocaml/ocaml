@@ -105,7 +105,8 @@ module Map : sig
       val add : key:key -> data:'a -> 'a t -> 'a t
       val singleton: key -> 'a -> 'a t
       val remove : key -> 'a t -> 'a t
-      val merge: f:(key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+      val merge:
+          f:(key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
       val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
       val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
@@ -160,6 +161,7 @@ module Set : sig
       val choose : t -> elt
       val split: elt -> t -> t * bool * t
       val find: elt -> t -> elt
+      val of_list: elt list -> t
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
 end

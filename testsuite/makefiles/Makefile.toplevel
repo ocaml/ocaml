@@ -12,14 +12,17 @@
 
 default:
 	@for file in *.ml; do \
-	  $(OCAML) $(TOPFLAGS) < $$file 2>&1 | grep -v '^        OCaml version' > $$file.result; \
+	  $(OCAML) $(TOPFLAGS) <$$file 2>&1 \
+	    | grep -v '^        OCaml version' > $$file.result; \
 	  if [ -f $$file.principal.reference ]; then \
-	    $(OCAML) $(TOPFLAGS) -principal < $$file 2>&1 | grep -v '^        OCaml version' > $$file.principal.result; \
+	    $(OCAML) $(TOPFLAGS) -principal <$$file 2>&1 \
+	      | grep -v '^        OCaml version' > $$file.principal.result; \
 	  fi; \
 	done
 	@for file in *.reference; do \
 	  printf " ... testing '$$file':"; \
-	  $(DIFF) $$file `basename $$file reference`result || (echo " => failed" && exit 1) && echo " => passed"; \
+	  $(DIFF) $$file `basename $$file reference`result >/dev/null \
+          && echo " => passed" || echo " => failed"; \
 	done
 
 promote: defaultpromote

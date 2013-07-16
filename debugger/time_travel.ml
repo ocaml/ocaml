@@ -238,7 +238,7 @@ let duplicate_current_checkpoint () =
            Checkpoint_done pid ->
              (new_checkpoint.c_pid <- pid;
               if !debug_time_travel then
-                prerr_endline ("Waiting for connection: " ^ (string_of_int pid)))
+                prerr_endline ("Waiting for connection: " ^ string_of_int pid))
          | Checkpoint_failed ->
              prerr_endline
                "A fork failed. Reducing maximum number of checkpoints.";

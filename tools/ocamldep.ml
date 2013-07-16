@@ -10,6 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+open Compenv
 open Parsetree
 
 
@@ -17,11 +18,11 @@ open Parsetree
 
 type file_kind = ML | MLI;;
 
+let include_dirs = ref []
 let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
 let native_only = ref false
-let force_slash = ref false
 let error_occurred = ref false
 let raw_dependencies = ref false
 let sort_files = ref false
@@ -41,11 +42,30 @@ let fix_slash s =
     r
   end
 
+(* Since we reinitialize load_path after reading OCAMLCOMP,
+  we must use a cache instead of calling Sys.readdir too often. *)
+module StringMap = Map.Make(String)
+let dirs = ref StringMap.empty
+let readdir dir =
+  try
+    StringMap.find dir !dirs
+  with Not_found ->
+    let contents =
+      try
+        Sys.readdir dir
+      with Sys_error msg ->
+        Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
+        error_occurred := true;
+        [||]
+    in
+    dirs := StringMap.add dir contents !dirs;
+    contents
+
 let add_to_load_path dir =
   try
     let dir = Misc.expand_directory Config.standard_library dir in
-    let contents = Sys.readdir dir in
-    load_path := !load_path @ [dir, contents]
+    let contents = readdir dir in
+    load_path := (dir, contents) :: !load_path
   with Sys_error msg ->
     Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
     error_occurred := true
@@ -130,7 +150,7 @@ let find_dependency target_kind modname (byt_deps, opt_deps) =
 let (depends_on, escaped_eol) = (":", " \\\n    ")
 
 let print_filename s =
-  let s = if !force_slash then fix_slash s else s in
+  let s = if !Clflags.force_slash then fix_slash s else s in
   if not (String.contains s ' ') then begin
     print_string s;
   end else begin
@@ -214,7 +234,7 @@ let read_parse_and_extract parse_function extract_function magic source_file =
       Pparse.remove_preprocessed input_file;
       !Depend.free_structure_names
     with x ->
-      Pparse.remove_preprocessed_if_ast input_file;
+      Pparse.remove_preprocessed input_file;
       raise x
     end
   with x ->
@@ -280,6 +300,13 @@ let mli_file_dependencies source_file =
     end
 
 let file_dependencies_as kind source_file =
+  Compenv.readenv Before_compile;
+  load_path := [];
+  List.iter add_to_load_path (
+      (!Compenv.last_include_dirs @
+       !include_dirs @
+       !Compenv.first_include_dirs
+      ));
   Location.input_name := source_file;
   try
     if Sys.file_exists source_file then begin
@@ -385,13 +412,14 @@ let print_version_num () =
 
 let _ =
   Clflags.classic := false;
-  add_to_load_path Filename.current_dir_name;
+  first_include_dirs := Filename.current_dir_name :: !first_include_dirs;
+  Compenv.readenv Before_args;
   Arg.parse [
      "-absname", Arg.Set Location.absname,
         " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
         " Generate dependencies on all files";
-     "-I", Arg.String add_to_load_path,
+     "-I", Arg.String (fun s -> include_dirs := s :: !include_dirs),
         "<dir>  Add <dir> to the list of include directories";
      "-impl", Arg.String (file_dependencies_as ML),
         "<f>  Process <f> as a .ml file";
@@ -409,9 +437,9 @@ let _ =
         " Output one line per file, regardless of the length";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
-    "-ppx", Arg.String(fun s -> Clflags.ppx := s :: !Clflags.ppx),
+    "-ppx", Arg.String(fun s -> first_ppx := s :: !first_ppx),
          "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
-     "-slash", Arg.Set force_slash,
+     "-slash", Arg.Set Clflags.force_slash,
          " (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-sort", Arg.Set sort_files,
         " Sort files according to their dependencies";
@@ -420,5 +448,6 @@ let _ =
      "-vnum", Arg.Unit print_version_num,
          " Print version number and exit";
     ] file_dependencies usage;
+  Compenv.readenv Before_link;
   if !sort_files then sort_files_by_dependencies !files;
   exit (if !error_occurred then 2 else 0)

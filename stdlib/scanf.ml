@@ -258,7 +258,7 @@ module Scanning : SCANNING = struct
 
      We cannot prevent the scanning mechanism to use one lookahead character,
      if needed by the semantics of the format string specifications (e.g. a
-     trailing ``skip space'' specification in the format string); in this case,
+     trailing 'skip space' specification in the format string); in this case,
      the mandatory lookahead character is indeed read from the input and not
      used to return the token read. It is thus mandatory to be able to store
      an unused lookahead character somewhere to get it as the first character
@@ -292,8 +292,8 @@ module Scanning : SCANNING = struct
      This phenomenon of reading mess is even worse when one defines more than
      one scanning buffer reading from the same input channel
      [ic]. Unfortunately, we have no simple way to get rid of this problem
-     (unless the basic input channel API is modified to offer a ``consider this
-     char as unread'' procedure to keep back the unused lookahead character as
+     (unless the basic input channel API is modified to offer a 'consider this
+     char as unread' procedure to keep back the unused lookahead character as
      available in the input channel for further reading).
 
      To prevent some of the confusion the scanning buffer allocation function
@@ -337,16 +337,17 @@ module Scanning : SCANNING = struct
   let from_ic_close_at_end = from_ic scan_close_at_end;;
 
   (* The scanning buffer reading from [Pervasives.stdin].
-     One could try to define [stdib] as a scanning buffer reading a character at a
-     time (no bufferization at all), but unfortunately the top-level
-     interaction would be wrong.
-     This is due to some kind of ``race condition'' when reading from [Pervasives.stdin],
+     One could try to define [stdib] as a scanning buffer reading a character
+     at a time (no bufferization at all), but unfortunately the top-level
+     interaction would be wrong. This is due to some kind of
+     'race condition' when reading from [Pervasives.stdin],
      since the interactive compiler and [scanf] will simultaneously read the
-     material they need from [Pervasives.stdin]; then, confusion will result from what should
-     be read by the top-level and what should be read by [scanf].
+     material they need from [Pervasives.stdin]; then, confusion will result
+     from what should be read by the top-level and what should be read
+     by [scanf].
      This is even more complicated by the one character lookahead that [scanf]
-     is sometimes obliged to maintain: the lookahead character will be available
-     for the next ([scanf]) entry, seemingly coming from nowhere.
+     is sometimes obliged to maintain: the lookahead character will be
+     available for the next ([scanf]) entry, seemingly coming from nowhere.
      Also no [End_of_file] is raised when reading from stdin: if not enough
      characters have been read, we simply ask to read more. *)
   let stdin =
@@ -447,12 +448,12 @@ let bad_conversion fmt i c =
   invalid_arg
     (Printf.sprintf
        "scanf: bad conversion %%%C, at char number %i \
-        in format string ``%s''" c i (Sformat.to_string fmt))
+        in format string \'%s\'" c i (Sformat.to_string fmt))
 ;;
 
 let incomplete_format fmt =
   invalid_arg
-    (Printf.sprintf "scanf: premature end of format string ``%s''"
+    (Printf.sprintf "scanf: premature end of format string \'%s\'"
        (Sformat.to_string fmt))
 ;;
 
@@ -470,7 +471,7 @@ let character_mismatch c ci =
 
 let format_mismatch_err fmt1 fmt2 =
   Printf.sprintf
-    "format read ``%s'' does not match specification ``%s''" fmt1 fmt2
+    "format read \'%s\' does not match specification \'%s\'" fmt1 fmt2
 ;;
 
 let format_mismatch fmt1 fmt2 = bad_input (format_mismatch_err fmt1 fmt2);;
@@ -481,19 +482,19 @@ let compatible_format_type fmt1 fmt2 =
   Tformat.summarize_format_type (string_to_format fmt2);;
 
 (* Checking that [c] is indeed in the input, then skips it.
-   In this case, the character c has been explicitly specified in the
+   In this case, the character [c] has been explicitly specified in the
    format as being mandatory in the input; hence we should fail with
    End_of_file in case of end_of_input. (Remember that Scan_failure is raised
    only when (we can prove by evidence) that the input does not match the
    format string given. We must thus differentiate End_of_file as an error
    due to lack of input, and Scan_failure which is due to provably wrong
-   input. I am not sure this is worth to burden: it is complex and somehow
+   input. I am not sure this is worth the burden: it is complex and somehow
    subliminal; should be clearer to fail with Scan_failure "Not enough input
    to complete scanning"!)
 
    That's why, waiting for a better solution, we use checked_peek_char here.
-   We are also careful to treat "\r\n" in the input as a end of line marker: it
-   always matches a '\n' specification in the input format string. *)
+   We are also careful to treat "\r\n" in the input as an end of line marker:
+   it always matches a '\n' specification in the input format string. *)
 let rec check_char ib c =
   let ci = Scanning.checked_peek_char ib in
   if ci = c then Scanning.invalidate_current_char ib else begin
@@ -611,7 +612,7 @@ let scan_decimal_digits_plus width ib =
     bad_input (Printf.sprintf "character %C is not a decimal digit" c)
 ;;
 
-let scan_digits_plus digitp width ib =
+let scan_digits_plus basis digitp width ib =
   (* To scan numbers from other bases, we use a predicate argument to
      scan_digits. *)
   let rec scan_digits width =
@@ -636,7 +637,7 @@ let scan_digits_plus digitp width ib =
     let width = Scanning.store_char width ib c in
     scan_digits width
   else
-    bad_input (Printf.sprintf "character %C is not a digit" c)
+    bad_input (Printf.sprintf "character %C is not a valid %s digit" c basis)
 ;;
 
 let is_binary_digit = function
@@ -644,21 +645,21 @@ let is_binary_digit = function
   | _ -> false
 ;;
 
-let scan_binary_int = scan_digits_plus is_binary_digit;;
+let scan_binary_int = scan_digits_plus "binary" is_binary_digit;;
 
 let is_octal_digit = function
   | '0' .. '7' -> true
   | _ -> false
 ;;
 
-let scan_octal_int = scan_digits_plus is_octal_digit;;
+let scan_octal_int = scan_digits_plus "octal" is_octal_digit;;
 
 let is_hexa_digit = function
   | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' -> true
   | _ -> false
 ;;
 
-let scan_hexadecimal_int = scan_digits_plus is_hexa_digit;;
+let scan_hexadecimal_int = scan_digits_plus "hexadecimal" is_hexa_digit;;
 
 (* Scan a decimal integer. *)
 let scan_unsigned_decimal_int = scan_decimal_digits_plus;;
@@ -933,8 +934,10 @@ let scan_Char width ib =
 
   and find_char width =
     match check_next_char_for_char width ib with
-    | '\\' -> find_stop (scan_backslash_char (Scanning.ignore_char width ib) ib)
-    | c -> find_stop (Scanning.store_char width ib c)
+    | '\\' ->
+      find_stop (scan_backslash_char (Scanning.ignore_char width ib) ib)
+    | c ->
+      find_stop (Scanning.store_char width ib c)
 
   and find_stop width =
     match check_next_char_for_char width ib with
@@ -1262,7 +1265,7 @@ let rec skip_whites ib =
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
     let i = Scanning.char_count ib in
-    bad_input (Printf.sprintf "scanf: bad input at char number %i: ``%s''" i s)
+    bad_input (Printf.sprintf "scanf: bad input at char number %i: \'%s\'" i s)
   | x -> raise x
 ;;
 
@@ -1349,7 +1352,8 @@ let scan_format ib ef fmt rv f =
         if i > lim then incomplete_format fmt else
         match Sformat.get fmt i with
         | '0' .. '9' as conv ->
-          let width, i = read_int_literal (decimal_value_of_char conv) (succ i) in
+          let width, i =
+            read_int_literal (decimal_value_of_char conv) (succ i) in
           Some width, i
         | _ -> None, i
 
@@ -1449,20 +1453,34 @@ let scan_format ib ef fmt rv f =
         | _ -> scan_fmt ir (stack f (get_count conv0 ib)) i end
       | '(' | '{' as conv (* ')' '}' *) ->
         let i = succ i in
-        (* Find the static specification for the format to read. *)
+        (* Find [mf], the static specification for the format to read. *)
         let j =
           Tformat.sub_format
             incomplete_format bad_conversion conv fmt i in
         let mf = Sformat.sub fmt (Sformat.index_of_int i) (j - 2 - i) in
-        (* Read the specified format string in the input buffer,
-           and check its correctness. *)
+        (* Read [rf], the specified format string in the input buffer,
+           and check its correctness w.r.t. [mf]. *)
         let _x = scan_String width ib in
         let rf = token_string ib in
         if not (compatible_format_type rf mf) then format_mismatch rf mf else
+        (* Proceed according to the kind of metaformat found:
+           - %{ mf %} simply returns [rf] as the token read,
+           - %( mf %) returns [rf] as the first token read, then
+             returns a second token obtained by scanning the input with
+             format string [rf].
+           Behaviour for %( mf %) is mandatory for sake of format string
+           typechecking specification. To get pure format string
+           substitution behaviour, you should use %_( mf %) that skips the
+           first (format string) token and hence properly substitutes [mf] by
+           [rf] in the format string argument.
+        *)
         (* For conversion %{%}, just return this format string as the token
-           read. *)
+           read and go on with the rest of the format string argument. *)
         if conv = '{' (* '}' *) then scan_fmt ir (stack f rf) j else
-        (* Or else, read according to the format string just read. *)
+        (* Or else, return this format string as the first token read;
+           then continue scanning using this format string to get
+           the following token read;
+           finally go on with the rest of the format string argument. *)
         let ir, nf = scan (string_to_format rf) ir (stack f rf) 0 in
         (* Return the format string read and the value just read,
            then go on with the rest of the format. *)

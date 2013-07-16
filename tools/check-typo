@@ -82,7 +82,7 @@ case "$1" in
 esac
 
 usage () {
-  echo "usage: check-typo {-<rule>} [--] [<file-or-dir> ...]" >&2
+  echo "usage: check-typo {-<rule>} [--] {<file-or-dir>}" >&2
   exit 2
 }
 

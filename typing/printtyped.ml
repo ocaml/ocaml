@@ -254,8 +254,8 @@ and expression_extra i ppf x attrs =
       attributes i ppf attrs;
       option i core_type ppf cto1;
       core_type i ppf cto2;
-  | Texp_open (m, _, _) ->
-      line i ppf "Pexp_open \"%a\"\n" fmt_path m;
+  | Texp_open (ovf, m, _, _) ->
+      line i ppf "Pexp_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
       attributes i ppf attrs;
   | Texp_poly cto ->
       line i ppf "Pexp_poly\n";
@@ -598,8 +598,8 @@ and signature_item i ppf x =
       line i ppf "Psig_modtype \"%a\"\n" fmt_ident x.mtd_id;
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
-  | Tsig_open (li,_,attrs) ->
-      line i ppf "Psig_open %a\n" fmt_path li;
+  | Tsig_open (ovf, li,_,attrs) ->
+      line i ppf "Psig_open %a %a\n" fmt_override_flag ovf  fmt_path li;
       attributes i ppf attrs
   | Tsig_include (mt, _, attrs) ->
       line i ppf "Psig_include\n";
@@ -704,8 +704,8 @@ and structure_item i ppf x =
       line i ppf "Pstr_modtype \"%a\"\n" fmt_ident x.mtd_id;
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
-  | Tstr_open (li, _, attrs) ->
-      line i ppf "Pstr_open %a\n" fmt_path li;
+  | Tstr_open (ovf, li, _, attrs) ->
+      line i ppf "Pstr_open %a %a\n" fmt_override_flag ovf fmt_path li;
       attributes i ppf attrs
   | Tstr_class (l) ->
       line i ppf "Pstr_class\n";

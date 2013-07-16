@@ -78,7 +78,7 @@ rule "ocaml: mli -> cmi"
   ~tags:["ocaml"]
   ~prod:"%.cmi"
   ~deps:["%.mli"; "%.mli.depends"]
-  (Ocaml_compiler.byte_compile_ocaml_interf "%.mli" "%.cmi");;
+  (Ocaml_compiler.compile_ocaml_interf "%.mli" "%.cmi");;
 
 rule "ocaml: mlpack & d.cmo* -> d.cmo & cmi"
   ~tags:["ocaml"; "debug"; "byte"]
@@ -160,6 +160,18 @@ rule "ocaml: cmo* -> byte"
   ~dep:"%.cmo"
   (Ocaml_compiler.byte_link "%.cmo" "%.byte");;
 
+rule "ocaml: cmo* -> byte.o"
+  ~tags:["ocaml"; "byte"; "link"; "output_obj" ]
+  ~prod:"%.byte.o"
+  ~dep:"%.cmo"
+  (Ocaml_compiler.byte_output_obj "%.cmo" "%.byte.o");;
+
+rule "ocaml: cmo* -> byte.c"
+  ~tags:["ocaml"; "byte"; "link"; "output_obj" ]
+  ~prod:"%.byte.c"
+  ~dep:"%.cmo"
+  (Ocaml_compiler.byte_output_obj "%.cmo" "%.byte.c");;
+
 rule "ocaml: p.cmx* & p.o* -> p.native"
   ~tags:["ocaml"; "native"; "profile"; "program"]
   ~prod:"%.p.native"
@@ -171,6 +183,12 @@ rule "ocaml: cmx* & o* -> native"
   ~prod:"%.native"
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_link "%.cmx" "%.native");;
+
+rule "ocaml: cmx* & o* -> native.o"
+  ~tags:["ocaml"; "native"; "output_obj" ]
+  ~prod:"%.native.o"
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_output_obj "%.cmx" "%.native.o");;
 
 rule "ocaml: mllib & d.cmo* -> d.cma"
   ~tags:["ocaml"; "byte"; "debug"; "library"]
@@ -535,10 +553,14 @@ flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
 flag ["ocaml"; "bin_annot"; "compile"] (A "-bin-annot");;
+flag ["ocaml"; "short_paths"; "compile"] (A "-short-paths");;
+flag ["ocaml"; "short_paths"; "infer_interface"] (A "-short-paths");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "doc"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "pack"] (A "-rectypes");;
+flag ["ocaml"; "principal"; "compile"] (A "-principal");;
+flag ["ocaml"; "principal"; "infer_interface"] (A "-principal");;
 flag ["ocaml"; "linkall"; "link"] (A "-linkall");;
 flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
@@ -576,6 +598,7 @@ let ocaml_warn_flag c =
 List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'K'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'X'; 'Y'; 'Z'];;
 
 flag ["ocaml"; "compile"; "strict-sequence"] (A "-strict-sequence");;
+flag ["ocaml"; "compile"; "strict_sequence"] (A "-strict-sequence");;
 
 flag ["ocaml"; "doc"; "docdir"; "extension:html"] (A"-html");;
 flag ["ocaml"; "doc"; "docdir"; "manpage"] (A"-man");;

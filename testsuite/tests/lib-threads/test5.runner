@@ -10,7 +10,7 @@
 #                                                                       #
 #########################################################################
 
-./program > test5.result &
+$RUNTIME ./program >test5.result &
 pid=$!
 sleep 3
 kill -9 $pid

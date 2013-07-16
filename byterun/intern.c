@@ -604,7 +604,7 @@ value caml_input_val(struct channel *chan)
   /* Free everything */
   caml_stat_free(intern_input);
   if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
-  return res;
+  return caml_check_urgent_gc(res);
 }
 
 CAMLprim value caml_input_value(value vchan)
@@ -643,7 +643,7 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
   intern_add_to_heap(whsize);
   /* Free everything */
   if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
-  CAMLreturn (obj);
+  CAMLreturn (caml_check_urgent_gc(obj));
 }
 
 CAMLprim value caml_input_value_from_string(value str, value ofs)
@@ -671,7 +671,7 @@ static value input_val_from_block(void)
   intern_add_to_heap(whsize);
   /* Free internal data structures */
   if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
-  return obj;
+  return caml_check_urgent_gc(obj);
 }
 
 CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
@@ -751,7 +751,9 @@ static char * intern_resolve_code_pointer(unsigned char digest[16],
 static void intern_bad_code_pointer(unsigned char digest[16])
 {
   char msg[256];
-  sprintf(msg, "input_value: unknown code module %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+  sprintf(msg, "input_value: unknown code module "
+               "%02X%02X%02X%02X%02X%02X%02X%02X"
+               "%02X%02X%02X%02X%02X%02X%02X%02X",
           digest[0], digest[1], digest[2], digest[3],
           digest[4], digest[5], digest[6], digest[7],
           digest[8], digest[9], digest[10], digest[11],

@@ -278,7 +278,7 @@ and expression_desc =
 
            (module ME : S) is represented as
            Pexp_constraint(Pexp_pack, Ptyp_package S) *)
-  | Pexp_open of Longident.t loc * expression
+  | Pexp_open of override_flag * Longident.t loc * expression
         (* let open M in E *)
   | Pexp_extension of extension
         (* [%id] *)
@@ -572,7 +572,7 @@ and signature_item_desc =
   | Psig_modtype of module_type_declaration
         (* module type S = MT
            module type S *)
-  | Psig_open of Longident.t loc * attributes
+  | Psig_open of override_flag * Longident.t loc * attributes
         (* open X *)
   | Psig_include of module_type * attributes
         (* include MT *)
@@ -672,7 +672,7 @@ and structure_item_desc =
         (* module rec X1 = ME1 and ... and Xn = MEn *)
   | Pstr_modtype of module_type_declaration
         (* module type S = MT *)
-  | Pstr_open of Longident.t loc * attributes
+  | Pstr_open of override_flag * Longident.t loc * attributes
         (* open X *)
   | Pstr_class of class_declaration list
         (* class c1 = ... and ... and cn = ... *)

@@ -32,8 +32,16 @@ static uintnat obj_counter;  /* Number of objects emitted so far */
 static uintnat size_32;  /* Size in words of 32-bit block for struct. */
 static uintnat size_64;  /* Size in words of 64-bit block for struct. */
 
-static int extern_ignore_sharing; /* Flag to ignore sharing */
-static int extern_closures;     /* Flag to allow externing code pointers */
+/* Flags affecting marshaling */
+
+enum { 
+  NO_SHARING = 1,               /* Flag to ignore sharing */
+  CLOSURES = 2,                 /* Flag to allow marshaling code pointers */
+  COMPAT_32 = 4                 /* Flag to ensure that output can safely
+                                   be read back on a 32-bit platform */
+};
+
+static int extern_flags;        /* logical or of some of the flags above */
 
 /* Trail mechanism to undo forwarding pointers put inside objects */
 
@@ -153,7 +161,7 @@ static void extern_record_location(value obj)
 {
   header_t hdr;
 
-  if (extern_ignore_sharing) return;
+  if (extern_flags & NO_SHARING) return;
   if (extern_trail_cur == extern_trail_limit) {
     struct trail_block * new_block = malloc(sizeof(struct trail_block));
     if (new_block == NULL) extern_out_of_memory();
@@ -370,6 +378,9 @@ static void extern_rec(value v)
       writecode16(CODE_INT16, n);
 #ifdef ARCH_SIXTYFOUR
     } else if (n < -((intnat)1 << 30) || n >= ((intnat)1 << 30)) {
+      if (extern_flags & COMPAT_32)
+        extern_failwith("output_value: integer cannot be read back on "
+                        "32-bit platform");
       writecode64(CODE_INT64, n);
 #endif
     } else
@@ -424,6 +435,11 @@ static void extern_rec(value v)
       } else if (len < 0x100) {
         writecode8(CODE_STRING8, len);
       } else {
+#ifdef ARCH_SIXTYFOUR
+        if (len > 0xFFFFFB && (extern_flags & COMPAT_32))
+          extern_failwith("output_value: string cannot be read back on "
+                          "32-bit platform");
+#endif
         writecode32(CODE_STRING32, len);
       }
       writeblock(String_val(v), len);
@@ -450,6 +466,11 @@ static void extern_rec(value v)
       if (nfloats < 0x100) {
         writecode8(CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
       } else {
+#ifdef ARCH_SIXTYFOUR
+        if (nfloats > 0x1FFFFF && (extern_flags & COMPAT_32))
+          extern_failwith("output_value: float array cannot be read back on "
+                          "32-bit platform");
+#endif
         writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
       }
       writeblock_float8((double *) v, nfloats);
@@ -487,9 +508,15 @@ static void extern_rec(value v)
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
 #ifdef ARCH_SIXTYFOUR
       } else if (hd >= ((uintnat)1 << 32)) {
+        /* Is this case useful?  The overflow check in extern_value will fail.*/
         writecode64(CODE_BLOCK64, Whitehd_hd (hd));
 #endif
       } else {
+#ifdef ARCH_SIXTYFOUR
+        if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
+          extern_failwith("output_value: array cannot be read back on "
+                          "32-bit platform");
+#endif
         writecode32(CODE_BLOCK32, Whitehd_hd (hd));
       }
       size_32 += 1 + sz;
@@ -510,7 +537,7 @@ static void extern_rec(value v)
     }
   }
   else if ((cf = extern_find_code((char *) v)) != NULL) {
-    if (!extern_closures)
+    if ((extern_flags & CLOSURES) == 0)
       extern_invalid_argument("output_value: functional value");
     writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
     writeblock((char *) cf->digest, 16);
@@ -530,17 +557,13 @@ static void extern_rec(value v)
   /* Never reached as function leaves with return */
 }
 
-enum { NO_SHARING = 1, CLOSURES = 2 };
-static int extern_flags[] = { NO_SHARING, CLOSURES };
+static int extern_flag_values[] = { NO_SHARING, CLOSURES, COMPAT_32 };
 
 static intnat extern_value(value v, value flags)
 {
   intnat res_len;
-  int fl;
   /* Parse flag list */
-  fl = caml_convert_flag_list(flags, extern_flags);
-  extern_ignore_sharing = fl & NO_SHARING;
-  extern_closures = fl & CLOSURES;
+  extern_flags = caml_convert_flag_list(flags, extern_flag_values);
   /* Initializations */
   init_extern_trail();
   obj_counter = 0;

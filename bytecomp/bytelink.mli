@@ -14,7 +14,8 @@
 
 val link : Format.formatter -> string list -> string -> unit
 
-val check_consistency: Format.formatter -> string -> Cmo_format.compilation_unit -> unit
+val check_consistency:
+  Format.formatter -> string -> Cmo_format.compilation_unit -> unit
 
 val extract_crc_interfaces: unit -> (string * Digest.t) list
 
@@ -27,6 +28,7 @@ type error =
   | Custom_runtime
   | File_exists of string
   | Cannot_open_dll of string
+  | Not_compatible_32
 
 exception Error of error
 

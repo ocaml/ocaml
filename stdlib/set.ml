@@ -48,6 +48,7 @@ module type S =
     val choose: t -> elt
     val split: elt -> t -> t * bool * t
     val find: elt -> t -> elt
+    val of_list: elt list -> t
   end
 
 module Make(Ord: OrderedType) =
@@ -355,4 +356,32 @@ module Make(Ord: OrderedType) =
           let c = Ord.compare x v in
           if c = 0 then v
           else find x (if c < 0 then l else r)
+
+    let of_sorted_list l =
+      let rec sub n l =
+        match n, l with
+        | 0, l -> Empty, l
+        | 1, x0 :: l -> Node (Empty, x0, Empty, 1), l
+        | 2, x0 :: x1 :: l -> Node (Node(Empty, x0, Empty, 1), x1, Empty, 2), l
+        | 3, x0 :: x1 :: x2 :: l -> Node (Node(Empty, x0, Empty, 1), x1, Node(Empty, x2, Empty, 1), 2), l
+        | n, l ->
+          let nl = n / 2 in
+          let left, l = sub nl l in
+          match l with
+          | [] -> assert false
+          | mid :: l ->
+            let right, l = sub (n - nl - 1) l in
+            create left mid right, l
+      in
+      fst (sub (List.length l) l)
+
+    let of_list l =
+      match l with
+      | [] -> empty
+      | [x0] -> singleton x0
+      | [x0; x1] -> add x1 (singleton x0)
+      | [x0; x1; x2] -> add x2 (add x1 (singleton x0))
+      | [x0; x1; x2; x3] -> add x3 (add x2 (add x1 (singleton x0)))
+      | [x0; x1; x2; x3; x4] -> add x4 (add x3 (add x2 (add x1 (singleton x0))))
+      | _ -> of_sorted_list (List.sort_uniq Ord.compare l)
   end

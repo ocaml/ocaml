@@ -16,8 +16,9 @@ let rec fib n = if n <= 2 then 1 else fib(n-1) + fib(n-2)
 
 let fibtask n =
   while true do
+    let res = fib n in
     Mutex.lock output_lock;
-    print_int(fib n); print_newline();
+    print_int res; print_newline();
     Mutex.unlock output_lock
   done
 

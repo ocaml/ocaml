@@ -117,32 +117,9 @@ int caml_page_table_initialize(mlsize_t bytesize);
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
 
-/* You must use [Modify] to change a field of an existing shared block,
-   unless you are sure the value being overwritten is not a shared block and
-   the value being written is not a young block. */
-/* [Modify] never calls the GC. */
-/* [Modify] can also be used to do assignment on data structures that are
-   not in the (major) heap.  In this case, it is a bit slower than
-   simple assignment.
-   In particular, you can use [Modify] when you don't know whether the
-   block being changed is in the minor heap or the major heap.
-*/
+/* Deprecated alias for [caml_modify] */
 
-#define Modify(fp, val) do{                                                 \
-  value _old_ = *(fp);                                                      \
-  *(fp) = (val);                                                            \
-  if (Is_in_heap (fp)){                                                     \
-    if (caml_gc_phase == Phase_mark) caml_darken (_old_, NULL);             \
-    if (Is_block (val) && Is_young (val)                                    \
-        && ! (Is_block (_old_) && Is_young (_old_))){                       \
-      if (caml_ref_table.ptr >= caml_ref_table.limit){                      \
-        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);            \
-        caml_realloc_ref_table (&caml_ref_table);                           \
-      }                                                                     \
-      *caml_ref_table.ptr++ = (fp);                                         \
-    }                                                                       \
-  }                                                                         \
-}while(0)
+#define Modify(fp,val) caml_modify((fp), (val))
 
 /* </private> */
 
@@ -212,7 +189,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   CAMLxparamN (x, (size))
 
 
-#if defined (__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
+#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
   #define CAMLunused __attribute__ ((unused))
 #else
   #define CAMLunused

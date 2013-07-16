@@ -68,7 +68,7 @@ val default_available_units: unit -> unit
 
 val allow_unsafe_modules : bool -> unit
 (** Govern whether unsafe object files are allowed to be
-    dynamically linked. A compilation unit is ``unsafe'' if it contains
+    dynamically linked. A compilation unit is 'unsafe' if it contains
     declarations of external functions, which can break type safety.
     By default, dynamic linking of unsafe object files is
     not allowed. In native code, this function does nothing; object files

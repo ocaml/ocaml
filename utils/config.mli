@@ -101,6 +101,8 @@ val asm: string
 
 val asm_cfi_supported: bool
         (* Whether assembler understands CFI directives *)
+val with_frame_pointers : bool
+        (* Whether assembler should maintain frame pointers *)
 
 val ext_obj: string
         (* Extension for object files, e.g. [.o] under Unix. *)
@@ -117,5 +119,11 @@ val default_executable_name: string
 
 val systhread_supported : bool
         (* Whether the system thread library is implemented *)
+
+val host : string
+        (* Whether the compiler is a cross-compiler *)
+
+val target : string
+        (* Whether the compiler is a cross-compiler *)
 
 val print_config : out_channel -> unit;;

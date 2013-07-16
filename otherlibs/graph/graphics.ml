@@ -212,6 +212,18 @@ let read_key () =
 let key_pressed () =
   let e = wait_next_event [Poll] in e.keypressed
 
+let loop_at_exit events handler =
+  let events = List.filter (fun e -> e <> Poll) events in
+  at_exit (fun _ ->
+    try
+      while true do
+        let e = wait_next_event events in
+        handler e
+      done
+    with Exit -> close_graph ()
+       | e -> close_graph (); raise e
+  )
+
 (*** Sound *)
 
 external sound : int -> int -> unit = "caml_gr_sound"

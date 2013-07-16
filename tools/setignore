@@ -18,6 +18,8 @@
 *.a
 *.so
 *.obj
+*.lib
+*.dll
 
 *.cm[ioxat]
 *.cmx[as]
@@ -28,7 +30,8 @@
 *.byte
 *.native
 program
-program.exe
+*.exe
+*.exe.manifest
 
 .depend
 .depend.nt

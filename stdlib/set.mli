@@ -149,6 +149,12 @@ module type S =
         to [Ord.compare]), or raise [Not_found] if no such element
         exists.
         @since 4.01.0 *)
+
+    val of_list: elt list -> t
+    (** [of_list l] creates a set from a list of elements.
+        This is usually more efficient than folding [add] over the list,
+        except perhaps for lists with many duplicated elements.
+        @since 4.02.0 *)
   end
 (** Output signature of the functor {!Set.Make}. *)
 

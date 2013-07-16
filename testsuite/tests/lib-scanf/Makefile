@@ -13,7 +13,7 @@
 BASEDIR=../..
 #MODULES=
 MAIN_MODULE=tscanf
-ADD_COMPFLAGS=-I $(BASEDIR)/lib
+ADD_COMPFLAGS=-I $(OTOPDIR)/testsuite/lib
 ADD_MODULES=testing
 TEST_TEMP_FILES=tscanf_data
 

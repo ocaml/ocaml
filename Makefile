@@ -65,7 +65,8 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
-  driver/pparse.cmo driver/main_args.cmo
+  driver/pparse.cmo driver/main_args.cmo \
+  driver/compenv.cmo driver/compmisc.cmo
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
 
@@ -282,8 +283,11 @@ install:
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
 	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
-	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi toplevel/*.cmi $(COMPLIBDIR)
-	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) $(COMPLIBDIR)
+	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi \
+	   toplevel/*.cmi $(COMPLIBDIR)
+	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
+	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
+	   $(COMPLIBDIR)
 	cp expunge $(LIBDIR)/expunge$(EXE)
 	cp toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
@@ -322,7 +326,8 @@ installoptopt:
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
 	   $(COMPLIBDIR)
-	cd $(COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a ocamloptcomp.a
+	cd $(COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
+	   ocamloptcomp.a
 
 clean:: partialclean
 
@@ -341,7 +346,7 @@ partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	$(CAMLC) $(LINKFLAGS) -o ocamlc \
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlc|' \
 	  driver/ocamlcomp.sh.in > ocamlcomp.sh
@@ -371,7 +376,8 @@ compilerlibs/ocamltoplevel.cma: $(TOPLEVEL)
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
-ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) expunge
+ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
+       compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) expunge
 	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	  compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
@@ -385,7 +391,7 @@ partialclean::
 
 ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
-		   $(NATTOPOBJS:.cmo=.cmx) -linkall
+	           $(NATTOPOBJS:.cmo=.cmx) -linkall
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
@@ -417,9 +423,12 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
+	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
 	    -e 's|%%MKDLL%%|$(MKDLL)|' \
 	    -e 's|%%MKEXE%%|$(MKEXE)|' \
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
+	    -e 's|%%HOST%%|$(HOST)|' \
+	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
@@ -462,7 +471,8 @@ compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a
 
-ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa $(BYTESTART:.cmo=.cmx)
+ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
+            $(BYTESTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
 	  compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
 	  $(BYTESTART:.cmo=.cmx) -cclib "$(BYTECCLIBS)"
@@ -480,7 +490,8 @@ compilerlibs/ocamloptcomp.cmxa: $(ASMCOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a
 
-ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa $(OPTSTART:.cmo=.cmx)
+ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+              $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
 	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	   $(OPTSTART:.cmo=.cmx)
@@ -582,9 +593,10 @@ tools/cvt_emit: tools/cvt_emit.mll
 
 # The "expunge" utility
 
-expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
-	$(CAMLC) $(LINKFLAGS) -o expunge \
-	  compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
+expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
+         toplevel/expunge.cmo
+	$(CAMLC) $(LINKFLAGS) -o expunge compilerlibs/ocamlcommon.cma \
+	         compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
 
 partialclean::
 	rm -f expunge
@@ -741,9 +753,9 @@ ocamlbuild.byte: ocamlc ocamlbuild-mixed-boot
 	./build/ocamlbuild-byte-only.sh
 #endif
 
-ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot
+ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
 	./build/ocamlbuild-native-only.sh
-ocamlbuildlib.native: ocamlopt ocamlbuild-mixed-boot
+ocamlbuildlib.native: ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
 	./build/ocamlbuildlib-native-only.sh
 
 ocamlbuild-mixed-boot: ocamlc

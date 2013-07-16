@@ -74,7 +74,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
-  let _ppx s = ppx := s :: !ppx
+  let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
   let _real_paths = set real_paths
   let _rectypes = set recursive_types
@@ -87,6 +87,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
+  let _short_paths = clear real_paths
 
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree

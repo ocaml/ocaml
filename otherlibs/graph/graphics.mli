@@ -235,7 +235,7 @@ type image
    Externally, images are represented as matrices of colors. *)
 
 val transp : color
-(** In matrices of colors, this color represent a ``transparent''
+(** In matrices of colors, this color represent a 'transparent'
    point: when drawing the corresponding image, all pixels on the
    screen corresponding to a transparent pixel in the image will
    not be modified, while other points will be set to the color
@@ -303,6 +303,14 @@ external wait_next_event : event list -> status = "caml_gr_wait_event"
    are queued, and dequeued one by one when the [Key_pressed]
    event is specified. *)
 
+val loop_at_exit : event list -> (status -> unit) -> unit
+(** Loop before exiting the program, the list given as argument is the
+    list of handlers and the events on which these handlers are called.
+    To exit cleanly the loop, the handler should raise Exit. Any other
+    exception will be propagated outside of the loop.
+    @since 4.01
+*)
+
 (** {6 Mouse and keyboard polling} *)
 
 val mouse_pos : unit -> int * int
@@ -333,7 +341,7 @@ external sound : int -> int -> unit = "caml_gr_sound"
 
 val auto_synchronize : bool -> unit
 (** By default, drawing takes place both on the window displayed
-   on screen, and in a memory area (the ``backing store'').
+   on screen, and in a memory area (the 'backing store').
    The backing store image is used to re-paint the on-screen
    window when necessary.
 

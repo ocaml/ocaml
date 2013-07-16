@@ -103,6 +103,7 @@ type error =
   | Final_self_clash of (type_expr * type_expr) list
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
+  | Duplicate of string * string
   | Extension of string
 
 exception Error of Location.t * Env.t * error

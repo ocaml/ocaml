@@ -16,65 +16,19 @@ open Misc
 open Config
 open Format
 open Typedtree
-
-(* Initialize the search path.
-   The current directory is always searched first,
-   then the directories specified with the -I option (in command-line order),
-   then the standard library directory. *)
-
-let init_path () =
-  let dirs =
-    if !Clflags.use_threads
-    then "+threads" :: !Clflags.include_dirs
-    else !Clflags.include_dirs in
-  let exp_dirs =
-    List.map (expand_directory Config.standard_library) dirs in
-  load_path := "" :: List.rev_append exp_dirs (Clflags.std_include_dir ());
-  Env.reset_cache ()
-
-(* Return the initial environment in which compilation proceeds. *)
-
-let initial_env () =
-  Ident.reinit();
-  try
-    if !Clflags.nopervasives
-    then Env.initial
-    else Env.open_pers_signature "Pervasives" Env.initial
-  with Not_found ->
-    fatal_error "cannot open pervasives.cmi"
-
-(* Note: this function is duplicated in compile.ml *)
-let check_unit_name ppf filename name =
-  try
-    begin match name.[0] with
-    | 'A'..'Z' -> ()
-    | _ ->
-       Location.print_warning (Location.in_file filename) ppf
-        (Warnings.Bad_module_name name);
-       raise Exit;
-    end;
-    for i = 1 to String.length name - 1 do
-      match name.[i] with
-      | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '\'' -> ()
-      | _ ->
-         Location.print_warning (Location.in_file filename) ppf
-           (Warnings.Bad_module_name name);
-         raise Exit;
-    done;
-  with Exit -> ()
-;;
+open Compenv
 
 (* Compile a .mli file *)
 
 let interface ppf sourcefile outputprefix =
   Location.input_name := sourcefile;
-  init_path ();
+  Compmisc.init_path true;
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
   check_unit_name ppf sourcefile modulename;
   Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
-  let initial_env = initial_env() in
+  let initial_env = Compmisc.initial_env() in
   try
     let ast =
       Pparse.file ppf inputfile Parse.interface ast_intf_magic_number in
@@ -91,12 +45,13 @@ let interface ppf sourcefile outputprefix =
     Warnings.check_fatal ();
     if not !Clflags.print_types then begin
       let sg = Env.save_signature sg modulename (outputprefix ^ ".cmi") in
-      Typemod.save_signature modulename tsg outputprefix sourcefile initial_env sg ;
+      Typemod.save_signature modulename tsg outputprefix sourcefile
+                             initial_env sg ;
     end;
     Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"))
   with e ->
-    Pparse.remove_preprocessed_if_ast inputfile;
+    Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"));
     raise e
 
@@ -111,29 +66,31 @@ let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile outputprefix =
   Location.input_name := sourcefile;
-  init_path ();
+  Compmisc.init_path true;
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
   check_unit_name ppf sourcefile modulename;
   Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
-  let env = initial_env() in
+  let env = Compmisc.initial_env() in
   Compilenv.reset ?packname:!Clflags.for_package modulename;
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
   try
-    if !Clflags.print_types then ignore(
+    if !Clflags.print_types then ignore begin
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree Printtyped.implementation_with_coercion)
-    else begin
+      ++ print_if ppf Clflags.dump_typedtree
+                  Printtyped.implementation_with_coercion
+    end else begin
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree Printtyped.implementation_with_coercion
+      ++ print_if ppf Clflags.dump_typedtree
+                  Printtyped.implementation_with_coercion
       ++ Translmod.transl_store_implementation modulename
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       +++ Simplif.simplify_lambda
@@ -147,7 +104,7 @@ let implementation ppf sourcefile outputprefix =
   with x ->
     remove_file objfile;
     remove_file cmxfile;
-    Pparse.remove_preprocessed_if_ast inputfile;
+    Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"));
     raise x
 

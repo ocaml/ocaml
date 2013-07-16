@@ -27,7 +27,8 @@ module type S =
     val add: key -> 'a -> 'a t -> 'a t
     val singleton: key -> 'a -> 'a t
     val remove: key -> 'a t -> 'a t
-    val merge: (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+    val merge:
+          (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit

@@ -25,8 +25,6 @@
 
 #if defined(_WIN32)
 typedef __int64 file_offset;
-extern __int64 _lseeki64(int, __int64, int);
-#define lseek(fd,d,m) _lseeki64(fd,d,m)
 #elif defined(HAS_OFF_T)
 #include <sys/types.h>
 typedef off_t file_offset;

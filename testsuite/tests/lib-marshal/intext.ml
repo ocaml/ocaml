@@ -544,7 +544,8 @@ let test_mutual_rec_regression () =
   let g () = () in
   let f q = if test_list q then g () in
 
-  test 700 (try ignore (Marshal.to_string f [Marshal.Closures]); true with _ -> false)
+  test 700 (try ignore (Marshal.to_string f [Marshal.Closures]); true
+            with _ -> false)
 
 let main() =
   if Array.length Sys.argv <= 2 then begin

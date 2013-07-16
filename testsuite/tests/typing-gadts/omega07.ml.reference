@@ -1,7 +1,7 @@
 
 # * * * * *                       type ('a, 'b) sum = Inl of 'a | Inr of 'b
 type zero = Zero
-type _ succ
+type 'a succ = Succ of 'a
 type _ nat = NZ : zero nat | NS : 'a nat -> 'a succ nat
 #             type (_, _) seq =
     Snil : ('a, zero) seq
@@ -14,15 +14,15 @@ type _ nat = NZ : zero nat | NS : 'a nat -> 'a succ nat
 #   *                     type (_, _, _) app =
     App : ('a, 'p) seq * ('n, 'm, 'p) plus -> ('a, 'n, 'm) app
 val app : ('a, 'n) seq -> ('a, 'm) seq -> ('a, 'n, 'm) app = <fun>
-# *                           type tp
-type nd
-type (_, _) fk
+# *                           type tp = TP
+type nd = ND
+type ('a, 'b) fk = FK
 type _ shape =
     Tp : tp shape
   | Nd : nd shape
   | Fk : 'a shape * 'b shape -> ('a, 'b) fk shape
-#           type tt
-type ff
+#           type tt = TT
+type ff = FF
 type _ boolean = BT : tt boolean | BF : ff boolean
 #                 type (_, _) path =
     Pnone : 'a -> (tp, 'a) path
@@ -102,8 +102,8 @@ type _ avl_del =
   | Ddecr : ('m succ, 'n) equal * 'm avl -> 'n avl_del
 val del : int -> 'n avl -> 'n avl_del = <fun>
 #           val delete : int -> avl' -> avl' = <fun>
-#                             type red
-type black
+#                             type red = RED
+type black = BLACK
 type (_, _) sub_tree =
     Bleaf : (black, zero) sub_tree
   | Rnode : (black, 'n) sub_tree * int *
@@ -175,8 +175,8 @@ val ex4 : int term =
   Ap (Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint)))),
    Const 3)
 val v4 : int = 6
-#                                             type rnil
-type (_, _, _) rcons
+#                                             type rnil = RNIL
+type ('a, 'b, 'c) rcons = RCons of 'a * 'b * 'c
 type _ is_row =
     Rnil : rnil is_row
   | Rcons : 'c is_row -> ('a, 'b, 'c) rcons is_row
@@ -277,11 +277,11 @@ val ex1 : term = Ab ("x", I, Ap (Ap (V "+", V "x"), V "x"))
    I)
 #           val eval_checked : 'a env -> 'a checked -> int = <fun>
 #   val v2 : int = 6
-#                                             type pexp
-type pval
+#                                             type pexp = PEXP
+type pval = PVAL
 type _ mode = Pexp : pexp mode | Pval : pval mode
-type (_, _) tarr
-type tint
+type ('a, 'b) tarr = TARR
+type tint = TINT
 type (_, _) rel =
     IntR : (tint, int) rel
   | IntTo : ('b, 's) rel -> ((tint, 'b) tarr, int -> 's) rel

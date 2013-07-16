@@ -122,12 +122,6 @@ type type_mismatch =
   | Field_missing of bool * Ident.t
   | Record_representation of bool
 
-let nth n =
-  if n = 1 then "first" else
-  if n = 2 then "2nd" else
-  if n = 3 then "3rd" else
-  string_of_int n ^ "th"
-
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match err with
@@ -144,8 +138,8 @@ let report_type_mismatch0 first second decl ppf err =
   | Field_arity s ->
       pr "The arities for field %s differ" (Ident.name s)
   | Field_names (n, name1, name2) ->
-      pr "Their %s fields have different names, %s and %s"
-        (nth n) (Ident.name name1) (Ident.name name2)
+      pr "Fields number %i have different names, %s and %s"
+        n (Ident.name name1) (Ident.name name2)
   | Field_missing (b, s) ->
       pr "The field %s is only present in %s %s"
         (Ident.name s) (if b then second else first) decl
@@ -244,18 +238,20 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         else [Constraint]
   in
   if err <> [] then err else
-  if match decl2.type_kind with
-  | Type_record (_,_) | Type_variant _ -> decl2.type_private = Private
-  | Type_abstract ->
-      match decl2.type_manifest with
-      | None -> true
-      | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
-  then
-    if List.for_all2
-        (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2)&&(not cn1 || cn2))
-        decl1.type_variance decl2.type_variance
-    then [] else [Variance]
-  else []
+  let abstr =
+    decl2.type_private = Private ||
+    decl2.type_kind = Type_abstract && decl2.type_manifest = None in
+  if List.for_all2
+      (fun ty (v1,v2) ->
+        let open Variance in
+        let imp a b = not a || b in
+        let (co1,cn1) = get_upper v1 and (co2,cn2) = get_upper v2 in
+        imp abstr (imp co1 co2 && imp cn1 cn2) &&
+        (abstr || Btype.(is_Tvar (repr ty)) || co1 = co2 && cn1 = cn2) &&
+        let (p1,n1,i1,j1) = get_lower v1 and (p2,n2,i2,j2) = get_lower v2 in
+        imp abstr (imp p2 p1 && imp n2 n1 && imp i2 i1 && imp j2 j1))
+      decl2.type_params (List.combine decl1.type_variance decl2.type_variance)
+  then [] else [Variance]
 
 (* Inclusion between exception declarations *)
 

@@ -14,6 +14,7 @@
 type extern_flags =
     No_sharing
   | Closures
+  | Compat_32
 (* note: this type definition is used in 'byterun/debugger.c' *)
 
 external to_channel: out_channel -> 'a -> extern_flags list -> unit

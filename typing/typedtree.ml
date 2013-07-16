@@ -66,7 +66,7 @@ and expression =
 and exp_extra =
   | Texp_constraint of core_type
   | Texp_coerce of core_type option * core_type
-  | Texp_open of Path.t * Longident.t loc * Env.t
+  | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
   | Texp_poly of core_type option
   | Texp_newtype of string
 
@@ -215,7 +215,7 @@ and structure_item_desc =
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
-  | Tstr_open of Path.t * Longident.t loc * attribute list
+  | Tstr_open of override_flag * Path.t * Longident.t loc * attribute list
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of module_expr * Ident.t list * attribute list
@@ -275,7 +275,7 @@ and signature_item_desc =
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
-  | Tsig_open of Path.t * Longident.t loc * attribute list
+  | Tsig_open of override_flag * Path.t * Longident.t loc * attribute list
   | Tsig_include of module_type * Types.signature * attribute list
   | Tsig_class of class_description list
   | Tsig_class_type of class_type_declaration list

@@ -859,8 +859,9 @@ value varify_constructors var_names =
     | ExWhi loc e1 el ->
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))
-    | <:expr@loc< let open $i$ in $e$ >> ->
-        mkexp loc (Pexp_open (long_uident i) (expr e))
+    | ExOpI loc i ov e ->
+        let fresh = override_flag loc ov in 
+        mkexp loc (Pexp_open fresh (long_uident i) (expr e))
     | <:expr@loc< (module $me$ : $pt$) >> ->
         mkexp loc (Pexp_constraint (mkexp loc (Pexp_pack (module_expr me)),
                     mktyp loc (Ptyp_package (package_type pt))))
@@ -1019,7 +1020,7 @@ value varify_constructors var_names =
         in
         [mksig loc (Psig_modtype {pmtd_name=with_loc n loc; pmtd_type=si; pmtd_attributes=[]}) :: l]
     | SgOpn loc id ->
-        [mksig loc (Psig_open (long_uident id) []) :: l]
+        [mksig loc (Psig_open Fresh (long_uident id) []) :: l]
     | SgTyp loc tdl -> [mksig loc (Psig_type (mktype_decl tdl [])) :: l]
     | SgVal loc n t -> [mksig loc (Psig_value (mkvalue_desc loc (with_loc n loc) t [])) :: l]
     | <:sig_item@loc< $anti:_$ >> -> error loc "antiquotation in sig_item" ]
@@ -1098,8 +1099,9 @@ value varify_constructors var_names =
           | _ -> Some (module_type mt) ]
         in
         [mkstr loc (Pstr_modtype {pmtd_name=with_loc n loc; pmtd_type=si; pmtd_attributes=[]}) :: l]
-    | StOpn loc id ->
-        [mkstr loc (Pstr_open (long_uident id, [])) :: l]
+    | StOpn loc ov id ->
+        let fresh = override_flag loc ov in
+        [mkstr loc (Pstr_open fresh (long_uident id) []) :: l]
     | StTyp loc tdl -> [mkstr loc (Pstr_type (mktype_decl tdl [])) :: l]
     | StVal loc rf bi ->
         [mkstr loc (Pstr_value (mkrf rf) (binding bi [])) :: l]

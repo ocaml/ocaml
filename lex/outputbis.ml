@@ -157,7 +157,7 @@ let output_entry sourcefile ic oc tr e =
 \n  let __ocaml_lex_result = __ocaml_lex_state%d lexbuf in\
 \n  lexbuf.Lexing.lex_start_p <- lexbuf.Lexing.lex_curr_p;\
 \n  lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with\
-\n    Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos + lexbuf.Lexing.lex_curr_pos};\
+\n    Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos};\
 \n  match __ocaml_lex_result with\n"
       e.auto_name output_args e.auto_args
       e.auto_mem_size (output_memory_actions "  ") init_moves init_num ;

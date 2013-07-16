@@ -63,7 +63,7 @@ and untype_structure_item item =
         Pstr_recmodule (List.map untype_module_binding list)
     | Tstr_modtype mtd ->
         Pstr_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
-    | Tstr_open (_path, lid, attrs) -> Pstr_open (lid, attrs)
+    | Tstr_open (ovf, _path, lid, attrs) -> Pstr_open (ovf, lid, attrs)
     | Tstr_class list ->
         Pstr_class (List.map (fun (ci, _, _) ->
               { pci_virt = ci.ci_virt;
@@ -171,6 +171,7 @@ and untype_pattern pat =
         Ppat_construct (lid,
           (match args with
               [] -> None
+            | [arg] -> Some (untype_pattern arg)
             | args ->
                 Some
                   (Pat.tuple ~loc:pat.pat_loc
@@ -197,7 +198,7 @@ and untype_extra (extra, loc, attrs) sexp =
                      untype_core_type cty2)
     | Texp_constraint cty ->
         Pexp_constraint (sexp, untype_core_type cty)
-    | Texp_open (_path, lid, _) -> Pexp_open (lid, sexp)
+    | Texp_open (ovf, _path, lid, _) -> Pexp_open (ovf, lid, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, option untype_core_type cto)
     | Texp_newtype s -> Pexp_newtype (s, sexp)
   in
@@ -333,7 +334,7 @@ and untype_signature_item item =
                pmd_attributes = md.md_attributes}) list)
     | Tsig_modtype mtd ->
         Psig_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
-    | Tsig_open (_path, lid, attrs) -> Psig_open (lid, attrs)
+    | Tsig_open (ovf, _path, lid, attrs) -> Psig_open (ovf, lid, attrs)
     | Tsig_include (mty, _lid, attrs) -> Psig_include (untype_module_type mty, attrs)
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)

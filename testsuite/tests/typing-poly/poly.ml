@@ -169,7 +169,7 @@ let p0 = new point ~x:3 ~y:5
 let p1 = new point ~x:10 ~y:13
 let cp = new color_point ~x:12 ~y:(-5) ~color:"green"
 let c = new circle p0 ~r:2
-let d = c#distance cp
+let d = floor (c#distance cp)
 ;;
 let f (x : < m : 'a. 'a -> 'a >) = (x : < m : 'b. 'b -> 'b >)
 ;;
@@ -654,3 +654,16 @@ let (A x) = (raise Exit : s);;
 (* PR#5224 *)
 
 type 'x t = < f : 'y. 'y t >;;
+
+(* PR#6056, PR#6057 *)
+let using_match b =
+  let f =
+    match b with
+    | true -> fun x -> x
+    | false -> fun x -> x
+  in
+  f 0,f
+;;
+
+match (fun x -> x), fun x -> x with x, y -> x, y;;
+match fun x -> x with x -> x, x;;

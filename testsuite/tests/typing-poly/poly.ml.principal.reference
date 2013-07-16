@@ -118,7 +118,7 @@
 val p1 : point = <obj>
 val cp : color_point = <obj>
 val c : circle = <obj>
-val d : float = 11.4536240470737098
+val d : float = 11.
 #   val f : < m : 'a. 'a -> 'a > -> < m : 'b. 'b -> 'b > = <fun>
 #   Characters 41-42:
   let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
@@ -644,4 +644,7 @@ Error: This field value has type unit -> unit which is less general than
   type 'x t = < f : 'y. 'y t >;;
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of t, type 'y t should be 'x t
+#                   val using_match : bool -> int * ('a -> 'a) = <fun>
+#   - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
+# - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
 # 

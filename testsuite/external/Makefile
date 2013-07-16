@@ -37,8 +37,8 @@ default:
 
 .PHONY: all-cygwin
 all-cygwin: findlib ounit res pcre react ocamltext ocamlssl camlzip cryptokit \
-            sqlite menhir hevea mysql ocgi xmllight configfile xmlm omake \
-	    camomile zen vsyml extlib fileutils ocamlify ocamlmod \
+            sqlite ocgi xmllight configfile xmlm omake \
+            camomile zen vsyml extlib fileutils ocamlify ocamlmod \
             calendar dbm ocamlscript camlp5 geneweb coq
 
 all-macos: findlib lablgtk ocamlgraph ounit res pcre core react ocamltext \
@@ -212,11 +212,12 @@ typeconv: ${TYPECONV}.tar.gz findlib
 	( cd ${TYPECONV} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove type_conv && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${TYPECONV} core
+	rm -rf ${TYPECONV} typeconv
 distclean::
 	rm -f ${TYPECONV}.tar.gz
 all: typeconv
@@ -234,11 +235,12 @@ variantslib: ${VARIANTSLIB}.tar.gz findlib typeconv
 	( cd ${VARIANTSLIB} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove variantslib && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${VARIANTSLIB} core
+	rm -rf ${VARIANTSLIB} variantslib
 distclean::
 	rm -f ${VARIANTSLIB}.tar.gz
 all: variantslib
@@ -256,11 +258,12 @@ pipebang: ${PIPEBANG}.tar.gz findlib typeconv
 	( cd ${PIPEBANG} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove pa_pipebang && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${PIPEBANG} core
+	rm -rf ${PIPEBANG} pipebang
 distclean::
 	rm -f ${PIPEBANG}.tar.gz
 all: pipebang
@@ -278,11 +281,12 @@ paounit: ${PAOUNIT}.tar.gz findlib typeconv
 	( cd ${PAOUNIT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove pa_ounit && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${PAOUNIT} core
+	rm -rf ${PAOUNIT} paounit
 distclean::
 	rm -f ${PAOUNIT}.tar.gz
 all: paounit
@@ -300,11 +304,12 @@ comparelib: ${COMPARELIB}.tar.gz findlib typeconv
 	( cd ${COMPARELIB} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove comparelib && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${COMPARELIB} core
+	rm -rf ${COMPARELIB} comparelib
 distclean::
 	rm -f ${COMPARELIB}.tar.gz
 all: comparelib
@@ -322,11 +327,12 @@ binprot: ${BINPROT}.tar.gz findlib typeconv ounit
 	( cd ${BINPROT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove bin_prot && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${BINPROT} core
+	rm -rf ${BINPROT} binprot
 distclean::
 	rm -f ${BINPROT}.tar.gz
 all: binprot
@@ -344,11 +350,12 @@ fieldslib: ${FIELDSLIB}.tar.gz findlib typeconv
 	( cd ${FIELDSLIB} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove fieldslib && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${FIELDSLIB} core
+	rm -rf ${FIELDSLIB} fieldslib
 distclean::
 	rm -f ${FIELDSLIB}.tar.gz
 all: fieldslib
@@ -366,11 +373,12 @@ sexplib: ${SEXPLIB}.tar.gz findlib typeconv
 	( cd ${SEXPLIB} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove sexplib && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${SEXPLIB} core
+	rm -rf ${SEXPLIB} sexplib
 distclean::
 	rm -f ${SEXPLIB}.tar.gz
 all: sexplib
@@ -389,8 +397,9 @@ core: ${CORE}.tar.gz findlib variantslib sexplib fieldslib binprot comparelib \
 	( cd ${CORE} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocamlfind remove core && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${CORE} core
@@ -412,8 +421,8 @@ coreextended: ${COREEXTENDED}.tar.gz findlib sexplib fieldslib binprot paounit \
 	( cd ${COREEXTENDED} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
-          ocaml setup.ml -build && \
-          ocaml setup.ml -install )
+	  ocaml setup.ml -build && \
+	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${COREEXTENDED} coreextended
@@ -1353,8 +1362,29 @@ distclean::
 	rm -f ${KAPUTT}.tar.gz
 all: kaputt
 
+#http://www.coherentpdf.com/ocaml-libraries.html
+CAMLPDF=camlpdf-0.5
+${CAMLPDF}.tar.bz2:
+	${WGET} http://www.coherentpdf.com/$@
+camlpdf: ${CAMLPDF}.tar.bz2
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${CAMLPDF}
+	tar zxf ${CAMLPDF}.tar.bz2
+	./Patcher.sh ${CAMLPDF}
+	( cd ${CAMLPDF} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ${MAKE} all && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${CAMLPDF} foo
+distclean::
+	rm -f ${CAMLPDF}.tar.gz
+all: camlpdf
+
 # http://pauillac.inria.fr/~ddr/camlp5/
-CAMLP5=camlp5-6.06
+CAMLP5=camlp5-6.08
 ${CAMLP5}.tgz:
 	${WGET} http://pauillac.inria.fr/~ddr/camlp5/distrib/src/$@
 camlp5: ${CAMLP5}.tgz
@@ -1417,6 +1447,54 @@ clean::
 distclean::
 	rm -f ${COQ}.tar.gz
 all: coq
+
+# http://code.google.com/p/bitstring/
+
+BITSTRING=ocaml-bitstring-2.0.3
+${BITSTRING}.tar.gz:
+	${WGET} http://bitstring.googlecode.com/files/$@
+bitstring: ${BITSTRING}.tar.gz findlib # cil FIXME ?
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${BITSTRING}
+	tar zxf ${BITSTRING}.tar.gz
+	./Patcher.sh ${BITSTRING}
+	( cd ${BITSTRING} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure --prefix ${PREFIX} && \
+	  ${MAKE} && \
+	  ${MAKE} check && \
+	  ${MAKE} examples && \
+	  ocamlfind remove bitstring && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${BITSTRING} bitstring
+distclean::
+	rm -f ${BITSTRING}.tar.gz
+all: bitstring
+
+# http://compcert.inria.fr
+COMPCERT=compcert-1.13
+${COMPCERT}.tgz:
+	${WGET} http://compcert.inria.fr/release/$@
+compcert: ${COMPCERT}.tgz coq bitstring
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${COMPCERT}
+	tar zxf ${COMPCERT}.tgz
+	./Patcher.sh ${COMPCERT}
+	( cd ${COMPCERT} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure -prefix ${PREFIX} ppc-linux && \
+	  ${MAKE} all && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${COMPCERT} compcert
+distclean::
+	rm -f ${COMPCERT}.tgz
+all: compcert
 
 # http://frama-c.com/
 FRAMAC=frama-c-Oxygen-20120901

@@ -100,7 +100,7 @@ type scanbuf = in_channel;;
     input, and a token buffer to store the string matched so far.
 
     Note: a scanning action may often require to examine one character in
-    advance; when this ``lookahead'' character does not belong to the token
+    advance; when this 'lookahead' character does not belong to the token
     read, it is stored back in the scanning buffer and becomes the next
     character yet to be read.
 *)
@@ -125,7 +125,7 @@ type file_name = string;;
 
 val open_in : file_name -> in_channel;;
 (** [Scanning.open_in fname] returns a formatted input channel for bufferized
-    reading in text mode of file [fname].
+    reading in text mode from file [fname].
 
     Note:
     [open_in] returns a formatted input channel that efficiently reads
@@ -137,7 +137,7 @@ val open_in : file_name -> in_channel;;
 
 val open_in_bin : file_name -> in_channel;;
 (** [Scanning.open_in_bin fname] returns a formatted input channel for
-    bufferized reading in binary mode of file [fname].
+    bufferized reading in binary mode from file [fname].
     @since 3.12.0
 *)
 
@@ -263,7 +263,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     special exceptions to this rule: the space character ([' '] or ASCII code
     32) and the line feed character (['\n'] or ASCII code 10).
     A space does not match a single space character, but any amount of
-    ``whitespace'' in the input. More precisely, a space inside the format
+    'whitespace' in the input. More precisely, a space inside the format
     string matches {e any number} of tab, space, line feed and carriage
     return characters. Similarly, a line feed character in the format string
     matches either a single line feed or a carriage return followed by a line
@@ -339,30 +339,33 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       function and applies it to the scanning buffer [ib] to read the
       next argument. The input function [ri] must therefore have type
       [Scanning.in_channel -> 'a] and the argument read has type ['a].
-    - [\{ fmt %\}]: reads a format string argument.  The format string
+    - [\{ fmt %\}]: reads a format string argument. The format string
       read must have the same type as the format string specification
-      [fmt].  For instance, ["%{ %i %}"] reads any format string that
+      [fmt]. For instance, ["%{ %i %}"] reads any format string that
       can read a value of type [int]; hence, if [s] is the string
       ["fmt:\"number is %u\""], then [Scanf.sscanf s "fmt: %{%i%}"]
       succeeds and returns the format string ["number is %u"].
-    - [\( fmt %\)]: scanning format substitution.
-      Reads a format string and then goes on scanning with the format string
-      read, instead of using [fmt].
-      The format string read must have the same type as the format string
+    - [\( fmt %\)]: scanning sub-format substitution.
+      Reads a format string [rf] in the input, then goes on scanning with
+      [rf] instead of scanning with [fmt].
+      The format string [rf] must have the same type as the format string
       specification [fmt] that it replaces.
       For instance, ["%( %i %)"] reads any format string that can read a value
       of type [int].
-      Returns the format string read, and the value read using the format
-      string read.
+      The conversion returns the format string read [rf], and then a value
+      read using [rf].
       Hence, if [s] is the string ["\"%4d\"1234.00"], then
       [Scanf.sscanf s "%(%i%)" (fun fmt i -> fmt, i)] evaluates to
       [("%4d", 1234)].
-      If the special flag [_] is used, the conversion discards the
-      format string read and only returns the value read with the format
-      string read.
-      Hence, if [s] is the string ["\"%4d\"1234.00"], then
-      [Scanf.sscanf s "%_(%i%)"] is simply equivalent to
-      [Scanf.sscanf "1234.00" "%4d"].
+
+      This behaviour is not mere format substitution, since the conversion
+      returns the format string read as additional argument. If you need
+      pure format substitution, use special flag [_] to discard the
+      extraneous argument: conversion [%_\( fmt %\)] reads a format string
+      [rf] and then behaves the same as format string [rf].  Hence, if [s] is
+      the string ["\"%4d\"1234.00"], then [Scanf.sscanf s "%_(%i%)"] is
+      simply equivalent to [Scanf.sscanf "1234.00" "%4d"].
+
     - [l]: returns the number of lines read so far.
     - [n]: returns the number of characters read so far.
     - [N] or [L]: returns the number of tokens read so far.

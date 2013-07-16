@@ -76,6 +76,15 @@ The "configure" script accepts the following options:
         hand. The installation instructions for gcc or emacs contain a
         complete list of configuration names.
 
+-target <targettype>            (default: same as -host)
+        The type of the target machine, in GNU's "configuration name"
+        format (CPU-COMPANY-SYSTEM or CPU-COMPANY-KERNEL-SYSTEM).
+        Setting this will setup OCaml as a cross-compiler which runs on
+        $host and produces code for $target. This requires a C toolchain
+        which also produces code for $target and a native OCaml
+        compiler of the exact same version (if you want a cross 4.00.1,
+        you need a native 4.00.1).
+
 -x11include <include_dir>       (default: determined automatically)
 -x11lib     <lib_dir>           (default: determined automatically)
         Location of the X11 include directory (e.g. /usr/X11R6/include)
@@ -134,6 +143,15 @@ The "configure" script accepts the following options:
 -no-camlp4
         Do not compile Camlp4.
 
+-no-debugger
+        Do not build ocamldebug.
+
+-no-ocamldoc
+        Do not build ocamldoc.
+
+-no-ocamlbuild
+        Do not build ocamlbuild.
+
 -no-graph
         Do not compile the Graphics library.
 
@@ -151,20 +169,21 @@ Examples:
   or:
     ./configure -prefix /usr -mandir '$(PREFIX)/man/manl'
 
+  On a Linux x86/64 bits host, to build a 32-bit version of OCaml:
+    ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c" \
+                -host i386-linux -partialld "ld -r -melf_i386"
+
+  On a Linux x86/64 bits host, to build the run-time system in PIC mode
+  (enables putting the runtime in a shared library,
+   at a small performance cost):
+    ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
+
   On a MacOSX 10.5/Intel Core 2 or MacOSX 10.5/PowerPC host,
   to build a 64-bit version of OCaml:
     ./configure -cc "gcc -m64"
 
   On a MacOSX 10.6/Intel Core 2, to build a 32-bit version of OCaml:
     ./configure -cc "gcc -m32" -as "as -arch i386" -aspp "gcc -m32 -c"
-
-  On a Linux x86/64 bits host, to build a 32-bit version of OCaml:
-    ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c"
-
-  On a Linux x86/64 bits host, to build the run-time system in PIC mode
-  (enables putting the runtime in a shared library,
-   at a small performance cost):
-    ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
 
   For Sun Solaris with the "acc" compiler:
     ./configure -cc "acc -fast" -libs "-lucb"

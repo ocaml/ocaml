@@ -20,7 +20,7 @@ module C = Myocamlbuild_config
 let windows = Sys.os_type = "Win32";;
 if windows then tag_any ["windows"];;
 let ccomptype = C.ccomptype
-let () = if ccomptype <> "cc" then eprintf "ccomptype: %s@." ccomptype;;
+(*let () = if ccomptype <> "cc" then eprintf "ccomptype: %s@." ccomptype;;*)
 
 let fp_cat oc f = with_input_file ~bin:true f (fun ic -> copy_chan ic oc)
 
@@ -105,9 +105,10 @@ let if_mixed_dir dir =
   if mixed then ".."/dir else dir;;
 
 let unix_dir =
-  match Sys.os_type with
-  | "Win32" -> if_mixed_dir "otherlibs/win32unix"
-  | _       -> if_mixed_dir "otherlibs/unix";;
+  if Sys.os_type = "Win32" || C.system = "mingw" then
+    if_mixed_dir "otherlibs/win32unix"
+  else
+    if_mixed_dir "otherlibs/unix";;
 
 let threads_dir    = if_mixed_dir "otherlibs/threads";;
 let systhreads_dir = if_mixed_dir "otherlibs/systhreads";;

@@ -1205,12 +1205,11 @@ module Analyser =
                       ty_info = com_opt ;
                       ty_parameters =
                       List.map2
-                      (fun p (co,cn,_) ->
-                         (Odoc_env.subst_type new_env p,
-                          co, cn)
-                      )
-                      tt_type_decl.Types.type_params
-                      tt_type_decl.Types.type_variance ;
+                       (fun p v ->
+                         let (co, cn) = Types.Variance.get_upper v in
+                         (Odoc_env.subst_type new_env p, co, cn))
+                       tt_type_decl.Types.type_params
+                       tt_type_decl.Types.type_variance ;
                       ty_kind = kind ;
                       ty_private = tt_type_decl.Types.type_private;
                       ty_manifest =
@@ -1435,7 +1434,7 @@ module Analyser =
           in
           (0, new_env2, [ Element_module_type mt ])
 
-      | Parsetree.Pstr_open (longident, _attrs) ->
+      | Parsetree.Pstr_open (_ovf, longident, _attrs) ->
           (* A VOIR : enrichir l'environnement quand open ? *)
           let ele_comments = match comment_opt with
             None -> []

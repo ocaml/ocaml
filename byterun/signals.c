@@ -14,6 +14,7 @@
 /* Signal handling, code common to the bytecode and native systems */
 
 #include <signal.h>
+#include <errno.h>
 #include "alloc.h"
 #include "callback.h"
 #include "config.h"
@@ -115,8 +116,12 @@ CAMLexport void caml_enter_blocking_section(void)
 
 CAMLexport void caml_leave_blocking_section(void)
 {
+  int saved_errno;
+  /* Save the value of errno (PR#5982). */
+  saved_errno = errno;
   caml_leave_blocking_section_hook ();
   caml_process_pending_signals();
+  errno = saved_errno;
 }
 
 /* Execute a signal handler immediately */

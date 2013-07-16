@@ -25,7 +25,7 @@ type error =
   | Custom_runtime
   | File_exists of string
   | Cannot_open_dll of string
-
+  | Not_compatible_32
 
 exception Error of error
 
@@ -174,7 +174,9 @@ let check_consistency ppf file_name cu =
   begin try
     let source = List.assoc cu.cu_name !implementations_defined in
     Location.print_warning (Location.in_file file_name) ppf
-      (Warnings.Multiple_definition(cu.cu_name, Location.show_filename file_name, Location.show_filename source))
+      (Warnings.Multiple_definition(cu.cu_name,
+                                    Location.show_filename file_name,
+                                    Location.show_filename source))
   with Not_found -> ()
   end;
   implementations_defined :=
@@ -185,21 +187,21 @@ let extract_crc_interfaces () =
 
 (* Record compilation events *)
 
-let debug_info = ref ([] : (int * string) list)
+let debug_info = ref ([] : (int * LongString.t) list)
 
 (* Link in a compilation unit *)
 
 let link_compunit ppf output_fun currpos_fun inchan file_name compunit =
   check_consistency ppf file_name compunit;
   seek_in inchan compunit.cu_pos;
-  let code_block = input_bytes inchan compunit.cu_codesize in
-  Symtable.patch_object code_block compunit.cu_reloc;
+  let code_block = LongString.input_bytes inchan compunit.cu_codesize in
+  Symtable.ls_patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
-    let buffer = input_bytes inchan compunit.cu_debugsize in
+    let buffer = LongString.input_bytes inchan compunit.cu_debugsize in
     debug_info := (currpos_fun(), buffer) :: !debug_info
   end;
-  output_fun code_block;
+  Array.iter output_fun code_block;
   if !Clflags.link_everything then
     List.iter Symtable.require_primitive compunit.cu_primitives
 
@@ -252,7 +254,7 @@ let link_file ppf output_fun currpos_fun = function
 let output_debug_info oc =
   output_binary_int oc (List.length !debug_info);
   List.iter
-    (fun (ofs, evl) -> output_binary_int oc ofs; output_string oc evl)
+    (fun (ofs, evl) -> output_binary_int oc ofs; Array.iter (output_string oc) evl)
     !debug_info;
   debug_info := []
 
@@ -305,7 +307,8 @@ let link_bytecode ppf tolink exec_name standalone =
     Symtable.init();
     Consistbl.clear crc_interfaces;
     let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
-    if standalone then begin
+    let check_dlls = standalone && Config.target = Config.host in
+    if check_dlls then begin
       (* Initialize the DLL machinery *)
       Dll.init_compile !Clflags.no_std_include;
       Dll.add_path !load_path;
@@ -315,7 +318,7 @@ let link_bytecode ppf tolink exec_name standalone =
     let output_fun = output_string outchan
     and currpos_fun () = pos_out outchan - start_code in
     List.iter (link_file ppf output_fun currpos_fun) tolink;
-    if standalone then Dll.close_all_dlls();
+    if check_dlls then Dll.close_all_dlls();
     (* The final STOP instruction *)
     output_byte outchan Opcodes.opSTOP;
     output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
@@ -333,7 +336,13 @@ let link_bytecode ppf tolink exec_name standalone =
     Symtable.output_primitive_names outchan;
     Bytesections.record outchan "PRIM";
     (* The table of global data *)
-    output_value outchan (Symtable.initial_global_table());
+    begin try
+      Marshal.to_channel outchan (Symtable.initial_global_table())
+          (if !Clflags.bytecode_compatible_32
+           then [Marshal.Compat_32] else [])
+    with Failure _ ->
+      raise (Error Not_compatible_32)
+    end;
     Bytesections.record outchan "DATA";
     (* The map of global identifiers *)
     Symtable.output_global_map outchan;
@@ -510,7 +519,7 @@ let link ppf objfiles output_name =
     else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
-  Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
+  Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts; (* put user's opts first *)
   Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
     link_bytecode ppf tolink output_name true
@@ -587,7 +596,8 @@ let report_error ppf = function
       fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name
   | Wrong_object_name name ->
-      fprintf ppf "The output file %s has a wrong name. The extension implies object file when the link step was requested" name
+      fprintf ppf "The output file %s has the wrong name. The extension implies\
+                  \ an object file but the link step was requested" name
   | Symbol_error(name, err) ->
       fprintf ppf "Error while linking %a:@ %a" Location.print_filename name
       Symtable.report_error err
@@ -606,3 +616,6 @@ let report_error ppf = function
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
+  | Not_compatible_32 ->
+      fprintf ppf "Generated bytecode executable cannot be run\
+                  \ on a 32-bit platform"

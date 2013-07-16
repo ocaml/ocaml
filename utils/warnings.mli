@@ -15,7 +15,7 @@ open Format
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated                              (*  3 *)
+  | Deprecated of string                    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted                          (*  6 *)
@@ -52,10 +52,12 @@ type t =
   | Unused_constructor of string * bool * bool (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
-  | Name_out_of_scope of string list * bool (* 40 *)
-  | Ambiguous_name of string list * bool    (* 41 *)
+  | Name_out_of_scope of string * string list * bool   (* 40 *)
+  | Ambiguous_name of string list * string list * bool (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
+  | Open_shadow_identifier of string * string (* 44 *)
+  | Open_shadow_label_constructor of string * string (* 45 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

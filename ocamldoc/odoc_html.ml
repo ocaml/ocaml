@@ -204,7 +204,10 @@ module Naming =
       f
   end
 
-module StringSet = Set.Make (struct type t = string let compare = compare end)
+module StringSet = Set.Make (struct
+  type t = string
+  let compare (x:t) y = compare x y
+end)
 
 (** A class with a method to colorize a string which represents OCaml code. *)
 class ocaml_code =

@@ -66,10 +66,10 @@ let extract_sig_open env loc mty =
 
 (* Compute the environment after opening a module *)
 
-let type_open ?toplevel env loc lid =
+let type_open ?toplevel ovf env loc lid =
   let (path, mty) = Typetexp.find_module env loc lid.txt in
   let sg = extract_sig_open env loc mty in
-  path, Env.open_signature ~loc ?toplevel path sg env
+  path, Env.open_signature ~loc ?toplevel ovf path sg env
 
 (* Record a module type *)
 let rm node =
@@ -89,12 +89,13 @@ let rec add_rec_types env = function
       add_rec_types (Env.add_type id decl env) rem
   | _ -> env
 
-let check_type_decl env id row_id newdecl decl rs rem =
+let check_type_decl env loc id row_id newdecl decl rs rem =
   let env = Env.add_type id newdecl env in
   let env =
     match row_id with None -> env | Some id -> Env.add_type id newdecl env in
   let env = if rs = Trec_not then env else add_rec_types env rem in
-  Includemod.type_declarations env id newdecl decl
+  Includemod.type_declarations env id newdecl decl;
+  Typedecl.check_coherence env loc id newdecl
 
 let rec make_params n = function
     [] -> []
@@ -113,6 +114,10 @@ let make_next_first rs rem =
 let sig_item desc typ env loc = {
   Typedtree.sig_desc = desc; sig_loc = loc; sig_env = env
 }
+
+let make p n i =
+  let open Variance in
+  set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
 
 let merge_constraint initial_env loc sg constr =
   let lid =
@@ -138,21 +143,24 @@ let merge_constraint initial_env loc sg constr =
             type_manifest = None;
             type_variance =
               List.map
-              (fun (_, v) ->
-                match v with
-                | Covariant -> true, false, false
-                | Contravariant -> false, true, true
-                | Invariant -> true, true, true
-              )
-              sdecl.ptype_params;
-            type_loc = Location.none;
+                (fun (_, v) ->
+                   let (c, n) =  
+                     match v with
+                     | Covariant -> true, false
+                     | Contravariant -> false, true
+                     | Invariant -> false, false
+                   in
+                   make (not n) (not c) false
+                )
+                sdecl.ptype_params;
+            type_loc = sdecl.ptype_loc;
             type_newtype_level = None }
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let tdecl = Typedecl.transl_with_constraint
                         initial_env id (Some(Pident id_row)) decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
         (Pident id, lid, Twith_type tdecl),
@@ -162,7 +170,7 @@ let merge_constraint initial_env loc sg constr =
         let tdecl =
           Typedecl.transl_with_constraint initial_env id None decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         (Pident id, lid, Twith_type tdecl), Sig_type(id, newdecl, rs) :: rem
     | (Sig_type(id, decl, rs) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
@@ -173,7 +181,7 @@ let merge_constraint initial_env loc sg constr =
         let tdecl =
           Typedecl.transl_with_constraint initial_env id None decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         real_id := Some id;
         (Pident id, lid, Twith_typesubst tdecl),
         make_next_first rs rem
@@ -324,8 +332,8 @@ and approx_sig env ssg =
           let info = approx_modtype_info env d.pmtd_type in
           let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
-      | Psig_open (lid, _attrs) ->
-          let (path, mty) = type_open env item.psig_loc lid in
+      | Psig_open (ovf, lid, _attrs) ->
+          let (path, mty) = type_open ovf env item.psig_loc lid in
           approx_sig mty srem
       | Psig_include (smty, _attrs) ->
           let mty = approx_modtype env smty in
@@ -370,7 +378,8 @@ let check_recmod_typedecls env sdecls decls =
 
 (* Auxiliaries for checking uniqueness of names in signatures and structures *)
 
-module StringSet = Set.Make(struct type t = string let compare = compare end)
+module StringSet =
+  Set.Make(struct type t = string let compare (x:t) y = compare x y end)
 
 let check cl loc set_ref name =
   if StringSet.mem name !set_ref
@@ -386,16 +395,24 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
-let rec remove_values ids = function
+let rec remove_duplicates val_ids exn_ids  = function
     [] -> []
   | Sig_value (id, _) :: rem
-    when List.exists (Ident.equal id) ids -> remove_values ids rem
-  | f :: rem -> f :: remove_values ids rem
+    when List.exists (Ident.equal id) val_ids -> remove_duplicates val_ids exn_ids rem
+  | Sig_exception(id, _) :: rem
+    when List.exists (Ident.equal id) exn_ids -> remove_duplicates val_ids exn_ids rem
+  | f :: rem -> f :: remove_duplicates val_ids exn_ids rem
 
 let rec get_values = function
     [] -> []
   | Sig_value (id, _) :: rem -> id :: get_values rem
   | f :: rem -> get_values rem
+
+let rec get_exceptions = function
+    [] -> []
+  | Sig_exception (id, _) :: rem -> id :: get_exceptions rem
+  | f :: rem -> get_exceptions rem
+
 
 (* Check and translate a module type expression *)
 
@@ -492,8 +509,10 @@ and transl_signature env sg =
         | Psig_exception sarg ->
             let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
             let (trem, rem, final_env) = transl_sig newenv srem in
+            let id = arg.cd_id in
             mksig (Tsig_exception arg) env loc :: trem,
-            Sig_exception(arg.cd_id, decl) :: rem,
+            (if List.exists (Ident.equal id) (get_exceptions rem) then rem
+             else Sig_exception(id, decl) :: rem),
             final_env
         | Psig_module pmd ->
             check "module" item.psig_loc module_names pmd.pmd_name.txt;
@@ -524,10 +543,11 @@ and transl_signature env sg =
             mksig (Tsig_modtype mtd) env loc :: trem,
             sg :: rem,
             final_env
-        | Psig_open (lid, attrs) ->
-            let (path, newenv) = type_open env item.psig_loc lid in
+        | Psig_open (ovf, lid, attrs) ->
+            let (path, newenv) = type_open ovf env item.psig_loc lid in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_open (path,lid,attrs)) env loc :: trem, rem, final_env
+            mksig (Tsig_open (ovf, path,lid,attrs)) env loc :: trem,
+            rem, final_env
         | Psig_include (smty, attrs) ->
             let tmty = transl_modtype env smty in
             let mty = tmty.mty_type in
@@ -540,7 +560,8 @@ and transl_signature env sg =
             let newenv = Env.add_signature sg env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include (tmty, sg, attrs)) env loc :: trem,
-            remove_values (get_values rem) sg @ rem, final_env
+            remove_duplicates (get_values rem) (get_exceptions rem) sg @ rem,
+            final_env
         | Psig_class cl ->
             List.iter
               (fun {pci_name = name} ->
@@ -632,11 +653,27 @@ and transl_recmodule_modtypes loc env sdecls =
     List.map2
       (fun pmd (id, id_loc, mty) -> (id, id_loc, transl_modtype env_c pmd.pmd_type))
       sdecls curr in
+  let ids = List.map (fun x -> Ident.create x.pmd_name.txt) sdecls in
+  let approx_env =
+    (*
+       cf #5965
+       We use a dummy module type in order to detect a reference to one
+       of the module being defined during the call to approx_modtype.
+       It will be detected in Env.lookup_module.
+    *)
+    List.fold_left
+      (fun env id ->
+         let dummy = Mty_ident (Path.Pident (Ident.create "#recmod#")) in
+         Env.add_module id dummy env
+      )
+      env ids
+  in
   let init =
-    List.map
-      (fun pmd->
-        (Ident.create pmd.pmd_name.txt, pmd.pmd_name, approx_modtype env pmd.pmd_type))
-      sdecls in
+    List.map2
+      (fun id pmd ->
+        (id, pmd.pmd_name, approx_modtype approx_env pmd.pmd_type))
+      ids sdecls
+  in
   let env0 = make_env init in
   let dcl1 = transition env0 init in
   let env1 = make_env2 dcl1 in
@@ -1118,9 +1155,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         mk (Tstr_modtype mtd) :: str_rem,
         sg :: sig_rem,
         final_env
-    | Pstr_open (lid, attrs) ->
-        let (path, newenv) = type_open ~toplevel env loc lid in
-        let item = mk (Tstr_open (path, lid, attrs)) in
+    | Pstr_open (ovf, lid, attrs) ->
+        let (path, newenv) = type_open ovf ~toplevel env loc lid in
+        let item = mk (Tstr_open (ovf, path, lid, attrs)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (item :: str_rem, sig_rem, final_env)
     | Pstr_class cl ->

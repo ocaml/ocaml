@@ -183,10 +183,10 @@ let rec search_pos_signature l ~pos ~env =
   List.fold_left l ~init:env ~f:
   begin fun env pt ->
     let env = match pt.psig_desc with
-      Psig_open (id, _) ->
+      Psig_open (ovf, id, _) ->
         let path, mt = lookup_module id.txt env in
         begin match mt with
-          Mty_signature sign -> open_signature path sign env
+          Mty_signature sign -> open_signature ovf path sign env
         | _ -> env
         end
     | sign_item ->
@@ -216,7 +216,8 @@ let rec search_pos_signature l ~pos ~env =
           List.iter l
             ~f:(fun ci -> search_pos_class_type ci.pci_expr ~pos ~env)
       (* The last cases should not happen in generated interfaces *)
-      | Psig_open (lid, _) -> add_found_sig (`Module, lid.txt) ~env ~loc:pt.psig_loc
+      | Psig_open (_, lid, _) ->
+        add_found_sig (`Module, lid.txt) ~env ~loc:pt.psig_loc
       | Psig_include (t, _) -> search_pos_module t ~pos ~env
       | Psig_attribute _ | Psig_extension _ -> ()
       end;
@@ -323,7 +324,7 @@ let dummy_item = Sig_modtype (Ident.create "dummy", Modtype_abstract)
 let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
   let env =
     match path with None -> env
-    | Some path -> Env.open_signature path sign env in
+    | Some path -> Env.open_signature Fresh path sign env in
   let title =
     match title, path with Some title, _ -> title
     | None, Some path -> string_of_path path

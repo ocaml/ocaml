@@ -190,6 +190,15 @@ let rec is_pure_clambda = function
 let make_const_int n = (Uconst(Const_base(Const_int n), None), Value_integer n)
 let make_const_ptr n = (Uconst(Const_pointer n, None), Value_constptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
+let make_comparison cmp (x: int) (y: int) =
+  make_const_bool
+    (match cmp with
+       Ceq -> x = y
+     | Cneq -> x <> y
+     | Clt -> x < y
+     | Cgt -> x > y
+     | Cle -> x <= y
+     | Cge -> x >= y)
 
 let simplif_prim_pure p (args, approxs) dbg =
   match approxs with
@@ -216,15 +225,7 @@ let simplif_prim_pure p (args, approxs) dbg =
       | Plslint -> make_const_int(x lsl y)
       | Plsrint -> make_const_int(x lsr y)
       | Pasrint -> make_const_int(x asr y)
-      | Pintcomp cmp ->
-          let result = match cmp with
-              Ceq -> x = y
-            | Cneq -> x <> y
-            | Clt -> x < y
-            | Cgt -> x > y
-            | Cle -> x <= y
-            | Cge -> x >= y in
-          make_const_bool result
+      | Pintcomp cmp -> make_comparison cmp x y
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
   | [Value_constptr x] ->
@@ -247,6 +248,17 @@ let simplif_prim_pure p (args, approxs) dbg =
       begin match p with
         Psequand -> make_const_bool(x <> 0 && y <> 0)
       | Psequor  -> make_const_bool(x <> 0 || y <> 0)
+      | Pintcomp cmp -> make_comparison cmp x y
+      | _ -> (Uprim(p, args, dbg), Value_unknown)
+      end
+  | [Value_constptr x; Value_integer y] ->
+      begin match p with
+      | Pintcomp cmp -> make_comparison cmp x y
+      | _ -> (Uprim(p, args, dbg), Value_unknown)
+      end
+  | [Value_integer x; Value_constptr y] ->
+      begin match p with
+      | Pintcomp cmp -> make_comparison cmp x y
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
   | _ ->
@@ -345,7 +357,8 @@ let rec substitute sb ulam =
           id in
       Uassign(id', substitute sb u)
   | Usend(k, u1, u2, ul, dbg) ->
-      Usend(k, substitute sb u1, substitute sb u2, List.map (substitute sb) ul, dbg)
+      Usend(k, substitute sb u1, substitute sb u2, List.map (substitute sb) ul,
+            dbg)
 
 (* Perform an inline expansion *)
 
@@ -499,9 +512,11 @@ let rec close fenv cenv = function
   | Lconst cst ->
       begin match cst with
         Const_base(Const_int n) -> (Uconst (cst,None), Value_integer n)
-      | Const_base(Const_char c) -> (Uconst (cst,None), Value_integer(Char.code c))
+      | Const_base(Const_char c) -> (Uconst (cst,None),
+                                     Value_integer(Char.code c))
       | Const_pointer n -> (Uconst (cst, None), Value_constptr n)
-      | _ -> (Uconst (cst, Some (Compilenv.new_structured_constant cst true)), Value_unknown)
+      | _ -> (Uconst (cst, Some (Compilenv.new_structured_constant cst true)),
+              Value_unknown)
       end
   | Lfunction(kind, params, body) as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
@@ -525,8 +540,9 @@ let rec close fenv cenv = function
           when nargs < fundesc.fun_arity ->
         let first_args = List.map (fun arg ->
           (Ident.create "arg", arg) ) uargs in
-        let final_args = Array.to_list (Array.init (fundesc.fun_arity - nargs) (fun _ ->
-          Ident.create "arg")) in
+        let final_args =
+          Array.to_list (Array.init (fundesc.fun_arity - nargs)
+                                    (fun _ -> Ident.create "arg")) in
         let rec iter args body =
           match args with
               [] -> body
@@ -624,7 +640,8 @@ let rec close fenv cenv = function
         match approx with
           Value_tuple a when n < Array.length a -> a.(n)
         | _ -> Value_unknown in
-      check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none)) fieldapprox
+      check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
+                            fieldapprox
   | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       (!global_approx).(n) <- approx;

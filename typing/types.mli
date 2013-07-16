@@ -135,6 +135,25 @@ and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
 
+(* Variance *)
+
+module Variance : sig
+  type t
+  type f = May_pos | May_neg | May_weak | Inj | Pos | Neg | Inv
+  val null : t                          (* no occurence *)
+  val full : t                          (* strictly invariant *)
+  val covariant : t                     (* strictly covariant *)
+  val may_inv : t                       (* maybe invariant *)
+  val union  : t -> t -> t
+  val inter  : t -> t -> t
+  val subset : t -> t -> bool
+  val set : f -> bool -> t -> t
+  val mem : f -> t -> bool
+  val conjugate : t -> t                (* exchange positive and negative *)
+  val get_upper : t -> bool * bool                  (* may_pos, may_neg   *)
+  val get_lower : t -> bool * bool * bool * bool    (* pos, neg, inv, inj *)
+end 
+
 (* Type definitions *)
 
 type type_declaration =
@@ -143,8 +162,8 @@ type type_declaration =
     type_kind: type_kind;
     type_private: private_flag;
     type_manifest: type_expr option;
-    type_variance: (bool * bool * bool) list;
-    (* covariant, contravariant, weakly contravariant *)
+    type_variance: Variance.t list;
+    (* covariant, contravariant, weakly contravariant, injective *)
     type_newtype_level: (int * int) option;
     (* definition level * expansion level *)
     type_loc: Location.t }
@@ -154,6 +173,11 @@ and type_kind =
   | Type_record of
       (Ident.t * mutable_flag * type_expr) list * record_representation
   | Type_variant of (Ident.t * type_expr list * type_expr option) list
+
+and type_transparence =
+    Type_public      (* unrestricted expansion *)
+  | Type_new         (* "new" type *)
+  | Type_private     (* private type *)
 
 type exception_declaration =
     { exn_args: type_expr list;
@@ -179,13 +203,13 @@ type class_declaration =
     mutable cty_type: class_type;
     cty_path: Path.t;
     cty_new: type_expr option;
-    cty_variance: (bool * bool) list }
+    cty_variance: Variance.t list }
 
 type class_type_declaration =
   { clty_params: type_expr list;
     clty_type: class_type;
     clty_path: Path.t;
-    clty_variance: (bool * bool) list }
+    clty_variance: Variance.t list }
 
 (* Type expressions for the module language *)
 

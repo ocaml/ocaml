@@ -20,13 +20,14 @@ CAMLLEX=../boot/ocamlrun ../boot/ocamllex
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 
-OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
+OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
+     compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
 
 all: ocamllex
 allopt: ocamllex.opt
 
 ocamllex: $(OBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamllex $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)
 
 ocamllex.opt: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -o ocamllex.opt $(OBJS:.cmo=.cmx)

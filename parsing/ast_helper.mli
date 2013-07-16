@@ -114,7 +114,7 @@ module Exp:
     val object_: ?loc:loc -> ?attrs:attrs -> class_structure -> expression
     val newtype: ?loc:loc -> ?attrs:attrs -> string -> expression -> expression
     val pack: ?loc:loc -> ?attrs:attrs -> module_expr -> expression
-    val open_: ?loc:loc -> ?attrs:attrs -> lid -> expression -> expression
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> expression -> expression
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
 
     val case: pattern -> ?guard:expression -> expression -> case
@@ -177,7 +177,7 @@ module Sig:
     val module_: ?loc:loc -> module_declaration -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
-    val open_: ?loc:loc -> ?attrs:attrs -> lid -> signature_item
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> signature_item
     val include_: ?loc:loc -> ?attrs:attrs -> module_type -> signature_item
     val class_: ?loc:loc -> class_description list -> signature_item
     val class_type: ?loc:loc -> class_type_declaration list -> signature_item
@@ -199,7 +199,7 @@ module Str:
     val module_: ?loc:loc -> module_binding -> structure_item
     val rec_module: ?loc:loc -> module_binding list -> structure_item
     val modtype: ?loc:loc -> module_type_declaration -> structure_item
-    val open_: ?loc:loc -> ?attrs:attrs -> lid -> structure_item
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> structure_item
     val class_: ?loc:loc -> class_declaration list -> structure_item
     val class_type: ?loc:loc -> class_type_declaration list -> structure_item
     val include_: ?loc:loc -> ?attrs:attrs -> module_expr -> structure_item

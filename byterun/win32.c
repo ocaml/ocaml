@@ -469,13 +469,18 @@ int caml_win32_random_seed (intnat data[16])
 {
   /* For better randomness, consider:
      http://msdn.microsoft.com/library/en-us/seccrypto/security/rtlgenrandom.asp
+     http://blogs.msdn.com/b/michael_howard/archive/2005/01/14/353379.aspx
   */
   FILETIME t;
+  LARGE_INTEGER pc;
   GetSystemTimeAsFileTime(&t);
+  QueryPerformanceCounter(&pc);  /* PR#6032 */
   data[0] = t.dwLowDateTime;
   data[1] = t.dwHighDateTime;
   data[2] = GetCurrentProcessId();
-  return 3;
+  data[3] = pc.LowPart;
+  data[4] = pc.HighPart;
+  return 5;
 }
 
 
@@ -497,3 +502,15 @@ void caml_install_invalid_parameter_handler()
 }
 
 #endif
+
+
+/* Recover executable name  */
+
+int caml_executable_name(char * name, int name_len)
+{
+  int retcode;
+
+  int ret = GetModuleFileName(NULL, name, name_len);
+  if (0 == ret || ret >= name_len) return -1;
+  return 0;
+}

@@ -138,7 +138,7 @@ module MT = struct
     | Psig_module x -> module_ ~loc (sub # module_declaration x)
     | Psig_recmodule l -> rec_module ~loc (List.map (sub # module_declaration) l)
     | Psig_modtype x -> modtype ~loc (sub # module_type_declaration x)
-    | Psig_open (lid, attrs) -> open_ ~loc ~attrs:(sub # attributes attrs) (map_loc sub lid)
+    | Psig_open (ovf, lid, attrs) -> open_ ~loc ~attrs:(sub # attributes attrs) ovf (map_loc sub lid)
     | Psig_include (mt, attrs) -> include_ ~loc (sub # module_type mt) ~attrs:(sub # attributes attrs)
     | Psig_class l -> class_ ~loc (List.map (sub # class_description) l)
     | Psig_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
@@ -176,7 +176,7 @@ module M = struct
     | Pstr_module x -> module_ ~loc (sub # module_binding x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub # module_binding) l)
     | Pstr_modtype x -> modtype ~loc (sub # module_type_declaration x)
-    | Pstr_open (lid, attrs) -> open_ ~loc ~attrs:(sub # attributes attrs) (map_loc sub lid)
+    | Pstr_open (ovf, lid, attrs) -> open_ ~loc ~attrs:(sub # attributes attrs) ovf (map_loc sub lid)
     | Pstr_class l -> class_ ~loc (List.map (sub # class_declaration) l)
     | Pstr_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
     | Pstr_include (e, attrs) -> include_ ~loc (sub # module_expr e) ~attrs:(sub # attributes attrs)
@@ -228,7 +228,7 @@ module E = struct
     | Pexp_object cls -> object_ ~loc ~attrs (sub # class_structure cls)
     | Pexp_newtype (s, e) -> newtype ~loc ~attrs s (sub # expr e)
     | Pexp_pack me -> pack ~loc ~attrs (sub # module_expr me)
-    | Pexp_open (lid, e) -> open_ ~loc ~attrs (map_loc sub lid) (sub # expr e)
+    | Pexp_open (ovf, lid, e) -> open_ ~loc ~attrs ovf (map_loc sub lid) (sub # expr e)
     | Pexp_extension x -> extension ~loc ~attrs (sub # extension x)
 end
 

@@ -174,9 +174,9 @@ try
   test (sprintf "%+C" 'c' = "'c'");
   test (sprintf "% C" 'c' = "'c'");
   test (sprintf "%#C" 'c' = "'c'");
-(*  test (sprintf "%4C" 'c' = "   c");     padding not done *)
-(*  test (sprintf "%*C" 2 'c' = " c");     padding not done *)
-(*  test (sprintf "%-0+ #4C" 'c' = "c   ");  padding not done *)
+(*  test (sprintf "%4C" 'c' = " 'c'");     padding not done *)
+(*  test (sprintf "%*C" 2 'c' = "'c'");     padding not done *)
+(*  test (sprintf "%-0+ #4C" 'c' = "'c' ");  padding not done *)
 
   printf "\nf\n%!";
   test (sprintf "%f" (-42.42) = "-42.420000");
@@ -198,9 +198,33 @@ try
   test (sprintf "%*.*f" 12 3 42.42 = "      42.420");
   test (sprintf "%-0+ #12.3f" 42.42 = "+42.420     ");
 
+  (* Under Windows (mingw and maybe also MSVC), the stdlib uses three
+     digits for the exponent instead of the two used by Linux and BSD.
+     Check that the two strings are equal, except that there may be an
+     extra zero, and if there is one, there may be a missing space or
+     zero. All in the first string relative to the second. *)
+  let ( =* ) s1 s2 =
+    let ss1 = s1 ^ "$" in
+    let ss2 = s2 ^ "$" in
+    let rec loop i1 i2 extra missing =
+      if i1 = String.length ss1 && i2 = String.length ss2 then begin
+        if extra then true else not missing
+      end else if i1 = String.length ss1 || i2 = String.length ss2 then
+        false
+      else begin
+        match ss1.[i1], ss2.[i2] with
+        | x, y when x = y -> loop (i1+1) (i2+1) extra missing
+        | '0', _ when not extra -> loop (i1+1) i2 true missing
+        | _, (' '|'0') when not missing -> loop i1 (i2+1) extra true
+        | _, _ -> false
+      end
+    in
+    loop 0 0 false false
+  in
+
   printf "\nF\n%!";
   test (sprintf "%F" 42.42 = "42.42");
-  test (sprintf "%F" 42.42e42 = "4.242e+43");
+  test (sprintf "%F" 42.42e42 =* "4.242e+43");
   test (sprintf "%F" 42.00 = "42.");
   test (sprintf "%F" 0.042 = "0.042");
 (* no padding, no precision
@@ -211,44 +235,44 @@ try
 *)
 
   printf "\ne\n%!";
-  test (sprintf "%e" (-42.42) = "-4.242000e+01");
-  test (sprintf "%-15e" (-42.42) = "-4.242000e+01  ");
-  test (sprintf "%015e" (-42.42) = "-004.242000e+01");
-  test (sprintf "%+e" 42.42 = "+4.242000e+01");
-  test (sprintf "% e" 42.42 = " 4.242000e+01");
-  test (sprintf "%#e" 42.42 = "4.242000e+01");
-  test (sprintf "%15e" 42.42 = "   4.242000e+01");
-  test (sprintf "%*e" 14 42.42 = "  4.242000e+01");
-  test (sprintf "%-0+ #14e" 42.42 = "+4.242000e+01 ");
-  test (sprintf "%.3e" (-42.42) = "-4.242e+01");
-  test (sprintf "%-15.3e" (-42.42) = "-4.242e+01     ");
-  test (sprintf "%015.3e" (-42.42) = "-000004.242e+01");
-  test (sprintf "%+.3e" 42.42 = "+4.242e+01");
-  test (sprintf "% .3e" 42.42 = " 4.242e+01");
-  test (sprintf "%#.3e" 42.42 = "4.242e+01");
-  test (sprintf "%15.3e" 42.42 = "      4.242e+01");
-  test (sprintf "%*.*e" 11 3 42.42 = "  4.242e+01");
-  test (sprintf "%-0+ #14.3e" 42.42 = "+4.242e+01    ");
+  test (sprintf "%e" (-42.42) =* "-4.242000e+01");
+  test (sprintf "%-15e" (-42.42) =* "-4.242000e+01  ");
+  test (sprintf "%015e" (-42.42) =* "-004.242000e+01");
+  test (sprintf "%+e" 42.42 =* "+4.242000e+01");
+  test (sprintf "% e" 42.42 =* " 4.242000e+01");
+  test (sprintf "%#e" 42.42 =* "4.242000e+01");
+  test (sprintf "%15e" 42.42 =* "   4.242000e+01");
+  test (sprintf "%*e" 14 42.42 =* "  4.242000e+01");
+  test (sprintf "%-0+ #14e" 42.42 =* "+4.242000e+01 ");
+  test (sprintf "%.3e" (-42.42) =* "-4.242e+01");
+  test (sprintf "%-15.3e" (-42.42) =* "-4.242e+01     ");
+  test (sprintf "%015.3e" (-42.42) =* "-000004.242e+01");
+  test (sprintf "%+.3e" 42.42 =* "+4.242e+01");
+  test (sprintf "% .3e" 42.42 =* " 4.242e+01");
+  test (sprintf "%#.3e" 42.42 =* "4.242e+01");
+  test (sprintf "%15.3e" 42.42 =* "      4.242e+01");
+  test (sprintf "%*.*e" 11 3 42.42 =* "  4.242e+01");
+  test (sprintf "%-0+ #14.3e" 42.42 =* "+4.242e+01    ");
 
   printf "\nE\n%!";
-  test (sprintf "%E" (-42.42) = "-4.242000E+01");
-  test (sprintf "%-15E" (-42.42) = "-4.242000E+01  ");
-  test (sprintf "%015E" (-42.42) = "-004.242000E+01");
-  test (sprintf "%+E" 42.42 = "+4.242000E+01");
-  test (sprintf "% E" 42.42 = " 4.242000E+01");
-  test (sprintf "%#E" 42.42 = "4.242000E+01");
-  test (sprintf "%15E" 42.42 = "   4.242000E+01");
-  test (sprintf "%*E" 14 42.42 = "  4.242000E+01");
-  test (sprintf "%-0+ #14E" 42.42 = "+4.242000E+01 ");
-  test (sprintf "%.3E" (-42.42) = "-4.242E+01");
-  test (sprintf "%-15.3E" (-42.42) = "-4.242E+01     ");
-  test (sprintf "%015.3E" (-42.42) = "-000004.242E+01");
-  test (sprintf "%+.3E" 42.42 = "+4.242E+01");
-  test (sprintf "% .3E" 42.42 = " 4.242E+01");
-  test (sprintf "%#.3E" 42.42 = "4.242E+01");
-  test (sprintf "%15.3E" 42.42 = "      4.242E+01");
-  test (sprintf "%*.*E" 11 3 42.42 = "  4.242E+01");
-  test (sprintf "%-0+ #14.3E" 42.42 = "+4.242E+01    ");
+  test (sprintf "%E" (-42.42) =* "-4.242000E+01");
+  test (sprintf "%-15E" (-42.42) =* "-4.242000E+01  ");
+  test (sprintf "%015E" (-42.42) =* "-004.242000E+01");
+  test (sprintf "%+E" 42.42 =* "+4.242000E+01");
+  test (sprintf "% E" 42.42 =* " 4.242000E+01");
+  test (sprintf "%#E" 42.42 =* "4.242000E+01");
+  test (sprintf "%15E" 42.42 =* "   4.242000E+01");
+  test (sprintf "%*E" 14 42.42 =* "  4.242000E+01");
+  test (sprintf "%-0+ #14E" 42.42 =* "+4.242000E+01 ");
+  test (sprintf "%.3E" (-42.42) =* "-4.242E+01");
+  test (sprintf "%-15.3E" (-42.42) =* "-4.242E+01     ");
+  test (sprintf "%015.3E" (-42.42) =* "-000004.242E+01");
+  test (sprintf "%+.3E" 42.42 =* "+4.242E+01");
+  test (sprintf "% .3E" 42.42 =* " 4.242E+01");
+  test (sprintf "%#.3E" 42.42 =* "4.242E+01");
+  test (sprintf "%15.3E" 42.42 =* "      4.242E+01");
+  test (sprintf "%*.*E" 11 3 42.42 =* "  4.242E+01");
+  test (sprintf "%-0+ #14.3E" 42.42 =* "+4.242E+01    ");
 
 (* %g gives strange results that correspond to neither %f nor %e
   printf "\ng\n%!";
@@ -440,11 +464,14 @@ try
   let f () = "ok" in
   test (sprintf "%t" f = "ok");
 
-(* Does not work as expected.  Should be fixed to work like %s.
+  (* Work as expected. Prints the format string type digest.
+     If you want to print the contents of the format string,
+     do not use a meta format; simply convert the format string
+     to a string and print it using %s. *)
+
   printf "\n{...%%}\n%!";
-  let f = format_of_string "%f/%s" in
-  test (sprintf "%{%f%s%}" f = "%f/%s");
-*)
+  let f = format_of_string "%4g/%s" in
+  test (sprintf "%{%#0F%S%}" f = "%f%s");
 
   printf "\n(...%%)\n%!";
   let f = format_of_string "%d/foo/%s" in

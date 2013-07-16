@@ -45,7 +45,8 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [s]: insert a string argument.
    - [S]: convert a string argument to OCaml syntax (double quotes, escapes).
    - [c]: insert a character argument.
-   - [C]: convert a character argument to OCaml syntax (single quotes, escapes).
+   - [C]: convert a character argument to OCaml syntax
+     (single quotes, escapes).
    - [f]: convert a floating-point argument to decimal notation,
      in the style [dddd.ddd].
    - [F]: convert a floating-point argument to OCaml syntax ([dddd.]
@@ -71,8 +72,9 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      [fprintf] at the current point.
    - [t]: same as [%a], but take only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
-   - [\{ fmt %\}]: convert a format string argument. The argument must
-     have the same type as the internal format string [fmt].
+   - [\{ fmt %\}]: convert a format string argument to its type digest.
+     The argument must have the same type as the internal format string
+     [fmt].
    - [( fmt %)]: format string substitution. Take a format string
      argument and substitute it to the internal format string [fmt]
      to print following arguments. The argument must have the same
@@ -178,6 +180,7 @@ module CamlinternalPr : sig
     external unsafe_index_of_int : int -> index = "%identity";;
 
     val succ_index : index -> index;;
+    val add_int_index : int -> index -> index;;
 
     val sub : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> index -> int -> string;;
     val to_string : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string;;
@@ -201,6 +204,8 @@ module CamlinternalPr : sig
     };;
 
     val ac_of_format : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> ac;;
+    val count_printing_arguments_of_format :
+      ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int;;
 
     val sub_format :
         (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int) ->

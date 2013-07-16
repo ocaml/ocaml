@@ -404,12 +404,14 @@ let transl_primitive loc p =
   match prim with
     Plazyforce ->
       let parm = Ident.create "prim" in
-      Lfunction(Curried, [parm], Matching.inline_lazy_force (Lvar parm) Location.none)
+      Lfunction(Curried, [parm],
+                Matching.inline_lazy_force (Lvar parm) Location.none)
   | _ ->
       let rec make_params n =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
-      Lfunction(Curried, params, Lprim(prim, List.map (fun id -> Lvar id) params))
+      Lfunction(Curried, params,
+                Lprim(prim, List.map (fun id -> Lvar id) params))
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -615,12 +617,14 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
-        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc))
+        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, [],
+                                              e.exp_loc))
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
         Lfunction(Curried, [obj; meth; cache; pos],
-                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos], e.exp_loc))
+                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos],
+                        e.exp_loc))
       else
         transl_primitive e.exp_loc p
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
@@ -640,7 +644,8 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})}, oargs)
+  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})} as fn,
+               oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
@@ -651,7 +656,8 @@ and transl_exp0 e =
       in
       let wrap0 f =
         if args' = [] then f else wrap f in
-      let args = List.map (function _, Some x, _ -> x | _ -> assert false) args in
+      let args =
+         List.map (function _, Some x, _ -> x | _ -> assert false) args in
       let argl = transl_list args in
       let public_send = p.prim_name = "%send"
         || not !Clflags.native_code && p.prim_name = "%sendcache"in
@@ -664,6 +670,12 @@ and transl_exp0 e =
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
+        if p.prim_name = "%sequand" && Path.last path = "&" then
+          Location.prerr_warning fn.exp_loc
+            (Warnings.Deprecated "operator (&); you should use (&&) instead");
+        if p.prim_name = "%sequor" && Path.last path = "or" then
+          Location.prerr_warning fn.exp_loc
+            (Warnings.Deprecated "operator (or); you should use (||) instead");
         let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
           (Praise, [arg1]) ->

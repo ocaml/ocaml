@@ -63,7 +63,8 @@ let read_symbols' bytecode_file =
   begin try
     ignore (Bytesections.seek_section ic "CODE")
   with Not_found ->
-    (* The file contains only debugging info, loading mode is forced to "manual" *)
+    (* The file contains only debugging info,
+       loading mode is forced to "manual" *)
     set_launching_function (List.assoc "manual" loading_modes)
   end;
   close_in_noerr ic;

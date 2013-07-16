@@ -104,7 +104,7 @@ let fmt_private_flag f x =
 ;;
 
 let line i f s (*...*) =
-  fprintf f "%s" (String.make (2*i) ' ');
+  fprintf f "%s" (String.make ((2*i) mod 72) ' ');
   fprintf f s (*...*)
 ;;
 
@@ -218,11 +218,11 @@ and pattern i ppf x =
       line i ppf "Ppat_lazy\n";
       pattern i ppf p;
   | Ppat_constraint (p, ct) ->
-      line i ppf "Ppat_constraint";
+      line i ppf "Ppat_constraint\n";
       pattern i ppf p;
       core_type i ppf ct;
   | Ppat_type (li) ->
-      line i ppf "Ppat_type";
+      line i ppf "Ppat_type\n";
       longident_loc i ppf li
   | Ppat_unpack s ->
       line i ppf "Ppat_unpack %a\n" fmt_string_loc s;
@@ -328,26 +328,27 @@ and expression i ppf x =
       module_expr i ppf me;
       expression i ppf e;
   | Pexp_assert (e) ->
-      line i ppf "Pexp_assert";
+      line i ppf "Pexp_assert\n";
       expression i ppf e;
   | Pexp_lazy (e) ->
-      line i ppf "Pexp_lazy";
+      line i ppf "Pexp_lazy\n";
       expression i ppf e;
   | Pexp_poly (e, cto) ->
       line i ppf "Pexp_poly\n";
       expression i ppf e;
       option i core_type ppf cto;
   | Pexp_object s ->
-      line i ppf "Pexp_object";
+      line i ppf "Pexp_object\n";
       class_structure i ppf s
   | Pexp_newtype (s, e) ->
       line i ppf "Pexp_newtype \"%s\"\n" s;
       expression i ppf e
   | Pexp_pack me ->
-      line i ppf "Pexp_pack";
+      line i ppf "Pexp_pack\n";
       module_expr i ppf me
-  | Pexp_open (m, e) ->
-      line i ppf "Pexp_open \"%a\"\n" fmt_longident_loc m;
+  | Pexp_open (ovf, m, e) ->
+      line i ppf "Pexp_open %a \"%a\"\n" fmt_override_flag ovf
+        fmt_longident_loc m;
       expression i ppf e
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
@@ -604,8 +605,10 @@ and signature_item i ppf x =
       line i ppf "Psig_modtype %a\n" fmt_string_loc x.pmtd_name;
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
-  | Psig_open (li, attrs) ->
-      line i ppf "Psig_open %a\n" fmt_longident_loc li;
+  | Psig_open (ovf, li, attrs) ->
+      line i ppf "Psig_open %a %a\n"
+        fmt_override_flag ovf
+        fmt_longident_loc li;
       attributes i ppf attrs
   | Psig_include (mt, attrs) ->
       line i ppf "Psig_include\n";
@@ -711,8 +714,10 @@ and structure_item i ppf x =
       line i ppf "Pstr_modtype %a\n" fmt_string_loc x.pmtd_name;
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
-  | Pstr_open (li, attrs) ->
-      line i ppf "Pstr_open %a\n" fmt_longident_loc li;
+  | Pstr_open (ovf, li, attrs) ->
+      line i ppf "Pstr_open %a %a\n"
+        fmt_override_flag ovf
+        fmt_longident_loc li;
       attributes i ppf attrs
   | Pstr_class (l) ->
       line i ppf "Pstr_class\n";

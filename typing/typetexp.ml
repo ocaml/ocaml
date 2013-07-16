@@ -50,6 +50,7 @@ type error =
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
+  | Illegal_reference_to_recursive_module
   | Extension of string
 
 exception Error of Location.t * Env.t * error
@@ -69,6 +70,8 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
     with Not_found ->
       narrow_unbound_lid_error env loc mlid
         (fun lid -> Unbound_module lid)
+       | Env.Recmodule ->
+         raise (Error (loc, env, Illegal_reference_to_recursive_module))
   in
   begin match lid with
   | Longident.Lident _ -> ()
@@ -88,6 +91,8 @@ let find_component lookup make_error env loc lid =
     | _ -> lookup lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
+  | Env.Recmodule ->
+    raise (Error (loc, env, Illegal_reference_to_recursive_module))
 
 let find_type =
   find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
@@ -299,7 +304,8 @@ let rec transl_type env policy styp =
                     check (Env.find_type path env)
                 | _ -> raise Not_found
           in check decl;
-          Location.prerr_warning styp.ptyp_loc Warnings.Deprecated;
+          Location.prerr_warning styp.ptyp_loc
+            (Warnings.Deprecated "old syntax for polymorphic variant type");
           (path, decl,true)
         with Not_found -> try
           let lid2 =
@@ -315,7 +321,7 @@ let rec transl_type env policy styp =
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
-		    Type_arity_mismatch(lid.txt, decl.type_arity,
+                    Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
       let args = List.map (transl_type env policy) stl in
       let params = instance_list decl.type_params in
@@ -814,5 +820,7 @@ let report_error env ppf = function
       spellcheck ppf Env.fold_cltypes env lid;
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
+  | Illegal_reference_to_recursive_module ->
+      fprintf ppf "Illegal recursive module reference"
   | Extension s ->
       fprintf ppf "Uninterpreted extension '%s'." s

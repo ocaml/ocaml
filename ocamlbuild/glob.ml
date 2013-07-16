@@ -52,7 +52,7 @@ module NFA =
     | QEPSILON
     ;;
 
-    module IS = Set.Make(struct type t = int let compare = compare let print = Format.pp_print_int end);;
+    module IS = Set.Make(struct type t = int let compare (x:t) y = compare x y let print = Format.pp_print_int end);;
     module ISM = Map.Make(struct type t = IS.t let compare = IS.compare let print = IS.print end);;
 
     type machine = {
@@ -257,7 +257,7 @@ module Brute =
         | Word v   ->
             String.length v = n &&
             begin
-              let rec check j = j = n or (v.[j] = u.[i + j] && check (j + 1))
+              let rec check j = j = n || (v.[j] = u.[i + j] && check (j + 1))
               in
               check 0
             end
