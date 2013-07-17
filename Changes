@@ -46,13 +46,16 @@ Standard library:
   (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 - Add optimized composition operators |> and @@ in Pervasives
 
-
 Runtime system:
 * PR#6019: more efficient implementation of caml_modify() and caml_initialize().
   The new implementations are less lenient than the old ones: now,
   the destination pointer of caml_modify() must point within the minor or
   major heaps, and the destination pointer of caml_initialize() must
   point within the major heap.
+
+Internals:
+- Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
+  as part of compilerlibs, to be used on bin-annot files.
 
 Bug fixes:
 - PR#3679: Warning display problems
@@ -159,9 +162,7 @@ Bug fixes:
 - PR#6033: Matching.inline_lazy_force needs eta-expansion (command-line flags)
 - PR#6056: Using 'match' prevents generalization of values
 - PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
-Internals:
-- Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
-  as part of compilerlibs, to be used on bin-annot files.
+- PR#6072: configure does not handle FreeBSD current (i.e. 10) correctly
 
 Feature wishes:
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM
