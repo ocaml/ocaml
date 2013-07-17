@@ -139,8 +139,8 @@ module MakeMap(Map : MapArgument) = struct
             (id, name, Map.leave_class_infos { ct with ci_expr = ci_expr})
           ) list in
           Tstr_class_type list
-        | Tstr_include (mexpr, idents) ->
-          Tstr_include (map_module_expr mexpr, idents)
+        | Tstr_include (mexpr, sg) ->
+          Tstr_include (map_module_expr mexpr, sg)
     in
     Map.leave_structure_item { item with str_desc = str_desc}
 
@@ -402,7 +402,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tsig_modtype (id, name, mdecl) ->
           Tsig_modtype (id, name, map_modtype_declaration mdecl)
         | Tsig_open _ -> item.sig_desc
-        | Tsig_include (mty, lid) -> Tsig_include (map_module_type mty, lid)
+        | Tsig_include (mty, sg) -> Tsig_include (map_module_type mty, sg)
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
         | Tsig_class_type list ->
           Tsig_class_type (List.map map_class_type_declaration list)
