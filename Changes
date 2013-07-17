@@ -52,6 +52,7 @@ Compilers:
   - uses of the (&) and (or) operators instead of (&&) and (||)
 - Experimental OCAMLCOMPPARAM for ocamlc and ocamlopt
 - PR#5571: incorrect ordinal number in error message
+- PR#6073: add signature to Tstr_include
 
 Standard library:
 - PR#5899: expose a way to inspect the current call stack
