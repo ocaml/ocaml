@@ -401,7 +401,7 @@ CAMLprim value caml_gc_set(value v)
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
-  newminsize = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
+  newminsize = Bsize_wsize (norm_minsize (Long_val (Field (v, 0))));
   if (newminsize != caml_minor_heap_size){
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);

@@ -1,4 +1,4 @@
-OCaml 4.01.0:
+sOCaml 4.01.0:
 -------------
 
 (Changes that can break existing programs are marked with a "*")
@@ -137,6 +137,7 @@ Bug fixes:
 - PR#5930: ocamldep leaks temporary preprocessing files
 - PR#5934: integer shift by negative amount (in otherlibs/num)
 - PR#5944: Bad typing performances of big variant type declaration
+- PR#5945: Mix-up of Minor_heap_min and Minor_heap_max units
 - PR#5948: GADT with polymorphic variants bug
 - PR#5965: disallow auto-reference to a recursive module in its definition
 - PR#5973: Format module incorrectly parses format string
