@@ -31,6 +31,10 @@ val make_symbol: ?unitname:string -> string option -> string
            corresponds to symbol [id] in the compilation unit [u]
            (or the current unit). *)
 
+val symbol_in_current_unit: string -> bool
+        (* Return true if the given asm symbol belongs to the
+           current compilation unit, false otherwise. *)
+
 val symbol_for_global: Ident.t -> string
         (* Return the asm symbol that refers to the given global identifier *)
 
