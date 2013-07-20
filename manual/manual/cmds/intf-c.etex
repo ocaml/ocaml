@@ -393,7 +393,7 @@ An alternative to "ocamlc -custom" is to build separately a custom
 runtime system integrating the desired C libraries, then generate
 ``pure'' bytecode executables (not containing their own runtime
 system) that can run on this custom runtime.  This is achieved by the
-"-make_runtime" and "-use_runtime" flags to "ocamlc".  For example,
+"-make-runtime" and "-use-runtime" flags to "ocamlc".  For example,
 to build a custom runtime system integrating the C parts of the
 ``Unix'' and ``Threads'' libraries, do:
 \begin{verbatim}
