@@ -145,7 +145,18 @@ let of_list l =
 ;;
 
 let of_string s =
-  from (fun c -> if c < String.length s then Some s.[c] else None)
+  let count = ref 0 in
+  from (fun _ ->
+    (* We cannot use the index passed by the [from] function directly
+       because it returns the current stream count, with absolutely no
+       guarantee that it will start from 0. For example, in the case
+       of [Stream.icons 'c' (Stream.from_string "ab")], the first
+       access to the string will be made with count [1] already.
+    *)
+    let c = !count in
+    if c < String.length s
+    then (incr count; Some s.[c])
+    else None)
 ;;
 
 let of_channel ic =
