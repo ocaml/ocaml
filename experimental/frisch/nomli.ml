@@ -6,7 +6,7 @@ open Longident
 open Misc
 open Parsetree
 open Types
-open Typedtree
+open! Typedtree
 open Ast_helper
 
 let mli_attr l = Convenience.find_attr "mli" l
@@ -15,7 +15,7 @@ let map_flatten f l =
   List.flatten (List.map f l)
 
 let is_abstract = function
-  | [{pstr_desc=Pstr_eval({pexp_desc=Pexp_ident{txt=Lident "abstract"}},_)}] -> true
+  | PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_ident{txt=Lident "abstract"}},_)}] -> true
   | _ -> false
 
 let explicit_type_of_expr = function
@@ -23,8 +23,8 @@ let explicit_type_of_expr = function
   | _ -> []
 
 let explicit_type = function
-  | [{pstr_desc=Pstr_eval({pexp_desc=Pexp_tuple el},_)}] -> map_flatten explicit_type_of_expr el
-  | [{pstr_desc=Pstr_eval(e,_)}] -> explicit_type_of_expr e
+  | PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_tuple el},_)}] -> map_flatten explicit_type_of_expr el
+  | PStr [{pstr_desc=Pstr_eval(e,_)}] -> explicit_type_of_expr e
   | _ -> []
 
 let rec structure l : Parsetree.signature =
@@ -98,12 +98,12 @@ and typ x : Parsetree.core_type =
 
 let mli_of_ml ppf sourcefile =
   Location.input_name := sourcefile;
-  Compile.init_path ();
+  Compmisc.init_path false;
   let file = chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename file) in
   Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
-  let env = Compile.initial_env() in
+  let env = Compmisc.initial_env() in
   let ast = Pparse.file ppf inputfile Parse.implementation Config.ast_impl_magic_number in
   let (str, _coerc) = Typemod.type_implementation sourcefile file modulename env ast in
   let sg = structure str in

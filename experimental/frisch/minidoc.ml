@@ -6,7 +6,7 @@ open Longident
 let pendings = ref []
 
 let doc ppf = function
-  | ({txt="doc";_}, [{pstr_desc=Pstr_eval(e, _); _}]) ->
+  | ({txt="doc";_}, PStr [{pstr_desc=Pstr_eval(e, _); _}]) ->
       begin match e.pexp_desc with
       | Pexp_constant(Const_string (s, _)) ->
           Format.fprintf ppf "    --> %s@." s

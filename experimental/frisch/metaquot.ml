@@ -67,9 +67,23 @@ module Main : sig end = struct
 
 
   let get_exp loc = function
-    | [ {pstr_desc=Pstr_eval (e, _); _} ] -> e
+    | PStr [ {pstr_desc=Pstr_eval (e, _); _} ] -> e
     | _ ->
-        Format.eprintf "%aExpression expected"
+        Format.eprintf "%aExpression expected@."
+          Location.print_error loc;
+        exit 2
+
+  let get_typ loc = function
+    | PTyp t -> t
+    | _ ->
+        Format.eprintf "%aType expected@."
+          Location.print_error loc;
+        exit 2
+
+  let get_pat loc = function
+    | PPat t -> t
+    | _ ->
+        Format.eprintf "%aPattern expected@."
           Location.print_error loc;
         exit 2
 
@@ -144,13 +158,11 @@ module Main : sig end = struct
           | Pexp_extension({txt="expr";loc=l}, e) ->
               (lifter !loc) # lift_Parsetree_expression (get_exp l e)
           | Pexp_extension({txt="pat";loc=l}, e) ->
-              let p = extract_str Parse.pattern "pattern" (get_exp l e) in
-              (lifter !loc) # lift_Parsetree_pattern p
-          | Pexp_extension({txt="str";_}, e) ->
+              (lifter !loc) # lift_Parsetree_pattern (get_pat l e)
+          | Pexp_extension({txt="str";_}, PStr e) ->
               (lifter !loc) # lift_Parsetree_structure e
           | Pexp_extension({txt="type";loc=l}, e) ->
-              let p = extract_str Parse.core_type "type" (get_exp l e) in
-              (lifter !loc) # lift_Parsetree_core_type p
+              (lifter !loc) # lift_Parsetree_core_type (get_typ l e)
           | _ ->
               super # expr e
         )

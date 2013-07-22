@@ -412,13 +412,13 @@ module Convenience = struct
     try Some (snd (List.find (fun (x, _) -> x.txt = s) attrs))
     with Not_found -> None
 
-  let expr_of_struct = function
-    | [{pstr_desc=Pstr_eval(e, _)}] -> Some e
+  let expr_of_payload = function
+    | PStr [{pstr_desc=Pstr_eval(e, _)}] -> Some e
     | _ -> None
 
   let find_attr_expr s attrs =
     match find_attr s attrs with
-    | Some e -> expr_of_struct e
+    | Some e -> expr_of_payload e
     | None -> None
 
   let has_attr s attrs =

@@ -21,7 +21,7 @@ open Types
 type partial = Partial | Total
 type optional = Required | Optional
 
-type attribute = string loc * Parsetree.structure
+type attribute = Parsetree.attribute
 type attributes = attribute list
 
 type pattern =

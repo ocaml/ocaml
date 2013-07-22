@@ -29,15 +29,15 @@
 
 *)
 
+open Location
 open Ast_helper
-open Asttypes
+open! Asttypes
 open Parsetree
 open Longident
-open Location
 
 let getenv loc arg =
   match arg with
-  | [{pstr_desc=Pstr_eval({pexp_desc = Pexp_construct ({txt = Lident sym; _}, None); _}, _); _}] ->
+  | PStr [{pstr_desc=Pstr_eval({pexp_desc = Pexp_construct ({txt = Lident sym; _}, None); _}, _); _}] ->
       (try Sys.getenv sym with Not_found -> "")
   | _ ->
       Format.eprintf "%a** IFDEF: bad syntax."

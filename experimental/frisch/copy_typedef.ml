@@ -23,9 +23,8 @@
 
 module Main : sig end = struct
   open Asttypes
-  open Location
+  open! Location
   open Parsetree
-  open Longident
 
   let fatal loc s =
     Location.print_error Format.err_formatter loc;
@@ -122,7 +121,7 @@ module Main : sig end = struct
     val mutable file = ""
 
     method source name = function
-      | [] ->
+      | PStr [] ->
           let file =
             if Filename.check_suffix file ".ml"
             then (Filename.chop_suffix file ".ml") ^ ".mli"
@@ -131,7 +130,7 @@ module Main : sig end = struct
             else failwith "Unknown source extension"
           in
           file, path, name
-      | [{pstr_desc=Pstr_eval
+      | PStr [{pstr_desc=Pstr_eval
             ({pexp_desc=Pexp_apply
                 ({pexp_desc=Pexp_constant(Const_string (file, _)); _},
                  ["", {pexp_desc=Pexp_ident{txt=lid;_}; _}]); _}, _); _}] ->

@@ -361,6 +361,6 @@ module Convenience :
     val get_lid: expression -> string option
 
     val has_attr: string -> attributes -> bool
-    val find_attr: string -> attributes -> structure option
+    val find_attr: string -> attributes -> payload option
     val find_attr_expr: string -> attributes -> expression option
   end

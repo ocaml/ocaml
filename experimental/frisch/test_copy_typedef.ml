@@ -16,4 +16,4 @@ let _x = M.A
 let _y : t = [1; 2]
 
 
-type loc = [%copy_typedef "../../parsing/location.mli" t]
+type _loc = [%copy_typedef "../../parsing/location.mli" t]

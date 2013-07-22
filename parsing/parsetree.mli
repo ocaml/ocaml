@@ -16,17 +16,22 @@ open Asttypes
 
 (** {2 Extension points} *)
 
-type attribute = string loc * structure
+type attribute = string loc * payload
       (* [@id STRUCTURE]
          [@@id STRUCTURE]
        *)
 
-and extension = string loc * structure
+and extension = string loc * payload
       (* [%id STRUCTURE]
          [%%id STRUCTURE]
        *)
 
 and attributes = attribute list
+
+and payload =
+  | PStr of structure
+  | PTyp of core_type
+  | PPat of pattern
 
 (** {2 Core language} *)
 

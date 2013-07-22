@@ -38,7 +38,7 @@ module Main : sig end = struct
     | Oval_string x -> str x
     | Oval_int x -> int x
     | Oval_char x -> char x
-    | Oval_float x -> float x
+    | Oval_float x -> Ast_helper.Convenience.float x
     | Oval_list l -> list (List.map exp_of_out_value l)
     | Oval_array l -> Exp.array (List.map exp_of_out_value l)
     | Oval_constr (c, args) -> constr (lid_of_out_ident c) (List.map exp_of_out_value args)
@@ -61,9 +61,9 @@ module Main : sig end = struct
       exit 2
 
   let get_exp loc = function
-    | [ {pstr_desc=Pstr_eval (e, _); _} ] -> e
+    | PStr [ {pstr_desc=Pstr_eval (e, _); _} ] -> e
     | _ ->
-        Format.eprintf "%aExpression expected"
+        Format.eprintf "%aExpression expected@."
           Location.print_error loc;
         exit 2
 
@@ -90,14 +90,14 @@ module Main : sig end = struct
           end;
           empty_str_item
       | Pstr_extension(({txt="eval.start";_},
-                        [{pstr_desc=Pstr_eval (e, _);_}]
+                        PStr [{pstr_desc=Pstr_eval (e, _);_}]
                        ), _) when get_lid e = Some "both" ->
           eval_str_items <- Some true;
           empty_str_item
-      | Pstr_extension(({txt="eval.start";_}, []), _) ->
+      | Pstr_extension(({txt="eval.start";_}, PStr []), _) ->
           eval_str_items <- Some false;
           empty_str_item
-      | Pstr_extension(({txt="eval.stop";_}, []), _) ->
+      | Pstr_extension(({txt="eval.stop";_}, PStr []), _) ->
           eval_str_items <- None;
           empty_str_item
       | _ ->

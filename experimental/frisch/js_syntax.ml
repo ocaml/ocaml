@@ -11,7 +11,7 @@
  *)
 
 open Asttypes
-open Location
+open! Location
 open Parsetree
 open Longident
 open Ast_helper
@@ -81,7 +81,7 @@ let mapper =
     method! expr e =
       let loc = e.pexp_loc in
       match e.pexp_desc with
-      | Pexp_extension({txt="js";_}, [{pstr_desc=Pstr_eval (e, _);_}]) ->
+      | Pexp_extension({txt="js";_}, PStr [{pstr_desc=Pstr_eval (e, _);_}]) ->
           {< js = true >} # expr e
 
       | Pexp_field (o, {txt = Lident meth; loc = _}) when js ->

@@ -13,16 +13,14 @@ and a payload (written s below).
    In the Parsetree, the identifier is represented as a single string
    (without spaces).
 
- * The payload 's' is an OCaml structure (i.e. a list of structure items).
-   Note that a payload can be empty or reduced to a single expression
-   (both cases are valid structures).  To support attributes whose
-   payload needs to be a type expression, the special syntax:
+ * The payload 's' can be one of three things:
 
-      : T
+   - An OCaml structure (i.e. a list of structure items).  Note that a
+     structure can be empty or reduced to a single expression.
 
-   (where T is a type expression) is also accepted as a valid payload,
-   and is interpreted internally as the structure made of the single
-   expression (() : T).
+   - A type expression, prefixed with the ":" character.
+
+   - A pattern, prefixed with the "?" character.
 
 
 Attributes on expressions, type expressions, module expressions, module type expressions,

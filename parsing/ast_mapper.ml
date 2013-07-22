@@ -409,9 +409,13 @@ class mapper =
 
     method location l = l
 
-    method extension (s, e) = (map_loc this s, this # structure e)
-    method attribute (s, e) = (map_loc this s, this # structure e)
+    method extension (s, e) = (map_loc this s, this # payload e)
+    method attribute (s, e) = (map_loc this s, this # payload e)
     method attributes l = List.map (this # attribute) l
+    method payload = function
+      | PStr x -> PStr (this # structure x)
+      | PTyp x -> PTyp (this # typ x)
+      | PPat x -> PPat (this # pat x)
   end
 
 class type main_entry_points =

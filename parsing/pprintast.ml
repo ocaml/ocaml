@@ -322,7 +322,7 @@ class printer  ()= object(self:'self)
             pp f "@[<hov2>(module@ %a@ with@ %a)@]" self#longident_loc lid
               (self#list aux  ~sep:"@ and@ ")  cstrs)
     | Ptyp_extension (s, arg) ->
-      pp f "@[<2>(&%s@ %a)@]" s.txt self#structure arg
+      pp f "@[<2>(&%s@ %a)@]" s.txt self#payload arg
     | _ -> self#paren true self#core_type f x
           (********************pattern********************)
           (* be cautious when use [pattern], [pattern1] is preferred *)
@@ -618,7 +618,7 @@ class printer  ()= object(self:'self)
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
     | Pexp_extension (s, arg) ->
-      pp f "@[<2>(&%s@ %a)@]" s.txt self#structure arg
+      pp f "@[<2>(&%s@ %a)@]" s.txt self#payload arg
     | _ -> self#expression1 f x
   method expression1 f x =
     if x.pexp_attributes <> [] then self#expression f x
@@ -688,7 +688,7 @@ class printer  ()= object(self:'self)
     List.iter (self # attribute f) l
 
   method attribute f (s, e) =
-    pp f "[@@%s %a]" s.txt self#structure e
+    pp f "[@@%s %a]" s.txt self#payload e
 
   method value_description f x =
     pp f "@[<hov2>%a%a@]" self#core_type x.pval_type
@@ -950,6 +950,11 @@ class printer  ()= object(self:'self)
     | Pmod_extension _ -> assert false
 
   method structure f x = self#list ~sep:"@\n" self#structure_item f x
+
+  method payload f = function
+    | PStr x -> self#structure f x
+    | PTyp x -> pp f ":"; self#core_type f x
+    | PPat x -> pp f "?"; self#pattern f x
 
   (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)
   method binding f {pvb_pat=p; pvb_expr=x; pvb_attributes=_} = (* TODO: print attributes *)

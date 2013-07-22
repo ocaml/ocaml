@@ -1993,7 +1993,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         Exp.fun_ ~loc
           l None
           (Pat.var ~loc (mknoloc "*opt*"))
-          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",[]] [Vb.mk spat smatch] sexp)
+          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []] [Vb.mk spat smatch] sexp)
       in
       type_expect ?in_function env sfun ty_expected
         (* TODO: keep attributes, call type_function directly *)

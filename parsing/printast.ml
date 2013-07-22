@@ -177,7 +177,7 @@ let rec core_type i ppf x =
       list i package_with ppf l;
   | Ptyp_extension (s, arg) ->
       line i ppf "Ptyp_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident_loc s;
@@ -228,7 +228,7 @@ and pattern i ppf x =
       line i ppf "Ppat_unpack %a\n" fmt_string_loc s;
   | Ppat_extension (s, arg) ->
       line i ppf "Ppat_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;
@@ -352,7 +352,7 @@ and expression i ppf x =
       expression i ppf e
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc x.pval_name fmt_location x.pval_loc;
@@ -386,9 +386,14 @@ and attributes i ppf l =
   List.iter
     (fun (s, arg) ->
       line i ppf "attribute \"%s\"\n" s.txt;
-      structure (i + 1) ppf arg;
+      payload (i + 1) ppf arg;
     )
     l
+
+and payload i ppf = function
+  | PStr x -> structure i ppf x
+  | PTyp x -> core_type i ppf x
+  | PPat x -> pattern i ppf x
 
 and type_kind i ppf x =
   match x with
@@ -418,7 +423,7 @@ and class_type i ppf x =
       class_type i ppf cl;
   | Pcty_extension (s, arg) ->
       line i ppf "Pcty_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and class_signature i ppf cs =
   line i ppf "class_signature\n";
@@ -446,7 +451,7 @@ and class_type_field i ppf x =
       core_type (i+1) ppf ct2;
   | Pctf_extension (s, arg) ->
       line i ppf "Pctf_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+     payload i ppf arg
 
 and class_description i ppf x =
   line i ppf "class_description %a\n" fmt_location x.pci_loc;
@@ -501,7 +506,7 @@ and class_expr i ppf x =
       class_type i ppf ct;
   | Pcl_extension (s, arg) ->
       line i ppf "Pcl_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and class_structure i ppf { pcstr_self = p; pcstr_fields = l } =
   line i ppf "class_structure\n";
@@ -534,7 +539,7 @@ and class_field i ppf x =
       expression (i+1) ppf e;
   | Pcf_extension (s, arg) ->
       line i ppf "Pcf_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and class_field_kind i ppf = function
   | Cfk_concrete (o, e) ->
@@ -577,7 +582,7 @@ and module_type i ppf x =
       module_expr i ppf m;
   | Pmty_extension (s, arg) ->
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and signature i ppf x = list i signature_item ppf x
 
@@ -623,10 +628,10 @@ and signature_item i ppf x =
   | Psig_extension ((s, arg), attrs) ->
       line i ppf "Psig_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;
-      structure i ppf arg
+      payload i ppf arg
   | Psig_attribute (s, arg) ->
       line i ppf "Psig_attribute \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and modtype_declaration i ppf = function
   | None -> line i ppf "#abstract"
@@ -675,7 +680,7 @@ and module_expr i ppf x =
       expression i ppf e;
   | Pmod_extension (s, arg) ->
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and structure i ppf x = list i structure_item ppf x
 
@@ -732,10 +737,10 @@ and structure_item i ppf x =
   | Pstr_extension ((s, arg), attrs) ->
       line i ppf "Pstr_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;
-      structure i ppf arg
+      payload i ppf arg
   | Pstr_attribute (s, arg) ->
       line i ppf "Pstr_attribute \"%s\"\n" s.txt;
-      structure i ppf arg
+      payload i ppf arg
 
 and module_declaration i ppf pmd =
   string_loc i ppf pmd.pmd_name;

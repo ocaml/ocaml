@@ -20,7 +20,7 @@
 
 module Main : sig end = struct
   open Asttypes
-  open Location
+  open! Location
   open Parsetree
   open Ast_helper
   open Ast_helper.Convenience

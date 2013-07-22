@@ -1270,7 +1270,7 @@ value varify_constructors var_names =
   ;
 
   value attribute loc s str =
-    (with_loc s loc, str_item str);
+    (with_loc s loc, PStr (str_item str));
 
   value () =
     attribute_fwd.val := attribute;
