@@ -81,7 +81,7 @@ module Main : sig end = struct
         exit 2
 
   let get_pat loc = function
-    | PPat t -> t
+    | PPat (t, None) -> t
     | _ ->
         Format.eprintf "%aPattern expected@."
           Location.print_error loc;

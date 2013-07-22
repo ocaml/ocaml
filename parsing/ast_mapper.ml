@@ -415,7 +415,7 @@ class mapper =
     method payload = function
       | PStr x -> PStr (this # structure x)
       | PTyp x -> PTyp (this # typ x)
-      | PPat x -> PPat (this # pat x)
+      | PPat (x, g) -> PPat (this # pat x, map_opt (this # expr) g)
   end
 
 class type main_entry_points =

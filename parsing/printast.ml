@@ -393,7 +393,12 @@ and attributes i ppf l =
 and payload i ppf = function
   | PStr x -> structure i ppf x
   | PTyp x -> core_type i ppf x
-  | PPat x -> pattern i ppf x
+  | PPat (x, None) -> pattern i ppf x
+  | PPat (x, Some g) ->
+    pattern i ppf x;
+    line i ppf "<when>\n";
+    expression (i + 1) ppf g
+
 
 and type_kind i ppf x =
   match x with

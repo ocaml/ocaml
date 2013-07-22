@@ -2004,11 +2004,8 @@ item_extension:
 ;
 payload:
     structure { PStr $1 }
-  | COLON core_type { PTyp $2
-(*      [ mkstrexp (ghexp (Pexp_constraint (ghunit (), $2))) [] ] *)
-  }
-  | QUESTION pattern { PPat $2
-(*       [ mkstr(Pstr_value(Nonrecursive, [Vb.mk $2 (ghunit ())])) ] *)
-  }
+  | COLON core_type { PTyp $2 }
+  | QUESTION pattern { PPat ($2, None) }
+  | QUESTION pattern WHEN seq_expr { PPat ($2, Some $4) }
 ;
 %%

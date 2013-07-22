@@ -954,7 +954,10 @@ class printer  ()= object(self:'self)
   method payload f = function
     | PStr x -> self#structure f x
     | PTyp x -> pp f ":"; self#core_type f x
-    | PPat x -> pp f "?"; self#pattern f x
+    | PPat (x, None) -> pp f "?"; self#pattern f x
+    | PPat (x, Some e) ->
+      pp f "?"; self#pattern f x;
+      pp f " when "; self#expression f e
 
   (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)
   method binding f {pvb_pat=p; pvb_expr=x; pvb_attributes=_} = (* TODO: print attributes *)

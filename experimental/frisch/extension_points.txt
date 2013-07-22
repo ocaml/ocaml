@@ -18,9 +18,19 @@ and a payload (written s below).
    - An OCaml structure (i.e. a list of structure items).  Note that a
      structure can be empty or reduced to a single expression.
 
+        [@id]
+        [@id x + 3]
+        [@id type t = int]
+
    - A type expression, prefixed with the ":" character.
 
-   - A pattern, prefixed with the "?" character.
+        [@id : TYP]
+
+   - A pattern, prefixed with the "?" character, and optionally followed
+     by a "when" clause:
+
+        [@id ? PAT]
+        [@id ? PAT when EXPR]
 
 
 Attributes on expressions, type expressions, module expressions, module type expressions,
