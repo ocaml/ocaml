@@ -335,7 +335,7 @@ and untype_signature_item item =
     | Tsig_modtype mtd ->
         Psig_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
     | Tsig_open (ovf, _path, lid, attrs) -> Psig_open (ovf, lid, attrs)
-    | Tsig_include (mty, _lid, attrs) -> Psig_include (untype_module_type mty, attrs)
+    | Tsig_include (mty, _, attrs) -> Psig_include (untype_module_type mty, attrs)
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->

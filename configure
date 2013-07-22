@@ -795,6 +795,7 @@ if test $withsharedlibs = "yes"; then
     x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
     arm*-*-linux*)                natdynlink=true;;
+    aarch64-*-linux*)             natdynlink=true;;
   esac
 fi
 
@@ -854,6 +855,7 @@ case "$target" in
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
   x86_64-*-darwin*)             arch=amd64; system=macosx;;
   x86_64-*-mingw*)              arch=amd64; system=mingw;;
+  aarch64-*-linux*)             arch=arm64; system=linux;;
 esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
@@ -915,7 +917,7 @@ case "$arch,$system" in
                     *gcc*) aspp="${TOOLPREF}gcc -c";;
                               *) aspp="${TOOLPREF}as -P";;
                   esac;;
-  amd64,*|arm,*|i386,*|power,bsd|sparc,*)
+  amd64,*|arm,*|arm64,*|i386,*|power,bsd|sparc,*)
                   as="${TOOLPREF}as"
                   aspp="${TOOLPREF}gcc -c";;
 esac
@@ -1347,6 +1349,7 @@ case "$arch" in
             fi;;
   power)    bng_arch=ppc; bng_asm_level=1;;
   amd64)    bng_arch=amd64; bng_asm_level=1;;
+  arm64)    bng_arch=arm64; bng_asm_level=1;;
   *)        bng_arch=generic; bng_asm_level=0;;
 esac
 

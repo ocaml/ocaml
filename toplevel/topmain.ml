@@ -96,8 +96,9 @@ end);;
 
 
 let main () =
-  Compenv.readenv Before_args;
+  let ppf = Format.err_formatter in
+  Compenv.readenv ppf Before_args;
   Arg.parse Options.list file_argument usage;
-  Compenv.readenv Before_link;
-  if not (prepare Format.err_formatter) then exit 2;
+  Compenv.readenv ppf Before_link;
+  if not (prepare ppf) then exit 2;
   Toploop.loop Format.std_formatter

@@ -218,7 +218,7 @@ and structure_item_desc =
   | Tstr_open of override_flag * Path.t * Longident.t loc * attribute list
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
-  | Tstr_include of module_expr * Ident.t list * attribute list
+  | Tstr_include of module_expr * Types.signature * attribute list
   | Tstr_attribute of attribute
 
 and module_binding =

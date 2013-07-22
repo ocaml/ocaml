@@ -33,4 +33,4 @@ val get_objfiles : unit -> string list
 type readenv_position =
   Before_args | Before_compile | Before_link
 
-val readenv : readenv_position -> unit
+val readenv : Format.formatter -> readenv_position -> unit
