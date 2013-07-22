@@ -4,16 +4,26 @@ This file describes the changes on the extension_points branch.
 === Attributes
 
 Attributes are "decorations" of the syntax tree which are ignored by
-the type-checker.  An attribute is made of an identifier (written id)
-and a argument, which is an OCaml structure (i.e. a list of structure
-items), written s below.
+the type-checker.  An attribute is made of an identifier (written id below)
+and a payload (written s below).
 
-The identifier can be a lowercase or uppercase identifier (including
-OCaml keywords) or a sequence of such atomic identifiers separated with
-a dots (whitespaces are allowed around the dots).  In the Parsetree,
-the identifier is represented as a single string (without spaces).
+ * The identifier 'id' can be a lowercase or uppercase identifier
+   (including OCaml keywords) or a sequence of such atomic identifiers
+   separated with a dots (whitespaces are allowed around the dots).
+   In the Parsetree, the identifier is represented as a single string
+   (without spaces).
 
-Note: a structure can be empty, or reduced to a single expression.
+ * The payload 's' is an OCaml structure (i.e. a list of structure items).
+   Note that a payload can be empty or reduced to a single expression
+   (both cases are valid structures).  To support attributes whose
+   payload needs to be a type expression, the special syntax:
+
+      : T
+
+   (where T is a type expression) is also accepted as a valid payload,
+   and is interpreted internally as the structure made of the single
+   expression (() : T).
+
 
 Attributes on expressions, type expressions, module expressions, module type expressions,
 patterns, class expressions, class type expressions:

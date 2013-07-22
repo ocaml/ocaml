@@ -2003,6 +2003,9 @@ item_extension:
   LBRACKETPERCENTPERCENT attr_id ext_arg RBRACKET { ($2, $3) }
 ;
 ext_arg:
-  structure { $1 }
+    structure { $1 }
+  | COLON core_type {
+      [ mkstrexp (ghexp (Pexp_constraint (ghunit (), $2))) [] ]
+  }
 ;
 %%
