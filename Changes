@@ -57,6 +57,7 @@ Runtime system:
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
   as part of compilerlibs, to be used on bin-annot files.
+- The test suite can now be run without installing OCaml first.
 
 Bug fixes:
 - PR#3679: Warning display problems
@@ -162,6 +163,7 @@ Bug fixes:
 - PR#6031: Camomile problem with -with-frame-pointers
 - PR#6032: better Random.self_init under Windows
 - PR#6033: Matching.inline_lazy_force needs eta-expansion (command-line flags)
+- PR#6046: testsuite picks up the wrong ocamlrun dlls
 - PR#6056: Using 'match' prevents generalization of values
 - PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
 - PR#6072: configure does not handle FreeBSD current (i.e. 10) correctly

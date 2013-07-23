@@ -22,7 +22,7 @@ CYGPATH=echo
 DIFF=diff -q
 CANKILL=true
 SORT=sort
-SET_LD_PATH=LD_LIBRARY_PATH="$(LD_PATH)"
+SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
 # The variables above may be overridden by .../config/Makefile
 # OTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
