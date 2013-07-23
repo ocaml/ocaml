@@ -315,7 +315,8 @@ let link ppf objfiles output_name =
     (fun (info, file_name, crc) -> check_consistency file_name info crc)
     units_tolink;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
-  Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts; (* put user's opts first *)
+  Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
+                                               (* put user's opts first *)
   let startup =
     if !Clflags.keep_startup_file then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in

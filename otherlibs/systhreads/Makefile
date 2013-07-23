@@ -41,7 +41,9 @@ libthreadsnat.a: $(NATIVECODE_C_OBJS)
 	$(AR) rc libthreadsnat.a $(NATIVECODE_C_OBJS)
 
 st_stubs_n.o: st_stubs.c st_posix.h
-	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c st_stubs.c
+	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) \
+	            $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) \
+	            -DSYS_$(SYSTEM) -c st_stubs.c
 	mv st_stubs.o st_stubs_n.o
 
 threads.cma: $(THREAD_OBJS)

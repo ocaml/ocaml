@@ -83,12 +83,14 @@ value caml_gr_draw_image(value im, value vx, value vy)
     }
   }
   if(caml_gr_remember_modeflag)
-    XCopyArea(caml_gr_display, Data_im(im), caml_gr_bstore.win, caml_gr_bstore.gc,
+    XCopyArea(caml_gr_display, Data_im(im), caml_gr_bstore.win,
+              caml_gr_bstore.gc,
               0, 0,
               Width_im(im), Height_im(im),
               x, by);
   if(caml_gr_display_modeflag)
-    XCopyArea(caml_gr_display, Data_im(im), caml_gr_window.win, caml_gr_window.gc,
+    XCopyArea(caml_gr_display, Data_im(im), caml_gr_window.win,
+              caml_gr_window.gc,
           0, 0,
           Width_im(im), Height_im(im),
           x, wy);

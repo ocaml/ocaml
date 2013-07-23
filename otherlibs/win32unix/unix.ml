@@ -197,10 +197,14 @@ let single_write fd buf ofs len =
 
 (* Interfacing with the standard input/output library *)
 
-external in_channel_of_descr: file_descr -> in_channel = "win_inchannel_of_filedescr"
-external out_channel_of_descr: file_descr -> out_channel = "win_outchannel_of_filedescr"
-external descr_of_in_channel : in_channel -> file_descr = "win_filedescr_of_channel"
-external descr_of_out_channel : out_channel -> file_descr = "win_filedescr_of_channel"
+external in_channel_of_descr: file_descr -> in_channel
+   = "win_inchannel_of_filedescr"
+external out_channel_of_descr: file_descr -> out_channel
+   = "win_outchannel_of_filedescr"
+external descr_of_in_channel : in_channel -> file_descr
+   = "win_filedescr_of_channel"
+external descr_of_out_channel : out_channel -> file_descr
+   = "win_filedescr_of_channel"
 
 (* Seeking and truncating *)
 
@@ -255,9 +259,12 @@ external link : string -> string -> unit = "unix_link"
 
 module LargeFile =
   struct
-    external lseek : file_descr -> int64 -> seek_command -> int64 = "unix_lseek_64"
-    let truncate name len = invalid_arg "Unix.LargeFile.truncate not implemented"
-    let ftruncate name len = invalid_arg "Unix.LargeFile.ftruncate not implemented"
+    external lseek : file_descr -> int64 -> seek_command -> int64
+       = "unix_lseek_64"
+    let truncate name len =
+      invalid_arg "Unix.LargeFile.truncate not implemented"
+    let ftruncate name len =
+      invalid_arg "Unix.LargeFile.ftruncate not implemented"
     type stats =
       { st_dev : int;
         st_ino : int;

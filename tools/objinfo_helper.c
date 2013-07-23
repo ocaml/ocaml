@@ -85,7 +85,7 @@ int main(int argc, char ** argv)
 
 int main(int argc, char ** argv)
 {
-  fprintf(stderr, "BFD library unavailable, cannot print info on .cmxs files\n");
+  fprintf(stderr,"BFD library unavailable, cannot print info on .cmxs files\n");
   return 2;
 }
 

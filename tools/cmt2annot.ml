@@ -23,7 +23,9 @@ let bind_variables scope =
       super # pattern pat;
       match pat.pat_desc with
       | Tpat_var (id, _) | Tpat_alias (_, id, _) ->
-          Stypes.record (Stypes.An_ident (pat.pat_loc, Ident.name id, Annot.Idef scope))
+          Stypes.record (Stypes.An_ident (pat.pat_loc,
+                                          Ident.name id,
+                                          Annot.Idef scope))
       | _ -> ()
   end
 
@@ -136,7 +138,8 @@ let binary_part iter x =
   | Partial_signature_item x -> iter # signature_item x
   | Partial_module_type x -> iter # module_type x
 
-let gen_annot target_filename filename {Cmt_format.cmt_loadpath; cmt_annots; cmt_use_summaries; _} =
+let gen_annot target_filename filename
+              {Cmt_format.cmt_loadpath; cmt_annots; cmt_use_summaries; _} =
   let open Cmt_format in
   Envaux.reset_cache ();
   Config.load_path := cmt_loadpath;
@@ -152,7 +155,7 @@ let gen_annot target_filename filename {Cmt_format.cmt_loadpath; cmt_annots; cmt
       iterator # structure typedtree;
       Stypes.dump target_filename
   | Interface _ ->
-      Printf.fprintf stderr "Cannot generate annotations for interface file\n%!";
+      Printf.eprintf "Cannot generate annotations for interface file\n%!";
       exit 2
   | Partial_implementation parts ->
       Array.iter (binary_part iterator) parts;

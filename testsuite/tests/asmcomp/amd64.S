@@ -18,8 +18,7 @@
 
 #ifdef SYS_macosx
 #define CALL_GEN_CODE _call_gen_code
-
-	#define CAML_C_CALL _caml_c_call
+#define CAML_C_CALL _caml_c_call
 #define CAML_NEGF_MASK _caml_negf_mask
 #define CAML_ABSF_MASK _caml_absf_mask
 #else

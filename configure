@@ -500,9 +500,9 @@ if $int64_native; then
            echo "#undef ARCH_ALIGN_INT64" >> m.h;;
         1) echo "64-bit integers must be doubleword-aligned."
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
-        *) echo "Something went wrong during alignment determination for 64-bit integers."
-           echo "I'm going to assume this architecture has alignment constraints."
-           echo "That's a safe bet: OCaml will work even if"
+        *) echo "Something went wrong during alignment determination for 64-bit"
+           echo "integers. I'm going to assume this architecture has alignment"
+           echo "constraints. That's a safe bet: OCaml will work even if"
            echo "this architecture has actually no alignment constraints."
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
       esac
@@ -515,11 +515,14 @@ fi
 
 sh ./runtest divmod.c
 case $? in
-  0) echo "Native division and modulus have round-towards-zero semantics, will use them."
+  0) echo "Native division and modulus have round-towards-zero semantics,"
+     echo "will use them."
      echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
-  1) echo "Native division and modulus do not have round-towards-zero semantics, will use software emulation."
+  1) echo "Native division and modulus do not have round-towards-zero"
+     echo "semantics, will use software emulation."
      echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
-  *) echo "Something went wrong while checking native division and modulus, please report it."
+  *) echo "Something went wrong while checking native division and modulus,"
+     echo "please report it at http://http://caml.inria.fr/mantis/"
      echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
 esac
 
@@ -693,7 +696,7 @@ case "$host" in
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
-                                if $arch64; then model=ppc64; else model=ppc; fi;;
+                                if $arch64;then model=ppc64;else model=ppc;fi;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
   arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;

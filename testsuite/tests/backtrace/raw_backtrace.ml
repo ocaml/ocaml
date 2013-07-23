@@ -27,7 +27,7 @@ let g msg =
 let backtrace args =
   try
     ignore (g args.(0)); None
-  with exn -> 
+  with exn ->
     let exn = Printexc.to_string exn in
     let trace = Printexc.get_raw_backtrace () in
     Some (exn, trace)

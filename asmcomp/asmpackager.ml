@@ -189,8 +189,9 @@ open Format
 
 let report_error ppf = function
     Illegal_renaming(name, file, id) ->
-      fprintf ppf "Wrong file naming: %a@ contains the code for @ %s when %s was expected"
-        Location.print_filename file name id 
+      fprintf ppf "Wrong file naming: %a@ contains the code for\
+                   @ %s when %s was expected"
+        Location.print_filename file name id
   | Forward_reference(file, ident) ->
       fprintf ppf "Forward reference to %s in file %a" ident
         Location.print_filename file

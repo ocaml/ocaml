@@ -26,7 +26,8 @@ class mapper:
     method class_signature: class_signature -> class_signature
     method class_structure: class_structure -> class_structure
     method class_type: class_type -> class_type
-    method class_type_declaration: class_type_declaration -> class_type_declaration
+    method class_type_declaration:
+             class_type_declaration -> class_type_declaration
     method class_type_field: class_type_field -> class_type_field
     method exception_declaration: exception_declaration -> exception_declaration
     method expr: expression -> expression
@@ -94,13 +95,20 @@ module T:
     val var: ?loc:Location.t -> string -> core_type
     val arrow: ?loc:Location.t -> label -> core_type -> core_type -> core_type
     val tuple: ?loc:Location.t -> core_type list -> core_type
-    val constr: ?loc:Location.t -> Longident.t loc -> core_type list -> core_type
+    val constr:
+          ?loc:Location.t -> Longident.t loc -> core_type list -> core_type
     val object_: ?loc:Location.t -> core_field_type list -> core_type
-    val class_: ?loc:Location.t -> Longident.t loc -> core_type list -> label list -> core_type
+    val class_:
+          ?loc:Location.t -> Longident.t loc -> core_type list ->
+            label list -> core_type
     val alias: ?loc:Location.t -> core_type -> string -> core_type
-    val variant: ?loc:Location.t -> row_field list -> bool -> label list option -> core_type
+    val variant:
+          ?loc:Location.t -> row_field list -> bool -> label list option ->
+            core_type
     val poly: ?loc:Location.t -> string list -> core_type -> core_type
-    val package: ?loc:Location.t -> Longident.t loc -> (Longident.t loc * core_type) list -> core_type
+    val package:
+          ?loc:Location.t -> Longident.t loc ->
+            (Longident.t loc * core_type) list -> core_type
     val field_type: ?loc:Location.t -> core_field_desc -> core_field_type
     val field: ?loc:Location.t -> string -> core_type -> core_field_type
     val field_var: ?loc:Location.t -> unit -> core_field_type
@@ -114,15 +122,22 @@ module T:
 module CT:
   sig
     val mk: ?loc:Location.t -> class_type_desc -> class_type
-    val constr: ?loc:Location.t -> Longident.t loc -> core_type list -> class_type
+    val constr:
+          ?loc:Location.t -> Longident.t loc -> core_type list -> class_type
     val signature: ?loc:Location.t -> class_signature -> class_type
     val fun_: ?loc:Location.t -> label -> core_type -> class_type -> class_type
     val map: mapper -> class_type -> class_type
     val mk_field: ?loc:Location.t -> class_type_field_desc -> class_type_field
     val inher: ?loc:Location.t -> class_type -> class_type_field
-    val val_: ?loc:Location.t -> string -> mutable_flag -> virtual_flag -> core_type -> class_type_field
-    val virt: ?loc:Location.t -> string -> private_flag -> core_type -> class_type_field
-    val meth: ?loc:Location.t -> string -> private_flag -> core_type -> class_type_field
+    val val_:
+          ?loc:Location.t -> string -> mutable_flag -> virtual_flag ->
+            core_type -> class_type_field
+    val virt:
+          ?loc:Location.t -> string -> private_flag -> core_type ->
+            class_type_field
+    val meth:
+          ?loc:Location.t -> string -> private_flag -> core_type ->
+            class_type_field
     val cstr: ?loc:Location.t -> core_type -> core_type -> class_type_field
     val map_field: mapper -> class_type_field -> class_type_field
     val map_signature: mapper -> class_signature -> class_signature
@@ -133,22 +148,35 @@ module MT:
     val mk: ?loc:Location.t -> module_type_desc -> module_type
     val ident: ?loc:Location.t -> Longident.t loc -> module_type
     val signature: ?loc:Location.t -> signature -> module_type
-    val functor_: ?loc:Location.t -> string loc -> module_type -> module_type -> module_type
-    val with_: ?loc:Location.t -> module_type -> (Longident.t loc * with_constraint) list -> module_type
+    val functor_:
+          ?loc:Location.t -> string loc -> module_type -> module_type ->
+            module_type
+    val with_:
+          ?loc:Location.t -> module_type ->
+            (Longident.t loc * with_constraint) list -> module_type
     val typeof_: ?loc:Location.t -> module_expr -> module_type
     val map: mapper -> module_type -> module_type
     val map_with_constraint: mapper -> with_constraint -> with_constraint
     val mk_item: ?loc:Location.t -> signature_item_desc -> signature_item
-    val value: ?loc:Location.t -> string loc -> value_description -> signature_item
-    val type_: ?loc:Location.t -> (string loc * type_declaration) list -> signature_item
-    val exception_: ?loc:Location.t -> string loc -> exception_declaration -> signature_item
+    val value:
+          ?loc:Location.t -> string loc -> value_description -> signature_item
+    val type_:
+          ?loc:Location.t -> (string loc * type_declaration) list ->
+            signature_item
+    val exception_:
+          ?loc:Location.t -> string loc -> exception_declaration ->
+            signature_item
     val module_: ?loc:Location.t -> string loc -> module_type -> signature_item
-    val rec_module: ?loc:Location.t -> (string loc * module_type) list -> signature_item
-    val modtype: ?loc:Location.t -> string loc -> modtype_declaration -> signature_item
-    val open_: ?loc:Location.t -> override_flag -> Longident.t loc -> signature_item
+    val rec_module:
+          ?loc:Location.t -> (string loc * module_type) list -> signature_item
+    val modtype:
+          ?loc:Location.t -> string loc -> modtype_declaration -> signature_item
+    val open_:
+          ?loc:Location.t -> override_flag -> Longident.t loc -> signature_item
     val include_: ?loc:Location.t -> module_type -> signature_item
     val class_: ?loc:Location.t -> class_description list -> signature_item
-    val class_type: ?loc:Location.t -> class_type_declaration list -> signature_item
+    val class_type:
+          ?loc:Location.t -> class_type_declaration list -> signature_item
     val map_signature_item: mapper -> signature_item -> signature_item
   end
 

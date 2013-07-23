@@ -48,11 +48,14 @@ let () =
           | Unsafe_file ->
               "Unsafe_file"
           | Linking_error (s, Undefined_global s') ->
-              Printf.sprintf "Linking_error (%S, Dynlink.Undefined_global %S)" s s'
+              Printf.sprintf "Linking_error (%S, Dynlink.Undefined_global %S)"
+                             s s'
           | Linking_error (s, Unavailable_primitive s') ->
-              Printf.sprintf "Linking_error (%S, Dynlink.Unavailable_primitive %S)" s s'
+              Printf.sprintf "Linking_error (%S, Dynlink.Unavailable_primitive \
+                              %S)" s s'
           | Linking_error (s, Uninitialized_global s') ->
-              Printf.sprintf "Linking_error (%S, Dynlink.Uninitialized_global %S)" s s'
+              Printf.sprintf "Linking_error (%S, Dynlink.Uninitialized_global \
+                              %S)" s s'
           | Corrupted_interface s ->
               Printf.sprintf "Corrupted_interface %S" s
           | File_not_found s ->
@@ -232,7 +235,8 @@ let load_compunit ic file_name file_digest compunit =
 
 let loadfile file_name =
   init();
-  if not (Sys.file_exists file_name) then raise(Error (File_not_found file_name));
+  if not (Sys.file_exists file_name)
+    then raise (Error (File_not_found file_name));
   let ic = open_in_bin file_name in
   let file_digest = Digest.channel ic (-1) in
   seek_in ic 0;

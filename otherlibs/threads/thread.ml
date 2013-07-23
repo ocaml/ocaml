@@ -42,7 +42,8 @@ let _ = [Resumed_wakeup; Resumed_delay; Resumed_join;
    must take exactly one argument. *)
 
 external thread_initialize : unit -> unit = "thread_initialize"
-external thread_initialize_preemption : unit -> unit = "thread_initialize_preemption"
+external thread_initialize_preemption : unit -> unit
+   = "thread_initialize_preemption"
 external thread_new : (unit -> unit) -> t = "thread_new"
 external thread_yield : unit -> unit = "thread_yield"
 external thread_request_reschedule : unit -> unit = "thread_request_reschedule"

@@ -41,19 +41,26 @@ let rec env_from_summary sum subst =
         Env_empty ->
           Env.empty
       | Env_value(s, id, desc) ->
-          Env.add_value id (Subst.value_description subst desc) (env_from_summary s subst)
+          Env.add_value id (Subst.value_description subst desc)
+                        (env_from_summary s subst)
       | Env_type(s, id, desc) ->
-          Env.add_type id (Subst.type_declaration subst desc) (env_from_summary s subst)
+          Env.add_type id (Subst.type_declaration subst desc)
+                       (env_from_summary s subst)
       | Env_exception(s, id, desc) ->
-          Env.add_exception id (Subst.exception_declaration subst desc) (env_from_summary s subst)
+          Env.add_exception id (Subst.exception_declaration subst desc)
+                            (env_from_summary s subst)
       | Env_module(s, id, desc) ->
-          Env.add_module id (Subst.modtype subst desc) (env_from_summary s subst)
+          Env.add_module id (Subst.modtype subst desc)
+                         (env_from_summary s subst)
       | Env_modtype(s, id, desc) ->
-          Env.add_modtype id (Subst.modtype_declaration subst desc) (env_from_summary s subst)
+          Env.add_modtype id (Subst.modtype_declaration subst desc)
+                          (env_from_summary s subst)
       | Env_class(s, id, desc) ->
-          Env.add_class id (Subst.class_declaration subst desc) (env_from_summary s subst)
+          Env.add_class id (Subst.class_declaration subst desc)
+                        (env_from_summary s subst)
       | Env_cltype (s, id, desc) ->
-          Env.add_cltype id (Subst.cltype_declaration subst desc) (env_from_summary s subst)
+          Env.add_cltype id (Subst.cltype_declaration subst desc)
+                         (env_from_summary s subst)
       | Env_open(s, path) ->
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in

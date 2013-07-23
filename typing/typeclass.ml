@@ -498,7 +498,8 @@ let class_type env scty =
 (*******************************)
 
 let rec class_field self_loc cl_num self_type meths vars
-    (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher, local_meths, local_vals)
+    (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher,
+     local_meths, local_vals)
   cf =
   let loc = cf.pcf_loc in
   match cf.pcf_desc with

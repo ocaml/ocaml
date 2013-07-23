@@ -62,7 +62,8 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
 
   version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
   if(GetVersionEx(&version) == 0) {
-    invalid_argument("lockf only supported on WIN32_NT platforms: could not determine current platform.");
+    invalid_argument("lockf only supported on WIN32_NT platforms:"
+                     " could not determine current platform.");
   }
   if(version.dwPlatformId != VER_PLATFORM_WIN32_NT) {
     invalid_argument("lockf only supported on WIN32_NT platforms");

@@ -43,10 +43,12 @@ static void caml_gr_draw_text(char *txt, int len)
   if (caml_gr_font == NULL) caml_gr_get_font(DEFAULT_FONT);
   if (caml_gr_remember_modeflag)
     XDrawString(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
-                caml_gr_x, Bcvt(caml_gr_y) - caml_gr_font->descent + 1, txt, len);
+                caml_gr_x, Bcvt(caml_gr_y) - caml_gr_font->descent + 1, txt,
+                len);
   if (caml_gr_display_modeflag) {
     XDrawString(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
-                caml_gr_x, Wcvt(caml_gr_y) - caml_gr_font->descent + 1, txt, len);
+                caml_gr_x, Wcvt(caml_gr_y) - caml_gr_font->descent + 1, txt,
+                len);
     XFlush(caml_gr_display);
   }
   caml_gr_x += XTextWidth(caml_gr_font, txt, len);

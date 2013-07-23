@@ -541,7 +541,9 @@ let dump_exe ic =
 let arg_list = [
   "-noloc", Arg.Clear print_locations, " : don't print source information";
 ]
-let arg_usage = Printf.sprintf "%s [OPTIONS] FILES : dump content of bytecode files" Sys.argv.(0)
+let arg_usage =
+  Printf.sprintf "%s [OPTIONS] FILES : dump content of bytecode files"
+                 Sys.argv.(0)
 
 let first_file = ref true
 

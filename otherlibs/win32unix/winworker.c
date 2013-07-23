@@ -27,10 +27,11 @@ typedef enum {
 
 struct _WORKER {
   LIST       lst;           /* This structure is used as a list. */
-  HANDLE     hJobStarted;   /* Event representing that the function has begun. */
-  HANDLE     hJobStop;      /* Event that can be used to notify the function that it
-                               should stop processing. */
-  HANDLE     hJobDone;      /* Event representing that the function has finished. */
+  HANDLE     hJobStarted;   /* Event representing that the function has begun.*/
+  HANDLE     hJobStop;      /* Event that can be used to notify the function
+                               that it should stop processing. */
+  HANDLE     hJobDone;      /* Event representing that the function has
+                               finished. */
   void      *lpJobUserData; /* User data for the job. */
   WORKERFUNC hJobFunc;      /* Function to be called during APC */
   HANDLE     hWorkerReady;  /* Worker is ready. */
