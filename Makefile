@@ -116,8 +116,15 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc
+all:
+	$(MAKE) runtime
+	$(MAKE) ocamlc
+	$(MAKE) ocamllex
+	$(MAKE) ocamlyacc
+	$(MAKE) ocamltools
+	$(MAKE) library
+	$(MAKE) ocaml
+	$(MAKE) otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc
 
 # Compile everything the first time
 world:
@@ -185,10 +192,15 @@ coldstart:
 	  ln -s ../byterun stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core: coldstart ocamlc ocamllex ocamlyacc ocamltools library
+core:
+	$(MAKE) coldstart
+	$(MAKE) ocamlc
+	$(MAKE) ocamllex ocamlyacc ocamltools library
 
 # Recompile the core system using the bootstrap compiler
-coreall: ocamlc ocamllex ocamlyacc ocamltools library
+coreall:
+	$(MAKE) ocamlc
+	$(MAKE) ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -245,20 +257,33 @@ opt:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
-	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamltoolsopt
-	$(MAKE) ocamlbuildlib.native
+	$(MAKE) otherlibrariesopt ocamltoolsopt ocamlbuildlib.native
 
 # Native-code versions of the tools
-opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 $(DEBUGGER) ocamldoc ocamlbuild.byte $(CAMLP4OUT) \
-	 ocamlopt.opt otherlibrariesopt ocamllex.opt \
-	 ocamltoolsopt ocamltoolsopt.opt ocamldoc.opt ocamlbuild.native \
-	 $(CAMLP4OPT)
+opt.opt:
+	$(MAKE) checkstack
+	$(MAKE) runtime
+	$(MAKE) core
+	$(MAKE) ocaml
+	$(MAKE) opt-core
+	$(MAKE) ocamlc.opt
+	$(MAKE) otherlibraries $(DEBUGGER) ocamldoc \
+	        ocamlbuild.byte $(CAMLP4OUT)
+	$(MAKE) ocamlopt.opt
+	$(MAKE) otherlibrariesopt
+	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt ocamldoc.opt \
+	        ocamlbuild.native $(CAMLP4OPT)
 
-base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
-	 otherlibrariesopt
+base.opt:
+	$(MAKE) checkstack
+	$(MAKE) runtime
+	$(MAKE) core
+	$(MAKE) ocaml
+	$(MAKE) opt-core
+	$(MAKE) ocamlc.opt
+	$(MAKE) otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc
+	$(MAKE) ocamlopt.opt
+	$(MAKE) otherlibrariesopt
 
 # Installation
 

@@ -7,12 +7,13 @@ Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
 
 Bug fixes:
-- PR#4719: Sys.executable_name is wrong if executable name contains dots (Windows)
+- PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
 
 Features wishes:
+- PR#4243: make the Makefiles parallelizable
 
 
 OCaml 4.01.0:

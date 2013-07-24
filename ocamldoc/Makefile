@@ -198,7 +198,11 @@ STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/bigarray/bigarray.mli \
 	../otherlibs/num/num.mli
 
-all: exe lib generators manpages
+all:
+	$(MAKE) exe
+	$(MAKE) lib
+	$(MAKE) generators
+	$(MAKE) manpages
 
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)

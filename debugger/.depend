@@ -48,9 +48,9 @@ command_line.cmo : unix_tools.cmi $(UNIXDIR)/unix.cmi \
     parser.cmi parameters.cmi ../utils/misc.cmi ../parsing/longident.cmi \
     ../parsing/location.cmi loadprinter.cmi lexer.cmi int64ops.cmi \
     ../bytecomp/instruct.cmi input_handling.cmi history.cmi frames.cmi \
-    events.cmi eval.cmi ../typing/envaux.cmi debugger_config.cmi debugcom.cmi \
-    ../typing/ctype.cmi ../utils/config.cmi checkpoints.cmi breakpoints.cmi \
-    command_line.cmi
+    events.cmi eval.cmi ../typing/envaux.cmi ../typing/env.cmi \
+    debugger_config.cmi debugcom.cmi ../typing/ctype.cmi ../utils/config.cmi \
+    checkpoints.cmi breakpoints.cmi command_line.cmi
 command_line.cmx : unix_tools.cmx $(UNIXDIR)/unix.cmx \
     ../typing/types.cmx time_travel.cmx symbols.cmx source.cmx \
     show_source.cmx show_information.cmx question.cmx program_management.cmx \
@@ -58,9 +58,9 @@ command_line.cmx : unix_tools.cmx $(UNIXDIR)/unix.cmx \
     parser.cmx parameters.cmx ../utils/misc.cmx ../parsing/longident.cmx \
     ../parsing/location.cmx loadprinter.cmx lexer.cmx int64ops.cmx \
     ../bytecomp/instruct.cmx input_handling.cmx history.cmx frames.cmx \
-    events.cmx eval.cmx ../typing/envaux.cmx debugger_config.cmx debugcom.cmx \
-    ../typing/ctype.cmx ../utils/config.cmx checkpoints.cmx breakpoints.cmx \
-    command_line.cmi
+    events.cmx eval.cmx ../typing/envaux.cmx ../typing/env.cmx \
+    debugger_config.cmx debugcom.cmx ../typing/ctype.cmx ../utils/config.cmx \
+    checkpoints.cmx breakpoints.cmx command_line.cmi
 debugcom.cmo : primitives.cmi ../utils/misc.cmi int64ops.cmi \
     input_handling.cmi debugcom.cmi
 debugcom.cmx : primitives.cmx ../utils/misc.cmx int64ops.cmx \
