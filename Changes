@@ -61,6 +61,7 @@ Internals:
 
 Bug fixes:
 - PR#3236: Document the fact that queues are not thread-safe
+- PR#3468: (part 1) Sys_error documentation
 - PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4079: Queue.copy is now tail-recursive
