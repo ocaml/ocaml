@@ -1,5 +1,6 @@
 \chapter{The debugger (ocamldebug)} \label{c:debugger}
 \pdfchapter{The debugger (ocamldebug)}
+%HEVEA\cutname{debugger.html}
 
 This chapter describes the OCaml source-level replay debugger
 "ocamldebug".
