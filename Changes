@@ -111,6 +111,7 @@ Bug fixes:
   incorrect
 - PR#5793: integer marshalling is inconsistent between architectures
 - PR#5798: add ARM VFPv2 support for Raspbian (ocamlopt)
+- PR#5802: Avoiding "let" as a value name
 - PR#5805: Assert failure with warning 34 on pre-processed file
 - PR#5806: ensure that backtrace tests are always run (testsuite)
 - PR#5810: error in switch printing when using -dclambda
