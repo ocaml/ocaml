@@ -170,6 +170,7 @@ Bug fixes:
 - PR#6056: Using 'match' prevents generalization of values
 - PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
 - PR#6072: configure does not handle FreeBSD current (i.e. 10) correctly
+- PR#6074: Wrong error message for failing Condition.broadcast
 
 Feature wishes:
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM
