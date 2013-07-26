@@ -64,6 +64,13 @@ test "camlp4.opt"
   ~matching:[M.x "dummy.native" ~output:"Hello"]
   ~targets:("dummy.native",[]) ();;
 
+test "ThreadAndArchive"
+  ~description:"Fixes PR#6058"
+  ~options:[`use_ocamlfind; `package "threads"; `tag "thread"]
+  ~tree:[T.f "t.ml" ~content:""]
+  ~matching:[M.f "_build/t.cma"]
+  ~targets:("t.cma",[]) ();;
+
 let tag_pat_msgs =
   ["*:a", "File \"_tags\", line 1, column 0: Lexing error: Invalid globbing pattern \"*\".";
    "\n<*{>:a", "File \"_tags\", line 2, column 0: Lexing error: Invalid globbing pattern \"<*{>\".";
@@ -136,7 +143,7 @@ test "NativeMliCmi"
                 (part of PR#4613)"
   ~tree:[T.f "foo.mli" ~content:"val bar : int"]
   ~options:[`ocamlc "toto";(*using ocamlc would fail*)  `tags["native"]]
-  ~matching:[M.f "_build/foo.cmi"]
+  ~matching:[_build [M.f "foo.cmi"]]
   ~targets:("foo.cmi",[]) ();;
 
 test "NoIncludeNoHygiene1"
