@@ -569,14 +569,13 @@ flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
 
 (* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
+flag ["ocaml"; "link"; "thread"] (A "-thread");;
 if not !Options.use_ocamlfind then begin
   flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);
-  flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);
-  flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"]);
-  flag ["ocaml"; "link"; "thread"; "native"; "toplevel"] (S[A "threads.cmxa"; A "-thread"]);
-  flag ["ocaml"; "link"; "thread"; "byte"; "toplevel"] (S[A "threads.cma"; A "-thread"])
-end else begin
-  flag ["ocaml"; "link"; "thread"; "program"] (A "-thread")
+  flag ["ocaml"; "link"; "thread"; "native"; "program"] (A "threads.cmxa");
+  flag ["ocaml"; "link"; "thread"; "byte"; "program"] (A "threads.cma");
+  flag ["ocaml"; "link"; "thread"; "native"; "toplevel"] (A "threads.cmxa");
+  flag ["ocaml"; "link"; "thread"; "byte"; "toplevel"] (A "threads.cma");
 end;;
 
 flag ["ocaml"; "compile"; "nopervasives"] (A"-nopervasives");;
