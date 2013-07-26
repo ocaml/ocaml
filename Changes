@@ -174,6 +174,8 @@ Bug fixes:
 - PR#6033: Matching.inline_lazy_force needs eta-expansion (command-line flags)
 - PR#6056: Using 'match' prevents generalization of values
 - PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
+- PR#6090: Module constraint + private type seems brocken in ocaml 4.01.0
+
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
   as part of compilerlibs, to be used on bin-annot files.
