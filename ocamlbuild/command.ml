@@ -128,7 +128,7 @@ let virtual_solver virtual_command =
 
 (* On Windows, we need to also check for the ".exe" version of the file. *)
 let file_or_exe_exists file =
-  sys_file_exists file || Sys.os_type = "Win32" && sys_file_exists (file ^ ".exe")
+  sys_file_exists file || (Sys.os_type = "Win32" && sys_file_exists (file ^ ".exe"))
 
 let search_in_path cmd =
   (* Try to find [cmd] in path [path]. *)

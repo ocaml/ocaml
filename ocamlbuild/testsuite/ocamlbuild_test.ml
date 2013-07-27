@@ -207,6 +207,7 @@ module Option = struct
     |  `no_links
     |  `no_skip
     |  `no_hygiene
+    |  `no_ocamlfind
     |  `no_plugin
     |  `no_stdlib
     |  `dont_catch_errors
@@ -295,6 +296,7 @@ module Option = struct
     | `no_links -> fprintf ppf "no-links"
     | `no_skip -> fprintf ppf "no-skip"
     | `no_hygiene -> fprintf ppf "no-hygiene"
+    | `no_ocamlfind -> fprintf ppf "no-ocamlfind"
     | `no_plugin -> fprintf ppf "no-pluging"
     | `no_stdlib -> fprintf ppf "no-stdlib"
     | `dont_catch_errors -> fprintf ppf "dont"

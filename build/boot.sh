@@ -34,6 +34,6 @@ boot/ocamlrun boot/myocamlbuild.boot \
 
 cp _build/myocamlbuild boot/myocamlbuild
 
-./boot/ocamlrun boot/myocamlbuild \
+./boot/ocamlrun boot/myocamlbuild -no-ocamlfind \
   -tag-line "$TAG_LINE" \
   $@ -log _boot_log2 boot/camlheader ocamlc

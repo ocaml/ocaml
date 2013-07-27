@@ -10,6 +10,7 @@ module T = Tree;;
 let _build = M.d "_build";;
 
 test "BasicNativeTree"
+  ~options:[`no_ocamlfind]
   ~description:"Output tree for native compilation"
   ~tree:[T.f "dummy.ml"]
   ~matching:[M.Exact
@@ -27,6 +28,7 @@ test "BasicNativeTree"
   ~targets:("dummy.native",[]) ();;
 
 test "BasicByteTree"
+  ~options:[`no_ocamlfind]
   ~description:"Output tree for byte compilation"
   ~tree:[T.f "dummy.ml"]
   ~matching:[M.Exact
@@ -42,6 +44,7 @@ test "BasicByteTree"
   ~targets:("dummy.byte",[]) ();;
 
 test "SeveralTargets"
+  ~options:[`no_ocamlfind]
   ~description:"Several targets"
   ~tree:[T.f "dummy.ml"]
   ~matching:[_build (M.lf ["dummy.byte"; "dummy.native"])]
@@ -50,7 +53,7 @@ test "SeveralTargets"
 let alt_build_dir = "BuIlD2";;
 
 test "BuildDir"
-  ~options:[`build_dir alt_build_dir]
+  ~options:[`no_ocamlfind; `build_dir alt_build_dir]
   ~description:"Different build directory"
   ~tree:[T.f "dummy.ml"]
   ~matching:[M.d alt_build_dir (M.lf ["dummy.byte"])]
@@ -58,7 +61,7 @@ test "BuildDir"
 
 test "camlp4.opt"
   ~description:"Fixes PR#5652"
-  ~options:[`use_ocamlfind; `package "camlp4.macro";`tags ["camlp4o.opt"; "syntax\\(camp4o\\)"];
+  ~options:[`package "camlp4.macro";`tags ["camlp4o.opt"; "syntax\\(camp4o\\)"];
             `ppflag "camlp4o.opt"; `ppflag "-parser"; `ppflag "macro"; `ppflag "-DTEST"]
   ~tree:[T.f "dummy.ml" ~content:"IFDEF TEST THEN\nprint_endline \"Hello\";;\nENDIF;;"]
   ~matching:[M.x "dummy.native" ~output:"Hello"]
@@ -66,7 +69,7 @@ test "camlp4.opt"
 
 test "ThreadAndArchive"
   ~description:"Fixes PR#6058"
-  ~options:[`use_ocamlfind; `package "threads"; `tag "thread"]
+  ~options:[`package "threads"; `tag "thread"]
   ~tree:[T.f "t.ml" ~content:""]
   ~matching:[M.f "_build/t.cma"]
   ~targets:("t.cma",[]) ();;
@@ -85,19 +88,21 @@ List.iteri (fun i (content,failing_msg) ->
 
 test "SubtoolOptions"
   ~description:"Options that come from tags that needs to be spliced to the subtool invocation (PR#5763)"
-  ~options:[`use_menhir; `use_ocamlfind;`tags["package\\(camlp4.fulllib\\)"]]
+  ~options:[`use_menhir; `tags["package\\(camlp4.fulllib\\)"]]
   ~tree:[T.f "parser.mly" ~content:"%{\n%}\n%token DUMMY\n%start<Camlp4.PreCast.Syntax.Ast.expr option> test%%test: {None}\n\n"]
   ~matching:[M.f "parser.native"; M.f "parser.byte"]
   ~targets:("parser.native",["parser.byte"])
   ();;
 
 test "Itarget"
+  ~options:[`no_ocamlfind]
   ~description:".itarget building with dependencies between the modules (PR#5686)"
   ~tree:[T.f "foo.itarget" ~content:"a.cma\nb.byte\n"; T.f "a.ml"; T.f "b.ml" ~content:"open A\n"]
   ~matching:[M.f "a.cma"; M.f "b.byte"]
   ~targets:("foo.otarget",[]) ();;
 
 test "PackAcross"
+  ~options:[`no_ocamlfind]
   ~description:"Pack using a module from the other tree (PR#4592)"
   ~tree:[T.f "main.ml" ~content:"let _ = Pack.Packed.g ()\n";
          T.f "Pack.mlpack" ~content:"pack/Packed";
@@ -110,6 +115,7 @@ test "PackAcross"
   ();;
 
 test "PackAcross2"
+  ~options:[`no_ocamlfind]
   ~description:"Pack using a module from the other tree (PR#4592)"
   ~tree:[T.f "a2.mli" ~content:"val f : unit -> unit";
          T.f "a2.ml" ~content:"let f _ = ()";
@@ -121,6 +127,7 @@ test "PackAcross2"
   ~targets:("prog.byte",[]) ();;
 
 test "PackAcross3"
+  ~options:[`no_ocamlfind]
   ~description:"Pack using a module from the other tree (PR#4592)"
   ~tree:[T.d "foo" [ T.f "bar.ml" ~content:"let baz = Quux.xyzzy"];
          T.f "foo.mlpack" ~content:"foo/Bar";
@@ -132,21 +139,22 @@ test "PackAcross3"
   ~targets:("main.byte",[]) ();;
 
 test "SyntaxFlag"
+  ~options:[`package "camlp4.macro"; `syntax "camlp4o"]
   ~description:"-syntax for ocamlbuild"
-  ~options:[`use_ocamlfind; `package "camlp4.macro"; `syntax "camlp4o"]
   ~tree:[T.f "dummy.ml" ~content:"IFDEF TEST THEN\nprint_endline \"Hello\";;\nENDIF;;"]
   ~matching:[M.f "dummy.native"]
   ~targets:("dummy.native",[]) ();;
 
 test "NativeMliCmi"
+  ~options:[`no_ocamlfind; `ocamlc "toto";(*using ocamlc would fail*)  `tags["native"]]
   ~description:"check that ocamlopt is used for .mli->.cmi when tag 'native' is set \
                 (part of PR#4613)"
   ~tree:[T.f "foo.mli" ~content:"val bar : int"]
-  ~options:[`ocamlc "toto";(*using ocamlc would fail*)  `tags["native"]]
   ~matching:[_build [M.f "foo.cmi"]]
   ~targets:("foo.cmi",[]) ();;
 
 test "NoIncludeNoHygiene1"
+  ~options:[`no_ocamlfind]
   ~description:"check that hygiene checks are only done in traversed directories\
                 (PR#4502)"
   ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
@@ -157,46 +165,47 @@ test "NoIncludeNoHygiene1"
   ~targets:("hello.byte",[]) ();;
 
 test "NoIncludeNoHygiene2"
+  ~options:[`no_ocamlfind; `build_dir "must_ignore"]
   ~description:"check that hygiene checks are not done on the -build-dir \
                 (PR#4502)"
   ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
          T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
          T.f "_tags" ~content:""]
-  ~options:[`build_dir "must_ignore"]
   ~pre_cmd:"ocamlc -c must_ignore/dirty.mli"
             (* will make hygiene fail if must_ignore/ is checked *)
   ~targets:("hello.byte",[]) ();;
 
 test "NoIncludeNoHygiene3"
+  ~options:[`no_ocamlfind; `X "must_ignore"]
   ~description:"check that hygiene checks are not done on excluded dirs (PR#4502)"
   ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
          T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
          T.f "_tags" ~content:""]
-  ~options:[`X "must_ignore"]
   ~pre_cmd:"ocamlc -c must_ignore/dirty.mli"
             (* will make hygiene fail if must_ignore/ is checked *)
   ~targets:("hello.byte",[]) ();;
 
 test "OutputObj"
+  ~options:[`no_ocamlfind]
   ~description:"output_obj targets for native and bytecode (PR #6049)"
   ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\""]
   ~targets:("hello.byte.o",["hello.byte.c";"hello.native.o"]) ();;
 
 test "StrictSequenceFlag"
+  ~options:[`no_ocamlfind; `quiet]
   ~description:"-strict_sequence tag"
   ~tree:[T.f "hello.ml" ~content:"let () = 1; ()";
          T.f "_tags" ~content:"true: strict_sequence\n"]
-  ~options:[`quiet]
   ~failing_msg:"File \"hello.ml\", line 1, characters 9-10:
 Error: This expression has type int but an expression was expected of type
          unit\nCommand exited with code 2."
   ~targets:("hello.byte",[]) ();;
 
-test "PrincipalFlag" 
+test "PrincipalFlag"
+  ~options:[`no_ocamlfind; `quiet]
   ~description:"-principal tag"
   ~tree:[T.f "hello.ml" ~content:"type s={foo:int;bar:unit} type t={foo:int} let f x = x.bar;x.foo";
          T.f "_tags" ~content:"true: principal\n"]
-  ~options:[`quiet]
   ~failing_msg:"File \"hello.ml\", line 1, characters 61-64:
 Warning 18: this type-based field disambiguation is not principal."
   ~targets:("hello.byte",["hello.native"]) ();;

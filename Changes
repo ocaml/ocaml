@@ -96,6 +96,7 @@ Bug fixes:
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping (was still unsound)
 - PR#5468: ocamlbuild should preserve order of parametric tags
 - PR#5551: Avoid repeated lookups for missing cmi files
+- PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5552: try to use camlp4.opt if it's possible
 - PR#5580: missed opportunities for constant propagation
 - PR#5611: avoid clashes betwen .cmo files and output files during linking
