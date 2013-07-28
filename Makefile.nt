@@ -26,8 +26,8 @@ CAMLDEP=boot/ocamlrun tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/ocamlrun
 
-CAMLP4OUT=$(CAMLP4:=out)
-CAMLP4OPT=$(CAMLP4:=opt)
+CAMLP4OUT=$(WITH_CAMLP4:=out)
+CAMLP4OPT=$(WITH_CAMLP4:=opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
@@ -105,7 +105,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries ocamldoc.byte ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER)
+  otherlibraries ocamldoc.byte ocamlbuild.byte $(CAMLP4OUT) $(WITH_DEBUGGER)
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.

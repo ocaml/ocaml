@@ -38,12 +38,13 @@ tk_libs=''
 tk_x11=yes
 dl_defs=''
 verbose=no
-withcurses=yes
+with_curses=yes
 debugruntime=noruntimed
-withsharedlibs=yes
+with_sharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
-withcamlp4=camlp4
+with_camlp4=camlp4
+with_debugger=ocamldebugger
 with_frame_pointers=false
 TOOLPREF=""
 
@@ -121,9 +122,9 @@ while : ; do
     -lib*)
         cclibs="$2 $cclibs"; shift;;
     -no-curses|--no-curses)
-        withcurses=no;;
+        with_curses=no;;
     -no-shared-libs|--no-shared-libs)
-        withsharedlibs=no;;
+        with_sharedlibs=no;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
@@ -152,7 +153,9 @@ while : ; do
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=runtimed;;
     -no-camlp4|--no-camlp4)
-        withcamlp4="";;
+        with_camlp4="";;
+    -no-debugger|--no-debugger)
+        with_debugger="";;
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
     *) err "Unknown option \"$1\".";;
@@ -372,12 +375,12 @@ case "$bytecc,$target" in
   *gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
-    if test $withsharedlibs = yes; then
+    if test $with_sharedlibs = yes; then
       flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
-        withsharedlibs=no
+        with_sharedlibs=no
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
@@ -389,7 +392,7 @@ case "$bytecc,$target" in
   *gcc*,*-*-mingw*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     dllccompopt="-DCAML_DLL"
-    if test $withsharedlibs = yes; then
+    if test $with_sharedlibs = yes; then
       case "$target" in
         i686-*-*)   flexlink_chain="mingw";;
         x86_64-*-*) flexlink_chain="mingw64";;
@@ -398,7 +401,7 @@ case "$bytecc,$target" in
       flexdir=`$flexlink -where`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
-        withsharedlibs=no
+        with_sharedlibs=no
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
@@ -672,7 +675,7 @@ byteccrpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
 
-if test $withsharedlibs = "yes"; then
+if test $with_sharedlibs = "yes"; then
   case "$target" in
     *-*-cygwin*)
       mksharedlib="$flexlink"
@@ -770,7 +773,7 @@ fi
 
 natdynlink=false
 
-if test $withsharedlibs = "yes"; then
+if test $with_sharedlibs = "yes"; then
   # TODO: handle *-*-mingw* (it has $withsharedlibs=no currently)
   case "$target" in
     *-*-cygwin*)                  natdynlink=true;;
@@ -1029,7 +1032,7 @@ fi
 
 # For the terminfo module
 
-if test "$withcurses" = "yes"; then
+if test "$with_curses" = "yes"; then
   for libs in "" "-lcurses" "-ltermcap" "-lcurses -ltermcap" "-lncurses"; do
     if sh ./hasgot $libs tgetent tgetstr tgetnum tputs; then
       inf "termcap functions found (with libraries '$libs')"
@@ -1320,14 +1323,15 @@ fi
 
 # Determine if the debugger is supported
 
-if test "$has_sockets" = "yes"; then
-  inf "Replay debugger supported."
-  debugger="ocamldebugger"
-else
-  inf "No replay debugger (missing system calls)"
-  debugger=""
+if test -n "$with_debugger"; then
+  if test "$has_sockets" = "yes"; then
+    inf "Replay debugger supported."
+    with_debugger="ocamldebugger"
+  else
+    inf "No replay debugger (missing system calls)"
+    with_debugger=""
+  fi
 fi
-
 
 # Determine if system stack overflows can be detected
 
@@ -1807,7 +1811,6 @@ echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
 echo "PROFILING=$profiling" >> Makefile
 echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
-echo "DEBUGGER=$debugger" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
 echo "PARTIALLD=$partialld" >> Makefile
@@ -1832,7 +1835,8 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
-echo "CAMLP4=${withcamlp4}" >>Makefile
+echo "WITH_CAMLP4=${with_camlp4}" >>Makefile
+echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "TARGET=$target" >> Makefile
@@ -1904,7 +1908,7 @@ else
   fi
 fi
 
-if test "$debugger" = "ocamldebugger"; then
+if test "$with_debugger" = "ocamldebugger"; then
   inf "Source-level replay debugger: supported"
 else
   inf "Source-level replay debugger: not supported"

@@ -18,7 +18,10 @@
 PREFIX=C:/ocamlmgw64
 
 ### Remove this to disable compiling camlp4
-CAMLP4=camlp4
+WITH_CAMLP4=camlp4
+
+### Remove this to disable compiling ocamldebug
+WITH_DEBUGGER=ocamldebugger
 
 ### Where to install the binaries
 BINDIR=$(PREFIX)/bin
@@ -72,7 +75,6 @@ ASPP=$(TOOLPREF)gcc -c
 ASPPPROFFLAGS=
 PROFILING=noprof
 DYNLINKOPTS=
-DEBUGGER=ocamldebugger
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=

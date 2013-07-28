@@ -29,8 +29,8 @@ CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
 MKDIR=mkdir -p
 
-CAMLP4OUT=$(CAMLP4:=out)
-CAMLP4OPT=$(CAMLP4:=opt)
+CAMLP4OUT=$(WITH_CAMLP4:=out)
+CAMLP4OPT=$(WITH_CAMLP4:=opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
@@ -124,7 +124,7 @@ all:
 	$(MAKE) ocamltools
 	$(MAKE) library
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc
+	$(MAKE) otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(WITH_DEBUGGER) ocamldoc
 
 # Compile everything the first time
 world:
@@ -267,7 +267,7 @@ opt.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(DEBUGGER) ocamldoc \
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) ocamldoc \
 	        ocamlbuild.byte $(CAMLP4OUT)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
@@ -281,7 +281,7 @@ base.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc
+	$(MAKE) otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(WITH_DEBUGGER) ocamldoc
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
