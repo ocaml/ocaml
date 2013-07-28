@@ -202,7 +202,7 @@ opt-core:
 	$(MAKE) -f Makefile.nt libraryopt
 
 opt:
-	$(MAKE) -f Makefile.nt opt
+	$(MAKE) -f Makefile.nt opt-core
 	$(MAKE) -f Makefile.nt otherlibrariesopt
 	$(MAKE) -f Makefile.nt ocamltoolsopt
 	if test -n "$(WITH_OCAMLBUILD)"; then \
