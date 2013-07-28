@@ -204,7 +204,6 @@ opt-core:
 opt:
 	$(MAKE) -f Makefile.nt opt-core
 	$(MAKE) -f Makefile.nt otherlibrariesopt
-	$(MAKE) -f Makefile.nt ocamltoolsopt
 	if test -n "$(WITH_OCAMLBUILD)"; then \
 		$(MAKE) -f Makefile.nt ocamlbuildlib.native; else :; fi
 
@@ -259,7 +258,7 @@ installopt:
 	cd stdlib ; $(MAKEREC) installopt
 	cp asmcomp/*.cmi driver/*.cmi $(COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
-	if test -n "$(OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); \
+	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); fi
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 
@@ -684,7 +683,7 @@ partialclean::
 # Make clean in the test suite
 
 clean::
-	cd testsuite; $(MAKE) -f Makefile.nt clean
+	cd testsuite; $(MAKE) clean
 
 # Default rules
 

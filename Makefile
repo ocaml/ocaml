@@ -341,7 +341,7 @@ installopt:
 	cd stdlib; $(MAKE) installopt
 	cp asmcomp/*.cmi $(COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
-	if test -n "$(OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
+	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
 		else :; fi
 	for i in $(OTHERLIBRARIES); \
 	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
