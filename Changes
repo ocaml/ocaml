@@ -74,6 +74,7 @@ Runtime system:
   point within the major heap.
 
 Bug fixes:
+- PR#5820: Fix camlp4 lexer roll back problem
 - PR#4855: 'camlp4 -I +dir' accepted, dir is related to 'camlp4 -where'
 - PR#6062: Fix a regression bug caused by commit 13047
 - PR#3679: Warning display problems
