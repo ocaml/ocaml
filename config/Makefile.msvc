@@ -155,6 +155,12 @@ WITH_CAMLP4=camlp4
 ### Clear this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
 
+### Clear this to disable compiling ocamlbuild; camlp4 requires ocamlbuild
+WITH_OCAMLBUILD=ocamlbuild
+
+### Clear this to disable compiling ocamldoc
+WITH_OCAMLDOC=ocamldoc
+
 ############# Configuration for the contributed libraries
 
 OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk

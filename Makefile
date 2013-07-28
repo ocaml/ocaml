@@ -32,6 +32,12 @@ MKDIR=mkdir -p
 CAMLP4OUT=$(WITH_CAMLP4:=out)
 CAMLP4OPT=$(WITH_CAMLP4:=opt)
 
+OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
+OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
+OCAMLBUILDLIBNATIVE=$(WITH_OCAMLBUILD:=lib.native)
+
+OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
+
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
 
@@ -124,7 +130,8 @@ all:
 	$(MAKE) ocamltools
 	$(MAKE) library
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(WITH_DEBUGGER) ocamldoc
+	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+	  $(WITH_OCAMLDOC)
 
 # Compile everything the first time
 world:
@@ -257,7 +264,7 @@ opt:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
-	$(MAKE) otherlibrariesopt ocamltoolsopt ocamlbuildlib.native
+	$(MAKE) otherlibrariesopt ocamltoolsopt $(OCAMLBUILDNATIVE)
 
 # Native-code versions of the tools
 opt.opt:
@@ -267,12 +274,12 @@ opt.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) ocamldoc \
-	        ocamlbuild.byte $(CAMLP4OUT)
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
+	        $(OCAMLBUILDBYTE) $(CAMLP4OUT)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt ocamldoc.opt \
-	        ocamlbuild.native $(CAMLP4OPT)
+	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
+	        $(OCAMLBUILDNATIVE) $(CAMLP4OPT)
 
 base.opt:
 	$(MAKE) checkstack
@@ -281,7 +288,8 @@ base.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(WITH_DEBUGGER) ocamldoc
+	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+	  $(WITH_OCAMLDOC)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
@@ -318,9 +326,9 @@ install:
 	for i in $(OTHERLIBRARIES); do \
 	  (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
 	done
-	cd ocamldoc; $(MAKE) install
+	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) install); else :; fi
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
+	if test -n "$(WITH_OCAMLDEBUG)"; then (cd debugger; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
 	BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) PREFIX=$(PREFIX) \
@@ -333,7 +341,8 @@ installopt:
 	cd stdlib; $(MAKE) installopt
 	cp asmcomp/*.cmi $(COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
-	cd ocamldoc; $(MAKE) installopt
+	if test -n "$(OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
+		else :; fi
 	for i in $(OTHERLIBRARIES); \
 	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; fi

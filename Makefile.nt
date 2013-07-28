@@ -29,6 +29,11 @@ CAMLRUN=byterun/ocamlrun
 CAMLP4OUT=$(WITH_CAMLP4:=out)
 CAMLP4OPT=$(WITH_CAMLP4:=opt)
 
+OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
+OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
+
+WITH_OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
+
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
 
@@ -105,7 +110,8 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries ocamldoc.byte ocamlbuild.byte $(CAMLP4OUT) $(WITH_DEBUGGER)
+  otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+  $(WITH_OCAMLDOC)
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -190,12 +196,22 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt-core: runtimeopt ocamlopt libraryopt
-opt: opt-core otherlibrariesopt ocamlbuildlib.native
+opt-core:
+	$(MAKE) runtimeopt
+	$(MAKE) ocamlopt
+	$(MAKE) libraryopt
+
+opt:
+	$(MAKE) runtimeopt
+	$(MAKE) ocamlopt
+	$(MAKE) libraryopt
+	$(MAKE) otherlibrariesopt
+	$(MAKE) ocamltoolsopt
+	if test -n "$(WITH_OCAMLBUILD)"; then $(MAKE) ocamlbuildlib.native; else :; fi
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-	 ocamltoolsopt.opt ocamlbuild.native $(CAMLP4OPT) ocamldoc.opt
+	 ocamltoolsopt.opt $(OCAMLBUILDNATIVE) $(CAMLP4OPT) $(OCAMLDOC_OPT)
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -224,10 +240,11 @@ installbyt:
 	cp expunge $(LIBDIR)/expunge.exe
 	cp toplevel/topdirs.cmi $(LIBDIR)
 	cd tools ; $(MAKEREC) install
-	cd ocamldoc ; $(MAKEREC) install
+	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) install); \
+	  else :; fi
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
-	if test -f debugger/ocamldebug.exe; then (cd debugger; $(MAKEREC) install); \
+	if test -n "$(WITH_OCAMLDEBUG)"; then (cd debugger; $(MAKEREC) install); \
 	   else :; fi
 	./build/partial-install.sh
 	cp config/Makefile $(LIBDIR)/Makefile.config
@@ -243,7 +260,7 @@ installopt:
 	cd stdlib ; $(MAKEREC) installopt
 	cp asmcomp/*.cmi driver/*.cmi $(COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
-	cd ocamldoc ; $(MAKEREC) installopt
+	if test -n "$(OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); \
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 
@@ -611,7 +628,7 @@ alldepend::
 
 # OCamldoc
 
-ocamldoc.byte:
+ocamldoc:
 	cd ocamldoc ; $(MAKEREC) all
 ocamldoc.opt:
 	cd ocamldoc ; $(MAKEREC) opt.opt
