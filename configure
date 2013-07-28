@@ -784,9 +784,9 @@ fi
 natdynlink=false
 
 if test $with_sharedlibs = "yes"; then
-  # TODO: handle *-*-mingw* (it has $withsharedlibs=no currently)
   case "$target" in
     *-*-cygwin*)                  natdynlink=true;;
+    *-*-mingw*)                   natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
     i[3456]86-*-gnu*)             natdynlink=true;;
     x86_64-*-linux*)              natdynlink=true;;
