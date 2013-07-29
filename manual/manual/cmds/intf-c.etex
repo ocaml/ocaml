@@ -166,7 +166,8 @@ long getblock(struct channel * channel, char * p, long n)
 To write C code that operates on OCaml values, the following
 include files are provided:
 \begin{tableau}{|l|p{12cm}|}{Include file}{Provides}
-\entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion macros}
+\entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion
+macros}
 \entree{"caml/alloc.h"}{allocation functions (to create structured OCaml
 objects)}
 \entree{"caml/memory.h"}{miscellaneous memory-related functions
@@ -185,6 +186,14 @@ serialization and deserialization functions for custom blocks
 \end{tableau}
 These files reside in the "caml/" subdirectory of the OCaml
 standard library directory (usually "/usr/local/lib/ocaml").
+
+{\bf Note:} It is recommended to define the macro "CAML_NAME_SPACE"
+before including these header files. If you do not define it, the
+header files will also define short names (without the "caml_" prefix)
+for most functions, which usually produce clashes with names defined
+by other C libraries that you might use. Including the header files
+without "CAML_NAME_SPACE" is only supported for backward
+compatibility.
 
 \subsection{Statically linking C code with OCaml code}
 \label{staticlink-c-code}
@@ -224,7 +233,8 @@ To link in ``custom runtime'' mode, execute the "ocamlc" command with:
 \item the names of the desired OCaml object files (".cmo" and ".cma" files) ;
 \item the names of the C object files and libraries (".o" and ".a"
 files) that implement the required primitives. Under Unix and Windows,
-a library named "lib"\var{name}".a" (respectively, ".lib") residing in one of the standard library directories can also be specified as "-cclib -l"\var{name}.
+a library named "lib"\var{name}".a" (respectively, ".lib") residing in one of
+the standard library directories can also be specified as "-cclib -l"\var{name}.
 \end{itemize}
 
 If you are using the native-code compiler "ocamlopt", the "-custom"
