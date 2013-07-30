@@ -97,8 +97,8 @@ Bug fixes:
   third arguments
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping (was still unsound)
 - PR#5468: ocamlbuild should preserve order of parametric tags
-- PR#5551: Avoid repeated lookups for missing cmi files
 - PR#5547: Enable the "-use-ocamlfind" option by default
+- PR#5551: Avoid repeated lookups for missing cmi files
 - PR#5552: try to use camlp4.opt if it's possible
 - PR#5580: missed opportunities for constant propagation
 - PR#5611: avoid clashes betwen .cmo files and output files during linking
@@ -178,6 +178,7 @@ Bug fixes:
 - PR#6056: Using 'match' prevents generalization of values
 - PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
 - PR#6090: Module constraint + private type seems brocken in ocaml 4.01.0
+- PR#6109: Typos in ocamlbuild error messages
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
