@@ -100,6 +100,6 @@ module Test2 : module type of Test with type t = Test.t = Test;;
 let f (x : Test.t) = (x : Test2.t);;
 let f Test2.A = ();;
 let a = Test2.A;; (* fail *)
-(* The following should fail: cannot both have private abbreviation
-   and private definition *)
+(* The following should fail from a semantical point of view,
+   but allow it for backward compatibility *)
 module Test2 : module type of Test with type t = private Test.t = Test;;
