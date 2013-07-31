@@ -238,7 +238,7 @@ Index: toplevel/topdirs.ml
  
  let dir_untrace_all ppf () =
    List.iter
-@@ -305,10 +306,55 @@
+@@ -305,10 +306,74 @@
      !traced_functions;
    traced_functions := []
  
@@ -249,6 +249,25 @@ Index: toplevel/topdirs.ml
    with Arg.Bad err -> fprintf ppf "%s.@." err
  
 +(* Typing information *)
++
++let rec trim_modtype = function
++    Mty_signature _ -> Mty_signature []
++  | Mty_functor (id, mty, mty') ->
++      Mty_functor (id, mty, trim_modtype mty')
++  | Mty_ident _ as mty -> mty
++
++let trim_signature = function
++    Mty_signature sg ->
++      Mty_signature
++        (List.map
++           (function
++               Sig_module (id, mty, rs) ->
++                 Sig_module (id, trim_modtype mty, rs)
++             (*| Sig_modtype (id, Modtype_manifest mty) ->
++                 Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
++             | item -> item)
++           sg)
++  | mty -> mty
 +
 +let dir_show ppf kind {Location.loc; txt=lid} =
 +  let env = !Toploop.toplevel_env in
@@ -273,7 +292,7 @@ Index: toplevel/topdirs.ml
 +          Sig_exception (id, {exn_args=desc.cstr_args; exn_loc=Location.none})
 +      | Pkind_module ->
 +          let path, desc = Typetexp.find_module env loc lid in
-+          Sig_module (id, desc, Trec_not)
++          Sig_module (id, trim_signature desc, Trec_not)
 +      | Pkind_modtype ->
 +          let path, desc = Typetexp.find_modtype env loc lid in
 +          Sig_modtype (id, desc)
@@ -294,7 +313,7 @@ Index: toplevel/topdirs.ml
  let _ =
    Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_out));
    Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_out));
-@@ -337,4 +383,7 @@
+@@ -337,4 +402,7 @@
               (Directive_string (parse_warnings std_out false));
  
    Hashtbl.add directive_table "warn_error"
