@@ -104,14 +104,9 @@ module Test2 : sig type t = Test.t = private A end
   let a = Test2.A;; (* fail *)
           ^^^^^^^
 Error: Cannot create values of the private type Test2.t
-# *   Characters 112-160:
+# *   Characters 148-171:
   module Test2 : module type of Test with type t = private Test.t = Test;;
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of t
-       does not match its original definition in the constrained signature:
-       Type declarations do not match:
-         type t = private Test.t
-       is not included in
-         type t = private A
-       Their kinds differ.
+                                          ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 3: deprecated feature: spurious use of private
+module Test2 : sig type t = Test.t = private A end
 # 

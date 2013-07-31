@@ -1055,15 +1055,19 @@ let transl_with_constraint env id row_path orig_decl sdecl =
         let cty = transl_simple_type env no_row sty in
         Some cty, Some cty.ctyp_type
   in
-  let keep_kind = arity_ok && sdecl.ptype_private = Public in
   let priv =
-    if keep_kind && orig_decl.type_kind <> Type_abstract
+    if sdecl.ptype_private = Private then Private else
+    if arity_ok && orig_decl.type_kind <> Type_abstract
     then orig_decl.type_private else sdecl.ptype_private
   in
+  if arity_ok && orig_decl.type_kind <> Type_abstract
+  && sdecl.ptype_private = Private then
+    Location.prerr_warning sdecl.ptype_loc
+      (Warnings.Deprecated "spurious use of private");
   let decl =
     { type_params = params;
       type_arity = List.length params;
-      type_kind = if keep_kind then orig_decl.type_kind else Type_abstract;
+      type_kind = if arity_ok then orig_decl.type_kind else Type_abstract;
       type_private = priv;
       type_manifest = man;
       type_variance = [];
