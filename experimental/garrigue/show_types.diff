@@ -1,6 +1,6 @@
 Index: parsing/printast.mli
 ===================================================================
---- parsing/printast.mli	(revision 13953)
+--- parsing/printast.mli	(revision 13955)
 +++ parsing/printast.mli	(working copy)
 @@ -16,3 +16,4 @@
  val interface : formatter -> signature_item list -> unit;;
@@ -9,7 +9,7 @@ Index: parsing/printast.mli
 +val string_of_kind : ident_kind -> string;;
 Index: parsing/pprintast.ml
 ===================================================================
---- parsing/pprintast.ml	(revision 13953)
+--- parsing/pprintast.ml	(revision 13955)
 +++ parsing/pprintast.ml	(working copy)
 @@ -1192,8 +1192,10 @@
      | Pdir_none -> ()
@@ -26,7 +26,7 @@ Index: parsing/pprintast.ml
      match x with
 Index: parsing/parser.mly
 ===================================================================
---- parsing/parser.mly	(revision 13953)
+--- parsing/parser.mly	(revision 13955)
 +++ parsing/parser.mly	(working copy)
 @@ -516,9 +516,9 @@
    | SEMISEMI EOF                                { [] }
@@ -75,7 +75,7 @@ Index: parsing/parser.mly
  /* Miscellaneous */
 Index: parsing/parsetree.mli
 ===================================================================
---- parsing/parsetree.mli	(revision 13953)
+--- parsing/parsetree.mli	(revision 13955)
 +++ parsing/parsetree.mli	(working copy)
 @@ -294,6 +294,15 @@
  
@@ -103,7 +103,7 @@ Index: parsing/parsetree.mli
    | Pdir_bool of bool
 Index: parsing/printast.ml
 ===================================================================
---- parsing/printast.ml	(revision 13953)
+--- parsing/printast.ml	(revision 13955)
 +++ parsing/printast.ml	(working copy)
 @@ -737,6 +737,16 @@
        core_type (i+1) ppf ct
@@ -135,7 +135,7 @@ Index: parsing/printast.ml
  
 Index: toplevel/opttoploop.ml
 ===================================================================
---- toplevel/opttoploop.ml	(revision 13953)
+--- toplevel/opttoploop.ml	(revision 13955)
 +++ toplevel/opttoploop.ml	(working copy)
 @@ -53,6 +53,7 @@
     | Directive_string of (string -> unit)
@@ -155,7 +155,7 @@ Index: toplevel/opttoploop.ml
              fprintf ppf "Wrong type of argument for directive `%s'.@." dir_name;
 Index: toplevel/topdirs.ml
 ===================================================================
---- toplevel/topdirs.ml	(revision 13953)
+--- toplevel/topdirs.ml	(revision 13955)
 +++ toplevel/topdirs.ml	(working copy)
 @@ -15,6 +15,7 @@
  open Format
@@ -324,7 +324,7 @@ Index: toplevel/topdirs.ml
 +             (Directive_show (dir_show std_out))
 Index: toplevel/toploop.ml
 ===================================================================
---- toplevel/toploop.ml	(revision 13953)
+--- toplevel/toploop.ml	(revision 13955)
 +++ toplevel/toploop.ml	(working copy)
 @@ -25,7 +25,8 @@
     | Directive_none of (unit -> unit)
@@ -346,7 +346,7 @@ Index: toplevel/toploop.ml
              fprintf ppf "Wrong type of argument for directive `%s'.@." dir_name;
 Index: toplevel/topdirs.mli
 ===================================================================
---- toplevel/topdirs.mli	(revision 13953)
+--- toplevel/topdirs.mli	(revision 13955)
 +++ toplevel/topdirs.mli	(working copy)
 @@ -20,11 +20,12 @@
  val dir_cd : string -> unit
@@ -367,7 +367,7 @@ Index: toplevel/topdirs.mli
  type 'a printer_type_old = 'a -> unit
 Index: toplevel/toploop.mli
 ===================================================================
---- toplevel/toploop.mli	(revision 13953)
+--- toplevel/toploop.mli	(revision 13955)
 +++ toplevel/toploop.mli	(working copy)
 @@ -37,7 +37,8 @@
     | Directive_none of (unit -> unit)
@@ -379,3 +379,41 @@ Index: toplevel/toploop.mli
     | Directive_bool of (bool -> unit)
  
  val directive_table : (string, directive_fun) Hashtbl.t
+Index: tools/Makefile.shared
+===================================================================
+--- tools/Makefile.shared	(revision 13955)
++++ tools/Makefile.shared	(working copy)
+@@ -210,6 +210,7 @@
+           ../parsing/location.cmo \
+           ../parsing/longident.cmo \
+           ../parsing/lexer.cmo \
++          ../parsing/printast.cmo \
+           ../parsing/pprintast.cmo \
+           ../typing/ident.cmo \
+           ../typing/path.cmo \
+Index: camlp4/Camlp4/Struct/Camlp4Ast2OCamlAst.ml
+===================================================================
+--- camlp4/Camlp4/Struct/Camlp4Ast2OCamlAst.ml	(revision 13955)
++++ camlp4/Camlp4/Struct/Camlp4Ast2OCamlAst.ml	(working copy)
+@@ -1229,7 +1229,7 @@
+     | ExInt _ i -> Pdir_int (int_of_string i)
+     | <:expr< True >> -> Pdir_bool True
+     | <:expr< False >> -> Pdir_bool False
+-    | e -> Pdir_ident (ident_noloc (ident_of_expr e)) ]
++    | e -> Pdir_ident (ident (ident_of_expr e)) ]
+   ;
+ 
+   value phrase =
+Index: camlp4/boot/Camlp4.ml
+===================================================================
+--- camlp4/boot/Camlp4.ml	(revision 13955)
++++ camlp4/boot/Camlp4.ml	(working copy)
+@@ -15686,7 +15686,7 @@
+               | ExInt (_, i) -> Pdir_int (int_of_string i)
+               | Ast.ExId (_, (Ast.IdUid (_, "True"))) -> Pdir_bool true
+               | Ast.ExId (_, (Ast.IdUid (_, "False"))) -> Pdir_bool false
+-              | e -> Pdir_ident (ident_noloc (ident_of_expr e))
++              | e -> Pdir_ident (ident (ident_of_expr e))
+               
+             let phrase =
+               function
