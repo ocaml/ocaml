@@ -88,7 +88,8 @@ static void fixup_endianness_trailer(uint32 * p)
 
 static int read_trailer(int fd, struct exec_trailer *trail)
 {
-  lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
+  if (lseek(fd, (long) -TRAILER_SIZE, SEEK_END) == -1)
+    return BAD_BYTECODE;
   if (read(fd, (char *) trail, TRAILER_SIZE) < TRAILER_SIZE)
     return BAD_BYTECODE;
   fixup_endianness_trailer(&trail->num_sections);
