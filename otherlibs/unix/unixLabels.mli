@@ -240,6 +240,8 @@ type open_flag = Unix.open_flag =
   | O_SYNC                      (** Writes complete as `Synchronised I/O file integrity completion' *)
   | O_RSYNC                     (** Reads complete as writes (depending on O_SYNC/O_DSYNC) *)
   | O_SHARE_DELETE              (** Windows only: allow the file to be deleted while still open *)
+  | O_CLOEXEC                   (** Set the close-on-exec flag on the
+                                   descriptor returned by {!openfile} *)
 (** The flags to {!UnixLabels.openfile}. *)
 
 

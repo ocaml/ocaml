@@ -47,6 +47,10 @@ Standard library:
   (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 - Add optimized composition operators |> and @@ in Pervasives
 
+Other libraries:
+- PR#5568: add O_CLOEXEC flag to Unix.openfile, so that the returned
+  file descriptor is created in close-on-exec mode
+
 Runtime system:
 * PR#6019: more efficient implementation of caml_modify() and caml_initialize().
   The new implementations are less lenient than the old ones: now,
