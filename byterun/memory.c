@@ -502,7 +502,8 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 */
 /* [caml_initialize] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
-CAMLexport void caml_initialize (value *fp, value val)
+/* PR#6084 workaround: define it as a weak symbol */
+CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 {
   CAMLassert(Is_in_heap(fp));
   *fp = val;
@@ -522,10 +523,10 @@ CAMLexport void caml_initialize (value *fp, value val)
    in the minor heap instead of in the major heap.  In this case, it
    is a bit slower than simple assignment.
    In particular, you can use [caml_modify] when you don't know whether the
-   block being changed is in the minor heap or the major heap.
-*/
+   block being changed is in the minor heap or the major heap. */
+/* PR#6084 workaround: define it as a weak symbol */
 
-CAMLexport void caml_modify (value *fp, value val)
+CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
 {
   /* The write barrier implemented by [caml_modify] checks for the
      following two conditions and takes appropriate action:

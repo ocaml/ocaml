@@ -171,6 +171,8 @@ Bug fixes:
 - PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
 - PR#6072: configure does not handle FreeBSD current (i.e. 10) correctly
 - PR#6074: Wrong error message for failing Condition.broadcast
+- PR#6084: Define caml_modify and caml_initialize as weak symbols to help
+  with Netmulticore
 - PR#6090: Module constraint + private type seems brocken in ocaml 4.01.0
 
 Feature wishes:
