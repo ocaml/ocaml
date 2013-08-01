@@ -96,6 +96,7 @@ Bug fixes:
 - PR#5327: (Windows) Unix.select blocks if same socket listed in first and
   third arguments
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping (was still unsound)
+- PR#5350: missing return code checks in the runtime system
 - PR#5468: ocamlbuild should preserve order of parametric tags
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5551: Avoid repeated lookups for missing cmi files
