@@ -933,13 +933,18 @@ storing the value.
 A registered global variable "v" can be un-registered by calling
 "caml_remove_global_root(&v)".
 
-If the contents of the global variable "v" are not modified after
+If the contents of the global variable "v" are seldom modified after
 registration, better performance can be achieved by calling
-"caml_register_generational_global_root(&v)" to register "v",
-and "caml_remove_generational_global_root(&v)" to un-register it.
+"caml_register_generational_global_root(&v)" to register "v" (after
+its initialization with a valid "value", but before any allocation or
+call to the GC functions),
+and "caml_remove_generational_global_root(&v)" to un-register it. In
+this case, you must not modify the value of "v" directly, but you must
+use "caml_modify_generational_global_root(&v,x)" to set it to "x".
 The garbage collector takes advantage of the guarantee that "v" is not
-modified to scan it less often.  This improves performance if many
-global variables need to be registered.
+modified between calls to "caml_modify_generational_global_root" to scan it
+less often. This improves performance if the
+modifications of "v" happen less often than minor collections.
 
 \paragraph{Note:} The "CAML" macros use identifiers (local variables, type
 identifiers, structure tags) that start with "caml__".  Do not use any
