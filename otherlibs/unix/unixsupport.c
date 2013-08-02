@@ -270,6 +270,15 @@ value unix_error_of_code (int errcode)
   return err;
 }
 
+extern int code_of_unix_error (value error)
+{
+  if (Is_block(error)) {
+    return Int_val(Field(error, 0));
+  } else {
+    return error_table[Int_val(error)];
+  }
+}
+
 void unix_error(int errcode, char *cmdname, value cmdarg)
 {
   value res;

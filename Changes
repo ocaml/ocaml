@@ -74,6 +74,7 @@ Bug fixes:
 - PR#4502: ocamlbuild now reliably excludes the build-dir from hygiene check
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4788: wrong error message when executable file is not found for backtrace
+- PR#4812: otherlibs/unix: add extern int code_of_unix_error (value error);
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
 - PR#4994: ocaml-mode doesn't work with xemacs21
 - PR#5098: creating module values may lead to memory leaks
