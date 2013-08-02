@@ -73,6 +73,7 @@ Bug fixes:
 - PR#4485: Graphics: Keyboard events incorrectly delivered in native code
 - PR#4502: ocamlbuild now reliably excludes the build-dir from hygiene check
 - PR#4762: ?? is not used at all, but registered as a lexer token
+- PR#4788: Highly misleading error message
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
 - PR#4994: ocaml-mode doesn't work with xemacs21
 - PR#5098: creating module values may lead to memory leaks
