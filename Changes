@@ -8,6 +8,7 @@ Compilers:
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
+- PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
