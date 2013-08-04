@@ -17,6 +17,7 @@ Standard library:
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
 - PR#4323: have "of_string" in Num and Big_int work with binary and hexa representations (patch by zoep)
+- PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 
 
 OCaml 4.01.0:
