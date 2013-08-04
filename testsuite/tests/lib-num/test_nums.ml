@@ -188,6 +188,21 @@ eq_num (num_of_string "0.23", Ratio (ratio_of_string "0.23/1"));;
 failwith_test 11
 num_of_string ("frlshjkurty") (Failure "num_of_string");;
 
+test 12
+eq_num (num_of_string "0xAbCdEf",
+        Big_int (big_int_of_int 0xabcdef));;
+
+test 13
+eq_num (num_of_string "0b1101/0O1765",
+        Ratio (ratio_of_string "0b1101/0o1765"));;
+
+test 14
+eq_num (num_of_string "-12_34_56",
+        Big_int (big_int_of_int (-123456)));;
+
+test 15
+eq_num (num_of_string "0B101010", Big_int (big_int_of_int 42));;
+
 (*******
 
 testing_function "immediate numbers";;
