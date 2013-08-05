@@ -339,6 +339,10 @@ and elements = parse
       {
         EOF
       }
+  | _ {
+        let s = Lexing.lexeme lexbuf in
+        failwith ("Unexpected character '"^s^"'")
+      }
 
 
 and simple = parse
