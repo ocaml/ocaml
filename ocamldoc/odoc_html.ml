@@ -671,13 +671,13 @@ class virtual info =
        @param indent can be specified not to use the style of info comments;
        default is [true].
     *)
-    method html_of_info ?(indent=true) b info_opt =
+    method html_of_info ?(cls="") ?(indent=true) b info_opt =
       match info_opt with
         None ->
           ()
       | Some info ->
           let module M = Odoc_info in
-          if indent then bs b "<div class=\"info\">\n";
+          if indent then bs b ("<div class=\"info "^cls^"\">\n");
           (
            match info.M.i_deprecated with
             None -> ()
@@ -1784,7 +1784,7 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~indent: true
+           self#html_of_info ~cls: "module top" ~indent: true
          else
            self#html_of_info_first_sentence
         ) b m.m_info
@@ -1813,7 +1813,7 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~indent: true
+           self#html_of_info ~cls: "modtype top" ~indent: true
          else
            self#html_of_info_first_sentence
         ) b mt.mt_info
@@ -1970,7 +1970,7 @@ class html =
       print_DEBUG "html#html_of_class : info" ;
       (
        if complete then
-         self#html_of_info ~indent: true
+         self#html_of_info ~cls: "class top" ~indent: true
        else
          self#html_of_info_first_sentence
       ) b c.cl_info
@@ -2013,7 +2013,7 @@ class html =
       bs b "</pre>";
       (
        if complete then
-         self#html_of_info ~indent: true
+         self#html_of_info ~cls: "classtype top" ~indent: true
        else
          self#html_of_info_first_sentence
       ) b ct.clt_info
