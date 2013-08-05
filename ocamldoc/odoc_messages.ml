@@ -246,6 +246,7 @@ let file_not_found_in_paths paths name =
     (String.concat "\n" paths)
 
 let tag_not_handled tag = "Tag @"^tag^" not handled by this generator"
+let should_escape_at_sign = "The character @ has a special meaning in ocamldoc comments, for commands such as @raise or @since. If you want to write a single @, you must escape it as \\@."
 let bad_tree = "Incorrect tree structure."
 let not_a_valid_tag s = s^" is not a valid tag."
 let fun_without_param f = "Function "^f^" has no parameter.";;
