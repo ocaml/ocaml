@@ -863,6 +863,22 @@ backends of the distribution are "latex", "html", "texi" and "man". If
 no target is specified (syntax "{% ... %}"), "latex" is chosen by
 default. Custom generators may support their own target prefix.
 
+\subsubsection*{Recognized HTML tags}
+The HTML tags  "<b>..</b>",
+"<i>..</i>",
+"<ul>..</ul>",
+"<ol>..</ol>",
+"<li>..</li>",
+"<center>..</center>" and
+"<h[0-9]>..</h[0-9]>" can be used instead of, respectively,
+@ '{b ..}' @,
+@ '{i ..}' @,
+@ '{ul ..}' @,
+@ '{ol ..}' @,
+@ '{li ..}' @,
+@ '{C ..}' @ and
+"{[0-9] ..}".
+
 %%%%%%%%%%%%%
 \subsection{Documentation tags (\@-tags)}
 \label{s:ocamldoc-tags}
