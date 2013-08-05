@@ -293,6 +293,10 @@ and elements = parse
         incr Odoc_comments_global.nb_chars;
         print_DEBUG2 "newline";
         elements lexbuf }
+  | "@"
+      {
+        raise (Failure (Odoc_messages.should_escape_at_sign))
+      }
 
   | "@"lowercase+
       {
