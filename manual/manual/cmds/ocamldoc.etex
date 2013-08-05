@@ -865,6 +865,7 @@ default. Custom generators may support their own target prefix.
 
 \subsubsection*{Recognized HTML tags}
 The HTML tags  "<b>..</b>",
+"<code>..</code>",
 "<i>..</i>",
 "<ul>..</ul>",
 "<ol>..</ol>",
@@ -872,6 +873,7 @@ The HTML tags  "<b>..</b>",
 "<center>..</center>" and
 "<h[0-9]>..</h[0-9]>" can be used instead of, respectively,
 @ '{b ..}' @,
+@ '[..]' @,
 @ '{i ..}' @,
 @ '{ul ..}' @,
 @ '{ol ..}' @,
