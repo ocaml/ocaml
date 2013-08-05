@@ -1559,7 +1559,7 @@ class html =
             bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
             if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
-            bp b "<span id=\"%s\">%s</span>&nbsp;:"
+            bp b "<span id=\"%s\">%s</span>&nbsp;: "
               (Naming.recfield_target t r)
               r.rf_name;
             self#html_of_type_expr b father r.rf_type;
