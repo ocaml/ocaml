@@ -58,6 +58,11 @@ let x_p_o = "%.p"-.-ext_obj;;
 let x_p_a = "%.p"-.-ext_lib;;
 let x_p_dll = "%.p"-.-ext_dll;;
 
+(* -output-obj targets *)
+let x_byte_c = "%.byte.c";;
+let x_byte_o = "%.byte"-.-ext_obj;;
+let x_native_o = "%.native"-.-ext_obj;;
+
 rule "target files"
   ~dep:"%.itarget"
   ~stamp:"%.otarget"
@@ -146,15 +151,15 @@ rule "ocaml: cmo* -> byte"
   ~dep:"%.cmo"
   (Ocaml_compiler.byte_link "%.cmo" "%.byte");;
 
-rule "ocaml: cmo* -> byte.o"
-  ~prod:"%.byte.o"
+rule "ocaml: cmo* -> byte.(o|obj)"
+  ~prod:x_byte_o
   ~dep:"%.cmo"
-  (Ocaml_compiler.byte_output_obj "%.cmo" "%.byte.o");;
+  (Ocaml_compiler.byte_output_obj "%.cmo" x_byte_o);;
 
 rule "ocaml: cmo* -> byte.c"
-  ~prod:"%.byte.c"
+  ~prod:x_byte_c
   ~dep:"%.cmo"
-  (Ocaml_compiler.byte_output_obj "%.cmo" "%.byte.c");;
+  (Ocaml_compiler.byte_output_obj "%.cmo" x_byte_c);;
 
 rule "ocaml: p.cmx* & p.o* -> p.native"
   ~prod:"%.p.native"
@@ -166,10 +171,10 @@ rule "ocaml: cmx* & o* -> native"
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_link "%.cmx" "%.native");;
 
-rule "ocaml: cmx* & o* -> native.o"
-  ~prod:"%.native.o"
+rule "ocaml: cmx* & o* -> native.(o|obj)"
+  ~prod:x_native_o
   ~deps:["%.cmx"; x_o]
-  (Ocaml_compiler.native_output_obj "%.cmx" "%.native.o");;
+  (Ocaml_compiler.native_output_obj "%.cmx" x_native_o);;
 
 rule "ocaml: mllib & d.cmo* -> d.cma"
   ~prod:"%.d.cma"
