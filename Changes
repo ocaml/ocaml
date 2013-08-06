@@ -15,9 +15,10 @@ Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
 
 Features wishes:
-- PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
 - PR#4243: make the Makefiles parallelizable
-- PR#4323: have "of_string" in Num and Big_int work with binary and hexa representations (patch by zoep)
+- PR#4323: have "of_string" in Num and Big_int work with binary and
+  hexa representations (patch by Zoe Paraskevopoulou)
+- PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 
 
