@@ -1399,7 +1399,7 @@ class html =
     (** Print html code for a value. *)
     method html_of_value b v =
       Odoc_info.reset_type_names ();
-      bs b "<pre>" ;
+      bs b "\n<pre>" ;
       bp b "<span id=\"%s\">" (Naming.value_target v);
       bs b (self#keyword "val");
       bs b " ";
@@ -1426,7 +1426,7 @@ class html =
     (** Print html code for an exception. *)
     method html_of_exception b e =
       Odoc_info.reset_type_names ();
-      bs b "<pre>";
+      bs b "\n<pre>";
       bp b "<span id=\"%s\">" (Naming.exception_target e);
       bs b (self#keyword "exception");
       bs b " ";
@@ -1461,12 +1461,12 @@ class html =
       let father = Name.father t.ty_name in
       bs b
         (match t.ty_manifest, t.ty_kind with
-          None, Type_abstract -> "<pre>"
+          None, Type_abstract -> "\n<pre>"
         | None, Type_variant _
-        | None, Type_record _ -> "<pre><code>"
-        | Some _, Type_abstract -> "<pre>"
+        | None, Type_record _ -> "\n<pre><code>"
+        | Some _, Type_abstract -> "\n<pre>"
         | Some _, Type_variant _
-        | Some _, Type_record _ -> "<pre>"
+        | Some _, Type_record _ -> "\n<pre>"
         );
       bp b "<span id=\"%s\">" (Naming.type_target t);
       bs b ((self#keyword "type")^" ");
@@ -1589,7 +1589,7 @@ class html =
     (** Print html code for a class attribute. *)
     method html_of_attribute b a =
       let module_name = Name.father (Name.father a.att_value.val_name) in
-      bs b "<pre>" ;
+      bs b "\n<pre>" ;
       bp b "<span id=\"%s\">" (Naming.attribute_target a);
       bs b (self#keyword "val");
       bs b " ";
@@ -1621,7 +1621,7 @@ class html =
     (** Print html code for a class method. *)
     method html_of_method b m =
       let module_name = Name.father (Name.father m.met_value.val_name) in
-      bs b "<pre>";
+      bs b "\n<pre>";
       (* html mark *)
       bp b "<span id=\"%s\">" (Naming.method_target m);
      bs b ((self#keyword "method")^" ");
@@ -1765,7 +1765,7 @@ class html =
     method html_of_module b ?(info=true) ?(complete=true) ?(with_link=true) m =
       let (html_file, _) = Naming.html_files m.m_name in
       let father = Name.father m.m_name in
-      bs b "<pre>";
+      bs b "\n<pre>";
       bs b ((self#keyword "module")^" ");
       (
        if with_link then
@@ -1795,7 +1795,7 @@ class html =
     method html_of_modtype b ?(info=true) ?(complete=true) ?(with_link=true) mt =
       let (html_file, _) = Naming.html_files mt.mt_name in
       let father = Name.father mt.mt_name in
-      bs b "<pre>";
+      bs b "\n<pre>";
       bs b ((self#keyword "module type")^" ");
       (
        if with_link then
@@ -1822,7 +1822,7 @@ class html =
 
     (** Print html code for an included module. *)
     method html_of_included_module b im =
-      bs b "<pre>";
+      bs b "\n<pre>";
       bs b ((self#keyword "include")^" ");
       (
        match im.im_module with
@@ -1933,7 +1933,7 @@ class html =
       let father = Name.father c.cl_name in
       Odoc_info.reset_type_names ();
       let (html_file, _) = Naming.html_files c.cl_name in
-      bs b "<pre>";
+      bs b "\n<pre>";
       (* we add a html id, the same as for a type so we can
          go directly here when the class name is used as a type name *)
       bp b "<span name=\"%s\">"
@@ -1980,7 +1980,7 @@ class html =
       Odoc_info.reset_type_names ();
       let father = Name.father ct.clt_name in
       let (html_file, _) = Naming.html_files ct.clt_name in
-      bs b "<pre>";
+      bs b "\n<pre>";
       (* we add a html id, the same as for a type so we can
          go directly here when the class type name is used as a type name *)
       bp b "<span id=\"%s\">"
