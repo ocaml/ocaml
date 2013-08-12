@@ -1508,9 +1508,10 @@ With "ocamlopt", you should do:
            camlcode.o -L/usr/local/lib/ocaml -lunix -lasmrun
 \end{alltt}
 
-The shared libraries produced by "ocamlc -output-obj" or by "ocamlopt
--output-obj" already contains the OCaml runtime library as
-well as all the needed C libraries.
+% -- This seems completely wrong -- Damien
+% The shared libraries produced by "ocamlc -output-obj" or by "ocamlopt
+% -output-obj" already contains the OCaml runtime library as
+% well as all the needed C libraries.
 
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the
@@ -1519,13 +1520,14 @@ are shown in the configuration file "config/Makefile" generated during
 compilation of OCaml, as the variables "BYTECCLINKOPTS"
 (for object files produced by "ocamlc -output-obj") and
 "NATIVECCLINKOPTS" (for object files produced by "ocamlopt
--output-obj").  Currently, the only ports that require special
-attention are:
+-output-obj").
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
 OCaml have been compiled with the "/MD" flag, and therefore
 all other object files linked with it should also be compiled with
 "/MD".
+\item other systems: you may have to add one or more of "-lcurses",
+"-lm", "-ldl", depending on your OS and C compiler.
 \end{itemize}
 
 \paragraph{Stack backtraces.}  When OCaml bytecode produced by
