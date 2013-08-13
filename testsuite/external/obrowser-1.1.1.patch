@@ -271,161 +271,6 @@
  val rev_map : ('a -> 'b) -> 'a list -> 'b list
  (** [List.rev_map f l] gives the same result as
     {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
---- obrowser-1.1.1.orig/rt/caml/printexc.ml	2011-04-20 18:26:44.000000000 +0200
-+++ obrowser-1.1.1/rt/caml/printexc.ml	2013-03-17 17:47:35.000000000 +0100
-@@ -1,6 +1,6 @@
- (***********************************************************************)
- (*                                                                     *)
--(*                           Objective Caml                            *)
-+(*                                OCaml                                *)
- (*                                                                     *)
- (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
- (*                                                                     *)
-@@ -11,8 +11,6 @@
- (*                                                                     *)
- (***********************************************************************)
- 
--(* $Id: printexc.ml 10272 2010-04-19 12:25:46Z frisch $ *)
--
- open Printf;;
- 
- let printers = ref []
-@@ -56,9 +54,12 @@
-             sprintf locfmt file line char (char+5) "Pattern matching failed"
-         | Assert_failure(file, line, char) ->
-             sprintf locfmt file line char (char+6) "Assertion failed"
-+        | Undefined_recursive_module(file, line, char) ->
-+            sprintf locfmt file line char (char+6) "Undefined recursive module"
-         | _ ->
-             let x = Obj.repr x in
--            let constructor = (Obj.magic(Obj.field (Obj.field x 0) 0) : string) in
-+            let constructor =
-+              (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
-             constructor ^ (fields x) in
-   conv !printers
- 
-@@ -78,6 +79,11 @@
-     eprintf "Uncaught exception: %s\n" (to_string x);
-     exit 2
- 
-+type raw_backtrace
-+
-+external get_raw_backtrace:
-+  unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
-+
- type loc_info =
-   | Known_location of bool   (* is_raise *)
-                     * string (* filename *)
-@@ -86,8 +92,13 @@
-                     * int    (* end char *)
-   | Unknown_location of bool (*is_raise*)
- 
--external get_exception_backtrace:
--  unit -> loc_info array option = "caml_get_exception_backtrace"
-+(* to avoid warning *)
-+let _ = [Known_location (false, "", 0, 0, 0); Unknown_location false]
-+
-+type backtrace = loc_info array
-+
-+external convert_raw_backtrace:
-+  raw_backtrace -> backtrace option = "caml_convert_raw_backtrace"
- 
- let format_loc_info pos li =
-   let is_raise =
-@@ -108,8 +119,8 @@
-       sprintf "%s unknown location"
-               info
- 
--let print_backtrace outchan =
--  match get_exception_backtrace() with
-+let print_exception_backtrace outchan backtrace =
-+  match backtrace with
-   | None ->
-       fprintf outchan
-         "(Program not linked with -g, cannot print stack backtrace)\n"
-@@ -119,8 +130,15 @@
-           fprintf outchan "%s\n" (format_loc_info i a.(i))
-       done
- 
--let get_backtrace () =
--  match get_exception_backtrace() with
-+let print_raw_backtrace outchan raw_backtrace =
-+  print_exception_backtrace outchan (convert_raw_backtrace raw_backtrace)
-+
-+(* confusingly named: prints the global current backtrace *)
-+let print_backtrace outchan =
-+  print_raw_backtrace outchan (get_raw_backtrace ())
-+
-+let backtrace_to_string backtrace =
-+  match backtrace with
-   | None ->
-      "(Program not linked with -g, cannot print stack backtrace)\n"
-   | Some a ->
-@@ -131,6 +149,17 @@
-       done;
-       Buffer.contents b
- 
-+let raw_backtrace_to_string raw_backtrace =
-+  backtrace_to_string (convert_raw_backtrace raw_backtrace)
-+
-+(* confusingly named:
-+   returns the *string* corresponding to the global current backtrace *)
-+let get_backtrace () =
-+  (* we could use the caml_get_exception_backtrace primitive here, but
-+     we hope to deprecate it so it's better to just compose the
-+     raw stuff *)
-+  backtrace_to_string (convert_raw_backtrace (get_raw_backtrace ()))
-+
- external record_backtrace: bool -> unit = "caml_record_backtrace"
- external backtrace_status: unit -> bool = "caml_backtrace_status"
- 
---- obrowser-1.1.1.orig/rt/caml/printexc.mli	2011-04-20 18:26:44.000000000 +0200
-+++ obrowser-1.1.1/rt/caml/printexc.mli	2013-03-17 17:47:39.000000000 +0100
-@@ -1,6 +1,6 @@
- (***********************************************************************)
- (*                                                                     *)
--(*                           Objective Caml                            *)
-+(*                                OCaml                                *)
- (*                                                                     *)
- (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
- (*                                                                     *)
-@@ -11,8 +11,6 @@
- (*                                                                     *)
- (***********************************************************************)
- 
--(* $Id: printexc.mli 10457 2010-05-21 18:30:12Z doligez $ *)
--
- (** Facilities for printing exceptions. *)
- 
- val to_string: exn -> string
-@@ -77,5 +75,27 @@
-     in the reverse order of their registrations, until a printer returns
-     a [Some s] value (if no such printer exists, the runtime will use a
-     generic printer).
-+
-+    When using this mechanism, one should be aware that an exception backtrace
-+    is attached to the thread that saw it raised, rather than to the exception
-+    itself. Practically, it means that the code related to [fn] should not use
-+    the backtrace if it has itself raised an exception before.
-     @since 3.11.2
- *)
-+
-+(** {6 Raw backtraces} *)
-+
-+type raw_backtrace
-+
-+(** The abstract type [backtrace] stores exception backtraces in
-+    a low-level format, instead of directly exposing them as string as
-+    the [get_backtrace()] function does.
-+
-+    This allows to pay the performance overhead of representation
-+    conversion and formatting only at printing time, which is useful
-+    if you want to record more backtrace than you actually print.
-+*)
-+
-+val get_raw_backtrace: unit -> raw_backtrace
-+val print_raw_backtrace: out_channel -> raw_backtrace -> unit
-+val raw_backtrace_to_string: raw_backtrace -> string
 --- obrowser-1.1.1-old/rt/caml/pervasives.mli	2013-06-20 13:50:19.000000000 +0200
 +++ obrowser-1.1.1/rt/caml/pervasives.mli	2013-06-20 13:50:59.000000000 +0200
 @@ -11,8 +11,6 @@
@@ -1139,3 +984,178 @@
  
  let at_exit f =
    let g = !exit_function in
+--- obrowser-1.1.1.orig/rt/caml/printexc.ml	2011-04-20 18:26:44.000000000 +0200
++++ obrowser-1.1.1/rt/caml/printexc.ml	2013-08-13 15:54:35.000000000 +0200
+@@ -1,6 +1,6 @@
+ (***********************************************************************)
+ (*                                                                     *)
+-(*                           Objective Caml                            *)
++(*                                OCaml                                *)
+ (*                                                                     *)
+ (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+ (*                                                                     *)
+@@ -11,8 +11,6 @@
+ (*                                                                     *)
+ (***********************************************************************)
+ 
+-(* $Id: printexc.ml 10272 2010-04-19 12:25:46Z frisch $ *)
+-
+ open Printf;;
+ 
+ let printers = ref []
+@@ -56,9 +54,12 @@
+             sprintf locfmt file line char (char+5) "Pattern matching failed"
+         | Assert_failure(file, line, char) ->
+             sprintf locfmt file line char (char+6) "Assertion failed"
++        | Undefined_recursive_module(file, line, char) ->
++            sprintf locfmt file line char (char+6) "Undefined recursive module"
+         | _ ->
+             let x = Obj.repr x in
+-            let constructor = (Obj.magic(Obj.field (Obj.field x 0) 0) : string) in
++            let constructor =
++              (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
+             constructor ^ (fields x) in
+   conv !printers
+ 
+@@ -78,6 +79,11 @@
+     eprintf "Uncaught exception: %s\n" (to_string x);
+     exit 2
+ 
++type raw_backtrace
++
++external get_raw_backtrace:
++  unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
++
+ type loc_info =
+   | Known_location of bool   (* is_raise *)
+                     * string (* filename *)
+@@ -86,8 +92,13 @@
+                     * int    (* end char *)
+   | Unknown_location of bool (*is_raise*)
+ 
+-external get_exception_backtrace:
+-  unit -> loc_info array option = "caml_get_exception_backtrace"
++(* to avoid warning *)
++let _ = [Known_location (false, "", 0, 0, 0); Unknown_location false]
++
++type backtrace = loc_info array
++
++external convert_raw_backtrace:
++  raw_backtrace -> backtrace option = "caml_convert_raw_backtrace"
+ 
+ let format_loc_info pos li =
+   let is_raise =
+@@ -108,8 +119,8 @@
+       sprintf "%s unknown location"
+               info
+ 
+-let print_backtrace outchan =
+-  match get_exception_backtrace() with
++let print_exception_backtrace outchan backtrace =
++  match backtrace with
+   | None ->
+       fprintf outchan
+         "(Program not linked with -g, cannot print stack backtrace)\n"
+@@ -119,8 +130,15 @@
+           fprintf outchan "%s\n" (format_loc_info i a.(i))
+       done
+ 
+-let get_backtrace () =
+-  match get_exception_backtrace() with
++let print_raw_backtrace outchan raw_backtrace =
++  print_exception_backtrace outchan (convert_raw_backtrace raw_backtrace)
++
++(* confusingly named: prints the global current backtrace *)
++let print_backtrace outchan =
++  print_raw_backtrace outchan (get_raw_backtrace ())
++
++let backtrace_to_string backtrace =
++  match backtrace with
+   | None ->
+      "(Program not linked with -g, cannot print stack backtrace)\n"
+   | Some a ->
+@@ -131,8 +149,22 @@
+       done;
+       Buffer.contents b
+ 
++let raw_backtrace_to_string raw_backtrace =
++  backtrace_to_string (convert_raw_backtrace raw_backtrace)
++
++(* confusingly named:
++   returns the *string* corresponding to the global current backtrace *)
++let get_backtrace () =
++  (* we could use the caml_get_exception_backtrace primitive here, but
++     we hope to deprecate it so it's better to just compose the
++     raw stuff *)
++  backtrace_to_string (convert_raw_backtrace (get_raw_backtrace ()))
++
+ external record_backtrace: bool -> unit = "caml_record_backtrace"
+ external backtrace_status: unit -> bool = "caml_backtrace_status"
+ 
+ let register_printer fn =
+   printers := fn :: !printers
++
++
++external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
+--- obrowser-1.1.1.orig/rt/caml/printexc.mli	2011-04-20 18:26:44.000000000 +0200
++++ obrowser-1.1.1/rt/caml/printexc.mli	2013-08-13 15:54:40.000000000 +0200
+@@ -1,6 +1,6 @@
+ (***********************************************************************)
+ (*                                                                     *)
+-(*                           Objective Caml                            *)
++(*                                OCaml                                *)
+ (*                                                                     *)
+ (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+ (*                                                                     *)
+@@ -11,9 +11,7 @@
+ (*                                                                     *)
+ (***********************************************************************)
+ 
+-(* $Id: printexc.mli 10457 2010-05-21 18:30:12Z doligez $ *)
+-
+-(** Facilities for printing exceptions. *)
++(** Facilities for printing exceptions and inspecting current call stack. *)
+ 
+ val to_string: exn -> string
+ (** [Printexc.to_string e] returns a string representation of
+@@ -77,5 +75,40 @@
+     in the reverse order of their registrations, until a printer returns
+     a [Some s] value (if no such printer exists, the runtime will use a
+     generic printer).
++
++    When using this mechanism, one should be aware that an exception backtrace
++    is attached to the thread that saw it raised, rather than to the exception
++    itself. Practically, it means that the code related to [fn] should not use
++    the backtrace if it has itself raised an exception before.
+     @since 3.11.2
+ *)
++
++(** {6 Raw backtraces} *)
++
++type raw_backtrace
++
++(** The abstract type [backtrace] stores exception backtraces in
++    a low-level format, instead of directly exposing them as string as
++    the [get_backtrace()] function does.
++
++    This allows to pay the performance overhead of representation
++    conversion and formatting only at printing time, which is useful
++    if you want to record more backtrace than you actually print.
++*)
++
++val get_raw_backtrace: unit -> raw_backtrace
++val print_raw_backtrace: out_channel -> raw_backtrace -> unit
++val raw_backtrace_to_string: raw_backtrace -> string
++
++
++(** {6 Current call stack} *)
++
++val get_callstack: int -> raw_backtrace
++
++(** [Printexc.get_callstack n] returns a description of the top of the
++    call stack on the current program point (for the current thread),
++    with at most [n] entries.  (Note: this function is not related to
++    exceptions at all, despite being part of the [Printexc] module.)
++
++    @since 4.01.0
++*)
