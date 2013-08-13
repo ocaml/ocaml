@@ -49,10 +49,6 @@ module Make(U:sig end) =
           end
         end
 
-    let profiling = Tags.mem "profile" (tags_of_pathname plugin_file)
-
-    let debugging = Tags.mem "debug" (tags_of_pathname plugin_file)
-
     let rebuild_plugin_if_needed () =
       let a = up_to_date_or_copy plugin_file in
       let b = (not we_have_a_config_file) || up_to_date_or_copy plugin_config_file in
@@ -73,11 +69,11 @@ module Make(U:sig end) =
               S[P plugin_config_file_interface; P plugin_config_file]
             else P plugin_config_file
           else N in
-        let cma, cmo, more_options, compiler =
+        let cma, cmo, compiler, byte_or_native =
           if !Options.native_plugin then
-            "cmxa", "cmx", (if profiling then A"-p" else N), !Options.ocamlopt
+            "cmxa", "cmx", !Options.ocamlopt, "native"
           else
-            "cma", "cmo", (if debugging then A"-g" else N), !Options.ocamlc
+            "cma", "cmo", !Options.ocamlc, "byte"
         in
         let ocamlbuildlib, ocamlbuild, libs =
           if (not !Options.native_plugin) && !*My_unix.is_degraded then
@@ -91,8 +87,11 @@ module Make(U:sig end) =
         if not (sys_file_exists (dir/ocamlbuildlib)) then
           failwith (sprintf "Cannot find %S in ocamlbuild -where directory" ocamlbuildlib);
         let dir = if Pathname.is_implicit dir then Pathname.pwd/dir else dir in
+        let tags =
+          tags_of_pathname plugin_file
+          ++"ocaml"++"program"++"link"++byte_or_native in
         let cmd =
-          Cmd(S[compiler; A"-I"; P dir; libs; more_options;
+          Cmd(S[compiler; A"-I"; P dir; libs; T tags;
                 P(dir/ocamlbuildlib); plugin_config; P plugin_file;
                 P(dir/ocamlbuild); A"-o"; Px (plugin^(!Options.exe))])
         in
