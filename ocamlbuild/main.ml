@@ -66,7 +66,15 @@ let proceed () =
   Options.init ();
   if !Options.must_clean then clean ();
   Hooks.call_hook Hooks.After_options;
-  Plugin.execute_plugin_if_needed ();
+  let options_wd = Sys.getcwd () in
+  let first_run_for_plugin =
+    (* If we are in the first run before launching the plugin, we
+       should skip the user-visible operations (hygiene) that may need
+       information from the plugin to run as the user expects it.
+       
+       Note that we don't need to disable the [Hooks] call as they are
+       no-ops anyway, before any plugin has registered hooks. *)
+    Plugin.we_need_a_plugin () && not !Options.just_plugin in
 
   if !Options.targets = []
     && !Options.show_tags = []
@@ -145,7 +153,7 @@ let proceed () =
       let tags = tags_of_pathname (path/name) in
       not (Tags.mem "not_hygienic" tags) && not (Tags.mem "precious" tags)
     end entry in
-  if !Options.hygiene then
+  if !Options.hygiene && not first_run_for_plugin then
     Fda.inspect hygiene_entry
   else
     Slurp.force hygiene_entry;
@@ -162,6 +170,9 @@ let proceed () =
   Hooks.call_hook Hooks.After_rules;
 
   Param_tags.init ();
+
+  Sys.chdir options_wd;
+  Plugin.execute_plugin_if_needed ();
 
   Sys.chdir newpwd;
   (*let () = dprintf 0 "source_dir_path_set:@ %a" StringSet.print source_dir_path_set*)

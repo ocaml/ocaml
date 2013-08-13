@@ -22,18 +22,22 @@ open Tools
 open Command
 ;;
 
+
+let plugin                = "myocamlbuild"
+let plugin_file           = plugin^".ml"
+let plugin_config_file    = plugin^"_config.ml"
+let plugin_config_file_interface = plugin^"_config.mli"
+let we_need_a_plugin ()      = !Options.plugin && sys_file_exists plugin_file
+let we_have_a_plugin ()      = sys_file_exists ((!Options.build_dir/plugin)^(!Options.exe))
+let we_have_a_config_file () = sys_file_exists plugin_config_file
+let we_have_a_config_file_interface () = sys_file_exists plugin_config_file_interface
+
 module Make(U:sig end) =
   struct
-    let plugin                = "myocamlbuild"
-    let plugin_file           = plugin^".ml"
-    let plugin_config_file    = plugin^"_config.ml"
-    let plugin_config_file_interface = plugin^"_config.mli"
-
-    let we_have_a_config_file = sys_file_exists plugin_config_file
-    let we_need_a_plugin      = !Options.plugin && sys_file_exists plugin_file
-    let we_have_a_plugin      = sys_file_exists ((!Options.build_dir/plugin)^(!Options.exe))
-    let we_have_a_config_file_interface = sys_file_exists plugin_config_file_interface
-
+    let we_need_a_plugin = we_need_a_plugin ()
+    let we_have_a_plugin = we_have_a_plugin ()
+    let we_have_a_config_file = we_have_a_config_file ()
+    let we_have_a_config_file_interface = we_have_a_config_file_interface ()
     let up_to_date_or_copy fn =
       let fn' = !Options.build_dir/fn in
       Pathname.exists fn &&
