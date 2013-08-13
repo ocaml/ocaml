@@ -94,7 +94,11 @@ module Make(U:sig end) =
         in
         Shell.chdir !Options.build_dir;
         Shell.rm_f (plugin^(!Options.exe));
-        Command.execute cmd
+        Command.execute cmd;
+        if !Options.just_plugin then begin
+          Log.finish ();
+          raise Exit_OK;
+        end;
       end
 
     let execute_plugin_if_needed () =
@@ -102,13 +106,14 @@ module Make(U:sig end) =
         begin
           rebuild_plugin_if_needed ();
           Shell.chdir Pathname.pwd;
-          if not !Options.just_plugin then
-            let runner = if !Options.native_plugin then N else !Options.ocamlrun in
-            let argv = List.tl (Array.to_list Sys.argv) in
-            let spec = S[runner; P(!Options.build_dir/plugin^(!Options.exe));
-                         A"-no-plugin"; atomize (List.filter (fun s -> s <> "-plugin-option") argv)] in
-            let () = Log.finish () in
-            raise (Exit_silently_with_code (sys_command (Command.string_of_command_spec spec)))
+          let runner = if !Options.native_plugin then N else !Options.ocamlrun in
+          let argv = List.tl (Array.to_list Sys.argv) in
+          let passed_argv = List.filter (fun s -> s <> "-plugin-option") argv in
+          let spec = S[runner; P(!Options.build_dir/plugin^(!Options.exe));
+                       A"-no-plugin"; atomize passed_argv] in
+          Log.finish ();
+          let rc = sys_command (Command.string_of_command_spec spec) in
+          raise (Exit_silently_with_code rc);
         end
       else
         ()
