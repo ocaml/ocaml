@@ -262,11 +262,11 @@ let rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bo
     List.fold_right begin fun x acc ->
       let r = import x in
       if List.mem r acc then
-        failwith (sprintf "in rule %s, multiple occurences of the resource %s" name x)
+        failwith (sprintf "in rule %s, multiple occurrences of the resource %s" name x)
       else r :: acc
     end xs init
   in
-  if prods = [] && prod = None && stamp = None then raise (Exit_rule_error "Can't make a rule that produce nothing");
+  if prods = [] && prod = None && stamp = None then raise (Exit_rule_error "Can't make a rule that produces nothing");
   let stamp, prods =
     match stamp with
     | None -> None, prods
