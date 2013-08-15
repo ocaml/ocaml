@@ -412,7 +412,7 @@ COREKERNEL=core_kernel-109.37.00
 ${COREKERNEL}.tar.gz:
 	${WGET} https://ocaml.janestreet.com/ocaml-core/109.37.00/individual/$@
 corekernel: ${COREKERNEL}.tar.gz findlib variantslib sexplib fieldslib \
-      binprot comparelib paounit pipebang res ounit
+      binprot comparelib paounit pipebang res ounit herelib
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${COREKERNEL}
