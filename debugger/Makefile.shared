@@ -13,8 +13,8 @@
 include ../config/Makefile
 
 CAMLC=../ocamlcomp.sh
-COMPFLAGS=-g -warn-error A $(INCLUDES)
-LINKFLAGS=-g -linkall -I $(UNIXDIR)
+COMPFLAGS=-warn-error A $(INCLUDES)
+LINKFLAGS=-linkall -I $(UNIXDIR)
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex
