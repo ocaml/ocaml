@@ -11,25 +11,22 @@ scheduler.o: scheduler.c ../../byterun/alloc.h \
   ../../byterun/sys.h
 condition.cmi : mutex.cmi
 event.cmi :
-marshal.cmi :
 mutex.cmi :
-pervasives.cmi :
-thread.cmi : unix.cmi
-threadUnix.cmi : unix.cmi
-unix.cmi :
+thread.cmi : unix.cmo
+threadUnix.cmi : unix.cmo
 condition.cmo : thread.cmi mutex.cmi condition.cmi
 condition.cmx : thread.cmx mutex.cmx condition.cmi
 event.cmo : mutex.cmi condition.cmi event.cmi
 event.cmx : mutex.cmx condition.cmx event.cmi
-marshal.cmo : pervasives.cmi marshal.cmi
-marshal.cmx : pervasives.cmx marshal.cmi
+marshal.cmo : pervasives.cmo
+marshal.cmx : pervasives.cmx
 mutex.cmo : thread.cmi mutex.cmi
 mutex.cmx : thread.cmx mutex.cmi
-pervasives.cmo : unix.cmi pervasives.cmi
-pervasives.cmx : unix.cmx pervasives.cmi
-thread.cmo : unix.cmi thread.cmi
+pervasives.cmo : unix.cmo
+pervasives.cmx : unix.cmx
+thread.cmo : unix.cmo thread.cmi
 thread.cmx : unix.cmx thread.cmi
-threadUnix.cmo : unix.cmi thread.cmi threadUnix.cmi
+threadUnix.cmo : unix.cmo thread.cmi threadUnix.cmi
 threadUnix.cmx : unix.cmx thread.cmx threadUnix.cmi
-unix.cmo : unix.cmi
-unix.cmx : unix.cmi
+unix.cmo :
+unix.cmx :

@@ -12,7 +12,9 @@ access.o: access.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
 addrofstr.o: addrofstr.c ../../byterun/mlvalues.h \
   ../../byterun/compatibility.h ../../byterun/config.h \
   ../../byterun/../config/m.h ../../byterun/../config/s.h \
-  ../../byterun/misc.h ../../byterun/fail.h ../../byterun/mlvalues.h \
+  ../../byterun/misc.h ../../byterun/memory.h ../../byterun/gc.h \
+  ../../byterun/mlvalues.h ../../byterun/major_gc.h \
+  ../../byterun/freelist.h ../../byterun/minor_gc.h ../../byterun/fail.h \
   unixsupport.h socketaddr.h ../../byterun/misc.h
 alarm.o: alarm.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \

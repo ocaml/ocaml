@@ -10,26 +10,26 @@ odoc_analyse.cmo : ../utils/warnings.cmi ../typing/typetexp.cmi \
     ../typing/types.cmi ../typing/typemod.cmi ../typing/typedtree.cmi \
     ../typing/typedecl.cmi ../typing/typecore.cmi ../typing/typeclass.cmi \
     ../bytecomp/translcore.cmi ../bytecomp/translclass.cmi \
-    ../parsing/syntaxerr.cmi ../parsing/parse.cmi odoc_types.cmi \
-    odoc_text.cmi odoc_sig.cmi odoc_module.cmo odoc_misc.cmi \
+    ../parsing/syntaxerr.cmi ../driver/pparse.cmi ../parsing/parse.cmi \
+    odoc_types.cmi odoc_text.cmi odoc_sig.cmi odoc_module.cmo odoc_misc.cmi \
     odoc_messages.cmo odoc_merge.cmi odoc_global.cmi odoc_dep.cmo \
     odoc_cross.cmi odoc_comments.cmi odoc_class.cmo odoc_ast.cmi \
     ../utils/misc.cmi ../parsing/location.cmi ../parsing/lexer.cmi \
     ../typing/includemod.cmi ../typing/env.cmi ../typing/ctype.cmi \
     ../utils/config.cmi ../typing/cmi_format.cmi ../utils/clflags.cmi \
-    ../utils/ccomp.cmi odoc_analyse.cmi
+    odoc_analyse.cmi
 odoc_analyse.cmx : ../utils/warnings.cmx ../typing/typetexp.cmx \
     ../typing/types.cmx ../typing/typemod.cmx ../typing/typedtree.cmx \
     ../typing/typedecl.cmx ../typing/typecore.cmx ../typing/typeclass.cmx \
     ../bytecomp/translcore.cmx ../bytecomp/translclass.cmx \
-    ../parsing/syntaxerr.cmx ../parsing/parse.cmx odoc_types.cmx \
-    odoc_text.cmx odoc_sig.cmx odoc_module.cmx odoc_misc.cmx \
+    ../parsing/syntaxerr.cmx ../driver/pparse.cmx ../parsing/parse.cmx \
+    odoc_types.cmx odoc_text.cmx odoc_sig.cmx odoc_module.cmx odoc_misc.cmx \
     odoc_messages.cmx odoc_merge.cmx odoc_global.cmx odoc_dep.cmx \
     odoc_cross.cmx odoc_comments.cmx odoc_class.cmx odoc_ast.cmx \
     ../utils/misc.cmx ../parsing/location.cmx ../parsing/lexer.cmx \
     ../typing/includemod.cmx ../typing/env.cmx ../typing/ctype.cmx \
     ../utils/config.cmx ../typing/cmi_format.cmx ../utils/clflags.cmx \
-    ../utils/ccomp.cmx odoc_analyse.cmi
+    odoc_analyse.cmi
 odoc_args.cmo : odoc_types.cmi odoc_texi.cmo odoc_messages.cmo odoc_man.cmo \
     odoc_latex.cmo odoc_html.cmo odoc_global.cmi odoc_gen.cmi odoc_dot.cmo \
     odoc_config.cmi ../utils/misc.cmi ../utils/config.cmi odoc_args.cmi

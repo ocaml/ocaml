@@ -5,7 +5,7 @@ bigarray_stubs.o: bigarray_stubs.c ../../byterun/alloc.h \
   ../../byterun/fail.h ../../byterun/intext.h ../../byterun/io.h \
   ../../byterun/hash.h ../../byterun/memory.h ../../byterun/gc.h \
   ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h
+  ../../byterun/minor_gc.h ../../byterun/int64_native.h
 mmap_unix.o: mmap_unix.c bigarray.h ../../byterun/config.h \
   ../../byterun/../config/m.h ../../byterun/../config/s.h \
   ../../byterun/mlvalues.h ../../byterun/config.h ../../byterun/misc.h \

@@ -226,7 +226,8 @@ startup.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/printexc.h stack.h ../byterun/sys.h
 str.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
-  ../byterun/fail.h ../byterun/mlvalues.h ../byterun/misc.h
+  ../byterun/fail.h ../byterun/mlvalues.h ../byterun/misc.h \
+  ../byterun/int64_native.h
 sys.o: sys.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/alloc.h ../byterun/misc.h \
   ../byterun/config.h ../byterun/mlvalues.h ../byterun/debugger.h \
@@ -476,7 +477,8 @@ startup.d.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/printexc.h stack.h ../byterun/sys.h
 str.d.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
-  ../byterun/fail.h ../byterun/mlvalues.h ../byterun/misc.h
+  ../byterun/fail.h ../byterun/mlvalues.h ../byterun/misc.h \
+  ../byterun/int64_native.h
 sys.d.o: sys.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/alloc.h ../byterun/misc.h \
   ../byterun/config.h ../byterun/mlvalues.h ../byterun/debugger.h \
@@ -726,7 +728,8 @@ startup.p.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/printexc.h stack.h ../byterun/sys.h
 str.p.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
-  ../byterun/fail.h ../byterun/mlvalues.h ../byterun/misc.h
+  ../byterun/fail.h ../byterun/mlvalues.h ../byterun/misc.h \
+  ../byterun/int64_native.h
 sys.p.o: sys.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/alloc.h ../byterun/misc.h \
   ../byterun/config.h ../byterun/mlvalues.h ../byterun/debugger.h \
