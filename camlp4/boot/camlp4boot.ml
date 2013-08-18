@@ -683,7 +683,7 @@ New syntax:\
                   | Some
                       ((KEYWORD
                           (("or" | "mod" | "land" | "lor" | "lxor" | "lsl" |
-                              "lsr" | "asr"
+                              "lsr" | "asr" | "*"
                             as i)),
                         _loc))
                       ->
