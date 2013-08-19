@@ -87,11 +87,32 @@ module Make(U:sig end) =
         if not (sys_file_exists (dir/ocamlbuildlib)) then
           failwith (sprintf "Cannot find %S in ocamlbuild -where directory" ocamlbuildlib);
         let dir = if Pathname.is_implicit dir then Pathname.pwd/dir else dir in
-        let tags =
+
+        let plugin_tags =
           tags_of_pathname plugin_file
           ++"ocaml"++"program"++"link"++byte_or_native in
+
+        (* The plugin is compiled before [Param_tags.init()] is called
+           globally, which means that parametrized tags have not been
+           made effective yet. The [partial_init] calls below initializes
+           precisely those that will be used during the compilation of
+           the plugin, and no more.
+           
+           Among the tags that apply to the plugin, we make a special
+           case for the global tags that come from (true: ...)
+           lines. They will be used for plugin compilation, but users
+           may still use parametrized tags that are defined by the
+           plugin there. So we initialize them "quietly", with no
+           warning in case of unknown tag.
+        *)
+        let global_tags = Configuration.global_tags () in
+        let not_global tag = not (Tags.mem tag global_tags) in
+        Param_tags.partial_init ~quiet:true global_tags;
+        Param_tags.partial_init ~quiet:false
+          (Tags.filter not_global plugin_tags);
+
         let cmd =
-          Cmd(S[compiler; A"-I"; P dir; libs; T tags;
+          Cmd(S[compiler; A"-I"; P dir; libs; T plugin_tags;
                 P(dir/ocamlbuildlib); plugin_config; P plugin_file;
                 P(dir/ocamlbuild); A"-o"; Px (plugin^(!Options.exe))])
         in
