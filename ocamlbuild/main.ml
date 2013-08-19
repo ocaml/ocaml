@@ -169,10 +169,16 @@ let proceed () =
   Ocaml_specific.init ();
   Hooks.call_hook Hooks.After_rules;
 
-  Param_tags.init ();
-
   Sys.chdir options_wd;
   Plugin.execute_plugin_if_needed ();
+
+  (* [Param_tags.init ()] is called *after* the plugin is executed, as
+     some of the parametrized tags present in the _tags files parsed
+     will be declared by the plugin, and would therefore result in
+     "tag X does not expect a parameter" warnings if initialized
+     before. Note that [Plugin.rebuild_plugin_if_needed] is careful to
+     partially initialize the tags that it uses for plugin compilation. *)
+  Param_tags.init ();
 
   Sys.chdir newpwd;
   (*let () = dprintf 0 "source_dir_path_set:@ %a" StringSet.print source_dir_path_set*)
