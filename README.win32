@@ -425,7 +425,7 @@ to adjust the paths accordingly.
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
     echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
     echo FLPATH="`cygpath '%PFPATH%\flexdll'`" >>C:\cygwin\tmp\msenv
-    echo PATH="${VCPATH}:$PATH:${FLPATH}" >>C:\cygwin\tmp\msenv
+    echo PATH="$VCPATH:$FLPATH:$PATH" >>C:\cygwin\tmp\msenv
     echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
     echo export OCAMLBUILD_FIND=/usr/bin/find >>C:\cygwin\tmp\msenv
 

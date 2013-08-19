@@ -141,6 +141,7 @@ Bug fixes:
 - PR#5824: Generate more efficient code for immediate right shifts.
 - PR#5825: Add a toplevel primitive to use source file wrapped with the
   coresponding module
+- PR#5833: README.win32 can leave the wrong flexlink in the path
 - PR#5835: nonoptional labeled arguments can be passed with '?'
 - PR#5840: improved documentation for 'Unix.lseek'
 - PR#5848: Assertion failure in type checker
