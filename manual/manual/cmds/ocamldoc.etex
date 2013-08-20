@@ -811,20 +811,23 @@ explicit the intended syntactic class, using "{!type:Foo.Bar.t}" to
 designate a type, and "{!val:Foo.Bar.t}" a value of the same name.
 
 The list of possible syntactic class is as follows:
-\begin{itemize}
-        \item["module:"] module
-        \item["modtype:"] module type
-        \item["class:"] class
-        \item["classtype:"] class type
-        \item["val:"] value
-        \item["type:"] type
-        \item["exception:"] exception
-        \item["attribute:"] attribute
-        \item["method:"] class method
-        \item["section:"] ocamldoc section
-        \item["const:"] variant constructor
-        \item["recfield:"] record field
-\end{itemize}
+\begin{center}
+\begin{tabular}{rl}
+\multicolumn{1}{c}{"tag"} & \multicolumn{1}{c}{syntactic class}\\ \hline
+"module:" & module \\
+"modtype:" & module type \\
+"class:" & class \\
+"classtype:" & class type \\
+"val:" & value \\
+"type:" & type \\
+"exception:" & exception \\
+"attribute:" & attribute \\
+"method:" & class method \\
+"section:" & ocamldoc section \\
+"const:" & variant constructor \\
+"recfield:" & record field 
+\end{tabular}
+\end{center}
 
 In the case of variant constructors or record field, the constructor
 or field name should be preceded by the name of the correspond type --
