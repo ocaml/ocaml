@@ -736,10 +736,10 @@ distclean::
 	rm -f ${OBROWSER}.tar.gz
 all: obrowser
 
-# http://hevea.inria.fr/
-HEVEA=hevea-2.00
+# http://hevea.inria.fr/old/
+HEVEA=hevea-2.08
 ${HEVEA}.tar.gz:
-	${WGET} http://hevea.inria.fr/distri/$@
+	${WGET} http://hevea.inria.fr/old/$@
 hevea: ${HEVEA}.tar.gz
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
