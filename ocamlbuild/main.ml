@@ -76,11 +76,6 @@ let proceed () =
        no-ops anyway, before any plugin has registered hooks. *)
     Plugin.we_need_a_plugin () && not !Options.just_plugin in
 
-  if !Options.targets = []
-    && !Options.show_tags = []
-    && not !Options.show_documentation
-    then raise Exit_silently;
-
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
   Configuration.parse_string
