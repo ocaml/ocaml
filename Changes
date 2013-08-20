@@ -105,6 +105,7 @@ Bug fixes:
 - PR#5698: remove harcoded limit of 200000 labels in emitaux.ml
 - PR#5702: bytecomp/bytelibrarian lib_sharedobjs was defined but never used
 - PR#5708: catch Failure"int_of_string" in ocamldebug
+- PR#5712: (9) new option -bin-annot is not documented
 - PR#5731: instruction scheduling forgot to account for destroyed registers
 - PR#5734: improved Win32 implementation of Unix.gettimeofday
 - PR#5735: %apply and %revapply not first class citizens

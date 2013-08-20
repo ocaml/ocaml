@@ -171,10 +171,19 @@ file can be used with the emacs commands given in
 .B emacs/caml\-types.el
 to display types and other annotations interactively.
 .TP
-.B \-dtypes
-Has been deprecated. Please use
-.BI \-annot
-instead.
+.B \-bin\-annot
+Dump detailed information about the compilation (types, bindings,
+tail-calls, etc) in binary format. The information for file
+.IR src .ml
+is put into file
+.IR src .cmt.
+In case of a type error, dump
+all the information inferred by the type-checker before the error.
+The annotation files produced by
+.B \-bin\-annot
+contain more information
+and are much more compact than the files produced by
+.BR \-annot .
 .TP
 .B \-c
 Compile only. Suppress the linking phase of the
@@ -302,6 +311,12 @@ flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 .TP
+.B \-no\-app\-funct
+Deactivates the applicative behaviour of functors. With this option,
+each functor application generates new types in its result and
+applying the same functor twice to the same argument yields two
+incompatible structures.
+.TP
 .B \-noassert
 Do not compile assertion checks.  Note that the special form
 .B assert\ false
@@ -414,7 +429,7 @@ an intermediate file, which is compiled. If there are no compilation
 errors, the intermediate file is deleted afterwards.
 .TP
 .BI \-ppx \ command
-Pipe abstract syntax tree through preprocessor
+After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
 .TP
 .B \-principal
@@ -465,6 +480,11 @@ flag. Some constraints might also
 apply to the way the extra native objects have been compiled (under
 Linux AMD 64, they must contain only position-independent code).
 .TP
+.B \-short\-paths
+When a type is visible under several module-paths, use the shortest
+one when printing the type's name in inferred interfaces and error and
+warning messages.
+.TP
 .B \-strict\-sequence
 The left-hand part of a sequence must have type unit.
 .TP
@@ -502,7 +522,7 @@ Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
 .BI \-w \ warning\-list
-Enable, disable, or mark as errors the warnings specified by the argument
+Enable, disable, or mark as fatal the warnings specified by the argument
 .IR warning\-list .
 See
 .BR ocamlc (1)
@@ -510,7 +530,7 @@ for the syntax of
 .IR warning-list .
 .TP
 .BI \-warn\-error \ warning\-list
-Mark as errors the warnings specified in the argument
+Mark as fatal the warnings specified in the argument
 .IR warning\-list .
 The compiler will stop with an error when one of these
 warnings is emitted.  The
@@ -520,11 +540,11 @@ the
 .B \-w
 option: a
 .B +
-sign (or an uppercase letter) turns the corresponding warnings into errors, a
+sign (or an uppercase letter) marks the corresponding warnings as fatal, a
 .B \-
-sign (or a lowercase letter) turns them back into warnings, and a
+sign (or a lowercase letter) turns them back into non-fatal warnings, and a
 .B @
-sign both enables and marks the corresponding warnings.
+sign both enables and marks as fatal the corresponding warnings.
 
 Note: it is not recommended to use the
 .B \-warn\-error
@@ -533,8 +553,11 @@ compiling your program with later versions of OCaml when they add new
 warnings.
 
 The default setting is
-.B \-warn\-error\ -a
-(none of the warnings is treated as an error).
+.B \-warn\-error\ -a (all warnings are non-fatal).
+.TP
+.B \-warn\-help
+Show the description of all available warning numbers.
+.TP
 .TP
 .B \-where
 Print the location of the standard library, then exit.

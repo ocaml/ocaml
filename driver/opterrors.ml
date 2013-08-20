@@ -77,7 +77,7 @@ let report_error ppf exn =
       fprintf ppf "I/O error: %s" msg
   | Warnings.Errors (n) ->
       Location.print_error_cur_file ppf;
-      fprintf ppf "Error-enabled warnings (%d occurrences)" n
+      fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
   | x -> fprintf ppf "@]"; raise x in
 
   fprintf ppf "@[%a@]@." report exn

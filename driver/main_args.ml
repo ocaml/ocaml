@@ -222,10 +222,6 @@ let mk_principal f =
   "-principal", Arg.Unit f, " Check principality of type inference"
 ;;
 
-let mk_short_paths f =
-  "-short-paths", Arg.Unit f, " Shorten paths in types"
-;;
-
 let mk_rectypes f =
   "-rectypes", Arg.Unit f, " Allow arbitrary recursive types"
 ;;
@@ -237,6 +233,10 @@ let mk_runtime_variant f =
 
 let mk_S f =
   "-S", Arg.Unit f, " Keep intermediate assembly file"
+;;
+
+let mk_short_paths f =
+  "-short-paths", Arg.Unit f, " Shorten paths in types"
 ;;
 
 let mk_stdin f =
@@ -277,22 +277,22 @@ let mk_v f =
   " Print compiler version and location of standard library and exit"
 ;;
 
-let mk_version f =
-  "-version", Arg.Unit f, " Print version and exit"
-;;
-
-let mk_vnum f =
-  "-vnum", Arg.Unit f, " Print version number and exit"
-;;
-
 let mk_verbose f =
   "-verbose", Arg.Unit f, " Print calls to external commands"
+;;
+
+let mk_version f =
+  "-version", Arg.Unit f, " Print version and exit"
 ;;
 
 let mk_vmthread f =
   "-vmthread", Arg.Unit f,
   " Generate code that supports the threads library with VM-level\n\
   \     scheduling"
+;;
+
+let mk_vnum f =
+  "-vnum", Arg.Unit f, " Print version number and exit"
 ;;
 
 let mk_w f =
@@ -427,8 +427,8 @@ module type Bytecomp_options = sig
   val _cc : string -> unit
   val _cclib : string -> unit
   val _ccopt : string -> unit
-  val _config : unit -> unit
   val _compat_32 : unit -> unit
+  val _config : unit -> unit
   val _custom : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
@@ -452,9 +452,9 @@ module type Bytecomp_options = sig
   val _pp : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
-  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
+  val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
   val _thread : unit -> unit
   val _vmthread : unit -> unit
@@ -494,8 +494,8 @@ module type Bytetop_options = sig
   val _nostdlib : unit -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
-  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
+  val _short_paths : unit -> unit
   val _stdin: unit -> unit
   val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
@@ -549,18 +549,18 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
-  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
   val _S : unit -> unit
-  val _strict_sequence : unit -> unit
   val _shared : unit -> unit
+  val _short_paths : unit -> unit
+  val _strict_sequence : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
   val _v : unit -> unit
+  val _verbose : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
-  val _verbose : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
@@ -605,9 +605,9 @@ module type Opttop_options = sig
   val _nostdlib : unit -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
-  val _short_paths : unit -> unit
   val _rectypes : unit -> unit
   val _S : unit -> unit
+  val _short_paths : unit -> unit
   val _stdin : unit -> unit
   val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
@@ -655,8 +655,8 @@ struct
     mk_cc F._cc;
     mk_cclib F._cclib;
     mk_ccopt F._ccopt;
-    mk_config F._config;
     mk_compat_32 F._compat_32;
+    mk_config F._config;
     mk_custom F._custom;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
@@ -685,19 +685,19 @@ struct
     mk_pp F._pp;
     mk_ppx F._ppx;
     mk_principal F._principal;
-    mk_short_paths F._short_paths;
     mk_rectypes F._rectypes;
     mk_runtime_variant F._runtime_variant;
+    mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_use_runtime F._use_runtime;
     mk_use_runtime_2 F._use_runtime;
     mk_v F._v;
-    mk_version F._version;
-    mk_vnum F._vnum;
     mk_verbose F._verbose;
+    mk_version F._version;
     mk_vmthread F._vmthread;
+    mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
@@ -731,8 +731,8 @@ struct
     mk_nostdlib F._nostdlib;
     mk_ppx F._ppx;
     mk_principal F._principal;
-    mk_short_paths F._short_paths;
     mk_rectypes F._rectypes;
+    mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_unsafe F._unsafe;
@@ -790,18 +790,18 @@ struct
     mk_pp F._pp;
     mk_ppx F._ppx;
     mk_principal F._principal;
-    mk_short_paths F._short_paths;
     mk_rectypes F._rectypes;
     mk_runtime_variant F._runtime_variant;
     mk_S F._S;
-    mk_strict_sequence F._strict_sequence;
     mk_shared F._shared;
+    mk_short_paths F._short_paths;
+    mk_strict_sequence F._strict_sequence;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_v F._v;
+    mk_verbose F._verbose;
     mk_version F._version;
     mk_vnum F._vnum;
-    mk_verbose F._verbose;
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
@@ -848,9 +848,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_nostdlib F._nostdlib;
     mk_ppx F._ppx;
     mk_principal F._principal;
-    mk_short_paths F._short_paths;
     mk_rectypes F._rectypes;
     mk_S F._S;
+    mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_unsafe F._unsafe;
