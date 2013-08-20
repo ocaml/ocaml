@@ -78,6 +78,7 @@ let tag_pat_msgs =
 
 List.iteri (fun i (content,failing_msg) ->
   test (Printf.sprintf "TagsErrorMessage_%d" (i+1))
+    ~options:[`no_ocamlfind]
     ~description:"Confirm relevance of an error message due to erronous _tags"
     ~failing_msg
     ~tree:[T.f "_tags" ~content; T.f "dummy.ml"]
@@ -191,9 +192,10 @@ test "PrincipalFlag"
   ~options:[`quiet]
   ~failing_msg:"File \"hello.ml\", line 1, characters 61-64:
 Warning 18: this type-based field disambiguation is not principal."
-  ~targets:("hello.byte",["hello.native"]) ();;
+  ~targets:("hello.byte",[]) ();;
 
 test "ModularPlugin1"
+  ~options:[`no_ocamlfind; `quiet]
   ~description:"test a plugin with dependency on external libraries"
   ~tree:[T.f "main.ml" ~content:"let x = 1";
          T.f "_tags" ~content:"\"myocamlbuild.ml\": use_str";
@@ -204,7 +206,7 @@ test "ModularPlugin1"
 test "ModularPlugin2"
   ~description:"check that parametrized tags defined by the plugin
                 do not warn at plugin-compilation time"
-  ~options:[`quiet]
+  ~options:[`no_ocamlfind; `quiet]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
          T.f "_tags" ~content:"<main.*>: toto(-g)";
          T.f "myocamlbuild.ml"
@@ -217,7 +219,7 @@ test "ModularPlugin2"
 test "ModularPlugin3"
   ~description:"check that unknown parametrized tags encountered
                 during plugin compilation still warn"
-  ~options:[`quiet]
+  ~options:[`no_ocamlfind; `quiet]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
          T.f "_tags" ~content:"\"myocamlbuild.ml\": toto(-g)";
          T.f "myocamlbuild.ml"
