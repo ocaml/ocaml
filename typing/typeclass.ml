@@ -1226,8 +1226,11 @@ let class_infos define_class kind
   Ctype.end_def ();
 
   let sty = Ctype.self_type typ in
-  ignore (Ctype.object_fields sty);
 
+  (* First generalize the type of the dummy method (cf PR#6123) *)
+  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sty) in
+  List.iter (fun (met, _, ty) -> if met = dummy_method then Ctype.generalize ty)
+    fields;
   (* Generalize the row variable *)
   let rv = Ctype.row_variable sty in
   List.iter (Ctype.limited_generalize rv) params;
