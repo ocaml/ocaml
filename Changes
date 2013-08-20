@@ -192,6 +192,7 @@ Bug fixes:
 - PR#6084: Define caml_modify and caml_initialize as weak symbols to help
   with Netmulticore
 - PR#6109: Typos in ocamlbuild error messages
+- PR#6123: Assert failure when self escapes its class
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
