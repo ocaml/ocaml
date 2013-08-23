@@ -160,6 +160,7 @@ Bug fixes:
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5910: Fix code generation bug for "mod 1" on ARM.
 - PR#5911: Signature substitutions fail in submodules
+- PR#5912: add configure option -no-cfi (for OSX 10.6.x with XCode 4.0.2)
 - PR#5914: Functor breaks with an equivalent argument signature
 - PR#5920, PR#5957: linking failure for big bytecodes on 32bit architectures
 - PR#5928: Missing space between words in manual page for ocamlmktop

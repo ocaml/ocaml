@@ -44,6 +44,7 @@ gcc_warnings="-Wall"
 partialld="ld -r"
 withcamlp4=camlp4
 with_frame_pointers=false
+with_cfi=true
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -118,6 +119,8 @@ while : ; do
         withcamlp4="";;
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
+    -no-cfi|--no-cfi)
+        with_cfi=false;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -1576,7 +1579,9 @@ asm_cfi_supported=false
 
 export as aspp
 
-if sh ./tryassemble cfi.S; then
+if ! $with_cfi; then
+  echo "CFI support: disabled by command-line option -no-cfi"
+elif sh ./tryassemble cfi.S; then
   echo "#define ASM_CFI_SUPPORTED" >> m.h
   asm_cfi_supported=true
   echo "Assembler supports CFI"
