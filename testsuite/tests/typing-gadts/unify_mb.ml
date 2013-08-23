@@ -138,9 +138,11 @@ let flex_flex x y =
   match thick x y with
   | Some y' -> asnoc Anil (Var y') x
   | None -> EAlist Anil
+(* val flex_flex : 'a succ fin -> 'a succ fin -> 'a succ ealist *)
 
 let flex_rigid x t =
   bind (check x t) (fun t' -> Some (asnoc Anil t' x))
+(* val flex_rigid : 'a succ fin -> 'a succ term -> 'a succ ealist option *)
 
 let rec amgu : type m. m term -> m term -> m ealist -> m ealist option =
   fun s t acc -> match s, t, acc with
