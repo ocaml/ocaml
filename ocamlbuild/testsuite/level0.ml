@@ -212,10 +212,9 @@ Warning 18: this type-based field disambiguation is not principal."
   ~targets:("hello.byte",[]) ();;
 
 test "ModularPlugin1"
-  ~options:[`no_ocamlfind; `quiet]
+  ~options:[`no_ocamlfind; `quiet; `plugin_tag "use_str"]
   ~description:"test a plugin with dependency on external libraries"
   ~tree:[T.f "main.ml" ~content:"let x = 1";
-         T.f "_tags" ~content:"\"myocamlbuild.ml\": use_str";
          T.f "myocamlbuild.ml" ~content:"ignore (Str.quote \"\");;"]
   ~matching:[M.f "main.byte"]
   ~targets:("main.byte",[]) ();;
@@ -236,9 +235,8 @@ test "ModularPlugin2"
 test "ModularPlugin3"
   ~description:"check that unknown parametrized tags encountered
                 during plugin compilation still warn"
-  ~options:[`no_ocamlfind; `quiet]
+  ~options:[`no_ocamlfind; `quiet; `plugin_tag "'toto(-g)'"]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
-         T.f "_tags" ~content:"\"myocamlbuild.ml\": toto(-g)";
          T.f "myocamlbuild.ml"
            ~content:"open Ocamlbuild_plugin;;
                      pflag [\"link\"] \"toto\" (fun arg -> A arg);;"]

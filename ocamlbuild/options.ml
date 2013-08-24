@@ -119,6 +119,7 @@ let ignore_list_internal = ref []
 let tags_internal = ref [["quiet"]]
 let tag_lines_internal = ref []
 let show_tags_internal = ref []
+let plugin_tags_internal = ref []
 let log_file_internal = ref "_log"
 
 let my_include_dirs = ref [[Filename.current_dir_name]]
@@ -195,6 +196,8 @@ let spec = ref (
    "-pp", String (add_to ocaml_ppflags_internal), "<flag,...> (idem)";
    "-tag", String (add_to' tags_internal), "<tag> Add to default tags";
    "-tags", String (add_to tags_internal), "<tag,...> (idem)";
+   "-plugin-tag", String (add_to' plugin_tags_internal), "<tag> Use this tag when compiling the myocamlbuild.ml plugin";
+   "-plugin-tags", String (add_to plugin_tags_internal), "<tag,...> (idem)";
    "-tag-line", String (add_to' tag_lines_internal), "<tag> Use this line of tags (as in _tags)";
    "-show-tags", String (add_to' show_tags_internal), "<path> Show tags that applies on that pathname";
 
@@ -258,6 +261,7 @@ let ignore_list = ref []
 let tags = ref []
 let tag_lines = ref []
 let show_tags = ref []
+let plugin_tags = ref []
 
 let init () =
   let anon_fun = add_to' targets_internal in
@@ -311,6 +315,7 @@ let init () =
   reorder tag_lines tag_lines_internal;
   reorder ignore_list ignore_list_internal;
   reorder show_tags show_tags_internal;
+  reorder plugin_tags plugin_tags_internal;
 
   let check_dir dir =
     if Filename.is_implicit dir then
