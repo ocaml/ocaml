@@ -78,7 +78,6 @@ let tag_pat_msgs =
 
 List.iteri (fun i (content,failing_msg) ->
   test (Printf.sprintf "TagsErrorMessage_%d" (i+1))
-    ~options:[`no_ocamlfind]
     ~description:"Confirm relevance of an error message due to erronous _tags"
     ~failing_msg
     ~tree:[T.f "_tags" ~content; T.f "dummy.ml"]
@@ -86,7 +85,7 @@ List.iteri (fun i (content,failing_msg) ->
 
 test "SubtoolOptions"
   ~description:"Options that come from tags that needs to be spliced to the subtool invocation (PR#5763)"
-  ~options:[`use_menhir; `use_ocamlfind;`tags["package\\(camlp4.fulllib\\)"]]
+  ~options:[`use_menhir; `use_ocamlfind; `tags["package\\(camlp4.fulllib\\)"]]
   ~tree:[T.f "parser.mly" ~content:"%{\n%}\n%token DUMMY\n%start<Camlp4.PreCast.Syntax.Ast.expr option> test%%test: {None}\n\n"]
   ~matching:[M.f "parser.native"; M.f "parser.byte"]
   ~targets:("parser.native",["parser.byte"])
@@ -195,7 +194,7 @@ Warning 18: this type-based field disambiguation is not principal."
   ~targets:("hello.byte",[]) ();;
 
 test "ModularPlugin1"
-  ~options:[`no_ocamlfind; `quiet; `plugin_tag "use_str"]
+  ~options:[`quiet; `plugin_tag "use_str"]
   ~description:"test a plugin with dependency on external libraries"
   ~tree:[T.f "main.ml" ~content:"let x = 1";
          T.f "myocamlbuild.ml" ~content:"ignore (Str.quote \"\");;"]
@@ -205,7 +204,7 @@ test "ModularPlugin1"
 test "ModularPlugin2"
   ~description:"check that parametrized tags defined by the plugin
                 do not warn at plugin-compilation time"
-  ~options:[`no_ocamlfind; `quiet]
+  ~options:[`quiet]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
          T.f "_tags" ~content:"<main.*>: toto(-g)";
          T.f "myocamlbuild.ml"
@@ -218,7 +217,7 @@ test "ModularPlugin2"
 test "ModularPlugin3"
   ~description:"check that unknown parametrized tags encountered
                 during plugin compilation still warn"
-  ~options:[`no_ocamlfind; `quiet; `plugin_tag "'toto(-g)'"]
+  ~options:[`quiet; `plugin_tag "'toto(-g)'"]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
          T.f "myocamlbuild.ml"
            ~content:"open Ocamlbuild_plugin;;
