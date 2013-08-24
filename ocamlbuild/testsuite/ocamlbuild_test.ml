@@ -201,6 +201,8 @@ module Option = struct
     |  `pp of flag list
     |  `tag of tag
     |  `tags of tag list
+    |  `plugin_tag of tag
+    |  `plugin_tags of tag list
     |  `tag_line of tag
     |  `show_tags of path
     |  `ignore of _module list
@@ -289,6 +291,8 @@ module Option = struct
     | `pp flags -> fprintf ppf "pp %a" print_flags flags
     | `tag tag -> fprintf ppf "tag %a" print_tag tag
     | `tags tags -> fprintf ppf "tags %a" print_tags tags
+    | `plugin_tag tag -> fprintf ppf "plugin-tag %a" print_tag tag
+    | `plugin_tags tags -> fprintf ppf "plugin-tags %a" print_tags tags
     | `tag_line tag -> fprintf ppf "tag-line %a" print_tag tag
     | `show_tags path -> fprintf ppf "show-tags %a" print_path path
     | `ignore _modules -> fprintf ppf "ignore %a" print_modules _modules
