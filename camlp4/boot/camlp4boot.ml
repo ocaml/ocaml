@@ -683,7 +683,7 @@ New syntax:\
                   | Some
                       ((KEYWORD
                           (("or" | "mod" | "land" | "lor" | "lxor" | "lsl" |
-                              "lsr" | "asr"
+                              "lsr" | "asr" | "*"
                             as i)),
                         _loc))
                       ->
@@ -15990,7 +15990,13 @@ You should give the -noassert option to the ocaml compiler instead.@."
          !rcall_callback ())
       
     let initial_spec_list =
-      [ ("-I", (Arg.String (fun x -> input_file (IncludeDir x))),
+      [ ("-I",
+         (Arg.String
+            (fun x ->
+               input_file
+                 (IncludeDir
+                    (Camlp4_import.Misc.expand_directory Camlp4_config.
+                       camlp4_standard_library x)))),
          "<directory>  Add directory in search patch for object files.");
         ("-where", (Arg.Unit print_stdlib),
          "Print camlp4 library directory and exit.");

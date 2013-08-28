@@ -447,6 +447,18 @@ eq_big_int (minus_big_int bi1,
                          (big_int_of_string "-0.02e2")))*)
 ;;
 
+test 18
+eq_big_int (big_int_of_string "0xAbC", big_int_of_int 0xABC);;
+
+test 19
+eq_big_int (big_int_of_string "-0o452", big_int_of_int (-0o452));;
+
+test 20
+eq_big_int (big_int_of_string "0B110101", big_int_of_int 53);;
+
+test 21
+eq_big_int (big_int_of_string "0b11_01_01", big_int_of_int 53);;
+
 testing_function "power_base_int";;
 
 test 1

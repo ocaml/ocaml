@@ -419,19 +419,30 @@ let string_of_big_int bi =
   else string_of_nat bi.abs_value
 
 
-let sys_big_int_of_string_aux s ofs len sgn =
+let sys_big_int_of_string_aux s ofs len sgn base =
   if len < 1 then failwith "sys_big_int_of_string";
-  let n = sys_nat_of_string 10 s ofs len in
+  let n = sys_nat_of_string base s ofs len in
   if is_zero_nat n 0 (length_nat n) then zero_big_int
   else {sign = sgn; abs_value = n}
+;;
+
+let sys_big_int_of_string_base s ofs len sgn =
+  if len < 1 then failwith "sys_big_int_of_string";
+  if len < 2 then sys_big_int_of_string_aux s ofs len sgn 10
+  else
+    match (s.[ofs], s.[ofs+1]) with
+    | ('0', 'x') | ('0', 'X') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 16
+    | ('0', 'o') | ('0', 'O') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 8
+    | ('0', 'b') | ('0', 'B') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 2
+    | _ -> sys_big_int_of_string_aux s ofs len sgn 10
 ;;
 
 let sys_big_int_of_string s ofs len =
   if len < 1 then failwith "sys_big_int_of_string";
   match s.[ofs] with
-  | '-' -> sys_big_int_of_string_aux s (ofs+1) (len-1) (-1)
-  | '+' -> sys_big_int_of_string_aux s (ofs+1) (len-1) 1
-  | _ -> sys_big_int_of_string_aux s ofs len 1
+  | '-' -> sys_big_int_of_string_base s (ofs+1) (len-1) (-1)
+  | '+' -> sys_big_int_of_string_base s (ofs+1) (len-1) 1
+  | _ -> sys_big_int_of_string_base s ofs len 1
 ;;
 
 let big_int_of_string s =

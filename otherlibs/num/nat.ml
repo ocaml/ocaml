@@ -509,6 +509,7 @@ let base_digit_of_char c base =
   let n = Char.code c in
     if n >= 48 && n <= 47 + min base 10 then n - 48
     else if n >= 65 && n <= 65 + base - 11 then n - 55
+    else if n >= 97 && n <= 97 + base - 11 then n - 87
     else failwith "invalid digit"
 
 (*
@@ -537,6 +538,7 @@ let sys_nat_of_string base s off len =
       let c = String.get s i  in
         begin match c with
           ' ' | '\t' | '\n' | '\r' | '\\' -> ()
+        | '_' when i > off -> ()
         | _ -> int := !int * base + base_digit_of_char c base;
                incr digits_read
         end;

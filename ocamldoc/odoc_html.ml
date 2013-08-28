@@ -671,13 +671,13 @@ class virtual info =
        @param indent can be specified not to use the style of info comments;
        default is [true].
     *)
-    method html_of_info ?(indent=true) b info_opt =
+    method html_of_info ?(cls="") ?(indent=true) b info_opt =
       match info_opt with
         None ->
           ()
       | Some info ->
           let module M = Odoc_info in
-          if indent then bs b "<div class=\"info\">\n";
+          if indent then bs b ("<div class=\"info "^cls^"\">\n");
           (
            match info.M.i_deprecated with
             None -> ()
@@ -1399,7 +1399,7 @@ class html =
     (** Print html code for a value. *)
     method html_of_value b v =
       Odoc_info.reset_type_names ();
-      bs b "<pre>" ;
+      bs b "\n<pre>" ;
       bp b "<span id=\"%s\">" (Naming.value_target v);
       bs b (self#keyword "val");
       bs b " ";
@@ -1426,7 +1426,7 @@ class html =
     (** Print html code for an exception. *)
     method html_of_exception b e =
       Odoc_info.reset_type_names ();
-      bs b "<pre>";
+      bs b "\n<pre>";
       bp b "<span id=\"%s\">" (Naming.exception_target e);
       bs b (self#keyword "exception");
       bs b " ";
@@ -1461,12 +1461,12 @@ class html =
       let father = Name.father t.ty_name in
       bs b
         (match t.ty_manifest, t.ty_kind with
-          None, Type_abstract -> "<pre>"
+          None, Type_abstract -> "\n<pre>"
         | None, Type_variant _
-        | None, Type_record _ -> "<pre><code>"
-        | Some _, Type_abstract -> "<pre>"
+        | None, Type_record _ -> "\n<pre><code>"
+        | Some _, Type_abstract -> "\n<pre>"
         | Some _, Type_variant _
-        | Some _, Type_record _ -> "<pre>"
+        | Some _, Type_record _ -> "\n<pre>"
         );
       bp b "<span id=\"%s\">" (Naming.type_target t);
       bs b ((self#keyword "type")^" ");
@@ -1559,7 +1559,7 @@ class html =
             bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
             if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
-            bp b "<span id=\"%s\">%s</span>&nbsp;:"
+            bp b "<span id=\"%s\">%s</span>&nbsp;: "
               (Naming.recfield_target t r)
               r.rf_name;
             self#html_of_type_expr b father r.rf_type;
@@ -1589,7 +1589,7 @@ class html =
     (** Print html code for a class attribute. *)
     method html_of_attribute b a =
       let module_name = Name.father (Name.father a.att_value.val_name) in
-      bs b "<pre>" ;
+      bs b "\n<pre>" ;
       bp b "<span id=\"%s\">" (Naming.attribute_target a);
       bs b (self#keyword "val");
       bs b " ";
@@ -1621,7 +1621,7 @@ class html =
     (** Print html code for a class method. *)
     method html_of_method b m =
       let module_name = Name.father (Name.father m.met_value.val_name) in
-      bs b "<pre>";
+      bs b "\n<pre>";
       (* html mark *)
       bp b "<span id=\"%s\">" (Naming.method_target m);
      bs b ((self#keyword "method")^" ");
@@ -1765,7 +1765,7 @@ class html =
     method html_of_module b ?(info=true) ?(complete=true) ?(with_link=true) m =
       let (html_file, _) = Naming.html_files m.m_name in
       let father = Name.father m.m_name in
-      bs b "<pre>";
+      bs b "\n<pre>";
       bs b ((self#keyword "module")^" ");
       (
        if with_link then
@@ -1784,7 +1784,7 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~indent: true
+           self#html_of_info ~cls: "module top" ~indent: true
          else
            self#html_of_info_first_sentence
         ) b m.m_info
@@ -1795,7 +1795,7 @@ class html =
     method html_of_modtype b ?(info=true) ?(complete=true) ?(with_link=true) mt =
       let (html_file, _) = Naming.html_files mt.mt_name in
       let father = Name.father mt.mt_name in
-      bs b "<pre>";
+      bs b "\n<pre>";
       bs b ((self#keyword "module type")^" ");
       (
        if with_link then
@@ -1813,7 +1813,7 @@ class html =
       if info then
         (
          if complete then
-           self#html_of_info ~indent: true
+           self#html_of_info ~cls: "modtype top" ~indent: true
          else
            self#html_of_info_first_sentence
         ) b mt.mt_info
@@ -1822,7 +1822,7 @@ class html =
 
     (** Print html code for an included module. *)
     method html_of_included_module b im =
-      bs b "<pre>";
+      bs b "\n<pre>";
       bs b ((self#keyword "include")^" ");
       (
        match im.im_module with
@@ -1933,7 +1933,7 @@ class html =
       let father = Name.father c.cl_name in
       Odoc_info.reset_type_names ();
       let (html_file, _) = Naming.html_files c.cl_name in
-      bs b "<pre>";
+      bs b "\n<pre>";
       (* we add a html id, the same as for a type so we can
          go directly here when the class name is used as a type name *)
       bp b "<span name=\"%s\">"
@@ -1970,7 +1970,7 @@ class html =
       print_DEBUG "html#html_of_class : info" ;
       (
        if complete then
-         self#html_of_info ~indent: true
+         self#html_of_info ~cls: "class top" ~indent: true
        else
          self#html_of_info_first_sentence
       ) b c.cl_info
@@ -1980,7 +1980,7 @@ class html =
       Odoc_info.reset_type_names ();
       let father = Name.father ct.clt_name in
       let (html_file, _) = Naming.html_files ct.clt_name in
-      bs b "<pre>";
+      bs b "\n<pre>";
       (* we add a html id, the same as for a type so we can
          go directly here when the class type name is used as a type name *)
       bp b "<span id=\"%s\">"
@@ -2013,7 +2013,7 @@ class html =
       bs b "</pre>";
       (
        if complete then
-         self#html_of_info ~indent: true
+         self#html_of_info ~cls: "classtype top" ~indent: true
        else
          self#html_of_info_first_sentence
       ) b ct.clt_info

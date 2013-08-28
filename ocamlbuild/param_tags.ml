@@ -32,21 +32,25 @@ let only_once f =
 let declare name action =
   Hashtbl.add declared_tags name (only_once action)
 
+let parse tag = Lexers.tag_gen (Lexing.from_string tag)
+
 let acknowledge tag =
-  let tag = Lexers.tag_gen (Lexing.from_string tag) in
-  acknowledged_tags := tag :: !acknowledged_tags
+  acknowledged_tags := parse tag :: !acknowledged_tags
 
-
-let really_acknowledge (name, param) =
+let really_acknowledge ?(quiet=false) (name, param) =
   match param with
     | None ->
-        if Hashtbl.mem declared_tags name then
+        if Hashtbl.mem declared_tags name && not quiet then
           Log.eprintf "Warning: tag %S expects a parameter" name
     | Some param ->
         let actions = List.rev (Hashtbl.find_all declared_tags name) in
-        if actions = [] then
-          Log.eprintf "Warning: tag %S does not expect a parameter, but is used with parameter %S" name param;
+        if actions = [] && not quiet then
+          Log.eprintf "Warning: tag %S does not expect a parameter, \
+                       but is used with parameter %S" name param;
         List.iter (fun f -> f param) actions
+
+let partial_init ?quiet tags =
+  Tags.iter (fun tag -> really_acknowledge ?quiet (parse tag)) tags
 
 let init () =
   List.iter really_acknowledge (My_std.List.ordered_unique !acknowledged_tags)

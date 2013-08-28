@@ -22,18 +22,22 @@ open Tools
 open Command
 ;;
 
+
+let plugin                = "myocamlbuild"
+let plugin_file           = plugin^".ml"
+let plugin_config_file    = plugin^"_config.ml"
+let plugin_config_file_interface = plugin^"_config.mli"
+let we_need_a_plugin ()      = !Options.plugin && sys_file_exists plugin_file
+let we_have_a_plugin ()      = sys_file_exists ((!Options.build_dir/plugin)^(!Options.exe))
+let we_have_a_config_file () = sys_file_exists plugin_config_file
+let we_have_a_config_file_interface () = sys_file_exists plugin_config_file_interface
+
 module Make(U:sig end) =
   struct
-    let plugin                = "myocamlbuild"
-    let plugin_file           = plugin^".ml"
-    let plugin_config_file    = plugin^"_config.ml"
-    let plugin_config_file_interface = plugin^"_config.mli"
-
-    let we_have_a_config_file = sys_file_exists plugin_config_file
-    let we_need_a_plugin      = !Options.plugin && sys_file_exists plugin_file
-    let we_have_a_plugin      = sys_file_exists ((!Options.build_dir/plugin)^(!Options.exe))
-    let we_have_a_config_file_interface = sys_file_exists plugin_config_file_interface
-
+    let we_need_a_plugin = we_need_a_plugin ()
+    let we_have_a_plugin = we_have_a_plugin ()
+    let we_have_a_config_file = we_have_a_config_file ()
+    let we_have_a_config_file_interface = we_have_a_config_file_interface ()
     let up_to_date_or_copy fn =
       let fn' = !Options.build_dir/fn in
       Pathname.exists fn &&
@@ -44,10 +48,6 @@ module Make(U:sig end) =
             false
           end
         end
-
-    let profiling = Tags.mem "profile" (tags_of_pathname plugin_file)
-
-    let debugging = Tags.mem "debug" (tags_of_pathname plugin_file)
 
     let rebuild_plugin_if_needed () =
       let a = up_to_date_or_copy plugin_file in
@@ -69,11 +69,11 @@ module Make(U:sig end) =
               S[P plugin_config_file_interface; P plugin_config_file]
             else P plugin_config_file
           else N in
-        let cma, cmo, more_options, compiler =
+        let cma, cmo, compiler, byte_or_native =
           if !Options.native_plugin then
-            "cmxa", "cmx", (if profiling then A"-p" else N), !Options.ocamlopt
+            "cmxa", "cmx", !Options.ocamlopt, "native"
           else
-            "cma", "cmo", (if debugging then A"-g" else N), !Options.ocamlc
+            "cma", "cmo", !Options.ocamlc, "byte"
         in
         let ocamlbuildlib, ocamlbuild, libs =
           if (not !Options.native_plugin) && !*My_unix.is_degraded then
@@ -87,14 +87,31 @@ module Make(U:sig end) =
         if not (sys_file_exists (dir/ocamlbuildlib)) then
           failwith (sprintf "Cannot find %S in ocamlbuild -where directory" ocamlbuildlib);
         let dir = if Pathname.is_implicit dir then Pathname.pwd/dir else dir in
+
+        let plugin_tags =
+          Tags.of_list !Options.plugin_tags
+          ++ "ocaml" ++ "program" ++ "link" ++ byte_or_native in
+
+        (* The plugin is compiled before [Param_tags.init()] is called
+           globally, which means that parametrized tags have not been
+           made effective yet. The [partial_init] calls below initializes
+           precisely those that will be used during the compilation of
+           the plugin, and no more.
+        *)
+        Param_tags.partial_init plugin_tags;
+
         let cmd =
-          Cmd(S[compiler; A"-I"; P dir; libs; more_options;
+          Cmd(S[compiler; A"-I"; P dir; libs; T plugin_tags;
                 P(dir/ocamlbuildlib); plugin_config; P plugin_file;
                 P(dir/ocamlbuild); A"-o"; Px (plugin^(!Options.exe))])
         in
         Shell.chdir !Options.build_dir;
         Shell.rm_f (plugin^(!Options.exe));
-        Command.execute cmd
+        Command.execute cmd;
+        if !Options.just_plugin then begin
+          Log.finish ();
+          raise Exit_OK;
+        end;
       end
 
     let execute_plugin_if_needed () =
@@ -102,13 +119,14 @@ module Make(U:sig end) =
         begin
           rebuild_plugin_if_needed ();
           Shell.chdir Pathname.pwd;
-          if not !Options.just_plugin then
-            let runner = if !Options.native_plugin then N else !Options.ocamlrun in
-            let argv = List.tl (Array.to_list Sys.argv) in
-            let spec = S[runner; P(!Options.build_dir/plugin^(!Options.exe));
-                         A"-no-plugin"; atomize (List.filter (fun s -> s <> "-plugin-option") argv)] in
-            let () = Log.finish () in
-            raise (Exit_silently_with_code (sys_command (Command.string_of_command_spec spec)))
+          let runner = if !Options.native_plugin then N else !Options.ocamlrun in
+          let argv = List.tl (Array.to_list Sys.argv) in
+          let passed_argv = List.filter (fun s -> s <> "-plugin-option") argv in
+          let spec = S[runner; P(!Options.build_dir/plugin^(!Options.exe));
+                       A"-no-plugin"; atomize passed_argv] in
+          Log.finish ();
+          let rc = sys_command (Command.string_of_command_spec spec) in
+          raise (Exit_silently_with_code rc);
         end
       else
         ()

@@ -66,12 +66,15 @@ let proceed () =
   Options.init ();
   if !Options.must_clean then clean ();
   Hooks.call_hook Hooks.After_options;
-  Plugin.execute_plugin_if_needed ();
-
-  if !Options.targets = []
-    && !Options.show_tags = []
-    && not !Options.show_documentation
-    then raise Exit_silently;
+  let options_wd = Sys.getcwd () in
+  let first_run_for_plugin =
+    (* If we are in the first run before launching the plugin, we
+       should skip the user-visible operations (hygiene) that may need
+       information from the plugin to run as the user expects it.
+       
+       Note that we don't need to disable the [Hooks] call as they are
+       no-ops anyway, before any plugin has registered hooks. *)
+    Plugin.we_need_a_plugin () && not !Options.just_plugin in
 
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
@@ -145,7 +148,7 @@ let proceed () =
       let tags = tags_of_pathname (path/name) in
       not (Tags.mem "not_hygienic" tags) && not (Tags.mem "precious" tags)
     end entry in
-  if !Options.hygiene then
+  if !Options.hygiene && not first_run_for_plugin then
     Fda.inspect hygiene_entry
   else
     Slurp.force hygiene_entry;
@@ -161,6 +164,15 @@ let proceed () =
   Ocaml_specific.init ();
   Hooks.call_hook Hooks.After_rules;
 
+  Sys.chdir options_wd;
+  Plugin.execute_plugin_if_needed ();
+
+  (* [Param_tags.init ()] is called *after* the plugin is executed, as
+     some of the parametrized tags present in the _tags files parsed
+     will be declared by the plugin, and would therefore result in
+     "tag X does not expect a parameter" warnings if initialized
+     before. Note that [Plugin.rebuild_plugin_if_needed] is careful to
+     partially initialize the tags that it uses for plugin compilation. *)
   Param_tags.init ();
 
   Sys.chdir newpwd;

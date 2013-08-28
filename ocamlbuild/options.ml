@@ -38,7 +38,7 @@ let make_links = ref true
 let nostdlib = ref false
 let use_menhir = ref false
 let catch_errors = ref true
-let use_ocamlfind = ref false
+let use_ocamlfind = ref true
 
 (* Currently only ocamlfind and menhir is defined as no-core tool,
    perhaps later we need something better *)
@@ -92,7 +92,8 @@ let ocamllex = ref (V"OCAMLLEX")
 let ocamlmklib = ref (V"OCAMLMKLIB")
 let ocamlmktop = ref (V"OCAMLMKTOP")
 let ocamlrun = ref N
-let ocamlfind x = S[V"OCAMLFIND"; x]
+let ocamlfind_cmd = ref (V"OCAMLFIND")
+let ocamlfind arg = S[!ocamlfind_cmd; arg]
 let program_to_execute = ref false
 let must_clean = ref false
 let show_documentation = ref false
@@ -118,6 +119,7 @@ let ignore_list_internal = ref []
 let tags_internal = ref [["quiet"]]
 let tag_lines_internal = ref []
 let show_tags_internal = ref []
+let plugin_tags_internal = ref []
 let log_file_internal = ref "_log"
 
 let my_include_dirs = ref [[Filename.current_dir_name]]
@@ -194,6 +196,8 @@ let spec = ref (
    "-pp", String (add_to ocaml_ppflags_internal), "<flag,...> (idem)";
    "-tag", String (add_to' tags_internal), "<tag> Add to default tags";
    "-tags", String (add_to tags_internal), "<tag,...> (idem)";
+   "-plugin-tag", String (add_to' plugin_tags_internal), "<tag> Use this tag when compiling the myocamlbuild.ml plugin";
+   "-plugin-tags", String (add_to plugin_tags_internal), "<tag,...> (idem)";
    "-tag-line", String (add_to' tag_lines_internal), "<tag> Use this line of tags (as in _tags)";
    "-show-tags", String (add_to' show_tags_internal), "<path> Show tags that applies on that pathname";
 
@@ -213,7 +217,8 @@ let spec = ref (
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
    "-use-jocaml", Unit use_jocaml, " Use jocaml compilers instead of ocaml ones";
-   "-use-ocamlfind", Set use_ocamlfind, " Use ocamlfind to call ocaml compilers";
+   "-use-ocamlfind", Set use_ocamlfind, " Option deprecated. Now enabled by default. Use -no-ocamlfind to disable";
+   "-no-ocamlfind", Clear use_ocamlfind, " Don't use ocamlfind";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
@@ -256,6 +261,7 @@ let ignore_list = ref []
 let tags = ref []
 let tag_lines = ref []
 let show_tags = ref []
+let plugin_tags = ref []
 
 let init () =
   let anon_fun = add_to' targets_internal in
@@ -279,6 +285,10 @@ let init () =
   in
 
   if !use_ocamlfind then begin
+    ocamlfind_cmd := A "ocamlfind";
+    let cmd = Command.string_of_command_spec !ocamlfind_cmd in
+    begin try ignore(Command.search_in_path cmd)
+    with Not_found -> failwith "ocamlfind not found on path, but -no-ocamlfind not used" end;
     (* TODO: warning message when using an option such as -ocamlc *)
     (* Note that plugins can still modify these variables After_options.
        This design decision can easily be changed. *)
@@ -305,6 +315,7 @@ let init () =
   reorder tag_lines tag_lines_internal;
   reorder ignore_list ignore_list_internal;
   reorder show_tags show_tags_internal;
+  reorder plugin_tags plugin_tags_internal;
 
   let check_dir dir =
     if Filename.is_implicit dir then

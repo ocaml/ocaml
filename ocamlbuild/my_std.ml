@@ -264,7 +264,7 @@ let sys_command =
   match Sys.os_type with
   | "Win32" -> fun cmd ->
       if cmd = "" then 0 else
-      let cmd = "bash -c "^Filename.quote cmd in
+      let cmd = "bash --norc -c "^Filename.quote cmd in
       Sys.command cmd
   | _ -> fun cmd -> if cmd = "" then 0 else Sys.command cmd
 

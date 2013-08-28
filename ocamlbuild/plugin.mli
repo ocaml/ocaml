@@ -15,3 +15,4 @@
 (* Plugin *)
 
 val execute_plugin_if_needed : unit -> unit
+val we_need_a_plugin : unit -> bool

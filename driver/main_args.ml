@@ -168,6 +168,10 @@ let mk_nodynlink f =
   " Enable optimizations for code that will not be dynlinked"
 ;;
 
+let mk_noinit f =
+  "-noinit", Arg.Unit f,
+  " Do not load any init file"
+
 let mk_nolabels f =
   "-nolabels", Arg.Unit f, " Ignore non-optional labels in types"
 ;;
@@ -487,6 +491,7 @@ module type Bytetop_options = sig
   val _labels : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _noinit : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
@@ -598,6 +603,7 @@ module type Opttop_options = sig
   val _labels : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _noinit : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
@@ -724,6 +730,7 @@ struct
     mk_labels F._labels;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
+    mk_noinit F._noinit;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
@@ -841,6 +848,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_labels F._labels;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
+    mk_noinit F._noinit;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;

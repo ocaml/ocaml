@@ -70,7 +70,6 @@ ASPP=
 ASPPPROFFLAGS=
 PROFILING=noprof
 DYNLINKOPTS=
-DEBUGGER=ocamldebugger
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 CMXS=cmxs
@@ -156,7 +155,16 @@ PACKLD=link /lib /nologo /machine:AMD64 /out:# must have no space after '/out:'
 # This variable controls whether camlp4 will be built.
 # If it is set to camlp4, then it will be built.
 # If it is set to the empty string, then it will not be built.
-CAMLP4=camlp4
+WITH_CAMLP4=camlp4
+
+### Clear this to disable compiling ocamldebug
+WITH_DEBUGGER=ocamldebugger
+
+### Clear this to disable compiling ocamlbuild; camlp4 requires ocamlbuild
+WITH_OCAMLBUILD=ocamlbuild
+
+### Clear this to disable compiling ocamldoc
+WITH_OCAMLDOC=ocamldoc
 
 ############# Configuration for the contributed libraries
 

@@ -150,7 +150,7 @@ The "configure" script accepts the following options:
         Do not build ocamldoc.
 
 -no-ocamlbuild
-        Do not build ocamlbuild.
+        Do not build ocamlbuild. This requires -no-camlp4.
 
 -no-graph
         Do not compile the Graphics library.

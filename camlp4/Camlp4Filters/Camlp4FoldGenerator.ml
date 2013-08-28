@@ -496,7 +496,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         StringMap.add name (name, <:ident< $lid:name$ >>, tl, tk, False) acc
     | _ -> assert False ];
 
-  value generate_class_implem mode c tydcl n =
+  value generate_class_implem ?(virtual_flag=False) mode c tydcl n =
     let tyMap = tyMap_of_type_decls tydcl StringMap.empty in
     let module M = Gen(struct value size = n; value mode = mode; end) in
     let generated = M.generate_structure tyMap in
@@ -515,11 +515,13 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
       <:ctyp< ! 'a . $M.method_type_of_type <:ctyp< 'a >> <:ctyp< 'a >> [] []$ >>
     in
     let unknown =
-      <:class_str_item< method unknown : $gen_type$ = $M.default_expr$ >>
-    in
-    <:str_item< class $lid:c$ = object (o : 'self_type) $generated$; $failure$; $unknown$ end >>;
+      <:class_str_item< method unknown : $gen_type$ = $M.default_expr$ >> in
+    if not virtual_flag then
+      <:str_item< class $lid:c$ = object (o : 'self_type) $generated$; $failure$; $unknown$ end >>
+    else 
+      <:str_item< class virtual $lid:c$ = object (o : 'self_type) $generated$; $failure$; $unknown$ end >>;
 
-  value generate_class_interf mode c tydcl n =
+  value generate_class_interf ?(virtual_flag=False) mode c tydcl n =
     let tyMap = tyMap_of_type_decls tydcl StringMap.empty in
     let module M = Gen(struct value size = n; value mode = mode; end) in
     let generated = M.generate_signature tyMap in
@@ -538,7 +540,10 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
     let unknown =
       <:class_sig_item< method unknown : $gen_type$ >>
     in
-    <:sig_item< class $lid:c$ : object ('self_type) $generated$; $failure$; $unknown$ end >>;
+    if not virtual_flag then 
+      <:sig_item< class $lid:c$ : object ('self_type) $generated$; $failure$; $unknown$ end >>
+    else
+      <:sig_item< class virtual $lid:c$ : object ('self_type) $generated$; $failure$; $unknown$ end >> ;
 
   value processor =
     let last = ref <:ctyp<>> in
@@ -565,12 +570,19 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         (* backward compatibility *)
         | <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateFold.generated >> ->
               generate_class_implem Fold c last.val 1
+        | <:str_item@_loc< class virtual $lid:c$ = Camlp4Filters.GenerateFold.generated >> ->
+              generate_class_implem ~virtual_flag:True Fold c last.val 1
+
         | <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateMap.generated >> ->
               generate_class_implem Map c last.val 1
+        | <:str_item@_loc< class virtual $lid:c$ = Camlp4Filters.GenerateMap.generated >> ->
+              generate_class_implem ~virtual_flag:True Map c last.val 1
 
         (* Handle Camlp4(Fold|Map|FoldMap)\d*Generator *)
         | <:str_item@_loc< class $lid:c$ = $uid:m$.generated >> ->
-              generate_class_from_module_name generate_class_implem c st m
+              generate_class_from_module_name (generate_class_implem ~virtual_flag:False) c st m
+        | <:str_item@_loc< class virtual $lid:c$ = $uid:m$.generated >> ->
+              generate_class_from_module_name (generate_class_implem ~virtual_flag:True) c st m
 
         (* It's a hack to force to recurse on the left to right order *)
         | <:str_item< $st1$; $st2$ >> ->
@@ -586,12 +598,19 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         (* backward compatibility *)
         | <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateFold.generated >> ->
              generate_class_interf Fold c last.val 1
+        | <:sig_item@_loc< class virtual $lid:c$ : Camlp4Filters.GenerateFold.generated >> ->
+             generate_class_interf ~virtual_flag:True Fold c last.val 1
+
         | <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateMap.generated >> ->
              generate_class_interf Map c last.val 1
+        | <:sig_item@_loc< class virtual $lid:c$ : Camlp4Filters.GenerateMap.generated >> ->
+             generate_class_interf ~virtual_flag:True Map c last.val 1
 
         (* Handle Camlp4(Fold|Map|FoldMap)\d*Generator *)
         | <:sig_item@_loc< class $lid:c$ : $uid:m$.generated >> ->
-            generate_class_from_module_name generate_class_interf c sg m
+            generate_class_from_module_name (generate_class_interf ~virtual_flag:False) c sg m
+        | <:sig_item@_loc< class virtual $lid:c$ : $uid:m$.generated >> ->
+            generate_class_from_module_name (generate_class_interf ~virtual_flag:True) c sg m
 
         (* It's a hack to force to recurse on the left to right order *)
         | <:sig_item< $sg1$; $sg2$ >> ->

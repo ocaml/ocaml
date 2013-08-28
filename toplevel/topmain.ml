@@ -65,6 +65,7 @@ module Options = Main_args.Make_bytetop_options (struct
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
+  let _noinit = set noinit
   let _labels = clear classic
   let _no_app_funct = clear applicative_functors
   let _noassert = set noassert
