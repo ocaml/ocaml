@@ -106,7 +106,7 @@ You will need the following software components to perform the recompilation:
   compiling on a 64-bit Windows.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
   Install at least the following packages (and their dependencies):
-  diffutils, make, ncurses.
+  diffutils, dos2unix, gcc-core, make, ncurses.
 
 First, you need to set up your cygwin environment for using the MS
 tools.  The following assumes that you have installed [1], [2], and [3]
