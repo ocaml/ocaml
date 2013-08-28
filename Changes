@@ -36,7 +36,7 @@ Compilers:
 * warning 3 is extended to warn about other deprecated features:
   - ISO-latin1 characters in identifiers
   - uses of the (&) and (or) operators instead of (&&) and (||)
-- Experimental OCAMLCOMPPARAM for ocamlc and ocamlopt
+- Experimental OCAMLPARAM for ocamlc and ocamlopt
 - PR#5571: incorrect ordinal number in error message
 - PR#6073: add signature to Tstr_include
 
