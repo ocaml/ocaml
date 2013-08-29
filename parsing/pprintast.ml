@@ -64,10 +64,9 @@ let override = function
 
 (* variance encoding: need to sync up with the [parser.mly] *)
 let type_variance = function
-  | (false,false) -> ""
-  | (true,false) -> "+"
-  | (false,true) -> "-"
-  | (_,_) -> assert false
+  | Invariant -> ""
+  | Covariant -> "+"
+  | Contravariant -> "-"
 
 type construct =
   [ `cons of expression list
@@ -79,22 +78,22 @@ type construct =
 
 let view_expr x =
   match x.pexp_desc with
-  | Pexp_construct ( {txt= Lident "()"; _},_,_) -> `tuple
-  | Pexp_construct ( {txt= Lident "[]";_},_,_) -> `nil
-  | Pexp_construct ( {txt= Lident"::";_},Some _,_) ->
+  | Pexp_construct ( {txt= Lident "()"; _},_) -> `tuple
+  | Pexp_construct ( {txt= Lident "[]";_},_) -> `nil
+  | Pexp_construct ( {txt= Lident"::";_},Some _) ->
       let rec loop exp acc = match exp with
-          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_,_);_} ->
+          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_);_} ->
               (List.rev acc,true)
           | {pexp_desc=
              Pexp_construct ({txt=Lident "::";_},
-                             Some ({pexp_desc= Pexp_tuple([e1;e2]);_}),_);_} ->
+                             Some ({pexp_desc= Pexp_tuple([e1;e2]);_}));_} ->
               loop e2 (e1::acc)
           | e -> (List.rev (e::acc),false) in
       let (ls,b) = loop x []  in
       if b then
         `list ls
       else `cons ls
-  | Pexp_construct (x,None,_) -> `simple (x.txt)
+  | Pexp_construct (x,None) -> `simple (x.txt)
   | _ -> `normal
 
 let is_simple_construct :construct -> bool = function
@@ -112,8 +111,10 @@ let rec is_irrefut_patt x =
   | Ppat_or (l,r) -> is_irrefut_patt l || is_irrefut_patt r
   | Ppat_record (ls,_) -> List.for_all (fun (_,x) -> is_irrefut_patt x) ls
   | Ppat_lazy p -> is_irrefut_patt p
+  | Ppat_extension _ -> assert false
+  | Ppat_interval _
   | Ppat_constant _ | Ppat_construct _  | Ppat_variant _ | Ppat_array _
-    | Ppat_type _ -> false (*conservative*)
+  | Ppat_type _-> false (*conservative*)
 class printer  ()= object(self:'self)
   val pipe = false
   val semi = false
@@ -175,7 +176,8 @@ class printer  ()= object(self:'self)
   method longident_loc f x = pp f "%a" self#longident x.txt
   method constant f  = function
     | Const_char i -> pp f "%C"  i
-    | Const_string i -> pp f "%S" i
+    | Const_string (i, None) -> pp f "%S" i
+    | Const_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
     | Const_int i -> self#paren (i<0) (fun f -> pp f "%d") f i
     | Const_float  i -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
     | Const_int32 i -> self#paren (i<0l) (fun f -> pp f "%ldl") f i
@@ -195,7 +197,7 @@ class printer  ()= object(self:'self)
   (* trailing space added *)
   method rec_flag f = function
     | Nonrecursive -> ()
-    | Recursive | Default -> pp f "rec "
+    | Recursive -> pp f "rec "
   method direction_flag f = function
     | Upto -> pp f "to@ "
     | Downto -> pp f "downto@ "
@@ -231,7 +233,11 @@ class printer  ()= object(self:'self)
           | _ -> failwith "invalid input in print_type_with_label"
         else pp f "%s:%a" s self#core_type1 c
   method core_type f x =
-    match x.ptyp_desc with
+    if x.ptyp_attributes <> [] then begin
+      pp f "((%a)%a)" self#core_type {x with ptyp_attributes=[]}
+        self#attributes x.ptyp_attributes
+    end
+    else match x.ptyp_desc with
     | Ptyp_arrow (l, ct1, ct2) ->
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
           self#type_with_label (l,ct1) self#core_type ct2
@@ -250,7 +256,8 @@ class printer  ()= object(self:'self)
           sl  self#core_type ct
     | _ -> pp f "@[<2>%a@]" self#core_type1 x
   method core_type1 f x =
-    match x.ptyp_desc with
+    if x.ptyp_attributes <> [] then self#core_type f x
+    else match x.ptyp_desc with
     | Ptyp_any -> pp f "_";
     | Ptyp_var s -> self#tyvar f  s;
     | Ptyp_tuple l ->  pp f "(%a)" (self#list self#core_type1 ~sep:"*@;") l
@@ -278,9 +285,9 @@ class printer  ()= object(self:'self)
               | _ ->
               pp f "%s@;%a"
                 (match (closed,low) with
-                | (true,None) -> ""
-                | (true,Some _) -> "<" (* FIXME desugar the syntax sugar *)
-                | (false,_) -> ">")
+                | (Closed,None) -> ""
+                | (Closed,Some _) -> "<" (* FIXME desugar the syntax sugar*)
+                | (Open,_) -> ">")
                 (self#list type_variant_helper ~sep:"@;<1 -2>| ") l) l
           (fun f low
             ->
@@ -289,20 +296,23 @@ class printer  ()= object(self:'self)
               |Some xs ->
               pp f ">@ %a"
                 (self#list self#string_quot) xs) low
-    | Ptyp_object l ->
-        let  core_field_type f {pfield_desc;_} =
-          match pfield_desc with
-          | Pfield (s, ct) ->
-              pp f "@[<hov2>%s@ :%a@ @]" s self#core_type ct
-          | Pfield_var -> pp f ".." in
-        pp f "@[<hov2><@ %a@ >@]" (self#list core_field_type ~sep:";") l
-    | Ptyp_class (li, l, low) ->   (*FIXME*)
-        pp f "@[<hov2>%a#%a%a@]"
+    | Ptyp_object (l, o) ->
+        let core_field_type f (s, ct) =
+          pp f "@[<hov2>%s@ :%a@ @]" s self#core_type ct
+        in
+        let field_var f = function
+          | Asttypes.Closed -> ()
+          | Asttypes.Open ->
+              match l with
+              | [] -> pp f ".."
+              | _ -> pp f " ;.."
+        in
+        pp f "@[<hov2><@ %a%a@ >@]" (self#list core_field_type ~sep:";") l
+          field_var o
+    | Ptyp_class (li, l) ->   (*FIXME*)
+        pp f "@[<hov2>%a#%a@]"
           (self#list self#core_type ~sep:"," ~first:"(" ~last:")") l
           self#longident_loc li
-          (fun f low -> match low with
-          | [] -> ()
-          | _ -> pp f "@ [>@ %a]" (self#list self#string_quot) low) low
     | Ptyp_package (lid, cstrs) ->
         let aux f (s, ct) =
           pp f "type %a@ =@ %a" self#longident_loc s self#core_type ct  in
@@ -311,27 +321,21 @@ class printer  ()= object(self:'self)
         |_ ->
             pp f "@[<hov2>(module@ %a@ with@ %a)@]" self#longident_loc lid
               (self#list aux  ~sep:"@ and@ ")  cstrs)
+    | Ptyp_extension (s, arg) ->
+      pp f "@[<2>(&%s@ %a)@]" s.txt self#payload arg
     | _ -> self#paren true self#core_type f x
           (********************pattern********************)
           (* be cautious when use [pattern], [pattern1] is preferred *)
   method pattern f x =
-    let rec pattern_or_helper  cur = function
-      |{ppat_desc = Ppat_constant (Const_char a);_}
-        ->
-          if Char.code a = Char.code cur + 1 then
-            Some a
-          else None
-      |{ppat_desc =
-        Ppat_or({ppat_desc=Ppat_constant (Const_char a);_}, p2);_} ->
-          if Char.code a = Char.code cur + 1 then
-            pattern_or_helper a p2
-          else None
-      | _ -> None in
     let rec list_of_pattern acc = function (* only consider ((A|B)|C)*)
       | {ppat_desc= Ppat_or (p1,p2);_} ->
           list_of_pattern  (p2::acc) p1
       | x -> x::acc in
-    match x.ppat_desc with
+    if x.ppat_attributes <> [] then begin
+      pp f "((%a)%a)" self#pattern {x with ppat_attributes=[]}
+        self#attributes x.ppat_attributes
+    end
+    else match x.ppat_desc with
     | Ppat_alias (p, s) -> pp f "@[<2>%a@;as@;%a@]"
           self#pattern p
           (fun f s->
@@ -340,31 +344,22 @@ class printer  ()= object(self:'self)
             then pp f "( %s )" s.txt
             else pp f "%s" s.txt ) s (* RA*)
     | Ppat_or (p1, p2) -> (* *)
-        (match p1 with
-        | {ppat_desc=Ppat_constant (Const_char a);_} ->
-            (match pattern_or_helper a p2 with
-            |Some b -> pp f "@[<2>%C..%C@]" a b
-            |None ->
-                pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern)
-                   (list_of_pattern [] x))
-        | _ ->
-            pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern)
-               (list_of_pattern [] x)
-        )
+        pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern) (list_of_pattern [] x)
     | _ -> self#pattern1 f x
   method pattern1 (f:Format.formatter) (x:pattern) :unit =
     let rec pattern_list_helper f  =  function
       | {ppat_desc =
          Ppat_construct
            ({ txt = Lident("::") ;_},
-            Some ({ppat_desc = Ppat_tuple([pat1; pat2]);_}),
-            _);_} ->
+            Some ({ppat_desc = Ppat_tuple([pat1; pat2]);_})); _}
+            ->
               pp f "%a::%a"  self#simple_pattern  pat1  pattern_list_helper pat2 (*RA*)
       | p -> self#pattern1 f p in
-    match x.ppat_desc with
+    if x.ppat_attributes <> [] then self#pattern f x
+    else match x.ppat_desc with
     | Ppat_variant (l, Some p) ->  pp f "@[<2>`%s@;%a@]" l self#pattern1 p (*RA*)
-    | Ppat_construct (({txt=Lident("()"|"[]");_}), _, _) -> self#simple_pattern f x
-    | Ppat_construct (({txt;_} as li), po, _) -> (* FIXME The third field always false *)
+    | Ppat_construct (({txt=Lident("()"|"[]");_}), _) -> self#simple_pattern f x
+    | Ppat_construct (({txt;_} as li), po) -> (* FIXME The third field always false *)
         if txt = Lident "::" then
           pp f "%a" pattern_list_helper x
         else
@@ -375,7 +370,7 @@ class printer  ()= object(self:'self)
     | _ -> self#simple_pattern f x
   method simple_pattern (f:Format.formatter) (x:pattern) :unit =
     match x.ppat_desc with
-    | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), _, _) -> pp f  "%s" x
+    | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), _) -> pp f  "%s" x
     | Ppat_any -> pp f "_";
     | Ppat_var ({txt = txt;_}) ->
         if (is_infix (fixity_of_string txt)) || List.mem txt.[0] prefix_symbols then
@@ -407,6 +402,7 @@ class printer  ()= object(self:'self)
               (self#list longident_x_pattern ~sep:";@;") l)
     | Ppat_tuple l -> pp f "@[<1>(%a)@]" (self#list  ~sep:"," self#pattern1)  l (* level1*)
     | Ppat_constant (c) -> pp f "%a" self#constant c
+    | Ppat_interval (c1, c2) -> pp f "%a..%a" self#constant c1 self#constant c2
     | Ppat_variant (l,None) ->  pp f "`%s" l
     | Ppat_constraint (p, ct) ->
         pp f "@[<2>(%a@;:@;%a)@]" self#pattern1 p self#core_type ct
@@ -436,7 +432,9 @@ class printer  ()= object(self:'self)
             pp f "~%s@;" l
         | _ ->  pp f "~%s:%a@;" l self#simple_pattern p )
   method sugar_expr f e =
-    match e.pexp_desc with
+    if e.pexp_attributes <> [] then false
+      (* should also check attributes underneath *)
+    else match e.pexp_desc with
     | Pexp_apply
         ({pexp_desc=
           Pexp_ident
@@ -516,34 +514,24 @@ class printer  ()= object(self:'self)
 
     | _ -> false
   method expression f x =
-    match x.pexp_desc with
-    | Pexp_function _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
+    if x.pexp_attributes <> [] then begin
+      pp f "((%a)%a)" self#expression {x with pexp_attributes=[]}
+        self#attributes x.pexp_attributes
+    end
+    else match x.pexp_desc with
+    | Pexp_function _ | Pexp_fun _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
       when pipe || semi ->
         self#paren true self#reset#expression f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ifthenelse ->
         self#paren true self#reset#expression f x
     | Pexp_let _ | Pexp_letmodule _ when semi ->
         self#paren true self#reset#expression f x
-    | Pexp_function _(* (p, eo, l) *) ->
-        let rec aux acc = function
-          | {pexp_desc = Pexp_function (l,eo, [(p',e')]);_}
-              -> aux ((l,eo,p')::acc) e'
-          | x -> (List.rev acc,x)  in
-        begin match aux [] x with
-        | [], {pexp_desc=Pexp_function(_label,_eo,l);_} -> (* label should be "" *)
-            pp f "@[<hv>function%a@]" self#case_list l
-        | ls, {pexp_desc=Pexp_when(e1,e2);_}->
-            pp f "@[<2>fun@;%a@;when@;%a@;->@;%a@]"
-            (self#list
-               (fun f (l,eo,p) ->
-                 self#label_exp  f (l,eo,p) )) ls
-              self#reset#expression e1 self#expression e2
-        | ls, e ->
-            pp f "@[<2>fun@;%a@;->@;%a@]"
-              (self#list
-                 (fun f (l,eo,p) ->
-                   self#label_exp f (l,eo,p))) ls
-              self#expression e end
+    | Pexp_fun (l, e0, p, e) ->
+        pp f "@[<2>fun@;%a@;->@;%a@]"
+          self#label_exp (l, e0, p)
+          self#expression e
+    | Pexp_function l ->
+        pp f "@[<hv>function%a@]" self#case_list l
     | Pexp_match (e, l) ->
         pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]" self#reset#expression e self#case_list l
 
@@ -581,7 +569,7 @@ class printer  ()= object(self:'self)
                (*reset here only because [function,match,try,sequence] are lower priority*)
             end (e,l))
 
-    | Pexp_construct (li, Some eo, _)
+    | Pexp_construct (li, Some eo)
       when not (is_simple_construct (view_expr x))-> (* Not efficient FIXME*)
         (match view_expr x with
         | `cons ls -> self#list self#simple_expr f ls ~sep:"@;::@;"
@@ -606,7 +594,6 @@ class printer  ()= object(self:'self)
         let lst = sequence_helper [] x in
         pp f "@[<hv>%a@]"
           (self#list self#under_semi#expression ~sep:";@;") lst
-    | Pexp_when (_e1, _e2) ->  assert false (*FIXME handled already in pattern *)
     | Pexp_new (li) ->
         pp f "@[<hov2>new@ %a@]" self#longident_loc li;
     | Pexp_setinstvar (s, e) ->
@@ -621,8 +608,6 @@ class printer  ()= object(self:'self)
           self#reset#module_expr me  self#expression e
     | Pexp_assert e ->
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
-    | Pexp_assertfalse ->
-        pp f "@[<2>assert@;false@]" ;
     | Pexp_lazy (e) ->
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e
     | Pexp_poly _ ->
@@ -632,20 +617,25 @@ class printer  ()= object(self:'self)
           self#expression  e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
+    | Pexp_extension (s, arg) ->
+      pp f "@[<2>(&%s@ %a)@]" s.txt self#payload arg
     | _ -> self#expression1 f x
   method expression1 f x =
-    match x.pexp_desc with
+    if x.pexp_attributes <> [] then self#expression f x
+    else match x.pexp_desc with
     | Pexp_object cs -> pp f "%a" self#class_structure cs
     | _ -> self#expression2 f x
   (* used in [Pexp_apply] *)
   method expression2 f x =
-    match x.pexp_desc with
+    if x.pexp_attributes <> [] then self#expression f x
+    else match x.pexp_desc with
     | Pexp_field (e, li) -> pp f "@[<hov2>%a.%a@]" self#simple_expr e self#longident_loc li
     | Pexp_send (e, s) ->  pp f "@[<hov2>%a#%s@]" self#simple_expr e  s
 
     | _ -> self#simple_expr f x
   method simple_expr f x =
-    match x.pexp_desc with
+    if x.pexp_attributes <> [] then self#expression f x
+    else match x.pexp_desc with
     | Pexp_construct _  when is_simple_construct (view_expr x) ->
         (match view_expr x with
         | `nil -> pp f "[]"
@@ -665,10 +655,12 @@ class printer  ()= object(self:'self)
         pp f "fun@;(type@;%s)@;->@;%a"  lid  self#expression  e
     | Pexp_tuple l ->
         pp f "@[<hov2>(%a)@]"  (self#list self#simple_expr  ~sep:",@;")  l
-    | Pexp_constraint (e, cto1, cto2) ->
-        pp f "(%a%a%a)" self#expression e
+    | Pexp_constraint (e, ct) ->
+        pp f "(%a : %a)" self#expression e self#core_type ct
+    | Pexp_coerce (e, cto1, ct) ->
+        pp f "(%a%a :> %a)" self#expression e
           (self#option self#core_type ~first:" : " ~last:" ") cto1 (* no sep hint*)
-          (self#option self#core_type ~first:" :>") cto2
+          self#core_type ct
     | Pexp_variant (l, None) -> pp f "`%s" l
     | Pexp_record (l, eo) ->
         let longident_x_expression f ( li, e) =
@@ -692,6 +684,11 @@ class printer  ()= object(self:'self)
         pp f fmt s.txt self#expression e1 self#direction_flag df self#expression e2  self#expression e3
     | _ ->  self#paren true self#expression f x
 
+  method attributes f l =
+    List.iter (self # attribute f) l
+
+  method attribute f (s, e) =
+    pp f "[@@%s %a]" s.txt self#payload e
 
   method value_description f x =
     pp f "@[<hov2>%a%a@]" self#core_type x.pval_type
@@ -703,30 +700,28 @@ class printer  ()= object(self:'self)
         end) x
 
 
-  method exception_declaration f (s,ed) =
-    pp f "@[<hov2>exception@ %s%a@]" s
+  method exception_declaration f cd =
+    pp f "@[<hov2>exception@ %s%a@]" cd.pcd_name.txt
       (fun f ed -> match ed with
       |[] -> ()
-      |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) ed
-
+      |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) cd.pcd_args
 
   method class_signature f { pcsig_self = ct; pcsig_fields = l ;_} =
     let class_type_field f x =
       match x.pctf_desc with
-      | Pctf_inher (ct) ->
+      | Pctf_inherit (ct) ->
           pp f "@[<2>inherit@ %a@]" self#class_type ct
       | Pctf_val (s, mf, vf, ct) ->
           pp f "@[<2>val @ %a%a%s@ :@ %a@]"
             self#mutable_flag mf self#virtual_flag vf s  self#core_type  ct
-      | Pctf_virt (s, pf, ct) ->    (* todo: test this *)
-          pp f "@[<2>method@ %a@ virtual@ %s@ :@ %a@]"
-            self#private_flag pf s  self#core_type ct
-      | Pctf_meth (s, pf, ct) ->
-          pp f "@[<2>method %a%s :@;%a@]"
-            self#private_flag pf s self#core_type ct
-      | Pctf_cstr (ct1, ct2) ->
+      | Pctf_method (s, pf, vf, ct) ->
+          pp f "@[<2>method %a %a%s :@;%a@]"
+            self#private_flag pf self#virtual_flag vf s self#core_type ct
+      | Pctf_constraint (ct1, ct2) ->
           pp f "@[<2>constraint@ %a@ =@ %a@]"
-            self#core_type ct1 self#core_type ct2 in
+            self#core_type ct1 self#core_type ct2
+      | Pctf_extension _ -> assert false
+    in
     pp f "@[<hv0>@[<hv2>object @[<1>%a@]@ %a@]@ end@]"
       (fun f ct -> match ct.ptyp_desc with
       | Ptyp_any -> ()
@@ -743,16 +738,17 @@ class printer  ()= object(self:'self)
           | [] -> ()
           | _  -> pp f "[%a]@ " (self#list self#core_type ~sep:"," ) l) l
           self#longident_loc li
-    | Pcty_fun (l, co, cl) ->
+    | Pcty_arrow (l, co, cl) ->
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
           self#type_with_label (l,co) self#class_type cl
+    | Pcty_extension _ -> assert false
 
 
   (* [class type a = object end] *)
   method class_type_declaration_list f  l =
-    let class_type_declaration f ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
+    let class_type_declaration f ({pci_params=ls;pci_name={txt;_};_} as x) =
       pp f "%a%a%s@ =@ %a" self#virtual_flag x.pci_virt
-        self#class_params_def (List.combine ls pci_variance) txt
+        self#class_params_def ls txt
         self#class_type x.pci_expr in
     match l with
     | [] -> ()
@@ -763,22 +759,22 @@ class printer  ()= object(self:'self)
 
   method class_field f x =
     match x.pcf_desc with
-    | Pcf_inher (ovf, ce, so) ->
+    | Pcf_inherit (ovf, ce, so) ->
         pp f "@[<2>inherit@ %s@ %a%a@]"  (override ovf) self#class_expr ce
           (fun f so -> match so with
           | None -> ();
           | Some (s) -> pp f "@ as %s" s ) so
-    | Pcf_val (s, mf, ovf, e) ->
+    | Pcf_val (s, mf, Cfk_concrete (ovf, e)) ->
         pp f "@[<2>val%s %a%s =@;%a@]" (override ovf)  self#mutable_flag mf
           s.txt  self#expression  e
-    | Pcf_virt (s, pf, ct) ->
+    | Pcf_method (s, pf, Cfk_virtual ct) ->
         pp f "@[<2>method virtual %a %s :@;%a@]"
           self#private_flag pf s.txt self#core_type  ct
-    | Pcf_valvirt (s, mf, ct) ->
+    | Pcf_val (s, mf, Cfk_virtual ct) ->
         pp f "@[<2>val virtual %a%s :@ %a@]"
           self#mutable_flag mf s.txt
           self#core_type  ct
-    | Pcf_meth (s, pf, ovf, e) ->
+    | Pcf_method (s, pf, Cfk_concrete (ovf, e)) ->
         pp f "@[<2>method%s %a%a@]"
           (override ovf)
           self#private_flag pf
@@ -787,15 +783,18 @@ class printer  ()= object(self:'self)
               pp f "%s :@;%a=@;%a"
                 s.txt (self#core_type) ct self#expression e
           | Pexp_poly (e,None) ->
-              self#binding f ({ppat_desc=Ppat_var s;ppat_loc=Location.none} ,e)
+              self#binding f {pvb_pat={ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]};
+                              pvb_expr=e;
+                              pvb_attributes=[]}
           | _ ->
               self#expression f e ) e
-    | Pcf_constr (ct1, ct2) ->
+    | Pcf_constraint (ct1, ct2) ->
         pp f "@[<2>constraint %a =@;%a@]" self#core_type  ct1 self#core_type  ct2
-    | Pcf_init (e) ->
+    | Pcf_initializer (e) ->
         pp f "@[<2>initializer@ %a@]" self#expression e
+    | Pcf_extension _ -> assert false
 
-  method class_structure f { pcstr_pat = p; pcstr_fields =  l } =
+  method class_structure f { pcstr_self = p; pcstr_fields =  l } =
     pp f "@[<hv0>@[<hv2>object %a@;%a@]@;end@]"
       (fun f p -> match p.ppat_desc with
       | Ppat_any -> ()
@@ -826,8 +825,7 @@ class printer  ()= object(self:'self)
         pp f "(%a@ :@ %a)"
           self#class_expr ce
           self#class_type ct
-
-
+    | Pcl_extension _ -> assert false
 
   method module_type f x =
     match x.pmty_desc with
@@ -840,51 +838,54 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
           self#module_type mt1  self#module_type mt2
     | Pmty_with (mt, l) ->
-        let longident_x_with_constraint f (li, wc) =
-          match wc with
-          | Pwith_type ({ptype_params= ls ;_} as td) ->
+        let with_constraint f = function
+          | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->
+              let ls = List.map fst ls in
               pp f "type@ %a %a =@ %a"
                 (self#list self#type_var_option ~sep:"," ~first:"(" ~last:")")
                 ls self#longident_loc li  self#type_declaration  td
-          | Pwith_module (li2) ->
+          | Pwith_module (li, li2) ->
               pp f "module %a =@ %a" self#longident_loc li self#longident_loc li2;
           | Pwith_typesubst ({ptype_params=ls;_} as td) ->
-              pp f "type@ %a %a :=@ %a"
+              let ls = List.map fst ls in
+              pp f "type@ %a %s :=@ %a"
                 (self#list self#type_var_option ~sep:"," ~first:"(" ~last:")")
-                ls self#longident_loc li
+                ls td.ptype_name.txt
                 self#type_declaration  td
-          | Pwith_modsubst (li2) ->
-              pp f "module %a :=@ %a" self#longident_loc li self#longident_loc li2 in
+          | Pwith_modsubst (s, li2) ->
+              pp f "module %s :=@ %a" s.txt self#longident_loc li2 in
         (match l with
         | [] -> pp f "@[<hov2>%a@]" self#module_type mt
         | _ -> pp f "@[<hov2>(%a@ with@ %a)@]"
-              self#module_type mt (self#list longident_x_with_constraint ~sep:"@ and@ ") l )
+              self#module_type mt (self#list with_constraint ~sep:"@ and@ ") l )
     | Pmty_typeof me ->
         pp f "@[<hov2>module@ type@ of@ %a@]"
           self#module_expr me
+    | Pmty_extension _ -> assert false
+
   method signature f x =  self#list ~sep:"@\n" self#signature_item f x
 
   method signature_item f x :unit= begin
     match x.psig_desc with
     | Psig_type l ->
         self#type_def_list f l
-    | Psig_value (s, vd) ->
+    | Psig_value vd ->
         pp f "@[<2>%a@]"
-          (fun f (s,vd) ->
+          (fun f vd ->
             let intro = if vd.pval_prim = [] then "val" else "external" in
-            if (is_infix (fixity_of_string s.txt)) || List.mem s.txt.[0] prefix_symbols then
-              pp f "%s@ (@ %s@ )@ :@ " intro s.txt
+            if (is_infix (fixity_of_string vd.pval_name.txt)) || List.mem vd.pval_name.txt.[0] prefix_symbols then
+              pp f "%s@ (@ %s@ )@ :@ " intro vd.pval_name.txt
             else
-              pp f "%s@ %s@ :@ " intro s.txt;
-            self#value_description f vd;) (s,vd)
-    | Psig_exception (s, ed) ->
-        self#exception_declaration f (s.txt,ed)
+              pp f "%s@ %s@ :@ " intro vd.pval_name.txt;
+            self#value_description f vd;) vd
+    | Psig_exception ed ->
+        self#exception_declaration f ed
     | Psig_class l ->
-        let class_description f ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
+        let class_description f ({pci_params=ls;pci_name={txt;_};_} as x) =
           pp f "%a%a%s@;:@;%a" (* "@[<2>class %a%a%s@;:@;%a@]" *)
             self#virtual_flag x.pci_virt
             self#class_params_def
-            (List.combine ls pci_variance)
+            ls
             txt  self#class_type x.pci_expr in
         pp f  "@[<0>%a@]"
           (fun f l ->  match l with
@@ -892,21 +893,21 @@ class printer  ()= object(self:'self)
             |[x] -> pp f "@[<2>class %a@]" class_description x
             |_ -> self#list ~first:"@[<v0>class @[<2>" ~sep:"@]@;and @[" ~last:"@]@]"
                   class_description f l) l
-    | Psig_module (s, mt) ->
+    | Psig_module pmd ->
         pp f "@[<hov>module@ %s@ :@ %a@]"
-          s.txt
-          self#module_type  mt
-    | Psig_open (ovf, li) ->
+          pmd.pmd_name.txt
+          self#module_type  pmd.pmd_type
+    | Psig_open (ovf, li, _attrs) ->
         pp f "@[<hov2>open%s@ %a@]" (override ovf) self#longident_loc li
-    | Psig_include (mt) ->
+    | Psig_include (mt, _attrs) ->
         pp f "@[<hov2>include@ %a@]"
           self#module_type  mt
-    | Psig_modtype (s, md) ->
+    | Psig_modtype {pmtd_name=s; pmtd_type=md} ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
           (fun f md -> match md with
-          | Pmodtype_abstract -> ()
-          | Pmodtype_manifest (mt) ->
+          | None -> ()
+          | Some mt ->
               pp_print_space f () ;
               pp f "@ =@ %a"  self#module_type mt
           ) md
@@ -916,15 +917,17 @@ class printer  ()= object(self:'self)
         let rec  string_x_module_type_list f ?(first=true) l =
           match l with
           | [] -> () ;
-          | (s,mty) :: tl ->
+          | pmd :: tl ->
               if not first then
                 pp f "@ @[<hov2>and@ %s:@ %a@]"
-                  s.txt self#module_type mty
+                  pmd.pmd_name.txt self#module_type pmd.pmd_type
               else
                 pp f "@ @[<hov2>module@ rec@ %s:@ %a@]"
-                  s.txt self#module_type mty;
+                  pmd.pmd_name.txt self#module_type pmd.pmd_type;
               string_x_module_type_list f ~first:false tl  in
         string_x_module_type_list f decls
+    | Psig_attribute _
+    | Psig_extension _ -> assert false
   end
   method module_expr f x =
     match x.pmod_desc with
@@ -944,35 +947,41 @@ class printer  ()= object(self:'self)
         pp f "%a(%a)" self#module_expr me1  self#module_expr  me2
     | Pmod_unpack e ->
         pp f "(val@ %a)"  self#expression  e
+    | Pmod_extension _ -> assert false
 
   method structure f x = self#list ~sep:"@\n" self#structure_item f x
 
+  method payload f = function
+    | PStr x -> self#structure f x
+    | PTyp x -> pp f ":"; self#core_type f x
+    | PPat (x, None) -> pp f "?"; self#pattern f x
+    | PPat (x, Some e) ->
+      pp f "?"; self#pattern f x;
+      pp f " when "; self#expression f e
+
   (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)
-  method binding f ((p:pattern),(x:expression)) =
+  method binding f {pvb_pat=p; pvb_expr=x; pvb_attributes=_} = (* TODO: print attributes *)
     let rec pp_print_pexp_function f x =
-      match x.pexp_desc with
-      | Pexp_function (label,eo,[(p,e)]) ->
+      if x.pexp_attributes <> [] then pp f "=@;%a" self#expression x
+      else match x.pexp_desc with
+      | Pexp_fun (label, eo, p, e) ->
           if label="" then
-            match e.pexp_desc with
-            | Pexp_when _  -> pp f "=@;%a" self#expression x
-            | _ ->
-                pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function e
+            pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function e
           else
             pp f "%a@ %a" self#label_exp (label,eo,p) pp_print_pexp_function e
       | Pexp_newtype (str,e) ->
           pp f "(type@ %s)@ %a" str pp_print_pexp_function e
       | _ -> pp f "=@;%a" self#expression x in
-    match (x.pexp_desc,p.ppat_desc) with
-    | (Pexp_when (e1,e2),_) ->
-        pp f "=@[<2>fun@ %a@ when@ %a@ ->@ %a@]"
-          self#simple_pattern p self#expression e1 self#expression e2
+    if x.pexp_attributes <> [] then
+      pp f "%a@;=@;%a" self#pattern p self#expression x
+    else match (x.pexp_desc,p.ppat_desc) with
     | ( _ , Ppat_constraint( p ,ty)) -> (* special case for the first*)
         (match ty.ptyp_desc with
         | Ptyp_poly _ ->
             pp f "%a@;:@;%a=@;%a" self#simple_pattern p  self#core_type ty self#expression x
         | _ ->
             pp f "(%a@;:%a)=@;%a" self#simple_pattern p  self#core_type ty self#expression x)
-    | Pexp_constraint (e,Some t1,None),Ppat_var {txt;_} ->
+    | Pexp_constraint (e,t1),Ppat_var {txt;_} ->
         pp f "%s:@ %a@;=@;%a" txt self#core_type t1  self#expression e
     | (_, Ppat_var _) ->
         pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function x
@@ -1006,21 +1015,21 @@ class printer  ()= object(self:'self)
 
   method structure_item f x = begin
     match x.pstr_desc with
-    | Pstr_eval (e) ->
+    | Pstr_eval (e, _attrs) ->
         pp f "@[<hov2>let@ _ =@ %a@]" self#expression e
     | Pstr_type [] -> assert false
     | Pstr_type l  -> self#type_def_list f l
     | Pstr_value (rf, l) -> (* pp f "@[<hov2>let %a%a@]"  self#rec_flag rf self#bindings l *)
         pp f "@[<2>%a@]" self#bindings (rf,l)
-    | Pstr_exception (s, ed) -> self#exception_declaration f (s.txt,ed)
-    | Pstr_module (s, me) ->
+    | Pstr_exception ed -> self#exception_declaration f ed
+    | Pstr_module x ->
         let rec module_helper me = match me.pmod_desc with
         | Pmod_functor(s,mt,me) ->
             pp f "(%s:%a)"  s.txt  self#module_type mt ;
             module_helper me
         | _ -> me in
         pp f "@[<hov2>module %s%a@]"
-          s.txt
+          x.pmb_name.txt
           (fun f me ->
             let me = module_helper me  in
             (match me.pmod_desc with
@@ -1030,20 +1039,26 @@ class printer  ()= object(self:'self)
             | Pmty_signature (_));_} as mt)) ->
                 pp f " :@;%a@;=@;%a@;"  self#module_type mt self#module_expr  me
             | _ ->
-                pp f " =@ %a"  self#module_expr  me
-            )) me
-    | Pstr_open (ovf, li) ->
+                pp f " =@ %a"  self#module_expr  me 
+            )) x.pmb_expr
+    | Pstr_open (ovf, li, _attrs) ->
         pp f "@[<2>open%s@;%a@]" (override ovf) self#longident_loc li;
-    | Pstr_modtype (s, mt) ->
-        pp f "@[<2>module type %s =@;%a@]" s.txt self#module_type mt
+    | Pstr_modtype {pmtd_name=s; pmtd_type=md} ->
+        pp f "@[<hov2>module@ type@ %s%a@]"
+          s.txt
+          (fun f md -> match md with
+          | None -> ()
+          | Some mt ->
+              pp_print_space f () ;
+              pp f "@ =@ %a"  self#module_type mt
+          ) md
     | Pstr_class l ->
         let class_declaration f  (* for the second will be changed to and FIXME*)
-            ({pci_params=(ls,_);
+            ({pci_params=ls;
               pci_name={txt;_};
               pci_virt;
               pci_expr={pcl_desc;_};
-              pci_variance;_ } as x) =
-          let ls = List.combine ls pci_variance in
+              _ } as x) =
           let rec  class_fun_helper f e = match e.pcl_desc with
           | Pcl_fun (l, eo, p, e) ->
               self#label_exp f (l,eo,p);
@@ -1072,38 +1087,43 @@ class printer  ()= object(self:'self)
               ~last:"@]@]" class_declaration f xs)
     | Pstr_class_type (l) ->
         self#class_type_declaration_list f l ;
-    | Pstr_primitive (s, vd) ->
+    | Pstr_primitive vd ->
         let need_parens =
-          match s.txt with
+          match vd.pval_name.txt with
           | "or" | "mod" | "land"| "lor" | "lxor" | "lsl" | "lsr" | "asr" -> true
-          | _ -> match s.txt.[0] with
+          | _ -> match vd.pval_name.txt.[0] with
               'a'..'z' -> false | _ -> true in
         pp f "@[<hov2>external@ %s@ :@ %a@]"
-          (if need_parens then "( "^s.txt^" )" else s.txt)
+          (if need_parens then "( "^vd.pval_name.txt^" )" else vd.pval_name.txt)
           self#value_description  vd
-    | Pstr_include me ->
+    | Pstr_include (me, _attrs) ->
         pp f "@[<hov2>include@ %a@]"  self#module_expr  me
-    | Pstr_exn_rebind (s, li) ->        (* todo: check this *)
+    | Pstr_exn_rebind (s, li, _attrs) ->        (* todo: check this *)
         pp f "@[<hov2>exception@ %s@ =@ %a@]" s.txt self#longident_loc li
     | Pstr_recmodule decls -> (* 3.07 *)
-        let text_x_modtype_x_module f (s, mt, me) =
-          pp f "@[<hov2>and@ %s:%a@ =@ %a@]"
-            s.txt self#module_type mt self#module_expr me
-        in match decls with
-        | (s,mt,me):: l2 ->
+        let aux f = function
+          | {pmb_name = s; pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} ->
+              pp f "@[<hov2>and@ %s:%a@ =@ %a@]"
+              s.txt self#module_type typ self#module_expr expr
+          | _ -> assert false
+        in
+        begin match decls with
+        | {pmb_name = s; pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} :: l2 ->
             pp f "@[<hv>@[<hov2>module@ rec@ %s:%a@ =@ %a@]@ %a@]"
               s.txt
-              self#module_type mt
-              self#module_expr me
-              (fun f l2 -> List.iter (text_x_modtype_x_module f) l2) l2
+              self#module_type typ
+              self#module_expr expr
+              (fun f l2 -> List.iter (aux f) l2) l2
         | _ -> assert false
+        end
+    | Pstr_attribute _ -> ()
+    | Pstr_extension _ -> assert false
   end
-  method type_param f  = function
-    | (a,opt) -> pp f "%s%a" (type_variance a ) self#type_var_option opt
+  method type_param f (opt, a) =
+    pp f "%s%a" (type_variance a ) self#type_var_option opt
           (* shared by [Pstr_type,Psig_type]*)
   method  type_def_list f  l =
-    let aux f (s, ({ptype_params;ptype_kind;ptype_manifest;ptype_variance;_} as td )) =
-      let ptype_params = List.combine  ptype_variance ptype_params in
+    let aux f ({ptype_name = s; ptype_params;ptype_kind;ptype_manifest;_} as td) =
       pp f "%a%s%a"
         (fun f l -> match l with
         |[] -> ()
@@ -1120,15 +1140,15 @@ class printer  ()= object(self:'self)
           (self#list aux ~sep:"@]@,@[<2>and " ~last:"@]@]") xs
           (* called by type_def_list *)
   method type_declaration f x = begin
-    let  type_variant_leaf f  (s, l,gadt, _loc)  = match gadt with
+    let  type_variant_leaf f  {pcd_name; pcd_args; pcd_res; pcd_loc=_} = match pcd_res with
     |None ->
-        pp f "@\n|@;%s%a" s.txt
+        pp f "@\n|@;%s%a" pcd_name.txt
           (fun f l -> match l with
           | [] -> ()
-          | _ -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) l
+          | _ -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) pcd_args
     |Some x ->
-        pp f "@\n|@;%s:@;%a" s.txt
-          (self#list self#core_type1 ~sep:"@;->@;") (l@[x]) in
+        pp f "@\n|@;%s:@;%a" pcd_name.txt
+          (self#list self#core_type1 ~sep:"@;->@;") (pcd_args@[x]) in
     pp f "%a%a@ %a"
       (fun f x -> match (x.ptype_manifest,x.ptype_kind,x.ptype_private) with
       | (None,_,Public) ->  pp f "@;"
@@ -1149,8 +1169,8 @@ class printer  ()= object(self:'self)
             (self#list ~sep:"" type_variant_leaf) xs
       | Ptype_abstract -> ()
       | Ptype_record l ->
-          let type_record_field f (s, mf, ct,_) =
-            pp f "@[<2>%a%s:@;%a@]" self#mutable_flag mf s.txt self#core_type ct in
+          let type_record_field f pld =
+            pp f "@[<2>%a%s:@;%a@]" self#mutable_flag pld.pld_mutable pld.pld_name.txt self#core_type pld.pld_type in
           pp f "{@\n%a}"
             (self#list type_record_field ~sep:";@\n" )  l ;
       ) x
@@ -1158,15 +1178,12 @@ class printer  ()= object(self:'self)
          (fun f (ct1,ct2,_) ->
            pp f "@[<hov2>constraint@ %a@ =@ %a@]"
              self#core_type ct1 self#core_type ct2 ))  x.ptype_cstrs  ;
+      (* TODO: attributes *)
   end
-  method case_list f (l:(pattern * expression) list) :unit=
-    let aux f (p,e) =
-      let (e,w) =
-        (match e with
-        | {pexp_desc = Pexp_when (e1, e2);_} -> (e2, Some (e1))
-        | _ -> (e, None)) in
+  method case_list f l : unit =
+    let aux f {pc_lhs; pc_guard; pc_rhs} =
       pp f "@;| @[<2>%a%a@;->@;%a@]"
-        self#pattern p (self#option self#expression ~first:"@;when@;") w self#under_pipe#expression e in
+        self#pattern pc_lhs (self#option self#expression ~first:"@;when@;") pc_guard self#under_pipe#expression pc_rhs in
     self#list aux f l ~sep:""
   method label_x_expression_param f (l,e) =
     match l with

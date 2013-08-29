@@ -14,8 +14,10 @@ open Asttypes
 open Typedtree
 
 class iter: object
-  method binding: (pattern * expression) -> unit
-  method bindings: (rec_flag * (pattern * expression) list) -> unit
+  method binding: value_binding -> unit
+  method bindings: (rec_flag * value_binding list) -> unit
+  method case: case -> unit
+  method cases: case list -> unit
   method class_description: class_description -> unit
   method class_expr: class_expr -> unit
   method class_field: class_field -> unit
@@ -24,11 +26,9 @@ class iter: object
   method class_type: class_type -> unit
   method class_type_declaration: class_type_declaration -> unit
   method class_type_field: class_type_field -> unit
-  method core_field_type: core_field_type -> unit
   method core_type: core_type -> unit
-  method exception_declaration: exception_declaration -> unit
   method expression: expression -> unit
-  method modtype_declaration: modtype_declaration -> unit
+  method module_binding: module_binding -> unit
   method module_expr: module_expr -> unit
   method module_type: module_type -> unit
   method package_type: package_type -> unit
@@ -51,8 +51,8 @@ end
 (** The following functions apply the provided iterator to each
     sub-component of the argument. *)
 
-val binding: iter -> (pattern * expression) -> unit
-val bindings: iter -> (rec_flag * (pattern * expression) list) -> unit
+val binding: iter -> value_binding -> unit
+val bindings: iter -> (rec_flag * value_binding list) -> unit
 val class_description: iter -> class_description -> unit
 val class_expr: iter -> class_expr -> unit
 val class_field: iter -> class_field -> unit
@@ -61,11 +61,9 @@ val class_structure: iter -> class_structure -> unit
 val class_type: iter -> class_type -> unit
 val class_type_declaration: iter -> class_type_declaration -> unit
 val class_type_field: iter -> class_type_field -> unit
-val core_field_type: iter -> core_field_type -> unit
 val core_type: iter -> core_type -> unit
-val exception_declaration: iter -> exception_declaration -> unit
 val expression: iter -> expression -> unit
-val modtype_declaration: iter -> modtype_declaration -> unit
+val module_binding: iter -> module_binding -> unit
 val module_expr: iter -> module_expr -> unit
 val module_type: iter -> module_type -> unit
 val package_type: iter -> package_type -> unit

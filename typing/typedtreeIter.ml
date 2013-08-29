@@ -24,14 +24,12 @@ module type IteratorArgument = sig
     val enter_structure : structure -> unit
     val enter_value_description : value_description -> unit
     val enter_type_declaration : type_declaration -> unit
-    val enter_exception_declaration :
-      exception_declaration -> unit
     val enter_pattern : pattern -> unit
     val enter_expression : expression -> unit
     val enter_package_type : package_type -> unit
     val enter_signature : signature -> unit
     val enter_signature_item : signature_item -> unit
-    val enter_modtype_declaration : modtype_declaration -> unit
+    val enter_module_type_declaration : module_type_declaration -> unit
     val enter_module_type : module_type -> unit
     val enter_module_expr : module_expr -> unit
     val enter_with_constraint : with_constraint -> unit
@@ -43,7 +41,6 @@ module type IteratorArgument = sig
     val enter_class_type : class_type -> unit
     val enter_class_type_field : class_type_field -> unit
     val enter_core_type : core_type -> unit
-    val enter_core_field_type : core_field_type -> unit
     val enter_class_structure : class_structure -> unit
     val enter_class_field : class_field -> unit
     val enter_structure_item : structure_item -> unit
@@ -52,14 +49,12 @@ module type IteratorArgument = sig
     val leave_structure : structure -> unit
     val leave_value_description : value_description -> unit
     val leave_type_declaration : type_declaration -> unit
-    val leave_exception_declaration :
-      exception_declaration -> unit
     val leave_pattern : pattern -> unit
     val leave_expression : expression -> unit
     val leave_package_type : package_type -> unit
     val leave_signature : signature -> unit
     val leave_signature_item : signature_item -> unit
-    val leave_modtype_declaration : modtype_declaration -> unit
+    val leave_module_type_declaration : module_type_declaration -> unit
     val leave_module_type : module_type -> unit
     val leave_module_expr : module_expr -> unit
     val leave_with_constraint : with_constraint -> unit
@@ -71,14 +66,13 @@ module type IteratorArgument = sig
     val leave_class_type : class_type -> unit
     val leave_class_type_field : class_type_field -> unit
     val leave_core_type : core_type -> unit
-    val leave_core_field_type : core_field_type -> unit
     val leave_class_structure : class_structure -> unit
     val leave_class_field : class_field -> unit
     val leave_structure_item : structure_item -> unit
 
     val enter_bindings : rec_flag -> unit
-    val enter_binding : pattern -> expression -> unit
-    val leave_binding : pattern -> expression -> unit
+    val enter_binding : value_binding -> unit
+    val leave_binding : value_binding -> unit
     val leave_bindings : rec_flag -> unit
 
       end
@@ -102,45 +96,45 @@ module MakeIterator(Iter : IteratorArgument) : sig
       | Some x -> f x
 
 
-    open Asttypes
-
     let rec iter_structure str =
       Iter.enter_structure str;
       List.iter iter_structure_item str.str_items;
       Iter.leave_structure str
 
 
-    and iter_binding (pat, exp) =
-      Iter.enter_binding pat exp;
-      iter_pattern pat;
-      iter_expression exp;
-      Iter.leave_binding pat exp
+    and iter_binding vb =
+      Iter.enter_binding vb;
+      iter_pattern vb.vb_pat;
+      iter_expression vb.vb_expr;
+      Iter.leave_binding vb
 
     and iter_bindings rec_flag list =
       Iter.enter_bindings rec_flag;
       List.iter iter_binding list;
       Iter.leave_bindings rec_flag
 
+    and iter_case {c_lhs; c_guard; c_rhs} =
+      iter_pattern c_lhs;
+      may_iter iter_expression c_guard;
+      iter_expression c_rhs
+
+    and iter_cases cases =
+      List.iter iter_case cases
+
     and iter_structure_item item =
       Iter.enter_structure_item item;
       begin
         match item.str_desc with
-          Tstr_eval exp -> iter_expression exp
+          Tstr_eval (exp, _attrs) -> iter_expression exp
         | Tstr_value (rec_flag, list) ->
             iter_bindings rec_flag list
-        | Tstr_primitive (id, _, v) -> iter_value_description v
-        | Tstr_type list ->
-            List.iter (fun (id, _, decl) -> iter_type_declaration decl) list
-        | Tstr_exception (id, _, decl) -> iter_exception_declaration decl
-        | Tstr_exn_rebind (id, _, p, _) -> ()
-        | Tstr_module (id, _, mexpr) ->
-            iter_module_expr mexpr
-        | Tstr_recmodule list ->
-            List.iter (fun (id, _, mtype, mexpr) ->
-                iter_module_type mtype;
-                iter_module_expr mexpr) list
-        | Tstr_modtype (id, _, mtype) ->
-            iter_module_type mtype
+        | Tstr_primitive vd -> iter_value_description vd
+        | Tstr_type list -> List.iter iter_type_declaration list
+        | Tstr_exception cd -> iter_constructor_declaration cd
+        | Tstr_exn_rebind _ -> ()
+        | Tstr_module x -> iter_module_binding x
+        | Tstr_recmodule list -> List.iter iter_module_binding list
+        | Tstr_modtype mtd -> iter_module_type_declaration mtd
         | Tstr_open _ -> ()
         | Tstr_class list ->
             List.iter (fun (ci, _, _) ->
@@ -154,15 +148,24 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 iter_class_type ct.ci_expr;
                 Iter.leave_class_type_declaration ct;
             ) list
-        | Tstr_include (mexpr, _) ->
+        | Tstr_include (mexpr, _, _attrs) ->
             iter_module_expr mexpr
+        | Tstr_attribute _ ->
+            ()
       end;
       Iter.leave_structure_item item
+
+    and iter_module_binding x =
+      iter_module_expr x.mb_expr
 
     and iter_value_description v =
       Iter.enter_value_description v;
       iter_core_type v.val_desc;
       Iter.leave_value_description v
+
+    and iter_constructor_declaration cd =
+      List.iter iter_core_type cd.cd_args;
+      option iter_core_type cd.cd_res;
 
     and iter_type_declaration decl =
       Iter.enter_type_declaration decl;
@@ -173,12 +176,11 @@ module MakeIterator(Iter : IteratorArgument) : sig
       begin match decl.typ_kind with
           Ttype_abstract -> ()
         | Ttype_variant list ->
-            List.iter (fun (s, _, cts, loc) ->
-                List.iter iter_core_type cts
-            ) list
+            List.iter iter_constructor_declaration list
         | Ttype_record list ->
-            List.iter (fun (s, _, mut, ct, loc) ->
-                iter_core_type ct
+            List.iter
+              (fun ld ->
+                iter_core_type ld.ld_type
             ) list
       end;
       begin match decl.typ_manifest with
@@ -187,14 +189,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
       end;
       Iter.leave_type_declaration decl
 
-    and iter_exception_declaration decl =
-      Iter.enter_exception_declaration decl;
-      List.iter iter_core_type decl.exn_params;
-      Iter.leave_exception_declaration decl;
-
     and iter_pattern pat =
       Iter.enter_pattern pat;
-      List.iter (fun (cstr, _) -> match cstr with
+      List.iter (fun (cstr, _, _attrs) -> match cstr with
               | Tpat_type _ -> ()
               | Tpat_unpack -> ()
               | Tpat_constraint ct -> iter_core_type ct) pat.pat_extra;
@@ -206,7 +203,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tpat_constant cst -> ()
         | Tpat_tuple list ->
             List.iter iter_pattern list
-        | Tpat_construct (_, _, args, _) ->
+        | Tpat_construct (_, _, args) ->
             List.iter iter_pattern args
         | Tpat_variant (label, pato, _) ->
             begin match pato with
@@ -225,10 +222,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_expression exp =
       Iter.enter_expression exp;
-      List.iter (function (cstr, _) ->
+      List.iter (function (cstr, _, _attrs) ->
         match cstr with
-          Texp_constraint (cty1, cty2) ->
-            option iter_core_type cty1; option iter_core_type cty2
+          Texp_constraint ct ->
+            iter_core_type ct
+        | Texp_coerce (cty1, cty2) ->
+            option iter_core_type cty1; iter_core_type cty2
         | Texp_open (_, path, _, _) -> ()
         | Texp_poly cto -> option iter_core_type cto
         | Texp_newtype s -> ())
@@ -241,7 +240,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_bindings rec_flag list;
             iter_expression exp
         | Texp_function (label, cases, _) ->
-            iter_bindings Nonrecursive cases
+            iter_cases cases
         | Texp_apply (exp, list) ->
             iter_expression exp;
             List.iter (fun (label, expo, _) ->
@@ -251,13 +250,13 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ) list
         | Texp_match (exp, list, _) ->
             iter_expression exp;
-            iter_bindings Nonrecursive list
+            iter_cases list
         | Texp_try (exp, list) ->
             iter_expression exp;
-            iter_bindings Nonrecursive list
+            iter_cases list
         | Texp_tuple list ->
             List.iter iter_expression list
-        | Texp_construct (_, _, args, _) ->
+        | Texp_construct (_, _, args) ->
             List.iter iter_expression args
         | Texp_variant (label, expo) ->
             begin match expo with
@@ -294,9 +293,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_expression exp1;
             iter_expression exp2;
             iter_expression exp3
-        | Texp_when (exp1, exp2) ->
-            iter_expression exp1;
-            iter_expression exp2
         | Texp_send (exp, meth, expo) ->
             iter_expression exp;
           begin
@@ -316,7 +312,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_module_expr mexpr;
             iter_expression exp
         | Texp_assert exp -> iter_expression exp
-        | Texp_assertfalse -> ()
         | Texp_lazy exp -> iter_expression exp
         | Texp_object (cl, _) ->
             iter_class_structure cl
@@ -339,37 +334,36 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_signature_item item;
       begin
         match item.sig_desc with
-          Tsig_value (id, _, v) ->
-            iter_value_description v
+          Tsig_value vd ->
+            iter_value_description vd
         | Tsig_type list ->
-            List.iter (fun (id, _, decl) ->
-                iter_type_declaration decl
-            ) list
-        | Tsig_exception (id, _, decl) ->
-            iter_exception_declaration decl
-        | Tsig_module (id, _, mtype) ->
-            iter_module_type mtype
+            List.iter iter_type_declaration list
+        | Tsig_exception cd ->
+            iter_constructor_declaration cd
+        | Tsig_module md ->
+            iter_module_type md.md_type
         | Tsig_recmodule list ->
-            List.iter (fun (id, _, mtype) -> iter_module_type mtype) list
-        | Tsig_modtype (id, _, mdecl) ->
-            iter_modtype_declaration mdecl
+            List.iter (fun md -> iter_module_type md.md_type) list
+        | Tsig_modtype mtd ->
+            iter_module_type_declaration mtd
         | Tsig_open _ -> ()
-        | Tsig_include (mty,_) -> iter_module_type mty
+        | Tsig_include (mty, _, _attrs) -> iter_module_type mty
         | Tsig_class list ->
             List.iter iter_class_description list
         | Tsig_class_type list ->
             List.iter iter_class_type_declaration list
+        | Tsig_attribute _ -> ()
       end;
       Iter.leave_signature_item item;
 
-    and iter_modtype_declaration mdecl =
-      Iter.enter_modtype_declaration mdecl;
+    and iter_module_type_declaration mtd =
+      Iter.enter_module_type_declaration mtd;
       begin
-        match mdecl with
-          Tmodtype_abstract -> ()
-        | Tmodtype_manifest mtype -> iter_module_type mtype
+        match mtd.mtd_type with
+        | None -> ()
+        | Some mtype -> iter_module_type mtype
       end;
-      Iter.leave_modtype_declaration mdecl;
+      Iter.leave_module_type_declaration mtd
 
 
     and iter_class_description cd =
@@ -475,7 +469,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           Tcty_signature csg -> iter_class_signature csg
         | Tcty_constr (path, _, list) ->
             List.iter iter_core_type list
-        | Tcty_fun (label, ct, cl) ->
+        | Tcty_arrow (label, ct, cl) ->
             iter_core_type ct;
             iter_class_type cl
       end;
@@ -492,14 +486,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_class_type_field ctf;
       begin
         match ctf.ctf_desc with
-          Tctf_inher ct -> iter_class_type ct
-        | Tctf_val (s, mut, virt, ct) ->
+          Tctf_inherit ct -> iter_class_type ct
+        | Tctf_val (s, _mut, _virt, ct) ->
             iter_core_type ct
-        | Tctf_virt  (s, priv, ct) ->
+        | Tctf_method (s, _priv, _virt, ct) ->
             iter_core_type ct
-        | Tctf_meth  (s, priv, ct) ->
-            iter_core_type ct
-        | Tctf_cstr  (ct1, ct2) ->
+        | Tctf_constraint  (ct1, ct2) ->
             iter_core_type ct1;
             iter_core_type ct2
       end;
@@ -517,9 +509,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Ttyp_tuple list -> List.iter iter_core_type list
         | Ttyp_constr (path, _, list) ->
             List.iter iter_core_type list
-        | Ttyp_object list ->
-            List.iter iter_core_field_type list
-        | Ttyp_class (path, _, list, labels) ->
+        | Ttyp_object (list, o) ->
+            List.iter (fun (_, t) -> iter_core_type t) list
+        | Ttyp_class (path, _, list) ->
             List.iter iter_core_type list
         | Ttyp_alias (ct, s) ->
             iter_core_type ct
@@ -528,19 +520,11 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Ttyp_poly (list, ct) -> iter_core_type ct
         | Ttyp_package pack -> iter_package_type pack
       end;
-      Iter.leave_core_type ct;
-
-    and iter_core_field_type cft =
-      Iter.enter_core_field_type cft;
-      begin match cft.field_desc with
-          Tcfield_var -> ()
-        | Tcfield (s, ct) -> iter_core_type ct
-      end;
-      Iter.leave_core_field_type cft;
+      Iter.leave_core_type ct
 
     and iter_class_structure cs =
       Iter.enter_class_structure cs;
-      iter_pattern cs.cstr_pat;
+      iter_pattern cs.cstr_self;
       List.iter iter_class_field cs.cstr_fields;
       Iter.leave_class_structure cs;
 
@@ -555,27 +539,23 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_class_field cf;
       begin
         match cf.cf_desc with
-          Tcf_inher (ovf, cl, super, _vals, _meths) ->
+          Tcf_inherit (ovf, cl, super, _vals, _meths) ->
           iter_class_expr cl
-      | Tcf_constr (cty, cty') ->
+      | Tcf_constraint (cty, cty') ->
           iter_core_type cty;
           iter_core_type cty'
-      | Tcf_val (lab, _, _, mut, Tcfk_virtual cty, override) ->
+      | Tcf_val (lab, _, _, Tcfk_virtual cty, _) ->
           iter_core_type cty
-      | Tcf_val (lab, _, _, mut, Tcfk_concrete exp, override) ->
+      | Tcf_val (lab, _, _, Tcfk_concrete (_, exp), _) ->
           iter_expression exp
-      | Tcf_meth (lab, _, priv, Tcfk_virtual cty, override) ->
+      | Tcf_method (lab, _, Tcfk_virtual cty) ->
           iter_core_type cty
-      | Tcf_meth (lab, _, priv, Tcfk_concrete exp, override) ->
+      | Tcf_method (lab, _, Tcfk_concrete (_, exp)) ->
           iter_expression exp
-(*      | Tcf_let (rec_flag, bindings, exps) ->
-          iter_bindings rec_flag bindings;
-        List.iter (fun (id, _, exp) -> iter_expression exp) exps; *)
-      | Tcf_init exp ->
+      | Tcf_initializer exp ->
           iter_expression exp
       end;
       Iter.leave_class_field cf;
-
   end
 
 module DefaultIteratorArgument = struct
@@ -589,7 +569,7 @@ module DefaultIteratorArgument = struct
       let enter_package_type _ = ()
       let enter_signature _ = ()
       let enter_signature_item _ = ()
-      let enter_modtype_declaration _ = ()
+      let enter_module_type_declaration _ = ()
       let enter_module_type _ = ()
       let enter_module_expr _ = ()
       let enter_with_constraint _ = ()
@@ -616,7 +596,7 @@ module DefaultIteratorArgument = struct
       let leave_package_type _ = ()
       let leave_signature _ = ()
       let leave_signature_item _ = ()
-      let leave_modtype_declaration _ = ()
+      let leave_module_type_declaration _ = ()
       let leave_module_type _ = ()
       let leave_module_expr _ = ()
       let leave_with_constraint _ = ()
@@ -633,8 +613,8 @@ module DefaultIteratorArgument = struct
     let leave_class_field _ = ()
     let leave_structure_item _ = ()
 
-    let enter_binding _ _ = ()
-    let leave_binding _ _ = ()
+    let enter_binding _ = ()
+    let leave_binding _ = ()
 
     let enter_bindings _ = ()
     let leave_bindings _ = ()

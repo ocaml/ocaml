@@ -676,6 +676,7 @@ let camlp4_import_list =
      "parsing/longident.ml";
      "parsing/asttypes.mli";
      "parsing/parsetree.mli";
+     "parsing/ast_helper.ml";
      "typing/outcometree.mli";
      "typing/oprint.ml";
      "myocamlbuild_config.ml";

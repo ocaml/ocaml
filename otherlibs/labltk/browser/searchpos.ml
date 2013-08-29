@@ -120,19 +120,16 @@ let rec search_pos_type t ~pos ~env =
   | Ptyp_constr (lid, tl) ->
       List.iter tl ~f:(search_pos_type ~pos ~env);
       add_found_sig (`Type, lid.txt) ~env ~loc:t.ptyp_loc
-  | Ptyp_object fl ->
-      List.iter fl ~f:
-        begin function
-        | {pfield_desc = Pfield (_, ty)} -> search_pos_type ty ~pos ~env
-        | _ -> ()
-        end
-  | Ptyp_class (lid, tl, _) ->
+  | Ptyp_object (fl, _) ->
+      List.iter fl ~f:(fun (_, ty) -> search_pos_type ty ~pos ~env)
+  | Ptyp_class (lid, tl) ->
       List.iter tl ~f:(search_pos_type ~pos ~env);
       add_found_sig (`Type, lid.txt) ~env ~loc:t.ptyp_loc
   | Ptyp_alias (t, _)
   | Ptyp_poly (_, t) -> search_pos_type ~pos ~env t
   | Ptyp_package (_, stl) ->
      List.iter stl ~f:(fun (_, ty) -> search_pos_type ty ~pos ~env)
+  | Ptyp_extension _ -> ()
   end
 
 let rec search_pos_class_type cl ~pos ~env =
@@ -143,22 +140,21 @@ let rec search_pos_class_type cl ~pos ~env =
     | Pcty_signature  cl ->
         List.iter cl.pcsig_fields ~f: (fun fl ->
           begin match fl.pctf_desc with
-              Pctf_inher cty -> search_pos_class_type cty ~pos ~env
-            | Pctf_val (_, _, _, ty) ->
+              Pctf_inherit cty -> search_pos_class_type cty ~pos ~env
+            | Pctf_val (_, _, _, ty)
+            | Pctf_method (_, _, _, ty) ->
                 if in_loc fl.pctf_loc ~pos then search_pos_type ty ~pos ~env
-            | Pctf_virt (_, _, ty) ->
-                if in_loc fl.pctf_loc ~pos then search_pos_type ty ~pos ~env
-            | Pctf_meth (_, _, ty) ->
-                if in_loc fl.pctf_loc ~pos then search_pos_type ty ~pos ~env
-            | Pctf_cstr (ty1, ty2) ->
+            | Pctf_constraint (ty1, ty2) ->
                 if in_loc fl.pctf_loc ~pos then begin
                   search_pos_type ty1 ~pos ~env;
                   search_pos_type ty2 ~pos ~env
                 end
+            | Pctf_extension _ -> ()
           end)
-    | Pcty_fun (_, ty, cty) ->
+    | Pcty_arrow (_, ty, cty) ->
         search_pos_type ty ~pos ~env;
         search_pos_class_type cty ~pos ~env
+    | Pcty_extension _ -> ()
     end
 
 let search_pos_type_decl td ~pos ~env =
@@ -171,9 +167,9 @@ let search_pos_type_decl td ~pos ~env =
       Ptype_abstract -> ()
     | Ptype_variant dl ->
         List.iter dl
-          ~f:(fun (_, tl, _, _) -> List.iter tl ~f:(search_pos_type ~pos ~env))
+          ~f:(fun pcd -> List.iter pcd.pcd_args ~f:(search_pos_type ~pos ~env)) (* iter on pcd_res? *)
     | Ptype_record dl ->
-        List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env) in
+        List.iter dl ~f:(fun pld -> search_pos_type pld.pld_type ~pos ~env) in
     search_tkind td.ptype_kind;
     List.iter td.ptype_cstrs ~f:
       begin fun (t1, t2, _) ->
@@ -187,7 +183,7 @@ let rec search_pos_signature l ~pos ~env =
   List.fold_left l ~init:env ~f:
   begin fun env pt ->
     let env = match pt.psig_desc with
-      Psig_open (ovf, id) ->
+      Psig_open (ovf, id, _) ->
         let path, mt = lookup_module id.txt env in
         begin match mt with
           Mty_signature sign -> open_signature ovf path sign env
@@ -200,17 +196,17 @@ let rec search_pos_signature l ~pos ~env =
     in
     if in_loc ~pos pt.psig_loc then
       begin match pt.psig_desc with
-        Psig_value (_, desc) -> search_pos_type desc.pval_type ~pos ~env
+        Psig_value desc -> search_pos_type desc.pval_type ~pos ~env
       | Psig_type l ->
-          List.iter l ~f:(fun (_,desc) -> search_pos_type_decl ~pos desc ~env)
-      | Psig_exception (_, l) ->
-          List.iter l ~f:(search_pos_type ~pos ~env);
+          List.iter l ~f:(search_pos_type_decl ~pos ~env)
+      | Psig_exception pcd ->
+          List.iter pcd.pcd_args ~f:(search_pos_type ~pos ~env);
           add_found_sig (`Type, Lident "exn") ~env ~loc:pt.psig_loc
-      | Psig_module (_, t) ->
-          search_pos_module t ~pos ~env
+      | Psig_module pmd ->
+          search_pos_module pmd.pmd_type ~pos ~env
       | Psig_recmodule decls ->
-          List.iter decls ~f:(fun (_, t) -> search_pos_module t ~pos ~env)
-      | Psig_modtype (_, Pmodtype_manifest t) ->
+          List.iter decls ~f:(fun pmd -> search_pos_module pmd.pmd_type ~pos ~env)
+      | Psig_modtype {pmtd_type=Some t} ->
           search_pos_module t ~pos ~env
       | Psig_modtype _ -> ()
       | Psig_class l ->
@@ -220,9 +216,10 @@ let rec search_pos_signature l ~pos ~env =
           List.iter l
             ~f:(fun ci -> search_pos_class_type ci.pci_expr ~pos ~env)
       (* The last cases should not happen in generated interfaces *)
-      | Psig_open (_, lid) ->
+      | Psig_open (_, lid, _) ->
         add_found_sig (`Module, lid.txt) ~env ~loc:pt.psig_loc
-      | Psig_include t -> search_pos_module t ~pos ~env
+      | Psig_include (t, _) -> search_pos_module t ~pos ~env
+      | Psig_attribute _ | Psig_extension _ -> ()
       end;
     env
   end)
@@ -239,11 +236,12 @@ and search_pos_module m ~pos ~env =
         search_pos_module m ~pos ~env;
         List.iter l ~f:
           begin function
-              _, Pwith_type t -> search_pos_type_decl t ~pos ~env
+              Pwith_type (_, t) -> search_pos_type_decl t ~pos ~env
             | _ -> ()
           end
     | Pmty_typeof md ->
         ()   (* TODO? *)
+    | Pmty_extension _ -> ()
     end
   end
 
@@ -662,41 +660,43 @@ let add_found_str = add_found ~found:found_str
 let rec search_pos_structure ~pos str =
   List.iter str ~f:
   begin function str -> match str.str_desc with
-    Tstr_eval exp -> search_pos_expr exp ~pos
+    Tstr_eval (exp, _) -> search_pos_expr exp ~pos
   | Tstr_value (rec_flag, l) ->
       List.iter l ~f:
-      begin fun (pat, exp) ->
+      begin fun {vb_pat=pat;vb_expr=exp} ->
         let env =
           if rec_flag = Asttypes.Recursive then exp.exp_env else Env.empty in
         search_pos_pat pat ~pos ~env;
         search_pos_expr exp ~pos
       end
-  | Tstr_primitive (_, _, vd) ->()
-  | Tstr_type _ -> ()
-  | Tstr_exception _ -> ()
-  | Tstr_exn_rebind(_, _, _, _) -> ()
-  | Tstr_module (_, _, m) -> search_pos_module_expr m ~pos
+  | Tstr_module mb -> search_pos_module_expr mb.mb_expr ~pos
   | Tstr_recmodule bindings ->
-      List.iter bindings ~f:(fun (_, _, _, m) -> search_pos_module_expr m ~pos)
-  | Tstr_modtype _ -> ()
-  | Tstr_open _ -> ()
+      List.iter bindings ~f:(fun mb -> search_pos_module_expr mb.mb_expr ~pos)
   | Tstr_class l ->
       List.iter l ~f:(fun (cl, _, _) -> search_pos_class_expr cl.ci_expr ~pos)
-  | Tstr_class_type _ -> ()
-  | Tstr_include (m, _) -> search_pos_module_expr m ~pos
+  | Tstr_include (m, _, _) -> search_pos_module_expr m ~pos
+  | Tstr_primitive _
+  | Tstr_type _
+  | Tstr_exception _
+  | Tstr_modtype _
+  | Tstr_open _
+  | Tstr_class_type _
+  | Tstr_exn_rebind _
+  | Tstr_attribute _
+    -> ()
   end
 
 and search_pos_class_structure ~pos cls =
   List.iter cls.cstr_fields ~f:
     begin function cf -> match cf.cf_desc with
-        Tcf_inher (_, cl, _, _, _) ->
+        Tcf_inherit (_, cl, _, _, _) ->
           search_pos_class_expr cl ~pos
-      | Tcf_val (_, _, _, _, Tcfk_concrete exp, _) -> search_pos_expr exp ~pos
+      | Tcf_val (_, _, _, Tcfk_concrete (_, exp), _) -> search_pos_expr exp ~pos
       | Tcf_val _ -> ()
-      | Tcf_meth (_, _, _, Tcfk_concrete exp, _) -> search_pos_expr exp ~pos
-      | Tcf_init exp -> search_pos_expr exp ~pos
-      | Tcf_constr _
-      | Tcf_meth _
+      | Tcf_method (_, _, Tcfk_concrete (_, exp)) -> search_pos_expr exp ~pos
+      | Tcf_initializer exp -> search_pos_expr exp ~pos
+      | Tcf_constraint _
+      | Tcf_method _
         -> assert false (* TODO !!!!!!!!!!!!!!!!! *)
     end
 
@@ -717,7 +717,7 @@ and search_pos_class_expr ~pos cl =
         List.iter el ~f:(fun (_, x,_) -> Misc.may (search_pos_expr ~pos) x)
     | Tcl_let (_, pel, iel, cl) ->
         List.iter pel ~f:
-          begin fun (pat, exp) ->
+          begin fun {vb_pat=pat; vb_expr=exp} ->
             search_pos_pat pat ~pos ~env:exp.exp_env;
             search_pos_expr exp ~pos
           end;
@@ -730,6 +730,14 @@ and search_pos_class_expr ~pos cl =
       ~env:!start_env ~loc:cl.cl_loc
   end
 
+and search_case ~pos {c_lhs; c_guard; c_rhs} =
+  search_pos_pat c_lhs ~pos ~env:c_rhs.exp_env;
+  begin match c_guard with
+  | None -> ()
+  | Some g -> search_pos_expr g ~pos
+  end;
+  search_pos_expr c_rhs ~pos
+
 and search_pos_expr ~pos exp =
   if in_loc exp.exp_loc ~pos then begin
   begin match exp.exp_desc with
@@ -741,36 +749,24 @@ and search_pos_expr ~pos exp =
         ~env:exp.exp_env ~loc:exp.exp_loc
   | Texp_let (_, expl, exp) ->
       List.iter expl ~f:
-      begin fun (pat, exp') ->
+      begin fun {vb_pat=pat; vb_expr=exp'} ->
         search_pos_pat pat ~pos ~env:exp.exp_env;
         search_pos_expr exp' ~pos
       end;
       search_pos_expr exp ~pos
   | Texp_function (_, l, _) ->
-      List.iter l ~f:
-      begin fun (pat, exp) ->
-        search_pos_pat pat ~pos ~env:exp.exp_env;
-        search_pos_expr exp ~pos
-      end
+      List.iter l ~f:(search_case ~pos)
   | Texp_apply (exp, l) ->
       List.iter l ~f:(fun (_, x,_) -> Misc.may (search_pos_expr ~pos) x);
       search_pos_expr exp ~pos
   | Texp_match (exp, l, _) ->
       search_pos_expr exp ~pos;
-      List.iter l ~f:
-      begin fun (pat, exp) ->
-        search_pos_pat pat ~pos ~env:exp.exp_env;
-        search_pos_expr exp ~pos
-      end
+      List.iter l ~f:(search_case ~pos)
   | Texp_try (exp, l) ->
       search_pos_expr exp ~pos;
-      List.iter l ~f:
-      begin fun (pat, exp) ->
-        search_pos_pat pat ~pos ~env:exp.exp_env;
-        search_pos_expr exp ~pos
-      end
+      List.iter l ~f:(search_case ~pos)
   | Texp_tuple l -> List.iter l ~f:(search_pos_expr ~pos)
-  | Texp_construct (_, _, l,_) -> List.iter l ~f:(search_pos_expr ~pos)
+  | Texp_construct (_, _, l) -> List.iter l ~f:(search_pos_expr ~pos)
   | Texp_variant (_, None) -> ()
   | Texp_variant (_, Some exp) -> search_pos_expr exp ~pos
   | Texp_record (l, opt) ->
@@ -791,8 +787,6 @@ and search_pos_expr ~pos exp =
       search_pos_expr a ~pos; search_pos_expr b ~pos
   | Texp_for (_, _, a, b, _, c) ->
       List.iter [a;b;c] ~f:(search_pos_expr ~pos)
-  | Texp_when (a, b) ->
-      search_pos_expr a ~pos; search_pos_expr b ~pos
   | Texp_send (exp, _, _) -> search_pos_expr exp ~pos
   | Texp_new (path, _, _) ->
       add_found_str (`Exp(`New path, exp.exp_type))
@@ -809,7 +803,6 @@ and search_pos_expr ~pos exp =
   | Texp_letmodule (id, _, modexp, exp) ->
       search_pos_module_expr modexp ~pos;
       search_pos_expr exp ~pos
-  | Texp_assertfalse -> ()
   | Texp_assert exp ->
       search_pos_expr exp ~pos
   | Texp_lazy exp ->
@@ -835,7 +828,7 @@ and search_pos_pat ~pos ~env pat =
       add_found_str (`Exp(`Const, pat.pat_type)) ~env ~loc:pat.pat_loc
   | Tpat_tuple l ->
       List.iter l ~f:(search_pos_pat ~pos ~env)
-  | Tpat_construct (_, _, l, _) ->
+  | Tpat_construct (_, _, l) ->
       List.iter l ~f:(search_pos_pat ~pos ~env)
   | Tpat_variant (_, None, _) -> ()
   | Tpat_variant (_, Some pat, _) -> search_pos_pat pat ~pos ~env

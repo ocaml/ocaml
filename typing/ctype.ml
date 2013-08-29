@@ -367,7 +367,7 @@ let rec signature_of_class_type =
   function
     Cty_constr (_, _, cty) -> signature_of_class_type cty
   | Cty_signature sign     -> sign
-  | Cty_fun (_, ty, cty)   -> signature_of_class_type cty
+  | Cty_arrow (_, ty, cty)   -> signature_of_class_type cty
 
 let self_type cty =
   repr (signature_of_class_type cty).cty_self
@@ -376,7 +376,7 @@ let rec class_type_arity =
   function
     Cty_constr (_, _, cty) ->  class_type_arity cty
   | Cty_signature _        ->  0
-  | Cty_fun (_, _, cty)    ->  1 + class_type_arity cty
+  | Cty_arrow (_, _, cty)    ->  1 + class_type_arity cty
 
 
                   (*******************************************)
@@ -1141,8 +1141,8 @@ let instance_class params cty =
            cty_concr = sign.cty_concr;
            cty_inher =
              List.map (fun (p,tl) -> (p, List.map copy tl)) sign.cty_inher}
-    | Cty_fun (l, ty, cty) ->
-        Cty_fun (l, copy ty, copy_class_type cty)
+    | Cty_arrow (l, ty, cty) ->
+        Cty_arrow (l, copy ty, copy_class_type cty)
   in
   let params' = List.map copy params in
   let cty' = copy_class_type cty in
@@ -3196,7 +3196,7 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
         moregen_clty true type_pairs env cty1 cty2
     | _, Cty_constr (_, _, cty2) ->
         moregen_clty true type_pairs env cty1 cty2
-    | Cty_fun (l1, ty1, cty1'), Cty_fun (l2, ty2, cty2') when l1 = l2 ->
+    | Cty_arrow (l1, ty1, cty1'), Cty_arrow (l2, ty2, cty2') when l1 = l2 ->
         begin try moregen true type_pairs env ty1 ty2 with Unify trace ->
           raise (Failure [CM_Parameter_mismatch (env, expand_trace env trace)])
         end;
@@ -3331,7 +3331,7 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
         equal_clty true type_pairs subst env cty1 cty2
     | _, Cty_constr (_, _, cty2) ->
         equal_clty true type_pairs subst env cty1 cty2
-    | Cty_fun (l1, ty1, cty1'), Cty_fun (l2, ty2, cty2') when l1 = l2 ->
+    | Cty_arrow (l1, ty1, cty1'), Cty_arrow (l2, ty2, cty2') when l1 = l2 ->
         begin try eqtype true type_pairs subst env ty1 ty2 with Unify trace ->
           raise (Failure [CM_Parameter_mismatch (env, expand_trace env trace)])
         end;
@@ -3457,7 +3457,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         (* Use moregeneral for class parameters, need to recheck everything to
            keeps relationships (PR#4824) *)
         let clty_params =
-          List.fold_right (fun ty cty -> Cty_fun ("*",ty,cty)) in
+          List.fold_right (fun ty cty -> Cty_arrow ("*",ty,cty)) in
         match_class_types ~trace:false env
           (clty_params patt_params patt_type)
           (clty_params subj_params subj_type)
@@ -4180,8 +4180,8 @@ let rec nondep_class_type env id =
                    nondep_class_type env id cty)
   | Cty_signature sign ->
       Cty_signature (nondep_class_signature env id sign)
-  | Cty_fun (l, ty, cty) ->
-      Cty_fun (l, nondep_type_rec env id ty, nondep_class_type env id cty)
+  | Cty_arrow (l, ty, cty) ->
+      Cty_arrow (l, nondep_type_rec env id ty, nondep_class_type env id cty)
 
 let nondep_class_declaration env id decl =
   assert (not (Path.isfree id decl.cty_path));

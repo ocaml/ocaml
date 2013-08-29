@@ -333,10 +333,10 @@ let transl_prim loc prim args =
          simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _, _)}]
+      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _, _)}; arg2]
+    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; {exp_desc = Texp_variant(_, None)}]
@@ -495,7 +495,7 @@ let extract_float = function
 
 let rec name_pattern default = function
     [] -> Ident.create default
-  | (p, e) :: rem ->
+  | {c_lhs=p; _} :: rem ->
       match p.pat_desc with
         Tpat_var (id, _) -> id
       | Tpat_alias(p, id, _) -> id
@@ -503,24 +503,27 @@ let rec name_pattern default = function
 
 (* Push the default values under the functional abstractions *)
 
-let rec push_defaults loc bindings pat_expr_list partial =
-  match pat_expr_list with
-    [pat, ({exp_desc = Texp_function(l, pl,partial)} as exp)] ->
+let rec push_defaults loc bindings cases partial =
+  match cases with
+    [{c_lhs=pat; c_guard=None;
+      c_rhs={exp_desc = Texp_function(l, pl,partial)} as exp}] ->
       let pl = push_defaults exp.exp_loc bindings pl partial in
-      [pat, {exp with exp_desc = Texp_function(l, pl, partial)}]
-  | [pat, {exp_desc = Texp_let
-             (Default, cases, ({exp_desc = Texp_function _} as e2))}] ->
-      push_defaults loc (cases :: bindings) [pat, e2] partial
-  | [pat, exp] ->
+      [{c_lhs=pat; c_guard=None; c_rhs={exp with exp_desc = Texp_function(l, pl, partial)}}]
+  | [{c_lhs=pat; c_guard=None;
+      c_rhs={exp_attributes=[{txt="#default"},_];
+             exp_desc = Texp_let
+               (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
+      push_defaults loc (binds :: bindings) [{c_lhs=pat;c_guard=None;c_rhs=e2}] partial
+  | [case] ->
       let exp =
         List.fold_left
-          (fun exp cases ->
-            {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
-          exp bindings
+          (fun exp binds ->
+            {exp with exp_desc = Texp_let(Nonrecursive, binds, exp)})
+          case.c_rhs bindings
       in
-      [pat, exp]
-  | (pat, exp) :: _ when bindings <> [] ->
-      let param = name_pattern "param" pat_expr_list in
+      [{case with c_rhs=exp}]
+  | {c_lhs=pat; c_rhs=exp; c_guard=_} :: _ when bindings <> [] ->
+      let param = name_pattern "param" cases in
       let name = Ident.name param in
       let exp =
         { exp with exp_loc = loc; exp_desc =
@@ -530,12 +533,12 @@ let rec push_defaults loc bindings pat_expr_list partial =
                           {val_type = pat.pat_type; val_kind = Val_reg;
                            Types.val_loc = Location.none;
                           })},
-             pat_expr_list, partial) }
+             cases, partial) }
       in
       push_defaults loc bindings
-        [{pat with pat_desc = Tpat_var (param, mknoloc name)}, exp] Total
+        [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)}; c_guard=None; c_rhs=exp}] Total
   | _ ->
-      pat_expr_list
+      cases
 
 (* Insertion of debugging events *)
 
@@ -585,7 +588,7 @@ let assert_failed exp =
     (Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
            Lconst(Const_block(0,
-              [Const_base(Const_string fname);
+              [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
                Const_base(Const_int char)]))]))])
 ;;
@@ -705,7 +708,7 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(_, cstr, args, _) ->
+  | Texp_construct(_, cstr, args) ->
       let ll = transl_list args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
@@ -782,10 +785,6 @@ and transl_exp0 e =
   | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp low, transl_exp high, dir,
            event_before body (transl_exp body))
-  | Texp_when(cond, body) ->
-      event_before cond
-        (Lifthenelse(transl_exp cond, event_before body (transl_exp body),
-                     staticfail))
   | Texp_send(_, _, Some exp) -> transl_exp exp
   | Texp_send(expr, met, None) ->
       let obj = transl_exp expr in
@@ -818,11 +817,12 @@ and transl_exp0 e =
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
   | Texp_pack modl ->
       !transl_module Tcoerce_none None modl
+  | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _)} ->
+      assert_failed e
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e)
-  | Texp_assertfalse -> assert_failed e
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would
@@ -833,7 +833,7 @@ and transl_exp0 e =
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
       | Texp_function(_, _, _)
-      | Texp_construct (_, {cstr_arity = 0}, _, _)
+      | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
           Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
@@ -880,18 +880,29 @@ and transl_exp0 e =
         { cl_desc = Tcl_structure cs;
           cl_loc = e.exp_loc;
           cl_type = Cty_signature cty;
-          cl_env = e.exp_env }
+          cl_env = e.exp_env;
+          cl_attributes = [];
+         }
 
 and transl_list expr_list =
   List.map transl_exp expr_list
 
-and transl_cases pat_expr_list =
-  List.map
-    (fun (pat, expr) -> (pat, event_before expr (transl_exp expr)))
-    pat_expr_list
+and transl_guard guard rhs =
+  let expr = event_before rhs (transl_exp rhs) in
+  match guard with
+  | None -> expr
+  | Some cond ->
+      event_before cond (Lifthenelse(transl_exp cond, expr, staticfail))
+
+and transl_case {c_lhs; c_guard; c_rhs} =
+  c_lhs, transl_guard c_guard c_rhs
+
+and transl_cases cases =
+  List.map transl_case cases
 
 and transl_tupled_cases patl_expr_list =
-  List.map (fun (patl, expr) -> (patl, transl_exp expr)) patl_expr_list
+  List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
+    patl_expr_list
 
 and transl_apply lam sargs loc =
   let lapply funct args =
@@ -943,56 +954,58 @@ and transl_apply lam sargs loc =
   in
   build_apply lam [] (List.map (fun (l, x,o) -> may_map transl_exp x, o) sargs)
 
-and transl_function loc untuplify_fn repr partial pat_expr_list =
-  match pat_expr_list with
-    [pat, ({exp_desc = Texp_function(_, pl,partial')} as exp)]
+and transl_function loc untuplify_fn repr partial cases =
+  match cases with
+    [{c_lhs=pat; c_guard=None;
+      c_rhs={exp_desc = Texp_function(_, pl,partial')} as exp}]
     when Parmatch.fluid pat ->
-      let param = name_pattern "param" pat_expr_list in
+      let param = name_pattern "param" cases in
       let ((_, params), body) =
         transl_function exp.exp_loc false repr partial' pl in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
-  | ({pat_desc = Tpat_tuple pl}, _) :: _ when untuplify_fn ->
+  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
         let pats_expr_list =
           List.map
-            (fun (pat, expr) -> (Matching.flatten_pattern size pat, expr))
-            pat_expr_list in
+            (fun {c_lhs; c_guard; c_rhs} ->
+              (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
+            cases in
         let params = List.map (fun p -> Ident.create "param") pl in
         ((Tupled, params),
          Matching.for_tupled_function loc params
            (transl_tupled_cases pats_expr_list) partial)
       with Matching.Cannot_flatten ->
-        let param = name_pattern "param" pat_expr_list in
+        let param = name_pattern "param" cases in
         ((Curried, [param]),
          Matching.for_function loc repr (Lvar param)
-           (transl_cases pat_expr_list) partial)
+           (transl_cases cases) partial)
       end
   | _ ->
-      let param = name_pattern "param" pat_expr_list in
+      let param = name_pattern "param" cases in
       ((Curried, [param]),
        Matching.for_function loc repr (Lvar param)
-         (transl_cases pat_expr_list) partial)
+         (transl_cases cases) partial)
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
-    Nonrecursive | Default ->
+    Nonrecursive ->
       let rec transl = function
         [] ->
           body
-      | (pat, expr) :: rem ->
+      | {vb_pat=pat; vb_expr=expr} :: rem ->
           Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
         List.map
-          (fun (pat, expr) -> match pat.pat_desc with
+          (fun {vb_pat=pat} -> match pat.pat_desc with
               Tpat_var (id,_) -> id
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
-      let transl_case (pat, expr) id =
+      let transl_case {vb_pat=pat; vb_expr=expr} id =
         let lam = transl_exp expr in
         if not (check_recursive_lambda idlist lam) then
           raise(Error(expr.exp_loc, Illegal_letrec_expr));
@@ -1083,12 +1096,13 @@ let transl_let rec_flag pat_expr_list body =
 
 (* Compile an exception definition *)
 
-let transl_exception id path decl =
+let transl_exception path decl =
   let name =
     match path with
-      None -> Ident.name id
+      None -> Ident.name decl.cd_id
     | Some p -> Path.name p in
-  Lprim(Pmakeblock(0, Immutable), [Lconst(Const_base(Const_string name))])
+  Lprim(Pmakeblock(0, Immutable),
+        [Lconst(Const_base(Const_string (name,None)))])
 
 (* Error report *)
 

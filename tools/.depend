@@ -27,6 +27,14 @@ depend.cmo : ../parsing/parsetree.cmi ../utils/misc.cmi \
 depend.cmx : ../parsing/parsetree.cmi ../utils/misc.cmx \
     ../parsing/longident.cmx ../parsing/location.cmx ../parsing/asttypes.cmi \
     depend.cmi
+dump_ast.cmo : ../typing/typetexp.cmi ../typing/typedtree.cmi \
+    ../toplevel/toploop.cmi ../parsing/parse.cmi ../typing/outcometree.cmi \
+    ../typing/oprint.cmi ../driver/errors.cmi ../typing/env.cmi \
+    ../utils/config.cmi
+dump_ast.cmx : ../typing/typetexp.cmx ../typing/typedtree.cmx \
+    ../toplevel/toploop.cmx ../parsing/parse.cmx ../typing/outcometree.cmi \
+    ../typing/oprint.cmx ../driver/errors.cmx ../typing/env.cmx \
+    ../utils/config.cmx
 dumpobj.cmo : ../utils/tbl.cmi opnames.cmo ../bytecomp/opcodes.cmo \
     ../utils/misc.cmi ../parsing/location.cmi ../bytecomp/lambda.cmi \
     ../bytecomp/instruct.cmi ../typing/ident.cmi ../utils/config.cmi \

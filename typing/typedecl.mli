@@ -12,24 +12,23 @@
 
 (* Typing of type definitions and primitive definitions *)
 
-open Asttypes
 open Types
 open Format
 
 val transl_type_decl:
-    Env.t -> (string loc * Parsetree.type_declaration) list ->
-    (Ident.t * string Asttypes.loc * Typedtree.type_declaration) list * Env.t
+    Env.t -> Parsetree.type_declaration list ->
+    Typedtree.type_declaration list * Env.t
 
 val transl_exception:
-    Env.t -> Location.t ->
-    Parsetree.exception_declaration -> Typedtree.exception_declaration
+    Env.t ->
+    Parsetree.constructor_declaration -> Typedtree.constructor_declaration * exception_declaration * Env.t
 
 val transl_exn_rebind:
     Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
 
 val transl_value_decl:
     Env.t -> Location.t ->
-    Parsetree.value_description -> Typedtree.value_description
+    Parsetree.value_description -> Typedtree.value_description * Env.t
 
 val transl_with_constraint:
     Env.t -> Ident.t -> Path.t option -> Types.type_declaration ->
@@ -37,7 +36,7 @@ val transl_with_constraint:
 
 val abstract_type_decl: int -> type_declaration
 val approx_type_decl:
-    Env.t -> (string loc * Parsetree.type_declaration) list ->
+    Env.t -> Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
@@ -77,6 +76,7 @@ type error =
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
   | Varying_anonymous
+  | Exception_constructor_with_result
 
 exception Error of Location.t * error
 

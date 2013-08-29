@@ -212,8 +212,8 @@ let rec class_type s =
       Cty_constr (type_path s p, List.map (typexp s) tyl, class_type s cty)
   | Cty_signature sign ->
       Cty_signature (class_signature s sign)
-  | Cty_fun (l, ty, cty) ->
-      Cty_fun (l, typexp s ty, class_type s cty)
+  | Cty_arrow (l, ty, cty) ->
+      Cty_arrow (l, typexp s ty, class_type s cty)
 
 let class_declaration s decl =
   let decl =

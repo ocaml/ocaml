@@ -33,12 +33,12 @@ module Typedtree_search :
       (** This function returns the [Types.module_type] associated to the given module type name,
          in the given table.
          @raise Not_found if the module type was not found.*)
-      val search_module_type : tab -> string -> Typedtree.module_type
+      val search_module_type : tab -> string -> Typedtree.module_type_declaration
 
       (** This function returns the [Types.exception_declaration] associated to the given exception name,
          in the given table.
          @raise Not_found if the exception was not found.*)
-      val search_exception : tab -> string -> Typedtree.exception_declaration
+      val search_exception : tab -> string -> Typedtree.constructor_declaration
 
       (** This function returns the [Path.t] associated to the given exception rebind name,
          in the table.

@@ -162,19 +162,19 @@ let make_default matcher env =
 let ctx_matcher p =
   let p = normalize_pat p in
   match p.pat_desc with
-  | Tpat_construct (_, cstr,omegas,_) ->
+  | Tpat_construct (_, cstr,omegas) ->
       begin match cstr.cstr_tag with
       | Cstr_exception _ -> (* exception matching *)
           let nargs = List.length omegas in
           (fun q rem -> match q.pat_desc with
-          | Tpat_construct (_, cstr',args,_)
+          | Tpat_construct (_, cstr',args)
             when List.length args = nargs ->
                 p,args @ rem
           | Tpat_any -> p,omegas @ rem
           | _ -> raise NoMatch)
       | _ ->
           (fun q rem -> match q.pat_desc with
-          | Tpat_construct (_, cstr',args,_)
+          | Tpat_construct (_, cstr',args)
             when cstr.cstr_tag=cstr'.cstr_tag ->
               p,args @ rem
           | Tpat_any -> p,omegas @ rem
@@ -500,12 +500,12 @@ let up_ok_action act1 act2 =
 
 (* Nothing is kown about exeception patterns, because of potential rebind *)
 let rec exc_inside p = match p.pat_desc with
-  | Tpat_construct (_,{cstr_tag=Cstr_exception _},_,_) -> true
+  | Tpat_construct (_,{cstr_tag=Cstr_exception _},_) -> true
   | Tpat_any|Tpat_constant _|Tpat_var _
-  | Tpat_construct (_,_,[],_)
+  | Tpat_construct (_,_,[])
   | Tpat_variant (_,None,_)
     -> false
-  | Tpat_construct (_,_,ps,_) 
+  | Tpat_construct (_,_,ps)
   | Tpat_tuple ps
   | Tpat_array ps
       -> exc_insides ps
@@ -662,7 +662,7 @@ let rec extract_vars r p = match p.pat_desc with
     List.fold_left
       (fun r (_, _, p) -> extract_vars r p)
       r lpats
-| Tpat_construct (_, _, pats,_) ->
+| Tpat_construct (_, _, pats) ->
     List.fold_left extract_vars r pats
 | Tpat_array pats ->
     List.fold_left extract_vars r pats
@@ -707,7 +707,7 @@ let pm_free_variables {cases=cases} =
 
 (* Basic grouping predicates *)
 let pat_as_constr = function
-  | {pat_desc=Tpat_construct (_, cstr,_,_)} -> cstr
+  | {pat_desc=Tpat_construct (_, cstr,_)} -> cstr
   | _ -> fatal_error "Matching.pat_as_constr"
 
 let group_constant = function
@@ -715,7 +715,7 @@ let group_constant = function
   | _                           -> false
 
 and group_constructor = function
-  | {pat_desc = Tpat_construct (_,_,_,_)} -> true
+  | {pat_desc = Tpat_construct (_,_,_)} -> true
   | _ -> false
 
 and group_variant = function
@@ -965,7 +965,7 @@ and split_constr cls args def k =
   let ex_pat = what_is_cases cls in
   match ex_pat.pat_desc with
   | Tpat_any -> precompile_var args cls def k
-  | Tpat_construct (_,{cstr_tag=Cstr_exception _},_,_) ->
+  | Tpat_construct (_,{cstr_tag=Cstr_exception _},_) ->
       split_naive cls args def k
   | _ ->
 
@@ -1075,7 +1075,7 @@ and dont_precompile_var args cls def k =
 and is_exc p = match p.pat_desc with
 | Tpat_or (p1,p2,_) -> is_exc p1 || is_exc p2
 | Tpat_alias (p,v,_) -> is_exc p
-| Tpat_construct (_,{cstr_tag = Cstr_exception _},_,_) -> true
+| Tpat_construct (_,{cstr_tag = Cstr_exception _},_) -> true
 | _ -> false
 
 and precompile_or argo cls ors args def k = match ors with
@@ -1255,13 +1255,12 @@ let make_field_args binding_kind arg first_pos last_pos argl =
   in make_args first_pos
 
 let get_key_constr = function
-  | {pat_desc=Tpat_construct (_, cstr,_,_)} -> cstr.cstr_tag
+  | {pat_desc=Tpat_construct (_, cstr,_)} -> cstr.cstr_tag
   | _ -> assert false
 
 let get_args_constr p rem = match p with
-| {pat_desc=Tpat_construct (_, _, args, _)} -> args @ rem
+| {pat_desc=Tpat_construct (_, _, args)} -> args @ rem
 | _ -> assert false
-
 
 let matcher_constr cstr = match cstr.cstr_arity with
 | 0 ->
@@ -1273,7 +1272,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
           with
           | NoMatch -> matcher_rec p2 rem
         end
-    | Tpat_construct (_, cstr1, [],_) when cstr.cstr_tag = cstr1.cstr_tag ->
+    | Tpat_construct (_, cstr1, []) when cstr.cstr_tag = cstr1.cstr_tag ->
         rem
     | Tpat_any -> rem
     | _ -> raise NoMatch in
@@ -1294,7 +1293,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
             rem
         | _, _ -> assert false
         end
-    | Tpat_construct (_, cstr1, [arg],_)
+    | Tpat_construct (_, cstr1, [arg])
       when cstr.cstr_tag = cstr1.cstr_tag -> arg::rem
     | Tpat_any -> omega::rem
     | _ -> raise NoMatch in
@@ -1302,7 +1301,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
 | _ ->
     fun q rem -> match q.pat_desc with
     | Tpat_or (_,_,_) -> raise OrPat
-    | Tpat_construct (_, cstr1, args,_)
+    | Tpat_construct (_, cstr1, args)
       when cstr.cstr_tag = cstr1.cstr_tag -> args @ rem
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
     | _        -> raise NoMatch
@@ -2569,7 +2568,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         divide_constant
         (combine_constant arg cst partial)
         ctx pm
-  | Tpat_construct (_, cstr, _, _) ->
+  | Tpat_construct (_, cstr, _) ->
       compile_test
         (compile_match repr partial) partial
         divide_constructor (combine_constructor arg pat cstr partial)
@@ -2632,7 +2631,7 @@ let find_in_pat pred =
     begin match p.pat_desc with
     | Tpat_alias (p,_,_) | Tpat_variant (_,Some p,_) | Tpat_lazy p ->
         find_rec p
-    | Tpat_tuple ps|Tpat_construct (_,_,ps,_) | Tpat_array ps ->
+    | Tpat_tuple ps|Tpat_construct (_,_,ps) | Tpat_array ps ->
         List.exists find_rec ps
     | Tpat_record (lpats,_) ->
         List.exists
@@ -2732,7 +2731,7 @@ let partial_function loc () =
   Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_match_failure;
            Lconst(Const_block(0,
-              [Const_base(Const_string fname);
+              [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
                Const_base(Const_int char)]))])])
 

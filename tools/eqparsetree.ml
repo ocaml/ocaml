@@ -231,10 +231,9 @@ let rec eq_pattern_desc : (pattern_desc * pattern_desc) -> 'result =
   | (Ppat_constant a0, Ppat_constant b0) ->
       Asttypes.eq_constant (a0, b0)
   | (Ppat_tuple a0, Ppat_tuple b0) -> eq_list eq_pattern (a0, b0)
-  | (Ppat_construct (a0, a1, a2), Ppat_construct (b0, b1, b2)) ->
+  | (Ppat_construct (a0, a1), Ppat_construct (b0, b1)) ->
       ((Asttypes.eq_loc Longident.eq_t (a0, b0)) &&
          (eq_option eq_pattern (a1, b1)))
-        && (eq_bool (a2, b2))
   | (Ppat_variant (a0, a1), Ppat_variant (b0, b1)) ->
       (Asttypes.eq_label (a0, b0)) && (eq_option eq_pattern (a1, b1))
   | (Ppat_record (a0, a1), Ppat_record (b0, b1)) ->
@@ -471,8 +470,8 @@ and eq_class_field : (class_field * class_field) -> 'result =
 and eq_class_structure :
   (class_structure * class_structure) -> 'result =
   fun
-    ({ pcstr_pat = a0; pcstr_fields = a1 },
-     { pcstr_pat = b0; pcstr_fields = b1 })
+    ({ pcstr_self = a0; pcstr_fields = a1 },
+     { pcstr_self = b0; pcstr_fields = b1 })
     -> (eq_pattern (a0, b0)) && (eq_list eq_class_field (a1, b1))
 and eq_class_expr_desc :
   (class_expr_desc * class_expr_desc) -> 'result =
@@ -565,7 +564,7 @@ and eq_class_type_desc :
         (eq_list eq_core_type (a1, b1))
   | (Pcty_signature a0, Pcty_signature b0) ->
       eq_class_signature (a0, b0)
-  | (Pcty_fun (a0, a1, a2), Pcty_fun (b0, b1, b2)) ->
+  | (Pcty_arrow (a0, a1, a2), Pcty_arrow (b0, b1, b2)) ->
       ((Asttypes.eq_label (a0, b0)) && (eq_core_type (a1, b1))) &&
         (eq_class_type (a2, b2))
   | (_, _) -> false
@@ -657,14 +656,17 @@ and eq_expression_desc :
                (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
             (a1, b1)))
         && (eq_expression (a2, b2))
-  | (Pexp_function (a0, a1, a2), Pexp_function (b0, b1, b2)) ->
+  | Pexp_fun (a1, a1, a2, a3), Pexp_function (b0, b1, b2, b3) ->
       ((Asttypes.eq_label (a0, b0)) &&
-         (eq_option eq_expression (a1, b1)))
-        &&
-        (eq_list
-           (fun ((a0, a1), (b0, b1)) ->
-              (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
-           (a2, b2))
+       (eq_option eq_expression (a1, b1)) &&
+       (eq_pattern a2 b2) &&
+       (eq_expression (a3, b3)))
+  | (Pexp_function (a0, a1, a2), Pexp_function (b0, b1, b2)) ->
+      (* FIX *)
+      eq_list
+        (fun ((a0, a1), (b0, b1)) ->
+          (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
+        (a2, b2))
   | (Pexp_apply (a0, a1), Pexp_apply (b0, b1)) ->
       (eq_expression (a0, b0)) &&
         (eq_list
@@ -685,10 +687,9 @@ and eq_expression_desc :
               (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
            (a1, b1))
   | (Pexp_tuple a0, Pexp_tuple b0) -> eq_list eq_expression (a0, b0)
-  | (Pexp_construct (a0, a1, a2), Pexp_construct (b0, b1, b2)) ->
+  | (Pexp_construct (a0, a1), Pexp_construct (b0, b1)) ->
       ((Asttypes.eq_loc Longident.eq_t (a0, b0)) &&
          (eq_option eq_expression (a1, b1)))
-        && (eq_bool (a2, b2))
   | (Pexp_variant (a0, a1), Pexp_variant (b0, b1)) ->
       (Asttypes.eq_label (a0, b0)) &&
         (eq_option eq_expression (a1, b1))
@@ -743,7 +744,6 @@ and eq_expression_desc :
          (eq_module_expr (a1, b1)))
         && (eq_expression (a2, b2))
   | (Pexp_assert a0, Pexp_assert b0) -> eq_expression (a0, b0)
-  | (Pexp_assertfalse, Pexp_assertfalse) -> true
   | (Pexp_lazy a0, Pexp_lazy b0) -> eq_expression (a0, b0)
   | (Pexp_poly (a0, a1), Pexp_poly (b0, b1)) ->
       (eq_expression (a0, b0)) && (eq_option eq_core_type (a1, b1))

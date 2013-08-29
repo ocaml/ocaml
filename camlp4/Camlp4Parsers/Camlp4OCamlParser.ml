@@ -339,7 +339,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     (* Patterns *)
     patt:
-      [ "as" LEFTA
+      [  "attribute"
+        [ e = SELF; "[@"; s = a_LIDENT; str = str_items; "]" ->
+            Ast.PaAtt _loc s str e  ]
+      | "as" LEFTA
         [ p1 = SELF; "as"; i = a_LIDENT -> <:patt< ($p1$ as $lid:i$) >> ]
       | "|" LEFTA
         [ p1 = SELF; "|"; p2 = SELF -> <:patt< $p1$ | $p2$ >> ]
@@ -500,6 +503,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             let t = <:ctyp< $t1$ $t2$ >> in
             try <:ctyp< $id:Ast.ident_of_ctyp t$ >>
             with [ Invalid_argument s -> raise (Stream.Error s) ] ]
+      | "attribute"
+        [ e = SELF; "[@"; s = a_LIDENT; str = str_items; "]" ->
+            Ast.TyAtt _loc s str e ]
       | "simple"
         [ "'"; i = a_ident -> <:ctyp< '$i$ >>
         | "_" -> <:ctyp< _ >>

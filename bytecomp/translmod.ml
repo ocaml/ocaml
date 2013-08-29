@@ -109,7 +109,7 @@ let mod_prim name =
 let undefined_location loc =
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lconst(Const_block(0,
-                     [Const_base(Const_string fname);
+                     [Const_base(Const_string (fname, None));
                       Const_base(Const_int line);
                       Const_base(Const_int char)]))
 
@@ -222,10 +222,10 @@ let eval_rec_bindings bindings cont =
 let compile_recmodule compile_rhs bindings cont =
   eval_rec_bindings
     (reorder_rec_bindings
-      (List.map
-        (fun ( id, _, _, modl) ->
-                  (id, modl.mod_loc, init_shape modl, compile_rhs id modl))
-        bindings))
+       (List.map
+          (fun {mb_id=id; mb_expr=modl; _} ->
+            (id, modl.mod_loc, init_shape modl, compile_rhs id modl))
+          bindings))
     cont
 
 (* Extract the list of "value" identifiers bound by a signature.
@@ -298,39 +298,38 @@ and transl_structure fields cc rootpath = function
       end
   | item :: rem ->
       match item.str_desc with
-      | Tstr_eval expr ->
+      | Tstr_eval (expr, _) ->
       Lsequence(transl_exp expr, transl_structure fields cc rootpath rem)
   | Tstr_value(rec_flag, pat_expr_list) ->
       let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
       transl_let rec_flag pat_expr_list
                  (transl_structure ext_fields cc rootpath rem)
-  | Tstr_primitive(id, _, descr) ->
+  | Tstr_primitive descr ->
       record_primitive descr.val_val;
       transl_structure fields cc rootpath rem
   | Tstr_type(decls) ->
       transl_structure fields cc rootpath rem
-  | Tstr_exception( id, _, decl) ->
-      Llet(Strict, id, transl_exception id (field_path rootpath id) decl,
+  | Tstr_exception decl ->
+      let id = decl.cd_id in
+      Llet(Strict, id, transl_exception (field_path rootpath id) decl,
            transl_structure (id :: fields) cc rootpath rem)
-  | Tstr_exn_rebind( id, _, path, _) ->
+  | Tstr_exn_rebind( id, _, path, _, _) ->
       Llet(Strict, id, transl_path path,
            transl_structure (id :: fields) cc rootpath rem)
-  | Tstr_module( id, _, modl) ->
+  | Tstr_module mb ->
+      let id = mb.mb_id in
       Llet(Strict, id,
-           transl_module Tcoerce_none (field_path rootpath id) modl,
+           transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr,
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_recmodule bindings ->
       let ext_fields =
-        List.rev_append (List.map (fun (id, _,_,_) -> id) bindings) fields in
+        List.rev_append (List.map (fun mb -> mb.mb_id) bindings) fields
+      in
       compile_recmodule
         (fun id modl ->
           transl_module Tcoerce_none (field_path rootpath id) modl)
         bindings
         (transl_structure ext_fields cc rootpath rem)
-  | Tstr_modtype(id, _, decl) ->
-      transl_structure fields cc rootpath rem
-  | Tstr_open _ ->
-      transl_structure fields cc rootpath rem
   | Tstr_class cl_list ->
       let ids = List.map (fun (ci,_,_) -> ci.ci_id_class) cl_list in
       Lletrec(List.map
@@ -340,9 +339,7 @@ and transl_structure fields cc rootpath = function
                   (id, transl_class ids id meths cl vf ))
                 cl_list,
               transl_structure (List.rev ids @ fields) cc rootpath rem)
-  | Tstr_class_type cl_list ->
-      transl_structure fields cc rootpath rem
-  | Tstr_include(modl, sg) ->
+  | Tstr_include(modl, sg, _) ->
       let ids = bound_value_identifiers sg in
       let mid = Ident.create "include" in
       let rec rebind_idents pos newfields = function
@@ -353,6 +350,12 @@ and transl_structure fields cc rootpath = function
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
+
+  | Tstr_modtype _
+  | Tstr_open _
+  | Tstr_class_type _
+  | Tstr_attribute _ ->
+      transl_structure fields cc rootpath rem
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -376,22 +379,23 @@ let rec defined_idents = function
     [] -> []
   | item :: rem ->
     match item.str_desc with
-    | Tstr_eval expr -> defined_idents rem
+    | Tstr_eval (expr, _) -> defined_idents rem
     | Tstr_value(rec_flag, pat_expr_list) ->
       let_bound_idents pat_expr_list @ defined_idents rem
-    | Tstr_primitive(id, _, descr) -> defined_idents rem
+    | Tstr_primitive desc -> defined_idents rem
     | Tstr_type decls -> defined_idents rem
-    | Tstr_exception(id, _, decl) -> id :: defined_idents rem
-    | Tstr_exn_rebind(id, _, path, _) -> id :: defined_idents rem
-    | Tstr_module(id, _, modl) -> id :: defined_idents rem
+    | Tstr_exception decl -> decl.cd_id :: defined_idents rem
+    | Tstr_exn_rebind(id, _, path, _, _) -> id :: defined_idents rem
+    | Tstr_module mb -> mb.mb_id :: defined_idents rem
     | Tstr_recmodule decls ->
-      List.map (fun (id, _, _, _) -> id) decls @ defined_idents rem
-    | Tstr_modtype(id, _, decl) -> defined_idents rem
+      List.map (fun mb -> mb.mb_id) decls @ defined_idents rem
+    | Tstr_modtype _ -> defined_idents rem
     | Tstr_open _ -> defined_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ defined_idents rem
     | Tstr_class_type cl_list -> defined_idents rem
-    | Tstr_include(modl, sg) -> bound_value_identifiers sg @ defined_idents rem
+    | Tstr_include(modl, sg, _) -> bound_value_identifiers sg @ defined_idents rem
+    | Tstr_attribute _ -> []
 
 (* second level idents (module M = struct ... let id = ... end),
    and all sub-levels idents *)
@@ -399,44 +403,46 @@ let rec more_idents = function
     [] -> []
   | item :: rem ->
     match item.str_desc with
-    | Tstr_eval expr -> more_idents rem
+    | Tstr_eval (expr, _attrs) -> more_idents rem
     | Tstr_value(rec_flag, pat_expr_list) -> more_idents rem
-    | Tstr_primitive(id, _, descr) -> more_idents rem
+    | Tstr_primitive _ -> more_idents rem
     | Tstr_type decls -> more_idents rem
-    | Tstr_exception(id, _, decl) -> more_idents rem
-    | Tstr_exn_rebind(id, _, path, _) -> more_idents rem
+    | Tstr_exception _ -> more_idents rem
+    | Tstr_exn_rebind(id, _, path, _, _) -> more_idents rem
     | Tstr_recmodule decls -> more_idents rem
-    | Tstr_modtype(id, _, decl) -> more_idents rem
+    | Tstr_modtype _ -> more_idents rem
     | Tstr_open _ -> more_idents rem
     | Tstr_class cl_list -> more_idents rem
     | Tstr_class_type cl_list -> more_idents rem
-    | Tstr_include(modl, _) -> more_idents rem
-    | Tstr_module(id, _, { mod_desc = Tmod_structure str }) ->
-      all_idents str.str_items @ more_idents rem
-    | Tstr_module(id, _, _) -> more_idents rem
+    | Tstr_include(modl, _, _) -> more_idents rem
+    | Tstr_module {mb_expr={mod_desc = Tmod_structure str}} ->
+        all_idents str.str_items @ more_idents rem
+    | Tstr_module _ -> more_idents rem
+    | Tstr_attribute _ -> []
 
 and all_idents = function
     [] -> []
   | item :: rem ->
     match item.str_desc with
-    | Tstr_eval expr -> all_idents rem
+    | Tstr_eval (expr, _attrs) -> all_idents rem
     | Tstr_value(rec_flag, pat_expr_list) ->
       let_bound_idents pat_expr_list @ all_idents rem
-    | Tstr_primitive(id, _, descr) -> all_idents rem
+    | Tstr_primitive _ -> all_idents rem
     | Tstr_type decls -> all_idents rem
-    | Tstr_exception(id, _, decl) -> id :: all_idents rem
-    | Tstr_exn_rebind(id, _, path, _) -> id :: all_idents rem
+    | Tstr_exception decl -> decl.cd_id :: all_idents rem
+    | Tstr_exn_rebind(id, _, path, _, _) -> id :: all_idents rem
     | Tstr_recmodule decls ->
-      List.map (fun (id, _, _, _) -> id) decls @ all_idents rem
-    | Tstr_modtype(id, _, decl) -> all_idents rem
+      List.map (fun mb -> mb.mb_id) decls @ all_idents rem
+    | Tstr_modtype _ -> all_idents rem
     | Tstr_open _ -> all_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type cl_list -> all_idents rem
-    | Tstr_include(modl, sg) -> bound_value_identifiers sg @ all_idents rem
-    | Tstr_module(id, _, { mod_desc = Tmod_structure str }) ->
-      id :: all_idents str.str_items @ all_idents rem
-    | Tstr_module(id, _, _) -> id :: all_idents rem
+    | Tstr_include(modl, sg, _) -> bound_value_identifiers sg @ all_idents rem
+    | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}} ->
+        mb_id :: all_idents str.str_items @ all_idents rem
+    | Tstr_module mb -> mb.mb_id :: all_idents rem
+    | Tstr_attribute _ -> []
 
 
 (* A variant of transl_structure used to compile toplevel structure definitions
@@ -466,7 +472,7 @@ let transl_store_structure glob map prims str =
         lambda_unit
     | item :: rem ->
         match item.str_desc with
-  | Tstr_eval expr ->
+  | Tstr_eval (expr, _attrs) ->
       Lsequence(subst_lambda subst (transl_exp expr),
                 transl_store rootpath subst rem)
   | Tstr_value(rec_flag, pat_expr_list) ->
@@ -474,20 +480,21 @@ let transl_store_structure glob map prims str =
       let lam = transl_let rec_flag pat_expr_list (store_idents ids) in
       Lsequence(subst_lambda subst lam,
                 transl_store rootpath (add_idents false ids subst) rem)
-  | Tstr_primitive(id, _, descr) ->
+  | Tstr_primitive descr ->
       record_primitive descr.val_val;
       transl_store rootpath subst rem
   | Tstr_type(decls) ->
       transl_store rootpath subst rem
-  | Tstr_exception( id, _, decl) ->
-      let lam = transl_exception id (field_path rootpath id) decl in
+  | Tstr_exception decl ->
+      let id = decl.cd_id in
+      let lam = transl_exception (field_path rootpath id) decl in
       Lsequence(Llet(Strict, id, lam, store_ident id),
                 transl_store rootpath (add_ident false id subst) rem)
-  | Tstr_exn_rebind( id, _, path, _) ->
+  | Tstr_exn_rebind( id, _, path, _, _) ->
       let lam = subst_lambda subst (transl_path path) in
       Lsequence(Llet(Strict, id, lam, store_ident id),
                 transl_store rootpath (add_ident false id subst) rem)
-  | Tstr_module(id, _, { mod_desc = Tmod_structure str }) ->
+  | Tstr_module{mb_id=id; mb_expr={mod_desc = Tmod_structure str}} ->
     let lam = transl_store (field_path rootpath id) subst str.str_items in
       (* Careful: see next case *)
     let subst = !transl_store_subst in
@@ -500,7 +507,7 @@ let transl_store_structure glob map prims str =
                    Lsequence(store_ident id,
                              transl_store rootpath (add_ident true id subst)
                                           rem)))
-  | Tstr_module( id, _, modl) ->
+  | Tstr_module{mb_id=id; mb_expr=modl} ->
       let lam =
         transl_module Tcoerce_none (field_path rootpath id) modl in
       (* Careful: the module value stored in the global may be different
@@ -513,7 +520,7 @@ let transl_store_structure glob map prims str =
         Lsequence(store_ident id,
                   transl_store rootpath (add_ident true id subst) rem))
   | Tstr_recmodule bindings ->
-      let ids = List.map fst4 bindings in
+      let ids = List.map (fun mb -> mb.mb_id) bindings in
       compile_recmodule
         (fun id modl ->
           subst_lambda subst
@@ -522,10 +529,6 @@ let transl_store_structure glob map prims str =
         bindings
         (Lsequence(store_idents ids,
                    transl_store rootpath (add_idents true ids subst) rem))
-  | Tstr_modtype(id, _, decl) ->
-      transl_store rootpath subst rem
-  | Tstr_open _ ->
-      transl_store rootpath subst rem
   | Tstr_class cl_list ->
       let ids = List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list in
       let lam =
@@ -538,9 +541,7 @@ let transl_store_structure glob map prims str =
                 store_idents ids) in
       Lsequence(subst_lambda subst lam,
                 transl_store rootpath (add_idents false ids subst) rem)
-  | Tstr_class_type cl_list ->
-      transl_store rootpath subst rem
-  | Tstr_include(modl, sg) ->
+  | Tstr_include(modl, sg, _attrs) ->
       let ids = bound_value_identifiers sg in
       let mid = Ident.create "include" in
       let rec store_idents pos = function
@@ -551,6 +552,11 @@ let transl_store_structure glob map prims str =
       Llet(Strict, mid,
            subst_lambda subst (transl_module Tcoerce_none None modl),
            store_idents 0 ids)
+  | Tstr_modtype _
+  | Tstr_open _
+  | Tstr_class_type _
+  | Tstr_attribute _ ->
+      transl_store rootpath subst rem
 
   and store_ident id =
     try
@@ -635,7 +641,7 @@ let transl_store_gen module_name ({ str_items = str }, restr) topl =
   let (map, prims, size) =
     build_ident_map restr (defined_idents str) (more_idents str) in
   let f = function
-    | [ { str_desc = Tstr_eval expr } ] when topl ->
+    | [ { str_desc = Tstr_eval (expr, _attrs) } ] when topl ->
         assert (size = 0);
         subst_lambda !transl_store_subst (transl_exp expr)
     | str -> transl_store_structure module_id map prims str in
@@ -671,13 +677,13 @@ let toplevel_name id =
 let toploop_getvalue id =
   Lapply(Lprim(Pfield toploop_getvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id)))],
+         [Lconst(Const_base(Const_string (toplevel_name id, None)))],
          Location.none)
 
 let toploop_setvalue id lam =
   Lapply(Lprim(Pfield toploop_setvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id))); lam],
+         [Lconst(Const_base(Const_string (toplevel_name id, None))); lam],
          Location.none)
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
@@ -688,36 +694,28 @@ let close_toplevel_term lam =
 
 let transl_toplevel_item item =
   match item.str_desc with
-    Tstr_eval expr ->
+    Tstr_eval (expr, _attrs) ->
       transl_exp expr
   | Tstr_value(rec_flag, pat_expr_list) ->
       let idents = let_bound_idents pat_expr_list in
       transl_let rec_flag pat_expr_list
                  (make_sequence toploop_setvalue_id idents)
-  | Tstr_primitive(id, _, descr) ->
-      lambda_unit
-  | Tstr_type(decls) ->
-      lambda_unit
-  | Tstr_exception(id, _, decl) ->
-      toploop_setvalue id (transl_exception id None decl)
-  | Tstr_exn_rebind(id, _, path, _) ->
+  | Tstr_exception decl ->
+      toploop_setvalue decl.cd_id (transl_exception None decl)
+  | Tstr_exn_rebind(id, _, path, _, _) ->
       toploop_setvalue id (transl_path path)
-  | Tstr_module(id, _, modl) ->
+  | Tstr_module {mb_id=id; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
          with "open" (PR#1672) *)
       set_toplevel_unique_name id;
       toploop_setvalue id
                         (transl_module Tcoerce_none (Some(Pident id)) modl)
   | Tstr_recmodule bindings ->
-      let idents = List.map fst4 bindings in
+      let idents = List.map (fun mb -> mb.mb_id) bindings in
       compile_recmodule
         (fun id modl -> transl_module Tcoerce_none (Some(Pident id)) modl)
         bindings
         (make_sequence toploop_setvalue_id idents)
-  | Tstr_modtype(id, _, decl) ->
-      lambda_unit
-  | Tstr_open _ ->
-      lambda_unit
   | Tstr_class cl_list ->
       (* we need to use unique names for the classes because there might
          be a value named identically *)
@@ -732,9 +730,7 @@ let transl_toplevel_item item =
               make_sequence
                 (fun (ci, _, _) -> toploop_setvalue_id ci.ci_id_class)
                 cl_list)
-  | Tstr_class_type cl_list ->
-      lambda_unit
-  | Tstr_include(modl, sg) ->
+  | Tstr_include(modl, sg, _attrs) ->
       let ids = bound_value_identifiers sg in
       let mid = Ident.create "include" in
       let rec set_idents pos = function
@@ -744,6 +740,13 @@ let transl_toplevel_item item =
           Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
                     set_idents (pos + 1) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
+  | Tstr_modtype _
+  | Tstr_open _
+  | Tstr_primitive _
+  | Tstr_type _
+  | Tstr_class_type _
+  | Tstr_attribute _ ->
+      lambda_unit
 
 let transl_toplevel_item_and_close itm =
   close_toplevel_term (transl_label_init (transl_toplevel_item itm))

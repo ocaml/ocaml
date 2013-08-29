@@ -587,6 +587,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
            o#module_expr me o#module_type mt
     | <:expr< (module $me$) >> ->
         pp f "@[<hv0>@[<hv2>(module %a@])@]" o#module_expr me
+    | Ast.ExAtt _loc s str e ->
+        pp f "((%a)[@@%s %a])" o#expr e s o#str_item str
     | <:expr< $_$ $_$ >> | <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
       <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
       <:expr< $_$ # $_$ >> |
@@ -690,6 +692,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       <:patt< $_$ .. $_$ >> | <:patt< $_$, $_$ >> |
       <:patt< $_$; $_$ >> | <:patt< $_$ = $_$ >> | <:patt< lazy $_$ >> as p ->
           pp f "@[<1>(%a)@]" o#patt p
+    | Ast.PaAtt _loc s str e ->
+        pp f "((%a)[@@%s %a])" o#patt e s o#str_item str
     ];
 
     method patt_tycon f =
@@ -726,6 +730,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< # $i$ >> -> pp f "@[<2>#%a@]" o#ident i
     | <:ctyp< `$s$ >> -> pp f "`%a" o#var s
     | <:ctyp< $t1$ * $t2$ >> -> pp f "%a *@ %a" o#simple_ctyp t1 o#simple_ctyp t2
+    | Ast.TyAtt _loc s str e ->
+        pp f "((%a)[@@%s %a])" o#ctyp e s o#str_item str
     | <:ctyp<>> -> assert False
     | t -> pp f "@[<1>(%a)@]" o#ctyp t ];
 
@@ -904,6 +910,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:module_type< '$s$ >> -> pp f "'%a" o#var s
     | <:module_type< sig $sg$ end >> ->
           pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" o#sig_item sg
+    | Ast.MtAtt _loc s str e ->
+        pp f "((%a)[@@%s %a])" o#module_type e s o#str_item str
     | <:module_type< $mt$ with $wc$ >> ->
           pp f "@[<2>%a@ with@ %a@]" o#module_type mt o#with_constraint wc ];
 
@@ -950,6 +958,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<1>(%s %a :@ %a)@]" o#value_val o#expr e o#module_type mt
     | <:module_expr< (value $e$ ) >> ->
           pp f "@[<1>(%s %a)@]" o#value_val o#expr e
+    | Ast.MeAtt _loc s str e ->
+        pp f "((%a)[@@%s %a])" o#module_expr e s o#str_item str
     ];
 
     method class_expr f ce =
@@ -985,6 +995,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             o#patt_class_expr_fun_args (p, ce2)
     | <:class_expr< $ce1$ = $ce2$ >> ->
           pp f "@[<2>%a =@]@ %a" o#class_expr ce1 o#class_expr ce2
+    | Ast.CeAtt _loc s str e ->
+        pp f "((%a)[@@%s %a])" o#class_expr e s o#str_item str
     | _ -> assert False ];
 
     method class_type f ct =
@@ -1012,6 +1024,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "%a :@ %a" o#class_type ct1 o#class_type ct2
     | <:class_type< $ct1$ = $ct2$ >> ->
           pp f "%a =@ %a" o#class_type ct1 o#class_type ct2
+    | Ast.CtAtt _loc s str e ->
+        pp f "((%a)[@@%s %a])" o#class_type e s o#str_item str
     | _ -> assert False ];
 
     method class_sig_item f csg =

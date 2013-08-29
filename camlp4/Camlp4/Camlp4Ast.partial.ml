@@ -104,6 +104,7 @@
     | TyAmp of loc and ctyp and ctyp (* t & t *)
     | TyOfAmp of loc and ctyp and ctyp (* t of & t *)
     | TyPkg of loc and module_type (* (module S) *)
+    | TyAtt of loc and string and str_item and ctyp  (* .. [@attr] *)
     | TyAnt of loc and string (* $s$ *)
     ]
    and patt =
@@ -137,6 +138,7 @@
     | PaTyp of loc and ident (* #i *)
     | PaVrn of loc and string (* `s *)
     | PaLaz of loc and patt (* lazy p *)
+    | PaAtt of loc and string and str_item and patt  (* .. [@attr] *)
     | PaMod of loc and string (* (module M) *) ]
   and expr =
     [ ExNil of loc
@@ -205,7 +207,10 @@
       (* let f x (type t) y z = e *)
     | ExFUN of loc and string and expr
       (* (module ME : S) which is represented as (module (ME : S)) *)
-    | ExPkg of loc and module_expr ]
+    | ExPkg of loc and module_expr
+      (* e [@attr] *)
+    | ExAtt of loc and string and str_item and expr
+  ]
   and module_type =
     [ MtNil of loc
       (* i *) (* A.B.C *)
@@ -220,6 +225,7 @@
     | MtWit of loc and module_type and with_constr
       (* module type of m *)
     | MtOf of loc and module_expr
+    | MtAtt of loc and string and str_item and module_type  (* .. [@attr] *)
     | MtAnt of loc and string (* $s$ *) ]
   and sig_item =
     [ SgNil of loc
@@ -308,6 +314,7 @@
       (* (value e) *)
       (* (value e : S) which is represented as (value (e : S)) *)
     | MePkg of loc and expr
+    | MeAtt of loc and string and str_item and module_expr  (* .. [@attr] *)
     | MeAnt of loc and string (* $s$ *) ]
   and str_item =
     [ StNil of loc
@@ -355,6 +362,7 @@
       (* ct = ct *)
     | CtEq  of loc and class_type and class_type
       (* $s$ *)
+    | CtAtt of loc and string and str_item and class_type  (* .. [@attr] *)
     | CtAnt of loc and string ]
   and class_sig_item =
     [ CgNil of loc
@@ -390,6 +398,7 @@
       (* ce = ce *)
     | CeEq  of loc and class_expr and class_expr
       (* $s$ *)
+    | CeAtt of loc and string and str_item and class_expr  (* .. [@attr] *)
     | CeAnt of loc and string ]
   and class_str_item =
     [ CrNil of loc

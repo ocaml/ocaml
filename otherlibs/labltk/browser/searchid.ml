@@ -412,12 +412,13 @@ open Parsetree
 
 let rec bound_variables pat =
   match pat.ppat_desc with
-    Ppat_any | Ppat_constant _ | Ppat_type _ | Ppat_unpack _ -> []
+    Ppat_any | Ppat_constant _ | Ppat_type _ | Ppat_unpack _
+  | Ppat_interval _ -> []
   | Ppat_var s -> [s.txt]
   | Ppat_alias (pat,s) -> s.txt :: bound_variables pat
   | Ppat_tuple l -> List2.flat_map l ~f:bound_variables
-  | Ppat_construct (_,None,_) -> []
-  | Ppat_construct (_,Some pat,_) -> bound_variables pat
+  | Ppat_construct (_,None) -> []
+  | Ppat_construct (_,Some pat) -> bound_variables pat
   | Ppat_variant (_,None) -> []
   | Ppat_variant (_,Some pat) -> bound_variables pat
   | Ppat_record (l, _) ->
@@ -428,6 +429,7 @@ let rec bound_variables pat =
       bound_variables pat1 @ bound_variables pat2
   | Ppat_constraint (pat,_) -> bound_variables pat
   | Ppat_lazy pat -> bound_variables pat
+  | Ppat_extension _ -> []
 
 let search_structure str ~name ~kind ~prefix =
   let loc = ref 0 in
@@ -438,9 +440,9 @@ let search_structure str ~name ~kind ~prefix =
           List.fold_left ~init:[] str ~f:
             begin fun acc item ->
               match item.pstr_desc with
-                Pstr_module (s, mexp) when s.txt = modu ->
-                  loc := mexp.pmod_loc.loc_start.Lexing.pos_cnum;
-                  begin match mexp.pmod_desc with
+                Pstr_module x when x.pmb_name.txt = modu ->
+                  loc := x.pmb_expr.pmod_loc.loc_start.Lexing.pos_cnum;
+                  begin match x.pmb_expr.pmod_desc with
                     Pmod_structure str -> str
                   | _ -> []
                   end
@@ -453,21 +455,21 @@ let search_structure str ~name ~kind ~prefix =
       if match item.pstr_desc with
         Pstr_value (_, l) when kind = Pvalue ->
           List.iter l ~f:
-            begin fun (pat,_) ->
+            begin fun {pvb_pat=pat} ->
               if List.mem name (bound_variables pat)
               then loc := pat.ppat_loc.loc_start.Lexing.pos_cnum
             end;
           false
-      | Pstr_primitive (s, _) when kind = Pvalue -> name = s.txt
+      | Pstr_primitive vd when kind = Pvalue -> name = vd.pval_name.txt
       | Pstr_type l when kind = Ptype ->
           List.iter l ~f:
-            begin fun (s, td) ->
-              if s.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
+            begin fun td ->
+              if td.ptype_name.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
             end;
           false
-      | Pstr_exception (s, _) when kind = Pconstructor -> name = s.txt
-      | Pstr_module (s, _) when kind = Pmodule -> name = s.txt
-      | Pstr_modtype (s, _) when kind = Pmodtype -> name = s.txt
+      | Pstr_exception pcd when kind = Pconstructor -> name = pcd.pcd_name.txt
+      | Pstr_module x when kind = Pmodule -> name = x.pmb_name.txt
+      | Pstr_modtype x when kind = Pmodtype -> name = x.pmtd_name.txt
       | Pstr_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
           List.iter l ~f:
             begin fun c ->
@@ -498,9 +500,9 @@ let search_signature sign ~name ~kind ~prefix =
           List.fold_left ~init:[] sign ~f:
             begin fun acc item ->
               match item.psig_desc with
-                Psig_module (s, mtyp) when s.txt = modu ->
-                  loc := mtyp.pmty_loc.loc_start.Lexing.pos_cnum;
-                  begin match mtyp.pmty_desc with
+                Psig_module pmd when pmd.pmd_name.txt = modu ->
+                  loc := pmd.pmd_type.pmty_loc.loc_start.Lexing.pos_cnum;
+                  begin match pmd.pmd_type.pmty_desc with
                     Pmty_signature sign -> sign
                   | _ -> []
                   end
@@ -511,16 +513,16 @@ let search_signature sign ~name ~kind ~prefix =
   List.iter (search_module_type sign ~prefix) ~f:
     begin fun item ->
       if match item.psig_desc with
-        Psig_value (s, _) when kind = Pvalue -> name = s.txt
+        Psig_value vd when kind = Pvalue -> name = vd.pval_name.txt
       | Psig_type l when kind = Ptype ->
           List.iter l ~f:
-            begin fun (s, td) ->
-              if s.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
+            begin fun td ->
+              if td.ptype_name.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
             end;
           false
-      | Psig_exception (s, _) when kind = Pconstructor -> name = s.txt
-      | Psig_module (s, _) when kind = Pmodule -> name = s.txt
-      | Psig_modtype (s, _) when kind = Pmodtype -> name = s.txt
+      | Psig_exception pcd when kind = Pconstructor -> name = pcd.pcd_name.txt
+      | Psig_module pmd when kind = Pmodule -> name = pmd.pmd_name.txt
+      | Psig_modtype pmtd when kind = Pmodtype -> name = pmtd.pmtd_name.txt
       | Psig_class l when kind = Pclass || kind = Ptype || kind = Pcltype ->
           List.iter l ~f:
             begin fun c ->
