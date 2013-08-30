@@ -3,6 +3,9 @@ Next version:
 
 (Changes that can break existing programs are marked with a "*")
 
+Language features:
+- Attributes and extension nodes
+
 Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
 
