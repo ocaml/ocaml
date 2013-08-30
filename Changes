@@ -64,9 +64,8 @@ Internals:
 - The test suite can now be run without installing OCaml first.
 
 Bug fixes:
-- PR#5820: Fix camlp4 lexer roll back problem
-- PR#4855: 'camlp4 -I +dir' accepted, dir is related to 'camlp4 -where'
-- PR#6062: Fix a regression bug caused by commit 13047
+- PR#3236: Document the fact that queues are not thread-safe
+- PR#3468: (part 1) Sys_error documentation
 - PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4079: Queue.copy is now tail-recursive
