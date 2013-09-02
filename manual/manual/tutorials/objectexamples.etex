@@ -280,7 +280,7 @@ class printable_point x_init =
     method get_x = x
     method move d = x <- x + d
     method print = print_int self#get_x
-    initializer print_string "new point at "; self#print; print_newline()
+    initializer print_string "new point at "; self#print; print_newline ()
   end;;
 let p = new printable_point 17;;
 \end{caml_example}

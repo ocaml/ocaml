@@ -145,7 +145,7 @@ ccp#history;;
 \end{caml_example}
 Closing an account can be done with the following polymorphic function:
 \begin{caml_example}
-let close c = c#withdraw (c#balance);;
+let close c = c#withdraw c#balance;;
 \end{caml_example}
 Of course, this applies to all sorts of accounts.
 
@@ -411,7 +411,7 @@ However, the method "fold" of a given object can only be
 applied to functions that all have the same type:
 \begin{caml_example}
 let s = new stack2;;
-s#fold (+) 0;;
+s#fold ( + ) 0;;
 s;;
 \end{caml_example}
 A better solution is to use polymorphic methods, which were
@@ -523,7 +523,7 @@ module Set : SET =
       object (_ : 'b)
         val repr = ([] : 'a list)
         method is_empty = (repr = [])
-        method mem x = List.exists ((=) x) repr
+        method mem x = List.exists (( = ) x) repr
         method add x = {< repr = merge [x] repr >}
         method union (s : 'b) = {< repr = merge repr s#tag >}
         method iter (f : 'a -> unit) = List.iter f repr

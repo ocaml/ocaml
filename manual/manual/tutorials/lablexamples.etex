@@ -58,7 +58,7 @@ the remaining parameters.
 let f ~x ~y = x - y;;
 f ~y:2 ~x:3;;
 ListLabels.fold_left;;
-ListLabels.fold_left [1;2;3] ~init:0 ~f:(+);;
+ListLabels.fold_left [1;2;3] ~init:0 ~f:( + );;
 ListLabels.fold_left ~init:0;;
 \end{caml_example}
 
@@ -83,7 +83,7 @@ ListLabels.map succ [1;2;3];;
 But beware that functions like "ListLabels.fold_left" whose result
 type is a type variable will never be considered as totally applied.
 \begin{caml_example}
-ListLabels.fold_left (+) 0 [1;2;3];;
+ListLabels.fold_left ( + ) 0 [1;2;3];;
 \end{caml_example}
 
 When a function is passed as an argument to a higher-order function,
@@ -92,7 +92,7 @@ are allowed.
 \begin{caml_example}
 let h g = g ~x:3 ~y:2;;
 h f;;
-h (+);;
+h ( + );;
 \end{caml_example}
 Note that when you don't need an argument, you can still use a wildcard
 pattern, but you must prefix it with the label.

@@ -31,7 +31,7 @@ identifiers (either values or functions).
 1+2*3;;
 let pi = 4.0 *. atan 1.0;;
 let square x = x *. x;;
-square(sin pi) +. square(cos pi);;
+square (sin pi) +. square (cos pi);;
 \end{caml_example}
 The OCaml system computes both the value and the type for
 each phrase. Even function parameters need no explicit type declaration:
@@ -46,7 +46,7 @@ integers, but "+." and "*."  operate on floats.
 Recursive functions are defined with the "let rec" binding:
 \begin{caml_example}
 let rec fib n =
-  if n < 2 then n else fib(n-1) + fib(n-2);;
+  if n < 2 then n else fib (n-1) + fib (n-2);;
 fib 10;;
 \end{caml_example}
 
@@ -124,13 +124,13 @@ piece of data. For instance, here is a "deriv" function that takes any
 float function as argument and returns an approximation of its
 derivative function:
 \begin{caml_example}
-let deriv f dx = function x -> (f(x +. dx) -. f(x)) /. dx;;
+let deriv f dx = function x -> (f (x +. dx) -. f x) /. dx;;
 let sin' = deriv sin 1e-6;;
 sin' pi;;
 \end{caml_example}
 Even function composition is definable:
 \begin{caml_example}
-let compose f g = function x -> f(g(x));;
+let compose f g = function x -> f (g x);;
 let cos2 = compose square cos;;
 \end{caml_example}
 
@@ -196,7 +196,7 @@ let add_num n1 n2 =
   match (n1, n2) with
     (Int i1, Int i2) ->
       (* Check for overflow of integer addition *)
-      if sign_int i1 = sign_int i2 && sign_int(i1 + i2) <> sign_int i1
+      if sign_int i1 = sign_int i2 && sign_int (i1 + i2) <> sign_int i1
       then Float(float i1 +. float i2)
       else Int(i1 + i2)
   | (Int i1, Float f2) -> Float(float i1 +. f2)
@@ -304,8 +304,8 @@ Again, there is nothing magical with references: they are implemented as
 a single-field mutable record, as follows.
 \begin{caml_example}
 type 'a ref = { mutable contents: 'a };;
-let (!) r = r.contents;;
-let (:=) r newval = r.contents <- newval;;
+let ( ! ) r = r.contents;;
+let ( := ) r newval = r.contents <- newval;;
 \end{caml_example}
 
 In some special cases, you may need to store a polymorphic function in
@@ -406,7 +406,7 @@ let rec eval env exp =
   match exp with
     Const c -> c
   | Var v ->
-      (try List.assoc v env with Not_found -> raise(Unbound_variable v))
+      (try List.assoc v env with Not_found -> raise (Unbound_variable v))
   | Sum(f, g) -> eval env f +. eval env g
   | Diff(f, g) -> eval env f -. eval env g
   | Prod(f, g) -> eval env f *. eval env g
@@ -474,8 +474,8 @@ let print_expr exp =
         close_paren prec 2
   in print 0 exp;;
 let e = Sum(Prod(Const 2.0, Var "x"), Const 1.0);;
-print_expr e; print_newline();;
-print_expr (deriv e "x"); print_newline();;
+print_expr e; print_newline ();;
+print_expr (deriv e "x"); print_newline ();;
 \end{caml_example}
 
 Parsing (transforming concrete syntax into abstract syntax) is usually
@@ -506,7 +506,7 @@ input stream of characters. Tokens are either identifiers, keywords,
 or literals (integer, floats, characters, strings). Whitespace and
 comments are skipped.
 \begin{caml_example}
-let token_stream = lexer(Stream.of_string "1.0 +x");;
+let token_stream = lexer (Stream.of_string "1.0 +x");;
 Stream.next token_stream;;
 Stream.next token_stream;;
 Stream.next token_stream;;
@@ -551,7 +551,7 @@ let parse_expression = parser [< e = parse_expr; _ = Stream.empty >] -> e;;
 Composing the lexer and parser, we finally obtain a function to read
 an expression from a character string:
 \begin{caml_example}
-let read_expression s = parse_expression(lexer(Stream.of_string s));;
+let read_expression s = parse_expression (lexer (Stream.of_string s));;
 read_expression "2*(x+y)";;
 \end{caml_example}
 A small puzzle: why do we get different results in the following two
@@ -582,11 +582,11 @@ sample standalone program to print Fibonacci numbers:
 \begin{verbatim}
 (* File fib.ml *)
 let rec fib n =
-  if n < 2 then 1 else fib(n-1) + fib(n-2);;
+  if n < 2 then 1 else fib (n-1) + fib (n-2);;
 let main () =
   let arg = int_of_string Sys.argv.(1) in
-  print_int(fib arg);
-  print_newline();
+  print_int (fib arg);
+  print_newline ();
   exit 0;;
 main ();;
 \end{verbatim}
