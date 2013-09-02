@@ -422,7 +422,7 @@ corekernel: ${COREKERNEL}.tar.gz findlib variantslib sexplib fieldslib \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ocaml setup.ml -configure && \
 	  ocaml setup.ml -build && \
-	  ocamlfind remove core && \
+	  ocamlfind remove core_kernel && \
 	  ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
@@ -737,7 +737,7 @@ distclean::
 all: obrowser
 
 # http://hevea.inria.fr/old/
-HEVEA=hevea-2.08
+HEVEA=hevea-2.09
 ${HEVEA}.tar.gz:
 	${WGET} http://hevea.inria.fr/old/$@
 hevea: ${HEVEA}.tar.gz
