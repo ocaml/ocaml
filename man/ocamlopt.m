@@ -431,6 +431,8 @@ errors, the intermediate file is deleted afterwards.
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
+The format of the input and ouput of the preprocessor
+are not yet documented.
 .TP
 .B \-principal
 Check information path during type-checking, to make sure that all
