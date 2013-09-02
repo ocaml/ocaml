@@ -119,6 +119,14 @@ The \var{src}".annot" file can be used with the emacs commands given in
 "emacs/caml-types.el" to display types and other annotations
 interactively.
 
+\item["-bin-annot"]
+Dump detailed information about the compilation (types, bindings,
+tail-calls, etc) in binary format. The information for file \var{src}".ml"
+is put into file \var{src}".cmt".  In case of a type error, dump
+all the information inferred by the type-checker before the error.
+The "*.cmt" files produced by "-bin-annot" contain more information
+and are much more compact than the files produced by "-annot".
+
 \item["-c"]
 Compile only. Suppress the linking phase of the
 compilation. Source code files are turned into compiled files, but no
@@ -215,6 +223,12 @@ flag is not given, unreferenced modules are not linked in. When
 building a library ("-a" flag), setting the "-linkall" flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
+
+\item["-no-app-funct"]
+Deactivates the applicative behaviour of functors. With this option,
+each functor application generates new types in its result and
+applying the same functor twice to the same argument yields two
+incompatible structures.
 
 \item["-noassert"]
 Do not compile assertion checks.  Note that the special form
@@ -313,6 +327,11 @@ for each source file. The output of \var{command} is redirected to
 an intermediate file, which is compiled. If there are no compilation
 errors, the intermediate file is deleted afterwards.
 
+\item["-ppx" \var{command}]
+After parsing, pipe the abstract syntax tree through the preprocessor
+\var{command}. The format of the input and ouput of the preprocessor
+are not yet documented.
+
 \item["-principal"]
 Check information path during type-checking, to make sure that all
 types are derived in a principal way. All programs accepted in
@@ -324,6 +343,14 @@ Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported. Note that once you have created an interface using this
 flag, you must use it again for all dependencies.
+
+\item["-runtime-variant" \var{suffix}]
+Add the \var{suffix} string to the name of the runtime library used by
+the program.  Currently, only one such suffix is supported: "d", and
+only if the OCaml compiler was configured with option
+"-with-debug-runtime".  This suffix gives the debug version of the
+runtime, which is useful for debugging pointer problems in low-level
+code such as C stubs.
 
 \item["-S"]
 Keep the assembly code produced during the compilation. The assembly
@@ -340,6 +367,14 @@ only Linux AMD 64), all the OCaml code linked in a plugin must have
 been compiled without the "-nodynlink" flag. Some constraints might also
 apply to the way the extra native objects have been compiled (under
 Linux AMD 64, they must contain only position-independent code).
+
+\item["-short-paths"]
+When a type is visible under several module-paths, use the shortest
+one when printing the type's name in inferred interfaces and error and
+warning messages.
+
+\item["-strict-sequence"]
+Force the left-hand part of each sequence to have type unit.
 
 \item["-thread"]
 Compile or link multithreaded programs, in combination with the
@@ -368,16 +403,15 @@ Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 
 \item["-w" \var{warning-list}]
-Enable, disable, or mark as errors the warnings specified by the argument
+Enable, disable, or mark as fatal the warnings specified by the argument
 \var{warning-list}.
 Each warning can be {\em enabled} or {\em disabled}, and each warning
-can be {\em marked} or {\em unmarked}.
+can be {\em fatal} or {\em non-fatal}.
 If a warning is disabled, it isn't displayed and doesn't affect
-compilation in any way (even if it is marked).  If a warning is
+compilation in any way (even if it is fatal).  If a warning is
 enabled, it is displayed normally by the compiler whenever the source
-code triggers it.  If it is enabled and marked, the compiler will stop
-with an error after displaying that warning if the source code
-triggers it.
+code triggers it.  If it is enabled and fatal, the compiler will also
+stop with an error after displaying it.
 
 The \var{warning-list} argument is a sequence of warning specifiers,
 with no separators between them.  A warning specifier is one of the
@@ -386,15 +420,16 @@ following:
 \begin{options}
 \item["+"\var{num}] Enable warning number \var{num}.
 \item["-"\var{num}] Disable warning number \var{num}.
-\item["@"\var{num}] Enable and mark warning number \var{num}.
+\item["@"\var{num}] Enable and mark as fatal warning number \var{num}.
 \item["+"\var{num1}..\var{num2}] Enable warnings in the given range.
 \item["-"\var{num1}..\var{num2}] Disable warnings in the given range.
-\item["@"\var{num1}..\var{num2}] Enable and mark warnings in the given range.
+\item["@"\var{num1}..\var{num2}] Enable and mark as fatal warnings in
+the given range.
 \item["+"\var{letter}] Enable the set of warnings corresponding to
 \var{letter}. The letter may be uppercase or lowercase.
 \item["-"\var{letter}] Disable the set of warnings corresponding to
 \var{letter}. The letter may be uppercase or lowercase.
-\item["@"\var{letter}] Enable and mark the set of warnings
+\item["@"\var{letter}] Enable and mark as fatal the set of warnings
 corresponding to \var{letter}. The letter may be uppercase or
 lowercase.
 \item[\var{uppercase-letter}] Enable the set of warnings corresponding
@@ -409,27 +444,30 @@ that are currently defined are ignored. The warning are as follows.
 \input{warnings.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..39".  It is displayed by
-"ocamlopt -help".
+The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45".
+It is displayed by "ocamlopt -help".
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
 
 \item["-warn-error" \var{warning-list}]
-Mark as errors the warnings specified in the argument \var{warning-list}.
+Mark as fatal the warnings specified in the argument \var{warning-list}.
 The compiler will stop with an error when one of these warnings is
 emitted. The \var{warning-list} has the same meaning as for
-the "-w" option: a "+" sign (or an uppercase letter) turns the
-corresponding warnings into errors, a "-"
-sign (or a lowercase letter) turns them back into warnings, and a
-"@" sign both enables and marks the corresponding warnings.
+the "-w" option: a "+" sign (or an uppercase letter) marks the
+corresponding warnings as fatal, a "-"
+sign (or a lowercase letter) turns them back into non-fatal warnings,
+and a "@" sign both enables and marks as fatal the corresponding
+warnings.
 
 Note: it is not recommended to use warning sets (i.e. letters) as
 arguments to "-warn-error"
 in production code, because this can break your build when future versions
 of OCaml add some new warnings.
 
-The default setting is "-warn-error -a"
-(none of the warnings is treated as an error).
+The default setting is "-warn-error -a" (all warnings are non-fatal).
+
+\item["-warn-help"]
+Show the description of all available warning numbers.
 
 \item["-where"]
 Print the location of the standard library, then exit.

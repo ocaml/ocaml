@@ -127,8 +127,6 @@ The following command-line options are recognized by the "ocaml" command.
 
 \begin{options}
 
-%% FIXME This list is incomplete.
-
 \item["-absname"]
 Force error messages to show absolute paths for file names.
 
@@ -157,6 +155,12 @@ exists, otherwise ".ocamlinit" in the user's home directory.
 Labels are not ignored in types, labels may be used in applications,
 and labelled parameters can be given in any order.  This is the default.
 
+\item["-no-app-funct"]
+Deactivates the applicative behaviour of functors. With this option,
+each functor application generates new types in its result and
+applying the same functor twice to the same argument yields two
+incompatible structures.
+
 \item["-noassert"]
 Do not compile assertion checks.  Note that the special form
 "assert false" is always compiled because it is typed specially.
@@ -168,9 +172,19 @@ applications, and parameter order becomes strict.
 \item["-noprompt"]
 Do not display any prompt when waiting for input.
 
+\item["-nopromptcont"]
+Do not display the secondary prompt when waiting for continuation
+lines in multi-line inputs.  This should be used e.g. when running
+"ocaml" in an "emacs" window.
+
 \item["-nostdlib"]
 Do not include the standard library directory in the list of
 directories searched for source and compiled files.
+
+\item["-ppx" \var{command}]
+After parsing, pipe the abstract syntax tree through the preprocessor
+\var{command}. The format of the input and ouput of the preprocessor
+are not yet documented.
 
 \item["-principal"]
 Check information paths during type-checking, to make sure that all
@@ -187,6 +201,18 @@ use it once before publishing source code.
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported.
+
+\item["-short-paths"]
+When a type is visible under several module-paths, use the shortest
+one when printing the type's name in inferred interfaces and error and
+warning messages.
+
+\item["-stdin"]
+Read the standard input as a script file rather than starting an
+interactive session.
+
+\item["-strict-sequence"]
+Force the left-hand part of each sequence to have type unit.
 
 \item["-unsafe"]
 See the corresponding option for "ocamlc", chapter~\ref{c:camlc}.
@@ -206,8 +232,15 @@ Enable or disable warnings according to the argument \var{warning-list}.
 See section~\ref{s:comp-options} for the syntax of the argument.
 
 \item["-warn-error" \var{warning-list}]
-Treat as errors the warnings enabled by the argument \var{warning-list}.
+Mark as fatal the warnings enabled by the argument \var{warning-list}.
 See section~\ref{s:comp-options} for the syntax of the argument.
+
+\item["-warn-help"]
+Show the description of all available warning numbers.
+
+\item["-" \var{file}]
+Use \var{file} as a script file name, even when it starts with a
+hyphen (-).
 
 \item["-help" or "--help"]
 Display a short usage summary and exit.
