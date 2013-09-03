@@ -17,13 +17,13 @@ open Asttypes
 (** {2 Extension points} *)
 
 type attribute = string loc * payload
-      (* [@id STRUCTURE]
-         [@@id STRUCTURE]
+      (* [@id ARG]
+         [@@id ARG]
        *)
 
 and extension = string loc * payload
-      (* [%id STRUCTURE]
-         [%%id STRUCTURE]
+      (* [%id ARG]
+         [%%id ARG]
        *)
 
 and attributes = attribute list

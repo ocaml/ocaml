@@ -93,3 +93,7 @@ val register: string -> (string list -> #mapper) -> unit
         themselves, and then run all or some of them.  It is also
         possible to have -ppx drivers apply rewriters to only specific
         parts of an AST.  *)
+
+(** {2 Convenience functions to write mappers} *)
+
+val map_opt: ('a -> 'b) -> 'a option -> 'b option
