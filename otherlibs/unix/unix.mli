@@ -677,7 +677,8 @@ val lockf : file_descr -> lock_command -> int -> unit
 
 val kill : int -> int -> unit
 (** [kill pid sig] sends signal number [sig] to the process
-   with id [pid]. *)
+   with id [pid]. Under Windows, only the [Sys.sigkill] signal
+   is emulated. *)
 
 type sigprocmask_command =
     SIG_SETMASK

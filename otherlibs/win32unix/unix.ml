@@ -374,7 +374,17 @@ type lock_command =
   | F_TRLOCK
 
 external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
-let kill pid signo = invalid_arg "Unix.kill not implemented"
+
+external terminate_process: int -> bool = "win_terminate_process"
+
+let kill pid signo =
+  if signo <> Sys.sigkill then
+    invalid_arg "Unix.kill"
+  else
+    if not (terminate_process pid) then
+      raise(Unix_error(ESRCH, "kill", ""))
+        (* could be more precise *)
+
 type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
 let sigprocmask cmd sigs = invalid_arg "Unix.sigprocmask not implemented"
 let sigpending () = invalid_arg "Unix.sigpending not implemented"
