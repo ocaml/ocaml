@@ -565,7 +565,7 @@ let _ =
   test 3 (Nativeint.to_int32 (Nativeint.of_string "0x123456789ABCDEF0"))
          (Int32.of_string "0x9ABCDEF0")
   else
-  test 3 0 0; (* placeholder to have the same output on both 32-bit and 64-bit *)
+  test 3 0 0; (* placeholder to have the same output on 32-bit and 64-bit *)
   testing_function "int64 of/to int32";
   test 1 (Int64.of_int32 (Int32.of_string "-0x12345678"))
          (Int64.of_string "-0x12345678");

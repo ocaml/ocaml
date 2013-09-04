@@ -542,36 +542,41 @@ have caml-electric-indent on, which see.")
         (caml-show-imenu)))
   (run-hooks 'caml-mode-hook))
 
-(defun caml-set-compile-command ()
-  "Hook to set compile-command locally, unless there is a Makefile or
-   a _build directory or a _tags file in the current directory."
-  (interactive)
-  (unless (or (null buffer-file-name)
-              (file-exists-p "makefile")
-              (file-exists-p "Makefile")
-              (file-exists-p "_build")
-              (file-exists-p "_tags"))
-    (let* ((filename (file-name-nondirectory buffer-file-name))
-           (basename (file-name-sans-extension filename))
-           (command nil))
-      (cond
-       ((string-match ".*\\.mli\$" filename)
-        (setq command "ocamlc -c"))
-       ((string-match ".*\\.ml\$" filename)
-        (setq command "ocamlc -c") ; (concat "ocamlc -o " basename)
-        )
-       ((string-match ".*\\.mll\$" filename)
-        (setq command "ocamllex"))
-       ((string-match ".*\\.mll\$" filename)
-        (setq command "ocamlyacc"))
-       )
-      (if command
-          (progn
-            (make-local-variable 'compile-command)
-            (setq compile-command (concat command " " filename))))
-      )))
 
-(add-hook 'caml-mode-hook 'caml-set-compile-command)
+;; Disabled because it assumes make and does not play well with ocamlbuild.
+;; See PR#4469 for details.
+
+;; (defun caml-set-compile-command ()
+;;   "Hook to set compile-command locally, unless there is a Makefile or
+;;    a _build directory or a _tags file in the current directory."
+;;   (interactive)
+;;   (unless (or (null buffer-file-name)
+;;               (file-exists-p "makefile")
+;;               (file-exists-p "Makefile")
+;;               (file-exists-p "_build")
+;;               (file-exists-p "_tags"))
+;;     (let* ((filename (file-name-nondirectory buffer-file-name))
+;;            (basename (file-name-sans-extension filename))
+;;            (command nil))
+;;       (cond
+;;        ((string-match ".*\\.mli\$" filename)
+;;         (setq command "ocamlc -c"))
+;;        ((string-match ".*\\.ml\$" filename)
+;;         (setq command "ocamlc -c") ; (concat "ocamlc -o " basename)
+;;         )
+;;        ((string-match ".*\\.mll\$" filename)
+;;         (setq command "ocamllex"))
+;;        ((string-match ".*\\.mll\$" filename)
+;;         (setq command "ocamlyacc"))
+;;        )
+;;       (if command
+;;           (progn
+;;             (make-local-variable 'compile-command)
+;;             (setq compile-command (concat command " " filename))))
+;;       )))
+
+;; (add-hook 'caml-mode-hook 'caml-set-compile-command)
+
 
 ;;; Auxiliary function. Garrigue 96-11-01.
 

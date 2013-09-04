@@ -20,7 +20,8 @@ let compiler_path name =
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
 and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to ocamlopt *)
-and c_objs = ref []         (* .o, .a, .obj, .lib, .dll files to pass to mksharedlib and ar *)
+and c_objs = ref []         (* .o, .a, .obj, .lib, .dll files to pass
+                               to mksharedlib and ar *)
 and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
 and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
 and dynlink = ref supports_shared_libraries
@@ -142,7 +143,8 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
-Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|.dll files>\
+Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|\
+                             .dll files>\
 \nOptions are:\
 \n  -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only\
 \n  -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only\

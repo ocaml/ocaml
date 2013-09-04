@@ -85,7 +85,8 @@ let check_unit_name ppf filename name =
 type readenv_position =
   Before_args | Before_compile | Before_link
 
-(* Syntax of OCAMLPARAM: [name=VALUE,]*_[,name=VALUE] where VALUE should not contain ',' *)
+(* Syntax of OCAMLPARAM: (name=VALUE,)* _ (,name=VALUE)*
+   where VALUE should not contain ',' *)
 exception SyntaxError of string
 
 let parse_args s =
@@ -122,7 +123,8 @@ let setter ppf f name options s =
     List.iter (fun b -> b := f bool) options
   with Not_found ->
     Location.print_warning Location.none ppf
-      (Warnings.Bad_env_variable ("OCAMLPARAM", Printf.sprintf "bad value for %s" name))
+      (Warnings.Bad_env_variable ("OCAMLPARAM",
+                                  Printf.sprintf "bad value for %s" name))
 
 let read_OCAMLPARAM ppf position =
   try
@@ -187,7 +189,8 @@ let read_OCAMLPARAM ppf position =
           inline_threshold := 8 * int_of_string v
         with _ ->
           Location.print_warning Location.none ppf
-            (Warnings.Bad_env_variable ("OCAMLPARAM", "value for inline should be an interger"))
+            (Warnings.Bad_env_variable ("OCAMLPARAM",
+                                        "non-integer parameter for \"inline\""))
         end
 
       | "intf-suffix" -> Config.interface_suffix := v
@@ -266,4 +269,3 @@ let readenv ppf position =
 
 let get_objfiles () =
   List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
-

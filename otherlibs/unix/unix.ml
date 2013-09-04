@@ -202,7 +202,8 @@ external execvp : string -> string array -> 'a = "unix_execvp"
 external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
 external fork : unit -> int = "unix_fork"
 external wait : unit -> int * process_status = "unix_wait"
-external waitpid : wait_flag list -> int -> int * process_status = "unix_waitpid"
+external waitpid : wait_flag list -> int -> int * process_status
+   = "unix_waitpid"
 external getpid : unit -> int = "unix_getpid"
 external getppid : unit -> int = "unix_getppid"
 external nice : int -> int = "unix_nice"
@@ -238,7 +239,8 @@ external openfile : string -> open_flag list -> file_perm -> file_descr
 external close : file_descr -> unit = "unix_close"
 external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
 external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
-external unsafe_single_write : file_descr -> string -> int -> int -> int = "unix_single_write"
+external unsafe_single_write : file_descr -> string -> int -> int -> int
+   = "unix_single_write"
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > String.length buf - len
@@ -307,7 +309,8 @@ external link : string -> string -> unit = "unix_link"
 
 module LargeFile =
   struct
-    external lseek : file_descr -> int64 -> seek_command -> int64 = "unix_lseek_64"
+    external lseek : file_descr -> int64 -> seek_command -> int64
+       = "unix_lseek_64"
     external truncate : string -> int64 -> unit = "unix_truncate_64"
     external ftruncate : file_descr -> int64 -> unit = "unix_ftruncate_64"
     type stats =

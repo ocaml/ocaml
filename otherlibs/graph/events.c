@@ -60,8 +60,10 @@ void caml_gr_handle_event(XEvent * event)
   switch (event->type) {
 
   case Expose:
-    XCopyArea(caml_gr_display, caml_gr_bstore.win, caml_gr_window.win, caml_gr_window.gc,
-              event->xexpose.x, event->xexpose.y + caml_gr_bstore.h - caml_gr_window.h,
+    XCopyArea(caml_gr_display, caml_gr_bstore.win, caml_gr_window.win,
+              caml_gr_window.gc,
+              event->xexpose.x,
+              event->xexpose.y + caml_gr_bstore.h - caml_gr_window.h,
               event->xexpose.width, event->xexpose.height,
               event->xexpose.x, event->xexpose.y);
     XFlush(caml_gr_display);
@@ -70,7 +72,8 @@ void caml_gr_handle_event(XEvent * event)
   case ConfigureNotify:
     caml_gr_window.w = event->xconfigure.width;
     caml_gr_window.h = event->xconfigure.height;
-    if (caml_gr_window.w > caml_gr_bstore.w || caml_gr_window.h > caml_gr_bstore.h) {
+    if (caml_gr_window.w > caml_gr_bstore.w
+        || caml_gr_window.h > caml_gr_bstore.h) {
 
       /* Allocate a new backing store large enough to accomodate
          both the old backing store and the current window. */
@@ -78,7 +81,8 @@ void caml_gr_handle_event(XEvent * event)
       newbstore.w = max(caml_gr_window.w, caml_gr_bstore.w);
       newbstore.h = max(caml_gr_window.h, caml_gr_bstore.h);
       newbstore.win =
-        XCreatePixmap(caml_gr_display, caml_gr_window.win, newbstore.w, newbstore.h,
+        XCreatePixmap(caml_gr_display, caml_gr_window.win, newbstore.w,
+                      newbstore.h,
                       XDefaultDepth(caml_gr_display, caml_gr_screen));
       newbstore.gc = XCreateGC(caml_gr_display, newbstore.win, 0, NULL);
       XSetBackground(caml_gr_display, newbstore.gc, caml_gr_white);
@@ -90,8 +94,10 @@ void caml_gr_handle_event(XEvent * event)
         XSetFont(caml_gr_display, newbstore.gc, caml_gr_font->fid);
 
       /* Copy the old backing store into the new one */
-      XCopyArea(caml_gr_display, caml_gr_bstore.win, newbstore.win, newbstore.gc,
-                0, 0, caml_gr_bstore.w, caml_gr_bstore.h, 0, newbstore.h - caml_gr_bstore.h);
+      XCopyArea(caml_gr_display, caml_gr_bstore.win, newbstore.win,
+                newbstore.gc,
+                0, 0, caml_gr_bstore.w, caml_gr_bstore.h, 0,
+                newbstore.h - caml_gr_bstore.h);
 
       /* Free the old backing store */
       XFreeGC(caml_gr_display, caml_gr_bstore.gc);
@@ -153,6 +159,7 @@ static value caml_gr_wait_event_poll(void)
   unsigned int modifiers;
   unsigned int i;
 
+  caml_process_pending_signals ();
   if (XQueryPointer(caml_gr_display, caml_gr_window.win,
                     &rootwin, &childwin,
                     &root_x, &root_y, &win_x, &win_y,
@@ -175,7 +182,8 @@ static value caml_gr_wait_event_poll(void)
       break;
     }
   }
-  return caml_gr_wait_allocate_result(mouse_x, mouse_y, button, keypressed, key);
+  return
+    caml_gr_wait_allocate_result(mouse_x, mouse_y, button, keypressed, key);
 }
 
 static value caml_gr_wait_event_in_queue(long mask)

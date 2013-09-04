@@ -308,7 +308,7 @@ let read_pers_struct modname filename = (
                ps_comps = comps;
                ps_crcs = crcs;
                ps_filename = filename;
-               ps_flags = flags } in 
+               ps_flags = flags } in
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(modname, ps.ps_name, filename)));
     check_consistency filename ps.ps_crcs;
@@ -837,7 +837,7 @@ let rec find_shadowed_comps path env =
   | Pdot (p, s, _) ->
       let l = find_shadowed_comps p env in
       let l' =
-	List.map (find_all_comps (fun comps -> comps.comp_components) s) l in
+        List.map (find_all_comps (fun comps -> comps.comp_components) s) l in
       List.flatten l'
   | Papply _ -> []
 
@@ -1178,15 +1178,18 @@ and store_type slot id path info env renv =
   { env with
     constrs =
       List.fold_right
-        (fun (id, descr) constrs -> EnvTbl.add "constructor" slot id descr constrs renv.constrs)
+        (fun (id, descr) constrs ->
+          EnvTbl.add "constructor" slot id descr constrs renv.constrs)
         constructors
         env.constrs;
     labels =
       List.fold_right
-        (fun (id, descr) labels -> EnvTbl.add "label" slot id descr labels renv.labels)
+        (fun (id, descr) labels ->
+          EnvTbl.add "label" slot id descr labels renv.labels)
         labels
         env.labels;
-    types = EnvTbl.add "type" slot id (path, (info, descrs)) env.types renv.types;
+    types = EnvTbl.add "type" slot id (path, (info, descrs)) env.types
+                       renv.types;
     summary = Env_type(env.summary, id, info) }
 
 and store_type_infos slot id path info env renv =
@@ -1196,7 +1199,8 @@ and store_type_infos slot id path info env renv =
      keep track of type abbreviations (e.g. type t = float) in the
      computation of label representations. *)
   { env with
-    types = EnvTbl.add "type" slot id (path, (info,([],[]))) env.types renv.types;
+    types = EnvTbl.add "type" slot id (path, (info,([],[]))) env.types
+                       renv.types;
     summary = Env_type(env.summary, id, info) }
 
 and store_exception slot id path decl env renv =
@@ -1221,20 +1225,24 @@ and store_exception slot id path decl env renv =
     end;
   end;
   { env with
-    constrs = EnvTbl.add "constructor" slot id (Datarepr.exception_descr path decl) env.constrs renv.constrs;
+    constrs = EnvTbl.add "constructor" slot id
+                         (Datarepr.exception_descr path decl) env.constrs
+                         renv.constrs;
     summary = Env_exception(env.summary, id, decl) }
 
 and store_module slot id path mty env renv =
   { env with
     modules = EnvTbl.add "module" slot id (path, mty) env.modules renv.modules;
     components =
-      EnvTbl.add "module" slot id (path, components_of_module env Subst.identity path mty)
+      EnvTbl.add "module" slot id
+                 (path, components_of_module env Subst.identity path mty)
                    env.components renv.components;
     summary = Env_module(env.summary, id, mty) }
 
 and store_modtype slot id path info env renv =
   { env with
-    modtypes = EnvTbl.add "module type" slot id (path, info) env.modtypes renv.modtypes;
+    modtypes = EnvTbl.add "module type" slot id (path, info) env.modtypes
+                          renv.modtypes;
     summary = Env_modtype(env.summary, id, info) }
 
 and store_class slot id path desc env renv =
@@ -1244,7 +1252,8 @@ and store_class slot id path desc env renv =
 
 and store_cltype slot id path desc env renv =
   { env with
-    cltypes = EnvTbl.add "class type" slot id (path, desc) env.cltypes renv.cltypes;
+    cltypes = EnvTbl.add "class type" slot id (path, desc) env.cltypes
+                         renv.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
 (* Compute the components of a functor application in a path. *)
@@ -1368,7 +1377,10 @@ let open_pers_signature name env =
   open_signature None (Pident(Ident.create_persistent name)) ps.ps_sig env
 
 let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
-  if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost && (Warnings.is_active (Warnings.Unused_open "") || Warnings.is_active (Warnings.Open_shadow_identifier ("", "")) || Warnings.is_active (Warnings.Open_shadow_label_constructor ("", "")))
+  if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
+     && (Warnings.is_active (Warnings.Unused_open "")
+         || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
+         || Warnings.is_active (Warnings.Open_shadow_label_constructor ("","")))
   then begin
     let used = ref false in
     !add_delayed_check_forward
@@ -1382,7 +1394,8 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
         shadowed := (kind, s) :: !shadowed;
         let w =
           match kind with
-          | "label" | "constructor" -> Warnings.Open_shadow_label_constructor (kind, s)
+          | "label" | "constructor" ->
+              Warnings.Open_shadow_label_constructor (kind, s)
           | _ -> Warnings.Open_shadow_identifier (kind, s)
         in
         Location.prerr_warning loc w
@@ -1581,7 +1594,7 @@ open Format
 let report_error ppf = function
   | Illegal_renaming(name, modname, filename) -> fprintf ppf
       "Wrong file naming: %a@ contains the compiled interface for @ %s when %s was expected"
-      Location.print_filename filename name modname 
+      Location.print_filename filename name modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"

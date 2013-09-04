@@ -27,7 +27,8 @@ class mapper:
     method class_signature: class_signature -> class_signature
     method class_structure: class_structure -> class_structure
     method class_type: class_type -> class_type
-    method class_type_declaration: class_type_declaration -> class_type_declaration
+    method class_type_declaration:
+             class_type_declaration -> class_type_declaration
     method class_type_field: class_type_field -> class_type_field
     method expr: expression -> expression
     method implementation: string -> structure -> string * structure

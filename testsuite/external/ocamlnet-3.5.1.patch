@@ -23,3 +23,19 @@
  
  ISO_MAPPINGS   = mappings/iso*.unimap
  JP_MAPPINGS    = mappings/jis*.*map
+--- ocamlnet-3.5.1.orig/src/pop/netpop.ml	2012-02-29 19:02:53.000000000 +0100
++++ ocamlnet-3.5.1/src/pop/netpop.ml	2013-06-20 14:06:11.000000000 +0200
+@@ -231,6 +231,7 @@
+ 	  status_response ic parse_line (Hashtbl.create 1)
+     with _ -> raise Protocol_error
+ 
++(*
+   method stat () =
+     self#check_state `Transaction;
+     send_command oc "STAT";
+@@ -242,4 +243,5 @@
+ 	(count, size, ext)
+       )
+     with _ -> raise Protocol_error;
++*)
+ end

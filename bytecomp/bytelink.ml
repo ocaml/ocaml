@@ -254,7 +254,9 @@ let link_file ppf output_fun currpos_fun = function
 let output_debug_info oc =
   output_binary_int oc (List.length !debug_info);
   List.iter
-    (fun (ofs, evl) -> output_binary_int oc ofs; Array.iter (output_string oc) evl)
+    (fun (ofs, evl) ->
+      output_binary_int oc ofs;
+      Array.iter (output_string oc) evl)
     !debug_info;
   debug_info := []
 
@@ -519,7 +521,8 @@ let link ppf objfiles output_name =
     else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
-  Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts; (* put user's opts first *)
+  Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
+                                                   (* put user's opts first *)
   Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
     link_bytecode ppf tolink output_name true

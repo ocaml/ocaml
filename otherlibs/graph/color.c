@@ -97,7 +97,8 @@ void caml_gr_init_direct_rgb_to_pixel(void)
     fprintf(stderr, "green %d %d\n", caml_gr_green_l, caml_gr_green_r);
 #endif
     for(i=0; i<256; i++){
-      caml_gr_green_vals[i] = (((i << 8) + i) >> caml_gr_green_r) << caml_gr_green_l;
+      caml_gr_green_vals[i] =
+        (((i << 8) + i) >> caml_gr_green_r) << caml_gr_green_l;
     }
 
     caml_gr_get_shifts(caml_gr_blue_mask, &caml_gr_blue_l, &caml_gr_blue_r);
@@ -105,7 +106,8 @@ void caml_gr_init_direct_rgb_to_pixel(void)
     fprintf(stderr, "blue %d %d\n", caml_gr_blue_l, caml_gr_blue_r);
 #endif
     for(i=0; i<256; i++){
-      caml_gr_blue_vals[i] = (((i << 8) + i) >> caml_gr_blue_r) << caml_gr_blue_l;
+      caml_gr_blue_vals[i] =
+        (((i << 8) + i) >> caml_gr_blue_r) << caml_gr_blue_l;
     }
 
     if( caml_gr_red_l < 0 || caml_gr_red_r < 0 ||
@@ -189,9 +191,12 @@ int caml_gr_rgb_pixel(long unsigned int pixel)
   int i;
 
   if (caml_gr_direct_rgb) {
-    r = (((pixel & caml_gr_red_mask) >> caml_gr_red_l) << 8) >> (16 - caml_gr_red_r);
-    g = (((pixel & caml_gr_green_mask) >> caml_gr_green_l) << 8) >> (16 - caml_gr_green_r);
-    b = (((pixel & caml_gr_blue_mask) >> caml_gr_blue_l) << 8) >> (16 - caml_gr_blue_r);
+    r = (((pixel & caml_gr_red_mask) >> caml_gr_red_l) << 8)
+        >> (16 - caml_gr_red_r);
+    g = (((pixel & caml_gr_green_mask) >> caml_gr_green_l) << 8)
+        >> (16 - caml_gr_green_r);
+    b = (((pixel & caml_gr_blue_mask) >> caml_gr_blue_l) << 8)
+        >> (16 - caml_gr_blue_r);
     return (r << 16) + (g << 8) + b;
   }
 

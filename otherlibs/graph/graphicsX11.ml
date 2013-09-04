@@ -11,7 +11,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Module [GraphicsX11]: additional graphics primitives for the X Windows system *)
+(* Module [GraphicsX11]: additional graphics primitives for
+   the X Windows system *)
 
 type window_id = string
 
@@ -35,5 +36,5 @@ let close_subwindow wid =
     close_subwindow wid;
     Hashtbl.remove subwindows wid
   end else
-    raise (Graphics.Graphic_failure ("close_subwindow: no such subwindow: " ^ wid))
+    raise (Graphics.Graphic_failure("close_subwindow: no such subwindow: "^wid))
 ;;

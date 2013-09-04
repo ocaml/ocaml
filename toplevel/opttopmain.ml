@@ -12,7 +12,8 @@
 
 open Clflags
 
-let usage = "Usage: ocamlnat <options> <object-files> [script-file]\noptions are:"
+let usage =
+   "Usage: ocamlnat <options> <object-files> [script-file]\noptions are:"
 
 let preload_objects = ref []
 
@@ -80,6 +81,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _rectypes = set recursive_types
   let _strict_sequence = set strict_sequence
   let _S = set keep_asm_file
+  let _short_paths = clear real_paths
   let _stdin () = file_argument ""
   let _unsafe = set fast
   let _version () = print_version ()
@@ -87,7 +89,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
-  let _short_paths = clear real_paths
 
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree

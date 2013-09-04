@@ -166,12 +166,13 @@ rule main = parse
     }
   | '{'
     { let p = Lexing.lexeme_end_p lexbuf in
+      let f = p.Lexing.pos_fname in
       let n1 = p.Lexing.pos_cnum
       and l1 = p.Lexing.pos_lnum
       and s1 = p.Lexing.pos_bol in
       brace_depth := 1;
       let n2 = handle_lexical_error action lexbuf in
-      Taction({start_pos = n1; end_pos = n2;
+      Taction({loc_file = f; start_pos = n1; end_pos = n2;
                start_line = l1; start_col = n1 - s1}) }
   | '='  { Tequal }
   | '|'  { Tor }

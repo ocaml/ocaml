@@ -40,7 +40,8 @@ CAMLprim value unix_open(value path, value flags, value perm)
   HANDLE h;
 
   fileaccess = convert_flag_list(flags, open_access_flags);
-  sharemode = FILE_SHARE_READ | FILE_SHARE_WRITE | convert_flag_list(flags, open_share_flags);
+  sharemode = FILE_SHARE_READ | FILE_SHARE_WRITE
+              | convert_flag_list(flags, open_share_flags);
 
   createflags = convert_flag_list(flags, open_create_flags);
   if ((createflags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))

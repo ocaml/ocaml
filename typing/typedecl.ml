@@ -533,7 +533,7 @@ let compute_variance env visited vari ty =
                 if strict then compute_variance_rec full ty else
                 let p1 = inter v vari
                 and n1 = inter v (conjugate vari) in
-                let v1 = 
+                let v1 =
                   union (inter covariant (union p1 (conjugate p1)))
                     (inter (conjugate covariant) (union n1 (conjugate n1)))
                 and weak =
@@ -659,7 +659,7 @@ let compute_variance_type env check (required, loc) decl tyl =
       Btype.backtrack snap;
       let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then
-        if List.memq ty fvl then 
+        if List.memq ty fvl then
           let code = if not i2 then -2 else if c2 || n2 then -1 else -3 in
           raise (Error (loc, Bad_variance (code, (c1,n1,false), (c2,n2,false))))
         else

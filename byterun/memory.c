@@ -528,7 +528,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
 
 CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
 {
-  /* The write barrier implemented by [caml_modify] checks for the 
+  /* The write barrier implemented by [caml_modify] checks for the
      following two conditions and takes appropriate action:
      1- a pointer from the major heap to the minor heap is created
         --> add [fp] to the remembered set

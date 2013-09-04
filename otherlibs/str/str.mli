@@ -47,6 +47,21 @@ val regexp : string -> regexp
    - [\b    ] Matches word boundaries.
    - [\     ] Quotes special characters.  The special characters
               are [$^\.*+?[]].
+
+   Note: the argument to [regexp] is usually a string literal. In this
+   case, any backslash character in the regular expression must be
+   doubled to make it past the OCaml string parser. For example, the
+   following expression:
+   {[ let r = Str.regexp "hello \\([A-Za-z]+\\)" in
+      Str.replace_first r "\\1" "hello world" ]}
+   returns the string ["world"].
+
+   In particular, if you want a regular expression that matches a single
+   backslash character, you need to quote it in the argument to [regexp]
+   (according to the last item of the list above) by adding a second
+   backslash. Then you need to quote both backslashes (according to the
+   syntax of string constants in OCaml) by doubling them again, so you
+   need to write four backslash characters: [Str.regexp "\\\\"].
 *)
 
 val regexp_case_fold : string -> regexp

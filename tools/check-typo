@@ -47,6 +47,9 @@
 #     *.clib
 #     *.reference
 #     */reference
+# - Any file whose name matches one of the following patterns is
+#   automatically exempt from the "long-line" rule.
+#     *.reference
 
 # ASCII characters are bytes from 0 to 127.  Any other byte is
 # flagged as a non-ASCII character.
@@ -136,6 +139,9 @@ IGNORE_DIRS="
       */.depend*|*/.ignore) h;;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) h;;
       *.reference|*/reference) h;;
+    esac
+    case "$f" in
+      *.reference) rules="long-line,$rules";;
     esac
 
     (cat "$f"; echo) \

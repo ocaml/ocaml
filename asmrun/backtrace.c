@@ -69,7 +69,7 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
     h = Hash_retaddr(*pc);
     while (1) {
       d = caml_frame_descriptors[h];
-      if (d == 0) return NULL; /* can happen if some code not compiled with -g */
+      if (d == 0) return NULL; /* can happen if some code compiled without -g */
       if (d->retaddr == *pc) break;
       h = (h+1) & caml_frame_descriptors_mask;
     }
@@ -123,7 +123,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     /* store its descriptor in the backtrace buffer */
     if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
     caml_backtrace_buffer[caml_backtrace_pos++] = (code_t) descr;
-    
+
     /* Stop when we reach the current exception handler */
 #ifndef Stack_grows_upwards
     if (sp > trapsp) return;
@@ -160,7 +160,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
     trace_size = 0;
     while (1) {
       frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
-      if (descr == NULL) break; 
+      if (descr == NULL) break;
       if (trace_size >= max_frames) break;
       ++trace_size;
 
@@ -244,7 +244,7 @@ static void extract_location_info(frame_descr * d,
 }
 
 /* Print location information -- same behavior as in Printexc
- 
+
    note that the test for compiler-inserted raises is slightly redundant:
      (!li->loc_valid && li->loc_is_raise)
    extract_location_info above guarantees that when li->loc_valid is

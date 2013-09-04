@@ -93,7 +93,8 @@ value caml_gr_open_graph(value arg)
     hints.flags = PPosition | PSize;
     hints.win_gravity = 0;
 
-    ret = XWMGeometry(caml_gr_display, caml_gr_screen, geometry_spec, "", BORDER_WIDTH,
+    ret = XWMGeometry(caml_gr_display, caml_gr_screen, geometry_spec, "",
+                      BORDER_WIDTH,
                       &hints, &x, &y, &w, &h, &hints.win_gravity);
     if (ret & (XValue | YValue)) {
       hints.x = x; hints.y = y; hints.flags |= USPosition;
@@ -138,7 +139,8 @@ value caml_gr_open_graph(value arg)
     caml_gr_bstore.w = caml_gr_window.w;
     caml_gr_bstore.h = caml_gr_window.h;
     caml_gr_bstore.win =
-      XCreatePixmap(caml_gr_display, caml_gr_window.win, caml_gr_bstore.w, caml_gr_bstore.h,
+      XCreatePixmap(caml_gr_display, caml_gr_window.win, caml_gr_bstore.w,
+                    caml_gr_bstore.h,
                     XDefaultDepth(caml_gr_display, caml_gr_screen));
     caml_gr_bstore.gc = XCreateGC(caml_gr_display, caml_gr_bstore.win, 0, NULL);
     XSetBackground(caml_gr_display, caml_gr_bstore.gc, caml_gr_background);
@@ -211,7 +213,9 @@ value caml_gr_close_graph(void)
     setitimer(ITIMER_REAL, &it, NULL);
 #endif
     caml_gr_initialized = False;
-    if (caml_gr_font != NULL) { XFreeFont(caml_gr_display, caml_gr_font); caml_gr_font = NULL; }
+    if (caml_gr_font != NULL) {
+      XFreeFont(caml_gr_display, caml_gr_font); caml_gr_font = NULL;
+    }
     XFreeGC(caml_gr_display, caml_gr_window.gc);
     XDestroyWindow(caml_gr_display, caml_gr_window.win);
     XFreeGC(caml_gr_display, caml_gr_bstore.gc);
@@ -311,7 +315,8 @@ value caml_gr_size_y(void)
 value caml_gr_synchronize(void)
 {
   caml_gr_check_open();
-  XCopyArea(caml_gr_display, caml_gr_bstore.win, caml_gr_window.win, caml_gr_window.gc,
+  XCopyArea(caml_gr_display, caml_gr_bstore.win, caml_gr_window.win,
+            caml_gr_window.gc,
             0, caml_gr_bstore.h - caml_gr_window.h,
             caml_gr_window.w, caml_gr_window.h,
             0, 0);
@@ -367,7 +372,8 @@ void caml_gr_fail(char *fmt, char *arg)
   if (graphic_failure_exn == NULL) {
     graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
     if (graphic_failure_exn == NULL)
-      invalid_argument("Exception Graphics.Graphic_failure not initialized, must link graphics.cma");
+      invalid_argument("Exception Graphics.Graphic_failure not initialized,"
+                       " must link graphics.cma");
   }
   sprintf(buffer, fmt, arg);
   raise_with_string(*graphic_failure_exn, buffer);
