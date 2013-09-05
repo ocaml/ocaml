@@ -205,6 +205,7 @@ Bug fixes:
 - PR#6090: Module constraint + private type seems brocken in ocaml 4.01.0
 - PR#6109: Typos in ocamlbuild error messages
 - PR#6123: Assert failure when self escapes its class
+- PR#6158: Fatal error using GADTs
 
 Feature wishes:
 - PR#5181: Merge common floating point constants in ocamlopt
