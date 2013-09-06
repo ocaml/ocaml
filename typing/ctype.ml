@@ -982,6 +982,12 @@ let rec copy ?env ?partial ?keep_names ty =
                     if keep then more else newty more.desc
                 |  _ -> assert false
               in
+              let row =
+                match repr more' with (* PR#6163 *)
+                  {desc=Tconstr _} when not row.row_fixed ->
+                    {row with row_fixed = true}
+                | _ -> row
+              in
               (* Open row if partial for pattern and contains Reither *)
               let more', row =
                 match partial with
