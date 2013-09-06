@@ -240,6 +240,7 @@ Bug fixes:
 - PR#6109: Typos in ocamlbuild error messages
 - PR#6123: Assert failure when self escapes its class
 - PR#6158: Fatal error using GADTs
+- PR#6163: Assert_failure using polymorphic variants in GADTs
 
 Feature wishes:
 - PR#5181: Merge common floating point constants in ocamlopt
