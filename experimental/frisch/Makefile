@@ -39,7 +39,7 @@ minidoc:
 
 .PHONY: lifter
 lifter:
-	$(OCAMLC) -w +A-4 -custom -o genlifter.exe $(COMMON) genlifter.ml
+	$(OCAMLC) -w +A-4-44-45 -custom -o genlifter.exe $(COMMON) genlifter.ml
 	./genlifter.exe -I ../../parsing -I ../../stdlib Parsetree.expression > ast_lifter.ml
 	$(OCAMLC) -c -w +A-17 ast_lifter.ml
 	$(OCAMLC) -c dumpast.ml

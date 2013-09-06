@@ -134,6 +134,7 @@ and tyexpr_fun env ty =
   lam (pvar "x") (tyexpr env ty (evar "x"))
 
 let simplify =
+  (* (fun x -> <expr> x) ====> <expr> *)
   object
     inherit Ast_mapper.mapper as super
     method! expr e =
@@ -165,7 +166,7 @@ let usage =
 let () =
   Config.load_path := [];
   Arg.parse (Arg.align args) gen usage;
-  let cl = {Parsetree.pcstr_self = pvar "this"; pcstr_fields = !meths} in
+  let cl = Cstr.mk (pvar "this") !meths in
   let params = [mknoloc "res", Invariant] in
   let cl = Ci.mk ~virt:Virtual ~params (mknoloc "lifter") (Cl.structure cl) in
   let s = [Str.class_ [cl]] in
