@@ -207,6 +207,7 @@ Bug fixes:
 - PR#6123: Assert failure when self escapes its class
 - PR#6158: Fatal error using GADTs
 - PR#6163: Assert_failure using polymorphic variants in GADTs
+- PR#6164: segmentation fault on Num.power_num of 0/1
 
 Feature wishes:
 - PR#5181: Merge common floating point constants in ocamlopt
