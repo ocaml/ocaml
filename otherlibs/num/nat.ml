@@ -355,8 +355,10 @@ let int_to_string int s pos_ref base times =
 (* XL: suppression de adjust_string *)
 
 let power_base_int base i =
-  if i = 0 then
+  if i = 0 || base = 1 then
     nat_of_int 1
+  else if base = 0 then
+    nat_of_int 0
   else if i < 0 then
     invalid_arg "power_base_int"
   else begin
