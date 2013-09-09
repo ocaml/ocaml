@@ -10,11 +10,6 @@
    [%str ...] maps to code which creates the structure represented by ...
    [%type: ...] maps to code which creates the core type represented by ...
 
-   Note that except for the expr and str expander, the argument needs to be
-   a string literal (it can also be a quoted string, of course), which
-   will be re-parse by the expander (in case of a parsing error,
-   the location will be relative to the parsed string).
-
    Quoted code can refer to expressions representing AST fragments,
    using the following extensions:
 
@@ -35,7 +30,26 @@
 
      e [@metaloc ...]
 
-   No support is provided yet for meta quotation in pattern position.
+
+
+   Support is also provided to use concrete syntax in pattern
+   position.  The location and attribute fields are currently ignored
+   by patterns generated from meta quotations.
+
+   We support the following extensions in pattern position:
+
+   [%expr ...]  maps to code which creates the expression represented by ...
+   [%pat? ...] maps to code which creates the pattern represented by ...
+   [%str ...] maps to code which creates the structure represented by ...
+   [%type: ...] maps to code which creates the core type represented by ...
+
+   Quoted code can refer to expressions representing AST fragments,
+   using the following extensions:
+
+     [%e? ...] where ... is a pattern of type Parsetree.expression
+     [%t? ...] where ... is a pattern of type Parsetree.core_type
+     [%p? ...] where ... is a pattern of type Parsetree.pattern
+
 *)
 
 module Main : sig end = struct
@@ -64,6 +78,20 @@ module Main : sig end = struct
       method nativeint x = Exp.constant (Const_nativeint x)
     end
 
+  class pat_builder =
+    object
+      method record ty x = precord ~closed:Closed (List.map (fun (l, e) -> prefix ty l, e) x)
+      method constr ty (c, args) = pconstr (prefix ty c) args
+      method list = plist
+      method tuple = ptuple
+      method int = pint
+      method string = pstr
+      method char = pchar
+      method int32 x = Pat.constant (Const_int32 x)
+      method int64 x = Pat.constant (Const_int64 x)
+      method nativeint x = Pat.constant (Const_nativeint x)
+    end
+
 
   let get_exp loc = function
     | PStr [ {pstr_desc=Pstr_eval (e, _); _} ] -> e
@@ -86,7 +114,7 @@ module Main : sig end = struct
           Location.print_error loc;
         exit 2
 
-  let lifter loc =
+  let exp_lifter loc =
     object
       inherit [_] Ast_lifter.lifter as super
       inherit exp_builder
@@ -108,7 +136,31 @@ module Main : sig end = struct
         | x -> super # lift_Parsetree_core_type x
     end
 
+  let pat_lifter =
+    object
+      inherit [_] Ast_lifter.lifter as super
+      inherit pat_builder
+
+          (* Special support for location and attributes in the generated AST *)
+      method! lift_Location_t _ = Pat.any ()
+      method! lift_Parsetree_attributes _ = Pat.any ()
+
+          (* Support for antiquotations *)
+      method! lift_Parsetree_expression = function
+        | {pexp_desc=Pexp_extension({txt="e";loc}, e); _} -> get_pat loc e
+        | x -> super # lift_Parsetree_expression x
+
+      method! lift_Parsetree_pattern = function
+        | {ppat_desc=Ppat_extension({txt="p";loc}, e); _} -> get_pat loc e
+        | x -> super # lift_Parsetree_pattern x
+
+      method! lift_Parsetree_core_type = function
+        | {ptyp_desc=Ptyp_extension({txt="t";loc}, e); _} -> get_pat loc e
+        | x -> super # lift_Parsetree_core_type x
+    end
+
   let loc = ref (app (evar "Pervasives.!") [evar "Ast_helper.default_loc"])
+
   let handle_attr = function
     | {txt="metaloc";loc=l}, e -> loc := get_exp l e
     | _ -> ()
@@ -128,15 +180,31 @@ module Main : sig end = struct
         (fun () ->
           match e.pexp_desc with
           | Pexp_extension({txt="expr";loc=l}, e) ->
-              (lifter !loc) # lift_Parsetree_expression (get_exp l e)
+              (exp_lifter !loc) # lift_Parsetree_expression (get_exp l e)
           | Pexp_extension({txt="pat";loc=l}, e) ->
-              (lifter !loc) # lift_Parsetree_pattern (get_pat l e)
+              (exp_lifter !loc) # lift_Parsetree_pattern (get_pat l e)
           | Pexp_extension({txt="str";_}, PStr e) ->
-              (lifter !loc) # lift_Parsetree_structure e
+              (exp_lifter !loc) # lift_Parsetree_structure e
           | Pexp_extension({txt="type";loc=l}, e) ->
-              (lifter !loc) # lift_Parsetree_core_type (get_typ l e)
+              (exp_lifter !loc) # lift_Parsetree_core_type (get_typ l e)
           | _ ->
               super # expr e
+        )
+
+    method! pat p =
+      with_loc ~attrs:p.ppat_attributes
+        (fun () ->
+          match p.ppat_desc with
+          | Ppat_extension({txt="expr";loc=l}, e) ->
+              pat_lifter # lift_Parsetree_expression (get_exp l e)
+          | Ppat_extension({txt="pat";loc=l}, e) ->
+              pat_lifter # lift_Parsetree_pattern (get_pat l e)
+          | Ppat_extension({txt="str";_}, PStr e) ->
+              pat_lifter # lift_Parsetree_structure e
+          | Ppat_extension({txt="type";loc=l}, e) ->
+              pat_lifter # lift_Parsetree_core_type (get_typ l e)
+          | _ ->
+              super # pat p
         )
 
     method! structure l =

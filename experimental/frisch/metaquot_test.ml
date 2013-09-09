@@ -19,3 +19,9 @@ let () = Format.printf "%a@." (Printast.expression 0) e
 let mytype = [%type: int list]
 let s = [%str type t = A of [%t mytype] | B of string]
 let () = Format.printf "%a@." Printast.implementation s
+
+
+let f = function
+  | ([%expr [%e? x] + 1]
+    | [%expr 1 + [%e? x]]) as e0 -> [%expr succ [%e x]] [@metaloc e0.pexp_loc]
+  | e -> e
