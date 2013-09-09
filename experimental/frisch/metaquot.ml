@@ -6,10 +6,9 @@
    We support the following extensions in expression position:
 
    [%expr ...]  maps to code which creates the expression represented by ...
-   [%pat "..."] maps to code which creates the pattern represented by ...
-   [%pat "..."] maps to code which creates the pattern represented by ...
+   [%pat? ...] maps to code which creates the pattern represented by ...
    [%str ...] maps to code which creates the structure represented by ...
-   [type "..."] maps to code which creates the core type represented by ...
+   [%type: ...] maps to code which creates the core type represented by ...
 
    Note that except for the expr and str expander, the argument needs to be
    a string literal (it can also be a quoted string, of course), which
@@ -120,33 +119,6 @@ module Main : sig end = struct
     let r = f () in
     loc := old_loc;
     r
-
-  let report_error ppf exn =
-    let report ppf = function
-      | Lexer.Error(err, loc) ->
-          Location.print_error ppf loc;
-          Lexer.report_error ppf err
-      | Syntaxerr.Error err ->
-          Syntaxerr.report_error ppf err
-      | x ->
-          Format.fprintf ppf "%s" (Printexc.to_string x)
-    in
-    Format.fprintf ppf "@[%a@]@." report exn
-
-  let extract_str parse kind = function
-    | {pexp_desc = Pexp_constant (Const_string (s, _)); pexp_loc = loc; _} ->
-        begin try parse (Lexing.from_string s)
-        with exn ->
-          Location.print_error Format.std_formatter loc;
-          Format.eprintf "Error while parsing a %s quotation:@.%a@." kind
-            report_error exn;
-          exit 2
-        end
-    | {pexp_loc = loc; _} ->
-        Location.print_error Format.std_formatter loc;
-        Format.eprintf
-          "The content of this quotation must be a string literal.@.";
-        exit 2
 
   let expander = object
     inherit Ast_mapper.mapper as super
