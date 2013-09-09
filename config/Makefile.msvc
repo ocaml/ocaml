@@ -163,24 +163,11 @@ WITH_OCAMLDOC=ocamldoc
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk
+OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray
 
 ### Name of the target architecture for the "num" library
 BNG_ARCH=generic
 BNG_ASM_LEVEL=0
-
-### Configuration for LablTk
-# Set TK_ROOT to the directory where you installed TCL/TK 8.5
-TK_ROOT=c:/tcl
-TK_DEFS=-I$(TK_ROOT)/include
-# The following definition avoids hard-wiring $(TK_ROOT) in the libraries
-# produced by OCaml, and is therefore required for binary distribution
-# of these libraries.  However, $(TK_ROOT)/lib must be added to the LIB
-# environment variable, as described in README.win32.
-TK_LINK=tk85.lib tcl85.lib ws2_32.lib
-# An alternative definition that avoids mucking with the LIB variable,
-# but hard-wires the Tcl/Tk location in the binaries
-# TK_LINK=$(TK_ROOT)/tk85.lib $(TK_ROOT)/tcl85.lib ws2_32.lib
 
 ############# Aliases for common commands
 

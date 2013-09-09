@@ -164,10 +164,6 @@ OTHERLIBRARIES=win32unix str num win32graph dynlink bigarray systhreads
 BNG_ARCH=amd64
 BNG_ASM_LEVEL=1
 
-### Configuration for LablTk (not supported)
-TK_DEFS=
-TK_LINK=
-
 ############# Aliases for common commands
 
 MAKEREC=$(MAKE) -f Makefile.nt

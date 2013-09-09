@@ -258,9 +258,9 @@ If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I\ +labltk
+.B \-I\ +camlp4
 adds the subdirectory
-.B labltk
+.B camlp4
 of the standard library to the search path.
 .TP
 .BI \-impl \ filename

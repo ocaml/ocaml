@@ -1,9 +1,0 @@
-cPlace.cmo cResource.cmo cWm.cmo cImagephoto.cmo cCanvas.cmo cButton.cmo
-cText.cmo cLabel.cmo cScrollbar.cmo cImage.cmo cEncoding.cmo cPixmap.cmo
-cPalette.cmo cFont.cmo cMessage.cmo cMenu.cmo cEntry.cmo cListbox.cmo
-cFocus.cmo cMenubutton.cmo cPack.cmo cOption.cmo cToplevel.cmo cFrame.cmo
-cDialog.cmo cImagebitmap.cmo cClipboard.cmo cRadiobutton.cmo cTkwait.cmo
-cGrab.cmo cSelection.cmo cScale.cmo cOptionmenu.cmo cWinfo.cmo cGrid.cmo
-cCheckbutton.cmo cBell.cmo cTkvars.cmo
-
-cTk.cmo camltk.cmo

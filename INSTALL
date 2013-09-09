@@ -79,24 +79,6 @@ The "configure" script accepts the following options:
         Location of the X11 include directory (e.g. /usr/X11R6/include)
         and the X11 library directory (e.g. /usr/X11R6/lib).
 
--tkdefs <cpp flags>             (default: none)
--tklibs <flags and libraries>   (default: determined automatically)
-        These options specify where to find the Tcl/Tk libraries for
-        LablTk. "-tkdefs" helps to find the headers, and "-tklibs"
-        the C libraries. "-tklibs" may contain either only -L/path and
-        -Wl,... flags, in which case the library names are determined
-        automatically, or the actual libraries, which are used as given.
-        Example: for a Japanese tcl/tk whose headers are in specific
-        directories and libraries in /usr/local/lib, you can use
-        ./configure -tklibs "-L/usr/local/lib -ltk8.0jp -ltcl8.0jp"
-          -tkdefs "-I/usr/local/include/tcl8.0jp -I/usr/local/include/tk8.0jp"
-
--tk-no-x11
-        Build LablTk without using X11. This option is needed on Cygwin.
-
--no-tk
-        Do not attempt to build LablTk.
-
 -no-pthread
         Do not attempt to use POSIX threads.
 

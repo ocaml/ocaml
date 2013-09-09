@@ -83,23 +83,6 @@ for lib in $OTHERLIBRARIES; do
     add_byte pervasives.cmi pervasives.mli \
              $THREADS_CMIS marshal.cmi marshal.mli \
              stdlib.cma unix.cma threads.cma libvmthreads.$A;;
-  labltk)
-    add_file      support/camltk.h
-    add_byte      support/byte.otarget
-    add_native    support/native.otarget
-    add_file      support/liblabltk.$A
-    add_byte      compiler/tkcompiler$EXE compiler/pp$EXE
-    add_file      labltk/tk.ml labltk/labltk.ml
-    add_byte      labltk/byte.otarget
-    add_native    labltk/native.otarget
-    add_byte      camltk/byte.otarget
-    add_native    camltk/native.otarget
-    add_ocaml_lib lib/labltk
-    add_byte      lib/labltktop$EXE lib/labltk$EXE
-    add_ocaml_lib jpf/jpflib
-    add_ocaml_lib frx/frxlib
-    add_byte      browser/ocamlbrowser$EXE
-    ;;
   dbm)
     add_ocaml_lib dbm
     add_c_lib mldbm;;

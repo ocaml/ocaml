@@ -306,9 +306,8 @@ install:
 	if test -d $(MANDIR)/man$(MANEXT); then : ; \
 	  else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
 	cp VERSION $(LIBDIR)/
-	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
-	  dllthreads.so dllunix.so dllgraphics.so dllstr.so \
-	  dlltkanim.so
+	cd $(LIBDIR); rm -f dllbigarray.so dllnums.so dllthreads.so \
+	  dllunix.so dllgraphics.so dllstr.so
 	cd byterun; $(MAKE) install
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
 	cp ocaml $(BINDIR)/ocaml$(EXE)

@@ -102,7 +102,6 @@ mkdir -p $LIBDIR/caml
 mkdir -p $LIBDIR/camlp4
 mkdir -p $LIBDIR/vmthreads
 mkdir -p $LIBDIR/threads
-mkdir -p $LIBDIR/labltk
 mkdir -p $LIBDIR/ocamlbuild
 mkdir -p $LIBDIR/ocamldoc
 mkdir -p $LIBDIR/ocamldoc/custom
@@ -273,10 +272,6 @@ installbin toplevel/expunge.byte$EXE $LIBDIR/expunge$EXE
 installbin tools/addlabels.byte $LIBDIR/addlabels
 installbin tools/scrapelabels.byte $LIBDIR/scrapelabels
 installbin otherlibs/dynlink/extract_crc.byte $LIBDIR/extract_crc
-installbin otherlibs/labltk/lib/labltk$EXE $BINDIR/labltk$EXE
-installbin otherlibs/labltk/browser/ocamlbrowser$EXE $BINDIR/ocamlbrowser$EXE
-installbin otherlibs/labltk/compiler/pp$EXE $LIBDIR/labltk/pp$EXE
-installbin otherlibs/labltk/lib/labltktop$EXE $LIBDIR/labltk/labltktop$EXE
 
 echo "Installing libraries..."
 installdir \
@@ -303,51 +298,6 @@ installdir \
   $LIBDIR
 
 installdir \
-  otherlibs/labltk/support/fileevent.mli \
-  otherlibs/labltk/support/fileevent.cmi \
-  otherlibs/labltk/support/fileevent.cmx \
-  otherlibs/labltk/support/protocol.mli \
-  otherlibs/labltk/support/protocol.cmi \
-  otherlibs/labltk/support/protocol.cmx \
-  otherlibs/labltk/support/textvariable.mli \
-  otherlibs/labltk/support/textvariable.cmi \
-  otherlibs/labltk/support/textvariable.cmx \
-  otherlibs/labltk/support/timer.mli \
-  otherlibs/labltk/support/timer.cmi \
-  otherlibs/labltk/support/timer.cmx \
-  otherlibs/labltk/support/rawwidget.mli \
-  otherlibs/labltk/support/rawwidget.cmi \
-  otherlibs/labltk/support/rawwidget.cmx \
-  otherlibs/labltk/support/widget.mli \
-  otherlibs/labltk/support/widget.cmi \
-  otherlibs/labltk/support/widget.cmx \
-  otherlibs/labltk/support/tkthread.mli \
-  otherlibs/labltk/support/tkthread.cmi \
-  otherlibs/labltk/support/tkthread.cmo \
-  otherlibs/labltk/support/tkthread.$O \
-  otherlibs/labltk/support/tkthread.cmx \
-  otherlibs/labltk/labltk/[^_]*.mli \
-  otherlibs/labltk/labltk/*.cmi \
-  otherlibs/labltk/labltk/*.cmx \
-  otherlibs/labltk/camltk/[^_]*.mli \
-  otherlibs/labltk/camltk/*.cmi \
-  otherlibs/labltk/camltk/*.cmx \
-  otherlibs/labltk/frx/frxlib.cma \
-  otherlibs/labltk/frx/frxlib.cmxa \
-  ../otherlibs/labltk/frx/*.mli \
-  otherlibs/labltk/frx/*.cmi \
-  otherlibs/labltk/jpf/jpflib.cma \
-  otherlibs/labltk/jpf/jpflib.cmxa \
-  otherlibs/labltk/jpf/*.mli \
-  otherlibs/labltk/jpf/*.cmi \
-  otherlibs/labltk/jpf/*.cmx \
-  otherlibs/labltk/lib/labltk.cma \
-  otherlibs/labltk/lib/labltk.cmxa \
-  otherlibs/labltk/lib/labltk.cmx \
-  otherlibs/labltk/compiler/tkcompiler \
-  $LIBDIR/labltk
-
-installdir \
   otherlibs/systhreads/threads.cma \
   otherlibs/systhreads/threads.cmxa \
   otherlibs/systhreads/thread.cmi \
@@ -371,7 +321,6 @@ installdir \
   otherlibs/systhreads/dllthreads$EXT_DLL \
   otherlibs/"$WIN32"unix/dllunix$EXT_DLL \
   otherlibs/threads/dllvmthreads$EXT_DLL \
-  otherlibs/labltk/support/dlllabltk$EXT_DLL \
   $STUBLIBDIR
 
 installlibdir \
@@ -393,13 +342,6 @@ installdir \
   otherlibs/threads/stdlib.cma \
   otherlibs/threads/unix.cma \
   $LIBDIR/vmthreads
-
-installlibdir \
-  otherlibs/labltk/support/liblabltk.$A \
-  otherlibs/labltk/lib/labltk.$A \
-  otherlibs/labltk/jpf/jpflib.$A \
-  otherlibs/labltk/frx/frxlib.$A \
-  $LIBDIR/labltk
 
 installlibdir \
   otherlibs/bigarray/libbigarray.$A \

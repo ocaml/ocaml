@@ -1,2 +1,0 @@
-cltkCaml.o cltkUtf.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o
-cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o cltkImg.o

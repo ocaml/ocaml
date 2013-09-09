@@ -3,6 +3,9 @@ Next version:
 
 (Changes that can break existing programs are marked with a "*")
 
+Other libraries:
+* Labltk: removed from the distribution, now available as a third-party library
+
 Language features:
 - Attributes and extension nodes
 

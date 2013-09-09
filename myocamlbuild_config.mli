@@ -23,7 +23,6 @@ val bng_asm_level : string
 val pthread_link : string
 val x11_includes : string
 val x11_link : string
-val tk_link : string
 val bytecc : string
 val bytecccompopts : string
 val bytecclinkopts : string
@@ -68,7 +67,6 @@ val so : string
 val toolchain : string
 val ccomptype : string
 val extralibs : string
-val tk_defs : string
 val asm_cfi_supported : bool
 val target : string
 val host : string

@@ -89,10 +89,3 @@ true: use_stdlib
 <otherlibs/dbm/**>: otherlibs_dbm
 <otherlibs/graph/**>: otherlibs_graph
 <otherlibs/win32graph/**>: otherlibs_win32graph
-<otherlibs/labltk/**>: otherlibs_labltk
-
-<otherlibs/labltk/support/tkthread.ml*> or <otherlibs/labltk/browser/*.ml*>: bootstrap_thread
-<otherlibs/labltk/**.{cm{,x},}a>: ocamlmklib
-"otherlibs/labltk/browser/jglib.cma": -ocamlmklib
-"otherlibs/labltk/browser/main.byte": use_unix, use_str, ocamlbrowser, bootstrap_thread
-<otherlibs/labltk/{browser,jpf}/**.ml*>: include_unix, include_str
