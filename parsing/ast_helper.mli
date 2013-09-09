@@ -349,7 +349,20 @@ module Convenience :
 
     val pvar: string -> pattern
     val pconstr: string -> pattern list -> pattern
+    val precord: ?closed:closed_flag -> (string * pattern) list -> pattern
+    val ptuple: pattern list -> pattern
+
+    val pnil: unit -> pattern
+    val pcons: pattern -> pattern -> pattern
+    val plist: pattern list -> pattern
+
+    val pstr: string -> pattern
+    val pint: int -> pattern
+    val pchar: char -> pattern
+    val pfloat: float -> pattern
+
     val punit: unit -> pattern
+
 
     (** {2 Types} *)
 
