@@ -23,3 +23,9 @@ val remove_preprocessed : string -> unit
 val file : formatter -> string -> (Lexing.lexbuf -> 'a) -> string -> 'a
 val apply_rewriters : string -> 'a -> 'a
 val report_error : formatter -> error -> unit
+
+
+val parse_implementation:
+  formatter -> string -> (Parsetree.structure -> 'a) -> 'a
+val parse_interface:
+  formatter -> string -> (Parsetree.signature -> 'a) -> 'a

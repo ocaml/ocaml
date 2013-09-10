@@ -140,3 +140,21 @@ let report_error ppf = function
   | WrongMagic cmd ->
       fprintf ppf "External preprocessor does not produce a valid file@.\
                    Command line: %s@." cmd
+
+
+let parse_all parse_fun magic ppf sourcefile k =
+  Location.input_name := sourcefile;
+  let inputfile = preprocess sourcefile in
+  try
+    let ast = file ppf inputfile parse_fun magic in
+    let res = k ast in
+    remove_preprocessed inputfile;
+    res
+  with exn ->
+    remove_preprocessed inputfile;
+    raise exn
+
+let parse_implementation ppf sourcefile k =
+  parse_all Parse.implementation Config.ast_impl_magic_number ppf sourcefile k
+let parse_interface ppf sourcefile k =
+  parse_all Parse.interface Config.ast_intf_magic_number ppf sourcefile k
