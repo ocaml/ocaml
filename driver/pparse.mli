@@ -25,7 +25,5 @@ val apply_rewriters : string -> 'a -> 'a
 val report_error : formatter -> error -> unit
 
 
-val parse_implementation:
-  formatter -> string -> (Parsetree.structure -> 'a) -> 'a
-val parse_interface:
-  formatter -> string -> (Parsetree.signature -> 'a) -> 'a
+val parse_implementation: formatter -> string -> Parsetree.structure
+val parse_interface: formatter -> string -> Parsetree.signature

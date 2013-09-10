@@ -142,19 +142,19 @@ let report_error ppf = function
                    Command line: %s@." cmd
 
 
-let parse_all parse_fun magic ppf sourcefile k =
+let parse_all parse_fun magic ppf sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
-  try
-    let ast = file ppf inputfile parse_fun magic in
-    let res = k ast in
-    remove_preprocessed inputfile;
-    res
-  with exn ->
-    remove_preprocessed inputfile;
-    raise exn
+  let ast =
+    try file ppf inputfile parse_fun magic
+    with exn ->
+      remove_preprocessed inputfile;
+      raise exn
+  in
+  remove_preprocessed inputfile;
+  ast
 
-let parse_implementation ppf sourcefile k =
-  parse_all Parse.implementation Config.ast_impl_magic_number ppf sourcefile k
-let parse_interface ppf sourcefile k =
-  parse_all Parse.interface Config.ast_intf_magic_number ppf sourcefile k
+let parse_implementation ppf sourcefile =
+  parse_all Parse.implementation Config.ast_impl_magic_number ppf sourcefile
+let parse_interface ppf sourcefile =
+  parse_all Parse.interface Config.ast_intf_magic_number ppf sourcefile

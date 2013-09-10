@@ -29,26 +29,24 @@ let interface ppf sourcefile outputprefix =
   check_unit_name ppf sourcefile modulename;
   Env.set_unit_name modulename;
   let initial_env = Compmisc.initial_env () in
-  Pparse.parse_interface ppf sourcefile
-    (fun ast ->
-       if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
-       if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
-       let tsg = Typemod.transl_signature initial_env ast in
-       if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
-       let sg = tsg.sig_type in
-       if !Clflags.print_types then
-         Printtyp.wrap_printing_env initial_env (fun () ->
-             fprintf std_formatter "%a@."
-               Printtyp.signature (Typemod.simplify_signature sg));
-       ignore (Includemod.signatures initial_env sg sg);
-       Typecore.force_delayed_checks ();
-       Warnings.check_fatal ();
-       if not !Clflags.print_types then begin
-         let sg = Env.save_signature sg modulename (outputprefix ^ ".cmi") in
-         Typemod.save_signature modulename tsg outputprefix sourcefile
-           initial_env sg ;
-       end
-    )
+  let ast = Pparse.parse_interface ppf sourcefile in
+  if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
+  if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
+  let tsg = Typemod.transl_signature initial_env ast in
+  if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
+  let sg = tsg.sig_type in
+  if !Clflags.print_types then
+    Printtyp.wrap_printing_env initial_env (fun () ->
+        fprintf std_formatter "%a@."
+          Printtyp.signature (Typemod.simplify_signature sg));
+  ignore (Includemod.signatures initial_env sg sg);
+  Typecore.force_delayed_checks ();
+  Warnings.check_fatal ();
+  if not !Clflags.print_types then begin
+    let sg = Env.save_signature sg modulename (outputprefix ^ ".cmi") in
+    Typemod.save_signature modulename tsg outputprefix sourcefile
+      initial_env sg ;
+  end
 
 (* Compile a .ml file *)
 
@@ -96,7 +94,7 @@ let implementation ppf sourcefile outputprefix =
     Warnings.check_fatal ();
     Stypes.dump (Some (outputprefix ^ ".annot"))
   in
-  try Pparse.parse_implementation ppf sourcefile comp
+  try comp (Pparse.parse_implementation ppf sourcefile)
   with x ->
     Stypes.dump (Some (outputprefix ^ ".annot"));
     remove_file objfile;
