@@ -91,7 +91,9 @@ let apply_rewriters magic ast =
   | [] -> ast
   | ppxs ->
       let fn =
-        List.fold_left (apply_rewriter magic) (write_ast magic ast) ppxs in
+        List.fold_left (apply_rewriter magic) (write_ast magic ast)
+          (List.rev ppxs)
+      in
       read_ast magic fn
 
 (* Parse a file or get a dumped syntax tree from it *)
