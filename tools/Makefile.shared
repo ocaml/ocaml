@@ -308,16 +308,6 @@ primreq: $(PRIMREQ)
 clean::
 	rm -f primreq
 
-# Dump the Parsetree representation of OCaml code, in OCaml syntax
-
-OCAMLAST=dump_ast.cmo
-
-ocamlast: $(OCAMLAST)
-	$(CAMLC) $(LINKFLAGS) -o ocamlast ../compilerlibs/ocamlcommon.cma ../compilerlibs/ocamlbytecomp.cma ../compilerlibs/ocamltoplevel.cma $(OCAMLAST)
-
-clean::
-	rm -rf ocamlast
-
 # Common stuff
 
 .SUFFIXES:
