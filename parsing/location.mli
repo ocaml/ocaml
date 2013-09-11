@@ -75,3 +75,29 @@ val show_filename: string -> string
 
 
 val absname: bool ref
+
+
+(* Support for located errors *)
+
+type error =
+  {
+    loc: t;
+    msg: string;
+    sub: error list;
+  }
+
+val error: ?loc:t -> ?sub:error list -> string -> error
+
+val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
+
+val error_of_exn: exn -> error option
+
+val register_error_of_exn: (exn -> error option) -> unit
+  (* Each compiler module which defines a custom type of exception
+     which can surface as a user-visible error should register
+     a "printer" for this exception using [register_error_of_exn].
+     The result of the printer is an [error] value containing
+     a location, a message, and optionally sub-messages (each of them
+     being located as well). *)
+
+val report_error: formatter -> error -> unit

@@ -286,3 +286,41 @@ type 'a loc = {
 
 let mkloc txt loc = { txt ; loc }
 let mknoloc txt = mkloc txt none
+
+
+type error =
+  {
+    loc: t;
+    msg: string;
+    sub: error list;
+  }
+
+let error ?(loc = none) ?(sub = []) msg = {loc; msg; sub}
+
+let error_of_exn : (exn -> error option) list ref = ref []
+
+let register_error_of_exn f = error_of_exn := f :: !error_of_exn
+
+let error_of_exn exn =
+  let rec loop = function
+    | [] -> None
+    | f :: rest ->
+        match f exn with
+        | Some _ as r -> r
+        | None -> loop rest
+  in
+  loop !error_of_exn
+
+let rec report_error ppf {loc; msg; sub} =
+  print ppf loc;
+  Format.pp_print_string ppf msg;
+  List.iter (fun err -> Format.fprintf ppf "@\n@[<2>%a@]" report_error err) sub
+
+let error_of_printer loc print x =
+  let buf = Buffer.create 64 in
+  let ppf = Format.formatter_of_buffer buf in
+  Format.fprintf ppf "Error: ";
+  print ppf x;
+  pp_print_flush ppf ();
+  let msg = Buffer.contents buf in
+  error ~loc msg
