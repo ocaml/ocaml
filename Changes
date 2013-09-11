@@ -363,11 +363,13 @@ Bug fixes:
 - PR#6109: Typos in ocamlbuild error messages
   (Gabriel Kerneis)
 - PR#6123: Assert failure when self escapes its class
-  (Jacques Garrigue, report by whitequark)
+  (Jacques Garrigue, report by user 'whitequark')
 - PR#6158: Fatal error using GADTs
   (Jacques Garrigue, report by Jeremy Yallop)
 - PR#6163: Assert_failure using polymorphic variants in GADTs
   (Jacques Garrigue, report by Leo P. White)
+- PR#6164: segmentation fault on Num.power_num of 0/1
+  (Fabrice Le Fessant, report by Johannes Kanig)
 
 Feature wishes:
 - PR#5181: Merge common floating point constants in ocamlopt
