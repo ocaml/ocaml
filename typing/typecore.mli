@@ -111,7 +111,6 @@ type error =
 exception Error of Location.t * Env.t * error
 
 val report_error: Env.t -> formatter -> error -> unit
- (* Deprecated.  Use Location.{error_of_exn, report_error}. *)
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
