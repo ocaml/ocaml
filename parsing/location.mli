@@ -56,7 +56,7 @@ val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
 
-val highlight_locations: formatter -> t -> t -> bool
+val highlight_locations: formatter -> t list -> bool
 
 type 'a loc = {
   txt : 'a;
@@ -84,9 +84,12 @@ type error =
     loc: t;
     msg: string;
     sub: error list;
+    if_highlight: string; (* alternative message if locations are highlighted *)
   }
 
-val error: ?loc:t -> ?sub:error list -> string -> error
+val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
+
+val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string -> ('a, unit, string, error) format4 -> 'a
 
 val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 

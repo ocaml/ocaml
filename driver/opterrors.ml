@@ -23,8 +23,6 @@ let report_error ppf exn =
   | Lexer.Error(err, l) ->
       Location.print_error ppf l;
       Lexer.report_error ppf err
-  | Syntaxerr.Error err ->
-      Syntaxerr.report_error ppf err
   | Pparse.Error err ->
       Pparse.report_error ppf err
   | Env.Error err ->

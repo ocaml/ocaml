@@ -211,9 +211,6 @@ let report_err source_file exn =
     | Lexer.Error(err, range) ->
         Format.fprintf Format.err_formatter "@[%a%a@]@."
         Location.print_error range  Lexer.report_error err
-    | Syntaxerr.Error err ->
-        Format.fprintf Format.err_formatter "@[%a@]@."
-        Syntaxerr.report_error err
     | Sys_error msg ->
         Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
     | Pparse.Error err ->
@@ -221,7 +218,12 @@ let report_err source_file exn =
                        "@[Preprocessing error on file %s@]@.@[%a@]@."
           source_file
           Pparse.report_error err
-    | x -> raise x
+    | x ->
+        match Location.error_of_exn x with
+        | Some err ->
+            Format.fprintf Format.err_formatter "@[%a@]@."
+              Location.report_error err
+        | None -> raise x
 
 let read_parse_and_extract parse_function extract_function magic source_file =
   Depend.free_structure_names := Depend.StringSet.empty;
