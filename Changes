@@ -303,7 +303,7 @@ Bug fixes:
 - PR#5973: Format module incorrectly parses format string
   (Pierre Weis, report by Frédéric Bour)
 - PR#5974: better documentation for Str.regexp
-  (Damien Doligez, report by user 'william')
+  (Damien Doligez, report by william)
 - PR#5976: crash after recovering from two stack overflows (ocamlopt on MacOS X)
   (Xavier Leroy, report by Pierre Boutillier)
 - PR#5977: Build failure on raspberry pi: "input_value: integer too large"
@@ -363,7 +363,7 @@ Bug fixes:
 - PR#6109: Typos in ocamlbuild error messages
   (Gabriel Kerneis)
 - PR#6123: Assert failure when self escapes its class
-  (Jacques Garrigue, report by user 'whitequark')
+  (Jacques Garrigue, report by whitequark)
 - PR#6158: Fatal error using GADTs
   (Jacques Garrigue, report by Jeremy Yallop)
 - PR#6163: Assert_failure using polymorphic variants in GADTs
