@@ -95,8 +95,9 @@ lablgtk: ${LABLGTK}.tar.gz findlib # TODO: add lablgl
 	  ${MAKE} world && \
 	  ocamlfind remove lablgtk2 && \
 	  ${MAKE} install && \
-	  ln -h -f -s ${PREFIX}/lib/ocaml/site-lib/lablgtk2 \
-	              ${PREFIX}/lib/ocaml/lablgtk2 )
+	  rm -f ${PREFIX}/lib/ocaml/lablgtk2 && \
+	  ln -f -s ${PREFIX}/lib/ocaml/site-lib/lablgtk2 \
+	           ${PREFIX}/lib/ocaml/lablgtk2 )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${LABLGTK} lablgtk
@@ -840,6 +841,7 @@ xmllight: ${XMLLIGHT}.zip
 	./Patcher.sh ${XMLLIGHT}
 	( cd ${XMLLIGHT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ${MAKE} xml_parser.ml && \
 	  ${MAKE} all opt && \
 	  ${MAKE} install )
 	echo ${VERSION} >$@
@@ -876,7 +878,7 @@ all: configfile
 XMLM=xmlm-1.1.0
 ${XMLM}.tbz:
 	${WGET} http://erratique.ch/software/xmlm/releases/$@
-xmlm: ${XMLM}.tbz
+xmlm: ${XMLM}.tbz findlib
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${XMLM}
@@ -884,7 +886,7 @@ xmlm: ${XMLM}.tbz
 	./Patcher.sh ${XMLM} oasis-common.patch
 	( cd ${XMLM} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
-	  ocaml setup.ml -configure && \
+	  ocaml setup.ml -configure --prefix ${PREFIX} && \
 	  ocaml setup.ml -build && \
 	  ocamlfind remove xmlm && \
 	  ocaml setup.ml -install )
@@ -1109,6 +1111,28 @@ clean::
 distclean::
 	rm -f ${OCAMLNET}.tar.gz
 all: ocamlnet
+
+# http://zoggy.github.io/ocamlrss/
+RSS=ocamlrss-2.2.2
+${RSS}.tar.gz:
+	${WGET} http://zoggy.github.io/ocamlrss/$@
+rss: ${RSS}.tar.gz xmlm ocamlnet
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${RSS}
+	tar zxf ${RSS}.tar.gz
+	./Patcher.sh ${RSS}
+	( cd ${RSS} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ${MAKE} all && \
+	  ocamlfind remove ocaml-rss && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${RSS} rss
+distclean::
+	rm -f ${RSS}.tar.gz
+all: rss
 
 # http://code.google.com/p/ocaml-extlib/
 EXTLIB=extlib-1.5.2
