@@ -148,7 +148,8 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (err, file) ->
-        Some (Location.error_of_printer (Location.in_file file) report_error err)
+          Some
+            (Location.error_of_printer (Location.in_file file) report_error err)
       | _ ->
         None
     )
