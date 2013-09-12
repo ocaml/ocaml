@@ -58,9 +58,9 @@ type error =
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
 
-exception Error of error * string
+exception Error of error
 
-let error err = raise (Error (err, !Location.input_name))
+let error err = raise (Error err)
 
 module EnvLazy : sig
   type ('a,'b) t
@@ -1609,9 +1609,10 @@ let report_error ppf = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error (err, file) ->
+      | Error err ->
           Some
-            (Location.error_of_printer (Location.in_file file) report_error err)
+            (Location.error_of_printer
+               (Location.in_file !Location.input_name) report_error err)
       | _ ->
         None
     )

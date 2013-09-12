@@ -16,7 +16,7 @@ type error =
   | CannotRun of string
   | WrongMagic of string
 
-exception Error of error * string
+exception Error of error
 
 (* Optionally preprocess a source file *)
 
@@ -30,7 +30,7 @@ let preprocess sourcefile =
       in
       if Ccomp.command comm <> 0 then begin
         Misc.remove_file tmpfile;
-        raise (Error (CannotRun comm, !Location.input_name));
+        raise (Error (CannotRun comm));
       end;
       tmpfile
 
@@ -57,10 +57,10 @@ let apply_rewriter magic fn_in ppx =
   Misc.remove_file fn_in;
   if not ok then begin
     Misc.remove_file fn_out;
-    raise (Error (CannotRun comm, !Location.input_name));
+    raise (Error (CannotRun comm));
   end;
   if not (Sys.file_exists fn_out) then
-    raise (Error (WrongMagic comm, !Location.input_name));
+    raise (Error (WrongMagic comm));
   (* check magic before passing to the next ppx *)
   let ic = open_in_bin fn_out in
   let buffer =
@@ -68,7 +68,7 @@ let apply_rewriter magic fn_in ppx =
   close_in ic;
   if buffer <> magic then begin
     Misc.remove_file fn_out;
-    raise (Error (WrongMagic comm, !Location.input_name));
+    raise (Error (WrongMagic comm));
   end;
   fn_out
 
@@ -147,9 +147,10 @@ let report_error ppf = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error (err, file) ->
+      | Error err ->
           Some
-            (Location.error_of_printer (Location.in_file file) report_error err)
+            (Location.error_of_printer
+               (Location.in_file !Location.input_name) report_error err)
       | _ ->
         None
     )

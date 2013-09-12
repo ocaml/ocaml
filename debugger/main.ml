@@ -218,7 +218,7 @@ let main () =
   with
     Toplevel ->
       exit 2
-  | Env.Error (e, _) ->
+  | Env.Error e ->
       eprintf "Debugger [version %s] environment error:@ @[@;" Config.version;
       Env.report_error err_formatter e;
       eprintf "@]@.";

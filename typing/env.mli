@@ -174,7 +174,7 @@ type error =
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
 
-exception Error of error * string (* file name *)
+exception Error of error
 
 open Format
 
