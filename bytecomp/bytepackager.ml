@@ -276,3 +276,10 @@ let report_error ppf = function
         Location.print_filename file name id
   | File_not_found file ->
       fprintf ppf "File %s not found" file
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )

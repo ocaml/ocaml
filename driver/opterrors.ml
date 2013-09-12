@@ -35,12 +35,6 @@ let report_error ppf exn =
   | Asmpackager.Error code ->
       Location.print_error_cur_file ppf;
       Asmpackager.report_error ppf code
-  | Sys_error msg ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "I/O error: %s" msg
-  | Warnings.Errors (n) ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
   | x ->
       match Location.error_of_exn x with
       | Some err -> Location.report_error ppf err

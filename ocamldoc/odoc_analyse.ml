@@ -107,21 +107,14 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
    and we don't want to take care of this. Besises, these
    differences only concern code generation (i believe).*)
 let process_error exn =
-  let report ppf = function
-  | Sys_error msg ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "I/O error: %s" msg
-  | Warnings.Errors (n) ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
-  | x ->
-      match Location.error_of_exn x with
-      | Some err -> Location.report_error ppf err
-      | None ->
-          fprintf ppf "@]";
-          fprintf ppf
-            "Compilation error(%s). Use the OCaml compiler to get more details."
-            (Printexc.to_string x)
+  let report ppf x =
+    match Location.error_of_exn x with
+    | Some err -> Location.report_error ppf err
+    | None ->
+        fprintf ppf "@]";
+        fprintf ppf
+          "Compilation error(%s). Use the OCaml compiler to get more details."
+          (Printexc.to_string x)
   in
   Format.fprintf Format.err_formatter "@[%a@]@." report exn
 

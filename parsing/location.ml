@@ -347,3 +347,16 @@ let error_of_printer loc print x =
 
 let error_of_printer_file print x =
   error_of_printer (in_file !input_name) print x
+
+let () =
+  register_error_of_exn
+    (function
+      | Sys_error msg ->
+          Some (errorf ~loc:(in_file !input_name) "Error: I/O error: %s" msg)
+      | Warnings.Errors n ->
+          Some
+            (errorf ~loc:(in_file !input_name)
+               "Error: Some fatal warnings were triggered (%d occurrences)" n)
+      | _ ->
+          None
+    )
