@@ -93,6 +93,8 @@ val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string -> ('a, unit, stri
 
 val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 
+val error_of_printer_file: (formatter -> 'a -> unit) -> 'a -> error
+
 val error_of_exn: exn -> error option
 
 val register_error_of_exn: (exn -> error option) -> unit

@@ -147,12 +147,8 @@ let report_error ppf = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error err ->
-          Some
-            (Location.error_of_printer
-               (Location.in_file !Location.input_name) report_error err)
-      | _ ->
-        None
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
     )
 
 let parse_all parse_fun magic ppf sourcefile =

@@ -343,3 +343,6 @@ let error_of_printer loc print x =
   pp_print_flush ppf ();
   let msg = Buffer.contents buf in
   errorf ~loc "Error: %s" msg
+
+let error_of_printer_file print x =
+  error_of_printer (in_file !input_name) print x
