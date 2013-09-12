@@ -20,11 +20,6 @@ open Format
 
 let report_error ppf exn =
   let report ppf = function
-  | Ctype.Tags(l, l') ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf
-      "In this program,@ variant constructors@ `%s and `%s@ \
-       have the same hash value.@ Change one of them." l l'
   | Typetexp.Error(loc, env, err) ->
       Location.print_error ppf loc; Typetexp.report_error env ppf err
   | Typedecl.Error(loc, err) ->

@@ -108,11 +108,6 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
    differences only concern code generation (i believe).*)
 let process_error exn =
   let report ppf = function
-  | Ctype.Tags(l, l') ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf
-      "In this program,@ variant constructors@ `%s and `%s@ \
-       have the same hash value." l l'
   | Typetexp.Error(loc, env, err) ->
       Location.print_error ppf loc; Typetexp.report_error env ppf err
   | Typedecl.Error(loc, err) ->
