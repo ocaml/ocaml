@@ -21,9 +21,6 @@ open Format
 
 let report_error ppf exn =
   let report ppf = function
-  | Includemod.Error err ->
-      Location.print_error_cur_file ppf;
-      Includemod.report_error ppf err
   | Translcore.Error(loc, err) ->
       Location.print_error ppf loc; Translcore.report_error ppf err
   | Translclass.Error(loc, err) ->

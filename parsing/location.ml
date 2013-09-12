@@ -339,10 +339,11 @@ let rec report_error ppf ({loc; msg; sub; if_highlight} as err) =
 let error_of_printer loc print x =
   let buf = Buffer.create 64 in
   let ppf = Format.formatter_of_buffer buf in
+  pp_print_string ppf "Error: ";
   print ppf x;
   pp_print_flush ppf ();
   let msg = Buffer.contents buf in
-  errorf ~loc "Error: %s" msg
+  errorf ~loc "%s" msg
 
 let error_of_printer_file print x =
   error_of_printer (in_file !input_name) print x
