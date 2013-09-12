@@ -40,5 +40,4 @@ let report_error ppf exn =
       | Some err -> Location.report_error ppf err
       | None -> fprintf ppf "@]"; raise x
   in
-
   fprintf ppf "@[%a@]@." report exn

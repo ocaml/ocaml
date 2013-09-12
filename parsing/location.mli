@@ -106,3 +106,6 @@ val register_error_of_exn: (exn -> error option) -> unit
      being located as well). *)
 
 val report_error: formatter -> error -> unit
+
+val report_exception: formatter -> exn -> unit
+  (* Reraise the exception if it is unknown. *)

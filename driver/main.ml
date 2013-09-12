@@ -184,7 +184,7 @@ let main () =
     end;
     exit 0
   with x ->
-    Errors.report_error ppf x;
+    Location.report_exception ppf x;
     exit 2
 
 let _ = main ()

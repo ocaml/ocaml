@@ -100,23 +100,16 @@ module Ast_analyser = Odoc_ast.Analyser (Odoc_comments.Basic_info_retriever)
 (** The module used to analyse the parse tree and typed tree of an interface file.*)
 module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 
-(** Handle an error. This is a partial copy of the compiler
-   driver/error.ml file. We do this because there are
-   some differences between the possibly raised exceptions
-   in the bytecode (error.ml) and opt (opterros.ml) compilers
-   and we don't want to take care of this. Besises, these
-   differences only concern code generation (i believe).*)
+(** Handle an error. *)
+
 let process_error exn =
-  let report ppf x =
-    match Location.error_of_exn x with
-    | Some err -> Location.report_error ppf err
-    | None ->
-        fprintf ppf "@]";
-        fprintf ppf
-          "Compilation error(%s). Use the OCaml compiler to get more details."
-          (Printexc.to_string x)
-  in
-  Format.fprintf Format.err_formatter "@[%a@]@." report exn
+  match Location.error_of_exn exn with
+  | Some err ->
+      fprintf Format.err_formatter "@[%a@]@." Location.report_error err
+  | None ->
+      fprintf Format.err_formatter
+        "Compilation error(%s). Use the OCaml compiler to get more details.@."
+        (Printexc.to_string exn)
 
 (** Process the given file, according to its extension. Return the Module.t created, if any.*)
 let process_file ppf sourcefile =

@@ -360,3 +360,9 @@ let () =
       | _ ->
           None
     )
+
+
+let report_exception ppf exn =
+  match error_of_exn exn with
+  | Some err -> fprintf ppf "@[%a@]@." report_error err
+  | None -> raise exn

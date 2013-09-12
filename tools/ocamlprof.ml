@@ -499,18 +499,11 @@ let main () =
                 "        Print version number and exit";
       ] process_anon_file usage;
     exit 0
-  with x ->
-    let report_error ppf = function
-    | Profiler msg ->
-        fprintf ppf "@[%s@]@." msg
-    | Sys_error msg ->
-        fprintf ppf "@[I/O error:@ %s@]@." msg
-    | x ->
-        match Location.error_of_exn x with
-        | Some err -> fprintf ppf "@[%a@]@." Location.report_error err
-        | None -> raise x
-    in
-    report_error Format.err_formatter x;
-    exit 2
+  with
+  | Profiler msg ->
+      fprintf Format.err_formatter "@[%s@]@." msg;
+      exit 2
+  | exn ->
+      Location.report_exception Format.err_formatter exn
 
 let _ = main ()
