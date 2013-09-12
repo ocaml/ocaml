@@ -694,10 +694,10 @@ value varify_constructors var_names =
     | ExAcc loc _ _ | <:expr@loc< $id:<:ident< $_$ . $_$ >>$ >> as e ->
         let (e, l) =
           match sep_expr_acc [] e with
-          [ [(loc, ml, <:expr@sloc< $uid:s$ >>) :: l] ->
-              (mkexp loc (Pexp_construct (mkli sloc (conv_con s) ml) None), l)
-          | [(loc, ml, <:expr@sloc< $lid:s$ >>) :: l] ->
-              (mkexp loc (Pexp_ident (mkli sloc s ml)), l)
+          [ [(loc, ml, <:expr< $uid:s$ >>) :: l] ->
+              (mkexp loc (Pexp_construct (mkli loc (conv_con s) ml) None), l)
+          | [(loc, ml, <:expr< $lid:s$ >>) :: l] ->
+              (mkexp loc (Pexp_ident (mkli loc s ml)), l)
           | [(_, [], e) :: l] -> (expr e, l)
           | _ -> error loc "bad ast in expression" ]
         in
