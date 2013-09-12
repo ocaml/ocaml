@@ -10,34 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* WARNING: if you change something in this file, you must look at
-   errors.ml to see if you need to make the same changes there.
-*)
+(* This module should be removed.  We keep it for now, to avoid
+   breaking external tools depending on it. *)
 
-open Format
-
-(* Report an error *)
-
-let report_error ppf exn =
-  let report ppf = function
-  | Compilenv.Error code ->
-      Location.print_error_cur_file ppf;
-      Compilenv.report_error ppf code
-  | Asmgen.Error code ->
-      Location.print_error_cur_file ppf;
-      Asmgen.report_error ppf code
-  | Asmlink.Error code ->
-      Location.print_error_cur_file ppf;
-      Asmlink.report_error ppf code
-  | Asmlibrarian.Error code ->
-      Location.print_error_cur_file ppf;
-      Asmlibrarian.report_error ppf code
-  | Asmpackager.Error code ->
-      Location.print_error_cur_file ppf;
-      Asmpackager.report_error ppf code
-  | x ->
-      match Location.error_of_exn x with
-      | Some err -> Location.report_error ppf err
-      | None -> fprintf ppf "@]"; raise x
-  in
-  fprintf ppf "@[%a@]@." report exn
+let report_error = Location.report_exception
