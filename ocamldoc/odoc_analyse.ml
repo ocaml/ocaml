@@ -108,22 +108,14 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
    differences only concern code generation (i believe).*)
 let process_error exn =
   let report ppf = function
-  | Typetexp.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typetexp.report_error env ppf err
-  | Typedecl.Error(loc, err) ->
-      Location.print_error ppf loc; Typedecl.report_error ppf err
   | Includemod.Error err ->
       Location.print_error_cur_file ppf;
       Includemod.report_error ppf err
-  | Typemod.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typemod.report_error env ppf err
   | Translcore.Error(loc, err) ->
       Location.print_error ppf loc; Translcore.report_error ppf err
   | Sys_error msg ->
       Location.print_error_cur_file ppf;
       fprintf ppf "I/O error: %s" msg
-  | Typeclass.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typeclass.report_error env ppf err
   | Translclass.Error(loc, err) ->
       Location.print_error ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->

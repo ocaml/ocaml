@@ -1344,3 +1344,12 @@ let report_error ppf = function
         "cannot be checked"
   | Exception_constructor_with_result ->
       fprintf ppf "Exception constructors cannot specify a result type"
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (loc, err) ->
+        Some (Location.error_of_printer loc report_error err)
+      | _ ->
+        None
+    )
