@@ -20,8 +20,6 @@ open Format
 
 let report_error ppf exn =
   let report ppf = function
-  | Pparse.Error err ->
-      Pparse.report_error ppf err
   | Env.Error err ->
       Location.print_error_cur_file ppf;
       Env.report_error ppf err

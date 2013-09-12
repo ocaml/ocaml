@@ -16,7 +16,7 @@ type error =
   | CannotRun of string
   | WrongMagic of string
 
-exception Error of error
+exception Error of error * string
 
 (* Optionally preprocess a source file *)
 
@@ -30,7 +30,7 @@ let preprocess sourcefile =
       in
       if Ccomp.command comm <> 0 then begin
         Misc.remove_file tmpfile;
-        raise (Error (CannotRun comm));
+        raise (Error (CannotRun comm, !Location.input_name));
       end;
       tmpfile
 
@@ -57,9 +57,10 @@ let apply_rewriter magic fn_in ppx =
   Misc.remove_file fn_in;
   if not ok then begin
     Misc.remove_file fn_out;
-    raise (Error (CannotRun comm));
+    raise (Error (CannotRun comm, !Location.input_name));
   end;
-  if not (Sys.file_exists fn_out) then raise (Error (WrongMagic comm));
+  if not (Sys.file_exists fn_out) then
+    raise (Error (WrongMagic comm, !Location.input_name));
   (* check magic before passing to the next ppx *)
   let ic = open_in_bin fn_out in
   let buffer =
@@ -67,7 +68,7 @@ let apply_rewriter magic fn_in ppx =
   close_in ic;
   if buffer <> magic then begin
     Misc.remove_file fn_out;
-    raise (Error (WrongMagic comm));
+    raise (Error (WrongMagic comm, !Location.input_name));
   end;
   fn_out
 
@@ -143,6 +144,14 @@ let report_error ppf = function
       fprintf ppf "External preprocessor does not produce a valid file@.\
                    Command line: %s@." cmd
 
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (err, file) ->
+        Some (Location.error_of_printer (Location.in_file file) report_error err)
+      | _ ->
+        None
+    )
 
 let parse_all parse_fun magic ppf sourcefile =
   Location.input_name := sourcefile;

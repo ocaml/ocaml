@@ -16,7 +16,7 @@ type error =
   | CannotRun of string
   | WrongMagic of string
 
-exception Error of error
+exception Error of error * string (* source file *)
 
 val preprocess : string -> string
 val remove_preprocessed : string -> unit

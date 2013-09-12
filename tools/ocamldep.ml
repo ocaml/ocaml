@@ -210,11 +210,6 @@ let report_err source_file exn =
   match exn with
     | Sys_error msg ->
         Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
-    | Pparse.Error err ->
-        Format.fprintf Format.err_formatter
-                       "@[Preprocessing error on file %s@]@.@[%a@]@."
-          source_file
-          Pparse.report_error err
     | x ->
         match Location.error_of_exn x with
         | Some err ->
