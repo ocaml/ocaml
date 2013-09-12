@@ -208,9 +208,6 @@ let print_raw_dependencies source_file deps =
 let report_err source_file exn =
   error_occurred := true;
   match exn with
-    | Lexer.Error(err, range) ->
-        Format.fprintf Format.err_formatter "@[%a%a@]@."
-        Location.print_error range  Lexer.report_error err
     | Sys_error msg ->
         Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
     | Pparse.Error err ->

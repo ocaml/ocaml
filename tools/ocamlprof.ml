@@ -501,9 +501,6 @@ let main () =
     exit 0
   with x ->
     let report_error ppf = function
-    | Lexer.Error(err, range) ->
-        fprintf ppf "@[%a%a@]@."
-        Location.print_error range  Lexer.report_error err
     | Profiler msg ->
         fprintf ppf "@[%s@]@." msg
     | Sys_error msg ->

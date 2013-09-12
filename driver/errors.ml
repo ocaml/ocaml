@@ -21,9 +21,6 @@ open Format
 
 let report_error ppf exn =
   let report ppf = function
-  | Lexer.Error(err, loc) ->
-      Location.print_error ppf loc;
-      Lexer.report_error ppf err
   | Pparse.Error err ->
       Pparse.report_error ppf err
   | Env.Error err ->

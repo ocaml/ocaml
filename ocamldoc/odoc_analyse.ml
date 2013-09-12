@@ -108,9 +108,6 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
    differences only concern code generation (i believe).*)
 let process_error exn =
   let report ppf = function
-  | Lexer.Error(err, loc) ->
-      Location.print_error ppf loc;
-      Lexer.report_error ppf err
   | Env.Error err ->
       Location.print_error_cur_file ppf;
       Env.report_error ppf err
