@@ -108,9 +108,6 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
    differences only concern code generation (i believe).*)
 let process_error exn =
   let report ppf = function
-  | Cmi_format.Error err ->
-      Location.print_error_cur_file ppf;
-      Cmi_format.report_error ppf err
   | Ctype.Tags(l, l') ->
       Location.print_error_cur_file ppf;
       fprintf ppf

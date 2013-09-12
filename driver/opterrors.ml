@@ -20,9 +20,6 @@ open Format
 
 let report_error ppf exn =
   let report ppf = function
-  | Cmi_format.Error err ->
-      Location.print_error_cur_file ppf;
-      Cmi_format.report_error ppf err
   | Ctype.Tags(l, l') ->
       Location.print_error_cur_file ppf;
       fprintf ppf
