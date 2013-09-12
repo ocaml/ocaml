@@ -810,3 +810,12 @@ let report_error ppf = function
         "@[Cannot safely evaluate the definition@ \
          of the recursively-defined module %a@]"
         Printtyp.ident id
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (loc, err) ->
+        Some (Location.error_of_printer loc report_error err)
+      | _ ->
+        None
+    )

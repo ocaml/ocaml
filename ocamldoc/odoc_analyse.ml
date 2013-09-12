@@ -108,13 +108,9 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
    differences only concern code generation (i believe).*)
 let process_error exn =
   let report ppf = function
-  | Translcore.Error(loc, err) ->
-      Location.print_error ppf loc; Translcore.report_error ppf err
   | Sys_error msg ->
       Location.print_error_cur_file ppf;
       fprintf ppf "I/O error: %s" msg
-  | Translclass.Error(loc, err) ->
-      Location.print_error ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->
       Location.print_error_cur_file ppf;
       fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
