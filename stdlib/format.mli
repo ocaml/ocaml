@@ -564,6 +564,27 @@ val pp_get_formatter_out_functions :
    evaluation of these primitives. For instance,
    [print_string] is equal to [pp_print_string std_formatter]. *)
 
+(** {6 Convenience formatting functions.} *)
+
+val pp_print_list:
+  ?pp_sep:(formatter -> unit -> unit) -> 
+  (formatter -> 'a -> unit) -> (formatter -> 'a list -> unit)
+(** [pp_print_list ?pp_sep pp_v ppf l] prints the list [l]. [pp_v] is
+    used on the elements of [l] and each element is separated by
+    a call to [pp_sep] (defaults to {!pp_print_cut}). Does nothing on
+    empty lists.
+
+    @since 4.02
+*)
+
+val pp_print_text : formatter -> string -> unit
+(** [pp_print_text ppf s] prints [s] with spaces and newlines
+    respectively printed with {!pp_print_space} and
+    {!pp_force_newline}.
+
+    @since 4.02
+*)
+
 (** {6 [printf] like functions for pretty-printing.} *)
 
 val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
