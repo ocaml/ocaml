@@ -55,7 +55,7 @@ char *text_file_name;
 char *union_file_name;
 char *verbose_file_name;
 
-#if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__) || (__APPLE__)
+#if defined(__linux__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__) || (__APPLE__)
 #define HAVE_MKSTEMP
 #endif
 
