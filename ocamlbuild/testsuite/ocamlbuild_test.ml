@@ -78,7 +78,7 @@ module Match = struct
       Expected of string
     | Unexpected of string
     | Structure of string * string list
-    | Output of string * string
+    | Output of string * string * string
 
   (* This will print the tree *)
   let print ppf tree =
@@ -105,13 +105,13 @@ module Match = struct
   let x ?(atts=()) name ~output = X ((atts,name), (0,output))
 
   let match_with_fs ~root m =
-    let errors = ref [] in
-    let rec visit ~exact path m =
+    let rec visit ~exact ~successes ~errors path m =
       let string_of_path path = "./" ^ String.concat "/" (List.rev path) in
       let file name = string_of_path (name :: path) in
       let push li x = li := x :: !li in
       let exists_assert filename =
-        if not (exists filename) then push errors (Expected filename) in
+        push (if exists filename then successes else errors) (Expected filename)
+      in
       let rec take_name = function
         | F (_, name)
         | D ((_, name), _)
@@ -129,29 +129,34 @@ module Match = struct
           let lst' = List.filter (fun x -> not (List.mem x lst)) lst' in
           (if exact && lst' <> [] then
               errors := Structure ((file name), lst') :: !errors);
-          List.iter (visit ~exact (name :: path)) sub
+          List.iter (visit ~exact ~successes ~errors (name :: path)) sub
         | X (((), name), (retcode, output)) ->
           let _,output' = execute (file name) in
           let output' = String.concat "\n" output' in
-          if output <> output' then
-            errors := Output (output, output') :: !errors
-        | Exact sub -> visit ~exact:true path sub
-        | Contains sub -> visit ~exact:false path sub
-        | Any -> ()
-        | Empty -> 
-          errors := Unexpected (string_of_path path) :: !errors
+          push (if output <> output' then errors else successes)
+            (Output (file name, output, output'));
+        | Exact sub -> visit ~exact:true ~successes ~errors path sub
+        | Contains sub -> visit ~exact:false ~successes ~errors path sub
+        | Any -> push successes (Unexpected (string_of_path path))
+        | Empty -> push errors (Unexpected (string_of_path path))
     in
     let dir = Sys.getcwd () in
     Unix.chdir root;
-    visit ~exact:false [] m;
+    let successes = ref [] in
+    let errors = ref [] in
+    visit ~exact:false ~successes ~errors [] m;
     Unix.chdir dir;
     List.rev !errors
 
   let string_of_error = function
   | Expected s -> Printf.sprintf "expected '%s' on a file system" s
   | Unexpected s -> Printf.sprintf "un-expected '%s' on a file system" s
-  | Structure (s,l) -> Printf.sprintf  "directory structure '%s' has un-expected files %s" s (String.concat ", " l)
-  | Output (e, p) -> Printf.sprintf  "not matching output '%s' expected but got %s" e p
+  | Structure (s,l) ->
+    Printf.sprintf  "directory structure '%s' has un-expected files %s"
+      s (String.concat ", " l)
+  | Output (s, e, p) ->
+    Printf.sprintf "executable %s expected output %S but got %S"
+      s e p
 end
 
 module Option = struct
