@@ -650,13 +650,13 @@ module type PLUGIN = sig
       _build/_log after trying to compile your code. *)
   val flag : Tags.elt list -> Command.spec -> unit
 
-  (** Allows to use [flag] with a parameterized tag (as [pdep] for [dep]).
+  (** Allows to use [flag] with a parametrized tag (as [pdep] for [dep]).
 
       Example:
         [pflag ["ocaml"; "compile"] "inline"
            (fun count -> S [A "-inline"; A count])]
       says that command line option ["-inline 42"] should be added
-      when compiling files tagged with tag ["inline(42)"]. *)
+      when compiling OCaml modules tagged with ["inline(42)"]. *)
   val pflag : Tags.elt list -> Tags.elt -> (string -> Command.spec) -> unit
 
   (** [flag_and_dep tags command_spec]
@@ -767,7 +767,7 @@ module type PLUGIN = sig
   val run_and_read : string -> string
 
   (** Here is the list of hooks that the dispatch function have to handle.
-      Generally one respond to one or two hooks (like After_rules) and do
+      Generally one responds to one or two hooks (like After_rules) and do
       nothing in the default case. *)
   type hook =
     | Before_hygiene
