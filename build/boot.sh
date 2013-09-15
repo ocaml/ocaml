@@ -31,7 +31,7 @@ rm -f _build/myocamlbuild
 
 boot/ocamlrun boot/myocamlbuild.boot \
   -just-plugin -install-lib-dir _build/ocamlbuild -byte-plugin \
-  -no-ocamlfind
+  -no-ocamlfind || exit 1
 
 cp _build/myocamlbuild boot/myocamlbuild
 

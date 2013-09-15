@@ -17,6 +17,7 @@ open Format
 
 module C = Myocamlbuild_config
 
+let () = mark_tag_used "windows";;
 let windows = Sys.os_type = "Win32";;
 if windows then tag_any ["windows"];;
 let ccomptype = C.ccomptype
@@ -398,6 +399,15 @@ rule "C files"
   begin fun env _ ->
     mkobj (env ("%"-.-C.o)) (env "%.c") N
   end;;
+
+let () =
+  (* define flags otherlibs_unix, otherlibs_bigarray... *)
+  let otherlibs = "otherlibs" in
+  let open Pathname in
+  Array.iter (fun file -> 
+    if is_directory (concat "otherlibs" file) then
+      mark_tag_used ("otherlibs_" ^ file)
+  ) (readdir otherlibs);;
 
 (* ../ is because .h files are not dependencies so they are not imported in build dir *)
 flag ["c"; "compile"; "otherlibs_bigarray"] (S[A"-I"; P"../otherlibs/bigarray"]);;
