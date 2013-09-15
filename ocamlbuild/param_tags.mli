@@ -22,7 +22,7 @@ if a tag of the form [name(param)] is [acknowledge]d.
 A given tag may be declared several times with different actions. All actions
 will be executed, in the order they were declared. *)
 
-val acknowledge: string -> unit
+val acknowledge: Loc.location option -> string -> unit
   (** Acknowledge a tag.
 
 If the tag is of the form [X(Y)], and have been declared using [declare],

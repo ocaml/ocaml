@@ -19,7 +19,7 @@ open Lexers
 type t = Lexers.conf
 
 let acknowledge_config config =
-  let ack (tag, _loc) = Param_tags.acknowledge tag in
+  let ack (tag, loc) = Param_tags.acknowledge (Some loc) tag in
   List.iter (fun (_, config) -> List.iter ack config.plus_tags) config
 
 let cache = Hashtbl.create 107
