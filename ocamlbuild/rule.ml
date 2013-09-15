@@ -53,7 +53,7 @@ let print_rule_name f r = pp_print_string f r.name
 let print_resource_list = List.print Resource.print
 
 let print_rule_contents ppelt f r =
-  fprintf f "@[<v2>{@ @[<2>name  =@ %S@];@ @[<2>deps  =@ %a@];@ @[<2>prods = %a@];@ @[<2>code  = <fun>@];@ @[<2> doc = %s@]@]@ }"
+  fprintf f "@[<v2>{@ @[<2>name  =@ %S@];@ @[<2>deps  =@ %a@];@ @[<2>prods = %a@];@ @[<2>code  = <fun>@];@ @[<hov 2> doc = %s@]@]@ }"
     r.name print_resource_list r.deps (List.print ppelt)
     r.prods
     (match r.doc with
@@ -61,11 +61,11 @@ let print_rule_contents ppelt f r =
       | Some doc -> sprintf "Some %S" doc)
 
 let pretty_print ppelt f r =
-  fprintf f "@[<hv2>rule@ %S@ ~deps:%a@ ~prods:%a@ "
+  fprintf f "@[<hv2>rule %S@ ~deps:%a@ ~prods:%a@ "
     r.name print_resource_list r.deps (List.print ppelt) r.prods;
   begin match r.doc with
     | None -> ()
-    | Some doc -> fprintf f "~doc:%S" doc
+    | Some doc -> fprintf f "~doc:\"@[<hov>%a@]\"@ " pp_print_text doc
   end;
   fprintf f "<fun>@]"
 
