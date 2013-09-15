@@ -1,21 +1,12 @@
-#load "unix.cma";;
-
-let ocamlbuild = try Sys.getenv "OCAMLBUILD" with Not_found -> "ocamlbuild";;
-
-#use "ocamlbuild_test.ml";;
-
-module M = Match;;
-module T = Tree;;
-
-let _build = M.d "_build";;
+#use "internal_test_header.ml";;
 
 test "BasicNativeTree"
   ~options:[`no_ocamlfind]
   ~description:"Output tree for native compilation"
   ~tree:[T.f "dummy.ml"]
   ~matching:[M.Exact
-               (_build
-                  (M.lf
+                (_build
+                   (M.lf
                       ["_digests";
                        "dummy.cmi";
                        "dummy.cmo";
@@ -32,8 +23,8 @@ test "BasicByteTree"
   ~description:"Output tree for byte compilation"
   ~tree:[T.f "dummy.ml"]
   ~matching:[M.Exact
-               (_build
-                  (M.lf
+                (_build
+                   (M.lf
                       ["_digests";
                        "dummy.cmi";
                        "dummy.cmo";
@@ -59,25 +50,15 @@ test "BuildDir"
   ~matching:[M.d alt_build_dir (M.lf ["dummy.byte"])]
   ~targets:("dummy.byte",[]) ();;
 
-test "camlp4.opt"
-  ~description:"Fixes PR#5652"
-  ~options:[`package "camlp4.macro";`tags ["camlp4o.opt"; "syntax\\(camp4o\\)"];
-            `ppflag "camlp4o.opt"; `ppflag "-parser"; `ppflag "macro"; `ppflag "-DTEST"]
-  ~tree:[T.f "dummy.ml" ~content:"IFDEF TEST THEN\nprint_endline \"Hello\";;\nENDIF;;"]
-  ~matching:[M.x "dummy.native" ~output:"Hello"]
-  ~targets:("dummy.native",[]) ();;
-
-test "ThreadAndArchive"
-  ~description:"Fixes PR#6058"
-  ~options:[`package "threads"; `tag "thread"]
-  ~tree:[T.f "t.ml" ~content:""]
-  ~matching:[M.f "_build/t.cma"]
-  ~targets:("t.cma",[]) ();;
-
 let tag_pat_msgs =
-  ["*:a", "File \"_tags\", line 1, column 0: Lexing error: Invalid globbing pattern \"*\".";
-   "\n<*{>:a", "File \"_tags\", line 2, column 0: Lexing error: Invalid globbing pattern \"<*{>\".";
-   "<*>: ~@a,# ~a", "File \"_tags\", line 1, column 10: Lexing error: Only ',' separated tags are alllowed."];;
+  ["*:a", "File \"_tags\", line 1, column 0: \
+    Lexing error: Invalid globbing pattern \"*\".";
+
+   "\n<*{>:a", "File \"_tags\", line 2, column 0: \
+    Lexing error: Invalid globbing pattern \"<*{>\".";
+
+   "<*>: ~@a,# ~a", "File \"_tags\", line 1, column 10: \
+    Lexing error: Only ',' separated tags are alllowed."];;
 
 List.iteri (fun i (content,failing_msg) ->
   test (Printf.sprintf "TagsErrorMessage_%d" (i+1))
@@ -86,14 +67,6 @@ List.iteri (fun i (content,failing_msg) ->
     ~failing_msg
     ~tree:[T.f "_tags" ~content; T.f "dummy.ml"]
     ~targets:("dummy.native",[]) ()) tag_pat_msgs;;
-
-test "SubtoolOptions"
-  ~description:"Options that come from tags that needs to be spliced to the subtool invocation (PR#5763)"
-  ~options:[`use_menhir; `tags["package\\(camlp4.fulllib\\)"]]
-  ~tree:[T.f "parser.mly" ~content:"%{\n%}\n%token DUMMY\n%start<Camlp4.PreCast.Syntax.Ast.expr option> test%%test: {None}\n\n"]
-  ~matching:[M.f "parser.native"; M.f "parser.byte"]
-  ~targets:("parser.native",["parser.byte"])
-  ();;
 
 test "Itarget"
   ~options:[`no_ocamlfind]
@@ -139,17 +112,11 @@ test "PackAcross3"
   ~matching:[M.f "main.byte"]
   ~targets:("main.byte",[]) ();;
 
-test "SyntaxFlag"
-  ~options:[`package "camlp4.macro"; `syntax "camlp4o"]
-  ~description:"-syntax for ocamlbuild"
-  ~tree:[T.f "dummy.ml" ~content:"IFDEF TEST THEN\nprint_endline \"Hello\";;\nENDIF;;"]
-  ~matching:[M.f "dummy.native"]
-  ~targets:("dummy.native",[]) ();;
-
 test "NativeMliCmi"
-  ~options:[`no_ocamlfind; `ocamlc "toto";(*using ocamlc would fail*)  `tags["native"]]
-  ~description:"check that ocamlopt is used for .mli->.cmi when tag 'native' is set \
-                (part of PR#4613)"
+  ~options:[`no_ocamlfind; `ocamlc "toto" (*using ocamlc would fail*);
+            `tags["native"]]
+  ~description:"check that ocamlopt is used for .mli->.cmi \
+                when tag 'native' is set (part of PR#4613)"
   ~tree:[T.f "foo.mli" ~content:"val bar : int"]
   ~matching:[_build [M.f "foo.cmi"]]
   ~targets:("foo.cmi",[]) ();;
@@ -205,7 +172,9 @@ Error: This expression has type int but an expression was expected of type
 test "PrincipalFlag"
   ~options:[`no_ocamlfind; `quiet]
   ~description:"-principal tag"
-  ~tree:[T.f "hello.ml" ~content:"type s={foo:int;bar:unit} type t={foo:int} let f x = x.bar;x.foo";
+  ~tree:[T.f "hello.ml"
+            ~content:"type s={foo:int;bar:unit} type t={foo:int}
+                      let f x = (x.bar; x.foo)";
          T.f "_tags" ~content:"true: principal\n"]
   ~failing_msg:"File \"hello.ml\", line 1, characters 61-64:
 Warning 18: this type-based field disambiguation is not principal."
@@ -245,4 +214,4 @@ test "ModularPlugin3"
   ~matching:[M.f "main.byte"]
   ~targets:("main.byte",[]) ();;
 
-run ~root:"_test";;
+run ~root:"_test_internal";;
