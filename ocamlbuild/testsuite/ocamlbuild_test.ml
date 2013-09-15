@@ -414,6 +414,20 @@ let test name
     run;
   }]
 
+let print_colored header_color header name body_color body =
+  let color_code = function
+      | `Red -> "31"
+      | `Green -> "32"
+      | `Yellow -> "33"
+      | `Blue -> "34"
+      | `Magenta -> "35"
+      | `Cyan -> "36"
+  in
+  Printf.printf "\x1b[0;%sm\x1b[1m[%s]\x1b[0m \
+                 \x1b[1m%-20s\x1b[0;%sm%s.\n\x1b[m%!"
+    (color_code header_color) header name
+    (color_code body_color) body
+
 let run ~root =
   let dir = Sys.getcwd () in
   let root = dir ^ "/" ^ root in
@@ -448,8 +462,7 @@ let run ~root =
 
     match requirements with
       | Some (Missing req) ->
-        Printf.printf "\x1b[0;33m\x1b[1m[SKIPPED]\x1b[0m \
-                       \x1b[1m%-20s\x1b[0;33m%s.\n\x1b[m%!" name
+        print_colored `Yellow "SKIPPED" name `Yellow
           (Printf.sprintf "%s is required and missing" req)
 
       | Some Fullfilled | None -> begin
@@ -476,8 +489,7 @@ let run ~root =
                   (fun l -> output_string ch l; output_string ch "\n")
                   lines;
                 close_out ch;
-                Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \
-                               \x1b[1m%-20s\x1b[0;33m%s.\n\x1b[m%!" name
+                print_colored `Red "FAILED" name `Yellow
                   (Printf.sprintf "Command '%s' with error code %n \
                                    output written to %s" cmd n log_name);
               | Some failing_msg ->
@@ -487,11 +499,9 @@ let run ~root =
                   List.filter (fun s -> not (starts_with_plus s)) lines in
                 let msg = String.concat "\n" lines in
                 if failing_msg = msg then
-                  Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \
-                                 \x1b[1m%-20s\x1b[0;36m%s.\n\x1b[m%!" name description
+                  print_colored `Green "PASSED" name `Cyan description
                 else
-                  Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \
-                                 \x1b[1m%-20s\x1b[0;33m%s.\n\x1b[m%!" name
+                  print_colored `Red "FAILED" name `Yellow
                     ((Printf.sprintf "Failure with not matching message:\n\
                                       %s\n!=\n%s\n") msg failing_msg)
             end;
@@ -500,8 +510,7 @@ let run ~root =
               List.concat
                 (List.map (Match.match_with_fs ~root:full_name) matching) in
             begin if errors == [] then
-                Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \
-                       \x1b[1m%-20s\x1b[0;36m%s.\n\x1b[m%!" name description
+                print_colored `Green "PASSED" name `Cyan description
               else begin
                 let ch = open_out log_name in
                 output_string ch ("Run '" ^ cmd ^ "'\n");
@@ -511,8 +520,7 @@ let run ~root =
                     output_string ch ".\n")
                   errors;
                 close_out ch;
-                Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \
-                         \x1b[1m%-20s\x1b[0;33m%s.\n\x1b[m%!" name
+                print_colored `Red "FAILED" name `Yellow
                   (Printf.sprintf "Some system checks failed, \
                                    output written to %s"
                      log_name)
