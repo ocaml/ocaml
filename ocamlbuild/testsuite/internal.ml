@@ -176,7 +176,7 @@ test "PrincipalFlag"
             ~content:"type s={foo:int;bar:unit} type t={foo:int}
                       let f x = (x.bar; x.foo)";
          T.f "_tags" ~content:"true: principal\n"]
-  ~failing_msg:"File \"hello.ml\", line 1, characters 61-64:
+  ~failing_msg:"File \"hello.ml\", line 2, characters 42-45:
 Warning 18: this type-based field disambiguation is not principal."
   ~targets:("hello.byte",[]) ();;
 
