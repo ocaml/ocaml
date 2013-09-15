@@ -1,6 +1,6 @@
 #use "internal_test_header.ml";;
 
-test "BasicNativeTree"
+let () = test "BasicNativeTree"
   ~options:[`no_ocamlfind]
   ~description:"Output tree for native compilation"
   ~tree:[T.f "dummy.ml"]
@@ -18,7 +18,7 @@ test "BasicNativeTree"
                        "_log"]))]
   ~targets:("dummy.native",[]) ();;
 
-test "BasicByteTree"
+let () = test "BasicByteTree"
   ~options:[`no_ocamlfind]
   ~description:"Output tree for byte compilation"
   ~tree:[T.f "dummy.ml"]
@@ -34,7 +34,7 @@ test "BasicByteTree"
                        "_log"]))]
   ~targets:("dummy.byte",[]) ();;
 
-test "SeveralTargets"
+let () = test "SeveralTargets"
   ~options:[`no_ocamlfind]
   ~description:"Several targets"
   ~tree:[T.f "dummy.ml"]
@@ -43,7 +43,7 @@ test "SeveralTargets"
 
 let alt_build_dir = "BuIlD2";;
 
-test "BuildDir"
+let () = test "BuildDir"
   ~options:[`no_ocamlfind; `build_dir alt_build_dir]
   ~description:"Different build directory"
   ~tree:[T.f "dummy.ml"]
@@ -61,21 +61,22 @@ let tag_pat_msgs =
     Lexing error: Only ',' separated tags are alllowed."];;
 
 List.iteri (fun i (content,failing_msg) ->
-  test (Printf.sprintf "TagsErrorMessage_%d" (i+1))
+  let () = test (Printf.sprintf "TagsErrorMessage_%d" (i+1))
     ~options:[`no_ocamlfind]
     ~description:"Confirm relevance of an error message due to erronous _tags"
     ~failing_msg
     ~tree:[T.f "_tags" ~content; T.f "dummy.ml"]
-    ~targets:("dummy.native",[]) ()) tag_pat_msgs;;
+    ~targets:("dummy.native",[]) ()
+  in ()) tag_pat_msgs;;
 
-test "Itarget"
+let () = test "Itarget"
   ~options:[`no_ocamlfind]
   ~description:".itarget building with dependencies between the modules (PR#5686)"
   ~tree:[T.f "foo.itarget" ~content:"a.cma\nb.byte\n"; T.f "a.ml"; T.f "b.ml" ~content:"open A\n"]
   ~matching:[M.f "a.cma"; M.f "b.byte"]
   ~targets:("foo.otarget",[]) ();;
 
-test "PackAcross"
+let () = test "PackAcross"
   ~options:[`no_ocamlfind]
   ~description:"Pack using a module from the other tree (PR#4592)"
   ~tree:[T.f "main.ml" ~content:"let _ = Pack.Packed.g ()\n";
@@ -88,7 +89,7 @@ test "PackAcross"
   ~targets:("main.byte", ["main.native"])
   ();;
 
-test "PackAcross2"
+let () = test "PackAcross2"
   ~options:[`no_ocamlfind]
   ~description:"Pack using a module from the other tree (PR#4592)"
   ~tree:[T.f "a2.mli" ~content:"val f : unit -> unit";
@@ -100,7 +101,7 @@ test "PackAcross2"
   ~matching:[M.f "prog.byte"]
   ~targets:("prog.byte",[]) ();;
 
-test "PackAcross3"
+let () = test "PackAcross3"
   ~options:[`no_ocamlfind]
   ~description:"Pack using a module from the other tree (PR#4592)"
   ~tree:[T.d "foo" [ T.f "bar.ml" ~content:"let baz = Quux.xyzzy"];
@@ -112,7 +113,7 @@ test "PackAcross3"
   ~matching:[M.f "main.byte"]
   ~targets:("main.byte",[]) ();;
 
-test "NativeMliCmi"
+let () = test "NativeMliCmi"
   ~options:[`no_ocamlfind; `ocamlc "toto" (*using ocamlc would fail*);
             `tags["native"]]
   ~description:"check that ocamlopt is used for .mli->.cmi \
@@ -121,7 +122,7 @@ test "NativeMliCmi"
   ~matching:[_build [M.f "foo.cmi"]]
   ~targets:("foo.cmi",[]) ();;
 
-test "NoIncludeNoHygiene1"
+let () = test "NoIncludeNoHygiene1"
   ~options:[`no_ocamlfind]
   ~description:"check that hygiene checks are only done in traversed directories\
                 (PR#4502)"
@@ -132,7 +133,7 @@ test "NoIncludeNoHygiene1"
             (* will make hygiene fail if must_ignore/ is checked *)
   ~targets:("hello.byte",[]) ();;
 
-test "NoIncludeNoHygiene2"
+let () = test "NoIncludeNoHygiene2"
   ~options:[`no_ocamlfind; `build_dir "must_ignore"]
   ~description:"check that hygiene checks are not done on the -build-dir \
                 (PR#4502)"
@@ -143,7 +144,7 @@ test "NoIncludeNoHygiene2"
             (* will make hygiene fail if must_ignore/ is checked *)
   ~targets:("hello.byte",[]) ();;
 
-test "NoIncludeNoHygiene3"
+let () = test "NoIncludeNoHygiene3"
   ~options:[`no_ocamlfind; `X "must_ignore"]
   ~description:"check that hygiene checks are not done on excluded dirs (PR#4502)"
   ~tree:[T.d "must_ignore" [ T.f "dirty.mli" ~content:"val bug : int"];
@@ -153,13 +154,13 @@ test "NoIncludeNoHygiene3"
             (* will make hygiene fail if must_ignore/ is checked *)
   ~targets:("hello.byte",[]) ();;
 
-test "OutputObj"
+let () = test "OutputObj"
   ~options:[`no_ocamlfind]
   ~description:"output_obj targets for native and bytecode (PR #6049)"
   ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\""]
   ~targets:("hello.byte.o",["hello.byte.c";"hello.native.o"]) ();;
 
-test "StrictSequenceFlag"
+let () = test "StrictSequenceFlag"
   ~options:[`no_ocamlfind; `quiet]
   ~description:"-strict_sequence tag"
   ~tree:[T.f "hello.ml" ~content:"let () = 1; ()";
@@ -169,7 +170,7 @@ Error: This expression has type int but an expression was expected of type
          unit\nCommand exited with code 2."
   ~targets:("hello.byte",[]) ();;
 
-test "PrincipalFlag"
+let () = test "PrincipalFlag"
   ~options:[`no_ocamlfind; `quiet]
   ~description:"-principal tag"
   ~tree:[T.f "hello.ml"
@@ -180,16 +181,15 @@ test "PrincipalFlag"
 Warning 18: this type-based field disambiguation is not principal."
   ~targets:("hello.byte",[]) ();;
 
-test "ModularPlugin1"
-  ~options:[`no_ocamlfind; `quiet; `plugin_tag "use_str"]
+let () = test "ModularPlugin1"
   ~description:"test a plugin with dependency on external libraries"
-  ~options:[`no_ocamlfind]
+  ~options:[`no_ocamlfind; `quiet; `plugin_tag "use_str"]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
          T.f "myocamlbuild.ml" ~content:"ignore (Str.quote \"\");;"]
   ~matching:[M.f "main.byte"]
   ~targets:("main.byte",[]) ();;
 
-test "ModularPlugin2"
+let () = test "ModularPlugin2"
   ~description:"check that parametrized tags defined by the plugin \
                 do not warn at plugin-compilation time"
   ~options:[`no_ocamlfind; `quiet]
@@ -202,7 +202,7 @@ test "ModularPlugin2"
   ~matching:[M.f "main.byte"]
   ~targets:("main.byte",[]) ();;
 
-test "ModularPlugin3"
+let () = test "ModularPlugin3"
   ~description:"check that unknown parametrized tags encountered \
                 during plugin compilation still warn"
   ~options:[`no_ocamlfind; `quiet; `plugin_tag "'toto(-g)'"]

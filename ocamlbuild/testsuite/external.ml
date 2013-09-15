@@ -2,7 +2,7 @@
 #use "findlibonly_test_header.ml";;
 #use "external_test_header.ml";;
 
-test "SubtoolOptions"
+let () = test "SubtoolOptions"
   ~description:"Options that come from tags that needs to be spliced \
                 to the subtool invocation (PR#5763)"
   (* testing for the 'menhir' executable directly
