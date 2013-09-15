@@ -68,10 +68,11 @@ module Match = struct
     (* Here we want just the tree contained entities but we allow some
      other stuff to be there too *)
     | Contains of t
-    (* Any means that we match anything *)
-    | Any
-    (* Empty a tree leaf that don't match at all *)
+    (* matching on Empty always fail *)
     | Empty
+    (* matches the negation of its argument: fails when it succeeds
+       and vice versa; Any can be expressed as (Not Empty) *)
+    | Not of t
 
   (* Type of error, we either expect something or something is un-expected *)
   type error =
@@ -92,8 +93,8 @@ module Match = struct
  (* | L ((_,src), (_,dst)) -> fprintf ppf "@[<h>%s->%s@]@" src dst *)
     | Exact content -> fprintf ppf "{%a}" item content
     | Contains content -> fprintf ppf "<%a>" item content
-    | Any -> pp_print_char ppf '*'
     | Empty -> pp_print_char ppf '#'
+    | Not t -> fprintf ppf "not(@[%a@])" item t
     in
     pp_open_vbox ppf 0;
     item ppf tree;
@@ -116,8 +117,10 @@ module Match = struct
         | F (_, name)
         | D ((_, name), _)
         | X ((_, name), _) -> [name]
-        | Exact sub | Contains sub -> take_name sub
-        | Any | Empty -> []
+        | Exact sub
+        | Contains sub
+        | Not sub -> take_name sub
+        | Empty -> []
       in
       match m with
         | F ((),name) ->
@@ -137,8 +140,8 @@ module Match = struct
             (Output (file name, output, output'));
         | Exact sub -> visit ~exact:true ~successes ~errors path sub
         | Contains sub -> visit ~exact:false ~successes ~errors path sub
-        | Any -> push successes (Unexpected (string_of_path path))
         | Empty -> push errors (Unexpected (string_of_path path))
+        | Not sub -> visit ~exact ~errors:successes ~successes:errors path sub
     in
     let dir = Sys.getcwd () in
     Unix.chdir root;
