@@ -42,3 +42,13 @@ let add x xs = x :: xs
 let remove me = List.filter (fun x -> me <> x)
 
 let get_flags () = !all_flags
+
+
+let show_documentation () =
+  let pp fmt = Log.raw_dprintf (-1) fmt in
+  let flags = get_flags () in
+  List.iter begin fun (tags, flag) ->
+    let sflag = Command.string_of_command_spec flag in
+    pp "@[<2>flag@ {. %a .}@ %S@]@\n@\n" Tags.print tags sflag
+  end flags;
+  pp "@."

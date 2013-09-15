@@ -67,7 +67,7 @@ let pretty_print ppelt f r =
     | None -> ()
     | Some doc -> fprintf f "~doc:\"@[<hov>%a@]\"@ " pp_print_text doc
   end;
-  fprintf f "<fun>@]"
+  fprintf f "<fun>@]"  
 
 let print = print_rule_name
 
@@ -326,3 +326,13 @@ let copy_rule name ?insert src dest =
       Shell.mkdir_p (Pathname.dirname dest);
       cp_p src dest
     end
+
+let show_documentation () =
+  let pp fmt = Log.raw_dprintf (-1) fmt in
+  let rules = get_rules () in
+  List.iter
+    (fun rule -> pp "%a@\n@\n" (pretty_print Resource.print_pattern) rule)
+    rules;
+  pp "@."
+   
+

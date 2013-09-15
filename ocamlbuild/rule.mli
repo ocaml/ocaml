@@ -81,3 +81,5 @@ val clear_rules : unit -> unit
 val call : builder -> rule -> unit
 
 val build_deps_of_tags : builder -> Tags.t -> Pathname.t list
+
+val show_documentation : unit -> unit
