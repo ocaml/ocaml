@@ -70,7 +70,7 @@ let show_documentation () =
 
 let used_tags = ref Tags.empty
 
-let mark_as_used tag =
+let mark_tag_used tag =
   used_tags := Tags.add tag !used_tags
 
 let get_used_tags () =

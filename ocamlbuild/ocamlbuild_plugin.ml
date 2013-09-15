@@ -40,6 +40,7 @@ let copy_rule = Rule.copy_rule
 let ocaml_lib = Ocamlbuild_pack.Ocaml_utils.ocaml_lib
 let flag = Ocamlbuild_pack.Flags.flag ?deprecated:None
 let pflag = Ocamlbuild_pack.Flags.pflag
+let mark_tag_used = Ocamlbuild_pack.Flags.mark_tag_used
 let flag_and_dep = Ocamlbuild_pack.Ocaml_utils.flag_and_dep
 let pflag_and_dep = Ocamlbuild_pack.Ocaml_utils.pflag_and_dep
 let non_dependency = Ocamlbuild_pack.Ocaml_utils.non_dependency

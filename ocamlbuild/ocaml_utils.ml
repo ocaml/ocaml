@@ -121,7 +121,7 @@ let ocaml_lib ?(extern=false) ?(byte=true) ?(native=true) ?dir ?tag_name libpath
   (* adding [tag_name] to [info_libraries] will make this tag
      affect include-dir lookups, so it is used even if not
      mentioned explicitly in any rule. *)
-  Flags.mark_as_used tag_name;
+  Flags.mark_tag_used tag_name;
   if extern then begin
     if byte then
       flag_and_dep ["ocaml"; tag_name; "link"; "byte"] (libpath^".cma");

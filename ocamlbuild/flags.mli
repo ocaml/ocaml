@@ -37,13 +37,4 @@ val show_documentation : unit -> unit
     explicitly added with [mark_as_used] *)
 val get_used_tags : unit -> Tags.t
 
-(** manually mark the tag as "useful" to silence the warning about
-    useless tags; this is useful if the tag is not part of a flag
-    declaration, but its use is hardcoded in the code of your
-    plugin -- arguably a bad practice.
-
-    It is used internally by OCamlbuild; for example the "traverse"
-    tag is not part of a flag declaration, it is explicitly tested by
-    the traversal code.
-*)
-val mark_as_used : Tags.elt -> unit
+val mark_tag_used : Tags.elt -> unit

@@ -77,9 +77,10 @@ let tag_any tags =
 let check_tags_usage useful_tags =
   let check_tag (tag, loc) =
     if not (Tags.mem tag useful_tags) then
-      Log.eprintf "%aWarning: the tag %S used in your configuration \
-                   is not mentioned in any rule and will have no effect. \
-                   It may be a typo."
+      Log.eprintf "%aWarning: the tag %S is not used in any flag declaration, \
+                   so it will have no effect; it may be a typo. Otherwise use \
+                   `mark_tag_used` in your myocamlbuild.ml to disable \
+                   this warning."
         Loc.print_loc loc tag
   in
   let check_conf (_, values) =

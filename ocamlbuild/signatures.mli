@@ -672,6 +672,19 @@ module type PLUGIN = sig
   val pflag_and_dep : Tags.elt list -> Tags.elt ->
     (string -> Command.spec) -> unit
 
+  (** manually mark the tag as "useful" to silence the warning about
+      tags that are not part of any flag declaration.
+
+      This is useful,
+      for example, if the tag is used in a flag declaration that is
+      only perfored in a conditional branch:
+      [if we_are_on_Windows then flag ["libfoo"] (A "bar");]
+
+      When [we_are_on_Windows] is not true, you could get a warning about
+      "libfoo" not used in any flag declaration.
+     *)
+  val mark_tag_used : Tags.elt -> unit
+
   (** [non_dependency module_path module_name]
       Example:
          [non_dependency "foo/bar/baz" "Goo"]
