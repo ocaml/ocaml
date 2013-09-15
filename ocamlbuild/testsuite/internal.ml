@@ -215,4 +215,30 @@ let () = test "ModularPlugin3"
   ~matching:[M.f "main.byte"]
   ~targets:("main.byte",[]) ();;
 
+let () = test "PluginCompilation1"
+  ~description:"check that the plugin is not compiled when -no-plugin is passed"
+  ~options:[`no_ocamlfind; `no_plugin]
+  ~tree:[T.f "main.ml" ~content:"let x = 1";
+         T.f "myocamlbuild.ml" ~content:"prerr_endline \"foo\";;"]
+  ~matching:[_build [M.Not (M.f "myocamlbuild")]]
+  ~targets:("main.byte",[]) ();;
+
+let () = test "PluginCompilation2"
+  ~description:"check that the plugin is compiled when -just-plugin is passed"
+  ~options:[`no_ocamlfind; `just_plugin]
+  ~tree:[T.f "main.ml" ~content:"let x = 1";
+         T.f "myocamlbuild.ml" ~content:"print_endline \"foo\";;"]
+  ~matching:[_build [M.f "myocamlbuild"]]
+  ~targets:("", []) ();;
+
+let () = test "PluginCompilation3"
+  ~description:"check that the plugin is not executed \
+                when -just-plugin is passed"
+  ~options:[`no_ocamlfind; `quiet; `just_plugin]
+  ~tree:[T.f "main.ml" ~content:"let x = 1";
+         T.f "myocamlbuild.ml" ~content:"print_endline \"foo\";;"]
+  (* if the plugin were executed we'd get "foo" in failing_msg *)
+  ~failing_msg:""
+  ~targets:("main,byte", []) ();;
+
 run ~root:"_test_internal";;
