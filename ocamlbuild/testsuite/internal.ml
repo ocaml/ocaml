@@ -183,6 +183,7 @@ Warning 18: this type-based field disambiguation is not principal."
 test "ModularPlugin1"
   ~options:[`no_ocamlfind; `quiet; `plugin_tag "use_str"]
   ~description:"test a plugin with dependency on external libraries"
+  ~options:[`no_ocamlfind]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
          T.f "myocamlbuild.ml" ~content:"ignore (Str.quote \"\");;"]
   ~matching:[M.f "main.byte"]
