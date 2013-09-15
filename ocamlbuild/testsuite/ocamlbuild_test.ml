@@ -61,8 +61,8 @@ module Match = struct
     | D of file * t list
     (* Like file, but will be executed, and the result will compared *)
     | X of file * result
-    (* Symlink *)
-    | L of file * file
+    (* Symlink; currently not supported *)
+ (* | L of file * file *)
     (* We request that everything below should match exactly *)
     | Exact of t
     (* Here we want just the tree contained entities but we allow some
@@ -86,9 +86,10 @@ module Match = struct
       List.iter (fun line -> pp_print_space ppf (); item ppf line) lst
     and item ppf = function
     | F (_, name) -> fprintf ppf "@[<h>%s@]" name
-    | D ((_, name), children) -> fprintf ppf "@[<v 1>@[<h>%s/@]%a@]" name lines children
+    | D ((_, name), children) ->
+      fprintf ppf "@[<v 1>@[<h>%s/@]%a@]" name lines children
     | X ((_,name), _) -> fprintf ppf "@[<h>%s@]" name
-    | L ((_,src), (_,dst)) -> fprintf ppf "@[<h>%s->%s@]@" src dst
+ (* | L ((_,src), (_,dst)) -> fprintf ppf "@[<h>%s->%s@]@" src dst *)
     | Exact content -> fprintf ppf "{%a}" item content
     | Contains content -> fprintf ppf "<%a>" item content
     | Any -> pp_print_char ppf '*'
@@ -104,45 +105,41 @@ module Match = struct
   let x ?(atts=()) name ~output = X ((atts,name), (0,output))
 
   let match_with_fs ~root m =
-
     let errors = ref [] in
-
     let rec visit ~exact path m =
-      let file name =
-        "./" ^ (List.rev (name :: path) |> String.concat "/")
-
+      let string_of_path path = "./" ^ String.concat "/" (List.rev path) in
+      let file name = string_of_path (name :: path) in
+      let push li x = li := x :: !li in
+      let exists_assert filename =
+        if not (exists filename) then push errors (Expected filename) in
+      let rec take_name = function
+        | F (_, name)
+        | D ((_, name), _)
+        | X ((_, name), _) -> [name]
+        | Exact sub | Contains sub -> take_name sub
+        | Any | Empty -> []
       in
-
-    let exists_assert filename =
-      if not (exists (file filename)) then
-        errors := Expected filename :: !errors;
-    in
-
-    let take_name = function
-    | F (_, name)
-    | D ((_, name),_) -> [name]
-    | _ -> []
-    in
-
-    match m with
-    | F ((),name) ->
-      exists_assert name
-    | D (((),name), sub) ->
-      exists_assert name;
-      let lst = List.flatten (List.map take_name sub) in
-      let lst' = Sys.readdir name |> Array.to_list in
-      let lst' = List.filter (fun x -> not (List.mem x lst)) lst' in
-      (if exact && lst' <> [] then
-        errors := Structure ((file name), lst') :: !errors);
-      List.iter (visit ~exact (name :: path)) sub
-    | X (((), name), (retcode, output)) ->
-      let _,output' = execute (file name) in
-      let output' = String.concat "\n" output' in
-      if output <> output' then
-        errors := Output (output, output') :: !errors
-    | Exact sub -> visit ~exact:true path sub
-    | Contains sub -> visit ~exact:false path sub
-    | _ -> assert false
+      match m with
+        | F ((),name) ->
+          exists_assert (file name)
+        | D (((),name), sub) ->
+          exists_assert (file name);
+          let lst = List.flatten (List.map take_name sub) in
+          let lst' = Sys.readdir name |> Array.to_list in
+          let lst' = List.filter (fun x -> not (List.mem x lst)) lst' in
+          (if exact && lst' <> [] then
+              errors := Structure ((file name), lst') :: !errors);
+          List.iter (visit ~exact (name :: path)) sub
+        | X (((), name), (retcode, output)) ->
+          let _,output' = execute (file name) in
+          let output' = String.concat "\n" output' in
+          if output <> output' then
+            errors := Output (output, output') :: !errors
+        | Exact sub -> visit ~exact:true path sub
+        | Contains sub -> visit ~exact:false path sub
+        | Any -> ()
+        | Empty -> 
+          errors := Unexpected (string_of_path path) :: !errors
     in
     let dir = Sys.getcwd () in
     Unix.chdir root;
