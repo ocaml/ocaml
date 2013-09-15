@@ -189,7 +189,7 @@ test "ModularPlugin1"
   ~targets:("main.byte",[]) ();;
 
 test "ModularPlugin2"
-  ~description:"check that parametrized tags defined by the plugin
+  ~description:"check that parametrized tags defined by the plugin \
                 do not warn at plugin-compilation time"
   ~options:[`no_ocamlfind; `quiet]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
@@ -202,7 +202,7 @@ test "ModularPlugin2"
   ~targets:("main.byte",[]) ();;
 
 test "ModularPlugin3"
-  ~description:"check that unknown parametrized tags encountered
+  ~description:"check that unknown parametrized tags encountered \
                 during plugin compilation still warn"
   ~options:[`no_ocamlfind; `quiet; `plugin_tag "'toto(-g)'"]
   ~tree:[T.f "main.ml" ~content:"let x = 1";
