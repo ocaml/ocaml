@@ -594,14 +594,22 @@ module type PLUGIN = sig
         Use ~dep for one file, ~deps for list of files.
       - It finally takes the action to perform in order to produce the
         productions files using the dependencies (see [action]).
-      There is also two more options:
+
+      There are some more optional parameters:
       - The ~insert argument allow to insert the rules precisely between other
         rules.
       - The ~stamp argument specify the name of a file that will be
         automatically produced by ocamlbuild. This file can serve as a virtual
         target (or phony target), since it will be filled up by a digest of
         it dependencies.
-      - The ~tags argument in deprecated, don't use it. *)
+      - The ~tags argument in deprecated, don't use it.
+      
+      Finally, the optional ~doc argument allows to give an informal
+      explanation of the rule purpose and behavior, that will be
+      displayed by [ocamlbuild -documentation]. For example, it is
+      a good place to specify the commands that will be called, any
+      new tags introduced by the rule, and dynamic dependencies.
+  *)
   val rule : string ->
     ?tags:string list ->
     ?prods:string list ->
@@ -610,6 +618,7 @@ module type PLUGIN = sig
     ?dep:string ->
     ?stamp:string ->
     ?insert:[`top | `before of string | `after of string | `bottom] ->
+    ?doc:string ->
     action -> unit
 
   (** [copy_rule name ?insert source destination] *)

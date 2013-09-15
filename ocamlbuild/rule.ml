@@ -32,6 +32,7 @@ type 'a gen_rule =
     deps  : Pathname.t list; (* These pathnames must be normalized *)
     prods : 'a list; (* Note that prods also contains stamp *)
     stamp : 'a option;
+    doc   : string option;
     code  : env -> builder -> digest_command }
 
 type rule = Pathname.t gen_rule
@@ -41,6 +42,7 @@ let name_of_rule r = r.name
 let deps_of_rule r = r.deps
 let prods_of_rule r = r.prods
 let stamp_of_rule r = r.stamp
+let doc_of_rule r = r.doc
 
 type 'a rule_printer = (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a gen_rule -> unit
 
@@ -51,12 +53,21 @@ let print_rule_name f r = pp_print_string f r.name
 let print_resource_list = List.print Resource.print
 
 let print_rule_contents ppelt f r =
-  fprintf f "@[<v2>{@ @[<2>name  =@ %S@];@ @[<2>deps  =@ %a@];@ @[<2>prods = %a@];@ @[<2>code  = <fun>@]@]@ }"
-    r.name print_resource_list r.deps (List.print ppelt) r.prods
+  fprintf f "@[<v2>{@ @[<2>name  =@ %S@];@ @[<2>deps  =@ %a@];@ @[<2>prods = %a@];@ @[<2>code  = <fun>@];@ @[<2> doc = %s@]@]@ }"
+    r.name print_resource_list r.deps (List.print ppelt)
+    r.prods
+    (match r.doc with
+      | None -> "None"
+      | Some doc -> sprintf "Some %S" doc)
 
 let pretty_print ppelt f r =
-  fprintf f "@[<hv2>rule@ %S@ ~deps:%a@ ~prods:%a@ <fun>@]"
-    r.name print_resource_list r.deps (List.print ppelt) r.prods
+  fprintf f "@[<hv2>rule@ %S@ ~deps:%a@ ~prods:%a@ "
+    r.name print_resource_list r.deps (List.print ppelt) r.prods;
+  begin match r.doc with
+    | None -> ()
+    | Some doc -> fprintf f "~doc:%S" doc
+  end;
+  fprintf f "<fun>@]"
 
 let print = print_rule_name
 
@@ -72,6 +83,7 @@ let subst env rule =
       (* The substition should preserve normalization of pathnames *)
       subst_resources rule.deps; 
     stamp = stamp;
+    doc = rule.doc;
     code = (fun env -> rule.code (finder env)) }
 
 exception Can_produce of rule
@@ -251,7 +263,7 @@ let (get_rules, add_rule, clear_rules) =
   end,
   (fun () -> rules := [])
 
-let rule name ?tags ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bottom) code =
+let rule name ?tags ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bottom) ?doc code =
   let () =
     match tags with
       | None -> ()
@@ -290,6 +302,7 @@ let rule name ?tags ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bottom)
   { name  = name;
     deps  = res_add Resource.import (* should normalize *) deps dep;
     stamp = stamp;
+    doc = doc;
     prods = prods;
     code  = code }
 
