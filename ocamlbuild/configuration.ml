@@ -70,3 +70,16 @@ let tag_file file tags =
 
 let tag_any tags =
   if tags <> [] then parse_string (Printf.sprintf "true: %s" (String.concat ", " tags));;
+
+let check_tags_usage useful_tags =
+  let check_tag tag =
+    if not (Tags.mem tag useful_tags) then
+      Log.eprintf "Warning: the tag %S used in your configuration \
+                   is not mentioned in any rule and will have no effect. \
+                   It may be a typo." tag
+  in
+  let check_conf (_, values) =
+    List.iter check_tag values.plus_tags;
+    List.iter check_tag values.minus_tags;
+  in
+  List.iter (List.iter check_conf) (configs ())

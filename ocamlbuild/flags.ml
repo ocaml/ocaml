@@ -52,7 +52,6 @@ let pflag tags ptag flags =
 let add x xs = x :: xs
 let remove me = List.filter (fun x -> me <> x)
 
-
 let pretty_print { tags; flags; deprecated } =
   let sflag = Command.string_of_command_spec flags in
   let header = if deprecated then "deprecated flag" else "flag" in
@@ -68,3 +67,12 @@ let show_documentation () =
     !all_decls;
   let pp fmt = Log.raw_dprintf (-1) fmt in
   pp "@."
+
+let used_tags = ref Tags.empty
+
+let mark_as_used tag =
+  used_tags := Tags.add tag !used_tags
+
+let get_used_tags () =
+  List.fold_left (fun acc decl -> Tags.union acc decl.tags)
+    !used_tags !all_decls

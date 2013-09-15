@@ -52,6 +52,15 @@ let show_documentation () =
   Flags.show_documentation ();
 ;;
 
+(* these tags are used in an ad-hoc way by the ocamlbuild implementation;
+   this means that even if they were not part of any flag declaration,
+   they should be marked as useful, to avoid the "unused tag" warning. *)
+let builtin_useful_tags =
+  Tags.of_list
+    ["include"; "traverse"; "not_hygienic";
+     "pack"; "ocamlmklib"; "native"; "thread"; "nopervasives"]
+;;
+
 let proceed () =
   Hooks.call_hook Hooks.Before_options;
   Options.init ();
@@ -173,6 +182,10 @@ let proceed () =
     show_documentation ();
     raise Exit_silently
   end;
+
+  let all_tags = Tags.union builtin_useful_tags (Flags.get_used_tags ()) in
+  Configuration.check_tags_usage all_tags;
+
   Digest_cache.init ();
 
   Sys.catch_break true;

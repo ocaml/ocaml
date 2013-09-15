@@ -32,3 +32,18 @@ val add : 'a -> 'a list -> 'a list
 val remove : 'a -> 'a list -> 'a list
 
 val show_documentation : unit -> unit
+
+(** "useful" tags: they are used by a tag declaration, or have been
+    explicitly added with [mark_as_used] *)
+val get_used_tags : unit -> Tags.t
+
+(** manually mark the tag as "useful" to silence the warning about
+    useless tags; this is useful if the tag is not part of a flag
+    declaration, but its use is hardcoded in the code of your
+    plugin -- arguably a bad practice.
+
+    It is used internally by OCamlbuild; for example the "traverse"
+    tag is not part of a flag declaration, it is explicitly tested by
+    the traversal code.
+*)
+val mark_as_used : Tags.elt -> unit
