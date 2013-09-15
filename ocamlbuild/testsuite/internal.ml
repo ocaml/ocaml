@@ -51,14 +51,14 @@ let () = test "BuildDir"
   ~targets:("dummy.byte",[]) ();;
 
 let tag_pat_msgs =
-  ["*:a", "File \"_tags\", line 1, column 0: \
-    Lexing error: Invalid globbing pattern \"*\".";
+  ["*:a", "File \"_tags\", line 1, characters 0-2:\n\
+           Lexing error: Invalid globbing pattern \"*\".";
 
-   "\n<*{>:a", "File \"_tags\", line 2, column 0: \
-    Lexing error: Invalid globbing pattern \"<*{>\".";
+   "\n<*{>:a", "File \"_tags\", line 2, characters 0-5:\n\
+                Lexing error: Invalid globbing pattern \"<*{>\".";
 
-   "<*>: ~@a,# ~a", "File \"_tags\", line 1, column 10: \
-    Lexing error: Only ',' separated tags are alllowed."];;
+   "<*>: ~@a,# ~a", "File \"_tags\", line 1, characters 10-11:\n\
+                     Lexing error: Only ',' separated tags are alllowed."];;
 
 List.iteri (fun i (content,failing_msg) ->
   let () = test (Printf.sprintf "TagsErrorMessage_%d" (i+1))

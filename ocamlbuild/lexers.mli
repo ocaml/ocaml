@@ -12,7 +12,7 @@
 
 
 (* Original author: Nicolas Pouillard *)
-exception Error of (string * Lexing.position)
+exception Error of (string * Loc.location)
 
 type conf_values =
   { plus_tags   : (string * Loc.location)  list;

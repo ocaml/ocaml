@@ -13,9 +13,10 @@
 
 (* Original author: Nicolas Pouillard *)
 {
-exception Error of (string * Lexing.position)
+exception Error of (string * Loc.location)
 
-let error lexbuf fmt = Printf.ksprintf (fun s -> raise (Error (s,Lexing.lexeme_start_p lexbuf))) fmt
+let error lexbuf fmt =
+  Printf.ksprintf (fun s -> raise (Error (s, Loc.of_lexbuf lexbuf))) fmt
 
 open Glob_ast
 
