@@ -90,8 +90,8 @@ exception Recmodule
 
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
-val add_type: Ident.t -> type_declaration -> t -> t
-val add_exception: Ident.t -> exception_declaration -> t -> t
+val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
+val add_exception: check:bool -> Ident.t -> exception_declaration -> t -> t
 val add_module: Ident.t -> module_type -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t

@@ -1167,7 +1167,7 @@ let temp_abbrev loc env id arity =
   done;
   let ty = Ctype.newobj (Ctype.newvar ()) in
   let env =
-    Env.add_type id
+    Env.add_type ~check:true id
       {type_params = !params;
        type_arity = arity;
        type_kind = Type_abstract;
@@ -1480,8 +1480,10 @@ let final_env define_class env
     (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
      arity, pub_meths, coe, expr, req) =
   (* Add definitions after cleaning them *)
-  Env.add_type obj_id (Subst.type_declaration Subst.identity obj_abbr) (
-  Env.add_type cl_id (Subst.type_declaration Subst.identity cl_abbr) (
+  Env.add_type ~check:true obj_id
+    (Subst.type_declaration Subst.identity obj_abbr) (
+  Env.add_type ~check:true cl_id
+    (Subst.type_declaration Subst.identity cl_abbr) (
   Env.add_cltype ty_id (Subst.cltype_declaration Subst.identity cltydef) (
   if define_class then
     Env.add_class id (Subst.class_declaration Subst.identity clty) env

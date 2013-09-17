@@ -63,7 +63,7 @@ let enter_type env sdecl id =
       type_loc = sdecl.ptype_loc;
     }
   in
-  Env.add_type id decl env
+  Env.add_type ~check:true id decl env
 
 let update_type temp_env env id loc =
   let path = Path.Pident id in
@@ -772,7 +772,8 @@ let rec compute_variance_fixpoint env decls required variances =
       decls variances
   in
   let new_env =
-    List.fold_right (fun (id, decl) env -> Env.add_type id decl env)
+    List.fold_right
+      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
       new_decls env
   in
   let new_variances =
@@ -935,7 +936,7 @@ let transl_type_decl env sdecl_list =
   (* Build the final env. *)
   let newenv =
     List.fold_right
-      (fun (id, decl) env -> Env.add_type id decl env)
+      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
       decls env
   in
   (* Update stubs *)

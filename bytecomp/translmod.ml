@@ -135,7 +135,7 @@ let init_shape modl =
           | _ -> raise Not_found in
         init_v :: init_shape_struct env rem
     | Sig_type(id, tdecl, _) :: rem ->
-        init_shape_struct (Env.add_type id tdecl env) rem
+        init_shape_struct (Env.add_type ~check:false id tdecl env) rem
     | Sig_exception(id, edecl) :: rem ->
         raise Not_found
     | Sig_module(id, mty, _) :: rem ->

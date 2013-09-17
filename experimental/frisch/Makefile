@@ -7,6 +7,12 @@ TOPLVL=$(ROOT)/compilerlibs/ocamltoplevel.cma
 clean:
 	rm -f *.exe *.cm* *~
 
+## Detecting unused exported values
+
+.PHONY: unused_exported_values
+unused_exported_values:
+	$(OCAMLC) -o unused_exported_values.exe $(COMMON) $(ROOT)/tools/tast_iter.cmo unused_exported_values.ml
+
 
 ## Conditional compilation based on environment variables
 
