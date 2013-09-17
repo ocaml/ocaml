@@ -31,6 +31,7 @@ module type Bytecomp_options =
     val _impl : string -> unit
     val _intf : string -> unit
     val _intf_suffix : string -> unit
+    val _keep_locs : unit -> unit
     val _labels : unit -> unit
     val _linkall : unit -> unit
     val _make_runtime : unit -> unit
@@ -129,6 +130,7 @@ module type Optcomp_options = sig
   val _inline : int -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_locs : unit -> unit
   val _labels : unit -> unit
   val _linkall : unit -> unit
   val _no_app_funct : unit -> unit

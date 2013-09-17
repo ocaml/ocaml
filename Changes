@@ -13,6 +13,7 @@ Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
 - PR#6182: better message for virtual objects and class types
   (Leo P. White, Stephen Dolan)
+- PR#5817: new flag to keep locations in cmi files
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)

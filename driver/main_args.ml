@@ -125,6 +125,10 @@ let mk_intf_suffix_2 f =
   "-intf_suffix", Arg.String f, "<string>  (deprecated) same as -intf-suffix"
 ;;
 
+let mk_keep_locs f =
+  "-keep-locs", Arg.Unit f, " Keep locations in .cmi files"
+;;
+
 let mk_labels f =
   "-labels", Arg.Unit f, " Use commuting label mode"
 ;;
@@ -442,6 +446,7 @@ module type Bytecomp_options = sig
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_locs : unit -> unit
   val _labels : unit -> unit
   val _linkall : unit -> unit
   val _make_runtime : unit -> unit
@@ -539,6 +544,7 @@ module type Optcomp_options = sig
   val _inline : int -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_locs : unit -> unit
   val _labels : unit -> unit
   val _linkall : unit -> unit
   val _no_app_funct : unit -> unit
@@ -675,6 +681,7 @@ struct
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_intf_suffix_2 F._intf_suffix;
+    mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
     mk_make_runtime F._make_runtime;
@@ -782,6 +789,7 @@ struct
     mk_inline F._inline;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
+    mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
     mk_no_app_funct F._no_app_funct;

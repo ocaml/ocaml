@@ -35,6 +35,9 @@ let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
 
+let loc s x =
+  if s.for_saving && not !Clflags.keep_locs then Location.none else x
+
 let rec module_path s = function
     Pident id as p ->
       begin try Tbl.find id s.modules with Not_found -> p end
@@ -190,7 +193,7 @@ let type_declaration s decl =
       type_private = decl.type_private;
       type_variance = decl.type_variance;
       type_newtype_level = None;
-      type_loc = if s.for_saving then Location.none else decl.type_loc;
+      type_loc = loc s decl.type_loc;
     }
   in
   cleanup_types ();
@@ -250,12 +253,12 @@ let class_type s cty =
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
     val_kind = descr.val_kind;
-    val_loc = if s.for_saving then Location.none else descr.val_loc;
+    val_loc = loc s descr.val_loc;
    }
 
 let exception_declaration s descr =
   { exn_args = List.map (type_expr s) descr.exn_args;
-    exn_loc = if s.for_saving then Location.none else descr.exn_loc;
+    exn_loc = loc s descr.exn_loc;
    }
 
 let rec rename_bound_idents s idents = function
