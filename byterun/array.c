@@ -135,6 +135,16 @@ CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
     return caml_array_unsafe_set_addr(array, index, newval);
 }
 
+CAMLprim value caml_make_float_vect(value len)
+{
+  mlsize_t wsize = Long_val(len) * Double_wosize;
+  if (wsize == 0)
+    return Atom(0);
+  if (wsize > Max_wosize)
+    caml_invalid_argument("Array.make");
+  return caml_alloc(wsize, Double_array_tag);
+}
+
 CAMLprim value caml_make_vect(value len, value init)
 {
   CAMLparam2 (len, init);

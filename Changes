@@ -27,6 +27,7 @@ Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
 - PR#6148: speed improvement for Buffer (patch by John Whitington)
 - PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
+- PR#6180: efficient creation of uninitialized float arrays
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable

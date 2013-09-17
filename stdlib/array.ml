@@ -25,6 +25,7 @@ external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"
 external unsafe_blit :
   'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
+external make_float: int -> float array = "caml_make_float_vect"
 
 let init l f =
   if l = 0 then [||] else
