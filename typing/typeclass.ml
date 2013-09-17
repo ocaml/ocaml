@@ -30,7 +30,7 @@ type error =
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
   | Constructor_type_mismatch of string * (type_expr * type_expr) list
-  | Virtual_class of bool * string list * string list
+  | Virtual_class of bool * bool * string list * string list
   | Parameter_arity_mismatch of Longident.t * int * int
   | Parameter_mismatch of (type_expr * type_expr) list
   | Bad_parameters of Ident.t * type_expr * type_expr
@@ -772,7 +772,7 @@ and class_structure cl_num final val_env met_env loc
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.cty_vars [] in
     if mets <> [] || vals <> [] then
-      raise(Error(loc, val_env, Virtual_class(true, mets, vals)));
+      raise(Error(loc, val_env, Virtual_class(true, final, mets, vals)));
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
@@ -1357,7 +1357,7 @@ let class_infos define_class kind
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.cty_vars [] in
     if mets <> []  || vals <> [] then
-      raise(Error(cl.pci_loc, env, Virtual_class(true, mets, vals)));
+      raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets, vals)));
   end;
 
   (* Misc. *)
@@ -1678,20 +1678,23 @@ let report_error env ppf = function
            fprintf ppf "The expression \"new %s\" has type" c)
         (function ppf ->
            fprintf ppf "but is used with type")
-  | Virtual_class (cl, mets, vals) ->
+  | Virtual_class (cl, imm, mets, vals) ->
       let print_mets ppf mets =
         List.iter (function met -> fprintf ppf "@ %s" met) mets in
-      let cl_mark = if cl then "" else " type" in
       let missings =
         match mets, vals with
           [], _ -> "variables"
         | _, [] -> "methods"
         | _ -> "methods and variables"
       in
+      let print_msg ppf =
+        if imm then fprintf ppf "This object has virtual %s" missings
+        else if cl then fprintf ppf "This class should be virtual"
+        else fprintf ppf "This class type should be virtual"
+      in
       fprintf ppf
-        "@[This class%s should be virtual.@ \
-           @[<2>The following %s are undefined :%a@]@]"
-          cl_mark missings print_mets (mets @ vals)
+        "@[%t.@ @[<2>The following %s are undefined :%a@]@]"
+        print_msg missings print_mets (mets @ vals)
   | Parameter_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
         "@[The class constructor %a@ expects %i type argument(s),@ \
