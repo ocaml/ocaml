@@ -91,3 +91,10 @@ let report_error ppf = function
   | Corrupted_interface filename ->
       fprintf ppf "Corrupted compiled interface@ %a"
         Location.print_filename filename
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )

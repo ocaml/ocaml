@@ -390,3 +390,10 @@ let report_error ppf = function
         Location.print_filename filename name
         Location.print_filename  filename
         name
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )

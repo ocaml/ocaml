@@ -26,7 +26,7 @@ let prepare ppf =
     !Opttoploop.toplevel_startup_hook ();
     res
   with x ->
-    try Opterrors.report_error ppf x; false
+    try Location.report_exception ppf x; false
     with x ->
       Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
       false

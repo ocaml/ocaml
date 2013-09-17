@@ -100,60 +100,16 @@ module Ast_analyser = Odoc_ast.Analyser (Odoc_comments.Basic_info_retriever)
 (** The module used to analyse the parse tree and typed tree of an interface file.*)
 module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 
-(** Handle an error. This is a partial copy of the compiler
-   driver/error.ml file. We do this because there are
-   some differences between the possibly raised exceptions
-   in the bytecode (error.ml) and opt (opterros.ml) compilers
-   and we don't want to take care of this. Besises, these
-   differences only concern code generation (i believe).*)
+(** Handle an error. *)
+
 let process_error exn =
-  let report ppf = function
-  | Lexer.Error(err, loc) ->
-      Location.print_error ppf loc;
-      Lexer.report_error ppf err
-  | Syntaxerr.Error err ->
-      Syntaxerr.report_error ppf err
-  | Env.Error err ->
-      Location.print_error_cur_file ppf;
-      Env.report_error ppf err
-  | Cmi_format.Error err ->
-      Location.print_error_cur_file ppf;
-      Cmi_format.report_error ppf err
-  | Ctype.Tags(l, l') ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf
-      "In this program,@ variant constructors@ `%s and `%s@ \
-       have the same hash value." l l'
-  | Typecore.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typecore.report_error env ppf err
-  | Typetexp.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typetexp.report_error env ppf err
-  | Typedecl.Error(loc, err) ->
-      Location.print_error ppf loc; Typedecl.report_error ppf err
-  | Includemod.Error err ->
-      Location.print_error_cur_file ppf;
-      Includemod.report_error ppf err
-  | Typemod.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typemod.report_error env ppf err
-  | Translcore.Error(loc, err) ->
-      Location.print_error ppf loc; Translcore.report_error ppf err
-  | Sys_error msg ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "I/O error: %s" msg
-  | Typeclass.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typeclass.report_error env ppf err
-  | Translclass.Error(loc, err) ->
-      Location.print_error ppf loc; Translclass.report_error ppf err
-  | Warnings.Errors (n) ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
-  | x ->
-      fprintf ppf "@]";
-      fprintf ppf
-        "Compilation error(%s). Use the OCaml compiler to get more details."
-        (Printexc.to_string x)
-  in
-  Format.fprintf Format.err_formatter "@[%a@]@." report exn
+  match Location.error_of_exn exn with
+  | Some err ->
+      fprintf Format.err_formatter "@[%a@]@." Location.report_error err
+  | None ->
+      fprintf Format.err_formatter
+        "Compilation error(%s). Use the OCaml compiler to get more details.@."
+        (Printexc.to_string exn)
 
 (** Process the given file, according to its extension. Return the Module.t created, if any.*)
 let process_file ppf sourcefile =

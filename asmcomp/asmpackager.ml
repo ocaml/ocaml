@@ -204,3 +204,10 @@ let report_error ppf = function
       fprintf ppf "Error while assembling %s" file
   | Linking_error ->
       fprintf ppf "Error during partial linking"
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )

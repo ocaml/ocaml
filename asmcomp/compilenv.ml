@@ -245,3 +245,10 @@ let report_error ppf = function
       fprintf ppf "%a@ contains the description for unit\
                    @ %s when %s was expected"
         Location.print_filename filename name modname
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )
