@@ -48,7 +48,6 @@ O=obj
 A=lib
 S=asm
 SO=s.obj
-DO=d.obj
 EXE=.exe
 EXT_DLL=.dll
 EXT_OBJ=.$(O)

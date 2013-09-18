@@ -59,7 +59,6 @@ O=o
 A=a
 S=s
 SO=s.o
-DO=d.o
 EXE=.exe
 EXT_DLL=.dll
 EXT_OBJ=.$(O)
