@@ -32,7 +32,7 @@ CAMLP4OPT=$(WITH_CAMLP4:=opt)
 OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
 OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 
-WITH_OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
+OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
