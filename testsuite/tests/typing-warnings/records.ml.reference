@@ -17,10 +17,6 @@ Characters 151-152:
       match r with {x; y} -> y + y (* ok *)
                        ^
 Warning 42: this use of y required disambiguation.
-Characters 81-103:
-    let f2 r = ignore (r:t); r.x (* non principal *)
-                       ^^^^^^^^^^^^^^^^^^^^^^
-Warning 34: unused type u.
 Characters 148-149:
       match r with {x; y} -> y + y (* ok *)
                     ^
@@ -45,10 +41,6 @@ Characters 89-90:
          {x; y} -> y + y
              ^
 Warning 42: this use of y required disambiguation.
-Characters 81-103:
-  ...    {x; y} -> y + y
-  en..............................
-Warning 34: unused type u.
 Characters 86-87:
          {x; y} -> y + y
           ^
@@ -92,11 +84,6 @@ Characters 30-36:
     open N
     ^^^^^^
 Warning 33: unused open N.
-Characters 25-47:
-  ...... M
-    open N
-    let f (r...........
-Warning 34: unused type u.
 module OK : sig val f : M.t -> int end
 #           module M :
   sig
@@ -120,8 +107,6 @@ Characters 36-41:
 Warning 9: the following labels are not bound in this record pattern:
 y
 Either bind these labels explicitly or add '; _' to the pattern.
-Characters 87-105:
-  Warning 34: unused type t.
 module OK : sig val f : M.u -> bool * char end
 #       Characters 38-52:
     let r = {x=true;z='z'}
