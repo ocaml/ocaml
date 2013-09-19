@@ -40,6 +40,12 @@ Features wishes:
 - PR#6166: document -ocamldoc option of ocamlbuild
 
 
+OCaml 4.01.1:
+-------------
+
+Bug fixes:
+- PR#6173: Typing error message is worse that before
+
 OCaml 4.01.0:
 -------------
 
