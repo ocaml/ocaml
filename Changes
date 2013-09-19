@@ -1,3 +1,6 @@
+Bug fixes:
+- PR#6173: Typing error message is worse that before
+
 OCaml 4.01.0:
 -------------
 

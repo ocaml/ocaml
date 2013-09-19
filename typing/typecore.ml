@@ -33,7 +33,7 @@ type error =
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * Path.t * Longident.t
+  | Wrong_name of string * type_expr * string * Path.t * Longident.t
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Incomplete_format of string
@@ -573,7 +573,8 @@ end) = struct
         try
           List.find (fun nd -> get_name nd = s) descrs
         with Not_found ->
-          raise (Error (lid.loc, env, Wrong_name (type_kind, tpath, lid.txt)))
+          raise (Error (lid.loc, env,
+                        Wrong_name ("", newvar (), type_kind, tpath, lid.txt)))
       end
     | _ -> raise Not_found
 
@@ -670,6 +671,10 @@ end) = struct
     end;
     lbl
 end
+
+let wrap_disambiguate kind ty f x =
+  try f x with Error (loc, env, Wrong_name (_,_,tk,tp,lid)) ->
+    raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,lid)))
 
 module Label = NameChoice (struct
   type t = label_description
@@ -958,7 +963,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
                         Unqualified_gadt_pattern (tpath, constr.cstr_name)))
       in
       let constr =
-        Constructor.disambiguate lid !env opath constrs ~check_lk in
+        wrap_disambiguate "This variant pattern is expected to have" expected_ty
+          (Constructor.disambiguate lid !env opath ~check_lk) constrs
+      in
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, !env, Unexpected_existential));
@@ -1040,8 +1047,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         (label_lid, label, arg)
       in
       let lbl_pat_list =
-        type_label_a_list ?labels loc false !env type_label_pat opath
-          lid_sp_list in
+        wrap_disambiguate "This record pattern is expected to have" expected_ty
+          (type_label_a_list ?labels loc false !env type_label_pat opath)
+          lid_sp_list
+      in
       check_recordpat_labels loc lbl_pat_list closed;
       unify_pat_types loc !env record_ty expected_ty;
       rp {
@@ -2110,19 +2119,30 @@ and type_expect_ ?in_function env sexp ty_expected =
         in
         match get_path ty_expected with
           None ->
-            let op =
-              match opt_exp with
-                None -> None
-              | Some exp -> get_path exp.exp_type
-            in
-            newvar (), op
+            begin match opt_exp with
+              None -> newvar (), None
+            | Some exp ->
+                match get_path exp.exp_type with
+                  None -> newvar (), None
+                | Some (_, p', _) as op ->
+                    let decl = Env.find_type p' env in
+                    begin_def ();
+                    let ty =
+                      newconstr p' (instance_list env decl.type_params) in
+                    end_def ();
+                    generalize ty;
+                    ty, op
+            end
         | op -> ty_expected, op
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
-        type_label_a_list loc closed env
-          (type_label_exp true env loc ty_record)
-          opath lid_sexp_list in
+        wrap_disambiguate "This record expression is expected to have" ty_record
+          (type_label_a_list loc closed env
+             (type_label_exp true env loc ty_record)
+             opath)
+          lid_sexp_list
+      in
       unify_exp_types loc env ty_record (instance env ty_expected);
 
       (* type_label_a_list returns a list of labels sorted by lbl_pos *)
@@ -2725,7 +2745,9 @@ and type_label_access env loc srecord lid =
     with Not_found -> None
   in
   let labels = Typetexp.find_all_labels env lid.loc lid.txt in
-  let label = Label.disambiguate lid env opath labels in
+  let label =
+    wrap_disambiguate "This expression has" ty_exp
+      (Label.disambiguate lid env opath) labels in
   (record, label, opath)
 
 and type_label_exp create env loc ty_expected
@@ -3052,7 +3074,9 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
     with Not_found -> None
   in
   let constrs = Typetexp.find_all_constructors env lid.loc lid.txt in
-  let constr = Constructor.disambiguate lid env opath constrs in
+  let constr =
+    wrap_disambiguate "This variant expression is expected to have" ty_expected
+      (Constructor.disambiguate lid env opath) constrs in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) constr;
   let sargs =
     match sarg with
@@ -3514,10 +3538,13 @@ let report_error env ppf = function
         print_labels labels
   | Label_not_mutable lid ->
       fprintf ppf "The record field %a is not mutable" longident lid
-  | Wrong_name (kind, p, lid) ->
-      fprintf ppf "The %s type %a has no %s %a" kind path p
+  | Wrong_name (eorp, ty, kind, p, lid) ->
+      reset_and_mark_loops ty;
+      fprintf ppf "@[@[<2>%s type@ %a@]@ "
+        eorp type_expr ty;
+      fprintf ppf "The %s %a does not belong to type %a@]"
         (if kind = "record" then "field" else "constructor")
-        longident lid;
+        longident lid (*kind*) path p;
       if kind = "record" then Label.spellcheck ppf env p lid
                          else Constructor.spellcheck ppf env p lid
   | Name_type_mismatch (kind, lid, tp, tpl) ->
