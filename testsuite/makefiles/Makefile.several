@@ -44,7 +44,7 @@ run-all:
 	    CANKILL=$(CANKILL) sh `basename $$file ml`precheck || continue; \
 	  fi; \
 	  printf " ... testing '$$file':"; \
-	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \
+	  $(MAKE) run-file DESC=ocamlc COMP="$(OCAMLC)" \
 	          RUNTIME='$(MYRUNTIME)' \
 	          COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) \
 	                     $(CMA_FILES) -I $(OTOPDIR)/testsuite/lib \
@@ -52,7 +52,7 @@ run-all:
 	          FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) \
 	  && \
 	  if $(BYTECODE_ONLY); then : ; else \
-	    $(MAKE) run-file DESC=ocamlopt COMP='$(OCAMLOPT)' \
+	    $(MAKE) run-file DESC=ocamlopt COMP="$(OCAMLOPT)" \
 	            RUNTIME= \
 	            COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_OPTFLAGS) \
 		               $(O_FILES) $(CMXA_FILES) \
@@ -61,7 +61,7 @@ run-all:
 	  fi \
 	  && \
 	  if [ -n "$(UNSAFE)" ]; then \
-	    $(MAKE) run-file DESC=ocamlc-unsafe COMP='$(OCAMLC)' \
+	    $(MAKE) run-file DESC=ocamlc-unsafe COMP="$(OCAMLC)" \
 	            RUNTIME='$(MYRUNTIME)' \
 	            COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_CFLAGS) \
 	                       $(O_FILES) $(CMA_FILES) \
@@ -69,7 +69,7 @@ run-all:
 	            FILE=$$file \
 	    && \
 	    if $(BYTECODE_ONLY); then : ; else \
-	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP='$(OCAMLOPT)' \
+	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP="$(OCAMLOPT)" \
 	              RUNTIME= \
 	              COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_OPTFLAGS)\
 		                 $(O_FILES) $(CMXA_FILES) \

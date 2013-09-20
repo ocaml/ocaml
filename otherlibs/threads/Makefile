@@ -15,9 +15,10 @@ include ../../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
-CAMLC=../../ocamlcomp.sh -I ../unix
+CAMLC=$(CAMLC_BIN) -nostdlib -I ../../stdlib -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A
+CAMLC_BIN_CMD=$(CAMLC_BIN_CMD_TO_EVAL) -nostdlib -I ../../stdlib
 
 C_OBJS=scheduler.o
 
@@ -53,13 +54,13 @@ libvmthreads.a: $(C_OBJS)
 	$(MKLIB) -o threads -oc vmthreads $(C_OBJS)
 
 threads.cma: $(CAML_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o threads -oc vmthreads $(CAML_OBJS)
+	$(MKLIB) -ocamlc "$$($(CAMLC_BIN_CMD))" -o threads -oc vmthreads $(CAML_OBJS)
 
 stdlib.cma: $(LIB_OBJS)
 	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
 
 unix.cma: $(UNIXLIB_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
+	$(MKLIB) -ocamlc "$$($(CAMLC_BIN_CMD))" -o unix -linkall $(UNIXLIB_OBJS)
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
 	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml
@@ -116,6 +117,7 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
+	exit 1
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:

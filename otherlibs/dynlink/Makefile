@@ -15,10 +15,10 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/ocamlrun ../../ocamlc
-CAMLOPT=../../ocamlcompopt.sh
+CAMLC=$(CAMLC_BIN) -nostdlib -I ../../stdlib
+CAMLOPT=$(CAMLOPT_BIN) -nostdlib -I ../../stdlib
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp -I ../../asmcomp
-COMPFLAGS=-w +33..39 -warn-error A -I ../../stdlib $(INCLUDES)
+COMPFLAGS=-w +33..39 -warn-error A $(INCLUDES)
 
 OBJS=dynlinkaux.cmo dynlink.cmo
 

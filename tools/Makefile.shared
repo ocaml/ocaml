@@ -12,9 +12,8 @@
 
 include ../config/Makefile
 
-CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
-CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
+CAMLC=$(CAMLC_BIN) -nostdlib -I ../boot -strict-sequence
+CAMLOPT=$(CAMLOPT_BIN) -nostdlib -I ../stdlib 
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 	 -I ../driver -I ../toplevel

@@ -28,8 +28,8 @@ main() {
   # Some variables in the config have a value that is shell script and has to be
   # evaluated to make sense for the outputs.
 	local eval_command='s/\\"\(.*\)\\"/\\"$$(\1)\\"/'
-  local eval_commands_1='/CAMLC_BIN_CMD/ '"${eval_command}"
-  local eval_commands_2='/CAMLOPT_BIN_CMD/ '"${eval_command}"
+  local eval_commands_1='/CAMLC_BIN_CMD_TO_EVAL/ '"${eval_command}"
+  local eval_commands_2='/CAMLOPT_BIN_CMD_TO_EVAL/ '"${eval_command}"
 
   printf "include Makefile\n\n"
   printf "p:\n\t@true; \\\\\n"

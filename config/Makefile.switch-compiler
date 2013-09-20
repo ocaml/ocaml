@@ -1,0 +1,21 @@
+include Makefile
+
+enable disable:
+	@case "$@" in \
+	  "enable")  C1="#"; C2=" ";; \
+	  "disable") C1=" "; C2="#";; \
+	  *) echo "Unknown action." 1>&2 ; exit 1;; \
+	esac; \
+	\
+	if ! test -e "ocamlcomp"; then \
+	  echo '  CAMLC_BIN="$(CAMLC_BIN_BOOT)" # BOOT' >> "ocamlcomp"; \
+	  echo '# CAMLC_BIN="$(CAMLC_BIN_BYTE)" # BYTE' >> "ocamlcomp"; \
+	  echo '# CAMLC_BIN="$(CAMLC_BIN_OPT)"  # OPT ' >> "ocamlcomp"; \
+	  echo '# CAMLOPT_BIN="$(CAMLOPT_BIN_BYTE)" # BYTE' >> "ocamlcomp"; \
+	  echo '# CAMLOPT_BIN="$(CAMLOPT_BIN_OPT)"  # OPT ' >> "ocamlcomp"; \
+	fi; \
+	\
+	sed -e "/^$${C1} \($(COMPILER)_BIN\).*# $(VARIANT)/ s/$${C1}/$${C2}/" \
+	  "ocamlcomp" \
+	  > "ocamlcomp.tmp" ; \
+	mv "ocamlcomp.tmp" "ocamlcomp"
