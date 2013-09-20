@@ -101,8 +101,8 @@ ocamlmklib.cmo: myocamlbuild_config.cmi
 
 myocamlbuild_config.cmi: myocamlbuild_config.cmo
 
-myocamlbuild_config.ml: ../config/Makefile ../build/mkmyocamlbuild_config.sh
-	../build/mkmyocamlbuild_config.sh
+myocamlbuild_config.ml: ../config/Makefile ../build/mk_shell_and_ocamlbuild_config.sh
+	../build/mk_shell_and_ocamlbuild_config.sh
 	cp ../myocamlbuild_config.ml .
 
 install::
