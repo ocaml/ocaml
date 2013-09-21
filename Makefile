@@ -384,7 +384,9 @@ ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(SWITCH_COMPILER) disable COMPILER=CAMLC VARIANT=OPT
 
 partialclean::
-	$(SWITCH_COMPILER) disable COMPILER=CAMLC VARIANT=BYTE
+	if [ -n "$(ROOTDIR)" ]; then \
+	  $(SWITCH_COMPILER) disable COMPILER=CAMLC VARIANT=BYTE ; \
+	fi
 
 # The native-code compiler
 
@@ -401,7 +403,9 @@ ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
 
 partialclean::
 	rm -f ocamlopt
-	$(SWITCH_COMPILER) disable  COMPILER=CAMLOPT VARIANT=BYTE
+	if [ -n "$(ROOTDIR)" ]; then \
+	  $(SWITCH_COMPILER) disable  COMPILER=CAMLOPT VARIANT=BYTE ; \
+	fi
 
 # The toplevel
 
@@ -514,7 +518,9 @@ ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
 
 partialclean::
 	rm -f ocamlc.opt
-	$(SWITCH_COMPILER) disable COMPILER=CAMLC VARIANT=OPT
+	if [ -n "$(ROOTDIR)" ]; then \
+		$(SWITCH_COMPILER) disable COMPILER=CAMLC VARIANT=OPT ; \
+	fi
 
 # The native-code compiler compiled with itself
 
@@ -532,7 +538,9 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 
 partialclean::
 	rm -f ocamlopt.opt
-	$(SWITCH_COMPILER) disable COMPILER=CAMLOPT VARIANT=OPT
+	if [ -n "$(ROOTDIR)" ]; then \
+	  $(SWITCH_COMPILER) disable COMPILER=CAMLOPT VARIANT=OPT ; \
+	fi
 
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
