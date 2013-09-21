@@ -1,4 +1,4 @@
-#!/bin/sh -eu
+#!/bin/sh -eux
 
 # Generate config.sh and myocamlbuild_config.ml from config/Makefile.
 #
@@ -23,7 +23,7 @@ main() {
   local list_variables='/[^#].*=/ s/\([^ \t:=]\{1,\}\).*=.*$/\1/ p'
 
   # Variables we don't want to retrieve.
-  local exclude='^#|\<CAML(C|OPT)_BIN\>|\<(MKLIB|SYSLIB|FLEXDIR|^SET_LD_PATH)\>'
+  local exclude='^#|\<CAML(C|OPT)_BIN\>|\<(MKLIB|SYSLIB|FLEXDIR|IFLEXDIR|^SET_LD_PATH)\>'
 
   # Some variables in the config have a value that is shell script and has to be
   # evaluated to make sense for the outputs.
