@@ -19,7 +19,7 @@ CAMLC=$(CAMLC_BIN) -nostdlib -I boot
 CAMLOPT=$(CAMLOPT_BIN) -nostdlib -I stdlib -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -w +33..39 -warn-error A $(INCLUDES)
 LINKFLAGS=
-SWITCH_COMPILER=make -C $(ROOTDIR)/config -f Makefile.switch-compiler
+SWITCH_COMPILER=cd $(ROOTDIR)/config && $(MAKE) -f Makefile.switch-compiler
 
 CAMLYACC=boot/ocamlyacc
 YACCFLAGS=-v

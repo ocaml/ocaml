@@ -1741,7 +1741,7 @@ rm -f ../m.h ../s.h ../Makefile
 mv m.h s.h Makefile ..
 
 rm -f ../ocamlcomp
-make -C .. -f Makefile.switch-compiler disable COMPILER="CAMLC" VARIANT="BYTE"
+cd .. && make -f Makefile.switch-compiler disable COMPILER="CAMLC" VARIANT="BYTE"
 
 # Print a summary
 
