@@ -178,7 +178,7 @@ CANKILL=false
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
 
 THIS_MAKEFILE=$(filter %config/Makefile,$(MAKEFILE_LIST))
-ifeq ($(filter /,$(THIS_MAKEFILE)),)
+ifeq ($(filter /%,$(THIS_MAKEFILE)),)
 ROOTDIR:=$(abspath $(dir $(CURDIR)/$(THIS_MAKEFILE))/..)
 else
 ROOTDIR:=$(abspath $(dir $(THIS_MAKEFILE))/..)
