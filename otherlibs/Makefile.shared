@@ -41,11 +41,11 @@ all: lib$(CLIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 allopt: lib$(CLIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
 
 $(LIBNAME).cma: $(CAMLOBJS)
-	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc "$$($(CAMLC_BIN_CMD))" \
+	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc "$(CAMLC_BIN_CMD)" \
 	  -linkall $(CAMLOBJS) $(LINKOPTS)
 
 $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
-	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlopt "$$($(CAMLOPT_BIN_CMD))" \
+	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlopt "$(CAMLOPT_BIN_CMD)" \
 	  -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
 
 $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)

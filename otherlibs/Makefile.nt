@@ -15,8 +15,8 @@
 
 CAMLC=$(CAMLC_BIN) -nostdlib -I ../../stdlib -w s
 CAMLOPT=$(CAMLOPT_BIN) -nostdlib -I ../../stdlib -w s
-CAMLC_BIN_CMD=$(CAMLC_BIN_CMD_TO_EVAL) -nostdlib -I ../../stdlib
-CAMLOPT_BIN_CMD=$(CAMLOPT_BIN_CMD_TO_EVAL) -nostdlib -I ../../stdlib
+CAMLC_BIN_CMD=$(shell cygpath -m $(shell $(CAMLC_BIN_CMD_TO_EVAL))) -nostdlib -I ../../stdlib
+CAMLOPT_BIN_CMD=$(shell cygpath -m $(shell $(CAMLOPT_BIN_CMD_TO_EVAL))) -nostdlib -I ../../stdlib
 CFLAGS=-I../../byterun $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
 
 include ../Makefile.shared
