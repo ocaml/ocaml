@@ -683,7 +683,7 @@ New syntax:\
                   | Some
                       ((KEYWORD
                           (("or" | "mod" | "land" | "lor" | "lxor" | "lsl" |
-                              "lsr" | "asr"
+                              "lsr" | "asr" | "*"
                             as i)),
                         _loc))
                       ->
@@ -931,7 +931,8 @@ New syntax:\
             and _ = (a_INT : 'a_INT Gram.Entry.t)
             and _ = (a_FLOAT : 'a_FLOAT Gram.Entry.t) in
             let grammar_entry_create = Gram.Entry.mk in
-            let (* Here it's LABEL and not tilde_label since ~a:b is different than ~a : b *)
+            let (* <:str_item< open $i$ >> *)
+              (* Here it's LABEL and not tilde_label since ~a:b is different than ~a : b *)
               (* Same remark for ?a:b *) infixop5 : 'infixop5 Gram.Entry.t =
               grammar_entry_create "infixop5"
             and (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
@@ -1175,7 +1176,18 @@ New syntax:\
                             (Gram.Action.mk
                                (fun (i : 'module_longident) _
                                   (_loc : Gram.Loc.t) ->
-                                  (Ast.StOpn (_loc, i) : 'str_item))));
+                                  (Ast.StOpn (_loc, Ast.OvNil, i) :
+                                    'str_item))));
+                           ([ Gram.Skeyword "open"; Gram.Skeyword "!";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (module_longident :
+                                     'module_longident Gram.Entry.t)) ],
+                            (Gram.Action.mk
+                               (fun (i : 'module_longident) _ _
+                                  (_loc : Gram.Loc.t) ->
+                                  (Ast.StOpn (_loc, Ast.OvOverride, i) :
+                                    'str_item))));
                            ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                               Gram.Snterm
                                 (Gram.Entry.obj
@@ -2028,7 +2040,19 @@ New syntax:\
                             (Gram.Action.mk
                                (fun (e : 'expr) _ (i : 'module_longident) _ _
                                   (_loc : Gram.Loc.t) ->
-                                  (Ast.ExOpI (_loc, i, e) : 'expr))));
+                                  (Ast.ExOpI (_loc, i, Ast.OvNil, e) : 'expr))));
+                           ([ Gram.Skeyword "let"; Gram.Skeyword "open";
+                              Gram.Skeyword "!";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (module_longident :
+                                     'module_longident Gram.Entry.t));
+                              Gram.Skeyword "in"; Gram.Sself ],
+                            (Gram.Action.mk
+                               (fun (e : 'expr) _ (i : 'module_longident) _ _
+                                  _ (_loc : Gram.Loc.t) ->
+                                  (Ast.ExOpI (_loc, i, Ast.OvOverride, e) :
+                                    'expr))));
                            ([ Gram.Skeyword "let"; Gram.Skeyword "module";
                               Gram.Snterm
                                 (Gram.Entry.obj
@@ -2599,7 +2623,7 @@ New syntax:\
                                (fun _ (e : 'sequence)
                                   (i : 'module_longident_dot_lparen)
                                   (_loc : Gram.Loc.t) ->
-                                  (Ast.ExOpI (_loc, i, e) : 'expr))));
+                                  (Ast.ExOpI (_loc, i, Ast.OvNil, e) : 'expr))));
                            ([ Gram.Snterm
                                 (Gram.Entry.obj
                                    (a_CHAR : 'a_CHAR Gram.Entry.t)) ],
@@ -2948,7 +2972,20 @@ New syntax:\
                             (Gram.Action.mk
                                (fun (e : 'sequence) _ (i : 'module_longident)
                                   _ _ (_loc : Gram.Loc.t) ->
-                                  (Ast.ExOpI (_loc, i, e) : 'sequence))));
+                                  (Ast.ExOpI (_loc, i, Ast.OvNil, e) :
+                                    'sequence))));
+                           ([ Gram.Skeyword "let"; Gram.Skeyword "open";
+                              Gram.Skeyword "!";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (module_longident :
+                                     'module_longident Gram.Entry.t));
+                              Gram.Skeyword "in"; Gram.Sself ],
+                            (Gram.Action.mk
+                               (fun (e : 'sequence) _ (i : 'module_longident)
+                                  _ _ _ (_loc : Gram.Loc.t) ->
+                                  (Ast.ExOpI (_loc, i, Ast.OvOverride, e) :
+                                    'sequence))));
                            ([ Gram.Skeyword "let"; Gram.Skeyword "module";
                               Gram.Snterm
                                 (Gram.Entry.obj
@@ -14264,7 +14301,7 @@ Added statements:
                          Gram.Sself ])
                 | None -> ());
              defined := list_remove x !defined)
-          with | Not_found -> ()
+          with | Struct.Grammar.Delete.Rule_not_found _ -> ()
           
         let parse_def s =
           match Gram.parse_string expr (Loc.mk "<command line>") s with
@@ -15953,7 +15990,13 @@ You should give the -noassert option to the ocaml compiler instead.@."
          !rcall_callback ())
       
     let initial_spec_list =
-      [ ("-I", (Arg.String (fun x -> input_file (IncludeDir x))),
+      [ ("-I",
+         (Arg.String
+            (fun x ->
+               input_file
+                 (IncludeDir
+                    (Camlp4_import.Misc.expand_directory Camlp4_config.
+                       camlp4_standard_library x)))),
          "<directory>  Add directory in search patch for object files.");
         ("-where", (Arg.Unit print_stdlib),
          "Print camlp4 library directory and exit.");

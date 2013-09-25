@@ -144,7 +144,7 @@ module Make (Token : Sig.Camlp4Token)
   let is_in_comment c = c.in_comment
   let in_comment c = { (c) with in_comment = true }
   let set_start_p c = c.lexbuf.lex_start_p <- Loc.start_pos c.loc
-  let move_start_p shift c =
+  let move_start_p shift c = (* FIXME Please see PR#5820*)
     let p = c.lexbuf.lex_start_p in
     c.lexbuf.lex_start_p <- { (p) with pos_cnum = p.pos_cnum + shift }
 
@@ -308,7 +308,8 @@ module Make (Token : Sig.Camlp4Token)
           parse comment (in_comment c); COMMENT (buff_contents c)               }
     | "*)"
         { warn Comment_not_end (Loc.of_lexbuf lexbuf)                           ;
-          move_start_p (-1) c; SYMBOL "*"                                       }
+          c.lexbuf.lex_curr_pos <- c.lexbuf.lex_curr_pos - 1;
+          SYMBOL "*"                                       }
     | "<<" (quotchar* as beginning)
       { if quotations c
         then (move_start_p (-String.length beginning);
