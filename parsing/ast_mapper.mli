@@ -14,72 +14,69 @@
 
 open Parsetree
 
-(** {2 A generic mapper class} *)
+(** {2 A generic Parsetree mapper} *)
 
-class mapper:
-  object
-    method case: case -> case
-    method cases: case list -> case list
-    method class_declaration: class_declaration -> class_declaration
-    method class_description: class_description -> class_description
-    method class_expr: class_expr -> class_expr
-    method class_field: class_field -> class_field
-    method class_signature: class_signature -> class_signature
-    method class_structure: class_structure -> class_structure
-    method class_type: class_type -> class_type
-    method class_type_declaration:
-             class_type_declaration -> class_type_declaration
-    method class_type_field: class_type_field -> class_type_field
-    method expr: expression -> expression
-    method implementation: string -> structure -> string * structure
-    method interface: string -> signature -> string * signature
-    method location: Location.t -> Location.t
-    method module_binding: module_binding -> module_binding
-    method module_declaration: module_declaration -> module_declaration
-    method module_expr: module_expr -> module_expr
-    method module_type: module_type -> module_type
-    method module_type_declaration: module_type_declaration -> module_type_declaration
-    method pat: pattern -> pattern
-    method signature: signature -> signature
-    method signature_item: signature_item -> signature_item
-    method structure: structure -> structure
-    method structure_item: structure_item -> structure_item
-    method typ: core_type -> core_type
-    method type_declaration: type_declaration -> type_declaration
-    method type_kind: type_kind -> type_kind
-    method value_description: value_description -> value_description
-    method with_constraint: with_constraint -> with_constraint
-    method attribute: attribute -> attribute
-    method attributes: attribute list -> attribute list
-    method extension: extension -> extension
-    method constructor_declaration: constructor_declaration -> constructor_declaration
-    method label_declaration: label_declaration -> label_declaration
-    method value_binding: value_binding -> value_binding
-    method payload: payload -> payload
-  end
+type mapper = {
+  interface: mapper -> (string * signature) -> (string * signature);
+  implementation: mapper -> (string * structure) -> (string * structure);
 
-class type main_entry_points =
-  object
-    method implementation: string -> structure -> string * structure
-    method interface: string -> signature -> string * signature
-  end
+  attribute: mapper -> attribute -> attribute;
+  attributes: mapper -> attribute list -> attribute list;
+  case: mapper -> case -> case;
+  cases: mapper -> case list -> case list;
+  class_declaration: mapper -> class_declaration -> class_declaration;
+  class_description: mapper -> class_description -> class_description;
+  class_expr: mapper -> class_expr -> class_expr;
+  class_field: mapper -> class_field -> class_field;
+  class_signature: mapper -> class_signature -> class_signature;
+  class_structure: mapper -> class_structure -> class_structure;
+  class_type: mapper -> class_type -> class_type;
+  class_type_declaration: mapper -> class_type_declaration -> class_type_declaration;
+  class_type_field: mapper -> class_type_field -> class_type_field;
+  constructor_declaration: mapper -> constructor_declaration -> constructor_declaration;
+  expr: mapper -> expression -> expression;
+  extension: mapper -> extension -> extension;
+  label_declaration: mapper -> label_declaration -> label_declaration;
+  location: mapper -> Location.t -> Location.t;
+  module_binding: mapper -> module_binding -> module_binding;
+  module_declaration: mapper -> module_declaration -> module_declaration;
+  module_expr: mapper -> module_expr -> module_expr;
+  module_type: mapper -> module_type -> module_type;
+  module_type_declaration: mapper -> module_type_declaration -> module_type_declaration;
+  pat: mapper -> pattern -> pattern;
+  payload: mapper -> payload -> payload;
+  signature: mapper -> signature -> signature;
+  signature_item: mapper -> signature_item -> signature_item;
+  structure: mapper -> structure -> structure;
+  structure_item: mapper -> structure_item -> structure_item;
+  typ: mapper -> core_type -> core_type;
+  type_declaration: mapper -> type_declaration -> type_declaration;
+  type_kind: mapper -> type_kind -> type_kind;
+  value_binding: mapper -> value_binding -> value_binding;
+  value_description: mapper -> value_description -> value_description;
+  with_constraint: mapper -> with_constraint -> with_constraint;
+}
 
-val apply: source:string -> target:string -> #main_entry_points -> unit
+val default_mapper: mapper
+
+
+
+val apply: source:string -> target:string -> mapper -> unit
     (** Apply a mapper to a dumped parsetree found in the [source] file
         and put the result in the [target] file. *)
 
-val main: #main_entry_points -> unit
+val main: mapper -> unit
     (** Entry point to call to implement a standalone -ppx rewriter
         from a mapper object. *)
 
-val run_main: (string list -> #main_entry_points) -> unit
+val run_main: (string list -> mapper) -> unit
     (** Same as [main], but with extra arguments from the command line. *)
 
 (** {2 Registration API} *)
 
 val register_function: (string -> (string list -> mapper) -> unit) ref
 
-val register: string -> (string list -> #mapper) -> unit
+val register: string -> (string list -> mapper) -> unit
 
     (** Apply the [register_function].  The default behavior is to run
         the mapper immediately, taking arguments from the process
