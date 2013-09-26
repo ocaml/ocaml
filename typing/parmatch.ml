@@ -1634,9 +1634,11 @@ let pressure_variants tdefs patl =
   about guarded patterns
 *)
 
-let has_guard act =   match act.exp_desc with
-| Texp_when(_, _) -> true
-| _ -> false
+let rec has_guard act =
+  match act.exp_desc with
+  | Texp_when (_, _) -> true
+  | Texp_letmodule (_, _, _, exp) -> has_guard exp (* for module patterns *)
+  | _ -> false
 
 
 let rec initial_matrix = function

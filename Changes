@@ -1,5 +1,6 @@
 Bug fixes:
 - PR#6173: Typing error message is worse that before
+- PR#6194: Incorrect unused warning with first-class modules in patterns
 
 OCaml 4.01.0:
 -------------

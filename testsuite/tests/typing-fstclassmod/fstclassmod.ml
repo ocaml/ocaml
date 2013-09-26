@@ -139,3 +139,11 @@ end
 let () =
   print_endline (Print.to_string int 10);
   print_endline (Print.to_string (pair int (pair str int)) (123, ("A", 456)))
+
+(* PR#6194 *)
+module type S2 = sig val x : bool end;;
+let f = function
+  | Some (module M : S2) when M.x ->1
+  | Some _ -> 2
+  | None -> 3;;       
+print_endline (string_of_int (f (Some (module struct let x = false end))));;
