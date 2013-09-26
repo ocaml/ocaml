@@ -544,20 +544,19 @@ let apply ~source ~target mapper =
   really_input ic magic 0 (String.length magic);
   if magic <> Config.ast_impl_magic_number
   && magic <> Config.ast_intf_magic_number then
-    failwith "Bad magic";
-  let input_name = input_value ic in
+    failwith "Ast_mapper: unknown magic number";
+  Location.input_name := input_value ic;
   let ast = input_value ic in
   close_in ic;
 
-  let (input_name, ast) =
+  let ast =
     if magic = Config.ast_impl_magic_number
-    then Obj.magic (mapper.implementation mapper (input_name, Obj.magic ast))
-    else Obj.magic (mapper.interface mapper (input_name, Obj.magic ast))
+    then Obj.magic (mapper.structure mapper (Obj.magic ast))
+    else Obj.magic (mapper.signature mapper (Obj.magic ast))
   in
-  Printf.printf "target = %s\n%!" target;
   let oc = open_out_bin target in
   output_string oc magic;
-  output_value oc input_name;
+  output_value oc !Location.input_name;
   output_value oc ast;
   close_out oc
 
@@ -571,13 +570,13 @@ let run_main mapper =
     else begin
       Printf.eprintf "Usage: %s [extra_args] <infile> <outfile>\n%!"
                      Sys.executable_name;
-      exit 1
+      exit 2
     end
   with exn ->
-    prerr_endline (Printexc.to_string exn);
+    begin try Location.report_exception Format.err_formatter exn
+    with exn -> prerr_endline (Printexc.to_string exn)
+    end;
     exit 2
 
-let main mapper = run_main (fun _ -> mapper)
-
 let register_function = ref (fun _name f -> run_main f)
-let register name f = !register_function name (f :> string list -> mapper)
+let register name f = !register_function name f

@@ -45,7 +45,7 @@ let getenv loc arg =
 
 let empty_str_item = Str.include_ (Mod.structure [])
 
-let ifdef =
+let ifdef _args =
   let stack = ref [] in
   let eval_attributes =
     List.for_all
@@ -115,4 +115,4 @@ let ifdef =
       );
   }
 
-let () = Ast_mapper.main ifdef
+let () = Ast_mapper.run_main ifdef
