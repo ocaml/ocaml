@@ -13,7 +13,6 @@
 (* A generic Parsetree mapping class *)
 
 open Parsetree
-open Asttypes
 open Ast_helper
 open Location
 
@@ -54,45 +53,6 @@ type mapper = {
   value_description: mapper -> value_description -> value_description;
   with_constraint: mapper -> with_constraint -> with_constraint;
 }
-
-
-(*
-let attribute this = this.attribute this
-let attributes this = this.attributes this
-let case this = this.case this
-let cases this = this.cases this
-let class_declaration this = this.class_declaration this
-let class_description this = this.class_description this
-let class_expr this = this.class_expr this
-let class_field this = this.class_field this
-let class_signature this = this.class_signature this
-let class_structure this = this.class_structure this
-let class_type this = this.class_type this
-let class_type_declaration this = this.class_type_declaration this
-let class_type_field this = this.class_type_field this
-let constructor_declaration this = this.constructor_declaration this
-let expr this = this.expr this
-let extension this = this.extension this
-let label_declaration this = this.label_declaration this
-let location this = this.location this
-let module_binding this = this.module_binding this
-let module_declaration this = this.module_declaration this
-let module_expr this = this.module_expr this
-let module_type this = this.module_type this
-let module_type_declaration this = this.module_type_declaration this
-let pat this = this.pat this
-let payload this = this.payload this
-let signature this = this.signature this
-let signature_item this = this.signature_item this
-let structure this = this.structure this
-let structure_item this = this.structure_item this
-let typ this = this.typ this
-let type_declaration this = this.type_declaration this
-let type_kind this = this.type_kind this
-let value_binding this = this.value_binding this
-let value_description this = this.value_description this
-let with_constraint this = this.with_constraint this
-*)
 
 let map_fst f (x, y) = (f x, y)
 let map_snd f (x, y) = (x, f y)
@@ -292,12 +252,6 @@ end
 
 module E = struct
   (* Value expressions for the core language *)
-
-  let lid ?(loc = Location.none) ?attrs lid =
-    Exp.ident ~loc ?attrs (mkloc (Longident.parse lid) loc)
-  let apply_nolabs ?loc ?attrs f el =
-    Exp.apply ?loc ?attrs f (List.map (fun e -> ("", e)) el)
-  let strconst ?loc ?attrs x = Exp.constant ?loc ?attrs (Const_string (x, None))
 
   let map sub {pexp_loc = loc; pexp_desc = desc; pexp_attributes = attrs} =
     let open Exp in
