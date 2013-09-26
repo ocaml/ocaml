@@ -17,9 +17,6 @@ open Parsetree
 (** {2 A generic Parsetree mapper} *)
 
 type mapper = {
-  interface: mapper -> (string * signature) -> (string * signature);
-  implementation: mapper -> (string * structure) -> (string * structure);
-
   attribute: mapper -> attribute -> attribute;
   attributes: mapper -> attribute list -> attribute list;
   case: mapper -> case -> case;
@@ -56,10 +53,55 @@ type mapper = {
   value_description: mapper -> value_description -> value_description;
   with_constraint: mapper -> with_constraint -> with_constraint;
 }
+(** A mapper record implements one "method" per syntactic category,
+    using an open recursion style: each method takes as its first
+    argument the mapper to be applied to children in the syntax
+    tree. *)
 
 val default_mapper: mapper
+(** A default mapper, which implements a "deep identity" mapping. *)
 
+(** {2 Applying a mapper to a specific syntactic category} *)
 
+val attribute: mapper -> attribute -> attribute
+ (** [attribute this x] is equivalent to [this.attribute this x]. *)
+
+val attributes: mapper -> attribute list -> attribute list
+val case: mapper -> case -> case
+val cases: mapper -> case list -> case list
+val class_declaration: mapper -> class_declaration -> class_declaration
+val class_description: mapper -> class_description -> class_description
+val class_expr: mapper -> class_expr -> class_expr
+val class_field: mapper -> class_field -> class_field
+val class_signature: mapper -> class_signature -> class_signature
+val class_structure: mapper -> class_structure -> class_structure
+val class_type: mapper -> class_type -> class_type
+val class_type_declaration: mapper -> class_type_declaration -> class_type_declaration
+val class_type_field: mapper -> class_type_field -> class_type_field
+val constructor_declaration: mapper -> constructor_declaration -> constructor_declaration
+val expr: mapper -> expression -> expression
+val extension: mapper -> extension -> extension
+val label_declaration: mapper -> label_declaration -> label_declaration
+val location: mapper -> Location.t -> Location.t
+val module_binding: mapper -> module_binding -> module_binding
+val module_declaration: mapper -> module_declaration -> module_declaration
+val module_expr: mapper -> module_expr -> module_expr
+val module_type: mapper -> module_type -> module_type
+val module_type_declaration: mapper -> module_type_declaration -> module_type_declaration
+val pat: mapper -> pattern -> pattern
+val payload: mapper -> payload -> payload
+val signature: mapper -> signature -> signature
+val signature_item: mapper -> signature_item -> signature_item
+val structure: mapper -> structure -> structure
+val structure_item: mapper -> structure_item -> structure_item
+val typ: mapper -> core_type -> core_type
+val type_declaration: mapper -> type_declaration -> type_declaration
+val type_kind: mapper -> type_kind -> type_kind
+val value_binding: mapper -> value_binding -> value_binding
+val value_description: mapper -> value_description -> value_description
+val with_constraint: mapper -> with_constraint -> with_constraint
+
+(** {2 Apply mappers to compilation units} *)
 
 val apply: source:string -> target:string -> mapper -> unit
 (** Apply a mapper (parametrized by the unit name) to a dumped
