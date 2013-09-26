@@ -1230,7 +1230,9 @@ let add_pattern_variables ?check ?check_as env =
      (fun (id, ty, name, loc, as_var) env ->
        let check = if as_var then check_as else check in
        Env.add_value ?check id
-         {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env
+         {val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
+          val_attributes = [];
+         } env
      )
      pv env,
    get_ref module_variables)
@@ -1272,6 +1274,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
          ((id', name, id, ty)::pv,
           Env.add_value id' {val_type = ty;
                              val_kind = Val_ivar (Immutable, cl_num);
+                             val_attributes = [];
                              Types.val_loc = loc;
                             } ~check
             env))
@@ -1299,16 +1302,19 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
       (fun (id, ty, name, loc, as_var) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty;
                             val_kind = Val_unbound;
+                            val_attributes = [];
                             Types.val_loc = loc;
                            } val_env,
           Env.add_value id {val_type = ty;
                             val_kind = Val_self (meths, vars, cl_num, privty);
+                            val_attributes = [];
                             Types.val_loc = loc;
                            }
             ~check:(fun s -> if as_var then Warnings.Unused_var s
                              else Warnings.Unused_var_strict s)
             met_env,
           Env.add_value id {val_type = ty; val_kind = Val_unbound;
+                            val_attributes = [];
                             Types.val_loc = loc;
                            } par_env))
       pv (val_env, met_env, par_env)
@@ -1907,6 +1913,13 @@ and type_expect_ ?in_function env sexp ty_expected =
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
+        if
+          List.exists
+            (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
+            desc.val_attributes
+        then
+          Location.prerr_warning loc (Warnings.Deprecated (Path.name path));
+
         rue {
           exp_desc =
             begin match desc.val_kind with
@@ -2302,6 +2315,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       let high = type_expect env shigh Predef.type_int in
       let (id, new_env) =
         Env.enter_value param.txt {val_type = instance_def Predef.type_int;
+          val_attributes = [];
           val_kind = Val_reg; Types.val_loc = loc; } env
           ~check:(fun s -> Warnings.Unused_for_index s)
       in
@@ -2460,6 +2474,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                                 Texp_ident(Path.Pident method_id, lid,
                                            {val_type = method_type;
                                             val_kind = Val_reg;
+                                            val_attributes = [];
                                             Types.val_loc = Location.none});
                                 exp_loc = loc; exp_extra = [];
                                 exp_type = method_type;
@@ -2952,6 +2967,7 @@ and type_argument env sarg ty_expected' ty_expected =
          exp_desc =
          Texp_ident(Path.Pident id, mknoloc (Longident.Lident name),
                     {val_type = ty; val_kind = Val_reg;
+                     val_attributes = [];
                      Types.val_loc = Location.none})}
       in
       let eta_pat, eta_var = var_pair "eta" ty_arg in

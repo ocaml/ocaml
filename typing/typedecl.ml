@@ -1047,7 +1047,8 @@ let transl_value_decl env loc valdecl =
   let v =
   match valdecl.pval_prim with
     [] ->
-      { val_type = ty; val_kind = Val_reg; Types.val_loc = loc }
+      { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
+        val_attributes = valdecl.pval_attributes }
   | decl ->
       let arity = Ctype.arity ty in
       if arity = 0 then
@@ -1057,7 +1058,8 @@ let transl_value_decl env loc valdecl =
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc }
+      { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
+        val_attributes = valdecl.pval_attributes }
   in
   let (id, newenv) =
     Env.enter_value valdecl.pval_name.txt v env

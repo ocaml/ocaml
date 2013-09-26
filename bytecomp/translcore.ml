@@ -531,6 +531,7 @@ let rec push_defaults loc bindings cases partial =
             ({exp with exp_type = pat.pat_type; exp_desc =
               Texp_ident (Path.Pident param, mknoloc (Longident.Lident name),
                           {val_type = pat.pat_type; val_kind = Val_reg;
+                           val_attributes = [];
                            Types.val_loc = Location.none;
                           })},
              cases, partial) }

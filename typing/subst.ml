@@ -250,10 +250,18 @@ let class_type s cty =
   cleanup_types ();
   cty
 
+let remove_loc =
+  let open Ast_mapper in
+  {default_mapper with location = (fun _this _loc -> Location.none)}
+
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
     val_kind = descr.val_kind;
     val_loc = loc s descr.val_loc;
+    val_attributes =
+      if s.for_saving && not !Clflags.keep_locs
+      then remove_loc.Ast_mapper.attributes remove_loc descr.val_attributes
+      else descr.val_attributes;
    }
 
 let exception_declaration s descr =

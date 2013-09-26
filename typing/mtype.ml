@@ -108,10 +108,9 @@ let nondep_supertype env mid mty =
       let rem' = nondep_sig env va rem in
       match item with
         Sig_value(id, d) ->
-          Sig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
-                          val_kind = d.val_kind;
-                          val_loc = d.val_loc;
-                        }) :: rem'
+          Sig_value(id,
+                    {d with val_type = Ctype.nondep_type env mid d.val_type})
+          :: rem'
       | Sig_type(id, d, rs) ->
           Sig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
           :: rem'
