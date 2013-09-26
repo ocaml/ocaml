@@ -45,6 +45,7 @@ minidoc:
 eval:
 	$(OCAMLC) -linkall -o eval.exe  $(COMMON) $(BYTECMP) $(TOPLVL) eval.ml
 	$(OCAMLC) -o test_eval.exe -ppx ./eval.exe test_eval.ml
+	./test_eval.exe
 
 ## Example of code generation based on type declarations
 
