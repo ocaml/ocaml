@@ -76,28 +76,28 @@ let mapper _args =
   let open Ast_mapper in
   let rec mk ~js =
     let super = default_mapper in
-    let my_expr this e =
+    let expr this e =
       let loc = e.pexp_loc in
       match e.pexp_desc with
       | Pexp_extension({txt="js";_}, PStr [{pstr_desc=Pstr_eval (e, _);_}]) ->
-          expr (mk ~js:true) e
+          let this = mk ~js:true in this.expr this e
 
       | Pexp_field (o, {txt = Lident meth; loc = _}) when js ->
-          let o = expr this o in
+          let o = this.expr this o in
           let prop_type = fresh_type () in
           let meth_type = tconstr "Js.gen_prop" [oobject ["get", prop_type]] in
           access_object loc o meth meth_type
             (fun x -> annot (apply_ "Js.Unsafe.get" [x; method_literal meth]) prop_type)
 
       | Pexp_setfield (o, {txt = Lident meth; loc = _}, e) when js ->
-          let o = expr this o and e = expr this e in
+          let o = this.expr this o and e = this.expr this e in
           let prop_type = fresh_type () in
           let meth_type = tconstr "Js.gen_prop" [oobject ["set", Typ.arrow "" prop_type (tconstr "unit" [])]] in
           access_object loc o meth meth_type
             (fun x -> apply_ "Js.Unsafe.set" [x; method_literal meth; annot e prop_type])
 
       | Pexp_apply ({pexp_desc = Pexp_send (o, meth); pexp_loc = loc; _}, args) when js ->
-          method_call loc o meth (List.map (expr this) (List.map snd args))
+          method_call loc o meth (List.map (this.expr this) (List.map snd args))
 
       | Pexp_send (o, meth) when js ->
           method_call loc o meth []
@@ -105,7 +105,7 @@ let mapper _args =
       | _ ->
           super.expr this e
     in
-    {super with expr = my_expr}
+    {super with expr}
   in
   mk ~js:false
 

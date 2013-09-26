@@ -90,7 +90,7 @@ module Main : sig end = struct
                 (function
                   | {pstr_desc = Pstr_type tdecls; _} as i ->
                       i :: (List.flatten (List.map gen_builder tdecls))
-                  | i -> [structure_item this i]
+                  | i -> [this.structure_item this i]
                 ) l
              )
         )
