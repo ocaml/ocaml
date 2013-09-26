@@ -78,20 +78,23 @@ module Main : sig end = struct
   let gen_builder tdecl =
     with_default_loc tdecl.ptype_loc (fun () -> gen_builder tdecl)
 
-  let builder = object(this)
-    inherit Ast_mapper.mapper
-
-    method! structure l =
-      List.flatten
-        (List.map
-           (function
-             | {pstr_desc = Pstr_type tdecls; _} as i ->
-                 i :: (List.flatten (List.map gen_builder tdecls))
-             | i -> [this # structure_item i]
-           )
-           l
+  let builder _args =
+    let open Ast_mapper in
+    let super = default_mapper in
+    {super
+     with
+      structure =
+        (fun this l ->
+           List.flatten
+             (List.map
+                (function
+                  | {pstr_desc = Pstr_type tdecls; _} as i ->
+                      i :: (List.flatten (List.map gen_builder tdecls))
+                  | i -> [structure_item this i]
+                ) l
+             )
         )
-  end
+    }
 
-  let () = Ast_mapper.main builder
+  let () = Ast_mapper.run_main builder
 end
