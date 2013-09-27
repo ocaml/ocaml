@@ -787,12 +787,12 @@ let rec tree_of_type_decl id decl =
   | Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter
-        (fun (_, args,ret_type_opt) ->
-          List.iter mark_loops args;
-          may mark_loops ret_type_opt)
+        (fun c ->
+          List.iter mark_loops c.cd_args;
+          may mark_loops c.cd_res)
         cstrs
   | Type_record(l, rep) ->
-      List.iter (fun (_, _, ty) -> mark_loops ty) l
+      List.iter (fun l -> mark_loops l.ld_type) l
   end;
 
   let type_param =
@@ -809,7 +809,7 @@ let rec tree_of_type_decl id decl =
           decl.type_private = Private
       | Type_variant tll ->
           decl.type_private = Private ||
-          List.exists (fun (_,_,ret) -> ret <> None) tll
+          List.exists (fun cd -> cd.cd_res <> None) tll
     in
     let vari =
       List.map2
@@ -846,15 +846,17 @@ let rec tree_of_type_decl id decl =
   in
   (name, args, ty, priv, constraints)
 
-and tree_of_constructor (name, args, ret_type_opt) =
-  let name = Ident.name name in
-  if ret_type_opt = None then (name, tree_of_typlist false args, None) else
-  let nm = !names in
-  names := [];
-  let ret = may_map (tree_of_typexp false) ret_type_opt in
-  let args = tree_of_typlist false args in
-  names := nm;
-  (name, args, ret)
+and tree_of_constructor cd =
+  let name = Ident.name cd.cd_id in
+  match cd.cd_res with
+  | None -> (name, tree_of_typlist false cd.cd_args, None)
+  | Some res ->
+      let nm = !names in
+      names := [];
+      let ret = tree_of_typexp false res in
+      let args = tree_of_typlist false cd.cd_args in
+      names := nm;
+      (name, args, Some ret)
 
 
 and tree_of_constructor_ret =
@@ -862,8 +864,8 @@ and tree_of_constructor_ret =
     | None -> None
     | Some ret_type -> Some (tree_of_typexp false ret_type)
 
-and tree_of_label (name, mut, arg) =
-  (Ident.name name, mut = Mutable, tree_of_typexp false arg)
+and tree_of_label l =
+  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp false l.ld_type)
 
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
@@ -1089,7 +1091,9 @@ let filter_rem_sig item rem =
 let dummy =
   { type_params = []; type_arity = 0; type_kind = Type_abstract;
     type_private = Public; type_manifest = None; type_variance = [];
-    type_newtype_level = None; type_loc = Location.none; }
+    type_newtype_level = None; type_loc = Location.none;
+    type_attributes = [];
+  }
 
 let hide_rec_items = function
   | Sig_type(id, decl, rs) ::rem

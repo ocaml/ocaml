@@ -219,7 +219,7 @@ module Analyser =
         Types.Type_abstract ->
           Odoc_type.Type_abstract
       | Types.Type_variant l ->
-          let f (constructor_name, type_expr_list, ret_type) =
+          let f {Types.cd_id=constructor_name;cd_args=type_expr_list;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
               try
@@ -238,7 +238,7 @@ module Analyser =
           Odoc_type.Type_variant (List.map f l)
 
       | Types.Type_record (l, _) ->
-          let f (field_name, mutable_flag, type_expr) =
+          let f {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr} =
             let field_name = Ident.name field_name in
             let comment_opt =
               try

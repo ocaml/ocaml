@@ -113,7 +113,10 @@ type constructor_description =
     cstr_nonconsts: int;                (* Number of non-const constructors *)
     cstr_normal: int;                   (* Number of non generalized constrs *)
     cstr_generalized: bool;             (* Constrained return type? *)
-    cstr_private: private_flag }        (* Read-only constructor? *)
+    cstr_private: private_flag;         (* Read-only constructor? *)
+    cstr_loc: Location.t;
+    cstr_attributes: Parsetree.attributes;
+   }
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
@@ -130,7 +133,10 @@ type label_description =
     lbl_pos: int;                       (* Position in block *)
     lbl_all: label_description array;   (* All the labels in this type *)
     lbl_repres: record_representation;  (* Representation for this record *)
-    lbl_private: private_flag }         (* Read-only field? *)
+    lbl_private: private_flag;          (* Read-only field? *)
+    lbl_loc: Location.t;
+    lbl_attributes: Parsetree.attributes;
+  }
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -167,13 +173,32 @@ type type_declaration =
     (* covariant, contravariant, weakly contravariant, injective *)
     type_newtype_level: (int * int) option;
     (* definition level * expansion level *)
-    type_loc: Location.t }
+    type_loc: Location.t;
+    type_attributes: Parsetree.attributes;
+  }
 
 and type_kind =
     Type_abstract
-  | Type_record of
-      (Ident.t * mutable_flag * type_expr) list * record_representation
-  | Type_variant of (Ident.t * type_expr list * type_expr option) list
+  | Type_record of label_declaration list  * record_representation
+  | Type_variant of constructor_declaration list
+
+and label_declaration =
+  {
+    ld_id: Ident.t;
+    ld_mutable: mutable_flag;
+    ld_type: type_expr;
+    ld_loc: Location.t;
+    ld_attributes: Parsetree.attributes;
+  }
+
+and constructor_declaration =
+  {
+    cd_id: Ident.t;
+    cd_args: type_expr list;
+    cd_res: type_expr option;
+    cd_loc: Location.t;
+    cd_attributes: Parsetree.attributes;
+  }
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -182,7 +207,9 @@ and type_transparence =
 
 type exception_declaration =
     { exn_args: type_expr list;
-      exn_loc: Location.t }
+      exn_loc: Location.t;
+      exn_attributes: Parsetree.attributes;
+    }
 
 (* Type expressions for the class language *)
 

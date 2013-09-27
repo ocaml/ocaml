@@ -157,7 +157,9 @@ let merge_constraint initial_env loc sg constr =
                 )
                 sdecl.ptype_params;
             type_loc = sdecl.ptype_loc;
-            type_newtype_level = None }
+            type_newtype_level = None;
+            type_attributes = [];
+          }
         and id_row = Ident.create (s^"#row") in
         let initial_env =
           Env.add_type ~check:true id_row decl_row initial_env

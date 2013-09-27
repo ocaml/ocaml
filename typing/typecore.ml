@@ -68,6 +68,15 @@ type error =
 
 exception Error of Location.t * Env.t * error
 
+let check_deprecated loc attrs s =
+  if
+    List.exists
+      (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
+      attrs
+  then
+    Location.prerr_warning loc (Warnings.Deprecated s)
+
+
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
 let type_module =
@@ -285,7 +294,7 @@ let extract_concrete_variant env ty =
 let extract_label_names sexp env ty =
   try
     let (_, _,fields) = extract_concrete_record env ty in
-    List.map (fun (name, _, _) -> name) fields
+    List.map (fun l -> l.Types.ld_id) fields
   with Not_found ->
     assert false
 
@@ -1013,6 +1022,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
           (Constructor.disambiguate lid !env opath ~check_lk) constrs
       in
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
+      check_deprecated loc constr.cstr_attributes constr.cstr_name;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, !env, Unexpected_existential));
       (* if constructor is gadt, we must verify that the expected type has the
@@ -1913,13 +1923,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
-        if
-          List.exists
-            (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
-            desc.val_attributes
-        then
-          Location.prerr_warning loc (Warnings.Deprecated (Path.name path));
-
+        check_deprecated loc desc.val_attributes (Path.name path);
         rue {
           exp_desc =
             begin match desc.val_kind with
@@ -2728,6 +2732,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         type_variance = [];
         type_newtype_level = Some (level, level);
         type_loc = loc;
+        type_attributes = [];
       }
       in
       Ident.set_current_time ty.level;
@@ -3195,6 +3200,7 @@ and type_construct env loc lid sarg ty_expected attrs =
     wrap_disambiguate "This variant expression is expected to have" ty_expected
       (Constructor.disambiguate lid env opath) constrs in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) constr;
+  check_deprecated loc constr.cstr_attributes constr.cstr_name;
   let sargs =
     match sarg with
       None -> []

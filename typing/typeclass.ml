@@ -1180,6 +1180,7 @@ let temp_abbrev loc env id arity =
        type_variance = Misc.replicate_list Variance.full arity;
        type_newtype_level = None;
        type_loc = loc;
+       type_attributes = []; (* or keep attrs from the class decl? *)
       }
       env
   in
@@ -1396,7 +1397,9 @@ let class_infos define_class kind
      type_manifest = Some obj_ty;
      type_variance = List.map (fun _ -> Variance.full) obj_params;
      type_newtype_level = None;
-     type_loc = cl.pci_loc}
+     type_loc = cl.pci_loc;
+     type_attributes = []; (* or keep attrs from cl? *)
+    }
   in
   let (cl_params, cl_ty) =
     Ctype.instance_parameterized_type params (Ctype.self_type typ)
@@ -1411,7 +1414,9 @@ let class_infos define_class kind
      type_manifest = Some cl_ty;
      type_variance = List.map (fun _ -> Variance.full) cl_params;
      type_newtype_level = None;
-     type_loc = cl.pci_loc}
+     type_loc = cl.pci_loc;
+     type_attributes = []; (* or keep attrs from cl? *)
+    }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
     arity, pub_meths, List.rev !coercion_locs, expr) :: res,

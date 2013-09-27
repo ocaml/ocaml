@@ -262,6 +262,13 @@ let rec transl_type env policy styp =
         raise(Error(styp.ptyp_loc, env,
 		    Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
+      if
+        List.exists
+          (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
+          decl.type_attributes
+      then
+        Location.prerr_warning loc (Warnings.Deprecated (Path.name path));
+
       let args = List.map (transl_type env policy) stl in
       let params = instance_list decl.type_params in
       let unify_param =

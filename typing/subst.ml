@@ -38,6 +38,16 @@ let for_saving s = { s with for_saving = true }
 let loc s x =
   if s.for_saving && not !Clflags.keep_locs then Location.none else x
 
+let remove_loc =
+  let open Ast_mapper in
+  {default_mapper with location = (fun _this _loc -> Location.none)}
+
+let attrs s x =
+  if s.for_saving && not !Clflags.keep_locs
+  then remove_loc.Ast_mapper.attributes remove_loc x
+  else x
+
+
 let rec module_path s = function
     Pident id as p ->
       begin try Tbl.find id s.modules with Not_found -> p end
@@ -176,12 +186,28 @@ let type_declaration s decl =
         | Type_variant cstrs ->
             Type_variant
               (List.map
-                 (fun (n, args, ret_type) ->
-                   (n, List.map (typexp s) args, may_map (typexp s) ret_type))
+                 (fun c ->
+                    {
+                      cd_id = c.cd_id;
+                      cd_args = List.map (typexp s) c.cd_args;
+                      cd_res = may_map (typexp s) c.cd_res;
+                      cd_loc = loc s c.cd_loc;
+                      cd_attributes = attrs s c.cd_attributes;
+                    }
+                 )
                  cstrs)
         | Type_record(lbls, rep) ->
             Type_record
-              (List.map (fun (n, mut, arg) -> (n, mut, typexp s arg)) lbls,
+              (List.map (fun l ->
+                   {
+                     ld_id = l.ld_id;
+                     ld_mutable = l.ld_mutable;
+                     ld_type = typexp s l.ld_type;
+                     ld_loc = loc s l.ld_loc;
+                     ld_attributes = attrs s l.ld_attributes;
+                   }
+                 )
+                  lbls,
                rep)
         end;
       type_manifest =
@@ -194,6 +220,7 @@ let type_declaration s decl =
       type_variance = decl.type_variance;
       type_newtype_level = None;
       type_loc = loc s decl.type_loc;
+      type_attributes = attrs s decl.type_attributes;
     }
   in
   cleanup_types ();
@@ -250,23 +277,17 @@ let class_type s cty =
   cleanup_types ();
   cty
 
-let remove_loc =
-  let open Ast_mapper in
-  {default_mapper with location = (fun _this _loc -> Location.none)}
-
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
     val_kind = descr.val_kind;
     val_loc = loc s descr.val_loc;
-    val_attributes =
-      if s.for_saving && not !Clflags.keep_locs
-      then remove_loc.Ast_mapper.attributes remove_loc descr.val_attributes
-      else descr.val_attributes;
+    val_attributes = attrs s descr.val_attributes;
    }
 
 let exception_declaration s descr =
   { exn_args = List.map (type_expr s) descr.exn_args;
     exn_loc = loc s descr.exn_loc;
+    exn_attributes = attrs s descr.exn_attributes;
    }
 
 let rec rename_bound_idents s idents = function

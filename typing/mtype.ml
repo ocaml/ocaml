@@ -115,8 +115,11 @@ let nondep_supertype env mid mty =
           Sig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
           :: rem'
       | Sig_exception(id, d) ->
-          let d = {exn_args = List.map (Ctype.nondep_type env mid) d.exn_args;
-                   exn_loc = d.exn_loc} in
+          let d =
+            {d with
+             exn_args = List.map (Ctype.nondep_type env mid) d.exn_args
+            }
+          in
           Sig_exception(id, d) :: rem'
       | Sig_module(id, mty, rs) ->
           Sig_module(id, nondep_mty env va mty, rs) :: rem'

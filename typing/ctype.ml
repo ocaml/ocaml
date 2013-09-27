@@ -532,14 +532,13 @@ let closed_type_decl decl =
         ()
     | Type_variant v ->
         List.iter
-          (fun (_, tyl,ret_type_opt) ->
-            match ret_type_opt with
+          (fun {cd_args; cd_res; _} ->
+            match cd_res with
             | Some _ -> ()
-            | None ->
-                List.iter closed_type tyl)
+            | None -> List.iter closed_type cd_args)
           v
     | Type_record(r, rep) ->
-        List.iter (fun (_, _, ty) -> closed_type ty) r
+        List.iter (fun l -> closed_type l.ld_type) r
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -1090,6 +1089,7 @@ let new_declaration newtype manifest =
     type_variance = [];
     type_newtype_level = newtype;
     type_loc = Location.none;
+    type_attributes = [];
   }
 
 let instance_constructor ?in_pattern cstr =
@@ -1139,10 +1139,18 @@ let instance_declaration decl =
      | Type_abstract -> Type_abstract
      | Type_variant cl ->
          Type_variant (
-         List.map (fun (s,tl,ot) -> (s, List.map copy tl, may_map copy ot))
-           cl)
+           List.map
+             (fun c ->
+                {c with cd_args=List.map copy c.cd_args;
+                        cd_res=may_map copy c.cd_res})
+             cl)
      | Type_record (fl, rr) ->
-         Type_record (List.map (fun (s,m,ty) -> (s, m, copy ty)) fl, rr)}
+         Type_record (
+           List.map
+             (fun l ->
+                {l with ld_type = copy l.ld_type}
+             ) fl, rr)
+    }
   in
   cleanup_types ();
   decl
@@ -2087,10 +2095,10 @@ and mcomp_type_option type_pairs env t t' =
 and mcomp_variant_description type_pairs env xs ys =
   let rec iter = fun x y ->
     match x, y with
-    (id, tl, t) :: xs, (id', tl', t') :: ys   ->
-      mcomp_type_option type_pairs env t t';
-      mcomp_list type_pairs env tl tl';
-      if Ident.name id = Ident.name id'
+    | c1 :: xs, c2 :: ys   ->
+      mcomp_type_option type_pairs env c1.cd_res c2.cd_res;
+      mcomp_list type_pairs env c1.cd_args c2.cd_args;
+     if Ident.name c1.cd_id = Ident.name c2.cd_id
       then iter xs ys
       else raise (Unify [])
     | [],[] -> ()
@@ -2099,11 +2107,12 @@ and mcomp_variant_description type_pairs env xs ys =
   iter xs ys
 
 and mcomp_record_description type_pairs env =
-  let rec iter = fun x y ->
+  let rec iter x y =
     match x, y with
-      (id, mutable_flag, t) :: xs, (id', mutable_flag', t') :: ys ->
-        mcomp type_pairs env t t';
-        if Ident.name id = Ident.name id' && mutable_flag = mutable_flag'
+    | l1 :: xs, l2 :: ys ->
+        mcomp type_pairs env l1.ld_type l2.ld_type;
+        if Ident.name l1.ld_id = Ident.name l2.ld_id &&
+           l1.ld_mutable = l2.ld_mutable
         then iter xs ys
         else raise (Unify [])
     | [], [] -> ()
@@ -4139,16 +4148,19 @@ let nondep_type_decl env mid id is_covariant decl =
       | Type_variant cstrs ->
           Type_variant
             (List.map
-               (fun (c, tl,ret_type_opt) ->
-                 let ret_type_opt =
-                   may_map (nondep_type_rec env mid) ret_type_opt
-                 in
-                 (c, List.map (nondep_type_rec env mid) tl,ret_type_opt))
+               (fun c ->
+                 {c with
+                  cd_args = List.map (nondep_type_rec env mid) c.cd_args;
+                  cd_res = may_map (nondep_type_rec env mid) c.cd_res;
+                 }
+               )
                cstrs)
       | Type_record(lbls, rep) ->
           Type_record
             (List.map
-               (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
+               (fun l ->
+                  {l with ld_type = nondep_type_rec env mid l.ld_type}
+               )
                lbls,
              rep)
       with Not_found when is_covariant -> Type_abstract
@@ -4174,6 +4186,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_variance = decl.type_variance;
       type_newtype_level = None;
       type_loc = decl.type_loc;
+      type_attributes = decl.type_attributes;
     }
   with Not_found ->
     clear_hash ();

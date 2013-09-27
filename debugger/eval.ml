@@ -147,13 +147,13 @@ let rec expression event env = function
 and find_label lbl env ty path tydesc pos = function
     [] ->
       raise(Error(Wrong_label(ty, lbl)))
-  | (name, mut, ty_arg) :: rem ->
-      if Ident.name name = lbl then begin
+  | {ld_id; ld_type} :: rem ->
+      if Ident.name ld_id = lbl then begin
         let ty_res =
           Btype.newgenty(Tconstr(path, tydesc.type_params, ref Mnil))
         in
         (pos,
-         try Ctype.apply env [ty_res] ty_arg [ty] with Ctype.Cannot_apply ->
+         try Ctype.apply env [ty_res] ld_type [ty] with Ctype.Cannot_apply ->
            abstract_type)
       end else
         find_label lbl env ty path tydesc (pos + 1) rem
