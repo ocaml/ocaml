@@ -135,8 +135,13 @@ let find_value env loc lid =
   check_deprecated loc decl.val_attributes (Path.name path);
   r
 
-let find_module =
-  find_component Env.lookup_module (fun lid -> Unbound_module lid)
+let find_module env loc lid =
+  let (path, decl) as r =
+    find_component Env.lookup_module (fun lid -> Unbound_module lid) env loc lid
+  in
+  check_deprecated loc decl.md_attributes (Path.name path);
+  r
+
 let find_modtype =
   find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
 

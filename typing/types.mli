@@ -259,10 +259,16 @@ and signature_item =
     Sig_value of Ident.t * value_description
   | Sig_type of Ident.t * type_declaration * rec_status
   | Sig_exception of Ident.t * exception_declaration
-  | Sig_module of Ident.t * module_type * rec_status
-  | Sig_modtype of Ident.t * modtype_declaration
+  | Sig_module of Ident.t * module_declaration * rec_status
+  | Sig_modtype of Ident.t * modtype_declaration  (* todo: attributes *)
   | Sig_class of Ident.t * class_declaration * rec_status
   | Sig_class_type of Ident.t * class_type_declaration * rec_status
+
+and module_declaration =
+  {
+    md_type: module_type;
+    md_attributes: Parsetree.attributes;
+  }
 
 and modtype_declaration =
     Modtype_abstract

@@ -346,8 +346,8 @@ and signature_component s comp newid =
       Sig_type(newid, type_declaration s d, rs)
   | Sig_exception(id, d) ->
       Sig_exception(newid, exception_declaration s d)
-  | Sig_module(id, mty, rs) ->
-      Sig_module(newid, modtype s mty, rs)
+  | Sig_module(id, d, rs) ->
+      Sig_module(newid, module_declaration s d, rs)
   | Sig_modtype(id, d) ->
       Sig_modtype(newid, modtype_declaration s d)
   | Sig_class(id, d, rs) ->
@@ -358,6 +358,12 @@ and signature_component s comp newid =
 and modtype_declaration s = function
     Modtype_abstract -> Modtype_abstract
   | Modtype_manifest mty -> Modtype_manifest(modtype s mty)
+
+and module_declaration s decl =
+  {
+    md_type = modtype s decl.md_type;
+    md_attributes = attrs s decl.md_attributes;
+  }
 
 (* For every binding k |-> d of m1, add k |-> f d to m2
    and return resulting merged map. *)

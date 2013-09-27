@@ -94,7 +94,7 @@ module Signature_search =
 
     let search_module table name =
       match Hashtbl.find table (M name) with
-      | (Types.Sig_module (ident, module_type, _)) -> module_type
+      | (Types.Sig_module (ident, md, _)) -> md.Types.md_type
       | _ -> assert false
 
     let search_module_type table name =

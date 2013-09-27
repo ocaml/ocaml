@@ -284,7 +284,7 @@ and signature_components env cxt subst = function
   | (Sig_module(id1, mty1, _), Sig_module(id2, mty2, _), pos) :: rem ->
       let cc =
         modtypes env (Module id1::cxt) subst
-          (Mtype.strengthen env mty1 (Pident id1)) mty2 in
+          (Mtype.strengthen env mty1.md_type (Pident id1)) mty2.md_type in
       (pos, cc) :: signature_components env cxt subst rem
   | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
