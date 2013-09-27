@@ -106,11 +106,11 @@ module Signature_search =
       | _ -> assert false
 
     let search_attribute_type name class_sig =
-      let (_, _, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
+      let (_, _, type_expr) = Types.Vars.find name class_sig.Types.csig_vars in
       type_expr
 
     let search_method_type name class_sig =
-      let fields = Odoc_misc.get_fields class_sig.Types.cty_self in
+      let fields = Odoc_misc.get_fields class_sig.Types.csig_self in
       List.assoc name fields
   end
 

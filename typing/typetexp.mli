@@ -83,12 +83,12 @@ val find_type:
 val find_constructor:
     Env.t -> Location.t -> Longident.t -> constructor_description
 val find_all_constructors:
-    Env.t -> Location.t -> Longident.t -> 
+    Env.t -> Location.t -> Longident.t ->
     (constructor_description * (unit -> unit)) list
 val find_label:
     Env.t -> Location.t -> Longident.t -> label_description
 val find_all_labels:
-    Env.t -> Location.t -> Longident.t -> 
+    Env.t -> Location.t -> Longident.t ->
     (label_description * (unit -> unit)) list
 val find_value:
     Env.t -> Location.t -> Longident.t -> Path.t * value_description
@@ -109,3 +109,6 @@ val spellcheck_simple:
     Format.formatter ->
     (('a -> cd -> cd) -> Longident.t option -> 'b -> cd -> cd) ->
     ('a -> string) -> 'b -> Longident.t -> unit
+
+val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
+

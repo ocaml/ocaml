@@ -221,23 +221,30 @@ type class_type =
   | Cty_arrow of label * type_expr * class_type
 
 and class_signature =
-  { cty_self: type_expr;
-    cty_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
-    cty_concr: Concr.t;
-    cty_inher: (Path.t * type_expr list) list }
+  { csig_self: type_expr;
+    csig_vars:
+      (Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr) Vars.t;
+    csig_concr: Concr.t;
+    csig_inher: (Path.t * type_expr list) list }
 
 type class_declaration =
   { cty_params: type_expr list;
     mutable cty_type: class_type;
     cty_path: Path.t;
     cty_new: type_expr option;
-    cty_variance: Variance.t list }
+    cty_variance: Variance.t list;
+    cty_loc: Location.t;
+    cty_attributes: Parsetree.attributes;
+  }
 
 type class_type_declaration =
   { clty_params: type_expr list;
     clty_type: class_type;
     clty_path: Path.t;
-    clty_variance: Variance.t list }
+    clty_variance: Variance.t list;
+    clty_loc: Location.t;
+    clty_attributes: Parsetree.attributes;
+  }
 
 (* Type expressions for the module language *)
 

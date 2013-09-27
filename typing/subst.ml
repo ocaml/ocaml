@@ -227,13 +227,13 @@ let type_declaration s decl =
   decl
 
 let class_signature s sign =
-  { cty_self = typexp s sign.cty_self;
-    cty_vars =
-      Vars.map (function (m, v, t) -> (m, v, typexp s t)) sign.cty_vars;
-    cty_concr = sign.cty_concr;
-    cty_inher =
+  { csig_self = typexp s sign.csig_self;
+    csig_vars =
+      Vars.map (function (m, v, t) -> (m, v, typexp s t)) sign.csig_vars;
+    csig_concr = sign.csig_concr;
+    csig_inher =
       List.map (fun (p, tl) -> (type_path s p, List.map (typexp s) tl))
-        sign.cty_inher
+        sign.csig_inher;
   }
 
 let rec class_type s =
@@ -255,7 +255,10 @@ let class_declaration s decl =
         begin match decl.cty_new with
           None    -> None
         | Some ty -> Some (typexp s ty)
-        end }
+        end;
+      cty_loc = loc s decl.cty_loc;
+      cty_attributes = attrs s decl.cty_attributes;
+    }
   in
   (* Do not clean up if saving: next is cltype_declaration *)
   if not s.for_saving then cleanup_types ();
@@ -266,7 +269,10 @@ let cltype_declaration s decl =
     { clty_params = List.map (typexp s) decl.clty_params;
       clty_variance = decl.clty_variance;
       clty_type = class_type s decl.clty_type;
-      clty_path = type_path s decl.clty_path }
+      clty_path = type_path s decl.clty_path;
+      clty_loc = loc s decl.clty_loc;
+      clty_attributes = attrs s decl.clty_attributes;
+    }
   in
   (* Do clean up even if saving: type_declaration may be recursive *)
   cleanup_types ();
