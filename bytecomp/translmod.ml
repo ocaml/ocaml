@@ -250,6 +250,9 @@ let rec bound_value_identifiers = function
 (* Compile a module expression *)
 
 let rec transl_module cc rootpath mexp =
+  match mexp.mod_type with
+    Mty_alias _ -> lambda_unit
+  | _ ->
   match mexp.mod_desc with
     Tmod_ident (path,_) ->
       apply_coercion cc (transl_ident_path mexp.mod_env path)
@@ -513,11 +516,7 @@ let transl_store_structure glob map prims str =
                              transl_store rootpath (add_ident true id subst)
                                           rem)))
   | Tstr_module{mb_id=id; mb_expr=modl} ->
-      let lam =
-        match modl.mod_type with
-          Mty_alias _ -> lambda_unit
-        | _ -> transl_module Tcoerce_none (field_path rootpath id) modl
-      in
+      let lam = transl_module Tcoerce_none (field_path rootpath id) modl in
       (* Careful: the module value stored in the global may be different
          from the local module value, in case a coercion is applied.
          If so, keep using the local module value (id) in the remainder of
@@ -716,11 +715,7 @@ let transl_toplevel_item item =
       (* we need to use the unique name for the module because of issues
          with "open" (PR#1672) *)
       set_toplevel_unique_name id;
-      let lam =
-        match modl.mod_type with
-          Mty_alias _ -> lambda_unit
-        | _ -> transl_module Tcoerce_none (Some(Pident id)) modl
-      in
+      let lam = transl_module Tcoerce_none (Some(Pident id)) modl in
       toploop_setvalue id lam
   | Tstr_recmodule bindings ->
       let idents = List.map (fun mb -> mb.mb_id) bindings in

@@ -2614,7 +2614,6 @@ and type_expect_ ?in_function env sexp ty_expected =
       let context = Typetexp.narrow () in
       let modl = !type_module env smodl in
       let (id, new_env) = Env.enter_module name.txt modl.mod_type env in
-      
       Ctype.init_def(Ident.current_time());
       Typetexp.widen context;
       let body = type_expect new_env sbody ty_expected in
