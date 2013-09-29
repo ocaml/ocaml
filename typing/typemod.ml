@@ -55,12 +55,12 @@ let rec path_concat head p =
 (* Extract a signature from a module type *)
 
 let extract_sig env loc mty =
-  match Mtype.scrape env mty with
+  match Env.scrape_alias env mty with
     Mty_signature sg -> sg
   | _ -> raise(Error(loc, env, Signature_expected))
 
 let extract_sig_open env loc mty =
-  match Mtype.scrape env mty with
+  match Env.scrape_alias env mty with
     Mty_signature sg -> sg
   | _ -> raise(Error(loc, env, Structure_expected mty))
 
@@ -294,6 +294,9 @@ let rec approx_modtype env smty =
     Pmty_ident lid ->
       let (path, info) = Typetexp.find_modtype env smty.pmty_loc lid.txt in
       Mty_ident path
+  | Pmty_alias lid ->
+      let (path, info) = Typetexp.find_module env smty.pmty_loc lid.txt in
+      Mty_alias path
   | Pmty_signature ssg ->
       Mty_signature(approx_sig env ssg)
   | Pmty_functor(param, sarg, sres) ->
@@ -427,6 +430,10 @@ let transl_modtype_longident loc env lid =
   let (path, info) = Typetexp.find_modtype env loc lid in
   path
 
+let transl_module_alias loc env lid =
+  let (path, info) = Typetexp.find_module env loc lid in
+  path
+
 let mkmty desc typ env loc attrs =
   let mty = {
     mty_desc = desc;
@@ -451,6 +458,10 @@ let rec transl_modtype env smty =
     Pmty_ident lid ->
       let path = transl_modtype_longident loc env lid.txt in
       mkmty (Tmty_ident (path, lid)) (Mty_ident path) env loc
+        smty.pmty_attributes
+  | Pmty_alias lid ->
+      let path = transl_module_alias loc env lid.txt in
+      mkmty (Tmty_alias (path, lid)) (Mty_alias path) env loc
         smty.pmty_attributes
   | Pmty_signature ssg ->
       let sg = transl_signature env ssg in
@@ -496,7 +507,8 @@ and transl_signature env sg =
         let loc = item.psig_loc in
         match item.psig_desc with
         | Psig_value sdesc ->
-            let (tdesc, newenv) = Typedecl.transl_value_decl env item.psig_loc sdesc in
+            let (tdesc, newenv) =
+              Typedecl.transl_value_decl env item.psig_loc sdesc in
             let (trem,rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_value tdesc) env loc :: trem,
             (if List.exists (Ident.equal tdesc.val_id) (get_values rem) then rem
@@ -527,7 +539,9 @@ and transl_signature env sg =
             let mty = tmty.mty_type in
             let (id, newenv) = Env.enter_module pmd.pmd_name.txt mty env in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name; md_type=tmty; md_attributes=pmd.pmd_attributes}) env loc :: trem,
+            mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name; md_type=tmty;
+                                md_attributes=pmd.pmd_attributes})
+              env loc :: trem,
             Sig_module(id, mty, Trec_not) :: rem,
             final_env
         | Psig_recmodule sdecls ->
@@ -717,6 +731,7 @@ let rec path_of_module mexp =
 
 let rec closed_modtype = function
     Mty_ident p -> true
+  | Mty_alias p -> true
   | Mty_signature sg -> List.for_all closed_signature_item sg
   | Mty_functor(id, param, body) -> closed_modtype body
 
@@ -906,7 +921,8 @@ let rec type_module sttn funct_body anchor env smod =
     Pmod_ident lid ->
       let (path, mty) = Typetexp.find_module env smod.pmod_loc lid.txt in
       rm { mod_desc = Tmod_ident (path, lid);
-           mod_type = if sttn then Mtype.strengthen env mty path else mty;
+           mod_type = Mty_alias path;
+             (*if sttn then Mtype.strengthen env mty path else mty;*)
            mod_env = env;
            mod_attributes = smod.pmod_attributes;
            mod_loc = smod.pmod_loc }
@@ -932,7 +948,7 @@ let rec type_module sttn funct_body anchor env smod =
       let path = try Some (path_of_module arg) with Not_a_path -> None in
       let funct =
         type_module (sttn && path <> None) funct_body None env sfunct in
-      begin match Mtype.scrape env funct.mod_type with
+      begin match Env.scrape_alias env funct.mod_type with
         Mty_functor(param, mty_param, mty_res) as mty_functor ->
           let coercion =
             try
@@ -1202,6 +1218,7 @@ let type_structure = type_structure false None
 
 let rec normalize_modtype env = function
     Mty_ident p -> ()
+  | Mty_alias p -> ()
   | Mty_signature sg -> normalize_signature env sg
   | Mty_functor(id, param, body) -> normalize_modtype env body
 
@@ -1220,6 +1237,7 @@ and normalize_signature_item env = function
 let rec simplify_modtype mty =
   match mty with
     Mty_ident path -> mty
+  | Mty_alias path -> mty
   | Mty_functor(id, arg, res) -> Mty_functor(id, arg, simplify_modtype res)
   | Mty_signature sg -> Mty_signature(simplify_signature sg)
 

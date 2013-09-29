@@ -144,6 +144,7 @@ module Mty:
     val attr: module_type -> attribute -> module_type
 
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> module_type
+    val alias: ?loc:loc -> ?attrs:attrs -> lid -> module_type
     val signature: ?loc:loc -> ?attrs:attrs -> signature -> module_type
     val functor_: ?loc:loc -> ?attrs:attrs -> str -> module_type -> module_type -> module_type
     val with_: ?loc:loc -> ?attrs:attrs -> module_type -> with_constraint list -> module_type

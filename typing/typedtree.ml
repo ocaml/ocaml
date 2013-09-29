@@ -241,6 +241,7 @@ and module_coercion =
   | Tcoerce_structure of (int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
   | Tcoerce_primitive of Primitive.description
+  | Tcoerce_alias of Path.t * module_coercion
 
 and module_type =
   { mty_desc: module_type_desc;
@@ -256,6 +257,7 @@ and module_type_desc =
   | Tmty_functor of Ident.t * string loc * module_type * module_type
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
+  | Tmty_alias of Path.t * Longident.t loc
 
 and signature = {
   sig_items : signature_item list;

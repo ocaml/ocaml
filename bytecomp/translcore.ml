@@ -38,6 +38,10 @@ let transl_object =
   ref (fun id s cl -> assert false :
        Ident.t -> string list -> class_expr -> lambda)
 
+(* Translation of value identifiers *)
+let transl_ident_path env path =
+  transl_path (Mtype.normalize_path env path) 
+
 (* Translation of primitives *)
 
 let comparisons_table = create_hashtable 11 [
@@ -631,7 +635,7 @@ and transl_exp0 e =
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
-      transl_path path
+      transl_ident_path e.exp_env path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)

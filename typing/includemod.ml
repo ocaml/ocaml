@@ -35,6 +35,7 @@ type symptom =
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
   | Unbound_modtype_path of Path.t
+  | Unbound_module_path of Path.t
 
 type pos =
     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
@@ -100,6 +101,16 @@ let expand_module_path env cxt path =
   with Not_found ->
     raise(Error[cxt, env, Unbound_modtype_path path])
 
+let expand_module_alias env cxt path =
+  try Env.find_module path env
+  with Not_found ->
+    raise(Error[cxt, env, Unbound_module_path path])
+
+let rec normalize_module_path env cxt path =
+  match expand_module_alias env cxt path with
+    Mty_alias path' -> normalize_module_path env cxt path'
+  | _ -> path
+
 (* Extract name, kind and ident from a signature item *)
 
 type field_desc =
@@ -158,7 +169,16 @@ let rec modtypes env cxt subst mty1 mty2 =
 
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
-    (_, Mty_ident p2) ->
+    (Mty_alias p1, Mty_alias p2) ->
+      let p1 = normalize_module_path env cxt p1
+      and p2 = normalize_module_path env cxt p2 in
+      if Path.same p1 p2 then Tcoerce_none else raise Dont_match
+  | (Mty_alias p1, _) ->
+      let p1 = normalize_module_path env cxt p1 in
+      let mty1 = expand_module_alias env cxt p1 in
+      Tcoerce_alias (Mtype.normalize_path env p1,
+                     modtypes env cxt subst mty1 mty2)
+  | (_, Mty_ident p2) ->
       try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
   | (Mty_ident p1, _) ->
       try_modtypes env cxt subst (expand_module_path env cxt p1) mty2
@@ -422,6 +442,8 @@ let include_err ppf = function
       Includeclass.report_error reason
   | Unbound_modtype_path path ->
       fprintf ppf "Unbound module type %a" Printtyp.path path
+  | Unbound_module_path path ->
+      fprintf ppf "Unbound module %a" Printtyp.path path
 
 let rec context ppf = function
     Module id :: rem ->

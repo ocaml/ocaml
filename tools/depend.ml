@@ -199,6 +199,7 @@ and add_bindings recf bv pel =
 and add_modtype bv mty =
   match mty.pmty_desc with
     Pmty_ident l -> add bv l
+  | Pmty_alias l -> add bv l
   | Pmty_signature s -> add_signature bv s
   | Pmty_functor(id, mty1, mty2) ->
       add_modtype bv mty1; add_modtype (StringSet.add id.txt bv) mty2

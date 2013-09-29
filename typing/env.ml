@@ -908,14 +908,20 @@ let add_gadt_instance_chain env lv t =
 
 (* Expand manifest module type names at the top of the given module type *)
 
-let rec scrape_modtype mty env =
+let rec scrape_alias env mty =
   match mty with
     Mty_ident path ->
       begin try
-        scrape_modtype (find_modtype_expansion path env) env
+        scrape_alias env (find_modtype_expansion path env)
       with Not_found ->
         mty
       end
+  | Mty_alias path ->
+      begin try
+        scrape_alias env (find_module path env)
+      with Not_found ->
+        mty
+      end      
   | _ -> mty
 
 (* Compute constructor descriptions *)
@@ -1035,7 +1041,7 @@ let rec components_of_module env sub path mty =
   EnvLazy.create (env, sub, path, mty)
 
 and components_of_module_maker (env, sub, path, mty) =
-  (match scrape_modtype mty env with
+  (match scrape_alias env mty with
     Mty_signature sg ->
       let c =
         { comp_values = Tbl.empty;
@@ -1118,7 +1124,8 @@ and components_of_module_maker (env, sub, path, mty) =
           fcomp_env = env;
           fcomp_subst = sub;
           fcomp_cache = Hashtbl.create 17 }
-  | Mty_ident p ->
+  | Mty_ident _
+  | Mty_alias _ ->
         Structure_comps {
           comp_values = Tbl.empty;
           comp_constrs = Tbl.empty;

@@ -1115,6 +1115,8 @@ let rec tree_of_modtype = function
       Omty_functor
         (Ident.name param, tree_of_modtype ty_arg,
          wrap_env (Env.add_module param ty_arg) tree_of_modtype ty_res)
+  | Mty_alias p ->
+      Omty_alias (tree_of_path p)
 
 and tree_of_signature sg =
   wrap_env (fun env -> env) (tree_of_signature_rec !printing_env) sg

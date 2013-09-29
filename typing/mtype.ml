@@ -17,6 +17,18 @@ open Path
 open Types
 
 
+let rec normalize_path env path =
+  let path =
+    match path with
+      Pdot(p, s, pos) ->
+        Pdot(normalize_path env p, s, pos)
+    | _ -> path
+  in
+  try match Env.find_module path env with
+    Mty_alias path -> normalize_path env path
+  | _ -> path
+  with Not_found -> path
+
 let rec scrape env mty =
   match mty with
     Mty_ident p ->
@@ -93,6 +105,10 @@ let nondep_supertype env mid mty =
       Mty_ident p ->
         if Path.isfree mid p then
           nondep_mty env va (Env.find_modtype_expansion p env)
+        else mty
+    | Mty_alias p ->
+        if Path.isfree mid p then
+          nondep_mty env va (Env.find_module p env)
         else mty
     | Mty_signature sg ->
         Mty_signature(nondep_sig env va sg)
@@ -174,6 +190,7 @@ and enrich_item env p = function
 let rec type_paths env p mty =
   match scrape env mty with
     Mty_ident p -> []
+  | Mty_alias p -> []
   | Mty_signature sg -> type_paths_sig env p 0 sg
   | Mty_functor(param, arg, res) -> []
 
@@ -200,6 +217,7 @@ let rec no_code_needed env mty =
     Mty_ident p -> false
   | Mty_signature sg -> no_code_needed_sig env sg
   | Mty_functor(_, _, _) -> false
+  | Mty_alias p -> true
 
 and no_code_needed_sig env sg =
   match sg with

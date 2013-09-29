@@ -48,6 +48,8 @@ let rec apply_coercion restr arg =
                     Location.none))))
   | Tcoerce_primitive p ->
       transl_primitive Location.none p
+  | Tcoerce_alias (path, cc) ->
+      name_lambda arg (fun id -> apply_coercion cc (transl_path path))
 
 and apply_coercion_field id (pos, cc) =
   apply_coercion cc (Lprim(Pfield pos, [Lvar id]))
@@ -72,6 +74,8 @@ let rec compose_coercions c1 c2 =
   | (Tcoerce_functor(arg1, res1), Tcoerce_functor(arg2, res2)) ->
       Tcoerce_functor(compose_coercions arg2 arg1,
                       compose_coercions res1 res2)
+  | (Tcoerce_alias (path, c1), c2) ->
+      Tcoerce_alias (path, compose_coercions c1 c2)
   | (_, _) ->
       fatal_error "Translmod.compose_coercions"
 
@@ -116,7 +120,8 @@ let undefined_location loc =
 let init_shape modl =
   let rec init_shape_mod env mty =
     match Mtype.scrape env mty with
-      Mty_ident _ ->
+      Mty_ident _
+    | Mty_alias _ ->
         raise Not_found
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
@@ -247,7 +252,7 @@ let rec bound_value_identifiers = function
 let rec transl_module cc rootpath mexp =
   match mexp.mod_desc with
     Tmod_ident (path,_) ->
-      apply_coercion cc (transl_path path)
+      apply_coercion cc (transl_ident_path mexp.mod_env path)
   | Tmod_structure str ->
       transl_struct [] cc rootpath str
   | Tmod_functor( param, _, mty, body) ->
@@ -509,7 +514,10 @@ let transl_store_structure glob map prims str =
                                           rem)))
   | Tstr_module{mb_id=id; mb_expr=modl} ->
       let lam =
-        transl_module Tcoerce_none (field_path rootpath id) modl in
+        match modl.mod_type with
+          Mty_alias _ -> lambda_unit
+        | _ -> transl_module Tcoerce_none (field_path rootpath id) modl
+      in
       (* Careful: the module value stored in the global may be different
          from the local module value, in case a coercion is applied.
          If so, keep using the local module value (id) in the remainder of
@@ -708,8 +716,12 @@ let transl_toplevel_item item =
       (* we need to use the unique name for the module because of issues
          with "open" (PR#1672) *)
       set_toplevel_unique_name id;
-      toploop_setvalue id
-                        (transl_module Tcoerce_none (Some(Pident id)) modl)
+      let lam =
+        match modl.mod_type with
+          Mty_alias _ -> lambda_unit
+        | _ -> transl_module Tcoerce_none (Some(Pident id)) modl
+      in
+      toploop_setvalue id lam
   | Tstr_recmodule bindings ->
       let idents = List.map (fun mb -> mb.mb_id) bindings in
       compile_recmodule
