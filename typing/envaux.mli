@@ -17,7 +17,7 @@ open Format
 
 (* Convert environment summaries to environments *)
 
-val env_of_event: Instruct.debug_event option -> Env.t
+val env_from_summary : Env.summary -> Subst.t -> Env.t
 
 (* Empty the environment caches. To be called when load_path changes. *)
 

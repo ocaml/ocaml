@@ -483,12 +483,17 @@ let print_expr depth ev env ppf expr =
     Eval.report_error ppf msg;
     raise Toplevel
 
+let env_of_event =
+  function
+    None    -> Env.empty
+  | Some ev -> Envaux.env_from_summary ev.Instruct.ev_typenv ev.Instruct.ev_typsubst
+
 let print_command depth ppf lexbuf =
   let exprs = expression_list_eol Lexer.lexeme lexbuf in
   ensure_loaded ();
   let env =
     try
-      Envaux.env_of_event !selected_event
+      env_of_event !selected_event
     with
     | Envaux.Error msg ->
         Envaux.report_error ppf msg;
@@ -573,7 +578,7 @@ let instr_break ppf lexbuf =
     | BA_function expr ->                       (* break FUNCTION *)
         let env =
           try
-            Envaux.env_of_event !selected_event
+            env_of_event !selected_event
           with
           | Envaux.Error msg ->
               Envaux.report_error ppf msg;

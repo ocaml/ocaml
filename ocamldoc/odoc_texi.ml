@@ -644,13 +644,13 @@ class texi =
           Printf.sprintf "(%s) "
             (String.concat ", " (List.map f l))
 
-    method string_of_type_args (args:Types.type_expr list) (ret:Types.type_expr option) = 
+    method string_of_type_args (args:Types.type_expr list) (ret:Types.type_expr option) =
       match args, ret with
       | [], None -> ""
       | args, None -> " of " ^ (Odoc_info.string_of_type_list " * " args)
       | [], Some r -> " : " ^ (Odoc_info.string_of_type_expr r)
-      | args, Some r -> " : " ^ (Odoc_info.string_of_type_list " * " args) ^ 
-	                        " -> " ^ (Odoc_info.string_of_type_expr r)
+      | args, Some r -> " : " ^ (Odoc_info.string_of_type_list " * " args) ^
+                                " -> " ^ (Odoc_info.string_of_type_expr r)
 
     (** Return Texinfo code for a type. *)
     method texi_of_type ty =

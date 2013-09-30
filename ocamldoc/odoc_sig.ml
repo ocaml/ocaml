@@ -243,7 +243,7 @@ module Analyser =
             {
               vc_name = constructor_name ;
               vc_args = List.map (Odoc_env.subst_type env) type_expr_list ;
-	      vc_ret =  may_map (Odoc_env.subst_type env) ret_type;
+              vc_ret =  may_map (Odoc_env.subst_type env) ret_type;
               vc_text = comment_opt
             }
           in

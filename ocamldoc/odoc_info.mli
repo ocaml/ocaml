@@ -245,7 +245,7 @@ module Type :
         {
           vc_name : string ; (** Name of the constructor. *)
           vc_args : Types.type_expr list ; (** Arguments of the constructor. *)
-	  vc_ret : Types.type_expr option ;
+          vc_ret : Types.type_expr option ;
           mutable vc_text : text option ; (** Optional description in the associated comment. *)
         }
 

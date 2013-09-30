@@ -581,7 +581,7 @@ class latex =
                            p fmt2 " %s@ %s@ %s@ %s"
                              ":"
                              (self#normal_type_list ~par: false mod_name " * " l)
-			     "->"
+                             "->"
                              (self#normal_type mod_name r)
                       );
                       flush2 ()
