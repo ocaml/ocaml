@@ -82,7 +82,7 @@ let simpl_class_type t =
     match t with
       Types.Cty_constr (p,texp_list,ct) -> t
     | Types.Cty_signature cs ->
-        (* on vire les vals et methods pour ne pas qu'elles soient imprimées
+        (* on vire les vals et methods pour ne pas qu'elles soient imprimees
            quand on affichera le type *)
         let tnil = { Types.desc = Types.Tnil ; Types.level = 0; Types.id = 0 } in
         Types.Cty_signature { Types.cty_self = { cs.Types.cty_self with

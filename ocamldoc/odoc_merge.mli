@@ -13,7 +13,7 @@
 
 (** Merge of information from [.ml] and [.mli] for a module.*)
 
-(** Merging \@before tags. *)
+(** Merging \@before tags. *)
 val merge_before_tags :
     (string * Odoc_types.text) list -> (string * Odoc_types.text) list
 
