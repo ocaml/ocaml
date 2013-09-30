@@ -111,6 +111,7 @@ type summary =
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
   | Env_open of summary * Path.t
+  | Env_functor_arg of summary * Ident.t
 
 module EnvTbl =
   struct
@@ -172,6 +173,7 @@ type t = {
   components: (Path.t * module_components) EnvTbl.t;
   classes: (Path.t * class_declaration) EnvTbl.t;
   cltypes: (Path.t * class_type_declaration) EnvTbl.t;
+  functor_args: unit Ident.tbl;
   summary: summary;
   local_constraints: bool;
   gadt_instances: (int * TypeSet.t ref) list;
@@ -218,6 +220,7 @@ let empty = {
   cltypes = EnvTbl.empty;
   summary = Env_empty; local_constraints = false; gadt_instances = [];
   in_signature = false;
+  functor_args = Ident.empty;
  }
 
 let in_signature env = {env with in_signature = true}
@@ -490,6 +493,11 @@ let find_module path env =
       end
   | Papply(p1, p2) ->
       raise Not_found (* not right *)
+
+let is_functor_arg path env =
+  let id = Path.head path in
+  try Ident.find_same id env.functor_args; true
+  with Not_found -> false
 
 (* Lookup by name *)
 
@@ -1289,6 +1297,12 @@ let _ =
 
 (* Insertion of bindings by identifier *)
 
+let add_functor_arg ?(arg=false) id env =
+  if not arg then env else
+  {env with
+   functor_args = Ident.add id () env.functor_args;
+   summary = Env_functor_arg (env.summary, id)}
+
 let add_value ?check id desc env =
   store_value None ?check id (Pident id) desc env env
 
@@ -1298,8 +1312,9 @@ let add_type ~check id info env =
 and add_exception ~check id decl env =
   store_exception ~check None id (Pident id) decl env env
 
-and add_module id mty env =
-  store_module None id (Pident id) mty env env
+and add_module ?arg id mty env =
+  let env = store_module None id (Pident id) mty env env in
+  add_functor_arg ?arg id env
 
 and add_modtype id info env =
   store_modtype None id (Pident id) info env env
@@ -1328,7 +1343,9 @@ let enter store_fun name data env =
 let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_exception = enter (store_exception ~check:true)
-and enter_module = enter store_module
+and enter_module ?arg name mty env =
+  let (id, env) = enter store_module name mty env in
+  (id, add_functor_arg ?arg id env)
 and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype

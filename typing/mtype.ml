@@ -116,7 +116,7 @@ let nondep_supertype env mid mty =
         let var_inv =
           match va with Co -> Contra | Contra -> Co | Strict -> Strict in
         Mty_functor(param, nondep_mty env var_inv arg,
-                     nondep_mty (Env.add_module param arg env) va res)
+                    nondep_mty (Env.add_module ~arg:true param arg env) va res)
 
   and nondep_sig env va = function
     [] -> []

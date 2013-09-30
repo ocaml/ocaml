@@ -251,7 +251,7 @@ let rec bound_value_identifiers = function
 
 let rec transl_module cc rootpath mexp =
   match mexp.mod_type with
-    Mty_alias _ -> lambda_unit
+    Mty_alias _ -> apply_coercion cc lambda_unit
   | _ ->
   match mexp.mod_desc with
     Tmod_ident (path,_) ->

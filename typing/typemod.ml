@@ -301,7 +301,7 @@ let rec approx_modtype env smty =
       Mty_signature(approx_sig env ssg)
   | Pmty_functor(param, sarg, sres) ->
       let arg = approx_modtype env sarg in
-      let (id, newenv) = Env.enter_module param.txt arg env in
+      let (id, newenv) = Env.enter_module ~arg:true param.txt arg env in
       let res = approx_modtype newenv sres in
       Mty_functor(id, arg, res)
   | Pmty_with(sbody, constraints) ->
@@ -469,7 +469,8 @@ let rec transl_modtype env smty =
         smty.pmty_attributes
   | Pmty_functor(param, sarg, sres) ->
       let arg = transl_modtype env sarg in
-      let (id, newenv) = Env.enter_module param.txt arg.mty_type env in
+      let (id, newenv) =
+        Env.enter_module ~arg:true param.txt arg.mty_type env in
       let res = transl_modtype newenv sres in
       mkmty (Tmty_functor (id, param, arg, res))
       (Mty_functor(id, arg.mty_type, res.mty_type)) env loc
@@ -920,9 +921,14 @@ let rec type_module sttn funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let (path, mty) = Typetexp.find_module env smod.pmod_loc lid.txt in
+      let mty =
+        if sttn then
+          if Env.is_functor_arg path env
+          then Mtype.strengthen env mty path
+          else Mty_alias path
+        else mty in
       rm { mod_desc = Tmod_ident (path, lid);
-           mod_type = Mty_alias path;
-             (*if sttn then Mtype.strengthen env mty path else mty;*)
+           mod_type = mty;
            mod_env = env;
            mod_attributes = smod.pmod_attributes;
            mod_loc = smod.pmod_loc }
@@ -936,7 +942,7 @@ let rec type_module sttn funct_body anchor env smod =
            mod_loc = smod.pmod_loc }
   | Pmod_functor(name, smty, sbody) ->
       let mty = transl_modtype env smty in
-      let (id, newenv) = Env.enter_module name.txt mty.mty_type env in
+      let (id, newenv) = Env.enter_module ~arg:true name.txt mty.mty_type env in
       let body = type_module sttn true None newenv sbody in
       rm { mod_desc = Tmod_functor(id, name, mty, body);
            mod_type = Mty_functor(id, mty.mty_type, body.mod_type);
@@ -963,7 +969,8 @@ let rec type_module sttn funct_body anchor env smod =
             | None ->
                 try
                   Mtype.nondep_supertype
-                    (Env.add_module param arg.mod_type env) param mty_res
+                    (Env.add_module ~arg:true param arg.mod_type env)
+                    param mty_res
                 with Not_found ->
                   raise(Error(smod.pmod_loc, env,
                               Cannot_eliminate_dependency mty_functor))
@@ -1305,7 +1312,7 @@ let type_package env m p nl tl =
     match modl.mod_desc with
       Tmod_ident (mp,_) -> (mp, env)
     | _ ->
-      let (id, new_env) = Env.enter_module "%M" modl.mod_type env in
+      let (id, new_env) = Env.enter_module ~arg:true "%M" modl.mod_type env in
       (Pident id, new_env)
   in
   let rec mkpath mp = function

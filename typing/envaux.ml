@@ -73,6 +73,10 @@ let rec env_from_summary sum subst =
               raise (Error (Module_not_found path'))
           in
           Env.open_signature Asttypes.Override path' (extract_sig env mty) env
+      | Env_functor_arg(Env_module(s, id, desc), id') when Ident.same id id' ->
+          Env.add_module id (Subst.modtype subst desc) ~arg:true
+                         (env_from_summary s subst)
+      | Env_functor_arg _ -> assert false
     in
       Hashtbl.add env_cache (sum, subst) env;
       env

@@ -24,6 +24,7 @@ type summary =
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
   | Env_open of summary * Path.t
+  | Env_functor_arg of summary * Ident.t
 
 type t
 
@@ -59,6 +60,7 @@ val find_type_expansion_opt:
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
+val is_functor_arg: Path.t -> t -> bool
 
 val has_local_constraints: t -> bool
 val add_gadt_instance_level: int -> t -> t
@@ -92,7 +94,7 @@ val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
 val add_exception: check:bool -> Ident.t -> exception_declaration -> t -> t
-val add_module: Ident.t -> module_type -> t -> t
+val add_module: ?arg:bool -> Ident.t -> module_type -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
@@ -118,7 +120,7 @@ val enter_value:
     string -> value_description -> t -> Ident.t * t
 val enter_type: string -> type_declaration -> t -> Ident.t * t
 val enter_exception: string -> exception_declaration -> t -> Ident.t * t
-val enter_module: string -> module_type -> t -> Ident.t * t
+val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
