@@ -109,13 +109,13 @@ let emit_reg = function
 
 let reg_low_8_name =
   [| "%al"; "%bl"; "%dil"; "%sil"; "%dl"; "%cl"; "%r8b"; "%r9b";
-     "%r10b"; "%r11b"; "%bpl"; "%r12b"; "%r13b" |]
+     "%r12b"; "%r13b"; "%bpl"; "%r10b"; "%r11b" |]
 let reg_low_16_name =
   [| "%ax"; "%bx"; "%di"; "%si"; "%dx"; "%cx"; "%r8w"; "%r9w";
-     "%r10w"; "%r11w"; "%bp"; "%r12w"; "%r13w" |]
+     "%r12w"; "%r13w"; "%bp"; "%r10w"; "%r11w" |]
 let reg_low_32_name =
   [| "%eax"; "%ebx"; "%edi"; "%esi"; "%edx"; "%ecx"; "%r8d"; "%r9d";
-     "%r10d"; "%r11d"; "%ebp"; "%r12d"; "%r13d" |]
+     "%r12d"; "%r13d"; "%ebp"; "%r10d"; "%r11d" |]
 
 let emit_subreg tbl r =
   match r.loc with
@@ -669,14 +669,13 @@ let emit_profile () =
   match Config.system with
   | "linux" | "gnu" ->
       (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
-         and rbx, rbp, r12-r15 like all C functions.
-         We need to preserve r10 and r11 ourselves, since OCaml can
-         use them for argument passing. *)
+         and rbx, rbp, r12-r15 like all C functions.  This includes
+         all the registers used for argument passing, so we don't
+         need to preserve other regs.  We do need to initialize rbp
+         like mcount expects it, though. *)
       `	pushq	%r10\n`;
       `	movq	%rsp, %rbp\n`;
-      `	pushq	%r11\n`;
       `	{emit_call "mcount"}\n`;
-      `	popq	%r11\n`;
       `	popq	%r10\n`
   | _ ->
       () (*unsupported yet*)

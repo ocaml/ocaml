@@ -51,11 +51,11 @@ L105:
         mov     caml_young_ptr, r15
         mov     caml_exception_pointer, r14
     ; Build array of registers, save it into caml_gc_regs
-        push    r13
-        push    r12
-        push    rbp
         push    r11
         push    r10
+        push    rbp
+        push    r13
+        push    r12
         push    r9
         push    r8
         push    rcx
@@ -113,11 +113,11 @@ L105:
         pop     rcx
         pop     r8
         pop     r9
-        pop     r10
-        pop     r11
-        pop     rbp
         pop     r12
         pop     r13
+        pop     rbp
+        pop     r10
+        pop     r11
     ; Restore caml_young_ptr, caml_exception_pointer
         mov     r15, caml_young_ptr
         mov     r14, caml_exception_pointer

@@ -34,7 +34,7 @@ module type LIST = sig
   val print : (Format.formatter -> 'a -> 'b) -> Format.formatter -> 'a list -> unit
   val filter_opt : ('a -> 'b option) -> 'a list -> 'b list
   val union : 'a list -> 'a list -> 'a list
-
+  val ordered_unique : 'a list -> 'a list
   (* Original functions *)
   include module type of List
 end

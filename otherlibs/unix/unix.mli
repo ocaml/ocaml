@@ -189,7 +189,8 @@ val waitpid : wait_flag list -> int -> int * process_status
    as the current process.
    Negative pid arguments represent process groups.
    The list of options indicates whether [waitpid] should return
-   immediately without waiting, or also report stopped children. *)
+   immediately without waiting, and whether it should report stopped
+   children. *)
 
 val system : string -> process_status
 (** Execute the given command, wait until it terminates, and return

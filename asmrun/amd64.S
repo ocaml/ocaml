@@ -249,11 +249,11 @@ LBL(caml_call_gc):
         addq    $32768, %rsp
 #endif
     /* Build array of registers, save it into caml_gc_regs */
-        pushq   %r13; CFI_ADJUST (8);
-        pushq   %r12; CFI_ADJUST (8);
-        pushq   %rbp; CFI_ADJUST (8);
         pushq   %r11; CFI_ADJUST (8);
         pushq   %r10; CFI_ADJUST (8);
+        pushq   %rbp; CFI_ADJUST (8);
+        pushq   %r13; CFI_ADJUST (8);
+        pushq   %r12; CFI_ADJUST (8);
         pushq   %r9; CFI_ADJUST (8);
         pushq   %r8; CFI_ADJUST (8);
         pushq   %rcx; CFI_ADJUST (8);
@@ -317,11 +317,11 @@ LBL(caml_call_gc):
         popq    %rcx; CFI_ADJUST(-8)
         popq    %r8; CFI_ADJUST(-8)
         popq    %r9; CFI_ADJUST(-8)
-        popq    %r10; CFI_ADJUST(-8)
-        popq    %r11; CFI_ADJUST(-8)
-        popq    %rbp; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)
         popq    %r13; CFI_ADJUST(-8)
+        popq    %rbp; CFI_ADJUST(-8)
+        popq    %r10; CFI_ADJUST(-8)
+        popq    %r11; CFI_ADJUST(-8)
     /* Return to caller */
         ret
 CFI_ENDPROC

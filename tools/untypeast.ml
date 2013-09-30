@@ -239,9 +239,10 @@ and untype_expression exp =
         Pexp_construct (lid,
           (match args with
               [] -> None
-            | args -> Some
-                  { pexp_desc = Pexp_tuple (List.map untype_expression args);
-                  pexp_loc = exp.exp_loc; }
+          | [ arg ] -> Some (untype_expression arg)
+          | args -> Some
+            { pexp_desc = Pexp_tuple (List.map untype_expression args);
+              pexp_loc = exp.exp_loc; }
           ), explicit_arity)
     | Texp_variant (label, expo) ->
         Pexp_variant (label, match expo with

@@ -331,7 +331,7 @@ static void do_compaction (void)
         word q = *p;
         if (Color_hd (q) == Caml_white){
           size_t sz = Bhsize_hd (q);
-          char *newadr = compact_allocate (sz);  Assert (newadr <= (char *)p);
+          char *newadr = compact_allocate (sz);
           memmove (newadr, p, sz);
           p += Wsize_bsize (sz);
         }else{
@@ -384,7 +384,8 @@ static void do_compaction (void)
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
         caml_make_free_blocks ((value *) (ch + Chunk_alloc (ch)),
-                               Wsize_bsize (Chunk_size(ch)-Chunk_alloc(ch)), 1);
+                               Wsize_bsize (Chunk_size(ch)-Chunk_alloc(ch)), 1,
+                               Caml_white);
       }
       ch = Chunk_next (ch);
     }
@@ -397,7 +398,7 @@ uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 
 void caml_compact_heap (void)
 {
-  uintnat target_size, live;
+  uintnat target_words, target_size, live;
 
   do_compaction ();
   /* Compaction may fail to shrink the heap to a reasonable size
@@ -414,26 +415,33 @@ void caml_compact_heap (void)
      See PR#5389
   */
   /* We compute:
-     freewords = caml_fl_cur_size          (exact)
-     heapsize = caml_heap_size             (exact)
-     live = heap_size - freewords
-     target_size = live * (1 + caml_percent_free / 100)
-                 = live / 100 * (100 + caml_percent_free)
-     We add 1 to live/100 to make sure it isn't 0.
+     freewords = caml_fl_cur_size                  (exact)
+     heapwords = Wsize_bsize (caml_heap_size)      (exact)
+     live = heapwords - freewords
+     wanted = caml_percent_free * (live / 100 + 1) (same as in do_compaction)
+     target_words = live + wanted
+     We add one page to make sure a small difference in counting sizes
+     won't make [do_compaction] keep the second block (and break all sorts
+     of invariants).
 
      We recompact if target_size < heap_size / 2
   */
-  live = caml_stat_heap_size - Bsize_wsize (caml_fl_cur_size);
-  target_size = (live / 100 + 1) * (100 + caml_percent_free);
-  target_size = caml_round_heap_chunk_size (target_size);
+  live = Wsize_bsize (caml_stat_heap_size) - caml_fl_cur_size;
+  target_words = live + caml_percent_free * (live / 100 + 1)
+                 + Wsize_bsize (Page_size);
+  target_size = caml_round_heap_chunk_size (Bsize_wsize (target_words));
   if (target_size < caml_stat_heap_size / 2){
     char *chunk;
 
-    /* round it up to a page size */
+    caml_gc_message (0x10, "Recompacting heap (target=%luk)\n",
+                     target_size / 1024);
+
     chunk = caml_alloc_for_heap (target_size);
     if (chunk == NULL) return;
+    /* PR#5757: we need to make the new blocks blue, or they won't be
+       recognized as free by the recompaction. */
     caml_make_free_blocks ((value *) chunk,
-                           Wsize_bsize (Chunk_size (chunk)), 0);
+                           Wsize_bsize (Chunk_size (chunk)), 0, Caml_blue);
     if (caml_page_table_add (In_heap, chunk, chunk + Chunk_size (chunk)) != 0){
       caml_free_for_heap (chunk);
       return;
@@ -448,6 +456,7 @@ void caml_compact_heap (void)
     do_compaction ();
     Assert (caml_stat_heap_chunks == 1);
     Assert (Chunk_next (caml_heap_start) == NULL);
+    Assert (caml_stat_heap_size == Chunk_size (chunk));
   }
 }
 

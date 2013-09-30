@@ -18,6 +18,7 @@
 #include <memory.h>
 #include <signals.h>
 #include "unixsupport.h"
+#include <mswsock.h>   // for SO_OPENTYPE and SO_SYNCHRONOUS_NONALERT
 #include "socketaddr.h"
 
 CAMLprim value unix_accept(sock)

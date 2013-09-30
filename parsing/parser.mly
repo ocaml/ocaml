@@ -64,7 +64,7 @@ let mkpatvar name pos =
   expressions and patterns that do not appear explicitly in the
   source file they have the loc_ghost flag set to true.
   Then the profiler will not try to instrument them and the
-  -stypes option will not try to display their type.
+  -annot option will not try to display their type.
 
   Every grammar rule that generates an element with a location must
   make at most one non-ghost element, the topmost one.
@@ -796,7 +796,7 @@ value:
     override_flag mutable_flag label EQUAL seq_expr
       { mkrhs $3 3, $2, $1, $5 }
   | override_flag mutable_flag label type_constraint EQUAL seq_expr
-      { mkrhs $3 3, $2, $1, (let (t, t') = $4 in ghexp(Pexp_constraint($6, t, t'))) },
+      { mkrhs $3 3, $2, $1, (let (t, t') = $4 in ghexp(Pexp_constraint($6, t, t'))) }
 ;
 virtual_method:
     METHOD override_flag PRIVATE VIRTUAL label COLON poly_type
@@ -1262,7 +1262,7 @@ pattern:
   | name_tag pattern %prec prec_constr_appl
       { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
-      { mkpat_cons (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) },
+      { mkpat_cons (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
   | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
       { mkpat_cons (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
   | pattern BAR pattern
@@ -1807,6 +1807,7 @@ any_longident:
   | LPAREN RPAREN                               { Lident "()" }
   | FALSE                                       { Lident "false" }
   | TRUE                                        { Lident "true" }
+;
 
 /* Toplevel directives */
 
