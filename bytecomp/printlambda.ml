@@ -255,12 +255,15 @@ let rec lam ppf = function
             fprintf ppf ")" in
       fprintf ppf "@[<2>(function%a@ %a)@]" pr_params params lam body
   | Llet(str, id, arg, body) ->
+      let kind = function
+        Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v" in
       let rec letbody = function
         | Llet(str, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a@ %a@]" Ident.print id lam arg;
+            fprintf ppf "@ @[<2>%a =%s@ %a@]" Ident.print id (kind str) lam arg;
             letbody body
         | expr -> expr in
-      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" Ident.print id lam arg;
+      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a =%s@ %a@]"
+        Ident.print id (kind str) lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->

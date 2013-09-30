@@ -928,7 +928,7 @@ let rec scrape_alias env mty =
       begin try
         scrape_alias env (find_module path env)
       with Not_found ->
-        mty
+        assert false
       end      
   | _ -> mty
 

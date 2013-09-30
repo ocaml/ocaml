@@ -1215,7 +1215,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 
 let type_toplevel_phrase env s =
   type_structure ~toplevel:true false None env s Location.none
-let type_module_alias = type_module ~alias:true true false None
+(*let type_module_alias = type_module ~alias:true true false None*)
 let type_module = type_module true false None
 let type_structure = type_structure false None
 
@@ -1303,7 +1303,7 @@ let type_package env m p nl tl =
   Ctype.begin_def ();
   Ident.set_current_time lv;
   let context = Typetexp.narrow () in
-  let modl = type_module_alias env m in
+  let modl = type_module env m in
   Ctype.init_def(Ident.current_time());
   Typetexp.widen context;
   let (mp, env) =

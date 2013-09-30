@@ -16,7 +16,8 @@ let f x = let module M = struct module L = List end in M.L.length x;;
 let g x = let module L = List in L.length (L.map succ x);;
 
 module F(X:sig end) = Char;;
-module C3 = F(struct end);;
+module C4 = F(struct end);;
+C4.chr 66;;
 
 module G(X:sig end) = X;; (* does not alias X *)
 module M = G(struct end);;
@@ -46,4 +47,31 @@ module F(X:sig end) = struct
   module N' = N
 end;;
 module G : functor(X:sig end) -> sig module N' : sig val x : int end end = F;;
-(* must fix *)
+module M5 = G(struct end);;
+M5.N'.x;;
+
+module M = struct
+  module D = struct let y = 3 end
+  module N = struct let x = 1 end
+  module N' = N
+end;;
+
+module M1 : sig module N : sig val x : int end module N' = N end = M;;
+M1.N'.x;;
+module M2 : sig module N' : sig val x : int end end =
+  (M : sig module N : sig val x : int end module N' = N end);;
+M2.N'.x;;
+
+open M;;
+N'.x;;
+
+module M = struct
+  module C = Char
+  module C' = C
+end;;
+module M1 : sig module C : sig val chr : int -> char end module C' = C end =
+  M;;
+M1.C'.chr 66;;
+module M2 : sig module C' : sig val chr : int -> char end end =
+  (M : sig module C : sig val chr : int -> char end module C' = C end);;
+M2.C'.chr 66;;
