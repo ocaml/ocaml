@@ -755,7 +755,7 @@ all: vsyml
 OCAMLNET=ocamlnet-3.5.1
 ${OCAMLNET}.tar.gz:
 	${WGET} http://download.camlcity.org/download/$@
-ocamlnet: ${OCAMLNET}.tar.gz findlib pcre
+ocamlnet: ${OCAMLNET}.tar.gz findlib pcre lablgtk ocamlssl camlzip cryptokit
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OCAMLNET}
@@ -1177,7 +1177,7 @@ clean::
 	rm -rf ${COQ} coq
 distclean::
 	rm -f ${COQ}.tar.gz
-#all: coq
+all: coq
 
 # http://frama-c.com/
 FRAMAC=frama-c-Nitrogen-20111001
@@ -1200,7 +1200,7 @@ clean::
 	rm -rf ${FRAMAC} framac
 distclean::
 	rm -f ${FRAMAC}.tar.gz
-#all: framac
+all: framac
 
 ##################################################################
 ### Template for new entries

@@ -17,7 +17,7 @@ let mk_a f =
 ;;
 
 let mk_absname f =
-  "-absname", Arg.Unit f, "  Show absolute filenames in error message"
+  "-absname", Arg.Unit f, "  Show absolute filenames in error messages"
 ;;
 
 let mk_annot f =

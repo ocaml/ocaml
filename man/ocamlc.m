@@ -195,6 +195,9 @@ command line, unless the
 .B -noautolink
 option is given.
 .TP
+.B \-absname
+Show absolute filenames in error messages.
+.TP
 .B \-annot
 Dump detailed information about the compilation (types, bindings,
 tail-calls, etc).  The information for file

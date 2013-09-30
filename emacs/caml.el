@@ -407,26 +407,27 @@ have caml-electric-indent on, which see.")
   "Syntax table in use in Caml mode buffers.")
 (if caml-mode-syntax-table
     ()
-  (setq caml-mode-syntax-table (make-syntax-table))
-  ; backslash is an escape sequence
-  (modify-syntax-entry ?\\ "\\" caml-mode-syntax-table)
-  ; ( is first character of comment start
-  (modify-syntax-entry ?\( "()1n" caml-mode-syntax-table)
-  ; * is second character of comment start,
-  ; and first character of comment end
-  (modify-syntax-entry ?*  ". 23n" caml-mode-syntax-table)
-  ; ) is last character of comment end
-  (modify-syntax-entry ?\) ")(4" caml-mode-syntax-table)
-  ; backquote was a string-like delimiter (for character literals)
-  ; (modify-syntax-entry ?` "\"" caml-mode-syntax-table)
-  ; quote and underscore are part of words
-  (modify-syntax-entry ?' "w" caml-mode-syntax-table)
-  (modify-syntax-entry ?_ "w" caml-mode-syntax-table)
-  ; ISO-latin accented letters and EUC kanjis are part of words
-  (let ((i 160))
-    (while (< i 256)
-      (modify-syntax-entry i "w" caml-mode-syntax-table)
-      (setq i (1+ i)))))
+  (let ((n (if (string-match "XEmacs" (emacs-version)) "" "n")))
+    (setq caml-mode-syntax-table (make-syntax-table))
+    ; backslash is an escape sequence
+    (modify-syntax-entry ?\\ "\\" caml-mode-syntax-table)
+    ; ( is first character of comment start
+    (modify-syntax-entry ?\( (concat "()1" n) caml-mode-syntax-table)
+    ; * is second character of comment start,
+    ; and first character of comment end
+    (modify-syntax-entry ?*  (concat ". 23" n) caml-mode-syntax-table)
+    ; ) is last character of comment end
+    (modify-syntax-entry ?\) ")(4" caml-mode-syntax-table)
+    ; backquote was a string-like delimiter (for character literals)
+    ; (modify-syntax-entry ?` "\"" caml-mode-syntax-table)
+    ; quote and underscore are part of words
+    (modify-syntax-entry ?' "w" caml-mode-syntax-table)
+    (modify-syntax-entry ?_ "w" caml-mode-syntax-table)
+    ; ISO-latin accented letters and EUC kanjis are part of words
+    (let ((i 160))
+      (while (< i 256)
+        (modify-syntax-entry i "w" caml-mode-syntax-table)
+        (setq i (1+ i))))))
 
 (defvar caml-mode-abbrev-table nil
   "Abbrev table used for Caml mode buffers.")
@@ -794,12 +795,25 @@ variable caml-mode-indentation."
   "^[ A-\377]+ \"\\([^\"\n]+\\)\", [A-\377]+ \\([0-9]+\\)[-,:]"
   "Regular expression matching the error messages produced by camlc.")
 
+;; Newer emacs versions support line/char ranges
+;; We will adapt OCaml to output error messages in a compatible format.
+;; In the meantime we add the new format here in addition to the old one.
+(defconst caml-error-regexp-newstyle
+  "^[ A-\377]+ \"\\([^\"\n]+\\)\", line \\([0-9]+\\), char \\([0-9]+\\) to line \\([0-9]+\\), char \\([0-9]+\\):"
+  "Regular expression matching the error messages produced by ocamlc/ocamlopt.")
+
 (if (boundp 'compilation-error-regexp-alist)
-    (or (assoc caml-error-regexp
-               compilation-error-regexp-alist)
-        (setq compilation-error-regexp-alist
-              (cons (list caml-error-regexp 1 2)
-               compilation-error-regexp-alist))))
+    (progn
+      (or (assoc caml-error-regexp
+                 compilation-error-regexp-alist)
+          (setq compilation-error-regexp-alist
+                (cons (list caml-error-regexp 1 2)
+                      compilation-error-regexp-alist)))
+      (or (assoc caml-error-regexp-newstyle
+                 compilation-error-regexp-alist)
+          (setq compilation-error-regexp-alist
+                (cons (list caml-error-regexp-newstyle 1 '(2 . 4) '(3 . 5))
+                      compilation-error-regexp-alist)))))
 
 ;; A regexp to extract the range info
 

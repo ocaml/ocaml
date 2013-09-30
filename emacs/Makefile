@@ -37,6 +37,7 @@ COMPILECMD=(progn \
 	      (byte-compile-file "inf-caml.el") \
 	      (byte-compile-file "caml-help.el") \
 	      (byte-compile-file "caml-types.el") \
+	      (byte-compile-file "caml-font.el") \
 	      (byte-compile-file "camldebug.el"))
 
 install:
@@ -80,4 +81,4 @@ compile-only:
 	$(EMACS) --batch --eval '$(COMPILECMD)'
 
 clean:
-	rm -f ocamltags *~ #*# *.elc
+	rm -f ocamltags *~ \#*# *.elc
