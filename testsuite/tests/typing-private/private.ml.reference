@@ -6,8 +6,8 @@
                       ^
 Error: This expression has type F0.t but an expression was expected of type
          Foobar.t
-#   module F : sig type t = Foobar.t end
-#   val f : F.t -> Foobar.t = <fun>
+#   module F = Foobar
+#   val f : Foobar.t -> Foobar.t = <fun>
 #   module M : sig type t = < m : int > end
 # module M1 : sig type t = private < m : int; .. > end
 # module M2 : sig type t = private < m : int; .. > end
@@ -24,6 +24,10 @@ Error: This expression has type M1.t but an expression was expected of type
                                               ^^
 Error: Signature mismatch:
        Modules do not match:
+         (module M2)
+       is not included in
+         sig type t = private M3.t end
+       Modules do not match:
          sig type t = M2.t end
        is not included in
          sig type t = private M3.t end
@@ -35,6 +39,10 @@ Error: Signature mismatch:
   module M4 : sig type t = private M3.t end = M;; (* fails *)
                                               ^
 Error: Signature mismatch:
+       Modules do not match:
+         (module M)
+       is not included in
+         sig type t = private M3.t end
        Modules do not match:
          sig type t = < m : int > end
        is not included in
@@ -48,6 +56,10 @@ Error: Signature mismatch:
                                               ^^
 Error: Signature mismatch:
        Modules do not match:
+         (module M1)
+       is not included in
+         sig type t = private M3.t end
+       Modules do not match:
          sig type t = M1.t end
        is not included in
          sig type t = private M3.t end
@@ -60,6 +72,10 @@ Error: Signature mismatch:
   module M6 : sig type t = private < n:int; .. > end = M1;; (* fails *)
                                                        ^^
 Error: Signature mismatch:
+       Modules do not match:
+         (module M1)
+       is not included in
+         sig type t = private < n : int; .. > end
        Modules do not match:
          sig type t = M1.t end
        is not included in

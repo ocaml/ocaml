@@ -1303,6 +1303,18 @@ let _ =
   components_of_functor_appl' := components_of_functor_appl;
   components_of_module_maker' := components_of_module_maker
 
+let rec normalize_path env path =
+  let path =
+    match path with
+      Pdot(p, s, pos) ->
+        Pdot(normalize_path env p, s, pos)
+    | _ -> path
+  in
+  try match find_module path env with
+    {md_type=Mty_alias path} -> normalize_path env path
+  | _ -> path
+  with Not_found -> path
+
 (* Insertion of bindings by identifier *)
 
 let add_functor_arg ?(arg=false) id env =
@@ -1321,7 +1333,12 @@ and add_exception ~check id decl env =
   store_exception ~check None id (Pident id) decl env env
 
 and add_module_declaration ?arg id md env =
-  let env = store_module None id (Pident id) md env env in
+  let path =
+    match md.md_type with
+      Mty_alias path -> normalize_path env path
+    | _ -> Pident id
+  in
+  let env = store_module None id path md env env in
   add_functor_arg ?arg id env
 
 and add_modtype id info env =
@@ -1355,8 +1372,10 @@ let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_exception = enter (store_exception ~check:true)
 and enter_module_declaration ?arg name md env =
-  let (id, env) = enter store_module name md env in
-  (id, add_functor_arg ?arg id env)
+  let id = Ident.create name in
+  (id, add_module_declaration ?arg id md env)
+  (* let (id, env) = enter store_module name md env in
+  (id, add_functor_arg ?arg id env) *)
 and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype

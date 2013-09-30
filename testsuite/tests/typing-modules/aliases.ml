@@ -19,7 +19,7 @@ module F(X:sig end) = Char;;
 module C4 = F(struct end);;
 C4.chr 66;;
 
-module G(X:sig end) = X;; (* does not alias X *)
+module G(X:sig end) = struct module M = X end;; (* does not alias X *)
 module M = G(struct end);;
 
 module M' = struct

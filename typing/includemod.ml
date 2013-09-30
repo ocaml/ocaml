@@ -106,10 +106,12 @@ let expand_module_alias env cxt path =
   with Not_found ->
     raise(Error[cxt, env, Unbound_module_path path])
 
+(*
 let rec normalize_module_path env cxt path =
   match expand_module_alias env cxt path with
     Mty_alias path' -> normalize_module_path env cxt path'
   | _ -> path
+*)
 
 (* Extract name, kind and ident from a signature item *)
 
@@ -170,16 +172,15 @@ let rec modtypes env cxt subst mty1 mty2 =
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
     (Mty_alias p1, Mty_alias p2) ->
-      let p1 = normalize_module_path env cxt p1
-      and p2 = normalize_module_path env cxt (Subst.module_path subst p2) in
+      let p1 = Env.normalize_path env p1
+      and p2 = Env.normalize_path env (Subst.module_path subst p2) in
       if Path.same p1 p2 then Tcoerce_none else
       Printtyp.(Format.eprintf "%a %a@." path p1 path p2;
       raise Dont_match)
   | (Mty_alias p1, _) ->
-      let p1 = normalize_module_path env cxt p1 in
-      let mty1 = expand_module_alias env cxt p1 in
-      Tcoerce_alias (Mtype.normalize_path env p1,
-                     modtypes env cxt subst mty1 mty2)
+      let p1 = Env.normalize_path env p1 in
+      let mty1 = Mtype.strengthen env (expand_module_alias env cxt p1) p1 in
+      Tcoerce_alias (p1, modtypes env cxt subst mty1 mty2)
   | (_, Mty_ident p2) ->
       try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
   | (Mty_ident p1, _) ->

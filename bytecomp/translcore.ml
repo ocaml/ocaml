@@ -40,7 +40,7 @@ let transl_object =
 
 (* Translation of value identifiers *)
 let transl_ident_path env path =
-  transl_path (Mtype.normalize_path env path) 
+  transl_path (Env.normalize_path env path) 
 
 (* Translation of primitives *)
 

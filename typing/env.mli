@@ -61,6 +61,8 @@ val find_type_expansion_opt:
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
 val is_functor_arg: Path.t -> t -> bool
+val normalize_path: t -> Path.t -> Path.t
+        (* Normalize the path to a concrete value or module *)
 
 val has_local_constraints: t -> bool
 val add_gadt_instance_level: int -> t -> t

@@ -1,0 +1,98 @@
+
+# module C = Char
+# - : char = 'B'
+#   module C' :
+  sig
+    external code : char -> int = "%identity"
+    val chr : int -> char
+    val escaped : char -> string
+    val lowercase : char -> char
+    val uppercase : char -> char
+    type t = char
+    val compare : t -> t -> int
+    external unsafe_chr : int -> char = "%identity"
+  end
+# - : char = 'B'
+#   C' Char
+Characters 27-29:
+  module C'' : (module C) = C';; (* fails *)
+                            ^^
+Error: Signature mismatch:
+       Modules do not match: (module C') is not included in (module Char)
+#   module C'' = Char
+# - : char = 'B'
+#   module C3 :
+  sig
+    external code : char -> int = "%identity"
+    val chr : int -> char
+    val escaped : char -> string
+    val lowercase : char -> char
+    val uppercase : char -> char
+    type t = char
+    val compare : t -> t -> int
+    external unsafe_chr : int -> char = "%identity"
+  end
+# - : char = 'B'
+#   val f : 'a list -> int = <fun>
+# val g : int list -> int = <fun>
+#   module F :
+  functor (X : sig  end) ->
+    sig
+      external code : char -> int = "%identity"
+      val chr : int -> char
+      val escaped : char -> string
+      val lowercase : char -> char
+      val uppercase : char -> char
+      type t = char
+      val compare : t -> t -> int
+      external unsafe_chr : int -> char = "%identity"
+    end
+# module C4 :
+  sig
+    external code : char -> int = "%identity"
+    val chr : int -> char
+    val escaped : char -> string
+    val lowercase : char -> char
+    val uppercase : char -> char
+    type t = char
+    val compare : t -> t -> int
+    external unsafe_chr : int -> char = "%identity"
+  end
+# - : char = 'B'
+#   module G : functor (X : sig  end) -> sig module M : sig  end end
+# module M : sig module M : sig  end end
+#         module M' : sig module N : sig val x : int end module N' = N end
+# - : int = 1
+#   module M'' : sig module N' : sig val x : int end end
+# - : int = 1
+# module M2 : sig module N : sig val x : int end module N' = N end
+# module M3 : sig module N' : sig val x : int end end
+# - : int = 1
+# module M3' : sig module N' : sig val x : int end end
+# - : int = 1
+#         module M4 : sig module N' : sig val x : int end end
+# - : int = 1
+#         module F :
+  functor (X : sig  end) ->
+    sig module N : sig val x : int end module N' = N end
+# module G : functor (X : sig  end) -> sig module N' : sig val x : int end end
+# module M5 : sig module N' : sig val x : int end end
+# - : int = 1
+#           module M :
+  sig
+    module D : sig val y : int end
+    module N : sig val x : int end
+    module N' = N
+  end
+#   module M1 : sig module N : sig val x : int end module N' = N end
+# - : int = 1
+#   module M2 : sig module N' : sig val x : int end end
+# - : int = 1
+#   # - : int = 1
+#         module M : sig module C = Char module C' = Char end
+#   module M1 : sig module C : sig val chr : int -> char end module C' = C end
+# - : char = 'B'
+#   module M2 : sig module C' : sig val chr : int -> char end end
+# - : char = 'B'
+#   - : f:('a -> 'b) -> 'a list -> 'b list = <fun>
+# 

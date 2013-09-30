@@ -124,7 +124,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
         match envs with None -> []
         | Some envs -> [Lprim(Pfield (List.length inh_init + 1), [Lvar envs])]
       in
-      ((envs, (obj_init, Mtype.normalize_path cl.cl_env path)::inh_init),
+      ((envs, (obj_init, Env.normalize_path cl.cl_env path)::inh_init),
        mkappl(Lvar obj_init, env @ [obj]))
   | Tcl_structure str ->
       create_object cl_table obj (fun obj ->
@@ -331,7 +331,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
       let cl = ignore_cstrs cl in
       begin match cl.cl_desc, inh_init with
         Tcl_ident (path, _, _), (obj_init, path')::inh_init ->
-          assert (Path.same (Mtype.normalize_path cl.cl_env path) path');
+          assert (Path.same (Env.normalize_path cl.cl_env path) path');
           let lpath = transl_ident_path cl.cl_env path in
           let inh = Ident.create "inh"
           and ofs = List.length vals + 1
@@ -398,7 +398,7 @@ let rec transl_class_rebind obj_init cl vf =
         try if (Env.find_class path cl.cl_env).cty_new = None then raise Exit
         with Not_found -> raise Exit
       end;
-      (Mtype.normalize_path cl.cl_env path, obj_init)
+      (Env.normalize_path cl.cl_env path, obj_init)
   | Tcl_fun (_, pat, _, cl, partial) ->
       let path, obj_init = transl_class_rebind obj_init cl vf in
       let build params rem =

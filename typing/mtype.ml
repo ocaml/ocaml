@@ -17,18 +17,6 @@ open Path
 open Types
 
 
-let rec normalize_path env path =
-  let path =
-    match path with
-      Pdot(p, s, pos) ->
-        Pdot(normalize_path env p, s, pos)
-    | _ -> path
-  in
-  try match Env.find_module path env with
-    {md_type=Mty_alias path} -> normalize_path env path
-  | _ -> path
-  with Not_found -> path
-
 let rec scrape env mty =
   match mty with
     Mty_ident p ->
