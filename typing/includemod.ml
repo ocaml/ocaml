@@ -157,9 +157,9 @@ let simplify_structure_coercion cc =
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
 
-let rec modtypes env cxt subst mty1 mty2 =
+let rec modtypes env cxt msubs subst mty1 mty2 =
   try
-    try_modtypes env cxt subst mty1 mty2
+    try_modtypes env cxt msubs subst mty1 mty2
   with
     Dont_match ->
       raise(Error[cxt, env, Module_types(mty1, Subst.modtype subst mty2)])
@@ -167,7 +167,7 @@ let rec modtypes env cxt subst mty1 mty2 =
       raise(Error((cxt, env, Module_types(mty1, Subst.modtype subst mty2))
                   :: reasons))
 
-and try_modtypes env cxt subst mty1 mty2 =
+and try_modtypes env cxt msubs subst mty1 mty2 =
   match (mty1, mty2) with
     (Mty_alias p1, Mty_alias p2) ->
       let p1 = normalize_module_path env cxt p1
@@ -176,20 +176,28 @@ and try_modtypes env cxt subst mty1 mty2 =
   | (Mty_alias p1, _) ->
       let p1 = normalize_module_path env cxt p1 in
       let mty1 = expand_module_alias env cxt p1 in
-      Tcoerce_alias (Mtype.normalize_path env p1,
-                     modtypes env cxt subst mty1 mty2)
+      let p1' = Mtype.normalize_path env p1 in
+      let msubs, p1'' =
+        match msubs with None -> Some (p1, Subst.identity), p1'
+        | Some (_, s) -> Some (p1, s), Subst.module_path s p1' in
+      Printtyp.(Format.eprintf "%a %a %a@." path p1 path p1' path p1'');
+      Tcoerce_alias (p1'', modtypes env cxt msubs subst mty1 mty2)
   | (_, Mty_ident p2) ->
-      try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
+      try_modtypes2 env cxt msubs mty1 (Subst.modtype subst mty2)
   | (Mty_ident p1, _) ->
-      try_modtypes env cxt subst (expand_module_path env cxt p1) mty2
+      try_modtypes env cxt msubs subst (expand_module_path env cxt p1) mty2
   | (Mty_signature sig1, Mty_signature sig2) ->
-      signatures env cxt subst sig1 sig2
+      signatures env cxt msubs subst sig1 sig2
   | (Mty_functor(param1, arg1, res1), Mty_functor(param2, arg2, res2)) ->
       let arg2' = Subst.modtype subst arg2 in
-      let cc_arg = modtypes env (Arg param1::cxt) Subst.identity arg2' arg1 in
+      let msubs =
+        match msubs with None -> Some (Pident param1, Subst.identity)
+        | Some (_, s) -> Some (Pident param1, Subst.identity) in
+      let cc_arg =
+        modtypes env (Arg param1::cxt) msubs Subst.identity arg2' arg1 in
       let cc_res =
         modtypes (Env.add_module param1 arg2' env) (Body param1::cxt)
-          (Subst.add_module param2 (Pident param1) subst) res1 res2 in
+          msubs (Subst.add_module param2 (Pident param1) subst) res1 res2 in
       begin match (cc_arg, cc_res) with
           (Tcoerce_none, Tcoerce_none) -> Tcoerce_none
         | _ -> Tcoerce_functor(cc_arg, cc_res)
@@ -197,22 +205,37 @@ and try_modtypes env cxt subst mty1 mty2 =
   | (_, _) ->
       raise Dont_match
 
-and try_modtypes2 env cxt mty1 mty2 =
+and try_modtypes2 env cxt msubs mty1 mty2 =
   (* mty2 is an identifier *)
   match (mty1, mty2) with
     (Mty_ident p1, Mty_ident p2) when Path.same p1 p2 ->
       Tcoerce_none
   | (_, Mty_ident p2) ->
-      try_modtypes env cxt Subst.identity mty1 (expand_module_path env cxt p2)
+      try_modtypes env cxt msubs Subst.identity mty1
+        (expand_module_path env cxt p2)
   | (_, _) ->
       assert false
 
 (* Inclusion between signatures *)
 
-and signatures env cxt subst sig1 sig2 =
+and signatures env cxt msubs subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
   let new_env =
     Env.add_signature sig1 (Env.in_signature env) in
+  (* Substitution used for module aliases *)
+  let msubs =
+    match msubs with
+      None -> msubs
+    | Some (pr, s) ->
+        let (s, pos) =
+          List.fold_left
+            (fun (s,pos) -> function
+                Sig_module (id, _, _) ->
+                (Subst.add_module id (Pdot (pr, Ident.name id, pos)) s, pos+1)
+              | item -> (s, if is_runtime_component item then pos+1 else pos))
+            (s, 0) sig1
+        in Some (pr, s)
+  in
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
@@ -240,7 +263,7 @@ and signatures env cxt subst sig1 sig2 =
         begin match unpaired with
             [] ->
               let cc =
-                signature_components new_env cxt subst (List.rev paired)
+                signature_components new_env cxt msubs subst (List.rev paired)
               in
               if len1 = len2 then (* see PR#5098 *)
                 simplify_structure_coercion cc
@@ -286,36 +309,39 @@ and signatures env cxt subst sig1 sig2 =
 
 (* Inclusion between signature components *)
 
-and signature_components env cxt subst = function
+and signature_components env cxt msubs subst = function
     [] -> []
   | (Sig_value(id1, valdecl1), Sig_value(id2, valdecl2), pos) :: rem ->
       let cc = value_descriptions env cxt subst id1 valdecl1 valdecl2 in
       begin match valdecl2.val_kind with
-        Val_prim p -> signature_components env cxt subst rem
-      | _ -> (pos, cc) :: signature_components env cxt subst rem
+        Val_prim p -> signature_components env cxt msubs subst rem
+      | _ -> (pos, cc) :: signature_components env cxt msubs subst rem
       end
   | (Sig_type(id1, tydecl1, _), Sig_type(id2, tydecl2, _), pos) :: rem ->
       type_declarations env cxt subst id1 tydecl1 tydecl2;
-      signature_components env cxt subst rem
+      signature_components env cxt msubs subst rem
   | (Sig_exception(id1, excdecl1), Sig_exception(id2, excdecl2), pos)
     :: rem ->
       exception_declarations env cxt subst id1 excdecl1 excdecl2;
-      (pos, Tcoerce_none) :: signature_components env cxt subst rem
+      (pos, Tcoerce_none) :: signature_components env cxt msubs subst rem
   | (Sig_module(id1, mty1, _), Sig_module(id2, mty2, _), pos) :: rem ->
+      let msubs' =
+        match msubs with None -> Some (Pident id1, Subst.identity)
+        | Some (pr, s) -> Some (Pdot (pr, Ident.name id1, pos), s) in
       let cc =
-        modtypes env (Module id1::cxt) subst
+        modtypes env (Module id1::cxt) msubs' subst
           (Mtype.strengthen env mty1 (Pident id1)) mty2 in
-      (pos, cc) :: signature_components env cxt subst rem
+      (pos, cc) :: signature_components env cxt msubs subst rem
   | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
-      signature_components env cxt subst rem
+      signature_components env cxt msubs subst rem
   | (Sig_class(id1, decl1, _), Sig_class(id2, decl2, _), pos) :: rem ->
       class_declarations env cxt subst id1 decl1 decl2;
-      (pos, Tcoerce_none) :: signature_components env cxt subst rem
+      (pos, Tcoerce_none) :: signature_components env cxt msubs subst rem
   | (Sig_class_type(id1, info1, _),
      Sig_class_type(id2, info2, _), pos) :: rem ->
       class_type_declarations env cxt subst id1 info1 info2;
-      signature_components env cxt subst rem
+      signature_components env cxt msubs subst rem
   | _ ->
       assert false
 
@@ -337,8 +363,8 @@ and modtype_infos env cxt subst id info1 info2 =
 
 and check_modtype_equiv env cxt mty1 mty2 =
   match
-    (modtypes env cxt Subst.identity mty1 mty2,
-     modtypes env cxt Subst.identity mty2 mty1)
+    (modtypes env cxt None Subst.identity mty1 mty2,
+     modtypes env cxt None Subst.identity mty2 mty1)
   with
     (Tcoerce_none, Tcoerce_none) -> ()
   | (_, _) -> raise(Error [cxt, env, Modtype_permutation])
@@ -347,7 +373,7 @@ and check_modtype_equiv env cxt mty1 mty2 =
 
 let check_modtype_inclusion env mty1 path1 mty2 =
   try
-    ignore(modtypes env [] Subst.identity
+    ignore(modtypes env [] None Subst.identity
                     (Mtype.strengthen env mty1 path1) mty2)
   with Error reasons ->
     raise Not_found
@@ -359,15 +385,15 @@ let _ = Env.check_modtype_inclusion := check_modtype_inclusion
 
 let compunit impl_name impl_sig intf_name intf_sig =
   try
-    signatures Env.initial [] Subst.identity impl_sig intf_sig
+    signatures Env.initial [] None Subst.identity impl_sig intf_sig
   with Error reasons ->
     raise(Error(([], Env.empty,Interface_mismatch(impl_name, intf_name))
                 :: reasons))
 
 (* Hide the context and substitution parameters to the outside world *)
 
-let modtypes env mty1 mty2 = modtypes env [] Subst.identity mty1 mty2
-let signatures env sig1 sig2 = signatures env [] Subst.identity sig1 sig2
+let modtypes env mty1 mty2 = modtypes env [] None Subst.identity mty1 mty2
+let signatures env sig1 sig2 = signatures env [] None Subst.identity sig1 sig2
 let type_declarations env id decl1 decl2 =
   type_declarations env [] Subst.identity id decl1 decl2
 

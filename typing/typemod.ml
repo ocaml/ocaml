@@ -917,16 +917,13 @@ let wrap_constraint env arg mty explicit =
 
 (* Type a module value expression *)
 
-let rec type_module sttn funct_body anchor env smod =
+let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let (path, mty) = Typetexp.find_module env smod.pmod_loc lid.txt in
       let mty =
-        if sttn then
-          if Env.is_functor_arg path env
-          then Mtype.strengthen env mty path
-          else Mty_alias path
-        else mty in
+        if alias && not (Env.is_functor_arg path env) then Mty_alias path else
+        if sttn then Mtype.strengthen env mty path else mty in
       rm { mod_desc = Tmod_ident (path, lid);
            mod_type = mty;
            mod_env = env;
@@ -984,7 +981,7 @@ let rec type_module sttn funct_body anchor env smod =
           raise(Error(sfunct.pmod_loc, env, Cannot_apply funct.mod_type))
       end
   | Pmod_constraint(sarg, smty) ->
-      let arg = type_module true funct_body anchor env sarg in
+      let arg = type_module ~alias true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
       rm {(wrap_constraint env arg mty.mty_type (Tmodtype_explicit mty)) with
           mod_loc = smod.pmod_loc;
@@ -1081,8 +1078,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs} ->
         check "module" loc module_names name.txt;
         let modl =
-          type_module true funct_body (anchor_submodule name.txt anchor) env
-            smodl in
+          type_module ~alias:true true funct_body
+            (anchor_submodule name.txt anchor) env smodl in
         let mty = enrich_module_type anchor name.txt modl.mod_type env in
         let (id, newenv) = Env.enter_module name.txt mty env in
         Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;mb_attributes=attrs},
@@ -1218,6 +1215,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 
 let type_toplevel_phrase env s =
   type_structure ~toplevel:true false None env s Location.none
+let type_module_alias = type_module ~alias:true true false None
 let type_module = type_module true false None
 let type_structure = type_structure false None
 
@@ -1305,7 +1303,7 @@ let type_package env m p nl tl =
   Ctype.begin_def ();
   Ident.set_current_time lv;
   let context = Typetexp.narrow () in
-  let modl = type_module env m in
+  let modl = type_module_alias env m in
   Ctype.init_def(Ident.current_time());
   Typetexp.widen context;
   let (mp, env) =
