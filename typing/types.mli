@@ -113,7 +113,10 @@ type constructor_description =
     cstr_nonconsts: int;                (* Number of non-const constructors *)
     cstr_normal: int;                   (* Number of non generalized constrs *)
     cstr_generalized: bool;             (* Constrained return type? *)
-    cstr_private: private_flag }        (* Read-only constructor? *)
+    cstr_private: private_flag;         (* Read-only constructor? *)
+    cstr_loc: Location.t;
+    cstr_attributes: Parsetree.attributes;
+   }
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
@@ -130,7 +133,10 @@ type label_description =
     lbl_pos: int;                       (* Position in block *)
     lbl_all: label_description array;   (* All the labels in this type *)
     lbl_repres: record_representation;  (* Representation for this record *)
-    lbl_private: private_flag }         (* Read-only field? *)
+    lbl_private: private_flag;          (* Read-only field? *)
+    lbl_loc: Location.t;
+    lbl_attributes: Parsetree.attributes;
+  }
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -167,13 +173,32 @@ type type_declaration =
     (* covariant, contravariant, weakly contravariant, injective *)
     type_newtype_level: (int * int) option;
     (* definition level * expansion level *)
-    type_loc: Location.t }
+    type_loc: Location.t;
+    type_attributes: Parsetree.attributes;
+  }
 
 and type_kind =
     Type_abstract
-  | Type_record of
-      (Ident.t * mutable_flag * type_expr) list * record_representation
-  | Type_variant of (Ident.t * type_expr list * type_expr option) list
+  | Type_record of label_declaration list  * record_representation
+  | Type_variant of constructor_declaration list
+
+and label_declaration =
+  {
+    ld_id: Ident.t;
+    ld_mutable: mutable_flag;
+    ld_type: type_expr;
+    ld_loc: Location.t;
+    ld_attributes: Parsetree.attributes;
+  }
+
+and constructor_declaration =
+  {
+    cd_id: Ident.t;
+    cd_args: type_expr list;
+    cd_res: type_expr option;
+    cd_loc: Location.t;
+    cd_attributes: Parsetree.attributes;
+  }
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -182,7 +207,9 @@ and type_transparence =
 
 type exception_declaration =
     { exn_args: type_expr list;
-      exn_loc: Location.t }
+      exn_loc: Location.t;
+      exn_attributes: Parsetree.attributes;
+    }
 
 (* Type expressions for the class language *)
 
@@ -194,23 +221,30 @@ type class_type =
   | Cty_arrow of label * type_expr * class_type
 
 and class_signature =
-  { cty_self: type_expr;
-    cty_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
-    cty_concr: Concr.t;
-    cty_inher: (Path.t * type_expr list) list }
+  { csig_self: type_expr;
+    csig_vars:
+      (Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr) Vars.t;
+    csig_concr: Concr.t;
+    csig_inher: (Path.t * type_expr list) list }
 
 type class_declaration =
   { cty_params: type_expr list;
     mutable cty_type: class_type;
     cty_path: Path.t;
     cty_new: type_expr option;
-    cty_variance: Variance.t list }
+    cty_variance: Variance.t list;
+    cty_loc: Location.t;
+    cty_attributes: Parsetree.attributes;
+  }
 
 type class_type_declaration =
   { clty_params: type_expr list;
     clty_type: class_type;
     clty_path: Path.t;
-    clty_variance: Variance.t list }
+    clty_variance: Variance.t list;
+    clty_loc: Location.t;
+    clty_attributes: Parsetree.attributes;
+  }
 
 (* Type expressions for the module language *)
 
@@ -226,10 +260,16 @@ and signature_item =
     Sig_value of Ident.t * value_description
   | Sig_type of Ident.t * type_declaration * rec_status
   | Sig_exception of Ident.t * exception_declaration
-  | Sig_module of Ident.t * module_type * rec_status
-  | Sig_modtype of Ident.t * modtype_declaration
+  | Sig_module of Ident.t * module_declaration * rec_status
+  | Sig_modtype of Ident.t * modtype_declaration  (* todo: attributes *)
   | Sig_class of Ident.t * class_declaration * rec_status
   | Sig_class_type of Ident.t * class_type_declaration * rec_status
+
+and module_declaration =
+  {
+    md_type: module_type;
+    md_attributes: Parsetree.attributes;
+  }
 
 and modtype_declaration =
     Modtype_abstract

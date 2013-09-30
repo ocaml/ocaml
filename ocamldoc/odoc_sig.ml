@@ -94,7 +94,7 @@ module Signature_search =
 
     let search_module table name =
       match Hashtbl.find table (M name) with
-      | (Types.Sig_module (ident, module_type, _)) -> module_type
+      | (Types.Sig_module (ident, md, _)) -> md.Types.md_type
       | _ -> assert false
 
     let search_module_type table name =
@@ -106,11 +106,11 @@ module Signature_search =
       | _ -> assert false
 
     let search_attribute_type name class_sig =
-      let (_, _, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
+      let (_, _, type_expr) = Types.Vars.find name class_sig.Types.csig_vars in
       type_expr
 
     let search_method_type name class_sig =
-      let fields = Odoc_misc.get_fields class_sig.Types.cty_self in
+      let fields = Odoc_misc.get_fields class_sig.Types.csig_self in
       List.assoc name fields
   end
 
@@ -219,7 +219,7 @@ module Analyser =
         Types.Type_abstract ->
           Odoc_type.Type_abstract
       | Types.Type_variant l ->
-          let f (constructor_name, type_expr_list, ret_type) =
+          let f {Types.cd_id=constructor_name;cd_args=type_expr_list;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
               try
@@ -238,7 +238,7 @@ module Analyser =
           Odoc_type.Type_variant (List.map f l)
 
       | Types.Type_record (l, _) ->
-          let f (field_name, mutable_flag, type_expr) =
+          let f {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr} =
             let field_name = Ident.name field_name in
             let comment_opt =
               try

@@ -75,3 +75,5 @@ M1.C'.chr 66;;
 module M2 : sig module C' : sig val chr : int -> char end end =
   (M : sig module C : sig val chr : int -> char end module C' = C end);;
 M2.C'.chr 66;;
+
+StdLabels.List.map;;

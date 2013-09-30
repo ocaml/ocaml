@@ -99,7 +99,18 @@ let decl_abstr =
    type_private = Asttypes.Public;
    type_manifest = None;
    type_variance = [];
-   type_newtype_level = None}
+   type_newtype_level = None;
+   type_attributes = [];
+  }
+
+let cstr id args =
+  {
+    cd_id = id;
+    cd_args = args;
+    cd_res = None;
+    cd_loc = Location.none;
+    cd_attributes = [];
+  }
 
 let ident_false = ident_create "false"
 and ident_true = ident_create "true"
@@ -111,10 +122,10 @@ and ident_some = ident_create "Some"
 let build_initial_env add_type add_exception empty_env =
   let decl_bool =
     {decl_abstr with
-     type_kind = Type_variant([ident_false, [], None; ident_true, [], None])}
+     type_kind = Type_variant([cstr ident_false []; cstr ident_true []])}
   and decl_unit =
     {decl_abstr with
-     type_kind = Type_variant([ident_void, [], None])}
+     type_kind = Type_variant([cstr ident_void []])}
   and decl_exn =
     {decl_abstr with
      type_kind = Type_variant []}
@@ -130,8 +141,7 @@ let build_initial_env add_type add_exception empty_env =
      type_params = [tvar];
      type_arity = 1;
      type_kind =
-     Type_variant([ident_nil, [], None; ident_cons, [tvar; type_list tvar],
-                   None]);
+     Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]]);
      type_variance = [Variance.covariant]}
   and decl_format6 =
     let params = List.map newgenvar [();();();();();()] in
@@ -144,7 +154,7 @@ let build_initial_env add_type add_exception empty_env =
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
-     type_kind = Type_variant([ident_none, [], None; ident_some, [tvar], None]);
+     type_kind = Type_variant([cstr ident_none []; cstr ident_some [tvar]]);
      type_variance = [Variance.covariant]}
   and decl_lazy_t =
     let tvar = newgenvar() in
@@ -155,7 +165,9 @@ let build_initial_env add_type add_exception empty_env =
   in
 
   let add_exception id l =
-    add_exception id { exn_args = l; exn_loc = Location.none } in
+    add_exception id
+      { exn_args = l; exn_loc = Location.none; exn_attributes = [] }
+  in
   add_exception ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_exception ident_out_of_memory [] (

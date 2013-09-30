@@ -157,9 +157,10 @@ let report_type_mismatch first second decl ppf =
 let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with
     [], []           -> []
-  | [], (cstr2,_,_)::_ -> [Field_missing (true, cstr2)]
-  | (cstr1,_,_)::_, [] -> [Field_missing (false, cstr1)]
-  | (cstr1, arg1, ret1)::rem1, (cstr2, arg2,ret2)::rem2 ->
+  | [], c::_ -> [Field_missing (true, c.Types.cd_id)]
+  | c::_, [] -> [Field_missing (false, c.Types.cd_id)]
+  | {Types.cd_id=cstr1; cd_args=arg1; cd_res=ret1}::rem1,
+    {Types.cd_id=cstr2; cd_args=arg2; cd_res=ret2}::rem2 ->
       if Ident.name cstr1 <> Ident.name cstr2 then
         [Field_names (n, cstr1, cstr2)]
       else if List.length arg1 <> List.length arg2 then
@@ -183,9 +184,10 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
 let rec compare_records env decl1 decl2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
-  | [], (lab2,_,_)::_ -> [Field_missing (true, lab2)]
-  | (lab1,_,_)::_, [] -> [Field_missing (false, lab1)]
-  | (lab1, mut1, arg1)::rem1, (lab2, mut2, arg2)::rem2 ->
+  | [], l::_ -> [Field_missing (true, l.ld_id)]
+  | l::_, [] -> [Field_missing (false, l.ld_id)]
+  | {Types.ld_id=lab1; ld_mutable=mut1; ld_type=arg1}::rem1,
+    {Types.ld_id=lab2; ld_mutable=mut2; ld_type=arg2}::rem2 ->
       if Ident.name lab1 <> Ident.name lab2
       then [Field_names (n, lab1, lab2)]
       else if mut1 <> mut2 then [Field_mutable lab1] else
@@ -202,8 +204,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
     | (Type_variant cstrs1, Type_variant cstrs2) ->
         let mark cstrs usage name decl =
           List.iter
-            (fun (c, _, _) ->
-              Env.mark_constructor_used usage name decl (Ident.name c))
+            (fun c ->
+              Env.mark_constructor_used usage name decl (Ident.name c.Types.cd_id))
             cstrs
         in
         let usage =

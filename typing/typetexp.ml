@@ -55,6 +55,15 @@ type error =
 
 exception Error of Location.t * Env.t * error
 
+let check_deprecated loc attrs s =
+  if
+    List.exists
+      (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
+      attrs
+  then
+    Location.prerr_warning loc (Warnings.Deprecated s)
+
+
 type variable_context = int * (string, type_expr) Tbl.t
 
 (* Local definitions *)
@@ -94,8 +103,14 @@ let find_component lookup make_error env loc lid =
   | Env.Recmodule ->
     raise (Error (loc, env, Illegal_reference_to_recursive_module))
 
-let find_type =
-  find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
+let find_type env loc lid =
+  let (path, decl) as r =
+    find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
+      env loc lid
+  in
+  check_deprecated loc decl.type_attributes (Path.name path);
+  r
+
 let find_constructor =
   find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
 let find_all_constructors =
@@ -105,16 +120,38 @@ let find_label =
   find_component Env.lookup_label (fun lid -> Unbound_label lid)
 let find_all_labels =
   find_component Env.lookup_all_labels (fun lid -> Unbound_label lid)
-let find_class =
-  find_component Env.lookup_class (fun lid -> Unbound_class lid)
-let find_value =
-  find_component Env.lookup_value (fun lid -> Unbound_value lid)
-let find_module =
-  find_component Env.lookup_module (fun lid -> Unbound_module lid)
+
+let find_class env loc lid =
+  let (path, decl) as r =
+    find_component Env.lookup_class (fun lid -> Unbound_class lid) env loc lid
+  in
+  check_deprecated loc decl.cty_attributes (Path.name path);
+  r
+
+let find_value env loc lid =
+  let (path, decl) as r =
+    find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
+  in
+  check_deprecated loc decl.val_attributes (Path.name path);
+  r
+
+let find_module env loc lid =
+  let (path, decl) as r =
+    find_component Env.lookup_module (fun lid -> Unbound_module lid) env loc lid
+  in
+  check_deprecated loc decl.md_attributes (Path.name path);
+  r
+
 let find_modtype =
   find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
-let find_class_type =
-  find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
+
+let find_class_type env loc lid =
+  let (path, decl) as r =
+    find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
+      env loc lid
+  in
+  check_deprecated loc decl.clty_attributes (Path.name path);
+  r
 
 let unbound_constructor_error env lid =
   narrow_unbound_lid_error env lid.loc lid.txt

@@ -329,7 +329,9 @@ and untype_signature_item item =
     | Tsig_exception decl ->
         Psig_exception (untype_constructor_declaration decl)
     | Tsig_module md ->
-        Psig_module {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type; pmd_attributes = md.md_attributes}
+        Psig_module {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
+                     pmd_attributes = md.md_attributes;
+                    }
     | Tsig_recmodule list ->
         Psig_recmodule (List.map (fun md ->
               {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;

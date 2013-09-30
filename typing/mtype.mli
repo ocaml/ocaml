@@ -24,6 +24,7 @@ val freshen: module_type -> module_type
 val strengthen: Env.t -> module_type -> Path.t -> module_type
         (* Strengthen abstract type components relative to the
            given path. *)
+val strengthen_decl: Env.t -> module_declaration -> Path.t -> module_declaration
 val nondep_supertype: Env.t -> Ident.t -> module_type -> module_type
         (* Return the smallest supertype of the given type
            in which the given ident does not appear.

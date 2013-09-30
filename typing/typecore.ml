@@ -285,7 +285,7 @@ let extract_concrete_variant env ty =
 let extract_label_names sexp env ty =
   try
     let (_, _,fields) = extract_concrete_record env ty in
-    List.map (fun (name, _, _) -> name) fields
+    List.map (fun l -> l.Types.ld_id) fields
   with Not_found ->
     assert false
 
@@ -1013,6 +1013,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
           (Constructor.disambiguate lid !env opath ~check_lk) constrs
       in
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
+      Typetexp.check_deprecated loc constr.cstr_attributes constr.cstr_name;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, !env, Unexpected_existential));
       (* if constructor is gadt, we must verify that the expected type has the
@@ -1378,7 +1379,7 @@ let rec is_nonexpansive exp =
       true
   (* Note: nonexpansive only means no _observable_ side effects *)
   | Texp_lazy e -> is_nonexpansive e
-  | Texp_object ({cstr_fields=fields; cstr_type = { cty_vars=vars}}, _) ->
+  | Texp_object ({cstr_fields=fields; cstr_type = { csig_vars=vars}}, _) ->
       let count = ref 0 in
       List.for_all
         (fun field -> match field.cf_desc with
@@ -1913,13 +1914,6 @@ and type_expect_ ?in_function env sexp ty_expected =
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
-        if
-          List.exists
-            (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
-            desc.val_attributes
-        then
-          Location.prerr_warning loc (Warnings.Deprecated (Path.name path));
-
         rue {
           exp_desc =
             begin match desc.val_kind with
@@ -2533,7 +2527,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       end
   | Pexp_new cl ->
       let (cl_path, cl_decl) = Typetexp.find_class env loc cl.txt in
-        begin match cl_decl.cty_new with
+      begin match cl_decl.cty_new with
           None ->
             raise(Error(loc, env, Virtual_class cl.txt))
         | Some ty ->
@@ -2668,7 +2662,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       rue {
         exp_desc = Texp_object (desc, (*sign,*) meths);
         exp_loc = loc; exp_extra = [];
-        exp_type = sign.cty_self;
+        exp_type = sign.csig_self;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
@@ -2728,6 +2722,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         type_variance = [];
         type_newtype_level = Some (level, level);
         type_loc = loc;
+        type_attributes = [];
       }
       in
       Ident.set_current_time ty.level;
@@ -3195,6 +3190,7 @@ and type_construct env loc lid sarg ty_expected attrs =
     wrap_disambiguate "This variant expression is expected to have" ty_expected
       (Constructor.disambiguate lid env opath) constrs in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) constr;
+  Typetexp.check_deprecated loc constr.cstr_attributes constr.cstr_name;
   let sargs =
     match sarg with
       None -> []

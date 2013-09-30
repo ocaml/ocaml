@@ -143,8 +143,8 @@ let rec get_constr tag ty tenv =
 
 let find_label lbl lbls =
   try
-    let name,_,_ = List.nth lbls lbl.lbl_pos in
-    name
+    let l = List.nth lbls lbl.lbl_pos in
+    l.Types.ld_id
   with Failure "nth" -> Ident.create "*Unknown label*"
 
 let rec get_record_labels ty tenv =
@@ -166,7 +166,7 @@ let get_constr_name tag ty tenv  = match tag with
 | Cstr_exception (path, _) -> Path.name path
 | _ ->
   try
-    let name,_,_ = get_constr tag ty tenv in Ident.name name
+    let cd = get_constr tag ty tenv in Ident.name cd.cd_id
   with
   | Datarepr.Constr_not_found -> "*Unknown constructor*"
 

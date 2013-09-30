@@ -61,6 +61,7 @@ let enter_type env sdecl id =
       type_variance = List.map (fun _ -> Variance.full) sdecl.ptype_params;
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
+      type_attributes = sdecl.ptype_attributes;
     }
   in
   Env.add_type ~check:true id decl env
@@ -191,8 +192,11 @@ let transl_declaration env sdecl id =
           {cd_id = name; cd_name = lid; cd_args = ctys; cd_res = res;
            cd_loc = loc; cd_attributes = attrs}
         ) cstrs),
-        Type_variant (List.map (fun (name, name_loc, ctys, _, option, loc, _attrs) ->
-          name, List.map (fun cty -> cty.ctyp_type) ctys, option) cstrs)
+        Type_variant (List.map (fun (name, name_loc, ctys, _, option, loc, attrs) ->
+            {Types.cd_id = name; cd_args = List.map (fun cty -> cty.ctyp_type) ctys;
+             cd_res = option;
+             cd_loc = loc; cd_attributes = attrs}
+          ) cstrs)
 
       | Ptype_record lbls ->
         let all_labels = ref StringSet.empty in
@@ -212,10 +216,17 @@ let transl_declaration env sdecl id =
           List.map
             (fun ld ->
               let ty = ld.ld_type.ctyp_type in
-              ld.ld_id, ld.ld_mutable, match ty.desc with Tpoly(t,[]) -> t | _ -> ty)
+              let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
+              {Types.ld_id = ld.ld_id;
+               ld_mutable = ld.ld_mutable;
+               ld_type = ty;
+               ld_loc = ld.ld_loc;
+               ld_attributes = ld.ld_attributes
+              }
+            )
             lbls in
         let rep =
-          if List.for_all (fun (name, mut, arg) -> is_float env arg) lbls'
+          if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
           then Record_float
           else Record_regular in
         Ttype_record lbls, Type_record(lbls', rep)
@@ -236,6 +247,7 @@ let transl_declaration env sdecl id =
         type_variance = List.map (fun _ -> Variance.full) params;
         type_newtype_level = None;
         type_loc = sdecl.ptype_loc;
+        type_attributes = sdecl.ptype_attributes;
       } in
 
   (* Check constraints *)
@@ -282,12 +294,12 @@ let generalize_decl decl =
       ()
   | Type_variant v ->
       List.iter
-        (fun (_, tyl, ret_type) ->
-          List.iter Ctype.generalize tyl;
-          may Ctype.generalize ret_type)
+        (fun c ->
+          List.iter Ctype.generalize c.Types.cd_args;
+          may Ctype.generalize c.Types.cd_res)
         v
   | Type_record(r, rep) ->
-      List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
+      List.iter (fun l -> Ctype.generalize l.Types.ld_type) r
   end;
   begin match decl.type_manifest with
   | None    -> ()
@@ -339,7 +351,7 @@ let check_constraints env sdecl (_, decl) =
         List.fold_left foldf SMap.empty pl
       in
       List.iter
-        (fun (name, tyl, ret_type) ->
+        (fun {Types.cd_id=name; cd_args=tyl; cd_res=ret_type} ->
           let {pcd_args = styl; pcd_res = sret_type; _} =
             try SMap.find (Ident.name name) pl_index
             with Not_found -> assert false in
@@ -365,7 +377,7 @@ let check_constraints env sdecl (_, decl) =
             if name = pld.pld_name.txt then pld.pld_type.ptyp_loc else get_loc name tl
       in
       List.iter
-        (fun (name, _, ty) ->
+        (fun {Types.ld_id=name; ld_type=ty} ->
           check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
         l
   end;
@@ -577,18 +589,6 @@ let compute_variance env visited vari ty =
   compute_variance_rec vari ty
 
 let make_variance ty = (ty, ref Variance.null)
-let whole_type decl =
-  match decl.type_kind with
-    Type_variant tll ->
-      Btype.newgenty
-        (Ttuple (List.map (fun (_, tl, _) -> Btype.newgenty (Ttuple tl)) tll))
-  | Type_record (ftl, _) ->
-      Btype.newgenty
-        (Ttuple (List.map (fun (_, _, ty) -> ty) ftl))
-  | Type_abstract ->
-      match decl.type_manifest with
-        Some ty -> ty
-      | _ -> Btype.newgenty (Ttuple [])
 
 let make p n i =
   let open Variance in
@@ -699,7 +699,7 @@ let constrained env vars ty =
   | _ -> true
 
 let compute_variance_gadt env check (required, loc as rloc) decl
-    (_, tl, ret_type_opt) =
+    (tl, ret_type_opt) =
   match ret_type_opt with
   | None ->
       compute_variance_type env check rloc {decl with type_private = Private}
@@ -742,13 +742,13 @@ let compute_variance_decl env check decl (required, loc as rloc) =
     Type_abstract ->
       compute_variance_type env check rloc decl mn
   | Type_variant tll ->
-      if List.for_all (fun (_,_,ret) -> ret = None) tll then
+      if List.for_all (fun c -> c.Types.cd_res = None) tll then
         compute_variance_type env check rloc decl
-          (mn @ add_false (List.flatten (List.map (fun (_,tyl,_) -> tyl) tll)))
+          (mn @ add_false (List.flatten (List.map (fun c -> c.Types.cd_args) tll)))
       else begin
         let mn =
-          List.map (fun (_,ty) -> (Ident.create_persistent"",[ty],None)) mn in
-        let tll = mn @ tll in
+          List.map (fun (_,ty) -> ([ty],None)) mn in
+        let tll = mn @ List.map (fun c -> c.Types.cd_args, c.Types.cd_res) tll in
         match List.map (compute_variance_gadt env check rloc decl) tll with
         | vari :: rem ->
             let varl = List.fold_left (List.map2 Variance.union) vari rem in
@@ -759,7 +759,8 @@ let compute_variance_decl env check decl (required, loc as rloc) =
       end
   | Type_record (ftl, _) ->
       compute_variance_type env check rloc decl
-        (mn @ List.map (fun (_, mut, ty) -> (mut = Mutable, ty)) ftl)
+        (mn @ List.map (fun {Types.ld_mutable; ld_type} ->
+             (ld_mutable = Mutable, ld_type)) ftl)
 
 let is_sharp id =
   let s = Ident.name id in
@@ -1014,7 +1015,13 @@ let transl_exception env excdecl =
   Ctype.end_def();
   let types = List.map (fun cty -> cty.ctyp_type) ttypes in
   List.iter Ctype.generalize types;
-  let exn_decl = { exn_args = types; Types.exn_loc = loc } in
+  let exn_decl =
+    {
+      exn_args = types;
+      exn_attributes = excdecl.pcd_attributes;
+      Types.exn_loc = loc;
+    }
+  in
   let (id, newenv) = Env.enter_exception excdecl.pcd_name.txt exn_decl env in
   let cd =
     { cd_id = id;
@@ -1037,7 +1044,9 @@ let transl_exn_rebind env loc lid =
   Env.mark_constructor Env.Positive env (Longident.last lid) cdescr;
   match cdescr.cstr_tag with
     Cstr_exception (path, _) ->
-      (path, {exn_args = cdescr.cstr_args; Types.exn_loc = loc})
+      (path, {exn_args = cdescr.cstr_args;
+              exn_attributes = [];
+              Types.exn_loc = loc})
   | _ -> raise(Error(loc, Not_an_exception lid))
 
 (* Translate a value declaration *)
@@ -1126,6 +1135,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_variance = [];
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
+      type_attributes = sdecl.ptype_attributes;
     }
   in
   begin match row_path with None -> ()
@@ -1169,6 +1179,7 @@ let abstract_type_decl arity =
       type_variance = replicate_list Variance.full arity;
       type_newtype_level = None;
       type_loc = Location.none;
+      type_attributes = [];
      } in
   Ctype.end_def();
   generalize_decl decl;
@@ -1282,12 +1293,12 @@ let report_error ppf = function
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
-          explain_unbound ppf ty tl (fun (_,tl,_) ->
-            Btype.newgenty (Ttuple tl))
-            "case" (fun (lab,_,_) -> Ident.name lab ^ " of ")
+          explain_unbound ppf ty tl (fun c ->
+            Btype.newgenty (Ttuple c.Types.cd_args))
+            "case" (fun c -> Ident.name c.Types.cd_id ^ " of ")
       | Type_record (tl, _), _ ->
-          explain_unbound ppf ty tl (fun (_,_,t) -> t)
-            "field" (fun (lab,_,_) -> Ident.name lab ^ ": ")
+          explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
+            "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
       | Type_abstract, Some ty' ->
           explain_unbound_single ppf ty ty'
       | _ -> ()

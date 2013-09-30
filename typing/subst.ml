@@ -38,6 +38,16 @@ let for_saving s = { s with for_saving = true }
 let loc s x =
   if s.for_saving && not !Clflags.keep_locs then Location.none else x
 
+let remove_loc =
+  let open Ast_mapper in
+  {default_mapper with location = (fun _this _loc -> Location.none)}
+
+let attrs s x =
+  if s.for_saving && not !Clflags.keep_locs
+  then remove_loc.Ast_mapper.attributes remove_loc x
+  else x
+
+
 let rec module_path s = function
     Pident id as p ->
       begin try Tbl.find id s.modules with Not_found -> p end
@@ -176,12 +186,28 @@ let type_declaration s decl =
         | Type_variant cstrs ->
             Type_variant
               (List.map
-                 (fun (n, args, ret_type) ->
-                   (n, List.map (typexp s) args, may_map (typexp s) ret_type))
+                 (fun c ->
+                    {
+                      cd_id = c.cd_id;
+                      cd_args = List.map (typexp s) c.cd_args;
+                      cd_res = may_map (typexp s) c.cd_res;
+                      cd_loc = loc s c.cd_loc;
+                      cd_attributes = attrs s c.cd_attributes;
+                    }
+                 )
                  cstrs)
         | Type_record(lbls, rep) ->
             Type_record
-              (List.map (fun (n, mut, arg) -> (n, mut, typexp s arg)) lbls,
+              (List.map (fun l ->
+                   {
+                     ld_id = l.ld_id;
+                     ld_mutable = l.ld_mutable;
+                     ld_type = typexp s l.ld_type;
+                     ld_loc = loc s l.ld_loc;
+                     ld_attributes = attrs s l.ld_attributes;
+                   }
+                 )
+                  lbls,
                rep)
         end;
       type_manifest =
@@ -194,19 +220,20 @@ let type_declaration s decl =
       type_variance = decl.type_variance;
       type_newtype_level = None;
       type_loc = loc s decl.type_loc;
+      type_attributes = attrs s decl.type_attributes;
     }
   in
   cleanup_types ();
   decl
 
 let class_signature s sign =
-  { cty_self = typexp s sign.cty_self;
-    cty_vars =
-      Vars.map (function (m, v, t) -> (m, v, typexp s t)) sign.cty_vars;
-    cty_concr = sign.cty_concr;
-    cty_inher =
+  { csig_self = typexp s sign.csig_self;
+    csig_vars =
+      Vars.map (function (m, v, t) -> (m, v, typexp s t)) sign.csig_vars;
+    csig_concr = sign.csig_concr;
+    csig_inher =
       List.map (fun (p, tl) -> (type_path s p, List.map (typexp s) tl))
-        sign.cty_inher
+        sign.csig_inher;
   }
 
 let rec class_type s =
@@ -228,7 +255,10 @@ let class_declaration s decl =
         begin match decl.cty_new with
           None    -> None
         | Some ty -> Some (typexp s ty)
-        end }
+        end;
+      cty_loc = loc s decl.cty_loc;
+      cty_attributes = attrs s decl.cty_attributes;
+    }
   in
   (* Do not clean up if saving: next is cltype_declaration *)
   if not s.for_saving then cleanup_types ();
@@ -239,7 +269,10 @@ let cltype_declaration s decl =
     { clty_params = List.map (typexp s) decl.clty_params;
       clty_variance = decl.clty_variance;
       clty_type = class_type s decl.clty_type;
-      clty_path = type_path s decl.clty_path }
+      clty_path = type_path s decl.clty_path;
+      clty_loc = loc s decl.clty_loc;
+      clty_attributes = attrs s decl.clty_attributes;
+    }
   in
   (* Do clean up even if saving: type_declaration may be recursive *)
   cleanup_types ();
@@ -250,23 +283,17 @@ let class_type s cty =
   cleanup_types ();
   cty
 
-let remove_loc =
-  let open Ast_mapper in
-  {default_mapper with location = (fun _this _loc -> Location.none)}
-
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
     val_kind = descr.val_kind;
     val_loc = loc s descr.val_loc;
-    val_attributes =
-      if s.for_saving && not !Clflags.keep_locs
-      then remove_loc.Ast_mapper.attributes remove_loc descr.val_attributes
-      else descr.val_attributes;
+    val_attributes = attrs s descr.val_attributes;
    }
 
 let exception_declaration s descr =
   { exn_args = List.map (type_expr s) descr.exn_args;
     exn_loc = loc s descr.exn_loc;
+    exn_attributes = attrs s descr.exn_attributes;
    }
 
 let rec rename_bound_idents s idents = function
@@ -321,8 +348,8 @@ and signature_component s comp newid =
       Sig_type(newid, type_declaration s d, rs)
   | Sig_exception(id, d) ->
       Sig_exception(newid, exception_declaration s d)
-  | Sig_module(id, mty, rs) ->
-      Sig_module(newid, modtype s mty, rs)
+  | Sig_module(id, d, rs) ->
+      Sig_module(newid, module_declaration s d, rs)
   | Sig_modtype(id, d) ->
       Sig_modtype(newid, modtype_declaration s d)
   | Sig_class(id, d, rs) ->
@@ -333,6 +360,12 @@ and signature_component s comp newid =
 and modtype_declaration s = function
     Modtype_abstract -> Modtype_abstract
   | Modtype_manifest mty -> Modtype_manifest(modtype s mty)
+
+and module_declaration s decl =
+  {
+    md_type = modtype s decl.md_type;
+    md_attributes = attrs s decl.md_attributes;
+  }
 
 (* For every binding k |-> d of m1, add k |-> f d to m2
    and return resulting merged map. *)
