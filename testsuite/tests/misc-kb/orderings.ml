@@ -16,7 +16,7 @@
 
 open Terms
 
-type ordering = 
+type ordering =
     Greater
   | Equal
   | NotGE
@@ -65,10 +65,10 @@ let lex_ext order = function
       | ( _ , []) -> Greater
       | (x1::l1, x2::l2) ->
           match order (x1,x2) with
-            Greater -> if List.for_all (fun n' -> gt_ord order (m,n')) l2 
+            Greater -> if List.for_all (fun n' -> gt_ord order (m,n')) l2
                        then Greater else NotGE
           | Equal -> lexrec (l1,l2)
-          | NotGE -> if List.exists (fun m' -> ge_ord order (m',n)) l1 
+          | NotGE -> if List.exists (fun m' -> ge_ord order (m',n)) l1
                      then Greater else NotGE in
       lexrec (sons1, sons2)
   | _ -> failwith "lex_ext"
@@ -76,9 +76,9 @@ let lex_ext order = function
 
 (* Recursive path ordering *)
 
-let rpo op_order ext = 
+let rpo op_order ext =
   let rec rporec (m,n) =
-    if m = n then Equal else 
+    if m = n then Equal else
       match m with
           Var vm -> NotGE
         | Term(op1,sons1) ->
@@ -96,4 +96,3 @@ let rpo op_order ext =
                         if List.exists (fun m' -> ge_ord rporec (m',n)) sons1
                         then Greater else NotGE
   in rporec
-

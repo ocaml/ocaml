@@ -28,4 +28,3 @@ let tree =
   ])
 
 let () = Format.printf "%a@." print_elt tree
-

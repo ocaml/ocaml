@@ -7,4 +7,3 @@ let a =
   [ <:expr< parser [: `$str:x$ :] -> t >> -> x
   | _ -> assert False ]
 in Format.printf "a: %S@." a;
-

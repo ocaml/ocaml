@@ -92,7 +92,7 @@ value insert_matching matchings (patt, has_when, expr) =
         if m1.has_when && not m.has_when then [m1 :: gml] else
         if not m1.has_when && m.has_when then [m :: loop ml] else
         (* either both or none have a when clause *)
-        if compare m1.patt m.patt = 0 then 
+        if compare m1.patt m.patt = 0 then
           if not m1.has_when then [m1 :: ml] else [m1 :: gml]
         else [m :: loop ml]
     | [] -> [m1] ]

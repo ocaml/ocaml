@@ -491,7 +491,7 @@ and print_out_type_decl kwd ppf td =
   match td.otype_type with
   [ Otyp_abstract ->
       fprintf ppf "@[<2>@[<hv 2>@[%s %t@]@]%a@]" kwd type_defined
-	print_constraints td.otype_cstrs
+        print_constraints td.otype_cstrs
   | _ ->
       fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@]%a@]" kwd type_defined
 	print_types td.otype_type print_constraints td.otype_cstrs ]

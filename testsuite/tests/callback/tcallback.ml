@@ -65,4 +65,3 @@ let _ =
   print_string(tripwire mycamlparam); print_newline();
   Sys.set_signal Sys.sigusr1 (Sys.Signal_handle sighandler);
   print_string(callbacksig ()); print_newline()
-

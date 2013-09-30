@@ -22,5 +22,4 @@ and DirHash
     end
   = struct
       type t = DirCompare.t list
-    end      
-
+    end

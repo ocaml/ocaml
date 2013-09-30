@@ -16,17 +16,17 @@
 
   open Camlp4.PreCast;;
   module ArithGram = MakeGram(Lexer);;
-  
+
   type t = Local of string * t * t
          | Binop of t * (int -> int -> int) * t
          | Int   of int
          | Var   of string;;
-  
+
   let expression = ArithGram.Entry.mk "expression";;
-  
+
   EXTEND ArithGram
     GLOBAL: expression;
-  
+
     expression: (* A grammar entry for expressions *)
     [ "top"
       [ "let"; `LIDENT s; "="; e1 = SELF; "in"; e2 = SELF -> Local(s,e1,e2) ]
@@ -41,12 +41,12 @@
       | `LIDENT s -> Var(s)
       | "("; e = expression; ")" -> e ]
     ];
-  
+
   END;;
-  
+
   let parse_arith s =
     ArithGram.parse_string expression (Loc.mk "<string>") s;;
-  
+
   let rec eval env =
     function
     | Local(x, e1, e2) ->
@@ -56,8 +56,8 @@
          op (eval env e1) (eval env e2)
     | Int(i) -> i
     | Var(x) -> List.assoc x env;;
-  
+
   let calc s =
     Format.printf "%s ==> %d@." s (eval [] (parse_arith s));;
-  
+
   calc "42 * let x = 21 in x + x";;

@@ -57,4 +57,3 @@ let main() =
     ] compile_file usage
 
 let _ = (*Printexc.catch*) main (); exit 0
-

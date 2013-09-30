@@ -103,7 +103,7 @@ let test x v s1 s2 =
 
   check "split"
     (let (l, p, r) = M.split x s1 in
-     fun i -> 
+     fun i ->
        if i < x then img i l = img i s1
        else if i > x then img i r = img i s1
        else p = img i s1)
@@ -120,4 +120,3 @@ let rmap() =
 let _ =
   Random.init 42;
   for i = 1 to 25000 do test (rkey()) (rdata()) (rmap()) (rmap()) done
-  

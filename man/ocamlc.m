@@ -407,7 +407,7 @@ specify the name of the output file produced.
 .B \-output\-obj
 Cause the linker to produce a C object file instead of a bytecode
 executable file. This is useful to wrap OCaml code as a C library,
-callable from any C program. The name of the output object file 
+callable from any C program. The name of the output object file
 must be set with the
 .B \-o
 option. This

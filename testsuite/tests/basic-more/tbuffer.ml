@@ -24,4 +24,3 @@ Buffer.clear b;
 Buffer.add_substitute b identity pat1;
 test (String.length (Buffer.contents b) = n1)
 ;;
-

@@ -331,7 +331,7 @@ void create_file_names(void)
     if (action_fd == -1)
         open_error(action_file_name);
     entry_fd = mkstemp(entry_file_name);
-    if (entry_fd == -1)                 
+    if (entry_fd == -1)
         open_error(entry_file_name);
     text_fd = mkstemp(text_file_name);
     if (text_fd == -1)

@@ -42,4 +42,3 @@
   (store float "low" 0.0)
   (store float "hi" 1.0)
   (load float (app "integr" "square" "low" "hi" n addr)))
-

@@ -10,4 +10,3 @@ module PR_4758 = struct
     module Other = A
   end
 end
-

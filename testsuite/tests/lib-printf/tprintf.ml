@@ -272,7 +272,7 @@ try
   test (sprintf "%B" true = "true");
   test (sprintf "%B" false = "false");
 
-  printf "ld/li positive\n%!";
+  printf "\nld/li positive\n%!";
   test (sprintf "%ld/%li" 42l 43l = "42/43");
   test (sprintf "%-4ld/%-5li" 42l 43l = "42  /43   ");
   test (sprintf "%04ld/%05li" 42l 43l = "0042/00043");
@@ -353,7 +353,7 @@ try
   (* Nativeint not tested: looks like too much work, and anyway it should
      work like Int32 or Int64. *)
 
-  printf "Ld/Li positive\n%!";
+  printf "\nLd/Li positive\n%!";
   test (sprintf "%Ld/%Li" 42L 43L = "42/43");
   test (sprintf "%-4Ld/%-5Li" 42L 43L = "42  /43   ");
   test (sprintf "%04Ld/%05Li" 42L 43L = "0042/00043");

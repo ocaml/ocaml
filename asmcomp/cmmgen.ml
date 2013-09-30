@@ -1273,7 +1273,7 @@ and transl_prim_2 p arg1 arg2 dbg =
           bind "header" (header arr) (fun hdr ->
             if wordsize_shift = numfloat_shift then
               Csequence(make_checkbound dbg [addr_array_length hdr; idx],
-                        Cifthenelse(is_addr_array_hdr hdr, 
+                        Cifthenelse(is_addr_array_hdr hdr,
                                     addr_array_ref arr idx,
                                     float_array_ref arr idx))
             else
@@ -1390,7 +1390,7 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
           bind "header" (header arr) (fun hdr ->
             if wordsize_shift = numfloat_shift then
               Csequence(make_checkbound dbg [addr_array_length hdr; idx],
-                        Cifthenelse(is_addr_array_hdr hdr, 
+                        Cifthenelse(is_addr_array_hdr hdr,
                                     addr_array_set arr idx newval,
                                     float_array_set arr idx
                                                     (unbox_float newval)))
@@ -1774,12 +1774,12 @@ let emit_constant_closure symb fundecls cont =
 let emit_all_constants cont =
   let c = ref cont in
   List.iter
-    (fun (lbl, global, cst) -> 
+    (fun (lbl, global, cst) ->
        let cst = emit_constant lbl cst [] in
-       let cst = if global then 
-	 Cglobal_symbol lbl :: cst
+       let cst = if global then
+         Cglobal_symbol lbl :: cst
        else cst in
-	 c:= Cdata(cst):: !c)
+         c:= Cdata(cst):: !c)
     (Compilenv.structured_constants());
 (*  structured_constants := []; done in Compilenv.reset() *)
   Hashtbl.clear immstrings;   (* PR#3979 *)
@@ -1992,15 +1992,15 @@ let final_curry_function arity =
           args @ [Cvar last_arg; Cvar clos])
     else
       if n = arity - 1 then
-	begin
+        begin
       let newclos = Ident.create "clos" in
       Clet(newclos,
            get_field (Cvar clos) 3,
            curry_fun (get_field (Cvar clos) 2 :: args) newclos (n-1))
-	end else
-	begin
-	  let newclos = Ident.create "clos" in
-	  Clet(newclos,
+        end else
+        begin
+          let newclos = Ident.create "clos" in
+          Clet(newclos,
                get_field (Cvar clos) 4,
                curry_fun (get_field (Cvar clos) 3 :: args) newclos (n-1))
     end in
@@ -2023,15 +2023,15 @@ let rec intermediate_curry_functions arity num =
      {fun_name = name2;
       fun_args = [arg, typ_addr; clos, typ_addr];
       fun_body =
-	 if arity - num > 2 then
-	   Cop(Calloc,
+         if arity - num > 2 then
+           Cop(Calloc,
                [alloc_closure_header 5;
                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                 int_const (arity - num - 1);
                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app");
-		Cvar arg; Cvar clos])
-	 else
-	   Cop(Calloc,
+                Cvar arg; Cvar clos])
+         else
+           Cop(Calloc,
                      [alloc_closure_header 4;
                       Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                       int_const 1; Cvar arg; Cvar clos]);
@@ -2039,35 +2039,35 @@ let rec intermediate_curry_functions arity num =
       fun_dbg  = Debuginfo.none }
     ::
       (if arity - num > 2 then
-	  let rec iter i =
-	    if i <= arity then
-	      let arg = Ident.create (Printf.sprintf "arg%d" i) in
-	      (arg, typ_addr) :: iter (i+1)
-	    else []
-	  in
-	  let direct_args = iter (num+2) in
-	  let rec iter i args clos =
-	    if i = 0 then
-	      Cop(Capply(typ_addr, Debuginfo.none),
-		  (get_field (Cvar clos) 2) :: args @ [Cvar clos])
-	    else
-	      let newclos = Ident.create "clos" in
-	      Clet(newclos,
-		   get_field (Cvar clos) 4,
-		   iter (i-1) (get_field (Cvar clos) 3 :: args) newclos)
-	  in
-	  let cf =
-	    Cfunction
-	      {fun_name = name1 ^ "_" ^ string_of_int (num+1) ^ "_app";
-	       fun_args = direct_args @ [clos, typ_addr];
-	       fun_body = iter (num+1)
-		  (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
-	       fun_fast = true;
+          let rec iter i =
+            if i <= arity then
+              let arg = Ident.create (Printf.sprintf "arg%d" i) in
+              (arg, typ_addr) :: iter (i+1)
+            else []
+          in
+          let direct_args = iter (num+2) in
+          let rec iter i args clos =
+            if i = 0 then
+              Cop(Capply(typ_addr, Debuginfo.none),
+                  (get_field (Cvar clos) 2) :: args @ [Cvar clos])
+            else
+              let newclos = Ident.create "clos" in
+              Clet(newclos,
+                   get_field (Cvar clos) 4,
+                   iter (i-1) (get_field (Cvar clos) 3 :: args) newclos)
+          in
+          let cf =
+            Cfunction
+              {fun_name = name1 ^ "_" ^ string_of_int (num+1) ^ "_app";
+               fun_args = direct_args @ [clos, typ_addr];
+               fun_body = iter (num+1)
+                  (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
+               fun_fast = true;
                fun_dbg = Debuginfo.none }
-	  in
-	  cf :: intermediate_curry_functions arity (num+1)
+          in
+          cf :: intermediate_curry_functions arity (num+1)
        else
-	  intermediate_curry_functions arity (num+1))
+          intermediate_curry_functions arity (num+1))
   end
 
 let curry_function arity =

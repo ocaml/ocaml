@@ -107,13 +107,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | _ -> 1 ])
   ;
 
-  value lident_colon =	 
-     Gram.Entry.of_parser "lident_colon"	 
-       (fun strm ->	 
-         match Stream.npeek 2 strm with	 
-         [ [(LIDENT i, _); (KEYWORD ":", _)] ->	 
-             do { Stream.junk strm; Stream.junk strm; i }	 
-         | _ -> raise Stream.Failure ])	 
+  value lident_colon =
+     Gram.Entry.of_parser "lident_colon"
+       (fun strm ->
+         match Stream.npeek 2 strm with
+         [ [(LIDENT i, _); (KEYWORD ":", _)] ->
+             do { Stream.junk strm; Stream.junk strm; i }
+         | _ -> raise Stream.Failure ])
    ;
 
   value rec is_ident_constr_call =
@@ -580,7 +580,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     optional_type_parameter:
       [ [ `ANTIQUOT (""|"typ"|"anti" as n) s -> <:ctyp< $anti:mk_anti n s$ >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
-        | "+"; "_" -> Ast.TyAnP _loc 
+        | "+"; "_" -> Ast.TyAnP _loc
         | "+"; "'"; i = a_ident -> <:ctyp< +'$lid:i$ >>
         | "-"; "_" -> Ast.TyAnM _loc
         | "-"; "'"; i = a_ident -> <:ctyp< -'$lid:i$ >>

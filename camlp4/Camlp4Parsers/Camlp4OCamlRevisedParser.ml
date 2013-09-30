@@ -1053,7 +1053,7 @@ New syntax:\
         | "'"; i = a_ident -> <:ctyp< '$lid:i$ >>
         | "+"; "'"; i = a_ident -> <:ctyp< +'$lid:i$ >>
         | "-"; "'"; i = a_ident -> <:ctyp< -'$lid:i$ >>
-        | "+"; "_" -> Ast.TyAnP _loc 
+        | "+"; "_" -> Ast.TyAnP _loc
         | "-"; "_" -> Ast.TyAnM _loc
         | "_" -> Ast.TyAny _loc
 
@@ -1149,7 +1149,7 @@ New syntax:\
         | s = a_UIDENT; "="; i = type_longident ->
 	    <:ctyp< $uid:s$ = $id:i$ >>
         | s = a_UIDENT ->
-	    <:ctyp< $uid:s$ >>
+          <:ctyp< $uid:s$ >>
       ] ]
     ;
     constructor_declaration:
@@ -1403,9 +1403,9 @@ New syntax:\
     ;
     cvalue_binding:
       [ [ "="; e = expr -> e
-        | ":"; "type"; t1 = unquoted_typevars; "." ; t2 = ctyp ; "="; e = expr -> 
-	let u = Ast.TyTypePol _loc t1 t2 in
-	<:expr< ($e$ : $u$) >>
+        | ":"; "type"; t1 = unquoted_typevars; "." ; t2 = ctyp ; "="; e = expr ->
+        let u = Ast.TyTypePol _loc t1 t2 in
+        <:expr< ($e$ : $u$) >>
         | ":"; t = poly_type; "="; e = expr -> <:expr< ($e$ : $t$) >>
         | ":"; t = poly_type; ":>"; t2 = ctyp; "="; e = expr ->
             match t with

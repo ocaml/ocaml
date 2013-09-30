@@ -19,7 +19,7 @@
 |       int * int * address -> void
 |       int * int -> void
 |       unit -> unit
-| Hence arg1 -> d0, arg2 -> d1, arg3 -> a0, 
+| Hence arg1 -> d0, arg2 -> d1, arg3 -> a0,
 | and we need a special case for int -> double
 
         .text

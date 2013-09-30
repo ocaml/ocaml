@@ -289,7 +289,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | TyAnt loc _ -> error loc "antiquotation not allowed here"
     | TyOfAmp _ _ _ |TyAmp _ _ _ |TySta _ _ _ |
       TyCom _ _ _ |TyVrn _ _ |TyQuM _ _ |TyQuP _ _ |TyDcl _ _ _ _ _ |TyExt _ _ _ _ |
-	  TyAnP _ | TyAnM _ | TyTypePol _ _ _ |
+        TyAnP _ | TyAnM _ | TyTypePol _ _ _ |
       TyObj _ _ (RvAnt _) | TyNil _ | TyTup _ _ ->
         assert False ]
   and row_field = fun
@@ -686,28 +686,28 @@ value varify_constructors var_names =
   let rec loop t =
     let desc =
       match t.ptyp_desc with
-	  [
+          [
        Ptyp_any -> Ptyp_any
       | Ptyp_var x -> Ptyp_var x
       | Ptyp_arrow label core_type core_type' ->
-	  Ptyp_arrow label (loop core_type) (loop core_type')
+          Ptyp_arrow label (loop core_type) (loop core_type')
       | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
       | Ptyp_constr ({ txt = Lident s }) [] when List.mem s var_names ->
-	  Ptyp_var ("&" ^ s)
+          Ptyp_var ("&" ^ s)
       | Ptyp_constr longident lst ->
-	  Ptyp_constr longident (List.map loop lst)
+          Ptyp_constr longident (List.map loop lst)
       | Ptyp_object lst ->
-	  Ptyp_object (List.map loop_core_field lst)
+          Ptyp_object (List.map loop_core_field lst)
       | Ptyp_class longident lst lbl_list ->
-	  Ptyp_class (longident, List.map loop lst, lbl_list)
+          Ptyp_class (longident, List.map loop lst, lbl_list)
       | Ptyp_alias core_type string ->
-	  Ptyp_alias(loop core_type, string)
+          Ptyp_alias(loop core_type, string)
       | Ptyp_variant row_field_list flag lbl_lst_option ->
-	  Ptyp_variant(List.map loop_row_field row_field_list, flag, lbl_lst_option)
+          Ptyp_variant(List.map loop_row_field row_field_list, flag, lbl_lst_option)
       | Ptyp_poly string_lst core_type ->
-	  Ptyp_poly(string_lst, loop core_type)
+          Ptyp_poly(string_lst, loop core_type)
       | Ptyp_package longident lst ->
-	  Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
+          Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
 ]
     in
     {(t) with ptyp_desc = desc}
@@ -715,17 +715,17 @@ value varify_constructors var_names =
     let desc =
       match t.pfield_desc with
       [ Pfield(n,typ) ->
-	  Pfield(n,loop typ)
+          Pfield(n,loop typ)
       | Pfield_var ->
-	  Pfield_var]
+          Pfield_var]
     in
     { (t) with pfield_desc=desc}
   and loop_row_field x  =
     match x with
       [ Rtag(label,flag,lst) ->
-	  Rtag(label,flag,List.map loop lst)
+          Rtag(label,flag,List.map loop lst)
       | Rinherit t ->
-	  Rinherit (loop t) ]
+          Rinherit (loop t) ]
   in
   loop;
 
@@ -948,10 +948,10 @@ value varify_constructors var_names =
     | <:binding@_loc< $pat:( <:patt@sloc< $lid:bind_name$ >> )$ = ($e$ : $TyTypePol _ vs ty$) >> ->
       (* this code is not pretty because it is temporary *)
       let rec id_to_string x =
-	match x with
-	    [ <:ctyp< $lid:x$ >> -> [x]
-	    | <:ctyp< $x$ $y$ >> -> (id_to_string x) @ (id_to_string y)
-	    | _ -> assert False]
+        match x with
+            [ <:ctyp< $lid:x$ >> -> [x]
+            | <:ctyp< $x$ $y$ >> -> (id_to_string x) @ (id_to_string y)
+            | _ -> assert False]
       in
       let vars = id_to_string vs in
       let ampersand_vars = List.map (fun x -> "&" ^ x) vars in
@@ -960,14 +960,14 @@ value varify_constructors var_names =
       let mkpat = mkpat _loc in
       let e = mkexp (Pexp_constraint (expr e) (Some (ctyp ty)) None) in
       let rec mk_newtypes x =
-	match x with
-	  [ [newtype :: []] -> mkexp (Pexp_newtype(newtype, e))
-	  | [newtype :: newtypes] ->
-	    mkexp(Pexp_newtype (newtype,mk_newtypes newtypes))
-	  | [] -> assert False]
+        match x with
+          [ [newtype :: []] -> mkexp (Pexp_newtype(newtype, e))
+          | [newtype :: newtypes] ->
+            mkexp(Pexp_newtype (newtype,mk_newtypes newtypes))
+          | [] -> assert False]
       in
       let pat =
-	mkpat (Ppat_constraint (mkpat (Ppat_var (with_loc bind_name sloc)),
+        mkpat (Ppat_constraint (mkpat (Ppat_var (with_loc bind_name sloc)),
                                 mktyp _loc (Ptyp_poly ampersand_vars ty')))
       in
       let e = mk_newtypes vars in

@@ -7,5 +7,5 @@ let facts = [ fact 1; fact 2; fact 3; fact (Random.int 4) ]
 let () =
   Api.reg_mod "Plugin";
   Api.add_cb (fun () -> print_endline "Callback from plugin");
-  print_endline "COUCOU"; 
+  print_endline "COUCOU";
   ()

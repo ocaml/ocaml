@@ -65,7 +65,7 @@ CAMLprim value camltk_setvar(value var, value contents)
 
   if (s == NULL)
     tk_error(Tcl_GetStringResult(cltclinterp));
-  else 
+  else
     return(Val_unit);
 }
 
