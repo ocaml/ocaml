@@ -36,9 +36,10 @@ LIB_OBJS=pervasives.cmo \
   $(LIB)/lazy.cmo $(LIB)/stream.cmo $(LIB)/buffer.cmo                       \
   $(LIB)/printf.cmo $(LIB)/arg.cmo $(LIB)/printexc.cmo $(LIB)/gc.cmo        \
   $(LIB)/digest.cmo $(LIB)/random.cmo $(LIB)/hashtbl.cmo                    \
-  $(LIB)/format.cmo $(LIB)/scanf.cmo $(LIB)/camlinternalOO.cmo              \
+  $(LIB)/format.cmo $(LIB)/scanf.cmo $(LIB)/callback.cmo \
+  $(LIB)/camlinternalOO.cmo              \
   $(LIB)/oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/genlex.cmo                \
-  $(LIB)/callback.cmo $(LIB)/weak.cmo $(LIB)/filename.cmo                   \
+  $(LIB)/weak.cmo $(LIB)/filename.cmo                   \
   $(LIB)/complex.cmo $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo           \
   $(LIB)/stringLabels.cmo $(LIB)/stdLabels.cmo $(LIB)/moreLabels.cmo
 

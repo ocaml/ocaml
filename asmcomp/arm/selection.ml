@@ -16,11 +16,9 @@
 (* Instruction selection for the ARM processor *)
 
 open Arch
+open Proc
 open Cmm
 open Mach
-open Misc
-open Proc
-open Reg
 
 let is_offset chunk n =
   match chunk with

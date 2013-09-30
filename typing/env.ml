@@ -113,10 +113,14 @@ module EnvTbl =
     type 'a t = ('a * bool ref) Ident.tbl
 
     let empty = Ident.empty
-    let current_slot = ref (ref true)
+    let dummy_slot = ref true
+    let current_slot = ref dummy_slot
 
     let add id x tbl =
       Ident.add id (x, !current_slot) tbl
+
+    let add_dont_track id x tbl =
+      Ident.add id (x, dummy_slot) tbl
 
     let find_same_not_using id tbl =
       fst (Ident.find_same id tbl)
@@ -940,7 +944,7 @@ and store_value ?check id path decl env =
 and store_annot id path annot env =
   if !Clflags.annotations then
     { env with
-      annotations = EnvTbl.add id (path, annot) env.annotations }
+      annotations = EnvTbl.add_dont_track id (path, annot) env.annotations }
   else env
 
 and store_type id path info env =

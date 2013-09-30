@@ -346,7 +346,11 @@ class virtual text =
         in
         fun b s ->
       if !colorize_code then
-         self#html_of_code b (remove_useless_newlines s)
+          (
+           bs b "<pre class=\"codepre\">";
+           self#html_of_code b (remove_useless_newlines s);
+           bs b "</pre>"
+          )
       else
         (
          bs b "<pre class=\"codepre\"><code class=\"";
@@ -414,7 +418,6 @@ class virtual text =
 
     method html_of_Title b n label_opt t =
       let label1 = self#create_title_label (n, label_opt, t) in
-      bp b "<span id=\"%s\">" (Naming.label_target label1);
       let (tag_o, tag_c) =
         if n > 6 then
           (Printf.sprintf "div class=\"h%d\"" n, "div")
@@ -422,13 +425,12 @@ class virtual text =
           let t = Printf.sprintf "h%d" n in (t, t)
       in
       bs b "<";
-      bs b tag_o;
+      bp b "%s id=\"%s\"" tag_o (Naming.label_target label1);
       bs b ">";
       self#html_of_text b t;
       bs b "</";
       bs b tag_c;
-      bs b ">";
-      bs b "</span>"
+      bs b ">"
 
     method html_of_Latex b _ = ()
       (* don't care about LaTeX stuff in HTML. *)

@@ -21,6 +21,7 @@ open Cmo_format
 type error =
     File_not_found of string
   | Not_an_object_file of string
+  | Wrong_object_name of string
   | Symbol_error of string * Symtable.error
   | Inconsistent_import of string * string * string
   | Custom_runtime
@@ -272,6 +273,12 @@ let make_absolute file =
 (* Create a bytecode executable file *)
 
 let link_bytecode ppf tolink exec_name standalone =
+  (* Avoid the case where the specified exec output file is the same as
+     one of the objects to be linked *)
+  List.iter (function
+    | Link_object(file_name, _) when file_name = exec_name ->
+      raise (Error (Wrong_object_name exec_name));
+    | _ -> ()) tolink;
   Misc.remove_file exec_name; (* avoid permission problems, cf PR#1911 *)
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
@@ -581,6 +588,8 @@ let report_error ppf = function
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name
+  | Wrong_object_name name ->
+      fprintf ppf "The output file %s has a wrong name. The extension implies object file when the link step was requested" name
   | Symbol_error(name, err) ->
       fprintf ppf "Error while linking %a:@ %a" Location.print_filename name
       Symtable.report_error err

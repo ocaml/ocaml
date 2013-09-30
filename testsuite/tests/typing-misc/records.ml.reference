@@ -22,4 +22,19 @@ Error: Cannot create values of the private type u
   fun x -> x.u <- 3;;
              ^
 Error: Cannot assign field u of the private type u
+#         module M : sig type t = { x : int; y : int; } end
+#   val f : M.t -> int = <fun>
+# val r : M.t = {M.x = 1; y = 2}
+# val z : int = 3
+#         module M : sig type t = { x : int; y : int; } type u = { y : bool; } end
+#   Characters 43-51:
+  let f {M.x; y} = x+y;; (* fails *)
+        ^^^^^^^^
+Error: This pattern matches values of type M.u
+       but a pattern was expected which matches values of type M.t
+# Characters 16-17:
+  let r = {M.x=1; y=2};; (* fails *)
+                  ^
+Error: The record field label M.y belongs to the type M.u
+       but is mixed here with labels of type M.t
 # 

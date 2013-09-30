@@ -23,6 +23,7 @@ val extract_crc_interfaces: unit -> (string * Digest.t) list
 type error =
     File_not_found of string
   | Not_an_object_file of string
+  | Wrong_object_name of string
   | Symbol_error of string * Symtable.error
   | Inconsistent_import of string * string * string
   | Custom_runtime

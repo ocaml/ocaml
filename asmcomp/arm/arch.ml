@@ -15,7 +15,6 @@
 
 (* Specific operations for the ARM processor *)
 
-open Misc
 open Format
 
 type abi = EABI | EABI_VFP
