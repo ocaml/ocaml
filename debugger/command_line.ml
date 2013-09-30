@@ -187,6 +187,8 @@ let interprete_line ppf line =
     with
     | Parsing.Parse_error ->
         error "Syntax error."
+    | Failure "int_of_string" ->
+      error "Integer overflow"
 
 let line_loop ppf line_buffer =
   resume_user_input ();

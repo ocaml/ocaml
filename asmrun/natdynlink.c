@@ -18,7 +18,6 @@
 #include "callback.h"
 #include "alloc.h"
 #include "intext.h"
-#include "natdynlink.h"
 #include "osdeps.h"
 #include "fail.h"
 
