@@ -81,6 +81,13 @@ struct caml_ba_array {
 #endif
 };
 
+/* Size of struct caml_ba_array, in bytes, without dummy first dimension */
+#if (__STDC_VERSION__ >= 199901L)
+#define SIZEOF_BA_ARRAY sizeof(struct caml_ba_array)
+#else
+#define SIZEOF_BA_ARRAY (sizeof(struct caml_ba_array) - sizeof(intnat))
+#endif
+
 #define Caml_ba_array_val(v) ((struct caml_ba_array *) Data_custom_val(v))
 
 #define Caml_ba_data_val(v) (Caml_ba_array_val(v)->data)

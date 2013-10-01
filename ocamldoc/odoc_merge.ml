@@ -1080,7 +1080,7 @@ let merge merge_options modules_list =
                    raise (Failure (Odoc_messages.two_interfaces m.m_name))
             )
         | _ ->
-            (* two many Module.t ! *)
+            (* too many Module.t ! *)
             raise (Failure (Odoc_messages.too_many_module_objects m.m_name))
 
   in

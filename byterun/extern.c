@@ -465,8 +465,8 @@ static void extern_rec(value v)
       break;
     case Infix_tag:
       writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
-      extern_rec(v - Infix_offset_hd(hd));
-      break;
+      v = v - Infix_offset_hd(hd); /* PR#5772 */
+      continue;
     case Custom_tag: {
       uintnat sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;

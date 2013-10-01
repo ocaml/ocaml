@@ -1129,7 +1129,7 @@ value varify_constructors var_names =
         [mkstr loc (Pstr_exception (with_loc (conv_con s) loc)
                       (List.map ctyp (list_of_ctyp t []))) :: l ]
     | <:str_item@loc< exception $uid:s$ = $i$ >> ->
-        [mkstr loc (Pstr_exn_rebind (with_loc (conv_con s) loc) (ident i)) :: l ]
+        [mkstr loc (Pstr_exn_rebind (with_loc (conv_con s) loc) (long_uident ~conv_con i)) :: l ]
     | StExc _ _ -> assert False (*FIXME*)
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
     | StExt loc n t sl -> [mkstr loc (Pstr_primitive (with_loc n loc) (mkvalue_desc loc t (list_of_meta_list sl))) :: l]

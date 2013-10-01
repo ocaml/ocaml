@@ -1057,8 +1057,6 @@ let new_declaration newtype manifest =
   }
 
 let instance_constructor ?in_pattern cstr =
-  let ty_res = copy cstr.cstr_res in
-  let ty_args = List.map copy cstr.cstr_args in
   begin match in_pattern with
   | None -> ()
   | Some (env, newtype_lev) ->
@@ -1073,10 +1071,14 @@ let instance_constructor ?in_pattern cstr =
           Env.enter_type (get_new_abstract_name name) decl !env in
         env := new_env;
         let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
-        link_type (copy existential) to_unify
+	let tv = copy existential in
+	assert (is_Tvar tv);
+        link_type tv to_unify
       in
       List.iter process cstr.cstr_existentials
   end;
+  let ty_res = copy cstr.cstr_res in
+  let ty_args = List.map copy cstr.cstr_args in
   cleanup_types ();
   (ty_args, ty_res)
 
@@ -1844,6 +1846,10 @@ let is_abstract_newtype env p =
     decl.type_kind = Type_abstract
   with Not_found -> false
 
+let non_aliasable p decl =
+  in_pervasives p ||
+  in_current_module p && decl.type_newtype_level = None
+
 (* mcomp type_pairs subst env t1 t2 does not raise an
    exception if it is possible that t1 and t2 are actually
    equal, assuming the types in type_pairs are equal and
@@ -1882,6 +1888,9 @@ let rec mcomp type_pairs subst env t1 t2 =
                   mcomp_list type_pairs subst env tl1 tl2
                 | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
                   mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2
+                | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
+                  let decl = Env.find_type p env in
+                  if non_aliasable p decl then raise (Unify [])
                 | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2))
                   when Path.same p1 p2 && n1 = n2 ->
                   mcomp_list type_pairs subst env tl1 tl2
@@ -1959,17 +1968,13 @@ and mcomp_row type_pairs subst env row1 row2 =
     pairs
 
 and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
-  let non_aliased p decl =
-    in_pervasives p ||
-    in_current_module p && decl.type_newtype_level = None
-  in
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
       if Path.same p1 p2 then
-	if non_aliased p1 decl then mcomp_list type_pairs subst env tl1 tl2 else ()
+	if non_aliasable p1 decl then mcomp_list type_pairs subst env tl1 tl2 else ()
       else 
-	if non_aliased p1 decl && non_aliased p2 decl' then raise (Unify [])
+	if non_aliasable p1 decl && non_aliasable p2 decl' then raise (Unify [])
 	else match decl.type_kind, decl'.type_kind with
 	  | Type_record (lst,r), Type_record (lst',r') when r = r' ->
 	      mcomp_list type_pairs subst env tl1 tl2;
@@ -1988,9 +1993,9 @@ and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 =
 	  | Type_open, Type_record _ -> raise (Unify [])
 	      
 	  | Type_abstract, (Type_variant _ | Type_record _ | Type_open) 
-	      when non_aliased p1 decl -> raise (Unify [])
+	      when non_aliasable p1 decl -> raise (Unify [])
 	  | (Type_variant _ | Type_record _ | Type_open), Type_abstract
-	      when non_aliased p2 decl' -> raise (Unify [])
+	      when non_aliasable p2 decl' -> raise (Unify [])
 	  | _ -> ()
   with Not_found -> ()
 
