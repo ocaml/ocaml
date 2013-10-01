@@ -876,6 +876,8 @@ module Analyser =
             let rec f = function
                 Parsetree.Pmty_ident longident ->
                   Name.from_longident longident.txt
+              | Parsetree.Pmty_alias longident ->
+                  Name.from_longident longident.txt
               | Parsetree.Pmty_signature _ ->
                   "??"
               | Parsetree.Pmty_functor _ ->
@@ -1066,6 +1068,16 @@ module Analyser =
           Module_type_alias { mta_name = Odoc_env.full_module_type_name env name ;
                               mta_module = None }
 
+      | Parsetree.Pmty_alias longident ->
+          let name =
+            match sig_module_type with
+              Types.Mty_alias path -> Name.from_path path
+            | _ -> Name.from_longident longident.txt
+          in
+          (* Wrong naming... *)
+          Module_type_alias { mta_name = Odoc_env.full_module_name env name ;
+                              mta_module = None }
+
       | Parsetree.Pmty_signature ast ->
           (
            let ast = filter_out_erased_items_from_signature erased ast in
@@ -1135,7 +1147,8 @@ module Analyser =
     and analyse_module_kind
         ?(erased = Name.Set.empty) env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
-        Parsetree.Pmty_ident longident ->
+        Parsetree.Pmty_ident longident
+      | Parsetree.Pmty_alias longident ->
           let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
           Module_with ( k, "" )
 

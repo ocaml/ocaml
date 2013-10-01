@@ -18,7 +18,7 @@ Characters 27-29:
   module C'' : (module C) = C';; (* fails *)
                             ^^
 Error: Signature mismatch:
-       Modules do not match: (module C') is not included in (module Char)
+       Modules do not match: (module C') is not included in (module C)
 #   module C'' = Char
 # - : char = 'B'
 #   module C3 :
@@ -89,7 +89,7 @@ Error: Signature mismatch:
 #   module M2 : sig module N' : sig val x : int end end
 # - : int = 1
 #   # - : int = 1
-#         module M : sig module C = Char module C' = Char end
+#         module M : sig module C = Char module C' = C end
 #   module M1 : sig module C : sig val chr : int -> char end module C' = C end
 # - : char = 'B'
 #   module M2 : sig module C' : sig val chr : int -> char end end

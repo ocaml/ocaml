@@ -7,7 +7,7 @@
 Error: This expression has type F0.t but an expression was expected of type
          Foobar.t
 #   module F = Foobar
-#   val f : Foobar.t -> Foobar.t = <fun>
+#   val f : F.t -> Foobar.t = <fun>
 #   module M : sig type t = < m : int > end
 # module M1 : sig type t = private < m : int; .. > end
 # module M2 : sig type t = private < m : int; .. > end

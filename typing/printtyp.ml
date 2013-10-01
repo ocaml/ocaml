@@ -247,28 +247,22 @@ let rec uniq = function
 
 let rec normalize_type_path ?(cache=false) env p =
   try
-    let desc = Env.find_type p env in
-    if desc.type_private = Private || desc.type_newtype_level <> None then
-      (p, Id)
-    else match desc.type_manifest with
-      Some ty ->
-        let params = List.map repr desc.type_params in
-        begin match repr ty with
-          {desc = Tconstr (p1, tyl, _)} ->
-            let tyl = List.map repr tyl in
-            if List.length params = List.length tyl
-            && List.for_all2 (==) params tyl
-            then normalize_type_path ~cache env p1
-            else if cache || List.length params <= List.length tyl
-                 || not (uniq tyl) then (p, Id)
-            else
-              let l1 = List.map (index params) tyl in
-              let (p2, s2) = normalize_type_path ~cache env p1 in
-              (p2, compose l1 s2)
-        | ty ->
-            (p, Nth (index params ty))
-        end
-    | None -> (p, Id)
+    let (params, ty, _) = Env.find_type_expansion p env in
+    let params = List.map repr params in
+    match repr ty with
+      {desc = Tconstr (p1, tyl, _)} ->
+        let tyl = List.map repr tyl in
+        if List.length params = List.length tyl
+        && List.for_all2 (==) params tyl
+        then normalize_type_path ~cache env p1
+        else if cache || List.length params <= List.length tyl
+             || not (uniq tyl) then (p, Id)
+        else
+          let l1 = List.map (index params) tyl in
+          let (p2, s2) = normalize_type_path ~cache env p1 in
+          (p2, compose l1 s2)
+    | ty ->
+        (p, Nth (index params ty))
   with
     Not_found -> (p, Id)
 

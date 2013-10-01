@@ -348,8 +348,9 @@ and approx_sig env ssg =
               sdecls
           in
           let newenv =
-            List.fold_left (fun env (id, md) -> Env.add_module_declaration id md env)
-            env decls in
+            List.fold_left
+              (fun env (id, md) -> Env.add_module_declaration id md env)
+              env decls in
           map_rec (fun rs (id, md) -> Sig_module(id, md, rs)) decls
                   (approx_sig newenv srem)
       | Psig_modtype d ->
@@ -689,15 +690,16 @@ and transl_modtype_info env sinfo =
 and transl_recmodule_modtypes loc env sdecls =
   let make_env curr =
     List.fold_left
-      (fun env (id, _, mty) -> Env.add_module id mty env)
+      (fun env (id, _, mty) -> Env.add_module ~arg:true id mty env)
       env curr in
   let make_env2 curr =
     List.fold_left
-      (fun env (id, _, mty) -> Env.add_module id mty.mty_type env)
+      (fun env (id, _, mty) -> Env.add_module ~arg:true id mty.mty_type env)
       env curr in
   let transition env_c curr =
     List.map2
-      (fun pmd (id, id_loc, mty) -> (id, id_loc, transl_modtype env_c pmd.pmd_type))
+      (fun pmd (id, id_loc, mty) ->
+        (id, id_loc, transl_modtype env_c pmd.pmd_type))
       sdecls curr in
   let ids = List.map (fun x -> Ident.create x.pmd_name.txt) sdecls in
   let approx_env =
@@ -710,7 +712,7 @@ and transl_recmodule_modtypes loc env sdecls =
     List.fold_left
       (fun env id ->
          let dummy = Mty_ident (Path.Pident (Ident.create "#recmod#")) in
-         Env.add_module id dummy env
+         Env.add_module ~arg:true id dummy env
       )
       env ids
   in
@@ -850,7 +852,7 @@ let check_recmodule_inclusion env bindings =
                if first_time
                then mty_actual
                else subst_and_strengthen env s id mty_actual in
-             Env.add_module id' mty_actual' env)
+             Env.add_module ~arg:false id' mty_actual' env)
           env bindings1 in
       (* Build the output substitution Y_i <- X_i *)
       let s' =
@@ -1126,10 +1128,13 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let sbind =
           List.map
             (function
-              | {pmb_name = name; pmb_expr = {pmod_desc=Pmod_constraint(expr, typ)}; pmb_attributes = attrs} ->
+              | {pmb_name = name;
+                 pmb_expr = {pmod_desc=Pmod_constraint(expr, typ)};
+                 pmb_attributes = attrs} ->
                   name, typ, expr, attrs
               | mb ->
-                  raise (Error (mb.pmb_expr.pmod_loc, env, Recursive_module_require_explicit_type))
+                  raise (Error (mb.pmb_expr.pmod_loc, env,
+                                Recursive_module_require_explicit_type))
             )
             sbind
         in
@@ -1152,6 +1157,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                in
                (id, name, mty, modl, mty', attrs))
             decls sbind in
+        let newenv = (* allow aliasing recursive modules from outside *)
+          List.fold_left
+            (fun env md -> Env.add_module md.md_id md.md_type.mty_type env)
+            env decls
+        in
         let bindings2 =
           check_recmodule_inclusion newenv bindings1 in
         Tstr_recmodule bindings2,

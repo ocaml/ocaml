@@ -606,7 +606,6 @@ New syntax:\
             <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = SELF ->
             <:expr< let module $m$ = $mb$ in $e$ >>
-
         | "let"; "open"; "!"; i = module_longident; "in"; e = SELF ->
             <:expr< let open! $id:i$ in $e$>>
         | "let"; "open"; i = module_longident; "in"; e = SELF ->

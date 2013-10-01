@@ -439,39 +439,6 @@ let find_type p env =
 let find_type_descrs p env =
   snd (find_type_full p env)
 
-(* Find the manifest type associated to a type when appropriate:
-   - the type should be public or should have a private row,
-   - the type should have an associated manifest type. *)
-let find_type_expansion ?level path env =
-  let decl = find_type path env in
-  match decl.type_manifest with
-  | Some body when decl.type_private = Public
-              || decl.type_kind <> Type_abstract
-              || Btype.has_constr_row body ->
-                  (decl.type_params, body, may_map snd decl.type_newtype_level)
-  (* The manifest type of Private abstract data types without
-     private row are still considered unknown to the type system.
-     Hence, this case is caught by the following clause that also handles
-     purely abstract data types without manifest type definition. *)
-  | _ -> raise Not_found
-
-(* Find the manifest type information associated to a type, i.e.
-   the necessary information for the compiler's type-based optimisations.
-   In particular, the manifest type associated to a private abstract type
-   is revealed for the sake of compiler's type-based optimisations. *)
-let find_type_expansion_opt path env =
-  let decl = find_type path env in
-  match decl.type_manifest with
-  (* The manifest type of Private abstract data types can still get
-     an approximation using their manifest type. *)
-  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
-  | _ -> raise Not_found
-
-let find_modtype_expansion path env =
-  match find_modtype path env with
-    Modtype_abstract     -> raise Not_found
-  | Modtype_manifest mty -> mty
-
 let find_module path env =
   match path with
     Pident id ->
@@ -496,6 +463,64 @@ let find_module path env =
       end
   | Papply(p1, p2) ->
       raise Not_found (* not right *)
+
+let rec normalize_path env path =
+  let path =
+    match path with
+      Pdot(p, s, pos) ->
+        Pdot(normalize_path env p, s, pos)
+    | Papply(p1, p2) ->
+        Papply(normalize_path env p1, normalize_path env p2)
+    | _ -> path
+  in
+  try match find_module path env with
+    {md_type=Mty_alias path} -> normalize_path env path
+  | _ -> path
+  with Not_found -> path
+
+(* Find the manifest type associated to a type when appropriate:
+   - the type should be public or should have a private row,
+   - the type should have an associated manifest type. *)
+let find_type_expansion path env =
+  let decl = find_type path env in
+  match decl.type_manifest with
+  | Some body when decl.type_private = Public
+              || decl.type_kind <> Type_abstract
+              || Btype.has_constr_row body ->
+                  (decl.type_params, body, may_map snd decl.type_newtype_level)
+  (* The manifest type of Private abstract data types without
+     private row are still considered unknown to the type system.
+     Hence, this case is caught by the following clause that also handles
+     purely abstract data types without manifest type definition. *)
+  | _ ->
+      (* another way to expand is to normalize the path itself *)
+      let path' = normalize_path env path in
+      if Path.same path path' then raise Not_found else
+      (decl.type_params,
+       newgenty (Tconstr (path', decl.type_params, ref Mnil)),
+       may_map snd decl.type_newtype_level)
+
+(* Find the manifest type information associated to a type, i.e.
+   the necessary information for the compiler's type-based optimisations.
+   In particular, the manifest type associated to a private abstract type
+   is revealed for the sake of compiler's type-based optimisations. *)
+let find_type_expansion_opt path env =
+  let decl = find_type path env in
+  match decl.type_manifest with
+  (* The manifest type of Private abstract data types can still get
+     an approximation using their manifest type. *)
+  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
+  | _ ->
+      let path' = normalize_path env path in
+      if Path.same path path' then raise Not_found else
+      (decl.type_params,
+       newgenty (Tconstr (path', decl.type_params, ref Mnil)),
+       may_map snd decl.type_newtype_level)
+
+let find_modtype_expansion path env =
+  match find_modtype path env with
+    Modtype_abstract     -> raise Not_found
+  | Modtype_manifest mty -> mty
 
 let is_functor_arg path env =
   let id = Path.head path in
@@ -1303,18 +1328,6 @@ let _ =
   components_of_functor_appl' := components_of_functor_appl;
   components_of_module_maker' := components_of_module_maker
 
-let rec normalize_path env path =
-  let path =
-    match path with
-      Pdot(p, s, pos) ->
-        Pdot(normalize_path env p, s, pos)
-    | _ -> path
-  in
-  try match find_module path env with
-    {md_type=Mty_alias path} -> normalize_path env path
-  | _ -> path
-  with Not_found -> path
-
 (* Insertion of bindings by identifier *)
 
 let add_functor_arg ?(arg=false) id env =
@@ -1334,9 +1347,9 @@ and add_exception ~check id decl env =
 
 and add_module_declaration ?arg id md env =
   let path =
-    match md.md_type with
+    (*match md.md_type with
       Mty_alias path -> normalize_path env path
-    | _ -> Pident id
+    | _ ->*) Pident id
   in
   let env = store_module None id path md env env in
   add_functor_arg ?arg id env
