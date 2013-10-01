@@ -26,6 +26,7 @@ Bug fixes:
 - PR#5747: 'unused open' warning not given when compiling with -annot
 - PR#5758: Compiler bug when matching on floats
 - PR#5763: ocamlbuild does not give correct flags when running menhir
+- PR#5784: -dclambda option is ignored
 - PR#5787: Bad behavior of 'Unused ...' warnings in the toplevel
 
 Internals:
@@ -44,6 +45,7 @@ Bug fixes:
 - PR#5240: register exception printers for Unix.Unix_error and Dynlink.Error
 - PR#5300: verbose parameter should implicitly set classic display
 - PR#5772: problem with marshaling of mutually-recursive functions
+- PR#5775: several bug fixes for tools/pprintast.ml
 - PR#5785: misbehaviour with abstracted structural type used as GADT index
 
 
