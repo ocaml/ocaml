@@ -968,14 +968,16 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_env = !env }
   | Ppat_interval (Const_char c1, Const_char c2) ->
       let open Ast_helper.Pat in
+      let gloc = {loc with Location.loc_ghost=true} in
       let rec loop c1 c2 =
-        if c1 = c2 then constant ~loc (Const_char c1)
+        if c1 = c2 then constant ~loc:gloc (Const_char c1)
         else
-          or_ ~loc
-            (constant ~loc (Const_char c1))
+          or_ ~loc:gloc
+            (constant ~loc:gloc (Const_char c1))
             (loop (Char.chr(Char.code c1 + 1)) c2)
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
+      let p = {p with ppat_loc=loc} in
       type_pat p expected_ty (* TODO: record 'extra' to remember about interval *)
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
