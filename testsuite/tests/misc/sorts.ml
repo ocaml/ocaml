@@ -4475,5 +4475,3 @@ let main () =
 ;;
 
 if not !Sys.interactive then Printexc.catch main ();;
-
-(* $Id$ *)

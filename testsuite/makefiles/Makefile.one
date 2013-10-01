@@ -1,5 +1,3 @@
-# $Id$
-
 CMI_FILES=$(MODULES:=.cmi)
 CMO_FILES=$(MODULES:=.cmo)
 CMX_FILES=$(MODULES:=.cmx)

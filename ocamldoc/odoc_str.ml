@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
 module Name = Odoc_name
@@ -358,5 +356,3 @@ let string_of_method m =
   (match m.M.met_value.M.val_info with
     None -> ""
   | Some i -> Odoc_misc.string_of_info i)
-
-(* eof $Id$ *)

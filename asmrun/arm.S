@@ -12,8 +12,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Asm part of the runtime system, ARM processor */
 /* Must be preprocessed by cpp */
 

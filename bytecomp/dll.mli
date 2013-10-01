@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Handling of dynamically-linked libraries *)
 
 (* Extract the name of a DLLs from its external name (xxx.so or -lxxx) *)

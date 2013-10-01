@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 struct grimage {
   int width, height;            /* Dimensions of the image */
   Pixmap data;                  /* Pixels */

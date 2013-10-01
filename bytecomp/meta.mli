@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* To control the runtime system and bytecode interpreter *)
 
 external global_data : unit -> Obj.t array = "caml_get_global_data"

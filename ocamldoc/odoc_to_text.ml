@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Text generation.
 
    This module contains the class [to_text] with methods used to transform

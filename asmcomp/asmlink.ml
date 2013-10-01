@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Link a set of .cmx/.o files and produce an executable *)
 
 open Misc

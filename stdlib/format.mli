@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Pretty printing.
 
    This module implements a pretty-printing facility to format text

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Main entry point (can be overridden by a user-provided main()
    function that calls caml_main() later). */
 

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Trace the instructions executed */
 
 #ifndef _instrtrace_

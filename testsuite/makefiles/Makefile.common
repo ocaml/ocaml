@@ -1,5 +1,3 @@
-# $Id$
-
 TOPDIR=$(BASEDIR)/..
 
 include $(TOPDIR)/config/Makefile

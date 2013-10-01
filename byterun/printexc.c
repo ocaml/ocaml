@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Print an uncaught exception and abort */
 
 #include <stdio.h>

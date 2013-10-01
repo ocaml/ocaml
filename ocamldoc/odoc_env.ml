@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Environment for finding complete names from relative names. *)
 
 let print_DEBUG s = print_string s ; print_newline ();;
@@ -260,5 +258,3 @@ let subst_class_type env t =
         Types.Cty_fun (l, new_texp, new_ct)
   in
   iter t
-
-(* eof $Id$ *)

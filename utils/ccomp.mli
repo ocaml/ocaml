@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Compiling C files and building C libraries *)
 
 val command: string -> int

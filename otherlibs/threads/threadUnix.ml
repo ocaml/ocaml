@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Module [ThreadUnix]: thread-compatible system calls *)
 
 let execv = Unix.execv

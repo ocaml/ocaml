@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Second intermediate language (machine independent) *)
 
 type machtype_component =

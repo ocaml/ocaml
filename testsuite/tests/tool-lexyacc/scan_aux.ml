@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Auxiliaries for the lexical analyzer *)
 
 let brace_depth = ref 0

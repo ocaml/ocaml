@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Register allocation by coloring of the interference graph *)
 
 open Reg

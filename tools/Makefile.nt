@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 include Makefile.shared
 
 # To make custom toplevels

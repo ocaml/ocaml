@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Typing of type definitions and primitive definitions *)
 
 open Asttypes

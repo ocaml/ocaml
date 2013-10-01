@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Large, multi-dimensional, numerical arrays.
 
    This module implements multi-dimensional arrays of integers and

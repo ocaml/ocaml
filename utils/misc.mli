@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Miscellaneous useful types and functions *)
 
 val fatal_error: string -> 'a

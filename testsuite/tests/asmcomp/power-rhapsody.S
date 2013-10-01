@@ -10,8 +10,6 @@
 /*                                                                   */
 /*********************************************************************/
 
-/* $Id$ */
-
 /* Save and restore all callee-save registers */
 /* GPR 14 at sp+16 ... GPR 31 at sp+84
    FPR 14 at sp+92 ... FPR 31 at sp+228 */

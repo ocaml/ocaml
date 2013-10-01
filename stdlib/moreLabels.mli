@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Extra labeled libraries.
 
    This meta-module provides labelized version of the {!Hashtbl},

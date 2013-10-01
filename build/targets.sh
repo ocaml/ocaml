@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 . config/config.sh
 . build/otherlibs-targets.sh
 . build/camlp4-targets.sh

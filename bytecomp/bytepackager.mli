@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* "Package" a set of .cmo files into one .cmo file having the
    original compilation units as sub-modules. *)
 

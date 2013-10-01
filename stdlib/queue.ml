@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 exception Empty
 
 (* OCaml currently does not allow the components of a sum type to be

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Signal handling, code specific to the bytecode interpreter */
 
 #include <signal.h>

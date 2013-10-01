@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Memory management control and statistics; finalised values. *)
 
 type stat =

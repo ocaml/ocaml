@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Handling of sections in bytecode executable files *)
 
 (** Recording sections written to a bytecode executable file *)

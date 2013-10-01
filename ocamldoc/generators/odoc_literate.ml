@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Odoc_info
 module Naming = Odoc_html.Naming
 open Odoc_info.Value

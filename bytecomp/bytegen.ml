@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (*  bytegen.ml : translation of lambda terms to lists of instructions. *)
 
 open Misc

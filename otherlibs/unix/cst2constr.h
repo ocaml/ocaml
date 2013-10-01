@@ -11,6 +11,4 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 extern value cst_to_constr(int n, int * tbl, int size, int deflt);

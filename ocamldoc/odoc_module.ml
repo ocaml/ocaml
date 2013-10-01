@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Representation and manipulation of modules and module types. *)
 
 let print_DEBUG s = print_string s ; print_newline ()

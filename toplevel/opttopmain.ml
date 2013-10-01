@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Clflags
 
 let usage = "Usage: ocamlnat <options> <object-files> [script-file]\noptions are:"

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Stack backtrace for uncaught exceptions */
 
 #include <stdio.h>

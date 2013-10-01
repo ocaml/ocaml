@@ -12,8 +12,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Run-time library for profiled programs *)
 
 val counters: (string * (string * int array)) list ref;;

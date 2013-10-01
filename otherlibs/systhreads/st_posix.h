@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* POSIX thread implementation of the "st" interface */
 
 #include <errno.h>

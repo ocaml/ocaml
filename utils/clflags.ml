@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Command-line parameters *)
 
 let objfiles = ref ([] : string list)   (* .cmo and .cma files *)

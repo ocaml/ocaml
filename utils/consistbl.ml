@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Consistency tables: for checking consistency of module CRCs *)
 
 type t = (string, Digest.t * string) Hashtbl.t

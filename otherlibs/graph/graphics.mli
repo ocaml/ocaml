@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Machine-independent graphics primitives. *)
 
 exception Graphic_failure of string

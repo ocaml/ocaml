@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Structured output */
 
 /* The interface of this file is "intext.h" */

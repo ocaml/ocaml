@@ -1,5 +1,3 @@
-(* $Id$ *)
-
 let debug = false;;
 
 open Printf;;

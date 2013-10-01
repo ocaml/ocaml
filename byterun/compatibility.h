@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* definitions for compatibility with old identifiers */
 
 #ifndef CAML_COMPATIBILITY_H

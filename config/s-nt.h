@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Operating system dependencies, Intel x86 processors, Windows NT */
 
 #define OCAML_OS_TYPE "Win32"

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* A variant of the "lambda" code with direct / indirect calls explicit
    and closures explicit too *)
 

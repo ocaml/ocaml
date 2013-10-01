@@ -1,5 +1,3 @@
-# $Id$
-
 compile: compile-targets
 
 promote: defaultpromote

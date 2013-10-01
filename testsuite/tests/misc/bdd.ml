@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Translated to OCaml by Xavier Leroy *)
 (* Original code written in SML by ... *)
 

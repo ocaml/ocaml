@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Structured input, compact format */
 
 /* The interface of this file is "intext.h" */

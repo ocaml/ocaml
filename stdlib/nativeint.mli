@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Processor-native integers.
 
    This module provides operations on the type [nativeint] of

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** First-in first-out queues.
 
    This module implements queues (FIFOs), with in-place modification.

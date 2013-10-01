@@ -12,8 +12,6 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
-/* $Id$ */
-
 #include <signal.h>
 #include <string.h>
 #include "defs.h"

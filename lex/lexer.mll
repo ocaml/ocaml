@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* The lexical analyzer for lexer definitions. Bootstrapped! *)
 
 {

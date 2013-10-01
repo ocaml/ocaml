@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* To walk the memory roots for garbage collection */
 
 #include "finalise.h"

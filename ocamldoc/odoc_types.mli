@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Types for the information collected in comments. *)
 
 (** The differents kinds of element references. *)
