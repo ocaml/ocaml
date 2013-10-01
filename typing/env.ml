@@ -465,9 +465,9 @@ let find_type_expansion_opt path env =
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =
-  match find_modtype path env with
-    Modtype_abstract     -> raise Not_found
-  | Modtype_manifest mty -> mty
+  match (find_modtype path env).mtd_type with
+  | None -> raise Not_found
+  | Some mty -> mty
 
 let find_module path env =
   match path with

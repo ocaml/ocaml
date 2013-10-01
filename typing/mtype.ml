@@ -68,11 +68,12 @@ and strengthen_sig env sg p =
       (* Need to add the module in case it defines manifest module types *)
   | Sig_modtype(id, decl) :: rem ->
       let newdecl =
-        match decl with
-          Modtype_abstract ->
-            Modtype_manifest(Mty_ident(Pdot(p, Ident.name id, nopos)))
-        | Modtype_manifest _ ->
-            decl in
+        match decl.mtd_type with
+          None ->
+            {decl with mtd_type = Some(Mty_ident(Pdot(p, Ident.name id, nopos)))}
+        | Some _ ->
+            decl
+      in
       Sig_modtype(id, newdecl) ::
       strengthen_sig (Env.add_modtype id decl env) rem p
       (* Need to add the module type in case it is manifest *)
@@ -134,7 +135,7 @@ let nondep_supertype env mid mty =
             Sig_modtype(id, nondep_modtype_decl env d) :: rem'
           with Not_found ->
             match va with
-              Co -> Sig_modtype(id, Modtype_abstract) :: rem'
+              Co -> Sig_modtype(id, {mtd_type=None; mtd_attributes=[]}) :: rem'
             | _  -> raise Not_found
           end
       | Sig_class(id, d, rs) ->
@@ -144,9 +145,8 @@ let nondep_supertype env mid mty =
           Sig_class_type(id, Ctype.nondep_cltype_declaration env mid d, rs)
           :: rem'
 
-  and nondep_modtype_decl env = function
-      Modtype_abstract -> Modtype_abstract
-    | Modtype_manifest mty -> Modtype_manifest(nondep_mty env Strict mty)
+  and nondep_modtype_decl env mtd =
+    {mtd with mtd_type = Misc.may_map (nondep_mty env Strict) mtd.mtd_type}
 
   in
     nondep_mty env Co mty

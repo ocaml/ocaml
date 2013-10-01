@@ -260,7 +260,7 @@ and signature_item =
   | Sig_type of Ident.t * type_declaration * rec_status
   | Sig_exception of Ident.t * exception_declaration
   | Sig_module of Ident.t * module_declaration * rec_status
-  | Sig_modtype of Ident.t * modtype_declaration  (* todo: attributes *)
+  | Sig_modtype of Ident.t * modtype_declaration
   | Sig_class of Ident.t * class_declaration * rec_status
   | Sig_class_type of Ident.t * class_type_declaration * rec_status
 
@@ -271,8 +271,10 @@ and module_declaration =
   }
 
 and modtype_declaration =
-    Modtype_abstract
-  | Modtype_manifest of module_type
+  {
+    mtd_type: module_type option;  (* Nonte: abstract *)
+    mtd_attributes: Parsetree.attributes;
+  }
 
 and rec_status =
     Trec_not                            (* not recursive *)

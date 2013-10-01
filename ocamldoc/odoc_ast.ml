@@ -955,7 +955,7 @@ module Analyser =
               | _ -> false)
         | Element_module_type mt ->
             (function
-                Types.Sig_modtype (ident,Types.Modtype_manifest t) ->
+                Types.Sig_modtype (ident,{Types.mtd_type=Some t}) ->
                   let n1 = Name.simple mt.mt_name
                   and n2 = Ident.name ident in
                   (

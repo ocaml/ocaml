@@ -62,10 +62,10 @@ let rec add_signature env root ?rel signat =
         { env2 with env_modules = (rel_name ident, qualify ident) :: env2.env_modules }
     | Types.Sig_modtype (ident, modtype_decl) ->
         let env2 =
-          match modtype_decl with
-            Types.Modtype_abstract ->
+          match modtype_decl.Types.mtd_type with
+            None ->
               env
-          | Types.Modtype_manifest modtype ->
+          | Some modtype ->
               match modtype with
                  (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
                 Types.Mty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s

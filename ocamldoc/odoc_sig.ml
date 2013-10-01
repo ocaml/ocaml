@@ -99,9 +99,9 @@ module Signature_search =
 
     let search_module_type table name =
       match Hashtbl.find table (MT name) with
-      | (Types.Sig_modtype (_, Types.Modtype_manifest module_type)) ->
+      | (Types.Sig_modtype (_, {Types.mtd_type = Some module_type})) ->
           Some module_type
-      | (Types.Sig_modtype (_, Types.Modtype_abstract)) ->
+      | (Types.Sig_modtype (_, {Types.mtd_type = None})) ->
           None
       | _ -> assert false
 
