@@ -131,8 +131,8 @@ all:
 	$(MAKE) ocamltools
 	$(MAKE) library
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
-	  $(WITH_OCAMLDOC) #  $(CAMLP4OUT)
+	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+	  $(WITH_OCAMLDOC)
 
 # Compile everything the first time
 world:
@@ -276,11 +276,11 @@ opt.opt:
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
-	        $(OCAMLBUILDBYTE) # $(CAMLP4OUT)
+	        $(OCAMLBUILDBYTE) $(CAMLP4OUT)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	        $(OCAMLBUILDNATIVE) # $(CAMLP4OPT)
+	        $(OCAMLBUILDNATIVE) $(CAMLP4OPT)
 
 base.opt:
 	$(MAKE) checkstack

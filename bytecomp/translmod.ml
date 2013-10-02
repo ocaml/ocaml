@@ -31,35 +31,37 @@ exception Error of Location.t * error
 
 (* Compile a coercion *)
 
-let rec apply_coercion restr arg =
+let rec apply_coercion strict restr arg =
   match restr with
     Tcoerce_none ->
       arg
   | Tcoerce_structure(pos_cc_list, id_pos_list) ->
-      name_lambda arg (fun id ->
+      name_lambda strict arg (fun id ->
         let lam =
           Lprim(Pmakeblock(0, Immutable),
                 List.map (apply_coercion_field id) pos_cc_list) in
         let fv = free_variables lam in
         List.fold_left (fun lam (id',pos,c) ->
           if IdentSet.mem id' fv then
-            Llet(Alias,id',apply_coercion c (Lprim(Pfield pos,[Lvar id])),lam)
+            Llet(Alias,id',
+                 apply_coercion Alias c (Lprim(Pfield pos,[Lvar id])),lam)
           else lam)
           lam id_pos_list)
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
-      name_lambda arg (fun id ->
+      name_lambda strict arg (fun id ->
         Lfunction(Curried, [param],
-          apply_coercion cc_res
-            (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)],
+          apply_coercion Strict cc_res
+            (Lapply(Lvar id, [apply_coercion Alias cc_arg (Lvar param)],
                     Location.none))))
   | Tcoerce_primitive p ->
       transl_primitive Location.none p
   | Tcoerce_alias (path, cc) ->
-      name_lambda arg (fun id -> apply_coercion cc (transl_path path))
+      name_lambda strict arg
+        (fun id -> apply_coercion Alias cc (transl_path path))
 
 and apply_coercion_field id (pos, cc) =
-  apply_coercion cc (Lprim(Pfield pos, [Lvar id]))
+  apply_coercion Alias cc (Lprim(Pfield pos, [Lvar id]))
 
 (* Compose two coercions
    apply_coercion c1 (apply_coercion c2 e) behaves like
@@ -264,11 +266,11 @@ let rec bound_value_identifiers = function
 
 let rec transl_module cc rootpath mexp =
   match mexp.mod_type with
-    Mty_alias _ -> apply_coercion cc lambda_unit
+    Mty_alias _ -> apply_coercion Alias cc lambda_unit
   | _ ->
   match mexp.mod_desc with
     Tmod_ident (path,_) ->
-      apply_coercion cc (transl_ident_path mexp.mod_env path)
+      apply_coercion StrictOpt cc (transl_ident_path mexp.mod_env path)
   | Tmod_structure str ->
       transl_struct [] cc rootpath str
   | Tmod_functor( param, _, mty, body) ->
@@ -281,20 +283,21 @@ let rec transl_module cc rootpath mexp =
         | Tcoerce_functor(ccarg, ccres) ->
             let param' = Ident.create "funarg" in
             Lfunction(Curried, [param'],
-                      Llet(Alias, param, apply_coercion ccarg (Lvar param'),
+                      Llet(Alias, param,
+                           apply_coercion Alias ccarg (Lvar param'),
                            transl_module ccres bodypath body))
         | _ ->
             fatal_error "Translmod.transl_module")
         cc
   | Tmod_apply(funct, arg, ccarg) ->
       oo_wrap mexp.mod_env true
-        (apply_coercion cc)
+        (apply_coercion Strict cc)
         (Lapply(transl_module Tcoerce_none None funct,
                 [transl_module ccarg None arg], mexp.mod_loc))
   | Tmod_constraint(arg, mty, _, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->
-      apply_coercion cc (Translcore.transl_exp arg)
+      apply_coercion Strict cc (Translcore.transl_exp arg)
 
 and transl_struct fields cc rootpath str =
   transl_structure fields cc rootpath str.str_items
@@ -315,7 +318,7 @@ and transl_structure fields cc rootpath = function
                   (fun (pos, cc) ->
                     match cc with
                       Tcoerce_primitive p -> transl_primitive Location.none p
-                    | _ -> apply_coercion cc (Lvar v.(pos)))
+                    | _ -> apply_coercion Strict cc (Lvar v.(pos)))
                   pos_cc_list))
             (*id_pos_list*)
       | _ ->
@@ -339,16 +342,11 @@ and transl_structure fields cc rootpath = function
       Llet(Strict, id, transl_exception (field_path rootpath id) decl,
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_exn_rebind( id, _, path, _, _) ->
-      Llet(Strict, id, transl_path path,
+      Llet(Strict, id, transl_ident_path item.str_env path,
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_module mb ->
       let id = mb.mb_id in
-      (* let rec strict m =
-        match m.mod_desc with
-          Tmod_ident _ -> Alias
-        | Tmod_constraint (m,_,_,_) -> strict m
-        | _ -> Strict in *)
-      Llet(Strict, id,
+      Llet(pure_module mb.mb_expr, id,
            transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr,
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_recmodule bindings ->
@@ -378,7 +376,7 @@ and transl_structure fields cc rootpath = function
       | id :: ids ->
           Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
                rebind_idents (pos + 1) (id :: newfields) ids) in
-      Llet(Strict, mid, transl_module Tcoerce_none None modl,
+      Llet(pure_module modl, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
 
   | Tstr_modtype _
@@ -386,6 +384,12 @@ and transl_structure fields cc rootpath = function
   | Tstr_class_type _
   | Tstr_attribute _ ->
       transl_structure fields cc rootpath rem
+
+and pure_module m =
+  match m.mod_desc with
+    Tmod_ident _ -> Alias
+  | Tmod_constraint (m,_,_,_) -> pure_module m
+  | _ -> Strict
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -521,7 +525,7 @@ let transl_store_structure glob map prims str =
       Lsequence(Llet(Strict, id, lam, store_ident id),
                 transl_store rootpath (add_ident false id subst) rem)
   | Tstr_exn_rebind( id, _, path, _, _) ->
-      let lam = subst_lambda subst (transl_path path) in
+      let lam = subst_lambda subst (transl_ident_path item.str_env path) in
       Lsequence(Llet(Strict, id, lam, store_ident id),
                 transl_store rootpath (add_ident false id subst) rem)
   | Tstr_module{mb_id=id; mb_expr={mod_desc = Tmod_structure str}} ->
@@ -590,7 +594,7 @@ let transl_store_structure glob map prims str =
   and store_ident id =
     try
       let (pos, cc) = Ident.find_same id map in
-      let init_val = apply_coercion cc (Lvar id) in
+      let init_val = apply_coercion Alias cc (Lvar id) in
       Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val])
     with Not_found ->
       fatal_error("Translmod.store_ident: " ^ Ident.unique_name id)
@@ -733,7 +737,7 @@ let transl_toplevel_item item =
   | Tstr_exception decl ->
       toploop_setvalue decl.cd_id (transl_exception None decl)
   | Tstr_exn_rebind(id, _, path, _, _) ->
-      toploop_setvalue id (transl_path path)
+      toploop_setvalue id (transl_ident_path item.str_env path)
   | Tstr_module {mb_id=id; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
          with "open" (PR#1672) *)
@@ -800,7 +804,7 @@ let transl_package component_names target_name coercion =
               (* ignore id_pos_list as the ids are already bound *)
         let g = Array.of_list component_names in
         List.map
-          (fun (pos, cc) -> apply_coercion cc (get_component g.(pos)))
+          (fun (pos, cc) -> apply_coercion Strict cc (get_component g.(pos)))
           pos_cc_list
     | _ ->
         assert false in
@@ -828,7 +832,7 @@ let transl_store_package component_names target_name coercion =
          (fun dst (src, cc) ->
            Lprim(Psetfield(dst, false),
                  [Lprim(Pgetglobal target_name, []);
-                  apply_coercion cc (get_component id.(src))]))
+                  apply_coercion Strict cc (get_component id.(src))]))
          0 pos_cc_list)
   | _ -> assert false
 

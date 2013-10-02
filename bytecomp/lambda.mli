@@ -202,7 +202,7 @@ and lambda_event_kind =
 val same: lambda -> lambda -> bool
 val const_unit: structured_constant
 val lambda_unit: lambda
-val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
+val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
 val iter: (lambda -> unit) -> lambda -> unit

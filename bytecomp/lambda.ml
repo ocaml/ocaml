@@ -253,10 +253,10 @@ and sameswitch sw1 sw2 =
     | (Some a1, Some a2) -> same a1 a2
     | _ -> false)
 
-let name_lambda arg fn =
+let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(Strict, id, arg, fn id)
+  | _ -> let id = Ident.create "let" in Llet(strict, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function

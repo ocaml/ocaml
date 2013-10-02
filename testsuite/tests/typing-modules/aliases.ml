@@ -69,11 +69,16 @@ module M = struct
   module C = Char
   module C' = C
 end;;
-module M1 : sig module C : sig val chr : int -> char end module C' = C end =
-  M;;
-M1.C'.chr 66;;
+module M1
+  : sig module C : sig val escaped : char -> string end module C' = C end
+  = M;; (* sound, but should probably fail *)
+M1.C'.escaped 'A';;
 module M2 : sig module C' : sig val chr : int -> char end end =
   (M : sig module C : sig val chr : int -> char end module C' = C end);;
 M2.C'.chr 66;;
 
 StdLabels.List.map;;
+
+module Q = Queue;;
+exception QE = Q.Empty;;
+try Q.pop (Q.create ()) with QE -> "Ok";;

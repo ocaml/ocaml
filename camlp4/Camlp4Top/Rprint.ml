@@ -359,6 +359,7 @@ and print_out_class_sig_item ppf =
 value rec print_out_module_type ppf =
   fun
   [ Omty_ident id -> fprintf ppf "%a" print_ident id
+  | Omty_alias id -> fprintf ppf "@[<2>(module@ %a)@]" print_ident id
   | Omty_signature sg ->
       fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]"
         Toploop.print_out_signature.val sg
@@ -404,6 +405,8 @@ and print_out_sig_item ppf =
   | Osig_modtype name mty ->
       fprintf ppf "@[<2>module type %s =@ %a@]" name
         Toploop.print_out_module_type.val mty
+  | Osig_module name (Omty_alias id) Orec_not ->
+      fprintf ppf "@[<2>module %s :@ %a@]" name print_ident id  
   | Osig_module name mty rs ->
       fprintf ppf "@[<2>%s %s :@ %a@]"
         (match rs with [ Orec_not -> "module"

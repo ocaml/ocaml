@@ -174,6 +174,7 @@ and try_modtypes env cxt subst mty1 mty2 =
     (Mty_alias p1, Mty_alias p2) ->
       let p1 = Env.normalize_path env p1
       and p2 = Env.normalize_path env (Subst.module_path subst p2) in
+      (* Should actually be Tcoerce_ignore, if it existed *)
       if Path.same p1 p2 then Tcoerce_none else
       Printtyp.(Format.eprintf "%a %a@." path p1 path p2;
       raise Dont_match)
