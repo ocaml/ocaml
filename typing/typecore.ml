@@ -562,7 +562,9 @@ let rec expand_path env p =
         {desc=Tconstr(p,_,_)} -> expand_path env p
       | _ -> assert false
       end
-  | _ -> p
+  | _ ->
+      let p' = Env.normalize_path env p in
+      if Path.same p p' then p else expand_path env p'
 
 let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)

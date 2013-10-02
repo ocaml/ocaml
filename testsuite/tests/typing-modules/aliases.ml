@@ -82,3 +82,12 @@ StdLabels.List.map;;
 module Q = Queue;;
 exception QE = Q.Empty;;
 try Q.pop (Q.create ()) with QE -> "Ok";;
+
+module type Complex = module type of Complex with type t = Complex.t;;
+module M : sig module C : Complex end = struct module C = Complex end;;
+
+module C = Complex;;
+C.one.Complex.re;;
+include C;;
+
+module F(X:sig module C = Char end) = struct module C = X.C end;;

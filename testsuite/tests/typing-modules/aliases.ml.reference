@@ -99,4 +99,49 @@ Error: Signature mismatch:
 #   module Q = Queue
 # exception QE
 # - : string = "Ok"
+#   module type Complex =
+  sig
+    type t = Complex.t = { re : float; im : float; }
+    val zero : t
+    val one : t
+    val i : t
+    val neg : t -> t
+    val conj : t -> t
+    val add : t -> t -> t
+    val sub : t -> t -> t
+    val mul : t -> t -> t
+    val inv : t -> t
+    val div : t -> t -> t
+    val sqrt : t -> t
+    val norm2 : t -> float
+    val norm : t -> float
+    val arg : t -> float
+    val polar : float -> float -> t
+    val exp : t -> t
+    val log : t -> t
+    val pow : t -> t -> t
+  end
+# module M : sig module C : Complex end
+#   module C = Complex
+# - : float = 1.
+# type t = Complex.t = { re : float; im : float; }
+val zero : t = {re = 0.; im = 0.}
+val one : t = {re = 1.; im = 0.}
+val i : t = {re = 0.; im = 1.}
+val neg : t -> t = <fun>
+val conj : t -> t = <fun>
+val add : t -> t -> t = <fun>
+val sub : t -> t -> t = <fun>
+val mul : t -> t -> t = <fun>
+val inv : t -> t = <fun>
+val div : t -> t -> t = <fun>
+val sqrt : t -> t = <fun>
+val norm2 : t -> float = <fun>
+val norm : t -> float = <fun>
+val arg : t -> float = <fun>
+val polar : float -> float -> t = <fun>
+val exp : t -> t = <fun>
+val log : t -> t = <fun>
+val pow : t -> t -> t = <fun>
+#   module F : functor (X : sig module C = Char end) -> sig module C = Char end
 # 

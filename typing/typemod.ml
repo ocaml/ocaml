@@ -954,14 +954,26 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
     Pmod_ident lid ->
       let (path, md) = Typetexp.find_module env smod.pmod_loc lid.txt in
       let mty = md.md_type in
-      let mty =
-        if alias && not (Env.is_functor_arg path env) then Mty_alias path else
-        if sttn then Mtype.strengthen env mty path else mty in
-      rm { mod_desc = Tmod_ident (path, lid);
-           mod_type = mty;
-           mod_env = env;
-           mod_attributes = smod.pmod_attributes;
-           mod_loc = smod.pmod_loc }
+      let md = { mod_desc = Tmod_ident (path, lid);
+                 mod_type = mty;
+                 mod_env = env;
+                 mod_attributes = smod.pmod_attributes;
+                 mod_loc = smod.pmod_loc } in
+      let md =
+        if alias && not (Env.is_functor_arg path env) then
+          { md with mod_type = Mty_alias path }
+        else match mty with
+          Mty_alias p1 when not alias ->
+            let p1 = Env.normalize_path env p1 in
+            let mty = Includemod.expand_module_alias env [] p1 in
+            { md with
+              mod_desc = Tmod_constraint (md, mty, Tmodtype_implicit,
+                                          Tcoerce_alias (p1, Tcoerce_none));
+              mod_type = if sttn then Mtype.strengthen env mty p1 else mty }
+        | _ ->
+            if sttn then { md with mod_type = Mtype.strengthen env mty path}
+            else md
+      in rm md
   | Pmod_structure sstr ->
       let (str, sg, finalenv) =
         type_structure funct_body anchor env sstr smod.pmod_loc in
