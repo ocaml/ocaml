@@ -960,7 +960,10 @@ let rec scrape_alias env mty =
       begin try
         scrape_alias env (find_module path env).md_type
       with Not_found ->
-        assert false
+        Location.prerr_warning Location.none 
+          (Warnings.Deprecated
+             ("module " ^ Path.name path ^ " cannot be accessed"));
+        mty
       end      
   | _ -> mty
 

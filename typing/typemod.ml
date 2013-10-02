@@ -1385,7 +1385,9 @@ let type_package env m p nl tl =
     | _ -> assert false
   in
   let tl' =
-    List.map (fun name -> Ctype.newconstr (mkpath mp name) []) nl in
+    List.map
+      (fun name -> Btype.newgenty (Tconstr (mkpath mp name,[],ref Mnil)))
+      nl in
   (* go back to original level *)
   Ctype.end_def ();
   if nl = [] then
