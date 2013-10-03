@@ -949,7 +949,7 @@ let transl_extension_constructor env check_open type_decl type_path type_params 
               Typedtree.ext_loc = sext.pext_loc }
 	      
     | Pext_rebind lid ->
-      let (_, cdescr) = Typetexp.find_constructor env sext.pext_loc loc lid.txt in
+      let cdescr = Typetexp.find_constructor env sext.pext_loc loc lid.txt in
         Env.mark_constructor Env.Positive env (Longident.last lid.txt) cdescr;
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let ret_type = 
@@ -1077,7 +1077,7 @@ let transl_exception env loc excdecl =
 
 (* Translate an exception rebinding *)
 let transl_exn_rebind env loc lid =
-  let (path, cdescr) = Typetexp.find_constructor env loc lid in
+  let cdescr = Typetexp.find_constructor env loc lid in
   Env.mark_constructor Env.Positive env (Longident.last lid) cdescr;
   match cdescr.cstr_tag with
     Cstr_exception (path, _) ->

@@ -221,7 +221,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tpat_constant cst -> ()
         | Tpat_tuple list ->
             List.iter iter_pattern list
-        | Tpat_construct (path, _, _, args, _) ->
+        | Tpat_construct (_, _, args, _) ->
             List.iter iter_pattern args
         | Tpat_variant (label, pato, _) ->
             begin match pato with
@@ -229,7 +229,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
               | Some pat -> iter_pattern pat
             end
         | Tpat_record (list, closed) ->
-            List.iter (fun (path, _, _, pat) -> iter_pattern pat) list
+            List.iter (fun (_, _, pat) -> iter_pattern pat) list
         | Tpat_array list -> List.iter iter_pattern list
         | Tpat_or (p1, p2, _) -> iter_pattern p1; iter_pattern p2
         | Tpat_lazy p -> iter_pattern p
@@ -272,7 +272,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_bindings Nonrecursive list
         | Texp_tuple list ->
             List.iter iter_expression list
-        | Texp_construct (path, _, _, args, _) ->
+        | Texp_construct (_, _, args, _) ->
             List.iter iter_expression args
         | Texp_variant (label, expo) ->
             begin match expo with
@@ -280,16 +280,14 @@ module MakeIterator(Iter : IteratorArgument) : sig
               | Some exp -> iter_expression exp
             end
         | Texp_record (list, expo) ->
-            List.iter (fun (path, _, _, exp) ->
-                iter_expression exp
-            ) list;
+            List.iter (fun (_, _, exp) -> iter_expression exp) list;
             begin match expo with
                 None -> ()
               | Some exp -> iter_expression exp
             end
-        | Texp_field (exp, path, _, label) ->
+        | Texp_field (exp, _, label) ->
             iter_expression exp
-        | Texp_setfield (exp1, path, _ , label, exp2) ->
+        | Texp_setfield (exp1, _, label, exp2) ->
             iter_expression exp1;
             iter_expression exp2
         | Texp_array list ->

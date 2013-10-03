@@ -220,8 +220,8 @@ module MakeMap(Map : MapArgument) = struct
           let pat1 = map_pattern pat1 in
           Tpat_alias (pat1, p, text)
         | Tpat_tuple list -> Tpat_tuple (List.map map_pattern list)
-        | Tpat_construct (path, lid, cstr_decl, args, arity) ->
-          Tpat_construct (path, lid, cstr_decl,
+        | Tpat_construct (lid, cstr_decl, args, arity) ->
+          Tpat_construct (lid, cstr_decl,
                           List.map map_pattern args, arity)
         | Tpat_variant (label, pato, rowo) ->
           let pato = match pato with
@@ -230,8 +230,8 @@ module MakeMap(Map : MapArgument) = struct
           in
           Tpat_variant (label, pato, rowo)
         | Tpat_record (list, closed) ->
-          Tpat_record (List.map (fun (path, lid, lab_desc, pat) ->
-            (path, lid, lab_desc, map_pattern pat) ) list, closed)
+          Tpat_record (List.map (fun (lid, lab_desc, pat) ->
+            (lid, lab_desc, map_pattern pat) ) list, closed)
         | Tpat_array list -> Tpat_array (List.map map_pattern list)
         | Tpat_or (p1, p2, rowo) ->
           Tpat_or (map_pattern p1, map_pattern p2, rowo)
@@ -284,8 +284,8 @@ module MakeMap(Map : MapArgument) = struct
           )
         | Texp_tuple list ->
           Texp_tuple (List.map map_expression list)
-        | Texp_construct (path, lid, cstr_desc, args, arity) ->
-          Texp_construct (path, lid, cstr_desc,
+        | Texp_construct (lid, cstr_desc, args, arity) ->
+          Texp_construct (lid, cstr_desc,
                           List.map map_expression args, arity )
         | Texp_variant (label, expo) ->
           let expo =match expo with
@@ -295,20 +295,20 @@ module MakeMap(Map : MapArgument) = struct
           Texp_variant (label, expo)
         | Texp_record (list, expo) ->
           let list =
-            List.map (fun (path, lid, lab_desc, exp) ->
-              (path, lid, lab_desc, map_expression exp)
+            List.map (fun (lid, lab_desc, exp) ->
+              (lid, lab_desc, map_expression exp)
             ) list in
           let expo = match expo with
               None -> expo
             | Some exp -> Some (map_expression exp)
           in
           Texp_record (list, expo)
-        | Texp_field (exp, path, lid, label) ->
-          Texp_field (map_expression exp, path, lid, label)
-        | Texp_setfield (exp1, path, lid, label, exp2) ->
+        | Texp_field (exp, lid, label) ->
+          Texp_field (map_expression exp, lid, label)
+        | Texp_setfield (exp1, lid, label, exp2) ->
           Texp_setfield (
             map_expression exp1,
-            path, lid,
+            lid,
             label,
             map_expression exp2)
         | Texp_array list ->
