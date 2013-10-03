@@ -9,7 +9,7 @@ open Parsetree
    the compilation unit.  *)
 
 let trace s =
-  E.(apply (lid "Pervasives.print_endline") [strconst s])
+  E.(apply (lid "Pervasives.print_endline") ["", strconst s])
 
 let tracer =
   object(this)
@@ -22,14 +22,14 @@ let tracer =
 
     method! structure_item = function
       | {pstr_desc = Pstr_module (s, _); pstr_loc = _loc} as si ->
-          [ SI.map {< path = path ^ "." ^ s.txt >} si ]
+          [ M.map_structure_item {< path = path ^ "." ^ s.txt >} si ]
       | si ->
-          [ SI.map this si ]
+          [ M.map_structure_item this si ]
 
     method! structure l =
-      SI.eval (trace (Printf.sprintf "Entering module %s" path)) ::
+      M.eval (trace (Printf.sprintf "Entering module %s" path)) ::
       (super # structure l) @
-      [ SI.eval (trace (Printf.sprintf "Leaving module %s" path)) ]
+      [ M.eval (trace (Printf.sprintf "Leaving module %s" path)) ]
 
     method! expr e =
       match e.pexp_desc with

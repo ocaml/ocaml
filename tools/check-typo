@@ -45,9 +45,8 @@
 #     *.mltop
 #     *.odocl
 #     *.clib
-#     */unmaintained/*
-#     */experimental/*
 #     *.reference
+#     */reference
 
 # ASCII characters are bytes from 0 to 127.  Any other byte is
 # flagged as a non-ASCII character.
@@ -136,8 +135,7 @@ IGNORE_DIRS="
     case "$f" in
       */.depend*|*/.ignore) h;;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) h;;
-      */unmaintained/*|*/experimental/*) h;;
-      *.reference) h;;
+      *.reference|*/reference) h;;
     esac
 
     (cat "$f"; echo) \

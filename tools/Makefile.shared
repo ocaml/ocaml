@@ -208,6 +208,7 @@ READ_CMT= \
           ../parsing/location.cmo \
           ../parsing/longident.cmo \
           ../parsing/lexer.cmo \
+          ../parsing/pprintast.cmo \
           ../typing/ident.cmo \
           ../typing/path.cmo \
           ../typing/types.cmo \
@@ -227,7 +228,7 @@ READ_CMT= \
           ../typing/cmt_format.cmo \
           ../typing/stypes.cmo \
           \
-          pprintast.cmo untypeast.cmo \
+          untypeast.cmo \
           cmt2annot.cmo read_cmt.cmo
 
 read_cmt: $(READ_CMT)

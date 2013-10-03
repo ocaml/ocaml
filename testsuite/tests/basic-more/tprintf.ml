@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2006 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 open Testing;;
 
 open Printf;;
@@ -66,7 +78,7 @@ let test5 () =
   sprintf "%(toto %s titi.\n%).\n"
     "Bonjour %s" "toto" = "Bonjour toto.\n" &&
   sprintf "%(toto %s titi.\n%)%s\n"
-    "Bonjour %s." "toto" " Ça va?" = "Bonjour toto. Ça va?\n"
+    "Bonjour %s." "toto" " Ca va?" = "Bonjour toto. Ca va?\n"
 ;;
 
 test (test5 ());;
