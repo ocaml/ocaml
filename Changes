@@ -4,6 +4,7 @@ Next version
 Compilers:
 - PR#5634: parsetree rewriter (-ppx flag)
 - ocamldep now supports -absname
+- PR#5768: On "unbound identifier" errors, use spell-checking to suggest names present in the environment
 
 Bug fixes:
 - PR#4762: ?? is not used at all, but registered as a lexer token
@@ -28,6 +29,7 @@ Bug fixes:
 - PR#5763: ocamlbuild does not give correct flags when running menhir
 - PR#5784: -dclambda option is ignored
 - PR#5787: Bad behavior of 'Unused ...' warnings in the toplevel
+- PR#5770: Syntax error messages involving unclosed parens are sometimes incorrect
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary

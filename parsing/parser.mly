@@ -175,6 +175,9 @@ let unclosed opening_name opening_num closing_name closing_num =
   raise(Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
                                            rhs_loc closing_num, closing_name)))
 
+let expecting pos nonterm =
+    raise Syntaxerr.(Error(Expecting(rhs_loc pos, nonterm)))
+
 let bigarray_function str name =
   mkloc (Ldot(Ldot(Lident "Bigarray", str), name)) Location.none
 
@@ -1253,6 +1256,8 @@ pattern:
       { $1 }
   | pattern AS val_ident
       { mkpat(Ppat_alias($1, mkrhs $3 3)) }
+  | pattern AS error
+      { expecting 3 "identifier" }
   | pattern_comma_list  %prec below_COMMA
       { mkpat(Ppat_tuple(List.rev $1)) }
   | constr_longident pattern %prec prec_constr_appl
@@ -1261,10 +1266,16 @@ pattern:
       { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
       { mkpat_cons (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
+  | pattern COLONCOLON error
+      { expecting 3 "pattern" }
   | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
       { mkpat_cons (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
+  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern error
+      { unclosed "(" 4 ")" 8 }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
+  | pattern BAR error
+      { expecting 3 "pattern" }
   | LAZY simple_pattern
       { mkpat(Ppat_lazy $2) }
 ;
@@ -1305,6 +1316,8 @@ simple_pattern:
       { mkpat(Ppat_constraint($2, $4)) }
   | LPAREN pattern COLON core_type error
       { unclosed "(" 1 ")" 5 }
+  | LPAREN pattern COLON error
+      { expecting 4 "type" }
   | LPAREN MODULE UIDENT RPAREN
       { mkpat(Ppat_unpack (mkrhs $3 3)) }
   | LPAREN MODULE UIDENT COLON package_type RPAREN
@@ -1316,6 +1329,7 @@ simple_pattern:
 pattern_comma_list:
     pattern_comma_list COMMA pattern            { $3 :: $1 }
   | pattern COMMA pattern                       { [$3; $1] }
+  | pattern COMMA error                         { expecting 3 "pattern" }
 ;
 pattern_semi_list:
     pattern                                     { [$1] }
@@ -1723,6 +1737,8 @@ ident:
 val_ident:
     LIDENT                                      { $1 }
   | LPAREN operator RPAREN                      { $2 }
+  | LPAREN operator error                       { unclosed "(" 1 ")" 3 }
+  | LPAREN error                                { expecting 2 "operator" }
 ;
 operator:
     PREFIXOP                                    { $1 }

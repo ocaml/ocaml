@@ -405,13 +405,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
   let pt =
       try Parse.interface (Lexing.from_string text)
       with Syntaxerr.Error e ->
-        let l =
-          match e with
-            Syntaxerr.Unclosed(l,_,_,_) -> l
-          | Syntaxerr.Applicative_path l -> l
-          | Syntaxerr.Variable_in_scope(l,_) -> l
-          | Syntaxerr.Other l -> l
-        in
+        let l = Syntaxerr.location_of_error e in
         Jg_text.tag_and_see  tw ~start:(tpos l.loc_start.Lexing.pos_cnum)
           ~stop:(tpos l.loc_end.Lexing.pos_cnum) ~tag:"error"; []
       | Lexer.Error (_, l) ->

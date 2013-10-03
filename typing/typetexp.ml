@@ -25,7 +25,7 @@ exception Already_bound
 
 type error =
     Unbound_type_variable of string
-  | Unbound_type_constructor of Longident.t
+  | Unbound_type_constructor of Env.t * Longident.t
   | Unbound_type_constructor_2 of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
@@ -42,13 +42,13 @@ type error =
   | Cannot_quantify of string * type_expr
   | Multiple_constraints_on_type of Longident.t
   | Repeated_method_label of string
-  | Unbound_value of Longident.t
-  | Unbound_constructor of Longident.t
-  | Unbound_label of Longident.t
-  | Unbound_module of Longident.t
-  | Unbound_class of Longident.t
-  | Unbound_modtype of Longident.t
-  | Unbound_cltype of Longident.t
+  | Unbound_value of Env.t * Longident.t
+  | Unbound_constructor of Env.t * Longident.t
+  | Unbound_label of Env.t * Longident.t
+  | Unbound_module of Env.t * Longident.t
+  | Unbound_class of Env.t * Longident.t
+  | Unbound_modtype of Env.t * Longident.t
+  | Unbound_cltype of Env.t * Longident.t
   | Ill_typed_functor_application of Longident.t
 
 exception Error of Location.t * error
@@ -65,7 +65,8 @@ let rec narrow_unbound_lid_error env loc lid make_error =
   let check_module mlid =
     try ignore (Env.lookup_module mlid env)
     with Not_found ->
-      narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid);
+      narrow_unbound_lid_error env loc mlid
+        (fun env lid -> Unbound_module (env, lid));
       assert false
   in
   begin match lid with
@@ -76,7 +77,7 @@ let rec narrow_unbound_lid_error env loc lid make_error =
       check_module mlid;
       raise (Error (loc, Ill_typed_functor_application lid))
   end;
-  raise (Error (loc, make_error lid))
+  raise (Error (loc, make_error env lid))
 
 let find_component lookup make_error env loc lid =
   try
@@ -90,21 +91,29 @@ let find_component lookup make_error env loc lid =
     assert false
 
 let find_type =
-  find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
+  find_component Env.lookup_type
+    (fun env lid -> Unbound_type_constructor (env, lid))
 let find_constructor =
-  find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
+  find_component Env.lookup_constructor
+    (fun env lid -> Unbound_constructor (env, lid))
 let find_label =
-  find_component Env.lookup_label (fun lid -> Unbound_label lid)
+  find_component Env.lookup_label
+    (fun env lid -> Unbound_label (env, lid))
 let find_class =
-  find_component Env.lookup_class (fun lid -> Unbound_class lid)
+  find_component Env.lookup_class
+    (fun env lid -> Unbound_class (env, lid))
 let find_value =
-  find_component Env.lookup_value (fun lid -> Unbound_value lid)
+  find_component Env.lookup_value
+    (fun env lid -> Unbound_value (env, lid))
 let find_module =
-  find_component Env.lookup_module (fun lid -> Unbound_module lid)
+  find_component Env.lookup_module
+    (fun env lid -> Unbound_module (env, lid))
 let find_modtype =
-  find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
+  find_component Env.lookup_modtype
+    (fun env lid -> Unbound_modtype (env, lid))
 let find_class_type =
-  find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
+  find_component Env.lookup_cltype
+    (fun env lid -> Unbound_cltype (env, lid))
 
 (* Support for first-class modules. *)
 
@@ -316,7 +325,7 @@ let rec transl_type env policy styp =
           let (path, decl) = Env.lookup_type lid2 env in
           (path, decl, false)
         with Not_found ->
-          raise(Error(styp.ptyp_loc, Unbound_class lid.txt))
+          raise(Error(styp.ptyp_loc, Unbound_class (env, lid.txt)))
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid.txt, decl.type_arity,
@@ -674,24 +683,68 @@ let transl_type_scheme env styp =
 open Format
 open Printtyp
 
+let spellcheck ppf fold env lid =
+  let cutoff =
+    match String.length (Longident.last lid) with
+      | 1 | 2 -> 0
+      | 3 | 4 -> 1
+      | 5 | 6 -> 2
+      | _ -> 3
+  in
+  let compare target head _path _descr acc =
+    let (best_choice, best_dist) = acc in
+    match Misc.edit_distance target head cutoff with
+      | None -> (best_choice, best_dist)
+      | Some dist ->
+        let choice =
+          if dist < best_dist then [head]
+          else if dist = best_dist then head :: best_choice
+          else best_choice in
+        (choice, min dist best_dist)
+  in
+  let init = ([], max_int) in
+  let handle (choice, _dist) =
+    match List.rev choice with
+      | [] -> ()
+      | last :: rev_rest ->
+        fprintf ppf "@\nDid you mean %s%s%s?"
+          (String.concat ", " (List.rev rev_rest))
+          (if rev_rest = [] then "" else " or ")
+          last
+  in
+  (* flush now to get the error report early, in the (unheard of) case
+     where the linear search would take a bit of time; in the worst
+     case, the user has seen the error, she can interrupt the process
+     before the spell-checking terminates. *)
+  fprintf ppf "@?";
+  match lid with
+    | Longident.Lapply _ -> ()
+    | Longident.Lident s ->
+      handle (fold (compare s) None env init)
+    | Longident.Ldot (r, s) ->
+      handle (fold (compare s) (Some r) env init)
+
 let report_error ppf = function
   | Unbound_type_variable name ->
-      fprintf ppf "Unbound type parameter %s" name
-  | Unbound_type_constructor lid ->
-      fprintf ppf "Unbound type constructor %a" longident lid
+    fprintf ppf "Unbound type parameter %s@." name
+  | Unbound_type_constructor (env, lid) ->
+    fprintf ppf "Unbound type constructor %a" longident lid;
+    spellcheck ppf Env.fold_types env lid;
   | Unbound_type_constructor_2 p ->
-      fprintf ppf "The type constructor@ %a@ is not yet completely defined"
-        path p
+    fprintf ppf "The type constructor@ %a@ is not yet completely defined"
+      path p
   | Type_arity_mismatch(lid, expected, provided) ->
-      fprintf ppf
-       "@[The type constructor %a@ expects %i argument(s),@ \
+    fprintf ppf
+      "@[The type constructor %a@ expects %i argument(s),@ \
         but is here applied to %i argument(s)@]"
-       longident lid expected provided
+      longident lid expected provided
   | Bound_type_variable name ->
-      fprintf ppf "Already bound type parameter '%s" name
+    fprintf ppf "Already bound type parameter '%s" name
   | Recursive_type ->
-      fprintf ppf "This type is recursive"
+    fprintf ppf "This type is recursive"
   | Unbound_row_variable lid ->
+      (* we don't use "spellcheck" here: this error is not raised
+         anywhere so it's unclear how it should be handled *)
       fprintf ppf "Unbound row variable in #%a" longident lid
   | Type_mismatch trace ->
       Printtyp.unification_error true trace
@@ -740,19 +793,26 @@ let report_error ppf = function
   | Repeated_method_label s ->
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
         s "Multiple occurences are not allowed."
-  | Unbound_value lid ->
-      fprintf ppf "Unbound value %a" longident lid
-  | Unbound_module lid ->
-      fprintf ppf "Unbound module %a" longident lid
-  | Unbound_constructor lid ->
-      fprintf ppf "Unbound constructor %a" longident lid
-  | Unbound_label lid ->
-      fprintf ppf "Unbound record field label %a" longident lid
-  | Unbound_class lid ->
-      fprintf ppf "Unbound class %a" longident lid
-  | Unbound_modtype lid ->
-      fprintf ppf "Unbound module type %a" longident lid
-  | Unbound_cltype lid ->
-      fprintf ppf "Unbound class type %a" longident lid
+  | Unbound_value (env, lid) ->
+      fprintf ppf "Unbound value %a" longident lid;
+      spellcheck ppf Env.fold_values env lid;
+  | Unbound_module (env, lid) ->
+      fprintf ppf "Unbound module %a" longident lid;
+      spellcheck ppf Env.fold_modules env lid;
+  | Unbound_constructor (env, lid) ->
+      fprintf ppf "Unbound constructor %a" longident lid;
+      spellcheck ppf Env.fold_constructors env lid;
+  | Unbound_label (env, lid) ->
+      fprintf ppf "Unbound record field label %a" longident lid;
+      spellcheck ppf Env.fold_labels env lid;
+  | Unbound_class (env, lid) ->
+      fprintf ppf "Unbound class %a" longident lid;
+      spellcheck ppf Env.fold_classs env lid;
+  | Unbound_modtype (env, lid) ->
+      fprintf ppf "Unbound module type %a" longident lid;
+      spellcheck ppf Env.fold_modtypes env lid;
+  | Unbound_cltype (env, lid) ->
+      fprintf ppf "Unbound class type %a" longident lid;
+      spellcheck ppf Env.fold_cltypes env lid;
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
