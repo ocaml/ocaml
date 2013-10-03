@@ -36,10 +36,8 @@ type error =
   | Not_open_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Includecore.type_mismatch list
-  | Unbound_extension of Longident.t
   | Rebind_wrong_type of Longident.t * (type_expr * type_expr) list
   | Rebind_private of Longident.t
-  | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
   | Bad_variance of int * (bool * bool) * (bool * bool)
   | Unavailable_type_constructor of Path.t
@@ -951,12 +949,7 @@ let transl_extension_constructor env check_open type_decl type_path type_params 
               Typedtree.ext_loc = sext.pext_loc }
 	      
     | Pext_rebind lid ->
-      let (_, cdescr) =
-	try
-	  Env.lookup_constructor lid.txt env
-	with Not_found ->
-	  raise (Error(sext.pext_loc, Unbound_extension lid.txt))
-      in
+      let (_, cdescr) = Typetexp.find_constructor env sext.pext_loc loc lid.txt in
         Env.mark_constructor Env.Positive env (Longident.last lid.txt) cdescr;
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let ret_type = 
@@ -1084,11 +1077,7 @@ let transl_exception env loc excdecl =
 
 (* Translate an exception rebinding *)
 let transl_exn_rebind env loc lid =
-  let (path, cdescr) =
-    try
-      Env.lookup_constructor lid env
-    with Not_found ->
-      raise(Error(loc, Unbound_exception lid)) in
+  let (path, cdescr) = Typetexp.find_constructor env loc lid in
   Env.mark_constructor Env.Positive env (Longident.last lid) cdescr;
   match cdescr.cstr_tag with
     Cstr_exception (path, _) ->
@@ -1342,10 +1331,6 @@ let report_error ppf = function
         (Includecore.report_type_mismatch 
            "the type" "this extension" "definition")
         errs
-  | Unbound_extension lid ->
-      fprintf ppf "@[%s@ %a@]"
-	"Unbound constructor"
-	Printtyp.longident lid
   | Rebind_wrong_type (lid, trace) ->
       Printtyp.report_unification_error ppf trace
         (function ppf ->
@@ -1358,8 +1343,6 @@ let report_error ppf = function
 	"The constructor"
 	Printtyp.longident lid
 	"is private"
-  | Unbound_exception lid ->
-      fprintf ppf "Unbound exception constructor@ %a" Printtyp.longident lid
   | Not_an_exception lid ->
       fprintf ppf "The constructor@ %a@ is not an exception"
         Printtyp.longident lid
