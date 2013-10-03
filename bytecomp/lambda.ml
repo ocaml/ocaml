@@ -386,6 +386,11 @@ let rec transl_path = function
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
 
+(* Translation of value identifiers *)
+
+let transl_ident_path env path =
+  transl_path (Env.normalize_path env path) 
+
 (* Compile a sequence of expressions *)
 
 let rec make_sequence fn = function

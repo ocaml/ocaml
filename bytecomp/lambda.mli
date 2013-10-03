@@ -211,6 +211,7 @@ val free_variables: lambda -> IdentSet.t
 val free_methods: lambda -> IdentSet.t
 
 val transl_path: Path.t -> lambda
+val transl_ident_path: Env.t -> Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda

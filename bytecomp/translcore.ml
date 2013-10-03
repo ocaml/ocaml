@@ -38,10 +38,6 @@ let transl_object =
   ref (fun id s cl -> assert false :
        Ident.t -> string list -> class_expr -> lambda)
 
-(* Translation of value identifiers *)
-let transl_ident_path env path =
-  transl_path (Env.normalize_path env path) 
-
 (* Translation of primitives *)
 
 let comparisons_table = create_hashtable 11 [
@@ -725,7 +721,8 @@ and transl_exp0 e =
             Lprim(Pmakeblock(n, Immutable), ll)
           end
       | Cstr_exception (path, _) ->
-          Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
+          Lprim(Pmakeblock(0, Immutable),
+                transl_ident_path e.exp_env path :: ll)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
@@ -803,7 +800,8 @@ and transl_exp0 e =
       in
       event_after e lam
   | Texp_new (cl, _, _) ->
-      Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit], Location.none)
+      Lapply(Lprim(Pfield 0, [transl_ident_path e.exp_env cl]),
+             [lambda_unit], Location.none)
   | Texp_instvar(path_self, path, _) ->
       Lprim(Parrayrefu Paddrarray, [transl_path path_self; transl_path path])
   | Texp_setinstvar(path_self, path, _, expr) ->

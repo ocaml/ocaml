@@ -2158,7 +2158,8 @@ let combine_constructor arg ex_pat cstr partial ctx def
           match ex with
           | Cstr_exception (path, _) ->
               Lifthenelse(Lprim(Pintcomp Ceq,
-                                [Lprim(Pfield 0, [arg]); transl_path path]),
+                                [Lprim(Pfield 0, [arg]);
+                                 transl_ident_path ex_pat.pat_env path]),
                           act, rem)
           | _ -> assert false)
         tests default in
