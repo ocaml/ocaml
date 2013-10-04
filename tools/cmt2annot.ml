@@ -9,253 +9,155 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-(*
-Generate .annot file from a .types files.
-*)
 
+(* Generate an .annot file from a .cmt file. *)
+
+open Asttypes
 open Typedtree
-open TypedtreeIter
 
-let pattern_scopes = ref []
+let bind_variables scope =
+  object
+    inherit Tast_iter.iter as super
 
-let push_None () =
-  pattern_scopes := None :: !pattern_scopes
-let push_Some annot =
-  pattern_scopes := (Some annot) :: !pattern_scopes
-let pop_scope () =
-  match !pattern_scopes with
-    [] -> assert false
-  | _ :: scopes -> pattern_scopes := scopes
-
-module ForIterator = struct
-    open Asttypes
-
-    include DefaultIteratorArgument
-
-    let structure_begin_scopes = ref []
-    let structure_end_scopes = ref []
-
-    let rec find_last list =
-      match list with
-        [] -> assert false
-      | [x] -> x
-      | _ :: tail -> find_last tail
-
-    let enter_structure str =
-      match str.str_items with
-        [] -> ()
-      | _ ->
-          let loc =
-            match !structure_end_scopes with
-              [] -> Location.none
-            | _ ->
-                let s = find_last str.str_items in
-                s.str_loc
-          in
-          structure_end_scopes := loc :: !structure_end_scopes;
-
-          let rec iter list =
-            match list with
-              [] -> assert false
-            | [ { str_desc = Tstr_value (Nonrecursive, _); str_loc = loc } ] ->
-                structure_begin_scopes := loc.Location.loc_end
-                  :: !structure_begin_scopes
-            | [ _ ] -> ()
-            | item :: tail ->
-                iter tail;
-                match item, tail with
-                  { str_desc = Tstr_value (Nonrecursive,_) },
-                  { str_loc = loc } :: _ ->
-                    structure_begin_scopes := loc.Location.loc_start
-                      :: !structure_begin_scopes
-                | _ -> ()
-          in
-          iter str.str_items
-
-    let leave_structure str =
-      match str.str_items with
-        [] -> ()
-      | _ ->
-          match !structure_end_scopes with
-            [] -> assert false
-          | _ :: scopes -> structure_end_scopes := scopes
-
-    let enter_class_expr node =
-      Stypes.record (Stypes.Ti_class node)
-    let enter_module_expr node =
-      Stypes.record (Stypes.Ti_mod node)
-
-    let add_variable pat id =
-      match !pattern_scopes with
-      | [] -> assert false
-      | None :: _ -> ()
-      | (Some s) :: _ ->
-          Stypes.record (Stypes.An_ident (pat.pat_loc, Ident.name id, s))
-
-    let enter_pattern pat =
+    method! pattern pat =
+      super # pattern pat;
       match pat.pat_desc with
-      | Tpat_var (id, _)
-      | Tpat_alias (_, id,_)
-        -> add_variable pat id
-      | Tpat_any -> ()
-      | Tpat_constant _
-      | Tpat_tuple _
-      | Tpat_construct _
-      | Tpat_lazy _
-      | Tpat_or _
-      | Tpat_array _
-      | Tpat_record _
-      | Tpat_variant _
-        -> ()
-
-    let leave_pattern pat =
-      Stypes.record (Stypes.Ti_pat pat)
-
-    let rec name_of_path = function
-      | Path.Pident id -> Ident.name id
-      | Path.Pdot(p, s, pos) ->
-          if Oprint.parenthesized_ident s then
-            name_of_path p ^ ".( " ^ s ^ " )"
-          else
-            name_of_path p ^ "." ^ s
-      | Path.Papply(p1, p2) -> name_of_path p1 ^ "(" ^ name_of_path p2 ^ ")"
-
-    let enter_expression exp =
-      match exp.exp_desc with
-        Texp_ident (path, _, _) ->
-          let full_name = name_of_path path in
-          begin
-            try
-              let annot = Env.find_annot path exp.exp_env in
-              Stypes.record
-                (Stypes.An_ident (exp.exp_loc, full_name , annot))
-            with Not_found ->
-              Stypes.record
-                (Stypes.An_ident (exp.exp_loc, full_name , Annot.Iref_external))
-          end
-
-      | Texp_let (rec_flag, _, body) ->
-          begin
-            match rec_flag with
-            | Recursive -> push_Some (Annot.Idef exp.exp_loc)
-            | Nonrecursive -> push_Some (Annot.Idef body.exp_loc)
-            | Default -> push_None ()
-          end
-      | Texp_function _ -> push_None ()
-      | Texp_match _ -> push_None ()
-      | Texp_try _ -> push_None ()
+      | Tpat_var (id, _) | Tpat_alias (_, id, _) ->
+          Stypes.record (Stypes.An_ident (pat.pat_loc, Ident.name id, Annot.Idef scope))
       | _ -> ()
-
-    let leave_expression exp =
-      if not exp.exp_loc.Location.loc_ghost then
-        Stypes.record (Stypes.Ti_expr exp);
-      match exp.exp_desc with
-      | Texp_let _
-      | Texp_function _
-      | Texp_match _
-      | Texp_try _
-        -> pop_scope ()
-      | _ -> ()
-
-    let enter_binding pat exp =
-      let scope =
-        match !pattern_scopes with
-        | [] -> assert false
-        | None :: _ -> Some (Annot.Idef exp.exp_loc)
-        | scope :: _ -> scope
-      in
-      pattern_scopes := scope :: !pattern_scopes
-
-    let leave_binding _ _ =
-      pop_scope ()
-
-    let enter_class_expr exp =
-      match exp.cl_desc with
-      | Tcl_fun _ -> push_None ()
-      | Tcl_let _ -> push_None ()
-      | _ -> ()
-
-    let leave_class_expr exp =
-      match exp.cl_desc with
-      | Tcl_fun _
-      | Tcl_let _ -> pop_scope ()
-      | _ -> ()
-
-    let enter_class_structure _ =
-      push_None ()
-
-    let leave_class_structure _ =
-      pop_scope ()
-
-(*
-    let enter_class_field cf =
-      match cf.cf_desc with
-        Tcf_let _ -> push_None ()
-      | _ -> ()
-
-    let leave_class_field cf =
-      match cf.cf_desc with
-        Tcf_let _ -> pop_scope ()
-      | _ -> ()
-*)
-
-    let enter_structure_item s =
-      Stypes.record_phrase s.str_loc;
-      match s.str_desc with
-        Tstr_value (rec_flag, _) ->
-          begin
-            let loc = s.str_loc in
-            let scope = match !structure_end_scopes with
-                [] -> assert false
-              | scope :: _ -> scope
-            in
-            match rec_flag with
-            | Recursive -> push_Some
-                  (Annot.Idef { scope with
-                    Location.loc_start = loc.Location.loc_start})
-            | Nonrecursive ->
-(* TODO: do it lazily, when we start the next element ! *)
-(*
-                 let start = match srem with
-                  | [] -> loc.Location.loc_end
-                  | {pstr_loc = loc2} :: _ -> loc2.Location.loc_start
-in  *)
-                let start =
-                  match !structure_begin_scopes with
-                    [] -> assert false
-                  | loc :: tail ->
-                      structure_begin_scopes := tail;
-                      loc
-                in
-                push_Some (Annot.Idef {scope with Location.loc_start = start})
-            | Default -> push_None ()
-          end
-      | _ -> ()
-
-    let leave_structure_item s =
-      match s.str_desc with
-        Tstr_value _ -> pop_scope ()
-      | _ -> ()
-
-
   end
 
-module Iterator = MakeIterator(ForIterator)
+let bind_bindings scope bindings =
+  let o = bind_variables scope in
+  List.iter (fun (p, _) -> o # pattern p) bindings
 
-let gen_annot target_filename filename cmt =
-  match cmt.Cmt_format.cmt_annots with
-      Cmt_format.Implementation typedtree ->
-        Iterator.iter_structure typedtree;
-        let target_filename = match target_filename with
-            None -> Some (filename ^ ".annot")
-          | Some "-" -> None
-          | Some filename -> target_filename
-        in
-        Stypes.dump target_filename
-    | Cmt_format.Interface _ ->
+let bind_cases l =
+  List.iter (fun (p, e) -> (bind_variables e.exp_loc) # pattern p) l
+
+let iterator rebuild_env =
+  object(this)
+    val scope = Location.none  (* scope of the surrounding structure *)
+
+    inherit Tast_iter.iter as super
+
+    method! class_expr node =
+      Stypes.record (Stypes.Ti_class node);
+      super # class_expr node
+
+    method! module_expr node =
+      Stypes.record (Stypes.Ti_mod node);
+      Tast_iter.module_expr {< scope = node.mod_loc >} node
+
+    method! expression exp =
+      begin match exp.exp_desc with
+      | Texp_ident (path, _, _) ->
+          let full_name = Path.name ~paren:Oprint.parenthesized_ident path in
+          let env =
+            if rebuild_env then
+              try
+                Env.env_of_only_summary Envaux.env_from_summary exp.exp_env
+              with Envaux.Error err ->
+                Format.eprintf "%a@." Envaux.report_error err;
+                exit 2
+            else
+              exp.exp_env
+          in
+          let annot =
+            try
+              let desc = Env.find_value path env in
+              let dloc = desc.Types.val_loc in
+              if dloc.Location.loc_ghost then Annot.Iref_external
+              else Annot.Iref_internal dloc
+            with Not_found ->
+              Annot.Iref_external
+          in
+          Stypes.record
+            (Stypes.An_ident (exp.exp_loc, full_name , annot))
+      | Texp_let (Recursive, bindings, _) ->
+          bind_bindings exp.exp_loc bindings
+      | Texp_let (Nonrecursive, bindings, body) ->
+          bind_bindings body.exp_loc bindings
+      | Texp_function (_, f, _)
+      | Texp_match (_, f, _)
+      | Texp_try (_, f) ->
+          bind_cases f
+      | _ -> ()
+      end;
+      Stypes.record (Stypes.Ti_expr exp);
+      super # expression exp
+
+    method! pattern pat =
+      super # pattern pat;
+      Stypes.record (Stypes.Ti_pat pat)
+
+    method private structure_item_rem s rem =
+      begin match s with
+      | {str_desc = Tstr_value (rec_flag, bindings); str_loc = loc} ->
+          let open Location in
+          let doit loc_start = bind_bindings {scope with loc_start} bindings in
+          begin match rec_flag, rem with
+          | Default, _ -> ()
+          | Recursive, _ -> doit loc.loc_start
+          | Nonrecursive, [] -> doit loc.loc_end
+          | Nonrecursive,  {str_loc = loc2} :: _ -> doit loc2.loc_start
+          end
+      | _ ->
+          ()
+      end;
+      Stypes.record_phrase s.str_loc;
+      super # structure_item s
+
+    method! structure_item s =
+      (* This will be used for Partial_structure_item.
+         We don't have here the location of the "next" item,
+         this will give a slightly different scope for the non-recursive
+         binding case. *)
+      this # structure_item_rem s []
+
+    method! structure l =
+      let rec loop = function
+        | str :: rem -> this # structure_item_rem str rem; loop rem
+        | [] -> ()
+      in
+      loop l.str_items
+
+(* TODO: support binding for Tcl_fun, Tcl_let, etc *)
+  end
+
+let binary_part iter x =
+  let open Cmt_format in
+  match x with
+  | Partial_structure x -> iter # structure x
+  | Partial_structure_item x -> iter # structure_item x
+  | Partial_expression x -> iter # expression x
+  | Partial_pattern x -> iter # pattern x
+  | Partial_class_expr x -> iter # class_expr x
+  | Partial_signature x -> iter # signature x
+  | Partial_signature_item x -> iter # signature_item x
+  | Partial_module_type x -> iter # module_type x
+
+let gen_annot target_filename filename {Cmt_format.cmt_loadpath; cmt_annots; cmt_use_summaries; _} =
+  let open Cmt_format in
+  Envaux.reset_cache ();
+  Config.load_path := cmt_loadpath;
+  let target_filename =
+    match target_filename with
+    | None -> Some (filename ^ ".annot")
+    | Some "-" -> None
+    | Some filename -> target_filename
+  in
+  let iterator = iterator cmt_use_summaries in
+  match cmt_annots with
+  | Implementation typedtree ->
+      iterator # structure typedtree;
+      Stypes.dump target_filename
+  | Interface _ ->
       Printf.fprintf stderr "Cannot generate annotations for interface file\n%!";
       exit 2
-    | _ ->
+  | Partial_implementation parts ->
+      Array.iter (binary_part iterator) parts;
+      Stypes.dump target_filename
+  | _ ->
       Printf.fprintf stderr "File was generated with an error\n%!";
       exit 2
 

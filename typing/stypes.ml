@@ -20,10 +20,11 @@
 *)
 
 open Annot;;
-open Format;;
 open Lexing;;
 open Location;;
 open Typedtree;;
+
+let output_int oc i = output_string oc (string_of_int i)
 
 type annotation =
   | Ti_pat   of pattern
@@ -71,15 +72,22 @@ let cmp_ti_inner_first ti1 ti2 =
 
 let print_position pp pos =
   if pos = dummy_pos then
-    fprintf pp "--"
-  else
-    fprintf pp "%S %d %d %d" pos.pos_fname pos.pos_lnum pos.pos_bol
-                             pos.pos_cnum;
+    output_string pp "--"
+  else begin
+    output_char pp '\"';
+    output_string pp (String.escaped pos.pos_fname);
+    output_string pp "\" ";
+    output_int pp pos.pos_lnum;
+    output_char pp ' ';
+    output_int pp pos.pos_bol;
+    output_char pp ' ';
+    output_int pp pos.pos_cnum;
+  end
 ;;
 
 let print_location pp loc =
   print_position pp loc.loc_start;
-  fprintf pp " ";
+  output_char pp ' ';
   print_position pp loc.loc_end;
 ;;
 
@@ -115,34 +123,61 @@ let call_kind_string k =
 
 let print_ident_annot pp str k =
   match k with
-  | Idef l -> fprintf pp "def %s %a@." str print_location l;
-  | Iref_internal l -> fprintf pp "int_ref %s %a@." str print_location l;
-  | Iref_external -> fprintf pp "ext_ref %s@." str;
+  | Idef l ->
+      output_string pp "def ";
+      output_string pp str;
+      output_char pp ' ';
+      print_location pp l;
+      output_char pp '\n'
+  | Iref_internal l ->
+      output_string pp "int_ref ";
+      output_string pp str;
+      output_char pp ' ';
+      print_location pp l;
+      output_char pp '\n'
+  | Iref_external ->
+      output_string pp "ext_ref ";
+      output_string pp str;
+      output_char pp '\n'
 ;;
 
 (* The format of the annotation file is documented in emacs/caml-types.el. *)
 
-let print_info pp prev_loc ti =
+let print_info pp ppf prev_loc ti =
   match ti with
   | Ti_class _ | Ti_mod _ -> prev_loc
   | Ti_pat  {pat_loc = loc; pat_type = typ}
   | Ti_expr {exp_loc = loc; exp_type = typ} ->
-      if loc <> prev_loc then fprintf pp "%a@." print_location loc;
-      fprintf pp "type(@.  ";
+      if loc <> prev_loc then begin
+        print_location pp loc;
+        output_char pp '\n'
+      end;
+      output_string pp "type(\n";
+      flush pp;
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
-      Printtyp.type_sch pp typ;
-      fprintf pp "@.)@.";
+      Format.pp_print_string ppf "  ";
+      Printtyp.type_sch ppf typ;
+      Format.pp_print_newline ppf ();
+      output_string pp ")\n";
       loc
   | An_call (loc, k) ->
-      if loc <> prev_loc then fprintf pp "%a@." print_location loc;
-      fprintf pp "call(@.  %s@.)@." (call_kind_string k);
+      if loc <> prev_loc then begin
+        print_location pp loc;
+        output_char pp '\n'
+      end;
+      output_string pp "call(\n  ";
+      output_string pp (call_kind_string k);
+      output_string pp "\n)\n";
       loc
   | An_ident (loc, str, k) ->
-      if loc <> prev_loc then fprintf pp "%a@." print_location loc;
-      fprintf pp "ident(@.  ";
+      if loc <> prev_loc then begin
+        print_location pp loc;
+        output_char pp '\n'
+      end;
+      output_string pp "ident(\n  ";
       print_ident_annot pp str k;
-      fprintf pp ")@.";
+      output_string pp ")\n";
       loc
 ;;
 
@@ -157,10 +192,11 @@ let dump filename =
     let info = get_info () in
     let pp =
       match filename with
-          None -> std_formatter
-        | Some filename -> formatter_of_out_channel (open_out filename) in
+          None -> stdout
+        | Some filename -> open_out filename in
+    let ppf = Format.formatter_of_out_channel pp in
     sort_filter_phrases ();
-    ignore (List.fold_left (print_info pp) Location.none info);
+    ignore (List.fold_left (print_info pp ppf) Location.none info);
     phrases := [];
   end else begin
     annotations := [];

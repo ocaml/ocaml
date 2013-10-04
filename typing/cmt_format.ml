@@ -62,30 +62,11 @@ type cmt_infos = {
 type error =
     Not_a_typedtree of string
 
-
-
-
-
-(*
-  Keeping all the environments in the typedtree can result in
-  huge typedtrees.
-*)
-
-
 let need_to_clear_env =
   try ignore (Sys.getenv "OCAML_BINANNOT_WITHENV"); false
   with Not_found -> true
 
-(* Re-introduce sharing after clearing environments *)
-let env_hcons = Hashtbl.create 133
-let keep_only_summary env =
-  let new_env = Env.keep_only_summary env in
-  try
-    Hashtbl.find env_hcons new_env
-  with Not_found ->
-    Hashtbl.add env_hcons new_env new_env;
-    new_env
-let clear_env_hcons () = Hashtbl.clear env_hcons
+let keep_only_summary = Env.keep_only_summary
 
 module ClearEnv  = TypedtreeMap.MakeMap (struct
   open TypedtreeMap
@@ -242,7 +223,6 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
       cmt_interface_digest = this_crc;
       cmt_use_summaries = need_to_clear_env;
     } in
-    clear_env_hcons ();
     output_cmt oc cmt;
     close_out oc;
     set_saved_types [];

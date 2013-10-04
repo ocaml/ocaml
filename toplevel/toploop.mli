@@ -55,9 +55,11 @@ val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
            should be printed. Uncaught exceptions are always printed. *)
 val use_file : formatter -> string -> bool
 val use_silently : formatter -> string -> bool
+val mod_use_file : formatter -> string -> bool
         (* Read and execute commands from a file.
            [use_file] prints the types and values of the results.
-           [use_silently] does not print them. *)
+           [use_silently] does not print them.
+           [mod_use_file] wrap the file contents into a module. *)
 val eval_path: Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
 

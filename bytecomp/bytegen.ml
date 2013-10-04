@@ -330,6 +330,12 @@ let comp_primitive p args =
   | Pstringsets -> Kccall("caml_string_set", 3)
   | Pstringrefu -> Kgetstringchar
   | Pstringsetu -> Ksetstringchar
+  | Pstring_load_16(_) -> Kccall("caml_string_get16", 2)
+  | Pstring_load_32(_) -> Kccall("caml_string_get32", 2)
+  | Pstring_load_64(_) -> Kccall("caml_string_get64", 2)
+  | Pstring_set_16(_) -> Kccall("caml_string_set16", 3)
+  | Pstring_set_32(_) -> Kccall("caml_string_set32", 3)
+  | Pstring_set_64(_) -> Kccall("caml_string_set64", 3)
   | Parraylength kind -> Kvectlength
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
   | Parrayrefs Pfloatarray -> Kccall("caml_array_get_float", 2)
@@ -343,6 +349,14 @@ let comp_primitive p args =
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
   | Parraysetu Pfloatarray -> Kccall("caml_array_unsafe_set_float", 3)
   | Parraysetu _ -> Ksetvectitem
+  | Pctconst c ->
+     let const_name = match c with
+       | Big_endian -> "big_endian"
+       | Word_size -> "word_size"
+       | Ostype_unix -> "ostype_unix"
+       | Ostype_win32 -> "ostype_win32"
+       | Ostype_cygwin -> "ostype_cygwin" in
+     Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1)
   | Pisint -> Kisint
   | Pisout -> Kisout
   | Pbittest -> Kccall("caml_bitvect_test", 2)
@@ -374,6 +388,15 @@ let comp_primitive p args =
   | Pbintcomp(bi, Cge) -> Kccall("caml_greaterequal", 2)
   | Pbigarrayref(_, n, _, _) -> Kccall("caml_ba_get_" ^ string_of_int n, n + 1)
   | Pbigarrayset(_, n, _, _) -> Kccall("caml_ba_set_" ^ string_of_int n, n + 2)
+  | Pbigarraydim(n) -> Kccall("caml_ba_dim_" ^ string_of_int n, 1)
+  | Pbigstring_load_16(_) -> Kccall("caml_ba_uint8_get16", 2)
+  | Pbigstring_load_32(_) -> Kccall("caml_ba_uint8_get32", 2)
+  | Pbigstring_load_64(_) -> Kccall("caml_ba_uint8_get64", 2)
+  | Pbigstring_set_16(_) -> Kccall("caml_ba_uint8_set16", 3)
+  | Pbigstring_set_32(_) -> Kccall("caml_ba_uint8_set32", 3)
+  | Pbigstring_set_64(_) -> Kccall("caml_ba_uint8_set64", 3)
+  | Pbswap16 -> Kccall("caml_bswap16", 1)
+  | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max

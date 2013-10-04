@@ -197,6 +197,9 @@ let simplif_prim_pure p (args, approxs) dbg =
       begin match p with
         Pidentity -> make_const_int x
       | Pnegint -> make_const_int (-x)
+      | Pbswap16 ->
+         make_const_int (((x land 0xff) lsl 8) lor
+                         ((x land 0xff00) lsr 8))
       | Poffsetint y -> make_const_int (x + y)
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
@@ -229,6 +232,15 @@ let simplif_prim_pure p (args, approxs) dbg =
         Pidentity -> make_const_ptr x
       | Pnot -> make_const_bool(x = 0)
       | Pisint -> make_const_bool true
+      | Pctconst c ->
+          begin
+            match c with
+            | Big_endian -> make_const_bool Arch.big_endian
+            | Word_size -> make_const_int (8*Arch.size_int)
+            | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
+            | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
+            | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
+          end
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
   | [Value_constptr x; Value_constptr y] ->

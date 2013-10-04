@@ -592,7 +592,7 @@ Error: This definition has type 'a t -> 'a which is less general than
     function Leaf x -> x | Node x -> depth x;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This definition has type 'b. 'b t -> 'b which is less general than
-         'b 'a. 'a t -> 'b
+         'a 'b. 'a t -> 'b
 #   val r : 'a list * '_b list ref = ([], {contents = []})
 val q : unit -> 'a list * '_b list ref = <fun>
 # val f : 'a -> 'a = <fun>

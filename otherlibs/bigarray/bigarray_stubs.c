@@ -346,6 +346,72 @@ CAMLprim value caml_ba_get_generic(value vb, value vind)
   return caml_ba_get_N(vb, &Field(vind, 0), Wosize_val(vind));
 }
 
+
+CAMLprim value caml_ba_uint8_get16(value vb, value vind)
+{
+  intnat idx = Long_val(vind);
+  struct caml_ba_array * b = Caml_ba_array_val(vb);
+  if (idx < 0 || idx >= b->dim[0] - 1) caml_array_bound_error();
+  intnat res;
+  unsigned char b1 = ((unsigned char*) b->data)[idx];
+  unsigned char b2 = ((unsigned char*) b->data)[idx+1];
+#ifdef ARCH_BIG_ENDIAN
+  res = b1 << 8 | b2;
+#else
+  res = b2 << 8 | b1;
+#endif
+  return Val_int(res);
+}
+
+CAMLprim value caml_ba_uint8_get32(value vb, value vind)
+{
+  intnat idx = Long_val(vind);
+  struct caml_ba_array * b = Caml_ba_array_val(vb);
+  if (idx < 0 || idx >= b->dim[0] - 3) caml_array_bound_error();
+  intnat res;
+  unsigned char b1 = ((unsigned char*) b->data)[idx];
+  unsigned char b2 = ((unsigned char*) b->data)[idx+1];
+  unsigned char b3 = ((unsigned char*) b->data)[idx+2];
+  unsigned char b4 = ((unsigned char*) b->data)[idx+3];
+#ifdef ARCH_BIG_ENDIAN
+  res = b1 << 24 | b2 << 16 | b3 << 8 | b4;
+#else
+  res = b4 << 24 | b3 << 16 | b2 << 8 | b1;
+#endif
+  return caml_copy_int32(res);
+}
+
+#ifdef ARCH_INT64_TYPE
+#include "int64_native.h"
+#else
+#include "int64_emul.h"
+#endif
+
+CAMLprim value caml_ba_uint8_get64(value vb, value vind)
+{
+  intnat idx = Long_val(vind);
+  struct caml_ba_array * b = Caml_ba_array_val(vb);
+  if (idx < 0 || idx >= b->dim[0] - 7) caml_array_bound_error();
+  uint32 reshi;
+  uint32 reslo;
+  unsigned char b1 = ((unsigned char*) b->data)[idx];
+  unsigned char b2 = ((unsigned char*) b->data)[idx+1];
+  unsigned char b3 = ((unsigned char*) b->data)[idx+2];
+  unsigned char b4 = ((unsigned char*) b->data)[idx+3];
+  unsigned char b5 = ((unsigned char*) b->data)[idx+4];
+  unsigned char b6 = ((unsigned char*) b->data)[idx+5];
+  unsigned char b7 = ((unsigned char*) b->data)[idx+6];
+  unsigned char b8 = ((unsigned char*) b->data)[idx+7];
+#ifdef ARCH_BIG_ENDIAN
+  reshi = b1 << 24 | b2 << 16 | b3 << 8 | b4;
+  reslo = b5 << 24 | b6 << 16 | b7 << 8 | b8;
+#else
+  reshi = b8 << 24 | b7 << 16 | b6 << 8 | b5;
+  reslo = b4 << 24 | b3 << 16 | b2 << 8 | b1;
+#endif
+  return caml_copy_int64(I64_literal(reshi,reslo));
+}
+
 /* Generic write to a big array */
 
 static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
@@ -457,6 +523,89 @@ CAMLprim value caml_ba_set_generic(value vb, value vind, value newval)
   return caml_ba_set_aux(vb, &Field(vind, 0), Wosize_val(vind), newval);
 }
 
+CAMLprim value caml_ba_uint8_set16(value vb, value vind, value newval)
+{
+  intnat idx = Long_val(vind);
+  struct caml_ba_array * b = Caml_ba_array_val(vb);
+  if (idx < 0 || idx >= b->dim[0] - 1) caml_array_bound_error();
+  unsigned char b1, b2;
+  intnat val = Long_val(newval);
+#ifdef ARCH_BIG_ENDIAN
+  b1 = 0xFF & val >> 8;
+  b2 = 0xFF & val;
+#else
+  b2 = 0xFF & val >> 8;
+  b1 = 0xFF & val;
+#endif
+  ((unsigned char*) b->data)[idx] = b1;
+  ((unsigned char*) b->data)[idx+1] = b2;
+  return Val_unit;
+}
+
+CAMLprim value caml_ba_uint8_set32(value vb, value vind, value newval)
+{
+  intnat idx = Long_val(vind);
+  struct caml_ba_array * b = Caml_ba_array_val(vb);
+  if (idx < 0 || idx >= b->dim[0] - 3) caml_array_bound_error();
+  unsigned char b1, b2, b3, b4;
+  intnat val = Int32_val(newval);
+#ifdef ARCH_BIG_ENDIAN
+  b1 = 0xFF & val >> 24;
+  b2 = 0xFF & val >> 16;
+  b3 = 0xFF & val >> 8;
+  b4 = 0xFF & val;
+#else
+  b4 = 0xFF & val >> 24;
+  b3 = 0xFF & val >> 16;
+  b2 = 0xFF & val >> 8;
+  b1 = 0xFF & val;
+#endif
+  ((unsigned char*) b->data)[idx] = b1;
+  ((unsigned char*) b->data)[idx+1] = b2;
+  ((unsigned char*) b->data)[idx+2] = b3;
+  ((unsigned char*) b->data)[idx+3] = b4;
+  return Val_unit;
+}
+
+CAMLprim value caml_ba_uint8_set64(value vb, value vind, value newval)
+{
+  intnat idx = Long_val(vind);
+  struct caml_ba_array * b = Caml_ba_array_val(vb);
+  if (idx < 0 || idx >= b->dim[0] - 7) caml_array_bound_error();
+  unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
+  int64 val = Int64_val(newval);
+  uint32 lo,hi;
+  I64_split(val,hi,lo);
+#ifdef ARCH_BIG_ENDIAN
+  b1 = 0xFF & hi >> 24;
+  b2 = 0xFF & hi >> 16;
+  b3 = 0xFF & hi >> 8;
+  b4 = 0xFF & hi;
+  b5 = 0xFF & lo >> 24;
+  b6 = 0xFF & lo >> 16;
+  b7 = 0xFF & lo >> 8;
+  b8 = 0xFF & lo;
+#else
+  b8 = 0xFF & hi >> 24;
+  b7 = 0xFF & hi >> 16;
+  b6 = 0xFF & hi >> 8;
+  b5 = 0xFF & hi;
+  b4 = 0xFF & lo >> 24;
+  b3 = 0xFF & lo >> 16;
+  b2 = 0xFF & lo >> 8;
+  b1 = 0xFF & lo;
+#endif
+  ((unsigned char*) b->data)[idx] = b1;
+  ((unsigned char*) b->data)[idx+1] = b2;
+  ((unsigned char*) b->data)[idx+2] = b3;
+  ((unsigned char*) b->data)[idx+3] = b4;
+  ((unsigned char*) b->data)[idx+4] = b5;
+  ((unsigned char*) b->data)[idx+5] = b6;
+  ((unsigned char*) b->data)[idx+6] = b7;
+  ((unsigned char*) b->data)[idx+7] = b8;
+  return Val_unit;
+}
+
 /* Return the number of dimensions of a big array */
 
 CAMLprim value caml_ba_num_dims(value vb)
@@ -473,6 +622,21 @@ CAMLprim value caml_ba_dim(value vb, value vn)
   intnat n = Long_val(vn);
   if (n >= b->num_dims) caml_invalid_argument("Bigarray.dim");
   return Val_long(b->dim[n]);
+}
+
+CAMLprim value caml_ba_dim_1(value vb)
+{
+  return caml_ba_dim(vb, Val_int(0));
+}
+
+CAMLprim value caml_ba_dim_2(value vb)
+{
+  return caml_ba_dim(vb, Val_int(1));
+}
+
+CAMLprim value caml_ba_dim_3(value vb)
+{
+  return caml_ba_dim(vb, Val_int(2));
 }
 
 /* Return the kind of a big array */

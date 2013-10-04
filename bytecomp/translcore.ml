@@ -150,6 +150,11 @@ let primitives_table = create_hashtable 57 [
   "%sequand", Psequand;
   "%sequor", Psequor;
   "%boolnot", Pnot;
+  "%big_endian", Pctconst Big_endian;
+  "%word_size", Pctconst Word_size;
+  "%ostype_unix", Pctconst Ostype_unix;
+  "%ostype_win32", Pctconst Ostype_win32;
+  "%ostype_cygwin", Pctconst Ostype_cygwin;
   "%negint", Pnegint;
   "%succint", Poffsetint 1;
   "%predint", Poffsetint(-1);
@@ -272,7 +277,38 @@ let primitives_table = create_hashtable 57 [
   "%caml_ba_unsafe_set_2",
     Pbigarrayset(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
   "%caml_ba_unsafe_set_3",
-    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout)
+    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_dim_1", Pbigarraydim(1);
+  "%caml_ba_dim_2", Pbigarraydim(2);
+  "%caml_ba_dim_3", Pbigarraydim(3);
+  "%caml_string_get16", Pstring_load_16(false);
+  "%caml_string_get16u", Pstring_load_16(true);
+  "%caml_string_get32", Pstring_load_32(false);
+  "%caml_string_get32u", Pstring_load_32(true);
+  "%caml_string_get64", Pstring_load_64(false);
+  "%caml_string_get64u", Pstring_load_64(true);
+  "%caml_string_set16", Pstring_set_16(false);
+  "%caml_string_set16u", Pstring_set_16(true);
+  "%caml_string_set32", Pstring_set_32(false);
+  "%caml_string_set32u", Pstring_set_32(true);
+  "%caml_string_set64", Pstring_set_64(false);
+  "%caml_string_set64u", Pstring_set_64(true);
+  "%caml_bigstring_get16", Pbigstring_load_16(false);
+  "%caml_bigstring_get16u", Pbigstring_load_16(true);
+  "%caml_bigstring_get32", Pbigstring_load_32(false);
+  "%caml_bigstring_get32u", Pbigstring_load_32(true);
+  "%caml_bigstring_get64", Pbigstring_load_64(false);
+  "%caml_bigstring_get64u", Pbigstring_load_64(true);
+  "%caml_bigstring_set16", Pbigstring_set_16(false);
+  "%caml_bigstring_set16u", Pbigstring_set_16(true);
+  "%caml_bigstring_set32", Pbigstring_set_32(false);
+  "%caml_bigstring_set32u", Pbigstring_set_32(true);
+  "%caml_bigstring_set64", Pbigstring_set_64(false);
+  "%caml_bigstring_set64u", Pbigstring_set_64(true);
+  "%bswap16", Pbswap16;
+  "%bswap_int32", Pbbswap(Pint32);
+  "%bswap_int64", Pbbswap(Pint64);
+  "%bswap_native", Pbbswap(Pnativeint);
 ]
 
 let prim_makearray =

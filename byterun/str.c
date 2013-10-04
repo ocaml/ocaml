@@ -63,6 +63,148 @@ CAMLprim value caml_string_set(value str, value index, value newval)
   return Val_unit;
 }
 
+CAMLprim value caml_string_get16(value str, value index)
+{
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= caml_string_length(str) - 1) caml_array_bound_error();
+  intnat res;
+  unsigned char b1 = Byte_u(str, idx);
+  unsigned char b2 = Byte_u(str, idx + 1);
+#ifdef ARCH_BIG_ENDIAN
+  res = b1 << 8 | b2;
+#else
+  res = b2 << 8 | b1;
+#endif
+  return Val_int(res);
+}
+
+CAMLprim value caml_string_get32(value str, value index)
+{
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= caml_string_length(str) - 3) caml_array_bound_error();
+  intnat res;
+  unsigned char b1 = Byte_u(str, idx);
+  unsigned char b2 = Byte_u(str, idx + 1);
+  unsigned char b3 = Byte_u(str, idx + 2);
+  unsigned char b4 = Byte_u(str, idx + 3);
+#ifdef ARCH_BIG_ENDIAN
+  res = b1 << 24 | b2 << 16 | b3 << 8 | b4;
+#else
+  res = b4 << 24 | b3 << 16 | b2 << 8 | b1;
+#endif
+  return caml_copy_int32(res);
+}
+
+#ifdef ARCH_INT64_TYPE
+#include "int64_native.h"
+#else
+#include "int64_emul.h"
+#endif
+
+CAMLprim value caml_string_get64(value str, value index)
+{
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= caml_string_length(str) - 7) caml_array_bound_error();
+  uint32 reshi;
+  uint32 reslo;
+  unsigned char b1 = Byte_u(str, idx);
+  unsigned char b2 = Byte_u(str, idx + 1);
+  unsigned char b3 = Byte_u(str, idx + 2);
+  unsigned char b4 = Byte_u(str, idx + 3);
+  unsigned char b5 = Byte_u(str, idx + 4);
+  unsigned char b6 = Byte_u(str, idx + 5);
+  unsigned char b7 = Byte_u(str, idx + 6);
+  unsigned char b8 = Byte_u(str, idx + 7);
+#ifdef ARCH_BIG_ENDIAN
+  reshi = b1 << 24 | b2 << 16 | b3 << 8 | b4;
+  reslo = b5 << 24 | b6 << 16 | b7 << 8 | b8;
+#else
+  reshi = b8 << 24 | b7 << 16 | b6 << 8 | b5;
+  reslo = b4 << 24 | b3 << 16 | b2 << 8 | b1;
+#endif
+  return caml_copy_int64(I64_literal(reshi,reslo));
+}
+
+CAMLprim value caml_string_set16(value str, value index, value newval)
+{
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= caml_string_length(str) - 1) caml_array_bound_error();
+  unsigned char b1, b2;
+  intnat val = Long_val(newval);
+#ifdef ARCH_BIG_ENDIAN
+  b1 = 0xFF & val >> 8;
+  b2 = 0xFF & val;
+#else
+  b2 = 0xFF & val >> 8;
+  b1 = 0xFF & val;
+#endif
+  Byte_u(str, idx) = b1;
+  Byte_u(str, idx + 1) = b2;
+  return Val_unit;
+}
+
+CAMLprim value caml_string_set32(value str, value index, value newval)
+{
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= caml_string_length(str) - 3) caml_array_bound_error();
+  unsigned char b1, b2, b3, b4;
+  intnat val = Int32_val(newval);
+#ifdef ARCH_BIG_ENDIAN
+  b1 = 0xFF & val >> 24;
+  b2 = 0xFF & val >> 16;
+  b3 = 0xFF & val >> 8;
+  b4 = 0xFF & val;
+#else
+  b4 = 0xFF & val >> 24;
+  b3 = 0xFF & val >> 16;
+  b2 = 0xFF & val >> 8;
+  b1 = 0xFF & val;
+#endif
+  Byte_u(str, idx) = b1;
+  Byte_u(str, idx + 1) = b2;
+  Byte_u(str, idx + 2) = b3;
+  Byte_u(str, idx + 3) = b4;
+  return Val_unit;
+}
+
+CAMLprim value caml_string_set64(value str, value index, value newval)
+{
+  intnat idx = Long_val(index);
+  if (idx < 0 || idx >= caml_string_length(str) - 7) caml_array_bound_error();
+  unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
+  int64 val = Int64_val(newval);
+  uint32 lo,hi;
+  I64_split(val,hi,lo);
+#ifdef ARCH_BIG_ENDIAN
+  b1 = 0xFF & hi >> 24;
+  b2 = 0xFF & hi >> 16;
+  b3 = 0xFF & hi >> 8;
+  b4 = 0xFF & hi;
+  b5 = 0xFF & lo >> 24;
+  b6 = 0xFF & lo >> 16;
+  b7 = 0xFF & lo >> 8;
+  b8 = 0xFF & lo;
+#else
+  b8 = 0xFF & hi >> 24;
+  b7 = 0xFF & hi >> 16;
+  b6 = 0xFF & hi >> 8;
+  b5 = 0xFF & hi;
+  b4 = 0xFF & lo >> 24;
+  b3 = 0xFF & lo >> 16;
+  b2 = 0xFF & lo >> 8;
+  b1 = 0xFF & lo;
+#endif
+  Byte_u(str, idx) = b1;
+  Byte_u(str, idx + 1) = b2;
+  Byte_u(str, idx + 2) = b3;
+  Byte_u(str, idx + 3) = b4;
+  Byte_u(str, idx + 4) = b5;
+  Byte_u(str, idx + 5) = b6;
+  Byte_u(str, idx + 6) = b7;
+  Byte_u(str, idx + 7) = b8;
+  return Val_unit;
+}
+
 CAMLprim value caml_string_equal(value s1, value s2)
 {
   mlsize_t sz1, sz2;

@@ -17,10 +17,36 @@
  * - Nicolas Pouillard: refactoring
  *)
 
+exception Rule_not_found of (string * string);
+
+let () =
+  Printexc.register_printer
+    (fun
+      [ Rule_not_found (symbols, entry) ->
+	  let msg = Printf.sprintf "rule %S cannot be found in entry\n%s" symbols entry in
+	  Some msg
+      | _ -> None ]) in ()
+;
+
 module Make (Structure : Structure.S) = struct
   module Tools  = Tools.Make Structure;
   module Parser = Parser.Make Structure;
+  module Print = Print.Make Structure;
   open Structure;
+
+value raise_rule_not_found entry symbols =
+  let to_string f x =
+    let buff = Buffer.create 128 in
+    let ppf = Format.formatter_of_buffer buff in
+    do {
+      f ppf x;
+      Format.pp_print_flush ppf ();
+      Buffer.contents buff
+    } in
+    let entry = to_string Print.entry entry in
+    let symbols = to_string Print.print_rule symbols in
+    raise (Rule_not_found (symbols, entry))
+;
 
 (* Deleting a rule *)
 
@@ -104,7 +130,7 @@ value rec delete_rule_in_suffix entry symbols =
       | None ->
           let levs = delete_rule_in_suffix entry symbols levs in
           [lev :: levs] ]
-  | [] -> raise Not_found ]
+  | [] -> raise_rule_not_found entry symbols ]
 ;
 
 value rec delete_rule_in_prefix entry symbols =
@@ -128,7 +154,7 @@ value rec delete_rule_in_prefix entry symbols =
       | None ->
           let levs = delete_rule_in_prefix entry symbols levs in
           [lev :: levs] ]
-  | [] -> raise Not_found ]
+  | [] -> raise_rule_not_found entry symbols ]
 ;
 
 value rec delete_rule_in_level_list entry symbols levs =

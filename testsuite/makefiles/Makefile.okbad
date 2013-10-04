@@ -16,7 +16,10 @@ compile:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file'"; \
 	  if [ `echo $$file | grep bad` ]; then \
-	    $(OCAMLC) -c -w a $$file 2> /dev/null && (echo " => failed" && exit 1) || echo " => passed"; \
+	    if $(OCAMLC) -c -w a $$file 2> /dev/null; then \
+	      echo " => failed" && exit 1; \
+	    else echo " => passed"; \
+	    fi; \
 	  else \
 	    test -f `basename $$file ml`mli && $(OCAMLC) -c -w a `basename $$file ml`mli; \
 	    $(OCAMLC) -c -w a $$file 2> /dev/null || (echo " => failed" && exit 1); \

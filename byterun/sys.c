@@ -334,6 +334,35 @@ CAMLprim value caml_sys_random_seed (value unit)
   return res;
 }
 
+CAMLprim value caml_sys_const_big_endian(value unit)
+{
+#ifdef ARCH_BIG_ENDIAN
+  return Val_true;
+#else
+  return Val_false;
+#endif
+}
+
+CAMLprim value caml_sys_const_word_size(value unit)
+{
+  return Val_long(8 * sizeof(value));
+}
+
+CAMLprim value caml_sys_const_ostype_unix(value unit)
+{
+  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Unix"));
+}
+
+CAMLprim value caml_sys_const_ostype_win32(value unit)
+{
+  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Win32"));
+}
+
+CAMLprim value caml_sys_const_ostype_cygwin(value unit)
+{
+  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
+}
+
 CAMLprim value caml_sys_get_config(value unit)
 {
   CAMLparam0 ();   /* unit is unused */

@@ -24,11 +24,13 @@ LINKFLAGS=$(INCLUDES)
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
      objinfo read_cmt
 
+all: ast_mapper.cmo tast_iter.cmo
+
 # scrapelabels addlabels
 
 .PHONY: all
 
-opt.opt: ocamldep.opt
+opt.opt: ocamldep.opt read_cmt.opt
 .PHONY: opt.opt
 
 # The dependency generator
@@ -223,19 +225,25 @@ READ_CMT= \
           ../typing/oprint.cmo \
           ../typing/primitive.cmo \
           ../typing/printtyp.cmo \
+          ../typing/mtype.cmo \
+          ../typing/envaux.cmo \
           ../typing/typedtreeMap.cmo \
           ../typing/typedtreeIter.cmo \
           ../typing/cmt_format.cmo \
           ../typing/stypes.cmo \
           \
           untypeast.cmo \
+          tast_iter.cmo \
           cmt2annot.cmo read_cmt.cmo
 
 read_cmt: $(READ_CMT)
 	$(CAMLC) $(LINKFLAGS) -o read_cmt $(READ_CMT)
 
+read_cmt.opt: $(READ_CMT:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o read_cmt.opt $(READ_CMT:.cmo=.cmx)
+
 clean::
-	rm -f read_cmt
+	rm -f read_cmt read_cmt.opt
 
 beforedepend::
 

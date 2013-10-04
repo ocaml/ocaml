@@ -17,9 +17,9 @@ include $(TOPDIR)/config/Makefile
 DIFF=diff -q
 BOOTDIR=$(TOPDIR)/boot
 OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
-OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml -I $(TOPDIR)/stdlib
-OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
-OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib
+OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml -I $(TOPDIR)/stdlib $(COMPFLAGS)
+OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib $(COMPFLAGS)
+OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib $(COMPFLAGS)
 OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib

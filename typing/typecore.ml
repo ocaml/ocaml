@@ -30,7 +30,7 @@ type error =
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
-  | Label_multiply_defined of Longident.t
+  | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
   | Incomplete_format of string
@@ -565,8 +565,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
       let defined = Array.make (Array.length all) false in
       let check_defined (_, label, _) =
         if defined.(label.lbl_pos)
-        then raise(Error(loc, Label_multiply_defined
-                                       (Longident.Lident label.lbl_name)))
+        then raise(Error(loc, Label_multiply_defined label.lbl_name))
         else defined.(label.lbl_pos) <- true in
       List.iter check_defined lbl_pat_list;
       if closed = Closed
@@ -884,12 +883,12 @@ let rec iter3 f lst1 lst2 lst3 =
 let add_pattern_variables ?check ?check_as env =
   let pv = get_ref pattern_variables in
   (List.fold_right
-    (fun (id, ty, name, loc, as_var) env ->
+     (fun (id, ty, name, loc, as_var) env ->
        let check = if as_var then check_as else check in
-       let e1 = Env.add_value ?check id
-           {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env in
-       Env.add_annot id (Annot.Iref_internal loc) e1)
-    pv env,
+       Env.add_value ?check id
+         {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env
+     )
+     pv env,
    get_ref module_variables)
 
 let type_pattern ~lev env spat scope expected_ty =
@@ -1490,25 +1489,31 @@ let rec type_exp env sexp =
  *)
 
 and type_expect ?in_function env sexp ty_expected =
+  let previous_saved_types = Cmt_format.get_saved_types () in
+  let exp = type_expect_ ?in_function env sexp ty_expected in
+  Cmt_format.set_saved_types (Cmt_format.Partial_expression exp :: previous_saved_types);
+  exp
+
+and type_expect_ ?in_function env sexp ty_expected =
   let loc = sexp.pexp_loc in
   (* Record the expression type before unifying it with the expected type *)
   let rue exp =
-    Cmt_format.add_saved_type (Cmt_format.Partial_expression exp);
-    Stypes.record (Stypes.Ti_expr exp);
-    unify_exp env exp (instance env ty_expected);
+    unify_exp env (re exp) (instance env ty_expected);
     exp
   in
   match sexp.pexp_desc with
   | Pexp_ident lid ->
       begin
-        if !Clflags.annotations then begin
-          try let (path, annot) = Env.lookup_annot lid.txt env in
-              Stypes.record
-                (Stypes.An_ident (
-                 loc, Path.name ~paren:Oprint.parenthesized_ident path, annot))
-          with _ -> ()
-        end;
         let (path, desc) = Typetexp.find_value env loc lid.txt in
+        if !Clflags.annotations then begin
+          let dloc = desc.Types.val_loc in
+          let annot =
+            if dloc.Location.loc_ghost then Annot.Iref_external
+            else Annot.Iref_internal dloc
+          in
+          let name = Path.name ~paren:Oprint.parenthesized_ident path in
+          Stypes.record (Stypes.An_ident (loc, name, annot))
+        end;
         rue {
           exp_desc =
             begin match desc.val_kind with
@@ -1764,14 +1769,17 @@ and type_expect ?in_function env sexp ty_expected =
       let lbl_exp_list =
         type_label_a_list env (type_label_exp true env loc ty_expected)
           lid_sexp_list in
-      let rec check_duplicates seen_pos lid_sexp lbl_exp =
-        match (lid_sexp, lbl_exp) with
-          ((lid, _) :: rem1, (_, lbl, _) :: rem2) ->
-            if List.mem lbl.lbl_pos seen_pos
-            then raise(Error(loc, Label_multiply_defined lid.txt))
-            else check_duplicates (lbl.lbl_pos :: seen_pos) rem1 rem2
-        | (_, _) -> () in
-      check_duplicates [] lid_sexp_list lbl_exp_list;
+      (* type_label_a_list returns a list of labels sorted by lbl_pos *)
+      (* note: check_duplicates would better be implemented in
+         type_label_a_list directly *)
+      let rec check_duplicates = function
+        | (_, lbl1, _) :: (_, lbl2, _) :: _ when lbl1.lbl_pos = lbl2.lbl_pos ->
+          raise(Error(loc, Label_multiply_defined lbl1.lbl_name))
+        | _ :: rem ->
+            check_duplicates rem
+        | [] -> ()
+      in
+      check_duplicates lbl_exp_list;
       let opt_exp =
         match opt_sexp, lbl_exp_list with
           None, _ -> None
@@ -3106,9 +3114,8 @@ let report_error ppf = function
         "@[<v>@[<2>The function applied to this argument has type@ %a@]@.\
           This argument cannot be applied %a@]"
         type_expr ty print_label l
-  | Label_multiply_defined lid ->
-      fprintf ppf "The record field label %a is defined several times"
-              longident lid
+  | Label_multiply_defined s ->
+      fprintf ppf "The record field label %s is defined several times" s
   | Label_missing labels ->
       let print_labels ppf =
         List.iter (fun lbl -> fprintf ppf "@ %s" (Ident.name lbl)) in

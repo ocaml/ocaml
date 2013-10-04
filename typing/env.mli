@@ -35,7 +35,6 @@ val diff: t -> t -> Ident.t list
 (* Lookup by paths *)
 
 val find_value: Path.t -> t -> value_description
-val find_annot: Path.t -> t -> Annot.ident
 val find_type: Path.t -> t -> type_declaration
 val find_constructors: Path.t -> t -> constructor_description list
 val find_module: Path.t -> t -> module_type
@@ -60,7 +59,6 @@ val add_gadt_instance_chain: t -> int -> type_expr -> unit
 (* Lookup by long identifiers *)
 
 val lookup_value: Longident.t -> t -> Path.t * value_description
-val lookup_annot: Longident.t -> t -> Path.t * Annot.ident
 val lookup_constructor: Longident.t -> t -> constructor_description
 val lookup_label: Longident.t -> t -> label_description
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
@@ -73,7 +71,6 @@ val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
 
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
-val add_annot: Ident.t -> Annot.ident -> t -> t
 val add_type: Ident.t -> type_declaration -> t -> t
 val add_extension: Ident.t -> extension_constructor -> t -> t
 val add_exception: Ident.t -> exception_declaration -> t -> t

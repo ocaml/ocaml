@@ -404,7 +404,6 @@ val map_pattern_desc: (pattern -> pattern) -> pattern_desc -> pattern_desc
 
 val let_bound_idents: (pattern * expression) list -> Ident.t list
 val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
-val pat_bound_idents: pattern -> Ident.t list
 
 val let_bound_idents_with_loc:
     (pattern * expression) list -> (Ident.t * string loc) list

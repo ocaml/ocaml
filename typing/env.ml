@@ -146,7 +146,6 @@ module EnvTbl =
 
 type t = {
   values: (Path.t * value_description) EnvTbl.t;
-  annotations: (Path.t * Annot.ident) EnvTbl.t;
   constrs: constructor_description EnvTbl.t;
   labels: label_description EnvTbl.t;
   constrs_by_path: (Path.t * (constructor_description list)) EnvTbl.t;
@@ -171,7 +170,6 @@ and module_components_repr =
 
 and structure_components = {
   mutable comp_values: (string, (value_description * int)) Tbl.t;
-  mutable comp_annotations: (string, (Annot.ident * int)) Tbl.t;
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_constrs_by_path:
@@ -197,7 +195,7 @@ and functor_components = {
 let subst_modtype_maker (subst, mty) = Subst.modtype subst mty
 
 let empty = {
-  values = EnvTbl.empty; annotations = EnvTbl.empty; constrs = EnvTbl.empty;
+  values = EnvTbl.empty; constrs = EnvTbl.empty;
   labels = EnvTbl.empty; types = EnvTbl.empty;
   constrs_by_path = EnvTbl.empty;
   modules = EnvTbl.empty; modtypes = EnvTbl.empty;
@@ -403,8 +401,6 @@ let find proj1 proj2 path env =
 
 let find_value =
   find (fun env -> env.values) (fun sc -> sc.comp_values)
-and find_annot =
-  find (fun env -> env.annotations) (fun sc -> sc.comp_annotations)
 and find_type =
   find (fun env -> env.types) (fun sc -> sc.comp_types)
 and find_constructors =
@@ -574,9 +570,7 @@ let has_local_constraints env = env.local_constraints
 
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
-let lookup_annot id e =
-  lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
-and lookup_constructor =
+let lookup_constructor =
   lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and lookup_label =
   lookup_simple (fun env -> env.labels) (fun sc -> sc.comp_labels)
@@ -623,10 +617,14 @@ let set_value_used_callback name vd callback =
     Hashtbl.add value_declarations key callback
 
 let set_type_used_callback name td callback =
+  let loc = td.type_loc in
+  if loc.Location.loc_ghost then ()
+  else let key = (name, loc) in
   let old =
-    try Hashtbl.find type_declarations (name, td.type_loc)
-    with Not_found -> assert false in
-  Hashtbl.replace type_declarations (name, td.type_loc) (fun () -> callback old)
+    try Hashtbl.find type_declarations key
+    with Not_found -> assert false
+  in
+  Hashtbl.replace type_declarations key (fun () -> callback old)
 
 let lookup_value lid env =
   let (_, desc) as r = lookup_value lid env in
@@ -828,7 +826,7 @@ and components_of_module_maker (env, sub, path, mty) =
   (match scrape_modtype mty env with
     Mty_signature sg ->
       let c =
-        { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
+        { comp_values = Tbl.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_constrs_by_path = Tbl.empty;
@@ -844,11 +842,6 @@ and components_of_module_maker (env, sub, path, mty) =
             let decl' = Subst.value_description sub decl in
             c.comp_values <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_values;
-            if !Clflags.annotations then begin
-              c.comp_annotations <-
-                Tbl.add (Ident.name id) (Annot.Iref_external, !pos)
-                        c.comp_annotations;
-            end;
             begin match decl.val_kind with
               Val_prim _ -> () | _ -> incr pos
             end
@@ -922,7 +915,7 @@ and components_of_module_maker (env, sub, path, mty) =
           fcomp_cache = Hashtbl.create 17 }
   | Mty_ident p ->
         Structure_comps {
-          comp_values = Tbl.empty; comp_annotations = Tbl.empty;
+          comp_values = Tbl.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty;
           comp_types = Tbl.empty; comp_constrs_by_path = Tbl.empty;
@@ -950,12 +943,6 @@ and store_value ?check id path decl env =
   { env with
     values = EnvTbl.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
-
-and store_annot id path annot env =
-  if !Clflags.annotations then
-    { env with
-      annotations = EnvTbl.add_dont_track id (path, annot) env.annotations }
-  else env
 
 and store_type id path info env =
   let loc = info.type_loc in
@@ -1111,10 +1098,7 @@ let _ =
 let add_value ?check id desc env =
   store_value ?check id (Pident id) desc env
 
-let add_annot id annot env =
-  store_annot id (Pident id) annot env
-
-and add_type id info env =
+let add_type id info env =
   store_type id (Pident id) info env
 
 and add_extension id ext env =
@@ -1187,9 +1171,8 @@ let open_signature root sg env =
       (fun env item p ->
         match item with
           Sig_value(id, decl) ->
-            let e1 = store_value (Ident.hide id) p
+            store_value (Ident.hide id) p
                         (Subst.value_description sub decl) env
-            in store_annot (Ident.hide id) p (Annot.Iref_external) e1
         | Sig_type(id, decl, _) ->
             store_type (Ident.hide id) p
                        (Subst.type_declaration sub decl) env
@@ -1387,12 +1370,25 @@ let initial = Predef.build_initial_env add_type add_exception empty
 
 let summary env = env.summary
 
+let last_env = ref empty
+let last_reduced_env = ref empty
+
 let keep_only_summary env =
-  { empty with
-    summary = env.summary;
-    local_constraints = env.local_constraints;
-    in_signature = env.in_signature;
-  }
+  if !last_env == env then !last_reduced_env
+  else begin
+    let new_env =
+      {
+       empty with
+       summary = env.summary;
+       local_constraints = env.local_constraints;
+       in_signature = env.in_signature;
+      }
+    in
+    last_env := env;
+    last_reduced_env := new_env;
+    new_env
+  end
+
 
 let env_of_only_summary env_from_summary env =
   let new_env = env_from_summary env.summary Subst.identity in

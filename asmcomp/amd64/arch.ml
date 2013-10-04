@@ -38,6 +38,9 @@ type specific_operation =
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ifloatarithmem of float_operation * addressing_mode
                                        (* Float arith operation with memory *)
+  | Ibswap of int                      (* endiannes conversion *)
+  | Isqrtf                             (* floating-point square root *)
+  | Ifloatsqrtf of addressing_mode     (* floating-point square root from memory *)
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatmul | Ifloatdiv
 
@@ -48,6 +51,8 @@ let big_endian = false
 let size_addr = 8
 let size_int = 8
 let size_float = 8
+
+let allow_unaligned_access = true
 
 (* Behavior of division *)
 
@@ -102,6 +107,10 @@ let print_specific_operation printreg op ppf arg =
       fprintf ppf "[%a] := \"%s\"" (print_addressing printreg addr) arg lbl
   | Ioffset_loc(n, addr) ->
       fprintf ppf "[%a] +:= %i" (print_addressing printreg addr) arg n
+  | Isqrtf ->
+      fprintf ppf "sqrtf %a" printreg arg.(0)
+  | Ifloatsqrtf addr ->
+     fprintf ppf "sqrtf float64[%a]" (print_addressing printreg addr) [|arg.(0)|]
   | Ifloatarithmem(op, addr) ->
       let op_name = function
       | Ifloatadd -> "+f"
@@ -111,3 +120,5 @@ let print_specific_operation printreg op ppf arg =
       fprintf ppf "%a %s float64[%a]" printreg arg.(0) (op_name op)
                    (print_addressing printreg addr)
                    (Array.sub arg 1 (Array.length arg - 1))
+  | Ibswap i ->
+      fprintf ppf "bswap_%i %a" i printreg arg.(0)
