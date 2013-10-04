@@ -63,6 +63,35 @@ let check_deprecated loc attrs s =
   then
     Location.prerr_warning loc (Warnings.Deprecated s)
 
+let warning_attribute attrs =
+  let prev_warnings = ref None in
+  List.iter
+    (function
+      | ({txt = "warning"; loc}, payload) ->
+          begin match payload with
+          | PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(s, _))}, _)}] ->
+              if !prev_warnings = None then
+                prev_warnings := Some (Warnings.backup ());
+              begin try Warnings.parse_options false s
+              with Arg.Bad _ ->
+                Location.prerr_warning loc
+                  (Warnings.Attribute_payload
+                     ("warning",
+                      "Ill-formed list of warnings"))
+              end
+          | _ ->
+              Location.prerr_warning loc
+                (Warnings.Attribute_payload
+                   ("warning",
+                    "A single string literal is expected"))
+          end
+      | _ ->
+          ()
+    )
+    attrs;
+  !prev_warnings
+
+
 
 type variable_context = int * (string, type_expr) Tbl.t
 

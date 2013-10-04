@@ -636,6 +636,7 @@ and transl_signature env sg =
                  classes [rem]),
             final_env
         | Psig_attribute x ->
+            let _back = Typetexp.warning_attribute [x] in
             let (trem,rem, final_env) = transl_sig env srem in
             mksig (Tsig_attribute x) env loc :: trem, rem, final_env
         | Psig_extension ((s, _), _) ->
@@ -1209,6 +1210,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_extension ((s, _), _) ->
         raise (Error (s.loc, env, Extension s.txt))
     | Pstr_attribute x ->
+        let _back = Typetexp.warning_attribute [x] in
         Tstr_attribute x, [], env
   in
   let rec type_struct env sstr =

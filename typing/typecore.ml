@@ -1892,7 +1892,9 @@ let rec type_exp env sexp =
 
 and type_expect ?in_function env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
+  let prev_warnings = Typetexp.warning_attribute sexp.pexp_attributes in
   let exp = type_expect_ ?in_function env sexp ty_expected in
+  begin match prev_warnings with Some x -> Warnings.restore x | None -> () end;
   Cmt_format.set_saved_types (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
 
