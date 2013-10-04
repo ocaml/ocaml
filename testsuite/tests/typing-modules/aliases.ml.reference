@@ -13,8 +13,7 @@
     external unsafe_chr : int -> char = "%identity"
   end
 # - : char = 'B'
-#   C' Char
-Characters 27-29:
+#   Characters 27-29:
   module C'' : (module C) = C';; (* fails *)
                             ^^
 Error: Signature mismatch:

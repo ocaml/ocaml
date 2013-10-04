@@ -58,7 +58,7 @@ let rec apply_coercion strict restr arg =
       transl_primitive Location.none p
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
-        (fun id -> apply_coercion Alias cc (transl_path path))
+        (fun id -> apply_coercion Alias cc (transl_normal_path path))
 
 and apply_coercion_field id (pos, cc) =
   apply_coercion Alias cc (Lprim(Pfield pos, [Lvar id]))
@@ -119,7 +119,7 @@ let field_path path field =
 
 let mod_prim name =
   try
-    transl_path
+    transl_normal_path
       (fst (Env.lookup_value (Ldot (Lident "CamlinternalMod", name))
                              Env.empty))
   with Not_found ->
@@ -270,7 +270,8 @@ let rec transl_module cc rootpath mexp =
   | _ ->
   match mexp.mod_desc with
     Tmod_ident (path,_) ->
-      apply_coercion StrictOpt cc (transl_ident_path mexp.mod_env path)
+      apply_coercion StrictOpt cc
+        (transl_path ~loc:mexp.mod_loc mexp.mod_env path)
   | Tmod_structure str ->
       transl_struct [] cc rootpath str
   | Tmod_functor( param, _, mty, body) ->
@@ -341,8 +342,8 @@ and transl_structure fields cc rootpath = function
       let id = decl.cd_id in
       Llet(Strict, id, transl_exception (field_path rootpath id) decl,
            transl_structure (id :: fields) cc rootpath rem)
-  | Tstr_exn_rebind( id, _, path, _, _) ->
-      Llet(Strict, id, transl_ident_path item.str_env path,
+  | Tstr_exn_rebind( id, _, path, {Location.loc=loc}, _) ->
+      Llet(Strict, id, transl_path ~loc item.str_env path,
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_module mb ->
       let id = mb.mb_id in
@@ -524,8 +525,8 @@ let transl_store_structure glob map prims str =
       let lam = transl_exception (field_path rootpath id) decl in
       Lsequence(Llet(Strict, id, lam, store_ident id),
                 transl_store rootpath (add_ident false id subst) rem)
-  | Tstr_exn_rebind( id, _, path, _, _) ->
-      let lam = subst_lambda subst (transl_ident_path item.str_env path) in
+  | Tstr_exn_rebind( id, _, path, {Location.loc=loc}, _) ->
+      let lam = subst_lambda subst (transl_path ~loc item.str_env path) in
       Lsequence(Llet(Strict, id, lam, store_ident id),
                 transl_store rootpath (add_ident false id subst) rem)
   | Tstr_module{mb_id=id; mb_expr={mod_desc = Tmod_structure str}} ->
@@ -736,8 +737,8 @@ let transl_toplevel_item item =
                  (make_sequence toploop_setvalue_id idents)
   | Tstr_exception decl ->
       toploop_setvalue decl.cd_id (transl_exception None decl)
-  | Tstr_exn_rebind(id, _, path, _, _) ->
-      toploop_setvalue id (transl_ident_path item.str_env path)
+  | Tstr_exn_rebind(id, _, path, {Location.loc=loc}, _) ->
+      toploop_setvalue id (transl_path ~loc item.str_env path)
   | Tstr_module {mb_id=id; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
          with "open" (PR#1672) *)

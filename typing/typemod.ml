@@ -964,7 +964,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
           { md with mod_type = Mty_alias path }
         else match mty with
           Mty_alias p1 when not alias ->
-            let p1 = Env.normalize_path env p1 in
+            let p1 = Env.normalize_path (Some smod.pmod_loc) env p1 in
             let mty = Includemod.expand_module_alias env [] p1 in
             { md with
               mod_desc = Tmod_constraint (md, mty, Tmodtype_implicit,

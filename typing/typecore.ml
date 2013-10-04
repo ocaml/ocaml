@@ -563,7 +563,7 @@ let rec expand_path env p =
       | _ -> assert false
       end
   | _ ->
-      let p' = Env.normalize_path env p in
+      let p' = Env.normalize_path None env p in
       if Path.same p p' then p else expand_path env p'
 
 let compare_type_path env tpath1 tpath2 =

@@ -587,7 +587,7 @@ let assert_failed exp =
     Location.get_pos_info exp.exp_loc.Location.loc_start in
   Lprim(Praise, [event_after exp
     (Lprim(Pmakeblock(0, Immutable),
-          [transl_path Predef.path_assert_failure;
+          [transl_normal_path Predef.path_assert_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
@@ -631,7 +631,7 @@ and transl_exp0 e =
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
-      transl_ident_path e.exp_env path
+      transl_path ~loc:e.exp_loc e.exp_env path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)
@@ -722,7 +722,7 @@ and transl_exp0 e =
           end
       | Cstr_exception (path, _) ->
           Lprim(Pmakeblock(0, Immutable),
-                transl_ident_path e.exp_env path :: ll)
+                transl_path ~loc:e.exp_loc e.exp_env path :: ll)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
@@ -799,17 +799,18 @@ and transl_exp0 e =
             Lsend (kind, tag, obj, cache, e.exp_loc)
       in
       event_after e lam
-  | Texp_new (cl, _, _) ->
-      Lapply(Lprim(Pfield 0, [transl_ident_path e.exp_env cl]),
+  | Texp_new (cl, {Location.loc=loc}, _) ->
+      Lapply(Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]),
              [lambda_unit], Location.none)
   | Texp_instvar(path_self, path, _) ->
-      Lprim(Parrayrefu Paddrarray, [transl_path path_self; transl_path path])
+      Lprim(Parrayrefu Paddrarray,
+            [transl_normal_path path_self; transl_normal_path path])
   | Texp_setinstvar(path_self, path, _, expr) ->
-      transl_setinstvar (transl_path path_self) path expr
+      transl_setinstvar (transl_normal_path path_self) path expr
   | Texp_override(path_self, modifs) ->
       let cpy = Ident.create "copy" in
       Llet(Strict, cpy,
-           Lapply(Translobj.oo_prim "copy", [transl_path path_self],
+           Lapply(Translobj.oo_prim "copy", [transl_normal_path path_self],
                   Location.none),
            List.fold_right
              (fun (path, _, expr) rem ->
@@ -1017,7 +1018,7 @@ and transl_let rec_flag pat_expr_list body =
 
 and transl_setinstvar self var expr =
   Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
-                    [self; transl_path var; transl_exp expr])
+                    [self; transl_normal_path var; transl_exp expr])
 
 and transl_record all_labels repres lbl_expr_list opt_init_expr =
   let size = Array.length all_labels in

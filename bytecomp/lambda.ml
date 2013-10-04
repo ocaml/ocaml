@@ -378,18 +378,18 @@ let rec patch_guarded patch = function
 
 (* Translate an access path *)
 
-let rec transl_path = function
+let rec transl_normal_path = function
     Pident id ->
       if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
   | Pdot(p, s, pos) ->
-      Lprim(Pfield pos, [transl_path p])
+      Lprim(Pfield pos, [transl_normal_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
 
 (* Translation of value identifiers *)
 
-let transl_ident_path env path =
-  transl_path (Env.normalize_path env path) 
+let transl_path ?(loc=Location.none) env path =
+  transl_normal_path (Env.normalize_path (Some loc) env path) 
 
 (* Compile a sequence of expressions *)
 

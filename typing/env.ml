@@ -57,6 +57,7 @@ type error =
   | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
+  | Missing_module of Location.t * Path.t * Path.t
 
 exception Error of error
 
@@ -464,19 +465,28 @@ let find_module path env =
   | Papply(p1, p2) ->
       raise Not_found (* not right *)
 
-let rec normalize_path env path =
+let rec normalize_path lax env path =
   let path =
     match path with
       Pdot(p, s, pos) ->
-        Pdot(normalize_path env p, s, pos)
+        Pdot(normalize_path lax env p, s, pos)
     | Papply(p1, p2) ->
-        Papply(normalize_path env p1, normalize_path env p2)
+        Papply(normalize_path lax env p1, normalize_path true env p2)
     | _ -> path
   in
   try match find_module path env with
-    {md_type=Mty_alias path} -> normalize_path env path
+    {md_type=Mty_alias path} -> normalize_path lax env path
   | _ -> path
-  with Not_found -> path
+  with Not_found when lax
+  || (match path with Pident id -> not (Ident.persistent id) | _ -> true) ->
+      path
+
+let normalize_path oloc env path =
+  try normalize_path (oloc = None) env path
+  with Not_found ->
+    match oloc with None -> assert false
+    | Some loc ->
+        raise (Error(Missing_module(loc, path, normalize_path true env path)))
 
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
@@ -494,7 +504,7 @@ let find_type_expansion path env =
      purely abstract data types without manifest type definition. *)
   | _ ->
       (* another way to expand is to normalize the path itself *)
-      let path' = normalize_path env path in
+      let path' = normalize_path None env path in
       if Path.same path path' then raise Not_found else
       (decl.type_params,
        newgenty (Tconstr (path', decl.type_params, ref Mnil)),
@@ -511,7 +521,7 @@ let find_type_expansion_opt path env =
      an approximation using their manifest type. *)
   | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
   | _ ->
-      let path' = normalize_path env path in
+      let path' = normalize_path None env path in
       if Path.same path path' then raise Not_found else
       (decl.type_params,
        newgenty (Tconstr (path', decl.type_params, ref Mnil)),
@@ -1684,10 +1694,22 @@ let report_error ppf = function
       fprintf ppf
         "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
         export import "The compilation flag -rectypes is required"
+  | Missing_module(_, path1, path2) ->
+      fprintf ppf "@[@[<hov>";
+      if Path.same path1 path2 then
+        fprintf ppf "Internal path@ %s@ is dangling." (Path.name path1)
+      else
+        fprintf ppf "Internal path@ %s@ expands to@ %s@ which is dangling."
+          (Path.name path1) (Path.name path2);
+      fprintf ppf "@]@ @[%s@ %s@ %s.@]@]"
+        "The compiled interface for module" (Ident.name (Path.head path2))
+        "was not found"
 
 let () =
   Location.register_error_of_exn
     (function
+      | Error (Missing_module (loc, _, _) as err) when loc <> Location.none ->
+          Some (Location.error_of_printer loc report_error err)
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )

@@ -210,8 +210,8 @@ module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
 val free_methods: lambda -> IdentSet.t
 
-val transl_path: Path.t -> lambda
-val transl_ident_path: Env.t -> Path.t -> lambda
+val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
+val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda

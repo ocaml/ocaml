@@ -61,8 +61,10 @@ val find_type_expansion_opt:
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
 val is_functor_arg: Path.t -> t -> bool
-val normalize_path: t -> Path.t -> Path.t
-        (* Normalize the path to a concrete value or module *)
+val normalize_path: Location.t option -> t -> Path.t -> Path.t
+(* Normalize the path to a concrete value or module.
+   If the option is None, allow returning dangling paths.
+   Otherwise raise a Missing_module error. *)
 
 val has_local_constraints: t -> bool
 val add_gadt_instance_level: int -> t -> t
@@ -180,6 +182,7 @@ type error =
   | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
+  | Missing_module of Location.t * Path.t * Path.t
 
 exception Error of error
 

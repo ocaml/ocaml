@@ -172,14 +172,16 @@ let rec modtypes env cxt subst mty1 mty2 =
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
     (Mty_alias p1, Mty_alias p2) ->
-      let p1 = Env.normalize_path env p1
-      and p2 = Env.normalize_path env (Subst.module_path subst p2) in
+      let p1 = Env.normalize_path None env p1
+      and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
       (* Should actually be Tcoerce_ignore, if it existed *)
-      if Path.same p1 p2 then Tcoerce_none else
-      Printtyp.(Format.eprintf "%a %a@." path p1 path p2;
-      raise Dont_match)
+      if Path.same p1 p2 then Tcoerce_none else raise Dont_match
   | (Mty_alias p1, _) ->
-      let p1 = Env.normalize_path env p1 in
+      let p1 = try
+        Env.normalize_path (Some Location.none) env p1
+      with Env.Error (Env.Missing_module (_, _, path)) ->
+        raise (Error[cxt, env, Unbound_module_path path])
+      in
       let mty1 = Mtype.strengthen env (expand_module_alias env cxt p1) p1 in
       Tcoerce_alias (p1, modtypes env cxt subst mty1 mty2)
   | (_, Mty_ident p2) ->
