@@ -41,12 +41,17 @@ let rec apply_coercion strict restr arg =
           Lprim(Pmakeblock(0, Immutable),
                 List.map (apply_coercion_field id) pos_cc_list) in
         let fv = free_variables lam in
-        List.fold_left (fun lam (id',pos,c) ->
-          if IdentSet.mem id' fv then
-            Llet(Alias,id',
-                 apply_coercion Alias c (Lprim(Pfield pos,[Lvar id])),lam)
-          else lam)
-          lam id_pos_list)
+        let (lam,s) =
+          List.fold_left (fun (lam,s) (id',pos,c) ->
+            if IdentSet.mem id' fv then
+              let id'' = Ident.create (Ident.name id') in
+              (Llet(Alias,id'',
+                    apply_coercion Alias c (Lprim(Pfield pos,[Lvar id])),lam),
+               Ident.add id' (Lvar id'') s)
+            else (lam,s))
+            (lam, Ident.empty) id_pos_list
+        in
+        if s == Ident.empty then lam else subst_lambda s lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
