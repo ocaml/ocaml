@@ -67,7 +67,8 @@ let extract_sig_open env loc mty =
 (* Compute the environment after opening a module *)
 
 let type_open ?toplevel ovf env loc lid =
-  let (path, md) = Typetexp.find_module env loc lid.txt in
+  let path = Typetexp.find_module env loc lid.txt in
+  let md = Env.find_module path env in
   let sg = extract_sig_open env loc md.md_type in
   path, Env.open_signature ~loc ?toplevel ovf path sg env
 
@@ -194,14 +195,16 @@ let merge_constraint initial_env loc sg constr =
         make_next_first rs rem
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_module (_, lid))
       when Ident.name id = s ->
-        let (path, md') = Typetexp.find_module initial_env loc lid.txt in
+        let path = Typetexp.find_module initial_env loc lid.txt in
+        let md' = Env.find_module path env in
         let newmd = Mtype.strengthen_decl env md' path in
         ignore(Includemod.modtypes env newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid)),
         Sig_module(id, newmd, rs) :: rem
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_modsubst (_, lid))
       when Ident.name id = s ->
-        let (path, md') = Typetexp.find_module initial_env loc lid.txt in
+        let path = Typetexp.find_module initial_env loc lid.txt in
+        let md' = Env.find_module path env in
         let newmd = Mtype.strengthen_decl env md' path in
         ignore(Includemod.modtypes env newmd.md_type md.md_type);
         real_id := Some id;
@@ -252,7 +255,7 @@ let merge_constraint initial_env loc sg constr =
     | [s], Pwith_modsubst (_, lid) ->
         let id =
           match !real_id with None -> assert false | Some id -> id in
-        let (path, _) = Typetexp.find_module initial_env loc lid.txt in
+        let path = Typetexp.find_module initial_env loc lid.txt in
         let sub = Subst.add_module id path Subst.identity in
         Subst.signature sub sg
     | _ ->
@@ -297,7 +300,7 @@ let rec approx_modtype env smty =
       let (path, info) = Typetexp.find_modtype env smty.pmty_loc lid.txt in
       Mty_ident path
   | Pmty_alias lid ->
-      let (path, info) = Typetexp.find_module env smty.pmty_loc lid.txt in
+      let path = Typetexp.find_module env smty.pmty_loc lid.txt in
       Mty_alias path
   | Pmty_signature ssg ->
       Mty_signature(approx_sig env ssg)
@@ -448,8 +451,7 @@ let transl_modtype_longident loc env lid =
   path
 
 let transl_module_alias loc env lid =
-  let (path, info) = Typetexp.find_module env loc lid in
-  path
+  Typetexp.find_module env loc lid
 
 let mkmty desc typ env loc attrs =
   let mty = {
@@ -753,6 +755,8 @@ let rec path_of_module mexp =
     Tmod_ident (p,_) -> p
   | Tmod_apply(funct, arg, coercion) when !Clflags.applicative_functors ->
       Papply(path_of_module funct, path_of_module arg)
+  | Tmod_constraint (mexp, _, _, _) ->
+      path_of_module mexp
   | _ -> raise Not_a_path
 
 (* Check that all core type schemes in a structure are closed *)
@@ -952,17 +956,15 @@ let wrap_constraint env arg mty explicit =
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
-      let (path, md) = Typetexp.find_module env smod.pmod_loc lid.txt in
-      let mty = md.md_type in
+      let path = Typetexp.find_module env smod.pmod_loc lid.txt in
       let md = { mod_desc = Tmod_ident (path, lid);
-                 mod_type = mty;
+                 mod_type = Mty_alias path;
                  mod_env = env;
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
       let md =
-        if alias && not (Env.is_functor_arg path env) then
-          { md with mod_type = Mty_alias path }
-        else match mty with
+        if alias && not (Env.is_functor_arg path env) then md else
+        match (Env.find_module path env).md_type with
           Mty_alias p1 when not alias ->
             let p1 = Env.normalize_path (Some smod.pmod_loc) env p1 in
             let mty = Includemod.expand_module_alias env [] p1 in
@@ -970,9 +972,10 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
               mod_desc = Tmod_constraint (md, mty, Tmodtype_implicit,
                                           Tcoerce_alias (p1, Tcoerce_none));
               mod_type = if sttn then Mtype.strengthen env mty p1 else mty }
-        | _ ->
-            if sttn then { md with mod_type = Mtype.strengthen env mty path}
-            else md
+        | mty ->
+            let mty =
+              if sttn then Mtype.strengthen env mty path else mty in
+            { md with mod_type = mty }
       in rm md
   | Pmod_structure sstr ->
       let (str, sg, finalenv) =
@@ -1339,7 +1342,8 @@ let type_module_type_of env smod =
   let tmty =
     match smod.pmod_desc with
     | Pmod_ident lid -> (* turn off strengthening in this case *)
-        let (path, md) = Typetexp.find_module env smod.pmod_loc lid.txt in
+        let path = Typetexp.find_module env smod.pmod_loc lid.txt in
+        let md = Env.find_module path env in
         rm { mod_desc = Tmod_ident (path, lid);
              mod_type = md.md_type;
              mod_env = env;
