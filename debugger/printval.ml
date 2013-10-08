@@ -47,7 +47,7 @@ module EvalPath =
   struct
     type valu = Debugcom.Remote_value.t
     exception Error
-    let rec eval_path = function
+    let rec eval_path env = function
       Pident id ->
         begin try
           Debugcom.Remote_value.global (Symtable.get_global_position id)
@@ -55,7 +55,7 @@ module EvalPath =
           raise Error
         end
     | Pdot(root, fieldname, pos) ->
-        let v = eval_path root in
+        let v = eval_path env root in
         if not (Debugcom.Remote_value.is_block v)
         then raise Error
         else Debugcom.Remote_value.field v pos
