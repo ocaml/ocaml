@@ -91,3 +91,9 @@ C.one.Complex.re;;
 include C;;
 
 module F(X:sig module C = Char end) = struct module C = X.C end;;
+
+(* Applicative functors *)
+module S = String
+module StringSet = Set.Make(String)
+module SSet = Set.Make(S);;
+let f (x : StringSet.t) = (x : SSet.t);;
