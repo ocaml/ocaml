@@ -283,7 +283,8 @@ type pers_struct =
     ps_comps: module_components;
     ps_crcs: (string * Digest.t) list;
     ps_filename: string;
-    ps_flags: pers_flags list }
+    ps_flags: pers_flags list;
+    mutable ps_crcs_checked: bool }
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
@@ -292,17 +293,19 @@ let persistent_structures =
 
 let crc_units = Consistbl.create()
 
-let check_consistency filename crcs =
+let check_consistency ps =
+  if ps.ps_crcs_checked then () else
   try
     List.iter
-      (fun (name, crc) -> Consistbl.check crc_units name crc filename)
-      crcs
+      (fun (name, crc) -> Consistbl.check crc_units name crc ps.ps_filename)
+      ps.ps_crcs;
+    ps.ps_crcs_checked <- true
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
 
 (* Reading persistent structures from .cmi files *)
 
-let read_pers_struct modname filename = (
+let read_pers_struct modname filename =
   let cmi = read_cmi filename in
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
@@ -311,35 +314,37 @@ let read_pers_struct modname filename = (
   let comps =
       !components_of_module' empty Subst.identity
                              (Pident(Ident.create_persistent name))
-                             (Mty_signature sign) in
-    let ps = { ps_name = name;
-               ps_sig = sign;
-               ps_comps = comps;
-               ps_crcs = crcs;
-               ps_filename = filename;
-               ps_flags = flags } in
-    if ps.ps_name <> modname then
-      error (Illegal_renaming(modname, ps.ps_name, filename));
-    check_consistency filename ps.ps_crcs;
-    List.iter
-      (function Rectypes ->
-        if not !Clflags.recursive_types then
-          error (Need_recursive_types(ps.ps_name, !current_unit)))
-      ps.ps_flags;
-    Hashtbl.add persistent_structures modname (Some ps);
-    ps
-)
+                             (Mty_signature sign)
+  in
+  let ps = { ps_name = name;
+             ps_sig = sign;
+             ps_comps = comps;
+             ps_crcs = crcs;
+             ps_crcs_checked = false;
+             ps_filename = filename;
+             ps_flags = flags } in
+  if ps.ps_name <> modname then
+    error (Illegal_renaming(modname, ps.ps_name, filename));
+  (*check_consistency filename ps.ps_crcs;*)
+  List.iter
+    (function Rectypes ->
+      if not !Clflags.recursive_types then
+        error (Need_recursive_types(ps.ps_name, !current_unit)))
+    ps.ps_flags;
+  Hashtbl.add persistent_structures modname (Some ps);
+  ps
 
-let find_pers_struct name =
+let find_pers_struct ?(check=true) name =
   if name = "*predef*" then raise Not_found;
   let r =
     try Some (Hashtbl.find persistent_structures name)
     with Not_found -> None
   in
-  match r with
-  | Some None -> raise Not_found
-  | Some (Some sg) -> sg
-  | None ->
+  let ps =
+    match r with
+    | Some None -> raise Not_found
+    | Some (Some sg) -> sg
+    | None ->
       let filename =
         try find_in_path_uncap !load_path (name ^ ".cmi")
         with Not_found ->
@@ -347,6 +352,9 @@ let find_pers_struct name =
           raise Not_found
       in
       read_pers_struct name filename
+  in
+  if check then check_consistency ps;
+  ps
 
 let reset_cache () =
   current_unit := "";
@@ -463,7 +471,16 @@ let find_module path env =
           raise Not_found
       end
   | Papply(p1, p2) ->
-      raise Not_found (* not right *)
+      let desc1 = find_module_descr p1 env in
+      begin match EnvLazy.force !components_of_module_maker' desc1 with
+        Functor_comps f ->
+          let mty =
+            Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
+              f.fcomp_res in
+          md mty
+      | Structure_comps c ->
+          raise Not_found
+      end
 
 let rec normalize_path lax env path =
   let path =
@@ -562,7 +579,8 @@ let rec lookup_module_descr lid env =
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
-      let (p2, {md_type=mty2}) = lookup_module l2 env in
+      let p2 = lookup_module l2 env in
+      let {md_type=mty2} = find_module p2 env in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 p2 f.fcomp_arg;
@@ -571,45 +589,41 @@ let rec lookup_module_descr lid env =
           raise Not_found
       end
 
-and lookup_module lid env : Path.t * module_declaration =
+and lookup_module lid env : Path.t =
   match lid with
     Lident s ->
       begin try
-        let (_, {md_type}) as r = EnvTbl.find_name s env.modules in
+        let (p, {md_type}) as r = EnvTbl.find_name s env.modules in
         begin match md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
           raise Recmodule
         | _ -> ()
         end;
-        r
+        p
       with Not_found ->
         if s = !current_unit then raise Not_found;
-        let ps = find_pers_struct s in
-        (Pident(Ident.create_persistent s),
-         md (Mty_signature ps.ps_sig)
-        )
+        ignore (find_pers_struct ~check:false s);
+        Pident(Ident.create_persistent s)
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
       begin match EnvLazy.force !components_of_module_maker' descr with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
-          (Pdot(p, s, pos), md (EnvLazy.force subst_modtype_maker data))
+          Pdot(p, s, pos)
       | Functor_comps f ->
           raise Not_found
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
-      let (p2, {md_type=mty2}) = lookup_module l2 env in
+      let p2 = lookup_module l2 env in
+      let {md_type=mty2} = find_module p2 env in
       let p = Papply(p1, p2) in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 p2 f.fcomp_arg;
-          let mty =
-            Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
-              f.fcomp_res in
-          (p, md mty)
+          p
       | Structure_comps c ->
           raise Not_found
       end
@@ -1496,12 +1510,14 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
 (* Read a signature from a file *)
 
 let read_signature modname filename =
-  let ps = read_pers_struct modname filename in ps.ps_sig
+  let ps = read_pers_struct modname filename in
+  check_consistency ps;
+  ps.ps_sig
 
 (* Return the CRC of the interface of the given compilation unit *)
 
 let crc_of_unit name =
-  let ps = find_pers_struct name in
+  let ps = find_pers_struct ~check:false name in
   try
     List.assoc name ps.ps_crcs
   with Not_found ->
@@ -1515,6 +1531,8 @@ let imported_units() =
 (* Save a signature to a file *)
 
 let save_signature_with_imports sg modname filename imports =
+  (*prerr_endline filename;
+  List.iter (fun (name, crc) -> prerr_endline name) imports;*)
   Btype.cleanup_abbrev ();
   Subst.reset_for_saving ();
   let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
@@ -1539,7 +1557,8 @@ let save_signature_with_imports sg modname filename imports =
         ps_comps = comps;
         ps_crcs = (cmi.cmi_name, crc) :: imports;
         ps_filename = filename;
-        ps_flags = cmi.cmi_flags } in
+        ps_flags = cmi.cmi_flags;
+        ps_crcs_checked = true } in
     Hashtbl.add persistent_structures modname (Some ps);
     Consistbl.set crc_units modname crc filename;
     sg

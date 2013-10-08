@@ -172,6 +172,7 @@ let rec modtypes env cxt subst mty1 mty2 =
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
     (Mty_alias p1, Mty_alias p2) ->
+      if Path.same p1 p2 then Tcoerce_none else
       let p1 = Env.normalize_path None env p1
       and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
       (* Should actually be Tcoerce_ignore, if it existed *)

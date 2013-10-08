@@ -137,10 +137,11 @@ let find_value env loc lid =
 
 let find_module env loc lid =
   let (path, decl) as r =
-    find_component Env.lookup_module (fun lid -> Unbound_module lid) env loc lid
+    find_component (fun lid env -> (Env.lookup_module lid env, ()))
+      (fun lid -> Unbound_module lid) env loc lid
   in
-  check_deprecated loc decl.md_attributes (Path.name path);
-  r
+  (* check_deprecated loc decl.md_attributes (Path.name path); *)
+  path
 
 let find_modtype =
   find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
