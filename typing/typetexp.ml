@@ -774,7 +774,7 @@ let spellcheck ppf fold env lid =
     match List.rev choice with
       | [] -> ()
       | last :: rev_rest ->
-        fprintf ppf "@\nDid you mean %s%s%s?"
+        fprintf ppf "@\nHint: Did you mean %s%s%s?"
           (String.concat ", " (List.rev rev_rest))
           (if rev_rest = [] then "" else " or ")
           last
