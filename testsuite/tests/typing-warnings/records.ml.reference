@@ -217,7 +217,7 @@ Error: The field A.x belongs to the record type A.t
                      ^^^
 Error: This record expression is expected to have type t
        The field yyz does not belong to type t
-Did you mean yyy?
+Hint: Did you mean yyy?
 #             type t = A
 type s = A
 class f : t -> object  end
