@@ -15,7 +15,6 @@
 open Format
 open Misc
 open Longident
-open Path
 open Types
 open Opttoploop
 

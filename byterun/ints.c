@@ -114,7 +114,7 @@ intnat caml_safe_mod(intnat p, intnat q)
 }
 #endif
 
-CAMLprim value caml_bswap16_direct(value x)
+value caml_bswap16_direct(value x)
 {
   return ((((x & 0x00FF) << 8) |
            ((x & 0xFF00) >> 8)));
@@ -317,7 +317,7 @@ static int32 swap32(int32 x)
           ((x & 0xFF000000) >> 24));
 }
 
-CAMLprim value caml_int32_direct_bswap(value v)
+value caml_int32_direct_bswap(value v)
 { return swap32(v); }
 
 CAMLprim value caml_int32_bswap(value v)
@@ -526,7 +526,7 @@ static value swap64(value x)
            (((x) & 0xFF00000000000000) >> 56)));
 }
 
-CAMLprim value caml_int64_direct_bswap(value v)
+value caml_int64_direct_bswap(value v)
 { return swap64(v); }
 #endif
 
@@ -785,7 +785,7 @@ CAMLprim value caml_nativeint_shift_right(value v1, value v2)
 CAMLprim value caml_nativeint_shift_right_unsigned(value v1, value v2)
 { return caml_copy_nativeint((uintnat)Nativeint_val(v1) >> Int_val(v2)); }
 
-CAMLprim value caml_nativeint_direct_bswap(value v)
+value caml_nativeint_direct_bswap(value v)
 {
 #ifdef ARCH_SIXTYFOUR
   return swap64(v);

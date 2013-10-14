@@ -64,6 +64,7 @@ module type Bytecomp_options =
     val _use_prims : string -> unit
     val _dsource : unit -> unit
     val _dparsetree : unit -> unit
+    val _dtypedtree : unit -> unit
     val _drawlambda : unit -> unit
     val _dlambda : unit -> unit
     val _dinstr : unit -> unit
@@ -96,6 +97,7 @@ module type Bytetop_options = sig
 
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
+  val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dinstr : unit -> unit
@@ -156,6 +158,7 @@ module type Optcomp_options = sig
   val _nopervasives : unit -> unit
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
+  val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dclambda : unit -> unit
@@ -203,6 +206,7 @@ module type Opttop_options = sig
 
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
+  val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
   val _dclambda : unit -> unit

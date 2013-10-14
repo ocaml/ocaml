@@ -88,8 +88,10 @@ module Options = Main_args.Make_opttop_options (struct
 
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree
+  let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
+  let _dclambda = set dump_clambda
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine

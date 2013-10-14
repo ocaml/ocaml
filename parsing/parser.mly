@@ -44,8 +44,9 @@ let mkcf d =
   { pcf_desc = d; pcf_loc = symbol_rloc () }
 let mkrhs rhs pos = mkloc rhs (rhs_loc pos)
 let mkoption d =
-  { ptyp_desc = Ptyp_constr(mknoloc (Ldot (Lident "*predef*", "option")), [d]);
-    ptyp_loc = d.ptyp_loc}
+  let loc = {d.ptyp_loc with loc_ghost = true} in
+  { ptyp_desc = Ptyp_constr(mkloc (Ldot (Lident "*predef*", "option")) loc,[d]);
+    ptyp_loc = loc}
 
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
@@ -77,6 +78,7 @@ let mkpatvar name pos =
 let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc () };;
 let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
 let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc () };;
+let ghloc d = { txt = d; loc = symbol_gloc () };;
 
 let mkassert e =
   match e with
@@ -120,43 +122,47 @@ let mkuplus name arg =
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
-let mkexp_cons args loc =
-  {pexp_desc = Pexp_construct(mkloc (Lident "::") Location.none,
-                              Some args, false); pexp_loc = loc}
+let mkexp_cons consloc args loc =
+  {pexp_desc = Pexp_construct(mkloc (Lident "::") consloc, Some args, false);
+   pexp_loc = loc}
 
-let mkpat_cons args loc =
-  {ppat_desc = Ppat_construct(mkloc (Lident "::") Location.none,
-                              Some args, false); ppat_loc = loc}
+let mkpat_cons consloc args loc =
+  {ppat_desc = Ppat_construct(mkloc (Lident "::") consloc, Some args, false);
+   ppat_loc = loc}
 
-let rec mktailexp = function
+let rec mktailexp nilloc = function
     [] ->
-      ghexp(Pexp_construct(mkloc (Lident "[]") Location.none, None, false))
+      let loc = { nilloc with loc_ghost = true } in
+      let nil = { txt = Lident "[]"; loc = loc } in
+      { pexp_desc = Pexp_construct (nil, None, false); pexp_loc = loc }
   | e1 :: el ->
-      let exp_el = mktailexp el in
+      let exp_el = mktailexp nilloc el in
       let l = {loc_start = e1.pexp_loc.loc_start;
                loc_end = exp_el.pexp_loc.loc_end;
                loc_ghost = true}
       in
       let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
-      mkexp_cons arg l
+      mkexp_cons {l with loc_ghost = true} arg l
 
-let rec mktailpat = function
+let rec mktailpat nilloc = function
     [] ->
-      ghpat(Ppat_construct(mkloc (Lident "[]") Location.none, None, false))
+      let loc = { nilloc with loc_ghost = true } in
+      let nil = { txt = Lident "[]"; loc = loc } in
+      { ppat_desc = Ppat_construct (nil, None, false); ppat_loc = loc }
   | p1 :: pl ->
-      let pat_pl = mktailpat pl in
+      let pat_pl = mktailpat nilloc pl in
       let l = {loc_start = p1.ppat_loc.loc_start;
                loc_end = pat_pl.ppat_loc.loc_end;
                loc_ghost = true}
       in
       let arg = {ppat_desc = Ppat_tuple [p1; pat_pl]; ppat_loc = l} in
-      mkpat_cons arg l
+      mkpat_cons {l with loc_ghost = true} arg l
 
-let ghstrexp e =
-  { pstr_desc = Pstr_eval e; pstr_loc = {e.pexp_loc with loc_ghost = true} }
+let mkstrexp e =
+  { pstr_desc = Pstr_eval e; pstr_loc = e.pexp_loc }
 
 let array_function str name =
-  mknoloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
+  ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
 
 let rec deep_mkrangepat c1 c2 =
   if c1 = c2 then ghpat(Ppat_constant(Const_char c1)) else
@@ -179,7 +185,7 @@ let expecting pos nonterm =
     raise Syntaxerr.(Error(Expecting(rhs_loc pos, nonterm)))
 
 let bigarray_function str name =
-  mkloc (Ldot(Ldot(Lident "Bigarray", str), name)) Location.none
+  ghloc (Ldot(Ldot(Lident "Bigarray", str), name))
 
 let bigarray_untuplify = function
     { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
@@ -494,7 +500,7 @@ interface:
 ;
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def $1 }
-  | seq_expr SEMISEMI                    { Ptop_def[ghstrexp $1] }
+  | seq_expr SEMISEMI                    { Ptop_def[mkstrexp $1] }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
@@ -504,12 +510,12 @@ top_structure:
 ;
 use_file:
     use_file_tail                        { $1 }
-  | seq_expr use_file_tail               { Ptop_def[ghstrexp $1] :: $2 }
+  | seq_expr use_file_tail               { Ptop_def[mkstrexp $1] :: $2 }
 ;
 use_file_tail:
     EOF                                         { [] }
   | SEMISEMI EOF                                { [] }
-  | SEMISEMI seq_expr use_file_tail             { Ptop_def[ghstrexp $2] :: $3 }
+  | SEMISEMI seq_expr use_file_tail             { Ptop_def[mkstrexp $2] :: $3 }
   | SEMISEMI structure_item use_file_tail       { Ptop_def[$2] :: $3 }
   | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
   | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
@@ -560,12 +566,12 @@ module_expr:
 ;
 structure:
     structure_tail                              { $1 }
-  | seq_expr structure_tail                     { ghstrexp $1 :: $2 }
+  | seq_expr structure_tail                     { mkstrexp $1 :: $2 }
 ;
 structure_tail:
     /* empty */                                 { [] }
   | SEMISEMI                                    { [] }
-  | SEMISEMI seq_expr structure_tail            { ghstrexp $2 :: $3 }
+  | SEMISEMI seq_expr structure_tail            { mkstrexp $2 :: $3 }
   | SEMISEMI structure_item structure_tail      { $2 :: $3 }
   | structure_item structure_tail               { $1 :: $2 }
 ;
@@ -997,9 +1003,9 @@ expr:
   | FOR val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
       { mkexp(Pexp_for(mkrhs $2 2, $4, $6, $5, $8)) }
   | expr COLONCOLON expr
-      { mkexp_cons (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
+      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
   | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
-      { mkexp_cons (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
+      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
@@ -1077,7 +1083,8 @@ simple_expr:
   | BEGIN seq_expr END
       { reloc_exp $2 }
   | BEGIN END
-      { mkexp (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()), None, false)) }
+      { mkexp (Pexp_construct (mkloc (Lident "()") (symbol_rloc ()),
+                               None, false)) }
   | BEGIN seq_expr error
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
@@ -1113,7 +1120,7 @@ simple_expr:
   | LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_array []) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
-      { reloc_exp (mktailexp (List.rev $2)) }
+      { reloc_exp (mktailexp (rhs_loc 4) (List.rev $2)) }
   | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
@@ -1210,7 +1217,7 @@ fun_def:
 ;
 match_action:
     MINUSGREATER seq_expr                       { $2 }
-  | WHEN seq_expr MINUSGREATER seq_expr         { mkexp(Pexp_when($2, $4)) }
+  | WHEN seq_expr MINUSGREATER seq_expr         { ghexp(Pexp_when($2, $4)) }
 ;
 expr_comma_list:
     expr_comma_list COMMA expr                  { $3 :: $1 }
@@ -1265,11 +1272,11 @@ pattern:
   | name_tag pattern %prec prec_constr_appl
       { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
-      { mkpat_cons (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
+      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
   | pattern COLONCOLON error
       { expecting 3 "pattern" }
   | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
-      { mkpat_cons (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
+      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
   | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern error
       { unclosed "(" 4 ")" 8 }
   | pattern BAR pattern
@@ -1299,7 +1306,7 @@ simple_pattern:
   | LBRACE lbl_pattern_list error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { reloc_pat (mktailpat (List.rev $2)) }
+      { reloc_pat (mktailpat (rhs_loc 4) (List.rev $2)) }
   | LBRACKET pattern_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET

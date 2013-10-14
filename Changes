@@ -66,9 +66,10 @@ Bug fixes:
 - PR#5772: problem with marshaling of mutually-recursive functions
 - PR#5775: several bug fixes for tools/pprintast.ml
 - PR#5785: misbehaviour with abstracted structural type used as GADT index
+- PR#5798: add ARM VFPv2 support for Raspbian (ocamlopt)
 - PR#5806: ensure that backtrace tests are always run (testsuite)
 - PR#5810: error in switch printing when using -dclambda
-
+- PR#5858: Assert failure during typing of class
 
 OCaml 4.00.1:
 -------------

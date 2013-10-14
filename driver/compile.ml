@@ -84,6 +84,7 @@ let interface ppf sourcefile outputprefix =
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
     if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
     let tsg = Typemod.transl_signature initial_env ast in
+    if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
     let sg = tsg.sig_type in
     if !Clflags.print_types then
       fprintf std_formatter "%a@." Printtyp.signature
@@ -123,7 +124,8 @@ let implementation ppf sourcefile outputprefix =
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env);
+      ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ print_if ppf Clflags.dump_typedtree Printtyped.implementation_with_coercion);
       Warnings.check_fatal ();
       Pparse.remove_preprocessed inputfile;
       Stypes.dump (Some (outputprefix ^ ".annot"));
@@ -139,6 +141,7 @@ let implementation ppf sourcefile outputprefix =
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ print_if ppf Clflags.dump_typedtree Printtyped.implementation_with_coercion
       ++ Translmod.transl_implementation modulename
       ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Simplif.simplify_lambda
