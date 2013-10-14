@@ -2240,13 +2240,7 @@ and unify3 env t1 t1' t2 t2' =
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list env tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-          if !umode = Expression || not !generate_equations
-          || in_current_module p1 (* || in_pervasives p1 *)
-          || try is_datatype (Env.find_type p1 !env) with Not_found -> false
-          then
-            unify_list env tl1 tl2
-          else
-            set_mode Pattern ~generate:false (fun () -> unify_list env tl1 tl2)
+          unify_list env tl1 tl2
       | (Tconstr ((Path.Pident p) as path,[],_),
          Tconstr ((Path.Pident p') as path',[],_))
         when is_abstract_newtype !env path && is_abstract_newtype !env path'
