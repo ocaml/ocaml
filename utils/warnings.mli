@@ -52,7 +52,9 @@ type t =
   | Unused_constructor of string * bool * bool  (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
-  | Unused_extension of string * bool * bool  (* 40 *)
+  | Name_out_of_scope of string list * bool (* 40 *)
+  | Ambiguous_name of string list * bool    (* 41 *)
+  | Unused_extension of string * bool * bool  (* 42 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

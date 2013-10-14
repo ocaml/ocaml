@@ -32,11 +32,14 @@ val empty: t
 val initial: t
 val diff: t -> t -> Ident.t list
 
+type type_descriptions =
+    constructor_description list * label_description list
+
 (* Lookup by paths *)
 
 val find_value: Path.t -> t -> value_description
 val find_type: Path.t -> t -> type_declaration
-val find_constructors: Path.t -> t -> constructor_description list
+val find_type_descrs: Path.t -> t -> type_descriptions
 val find_module: Path.t -> t -> module_type
 val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
@@ -48,7 +51,7 @@ val find_type_expansion_opt:
     Path.t -> t -> type_expr list * type_expr * int option
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
-val find_modtype_expansion: Path.t -> t -> Types.module_type
+val find_modtype_expansion: Path.t -> t -> module_type
 
 val has_local_constraints: t -> bool
 val add_gadt_instance_level: int -> t -> t
@@ -60,7 +63,11 @@ val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 val lookup_value: Longident.t -> t -> Path.t * value_description
 val lookup_constructor: Longident.t -> t -> constructor_description
+val lookup_all_constructors:
+  Longident.t -> t -> (constructor_description * (unit -> unit)) list
 val lookup_label: Longident.t -> t -> label_description
+val lookup_all_labels:
+  Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
 val lookup_module: Longident.t -> t -> Path.t * module_type
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
@@ -191,29 +198,29 @@ val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (** Folding over all identifiers (for analysis purpose) *)
 
 val fold_values:
-  (string -> Path.t -> Types.value_description -> 'a -> 'a) ->
+  (string -> Path.t -> value_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_types:
-  (string -> Path.t -> Types.type_declaration -> 'a -> 'a) ->
+  (string -> Path.t -> type_declaration * type_descriptions -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_constructors:
-  (Types.constructor_description -> 'a -> 'a) ->
+  (constructor_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_labels:
-  (Types.label_description -> 'a -> 'a) ->
+  (label_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 
 (** Persistent structures are only traversed if they are already loaded. *)
 val fold_modules:
-  (string -> Path.t -> Types.module_type -> 'a -> 'a) ->
+  (string -> Path.t -> module_type -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 
 val fold_modtypes:
-  (string -> Path.t -> Types.modtype_declaration -> 'a -> 'a) ->
+  (string -> Path.t -> modtype_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_classs:
-  (string -> Path.t -> Types.class_declaration -> 'a -> 'a) ->
+  (string -> Path.t -> class_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_cltypes:
-  (string -> Path.t -> Types.class_type_declaration -> 'a -> 'a) ->
+  (string -> Path.t -> class_type_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a

@@ -10,19 +10,7 @@
 #                                                                       #
 #########################################################################
 
-default:
-	@for file in *.ml; do \
-	  $(OCAML) $(TOPFLAGS) < $$file 2>&1 | grep -v '^        OCaml version' > $$file.result; \
-	  if [ -f $$file.principal.reference ]; then \
-	    $(OCAML) $(TOPFLAGS) -principal < $$file 2>&1 | grep -v '^        OCaml version' > $$file.principal.result; \
-	  fi; \
-	done
-	@for file in *.reference; do \
-	  printf " ... testing '$$file':"; \
-	  $(DIFF) $$file `basename $$file reference`result || (echo " => failed" && exit 1) && echo " => passed"; \
-	done
-
-promote: defaultpromote
-
-clean: defaultclean
-	@rm -f *.result
+BASEDIR=../..
+include $(BASEDIR)/makefiles/Makefile.toplevel
+include $(BASEDIR)/makefiles/Makefile.common
+TOPFLAGS = -w A

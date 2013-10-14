@@ -20,10 +20,16 @@ let f {M.x; y} = x+y;;
 let r = {M.x=1; y=2};;
 let z = f r;;
 
-module M = struct
-  type t = {x: int; y: int}
-  type u = {y: bool}
-end;;
-(* path abbreviation is syntactic *)
-let f {M.x; y} = x+y;; (* fails *)
-let r = {M.x=1; y=2};; (* fails *)
+(* messages *)
+type foo = { mutable y:int };;
+let f (r: int) = r.y <- 3;;
+
+(* bugs *)
+type foo = { y: int; z: int };;
+type bar = { x: int };;
+let f (r: bar) = ({ r with z = 3 } : foo)
+
+type foo = { x: int };;
+let r : foo = { ZZZ.x = 2 };;
+
+(ZZZ.X : int option);;

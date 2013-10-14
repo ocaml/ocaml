@@ -977,6 +977,10 @@ let type_expansion t ppf t' =
   let t' = if proxy t == proxy t' then unalias t' else t' in
   fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
 
+let type_path_expansion tp ppf tp' =
+  if Path.same tp tp' then path ppf tp else
+  fprintf ppf "@[<2>%a@ =@ %a@]" path tp path tp'
+
 let rec trace fst txt ppf = function
   | (t1, t1') :: (t2, t2') :: rem ->
       if not fst then fprintf ppf "@,";
@@ -994,6 +998,14 @@ let rec filter_trace = function
       then rem'
       else (t1, t1') :: (t2, t2') :: rem'
   | _ -> []
+
+let rec type_path_list ppf = function
+  | [tp, tp'] -> type_path_expansion tp ppf tp'
+  | (tp, tp') :: rem -> 
+      fprintf ppf "%a@;<2 0>%a"
+        (type_path_expansion tp) tp'
+        type_path_list rem
+  | [] -> ()
 
 (* Hide variant name and var, to force printing the expanded type *)
 let hide_variant_name t =
@@ -1179,3 +1191,25 @@ let report_subtyping_error ppf tr1 txt1 tr2 =
   let mis = mismatch true tr2 in
   trace false "is not compatible with type" ppf tr2;
   explanation true mis ppf
+
+let report_ambiguous_type_error ppf (tp0, tp0') tpl txt1 txt2 txt3 =
+  reset ();
+  List.iter 
+    (fun (tp, tp') -> path_same_name tp0 tp; path_same_name tp0' tp') 
+    tpl;
+  match tpl with
+    [] -> assert false
+  | [tp, tp'] ->       
+      fprintf ppf
+        "@[%t@;<1 2>%a@ \
+            %t@;<1 2>%a\
+          @]"
+        txt1 (type_path_expansion tp) tp'
+        txt3 (type_path_expansion tp0) tp0'
+  | _ ->
+      fprintf ppf
+        "@[%t@;<1 2>@[<hv>%a@]\
+           @ %t@;<1 2>%a\
+          @]"
+        txt2 type_path_list tpl
+        txt3 (type_path_expansion tp0) tp0'

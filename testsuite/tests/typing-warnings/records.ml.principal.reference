@@ -1,0 +1,151 @@
+
+#         module M1 :
+  sig type t = { x : int; y : int; } type u = { x : bool; y : bool; } end
+#                 Characters 89-90:
+    let f2 r = ignore (r:t); r.x (* non principal *)
+                               ^
+Warning 18: this type-based field disambiguation is not principal.
+Characters 81-103:
+    let f2 r = ignore (r:t); r.x (* non principal *)
+                       ^^^^^^^^^^^^^^^^^^^^^^
+Warning 34: unused type u.
+Characters 148-149:
+      match r with {x; y} -> y + y (* ok *)
+                    ^
+Warning 27: unused variable x.
+module OK :
+  sig val f1 : M1.t -> int val f2 : M1.t -> int val f3 : M1.t -> int end
+#         Characters 55-61:
+    let f r = match r with {x; y} -> y + y
+                           ^^^^^^
+Warning 41: this record contains fields that are ambiguous: x y.
+Characters 65-66:
+    let f r = match r with {x; y} -> y + y
+                                     ^
+Error: This expression has type bool but an expression was expected of type
+         int
+#               Characters 85-91:
+         {x; y} -> y + y
+         ^^^^^^
+Warning 41: this record contains fields that are ambiguous: x y.
+Characters 85-91:
+         {x; y} -> y + y
+         ^^^^^^
+Error: This pattern matches values of type M1.u
+       but a pattern was expected which matches values of type M1.t
+#           module M : sig type t = { x : int; } type u = { x : bool; } end
+# val f : M.t -> int = <fun>
+# Characters 18-19:
+  let f (r:M.t) = r.x;; (* warning *)
+                    ^
+Warning 40: x is used out of scope.
+val f : M.t -> int = <fun>
+#       module M : sig type t = { x : int; y : int; } end
+#     module N : sig type u = { x : bool; y : bool; } end
+#         Characters 30-36:
+    open N
+    ^^^^^^
+Warning 33: unused open N.
+Characters 25-47:
+  ...... M
+    open N
+    let f (r...........
+Warning 34: unused type u.
+module OK : sig val f : M.t -> int end
+#           module M :
+  sig
+    type t = { x : int; }
+    module N : sig type s = t = { x : int; } end
+    type u = { x : bool; }
+  end
+#       module OK : sig val f : M.t -> int end
+#           module M :
+  sig
+    type u = { x : bool; y : int; z : char; }
+    type t = { x : int; y : bool; }
+  end
+#       Characters 36-41:
+    let f {x;z} = x,z
+          ^^^^^
+Warning 9: the following labels are not bound in this record pattern:
+y
+Either bind these labels explicitly or add '; _' to the pattern.
+Characters 87-105:
+  Warning 34: unused type t.
+module OK : sig val f : M.u -> bool * char end
+#       Characters 38-52:
+    let r = {x=true;z='z'}
+            ^^^^^^^^^^^^^^
+Error: Some record fields are undefined: y
+#           module OK :
+  sig
+    type u = { x : int; y : bool; }
+    type t = { x : bool; y : int; z : char; }
+    val r : u
+  end
+#               Characters 111-112:
+    let b : bar = {x=3; y=4}
+                        ^
+Error: The record type bar has no field y
+#   module M : sig type foo = { x : int; y : int; } end
+# module N : sig type bar = { x : int; y : int; } end
+# Characters 19-22:
+  let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
+                     ^^^
+Error: The record field N.y belongs to the type N.bar
+       but is mixed here with fields of type M.foo
+#     module MN :
+  sig
+    type foo = M.foo = { x : int; y : int; }
+    type bar = N.bar = { x : int; y : int; }
+  end
+module NM :
+  sig
+    type bar = N.bar = { x : int; y : int; }
+    type foo = M.foo = { x : int; y : int; }
+  end
+# Characters 8-28:
+  let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
+          ^^^^^^^^^^^^^^^^^^^^
+Warning 41: this record contains fields that are ambiguous: x y.
+Characters 19-23:
+  let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
+                     ^^^^
+Error: The record field NM.y belongs to the type NM.foo = M.foo
+       but is mixed here with fields of type MN.bar = N.bar
+#             module M :
+  sig
+    type foo = { x : int; y : int; }
+    type bar = { x : int; y : int; z : int; }
+  end
+#       Characters 72-73:
+    let f r = ignore (r: foo); {r with x = 2; z = 3}
+                                              ^
+Error: The record type M.foo has no field z
+#       module M :
+  sig
+    type foo = M.foo = { x : int; y : int; }
+    type bar = M.bar = { x : int; y : int; z : int; }
+    type other = { a : int; b : int; }
+  end
+#       Characters 73-74:
+    let f r = ignore (r: foo); { r with x = 3; a = 4 }
+                                               ^
+Error: The record type M.foo has no field a
+#         Characters 67-68:
+    let r: other = {x=1; y=2}
+                    ^
+Error: The record type M.other has no field x
+#     module A : sig type t = { x : int; } end
+module B : sig type t = { x : int; } end
+# Characters 20-23:
+  let f (r : B.t) = r.A.x;; (* fail *)
+                      ^^^
+Error: The field A.x belongs to the record type A.t
+       but a field was expected belonging to the record type B.t
+#             Characters 88-91:
+    let a : t = {x=1;yyz=2}
+                     ^^^
+Error: The record type t has no field yyz
+Did you mean yyy?
+# 
