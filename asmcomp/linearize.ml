@@ -42,10 +42,10 @@ and instruction_desc =
   | Lsetuptrap of label
   | Lpushtrap
   | Lpoptrap
-  | Lraise
+  | Lraise of Lambda.raise_kind
 
 let has_fallthrough = function
-  | Lreturn | Lbranch _ | Lswitch _ | Lraise
+  | Lreturn | Lbranch _ | Lswitch _ | Lraise _
   | Lop Itailcall_ind | Lop (Itailcall_imm _) -> false
   | _ -> true
 
@@ -257,8 +257,8 @@ let rec linear i n =
                     (linear body (cons_instr Lpoptrap n1))) in
       cons_instr (Lsetuptrap lbl_body)
         (linear handler (add_branch lbl_join n2))
-  | Iraise ->
-      copy_instr Lraise i (discard_dead_code n)
+  | Iraise k ->
+      copy_instr (Lraise k) i (discard_dead_code n)
 
 let fundecl f =
   { fun_name = f.Mach.fun_name;

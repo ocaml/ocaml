@@ -237,3 +237,5 @@ val staticfail : lambda (* Anticipated static failure *)
 (* Check anticipated failure, substitute its final value *)
 val is_guarded: lambda -> bool
 val patch_guarded : lambda -> lambda -> lambda
+
+val raise_kind: raise_kind -> string

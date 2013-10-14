@@ -190,7 +190,7 @@ let safe_divmod op c1 c2 dbg =
     bind "divisor" c2 (fun c2 ->
       Cifthenelse(c2,
                   Cop(op, [c1; c2]),
-                  Cop(Craise dbg,
+                  Cop(Craise (Raise_regular, dbg),
                       [Cconst_symbol "caml_bucket_Division_by_zero"])))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
@@ -211,7 +211,7 @@ let safe_divmod_bi mkop mkm1 c1 c2 bi dbg =
       c3
     else
       Cifthenelse(c2, c3,
-                  Cop(Craise dbg,
+                  Cop(Craise (Raise_regular, dbg),
                       [Cconst_symbol "caml_bucket_Division_by_zero"]))))
 
 let safe_div_bi =
@@ -1290,8 +1290,8 @@ and transl_prim_1 p arg dbg =
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
   (* Exceptions *)
-  | Praise ->
-      Cop(Craise dbg, [transl arg])
+  | Praise k ->
+      Cop(Craise (k, dbg), [transl arg])
   (* Integer operations *)
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl arg])

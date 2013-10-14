@@ -457,3 +457,8 @@ and negate_comparison = function
 | Ceq -> Cneq| Cneq -> Ceq
 | Clt -> Cge | Cle -> Cgt
 | Cgt -> Cle | Cge -> Clt
+
+let raise_kind = function
+  | Raise_regular -> "raise"
+  | Raise_reraise -> "reraise"
+  | Raise_notrace -> "raise_notrace"

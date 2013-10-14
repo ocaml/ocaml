@@ -177,8 +177,8 @@ let rec instr ppf i =
   | Itrywith(body, handler) ->
       fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
              instr body instr handler
-  | Iraise ->
-      fprintf ppf "raise %a" reg i.arg.(0)
+  | Iraise k ->
+      fprintf ppf "%s %a" (Lambda.raise_kind k) reg i.arg.(0)
   end;
   if not (Debuginfo.is_none i.dbg) then
     fprintf ppf "%s" (Debuginfo.to_string i.dbg);

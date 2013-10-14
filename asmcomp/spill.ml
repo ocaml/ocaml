@@ -238,7 +238,7 @@ let rec reload i before =
         reload i.next (Reg.Set.union after_body after_handler) in
       (instr_cons (Itrywith(new_body, new_handler)) i.arg i.res new_next,
        finally)
-  | Iraise ->
+  | Iraise _ ->
       (add_reloads (Reg.inter_set_array before i.arg) i, Reg.Set.empty)
 
 (* Second pass: add spill instructions based on what we've decided to reload.
@@ -379,7 +379,7 @@ let rec spill i finally =
       spill_at_raise := saved_spill_at_raise;
       (instr_cons (Itrywith(new_body, new_handler)) i.arg i.res new_next,
        before_body)
-  | Iraise ->
+  | Iraise _ ->
       (i, !spill_at_raise)
 
 (* Entry point *)

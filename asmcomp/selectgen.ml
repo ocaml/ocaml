@@ -153,7 +153,7 @@ let join_array rs =
 let debuginfo_op = function
   | Capply(_, dbg) -> dbg
   | Cextcall(_, _, _, dbg) -> dbg
-  | Craise dbg -> dbg
+  | Craise (_, dbg) -> dbg
   | Ccheckbound dbg -> dbg
   | _ -> Debuginfo.none
 
@@ -441,13 +441,13 @@ method emit_expr env exp =
       | Some(simple_list, ext_env) ->
           Some(self#emit_tuple ext_env simple_list)
       end
-  | Cop(Craise dbg, [arg]) ->
+  | Cop(Craise (k, dbg), [arg]) ->
       begin match self#emit_expr env arg with
         None -> None
       | Some r1 ->
           let rd = [|Proc.loc_exn_bucket|] in
           self#insert (Iop Imove) r1 rd;
-          self#insert_debug Iraise dbg rd [||];
+          self#insert_debug (Iraise k) dbg rd [||];
           None
       end
   | Cop(Ccmpf comp, args) ->

@@ -532,6 +532,8 @@ CFI_STARTPROC
         popq    %r14
         ret
 LBL(110):
+        STORE_VAR($0, caml_backtrace_pos)
+LBL(111):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
 #ifdef WITH_FRAME_POINTERS
@@ -553,18 +555,27 @@ LBL(110):
         ret
 CFI_ENDPROC
 
+FUNCTION(G(caml_reraise_exn))
+CFI_STARTPROC
+        TESTL_VAR($1, caml_backtrace_active)
+        jne     LBL(111)
+        movq    %r14, %rsp
+        popq    %r14
+        ret
+CFI_ENDPROC
+
 /* Raise an exception from C */
 
 FUNCTION(G(caml_raise_exception))
 CFI_STARTPROC
         TESTL_VAR($1, caml_backtrace_active)
-        jne     LBL(111)
+        jne     LBL(112)
         movq    C_ARG_1, %rax
         LOAD_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
         popq    %r14                   /* Recover previous exception handler */
         LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
-LBL(111):
+LBL(112):
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION          ;
 #endif

@@ -81,7 +81,9 @@ let operation = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
-  | Craise d -> "raise" ^ Debuginfo.to_string d
+  | Craise (Lambda.Raise_regular, d) -> "raise" ^ Debuginfo.to_string d
+  | Craise (Lambda.Raise_reraise, d) -> "reraise" ^ Debuginfo.to_string d
+  | Craise (Lambda.Raise_notrace, d) -> "raise_notrace" ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
 
 let rec expr ppf = function

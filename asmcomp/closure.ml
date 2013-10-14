@@ -96,7 +96,7 @@ let prim_size prim args =
   | Psetfloatfield f -> 1
   | Pduprecord _ -> 10 + List.length args
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
-  | Praise -> 4
+  | Praise _ -> 4
   | Pstringlength -> 5
   | Pstringrefs | Pstringsets -> 6
   | Pmakearray kind -> 5 + List.length args
@@ -180,7 +180,7 @@ let rec is_pure_clambda = function
     Uvar v -> true
   | Uconst _ -> true
   | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
+           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
   | Uprim(p, args, _) -> List.for_all is_pure_clambda args
   | _ -> false
@@ -403,7 +403,7 @@ let rec is_pure = function
     Lvar v -> true
   | Lconst cst -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
+           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
   | Lprim(p, args) -> List.for_all is_pure args
   | Levent(lam, ev) -> is_pure lam
@@ -473,8 +473,8 @@ let rec add_debug_info ev u =
                          args2, Debuginfo.from_call ev)
       | Ugeneric_apply(fn, args, dinfo) ->
           Ugeneric_apply(fn, args, Debuginfo.from_call ev)
-      | Uprim(Praise, args, dinfo) ->
-          Uprim(Praise, args, Debuginfo.from_call ev)
+      | Uprim(Praise k, args, dinfo) ->
+          Uprim(Praise k, args, Debuginfo.from_call ev)
       | Uprim(p, args, dinfo) ->
           Uprim(p, args, Debuginfo.from_call ev)
       | Usend(kind, u1, u2, args, dinfo) ->
@@ -647,9 +647,9 @@ let rec close fenv cenv = function
       (!global_approx).(n) <- approx;
       (Uprim(Psetfield(n, false), [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
-  | Lprim(Praise, [Levent(arg, ev)]) ->
+  | Lprim(Praise k, [Levent(arg, ev)]) ->
       let (ulam, approx) = close fenv cenv arg in
-      (Uprim(Praise, [ulam], Debuginfo.from_raise ev),
+      (Uprim(Praise k, [ulam], Debuginfo.from_raise ev),
        Value_unknown)
   | Lprim(p, args) ->
       simplif_prim p (close_list_approx fenv cenv args) Debuginfo.none

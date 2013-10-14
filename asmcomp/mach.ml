@@ -71,7 +71,7 @@ and instruction_desc =
   | Icatch of int * instruction * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
-  | Iraise
+  | Iraise of Lambda.raise_kind
 
 type fundecl =
   { fun_name: string;
@@ -125,6 +125,6 @@ let rec instr_iter f i =
       | Iexit _ -> ()
       | Itrywith(body, handler) ->
           instr_iter f body; instr_iter f handler; instr_iter f i.next
-      | Iraise -> ()
+      | Iraise _ -> ()
       | _ ->
           instr_iter f i.next
