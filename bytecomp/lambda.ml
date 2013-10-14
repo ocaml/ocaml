@@ -41,7 +41,7 @@ type primitive =
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
-  | Praise
+  | Praise of raise_kind
   (* Boolean operations *)
   | Psequand | Psequor | Pnot
   (* Integer operations *)
@@ -136,6 +136,11 @@ and bigarray_layout =
     Pbigarray_unknown_layout
   | Pbigarray_c_layout
   | Pbigarray_fortran_layout
+
+and raise_kind =
+  | Raise_regular
+  | Raise_reraise
+  | Raise_nostack
 
 type structured_constant =
     Const_base of constant

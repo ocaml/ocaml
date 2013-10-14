@@ -820,10 +820,23 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp += 4;
       Next;
 
+    Instruct(RAISE_NOSTACK):
+      /*printf("raise_nostack\n"); fflush(stdout);*/
+      if (caml_trapsp >= caml_trap_barrier) caml_debugger(TRAP_BARRIER);
+      goto raise_nostack;
+
+    Instruct(RERAISE):
+      /*printf("reraise\n"); fflush(stdout);*/
+      if (caml_trapsp >= caml_trap_barrier) caml_debugger(TRAP_BARRIER);
+      if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp, 1);
+      goto raise_nostack;
+
     Instruct(RAISE):
+      /*printf("raise\n"); fflush(stdout);*/
     raise_exception:
       if (caml_trapsp >= caml_trap_barrier) caml_debugger(TRAP_BARRIER);
-      if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp);
+      if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
+    raise_nostack:
       if ((char *) caml_trapsp
           >= (char *) caml_stack_high - initial_sp_offset) {
         caml_external_raise = initial_external_raise;

@@ -199,6 +199,10 @@ coldstart:
 	if test -d stdlib/caml; then :; else \
 	  ln -s ../byterun stdlib/caml; fi
 
+bootlib:
+	cd stdlib; $(MAKE) all
+	cd stdlib; cp $(LIBFILES) ../boot
+
 # Build the core system: the minimum needed to make depend and bootstrap
 core:
 	$(MAKE) coldstart
@@ -782,7 +786,7 @@ camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
 
 # Ocamlbuild
 #ifeq ($(OCAMLBUILD_NOBOOT),"yes")
-#ocamlbuild.byte: ocamlc
+#ocamlbuild.byte: ocamlc	
 #	$(MAKE) -C ocamlbuild -f Makefile.noboot
 #else
 ocamlbuild.byte: ocamlc ocamlbuild-mixed-boot

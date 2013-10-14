@@ -146,7 +146,9 @@ let primitives_table = create_hashtable 57 [
   "%setfield0", Psetfield(0, true);
   "%makeblock", Pmakeblock(0, Immutable);
   "%makemutable", Pmakeblock(0, Mutable);
-  "%raise", Praise;
+  "%raise", Praise Raise_regular;
+  "%reraise", Praise Raise_reraise;
+  "%raise_nostack", Praise Raise_nostack;
   "%sequand", Psequand;
   "%sequor", Psequor;
   "%boolnot", Pnot;
@@ -585,7 +587,7 @@ let primitive_is_ccall = function
 let assert_failed exp =
   let (fname, line, char) =
     Location.get_pos_info exp.exp_loc.Location.loc_start in
-  Lprim(Praise, [event_after exp
+  Lprim(Praise Raise_regular, [event_after exp
     (Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
            Lconst(Const_block(0,
@@ -679,8 +681,8 @@ and transl_exp0 e =
             (Warnings.Deprecated "operator (or); you should use (||) instead");
         let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
-          (Praise, [arg1]) ->
-            wrap0 (Lprim(Praise, [event_after arg1 (List.hd argl)]))
+          (Praise k, [arg1]) ->
+            wrap0 (Lprim(Praise k, [event_after arg1 (List.hd argl)]))
         | (_, _) ->
             begin match (prim, argl) with
             | (Plazyforce, [a]) ->

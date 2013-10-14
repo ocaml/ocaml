@@ -1678,7 +1678,7 @@ let rec do_tests_nofail tst arg = function
 
 let make_test_sequence fail tst lt_tst arg const_lambda_list =
   let rec make_test_sequence const_lambda_list =
-    if List.length const_lambda_list >= 4 && lt_tst <> Praise then
+    if List.length const_lambda_list >= 4 && lt_tst <> Pignore then
       split_sequence const_lambda_list
     else match fail with
     | None -> do_tests_nofail tst arg const_lambda_list
@@ -2098,7 +2098,7 @@ let combine_constant arg cst partial ctx def
           fail arg 0 255 int_lambda_list
     | Const_string _ ->
         make_test_sequence
-          fail prim_string_notequal Praise arg const_lambda_list
+          fail prim_string_notequal Pignore arg const_lambda_list
     | Const_float _ ->
         make_test_sequence
           fail
@@ -2728,7 +2728,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
 let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
-  Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
+  Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_match_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
@@ -2740,7 +2740,8 @@ let for_function loc repr param pat_act_list partial =
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
-  compile_matching Location.none None (fun () -> Lprim(Praise, [param]))
+  compile_matching Location.none None
+    (fun () -> Lprim(Praise Raise_reraise, [param]))
     param pat_act_list Partial
 
 let for_let loc param pat body =

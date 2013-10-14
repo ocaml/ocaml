@@ -67,7 +67,9 @@ let instruction ppf = function
   | Kboolnot -> fprintf ppf "\tboolnot"
   | Kpushtrap lbl -> fprintf ppf "\tpushtrap L%i" lbl
   | Kpoptrap -> fprintf ppf "\tpoptrap"
-  | Kraise -> fprintf ppf "\traise"
+  | Kraise Raise_regular-> fprintf ppf "\traise"
+  | Kraise Raise_reraise-> fprintf ppf "\treraise"
+  | Kraise Raise_nostack-> fprintf ppf "\traise_nostack"
   | Kcheck_signals -> fprintf ppf "\tcheck_signals"
   | Kccall(s, n) ->
       fprintf ppf "\tccall %s, %i" s n
