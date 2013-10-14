@@ -62,11 +62,11 @@ Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
              ^^^^^^^^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type s t
-#                         Characters 224-237:
-          | `A, BoolLit _ -> ()
-            ^^^^^^^^^^^^^
-Error: This pattern matches values of type ([? `A ] as 'a) * bool t
-       but a pattern was expected which matches values of type 'a * int t
+#                         module Polymorphic_variants :
+  sig
+    type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
+    val eval : [ `A ] * 's t -> unit
+  end
 #                                 module Propagation :
   sig
     type _ t = IntLit : int -> int t | BoolLit : bool -> bool t

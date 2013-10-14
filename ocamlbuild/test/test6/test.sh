@@ -15,7 +15,7 @@ cd `dirname $0`
 set -x
 rm -rf _build
 CMDOPTS="" # -- command args
-BUILD="../../_build/ocamlbuild.native -no-skip main.byte -classic-display $@"
+BUILD="$OCB -no-skip main.byte -classic-display $@"
 BUILD1="$BUILD $CMDOPTS"
 BUILD2="$BUILD -verbose 0 -nothing-should-be-rebuilt $CMDOPTS"
 cp b.mli.v1 b.mli

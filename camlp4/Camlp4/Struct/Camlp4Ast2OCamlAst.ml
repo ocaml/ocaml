@@ -362,8 +362,11 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     fun
     [ <:ctyp< $t1$ == $t2$ >> ->
         type_decl tl cl loc (Some (ctyp t1)) pflag t2
-    | <:ctyp< private $t$ >> ->
-        type_decl tl cl loc m True t
+    | <:ctyp@_loc< private $t$ >> ->
+        if pflag then
+          error _loc "multiple private keyword used, use only one instead"
+        else
+          type_decl tl cl loc m True t
     | <:ctyp< { $t$ } >> ->
         mktype loc tl cl
           (Ptype_record (List.map mktrecord (list_of_ctyp t []))) (mkprivate' pflag) m

@@ -101,7 +101,7 @@ let env_path = lazy begin
   let paths =
     try
       parse_path (Lexing.from_string path_var)
-    with Lexers.Error msg -> raise (Lexers.Error ("$PATH: " ^ msg))
+    with Lexers.Error (msg,pos) -> raise (Lexers.Error ("$PATH: " ^ msg, pos))
   in
   let norm_current_dir_name path =
     if path = "" then Filename.current_dir_name else path

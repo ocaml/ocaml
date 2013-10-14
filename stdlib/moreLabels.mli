@@ -159,6 +159,7 @@ module Set : sig
       val max_elt : t -> elt
       val choose : t -> elt
       val split: elt -> t -> t * bool * t
+      val find: elt -> t -> elt
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
 end

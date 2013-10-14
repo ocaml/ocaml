@@ -682,6 +682,16 @@ let emit_instr i =
                      | Imulsub -> "mls"
                      | _ -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`; 1
+    | Lop(Ispecific(Ibswap size)) ->
+        begin match size with
+          16 ->
+            `	rev16	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
+            `	movt	{emit_reg i.res.(0)}, #0\n`; 2
+        | 32 ->
+            `	rev	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`; 1
+        | _ ->
+            assert false
+        end
     | Lreloadretaddr ->
         let n = frame_size() in
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1

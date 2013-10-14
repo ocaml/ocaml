@@ -727,9 +727,13 @@ camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
 	./build/camlp4-native-only.sh
 
 # Ocamlbuild
-
+ifeq ($(OCAMLBUILD_NOBOOT),"yes")
+ocamlbuild.byte: ocamlc
+	$(MAKE) -C ocamlbuild -f Makefile.noboot
+else
 ocamlbuild.byte: ocamlc ocamlbuild-mixed-boot
 	./build/ocamlbuild-byte-only.sh
+endif
 
 ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot
 	./build/ocamlbuild-native-only.sh
@@ -795,6 +799,7 @@ alldepend:: depend
 
 distclean:
 	./build/distclean.sh
+	rm -f ocaml ocamlcomp.sh testsuite/_log
 
 .PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart

@@ -15,6 +15,7 @@ BASEDIR=../..
 MAIN_MODULE=tscanf
 ADD_COMPFLAGS=-I $(BASEDIR)/lib
 ADD_MODULES=testing
+TEST_TEMP_FILES=tscanf_data
 
 include $(BASEDIR)/makefiles/Makefile.one
 include $(BASEDIR)/makefiles/Makefile.common

@@ -409,6 +409,23 @@ let emit_floatspecial = function
   | "tan"   -> `	fptan; fstp %st(0)\n`
   | _ -> assert false
 
+(* Floating-point constants *)
+
+let float_constants = ref ([] : (string * int) list)
+
+let add_float_constant cst =
+  try
+    List.assoc cst !float_constants
+  with
+    Not_found ->
+      let lbl = new_label() in
+      float_constants := (cst, lbl) :: !float_constants;
+      lbl
+
+let emit_float_constant (cst, lbl) =
+  `{emit_label lbl}:`;
+  emit_float64_split_directive ".long" cst
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -417,8 +434,6 @@ let function_name = ref ""
 let tailrec_entry_point = ref 0
 (* Label of trap for out-of-range accesses *)
 let range_check_trap = ref 0
-(* Record float literals to be emitted later *)
-let float_constants = ref ([] : (int * string) list)
 (* Record references to external C functions (for MacOSX) *)
 let external_symbols_direct = ref StringSet.empty
 let external_symbols_indirect = ref StringSet.empty
@@ -460,8 +475,7 @@ let emit_instr fallthrough i =
         | 0xBFF0_0000_0000_0000L ->       (* -1.0 *)
           `	fld1\n	fchs\n`
         | _ ->
-          let lbl = new_label() in
-          float_constants := (lbl, s) :: !float_constants;
+          let lbl = add_float_constant s in
           `	fldl	{emit_label lbl}\n`
         end
     | Lop(Iconst_symbol s) ->
@@ -836,13 +850,6 @@ let rec emit_all fallthrough i =
         (Linearize.has_fallthrough  i.desc)
         i.next
 
-(* Emission of the floating-point constants *)
-
-let emit_float_constant (lbl, cst) =
-  `	.data\n`;
-  `{emit_label lbl}:`;
-  emit_float64_split_directive ".long" cst
-
 (* Emission of external symbol references (for MacOSX) *)
 
 let emit_external_symbol_direct s =
@@ -908,7 +915,6 @@ let fundecl fundecl =
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := 0;
-  float_constants := [];
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
@@ -940,8 +946,7 @@ let fundecl fundecl =
     "linux_elf" | "bsd_elf" | "gnu" ->
       `	.type	{emit_symbol fundecl.fun_name},@function\n`;
       `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
-  | _ -> () end;
-  List.iter emit_float_constant !float_constants
+  | _ -> () end
 
 
 (* Emission of data *)
@@ -986,6 +991,7 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();                   (* PR#5603 *)
+  float_constants := [];
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
@@ -997,6 +1003,10 @@ let begin_assembly() =
   if macosx then `	nop\n` (* PR#4690 *)
 
 let end_assembly() =
+  if !float_constants <> [] then begin
+    `	.data\n`;
+    List.iter emit_float_constant !float_constants
+  end;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   if macosx then `	nop\n`; (* suppress "ld warning: atom sorting error" *)

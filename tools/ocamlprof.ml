@@ -13,10 +13,7 @@
 
 open Printf
 
-open Clflags
-open Config
 open Location
-open Misc
 open Parsetree
 
 (* User programs must not use identifiers that start with these prefixes. *)
@@ -50,7 +47,7 @@ let copy_chars_unix nchars =
   done
 
 let copy_chars_win32 nchars =
-  for i = 1 to nchars do
+  for _i = 1 to nchars do
     let c = input_char !inchan in
     if c <> '\r' then output_char !outchan c
   done

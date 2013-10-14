@@ -143,6 +143,12 @@ module type S =
           strictly greater than [x];
           [present] is [false] if [s] contains no element equal to [x],
           or [true] if [s] contains an element equal to [x]. *)
+
+    val find: elt -> t -> elt
+    (** [find x s] returns the element of [s] equal to [x] (according
+        to [Ord.compare]), or raise [Not_found] if no such element
+        exists.
+        @since 4.01.0 *)
   end
 (** Output signature of the functor {!Set.Make}. *)
 

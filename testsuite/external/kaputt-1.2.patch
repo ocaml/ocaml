@@ -1,0 +1,11 @@
+--- kaputt-1.2/src/syntax/kaputt_pp.ml.orig	2012-12-19 16:46:36.000000000 +0100
++++ kaputt-1.2/src/syntax/kaputt_pp.ml	2012-12-19 16:46:59.000000000 +0100
+@@ -54,6 +54,8 @@
+       let temp_name, temp_chan = Filename.open_temp_file "kaputt" ".ml" in
+       let source_chan = open_in args.(len - 3) in
+       let test_chan = open_in test_file in
++      let directive = Printf.sprintf "# 1 %S\n" args.(len - 3) in
++      output_string temp_chan directive;
+       copy source_chan temp_chan;
+       let directive = Printf.sprintf "# 1 %S\n" test_file in
+       output_string temp_chan directive;

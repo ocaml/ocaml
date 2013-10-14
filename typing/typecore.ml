@@ -327,7 +327,7 @@ let finalize_variant pat =
         | _ -> assert false
       in
       begin match row_field tag row with
-      | Rabsent -> assert false
+      | Rabsent -> () (* assert false *)
       | Reither (true, [], _, e) when not row.row_closed ->
           set_row_field e (Rpresent None)
       | Reither (false, ty::tl, _, e) when not row.row_closed ->
@@ -550,7 +550,7 @@ module NameChoice(Name : sig
   val get_type: t -> type_expr
   val get_descrs: Env.type_descriptions -> t list
   val fold: (t -> 'a -> 'a) -> Longident.t option -> Env.t -> 'a -> 'a
-  val unbound_name_error: Env.t -> Longident.t loc -> unit
+  val unbound_name_error: Env.t -> Longident.t loc -> 'a
 end) = struct
   open Name
 
@@ -600,7 +600,7 @@ end) = struct
     match opath with
       None ->
 	begin match lbls with
-          [] -> unbound_name_error env lid; assert false
+          [] -> unbound_name_error env lid
 	| (lbl, use) :: rest ->
 	    use ();
 	    if is_ambiguous env lbl rest then
@@ -639,6 +639,7 @@ end) = struct
           if not pr then warn_pr ();
           lbl
 	with Not_found ->
+          if lbls = [] then unbound_name_error env lid else
           let tp = (tpath0, expand_path env tpath) in
 	  let tpl = 
             List.map 
@@ -1662,6 +1663,28 @@ let create_package_type loc env (p, l) =
     sexp unpacks
 
 (* Helpers for type_cases *)
+
+let contains_variant_either ty =
+  let rec loop ty = 
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      mark_type_node ty;
+      match ty.desc with
+        Tvariant row ->
+          let row = row_repr row in
+          if not row.row_fixed then
+            List.iter
+              (fun (_,f) ->
+                match row_field_repr f with Reither _ -> raise Exit | _ -> ())
+              row.row_fields;
+          iter_row loop row
+      | _ ->
+          iter_type_expr loop ty
+    end
+  in
+  try loop ty; unmark_type ty; false
+  with Exit -> unmark_type ty; true
+
 let iter_ppat f p =
   match p.ppat_desc with
   | Ppat_any | Ppat_var _ | Ppat_constant _
@@ -1694,6 +1717,24 @@ let contains_gadt env p =
     | _ -> iter_ppat loop p
   in
   try loop p; false with Exit -> true
+
+let check_absent_variant env =
+  iter_pattern
+    (function {pat_desc = Tpat_variant (s, arg, row)} as pat ->
+      let row = row_repr !row in
+      if List.exists (fun (s',fi) -> s = s' && row_field_repr fi <> Rabsent)
+          row.row_fields
+      then () else
+      let ty_arg =
+        match arg with None -> [] | Some p -> [correct_levels p.pat_type] in
+      let row' = {row_fields = [s, Reither(arg=None,ty_arg,true,ref None)];
+                  row_more = newvar (); row_bound = ();
+                  row_closed = false; row_fixed = false; row_name = None} in
+      (* Should fail *)
+      unify_pat env {pat with pat_type = newty (Tvariant row')}
+                    (correct_levels pat.pat_type)
+      | _ -> ())
+      
 
 let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
 
@@ -2903,7 +2944,9 @@ and type_application env funct sargs =
                 (l', sarg0, sargs @ sargs1, sargs2)
             in
             sargs, more_sargs,
-            if optional = Required || is_optional l' then
+            if optional = Required && is_optional l' then
+              raise(Error(sarg0.pexp_loc, Apply_wrong_label(l', ty_fun')))
+            else if optional = Required || is_optional l' then
               Some (fun () -> type_argument env sarg0 ty ty0)
             else begin
               may_warn sarg0.pexp_loc
@@ -3042,16 +3085,20 @@ and type_statement env sexp =
 
 and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* ty_arg is _fully_ generalized *)
-  let dont_propagate, has_gadts =
-    let patterns = List.map fst caselist in
-    List.exists contains_polymorphic_variant patterns,
-    List.exists (contains_gadt env) patterns in
+  let patterns = List.map fst caselist in
+  let erase_either =
+    List.exists contains_polymorphic_variant patterns
+    && contains_variant_either ty_arg
+  and has_gadts = List.exists (contains_gadt env) patterns in
 (*  prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
-  let ty_arg, ty_res, env =
+  let ty_arg =
+    if (has_gadts || erase_either) && not !Clflags.principal
+    then correct_levels ty_arg else ty_arg
+  and ty_res, env =
     if has_gadts && not !Clflags.principal then
-      correct_levels ty_arg, correct_levels ty_res,
-      duplicate_ident_types loc caselist env
-    else ty_arg, ty_res, env in
+      correct_levels ty_res, duplicate_ident_types loc caselist env
+    else ty_res, env
+  in
   let lev, env =
     if has_gadts then begin
       (* raise level for existentials *)
@@ -3077,10 +3124,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) =
           let partial =
-            if !Clflags.principal then Some false else None in
-          let ty_arg =
-            if dont_propagate then newvar () else instance ?partial env ty_arg
-          in type_pattern ~lev env spat scope ty_arg
+            if !Clflags.principal || erase_either
+            then Some false else None in
+          let ty_arg = instance ?partial env ty_arg in
+          type_pattern ~lev env spat scope ty_arg
         in
         pattern_force := force @ !pattern_force;
         let pat =
@@ -3139,7 +3186,11 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     else
       Partial
   in
-  add_delayed_check (fun () -> Parmatch.check_unused env cases);
+  add_delayed_check
+    (fun () ->
+      List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
+        pat_env_list;
+      Parmatch.check_unused env cases);
   if has_gadts then begin
     end_def ();
     (* Ensure that existential types do not escape *)

@@ -145,6 +145,12 @@ let rec prepare_link tag cmx extensions build =
       (if Pathname.exists (ml-.-"depends") then path_dependencies_of ml else [])
       (if Pathname.exists (mli-.-"depends") then path_dependencies_of mli else [])
   in
+  let modules =
+    if (modules = []) && (Pathname.exists (ml^"pack")) then
+      List.map (fun s -> (`mandatory, s)) (string_list_of_file (ml^"pack"))
+    else
+      modules
+  in
   if modules <> [] && not (Hashtbl.mem cache_prepare_link key) then
     let () = Hashtbl.add cache_prepare_link key true in
     let modules' = List.map (fun (_, x) -> expand_module include_dirs x extensions) modules in

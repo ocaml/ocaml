@@ -110,7 +110,7 @@ let rec query name =
           (* TODO: Improve to differenciate whether ocamlfind cannot be
              run or is not installed *)
           error Cannot_run_ocamlfind
-      | Lexers.Error s ->
+      | Lexers.Error (s,_) ->
           error (Cannot_parse_query (name, s))
 
 let split_nl s =

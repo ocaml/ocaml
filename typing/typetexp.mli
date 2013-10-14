@@ -101,8 +101,8 @@ val find_modtype:
 val find_class_type:
     Env.t -> Location.t -> Longident.t -> Path.t * Types.class_type_declaration
 
-val unbound_constructor_error: Env.t -> Longident.t Location.loc -> unit
-val unbound_label_error: Env.t -> Longident.t Location.loc -> unit
+val unbound_constructor_error: Env.t -> Longident.t Location.loc -> 'a
+val unbound_label_error: Env.t -> Longident.t Location.loc -> 'a
 
 type cd
 val spellcheck_simple:

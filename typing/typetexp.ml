@@ -61,13 +61,13 @@ let instance_list = Ctype.instance_list Env.empty
 
 (* Narrowing unbound identifier errors. *)
 
-let rec narrow_unbound_lid_error env loc lid make_error =
+let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
+  fun env loc lid make_error ->
   let check_module mlid =
     try ignore (Env.lookup_module mlid env)
     with Not_found ->
       narrow_unbound_lid_error env loc mlid
-        (fun env lid -> Unbound_module (env, lid));
-      assert false
+        (fun env lid -> Unbound_module (env, lid))
   in
   begin match lid with
   | Longident.Lident _ -> ()
@@ -86,9 +86,7 @@ let find_component lookup make_error env loc lid =
         lookup (Longident.Lident s) Env.initial
     | _ -> lookup lid env
   with Not_found ->
-    (narrow_unbound_lid_error env loc lid make_error
-     : unit (* to avoid a warning *));
-    assert false
+    narrow_unbound_lid_error env loc lid make_error
 
 let find_type =
   find_component Env.lookup_type

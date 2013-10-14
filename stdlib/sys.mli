@@ -80,15 +80,15 @@ val os_type : string
 
 val unix : bool
 (** True if [Sys.os_type = "Unix"].
-    @since patch included *)
+    @since 4.01.0 *)
 
 val win32 : bool
 (** True if [Sys.os_type = "Win32"].
-    @since patch included *)
+    @since 4.01.0 *)
 
 val cygwin : bool
 (** True if [Sys.os_type = "Cygwin"].
-    @since patch included *)
+    @since 4.01.0 *)
 
 val word_size : int
 (** Size of one word on the machine currently executing the OCaml
@@ -113,7 +113,7 @@ val max_array_length : int
 type signal_behavior =
     Signal_default
   | Signal_ignore
-  | Signal_handle of (int -> unit)
+  | Signal_handle of (int -> unit)   (** *)
 (** What to do when receiving a signal:
    - [Signal_default]: take the default behavior
      (usually: abort the program)

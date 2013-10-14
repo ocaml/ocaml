@@ -288,25 +288,25 @@ let emit_float_test cmp neg arg lbl =
       `	jp	{emit_label lbl}\n`;     (* branch taken if unordered *)
       `	jne	{emit_label lbl}\n`      (* branch taken if x<y or x>y *)
   | (Clt, _) ->
-      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
       if not neg then
       `	ja	{emit_label lbl}\n`     (* branch taken if y>x i.e. x<y *)
       else
       `	jbe	{emit_label lbl}\n` (* taken if unordered or y<=x i.e. !(x<y) *)
   | (Cle, _) ->
-      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
       if not neg then
       `	jae	{emit_label lbl}\n`     (* branch taken if y>=x i.e. x<=y *)
       else
       `	jb	{emit_label lbl}\n` (* taken if unordered or y<x i.e. !(x<=y) *)
   | (Cgt, _) ->
-      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
+      `	comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
       if not neg then
       `	ja	{emit_label lbl}\n`     (* branch taken if x>y *)
       else
       `	jbe	{emit_label lbl}\n` (* taken if unordered or x<=y i.e. !(x>y) *)
   | (Cge, _) ->
-      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
       if not neg then
       `	jae	{emit_label lbl}\n`     (* branch taken if x>=y *)
       else
@@ -326,14 +326,29 @@ let output_epilogue f =
   else
     f ()
 
+(* Floating-point constants *)
+
+let float_constants = ref ([] : (string * int) list)
+
+let add_float_constant cst =
+  try
+    List.assoc cst !float_constants
+  with
+    Not_found ->
+      let lbl = new_label() in
+      float_constants := (cst, lbl) :: !float_constants;
+      lbl
+
+let emit_float_constant (cst, lbl) =
+  `{emit_label lbl}:`;
+  emit_float64_directive ".quad" cst
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
-
-let float_constants = ref ([] : (int * string) list)
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =
@@ -365,8 +380,7 @@ let emit_instr fallthrough i =
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           `	xorpd	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
         | _ ->
-          let lbl = new_label() in
-          float_constants := (lbl, s) :: !float_constants;
+          let lbl = add_float_constant s in
           `	movsd	{emit_label lbl}(%rip), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_symbol s) ->
@@ -671,12 +685,6 @@ let rec emit_all fallthrough i =
       emit_instr fallthrough i;
       emit_all (Linearize.has_fallthrough i.desc) i.next
 
-(* Emission of the floating-point constants *)
-
-let emit_float_constant (lbl, cst) =
-  `{emit_label lbl}:`;
-  emit_float64_directive ".quad" cst
-
 (* Emission of the profiling prelude *)
 
 let emit_profile () =
@@ -701,7 +709,6 @@ let fundecl fundecl =
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := 0;
-  float_constants := [];
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
@@ -733,15 +740,6 @@ let fundecl fundecl =
       `	.type	{emit_symbol fundecl.fun_name},@function\n`;
       `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
     | _ -> ()
-  end;
-  if !float_constants <> [] then begin
-    if macosx then
-      `	.literal8\n`
-    else if mingw64 then
-      `	.section .rdata,\"dr\"\n`
-    else
-      `	.section .rodata.cst8,\"a\",@progbits\n`;
-    List.iter emit_float_constant !float_constants
   end
 
 (* Emission of data *)
@@ -784,6 +782,7 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();                   (* PR#5603 *)
+  float_constants := [];
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
     if macosx then
@@ -808,6 +807,15 @@ let begin_assembly() =
   if macosx then `	nop\n` (* PR#4690 *)
 
 let end_assembly() =
+  if !float_constants <> [] then begin
+    if macosx then
+      `	.literal8\n`
+    else if mingw64 then
+      `	.section .rdata,\"dr\"\n`
+    else
+      `	.section .rodata.cst8,\"a\",@progbits\n`;
+    List.iter emit_float_constant !float_constants
+  end;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   if macosx then `	nop\n`; (* suppress "ld warning: atom sorting error" *)

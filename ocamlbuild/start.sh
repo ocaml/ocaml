@@ -28,7 +28,6 @@ let o = "o";;
 let so = "so";;
 let exe = "";;
 EOF
-ocamlc -c std_signatures.mli
 ocamlc -c signatures.mli
 ocamlc -c tags.mli
 ocamlc -c ocamlbuild_Myocamlbuild_config.ml

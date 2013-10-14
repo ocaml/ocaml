@@ -62,7 +62,7 @@ module Set = struct
 
   module type S = sig
     include Set.S
-    val find : (elt -> bool) -> t -> elt
+    val find_elt : (elt -> bool) -> t -> elt
     val map : (elt -> elt) -> t -> t
     val of_list : elt list -> t
     val print : formatter -> t -> unit
@@ -71,7 +71,7 @@ module Set = struct
   module Make (M : OrderedTypePrintable) : S with type elt = M.t = struct
     include Set.Make(M)
     exception Found of elt
-    let find p set =
+    let find_elt p set =
       try
         iter begin fun elt ->
           if p elt then raise (Found elt)

@@ -1,0 +1,226 @@
+#(***********************************************************************)
+#(*                                                                     *)
+#(*                             ocamlbuild                              *)
+#(*                                                                     *)
+#(*                           Wojciech Meyer                            *)
+#(*                                                                     *)
+#(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
+#(*  en Automatique.  All rights reserved.  This file is distributed    *)
+#(*  under the terms of the Q Public License version 1.0.               *)
+#(*                                                                     *)
+#(***********************************************************************)
+
+# This file removes the dependency on ocamlbuild itself, thus removes need
+# for bootstrap. The base for this Makefile was ocamldoc Makefile.
+
+include ../config/Makefile
+
+# Various commands and dir
+##########################
+CAMLRUN  = ../boot/ocamlrun
+OCAMLC   = ../ocamlcomp.sh
+OCAMLOPT = ../ocamlcompopt.sh
+OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
+OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
+OCAMLLIB = $(LIBDIR)
+OCAMLBIN = $(BINDIR)
+
+# For installation
+##############
+MKDIR=mkdir -p
+CP=cp -f
+OCAMLBUILD=ocamlbuild
+OCAMLBUILD_OPT=$(OCAMLBUILD).opt
+OCAMLBUILD_LIBCMA=ocamlbuildlib.cma
+OCAMLBUILD_LIBCMI=ocamlbuildlib.cmi
+OCAMLBUILD_LIBCMXA=ocamlbuild.cmxa
+OCAMLBUILD_LIBA=ocamlbuild.$(A)
+INSTALL_LIBDIR=$(OCAMLLIB)/ocamlbuild
+INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
+INSTALL_BINDIR=$(OCAMLBIN)
+INSTALL_MANODIR=$(MANDIR)/man3
+
+INSTALL_MLIS=
+INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
+
+# Compilation
+#############
+OCAMLSRCDIR=..
+INCLUDES_DEP=
+
+INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
+	-I $(OCAMLSRCDIR)/otherlibs/str \
+	-I $(OCAMLSRCDIR)/otherlibs/dynlink \
+	-I $(OCAMLSRCDIR)/otherlibs/unix
+
+INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
+
+COMPFLAGS=$(INCLUDES) -warn-error A
+LINKFLAGS=$(INCLUDES)
+
+CMOFILES_PACK= 			            \
+	 ocamlbuild_Myocamlbuild_config.cmo \
+	 discard_printf.cmo 		    \
+         my_std.cmo 			    \
+         bool.cmo                           \
+         glob_ast.cmo                       \
+         glob_lexer.cmo                     \
+         glob.cmo                           \
+         lexers.cmo                         \
+         my_unix.cmo                        \
+         tags.cmo                           \
+         display.cmo                        \
+         log.cmo                            \
+         param_tags.cmo                     \
+         shell.cmo                          \
+         slurp.cmo                          \
+         ocamlbuild_where.cmo               \
+         command.cmo                        \
+         options.cmo  			    \
+         pathname.cmo                       \
+         digest_cache.cmo                   \
+         resource.cmo 			    \
+         rule.cmo 			    \
+         flags.cmo 			    \
+         solver.cmo 			    \
+         report.cmo 			    \
+         ocaml_arch.cmo 		    \
+         hygiene.cmo 			    \
+         configuration.cmo 		    \
+         tools.cmo 			    \
+         fda.cmo 			    \
+         plugin.cmo 			    \
+         ocaml_utils.cmo 		    \
+         ocaml_dependencies.cmo 	    \
+         ocaml_compiler.cmo 		    \
+         ocaml_tools.cmo 		    \
+         hooks.cmo 			    \
+         findlib.cmo 			    \
+         ocaml_specific.cmo 		    \
+         exit_codes.cmo 		    \
+         main.cmo
+
+BASE_CMOFILES= ocamlbuild_executor.cmo \
+	       ocamlbuild_unix_plugin.cmo
+
+INSTALL_LIBFILES = $(BASE_CMOFILES)           \
+		   $(BASE_CMOFILES:.cmo=.cmi) \
+		   $(OCAMLBUILD_LIBCMA)       \
+	           $(OCAMLBUILD).cmo          \
+		   $(OCAMLBUILD)_pack.cmi
+
+INSTALL_BINFILES = $(OCAMLBUILD)
+
+CMXFILES= $(CMOFILES:.cmo=.cmx)
+
+CMXFILES_PACK= $(CMOFILES_PACK:.cmo=.cmx)
+CMIFILES_PACK= $(CMOFILES_PACK:.cmo=.cmi) signatures.cmi
+
+EXECMOFILES_PACK= $(CMOFILES_PACK)
+EXECMXFILES_PACK= $(EXECMOFILES_PACK:.cmo=.cmx)
+EXECMIFILES_PACK= $(EXECMOFILES_PACK:.cmo=.cmi)
+
+LIBCMOFILES_PACK= $(CMOFILES_PACK)
+LIBCMXFILES_PACK= $(LIBCMOFILES_PACK:.cmo=.cmx)
+LIBCMIFILES_PACK= $(LIBCMOFILES_PACK:.cmo=.cmi)
+
+# Les cmo et cmx de la distrib OCAML
+OCAMLCMOFILES=
+OCAMLCMXFILES=$(OCAMLCMOFILES_PACK:.cmo=.cmx)
+
+all: exe lib
+opt: $(OCAMLBUILD).native
+exe: $(OCAMLBUILD)
+lib: $(OCAMLBUILD_LIBCMA)
+
+opt.opt: exeopt libopt
+exeopt: $(OCAMLBUILD_OPT)
+libopt: $(OCAMLBUILD_LIBCMXA) $(OCAMLBUILD_LIBCMI)
+
+debug:
+	$(MAKE) OCAMLPP=""
+
+$(OCAMLBUILD)_pack.cmo: $(CMOFILES_PACK) $(CMIFILES_PACK)
+	$(OCAMLC) -pack -o $@ $(LINKFLAGS) $(OCAMLCMOFILES_PACK) $(EXECMOFILES_PACK) signatures.mli
+
+$(OCAMLBUILD)_pack.cmx: $(EXECMXFILES_PACK)
+	$(OCAMLOPT) -pack -o $@ $(LINKFLAGS) $(OCAMLCMOFILES_PACK) $(EXECMXFILES_PACK)
+
+$(OCAMLBUILD): $(OCAMLBUILD)_pack.cmo $(CMOFILES) $(OCAMLBUILD).cmo $(BASE_CMOFILES)
+	$(OCAMLC) -o $@ unix.cma $(LINKFLAGS) $(OCAMLBUILD)_pack.cmo $(CMOFILES)
+
+$(OCAMLBUILD).native: $(OCAMLBUILD)_pack.cmx $(CMXFILES)
+	$(OCAMLOPT) -o $@  $(LINKFLAGS) $(CMXFILES)
+
+$(OCAMLBUILD_LIBCMA): $(LIBCMOFILES_PACK)
+	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo $(LIBCMOFILES_PACK)
+$(OCAMLBUILD_LIBCMXA): $(LIBCMXFILES)
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS)	$(OCAMLSRCDIR)/tools/depend.cmx $(LIBCMXFILES)
+
+# generic rules :
+#################
+
+.SUFFIXES: .mll .mly .ml .mli .cmo .cmi .cmx .cmxs
+
+.ml.cmo:
+	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
+
+.mli.cmi:
+	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
+
+.ml.cmx:
+	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
+
+.ml.cmxs:
+	$(OCAMLOPT) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
+
+.mll.ml:
+	$(OCAMLLEX) $<
+
+.mly.ml:
+	$(OCAMLYACC) -v $<
+
+.mly.mli:
+	$(OCAMLYACC) -v $<
+
+# Installation targets
+######################
+install: dummy
+	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
+	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
+	if test -d $(INSTALL_CUSTOMDIR); then : ; else $(MKDIR) $(INSTALL_CUSTOMDIR); fi
+	$(CP) $(OCAMLBUILD) $(INSTALL_BINDIR)/$(OCAMLBUILD)$(EXE)
+	$(CP) $(INSTALL_LIBFILES) $(INSTALL_LIBDIR)
+	$(CP) $(INSTALL_BINFILES) $(INSTALL_BINDIR)
+
+installopt:
+	if test -f $(OCAMLBUILD_OPT) ; then $(MAKE) installopt_really ; fi
+
+installopt_really:
+	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
+	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
+	$(CP) ocamlbuild.hva $(OCAMLBUILD_LIBA) $(OCAMLBUILD_LIBCMXA) $(INSTALL_LIBDIR)
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
+
+
+# backup, clean and depend :
+############################
+
+clean:: dummy
+	@rm -f *~ \#*\#
+	@rm -f $(OCAMLBUILD) $(OCAMLBUILD_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.$(A) *.$(O)
+	@rm -f glob_lexer.ml lexers.ml
+
+depend::
+	$(OCAMLDEP) $(INCLUDES_DEP) *.mli *.mll *.mly *.ml > .depend
+
+dummy:
+
+include .depend
+
+# Additional rules
+glob_lexer.cmo: glob_lexer.cmi
+lexers.cmo: lexers.cmi
+
+glob_lexer.cmx: glob_lexer.cmi
+lexers.cmx: lexers.cmi

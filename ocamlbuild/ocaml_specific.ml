@@ -478,26 +478,20 @@ let () =
   pflag ["ocaml";"compile";] "warn"
     (fun param -> S [A "-w"; A param])
 
-let try_opt name =
-  let cmd = Command.string_of_command_spec (A name)in
-  try ignore(Command.search_in_path cmd); name ^ ".opt"
-  with Not_found -> name
-
 let camlp4_flags camlp4s =
   List.iter begin fun camlp4 ->
-    flag ["ocaml"; "pp"; camlp4] (A (try_opt camlp4))
+    flag ["ocaml"; "pp"; camlp4] (A camlp4)
   end camlp4s;;
 
 camlp4_flags ["camlp4o"; "camlp4r"; "camlp4of"; "camlp4rf"; "camlp4orf"; "camlp4oof"];;
 
 let camlp4_flags' camlp4s =
-  List.iter begin fun (camlp4, cmd, flags) ->
-    let flags = S (A (try_opt cmd) :: flags) in
+  List.iter begin fun (camlp4, flags) ->
     flag ["ocaml"; "pp"; camlp4] flags
   end camlp4s;;
 
-camlp4_flags' ["camlp4orr", "camlp4of", [A"-parser"; A"reloaded"];
-               "camlp4rrr", "camlp4rf", [A"-parser"; A"reloaded"]];;
+camlp4_flags' ["camlp4orr", S[A"camlp4of"; A"-parser"; A"reloaded"];
+               "camlp4rrr", S[A"camlp4rf"; A"-parser"; A"reloaded"]];;
 
 flag ["ocaml"; "pp"; "camlp4:no_quot"] (A"-no_quot");;
 
@@ -571,7 +565,7 @@ let ocaml_warn_flag c =
   flag ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase c)]
        (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase c))]);;
 
-List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'Y'; 'Z'; 'X'];;
+List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'K'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'X'; 'Y'; 'Z'];;
 
 flag ["ocaml"; "compile"; "strict-sequence"] (A "-strict-sequence");;
 

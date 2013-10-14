@@ -12,7 +12,7 @@
 
 
 (* Original author: Nicolas Pouillard *)
-exception Error of string
+exception Error of (string * Lexing.position)
 
 type conf_values =
   { plus_tags   : string list;
@@ -36,7 +36,7 @@ val parse_environment_path : Lexing.lexbuf -> string list
 (* Same one, for Windows (PATH is ;-separated) *)
 val parse_environment_path_w : Lexing.lexbuf -> string list
 
-val conf_lines : string option -> int -> string -> Lexing.lexbuf -> conf
+val conf_lines : string option -> Lexing.lexbuf -> conf
 val path_scheme : bool -> Lexing.lexbuf ->
   [ `Word of string
   | `Var of (string * Glob.globber)
