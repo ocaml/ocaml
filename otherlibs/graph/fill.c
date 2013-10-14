@@ -40,7 +40,7 @@ value caml_gr_fill_poly(value array)
 
   caml_gr_check_open();
   npoints = Wosize_val(array);
-  points = (XPoint *) stat_alloc(npoints * sizeof(XPoint));
+  points = (XPoint *) caml_stat_alloc(npoints * sizeof(XPoint));
   for (i = 0; i < npoints; i++) {
     points[i].x = Int_val(Field(Field(array, i), 0));
     points[i].y = Bcvt(Int_val(Field(Field(array, i), 1)));

@@ -3,6 +3,9 @@ Next version
 
 (Changes that can break existing programs are marked with a "*")
 
+Other libraries:
+- Labltk: updated to Tcl/Tk 8.6.
+
 Type system:
 * Propagate type information towards pattern-matching, even in the presence of
   polymorphic variants (discarding only information about possibly-present
@@ -62,11 +65,13 @@ Bug fixes:
 - PR#5824: Generate more efficient code for immediate right shifts.
 - PR#5825: Add a toplevel primitive to use source file wrapped with the
   coresponding module
-* PR#5835: nonoptional labeled arguments can be passed with '?'
+- PR#5835: nonoptional labeled arguments can be passed with '?'
 - PR#5865: assert failure when reporting undefined field label
 - PR#5885: Incorrect rule for compiling C stubs when shared libraries are not
   supported.
+- PR#5928: Missing space between words in manual page for ocamlmktop
 - ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
+- PR#5930: ocamldep leaks temporary preprocessing files
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary

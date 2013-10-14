@@ -127,7 +127,7 @@ CAMLprim value unix_gethostbyname(value name)
   char * hostname;
 
 #if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
-  hostname = stat_alloc(string_length(name) + 1);
+  hostname = caml_stat_alloc(string_length(name) + 1);
   strcpy(hostname, String_val(name));
 #else
   hostname = String_val(name);

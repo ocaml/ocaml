@@ -207,9 +207,16 @@ let read_parse_and_extract parse_function extract_function magic source_file =
   Depend.free_structure_names := Depend.StringSet.empty;
   try
     let input_file = Pparse.preprocess source_file in
-    let ast = Pparse.file Format.err_formatter input_file parse_function magic in
-    extract_function Depend.StringSet.empty ast;
-    !Depend.free_structure_names
+    begin try
+      let ast =
+        Pparse.file Format.err_formatter input_file parse_function magic in
+      extract_function Depend.StringSet.empty ast;
+      Pparse.remove_preprocessed input_file;
+      !Depend.free_structure_names
+    with x ->
+      Pparse.remove_preprocessed_if_ast input_file;
+      raise x
+    end
   with x ->
     report_err source_file x;
     Depend.StringSet.empty

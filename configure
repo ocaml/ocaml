@@ -1437,6 +1437,8 @@ if test $has_tk = true; then
   for tk_incs in \
     "-I/usr/local/include" \
     "-I/usr/include" \
+    "-I/usr/local/include/tcl8.6 -I/usr/local/include/tk8.6" \
+    "-I/usr/include/tcl8.6 -I/usr/include/tk8.6" \
     "-I/usr/local/include/tcl8.5 -I/usr/local/include/tk8.5" \
     "-I/usr/include/tcl8.5 -I/usr/include/tk8.5" \
     "-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4" \
@@ -1454,6 +1456,7 @@ if test $has_tk = true; then
   if test -n "$tcl_version" && test "x$tcl_version" != "xnone"; then
     echo "tcl.h and tk.h version $tcl_version found with \"$tk_defs\"."
     case $tcl_version in
+    8.6) tclmaj=8 tclmin=6 tkmaj=8 tkmin=6 ;;
     8.5) tclmaj=8 tclmin=5 tkmaj=8 tkmin=5 ;;
     8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
     8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;

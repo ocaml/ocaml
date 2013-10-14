@@ -31,7 +31,7 @@
 #include "signals.h"
 #include "sys.h"
 
-#include "flexdll.h"
+#include <flexdll.h>
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -91,7 +91,7 @@ CAMLexport char * caml_search_exe_in_path(char * name)
   pathlen = strlen(name) + 1;
   if (pathlen < 256) pathlen = 256;
   while (1) {
-    fullname = stat_alloc(pathlen);
+    fullname = caml_stat_alloc(pathlen);
     retcode = SearchPath(NULL,              /* use system search path */
                          name,
                          ".exe",            /* add .exe extension if needed */
@@ -105,7 +105,7 @@ CAMLexport char * caml_search_exe_in_path(char * name)
       break;
     }
     if (retcode < pathlen) break;
-    stat_free(fullname);
+    caml_stat_free(fullname);
     pathlen = retcode + 1;
   }
   return fullname;
@@ -496,4 +496,4 @@ void caml_install_invalid_parameter_handler()
   _set_invalid_parameter_handler(invalid_parameter_handler);
 }
 
-#endif 
+#endif

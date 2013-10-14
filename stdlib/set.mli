@@ -70,8 +70,8 @@ module type S =
     val inter: t -> t -> t
     (** Set intersection. *)
 
-    (** Set difference. *)
     val diff: t -> t -> t
+    (** Set difference. *)
 
     val compare: t -> t -> int
     (** Total ordering between sets. Can be used as the ordering function

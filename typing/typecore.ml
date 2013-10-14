@@ -598,7 +598,8 @@ end) = struct
 
   let disambiguate ?(warn=Location.prerr_warning) ?(check_lk=fun _ _ -> ())
       ?scope lid env opath lbls =
-    match opath with
+    let scope = match scope with None -> lbls | Some l -> l in
+    let lbl = match opath with
       None ->
 	begin match lbls with
           [] -> unbound_name_error env lid
@@ -610,7 +611,6 @@ end) = struct
 	    lbl
 	end
     | Some(tpath0, tpath, pr) ->
-	let scope = match scope with None -> lbls | Some l -> l in
 	let warn_pr () =
 	  let kind = if type_kind = "record" then "field" else "constructor" in
           warn lid.loc
@@ -652,6 +652,14 @@ end) = struct
           in
           raise (Error (lid.loc, env,
                         Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
+    in
+    begin match scope with
+      (lab1,_)::_ when lab1 == lbl -> ()
+    | _ ->
+        Location.prerr_warning lid.loc
+          (Warnings.Disambiguated_name(get_name lbl))
+    end;
+    lbl
 end
 
 module Label = NameChoice (struct
@@ -2949,10 +2957,11 @@ and type_application env funct sargs =
                     (Warnings.Not_principal "commuting this argument");
                 (l', sarg0, sargs @ sargs1, sargs2)
             in
-            sargs, more_sargs,
             if optional = Required && is_optional l' then
-              raise(Error(sarg0.pexp_loc, env, Apply_wrong_label(l', ty_fun')))
-            else if optional = Required || is_optional l' then
+              Location.prerr_warning sarg0.pexp_loc
+                (Warnings.Nonoptional_label l);
+            sargs, more_sargs,
+            if optional = Required || is_optional l' then
               Some (fun () -> type_argument env sarg0 ty ty0)
             else begin
               may_warn sarg0.pexp_loc

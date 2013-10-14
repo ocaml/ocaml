@@ -28,7 +28,7 @@ value gb_get(value vblock)
 
 value gb_classic_register(value v)
 {
-  struct block * b = stat_alloc(sizeof(struct block));
+  struct block * b = caml_stat_alloc(sizeof(struct block));
   b->v = v;
   caml_register_global_root(&(b->v));
   return (value) b;
@@ -48,7 +48,7 @@ value gb_classic_remove(value vblock)
 
 value gb_generational_register(value v)
 {
-  struct block * b = stat_alloc(sizeof(struct block));
+  struct block * b = caml_stat_alloc(sizeof(struct block));
   b->v = v;
   caml_register_generational_global_root(&(b->v));
   return (value) b;

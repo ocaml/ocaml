@@ -55,7 +55,7 @@ CAMLprim value camltk_splitlist (value v)
 char *string_to_c(value s)
 {
   int l = string_length(s);
-  char *res = stat_alloc(l + 1);
+  char *res = caml_stat_alloc(l + 1);
   memmove (res, String_val (s), l);
   res[l] = '\0';
   return res;

@@ -1,7 +1,23 @@
 
 #         module M1 :
   sig type t = { x : int; y : int; } type u = { x : bool; y : bool; } end
-#                 Characters 81-103:
+#                 Characters 49-50:
+    let f1 (r:t) = r.x (* ok *)
+                     ^
+Warning 42: this use of x required disambiguation.
+Characters 89-90:
+    let f2 r = ignore (r:t); r.x (* non principal *)
+                               ^
+Warning 42: this use of x required disambiguation.
+Characters 148-149:
+      match r with {x; y} -> y + y (* ok *)
+                    ^
+Warning 42: this use of x required disambiguation.
+Characters 151-152:
+      match r with {x; y} -> y + y (* ok *)
+                       ^
+Warning 42: this use of y required disambiguation.
+Characters 81-103:
     let f2 r = ignore (r:t); r.x (* non principal *)
                        ^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type u.
@@ -20,7 +36,15 @@ Characters 65-66:
                                      ^
 Error: This expression has type bool but an expression was expected of type
          int
-#               Characters 81-103:
+#               Characters 86-87:
+         {x; y} -> y + y
+          ^
+Warning 42: this use of x required disambiguation.
+Characters 89-90:
+         {x; y} -> y + y
+             ^
+Warning 42: this use of y required disambiguation.
+Characters 81-103:
   ...    {x; y} -> y + y
   en..............................
 Warning 34: unused type u.
@@ -30,15 +54,27 @@ Characters 86-87:
 Warning 27: unused variable x.
 module F2 : sig val f : M1.t -> int end
 #           module M : sig type t = { x : int; } type u = { x : bool; } end
-# val f : M.t -> int = <fun>
+# Characters 18-21:
+  let f (r:M.t) = r.M.x;; (* ok *)
+                    ^^^
+Warning 42: this use of x required disambiguation.
+val f : M.t -> int = <fun>
 # Characters 18-19:
   let f (r:M.t) = r.x;; (* warning *)
                     ^
 Warning 40: x is used out of scope.
+Characters 18-19:
+  let f (r:M.t) = r.x;; (* warning *)
+                    ^
+Warning 42: this use of x required disambiguation.
 val f : M.t -> int = <fun>
 #       module M : sig type t = { x : int; y : int; } end
 #     module N : sig type u = { x : bool; y : bool; } end
-#         Characters 30-36:
+#         Characters 57-58:
+    let f (r:M.t) = r.x
+                      ^
+Warning 42: this use of x required disambiguation.
+Characters 30-36:
     open N
     ^^^^^^
 Warning 33: unused open N.
@@ -60,7 +96,11 @@ module OK : sig val f : M.t -> int end
     type u = { x : bool; y : int; z : char; }
     type t = { x : int; y : bool; }
   end
-#       Characters 36-41:
+#       Characters 37-38:
+    let f {x;z} = x,z
+           ^
+Warning 42: this use of x required disambiguation.
+Characters 36-41:
     let f {x;z} = x,z
           ^^^^^
 Warning 9: the following labels are not bound in this record pattern:
@@ -73,7 +113,15 @@ module OK : sig val f : M.u -> bool * char end
     let r = {x=true;z='z'}
             ^^^^^^^^^^^^^^
 Error: Some record fields are undefined: y
-#           module OK :
+#           Characters 90-91:
+    let r = {x=3; y=true}
+             ^
+Warning 42: this use of x required disambiguation.
+Characters 95-96:
+    let r = {x=3; y=true}
+                  ^
+Warning 42: this use of y required disambiguation.
+module OK :
   sig
     type u = { x : int; y : bool; }
     type t = { x : bool; y : int; z : char; }
@@ -114,7 +162,11 @@ Error: The record field NM.y belongs to the type NM.foo = M.foo
     type foo = { x : int; y : int; }
     type bar = { x : int; y : int; z : int; }
   end
-#       Characters 72-73:
+#       Characters 65-66:
+    let f r = ignore (r: foo); {r with x = 2; z = 3}
+                                       ^
+Warning 42: this use of x required disambiguation.
+Characters 72-73:
     let f r = ignore (r: foo); {r with x = 2; z = 3}
                                               ^
 Error: The record type M.foo has no field z
@@ -124,11 +176,23 @@ Error: The record type M.foo has no field z
     type bar = M.bar = { x : int; y : int; z : int; }
     type other = { a : int; b : int; }
   end
-#       Characters 73-74:
+#       Characters 66-67:
+    let f r = ignore (r: foo); { r with x = 3; a = 4 }
+                                        ^
+Warning 42: this use of x required disambiguation.
+Characters 73-74:
     let f r = ignore (r: foo); { r with x = 3; a = 4 }
                                                ^
 Error: The record type M.foo has no field a
-#         Characters 67-68:
+#         Characters 39-40:
+    let r = {x=1; y=2}
+             ^
+Warning 42: this use of x required disambiguation.
+Characters 44-45:
+    let r = {x=1; y=2}
+                  ^
+Warning 42: this use of y required disambiguation.
+Characters 67-68:
     let r: other = {x=1; y=2}
                     ^
 Error: The record type M.other has no field x

@@ -304,7 +304,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->exit_buf = NULL;
 #else
   /* Allocate the stacks */
-  th->stack_low = (value *) stat_alloc(Thread_stack_size);
+  th->stack_low = (value *) caml_stat_alloc(Thread_stack_size);
   th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
   th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
   th->sp = th->stack_high;
@@ -406,7 +406,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   st_tls_newkey(&last_channel_locked_key);
   /* Set up a thread info block for the current thread */
   curr_thread =
-    (caml_thread_t) stat_alloc(sizeof(struct caml_thread_struct));
+    (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
   curr_thread->descr = caml_thread_new_descriptor(Val_unit);
   curr_thread->next = curr_thread;
   curr_thread->prev = curr_thread;

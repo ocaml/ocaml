@@ -162,7 +162,7 @@ int CamlRunCmd(dummy, interp, argc, argv)
                         + trail.symbol_size + trail.debug_size), 2);
 
     code_size = trail.code_size;
-    start_code = (code_t) stat_alloc(code_size);
+    start_code = (code_t) caml_stat_alloc(code_size);
     if (read(fd, (char *) start_code, code_size) != code_size)
       fatal_error("Fatal error: truncated bytecode file.\n");
 
@@ -215,7 +215,7 @@ int Caml_Init(interp)
   {
     char *home = getenv("HOME");
     if (home != NULL) {
-      char *f = stat_alloc(strlen(home)+strlen(RCNAME)+2);
+      char *f = caml_stat_alloc(strlen(home)+strlen(RCNAME)+2);
       f[0]='\0';
       strcat(f, home);
       strcat(f, "/");

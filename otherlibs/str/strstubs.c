@@ -298,7 +298,7 @@ static int re_match(value re,
     /* Push an item on the backtrack stack and continue with next instr */
     if (sp == stack->point + BACKTRACK_STACK_BLOCK_SIZE) {
       struct backtrack_stack * newstack =
-        stat_alloc(sizeof(struct backtrack_stack));
+        caml_stat_alloc(sizeof(struct backtrack_stack));
       newstack->previous = stack;
       stack = newstack;
       sp = stack->point;

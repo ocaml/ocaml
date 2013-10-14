@@ -268,7 +268,6 @@ let init fw =
   let scorev = Textvariable.create ()
   and linev = Textvariable.create ()
   and levv = Textvariable.create ()
-  and namev = Textvariable.create ()
   in
   let f = Frame.create fw ~borderwidth: 2 in
   let c = Canvas.create f ~width: (block_size * 10)

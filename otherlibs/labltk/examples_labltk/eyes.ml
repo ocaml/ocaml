@@ -24,7 +24,7 @@ let _ =
   pack [fw];
   let c = Canvas.create ~width: 200 ~height: 200 fw in
   let create_eye cx cy wx wy ewx ewy bnd =
-    let o2 = Canvas.create_oval
+    let _o2 = Canvas.create_oval
         ~x1:(cx - wx) ~y1:(cy - wy)
         ~x2:(cx + wx) ~y2:(cy + wy)
         ~outline: `Black ~width: 7

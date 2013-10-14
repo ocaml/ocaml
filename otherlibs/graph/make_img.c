@@ -41,7 +41,7 @@ value caml_gr_make_image(value m)
                  ZPixmap, 0, NULL, width, height,
                  BitmapPad(caml_gr_display), 0);
 
-  bdata = (char *) stat_alloc(height * idata->bytes_per_line);
+  bdata = (char *) caml_stat_alloc(height * idata->bytes_per_line);
   idata->data = bdata;
   has_transp = False;
 
@@ -61,7 +61,7 @@ value caml_gr_make_image(value m)
       XCreateImage(caml_gr_display, DefaultVisual(caml_gr_display, caml_gr_screen),
                    1, ZPixmap, 0, NULL, width, height,
                    BitmapPad(caml_gr_display), 0);
-    bmask = (char *) stat_alloc(height * imask->bytes_per_line);
+    bmask = (char *) caml_stat_alloc(height * imask->bytes_per_line);
     imask->data = bmask;
 
     for (i = 0; i < height; i++) {

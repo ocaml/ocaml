@@ -43,7 +43,7 @@ char *external_to_utf( char *str ){
 
   Tcl_ExternalToUtfDString(NULL, str, strlen(str), &dstr);
   length = Tcl_DStringLength(&dstr);
-  res = stat_alloc(length + 1);
+  res = caml_stat_alloc(length + 1);
   memmove( res, Tcl_DStringValue(&dstr), length+1);
   Tcl_DStringFree(&dstr);
 
@@ -57,7 +57,7 @@ char *utf_to_external( char *str ){
 
   Tcl_UtfToExternalDString(NULL, str, strlen(str), &dstr);
   length = Tcl_DStringLength(&dstr);
-  res = stat_alloc(length + 1);
+  res = caml_stat_alloc(length + 1);
   memmove( res, Tcl_DStringValue(&dstr), length+1);
   Tcl_DStringFree(&dstr);
 
