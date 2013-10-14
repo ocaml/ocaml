@@ -1,11 +1,13 @@
 Next version
 ------------
 
+(Changes that can break existing programs are marked with a "*")
+
 Type system:
-- Propagate type information towards pattern-matching, even in the presence of
+* Propagate type information towards pattern-matching, even in the presence of
   polymorphic variants (discarding only information about possibly-present
   constructors). As a result, matching against absent constructors is no longer
-  allowed. 
+  allowed for exact and fixed polymorphic variant types.
 
 Compilers:
 - PR#5861: raise an error when multiple private keywords are used in type
@@ -16,6 +18,8 @@ Compilers:
   present in the environment
 - ocamlc has a new option -dsource which visualize the parsetree
 - tools/eqparsetree compare two parsetree ignoring location
+- ocamlopt now uses clang as assembler on OS X if available, which enables
+  CFI support for OS X.
 Bug fixes:
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4994: ocaml-mode doesn't work with xemacs21
@@ -52,8 +56,10 @@ Bug fixes:
 - PR#5824: Generate more efficient code for immediate right shifts.
 - PR#5825: Add a toplevel primitive to use source file wrapped with the
   coresponding module
-- PR#5835: nonoptional labeled arguments can be passed with '?'
+* PR#5835: nonoptional labeled arguments can be passed with '?'
 - PR#5865: assert failure when reporting undefined field label
+- PR#5885: Incorrect rule for compiling C stubs when shared libraries are not supported.
+- ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
@@ -83,10 +89,15 @@ Bug fixes:
 - PR#5772: problem with marshaling of mutually-recursive functions
 - PR#5775: several bug fixes for tools/pprintast.ml
 - PR#5785: misbehaviour with abstracted structural type used as GADT index
+- PR#5793: integer marshalling is inconsistent between architectures
 - PR#5798: add ARM VFPv2 support for Raspbian (ocamlopt)
 - PR#5806: ensure that backtrace tests are always run (testsuite)
 - PR#5810: error in switch printing when using -dclambda
+- PR#5840: improved documentation for 'Unix.lseek'
 - PR#5858: Assert failure during typing of class
+- PR#5880: 'Genlex.make_lexer' documention mentions the wrong exception
+- PR#5891: support rectypes tag for mlpack (ocamlbuild)
+- PR#5892: GADT exhaustiveness check is broken
 
 OCaml 4.00.1:
 -------------

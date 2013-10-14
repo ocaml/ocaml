@@ -42,7 +42,8 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
-  parsing/pprintast.cmo
+  parsing/pprintast.cmo \
+  parsing/ast_mapper.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \

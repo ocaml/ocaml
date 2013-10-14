@@ -61,7 +61,18 @@
 
 #elif defined(TARGET_arm) && (defined(SYS_linux_eabi) || defined(SYS_linux_eabihf))
 
-  #include <sys/ucontext.h>
+  #if defined(__ANDROID__)
+    // The Android NDK does not have sys/ucontext.h yet.
+    typedef struct ucontext {
+      uint32_t uc_flags;
+      struct ucontext *uc_link;
+      stack_t uc_stack;
+      struct sigcontext uc_mcontext;
+      // Other fields omitted...
+    } ucontext_t;
+  #else
+    #include <sys/ucontext.h>
+  #endif
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, siginfo_t * info, ucontext_t * context)

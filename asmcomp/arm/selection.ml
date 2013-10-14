@@ -94,9 +94,9 @@ method! is_simple_expr = function
   | Cop(Cextcall("sqrt", _, _, _), args) when !fpu >= VFPv2 ->
       List.for_all self#is_simple_expr args
   (* inlined byte-swap ops are simple if their arguments are *)
-  | (Cextcall("caml_bswap16_direct", _, _, _), args) when !arch >= ARMv6T2 ->
+  | Cop(Cextcall("caml_bswap16_direct", _, _, _), args) when !arch >= ARMv6T2 ->
       List.for_all self#is_simple_expr args
-  | (Cextcall("caml_int32_direct_bswap", _, _, _), args) when !arch >= ARMv6 ->
+  | Cop(Cextcall("caml_int32_direct_bswap", _, _, _), args) when !arch >= ARMv6 ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 

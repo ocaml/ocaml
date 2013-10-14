@@ -1724,6 +1724,7 @@ let check_absent_variant env =
       let row = row_repr !row in
       if List.exists (fun (s',fi) -> s = s' && row_field_repr fi <> Rabsent)
           row.row_fields
+      || not row.row_fixed && not (static_row row)  (* same as Ctype.poly *)
       then () else
       let ty_arg =
         match arg with None -> [] | Some p -> [correct_levels p.pat_type] in

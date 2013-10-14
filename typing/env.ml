@@ -51,6 +51,8 @@ let used_constructors :
     (string * Location.t * string, (constructor_usage -> unit)) Hashtbl.t
   = Hashtbl.create 16
 
+let prefixed_sg = Hashtbl.create 113
+
 type error =
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
@@ -335,7 +337,8 @@ let reset_cache () =
   Consistbl.clear crc_units;
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations;
-  Hashtbl.clear used_constructors
+  Hashtbl.clear used_constructors;
+  Hashtbl.clear prefixed_sg
 
 let reset_cache_toplevel () =
   (* Delete 'missing cmi' entries from the cache. *)
@@ -347,7 +350,8 @@ let reset_cache_toplevel () =
   List.iter (Hashtbl.remove persistent_structures) l;
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations;
-  Hashtbl.clear used_constructors
+  Hashtbl.clear used_constructors;
+  Hashtbl.clear prefixed_sg
 
 
 let set_unit_name name =
@@ -900,6 +904,53 @@ let rec prefix_idents root pos sub = function
       let (pl, final_sub) = prefix_idents root pos sub rem in
       (p::pl, final_sub)
 
+let subst_signature sub sg =
+  List.map
+    (fun item ->
+      match item with
+      | Sig_value(id, decl) ->
+          Sig_value (id, Subst.value_description sub decl)
+      | Sig_type(id, decl, x) ->
+          Sig_type(id, Subst.type_declaration sub decl, x)
+      | Sig_extension(id, ext, es) ->
+          Sig_extension (id, Subst.extension_constructor sub ext, es)
+      | Sig_exception(id, decl) ->
+          Sig_exception (id, Subst.exception_declaration sub decl)
+      | Sig_module(id, mty, x) ->
+          Sig_module(id, Subst.modtype sub mty,x)
+      | Sig_modtype(id, decl) ->
+          Sig_modtype(id, Subst.modtype_declaration sub decl)
+      | Sig_class(id, decl, x) ->
+          Sig_class(id, Subst.class_declaration sub decl, x)
+      | Sig_class_type(id, decl, x) ->
+          Sig_class_type(id, Subst.cltype_declaration sub decl, x)
+    )
+    sg
+
+
+let prefix_idents_and_subst root sub sg =
+  let (pl, sub) = prefix_idents root 0 sub sg in
+  pl, sub, lazy (subst_signature sub sg)
+
+let prefix_idents_and_subst root sub sg =
+  if sub = Subst.identity then
+    let sgs =
+      try
+        Hashtbl.find prefixed_sg root
+      with Not_found ->
+        let sgs = ref [] in
+        Hashtbl.add prefixed_sg root sgs;
+        sgs
+    in
+    try
+      List.assq sg !sgs
+    with Not_found ->
+      let r = prefix_idents_and_subst root sub sg in
+      sgs := (sg, r) :: !sgs;
+      r
+  else
+    prefix_idents_and_subst root sub sg
+
 (* Compute structure descriptions *)
 
 let add_to_tbl id decl tbl =
@@ -920,7 +971,7 @@ and components_of_module_maker (env, sub, path, mty) =
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty } in
-      let (pl, sub) = prefix_idents path 0 sub sg in
+      let pl, sub, _ = prefix_idents_and_subst path sub sg in
       let env = ref env in
       let pos = ref 0 in
       List.iter2 (fun item path ->
@@ -1249,35 +1300,32 @@ let rec add_signature sg env =
 
 let open_signature root sg env =
   (* First build the paths and substitution *)
-  let (pl, sub) = prefix_idents root 0 Subst.identity sg in
+  let (pl, sub, sg) = prefix_idents_and_subst root Subst.identity sg in
+  let sg = Lazy.force sg in
+
   (* Then enter the components in the environment after substitution *)
+
   let newenv =
     List.fold_left2
       (fun env item p ->
         match item with
           Sig_value(id, decl) ->
-            store_value (Ident.hide id) p
-                        (Subst.value_description sub decl) env
+            store_value (Ident.hide id) p decl env
         | Sig_type(id, decl, _) ->
-            store_type (Ident.hide id) p
-                       (Subst.type_declaration sub decl) env
+            store_type (Ident.hide id) p decl env
         | Sig_extension(id, ext, _) ->
-            store_extension (Ident.hide id) p
-                            (Subst.extension_constructor sub ext) env
+            store_extension (Ident.hide id) p ext env
         | Sig_exception(id, decl) ->
-            store_exception (Ident.hide id) p
-                            (Subst.exception_declaration sub decl) env
+            store_exception (Ident.hide id) p decl env
         | Sig_module(id, mty, _) ->
-            store_module (Ident.hide id) p (Subst.modtype sub mty) env
+            store_module (Ident.hide id) p mty env
         | Sig_modtype(id, decl) ->
-            store_modtype (Ident.hide id) p
-                          (Subst.modtype_declaration sub decl) env
+            store_modtype (Ident.hide id) p decl env
         | Sig_class(id, decl, _) ->
-            store_class (Ident.hide id) p
-                        (Subst.class_declaration sub decl) env
+            store_class (Ident.hide id) p decl env
         | Sig_class_type(id, decl, _) ->
-            store_cltype (Ident.hide id) p
-                         (Subst.cltype_declaration sub decl) env)
+            store_cltype (Ident.hide id) p decl env
+      )
       env sg pl in
   { newenv with summary = Env_open(env.summary, root) }
 

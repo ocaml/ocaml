@@ -303,7 +303,8 @@ type seek_command = Unix.seek_command =
 
 
 val lseek : file_descr -> int -> mode:seek_command -> int
-(** Set the current position for a file descriptor *)
+(** Set the current position for a file descriptor, and return the resulting
+    offset (from the beginning of the file). *)
 
 val truncate : string -> len:int -> unit
 (** Truncates the named file to the given size. *)

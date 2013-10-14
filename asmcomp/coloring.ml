@@ -101,12 +101,16 @@ let allocate_registers() =
       iter_preferred
         (fun r w ->
           match r.loc with
-            Reg n -> let n = n - first_reg in score.(n) <- score.(n) + w
+            Reg n -> let n = n - first_reg in
+                     if n < num_regs then
+                       score.(n) <- score.(n) + w
           | Unknown ->
               List.iter
                 (fun neighbour ->
                   match neighbour.loc with
-                    Reg n -> let n = n - first_reg in score.(n) <- score.(n) - w
+                    Reg n -> let n = n - first_reg in
+                             if n < num_regs then
+                               score.(n) <- score.(n) - w
                   | _ -> ())
                 r.interf
           | _ -> ())
@@ -116,7 +120,9 @@ let allocate_registers() =
           (* Prohibit the registers that have been assigned
              to our neighbours *)
           begin match neighbour.loc with
-            Reg n -> let n = n - first_reg in score.(n) <- (-1000000)
+            Reg n -> let n = n - first_reg in
+                     if n < num_regs then
+                       score.(n) <- (-1000000)
           | _ -> ()
           end;
           (* Avoid the registers that have been assigned to pseudoregs
@@ -124,7 +130,9 @@ let allocate_registers() =
           iter_preferred
             (fun r w ->
               match r.loc with
-                Reg n -> let n = n - first_reg in score.(n) <- score.(n) - (w-1)
+                Reg n -> let n = n - first_reg in
+                         if n < num_regs then
+                           score.(n) <- score.(n) - (w-1)
                          (* w-1 to break the symmetry when two conflicting regs
                             have the same preference for a third reg. *)
               | _ -> ())

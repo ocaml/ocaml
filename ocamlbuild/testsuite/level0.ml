@@ -76,4 +76,12 @@ List.iteri (fun i (content,failing_msg) ->
     ~tree:[T.f "_tags" ~content; T.f "dummy.ml"]
     ~targets:("dummy.native",[]) ()) tag_pat_msgs;;
 
+test "SubtoolOptions"
+  ~description:"Options that come from tags that needs to be spliced to the subtool invocation (PR#5763)"
+  ~options:[`use_menhir; `use_ocamlfind;`tags["package\\(camlp4.fulllib\\)"]]
+  ~tree:[T.f "parser.mly" ~content:"%{\n%}\n%token DUMMY\n%start<Camlp4.PreCast.Syntax.Ast.expr option> test%%test: {None}\n\n"]
+  ~matching:[M.f "parser.native"; M.f "parser.byte"]
+  ~targets:("parser.native",["parser.byte"])
+  ();;
+
 run ~root:"_test";;
