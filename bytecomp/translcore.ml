@@ -603,6 +603,8 @@ let rec cut n l =
 
 (* Translation of expressions *)
 
+let try_ids = Hashtbl.create 8
+
 let rec transl_exp e =
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
@@ -682,7 +684,16 @@ and transl_exp0 e =
         let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
           (Praise k, [arg1]) ->
-            wrap0 (Lprim(Praise k, [event_after arg1 (List.hd argl)]))
+            let targ = List.hd argl in
+            let k =
+              match k, targ with
+              | Raise_regular, Lvar id
+                when Hashtbl.mem try_ids id ->
+                  Raise_reraise
+              | _ ->
+                  k
+            in
+            wrap0 (Lprim(Praise k, [event_after arg1 targ]))
         | (_, _) ->
             begin match (prim, argl) with
             | (Plazyforce, [a]) ->
@@ -703,7 +714,7 @@ and transl_exp0 e =
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
-               Matching.for_trywith (Lvar id) (transl_cases pat_expr_list))
+               Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list el in
       begin try
@@ -902,6 +913,20 @@ and transl_case {c_lhs; c_guard; c_rhs} =
 
 and transl_cases cases =
   List.map transl_case cases
+
+and transl_case_try {c_lhs; c_guard; c_rhs} =
+  match c_lhs.pat_desc with
+  | Tpat_var (id, _)
+  | Tpat_alias (_, id, _) ->
+      Hashtbl.replace try_ids id ();
+      Misc.try_finally
+        (fun () -> c_lhs, transl_guard c_guard c_rhs)
+        (fun () -> Hashtbl.remove try_ids id)
+  | _ ->
+      c_lhs, transl_guard c_guard c_rhs
+
+and transl_cases_try cases =
+  List.map transl_case_try cases
 
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))

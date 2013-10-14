@@ -282,7 +282,8 @@ static void extract_location_info(value events, code_t pc,
   value ev, ev_start;
 
   ev = event_for_location(events, pc);
-  li->loc_is_raise = caml_is_instruction(*pc, RAISE);
+  li->loc_is_raise = caml_is_instruction(*pc, RAISE) ||
+    caml_is_instruction(*pc, RERAISE);
   if (ev == Val_false) {
     li->loc_valid = 0;
     return;
