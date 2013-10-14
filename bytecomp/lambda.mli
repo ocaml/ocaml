@@ -140,7 +140,7 @@ and bigarray_layout =
 and raise_kind =
   | Raise_regular
   | Raise_reraise
-  | Raise_nostack
+  | Raise_notrace
 
 type structured_constant =
     Const_base of constant

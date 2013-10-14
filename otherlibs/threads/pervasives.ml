@@ -20,6 +20,7 @@
 (* Exceptions *)
 
 external raise : exn -> 'a = "%raise"
+external raise_notrace : exn -> 'a = "%raise_notrace"
 
 let failwith s = raise(Failure s)
 let invalid_arg s = raise(Invalid_argument s)

@@ -107,7 +107,7 @@ let primitive ppf = function
   | Pccall p -> fprintf ppf "%s" p.prim_name
   | Praise Raise_regular -> fprintf ppf "raise"
   | Praise Raise_reraise -> fprintf ppf "re-raise"
-  | Praise Raise_nostack -> fprintf ppf "raise-no-stack"
+  | Praise Raise_notrace -> fprintf ppf "raise-no-trace"
   | Psequand -> fprintf ppf "&&"
   | Psequor -> fprintf ppf "||"
   | Pnot -> fprintf ppf "not"

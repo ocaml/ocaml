@@ -245,7 +245,7 @@ let emit_instr = function
   | Kpoptrap -> out opPOPTRAP
   | Kraise Raise_regular -> out opRAISE
   | Kraise Raise_reraise -> out opRERAISE
-  | Kraise Raise_nostack -> out opRAISE_NOSTACK
+  | Kraise Raise_notrace -> out opRAISE_NOTRACE
   | Kcheck_signals -> out opCHECK_SIGNALS
   | Kccall(name, n) ->
       if n <= 5
