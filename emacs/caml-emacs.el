@@ -25,7 +25,7 @@
 (defalias 'caml-mouse-movement-p 'mouse-movement-p)
 (defalias 'caml-sit-for 'sit-for)
 
-(defmacro caml-track-mouse (&rest body) (cons 'track-mouse body))
+(defalias 'caml-track-mouse 'track-mouse)
 
 (defun caml-event-window (e) (posn-window (event-start e)))
 (defun caml-event-point-start (e) (posn-point (event-start e)))
@@ -37,8 +37,7 @@
          (or (member 'drag modifiers)
              (member 'click modifiers)))))
 
-(if (fboundp 'string-to-number)
-   (defalias 'caml-string-to-int 'string-to-number)
- (defalias 'caml-string-to-int 'string-to-int))
+(defalias 'caml-string-to-int (if (fboundp 'string-to-number)
+                                  'string-to-number 'string-to-int))
 
 (provide 'caml-emacs)

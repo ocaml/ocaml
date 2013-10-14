@@ -20,7 +20,9 @@ Compilers:
 - tools/eqparsetree compare two parsetree ignoring location
 - ocamlopt now uses clang as assembler on OS X if available, which enables
   CFI support for OS X.
+
 Bug fixes:
+- PR#4887: input_char after close_in crashes ocaml (msvc runtime)
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4994: ocaml-mode doesn't work with xemacs21
 * PR#5119: camlp4 now raises a specific exception when 'DELETE_RULE' fails,
@@ -58,7 +60,8 @@ Bug fixes:
   coresponding module
 * PR#5835: nonoptional labeled arguments can be passed with '?'
 - PR#5865: assert failure when reporting undefined field label
-- PR#5885: Incorrect rule for compiling C stubs when shared libraries are not supported.
+- PR#5885: Incorrect rule for compiling C stubs when shared libraries are not
+  supported.
 - ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
 
 Internals:
@@ -78,6 +81,7 @@ Tools:
 - OCamlbuild now features a bin_annot tag to generate .cmt files.
 - OCamlbuild now features a strict_sequence tag to trigger the strict-sequence
   option.
+- PR#5884: Misc minor fixes and cleanup for emacs mode
 
 OCaml 4.00.2:
 -------------
@@ -98,6 +102,9 @@ Bug fixes:
 - PR#5880: 'Genlex.make_lexer' documention mentions the wrong exception
 - PR#5891: support rectypes tag for mlpack (ocamlbuild)
 - PR#5892: GADT exhaustiveness check is broken
+- PR#5906: GADT exhaustiveness check is still broken
+- PR#5907: Undetected cycle during typecheck causes exceptions
+- PR#5911: Signature substitutions fail in submodules
 
 OCaml 4.00.1:
 -------------

@@ -391,6 +391,7 @@ module type OPTIONS = sig
   val ocaml_libs : string list ref
   val ocaml_mods : string list ref
   val ocaml_pkgs : string list ref
+  val ocaml_syntax : string option ref
   val ocaml_cflags : string list ref
   val ocaml_lflags : string list ref
   val ocaml_ppflags : string list ref

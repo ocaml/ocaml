@@ -47,12 +47,43 @@ class mapper:
     method with_constraint: with_constraint -> with_constraint
   end
 
-val apply: source:string -> target:string -> mapper -> unit
+class type main_entry_points =
+  object
+    method implementation: string -> structure -> string * structure
+    method interface: string -> signature -> string * signature
+  end
+
+val apply: source:string -> target:string -> #main_entry_points -> unit
     (** Apply a mapper to a dumped parsetree found in the [source] file
         and put the result in the [target] file. *)
 
-val main: mapper -> unit
-    (** Entry point to call to implement a -ppx rewriter from a mapper object. *)
+val main: #main_entry_points -> unit
+    (** Entry point to call to implement a standalone -ppx rewriter
+        from a mapper object. *)
+
+val run_main: (string list -> #main_entry_points) -> unit
+    (** Same as [main], but with extra arguments from the command line. *)
+
+(** {2 Registration API} *)
+
+val register_function: (string -> (string list -> mapper) -> unit) ref
+
+val register: string -> (string list -> #mapper) -> unit
+
+    (** Apply the [register_function].  The default behavior is to run
+        the mapper immediatly, taking arguments from the process
+        command line.  This is to support a scenario where a mapper is
+        linked as a stand-alone executable.
+
+        It is possible to overwrite the [register_function] to define
+        "-ppx drivers", which combine several mappers in a single
+        process.  Typically, a driver starts by defining
+        [register_function] to a custom implementation, then lets ppx
+        rewriters (linked statically or dynamically) register
+        themselves, and then run all or some of them.  It is also
+        possible to have -ppx drivers apply rewriters to only specific
+        parts of an AST.  *)
+
 
 (** {2 Helpers to build Parsetree fragments} *)
 

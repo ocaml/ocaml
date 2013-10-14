@@ -106,6 +106,7 @@ let targets_internal = ref []
 let ocaml_libs_internal = ref []
 let ocaml_mods_internal = ref []
 let ocaml_pkgs_internal = ref []
+let ocaml_syntax = ref None
 let ocaml_lflags_internal = ref []
 let ocaml_cflags_internal = ref []
 let ocaml_docflags_internal = ref []
@@ -178,6 +179,7 @@ let spec = ref (
    "-pkg", String (add_to' ocaml_pkgs_internal), "<package> Link to this ocaml findlib package";
    "-pkgs", String (add_to ocaml_pkgs_internal), "<package,...> (idem)";
    "-package", String (add_to' ocaml_pkgs_internal), "<package> (idem)";
+   "-syntax", String (fun syntax -> ocaml_syntax := Some syntax), "<syntax> Specify syntax using ocamlfind";
    "-lflag", String (add_to' ocaml_lflags_internal), "<flag> Add to ocamlc link flags";
    "-lflags", String (add_to ocaml_lflags_internal), "<flag,...> (idem)";
    "-cflag", String (add_to' ocaml_cflags_internal), "<flag> Add to ocamlc compile flags";

@@ -196,10 +196,11 @@ let report_err source_file exn =
         Syntaxerr.report_error err
     | Sys_error msg ->
         Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
-    | Pparse.Error ->
+    | Pparse.Error err ->
         Format.fprintf Format.err_formatter
-                       "@[Preprocessing error on file %s@]@."
-            source_file
+                       "@[Preprocessing error on file %s@]@.@[%a@]@."
+          source_file
+          Pparse.report_error err
     | x -> raise x
 
 let read_parse_and_extract parse_function extract_function magic source_file =

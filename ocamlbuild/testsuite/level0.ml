@@ -84,4 +84,51 @@ test "SubtoolOptions"
   ~targets:("parser.native",["parser.byte"])
   ();;
 
+test "Itarget"
+  ~description:".itarget building with dependencies between the modules (PR#5686)"
+  ~tree:[T.f "foo.itarget" ~content:"a.cma\nb.byte\n"; T.f "a.ml"; T.f "b.ml" ~content:"open A\n"]
+  ~matching:[M.f "a.cma"; M.f "b.byte"]
+  ~targets:("foo.otarget",[]) ();;
+
+test "PackAcross"
+  ~description:"Pack using a module from the other tree (PR#4592)"
+  ~tree:[T.f "main.ml" ~content:"let _ = Pack.Packed.g ()\n";
+         T.f "Pack.mlpack" ~content:"pack/Packed";
+         T.f "_tags" ~content:"<lib>: include\n<pack/*.cmx>: for-pack(Pack)\n";
+         T.d "lib" [T.f "Lib.ml" ~content:"let f()=()";
+                    T.f "Lib.mli" ~content:"val f : unit -> unit"];
+         T.d "pack" [T.f "Packed.ml" ~content:"let g() = Lib.f ()"]]
+  ~matching:[M.f "main.byte"; M.f "main.native"]
+  ~targets:("main.byte", ["main.native"])
+  ();;
+
+test "PackAcross2"
+  ~description:"Pack using a module from the other tree (PR#4592)"
+  ~tree:[T.f "a2.mli" ~content:"val f : unit -> unit";
+         T.f "a2.ml" ~content:"let f _ = ()";
+         T.f "lib.ml" ~content:"module A = A2";
+         T.f "b.ml" ~content:"let g = Lib.A.f";
+         T.f "sup.mlpack" ~content:"B";
+         T.f "prog.ml" ~content:"Sup.B.g"]
+  ~matching:[M.f "prog.byte"]
+  ~targets:("prog.byte",[]) ();;
+
+test "PackAcross3"
+  ~description:"Pack using a module from the other tree (PR#4592)"
+  ~tree:[T.d "foo" [ T.f "bar.ml" ~content:"let baz = Quux.xyzzy"];
+         T.f "foo.mlpack" ~content:"foo/Bar";
+         T.f "main.ml" ~content:"prerr_endline Foo.Bar.baz";
+         T.f "myocamlbuild.ml";
+         T.f "quux.ml" ~content:"let xyzzy = \"xyzzy\"";
+         T.f "quux.mli" ~content:"val xyzzy : string"]
+  ~matching:[M.f "main.byte"]
+  ~targets:("main.byte",[]) ();;
+
+test "SyntaxFlag"
+  ~description:"-syntax for ocamlbuild"
+  ~options:[`use_ocamlfind; `package "camlp4.macro"; `syntax "camlp4o"]
+  ~tree:[T.f "dummy.ml" ~content:"IFDEF TEST THEN\nprint_endline \"Hello\";;\nENDIF;;"]
+  ~matching:[M.f "dummy.native"]
+  ~targets:("dummy.native",[]) ();;
+
 run ~root:"_test";;

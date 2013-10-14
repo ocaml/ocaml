@@ -71,6 +71,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _ppx s = ppx := s :: !ppx
   let _principal = set principal
   let _rectypes = set recursive_types
   let _stdin () = file_argument ""

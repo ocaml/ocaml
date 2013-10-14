@@ -98,6 +98,10 @@ let proceed () =
     (fun pkg -> Configuration.tag_any [Param_tags.make "package" pkg])
     !Options.ocaml_pkgs;
 
+  begin match !Options.ocaml_syntax with
+  | Some syntax -> Configuration.tag_any [Param_tags.make "syntax" syntax]
+  | None -> () end;
+
   let newpwd = Sys.getcwd () in
   Sys.chdir Pathname.pwd;
   let entry_include_dirs = ref [] in

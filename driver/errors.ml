@@ -26,9 +26,8 @@ let report_error ppf exn =
       Lexer.report_error ppf err
   | Syntaxerr.Error err ->
       Syntaxerr.report_error ppf err
-  | Pparse.Error ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "Preprocessor error"
+  | Pparse.Error err ->
+      Pparse.report_error ppf err
   | Env.Error err ->
       Location.print_error_cur_file ppf;
       Env.report_error ppf err

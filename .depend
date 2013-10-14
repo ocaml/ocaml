@@ -996,12 +996,12 @@ toplevel/toploop.cmo : utils/warnings.cmi typing/types.cmi \
     bytecomp/translmod.cmi bytecomp/symtable.cmi bytecomp/simplif.cmi \
     typing/printtyped.cmi typing/printtyp.cmi bytecomp/printlambda.cmi \
     bytecomp/printinstr.cmi parsing/printast.cmi typing/predef.cmi \
-    parsing/pprintast.cmi typing/path.cmi parsing/parsetree.cmi \
-    parsing/parse.cmi typing/outcometree.cmi typing/oprint.cmi utils/misc.cmi \
-    bytecomp/meta.cmi parsing/longident.cmi parsing/location.cmi \
-    parsing/lexer.cmi typing/includemod.cmi typing/ident.cmi \
-    toplevel/genprintval.cmi driver/errors.cmi typing/env.cmi \
-    bytecomp/emitcode.cmi bytecomp/dll.cmi utils/consistbl.cmi \
+    parsing/pprintast.cmi driver/pparse.cmi typing/path.cmi \
+    parsing/parsetree.cmi parsing/parse.cmi typing/outcometree.cmi \
+    typing/oprint.cmi utils/misc.cmi bytecomp/meta.cmi parsing/longident.cmi \
+    parsing/location.cmi parsing/lexer.cmi typing/includemod.cmi \
+    typing/ident.cmi toplevel/genprintval.cmi driver/errors.cmi \
+    typing/env.cmi bytecomp/emitcode.cmi bytecomp/dll.cmi utils/consistbl.cmi \
     utils/config.cmi driver/compile.cmi utils/clflags.cmi \
     bytecomp/bytegen.cmi typing/btype.cmi toplevel/toploop.cmi
 toplevel/toploop.cmx : utils/warnings.cmx typing/types.cmx \
@@ -1009,12 +1009,12 @@ toplevel/toploop.cmx : utils/warnings.cmx typing/types.cmx \
     bytecomp/translmod.cmx bytecomp/symtable.cmx bytecomp/simplif.cmx \
     typing/printtyped.cmx typing/printtyp.cmx bytecomp/printlambda.cmx \
     bytecomp/printinstr.cmx parsing/printast.cmx typing/predef.cmx \
-    parsing/pprintast.cmx typing/path.cmx parsing/parsetree.cmi \
-    parsing/parse.cmx typing/outcometree.cmi typing/oprint.cmx utils/misc.cmx \
-    bytecomp/meta.cmx parsing/longident.cmx parsing/location.cmx \
-    parsing/lexer.cmx typing/includemod.cmx typing/ident.cmx \
-    toplevel/genprintval.cmx driver/errors.cmx typing/env.cmx \
-    bytecomp/emitcode.cmx bytecomp/dll.cmx utils/consistbl.cmx \
+    parsing/pprintast.cmx driver/pparse.cmx typing/path.cmx \
+    parsing/parsetree.cmi parsing/parse.cmx typing/outcometree.cmi \
+    typing/oprint.cmx utils/misc.cmx bytecomp/meta.cmx parsing/longident.cmx \
+    parsing/location.cmx parsing/lexer.cmx typing/includemod.cmx \
+    typing/ident.cmx toplevel/genprintval.cmx driver/errors.cmx \
+    typing/env.cmx bytecomp/emitcode.cmx bytecomp/dll.cmx utils/consistbl.cmx \
     utils/config.cmx driver/compile.cmx utils/clflags.cmx \
     bytecomp/bytegen.cmx typing/btype.cmx toplevel/toploop.cmi
 toplevel/topmain.cmo : utils/warnings.cmi toplevel/toploop.cmi \

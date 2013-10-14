@@ -692,14 +692,14 @@ the current point."
        ((looking-at "[ \t]*method")
         (setq method-alist (cons index method-alist)))))
     ;; build menu
-    (mapcar
-     '(lambda (pair)
-        (if (symbol-value (cdr pair))
-            (setq menu-alist
-                  (cons
-                   (cons (car pair)
-                         (sort (symbol-value (cdr pair)) 'imenu--sort-by-name))
-                   menu-alist))))
+    (mapc
+     (lambda (pair)
+       (if (symbol-value (cdr pair))
+           (setq menu-alist
+                 (cons
+                  (cons (car pair)
+                        (sort (symbol-value (cdr pair)) 'imenu--sort-by-name))
+                  menu-alist))))
      '(("Values" . value-alist)
        ("Types" . type-alist)
        ("Modules" . module-alist)

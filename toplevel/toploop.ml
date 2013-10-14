@@ -306,6 +306,17 @@ let protect r newval body =
 
 let use_print_results = ref true
 
+let phrase ppf phr =
+  let phr =
+    match phr with
+    | Ptop_def str ->
+        Ptop_def (Pparse.apply_rewriters ast_impl_magic_number str)
+    | phr -> phr
+  in
+  if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
+  if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
+  phr
+
 let use_file ppf wrap_mod name =
   try
     let (filename, ic, must_close) =
@@ -326,8 +337,7 @@ let use_file ppf wrap_mod name =
         try
           List.iter
             (fun ph ->
-              if !Clflags.dump_parsetree then Printast.top_phrase ppf ph;
-              if !Clflags.dump_source then Pprintast.top_phrase ppf ph;
+              let ph = phrase ppf ph in
               if not (execute_phrase !use_print_results ppf ph) then raise Exit)
             (if wrap_mod then
                parse_mod_use_file name lb
@@ -448,8 +458,7 @@ let loop ppf =
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
-      if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
+      let phr = phrase ppf phr  in
       Env.reset_cache_toplevel ();
       ignore(execute_phrase true ppf phr)
     with

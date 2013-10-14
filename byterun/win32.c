@@ -477,3 +477,23 @@ int caml_win32_random_seed (intnat data[16])
   data[2] = GetCurrentProcessId();
   return 3;
 }
+
+
+#ifdef _MSC_VER
+
+static void invalid_parameter_handler(const wchar_t* expression,
+   const wchar_t* function,
+   const wchar_t* file,
+   unsigned int line,
+   uintptr_t pReserved)
+{
+  /* no crash box */
+}
+
+
+void caml_install_invalid_parameter_handler()
+{
+  _set_invalid_parameter_handler(invalid_parameter_handler);
+}
+
+#endif 
