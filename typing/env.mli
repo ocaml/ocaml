@@ -35,6 +35,10 @@ val diff: t -> t -> Ident.t list
 type type_descriptions =
     constructor_description list * label_description list
 
+val iter_types:
+    (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
+    t -> unit
+
 (* Lookup by paths *)
 
 val find_value: Path.t -> t -> value_description

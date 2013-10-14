@@ -301,11 +301,11 @@ let search_string_type text ~mode =
         end in
       try (Typemod.transl_signature env sexp).sig_type
       with Env.Error err -> []
-      | Typemod.Error (l,_) ->
+      | Typemod.Error (l,_,_) ->
           let start_c = l.loc_start.Lexing.pos_cnum in
           let end_c = l.loc_end.Lexing.pos_cnum in
           raise (Error (start_c - 8, end_c - 8))
-      | Typetexp.Error (l,_) ->
+      | Typetexp.Error (l,_,_) ->
           let start_c = l.loc_start.Lexing.pos_cnum in
           let end_c = l.loc_end.Lexing.pos_cnum in
           raise (Error (start_c - 8, end_c - 8))

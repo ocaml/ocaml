@@ -3116,11 +3116,11 @@ let eqtype rename type_pairs subst env t1 t2 =
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of (type_expr * type_expr) list
-  | CM_Class_type_mismatch of class_type * class_type
-  | CM_Parameter_mismatch of (type_expr * type_expr) list
-  | CM_Val_type_mismatch of string * (type_expr * type_expr) list
-  | CM_Meth_type_mismatch of string * (type_expr * type_expr) list
+  | CM_Type_parameter_mismatch of Env.t * (type_expr * type_expr) list
+  | CM_Class_type_mismatch of Env.t * class_type * class_type
+  | CM_Parameter_mismatch of Env.t * (type_expr * type_expr) list
+  | CM_Val_type_mismatch of string * Env.t * (type_expr * type_expr) list
+  | CM_Meth_type_mismatch of string * Env.t * (type_expr * type_expr) list
   | CM_Non_mutable_value of string
   | CM_Non_concrete_value of string
   | CM_Missing_value of string
@@ -3142,7 +3142,7 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
         moregen_clty true type_pairs env cty1 cty2
     | Cty_fun (l1, ty1, cty1'), Cty_fun (l2, ty2, cty2') when l1 = l2 ->
         begin try moregen true type_pairs env ty1 ty2 with Unify trace ->
-          raise (Failure [CM_Parameter_mismatch (expand_trace env trace)])
+          raise (Failure [CM_Parameter_mismatch (env, expand_trace env trace)])
         end;
         moregen_clty false type_pairs env cty1' cty2'
     | Cty_signature sign1, Cty_signature sign2 ->
@@ -3155,7 +3155,7 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
           (fun (lab, k1, t1, k2, t2) ->
             begin try moregen true type_pairs env t1 t2 with Unify trace ->
               raise (Failure [CM_Meth_type_mismatch
-                                 (lab, expand_trace env trace)])
+                                 (lab, env, expand_trace env trace)])
            end)
         pairs;
       Vars.iter
@@ -3163,13 +3163,13 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
            let (mut', v', ty') = Vars.find lab sign1.cty_vars in
            try moregen true type_pairs env ty' ty with Unify trace ->
              raise (Failure [CM_Val_type_mismatch
-                                (lab, expand_trace env trace)]))
+                                (lab, env, expand_trace env trace)]))
         sign2.cty_vars
   | _ ->
       raise (Failure [])
   with
     Failure error when trace || error = [] ->
-      raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
+      raise (Failure (CM_Class_type_mismatch (env, cty1, cty2)::error))
 
 let match_class_types ?(trace=true) env pat_sch subj_sch =
   let type_pairs = TypePairs.create 53 in
@@ -3261,7 +3261,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
           Failure r -> r
         end
     | error ->
-        CM_Class_type_mismatch (patt, subj)::error
+        CM_Class_type_mismatch (env, patt, subj)::error
   in
   current_level := old_level;
   res
@@ -3277,7 +3277,7 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
         equal_clty true type_pairs subst env cty1 cty2
     | Cty_fun (l1, ty1, cty1'), Cty_fun (l2, ty2, cty2') when l1 = l2 ->
         begin try eqtype true type_pairs subst env ty1 ty2 with Unify trace ->
-          raise (Failure [CM_Parameter_mismatch (expand_trace env trace)])
+          raise (Failure [CM_Parameter_mismatch (env, expand_trace env trace)])
         end;
         equal_clty false type_pairs subst env cty1' cty2'
     | Cty_signature sign1, Cty_signature sign2 ->
@@ -3291,7 +3291,7 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
              begin try eqtype true type_pairs subst env t1 t2 with
                Unify trace ->
                  raise (Failure [CM_Meth_type_mismatch
-                                    (lab, expand_trace env trace)])
+                                    (lab, env, expand_trace env trace)])
              end)
           pairs;
         Vars.iter
@@ -3299,15 +3299,15 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
              let (_, _, ty') = Vars.find lab sign1.cty_vars in
              try eqtype true type_pairs subst env ty' ty with Unify trace ->
                raise (Failure [CM_Val_type_mismatch
-                                  (lab, expand_trace env trace)]))
+                                  (lab, env, expand_trace env trace)]))
           sign2.cty_vars
     | _ ->
         raise
           (Failure (if trace then []
-                    else [CM_Class_type_mismatch (cty1, cty2)]))
+                    else [CM_Class_type_mismatch (env, cty1, cty2)]))
   with
     Failure error when trace ->
-      raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
+      raise (Failure (CM_Class_type_mismatch (env, cty1, cty2)::error))
 
 let match_class_declarations env patt_params patt_type subj_params subj_type =
   let type_pairs = TypePairs.create 53 in
@@ -3393,7 +3393,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         List.iter2 (fun p s ->
           try eqtype true type_pairs subst env p s with Unify trace ->
             raise (Failure [CM_Type_parameter_mismatch
-                               (expand_trace env trace)]))
+                               (env, expand_trace env trace)]))
           patt_params subj_params;
      (* old code: equal_clty false type_pairs subst env patt_type subj_type; *)
         equal_clty false type_pairs subst env

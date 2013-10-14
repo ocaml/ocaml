@@ -46,6 +46,8 @@ type error =
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
 
+exception Error of Location.t * Env.t * error
+
 open Typedtree
 
 let ctyp desc typ env loc =
@@ -55,8 +57,6 @@ let cltyp desc typ env loc =
 let mkcf desc loc = { cf_desc = desc; cf_loc = loc }
 let mkctf desc loc = { ctf_desc = desc; ctf_loc = loc }
 
-
-exception Error of Location.t * error
 
 
                        (**********************)
@@ -216,13 +216,15 @@ let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
   let (id, virt) =
     try
       let (id, mut', virt', ty') = Vars.find lab !vars in
-      if mut' <> mut then raise (Error(loc, Mutability_mismatch(lab, mut)));
+      if mut' <> mut then
+        raise (Error(loc, val_env, Mutability_mismatch(lab, mut)));
       Ctype.unify val_env (instance ty) (instance ty');
       (if not inh then Some id else None),
       (if virt' = Concrete then virt' else virt)
     with
       Ctype.Unify tr ->
-        raise (Error(loc, Field_type_mismatch("instance variable", lab, tr)))
+        raise (Error(loc, val_env,
+                     Field_type_mismatch("instance variable", lab, tr)))
     | Not_found -> None, virt
   in
   let (id, _, _, _) as result =
@@ -249,7 +251,7 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
       with Ctype.Unify trace ->
         match trace with
           _::_::_::({desc = Tfield(n, _, _, _)}, _)::rem ->
-            raise(Error(loc, Field_type_mismatch ("method", n, rem)))
+            raise(Error(loc, env, Field_type_mismatch ("method", n, rem)))
         | _ ->
             assert false
       end;
@@ -274,7 +276,7 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
                  (cname :: Concr.elements over_vals));
       | Some Override
         when Concr.is_empty over_meths && Concr.is_empty over_vals ->
-        raise (Error(loc, No_overriding ("","")))
+        raise (Error(loc, env, No_overriding ("","")))
       | _ -> ()
       end;
 
@@ -284,7 +286,7 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
       (cl_sig, concr_meths, warn_vals)
 
   | _ ->
-      raise(Error(loc, Structure_expected parent))
+      raise(Error(loc, env, Structure_expected parent))
 
 let virtual_method val_env meths self_type lab priv sty loc =
   let (_, ty') =
@@ -294,7 +296,7 @@ let virtual_method val_env meths self_type lab priv sty loc =
   let ty = cty.ctyp_type in
   begin
     try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
-        raise(Error(loc, Field_type_mismatch ("method", lab, trace)));
+        raise(Error(loc, val_env, Field_type_mismatch ("method", lab, trace)));
   end;
   cty
 
@@ -306,7 +308,7 @@ let declare_method val_env meths self_type lab priv sty loc =
   in
   let unif ty =
     try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
-      raise(Error(loc, Field_type_mismatch ("method", lab, trace)))
+      raise(Error(loc, val_env, Field_type_mismatch ("method", lab, trace)))
   in
   match sty.ptyp_desc, priv with
     Ptyp_poly ([],sty'), Public ->
@@ -336,7 +338,7 @@ let type_constraint val_env sty sty' loc =
   let ty' = cty'.ctyp_type in
   begin
     try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
-        raise(Error(loc, Unconsistent_constraint trace));
+        raise(Error(loc, val_env, Unconsistent_constraint trace));
   end;
   (cty, cty')
 
@@ -420,7 +422,7 @@ and class_signature env sty sign loc =
   begin try
     Ctype.unify env self_type dummy_obj
   with Ctype.Unify _ ->
-    raise(Error(sty.ptyp_loc, Pattern_type_clash self_type))
+    raise(Error(sty.ptyp_loc, env, Pattern_type_clash self_type))
   end;
 
   (* Class type fields *)
@@ -446,12 +448,12 @@ and class_type env scty =
     Pcty_constr (lid, styl) ->
       let (path, decl) = Typetexp.find_class_type env scty.pcty_loc lid.txt in
       if Path.same decl.clty_path unbound_class then
-        raise(Error(scty.pcty_loc, Unbound_class_type_2 lid.txt));
+        raise(Error(scty.pcty_loc, env, Unbound_class_type_2 lid.txt));
       let (params, clty) =
         Ctype.instance_class decl.clty_params decl.clty_type
       in
       if List.length params <> List.length styl then
-        raise(Error(scty.pcty_loc,
+        raise(Error(scty.pcty_loc, env,
                     Parameter_arity_mismatch (lid.txt, List.length params,
                                                    List.length styl)));
       let ctys = List.map2
@@ -460,7 +462,7 @@ and class_type env scty =
           let ty' = cty'.ctyp_type in
           begin
            try Ctype.unify env ty' ty with Ctype.Unify trace ->
-                  raise(Error(sty.ptyp_loc, Parameter_mismatch trace))
+                  raise(Error(sty.ptyp_loc, env, Parameter_mismatch trace))
             end;
             cty'
         )       styl params
@@ -566,12 +568,13 @@ let rec class_field self_loc cl_num self_type meths vars
             (Warnings.Instance_variable_override[lab.txt])
       end else begin
         if ovf = Override then
-          raise(Error(loc, No_overriding ("instance variable", lab.txt)))
+          raise(Error(loc, val_env,
+                      No_overriding ("instance variable", lab.txt)))
       end;
       if !Clflags.principal then Ctype.begin_def ();
       let exp =
         try type_exp val_env sexp with Ctype.Unify [(ty, _)] ->
-          raise(Error(loc, Make_nongen_seltype ty))
+          raise(Error(loc, val_env, Make_nongen_seltype ty))
       in
       if !Clflags.principal then begin
         Ctype.end_def ();
@@ -600,7 +603,7 @@ let rec class_field self_loc cl_num self_type meths vars
           Location.prerr_warning loc (Warnings.Method_override [lab.txt])
       end else begin
         if ovf = Override then
-          raise(Error(loc, No_overriding("method", lab.txt)))
+          raise(Error(loc, val_env, No_overriding("method", lab.txt)))
       end;
       let (_, ty) =
         Ctype.filter_self_method val_env lab.txt priv meths self_type
@@ -626,7 +629,8 @@ let rec class_field self_loc cl_num self_type meths vars
           end
       | _ -> assert false
       with Ctype.Unify trace ->
-        raise(Error(loc, Field_type_mismatch ("method", lab.txt, trace)))
+        raise(Error(loc, val_env,
+                    Field_type_mismatch ("method", lab.txt, trace)))
       end;
       let meth_expr = make_method self_loc cl_num expr in
       (* backup variables for Pexp_override *)
@@ -700,7 +704,7 @@ and class_structure cl_num final val_env met_env loc
     else self_type in
   begin try Ctype.unify val_env public_self ty with
     Ctype.Unify _ ->
-      raise(Error(spat.ppat_loc, Pattern_type_clash public_self))
+      raise(Error(spat.ppat_loc, val_env, Pattern_type_clash public_self))
   end;
   let get_methods ty =
     (fst (Ctype.flatten_fields
@@ -743,7 +747,7 @@ and class_structure cl_num final val_env met_env loc
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.cty_vars [] in
     if mets <> [] || vals <> [] then
-      raise(Error(loc, Virtual_class(true, mets, vals)));
+      raise(Error(loc, val_env, Virtual_class(true, mets, vals)));
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
@@ -759,7 +763,7 @@ and class_structure cl_num final val_env met_env loc
       Ctype.unify val_env private_self
         (Ctype.newty (Tobject(self_methods, ref None)));
       Ctype.unify val_env public_self self_type
-    with Ctype.Unify trace -> raise(Error(loc, Final_self_clash trace))
+    with Ctype.Unify trace -> raise(Error(loc, val_env, Final_self_clash trace))
     end;
   end;
 
@@ -794,7 +798,7 @@ and class_expr cl_num val_env met_env scl =
     Pcl_constr (lid, styl) ->
       let (path, decl) = Typetexp.find_class val_env scl.pcl_loc lid.txt in
       if Path.same decl.cty_path unbound_class then
-        raise(Error(scl.pcl_loc, Unbound_class_2 lid.txt));
+        raise(Error(scl.pcl_loc, val_env, Unbound_class_2 lid.txt));
       let tyl = List.map
           (fun sty -> transl_simple_type val_env false sty)
           styl
@@ -804,14 +808,14 @@ and class_expr cl_num val_env met_env scl =
       in
       let clty' = abbreviate_class_type path params clty in
       if List.length params <> List.length tyl then
-        raise(Error(scl.pcl_loc,
+        raise(Error(scl.pcl_loc, val_env,
                     Parameter_arity_mismatch (lid.txt, List.length params,
                                                    List.length tyl)));
       List.iter2
         (fun cty' ty ->
           let ty' = cty'.ctyp_type in
            try Ctype.unify val_env ty' ty with Ctype.Unify trace ->
-             raise(Error(cty'.ctyp_loc, Parameter_mismatch trace)))
+             raise(Error(cty'.ctyp_loc, val_env, Parameter_mismatch trace)))
         tyl params;
       let cl =
         rc {cl_desc = Tcl_ident (path, lid, tyl);
@@ -934,10 +938,11 @@ and class_expr cl_num val_env met_env scl =
               if ignore_labels && not (Btype.is_optional l) then begin
                 match sargs, more_sargs with
                   (l', sarg0)::_, _ ->
-                    raise(Error(sarg0.pexp_loc, Apply_wrong_label(l')))
+                    raise(Error(sarg0.pexp_loc, val_env, Apply_wrong_label l'))
                 | _, (l', sarg0)::more_sargs ->
                     if l <> l' && l' <> "" then
-                      raise(Error(sarg0.pexp_loc, Apply_wrong_label l'))
+                      raise(Error(sarg0.pexp_loc, val_env,
+                                  Apply_wrong_label l'))
                     else ([], more_sargs,
                           Some (type_argument val_env sarg0 ty ty))
                 | _ ->
@@ -974,9 +979,9 @@ and class_expr cl_num val_env met_env scl =
             match sargs @ more_sargs with
               (l, sarg0)::_ ->
                 if omitted <> [] then
-                  raise(Error(sarg0.pexp_loc, Apply_wrong_label l))
+                  raise(Error(sarg0.pexp_loc, val_env, Apply_wrong_label l))
                 else
-                  raise(Error(cl.cl_loc, Cannot_apply cl.cl_type))
+                  raise(Error(cl.cl_loc, val_env, Cannot_apply cl.cl_type))
             | [] ->
                 (List.rev args,
                  List.fold_left
@@ -998,7 +1003,7 @@ and class_expr cl_num val_env met_env scl =
         try
           Typecore.type_let val_env rec_flag sdefs None
         with Ctype.Unify [(ty, _)] ->
-          raise(Error(scl.pcl_loc, Make_nongen_seltype ty))
+          raise(Error(scl.pcl_loc, val_env, Make_nongen_seltype ty))
       in
       let (vals, met_env) =
         List.fold_right
@@ -1054,7 +1059,7 @@ and class_expr cl_num val_env met_env scl =
         Includeclass.class_types val_env cl.cl_type clty.cltyp_type
       with
         []    -> ()
-      | error -> raise(Error(cl.cl_loc, Class_match_failure error))
+      | error -> raise(Error(cl.cl_loc, val_env, Class_match_failure error))
       end;
       let (vals, meths, concrs) = extract_constraints clty.cltyp_type in
       rc {cl_desc = Tcl_constraint (cl, Some clty, vals, meths, concrs);
@@ -1175,7 +1180,7 @@ let class_infos define_class kind
         let cty = transl_type_param env true sty in
           cty, cty.ctyp_type
       with Already_bound ->
-        raise(Error(sty.ptyp_loc, Repeated_parameter))
+        raise(Error(sty.ptyp_loc, env, Repeated_parameter))
     in
       List.split (List.map make_param cl.pci_params)
   in
@@ -1215,7 +1220,7 @@ let class_infos define_class kind
     begin try
       List.iter2 (Ctype.unify env) obj_params obj_params'
     with Ctype.Unify _ ->
-      raise(Error(cl.pci_loc,
+      raise(Error(cl.pci_loc, env,
             Bad_parameters (obj_id, constr,
                             Ctype.newconstr (Path.Pident obj_id)
                                             obj_params')))
@@ -1223,7 +1228,7 @@ let class_infos define_class kind
     begin try
       Ctype.unify env ty constr
     with Ctype.Unify _ ->
-      raise(Error(cl.pci_loc,
+      raise(Error(cl.pci_loc, env,
         Abbrev_type_clash (constr, ty, Ctype.expand_head env constr)))
     end
   end;
@@ -1237,7 +1242,7 @@ let class_infos define_class kind
     begin try
       List.iter2 (Ctype.unify env) cl_params cl_params'
     with Ctype.Unify _ ->
-      raise(Error(cl.pci_loc,
+      raise(Error(cl.pci_loc, env,
             Bad_parameters (cl_id,
                             Ctype.newconstr (Path.Pident cl_id)
                                             cl_params,
@@ -1248,7 +1253,7 @@ let class_infos define_class kind
       Ctype.unify env ty cl_ty
     with Ctype.Unify _ ->
       let constr = Ctype.newconstr (Path.Pident cl_id) params in
-      raise(Error(cl.pci_loc, Abbrev_type_clash (constr, ty, cl_ty)))
+      raise(Error(cl.pci_loc, env, Abbrev_type_clash (constr, ty, cl_ty)))
     end
   end;
 
@@ -1258,7 +1263,7 @@ let class_infos define_class kind
       (constructor_type constr obj_type)
       (Ctype.instance env constr_type)
   with Ctype.Unify trace ->
-    raise(Error(cl.pci_loc,
+    raise(Error(cl.pci_loc, env,
                 Constructor_type_mismatch (cl.pci_name.txt, trace)))
   end;
 
@@ -1291,7 +1296,7 @@ let class_infos define_class kind
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.cty_vars [] in
     if mets <> []  || vals <> [] then
-      raise(Error(cl.pci_loc, Virtual_class(true, mets, vals)));
+      raise(Error(cl.pci_loc, env, Virtual_class(true, mets, vals)));
   end;
 
   (* Misc. *)
@@ -1353,7 +1358,7 @@ let final_decl env define_class
 
   begin try Ctype.collapse_conj_params env clty.cty_params
   with Ctype.Unify trace ->
-    raise(Error(cl.pci_loc, Non_collapsable_conjunction (id, clty, trace)))
+    raise(Error(cl.pci_loc, env, Non_collapsable_conjunction (id, clty, trace)))
   end;
 
   List.iter Ctype.generalize clty.cty_params;
@@ -1374,7 +1379,7 @@ let final_decl env define_class
   end;
 
   if not (closed_class clty) then
-    raise(Error(cl.pci_loc, Non_generalizable_class (id, clty)));
+    raise(Error(cl.pci_loc, env, Non_generalizable_class (id, clty)));
 
   begin match
     Ctype.closed_class clty.cty_params
@@ -1387,7 +1392,7 @@ let final_decl env define_class
         then function ppf -> Printtyp.class_declaration id ppf clty
         else function ppf -> Printtyp.cltype_declaration id ppf cltydef
       in
-      raise(Error(cl.pci_loc, Unbound_type_var(printer, reason)))
+      raise(Error(cl.pci_loc, env, Unbound_type_var(printer, reason)))
   end;
 
   (id, cl.pci_name, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
@@ -1450,10 +1455,10 @@ let check_coercions env
       in
       begin try Ctype.subtype env cl_ty obj_ty ()
       with Ctype.Subtype (tr1, tr2) ->
-        raise(Typecore.Error(loc, Typecore.Not_subtype(tr1, tr2)))
+        raise(Typecore.Error(loc, env, Typecore.Not_subtype(tr1, tr2)))
       end;
       if not (Ctype.opened_object cl_ty) then
-        raise(Error(loc, Cannot_coerce_self obj_ty))
+        raise(Error(loc, env, Cannot_coerce_self obj_ty))
   end;
   (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
    arity, pub_meths, req)
@@ -1571,16 +1576,16 @@ let approx_class_declarations env sdecls =
 
 open Format
 
-let report_error ppf = function
+let report_error env ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint trace ->
       fprintf ppf "The class constraints are not consistent.@.";
-      Printtyp.report_unification_error ppf trace
+      Printtyp.report_unification_error ppf env trace
         (fun ppf -> fprintf ppf "Type")
         (fun ppf -> fprintf ppf "is not compatible with type")
   | Field_type_mismatch (k, m, trace) ->
-      Printtyp.report_unification_error ppf trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "The %s %s@ has type" k m)
         (function ppf ->
@@ -1619,7 +1624,7 @@ let report_error ppf = function
        Printtyp.type_expr actual
        Printtyp.type_expr expected
   | Constructor_type_mismatch (c, trace) ->
-      Printtyp.report_unification_error ppf trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "The expression \"new %s\" has type" c)
         (function ppf ->
@@ -1644,7 +1649,7 @@ let report_error ppf = function
            but is here applied to %i type argument(s)@]"
         Printtyp.longident lid expected provided
   | Parameter_mismatch trace ->
-      Printtyp.report_unification_error ppf trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "The type parameter")
         (function ppf ->
@@ -1701,11 +1706,11 @@ let report_error ppf = function
         "@[The type of this class,@ %a,@ \
            contains non-collapsible conjunctive types in constraints@]"
         (Printtyp.class_declaration id) clty;
-      Printtyp.report_unification_error ppf trace
+      Printtyp.report_unification_error ppf env trace
         (fun ppf -> fprintf ppf "Type")
         (fun ppf -> fprintf ppf "is not compatible with type")
   | Final_self_clash trace ->
-      Printtyp.report_unification_error ppf trace
+      Printtyp.report_unification_error ppf env trace
         (function ppf ->
            fprintf ppf "This object is expected to have type")
         (function ppf ->
@@ -1722,3 +1727,6 @@ let report_error ppf = function
         "instance variable"
   | No_overriding (kind, name) ->
       fprintf ppf "@[The %s `%s'@ has no previous definition@]" kind name
+	
+let report_error env ppf err =
+  Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)

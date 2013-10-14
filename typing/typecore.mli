@@ -75,7 +75,7 @@ type error =
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * Env.t * Path.t * Longident.t
+  | Wrong_name of string * Path.t * Longident.t
   | Name_type_mismatch of 
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Incomplete_format of string
@@ -106,9 +106,9 @@ type error =
   | Unexpected_existential
   | Unqualified_gadt_pattern of Path.t * string
 
-exception Error of Location.t * error
+exception Error of Location.t * Env.t * error
 
-val report_error: formatter -> error -> unit
+val report_error: Env.t -> formatter -> error -> unit
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref

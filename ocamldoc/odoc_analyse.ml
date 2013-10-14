@@ -124,24 +124,24 @@ let process_error exn =
       fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
        have the same hash value." l l'
-  | Typecore.Error(loc, err) ->
-      Location.print_error ppf loc; Typecore.report_error ppf err
-  | Typetexp.Error(loc, err) ->
-      Location.print_error ppf loc; Typetexp.report_error ppf err
+  | Typecore.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typecore.report_error env ppf err
+  | Typetexp.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typetexp.report_error env ppf err
   | Typedecl.Error(loc, err) ->
       Location.print_error ppf loc; Typedecl.report_error ppf err
   | Includemod.Error err ->
       Location.print_error_cur_file ppf;
       Includemod.report_error ppf err
-  | Typemod.Error(loc, err) ->
-      Location.print_error ppf loc; Typemod.report_error ppf err
+  | Typemod.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typemod.report_error env ppf err
   | Translcore.Error(loc, err) ->
       Location.print_error ppf loc; Translcore.report_error ppf err
   | Sys_error msg ->
       Location.print_error_cur_file ppf;
       fprintf ppf "I/O error: %s" msg
-  | Typeclass.Error(loc, err) ->
-      Location.print_error ppf loc; Typeclass.report_error ppf err
+  | Typeclass.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typeclass.report_error env ppf err
   | Translclass.Error(loc, err) ->
       Location.print_error ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->

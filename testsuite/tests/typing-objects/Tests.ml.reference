@@ -254,10 +254,12 @@ Error: Multiple definition of the type name t.
   fun x -> (x : int -> bool :> 'a -> 'a);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type int -> bool is not a subtype of int -> int 
+       Type bool is not a subtype of int 
 # Characters 9-40:
   fun x -> (x : int -> bool :> int -> int);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type int -> bool is not a subtype of int -> int 
+       Type bool is not a subtype of int 
 # - : <  > -> <  > = <fun>
 # - : < .. > -> <  > = <fun>
 #   val x : '_a list ref = {contents = []}

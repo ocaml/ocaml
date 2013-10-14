@@ -396,7 +396,8 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
       tl, tw, finish
   in
   Format.set_max_boxes 100;
-  Printtyp.signature Format.std_formatter sign;
+  Printtyp.wrap_printing_env env
+    (fun () -> Printtyp.signature Format.std_formatter sign);
   finish ();
   Lexical.init_tags tw;
   Lexical.tag tw;
@@ -537,16 +538,18 @@ and view_decl_menu lid ~kind ~env ~parent =
     Format.set_formatter_output_functions buf#out (fun () -> ());
     Format.set_margin 60;
     Format.open_hbox ();
-    if kind = `Type then
-      Printtyp.type_declaration
-        (ident_of_path path ~default:"t")
-        Format.std_formatter
-        (find_type path env)
-    else
-      Printtyp.modtype_declaration
-        (ident_of_path path ~default:"S")
-        Format.std_formatter
-        (find_modtype path env);
+    Printtyp.wrap_printing_env env begin fun () ->
+      if kind = `Type then
+        Printtyp.type_declaration
+          (ident_of_path path ~default:"t")
+          Format.std_formatter
+          (find_type path env)
+      else
+        Printtyp.modtype_declaration
+          (ident_of_path path ~default:"S")
+          Format.std_formatter
+          (find_modtype path env)
+    end;
     Format.close_box (); Format.print_flush ();
     Format.set_formatter_output_functions fo ff;
     Format.set_margin margin;
@@ -637,7 +640,8 @@ let view_type_menu kind ~env ~parent =
       Format.open_hbox ();
       Printtyp.reset ();
       Printtyp.mark_loops ty;
-      Printtyp.type_expr Format.std_formatter ty;
+      Printtyp.wrap_printing_env env
+        (fun () -> Printtyp.type_expr Format.std_formatter ty);
       Format.close_box (); Format.print_flush ();
       Format.set_formatter_output_functions fo ff;
       Format.set_margin margin;
