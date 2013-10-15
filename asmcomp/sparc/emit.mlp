@@ -603,7 +603,7 @@ let rec emit_instr i dslot =
         `	ld	[%sp + 100], %l5\n`;
         `	add	%sp, 8, %sp\n`;
         stack_offset := !stack_offset - 8
-    | Lraise ->
+    | Lraise _ ->
         `	ld	[%l5 + 96], %g1\n`;
         `	mov	%l5, %sp\n`;
         `	ld	[%sp + 100], %l5\n`;
