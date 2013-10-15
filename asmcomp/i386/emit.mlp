@@ -830,11 +830,16 @@ let emit_instr fallthrough i =
         `	addl	${emit_int (trap_frame_size - 4)}, %esp\n`;
         cfi_adjust_cfa_offset (-trap_frame_size);
         stack_offset := !stack_offset - trap_frame_size
-    | Lraise ->
-        if !Clflags.debug then begin
+    | Lraise k  ->
+        begin match !Clflags.debug, k with
+        | true, Lambda.Raise_regular ->
           `	call    {emit_symbol "caml_raise_exn"}\n`;
           record_frame Reg.Set.empty i.dbg
-        end else begin
+        | true, Lambda.Raise_reraise ->
+          `	call    {emit_symbol "caml_reraise_exn"}\n`;
+          record_frame Reg.Set.empty i.dbg
+        | false, _
+        | true, Lambda.Raise_notrace ->
           `	movl	{emit_symbol "caml_exception_pointer"}, %esp\n`;
           `	popl    {emit_symbol "caml_exception_pointer"}\n`;
           if trap_frame_size > 8 then
