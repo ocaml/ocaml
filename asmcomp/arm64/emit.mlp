@@ -614,10 +614,12 @@ let emit_instr i =
         cfi_adjust_cfa_offset (-16);
         stack_offset := !stack_offset - 16
     | Lraise ->
-        if !Clflags.debug then begin
+        begin match !Clflags.debug, k with
+        | true, (Lambda.Raise_regular | Lambda.Raise_reraise) ->
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
           `{record_frame Reg.Set.empty i.dbg}\n`
-        end else begin
+        | false, _
+        | true, Lambda.Raise_notrace ->
           `	mov	sp, {emit_reg reg_trap_ptr}\n`;
           `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
           `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
