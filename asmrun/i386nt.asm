@@ -27,6 +27,7 @@
         EXTERN  _caml_last_return_address: DWORD
         EXTERN  _caml_gc_regs: DWORD
         EXTERN  _caml_exception_pointer: DWORD
+        EXTERN  _caml_backtrace_pos: DWORD
         EXTERN  _caml_backtrace_active: DWORD
         EXTERN  _caml_stash_backtrace: PROC
 
@@ -205,6 +206,8 @@ _caml_raise_exn:
         pop     _caml_exception_pointer
         ret
 L110:
+        mov     _caml_backtrace_pos, 0
+L111:
         mov     esi, eax                ; Save exception bucket in esi
         mov     edi, _caml_exception_pointer ; SP of handler
         mov     eax, [esp]              ; PC of raise
@@ -219,18 +222,27 @@ L110:
         pop     _caml_exception_pointer
         ret
 
-; Raise an exception from C
+        PUBLIC  _caml_reraise_exn
+        ALIGN   4
+_caml_reraise_exn:
+        test    _caml_backtrace_active, 1
+        jne     L111
+        mov     esp, _caml_exception_pointer
+        pop     _caml_exception_pointer
+        ret
+
+                                ; Raise an exception from C
 
         PUBLIC  _caml_raise_exception
         ALIGN  4
 _caml_raise_exception:
         test    _caml_backtrace_active, 1
-        jne     L111
+        jne     L112
         mov     eax, [esp+4]
         mov     esp, _caml_exception_pointer
         pop     _caml_exception_pointer
         ret
-L111:
+L112:
         mov     esi, [esp+4]            ; Save exception bucket in esi
         push    _caml_exception_pointer ; arg 4: SP of handler
         push    _caml_bottom_of_stack   ; arg 3: SP of raise
