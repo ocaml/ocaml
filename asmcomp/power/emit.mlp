@@ -365,7 +365,7 @@ let instr_size = function
   | Lsetuptrap lbl -> 1
   | Lpushtrap -> 4
   | Lpoptrap -> 2
-  | Lraise -> 6
+  | Lraise _ -> 6
 
 let label_map code =
   let map = Hashtbl.create 37 in
@@ -767,11 +767,13 @@ let rec emit_instr i dslot =
         `	{emit_string lg}	{emit_gpr 29}, {emit_int size_addr}({emit_gpr 1})\n`;
         `	addi	{emit_gpr 1}, {emit_gpr 1}, 16\n`;
         stack_offset := !stack_offset - 16
-    | Lraise ->
-        if !Clflags.debug && supports_backtraces then begin
+    | Lraise k ->
+        begin match !Clflags.debug && supports_backtraces, k with
+        | true, (Lambda.Raise_regular | Lambda.Raise_reraise) ->
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
           record_frame Reg.Set.empty i.dbg
-        end else begin
+        | false, _
+        | true, Lambda.Raise_notrace ->
           `	{emit_string lg}	{emit_gpr 0}, 0({emit_gpr 29})\n`;
           `	mr	{emit_gpr 1}, {emit_gpr 29}\n`;
           `	mtlr	{emit_gpr 0}\n`;
