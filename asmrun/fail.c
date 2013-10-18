@@ -73,13 +73,7 @@ void caml_raise(value v)
 
 void caml_raise_constant(value tag)
 {
-  CAMLparam1 (tag);
-  CAMLlocal1 (bucket);
-
-  bucket = caml_alloc_small (1, 0);
-  Field(bucket, 0) = tag;
-  caml_raise(bucket);
-  CAMLnoreturn;
+  caml_raise(tag);
 }
 
 void caml_raise_with_arg(value tag, value arg)
