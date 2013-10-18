@@ -734,7 +734,9 @@ and transl_exp0 e =
             Lprim(Pmakeblock(n, Immutable), ll)
           end
       | Cstr_exception (path, _) ->
-          Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
+          let slot = transl_path path in
+          if cstr.cstr_arity = 0 then slot
+          else Lprim(Pmakeblock(0, Immutable), slot :: ll)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in

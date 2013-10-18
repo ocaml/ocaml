@@ -2155,10 +2155,15 @@ let combine_constructor arg ex_pat cstr partial ctx def
         | Some fail -> fail, tag_lambda_list in
       List.fold_right
         (fun (ex, act) rem ->
+           assert(ex = cstr.cstr_tag);
           match ex with
           | Cstr_exception (path, _) ->
+              let slot =
+                if cstr.cstr_arity = 0 then arg
+                else Lprim(Pfield 0, [arg])
+              in
               Lifthenelse(Lprim(Pintcomp Ceq,
-                                [Lprim(Pfield 0, [arg]); transl_path path]),
+                                [slot; transl_path path]),
                           act, rem)
           | _ -> assert false)
         tests default in

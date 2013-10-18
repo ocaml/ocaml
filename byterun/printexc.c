@@ -53,8 +53,8 @@ CAMLexport char * caml_format_exception(value exn)
 
   buf.ptr = buf.data;
   buf.end = buf.data + sizeof(buf.data) - 1;
-  add_string(&buf, String_val(Field(Field(exn, 0), 0)));
   if (Wosize_val(exn) >= 2) {
+    add_string(&buf, String_val(Field(Field(exn, 0), 0)));
     /* Check for exceptions in the style of Match_failure and Assert_failure */
     if (Wosize_val(exn) == 2 &&
         Is_block(Field(exn, 1)) &&
@@ -82,7 +82,9 @@ CAMLexport char * caml_format_exception(value exn)
       }
     }
     add_char(&buf, ')');
-  }
+  } else
+    add_string(&buf, String_val(Field(exn, 0)));
+
   *buf.ptr = 0;              /* Terminate string */
   i = buf.ptr - buf.data + 1;
   res = malloc(i);

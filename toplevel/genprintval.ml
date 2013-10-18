@@ -349,7 +349,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         Oval_constr (lid, args)
 
     and tree_of_exception depth bucket =
-      let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
+      let slot = if O.size bucket = 1 then bucket else O.field bucket 1 in
+      let name = (O.obj(O.field slot 0) : string) in
       let lid = Longident.parse name in
       try
         (* Attempt to recover the constructor description for the exn
@@ -361,7 +362,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)
-        if not (EVP.same_value (O.field bucket 0) (EVP.eval_path path))
+        if not (EVP.same_value slot (EVP.eval_path path))
         then raise Not_found;
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name 1 depth bucket cstr.cstr_args

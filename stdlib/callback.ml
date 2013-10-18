@@ -20,4 +20,6 @@ let register name v =
   register_named_value name (Obj.repr v)
 
 let register_exception name (exn : exn) =
-  register_named_value name (Obj.field (Obj.repr exn) 0)
+  let exn = Obj.repr exn in
+  let slot = if Obj.size exn = 1 then exn else Obj.field exn 1 in
+  register_named_value name slot
