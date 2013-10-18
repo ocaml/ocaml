@@ -1484,7 +1484,7 @@ label_declaration:
 /* Type Extensions */
 
 str_type_extension:
-  optional_type_parameters type_longident PLUSEQUAL private_flag str_extension_constructors
+  optional_type_parameters type_longident PLUSEQUAL private_flag opt_bar str_extension_constructors
       { let (params, variance) = List.split $1 in
 	  {ptyext_path = mkrhs $2 2;
 	   ptyext_params = params;
@@ -1493,7 +1493,7 @@ str_type_extension:
 	   ptyext_variance = variance} }
 ;
 sig_type_extension:
-  optional_type_parameters type_longident PLUSEQUAL private_flag sig_extension_constructors
+  optional_type_parameters type_longident PLUSEQUAL private_flag opt_bar sig_extension_constructors
       { let (params, variance) = List.split $1 in
 	  {ptyext_path = mkrhs $2 2;
 	   ptyext_params = params;
