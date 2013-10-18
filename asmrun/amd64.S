@@ -603,7 +603,7 @@ CFI_ENDPROC
    backtrace anyway. */
 
 FUNCTION(G(caml_stack_overflow))
-        LEA_VAR(caml_bucket_Stack_overflow, %rax)
+        LEA_VAR(caml_exn_Stack_overflow, %rax)
         movq    %r14, %rsp            /* cut the stack */
         popq    %r14                  /* recover previous exn handler */
         ret                           /* jump to handler's code */

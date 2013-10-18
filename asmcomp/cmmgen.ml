@@ -191,7 +191,7 @@ let safe_divmod op c1 c2 dbg =
       Cifthenelse(c2,
                   Cop(op, [c1; c2]),
                   Cop(Craise (Raise_regular, dbg),
-                      [Cconst_symbol "caml_bucket_Division_by_zero"])))
+                      [Cconst_symbol "caml_exn_Division_by_zero"])))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
@@ -212,7 +212,7 @@ let safe_divmod_bi mkop mkm1 c1 c2 bi dbg =
     else
       Cifthenelse(c2, c3,
                   Cop(Craise (Raise_regular, dbg),
-                      [Cconst_symbol "caml_bucket_Division_by_zero"]))))
+                      [Cconst_symbol "caml_exn_Division_by_zero"]))))
 
 let safe_div_bi =
   safe_divmod_bi (fun c1 c2 -> Cop(Cdivi, [c1;c2]))
@@ -2503,15 +2503,10 @@ let code_segment_table namelist =
 (* Initialize a predefined exception *)
 
 let predef_exception name =
-  let bucketname = "caml_bucket_" ^ name in
   let symname = "caml_exn_" ^ name in
   Cdata(Cglobal_symbol symname ::
         emit_constant symname
-          (Const_block(0,[Const_base(Const_string (name, None))]))
-        [ Cglobal_symbol bucketname;
-          Cint(block_header 0 1);
-          Cdefine_symbol bucketname;
-          Csymbol_address symname ])
+          (Const_block(0,[Const_base(Const_string (name, None))])) [])
 
 (* Header for a plugin *)
 

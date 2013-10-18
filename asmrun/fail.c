@@ -41,10 +41,9 @@ extern caml_generated_constant
   caml_exn_Sys_blocked_io,
   caml_exn_Stack_overflow,
   caml_exn_Assert_failure,
-  caml_exn_Undefined_recursive_module;
-extern caml_generated_constant
-  caml_bucket_Out_of_memory,
-  caml_bucket_Stack_overflow;
+  caml_exn_Undefined_recursive_module,
+  caml_exn_Out_of_memory,
+  caml_exn_Stack_overflow;
 
 /* Exception raising */
 
@@ -118,22 +117,14 @@ void caml_invalid_argument (char const *msg)
   caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
 }
 
-/* To raise [Out_of_memory], we can't use [caml_raise_constant],
-   because it allocates and we're out of memory...
-   We therefore use a statically-allocated bucket constructed
-   by the ocamlopt linker.
-   This works OK because the exception value for [Out_of_memory] is also
-   statically allocated out of the heap.
-   The same applies to Stack_overflow. */
-
 void caml_raise_out_of_memory(void)
 {
-  caml_raise((value) &caml_bucket_Out_of_memory);
+  caml_raise_constant((value) caml_exn_Out_of_memory);
 }
 
 void caml_raise_stack_overflow(void)
 {
-  caml_raise((value) &caml_bucket_Stack_overflow);
+  caml_raise_constant((value) caml_exn_Stack_overflow);
 }
 
 void caml_raise_sys_error(value msg)

@@ -384,8 +384,8 @@ partialclean::
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	$(SWITCH_COMPILER) enable COMPILER=CAMLC VARIANT=BYTE
-	$(SWITCH_COMPILER) disable COMPILER=CAMLC VARIANT=OPT
+	#$(SWITCH_COMPILER) enable COMPILER=CAMLC VARIANT=BYTE
+	#$(SWITCH_COMPILER) disable COMPILER=CAMLC VARIANT=OPT
 
 partialclean::
 	if [ -n "$(ROOTDIR)" ]; then \
@@ -518,7 +518,7 @@ ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
 	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
 	  compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
 	  $(BYTESTART:.cmo=.cmx) -cclib "$(BYTECCLIBS)"
-	$(SWITCH_COMPILER) enable COMPILER=CAMLC VARIANT=OPT
+	#$(SWITCH_COMPILER) enable COMPILER=CAMLC VARIANT=OPT
 
 partialclean::
 	rm -f ocamlc.opt
@@ -538,7 +538,7 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
 	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	   $(OPTSTART:.cmo=.cmx)
-	$(SWITCH_COMPILER) enable COMPILER=CAMLOPT VARIANT=OPT
+	#$(SWITCH_COMPILER) enable COMPILER=CAMLOPT VARIANT=OPT
 
 partialclean::
 	rm -f ocamlopt.opt
