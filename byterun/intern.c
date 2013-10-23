@@ -64,10 +64,6 @@ static value intern_block;
 /* Point to the heap block allocated as destination block.
    Meaningful only if intern_extra_block is NULL. */
 
-static value * camlinternaloo_last_id = NULL;
-/* Pointer to a reference holding the last object id.
-   -1 means not available (CamlinternalOO not loaded). */
-
 static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset);
 static void intern_bad_code_pointer(unsigned char digest[16]) Noreturn;
@@ -290,16 +286,9 @@ static void intern_rec(value *dest)
   switch (sp->op) {
   case OFreshOID:
     /* Refresh the object ID */
-    if (camlinternaloo_last_id == NULL) {
-      camlinternaloo_last_id = caml_named_value("CamlinternalOO.last_id");
-      if (camlinternaloo_last_id == NULL)
-        camlinternaloo_last_id = (value*) (-1);
-    }
-    if (camlinternaloo_last_id != (value*) (-1)) {
-      value id = Field(*camlinternaloo_last_id,0);
-      Field(dest, 0) = id;
-      Field(*camlinternaloo_last_id,0) = id + 2;
-    }
+    /* but do not do it for predefined exception slots */
+    if (Int_val(Field(dest, 1)) >= 0)
+      caml_set_oo_id((value)dest);
     /* Pop item and iterate */
     sp--;
     break;
@@ -336,7 +325,7 @@ static void intern_rec(value *dest)
           /* Request freshing OID */
           PushItem();
           sp->op = OFreshOID;
-          sp->dest = &Field(v, 1);
+          sp->dest = v;
           sp->arg = 1;
           /* Finally read first two block elements: method table and old OID */
           ReadItems(&Field(v, 0), 2);
@@ -503,8 +492,6 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
 {
   mlsize_t wosize;
 
-  if (camlinternaloo_last_id == (value*)-1)
-    camlinternaloo_last_id = NULL; /* Reset ignore flag */
   if (whsize == 0) {
     intern_obj_table = NULL;
     intern_extra_block = NULL;

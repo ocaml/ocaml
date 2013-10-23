@@ -79,6 +79,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       else []
 
     let outval_of_untyped_exception bucket =
+      if O.tag bucket <> 0 then
+        Oval_constr (Oide_ident (O.obj (O.field bucket 0) : string), [])
+      else
       let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
       let args =
         if (name = "Match_failure"
@@ -349,7 +352,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         Oval_constr (lid, args)
 
     and tree_of_exception depth bucket =
-      let slot = if O.size bucket = 1 then bucket else O.field bucket 1 in
+      let slot =
+        if O.tag bucket <> 0 then bucket
+        else O.field bucket 0
+      in
       let name = (O.obj(O.field slot 0) : string) in
       let lid = Longident.parse name in
       try

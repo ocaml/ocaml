@@ -26,5 +26,5 @@ val globals_map: (string * Digest.t * Digest.t * string list) list ->
 val frame_table: string list -> Cmm.phrase
 val data_segment_table: string list -> Cmm.phrase
 val code_segment_table: string list -> Cmm.phrase
-val predef_exception: string -> Cmm.phrase
+val predef_exception: int -> string -> Cmm.phrase
 val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> Cmm.phrase

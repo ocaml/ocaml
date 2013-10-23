@@ -24,6 +24,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "prims.h"
+#include "stdio.h"
 
 CAMLprim value caml_static_alloc(value size)
 {
@@ -247,3 +248,11 @@ value caml_cache_public_method2 (value *meths, value tag, value *cache)
   }
 }
 #endif /*CAML_JIT*/
+
+static value oo_last_id = Val_int(0);
+
+CAMLprim value caml_set_oo_id (value obj) {
+  Field(obj, 1) = oo_last_id;
+  oo_last_id += 2;
+  return obj;
+}

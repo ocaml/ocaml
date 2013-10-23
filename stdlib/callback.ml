@@ -21,5 +21,5 @@ let register name v =
 
 let register_exception name (exn : exn) =
   let exn = Obj.repr exn in
-  let slot = if Obj.size exn = 1 then exn else Obj.field exn 1 in
+  let slot = if Obj.tag exn = Obj.object_tag then exn else Obj.field exn 0 in
   register_named_value name slot

@@ -2502,11 +2502,14 @@ let code_segment_table namelist =
 
 (* Initialize a predefined exception *)
 
-let predef_exception name =
+let predef_exception i name =
   let symname = "caml_exn_" ^ name in
   Cdata(Cglobal_symbol symname ::
         emit_constant symname
-          (Const_block(0,[Const_base(Const_string (name, None))])) [])
+          (Const_block(Obj.object_tag,
+                       [Const_base(Const_string (name, None));
+                        Const_base(Const_int (-i-1))
+                       ])) [])
 
 (* Header for a plugin *)
 

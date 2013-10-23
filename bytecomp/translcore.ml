@@ -1124,16 +1124,6 @@ let transl_let rec_flag pat_expr_list body =
         (transl_let rec_flag pat_expr_list) body
 *)
 
-(* Compile an exception definition *)
-
-let transl_exception path decl =
-  let name =
-    match path with
-      None -> Ident.name decl.cd_id
-    | Some p -> Path.name p in
-  Lprim(Pmakeblock(0, Immutable),
-        [Lconst(Const_base(Const_string (name,None)))])
-
 (* Error report *)
 
 open Format

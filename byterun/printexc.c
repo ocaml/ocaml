@@ -53,7 +53,7 @@ CAMLexport char * caml_format_exception(value exn)
 
   buf.ptr = buf.data;
   buf.end = buf.data + sizeof(buf.data) - 1;
-  if (Wosize_val(exn) >= 2) {
+  if (Tag_val(exn) == 0) {
     add_string(&buf, String_val(Field(Field(exn, 0), 0)));
     /* Check for exceptions in the style of Match_failure and Assert_failure */
     if (Wosize_val(exn) == 2 &&
