@@ -45,6 +45,8 @@ corekernel
 core_kernel-109.37.00
 cryptokit
 cryptokit-1.6
+csv
+csv-1.3.1
 customprintf
 custom_printf-109.27.00
 dbm
