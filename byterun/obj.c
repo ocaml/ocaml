@@ -74,6 +74,11 @@ CAMLprim value caml_obj_tag(value arg)
   }
 }
 
+CAMLprim value caml_obj_raw_tag(value arg)
+{
+  return Val_int(Tag_val(arg));
+}
+
 CAMLprim value caml_obj_set_tag (value arg, value new_tag)
 {
   Tag_val (arg) = Int_val (new_tag);

@@ -58,7 +58,7 @@ let to_string x =
             sprintf locfmt file line char (char+6) "Undefined recursive module"
         | _ ->
             let x = Obj.repr x in
-            if Obj.tag x <> 0 then
+            if Obj.raw_tag x <> 0 then
               (Obj.magic (Obj.field x 0) : string)
             else
               let constructor =
@@ -175,7 +175,7 @@ external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 
 let exn_slot x =
   let x = Obj.repr x in
-  if Obj.tag x = 0 then Obj.field x 0 else x
+  if Obj.raw_tag x = 0 then Obj.field x 0 else x
 
 let exn_slot_id x =
   let slot = exn_slot x in
