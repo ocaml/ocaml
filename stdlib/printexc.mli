@@ -112,3 +112,23 @@ val get_callstack: int -> raw_backtrace
 
     @since 4.01.0
 *)
+
+
+(** {6 Exception slots} *)
+
+val exn_slot_id: exn -> int
+(** [Printexc.exn_slot_id] returns an integer which uniquely identifies
+    the constructor used to create the exception value [exn]
+    (in the current runtime).
+
+    @since 4.02.0
+*)
+
+val exn_slot_name: exn -> string
+(** [Printexc.exn_slot_id exn] returns the internal name of the constructor
+    used to create the exception value [exn].
+
+    @since 4.02.0
+*)
+
+
