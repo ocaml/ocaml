@@ -357,14 +357,16 @@ and signature_component s comp newid =
   | Sig_class_type(id, d, rs) ->
       Sig_class_type(newid, cltype_declaration s d, rs)
 
-and modtype_declaration s = function
-    Modtype_abstract -> Modtype_abstract
-  | Modtype_manifest mty -> Modtype_manifest(modtype s mty)
-
 and module_declaration s decl =
   {
     md_type = modtype s decl.md_type;
     md_attributes = attrs s decl.md_attributes;
+  }
+
+and modtype_declaration s decl  =
+  {
+    mtd_type = may_map (modtype s) decl.mtd_type;
+    mtd_attributes = attrs s decl.mtd_attributes;
   }
 
 (* For every binding k |-> d of m1, add k |-> f d to m2

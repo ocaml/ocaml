@@ -545,9 +545,9 @@ let find_type_expansion_opt path env =
        may_map snd decl.type_newtype_level)
 
 let find_modtype_expansion path env =
-  match find_modtype path env with
-    Modtype_abstract     -> raise Not_found
-  | Modtype_manifest mty -> mty
+  match (find_modtype path env).mtd_type with
+  | None -> raise Not_found
+  | Some mty -> mty
 
 let is_functor_arg path env =
   let id = Path.head path in

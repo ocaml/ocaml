@@ -63,6 +63,35 @@ let check_deprecated loc attrs s =
   then
     Location.prerr_warning loc (Warnings.Deprecated s)
 
+let warning_attribute attrs =
+  let prev_warnings = ref None in
+  List.iter
+    (function
+      | ({txt = "warning"; loc}, payload) ->
+          begin match payload with
+          | PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(s, _))}, _)}] ->
+              if !prev_warnings = None then
+                prev_warnings := Some (Warnings.backup ());
+              begin try Warnings.parse_options false s
+              with Arg.Bad _ ->
+                Location.prerr_warning loc
+                  (Warnings.Attribute_payload
+                     ("warning",
+                      "Ill-formed list of warnings"))
+              end
+          | _ ->
+              Location.prerr_warning loc
+                (Warnings.Attribute_payload
+                   ("warning",
+                    "A single string literal is expected"))
+          end
+      | _ ->
+          ()
+    )
+    attrs;
+  !prev_warnings
+
+
 
 type variable_context = int * (string, type_expr) Tbl.t
 
@@ -143,8 +172,13 @@ let find_module env loc lid =
   (* check_deprecated loc decl.md_attributes (Path.name path); *)
   path
 
-let find_modtype =
-  find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
+let find_modtype env loc lid =
+  let (path, decl) as r =
+    find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
+      env loc lid
+  in
+  check_deprecated loc decl.mtd_attributes (Path.name path);
+  r
 
 let find_class_type env loc lid =
   let (path, decl) as r =
@@ -741,7 +775,7 @@ let spellcheck ppf fold env lid =
     match List.rev choice with
       | [] -> ()
       | last :: rev_rest ->
-        fprintf ppf "@\nDid you mean %s%s%s?"
+        fprintf ppf "@\nHint: Did you mean %s%s%s?"
           (String.concat ", " (List.rev rev_rest))
           (if rev_rest = [] then "" else " or ")
           last

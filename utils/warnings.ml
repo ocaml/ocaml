@@ -64,6 +64,7 @@ type t =
   | Open_shadow_identifier of string * string (* 44 *)
   | Open_shadow_label_constructor of string * string (* 45 *)
   | Bad_env_variable of string * string     (* 46 *)
+  | Attribute_payload of string * string    (* 47 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -119,9 +120,10 @@ let number = function
   | Open_shadow_identifier _ -> 44
   | Open_shadow_label_constructor _ -> 45
   | Bad_env_variable _ -> 46
+  | Attribute_payload _ -> 47
 ;;
 
-let last_warning_number = 46
+let last_warning_number = 47
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -158,6 +160,14 @@ let letter = function
 
 let active = Array.create (last_warning_number + 1) true;;
 let error = Array.create (last_warning_number + 1) false;;
+
+type state = bool array * bool array
+let backup () = (Array.copy active, Array.copy error)
+let restore (a, e) =
+  assert(Array.length a = Array.length active);
+  assert(Array.length e = Array.length error);
+  Array.blit a 0 active 0 (Array.length active);
+  Array.blit e 0 error 0 (Array.length error)
 
 let is_active x = active.(number x);;
 let is_error x = error.(number x);;
@@ -347,7 +357,9 @@ let message = function
         "this open statement shadows the %s %s (which is later used)"
         kind s
   | Bad_env_variable (var, s) ->
-    Printf.sprintf "illegal environment variable %s : %s" var s
+      Printf.sprintf "illegal environment variable %s : %s" var s
+  | Attribute_payload (a, s) ->
+      Printf.sprintf "illegal payload for attribute '%s'.\n%s" a s
 ;;
 
 let nerrors = ref 0;;
@@ -439,6 +451,8 @@ let descriptions =
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
+   46, "Illegal environment variable";
+   47, "Illegal attribute payload";
   ]
 ;;
 

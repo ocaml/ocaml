@@ -1154,9 +1154,9 @@ and tree_of_signature_rec env' = function
 
 and tree_of_modtype_declaration id decl =
   let mty =
-    match decl with
-    | Modtype_abstract -> Omty_abstract
-    | Modtype_manifest mty -> tree_of_modtype mty
+    match decl.mtd_type with
+    | None -> Omty_abstract
+    | Some mty -> tree_of_modtype mty
   in
   Osig_modtype (Ident.name id, mty)
 

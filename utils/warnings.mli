@@ -58,7 +58,8 @@ type t =
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
   | Open_shadow_label_constructor of string * string (* 45 *)
-  | Bad_env_variable of string * string
+  | Bad_env_variable of string * string     (* 46 *)
+  | Attribute_payload of string * string    (* 47 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
@@ -78,3 +79,7 @@ exception Errors of int;;
 val check_fatal : unit -> unit;;
 
 val help_warnings: unit -> unit
+
+type state
+val backup: unit -> state
+val restore: state -> unit

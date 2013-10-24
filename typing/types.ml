@@ -283,9 +283,12 @@ and module_declaration =
     md_type: module_type;
     md_attributes: Parsetree.attributes;
   }
+
 and modtype_declaration =
-    Modtype_abstract
-  | Modtype_manifest of module_type
+  {
+    mtd_type: module_type option;  (* Nonte: abstract *)
+    mtd_attributes: Parsetree.attributes;
+  }
 
 and rec_status =
     Trec_not                            (* not recursive *)

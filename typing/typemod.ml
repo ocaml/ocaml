@@ -357,7 +357,7 @@ and approx_sig env ssg =
           map_rec (fun rs (id, md) -> Sig_module(id, md, rs)) decls
                   (approx_sig newenv srem)
       | Psig_modtype d ->
-          let info = approx_modtype_info env d.pmtd_type in
+          let info = approx_modtype_info env d in
           let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
       | Psig_open (ovf, lid, _attrs) ->
@@ -383,11 +383,10 @@ and approx_sig env ssg =
           approx_sig env srem
 
 and approx_modtype_info env sinfo =
-  match sinfo with
-    None ->
-      Modtype_abstract
-  | Some smty ->
-      Modtype_manifest(approx_modtype env smty)
+  {
+   mtd_type = may_map (approx_modtype env) sinfo.pmtd_type;
+   mtd_attributes = sinfo.pmtd_attributes;
+  }
 
 (* Additional validity checks on type definitions arising from
    recursive modules *)
@@ -654,6 +653,7 @@ and transl_signature env sg =
                  classes [rem]),
             final_env
         | Psig_attribute x ->
+            let _back = Typetexp.warning_attribute [x] in
             let (trem,rem, final_env) = transl_sig env srem in
             mksig (Tsig_attribute x) env loc :: trem, rem, final_env
         | Psig_extension ((s, _), _) ->
@@ -669,25 +669,23 @@ and transl_signature env sg =
 and transl_modtype_decl modtype_names env loc
     {pmtd_name; pmtd_type; pmtd_attributes} =
   check "module type" loc modtype_names pmtd_name.txt;
-  let (tinfo, info) = transl_modtype_info env pmtd_type in
-  let (id, newenv) = Env.enter_modtype pmtd_name.txt info env in
+  let tmty = Misc.may_map (transl_modtype env) pmtd_type in
+  let decl =
+    {
+     mtd_type=may_map (fun t -> t.mty_type) tmty;
+     mtd_attributes=pmtd_attributes;
+    }
+  in
+  let (id, newenv) = Env.enter_modtype pmtd_name.txt decl env in
   let mtd =
     {
      mtd_id=id;
      mtd_name=pmtd_name;
-     mtd_type=tinfo;
+     mtd_type=tmty;
      mtd_attributes=pmtd_attributes;
     }
   in
-  newenv, mtd, Sig_modtype(id, info)
-
-and transl_modtype_info env sinfo =
-  match sinfo with
-    None ->
-      None, Modtype_abstract
-  | Some smty ->
-      let tmty = transl_modtype env smty in
-      Some tmty, Modtype_manifest tmty.mty_type
+  newenv, mtd, Sig_modtype(id, decl)
 
 and transl_recmodule_modtypes loc env sdecls =
   let make_env curr =
@@ -928,8 +926,8 @@ let rec package_constraints env loc mty constrs =
   Mty_signature sg'
 
 let modtype_of_package env loc p nl tl =
-  try match Env.find_modtype p env with
-  | Modtype_manifest mty when nl <> [] ->
+  try match (Env.find_modtype p env).mtd_type with
+  | Some mty when nl <> [] ->
       package_constraints env loc mty
         (List.combine (List.map Longident.flatten nl) tl)
   | _ ->
@@ -1256,6 +1254,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_extension ((s, _), _) ->
         raise (Error (s.loc, env, Extension s.txt))
     | Pstr_attribute x ->
+        let _back = Typetexp.warning_attribute [x] in
         Tstr_attribute x, [], env
   in
   let rec type_struct env sstr =
