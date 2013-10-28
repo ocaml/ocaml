@@ -1660,7 +1660,8 @@ let rec local_non_recursive_abbrev visited env p ty =
         iter_type_expr (local_non_recursive_abbrev visited env p) ty
   end
 
-let local_non_recursive_abbrev = local_non_recursive_abbrev (ref [])
+let local_non_recursive_abbrev env p =
+  local_non_recursive_abbrev (ref []) env p
 
                    (*****************************)
                    (*  Polymorphic Unification  *)

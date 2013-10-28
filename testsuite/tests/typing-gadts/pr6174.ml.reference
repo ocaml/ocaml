@@ -1,0 +1,8 @@
+
+#     Characters 118-119:
+   fun C k -> k (fun x -> x);;
+       ^
+Error: Recursive local constraint when unifying
+         (((ex#0 -> ex#1) -> ex#1) -> (ex#2 -> ex#1) -> ex#1) t
+       with ((a -> o) -> o) t
+# 
