@@ -1703,7 +1703,8 @@ let rec list_labels_aux env visited ls ty_fun =
   | _ ->
       List.rev ls, is_Tvar ty
 
-let list_labels env ty = list_labels_aux env [] [] ty
+let list_labels env ty =
+  wrap_trace_gadt_instances env (list_labels_aux env [] []) ty
 
 (* Check that all univars are safe in a type *)
 let check_univars env expans kind exp ty_expected vars =
@@ -2041,7 +2042,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       in
       let ty = instance env funct.exp_type in
       end_def ();
-      lower_args [] ty;
+      wrap_trace_gadt_instances env (lower_args []) ty;
       begin_def ();
       let (args, ty_res) = type_application env funct sargs in
       end_def ();

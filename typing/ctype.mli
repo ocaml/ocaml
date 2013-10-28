@@ -263,3 +263,4 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
 
 val get_current_level: unit -> int
+val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
