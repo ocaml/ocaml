@@ -98,6 +98,33 @@ value dump f x =
 
 value start_pos = { line = 1 ; bol = 0 ; off = 0 };
 
+value min_pos (x:pos) (y:pos) =
+  if x.off < y.off
+  then x
+  else y;
+value max_pos (x:pos) (y:pos) =
+  if x.off > y.off
+  then x
+  else y;
+
+value smart_merge (a:t) (b:t) =
+  if a == b then a
+  else
+    match (a,b) with
+    [ ({ghost=False;start=a0;stop=a1;file_name = f},
+       {ghost=False;start=b0;stop=b1;_}) ->
+        {ghost = False;
+         start = min_pos a0 b0;
+         stop = max_pos a1 b1;
+         file_name = f
+       }
+    | ({ghost = True;_},{ghost=True;_})
+    | ({ghost = True;_},_) -> {(a) with stop = b.stop }
+    | ({ghost = _;_},{ghost = True;_}) ->
+        {(b) with start = a.start }
+    ]
+;
+      
 value ghost =
   { file_name = "ghost-location";
     start     = start_pos;

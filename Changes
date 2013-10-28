@@ -374,7 +374,8 @@ Bug fixes:
   (Jacques Garrigue, report by Leo P. White)
 - PR#6164: segmentation fault on Num.power_num of 0/1
   (Fabrice Le Fessant, report by Johannes Kanig)
-
+- PR#6210: Camlp4 location error
+  (Hongbo Zhang, report by Jun Furuse)
 Feature wishes:
 - PR#5181: Merge common floating point constants in ocamlopt
   (Benedikt Meurer)

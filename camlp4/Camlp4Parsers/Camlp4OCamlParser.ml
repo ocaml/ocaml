@@ -533,8 +533,18 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     meth_list:
       [ [ m = meth_decl -> (m, <:row_var_flag<>>) ] ];
     comma_ctyp_app:
-      [ [ t1 = ctyp; ","; t2 = SELF -> fun acc -> t2 <:ctyp< $acc$ $t1$ >>
-        | t = ctyp -> fun acc -> <:ctyp< $acc$ $t$ >>
+      [ [ t1 = ctyp; ","; t2 = SELF ->
+        fun acc ->
+          let loc1 = Ast.loc_of_ctyp t1 in
+          let loc2 = Ast.loc_of_ctyp acc in
+          let _loc = Loc.smart_merge loc1 loc2 in
+          t2 <:ctyp< $acc$ $t1$ >>
+        | t = ctyp ->
+            fun acc ->
+              let loc1 = Ast.loc_of_ctyp t in
+              let loc2 = Ast.loc_of_ctyp acc in
+              let _loc = Loc.smart_merge loc1 loc2 in
+              <:ctyp< $acc$ $t$ >>
       ] ]
     ;
     star_ctyp:
