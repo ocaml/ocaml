@@ -109,7 +109,9 @@ module type Loc = sig
   (** [merge loc1 loc2] Return a location that starts at [loc1] and end at
       [loc2]. *)
   value merge : t -> t -> t;
-
+  (** [smart_merge loc1 loc2] Try to return a location that covers both [loc1] and [loc2]*)
+    
+  value smart_merge : t -> t -> t ;  
   (** The stop pos becomes equal to the start pos. *)
   value join : t -> t;
 

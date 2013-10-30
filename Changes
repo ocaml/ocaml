@@ -101,6 +101,10 @@ Internals:
 Bug fixes:
 - PR#3236: Document the fact that queues are not thread-safe
   (Damien Doligez)
+- PR#6175: Fix open!  
+- PR#5820: Fix camlp4 lexer roll back problem
+- PR#4855: 'camlp4 -I +dir' accepted, dir is related to 'camlp4 -where'
+- PR#6062: Fix a regression bug caused by commit 13047
 - PR#3468: (part 1) Sys_error documentation
   (Damien Doligez)
 - PR#3679: Warning display problems
@@ -377,7 +381,8 @@ Bug fixes:
   (Jacques Garrigue, report by Leo P. White)
 - PR#6164: segmentation fault on Num.power_num of 0/1
   (Fabrice Le Fessant, report by Johannes Kanig)
-
+- PR#6210: Camlp4 location error
+  (Hongbo Zhang, report by Jun Furuse)
 Feature wishes:
 - PR#5181: Merge common floating point constants in ocamlopt
   (Benedikt Meurer)
@@ -570,6 +575,7 @@ Installation procedure:
   (-runtime-variant) to select the debug runtime.
 
 Bug Fixes:
+
 - PR#1643: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added
 - PR#3571: in Bigarrays, call msync() before unmapping to commit changes
