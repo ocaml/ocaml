@@ -105,10 +105,10 @@ let pseudoregs_for_operation op arg res =
       ([| rax; rcx |], [| rax |])
   | Iintop(Imod) ->
       ([| rax; rcx |], [| rdx |])
-  (* For div and mod with immediate operand, arg must not be in rax.
-     Keep it simple, force it in rdx. *)
+  (* For div and mod with immediate operand, arg must not be in rax nor rdx.
+     Keep it simple, force it in rcx. *)
   | Iintop_imm((Idiv|Imod), _) ->
-      ([| rdx |], [| rdx |])
+      ([| rcx |], [| rcx |])
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
@@ -176,18 +176,16 @@ method! select_operation op args =
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
-  (* Recognize (x / cst) and (x % cst) only if cst is a power of 2. *)
+  (* Recognize (x / cst) and (x % cst) only if cst is > 0. *)
   | Cdivi ->
       begin match args with
-        [arg1; Cconst_int n] when self#is_immediate n
-                               && n = 1 lsl (Misc.log2 n) ->
+        [arg1; Cconst_int n] when self#is_immediate n && n > 0 ->
           (Iintop_imm(Idiv, n), [arg1])
       | _ -> (Iintop Idiv, args)
       end
   | Cmodi ->
       begin match args with
-        [arg1; Cconst_int n] when self#is_immediate n
-                               && n = 1 lsl (Misc.log2 n) ->
+        [arg1; Cconst_int n] when self#is_immediate n && n > 0 ->
           (Iintop_imm(Imod, n), [arg1])
       | _ -> (Iintop Imod, args)
       end
