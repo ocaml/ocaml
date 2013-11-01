@@ -110,7 +110,7 @@ let pseudoregs_for_operation op arg res =
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor) ->
       ([|res.(0); arg.(1)|], res, false)
   (* Two-address unary operations *)
-  | Iintop_imm((Iadd|Isub|Imul|Idiv|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) ->
+  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) ->
       (res, res, false)
   (* For shifts with variable shift count, second arg must be in ecx *)
   | Iintop(Ilsl|Ilsr|Iasr) ->
@@ -122,10 +122,10 @@ let pseudoregs_for_operation op arg res =
       ([| eax; ecx |], [| eax |], true)
   | Iintop(Imod) ->
       ([| eax; ecx |], [| edx |], true)
-  (* For mod with immediate operand, arg must not be in eax.
-     Keep it simple, force it in edx. *)
-  | Iintop_imm(Imod, _) ->
-      ([| edx |], [| edx |], true)
+  (* For div and mod with immediate operand, arg must not be in eax nor edx.
+     Keep it simple, force it in ecx. *)
+  | Iintop_imm((Idiv|Imod), _) ->
+      ([| ecx |], [| ecx |], true)
   (* For floating-point operations and floating-point loads,
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
@@ -202,16 +202,16 @@ method! select_operation op args =
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
-  (* Recognize (x / cst) and (x % cst) only if cst is a power of 2. *)
+  (* Recognize (x / cst) and (x % cst) only if cst is > 0. *)
   | Cdivi ->
       begin match args with
-        [arg1; Cconst_int n] when n = 1 lsl (Misc.log2 n) ->
+        [arg1; Cconst_int n] when n > 0 ->
           (Iintop_imm(Idiv, n), [arg1])
       | _ -> (Iintop Idiv, args)
       end
   | Cmodi ->
       begin match args with
-        [arg1; Cconst_int n] when n = 1 lsl (Misc.log2 n) ->
+        [arg1; Cconst_int n] when n > 0 ->
           (Iintop_imm(Imod, n), [arg1])
       | _ -> (Iintop Imod, args)
       end
