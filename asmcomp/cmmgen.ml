@@ -125,6 +125,8 @@ let mul_int c1 c2 =
   | (Cconst_int 1, _) -> c2
   | (_, Cconst_int 0) -> c2
   | (_, Cconst_int 1) -> c1
+  | (c, Cconst_int n) | (Cconst_int n, c) when n = 1 lsl Misc.log2 n->
+      Cop(Clsl, [c; Cconst_int(Misc.log2 n)])
   | (_, _) -> Cop(Cmuli, [c1; c2])
 
 let tag_int = function
@@ -1415,7 +1417,7 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Psubint ->
       incr_int(sub_int (transl arg1) (transl arg2))
   | Pmulint ->
-      incr_int(Cop(Cmuli, [decr_int(transl arg1); untag_int(transl arg2)]))
+      incr_int(mul_int (decr_int(transl arg1)) (untag_int(transl arg2)))
   | Pdivint ->
       tag_int(safe_divmod Cdivi (untag_int(transl arg1))
                           (untag_int(transl arg2)) dbg)
