@@ -597,33 +597,79 @@ let emit_instr i =
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
-    | Lop(Iintop_imm(Idiv, n)) -> (* n is a power of 2 *)
+    | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
-        let r = i.res.(0) in
-        `	movs	{emit_reg r}, {emit_reg i.arg.(0)}\n`;
-        if n <= 256 then begin
-          `	it	lt\n`;
-          `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int (n-1)}\n`
+        if n = 1 lsl l then begin
+          let r = i.res.(0) in
+          `	movs	{emit_reg r}, {emit_reg i.arg.(0)}\n`;
+          if n <= 256 then begin
+            `	it	lt\n`;
+            `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int (n-1)}\n`
+          end else begin
+            `	itt	lt\n`;
+            `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
+            `	sublt	{emit_reg r}, {emit_reg r}, #1\n`
+          end;
+          (* Use movs to enable 16-bit T1 encoding *)
+          `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int l}\n`; 5
         end else begin
-          `	itt	lt\n`;
-          `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
-          `	sublt	{emit_reg r}, {emit_reg r}, #1\n`
-        end;
-        (* Use movs to enable 16-bit T1 encoding *)
-        `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int l}\n`; 5
-    | Lop(Iintop_imm(Imod, n)) -> (* n is a power of 2 *)
+          assert (!arch >= ARMv6);
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          (* Algorithm:
+                t = multiply-high-signed(arg, m)
+                if m < 0, t = t + m
+                t = shift-right-signed(t, p)
+                res = t + sign-bit(arg) 
+          *)
+          let a = i.arg.(0) in
+          let r = i.res.(0) in
+          let ninstr = emit_intconst r (Nativeint.to_int32 m) in
+          if m >= 0n then
+            `	smmul	{emit_reg r}, {emit_reg r}, {emit_reg a}\n`
+          else
+            `	smmla	{emit_reg r}, {emit_reg r}, {emit_reg a}, {emit_reg r}\n`;
+          if p > 0 then
+            `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int p}\n`;
+          `	add	{emit_reg r}, {emit_reg r}, {emit_reg a}, lsr #31\n`;
+          ninstr + 3
+        end
+    | Lop(Iintop_imm(Imod, n)) ->
         let l = Misc.log2 n in
         let a = i.arg.(0) in
         let r = i.res.(0) in
-        let lbl = new_label() in
-        `	cmp	{emit_reg a}, #0\n`;
-        `	mov	{emit_reg r}, {emit_reg a}, lsl #{emit_int (32-l)}\n`;
-        `	mov	{emit_reg r}, {emit_reg r}, lsr #{emit_int (32-l)}\n`;
-        `	bpl	{emit_label lbl}\n`;
-        `	cmp	{emit_reg r}, #0\n`;
-        `	it	ne\n`;
-        `	subne	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
-        `{emit_label lbl}:\n`; 7
+        if n = 1 lsl l then begin
+          let lbl = new_label() in
+          `	cmp	{emit_reg a}, #0\n`;
+          `	mov	{emit_reg r}, {emit_reg a}, lsl #{emit_int (32-l)}\n`;
+          `	mov	{emit_reg r}, {emit_reg r}, lsr #{emit_int (32-l)}\n`;
+          `	bpl	{emit_label lbl}\n`;
+          `	cmp	{emit_reg r}, #0\n`;
+          `	it	ne\n`;
+          `	subne	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
+          `{emit_label lbl}:\n`; 7
+        end else begin
+          assert (!arch >= ARMv6);
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          (* Algorithm:
+                t = multiply-high-signed(arg, m)
+                if m < 0, t = t + m
+                t = shift-right-signed(t, p)
+                t = (t + sign-bit(arg)) * n
+                res = arg - t
+          *)
+          let r12 = phys_reg 8 in
+          let ninstr = emit_intconst r (Nativeint.to_int32 m) in
+          if m >= 0n then
+            `	smmul	{emit_reg r}, {emit_reg r}, {emit_reg a}\n`
+          else
+            `	smmla	{emit_reg r}, {emit_reg r}, {emit_reg a}, {emit_reg r}\n`;
+          if p > 0 then
+            `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int p}\n`;
+          `	add	{emit_reg r}, {emit_reg r}, {emit_reg a}, lsr #31\n`;
+          let ninstr = ninstr + emit_intconst r12 (Int32.of_int n) in
+          `	mls	{emit_reg r}, {emit_reg r}, r12, {emit_reg a}\n`;
+          ninstr + 4
+        end
     | Lop(Iintop_imm((Ilsl | Ilsr | Iasr as op), n)) ->
         let shift = name_for_shift_operation op in
         (* Use movs to enable 16-bit T1 encoding *)

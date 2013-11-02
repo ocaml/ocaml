@@ -201,6 +201,8 @@ let destroyed_at_oper = function
       destroyed_at_alloc
   | Iop(Iconst_symbol _) when !pic_code ->
       [| phys_reg 3; phys_reg 8 |]  (* r3 and r12 destroyed *)
+  | Iop(Iintop_imm(Imod, n)) when !arch >= ARMv6 && n = 1 lsl Misc.log2 n ->
+      [| phys_reg 8 |]              (* r12 destroyed *)
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _)) ->
       [| phys_reg 107 |]            (* d7 (s14-s15) destroyed *)
   | _ -> [||]
