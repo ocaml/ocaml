@@ -105,7 +105,8 @@ module Map : sig
       val add : key:key -> data:'a -> 'a t -> 'a t
       val singleton: key -> 'a -> 'a t
       val remove : key -> 'a t -> 'a t
-      val merge: f:(key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+      val merge:
+          f:(key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
       val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
       val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit

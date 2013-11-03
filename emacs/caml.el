@@ -788,6 +788,7 @@ variable caml-mode-indentation."
 ;; In Emacs 19, the regexps in compilation-error-regexp-alist do not
 ;; match the error messages when the language is not English.
 ;; Hence we add a regexp.
+;; FIXME do we (still) have i18n of error messages ???
 
 (defconst caml-error-regexp
   "^[ A-\377]+ \"\\([^\"\n]+\\)\", [A-\377]+ \\([0-9]+\\)[-,:]"
@@ -797,7 +798,8 @@ variable caml-mode-indentation."
 ;; We will adapt OCaml to output error messages in a compatible format.
 ;; In the meantime we add the new format here in addition to the old one.
 (defconst caml-error-regexp-newstyle
-  "^[ A-\377]+ \"\\([^\"\n]+\\)\", line \\([0-9]+\\), char \\([0-9]+\\) to line \\([0-9]+\\), char \\([0-9]+\\):"
+  (concat "^[ A-\377]+ \"\\([^\"\n]+\\)\", line \\([0-9]+\\),"
+          "char \\([0-9]+\\) to line \\([0-9]+\\), char \\([0-9]+\\):")
   "Regular expression matching the error messages produced by ocamlc/ocamlopt.")
 
 (if (boundp 'compilation-error-regexp-alist)

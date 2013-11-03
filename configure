@@ -274,6 +274,7 @@ case "$bytecc,$host" in
   *,*-*-darwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     mathlib=""
+    mkexe="$mkexe -Wl,-no_compact_unwind"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
     echo "#ifndef __PIC__" >> m.h
@@ -471,9 +472,9 @@ case "$host" in
       1) echo "Doubles must be doubleword-aligned."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
       *) echo "Something went wrong during alignment determination for doubles."
-         echo "I'm going to assume this architecture has alignment constraints over doubles."
+         echo "We will assume alignment constraints over doubles."
          echo "That's a safe bet: OCaml will work even if"
-         echo "this architecture has actually no alignment constraints."
+         echo "this architecture actually has no alignment constraints."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
     esac;;
 esac
@@ -596,7 +597,7 @@ if test $withsharedlibs = "yes"; then
       dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-apple-darwin*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
+      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -Wl,-no_compact_unwind"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
@@ -724,6 +725,8 @@ fi
 
 nativecccompopts=''
 nativecclinkopts=''
+# FIXME the naming of nativecclinkopts is broken: these are options for
+# ld (for shared libs), not for cc
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$host_type" in

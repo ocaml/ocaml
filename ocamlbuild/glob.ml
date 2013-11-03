@@ -52,7 +52,7 @@ module NFA =
     | QEPSILON
     ;;
 
-    module IS = Set.Make(struct type t = int let compare = compare let print = Format.pp_print_int end);;
+    module IS = Set.Make(struct type t = int let compare (x:t) y = compare x y let print = Format.pp_print_int end);;
     module ISM = Map.Make(struct type t = IS.t let compare = IS.compare let print = IS.print end);;
 
     type machine = {

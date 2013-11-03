@@ -39,16 +39,6 @@ let remove_preprocessed inputfile =
     None -> ()
   | Some _ -> Misc.remove_file inputfile
 
-let remove_preprocessed_if_ast inputfile =
-  match !Clflags.preprocessor with
-    None -> ()
-  | Some _ ->
-      if inputfile <> !Location.input_name then Misc.remove_file inputfile
-
-(* Parse a file or get a dumped syntax tree in it *)
-
-exception Outdated_version
-
 let write_ast magic ast =
   let fn = Filename.temp_file "camlppx" "" in
   let oc = open_out_bin fn in
@@ -60,7 +50,9 @@ let write_ast magic ast =
 
 let apply_rewriter magic fn_in ppx =
   let fn_out = Filename.temp_file "camlppx" "" in
-  let comm = Printf.sprintf "%s %s %s" ppx (Filename.quote fn_in) (Filename.quote fn_out) in
+  let comm =
+    Printf.sprintf "%s %s %s" ppx (Filename.quote fn_in) (Filename.quote fn_out)
+  in
   let ok = Ccomp.command comm = 0 in
   Misc.remove_file fn_in;
   if not ok then begin
@@ -70,7 +62,8 @@ let apply_rewriter magic fn_in ppx =
   if not (Sys.file_exists fn_out) then raise (Error (WrongMagic comm));
   (* check magic before passing to the next ppx *)
   let ic = open_in_bin fn_out in
-  let buffer = try Misc.input_bytes ic (String.length magic) with End_of_file -> "" in
+  let buffer =
+    try Misc.input_bytes ic (String.length magic) with End_of_file -> "" in
   close_in ic;
   if buffer <> magic then begin
     Misc.remove_file fn_out;
@@ -97,8 +90,13 @@ let apply_rewriters magic ast =
   match !Clflags.ppx with
   | [] -> ast
   | ppxs ->
-      let fn = List.fold_left (apply_rewriter magic) (write_ast magic ast) ppxs in
+      let fn =
+        List.fold_left (apply_rewriter magic) (write_ast magic ast) ppxs in
       read_ast magic fn
+
+(* Parse a file or get a dumped syntax tree from it *)
+
+exception Outdated_version
 
 let file ppf inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
@@ -118,6 +116,7 @@ let file ppf inputfile parse_fun ast_magic =
     try
       if is_ast_file then begin
         if !Clflags.fast then
+          (* FIXME make this a proper warning *)
           fprintf ppf "@[Warning: %s@]@."
             "option -unsafe used with a preprocessor returning a syntax tree";
         Location.input_name := input_value ic;
@@ -134,9 +133,10 @@ let file ppf inputfile parse_fun ast_magic =
   close_in ic;
   apply_rewriters ast_magic ast
 
-
 let report_error ppf = function
   | CannotRun cmd ->
-      fprintf ppf "Error while running external preprocessor@.Command line: %s@." cmd
+      fprintf ppf "Error while running external preprocessor@.\
+                   Command line: %s@." cmd
   | WrongMagic cmd ->
-      fprintf ppf "External preprocessor does not produce a valid file@.Command line: %s@." cmd
+      fprintf ppf "External preprocessor does not produce a valid file@.\
+                   Command line: %s@." cmd

@@ -14,7 +14,13 @@
    Annotate pseudoregs with interference lists and preference lists. *)
 
 module IntPairSet =
-  Set.Make(struct type t = int * int let compare = compare end)
+  Set.Make(struct
+    type t = int * int
+    let compare ((a1,b1) : t) (a2,b2) =
+      match compare a1 a2 with
+        | 0 -> compare b1 b2
+        | c -> c
+  end)
 
 open Reg
 open Mach

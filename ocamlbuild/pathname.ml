@@ -24,7 +24,7 @@ let print_strings = List.print String.print
 
 let concat = filename_concat
 
-let compare = compare
+let compare (x:t) y = compare x y
 
 let print = pp_print_string
 

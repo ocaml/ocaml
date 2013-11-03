@@ -39,7 +39,8 @@ let mk_cclib f =
 ;;
 
 let mk_ccopt f =
-  "-ccopt", Arg.String f, "<opt>  Pass option <opt> to the C compiler and linker"
+  "-ccopt", Arg.String f,
+  "<opt>  Pass option <opt> to the C compiler and linker"
 ;;
 
 let mk_compact f =
@@ -208,7 +209,8 @@ let mk_pp f =
 ;;
 
 let mk_ppx f =
-  "-ppx", Arg.String f, "<command>  Pipe abstract syntax trees through preprocessor <command>"
+  "-ppx", Arg.String f,
+  "<command>  Pipe abstract syntax trees through preprocessor <command>"
 ;;
 
 let mk_principal f =

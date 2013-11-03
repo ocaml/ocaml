@@ -803,7 +803,8 @@ value:
     override_flag mutable_flag label EQUAL seq_expr
       { mkrhs $3 3, $2, $1, $5 }
   | override_flag mutable_flag label type_constraint EQUAL seq_expr
-      { mkrhs $3 3, $2, $1, (let (t, t') = $4 in ghexp(Pexp_constraint($6, t, t'))) }
+      { let (t, t') = $4 in
+        mkrhs $3 3, $2, $1, ghexp(Pexp_constraint($6, t, t')) }
 ;
 virtual_method:
     METHOD override_flag PRIVATE VIRTUAL label COLON poly_type
@@ -1183,7 +1184,9 @@ let_binding:
     val_ident fun_binding
       { (mkpatvar $1 1, $2) }
   | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
-      { (ghpat(Ppat_constraint(mkpatvar $1 1, ghtyp(Ptyp_poly(List.rev $3,$5)))), $7) }
+      { (ghpat(Ppat_constraint(mkpatvar $1 1,
+                               ghtyp(Ptyp_poly(List.rev $3,$5)))),
+         $7) }
   | val_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $4 $6 $8 in
         (ghpat(Ppat_constraint(mkpatvar $1 1, poly)), exp) }
@@ -1328,7 +1331,8 @@ simple_pattern:
   | LPAREN MODULE UIDENT RPAREN
       { mkpat(Ppat_unpack (mkrhs $3 3)) }
   | LPAREN MODULE UIDENT COLON package_type RPAREN
-      { mkpat(Ppat_constraint(mkpat(Ppat_unpack (mkrhs $3 3)),ghtyp(Ptyp_package $5))) }
+      { mkpat(Ppat_constraint(mkpat(Ppat_unpack (mkrhs $3 3)),
+                              ghtyp(Ptyp_package $5))) }
   | LPAREN MODULE UIDENT COLON package_type error
       { unclosed "(" 1 ")" 6 }
 ;
@@ -1343,10 +1347,11 @@ pattern_semi_list:
   | pattern_semi_list SEMI pattern              { $3 :: $1 }
 ;
 lbl_pattern_list:
-     lbl_pattern { [$1], Closed }
-  |  lbl_pattern SEMI { [$1], Closed }
-  |  lbl_pattern SEMI UNDERSCORE opt_semi { [$1], Open }
-  |  lbl_pattern SEMI lbl_pattern_list { let (fields, closed) = $3 in $1 :: fields, closed }
+    lbl_pattern { [$1], Closed }
+  | lbl_pattern SEMI { [$1], Closed }
+  | lbl_pattern SEMI UNDERSCORE opt_semi { [$1], Open }
+  | lbl_pattern SEMI lbl_pattern_list
+      { let (fields, closed) = $3 in $1 :: fields, closed }
 ;
 lbl_pattern:
     label_longident EQUAL pattern
@@ -1478,7 +1483,8 @@ label_declarations:
   | label_declarations SEMI label_declaration   { $3 :: $1 }
 ;
 label_declaration:
-    mutable_flag label COLON poly_type          { (mkrhs $2 2, $1, $4, symbol_rloc()) }
+    mutable_flag label COLON poly_type
+      { (mkrhs $2 2, $1, $4, symbol_rloc()) }
 ;
 
 /* Type Extensions */
@@ -1626,7 +1632,7 @@ simple_core_type2:
   | LBRACKET tag_field RBRACKET
       { mktyp(Ptyp_variant([$2], true, None)) }
 /* PR#3835: this is not LR(1), would need lookahead=2
-  | LBRACKET simple_core_type2 RBRACKET
+  | LBRACKET simple_core_type RBRACKET
       { mktyp(Ptyp_variant([$2], true, None)) }
 */
   | LBRACKET BAR row_field_list RBRACKET
@@ -1661,7 +1667,7 @@ row_field_list:
 ;
 row_field:
     tag_field                                   { $1 }
-  | simple_core_type2                           { Rinherit $1 }
+  | simple_core_type                            { Rinherit $1 }
 ;
 tag_field:
     name_tag OF opt_ampersand amper_type_list
@@ -1722,17 +1728,17 @@ constant:
   | NATIVEINT                                   { Const_nativeint $1 }
 ;
 signed_constant:
-    constant                                    { $1 }
-  | MINUS INT                                   { Const_int(- $2) }
-  | MINUS FLOAT                                 { Const_float("-" ^ $2) }
-  | MINUS INT32                                 { Const_int32(Int32.neg $2) }
-  | MINUS INT64                                 { Const_int64(Int64.neg $2) }
-  | MINUS NATIVEINT                             { Const_nativeint(Nativeint.neg $2) }
-  | PLUS INT                                    { Const_int $2 }
-  | PLUS FLOAT                                  { Const_float $2 }
-  | PLUS INT32                                  { Const_int32 $2 }
-  | PLUS INT64                                  { Const_int64 $2 }
-  | PLUS NATIVEINT                              { Const_nativeint $2 }
+    constant                               { $1 }
+  | MINUS INT                              { Const_int(- $2) }
+  | MINUS FLOAT                            { Const_float("-" ^ $2) }
+  | MINUS INT32                            { Const_int32(Int32.neg $2) }
+  | MINUS INT64                            { Const_int64(Int64.neg $2) }
+  | MINUS NATIVEINT                        { Const_nativeint(Nativeint.neg $2) }
+  | PLUS INT                               { Const_int $2 }
+  | PLUS FLOAT                             { Const_float $2 }
+  | PLUS INT32                             { Const_int32 $2 }
+  | PLUS INT64                             { Const_int64 $2 }
+  | PLUS NATIVEINT                         { Const_nativeint $2 }
 ;
 
 /* Identifiers and long identifiers */
@@ -1746,6 +1752,7 @@ val_ident:
   | LPAREN operator RPAREN                      { $2 }
   | LPAREN operator error                       { unclosed "(" 1 ")" 3 }
   | LPAREN error                                { expecting 2 "operator" }
+  | LPAREN MODULE error                         { expecting 3 "module-expr" }
 ;
 operator:
     PREFIXOP                                    { $1 }

@@ -72,7 +72,8 @@ let rec protect ppf restart loop =
       protect ppf restart (function ppf ->
         let b =
           if !current_duration = -1L then begin
-            let msg = sprintf "Restart from time %Ld and try to get closer of the problem" time in
+            let msg = sprintf "Restart from time %Ld and try to get \
+                               closer of the problem" time in
             stop_user_input ();
             if yes_or_no msg then
               (current_duration := init_duration; true)

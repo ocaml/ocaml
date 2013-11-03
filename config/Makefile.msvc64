@@ -141,7 +141,7 @@ NATIVECCCOMPOPTS=/Ox /MD
 NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
-PACKLD=link /lib /nologo /machine:AMD64 /out:# there must be no space after this '/out:'
+PACKLD=link /lib /nologo /machine:AMD64 /out:# must have no space after '/out:'
 
 ############# Configuration for camlp4
 

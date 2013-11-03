@@ -789,7 +789,7 @@ buffer positions."
 
 
 (defface ocaml-link-face
-  '(((class color) :foreground "Purple"))
+  '((((class color)) :foreground "Purple"))
   "Face to highlight hyperlinks.")
 
 (defun ocaml-link-activate (section)

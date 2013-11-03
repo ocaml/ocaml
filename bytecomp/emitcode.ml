@@ -340,7 +340,8 @@ let rec emit = function
     (Kgetglobal _ as instr1) :: (Kgetfield _ as instr2) :: c ->
       emit (Kpush :: instr1 :: instr2 :: ev :: c)
   | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
-    (Kacc _ | Kenvacc _ | Koffsetclosure _ | Kgetglobal _ | Kconst _ as instr) :: c ->
+    (Kacc _ | Kenvacc _ | Koffsetclosure _ | Kgetglobal _ | Kconst _ as instr)::
+    c ->
       emit (Kpush :: instr :: ev :: c)
   | Kgetglobal id :: Kgetfield n :: c ->
       out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
@@ -371,7 +372,8 @@ let to_file outchan unit_name code =
       cu_codesize = !out_position;
       cu_reloc = List.rev !reloc_info;
       cu_imports = Env.imported_units();
-      cu_primitives = List.map Primitive.byte_name !Translmod.primitive_declarations;
+      cu_primitives = List.map Primitive.byte_name
+                               !Translmod.primitive_declarations;
       cu_force_link = false;
       cu_debug = pos_debug;
       cu_debugsize = size_debug } in

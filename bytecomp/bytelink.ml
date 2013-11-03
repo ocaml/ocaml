@@ -174,7 +174,9 @@ let check_consistency ppf file_name cu =
   begin try
     let source = List.assoc cu.cu_name !implementations_defined in
     Location.print_warning (Location.in_file file_name) ppf
-      (Warnings.Multiple_definition(cu.cu_name, Location.show_filename file_name, Location.show_filename source))
+      (Warnings.Multiple_definition(cu.cu_name,
+                                    Location.show_filename file_name,
+                                    Location.show_filename source))
   with Not_found -> ()
   end;
   implementations_defined :=
@@ -587,7 +589,8 @@ let report_error ppf = function
       fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name
   | Wrong_object_name name ->
-      fprintf ppf "The output file %s has a wrong name. The extension implies object file when the link step was requested" name
+      fprintf ppf "The output file %s has the wrong name. The extension implies\
+                  \ an object file but the link step was requested" name
   | Symbol_error(name, err) ->
       fprintf ppf "Error while linking %a:@ %a" Location.print_filename name
       Symtable.report_error err

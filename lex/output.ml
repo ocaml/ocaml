@@ -97,7 +97,7 @@ let output_entry sourcefile ic oc oci e =
       fprintf oc "\n")
     e.auto_actions;
   fprintf oc "  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; \
-                                __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state\n\n"
+              __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state\n\n"
           e.auto_name output_args e.auto_args
 
 (* Main output function *)

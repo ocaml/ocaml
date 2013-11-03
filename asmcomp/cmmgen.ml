@@ -155,7 +155,8 @@ let lsl_int c1 c2 =
       Cop(Clsl, [c1; c2])
 
 let ignore_low_bit_int = function
-    Cop(Caddi, [(Cop(Clsl, [_; Cconst_int n]) as c); Cconst_int 1]) when n > 0 -> c
+    Cop(Caddi, [(Cop(Clsl, [_; Cconst_int n]) as c); Cconst_int 1]) when n > 0
+      -> c
   | Cop(Cor, [c; Cconst_int 1]) -> c
   | c -> c
 
@@ -641,7 +642,8 @@ let bigarray_get unsafe elt_kind layout b args dbg =
       Pbigarray_complex32 | Pbigarray_complex64 ->
         let kind = bigarray_word_kind elt_kind in
         let sz = bigarray_elt_size elt_kind / 2 in
-        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
+        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg)
+          (fun addr ->
           box_complex
             (Cop(Cload kind, [addr]))
             (Cop(Cload kind, [Cop(Cadda, [addr; Cconst_int sz])])))
@@ -656,7 +658,8 @@ let bigarray_set unsafe elt_kind layout b args newval dbg =
         let kind = bigarray_word_kind elt_kind in
         let sz = bigarray_elt_size elt_kind / 2 in
         bind "newval" newval (fun newv ->
-        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
+        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg)
+          (fun addr ->
           Csequence(
             Cop(Cstore kind, [addr; complex_re newv]),
             Cop(Cstore kind,
@@ -970,7 +973,7 @@ let is_unboxed_number = function
             Boxed_float
         | Pbigarrayref(_, _, Pbigarray_int32, _) -> Boxed_integer Pint32
         | Pbigarrayref(_, _, Pbigarray_int64, _) -> Boxed_integer Pint64
-        | Pbigarrayref(_, _, Pbigarray_native_int, _) -> Boxed_integer Pnativeint
+        | Pbigarrayref(_, _, Pbigarray_native_int,_) -> Boxed_integer Pnativeint
         | Pstring_load_32(_) -> Boxed_integer Pint32
         | Pstring_load_64(_) -> Boxed_integer Pint64
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
@@ -1111,7 +1114,8 @@ let rec transl = function
               (Cop(Cextcall(prim.prim_native_name, typ_float, false, dbg),
                    List.map transl_unbox_float args))
           else
-            Cop(Cextcall(Primitive.native_name prim, typ_addr, prim.prim_alloc, dbg),
+            Cop(Cextcall(Primitive.native_name prim, typ_addr, prim.prim_alloc,
+                         dbg),
                 List.map transl args)
       | (Pmakearray kind, []) ->
           transl_constant(Const_block(0, []))
@@ -1298,7 +1302,8 @@ and transl_prim_1 p arg dbg =
       if no_overflow_lsl n then
         add_const (transl arg) (n lsl 1)
       else
-        transl_prim_2 Paddint arg (Uconst (Const_base(Const_int n), None)) Debuginfo.none
+        transl_prim_2 Paddint arg (Uconst (Const_base(Const_int n), None))
+                      Debuginfo.none
   | Poffsetref n ->
       return_unit
         (bind "ref" (transl arg) (fun arg ->
@@ -1358,8 +1363,9 @@ and transl_prim_1 p arg dbg =
                                typ_int, false, Debuginfo.none),
                       [transl_unbox_int bi arg]))
   | Pbswap16 ->
-      tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false, Debuginfo.none),
-                      [untag_int (transl arg)]))
+      tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false,
+                            Debuginfo.none),
+                   [untag_int (transl arg)]))
   | _ ->
       fatal_error "Cmmgen.transl_prim_1"
 
@@ -1368,7 +1374,7 @@ and transl_prim_2 p arg1 arg2 dbg =
   (* Heap operations *)
     Psetfield(n, ptr) ->
       if ptr then
-        return_unit(Cop(Cextcall("caml_modify", typ_void, false, Debuginfo.none),
+        return_unit(Cop(Cextcall("caml_modify", typ_void, false,Debuginfo.none),
                         [field_address (transl arg1) n; transl arg2]))
       else
         return_unit(set_field (transl arg1) n (transl arg2))
@@ -1397,9 +1403,11 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Pmulint ->
       incr_int(Cop(Cmuli, [decr_int(transl arg1); untag_int(transl arg2)]))
   | Pdivint ->
-      tag_int(safe_divmod Cdivi (untag_int(transl arg1)) (untag_int(transl arg2)) dbg)
+      tag_int(safe_divmod Cdivi (untag_int(transl arg1))
+                          (untag_int(transl arg2)) dbg)
   | Pmodint ->
-      tag_int(safe_divmod Cmodi (untag_int(transl arg1)) (untag_int(transl arg2)) dbg)
+      tag_int(safe_divmod Cmodi (untag_int(transl arg1))
+                          (untag_int(transl arg2)) dbg)
   | Pandint ->
       Cop(Cand, [transl arg1; transl arg2])
   | Porint ->
@@ -1453,8 +1461,8 @@ and transl_prim_2 p arg1 arg2 dbg =
      tag_int
        (bind "str" (transl arg1) (fun str ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
-          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 1)) idx
-                      (unaligned_load_16 str idx))))
+          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 1))
+                      idx (unaligned_load_16 str idx))))
 
   | Pbigstring_load_16(unsafe) ->
      tag_int
@@ -1469,8 +1477,8 @@ and transl_prim_2 p arg1 arg2 dbg =
      box_int Pint32
        (bind "str" (transl arg1) (fun str ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
-          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 3)) idx
-                      (unaligned_load_32 str idx))))
+          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 3))
+                      idx (unaligned_load_32 str idx))))
 
   | Pbigstring_load_32(unsafe) ->
      box_int Pint32
@@ -1485,8 +1493,8 @@ and transl_prim_2 p arg1 arg2 dbg =
      box_int Pint64
        (bind "str" (transl arg1) (fun str ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
-          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 7)) idx
-                      (unaligned_load_64 str idx))))
+          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 7))
+                      idx (unaligned_load_64 str idx))))
 
   | Pbigstring_load_64(unsafe) ->
      box_int Pint64
@@ -1530,15 +1538,16 @@ and transl_prim_2 p arg1 arg2 dbg =
                           float_array_ref arr idx)))))
       | Paddrarray | Pintarray ->
           bind "index" (transl arg2) (fun idx ->
-            bind "arr" (transl arg1) (fun arr ->
-              Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
-                        addr_array_ref arr idx)))
+          bind "arr" (transl arg1) (fun arr ->
+            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+                      addr_array_ref arr idx)))
       | Pfloatarray ->
           box_float(
             bind "index" (transl arg2) (fun idx ->
-              bind "arr" (transl arg1) (fun arr ->
-                Csequence(make_checkbound dbg [float_array_length(header arr); idx],
-                          unboxed_float_array_ref arr idx))))
+            bind "arr" (transl arg1) (fun arr ->
+              Csequence(make_checkbound dbg
+                                        [float_array_length(header arr); idx],
+                        unboxed_float_array_ref arr idx))))
       end
 
   (* Operations on bitvects *)
@@ -1672,8 +1681,8 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
        (bind "str" (transl arg1) (fun str ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
         bind "newval" (untag_int (transl arg3)) (fun newval ->
-          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 1)) idx
-                      (unaligned_set_16 str idx newval)))))
+          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 1))
+                      idx (unaligned_set_16 str idx newval)))))
 
   | Pbigstring_set_16(unsafe) ->
      return_unit
@@ -1682,16 +1691,16 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
         bind "newval" (untag_int (transl arg3)) (fun newval ->
         bind "ba_data" (Cop(Cload Word, [field_address ba 1])) (fun ba_data ->
           check_bound unsafe dbg (sub_int (Cop(Cload Word,[field_address ba 5]))
-                                          (Cconst_int 1)) idx
-                      (unaligned_set_16 ba_data idx newval))))))
+                                          (Cconst_int 1))
+                      idx (unaligned_set_16 ba_data idx newval))))))
 
   | Pstring_set_32(unsafe) ->
      return_unit
        (bind "str" (transl arg1) (fun str ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
         bind "newval" (transl_unbox_int Pint32 arg3) (fun newval ->
-          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 3)) idx
-                      (unaligned_set_32 str idx newval)))))
+          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 3))
+                      idx (unaligned_set_32 str idx newval)))))
 
   | Pbigstring_set_32(unsafe) ->
      return_unit
@@ -1700,16 +1709,16 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
         bind "newval" (transl_unbox_int Pint32 arg3) (fun newval ->
         bind "ba_data" (Cop(Cload Word, [field_address ba 1])) (fun ba_data ->
           check_bound unsafe dbg (sub_int (Cop(Cload Word,[field_address ba 5]))
-                                          (Cconst_int 3)) idx
-                      (unaligned_set_32 ba_data idx newval))))))
+                                          (Cconst_int 3))
+                      idx (unaligned_set_32 ba_data idx newval))))))
 
   | Pstring_set_64(unsafe) ->
      return_unit
        (bind "str" (transl arg1) (fun str ->
         bind "index" (untag_int (transl arg2)) (fun idx ->
         bind "newval" (transl_unbox_int Pint64 arg3) (fun newval ->
-          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 7)) idx
-                      (unaligned_set_64 str idx newval)))))
+          check_bound unsafe dbg (sub_int (string_length str) (Cconst_int 7))
+                      idx (unaligned_set_64 str idx newval)))))
 
   | Pbigstring_set_64(unsafe) ->
      return_unit
@@ -1735,7 +1744,7 @@ and transl_unbox_int bi = function
       Cconst_natint n
   | Uconst(Const_base(Const_int64 n), _) ->
       assert (size_int = 8); Cconst_natint (Int64.to_nativeint n)
-  | Uprim(Pbintofint bi', [Uconst(Const_base(Const_int i),_)], _) when bi = bi' ->
+  | Uprim(Pbintofint bi',[Uconst(Const_base(Const_int i),_)],_) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
@@ -1900,7 +1909,7 @@ let transl_function f =
 module StringSet =
   Set.Make(struct
     type t = string
-    let compare = compare
+    let compare (x:t) y = compare x y
   end)
 
 let rec transl_all_functions already_translated cont =
@@ -2275,14 +2284,21 @@ let tuplify_function arity =
                clos clos1.vars[1])
            (app clos.direct
                 clos1.vars[0] ... closN-2.vars[0] clos.vars[0] arg clos)))
+
     Special "shortcut" functions are also generated to handle the
     case where a partially applied function is applied to all remaining
     arguments in one go.  For instance:
       (defun caml_curry_N_1_app (arg2 ... argN clos)
         (let clos' clos.vars[1]
            (app clos'.direct clos.vars[0] arg2 ... argN clos')))
+
+    Those shortcuts may lead to a quadratic number of application
+    primitives being generated in the worst case, which resulted in
+    linking time blowup in practice (PR#5933), so we only generate and
+    use them when below a fixed arity 'max_arity_optimized'.
 *)
 
+let max_arity_optimized = 15
 let final_curry_function arity =
   let last_arg = Ident.create "arg" in
   let last_clos = Ident.create "clos" in
@@ -2292,7 +2308,7 @@ let final_curry_function arity =
           get_field (Cvar clos) 2 ::
           args @ [Cvar last_arg; Cvar clos])
     else
-      if n = arity - 1 then
+      if n = arity - 1 || arity > max_arity_optimized then
         begin
       let newclos = Ident.create "clos" in
       Clet(newclos,
@@ -2324,7 +2340,7 @@ let rec intermediate_curry_functions arity num =
      {fun_name = name2;
       fun_args = [arg, typ_addr; clos, typ_addr];
       fun_body =
-         if arity - num > 2 then
+         if arity - num > 2 && arity <= max_arity_optimized then
            Cop(Calloc,
                [alloc_closure_header 5;
                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
@@ -2339,7 +2355,7 @@ let rec intermediate_curry_functions arity num =
       fun_fast = true;
       fun_dbg  = Debuginfo.none }
     ::
-      (if arity - num > 2 then
+      (if arity <= max_arity_optimized && arity - num > 2 then
           let rec iter i =
             if i <= arity then
               let arg = Ident.create (Printf.sprintf "arg%d" i) in
@@ -2380,7 +2396,7 @@ let curry_function arity =
 module IntSet = Set.Make(
   struct
     type t = int
-    let compare = compare
+    let compare (x:t) y = compare x y
   end)
 
 let default_apply = IntSet.add 2 (IntSet.add 3 IntSet.empty)

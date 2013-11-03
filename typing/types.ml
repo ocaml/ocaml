@@ -76,7 +76,8 @@ end
 
 (* Maps of methods and instance variables *)
 
-module OrderedString = struct type t = string let compare = compare end
+module OrderedString =
+  struct type t = string let compare (x:t) y = compare x y end
 module Meths = Map.Make(OrderedString)
 module Vars = Meths
 

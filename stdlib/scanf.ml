@@ -337,13 +337,14 @@ module Scanning : SCANNING = struct
   let from_ic_close_at_end = from_ic scan_close_at_end;;
 
   (* The scanning buffer reading from [Pervasives.stdin].
-     One could try to define [stdib] as a scanning buffer reading a character at a
-     time (no bufferization at all), but unfortunately the top-level
-     interaction would be wrong.
-     This is due to some kind of ``race condition'' when reading from [Pervasives.stdin],
+     One could try to define [stdib] as a scanning buffer reading a character
+     at a time (no bufferization at all), but unfortunately the top-level
+     interaction would be wrong. This is due to some kind of
+     ``race condition'' when reading from [Pervasives.stdin],
      since the interactive compiler and [scanf] will simultaneously read the
-     material they need from [Pervasives.stdin]; then, confusion will result from what should
-     be read by the top-level and what should be read by [scanf].
+     material they need from [Pervasives.stdin]; then, confusion will result
+     from what should be read by the top-level and what should be read
+     by [scanf].
      This is even more complicated by the one character lookahead that [scanf]
      is sometimes obliged to maintain: the lookahead character will be available
      for the next ([scanf]) entry, seemingly coming from nowhere.
@@ -481,18 +482,18 @@ let compatible_format_type fmt1 fmt2 =
   Tformat.summarize_format_type (string_to_format fmt2);;
 
 (* Checking that [c] is indeed in the input, then skips it.
-   In this case, the character c has been explicitly specified in the
+   In this case, the character [c] has been explicitly specified in the
    format as being mandatory in the input; hence we should fail with
    End_of_file in case of end_of_input. (Remember that Scan_failure is raised
    only when (we can prove by evidence) that the input does not match the
    format string given. We must thus differentiate End_of_file as an error
    due to lack of input, and Scan_failure which is due to provably wrong
-   input. I am not sure this is worth to burden: it is complex and somehow
+   input. I am not sure this is worth the burden: it is complex and somehow
    subliminal; should be clearer to fail with Scan_failure "Not enough input
    to complete scanning"!)
 
    That's why, waiting for a better solution, we use checked_peek_char here.
-   We are also careful to treat "\r\n" in the input as a end of line marker: it
+   We are also careful to treat "\r\n" in the input as an end of line marker: it
    always matches a '\n' specification in the input format string. *)
 let rec check_char ib c =
   let ci = Scanning.checked_peek_char ib in
@@ -1349,7 +1350,8 @@ let scan_format ib ef fmt rv f =
         if i > lim then incomplete_format fmt else
         match Sformat.get fmt i with
         | '0' .. '9' as conv ->
-          let width, i = read_int_literal (decimal_value_of_char conv) (succ i) in
+          let width, i =
+            read_int_literal (decimal_value_of_char conv) (succ i) in
           Some width, i
         | _ -> None, i
 
@@ -1449,20 +1451,34 @@ let scan_format ib ef fmt rv f =
         | _ -> scan_fmt ir (stack f (get_count conv0 ib)) i end
       | '(' | '{' as conv (* ')' '}' *) ->
         let i = succ i in
-        (* Find the static specification for the format to read. *)
+        (* Find [mf], the static specification for the format to read. *)
         let j =
           Tformat.sub_format
             incomplete_format bad_conversion conv fmt i in
         let mf = Sformat.sub fmt (Sformat.index_of_int i) (j - 2 - i) in
-        (* Read the specified format string in the input buffer,
-           and check its correctness. *)
+        (* Read [rf], the specified format string in the input buffer,
+           and check its correctness w.r.t. [mf]. *)
         let _x = scan_String width ib in
         let rf = token_string ib in
         if not (compatible_format_type rf mf) then format_mismatch rf mf else
+        (* Proceed according to the kind of metaformat found:
+           - %{ mf %} simply returns [rf] as the token read,
+           - %( mf %) returns [rf] as the first token read, then
+             returns a second token obtained by scanning the input with
+             format string [rf].
+           Behaviour for %( mf %) is mandatory for sake of format string
+           typechecking specification. To get pure format string
+           substitution behaviour, you should use %_( mf %) that skips the
+           first (format string) token and hence properly substitutes [mf] by
+           [rf] in the format string argument.
+        *)
         (* For conversion %{%}, just return this format string as the token
-           read. *)
+           read and go on with the rest of the format string argument. *)
         if conv = '{' (* '}' *) then scan_fmt ir (stack f rf) j else
-        (* Or else, read according to the format string just read. *)
+        (* Or else, return this format string as the first token read;
+           then continue scanning using this format string to get
+           the following token read;
+           finally go on with the rest of the format string argument. *)
         let ir, nf = scan (string_to_format rf) ir (stack f rf) 0 in
         (* Return the format string read and the value just read,
            then go on with the rest of the format. *)

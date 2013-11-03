@@ -111,7 +111,8 @@ sp is a local copy of the global variable caml_extern_sp. */
    For GCC, I have hand-assigned hardware registers for several architectures.
 */
 
-#if defined(__GNUC__) && !defined(DEBUG) && !defined(__INTEL_COMPILER) && !defined(__llvm__)
+#if defined(__GNUC__) && !defined(DEBUG) && !defined(__INTEL_COMPILER) \
+    && !defined(__llvm__)
 #ifdef __mips__
 #define PC_REG asm("$16")
 #define SP_REG asm("$17")
@@ -1121,7 +1122,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #else
       caml_fatal_error_arg("Fatal error: bad opcode (%"
                            ARCH_INTNAT_PRINTF_FORMAT "x)\n",
-                           *(pc-1));
+                           (char *) (intnat) *(pc-1));
 #endif
     }
   }

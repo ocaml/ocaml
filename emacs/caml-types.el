@@ -54,6 +54,8 @@ The current list of keywords is:
 type call ident"
 )
 
+(defvar caml-types-position-re nil)
+
 (let* ((caml-types-filename-re "\"\\(\\([^\\\"]\\|\\\\.\\)*\\)\"")
        (caml-types-number-re "\\([0-9]*\\)"))
   (setq caml-types-position-re
@@ -329,7 +331,8 @@ See `caml-types-location-re' for annotation file format.
                  caml-types-annotation-date
                  (not (caml-types-date< caml-types-annotation-date type-date)))
       (if (and type-date target-date (caml-types-date< type-date target-date))
-          (error (format "`%s' is more recent than `%s'" target-path type-path)))
+          (error (format "`%s' is more recent than `%s'"
+                         target-path type-path)))
       (message "Reading annotation file...")
       (let* ((type-buf (caml-types-find-file type-path))
              (tree (with-current-buffer type-buf

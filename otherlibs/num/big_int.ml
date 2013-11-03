@@ -451,22 +451,20 @@ let power_base_nat base nat off len =
     let res = make_nat n
     and res2 = make_nat (succ n)
     and l = num_bits_int n - 2 in
-    let p = ref (1 lsl l) in
       blit_nat res 0 power_base pmax 1;
-      for _i = l downto 0 do
+      for i = l downto 0 do
         let len = num_digits_nat res 0 n in
         let len2 = min n (2 * len) in
         let succ_len2 = succ len2 in
           ignore (square_nat res2 0 len2 res 0 len);
           begin
-           if n land !p > 0
+           if n land (1 lsl i) > 0
               then (set_to_zero_nat res 0 len;
                     ignore (mult_digit_nat res 0 succ_len2
                               res2 0 len2 power_base pmax))
               else blit_nat res 0 res2 0 len2
           end;
-          set_to_zero_nat res2 0 len2;
-          p := !p lsr 1
+          set_to_zero_nat res2 0 len2
       done;
     if rem > 0
      then (ignore (mult_digit_nat res2 0 (succ n)
@@ -496,21 +494,19 @@ let power_big_int_positive_int bi n =
          let res = make_nat res_len
          and res2 = make_nat res_len
          and l = num_bits_int n - 2 in
-         let p = ref (1 lsl l) in
          blit_nat res 0 bi.abs_value 0 bi_len;
-         for _i = l downto 0 do
+         for i = l downto 0 do
            let len = num_digits_nat res 0 res_len in
            let len2 = min res_len (2 * len) in
            set_to_zero_nat res2 0 len2;
            ignore (square_nat res2 0 len2 res 0 len);
-           if n land !p > 0 then begin
+           if n land (1 lsl i) > 0 then begin
              let lenp = min res_len (len2 + bi_len) in
              set_to_zero_nat res 0 lenp;
              ignore(mult_nat res 0 lenp res2 0 len2 (bi.abs_value) 0 bi_len)
            end else begin
              blit_nat res 0 res2 0 len2
-           end;
-           p := !p lsr 1
+           end
          done;
          {sign = if bi.sign >=  0 then bi.sign
                  else if n land 1 = 0 then 1 else -1;

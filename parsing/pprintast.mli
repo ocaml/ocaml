@@ -83,7 +83,7 @@ class printer :
     method reset_semi : 'b
     method reset_ifthenelse : 'b
     method reset_pipe : 'b
-        
+
     method signature :
       Format.formatter -> Parsetree.signature_item list -> unit
     method signature_item :

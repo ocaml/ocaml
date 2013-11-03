@@ -12,7 +12,8 @@
 
 (* Emission of PowerPC assembly code *)
 
-module StringSet = Set.Make(struct type t = string let compare = compare end)
+module StringSet =
+  Set.Make(struct type t = string let compare (x:t) y = compare x y end)
 
 open Location
 open Misc

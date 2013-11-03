@@ -371,10 +371,10 @@ FUNCTION(caml_raise_exception)
 LBL(111):
         movl    4(%esp), %esi          /* Save exception bucket in esi */
         ALIGN_STACK(12)
-        pushl   G(caml_exception_pointer); CFI_ADJUST(4)   /* arg 4: sp of handler */
-        pushl   G(caml_bottom_of_stack);   CFI_ADJUST(4)     /* arg 3: sp of raise */
-        pushl   G(caml_last_return_address); CFI_ADJUST(4) /* arg 2: pc of raise */
-        pushl   %esi; CFI_ADJUST(4)                        /* arg 1: exception bucket */
+        pushl   G(caml_exception_pointer); CFI_ADJUST(4)  /* 4: sp of handler */
+        pushl   G(caml_bottom_of_stack); CFI_ADJUST(4)    /* 3: sp of raise */
+        pushl   G(caml_last_return_address); CFI_ADJUST(4)/* 2: pc of raise */
+        pushl   %esi; CFI_ADJUST(4)                    /* 1: exception bucket */
         call    G(caml_stash_backtrace)
         movl    %esi, %eax              /* Recover exception bucket */
         movl    G(caml_exception_pointer), %esp

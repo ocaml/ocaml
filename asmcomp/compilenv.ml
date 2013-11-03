@@ -27,7 +27,8 @@ exception Error of error
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 
-let structured_constants = ref ([] : (string * bool * Lambda.structured_constant) list)
+let structured_constants =
+  ref ([] : (string * bool * Lambda.structured_constant) list)
 
 let current_unit =
   { ui_name = "";

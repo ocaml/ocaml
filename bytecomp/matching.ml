@@ -30,12 +30,12 @@ open Printf
 
 
 (*
-   Many functions on the various data structures ofthe algorithm :
+   Many functions on the various data structures of the algorithm :
      - Pattern matrices.
      - Default environments: mapping from matrices to exit numbers.
      - Contexts:  matrices whose column are partitioned into
        left and right.
-     - Jump sumaries: mapping from exit numbers to contexts
+     - Jump summaries: mapping from exit numbers to contexts
 *)
 
 type matrix = pattern list list
@@ -1329,7 +1329,8 @@ let get_mod_field modname field =
         match Env.lookup_value (Longident.Lident field) env with
         | (Path.Pdot(_,_,i), _) -> i
         | _ -> fatal_error ("Primitive "^modname^"."^field^" not found.")
-      with Not_found -> fatal_error ("Primitive "^modname^"."^field^" not found.")
+      with Not_found ->
+        fatal_error ("Primitive "^modname^"."^field^" not found.")
       in
       Lprim(Pfield p, [Lprim(Pgetglobal mod_ident, [])])
     with Not_found -> fatal_error ("Module "^modname^" unavailable.")
@@ -2615,8 +2616,8 @@ let rec flatten_pat_line size p k = match p.pat_desc with
 | Tpat_any ->  omegas size::k
 | Tpat_tuple args -> args::k
 | Tpat_or (p1,p2,_) ->  flatten_pat_line size p1 (flatten_pat_line size p2 k)
-| Tpat_alias (p,_,_) -> (* Note: if this 'as' pat is here, then this is a useless
-                         binding, solves PR #3780 *)
+| Tpat_alias (p,_,_) -> (* Note: if this 'as' pat is here, then this is a
+                           useless binding, solves PR #3780 *)
     flatten_pat_line size p k
 | _ -> fatal_error "Matching.flatten_pat_line"
 

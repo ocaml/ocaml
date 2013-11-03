@@ -263,7 +263,8 @@ let instr_dir ppf lexbuf =
     else begin
       let new_directory' = List.rev new_directory in
       match new_directory' with
-      | mdl :: for_keyw :: tl when (String.lowercase for_keyw) = "for" && (List.length tl) > 0 ->
+      | mdl :: for_keyw :: tl
+        when (String.lowercase for_keyw) = "for" && (List.length tl) > 0 ->
           List.iter (function x -> add_path_for mdl (expand_path x)) tl
       | _ ->
           List.iter (function x -> add_path (expand_path x)) new_directory'
@@ -272,7 +273,8 @@ let instr_dir ppf lexbuf =
     fprintf ppf "@[<2>Directories: %a@]@." print_dirs !Config.load_path;
     Hashtbl.iter
       (fun mdl dirs ->
-        fprintf ppf "@[<2>Source directories for %s: %a@]@." mdl print_dirs dirs)
+         fprintf ppf "@[<2>Source directories for %s: %a@]@." mdl print_dirs
+                 dirs)
       Debugger_config.load_path_for
 
 let instr_kill ppf lexbuf =
@@ -486,7 +488,8 @@ let print_expr depth ev env ppf expr =
 let env_of_event =
   function
     None    -> Env.empty
-  | Some ev -> Envaux.env_from_summary ev.Instruct.ev_typenv ev.Instruct.ev_typsubst
+  | Some ev ->
+      Envaux.env_from_summary ev.Instruct.ev_typenv ev.Instruct.ev_typsubst
 
 let print_command depth ppf lexbuf =
   let exprs = expression_list_eol Lexer.lexeme lexbuf in
@@ -621,7 +624,9 @@ let instr_break ppf lexbuf =
                raise Toplevel)
     | BA_pos2 (mdle, position) ->             (* break @ [MODULE] # POSITION *)
         try
-          new_breakpoint (event_near_pos (convert_module (module_of_longident mdle)) position)
+          new_breakpoint
+            (event_near_pos (convert_module (module_of_longident mdle))
+                            position)
         with
         | Not_found ->
             eprintf "Can't find any event there.@."
@@ -859,7 +864,7 @@ let info_modules ppf lexbuf =
   if !opened_modules_names = [] then
     print_endline "(no module opened)."
   else
-    (List.iter (function x -> print_string x; print_space) !opened_modules_names;
+    (List.iter (function x -> print_string x;print_space) !opened_modules_names;
      print_newline ())
 *********)
 
@@ -897,7 +902,9 @@ let info_breakpoints ppf lexbuf =
 
 let info_events ppf lexbuf =
   ensure_loaded ();
-  let mdle = convert_module (module_of_longident (opt_longident_eol Lexer.lexeme lexbuf)) in
+  let mdle =
+    convert_module (module_of_longident (opt_longident_eol Lexer.lexeme lexbuf))
+  in
     print_endline ("Module: " ^ mdle);
     print_endline "   Address  Characters        Kind      Repr.";
     List.iter

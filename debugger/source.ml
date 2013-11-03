@@ -41,7 +41,7 @@ let source_of_module pos mdle =
     let innermost_module =
       try
         let dot_index = String.rindex mdle '.' in
-        String.sub mdle (succ dot_index) (pred ((String.length mdle) - dot_index))
+        String.sub mdle (succ dot_index) (pred (String.length mdle - dot_index))
       with Not_found -> mdle in
     let rec loop =
       function

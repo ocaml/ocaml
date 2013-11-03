@@ -91,12 +91,13 @@ let interface ppf sourcefile outputprefix =
     Warnings.check_fatal ();
     if not !Clflags.print_types then begin
       let sg = Env.save_signature sg modulename (outputprefix ^ ".cmi") in
-      Typemod.save_signature modulename tsg outputprefix sourcefile initial_env sg ;
+      Typemod.save_signature modulename tsg outputprefix sourcefile
+                             initial_env sg ;
     end;
     Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"))
   with e ->
-    Pparse.remove_preprocessed_if_ast inputfile;
+    Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"));
     raise e
 
@@ -122,18 +123,20 @@ let implementation ppf sourcefile outputprefix =
   let cmxfile = outputprefix ^ ".cmx" in
   let objfile = outputprefix ^ ext_obj in
   try
-    if !Clflags.print_types then ignore(
+    if !Clflags.print_types then ignore begin
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree Printtyped.implementation_with_coercion)
-    else begin
+      ++ print_if ppf Clflags.dump_typedtree
+                  Printtyped.implementation_with_coercion
+    end else begin
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ print_if ppf Clflags.dump_typedtree Printtyped.implementation_with_coercion
+      ++ print_if ppf Clflags.dump_typedtree
+                  Printtyped.implementation_with_coercion
       ++ Translmod.transl_store_implementation modulename
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       +++ Simplif.simplify_lambda
@@ -147,7 +150,7 @@ let implementation ppf sourcefile outputprefix =
   with x ->
     remove_file objfile;
     remove_file cmxfile;
-    Pparse.remove_preprocessed_if_ast inputfile;
+    Pparse.remove_preprocessed inputfile;
     Stypes.dump (Some (outputprefix ^ ".annot"));
     raise x
 

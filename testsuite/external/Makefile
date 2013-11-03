@@ -216,7 +216,7 @@ typeconv: ${TYPECONV}.tar.gz findlib
           ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${TYPECONV} core
+	rm -rf ${TYPECONV} typeconv
 distclean::
 	rm -f ${TYPECONV}.tar.gz
 all: typeconv
@@ -238,7 +238,7 @@ variantslib: ${VARIANTSLIB}.tar.gz findlib typeconv
           ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${VARIANTSLIB} core
+	rm -rf ${VARIANTSLIB} variantslib
 distclean::
 	rm -f ${VARIANTSLIB}.tar.gz
 all: variantslib
@@ -260,7 +260,7 @@ pipebang: ${PIPEBANG}.tar.gz findlib typeconv
           ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${PIPEBANG} core
+	rm -rf ${PIPEBANG} pipebang
 distclean::
 	rm -f ${PIPEBANG}.tar.gz
 all: pipebang
@@ -282,7 +282,7 @@ paounit: ${PAOUNIT}.tar.gz findlib typeconv
           ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${PAOUNIT} core
+	rm -rf ${PAOUNIT} paounit
 distclean::
 	rm -f ${PAOUNIT}.tar.gz
 all: paounit
@@ -304,7 +304,7 @@ comparelib: ${COMPARELIB}.tar.gz findlib typeconv
           ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${COMPARELIB} core
+	rm -rf ${COMPARELIB} comparelib
 distclean::
 	rm -f ${COMPARELIB}.tar.gz
 all: comparelib
@@ -326,7 +326,7 @@ binprot: ${BINPROT}.tar.gz findlib typeconv ounit
           ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${BINPROT} core
+	rm -rf ${BINPROT} binprot
 distclean::
 	rm -f ${BINPROT}.tar.gz
 all: binprot
@@ -348,7 +348,7 @@ fieldslib: ${FIELDSLIB}.tar.gz findlib typeconv
           ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${FIELDSLIB} core
+	rm -rf ${FIELDSLIB} fieldslib
 distclean::
 	rm -f ${FIELDSLIB}.tar.gz
 all: fieldslib
@@ -370,7 +370,7 @@ sexplib: ${SEXPLIB}.tar.gz findlib typeconv
           ocaml setup.ml -install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${SEXPLIB} core
+	rm -rf ${SEXPLIB} sexplib
 distclean::
 	rm -f ${SEXPLIB}.tar.gz
 all: sexplib
@@ -1354,7 +1354,7 @@ distclean::
 all: kaputt
 
 # http://pauillac.inria.fr/~ddr/camlp5/
-CAMLP5=camlp5-6.06
+CAMLP5=camlp5-6.08
 ${CAMLP5}.tgz:
 	${WGET} http://pauillac.inria.fr/~ddr/camlp5/distrib/src/$@
 camlp5: ${CAMLP5}.tgz
@@ -1417,6 +1417,28 @@ clean::
 distclean::
 	rm -f ${COQ}.tar.gz
 all: coq
+
+# http://compcert.inria.fr
+COMPCERT=compcert-1.13
+${COMPCERT}.tgz:
+	${WGET} http://compcert.inria.fr/release/$@
+compcert: ${COMPCERT}.tgz coq #bitstring FIXME
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${COMPCERT}
+	tar zxf ${COMPCERT}.tgz
+	./Patcher.sh ${COMPCERT}
+	( cd ${COMPCERT} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure -prefix ${PREFIX} ia32-macosx && \
+	  ${MAKE} all && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${COMPCERT} compcert
+distclean::
+	rm -f ${COMPCERT}.tgz
+all: compcert
 
 # http://frama-c.com/
 FRAMAC=frama-c-Oxygen-20120901

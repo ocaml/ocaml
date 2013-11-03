@@ -1,13 +1,24 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*          Damien Doligez, projet Gallium, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Exotic OCaml syntax constructs found in the manual that are not *)
 (* used in the source of the OCaml distribution (even in the tests). *)
 
-(* Spaces between the parts of the ?label: token in a typexpr. *)
-type t = ? label : int -> int -> int;;
+(* Spaces between the parts of the ?label: token in a typexpr.
+   (used in bin-prot) *)
+type t1 = ? label : int -> int -> int;;
 
-(* Lazy in a pattern. *)
-let f x =
-  match x with lazy y -> y
-;;
+(* Lazy in a pattern. (used in advi) *)
+function lazy y -> y;;
 
 (* Spaces between the parts of the ?label: token in a class-type. *)
 class c1 =
@@ -27,28 +38,61 @@ module type T = sig
 end;;
 
 (* associativity rules for patterns *)
-match Some (Some 1) with Some Some x -> x | _ -> 0;;
-match Some (`Tag 1) with Some `Tag x -> x | _ -> 0;;
-match `Tag (Some 1) with `Tag Some x -> x | _ -> 0;;
-match `Tag (`Tag 1) with `Tag `Tag x -> x | _ -> 0;;
+function Some Some x -> x | _ -> 0;;
+function Some `Tag x -> x | _ -> 0;;
+function `Tag Some x -> x | _ -> 0;;
+function `Tag `Tag x -> x | _ -> 0;;
 
 (* negative int32, int64, nativeint constants in patterns *)
-match -1l with -1l -> () | _ -> ();;
-match -1L with -1L -> () | _ -> ();;
-match -1n with -1n -> () | _ -> ();;
+function -1l -> () | _ -> ();;
+function -1L -> () | _ -> ();;
+function -1n -> () | _ -> ();;
 
-(* Even more exotic: not even found in the manual, but used in some *)
-(* programs in testsuite/external/. *)
+(* surprising places where you can use an operator as a variable name *)
+function (+) -> (+);;
+function _ as (+) -> (+);;
+for (+) = 0 to 1 do () done;;
+
+(* access a class-type through an extended-module-path *)
+module F (X : sig end) = struct
+  class type t = object end
+end;;
+module M1 = struct end;;
+class type u = F(M1).t;;
+
+(* conjunctive constraints on tags (used by the compiler to print some
+   inferred types *)
+type 'a t2 = [< `A of int & int & int ] as 'a;;
+
+(* same for a parameterless tag (triggers a very strange error message) *)
+(*type ('a, 'b) t3 = [< `A of & 'b ] as 'a;;*)
+
+(* negative float constant in a pattern *)
+function -1.0 -> 1 | _ -> 2;;
+
+(* combining language extensions (sec. 7.13 and 7.17) *)
+object
+  method f = 1
+  method! f : type t . int = 2
+end;;
+
+(* private polymorphic method with local type *)
+object method private f : type t . int = 1 end;;
+
+
+(* More exotic: not even found in the manual (up to version 4.00),
+   but used in some programs found in the wild.
+*)
 
 (* local functor *)
-let module M (M1 : sig end) (M2 : sig end) = struct end in ();;
+let module M (M1 : sig end) = struct end in ();;
 
 (* let-binding with a type coercion *)
-let f x :> int = x + 1;;
-let f x : int :> int = x + 1;;
+let x :> int = 1;;
+let x : int :> int = 1;;
 
 (* "begin end" as an alias for "()" *)
-let x = begin end;;
+begin end;;
 
 (* putting "virtual" before "mutable" or "private" *)
 class type virtual ct = object
@@ -63,3 +107,50 @@ class virtual c = object
   method private virtual f : int
   method virtual private g : int
 end;;
+
+(* Double-semicolon at the beginning of a module body [ocp-indent] *)
+module M2 = struct ;; end;;
+
+
+(**********************
+
+(* Most exotic: not found in the manual (up to 4.00) and not used
+   deliberately by anyone, but still implemented by the compiler. *)
+
+(* whitespace inside val!, method!, inherit! [found in ocamlspot] *)
+object
+  val x = 1
+  val ! x = 2
+  method m = 1
+  method ! m = 2
+  inherit ! object val x = 3 end
+end;;
+
+(* Using () as a constructor name [found in gettext] *)
+type t = ();;
+let x : t = ();;
+
+(* Using :: as a constructor name *)
+type t = :: of int * int;;
+
+(* Prefix syntax for :: in expressions *)
+(::) (1, 1);;
+
+(* Prefix syntax for :: in patterns *)
+function (::) (_, _) -> 1;;
+
+(* Unary plus in expressions (ints and float) *)
++1;;
++1l;;
++1L;;
++1n;;
++1.0;;
+
+(* Unary plus in patterns (ints and floats) *)
+function +1 -> ();;
+function +1l -> ();;
+function +1L -> ();;
+function +1n -> ();;
+function +1.0 -> ();;
+
+**********************)

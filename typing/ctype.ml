@@ -193,22 +193,38 @@ type unification_mode =
 
 let umode = ref Expression
 let generate_equations = ref false
+let assume_injective = ref false
 
-let set_mode mode ?(generate = (mode = Pattern)) f =
+let set_mode_expression f =
   let old_unification_mode = !umode
   and old_gen = !generate_equations in
   try
-    umode := mode;
+    umode := Expression;
+    let ret = f () in
+    umode := old_unification_mode;
+    ret
+  with e ->
+    umode := old_unification_mode;
+    raise e
+
+let set_mode_pattern ~generate ~injective f =
+  let old_unification_mode = !umode
+  and old_gen = !generate_equations
+  and old_inj = !assume_injective in
+  try
+    umode := Pattern;
     generate_equations := generate;
+    assume_injective := injective;
     let ret = f () in
     umode := old_unification_mode;
     generate_equations := old_gen;
+    assume_injective := old_inj;
     ret
   with e ->
     umode := old_unification_mode;
     generate_equations := old_gen;
+    assume_injective := old_inj;
     raise e
-
 
 (*** Checks for type definitions ***)
 
@@ -1865,7 +1881,19 @@ let reify env t =
           let t = create_fresh_constr ty.level name in
           link_type ty t
       | Tvariant r ->
-          if not (static_row r) then iterator (row_more r);
+	  let r = row_repr r in
+          if not (static_row r) then begin
+	    if r.row_fixed then iterator (row_more r) else
+	    let m = r.row_more in
+	    match m.desc with
+	      Tvar o ->
+		let name = match o with Some s -> s | _ -> "ex" in
+		let t = create_fresh_constr m.level name in
+		let row =
+		  {r with row_fields=[]; row_fixed=true; row_more = t} in
+		link_type m (newty2 m.level (Tvariant row))
+	    | _ -> assert false
+	  end;
           iter_row iterator r
       | Tconstr (p, _, _) when is_object_type p ->
           iter_type_expr iterator (full_expand !env ty)
@@ -2240,7 +2268,22 @@ and unify3 env t1 t1' t2 t2' =
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list env tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-          unify_list env tl1 tl2
+          if !umode = Expression || not !generate_equations then
+            unify_list env tl1 tl2
+          else if !assume_injective then
+            set_mode_pattern ~generate:true ~injective:false
+                             (fun () -> unify_list env tl1 tl2)
+          else if in_current_module p1 (* || in_pervasives p1 *)
+                  || try is_datatype (Env.find_type p1 !env) with Not_found -> false then
+            unify_list env tl1 tl2
+          else
+            set_mode_pattern ~generate:false ~injective:false
+              begin fun () ->
+                let snap = snapshot () in
+                try unify_list env tl1 tl2 with Unify _ ->
+                  backtrack snap;
+                  List.iter (reify env) (tl1 @ tl2)
+              end
       | (Tconstr ((Path.Pident p) as path,[],_),
          Tconstr ((Path.Pident p') as path',[],_))
         when is_abstract_newtype !env path && is_abstract_newtype !env path'
@@ -2263,7 +2306,7 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (_,[],_), _) | (_, Tconstr (_,[],_)) when !umode = Pattern ->
           reify env t1';
           reify env t2';
-          mcomp !env t1' t2'
+          if !generate_equations then mcomp !env t1' t2'
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
           unify_fields env fi1 fi2;
           (* Type [t2'] may have been instantiated by [unify_fields] *)
@@ -2524,7 +2567,7 @@ let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =
   try
     univar_pairs := [];
     newtype_level := Some lev;
-    set_mode Pattern (fun () -> unify env ty1 ty2);
+    set_mode_pattern ~generate:true ~injective:true (fun () -> unify env ty1 ty2);
     newtype_level := None;
     TypePairs.clear unify_eq_set;
   with e ->

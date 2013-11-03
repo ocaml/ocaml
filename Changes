@@ -72,6 +72,7 @@ Bug fixes:
 - PR#5928: Missing space between words in manual page for ocamlmktop
 - ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
 - PR#5930: ocamldep leaks temporary preprocessing files
+- PR#5934: integer shift by negative amount (in otherlibs/num)
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
@@ -114,6 +115,8 @@ Bug fixes:
 - PR#5906: GADT exhaustiveness check is still broken
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5911: Signature substitutions fail in submodules
+- PR#5948: GADT with polymorphic variants bug
+- PR#5982: Incompatibility check assumes abstracted types are injective
 
 OCaml 4.00.1:
 -------------
@@ -699,7 +702,7 @@ Bug Fixes:
 - PR#5018: wrong exception raised by Dynlink.loadfile.
 - PR#5057: fatal typing error with local module + functor + polymorphic variant
 - Wrong type for Obj.add_offset.
-- Small problem with the representation of Int32, Int64, and Nativeint constants.
+- Small problem with representation of Int32, Int64, and Nativeint constants.
 - Use RTLD_LOCAL for native dynlink in private mode.
 
 Objective Caml 3.11.2:

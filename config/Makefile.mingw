@@ -143,7 +143,7 @@ NATIVECCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused
 NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
-PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o #there must be a space after this '-o'
+PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o # must have a space after '-o'
 
 ############# Configuration for the contributed libraries
 

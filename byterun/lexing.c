@@ -218,7 +218,8 @@ CAMLprim value caml_new_lex_engine(struct lexing_table *tbl, value start_state,
       else
         pc_off = Short(tbl->lex_default_code, pstate) ;
       if (pc_off > 0)
-        run_mem(Bp_val(tbl->lex_code) + pc_off, lexbuf->lex_mem, lexbuf->lex_curr_pos) ;
+        run_mem(Bp_val(tbl->lex_code) + pc_off, lexbuf->lex_mem,
+                lexbuf->lex_curr_pos) ;
       /* Erase the EOF condition only if the EOF pseudo-character was
          consumed by the automaton (i.e. there was no backtrack above)
        */
