@@ -27,6 +27,12 @@ Compilers:
   representation for type constructors inside types, taking open modules
   into account. This can make types much more readable if your code
   uses lots of functors.
+- PR#5986: added flag -compat-32 to ocamlc, ensuring that the generated
+  bytecode executable can be loaded on 32-bit hosts.
+
+Standard library:
+- PR#5986: new flag Marshal.Compat_32 for the serialization functions
+  (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 
 Bug fixes:
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
@@ -73,6 +79,7 @@ Bug fixes:
 - ocamlbuild now picks the non-core tools like ocamlfind and menhir from PATH
 - PR#5930: ocamldep leaks temporary preprocessing files
 - PR#5934: integer shift by negative amount (in otherlibs/num)
+- PR#5920, PR#2957: linking failure for big bytecodes on 32bit architectures
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary

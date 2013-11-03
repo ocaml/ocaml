@@ -28,7 +28,7 @@
 *.byte
 *.native
 program
-program.exe
+*.exe
 
 .depend
 .depend.nt

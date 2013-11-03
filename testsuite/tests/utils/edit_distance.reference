@@ -22,11 +22,11 @@ OK
 OK
 [12] (edit_distance "abcxyzw" "abcmnpqr" 10), expected Some 5
 OK
-[13] (edit_distance "a" "a" 4611686018427387903), expected Some 0
+[13] (edit_distance "a" "a" max_int), expected Some 0
 OK
-[14] (edit_distance "a" "b" 4611686018427387903), expected Some 1
+[14] (edit_distance "a" "b" max_int), expected Some 1
 OK
-[15] (edit_distance "abc" "ade" 4611686018427387903), expected Some 2
+[15] (edit_distance "abc" "ade" max_int), expected Some 2
 OK
 [16] (edit_distance "" "" 3), expected Some 0
 OK

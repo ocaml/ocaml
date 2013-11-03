@@ -42,7 +42,7 @@ CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   ccomp.cmo pparse.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
-	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
 ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \

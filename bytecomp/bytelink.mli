@@ -28,6 +28,7 @@ type error =
   | Custom_runtime
   | File_exists of string
   | Cannot_open_dll of string
+  | Not_compatible_32
 
 exception Error of error
 

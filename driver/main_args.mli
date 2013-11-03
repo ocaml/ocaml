@@ -21,6 +21,7 @@ module type Bytecomp_options =
     val _cclib : string -> unit
     val _ccopt : string -> unit
     val _config : unit -> unit
+    val _compat_32 : unit -> unit
     val _custom : unit -> unit
     val _dllib : string -> unit
     val _dllpath : string -> unit

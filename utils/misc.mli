@@ -121,6 +121,18 @@ val fst4: 'a * 'b * 'c * 'd -> 'a
 val snd4: 'a * 'b * 'c * 'd -> 'b
 val thd4: 'a * 'b * 'c * 'd -> 'c
 
+module LongString :
+  sig
+    type t = string array
+    val create : int -> t
+    val length : t -> int
+    val get : t -> int -> char
+    val set : t -> int -> char -> unit
+    val blit : t -> int -> t -> int -> int -> unit
+    val output : out_channel -> t -> int -> int -> unit
+    val unsafe_blit_to_string : t -> int -> string -> int -> int -> unit
+    val input_bytes : in_channel -> int -> t
+  end
 
 val edit_distance : string -> string -> int -> int option
 (** [edit_distance a b cutoff] computes the edit distance between
