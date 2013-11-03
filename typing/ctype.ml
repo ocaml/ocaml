@@ -196,8 +196,7 @@ let generate_equations = ref false
 let assume_injective = ref false
 
 let set_mode_expression f =
-  let old_unification_mode = !umode
-  and old_gen = !generate_equations in
+  let old_unification_mode = !umode in
   try
     umode := Expression;
     let ret = f () in
