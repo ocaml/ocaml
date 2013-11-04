@@ -599,9 +599,10 @@ let emit_instr i =
         `	{emit_string instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
     | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
+        let a = i.arg.(0) in
+        let r = i.res.(0) in
         if n = 1 lsl l then begin
-          let r = i.res.(0) in
-          `	movs	{emit_reg r}, {emit_reg i.arg.(0)}\n`;
+          `	movs	{emit_reg r}, {emit_reg a}\n`;
           if n <= 256 then begin
             `	it	lt\n`;
             `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int (n-1)}\n`
@@ -617,17 +618,15 @@ let emit_instr i =
           let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
           (* Algorithm:
                 t = multiply-high-signed(arg, m)
-                if m < 0, t = t + m
+                if m < 0, t = t + arg
                 t = shift-right-signed(t, p)
-                res = t + sign-bit(arg) 
+                res = t + sign-bit(arg)
           *)
-          let a = i.arg.(0) in
-          let r = i.res.(0) in
           let ninstr = emit_intconst r (Nativeint.to_int32 m) in
           if m >= 0n then
             `	smmul	{emit_reg r}, {emit_reg r}, {emit_reg a}\n`
           else
-            `	smmla	{emit_reg r}, {emit_reg r}, {emit_reg a}, {emit_reg r}\n`;
+            `	smmla	{emit_reg r}, {emit_reg r}, {emit_reg a}, {emit_reg a}\n`;
           if p > 0 then
             `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int p}\n`;
           `	add	{emit_reg r}, {emit_reg r}, {emit_reg a}, lsr #31\n`;
@@ -652,20 +651,21 @@ let emit_instr i =
           let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
           (* Algorithm:
                 t = multiply-high-signed(arg, m)
-                if m < 0, t = t + m
+                if m < 0, t = t + arg
                 t = shift-right-signed(t, p)
-                t = (t + sign-bit(arg)) * n
-                res = arg - t
+                t = t + sign-bit(arg)
+                res = arg - (t * n)
           *)
           let r12 = phys_reg 8 in
           let ninstr = emit_intconst r (Nativeint.to_int32 m) in
           if m >= 0n then
             `	smmul	{emit_reg r}, {emit_reg r}, {emit_reg a}\n`
           else
-            `	smmla	{emit_reg r}, {emit_reg r}, {emit_reg a}, {emit_reg r}\n`;
+            `	smmla	{emit_reg r}, {emit_reg r}, {emit_reg a}, {emit_reg a}\n`;
           if p > 0 then
             `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int p}\n`;
           `	add	{emit_reg r}, {emit_reg r}, {emit_reg a}, lsr #31\n`;
+          (* Compute remainder via Euclid's equality *)
           let ninstr = ninstr + emit_intconst r12 (Int32.of_int n) in
           if !arch >= ARMv6T2 then begin
             `	mls	{emit_reg r}, {emit_reg r}, r12, {emit_reg a}\n`;
