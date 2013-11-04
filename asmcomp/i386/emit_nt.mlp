@@ -597,7 +597,7 @@ let emit_instr i =
           if m < 0n then
             `	add	edx, ecx\n`;
           if p > 0 then
-            `	sar	edx, ${emit_int p}\n`;
+            `	sar	edx, {emit_int p}\n`;
           `	shr	ecx, 31\n`;
           `	add	ecx, edx\n`
         end
@@ -621,7 +621,7 @@ let emit_instr i =
           if m < 0n then
             `	add	edx, ecx\n`;
           if p > 0 then
-            `	sar	edx, ${emit_int p}\n`;
+            `	sar	edx, {emit_int p}\n`;
           `	mov	eax, ecx\n`;
           `	shr	eax, 31\n`;
           `	add	edx, eax\n`;
