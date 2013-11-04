@@ -75,10 +75,14 @@ let int_const n =
   else Cconst_natint
           (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
 
-let add_const c n =
+let rec add_const c n =
   if n = 0 then c
   else match c with
   | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+  | Cop(Csubi, [Cconst_int x; c]) when no_overflow_add n x ->
+      Cop(Csubi, [Cconst_int (n + x); c])
+  | Cop(Csubi, [c; Cconst_int x]) when no_overflow_sub n x ->
+      add_const c (n - x)
   | c -> Cop(Caddi, [c; Cconst_int n])
 
 let incr_int = function
