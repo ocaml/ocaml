@@ -121,13 +121,16 @@ let sub_int c1 c2 =
 
 let mul_int c1 c2 =
   match (c1, c2) with
-    (Cconst_int 0, _) -> c1
-  | (Cconst_int 1, _) -> c2
-  | (_, Cconst_int 0) -> c2
-  | (_, Cconst_int 1) -> c1
+    (c, Cconst_int 0) | (Cconst_int 0, c) ->
+      Cconst_int 0
+  | (c, Cconst_int 1) | (Cconst_int 1, c) ->
+      c
+  | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
+      sub_int (Cconst_int 0) c
   | (c, Cconst_int n) | (Cconst_int n, c) when n = 1 lsl Misc.log2 n->
       Cop(Clsl, [c; Cconst_int(Misc.log2 n)])
-  | (_, _) -> Cop(Cmuli, [c1; c2])
+  | (c1, c2) ->
+      Cop(Cmuli, [c1; c2])
 
 let tag_int = function
     Cconst_int n -> int_const n
