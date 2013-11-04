@@ -667,8 +667,14 @@ let emit_instr i =
             `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int p}\n`;
           `	add	{emit_reg r}, {emit_reg r}, {emit_reg a}, lsr #31\n`;
           let ninstr = ninstr + emit_intconst r12 (Int32.of_int n) in
-          `	mls	{emit_reg r}, {emit_reg r}, r12, {emit_reg a}\n`;
-          ninstr + 4
+          if !arch >= ARMv6T2 then begin
+            `	mls	{emit_reg r}, {emit_reg r}, r12, {emit_reg a}\n`;
+            ninstr + 4
+          end else begin
+            `	mul	{emit_reg r}, {emit_reg r}, r12\n`;
+            `	sub	{emit_reg r}, {emit_reg a}, {emit_reg r}\n`;
+            ninstr + 5
+          end
         end
     | Lop(Iintop_imm((Ilsl | Ilsr | Iasr as op), n)) ->
         let shift = name_for_shift_operation op in
