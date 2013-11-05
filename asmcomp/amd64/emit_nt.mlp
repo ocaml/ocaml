@@ -24,6 +24,8 @@ open Mach
 open Linearize
 open Emitaux
 
+let rdx = phys_reg 4
+
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -351,6 +353,10 @@ let emit_float s =
 let emit_float_constant (cst, lbl) =
   `{emit_label lbl}     REAL8   {emit_float cst}\n`
 
+let emit_movabs reg n =
+  (* force ml64 to use mov reg, imm64 instruction *)
+  `	mov	{emit_reg reg}, {emit_printf "0%nxH" n}\n`
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -383,8 +389,7 @@ let emit_instr fallthrough i =
 	  (* work around bug in ml64 *)
           `	mov	{emit_reg32 i.res.(0)}, {emit_nativeint n}\n`
         else
-	  (* force ml64 to use mov reg, imm64 instruction *)
-          `	mov	{emit_reg i.res.(0)}, {emit_printf "0%nxH" n}\n`
+          emit_movabs i.res.(0) n
     | Lop(Iconst_float s) ->
         begin match Int64.bits_of_float (float_of_string s) with
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
@@ -527,21 +532,60 @@ let emit_instr fallthrough i =
     | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
         `	dec	{emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Idiv, n)) ->
-        (* Note: i.arg.(0) = i.res.(0) = rdx  (cf. selection.ml) *)
+        (* Note: i.arg.(0) = i.res.(0) = rcx  (cf. selection.ml) *)
         let l = Misc.log2 n in
+        if n = 1 lsl l then begin
         `	mov	rax, {emit_reg i.arg.(0)}\n`;
         `	add	{emit_reg i.arg.(0)}, {emit_int(n-1)}\n`;
         `	test	rax, rax\n`;
         `	cmovns	{emit_reg i.arg.(0)}, rax\n`;
         `	sar	{emit_reg i.res.(0)}, {emit_int l}\n`
+        end else begin
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          (* Algorithm:
+                t = multiply-high-signed(arg, m)
+                if m < 0, t = t + m
+                t = shift-right-signed(t, p)
+                res = t + sign-bit(arg) 
+          *)
+          emit_movabs rdx m;
+          `	mov	rax, rcx\n`;
+          `	imul	rdx\n`; (* rdx = high 64 bits of arg * m, signed *)
+          if m < 0n then
+            `	add	rdx, rcx\n`;
+          if p > 0 then
+            `	sar	rdx, {emit_int p}\n`;
+          `	shr	rcx, 63\n`;
+          `	add	rcx, rdx\n`
+        end
     | Lop(Iintop_imm(Imod, n)) ->
-        (* Note: i.arg.(0) = i.res.(0) = rdx  (cf. selection.ml) *)
+        (* Note: i.arg.(0) = i.res.(0) = rcx  (cf. selection.ml) *)
+        let l = Misc.log2 n in
+        if n = 1 lsl l then begin
         `	mov	rax, {emit_reg i.arg.(0)}\n`;
         `	test	rax, rax\n`;
         `	lea	rax, {emit_int(n-1)}[rax]\n`;
         `	cmovns	rax, {emit_reg i.arg.(0)}\n`;
         `	and	rax, {emit_int (-n)}\n`;
         `	sub	{emit_reg i.res.(0)}, rax\n`
+        end else begin
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          (* Compute quotient as in the Idiv immediate case, but
+             compute it in rdx, preserving rcx *)
+          emit_movabs rdx m;
+          `	mov	rax, rcx\n`;
+          `	imul	rdx\n`;
+          if m < 0n then
+            `	add	rdx, rcx\n`;
+          if p > 0 then
+            `	sar	rdx, {emit_int p}\n`;
+          `	mov	rax, rcx\n`;
+          `	shr	rax, 63\n`;
+          `	add	rdx, rax\n`;
+          (* Compute remainder via Euclid's equality *)
+          `	imul	rdx, {emit_int n}\n`;
+          `	sub	rcx, rdx\n`
+        end
     | Lop(Iintop_imm(op, n)) ->
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	{emit_reg i.res.(0)}, {emit_int n}\n`
