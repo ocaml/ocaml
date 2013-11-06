@@ -250,13 +250,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
       (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (co1 = co2)&&(cn1 = cn2))
       decl1.type_variance decl2.type_variance
     then [] else [Variance]
-  else if match decl2.type_kind with
-    | Type_record (_,_) | Type_variant _ -> decl2.type_private = Private
-    | Type_open -> false
-    | Type_abstract ->
-	match decl2.type_manifest with
-	  | None -> true
-	  | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
+  else if decl2.type_private = Private
+  || decl2.type_kind = Type_abstract && decl2.type_manifest = None then
   then
     if List.for_all2
       (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2)&&(not cn1 || cn2))
