@@ -173,6 +173,28 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       let printer_steps = ref max_steps in
 
+      let module H = Hashtbl.Make(struct
+        type t = Obj.t
+        let equal = (==)
+        let hash = Hashtbl.hash
+      end) in
+      let nested_values = H.create 8 in
+      let nest_gen err f depth obj ty =
+        let repr = Obj.repr obj in
+        if Obj.is_block repr then
+          if H.mem nested_values repr then
+            err
+          else begin
+            H.add nested_values repr ();
+            let ret = f depth obj ty in
+            H.remove nested_values repr;
+            ret
+          end
+        else f depth obj ty
+        in
+
+      let nest f = nest_gen (Oval_stuff "<cycle>") f in
+
       let rec tree_of_val depth obj ty =
         decr printer_steps;
         if !printer_steps < 0 || depth < 0 then Oval_ellipsis
@@ -195,17 +217,18 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 match check_depth depth obj ty with
                   Some x -> x
                 | None ->
-                    let rec tree_of_conses tree_list obj =
+                    let rec tree_of_conses tree_list depth obj ty_arg =
                       if !printer_steps < 0 || depth < 0 then
                         Oval_ellipsis :: tree_list
                       else if O.is_block obj then
                         let tree =
-                          tree_of_val (depth - 1) (O.field obj 0) ty_arg in
+                          nest tree_of_val (depth - 1) (O.field obj 0) ty_arg in
                         let next_obj = O.field obj 1 in
-                        tree_of_conses (tree :: tree_list) next_obj
+                        nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
+                          (tree_of_conses (tree :: tree_list)) depth next_obj ty_arg
                       else tree_list
                     in
-                    Oval_list (List.rev (tree_of_conses [] obj))
+                    Oval_list (List.rev (tree_of_conses [] depth obj ty_arg))
               else
                 Oval_list []
           | Tconstr(path, [ty_arg], _)
@@ -220,7 +243,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         Oval_ellipsis :: tree_list
                       else if i < length then
                         let tree =
-                          tree_of_val (depth - 1) (O.field obj i) ty_arg in
+                          nest tree_of_val (depth - 1) (O.field obj i) ty_arg in
                         tree_of_items (tree :: tree_list) (i + 1)
                       else tree_list
                     in
@@ -230,7 +253,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
               if Lazy.lazy_is_val (O.obj obj)
-              then let v = tree_of_val depth (Lazy.force (O.obj obj)) ty_arg in
+              then let v = nest tree_of_val depth (Lazy.force (O.obj obj)) ty_arg in
                    Oval_constr (Oide_ident "lazy", [v])
               else Oval_stuff "<lazy>"
           | Tconstr(path, ty_list, _) ->
@@ -240,7 +263,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 | {type_kind = Type_abstract; type_manifest = None} ->
                     Oval_stuff "<abstr>"
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
-                    tree_of_val depth obj
+                    nest tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
                 | {type_kind = Type_variant constr_list} ->
@@ -287,7 +310,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                                 if pos = 0 then tree_of_label env path name
                                 else Oide_ident name
                               and v =
-                                tree_of_val (depth - 1) (O.field obj pos)
+                                nest tree_of_val (depth - 1) (O.field obj pos)
                                   ty_arg
                               in
                               (lid, v) :: tree_of_fields (pos + 1) remainder
@@ -310,7 +333,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         match Btype.row_field_repr f with
                         | Rpresent(Some ty) | Reither(_,[ty],_,_) ->
                             let args =
-                              tree_of_val (depth - 1) (O.field obj 1) ty in
+                              nest tree_of_val (depth - 1) (O.field obj 1) ty in
                             Oval_variant (l, Some args)
                         | _ -> find fields
                       else find fields
@@ -328,11 +351,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tobject (_, _) ->
               Oval_stuff "<obj>"
           | Tsubst ty ->
-              tree_of_val (depth - 1) obj ty
+              nest tree_of_val (depth - 1) obj ty
           | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.outval_of_value"
           | Tpoly (ty, _) ->
-              tree_of_val (depth - 1) obj ty
+              nest tree_of_val (depth - 1) obj ty
           | Tpackage _ ->
               Oval_stuff "<module>"
         end
@@ -341,7 +364,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let rec tree_list i = function
           | [] -> []
           | ty :: ty_list ->
-              let tree = tree_of_val (depth - 1) (O.field obj i) ty in
+              let tree = nest tree_of_val (depth - 1) (O.field obj i) ty in
               tree :: tree_list (i + 1) ty_list in
       tree_list start ty_list
 
@@ -377,6 +400,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           Some x -> x
         | None -> outval_of_untyped_exception bucket
 
-    in tree_of_val max_depth obj ty
+    in nest tree_of_val max_depth obj ty
 
 end
