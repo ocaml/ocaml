@@ -309,7 +309,7 @@ CAMLprim value caml_int32_shift_right(value v1, value v2)
 CAMLprim value caml_int32_shift_right_unsigned(value v1, value v2)
 { return caml_copy_int32((uint32)Int32_val(v1) >> Int_val(v2)); }
 
-static int32 swap32(int32 x)
+static int32 caml_swap32(int32 x)
 {
   return (((x & 0x000000FF) << 24) |
           ((x & 0x0000FF00) << 8) |
@@ -318,10 +318,10 @@ static int32 swap32(int32 x)
 }
 
 value caml_int32_direct_bswap(value v)
-{ return swap32(v); }
+{ return caml_swap32(v); }
 
 CAMLprim value caml_int32_bswap(value v)
-{ return caml_copy_int32(swap32(Int32_val(v))); }
+{ return caml_copy_int32(caml_swap32(Int32_val(v))); }
 
 CAMLprim value caml_int32_of_int(value v)
 { return caml_copy_int32(Long_val(v)); }
@@ -514,7 +514,7 @@ CAMLprim value caml_int64_shift_right_unsigned(value v1, value v2)
 { return caml_copy_int64(I64_lsr(Int64_val(v1), Int_val(v2))); }
 
 #ifdef ARCH_SIXTYFOUR
-static value swap64(value x)
+static value caml_swap64(value x)
 {
   return (((((x) & 0x00000000000000FF) << 56) |
            (((x) & 0x000000000000FF00) << 40) |
@@ -527,7 +527,7 @@ static value swap64(value x)
 }
 
 value caml_int64_direct_bswap(value v)
-{ return swap64(v); }
+{ return caml_swap64(v); }
 #endif
 
 CAMLprim value caml_int64_bswap(value v)
@@ -790,18 +790,18 @@ CAMLprim value caml_nativeint_shift_right_unsigned(value v1, value v2)
 value caml_nativeint_direct_bswap(value v)
 {
 #ifdef ARCH_SIXTYFOUR
-  return swap64(v);
+  return caml_swap64(v);
 #else
-  return swap32(v);
+  return caml_swap32(v);
 #endif
 }
 
 CAMLprim value caml_nativeint_bswap(value v)
 {
 #ifdef ARCH_SIXTYFOUR
-  return caml_copy_nativeint(swap64(Nativeint_val(v)));
+  return caml_copy_nativeint(caml_swap64(Nativeint_val(v)));
 #else
-  return caml_copy_nativeint(swap32(Nativeint_val(v)));
+  return caml_copy_nativeint(caml_swap32(Nativeint_val(v)));
 #endif
 }
 

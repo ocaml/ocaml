@@ -123,7 +123,8 @@ Bug fixes:
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5911: Signature substitutions fail in submodules
 - PR#5948: GADT with polymorphic variants bug
-- PR#5982: Incompatibility check assumes abstracted types are injective
+- PR#5981: Incompatibility check assumes abstracted types are injective
+- PR#5989: Assumed inequalities involving private rows
 
 OCaml 4.00.1:
 -------------

@@ -28,14 +28,12 @@ run:
 	 for f in *.bytecode; do \
 	  printf " ... testing '$$f':"; \
 	  (./$$f > $$f.result 2>&1 || true); \
-	  $(DIFF) $$f.reference $$f.result > /dev/null || (echo " => failed" &&\
- exit 1) && echo " => passed"; \
+	  $(DIFF) $$f.reference $$f.result > /dev/null || (echo " => failed" && exit 1) && echo " => passed"; \
 	  fn=`basename $$f bytecode`native; \
 	  if [ -z "$(BYTECODE_ONLY)" -a -f "$$fn" ]; then \
 	    printf " ... testing '$$fn':"; \
 	    (./$$fn > $$fn.result 2>&1 || true); \
-	    $(DIFF) $$fn.reference $$fn.result > /dev/null || (echo " => failed\
-" && exit 1) && echo " => passed"; \
+	    $(DIFF) $$fn.reference $$fn.result > /dev/null || (echo " => failed" && exit 1) && echo " => passed"; \
 	  fi; \
 	done
 
