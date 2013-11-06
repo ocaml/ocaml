@@ -184,6 +184,9 @@ void caml_array_bound_error(void)
     caml_page_table_add(In_static_data,
                         &array_bound_error_msg,
                         &array_bound_error_msg + 1);
+    caml_page_table_add(In_static_data,
+                        &array_bound_error_bucket,
+                        &array_bound_error_bucket + 1);
     array_bound_error_bucket_inited = 1;
   }
   caml_raise((value) &array_bound_error_bucket.exn);
