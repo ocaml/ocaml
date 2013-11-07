@@ -64,7 +64,7 @@ let symbol_prefix =
   if Config.system = "sunos" then "_" else ""
 
 let emit_symbol s =
-  if String.length s >= 1 & s.[0] = '.'
+  if String.length s >= 1 && s.[0] = '.'
   then emit_string s
   else begin emit_string symbol_prefix; Emitaux.emit_symbol '$' s end
 
@@ -629,8 +629,8 @@ let is_one_instr i =
           i.arg.(0).typ <> Float && i.res.(0).typ <> Float
       | Iconst_int n -> is_native_immediate n
       | Istackoffset _ -> true
-      | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_immediate n
-      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_immediate n
+      | Iload(_, Iindexed n) -> i.res.(0).typ <> Float && is_immediate n
+      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float && is_immediate n
       | Iintop(op) -> is_one_instr_op op
       | Iintop_imm(op, _) -> is_one_instr_op op
       | Iaddf | Isubf | Imulf | Idivf -> true
@@ -660,15 +660,15 @@ let rec emit_all i =
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lop(Itailcall_imm s)}}
-    when s = !function_name & is_one_instr i ->
+    when s = !function_name && is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lop(Icall_ind)}}
-    when is_one_instr i & no_interference i.res i.next.arg ->
+    when is_one_instr i && no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lcondbranch(_, _)}}
-    when is_one_instr i & no_interference i.res i.next.arg ->
+    when is_one_instr i && no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | _ ->
