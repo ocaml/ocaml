@@ -115,13 +115,17 @@ let build_graph fundecl =
 
   (* Add a preference from one reg to another.
      Do not add anything if the two registers conflict,
-     or if the source register already has a location. *)
+     or if the source register already has a location,
+     or if the two registers belong to different classes.
+     (The last case can occur e.g. on Sparc when passing
+      float arguments in integer registers, PR#6227.) *)
 
   let add_pref weight r1 r2 =
     if weight > 0 then begin
       let i = r1.stamp and j = r2.stamp in
       if i <> j
       && r1.loc = Unknown
+      && Proc.register_class r1 = Proc.register_class r2
       && (let p = if i < j then (i, j) else (j, i) in
           not (IntPairSet.mem p !mat))
       then r1.prefer <- (r2, weight) :: r1.prefer
