@@ -481,7 +481,7 @@ implementation (.ml) file.
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
-The format of the input and ouput of the preprocessor
+The format of the input and output of the preprocessor
 are not yet documented.
 .TP
 .B \-principal

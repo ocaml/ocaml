@@ -91,9 +91,9 @@ type raw_backtrace
     a low-level format, instead of directly exposing them as string as
     the [get_backtrace()] function does.
 
-    This allows to pay the performance overhead of representation
-    conversion and formatting only at printing time, which is useful
-    if you want to record more backtrace than you actually print.
+    This allows delaying the formatting of backtraces to when they are
+    actually printed, which might be useful if you record more
+    backtraces than you print.
 *)
 
 val get_raw_backtrace: unit -> raw_backtrace
