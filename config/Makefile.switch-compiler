@@ -11,8 +11,9 @@ enable disable:
 	  echo '  CAMLC_BIN="$(CAMLC_BIN_BOOT)" # BOOT' >> "ocamlcomp"; \
 	  echo '# CAMLC_BIN="$(CAMLC_BIN_BYTE)" # BYTE' >> "ocamlcomp"; \
 	  echo '# CAMLC_BIN="$(CAMLC_BIN_OPT)"  # OPT ' >> "ocamlcomp"; \
-	  echo '# CAMLOPT_BIN="$(CAMLOPT_BIN_BYTE)" # BYTE' >> "ocamlcomp"; \
-	  echo '# CAMLOPT_BIN="$(CAMLOPT_BIN_OPT)"  # OPT ' >> "ocamlcomp"; \
+	  echo '  CAMLOPT_BIN="no-opt-compiler-available" # NONE' >> "ocamlcomp"; \
+	  echo '# CAMLOPT_BIN="$(CAMLOPT_BIN_BYTE)"       # BYTE' >> "ocamlcomp"; \
+	  echo '# CAMLOPT_BIN="$(CAMLOPT_BIN_OPT)"        # OPT ' >> "ocamlcomp"; \
 	fi; \
 	\
 	sed -e "/^$${C1} \($(COMPILER)_BIN\).*# $(VARIANT)/ s/$${C1}/$${C2}/" \
