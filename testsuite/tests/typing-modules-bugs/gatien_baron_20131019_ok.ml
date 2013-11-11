@@ -4,6 +4,7 @@ open Std;;
 module Hash1 : module type of Hash = Hash;;
 module Hash2 : sig include (module type of Hash) end = Hash;;
 let f1 (x : (_,_) Hash1.t) = (x : (_,_) Hashtbl.t);;
+let f2 (x : (_,_) Hash2.t) = (x : (_,_) Hashtbl.t);;
 
 (* original report required Core_kernel:
 module type S = sig
