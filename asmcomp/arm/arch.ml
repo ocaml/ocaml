@@ -107,8 +107,8 @@ type addressing_mode =
 (* Specific operations *)
 
 type specific_operation =
-    Ishiftarith of arith_operation * int
-  | Ishiftcheckbound of int
+    Ishiftarith of arith_operation * shift_operation * int
+  | Ishiftcheckbound of shift_operation * int
   | Irevsubimm of int
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
@@ -124,6 +124,14 @@ and arith_operation =
     Ishiftadd
   | Ishiftsub
   | Ishiftsubrev
+  | Ishiftand
+  | Ishiftor
+  | Ishiftxor
+
+and shift_operation =
+    Ishiftlogicalleft
+  | Ishiftlogicalright
+  | Ishiftarithmeticright
 
 (* Sizes, endianness *)
 
@@ -155,21 +163,34 @@ let print_addressing printreg addr ppf arg =
       printreg ppf arg.(0);
       if n <> 0 then fprintf ppf " + %i" n
 
+let shiftop_name = function
+  | Ishiftlogicalleft -> "<<"
+  | Ishiftlogicalright -> ">>u"
+  | Ishiftarithmeticright -> ">>s"
+
 let print_specific_operation printreg op ppf arg =
   match op with
-  | Ishiftarith(op, shift) ->
-      let op_name = function
-      | Ishiftadd -> "+"
-      | Ishiftsub -> "-"
-      | Ishiftsubrev -> "-rev" in
-      let shift_mark =
-       if shift >= 0
-       then sprintf "<< %i" shift
-       else sprintf ">> %i" (-shift) in
-      fprintf ppf "%a %s %a %s"
-       printreg arg.(0) (op_name op) printreg arg.(1) shift_mark
-  | Ishiftcheckbound n ->
-      fprintf ppf "check %a >> %i > %a" printreg arg.(0) n printreg arg.(1)
+    Ishiftarith(op, shiftop, amount) ->
+      let (op1_name, op2_name) = match op with
+          Ishiftadd -> ("", "+")
+        | Ishiftsub -> ("", "-")
+        | Ishiftsubrev -> ("-", "+")
+        | Ishiftand -> ("", "&")
+        | Ishiftor -> ("", "|")
+        | Ishiftxor -> ("", "^") in
+      fprintf ppf "%s%a %s (%a %s %i)"
+        op1_name
+        printreg arg.(0)
+        op2_name
+        printreg arg.(1)
+        (shiftop_name shiftop)
+        amount
+  | Ishiftcheckbound(shiftop, amount) ->
+      fprintf ppf "check (%a %s %i) > %a"
+        printreg arg.(0)
+        (shiftop_name shiftop)
+        amount
+        printreg arg.(1)
   | Irevsubimm n ->
       fprintf ppf "%i %s %a" n "-" printreg arg.(0)
   | Imuladd ->

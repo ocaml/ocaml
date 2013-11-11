@@ -37,9 +37,11 @@ let is_offset chunk n =
   | _ ->
       n >= -255 && n <= 255
 
-let is_intconst = function
-    Cconst_int _ -> true
-  | _ -> false
+let select_shiftop = function
+    Clsl -> Ishiftlogicalleft
+  | Clsr -> Ishiftlogicalright
+  | Casr -> Ishiftarithmeticright
+  | __-> assert false
 
 (* Special constraints on operand and result registers *)
 
@@ -120,20 +122,14 @@ method select_addressing chunk = function
   | arg ->
       (Iindexed 0, arg)
 
-method select_shift_arith op shiftop shiftrevop args =
+method select_shift_arith op arithop arithrevop args =
   match args with
-    [arg1; Cop(Clsl, [arg2; Cconst_int n])]
-    when n > 0 && n < 32 && not(is_intconst arg2) ->
-      (Ispecific(Ishiftarith(shiftop, n)), [arg1; arg2])
-  | [arg1; Cop(Casr, [arg2; Cconst_int n])]
-    when n > 0 && n < 32 && not(is_intconst arg2) ->
-      (Ispecific(Ishiftarith(shiftop, -n)), [arg1; arg2])
-  | [Cop(Clsl, [arg1; Cconst_int n]); arg2]
-    when n > 0 && n < 32 && not(is_intconst arg1) ->
-      (Ispecific(Ishiftarith(shiftrevop, n)), [arg2; arg1])
-  | [Cop(Casr, [arg1; Cconst_int n]); arg2]
-    when n > 0 && n < 32 && not(is_intconst arg1) ->
-      (Ispecific(Ishiftarith(shiftrevop, -n)), [arg2; arg1])
+    [arg1; Cop(Clsl | Clsr | Casr as op, [arg2; Cconst_int n])]
+    when n > 0 && n < 32 ->
+      (Ispecific(Ishiftarith(arithop, select_shiftop op, n)), [arg1; arg2])
+  | [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int n]); arg2]
+    when n > 0 && n < 32 ->
+      (Ispecific(Ishiftarith(arithrevop, select_shiftop op, n)), [arg2; arg1])
   | args ->
       begin match super#select_operation op args with
       (* Recognize multiply and add *)
@@ -171,9 +167,15 @@ method! select_operation op args =
       (Ispecific(Irevsubimm n), [arg])
   | ((Csuba | Csubi as op), args) ->
       self#select_shift_arith op Ishiftsub Ishiftsubrev args
-  | (Ccheckbound _, [Cop(Clsr, [arg1; Cconst_int n]); arg2])
-    when n > 0 && n < 32 && not(is_intconst arg2) ->
-      (Ispecific(Ishiftcheckbound n), [arg1; arg2])
+  | (Cand as op, args) ->
+      self#select_shift_arith op Ishiftand Ishiftand args
+  | (Cor as op, args) ->
+      self#select_shift_arith op Ishiftor Ishiftor args
+  | (Cxor as op, args) ->
+      self#select_shift_arith op Ishiftxor Ishiftxor args
+  | (Ccheckbound _, [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int n]); arg2])
+    when n > 0 && n < 32 ->
+      (Ispecific(Ishiftcheckbound(select_shiftop op, n)), [arg1; arg2])
   (* ARM does not support immediate operands for multiplication *)
   | (Cmuli, args) ->
       (Iintop Imul, args)
