@@ -214,6 +214,8 @@ val check_modtype_inclusion:
       (t -> module_type -> Path.t -> module_type -> unit) ref
 (* Forward declaration to break mutual recursion with Typecore. *)
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
+(* Forward declaration to break mutual recursion with Mtype. *)
+val strengthen: (t -> module_type -> Path.t -> module_type) ref
 
 (** Folding over all identifiers (for analysis purpose) *)
 
@@ -244,3 +246,6 @@ val fold_classs:
 val fold_cltypes:
   (string -> Path.t -> class_type_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
+
+(** Utilities *)
+val scrape_alias: t -> module_type -> module_type

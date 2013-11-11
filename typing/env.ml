@@ -266,6 +266,10 @@ let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
   ref ((fun env mty1 path1 mty2 -> assert false) :
           t -> module_type -> Path.t -> module_type -> unit)
+let strengthen =
+  (* to be filled with Mtype.strengthen *)
+  ref ((fun env mty path -> assert false) :
+         t -> module_type -> Path.t -> module_type)
 
 let md md_type =
   {md_type; md_attributes=[]}
@@ -972,24 +976,28 @@ let add_gadt_instance_chain env lv t =
 
 (* Expand manifest module type names at the top of the given module type *)
 
-let rec scrape_alias env mty =
-  match mty with
-    Mty_ident path ->
+let rec scrape_alias env ?path mty =
+  match mty, path with
+    Mty_ident path, _ ->
       begin try
         scrape_alias env (find_modtype_expansion path env)
       with Not_found ->
         mty
       end
-  | Mty_alias path ->
+  | Mty_alias path, _ ->
       begin try
-        scrape_alias env (find_module path env).md_type
+        scrape_alias env (find_module path env).md_type ~path
       with Not_found ->
         Location.prerr_warning Location.none 
           (Warnings.Deprecated
              ("module " ^ Path.name path ^ " cannot be accessed"));
         mty
       end      
+  | mty, Some path ->
+      !strengthen env mty path
   | _ -> mty
+
+let scrape_alias env mty = scrape_alias env mty
 
 (* Compute constructor descriptions *)
 

@@ -85,6 +85,7 @@ and strengthen_sig env sg p =
 and strengthen_decl env md p =
   {md with md_type = strengthen env md.md_type p}
 
+let () = Env.strengthen := strengthen
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
