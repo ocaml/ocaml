@@ -244,6 +244,3 @@ val fold_classs:
 val fold_cltypes:
   (string -> Path.t -> class_type_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
-
-(** Utilities *)
-val scrape_alias: t -> module_type -> module_type

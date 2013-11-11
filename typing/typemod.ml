@@ -54,13 +54,34 @@ let rec path_concat head p =
 
 (* Extract a signature from a module type *)
 
+(* see also Env.scrape_alias *)
+let rec scrape_alias_sttn env ?path mty =
+  match mty, path with
+    Mty_ident path, _ ->
+      begin try
+        scrape_alias_sttn env (Env.find_modtype_expansion path env)
+      with Not_found -> mty
+      end
+  | Mty_alias path, _ ->
+      begin try
+        scrape_alias_sttn env (Env.find_module path env).md_type ~path
+      with Not_found ->
+        Location.prerr_warning Location.none 
+          (Warnings.Deprecated
+             ("module " ^ Path.name path ^ " cannot be accessed"));
+        mty
+      end
+  | mty, Some path ->
+      Mtype.strengthen env mty path
+  | _ -> mty
+
 let extract_sig env loc mty =
-  match Env.scrape_alias env mty with
+  match scrape_alias_sttn env mty with
     Mty_signature sg -> sg
   | _ -> raise(Error(loc, env, Signature_expected))
 
 let extract_sig_open env loc mty =
-  match Env.scrape_alias env mty with
+  match scrape_alias_sttn env mty with
     Mty_signature sg -> sg
   | _ -> raise(Error(loc, env, Structure_expected mty))
 
@@ -997,7 +1018,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
       let path = try Some (path_of_module arg) with Not_a_path -> None in
       let funct =
         type_module (sttn && path <> None) funct_body None env sfunct in
-      begin match Env.scrape_alias env funct.mod_type with
+      begin match scrape_alias_sttn env funct.mod_type with
         Mty_functor(param, mty_param, mty_res) as mty_functor ->
           let coercion =
             try
