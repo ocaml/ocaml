@@ -1001,16 +1001,21 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_type = expected_ty;
         pat_env = !env }
   | Ppat_variant(l, sarg) ->
-      let arg = may_map (fun p -> type_pat p (newvar())) sarg in
-      let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
+      let arg_type = match sarg with None -> [] | Some _ -> [newvar()] in
       let row = { row_fields =
-                    [l, Reither(arg = None, arg_type, true, ref None)];
+                    [l, Reither(sarg = None, arg_type, true, ref None)];
                   row_bound = ();
                   row_closed = false;
                   row_more = newvar ();
                   row_fixed = false;
                   row_name = None } in
       unify_pat_types loc !env (newty (Tvariant row)) expected_ty;
+      let arg =
+        (* PR#6235: propagate type information *)
+        match sarg, arg_type with
+          Some p, [ty] -> Some (type_pat p ty)
+        | _            -> None
+      in
       rp {
         pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
         pat_loc = loc; pat_extra=[];

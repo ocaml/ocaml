@@ -281,4 +281,15 @@ module Shadow2 :
     module M : sig type s = { x : string; } end
     val y : M.s
   end
+#                 Characters 167-170:
+    let f (u : u) = match u with `Key {loc} -> loc
+                                       ^^^
+Warning 42: this use of loc required disambiguation.
+module P6235 :
+  sig
+    type t = { loc : string; }
+    type v = { loc : string; x : int; }
+    type u = [ `Key of t ]
+    val f : u -> string
+  end
 # 

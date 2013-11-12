@@ -3,6 +3,7 @@ Bug fixes:
 - PR#6174: OCaml compiler loops on an example using GADTs (non -rectypes)
 - PR#6194: Incorrect unused warning with first-class modules in patterns
 - PR#6216: inlining of GADT matches generates invalid assembly
+- PR#6235: Issue with type information flowing through a variant pattern
 
 
 OCaml 4.01.0:
