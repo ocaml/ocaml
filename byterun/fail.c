@@ -140,12 +140,6 @@ CAMLexport void caml_raise_sys_blocked_io(void)
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
-/* Initialization of statically-allocated exception buckets */
-
-void caml_init_exceptions(void)
-{
-}
-
 int caml_is_special_exception(value exn) {
   return exn == Field(caml_global_data, MATCH_FAILURE_EXN)
     || exn == Field(caml_global_data, ASSERT_FAILURE_EXN)

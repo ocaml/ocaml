@@ -429,7 +429,6 @@ CAMLexport void caml_main(char **argv)
   caml_oldify_one (caml_global_data, &caml_global_data);
   caml_oldify_mopup ();
   /* Initialize system libraries */
-  caml_init_exceptions();
   caml_sys_init(exe_name, argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
@@ -514,7 +513,6 @@ CAMLexport void caml_startup_code(
   caml_section_table = section_table;
   caml_section_table_size = section_table_size;
   /* Initialize system libraries */
-  caml_init_exceptions();
   caml_sys_init(exe_name, argv);
   /* Execute the program */
   caml_debugger(PROGRAM_START);

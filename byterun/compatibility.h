@@ -112,7 +112,6 @@
 #define raise_zero_divide caml_raise_zero_divide
 #define raise_not_found caml_raise_not_found
 #define raise_sys_blocked_io caml_raise_sys_blocked_io
-#define init_exceptions caml_init_exceptions
 /* **** asmrun/fail.c */
 /* **** asmrun/<arch>.s */
 
