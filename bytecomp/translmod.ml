@@ -47,11 +47,6 @@ let transl_exception path decl =
         [Lprim(Pmakeblock(Obj.object_tag, Immutable),
               [Lconst(Const_base(Const_string (name,None)));
                Lconst(Const_base(Const_int 0))])])
-(*
-  Lapply(oo_prim "create_exn",
-         [Lconst(Const_base(Const_string (name,None)))],
-         Location.none)
-*)
 
 (* Compile a coercion *)
 
