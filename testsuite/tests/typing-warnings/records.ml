@@ -158,3 +158,23 @@ module Shadow2 = struct
   open M  (* this open shadows label 'x' *)
   let y = {x = ""}
 end;;
+
+(* PR#6235 *)
+
+module P6235 = struct
+  type t = { loc : string; }
+  type v = { loc : string; x : int; }
+  type u = [ `Key of t ]
+  let f (u : u) = match u with `Key {loc} -> loc
+end;;
+
+(* Remove interaction between branches *)
+
+module P6235' = struct
+  type t = { loc : string; }
+  type v = { loc : string; x : int; }
+  type u = [ `Key of t ]
+  let f = function
+    | (_ : u) when false -> ""
+    |`Key {loc} -> loc
+end;;

@@ -1050,16 +1050,21 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_variant(l, sarg) ->
-      let arg = may_map (fun p -> type_pat p (newvar())) sarg in
-      let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
+      let arg_type = match sarg with None -> [] | Some _ -> [newvar()] in
       let row = { row_fields =
-                    [l, Reither(arg = None, arg_type, true, ref None)];
+                    [l, Reither(sarg = None, arg_type, true, ref None)];
                   row_bound = ();
                   row_closed = false;
                   row_more = newvar ();
                   row_fixed = false;
                   row_name = None } in
       unify_pat_types loc !env (newty (Tvariant row)) expected_ty;
+      let arg =
+        (* PR#6235: propagate type information *)
+        match sarg, arg_type with
+          Some p, [ty] -> Some (type_pat p ty)
+        | _            -> None
+      in
       rp {
         pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
         pat_loc = loc; pat_extra=[];
@@ -3325,11 +3330,12 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist : Typedt
             { pat with pat_type = instance env pat.pat_type }
           end else pat
         in
-        unify_pat env pat ty_arg';
         (pat, (ext_env, unpacks)))
       caselist in
-  (* Check for polymorphic variants to close *)
+  (* Unify cases (delayed to keep it order-free) *)
   let patl = List.map fst pat_env_list in
+  List.iter (fun pat -> unify_pat env pat ty_arg') patl;
+  (* Check for polymorphic variants to close *)
   if List.exists has_variants patl then begin
     Parmatch.pressure_variants env patl;
     List.iter (iter_pattern finalize_variant) patl
@@ -3337,7 +3343,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist : Typedt
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
   (* Post-processing and generalization *)
-  let patl = List.map fst pat_env_list in
   List.iter (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar())))
     patl;
   List.iter (fun pat -> unify_pat env pat (instance env ty_arg)) patl;
