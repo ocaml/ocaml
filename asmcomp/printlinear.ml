@@ -60,8 +60,8 @@ let instr ppf i =
       fprintf ppf "push trap"
   | Lpoptrap ->
       fprintf ppf "pop trap"
-  | Lraise ->
-      fprintf ppf "raise %a" reg i.arg.(0)
+  | Lraise k ->
+      fprintf ppf "%s %a" (Lambda.raise_kind k) reg i.arg.(0)
   end;
   if not (Debuginfo.is_none i.dbg) then
     fprintf ppf " %s" (Debuginfo.to_string i.dbg)

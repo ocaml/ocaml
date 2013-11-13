@@ -60,10 +60,10 @@ let mkdll = C.mkdll
 let mkexe = C.mkexe
 let mkmaindll = C.mkmaindll
 
-let exec_magic_number = "Caml1999X008"
-and cmi_magic_number = "Caml1999I015"
-and cmo_magic_number = "Caml1999O007"
-and cma_magic_number = "Caml1999A008"
+let exec_magic_number = "Caml1999X010"
+and cmi_magic_number = "Caml1999I016"
+and cmo_magic_number = "Caml1999O008"
+and cma_magic_number = "Caml1999A009"
 and cmx_magic_number = "Caml1999Y011"
 and cmxa_magic_number = "Caml1999Z010"
 and ast_impl_magic_number = "Caml1999M016"

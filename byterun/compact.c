@@ -40,7 +40,7 @@ extern void caml_shrink_heap (char *);              /* memory.c */
   XXX Should be fixed:
   XXX The above assumes that all roots are aligned on a 4-byte boundary,
   XXX which is not always guaranteed by C.
-  XXX (see [caml_register_global_roots] and [caml_init_exceptions])
+  XXX (see [caml_register_global_roots])
   XXX Should be able to fix it to only assume 2-byte alignment.
 */
 #define Make_ehd(s,t,c) (((s) << 10) | (t) << 2 | (c))

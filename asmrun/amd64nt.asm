@@ -29,6 +29,7 @@
         EXTRN  caml_last_return_address: QWORD
         EXTRN  caml_gc_regs: QWORD
         EXTRN  caml_exception_pointer: QWORD
+        EXTRN  caml_backtrace_pos: DWORD
         EXTRN  caml_backtrace_active: DWORD
         EXTRN  caml_stash_backtrace: NEAR
 
@@ -306,6 +307,8 @@ caml_raise_exn:
         pop     r14                  ; Recover previous exception handler
         ret                          ; Branch to handler
 L110:
+        mov     caml_backtrace_pos, 0
+L111:
         mov     r12, rax             ; Save exception bucket in r12
         mov     rcx, rax             ; Arg 1: exception bucket
         mov     rdx, [rsp]           ; Arg 2: PC of raise
@@ -318,19 +321,28 @@ L110:
         pop     r14                  ; Recover previous exception handler
         ret                          ; Branch to handler
 
+        PUBLIC  caml_reraise_exn
+        ALIGN   16
+caml_reraise_exn:
+        test    caml_backtrace_active, 1
+        jne     L111
+        mov     rsp, r14             ; Cut stack
+        pop     r14                  ; Recover previous exception handler
+        ret                          ; Branch to handler
+
 ; Raise an exception from C
 
         PUBLIC  caml_raise_exception
         ALIGN   16
 caml_raise_exception:
         test    caml_backtrace_active, 1
-        jne     L111
+        jne     L112
         mov     rax, rcx             ; First argument is exn bucket
         mov     rsp, caml_exception_pointer
         pop     r14                  ; Recover previous exception handler
         mov     r15, caml_young_ptr ; Reload alloc ptr
         ret
-L111:
+L112:
         mov     r12, rcx             ; Save exception bucket in r12
                                      ; Arg 1: exception bucket
         mov     rdx, caml_last_return_address ; Arg 2: PC of raise

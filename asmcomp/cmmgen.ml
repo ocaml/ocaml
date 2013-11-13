@@ -199,8 +199,8 @@ let safe_divmod op c1 c2 dbg =
     bind "divisor" c2 (fun c2 ->
       Cifthenelse(c2,
                   Cop(op, [c1; c2]),
-                  Cop(Craise dbg,
-                      [Cconst_symbol "caml_bucket_Division_by_zero"])))
+                  Cop(Craise (Raise_regular, dbg),
+                      [Cconst_symbol "caml_exn_Division_by_zero"])))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
@@ -220,8 +220,8 @@ let safe_divmod_bi mkop mkm1 c1 c2 bi dbg =
       c3
     else
       Cifthenelse(c2, c3,
-                  Cop(Craise dbg,
-                      [Cconst_symbol "caml_bucket_Division_by_zero"]))))
+                  Cop(Craise (Raise_regular, dbg),
+                      [Cconst_symbol "caml_exn_Division_by_zero"]))))
 
 let safe_div_bi =
   safe_divmod_bi (fun c1 c2 -> Cop(Cdivi, [c1;c2]))
@@ -1306,8 +1306,8 @@ and transl_prim_1 p arg dbg =
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
   (* Exceptions *)
-  | Praise ->
-      Cop(Craise dbg, [transl arg])
+  | Praise k ->
+      Cop(Craise (k, dbg), [transl arg])
   (* Integer operations *)
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl arg])
@@ -2519,16 +2519,14 @@ let code_segment_table namelist =
 
 (* Initialize a predefined exception *)
 
-let predef_exception name =
-  let bucketname = "caml_bucket_" ^ name in
+let predef_exception i name =
   let symname = "caml_exn_" ^ name in
   Cdata(Cglobal_symbol symname ::
         emit_constant symname
-          (Const_block(0,[Const_base(Const_string (name, None))]))
-        [ Cglobal_symbol bucketname;
-          Cint(block_header 0 1);
-          Cdefine_symbol bucketname;
-          Csymbol_address symname ])
+          (Const_block(Obj.object_tag,
+                       [Const_base(Const_string (name, None));
+                        Const_base(Const_int (-i-1))
+                       ])) [])
 
 (* Header for a plugin *)
 

@@ -108,7 +108,7 @@ let access_array base numelt size =
 %token OR
 %token <int> POINTER
 %token PROJ
-%token RAISE
+%token <Lambda.raise_kind> RAISE
 %token RBRACKET
 %token RPAREN
 %token SEQ
@@ -247,7 +247,7 @@ unaryop:
   | ALLOC                       { Calloc }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
-  | RAISE                       { Craise Debuginfo.none }
+  | RAISE                       { Craise ($1, Debuginfo.none) }
   | ABSF                        { Cabsf }
 ;
 binaryop:

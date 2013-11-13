@@ -39,13 +39,7 @@ CAMLexport void caml_raise(value v)
 
 CAMLexport void caml_raise_constant(value tag)
 {
-  CAMLparam1 (tag);
-  CAMLlocal1 (bucket);
-
-  bucket = caml_alloc_small (1, 0);
-  Field(bucket, 0) = tag;
-  caml_raise(bucket);
-  CAMLnoreturn;
+  caml_raise(tag);
 }
 
 CAMLexport void caml_raise_with_arg(value tag, value arg)
@@ -111,21 +105,9 @@ CAMLexport void caml_array_bound_error(void)
   caml_invalid_argument("index out of bounds");
 }
 
-/* Problem: we can't use [caml_raise_constant], because it allocates and
-   we're out of memory... Here, we allocate statically the exn bucket
-   for [Out_of_memory]. */
-
-static struct {
-  header_t hdr;
-  value exn;
-} out_of_memory_bucket = { 0, 0 };
-
 CAMLexport void caml_raise_out_of_memory(void)
 {
-  if (out_of_memory_bucket.exn == 0)
-    caml_fatal_error
-      ("Fatal error: out of memory while raising Out_of_memory\n");
-  caml_raise((value) &(out_of_memory_bucket.exn));
+  caml_raise_constant(Field(caml_global_data, OUT_OF_MEMORY_EXN));
 }
 
 CAMLexport void caml_raise_stack_overflow(void)
@@ -156,15 +138,6 @@ CAMLexport void caml_raise_not_found(void)
 CAMLexport void caml_raise_sys_blocked_io(void)
 {
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
-}
-
-/* Initialization of statically-allocated exception buckets */
-
-void caml_init_exceptions(void)
-{
-  out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
-  out_of_memory_bucket.exn = Field(caml_global_data, OUT_OF_MEMORY_EXN);
-  caml_register_global_root(&out_of_memory_bucket.exn);
 }
 
 int caml_is_special_exception(value exn) {

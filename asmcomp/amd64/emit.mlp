@@ -713,11 +713,16 @@ let emit_instr fallthrough i =
         `	addq	$8, %rsp\n`;
         cfi_adjust_cfa_offset (-8);
         stack_offset := !stack_offset - 16
-    | Lraise ->
-        if !Clflags.debug then begin
+    | Lraise k ->
+        begin match !Clflags.debug, k with
+        | true, Lambda.Raise_regular ->
           `	{emit_call "caml_raise_exn"}\n`;
           record_frame Reg.Set.empty i.dbg
-        end else begin
+        | true, Lambda.Raise_reraise ->
+          `	{emit_call "caml_reraise_exn"}\n`;
+          record_frame Reg.Set.empty i.dbg
+        | false, _
+        | true, Lambda.Raise_notrace ->
           `	movq	%r14, %rsp\n`;
           `	popq	%r14\n`;
           `	ret\n`

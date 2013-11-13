@@ -27,7 +27,26 @@ open Translclass
 type error =
   Circular_dependency of Ident.t
 
+
 exception Error of Location.t * error
+
+(* Compile an exception definition *)
+
+let prim_set_oo_id =
+  Pccall {Primitive.prim_name = "caml_set_oo_id"; prim_arity = 1;
+          prim_alloc = false; prim_native_name = "";
+          prim_native_float = false}
+
+let transl_exception path decl =
+  let name =
+    match path with
+      None -> Ident.name decl.cd_id
+    | Some p -> Path.name p
+  in
+  Lprim(prim_set_oo_id,
+        [Lprim(Pmakeblock(Obj.object_tag, Immutable),
+              [Lconst(Const_base(Const_string (name,None)));
+               Lconst(Const_base(Const_int 0))])])
 
 (* Compile a coercion *)
 

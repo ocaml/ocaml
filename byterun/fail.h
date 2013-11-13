@@ -74,7 +74,6 @@ CAMLextern void caml_raise_sys_error (value) Noreturn;
 CAMLextern void caml_raise_end_of_file (void) Noreturn;
 CAMLextern void caml_raise_zero_divide (void) Noreturn;
 CAMLextern void caml_raise_not_found (void) Noreturn;
-CAMLextern void caml_init_exceptions (void);
 CAMLextern void caml_array_bound_error (void) Noreturn;
 CAMLextern void caml_raise_sys_blocked_io (void) Noreturn;
 

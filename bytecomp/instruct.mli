@@ -105,7 +105,7 @@ type instruction =
   | Kboolnot
   | Kpushtrap of label
   | Kpoptrap
-  | Kraise
+  | Kraise of raise_kind
   | Kcheck_signals
   | Kccall of string * int
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint

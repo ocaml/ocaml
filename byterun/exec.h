@@ -54,7 +54,7 @@ struct exec_trailer {
 
 /* Magic number for this release */
 
-#define EXEC_MAGIC "Caml1999X008"
+#define EXEC_MAGIC "Caml1999X010"
 
 
 #endif /* CAML_EXEC_H */

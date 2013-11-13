@@ -809,11 +809,16 @@ let emit_instr i =
         `	pop	_caml_exception_pointer\n`;
         `	add	esp, 4\n`;
         stack_offset := !stack_offset - 8
-    | Lraise ->
-        if !Clflags.debug then begin
+    | Lraise k ->
+        begin match !Clflags.debug, k with
+        | true, Lambda.Raise_regular ->
           `	call	_caml_raise_exn\n`;
           record_frame Reg.Set.empty i.dbg
-        end else begin
+        | true, Lambda.Raise_reraise ->
+          `	call	_caml_reraise_exn\n`;
+          record_frame Reg.Set.empty i.dbg
+        | false, _
+        | true, Lambda.Raise_notrace ->
           `	mov	esp, _caml_exception_pointer\n`;
           `	pop	_caml_exception_pointer\n`;
           `	ret\n`
@@ -901,6 +906,7 @@ let begin_assembly() =
   `	EXTERN _caml_alloc3: PROC\n`;
   `	EXTERN _caml_ml_array_bound_error: PROC\n`;
   `	EXTERN _caml_raise_exn: PROC\n`;
+  `	EXTERN _caml_reraise_exn: PROC\n`;
   `	.DATA\n`;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   add_def_symbol lbl_begin;

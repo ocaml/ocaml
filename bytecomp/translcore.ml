@@ -146,7 +146,9 @@ let primitives_table = create_hashtable 57 [
   "%setfield0", Psetfield(0, true);
   "%makeblock", Pmakeblock(0, Immutable);
   "%makemutable", Pmakeblock(0, Mutable);
-  "%raise", Praise;
+  "%raise", Praise Raise_regular;
+  "%reraise", Praise Raise_reraise;
+  "%raise_notrace", Praise Raise_notrace;
   "%sequand", Psequand;
   "%sequor", Psequor;
   "%boolnot", Pnot;
@@ -585,7 +587,7 @@ let primitive_is_ccall = function
 let assert_failed exp =
   let (fname, line, char) =
     Location.get_pos_info exp.exp_loc.Location.loc_start in
-  Lprim(Praise, [event_after exp
+  Lprim(Praise Raise_regular, [event_after exp
     (Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
            Lconst(Const_block(0,
@@ -600,6 +602,8 @@ let rec cut n l =
   | a::l -> let (l1,l2) = cut (n-1) l in (a::l1,l2)
 
 (* Translation of expressions *)
+
+let try_ids = Hashtbl.create 8
 
 let rec transl_exp e =
   let eval_once =
@@ -679,8 +683,17 @@ and transl_exp0 e =
             (Warnings.Deprecated "operator (or); you should use (||) instead");
         let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
-          (Praise, [arg1]) ->
-            wrap0 (Lprim(Praise, [event_after arg1 (List.hd argl)]))
+          (Praise k, [arg1]) ->
+            let targ = List.hd argl in
+            let k =
+              match k, targ with
+              | Raise_regular, Lvar id
+                when Hashtbl.mem try_ids id ->
+                  Raise_reraise
+              | _ ->
+                  k
+            in
+            wrap0 (Lprim(Praise k, [event_after arg1 targ]))
         | (_, _) ->
             begin match (prim, argl) with
             | (Plazyforce, [a]) ->
@@ -701,7 +714,7 @@ and transl_exp0 e =
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
-               Matching.for_trywith (Lvar id) (transl_cases pat_expr_list))
+               Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list el in
       begin try
@@ -721,7 +734,9 @@ and transl_exp0 e =
             Lprim(Pmakeblock(n, Immutable), ll)
           end
       | Cstr_exception (path, _) ->
-          Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
+          let slot = transl_path path in
+          if cstr.cstr_arity = 0 then slot
+          else Lprim(Pmakeblock(0, Immutable), slot :: ll)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
@@ -900,6 +915,20 @@ and transl_case {c_lhs; c_guard; c_rhs} =
 
 and transl_cases cases =
   List.map transl_case cases
+
+and transl_case_try {c_lhs; c_guard; c_rhs} =
+  match c_lhs.pat_desc with
+  | Tpat_var (id, _)
+  | Tpat_alias (_, id, _) ->
+      Hashtbl.replace try_ids id ();
+      Misc.try_finally
+        (fun () -> c_lhs, transl_guard c_guard c_rhs)
+        (fun () -> Hashtbl.remove try_ids id)
+  | _ ->
+      c_lhs, transl_guard c_guard c_rhs
+
+and transl_cases_try cases =
+  List.map transl_case_try cases
 
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
@@ -1094,16 +1123,6 @@ let transl_let rec_flag pat_expr_list body =
       Translobj.oo_wrap expr.exp_env false
         (transl_let rec_flag pat_expr_list) body
 *)
-
-(* Compile an exception definition *)
-
-let transl_exception path decl =
-  let name =
-    match path with
-      None -> Ident.name decl.cd_id
-    | Some p -> Path.name p in
-  Lprim(Pmakeblock(0, Immutable),
-        [Lconst(Const_base(Const_string (name,None)))])
 
 (* Error report *)
 
