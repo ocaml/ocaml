@@ -23,7 +23,11 @@ Compilers:
 - PR#5817: new flag to keep locations in cmi files
 - PR#5854: issue warning 3 when referring to a value marked with
   the [@@deprecated] attribute
+- PR#6203: Constant exception constructor no longer allocate
 
+Runtime system:
+- PR#4765: Structural equality should treat exception specifically
+- PR#5009: Extending exception tag blocks
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
@@ -40,6 +44,7 @@ Standard library:
 - PR#6148: speed improvement for Buffer (patch by John Whitington)
 - PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
 - PR#6180: efficient creation of uninitialized float arrays
+- PR#5935: a faster version of "raise" which does not maintain the backtrace
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
