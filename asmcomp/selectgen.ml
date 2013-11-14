@@ -436,7 +436,11 @@ method emit_expr env exp =
   | Ctuple [] ->
       Some [||]
   | Ctuple exp_list ->
-      self#emit_expr_list env exp_list
+      begin match self#emit_parts_list env exp_list with
+        None -> None
+      | Some(simple_list, ext_env) ->
+          Some(self#emit_tuple ext_env simple_list)
+      end
   | Cop(Craise (k, dbg), [arg]) ->
       begin match self#emit_expr env arg with
         None -> None
@@ -449,59 +453,55 @@ method emit_expr env exp =
   | Cop(Ccmpf comp, args) ->
       self#emit_expr env (Cifthenelse(exp, Cconst_int 1, Cconst_int 0))
   | Cop(op, args) ->
-      let ty = oper_result_type op in
-      let (new_op, new_args) = self#select_operation op args in
-      let dbg = debuginfo_op op in
-      begin match new_op with
-        Icall_ind | Icall_imm _ | Iextcall _ | Ialloc _ ->
-          begin match self#emit_parts_list env new_args with
-            None -> None
-          | Some(new_args, env) ->
+      begin match self#emit_parts_list env args with
+        None -> None
+      | Some(simple_args, env) ->
+          let ty = oper_result_type op in
+          let (new_op, new_args) = self#select_operation op simple_args in
+          let dbg = debuginfo_op op in
+          match new_op with
+            Icall_ind ->
               Proc.contains_calls := true;
-              match new_op with
-                Icall_ind ->
-                  let r1 = self#emit_tuple env new_args in
-                  let rarg = Array.sub r1 1 (Array.length r1 - 1) in
-                  let rd = self#regs_for ty in
-                  let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
-                  let loc_res = Proc.loc_results rd in
-                  self#insert_move_args rarg loc_arg stack_ofs;
-                  self#insert_debug (Iop new_op) dbg
-                    (Array.append [|r1.(0)|] loc_arg) loc_res;
-                  self#insert_move_results loc_res rd stack_ofs;
-                  Some rd
-              | Icall_imm _ ->
-                  let r1 = self#emit_tuple env new_args in
-                  let rd = self#regs_for ty in
-                  let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
-                  let loc_res = Proc.loc_results rd in
-                  self#insert_move_args r1 loc_arg stack_ofs;
-                  self#insert_debug (Iop new_op) dbg loc_arg loc_res;
-                  self#insert_move_results loc_res rd stack_ofs;
-                  Some rd
-              | Iextcall _ ->
-                  let (loc_arg, stack_ofs) =
-                    self#emit_extcall_args env new_args in
-                  let rd = self#regs_for ty in
-                  let loc_res = self#insert_op_debug new_op dbg
-                                  loc_arg (Proc.loc_external_results rd) in
-                  self#insert_move_results loc_res rd stack_ofs;
-                  Some rd
-              | Ialloc _ ->
-                  let rd = self#regs_for typ_addr in
-                  let size = size_expr env (Ctuple new_args) in
-                  self#insert_debug (Iop(Ialloc size)) dbg [||] rd;
-                  self#emit_stores env new_args rd;
-                  Some rd
-              | _ -> assert false
-          end
-      | op ->
-          begin match self#emit_expr_list env new_args with
-            None -> None
-          | Some r1 ->
+              let r1 = self#emit_tuple env new_args in
+              let rarg = Array.sub r1 1 (Array.length r1 - 1) in
+              let rd = self#regs_for ty in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
+              let loc_res = Proc.loc_results rd in
+              self#insert_move_args rarg loc_arg stack_ofs;
+              self#insert_debug (Iop Icall_ind) dbg
+                          (Array.append [|r1.(0)|] loc_arg) loc_res;
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
+          | Icall_imm lbl ->
+              Proc.contains_calls := true;
+              let r1 = self#emit_tuple env new_args in
+              let rd = self#regs_for ty in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
+              let loc_res = Proc.loc_results rd in
+              self#insert_move_args r1 loc_arg stack_ofs;
+              self#insert_debug (Iop(Icall_imm lbl)) dbg loc_arg loc_res;
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
+          | Iextcall(lbl, alloc) ->
+              Proc.contains_calls := true;
+              let (loc_arg, stack_ofs) =
+                self#emit_extcall_args env new_args in
+              let rd = self#regs_for ty in
+              let loc_res = self#insert_op_debug (Iextcall(lbl, alloc)) dbg
+                                    loc_arg (Proc.loc_external_results rd) in
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
+          | Ialloc _ ->
+              Proc.contains_calls := true;
+              let rd = self#regs_for typ_addr in
+              let size = size_expr env (Ctuple new_args) in
+              self#insert (Iop(Ialloc size)) [||] rd;
+              self#emit_stores env new_args rd;
+              Some rd
+          | op ->
+              let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in
               Some (self#insert_op_debug op dbg r1 rd)
-          end
       end
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 with
@@ -553,9 +553,10 @@ method emit_expr env exp =
       self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
   | Cexit (nfail,args) ->
-      begin match self#emit_expr_list env args with
+      begin match self#emit_parts_list env args with
         None -> None
-      | Some src ->
+      | Some (simple_list, ext_env) ->
+          let src = self#emit_tuple ext_env simple_list in
           let dest =
             try List.assoc nfail !catch_regs
             with Not_found ->
@@ -630,22 +631,6 @@ method private emit_parts_list env exp_list =
           match self#emit_parts new_env exp with
             None -> None
           | Some(new_exp, fin_env) -> Some(new_exp :: new_rem, fin_env)
-
-method private emit_expr_list env exp_list =
-  let rec emit_list = function
-    [] -> Some([])
-  | exp :: rem ->
-      (* This ensures right-to-left evaluation, consistent with the
-         bytecode compiler *)
-      match emit_list rem with
-        None -> None
-      | Some(loc_rem) ->
-          match self#emit_expr env exp with
-            None -> None
-          | Some(loc_exp) -> Some(loc_exp :: loc_rem) in
-  match emit_list exp_list with
-    None -> None
-  | Some(loc_list) -> Some(Array.concat loc_list)
 
 method private emit_tuple env exp_list =
   let rec emit_list = function
