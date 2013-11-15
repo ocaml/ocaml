@@ -553,10 +553,14 @@ let find_modtype_expansion path env =
   | None -> raise Not_found
   | Some mty -> mty
 
-let is_functor_arg path env =
-  let id = Path.head path in
-  try Ident.find_same id env.functor_args; true
-  with Not_found -> false
+let rec is_functor_arg path env =
+  match path with
+    Pident id ->
+      begin try Ident.find_same id env.functor_args; true
+      with Not_found -> false
+      end
+  | Pdot (p, s, _) -> is_functor_arg p env
+  | Papply _ -> true
 
 (* Lookup by name *)
 

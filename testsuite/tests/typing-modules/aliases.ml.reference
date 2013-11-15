@@ -64,7 +64,7 @@ Error: Signature mismatch:
 # - : int = 1
 #   module M'' : sig module N' : sig val x : int end end
 # - : int = 1
-# module M2 : sig module N : sig val x : int end module N' = N end
+# module M2 : sig module N = M'.N module N' = M'.N' end
 # module M3 : sig module N' : sig val x : int end end
 # - : int = 1
 # module M3' : sig module N' : sig val x : int end end
@@ -207,4 +207,9 @@ module SSet :
     val of_list : elt list -> t
   end
 # val f : StringSet.t -> SSet.t = <fun>
+#             module F : functor (M : sig  end) -> sig type t end
+module T : sig module M : sig  end type t = F(M).t end
+# module M = T.M
+type t = F(M).t
+# val f : t -> T.t = <fun>
 # 

@@ -97,3 +97,12 @@ module S = String
 module StringSet = Set.Make(String)
 module SSet = Set.Make(S);;
 let f (x : StringSet.t) = (x : SSet.t);;
+
+(* Also using include (cf. Leo's mail 2013-11-16) *)
+module F (M : sig end) : sig type t end = struct type t = int end
+module T = struct
+  module M = struct end
+  include F(M)
+end;;
+include T;;
+let f (x : t) : T.t = x ;;
