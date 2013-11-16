@@ -1258,9 +1258,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                       Sig_module (id, {md with md_type =
                                        Mty_alias (Pdot(p,Ident.name id,n))},
                                   rs)
-                  | Sig_value _ | Sig_exception _ | Sig_class _ as it ->
+                  | Sig_value (_, {val_kind=Val_reg}) | Sig_exception _
+                  | Sig_class _ as it ->
                       incr pos; it
-                  | Sig_type _ | Sig_modtype _ | Sig_class_type _ as it ->
+                  | Sig_value _ | Sig_type _ | Sig_modtype _
+                  | Sig_class_type _ as it ->
                       it)
                 sg
           | _ -> sg
