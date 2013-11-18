@@ -106,3 +106,27 @@ module T = struct
 end;;
 include T;;
 let f (x : t) : T.t = x ;;
+
+(* PR#4049 *)
+(* This works thanks to abbreviations *)
+module A = struct
+  module B = struct type t let compare x y = 0 end
+  module S = Set.Make(B)
+  let empty = S.empty 
+end
+module A1 = A;;
+A1.empty = A.empty;;
+
+(* PR#3476 *)
+(* Does not work yet *)
+module FF(X : sig end) = struct type t end
+module M = struct
+  module X = struct end
+  module Y = FF (X) (* XXX *)
+  type t = Y.t
+end
+module F (Y : sig type t end) (M : sig type t = Y.t end) = struct end;;
+
+module G = F (M.Y);;
+(*module N = G (M);;
+module N = F (M.Y) (M);;*)

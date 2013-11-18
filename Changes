@@ -47,6 +47,7 @@ OCaml 4.01.1:
 
 Bug fixes:
 - PR#6173: Typing error message is worse that before
+- PR#6240: Fail to expand module type abbreviation during substyping
 
 OCaml 4.01.0:
 -------------
