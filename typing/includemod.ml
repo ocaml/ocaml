@@ -94,6 +94,10 @@ let class_declarations env cxt subst id decl1 decl2 =
 
 exception Dont_match
 
+let may_expand_module_path env path =
+  try ignore (Env.find_modtype_expansion path env); true
+  with Not_found -> false
+
 let expand_module_path env cxt path =
   try
     Env.find_modtype_expansion path env
@@ -158,10 +162,10 @@ let rec modtypes env cxt subst mty1 mty2 =
 
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
-    (_, Mty_ident p2) ->
-      try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
-  | (Mty_ident p1, _) ->
+    (Mty_ident p1, _) when may_expand_module_path env p1 ->
       try_modtypes env cxt subst (expand_module_path env cxt p1) mty2
+  | (_, Mty_ident p2) ->
+      try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
   | (Mty_signature sig1, Mty_signature sig2) ->
       signatures env cxt subst sig1 sig2
   | (Mty_functor(param1, arg1, res1), Mty_functor(param2, arg2, res2)) ->
