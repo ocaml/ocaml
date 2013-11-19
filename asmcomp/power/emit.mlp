@@ -266,15 +266,16 @@ let name_for_int_comparison = function
 (* Names for various instructions *)
 
 let name_for_intop = function
-    Iadd -> "add"
-  | Imul -> if ppc64 then "mulld" else "mullw"
-  | Idiv -> if ppc64 then "divd" else "divw"
-  | Iand -> "and"
-  | Ior  -> "or"
-  | Ixor -> "xor"
-  | Ilsl -> if ppc64 then "sld" else "slw"
-  | Ilsr -> if ppc64 then "srd" else "srw"
-  | Iasr -> if ppc64 then "srad" else "sraw"
+    Iadd  -> "add"
+  | Imul - > if ppc64 then "mulld" else "mullw"
+  | Imulh -> if ppc64 then "mulhd" else "mulhw"
+  | Idiv  -> if ppc64 then "divd" else "divw"
+  | Iand  -> "and"
+  | Ior   -> "or"
+  | Ixor  -> "xor"
+  | Ilsl  -> if ppc64 then "sld" else "slw"
+  | Ilsr  -> if ppc64 then "srd" else "srw"
+  | Iasr  -> if ppc64 then "srad" else "sraw"
   | _ -> Misc.fatal_error "Emit.Intop"
 
 let name_for_intop_imm = function
@@ -344,8 +345,6 @@ let instr_size = function
   | Lop(Iintop Imod) -> 3
   | Lop(Iintop(Icomp cmp)) -> 4
   | Lop(Iintop op) -> 1
-  | Lop(Iintop_imm(Idiv, n)) -> 2
-  | Lop(Iintop_imm(Imod, n)) -> 4
   | Lop(Iintop_imm(Icomp cmp, n)) -> 4
   | Lop(Iintop_imm(op, n)) -> 1
   | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
@@ -605,16 +604,6 @@ let rec emit_instr i dslot =
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop_imm(Isub, n)) ->
         `	addi	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int(-n)}\n`
-    | Lop(Iintop_imm(Idiv, n)) ->       (* n is guaranteed to be a power of 2 *)
-        let l = Misc.log2 n in
-        `	{emit_string sragi}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int l}\n`;
-        `	addze	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-    | Lop(Iintop_imm(Imod, n)) ->       (* n is guaranteed to be a power of 2 *)
-        let l = Misc.log2 n in
-        `	{emit_string sragi}	{emit_gpr 0}, {emit_reg i.arg.(0)}, {emit_int l}\n`;
-        `	addze	{emit_gpr 0}, {emit_gpr 0}\n`;
-        `	{emit_string slgi}	{emit_gpr 0}, {emit_gpr 0}, {emit_int l}\n`;
-        `	subfc	{emit_reg i.res.(0)}, {emit_gpr 0}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         begin match cmp with
           Isigned c ->

@@ -57,15 +57,11 @@ let pseudoregs_for_operation op arg res =
      is also a result of the mul / mla operation. *)
     Iintop Imul | Ispecific Imuladd when !arch < ARMv6 ->
       (arg, [| res.(0); arg.(0) |])
-  (* For integer division by a constant, which is not a power of 2, on ARMv6
-     and later, the result and argument registers must be different. We deal
-     with this by pretending that the argument value is also a result of the
-     operation. For modulus we also require a scratch register (r12) that
-     is different from both the result and argument registers. *)
-  | Iintop_imm(Idiv, n) when !arch >= ARMv6 && n <> 1 lsl Misc.log2 n->
+  (* For smull rdlo,rdhi,rn,rm (pre-ARMv6) the registers rdlo, rdhi and rn
+     must be different. We deal with this by  pretending that rn is also a
+     result of the smull operation. *)
+  | Iintop Imulh when !arch < ARMv6 ->
       (arg, [| res.(0); arg.(0) |])
-  | Iintop_imm(Imod, n) when !arch >= ARMv6 && n <> 1 lsl Misc.log2 n->
-      (arg, [| res.(0); arg.(0); r12 |])
   (* Soft-float Iabsf and Inegf: arg.(0) and res.(0) must be the same *)
   | Iabsf | Inegf when !fpu = Soft ->
       ([|res.(0); arg.(1)|], res)
@@ -132,8 +128,17 @@ method select_shift_arith op arithop arithrevop args =
       (Ispecific(Ishiftarith(arithrevop, select_shiftop op, n)), [arg2; arg1])
   | args ->
       begin match super#select_operation op args with
+      (* Recognize multiply high and add *)
+        (Iintop Iadd, [Cop(Cmulhi, args); arg3])
+      | (Iintop Iadd, [arg3; Cop(Cmulhi, args)]) as op_args
+        when !arch >= ARMv6 ->
+          begin match self#select_operation Cmulhi args with
+            (Iintop Imulh, [arg1; arg2]) ->
+              (Ispecific Imulhadd, [arg1; arg2; arg3])
+          | _ -> op_args
+          end
       (* Recognize multiply and add *)
-        (Iintop Iadd, [Cop(Cmuli, args); arg3])
+      | (Iintop Iadd, [Cop(Cmuli, args); arg3])
       | (Iintop Iadd, [arg3; Cop(Cmuli, args)]) as op_args ->
           begin match self#select_operation Cmuli args with
             (Iintop Imul, [arg1; arg2]) ->
@@ -179,15 +184,11 @@ method! select_operation op args =
   (* ARM does not support immediate operands for multiplication *)
   | (Cmuli, args) ->
       (Iintop Imul, args)
+  | (Cmulhi, args) ->
+      (Iintop Imulh, args)
   (* Turn integer division/modulus into runtime ABI calls *)
-  | (Cdivi, [arg; Cconst_int n]) when n > 0 && (!arch >= ARMv6
-                                                || n = 1 lsl Misc.log2 n) ->
-      (Iintop_imm(Idiv, n), [arg])
   | (Cdivi, args) ->
       (Iextcall("__aeabi_idiv", false), args)
-  | (Cmodi, [arg; Cconst_int n]) when n > 0 && (!arch >= ARMv6
-                                                || n = 1 lsl Misc.log2 n) ->
-      (Iintop_imm(Imod, n), [arg])
   | (Cmodi, args) ->
       (* See above for fix up of return register *)
       (Iextcall("__aeabi_idivmod", false), args)

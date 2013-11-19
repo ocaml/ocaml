@@ -61,16 +61,8 @@ method select_addressing chunk exp =
 
 method! select_operation op args =
   match (op, args) with
-  (* Prevent the recognition of (x / cst) and (x % cst) when cst is not
-     a power of 2, which do not correspond to an instruction. *)
-    (Cdivi, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Idiv, n), [arg])
-  | (Cdivi, _) ->
-      (Iintop Idiv, args)
-  | (Cmodi, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Imod, n), [arg])
-  | (Cmodi, _) ->
-      (Iintop Imod, args)
+  (* PowerPC does not support immediate operands for multiply high *)
+    (Cmulhi, _) -> (Iintop Imulh, args)
   (* The and, or and xor instructions have a different range of immediate
      operands than the other instructions *)
   | (Cand, _) -> self#select_logical Iand args

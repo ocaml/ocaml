@@ -32,7 +32,8 @@ open Mach
      Istore                             R       R
      Iintop(Icomp)              R       R       S
                             or  S       S       R
-     Iintop(Imul|Idiv|mod)      R       R       S
+     Iintop(Imul|Idiv|Imod)     R       R       S
+     Iintop(Imulh)              R       R       S
      Iintop(shift)              S       S       R
      Iintop(others)             R       R       S
                             or  S       S       R
@@ -71,10 +72,10 @@ method! reload_operation op arg res =
       (* This add will be turned into a lea; args and results must be
          in registers *)
       super#reload_operation op arg res
-  | Iintop(Idiv | Imod | Ilsl | Ilsr | Iasr)
+  | Iintop(Imulh | Idiv | Imod | Ilsl | Ilsr | Iasr)
   | Iintop_imm(_, _) ->
       (* The argument(s) and results can be either in register or on stack *)
-      (* Note: Idiv, Imod: arg(0) and res(0) already forced in regs
+      (* Note: Imulh, Idiv, Imod: arg(0) and res(0) already forced in regs
                Ilsl, Ilsr, Iasr: arg(1) already forced in regs *)
       (arg, res)
   | Iintop(Imul) | Iaddf | Isubf | Imulf | Idivf ->

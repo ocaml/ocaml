@@ -70,7 +70,7 @@ type operation =
   | Cload of memory_chunk
   | Calloc
   | Cstore of memory_chunk
-  | Caddi | Csubi | Cmuli | Cdivi | Cmodi
+  | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi of comparison
   | Cadda | Csuba

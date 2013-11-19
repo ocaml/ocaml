@@ -91,6 +91,10 @@ let pseudoregs_for_operation op arg res =
      (rax, rbx, rcx or rdx). Keep it simple, just force the argument in rax. *)
   | Ispecific(Ibswap 16) ->
       ([| rax |], [| rax |])
+  (* For imulq, first arg must be in rax, rax is clobbered, and result is in
+     rdx. *)
+  | Iintop(Imulh) ->
+      ([| rax; arg.(1) |], [| rdx |])
   | Ispecific(Ifloatarithmem(_,_)) ->
       let arg' = Array.copy arg in
       arg'.(0) <- res.(0);
@@ -105,10 +109,6 @@ let pseudoregs_for_operation op arg res =
       ([| rax; rcx |], [| rax |])
   | Iintop(Imod) ->
       ([| rax; rcx |], [| rdx |])
-  (* For div and mod with immediate operand, arg must not be in rax nor rdx.
-     Keep it simple, force it in rcx. *)
-  | Iintop_imm((Idiv|Imod), _) ->
-      ([| rcx |], [| rcx |])
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
@@ -176,19 +176,6 @@ method! select_operation op args =
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
-  (* Recognize (x / cst) and (x % cst) only if cst is > 0. *)
-  | Cdivi ->
-      begin match args with
-        [arg1; Cconst_int n] when self#is_immediate n && n > 0 ->
-          (Iintop_imm(Idiv, n), [arg1])
-      | _ -> (Iintop Idiv, args)
-      end
-  | Cmodi ->
-      begin match args with
-        [arg1; Cconst_int n] when self#is_immediate n && n > 0 ->
-          (Iintop_imm(Imod, n), [arg1])
-      | _ -> (Iintop Imod, args)
-      end
   (* Recognize float arithmetic with memory. *)
   | Caddf ->
       self#select_floatarith true Iaddf Ifloatadd args
@@ -225,6 +212,9 @@ method! select_operation op args =
   | Cextcall("caml_int64_direct_bswap", _, _, _)
   | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
       (Ispecific (Ibswap 64), args)
+  (* AMD64 does not support immediate operands for multiply high signed *)
+  | Cmulhi ->
+      (Iintop Imulh, args)
   | _ -> super#select_operation op args
 
 (* Recognize float arithmetic with mem *)

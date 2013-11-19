@@ -443,36 +443,15 @@ let rec emit_instr i dslot =
         `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
         `	wr	%g1, %y\n`;
         `	sdiv	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop Imulh) ->
+        `	smul	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, %g1\n`;
+        `	rd	%y, {emit_reg i.res.(0)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Ilsl, 1)) ->
         (* UltraSPARC has two add units but only one shifter. *)
         `	add	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
-    | Lop(Iintop_imm(Idiv, n)) ->
-        let l = Misc.log2 n in
-        if n = 1 lsl l then begin
-          let lbl = new_label() in
-          `	cmp	{emit_reg i.arg.(0)}, 0\n`;
-          `	bge	{emit_label lbl}\n`;
-          `	mov	{emit_reg i.arg.(0)}, %g1\n`; (* in delay slot *)
-          `	add	%g1, {emit_int (n-1)}, %g1\n`;
-          `{emit_label lbl}:\n`;
-          `	sra	%g1, {emit_int l}, {emit_reg i.res.(0)}\n`
-        end else begin
-          `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
-          `	wr	%g1, %y\n`;
-          `	sdiv	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
-        end
-    | Lop(Iintop_imm(Imod, n)) ->       (* n is a power of 2 *)
-        let lbl = new_label() in
-        `	tst	{emit_reg i.arg.(0)}\n`;
-        `	bge	{emit_label lbl}\n`;
-        `	andcc	{emit_reg i.arg.(0)}, {emit_int (n-1)}, {emit_reg i.res.(0)}\n`; (* in delay slot *)
-        `	be	{emit_label lbl}\n`;
-        `	nop\n`;
-        `	sub	{emit_reg i.res.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`;
-        `{emit_label lbl}:\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         if !arch_version = SPARC_V9 then begin
@@ -496,6 +475,9 @@ let rec emit_instr i dslot =
           `	bleu	{emit_label !range_check_trap}\n`;
           `	nop\n`                  (* delay slot *)
         end
+    | Lop(Iintop_imm(Imulh, n)) ->
+        `	smul	{emit_reg i.arg.(0)}, {emit_int n}, %g1\n`;
+        `	rd	%y, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
@@ -618,7 +600,7 @@ and fill_delay_slot = function
    that does not branch. *)
 
 let is_one_instr_op = function
-    Idiv | Imod | Icomp _ | Icheckbound -> false
+    Imulh | Idiv | Imod | Icomp _ | Icheckbound -> false
   | _ -> true
 
 let is_one_instr i =

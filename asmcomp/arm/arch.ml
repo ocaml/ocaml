@@ -110,6 +110,7 @@ type specific_operation =
     Ishiftarith of arith_operation * shift_operation * int
   | Ishiftcheckbound of shift_operation * int
   | Irevsubimm of int
+  | Imulhadd      (* multiply high and add *)
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)
@@ -193,6 +194,11 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(1)
   | Irevsubimm n ->
       fprintf ppf "%i %s %a" n "-" printreg arg.(0)
+  | Imulhadd ->
+      fprintf ppf "%a *h %a) + %a"
+        printreg arg.(0)
+        printreg arg.(1)
+        printreg arg.(2)
   | Imuladd ->
       fprintf ppf "(%a * %a) + %a"
         printreg arg.(0)

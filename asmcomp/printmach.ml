@@ -70,6 +70,7 @@ let intop = function
   | Iadd -> " + "
   | Isub -> " - "
   | Imul -> " * "
+  | Imulh -> " *h "
   | Idiv -> " div "
   | Imod -> " mod "
   | Iand -> " & "
