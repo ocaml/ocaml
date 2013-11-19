@@ -1991,8 +1991,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             let decl = Env.find_type p env in
             if non_aliasable p decl then raise (Unify [])
-        | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2))
-          when Path.same p1 p2 && n1 = n2 ->
+        | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when n1 = n2 ->
             mcomp_list type_pairs env tl1 tl2
         | (Tvariant row1, Tvariant row2) ->
             mcomp_row type_pairs env row1 row2
@@ -2398,9 +2397,12 @@ and unify3 env t1 t1' t2 t2' =
           unify env t1 t2
       | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
           enter_poly !env univar_pairs t1 tl1 t2 tl2 (unify env)
-      | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2))
-        when Path.same p1 p2 && n1 = n2 ->
-          unify_list env tl1 tl2
+      | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when n1 = n2 ->
+          if Path.same p1 p2 then unify_list env tl1 tl2 else
+          if !umode = Expression then raise (Unify []) else begin
+            List.iter (reify env) (tl1 @ tl2);
+            if !generate_equations then List.iter2 (mcomp !env) tl1 tl2
+          end
       | (_, _) ->
           raise (Unify [])
       end;

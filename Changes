@@ -65,6 +65,7 @@ Bug fixes:
 - PR#6216: inlining of GADT matches generates invalid assembly
 - PR#6235: Issue with type information flowing through a variant pattern
 - PR#6240: Fail to expand module type abbreviation during substyping
+- PR#6241: Assumed inequality between paths involving functor arguments
 
 OCaml 4.01.0:
 -------------
