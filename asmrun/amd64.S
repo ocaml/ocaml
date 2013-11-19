@@ -99,6 +99,10 @@
         movq    GREL(dstlabel)(%rip), %r11 ; \
         movq    srcreg, (%r11)
 
+#define STORE_VAR32(srcreg,dstlabel) \
+        movq    GREL(dstlabel)(%rip), %r11 ; \
+        movl    srcreg, (%r11)
+
 /* Load global [srclabel] in register [dstreg].  Clobbers %r11. */
 #define LOAD_VAR(srclabel,dstreg) \
         movq    GREL(srclabel)(%rip), %r11 ; \
@@ -143,6 +147,9 @@
 
 #define STORE_VAR(srcreg,dstlabel) \
         movq    srcreg, G(dstlabel)(%rip)
+
+#define STORE_VAR32(srcreg,dstlabel) \
+        movl    srcreg, G(dstlabel)(%rip)
 
 #define LOAD_VAR(srclabel,dstreg) \
         movq    G(srclabel)(%rip), dstreg
@@ -532,7 +539,7 @@ CFI_STARTPROC
         popq    %r14
         ret
 LBL(110):
-        STORE_VAR($0, caml_backtrace_pos)
+        STORE_VAR32($0, caml_backtrace_pos)
 LBL(111):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
