@@ -77,6 +77,18 @@ CAMLprim value caml_weak_set (value ar, value n, value el)
 #define Setup_for_gc
 #define Restore_after_gc
 
+int caml_is_weak_none(value ar, mlsize_t offset, value elt){
+  if (elt == caml_weak_none){
+    return 1;
+  }else if (caml_gc_phase == Phase_clean &&
+            Is_block (elt) && Is_in_heap (elt) && Is_white_val(elt)){
+    /** Must be cleaned during this phase */
+    Field (ar, offset) = caml_weak_none; /* just optimisation */
+    return 1;
+  }
+  return 0;
+}
+
 CAMLprim value caml_weak_get (value ar, value n)
 {
   CAMLparam2 (ar, n);
@@ -86,10 +98,10 @@ CAMLprim value caml_weak_get (value ar, value n)
   if (offset < 1 || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.get");
   }
-  if (Field (ar, offset) == caml_weak_none){
+  elt = Field (ar, offset);
+  if (caml_is_weak_none(ar, offset, elt)){
     res = None_val;
   }else{
-    elt = Field (ar, offset);
     if (caml_gc_phase == Phase_mark && Is_block (elt) && Is_in_heap (elt)){
       caml_darken (elt, NULL);
     }
@@ -114,12 +126,12 @@ CAMLprim value caml_weak_get_copy (value ar, value n)
   }
 
   v = Field (ar, offset);
-  if (v == caml_weak_none) CAMLreturn (None_val);
+  if (caml_is_weak_none(ar, offset, v)) CAMLreturn (None_val);
   if (Is_block (v) && Is_in_heap_or_young(v)) {
     elt = caml_alloc (Wosize_val (v), Tag_val (v));
           /* The GC may erase or move v during this call to caml_alloc. */
     v = Field (ar, offset);
-    if (v == caml_weak_none) CAMLreturn (None_val);
+    if (caml_is_weak_none(ar, offset, v)) CAMLreturn (None_val);
     if (Tag_val (v) < No_scan_tag){
       mlsize_t i;
       for (i = 0; i < Wosize_val (v); i++){
@@ -148,7 +160,7 @@ CAMLprim value caml_weak_check (value ar, value n)
   if (offset < 1 || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.get");
   }
-  return Val_bool (Field (ar, offset) != caml_weak_none);
+  return Val_bool (!caml_is_weak_none(ar, offset, Field (ar, offset)));
 }
 
 CAMLprim value caml_weak_blit (value ars, value ofs,
@@ -166,7 +178,7 @@ CAMLprim value caml_weak_blit (value ars, value ofs,
   if (offset_d < 1 || offset_d + length > Wosize_val (ard)){
     caml_invalid_argument ("Weak.blit");
   }
-  if (caml_gc_phase == Phase_mark && caml_gc_subphase == Subphase_weak1){
+  if (caml_gc_phase == Phase_clean){
     for (i = 0; i < length; i++){
       value v = Field (ars, offset_s + i);
       if (v != caml_weak_none && Is_block (v) && Is_in_heap (v)

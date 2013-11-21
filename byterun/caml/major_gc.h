@@ -38,13 +38,22 @@ extern uintnat caml_dependent_size, caml_dependent_allocated;
 extern uintnat caml_fl_wsz_at_phase_change;
 
 #define Phase_mark 0
-#define Phase_sweep 1
-#define Phase_idle 2
-#define Subphase_roots 10
-#define Subphase_main 11
-#define Subphase_weak1 12
-#define Subphase_weak2 13
-#define Subphase_final 14
+#define Phase_clean 1
+#define Phase_sweep 2
+#define Phase_idle 3
+
+
+/* Subphase of mark */
+#define Subphase_mark_roots 10 /* finish to mark global roots */
+#define Subphase_mark_main 11 /* before marking finalized value */
+/* Between this two subphases the set of marked blocks is an
+   over-approximation of the set of alive blocks at the beginning of
+   the marking phase */
+#define Subphase_mark_final 12 /* after marking finalized value */
+
+/* Subphase of clean */
+#define Subphase_clean_weak  20 /* clean weak arrays */
+#define Subphase_unlink_weak 21 /* remove dead weak arrays */
 
 CAMLextern char *caml_heap_start;
 extern uintnat total_heap_size;
