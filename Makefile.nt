@@ -27,9 +27,6 @@ CAMLLEX=boot/ocamlrun boot/ocamllex
 CAMLDEP=boot/ocamlrun tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
-CAMLP4OUT=$(WITH_CAMLP4:=out)
-CAMLP4OPT=$(WITH_CAMLP4:=opt)
-
 OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
 OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 
@@ -112,7 +109,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+  otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
   $(WITH_OCAMLDOC)
 
 # The compilation of ocaml will fail if the runtime has changed.
@@ -215,7 +212,7 @@ opt:
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-	 ocamltoolsopt.opt $(OCAMLBUILDNATIVE) $(CAMLP4OPT) $(OCAMLDOC_OPT)
+	 ocamltoolsopt.opt $(OCAMLBUILDNATIVE) $(OCAMLDOC_OPT)
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -661,13 +658,6 @@ partialclean::
 alldepend::
 	cd debugger; $(MAKEREC) depend
 
-# Camlp4
-
-camlp4out: ocamlc otherlibraries ocamlbuild-mixed-boot ocamlbuild.byte
-	./build/camlp4-byte-only.sh
-camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
-	./build/camlp4-native-only.sh
-
 # Ocamlbuild
 
 ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-mixed-boot
@@ -722,7 +712,7 @@ alldepend:: depend
 distclean:
 	./build/distclean.sh
 
-.PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
+.PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot defaultentry depend distclean install installopt

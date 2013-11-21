@@ -15,7 +15,7 @@
 true: -traverse
 
 # Traverse only these directories
-<{bytecomp,driver,stdlib,tools,asmcomp,camlp4,ocamlbuild,toplevel,ocamldoc,typing,otherlibs,utils,debugger,lex,parsing,byterun,asmrun}/**>: traverse
+<{bytecomp,driver,stdlib,tools,asmcomp,ocamlbuild,toplevel,ocamldoc,typing,otherlibs,utils,debugger,lex,parsing,byterun,asmrun}/**>: traverse
 
 "ocamlbuild/test" or "ocamlbuild/testsuite": -traverse
 
@@ -43,16 +43,6 @@ true: use_stdlib
 <ocamldoc/*.ml>: ocamldoc_sources
 <ocamldoc/*.ml*>: include_unix, include_str, include_dynlink
 <ocamldoc/odoc.{byte,native}>: use_unix, use_str, use_dynlink
-
-<camlp4/**/*.ml*>: camlp4boot, warn_Z
-<camlp4/Camlp4_{config,import}.ml*>: -camlp4boot
-"camlp4/Camlp4_import.ml": -warn_Z
-<camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Z, warn_a
-<camlp4/Camlp4Bin.{byte,native}> or <camlp4/{mkcamlp4,boot/camlp4boot}.byte>: use_dynlink
-<camlp4/Camlp4Printers/**.ml>: include_unix
-"camlp4/Camlp4/Struct/DynLoader.ml" or "camlp4/boot/Camlp4.ml": include_dynlink
-<camlp4/Camlp4Top/**>: include_toplevel
-<camlp4/camlp4{,boot,o,r,of,rf,oof,orf}.byte>: -debug
 
 <ocamlbuild/*>: include_unix
 

@@ -16,7 +16,6 @@ cd `dirname $0`/..
 set -ex
 TAG_LINE='true: -use_stdlib'
 
-# If you modify this list, modify it also in camlp4-native-only.sh and camlp4-byte-only.sh
 STDLIB_MODULES='Pervasives,Arg,Array,Buffer,Char,Digest,Filename,Format,Hashtbl,Lazy,Lexing,List,Map,Printexc,Printf,Scanf,Set,String,Sys,Parsing,Int32,Int64,Nativeint,Obj,Queue,Sort,Stream,Stack'
 
 ./boot/ocamlrun boot/myocamlbuild.boot -ignore "$STDLIB_MODULES" \
