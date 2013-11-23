@@ -29,9 +29,6 @@ DEPFLAGS=$(INCLUDES)
 SHELL=/bin/sh
 MKDIR=mkdir -p
 
-CAMLP4OUT=$(WITH_CAMLP4:=out)
-CAMLP4OPT=$(WITH_CAMLP4:=opt)
-
 OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
 OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 OCAMLBUILDLIBNATIVE=$(WITH_OCAMLBUILD:=lib.native)
@@ -131,7 +128,7 @@ all:
 	$(MAKE) ocamltools
 	$(MAKE) library
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
 	  $(WITH_OCAMLDOC)
 
 # Compile everything the first time
@@ -276,11 +273,11 @@ opt.opt:
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
-	        $(OCAMLBUILDBYTE) $(CAMLP4OUT)
+	        $(OCAMLBUILDBYTE)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	        $(OCAMLBUILDNATIVE) $(CAMLP4OPT)
+	        $(OCAMLBUILDNATIVE)
 
 base.opt:
 	$(MAKE) checkstack
@@ -289,7 +286,7 @@ base.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
 	  $(WITH_OCAMLDOC)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
@@ -772,14 +769,6 @@ partialclean::
 alldepend::
 	cd debugger; $(MAKE) depend
 
-# Camlp4
-
-camlp4out: ocamlc ocamlbuild.byte
-	./build/camlp4-byte-only.sh
-
-camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
-	./build/camlp4-native-only.sh
-
 # Ocamlbuild
 #ifeq ($(OCAMLBUILD_NOBOOT),"yes")
 #ocamlbuild.byte: ocamlc
@@ -855,7 +844,7 @@ distclean:
 	./build/distclean.sh
 	rm -f ocaml testsuite/_log
 
-.PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
+.PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot defaultentry depend distclean install installopt

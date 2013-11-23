@@ -17,13 +17,10 @@
 
 PREFIX=C:/ocamlmgw64
 
-### Remove this to disable compiling camlp4
-WITH_CAMLP4=camlp4
-
 ### Remove this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
 
-### Remove this to disable compiling ocamlbuild; camlp4 requires ocamlbuild
+### Remove this to disable compiling ocamlbuild
 WITH_OCAMLBUILD=ocamlbuild
 
 ### Remove this to disable compiling ocamldoc

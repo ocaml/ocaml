@@ -54,7 +54,6 @@ CONTENTS:
   boot/                 bootstrap compiler
   bytecomp/             bytecode compiler and linker
   byterun/              bytecode interpreter and runtime system
-  camlp4/               the Camlp4 preprocessor
   config/               autoconfiguration stuff
   debugger/             source-level replay debugger
   driver/               driver code for the compilers

@@ -15,8 +15,8 @@ PREREQUISITES
   are all *required*.  The vendor-provided compiler, assembler and make
   have major problems.
 
-* GNU make is needed to build ocamlbuild and camlp4.  If your system's
-  default make is not GNU make, you need to define the GNUMAKE environment
+* GNU make is needed to build ocamlbuild.  If your system's default
+  make is not GNU make, you need to define the GNUMAKE environment
   variable to the name of GNU make, typically with this command:
 
     export GNUMAKE=gnumake
@@ -111,9 +111,6 @@ The "configure" script accepts the following options:
         Verbose output of the configuration tests. Use it if the outcome
         of configure is not what you were expecting.
 
--no-camlp4
-        Do not compile Camlp4.
-
 -no-debugger
         Do not build ocamldebug.
 
@@ -121,7 +118,7 @@ The "configure" script accepts the following options:
         Do not build ocamldoc.
 
 -no-ocamlbuild
-        Do not build ocamlbuild. This requires -no-camlp4.
+        Do not build ocamlbuild.
 
 -no-graph
         Do not compile the Graphics library.

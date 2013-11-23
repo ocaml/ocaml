@@ -144,17 +144,10 @@ NATIVECCLINKOPTS=
 ### Build partially-linked object file
 PACKLD=link /lib /nologo /out:# there must be no space after this '/out:'
 
-############# Configuration for camlp4
-
-# This variable controls whether camlp4 will be built.
-# If it is set to camlp4, then it will be built.
-# If it is set to the empty string, then it will not be built.
-WITH_CAMLP4=camlp4
-
 ### Clear this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
 
-### Clear this to disable compiling ocamlbuild; camlp4 requires ocamlbuild
+### Clear this to disable compiling ocamlbuild
 WITH_OCAMLBUILD=ocamlbuild
 
 ### Clear this to disable compiling ocamldoc

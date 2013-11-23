@@ -297,7 +297,7 @@ launch the C compiler.
 
 In order to recompile flexdll, you first need to configure, compile,
 and install OCaml without flexdll support (configure with options
--no-shared-libs -no-camlp4), then modify the flexdll Makefile to change
+-no-shared-libs), then modify the flexdll Makefile to change
 line 51 from:
   LINKFLAGS = -ccopt "-link version_res.o"
 to:

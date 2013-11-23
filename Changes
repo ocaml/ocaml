@@ -3,6 +3,9 @@ Next version:
 
 (Changes that can break existing programs are marked with a "*")
 
+Camlp4:
+- Removed from the official distribution
+
 Other libraries:
 * Labltk: removed from the distribution, now available as a third-party library
 
