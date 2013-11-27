@@ -1159,3 +1159,227 @@
 +
 +    @since 4.01.0
 +*)
+--- obrowser-1.1.1/rt/caml/pervasives.mli	2013-11-27 09:51:32.000000000 +0100
++++ /usr/local/ocaml/trunk/lib/ocaml/pervasives.mli	2013-11-26 19:03:11.000000000 +0100
+@@ -28,6 +28,11 @@
+ external raise : exn -> 'a = "%raise"
+ (** Raise the given exception value *)
+ 
++external raise_notrace : exn -> 'a = "%raise_notrace"
++(** A faster version [raise] which does not record the backtrace.
++    @since 4.02.0
++*)
++
+ val invalid_arg : string -> 'a
+ (** Raise exception [Invalid_argument] with the given string. *)
+ 
+--- obrowser-1.1.1/rt/caml/pervasives.ml	2013-11-27 14:25:40.000000000 +0100
++++ /usr/local/ocaml/trunk/lib/ocaml/pervasives.ml	2013-11-26 19:03:11.000000000 +0100
+@@ -15,7 +15,17 @@
+ 
+ (* Exceptions *)
+ 
++external register_named_value : string -> 'a -> unit
++                              = "caml_register_named_value"
++
++let () =
++  (* for asmrun/fail.c *)
++  register_named_value "Pervasives.array_bound_error"
++    (Invalid_argument "index out of bounds")
++
++
+ external raise : exn -> 'a = "%raise"
++external raise_notrace : exn -> 'a = "%raise_notrace"
+ 
+ let failwith s = raise(Failure s)
+ let invalid_arg s = raise(Invalid_argument s)
+@@ -454,7 +464,4 @@
+   do_at_exit ();
+   sys_exit retcode
+ 
+-external register_named_value : string -> 'a -> unit
+-                              = "caml_register_named_value"
+-
+ let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
+--- obrowser-1.1.1/rt/caml/printexc.mli	2013-11-27 14:26:19.000000000 +0100
++++ /usr/local/ocaml/trunk/lib/ocaml/printexc.mli	2013-11-26 19:03:11.000000000 +0100
+@@ -112,3 +112,23 @@
+ 
+     @since 4.01.0
+ *)
++
++
++(** {6 Exception slots} *)
++
++val exn_slot_id: exn -> int
++(** [Printexc.exn_slot_id] returns an integer which uniquely identifies
++    the constructor used to create the exception value [exn]
++    (in the current runtime).
++
++    @since 4.02.0
++*)
++
++val exn_slot_name: exn -> string
++(** [Printexc.exn_slot_id exn] returns the internal name of the constructor
++    used to create the exception value [exn].
++
++    @since 4.02.0
++*)
++
++
+--- obrowser-1.1.1/rt/caml/printexc.ml	2013-11-27 14:27:37.000000000 +0100
++++ /usr/local/ocaml/trunk/lib/ocaml/printexc.ml	2013-11-26 19:03:11.000000000 +0100
+@@ -58,9 +58,12 @@
+             sprintf locfmt file line char (char+6) "Undefined recursive module"
+         | _ ->
+             let x = Obj.repr x in
+-            let constructor =
+-              (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
+-            constructor ^ (fields x) in
++            if Obj.tag x <> 0 then
++              (Obj.magic (Obj.field x 0) : string)
++            else
++              let constructor =
++                (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
++              constructor ^ (fields x) in
+   conv !printers
+ 
+ let print fct arg =
+@@ -168,3 +171,16 @@
+ 
+ 
+ external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
++
++
++let exn_slot x =
++  let x = Obj.repr x in
++  if Obj.tag x = 0 then Obj.field x 0 else x
++
++let exn_slot_id x =
++  let slot = exn_slot x in
++  (Obj.obj (Obj.field slot 1) : int)
++
++let exn_slot_name x =
++  let slot = exn_slot x in
++  (Obj.obj (Obj.field slot 0) : string)
+--- obrowser-1.1.1/rt/caml/list.mli	2013-11-27 14:28:14.000000000 +0100
++++ /usr/local/ocaml/trunk/lib/ocaml/list.mli	2013-11-26 19:03:11.000000000 +0100
+@@ -280,6 +278,9 @@
+ (** Same as {!List.sort} or {!List.stable_sort}, whichever is faster
+     on typical input. *)
+ 
++val sort_uniq : ('a -> 'a -> int) -> 'a list -> 'a list
++(** Same as {!List.sort}, but also remove duplicates. *)
++
+ val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
+ (** Merge two lists:
+     Assuming that [l1] and [l2] are sorted according to the
+--- obrowser-1.1.1/rt/caml/list.ml	2013-11-27 14:29:31.000000000 +0100
++++ /usr/local/ocaml/trunk/lib/ocaml/list.ml	2013-11-26 19:03:11.000000000 +0100
+@@ -326,3 +324,106 @@
+   array_to_list_in_place a
+ ;;
+ *)
++
++
++(** sorting + removing duplicates *)
++
++let sort_uniq cmp l =
++  let rec rev_merge l1 l2 accu =
++    match l1, l2 with
++    | [], l2 -> rev_append l2 accu
++    | l1, [] -> rev_append l1 accu
++    | h1::t1, h2::t2 ->
++        let c = cmp h1 h2 in
++        if c = 0 then rev_merge t1 t2 (h1::accu)
++        else if c < 0
++        then rev_merge t1 l2 (h1::accu)
++        else rev_merge l1 t2 (h2::accu)
++  in
++  let rec rev_merge_rev l1 l2 accu =
++    match l1, l2 with
++    | [], l2 -> rev_append l2 accu
++    | l1, [] -> rev_append l1 accu
++    | h1::t1, h2::t2 ->
++        let c = cmp h1 h2 in
++        if c = 0 then rev_merge_rev t1 t2 (h1::accu)
++        else if c > 0
++        then rev_merge_rev t1 l2 (h1::accu)
++        else rev_merge_rev l1 t2 (h2::accu)
++  in
++  let rec sort n l =
++    match n, l with
++    | 2, x1 :: x2 :: _ ->
++       let c = cmp x1 x2 in
++       if c = 0 then [x1]
++       else if c < 0 then [x1; x2] else [x2; x1]
++    | 3, x1 :: x2 :: x3 :: _ ->
++       let c = cmp x1 x2 in
++       if c = 0 then begin
++         let c = cmp x2 x3 in
++         if c = 0 then [x2]
++         else if c < 0 then [x2; x3] else [x3; x2]
++       end else if c < 0 then begin
++         let c = cmp x2 x3 in
++         if c = 0 then [x1; x2]
++         else if c < 0 then [x1; x2; x3]
++         else let c = cmp x1 x3 in
++         if c = 0 then [x1; x2]
++         else if c < 0 then [x1; x3; x2]
++         else [x3; x1; x2]
++       end else begin
++         let c = cmp x1 x3 in
++         if c = 0 then [x2; x1]
++         else if c < 0 then [x2; x1; x3]
++         else let c = cmp x2 x3 in
++         if c = 0 then [x2; x1]
++         else if c < 0 then [x2; x3; x1]
++         else [x3; x2; x1]
++       end
++    | n, l ->
++       let n1 = n asr 1 in
++       let n2 = n - n1 in
++       let l2 = chop n1 l in
++       let s1 = rev_sort n1 l in
++       let s2 = rev_sort n2 l2 in
++       rev_merge_rev s1 s2 []
++  and rev_sort n l =
++    match n, l with
++    | 2, x1 :: x2 :: _ ->
++       let c = cmp x1 x2 in
++       if c = 0 then [x1]
++       else if c > 0 then [x1; x2] else [x2; x1]
++    | 3, x1 :: x2 :: x3 :: _ ->
++       let c = cmp x1 x2 in
++       if c = 0 then begin
++         let c = cmp x2 x3 in
++         if c = 0 then [x2]
++         else if c > 0 then [x2; x3] else [x3; x2]
++       end else if c > 0 then begin
++         let c = cmp x2 x3 in
++         if c = 0 then [x1; x2]
++         else if c > 0 then [x1; x2; x3]
++         else let c = cmp x1 x3 in
++         if c = 0 then [x1; x2]
++         else if c > 0 then [x1; x3; x2]
++         else [x3; x1; x2]
++       end else begin
++         let c = cmp x1 x3 in
++         if c = 0 then [x2; x1]
++         else if c > 0 then [x2; x1; x3]
++         else let c = cmp x2 x3 in
++         if c = 0 then [x2; x1]
++         else if c > 0 then [x2; x3; x1]
++         else [x3; x2; x1]
++       end
++    | n, l ->
++       let n1 = n asr 1 in
++       let n2 = n - n1 in
++       let l2 = chop n1 l in
++       let s1 = sort n1 l in
++       let s2 = sort n2 l2 in
++       rev_merge s1 s2 []
++  in
++  let len = length l in
++  if len < 2 then l else sort len l
++;;
