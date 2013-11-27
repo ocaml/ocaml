@@ -433,6 +433,8 @@ method emit_expr env exp =
           Some(self#emit_tuple ext_env simple_list)
       end
   | Cop(Craise (k, dbg), [arg]) ->
+      if !Clflags.debug && k <> Lambda.Raise_notrace then
+        Proc.contains_calls := true;    (* PR#6239 *)
       begin match self#emit_expr env arg with
         None -> None
       | Some r1 ->
