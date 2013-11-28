@@ -41,8 +41,6 @@ Bug fixes:
 - PR#6109: Typos in ocamlbuild error messages
 - PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
-- PR#6239: sometimes wrong stack alignment when raising exceptions
-  in -g mode with backtraces active
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
@@ -71,6 +69,10 @@ Bug fixes:
 - PR#6235: Issue with type information flowing through a variant pattern
 - PR#6240: Fail to expand module type abbreviation during substyping
 - PR#6241: Assumed inequality between paths involving functor arguments
+- PR#6243: Make "ocamlopt -g" more resistant to ill-formed locations
+- PR#6239: sometimes wrong stack alignment when raising exceptions
+  in -g mode with backtraces active
+
 
 OCaml 4.01.0:
 -------------
