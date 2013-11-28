@@ -200,31 +200,87 @@ caml_c_call:
     /* Reload allocation pointer and allocation limit*/
         Loadglobal(31, caml_young_ptr, 11)
         Loadglobal(30, caml_young_limit, 11)
-    /* Say we are back into OCaml code */
-        li      12, 0
-        Storeglobal(12, caml_last_return_address, 11)
     /* Return to caller */
         blr
+
+/* Raise an exception from OCaml */
+        .globl  caml_raise_exn
+        .type   caml_raise_exn, @function
+caml_raise_exn:
+        Loadglobal(0, caml_backtrace_active, 11)
+        cmpwi   0, 0
+        bne     .L111
+.L110:
+    /* Pop trap frame */
+        lwz     0, 0(29)
+        mr      1, 29
+        mtctr   0
+        lwz     29, 4(29)
+        addi    1, 1, 16
+    /* Branch to handler */
+        bctr
+.L111:
+        li      0, 0
+        Storeglobal(0, caml_backtrace_pos, 11)
+.L112:
+        mr      28, 3           /* preserve exn bucket in callee-save reg */
+                                /* arg1: exception bucket, already in r3 */
+        mflr    4               /* arg2: PC of raise */
+        mr      5, 1            /* arg3: SP of raise */
+        mr      6, 29           /* arg4: SP of handler */
+        addi    1, 1, -16       /* reserve stack space for C call */
+        bl      caml_stash_backtrace
+        mr      3, 28           /* restore exn bucket */
+        b       .L110           /* raise the exn */
+
+        .globl  caml_reraise_exn
+        .type   caml_reraise_exn, @function
+caml_reraise_exn:
+        Loadglobal(0, caml_backtrace_active, 11)
+        cmpwi   0, 0
+        bne-    .L112
+    /* Pop trap frame */
+        lwz     0, 0(29)
+        mr      1, 29
+        mtctr   0
+        lwz     29, 4(29)
+        addi    1, 1, 16
+    /* Branch to handler */
+        bctr
 
 /* Raise an exception from C */
 
         .globl  caml_raise_exception
         .type   caml_raise_exception, @function
 caml_raise_exception:
+	Loadglobal(0, caml_backtrace_active, 11)
+	cmpwi	0, 0
+	bne	.L121
+.L120:
     /* Reload OCaml global registers */
         Loadglobal(1, caml_exception_pointer, 11)
         Loadglobal(31, caml_young_ptr, 11)
         Loadglobal(30, caml_young_limit, 11)
-    /* Say we are back into OCaml code */
-        li      0, 0
-        Storeglobal(0, caml_last_return_address, 11)
     /* Pop trap frame */
         lwz     0, 0(1)
         lwz     29, 4(1)
-        mtlr    0
+        mtctr   0
         addi    1, 1, 16
     /* Branch to handler */
-        blr
+        bctr
+.L121:
+        li      0, 0
+        Storeglobal(0, caml_backtrace_pos, 11)
+        mr      28, 3           /* preserve exn bucket in callee-save reg */
+                                /* arg1: exception bucket, already in r3 */
+        Loadglobal(4, caml_last_return_address, 11) /* arg2: PC of raise */
+	Loadglobal(5, caml_bottom_of_stack, 11)     /* arg3: SP of raise */
+	Loadglobal(6, caml_exception_pointer, 11)   /* arg4: SP of handler */
+        addi    1, 1, -16       /* reserve stack space for C call */
+        bl      caml_stash_backtrace
+        mr      3, 28           /* restore exn bucket */
+        b       .L120           /* raise the exn */
+
 
 /* Start the OCaml program */
 
