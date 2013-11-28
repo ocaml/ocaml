@@ -6,6 +6,8 @@ Bug fixes:
 - PR#6235: Issue with type information flowing through a variant pattern
 - PR#6240: Fail to expand module type abbreviation during substyping
 - PR#6241: Assumed inequality between paths involving functor arguments
+- PR#6239: sometimes wrong stack alignment when raising exceptions
+  in -g mode with backtraces active
 
 OCaml 4.01.0:
 -------------
