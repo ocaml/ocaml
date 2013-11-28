@@ -10,7 +10,7 @@ log_*
 advi
 advi-1.10.2
 altergo
-alt-ergo-0.95
+alt-ergo-0.95.2
 binprot
 bin_prot-109.30.00
 bitstring
@@ -38,7 +38,7 @@ compcert-1.13
 configfile
 config-file-1.1
 coq
-coq-8.4pl1
+coq-8.4pl2
 core
 core-109.37.00
 coreextended
@@ -72,7 +72,7 @@ hevea-2.09
 kaputt
 kaputt-1.2
 lablgtk
-lablgtk-2.16.0
+lablgtk-2.18.0
 lablgtkextras
 lablgtkextras-1.3
 lwt
@@ -143,6 +143,8 @@ xmllight
 xml-light-2.2
 xmlm
 xmlm-1.1.0
+zarith
+zarith-1.2.1
 zen
 zen_2.3.2
 ._ZEN_2.3.2

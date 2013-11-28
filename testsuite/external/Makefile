@@ -40,14 +40,14 @@ default:
 all-cygwin: findlib ounit res pcre react ocamltext ocamlssl camlzip cryptokit \
             sqlite ocgi xmllight configfile xmlm omake \
             camomile zen vsyml extlib fileutils ocamlify ocamlmod \
-            calendar dbm ocamlscript
+            calendar dbm ocamlscript coq compcert
 
 all-macos: findlib lablgtk ocamlgraph ounit res pcre core react ocamltext \
            ocamlssl lwt camlzip cryptokit sqlite menhir hevea \
            unison ocgi xmllight configfile xmlm lablgtkextras sks omake \
            altergo boomerang camomile zen vsyml ocamlnet extlib fileutils \
            odn ocamlify expect ocamlmod oasis calendar camlimages advi \
-           dbm ocsigen ocamlscript framac
+           dbm ocsigen ocamlscript coq compcert framac
 
 platform:
 	case `uname -s` in \
@@ -104,9 +104,9 @@ distclean::
 all: findlib
 
 # http://lablgtk.forge.ocamlcore.org/
-LABLGTK=lablgtk-2.16.0
+LABLGTK=lablgtk-2.18.0
 ${LABLGTK}.tar.gz:
-	${WGET} https://forge.ocamlcore.org/frs/download.php/561/$@
+	${WGET} https://forge.ocamlcore.org/frs/download.php/1261/$@
 lablgtk: ${LABLGTK}.tar.gz findlib # TODO: add lablgl
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -598,19 +598,20 @@ distclean::
 	rm -f ${OCAMLTEXT}.tar.gz
 all: ocamltext
 
-# http://sourceforge.net/projects/savonet/files/ocaml-ssl/
+# https://github.com/savonet/ocaml-ssl
 OCAMLSSL=ocaml-ssl-0.4.6
 ${OCAMLSSL}.tar.gz:
-	${WGET} http://voxel.dl.sourceforge.net/project/savonet/ocaml-ssl/0.4.6/$@
+	${WGET} https://github.com/savonet/ocaml-ssl/archive/$@
 ocamlssl: ${OCAMLSSL}.tar.gz findlib
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OCAMLSSL}
-	tar zxf ${OCAMLSSL}.tar.gz
+	tar zxf ${OCAMLSSL}.tar.gz && mv ocaml-ssl-${OCAMLSSL} ${OCAMLSSL}
 	./Patcher.sh ${OCAMLSSL}
 	( cd ${OCAMLSSL} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
-	  ./configure && \
+	  autoconf configure.ac >configure && \
+	  sh ./configure && \
 	  ${MAKE} && \
 	  ocamlfind remove ssl && \
 	  ${MAKE} install )
@@ -990,11 +991,34 @@ distclean::
 	rm -f ${OMAKE}-0.rc1.tar.gz
 all: omake
 
-# http://alt-ergo.lri.fr/
-ALTERGO=alt-ergo-0.95
+# http://forge.ocamlcore.org/projects/zarith
+ZARITH=zarith-1.2.1
+${ZARITH}.tar.gz:
+	${WGET} http://forge.ocamlcore.org/frs/download.php/1199/$@
+zarith: ${ZARITH}.tar.gz
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${ZARITH}
+	tar zxf ${ZARITH}.tar.gz
+	./Patcher.sh ${ZARITH}
+	( cd ${ZARITH} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure && \
+	  ${MAKE} && \
+	  ocamlfind remove zarith && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${ZARITH} zarith
+distclean::
+	rm -f ${ZARITH}.tar.gz
+all: zarith
+
+# http://alt-ergo.ocamlpro.com
+ALTERGO=alt-ergo-0.95.2
 ${ALTERGO}.tar.gz:
-	${WGET} http://alt-ergo.lri.fr/http/$(ALTERGO)/$@
-altergo: ${ALTERGO}.tar.gz ocamlgraph
+	${WGET} http://alt-ergo.ocamlpro.com/download_manager.php?target=$@ -O $@
+altergo: ${ALTERGO}.tar.gz ocamlgraph zarith
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${ALTERGO}
@@ -1571,29 +1595,27 @@ all: camlpdf
 # 	rm -f ${GENEWEB}.tgz
 # all: geneweb
 
-# disabled: Cannot find file q_coqast.cmo
-# maybe because of the camlp5 -> camlp4 switch
 # http://coq.inria.fr/download
-# COQ=coq-8.4pl1
-# ${COQ}.tar.gz:
-# 	${WGET} http://coq.inria.fr/distrib/V8.4pl1/files/$@
-# coq: ${COQ}.tar.gz
-# 	printf "%s " "$@" >/dev/tty
-# 	test -d ${PREFIX}
-# 	rm -rf ${COQ}
-# 	tar zxf ${COQ}.tar.gz
-# 	./Patcher.sh ${COQ}
-# 	( cd ${COQ} && \
-# 	  export PATH=${PREFIX}/bin:$$PATH && \
-# 	  ./configure -prefix ${PREFIX} -with-doc no && \
-# 	  ${MAKE} world && \
-# 	  ${MAKE} install )
-# 	echo ${VERSION} >$@
-# clean::
-# 	rm -rf ${COQ} coq
-# distclean::
-# 	rm -f ${COQ}.tar.gz
-# all: coq
+COQ=coq-8.4pl2
+${COQ}.tar.gz:
+	${WGET} http://coq.inria.fr/distrib/V8.4pl2/files/$@
+coq: ${COQ}.tar.gz
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${COQ}
+	tar zxf ${COQ}.tar.gz
+	./Patcher.sh ${COQ}
+	( cd ${COQ} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ./configure -prefix ${PREFIX} -with-doc no && \
+	  ${MAKE} world && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${COQ} coq
+distclean::
+	rm -f ${COQ}.tar.gz
+all: coq
 
 # http://code.google.com/p/bitstring/
 
@@ -1621,34 +1643,33 @@ distclean::
 	rm -f ${BITSTRING}.tar.gz
 all: bitstring
 
-# disabled: depends on coq
 # http://compcert.inria.fr
-# COMPCERT=compcert-1.13
-# ${COMPCERT}.tgz:
-# 	${WGET} http://compcert.inria.fr/release/$@
-# compcert: ${COMPCERT}.tgz coq bitstring
-# 	printf "%s " "$@" >/dev/tty
-# 	test -d ${PREFIX}
-# 	rm -rf ${COMPCERT}
-# 	tar zxf ${COMPCERT}.tgz
-# 	./Patcher.sh ${COMPCERT}
-# 	( cd ${COMPCERT} && \
-# 	  export PATH=${PREFIX}/bin:$$PATH && \
-# 	  sh ./configure -prefix ${PREFIX} ppc-linux && \
-# 	  ${MAKE} all && \
-# 	  ${MAKE} install )
-# 	echo ${VERSION} >$@
-# clean::
-# 	rm -rf ${COMPCERT} compcert
-# distclean::
-# 	rm -f ${COMPCERT}.tgz
-# all: compcert
+COMPCERT=compcert-1.13
+${COMPCERT}.tgz:
+	${WGET} http://compcert.inria.fr/release/$@
+compcert: ${COMPCERT}.tgz coq bitstring
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${COMPCERT}
+	tar zxf ${COMPCERT}.tgz
+	./Patcher.sh ${COMPCERT}
+	( cd ${COMPCERT} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure -prefix ${PREFIX} ppc-linux && \
+	  ${MAKE} all && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${COMPCERT} compcert
+distclean::
+	rm -f ${COMPCERT}.tgz
+all: compcert
 
 # http://frama-c.com/
 FRAMAC=frama-c-Oxygen-20120901
 ${FRAMAC}.tar.gz:
 	${WGET} http://frama-c.com/download/$@
-framac: ${FRAMAC}.tar.gz lablgtk ocamlgraph altergo  # coq removed (disabled)
+framac: ${FRAMAC}.tar.gz lablgtk ocamlgraph altergo coq
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${FRAMAC}
