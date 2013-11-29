@@ -445,24 +445,25 @@ esac
 # "ocamlrun" executable must be available on the system.
 if test x"$target" != x"$host"; then
   if ! sh ./searchpath ocamlrun; then
-    err "Cross-compilation requires an ocaml runtime environment (the ocamlrun binary). Moreover, its version must be the same as the one you're trying to build (`cut -f1 -d+ < ../../VERSION`)."
+    err "Cross-compilation requires an ocaml runtime environment\n" \
+        "(the ocamlrun binary). Moreover, its version must be the same\n" \
+        "as the one you're trying to build (`cut -f1 -d+ < ../../VERSION`)."
   else
-    # Make sure the version of the system ocaml and the version of these
-    # sources match. Don't compare "+devXX" on purpose as it would be too
-    # annoying during development and people using SVN are expected to know
-    # what they're doing and how to handle basic issues.
-    ocaml_system_version=`ocamlc -version | cut -f1 -d+`
+    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]\+\).*/\1/'`
     ocaml_source_version=`sed -n '1 s/\([0-9\.]\+\).*/\1/ p' < ../../VERSION`
     if test x"$ocaml_system_version" != x"$ocaml_source_version"; then
-      err "The system OCaml toolchain is $ocaml_system_version but these sources are $ocaml_source_version.\nBuilding a cross-compiler requires versions to match."
+      err "While you have an ocaml runtime environment, its version\n" \
+          "($ocaml_system_version) doesn't match the version of these sources\n" \
+          "($ocaml_source_version)."
     else
-      camlrun="ocamlrun"
+      CAMLRUN="ocamlrun"
     fi
   fi
 else
-  rootdir=`cd ../.. && pwd`
-  camlrun=$rootdir/boot/ocamlrun
+  CAMLRUN=`cd ../.. && pwd`/boot/ocamlrun
 fi
+
+echo "CAMLRUN=$CAMLRUN" >> Makefile
 
 # Check the sizes of data types
 # OCaml needs a 32 or 64bit architectue and a 32-bit integer type.
@@ -1712,28 +1713,10 @@ if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
 
-cat >> Makefile << EOF
-ROOTDIR=$rootdir
-CAMLRUN=${camlrun}\$(EXE)
-OCAMLRUN=\$(CAMLRUN)
-CAMLC_BIN_BOOT   = \$(CAMLRUN) \$(ROOTDIR)/boot/ocamlc
-CAMLC_BIN_BYTE   = \$(CAMLRUN) \$(ROOTDIR)/ocamlc
-CAMLC_BIN_OPT    = \$(ROOTDIR)/ocamlc.opt
-CAMLOPT_BIN_BYTE = \$(CAMLRUN) \$(ROOTDIR)/ocamlopt
-CAMLOPT_BIN_OPT  = \$(ROOTDIR)/ocamlopt.opt
-
-CAMLC_BIN   = @ . \$(ROOTDIR)/config/ocamlcomp; PS4=""; set -x; \$\${CAMLC_BIN}
-CAMLOPT_BIN = @ . \$(ROOTDIR)/config/ocamlcomp; PS4=""; set -x; \$\${CAMLOPT_BIN}
-CAMLC_BIN_CMD_TO_EVAL   = . \$(ROOTDIR)/config/ocamlcomp; echo \$\${CAMLC_BIN}
-CAMLOPT_BIN_CMD_TO_EVAL = . \$(ROOTDIR)/config/ocamlcomp; echo \$\${CAMLOPT_BIN}
-EOF
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
 mv m.h s.h Makefile ..
-
-rm -f ../ocamlcomp
-cd .. && make -f Makefile.switch-compiler disable COMPILER="CAMLC" VARIANT="BYTE"
 
 # Print a summary
 

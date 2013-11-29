@@ -1,5 +1,3 @@
-#!/bin/sh
-
 #########################################################################
 #                                                                       #
 #                                 OCaml                                 #
@@ -12,11 +10,14 @@
 #                                                                       #
 #########################################################################
 
-set -ex
-cd `dirname $0`/..
-touch build/ocamlbuild_mixed_mode
-mkdir -p _build
-cp -rf boot _build/
-./build/mkconfig.sh
-./build/mkmyocamlbuild_config.sh
-./build/boot.sh
+# tolower.sed expands one ...<:lower<FOO>>... to ...foo... per line
+h
+s/.*<:lower<\(.*\)>>.*/\1/
+t cont
+b end
+:cont
+y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/
+s/$/|/
+G
+s/\(.*\)|\n\(.*\)<:lower<\(.*\)>>/\2\1/
+:end

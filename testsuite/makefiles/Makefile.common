@@ -43,13 +43,15 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
 include $(TOPDIR)/config/Makefile
 
+OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
+
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 OCOPTFLAGS=
 
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
       -init $(OTOPDIR)/testsuite/lib/empty
-OCAMLC=$$($(CAMLC_BIN_CMD_TO_EVAL)) $(OCFLAGS)
-OCAMLOPT=$$($(CAMLOPT_BIN_CMD_TO_EVAL)) $(OCFLAGS) $(OCOPTFLAGS)
+OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(OCFLAGS)
+OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
@@ -84,23 +86,23 @@ defaultclean:
 .SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so .c .f
 
 .mli.cmi:
-	$(OCAMLC) -c $(ADD_COMPFLAGS) $<
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmi:
-	$(OCAMLC) -c $(ADD_COMPFLAGS) $<
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmo:
 	@if [ -f $<i ]; then $(OCAMLC) -c $(ADD_COMPFLAGS) $<i; fi
-	$(OCAMLC) -c $(ADD_COMPFLAGS) $<
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmx:
-	$(OCAMLOPT) -c $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -c $(ADD_COMPFLAGS) $<
 
 .cmx.so:
-	$(OCAMLOPT) -o $@ -shared $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -o $@ -shared $(ADD_COMPFLAGS) $<
 
 .cmxa.so:
-	$(OCAMLOPT) -o $@ -shared -linkall $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -o $@ -shared -linkall $(ADD_COMPFLAGS) $<
 
 .mly.ml:
 	@$(OCAMLYACC) -q $< 2> /dev/null

@@ -13,11 +13,10 @@
 
 include ../../config/Makefile
 
-CAMLC=$(CAMLC_BIN) -nostdlib -I ../../stdlib -I ../unix
-CAMLOPT=$(CAMLOPT_BIN) -nostdlib -I ../../stdlib -I ../unix
+CAMLC=../../ocamlcomp.sh -I ../unix
+CAMLOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g
-CAMLC_BIN_CMD=$(CAMLC_BIN_CMD_TO_EVAL) -nostdlib -I ../../stdlib
 
 BYTECODE_C_OBJS=st_stubs_b.o
 NATIVECODE_C_OBJS=st_stubs_n.o
@@ -48,7 +47,7 @@ st_stubs_n.o: st_stubs.c st_posix.h
 	mv st_stubs.o st_stubs_n.o
 
 threads.cma: $(THREAD_OBJS)
-	$(MKLIB) -ocamlc "$$($(CAMLC_BIN_CMD))" -o threads $(THREAD_OBJS) \
+	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
 	  -cclib -lunix $(PTHREAD_LINK)
 
 # See remark above: force static linking of libthreadsnat.a
