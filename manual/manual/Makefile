@@ -24,8 +24,7 @@ MLIS=$(SRC2)/stdlib/*.mli \
 	$(SRC2)/otherlibs/num/ratio.mli \
 	$(SRC2)/otherlibs/str/*.mli \
 	$(SRC2)/otherlibs/systhreads/*.mli \
-	$(SRC2)/otherlibs/unix/*.mli \
-	../library/tk.mli
+	$(SRC2)/otherlibs/unix/*.mli
 
 manual: files
 	cd texstuff; \
@@ -60,25 +59,27 @@ html: files
 	-I $(SRC2)/otherlibs/str \
 	-I $(SRC2)/otherlibs/systhreads \
 	-I $(SRC2)/otherlibs/unix \
-	-I $(SRC2)/otherlibs/labltk/support \
-	-I $(SRC2)/otherlibs/labltk/lib \
-	-I $(SRC2)/otherlibs/labltk/labltk \
-	-I $(SRC2)/otherlibs/labltk/camltk \
 	$(MLIS) ; \
 	cp -f ../style.css libref ; \
-	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff manual.hva -e macros.tex ../manual.tex ;\
-	${HACHA} -tocter manual.html ;\
+	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds \
+	         -I ../tutorials -I ../../styles -I ../texstuff manual.hva \
+	         -e macros.tex ../manual.tex ; \
+	${HACHA} -tocter manual.html ; \
 
 
 info: files
 	cd infoman; rm -f ocaml.info*; \
-	${HEVEA} ${INFO} -o ocaml.info.body -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
+	${HEVEA} ${INFO} -o ocaml.info.body -I .. -I ../refman -I ../library \
+	         -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff \
+	         ../manual.inf -e macros.tex ../manual.tex
 	cat manual.info.header infoman/ocaml.info.body > infoman/ocaml.info
 	cd infoman; rm -f ocaml.info.tmp; gzip -9 ocaml.info*
 
 text: files
 	cd textman; \
-	${HEVEA} ${TEXT} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
+	${HEVEA} ${TEXT} -I .. -I ../refman -I ../library -I ../cmds \
+	         -I ../tutorials -I ../../styles -I ../texstuff \
+	         ../manual.inf -e macros.tex ../manual.tex
 
 files: $(FILES)
 	cd refman; $(MAKE) all
@@ -123,7 +124,9 @@ release:
 	../tools/texquote2 < $*.etex > $*.tex
 
 version.tex: $(SRC)/VERSION
-	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $(SRC)/VERSION > version.tex
+	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' \
+	    $(SRC)/VERSION > version.tex
 
 warnings.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
-	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help | sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/' > warnings.etex
+	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
+	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/' > warnings.etex

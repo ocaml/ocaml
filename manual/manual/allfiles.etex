@@ -32,7 +32,7 @@ This manual is also available in
 \ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.dvi.gz}{DVI},
 \ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.txt}{plain text},
 as a
-\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.html.tar.gz}{bundle of HTML files},
+\ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman-html.tar.gz}{bundle of HTML files},
 and as a
 \ahref{http://caml.inria.fr/distrib/ocaml-\ocamlversion/ocaml-\ocamlversion-refman.info.tar.gz}{bundle of Emacs Info files}.
 \rule{}{}
@@ -83,7 +83,6 @@ and as a
 \input{libthreads.tex}
 \input{libgraph.tex}
 \input{libdynlink.tex}
-\input{liblabltk.tex}
 \input{libbigarray.tex}
 
 \part{Appendix}

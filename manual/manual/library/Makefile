@@ -13,7 +13,7 @@ OTHERLIB_INTF=Unix.tex UnixLabels.tex Str.tex \
   Num.tex Arithstatus.tex Bigint.tex \
   Graphics.tex GraphicsX11.tex \
   Thread.tex Mutex.tex Condition.tex Event.tex ThreadUnix.tex \
-  Dynlink.tex Bigarray.tex Tk.tex
+  Dynlink.tex Bigarray.tex
 
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
@@ -28,12 +28,11 @@ MLIS=$(CSLDIR)/stdlib/*.mli \
 	$(CSLDIR)/otherlibs/num/big_int.mli \
 	$(CSLDIR)/otherlibs/str/*.mli \
 	$(CSLDIR)/otherlibs/systhreads/*.mli \
-	$(CSLDIR)/otherlibs/unix/*.mli\
-	tk.mli
+	$(CSLDIR)/otherlibs/unix/*.mli
 
 BLURB=core.tex builtin.tex stdlib.tex \
   libunix.tex libstr.tex libnum.tex libgraph.tex \
-  libthreads.tex libdynlink.tex liblabltk.tex libbigarray.tex
+  libthreads.tex libdynlink.tex libbigarray.tex
 
 FILES=$(BLURB) $(INTF)
 
@@ -58,10 +57,6 @@ $(INTF): $(MLIS)
 	-I $(CSLDIR)/otherlibs/str \
 	-I $(CSLDIR)/otherlibs/systhreads \
 	-I $(CSLDIR)/otherlibs/unix \
-	-I $(CSLDIR)/otherlibs/labltk/support \
-	-I $(CSLDIR)/otherlibs/labltk/lib \
-	-I $(CSLDIR)/otherlibs/labltk/labltk \
-	-I $(CSLDIR)/otherlibs/labltk/camltk \
 	$(MLIS) \
 	-sepfiles \
 	-latextitle "6,subsection*" \
