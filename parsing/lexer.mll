@@ -22,7 +22,7 @@ type error =
   | Illegal_escape of string
   | Unterminated_comment of Location.t
   | Unterminated_string
-  | Unterminated_string_in_comment of Location.t
+  | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string
   | Literal_overflow of string
 ;;
@@ -235,8 +235,9 @@ let report_error ppf = function
       fprintf ppf "Comment not terminated"
   | Unterminated_string ->
       fprintf ppf "String literal not terminated"
-  | Unterminated_string_in_comment _ ->
-      fprintf ppf "This comment contains an unterminated string literal"
+  | Unterminated_string_in_comment (_, loc) ->
+      fprintf ppf "This comment contains an unterminated string literal@.%aString literal begins here"
+        Location.print_error loc
   | Keyword_as_label kwd ->
       fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
   | Literal_overflow ty ->
@@ -492,13 +493,14 @@ and comment = parse
         store_string_char '"';
         is_in_string := true;
         begin try string lexbuf
-        with Error (Unterminated_string, _) ->
+        with Error (Unterminated_string, str_start) ->
           match !comment_start_loc with
           | [] -> assert false
           | loc :: _ ->
             let start = List.hd (List.rev !comment_start_loc) in
             comment_start_loc := [];
-            raise (Error (Unterminated_string_in_comment start, loc))
+            raise (Error (Unterminated_string_in_comment (start, str_start),
+                          loc))
         end;
         is_in_string := false;
         store_string_char '"';
@@ -511,13 +513,13 @@ and comment = parse
         store_lexeme lexbuf;
         is_in_string := true;
         begin try quoted_string delim lexbuf
-        with Error (Unterminated_string, _) ->
+        with Error (Unterminated_string, str_start) ->
           match !comment_start_loc with
           | [] -> assert false
           | loc :: _ ->
             let start = List.hd (List.rev !comment_start_loc) in
             comment_start_loc := [];
-            raise (Error (Unterminated_string_in_comment start, loc))
+            raise (Error (Unterminated_string_in_comment (start, str_start), loc))
         end;
         is_in_string := false;
         store_string_char '|';
