@@ -3,7 +3,8 @@
 %HEVEA\cutname{intfc.html}
 
 This chapter describes how user-defined primitives, written in C, can
-be linked with OCaml code and called from OCaml functions.
+be linked with OCaml code and called from OCaml functions, and how
+these C functions can call back to OCaml code.
 
 \section{Overview and compilation information}
 \pdfsection{Overview and compilation information}
@@ -38,14 +39,17 @@ External functions thus defined can be specified in interface files or
 \begin{alltt}
         val \var{name} : \var{type}
 \end{alltt}
-thus hiding their implementation as a C function, or explicitly as
+thus hiding their implementation as C functions, or explicitly as
 ``manifest'' external functions
 \begin{alltt}
         external \var{name} : \var{type} = \var{C-function-name}
 \end{alltt}
 The latter is slightly more efficient, as it allows clients of the
 module to call directly the C function instead of going through the
-corresponding OCaml function.
+corresponding OCaml function. On the other hand, it should not be used
+in library modules if they have side-effects at toplevel, as this
+direct call interferes with the linker's algorithm for removing unused
+modules from libraries at link-time.
 
 The arity (number of arguments) of a primitive is automatically
 determined from its OCaml type in the "external" declaration, by
@@ -69,7 +73,7 @@ primitive.  For instance,
 return a functional value (as in the "f" example above): just remember
 to name the functional return type in a type abbreviation.
 
-Note that the language accepts external declarations with one or two
+The language accepts external declarations with one or two
 flag strings in addition to the C function's name.  These flags are
 reserved for the implementation of the standard library.
 
@@ -79,9 +83,9 @@ User primitives with arity $n \leq 5$ are implemented by C functions
 that take $n$ arguments of type "value", and return a result of type
 "value". The type "value" is the type of the representations for OCaml
 values. It encodes objects of several base types (integers,
-floating-point numbers, strings, \ldots), as well as OCaml data
+floating-point numbers, strings,~\ldots) as well as OCaml data
 structures. The type "value" and the associated conversion
-functions and macros are described in details below.  For instance,
+functions and macros are described in detail below.  For instance,
 here is the declaration for the C function implementing the "input"
 primitive:
 \begin{verbatim}
@@ -153,7 +157,7 @@ CAMLprim value input(value channel, value buffer, value offset, value length)
 (Here, "Val_long", "Long_val" and so on are conversion macros for the
 type "value", that will be described later.  The "CAMLprim" macro
 expands to the required compiler directives to ensure that the
-function following it is exported and accessible from OCaml.)
+function is exported and accessible from OCaml.)
 The hard work is performed by the function "getblock", which is
 declared as:
 \begin{verbatim}
@@ -185,7 +189,8 @@ serialization and deserialization functions for custom blocks
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
 These files reside in the "caml/" subdirectory of the OCaml
-standard library directory (usually "/usr/local/lib/ocaml").
+standard library directory, which is returned by the command
+"ocamlc -where" (usually "/usr/local/lib/ocaml" or "/usr/lib/ocaml").
 
 {\bf Note:} It is recommended to define the macro "CAML_NAME_SPACE"
 before including these header files. If you do not define it, the
@@ -266,7 +271,7 @@ and the system will automatically add the "-custom" and "-cclib
 \begin{alltt}
         ocamlc -o myprog -custom a.cmo b.cmo ... -cclib -lmylib
 \end{alltt}
-The alternative, of course, is to build the library without extra
+The alternative is of course to build the library without extra
 options:
 \begin{alltt}
         ocamlc -a -o mylib.cma a.cmo b.cmo
@@ -436,11 +441,12 @@ manipulate values of that type. An object of type "value" is either:
 allocated through one of the \verb"caml_alloc_*" functions below);
 \item a pointer to an object outside the heap (e.g., a pointer to a block
 allocated by "malloc", or to a C variable).
+   %%% FIXME will change in 4.02.0 (?)
 \end{itemize}
 
 \subsection{Integer values}
 
-Integer values encode 31-bit signed integers (63-bit on 64-bit
+Integer values encode 63-bit signed integers (31-bit on 32-bit
 architectures). They are unboxed (unallocated).
 
 \subsection{Blocks}
@@ -478,6 +484,7 @@ Any word-aligned pointer to an address outside the heap can be safely
 cast to and from the type "value". This includes pointers returned by
 "malloc", and pointers to C variables (of size at least one word)
 obtained with the \verb'&' operator.
+   %%% FIXME will change in 4.02.0 (?)
 
 Caution: if a pointer returned by "malloc" is cast to the type "value"
 and returned to OCaml, explicit deallocation of the pointer using
@@ -485,7 +492,7 @@ and returned to OCaml, explicit deallocation of the pointer using
 accessible from the OCaml world.  Worse, the memory space deallocated
 by "free" can later be reallocated as part of the OCaml heap; the
 pointer, formerly pointing outside the OCaml heap, now points inside
-the OCaml heap, and this can confuse the garbage collector.  To avoid
+the OCaml heap, and this can crash the garbage collector.  To avoid
 these problems, it is preferable to wrap the pointer in a OCaml block
 with tag "Abstract_tag" or "Custom_tag".
 
@@ -515,7 +522,7 @@ Records are also represented by zero-tagged blocks. The ordering of
 labels in the record type declaration determines the layout of
 the record fields: the value associated to the label
 declared first is stored in field~0 of the block, the value associated
-to the label declared next goes in field~1, and so on.
+to the second label goes in field~1, and so on.
 
 As an optimization, records whose fields all have static type "float"
 are represented as arrays of floating-point numbers, with tag
@@ -540,9 +547,9 @@ constant constructors) or by blocks whose tag encode the constructor
 (for non-constant constructors). The constant constructors and the
 non-constant constructors for a given concrete type are numbered
 separately, starting from 0, in the order in which they appear in the
-concrete type declaration. Constant constructors are represented by
-unboxed integers equal to the constructor number. A non-constant
-constructors declared with $n$ arguments is represented by
+concrete type declaration. A constant constructor is represented by
+the unboxed integer equal to its constructor number. A non-constant
+constructor declared with $n$ arguments is represented by
 a block of size $n$, tagged with the constructor number; the $n$
 fields contain its arguments. Example:
 
@@ -558,7 +565,7 @@ contains "h", second field "t".}
 As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
 "Val_false" and "Val_true" to refer to "()", "false" and "true".
 
-The following artificial example illustrates the assignment of
+The following example illustrates the assignment of
 integers and block tags to constructors:
 \begin{verbatim}
 type t =
@@ -572,7 +579,7 @@ type t =
 \subsection{Objects}
 
 Objects are represented as blocks with tag "Object_tag". The first
-field of the block refers to the object class and associated method
+field of the block refers to the object's class and associated method
 suite, in a format that cannot easily be exploited from C. The second
 field contains a unique object ID, used for comparisons. The remaining
 fields of the object contain the values of the instance variables of
@@ -595,7 +602,7 @@ to do the method call "foo#bar" from the C side, you should call:
 \subsection{Polymorphic variants}
 
 Like constructed terms, polymorphic variant values are represented either
-as integers (for polymorphic variants without arguments), or as blocks
+as integers (for polymorphic variants without argument), or as blocks
 (for polymorphic variants with an argument).  Unlike constructed
 terms, variant constructors are not numbered starting from 0, but
 identified by a hash value (an OCaml integer), as computed by the C function
@@ -826,7 +833,7 @@ begin with a call to one of the "CAMLparam" macros and return with
 \end{gcrule}
 
 There are six "CAMLparam" macros: "CAMLparam0" to "CAMLparam5", which
-take zero to five arguments respectively.  If your function has fewer
+take zero to five arguments respectively.  If your function has no more
 than 5 parameters of type "value", use the corresponding macros
 with these parameters as arguments.  If your function has more than 5
 parameters of type "value", use "CAMLparam5" with five of these
@@ -1113,16 +1120,18 @@ can be made available to OCaml programs. First of all, here is
 the interface "curses.mli" that declares the "curses" primitives and
 data types:
 \begin{verbatim}
+(* File curses.mli -- declaration of primitives and data types *)
 type window                   (* The type "window" remains abstract *)
-external initscr: unit -> window = "curses_initscr"
-external endwin: unit -> unit = "curses_endwin"
-external refresh: unit -> unit = "curses_refresh"
-external wrefresh : window -> unit = "curses_wrefresh"
-external newwin: int -> int -> int -> int -> window = "curses_newwin"
-external addch: char -> unit = "curses_addch"
-external mvwaddch: window -> int -> int -> char -> unit = "curses_mvwaddch"
-external addstr: string -> unit = "curses_addstr"
-external mvwaddstr: window -> int -> int -> string -> unit = "curses_mvwaddstr"
+external initscr: unit -> window = "caml_curses_initscr"
+external endwin: unit -> unit = "caml_curses_endwin"
+external refresh: unit -> unit = "caml_curses_refresh"
+external wrefresh : window -> unit = "caml_curses_wrefresh"
+external newwin: int -> int -> int -> int -> window = "caml_curses_newwin"
+external addch: char -> unit = "caml_curses_addch"
+external mvwaddch: window -> int -> int -> char -> unit = "caml_curses_mvwaddch"
+external addstr: string -> unit = "caml_curses_addstr"
+external mvwaddstr: window -> int -> int -> string -> unit
+         = "caml_curses_mvwaddstr"
 (* lots more omitted *)
 \end{verbatim}
 To compile this interface:
@@ -1134,6 +1143,7 @@ To implement these functions, we just have to provide the stub code;
 the core functions are already implemented in the "curses" library.
 The stub code file, "curses_stubs.c", looks like this:
 \begin{verbatim}
+/* File curses_stubs.c -- stub code for curses */
 #include <curses.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
@@ -1230,19 +1240,20 @@ value caml_curses_mvwaddstr(value win, value x, value y, value s)
 
 The file "curses_stubs.c" can be compiled with:
 \begin{verbatim}
-        cc -c -I`ocamlc -where` curses.c
+        cc -c -I`ocamlc -where` curses_stubs.c
 \end{verbatim}
 or, even simpler,
 \begin{verbatim}
-        ocamlc -c curses.c
+        ocamlc -c curses_stubs.c
 \end{verbatim}
 (When passed a ".c" file, the "ocamlc" command simply calls the C
 compiler on that file, with the right "-I" option.)
 
-Now, here is a sample OCaml program "test.ml" that uses the "curses"
+Now, here is a sample OCaml program "prog.ml" that uses the "curses"
 module:
 \begin{verbatim}
-open Curses
+(* File prog.ml -- main program using curses *)
+open Curses;;
 let main_window = initscr () in
 let small_window = newwin 10 5 20 10 in
   mvwaddstr main_window 10 2 "Hello";
@@ -1253,19 +1264,22 @@ let small_window = newwin 10 5 20 10 in
 \end{verbatim}
 To compile and link this program, run:
 \begin{verbatim}
-        ocamlc -custom -o test unix.cma test.ml curses_stubs.o -cclib -lcurses
+       ocamlc -custom -o prog unix.cma prog.ml curses_stubs.o -cclib -lcurses
 \end{verbatim}
 (On some machines, you may need to put
 "-cclib -lcurses -cclib -ltermcap" or "-cclib -ltermcap"
 instead of "-cclib -lcurses".)
+
+%% Note by Damien: when I launch the program, it only displays "Hello"
+%% and not "world". Why?
 
 \section{Advanced topic: callbacks from C to OCaml} \label{s:callback}
 \pdfsection{Advanced topic: callbacks from C to OCaml}
 
 So far, we have described how to call C functions from OCaml. In this
 section, we show how C functions can call OCaml functions, either as
-callbacks (OCaml calls C which calls OCaml), or because the main program
-is written in C.
+callbacks (OCaml calls C which calls OCaml), or with the main program
+written in C.
 
 \subsection{Applying OCaml closures from C} \label{s:callbacks}
 
@@ -1499,13 +1513,13 @@ Unix library.  With "ocamlc", you should do:
 \begin{alltt}
         ocamlc -output-obj -o camlcode.o unix.cma {\it{other}} .cmo {\it{and}} .cma {\it{files}}
         cc -o myprog {\it{C objects and libraries}} \char92
-           camlcode.o -L/usr/local/lib/ocaml -lunix -lcamlrun
+           camlcode.o -L`ocamlc -where` -lunix -lcamlrun
 \end{alltt}
 With "ocamlopt", you should do:
 \begin{alltt}
         ocamlopt -output-obj -o camlcode.o unix.cmxa {\it{other}} .cmx {\it{and}} .cmxa {\it{files}}
         cc -o myprog {\it{C objects and libraries}} \char92
-           camlcode.o -L/usr/local/lib/ocaml -lunix -lasmrun
+           camlcode.o -L`ocamlc -where` -lunix -lasmrun
 \end{alltt}
 
 % -- This seems completely wrong -- Damien
@@ -1596,7 +1610,7 @@ library along with the stub code in "modwrap.c" and the OCaml runtime system:
 \begin{verbatim}
         ocamlc -custom -output-obj -o modcaml.o mod.ml
         ocamlc -c modwrap.c
-        cp /usr/local/lib/ocaml/libcamlrun.a mod.a
+        cp `ocamlc -where`/libcamlrun.a mod.a && chmod +w mod.a
         ar r mod.a modcaml.o modwrap.o
 \end{verbatim}
 (One can also use "ocamlopt -output-obj" instead of "ocamlc -custom
@@ -1611,6 +1625,10 @@ program, just like regular C functions. Just remember to call
 /* File main.c -- a sample client for the OCaml functions */
 
 #include <stdio.h>
+#include <caml/callback.h>
+
+extern int fib(int n);
+extern char * format_result(int n);
 
 int main(int argc, char ** argv)
 {
@@ -1627,7 +1645,7 @@ int main(int argc, char ** argv)
 
 To build the whole program, just invoke the C compiler as follows:
 \begin{verbatim}
-        cc -o prog main.c mod.a -lcurses
+        cc -o prog -I `ocamlc -where` main.c mod.a -lcurses
 \end{verbatim}
 (On some machines, you may need to put "-ltermcap" or
 "-lcurses -ltermcap" instead of "-lcurses".)
