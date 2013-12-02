@@ -680,8 +680,8 @@ class printer  ()= object(self:'self)
         pp f fmt self#expression e1 self#expression e2
     | Pexp_for (s, e1, e2, df, e3) ->
         let fmt:(_,_,_)format =
-          "@[<hv0>@[<hv2>@[<2>for %s =@;%a@;%a%a@;do@]@;%a@]@;done@]" in
-        pp f fmt s.txt self#expression e1 self#direction_flag df self#expression e2  self#expression e3
+          "@[<hv0>@[<hv2>@[<2>for %a =@;%a@;%a%a@;do@]@;%a@]@;done@]" in
+        pp f fmt self#pattern s self#expression e1 self#direction_flag df self#expression e2  self#expression e3
     | _ ->  self#paren true self#expression f x
 
   method attributes f l =

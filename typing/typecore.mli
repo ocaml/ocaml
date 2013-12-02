@@ -106,6 +106,7 @@ type error =
   | Unexpected_existential
   | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval
+  | Invalid_for_loop_index
   | Extension of string
 
 exception Error of Location.t * Env.t * error
