@@ -32,7 +32,7 @@
         .align FUNCTION_ALIGN; \
         name:
 
-#elif defined(SYS_mingw64)
+#elif defined(SYS_mingw64) || defined(SYS_cygwin)
 
 #define LBL(x) .L##x
 #define G(r) r
@@ -90,7 +90,7 @@
 
 #endif
 
-#if defined(__PIC__) && !defined(SYS_mingw64)
+#if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
 
 /* Position-independent operations on global variables. */
 
@@ -172,7 +172,7 @@
 /* Save and restore all callee-save registers on stack.
    Keep the stack 16-aligned. */
 
-#if defined(SYS_mingw64)
+#if defined(SYS_mingw64) || defined(SYS_cygwin)
 
 /* Win64 API: callee-save regs are rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 */
 
@@ -242,7 +242,7 @@
 
 #endif
 
-#ifdef SYS_mingw64
+#if defined(SYS_mingw64) || defined (SYS_cygwin)
    /* Calls from OCaml to C must reserve 32 bytes of extra stack space */
 #  define PREPARE_FOR_C_CALL subq $32, %rsp; CFI_ADJUST(32)
 #  define CLEANUP_AFTER_C_CALL addq $32, %rsp; CFI_ADJUST(-32)
@@ -264,7 +264,7 @@ FUNCTION(G(caml_call_gc))
         CFI_STARTPROC
         RECORD_STACK_FRAME(0)
 LBL(caml_call_gc):
-#ifndef SYS_mingw64
+#if !defined(SYS_mingw64) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
         subq    $32768, %rsp
@@ -441,7 +441,7 @@ LBL(caml_c_call):
         STORE_VAR(%r12, caml_last_return_address)
         STORE_VAR(%rsp, caml_bottom_of_stack)
         subq    $8, %rsp; CFI_ADJUST(8) /* equivalent to pushq %r12 */
-#ifndef SYS_mingw64
+#if !defined(SYS_mingw64) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
         subq    $32768, %rsp
@@ -510,7 +510,7 @@ CFI_ENDPROC
 
 /* Registers holding arguments of C functions. */
 
-#ifdef SYS_mingw64
+#if defined(SYS_mingw64) || defined(SYS_cygwin)
 #define C_ARG_1 %rcx
 #define C_ARG_2 %rdx
 #define C_ARG_3 %r8
@@ -656,7 +656,7 @@ G(caml_system__frametable):
 
 #if defined(SYS_macosx)
         .literal16
-#elif defined(SYS_mingw64)
+#elif defined(SYS_mingw64) || defined(SYS_cygwin)
         .section .rdata,"dr"
 #else
         .section    .rodata.cst8,"a",@progbits

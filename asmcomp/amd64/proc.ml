@@ -24,7 +24,7 @@ let fp = Config.with_frame_pointers
 
 let win64 =
   match Config.system with
-  | "win64" | "mingw64" -> true
+  | "win64" | "mingw64" | "cygwin" -> true
   | _                   -> false
 
 (* Which asm conventions to use *)
