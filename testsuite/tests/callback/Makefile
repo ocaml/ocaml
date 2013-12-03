@@ -19,7 +19,8 @@ LD_PATH=$(TOPDIR)/otherlibs/unix
 .PHONY: default
 default:
 	@case " $(OTHERLIBRARIES) " in \
-	  *' unix '*) $(SET_LD_PATH) $(MAKE) run-byte run-opt;; \
+	  *' unix '*) $(SET_LD_PATH) $(MAKE) run-byte; \
+	              $(SET_LD_PATH) $(MAKE) run-opt;; \
 	esac
 
 .PHONY: common

@@ -15,9 +15,12 @@ BASEDIR=../..
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
+MYRUNTIME=`if [ -z "$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
+
 .PHONY: default
 default:
-	@$(SET_LD_PATH) $(MAKE) compile run
+	@$(MAKE) compile
+	@$(SET_LD_PATH) $(MAKE) run
 
 .PHONY: compile
 compile: tscanf2_io.cmo
@@ -34,7 +37,7 @@ compile: tscanf2_io.cmo
 
 run:
 	@printf " ... testing with ocamlc"
-	@$(OCAMLRUN) ./master.byte "$(OTOPDIR)/boot/ocamlrun$(EXE) \
+	@$(MYRUNTIME) ./master.byte "$(OTOPDIR)/boot/ocamlrun$(EXE) \
 	                                     `$(CYGPATH) ./slave.byte`" \
 	             >result.byte 2>&1
 	@$(DIFF) reference result.byte >/dev/null \
