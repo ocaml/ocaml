@@ -22,6 +22,9 @@
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
+#ifdef __CYGWIN__
+#include </usr/include/io.h>
+#endif
 #include "alloc.h"
 #include "custom.h"
 #include "fail.h"

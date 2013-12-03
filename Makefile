@@ -786,7 +786,8 @@ partialclean::
 # Check that the stack limit is reasonable.
 
 checkstack:
-	@if $(BYTECC) -o tools/checkstack tools/checkstack.c; \
+	@if $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
+	              -o tools/checkstack tools/checkstack.c; \
 	  then tools/checkstack; \
 	  else :; \
 	fi

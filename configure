@@ -381,6 +381,10 @@ case "$bytecc,$target" in
         mkexedebugflag="-link -g"
       fi
     fi
+    if test $with_sharedlibs = no; then
+      mkexe="$mkexe -Wl,--stack,16777216"
+      bytecclinkopts="-Wl,--stack,16777216"
+    fi
     exe=".exe"
     ostype="Cygwin";;
   *gcc*,*-*-mingw*)
@@ -858,6 +862,7 @@ case "$target" in
   x86_64-*-darwin*)             arch=amd64; system=macosx;;
   x86_64-*-mingw*)              arch=amd64; system=mingw;;
   aarch64-*-linux*)             arch=arm64; system=linux;;
+  x86_64-*-cygwin*)             arch=amd64; system=cygwin;;
 esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
