@@ -17,7 +17,11 @@ LD_PATH=.:$(TOPDIR)/otherlibs/dynlink
 
 .PHONY: default
 default:
-	@$(SET_LD_PATH) $(MAKE) compile run
+	@if ! $(SUPPORTS_SHARED_LIBRARIES); then \
+	  echo 'skipped (shared libraries not available)'; \
+	else \
+	  $(SET_LD_PATH) $(MAKE) compile run; \
+	fi
 
 .PHONY: compile
 compile: caml

@@ -27,13 +27,14 @@ GENERATED_SOURCES=$(ML_LEX_FILES) $(ML_YACC_FILES) $(MLI_YACC_FILES)
 
 CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
-MYRUNTIME=`if [ -z "$(C_FILES)" ]; then echo '$(OCAMLRUN)'; fi`
+MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
 
 CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 
 .PHONY: default
 default:
-	@$(SET_LD_PATH) $(MAKE) compile run
+	@$(MAKE) compile
+	@$(SET_LD_PATH) $(MAKE) run
 
 .PHONY: compile
 compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo

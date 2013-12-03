@@ -117,7 +117,9 @@ default:
 	  $(MAKE) all; \
 	fi
 
-all: arch codegen tests
+all:
+	$(MAKE) arch codegen
+	$(MAKE) tests
 
 codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
