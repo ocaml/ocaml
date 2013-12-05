@@ -139,3 +139,18 @@ end
 let () =
   print_endline (Print.to_string int 10);
   print_endline (Print.to_string (pair int (pair str int)) (123, ("A", 456)))
+
+
+(* #6262: first-class modules and module type aliases *)
+
+module type S1 = sig end
+module type S2 = S1
+
+let f (x : (module S1)) : (module S2) = x
+
+module X = struct
+  module type S
+end
+module Y = struct include X end
+
+let f (x : (module X.S)) : (module Y.S) = x
