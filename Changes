@@ -50,6 +50,10 @@ Standard library:
 - PR#6180: efficient creation of uninitialized float arrays
 - PR#5935: a faster version of "raise" which does not maintain the backtrace
 
+OCamldoc:
+- PR#6257: handle full doc comments for variant constructors and
+           record fields
+
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
 - PR#4323: have "of_string" in Num and Big_int work with binary and
