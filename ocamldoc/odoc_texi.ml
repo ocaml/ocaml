@@ -676,8 +676,8 @@ class texi =
                        (match constr.vc_text with
                        | None -> [ Newline ]
                        | Some t ->
-                           (Raw (indent 5 "\n(* ") ::
-                            self#soft_fix_linebreaks 8 t) @
+                           (Raw (indent 5 "\n(*\n ") ::
+                            self#soft_fix_linebreaks 8 (self#text_of_info (Some t))) @
                            [ Raw " *)" ; Newline ]
                        ) ) l ) )
            | Type_record l ->
@@ -693,7 +693,8 @@ class texi =
                        (match r.rf_text with
                        | None -> [ Newline ]
                        | Some t ->
-                           ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @
+                           ((Raw (indent 5 "\n(*\n ")) ::
+                           (self#soft_fix_linebreaks 8 (self#text_of_info (Some t)))) @
                            [ Raw " *)" ; Newline ] ) )
                      l ) )
                @  [ Raw " }" ]

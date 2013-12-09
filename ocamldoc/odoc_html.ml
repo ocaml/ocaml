@@ -1530,7 +1530,7 @@ class html =
                  bs b "(*";
                  bs b "</code></td>";
                  bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
-                 self#html_of_text b t;
+                 self#html_of_info b (Some t);
                  bs b "</td>";
                  bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
                  bs b "<code>";
@@ -1573,7 +1573,7 @@ class html =
                  bs b "(*";
                  bs b "</code></td>";
                  bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
-                 self#html_of_text b t;
+                 self#html_of_info b (Some t);
                  bs b "</td><td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
                  bs b "<code>*)</code></td>";
             );

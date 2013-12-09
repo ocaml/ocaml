@@ -584,7 +584,7 @@ class latex =
                     | Some t ->
                         let s =
                           ps fmt2 "\\begin{ocamldoccomment}\n";
-                          self#latex_of_text fmt2 t;
+                          self#latex_of_info fmt2 (Some t);
                           ps fmt2 "\n\\end{ocamldoccomment}\n";
                           flush2 ()
                         in
@@ -612,7 +612,7 @@ class latex =
                       | Some t ->
                           let s =
                             ps fmt2 "\\begin{ocamldoccomment}\n";
-                            self#latex_of_text fmt2 t;
+                            self#latex_of_info fmt2 (Some t);
                             ps fmt2 "\n\\end{ocamldoccomment}\n";
                             flush2 ()
                         in

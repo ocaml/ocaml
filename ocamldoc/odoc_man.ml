@@ -29,6 +29,8 @@ let new_buf () = Buffer.create 1024
 let bp = Printf.bprintf
 let bs = Buffer.add_string
 
+let linebreak = "\n.sp\n";;
+
 (** A class used to get a [text] for info structures. *)
 class virtual info =
   object (self)
@@ -40,170 +42,193 @@ class virtual info =
     (** Return man code for a [text]. *)
     method virtual man_of_text : Buffer.t -> Odoc_info.text -> unit
 
+    method str_man_of_text t =
+      let b = Buffer.create 256 in
+      self#man_of_text b t ;
+      Buffer.contents b
+
     (** Print groff string for an author list. *)
-    method man_of_author_list b l =
+    method str_man_of_author_list l =
       match l with
-        [] -> ()
+        [] -> ""
       | _ ->
+          let b = Buffer.create 256 in
           bs b ".B \"";
           bs b Odoc_messages.authors;
           bs b "\"\n:\n";
           bs b (String.concat ", " l);
-          bs b "\n.sp\n"
+          bs b "\n";
+          (*bs b "\n.sp\n"*)
+          Buffer.contents b
 
     (** Print groff string for the given optional version information.*)
-    method man_of_version_opt b v_opt =
+    method str_man_of_version_opt v_opt =
       match v_opt with
-        None -> ()
+        None -> ""
       | Some v ->
+          let b = Buffer.create 256 in
           bs b ".B \"";
           bs b Odoc_messages.version;
           bs b "\"\n:\n";
           bs b v;
-          bs b "\n.sp\n"
+          bs b "\n";
+          (*".sp\n"*)
+          Buffer.contents b
 
     (** Printf groff string for the \@before information. *)
-    method man_of_before b = function
-      [] -> ()
+    method str_man_of_before = function
+      [] -> ""
     | l ->
-        List.iter
-          (fun (v, text) ->
+        let b = Buffer.create 256 in
+        let rec iter = function
+          [] -> ()
+        | (v, text) :: q ->
              bp b ".B \"%s" Odoc_messages.before;
              bs b v;
              bs b "\"\n";
              self#man_of_text b text;
              bs b "\n";
-             bs b "\n.sp\n"
-          )
-          l
-
+             bs b "\n";
+             match q with
+               [] -> ()
+             | _ -> bs b linebreak ; iter q
+        in
+        iter l;
+        Buffer.contents b
 
     (** Print groff string for the given optional since information.*)
-    method man_of_since_opt b s_opt =
+    method str_man_of_since_opt s_opt =
       match s_opt with
-        None -> ()
+        None -> ""
       | Some s ->
+          let b = Buffer.create 256 in
           bs b ".B \"";
           bs b Odoc_messages.since;
           bs b "\"\n";
           bs b s;
-          bs b "\n.sp\n"
+          bs b "\n";(*".sp\n"*)
+          Buffer.contents b
 
     (** Print groff string for the given list of raised exceptions.*)
-    method man_of_raised_exceptions b l =
+    method str_man_of_raised_exceptions l =
       match l with
-        [] -> ()
-      | (s, t) :: [] ->
-          bs b ".B \"";
-          bs b Odoc_messages.raises;
-          bs b (" "^s^"\"\n");
-          self#man_of_text b t;
-          bs b "\n.sp\n"
+        [] -> ""
       | _ ->
-          bs b ".B \"";
-          bs b Odoc_messages.raises;
-          bs b "\"\n";
-          List.iter
-            (fun (ex, desc) ->
-              bs b ".sp\n.B \"";
-              bs b ex;
-              bs b "\"\n";
-              self#man_of_text b desc;
-              bs b "\n"
-            )
-            l;
-          bs b "\n.sp\n"
+          let b = Buffer.create 256 in
+          let rec iter = function
+            [] -> ()
+          | (s, t) :: q ->
+              bs b ".B \"";
+              bs b Odoc_messages.raises;
+              bs b (" "^s^"\"\n");
+              self#man_of_text b t;
+              bs b "\n";
+              match q with
+                [] -> ()
+              | _ -> bs b linebreak; iter q
+          in
+          iter l;
+          Buffer.contents b
 
     (** Print groff string for the given "see also" reference. *)
-    method man_of_see b (see_ref, t)  =
+    method str_man_of_see (see_ref, t)  =
       let t_ref =
         match see_ref with
           Odoc_info.See_url s -> [ Odoc_info.Link (s, t) ]
         | Odoc_info.See_file s -> (Odoc_info.Code s) :: (Odoc_info.Raw " ") :: t
         | Odoc_info.See_doc s -> (Odoc_info.Italic [Odoc_info.Raw s]) :: (Odoc_info.Raw " ") :: t
       in
-      self#man_of_text b t_ref
+      self#str_man_of_text t_ref
 
     (** Print groff string for the given list of "see also" references.*)
-    method man_of_sees b l =
+    method str_man_of_sees l =
       match l with
-        [] -> ()
-      | see :: [] ->
-          bs b ".B \"";
-          bs b Odoc_messages.see_also;
-          bs b "\"\n";
-          self#man_of_see b see;
-          bs b "\n.sp\n"
+        [] -> ""
       | _ ->
-          bs b ".B \"";
-          bs b Odoc_messages.see_also;
-          bs b "\"\n";
-          List.iter
-            (fun see ->
-              bs b ".sp\n";
-              self#man_of_see b see;
-              bs b "\n"
-            )
-            l;
-          bs b "\n.sp\n"
+          let b = Buffer.create 256 in
+          let rec iter = function
+            [] -> ()
+          | see :: q ->
+              bs b ".B \"";
+              bs b Odoc_messages.see_also;
+              bs b "\"\n";
+              bs b (self#str_man_of_see see);
+              bs b "\n";
+              match q with
+                [] -> ()
+              | _ -> bs b linebreak; iter q
+          in
+          iter l;
+          Buffer.contents b
 
     (** Print groff string for the given optional return information.*)
-    method man_of_return_opt b return_opt =
+    method str_man_of_return_opt return_opt =
       match return_opt with
-        None -> ()
+        None -> ""
       | Some s ->
+          let b = Buffer.create 256 in
           bs b ".B ";
           bs b Odoc_messages.returns;
           bs b "\n";
           self#man_of_text b s;
-          bs b "\n.sp\n"
+          bs b "\n";
+          Buffer.contents b
 
     (** Print man code for the given list of custom tagged texts. *)
-    method man_of_custom b l =
-      let buf = Buffer.create 50 in
-      List.iter
-        (fun (tag, text) ->
-          try
-            let f = List.assoc tag tag_functions in
-            Buffer.add_string buf (f text)
+    method str_man_of_custom l =
+      List.fold_left
+        (fun acc (tag, text) ->
+           try
+             let f = List.assoc tag tag_functions in
+             let buf = Buffer.create 50 in
+             Buffer.add_string buf (f text);
+             (Buffer.contents buf) :: acc
           with
             Not_found ->
-              Odoc_info.warning (Odoc_messages.tag_not_handled tag)
+              Odoc_info.warning (Odoc_messages.tag_not_handled tag);
+              acc
         )
-        l
+        [] l
 
     (** Print the groff string to display an optional info structure. *)
-    method man_of_info b info_opt =
+    method man_of_info ?(margin=0) b info_opt =
         match info_opt with
         None -> ()
       | Some info ->
           let module M = Odoc_info in
-          (
+          let l =
+            (
            match info.M.i_deprecated with
-             None -> ()
+             None -> []
            | Some d ->
+               let b = Buffer.create 256 in
                bs b ".B \"";
                bs b Odoc_messages.deprecated;
                bs b "\"\n";
                self#man_of_text b d;
-               bs b "\n.sp\n"
-          );
-          (
-           match info.M.i_desc with
-             None -> ()
-           | Some d when d = [Odoc_info.Raw ""] -> ()
-           | Some d ->
-               self#man_of_text b d;
-               bs b "\n.sp\n"
-          );
-          self#man_of_author_list b info.M.i_authors;
-          self#man_of_version_opt b info.M.i_version;
-          self#man_of_before b info.M.i_before;
-          self#man_of_since_opt b info.M.i_since;
-          self#man_of_raised_exceptions b info.M.i_raised_exceptions;
-          self#man_of_return_opt b info.M.i_return_value;
-          self#man_of_sees b info.M.i_sees;
-          self#man_of_custom b info.M.i_custom
+               bs b "\n";
+               [ Buffer.contents b ]
+            ) @
+              (
+               match info.M.i_desc with
+                 None -> []
+               | Some d when d = [Odoc_info.Raw ""] -> []
+               | Some d ->
+                   [ (self#str_man_of_text d)^"\n" ]
+              ) @
+              [
+                self#str_man_of_author_list info.M.i_authors;
+                self#str_man_of_version_opt info.M.i_version;
+                self#str_man_of_before info.M.i_before;
+                self#str_man_of_since_opt info.M.i_since;
+                self#str_man_of_raised_exceptions info.M.i_raised_exceptions;
+                self#str_man_of_return_opt info.M.i_return_value;
+                self#str_man_of_sees info.M.i_sees;
+              ] @
+                (self#str_man_of_custom info.M.i_custom)
+          in
+          let l = List.filter ((<>) "") l in
+          Buffer.add_string b (String.concat "\n.sp\n" l)
   end
 
 module Generator =
@@ -463,9 +488,9 @@ class man =
                match constr.vc_args, constr.vc_text,constr.vc_ret with
                | [], None, None -> bs b "\n "
                | [], (Some t), None ->
-                   bs b "  (* ";
-                   self#man_of_text b t;
-                   bs b " *)\n "
+                   bs b "  (*\n";
+                   self#man_of_info b (Some t);
+                   bs b "*)\n "
                | l, None, None ->
                    bs b "\n.B of ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
@@ -474,9 +499,9 @@ class man =
                    bs b "\n.B of ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
                    bs b ".I \"  \"\n";
-                   bs b "(* ";
-                   self#man_of_text b t;
-                   bs b " *)\n "
+                   bs b "(*\n";
+                   self#man_of_info b (Some t);
+                   bs b "*)\n"
                | [], None, Some r ->
                    bs b "\n.B : ";
                    self#man_of_type_expr b father r;
@@ -485,9 +510,9 @@ class man =
                    bs b "\n.B : ";
                    self#man_of_type_expr b father r;
                    bs b ".I \"  \"\n";
-                   bs b "(* ";
-                   self#man_of_text b t;
-                   bs b " *)\n "
+                   bs b "(*\n";
+                   self#man_of_info b (Some t);
+                   bs b "*)\n "
                | l, None, Some r ->
                    bs b "\n.B : ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
@@ -500,9 +525,9 @@ class man =
                    bs b ".B -> ";
                    self#man_of_type_expr b father r;
                    bs b ".I \"  \"\n";
-                   bs b "(* ";
-                   self#man_of_text b t;
-                   bs b " *)\n "
+                   bs b "(*\n";
+                   self#man_of_info b (Some t);
+                   bs b "*)\n "
               )
             )
             l
@@ -520,9 +545,9 @@ class man =
                match r.rf_text with
                  None -> ()
                | Some t ->
-                   bs b "  (* ";
-                   self#man_of_text b t;
-                   bs b " *) "
+                   bs b "  (*\n";
+                   self#man_of_info b (Some t);
+                   bs b "*) "
               );
             )
             l;

@@ -201,7 +201,7 @@ let string_of_type t =
                 None ->
                   ""
               | Some t ->
-                  "(* "^(Odoc_misc.string_of_text t)^" *)"
+                  "(* "^(Odoc_misc.string_of_info t)^" *)"
               )^"\n"
             )
             l
@@ -219,7 +219,7 @@ let string_of_type t =
                 None ->
                   ""
               | Some t ->
-                  "(* "^(Odoc_misc.string_of_text t)^" *)"
+                  "(* "^(Odoc_misc.string_of_info t)^" *)"
               )^"\n"
             )
             l

@@ -222,10 +222,7 @@ module Analyser =
           let f {Types.cd_id=constructor_name;cd_args=type_expr_list;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
-              try
-                match List.assoc constructor_name name_comment_list with
-                  None -> None
-                | Some d -> d.Odoc_types.i_desc
+              try List.assoc constructor_name name_comment_list 
               with Not_found -> None
             in
             {
@@ -241,10 +238,7 @@ module Analyser =
           let f {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr} =
             let field_name = Ident.name field_name in
             let comment_opt =
-              try
-                match List.assoc field_name name_comment_list with
-                  None -> None
-                | Some d -> d.Odoc_types.i_desc
+              try List.assoc field_name name_comment_list
               with Not_found -> None
             in
             {
