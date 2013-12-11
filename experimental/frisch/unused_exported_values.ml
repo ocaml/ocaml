@@ -24,7 +24,7 @@ let rec collect_export fn = function
       *)
       if unit fn = unit val_loc.Location.loc_start.Lexing.pos_fname then
         vds := val_loc :: !vds
-  | Sig_module (_, Mty_signature sg, _) -> List.iter (collect_export fn) sg
+  | Sig_module (_, {Types.md_type=Mty_signature sg; _}, _) -> List.iter (collect_export fn) sg
   | _ -> ()
 
 let collect_references = object
