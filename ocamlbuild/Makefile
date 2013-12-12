@@ -10,119 +10,190 @@
 #                                                                       #
 #########################################################################
 
-.PHONY: all byte native profile debug ppcache doc
+include ../config/Makefile
 
-ifndef INSTALL_PREFIX
-INSTALL_PREFIX := $(PWD)/_install
-endif
+OCAMLRUN = ../boot/ocamlrun
+OCAMLC   = ../ocamlcomp.sh
+OCAMLOPT = ../ocamlcompopt.sh
+OCAMLDEP = $(OCAMLRUN) ../tools/ocamldep
+OCAMLLEX = $(OCAMLRUN) ../boot/ocamllex
+CP       = cp 
+COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB)
+LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
 
-ifndef INSTALL_LIB
-INSTALL_LIB := $(INSTALL_PREFIX)/lib/ocamlbuild
-endif
+PACK_CMO=\
+  loc.cmo \
+  discard_printf.cmo \
+  signatures.cmi \
+  my_std.cmo \
+  my_unix.cmo \
+  tags.cmo \
+  display.cmo \
+  log.cmo \
+  shell.cmo \
+  bool.cmo \
+  glob_ast.cmo \
+  glob_lexer.cmo \
+  glob.cmo \
+  lexers.cmo \
+  param_tags.cmo \
+  command.cmo \
+  ocamlbuild_config.cmo \
+  ocamlbuild_where.cmo \
+  slurp.cmo \
+  options.cmo \
+  pathname.cmo \
+  configuration.cmo \
+  flags.cmo \
+  hygiene.cmo \
+  digest_cache.cmo \
+  resource.cmo \
+  rule.cmo \
+  solver.cmo \
+  report.cmo \
+  tools.cmo \
+  fda.cmo \
+  findlib.cmo \
+  ocaml_arch.cmo \
+  ocaml_utils.cmo \
+  ocaml_dependencies.cmo \
+  ocaml_compiler.cmo \
+  ocaml_tools.cmo \
+  ocaml_specific.cmo \
+  plugin.cmo \
+  exit_codes.cmo \
+  hooks.cmo \
+  main.cmo
 
-ifndef INSTALL_BIN
-INSTALL_BIN := $(INSTALL_PREFIX)/bin
-endif
+EXTRA_CMO=\
+  ocamlbuild_plugin.cmo \
+  ocamlbuild_executor.cmo \
+  ocamlbuild_unix_plugin.cmo
 
-ifndef BUILDDIR
-BUILDDIR := "_build"
-endif
+PACK_CMX=$(PACK_CMO:.cmo=.cmx)
+EXTRA_CMX=$(EXTRA_CMO:.cmo=.cmx)
 
-ifndef OCAMLBUILDCMD
-OCAMLBUILDCMD := ./boot/ocamlbuild
-endif
+INSTALL_LIB=\
+  ocamlbuildlib.cma \
+  ocamlbuild.cmo \
+  ocamlbuild_pack.cmi \
+  $(EXTRA_CMO:.cmo=.cmi)
 
-ifdef O
-OCAMLBUILD_OPTIONS := $(OCAMLBUILD_OPTIONS) $(O)
-endif
+INSTALL_LIB_OPT=\
+  ocamlbuildlib.cmxa ocamlbuildlib.$(A) \
+  ocamlbuild.cmx ocamlbuild.$(O) \
+  ocamlbuild_pack.cmx \
+  $(EXTRA_CMO:.cmo=.cmx) $(EXTRA_CMO:.cmo=.$(O))
 
-ifeq ($(wildcard ./ocamlbuild_Myocamlbuil*_config.ml),./ocamlbuild_Myocamlbuild_config.ml)
-ifeq ($(wildcard ./boot/oc*build),./boot/ocamlbuild)
-OCAMLBUILD=INSTALL_LIB=$(INSTALL_LIB) INSTALL_BIN=$(INSTALL_BIN) $(OCAMLBUILDCMD) -build-dir $(BUILDDIR) -no-links $(OCAMLBUILD_OPTIONS)
-LIBS=ocamlbuildlib ocamlbuildlightlib
-PROGRAMS=ocamlbuild ocamlbuildlight
-BYTE=$(LIBS:=.cma) $(PROGRAMS:=.byte)
-NATIVE=$(LIBS:=.cmxa) $(PROGRAMS:=.native)
+all: ocamlbuild.byte ocamlbuildlib.cma
+                 # ocamlbuildlight.byte ocamlbuildlightlib.cma
+allopt: ocamlbuild.native ocamlbuildlib.cmxa
 
-all:
-	$(OCAMLBUILD) $(BYTE) $(NATIVE)
-byte:
-	$(OCAMLBUILD) $(BYTE)
-native:
-	$(OCAMLBUILD) $(NATIVE)
-profile:
-	$(OCAMLBUILD) $(LIBS:=.p.cmxa) $(PROGRAMS:=.p.native)
-debug:
-	$(OCAMLBUILD) $(LIBS:=.d.cma) $(PROGRAMS:=.d.byte)
-ppcache:
-	$(OCAMLBUILD) ppcache.byte ppcache.native
-doc:
-	$(OCAMLBUILD) ocamlbuild.docdir/index.html
-	ln -s -f $(BUILDDIR)/ocamlbuild.docdir doc
-else
-all byte native: ocamlbuild.byte.start
-	mkdir -p boot
-	cp ocamlbuild.byte.start boot/ocamlbuild
-	$(MAKE) $(MFLAGS) $(MAKECMDGOALS)
-	cp $(BUILDDIR)/ocamlbuild.native boot/ocamlbuild
-	$(MAKE) $(MFLAGS) $(MAKECMDGOALS) OCAMLBUILD_OPTIONS="-nothing-should-be-rebuilt -verbose -1"
-endif
-else
-all byte native:
-	@echo "Please copy the myocamlbuild_config.ml of the OCaml source distribution"
-	@echo "  as ocamlbuild_Myocamlbuild_config.ml"
-	@echo
-	@echo "$$ cp ../myocamlbuild_config.ml ocamlbuild_Myocamlbuild_config.ml"
-endif
+# The executables
 
-ocamlbuild.byte.start:
-	./start.sh
+ocamlbuild.byte: ocamlbuild_pack.cmo $(EXTRA_CMO) ocamlbuild.cmo
+	$(OCAMLC) $(LINKFLAGS) -o ocamlbuild.byte \
+          unix.cma ocamlbuild_pack.cmo $(EXTRA_CMO) ocamlbuild.cmo
 
-promote:
-	cp $(BUILDDIR)/ocamlbuild.native boot/ocamlbuild
+ocamlbuildlight.byte: ocamlbuild_pack.cmo ocamlbuildlight.cmo
+	$(OCAMLC) $(LINKFLAGS) -o ocamlbuildlight.byte \
+          ocamlbuild_pack.cmo ocamlbuildlight.cmo
 
-clean:
-	rm -rf $(BUILDDIR)
+ocamlbuild.native: ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
+	$(OCAMLOPT) $(LINKFLAGS) -o ocamlbuild.native \
+          unix.cmxa ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
 
-distclean: clean
-	rm -rf _log _start ocamlbuild.byte.start boot/ocamlbuild
+# The libraries
 
-install: all
-	mkdir -p $(INSTALL_BIN)
-	mkdir -p $(INSTALL_LIB)
-	install $(BUILDDIR)/ocamlbuild.byte \
-		$(BUILDDIR)/ocamlbuild.native \
-		$(BUILDDIR)/ocamlbuildlight.byte \
-		$(BUILDDIR)/ocamlbuildlight.native \
-		$(INSTALL_BIN)
-	install $(BUILDDIR)/ocamlbuild.native $(INSTALL_BIN)/ocamlbuild
-	install $(BUILDDIR)/ocamlbuildlight.byte $(INSTALL_BIN)/ocamlbuildlight
-	install -m 644 \
-	        $(BUILDDIR)/ocamlbuildlib.cmxa \
-	        $(BUILDDIR)/ocamlbuildlib.a \
-	        $(BUILDDIR)/ocamlbuildlib.cma \
-	        $(BUILDDIR)/ocamlbuildlightlib.cmxa \
-	        $(BUILDDIR)/ocamlbuildlightlib.a \
-	        $(BUILDDIR)/ocamlbuildlightlib.cma \
-	        $(BUILDDIR)/ocamlbuild_unix_plugin.cmx \
-	        $(BUILDDIR)/ocamlbuild_unix_plugin.o \
-	        $(BUILDDIR)/ocamlbuild_unix_plugin.cmo \
-	        $(BUILDDIR)/ocamlbuild_unix_plugin.cmi \
-	        $(BUILDDIR)/ocamlbuild_executor.cmi \
-	        $(BUILDDIR)/ocamlbuild_executor.cmo \
-	        $(BUILDDIR)/ocamlbuild_executor.cmx \
-	        $(BUILDDIR)/ocamlbuild_executor.o \
-	        $(BUILDDIR)/ocamlbuild_pack.cmi \
-	        $(BUILDDIR)/ocamlbuild_pack.cmo \
-	        $(BUILDDIR)/ocamlbuild_pack.cmx \
-	        $(BUILDDIR)/ocamlbuild_pack.o \
-	        $(BUILDDIR)/ocamlbuild.cmi \
-	        $(BUILDDIR)/ocamlbuild_plugin.cmi \
-	        $(BUILDDIR)/ocamlbuild.cmx \
-	        $(BUILDDIR)/ocamlbuild.o \
-	        $(BUILDDIR)/ocamlbuild.cmo \
-	        $(BUILDDIR)/ocamlbuildlight.cmx \
-	        $(BUILDDIR)/ocamlbuildlight.o \
-	        $(BUILDDIR)/ocamlbuildlight.cmo $(INSTALL_LIB)
-	ranlib $(INSTALL_LIB)/ocamlbuildlib.a
-	ranlib $(INSTALL_LIB)/ocamlbuildlightlib.a
+ocamlbuildlib.cma: ocamlbuild_pack.cmo $(EXTRA_CMO) ocamlbuild.cmo
+	$(OCAMLC) -a -o ocamlbuildlib.cma \
+          ocamlbuild_pack.cmo $(EXTRA_CMO) ocamlbuild.cmo
+
+ocamlbuildlightlib.cma: ocamlbuild_pack.cmo ocamlbuildlight.cmo
+	$(OCAMLC) -a -o ocamlbuildlightlib.cma \
+          ocamlbuild_pack.cmo ocamlbuildlight.cmo
+
+ocamlbuildlib.cmxa: ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
+	$(OCAMLOPT) -a -o ocamlbuildlib.cmxa \
+          ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
+
+# The packs
+
+ocamlbuild_pack.cmo ocamlbuild_pack.cmi: $(PACK_CMO)
+	$(OCAMLC) -pack $(PACK_CMO) -o ocamlbuild_pack.cmo
+
+ocamlbuild_pack.cmx: $(PACK_CMX)
+	$(OCAMLOPT) -pack $(PACK_CMX) -o ocamlbuild_pack.cmx
+
+# The config file
+
+ocamlbuild_config.ml: ../config/Makefile
+	(echo 'let bindir = "$(BINDIR)"'; \
+         echo 'let libdir = "$(LIBDIR)"'; \
+         echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
+         echo 'let a = "$(A)"'; \
+         echo 'let o = "$(O)"'; \
+         echo 'let so = "$(SO)"'; \
+         echo 'let exe = "$(EXE)"'; \
+        ) > ocamlbuild_config.ml
+clean::
+	rm -f ocamlbuild_config.ml
+beforedepend:: ocamlbuild_config.ml
+
+# The lexers
+
+lexers.ml: lexers.mll
+	$(OCAMLLEX) lexers.mll
+clean::
+	rm -f lexers.ml
+beforedepend:: lexers.ml
+
+glob_lexer.ml: glob_lexer.mll
+	$(OCAMLLEX) glob_lexer.mll
+clean::
+	rm -f glob_lexer.ml
+beforedepend:: glob_lexer.ml
+
+# Installation
+
+install:
+	$(CP) ocamlbuild.byte $(BINDIR)/ocamlbuild$(EXE)
+	$(CP) ocamlbuild.byte $(BINDIR)/ocamlbuild.byte$(EXE)
+	mkdir -p $(LIBDIR)/ocamlbuild
+	$(CP) $(INSTALL_LIB) $(LIBDIR)/ocamlbuild/
+
+installopt:
+	if test -f ocamlbuild.native; then $(MAKE) installopt_really; fi
+
+installopt_really:
+	$(CP) ocamlbuild.native $(BINDIR)/ocamlbuild$(EXE)
+	$(CP) ocamlbuild.native $(BINDIR)/ocamlbuild.native$(EXE)
+	mkdir -p $(LIBDIR)/ocamlbuild
+	$(CP) $(INSTALL_LIB_OPT) $(LIBDIR)/ocamlbuild/
+
+# The generic rules
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.ml.cmo:
+	$(OCAMLC) $(COMPFLAGS) -c $<
+
+.mli.cmi:
+	$(OCAMLC) $(COMPFLAGS) -c $<
+
+.ml.cmx:
+	$(OCAMLOPT) -for-pack Ocamlbuild_pack $(COMPFLAGS) -c $<
+
+clean::
+	rm -f *.cm? *.$(O) *.cmxa *.$(A)
+	rm -f *.byte *.native
+
+# The dependencies
+
+depend: beforedepend
+	$(OCAMLDEP) *.mli *.ml > .depend
+
+include .depend
+
+.PHONY: all allopt clean beforedepend 
+.PHONY: install installopt installopt_really depend

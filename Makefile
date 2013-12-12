@@ -31,7 +31,6 @@ MKDIR=mkdir -p
 
 OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
 OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
-OCAMLBUILDLIBNATIVE=$(WITH_OCAMLBUILD:=lib.native)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
@@ -324,12 +323,12 @@ install:
 	  (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
 	done
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) install); else :; fi
-	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	if test -n "$(WITH_OCAMLDEBUG)"; then (cd debugger; $(MAKE) install); \
+	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKE) install); \
+	   else :; fi
+	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
-	BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) PREFIX=$(PREFIX) \
-	  ./build/partial-install.sh
+	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 
 # Installation of the native-code compiler
 installopt:
@@ -340,6 +339,8 @@ installopt:
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
 		else :; fi
+	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
+	   else :; fi
 	for i in $(OTHERLIBRARIES); \
 	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; fi
@@ -763,25 +764,18 @@ alldepend::
 	cd debugger; $(MAKE) depend
 
 # Ocamlbuild
-#ifeq ($(OCAMLBUILD_NOBOOT),"yes")
-#ocamlbuild.byte: ocamlc
-#	$(MAKE) -C ocamlbuild -f Makefile.noboot
-#else
-ocamlbuild.byte: ocamlc ocamlbuild-mixed-boot
-	./build/ocamlbuild-byte-only.sh
-#endif
 
-ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
-	./build/ocamlbuild-native-only.sh
-ocamlbuildlib.native: ocamlopt ocamlbuild-mixed-boot otherlibrariesopt
-	./build/ocamlbuildlib-native-only.sh
+ocamlbuild.byte: ocamlc otherlibraries
+	cd ocamlbuild && $(MAKE) all
 
-ocamlbuild-mixed-boot: ocamlc
-	./build/mixed-boot.sh
-	touch ocamlbuild-mixed-boot
+ocamlbuild.native: ocamlopt otherlibrariesopt
+	cd ocamlbuild && $(MAKE) allopt
 
 partialclean::
-	rm -rf _build ocamlbuild-mixed-boot
+	cd ocamlbuild && $(MAKE) clean
+
+alldepend::
+	cd ocamlbuild && $(MAKE) depend
 
 # Check that the stack limit is reasonable.
 

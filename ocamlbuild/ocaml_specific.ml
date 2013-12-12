@@ -269,7 +269,7 @@ rule "ocaml: cmo* -> cma"
 
 rule "ocaml C stubs: clib & (o|obj)* -> (a|lib) & (so|dll)"
   ~prods:(["%(path:<**/>)lib%(libname:<*> and not <*.*>)"-.-ext_lib] @
-          if Ocamlbuild_Myocamlbuild_config.supports_shared_libraries then
+          if Ocamlbuild_config.supports_shared_libraries then
             ["%(path:<**/>)dll%(libname:<*> and not <*.*>)"-.-ext_dll]
           else
 	    [])
