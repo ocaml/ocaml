@@ -1,0 +1,6 @@
+
+(ocd) Loading program... done.
+arg1
+notbar
+Program exit.
+(ocd) The program is running. Quit anyway ? (y or n) Uncaught exception: Pervasives.Exit
