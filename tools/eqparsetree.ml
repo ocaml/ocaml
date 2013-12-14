@@ -666,7 +666,7 @@ and eq_expression_desc :
       eq_list
         (fun ((a0, a1), (b0, b1)) ->
           (eq_pattern (a0, b0)) && (eq_expression (a1, b1)))
-        (a2, b2))
+        (a2, b2)
   | (Pexp_apply (a0, a1), Pexp_apply (b0, b1)) ->
       (eq_expression (a0, b0)) &&
         (eq_list

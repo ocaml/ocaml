@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 open Printf
-open Myocamlbuild_config
+open Ocamlmklibconfig
 
 (* PR#4783: under Windows, don't use absolute paths because we do
    not know where the binary distribution will be installed. *)
