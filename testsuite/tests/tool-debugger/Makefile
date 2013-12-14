@@ -12,7 +12,7 @@
 
 BASEDIR=../..
 MAIN_MODULE=debuggee
-ADD_COMPFLAGS=-g
+ADD_COMPFLAGS=-g -custom
 
 .PHONY: default
 default:
@@ -30,7 +30,8 @@ compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
 run:
 	@printf " ... testing with ocamlc"
 	@echo 'source input_script' | \
-	 $(MYRUNTIME) $(TOPDIR)/debugger/ocamldebug program.byte$(EXE) 2>&1 | \
+	 $(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/debugger/ocamldebug$(EXE)` \
+	            program.byte$(EXE) 2>&1 | \
 	 grep -v 'Debugger version\|^Time:' >$(MAIN_MODULE).result \
 	 && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result >/dev/null \
 	 && echo " => passed" || echo " => failed"
