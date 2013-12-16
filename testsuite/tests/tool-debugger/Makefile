@@ -13,7 +13,7 @@
 BASEDIR=../..
 MAIN_MODULE=debuggee
 ADD_COMPFLAGS=-g -custom
-LD_PATH=$(TOPDIR)/otherlibs/unix
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
 .PHONY: default
 default:
