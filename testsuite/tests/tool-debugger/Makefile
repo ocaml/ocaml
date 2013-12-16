@@ -35,7 +35,8 @@ run:
 	@echo 'source input_script' | \
 	 $(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/debugger/ocamldebug$(EXE)` \
 	            program.byte$(EXE) 2>&1 | \
-	 egrep -v 'Debugger version\|^Time:' >$(MAIN_MODULE).result \
+	 sed -e '/Debugger version/d' -e '/^Time:/d' -e '/Program exit/q' \
+	   >$(MAIN_MODULE).result \
 	 && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result >/dev/null \
 	 && echo " => passed" || echo " => failed"
 
