@@ -13,12 +13,12 @@
 BASEDIR=../..
 MAIN_MODULE=debuggee
 ADD_COMPFLAGS=-g -custom
-LD_PATH=$(BASEDIR)/otherlibs/unix
+LD_PATH=$(TOPDIR)/otherlibs/unix
 
 .PHONY: default
 default:
 	@$(MAKE) compile
-	@$(SET_LD_PATH) $(MAKE) run
+	@$(SET_LD_PATH) OCAMLLIB=. $(MAKE) run
 
 .PHONY: compile
 compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
@@ -26,6 +26,8 @@ compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
 	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte$(EXE) \
 	           $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) \
 	           $(MAIN_MODULE).cmo
+	@mkdir -p compiler-libs
+	@cp $(TOPDIR)/toplevel/topdirs.cmi compiler-libs/
 
 .PHONY: run
 run:
@@ -45,5 +47,6 @@ clean: defaultclean
 	@rm -f *.result program.byte program.byte.exe \
 	       program.native program.native.exe \
 	       $(GENERATED_SOURCES) $(O_FILES) $(TEST_TEMP_FILES)
+	@rm -rf compiler-libs
 
 include $(BASEDIR)/makefiles/Makefile.common
