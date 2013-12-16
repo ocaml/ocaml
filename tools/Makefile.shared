@@ -93,17 +93,8 @@ clean::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-ocamlmklib: myocamlbuild_config.cmo ocamlmklib.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmklib myocamlbuild_config.cmo \
-	         ocamlmklib.cmo
-
-ocamlmklib.cmo: myocamlbuild_config.cmi
-
-myocamlbuild_config.cmi: myocamlbuild_config.cmo
-
-myocamlbuild_config.ml: ../config/Makefile ../build/mkmyocamlbuild_config.sh
-	../build/mkmyocamlbuild_config.sh
-	cp ../myocamlbuild_config.ml .
+ocamlmklib: ocamlmklibconfig.cmo ocamlmklib.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklibconfig.cmo ocamlmklib.cmo
 
 install::
 	cp ocamlmklib $(BINDIR)/ocamlmklib$(EXE)
@@ -111,22 +102,22 @@ install::
 clean::
 	rm -f ocamlmklib
 
-ocamlmklib.ml: ocamlmklib.mlp ../config/Makefile
-	echo '(* THIS FILE IS GENERATED FROM ocamlmklib.mlp *)' >ocamlmklib.ml
-	sed -e "s|%%BINDIR%%|$(BINDIR)|" \
-	    -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
-	    -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
-	    -e "s|%%BYTECCRPATH%%|$(BYTECCRPATH)|" \
-	    -e "s|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|" \
-	    -e "s|%%MKSHAREDLIBRPATH%%|$(MKSHAREDLIBRPATH)|" \
-	    -e "s|%%RANLIB%%|$(RANLIB)|" \
-	  ocamlmklib.mlp >> ocamlmklib.ml
+ocamlmklibconfig.ml: ../config/Makefile
+	(echo 'let bindir = "$(BINDIR)"'; \
+         echo 'let ext_lib = "$(EXT_LIB)"'; \
+         echo 'let ext_dll = "$(EXT_DLL)"'; \
+         echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
+         echo 'let mkdll = "$(MKDLL)"'; \
+         echo 'let byteccrpath = "$(BYTECCRPATH)"'; \
+         echo 'let nativeccrpath = "$(NATIVECCRPATH)"'; \
+         echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
+         sed -n -e 's/^#ml //p' ../config/Makefile) \
+        > ocamlmklibconfig.ml
 
-beforedepend:: ocamlmklib.ml
+beforedepend:: ocamlmklibconfig.ml
 
 clean::
-	rm -f ocamlmklib.ml
-
+	rm -f ocamlmklibconfig.ml
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
