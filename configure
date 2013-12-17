@@ -309,7 +309,7 @@ dllccompopts=""
 ostype="Unix"
 exe=""
 iflexdir=""
-SO=".so"
+SO="so"
 TOOLCHAIN="cc"
 
 case "$bytecc,$target" in
@@ -409,7 +409,7 @@ case "$bytecc,$target" in
     exe=".exe"
     ostype="Win32"
     TOOLCHAIN="mingw"
-    SO=".dll"
+    SO="dll"
     ;;
   *gcc*,x86_64-*-linux*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
@@ -1696,7 +1696,7 @@ echo "SO=$SO" >> Makefile
 echo "EXT_OBJ=.o" >> Makefile
 echo "EXT_ASM=.s" >> Makefile
 echo "EXT_LIB=.a" >> Makefile
-echo "EXT_DLL=$SO" >> Makefile
+echo "EXT_DLL=.$SO" >> Makefile
 echo "EXTRALIBS=" >> Makefile
 echo "CCOMPTYPE=cc" >> Makefile
 echo "TOOLCHAIN=$TOOLCHAIN" >> Makefile
