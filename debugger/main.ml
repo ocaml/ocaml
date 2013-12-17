@@ -26,10 +26,7 @@ open Primitives
 
 let line_buffer = Lexing.from_function read_user_input
 
-let rec loop ppf =
-  line_loop ppf line_buffer;
-  if !loaded && (not (yes_or_no "The program is running. Quit anyway")) then
-    loop ppf
+let rec loop ppf = line_loop ppf line_buffer
 
 let current_duration = ref (-1L)
 
