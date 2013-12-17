@@ -13,6 +13,20 @@ Syntax error: 'end' expected, the highlighted 'sig' might be unmatched
       object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
 Error: In this definition, a type variable cannot be deduced
        from the type parameters.
+#       Characters 83-128:
+  type 'x t = A of 'a constraint 'x = [< `X of 'a ] ;; (* fail *)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
+#     Characters 36-37:
+    let A x = A x in
+        ^
+Error: Unbound constructor A
+# Characters 4-37:
+  type 'a t = A : 'a -> [< `X of 'a ] t;; (* fail *)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable cannot be deduced
+       from the type parameters.
 #     type (_, _) eq = Eq : ('a, 'a) eq
 # val eq : 'a = <poly>
 #   val eq : ('a Queue.t, 'b Queue.t) eq = Eq
