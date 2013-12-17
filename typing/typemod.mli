@@ -60,6 +60,7 @@ type error =
   | Scoping_pack of Longident.t * type_expr
   | Extension of string
   | Recursive_module_require_explicit_type
+  | Apply_generative
 
 exception Error of Location.t * Env.t * error
 

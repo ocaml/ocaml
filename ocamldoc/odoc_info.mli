@@ -434,7 +434,7 @@ module Module :
 
     and module_parameter = Odoc_module.module_parameter = {
         mp_name : string ; (** the name *)
-        mp_type : Types.module_type ; (** the type *)
+        mp_type : Types.module_type option ; (** the type *)
         mp_type_code : string ; (** the original code *)
         mp_kind : module_type_kind ; (** the way the parameter was built *)
       }

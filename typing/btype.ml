@@ -56,6 +56,9 @@ let is_Tvar = function {desc=Tvar _} -> true | _ -> false
 let is_Tunivar = function {desc=Tunivar _} -> true | _ -> false
 
 let dummy_method = "*dummy method*"
+let default_mty = function
+    Some mty -> mty
+  | None -> Mty_signature []
 
 (**** Representative of a type ****)
 

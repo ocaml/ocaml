@@ -75,7 +75,7 @@ and out_class_sig_item =
 
 type out_module_type =
   | Omty_abstract
-  | Omty_functor of string * out_module_type * out_module_type
+  | Omty_functor of string * out_module_type option * out_module_type
   | Omty_ident of out_ident
   | Omty_signature of out_sig_item list
 and out_sig_item =
