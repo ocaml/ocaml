@@ -26,6 +26,14 @@ module F(T:sig type 'a t end) = struct
     object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
 end;; (* fail *)
 
+(* Another (more direct) instance using polymorphic variants *)
+(* PR#6275 *)
+type 'x t = A of 'a constraint 'x = [< `X of 'a ] ;; (* fail *)
+let magic (x : int) : bool = 
+  let A x = A x in
+  x;; (* fail *)
+type 'a t = A : 'a -> [< `X of 'a ] t;; (* fail *)
+
 (* It is not OK to allow modules exported by other compilation units *)
 type (_,_) eq = Eq : ('a,'a) eq;;
 let eq = Obj.magic Eq;;
