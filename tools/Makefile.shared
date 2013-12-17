@@ -111,6 +111,7 @@ ocamlmklibconfig.ml: ../config/Makefile
          echo 'let byteccrpath = "$(BYTECCRPATH)"'; \
          echo 'let nativeccrpath = "$(NATIVECCRPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
+         echo 'let toolpref = "$(TOOLPREF)"'; \
          sed -n -e 's/^#ml //p' ../config/Makefile) \
         > ocamlmklibconfig.ml
 
