@@ -9,7 +9,8 @@ Bug fixes:
 - PR#6243: Make "ocamlopt -g" more resistant to ill-formed locations
 - PR#6233: out-of-bounds exceptions lose their locations on ARM, PowerPC
 - PR#6239: sometimes wrong stack alignment when raising exceptions
-  in -g mode with backtraces active
+           in -g mode with backtraces active
+- PR#6275: Soundness bug related to type constraints
 
 OCaml 4.01.0:
 -------------
