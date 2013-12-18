@@ -602,7 +602,7 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
 {
   LPSELECTDATA res;
   LPSELECTDATA candidate;
-  DWORD i;
+  long i;
   LPSELECTQUERY aQueries;
 
   res = lpSelectData;
