@@ -35,9 +35,9 @@ run:
 	@rm -f $(MAIN_MODULE).result
 	@echo 'source input_script' | \
 	 $(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/debugger/ocamldebug$(EXE)` \
-	             program.byte$(EXE) >$(MAIN_MODULE).raw-result 2>&1 \
+	             program.byte$(EXE) >$(MAIN_MODULE).raw.result 2>&1 \
 	 && sed -e '/Debugger version/d' -e '/^Time:/d' -e '$$d' \
-	        $(MAIN_MODULE).raw-result >$(MAIN_MODULE).result \
+	        $(MAIN_MODULE).raw.result >$(MAIN_MODULE).result \
 	 && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result >/dev/null \
 	 && echo " => passed" || echo " => failed"
 
