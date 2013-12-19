@@ -34,4 +34,4 @@ val make_checkpoints : bool ref
 
 (*** Environment variables for debugee. ***)
 
-val environment : string list ref
+val environment : (string * string) list ref
