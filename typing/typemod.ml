@@ -961,8 +961,9 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
                  mod_attributes = smod.pmod_attributes;
                  mod_loc = smod.pmod_loc } in
       let md =
-        if alias && not (Env.is_functor_arg path env) then md else
-        match (Env.find_module path env).md_type with
+        if alias && not (Env.is_functor_arg path env) then
+          (Env.add_required_global (Path.head path); md)
+        else match (Env.find_module path env).md_type with
           Mty_alias p1 when not alias ->
             let p1 = Env.normalize_path (Some smod.pmod_loc) env p1 in
             let mty = Includemod.expand_module_alias env [] p1 in
@@ -1250,6 +1251,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let sg =
           match modl.mod_desc with
             Tmod_ident (p, _) when not (Env.is_functor_arg p env) ->
+              Env.add_required_global (Path.head p);
               let pos = ref 0 in
               List.map
                 (function
@@ -1301,6 +1303,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   str, sg, final_env
 
 let type_toplevel_phrase env s =
+  Env.reset_required_globals ();
   type_structure ~toplevel:true false None env s Location.none
 (*let type_module_alias = type_module ~alias:true true false None*)
 let type_module = type_module true false None
@@ -1441,6 +1444,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.set_saved_types [];
   try
   Typecore.reset_delayed_checks ();
+  Env.reset_required_globals ();
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in

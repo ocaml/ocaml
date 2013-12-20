@@ -79,6 +79,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _runtime_variant s = option_with_arg "-runtime-variant" s
   let _short_paths = option "-short-paths"
   let _strict_sequence = option "-strict-sequence"
+  let _trans_mod = option "-trans-mod"
   let _thread () = option "-thread" ()
   let _vmthread () = option "-vmthread" ()
   let _unsafe = option "-unsafe"

@@ -265,6 +265,10 @@ let mk_thread f =
   " Generate code that supports the system threads library"
 ;;
 
+let mk_trans_mod f =
+  "-trans-mod", Arg.Unit f,
+  " Make typing and linking only depend on normalized paths"
+
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"
@@ -465,6 +469,7 @@ module type Bytecomp_options = sig
   val _runtime_variant : string -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
+  val _trans_mod : unit -> unit
   val _thread : unit -> unit
   val _vmthread : unit -> unit
   val _unsafe : unit -> unit
@@ -508,6 +513,7 @@ module type Bytetop_options = sig
   val _short_paths : unit -> unit
   val _stdin: unit -> unit
   val _strict_sequence : unit -> unit
+  val _trans_mod : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
@@ -566,6 +572,7 @@ module type Optcomp_options = sig
   val _shared : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
+  val _trans_mod : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
   val _v : unit -> unit
@@ -622,6 +629,7 @@ module type Opttop_options = sig
   val _short_paths : unit -> unit
   val _stdin : unit -> unit
   val _strict_sequence : unit -> unit
+  val _trans_mod : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
@@ -702,6 +710,7 @@ struct
     mk_runtime_variant F._runtime_variant;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_trans_mod F._trans_mod;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_use_runtime F._use_runtime;
@@ -749,6 +758,7 @@ struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
+    mk_trans_mod F._trans_mod;
     mk_unsafe F._unsafe;
     mk_version F._version;
     mk_vnum F._vnum;
@@ -811,6 +821,7 @@ struct
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_trans_mod F._trans_mod;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_v F._v;
@@ -869,6 +880,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
+    mk_trans_mod F._trans_mod;
     mk_unsafe F._unsafe;
     mk_version F._version;
     mk_vnum F._vnum;

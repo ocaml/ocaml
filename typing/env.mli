@@ -64,7 +64,11 @@ val is_functor_arg: Path.t -> t -> bool
 val normalize_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the path to a concrete value or module.
    If the option is None, allow returning dangling paths.
-   Otherwise raise a Missing_module error. *)
+   Otherwise raise a Missing_module error, and may add forgotten
+   head as required global. *)
+val reset_required_globals: unit -> unit
+val get_required_globals: unit -> Ident.t list
+val add_required_global: Ident.t -> unit
 
 val has_local_constraints: t -> bool
 val add_gadt_instance_level: int -> t -> t
