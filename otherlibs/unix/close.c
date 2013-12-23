@@ -12,10 +12,15 @@
 /***********************************************************************/
 
 #include <mlvalues.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_close(value fd)
 {
-  if (close(Int_val(fd)) == -1) uerror("close", Nothing);
+  int ret;
+  caml_enter_blocking_section();
+  ret = close(Int_val(fd));
+  caml_leave_blocking_section();
+  if (ret == -1) uerror("close", Nothing);
   return Val_unit;
 }

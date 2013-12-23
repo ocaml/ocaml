@@ -12,7 +12,9 @@
 /***********************************************************************/
 
 #include <mlvalues.h>
+#include <memory.h>
 #include <alloc.h>
+#include <signals.h>
 #include "unixsupport.h"
 #include <sys/types.h>
 #ifdef HAS_DIRENT
@@ -23,11 +25,18 @@
 
 CAMLprim value unix_opendir(value path)
 {
+  CAMLparam1(path);
   DIR * d;
   value res;
-  d = opendir(String_val(path));
+  char * p;
+
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  d = opendir(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (d == (DIR *) NULL) uerror("opendir", path);
   res = alloc_small(1, Abstract_tag);
   DIR_Val(res) = d;
-  return res;
+  CAMLreturn(res);
 }
