@@ -13,6 +13,8 @@
 
 #include <fail.h>
 #include <mlvalues.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_UTIME
@@ -26,15 +28,23 @@
 
 CAMLprim value unix_utimes(value path, value atime, value mtime)
 {
+  CAMLparam3(path, atime, mtime);
   struct utimbuf times, * t;
+  char * p;
+  int ret;
   times.actime = Double_val(atime);
   times.modtime = Double_val(mtime);
   if (times.actime || times.modtime)
     t = &times;
   else
     t = (struct utimbuf *) NULL;
-  if (utime(String_val(path),  t) == -1) uerror("utimes", path);
-  return Val_unit;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = utime(p, t);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) uerror("utimes", path);
+  CAMLreturn(Val_unit);
 }
 
 #else
@@ -46,7 +56,10 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 
 CAMLprim value unix_utimes(value path, value atime, value mtime)
 {
+  CAMLparam3(path, atime, mtime);
   struct timeval tv[2], * t;
+  char * p;
+  int ret;
   double at = Double_val(atime);
   double mt = Double_val(mtime);
   tv[0].tv_sec = at;
@@ -57,8 +70,13 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     t = tv;
   else
     t = (struct timeval *) NULL;
-  if (utimes(String_val(path),  t) == -1) uerror("utimes", path);
-  return Val_unit;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = utimes(p, t);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) uerror("utimes", path);
+  CAMLreturn(Val_unit);
 }
 
 #else

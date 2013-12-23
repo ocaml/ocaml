@@ -13,7 +13,9 @@
 
 #include <sys/types.h>
 #include <mlvalues.h>
+#include <memory.h>
 #include <fail.h>
+#include <signals.h>
 #include <io.h>
 #include "unixsupport.h"
 #ifdef HAS_UNISTD
@@ -24,16 +26,32 @@
 
 CAMLprim value unix_truncate(value path, value len)
 {
-  if (truncate(String_val(path), Long_val(len)) == -1)
+  CAMLparam2(path, len);
+  char * p;
+  int ret;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = truncate(p, Long_val(len));
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1)
     uerror("truncate", path);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value unix_truncate_64(value path, value len)
 {
-  if (truncate(String_val(path), File_offset_val(len)) == -1)
+  CAMLparam2(path, len);
+  char * p;
+  int ret;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = truncate(p, File_offset_val(len));
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1)
     uerror("truncate", path);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 #else

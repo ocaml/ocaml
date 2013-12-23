@@ -15,6 +15,7 @@
 #include <mlvalues.h>
 #include <memory.h>
 #include <alloc.h>
+#include <signals.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <sys/types.h>
@@ -70,35 +71,49 @@ static value stat_aux(int use_64, struct stat *buf)
 
 CAMLprim value unix_stat(value path)
 {
+  CAMLparam1(path);
   int ret;
   struct stat buf;
-  ret = stat(String_val(path), &buf);
+  char * p;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = stat(p, &buf);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (ret == -1) uerror("stat", path);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
     unix_error(EOVERFLOW, "stat", path);
-  return stat_aux(0, &buf);
+  CAMLreturn(stat_aux(0, &buf));
 }
 
 CAMLprim value unix_lstat(value path)
 {
+  CAMLparam1(path);
   int ret;
   struct stat buf;
+  char * p;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
 #ifdef HAS_SYMLINK
-  ret = lstat(String_val(path), &buf);
+  ret = lstat(p, &buf);
 #else
-  ret = stat(String_val(path), &buf);
+  ret = stat(p, &buf);
 #endif
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (ret == -1) uerror("lstat", path);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
     unix_error(EOVERFLOW, "lstat", path);
-  return stat_aux(0, &buf);
+  CAMLreturn(stat_aux(0, &buf));
 }
 
 CAMLprim value unix_fstat(value fd)
 {
   int ret;
   struct stat buf;
+  caml_enter_blocking_section();
   ret = fstat(Int_val(fd), &buf);
+  caml_leave_blocking_section();
   if (ret == -1) uerror("fstat", Nothing);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
     unix_error(EOVERFLOW, "fstat", Nothing);
@@ -107,31 +122,45 @@ CAMLprim value unix_fstat(value fd)
 
 CAMLprim value unix_stat_64(value path)
 {
+  CAMLparam1(path);
   int ret;
   struct stat buf;
-  ret = stat(String_val(path), &buf);
+  char * p;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = stat(p, &buf);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (ret == -1) uerror("stat", path);
-  return stat_aux(1, &buf);
+  CAMLreturn(stat_aux(1, &buf));
 }
 
 CAMLprim value unix_lstat_64(value path)
 {
+  CAMLparam1(path);
   int ret;
   struct stat buf;
+  char * p;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
 #ifdef HAS_SYMLINK
-  ret = lstat(String_val(path), &buf);
+  ret = lstat(p, &buf);
 #else
-  ret = stat(String_val(path), &buf);
+  ret = stat(p, &buf);
 #endif
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (ret == -1) uerror("lstat", path);
-  return stat_aux(1, &buf);
+  CAMLreturn(stat_aux(1, &buf));
 }
 
 CAMLprim value unix_fstat_64(value fd)
 {
   int ret;
   struct stat buf;
+  caml_enter_blocking_section();
   ret = fstat(Int_val(fd), &buf);
+  caml_leave_blocking_section();
   if (ret == -1) uerror("fstat", Nothing);
   return stat_aux(1, &buf);
 }

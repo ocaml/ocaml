@@ -62,8 +62,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   char * p;
 
   cv_flags = convert_flag_list(flags, open_flag_table);
-  p = caml_stat_alloc(string_length(path) + 1);
-  strcpy(p, String_val(path));
+  p = caml_stat_alloc_string(path);
   /* open on a named FIFO can block (PR#1533) */
   enter_blocking_section();
   fd = open(p, cv_flags, Int_val(perm));

@@ -15,15 +15,25 @@
 #include <sys/stat.h>
 #include <fail.h>
 #include <mlvalues.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_MKFIFO
 
 CAMLprim value unix_mkfifo(value path, value mode)
 {
-  if (mkfifo(String_val(path), Int_val(mode)) == -1)
+  CAMLparam2(path, mode);
+  char * p;
+  int ret;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = mkfifo(p, Int_val(mode));
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1)
     uerror("mkfifo", path);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 #else
@@ -35,9 +45,17 @@ CAMLprim value unix_mkfifo(value path, value mode)
 
 CAMLprim value unix_mkfifo(value path, value mode)
 {
-  if (mknod(String_val(path), (Int_val(mode) & 07777) | S_IFIFO, 0) == -1)
+  CAMLparam2(path, mode);
+  char * p;
+  int ret;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = mknod(p, (Int_val(mode) & 07777) | S_IFIFO, 0);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1)
     uerror("mkfifo", path);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 #else

@@ -13,6 +13,8 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_UNISTD
@@ -40,11 +42,17 @@ static int access_permission_table[] = {
 
 CAMLprim value unix_access(value path, value perms)
 {
+  CAMLparam2(path, perms);
+  char * p;
   int ret, cv_flags;
 
   cv_flags = convert_flag_list(perms, access_permission_table);
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
   ret = access(String_val(path), cv_flags);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (ret == -1)
     uerror("access", path);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }

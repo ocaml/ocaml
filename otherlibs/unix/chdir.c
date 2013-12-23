@@ -12,12 +12,20 @@
 /***********************************************************************/
 
 #include <mlvalues.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_chdir(value path)
 {
+  CAMLparam1(path);
+  char * p;
   int ret;
-  ret = chdir(String_val(path));
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = chdir(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (ret == -1) uerror("chdir", path);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }

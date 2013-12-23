@@ -13,15 +13,28 @@
 
 #include <fail.h>
 #include <mlvalues.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_SYMLINK
 
 CAMLprim value unix_symlink(value path1, value path2)
 {
-  if (symlink(String_val(path1), String_val(path2)) == -1)
+  CAMLparam2(path1, path2);
+  char * p1;
+  char * p2;
+  int ret;
+  p1 = caml_stat_alloc_string(path1);
+  p2 = caml_stat_alloc_string(path2);
+  caml_enter_blocking_section();
+  ret = symlink(p1, p2);
+  caml_leave_blocking_section();
+  caml_stat_free(p1);
+  caml_stat_free(p2);
+  if (ret == -1)
     uerror("symlink", path2);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 #else

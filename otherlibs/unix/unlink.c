@@ -12,10 +12,20 @@
 /***********************************************************************/
 
 #include <mlvalues.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_unlink(value path)
 {
-  if (unlink(String_val(path)) == -1) uerror("unlink", path);
-  return Val_unit;
+  CAMLparam1(path);
+  char * p;
+  int ret;
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = unlink(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1) uerror("unlink", path);
+  CAMLreturn(Val_unit);
 }

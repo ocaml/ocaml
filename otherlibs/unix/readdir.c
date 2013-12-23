@@ -14,6 +14,7 @@
 #include <mlvalues.h>
 #include <fail.h>
 #include <alloc.h>
+#include <signals.h>
 #include "unixsupport.h"
 #include <errno.h>
 #include <sys/types.h>
@@ -31,7 +32,9 @@ CAMLprim value unix_readdir(value vd)
   directory_entry * e;
   d = DIR_Val(vd);
   if (d == (DIR *) NULL) unix_error(EBADF, "readdir", Nothing);
+  caml_enter_blocking_section();
   e = readdir((DIR *) d);
+  caml_leave_blocking_section();
   if (e == (directory_entry *) NULL) raise_end_of_file();
   return copy_string(e->d_name);
 }
