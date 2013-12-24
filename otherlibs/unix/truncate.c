@@ -39,14 +39,15 @@ CAMLprim value unix_truncate(value path, value len)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value unix_truncate_64(value path, value len)
+CAMLprim value unix_truncate_64(value path, value vlen)
 {
-  CAMLparam2(path, len);
+  CAMLparam2(path, vlen);
   char * p;
   int ret;
+  file_offset len = File_offset_val(vlen);
   p = caml_stat_alloc_string(path);
   caml_enter_blocking_section();
-  ret = truncate(p, File_offset_val(len));
+  ret = truncate(p, len);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
