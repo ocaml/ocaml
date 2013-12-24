@@ -49,7 +49,7 @@ CAMLprim value unix_access(value path, value perms)
   cv_flags = convert_flag_list(perms, access_permission_table);
   p = caml_stat_alloc_string(path);
   caml_enter_blocking_section();
-  ret = access(String_val(path), cv_flags);
+  ret = access(p, cv_flags);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
