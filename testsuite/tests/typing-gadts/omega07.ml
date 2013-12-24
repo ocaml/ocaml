@@ -48,11 +48,9 @@ let rec app : type a n m. (a,n) seq -> (a,m) seq -> (a,n,m) app =
   match xs with
   | Snil -> App (ys, PlusZ (length ys))
   | Scons (x, xs') ->
-      match app xs' ys with
-      | App (xs'', pl) -> App (Scons (x, xs''), PlusS pl)
+      let App (xs'', pl) = app xs' ys in
+      App (Scons (x, xs''), PlusS pl)
 ;;
-(* Note: it would be nice to be able to handle existentials in
-   let definitions *)
 
 (* 3.1 Feature: kinds *)
 
