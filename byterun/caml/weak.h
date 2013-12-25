@@ -18,7 +18,9 @@
 
 #include "mlvalues.h"
 
-extern value caml_weak_list_head;
-extern value caml_weak_none;
+extern value caml_ephe_list_head;
+extern value caml_ephe_none;
+
+void caml_ephe_clean (value v);
 
 #endif /* CAML_WEAK_H */

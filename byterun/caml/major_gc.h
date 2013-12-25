@@ -52,8 +52,8 @@ extern uintnat caml_fl_wsz_at_phase_change;
 #define Subphase_mark_final 12 /* after marking finalized value */
 
 /* Subphase of clean */
-#define Subphase_clean_weak  20 /* clean weak arrays */
-#define Subphase_unlink_weak 21 /* remove dead weak arrays */
+#define Subphase_clean_ephe  20 /* clean ephemeron */
+#define Subphase_unlink_ephe 21 /* remove dead ephemeron */
 
 CAMLextern char *caml_heap_start;
 extern uintnat total_heap_size;

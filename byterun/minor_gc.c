@@ -62,9 +62,11 @@ CAMLexport value *caml_young_trigger = NULL;
 
 CAMLexport struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
-  caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
   caml_finalize_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 /* table of custom blocks containing finalizers in the minor heap */
+
+CAMLexport struct caml_ephe_ref_table
+  caml_ephe_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 
 int caml_in_minor_collection = 0;
 
@@ -89,6 +91,13 @@ static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
 {
   alloc_generic_table ((struct generic_table *) tbl, sz, rsv, sizeof (value *));
+}
+
+void caml_alloc_ephe_table (struct caml_ephe_ref_table *tbl, asize_t sz,
+                            asize_t rsv)
+{
+  alloc_generic_table ((struct generic_table *) tbl, sz, rsv,
+                       sizeof (struct caml_ephe_ref_elt));
 }
 
 static void reset_table (struct generic_table *tbl)
@@ -174,7 +183,7 @@ void caml_set_minor_heap_size (asize_t bsz)
   caml_minor_heap_wsz = Wsize_bsize (bsz);
 
   reset_table ((struct generic_table *) &caml_ref_table);
-  reset_table ((struct generic_table *) &caml_weak_ref_table);
+  reset_table ((struct generic_table *) &caml_ephe_ref_table);
 }
 
 static value oldify_todo_list = 0;
@@ -273,6 +282,7 @@ void caml_oldify_mopup (void)
 {
   value v, new_v, f;
   mlsize_t i;
+  struct caml_ephe_ref_elt *re;
 
   while (oldify_todo_list != 0){
     v = oldify_todo_list;                /* Get the head. */
@@ -293,6 +303,37 @@ void caml_oldify_mopup (void)
       }
     }
   }
+
+  /* Oldify the data in the minor heap of alive ephemeron
+     During minor collection keys outside the minor heap are considered alive */
+  for (re = caml_ephe_ref_table.base;
+       re < caml_ephe_ref_table.ptr; re++){
+    /* look only at ephemeron with data in the minor heap */
+    if (re->offset == 1){
+      value *data = &Field(re->ephe,re->offset);
+      if (Is_block (*data) && Is_young (*data)){
+        if (Hd_val (*data) == 0){ /* Value copied to major heap */
+          *data = Field (*data, 0);
+        } else {
+          /* Test if the ephemeron is alive */
+          int alive_data = 1;
+          value child;
+          for (i = 2; alive_data && i < Wosize_val(re->ephe); i++){
+            child = Field (re->ephe, i);
+            if(child != caml_ephe_none
+               && Is_block (child) && Is_young (child)
+               && Hd_val (child) != 0){ /* Value not copied to major heap */
+              alive_data = 0;
+            }
+          }
+          if (alive_data) caml_oldify_one(*data,data);
+        }
+      }
+    }
+  }
+
+  if (oldify_todo_list != 0) caml_oldify_mopup ();
+
 }
 
 /* Make sure the minor heap is empty by performing a minor collection
@@ -302,6 +343,7 @@ void caml_empty_minor_heap (void)
 {
   value **r;
   uintnat prev_alloc_words;
+  struct caml_ephe_ref_elt *re;
 
   if (caml_young_ptr != caml_young_alloc_end){
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
@@ -317,15 +359,20 @@ void caml_empty_minor_heap (void)
     CAML_INSTR_TIME (tmr, "minor/ref_table");
     caml_oldify_mopup ();
     CAML_INSTR_TIME (tmr, "minor/copy");
-    for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
-      if (Is_block (**r) && Is_young (**r)){
-        if (Hd_val (**r) == 0){
-          **r = Field (**r, 0);
-        }else{
-          **r = caml_weak_none;
+    /* Update the ephemerons */
+    for (re = caml_ephe_ref_table.base;
+         re < caml_ephe_ref_table.ptr; re++){
+      value *key = &Field(re->ephe,re->offset);
+      if (Is_block (*key) && Is_young (*key)){
+        if (Hd_val (*key) == 0){ /* Value copied to major heap */
+          *key = Field (*key, 0);
+        }else{ /* Value not copied so it's dead */
+          *key = caml_ephe_none;
+          Field(re->ephe,1) = caml_ephe_none;
         }
       }
     }
+    /* Run custom block finalisation of dead minor value */
     for (r = caml_finalize_table.base; r < caml_finalize_table.ptr; r++){
       int hd = Hd_val ((value)*r);
       if (hd != 0){         /* If not oldified the finalizer must be called */
@@ -339,7 +386,7 @@ void caml_empty_minor_heap (void)
                      / caml_minor_heap_wsz;
     caml_young_ptr = caml_young_alloc_end;
     clear_table ((struct generic_table *) &caml_ref_table);
-    clear_table ((struct generic_table *) &caml_weak_ref_table);
+    clear_table ((struct generic_table *) &caml_ephe_ref_table);
     clear_table ((struct generic_table *) &caml_finalize_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
@@ -478,4 +525,14 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
      "ref_table threshold crossed\n",
      "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
      "Fatal error: ref_table overflow\n");
+}
+
+void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
+{
+  realloc_generic_table
+    ((struct generic_table *) tbl, sizeof (struct caml_ephe_ref_elt),
+     "request_minor/realloc_ephe_ref_table@",
+     "ephe_ref_table threshold crossed\n",
+     "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Fatal error: ephe_ref_table overflow\n");
 }
