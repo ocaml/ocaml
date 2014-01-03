@@ -1887,6 +1887,10 @@ lbl_pattern:
      { (mkrhs $1 1, mkpat_opt_constraint $4 $2) }
   | label_longident opt_pattern_type_constraint
      { (mkrhs $1 1, mkpat_opt_constraint (pat_of_label $1 1) $2) }
+   | pattern AS label_longident opt_pattern_type_constraint
+      { (mkrhs $3 3,
+         mkpat_opt_constraint
+          (mkpat (Ppat_alias($1, mkrhs (Longident.last $3) 3))) $4) }
 ;
 opt_pattern_type_constraint:
     COLON core_type { Some $2 }
