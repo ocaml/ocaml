@@ -830,20 +830,20 @@ distclean::
 all: ocgi
 
 # http://tech.motion-twin.com/xmllight
-XMLLIGHT=xml-light-2.2
-${XMLLIGHT}.zip:
-	${WGET} http://tech.motion-twin.com/zip/$@
-xmllight: ${XMLLIGHT}.zip
+XMLLIGHT=xml-light.2.3
+${XMLLIGHT}.tar.gz:
+	${WGET} https://github.com/bguil/ocamllibs/releases/download/xml-light.2.3/$@
+xmllight: ${XMLLIGHT}.tar.gz
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf xml-light ${XMLLIGHT}
-	unzip ${XMLLIGHT}.zip && mv xml-light ${XMLLIGHT}
+	tar zxf ${XMLLIGHT}.tar.gz
 	./Patcher.sh ${XMLLIGHT}
 	( cd ${XMLLIGHT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ${MAKE} xml_parser.ml && \
 	  ${MAKE} all opt && \
-	  ${MAKE} install )
+	  ${MAKE} install_ocamlfind )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${XMLLIGHT} xml-light xmllight
