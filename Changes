@@ -64,6 +64,7 @@ Features wishes:
   hexa representations (patch by Zoe Paraskevopoulou)
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
+- PR#6064: GADT representation for Bigarray.kind + CAML_BA_CHAR runtime kind
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
 - PR#6246: allow wilcard _ as for-loop index
