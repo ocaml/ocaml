@@ -56,20 +56,33 @@
    of the abstract types defined below.
 *)
 
-type float32_elt
-type float64_elt
-type complex32_elt
-type complex64_elt
-type int8_signed_elt
-type int8_unsigned_elt
-type int16_signed_elt
-type int16_unsigned_elt
-type int_elt
-type int32_elt
-type int64_elt
-type nativeint_elt
+type float32_elt = Float32_elt
+type float64_elt = Float64_elt
+type int8_signed_elt = Int8_signed_elt
+type int8_unsigned_elt = Int8_unsigned_elt
+type int16_signed_elt = Int16_signed_elt
+type int16_unsigned_elt = Int16_unsigned_elt
+type int32_elt = Int32_elt
+type int64_elt = Int64_elt
+type int_elt = Int_elt
+type nativeint_elt = Nativeint_elt
+type complex32_elt = Complex32_elt
+type complex64_elt = Complex64_elt
 
-type ('a, 'b) kind
+type ('a, 'b) kind =
+    Float32 : (float, float32_elt) kind
+  | Float64 : (float, float64_elt) kind
+  | Int8_signed : (int, int8_signed_elt) kind
+  | Int8_unsigned : (int, int8_unsigned_elt) kind
+  | Int16_signed : (int, int16_signed_elt) kind
+  | Int16_unsigned : (int, int16_unsigned_elt) kind
+  | Int32 : (int32, int32_elt) kind
+  | Int64 : (int64, int64_elt) kind
+  | Int : (int, int_elt) kind
+  | Nativeint : (nativeint, nativeint_elt) kind
+  | Complex32 : (Complex.t, complex32_elt) kind
+  | Complex64 : (Complex.t, complex64_elt) kind
+  | Char : (char, int8_unsigned_elt) kind
 (** To each element kind is associated an OCaml type, which is
    the type of OCaml values that can be stored in the big array
    or read back from it.  This type is not necessarily the same
@@ -140,10 +153,10 @@ val char : (char, int8_unsigned_elt) kind
 
 (** {6 Array layouts} *)
 
-type c_layout
+type c_layout = C_layout_typ
 (** See {!Bigarray.fortran_layout}.*)
 
-type fortran_layout
+type fortran_layout = Fortran_layout_typ
 (** To facilitate interoperability with existing C and Fortran code,
    this library supports two different memory layouts for big arrays,
    one compatible with the C conventions,
@@ -166,7 +179,9 @@ type fortran_layout
    Each layout style is identified at the type level by the
    abstract types {!Bigarray.c_layout} and [fortran_layout] respectively. *)
 
-type 'a layout
+type 'a layout =
+    C_layout: c_layout layout
+  | Fortran_layout: fortran_layout layout
 (** The type ['a layout] represents one of the two supported
    memory layouts: C-style if ['a] is {!Bigarray.c_layout}, Fortran-style
    if ['a] is {!Bigarray.fortran_layout}. *)
