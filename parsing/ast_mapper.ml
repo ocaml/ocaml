@@ -159,6 +159,7 @@ module MT = struct
     let attrs = sub.attributes sub attrs in
     match desc with
     | Pmty_ident s -> ident ~loc ~attrs (map_loc sub s)
+    | Pmty_alias s -> alias ~loc ~attrs (map_loc sub s)
     | Pmty_signature sg -> signature ~loc ~attrs (sub.signature sub sg)
     | Pmty_functor (s, mt1, mt2) ->
         functor_ ~loc ~attrs (map_loc sub s)
@@ -427,15 +428,18 @@ let default_mapper =
     signature_item = MT.map_signature_item;
     module_type = MT.map;
     with_constraint = MT.map_with_constraint;
-    class_declaration = (fun this -> CE.class_infos this (this.class_expr this));
+    class_declaration =
+      (fun this -> CE.class_infos this (this.class_expr this));
     class_expr = CE.map;
     class_field = CE.map_field;
     class_structure = CE.map_structure;
     class_type = CT.map;
     class_type_field = CT.map_field;
     class_signature = CT.map_signature;
-    class_type_declaration = (fun this -> CE.class_infos this (this.class_type this));
-    class_description = (fun this -> CE.class_infos this (this.class_type this));
+    class_type_declaration =
+      (fun this -> CE.class_infos this (this.class_type this));
+    class_description =
+      (fun this -> CE.class_infos this (this.class_type this));
     type_declaration = T.map_type_declaration;
     type_kind = T.map_type_kind;
     typ = T.map;

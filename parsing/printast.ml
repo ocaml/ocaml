@@ -572,6 +572,7 @@ and module_type i ppf x =
   let i = i+1 in
   match x.pmty_desc with
   | Pmty_ident li -> line i ppf "Pmty_ident %a\n" fmt_longident_loc li;
+  | Pmty_alias li -> line i ppf "Pmty_alias %a\n" fmt_longident_loc li;
   | Pmty_signature (s) ->
       line i ppf "Pmty_signature\n";
       signature i ppf s;

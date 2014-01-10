@@ -32,7 +32,7 @@ module type OBJ =
 module type EVALPATH =
   sig
     type valu
-    val eval_path: Path.t -> valu
+    val eval_path: Env.t -> Path.t -> valu
     exception Error
     val same_value: valu -> valu -> bool
   end
@@ -368,7 +368,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)
-        if not (EVP.same_value slot (EVP.eval_path path))
+        if not (EVP.same_value slot (EVP.eval_path env path))
         then raise Not_found;
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name 1 depth bucket cstr.cstr_args

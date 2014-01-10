@@ -2163,7 +2163,9 @@ let combine_constructor arg ex_pat cstr partial ctx def
                 else Lprim(Pfield 0, [arg])
               in
               Lifthenelse(Lprim(Pintcomp Ceq,
-                                [slot; transl_path path]),
+                                [slot;
+                                 transl_path ~loc:ex_pat.pat_loc
+                                   ex_pat.pat_env path]),
                           act, rem)
           | _ -> assert false)
         tests default in
@@ -2734,7 +2736,7 @@ let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable),
-          [transl_path Predef.path_match_failure;
+          [transl_normal_path Predef.path_match_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
                Const_base(Const_int line);

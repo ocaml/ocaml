@@ -182,11 +182,11 @@ typing/env.cmx : utils/warnings.cmx typing/types.cmx utils/tbl.cmx \
     typing/cmi_format.cmx utils/clflags.cmx typing/btype.cmx \
     parsing/asttypes.cmi typing/env.cmi
 typing/envaux.cmo : typing/types.cmi typing/subst.cmi typing/printtyp.cmi \
-    typing/path.cmi typing/mtype.cmi utils/misc.cmi typing/env.cmi \
-    parsing/asttypes.cmi typing/envaux.cmi
+    typing/path.cmi typing/mtype.cmi utils/misc.cmi typing/ident.cmi \
+    typing/env.cmi parsing/asttypes.cmi typing/envaux.cmi
 typing/envaux.cmx : typing/types.cmx typing/subst.cmx typing/printtyp.cmx \
-    typing/path.cmx typing/mtype.cmx utils/misc.cmx typing/env.cmx \
-    parsing/asttypes.cmi typing/envaux.cmi
+    typing/path.cmx typing/mtype.cmx utils/misc.cmx typing/ident.cmx \
+    typing/env.cmx parsing/asttypes.cmi typing/envaux.cmi
 typing/ident.cmo : typing/ident.cmi
 typing/ident.cmx : typing/ident.cmi
 typing/includeclass.cmo : typing/types.cmi typing/printtyp.cmi \

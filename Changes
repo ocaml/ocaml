@@ -3,6 +3,11 @@ Next version:
 
 (Changes that can break existing programs are marked with a "*")
 
+Language features:
+- Attributes and extension nodes
+- Generative functors
+- Module aliases
+
 Camlp4:
 - Removed from the official distribution
 
@@ -16,10 +21,9 @@ Type system:
 - Allow opening a first-class module or applying a generative functor
   in the body of a generative functor. Allow it also in the body of
   an applicative functor if no types are created
-
-Language features:
-- Attributes and extension nodes
-- Generative functors
+* Module aliases are now typed in a specific way, which remembers their
+  identity. In particular this changes the signature inferred by
+  "module type of"
 
 Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)

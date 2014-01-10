@@ -423,7 +423,8 @@ module MakeMap(Map : MapArgument) = struct
     let mty = Map.enter_module_type mty in
     let mty_desc =
       match mty.mty_desc with
-          Tmty_ident (path, lid) -> mty.mty_desc
+          Tmty_ident _ -> mty.mty_desc
+        | Tmty_alias _ -> mty.mty_desc
         | Tmty_signature sg -> Tmty_signature (map_signature sg)
         | Tmty_functor (id, name, mtype1, mtype2) ->
           Tmty_functor (id, name, Misc.may_map map_module_type mtype1,

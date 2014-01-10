@@ -84,6 +84,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _strict_sequence = option "-strict-sequence"
   let _shared = option "-shared"
   let _thread = option "-thread"
+  let _trans_mod = option "-trans-mod"
   let _unsafe = option "-unsafe"
   let _v = option "-v"
   let _version = option "-version"

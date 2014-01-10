@@ -112,6 +112,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
   let _thread = set use_threads
+  let _trans_mod = set transparent_modules
   let _vmthread = set use_vmthreads
   let _unsafe = set fast
   let _use_prims s = use_prims := s

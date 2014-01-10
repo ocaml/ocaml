@@ -221,7 +221,7 @@ let find_printer_type ppf lid =
 let dir_install_printer ppf lid =
   try
     let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
-    let v = eval_path path in
+    let v = eval_path !toplevel_env path in
     let print_function =
       if is_old_style then
         (fun formatter repr -> Obj.obj v (Obj.obj repr))
@@ -262,7 +262,7 @@ let dir_trace ppf lid =
         fprintf ppf "%a is an external function and cannot be traced.@."
         Printtyp.longident lid
     | _ ->
-        let clos = eval_path path in
+        let clos = eval_path !toplevel_env path in
         (* Nothing to do if it's not a closure *)
         if Obj.is_block clos
         && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)

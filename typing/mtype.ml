@@ -86,6 +86,7 @@ and strengthen_sig env sg p =
 and strengthen_decl env md p =
   {md with md_type = strengthen env md.md_type p}
 
+let () = Env.strengthen := strengthen
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
@@ -101,6 +102,10 @@ let nondep_supertype env mid mty =
         if Path.isfree mid p then
           nondep_mty env va (Env.find_modtype_expansion p env)
         else mty
+    | Mty_alias p ->
+        if Path.isfree mid p then
+          nondep_mty env va (Env.find_module p env).md_type
+        else mty
     | Mty_signature sg ->
         Mty_signature(nondep_sig env va sg)
     | Mty_functor(param, arg, res) ->
@@ -108,7 +113,8 @@ let nondep_supertype env mid mty =
           match va with Co -> Contra | Contra -> Co | Strict -> Strict in
         Mty_functor(param, Misc.may_map (nondep_mty env var_inv) arg,
                     nondep_mty
-                      (Env.add_module param (Btype.default_mty arg) env) va res)
+                      (Env.add_module ~arg:true param
+                         (Btype.default_mty arg) env) va res)
 
   and nondep_sig env va = function
     [] -> []
@@ -188,6 +194,7 @@ and enrich_item env p = function
 let rec type_paths env p mty =
   match scrape env mty with
     Mty_ident p -> []
+  | Mty_alias p -> []
   | Mty_signature sg -> type_paths_sig env p 0 sg
   | Mty_functor(param, arg, res) -> []
 
@@ -214,6 +221,7 @@ let rec no_code_needed env mty =
     Mty_ident p -> false
   | Mty_signature sg -> no_code_needed_sig env sg
   | Mty_functor(_, _, _) -> false
+  | Mty_alias p -> true
 
 and no_code_needed_sig env sg =
   match sg with
@@ -242,6 +250,8 @@ let rec contains_type env = function
       contains_type_sig env sg
   | Mty_functor (_, _, body) ->
       contains_type env body
+  | Mty_alias _ ->
+      ()
 
 and contains_type_sig env = List.iter (contains_type_item env)
 

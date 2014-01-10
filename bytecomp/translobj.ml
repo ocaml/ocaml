@@ -20,7 +20,7 @@ open Lambda
 
 let oo_prim name =
   try
-    transl_path
+    transl_normal_path
       (fst (Env.lookup_value (Ldot (Lident "CamlinternalOO", name)) Env.empty))
   with Not_found ->
     fatal_error ("Primitive " ^ name ^ " not found.")
@@ -93,12 +93,19 @@ let prim_makearray =
   { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
+(* Also use it for required globals *)
 let transl_label_init expr =
   let expr =
     Hashtbl.fold
       (fun c id expr -> Llet(Alias, id, Lconst c, expr))
       consts expr
   in
+  let expr =
+    List.fold_right
+      (fun id expr -> Lsequence(Lprim(Pgetglobal id, []), expr))
+      (Env.get_required_globals ()) expr
+  in
+  Env.reset_required_globals ();
   reset_labels ();
   expr
 

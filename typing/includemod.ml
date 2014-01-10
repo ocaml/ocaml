@@ -35,6 +35,7 @@ type symptom =
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
   | Unbound_modtype_path of Path.t
+  | Unbound_module_path of Path.t
 
 type pos =
     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
@@ -104,6 +105,18 @@ let expand_module_path env cxt path =
   with Not_found ->
     raise(Error[cxt, env, Unbound_modtype_path path])
 
+let expand_module_alias env cxt path =
+  try (Env.find_module path env).md_type
+  with Not_found ->
+    raise(Error[cxt, env, Unbound_module_path path])
+
+(*
+let rec normalize_module_path env cxt path =
+  match expand_module_alias env cxt path with
+    Mty_alias path' -> normalize_module_path env cxt path'
+  | _ -> path
+*)
+
 (* Extract name, kind and ident from a signature item *)
 
 type field_desc =
@@ -136,7 +149,7 @@ let is_runtime_component = function
 
 (* Simplify a structure coercion *)
 
-let simplify_structure_coercion cc =
+let simplify_structure_coercion cc id_pos_list =
   let rec is_identity_coercion pos = function
   | [] ->
       true
@@ -144,7 +157,7 @@ let simplify_structure_coercion cc =
       n = pos && c = Tcoerce_none && is_identity_coercion (pos + 1) rem in
   if is_identity_coercion 0 cc
   then Tcoerce_none
-  else Tcoerce_structure cc
+  else Tcoerce_structure (cc, id_pos_list)
 
 (* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
@@ -156,13 +169,31 @@ let rec modtypes env cxt subst mty1 mty2 =
   with
     Dont_match ->
       raise(Error[cxt, env, Module_types(mty1, Subst.modtype subst mty2)])
-  | Error reasons ->
-      raise(Error((cxt, env, Module_types(mty1, Subst.modtype subst mty2))
-                  :: reasons))
+  | Error reasons as err ->
+      match mty1, mty2 with
+        Mty_alias _, _
+      | _, Mty_alias _ -> raise err
+      | _ ->
+          raise(Error((cxt, env, Module_types(mty1, Subst.modtype subst mty2))
+                      :: reasons))
 
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
-    (Mty_ident p1, _) when may_expand_module_path env p1 ->
+    (Mty_alias p1, Mty_alias p2) ->
+      if Path.same p1 p2 then Tcoerce_none else
+      let p1 = Env.normalize_path None env p1
+      and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
+      (* Should actually be Tcoerce_ignore, if it existed *)
+      if Path.same p1 p2 then Tcoerce_none else raise Dont_match
+  | (Mty_alias p1, _) ->
+      let p1 = try
+        Env.normalize_path (Some Location.none) env p1
+      with Env.Error (Env.Missing_module (_, _, path)) ->
+        raise (Error[cxt, env, Unbound_module_path path])
+      in
+      let mty1 = Mtype.strengthen env (expand_module_alias env cxt p1) p1 in
+      Tcoerce_alias (p1, modtypes env cxt subst mty1 mty2)
+  | (Mty_ident p1, _) when may_expand_module_path env p1 ->
       try_modtypes env cxt subst (expand_module_path env cxt p1) mty2
   | (_, Mty_ident p2) ->
       try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
@@ -203,6 +234,14 @@ and signatures env cxt subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
   let new_env =
     Env.add_signature sig1 (Env.in_signature env) in
+  (* Keep ids for module aliases *)
+  let (id_pos_list,_) =
+    List.fold_left
+      (fun (l,pos) -> function
+          Sig_module (id, _, _) ->
+            ((id,pos,Tcoerce_none)::l , pos+1)
+        | item -> (l, if is_runtime_component item then pos+1 else pos))
+      ([], 0) sig1 in
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
@@ -233,9 +272,9 @@ and signatures env cxt subst sig1 sig2 =
                 signature_components new_env cxt subst (List.rev paired)
               in
               if len1 = len2 then (* see PR#5098 *)
-                simplify_structure_coercion cc
+                simplify_structure_coercion cc id_pos_list
               else
-                Tcoerce_structure cc
+                Tcoerce_structure (cc, id_pos_list)
           | _  -> raise(Error unpaired)
         end
     | item2 :: rem ->
@@ -432,6 +471,8 @@ let include_err ppf = function
       Includeclass.report_error reason
   | Unbound_modtype_path path ->
       fprintf ppf "Unbound module type %a" Printtyp.path path
+  | Unbound_module_path path ->
+      fprintf ppf "Unbound module %a" Printtyp.path path
 
 let rec context ppf = function
     Module id :: rem ->
