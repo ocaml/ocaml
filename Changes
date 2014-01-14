@@ -50,6 +50,7 @@ Bug fixes:
 - PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
 - PR#6262: equality of first-class modules take module aliases into account
+- PR#6293: Assert_failure with invalid package type
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list

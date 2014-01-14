@@ -1098,8 +1098,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_value(rec_flag, sdefs) ->
         let scope =
           match rec_flag with
-          | Recursive -> Some (Annot.Idef {scope with
-                                           Location.loc_start = loc.Location.loc_start})
+          | Recursive ->
+              Some (Annot.Idef {scope with
+                                Location.loc_start = loc.Location.loc_start})
           | Nonrecursive ->
               let start =
                 match srem with

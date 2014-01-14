@@ -1946,6 +1946,10 @@ and type_expect_ ?in_function env sexp ty_expected =
                 Texp_ident(path, lid, desc)
             | Val_unbound ->
                 raise(Error(loc, env, Masked_instance_variable lid.txt))
+            (*| Val_prim _ ->
+                let p = Env.normalize_path (Some loc) env path in
+                Env.add_required_global (Path.head p);
+                Texp_ident(path, lid, desc)*)
             | _ ->
                 Texp_ident(path, lid, desc)
           end;
