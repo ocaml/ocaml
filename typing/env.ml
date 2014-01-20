@@ -54,7 +54,7 @@ let used_constructors :
 let prefixed_sg = Hashtbl.create 113
 
 type error =
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
 
@@ -290,7 +290,7 @@ let check_consistency filename crcs =
 
 (* Reading persistent structures from .cmi files *)
 
-let read_pers_struct modname filename =
+let read_pers_struct modname filename = (
   let cmi = read_cmi filename in
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
@@ -305,9 +305,9 @@ let read_pers_struct modname filename =
                ps_comps = comps;
                ps_crcs = crcs;
                ps_filename = filename;
-               ps_flags = flags } in
+               ps_flags = flags } in 
     if ps.ps_name <> modname then
-      raise(Error(Illegal_renaming(ps.ps_name, filename)));
+      raise(Error(Illegal_renaming(modname, ps.ps_name, filename)));
     check_consistency filename ps.ps_crcs;
     List.iter
       (function Rectypes ->
@@ -316,6 +316,7 @@ let read_pers_struct modname filename =
       ps.ps_flags;
     Hashtbl.add persistent_structures modname (Some ps);
     ps
+)
 
 let find_pers_struct name =
   if name = "*predef*" then raise Not_found;
@@ -487,6 +488,8 @@ let find_module path env =
 
 (* Lookup by name *)
 
+exception Recmodule
+
 let rec lookup_module_descr lid env =
   match lid with
     Lident s ->
@@ -521,7 +524,14 @@ and lookup_module lid env =
   match lid with
     Lident s ->
       begin try
-        EnvTbl.find_name s env.modules
+        let (_, ty) as r = EnvTbl.find_name s env.modules in
+        begin match ty with
+        | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
+          (* see #5965 *)
+          raise Recmodule
+        | _ -> ()
+        end;
+        r
       with Not_found ->
         if s = !current_unit then raise Not_found;
         let ps = find_pers_struct s in
@@ -1569,9 +1579,9 @@ let env_of_only_summary env_from_summary env =
 open Format
 
 let report_error ppf = function
-  | Illegal_renaming(modname, filename) -> fprintf ppf
-      "Wrong file naming: %a@ contains the compiled interface for@ %s"
-      Location.print_filename filename modname
+  | Illegal_renaming(name, modname, filename) -> fprintf ppf
+      "Wrong file naming: %a@ contains the compiled interface for @ %s when %s was expected"
+      Location.print_filename filename name modname 
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"

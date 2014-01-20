@@ -591,14 +591,7 @@ end) = struct
     let tpaths = unique (compare_type_path env) [tpath] others in
     match tpaths with
       [_] -> []
-    | _ ->
-        let open Format in
-        ignore (flush_str_formatter ());
-        List.map
-          (fun p ->
-            fprintf str_formatter "%a" Printtyp.path p;
-            flush_str_formatter ())
-          tpaths
+    | _ -> List.map Printtyp.string_of_path tpaths
 
   let disambiguate_by_type env tpath lbls =
     let check_type (lbl, _) =
@@ -651,8 +644,9 @@ end) = struct
         with Not_found -> try
           let lbl = lookup_from_type env tpath lid in
           check_lk tpath lbl;
+          let s = Printtyp.string_of_path tpath in
           warn lid.loc
-            (Warnings.Name_out_of_scope ([Longident.last lid.txt], false));
+            (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
           if not pr then warn_pr ();
           lbl
 	with Not_found ->
@@ -704,13 +698,15 @@ let disambiguate_label_by_ids keep env closed ids labels =
 (* Only issue warnings once per record constructor/pattern *)
 let disambiguate_lid_a_list loc closed env opath lid_a_list =
   let ids = List.map (fun (lid, _) -> Longident.last lid.txt) lid_a_list in
-  let w_pr = ref false and w_amb = ref [] and w_scope = ref [] in
+  let w_pr = ref false and w_amb = ref []
+  and w_scope = ref [] and w_scope_ty = ref "" in
   let warn loc msg =
     let open Warnings in
     match msg with
     | Not_principal _ -> w_pr := true
     | Ambiguous_name([s], l, _) -> w_amb := (s, l) :: !w_amb
-    | Name_out_of_scope([s], _) -> w_scope := s :: !w_scope
+    | Name_out_of_scope(ty, [s], _) ->
+        w_scope := s :: !w_scope; w_scope_ty := ty
     | _ -> Location.prerr_warning loc msg
   in
   let process_label lid =
@@ -758,7 +754,7 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
   end;
   if !w_scope <> [] then
     Location.prerr_warning loc
-      (Warnings.Name_out_of_scope (List.rev !w_scope, true));
+      (Warnings.Name_out_of_scope (!w_scope_ty, List.rev !w_scope, true));
   lbl_a_list
 
 let rec find_record_qual = function

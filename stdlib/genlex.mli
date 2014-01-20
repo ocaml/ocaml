@@ -27,13 +27,14 @@
    to, for instance, [int], and would have rules such as:
 
    {[
-           let parse_expr = parser
-                  [< 'Int n >] -> n
-                | [< 'Kwd "("; n = parse_expr; 'Kwd ")" >] -> n
-                | [< n1 = parse_expr; n2 = parse_remainder n1 >] -> n2
+           let rec parse_expr = parser
+             | [< n1 = parse_atom; n2 = parse_remainder n1 >] -> n2
+           and parse_atom = parser
+             | [< 'Int n >] -> n
+             | [< 'Kwd "("; n = parse_expr; 'Kwd ")" >] -> n
            and parse_remainder n1 = parser
-                  [< 'Kwd "+"; n2 = parse_expr >] -> n1+n2
-                | ...
+             | [< 'Kwd "+"; n2 = parse_expr >] -> n1+n2
+             | [< >] -> n1
    ]}
 
    One should notice that the use of the [parser] keyword and associated

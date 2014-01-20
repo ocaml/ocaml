@@ -24,19 +24,19 @@ PLUGINS=plugin.so plugin2.so sub/plugin.so sub/plugin3.so plugin4.so mypack.so p
 
 ADD_COMPFLAGS=-thread
 
-compile: $(PLUGINS) main mylib.so
+compile: $(PLUGINS) main$(EXE) mylib.so
 
 run:
 	@printf " ... testing 'main'"
-	@./main plugin.so plugin2.so plugin_thread.so > result
+	@./main$(EXE) plugin.so plugin2.so plugin_thread.so > result
 	@$(DIFF) reference result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
-main: api.cmx main.cmx
-	@$(OCAMLOPT) -thread -o main -linkall unix.cmxa threads.cmxa dynlink.cmxa api.cmx main.cmx $(PTHREAD_LINK)
+main$(EXE): api.cmx main.cmx
+	@$(OCAMLOPT) -thread -o main$(EXE) -linkall unix.cmxa threads.cmxa dynlink.cmxa api.cmx main.cmx $(PTHREAD_LINK)
 
-main_ext: api.cmx main.cmx factorial.$(O)
-	@$(OCAMLOPT) -o main_ext dynlink.cmxa api.cmx main.cmx factorial.$(O)
+main_ext$(EXE): api.cmx main.cmx factorial.$(O)
+	@$(OCAMLOPT) -o main_ext$(EXE) dynlink.cmxa api.cmx main.cmx factorial.$(O)
 
 sub/plugin3.cmx: sub/api.cmi sub/api.cmx sub/plugin3.ml
 	@(cd sub; mv api.cmx api.cmx.bak; $(OCAMLOPT) -c $(COMPFLAGS) plugin3.ml; mv api.cmx.bak api.cmx)

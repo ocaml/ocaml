@@ -16,7 +16,7 @@
 val package_files: Format.formatter -> string list -> string -> unit
 
 type error =
-    Illegal_renaming of string * string
+    Illegal_renaming of string * string * string
   | Forward_reference of string * string
   | Wrong_for_pack of string * string
   | Linking_error

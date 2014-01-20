@@ -33,6 +33,7 @@ module M = struct
 end;;
 let f (r:M.t) = r.M.x;; (* ok *)
 let f (r:M.t) = r.x;; (* warning *)
+let f ({x}:M.t) = x;; (* warning *)
 
 module M = struct
   type t = {x: int; y: int}

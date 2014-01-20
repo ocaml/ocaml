@@ -12,20 +12,30 @@
 
 TOPDIR=$(BASEDIR)/..
 
+CYGPATH=echo
+DIFF=diff -q
+CANKILL=true
+
+# The variables above may be overridden by .../config/Makefile
+# CYGPATH is the command that translates TOPDIR to the target system's syntax.
+# DIFF is a "diff -q" command that ignores trailing CRs under Windows.
+# CANKILL is true if a script launched by the makefile can kill an OCaml
+#   process, and false for the mingw and MSVC ports.
+
 include $(TOPDIR)/config/Makefile
 
-DIFF=diff -q
-BOOTDIR=$(TOPDIR)/boot
-OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
-OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml -I $(TOPDIR)/stdlib $(COMPFLAGS)
-OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib $(COMPFLAGS)
-OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib $(COMPFLAGS)
-OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc
-OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex
-OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib
+TTOP = "`$(CYGPATH) $(TOPDIR)`"
+
+OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
+OCAML=$(OCAMLRUN) $(TTOP)/ocaml -I $(TTOP)/stdlib $(COMPFLAGS)
+OCAMLC=$(OCAMLRUN) $(TTOP)/ocamlc -I $(TTOP)/stdlib $(COMPFLAGS)
+OCAMLOPT=$(OCAMLRUN) $(TTOP)/ocamlopt -I $(TTOP)/stdlib $(COMPFLAGS)
+OCAMLDOC=$(OCAMLRUN) $(TTOP)/ocamldoc/ocamldoc
+OCAMLLEX=$(OCAMLRUN) $(TTOP)/lex/ocamllex
+OCAMLMKLIB=$(OCAMLRUN) $(TTOP)/tools/ocamlmklib
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
-DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj
+DUMPOBJ=$(OCAMLRUN) $(TTOP)/tool/dumpobj
 BYTECODE_ONLY=`if [ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]; then echo 'YES'; else echo ''; fi`
 #COMPFLAGS=
 #FORTRAN_COMPILER=
@@ -74,7 +84,7 @@ defaultclean:
 
 .cmm.o:
 	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
-	@$(AS) $(ASFLAGS) -o $*.o $*.s
+	@$(ASM) -o $*.o $*.s
 
 .S.o:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.S

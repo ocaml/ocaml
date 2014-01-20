@@ -20,6 +20,7 @@ val longident: formatter -> Longident.t -> unit
 val ident: formatter -> Ident.t -> unit
 val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
+val string_of_path: Path.t -> string
 val raw_type_expr: formatter -> type_expr -> unit
 
 val wrap_printing_env: Env.t -> (unit -> 'a) -> 'a

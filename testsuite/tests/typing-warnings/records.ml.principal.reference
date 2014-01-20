@@ -60,11 +60,24 @@ val f : M.t -> int = <fun>
 # Characters 18-19:
   let f (r:M.t) = r.x;; (* warning *)
                     ^
-Warning 40: x is used out of scope.
+Warning 40: x was selected from type M.t.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
 Characters 18-19:
   let f (r:M.t) = r.x;; (* warning *)
                     ^
 Warning 42: this use of x required disambiguation.
+val f : M.t -> int = <fun>
+# Characters 8-9:
+  let f ({x}:M.t) = x;; (* warning *)
+          ^
+Warning 42: this use of x required disambiguation.
+Characters 7-10:
+  let f ({x}:M.t) = x;; (* warning *)
+         ^^^
+Warning 40: this record of type M.t contains fields that are 
+not visible in the current scope: x.
+They will not be selected if the type becomes unknown.
 val f : M.t -> int = <fun>
 #       module M : sig type t = { x : int; y : int; } end
 #     module N : sig type u = { x : bool; y : bool; } end

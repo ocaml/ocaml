@@ -105,7 +105,7 @@ let _ =
   test "263-byte chunks" (copy_file 263) src testio;
   test "4011-byte chunks" (copy_file 4011) src testio;
   test "0...8192 byte chunks" (copy_random 8192) src testio;
-  test "line per line, short lines" copy_line "/etc/hosts" testio;
+  test "line per line, short lines" copy_line "test-file-short-lines" testio;
   make_lines lines;
   test "line per line, short and long lines" copy_line lines testio;
   test "backwards, 4096-byte chunks" (copy_seek 4096) src testio;

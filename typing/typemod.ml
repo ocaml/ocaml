@@ -635,11 +635,27 @@ and transl_recmodule_modtypes loc env sdecls =
     List.map2
       (fun (_,smty) (id,id_loc,mty) -> (id, id_loc, transl_modtype env_c smty))
       sdecls curr in
+  let ids = List.map (fun (name, _) -> Ident.create name.txt) sdecls in
+  let approx_env =
+    (*
+       cf #5965
+       We use a dummy module type in order to detect a reference to one
+       of the module being defined during the call to approx_modtype.
+       It will be detected in Env.lookup_module.
+    *)
+    List.fold_left
+      (fun env id ->
+         let dummy = Mty_ident (Path.Pident (Ident.create "#recmod#")) in
+         Env.add_module id dummy env
+      )
+      env ids
+  in
   let init =
-    List.map
-      (fun (name, smty) ->
-        (Ident.create name.txt, name, approx_modtype env smty))
-      sdecls in
+    List.map2
+      (fun id (name, smty) ->
+         (id, name, approx_modtype approx_env smty))
+      ids sdecls
+  in
   let env0 = make_env init in
   let dcl1 = transition env0 init in
   let env1 = make_env2 dcl1 in

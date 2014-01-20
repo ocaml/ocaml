@@ -51,7 +51,8 @@ exec-one:
 	  done; \
         else \
 	  echo "Running tests from '$$DIR' ..."; \
-	  (cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR)); \
+	  cd $(DIR) && \
+	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
 	fi
 
 promote: FORCE
@@ -70,13 +71,7 @@ clean: FORCE
 
 report: FORCE
 	@if [ ! -f _log ]; then echo "No '_log' file."; exit 1; fi
-	@echo ''
-	@echo 'Summary:'
-	@echo '  ' `grep 'passed$$' _log | wc -l` 'test(s) passed'
-	@echo '  ' `grep 'failed$$' _log | wc -l` 'test(s) failed'
-	@echo '  ' `grep '^Error' _log | wc -l` 'compilation error(s)'
-	@echo '  ' `grep '^Warning' _log | wc -l` 'compilation warning(s)'
-	@echo '  ' `grep '^make\[2\]: ' _log | wc -l` 'makefile error(s)'
+	@awk -f makefiles/summarize.awk <_log
 
 empty: FORCE
 

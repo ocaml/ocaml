@@ -169,7 +169,7 @@ let p0 = new point ~x:3 ~y:5
 let p1 = new point ~x:10 ~y:13
 let cp = new color_point ~x:12 ~y:(-5) ~color:"green"
 let c = new circle p0 ~r:2
-let d = c#distance cp
+let d = floor (c#distance cp)
 ;;
 let f (x : < m : 'a. 'a -> 'a >) = (x : < m : 'b. 'b -> 'b >)
 ;;

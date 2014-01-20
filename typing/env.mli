@@ -78,6 +78,11 @@ val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class: Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
 
+exception Recmodule
+  (* Raise by lookup_module when the identifier refers
+     to one of the modules of a recursive definition
+     during the computation of its approximation (see #5965). *)
+
 (* Insertion by identifier *)
 
 val add_value:
@@ -162,7 +167,7 @@ val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 (* Error report *)
 
 type error =
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
 

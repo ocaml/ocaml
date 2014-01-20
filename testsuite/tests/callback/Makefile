@@ -14,7 +14,10 @@ BASEDIR=../..
 
 CC=$(NATIVECC) -I $(TOPDIR)/byterun
 
-default: run-byte run-opt
+default:
+	@case " $(OTHERLIBRARIES) " in \
+	  *' unix '*) $(MAKE) run-byte run-opt;; \
+	esac
 
 common:
 	@$(CC) -c callbackprim.c

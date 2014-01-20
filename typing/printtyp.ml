@@ -69,6 +69,15 @@ let rec path ppf = function
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
 
+let rec string_of_out_ident = function
+  | Oide_ident s -> s
+  | Oide_dot (id, s) -> String.concat "." [string_of_out_ident id; s]
+  | Oide_apply (id1, id2) ->
+      String.concat ""
+        [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
+
+let string_of_path p = string_of_out_ident (tree_of_path p)
+
 (* Print a recursive annotation *)
 
 let tree_of_rec = function
