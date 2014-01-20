@@ -150,8 +150,8 @@ type type_declaration =
     type_kind: type_kind;
     type_private: private_flag;
     type_manifest: type_expr option;
-    type_variance: (bool * bool * bool) list;
-    (* covariant, contravariant, weakly contravariant *)
+    type_variance: (bool * bool * bool * bool) list;
+    (* covariant, contravariant, weakly contravariant, injective *)
     type_newtype_level: (int * int) option;
     type_loc: Location.t }
 
@@ -169,6 +169,11 @@ type extension_constructor =
       ext_ret_type: type_expr option; 
       ext_private: private_flag;
       ext_loc: Location.t }
+
+and type_transparence =
+    Type_public      (* unrestricted expansion *)
+  | Type_new         (* "new" type *)
+  | Type_private     (* private type *)
 
 type exception_declaration =
     { exn_args: type_expr list;

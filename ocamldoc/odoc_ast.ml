@@ -1228,7 +1228,7 @@ module Analyser =
                       ty_info = com_opt ;
                       ty_parameters =
                       List.map2
-                      (fun p (co,cn,_) ->
+                      (fun p (co,cn,_,_) ->
                          (Odoc_env.subst_type new_env p,
                           co, cn)
                       )

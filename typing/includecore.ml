@@ -247,15 +247,15 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
   if err <> [] then err else
   if decl2.type_kind = Type_open && decl2.type_manifest = None then
     if List.for_all2
-      (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (co1 = co2)&&(cn1 = cn2))
+      (fun (co1,cn1,_,_) (co2,cn2,_,_) -> (co1 = co2) && (cn1 = cn2)
       decl1.type_variance decl2.type_variance
     then [] else [Variance]
   else if decl2.type_private = Private
-  || decl2.type_kind = Type_abstract && decl2.type_manifest = None then
-  then
+  || (decl2.type_kind = Type_abstract && decl2.type_manifest) = None then
     if List.for_all2
-      (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2)&&(not cn1 || cn2))
-      decl1.type_variance decl2.type_variance
+         (fun (co1,cn1,ct1,i1) (co2,cn2,ct2,i2) ->
+          (not co1 || co2) && (not cn1 || cn2) && (not i2 || i1))
+         decl1.type_variance decl2.type_variance
     then [] else [Variance]
   else []
 

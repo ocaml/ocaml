@@ -82,8 +82,9 @@ Bug fixes:
 - PR#5930: ocamldep leaks temporary preprocessing files
 - PR#5934: integer shift by negative amount (in otherlibs/num)
 - PR#5920, PR#2957: linking failure for big bytecodes on 32bit architectures
-- PR#5981: Incompatibility check assumes abstracted types are injective
 - PR#5965: disallow auto-reference to a recursive module in its definition
+- PR#5981: Incompatibility check assumes abstracted types are injective
+- PR#5985: Unexpected interaction between variance and GADTs
 
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
