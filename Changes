@@ -35,6 +35,8 @@ Standard library:
   (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 
 Bug fixes:
+- PR#5973: Format module incorrectly parses format string
+- PR#5121: %( %) in Format module seems to be broken
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4994: ocaml-mode doesn't work with xemacs21

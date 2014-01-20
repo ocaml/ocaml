@@ -683,6 +683,17 @@ let rec tree_of_type_decl id decl =
 
   let params = filter_params decl.type_params in
 
+  begin match decl.type_manifest with
+  | Some ty ->
+      let vars = free_variables ty in
+      List.iter
+        (function {desc = Tvar (Some "_")} as ty ->
+            if List.memq ty vars then ty.desc <- Tvar None
+          | _ -> ())
+        params
+  | None -> ()
+  end;
+
   List.iter add_alias params;
   List.iter mark_loops params;
   List.iter check_name_of_type (List.map proxy params);

@@ -174,9 +174,9 @@ try
   test (sprintf "%+C" 'c' = "'c'");
   test (sprintf "% C" 'c' = "'c'");
   test (sprintf "%#C" 'c' = "'c'");
-(*  test (sprintf "%4C" 'c' = "   c");     padding not done *)
-(*  test (sprintf "%*C" 2 'c' = " c");     padding not done *)
-(*  test (sprintf "%-0+ #4C" 'c' = "c   ");  padding not done *)
+(*  test (sprintf "%4C" 'c' = " 'c'");     padding not done *)
+(*  test (sprintf "%*C" 2 'c' = "'c'");     padding not done *)
+(*  test (sprintf "%-0+ #4C" 'c' = "'c' ");  padding not done *)
 
   printf "\nf\n%!";
   test (sprintf "%f" (-42.42) = "-42.420000");
@@ -440,11 +440,14 @@ try
   let f () = "ok" in
   test (sprintf "%t" f = "ok");
 
-(* Does not work as expected.  Should be fixed to work like %s.
+  (* Work as expected. Prints the format string type digest.
+     If you want to print the contents of the format string,
+     do not use a meta format; simply convert the format string
+     to a string and print it using %s. *)
+
   printf "\n{...%%}\n%!";
-  let f = format_of_string "%f/%s" in
-  test (sprintf "%{%f%s%}" f = "%f/%s");
-*)
+  let f = format_of_string "%4g/%s" in
+  test (sprintf "%{%#0F%S%}" f = "%f%s");
 
   printf "\n(...%%)\n%!";
   let f = format_of_string "%d/foo/%s" in

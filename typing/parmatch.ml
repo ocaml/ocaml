@@ -274,9 +274,29 @@ let top_pretty ppf v =
   fprintf ppf "@[%a@]@?" pretty_val v
 
 
-let prerr_pat v =
-  top_pretty str_formatter v ;
-  prerr_string (flush_str_formatter ())
+let pretty_pat p =
+  top_pretty Format.str_formatter p ;
+  prerr_string (Format.flush_str_formatter ())
+
+type matrix = pattern list list
+
+let pretty_line ps =
+  List.iter
+    (fun p ->
+      top_pretty Format.str_formatter p ;
+      prerr_string " <" ;
+      prerr_string (Format.flush_str_formatter ()) ;
+      prerr_string ">")
+    ps
+
+let pretty_matrix (pss : matrix) =
+  prerr_endline "begin matrix" ;
+  List.iter
+    (fun ps ->
+      pretty_line ps ;
+      prerr_endline "")
+    pss ;
+  prerr_endline "end matrix"
 
 
 (****************************)
@@ -1269,29 +1289,6 @@ type answer =
   | Upartial of Typedtree.pattern list  (* Mixed, with list of useless ones *)
 
 
-let pretty_pat p =
-  top_pretty Format.str_formatter p ;
-  prerr_string (Format.flush_str_formatter ())
-
-type matrix = pattern list list
-
-let pretty_line ps =
-  List.iter
-    (fun p ->
-      top_pretty Format.str_formatter p ;
-      prerr_string " <" ;
-      prerr_string (Format.flush_str_formatter ()) ;
-      prerr_string ">")
-    ps
-
-let pretty_matrix (pss : matrix) =
-  prerr_endline "begin matrix" ;
-  List.iter
-    (fun ps ->
-      pretty_line ps ;
-      prerr_endline "")
-    pss ;
-  prerr_endline "end matrix"
 
 (* this row type enable column processing inside the matrix
     - left  ->  elements not to be processed,

@@ -295,4 +295,7 @@ Error: This expression has type < bar : int; foo : int; .. > as 'a
 #       type 'a ty = Int : int -> int ty
 #     val f : 'a ty -> 'a = <fun>
 #       val g : 'a ty -> 'a = <fun>
+#       module M : sig type _ t = int end
+# module M : sig type _ t = T : int t end
+# module N : sig type 'a t = 'a M.t = T : int t end
 # 

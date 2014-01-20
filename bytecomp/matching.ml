@@ -2414,6 +2414,7 @@ let arg_to_var arg cls = match arg with
    Output: a lambda term, a jump summary {..., exit number -> context, .. }
 *)
 
+let dbg = false
 
 let rec compile_match repr partial ctx m = match m with
 | { cases = [] } -> comp_exit ctx m
@@ -2431,14 +2432,14 @@ let rec compile_match repr partial ctx m = match m with
         { m with args = (newarg, Alias) :: argl } in
     let (lam, total) =
       comp_match_handlers
-        (do_compile_matching repr) partial ctx newarg first_match rem in
+        ((if dbg then do_compile_matching_pr else do_compile_matching) repr)
+        partial ctx newarg first_match rem in
     bind_check str v arg lam, total
 | _ -> assert false
 
 
 (* verbose version of do_compile_matching, for debug *)
 
-(*
 and do_compile_matching_pr repr partial ctx arg x =
   prerr_string "COMPILE: " ;
   prerr_endline (match partial with Partial -> "Partial" | Total -> "Total") ;
@@ -2450,7 +2451,6 @@ and do_compile_matching_pr repr partial ctx arg x =
   prerr_endline "JUMPS" ;
   pretty_jumps jumps ;
   r
-*)
 
 and do_compile_matching repr partial ctx arg pmh = match pmh with
 | Pm pm ->
@@ -2513,21 +2513,86 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
 (* The entry points *)
 
 (*
-   If there is a guard in a matching, then
-   set exhaustiveness info to Partial.
-   (because of side effects in guards, assume the worst)
+   If there is a guard in a matching or a lazy pattern, 
+   then set exhaustiveness info to Partial.
+   (because of side effects, assume the worst).
+
+   Notice that exhaustiveness information is trusted by the compiler,
+   that is, a match flagged as Total should not fail at runtime.
+   More specifically, for instance if match y with x::_ -> x uis flagged
+   total (as it happens during JoCaml compilation) then y cannot be []
+   at runtime. As a consequence, the static Total exhaustiveness information
+   have to to be downgraded to Partial, in the dubious cases where guards
+   or lazy pattern execute arbitrary code that may perform side effects
+   and change the subject values.
+LM:
+   Lazy pattern was PR #5992, initial patch by lwp25.
+   I have  generalized teh patch, so as to also find mutable fields.
 *)
 
-let check_partial pat_act_list partial =
-  if
-    List.exists
-      (fun (_,lam) -> is_guarded lam)
-       pat_act_list
-  then begin
-    Partial
-  end else
-    partial
+let find_in_pat pred =
+  let rec find_rec p =
+    pred p.pat_desc ||
+    begin match p.pat_desc with
+    | Tpat_alias (p,_,_) | Tpat_variant (_,Some p,_) | Tpat_lazy p ->
+        find_rec p
+    | Tpat_tuple ps|Tpat_construct (_,_,ps,_) | Tpat_array ps ->
+        List.exists find_rec ps
+    | Tpat_record (lpats,_) ->
+        List.exists
+          (fun (_, _, p) -> find_rec p)
+          lpats
+    | Tpat_or (p,q,_) ->
+        find_rec p || find_rec q
+    | Tpat_constant _ | Tpat_var _
+    | Tpat_any | Tpat_variant (_,None,_) -> false
+  end in
+  find_rec
 
+let is_lazy_pat = function
+  | Tpat_lazy _ -> true
+  | Tpat_alias _ | Tpat_variant _ | Tpat_record _
+  | Tpat_tuple _|Tpat_construct _ | Tpat_array _
+  | Tpat_or _ | Tpat_constant _ | Tpat_var _ | Tpat_any
+      -> false
+
+let is_lazy p = find_in_pat is_lazy_pat p
+
+let have_mutable_field p = match p with
+| Tpat_record (lps,_) ->
+    List.exists
+      (fun (_,lbl,_) ->
+        match lbl.Types.lbl_mut with
+        | Mutable -> true
+        | Immutable -> false)
+      lps
+| Tpat_alias _ | Tpat_variant _ | Tpat_lazy _
+| Tpat_tuple _|Tpat_construct _ | Tpat_array _
+| Tpat_or _
+| Tpat_constant _ | Tpat_var _ | Tpat_any
+  -> false
+    
+let is_mutable p = find_in_pat have_mutable_field p
+
+(* Downgrade Total when
+   1. Matching accesses some mutable fields;
+   2. And there are  guards or lazy patterns.
+*)
+
+let check_partial is_mutable is_lazy pat_act_list = function
+  | Partial -> Partial
+  | Total ->
+      if
+        List.exists
+          (fun (pats, lam) ->
+            is_mutable pats && (is_guarded lam || is_lazy pats))
+          pat_act_list
+      then Partial
+      else Total
+
+let check_partial_list =
+  check_partial (List.exists is_mutable) (List.exists is_lazy)
+let check_partial = check_partial is_mutable is_lazy
 
 (* have toplevel handler when appropriate *)
 
@@ -2590,7 +2655,7 @@ let for_let loc param pat body =
 
 (* Easy case since variables are available *)
 let for_tupled_function loc paraml pats_act_list partial =
-  let partial = check_partial pats_act_list partial in
+  let partial = check_partial_list pats_act_list partial in
   let raise_num = next_raise_count () in
   let omegas = [List.map (fun _ -> omega) paraml] in
   let pm =
