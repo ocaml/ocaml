@@ -100,7 +100,7 @@ type scanbuf = in_channel;;
     input, and a token buffer to store the string matched so far.
 
     Note: a scanning action may often require to examine one character in
-    advance; when this ``lookahead'' character does not belong to the token
+    advance; when this 'lookahead' character does not belong to the token
     read, it is stored back in the scanning buffer and becomes the next
     character yet to be read.
 *)
@@ -263,7 +263,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     special exceptions to this rule: the space character ([' '] or ASCII code
     32) and the line feed character (['\n'] or ASCII code 10).
     A space does not match a single space character, but any amount of
-    ``whitespace'' in the input. More precisely, a space inside the format
+    'whitespace' in the input. More precisely, a space inside the format
     string matches {e any number} of tab, space, line feed and carriage
     return characters. Similarly, a line feed character in the format string
     matches either a single line feed or a carriage return followed by a line

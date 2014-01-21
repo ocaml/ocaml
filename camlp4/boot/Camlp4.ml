@@ -14615,7 +14615,12 @@ module Struct =
               function
               | Ast.TyMan (_, t1, t2) ->
                   type_decl tl cl loc (Some (ctyp t1)) pflag t2
-              | Ast.TyPrv (_, t) -> type_decl tl cl loc m true t
+              | Ast.TyPrv (_loc, t) ->
+                  if pflag
+                  then
+                    error _loc
+                      "multiple private keyword used, use only one instead"
+                  else type_decl tl cl loc m true t
               | Ast.TyRec (_, t) ->
                   mktype loc tl cl
                     (Ptype_record (List.map mktrecord (list_of_ctyp t [])))
@@ -15513,7 +15518,7 @@ module Struct =
                      | _ -> Pmodtype_manifest (module_type mt))
                   in (mksig loc (Psig_modtype ((with_loc n loc), si))) :: l
               | SgOpn (loc, id) ->
-                  (mksig loc (Psig_open (Fresh, long_uident id))) :: l
+                  (mksig loc (Psig_open (Fresh, (long_uident id)))) :: l
               | SgTyp (loc, tdl) ->
                   let si =
                     (match tdl with
@@ -15600,7 +15605,7 @@ module Struct =
                   (Ast.TyRbd (_, (Ast.TyId (_, (Ast.IdUid (_, s)))), i))) ->
                   (mkstr loc
                      (Pstr_exn_rebind ((with_loc (conv_con s) loc),
-                        (ident i)))) ::
+                        (long_uident ~conv_con i)))) ::
                     l
               | StExc (_, _) -> assert false
               | StExp (loc, e) -> (mkstr loc (Pstr_eval (expr e))) :: l
@@ -15623,7 +15628,7 @@ module Struct =
                      (Pstr_modtype ((with_loc n loc), (module_type mt)))) ::
                     l
               | StOpn (loc, id) ->
-                  (mkstr loc (Pstr_open (Fresh, long_uident id))) :: l
+                  (mkstr loc (Pstr_open (Fresh, (long_uident id)))) :: l
               | StTyp (loc, tdl) ->
                   let si =
                     (match tdl with
@@ -18141,13 +18146,42 @@ module Struct =
           
         module Delete =
           struct
+            exception Rule_not_found of (string * string)
+              
+            let _ =
+              let () =
+                Printexc.register_printer
+                  (function
+                   | Rule_not_found ((symbols, entry)) ->
+                       let msg =
+                         Printf.sprintf
+                           "rule %S cannot be found in entry\n%s" symbols
+                           entry
+                       in Some msg
+                   | _ -> None)
+              in ()
+              
             module Make (Structure : Structure.S) =
               struct
                 module Tools = Tools.Make(Structure)
                   
                 module Parser = Parser.Make(Structure)
                   
+                module Print = Print.Make(Structure)
+                  
                 open Structure
+                  
+                let raise_rule_not_found entry symbols =
+                  let to_string f x =
+                    let buff = Buffer.create 128 in
+                    let ppf = Format.formatter_of_buffer buff
+                    in
+                      (f ppf x;
+                       Format.pp_print_flush ppf ();
+                       Buffer.contents buff) in
+                  let entry = to_string Print.entry entry in
+                  let symbols = to_string Print.print_rule symbols
+                  in raise (Rule_not_found ((symbols, entry)))
                   
                 let delete_rule_in_tree entry =
                   let rec delete_in_tree symbols tree =
@@ -18247,7 +18281,7 @@ module Struct =
                            let levs =
                              delete_rule_in_suffix entry symbols levs
                            in lev :: levs)
-                  | [] -> raise Not_found
+                  | [] -> raise_rule_not_found entry symbols
                   
                 let rec delete_rule_in_prefix entry symbols =
                   function
@@ -18274,7 +18308,7 @@ module Struct =
                            let levs =
                              delete_rule_in_prefix entry symbols levs
                            in lev :: levs)
-                  | [] -> raise Not_found
+                  | [] -> raise_rule_not_found entry symbols
                   
                 let rec delete_rule_in_level_list entry symbols levs =
                   match symbols with

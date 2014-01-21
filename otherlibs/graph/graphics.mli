@@ -235,7 +235,7 @@ type image
    Externally, images are represented as matrices of colors. *)
 
 val transp : color
-(** In matrices of colors, this color represent a ``transparent''
+(** In matrices of colors, this color represent a 'transparent'
    point: when drawing the corresponding image, all pixels on the
    screen corresponding to a transparent pixel in the image will
    not be modified, while other points will be set to the color
@@ -333,7 +333,7 @@ external sound : int -> int -> unit = "caml_gr_sound"
 
 val auto_synchronize : bool -> unit
 (** By default, drawing takes place both on the window displayed
-   on screen, and in a memory area (the ``backing store'').
+   on screen, and in a memory area (the 'backing store').
    The backing store image is used to re-paint the on-screen
    window when necessary.
 

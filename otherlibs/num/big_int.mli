@@ -155,13 +155,13 @@ val float_of_big_int : big_int -> float
 (** {6 Bit-oriented operations} *)
 
 val and_big_int : big_int -> big_int -> big_int
-        (** Bitwise logical ``and''.
+        (** Bitwise logical 'and'.
             The arguments must be positive or zero. *)
 val or_big_int : big_int -> big_int -> big_int
-        (** Bitwise logical ``or''.
+        (** Bitwise logical 'or'.
             The arguments must be positive or zero. *)
 val xor_big_int : big_int -> big_int -> big_int
-        (** Bitwise logical ``exclusive or''.
+        (** Bitwise logical 'exclusive or'.
             The arguments must be positive or zero. *)
 val shift_left_big_int : big_int -> int -> big_int
         (** [shift_left_big_int b n] returns [b] shifted left by [n] bits.

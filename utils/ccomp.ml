@@ -58,7 +58,7 @@ let compile_file name =
             if !Clflags.native_code
             then Config.native_c_compiler
             else Config.bytecomp_c_compiler)
-       (String.concat " " (List.rev !Clflags.ccopts))
+       (String.concat " " (List.rev !Clflags.all_ccopts))
        (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
        (Clflags.std_include_flag "-I")
        (Filename.quote name))
@@ -119,7 +119,7 @@ let call_linker mode output_name files extra =
         (if !Clflags.gprofile then Config.cc_profile else "")
         ""  (*(Clflags.std_include_flag "-I")*)
         (quote_prefixed "-L" !Config.load_path)
-        (String.concat " " (List.rev !Clflags.ccopts))
+        (String.concat " " (List.rev !Clflags.all_ccopts))
         files
         extra
   in

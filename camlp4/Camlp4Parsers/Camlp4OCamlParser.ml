@@ -193,7 +193,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   clear package_type;
   clear top_phrase;
 
-  EXTEND Gram
+  let apply ()  = EXTEND Gram
     GLOBAL:
       a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT
       a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
@@ -717,7 +717,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | `EOI -> None
       ] ]
     ;
-  END;
+  END in apply ();
 
   (* Some other DELETE_RULE are before the grammar *)
   DELETE_RULE Gram module_longident_with_app: "("; SELF; ")" END;

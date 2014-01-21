@@ -64,7 +64,7 @@ end
 let bad_conversion sfmt i c =
   invalid_arg
     ("Printf: bad conversion %" ^ String.make 1 c ^ ", at char number " ^
-     string_of_int i ^ " in format string ``" ^ sfmt ^ "''")
+     string_of_int i ^ " in format string \'" ^ sfmt ^ "\'")
 ;;
 
 let bad_conversion_format fmt i c =
@@ -73,8 +73,8 @@ let bad_conversion_format fmt i c =
 
 let incomplete_format fmt =
   invalid_arg
-    ("Printf: premature end of format string ``" ^
-     Sformat.to_string fmt ^ "''")
+    ("Printf: premature end of format string \'" ^
+     Sformat.to_string fmt ^ "\'")
 ;;
 
 (* Parses a string conversion to return the specified length and the
@@ -320,7 +320,7 @@ let list_iter_i f l =
   loop 0 l
 ;;
 
-(* ``Abstracting'' version of kprintf: returns a (curried) function that
+(* 'Abstracting' version of kprintf: returns a (curried) function that
    will print when totally applied.
    Note: in the following, we are careful not to be badly caught
    by the compiler optimizations for the representation of arrays. *)
@@ -371,17 +371,17 @@ type positional_specification =
 (* To scan an optional positional parameter specification,
    i.e. an integer followed by a [$].
 
-   Calling [got_spec] with appropriate arguments, we ``return'' a positional
+   Calling [got_spec] with appropriate arguments, we 'return' a positional
    specification and an index to go on scanning the [fmt] format at hand.
 
    Note that this is optimized for the regular case, i.e. no positional
-   parameter, since in this case we juste ``return'' the constant
-   [Spec_none]; in case we have a positional parameter, we ``return'' a
+   parameter, since in this case we juste 'return' the constant
+   [Spec_none]; in case we have a positional parameter, we 'return' a
    [Spec_index] [positional_specification] which is a bit more costly.
 
    Note also that we do not support [*$] specifications, since this would
    lead to type checking problems: a [*$] positional specification means
-   ``take the next argument to [printf] (which must be an integer value)'',
+   'take the next argument to [printf] (which must be an integer value)',
    name this integer value $n$; [*$] now designates parameter $n$.
 
    Unfortunately, the type of a parameter specified via a [*$] positional
@@ -466,11 +466,16 @@ let format_float_lexeme =
    After consuming the appropriate number of arguments and formatting
    them, one of the following five continuations described below is called:
 
-   - [cont_s] for outputting a string (arguments: arg num, string, next pos)
-   - [cont_a] for performing a %a action (arguments: arg num, fn, arg, next pos)
-   - [cont_t] for performing a %t action (arguments: arg num, fn, next pos)
-   - [cont_f] for performing a flush action (arguments: arg num, next pos)
-   - [cont_m] for performing a %( action (arguments: arg num, sfmt, next pos)
+   - [cont_s] for outputting a string
+     (arguments: arg num, string, next pos)
+   - [cont_a] for performing a %a action
+     (arguments: arg num, fn, arg, next pos)
+   - [cont_t] for performing a %t action
+     (arguments: arg num, fn, next pos)
+   - [cont_f] for performing a flush action
+     (arguments: arg num, next pos)
+   - [cont_m] for performing a %( action
+     (arguments: arg num, sfmt, next pos)
 
    "arg num" is the index in array [args] of the next argument to [printf].
    "next pos" is the position in [fmt] of the first character following

@@ -97,7 +97,7 @@ let create_archive ppf file_list lib_name =
       { lib_units = units;
         lib_custom = !Clflags.custom_runtime;
         lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
-        lib_ccopts = !Clflags.ccopts @ !lib_ccopts;
+        lib_ccopts = !Clflags.all_ccopts @ !lib_ccopts;
         lib_dllibs = !Clflags.dllibs @ !lib_dllibs } in
     let pos_toc = pos_out outchan in
     output_value outchan toc;

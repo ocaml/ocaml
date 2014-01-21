@@ -16,6 +16,7 @@ open Misc
 open Arch
 open Asttypes
 open Primitive
+open Types
 open Lambda
 open Clambda
 open Cmm

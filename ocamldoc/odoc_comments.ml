@@ -180,7 +180,7 @@ module Info_retriever =
       | (len, Some d) ->
           (* we check if the comment we got was really attached to the constructor,
              i.e. that there was no blank line or any special comment "(**" before *)
-          if (not strict) or (nothing_before_simple_comment s) then
+          if (not strict) || (nothing_before_simple_comment s) then
             (* ok, we attach the comment to the constructor *)
             (len, Some d)
           else
@@ -260,7 +260,7 @@ module Info_retriever =
                  (* if the special comment is the stop comment (**/**),
                     then we must not associate it. *)
                  let pos = Str.search_forward (Str.regexp_string "(**") s 0 in
-                 if blank_line (String.sub s 0 pos) or
+                 if blank_line (String.sub s 0 pos) ||
                    d.Odoc_types.i_desc = Some [Odoc_types.Raw "/*"]
                  then
                    (0, None)
@@ -293,7 +293,7 @@ module Info_retriever =
         |  h :: q ->
             if (blank_line_outside_simple file
                   (String.sub s len ((String.length s) - len)) )
-                or h.Odoc_types.i_desc = Some [Odoc_types.Raw "/*"]
+                || h.Odoc_types.i_desc = Some [Odoc_types.Raw "/*"]
             then
               (None, special_coms)
             else

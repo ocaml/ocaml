@@ -190,6 +190,15 @@ let rec is_pure_clambda = function
 let make_const_int n = (Uconst(Const_base(Const_int n), None), Value_integer n)
 let make_const_ptr n = (Uconst(Const_pointer n, None), Value_constptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
+let make_comparison cmp (x: int) (y: int) =
+  make_const_bool
+    (match cmp with
+       Ceq -> x = y
+     | Cneq -> x <> y
+     | Clt -> x < y
+     | Cgt -> x > y
+     | Cle -> x <= y
+     | Cge -> x >= y)
 
 let simplif_prim_pure p (args, approxs) dbg =
   match approxs with
@@ -216,15 +225,7 @@ let simplif_prim_pure p (args, approxs) dbg =
       | Plslint -> make_const_int(x lsl y)
       | Plsrint -> make_const_int(x lsr y)
       | Pasrint -> make_const_int(x asr y)
-      | Pintcomp cmp ->
-          let result = match cmp with
-              Ceq -> x = y
-            | Cneq -> x <> y
-            | Clt -> x < y
-            | Cgt -> x > y
-            | Cle -> x <= y
-            | Cge -> x >= y in
-          make_const_bool result
+      | Pintcomp cmp -> make_comparison cmp x y
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
   | [Value_constptr x] ->
@@ -247,6 +248,17 @@ let simplif_prim_pure p (args, approxs) dbg =
       begin match p with
         Psequand -> make_const_bool(x <> 0 && y <> 0)
       | Psequor  -> make_const_bool(x <> 0 || y <> 0)
+      | Pintcomp cmp -> make_comparison cmp x y
+      | _ -> (Uprim(p, args, dbg), Value_unknown)
+      end
+  | [Value_constptr x; Value_integer y] ->
+      begin match p with
+      | Pintcomp cmp -> make_comparison cmp x y
+      | _ -> (Uprim(p, args, dbg), Value_unknown)
+      end
+  | [Value_integer x; Value_constptr y] ->
+      begin match p with
+      | Pintcomp cmp -> make_comparison cmp x y
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
   | _ ->

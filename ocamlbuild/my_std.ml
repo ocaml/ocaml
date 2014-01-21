@@ -195,7 +195,7 @@ module String = struct
     and n = String.length v
     in
     m <= n &&
-      let rec loop i = i = m or u.[i] = v.[i] && loop (i + 1) in
+      let rec loop i = i = m || u.[i] = v.[i] && loop (i + 1) in
       loop 0
   (* ***)
 
@@ -205,7 +205,7 @@ module String = struct
     and n = String.length v
     in
     n <= m &&
-      let rec loop i = i = n or u.[m - 1 - i] = v.[n - 1 - i] && loop (i + 1) in
+      let rec loop i = i = n || u.[m - 1 - i] = v.[n - 1 - i] && loop (i + 1) in
       loop 0
   (* ***)
 

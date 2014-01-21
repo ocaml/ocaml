@@ -143,7 +143,7 @@ let print_ident_annot pp str k =
 
 (* The format of the annotation file is documented in emacs/caml-types.el. *)
 
-let print_info pp ppf prev_loc ti =
+let print_info pp prev_loc ti =
   match ti with
   | Ti_class _ | Ti_mod _ -> prev_loc
   | Ti_pat  {pat_loc = loc; pat_type = typ; pat_env = env}
@@ -153,12 +153,13 @@ let print_info pp ppf prev_loc ti =
         output_char pp '\n'
       end;
       output_string pp "type(\n";
-      flush pp;
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
-      Format.pp_print_string ppf "  ";
-      Printtyp.wrap_printing_env env (fun () -> Printtyp.type_sch ppf typ);
-      Format.pp_print_newline ppf ();
+      Format.pp_print_string Format.str_formatter "  ";
+      Printtyp.wrap_printing_env env (fun () -> Printtyp.type_sch Format.str_formatter typ);
+      Format.pp_print_newline Format.str_formatter ();
+      let s = Format.flush_str_formatter () in
+      output_string pp s;
       output_string pp ")\n";
       loc
   | An_call (loc, k) ->
@@ -194,9 +195,8 @@ let dump filename =
       match filename with
           None -> stdout
         | Some filename -> open_out filename in
-    let ppf = Format.formatter_of_out_channel pp in
     sort_filter_phrases ();
-    ignore (List.fold_left (print_info pp ppf) Location.none info);
+    ignore (List.fold_left (print_info pp) Location.none info);
     phrases := [];
   end else begin
     annotations := [];

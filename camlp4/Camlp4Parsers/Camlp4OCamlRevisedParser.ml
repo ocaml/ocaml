@@ -400,7 +400,7 @@ New syntax:\
     parser [: a = symb; s :] -> kont a s
   end;
 
-  EXTEND Gram
+  let apply () = EXTEND Gram
     GLOBAL:
       a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT rec_binding_quot
       a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
@@ -1924,7 +1924,7 @@ New syntax:\
     expr_eoi:
       [ [ x = expr; `EOI -> x ] ]
     ;
-  END;
+  END in apply ();
 
 end;
 

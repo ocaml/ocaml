@@ -12,13 +12,7 @@
 
 open Config
 open Clflags
-
-let output_prefix name =
-  let oname =
-    match !output_name with
-    | None -> name
-    | Some n -> if !compile_only then (output_name := None; n) else name in
-  Misc.chop_extension_if_any oname
+open Compenv
 
 let process_interface_file ppf name =
   Optcompile.interface ppf name (output_prefix name)
@@ -57,38 +51,17 @@ let process_file ppf name =
   else
     raise(Arg.Bad("don't know what to do with " ^ name))
 
-let print_version_and_library () =
-  print_string "The OCaml native-code compiler, version ";
-  print_string Config.version; print_newline();
-  print_string "Standard library directory: ";
-  print_string Config.standard_library; print_newline();
-  exit 0
-
-let print_version_string () =
-  print_string Config.version; print_newline(); exit 0
-
-let print_standard_library () =
-  print_string Config.standard_library; print_newline(); exit 0
-
-let fatal err =
-  prerr_endline err;
-  exit 2
-
-let extract_output = function
-  | Some s -> s
-  | None ->
-      fatal "Please specify the name of the output file, using option -o"
-
-let default_output = function
-  | Some s -> s
-  | None -> Config.default_executable_name
-
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
+let ppf = Format.err_formatter
+
 (* Error messages to standard error formatter *)
-let anonymous = process_file Format.err_formatter;;
-let impl = process_implementation_file Format.err_formatter;;
-let intf = process_interface_file Format.err_formatter;;
+let anonymous filename =
+  readenv Before_compile; process_file ppf filename;;
+let impl filename =
+  readenv Before_compile; process_implementation_file ppf filename;;
+let intf filename =
+  readenv Before_compile; process_interface_file ppf filename;;
 
 let show_config () =
   Config.print_config stdout;
@@ -106,7 +79,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _c = set compile_only
   let _cc s = c_compiler := Some s
   let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
-  let _ccopt s = ccopts := s :: !ccopts
+  let _ccopt s = first_ccopts := s :: !first_ccopts
   let _compact = clear optimize_for_speed
   let _config () = show_config ()
   let _for_pack s = for_package := Some s
@@ -130,7 +103,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _p = set gprofile
   let _pack = set make_package
   let _pp s = preprocessor := Some s
-  let _ppx s = ppx := s :: !ppx
+  let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
   let _short_paths = clear real_paths
   let _rectypes = set recursive_types
@@ -140,7 +113,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _S = set keep_asm_file
   let _thread = set use_threads
   let _unsafe = set fast
-  let _v () = print_version_and_library ()
+  let _v () = print_version_and_library "native-code compiler"
   let _version () = print_version_string ()
   let _vnum () = print_version_string ()
   let _verbose = set verbose
@@ -177,7 +150,9 @@ let main () =
   native_code := true;
   let ppf = Format.err_formatter in
   try
+    readenv Before_args;
     Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
+    readenv Before_link;
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;
@@ -187,19 +162,19 @@ let main () =
     if !make_archive then begin
       if !cmxa_present then
         fatal "Option -a cannot be used with .cmxa input files.";
-      Optcompile.init_path();
+      Compmisc.init_path true;
       let target = extract_output !output_name in
       Asmlibrarian.create_archive (List.rev !objfiles) target;
       Warnings.check_fatal ();
     end
     else if !make_package then begin
-      Optcompile.init_path();
+      Compmisc.init_path true;
       let target = extract_output !output_name in
       Asmpackager.package_files ppf (List.rev !objfiles) target;
       Warnings.check_fatal ();
     end
     else if !shared then begin
-      Optcompile.init_path();
+      Compmisc.init_path true;
       let target = extract_output !output_name in
       Asmlink.link_shared ppf (List.rev !objfiles) target;
       Warnings.check_fatal ();
@@ -220,7 +195,7 @@ let main () =
         else
           default_output !output_name
       in
-      Optcompile.init_path();
+      Compmisc.init_path true;
       Asmlink.link ppf (List.rev !objfiles) target;
       Warnings.check_fatal ();
     end;

@@ -518,7 +518,7 @@ let link ppf objfiles output_name =
     else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
-  Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
+  Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts; (* put user's opts first *)
   Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
     link_bytecode ppf tolink output_name true

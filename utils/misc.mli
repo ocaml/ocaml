@@ -146,3 +146,21 @@ val edit_distance : string -> string -> int -> int option
     letters, or swapping of adjacent letters to go from one word to the
     other. The particular algorithm may change in the future.
 *)
+
+val split : string -> char -> string list
+(** [String.split string char] splits the string [string] at every char
+    [char], and returns the list of sub-strings between the chars.
+    [String.concat (String.make 1 c) (String.split s c)] is the identity.
+    @since 4.01
+ *)
+
+val cut_at : string -> char -> string * string
+(** [String.cut_at s c] returns a pair containing the sub-string before
+   the first occurrence of [c] in [s], and the sub-string after the
+   first occurrence of [c] in [s].
+   [let (before, after) = String.cut_at s c in
+    before ^ String.make 1 c ^ after] is the identity if [s] contains [c].
+
+   Raise [Not_found] if the character does not appear in the string
+   @since 4.01
+*)

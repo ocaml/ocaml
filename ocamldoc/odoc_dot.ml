@@ -83,7 +83,7 @@ class dot =
     method generate_for_module fmt m =
       let l = List.filter
           (fun n ->
-            !dot_include_all or
+            !dot_include_all ||
             (List.exists (fun m -> m.Module.m_name = n) modules))
           m.Module.m_top_deps
       in

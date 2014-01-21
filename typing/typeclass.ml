@@ -45,6 +45,7 @@ type error =
   | Final_self_clash of (type_expr * type_expr) list
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
+  | Duplicate of string * string
 
 exception Error of Location.t * Env.t * error
 
@@ -497,7 +498,7 @@ let class_type env scty =
 (*******************************)
 
 let rec class_field self_loc cl_num self_type meths vars
-    (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher)
+    (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher, local_meths, local_vals)
   cf =
   let loc = cf.pcf_loc in
   match cf.pcf_desc with
@@ -545,7 +546,7 @@ let rec class_field self_loc cl_num self_type meths vars
       (val_env, met_env, par_env,
        lazy (mkcf (Tcf_inher (ovf, parent, super, inh_vars, inh_meths)) loc)
        :: fields,
-       concr_meths, warn_vals, inher)
+       concr_meths, warn_vals, inher, local_meths, local_vals)
 
   | Pcf_valvirt (lab, mut, styp) ->
       if !Clflags.principal then Ctype.begin_def ();
@@ -563,9 +564,11 @@ let rec class_field self_loc cl_num self_type meths vars
        lazy (mkcf (Tcf_val (lab.txt, lab, mut, id, Tcfk_virtual cty,
                             met_env' == met_env)) loc)
        :: fields,
-       concr_meths, warn_vals, inher)
+       concr_meths, warn_vals, inher, local_meths, local_vals)
 
   | Pcf_val (lab, mut, ovf, sexp) ->
+      if Concr.mem lab.txt local_vals then
+        raise(Error(loc, val_env, Duplicate ("instance variable", lab.txt)));
       if Concr.mem lab.txt warn_vals then begin
         if ovf = Fresh then
           Location.prerr_warning lab.loc
@@ -592,16 +595,19 @@ let rec class_field self_loc cl_num self_type meths vars
        lazy (mkcf (Tcf_val (lab.txt, lab, mut, id,
                             Tcfk_concrete exp, met_env' == met_env)) loc)
        :: fields,
-       concr_meths, Concr.add lab.txt warn_vals, inher)
+       concr_meths, Concr.add lab.txt warn_vals, inher, local_meths,
+       Concr.add lab.txt local_vals)
 
   | Pcf_virt (lab, priv, sty) ->
       let cty = virtual_method val_env meths self_type lab.txt priv sty loc in
       (val_env, met_env, par_env,
         lazy (mkcf(Tcf_meth (lab.txt, lab, priv, Tcfk_virtual cty, true)) loc)
        ::fields,
-        concr_meths, warn_vals, inher)
+        concr_meths, warn_vals, inher, local_meths, local_vals)
 
   | Pcf_meth (lab, priv, ovf, expr)  ->
+      if Concr.mem lab.txt local_meths then
+        raise(Error(loc, val_env, Duplicate ("method", lab.txt)));
       if Concr.mem lab.txt concr_meths then begin
         if ovf = Fresh then
           Location.prerr_warning loc (Warnings.Method_override [lab.txt])
@@ -654,13 +660,14 @@ let rec class_field self_loc cl_num self_type meths vars
               | Fresh -> false)) loc
         end in
       (val_env, met_env, par_env, field::fields,
-       Concr.add lab.txt concr_meths, warn_vals, inher)
+       Concr.add lab.txt concr_meths, warn_vals, inher,
+       Concr.add lab.txt local_meths, local_vals)
 
   | Pcf_constr (sty, sty') ->
       let (cty, cty') = type_constraint val_env sty sty' loc in
       (val_env, met_env, par_env,
         lazy (mkcf (Tcf_constr (cty, cty')) loc) :: fields,
-        concr_meths, warn_vals, inher)
+        concr_meths, warn_vals, inher, local_meths, local_vals)
 
   | Pcf_init expr ->
       let expr = make_method self_loc cl_num expr in
@@ -677,7 +684,8 @@ let rec class_field self_loc cl_num self_type meths vars
           Ctype.end_def ();
           mkcf (Tcf_init texp) loc
         end in
-      (val_env, met_env, par_env, field::fields, concr_meths, warn_vals, inher)
+      (val_env, met_env, par_env, field::fields, concr_meths, warn_vals,
+       inher, local_meths, local_vals)
 
 and class_structure cl_num final val_env met_env loc
   { pcstr_pat = spat; pcstr_fields = str } =
@@ -726,9 +734,10 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of class fields *)
-  let (_, _, _, fields, concr_meths, _, inher) =
+  let (_, _, _, fields, concr_meths, _, inher, _local_meths, _local_vals) =
     List.fold_left (class_field self_loc cl_num self_type meths vars)
-      (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [])
+      (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [],
+       Concr.empty, Concr.empty)
       str
   in
   Ctype.unify val_env self_type (Ctype.newvar ());
@@ -1734,6 +1743,9 @@ let report_error env ppf = function
         "instance variable"
   | No_overriding (kind, name) ->
       fprintf ppf "@[The %s `%s'@ has no previous definition@]" kind name
-	
+  | Duplicate (kind, name) ->
+      fprintf ppf "@[The %s `%s'@ has multiple definitions in this object@]"
+                    kind name
+
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)

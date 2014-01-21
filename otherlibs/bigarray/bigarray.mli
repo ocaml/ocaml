@@ -14,7 +14,7 @@
 (** Large, multi-dimensional, numerical arrays.
 
    This module implements multi-dimensional arrays of integers and
-   floating-point numbers, thereafter referred to as ``big arrays''.
+   floating-point numbers, thereafter referred to as 'big arrays'.
    The implementation allows efficient sharing of large numerical
    arrays between OCaml code and C or Fortran numerical libraries.
 
@@ -331,7 +331,7 @@ module Genarray :
     = "caml_ba_slice"
   (** Extract a sub-array of lower dimension from the given big array
      by fixing one or several of the first (left-most) coordinates.
-     [Genarray.slice_left a [|i1; ... ; iM|]] returns the ``slice''
+     [Genarray.slice_left a [|i1; ... ; iM|]] returns the 'slice'
      of [a] obtained by setting the first [M] coordinates to
      [i1], ..., [iM].  If [a] has [N] dimensions, the slice has
      dimension [N - M], and the element at coordinates
@@ -349,7 +349,7 @@ module Genarray :
     = "caml_ba_slice"
   (** Extract a sub-array of lower dimension from the given big array
      by fixing one or several of the last (right-most) coordinates.
-     [Genarray.slice_right a [|i1; ... ; iM|]] returns the ``slice''
+     [Genarray.slice_right a [|i1; ... ; iM|]] returns the 'slice'
      of [a] obtained by setting the last [M] coordinates to
      [i1], ..., [iM].  If [a] has [N] dimensions, the slice has
      dimension [N - M], and the element at coordinates

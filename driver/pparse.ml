@@ -87,7 +87,7 @@ let read_ast magic fn =
     raise exn
 
 let apply_rewriters magic ast =
-  match !Clflags.ppx with
+  match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
       let fn =

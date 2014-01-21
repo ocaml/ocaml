@@ -28,11 +28,11 @@ and link_everything = ref false         (* -linkall *)
 and custom_runtime = ref false          (* -custom *)
 and bytecode_compatible_32 = ref false  (* -compat-32 *)
 and output_c_object = ref false         (* -output-obj *)
-and ccopts = ref ([] : string list)     (* -ccopt *)
+and all_ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
 and preprocessor = ref(None : string option) (* -pp *)
-and ppx = ref ([] : string list)        (* -ppx *)
+and all_ppx = ref ([] : string list)        (* -ppx *)
 let annotations = ref false             (* -annot *)
 let binary_annotations = ref false      (* -annot *)
 and use_threads = ref false             (* -thread *)
@@ -84,6 +84,7 @@ let dump_combine = ref false            (* -dcombine *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 let inline_threshold = ref 10
+let force_slash = ref false             (* for ocamldep *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 
@@ -99,4 +100,5 @@ let std_include_dir () =
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
 
-let runtime_variant = ref "";;     (* -runtime-variant *)
+let runtime_variant = ref "";;      (* -runtime-variant *)
+

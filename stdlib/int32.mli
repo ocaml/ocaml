@@ -134,14 +134,14 @@ val to_string : int32 -> string
 
 external bits_of_float : float -> int32 = "caml_int32_bits_of_float"
 (** Return the internal representation of the given float according
-   to the IEEE 754 floating-point ``single format'' bit layout.
+   to the IEEE 754 floating-point 'single format' bit layout.
    Bit 31 of the result represents the sign of the float;
    bits 30 to 23 represent the (biased) exponent; bits 22 to 0
    represent the mantissa. *)
 
 external float_of_bits : int32 -> float = "caml_int32_float_of_bits"
 (** Return the floating-point number whose internal representation,
-   according to the IEEE 754 floating-point ``single format'' bit layout,
+   according to the IEEE 754 floating-point 'single format' bit layout,
    is the given [int32]. *)
 
 type t = int32

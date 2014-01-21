@@ -132,6 +132,17 @@ let item_ident_name = function
   | Sig_class(id, _, _) -> (id, Field_class(Ident.name id))
   | Sig_class_type(id, _, _) -> (id, Field_classtype(Ident.name id))
 
+let is_runtime_component = function
+  | Sig_value(_,{val_kind = Val_prim _})
+  | Sig_type(_,_,_)
+  | Sig_modtype(_,_)
+  | Sig_class_type(_,_,_) -> false
+  | Sig_value(_,_)
+  | Sig_extension(_,_,_)
+  | Sig_exception(_,_)
+  | Sig_module(_,_,_)
+  | Sig_class(_, _,_) -> true
+
 (* Simplify a structure coercion *)
 
 let simplify_structure_coercion cc =
@@ -198,24 +209,20 @@ and signatures env cxt subst sig1 sig2 =
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
-      [] -> tbl
+      [] -> pos, tbl
     | item :: rem ->
         let (id, name) = item_ident_name item in
-        let nextpos =
-          match item with
-            Sig_value(_,{val_kind = Val_prim _})
-          | Sig_type(_,_,_)
-          | Sig_modtype(_,_)
-          | Sig_class_type(_,_,_) -> pos
-          | Sig_value(_,_)
-	  | Sig_extension(_,_,_)
-          | Sig_exception(_,_)
-          | Sig_module(_,_,_)
-          | Sig_class(_, _,_) -> pos+1 in
+        let nextpos = if is_runtime_component item then pos + 1 else pos in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
-  let comps1 =
+  let len1, comps1 =
     build_component_table 0 Tbl.empty sig1 in
+  let len2 =
+    List.fold_left
+      (fun n i -> if is_runtime_component i then n + 1 else n)
+      0
+      sig2
+  in
   (* Pair each component of sig2 with a component of sig1,
      identifying the names along the way.
      Return a coercion list indicating, for all run-time components
@@ -224,7 +231,14 @@ and signatures env cxt subst sig1 sig2 =
   let rec pair_components subst paired unpaired = function
       [] ->
         begin match unpaired with
-            [] -> signature_components new_env cxt subst (List.rev paired)
+            [] ->
+              let cc =
+                signature_components new_env cxt subst (List.rev paired)
+              in
+              if len1 = len2 then (* see PR#5098 *)
+                simplify_structure_coercion cc
+              else
+                Tcoerce_structure cc
           | _  -> raise(Error unpaired)
         end
     | item2 :: rem ->
@@ -262,7 +276,7 @@ and signatures env cxt subst sig1 sig2 =
           pair_components subst paired unpaired rem
         end in
   (* Do the pairing and checking, and return the final coercion *)
-  simplify_structure_coercion (pair_components subst [] [] sig2)
+  pair_components subst [] [] sig2
 
 (* Inclusion between signature components *)
 

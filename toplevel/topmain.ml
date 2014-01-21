@@ -11,6 +11,7 @@
 (***********************************************************************)
 
 open Clflags
+open Compenv
 
 let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
              options are:"
@@ -71,7 +72,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
-  let _ppx s = ppx := s :: !ppx
+  let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
   let _short_paths = clear real_paths
   let _rectypes = set recursive_types
@@ -95,6 +96,8 @@ end);;
 
 
 let main () =
+  Compenv.readenv Before_args;
   Arg.parse Options.list file_argument usage;
+  Compenv.readenv Before_link;
   if not (prepare Format.err_formatter) then exit 2;
   Toploop.loop Format.std_formatter
