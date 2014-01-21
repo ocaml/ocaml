@@ -3,17 +3,8 @@
     type _ t = T : 'a -> 'a s t
         ^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
-       from the type parameters. It was expected to be unrestricted,
-       but it is injective invariant.
-# Characters 11-12:
-  module M = F (struct type 'a s = int end) ;;
-             ^
-Error: Unbound module F
-# Characters 4-7:
-  let M.T x = M.T 3 in x = true;;
-      ^^^
-Error: Unbound module M
-#           Characters 48-51:
+       from the type parameters.
+# * * *             Characters 131-134:
   module F (S : sig type #'a s end) = struct
                 ^^^
 Syntax error: 'end' expected, the highlighted 'sig' might be unmatched
@@ -21,8 +12,7 @@ Syntax error: 'end' expected, the highlighted 'sig' might be unmatched
   ........['a] c x =
       object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
 Error: In this definition, a type variable cannot be deduced
-       from the type parameters. It was expected to be unrestricted,
-       but it is injective invariant.
+       from the type parameters.
 #     type (_, _) eq = Eq : ('a, 'a) eq
 # val eq : 'a = <poly>
 #   val eq : ('a Queue.t, 'b Queue.t) eq = Eq
@@ -30,16 +20,44 @@ Error: In this definition, a type variable cannot be deduced
   type _ t = T : 'a -> 'a Queue.t t;; (* fail *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
-       from the type parameters. It was expected to be unrestricted,
-       but it is injective invariant.
-# * * * *             Characters 223-246:
+       from the type parameters.
+# * * * *             Characters 254-277:
     type _ t = T : 'a -> 'a s t
         ^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, a type variable cannot be deduced
-       from the type parameters. It was expected to be unrestricted,
-       but it is injective invariant.
+       from the type parameters.
 #   Characters 59-60:
   module rec M : (S with type 'a s = unit) = M;;
                   ^
 Error: Unbound module type S
-# * *   
+# * *         module M : sig type 'a t = 'a -> unit end
+#   Characters 11-14:
+  module F(X:sig type #'a t end) =
+             ^^^
+Syntax error: 'end' expected, the highlighted 'sig' might be unmatched
+# * * * *       type 'a q = Q
+# Characters 5-36:
+  type +'a t = 'b constraint 'a = 'b q;;
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable has a variance that
+       cannot be deduced from the type parameters.
+       It was expected to be unrestricted, but it is covariant.
+#     type 'a t = T of 'a
+# type +'a s = 'b constraint 'a = 'b t
+# Characters 5-36:
+  type -'a s = 'b constraint 'a = 'b t;; (* fail *)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable has a variance that
+       is not reflected by its occurrence in type parameters.
+       It was expected to be contravariant, but it is covariant.
+# type 'a u = 'a t
+# type 'a t = T of ('a -> 'a)
+# type -'a s = 'b constraint 'a = 'b t
+# type +'a s = 'b constraint 'a = 'b q t
+# Characters 5-38:
+  type +'a s = 'b constraint 'a = 'b t q;; (* fail *)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, a type variable has a variance that
+       cannot be deduced from the type parameters.
+       It was expected to be unrestricted, but it is covariant.
+# 

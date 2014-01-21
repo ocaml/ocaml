@@ -83,3 +83,5 @@ val report_ambiguous_type_error:
     formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list -> 
     (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
 
+(* for toploop *)
+val hide_rec_items: signature_item list -> unit

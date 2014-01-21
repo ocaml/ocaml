@@ -35,9 +35,13 @@ val diff: t -> t -> Ident.t list
 type type_descriptions =
     constructor_description list * label_description list
 
+(* For short-paths *)
 val iter_types:
     (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
     t -> unit
+val same_types: t -> t -> bool
+val used_persistent: unit -> Concr.t
+val find_shadowed_types: Path.t -> t -> Path.t list
 
 (* Lookup by paths *)
 

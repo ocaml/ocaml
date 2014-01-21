@@ -114,6 +114,10 @@ let sig_item desc typ env loc = {
   Typedtree.sig_desc = desc; sig_loc = loc; sig_env = env
 }
 
+let make p n i =
+  let open Variance in
+  set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
+
 let merge_constraint initial_env loc  sg lid constr =
   let real_id = ref None in
   let rec merge env sg namelist row_id =
@@ -131,7 +135,7 @@ let merge_constraint initial_env loc  sg lid constr =
             type_private = Private;
             type_manifest = None;
             type_variance =
-              List.map (fun (c,n) -> (not n, not c, not c, false))
+              List.map (fun (c,n) -> make (not n) (not c) false)
               sdecl.ptype_variance;
             type_loc = Location.none;
             type_newtype_level = None }

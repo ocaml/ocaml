@@ -802,7 +802,7 @@ let lookup_cltype lid env =
 let iter_env proj1 proj2 f env =
   Ident.iter (fun id (x,_) -> f (Pident id) x) (proj1 env);
   let rec iter_components path path' mcomps =
-    if EnvLazy.is_val mcomps then
+    (* if EnvLazy.is_val mcomps then *)
     match EnvLazy.force !components_of_module_maker' mcomps with
       Structure_comps comps ->
         Tbl.iter
@@ -826,6 +826,51 @@ let iter_env proj1 proj2 f env =
     env.components
 
 let iter_types f = iter_env (fun env -> env.types) (fun sc -> sc.comp_types) f
+
+let same_types env1 env2 =
+  env1.types == env2.types && env1.components == env2.components
+
+let used_persistent () =
+  let r = ref Concr.empty in
+  Hashtbl.iter (fun s pso -> if pso != None then r := Concr.add s !r)
+    persistent_structures;
+  !r
+
+let find_all_comps proj s (p,mcomps) =
+  match EnvLazy.force !components_of_module_maker' mcomps with
+    Functor_comps _ -> []
+  | Structure_comps comps ->
+      try let (c,n) = Tbl.find s (proj comps) in [Pdot(p,s,n), c]
+      with Not_found -> []
+
+let rec find_shadowed_comps path env =
+  match path with
+    Pident id ->
+      List.map fst (Ident.find_all (Ident.name id) env.components)
+  | Pdot (p, s, _) ->
+      let l = find_shadowed_comps p env in
+      let l' =
+	List.map (find_all_comps (fun comps -> comps.comp_components) s) l in
+      List.flatten l'
+  | Papply _ -> []
+
+let find_shadowed proj1 proj2 path env =
+  match path with
+    Pident id ->
+      List.map fst (Ident.find_all (Ident.name id) (proj1 env))
+  | Pdot (p, s, _) ->
+      let l = find_shadowed_comps p env in
+      let l' = List.map (find_all_comps proj2 s) l in
+      List.flatten l'
+  | Papply _ -> []
+
+let find_shadowed_types path env =
+  let l =
+    find_shadowed
+      (fun env -> env.types) (fun comps -> comps.comp_types) path env
+  in
+  List.map fst l
+
 
 (* GADT instance tracking *)
 
