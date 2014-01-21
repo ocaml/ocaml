@@ -1380,21 +1380,21 @@ let inline_lazy_force_switch arg loc =
          (Lswitch
             (varg,
              { sw_numconsts = 0; sw_consts = [];
-               sw_numblocks = (max Obj.lazy_tag Obj.forward_tag) + 1;
+               sw_numblocks = 256;  (* PR#6033 - tag ranges from 0 to 255 *)
                sw_blocks =
                  [ (Obj.forward_tag, Lprim(Pfield 0, [varg]));
                    (Obj.lazy_tag,
                     Lapply(force_fun, [varg], loc)) ];
                sw_failaction = Some varg } ))))
 
-let inline_lazy_force =
+let inline_lazy_force arg loc =
   if !Clflags.native_code then
     (* Lswitch generates compact and efficient native code *)
-    inline_lazy_force_switch
+    inline_lazy_force_switch arg loc
   else
     (* generating bytecode: Lswitch would generate too many rather big
        tables (~ 250 elts); conditionals are better *)
-    inline_lazy_force_cond
+    inline_lazy_force_cond arg loc
 
 let make_lazy_matching def = function
     [] -> fatal_error "Matching.make_lazy_matching"

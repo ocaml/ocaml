@@ -93,6 +93,15 @@ val parse :
     by specifying your own [-help] and [--help] options in [speclist].
 *)
 
+val parse_dynamic :
+  (string * spec * string) list ref -> anon_fun -> string -> unit
+(** Same as {!Arg.parse}, except that the [speclist] argument is a reference
+    and may be updated during the parsing. A typical use for this feature
+    is to parse command lines of the form:
+-     command subcommand [options]
+    where the list of options depends on the value of the subcommand argument.
+*)
+
 val parse_argv : ?current: int ref -> string array ->
   (key * spec * doc) list -> anon_fun -> usage_msg -> unit
 (** [Arg.parse_argv ~current args speclist anon_fun usage_msg] parses
@@ -104,6 +113,13 @@ val parse_argv : ?current: int ref -> string array ->
   the error message as argument.  If option [-help] or [--help] is
   given, [Arg.parse_argv] raises [Arg.Help] with the help message
   as argument.
+*)
+
+val parse_argv_dynamic : ?current:int ref -> string array ->
+  (string * spec * string) list ref -> anon_fun -> string -> unit
+(** Same as {!Arg.parse_argv}, except that the [speclist] argument is a
+    reference and may be updated during the parsing.
+    See {!Arg.parse_dynamic}.
 *)
 
 exception Help of string

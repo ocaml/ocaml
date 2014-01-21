@@ -58,6 +58,8 @@ let first_ccopts = ref []
 let last_ccopts = ref []
 let first_ppx = ref []
 let last_ppx = ref []
+let first_objfiles = ref []
+let last_objfiles = ref []
 
 (* Note: this function is duplicated in optcompile.ml *)
 let check_unit_name ppf filename name =
@@ -199,7 +201,6 @@ let set name options s =
 let clear name options s =
   setter (fun b -> not b) name options s
 
-
 let read_OCAMLPARAM position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
@@ -298,6 +299,27 @@ let read_OCAMLPARAM position =
             first_ppx := v :: !first_ppx
         end
 
+
+      | "cmo" | "cma" ->
+        if not !native_code then
+        begin
+          match position with
+          | Before_link | Before_compile ->
+            last_objfiles := v ::! last_objfiles
+          | Before_args ->
+            first_objfiles := v :: !first_objfiles
+        end
+
+      | "cmx" | "cmxa" ->
+        if !native_code then
+        begin
+          match position with
+          | Before_link | Before_compile ->
+            last_objfiles := v ::! last_objfiles
+          | Before_args ->
+            first_objfiles := v :: !first_objfiles
+        end
+
       | _ ->
         Printf.eprintf
             "Warning: discarding value of variable %S in OCAMLCOMPPARAM\n%!"
@@ -311,7 +333,11 @@ let readenv position =
   last_include_dirs := [];
   last_ccopts := [];
   last_ppx := [];
+  last_objfiles := [];
   read_OCAMLPARAM position;
   all_ccopts := !last_ccopts @ !first_ccopts;
   all_ppx := !last_ppx @ !first_ppx
+
+let get_objfiles () =
+  List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
 

@@ -102,7 +102,7 @@ let usage speclist errmsg =
 
 let current = ref 0;;
 
-let parse_argv ?(current=current) argv speclist anonfun errmsg =
+let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   let l = Array.length argv in
   let b = Buffer.create 200 in
   let initpos = !current in
@@ -121,7 +121,7 @@ let parse_argv ?(current=current) argv speclist anonfun errmsg =
       | Message s ->
           bprintf b "%s: %s.\n" progname s
     end;
-    usage_b b speclist errmsg;
+    usage_b b !speclist errmsg;
     if error = Unknown "-help" || error = Unknown "--help"
     then raise (Help (Buffer.contents b))
     else raise (Bad (Buffer.contents b))
@@ -131,7 +131,7 @@ let parse_argv ?(current=current) argv speclist anonfun errmsg =
     let s = argv.(!current) in
     if String.length s >= 1 && String.get s 0 = '-' then begin
       let action =
-        try assoc3 s speclist
+        try assoc3 s !speclist
         with Not_found -> stop (Unknown s)
       in
       begin try
@@ -210,9 +210,21 @@ let parse_argv ?(current=current) argv speclist anonfun errmsg =
   done;
 ;;
 
+let parse_argv ?(current=current) argv speclist anonfun errmsg =
+  parse_argv_dynamic ~current:current argv (ref speclist) anonfun errmsg;
+;;
+
 let parse l f msg =
   try
     parse_argv Sys.argv l f msg;
+  with
+  | Bad msg -> eprintf "%s" msg; exit 2;
+  | Help msg -> printf "%s" msg; exit 0;
+;;
+
+let parse_dynamic l f msg =
+  try
+    parse_argv_dynamic Sys.argv l f msg;
   with
   | Bad msg -> eprintf "%s" msg; exit 2;
   | Help msg -> printf "%s" msg; exit 0;
