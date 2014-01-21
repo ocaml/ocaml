@@ -257,7 +257,7 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         let (co1,cn1) = get_upper v1 and (co2,cn2) = get_upper v2 in
         (if abstr then (imp co1 co2 && imp cn1 cn2)
          else if opn || constrained ty then (co1 = co2 && cn1 = cn2)
-         else true) && 
+         else true) &&
         let (p1,n1,i1,j1) = get_lower v1 and (p2,n2,i2,j2) = get_lower v2 in
         imp abstr (imp p2 p1 && imp n2 n1 && imp i2 i1 && imp j2 j1))
       decl2.type_params (List.combine decl1.type_variance decl2.type_variance)

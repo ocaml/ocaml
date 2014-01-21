@@ -259,7 +259,7 @@ let view_defined ~env ?(show_all=false) modlid =
     in
     let l = iter_sign sign [] in
     let title = string_of_path path in
-    let env = open_signature path sign env in
+    let env = open_signature Asttypes.Fresh path sign env in
     !choose_symbol_ref l ~title ~signature:sign ~env ~path;
     if show_all then view_signature sign ~title ~env ~path
   | _ -> ()

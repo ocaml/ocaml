@@ -65,7 +65,7 @@ let rec env_from_summary sum subst =
             with Not_found ->
               raise (Error (Module_not_found path'))
           in
-          Env.open_signature path' (extract_sig env mty) env
+          Env.open_signature Asttypes.Override path' (extract_sig env mty) env
     in
       Hashtbl.add env_cache (sum, subst) env;
       env

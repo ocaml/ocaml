@@ -919,7 +919,7 @@ value varify_constructors var_names =
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))
     | <:expr@loc< let open $i$ in $e$ >> ->
-        mkexp loc (Pexp_open (long_uident i) (expr e))
+        mkexp loc (Pexp_open Fresh (long_uident i) (expr e))
     | <:expr@loc< (module $me$ : $pt$) >> ->
         mkexp loc (Pexp_constraint (mkexp loc (Pexp_pack (module_expr me)),
                     Some (mktyp loc (Ptyp_package (package_type pt))), None))
@@ -1071,7 +1071,7 @@ value varify_constructors var_names =
         in
         [mksig loc (Psig_modtype (with_loc n loc) si) :: l]
     | SgOpn loc id ->
-        [mksig loc (Psig_open (long_uident id)) :: l]
+        [mksig loc (Psig_open Fresh (long_uident id)) :: l]
     | SgTyp loc tdl -> 
         let si = 
           match tdl with
@@ -1142,7 +1142,7 @@ value varify_constructors var_names =
         [mkstr loc (Pstr_recmodule (module_str_binding mb [])) :: l]
     | StMty loc n mt -> [mkstr loc (Pstr_modtype (with_loc n loc) (module_type mt)) :: l]
     | StOpn loc id ->
-        [mkstr loc (Pstr_open (long_uident id)) :: l]
+        [mkstr loc (Pstr_open Fresh (long_uident id)) :: l]
     | StTyp loc tdl ->
         let si = 
           match tdl with

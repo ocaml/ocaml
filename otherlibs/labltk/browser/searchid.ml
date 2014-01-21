@@ -206,7 +206,7 @@ let mkpath = function
       ~f:(fun acc x -> Pdot (acc, x, 0))
 
 let get_fields ~prefix ~sign self =
-  let env = open_signature (mkpath prefix) sign initial in
+  let env = open_signature Fresh (mkpath prefix) sign initial in
   match (expand_head env self).desc with
     Tobject (ty_obj, _) ->
       let l,_ = flatten_fields ty_obj in l

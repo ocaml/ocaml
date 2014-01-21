@@ -28,6 +28,12 @@ function record_pass() {
     clear();
 }
 
+function record_skip() {
+    check();
+    ++ skipped;
+    clear();
+}
+
 function record_fail() {
     check();
     ++ failed;
@@ -69,6 +75,10 @@ function record_unexp() {
     record_pass();
 }
 
+/=> skipped/ {
+    record_skip();
+}
+
 /=> failed/ {
     record_fail();
 }
@@ -76,6 +86,9 @@ function record_unexp() {
 /=> unexpected error/ {
     record_unexp();
 }
+
+# Not displaying "skipped" for the moment, as most of the skipped tests
+# print nothing at all and are not counted.
 
 END {
     if (errored){

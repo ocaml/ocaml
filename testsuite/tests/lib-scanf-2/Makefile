@@ -12,8 +12,12 @@
 
 BASEDIR=../..
 
+COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
+
 .PHONY: default
-default: compile run
+default:
+	@$(SET_LD_PATH) $(MAKE) compile run
 
 .PHONY: compile
 compile: tscanf2_io.cmo

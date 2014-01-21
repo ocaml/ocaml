@@ -12,24 +12,33 @@
 
 BASEDIR=../..
 CUSTOM_MODULE=odoc_test
-ADD_COMPFLAGS=-I +ocamldoc
+COMPFLAGS=-I $(OTOPDIR)/ocamldoc
+LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/str
+DOCFLAGS=-I $(OTOPDIR)/stdlib $(COMPFLAGS)
 
+.PHONY: default
+default:
+	@$(SET_LD_PATH) $(MAKE) run
+
+.PHONY: run
 run: $(CUSTOM_MODULE).cmo
 	@for file in t*.ml; do \
 	  printf " ... testing '$$file'"; \
 	  F="`basename $$file .ml`"; \
-	  $(OCAMLDOC) -hide-warnings -g $(CUSTOM_MODULE).cmo -o $$F.result \
-	              $$file; \
+	  $(OCAMLDOC) $(DOCFLAGS) -hide-warnings -g $(CUSTOM_MODULE).cmo \
+	              -o $$F.result $$file; \
 	  $(DIFF) $$F.reference $$F.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done;
-	@$(OCAMLDOC) -hide-warnings -html t*.ml 2>&1 \
+	@$(OCAMLDOC) $(DOCFLAGS) -hide-warnings -html t*.ml 2>&1 \
 	  | grep -v test_types_display || true
-	@$(OCAMLDOC) -hide-warnings -latex t*.ml 2>&1 \
+	@$(OCAMLDOC) $(DOCFLAGS) -hide-warnings -latex t*.ml 2>&1 \
 	  | grep -v test_types_display || true
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.result *.html *.tex *.log *.out *.sty *.toc *.css *.aux
 

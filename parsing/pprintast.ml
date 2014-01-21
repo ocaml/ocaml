@@ -10,11 +10,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Original Code from Ber-metaocaml, modified fo 3.12.0 and fixed *)
+(* Original Code from Ber-metaocaml, modified for 3.12.0 and fixed *)
 (* Printing code expressions *)
 (* Authors:  Ed Pizzi, Fabrice Le Fessant *)
-(* Extensivily Rewrite: Hongbo Zhang: University of Pennsylvania*)
+(* Extensive Rewrite: Hongbo Zhang: University of Pennsylvania *)
 (* TODO more fine-grained precedence pretty-printing *)
+
 open Asttypes
 open Format
 open Location
@@ -22,7 +23,8 @@ open Longident
 open Parsetree
 
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
-let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/'; '$'; '%' ]
+let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
+                      '$'; '%' ]
 let operator_chars = [ '!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/';
                        ':'; '<'; '='; '>'; '?'; '@'; '^'; '|'; '~' ]
 let numeric_chars  = [ '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9' ]
@@ -81,9 +83,11 @@ let view_expr x =
   | Pexp_construct ( {txt= Lident "[]";_},_,_) -> `nil
   | Pexp_construct ( {txt= Lident"::";_},Some _,_) ->
       let rec loop exp acc = match exp with
-          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_,_);_} -> (List.rev acc,true)
+          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_,_);_} ->
+              (List.rev acc,true)
           | {pexp_desc=
-             Pexp_construct ({txt=Lident "::";_},Some ({pexp_desc= Pexp_tuple([e1;e2]);_}),_);_} ->
+             Pexp_construct ({txt=Lident "::";_},
+                             Some ({pexp_desc= Pexp_tuple([e1;e2]);_}),_);_} ->
               loop e2 (e1::acc)
           | e -> (List.rev (e::acc),false) in
       let (ls,b) = loop x []  in
@@ -108,7 +112,8 @@ let rec is_irrefut_patt x =
   | Ppat_or (l,r) -> is_irrefut_patt l || is_irrefut_patt r
   | Ppat_record (ls,_) -> List.for_all (fun (_,x) -> is_irrefut_patt x) ls
   | Ppat_lazy p -> is_irrefut_patt p
-  | Ppat_constant _ | Ppat_construct _  | Ppat_variant _ | Ppat_array _ | Ppat_type _-> false (*conservative*)
+  | Ppat_constant _ | Ppat_construct _  | Ppat_variant _ | Ppat_array _
+    | Ppat_type _ -> false (*conservative*)
 class printer  ()= object(self:'self)
   val pipe = false
   val semi = false
@@ -121,7 +126,8 @@ class printer  ()= object(self:'self)
   method reset_pipe = {<pipe=false>}
   method reset = {<pipe=false;semi=false;ifthenelse=false>}
   method list : 'a . ?sep:space_formatter -> ?first:space_formatter ->
-    ?last:space_formatter -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a list -> unit
+    ?last:space_formatter -> (Format.formatter -> 'a -> unit) ->
+    Format.formatter -> 'a list -> unit
         = fun  ?sep ?first  ?last fu f xs ->
           let first = match first with Some x -> x |None -> ""
           and last = match last with Some x -> x |None -> ""
@@ -155,7 +161,8 @@ class printer  ()= object(self:'self)
   method longident f = function
     | Lident s ->
         (match s.[0] with
-        | 'a' .. 'z' | 'A' .. 'Z' | '_' when not (is_infix (fixity_of_string s)) ->
+        | 'a' .. 'z' | 'A' .. 'Z' | '_'
+          when not (is_infix (fixity_of_string s)) ->
             pp f "%s" s
         | _ -> pp f "(@;%s@;)" s )
     | Ldot(y,s) -> (match s.[0] with
@@ -163,7 +170,7 @@ class printer  ()= object(self:'self)
           pp f "%a.%s" self#longident y s
       | _ ->
           pp f "%a.(@;%s@;)@ " self#longident y s)
-    | Lapply (y,s)->
+    | Lapply (y,s) ->
         pp f "%a(%a)" self#longident y self#longident s
   method longident_loc f x = pp f "%a" self#longident x.txt
   method constant f  = function
@@ -172,8 +179,10 @@ class printer  ()= object(self:'self)
     | Const_int i -> self#paren (i<0) (fun f -> pp f "%d") f i
     | Const_float  i -> self#paren (i.[0]='-') (fun f -> pp f "%s") f i
     | Const_int32 i -> self#paren (i<0l) (fun f -> pp f "%ldl") f i
-    | Const_int64 i -> self#paren (i<0L) (fun f -> pp f "%LdL") f i (* pp f "%LdL" i *)
-    | Const_nativeint i -> self#paren (i<0n) (fun f -> pp f "%ndn") f i (* pp f "%ndn" i *)
+    | Const_int64 i -> self#paren (i<0L) (fun f -> pp f "%LdL") f i
+                                         (* pp f "%LdL" i *)
+    | Const_nativeint i -> self#paren (i<0n) (fun f -> pp f "%ndn") f i
+                                             (* pp f "%ndn" i *)
 
   (* trailing space*)
   method mutable_flag f   = function
@@ -231,7 +240,9 @@ class printer  ()= object(self:'self)
               | [] -> ()
               | _ ->
                   pp f "%a@;.@;"
-                    (self#list self#tyvar ~sep:"@;")  l) l) sl  self#core_type ct
+                    (self#list self#tyvar ~sep:"@;")  l)
+              l)
+          sl  self#core_type ct
     | _ -> pp f "@[<2>%a@]" self#core_type1 x
   method core_type1 f x =
     match x.ptyp_desc with
@@ -243,7 +254,8 @@ class printer  ()= object(self:'self)
           (fun f l -> match l with
           |[] -> ()
           |[x]-> pp f "%a@;" self#core_type1  x
-          | _ -> self#list ~first:"(" ~last:")@;" self#core_type ~sep:"," f l )  l self#longident_loc li
+          | _ -> self#list ~first:"(" ~last:")@;" self#core_type ~sep:"," f l)
+          l self#longident_loc li
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
           match x with
@@ -262,7 +274,7 @@ class printer  ()= object(self:'self)
               pp f "%s@;%a"
                 (match (closed,low) with
                 | (true,None) -> ""
-                | (true,Some _) -> "<" (* FIXME desugar the syntax sugar*)
+                | (true,Some _) -> "<" (* FIXME desugar the syntax sugar *)
                 | (false,_) -> ">")
                 (self#list type_variant_helper ~sep:"@;<1 -2>| ") l) l
           (fun f low
@@ -318,7 +330,8 @@ class printer  ()= object(self:'self)
     | Ppat_alias (p, s) -> pp f "@[<2>%a@;as@;%a@]"
           self#pattern p
           (fun f s->
-            if is_infix (fixity_of_string s.txt) || List.mem s.txt.[0] prefix_symbols
+            if is_infix (fixity_of_string s.txt)
+               || List.mem s.txt.[0] prefix_symbols
             then pp f "( %s )" s.txt
             else pp f "%s" s.txt ) s (* RA*)
     | Ppat_or (p1, p2) -> (* *)
@@ -327,9 +340,11 @@ class printer  ()= object(self:'self)
             (match pattern_or_helper a p2 with
             |Some b -> pp f "@[<2>%C..%C@]" a b
             |None ->
-                pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern ) (list_of_pattern [] x))
+                pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern)
+                   (list_of_pattern [] x))
         | _ ->
-            pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern) (list_of_pattern [] x)
+            pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern)
+               (list_of_pattern [] x)
         )
     | _ -> self#pattern1 f x
   method pattern1 (f:Format.formatter) (x:pattern) :unit =
@@ -359,7 +374,7 @@ class printer  ()= object(self:'self)
     | Ppat_any -> pp f "_";
     | Ppat_var ({txt = txt;_}) ->
         if (is_infix (fixity_of_string txt)) || List.mem txt.[0] prefix_symbols then
-          if txt.[0]='*' then
+          if txt.[0]='*' || txt.[String.length txt - 1] = '*' then
             pp f "(@;%s@;)@ " txt
           else
             pp f "(%s)" txt
@@ -607,8 +622,8 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e
     | Pexp_poly _ ->
         assert false
-    | Pexp_open (lid, e) ->
-        pp f "@[<2>let open %a in@;%a@]" self#longident_loc lid
+    | Pexp_open (ovf, lid, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) self#longident_loc lid
           self#expression  e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
@@ -878,8 +893,8 @@ class printer  ()= object(self:'self)
         pp f "@[<hov>module@ %s@ :@ %a@]"
           s.txt
           self#module_type  mt
-    | Psig_open li ->
-        pp f "@[<hov2>open@ %a@]" self#longident_loc li
+    | Psig_open (ovf, li) ->
+        pp f "@[<hov2>open%s@ %a@]" (override ovf) self#longident_loc li
     | Psig_include (mt) ->
         pp f "@[<hov2>include@ %a@]"
           self#module_type  mt
@@ -1015,8 +1030,8 @@ class printer  ()= object(self:'self)
             | _ ->
                 pp f " =@ %a"  self#module_expr  me
             )) me
-    | Pstr_open (li) ->
-        pp f "@[<2>open@;%a@]" self#longident_loc li;
+    | Pstr_open (ovf, li) ->
+        pp f "@[<2>open%s@;%a@]" (override ovf) self#longident_loc li;
     | Pstr_modtype (s, mt) ->
         pp f "@[<2>module type %s =@;%a@]" s.txt self#module_type mt
     | Pstr_class l ->

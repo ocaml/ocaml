@@ -597,8 +597,8 @@ structure_item:
       { mkstr(Pstr_recmodule(List.rev $3)) }
   | MODULE TYPE ident EQUAL module_type
       { mkstr(Pstr_modtype(mkrhs $3 3, $5)) }
-  | OPEN mod_longident
-      { mkstr(Pstr_open (mkrhs $2 2)) }
+  | OPEN override_flag mod_longident
+      { mkstr(Pstr_open ($2, mkrhs $3 3)) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
@@ -669,8 +669,8 @@ signature_item:
       { mksig(Psig_modtype(mkrhs $3 3, Pmodtype_abstract)) }
   | MODULE TYPE ident EQUAL module_type
       { mksig(Psig_modtype(mkrhs $3 3, Pmodtype_manifest $5)) }
-  | OPEN mod_longident
-      { mksig(Psig_open (mkrhs $2 2)) }
+  | OPEN override_flag mod_longident
+      { mksig(Psig_open ($2, mkrhs $3 3)) }
   | INCLUDE module_type
       { mksig(Psig_include $2) }
   | CLASS class_descriptions
@@ -975,8 +975,8 @@ expr:
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | LET MODULE UIDENT module_binding IN seq_expr
       { mkexp(Pexp_letmodule(mkrhs $3 3, $4, $6)) }
-  | LET OPEN mod_longident IN seq_expr
-      { mkexp(Pexp_open(mkrhs $3 3, $5)) }
+  | LET OPEN override_flag mod_longident IN seq_expr
+      { mkexp(Pexp_open($3, mkrhs $4 4, $6)) }
   | FUNCTION opt_bar match_cases
       { mkexp(Pexp_function("", None, List.rev $3)) }
   | FUN labeled_simple_pattern fun_def
@@ -1093,7 +1093,7 @@ simple_expr:
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, mkrhs $3 3)) }
   | mod_longident DOT LPAREN seq_expr RPAREN
-      { mkexp(Pexp_open(mkrhs $1 1, $4)) }
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN

@@ -17,7 +17,23 @@
 #include <caml/custom.h>
 #include <caml/fail.h>
 
-__declspec(dllexport) void __stdcall start_caml_engine() {
+#if !defined(OPENSTEP) && (defined(__WIN32__) && !defined(__CYGWIN__))
+#  if defined(_MSC_VER) || defined(__MINGW32__)
+#    define _DLLAPI __declspec(dllexport)
+#  else
+#    define _DLLAPI extern
+#  endif 
+#  if defined(__MINGW32__) || defined(UNDER_CE) 
+#    define _CALLPROC
+#  else
+#    define _CALLPROC __stdcall
+#  endif
+#elif defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) >= 303
+#  define _DLLAPI __attribute__((visibility("default")))
+#  define _CALLPROC
+#endif /* WIN32 && !CYGWIN */
+
+_DLLAPI void _CALLPROC start_caml_engine() {
   char * argv[2];
   argv[0] = "--";
   argv[1] = NULL;

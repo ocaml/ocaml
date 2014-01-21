@@ -379,7 +379,8 @@ static void extern_rec(value v)
 #ifdef ARCH_SIXTYFOUR
     } else if (n < -((intnat)1 << 30) || n >= ((intnat)1 << 30)) {
       if (extern_flags & COMPAT_32)
-        extern_failwith("output_value: integer cannot be read back on 32-bit platform");
+        extern_failwith("output_value: integer cannot be read back on "
+                        "32-bit platform");
       writecode64(CODE_INT64, n);
 #endif
     } else

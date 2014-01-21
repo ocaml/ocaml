@@ -334,8 +334,9 @@ and expression i ppf x =
   | Pexp_pack me ->
       line i ppf "Pexp_pack\n";
       module_expr i ppf me
-  | Pexp_open (m, e) ->
-      line i ppf "Pexp_open \"%a\"\n" fmt_longident_loc m;
+  | Pexp_open (ovf, m, e) ->
+      line i ppf "Pexp_open %a \"%a\"\n" fmt_override_flag ovf
+        fmt_longident_loc m;
       expression i ppf e
 
 and value_description i ppf x =
@@ -583,7 +584,10 @@ and signature_item i ppf x =
   | Psig_modtype (s, md) ->
       line i ppf "Psig_modtype %a\n" fmt_string_loc s;
       modtype_declaration i ppf md;
-  | Psig_open li -> line i ppf "Psig_open %a\n" fmt_longident_loc li;
+  | Psig_open (ovf, li) ->
+    line i ppf "Psig_open %a %a\n"
+      fmt_override_flag ovf
+      fmt_longident_loc li;
   | Psig_include (mt) ->
       line i ppf "Psig_include\n";
       module_type i ppf mt;
@@ -673,7 +677,10 @@ and structure_item i ppf x =
   | Pstr_modtype (s, mt) ->
       line i ppf "Pstr_modtype %a\n" fmt_string_loc s;
       module_type i ppf mt;
-  | Pstr_open li -> line i ppf "Pstr_open %a\n" fmt_longident_loc li;
+  | Pstr_open (ovf, li) ->
+    line i ppf "Pstr_open %a %a\n"
+      fmt_override_flag ovf
+      fmt_longident_loc li;
   | Pstr_class (l) ->
       line i ppf "Pstr_class\n";
       list i class_declaration ppf l;

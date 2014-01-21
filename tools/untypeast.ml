@@ -66,7 +66,7 @@ and untype_structure_item item =
               untype_module_expr mexpr) list)
     | Tstr_modtype (_id, name, mtype) ->
         Pstr_modtype (name, untype_module_type mtype)
-    | Tstr_open (_path, lid) -> Pstr_open (lid)
+    | Tstr_open (ovf, _path, lid) -> Pstr_open (ovf, lid)
     | Tstr_class list ->
         Pstr_class 
           (List.map 
@@ -196,7 +196,7 @@ and untype_extra (extra, loc) sexp =
         Pexp_constraint (sexp,
                          option untype_core_type cty1,
                          option untype_core_type cty2)
-    | Texp_open (_path, lid, _) -> Pexp_open (lid, sexp)
+    | Texp_open (ovf, _path, lid, _) -> Pexp_open (ovf, lid, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, option untype_core_type cto)
     | Texp_newtype s -> Pexp_newtype (s, sexp)
   in
@@ -333,7 +333,7 @@ and untype_signature_item item =
               name, untype_module_type mtype) list)
     | Tsig_modtype (_id, name, mdecl) ->
         Psig_modtype (name, untype_modtype_declaration mdecl)
-    | Tsig_open (_path, lid) -> Psig_open (lid)
+    | Tsig_open (ovf, _path, lid) -> Psig_open (ovf, lid)
     | Tsig_include (mty, _lid) -> Psig_include (untype_module_type mty)
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)

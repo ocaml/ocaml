@@ -322,7 +322,7 @@ and transl_structure fields cc rootpath = function
         (transl_structure ext_fields cc rootpath rem)
   | Tstr_modtype(id, _, decl) ->
       transl_structure fields cc rootpath rem
-  | Tstr_open (path, _) ->
+  | Tstr_open _ ->
       transl_structure fields cc rootpath rem
   | Tstr_class cl_list ->
       let ids = List.map (fun (ci,_,_) -> ci.ci_id_class) cl_list in
@@ -382,7 +382,7 @@ let rec defined_idents = function
     | Tstr_recmodule decls ->
       List.map (fun (id, _, _, _) -> id) decls @ defined_idents rem
     | Tstr_modtype(id, _, decl) -> defined_idents rem
-    | Tstr_open (path, _) -> defined_idents rem
+    | Tstr_open _ -> defined_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ defined_idents rem
     | Tstr_class_type cl_list -> defined_idents rem
@@ -403,7 +403,7 @@ let rec more_idents = function
     | Tstr_exn_rebind(id, _, path, _) -> more_idents rem
     | Tstr_recmodule decls -> more_idents rem
     | Tstr_modtype(id, _, decl) -> more_idents rem
-    | Tstr_open (path, _) -> more_idents rem
+    | Tstr_open _ -> more_idents rem
     | Tstr_class cl_list -> more_idents rem
     | Tstr_class_type cl_list -> more_idents rem
     | Tstr_include(modl, ids) -> more_idents rem
@@ -428,7 +428,7 @@ and all_idents = function
     | Tstr_recmodule decls ->
       List.map (fun (id, _, _, _) -> id) decls @ all_idents rem
     | Tstr_modtype(id, _, decl) -> all_idents rem
-    | Tstr_open (path, _) -> all_idents rem
+    | Tstr_open _ -> all_idents rem
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type cl_list -> all_idents rem
@@ -528,7 +528,7 @@ let transl_store_structure glob map prims str =
                    transl_store rootpath (add_idents true ids subst) rem))
   | Tstr_modtype(id, _, decl) ->
       transl_store rootpath subst rem
-  | Tstr_open (path, _) ->
+  | Tstr_open _ ->
       transl_store rootpath subst rem
   | Tstr_class cl_list ->
       let ids = List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list in
@@ -723,7 +723,7 @@ let transl_toplevel_item item =
         (make_sequence toploop_setvalue_id idents)
   | Tstr_modtype(id, _, decl) ->
       lambda_unit
-  | Tstr_open (path, _) ->
+  | Tstr_open _ ->
       lambda_unit
   | Tstr_class cl_list ->
       (* we need to use unique names for the classes because there might

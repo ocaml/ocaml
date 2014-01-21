@@ -22,6 +22,7 @@ CYGPATH=echo
 DIFF=diff -q
 CANKILL=true
 SORT=sort
+SET_LD_PATH=LD_LIBRARY_PATH="$(LD_PATH)"
 
 # The variables above may be overridden by .../config/Makefile
 # OTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
@@ -35,24 +36,37 @@ SORT=sort
 #   and false for the mingw and MSVC ports.
 # SORT is the Unix "sort" command. Usually a simple command, but may be an
 #   absolute name if the Windows "sort" command is in the PATH.
+# SET_LD_PATH is a command prefix that sets the path for dynamic libraries
+#   (LD_LIBRARY_PATH for Unix, PATH for Windows) using the LD_PATH shell
+#   variable. Note that for Windows we add Unix-syntax directory names in
+#   PATH, and Cygwin will translate it to Windows syntax.
 
 include $(TOPDIR)/config/Makefile
 
 OCAMLRUN=$(TOPDIR)/boot/ocamlrun$(EXE)
-OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml -I $(OTOPDIR)/stdlib $(COMPFLAGS)
-OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc -I $(OTOPDIR)/stdlib $(COMPFLAGS)
-OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt -I $(OTOPDIR)/stdlib $(COMPFLAGS)
+
+OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
+
+OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
+      -init $(OTOPDIR)/testsuite/lib/empty
+OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(OCFLAGS)
+OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
-OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib
+OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
+		       -ocamlc "$(OTOPDIR)/boot/ocamlrun$(EXE) \
+		                $(OTOPDIR)/ocamlc $(OCFLAGS)" \
+		       -ocamlopt "$(OTOPDIR)/boot/ocamlrun$(EXE) \
+		                  $(OTOPDIR)/ocamlopt $(OCFLAGS)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tool/dumpobj
 BYTECODE_ONLY=[ "$(ARCH)" = "none" -o "$(ASM)" = "none" ]
 
-#COMPFLAGS=
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=
+
+UNIXLIBVAR=`case "$(OTHERLIBRARIES)" in *win32unix*) echo win32;; esac`
 
 defaultpromote:
 	@for file in *.reference; do \
@@ -71,23 +85,23 @@ defaultclean:
 .SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so .c .f
 
 .mli.cmi:
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmi:
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmo:
-	@if [ -f $<i ]; then $(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<i; fi
-	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@if [ -f $<i ]; then $(OCAMLC) -c $(ADD_COMPFLAGS) $<i; fi
+	@$(OCAMLC) -c $(ADD_COMPFLAGS) $<
 
 .ml.cmx:
-	@$(OCAMLOPT) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -c $(ADD_COMPFLAGS) $<
 
 .cmx.so:
-	@$(OCAMLOPT) -o $@ -shared $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -o $@ -shared $(ADD_COMPFLAGS) $<
 
 .cmxa.so:
-	@$(OCAMLOPT) -o $@ -shared -linkall $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+	@$(OCAMLOPT) -o $@ -shared -linkall $(ADD_COMPFLAGS) $<
 
 .mly.ml:
 	@$(OCAMLYACC) -q $< 2> /dev/null

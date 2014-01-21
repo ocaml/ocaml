@@ -169,3 +169,4 @@ CTOPDIR=$(TOPDIR)
 CYGPATH=cygpath -m
 DIFF=diff -q --strip-trailing-cr
 CANKILL=false
+SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"

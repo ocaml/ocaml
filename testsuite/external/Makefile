@@ -37,7 +37,7 @@ default:
 
 .PHONY: all-cygwin
 all-cygwin: findlib ounit res pcre react ocamltext ocamlssl camlzip cryptokit \
-            sqlite menhir hevea mysql ocgi xmllight configfile xmlm omake \
+            sqlite ocgi xmllight configfile xmlm omake \
 	    camomile zen vsyml extlib fileutils ocamlify ocamlmod \
             calendar dbm ocamlscript camlp5 geneweb coq
 

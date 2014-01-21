@@ -100,7 +100,12 @@ EOF
 chmod -R g-w root
 sudo chown -R root:wheel root
 
-/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker \
+# HOW TO INSTALL PackageMaker:
+# Get PackageMaker.app from
+# https://developer.apple.com/downloads/index.action?name=Auxiliary
+# It's in the "Auxiliary Tools for Xcode" download.
+# Copy it to /Applications/.
+/Applications/PackageMaker.app/Contents/MacOS/PackageMaker \
   -build -p "`pwd`/ocaml.pkg" -f "`pwd`/root" -i "`pwd`/Info.plist" \
   -d "`pwd`/Description.plist" -r "`pwd`/resources"
 

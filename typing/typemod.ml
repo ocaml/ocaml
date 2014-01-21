@@ -64,10 +64,10 @@ let extract_sig_open env loc mty =
 
 (* Compute the environment after opening a module *)
 
-let type_open ?toplevel env loc lid =
+let type_open ?toplevel ovf env loc lid =
   let (path, mty) = Typetexp.find_module env loc lid.txt in
   let sg = extract_sig_open env loc mty in
-  path, Env.open_signature ~loc ?toplevel path sg env
+  path, Env.open_signature ~loc ?toplevel ovf path sg env
 
 (* Record a module type *)
 let rm node =
@@ -318,8 +318,8 @@ and approx_sig env ssg =
           let info = approx_modtype_info env sinfo in
           let (id, newenv) = Env.enter_modtype name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
-      | Psig_open lid ->
-          let (path, mty) = type_open env item.psig_loc lid in
+      | Psig_open (ovf, lid) ->
+          let (path, mty) = type_open ovf env item.psig_loc lid in
           approx_sig mty srem
       | Psig_include smty ->
           let mty = approx_modtype env smty in
@@ -550,10 +550,11 @@ and transl_signature env sg =
             mksig (Tsig_modtype (id, name, tinfo)) env loc :: trem,
             Sig_modtype(id, info) :: rem,
             final_env
-        | Psig_open lid ->
-            let (path, newenv) = type_open env item.psig_loc lid in
+        | Psig_open (ovf, lid) ->
+            let (path, newenv) = type_open ovf env item.psig_loc lid in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_open (path,lid)) env loc :: trem, rem, final_env
+            mksig (Tsig_open (ovf, path,lid)) env loc :: trem,
+            rem, final_env
         | Psig_include smty ->
             let tmty = transl_modtype env smty in
             let mty = tmty.mty_type in
@@ -1112,9 +1113,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (item :: str_rem,
          Sig_modtype(id, Modtype_manifest mty.mty_type) :: sig_rem,
          final_env)
-    | Pstr_open (lid) ->
-        let (path, newenv) = type_open ~toplevel env loc lid in
-        let item = mk (Tstr_open (path, lid)) in
+    | Pstr_open (ovf, lid) ->
+        let (path, newenv) = type_open ovf ~toplevel env loc lid in
+        let item = mk (Tstr_open (ovf, path, lid)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (item :: str_rem, sig_rem, final_env)
     | Pstr_class cl ->
