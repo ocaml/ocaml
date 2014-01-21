@@ -23,8 +23,8 @@ compile:
 run:
 	@printf " ... testing 'cmmain':"
 	@./program > program.result
-	@$(DIFF) program.reference program.result > /dev/null || (echo " => failed" && exit 1)
-	@echo " => passed"
+	@$(DIFF) program.reference program.result >/dev/null \
+	&& echo " => passed" || echo " => failed"
 
 promote: defaultpromote
 

@@ -87,12 +87,13 @@ let rec add_rec_types env = function
       add_rec_types (Env.add_type id decl env) rem
   | _ -> env
 
-let check_type_decl env id row_id newdecl decl rs rem =
+let check_type_decl env loc id row_id newdecl decl rs rem =
   let env = Env.add_type id newdecl env in
   let env =
     match row_id with None -> env | Some id -> Env.add_type id newdecl env in
   let env = if rs = Trec_not then env else add_rec_types env rem in
-  Includemod.type_declarations env id newdecl decl
+  Includemod.type_declarations env id newdecl decl;
+  Typedecl.check_coherence env loc id newdecl
 
 let rec make_params n = function
     [] -> []
@@ -137,14 +138,14 @@ let merge_constraint initial_env loc  sg lid constr =
             type_variance =
               List.map (fun (c,n) -> make (not n) (not c) false)
               sdecl.ptype_variance;
-            type_loc = Location.none;
+            type_loc = sdecl.ptype_loc;
             type_newtype_level = None }
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let tdecl = Typedecl.transl_with_constraint
                         initial_env id (Some(Pident id_row)) decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
         (Pident id, lid, Twith_type tdecl),
@@ -154,7 +155,7 @@ let merge_constraint initial_env loc  sg lid constr =
         let tdecl =
           Typedecl.transl_with_constraint initial_env id None decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         (Pident id, lid, Twith_type tdecl), Sig_type(id, newdecl, rs) :: rem
     | (Sig_type(id, decl, rs) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
@@ -165,7 +166,7 @@ let merge_constraint initial_env loc  sg lid constr =
         let tdecl =
           Typedecl.transl_with_constraint initial_env id None decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         real_id := Some id;
         (Pident id, lid, Twith_typesubst tdecl),
         make_next_first rs rem

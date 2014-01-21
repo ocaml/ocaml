@@ -45,6 +45,8 @@ val approx_type_decl:
                                   (Ident.t * type_declaration) list
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
+val check_coherence:
+    Env.t -> Location.t -> Ident.t -> type_declaration -> unit
 
 (* for fixed types *)
 val is_fixed_type : Parsetree.type_declaration -> bool

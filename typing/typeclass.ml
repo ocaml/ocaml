@@ -89,18 +89,22 @@ let rec scrape_class_type =
   | cty                     -> cty
 
 (* Generalize a class type *)
-let rec generalize_class_type =
+let rec generalize_class_type gen =
   function
     Cty_constr (_, params, cty) ->
-      List.iter Ctype.generalize params;
-      generalize_class_type cty
+      List.iter gen params;
+      generalize_class_type gen cty
   | Cty_signature {cty_self = sty; cty_vars = vars; cty_inher = inher} ->
-      Ctype.generalize sty;
-      Vars.iter (fun _ (_, _, ty) -> Ctype.generalize ty) vars;
-      List.iter (fun (_,tl) -> List.iter Ctype.generalize tl) inher
+      gen sty;
+      Vars.iter (fun _ (_, _, ty) -> gen ty) vars;
+      List.iter (fun (_,tl) -> List.iter gen tl) inher
   | Cty_fun (_, ty, cty) ->
-      Ctype.generalize ty;
-      generalize_class_type cty
+      gen ty;
+      generalize_class_type gen cty
+
+let generalize_class_type vars =
+  let gen = if vars then Ctype.generalize else Ctype.generalize_structure in
+  generalize_class_type gen
 
 (* Return the virtual methods of a class type *)
 let virtual_methods sign =
@@ -909,7 +913,12 @@ and class_expr cl_num val_env met_env scl =
             (l, Ctype.instance_def pat.pat_type, cl.cl_type);
           cl_env = val_env}
   | Pcl_apply (scl', sargs) ->
+      if !Clflags.principal then Ctype.begin_def ();
       let cl = class_expr cl_num val_env met_env scl' in
+      if !Clflags.principal then begin
+        Ctype.end_def ();
+        generalize_class_type false cl.cl_type;
+      end;
       let rec nonopt_labels ls ty_fun =
         match ty_fun with
         | Cty_fun (l, _, ty_res) ->
@@ -928,9 +937,10 @@ and class_expr cl_num val_env met_env scl =
           true
         end
       in
-      let rec type_args args omitted ty_fun sargs more_sargs =
-        match ty_fun with
-        | Cty_fun (l, ty, ty_fun) when sargs <> [] || more_sargs <> [] ->
+      let rec type_args args omitted ty_fun ty_fun0 sargs more_sargs =
+        match ty_fun, ty_fun0 with
+        | Cty_fun (l, ty, ty_fun), Cty_fun (_, ty0, ty_fun0)
+          when sargs <> [] || more_sargs <> [] ->
             let name = Btype.label_name l
             and optional =
               if Btype.is_optional l then Optional else Required in
@@ -944,7 +954,7 @@ and class_expr cl_num val_env met_env scl =
                       raise(Error(sarg0.pexp_loc, val_env,
                                   Apply_wrong_label l'))
                     else ([], more_sargs,
-                          Some (type_argument val_env sarg0 ty ty))
+                          Some (type_argument val_env sarg0 ty ty0))
                 | _ ->
                     assert false
               end else try
@@ -963,21 +973,23 @@ and class_expr cl_num val_env met_env scl =
                     (Warnings.Nonoptional_label l);
                 sargs, more_sargs,
                 if optional = Required || Btype.is_optional l' then
-                  Some (type_argument val_env sarg0 ty ty)
+                  Some (type_argument val_env sarg0 ty ty0)
                 else
-                  let ty0 = extract_option_type val_env ty in
-                  let arg = type_argument val_env sarg0 ty0 ty0 in
+                  let ty' = extract_option_type val_env ty
+                  and ty0' = extract_option_type val_env ty0 in
+                  let arg = type_argument val_env sarg0 ty' ty0' in
                   Some (option_some arg)
               with Not_found ->
                 sargs, more_sargs,
                 if Btype.is_optional l &&
                   (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
                 then
-                  Some (option_none ty Location.none)
+                  Some (option_none ty0 Location.none)
                 else None
             in
-            let omitted = if arg = None then (l,ty) :: omitted else omitted in
-            type_args ((l,arg,optional)::args) omitted ty_fun sargs more_sargs
+            let omitted = if arg = None then (l,ty0) :: omitted else omitted in
+            type_args ((l,arg,optional)::args) omitted ty_fun ty_fun0
+              sargs more_sargs
         | _ ->
             match sargs @ more_sargs with
               (l, sarg0)::_ ->
@@ -989,13 +1001,14 @@ and class_expr cl_num val_env met_env scl =
                 (List.rev args,
                  List.fold_left
                    (fun ty_fun (l,ty) -> Cty_fun(l,ty,ty_fun))
-                   ty_fun omitted)
+                   ty_fun0 omitted)
       in
       let (args, cty) =
+        let (_, ty_fun0) = Ctype.instance_class [] cl.cl_type in
         if ignore_labels then
-          type_args [] [] cl.cl_type [] sargs
+          type_args [] [] cl.cl_type ty_fun0 [] sargs
         else
-          type_args [] [] cl.cl_type sargs []
+          type_args [] [] cl.cl_type ty_fun0 sargs []
       in
       rc {cl_desc = Tcl_apply (cl, args);
           cl_loc = scl.pcl_loc;
@@ -1365,21 +1378,12 @@ let final_decl env define_class
   end;
 
   List.iter Ctype.generalize clty.cty_params;
-  generalize_class_type clty.cty_type;
-  begin match clty.cty_new with
-    None -> ()
-  | Some ty -> Ctype.generalize ty
-  end;
+  generalize_class_type true clty.cty_type;
+  Misc.may  Ctype.generalize clty.cty_new;
   List.iter Ctype.generalize obj_abbr.type_params;
-  begin match obj_abbr.type_manifest with
-    None    -> ()
-  | Some ty -> Ctype.generalize ty
-  end;
+  Misc.may  Ctype.generalize obj_abbr.type_manifest;
   List.iter Ctype.generalize cl_abbr.type_params;
-  begin match cl_abbr.type_manifest with
-    None    -> ()
-  | Some ty -> Ctype.generalize ty
-  end;
+  Misc.may  Ctype.generalize cl_abbr.type_manifest;
 
   if not (closed_class clty) then
     raise(Error(cl.pci_loc, env, Non_generalizable_class (id, clty)));

@@ -148,8 +148,8 @@ tests: $(CASES:=.o)
 	done
 
 one:
-	@$(CC) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).o $(ARCH).o || (echo " => failed" && exit 1)
-	@echo " => passed"
+	@$(CC) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).o $(ARCH).o \
+	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
 	@rm -f ./codegen *.out

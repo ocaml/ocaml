@@ -225,4 +225,26 @@ Error: The field A.x belongs to the record type A.t
                      ^^^
 Error: The record type t has no field yyz
 Did you mean yyy?
+#             type t = A
+type s = A
+class f : t -> object  end
+# Characters 12-13:
+  class g = f A;; (* ok *)
+              ^
+Warning 42: this use of A required disambiguation.
+class g : f
+#   class f : 'a -> 'a -> object  end
+# Characters 13-14:
+  class g = f (A : t) A;; (* warn with -principal *)
+               ^
+Warning 42: this use of A required disambiguation.
+Characters 20-21:
+  class g = f (A : t) A;; (* warn with -principal *)
+                      ^
+Warning 18: this type-based constructor disambiguation is not principal.
+Characters 20-21:
+  class g = f (A : t) A;; (* warn with -principal *)
+                      ^
+Warning 42: this use of A required disambiguation.
+class g : f
 # 

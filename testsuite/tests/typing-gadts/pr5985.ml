@@ -73,3 +73,17 @@ type 'a t = T of ('a -> 'a);;
 type -'a s = 'b constraint 'a = 'b t;; (* ok *)
 type +'a s = 'b constraint 'a = 'b q t;; (* ok *)
 type +'a s = 'b constraint 'a = 'b t q;; (* fail *)
+
+
+(* the problem from lablgtk2 *)
+
+module Gobject = struct
+  type -'a obj
+end
+open Gobject;;
+
+class virtual ['a] item_container =
+ object
+   constraint 'a = < as_item : [>`widget] obj; .. >
+   method virtual add : 'a -> unit
+ end;;
