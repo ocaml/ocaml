@@ -14,7 +14,7 @@ BASEDIR=../..
 CSC=csc
 
 default:
-	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	@if $(BYTECODE_ONLY); then : ; else \
 	  $(MAKE) all; \
 	fi
 
@@ -26,7 +26,7 @@ prepare:
 
 bytecode:
 	@printf " ... testing 'bytecode':"
-	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if [ ! `which $(CSC) >/dev/null 2>&1` ]; then \
 	  echo " => passed"; \
 	else \
 	  $(OCAMLC) -output-obj -o main.dll dynlink.cma main.ml entry.c; \

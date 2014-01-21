@@ -10,4 +10,4 @@
 #                                                                       #
 #########################################################################
 
-./program < torture.data > torture.result 2> /dev/null || true
+$RUNTIME ./program <torture.data >torture.result 2>/dev/null || true

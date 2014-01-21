@@ -10,15 +10,19 @@
 #                                                                       #
 #########################################################################
 
+.PHONY: compile
 compile: compile-targets
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 
 include ../makefiles/Makefile.common
 
+.PHONY: compile-targets
 compile-targets: testing.cmi testing.cmo
-	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	@if $(BYTECODE_ONLY); then : ; else \
 	  $(MAKE) testing.cmx; \
 	fi

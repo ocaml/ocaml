@@ -570,11 +570,11 @@ let emit_instr fallthrough i =
     | Lop(Ispecific(Ibswap size)) ->
        begin match size with
        | 16 ->
-        `	xchg	%ah, %al\n`;
-        `	movzwq	{emit_reg i.res.(0)}, {emit_reg16 i.res.(0)}\n`
+        `	xchg	ah, al\n`;
+        `	movzx	{emit_reg i.res.(0)}, {emit_reg16 i.res.(0)}\n`
        | 32 ->
         `	bswap	{emit_reg32 i.res.(0)}\n`;
-        `	movslq	{emit_reg i.res.(0)}, {emit_reg32 i.res.(0)}\n`
+        `	movsxd	{emit_reg i.res.(0)}, {emit_reg32 i.res.(0)}\n`
        | 64 ->
         `	bswap	{emit_reg i.res.(0)}\n`
        | _ -> assert false

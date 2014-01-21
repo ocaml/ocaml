@@ -24,11 +24,13 @@ FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo '$(FORTRAN_LIBRARY)'; fi`
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
 
+.PHONY: check
 check:
 	@if [ -n "$(FORTRAN_COMPILER)" -o -z "$(F_FILES)" ]; then \
 	  $(MAKE) run-all; \
 	fi
 
+.PHONY: run-all
 run-all:
 	@for file in $(C_FILES); do \
 	  $(CC) -c -I$(PREFIX)/lib/ocaml/caml $$file.c; \
@@ -41,19 +43,39 @@ run-all:
 	    CANKILL=$(CANKILL) sh `basename $$file ml`precheck || continue; \
 	  fi; \
 	  printf " ... testing '$$file':"; \
-	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) -w a $(CMA_FILES) -I $(TTOP)/testsuite/lib $(CMO_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) \
-	  && if [ -z "$(BYTECODE_ONLY)" ]; then \
-	       $(MAKE) run-file DESC=ocamlopt COMP='$(OCAMLOPT)' COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES) -w a $(CMXA_FILES) -I $(TTOP)/testsuite/lib $(CMX_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS); \
-	     fi \
-	  && if [ ! -z $(UNSAFE) ]; then \
-	       $(MAKE) run-file DESC=ocamlc-unsafe COMP='$(OCAMLC)' COMPFLAGS='-w a -unsafe -I $(TTOP)/testsuite/lib $(CMO_FILES)' FILE=$$file \
-	    && if [ -z "$(BYTECODE_ONLY)" ]; then \
-	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP='$(OCAMLOPT)' COMPFLAGS='-w a -unsafe -I $(TTOP)/testsuite/lib $(CMX_FILES)' FILE=$$file; \
+	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \
+	          COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) \
+	                     $(CMA_FILES) -I $(OTOPDIR)/testsuite/lib \
+	                     $(CMO_FILES)' \
+	          FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) \
+	  && \
+	  if $(BYTECODE_ONLY); then : ; else \
+	    $(MAKE) run-file DESC=ocamlopt COMP='$(OCAMLOPT)' \
+	            COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES)\
+	                       $(CMXA_FILES) -I $(OTOPDIR)/testsuite/lib \
+	                       $(CMX_FILES)' \
+	            FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS); \
+	  fi \
+	  && \
+	  if [ -n "$(UNSAFE)" ]; then \
+	    $(MAKE) run-file DESC=ocamlc-unsafe COMP='$(OCAMLC)' \
+	            COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_CFLAGS) \
+	                       $(O_FILES) $(CMA_FILES) \
+	                       -I $(OTOPDIR)/testsuite/lib $(CMO_FILES)' \
+	            FILE=$$file \
+	    && \
+	    if $(BYTECODE_ONLY); then : ; else \
+	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP='$(OCAMLOPT)' \
+	              COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_OPTFLAGS) \
+	              $(O_FILES) $(CMXA_FILES) -I $(OTOPDIR)/testsuite/lib \
+	              $(CMX_FILES)' \
+	              FILE=$$file; \
 	       fi; \
 	     fi \
 	  && echo " => passed" || echo " => failed"; \
 	done
 
+.PHONY: run-file
 run-file:
 	@printf " $(DESC)"
 	@rm -f program program.exe
@@ -66,12 +88,14 @@ run-file:
 	fi \
 	&& \
 	if [ -f $$F.checker ]; then \
-	  DIFF="$(DIFF)" sh $$F.checker; \
+	  DIFF="$(DIFF)" SORT="$(SORT)" sh $$F.checker; \
 	else \
 	  $(DIFF) $$F.reference $$F.result >/dev/null; \
 	fi
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.result program program.exe

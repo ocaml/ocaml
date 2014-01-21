@@ -48,6 +48,11 @@ function record_unexp() {
     curfile = "";
 }
 
+/ ... testing.* ... testing/ {
+    printf("error at line %d: found two test results on the same line\n", NR);
+    errored = 1;
+}
+
 /^ ... testing '[^']*'/ {
     if (in_test) record_unexp();
     match($0, /... testing '[^']*'/);
@@ -74,6 +79,7 @@ function record_unexp() {
 
 END {
     if (errored){
+        printf ("\n#### Some fatal error occurred during testing.\n\n");
         exit (3);
     }else{
         printf("\n");

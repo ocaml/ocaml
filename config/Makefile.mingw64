@@ -163,6 +163,9 @@ MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)
 
 ############# for the testsuite makefiles
+#ml let topdir = "" and wintopdir = "";;
+OTOPDIR=$(WINTOPDIR)
+CTOPDIR=$(TOPDIR)
 CYGPATH=cygpath -m
 DIFF=diff -q --strip-trailing-cr
 CANKILL=false

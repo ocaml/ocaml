@@ -61,7 +61,8 @@ type t =
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
-  | Unused_extension of string * bool * bool  (* 44 *)
+  | Open_shadow_identifier of string * string (* 44 *)
+  | Unused_extension of string * bool * bool  (* 45 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -114,10 +115,11 @@ let number = function
   | Ambiguous_name _ -> 41
   | Disambiguated_name _ -> 42
   | Nonoptional_label _ -> 43
-  | Unused_extension _ -> 44
+  | Open_shadow_identifier _ -> 44
+  | Unused_extension _ -> 45
 ;;
 
-let last_warning_number = 44
+let last_warning_number = 45
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -133,7 +135,7 @@ let letter = function
   | 'h' -> []
   | 'i' -> []
   | 'j' -> []
-  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39; 44]
+  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39; 45]
   | 'l' -> [6]
   | 'm' -> [7]
   | 'n' -> []
@@ -212,7 +214,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -334,6 +336,10 @@ let message = function
       "this use of " ^ s ^ " required disambiguation."
   | Nonoptional_label s ->
       "the label " ^ s ^ " is not optional."
+  | Open_shadow_identifier (kind, s) ->
+      Printf.sprintf
+        "this open statement shadows the %s identifier %s (which is later used)"
+        kind s
   | Unused_extension (s, false, false) -> "unused extension constructor " ^ s ^ "."
   | Unused_extension (s, true, _) ->
       "extension constructor " ^ s ^
@@ -432,7 +438,8 @@ let descriptions =
    41, "Ambiguous constructor or label name.";
    42, "Disambiguated constructor or label name.";
    43, "Nonoptional label applied as optional.";
-   44, "Unused extension constructor.";
+   44, "Open statement shadows an already defined identifier.";
+   45, "Unused extension constructor.";
   ]
 ;;
 

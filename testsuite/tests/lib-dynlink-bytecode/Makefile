@@ -12,45 +12,52 @@
 
 BASEDIR=../..
 
+.PHONY: default
 default: compile run
 
+.PHONY: compile
 compile:
 	@$(OCAMLC) -c registry.ml
 	@for file in stub*.c; do \
 	  $(OCAMLC) -c $$file; \
 	  $(OCAMLMKLIB) -o `echo $$file | sed -e 's/stub/plug/' -e 's/\.c//'` \
-	                `basename $$file c`o; \
+	                `basename $$file c`$(O); \
 	done
 	@for file in plug*.ml; do \
 	  $(OCAMLC) -c $$file; \
 	  $(OCAMLMKLIB) -o `basename $$file .ml` `basename $$file ml`cmo; \
 	done
 	@$(OCAMLC) -c main.ml
+	@rm -f main static custom custom.exe
 	@$(OCAMLC) -o main dynlink.cma registry.cmo main.cmo
 	@$(OCAMLC) -o static -linkall registry.cmo plug1.cma plug2.cma \
-	           -use-runtime $(PREFIX)/bin/ocamlrun
-	@$(OCAMLC) -o custom -custom -linkall registry.cmo plug2.cma plug1.cma \
-	           -I .
+	           -use-runtime $(OTOPDIR)/boot/ocamlrun$(EXE)
+	@$(OCAMLC) -o custom$(EXE) -custom -linkall registry.cmo plug2.cma \
+	           plug1.cma -I .
 
+.PHONY: run
 run:
 	@printf " ... testing 'main'"
-	@LD_LIBRARY_PATH="`pwd`" ./main plug1.cma plug2.cma >main.result
+	@LD_LIBRARY_PATH="`pwd`" $(OCAMLRUN) ./main plug1.cma plug2.cma \
+	                                     >main.result
 	@$(DIFF) main.reference main.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
 
 	@printf " ... testing 'static'"
-	@LD_LIBRARY_PATH="`pwd`" ./static >static.result
+	@LD_LIBRARY_PATH="`pwd`" $(OCAMLRUN) ./static >static.result
 	@$(DIFF) static.reference static.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
 
 	@printf " ... testing 'custom'"
-	@LD_LIBRARY_PATH="`pwd`" ./custom > custom.result
+	@LD_LIBRARY_PATH="`pwd`" ./custom$(EXE) > custom.result
 	@$(DIFF) custom.reference custom.result >/dev/null \
 	&& echo " => passed" || echo " => failed"
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
-	@rm -f ./main ./static ./custom *.result marshal.data
+	@rm -f main static custom custom.exe *.result marshal.data
 
 include $(BASEDIR)/makefiles/Makefile.common

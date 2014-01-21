@@ -643,11 +643,13 @@ let compute_variance_type env check (required, loc) decl tyl =
       let visited' = TypeSet.add ty !visited in
       visited := visited';
       let v1 = get_variance ty tvl in
+      let snap = Btype.snapshot () in
       let v2 =
         TypeMap.fold
           (fun t vt v ->
             if Ctype.equal env false [ty] [t] then union vt v else v)
           !tvl2 null in
+      Btype.backtrack snap;
       let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then
         if List.memq ty fvl then 

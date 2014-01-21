@@ -20,7 +20,7 @@ module C = Myocamlbuild_config
 let windows = Sys.os_type = "Win32";;
 if windows then tag_any ["windows"];;
 let ccomptype = C.ccomptype
-let () = if ccomptype <> "cc" then eprintf "ccomptype: %s@." ccomptype;;
+(*let () = if ccomptype <> "cc" then eprintf "ccomptype: %s@." ccomptype;;*)
 
 let fp_cat oc f = with_input_file ~bin:true f (fun ic -> copy_chan ic oc)
 

@@ -16,102 +16,102 @@ CC=$(NATIVECC)
 CFLAGS=$(NATIVECCCOMPOPTS) -g
 
 INCLUDES=\
-  -I $(TTOP)/utils \
-  -I $(TTOP)/typing \
-  -I $(TTOP)/bytecomp \
-  -I $(TTOP)/asmcomp
+  -I $(OTOPDIR)/utils \
+  -I $(OTOPDIR)/typing \
+  -I $(OTOPDIR)/bytecomp \
+  -I $(OTOPDIR)/asmcomp
 
 OTHEROBJS=\
-  $(TTOP)/utils/misc.cmo \
-  $(TTOP)/utils/tbl.cmo \
-  $(TTOP)/utils/config.cmo \
-  $(TTOP)/utils/clflags.cmo \
-  $(TTOP)/utils/terminfo.cmo \
-  $(TTOP)/utils/ccomp.cmo \
-  $(TTOP)/utils/warnings.cmo \
-  $(TTOP)/utils/consistbl.cmo \
-  $(TTOP)/parsing/location.cmo \
-  $(TTOP)/parsing/longident.cmo \
-  $(TTOP)/parsing/syntaxerr.cmo \
-  $(TTOP)/parsing/parser.cmo \
-  $(TTOP)/parsing/lexer.cmo \
-  $(TTOP)/parsing/parse.cmo \
-  $(TTOP)/parsing/printast.cmo \
-  $(TTOP)/typing/ident.cmo \
-  $(TTOP)/typing/path.cmo \
-  $(TTOP)/typing/primitive.cmo \
-  $(TTOP)/typing/types.cmo \
-  $(TTOP)/typing/btype.cmo \
-  $(TTOP)/typing/oprint.cmo \
-  $(TTOP)/typing/subst.cmo \
-  $(TTOP)/typing/predef.cmo \
-  $(TTOP)/typing/datarepr.cmo \
-  $(TTOP)/typing/cmi_format.cmo \
-  $(TTOP)/typing/env.cmo \
-  $(TTOP)/typing/typedtree.cmo \
-  $(TTOP)/typing/ctype.cmo \
-  $(TTOP)/typing/printtyp.cmo \
-  $(TTOP)/typing/includeclass.cmo \
-  $(TTOP)/typing/mtype.cmo \
-  $(TTOP)/typing/includecore.cmo \
-  $(TTOP)/typing/includemod.cmo \
-  $(TTOP)/typing/parmatch.cmo \
-  $(TTOP)/typing/typetexp.cmo \
-  $(TTOP)/typing/typedtreeMap.cmo \
-  $(TTOP)/typing/cmt_format.cmo \
-  $(TTOP)/typing/stypes.cmo \
-  $(TTOP)/typing/typecore.cmo \
-  $(TTOP)/typing/typedecl.cmo \
-  $(TTOP)/typing/typeclass.cmo \
-  $(TTOP)/typing/typemod.cmo \
-  $(TTOP)/bytecomp/lambda.cmo \
-  $(TTOP)/bytecomp/printlambda.cmo \
-  $(TTOP)/bytecomp/typeopt.cmo \
-  $(TTOP)/bytecomp/switch.cmo \
-  $(TTOP)/bytecomp/matching.cmo \
-  $(TTOP)/bytecomp/translobj.cmo \
-  $(TTOP)/bytecomp/translcore.cmo \
-  $(TTOP)/bytecomp/translclass.cmo \
-  $(TTOP)/bytecomp/translmod.cmo \
-  $(TTOP)/bytecomp/simplif.cmo \
-  $(TTOP)/bytecomp/runtimedef.cmo \
-  $(TTOP)/asmcomp/arch.cmo \
-  $(TTOP)/asmcomp/debuginfo.cmo \
-  $(TTOP)/asmcomp/cmm.cmo \
-  $(TTOP)/asmcomp/printcmm.cmo \
-  $(TTOP)/asmcomp/reg.cmo \
-  $(TTOP)/asmcomp/mach.cmo \
-  $(TTOP)/asmcomp/proc.cmo \
-  $(TTOP)/asmcomp/clambda.cmo \
-  $(TTOP)/asmcomp/compilenv.cmo \
-  $(TTOP)/asmcomp/closure.cmo \
-  $(TTOP)/asmcomp/cmmgen.cmo \
-  $(TTOP)/asmcomp/printmach.cmo \
-  $(TTOP)/asmcomp/selectgen.cmo \
-  $(TTOP)/asmcomp/selection.cmo \
-  $(TTOP)/asmcomp/comballoc.cmo \
-  $(TTOP)/asmcomp/liveness.cmo \
-  $(TTOP)/asmcomp/spill.cmo \
-  $(TTOP)/asmcomp/split.cmo \
-  $(TTOP)/asmcomp/interf.cmo \
-  $(TTOP)/asmcomp/coloring.cmo \
-  $(TTOP)/asmcomp/reloadgen.cmo \
-  $(TTOP)/asmcomp/reload.cmo \
-  $(TTOP)/asmcomp/printlinear.cmo \
-  $(TTOP)/asmcomp/linearize.cmo \
-  $(TTOP)/asmcomp/schedgen.cmo \
-  $(TTOP)/asmcomp/scheduling.cmo \
-  $(TTOP)/asmcomp/emitaux.cmo \
-  $(TTOP)/asmcomp/emit.cmo \
-  $(TTOP)/asmcomp/printclambda.cmo \
-  $(TTOP)/asmcomp/asmgen.cmo
+  $(OTOPDIR)/utils/misc.cmo \
+  $(OTOPDIR)/utils/tbl.cmo \
+  $(OTOPDIR)/utils/config.cmo \
+  $(OTOPDIR)/utils/clflags.cmo \
+  $(OTOPDIR)/utils/terminfo.cmo \
+  $(OTOPDIR)/utils/ccomp.cmo \
+  $(OTOPDIR)/utils/warnings.cmo \
+  $(OTOPDIR)/utils/consistbl.cmo \
+  $(OTOPDIR)/parsing/location.cmo \
+  $(OTOPDIR)/parsing/longident.cmo \
+  $(OTOPDIR)/parsing/syntaxerr.cmo \
+  $(OTOPDIR)/parsing/parser.cmo \
+  $(OTOPDIR)/parsing/lexer.cmo \
+  $(OTOPDIR)/parsing/parse.cmo \
+  $(OTOPDIR)/parsing/printast.cmo \
+  $(OTOPDIR)/typing/ident.cmo \
+  $(OTOPDIR)/typing/path.cmo \
+  $(OTOPDIR)/typing/primitive.cmo \
+  $(OTOPDIR)/typing/types.cmo \
+  $(OTOPDIR)/typing/btype.cmo \
+  $(OTOPDIR)/typing/oprint.cmo \
+  $(OTOPDIR)/typing/subst.cmo \
+  $(OTOPDIR)/typing/predef.cmo \
+  $(OTOPDIR)/typing/datarepr.cmo \
+  $(OTOPDIR)/typing/cmi_format.cmo \
+  $(OTOPDIR)/typing/env.cmo \
+  $(OTOPDIR)/typing/typedtree.cmo \
+  $(OTOPDIR)/typing/ctype.cmo \
+  $(OTOPDIR)/typing/printtyp.cmo \
+  $(OTOPDIR)/typing/includeclass.cmo \
+  $(OTOPDIR)/typing/mtype.cmo \
+  $(OTOPDIR)/typing/includecore.cmo \
+  $(OTOPDIR)/typing/includemod.cmo \
+  $(OTOPDIR)/typing/parmatch.cmo \
+  $(OTOPDIR)/typing/typetexp.cmo \
+  $(OTOPDIR)/typing/typedtreeMap.cmo \
+  $(OTOPDIR)/typing/cmt_format.cmo \
+  $(OTOPDIR)/typing/stypes.cmo \
+  $(OTOPDIR)/typing/typecore.cmo \
+  $(OTOPDIR)/typing/typedecl.cmo \
+  $(OTOPDIR)/typing/typeclass.cmo \
+  $(OTOPDIR)/typing/typemod.cmo \
+  $(OTOPDIR)/bytecomp/lambda.cmo \
+  $(OTOPDIR)/bytecomp/printlambda.cmo \
+  $(OTOPDIR)/bytecomp/typeopt.cmo \
+  $(OTOPDIR)/bytecomp/switch.cmo \
+  $(OTOPDIR)/bytecomp/matching.cmo \
+  $(OTOPDIR)/bytecomp/translobj.cmo \
+  $(OTOPDIR)/bytecomp/translcore.cmo \
+  $(OTOPDIR)/bytecomp/translclass.cmo \
+  $(OTOPDIR)/bytecomp/translmod.cmo \
+  $(OTOPDIR)/bytecomp/simplif.cmo \
+  $(OTOPDIR)/bytecomp/runtimedef.cmo \
+  $(OTOPDIR)/asmcomp/arch.cmo \
+  $(OTOPDIR)/asmcomp/debuginfo.cmo \
+  $(OTOPDIR)/asmcomp/cmm.cmo \
+  $(OTOPDIR)/asmcomp/printcmm.cmo \
+  $(OTOPDIR)/asmcomp/reg.cmo \
+  $(OTOPDIR)/asmcomp/mach.cmo \
+  $(OTOPDIR)/asmcomp/proc.cmo \
+  $(OTOPDIR)/asmcomp/clambda.cmo \
+  $(OTOPDIR)/asmcomp/compilenv.cmo \
+  $(OTOPDIR)/asmcomp/closure.cmo \
+  $(OTOPDIR)/asmcomp/cmmgen.cmo \
+  $(OTOPDIR)/asmcomp/printmach.cmo \
+  $(OTOPDIR)/asmcomp/selectgen.cmo \
+  $(OTOPDIR)/asmcomp/selection.cmo \
+  $(OTOPDIR)/asmcomp/comballoc.cmo \
+  $(OTOPDIR)/asmcomp/liveness.cmo \
+  $(OTOPDIR)/asmcomp/spill.cmo \
+  $(OTOPDIR)/asmcomp/split.cmo \
+  $(OTOPDIR)/asmcomp/interf.cmo \
+  $(OTOPDIR)/asmcomp/coloring.cmo \
+  $(OTOPDIR)/asmcomp/reloadgen.cmo \
+  $(OTOPDIR)/asmcomp/reload.cmo \
+  $(OTOPDIR)/asmcomp/printlinear.cmo \
+  $(OTOPDIR)/asmcomp/linearize.cmo \
+  $(OTOPDIR)/asmcomp/schedgen.cmo \
+  $(OTOPDIR)/asmcomp/scheduling.cmo \
+  $(OTOPDIR)/asmcomp/emitaux.cmo \
+  $(OTOPDIR)/asmcomp/emit.cmo \
+  $(OTOPDIR)/asmcomp/printclambda.cmo \
+  $(OTOPDIR)/asmcomp/asmgen.cmo
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 
 ADD_COMPFLAGS=$(INCLUDES) -g
 
 default:
-	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	@if $(BYTECODE_ONLY) || [ -z "$(ASPP)" ]; then : ; else \
 	  $(MAKE) all; \
 	fi
 

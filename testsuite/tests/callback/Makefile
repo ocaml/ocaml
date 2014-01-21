@@ -12,7 +12,7 @@
 
 BASEDIR=../..
 
-CC=$(NATIVECC) -I $(TOPDIR)/byterun
+CC=$(NATIVECC) -I $(CTOPDIR)/byterun
 
 default:
 	@case " $(OTHERLIBRARIES) " in \
@@ -31,7 +31,7 @@ run-byte: common
 	&& echo " => passed" || echo " => failed"
 
 run-opt: common
-	@if [ -z "$(BYTECODE_ONLY)" ]; then \
+	@if $(BYTECODE_ONLY); then : ; else \
 	  printf " ... testing 'native':"; \
 	  $(OCAMLOPT) -c tcallback.ml; \
 	  $(OCAMLOPT) -o ./program unix.cmxa callbackprim.$(O) tcallback.cmx; \
