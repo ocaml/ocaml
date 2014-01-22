@@ -228,7 +228,7 @@ compiled interface files (".cmi"), compiled object code files
 searched first, then the standard library directory. Directories added
 with "-I" are searched after the current directory, in the order in
 which they were given on the command line, but before the standard
-library directory.
+library directory. See also option "-nostdlib".
 
 If the given directory starts with "+", it is taken relative to the
 standard library directory.  For instance, "-I +labltk" adds the
@@ -290,7 +290,10 @@ applications, and parameter order becomes strict.
 
 \item["-nostdlib"]
 Do not include the standard library directory in the list of
-directories searched for compiled interfaces (see option "-I").
+directories searched for
+compiled interface files (".cmi"), compiled object code files
+(".cmo"), libraries (".cma"), and C libraries specified with
+"-cclib -lxxx". See also option "-I".
 
 \item["-o" \var{exec-file}]
 Specify the name of the output file produced by the compiler. The
@@ -399,7 +402,7 @@ debug C library problems.
 Compile or link multithreaded programs, in combination with the
 VM-level "threads" library described in chapter~\ref{c:threads}.
 
-\item["-vnum" or "-version"]
+\item["-version" or "-vnum"]
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 

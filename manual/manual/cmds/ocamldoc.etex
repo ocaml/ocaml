@@ -716,6 +716,10 @@ class instance variable is ignored.
 At last, "(**)" is the empty documentation comment.
 
 %%%%%%%%%%%%%
+
+% enable section numbering for subsubsections (PR#6189, item 3)
+\setcounter{secnumdepth}{3}
+
 \subsection{Text formatting}
 
 Here is the BNF grammar for the simple markup language used to format
@@ -758,7 +762,7 @@ text: {{text-element}}
         (\LaTeX\ code by default, see details
         in \ref{sss:target-specific-syntax}) \\
 @||@&@ '{!' string '}' @ & insert a cross-reference to an element
-        (see below \ref{sss:crossref} for the syntax of cross-references).\\
+        (see section \ref{sss:crossref} for the syntax of cross-references).\\
 @||@&@ '{!modules:' string string ... '}' @ & insert an index table
 for the given module names. Used in HTML only.\\
 @||@&@ '{!indexlist}' @ & insert a table of links to the various indexes
@@ -771,7 +775,7 @@ must be	escaped by a '"\\"'\\
 @||@& \nt{blank-line} & force a new line.
 \end{tabular} \\
 
-\subsubsection*{List formatting}
+\subsubsection{List formatting}
 
 \begin{syntax}
 list:
@@ -801,7 +805,7 @@ The same shortcut is available for enumerated lists, using '"+"'
 instead of '"-"'.
 Note that only one list can be defined by this shortcut in nested lists.
 
-\subsubsection*{Cross-reference formatting}
+\subsubsection{Cross-reference formatting}
 \label{sss:crossref}
 
 Cross-references are fully qualified element names, as in the example
@@ -825,7 +829,7 @@ The list of possible syntactic class is as follows:
 "method:" & class method \\
 "section:" & ocamldoc section \\
 "const:" & variant constructor \\
-"recfield:" & record field 
+"recfield:" & record field
 \end{tabular}
 \end{center}
 
@@ -836,7 +840,7 @@ names. For example, the constructor "Node" of the type "tree" will be
 referenced as "{!tree.Node}" or "{!const:tree.Node}", or possibly
 "{!Mod1.Mod2.tree.Node}" from outside the module.
 
-\subsubsection*{First sentence}
+\subsubsection{First sentence}
 
 In the description of a value, type, exception, module, module type, class
 or class type, the {\em first sentence} is sometimes used in indexes, or
@@ -857,7 +861,7 @@ outside of the following text formatting :
 @ '{^' text '}' @,
 @ '{_' text '}' @.
 
-\subsubsection*{Target-specific formatting}
+\subsubsection{Target-specific formatting}
 \label{sss:target-specific-syntax}
 
 The content inside "{%foo: ... %}" is target-specific and will only be
@@ -866,7 +870,7 @@ backends of the distribution are "latex", "html", "texi" and "man". If
 no target is specified (syntax "{% ... %}"), "latex" is chosen by
 default. Custom generators may support their own target prefix.
 
-\subsubsection*{Recognized HTML tags}
+\subsubsection{Recognized HTML tags}
 The HTML tags  "<b>..</b>",
 "<code>..</code>",
 "<i>..</i>",
@@ -883,6 +887,9 @@ The HTML tags  "<b>..</b>",
 @ '{li ..}' @,
 @ '{C ..}' @ and
 "{[0-9] ..}".
+
+%disable section numbering for subsubsections
+\setcounter{secnumdepth}{2}
 
 %%%%%%%%%%%%%
 \subsection{Documentation tags (\@-tags)}
@@ -1024,11 +1031,11 @@ To know which methods to override and/or which methods are available,
 have a look at the different base implementations, depending on the
 kind of generator you are extending~:
 \begin{itemize}
-\item for HTML~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_html.ml?view=markup}{"odoc_html.ml"},
-\item for \LaTeX~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_latex.ml?view=markup}{"odoc_latex.ml"},
-\item for TeXinfo~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_texi.ml?view=markup}{"odoc_texi.ml"},
-\item for man pages~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_man.ml?view=markup}{"odoc_man.ml"},
-\item for graphviz (dot)~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/4.00/ocamldoc/odoc_dot.ml?view=markup}{"odoc_dot.ml"}.
+\item for HTML~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_html.ml?view=markup}{"odoc_html.ml"},
+\item for \LaTeX~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_latex.ml?view=markup}{"odoc_latex.ml"},
+\item for TeXinfo~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_texi.ml?view=markup}{"odoc_texi.ml"},
+\item for man pages~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_man.ml?view=markup}{"odoc_man.ml"},
+\item for graphviz (dot)~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_dot.ml?view=markup}{"odoc_dot.ml"}.
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
