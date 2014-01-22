@@ -44,6 +44,7 @@ Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
 - PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
 - PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
+- PR#5598: follow-up fix related to PR#6165
 - PR#5820: Fix camlp4 lexer roll back problem
 - PR#6062: Fix a regression bug caused by commit 13047
 - PR#6109: Typos in ocamlbuild error messages
@@ -54,10 +55,10 @@ Bug fixes:
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
-- PR#6148: speed improvement for Buffer (patch by John Whitington)
-- PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
-- PR#6180: efficient creation of uninitialized float arrays
 - PR#5935: a faster version of "raise" which does not maintain the backtrace
+- PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
+- PR#6148: speed improvement for Buffer (patch by John Whitington)
+- PR#6180: efficient creation of uninitialized float arrays
 
 OCamldoc:
 - PR#6257: handle full doc comments for variant constructors and
@@ -69,11 +70,12 @@ Features wishes:
   hexa representations (patch by Zoe Paraskevopoulou)
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
+- PR#5808: allow simple patterns, not only identifiers, in "let p : t = ..."
 - PR#6064: GADT representation for Bigarray.kind + CAML_BA_CHAR runtime kind
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
 - PR#6246: allow wilcard _ as for-loop index
-- PR#5808: allow simple patterns, not only identifiers, in "let p : t = ..."
+
 
 OCaml 4.01.1:
 -------------
