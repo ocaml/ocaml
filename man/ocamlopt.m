@@ -248,11 +248,13 @@ and edit that file to remove all declarations of unexported names.
 .TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
-compiled interface files (.cmi) and compiled object code files
-(.cmo). By default, the current directory is searched first, then the
-standard library directory. Directories added with \-I are searched
-after the current directory, in the order in which they were given on
-the command line, but before the standard library directory.
+compiled interface files (.cmi), compiled object code files (.cmx),
+and libraries (.cmxa). By default, the current directory is searched
+first, then the standard library directory. Directories added with \-I
+are searched after the current directory, in the order in which they
+were given on the command line, but before the standard library
+directory. See also option
+.BR \-nostdlib .
 
 If the given directory starts with
 .BR + ,
@@ -336,6 +338,12 @@ and pass the correct C libraries and options on the command line.
 .B \-nodynlink
 Allow the compiler to use some optimizations that are valid only for code
 that is never dynlinked.
+.TP
+.B -nostdlib
+Do not automatically add the standard library directory the list of
+directories searched for compiled interface files (.cmi), compiled
+object code files (.cmx), and libraries (.cmxa). See also option
+.BR \-I .
 .TP
 .B \-nolabels
 Ignore non-optional labels in types. Labels cannot be used in
@@ -519,7 +527,7 @@ standard library directory, then exit.
 Print all external commands before they are executed, in particular
 invocations of the assembler, C compiler, and linker.
 .TP
-.BR \-vnum or \-version
+.BR \-version \ or\  \-vnum
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
@@ -559,7 +567,6 @@ The default setting is
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.
-.TP
 .TP
 .B \-where
 Print the location of the standard library, then exit.
