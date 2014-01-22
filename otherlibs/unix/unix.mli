@@ -244,7 +244,6 @@ type open_flag =
                                    while still open *)
   | O_CLOEXEC                   (** Set the close-on-exec flag on the
                                    descriptor returned by {!openfile} *)
-
 (** The flags to {!Unix.openfile}. *)
 
 
