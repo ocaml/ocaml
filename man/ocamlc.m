@@ -335,14 +335,16 @@ that file to remove all declarations of unexported names.
 Add the given directory to the list of directories searched for
 compiled interface files (.cmi), compiled object code files
 (.cmo), libraries (.cma), and C libraries specified with
-.B \-cclib\ \-l
-.IR xxx .
+.BI \-cclib\ \-l xxx
+.RB .
 By default, the current directory is searched first, then the
 standard library directory. Directories added with
-.B -I
+.B \-I
 are searched
 after the current directory, in the order in which they were given on
-the command line, but before the standard library directory.
+the command line, but before the standard library directory. See also
+option
+.BR \-nostdlib .
 
 If the given directory starts with
 .BR + ,
@@ -421,10 +423,14 @@ Ignore non-optional labels in types. Labels cannot be used in
 applications, and parameter order becomes strict.
 .TP
 .B \-nostdlib
-Do not include the standard library directory in the list of
-directories searched for compiled interfaces (see option
-.B \-I
-).
+Do not automatically add the standard library directory to the list of
+directories searched for compiled interface files (.cmi), compiled
+object code files (.cmo), libraries (.cma), and C libraries specified
+with
+.BI \-cclib\ \-l xxx
+.RB .
+See also option
+.BR \-I .
 .TP
 .BI \-o \ exec\-file
 Specify the name of the output file produced by the linker. The
