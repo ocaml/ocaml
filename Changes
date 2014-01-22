@@ -1,15 +1,16 @@
 Bug fixes:
+- PR#6165: Alterations to handling of \013 in source files breaking other tools
 - PR#6173: Typing error message is worse that before
 - PR#6174: OCaml compiler loops on an example using GADTs (non -rectypes)
 - PR#6194: Incorrect unused warning with first-class modules in patterns
 - PR#6216: inlining of GADT matches generates invalid assembly
+- PR#6233: out-of-bounds exceptions lose their locations on ARM, PowerPC
 - PR#6235: Issue with type information flowing through a variant pattern
+- PR#6239: sometimes wrong stack alignment when raising exceptions
+           in -g mode with backtraces active
 - PR#6240: Fail to expand module type abbreviation during substyping
 - PR#6241: Assumed inequality between paths involving functor arguments
 - PR#6243: Make "ocamlopt -g" more resistant to ill-formed locations
-- PR#6233: out-of-bounds exceptions lose their locations on ARM, PowerPC
-- PR#6239: sometimes wrong stack alignment when raising exceptions
-           in -g mode with backtraces active
 - PR#6275: Soundness bug related to type constraints
 
 OCaml 4.01.0:
@@ -108,7 +109,7 @@ Internals:
 Bug fixes:
 - PR#3236: Document the fact that queues are not thread-safe
   (Damien Doligez)
-- PR#6175: Fix open!  
+- PR#6175: Fix open!
 - PR#5820: Fix camlp4 lexer roll back problem
 - PR#4855: 'camlp4 -I +dir' accepted, dir is related to 'camlp4 -where'
 - PR#6062: Fix a regression bug caused by commit 13047
