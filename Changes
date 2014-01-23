@@ -88,6 +88,7 @@ Bug fixes:
 - PR#6173: Typing error message is worse that before
 - PR#6174: OCaml compiler loops on an example using GADTs (non -rectypes)
 - PR#6175: Fix open!
+- PR#6183: enhanced documentation for 'Unix.shutdown_connection'
 - PR#6216: inlining of GADT matches generates invalid assembly
 - PR#6233: out-of-bounds exceptions lose their locations on ARM, PowerPC
 - PR#6235: Issue with type information flowing through a variant pattern
