@@ -15,6 +15,7 @@ Bug fixes:
 - PR#6240: Fail to expand module type abbreviation during substyping
 - PR#6241: Assumed inequality between paths involving functor arguments
 - PR#6243: Make "ocamlopt -g" more resistant to ill-formed locations
+- PR#6267: more information printed by "bt" command of ocamldebug
 - PR#6275: Soundness bug related to type constraints
 
 OCaml 4.01.0:
