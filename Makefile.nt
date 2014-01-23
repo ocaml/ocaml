@@ -238,7 +238,7 @@ installbyt:
 	  else :; fi
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
-	if test -n "$(WITH_OCAMLDEBUG)"; then (cd debugger; $(MAKEREC) install); \
+	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKEREC) install); \
 	   else :; fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
 	   else :; fi
