@@ -533,7 +533,7 @@ rule main = parse
 | begin_ext_ref
     {
       incr_cpts lexbuf ;
-      if !verb_mode or !target_mode or !code_pre_mode or !open_brackets >= 1 then
+      if !verb_mode || !target_mode || !code_pre_mode || !open_brackets >= 1 then
         Char (Lexing.lexeme lexbuf)
       else
         if not !ele_ref_mode then
