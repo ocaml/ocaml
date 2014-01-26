@@ -396,23 +396,23 @@ static uintnat deserialize_nat(void * dst)
 static intnat hash_nat(value v)
 {
   bngsize len, i;
-  uint32 h;
+  char a[CAML_HASH_T_SIZE];
+  hash_t h = caml_hash_init(a, 0);
 
   len = bng_num_digits(&Digit_val(v,0), Wosize_val(v) - 1);
-  h = 0;
   for (i = 0; i < len; i++) {
     bngdigit d = Digit_val(v, i);
 #ifdef ARCH_SIXTYFOUR
     /* Mix the two 32-bit halves as if we were on a 32-bit platform,
        namely low 32 bits first, then high 32 bits.
        Also, ignore final 32 bits if they are zero. */
-    h = caml_hash_mix_uint32(h, (uint32) d);
+    caml_hash_mix_uint32(h, (uint32) d);
     d = d >> 32;
     if (d == 0 && i + 1 == len) break;
-    h = caml_hash_mix_uint32(h, (uint32) d);
+    caml_hash_mix_uint32(h, (uint32) d);
 #else
-    h = caml_hash_mix_uint32(h, d);
+    caml_hash_mix_uint32(h, d);
 #endif
   }
-  return h;
+  return caml_hash_final(h);
 }

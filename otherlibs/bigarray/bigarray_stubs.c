@@ -780,12 +780,14 @@ static intnat caml_ba_hash(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
   intnat num_elts, n;
-  uint32 h, w;
+  uint32 w;
   int i;
+  hash_t h;
+  void*  a = alloca(CAML_HASH_T_SIZE);
 
   num_elts = 1;
   for (i = 0; i < b->num_dims; i++) num_elts = num_elts * b->dim[i];
-  h = 0;
+  h = caml_hash_init(a, 0);
 
   switch (b->flags & CAML_BA_KIND_MASK) {
   case CAML_BA_CHAR:
@@ -795,14 +797,14 @@ static intnat caml_ba_hash(value v)
     if (num_elts > 256) num_elts = 256;
     for (n = 0; n + 4 <= num_elts; n += 4, p += 4) {
       w = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
-      h = caml_hash_mix_uint32(h, w);
+      caml_hash_mix_uint32(h, w);
     }
     w = 0;
     switch (num_elts & 3) {
     case 3: w  = p[2] << 16;    /* fallthrough */
     case 2: w |= p[1] << 8;     /* fallthrough */
     case 1: w |= p[0];
-            h = caml_hash_mix_uint32(h, w);
+		caml_hash_mix_uint32(h, w);
     }
     break;
   }
@@ -812,17 +814,17 @@ static intnat caml_ba_hash(value v)
     if (num_elts > 128) num_elts = 128;
     for (n = 0; n + 2 <= num_elts; n += 2, p += 2) {
       w = p[0] | (p[1] << 16);
-      h = caml_hash_mix_uint32(h, w);
+      caml_hash_mix_uint32(h, w);
     }
     if ((num_elts & 1) != 0)
-      h = caml_hash_mix_uint32(h, p[0]);
+      caml_hash_mix_uint32(h, p[0]);
     break;
   }
   case CAML_BA_INT32:
   {
     uint32 * p = b->data;
     if (num_elts > 64) num_elts = 64;
-    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_uint32(h, *p);
+    for (n = 0; n < num_elts; n++, p++) caml_hash_mix_uint32(h, *p);
     break;
   }
   case CAML_BA_CAML_INT:
@@ -830,14 +832,14 @@ static intnat caml_ba_hash(value v)
   {
     intnat * p = b->data;
     if (num_elts > 64) num_elts = 64;
-    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_intnat(h, *p);
+    for (n = 0; n < num_elts; n++, p++) caml_hash_mix_intnat(h, *p);
     break;
   }
   case CAML_BA_INT64:
   {
     int64 * p = b->data;
     if (num_elts > 32) num_elts = 32;
-    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_int64(h, *p);
+    for (n = 0; n < num_elts; n++, p++) caml_hash_mix_int64(h, *p);
     break;
   }
   case CAML_BA_COMPLEX32:
@@ -846,7 +848,7 @@ static intnat caml_ba_hash(value v)
   {
     float * p = b->data;
     if (num_elts > 64) num_elts = 64;
-    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_float(h, *p);
+    for (n = 0; n < num_elts; n++, p++) caml_hash_mix_float(h, *p);
     break;
   }
   case CAML_BA_COMPLEX64:
@@ -855,7 +857,7 @@ static intnat caml_ba_hash(value v)
   {
     double * p = b->data;
     if (num_elts > 32) num_elts = 32;
-    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_double(h, *p);
+    for (n = 0; n < num_elts; n++, p++) caml_hash_mix_double(h, *p);
     break;
   }
   }

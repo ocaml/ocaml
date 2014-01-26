@@ -24,48 +24,55 @@
 /* The new implementation, based on MurmurHash 3,
      http://code.google.com/p/smhasher/  */
 
+CAMLexport hash_t caml_hash_init(void* a, hash_key k) {
+	hash_t h = (hash_t) a;
+	*h = k;
+	return h;
+}
+
+CAMLexport hash_out caml_hash_final(hash_t h) {
+	uint32 v = *h;
+	v ^= v >> 16;
+	v *= 0x85ebca6b;
+	v ^= v >> 13;
+	v *= 0xc2b2ae35;
+	v ^= v >> 16;
+	return v;
+}
+
 #define ROTL32(x,n) ((x) << n | (x) >> (32-n))
 
 #define MIX(h,d) \
   d *= 0xcc9e2d51; \
   d = ROTL32(d, 15); \
   d *= 0x1b873593; \
-  h ^= d; \
-  h = ROTL32(h, 13); \
-  h = h * 5 + 0xe6546b64;
+  *h ^= d; \
+  *h = ROTL32(*h, 13); \
+  *h = (*h) * 5 + 0xe6546b64;
 
-#define FINAL_MIX(h) \
-  h ^= h >> 16; \
-  h *= 0x85ebca6b; \
-  h ^= h >> 13; \
-  h *= 0xc2b2ae35; \
-  h ^= h >> 16;
 
-CAMLexport uint32 caml_hash_mix_uint32(uint32 h, uint32 d)
+CAMLexport void caml_hash_mix_uint32(hash_t h, uint32 d)
 {
   MIX(h, d);
-  return h;
 }
 
 /* Mix a platform-native integer. */
 
-CAMLexport uint32 caml_hash_mix_intnat(uint32 h, intnat d)
+CAMLexport void caml_hash_mix_intnat(hash_t h, intnat d)
 {
   uint64 n = (int64) d; /* Cast to get proper sign-expansion on 32-bit */
   uint32 lo = n >> 32, hi = (uint32) n;
   MIX(h, lo);
   MIX(h, hi);
-  return h;
 }
 
 /* Mix a 64-bit integer. */
 
-CAMLexport uint32 caml_hash_mix_int64(uint32 h, int64 d)
+CAMLexport void caml_hash_mix_int64(hash_t h, int64 d)
 {
   uint32 hi = (uint32) (d >> 32), lo = (uint32) d;
   MIX(h, lo);
   MIX(h, hi);
-  return h;
 }
 
 /* Mix a double-precision float.
@@ -73,7 +80,7 @@ CAMLexport uint32 caml_hash_mix_int64(uint32 h, int64 d)
    Treats all NaNs identically.
 */
 
-CAMLexport uint32 caml_hash_mix_double(uint32 hash, double d)
+CAMLexport void caml_hash_mix_double(hash_t hash, double d)
 {
   union {
     double d;
@@ -98,7 +105,6 @@ CAMLexport uint32 caml_hash_mix_double(uint32 hash, double d)
   }
   MIX(hash, l);
   MIX(hash, h);
-  return hash;
 }
 
 /* Mix a single-precision float.
@@ -106,7 +112,7 @@ CAMLexport uint32 caml_hash_mix_double(uint32 hash, double d)
    Treats all NaNs identically.
 */
 
-CAMLexport uint32 caml_hash_mix_float(uint32 hash, float d)
+CAMLexport void caml_hash_mix_float(hash_t hash, float d)
 {
   union {
     float f;
@@ -124,12 +130,11 @@ CAMLexport uint32 caml_hash_mix_float(uint32 hash, float d)
     n = 0;
   }
   MIX(hash, n);
-  return hash;
 }
 
 /* Mix an OCaml string */
 
-CAMLexport uint32 caml_hash_mix_string(uint32 h, value s)
+CAMLexport void caml_hash_mix_string(hash_t h, value s)
 {
   mlsize_t len = caml_string_length(s);
   mlsize_t i;
@@ -157,8 +162,7 @@ CAMLexport uint32 caml_hash_mix_string(uint32 h, value s)
   default: /*skip*/;     /* len & 3 == 0, no extra bytes, do nothing */
   }
   /* Finally, mix in the length.  Ignore the upper 32 bits, generally 0. */
-  h ^= (uint32) len;
-  return h;
+  *h ^= (uint32) len;
 }
 
 /* Maximal size of the queue used for breadth-first traversal.  */
@@ -175,36 +179,38 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   intnat wr;                    /* One past position of last value in queue */
   intnat sz;                    /* Max number of values to put in queue */
   intnat num;                   /* Max number of meaningful values to see */
-  uint32 h;                     /* Rolling hash */
+  char a[CAML_HASH_T_SIZE];     /* Heap allocation for the hash's state */
+  hash_t h;                     /* Rolling hash */
   value v;
   mlsize_t i, len;
 
   sz = Long_val(limit);
   if (sz < 0 || sz > HASH_QUEUE_SIZE) sz = HASH_QUEUE_SIZE;
   num = Long_val(count);
-  h = Int_val(seed);
+
+  h = caml_hash_init(a, Int_val(seed));
   queue[0] = obj; rd = 0; wr = 1;
 
   while (rd < wr && num > 0) {
     v = queue[rd++];
   again:
     if (Is_long(v)) {
-      h = caml_hash_mix_intnat(h, v);
+      caml_hash_mix_intnat(h, v);
       num--;
     }
     else if (Is_in_value_area(v)) {
       switch (Tag_val(v)) {
       case String_tag:
-        h = caml_hash_mix_string(h, v);
+        caml_hash_mix_string(h, v);
         num--;
         break;
       case Double_tag:
-        h = caml_hash_mix_double(h, Double_val(v));
+        caml_hash_mix_double(h, Double_val(v));
         num--;
         break;
       case Double_array_tag:
         for (i = 0, len = Wosize_val(v) / Double_wosize; i < len; i++) {
-          h = caml_hash_mix_double(h, Double_field(v, i));
+          caml_hash_mix_double(h, Double_field(v, i));
           num--;
           if (num <= 0) break;
         }
@@ -215,7 +221,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
       case Infix_tag:
         /* Mix in the offset to distinguish different functions from
            the same mutually-recursive definition */
-        h = caml_hash_mix_uint32(h, Infix_offset_val(v));
+        caml_hash_mix_uint32(h, Infix_offset_val(v));
         v = v - Infix_offset_val(v);
         goto again;
       case Forward_tag:
@@ -229,7 +235,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         /* Give up on this object and move to the next */
         break;
       case Object_tag:
-        h = caml_hash_mix_intnat(h, Oid_val(v));
+        caml_hash_mix_intnat(h, Oid_val(v));
         num--;
         break;
       case Custom_tag:
@@ -237,13 +243,13 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         /* Only use low 32 bits of custom hash, for 32/64 compatibility */
         if (Custom_ops_val(v)->hash != NULL) {
           uint32 n = (uint32) Custom_ops_val(v)->hash(v);
-          h = caml_hash_mix_uint32(h, n);
+          caml_hash_mix_uint32(h, n);
           num--;
         }
         break;
       default:
         /* Mix in the tag and size, but do not count this towards [num] */
-        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
         /* Copy fields into queue, not exceeding the total size [sz] */
         for (i = 0, len = Wosize_val(v); i < len; i++) {
           if (wr >= sz) break;
@@ -254,15 +260,15 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
     } else {
       /* v is a pointer outside the heap, probably a code pointer.
          Shall we count it?  Let's say yes by compatibility with old code. */
-      h = caml_hash_mix_intnat(h, v);
+      caml_hash_mix_intnat(h, v);
       num--;
     }
   }
   /* Final mixing of bits */
-  FINAL_MIX(h);
+  hash_out x = caml_hash_final(h);
   /* Fold result to the range [0, 2^30-1] so that it is a nonnegative
      OCaml integer both on 32 and 64-bit platforms. */
-  return Val_int(h & 0x3FFFFFFFU);
+  return Val_int(x & 0x3FFFFFFFU);
 }
 
 /* The old implementation */
