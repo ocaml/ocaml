@@ -51,19 +51,10 @@ CAMLexport uint32 caml_hash_mix_uint32(uint32 h, uint32 d)
 
 CAMLexport uint32 caml_hash_mix_intnat(uint32 h, intnat d)
 {
-  uint32 n;
-#ifdef ARCH_SIXTYFOUR
-  /* Mix the low 32 bits and the high 32 bits, in a way that preserves
-     32/64 compatibility: we want n = (uint32) d
-     if d is in the range [-2^31, 2^31-1]. */
-  n = (d >> 32) ^ (d >> 63) ^ d;
-  /* If 0 <= d < 2^31:   d >> 32 = 0     d >> 63 = 0
-     If -2^31 <= d < 0:  d >> 32 = -1    d >> 63 = -1
-     In both cases, n = (uint32) d.  */
-#else
-  n = d;
-#endif
-  MIX(h, n);
+  uint64 n = (int64) d; /* Cast to get proper sign-expansion on 32-bit */
+  uint32 lo = n >> 32, hi = (uint32) n;
+  MIX(h, lo);
+  MIX(h, hi);
   return h;
 }
 
