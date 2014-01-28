@@ -1457,7 +1457,7 @@ let () =
 (* Typecheck an implementation file *)
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
-  Cmt_format.set_saved_types [];
+  Cmt_format.clear ();
   try
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
