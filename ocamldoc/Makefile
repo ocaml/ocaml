@@ -193,8 +193,14 @@ dot: $(EXECMOFILES)
 odoc_text_parser.ml: odoc_text_parser.mly
 odoc_text_parser.mli: odoc_text_parser.mly
 
+odoc_text_parser.cmo: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
+odoc_text_parser.cmx: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
+
 odoc_parser.ml:	odoc_parser.mly
 odoc_parser.mli:odoc_parser.mly
+
+odoc_parser.cmo: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
+odoc_parser.cmx: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
 
 odoc_text_lexer.ml: odoc_text_lexer.mll
 

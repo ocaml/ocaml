@@ -473,6 +473,10 @@ beforedepend:: utils/config.ml
 parsing/parser.mli parsing/parser.ml: parsing/parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parsing/parser.mly
 
+parsing/parser.cmo: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
+parsing/parser.p.cmo: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
+parsing/parser.cmx: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
+
 partialclean::
 	rm -f parsing/parser.mli parsing/parser.ml parsing/parser.output
 
