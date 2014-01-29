@@ -87,6 +87,7 @@ module MakeIterator :
     val iter_module_type : module_type -> unit
     val iter_pattern : pattern -> unit
     val iter_class_expr : class_expr -> unit
-           end
+    val iter_class_type : class_type -> unit
+  end
 
 module DefaultIteratorArgument : IteratorArgument

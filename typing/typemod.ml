@@ -1414,9 +1414,234 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     (Cmt_format.Partial_structure str :: previous_saved_types);
   str, sg, final_env
 
+module ImplicitInstantiation() = struct
+
+  let variables = ref []
+  let aliases = ref []
+  let ignored_var = ref []
+  let active = ref 0
+
+  let rec insert_aliases name = function
+    | [] -> [name]
+    | n :: _ as names when n = name -> names
+    | n :: names -> n :: insert_aliases name names
+  let rec insert_var (name, _ as ty) = function
+    | [] -> [ty]
+    | (n, _) :: _ as res when n = name -> res
+    | ty' :: tys -> ty' :: insert_var ty tys
+
+  include TypedtreeIter.MakeIterator(struct
+
+    include TypedtreeIter.DefaultIteratorArgument
+
+    let enter_core_type ct =
+      match ct.ctyp_desc with
+      | Ttyp_var s
+        when !active = 0 && not (List.exists (List.mem s) !ignored_var) ->
+          variables := insert_var (s, ct) !variables
+      | Ttyp_alias (_, s)
+        when !active = 0 && not (List.exists (List.mem s) !ignored_var) ->
+          aliases := insert_aliases s !aliases
+      | Ttyp_poly (list, _) ->
+          ignored_var := list :: !ignored_var
+      | Ttyp_any
+      | Ttyp_var _
+      | Ttyp_alias (_, _)
+      | Ttyp_arrow (_, _, _)
+      | Ttyp_tuple _
+      | Ttyp_constr (_, _, _)
+      | Ttyp_object (_, _)
+      | Ttyp_class (_, _, _)
+      | Ttyp_variant (_, _, _)
+      | Ttyp_package _ -> ()
+
+    let leave_core_type ct =
+      match ct.ctyp_desc with
+      | Ttyp_poly (list, _) ->
+          ignored_var := List.tl !ignored_var
+      | Ttyp_any
+      | Ttyp_var _
+      | Ttyp_alias (_, _)
+      | Ttyp_arrow (_, _, _)
+      | Ttyp_tuple _
+      | Ttyp_constr (_, _, _)
+      | Ttyp_object (_, _)
+      | Ttyp_class (_, _, _)
+      | Ttyp_variant (_, _, _)
+      | Ttyp_package _ -> ()
+
+    let enter_class_expr cexpr =
+      match cexpr.cl_desc with
+      | Tcl_constraint (_, _, _, _, _ ) -> incr active
+      | Tcl_structure _
+      | Tcl_fun (_, _, _, _, _)
+      | Tcl_apply (_, _)
+      | Tcl_let (_, _, _, _)
+      | Tcl_ident (_, _, _) -> ()
+
+    let leave_class_expr cexpr =
+      match cexpr.cl_desc with
+      | Tcl_constraint (_, _, _, _, _ ) -> decr active
+      | Tcl_structure _
+      | Tcl_fun (_, _, _, _, _)
+      | Tcl_apply (_, _)
+      | Tcl_let (_, _, _, _)
+      | Tcl_ident (_, _, _) -> ()
+
+    let enter_expression exp =
+      match exp.exp_desc with
+      | Texp_letmodule (_, _, _, _)
+      | Texp_pack _ -> incr active
+      | Texp_ident (_, _, _)
+      | Texp_constant _
+      | Texp_let (_, _, _)
+      | Texp_function (_, _, _)
+      | Texp_apply (_, _)
+      | Texp_match (_, _, _, _)
+      | Texp_try (_, _)
+      | Texp_tuple _
+      | Texp_construct (_, _, _)
+      | Texp_variant (_, _)
+      | Texp_record (_, _)
+      | Texp_field (_, _, _)
+      | Texp_setfield (_, _, _, _)
+      | Texp_array _
+      | Texp_ifthenelse (_, _, _)
+      | Texp_sequence (_, _)
+      | Texp_while (_, _)
+      | Texp_for (_, _, _, _, _, _)
+      | Texp_send (_, _, _)
+      | Texp_new (_, _, _)
+      | Texp_instvar (_, _, _)
+      | Texp_setinstvar (_, _, _, _)
+      | Texp_override (_, _)
+      | Texp_assert _
+      | Texp_lazy _
+      | Texp_object (_, _) -> ()
+
+    let leave_expression exp =
+      match exp.exp_desc with
+      | Texp_letmodule (_, _, _, _)
+      | Texp_pack _ -> decr active
+      | Texp_ident (_, _, _)
+      | Texp_constant _
+      | Texp_let (_, _, _)
+      | Texp_function (_, _, _)
+      | Texp_apply (_, _)
+      | Texp_match (_, _, _, _)
+      | Texp_try (_, _)
+      | Texp_tuple _
+      | Texp_construct (_, _, _)
+      | Texp_variant (_, _)
+      | Texp_record (_, _)
+      | Texp_field (_, _, _)
+      | Texp_setfield (_, _, _, _)
+      | Texp_array _
+      | Texp_ifthenelse (_, _, _)
+      | Texp_sequence (_, _)
+      | Texp_while (_, _)
+      | Texp_for (_, _, _, _, _, _)
+      | Texp_send (_, _, _)
+      | Texp_new (_, _, _)
+      | Texp_instvar (_, _, _)
+      | Texp_setinstvar (_, _, _, _)
+      | Texp_override (_, _)
+      | Texp_assert _
+      | Texp_lazy _
+      | Texp_object (_, _) -> ()
+
+    end)
+
+  let check () =
+    let may_warn (name, ty) =
+      match (Ctype.correct_levels ty.ctyp_type).desc with
+      | Tvar (Some name') when name' <> name ->
+          Location.prerr_warning ty.ctyp_loc
+            (Warnings.Unified_var (name, name'));
+      | Tvar _ -> ()
+      | _ ->
+          Printtyp.type_expr Format.str_formatter ty.ctyp_type;
+          Location.prerr_warning ty.ctyp_loc
+            (Warnings.Instantiated_var
+               (name, Format.flush_str_formatter ()))
+    in
+    List.iter may_warn
+      (List.filter (fun (name, _) -> not (List.mem name !aliases)) !variables)
+
+end
+
+module WarnImplicit = struct
+
+  let check_class_expr cexpr =
+    let module M = ImplicitInstantiation() in
+    M.iter_class_expr cexpr;
+    M.check ()
+
+  let check_class_type ctype =
+    let module M = ImplicitInstantiation() in
+    M.iter_class_type ctype;
+    M.check ()
+
+  let check_expression exp =
+    let module M = ImplicitInstantiation() in
+    M.iter_expression exp;
+    M.check ()
+
+  let check_value_bindings bindings =
+    let module M = ImplicitInstantiation() in
+    List.iter
+      (fun { vb_expr; vb_pat } ->
+         M.iter_pattern vb_pat;
+         M.iter_expression vb_expr)
+      bindings;
+    M.check ()
+
+  include TypedtreeIter.MakeIterator(struct
+
+    include TypedtreeIter.DefaultIteratorArgument
+
+      let enter_class_expr cexpr =
+        match cexpr.cl_desc with
+        | Tcl_constraint (cl, None, _, _, _) ->
+            check_class_expr cl
+        | Tcl_constraint (cl, Some ct, _, _, _) ->
+            check_class_expr cl;
+            check_class_type ct
+        | Tcl_structure _
+        | Tcl_fun (_, _, _, _, _)
+        | Tcl_apply (_, _)
+        | Tcl_let (_, _, _, _)
+        | Tcl_ident (_, _, _) -> ()
+
+      let enter_structure_item item =
+        match item.str_desc with
+        | Tstr_eval (e, _) -> check_expression e
+        | Tstr_value (_, vb) -> check_value_bindings vb
+        | Tstr_module _
+        | Tstr_recmodule _
+        | Tstr_class _
+        | Tstr_include _
+        | Tstr_primitive _
+        | Tstr_type _
+        | Tstr_typext _
+        | Tstr_exception _
+        | Tstr_modtype _
+        | Tstr_open _
+        | Tstr_attribute _
+        | Tstr_class_type _ -> ()
+
+    end)
+
+  let warn str = iter_structure str
+
+end
+
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
-  type_structure ~toplevel:true false None env s Location.none
+  let (str, coerce, env) =
+    type_structure ~toplevel:true false None env s Location.none in
+  WarnImplicit.warn str;
+  (str, coerce, env)
 (*let type_module_alias = type_module ~alias:true true false None*)
 let type_module = type_module true false None
 let type_structure = type_structure false None
@@ -1616,6 +1841,11 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       (Some sourcefile) initial_env None;
     raise e
 
+let type_implementation sourcefile outputprefix modulename initial_env ast =
+  let (str, coerce) =
+    type_implementation sourcefile outputprefix modulename initial_env ast in
+  WarnImplicit.warn str;
+  (str, coerce)
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname

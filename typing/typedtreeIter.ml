@@ -91,6 +91,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
     val iter_module_type : module_type -> unit
     val iter_pattern : pattern -> unit
     val iter_class_expr : class_expr -> unit
+    val iter_class_type : class_type -> unit
 
   end = struct
 
@@ -249,7 +250,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         exp.exp_extra;
       begin
         match exp.exp_desc with
-          Texp_ident (path, _, _) -> ()
+        | Texp_ident (path, _, _) -> ()
         | Texp_constant cst -> ()
         | Texp_let (rec_flag, list, exp) ->
             iter_bindings rec_flag list;

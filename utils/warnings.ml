@@ -67,6 +67,8 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
+  | Unified_var of string * string          (* 50 *)
+  | Instantiated_var of string * string     (* 51 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -125,9 +127,11 @@ let number = function
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
+  | Unified_var _ -> 50
+  | Instantiated_var _ -> 51
 ;;
 
-let last_warning_number = 49
+let last_warning_number = 51
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -373,6 +377,10 @@ let message = function
         (String.concat ", " sl)
   | No_cmi_file s ->
       "no cmi file was found in path for module " ^ s
+  | Unified_var (name, name') ->
+      Printf.sprintf "The explicit type variable '%s has been unified with another explicit type variable: '%s." name name'
+  | Instantiated_var (name, ty) ->
+      Printf.sprintf "The explicit type variable '%s has been instantied into:\n%s" name ty
 ;;
 
 let nerrors = ref 0;;
@@ -468,6 +476,8 @@ let descriptions =
    47, "Illegal attribute payload.";
    48, "Implicit elimination of optional arguments.";
    49, "Absent cmi file when looking up module alias.";
+   50, "Unified variable in type constraint";
+   51, "Instantiated variable in type constraint";
   ]
 ;;
 

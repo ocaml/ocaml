@@ -62,6 +62,8 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
+  | Unified_var of string * string          (* 50 *)
+  | Instantiated_var of string * string     (* 51 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
