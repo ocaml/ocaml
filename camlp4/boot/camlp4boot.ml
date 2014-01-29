@@ -1235,27 +1235,11 @@ New syntax:\
                               Gram.Snterm
                                 (Gram.Entry.obj
                                    (constructor_declaration :
-                                     'constructor_declaration Gram.Entry.t));
-                              Gram.Skeyword "=";
-                              Gram.Snterm
-                                (Gram.Entry.obj
-                                   (type_longident :
-                                     'type_longident Gram.Entry.t)) ],
-                            (Gram.Action.mk
-                               (fun (i : 'type_longident) _
-                                  (t : 'constructor_declaration) _
-                                  (_loc : Gram.Loc.t) ->
-                                  (Ast.StExc (_loc, t, (Ast.OSome i)) :
-                                    'str_item))));
-                           ([ Gram.Skeyword "exception";
-                              Gram.Snterm
-                                (Gram.Entry.obj
-                                   (constructor_declaration :
                                      'constructor_declaration Gram.Entry.t)) ],
                             (Gram.Action.mk
                                (fun (t : 'constructor_declaration) _
                                   (_loc : Gram.Loc.t) ->
-                                  (Ast.StExc (_loc, t, Ast.ONone) :
+                                  (Ast.StExc (_loc, t) :
                                     'str_item)))) ]) ]))
                     ());
                Gram.extend (module_binding0 : 'module_binding0 Gram.Entry.t)
@@ -4508,16 +4492,46 @@ New syntax:\
                                 (Gram.Entry.obj
                                    (type_ident_and_parameters :
                                      'type_ident_and_parameters Gram.Entry.t));
+                            Gram.Slist0
+                              (Gram.Snterm
+                                 (Gram.Entry.obj
+                                    (constrain : 'constrain Gram.Entry.t))) ],
+                          (Gram.Action.mk
+                             (fun (cl : 'constrain list)
+                                ((n, tpl) : 'type_ident_and_parameters)
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.TyDcl (_loc, n, tpl, (Ast.TyNil _loc),
+                                   cl) :
+                                  'type_declaration))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (type_ident_and_parameters :
+                                   'type_ident_and_parameters Gram.Entry.t));
+                            Gram.Skeyword "+=";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (type_kind : 'type_kind Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (tk : 'type_kind) _
+                                ((n, tpl) : 'type_ident_and_parameters)
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.TyExt (_loc, n, tpl, tk) :
+                                  'type_declaration))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (type_ident_and_parameters :
+                                   'type_ident_and_parameters Gram.Entry.t));
+                            Gram.Skeyword "=";
                               Gram.Snterm
                                 (Gram.Entry.obj
-                                   (opt_eq_ctyp : 'opt_eq_ctyp Gram.Entry.t));
+                                   (type_kind : 'type_kind Gram.Entry.t));
                               Gram.Slist0
                                 (Gram.Snterm
                                    (Gram.Entry.obj
                                       (constrain : 'constrain Gram.Entry.t))) ],
                             (Gram.Action.mk
                                (fun (cl : 'constrain list)
-                                  (tk : 'opt_eq_ctyp)
+                                  (tk : 'type_kind) _
                                   ((n, tpl) : 'type_ident_and_parameters)
                                   (_loc : Gram.Loc.t) ->
                                   (Ast.TyDcl (_loc, n, tpl, tk, cl) :
@@ -4589,22 +4603,6 @@ New syntax:\
                                   (_loc : Gram.Loc.t) ->
                                   ((t1, t2) : 'constrain)))) ]) ]))
                     ());
-               Gram.extend (opt_eq_ctyp : 'opt_eq_ctyp Gram.Entry.t)
-                 ((fun () ->
-                     (None,
-                      [ (None, None,
-                         [ ([],
-                            (Gram.Action.mk
-                               (fun (_loc : Gram.Loc.t) ->
-                                  (Ast.TyNil _loc : 'opt_eq_ctyp))));
-                           ([ Gram.Skeyword "=";
-                              Gram.Snterm
-                                (Gram.Entry.obj
-                                   (type_kind : 'type_kind Gram.Entry.t)) ],
-                            (Gram.Action.mk
-                               (fun (tk : 'type_kind) _ (_loc : Gram.Loc.t)
-                                  -> (tk : 'opt_eq_ctyp)))) ]) ]))
-                    ());
                Gram.extend (type_kind : 'type_kind Gram.Entry.t)
                  ((fun () ->
                      (None,
@@ -4623,7 +4621,8 @@ New syntax:\
                       [ (None, None,
                          [ ([ Gram.Snterm
                                 (Gram.Entry.obj
-                                   (a_LIDENT : 'a_LIDENT Gram.Entry.t));
+                                   (type_longident :
+                                     'type_longident Gram.Entry.t));
                               Gram.Slist0
                                 (Gram.Snterm
                                    (Gram.Entry.obj
@@ -4631,7 +4630,7 @@ New syntax:\
                                         'optional_type_parameter Gram.Entry.t))) ],
                             (Gram.Action.mk
                                (fun (tpl : 'optional_type_parameter list)
-                                  (i : 'a_LIDENT) (_loc : Gram.Loc.t) ->
+                                  (i : 'type_longident) (_loc : Gram.Loc.t) ->
                                   ((i, tpl) : 'type_ident_and_parameters)))) ]) ]))
                     ());
                Gram.extend
@@ -4911,7 +4910,11 @@ New syntax:\
                                        raise (Stream.Error s) :
                                     'ctyp)))) ]);
                         ((Some "simple"), None,
-                         [ ([ Gram.Skeyword "("; Gram.Skeyword "module";
+                         [ ([ Gram.Skeyword ".." ],
+                            (Gram.Action.mk
+                               (fun _ (_loc : Gram.Loc.t) ->
+                                  (Ast.TyDot _loc : 'ctyp))));
+                           ([ Gram.Skeyword "("; Gram.Skeyword "module";
                               Gram.Snterm
                                 (Gram.Entry.obj
                                    (package_type :
@@ -5194,6 +5197,21 @@ New syntax:\
                            ([ Gram.Snterm
                                 (Gram.Entry.obj
                                    (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                             Gram.Skeyword "=";
+                             Gram.Snterm
+                               (Gram.Entry.obj
+                                  (type_longident :
+                                    'type_longident Gram.Entry.t)) ],
+                           (Gram.Action.mk
+                              (fun (i : 'type_longident) _ (s : 'a_UIDENT)
+                                 (_loc : Gram.Loc.t) ->
+                                 (Ast.TyRbd (_loc,
+                                    (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
+                                    i) :
+                                   'constructor_declarations))));
+                          ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
                               Gram.Skeyword ":";
                               Gram.Snterm
                                 (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
@@ -5289,7 +5307,22 @@ New syntax:\
                            ([ Gram.Snterm
                                 (Gram.Entry.obj
                                    (a_UIDENT : 'a_UIDENT Gram.Entry.t));
-                              Gram.Skeyword "of";
+                              Gram.Skeyword "=";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (type_longident :
+                                     'type_longident Gram.Entry.t)) ],
+                            (Gram.Action.mk
+                               (fun (i : 'type_longident) _ (s : 'a_UIDENT)
+                                  (_loc : Gram.Loc.t) ->
+                                  (Ast.TyRbd (_loc,
+                                     (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
+                                     i) :
+                                    'constructor_declaration))));
+                           ([ Gram.Snterm
+                                (Gram.Entry.obj
+                                   (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                               Gram.Skeyword "of";
                               Gram.Snterm
                                 (Gram.Entry.obj
                                    (constructor_arg_list :
@@ -8873,6 +8906,37 @@ New syntax:\
                                (fun (y : 'amp_ctyp) _ _ (x : 'more_ctyp)
                                   (_loc : Gram.Loc.t) ->
                                   (Ast.TyOfAmp (_loc, x, y) : 'ctyp_quot))));
+                           ([ Gram.Snterm
+                                (Gram.Entry.obj
+                                   (more_ctyp : 'more_ctyp Gram.Entry.t));
+                              Gram.Skeyword "=";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (type_longident :
+                                     'type_longident Gram.Entry.t));
+                              Gram.Skeyword "|";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (constructor_declarations :
+                                     'constructor_declarations Gram.Entry.t)) ],
+                            (Gram.Action.mk
+                               (fun (z : 'constructor_declarations) _
+                                  (y : 'type_longident) _ (x : 'more_ctyp)
+                                  (_loc : Gram.Loc.t) ->
+                                  (Ast.TyOr (_loc, (Ast.TyRbd (_loc, x, y)), z) :
+                                    'ctyp_quot))));
+                           ([ Gram.Snterm
+                                (Gram.Entry.obj
+                                   (more_ctyp : 'more_ctyp Gram.Entry.t));
+                              Gram.Skeyword "=";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (type_longident :
+                                     'type_longident Gram.Entry.t)) ],
+                            (Gram.Action.mk
+                               (fun (y : 'type_longident) _ (x : 'more_ctyp)
+                                  (_loc : Gram.Loc.t) ->
+                                  (Ast.TyRbd (_loc, x, y) : 'ctyp_quot))));
                            ([ Gram.Snterm
                                 (Gram.Entry.obj
                                    (more_ctyp : 'more_ctyp Gram.Entry.t));
