@@ -21,7 +21,11 @@
 
 CAMLprim value unix_fchmod(value fd, value perm)
 {
-  if (fchmod(Int_val(fd), Int_val(perm)) == -1) uerror("fchmod", Nothing);
+  int result;
+  caml_enter_blocking_section();
+  result = fchmod(Int_val(fd), Int_val(perm));
+  caml_leave_blocking_section();
+  if (result == -1) uerror("fchmod", Nothing);
   return Val_unit;
 }
 
