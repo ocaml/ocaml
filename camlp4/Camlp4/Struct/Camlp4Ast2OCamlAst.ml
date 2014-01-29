@@ -1018,6 +1018,7 @@ value varify_constructors var_names =
         in
         [(short_type_ident id,
           type_decl (List.fold_right optional_type_parameters tl []) cl td loc) :: acc]
+    | Ast.TyExt loc _ _ _ -> error loc "type extension not allowed here"
     | _ -> assert False ]
   and mktype_ext x =
     match x with
