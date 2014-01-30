@@ -1101,8 +1101,10 @@ let transl_type_extension check_open env loc styext =
     | _ -> raise (Error(loc, Not_extensible_type type_path))
   end;
   let type_variance = 
-    List.map (fun v -> Variance.get_upper v) 
-      type_decl.type_variance 
+    List.map (fun v ->
+                let (co, cn) = Variance.get_upper v in
+                  (not cn, not co))
+             type_decl.type_variance
   in
   let err =
     if type_decl.type_arity <> List.length styext.ptyext_params then 
