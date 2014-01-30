@@ -599,6 +599,7 @@ and module_declaration =
      pmd_name: string loc;
      pmd_type: module_type;
      pmd_attributes: attributes; (* ... [@@id1] [@@id2] *)
+     pmd_loc: Location.t;
     }
 (* S : MT *)
 
@@ -607,6 +608,7 @@ and module_type_declaration =
      pmtd_name: string loc;
      pmtd_type: module_type option;
      pmtd_attributes: attributes; (* ... [@@id1] [@@id2] *)
+     pmtd_loc: Location.t;
     }
 (* S = MT
    S       (abstract module type declaration, pmtd_type = None)
@@ -706,6 +708,7 @@ and module_binding =
      pmb_name: string loc;
      pmb_expr: module_expr;
      pmb_attributes: attributes;
+     pmb_loc: Location.t;
     }
 (* X = ME *)
 

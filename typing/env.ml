@@ -272,7 +272,7 @@ let strengthen =
          t -> module_type -> Path.t -> module_type)
 
 let md md_type =
-  {md_type; md_attributes=[]}
+  {md_type; md_attributes=[]; md_loc=Location.none}
 
 (* The name of the compilation unit currently compiled.
    "" if outside a compilation unit. *)

@@ -319,6 +319,13 @@ let rec approx_modtype env smty =
   | Pmty_extension (s, _arg) ->
       raise (Error (s.loc, env, Extension s.txt))
 
+and approx_module_declaration env pmd =
+  {
+    Types.md_type = approx_modtype env pmd.pmd_type;
+    md_attributes = pmd.pmd_attributes;
+    md_loc = pmd.pmd_loc;
+  }
+
 and approx_sig env ssg =
   match ssg with
     [] -> []
@@ -329,12 +336,7 @@ and approx_sig env ssg =
           let rem = approx_sig env srem in
           map_rec' (fun rs (id, info) -> Sig_type(id, info, rs)) decls rem
       | Psig_module pmd ->
-          let md =
-            {
-              Types.md_type = approx_modtype env pmd.pmd_type;
-              md_attributes = pmd.pmd_attributes;
-            }
-          in
+          let md = approx_module_declaration env pmd in
           let (id, newenv) =
             Env.enter_module_declaration pmd.pmd_name.txt md env
           in
@@ -343,12 +345,8 @@ and approx_sig env ssg =
           let decls =
             List.map
               (fun pmd ->
-                (Ident.create pmd.pmd_name.txt,
-                 {
-                   md_type = approx_modtype env pmd.pmd_type;
-                   md_attributes = pmd.pmd_attributes;
-                 }
-                )
+                 (Ident.create pmd.pmd_name.txt,
+                  approx_module_declaration env pmd)
               )
               sdecls
           in
@@ -388,6 +386,7 @@ and approx_modtype_info env sinfo =
   {
    mtd_type = may_map (approx_modtype env) sinfo.pmtd_type;
    mtd_attributes = sinfo.pmtd_attributes;
+   mtd_loc = sinfo.pmtd_loc;
   }
 
 (* Additional validity checks on type definitions arising from
@@ -560,13 +559,15 @@ and transl_signature env sg =
             let tmty = transl_modtype env pmd.pmd_type in
             let md = {
               md_type=tmty.mty_type;
-              md_attributes=pmd.pmd_attributes
+              md_attributes=pmd.pmd_attributes;
+              md_loc=pmd.pmd_loc;
             }
             in
             let (id, newenv) =
               Env.enter_module_declaration pmd.pmd_name.txt md env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name; md_type=tmty;
+                                md_loc=pmd.pmd_loc;
                                 md_attributes=pmd.pmd_attributes})
               env loc :: trem,
             Sig_module(id, md, Trec_not) :: rem,
@@ -582,7 +583,9 @@ and transl_signature env sg =
             mksig (Tsig_recmodule decls) env loc :: trem,
             map_rec (fun rs md ->
                 let d = {Types.md_type = md.md_type.mty_type;
-                          md_attributes = md.md_attributes} in
+                         md_attributes = md.md_attributes;
+                         md_loc = md.md_loc;
+                        } in
                 Sig_module(md.md_id, d, rs))
               decls rem,
             final_env
@@ -670,13 +673,14 @@ and transl_signature env sg =
   sg
 
 and transl_modtype_decl modtype_names env loc
-    {pmtd_name; pmtd_type; pmtd_attributes} =
+    {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
   check "module type" loc modtype_names pmtd_name.txt;
   let tmty = Misc.may_map (transl_modtype env) pmtd_type in
   let decl =
     {
-     mtd_type=may_map (fun t -> t.mty_type) tmty;
+     Types.mtd_type=may_map (fun t -> t.mty_type) tmty;
      mtd_attributes=pmtd_attributes;
+     mtd_loc=pmtd_loc;
     }
   in
   let (id, newenv) = Env.enter_modtype pmtd_name.txt decl env in
@@ -686,6 +690,7 @@ and transl_modtype_decl modtype_names env loc
      mtd_name=pmtd_name;
      mtd_type=tmty;
      mtd_attributes=pmtd_attributes;
+     mtd_loc=pmtd_loc;
     }
   in
   newenv, mtd, Sig_modtype(id, decl)
@@ -742,6 +747,7 @@ and transl_recmodule_modtypes loc env sdecls =
     List.map2
       (fun pmd (id, id_loc, mty) ->
         {md_id=id; md_name=id_loc; md_type=mty;
+         md_loc=pmd.pmd_loc;
          md_attributes=pmd.pmd_attributes})
       sdecls dcl2
   in
@@ -845,7 +851,7 @@ let check_recmodule_inclusion env bindings =
       (* Generate fresh names Y_i for the rec. bound module idents X_i *)
       let bindings1 =
         List.map
-          (fun (id, _, mty_decl, modl, mty_actual, _attrs) ->
+          (fun (id, _, mty_decl, modl, mty_actual, _attrs, _loc) ->
              (id, Ident.rename id, mty_actual))
           bindings in
       (* Enter the Y_i in the environment with their actual types substituted
@@ -870,7 +876,7 @@ let check_recmodule_inclusion env bindings =
     end else begin
       (* Base case: check inclusion of s(mty_actual) in s(mty_decl)
          and insert coercion if needed *)
-      let check_inclusion (id, id_loc, mty_decl, modl, mty_actual, attrs) =
+      let check_inclusion (id, id_loc, mty_decl, modl, mty_actual, attrs, loc) =
         let mty_decl' = Subst.modtype s mty_decl.mty_type
         and mty_actual' = subst_and_strengthen env s id mty_actual in
         let coercion =
@@ -891,6 +897,7 @@ let check_recmodule_inclusion env bindings =
          mb_name = id_loc;
          mb_expr = modl';
          mb_attributes = attrs;
+         mb_loc = loc;
         }
       in
       List.map check_inclusion bindings
@@ -1138,7 +1145,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Tstr_exn_rebind(id, name, path, longid, attrs),
         [Sig_exception(id, arg)],
         newenv
-    | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs} ->
+    | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
+                   pmb_loc;
+                  } ->
         check "module" loc module_names name.txt;
         let modl =
           type_module ~alias:true true funct_body
@@ -1146,13 +1155,18 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let md =
           { md_type = enrich_module_type anchor name.txt modl.mod_type env;
             md_attributes = attrs;
+            md_loc = pmb_loc;
           }
         in
         let (id, newenv) = Env.enter_module_declaration name.txt md env in
-        Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;mb_attributes=attrs},
+        Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;
+                     mb_attributes=attrs;  mb_loc=pmb_loc;
+                    },
         [Sig_module(id,
                     {md_type = modl.mod_type;
-                     md_attributes = attrs}, Trec_not)],
+                     md_attributes = attrs;
+                     md_loc = pmb_loc;
+                    }, Trec_not)],
         newenv
     | Pstr_recmodule sbind ->
         let sbind =
@@ -1160,8 +1174,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             (function
               | {pmb_name = name;
                  pmb_expr = {pmod_desc=Pmod_constraint(expr, typ)};
-                 pmb_attributes = attrs} ->
-                  name, typ, expr, attrs
+                 pmb_attributes = attrs;
+                 pmb_loc = loc;
+                } ->
+                  name, typ, expr, attrs, loc
               | mb ->
                   raise (Error (mb.pmb_expr.pmod_loc, env,
                                 Recursive_module_require_explicit_type))
@@ -1169,23 +1185,24 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             sbind
         in
         List.iter
-          (fun (name, _, _, _) -> check "module" loc module_names name.txt)
+          (fun (name, _, _, _, _) -> check "module" loc module_names name.txt)
           sbind;
         let (decls, newenv) =
           transl_recmodule_modtypes loc env
-            (List.map (fun (name, smty, smodl, attrs) ->
-                 {pmd_name=name; pmd_type=smty; pmd_attributes=attrs}) sbind
+            (List.map (fun (name, smty, smodl, attrs, loc) ->
+                 {pmd_name=name; pmd_type=smty;
+                  pmd_attributes=attrs; pmd_loc=loc}) sbind
             ) in
         let bindings1 =
           List.map2
-            (fun {md_id=id; md_type=mty} (name, _, smodl, attrs) ->
+            (fun {md_id=id; md_type=mty} (name, _, smodl, attrs, loc) ->
                let modl =
                  type_module true funct_body (anchor_recmodule id anchor) newenv
                    smodl in
                let mty' =
                  enrich_module_type anchor (Ident.name id) modl.mod_type newenv
                in
-               (id, name, mty, modl, mty', attrs))
+               (id, name, mty, modl, mty', attrs, loc))
             decls sbind in
         let newenv = (* allow aliasing recursive modules from outside *)
           List.fold_left
@@ -1198,7 +1215,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         map_rec (fun rs mb ->
             Sig_module(mb.mb_id, {
                 md_type=mb.mb_expr.mod_type;
-                md_attributes=mb.mb_attributes
+                md_attributes=mb.mb_attributes;
+                md_loc=mb.mb_loc;
               }, rs))
            bindings2 [],
         newenv
@@ -1530,7 +1548,9 @@ let rec package_signatures subst = function
       let oldid = Ident.create_persistent name
       and newid = Ident.create name in
       Sig_module(newid, {md_type=Mty_signature sg';
-                         md_attributes=[]},
+                         md_attributes=[];
+                         md_loc=Location.none;
+                        },
                  Trec_not) ::
       package_signatures (Subst.add_module oldid (Pident newid) subst) rem
 

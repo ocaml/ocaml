@@ -142,8 +142,8 @@ let item_ident_name = function
     Sig_value(id, d) -> (id, d.val_loc, Field_value(Ident.name id))
   | Sig_type(id, d, _) -> (id, d.type_loc, Field_type(Ident.name id))
   | Sig_exception(id, d) -> (id, d.exn_loc, Field_exception(Ident.name id))
-  | Sig_module(id, _, _) -> (id, Location.none, Field_module(Ident.name id))
-  | Sig_modtype(id, _) -> (id, Location.none, Field_modtype(Ident.name id))
+  | Sig_module(id, d, _) -> (id, d.md_loc, Field_module(Ident.name id))
+  | Sig_modtype(id, d) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
   | Sig_class(id, d, _) -> (id, d.cty_loc, Field_class(Ident.name id))
   | Sig_class_type(id, d, _) -> (id, d.clty_loc, Field_classtype(Ident.name id))
 

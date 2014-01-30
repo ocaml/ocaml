@@ -361,12 +361,14 @@ and module_declaration s decl =
   {
     md_type = modtype s decl.md_type;
     md_attributes = attrs s decl.md_attributes;
+    md_loc = loc s decl.md_loc;
   }
 
 and modtype_declaration s decl  =
   {
     mtd_type = may_map (modtype s) decl.mtd_type;
     mtd_attributes = attrs s decl.mtd_attributes;
+    mtd_loc = loc s decl.mtd_loc;
   }
 
 (* For every binding k |-> d of m1, add k |-> f d to m2

@@ -143,7 +143,8 @@ let nondep_supertype env mid mty =
             Sig_modtype(id, nondep_modtype_decl env d) :: rem'
           with Not_found ->
             match va with
-              Co -> Sig_modtype(id, {mtd_type=None; mtd_attributes=[]}) :: rem'
+              Co -> Sig_modtype(id, {mtd_type=None; mtd_loc=Location.none;
+                                     mtd_attributes=[]}) :: rem'
             | _  -> raise Not_found
           end
       | Sig_class(id, d, rs) ->

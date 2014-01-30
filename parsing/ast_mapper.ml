@@ -459,26 +459,28 @@ let default_mapper =
     expr = E.map;
 
     module_declaration =
-      (fun this {pmd_name; pmd_type; pmd_attributes} ->
+      (fun this {pmd_name; pmd_type; pmd_attributes; pmd_loc} ->
          Md.mk
            (map_loc this pmd_name)
            (this.module_type this pmd_type)
            ~attrs:(this.attributes this pmd_attributes)
+           ~loc:(this.location this pmd_loc)
       );
 
     module_type_declaration =
-      (fun this {pmtd_name; pmtd_type; pmtd_attributes} ->
-         {
-           pmtd_name = map_loc this pmtd_name;
-           pmtd_type =map_opt (this.module_type this) pmtd_type;
-           pmtd_attributes = this.attributes this pmtd_attributes;
-         }
+      (fun this {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} ->
+         Mtd.mk
+           (map_loc this pmtd_name)
+           ?typ:(map_opt (this.module_type this) pmtd_type)
+           ~attrs:(this.attributes this pmtd_attributes)
+           ~loc:(this.location this pmtd_loc)
       );
 
     module_binding =
-      (fun this {pmb_name; pmb_expr; pmb_attributes} ->
+      (fun this {pmb_name; pmb_expr; pmb_attributes; pmb_loc} ->
          Mb.mk (map_loc this pmb_name) (this.module_expr this pmb_expr)
            ~attrs:(this.attributes this pmb_attributes)
+           ~loc:(this.location this pmb_loc)
       );
 
     value_binding =

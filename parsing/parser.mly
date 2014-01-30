@@ -624,9 +624,11 @@ structure_item:
   | MODULE REC module_bindings
       { mkstr(Pstr_recmodule(List.rev $3)) }
   | MODULE TYPE ident post_item_attributes
-      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3) ~attrs:$4)) }
+      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
+                              ~attrs:$4 ~loc:(symbol_rloc()))) }
   | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3) ~typ:$5 ~attrs:$6)) }
+      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
+                              ~typ:$5 ~attrs:$6 ~loc:(symbol_rloc()))) }
   | OPEN override_flag mod_longident post_item_attributes
       { mkstr(Pstr_open ($2, mkrhs $3 3, $4)) }
   | CLASS class_declarations
@@ -654,7 +656,7 @@ module_bindings:
 ;
 module_binding:
     UIDENT module_binding_body post_item_attributes
-    { Mb.mk (mkrhs $1 1) $2 ~attrs:$3 }
+    { Mb.mk (mkrhs $1 1) $2 ~attrs:$3 ~loc:(symbol_rloc ()) }
 ;
 
 /* Module types */
@@ -713,17 +715,23 @@ signature_item:
   | EXCEPTION exception_declaration
       { mksig(Psig_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
-      { mksig(Psig_module (Md.mk (mkrhs $2 2) $3 ~attrs:$4)) }
+      { mksig(Psig_module (Md.mk (mkrhs $2 2)
+                             $3 ~attrs:$4 ~loc:(symbol_rloc()))) }
   | MODULE UIDENT EQUAL mod_longident post_item_attributes
       { mksig(Psig_module (Md.mk (mkrhs $2 2)
                              (Mty.alias ~loc:(rhs_loc 4) (mkrhs $4 4))
-                             ~attrs:$5)) }
+                             ~attrs:$5
+                             ~loc:(symbol_rloc())
+                          )) }
   | MODULE REC module_rec_declarations
       { mksig(Psig_recmodule (List.rev $3)) }
   | MODULE TYPE ident post_item_attributes
-      { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3) ~attrs:$4)) }
+      { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3)
+                              ~attrs:$4 ~loc:(symbol_rloc()))) }
   | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3) ~typ:$5 ~attrs:$6)) }
+      { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3) ~typ:$5
+                              ~loc:(symbol_rloc())
+                              ~attrs:$6)) }
   | OPEN override_flag mod_longident post_item_attributes
       { mksig(Psig_open ($2, mkrhs $3 3, $4)) }
   | INCLUDE module_type post_item_attributes %prec below_WITH
@@ -750,7 +758,7 @@ module_rec_declarations:
 ;
 module_rec_declaration:
     UIDENT COLON module_type post_item_attributes
-    { Md.mk (mkrhs $1 1) $3 ~attrs:$4 }
+    { Md.mk (mkrhs $1 1) $3 ~attrs:$4 ~loc:(symbol_rloc()) }
 ;
 
 /* Class expressions */
