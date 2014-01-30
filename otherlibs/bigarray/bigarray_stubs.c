@@ -1197,6 +1197,7 @@ CAMLprim value caml_ba_blit(value vsrc, value vdst)
 
 CAMLprim value caml_ba_fill(value vb, value vinit)
 {
+  CAMLparam1(vb);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   intnat num_elts = caml_ba_num_elts(b);
 
@@ -1269,7 +1270,7 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
     break;
   }
   }
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 /* Reshape an array: change dimensions and number of dimensions, preserving
