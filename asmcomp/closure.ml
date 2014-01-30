@@ -783,7 +783,7 @@ and close_functions fenv cenv fun_defs =
       build_closure_env env_param (fv_pos - env_pos) fv in
     let cenv_body =
       List.fold_right2
-        (fun (id, params, arity, body) pos env ->
+        (fun (id, params, body, fundesc) pos env ->
           Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
