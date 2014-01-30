@@ -35,6 +35,7 @@ Compilers:
 - PR#5854: issue warning 3 when referring to a value marked with
   the [@@deprecated] attribute
 - PR#6203: Constant exception constructor no longer allocate
+- PR#6311: Improve signature mismatch error messages
 
 Runtime system:
 - PR#4765: Structural equality should treat exception specifically
