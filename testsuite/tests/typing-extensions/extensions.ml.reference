@@ -6,7 +6,7 @@
 #     Characters 13-21:
   type foo += A of int (* Error type is not open *)
               ^^^^^^^^
-Error: Type declaration foo is not open.
+Error: Cannot extend type definition foo
 #         type 'a foo = ..
 #     Characters 1-30:
   type ('a, 'b) foo += A of int (* Error: type parameter mismatch *)
@@ -17,7 +17,7 @@ Error: This extension does not match the definition of type foo
 #                 Characters 85-107:
     type foo += B of float (* Error foo does not have an extensible type *)
     ^^^^^^^^^^^^^^^^^^^^^^
-Error: Type declaration foo is not extensible
+Error: Type foo is not extensible
 #         type foo = ..
 #                     module M :
   sig
@@ -88,13 +88,13 @@ type 'a foo = ..
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be covariant,
-       but it is contravariant
+       but it is injective contravariant.
 #     Characters 1-40:
   type _ foo += C : ('a -> int) -> 'a foo (* ERROR: Parameter variances are not satisfied *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be covariant,
-       but it is contravariant
+       but it is injective contravariant.
 #     type 'a bar = ..
 #     Characters 1-33:
   type +'a bar += D of (int -> 'a) (* ERROR: type variances do not match *)

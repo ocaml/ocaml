@@ -12,7 +12,7 @@
 #     Characters 13-23:
   type bar += Bar of int (* Error: type is not open *)
               ^^^^^^^^^^
-Error: Type declaration bar is not open.
+Error: Cannot extend type definition bar
 #     Characters 6-20:
   type baz = bar = .. (* Error: type kinds don't match *)
        ^^^^^^^^^^^^^^
@@ -42,7 +42,7 @@ Error: Syntax error
 #     Characters 17-20:
   type M_S.foo += Foo (* ERROR: Cannot extend a type that isn't "open" *)
                   ^^^
-Error: Type declaration M_S.foo is not open.
+Error: Cannot extend type definition M_S.foo
 #         module M : sig type foo end
 #     module type S = sig type foo = .. end
 #     Characters 15-16:
