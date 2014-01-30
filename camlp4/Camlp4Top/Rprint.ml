@@ -520,7 +520,7 @@ and print_out_extension_constructor ppf ext =
       fprintf ppf " private"
     else ()
   in
-  fprintf ppf "@[<hv 2>@[type %t@] +=%a@ %a@]"
+  fprintf ppf "@[<hv 2>@[type %t@] +=%a@ @[<hv>[ %a ]@]@]"
     type_extended
     print_private ext.oext_private
     print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
@@ -549,7 +549,7 @@ and print_out_type_extension ppf te =
       fprintf ppf " private"
     else ()
   in
-  fprintf ppf "@[<hv 2>@[type %t@] +=%a@ %a@]"
+  fprintf ppf "@[<hv 2>@[type %t@] +=%a@ @[<hv>[ %a ]@]@]"
     type_extended
     print_private te.otyext_private
     (print_list print_out_constr (fun ppf -> fprintf ppf "@ | "))
