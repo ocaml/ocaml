@@ -22,6 +22,7 @@
 #include "hash.h"
 #include "memory.h"
 #include "mlvalues.h"
+#include "signals.h"
 
 #define int8 caml_ba_int8
 #define uint8 caml_ba_uint8
@@ -1138,12 +1139,21 @@ CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
 
 /* Copying a big array into another one */
 
+static inline int is_mmapped(struct caml_ba_array *ba)
+{
+  return (ba->flags & CAML_BA_MAPPED_FILE);
+}
+
+#define LEAVE_RUNTIME_OP_CUTOFF 4096
+
 CAMLprim value caml_ba_blit(value vsrc, value vdst)
 {
+  CAMLparam2(vsrc, vdst);
   struct caml_ba_array * src = Caml_ba_array_val(vsrc);
   struct caml_ba_array * dst = Caml_ba_array_val(vdst);
   int i;
   intnat num_bytes;
+  int leave_runtime;
 
   /* Check same numbers of dimensions and same dimensions */
   if (src->num_dims != dst->num_dims) goto blit_error;
@@ -1153,15 +1163,37 @@ CAMLprim value caml_ba_blit(value vsrc, value vdst)
   num_bytes =
     caml_ba_num_elts(src)
     * caml_ba_element_size[src->flags & CAML_BA_KIND_MASK];
+  leave_runtime =
+    (
+      (num_bytes >= LEAVE_RUNTIME_OP_CUTOFF*sizeof(long))
+      || is_mmapped(src)
+      || is_mmapped(dst)
+    );
   /* Do the copying */
+  if (leave_runtime) caml_enter_blocking_section();
   memmove (dst->data, src->data, num_bytes);
-  return Val_unit;
+  if (leave_runtime) caml_leave_blocking_section();
+  CAMLreturn (Val_unit);
  blit_error:
   caml_invalid_argument("Bigarray.blit: dimension mismatch");
-  return Val_unit;              /* not reached */
+  CAMLreturn (Val_unit);              /* not reached */
 }
 
 /* Filling a big array with a given value */
+
+#define fill_gen_loop(n_ops, loop) \
+  int leave_runtime = ((n_ops >= LEAVE_RUNTIME_OP_CUTOFF) || is_mmapped(b)); \
+  if (leave_runtime) caml_enter_blocking_section(); \
+  loop; \
+  if (leave_runtime) caml_leave_blocking_section()
+
+#define fill_default_loop \
+  fill_gen_loop(num_elts, \
+    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init)
+
+#define fill_complex_loop \
+  fill_gen_loop(num_elts + num_elts, \
+    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; })
 
 CAMLprim value caml_ba_fill(value vb, value vinit)
 {
@@ -1174,13 +1206,13 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   case CAML_BA_FLOAT32: {
     float init = Double_val(vinit);
     float * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    fill_default_loop;
     break;
   }
   case CAML_BA_FLOAT64: {
     double init = Double_val(vinit);
     double * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    fill_default_loop;
     break;
   }
   case CAML_BA_CHAR:
@@ -1188,52 +1220,52 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   case CAML_BA_UINT8: {
     int init = Int_val(vinit);
     char * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    fill_default_loop;
     break;
   }
   case CAML_BA_SINT16:
   case CAML_BA_UINT16: {
     int init = Int_val(vinit);
     int16 * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    fill_default_loop;
     break;
   }
   case CAML_BA_INT32: {
     int32 init = Int32_val(vinit);
     int32 * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    fill_default_loop;
     break;
   }
   case CAML_BA_INT64: {
     int64 init = Int64_val(vinit);
     int64 * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    fill_default_loop;
     break;
   }
   case CAML_BA_NATIVE_INT: {
     intnat init = Nativeint_val(vinit);
     intnat * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    fill_default_loop;
     break;
   }
   case CAML_BA_CAML_INT: {
     intnat init = Long_val(vinit);
     intnat * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    fill_default_loop;
     break;
   }
   case CAML_BA_COMPLEX32: {
     float init0 = Double_field(vinit, 0);
     float init1 = Double_field(vinit, 1);
     float * p;
-    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
+    fill_complex_loop;
     break;
   }
   case CAML_BA_COMPLEX64: {
     double init0 = Double_field(vinit, 0);
     double init1 = Double_field(vinit, 1);
     double * p;
-    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
+    fill_complex_loop;
     break;
   }
   }
