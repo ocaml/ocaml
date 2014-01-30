@@ -1151,6 +1151,8 @@ CAMLprim value caml_ba_blit(value vsrc, value vdst)
   CAMLparam2(vsrc, vdst);
   struct caml_ba_array * src = Caml_ba_array_val(vsrc);
   struct caml_ba_array * dst = Caml_ba_array_val(vdst);
+  void *src_data = src->data;
+  void *dst_data = dst->data;
   int i;
   intnat num_bytes;
   int leave_runtime;
@@ -1171,7 +1173,7 @@ CAMLprim value caml_ba_blit(value vsrc, value vdst)
     );
   /* Do the copying */
   if (leave_runtime) caml_enter_blocking_section();
-  memmove (dst->data, src->data, num_bytes);
+  memmove (dst_data, src_data, num_bytes);
   if (leave_runtime) caml_leave_blocking_section();
   CAMLreturn (Val_unit);
  blit_error:
@@ -1189,16 +1191,17 @@ CAMLprim value caml_ba_blit(value vsrc, value vdst)
 
 #define fill_default_loop \
   fill_gen_loop(num_elts, \
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init)
+    for (p = data; num_elts > 0; p++, num_elts--) *p = init)
 
 #define fill_complex_loop \
   fill_gen_loop(num_elts + num_elts, \
-    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; })
+    for (p = data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; })
 
 CAMLprim value caml_ba_fill(value vb, value vinit)
 {
   CAMLparam1(vb);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
+  void *data = b->data;
   intnat num_elts = caml_ba_num_elts(b);
 
   switch (b->flags & CAML_BA_KIND_MASK) {
