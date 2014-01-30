@@ -18,7 +18,7 @@ open Typedtree
 open Types
 
 type symptom =
-    Missing_field of Ident.t
+    Missing_field of Ident.t * Location.t * string (* kind *)
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch list
@@ -129,14 +129,23 @@ type field_desc =
   | Field_class of string
   | Field_classtype of string
 
+let kind_of_field_desc = function
+  | Field_value _ -> "value"
+  | Field_type _ -> "type"
+  | Field_exception _ -> "exception"
+  | Field_module _ -> "module"
+  | Field_modtype _ -> "module type"
+  | Field_class _ -> "class"
+  | Field_classtype _ -> "class type"
+
 let item_ident_name = function
-    Sig_value(id, _) -> (id, Field_value(Ident.name id))
-  | Sig_type(id, _, _) -> (id, Field_type(Ident.name id))
-  | Sig_exception(id, _) -> (id, Field_exception(Ident.name id))
-  | Sig_module(id, _, _) -> (id, Field_module(Ident.name id))
-  | Sig_modtype(id, _) -> (id, Field_modtype(Ident.name id))
-  | Sig_class(id, _, _) -> (id, Field_class(Ident.name id))
-  | Sig_class_type(id, _, _) -> (id, Field_classtype(Ident.name id))
+    Sig_value(id, d) -> (id, d.val_loc, Field_value(Ident.name id))
+  | Sig_type(id, d, _) -> (id, d.type_loc, Field_type(Ident.name id))
+  | Sig_exception(id, d) -> (id, d.exn_loc, Field_exception(Ident.name id))
+  | Sig_module(id, _, _) -> (id, Location.none, Field_module(Ident.name id))
+  | Sig_modtype(id, _) -> (id, Location.none, Field_modtype(Ident.name id))
+  | Sig_class(id, d, _) -> (id, d.cty_loc, Field_class(Ident.name id))
+  | Sig_class_type(id, d, _) -> (id, d.clty_loc, Field_classtype(Ident.name id))
 
 let is_runtime_component = function
   | Sig_value(_,{val_kind = Val_prim _})
@@ -248,7 +257,7 @@ and signatures env cxt subst sig1 sig2 =
   let rec build_component_table pos tbl = function
       [] -> pos, tbl
     | item :: rem ->
-        let (id, name) = item_ident_name item in
+        let (id, _loc, name) = item_ident_name item in
         let nextpos = if is_runtime_component item then pos + 1 else pos in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
@@ -279,7 +288,7 @@ and signatures env cxt subst sig1 sig2 =
           | _  -> raise(Error unpaired)
         end
     | item2 :: rem ->
-        let (id2, name2) = item_ident_name item2 in
+        let (id2, loc, name2) = item_ident_name item2 in
         let name2, report =
           match item2, name2 with
             Sig_type (_, {type_manifest=None}, _), Field_type s
@@ -307,7 +316,9 @@ and signatures env cxt subst sig1 sig2 =
             ((item1, item2, pos1) :: paired) unpaired rem
         with Not_found ->
           let unpaired =
-            if report then (cxt, env, Missing_field id2) :: unpaired
+            if report then
+              (cxt, env, Missing_field (id2, loc, kind_of_field_desc name2)) ::
+              unpaired
             else unpaired in
           pair_components subst paired unpaired rem
         end in
@@ -416,8 +427,9 @@ let show_locs ppf (loc1, loc2) =
   show_loc "Actual declaration" ppf loc1
 
 let include_err ppf = function
-  | Missing_field id ->
-      fprintf ppf "The field `%a' is required but not provided" ident id
+  | Missing_field (id, loc, kind) ->
+      fprintf ppf "The %s `%a' is required but not provided" kind ident id;
+      show_loc "Expected declaration" ppf loc
   | Value_descriptions(id, d1, d2) ->
       fprintf ppf
         "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]"
