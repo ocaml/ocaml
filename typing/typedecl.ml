@@ -728,7 +728,7 @@ let compute_variance_decl env check decl (required, loc as rloc) =
        && decl.type_manifest = None then
     List.map
       (fun (c, n, i) ->
-        make (not n) (not c) (decl.type_kind <> Type_abstract || i)
+        make (not n) (not c) (decl.type_kind <> Type_abstract || i))
       required
   else
   let mn =
@@ -1048,7 +1048,7 @@ let transl_extension_constructor env check_open type_decl type_path type_params 
               Typedtree.ext_loc = sext.pext_loc }
 	      
     | Pext_rebind lid ->
-      let cdescr = Typetexp.find_constructor env sext.pext_loc loc lid.txt in
+      let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
         Env.mark_constructor Env.Positive env (Longident.last lid.txt) cdescr;
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let ret_type = 

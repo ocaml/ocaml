@@ -249,7 +249,7 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
     decl2.type_private = Private ||
     decl2.type_kind = Type_abstract && decl2.type_manifest = None in
   let opn = decl2.type_kind = Type_open && decl2.type_manifest = None in
-  let constrained ty = not (Btype.(is_Tvar (repr ty)) in
+  let constrained ty = not (Btype.(is_Tvar (repr ty))) in
   if List.for_all2
       (fun ty (v1,v2) ->
         let open Variance in

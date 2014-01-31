@@ -1494,7 +1494,7 @@ str_type_extension:
       { let (params, variance) = List.split $1 in
 	  {ptyext_path = mkrhs $2 2;
 	   ptyext_params = params;
-           ptyext_constructors = List.rev $5;
+           ptyext_constructors = List.rev $6;
            ptyext_private = $4;
 	   ptyext_variance = variance} }
 ;
@@ -1503,7 +1503,7 @@ sig_type_extension:
       { let (params, variance) = List.split $1 in
 	  {ptyext_path = mkrhs $2 2;
 	   ptyext_params = params;
-           ptyext_constructors = List.rev $5;
+           ptyext_constructors = List.rev $6;
            ptyext_private = $4;
 	   ptyext_variance = variance} }
 ;

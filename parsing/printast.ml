@@ -373,7 +373,7 @@ and type_kind i ppf x =
 and type_extension i ppf x =
   line i ppf "type_extension\n";
   let i = i+1 in
-  line i ppf "ptyext_path = %a\n" fmt_longident x.ptyext_path;
+  line i ppf "ptyext_path = %a\n" fmt_longident_loc x.ptyext_path;
   line i ppf "ptyext_params =\n";
   list (i+1) core_type ppf x.ptyext_params;
   line i ppf "ptyext_constructors =\n";
@@ -395,7 +395,7 @@ and extension_constructor_kind i ppf x =
 	option (i+1) core_type ppf r;
     | Pext_rebind li -> 
 	line i ppf "Pext_rebind\n";
-	line (i+1) ppf "%a\n" fmt_longident li;
+	line (i+1) ppf "%a\n" fmt_longident_loc li;
 
 and exception_declaration i ppf x = list i core_type ppf x
 

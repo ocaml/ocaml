@@ -77,10 +77,8 @@ type error =
   | Not_open_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Includecore.type_mismatch list
-  | Unbound_extension of Longident.t
-  | Rebind_wrong_type of Longident.t * (type_expr * type_expr) list
+  | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
   | Rebind_private of Longident.t
-  | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
   | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)
   | Unavailable_type_constructor of Path.t

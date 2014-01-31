@@ -117,7 +117,8 @@ let extension_descr path_ext ext =
 	  let arg_vars = free_vars (newgenty (Ttuple ext.ext_args)) in
 	    TypeSet.elements (TypeSet.diff arg_vars ret_vars)
   in
-    { cstr_res = ty_res;
+    { cstr_name = Path.last path_ext;
+      cstr_res = ty_res;
       cstr_existentials = existentials;
       cstr_args = ext.ext_args;
       cstr_arity = List.length ext.ext_args;

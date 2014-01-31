@@ -25,6 +25,7 @@ let structure_item sub x =
   | Tstr_primitive (_id, _, v) -> sub # value_description v
   | Tstr_type list ->
       List.iter (fun (_id, _, decl) -> sub # type_declaration decl) list
+  | Tstr_extension te -> sub # type_extension te
   | Tstr_exception (_id, _, decl) -> sub # exception_declaration decl
   | Tstr_exn_rebind (_id, _, _p, _) -> ()
   | Tstr_module (_id, _, mexpr) -> sub # module_expr mexpr
@@ -56,11 +57,22 @@ let type_declaration sub decl =
       List.iter (fun (_s, _, cts, _loc) -> List.iter (sub # core_type) cts) list
   | Ttype_record list ->
       List.iter (fun (_s, _, _mut, ct, _loc) -> sub # core_type ct) list
+  | Ttype_open -> ()
   end;
   opt (sub # core_type) decl.typ_manifest
 
+let type_extension sub te =
+  let extension_constructors ext = 
+    match ext.ext_kind with
+      Text_decl(ctl, cto) -> 
+        List.iter (sub # core_type) ctl; 
+        opt (sub # core_type) cto
+    | Text_rebind _ -> ()
+  in
+    List.iter extension_constructors te.tyext_constructors
+
 let exception_declaration sub decl =
-  List.iter (sub # core_type) decl.exn_params
+  List.iter (sub # core_type) decl.exn_args
 
 let pattern sub pat =
   let extra = function
@@ -174,6 +186,8 @@ let signature_item sub item =
       sub # value_description v
   | Tsig_type list ->
       List.iter (fun (_id, _, decl) -> sub # type_declaration decl) list
+  | Tsig_extension te ->
+      sub # type_extension te
   | Tsig_exception (_id, _, decl) ->
       sub # exception_declaration decl
   | Tsig_module (_id, _, mtype) ->
@@ -371,6 +385,7 @@ class iter = object(this)
   method structure = structure this
   method structure_item = structure_item this
   method type_declaration = type_declaration this
+  method type_extension = type_extension this
   method value_description = value_description this
   method with_constraint = with_constraint this
 end

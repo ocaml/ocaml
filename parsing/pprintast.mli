@@ -28,7 +28,7 @@ class printer :
     method class_expr : Format.formatter -> Parsetree.class_expr -> unit
     method class_field : Format.formatter -> Parsetree.class_field -> unit
     method class_params_def :
-      Format.formatter -> (string Asttypes.loc * (bool * bool)) list -> unit
+      Format.formatter -> ((bool * bool) * Parsetree.core_type) list -> unit
     method class_signature :
       Format.formatter -> Parsetree.class_signature -> unit
     method class_structure :
@@ -103,10 +103,10 @@ class printer :
     method type_def_list :
       Format.formatter ->
       (string Asttypes.loc * Parsetree.type_declaration) list -> unit
+    method type_extension :
+      Format.formatter -> Parsetree.type_extension -> unit
     method type_param :
-      Format.formatter -> (bool * bool) * string Asttypes.loc option -> unit
-    method type_var_option :
-      Format.formatter -> string Asttypes.loc option -> unit
+      Format.formatter -> (bool * bool) * Parsetree.core_type -> unit
     method type_with_label :
       Format.formatter -> Asttypes.label * Parsetree.core_type -> unit
     method tyvar : Format.formatter -> string -> unit

@@ -1100,7 +1100,7 @@ and components_of_module_maker (env, sub, path, mty) =
             let ext' = Subst.extension_constructor sub ext in
             let descr = Datarepr.extension_descr path ext' in
             c.comp_constrs <-
-              Tbl.add (Ident.name id) (descr, !pos) c.comp_constrs;
+              add_to_tbl (Ident.name id) (descr, !pos) c.comp_constrs;
             incr pos
         | Sig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
@@ -1251,7 +1251,7 @@ and store_extension slot id path ext env renv =
   end;
   { env with
     constrs = EnvTbl.add "constructor" slot id 
-                (path_subst_last path id, Datarepr.extension_descr path ext) 
+                (Datarepr.extension_descr path ext) 
                 env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
 

@@ -745,7 +745,7 @@ class printer  ()= object(self:'self)
 
   (* [class type a = object end] *)
   method class_type_declaration_list f  l =
-    let class_type_declaration f ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
+    let class_type_declaration f ({pci_params=ls;pci_name={txt;_};pci_variance;_} as x) =
       pp f "%a%a%s@ =@ %a" self#virtual_flag x.pci_virt
         self#class_params_def (List.combine pci_variance ls) txt
         self#class_type x.pci_expr in
@@ -877,7 +877,7 @@ class printer  ()= object(self:'self)
     | Psig_exception (s, ed) ->
         self#exception_declaration f (s.txt,ed)
     | Psig_class l ->
-        let class_description f ({pci_params=(ls,_);pci_name={txt;_};pci_variance;_} as x) =
+        let class_description f ({pci_params=ls;pci_name={txt;_};pci_variance;_} as x) =
           pp f "%a%a%s@;:@;%a" (* "@[<2>class %a%a%s@;:@;%a@]" *)
             self#virtual_flag x.pci_virt
             self#class_params_def
@@ -1036,7 +1036,7 @@ class printer  ()= object(self:'self)
         pp f "@[<2>module type %s =@;%a@]" s.txt self#module_type mt
     | Pstr_class l ->
         let class_declaration f  (* for the second will be changed to and FIXME*)
-            ({pci_params=(ls,_);
+            ({pci_params=ls;
               pci_name={txt;_};
               pci_virt;
               pci_expr={pcl_desc;_};
@@ -1176,14 +1176,14 @@ class printer  ()= object(self:'self)
           l
     | Pext_rebind li ->
         pp f "@\n|@;%s@ = @ %a" x.pext_name.txt
-           self#longident li
+           self#longident_loc li
     in
       pp f "@[<2>type %a%a +=@;%a@]"
          (fun f -> function
                 | [] -> ()
                 | l ->  pp f "%a@;" (self#list self#core_type ~first:"(" ~last:")" ~sep:",") l)
          x.ptyext_params
-         self#longident x.ptyext_path
+         self#longident_loc x.ptyext_path
          (self#list ~sep:"" extension_constructor)
          x.ptyext_constructors
 

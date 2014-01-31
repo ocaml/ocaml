@@ -94,6 +94,26 @@ module T = struct
     | Ptype_abstract -> Ptype_abstract
     | Ptype_variant l -> Ptype_variant (List.map (fun (s, tl, t, loc) -> (map_loc sub s, List.map (sub # typ) tl, map_opt (sub # typ) t, sub # location loc)) l)
     | Ptype_record l -> Ptype_record (List.map (fun (s, flags, t, loc) -> (map_loc sub s, flags, sub # typ t, sub # location loc)) l)
+    | Ptype_open -> Ptype_open
+
+  let map_type_extension sub te =
+    {te with
+       ptyext_path = map_loc sub te.ptyext_path;
+       ptyext_constructors = 
+         List.map (sub # extension_constructor) te.ptyext_constructors;
+    }
+
+  let map_extension_constructor sub ext =
+    {pext_name = map_loc sub ext.pext_name;
+     pext_kind = 
+       (match ext.pext_kind with
+          Pext_decl(ctl, cto) -> 
+            Pext_decl(List.map (sub # typ) ctl, map_opt (sub # typ) cto)
+        | Pext_rebind li -> 
+            Pext_rebind (map_loc sub li));
+     pext_loc = sub # location ext.pext_loc;
+    }
+
 end
 
 module CT = struct
@@ -169,6 +189,7 @@ module MT = struct
 
   let value ?loc a b = mk_item ?loc (Psig_value (a, b))
   let type_ ?loc a = mk_item ?loc (Psig_type a)
+  let extension_ ?loc a = mk_item ?loc (Psig_extension a)
   let exception_ ?loc a b = mk_item ?loc (Psig_exception (a, b))
   let module_ ?loc a b = mk_item ?loc (Psig_module (a, b))
   let rec_module ?loc a = mk_item ?loc (Psig_recmodule a)
@@ -184,6 +205,7 @@ module MT = struct
     | Psig_value (s, vd) -> value ~loc (map_loc sub s) (sub # value_description vd)
     | Psig_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
     | Psig_exception (s, ed) -> exception_ ~loc (map_loc sub s) (sub # exception_declaration ed)
+    | Psig_extension te -> extension_ ~loc (sub # type_extension te)
     | Psig_module (s, mt) -> module_ ~loc (map_loc sub s) (sub # module_type mt)
     | Psig_recmodule l -> rec_module ~loc (List.map (map_tuple (map_loc sub) (sub # module_type)) l)
     | Psig_modtype (s, Pmodtype_manifest mt) -> modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt))
@@ -222,6 +244,7 @@ module M = struct
   let value ?loc a b = mk_item ?loc (Pstr_value (a, b))
   let primitive ?loc a b = mk_item ?loc (Pstr_primitive (a, b))
   let type_ ?loc a = mk_item ?loc (Pstr_type a)
+  let extension_ ?loc a = mk_item ?loc (Pstr_extension a)
   let exception_ ?loc a b = mk_item ?loc (Pstr_exception (a, b))
   let exn_rebind ?loc a b = mk_item ?loc (Pstr_exn_rebind (a, b))
   let module_ ?loc a b = mk_item ?loc (Pstr_module (a, b))
@@ -239,6 +262,7 @@ module M = struct
     | Pstr_value (r, pel) -> value ~loc r (List.map (map_tuple (sub # pat) (sub # expr)) pel)
     | Pstr_primitive (name, vd) -> primitive ~loc (map_loc sub name) (sub # value_description vd)
     | Pstr_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
+    | Pstr_extension te -> extension_ ~loc (sub # type_extension te)
     | Pstr_exception (name, ed) -> exception_ ~loc (map_loc sub name) (sub # exception_declaration ed)
     | Pstr_exn_rebind (s, lid) -> exn_rebind ~loc (map_loc sub s) (map_loc sub lid)
     | Pstr_module (s, m) -> module_ ~loc (map_loc sub s) (sub # module_expr m)
@@ -430,10 +454,10 @@ module CE = struct
      pcstr_fields = List.map (sub # class_field) pcstr_fields;
     }
 
-  let class_infos sub f {pci_virt; pci_params = (pl, ploc); pci_name; pci_expr; pci_variance; pci_loc} =
+  let class_infos sub f {pci_virt; pci_params = pl; pci_name; pci_expr; pci_variance; pci_loc} =
     {
      pci_virt;
-     pci_params = List.map (map_loc sub) pl, sub # location ploc;
+     pci_params = List.map (sub # typ) pl;
      pci_name = map_loc sub pci_name;
      pci_expr = f pci_expr;
      pci_variance;
@@ -482,6 +506,9 @@ class mapper =
       }
     method pat = P.map this
     method expr = E.map this
+
+    method type_extension = T.map_type_extension this
+    method extension_constructor = T.map_extension_constructor this
 
     method exception_declaration tl = List.map (this # typ) tl
 

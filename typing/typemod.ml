@@ -1043,8 +1043,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          final_env)
     | Pstr_extension styext ->
 	let (tyext, newenv) = Typedecl.transl_type_extension true env loc styext in
+        let item = mk (Tstr_extension tyext) in
 	let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-	(mkstr (Tstr_extension tyext) loc :: str_rem,
+	(item :: str_rem,
 	 map_ext 
            (fun es ext -> Sig_extension(ext.ext_name, ext.ext_type, es)) 
            tyext.tyext_constructors sig_rem,

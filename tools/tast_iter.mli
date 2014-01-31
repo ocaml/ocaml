@@ -39,6 +39,7 @@ class iter: object
   method structure: structure -> unit
   method structure_item: structure_item -> unit
   method type_declaration: type_declaration -> unit
+  method type_extension: type_extension -> unit
   method value_description: value_description -> unit
   method with_constraint: with_constraint -> unit
 end
@@ -76,5 +77,6 @@ val signature_item: iter -> signature_item -> unit
 val structure: iter -> structure -> unit
 val structure_item: iter -> structure_item -> unit
 val type_declaration: iter -> type_declaration -> unit
+val type_extension: iter -> type_extension -> unit
 val value_description: iter -> value_description -> unit
 val with_constraint: iter -> with_constraint -> unit
