@@ -210,9 +210,9 @@ let merge_constraint initial_env loc  sg lid constr =
             when List.length stl = List.length sdecl.ptype_params ->
               List.iter2 (fun x y ->
                 match x, y with
-                  {ptyp_desc=Ptyp_var sx}, {ptyp_desc=Ptyp_var sy} 
+                  {ptyp_desc=Ptyp_var sx}, {ptyp_desc=Ptyp_var sy}
                     when sx = sy -> ()
-                | _, _ -> raise Exit) 
+                | _, _ -> raise Exit)
                 stl sdecl.ptype_params;
               lid
           | _ -> raise Exit
@@ -258,7 +258,7 @@ let rec map_rec'' fn decls rem =
   match decls with
   | (id, _,_ as d1) :: dl when Btype.is_row_name (Ident.name id) ->
     fn Trec_not d1 :: map_rec'' fn dl rem
-  | _ -> map_rec fn decls rem 
+  | _ -> map_rec fn decls rem
 
 (* Add extension flags to extension contructors *)
 let map_ext fn exts rem =
@@ -498,19 +498,19 @@ and transl_signature env sg =
             map_rec'' (fun rs (id, _, info) ->
                 Sig_type(id, info.typ_type, rs)) decls rem,
             final_env
-	| Psig_extension styext ->
-	    let (tyext, newenv) = 
-              Typedecl.transl_type_extension false env item.psig_loc styext 
+        | Psig_extension styext ->
+            let (tyext, newenv) =
+              Typedecl.transl_type_extension false env item.psig_loc styext
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            let constructors = 
-              List.filter 
-                (fun ext -> not 
+            let constructors =
+              List.filter
+                (fun ext -> not
                   (List.exists (Ident.equal ext.ext_name) (get_extensions rem)))
                 tyext.tyext_constructors
             in
               mksig (Tsig_extension tyext) env loc :: trem,
-	      map_ext (fun es ext -> 
+              map_ext (fun es ext ->
                 Sig_extension(ext.ext_name, ext.ext_type, es)) constructors rem,
               final_env
         | Psig_exception(name, sarg) ->
@@ -567,8 +567,8 @@ and transl_signature env sg =
             let newenv = Env.add_signature sg env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include (tmty, sg)) env loc :: trem,
-            remove_duplicates (get_values rem) (get_extensions rem) 
-              (get_exceptions rem) sg @ rem, 
+            remove_duplicates (get_values rem) (get_extensions rem)
+              (get_exceptions rem) sg @ rem,
             final_env
         | Psig_class cl ->
             List.iter
@@ -1042,14 +1042,16 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
            decls sig_rem,
          final_env)
     | Pstr_extension styext ->
-	let (tyext, newenv) = Typedecl.transl_type_extension true env loc styext in
+        let (tyext, newenv) =
+          Typedecl.transl_type_extension true env loc styext
+        in
         let item = mk (Tstr_extension tyext) in
-	let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-	(item :: str_rem,
-	 map_ext 
-           (fun es ext -> Sig_extension(ext.ext_name, ext.ext_type, es)) 
+        let (str_rem, sig_rem, final_env) = type_struct newenv srem in
+        (item :: str_rem,
+         map_ext
+           (fun es ext -> Sig_extension(ext.ext_name, ext.ext_type, es))
            tyext.tyext_constructors sig_rem,
-	 final_env)
+         final_env)
     | Pstr_exception(name, sarg) ->
         let arg = Typedecl.transl_exception env loc sarg in
         let (id, newenv) = Env.enter_exception name.txt arg.exn_exn env in

@@ -391,8 +391,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value mktyext id tl exts tp =
     let (params, variance) = List.split tl in
-    {ptyext_path = id; ptyext_params = params; 
-     ptyext_constructors = exts; ptyext_private = tp; 
+    {ptyext_path = id; ptyext_params = params;
+     ptyext_constructors = exts; ptyext_private = tp;
      ptyext_variance = variance}
   ;
   value mkextension =
@@ -423,7 +423,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     [ <:ctyp< private $t$ >> ->
         type_ext id tl loc True t
     | <:ctyp< [ $t$ ] >> ->
-        mktyext id tl 
+        mktyext id tl
           (List.map mkextension (list_of_ctyp t []))
           (mkprivate' pflag)
     | _ -> error loc "invalid type extension" ]
@@ -1023,9 +1023,9 @@ value varify_constructors var_names =
   and mktype_ext x =
     match x with
     [ Ast.TyExt loc id tl td ->
-        type_ext 
+        type_ext
           (long_type_ident id)
-          (List.fold_right optional_type_parameters tl []) 
+          (List.fold_right optional_type_parameters tl [])
           td loc
     | _ -> assert False ]
   and module_type =
@@ -1073,8 +1073,8 @@ value varify_constructors var_names =
         [mksig loc (Psig_modtype (with_loc n loc) si) :: l]
     | SgOpn loc id ->
         [mksig loc (Psig_open Fresh (long_uident id)) :: l]
-    | SgTyp loc tdl -> 
-        let si = 
+    | SgTyp loc tdl ->
+        let si =
           match tdl with
           [ Ast.TyExt _ _ _ _ -> Psig_extension (mktype_ext tdl)
           | _ -> Psig_type (mktype_decl tdl []) ]
@@ -1145,7 +1145,7 @@ value varify_constructors var_names =
     | StOpn loc id ->
         [mkstr loc (Pstr_open Fresh (long_uident id)) :: l]
     | StTyp loc tdl ->
-        let si = 
+        let si =
           match tdl with
           [ Ast.TyExt _ _ _ _ -> Pstr_extension (mktype_ext tdl)
           | _ -> Pstr_type (mktype_decl tdl []) ]

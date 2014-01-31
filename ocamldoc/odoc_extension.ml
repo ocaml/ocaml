@@ -36,8 +36,8 @@ and t_extension_constructor = {
 and t_type_extension = {
     mutable te_info : Odoc_types.info option ; (** optional user information *)
     te_type_name : Name.t;
-    te_type_parameters : Types.type_expr list; 
-    te_private : private_flag; 
+    te_type_parameters : Types.type_expr list;
+    te_private : private_flag;
     mutable te_constructors: t_extension_constructor list;
     mutable te_loc : Odoc_types.location ;
     mutable te_code : string option ;

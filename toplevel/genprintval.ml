@@ -231,7 +231,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                    Oval_constr (Oide_ident "lazy", [v])
               else Oval_stuff "<lazy>"
           | Tconstr(path, ty_list, _) -> begin
-	      try
+              try
                 let decl = Env.find_type path env in
                 match decl with
                 | {type_kind = Type_abstract; type_manifest = None} ->
@@ -291,8 +291,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         in
                         Oval_record (tree_of_fields 0 lbl_list)
                     end
-		| {type_kind = Type_open} ->
-		    Oval_stuff "<extension>"
+                | {type_kind = Type_open} ->
+                    Oval_stuff "<extension>"
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"

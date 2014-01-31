@@ -384,7 +384,7 @@ let wrap_type_annotation newtypes core_type body =
 /* %token PARSER */
 %token PLUS
 %token PLUSDOT
-%token PLUSEQUAL
+%token PLUSEQ
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
@@ -460,7 +460,7 @@ The precedences must be listed from low to high.
 %left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
 %right    COLONCOLON                    /* expr (e :: e :: e) */
-%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQUAL /* expr (e OP e OP e) */
+%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
 %nonassoc prec_unary_minus prec_unary_plus /* unary - */
@@ -1490,32 +1490,37 @@ label_declaration:
 /* Type Extensions */
 
 str_type_extension:
-  optional_type_parameters type_longident PLUSEQUAL private_flag opt_bar str_extension_constructors
+  optional_type_parameters type_longident
+  PLUSEQ private_flag opt_bar str_extension_constructors
       { let (params, variance) = List.split $1 in
-	  {ptyext_path = mkrhs $2 2;
-	   ptyext_params = params;
+          {ptyext_path = mkrhs $2 2;
+           ptyext_params = params;
            ptyext_constructors = List.rev $6;
            ptyext_private = $4;
-	   ptyext_variance = variance} }
+           ptyext_variance = variance} }
 ;
 sig_type_extension:
-  optional_type_parameters type_longident PLUSEQUAL private_flag opt_bar sig_extension_constructors
+  optional_type_parameters type_longident
+  PLUSEQ private_flag opt_bar sig_extension_constructors
       { let (params, variance) = List.split $1 in
-	  {ptyext_path = mkrhs $2 2;
-	   ptyext_params = params;
+          {ptyext_path = mkrhs $2 2;
+           ptyext_params = params;
            ptyext_constructors = List.rev $6;
            ptyext_private = $4;
-	   ptyext_variance = variance} }
+           ptyext_variance = variance} }
 ;
 str_extension_constructors:
     extension_constructor_declaration                     { [$1] }
   | extension_constructor_rebind                          { [$1] }
-  | str_extension_constructors BAR extension_constructor_declaration { $3 :: $1 }
-  | str_extension_constructors BAR extension_constructor_rebind { $3 :: $1 }
+  | str_extension_constructors BAR extension_constructor_declaration
+      { $3 :: $1 }
+  | str_extension_constructors BAR extension_constructor_rebind
+      { $3 :: $1 }
 ;
 sig_extension_constructors:
     extension_constructor_declaration                     { [$1] }
-  | sig_extension_constructors BAR extension_constructor_declaration { $3 :: $1 }
+  | sig_extension_constructors BAR extension_constructor_declaration
+      { $3 :: $1 }
 ;
 extension_constructor_declaration:
   | constr_ident generalized_constructor_arguments
@@ -1775,7 +1780,7 @@ operator:
   | AMPERSAND                                   { "&" }
   | AMPERAMPER                                  { "&&" }
   | COLONEQUAL                                  { ":=" }
-  | PLUSEQUAL                                   { "+=" }
+  | PLUSEQ                                      { "+=" }
 ;
 constr_ident:
     UIDENT                                      { $1 }

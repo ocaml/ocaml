@@ -1,5 +1,5 @@
 
-#     type foo = ..
+#   type foo = ..
 #         type bar = foo = ..
 #     type baz = foo = ..
 #     type bar += Bar1 of int
@@ -20,13 +20,13 @@ Error: This variant or record definition does not match that of type bar
        Their kinds differ.
 #         type 'a foo = ..
 #     Characters 6-32:
-  type ('a, 'b) bar = 'a foo = .. (* Error: arrities do not match *) 
+  type ('a, 'b) bar = 'a foo = .. (* Error: arrities do not match *)
        ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type 'a foo
        They have different arities.
 #     type ('a, 'b) foo = ..
 #     Characters 6-38:
-  type ('a, 'b) bar = ('a, 'a) foo = .. (* Error: constraints do not match *) 
+  type ('a, 'b) bar = ('a, 'a) foo = .. (* Error: constraints do not match *)
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          ('a, 'a) foo
@@ -70,4 +70,4 @@ Error: Signature mismatch:
        is not included in
          type 'a foo = ..
        Their variances do not agree.
-#   
+# 

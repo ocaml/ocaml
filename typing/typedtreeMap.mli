@@ -17,7 +17,8 @@ module type MapArgument = sig
   val enter_value_description : value_description -> value_description
   val enter_type_declaration : type_declaration -> type_declaration
   val enter_type_extension : type_extension -> type_extension
-  val enter_extension_constructor : extension_constructor -> extension_constructor
+  val enter_extension_constructor :
+    extension_constructor -> extension_constructor
   val enter_exception_declaration :
     exception_declaration -> exception_declaration
   val enter_pattern : pattern -> pattern
@@ -47,7 +48,8 @@ module type MapArgument = sig
   val leave_value_description : value_description -> value_description
   val leave_type_declaration : type_declaration -> type_declaration
   val leave_type_extension : type_extension -> type_extension
-  val leave_extension_constructor : extension_constructor -> extension_constructor
+  val leave_extension_constructor :
+    extension_constructor -> extension_constructor
   val leave_exception_declaration :
     exception_declaration -> exception_declaration
   val leave_pattern : pattern -> pattern

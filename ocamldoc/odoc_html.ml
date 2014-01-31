@@ -1484,7 +1484,7 @@ class html =
                 bs b (" " ^ (self#keyword ":") ^ " ");
                 self#html_of_type_expr_list ~par: false b father " * " l;
                 bs b (" " ^ (self#keyword "->") ^ " ");
-                self#html_of_type_expr b father r;		 
+                self#html_of_type_expr b father r;
         );
         (
             match x.xt_alias with
@@ -1562,11 +1562,11 @@ class html =
       bs b
         (match t.ty_manifest, t.ty_kind with
           None, Type_abstract
-	| None, Type_open -> "<pre>"
+        | None, Type_open -> "<pre>"
         | None, Type_variant _
         | None, Type_record _ -> "<pre><code>"
-        | Some _, Type_abstract 
-	| Some _, Type_open -> "<pre>"
+        | Some _, Type_abstract
+        | Some _, Type_open -> "<pre>"
         | Some _, Type_variant _
         | Some _, Type_record _ -> "<pre>"
         );
@@ -1683,9 +1683,9 @@ class html =
           in
           print_concat b "\n" print_one l;
           bs b "</table>\n}\n"
-      | Type_open -> 
+      | Type_open ->
           bs b "= ..";
-	  bs b "</pre>"
+          bs b "</pre>"
       );
       bs b "\n";
       self#html_of_info b t.ty_info;

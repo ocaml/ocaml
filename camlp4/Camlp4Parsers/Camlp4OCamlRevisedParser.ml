@@ -1013,10 +1013,10 @@ New syntax:\
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
         | t1 = SELF; "and"; t2 = SELF -> <:ctyp< $t1$ and $t2$ >>
         | (n, tpl) = type_ident_and_parameters; "="; tk = type_kind;
-          cl = LIST0 constrain -> Ast.TyDcl _loc n tpl tk cl 
-        | (n, tpl) = type_ident_and_parameters; "+="; tk = type_kind -> 
+          cl = LIST0 constrain -> Ast.TyDcl _loc n tpl tk cl
+        | (n, tpl) = type_ident_and_parameters; "+="; tk = type_kind ->
             Ast.TyExt _loc n tpl tk
-        | (n, tpl) = type_ident_and_parameters; cl = LIST0 constrain -> 
+        | (n, tpl) = type_ident_and_parameters; cl = LIST0 constrain ->
             Ast.TyDcl _loc n tpl <:ctyp<>> cl ] ]
     ;
     constrain:
@@ -1147,7 +1147,7 @@ New syntax:\
             let (tl, rt) = generalized_type_of_type t in
             <:ctyp< $uid:s$ : ($Ast.tyAnd_of_list tl$ -> $rt$) >>
         | s = a_UIDENT; "="; i = type_longident ->
-	    <:ctyp< $uid:s$ = $id:i$ >>
+            <:ctyp< $uid:s$ = $id:i$ >>
         | s = a_UIDENT ->
           <:ctyp< $uid:s$ >>
       ] ]
@@ -1159,7 +1159,7 @@ New syntax:\
         | s = a_UIDENT; "of"; t = constructor_arg_list ->
             <:ctyp< $uid:s$ of $t$ >>
         | s = a_UIDENT; "="; i = type_longident ->
-	    <:ctyp< $uid:s$ = $id:i$ >>
+            <:ctyp< $uid:s$ = $id:i$ >>
         | s = a_UIDENT ->
             <:ctyp< $uid:s$ >>
       ] ]

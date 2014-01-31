@@ -186,22 +186,22 @@ module Extension :
 
     and t_extension_constructor = Odoc_extension.t_extension_constructor =
         {
-	  xt_name : Name.t ;
-	  xt_args: Types.type_expr list ; (** the types of the parameters *)
-	  xt_ret: Types.type_expr option ; (** the optional return type of the extension *)
+          xt_name : Name.t ;
+          xt_args: Types.type_expr list ; (** the types of the parameters *)
+          xt_ret: Types.type_expr option ; (** the optional return type of the extension *)
           xt_type_extension: t_type_extension ; (** the type extension containing this constructor *)
-	  xt_alias: extension_alias option ; (** [None] when the extension is not a rebind. *)
-	  mutable xt_loc: Odoc_types.location ;
-	  mutable xt_text: Odoc_types.text option ; (** optional user description *)
-	}
+          xt_alias: extension_alias option ; (** [None] when the extension is not a rebind. *)
+          mutable xt_loc: Odoc_types.location ;
+          mutable xt_text: Odoc_types.text option ; (** optional user description *)
+        }
 
     and t_type_extension = Odoc_extension.t_type_extension =
         {
           mutable te_info : info option ; (** Information found in the optional associated comment. *)
-	  te_type_name : Name.t ; (** The type of the extension *)
-	  te_type_parameters : Types.type_expr list;
+          te_type_name : Name.t ; (** The type of the extension *)
+          te_type_parameters : Types.type_expr list;
           te_private : private_flag ;
-	  mutable te_constructors: t_extension_constructor list;
+          mutable te_constructors: t_extension_constructor list;
           mutable te_loc : location ;
           mutable te_code : string option ;
         }
@@ -909,19 +909,19 @@ module Scan :
         method scan_included_module : Module.included_module -> unit
 
       (** Scan of a type extension *)
-    
-	(** Overide this method to perform controls on the extension's type,
+
+        (** Overide this method to perform controls on the extension's type,
             private and info. This method is called before scanning the
-	    extension's constructors.
-	    @return true if the extension's constructors must be scanned.*)
-	method scan_type_extension_pre : Extension.t_type_extension -> bool
+            extension's constructors.
+            @return true if the extension's constructors must be scanned.*)
+        method scan_type_extension_pre : Extension.t_type_extension -> bool
 
        (** This method scans the constructors of the given type extension. *)
-	method scan_type_extension_constructors : Extension.t_type_extension -> unit
-	    
-	(** Scan of a type extension. Should not be overridden. It calls [scan_type_extension_pre]
-	    and if [scan_type_extension_pre] returns [true], then it calls scan_type_extension_constructors.*)
-	method scan_type_extension : Extension.t_type_extension -> unit 
+        method scan_type_extension_constructors : Extension.t_type_extension -> unit
+
+        (** Scan of a type extension. Should not be overridden. It calls [scan_type_extension_pre]
+            and if [scan_type_extension_pre] returns [true], then it calls scan_type_extension_constructors.*)
+        method scan_type_extension : Extension.t_type_extension -> unit
 
       (** Scan of a class. *)
 

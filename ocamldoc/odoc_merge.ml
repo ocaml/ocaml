@@ -288,7 +288,7 @@ let merge_types merge_options mli ml =
       in
       List.iter f l1
 
-  | Type_open, Type_open -> 
+  | Type_open, Type_open ->
       ()
 
   | _ ->
@@ -532,24 +532,24 @@ let rec merge_module_types merge_options mli ml =
   List.iter
     (fun te ->
        let rec f exts elems =
-	 match exts, elems with
-	     [], _  
-	   | _, [] -> () 
-	   | _, (Element_type_extension te2 :: rest) ->
-	       let merge_ext xt = 
+         match exts, elems with
+             [], _
+           | _, [] -> ()
+           | _, (Element_type_extension te2 :: rest) ->
+               let merge_ext xt =
                  try
-                   let xt2 = 
-                     List.find (fun xt2 -> xt.xt_name = xt2.xt_name) 
+                   let xt2 =
+                     List.find (fun xt2 -> xt.xt_name = xt2.xt_name)
                        te2.te_constructors
                    in
                      merge_extension_constructor merge_options xt xt2;
                      true
                  with Not_found -> false
                in
-	       let merged, unmerged = List.partition merge_ext exts in
-		 if merged <> [] then merge_type_extension merge_options te te2;
-		 f unmerged rest
-	   | _, (_ :: rest) -> f exts rest
+               let merged, unmerged = List.partition merge_ext exts in
+                 if merged <> [] then merge_type_extension merge_options te te2;
+                 f unmerged rest
+           | _, (_ :: rest) -> f exts rest
        in
          (* we look for the extensions in reverse order *)
          f te.te_constructors (List.rev (Odoc_module.module_type_elements ml))
@@ -807,14 +807,14 @@ and merge_modules merge_options mli ml =
   List.iter
     (fun te ->
        let rec f exts elems =
-	 match exts, elems with
-	     [], _  
-	   | _, [] -> () 
-	   | _, (Element_type_extension te2 :: rest) ->
-	       let merge_ext xt = 
+         match exts, elems with
+             [], _
+           | _, [] -> ()
+           | _, (Element_type_extension te2 :: rest) ->
+               let merge_ext xt =
                  try
-                   let xt2 = 
-                     List.find (fun xt2 -> xt.xt_name = xt2.xt_name) 
+                   let xt2 =
+                     List.find (fun xt2 -> xt.xt_name = xt2.xt_name)
                        te2.te_constructors
                    in
                      merge_extension_constructor merge_options xt xt2;
@@ -822,8 +822,8 @@ and merge_modules merge_options mli ml =
                  with Not_found -> false
                in
                let merged, unmerged = List.partition merge_ext exts in
-	         if merged <> [] then merge_type_extension merge_options te te2;
-	         f unmerged rest
+                 if merged <> [] then merge_type_extension merge_options te te2;
+                 f unmerged rest
            | _, (_ :: rest) -> f exts rest
        in
          (* we look for the extensions in reverse order *)

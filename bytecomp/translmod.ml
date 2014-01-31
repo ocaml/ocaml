@@ -300,8 +300,8 @@ and transl_structure fields cc rootpath = function
       transl_structure fields cc rootpath rem
   | Tstr_extension(tyext) ->
       let ids = List.map (fun ext -> ext.ext_name) tyext.tyext_constructors in
-	transl_type_extension tyext
-	  (transl_structure (List.rev_append ids fields) cc rootpath rem)
+        transl_type_extension tyext
+          (transl_structure (List.rev_append ids fields) cc rootpath rem)
   | Tstr_exception( id, _, decl) ->
       Llet(Strict, id, transl_exception id (field_path rootpath id) decl,
            transl_structure (id :: fields) cc rootpath rem)
@@ -374,7 +374,7 @@ let rec defined_idents = function
     | Tstr_primitive(id, _, descr) -> defined_idents rem
     | Tstr_type decls -> defined_idents rem
     | Tstr_extension tyext ->
-      List.map (fun ext -> ext.ext_name) tyext.tyext_constructors 
+      List.map (fun ext -> ext.ext_name) tyext.tyext_constructors
       @ defined_idents rem
     | Tstr_exception(id, _, decl) -> id :: defined_idents rem
     | Tstr_exn_rebind(id, _, path, _) -> id :: defined_idents rem
@@ -421,7 +421,7 @@ and all_idents = function
     | Tstr_primitive(id, _, descr) -> all_idents rem
     | Tstr_type decls -> all_idents rem
     | Tstr_extension tyext ->
-      List.map (fun ext -> ext.ext_name) tyext.tyext_constructors 
+      List.map (fun ext -> ext.ext_name) tyext.tyext_constructors
       @ all_idents rem
     | Tstr_exception(id, _, decl) -> id :: all_idents rem
     | Tstr_exn_rebind(id, _, path, _) -> id :: all_idents rem
@@ -481,8 +481,8 @@ let transl_store_structure glob map prims str =
   | Tstr_extension(tyext) ->
       let ids = List.map (fun ext -> ext.ext_name) tyext.tyext_constructors in
       let lam = transl_type_extension tyext (store_idents ids) in
-	Lsequence(subst_lambda subst lam,
-		  transl_store rootpath (add_idents false ids subst) rem)
+        Lsequence(subst_lambda subst lam,
+                  transl_store rootpath (add_idents false ids subst) rem)
   | Tstr_exception( id, _, decl) ->
       let lam = transl_exception id (field_path rootpath id) decl in
       Lsequence(Llet(Strict, id, lam, store_ident id),
@@ -702,9 +702,11 @@ let transl_toplevel_item item =
   | Tstr_type(decls) ->
       lambda_unit
   | Tstr_extension(tyext) ->
-      let idents = List.map (fun ext -> ext.ext_name) tyext.tyext_constructors in
-	transl_type_extension tyext
-	  (make_sequence toploop_setvalue_id idents)
+      let idents =
+        List.map (fun ext -> ext.ext_name) tyext.tyext_constructors
+      in
+        transl_type_extension tyext
+          (make_sequence toploop_setvalue_id idents)
   | Tstr_exception(id, _, decl) ->
       toploop_setvalue id (transl_exception id None decl)
   | Tstr_exn_rebind(id, _, path, _) ->

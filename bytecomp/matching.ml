@@ -2018,10 +2018,10 @@ let split_extension_cases tag_lambda_list =
         match cstr with
           Cstr_ext_constant(path, _) -> ((path, act) :: consts, nonconsts)
         | Cstr_ext_block(path, _) -> (consts, (path, act) :: nonconsts)
-	| Cstr_exception(path, _) -> (consts, (path, act) :: nonconsts)
+        | Cstr_exception(path, _) -> (consts, (path, act) :: nonconsts)
         | _ -> assert false in
   split_rec tag_lambda_list
-  
+
 
 let combine_constructor arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
@@ -2042,28 +2042,28 @@ let combine_constructor arg ex_pat cstr partial ctx def
             end
         | Some fail -> fail, consts, nonconsts in
       let nonconst_lambda =
-	match nonconsts with
-	    [] -> default
-	  | _ ->
-	      let tag = Ident.create "tag" in
-	      let tests = 
-		List.fold_right
-		  (fun (path, act) rem ->
-		     Lifthenelse(Lprim(Pintcomp Ceq,
-                                       [Lvar tag; transl_path path]),
-				 act, rem))
-		  nonconsts
-		  default
-	      in
-		Llet(Alias, tag, Lprim(Pfield 0, [arg]), tests)
+        match nonconsts with
+          [] -> default
+        | _ ->
+            let tag = Ident.create "tag" in
+            let tests =
+              List.fold_right
+                (fun (path, act) rem ->
+                   Lifthenelse(Lprim(Pintcomp Ceq,
+                                     [Lvar tag; transl_path path]),
+                               act, rem))
+                nonconsts
+                default
+            in
+              Llet(Alias, tag, Lprim(Pfield 0, [arg]), tests)
       in
-	List.fold_right
+        List.fold_right
           (fun (path, act) rem ->
              Lifthenelse(Lprim(Pintcomp Ceq,
                                [arg; transl_path path]),
                          act, rem))
-	  consts
-	  nonconst_lambda
+          consts
+          nonconst_lambda
     in
     lambda1, jumps_union local_jumps total1
   end else begin

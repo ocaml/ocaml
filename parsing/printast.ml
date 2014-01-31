@@ -389,13 +389,13 @@ and extension_constructor i ppf x =
 
 and extension_constructor_kind i ppf x =
   match x with
-      Pext_decl(a, r) -> 
-	line i ppf "Pext_decl\n";
-	list (i+1) core_type ppf a;
-	option (i+1) core_type ppf r;
-    | Pext_rebind li -> 
-	line i ppf "Pext_rebind\n";
-	line (i+1) ppf "%a\n" fmt_longident_loc li;
+      Pext_decl(a, r) ->
+        line i ppf "Pext_decl\n";
+        list (i+1) core_type ppf a;
+        option (i+1) core_type ppf r;
+    | Pext_rebind li ->
+        line i ppf "Pext_rebind\n";
+        line (i+1) ppf "%a\n" fmt_longident_loc li;
 
 and exception_declaration i ppf x = list i core_type ppf x
 

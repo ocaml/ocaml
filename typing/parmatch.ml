@@ -160,7 +160,7 @@ open Format
 
 let get_constr_name tag ty tenv  = match tag with
 | Cstr_exception(path, _)
-| Cstr_ext_constant(path, _) 
+| Cstr_ext_constant(path, _)
 | Cstr_ext_block(path, _) -> Path.name path
 | _ ->
   try
@@ -659,16 +659,16 @@ let clean_env env =
   loop env
 
 let full_match ignore_generalized closing env =  match env with
-| ({pat_desc = Tpat_construct(_,c,_,_);pat_type=typ},_) :: _ -> 
+| ({pat_desc = Tpat_construct(_,c,_,_);pat_type=typ},_) :: _ ->
     if c.cstr_consts < 0 then false (* exceptions and extensions *)
     else
       if ignore_generalized then
-	(* remove generalized constructors;
+        (* remove generalized constructors;
            those cases will be handled separately *)
-	let env = clean_env env in 
-	List.length env = c.cstr_normal
+        let env = clean_env env in
+        List.length env = c.cstr_normal
       else
-	List.length env = c.cstr_consts + c.cstr_nonconsts
+        List.length env = c.cstr_consts + c.cstr_nonconsts
 
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
@@ -823,7 +823,7 @@ let build_other_constant proj make first next p env =
 *)
 
 let build_other ext env =  match env with
-| ({pat_desc = Tpat_construct (lid, 
+| ({pat_desc = Tpat_construct (lid,
       ({cstr_tag=(Cstr_ext_constant _|Cstr_ext_block _)} as c),_,_)},_)
   ::_ ->
     make_pat
@@ -1934,14 +1934,14 @@ let extendable_path path =
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, c, ps, _) -> begin
     match c.cstr_tag with
-      |	Cstr_ext_constant _ | Cstr_ext_block _ | Cstr_exception _ ->
-	  List.fold_left collect_paths_from_pat r ps
+      | Cstr_ext_constant _ | Cstr_ext_block _ | Cstr_exception _ ->
+          List.fold_left collect_paths_from_pat r ps
       | Cstr_constant _ | Cstr_block _ ->
-	  let path =  get_type_path p.pat_type p.pat_env in
-	    List.fold_left
-	      collect_paths_from_pat
-	      (if extendable_path path then add_path path r else r)
-	      ps
+          let path =  get_type_path p.pat_type p.pat_env in
+            List.fold_left
+              collect_paths_from_pat
+              (if extendable_path path then add_path path r else r)
+              ps
   end
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps ->

@@ -83,14 +83,14 @@ let add_type_declaration bv td =
 
 let add_extension_constructor bv ext =
   match ext.pext_kind with
-      Pext_decl(args, rty) -> 
-	List.iter (add_type bv) args; Misc.may (add_type bv) rty
+      Pext_decl(args, rty) ->
+        List.iter (add_type bv) args; Misc.may (add_type bv) rty
     | Pext_rebind lid -> add bv lid
 
 let add_type_extension bv te =
   add bv te.ptyext_path;
   List.iter (add_extension_constructor bv) te.ptyext_constructors
-  
+
 let rec add_class_type bv cty =
   match cty.pcty_desc with
     Pcty_constr(l, tyl) ->

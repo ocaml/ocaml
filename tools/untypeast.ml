@@ -68,14 +68,14 @@ and untype_structure_item item =
         Pstr_modtype (name, untype_module_type mtype)
     | Tstr_open (ovf, _path, lid) -> Pstr_open (ovf, lid)
     | Tstr_class list ->
-        Pstr_class 
-          (List.map 
+        Pstr_class
+          (List.map
              (fun (ci, _, _) -> untype_class_declaration ci)
              list)
     | Tstr_class_type list ->
-        Pstr_class_type 
-          (List.map 
-             (fun (_id, _name, ct) -> untype_class_type_declaration ct) 
+        Pstr_class_type
+          (List.map
+             (fun (_id, _name, ct) -> untype_class_type_declaration ct)
              list)
     | Tstr_include (mexpr, _) ->
         Pstr_include (untype_module_expr mexpr)
@@ -115,26 +115,26 @@ and untype_type_declaration decl =
     ptype_loc = decl.typ_loc;
   }
 
-and untype_type_extension tyext = 
-  { 
+and untype_type_extension tyext =
+  {
     ptyext_path = tyext.tyext_path_txt;
     ptyext_params = List.map untype_core_type tyext.tyext_params;
-    ptyext_constructors = 
+    ptyext_constructors =
       List.map untype_extension_constructor tyext.tyext_constructors;
     ptyext_private = tyext.tyext_private;
-    ptyext_variance = tyext.tyext_variance; 
+    ptyext_variance = tyext.tyext_variance;
   }
 
 and untype_extension_constructor ext =
-  { 
+  {
     pext_name = ext.ext_name_txt;
     pext_kind = (match ext.ext_kind with
         Text_decl (args, ret) ->
-          Pext_decl (List.map untype_core_type args, 
+          Pext_decl (List.map untype_core_type args,
                      option untype_core_type ret)
       | Text_rebind (p, lid) -> Pext_rebind lid
     );
-    pext_loc = ext.ext_loc; 
+    pext_loc = ext.ext_loc;
   }
 
 and untype_exception_declaration decl =
@@ -349,8 +349,8 @@ and untype_modtype_declaration mdecl =
     Tmodtype_abstract -> Pmodtype_abstract
   | Tmodtype_manifest mtype -> Pmodtype_manifest (untype_module_type mtype)
 
-and untype_class_declaration cd = 
-  { 
+and untype_class_declaration cd =
+  {
     pci_virt = cd.ci_virt;
     pci_params = List.map untype_core_type cd.ci_params;
     pci_name = cd.ci_id_name;

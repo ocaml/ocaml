@@ -205,15 +205,15 @@ class printer  ()= object(self:'self)
 
   method constant_string f s = pp f "%S" s
   method tyvar f str = pp f "'%s" str
-  method string_quot f x = pp f "`%s" x 
+  method string_quot f x = pp f "`%s" x
 
           (* c ['a,'b] *)
   method class_params_def f =  function
     | [] -> ()
     | l ->
         pp f "[%a] " (* space *)
-          (self#list self#type_param ~sep:",") l 
-          
+          (self#list self#type_param ~sep:",") l
+
   method type_with_label f (label,({ptyp_desc;_}as c) ) =
     match label with
     | "" ->  self#core_type1 f c (* otherwise parenthesize *)
@@ -1159,9 +1159,9 @@ class printer  ()= object(self:'self)
            pp f "@[<hov2>constraint@ %a@ =@ %a@]"
              self#core_type ct1 self#core_type ct2 ))  x.ptype_cstrs  ;
   end
-  method type_extension f x = 
+  method type_extension f x =
     let extension_constructor f x = match x.pext_kind with
-    | Pext_decl(l, None) -> 
+    | Pext_decl(l, None) ->
         pp f "@\n|@;%s%a" x.pext_name.txt
           (fun f -> function
                  | [] -> ()
@@ -1170,7 +1170,7 @@ class printer  ()= object(self:'self)
         pp f "@\n|@;%s:@;%a" x.pext_name.txt
           (fun f -> function
                  | [] -> self#core_type1 f r
-                 | l -> pp f "%a@;->@;%a" 
+                 | l -> pp f "%a@;->@;%a"
                            (self#list self#core_type1 ~sep:"*@;") l
                            self#core_type1 r)
           l

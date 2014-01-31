@@ -120,13 +120,13 @@ module Search =
       in
       if ok then (Res_type t) :: l else l
 
-    let search_extension_constructor xt v = 
+    let search_extension_constructor xt v =
       if P.p_extension xt v then [Res_extension xt] else []
 
-    let search_type_extension te v = 
-      List.fold_left 
+    let search_type_extension te v =
+      List.fold_left
         (fun acc -> fun xt -> acc @ (search_extension_constructor xt v))
-        [] 
+        []
         (Odoc_extension.extension_constructors te)
 
     let search_exception e v = if P.p_exception e v then [Res_exception e] else []

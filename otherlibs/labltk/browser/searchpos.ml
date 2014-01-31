@@ -173,7 +173,7 @@ let search_pos_type_decl td ~pos ~env =
         List.iter dl
           ~f:(fun (_, tl, _, _) -> List.iter tl ~f:(search_pos_type ~pos ~env))
     | Ptype_record dl ->
-        List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env) 
+        List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env)
     | Ptype_open -> () in
     search_tkind td.ptype_kind;
     List.iter td.ptype_cstrs ~f:
@@ -186,7 +186,7 @@ let search_pos_type_decl td ~pos ~env =
 let search_pos_extension_constructor ext ~pos ~env =
   match ext.pext_kind with
       Pext_decl(tl, tyo) ->
-	List.iter tl ~f:(search_pos_type ~pos ~env)
+        List.iter tl ~f:(search_pos_type ~pos ~env)
     | Pext_rebind _ -> ()
 
 let rec search_pos_signature l ~pos ~env =

@@ -28,7 +28,7 @@ val transl_exn_rebind:
     Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
 
 val transl_type_extension:
-    bool -> Env.t -> Location.t -> Parsetree.type_extension -> 
+    bool -> Env.t -> Location.t -> Parsetree.type_extension ->
     Typedtree.type_extension * Env.t
 
 val transl_value_decl:

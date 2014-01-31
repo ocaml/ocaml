@@ -384,7 +384,7 @@ and type_kind i ppf x =
       list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
   | Ttype_open ->
       line i ppf "Ptype_open\n"
-    
+
 and type_extension i ppf x =
   line i ppf "type_extension\n";
   let i = i+1 in
@@ -404,14 +404,13 @@ and extension_constructor i ppf x =
 
 and extension_constructor_kind i ppf x =
   match x with
-      Text_decl(a, r) -> 
-	line i ppf "Pext_decl\n";
-	list (i+1) core_type ppf a;
-	option (i+1) core_type ppf r;
-    | Text_rebind(p, _) -> 
-	line i ppf "Pext_rebind\n";
-	line (i+1) ppf "%a\n" fmt_path p;
-
+      Text_decl(a, r) ->
+        line i ppf "Pext_decl\n";
+        list (i+1) core_type ppf a;
+        option (i+1) core_type ppf r;
+    | Text_rebind(p, _) ->
+        line i ppf "Pext_rebind\n";
+        line (i+1) ppf "%a\n" fmt_path p;
 
 and exception_declaration i ppf x = list i core_type ppf x
 

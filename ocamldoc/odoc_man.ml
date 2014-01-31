@@ -402,15 +402,15 @@ class man =
       Odoc_info.reset_type_names () ;
       bs b ".I type ";
       (
-	match te.te_type_parameters with
+        match te.te_type_parameters with
             [] -> ()
-	  | l ->
+          | l ->
               let s = Odoc_str.string_of_type_extension_param_list te in
               let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
-		bs b "\n.B ";
-		bs b (self#relative_idents m_name s2);
-		bs b "\n";
-		bs b ".I "
+                bs b "\n.B ";
+                bs b (self#relative_idents m_name s2);
+                bs b "\n";
+                bs b ".I "
       );
       bs b (self#relative_idents m_name te.te_type_name);
       bs b " \n";
@@ -419,7 +419,7 @@ class man =
       bs b "\n ";
       List.iter
         (fun x ->
-	   let father = Name.father x.xt_name in
+           let father = Name.father x.xt_name in
            bs b ("| "^(Name.simple x.xt_name));
            (
              match x.xt_args, x.xt_ret with
@@ -427,38 +427,38 @@ class man =
                | l, None ->
                    bs b "\n.B of ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
-               | [], Some r -> 
+               | [], Some r ->
                    bs b "\n.B : ";
                    self#man_of_type_expr b father r;
                | l, Some r ->
                    bs b "\n.B : ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
-		   bs b ".B -> ";
+                   bs b ".B -> ";
                    self#man_of_type_expr b father r;
            );
-	   (
-	     match x.xt_alias with
-		 None -> ()
-	       | Some xa ->
-		   bs b ".B = ";
-		   bs b
-		     (
-		       match xa.xa_xt with
-			   None -> xa.xa_name
-			 | Some x -> x.xt_name
-		     );
-		   bs b "\n"
-	   );
-	   (
-	     match x.xt_text with
-		 None -> 
+           (
+             match x.xt_alias with
+                 None -> ()
+               | Some xa ->
+                   bs b ".B = ";
+                   bs b
+                     (
+                       match xa.xa_xt with
+                           None -> xa.xa_name
+                         | Some x -> x.xt_name
+                     );
+                   bs b "\n"
+           );
+           (
+             match x.xt_text with
+                 None ->
                    bs b " "
-	       | Some t ->
+               | Some t ->
                    bs b ".I \"  \"\n";
                    bs b "(* ";
                    self#man_of_text b t;
                    bs b " *)\n "
-	   )
+           )
         )
         te.te_constructors;
       bs b "\n.sp\n";
@@ -598,7 +598,7 @@ class man =
           bs b "\n }\n"
       | Type_open ->
           bs b "= ..";
-	  bs b "\n"
+          bs b "\n"
       );
       bs b "\n.sp\n";
       self#man_of_info b t.ty_info;

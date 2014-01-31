@@ -99,17 +99,17 @@ module T = struct
   let map_type_extension sub te =
     {te with
        ptyext_path = map_loc sub te.ptyext_path;
-       ptyext_constructors = 
+       ptyext_constructors =
          List.map (sub # extension_constructor) te.ptyext_constructors;
     }
 
   let map_extension_constructor sub ext =
     {pext_name = map_loc sub ext.pext_name;
-     pext_kind = 
+     pext_kind =
        (match ext.pext_kind with
-          Pext_decl(ctl, cto) -> 
+          Pext_decl(ctl, cto) ->
             Pext_decl(List.map (sub # typ) ctl, map_opt (sub # typ) cto)
-        | Pext_rebind li -> 
+        | Pext_rebind li ->
             Pext_rebind (map_loc sub li));
      pext_loc = sub # location ext.pext_loc;
     }

@@ -151,8 +151,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_class list ->
             List.iter (fun (ci, _, _) -> iter_class_declaration ci) list
         | Tstr_class_type list ->
-            List.iter 
-              (fun (id, _, ct) -> iter_class_type_declaration ct) 
+            List.iter
+              (fun (id, _, ct) -> iter_class_type_declaration ct)
               list
         | Tstr_include (mexpr, _) ->
             iter_module_expr mexpr
@@ -190,7 +190,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_type_extension tyext;
       List.iter iter_core_type tyext.tyext_params;
       List.iter iter_extension_constructor tyext.tyext_constructors;
-      Iter.leave_type_extension tyext      
+      Iter.leave_type_extension tyext
 
     and iter_extension_constructor ext =
       Iter.enter_extension_constructor ext;

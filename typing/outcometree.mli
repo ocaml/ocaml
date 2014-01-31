@@ -98,14 +98,14 @@ and out_type_decl =
     otype_type: out_type;
     otype_private: Asttypes.private_flag;
     otype_cstrs: (out_type * out_type) list }
-and out_extension_constructor = 
+and out_extension_constructor =
   { oext_name: string;
     oext_type_name: string;
     oext_type_params: string list;
     oext_args: out_type list;
     oext_ret_type: out_type option;
     oext_private: Asttypes.private_flag }
-and out_type_extension = 
+and out_type_extension =
   { otyext_name: string;
     otyext_params: string list;
     otyext_constructors: (string * out_type list * out_type option) list;
@@ -114,7 +114,7 @@ and out_rec_status =
   | Orec_not
   | Orec_first
   | Orec_next
-and out_ext_status = 
+and out_ext_status =
   | Oext_first
   | Oext_next
 

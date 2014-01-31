@@ -238,13 +238,13 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
             end
           | Type_record(l, rep) ->
             List.exists l ~f:(fun (_, _, t) -> matches t)
-	  | Type_open -> false
+          | Type_open -> false
           end
           then [lid_of_id id, Ptype] else []
-      | Sig_extension (id, ext, _) -> 
-	  if (matches (newconstr ext.ext_type_path ext.ext_type_params)) ||
-	    (List.exists ext.ext_args ~f:matches) ||
-	    (match ext.ext_ret_type with None -> false | Some x -> matches x)
+      | Sig_extension (id, ext, _) ->
+          if (matches (newconstr ext.ext_type_path ext.ext_type_params)) ||
+            (List.exists ext.ext_args ~f:matches) ||
+            (match ext.ext_ret_type with None -> false | Some x -> matches x)
           then [lid_of_id id, Pconstructor]
           else []
       | Sig_exception (id, l) ->
@@ -473,13 +473,13 @@ let search_structure str ~name ~kind ~prefix =
               if s.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
             end;
           false
-      | Pstr_extension te when kind = Pconstructor -> 
-	  List.iter te.ptyext_constructors ~f:
-	    begin fun ext ->
-	      if ext.pext_name.txt = name then 
+      | Pstr_extension te when kind = Pconstructor ->
+          List.iter te.ptyext_constructors ~f:
+            begin fun ext ->
+              if ext.pext_name.txt = name then
                 loc := ext.pext_loc.loc_start.Lexing.pos_cnum
-	    end;
-	  false
+            end;
+          false
       | Pstr_exception (s, _) when kind = Pconstructor -> name = s.txt
       | Pstr_module (s, _) when kind = Pmodule -> name = s.txt
       | Pstr_modtype (s, _) when kind = Pmodtype -> name = s.txt
@@ -533,13 +533,13 @@ let search_signature sign ~name ~kind ~prefix =
               if s.txt = name then loc := td.ptype_loc.loc_start.Lexing.pos_cnum
             end;
           false
-      | Psig_extension te when kind = Pconstructor -> 
-	  List.iter te.ptyext_constructors ~f:
-	    begin fun ext ->
-	      if ext.pext_name.txt = name then 
+      | Psig_extension te when kind = Pconstructor ->
+          List.iter te.ptyext_constructors ~f:
+            begin fun ext ->
+              if ext.pext_name.txt = name then
                 loc := ext.pext_loc.loc_start.Lexing.pos_cnum
-	    end;
-	  false
+            end;
+          false
       | Psig_exception (s, _) when kind = Pconstructor -> name = s.txt
       | Psig_module (s, _) when kind = Pmodule -> name = s.txt
       | Psig_modtype (s, _) when kind = Pmodtype -> name = s.txt

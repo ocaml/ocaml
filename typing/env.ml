@@ -629,7 +629,7 @@ let cstr_shadow cstr1 cstr2 =
   match cstr1.cstr_tag, cstr2.cstr_tag with
     Cstr_exception _, Cstr_exception _ -> true
   | Cstr_ext_constant _, Cstr_ext_constant _ -> true
-  | Cstr_ext_constant _, Cstr_ext_block _ -> true 
+  | Cstr_ext_constant _, Cstr_ext_block _ -> true
   | Cstr_ext_block _, Cstr_ext_constant _ -> true
   | Cstr_ext_block _, Cstr_ext_block _ -> true
   | _ -> false
@@ -756,8 +756,8 @@ let mark_constructor usage env name desc =
       end
   | Cstr_ext_constant(_, loc) | Cstr_ext_block(_, loc)->
       begin
-	let ty_path = ty_path desc.cstr_res in
-	let ty_name = Path.last ty_path in
+        let ty_path = ty_path desc.cstr_res in
+        let ty_name = Path.last ty_path in
         try Hashtbl.find used_constructors (ty_name, loc, name) usage
         with Not_found -> ()
       end
@@ -1230,8 +1230,8 @@ and store_type_infos slot id path info env renv =
 
 and store_extension slot id path ext env renv =
   let loc = ext.ext_loc in
-  if not loc.Location.loc_ghost && 
-    Warnings.is_active (Warnings.Unused_extension ("", false, false)) 
+  if not loc.Location.loc_ghost &&
+    Warnings.is_active (Warnings.Unused_extension ("", false, false))
   then begin
     let ty = Path.last ext.ext_type_path in
     let n = Ident.name id in
@@ -1242,16 +1242,16 @@ and store_extension slot id path ext env renv =
       !add_delayed_check_forward
         (fun () ->
           if not env.in_signature && not used.cu_positive then
-            Location.prerr_warning loc 
-	      (Warnings.Unused_extension
-		 (n, used.cu_pattern, used.cu_privatize)
-	      )
+            Location.prerr_warning loc
+              (Warnings.Unused_extension
+                 (n, used.cu_pattern, used.cu_privatize)
+              )
         )
     end;
   end;
   { env with
-    constrs = EnvTbl.add "constructor" slot id 
-                (Datarepr.extension_descr path ext) 
+    constrs = EnvTbl.add "constructor" slot id
+                (Datarepr.extension_descr path ext)
                 env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
 

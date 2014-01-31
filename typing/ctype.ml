@@ -4144,7 +4144,7 @@ let nondep_type_decl env mid id is_covariant decl =
                lbls,
              rep)
       | Type_open ->
-	  Type_open
+          Type_open
       with Not_found when is_covariant -> Type_abstract
     and tm =
       try match decl.type_manifest with
@@ -4176,32 +4176,32 @@ let nondep_type_decl env mid id is_covariant decl =
 (* Preserve sharing inside extension constructors. *)
 let nondep_extension_constructor env mid ext =
   try
-    let type_path, type_params = 
-      if Path.isfree mid ext.ext_type_path then 
-	begin
-	  let ty = 
+    let type_path, type_params =
+      if Path.isfree mid ext.ext_type_path then
+        begin
+          let ty =
             newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
           in
-	  let ty' = nondep_type_rec env mid ty in
-	    match (repr ty').desc with
-		Tconstr(p, tl, _) -> p, tl
-	      | _ -> raise Not_found
-	end 
-      else 
+          let ty' = nondep_type_rec env mid ty in
+            match (repr ty').desc with
+                Tconstr(p, tl, _) -> p, tl
+              | _ -> raise Not_found
+        end
+      else
         let type_params =
-          List.map (nondep_type_rec env mid) ext.ext_type_params 
+          List.map (nondep_type_rec env mid) ext.ext_type_params
         in
-	  ext.ext_type_path, type_params
+          ext.ext_type_path, type_params
     in
     let args = List.map (nondep_type_rec env mid) ext.ext_args in
     let ret_type = may_map (nondep_type_rec env mid) ext.ext_ret_type in
       clear_hash ();
       { ext_type_path = type_path;
-	ext_type_params = type_params;
-	ext_args = args;
-	ext_ret_type = ret_type;
-	ext_private = ext.ext_private;
-	ext_loc = ext.ext_loc;
+        ext_type_params = type_params;
+        ext_args = args;
+        ext_ret_type = ret_type;
+        ext_private = ext.ext_private;
+        ext_loc = ext.ext_loc;
       }
   with Not_found ->
     clear_hash ();

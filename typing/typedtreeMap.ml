@@ -17,7 +17,8 @@ module type MapArgument = sig
   val enter_value_description : value_description -> value_description
   val enter_type_declaration : type_declaration -> type_declaration
   val enter_type_extension : type_extension -> type_extension
-  val enter_extension_constructor : extension_constructor -> extension_constructor
+  val enter_extension_constructor :
+    extension_constructor -> extension_constructor
   val enter_exception_declaration :
     exception_declaration -> exception_declaration
   val enter_pattern : pattern -> pattern
@@ -47,7 +48,8 @@ module type MapArgument = sig
   val leave_value_description : value_description -> value_description
   val leave_type_declaration : type_declaration -> type_declaration
   val leave_type_extension : type_extension -> type_extension
-  val leave_extension_constructor : extension_constructor -> extension_constructor
+  val leave_extension_constructor :
+    extension_constructor -> extension_constructor
   val leave_exception_declaration :
     exception_declaration -> exception_declaration
   val leave_pattern : pattern -> pattern
@@ -110,7 +112,7 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_type (List.map (
             fun (id, name, decl) ->
               (id, name, map_type_declaration decl) ) list)
-        | Tstr_extension tyext -> 
+        | Tstr_extension tyext ->
           Tstr_extension (map_type_extension tyext)
         | Tstr_exception (id, name, decl) ->
           Tstr_exception (id, name, map_exception_declaration decl)
@@ -134,7 +136,8 @@ module MakeMap(Map : MapArgument) = struct
               let ci = Map.enter_class_infos ci in
               let ci_params = List.map map_core_type ci.ci_params in
               let ci_expr = map_class_expr ci.ci_expr in
-              (Map.leave_class_infos { ci with ci_params = ci_params; ci_expr = ci_expr},
+              (Map.leave_class_infos
+                 { ci with ci_params = ci_params; ci_expr = ci_expr},
                string_list, virtual_flag)
             ) list
           in
@@ -144,7 +147,8 @@ module MakeMap(Map : MapArgument) = struct
             let ct = Map.enter_class_infos ct in
             let ci_params = List.map map_core_type ct.ci_params in
             let ci_expr = map_class_type ct.ci_expr in
-            (id, name, Map.leave_class_infos { ct with ci_params = ci_params; ci_expr = ci_expr})
+            (id, name, Map.leave_class_infos
+                         { ct with ci_params = ci_params; ci_expr = ci_expr})
           ) list in
           Tstr_class_type list
         | Tstr_include (mexpr, idents) ->
@@ -181,14 +185,14 @@ module MakeMap(Map : MapArgument) = struct
       | Ttype_open -> Ttype_open
     in
     let typ_manifest = may_map map_core_type decl.typ_manifest in
-    Map.leave_type_declaration { decl with typ_params = typ_params; 
+    Map.leave_type_declaration { decl with typ_params = typ_params;
       typ_cstrs = typ_cstrs; typ_kind = typ_kind; typ_manifest = typ_manifest }
 
     and map_type_extension tyext =
       let tyext = Map.enter_type_extension tyext in
       let tyext_params = List.map map_core_type tyext.tyext_params in
-      let tyext_constructors  = 
-        List.map map_extension_constructor tyext.tyext_constructors 
+      let tyext_constructors  =
+        List.map map_extension_constructor tyext.tyext_constructors
       in
       Map.leave_type_extension { tyext with tyext_params = tyext_params;
         tyext_constructors = tyext_constructors }
@@ -417,7 +421,7 @@ module MakeMap(Map : MapArgument) = struct
             (id, name, map_type_declaration decl)
           ) list
         )
-        | Tsig_extension tyext -> 
+        | Tsig_extension tyext ->
           Tsig_extension (map_type_extension tyext)
         | Tsig_exception (id, name, decl) ->
           Tsig_exception (id, name, map_exception_declaration decl)
@@ -451,13 +455,15 @@ module MakeMap(Map : MapArgument) = struct
     let cd = Map.enter_class_description cd in
     let ci_params = List.map map_core_type cd.ci_params in
     let ci_expr = map_class_type cd.ci_expr in
-    Map.leave_class_description { cd with ci_params = ci_params; ci_expr = ci_expr}
+    Map.leave_class_description
+      { cd with ci_params = ci_params; ci_expr = ci_expr}
 
   and map_class_type_declaration cd =
     let cd = Map.enter_class_type_declaration cd in
     let ci_params = List.map map_core_type cd.ci_params in
     let ci_expr = map_class_type cd.ci_expr in
-    Map.leave_class_type_declaration { cd with ci_params = ci_params; ci_expr = ci_expr }
+    Map.leave_class_type_declaration
+      { cd with ci_params = ci_params; ci_expr = ci_expr }
 
   and map_module_type mty =
     let mty = Map.enter_module_type mty in

@@ -112,7 +112,7 @@ module T:
     val map_type_declaration: mapper -> type_declaration -> type_declaration
     val map_type_kind: mapper -> type_kind -> type_kind
     val map_type_extension: mapper -> type_extension -> type_extension
-    val map_extension_constructor: 
+    val map_extension_constructor:
            mapper -> extension_constructor -> extension_constructor
   end
 

@@ -575,7 +575,7 @@ module Analyser =
               (fun (env_acc, exts_acc, _) -> fun {Parsetree.pext_name = { txt = name }} ->
                 let complete_name = Name.concat current_module_name name in
                 let env_acc = Odoc_env.add_extension env_acc complete_name in
-                let types_ext = 
+                let types_ext =
                   try Signature_search.search_extension table name
                   with Not_found ->
                     raise (Failure (Odoc_messages.extension_not_found current_module_name name))
@@ -585,7 +585,7 @@ module Analyser =
               (env, [], None)
               tyext.Parsetree.ptyext_constructors
           in
-          let ty_path, ty_params, priv = 
+          let ty_path, ty_params, priv =
             match last_ext with
               None -> assert false
             | Some ext -> ext.ext_type_path, ext.ext_type_params, ext.ext_private
@@ -593,22 +593,22 @@ module Analyser =
           let new_te =
             {
               te_info = comment_opt;
-              te_type_name = 
+              te_type_name =
                 Odoc_env.full_type_name new_env (Name.from_path ty_path);
-              te_type_parameters = 
+              te_type_parameters =
                 List.map (Odoc_env.subst_type new_env) ty_params;
               te_private = priv;
               te_constructors = [];
               te_loc = { loc_impl = None ; loc_inter = Some sig_item_loc} ;
               te_code =
                 (
-		  if !Odoc_global.keep_code then
-		    Some (get_string_of_file pos_start_ele pos_end_ele)
-		  else
-		    None
-		) ;
-	    }
-	  in
+                  if !Odoc_global.keep_code then
+                    Some (get_string_of_file pos_start_ele pos_end_ele)
+                  else
+                    None
+                ) ;
+            }
+          in
           let rec analyse_extension_constructors maybe_more exts_acc types_ext_list =
             match types_ext_list with
               [] -> (maybe_more, List.rev exts_acc)
@@ -625,14 +625,14 @@ module Analyser =
                   xt_text = None;
                 }
               in
-              let pos_limit2 = 
+              let pos_limit2 =
                 match q with
                   [] -> pos_limit
                 | (_, next) :: _ -> next.Types.ext_loc.Location.loc_start.Lexing.pos_cnum
               in
               let s = get_string_of_file ext_loc_end pos_limit2 in
               let (maybe_more, com_opt) =  My_ir.just_after_special !file_name s in
-              let comment_opt = 
+              let comment_opt =
                 match com_opt with
                   None -> None
                 | Some d -> d.Odoc_types.i_desc

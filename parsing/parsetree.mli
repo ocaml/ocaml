@@ -147,7 +147,7 @@ and type_kind =
       (string loc * mutable_flag * core_type * Location.t) list
   | Ptype_open
 
-and type_extension = 
+and type_extension =
   { ptyext_path: Longident.t loc;
     ptyext_params: core_type list;
     ptyext_constructors: extension_constructor list;
@@ -159,7 +159,7 @@ and extension_constructor =
     pext_kind : extension_constructor_kind;
     pext_loc : Location.t }
 
-and extension_constructor_kind = 
+and extension_constructor_kind =
     Pext_decl of core_type list * core_type option
   | Pext_rebind of Longident.t loc
 

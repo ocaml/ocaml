@@ -119,7 +119,7 @@ let nondep_supertype env mid mty =
           :: rem'
       | Sig_extension(id, ext, es) ->
           Sig_extension(id, Ctype.nondep_extension_constructor env mid ext, es)
-	  :: rem'
+          :: rem'
       | Sig_exception(id, d) ->
           let d = {exn_args = List.map (Ctype.nondep_type env mid) d.exn_args;
                    exn_loc = d.exn_loc} in

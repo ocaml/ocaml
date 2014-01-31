@@ -263,7 +263,7 @@ and signatures env cxt subst sig1 sig2 =
                 Subst.add_module id2 (Pident id1) subst
             | Sig_modtype _ ->
                 Subst.add_modtype id2 (Mty_ident (Pident id1)) subst
-            | Sig_value _ | Sig_extension _ 
+            | Sig_value _ | Sig_extension _
             | Sig_exception _ | Sig_class _ | Sig_class_type _ ->
                 subst
           in

@@ -812,7 +812,7 @@ let rec tree_of_type_decl id decl =
           decl.type_private = Private ||
           List.exists (fun (_,_,ret) -> ret <> None) tll
       | Type_open ->
-	  decl.type_manifest = None
+          decl.type_manifest = None
     in
     let vari =
       List.map2
@@ -847,8 +847,8 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
         decl.type_private
     | Type_open ->
-	tree_of_manifest Otyp_open,
-	Public
+        tree_of_manifest Otyp_open,
+        Public
   in
     { otype_name = name;
       otype_params = args;
@@ -865,7 +865,6 @@ and tree_of_constructor (name, args, ret_type_opt) =
   let args = tree_of_typlist false args in
   names := nm;
   (name, args, ret)
-    
 
 and tree_of_label (name, mut, arg) =
   (Ident.name name, mut = Mutable, tree_of_typexp false arg)
@@ -892,13 +891,13 @@ let tree_of_extension_constructor id ext es =
     | Otyp_var (_, id) -> id
     | _ -> "?"
   in
-  let ty_params = 
-    List.map (fun ty -> type_param (tree_of_typexp false ty)) ty_params 
+  let ty_params =
+    List.map (fun ty -> type_param (tree_of_typexp false ty)) ty_params
   in
-  let name, args, ret = 
-    tree_of_constructor (id, ext.ext_args, ext.ext_ret_type) 
+  let name, args, ret =
+    tree_of_constructor (id, ext.ext_args, ext.ext_ret_type)
   in
-  let ext = 
+  let ext =
     { oext_name = name;
       oext_type_name = ty_name;
       oext_type_params = ty_params;
@@ -906,9 +905,9 @@ let tree_of_extension_constructor id ext es =
       oext_ret_type = ret;
       oext_private = ext.ext_private }
   in
-  let es = 
+  let es =
     match es with
-	Text_first -> Oext_first
+        Text_first -> Oext_first
       | Text_next -> Oext_next
   in
     Osig_extension (ext, es)

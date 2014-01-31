@@ -387,25 +387,27 @@ and print_out_signature ppf =
   | [(Osig_extension ext Oext_first) :: items] ->
       (* Gather together the extension constructors *)
       let rec gather_extensions acc items =
-	match items with
-	  [ [(Osig_extension ext Oext_next) :: items] ->
-	      gather_extensions 
-                [(ext.oext_name,ext.oext_args,ext.oext_ret_type) :: acc] 
+        match items with
+          [ [(Osig_extension ext Oext_next) :: items] ->
+            gather_extensions
+                [(ext.oext_name,ext.oext_args,ext.oext_ret_type) :: acc]
                 items
-	  | _ -> (List.rev acc, items)]
+          | _ -> (List.rev acc, items)]
       in
-      let (exts, items) = 
+      let (exts, items) =
         gather_extensions 
-          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)] 
-          items 
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)]
+          items
       in
-      let te = 
+      let te =
         { otyext_name = ext.oext_type_name;
           otyext_params = ext.oext_type_params;
           otyext_constructors = exts;
           otyext_private = ext.oext_private }
       in
-	fprintf ppf "%a@ %a" Toploop.print_out_type_extension.val te print_out_signature items
+        fprintf ppf "%a@ %a"
+                Toploop.print_out_type_extension.val te
+                print_out_signature items
   | [item :: items] ->
       let sep = match items with
       [ [hd :: _] -> if needs_semi hd then ";" else ""
@@ -472,13 +474,13 @@ and print_out_type_decl kwd ppf td =
           (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) td.otype_params ]
   in
   let print_private ppf priv =
-    if priv = Obj.magic Camlp4_import.Asttypes.Private then 
+    if priv = Obj.magic Camlp4_import.Asttypes.Private then
       fprintf ppf " private"
     else ()
   in
   let print_kind ppf ty =
     fprintf ppf "%a@ %a"
-      print_private td.otype_private 
+      print_private td.otype_private
       Toploop.print_out_type.val ty
   in
   let print_types ppf = fun
@@ -504,19 +506,19 @@ and print_out_extension_constructor ppf ext =
   let type_extended ppf =
     match ext.oext_type_params with
       [ [] -> fprintf ppf "%s" ext.oext_type_name
-      | [ty_param] -> 
-        fprintf ppf "%s %a" 
+      | [ty_param] ->
+        fprintf ppf "%s %a"
           ext.oext_type_name
-          print_type_parameter 
+          print_type_parameter
           ty_param
       | _ ->
-        fprintf ppf "%s@ %a" 
+        fprintf ppf "%s@ %a"
           ext.oext_type_name
-          (print_list print_type_parameter (fun ppf -> fprintf ppf "@ ")) 
+          (print_list print_type_parameter (fun ppf -> fprintf ppf "@ "))
           ext.oext_type_params ]
   in
   let print_private ppf priv =
-    if priv = Obj.magic Camlp4_import.Asttypes.Private then 
+    if priv = Obj.magic Camlp4_import.Asttypes.Private then
       fprintf ppf " private"
     else ()
   in
@@ -533,19 +535,19 @@ and print_out_type_extension ppf te =
   let type_extended ppf =
     match te.otyext_params with
       [ [] -> fprintf ppf "%s" te.otyext_name
-      | [ty_param] -> 
-        fprintf ppf "%s %a" 
-          te.otyext_name 
-          print_type_parameter 
+      | [ty_param] ->
+        fprintf ppf "%s %a"
+          te.otyext_name
+          print_type_parameter
           ty_param
       | _ ->
-        fprintf ppf "%s %a" 
+        fprintf ppf "%s %a"
           te.otyext_name
-          (print_list print_type_parameter (fun ppf -> fprintf ppf "@ ")) 
+          (print_list print_type_parameter (fun ppf -> fprintf ppf "@ "))
           te.otyext_params ]
   in
   let print_private ppf priv =
-    if priv = Obj.magic Camlp4_import.Asttypes.Private then 
+    if priv = Obj.magic Camlp4_import.Asttypes.Private then
       fprintf ppf " private"
     else ()
   in
@@ -574,17 +576,17 @@ value rec print_items ppf =
   | [((Osig_extension ext Oext_first), None) :: items] ->
       (* Gather together extension constructors *)
       let rec gather_extensions acc items =
-	match items with
-	  [ [((Osig_extension ext Oext_next), None) :: items] ->
-	      gather_extensions 
-                [(ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc] 
+        match items with
+          [ [((Osig_extension ext Oext_next), None) :: items] ->
+            gather_extensions
+                [(ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc]
                 items
-	  | _ -> (List.rev acc, items) ]
+          | _ -> (List.rev acc, items) ]
       in
-      let (exts, items) = 
-        gather_extensions 
-          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)] 
-          items 
+      let (exts, items) =
+        gather_extensions
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)]
+          items
       in
       let te =
         { otyext_name = ext.oext_type_name;

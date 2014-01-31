@@ -62,10 +62,10 @@ let type_declaration sub decl =
   opt (sub # core_type) decl.typ_manifest
 
 let type_extension sub te =
-  let extension_constructors ext = 
+  let extension_constructors ext =
     match ext.ext_kind with
-      Text_decl(ctl, cto) -> 
-        List.iter (sub # core_type) ctl; 
+      Text_decl(ctl, cto) ->
+        List.iter (sub # core_type) ctl;
         opt (sub # core_type) cto
     | Text_rebind _ -> ()
   in

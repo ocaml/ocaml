@@ -287,7 +287,7 @@ class scan =
     method! scan_type_pre t =
       add_known_element t.ty_name (Odoc_search.Res_type t);
       true
-    method! scan_extension_constructor x = 
+    method! scan_extension_constructor x =
       add_known_element x.xt_name (Odoc_search.Res_extension x)
     method! scan_exception e =
       add_known_element e.ex_name (Odoc_search.Res_exception e)
@@ -647,24 +647,24 @@ and associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct.clt_kind
 
 and associate_in_type_extension module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) te =
-  List.fold_left 
+  List.fold_left
     (fun (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) xt ->
        match xt.xt_alias with
-	   None -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
+           None -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
          | Some xa ->
-	     match xa.xa_xt with
-		 Some _ ->
-		   (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
-	       | None ->
-		   let xt_opt =
-		     try Some (lookup_extension xa.xa_name)
-		     with Not_found -> None
-		   in
-		     match xt_opt with
-			 None -> (acc_b_modif, (Name.head xt.xt_name) :: acc_incomplete_top_module_names, (NF_xt xa.xa_name) :: acc_names_not_found)
-		       | Some x ->
-			   xa.xa_xt <- Some x ;
-			   (true, acc_incomplete_top_module_names, acc_names_not_found))
+             match xa.xa_xt with
+                 Some _ ->
+                   (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
+               | None ->
+                   let xt_opt =
+                     try Some (lookup_extension xa.xa_name)
+                     with Not_found -> None
+                   in
+                     match xt_opt with
+                         None -> (acc_b_modif, (Name.head xt.xt_name) :: acc_incomplete_top_module_names, (NF_xt xa.xa_name) :: acc_names_not_found)
+                       | Some x ->
+                           xa.xa_xt <- Some x ;
+                           (true, acc_incomplete_top_module_names, acc_names_not_found))
     (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
     te.te_constructors
 

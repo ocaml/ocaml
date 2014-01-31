@@ -14,7 +14,7 @@ Error: Cannot extend type definition foo
 Error: This extension does not match the definition of type foo
        They have different arities.
 #                 module type S = sig type foo type foo += A of float end
-#                 Characters 85-107:
+#                 Characters 84-106:
     type foo += B of float (* Error foo does not have an extensible type *)
     ^^^^^^^^^^^^^^^^^^^^^^
 Error: Type foo is not extensible
@@ -101,4 +101,4 @@ Error: In this definition, expected parameter variances are not satisfied.
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This extension does not match the definition of type bar
        Their variances do not agree.
-#   
+# 

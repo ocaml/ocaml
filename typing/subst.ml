@@ -180,7 +180,7 @@ let type_declaration s decl =
             Type_record
               (List.map (fun (n, mut, arg) -> (n, mut, typexp s arg)) lbls,
                rep)
-	| Type_open -> Type_open
+        | Type_open -> Type_open
         end;
       type_manifest =
         begin
@@ -254,7 +254,7 @@ let value_description s descr =
     val_loc = if s.for_saving then Location.none else descr.val_loc;
    }
 
-let extension_constructor s ext = 
+let extension_constructor s ext =
   let ext =
     { ext_type_path = type_path s ext.ext_type_path;
       ext_type_params = List.map (typexp s) ext.ext_type_params;

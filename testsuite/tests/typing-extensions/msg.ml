@@ -12,10 +12,10 @@ module Msg : sig
 
   type 'a tag += Int : int tag
 
-  module type Desc = sig 
-    type t 
+  module type Desc = sig
+    type t
     val label : string
-    val write : t -> string 
+    val write : t -> string
     val read : string -> t
   end
 
@@ -29,7 +29,7 @@ end = struct
 
   type ktag = T : 'a tag -> ktag
 
-  type 'a kind = 
+  type 'a kind =
   { tag : 'a tag;
     label : string;
     write : 'a -> string;
@@ -53,9 +53,10 @@ end = struct
         let body = k.read content in
           Result(k.tag, body)
 
-  let write_raw (label : string) (content : string) = raise (Failure "Not implemented")
+  let write_raw (label : string) (content : string) =
+    raise (Failure "Not implemented")
 
-  let write (tag : 'a tag) (body : 'a) = 
+  let write (tag : 'a tag) (body : 'a) =
     let {f} = Hashtbl.find writeTbl (T tag) in
     let k = f tag in
     let content = k.write body in
@@ -65,7 +66,7 @@ end = struct
 
   type 'a tag += Int : int tag
 
-  let ik = 
+  let ik =
     { tag = Int;
       label = "int";
       write = string_of_int;
@@ -73,35 +74,35 @@ end = struct
 
   let () = Hashtbl.add readTbl "int" (K ik)
 
-  let () = 
-    let f (type t) (i : t tag) : t kind = 
-      match i with 
-        Int -> ik 
+  let () =
+    let f (type t) (i : t tag) : t kind =
+      match i with
+        Int -> ik
       | _ -> assert false
     in
       Hashtbl.add writeTbl (T Int) {f}
 
   (* Support user defined kinds *)
 
-  module type Desc = sig 
-    type t 
+  module type Desc = sig
+    type t
     val label : string
-    val write : t -> string 
+    val write : t -> string
     val read : string -> t
   end
 
   module Define (D : Desc) = struct
     type 'a tag += C : D.t tag
-    let k = 
+    let k =
       { tag = C;
         label = D.label;
         write = D.write;
         read = D.read }
     let () = Hashtbl.add readTbl D.label (K k)
-    let () = 
-      let f (type t) (c : t tag) : t kind = 
-        match c with 
-          C -> k 
+    let () =
+      let f (type t) (c : t tag) : t kind =
+        match c with
+          C -> k
         | _ -> assert false
       in
         Hashtbl.add writeTbl (T C) {f}

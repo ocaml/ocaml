@@ -72,30 +72,30 @@ let view_symbol ~kind ~env ?path id =
       let cd = lookup_constructor id env in
       begin match cd.cstr_res.desc with
         Tconstr (cpath, cargs, _) -> begin
-	  match cd.cstr_tag with
-	      Cstr_exception _ ->
-                let exn = 
+          match cd.cstr_tag with
+              Cstr_exception _ ->
+                let exn =
                   { Types.exn_loc = Location.none;
                     exn_args = cd.cstr_args }
                 in
-		  view_signature ~title:(string_of_longident id) ~env ?path
-		    [Sig_exception (Ident.create name, exn)]
-	    | Cstr_ext_constant _ | Cstr_ext_block _ ->
-		let ext =
-		  { Types.ext_loc = Location.none;
+                  view_signature ~title:(string_of_longident id) ~env ?path
+                    [Sig_exception (Ident.create name, exn)]
+            | Cstr_ext_constant _ | Cstr_ext_block _ ->
+                let ext =
+                  { Types.ext_loc = Location.none;
                     ext_type_path = cpath;
-		    ext_type_params = 
-		      if cd.cstr_generalized then List.map (fun _ -> Ctype.newvar ()) cargs
-		      else cargs;
-		    ext_args = cd.cstr_args;
-		    ext_ret_type = if cd.cstr_generalized then Some cd.cstr_res else None;
-		    ext_private = cd.cstr_private }
-		in
-		  view_signature ~title:(string_of_longident id) ~env ?path
-		    [Sig_extension (Ident.create name, ext, Text_first)]
-	    | Cstr_constant _ | Cstr_block _ ->
-		view_type_decl cpath ~env
-	end
+                    ext_type_params =
+                      if cd.cstr_generalized then List.map (fun _ -> Ctype.newvar ()) cargs
+                      else cargs;
+                    ext_args = cd.cstr_args;
+                    ext_ret_type = if cd.cstr_generalized then Some cd.cstr_res else None;
+                    ext_private = cd.cstr_private }
+                in
+                  view_signature ~title:(string_of_longident id) ~env ?path
+                    [Sig_extension (Ident.create name, ext, Text_first)]
+            | Cstr_constant _ | Cstr_block _ ->
+                view_type_decl cpath ~env
+        end
       | _ -> ()
       end
   | Pmodule -> view_module_id id ~env

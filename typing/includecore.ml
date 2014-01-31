@@ -278,21 +278,21 @@ let extension_constructors env id ext1 ext2 =
     Btype.newgenty (Tconstr(ext2.ext_type_path, ext2.ext_type_params, ref Mnil))
   in
   if Ctype.equal env true [ty1] [ty2] then
-    if List.length ext1.ext_args = List.length ext2.ext_args then 
+    if List.length ext1.ext_args = List.length ext2.ext_args then
       if match ext1.ext_ret_type, ext2.ext_ret_type with
-	  Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) -> false
-	| Some _, None | None, Some _ -> false
-	| _ -> 
-	    Misc.for_all2 
-	      (fun ty1 ty2 -> 
-                Ctype.equal env true 
-                  (ty1 :: ext1.ext_type_params) 
+          Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) -> false
+        | Some _, None | None, Some _ -> false
+        | _ ->
+            Misc.for_all2
+              (fun ty1 ty2 ->
+                Ctype.equal env true
+                  (ty1 :: ext1.ext_type_params)
                   (ty2 :: ext2.ext_type_params))
-	      ext1.ext_args ext2.ext_args
+              ext1.ext_args ext2.ext_args
       then
-	match ext1.ext_private, ext2.ext_private with
-	    Private, Public -> false
-	  | _, _ -> true
+        match ext1.ext_private, ext2.ext_private with
+            Private, Public -> false
+          | _, _ -> true
       else false
     else false
   else false

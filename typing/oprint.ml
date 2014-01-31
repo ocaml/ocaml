@@ -358,19 +358,19 @@ and print_out_signature ppf =
   | Osig_extension(ext, Oext_first) :: items ->
       (* Gather together the extension constructors *)
       let rec gather_extensions acc items =
-	match items with
-	    Osig_extension(ext, Oext_next) :: items ->
-              gather_extensions 
-                ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc) 
+        match items with
+            Osig_extension(ext, Oext_next) :: items ->
+              gather_extensions
+                ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc)
                 items
-	  | _ -> (List.rev acc, items)
+          | _ -> (List.rev acc, items)
       in
-      let exts, items = 
-        gather_extensions 
-          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)] 
-          items 
+      let exts, items =
+        gather_extensions
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)]
+          items
       in
-      let te = 
+      let te =
         { otyext_name = ext.oext_type_name;
           otyext_params = ext.oext_type_params;
           otyext_constructors = exts;
@@ -435,8 +435,8 @@ and print_out_type_decl kwd ppf td =
     | [param] -> fprintf ppf "@[%a@ %s@]" type_parameter param td.otype_name
     | _ ->
         fprintf ppf "@[(@[%a)@]@ %s@]"
-          (print_list type_parameter (fun ppf -> fprintf ppf ",@ ")) 
-          td.otype_params 
+          (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
+          td.otype_params
           td.otype_name
   in
   let print_manifest ppf =
@@ -454,7 +454,7 @@ and print_out_type_decl kwd ppf td =
   in
   let print_private ppf = function
     Asttypes.Private -> fprintf ppf " private"
-  | Asttypes.Public -> () 
+  | Asttypes.Public -> ()
   in
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
@@ -511,15 +511,15 @@ and print_out_extension_constructor ppf ext =
     in
       match ext.oext_type_params with
         [] -> fprintf ppf "%s" ext.oext_type_name
-      | [ty_param] -> 
-        fprintf ppf "@[%a@ %s@]" 
-          print_type_parameter 
-          ty_param 
+      | [ty_param] ->
+        fprintf ppf "@[%a@ %s@]"
+          print_type_parameter
+          ty_param
           ext.oext_type_name
       | _ ->
         fprintf ppf "@[(@[%a)@]@ %s@]"
-          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ ")) 
-          ext.oext_type_params 
+          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
+          ext.oext_type_params
           ext.oext_type_name
   in
   fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
@@ -535,20 +535,20 @@ and print_out_type_extension ppf te =
     in
     match te.otyext_params with
       [] -> fprintf ppf "%s" te.otyext_name
-    | [param] -> 
-      fprintf ppf "@[%a@ %s@]" 
-        print_type_parameter param 
+    | [param] ->
+      fprintf ppf "@[%a@ %s@]"
+        print_type_parameter param
         te.otyext_name
     | _ ->
         fprintf ppf "@[(@[%a)@]@ %s@]"
-          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ ")) 
-          te.otyext_params 
+          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
+          te.otyext_params
           te.otyext_name
   in
   fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
     print_extended_type
     (if te.otyext_private = Asttypes.Private then " private" else "")
-    (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) 
+    (print_list print_out_constr (fun ppf -> fprintf ppf "@ | "))
     te.otyext_constructors
 
 let _ = out_module_type := print_out_module_type
@@ -572,26 +572,26 @@ let rec print_items ppf =
   | (Osig_extension(ext, Oext_first), None) :: items ->
       (* Gather together extension constructors *)
       let rec gather_extensions acc items =
-	match items with
-	    (Osig_extension(ext, Oext_next), None) :: items ->
-	      gather_extensions 
-                ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc) 
+        match items with
+            (Osig_extension(ext, Oext_next), None) :: items ->
+              gather_extensions
+                ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc)
                 items
-	  | _ -> (List.rev acc, items)
+          | _ -> (List.rev acc, items)
       in
-      let exts, items = 
-        gather_extensions 
-          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)] 
-          items 
+      let exts, items =
+        gather_extensions
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)]
+          items
       in
-      let te = 
+      let te =
         { otyext_name = ext.oext_type_name;
           otyext_params = ext.oext_type_params;
           otyext_constructors = exts;
           otyext_private = ext.oext_private }
       in
-	fprintf ppf "@[%a@]" !out_type_extension te;
-	if items <> [] then fprintf ppf "@ %a" print_items items
+        fprintf ppf "@[%a@]" !out_type_extension te;
+        if items <> [] then fprintf ppf "@ %a" print_items items
   | (tree, valopt) :: items ->
       begin match valopt with
         Some v ->

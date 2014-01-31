@@ -204,7 +204,7 @@ let type_variable loc name =
   with Not_found ->
     raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
 
-let transl_type_param env strict styp = 
+let transl_type_param env strict styp =
   let loc = styp.ptyp_loc in
   match styp.ptyp_desc with
     Ptyp_any ->
@@ -270,7 +270,7 @@ let rec transl_type env policy styp =
       let (path, decl) = find_type env styp.ptyp_loc lid.txt in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
-		    Type_arity_mismatch(lid.txt, decl.type_arity,
+                    Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
       let args = List.map (transl_type env policy) stl in
       let params = instance_list decl.type_params in

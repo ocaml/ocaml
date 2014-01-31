@@ -1347,11 +1347,12 @@ and is_nonexpansive_mod mexp =
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun (_, _, _, m) -> is_nonexpansive_mod m)
                 id_mod_list
-	  | Tstr_exception _ -> false (* true would be unsound *)
+          | Tstr_exception _ -> false (* true would be unsound *)
           | Tstr_extension te ->
-	      List.for_all 
-		(function {ext_kind = Text_decl _} -> false | {ext_kind = Text_rebind _} -> true)
-		te.tyext_constructors
+              List.for_all
+                (function {ext_kind = Text_decl _} -> false
+                        | {ext_kind = Text_rebind _} -> true)
+                te.tyext_constructors
           | Tstr_class _ -> false (* could be more precise *)
         )
         str.str_items

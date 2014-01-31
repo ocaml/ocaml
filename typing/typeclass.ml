@@ -1200,7 +1200,7 @@ let class_infos define_class kind
 
   (* Introduce class parameters *)
   let ci_params, params =
-    let make_param sty = 
+    let make_param sty =
       try
         let cty = transl_type_param env true sty in
           cty, cty.ctyp_type

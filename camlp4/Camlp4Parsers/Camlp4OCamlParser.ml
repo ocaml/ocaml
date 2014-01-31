@@ -620,9 +620,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ctyp_quot:
       [ [ "private"; t = ctyp_quot -> <:ctyp< private $t$ >>
         | "|"; t = constructor_declarations -> <:ctyp< [ $t$ ] >>
-        | x = TRY [i = a_UIDENT; "=" -> i]; 
+        | x = TRY [i = a_UIDENT; "=" -> i];
             y = type_longident -> <:ctyp< $uid:x$ = $id:y$ >>
-        | x = TRY [i = a_UIDENT; "=" -> i]; 
+        | x = TRY [i = a_UIDENT; "=" -> i];
             y = type_longident; "|"; z = constructor_declarations ->
               <:ctyp< $ <:ctyp< $uid:x$ = $id:y$ >> $ | $z$ >>
         | x = more_ctyp; "="; y = ctyp_quot -> <:ctyp< $x$ == $y$ >>

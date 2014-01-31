@@ -128,7 +128,7 @@ module StringSet =
   end)
 
 let make_params env params =
-  let make_param sty = 
+  let make_param sty =
     try
       transl_type_param env true sty
     with Already_bound ->
@@ -287,7 +287,7 @@ let generalize_decl decl =
         v
   | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
-  | Type_open -> 
+  | Type_open ->
       ()
   end;
   begin match decl.type_manifest with
@@ -387,7 +387,7 @@ let check_constraints env (_, sdecl) (_, decl) =
 *)
 let check_coherence env loc id decl =
   match decl with
-    { type_kind = (Type_variant _ | Type_record _| Type_open); 
+    { type_kind = (Type_variant _ | Type_record _| Type_open);
       type_manifest = Some ty } ->
       begin match (Ctype.repr ty).desc with
         Tconstr(path, args, _) ->
@@ -719,12 +719,12 @@ let compute_variance_gadt env check (required, loc as rloc) decl
       | _ -> assert false
 
 let compute_variance_extension env check decl name ext rloc =
-  compute_variance_gadt env check rloc 
+  compute_variance_gadt env check rloc
     {decl with type_params = ext.ext_type_params}
     (name, ext.ext_args, ext.ext_ret_type)
-            
+
 let compute_variance_decl env check decl (required, loc as rloc) =
-  if (decl.type_kind = Type_abstract || decl.type_kind = Type_open) 
+  if (decl.type_kind = Type_abstract || decl.type_kind = Type_open)
        && decl.type_manifest = None then
     List.map
       (fun (c, n, i) ->
@@ -756,8 +756,8 @@ let compute_variance_decl env check decl (required, loc as rloc) =
         | _ -> assert false
       end
   | Type_record (ftl, _) ->
-        compute_variance_type env check rloc decl
-          (mn @ List.map (fun (_, mut, ty) -> (mut = Mutable, ty)) ftl)
+      compute_variance_type env check rloc decl
+        (mn @ List.map (fun (_, mut, ty) -> (mut = Mutable, ty)) ftl)
 
 let is_sharp id =
   let s = Ident.name id in
@@ -984,7 +984,8 @@ let transl_type_decl env name_sdecl_list =
 
 (* Translating type extensions *)
 
-let transl_extension_constructor env check_open type_decl type_path type_params priv sext =
+let transl_extension_constructor env check_open type_decl
+                                 type_path type_params priv sext =
   let name = Ident.create sext.pext_name.txt in
     match sext.pext_kind with
       Pext_decl(args, None) ->
@@ -992,74 +993,76 @@ let transl_extension_constructor env check_open type_decl type_path type_params 
           match type_decl.type_kind with
             Type_open -> ()
           | Type_abstract ->
-            if check_open then raise (Error(sext.pext_loc, Not_open_type type_path))
+              if check_open then
+                raise (Error(sext.pext_loc, Not_open_type type_path))
           | _ -> assert false
         end;
-	let targs = List.map (transl_simple_type env true) args in
+        let targs = List.map (transl_simple_type env true) args in
         let args = List.map (fun cty -> cty.ctyp_type) targs in
-	let ext =
-	  { ext_type_path = type_path;
-	    ext_type_params = type_params;
-	    ext_args = args;
-	    ext_ret_type = None;
-	    ext_private = priv;
-	    Types.ext_loc = sext.pext_loc }
-	in
+        let ext =
+          { ext_type_path = type_path;
+            ext_type_params = type_params;
+            ext_args = args;
+            ext_ret_type = None;
+            ext_private = priv;
+            Types.ext_loc = sext.pext_loc }
+        in
           { ext_name = name;
             ext_name_txt = sext.pext_name;
             ext_type = ext;
             ext_kind = Text_decl(targs, None);
             Typedtree.ext_loc = sext.pext_loc }
-	      
+
     | Pext_decl(args, Some ret_type) ->
         begin
           match type_decl.type_kind with
             Type_open -> ()
           | Type_abstract ->
-            if check_open then raise (Error(sext.pext_loc, Not_open_type type_path))
+              if check_open then
+                raise (Error(sext.pext_loc, Not_open_type type_path))
           | _ -> assert false
         end;
-        let z = narrow () in 
-	reset_type_variables ();
-	let targs = List.map (transl_simple_type env false) args in 
+        let z = narrow () in
+        reset_type_variables ();
+        let targs = List.map (transl_simple_type env false) args in
         let args = List.map (fun cty -> cty.ctyp_type) targs in
-	let tret_type = transl_simple_type env false ret_type in
-        let ret_type = 
+        let tret_type = transl_simple_type env false ret_type in
+        let ret_type =
           let ty = tret_type.ctyp_type in
-	  match (Ctype.repr ty).desc with
-	      Tconstr (p, _, _) when Path.same type_path p -> ty
-            | _ -> 
-              raise(Error(sext.pext_loc, 
+          match (Ctype.repr ty).desc with
+              Tconstr (p, _, _) when Path.same type_path p -> ty
+            | _ ->
+              raise(Error(sext.pext_loc,
                 Constraint_failed (ty, Ctype.newconstr type_path type_params)))
-	in
-	  widen z;
-	  let ext =
-	    { ext_type_path = type_path;
-	      ext_type_params = type_params;
-	      ext_args = args;
-	      ext_ret_type = Some ret_type;
-	      ext_private = priv;
-	      Types.ext_loc = sext.pext_loc; }
-	  in
+        in
+          widen z;
+          let ext =
+            { ext_type_path = type_path;
+              ext_type_params = type_params;
+              ext_args = args;
+              ext_ret_type = Some ret_type;
+              ext_private = priv;
+              Types.ext_loc = sext.pext_loc; }
+          in
             { ext_name = name;
               ext_name_txt = sext.pext_name;
               ext_type = ext;
               ext_kind = Text_decl(targs, Some tret_type);
               Typedtree.ext_loc = sext.pext_loc }
-	      
+
     | Pext_rebind lid ->
       let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
         Env.mark_constructor Env.Positive env (Longident.last lid.txt) cdescr;
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
-        let ret_type = 
-          Ctype.newconstr type_path 
+        let ret_type =
+          Ctype.newconstr type_path
             (Ctype.instance_list env type_decl.type_params)
         in
           begin
             try
               Ctype.unify env cstr_res ret_type
             with Ctype.Unify trace ->
-              raise (Error(lid.loc, 
+              raise (Error(lid.loc,
                      Rebind_wrong_type(lid.txt, env, trace)))
           end;
           (* Disallow rebinding private constructors to non-private *)
@@ -1069,13 +1072,13 @@ let transl_extension_constructor env check_open type_decl type_path type_params 
                 raise (Error(lid.loc, Rebind_private lid.txt))
             | _ -> ()
           end;
-          let path = 
+          let path =
             match cdescr.cstr_tag with
               Cstr_ext_constant(path, _) -> path
             | Cstr_ext_block(path, _) -> path
             | _ -> assert false
           in
-          let ext = 
+          let ext =
             { ext_type_path = type_path;
               ext_type_params = type_params;
               ext_args = args;
@@ -1092,23 +1095,23 @@ let transl_extension_constructor env check_open type_decl type_path type_params 
 let transl_type_extension check_open env loc styext =
   reset_type_variables();
   Ctype.begin_def();
-  let (type_path, type_decl) = 
-    Typetexp.find_type env loc styext.ptyext_path.txt 
-  in 
+  let (type_path, type_decl) =
+    Typetexp.find_type env loc styext.ptyext_path.txt
+  in
   begin
     match type_decl.type_kind with
       Type_open | Type_abstract -> ()
     | _ -> raise (Error(loc, Not_extensible_type type_path))
   end;
-  let type_variance = 
+  let type_variance =
     List.map (fun v ->
                 let (co, cn) = Variance.get_upper v in
                   (not cn, not co))
              type_decl.type_variance
   in
   let err =
-    if type_decl.type_arity <> List.length styext.ptyext_params then 
-      [Includecore.Arity] 
+    if type_decl.type_arity <> List.length styext.ptyext_params then
+      [Includecore.Arity]
     else
       if List.for_all2
         (fun (c1, n1) (c2, n2) -> (not c2 || c1) && (not n2 || n1))
@@ -1119,10 +1122,10 @@ let transl_type_extension check_open env loc styext =
     raise (Error(loc, Extension_mismatch (type_path, err)));
   let ttype_params = make_params env styext.ptyext_params in
   let type_params = List.map (fun cty -> cty.ctyp_type) ttype_params in
-  List.iter2 (Ctype.unify_var env) 
-    (Ctype.instance_list env type_decl.type_params) 
+  List.iter2 (Ctype.unify_var env)
+    (Ctype.instance_list env type_decl.type_params)
     type_params;
-  let constructors = 
+  let constructors =
     List.map (transl_extension_constructor env check_open type_decl
                 type_path type_params styext.ptyext_private)
       styext.ptyext_constructors
@@ -1130,21 +1133,22 @@ let transl_type_extension check_open env loc styext =
   Ctype.end_def();
   (* Generalize types *)
   List.iter Ctype.generalize type_params;
-  List.iter 
-    (fun ext -> 
+  List.iter
+    (fun ext ->
        List.iter Ctype.generalize ext.ext_type.ext_args;
        may Ctype.generalize ext.ext_type.ext_ret_type)
     constructors;
   (* Check variances are correct *)
-  List.iter 
-    (fun ext-> ignore (compute_variance_extension env true type_decl 
-                         ext.ext_name ext.ext_type (add_injectivity type_variance, loc)))
+  List.iter
+    (fun ext->
+      ignore (compute_variance_extension env true type_decl
+                ext.ext_name ext.ext_type (add_injectivity type_variance, loc)))
     constructors;
   (* Add extension constructors to the environment *)
-  let newenv = 
-    List.fold_left 
-      (fun env ext -> Env.add_extension ext.ext_name ext.ext_type env) 
-      env constructors 
+  let newenv =
+    List.fold_left
+      (fun env ext -> Env.add_extension ext.ext_name ext.ext_type env)
+      env constructors
   in
   let tyext =
     { tyext_path = type_path;
@@ -1155,7 +1159,7 @@ let transl_type_extension check_open env loc styext =
       tyext_variance = styext.ptyext_variance }
   in
     (tyext, newenv)
-	  
+
 (* Translate an exception declaration *)
 let transl_closed_type env sty =
   let cty = transl_simple_type env true sty in
@@ -1417,20 +1421,20 @@ let report_error ppf = function
   | Unbound_type_var_exc (tv, ty) ->
       fprintf ppf "A type variable is unbound in this exception declaration";
       explain_unbound_single ppf (Ctype.repr tv) ty
-  | Not_open_type path -> 
+  | Not_open_type path ->
       fprintf ppf "@[%s@ %a@]"
-	"Cannot extend type definition"
-	Printtyp.path path
-  | Not_extensible_type path -> 
+        "Cannot extend type definition"
+        Printtyp.path path
+  | Not_extensible_type path ->
       fprintf ppf "@[%s@ %a@ %s@]"
-	"Type"
-	Printtyp.path path
-	"is not extensible"
+        "Type"
+        Printtyp.path path
+        "is not extensible"
   | Extension_mismatch (path, errs) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%s@]%a@]"
         "This extension" "does not match the definition of type"
         (Path.name path)
-        (Includecore.report_type_mismatch 
+        (Includecore.report_type_mismatch
            "the type" "this extension" "definition")
         errs
   | Rebind_wrong_type (lid, env, trace) ->
@@ -1442,9 +1446,9 @@ let report_error ppf = function
            fprintf ppf "but was expected to be of type")
   | Rebind_private lid ->
       fprintf ppf "@[%s@ %a@ %s@]"
-	"The constructor"
-	Printtyp.longident lid
-	"is private"
+        "The constructor"
+        Printtyp.longident lid
+        "is private"
   | Not_an_exception lid ->
       fprintf ppf "The constructor@ %a@ is not an exception"
         Printtyp.longident lid

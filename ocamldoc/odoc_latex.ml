@@ -630,7 +630,7 @@ class latex =
                  )
               ) @
               [ CodePre "}" ]
-	  | Type_open -> []
+          | Type_open -> []
 
         in
         let defs2 = (CodePre s_type3) :: defs in
@@ -655,60 +655,60 @@ class latex =
         let (fmt2, flush2) = new_fmt () in
         Odoc_info.reset_type_names () ;
         Format.fprintf fmt2 "@[<h 2>type ";
-	(
-	  match te.te_type_parameters with
+        (
+          match te.te_type_parameters with
               [] -> ()
-	    | [p] -> 
-		ps fmt2 (self#normal_type mod_name p);
-		ps fmt2 " "
-	    | l ->
-		ps fmt2 "(";
-		print_concat fmt2 ", " (fun p -> ps fmt2 (self#normal_type mod_name p)) l;
-		ps fmt2 ") "
-	);
-	ps fmt2 (self#relative_idents mod_name te.te_type_name);
+            | [p] ->
+                ps fmt2 (self#normal_type mod_name p);
+                ps fmt2 " "
+            | l ->
+                ps fmt2 "(";
+                print_concat fmt2 ", " (fun p -> ps fmt2 (self#normal_type mod_name p)) l;
+                ps fmt2 ") "
+        );
+        ps fmt2 (self#relative_idents mod_name te.te_type_name);
         p fmt2 " +=%s" (if te.te_private = Asttypes.Private then " private" else "") ;
-	let s_type3 = flush2 () in
+        let s_type3 = flush2 () in
         let defs =
           (List.flatten
              (List.map
                 (fun x ->
-		   let father = Name.father x.xt_name in
+                   let father = Name.father x.xt_name in
                    let s_cons =
                      p fmt2 "@[<h 6>  | %s" (Name.simple x.xt_name);
                      (
                        match x.xt_args, x.xt_ret with
                            [], None -> ()
-			 | l, None ->
+                         | l, None ->
                              p fmt2 " %s@ %s"
                                "of"
                                (self#normal_type_list ~par: false father " * " l)
-			 | [], Some r ->
+                         | [], Some r ->
                              p fmt2 " %s@ %s"
                                ":"
                                (self#normal_type father r)
-			 | l, Some r ->
+                         | l, Some r ->
                              p fmt2 " %s@ %s@ %s@ %s"
                                ":"
                                (self#normal_type_list ~par: false father " * " l)
-			       "->"
-                               (self#normal_type father r)			     
+                               "->"
+                               (self#normal_type father r)
                      );
-		     (
-		       match x.xt_alias with
-			   None -> ()
-			 | Some xa ->
-			     p fmt2 " = %s"
-			       (
-				 match xa.xa_xt with
-				     None -> xa.xa_name
-				   | Some x -> x.xt_name
-			       )
-		     );
+                     (
+                       match x.xt_alias with
+                           None -> ()
+                         | Some xa ->
+                             p fmt2 " = %s"
+                               (
+                                 match xa.xa_xt with
+                                     None -> xa.xa_name
+                                   | Some x -> x.xt_name
+                               )
+                     );
                      flush2 ()
                     in
                     [ Latex (self#make_label (self#extension_label x.xt_name));
-		      CodePre s_cons ] @
+                      CodePre s_cons ] @
                     (match x.xt_text with
                       None -> []
                     | Some t ->

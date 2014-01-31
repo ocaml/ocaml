@@ -2,7 +2,7 @@
 type foo = ..
 ;;
 
-type foo += 
+type foo +=
     A
   | B of int
 ;;
@@ -31,7 +31,7 @@ type ('a, 'b) foo += A of int (* Error: type parameter mismatch *)
 
 (* In a signature the type does not have to be open *)
 
-module type S = 
+module type S =
 sig
   type foo
   type foo += A of float
@@ -40,7 +40,7 @@ end
 
 (* But it must still be extensible *)
 
-module type S = 
+module type S =
 sig
   type foo = A of int
   type foo += B of float (* Error foo does not have an extensible type *)
@@ -52,18 +52,18 @@ end
 type foo = ..
 ;;
 
-module M = struct 
-  type foo += 
-      A of int 
-    | B of string 
+module M = struct
+  type foo +=
+      A of int
+    | B of string
 
-  type foo += 
-      C of int 
-    | D of float 
+  type foo +=
+      C of int
+    | D of float
 end
 ;;
 
-module type S = sig 
+module type S = sig
   type foo +=
       B of string
     | C of int
@@ -82,7 +82,7 @@ module M_S = (M : S)
 type 'a foo = ..
 ;;
 
-type _ foo += 
+type _ foo +=
     A : int -> int foo
   | B : int foo
 ;;
@@ -180,7 +180,7 @@ type 'a foo1 = 'a foo = ..
 type 'a foo2 = 'a foo = ..
 ;;
 
-type 'a foo1 += 
+type 'a foo1 +=
     A of int
   | B of 'a
   | C : int foo1
@@ -211,4 +211,3 @@ type 'a bar = ..
 
 type +'a bar += D of (int -> 'a) (* ERROR: type variances do not match *)
 ;;
-

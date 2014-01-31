@@ -712,44 +712,44 @@ class texi =
       Odoc_info.reset_type_names () ;
       let t =
         ( self#fixedblock (
-            [ Newline ; minus ; 
-	      Raw "type " ;
-	      Raw (match te.te_type_parameters with
-		     | [] -> ""
-		     | [ tp ] ->
-			 Printf.sprintf "%s "
-			   (Odoc_info.string_of_type_expr tp)
-		     | l ->
-			 Printf.sprintf "(%s) "
-			   (String.concat ", " 
+            [ Newline ; minus ;
+              Raw "type " ;
+              Raw (match te.te_type_parameters with
+                     | [] -> ""
+                     | [ tp ] ->
+                         Printf.sprintf "%s "
+                           (Odoc_info.string_of_type_expr tp)
+                     | l ->
+                         Printf.sprintf "(%s) "
+                           (String.concat ", "
                               (List.map Odoc_info.string_of_type_expr l))) ;
               Raw (self#relative_idents m_name te.te_type_name) ;
-              Raw (" +=" ^ 
-                      (if te.te_private = Asttypes.Private 
+              Raw (" +=" ^
+                      (if te.te_private = Asttypes.Private
                        then " private" else "")^"\n") ] @
               (List.flatten
                  (List.map
                     (fun x ->
                        (Raw ("  | " ^ (Name.simple x.xt_name))) ::
-			 (Raw (self#string_of_type_args
-				 x.xt_args x.xt_ret)) ::
-			 (match x.xt_alias with
-			    | None -> []
-			    | Some xa -> 
-				[ Raw " = " ; 
-				  Raw ( match xa.xa_xt with
-					  | None -> xa.xa_name
-					  | Some x -> x.xt_name ) ]) @
-			 (match x.xt_text with
-			    | None -> [ Newline ]
-			    | Some t ->
-				(Raw (indent 5 "\n(* ") ::
-				   self#soft_fix_linebreaks 8 t) @
-				  [ Raw " *)" ; Newline ] ) @
-			 [self#index `Extension x.xt_name ] )
-		    te.te_constructors ) ) ) ) ::
+                         (Raw (self#string_of_type_args
+                                 x.xt_args x.xt_ret)) ::
+                         (match x.xt_alias with
+                            | None -> []
+                            | Some xa ->
+                                [ Raw " = " ;
+                                  Raw ( match xa.xa_xt with
+                                          | None -> xa.xa_name
+                                          | Some x -> x.xt_name ) ]) @
+                         (match x.xt_text with
+                            | None -> [ Newline ]
+                            | Some t ->
+                                (Raw (indent 5 "\n(* ") ::
+                                   self#soft_fix_linebreaks 8 t) @
+                                  [ Raw " *)" ; Newline ] ) @
+                         [self#index `Extension x.xt_name ] )
+                    te.te_constructors ) ) ) ) ::
           (self#text_of_info te.te_info) in
-	self#texi_of_text t
+        self#texi_of_text t
 
     (** Return Texinfo code for an exception. *)
     method texi_of_exception e =

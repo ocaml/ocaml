@@ -98,24 +98,24 @@ let exception_descr path_exc decl =
     cstr_generalized = false }
 
 let extension_descr path_ext ext =
-  let ty_res = 
+  let ty_res =
     match ext.ext_ret_type with
-	Some type_ret -> type_ret
-      | None -> 
+        Some type_ret -> type_ret
+      | None ->
           newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
   in
   let tag =
     match ext.ext_args with
-	[] -> Cstr_ext_constant (path_ext, ext.ext_loc)
+        [] -> Cstr_ext_constant (path_ext, ext.ext_loc)
       | _ -> Cstr_ext_block (path_ext, ext.ext_loc)
   in
-  let existentials = 
+  let existentials =
     match ext.ext_ret_type with
       | None -> []
       | Some type_ret ->
-	  let ret_vars = free_vars type_ret in
-	  let arg_vars = free_vars (newgenty (Ttuple ext.ext_args)) in
-	    TypeSet.elements (TypeSet.diff arg_vars ret_vars)
+          let ret_vars = free_vars type_ret in
+          let arg_vars = free_vars (newgenty (Ttuple ext.ext_args)) in
+            TypeSet.elements (TypeSet.diff arg_vars ret_vars)
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;

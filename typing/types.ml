@@ -120,9 +120,9 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_ext_constant of Path.t * Location.t 
+  | Cstr_ext_constant of Path.t * Location.t
                                         (* Constant extension constructor *)
-  | Cstr_ext_block of Path.t * Location.t 
+  | Cstr_ext_block of Path.t * Location.t
                                         (* Regular extension constructor *)
   | Cstr_exception of Path.t * Location.t (* Exception constructor *)
 
@@ -191,11 +191,11 @@ and type_kind =
   | Type_variant of (Ident.t * type_expr list * type_expr option) list
   | Type_open
 
-type extension_constructor = 
+type extension_constructor =
     { ext_type_path: Path.t;
       ext_type_params: type_expr list;
       ext_args: type_expr list;
-      ext_ret_type: type_expr option; 
+      ext_ret_type: type_expr option;
       ext_private: private_flag;
       ext_loc: Location.t }
 

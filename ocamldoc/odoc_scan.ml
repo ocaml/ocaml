@@ -47,11 +47,11 @@ class scanner =
     method scan_included_module (im : Odoc_module.included_module) = ()
 
   (** Scan of a type extension *)
-    
+
     (** Overide this method to perform controls on the extension's type,
         private and info. This method is called before scanning the
-	extensions's constructors.
-	@return true if the extension's constructors must be scanned.*)
+        extensions's constructors.
+        @return true if the extension's constructors must be scanned.*)
     method scan_type_extension_pre (x: Odoc_extension.t_type_extension) = true
 
     (** This method scans the constructors of the given type extension. *)
@@ -60,7 +60,7 @@ class scanner =
 
     (** Scan of a type extension. Should not be overridden. It calls [scan_type_extension_pre]
       and if [scan_type_extension_pre] returns [true], then it calls scan_type_extension_constructors.*)
-    method scan_type_extension (x: Odoc_extension.t_type_extension) = 
+    method scan_type_extension (x: Odoc_extension.t_type_extension) =
       if self#scan_type_extension_pre x then self#scan_type_extension_constructors x
 
 

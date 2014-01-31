@@ -424,7 +424,7 @@ rule token = parse
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
   | "+." { PLUSDOT }
-  | "+=" { PLUSEQUAL }
+  | "+=" { PLUSEQ }
   | "-"  { MINUS }
   | "-." { MINUSDOT }
 

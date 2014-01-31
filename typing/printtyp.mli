@@ -47,11 +47,11 @@ val tree_of_type_declaration:
 val type_declaration: Ident.t -> formatter -> type_declaration -> unit
 val tree_of_extension_constructor:
     Ident.t -> extension_constructor -> ext_status -> out_sig_item
-val extension_constructor: 
+val extension_constructor:
     Ident.t -> formatter -> extension_constructor -> unit
-val tree_of_exception_declaration: 
+val tree_of_exception_declaration:
     Ident.t -> exception_declaration -> out_sig_item
-val exception_declaration: 
+val exception_declaration:
     Ident.t -> formatter -> exception_declaration -> unit
 val tree_of_module: Ident.t -> module_type -> rec_status -> out_sig_item
 val modtype: formatter -> module_type -> unit

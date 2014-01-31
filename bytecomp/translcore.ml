@@ -717,7 +717,7 @@ and transl_exp0 e =
             Lprim(Pmakeblock(n, Immutable), ll)
           end
       | Cstr_ext_constant(path, _) ->
-	  transl_path path
+          transl_path path
       | Cstr_ext_block(path, _) ->
           Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       | Cstr_exception(path, _) ->
@@ -1087,32 +1087,32 @@ let transl_let rec_flag pat_expr_list body =
 
 (* Compile a type extension *)
 
-let transl_type_extension tyext body = 
+let transl_type_extension tyext body =
   let (rebinds, body) =
     List.fold_right
       (fun ext (rebinds, body) ->
-	 match ext.ext_kind with
-	     Text_decl(args, ret) -> 
-	       let lam =
-		 Lapply ((Translobj.oo_prim "create_extension_tag"),
-			 [Lconst(Const_pointer 0)],
-			 Location.none)
-	       in
-	       let body = Llet(Strict, ext.ext_name, lam, body) in
-		 (rebinds, body)
-	   | Text_rebind(path, lid) ->
-	       let idpath = Ident.create "rebind" in
-	       let rebinds = (idpath, path) :: rebinds in
-	       let lam = Lvar idpath in
-	       let body = Llet(Strict, ext.ext_name, lam, body) in
-		 (rebinds, body))
+         match ext.ext_kind with
+             Text_decl(args, ret) ->
+               let lam =
+                 Lapply ((Translobj.oo_prim "create_extension_tag"),
+                         [Lconst(Const_pointer 0)],
+                         Location.none)
+               in
+               let body = Llet(Strict, ext.ext_name, lam, body) in
+                 (rebinds, body)
+           | Text_rebind(path, lid) ->
+               let idpath = Ident.create "rebind" in
+               let rebinds = (idpath, path) :: rebinds in
+               let lam = Lvar idpath in
+               let body = Llet(Strict, ext.ext_name, lam, body) in
+                 (rebinds, body))
       tyext.tyext_constructors
       ([], body)
   in
     List.fold_right
       (fun (id, path) body ->
-	 let lam = transl_path path in
-	   Llet(Strict, id, lam, body))
+         let lam = transl_path path in
+           Llet(Strict, id, lam, body))
       rebinds
       body
 

@@ -27,7 +27,7 @@ val transl_type_scheme:
 val reset_type_variables: unit -> unit
 val enter_type_variable: bool -> Location.t -> string -> type_expr
 val type_variable: Location.t -> string -> type_expr
-val transl_type_param: 
+val transl_type_param:
   Env.t -> bool -> Parsetree.core_type -> Typedtree.core_type
 
 type variable_context
@@ -84,12 +84,12 @@ val find_type:
 val find_constructor:
     Env.t -> Location.t -> Longident.t -> constructor_description
 val find_all_constructors:
-    Env.t -> Location.t -> Longident.t -> 
+    Env.t -> Location.t -> Longident.t ->
     (constructor_description * (unit -> unit)) list
 val find_label:
     Env.t -> Location.t -> Longident.t -> label_description
 val find_all_labels:
-    Env.t -> Location.t -> Longident.t -> 
+    Env.t -> Location.t -> Longident.t ->
     (label_description * (unit -> unit)) list
 val find_value:
     Env.t -> Location.t -> Longident.t -> Path.t * value_description

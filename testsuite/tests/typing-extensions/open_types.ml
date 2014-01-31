@@ -1,4 +1,3 @@
-
 type foo = ..
 ;;
 
@@ -44,13 +43,13 @@ type baz = bar = .. (* Error: type kinds don't match *)
 type 'a foo = ..
 ;;
 
-type ('a, 'b) bar = 'a foo = .. (* Error: arrities do not match *) 
+type ('a, 'b) bar = 'a foo = .. (* Error: arrities do not match *)
 ;;
 
 type ('a, 'b) foo = ..
 ;;
 
-type ('a, 'b) bar = ('a, 'a) foo = .. (* Error: constraints do not match *) 
+type ('a, 'b) bar = ('a, 'a) foo = .. (* Error: constraints do not match *)
 ;;
 
 (* Private abstract types cannot be open *)
@@ -96,4 +95,3 @@ module type S = sig type 'a foo = .. type 'a bar = 'a foo = .. end
 
 module M_S = (M : S) (* ERROR: Signatures are not compatible *)
 ;;
-
