@@ -41,11 +41,12 @@ type ident_info =
   | Ident_char of bool * tag_addr
 type t_env = (ident * ident_info) list
 
-type ('args,'action) lexer_entry =
-  { lex_name: string;
-    lex_regexp: regexp;
-    lex_mem_tags: int ;
-    lex_actions: (int *  t_env * 'action) list }
+type ('args,'action) lexer_entry = {
+  lex_name: string;
+  lex_regexp: regexp;
+  lex_mem_tags: int;
+  lex_actions: (int *  t_env * 'action) list;
+}
 
 
 type automata =
@@ -68,12 +69,13 @@ and tag_action = SetTag of int * int | EraseTag of int
 
 (* Representation of entry points *)
 
-type ('args,'action) automata_entry =
-  { auto_name: string;
-    auto_args: 'args ;
-    auto_mem_size : int ;
-    auto_initial_state: int * memory_action list;
-    auto_actions: (int * t_env * 'action) list }
+type ('args,'action) automata_entry = {
+  auto_name: string;
+  auto_args: 'args ;
+  auto_mem_size : int;
+  auto_initial_state: int * memory_action list;
+  auto_actions: (int * t_env * 'action) list;
+}
 
 
 (* A lot of sets and map structures *)
@@ -511,8 +513,9 @@ let encode_lexdef def =
         let (re,actions,_,ntags) = encode_casedef casedef in
         { lex_name = entry_name;
           lex_regexp = re;
-          lex_mem_tags = ntags ;
-          lex_actions = List.rev actions },args,shortest)
+          lex_mem_tags = ntags;
+          lex_actions = List.rev actions;
+        }, args, shortest)
       def in
   let chr = Array.of_list (List.rev !chars) in
   chars := [];
@@ -1168,13 +1171,14 @@ let make_dfa lexdef =
         let init_num = get_state init_state in
         r_states :=
            map_on_all_states
-             (translate_state shortest tags chars follow) !r_states ;
+             (translate_state shortest tags chars follow) !r_states;
         { auto_name = le.lex_name;
-          auto_args = args ;
+          auto_args = args;
           auto_mem_size =
-            (if !temp_pending then !next_mem_cell+1 else !next_mem_cell) ;
-          auto_initial_state = init_num ;
-          auto_actions = le.lex_actions })
+            (if !temp_pending then !next_mem_cell+1 else !next_mem_cell);
+          auto_initial_state = init_num;
+          auto_actions = le.lex_actions;
+        })
       entry_list in
   let states = !r_states in
 (*
