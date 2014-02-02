@@ -46,6 +46,7 @@ type ('args,'action) lexer_entry = {
   lex_regexp: regexp;
   lex_mem_tags: int;
   lex_actions: (int *  t_env * 'action) list;
+  lex_refill_handler: 'action option;
 }
 
 
@@ -75,6 +76,7 @@ type ('args,'action) automata_entry = {
   auto_mem_size : int;
   auto_initial_state: int * memory_action list;
   auto_actions: (int * t_env * 'action) list;
+  auto_refill_handler: 'action option;
 }
 
 
@@ -509,12 +511,14 @@ let encode_lexdef def =
   chars_count := 0;
   let entry_list =
     List.map
-      (fun {name=entry_name; args=args; shortest=shortest; clauses=casedef} ->
+      (fun {name=entry_name; args=args; shortest=shortest; clauses=casedef;
+            refill_handler=rh} ->
         let (re,actions,_,ntags) = encode_casedef casedef in
         { lex_name = entry_name;
           lex_regexp = re;
           lex_mem_tags = ntags;
           lex_actions = List.rev actions;
+          lex_refill_handler = rh;
         }, args, shortest)
       def in
   let chr = Array.of_list (List.rev !chars) in
@@ -1178,6 +1182,7 @@ let make_dfa lexdef =
             (if !temp_pending then !next_mem_cell+1 else !next_mem_cell);
           auto_initial_state = init_num;
           auto_actions = le.lex_actions;
+          auto_refill_handler = le.lex_refill_handler;
         })
       entry_list in
   let states = !r_states in
