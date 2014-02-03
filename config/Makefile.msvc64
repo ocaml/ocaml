@@ -35,6 +35,14 @@ MANDIR=$(PREFIX)/man
 ########## Toolchain and OS dependencies
 
 TOOLCHAIN=msvc
+
+# It doesn't make much sense to set "TARGET" and "HOST" for msvc but it's needed
+# for the myocamlbuild config.
+# The only case these will be used currently is to check whether we're
+# cross-compiling or not so setting them to the same value is what matters.
+HOST=msvc64
+TARGET=$(HOST)
+
 CCOMPTYPE=msvc
 O=obj
 A=lib

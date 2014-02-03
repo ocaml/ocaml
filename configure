@@ -20,6 +20,7 @@ libdir=''
 mandir=''
 manext=1
 host_type=unknown
+target_type=""
 ccoption=''
 asoption=''
 asppoption=''
@@ -44,6 +45,7 @@ gcc_warnings="-Wall"
 partialld="ld -r"
 withcamlp4=camlp4
 with_frame_pointers=false
+TOOLPREF=""
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -52,7 +54,40 @@ unset LC_ALL LC_CTYPE LC_COLLATE LC_MESSAGES LC_MONETARY LC_NUMERIC LC_TIME
 # Turn off some MacOS X debugging stuff, same reason
 unset RC_TRACE_ARCHIVES RC_TRACE_DYLIBS RC_TRACE_PREBINDING_DISABLED
 
+# The inf(), wrn(), err() functions below can be used to provide a consistent
+# way to notify the user. The notification is always given to the stdout
+# descriptor.
+#
+# Their output is redirected to a file-descriptor "3" which is then redirected
+# to fd 1 at the level of the whole configure script. This is done to not
+# conflict with how values are returned from functions in shell script.
+# Consider the following where "It works!" would be mixed with "42".
+#   do_foo() {
+#     if some_command; then
+#       inf "It works!"
+#       echo "42"
+#     fi
+#   }
+inf() {
+  printf "%b\n" "$*" 1>&3
+}
+
+wrn() {
+  printf "[WARNING] %b\n" "$*" 1>&3
+}
+
+err() {
+  printf "[ERROR!]%b\n" "$*" 1>&3
+  exit 2
+}
+
+exec 3>&1
+
 # Parse command-line arguments
+
+if echo "$configure_options" | grep -q -e '--\?[a-zA-Z0-9-]\+='; then
+  err "Arguments to this script look like '-prefix /foo/bar', not '-prefix=/foo/bar' (note the '=')."
+fi
 
 while : ; do
   case "$1" in
@@ -75,6 +110,8 @@ while : ; do
         shift;;
     -host*|--host*)
         host_type=$2; shift;;
+    -target*|--target*)
+        target_type=$2; shift;;
     -cc*)
         ccoption="$2"; shift;;
     -as)
@@ -118,7 +155,7 @@ while : ; do
         withcamlp4="";;
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
-    *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
+    *) err "Unknown option \"$1\".";;
   esac
   shift
 done
@@ -127,28 +164,25 @@ done
 
 case "$prefix" in
   /*) ;;
-   *) echo "The -prefix directory must be absolute." 1>&2; exit 2;;
+   *) err "The -prefix directory must be absolute.";;
 esac
 case "$bindir" in
   /*) ;;
   "") ;;
   '$(PREFIX)/'*) ;;
-   *) echo 'The -bindir directory must be absolute or relative to $(PREFIX).'>&2
-      exit 2;;
+   *) err 'The -bindir directory must be absolute or relative to $(PREFIX).';;
 esac
 case "$libdir" in
   /*) ;;
   "") ;;
   '$(PREFIX)/'*) ;;
-   *) echo 'The -libdir directory must be absolute or relative to $(PREFIX).'>&2
-      exit 2;;
+   *) err 'The -libdir directory must be absolute or relative to $(PREFIX).';;
 esac
 case "$mandir" in
   /*) ;;
   "") ;;
   '$(PREFIX)/'*) ;;
-   *) echo 'The -mandir directory must be absolute or relative to $(PREFIX).'>&2
-      exit 2;;
+   *) err 'The -mandir directory must be absolute or relative to $(PREFIX).';;
 esac
 
 # Generate the files
@@ -186,35 +220,49 @@ echo "MANEXT=$manext" >> Makefile
 
 if test "$host_type" = "unknown"; then
   if host_type=`../gnu/config.guess`; then :; else
-    echo "Cannot guess host type"
-    echo "You must specify one with the -host option"
-    exit 2
+    err "Cannot guess host type. You must specify one with the -host option."
   fi
 fi
 if host=`../gnu/config.sub $host_type`; then :; else
-  echo "Please specify the correct host type with the -host option"
-  exit 2
+  err "Please specify the correct host type with the -host option"
 fi
-echo "Configuring for a $host ..."
+inf "Configuring for host $host ..."
+
+if test -n "$target_type"; then
+  target="$target_type"
+  TOOLPREF="${target}-"
+else
+  target="$host"
+fi
+inf "Configuring for target $target ..."
 
 # Do we have gcc?
 
 if test -z "$ccoption"; then
-  if sh ./searchpath gcc; then
-    echo "gcc found"
-    cc=gcc
+  if sh ./searchpath "${TOOLPREF}gcc"; then
+    cc="${TOOLPREF}gcc"
   else
-    cc=cc
+    if test x"$host" = x"$target"; then
+      cc="cc"
+    else
+      err "No cross-compiler found for ${target}.\n" \
+          "It should be named ${TOOLPREF}gcc and be in the PATH."
+    fi
   fi
 else
   cc="$ccoption"
 fi
 
+inf "Using compiler $cc."
+
 # Check for buggy versions of GCC
+# These checks are not done for cross-compilation (yet at least) because after
+# 15 years, I doubt someone will try to use an experimental (2.96) or
+# known-unstable (2.7.2.1) version for cross-compilation.
 
 buggycc="no"
 
-case "$host,$cc" in
+case "$target,$cc" in
   i[3456]86-*-*,gcc*)
     case `$cc --version` in
       2.7.2.1) cat <<'EOF'
@@ -264,8 +312,10 @@ dllccompopts=""
 ostype="Unix"
 exe=""
 iflexdir=""
+SO=".so"
+TOOLCHAIN="cc"
 
-case "$bytecc,$host" in
+case "$bytecc,$target" in
   cc,*-*-nextstep*)
     # GNU C extensions disabled, but __GNUC__ still defined!
     bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
@@ -287,7 +337,7 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
     mathlib="";;
-  gcc,alpha*-*-osf*)
+  *gcc,alpha*-*-osf*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
@@ -298,7 +348,7 @@ case "$bytecc,$host" in
     echo "#define ARCH_CODE32" >> m.h;;
   cc,alpha*-*-osf*)
     bytecccompopts="-std1 -ieee";;
-  gcc,alpha*-*-linux*)
+  *gcc*,alpha*-*-linux*)
     if cc="$bytecc" sh ./hasgot -mieee; then
       bytecccompopts="-mieee $bytecccompopts";
     fi;;
@@ -314,19 +364,19 @@ case "$bytecc,$host" in
   *,alpha*-*-unicos*)
     # For the Cray T3E
     bytecccompopts="-DUMK";;
-  gcc*,powerpc-*-aix*)
+  *gcc*,powerpc-*-aix*)
     # Avoid name-space pollution by requiring Unix98-conformant includes
     bytecccompopts="-fno-defer-pop $gcc_warnings -D_XOPEN_SOURCE=500";;
   *,powerpc-*-aix*)
     bytecccompopts="-D_XOPEN_SOURCE=500";;
-  gcc*,*-*-cygwin*)
+  *gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $withsharedlibs = yes; then
       flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
-        echo "flexlink not found: native shared libraries won't be available"
+        wrn "flexlink not found: native shared libraries won't be available."
         withsharedlibs=no
       else
         iflexdir="-I\"$flexdir\""
@@ -336,14 +386,38 @@ case "$bytecc,$host" in
     fi
     exe=".exe"
     ostype="Cygwin";;
-  gcc*,x86_64-*-linux*)
+  *gcc*,*-*-mingw*)
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
+    dllccompopt="-DCAML_DLL"
+    if test $withsharedlibs = yes; then
+      case "$target" in
+        i686-*-*)   flexlink_chain="mingw";;
+        x86_64-*-*) flexlink_chain="mingw64";;
+      esac
+      flexlink="flexlink -chain $flexlink_chain -merge-manifest -stack 16777216"
+      flexdir=`$flexlink -where`
+      if test -z "$flexdir"; then
+        wrn "flexlink not found: native shared libraries won't be available."
+        withsharedlibs=no
+      else
+        iflexdir="-I\"$flexdir\""
+        mkexe="$flexlink -exe"
+        mkexedebugflag="-link -g"
+      fi
+    fi
+    exe=".exe"
+    ostype="Win32"
+    TOOLCHAIN="mingw"
+    SO=".dll"
+    ;;
+  *gcc*,x86_64-*-linux*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
     echo "#ifndef __PIC__" >> m.h
     echo "#  define ARCH_CODE32" >> m.h
     echo "#endif" >> m.h;;
-  gcc*)
+  *gcc*)
     bytecccompopts="-fno-defer-pop $gcc_warnings";;
 esac
 
@@ -356,38 +430,83 @@ export cc cclibs verbose
 
 sh ./runtest ansi.c
 case $? in
-  0) echo "The C compiler is ANSI-compliant.";;
-  1) echo "The C compiler $cc is not ANSI-compliant."
-     echo "You need an ANSI C compiler to build OCaml."
-     exit 2;;
-  *) echo "Unable to compile the test program."
-     echo "Make sure the C compiler $cc is properly installed."
-     exit 2;;
+  0) inf "The C compiler is ANSI-compliant." ;;
+  1) err "The C compiler $cc is not ANSI-compliant.\n" \
+         "You need an ANSI C compiler to build OCaml.";;
+  *)
+     if test x"$host" != x"$target"; then
+       wrn "Unable to compile the test program.\n" \
+           "This failure is expected for cross-compilation:\n" \
+           "we will assume the C compiler is ANSI-compliant."
+     else
+       err "Unable to compile the test program.\n" \
+           "Make sure the C compiler $cc is properly installed."
+     fi;;
 esac
+
+# Determine which ocamlrun executable to use; for cross-compilation, a native
+# "ocamlrun" executable must be available on the system.
+if test x"$target" != x"$host"; then
+  if ! sh ./searchpath ocamlrun; then
+    err "Cross-compilation requires an ocaml runtime environment\n" \
+        "(the ocamlrun binary). Moreover, its version must be the same\n" \
+        "as the one you're trying to build (`cut -f1 -d+ < ../../VERSION`)."
+  else
+    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]\+\).*/\1/'`
+    ocaml_source_version=`sed -n '1 s/\([0-9\.]\+\).*/\1/ p' < ../../VERSION`
+    if test x"$ocaml_system_version" != x"$ocaml_source_version"; then
+      err "While you have an ocaml runtime environment, its version\n" \
+          "($ocaml_system_version) doesn't match the version of these sources\n" \
+          "($ocaml_source_version)."
+    else
+      CAMLRUN="ocamlrun"
+    fi
+  fi
+else
+  CAMLRUN=`cd ../.. && pwd`/boot/ocamlrun
+fi
+
+echo "CAMLRUN=$CAMLRUN" >> Makefile
 
 # Check the sizes of data types
+# OCaml needs a 32 or 64bit architectue and a 32-bit integer type.
 
-echo "Checking the sizes of integers and pointers..."
-set `sh ./runtest sizes.c`
-case "$2,$3" in
-  4,4) echo "OK, this is a regular 32 bit architecture."
-       echo "#undef ARCH_SIXTYFOUR" >> m.h
-       arch64=false;;
-  *,8) echo "Wow! A 64 bit architecture!"
-       echo "#define ARCH_SIXTYFOUR" >> m.h
-       arch64=true;;
-  *,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
-       echo "OCaml won't run on this architecture."
-       exit 2;;
-    *) echo "Unable to compile the test program."
-       echo "Make sure the C compiler $cc is properly installed."
-       exit 2;;
-esac
-if test $1 != 4 && test $2 != 4 && test $4 != 4; then
-  echo "Sorry, we can't find a 32-bit integer type"
-  echo "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)"
-  echo "OCaml won't run on this architecture."
-  exit 2
+inf "Checking the sizes of integers and pointers..."
+ret=`sh ./runtest sizes.c`
+
+if test "$?" -eq 0; then
+  set $ret
+  case "$2,$3" in
+    4,4) inf "OK, this is a regular 32 bit architecture."
+         echo "#undef ARCH_SIXTYFOUR" >> m.h
+         arch64=false;;
+    *,8) inf "Wow! A 64 bit architecture!"
+         echo "#define ARCH_SIXTYFOUR" >> m.h
+         arch64=true
+         if test $1 != 4 && test $2 != 4 && test $4 != 4; then
+           err "Sorry, we can't find a 32-bit integer type\n" \
+               "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)\n" \
+               "OCaml won't run on this architecture."
+         fi;;
+    *,*) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
+             "OCaml won't run on this architecture.";;
+  esac
+else
+  # For cross-compilation, runtest always fails: add special handling.
+  case "$target" in
+    i686-*-mingw*) inf "OK, this is a regular 32 bit architecture."
+                   echo "#undef ARCH_SIXTYFOUR" >> m.h
+                   set 4 4 4 2
+                   arch64=false;;
+    x86_64-*-mingw*) inf "Wow! A 64 bit architecture!"
+                     echo "#define ARCH_SIXTYFOUR" >> m.h
+                     set 4 4 8 2
+                     arch64=true;;
+    *) err "Since datatype sizes cannot be guessed when cross-compiling,\n" \
+           "a hardcoded list is used but your architecture isn't known yet.\n" \
+           "You need to determine the sizes yourself.\n" \
+           "Please submit a bug report in order to expand the list." ;;
+  esac
 fi
 
 echo "#define SIZEOF_INT $1" >> m.h
@@ -403,54 +522,65 @@ if test $2 = 8; then
 else
   sh ./runtest longlong.c
   case $? in
-  0) echo "64-bit \"long long\" integer type found (printf with \"%ll\")."
+  0) inf "64-bit \"long long\" integer type found (printf with \"%ll\")."
      echo "#define ARCH_INT64_TYPE long long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
      echo '#define ARCH_INT64_PRINTF_FORMAT "ll"' >> m.h
      int64_native=true;;
-  1) echo "64-bit \"long long\" integer type found (printf with \"%q\")."
+  1) inf "64-bit \"long long\" integer type found (printf with \"%q\")."
      echo "#define ARCH_INT64_TYPE long long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
      echo '#define ARCH_INT64_PRINTF_FORMAT "q"' >> m.h
      int64_native=true;;
-  2) echo "64-bit \"long long\" integer type found (but no printf)."
+  2) inf "64-bit \"long long\" integer type found (but no printf)."
      echo "#define ARCH_INT64_TYPE long long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
      echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
      int64_native=true;;
-  *) echo "No suitable 64-bit integer type found, will use software emulation."
-     echo "#undef ARCH_INT64_TYPE" >> m.h
-     echo "#undef ARCH_UINT64_TYPE" >> m.h
-     echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
-     int64_native=false;;
+  *)
+     case "$target" in
+       *-*-mingw*)
+         inf "No suitable 64-bit integer type found, will use software emulation."
+         echo "#define ARCH_INT64_TYPE long long" >> m.h
+         echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
+         echo '#define ARCH_INT64_PRINTF_FORMAT "I64"' >> m.h
+         int64_native=true;;
+       *)
+         wrn "No suitable 64-bit integer type found, will use software emulation."
+         echo "#undef ARCH_INT64_TYPE" >> m.h
+         echo "#undef ARCH_UINT64_TYPE" >> m.h
+         echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
+         int64_native=false;;
+     esac;;
   esac
 fi
 
 if test $3 = 8 && test $int64_native = false; then
-  echo "This architecture has 64-bit pointers but no 64-bit integer type."
-  echo "OCaml won't run on this architecture."
-  exit 2
+  err "This architecture has 64-bit pointers but no 64-bit integer type.\n" \
+      "OCaml won't run on this architecture."
 fi
 
 # Determine endianness
 
 sh ./runtest endian.c
 case $? in
-  0) echo "This is a big-endian architecture."
+  0) inf "This is a big-endian architecture."
      echo "#define ARCH_BIG_ENDIAN" >> m.h;;
-  1) echo "This is a little-endian architecture."
+  1) inf "This is a little-endian architecture."
      echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
-  2) echo "This architecture seems to be neither big endian nor little endian."
-     echo "OCaml won't run on this architecture."
-     exit 2;;
-  *) echo "Something went wrong during endianness determination."
-     echo "You'll have to figure out endianness yourself"
-     echo "(option ARCH_BIG_ENDIAN in m.h).";;
+  2) err "This architecture seems to be neither big endian nor little endian.\n" \
+         "OCaml won't run on this architecture.";;
+  *) case $target in
+       *-*-mingw*) inf "This is a little-endian architecture."
+                   echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
+       *) wrn "Something went wrong during endianness determination.\n" \
+              "You will have to figure out endianness yourself (option ARCH_BIG_ENDIAN in m.h).";;
+     esac;;
 esac
 
 # Determine alignment constraints
 
-case "$host" in
+case "$target" in
   sparc*-*-*|hppa*-*-*|arm*-*-*|mips*-*-*)
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
@@ -461,50 +591,55 @@ case "$host" in
     # if we're in 64-bit mode (sizeof(long) == 8),
     # we must not doubleword-align floats...
     if test $2 = 8; then
-      echo "Doubles can be word-aligned."
+      inf "Doubles can be word-aligned."
       echo "#undef ARCH_ALIGN_DOUBLE" >> m.h
     else
-      echo "Doubles must be doubleword-aligned."
+      inf "Doubles must be doubleword-aligned."
       echo "#define ARCH_ALIGN_DOUBLE" >> m.h
     fi;;
   *)
     sh ./runtest dblalign.c
     case $? in
-      0) echo "Doubles can be word-aligned."
+      0) inf "Doubles can be word-aligned."
          echo "#undef ARCH_ALIGN_DOUBLE" >> m.h;;
-      1) echo "Doubles must be doubleword-aligned."
+      1) inf "Doubles must be doubleword-aligned."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
-      *) echo "Something went wrong during alignment determination for doubles."
-         echo "We will assume alignment constraints over doubles."
-         echo "That's a safe bet: OCaml will work even if"
-         echo "this architecture actually has no alignment constraints."
-         echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+      *) case "$target" in
+           *-*-mingw*) inf "Doubles can be word-aligned."
+                       echo "#undef ARCH_ALIGN_DOUBLE" >> m.h;;
+           *) wrn "Something went wrong during alignment determination for doubles.\n" \
+                  "We will assume alignment constraints over doubles.\n" \
+                  "That's a safe bet: OCaml will work even if\n" \
+                  "this architecture actually has no alignment constraints."
+              echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+         esac;;
     esac;;
 esac
 
 if $int64_native; then
-  case "$host" in
+  case "$target" in
     # PR#5088: autodetection is unreliable on ARM.  PR#5280: also on MIPS.
     sparc*-*-*|hppa*-*-*|arm*-*-*|mips*-*-*)
       if test $2 = 8; then
-        echo "64-bit integers can be word-aligned."
+        inf "64-bit integers can be word-aligned."
         echo "#undef ARCH_ALIGN_INT64" >> m.h
       else
-        echo "64-bit integers must be doubleword-aligned."
+        inf "64-bit integers must be doubleword-aligned."
         echo "#define ARCH_ALIGN_INT64" >> m.h
       fi;;
+    *-*-mingw*) true;; # Nothing is in config/m-nt.h so don't add anything.
     *)
       sh ./runtest int64align.c
       case $? in
-        0) echo "64-bit integers can be word-aligned."
+        0) inf "64-bit integers can be word-aligned."
            echo "#undef ARCH_ALIGN_INT64" >> m.h;;
-        1) echo "64-bit integers must be doubleword-aligned."
+        1) inf "64-bit integers must be doubleword-aligned."
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
-        *) echo "Something went wrong during alignment determination for 64-bit integers."
-           echo "I'm going to assume this architecture has alignment constraints."
-           echo "That's a safe bet: OCaml will work even if"
-           echo "this architecture has actually no alignment constraints."
-           echo "#define ARCH_ALIGN_INT64" >> m.h;;
+        *) wrn "Something went wrong during alignment determination for 64-bit integers.\n" \
+               "I'm going to assume this architecture has alignment constraints.\n" \
+               "That's a safe bet: OCaml will work even if\n" \
+               "this architecture has actually no alignment constraints."
+               "#define ARCH_ALIGN_INT64" >> m.h;;
       esac
   esac
 else
@@ -515,12 +650,16 @@ fi
 
 sh ./runtest divmod.c
 case $? in
-  0) echo "Native division and modulus have round-towards-zero semantics, will use them."
+  0) inf "Native division and modulus have round-towards-zero semantics, will use them."
      echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
-  1) echo "Native division and modulus do not have round-towards-zero semantics, will use software emulation."
+  1) inf "Native division and modulus do not have round-towards-zero semantics, will use software emulation."
      echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
-  *) echo "Something went wrong while checking native division and modulus, please report it."
-     echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
+  *) case $target in
+       *-*-mingw*) inf "Native division and modulus have round-towards-zero semantics, will use them."
+                   echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
+       *) wrn "Something went wrong while checking native division and modulus, please report it."
+          echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
+     esac;;
 esac
 
 # Shared library support
@@ -534,8 +673,12 @@ mksharedlibrpath=''
 natdynlinkopts=""
 
 if test $withsharedlibs = "yes"; then
-  case "$host" in
+  case "$target" in
     *-*-cygwin*)
+      mksharedlib="$flexlink"
+      mkmaindll="$flexlink -maindll"
+      shared_libraries_supported=true;;
+    *-*-mingw*)
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
@@ -549,7 +692,7 @@ if test $withsharedlibs = "yes"; then
       shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
-        gcc*)
+        *gcc*)
           sharedcccompopts="-fPIC"
           mksharedlib="$bytecc -shared"
           byteccrpath="-Wl,-rpath,"
@@ -564,7 +707,7 @@ if test $withsharedlibs = "yes"; then
       esac;;
     *-*-solaris2*)
       case "$bytecc" in
-        gcc*)
+        *gcc*)
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
             mksharedlib="$bytecc -shared"
@@ -588,7 +731,7 @@ if test $withsharedlibs = "yes"; then
     mips*-*-irix[56]*)
       case "$bytecc" in
         cc*) sharedcccompopts="";;
-        gcc*) sharedcccompopts="-fPIC";;
+        *gcc*) sharedcccompopts="-fPIC";;
       esac
       mksharedlib="ld -shared -rdata_shared"
       byteccrpath="-Wl,-rpath,"
@@ -628,7 +771,8 @@ fi
 natdynlink=false
 
 if test $withsharedlibs = "yes"; then
-  case "$host" in
+  # TODO: handle *-*-mingw* (it has $withsharedlibs=no currently)
+  case "$target" in
     *-*-cygwin*)                  natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
     i[3456]86-*-gnu*)             natdynlink=true;;
@@ -667,7 +811,7 @@ arch=none
 model=default
 system=unknown
 
-case "$host" in
+case "$target" in
   sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
   sparc*-*-linux*)              arch=sparc; system=linux;;
@@ -688,8 +832,10 @@ case "$host" in
                                   arch=i386; system=macosx
                                 fi;;
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
+  i[3456]86-*-mingw*)           arch=i386; system=mingw;;
   powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
+  powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
                                 if $arch64; then model=ppc64; else model=ppc; fi;;
@@ -707,10 +853,11 @@ case "$host" in
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
   x86_64-*-darwin*)             arch=amd64; system=macosx;;
+  x86_64-*-mingw*)              arch=amd64; system=mingw;;
 esac
 
 # Some platforms exist both in 32-bit and 64-bit variants, not distinguished
-# by $host.  Turn off native code compilation on platforms where 64-bit mode
+# by $target.  Turn off native code compilation on platforms where 64-bit mode
 # is not supported.  (PR#4441)
 
 if $arch64; then
@@ -732,7 +879,7 @@ nativecclinkopts=''
 # ld (for shared libs), not for cc
 nativeccrpath="$byteccrpath"
 
-case "$arch,$nativecc,$system,$host_type" in
+case "$arch,$nativecc,$system,$target" in
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
   *,*,rhapsody,*darwin[1-5].*)
@@ -747,98 +894,94 @@ esac
 
 asppprofflags='-DPROFILING'
 
-case "$arch,$model,$system" in
-  amd64,*,macosx)   if ./searchpath clang; then
+case "$arch,$system" in
+  amd64,macosx)   if ./searchpath clang; then
                       as='clang -arch x86_64 -c'
                       aspp='clang -arch x86_64 -c'
                     else
-                      as='as -arch x86_64'
-                      aspp='gcc -arch x86_64 -c'
+                      as="${TOOLPREF}as -arch x86_64"
+                      aspp="${TOOLPREF}gcc -arch x86_64 -c"
                     fi;;
-  amd64,*,solaris)  as='as --64'
-                    aspp='gcc -m64 -c';;
-  amd64,*,*)        as='as'
-                    aspp='gcc -c';;
-  arm,*,*)          as='as';
-                    aspp='gcc -c';;
-  i386,*,solaris)   as='as'
-                    aspp='/usr/ccs/bin/as -P';;
-  i386,*,*)         as='as'
-                    aspp='gcc -c';;
-  power,*,elf)      as='as -u -m ppc'
-                    aspp='gcc -c';;
-  power,*,bsd)      as='as'
-                    aspp='gcc -c';;
-  power,*,rhapsody) as="as -arch $model"
-                    aspp="$bytecc -c";;
-  sparc,*,solaris)  as='as'
-                    case "$cc" in
-                      gcc*) aspp='gcc -c';;
-                         *) aspp='as -P';;
-                    esac;;
-  sparc,*,*)        as='as'
-                    aspp='gcc -c';;
+  amd64,solaris)  as="${TOOLPREF}as --64"
+                  aspp="${TOOLPREF}gcc -m64 -c";;
+  i386,solaris)   as="${TOOLPREF}as"
+                  aspp="/usr/ccs/bin/${TOOLPREF}as -P";;
+  power,elf)      as="${TOOLPREF}as -u -m ppc"
+                  aspp="${TOOLPREF}gcc -c";;
+  power,rhapsody) as="${TOOLPREF}as -arch $model"
+                  aspp="$bytecc -c";;
+  sparc,solaris)  as="${TOOLPREF}as"
+                  case "$cc" in
+                    *gcc*) aspp="${TOOLPREF}gcc -c";;
+                              *) aspp="${TOOLPREF}as -P";;
+                  esac;;
+  amd64,*|arm,*|i386,*|power,bsd|sparc,*)
+                  as="${TOOLPREF}as"
+                  aspp="${TOOLPREF}gcc -c";;
 esac
 
 if test -n "$asoption"; then as="$asoption"; fi
 if test -n "$asppoption"; then aspp="$asppoption"; fi
 
 cc_profile='-pg'
-case "$arch,$model,$system" in
-  i386,*,linux_elf) profiling='prof';;
-  i386,*,gnu) profiling='prof';;
-  i386,*,bsd_elf) profiling='prof';;
-  amd64,*,macosx) profiling='prof';;
-  i386,*,macosx) profiling='prof';;
-  sparc,*,solaris)
+case "$arch,$system" in
+  i386,linux_elf) profiling='prof';;
+  i386,gnu) profiling='prof';;
+  i386,bsd_elf) profiling='prof';;
+  amd64,macosx) profiling='prof';;
+  i386,macosx) profiling='prof';;
+  sparc,solaris)
     profiling='prof'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
-  amd64,*,linux) profiling='prof';;
-  amd64,*,gnu) profiling='prof';;
-  arm,*,linux*) profiling='prof';;
+  amd64,linux) profiling='prof';;
+  amd64,gnu) profiling='prof';;
+  arm,linux*) profiling='prof';;
   *) profiling='noprof';;
 esac
 
 # Where is ranlib?
 
-if sh ./searchpath ranlib; then
-  echo "ranlib found"
-  echo "RANLIB=ranlib" >> Makefile
-  echo "RANLIBCMD=ranlib" >> Makefile
+if sh ./searchpath ${TOOLPREF}ranlib; then
+  inf "ranlib found"
+  echo "RANLIB=${TOOLPREF}ranlib" >> Makefile
+  echo "RANLIBCMD=${TOOLPREF}ranlib" >> Makefile
 else
-  echo "ranlib not used"
-  echo "RANLIB=ar rs" >> Makefile
+  inf "ranlib not used"
+  echo "RANLIB=${TOOLPREF}ar rs" >> Makefile
   echo "RANLIBCMD=" >> Makefile
 fi
 
-echo "ARCMD=ar" >> Makefile
+echo "ARCMD=${TOOLPREF}ar" >> Makefile
 
-
-# Do #! scripts work?
-
-if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
-  echo "#! appears to work in shell scripts"
-  case "$host" in
-    *-*-sunos*|*-*-unicos*)
-      echo "We won't use it, though, because under SunOS and Unicos it breaks"
-      echo "on pathnames longer than 30 characters"
-      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
-    *-*-cygwin*)
-      echo "We won't use it, though, because of conflicts with .exe extension"
-      echo "  under Cygwin"
-      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
-    *)
-      echo "SHARPBANGSCRIPTS=true" >> Makefile;;
-  esac
-else
-  echo "No support for #! in shell scripts"
-  echo "SHARPBANGSCRIPTS=false" >> Makefile
-fi
 
 # Write the OS type (Unix or Cygwin)
 
 echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
 echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
+
+# Do #! scripts work?
+
+if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
+  inf "#! appears to work in shell scripts."
+  case "$target" in
+    *-*-sunos*|*-*-unicos*)
+      wrn "We won't use it, though, because under SunOS and Unicos it breaks " \
+          "on pathnames longer than 30 characters"
+      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+    *-*-cygwin*)
+      wrn "We won't use it, though, because of conflicts with .exe extension " \
+          "under Cygwin"
+      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+    *-*-mingw*)
+      inf "We won't use it, though, because it's on the target platform it would be used and windows doesn't support it."
+      echo "SHARPBANGSCRIPTS=false" >> Makefile;;
+    *)
+      echo "SHARPBANGSCRIPTS=true" >> Makefile;;
+  esac
+else
+  inf "No support for #! in shell scripts"
+  echo "SHARPBANGSCRIPTS=false" >> Makefile
+fi
 
 # Use 64-bit file offset if possible
 
@@ -848,17 +991,17 @@ nativecccompopts="$nativecccompopts -D_FILE_OFFSET_BITS=64"
 # Check the semantics of signal handlers
 
 if sh ./hasgot sigaction sigprocmask; then
-  echo "POSIX signal handling found."
+  inf "POSIX signal handling found."
   echo "#define POSIX_SIGNALS" >> s.h
 else
   if sh ./runtest signals.c; then
-    echo "Signals have the BSD semantics."
+    inf "Signals have the BSD semantics."
     echo "#define BSD_SIGNALS" >> s.h
   else
-    echo "Signals have the System V semantics."
+    inf "Signals have the System V semantics."
   fi
   if sh ./hasgot sigsetmask; then
-    echo "sigsetmask() found"
+    inf "sigsetmask() found"
     echo "#define HAS_SIGSETMASK" >> s.h
   fi
 fi
@@ -866,19 +1009,19 @@ fi
 # For the Pervasives module
 
 if sh ./hasgot2 -i math.h $mathlib expm1 log1p hypot copysign; then
-  echo "expm1(), log1p(), hypot(), copysign() found."
+  inf "expm1(), log1p(), hypot(), copysign() found."
   echo "#define HAS_C99_FLOAT_OPS" >> s.h
 fi
 
 # For the Sys module
 
 if sh ./hasgot getrusage; then
-  echo "getrusage() found."
+  inf "getrusage() found."
   echo "#define HAS_GETRUSAGE" >> s.h
 fi
 
 if sh ./hasgot times; then
-  echo "times() found."
+  inf "times() found."
   echo "#define HAS_TIMES" >> s.h
 fi
 
@@ -887,7 +1030,7 @@ fi
 if test "$withcurses" = "yes"; then
   for libs in "" "-lcurses" "-ltermcap" "-lcurses -ltermcap" "-lncurses"; do
     if sh ./hasgot $libs tgetent tgetstr tgetnum tputs; then
-      echo "termcap functions found (with libraries '$libs')"
+      inf "termcap functions found (with libraries '$libs')"
       echo "#define HAS_TERMCAP" >> s.h
       curseslibs="${libs}"
       break
@@ -897,112 +1040,130 @@ fi
 
 # Configuration for the libraries
 
-otherlibraries="unix str num dynlink bigarray"
+case "$system" in
+  mingw) unix_or_win32="win32"; unixlib="win32unix"; graphlib="win32graph";;
+  *) unix_or_win32="unix"; unixlib="unix"; graphlib="graph";;
+esac
+
+echo "UNIX_OR_WIN32=$unix_or_win32" >> Makefile
+echo "UNIXLIB=$unixlib" >> Makefile
+echo "GRAPHLIB=$graphlib" >> Makefile
+
+otherlibraries="$unixlib str num dynlink bigarray"
 
 # For the Unix library
 
 has_sockets=no
 if sh ./hasgot socket socketpair bind listen accept connect; then
-  echo "You have BSD sockets."
+  inf "You have BSD sockets."
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
 elif sh ./hasgot -lnsl -lsocket socket socketpair bind listen accept connect; then
-  echo "You have BSD sockets (with libraries '-lnsl -lsocket')"
+  inf "You have BSD sockets (with libraries '-lnsl -lsocket')"
   cclibs="$cclibs -lnsl -lsocket"
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
+else
+  case "$target" in
+    *-*-mingw*)
+      inf "You have BSD sockets (with libraries '-lws2_32')"
+      cclibs="$cclibs -lws2_32"
+      echo "#define HAS_SOCKETS" >> s.h
+      has_sockets=yes ;;
+    *) ;;
+  esac
 fi
 
 if sh ./hasgot -i sys/socket.h -t socklen_t; then
-  echo "socklen_t is defined in <sys/socket.h>"
+  inf "socklen_t is defined in <sys/socket.h>"
   echo "#define HAS_SOCKLEN_T" >> s.h
 fi
 
 if sh ./hasgot inet_aton; then
-  echo "inet_aton() found."
+  inf "inet_aton() found."
   echo "#define HAS_INET_ATON" >> s.h
 fi
 
 if sh ./hasgot -i sys/types.h -i sys/socket.h -i netinet/in.h \
                -t 'struct sockaddr_in6' \
 && sh ./hasgot getaddrinfo getnameinfo inet_pton inet_ntop; then
-  echo "IPv6 is supported."
+  inf "IPv6 is supported."
   echo "#define HAS_IPV6" >> s.h
 fi
 
 if sh ./hasgot -i unistd.h; then
-  echo "unistd.h found."
+  inf "unistd.h found."
   echo "#define HAS_UNISTD" >> s.h
 fi
 
 if sh ./hasgot -i sys/types.h -t off_t; then
-  echo "off_t is defined in <sys/types.h>"
+  inf "off_t is defined in <sys/types.h>"
   echo "#define HAS_OFF_T" >> s.h
 fi
 
 if sh ./hasgot -i sys/types.h -i dirent.h; then
-  echo "dirent.h found."
+  inf "dirent.h found."
   echo "#define HAS_DIRENT" >> s.h
 fi
 
 if sh ./hasgot rewinddir; then
-  echo "rewinddir() found."
+  inf "rewinddir() found."
   echo "#define HAS_REWINDDIR" >> s.h
 fi
 
 if sh ./hasgot lockf; then
-  echo "lockf() found."
+  inf "lockf() found."
   echo "#define HAS_LOCKF" >> s.h
 fi
 
 if sh ./hasgot mkfifo; then
-  echo "mkfifo() found."
+  inf "mkfifo() found."
   echo "#define HAS_MKFIFO" >> s.h
 fi
 
 if sh ./hasgot getcwd; then
-  echo "getcwd() found."
+  inf "getcwd() found."
   echo "#define HAS_GETCWD" >> s.h
 fi
 
 if sh ./hasgot getwd; then
-  echo "getwd() found."
+  inf "getwd() found."
   echo "#define HAS_GETWD" >> s.h
 fi
 
 if sh ./hasgot getpriority setpriority; then
-  echo "getpriority() found."
+  inf "getpriority() found."
   echo "#define HAS_GETPRIORITY" >> s.h
 fi
 
 if sh ./hasgot -i sys/types.h -i utime.h && sh ./hasgot utime; then
-  echo "utime() found."
+  inf "utime() found."
   echo "#define HAS_UTIME" >> s.h
 fi
 
 if sh ./hasgot utimes; then
-  echo "utimes() found."
+  inf "utimes() found."
   echo "#define HAS_UTIMES" >> s.h
 fi
 
 if sh ./hasgot dup2; then
-  echo "dup2() found."
+  inf "dup2() found."
   echo "#define HAS_DUP2" >> s.h
 fi
 
 if sh ./hasgot fchmod fchown; then
-  echo "fchmod() found."
+  inf "fchmod() found."
   echo "#define HAS_FCHMOD" >> s.h
 fi
 
 if sh ./hasgot truncate ftruncate; then
-  echo "truncate() found."
+  inf "truncate() found."
   echo "#define HAS_TRUNCATE" >> s.h
 fi
 
 select_include=''
 if sh ./hasgot -i sys/types.h -i sys/select.h; then
-  echo "sys/select.h found."
+  inf "sys/select.h found."
   echo "#define HAS_SYS_SELECT_H" >> s.h
   select_include='-i sys/select.h'
 fi
@@ -1010,114 +1171,117 @@ fi
 has_select=no
 if sh ./hasgot select && \
    sh ./hasgot -i sys/types.h $select_include -t fd_set ; then
-  echo "select() found."
+  inf "select() found."
   echo "#define HAS_SELECT" >> s.h
   has_select=yes
 fi
 
 if sh ./hasgot symlink readlink lstat;  then
-  echo "symlink() found."
+  inf "symlink() found."
   echo "#define HAS_SYMLINK" >> s.h
 fi
 
 has_wait=no
 if sh ./hasgot waitpid;  then
-  echo "waitpid() found."
+  inf "waitpid() found."
   echo "#define HAS_WAITPID" >> s.h
   has_wait=yes
 fi
 
 if sh ./hasgot wait4;  then
-  echo "wait4() found."
+  inf "wait4() found."
   echo "#define HAS_WAIT4" >> s.h
   has_wait=yes
 fi
 
 if sh ./hasgot -i limits.h && sh ./runtest getgroups.c; then
-  echo "getgroups() found."
+  inf "getgroups() found."
   echo "#define HAS_GETGROUPS" >> s.h
 fi
 
 if sh ./hasgot -i limits.h -i grp.h && sh ./runtest setgroups.c; then
-  echo "setgroups() found."
+  inf "setgroups() found."
   echo "#define HAS_SETGROUPS" >> s.h
 fi
 
 if sh ./hasgot -i limits.h -i grp.h && sh ./runtest initgroups.c; then
-  echo "initgroups() found."
+  inf "initgroups() found."
   echo "#define HAS_INITGROUPS" >> s.h
 fi
 
 if sh ./hasgot -i termios.h &&
    sh ./hasgot tcgetattr tcsetattr tcsendbreak tcflush tcflow; then
-  echo "POSIX termios found."
+  inf "POSIX termios found."
   echo "#define HAS_TERMIOS" >> s.h
 fi
 
 if sh ./runtest async_io.c; then
-  echo "Asynchronous I/O are supported."
+  inf "Asynchronous I/O are supported."
   echo "#define HAS_ASYNC_IO" >> s.h
 fi
 
 has_setitimer=no
 if sh ./hasgot setitimer; then
-  echo "setitimer() found."
+  inf "setitimer() found."
   echo "#define HAS_SETITIMER" >> s.h
   has_setitimer="yes"
 fi
 
 if sh ./hasgot gethostname; then
-  echo "gethostname() found."
+  inf "gethostname() found."
   echo "#define HAS_GETHOSTNAME" >> s.h
 fi
 
 if sh ./hasgot -i sys/utsname.h && sh ./hasgot uname; then
-  echo "uname() found."
+  inf "uname() found."
   echo "#define HAS_UNAME" >> s.h
 fi
 
 has_gettimeofday=no
 if sh ./hasgot gettimeofday; then
-  echo "gettimeofday() found."
+  inf "gettimeofday() found."
   echo "#define HAS_GETTIMEOFDAY" >> s.h
   has_gettimeofday="yes"
 fi
 
 if sh ./hasgot mktime; then
-  echo "mktime() found."
+  inf "mktime() found."
   echo "#define HAS_MKTIME" >> s.h
 fi
 
-case "$host" in
+case "$target" in
   *-*-cygwin*) ;;  # setsid emulation under Cygwin breaks the debugger
   *) if sh ./hasgot setsid; then
-       echo "setsid() found."
+       inf "setsid() found."
        echo "#define HAS_SETSID" >> s.h
      fi;;
 esac
 
 if sh ./hasgot putenv; then
-  echo "putenv() found."
+  inf "putenv() found."
   echo "#define HAS_PUTENV" >> s.h
 fi
 
 if sh ./hasgot -i locale.h && sh ./hasgot setlocale; then
-  echo "setlocale() and <locale.h> found."
+  inf "setlocale() and <locale.h> found."
   echo "#define HAS_LOCALE" >> s.h
 fi
 
 
 if sh ./hasgot $dllib dlopen; then
-  echo "dlopen() found."
+  inf "dlopen() found."
 elif sh ./hasgot $dllib -ldl dlopen; then
-  echo "dlopen() found in -ldl."
+  inf "dlopen() found in -ldl."
   dllib="$dllib -ldl"
 else
-  shared_libraries_supported=false
+  case "$target" in
+    *-*-mingw*) ;;
+    *) shared_libraries_supported=false
+  esac
 fi
 
 if $shared_libraries_supported; then
-  echo "Dynamic loading of shared libraries is supported."
+  inf "Dynamic loading of shared libraries is supported."
   echo "#define SUPPORT_DYNAMIC_LINKING" >> s.h
   if $dl_needs_underscore; then
     echo '#define DL_NEEDS_UNDERSCORE' >>s.h
@@ -1125,12 +1289,12 @@ if $shared_libraries_supported; then
 fi
 
 if sh ./hasgot -i sys/types.h -i sys/mman.h && sh ./hasgot mmap munmap; then
-  echo "mmap() found."
+  inf "mmap() found."
   echo "#define HAS_MMAP" >> s.h
 fi
 
 if sh ./hasgot pwrite; then
-  echo "pwrite() found"
+  inf "pwrite() found"
   echo "#define HAS_PWRITE" >> s.h
 fi
 
@@ -1139,7 +1303,7 @@ for i in 5 6; do
   if sh ./trycompile -DNUM_ARGS=${i} gethostbyname.c; then nargs=$i; break; fi
 done
 if test $nargs != "none"; then
-  echo "gethostbyname_r() found (with ${nargs} arguments)."
+  inf "gethostbyname_r() found (with ${nargs} arguments)."
   echo "#define HAS_GETHOSTBYNAME_R $nargs" >> s.h
 fi
 
@@ -1148,17 +1312,17 @@ for i in 7 8; do
   if sh ./trycompile -DNUM_ARGS=${i} gethostbyaddr.c; then nargs=$i; break; fi
 done
 if test $nargs != "none"; then
-  echo "gethostbyaddr_r() found (with ${nargs} arguments)."
+  inf "gethostbyaddr_r() found (with ${nargs} arguments)."
   echo "#define HAS_GETHOSTBYADDR_R $nargs" >> s.h
 fi
 
 # Determine if the debugger is supported
 
 if test "$has_sockets" = "yes"; then
-  echo "Replay debugger supported."
+  inf "Replay debugger supported."
   debugger="ocamldebugger"
 else
-  echo "No replay debugger (missing system calls)"
+  inf "No replay debugger (missing system calls)"
   debugger=""
 fi
 
@@ -1167,10 +1331,10 @@ fi
 
 case "$arch,$system" in
   i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx)
-    echo "System stack overflow can be detected."
+    inf "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
-    echo "Cannot detect system stack overflow.";;
+    inf "Cannot detect system stack overflow.";;
 esac
 
 # Determine the target architecture for the "num" library
@@ -1194,7 +1358,7 @@ echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
 systhread_support=false
 
 if test "$pthread_wanted" = "yes"; then
-  case "$host" in
+  case "$target" in
     *-*-solaris*)  pthread_link="-lpthread -lposix4"
                    pthread_caml_link="-cclib -lpthread -cclib -lposix4";;
     *-*-freebsd*)  pthread_link="-pthread"
@@ -1205,12 +1369,12 @@ if test "$pthread_wanted" = "yes"; then
                    pthread_caml_link="-cclib -lpthread";;
   esac
   if ./hasgot -i pthread.h $pthread_link pthread_self; then
-    echo "POSIX threads library supported."
+    inf "POSIX threads library supported."
     systhread_support=true
     otherlibraries="$otherlibraries systhreads"
     bytecccompopts="$bytecccompopts -D_REENTRANT"
     nativecccompopts="$nativecccompopts -D_REENTRANT"
-    case "$host" in
+    case "$target" in
       *-*-freebsd*)
           bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
           nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
@@ -1219,13 +1383,13 @@ if test "$pthread_wanted" = "yes"; then
           asppflags="$asppflags -pthread"
           nativecccompopts="$nativecccompopts -pthread";;
     esac
-    echo "Options for linking with POSIX threads: $pthread_link"
+    inf "Options for linking with POSIX threads: $pthread_link"
     if sh ./hasgot $pthread_link sigwait; then
-      echo "sigwait() found"
+      inf "sigwait() found"
       echo "#define HAS_SIGWAIT" >> s.h
     fi
   else
-    echo "POSIX threads not found."
+    inf "POSIX threads not found."
     pthread_link=""
   fi
 else
@@ -1239,10 +1403,10 @@ if test "$has_select" = "yes" \
 && test "$has_setitimer" = "yes" \
 && test "$has_gettimeofday" = "yes" \
 && test "$has_wait" = "yes"; then
-  echo "Bytecode threads library supported."
+  inf "Bytecode threads library supported."
   otherlibraries="$otherlibraries threads"
 else
-  echo "Bytecode threads library not supported (missing system calls)"
+  inf "Bytecode threads library not supported (missing system calls)"
 fi
 
 # Determine the location of X include files and libraries
@@ -1379,7 +1543,7 @@ if test "$x11_include" = "not found"; then
         x11_link="-lX11"
       else
         x11_libs="-L$dir"
-        case "$host" in
+        case "$target" in
           *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
           *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
           *) x11_link="-L$dir -lX11";;
@@ -1395,9 +1559,9 @@ if test "x11_include" != "not found"; then
     x11_include=""
   fi
   if ./hasgot $x11_include $x11_link -i X11/Xlib.h XrmInitialize; then
-    echo "X11 works"
+    inf "X11 works"
   else
-    echo "Cannot compile X11 program"
+    wrn "Cannot compile X11 program."
     x11_include="not found"
   fi
 fi
@@ -1405,12 +1569,12 @@ fi
 has_graph=false
 if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
-  echo "X11 not found, the \"graph\" library will not be supported."
+  wrn 'X11 not found, the "graph" library will not be supported.'
   x11_include="not found"
   x11_link="not found"
 else
-  echo "Options for compiling for X11: $x11_include"
-  echo "Options for linking with X11: $x11_link"
+  inf "Options for compiling for X11: $x11_include"
+  inf "Options for linking with X11: $x11_link"
   if test "$graph_wanted" = yes
   then
     has_graph=true
@@ -1422,14 +1586,14 @@ echo "X11_LINK=$x11_link" >> Makefile
 
 # Look for tcl/tk
 
-echo "Configuring LablTk..."
+inf "Configuring LablTk..."
 
 if test $tk_wanted = no; then
   has_tk=false
 elif test $tk_x11 = no; then
   has_tk=true
 elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
-  echo "X11 not found or disabled."
+  inf "X11 not found or disabled."
   has_tk=false
 else
   tk_x11_include="$x11_include"
@@ -1460,7 +1624,7 @@ if test $has_tk = true; then
     tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   fi; done
   if test -n "$tcl_version" && test "x$tcl_version" != "xnone"; then
-    echo "tcl.h and tk.h version $tcl_version found with \"$tk_defs\"."
+    inf "tcl.h and tk.h version $tcl_version found with \"$tk_defs\"."
     case $tcl_version in
     8.6) tclmaj=8 tclmin=6 tkmaj=8 tkmin=6 ;;
     8.5) tclmaj=8 tclmin=5 tkmaj=8 tkmin=5 ;;
@@ -1471,10 +1635,10 @@ if test $has_tk = true; then
     8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
     7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
     7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
-    *) echo "This version is not known."; has_tk=false ;;
+    *) wrn "This version is not known." ; has_tk=false ;;
     esac
   else
-    echo "tcl.h and/or tk.h not found."
+    inf "tcl.h and/or tk.h not found."
     has_tk=false
   fi
 fi
@@ -1506,35 +1670,35 @@ if test $has_tk = true; then
         -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs \
                    Tcl_DoOneEvent
   then
-    case "$host" in
+    case "$target" in
       *-*-*bsd*) tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs";;
       *) tk_libs="-L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs";;
     esac
   else
-    echo "Tcl library not found."
+    inf "Tcl library not found."
     has_tk=false
   fi
 fi
 
 if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
-    echo "Tcl/Tk libraries found."
+    inf "Tcl/Tk libraries found."
   elif sh ./hasgot -L/sw/lib $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
-    case "$host" in
+    case "$target" in
       *-*-*bsd*) tk_libs="-R/sw/lib -L/sw/lib $tk_libs";;
       *) tk_libs="-L/sw/lib $tk_libs";;
     esac
-    echo "Tcl/Tk libraries found."
+    inf "Tcl/Tk libraries found."
   elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs $tkauxlibs \
                    Tk_SetGrid; then
-    case "$host" in
+    case "$target" in
       *-*-*bsd*) tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs";;
       *) tk_libs="-L/usr/pkg/lib $tk_libs";;
     esac
-    echo "Tcl/Tk libraries found."
+    inf "Tcl/Tk libraries found."
   else
-    echo "Tcl library found."
-    echo "Tk library not found."
+    inf "Tcl library found."
+    wrn "Tk library not found."
     has_tk=false
   fi
 fi
@@ -1549,7 +1713,7 @@ if test $has_tk = true; then
   fi
   otherlibraries="$otherlibraries labltk"
 else
-  echo "Configuration failed, LablTk will not be built."
+  wrn "LablTk configuration failed, LablTk will not be built."
   echo "TK_DEFS=" >> Makefile
   echo "TK_LINK=" >> Makefile
 fi
@@ -1558,11 +1722,11 @@ fi
 
 if ./hasgot -i bfd.h && \
    ./hasgot -lbfd -ldl -liberty -lz bfd_openr; then
-  echo "BFD library found."
+  inf "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
   echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
 else
-  echo "BFD library not found, 'objinfo' will be unable to display info on .cmxs files"
+  wrn "BFD library not found, 'objinfo' will be unable to display info on .cmxs files."
   echo "LIBBFD_LINK=" >> Makefile
 fi
 
@@ -1575,20 +1739,20 @@ export as aspp
 if sh ./tryassemble cfi.S; then
   echo "#define ASM_CFI_SUPPORTED" >> m.h
   asm_cfi_supported=true
-  echo "Assembler supports CFI"
+  inf "Assembler supports CFI"
 else
-  echo "Assembler does not support CFI"
+  inf "Assembler does not support CFI"
 fi
 
 if test "$with_frame_pointers" = "true"; then
-  case "$host,$cc" in
+  case "$target,$cc" in
     x86_64-*-linux*,gcc*)
        nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
        bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
        nativecclinkopts="$nativecclinkopts -g"
        echo "#define WITH_FRAME_POINTERS" >> m.h
        ;;
-    *)  echo "Unsupported architecture with frame pointers" 1>&2; exit 2;;
+    *) err "Unsupported architecture with frame pointers";;
   esac
 
 fi
@@ -1650,14 +1814,14 @@ echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
-echo "SO=so" >> Makefile
+echo "SO=$SO" >> Makefile
 echo "EXT_OBJ=.o" >> Makefile
 echo "EXT_ASM=.s" >> Makefile
 echo "EXT_LIB=.a" >> Makefile
-echo "EXT_DLL=.so" >> Makefile
+echo "EXT_DLL=$SO" >> Makefile
 echo "EXTRALIBS=" >> Makefile
 echo "CCOMPTYPE=cc" >> Makefile
-echo "TOOLCHAIN=cc" >> Makefile
+echo "TOOLCHAIN=$TOOLCHAIN" >> Makefile
 echo "NATDYNLINK=$natdynlink" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
@@ -1668,6 +1832,8 @@ echo "RUNTIMED=${debugruntime}" >>Makefile
 echo "CAMLP4=${withcamlp4}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
+echo "TARGET=$target" >> Makefile
+echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
@@ -1679,99 +1845,100 @@ mv m.h s.h Makefile ..
 
 # Print a summary
 
-echo
-echo "** Configuration summary **"
-echo
-echo "Directories where OCaml will be installed:"
-echo "        binaries.................. $bindir"
-echo "        standard library.......... $libdir"
-echo "        manual pages.............. $mandir (with extension .$manext)"
+inf
+inf "** Configuration summary **"
+inf
+inf "Directories where OCaml will be installed:"
+inf "        binaries.................. $bindir"
+inf "        standard library.......... $libdir"
+inf "        manual pages.............. $mandir (with extension .$manext)"
 
-echo "Configuration for the bytecode compiler:"
-echo "        C compiler used........... $bytecc"
-echo "        options for compiling..... $bytecccompopts"
-echo "        options for linking....... $bytecclinkopts $cclibs $dllib $curseslibs $pthread_link"
+inf "Configuration for the bytecode compiler:"
+inf "        C compiler used........... $bytecc"
+inf "        options for compiling..... $bytecccompopts"
+inf "        options for linking....... $bytecclinkopts $cclibs $dllib $curseslibs $pthread_link"
 if $shared_libraries_supported; then
-echo "        shared libraries are supported"
-echo "        options for compiling..... $sharedcccompopts $bytecccompopts"
-echo "        command for building...... $mksharedlib -o lib.so $mksharedlibrpath/a/path objs"
+inf "        shared libraries are supported"
+inf "        options for compiling..... $sharedcccompopts $bytecccompopts"
+inf "        command for building...... $mksharedlib -o lib.so $mksharedlibrpath/a/path objs"
 else
-echo "        shared libraries not supported"
+inf "        shared libraries not supported"
 fi
 
-echo "Configuration for the native-code compiler:"
+inf "Configuration for the native-code compiler:"
 if test "$arch" = "none"; then
-  echo "        (not supported on this platform)"
+  inf "        (not supported on this platform)"
 else
   if test "$model" = "default"; then
-    echo "        hardware architecture..... $arch"
+    inf "        hardware architecture..... $arch"
   else
-    echo "        hardware architecture..... $arch ($model)"
+    inf "        hardware architecture..... $arch ($model)"
   fi
   if test "$system" = "unknown"; then : ; else
-  echo "        OS variant................ $system"
+  inf "        OS variant................ $system"
   fi
-  echo "        C compiler used........... $nativecc"
-  echo "        options for compiling..... $nativecccompopts"
-  echo "        options for linking....... $nativecclinkopts $cclibs"
-  echo "        assembler ................ $as"
-  echo "        preprocessed assembler ... $aspp"
+  inf "        C compiler used........... $nativecc"
+  inf "        options for compiling..... $nativecccompopts"
+  inf "        options for linking....... $nativecclinkopts $cclibs"
+  inf "        assembler ................ $as"
+  inf "        preprocessed assembler ... $aspp"
   if test "$asm_cfi_supported" = "true"; then
-  echo "        assembler supports CFI ... yes"
+  inf "        assembler supports CFI ... yes"
   else
-  echo "        assembler supports CFI ... no"
+  inf "        assembler supports CFI ... no"
   fi
   if test "$with_frame_pointers" = "true"; then
-  echo "        with frame pointers....... yes"
+  inf "        with frame pointers....... yes"
   else
-  echo "        with frame pointers....... no"
+  inf "        with frame pointers....... no"
   fi
   echo "        native dynlink ........... $natdynlink"
+  inf "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then
-  echo "        profiling with gprof ..... supported"
+  inf "        profiling with gprof ..... supported"
   else
-  echo "        profiling with gprof ..... not supported"
+  inf "        profiling with gprof ..... not supported"
   fi
 fi
 
 if test "$debugger" = "ocamldebugger"; then
-  echo "Source-level replay debugger: supported"
+  inf "Source-level replay debugger: supported"
 else
-  echo "Source-level replay debugger: not supported"
+  inf "Source-level replay debugger: not supported"
 fi
 
 if test "$debugruntime" = "runtimed"; then
-  echo "Debug runtime will be compiled and installed"
+  inf "Debug runtime will be compiled and installed"
 fi
 
-echo "Additional libraries supported:"
-echo "        $otherlibraries"
+inf "Additional libraries supported:"
+inf "        $otherlibraries"
 
-echo "Configuration for the \"num\" library:"
-echo "        target architecture ...... $bng_arch (asm level $bng_asm_level)"
+inf "Configuration for the \"num\" library:"
+inf "        target architecture ...... $bng_arch (asm level $bng_asm_level)"
 
 if $has_graph; then
-echo "Configuration for the \"graph\" library:"
-echo "        options for compiling .... $x11_include"
-echo "        options for linking ...... $x11_link"
+inf "Configuration for the \"graph\" library:"
+inf "        options for compiling .... $x11_include"
+inf "        options for linking ...... $x11_link"
 else
-echo "The \"graph\" library: not supported"
+inf "The \"graph\" library: not supported"
 fi
 
 if test $has_tk = true; then
-echo "Configuration for the \"labltk\" library:"
-echo "        use tcl/tk version ....... $tcl_version"
-echo "        options for compiling .... $tk_defs $tk_x11_include"
-echo "        options for linking ...... $tk_libs $tk_x11_libs"
+inf "Configuration for the \"labltk\" library:"
+inf "        use tcl/tk version ....... $tcl_version"
+inf "        options for compiling .... $tk_defs $tk_x11_include"
+inf "        options for linking ...... $tk_libs $tk_x11_libs"
 else
-echo "The \"labltk\" library: not supported"
+inf "The \"labltk\" library: not supported"
 fi
 
-echo
-echo "** OCaml configuration completed successfully **"
-echo
+inf
+inf "** OCaml configuration completed successfully **"
+inf
 
 if test ! -z "$MACOSX_DEPLOYMENT_TARGET"; then
-  echo "WARNING: the environment variable MACOSX_DEPLOYMENT_TARGET is set."
-  echo "This will probably prevent compiling the OCaml system."
+  wrn "The environment variable MACOSX_DEPLOYMENT_TARGET is set.\n" \
+      "This will probably prevent compiling the OCaml system."
 fi

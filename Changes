@@ -4,6 +4,7 @@ Next version:
 (Changes that can break existing programs are marked with a "*")
 
 Bug fixes:
+- PR#4719: Sys.executable_name is wrong if executable name contains dots (Windows)
 
 Features wishes:
 
@@ -64,7 +65,7 @@ Bug fixes:
 - PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4079: Queue.copy is now tail-recursive
-- PR#4502: ocamlbuild now reliably excludes the build-dir from hygiene check 
+- PR#4502: ocamlbuild now reliably excludes the build-dir from hygiene check
 - PR#4762: ?? is not used at all, but registered as a lexer token
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
 - PR#4994: ocaml-mode doesn't work with xemacs21
@@ -156,7 +157,8 @@ Bug fixes:
 - PR#6031: Camomile problem with -with-frame-pointers
 - PR#6032: better Random.self_init under Windows
 - PR#6033: Matching.inline_lazy_force needs eta-expansion (command-line flags)
-
+- PR#6056: Using 'match' prevents generalization of values
+- PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
   as part of compilerlibs, to be used on bin-annot files.
@@ -171,6 +173,7 @@ Feature wishes:
 - PR#5774: Add bswap primitives for amd64 and arm
 - PR#5827: provide a dynamic command line parsing mechanism
 - PR#5864: Add a find operation to Set
+- PR#6049: support for OpenBSD/macppc platform
 
 Tools:
 - OCamlbuild now features a bin_annot tag to generate .cmt files.
@@ -375,8 +378,6 @@ Bug Fixes:
 - PR#5318: segfault on stack overflow when reading marshaled data
 - PR#5319: %r11 clobbered by Lswitch in Windows AMD64 native-code compilation
 - PR#5322: type abbreviations expanding to a universal type variable
-- PR#5325: (Windows) blocked Unix.recv in one thread blocks Unix.send in
-  another thread
 - PR#5328: under Windows, Unix.select leaves sockets in non-blocking mode
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5331: ocamlmktop is not always a shell script

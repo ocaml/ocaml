@@ -70,3 +70,5 @@ val ccomptype : string
 val extralibs : string
 val tk_defs : string
 val asm_cfi_supported : bool
+val target : string
+val host : string

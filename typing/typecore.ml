@@ -1289,6 +1289,9 @@ let rec is_nonexpansive exp =
   | Texp_function _ -> true
   | Texp_apply(e, (_,None,_)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd3 el)
+  | Texp_match(e, pat_exp_list, _) ->
+      is_nonexpansive e &&
+      List.for_all (fun (pat, exp) -> is_nonexpansive exp) pat_exp_list
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
   | Texp_construct( _, _, el,_) ->

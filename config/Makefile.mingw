@@ -40,7 +40,10 @@ MANDIR=$(PREFIX)/man
 TOOLCHAIN=mingw
 
 ### Toolchain prefix
-TOOLPREF=i686-w64-mingw32-
+TARGET=i686-w64-mingw32
+HOST=i686-w64-mingw32
+
+TOOLPREF=$(TARGET)-
 
 CCOMPTYPE=cc
 O=o

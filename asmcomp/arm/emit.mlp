@@ -173,12 +173,13 @@ let name_for_comparison = function
   | Iunsigned Cge -> "cs" | Iunsigned Clt -> "cc" | Iunsigned Cgt -> "hi"
 
 let name_for_int_operation = function
-    Iadd -> "add"
-  | Isub -> "sub"
-  | Imul -> "mul"
-  | Iand -> "and"
-  | Ior  -> "orr"
-  | Ixor -> "eor"
+  (* Use adds,subs,... to enable 16-bit T1 encoding *)
+    Iadd -> "adds"
+  | Isub -> "subs"
+  | Imul -> "muls"
+  | Iand -> "ands"
+  | Ior  -> "orrs"
+  | Ixor -> "eors"
   | _ -> assert false
 
 let name_for_shift_operation = function
@@ -233,8 +234,9 @@ let emit_intconst dst n =
     decompose_intconst n
       (fun bits ->
         if !first
-        then `	mov	{emit_reg dst}, #{emit_int32 bits} @ {emit_int32 n}\n`
-        else `	add	{emit_reg dst}, {emit_reg dst}, #{emit_int32 bits}\n`;
+        (* Use movs,adds here to enable 16-bit T1 encoding *)
+        then `	movs	{emit_reg dst}, #{emit_int32 bits} @ {emit_int32 n}\n`
+        else `	adds	{emit_reg dst}, {emit_reg dst}, #{emit_int32 bits}\n`;
         first := false)
   end
 
@@ -564,7 +566,8 @@ let emit_instr i =
         end
     | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
         let shift = name_for_shift_operation op in
-        `	mov	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_string shift} {emit_reg i.arg.(1)}\n`; 1
+        (* Use movs to enable 16-bit T1 encoding *)
+        `	movs	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_string shift} {emit_reg i.arg.(1)}\n`; 1
     | Lop(Iintop(Icomp cmp)) ->
         let compthen = name_for_comparison cmp in
         let compelse = name_for_comparison (negate_integer_comparison cmp) in
@@ -606,7 +609,8 @@ let emit_instr i =
           `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
           `	sublt	{emit_reg r}, {emit_reg r}, #1\n`
         end;
-        `	mov	{emit_reg r}, {emit_reg r}, asr #{emit_int l}\n`; 5
+        (* Use movs to enable 16-bit T1 encoding *)
+        `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int l}\n`; 5
     | Lop(Iintop_imm(Imod, n)) -> (* n is a power of 2 *)
         let l = Misc.log2 n in
         let a = i.arg.(0) in
@@ -622,7 +626,8 @@ let emit_instr i =
         `{emit_label lbl}:\n`; 7
     | Lop(Iintop_imm((Ilsl | Ilsr | Iasr as op), n)) ->
         let shift = name_for_shift_operation op in
-        `	mov	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_string shift} #{emit_int n}\n`; 1
+        (* Use movs to enable 16-bit T1 encoding *)
+        `	movs	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_string shift} #{emit_int n}\n`; 1
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1

@@ -76,6 +76,15 @@ The "configure" script accepts the following options:
         hand. The installation instructions for gcc or emacs contain a
         complete list of configuration names.
 
+-target <targettype>            (default: same as -host)
+        The type of the target machine, in GNU's "configuration name"
+        format (CPU-COMPANY-SYSTEM or CPU-COMPANY-KERNEL-SYSTEM).
+        Setting this will setup OCaml as a cross-compiler which runs on
+        $host and produces code for $target. This requires a C toolchain
+        which also produces code for $target and a native OCaml
+        compiler of the exact same version (if you want a cross 4.00.1,
+        you need a native 4.00.1).
+
 -x11include <include_dir>       (default: determined automatically)
 -x11lib     <lib_dir>           (default: determined automatically)
         Location of the X11 include directory (e.g. /usr/X11R6/include)
@@ -133,6 +142,15 @@ The "configure" script accepts the following options:
 
 -no-camlp4
         Do not compile Camlp4.
+
+-no-debugger
+        Do not build ocamldebug.
+
+-no-ocamldoc
+        Do not build ocamldoc.
+
+-no-ocamlbuild
+        Do not build ocamlbuild.
 
 -no-graph
         Do not compile the Graphics library.
