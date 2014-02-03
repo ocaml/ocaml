@@ -384,13 +384,13 @@ let check_sig_item type_names module_names modtype_names loc = function
 let rec remove_duplicates val_ids ext_ids exn_ids = function
     [] -> []
   | Sig_value (id, _) :: rem
-    when List.exists (Ident.equal id) val_ids -> 
+    when List.exists (Ident.equal id) val_ids ->
       remove_duplicates val_ids ext_ids exn_ids rem
   | Sig_extension (id, _, _) :: rem
-    when List.exists (Ident.equal id) ext_ids -> 
+    when List.exists (Ident.equal id) ext_ids ->
       remove_duplicates val_ids ext_ids exn_ids rem
   | Sig_exception (id, _) :: rem
-    when List.exists (Ident.equal id) exn_ids -> 
+    when List.exists (Ident.equal id) exn_ids ->
       remove_duplicates val_ids ext_ids exn_ids rem
   | f :: rem -> f :: remove_duplicates val_ids ext_ids exn_ids rem
 

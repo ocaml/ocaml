@@ -151,20 +151,21 @@ Examples:
   or:
     ./configure -prefix /usr -mandir '$(PREFIX)/man/manl'
 
+  On a Linux x86/64 bits host, to build a 32-bit version of OCaml:
+    ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c" \
+                -host i386-linux -partialld "ld -r -melf_i386"
+
+  On a Linux x86/64 bits host, to build the run-time system in PIC mode
+  (enables putting the runtime in a shared library,
+   at a small performance cost):
+    ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
+
   On a MacOSX 10.5/Intel Core 2 or MacOSX 10.5/PowerPC host,
   to build a 64-bit version of OCaml:
     ./configure -cc "gcc -m64"
 
   On a MacOSX 10.6/Intel Core 2, to build a 32-bit version of OCaml:
     ./configure -cc "gcc -m32" -as "as -arch i386" -aspp "gcc -m32 -c"
-
-  On a Linux x86/64 bits host, to build a 32-bit version of OCaml:
-    ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c"
-
-  On a Linux x86/64 bits host, to build the run-time system in PIC mode
-  (enables putting the runtime in a shared library,
-   at a small performance cost):
-    ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
 
   For Sun Solaris with the "acc" compiler:
     ./configure -cc "acc -fast" -libs "-lucb"

@@ -78,7 +78,7 @@ rule "ocaml: mli -> cmi"
   ~tags:["ocaml"]
   ~prod:"%.cmi"
   ~deps:["%.mli"; "%.mli.depends"]
-  (Ocaml_compiler.byte_compile_ocaml_interf "%.mli" "%.cmi");;
+  (Ocaml_compiler.compile_ocaml_interf "%.mli" "%.cmi");;
 
 rule "ocaml: mlpack & d.cmo* -> d.cmo & cmi"
   ~tags:["ocaml"; "debug"; "byte"]

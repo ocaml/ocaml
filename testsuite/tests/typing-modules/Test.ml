@@ -50,3 +50,7 @@ module M : sig type -'a t = private int end =
 module type A = sig type t = X of int end;;
 type u = X of bool;;
 module type B = A with type t = u;; (* fail *)
+
+(* PR#5815 *)
+
+module type S = sig exception Foo of int  exception Foo of bool end;;
