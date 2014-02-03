@@ -349,9 +349,7 @@ CAMLexport void caml_main(char **argv)
   value res;
   char * shared_lib_path, * shared_libs, * req_prims;
   char * exe_name;
-#ifdef __linux__
   static char proc_self_exe[256];
-#endif
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -368,12 +366,18 @@ CAMLexport void caml_main(char **argv)
 #endif
   parse_camlrunparam();
   pos = 0;
+
+  /* First, try argv[0] (when ocamlrun is called by a bytecode program) */
   exe_name = argv[0];
-#ifdef __linux__
-  if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
-    exe_name = proc_self_exe;
-#endif
   fd = caml_attempt_open(&exe_name, &trail, 0);
+
+  /* Should we really do that at all?  The current executable is ocamlrun
+     itself, it's never a bytecode program. */
+  if (fd < 0 && caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0) {
+    exe_name = proc_self_exe;
+    fd = caml_attempt_open(&exe_name, &trail, 0);
+  }
+
   if (fd < 0) {
     pos = parse_command_line(argv);
     if (argv[pos] == 0)
@@ -456,9 +460,7 @@ CAMLexport void caml_startup_code(
   value res;
   char* cds_file;
   char * exe_name;
-#ifdef __linux__
   static char proc_self_exe[256];
-#endif
 
   caml_init_ieee_floats();
 #ifdef _MSC_VER
@@ -475,10 +477,8 @@ CAMLexport void caml_startup_code(
   }
   parse_camlrunparam();
   exe_name = argv[0];
-#ifdef __linux__
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
-#endif
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,

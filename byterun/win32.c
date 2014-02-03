@@ -502,3 +502,15 @@ void caml_install_invalid_parameter_handler()
 }
 
 #endif
+
+
+/* Recover executable name  */
+
+int caml_executable_name(char * name, int name_len)
+{
+  int retcode;
+
+  int ret = GetModuleFileName(NULL, name, name_len);
+  if (0 == ret || ret >= name_len) return -1;
+  return 0;
+}

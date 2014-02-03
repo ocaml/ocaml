@@ -1275,16 +1275,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
-                  | Ast.ExOpI x0 x1 x2 ->
+                  | Ast.ExOpI x0 x1 x2 x3 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
                            (Ast.ExApp _loc
-                              (Ast.ExId _loc
-                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                    (Ast.IdUid _loc "ExOpI")))
-                              (meta_loc _loc x0))
-                           (meta_ident _loc x1))
-                        (meta_expr _loc x2)
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExOpI")))
+                                 (meta_loc _loc x0))
+                              (meta_ident _loc x1))
+                           (meta_override_flag _loc x2))
+                        (meta_expr _loc x3)
                   | Ast.ExWhi x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -2416,14 +2418,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "StTyp")))
                            (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
-                  | Ast.StOpn x0 x1 ->
+                  | Ast.StOpn x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
-                           (Ast.ExId _loc
-                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                 (Ast.IdUid _loc "StOpn")))
-                           (meta_loc _loc x0))
-                        (meta_ident _loc x1)
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StOpn")))
+                              (meta_loc _loc x0))
+                           (meta_override_flag _loc x1))
+                        (meta_ident _loc x2)
                   | Ast.StMty x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -3408,16 +3412,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
-                  | Ast.ExOpI x0 x1 x2 ->
+                  | Ast.ExOpI x0 x1 x2 x3 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
                            (Ast.PaApp _loc
-                              (Ast.PaId _loc
-                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                    (Ast.IdUid _loc "ExOpI")))
-                              (meta_loc _loc x0))
-                           (meta_ident _loc x1))
-                        (meta_expr _loc x2)
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExOpI")))
+                                 (meta_loc _loc x0))
+                              (meta_ident _loc x1))
+                           (meta_override_flag _loc x2))
+                        (meta_expr _loc x3)
                   | Ast.ExWhi x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -4549,14 +4555,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "StTyp")))
                            (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
-                  | Ast.StOpn x0 x1 ->
+                  | Ast.StOpn x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
-                           (Ast.PaId _loc
-                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                 (Ast.IdUid _loc "StOpn")))
-                           (meta_loc _loc x0))
-                        (meta_ident _loc x1)
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StOpn")))
+                              (meta_loc _loc x0))
+                           (meta_override_flag _loc x1))
+                        (meta_ident _loc x2)
                   | Ast.StMty x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -4819,9 +4827,10 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
               let _x_i2 = o#module_type _x_i2 in StMty _x _x_i1 _x_i2
-          | StOpn _x _x_i1 ->
+          | StOpn _x _x_i1 _x_i2 ->
               let _x = o#loc _x in
-              let _x_i1 = o#ident _x_i1 in StOpn _x _x_i1
+              let _x_i1 = o#override_flag _x_i1 in
+              let _x_i2 = o#ident _x_i2 in StOpn _x _x_i1 _x_i2
           | StTyp _x _x_i1 ->
               let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in StTyp _x _x_i1
           | StVal _x _x_i1 _x_i2 ->
@@ -5302,10 +5311,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#expr _x_i1 in
               let _x_i2 = o#expr _x_i2 in ExWhi _x _x_i1 _x_i2
-          | ExOpI _x _x_i1 _x_i2 ->
+          | ExOpI _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
               let _x_i1 = o#ident _x_i1 in
-              let _x_i2 = o#expr _x_i2 in ExOpI _x _x_i1 _x_i2
+              let _x_i2 = o#override_flag _x_i2 in
+              let _x_i3 = o#expr _x_i3 in ExOpI _x _x_i1 _x_i2 _x_i3
           | ExFUN _x _x_i1 _x_i2 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
@@ -5693,7 +5703,9 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | StMty _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in let o = o#module_type _x_i2 in o
-          | StOpn _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | StOpn _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#override_flag _x_i1 in let o = o#ident _x_i2 in o
           | StTyp _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
           | StVal _x _x_i1 _x_i2 ->
               let o = o#loc _x in
@@ -6018,9 +6030,10 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | ExWhi _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
-          | ExOpI _x _x_i1 _x_i2 ->
+          | ExOpI _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
-              let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
+              let o = o#ident _x_i1 in
+              let o = o#override_flag _x_i2 in let o = o#expr _x_i3 in o
           | ExFUN _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in let o = o#expr _x_i2 in o

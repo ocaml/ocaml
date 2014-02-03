@@ -321,4 +321,11 @@ int caml_executable_name(char * name, int name_len)
   return 0;
 }
 
+#else
+
+int caml_executable_name(char * name, int name_len)
+{
+  return -1;
+}
+
 #endif

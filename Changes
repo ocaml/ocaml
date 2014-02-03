@@ -1,8 +1,15 @@
 Next version:
 -------------
 
-OCaml 4.01:
-------------
+(Changes that can break existing programs are marked with a "*")
+
+Bug fixes:
+
+Features wishes:
+
+
+OCaml 4.01.0:
+-------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -126,6 +133,7 @@ Bug fixes:
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5910: Fix code generation bug for "mod 1" on ARM.
 - PR#5911: Signature substitutions fail in submodules
+- PR#5914: Functor breaks with an equivalent argument signature
 - PR#5920, PR#2957: linking failure for big bytecodes on 32bit architectures
 - PR#5928: Missing space between words in manual page for ocamlmktop
 - PR#5930: ocamldep leaks temporary preprocessing files

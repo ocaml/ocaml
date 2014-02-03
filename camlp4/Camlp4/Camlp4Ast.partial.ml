@@ -204,7 +204,7 @@
       (* while e do { e } *)
     | ExWhi of loc and expr and expr
       (* let open i in e *)
-    | ExOpI of loc and ident and expr
+    | ExOpI of loc and ident and override_flag and expr
       (* fun (type t) -> e *)
       (* let f x (type t) y z = e *)
     | ExFUN of loc and string and expr
@@ -338,7 +338,7 @@
       (* module type s = mt *)
     | StMty of loc and string and module_type
       (* open i *)
-    | StOpn of loc and ident
+    | StOpn of loc and override_flag and ident
       (* type t *)
     | StTyp of loc and ctyp
       (* value (rec)? bi *)

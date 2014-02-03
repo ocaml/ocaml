@@ -13,19 +13,61 @@
 BASEDIR=../..
 EXECNAME=program$(EXE)
 
-.PHONY: run-all
-run-all:
-	@for file in *.ml; do \
+ABCDFILES=backtrace.ml
+OTHERFILES=backtrace2.ml raw_backtrace.ml
+
+default:
+	$(MAKE) byte
+	@if $(BYTECODE_ONLY); then : ; else $(MAKE) native; fi
+
+.PHONY: byte
+byte:
+	@for file in $(ABCDFILES); do \
 	  rm -f program program.exe; \
 	  $(OCAMLC) -g -o $(EXECNAME) $$file; \
 	  for arg in a b c d ''; do \
-	    printf " ... testing '$$file' with argument '$$arg':"; \
+	    printf " ... testing '$$file' with ocamlc and argument '$$arg':"; \
 	    F="`basename $$file .ml`"; \
 	    (OCAMLRUNPARAM=b=1 $(OCAMLRUN) $(EXECNAME) $$arg || true) \
-	         >$$F.$$arg.result 2>&1; \
-	    $(DIFF) $$F.$$arg.reference $$F.$$arg.result >/dev/null \
+	         >$$F.$$arg.byte.result 2>&1; \
+	    $(DIFF) $$F.$$arg.reference $$F.$$arg.byte.result >/dev/null \
 	    && echo " => passed" || echo " => failed"; \
 	  done; \
+	done
+	@for file in $(OTHERFILES); do \
+	  rm -f program program.exe; \
+	  $(OCAMLC) -g -o $(EXECNAME) $$file; \
+	  printf " ... testing '$$file' with ocamlc:"; \
+	  F="`basename $$file .ml`"; \
+	  (OCAMLRUNPARAM=b=1 $(OCAMLRUN) $(EXECNAME) $$arg || true) \
+	       >$$F.byte.result 2>&1; \
+	  $(DIFF) $$F.reference $$F.byte.result >/dev/null \
+	  && echo " => passed" || echo " => failed"; \
+	done
+
+.PHONY: native
+native:
+	@for file in $(ABCDFILES); do \
+	  rm -f program program.exe; \
+	  $(OCAMLOPT) -g -o $(EXECNAME) $$file; \
+	  for arg in a b c d ''; do \
+	    printf " ... testing '$$file' with ocamlopt and argument '$$arg':"; \
+	    F="`basename $$file .ml`"; \
+	    (OCAMLRUNPARAM=b=1 ./$(EXECNAME) $$arg || true) \
+	         >$$F.$$arg.native.result 2>&1; \
+	    $(DIFF) $$F.$$arg.reference $$F.$$arg.native.result >/dev/null \
+	    && echo " => passed" || echo " => failed"; \
+	  done; \
+	done
+	@for file in $(OTHERFILES); do \
+	  rm -f program program.exe; \
+	  $(OCAMLOPT) -g -o $(EXECNAME) $$file; \
+	  printf " ... testing '$$file' with ocamlc:"; \
+	  F="`basename $$file .ml`"; \
+	  (OCAMLRUNPARAM=b=1 ./$(EXECNAME) $$arg || true) \
+	       >$$F.native.result 2>&1; \
+	  $(DIFF) $$F.reference $$F.native.result >/dev/null \
+	  && echo " => passed" || echo " => failed"; \
 	done
 
 .PHONY: promote

@@ -501,6 +501,7 @@ let get_variance ty visited =
 
 let compute_variance env visited vari ty =
   let rec compute_variance_rec vari ty =
+    (* Format.eprintf "%a: %x@." Printtyp.type_expr ty (Obj.magic vari); *)
     let ty = Ctype.repr ty in
     let vari' = get_variance ty visited in
     if Variance.subset vari vari' then () else
@@ -624,7 +625,7 @@ let compute_variance_type env check (required, loc) decl tyl =
       params required;
     (* Check propagation from constrained parameters *)
     let args = Btype.newgenty (Ttuple params) in
-    let fvl = if check then Ctype.free_variables args else [] in
+    let fvl = Ctype.free_variables args in
     let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
     (* If there are no extra variables there is nothing to do *)
     if fvl = [] then () else
@@ -700,7 +701,8 @@ let compute_variance_gadt env check (required, loc as rloc) decl
   | Some ret_type ->
       match Ctype.repr ret_type with
       | {desc=Tconstr (path, tyl, _)} ->
-          let tyl = List.map (Ctype.expand_head env) tyl in
+          (* let tyl = List.map (Ctype.expand_head env) tyl in *)
+          let tyl = List.map Ctype.repr tyl in
           let fvl = List.map Ctype.free_variables tyl in
           let _ =
             List.fold_left2

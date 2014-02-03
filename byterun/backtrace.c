@@ -107,6 +107,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp)
   }
   if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   if (pc >= caml_start_code && pc < end_code){
+    /* testing the code region is needed: PR#1554 */
     caml_backtrace_buffer[caml_backtrace_pos++] = pc;
   }
   for (/*nothing*/; sp < caml_trapsp; sp++) {
@@ -116,6 +117,74 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp)
       caml_backtrace_buffer[caml_backtrace_pos++] = p;
     }
   }
+}
+
+/* returns the next frame pointer (or NULL if none is available);
+   updates *sp to point to the following one, and *trapsp to the next
+   trap frame, which we will skip when we reach it  */
+
+code_t caml_next_frame_pointer(value ** sp, value ** trapsp)
+{
+  code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
+
+  while (*sp < caml_stack_high) {
+    code_t *p = (code_t*) (*sp)++;
+    if(&Trap_pc(*trapsp) == p) {
+      *trapsp = Trap_link(*trapsp);
+      continue;
+    }
+    if (*p >= caml_start_code && *p < end_code) return *p;
+  }
+  return NULL;
+}
+
+/* Stores upto [max_frames_value] frames of the current call stack to
+   return to the user. This is used not in an exception-raising
+   context, but only when the user requests to save the trace
+   (hopefully less often). Instead of using a bounded buffer as
+   [caml_stash_backtrace], we first traverse the stack to compute the
+   right size, then allocate space for the trace. */
+
+CAMLprim value caml_get_current_callstack(value max_frames_value) {
+  CAMLparam1(max_frames_value);
+  CAMLlocal1(trace);
+
+  /* we use `intnat` here because, were it only `int`, passing `max_int`
+     from the OCaml side would overflow on 64bits machines. */
+  intnat max_frames = Long_val(max_frames_value);
+  intnat trace_size;
+
+  /* first compute the size of the trace */
+  {
+    value * sp = caml_extern_sp;
+    value * trapsp = caml_trapsp;
+
+    for (trace_size = 0; trace_size < max_frames; trace_size++) {
+      code_t p = caml_next_frame_pointer(&sp, &trapsp);
+      if (p == NULL) break;
+    }
+  }
+
+  trace = caml_alloc(trace_size, Abstract_tag);
+
+  /* then collect the trace */
+  {
+    value * sp = caml_extern_sp;
+    value * trapsp = caml_trapsp;
+    uintnat trace_pos;
+
+    for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
+      code_t p = caml_next_frame_pointer(&sp, &trapsp);
+      Assert(p != NULL);
+      /* The assignment below is safe without [caml_initialize], even
+         if the trace is large and allocated on the old heap, because
+         we assign values that are outside the OCaml heap. */
+      Assert(!(Is_block((value) p) && Is_in_heap((value) p)));
+      Field(trace, trace_pos) = (value) p;
+    }
+  }
+
+  CAMLreturn(trace);
 }
 
 /* Read the debugging info contained in the current bytecode executable.
@@ -225,7 +294,7 @@ static void extract_location_info(value events, code_t pc,
     - Int_val (Field (ev_start, POS_BOL));
 }
 
-/* Print location information */
+/* Print location information -- same behavior as in Printexc */
 
 static void print_location(struct loc_info * li, int index)
 {

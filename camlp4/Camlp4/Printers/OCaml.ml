@@ -493,9 +493,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | _ ->
             pp f "@[<hv0>@[<2>let %a%a@]@ @[<hv2>in@ %a@]@]"
               o#rec_flag r o#binding bi o#reset_semi#expr e ]
-    | <:expr< let open $i$ in $e$ >> ->
-        pp f "@[<2>let open %a@]@ @[<2>in@ %a@]"
-             o#ident i o#reset_semi#expr e
+    | Ast.ExOpI _loc i ov e ->
+    (* | <:expr< let open $i$ in $e$ >> -> *)
+        pp f "@[<2>let open%a %a@]@ @[<2>in@ %a@]"
+          o#override_flag ov o#ident i o#reset_semi#expr e
     | <:expr< match $e$ with [ $a$ ] >> ->
         pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]"
           o#expr e o#match_case a
@@ -594,7 +595,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       <:expr< if $_$ then $_$ else $_$ >> |
       <:expr< let $rec:_$ $_$ in $_$ >> |
       <:expr< let module $_$ = $_$ in $_$ >> |
-      <:expr< let open $_$ in $_$ >> |
+      (* <:expr< let open $_$ in $_$ >> *)Ast.ExOpI _ _ _ _ |
       <:expr< assert $_$ >> | <:expr< assert False >> |
       <:expr< lazy $_$ >> | <:expr< new $_$ >> |
       <:expr< object ($_$) $_$ end >> ->
@@ -870,8 +871,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:str_item< module type $s$ = $mt$ >> ->
             pp f "@[<2>module type %a =@ %a%(%)@]"
               o#var s o#module_type mt semisep
-      | <:str_item< open $sl$ >> ->
-            pp f "@[<2>open@ %a%(%)@]" o#ident sl semisep
+      | Ast.StOpn _loc ov sl ->
+      (* | <:str_item< open $sl$ >> -> *)
+            pp f "@[<2>open%a@ %a%(%)@]"
+            o#override_flag ov
+            o#ident sl semisep
       | <:str_item< type $t$ >> ->
             pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t semisep
       | <:str_item< value $rec:r$ $bi$ >> ->

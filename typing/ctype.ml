@@ -2878,13 +2878,8 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       raise (Unify [])
   | _ when static_row row1 -> ()
   | _ when may_inst ->
-      if not (static_row row2) then moregen_occur env rm1.level rm2;
-      let ext =
-        if r2 = [] then rm2 else
-        let row_ext = {row2 with row_fields = r2} in
-        iter_row (moregen_occur env rm1.level) row_ext;
-        newty2 rm1.level (Tvariant row_ext)
-      in
+      let ext = newgenty (Tvariant {row2 with row_fields = r2}) in
+      moregen_occur env rm1.level ext;
       link_type rm1 ext
   | Tconstr _, Tconstr _ ->
       moregen inst_nongen type_pairs env rm1 rm2

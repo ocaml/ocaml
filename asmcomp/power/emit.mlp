@@ -15,7 +15,6 @@
 module StringSet =
   Set.Make(struct type t = string let compare (x:t) y = compare x y end)
 
-open Location
 open Misc
 open Cmm
 open Arch
@@ -820,7 +819,7 @@ let rec emit_all i =
   match i with
     {desc = Lend} -> ()
   | {next = {desc = (Lcondbranch(_, _) | Lcondbranch3(_, _, _))}}
-    when is_simple_instr i & no_interference i.res i.next.arg ->
+    when is_simple_instr i && no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | _ ->

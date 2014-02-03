@@ -1581,14 +1581,14 @@ else
 fi
 
 if test "$with_frame_pointers" = "true"; then
-  nativecccompopts="$nativecccompopts -g"
-  nativecclinkopts="$nativecclinkopts -g"
-  echo "#define WITH_FRAME_POINTERS" >> m.h
-
-  case "$cc" in
-    gcc*)
-      bytecccompopts="$bytecccompopts -fno-omit-frame-pointer"
-      nativecccompopts="$nativecccompopts -fno-omit-frame-pointer";;
+  case "$host,$cc" in
+    x86_64-*-linux*,gcc*)
+       nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
+       bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
+       nativecclinkopts="$nativecclinkopts -g"
+       echo "#define WITH_FRAME_POINTERS" >> m.h
+       ;;
+    *)  echo "Unsupported architecture with frame pointers" 1>&2; exit 2;;
   esac
 
 fi

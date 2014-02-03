@@ -931,10 +931,14 @@ New syntax:\
             and _ = (a_INT : 'a_INT Gram.Entry.t)
             and _ = (a_FLOAT : 'a_FLOAT Gram.Entry.t) in
             let grammar_entry_create = Gram.Entry.mk in
-            let (* Here it's LABEL and not tilde_label since ~a:b is different than ~a : b *)
-              (* Same remark for ?a:b *) infixop5 : 'infixop5 Gram.Entry.t =
+            let (* <:str_item< open $i$ >> *)
+              (* <:expr< let open $id:i$ in $e$ >> *)
+              (* Here it's LABEL and not tilde_label since ~a:b is different than ~a : b *)
+              (* Same remark for ?a:b *) (* <:expr< let open $i$ in $e$ >> *)
+              infixop5 : 'infixop5 Gram.Entry.t =
               grammar_entry_create "infixop5"
-            and (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
+            and (* <:expr< let open $id:i$ in $e$ >> *)
+              (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
               (* <:patt< ? $i$ : ($p$) >> *)
               (* | i = opt_label; "("; p = ipatt_tcon; ")" ->
             <:patt< ? $i$ : ($p$) >>
@@ -1175,7 +1179,18 @@ New syntax:\
                             (Gram.Action.mk
                                (fun (i : 'module_longident) _
                                   (_loc : Gram.Loc.t) ->
-                                  (Ast.StOpn (_loc, i) : 'str_item))));
+                                  (Ast.StOpn (_loc, Ast.OvNil, i) :
+                                    'str_item))));
+                           ([ Gram.Skeyword "open"; Gram.Skeyword "!";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (module_longident :
+                                     'module_longident Gram.Entry.t)) ],
+                            (Gram.Action.mk
+                               (fun (i : 'module_longident) _ _
+                                  (_loc : Gram.Loc.t) ->
+                                  (Ast.StOpn (_loc, Ast.OvOverride, i) :
+                                    'str_item))));
                            ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                               Gram.Snterm
                                 (Gram.Entry.obj
@@ -2012,7 +2027,19 @@ New syntax:\
                             (Gram.Action.mk
                                (fun (e : 'expr) _ (i : 'module_longident) _ _
                                   (_loc : Gram.Loc.t) ->
-                                  (Ast.ExOpI (_loc, i, e) : 'expr))));
+                                  (Ast.ExOpI (_loc, i, Ast.OvNil, e) : 'expr))));
+                           ([ Gram.Skeyword "let"; Gram.Skeyword "open";
+                              Gram.Skeyword "!";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (module_longident :
+                                     'module_longident Gram.Entry.t));
+                              Gram.Skeyword "in"; Gram.Sself ],
+                            (Gram.Action.mk
+                               (fun (e : 'expr) _ (i : 'module_longident) _ _
+                                  _ (_loc : Gram.Loc.t) ->
+                                  (Ast.ExOpI (_loc, i, Ast.OvOverride, e) :
+                                    'expr))));
                            ([ Gram.Skeyword "let"; Gram.Skeyword "module";
                               Gram.Snterm
                                 (Gram.Entry.obj
@@ -2583,7 +2610,7 @@ New syntax:\
                                (fun _ (e : 'sequence)
                                   (i : 'module_longident_dot_lparen)
                                   (_loc : Gram.Loc.t) ->
-                                  (Ast.ExOpI (_loc, i, e) : 'expr))));
+                                  (Ast.ExOpI (_loc, i, Ast.OvNil, e) : 'expr))));
                            ([ Gram.Snterm
                                 (Gram.Entry.obj
                                    (a_CHAR : 'a_CHAR Gram.Entry.t)) ],
@@ -2932,7 +2959,20 @@ New syntax:\
                             (Gram.Action.mk
                                (fun (e : 'sequence) _ (i : 'module_longident)
                                   _ _ (_loc : Gram.Loc.t) ->
-                                  (Ast.ExOpI (_loc, i, e) : 'sequence))));
+                                  (Ast.ExOpI (_loc, i, Ast.OvNil, e) :
+                                    'sequence))));
+                           ([ Gram.Skeyword "let"; Gram.Skeyword "open";
+                              Gram.Skeyword "!";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (module_longident :
+                                     'module_longident Gram.Entry.t));
+                              Gram.Skeyword "in"; Gram.Sself ],
+                            (Gram.Action.mk
+                               (fun (e : 'sequence) _ (i : 'module_longident)
+                                  _ _ _ (_loc : Gram.Loc.t) ->
+                                  (Ast.ExOpI (_loc, i, Ast.OvOverride, e) :
+                                    'sequence))));
                            ([ Gram.Skeyword "let"; Gram.Skeyword "module";
                               Gram.Snterm
                                 (Gram.Entry.obj
