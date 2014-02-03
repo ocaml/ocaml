@@ -182,6 +182,11 @@ val randomize : unit -> unit
 
     @since 4.00.0 *)
 
+val is_randomized : unit -> bool
+(** return if the tables are currently created in randomized mode by default
+
+    @since 4.02.0 *)
+
 type statistics = {
   num_bindings: int;
     (** Number of bindings present in the table.
