@@ -247,4 +247,33 @@ Characters 20-21:
                       ^
 Warning 42: this use of A required disambiguation.
 class g : f
+#                       Characters 199-200:
+    let y : t = {x = 0}
+                 ^
+Warning 42: this use of x required disambiguation.
+Characters 114-120:
+    open M  (* this open is unused, it isn't reported as shadowing 'x' *)
+    ^^^^^^
+Warning 33: unused open M.
+module Shadow1 :
+  sig
+    type t = { x : int; }
+    module M : sig type s = { x : string; } end
+    val y : t
+  end
+#               Characters 97-103:
+    open M  (* this open shadows label 'x' *)
+    ^^^^^^
+Warning 45: this open statement shadows the label x (which is later used)
+Characters 149-157:
+    let y = {x = ""}
+            ^^^^^^^^
+Warning 41: these field labels belong to several types: M.s t
+The first one was selected. Please disambiguate if this is wrong.
+module Shadow2 :
+  sig
+    type t = { x : int; }
+    module M : sig type s = { x : string; } end
+    val y : M.s
+  end
 # 

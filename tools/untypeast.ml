@@ -167,6 +167,7 @@ and untype_pattern pat =
         Ppat_construct (lid,
           (match args with
               [] -> None
+            | [arg] -> Some (untype_pattern arg)
             | args -> Some
                   { ppat_desc = Ppat_tuple (List.map untype_pattern args);
                   ppat_loc = pat.pat_loc; }

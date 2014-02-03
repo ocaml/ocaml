@@ -1916,12 +1916,12 @@ let reify env t =
   in
   iterator t
 
-let is_abstract_newtype env p =
+let is_newtype env p =
   try
     let decl = Env.find_type p env in
-    not (decl.type_newtype_level = None) &&
-    decl.type_manifest = None &&
-    decl.type_kind = Type_abstract
+    decl.type_newtype_level <> None &&
+    decl.type_kind = Type_abstract &&
+    decl.type_private = Public
   with Not_found -> false
 
 let non_aliasable p decl =
@@ -2191,6 +2191,18 @@ let rec unify (env:Env.t ref) t1 t2 =
                  || has_cached_expansion p2 !a2) ->
         update_level !env t1.level t2;
         link_type t1 t2
+    | (Tconstr (p1, [], _), Tconstr (p2, [], _))
+      when Env.has_local_constraints !env
+      && is_newtype !env p1 && is_newtype !env p2 ->
+        (* Do not use local constraints more than necessary *)
+        begin try
+          if find_newtype_level !env p1 < find_newtype_level !env p2 then
+            unify env t1 (try_expand_once !env t2)
+          else
+            unify env (try_expand_once !env t1) t2
+        with Cannot_expand ->
+          unify2 env t1 t2
+        end
     | _ ->
         unify2 env t1 t2
     end;
@@ -2306,7 +2318,7 @@ and unify3 env t1 t1' t2 t2' =
               inj (List.combine tl1 tl2)
       | (Tconstr ((Path.Pident p) as path,[],_),
          Tconstr ((Path.Pident p') as path',[],_))
-        when is_abstract_newtype !env path && is_abstract_newtype !env path'
+        when is_newtype !env path && is_newtype !env path'
         && !generate_equations ->
           let source,destination =
             if find_newtype_level !env path > find_newtype_level !env path'
@@ -2314,12 +2326,12 @@ and unify3 env t1 t1' t2 t2' =
             else  p',t1'
           in add_gadt_equation env source destination
       | (Tconstr ((Path.Pident p) as path,[],_), _)
-        when is_abstract_newtype !env path && !generate_equations ->
+        when is_newtype !env path && !generate_equations ->
           reify env t2';
           local_non_recursive_abbrev !env (Path.Pident p) t2';
           add_gadt_equation env p t2'
       | (_, Tconstr ((Path.Pident p) as path,[],_))
-        when is_abstract_newtype !env path && !generate_equations ->
+        when is_newtype !env path && !generate_equations ->
           reify env t1' ;
           local_non_recursive_abbrev !env (Path.Pident p) t1';
           add_gadt_equation env p t1'

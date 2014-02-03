@@ -1431,7 +1431,7 @@ let open_pers_signature name env =
   open_signature None (Pident(Ident.create_persistent name)) ps.ps_sig env
 
 let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
-  if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost && (Warnings.is_active (Warnings.Unused_open "") || Warnings.is_active (Warnings.Open_shadow_identifier ("", "")))
+  if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost && (Warnings.is_active (Warnings.Unused_open "") || Warnings.is_active (Warnings.Open_shadow_identifier ("", "")) || Warnings.is_active (Warnings.Open_shadow_label_constructor ("", "")))
   then begin
     let used = ref false in
     !add_delayed_check_forward
@@ -1443,7 +1443,12 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
     let slot kind s b =
       if b && not (List.mem (kind, s) !shadowed) then begin
         shadowed := (kind, s) :: !shadowed;
-        Location.prerr_warning loc (Warnings.Open_shadow_identifier (kind, s));
+        let w =
+          match kind with
+          | "label" | "constructor" -> Warnings.Open_shadow_label_constructor (kind, s)
+          | _ -> Warnings.Open_shadow_identifier (kind, s)
+        in
+        Location.prerr_warning loc w
       end;
       used := true
     in
