@@ -6,6 +6,9 @@ Next version:
 Bug fixes:
 - PR#4719: Sys.executable_name is wrong if executable name contains dots (Windows)
 
+Standard library:
+- PR#4986: add List.sort_uniq and Set.of_list
+
 Features wishes:
 
 
@@ -48,11 +51,15 @@ Compilers:
   - ISO-latin1 characters in identifiers
   - uses of the (&) and (or) operators instead of (&&) and (||)
 - Experimental OCAMLCOMPPARAM for ocamlc and ocamlopt
+- PR#5571: incorrect ordinal number in error message
 
 Standard library:
+- PR#5899: expose a way to inspect the current call stack
+  (Printexc.get_callstack)
 - PR#5986: new flag Marshal.Compat_32 for the serialization functions
   (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 - Add optimized composition operators |> and @@ in Pervasives
+
 
 Runtime system:
 * PR#6019: more efficient implementation of caml_modify() and caml_initialize().
@@ -62,6 +69,7 @@ Runtime system:
   point within the major heap.
 
 Bug fixes:
+- PR#6062: Fix a regression bug caused by commit 13047
 - PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4079: Queue.copy is now tail-recursive

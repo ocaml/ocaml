@@ -63,7 +63,8 @@ type t =
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
   | Open_shadow_label_constructor of string * string (* 45 *)
-  | Unused_extension of string * bool * bool  (* 46 *)
+  | Bad_env_variable of string * string     (* 46 *)
+  | Unused_extension of string * bool * bool  (* 47 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -118,10 +119,11 @@ let number = function
   | Nonoptional_label _ -> 43
   | Open_shadow_identifier _ -> 44
   | Open_shadow_label_constructor _ -> 45
-  | Unused_extension _ -> 46
+  | Bad_env_variable _ -> 46
+  | Unused_extension _ -> 47
 ;;
 
-let last_warning_number = 46
+let last_warning_number = 47
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -137,7 +139,7 @@ let letter = function
   | 'h' -> []
   | 'i' -> []
   | 'j' -> []
-  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39; 46]
+  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39; 47]
   | 'l' -> [6]
   | 'm' -> [7]
   | 'n' -> []
@@ -216,7 +218,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-46";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-47";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -346,6 +348,8 @@ let message = function
       Printf.sprintf
         "this open statement shadows the %s %s (which is later used)"
         kind s
+  | Bad_env_variable (var, s) ->
+    Printf.sprintf "illegal environment variable %s : %s" var s
   | Unused_extension (s, false, false) -> "unused extension constructor " ^ s ^ "."
   | Unused_extension (s, true, _) ->
       "extension constructor " ^ s ^
@@ -446,7 +450,7 @@ let descriptions =
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
-   46, "Unused extension constructor.";
+   47, "Unused extension constructor.";
   ]
 ;;
 

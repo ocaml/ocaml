@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(** Facilities for printing exceptions. *)
+(** Facilities for printing exceptions and inspecting current call stack. *)
 
 val to_string: exn -> string
 (** [Printexc.to_string e] returns a string representation of
@@ -99,3 +99,16 @@ type raw_backtrace
 val get_raw_backtrace: unit -> raw_backtrace
 val print_raw_backtrace: out_channel -> raw_backtrace -> unit
 val raw_backtrace_to_string: raw_backtrace -> string
+
+
+(** {6 Current call stack} *)
+
+val get_callstack: int -> raw_backtrace
+
+(** [Printexc.get_callstack n] returns a description of the top of the
+    call stack on the current program point (for the current thread),
+    with at most [n] entries.  (Note: this function is not related to
+    exceptions at all, despite being part of the [Printexc] module.)
+
+    @since 4.01.0
+*)

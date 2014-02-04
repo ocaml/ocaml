@@ -932,13 +932,10 @@ New syntax:\
             and _ = (a_FLOAT : 'a_FLOAT Gram.Entry.t) in
             let grammar_entry_create = Gram.Entry.mk in
             let (* <:str_item< open $i$ >> *)
-              (* <:expr< let open $id:i$ in $e$ >> *)
               (* Here it's LABEL and not tilde_label since ~a:b is different than ~a : b *)
-              (* Same remark for ?a:b *) (* <:expr< let open $i$ in $e$ >> *)
-              infixop5 : 'infixop5 Gram.Entry.t =
+              (* Same remark for ?a:b *) infixop5 : 'infixop5 Gram.Entry.t =
               grammar_entry_create "infixop5"
-            and (* <:expr< let open $id:i$ in $e$ >> *)
-              (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
+            and (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
               (* <:patt< ? $i$ : ($p$) >> *)
               (* | i = opt_label; "("; p = ipatt_tcon; ")" ->
             <:patt< ? $i$ : ($p$) >>
@@ -14368,7 +14365,7 @@ Added statements:
                          Gram.Sself ])
                 | None -> ());
              defined := list_remove x !defined)
-          with | Not_found -> ()
+          with | Struct.Grammar.Delete.Rule_not_found _ -> ()
           
         let parse_def s =
           match Gram.parse_string expr (Loc.mk "<command line>") s with

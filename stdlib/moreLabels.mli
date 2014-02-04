@@ -161,6 +161,7 @@ module Set : sig
       val choose : t -> elt
       val split: elt -> t -> t * bool * t
       val find: elt -> t -> elt
+      val of_list: elt list -> t
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
 end

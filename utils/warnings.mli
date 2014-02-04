@@ -58,7 +58,8 @@ type t =
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
   | Open_shadow_label_constructor of string * string (* 45 *)
-  | Unused_extension of string * bool * bool  (* 46 *)
+  | Bad_env_variable of string * string
+  | Unused_extension of string * bool * bool  (* 47 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

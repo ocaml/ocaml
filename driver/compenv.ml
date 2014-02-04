@@ -2,9 +2,9 @@
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
-(*      Fabrice Le Fessant, équipe Gallium, INRIA Rocquencourt         *)
+(*      Fabrice Le Fessant, EPI Gallium, INRIA Paris-Rocquencourt      *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -44,12 +44,6 @@ let extract_output = function
 let default_output = function
   | Some s -> s
   | None -> Config.default_executable_name
-
-(* Initialize the search path.
-   The current directory is always searched first,
-   then the directories specified with the -I option (in command-line order),
-   then the standard library directory (unless the -nostdlib option is given).
- *)
 
 let implicit_modules = ref []
 let first_include_dirs = ref []
@@ -91,74 +85,8 @@ let check_unit_name ppf filename name =
 type readenv_position =
   Before_args | Before_compile | Before_link
 
-(* Syntax of OCAMLCOMPPARAM: (name=VALUE)(,name=VALUE)* where
-   VALUE=expression without ,
-*)
+(* Syntax of OCAMLPARAM: [name=VALUE,]*_[,name=VALUE] where VALUE should not contain ',' *)
 exception SyntaxError of string
-
-(*
-let parse_args s =
-  let len = String.length s in
-  let rec iter0 i pos0 =
-    if i = len then
-      if i = pos0 then []
-      else raise (SyntaxError "End of line while expecting char '='")
-    else
-    let c = s.[i] in
-    let pos1 = i+1 in
-    if c = '=' then
-      iter1 pos1 pos1 (String.sub s pos0 (i-pos0))
-    else iter0 pos1 pos0
-
-  and iter1 i pos0 name =
-    if i = len then [name, ""]
-    else
-      let c = s.[i] in
-      let pos1 = i+1 in
-      match c with
-        '"' ->
-        iter3 pos1 (Buffer.create 50) name
-      | ',' ->
-        (name, "") :: iter0 pos1 pos1
-      | _ ->
-        iter2 pos1 pos0 name
-
-  and iter2 i pos0 name =
-    if i = len then [name, String.sub s pos0 (len-pos0)]
-    else
-      let pos1 = i+1 in
-      match s.[i] with
-      | ',' ->
-        (name, String.sub s pos0 (i-pos0)) :: iter0 pos1 pos1
-      | _ -> iter2 pos1 pos0 name
-
-  and iter3 i b name =
-    if i = len then
-      raise (SyntaxError "End of line while expecting '\"'")
-    else
-      let pos1 = i+1 in
-      match s.[i] with
-      | '"' ->
-        if pos1 = len then
-          [name, Buffer.contents b]
-        else begin
-          let pos2 = pos1+1 in
-          match s.[pos1] with
-          | '"' ->
-            Buffer.add_char b '"';
-            iter3 pos2 b name
-          | ',' ->
-            (name, Buffer.contents b) :: iter0 pos2 pos2
-          | _ ->
-            raise (SyntaxError "Syntax error while expecting ',' after '\"'")
-        end
-      | c ->
-        Buffer.add_char b c;
-        iter3 pos1 b name
-
-  in
-  iter0 0 0
-*)
 
 let parse_args s =
   let args = Misc.split s ',' in
@@ -184,7 +112,7 @@ let parse_args s =
   in
   iter false args [] []
 
-let setter f name options s =
+let setter ppf f name options s =
   try
     let bool = match s with
       | "0" -> false
@@ -193,26 +121,25 @@ let setter f name options s =
     in
     List.iter (fun b -> b := f bool) options
   with Not_found ->
-    Printf.eprintf "Warning: bad value for %S in OCAMLPARAM\n%!" name
+    Location.print_warning Location.none ppf
+      (Warnings.Bad_env_variable ("OCAMLPARAM", Printf.sprintf "bad value for %s" name))
 
-let set name options s =
-  setter (fun b -> b) name options s
-
-let clear name options s =
-  setter (fun b -> not b) name options s
-
-let read_OCAMLPARAM position =
+let read_OCAMLPARAM ppf position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
     let (before, after) =
       try
         parse_args s
       with SyntaxError s ->
-        fatal (Printf.sprintf "Illegal syntax of OCAMLPARAM: %s" s)
+         Location.print_warning Location.none ppf
+           (Warnings.Bad_env_variable ("OCAMLPARAM", s));
+         [],[]
     in
+
+    let set name options s =  setter ppf (fun b -> b) name options s in
+    let clear name options s = setter ppf (fun b -> not b) name options s in
     List.iter (fun (name, v) ->
       match name with
-
       | "g" -> set "g" [ Clflags.debug ] v
       | "p" -> set "p" [ Clflags.gprofile ] v
       | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
@@ -240,7 +167,6 @@ let read_OCAMLPARAM position =
 
       | "pp" -> preprocessor := Some v
       | "runtime-variant" -> runtime_variant := v
-      | "open" -> implicit_modules := Misc.split v ','
       | "cc" -> c_compiler := Some v
 
       (* assembly sources *)
@@ -260,8 +186,8 @@ let read_OCAMLPARAM position =
       | "inline" -> begin try
           inline_threshold := 8 * int_of_string v
         with _ ->
-          Printf.eprintf
-            "Warning: discarding non integer value of inline from OCAMLCOMPPARAM\n%!"
+          Location.print_warning Location.none ppf
+            (Warnings.Bad_env_variable ("OCAMLPARAM", "value for inline should be an interger"))
         end
 
       | "intf-suffix" -> Config.interface_suffix := v
@@ -322,19 +248,19 @@ let read_OCAMLPARAM position =
 
       | _ ->
         Printf.eprintf
-            "Warning: discarding value of variable %S in OCAMLCOMPPARAM\n%!"
+            "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
             name
     ) (match position with
         Before_args -> before
       | Before_compile | Before_link -> after)
   with Not_found -> ()
 
-let readenv position =
+let readenv ppf position =
   last_include_dirs := [];
   last_ccopts := [];
   last_ppx := [];
   last_objfiles := [];
-  read_OCAMLPARAM position;
+  read_OCAMLPARAM ppf position;
   all_ccopts := !last_ccopts @ !first_ccopts;
   all_ppx := !last_ppx @ !first_ppx
 

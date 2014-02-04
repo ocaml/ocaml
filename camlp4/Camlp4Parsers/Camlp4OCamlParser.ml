@@ -280,11 +280,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:expr< let module $m$ = $mb$ in $e$ >>
         | "let"; "open"; "!"; i = module_longident; "in"; e = expr LEVEL ";" ->
             <:expr< let open! $id:i$ in $e$ >>
-            (* Ast.ExOpI _loc i Ast.OvOverride e  *)
         | "let"; "open"; i = module_longident; "in"; e = expr LEVEL ";" ->
             <:expr< let open $id:i$ in $e$ >>
-            (* Ast.ExOpI _loc i Ast.OvNil e  *)
-            (* <:expr< let open $id:i$ in $e$ >> *)
         | "function"; a = match_case ->
             <:expr< fun [ $a$ ] >>
         | "if"; e1 = SELF; "then"; e2 = expr LEVEL "top";

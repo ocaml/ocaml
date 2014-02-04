@@ -554,7 +554,7 @@ flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
 flag ["ocaml"; "bin_annot"; "compile"] (A "-bin-annot");;
 flag ["ocaml"; "short_paths"; "compile"] (A "-short-paths");;
-flag ["ocaml"; "short_paths"; "infer_interface"] (A "-short_paths");;
+flag ["ocaml"; "short_paths"; "infer_interface"] (A "-short-paths");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "doc"] (A "-rectypes");;
