@@ -1191,16 +1191,31 @@ simple_expr:
       { let (exten, fields) = $2 in mkexp (Pexp_record(fields, exten)) }
   | LBRACE record_expr error
       { unclosed "{" 1 "}" 3 }
+  | mod_longident DOT LBRACE record_expr RBRACE
+      { let (exten, fields) = $4 in
+        let rec_exp = mkexp(Pexp_record(fields, exten)) in
+        mkexp(Pexp_open(Fresh, mkrhs $1 1, rec_exp)) }
+  | mod_longident DOT LBRACE record_expr error
+      { unclosed "{" 3 "}" 5 }
   | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp (Pexp_array(List.rev $2)) }
   | LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
   | LBRACKETBAR BARRBRACKET
       { mkexp (Pexp_array []) }
+  | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array(List.rev $4)))) }
+  | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
+      { unclosed "[|" 3 "|]" 6 }
   | LBRACKET expr_semi_list opt_semi RBRACKET
       { reloc_exp (mktailexp (rhs_loc 4) (List.rev $2)) }
   | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
+  | mod_longident DOT LBRACKET expr_semi_list opt_semi RBRACKET
+      { let list_exp = reloc_exp (mktailexp (rhs_loc 6) (List.rev $4)) in
+        mkexp(Pexp_open(Fresh, mkrhs $1 1, list_exp)) }
+  | mod_longident DOT LBRACKET expr_semi_list opt_semi error
+      { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
       { mkexp(Pexp_apply(mkoperator $1 1, ["",$2])) }
   | BANG simple_expr
@@ -1213,6 +1228,10 @@ simple_expr:
       { unclosed "{<" 1 ">}" 4 }
   | LBRACELESS GREATERRBRACE
       { mkexp (Pexp_override [])}
+  | mod_longident DOT LBRACELESS field_expr_list opt_semi GREATERRBRACE
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override(List.rev $4)))) }
+  | mod_longident DOT LBRACELESS field_expr_list opt_semi error
+      { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
   | LPAREN MODULE module_expr RPAREN
@@ -1222,6 +1241,12 @@ simple_expr:
                                 ghtyp (Ptyp_package $5))) }
   | LPAREN MODULE module_expr COLON error
       { unclosed "(" 1 ")" 5 }
+  | mod_longident DOT LPAREN MODULE module_expr COLON package_type RPAREN
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1,
+        mkexp (Pexp_constraint (ghexp (Pexp_pack $5),
+                                ghtyp (Ptyp_package $7))))) }
+  | mod_longident DOT LPAREN MODULE module_expr COLON error
+      { unclosed "(" 3 ")" 7 }
   | extension
       { mkexp (Pexp_extension $1) }
 ;
