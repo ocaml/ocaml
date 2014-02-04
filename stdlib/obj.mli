@@ -85,3 +85,42 @@ val marshal : t -> bytes
   [@@ocaml.deprecated "Use Marshal.to_bytes instead."]
 val unmarshal : bytes -> int -> t * int
   [@@ocaml.deprecated "Use Marshal.from_bytes and Marshal.total_size instead."]
+
+module Ephemeron: sig
+  (** Ephemeron with arbitrary arity and untyped *)
+
+  type eph
+  (** an ephemeron cf {!Ephemeron} *)
+
+  val create: int -> eph
+  (** [create n] returns an ephemeron with [n] keys.
+      All the keys and the data are initially empty *)
+  val length: eph -> int
+  (** return the number of keys *)
+
+  val get_key: eph -> int -> t option
+  (** Same as {!Ephemeron.K1.get_key} *)
+  val get_key_copy: eph -> int -> t option
+  (** Same as {!Ephemeron.K1.get_key_copy} *)
+  val set_key: eph -> int -> t -> unit
+  (** Same as {!Ephemeron.K1.set_key} *)
+  val unset_key: eph -> int -> unit
+  (** Same as {!Ephemeron.K1.unset_key} *)
+  val check_key: eph -> int -> bool
+  (** Same as {!Ephemeron.K1.check_key} *)
+  val blit_key : eph -> int -> eph -> int -> int -> unit
+  (** Same as {!Ephemeron.K1.blit_key} *)
+
+  val get_data: eph -> t option
+  (** Same as {!Ephemeron.K1.get_data} *)
+  val get_data_copy: eph -> t option
+  (** Same as {!Ephemeron.K1.get_data_copy} *)
+  val set_data: eph -> t -> unit
+  (** Same as {!Ephemeron.K1.set_data} *)
+  val unset_data: eph -> unit
+  (** Same as {!Ephemeron.K1.unset_data} *)
+  val check_data: eph -> bool
+  (** Same as {!Ephemeron.K1.check_data} *)
+  val blit_data : eph -> eph -> unit
+  (** Same as {!Ephemeron.K1.blit_data} *)
+end
