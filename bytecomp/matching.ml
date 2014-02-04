@@ -164,7 +164,7 @@ let ctx_matcher p =
   match p.pat_desc with
   | Tpat_construct (_, cstr,omegas,_) ->
       begin match cstr.cstr_tag with
-      | Cstr_exception _ -> (* exception matching *)
+      | Cstr_exception _ | Cstr_ext_constant _ | Cstr_ext_block _ ->
           let nargs = List.length omegas in
           (fun q rem -> match q.pat_desc with
           | Tpat_construct (_, cstr',args,_)
@@ -498,9 +498,12 @@ let up_ok_action act1 act2 =
   with
   | Not_simple -> false
 
-(* Nothing is kown about exeception patterns, because of potential rebind *)
+(* Nothing is kown about exeception/extension patterns,
+   because of potential rebind *)
 let rec exc_inside p = match p.pat_desc with
-  | Tpat_construct (_,{cstr_tag=Cstr_exception _},_,_) -> true
+  | Tpat_construct (_,{cstr_tag = Cstr_exception _
+                                | Cstr_ext_block _
+                                | Cstr_ext_constant _},_,_) -> true
   | Tpat_any|Tpat_constant _|Tpat_var _
   | Tpat_construct (_,_,[],_)
   | Tpat_variant (_,None,_)
@@ -898,9 +901,8 @@ let rec split_or argo cls args def =
 
   do_split [] [] [] cls
 
-(* Ultra-naive spliting, close to semantics,
-   used for exception, as potential rebind prevents any kind of
-   optimisation *)
+(* Ultra-naive spliting, close to semantics, used for exception/extension,
+   as potential rebind prevents any kind of optimisation *)
 
 and split_naive cls args def k =
 
@@ -965,7 +967,9 @@ and split_constr cls args def k =
   let ex_pat = what_is_cases cls in
   match ex_pat.pat_desc with
   | Tpat_any -> precompile_var args cls def k
-  | Tpat_construct (_,{cstr_tag=Cstr_exception _},_,_) ->
+  | Tpat_construct (_,{ cstr_tag = Cstr_exception _
+                                 | Cstr_ext_block _
+                                 | Cstr_ext_constant _ },_,_) ->
       split_naive cls args def k
   | _ ->
 
@@ -1075,7 +1079,9 @@ and dont_precompile_var args cls def k =
 and is_exc p = match p.pat_desc with
 | Tpat_or (p1,p2,_) -> is_exc p1 || is_exc p2
 | Tpat_alias (p,v,_) -> is_exc p
-| Tpat_construct (_,{cstr_tag = Cstr_exception _},_,_) -> true
+| Tpat_construct (_,{ cstr_tag = Cstr_exception _
+                               | Cstr_ext_constant _
+                               | Cstr_ext_constant _ },_,_) -> true
 | _ -> false
 
 and precompile_or argo cls ors args def k = match ors with
