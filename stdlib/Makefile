@@ -13,7 +13,9 @@
 
 include Makefile.shared
 
-allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILING)
+allopt:
+	$(MAKE) stdlib.cmxa std_exit.cmx
+	$(MAKE) allopt-$(PROFILING)
 
 allopt-noprof:
 

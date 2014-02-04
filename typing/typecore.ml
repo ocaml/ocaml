@@ -2850,7 +2850,7 @@ and type_argument env sarg ty_expected' ty_expected =
           (Warnings.Without_principality "eliminated optional argument");
       if is_nonexpansive texp then func texp else
       (* let-expand to have side effects *)
-      let let_pat, let_var = var_pair "let" texp.exp_type in
+      let let_pat, let_var = var_pair "arg" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
            Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
       end

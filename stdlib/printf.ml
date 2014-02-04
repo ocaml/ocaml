@@ -454,10 +454,13 @@ let format_float_lexeme =
     valid_float_loop 0 in
 
   (fun sfmt x ->
-   let s = format_float sfmt x in
    match classify_float x with
-   | FP_normal | FP_subnormal | FP_zero -> make_valid_float_lexeme s
-   | FP_nan | FP_infinite -> s)
+   | FP_normal | FP_subnormal | FP_zero ->
+       make_valid_float_lexeme (format_float sfmt x)
+   | FP_infinite ->
+       if x < 0.0 then "neg_infinity" else "infinity"
+   | FP_nan ->
+       "nan")
 ;;
 
 (* Decode a format string and act on it.
@@ -540,8 +543,11 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
     | 'F' as conv ->
       let (x : float) = get_arg spec n in
       let s =
-        if widths = [] then Pervasives.string_of_float x else
-        format_float_lexeme (extract_format_float conv fmt pos i widths) x in
+        format_float_lexeme
+          (if widths = []
+           then "%.12g"
+           else extract_format_float conv fmt pos i widths)
+          x in
       cont_s (next_index spec n) s (succ i)
     | 'B' | 'b' ->
       let (x : bool) = get_arg spec n in

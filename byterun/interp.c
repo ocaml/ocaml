@@ -173,6 +173,12 @@ sp is a local copy of the global variable caml_extern_sp. */
 #define SP_REG asm("%r14")
 #define ACCU_REG asm("%r13")
 #endif
+#ifdef __aarch64__
+#define PC_REG asm("%x19")
+#define SP_REG asm("%x20")
+#define ACCU_REG asm("%x21")
+#define JUMPTBL_BASE_REG asm("%x22")
+#endif
 #endif
 
 /* Division and modulus madness */

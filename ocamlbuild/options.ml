@@ -38,7 +38,7 @@ let make_links = ref true
 let nostdlib = ref false
 let use_menhir = ref false
 let catch_errors = ref true
-let use_ocamlfind = ref false
+let use_ocamlfind = ref true
 
 (* Currently only ocamlfind and menhir is defined as no-core tool,
    perhaps later we need something better *)
@@ -92,7 +92,8 @@ let ocamllex = ref (V"OCAMLLEX")
 let ocamlmklib = ref (V"OCAMLMKLIB")
 let ocamlmktop = ref (V"OCAMLMKTOP")
 let ocamlrun = ref N
-let ocamlfind x = S[V"OCAMLFIND"; x]
+let ocamlfind_cmd = ref (V"OCAMLFIND")
+let ocamlfind arg = S[!ocamlfind_cmd; arg]
 let program_to_execute = ref false
 let must_clean = ref false
 let show_documentation = ref false
@@ -213,7 +214,8 @@ let spec = ref (
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
    "-use-jocaml", Unit use_jocaml, " Use jocaml compilers instead of ocaml ones";
-   "-use-ocamlfind", Set use_ocamlfind, " Use ocamlfind to call ocaml compilers";
+   "-use-ocamlfind", Set use_ocamlfind, " Option deprecated. Now enabled by default. Use -no-ocamlfind to disable";
+   "-no-ocamlfind", Clear use_ocamlfind, " Don't use ocamlfind";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
@@ -279,6 +281,10 @@ let init () =
   in
 
   if !use_ocamlfind then begin
+    ocamlfind_cmd := A "ocamlfind";
+    let cmd = Command.string_of_command_spec !ocamlfind_cmd in
+    begin try ignore(Command.search_in_path cmd)
+    with Not_found -> failwith "ocamlfind not found on path, but -no-ocamlfind not used" end;
     (* TODO: warning message when using an option such as -ocamlc *)
     (* Note that plugins can still modify these variables After_options.
        This design decision can easily be changed. *)

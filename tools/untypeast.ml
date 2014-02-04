@@ -335,7 +335,7 @@ and untype_signature_item item =
     | Tsig_modtype (_id, name, mdecl) ->
         Psig_modtype (name, untype_modtype_declaration mdecl)
     | Tsig_open (ovf, _path, lid) -> Psig_open (ovf, lid)
-    | Tsig_include (mty, _lid) -> Psig_include (untype_module_type mty)
+    | Tsig_include (mty, _) -> Psig_include (untype_module_type mty)
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->

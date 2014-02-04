@@ -19,8 +19,8 @@ type 'a t = { count : int; data : 'a data }
 and 'a data =
     Sempty
   | Scons of 'a * 'a data
-  | Sapp of 'a data * 'a t
-  | Slazy of 'a t Lazy.t
+  | Sapp of 'a data * 'a data
+  | Slazy of 'a data Lazy.t
   | Sgen of 'a gen
   | Sbuffio of buffio
 and 'a gen = { mutable curr : 'a option option; func : int -> 'a option }
@@ -40,37 +40,26 @@ let fill_buff b =
   b.len <- input b.ic b.buff 0 (String.length b.buff); b.ind <- 0
 ;;
 
-let rec get_data s d = match d with
- (* Only return a "forced stream", that is either Sempty or
-    Scons(a,_). If d is a generator or a buffer, the item a is seen as
-    extracted from the generator/buffer.
-
-    Forcing also updates the "count" field of the delayed stream,
-    in the Sapp and Slazy cases (see slazy/lapp implementation below). *)
+let rec get_data count d = match d with
+ (* Returns either Sempty or Scons(a, _) even when d is a generator
+    or a buffer. In those cases, the item a is seen as extracted from
+ the generator/buffer.
+ The count parameter is used for calling `Sgen-functions'.  *)
    Sempty | Scons (_, _) -> d
- | Sapp (d1, s2) ->
-     begin match get_data s d1 with
-       Scons (a, d11) -> Scons (a, Sapp (d11, s2))
-     | Sempty ->
-       set_count s s2.count;
-       get_data s s2.data
+ | Sapp (d1, d2) ->
+     begin match get_data count d1 with
+       Scons (a, d11) -> Scons (a, Sapp (d11, d2))
+     | Sempty -> get_data count d2
      | _ -> assert false
      end
- | Sgen {curr = Some None; _ } -> Sempty
- | Sgen ({curr = Some(Some a); _ } as g) ->
+ | Sgen {curr = Some None; func = _ } -> Sempty
+ | Sgen ({curr = Some(Some a); func = f} as g) ->
      g.curr <- None; Scons(a, d)
- | Sgen ({curr = None; _} as g) ->
-     (* Warning: anyone using g thinks that an item has been read *)
-     begin match g.func s.count with
+ | Sgen g ->
+     begin match g.func count with
        None -> g.curr <- Some(None); Sempty
-     | Some a ->
-       (* One must not update g.curr here, because there Scons(a,d)
-          result of get_data, if the outer stream s was a Sapp, will
-          be used to update the outer stream to Scons(a,s): there is
-          already a memoization process at the outer layer. If g.curr
-          was updated here, the saved element would be produced twice,
-          once by the outer layer, once by Sgen/g.curr. *)
-       Scons(a, d)
+     | Some a -> Scons(a, d)
+         (* Warning: anyone using g thinks that an item has been read *)
      end
  | Sbuffio b ->
      if b.ind >= b.len then fill_buff b;
@@ -78,10 +67,7 @@ let rec get_data s d = match d with
        let r = Obj.magic (String.unsafe_get b.buff b.ind) in
        (* Warning: anyone using g thinks that an item has been read *)
        b.ind <- succ b.ind; Scons(r, d)
- | Slazy f ->
-   let s2 = Lazy.force f in
-   set_count s s2.count;
-   get_data s s2.data
+ | Slazy f -> get_data count (Lazy.force f)
 ;;
 
 let rec peek s =
@@ -90,20 +76,14 @@ let rec peek s =
    Sempty -> None
  | Scons (a, _) -> Some a
  | Sapp (_, _) ->
-     begin match get_data s s.data with
-     | Scons(a, _) as d -> set_data s d; Some a
+     begin match get_data s.count s.data with
+       Scons(a, _) as d -> set_data s d; Some a
      | Sempty -> None
      | _ -> assert false
      end
- | Slazy f ->
-   let s2 = Lazy.force f in
-   set_count s s2.count;
-   set_data s s2.data;
-   peek s
- | Sgen {curr = Some a; _ } -> a
- | Sgen ({curr = None; _ } as g) ->
-     let x = g.func s.count in
-     g.curr <- Some x; x
+ | Slazy f -> set_data s (Lazy.force f); peek s
+ | Sgen {curr = Some a} -> a
+ | Sgen g -> let x = g.func s.count in g.curr <- Some x; x
  | Sbuffio b ->
      if b.ind >= b.len then fill_buff b;
      if b.len == 0 then begin set_data s Sempty; None end
@@ -165,7 +145,18 @@ let of_list l =
 ;;
 
 let of_string s =
-  from (fun c -> if c < String.length s then Some s.[c] else None)
+  let count = ref 0 in
+  from (fun _ ->
+    (* We cannot use the index passed by the [from] function directly
+       because it returns the current stream count, with absolutely no
+       guarantee that it will start from 0. For example, in the case
+       of [Stream.icons 'c' (Stream.from_string "ab")], the first
+       access to the string will be made with count [1] already.
+    *)
+    let c = !count in
+    if c < String.length s
+    then (incr count; Some s.[c])
+    else None)
 ;;
 
 let of_channel ic =
@@ -175,21 +166,18 @@ let of_channel ic =
 
 (* Stream expressions builders *)
 
-(* In the slazy and lapp case, we can't statically predict the value
-   of the "count" field. We put a dummy 0 value, which will be updated
-   when the parameter stream is forced (see update code in [get_data]
-   and [peek]). *)
-
+let iapp i s = {count = 0; data = Sapp (i.data, s.data)};;
+let icons i s = {count = 0; data = Scons (i, s.data)};;
 let ising i = {count = 0; data = Scons (i, Sempty)};;
-let icons i s = {count = s.count - 1; data = Scons (i, s.data)};;
-let iapp i s = {count = i.count; data = Sapp (i.data, s)};;
+
+let lapp f s =
+  {count = 0; data = Slazy (lazy(Sapp ((f ()).data, s.data)))}
+;;
+let lcons f s = {count = 0; data = Slazy (lazy(Scons (f (), s.data)))};;
+let lsing f = {count = 0; data = Slazy (lazy(Scons (f (), Sempty)))};;
 
 let sempty = {count = 0; data = Sempty};;
-let slazy f = {count = 0; data = Slazy (lazy (f()))};;
-
-let lsing f = {count = 0; data = Slazy (lazy (ising (f())))};;
-let lcons f s = {count = 0; data = Slazy (lazy (icons (f()) s))};;
-let lapp f s = {count = 0; data = Slazy (lazy(iapp (f()) s))};;
+let slazy f = {count = 0; data = Slazy (lazy(f ()).data)};;
 
 (* For debugging use *)
 
@@ -209,11 +197,11 @@ and dump_data f =
       print_string ", ";
       dump_data f d;
       print_string ")"
-  | Sapp (d1, s2) ->
+  | Sapp (d1, d2) ->
       print_string "Sapp (";
       dump_data f d1;
       print_string ", ";
-      dump f s2;
+      dump_data f d2;
       print_string ")"
   | Slazy _ -> print_string "Slazy"
   | Sgen _ -> print_string "Sgen"

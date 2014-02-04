@@ -3,13 +3,17 @@ Next version:
 
 (Changes that can break existing programs are marked with a "*")
 
+Compilers:
+- Experimental native code generator for AArch64 (ARM 64 bits)
+
 Bug fixes:
-- PR#4719: Sys.executable_name is wrong if executable name contains dots (Windows)
+- PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
 
 Features wishes:
+- PR#4243: make the Makefiles parallelizable
 
 
 OCaml 4.01.0:
@@ -52,6 +56,7 @@ Compilers:
   - uses of the (&) and (or) operators instead of (&&) and (||)
 - Experimental OCAMLCOMPPARAM for ocamlc and ocamlopt
 - PR#5571: incorrect ordinal number in error message
+- PR#6073: add signature to Tstr_include
 
 Standard library:
 - PR#5899: expose a way to inspect the current call stack
@@ -69,6 +74,8 @@ Runtime system:
   point within the major heap.
 
 Bug fixes:
+- PR#5820: Fix camlp4 lexer roll back problem
+- PR#4855: 'camlp4 -I +dir' accepted, dir is related to 'camlp4 -where'
 - PR#6062: Fix a regression bug caused by commit 13047
 - PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
@@ -90,6 +97,7 @@ Bug fixes:
   third arguments
 - PR#5343: ocaml -rectypes is unsound wrt module subtyping (was still unsound)
 - PR#5468: ocamlbuild should preserve order of parametric tags
+- PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5551: Avoid repeated lookups for missing cmi files
 - PR#5552: try to use camlp4.opt if it's possible
 - PR#5580: missed opportunities for constant propagation
@@ -104,6 +112,7 @@ Bug fixes:
 - PR#5734: improved Win32 implementation of Unix.gettimeofday
 - PR#5735: %apply and %revapply not first class citizens
 - PR#5738: first class module patterns not handled by ocamldep
+- PR#5739: Printf.printf "%F" (-.nan) returns -nan
 - PR#5747: 'unused open' warning not given when compiling with -annot
 - PR#5752: missing dependencies at byte-code link with mlpack
 - PR#5758: Compiler bug when matching on floats
@@ -117,6 +126,7 @@ Bug fixes:
   incorrect
 - PR#5793: integer marshalling is inconsistent between architectures
 - PR#5798: add ARM VFPv2 support for Raspbian (ocamlopt)
+- PR#5802: Avoiding "let" as a value name
 - PR#5805: Assert failure with warning 34 on pre-processed file
 - PR#5806: ensure that backtrace tests are always run (testsuite)
 - PR#5810: error in switch printing when using -dclambda
@@ -143,7 +153,7 @@ Bug fixes:
 - PR#5910: Fix code generation bug for "mod 1" on ARM.
 - PR#5911: Signature substitutions fail in submodules
 - PR#5914: Functor breaks with an equivalent argument signature
-- PR#5920, PR#2957: linking failure for big bytecodes on 32bit architectures
+- PR#5920, PR#5957: linking failure for big bytecodes on 32bit architectures
 - PR#5928: Missing space between words in manual page for ocamlmktop
 - PR#5930: ocamldep leaks temporary preprocessing files
 - PR#5934: integer shift by negative amount (in otherlibs/num)
@@ -167,6 +177,9 @@ Bug fixes:
 - PR#6033: Matching.inline_lazy_force needs eta-expansion (command-line flags)
 - PR#6056: Using 'match' prevents generalization of values
 - PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
+- PR#6090: Module constraint + private type seems brocken in ocaml 4.01.0
+- PR#6109: Typos in ocamlbuild error messages
+
 Internals:
 - Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
   as part of compilerlibs, to be used on bin-annot files.

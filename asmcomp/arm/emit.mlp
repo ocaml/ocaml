@@ -176,7 +176,7 @@ let name_for_int_operation = function
   (* Use adds,subs,... to enable 16-bit T1 encoding *)
     Iadd -> "adds"
   | Isub -> "subs"
-  | Imul -> "muls"
+  | Imul -> "mul"
   | Iand -> "ands"
   | Ior  -> "orrs"
   | Ixor -> "eors"

@@ -25,6 +25,7 @@ cd `dirname $0`/..
 not_installed=$PWD/_build/not_installed
 
 rm -f "$not_installed"
+mkdir -p "$PWD/_build"
 touch "$not_installed"
 
 wontinstall() {
@@ -111,25 +112,25 @@ mkdir -p $MANDIR/man$MANEXT
 
 cd _build
 
-echo "Installing camlp4..."
-installbin camlp4/camlp4prof.byte$EXE $BINDIR/camlp4prof$EXE
-installbin camlp4/mkcamlp4.byte$EXE $BINDIR/mkcamlp4$EXE
-installbin camlp4/camlp4.byte$EXE $BINDIR/camlp4$EXE
-installbin camlp4/camlp4boot.byte$EXE $BINDIR/camlp4boot$EXE
-installbin camlp4/camlp4o.byte$EXE $BINDIR/camlp4o$EXE
-installbin camlp4/camlp4of.byte$EXE $BINDIR/camlp4of$EXE
-installbin camlp4/camlp4oof.byte$EXE $BINDIR/camlp4oof$EXE
-installbin camlp4/camlp4orf.byte$EXE $BINDIR/camlp4orf$EXE
-installbin camlp4/camlp4r.byte$EXE $BINDIR/camlp4r$EXE
-installbin camlp4/camlp4rf.byte$EXE $BINDIR/camlp4rf$EXE
-installbin camlp4/camlp4o.native$EXE $BINDIR/camlp4o.opt$EXE
-installbin camlp4/camlp4of.native$EXE $BINDIR/camlp4of.opt$EXE
-installbin camlp4/camlp4oof.native$EXE $BINDIR/camlp4oof.opt$EXE
-installbin camlp4/camlp4orf.native$EXE $BINDIR/camlp4orf.opt$EXE
-installbin camlp4/camlp4r.native$EXE $BINDIR/camlp4r.opt$EXE
-installbin camlp4/camlp4rf.native$EXE $BINDIR/camlp4rf.opt$EXE
-
 if test -d camlp4; then
+  echo "Installing camlp4..."
+  installbin camlp4/camlp4prof.byte$EXE $BINDIR/camlp4prof$EXE
+  installbin camlp4/mkcamlp4.byte$EXE $BINDIR/mkcamlp4$EXE
+  installbin camlp4/camlp4.byte$EXE $BINDIR/camlp4$EXE
+  installbin camlp4/camlp4boot.byte$EXE $BINDIR/camlp4boot$EXE
+  installbin camlp4/camlp4o.byte$EXE $BINDIR/camlp4o$EXE
+  installbin camlp4/camlp4of.byte$EXE $BINDIR/camlp4of$EXE
+  installbin camlp4/camlp4oof.byte$EXE $BINDIR/camlp4oof$EXE
+  installbin camlp4/camlp4orf.byte$EXE $BINDIR/camlp4orf$EXE
+  installbin camlp4/camlp4r.byte$EXE $BINDIR/camlp4r$EXE
+  installbin camlp4/camlp4rf.byte$EXE $BINDIR/camlp4rf$EXE
+  installbin camlp4/camlp4o.native$EXE $BINDIR/camlp4o.opt$EXE
+  installbin camlp4/camlp4of.native$EXE $BINDIR/camlp4of.opt$EXE
+  installbin camlp4/camlp4oof.native$EXE $BINDIR/camlp4oof.opt$EXE
+  installbin camlp4/camlp4orf.native$EXE $BINDIR/camlp4orf.opt$EXE
+  installbin camlp4/camlp4r.native$EXE $BINDIR/camlp4r.opt$EXE
+  installbin camlp4/camlp4rf.native$EXE $BINDIR/camlp4rf.opt$EXE
+
   cd camlp4
   CAMLP4DIR=$LIBDIR/camlp4
   for dir in Camlp4Parsers Camlp4Printers Camlp4Filters Camlp4Top; do
@@ -152,37 +153,47 @@ if test -d camlp4; then
   cd ..
 fi
 
-echo "Installing ocamlbuild..."
-cd ocamlbuild
-installbin ocamlbuild.byte$EXE $BINDIR/ocamlbuild.byte$EXE
-installbin ocamlbuild.native$EXE $BINDIR/ocamlbuild.native$EXE
-installbestbin ocamlbuild.native$EXE ocamlbuild.byte$EXE $BINDIR/ocamlbuild$EXE
+# I would have liked to test the value of ${WITH_OCAMLBUILD} instead of using
+# "test -d". However, the config.sh script that gets sourced near the top of
+# the file does: WITH_CAMLP4=${WITH_CAMLP4:-camlp4}, effectly destroying the
+# information that camlp4, ocamlbuild and others might have been disabled.
+# Of course, I tried to fix that. The config.sh file is created by mkconfig.sh
+# through an awful set of sed expressions which I don't feel confident to
+# change. -- Adrien Nader
+if test -d ocamlbuild; then
+  echo "Installing ocamlbuild..."
+  cd ocamlbuild
+  installbin ocamlbuild.byte$EXE $BINDIR/ocamlbuild.byte$EXE
+  installbin ocamlbuild.native$EXE $BINDIR/ocamlbuild.native$EXE
+  installbestbin ocamlbuild.native$EXE ocamlbuild.byte$EXE \
+    $BINDIR/ocamlbuild$EXE
 
-installlibdir \
-  ocamlbuildlib.$A \
-  $LIBDIR/ocamlbuild
+  installlibdir \
+    ocamlbuildlib.$A \
+    $LIBDIR/ocamlbuild
 
-installdir \
-  ocamlbuildlib.cmxa \
-  ocamlbuildlib.cma \
-  ocamlbuild_plugin.cmi \
-  ocamlbuild_plugin.cmo \
-  ocamlbuild_plugin.cmx \
-  ocamlbuild_pack.cmi \
-  ocamlbuild_unix_plugin.cmi \
-  ocamlbuild_unix_plugin.cmo \
-  ocamlbuild_unix_plugin.cmx \
-  ocamlbuild_unix_plugin.$O \
-  ocamlbuild_executor.cmi \
-  ocamlbuild_executor.cmo \
-  ocamlbuild_executor.cmx \
-  ocamlbuild_executor.$O \
-  ocamlbuild.cmo \
-  ocamlbuild.cmx \
-  ocamlbuild.$O \
-  $LIBDIR/ocamlbuild
-cd ..
+  installdir \
+    ocamlbuildlib.cmxa \
+    ocamlbuildlib.cma \
+    ocamlbuild_plugin.cmi \
+    ocamlbuild_plugin.cmo \
+    ocamlbuild_plugin.cmx \
+    ocamlbuild_pack.cmi \
+    ocamlbuild_unix_plugin.cmi \
+    ocamlbuild_unix_plugin.cmo \
+    ocamlbuild_unix_plugin.cmx \
+    ocamlbuild_unix_plugin.$O \
+    ocamlbuild_executor.cmi \
+    ocamlbuild_executor.cmo \
+    ocamlbuild_executor.cmx \
+    ocamlbuild_executor.$O \
+    ocamlbuild.cmo \
+    ocamlbuild.cmx \
+    ocamlbuild.$O \
+    $LIBDIR/ocamlbuild
+  cd ..
 
-installdir \
-  ../ocamlbuild/man/ocamlbuild.1 \
-  $MANDIR/man1
+  installdir \
+    ../ocamlbuild/man/ocamlbuild.1 \
+    $MANDIR/man1
+fi

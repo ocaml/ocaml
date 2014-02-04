@@ -6473,7 +6473,7 @@ module Struct =
                    COMMENT (buff_contents c))
               | 17 ->
                   (warn Comment_not_end (Loc.of_lexbuf lexbuf);
-                   move_start_p (-1) c;
+                   lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1;
                    SYMBOL "*")
               | 18 ->
                   let beginning =

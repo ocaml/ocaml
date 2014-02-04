@@ -716,21 +716,6 @@ let check_nongen_scheme env str =
 let check_nongen_schemes env str =
   List.iter (check_nongen_scheme env) str
 
-(* Extract the list of "value" identifiers bound by a signature.
-   "Value" identifiers are identifiers for signature components that
-   correspond to a run-time value: values, exceptions, modules, classes.
-   Note: manifest primitives do not correspond to a run-time value! *)
-
-let rec bound_value_identifiers = function
-    [] -> []
-  | Sig_value(id, {val_kind = Val_reg}) :: rem ->
-      id :: bound_value_identifiers rem
-  | Sig_extension(id, ext, _) :: rem -> id :: bound_value_identifiers rem
-  | Sig_exception(id, decl) :: rem -> id :: bound_value_identifiers rem
-  | Sig_module(id, mty, _) :: rem -> id :: bound_value_identifiers rem
-  | Sig_class(id, decl, _) :: rem -> id :: bound_value_identifiers rem
-  | _ :: rem -> bound_value_identifiers rem
-
 (* Helpers for typing recursive modules *)
 
 let anchor_submodule name anchor =
@@ -1186,7 +1171,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         List.iter
           (check_sig_item type_names module_names modtype_names loc) sg;
         let new_env = Env.add_signature sg env in
-        let item = mk (Tstr_include (modl, bound_value_identifiers sg)) in
+        let item = mk (Tstr_include (modl, sg)) in
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
         (item :: str_rem,
          sg @ sig_rem,

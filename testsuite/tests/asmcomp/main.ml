@@ -13,6 +13,7 @@
 open Clflags
 
 let compile_file filename =
+  Clflags.dlcode := false;
   Compilenv.reset "test";
   Emit.begin_assembly();
   let ic = open_in filename in

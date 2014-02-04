@@ -32,7 +32,12 @@ val from : (int -> 'a option) -> 'a t
    To create a new stream element, the function [f] is called with
    the current stream count. The user function [f] must return either
    [Some <value>] for a value or [None] to specify the end of the
-   stream. *)
+   stream.
+
+   Do note that the indices passed to [f] may not start at [0] in the
+   general case. For example, [[< '0; '1; Stream.from f >]] would call
+   [f] the first time with count [2].
+*)
 
 val of_list : 'a list -> 'a t
 (** Return the stream holding the elements of the list in the same

@@ -39,8 +39,6 @@ val save_signature : string -> Typedtree.signature -> string -> string ->
 val package_units:
         string list -> string -> string -> Typedtree.module_coercion
 
-val bound_value_identifiers : Types.signature_item list -> Ident.t list
-
 type error =
     Cannot_apply of module_type
   | Not_included of Includemod.error list
