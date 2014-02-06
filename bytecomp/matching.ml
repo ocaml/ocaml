@@ -443,7 +443,9 @@ let pretty_precompiled_res first nexts =
 
 
 
-(* A slight attempt to identify semantically equivalent lambda-expressions *)
+(* A slight attempt to identify semantically equivalent lambda-expressions,
+   We could have used Lambda.same, but our goal here is also to
+   find alpha-equivalent (simple) terms *)
 exception Not_simple
 
 let rec raw_rec env : lambda -> lambda = function
@@ -454,6 +456,8 @@ let rec raw_rec env : lambda -> lambda = function
       end
   | Lprim (Pfield i,args) ->
       Lprim (Pfield i, List.map (raw_rec env) args)
+  | Lconst  (Const_base (Const_string _)) ->
+      raise Not_simple (* do not share strings *)
   | Lconst _ as l -> l
   | Lstaticraise (i,args) ->
         Lstaticraise (i, List.map (raw_rec env) args)
