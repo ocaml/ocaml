@@ -49,7 +49,7 @@ let as_cset = function
 %token <string> Tstring
 %token <Syntax.location> Taction
 %token Trule Tparse Tparse_shortest Tand Tequal Tend Tor Tunderscore Teof
-       Tlbracket Trbracket Trefill
+       Tlbracket Trbracket
 %token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet Tas Tsharp
 
 %right Tas
@@ -89,15 +89,11 @@ other_definitions:
   | /*epsilon*/
         { [] }
 ;
-refill_handler:
-  | Trefill Taction { Some $2 }
-  | /*empty*/ { None }
-;
 definition:
-    Tident arguments Tequal refill_handler Tparse entry
-      { {name=$1 ; shortest=false ; args=$2 ; refill_handler=$4; clauses=$6} }
-  | Tident arguments Tequal refill_handler Tparse_shortest entry
-      { {name=$1 ; shortest=true ; args=$2 ; refill_handler=$4; clauses=$6} }
+    Tident arguments Tequal Tparse entry
+        { {name=$1 ; shortest=false ; args=$2 ; clauses=$5} }
+  |  Tident arguments Tequal Tparse_shortest entry
+        { {name=$1 ; shortest=true ; args=$2 ; clauses=$5} }
 ;
 
 arguments:

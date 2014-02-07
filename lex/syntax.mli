@@ -29,16 +29,13 @@ type regular_expression =
   | Repetition of regular_expression
   | Bind of regular_expression * (string * location)
 
-type ('arg,'action) entry = {
-  name:string;
-  shortest : bool;
-  args : 'arg;
-  clauses : (regular_expression * 'action) list;
-  refill_handler : 'action option;
-}
+type ('arg,'action) entry =
+  {name:string ;
+   shortest : bool ;
+   args : 'arg ;
+   clauses : (regular_expression * 'action) list}
 
-type lexer_definition = {
-  header: location;
-  entrypoints: ((string list, location) entry) list;
-  trailer: location;
-}
+type  lexer_definition =
+    { header: location;
+      entrypoints: ((string list, location) entry) list;
+      trailer: location }

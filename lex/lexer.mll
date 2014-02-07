@@ -141,7 +141,6 @@ rule main = parse
       | "eof" -> Teof
       | "let" -> Tlet
       | "as"  -> Tas
-      | "refill" -> Trefill
       | s -> Tident s }
   | '"'
     { reset_string_buffer();
