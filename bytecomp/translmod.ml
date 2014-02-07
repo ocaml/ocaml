@@ -454,7 +454,7 @@ let rec defined_idents = function
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ defined_idents rem
     | Tstr_class_type cl_list -> defined_idents rem
     | Tstr_include(modl, sg, _) -> bound_value_identifiers sg @ defined_idents rem
-    | Tstr_attribute _ -> []
+    | Tstr_attribute _ -> defined_idents rem
 
 (* second level idents (module M = struct ... let id = ... end),
    and all sub-levels idents *)
@@ -477,7 +477,7 @@ let rec more_idents = function
     | Tstr_module {mb_expr={mod_desc = Tmod_structure str}} ->
         all_idents str.str_items @ more_idents rem
     | Tstr_module _ -> more_idents rem
-    | Tstr_attribute _ -> []
+    | Tstr_attribute _ -> more_idents rem
 
 and all_idents = function
     [] -> []
@@ -501,7 +501,7 @@ and all_idents = function
     | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}} ->
         mb_id :: all_idents str.str_items @ all_idents rem
     | Tstr_module mb -> mb.mb_id :: all_idents rem
-    | Tstr_attribute _ -> []
+    | Tstr_attribute _ -> all_idents rem
 
 
 (* A variant of transl_structure used to compile toplevel structure definitions
