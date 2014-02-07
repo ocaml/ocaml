@@ -16,7 +16,11 @@ open Printf
 open Lexgen
 open Common
 
-let output_auto_defs oc =
+let output_auto_defs oc has_refill =
+  if has_refill then
+    output_string oc
+      "exception Ocaml_lex_refill of (Lexing.lexbuf -> int)\n\n";
+
   fprintf oc "let __ocaml_lex_init_lexbuf lexbuf mem_size =\
 \n  let pos = lexbuf.Lexing.lex_curr_pos in\
 \n  lexbuf.Lexing.lex_mem <- Array.create mem_size (-1) ;\
@@ -26,14 +30,20 @@ let output_auto_defs oc =
 \n\n\
 " ;
 
-  output_string oc
+  let on_refill =
+    if has_refill then
+      "-1"
+    else
+        "lexbuf.Lexing.refill_buff lexbuf ;\
+\n      __ocaml_lex_next_char lexbuf"
+  in
+  fprintf oc
     "let rec __ocaml_lex_next_char lexbuf =\
 \n  if lexbuf.Lexing.lex_curr_pos >= lexbuf.Lexing.lex_buffer_len then begin\
 \n    if lexbuf.Lexing.lex_eof_reached then\
 \n      256\
 \n    else begin\
-\n      lexbuf.Lexing.refill_buff lexbuf ;\
-\n      __ocaml_lex_next_char lexbuf\
+\n      %s\
 \n    end\
 \n  end else begin\
 \n    let i = lexbuf.Lexing.lex_curr_pos in\
@@ -41,8 +51,8 @@ let output_auto_defs oc =
 \n    lexbuf.Lexing.lex_curr_pos <- i+1 ;\
 \n    Char.code c\
 \n  end\
-\n\n\
-"
+\n\n"
+    on_refill
 
 
 let output_pats oc pats = List.iter (fun p -> fprintf oc "|%d" p) pats
@@ -120,37 +130,75 @@ let output_tag_actions pref oc mvs =
           pref output_mem_access t)
     mvs
 
-let output_trans pref oc i trans =
-  fprintf oc "%s __ocaml_lex_state%d lexbuf = " pref i ;
+let output_trans pref oc has_refill i trans =
+  let self = sprintf "__ocaml_lex_state%d" i in
+  fprintf oc "%s %s lexbuf = " pref self;
   match trans with
   | Perform (n,mvs) ->
       output_tag_actions "  " oc mvs ;
       fprintf oc "  %d\n" n
   | Shift (trans, move) ->
-      begin match trans with
+    let self =
+      match trans with
       | Remember (n,mvs) ->
-          output_tag_actions "  " oc mvs ;
-          fprintf oc
-            "  lexbuf.Lexing.lex_last_pos <- lexbuf.Lexing.lex_curr_pos ;\n" ;
-          fprintf oc "  lexbuf.Lexing.lex_last_action <- %d ;\n" n
-      | No_remember -> ()
-      end ;
-      fprintf oc "  match __ocaml_lex_next_char lexbuf with\n" ;
-      output_moves oc move
+        output_tag_actions "  " oc mvs ;
+        fprintf oc
+          "  lexbuf.Lexing.lex_last_pos <- lexbuf.Lexing.lex_curr_pos ;\n" ;
+        fprintf oc "  lexbuf.Lexing.lex_last_action <- %d ;\n" n;
+        if has_refill then
+          let next = sprintf "__ocaml_lex_state%d_next" i in
+          fprintf oc "  %s lexbuf\n" next;
+          fprintf oc "and %s lexbuf = " next;
+          next
+        else
+          self
+      | No_remember ->
+        self
+    in
+    output_string oc "match __ocaml_lex_next_char lexbuf with\n";
+    if has_refill then
+      fprintf oc "\n  | -1 -> raise (Ocaml_lex_refill %s)\n" self;
+    output_moves oc move
 
-let output_automata oc auto =
-  output_auto_defs oc ;
+let output_automata oc has_refill auto =
+  output_auto_defs oc has_refill;
   let n = Array.length auto in
-  output_trans "let rec" oc 0 auto.(0) ;
+  output_trans "let rec" oc has_refill 0 auto.(0) ;
   for i = 1 to n-1 do
-    output_trans "\nand" oc i auto.(i)
+    output_trans "\nand" oc has_refill i auto.(i)
   done ;
   output_char oc '\n'
 
 
 (* Output the entries *)
 
-let output_entry sourcefile ic oc tr e =
+let output_entry_refill oc e =
+  let init_num, init_moves = e.auto_initial_state in
+  fprintf oc "%s %alexbuf =\
+\n  __ocaml_lex_init_lexbuf lexbuf %d; %a\
+\n  __ocaml_lex_%s_rec __ocaml_lex_state%d %alexbuf
+\nand __ocaml_lex_%s_rec __ocaml_lex_state %alexbuf =
+\n  try
+\n    let __ocaml_lex_result = __ocaml_lex_state lexbuf in\
+\n    lexbuf.Lexing.lex_start_p <- lexbuf.Lexing.lex_curr_p;\
+\n    lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with\
+\n      Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos};\
+\n    match __ocaml_lex_result with\n"
+    e.auto_name output_args e.auto_args
+    e.auto_mem_size
+    (output_memory_actions "  ") init_moves
+    e.auto_name init_num output_args e.auto_args
+    e.auto_name output_args e.auto_args
+
+let output_entry_close_refill oc e =
+  fprintf oc "  with Ocaml_lex_refill __ocaml_lex_state ->\
+            \n  __ocaml_lex_refill \
+                 (fun lexbuf -> lexbuf.Lexing.refill_buff lexbuf;\
+            \n      __ocaml_lex_%s_rec __ocaml_lex_state %alexbuf)\
+            \n    lexbuf"
+    e.auto_name output_args e.auto_args
+
+let output_entry_classic oc e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s %alexbuf =\
 \n  __ocaml_lex_init_lexbuf lexbuf %d; %a\
@@ -159,8 +207,18 @@ let output_entry sourcefile ic oc tr e =
 \n  lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with\
 \n    Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos};\
 \n  match __ocaml_lex_result with\n"
-      e.auto_name output_args e.auto_args
-      e.auto_mem_size (output_memory_actions "  ") init_moves init_num ;
+    e.auto_name
+    output_args e.auto_args
+    e.auto_mem_size
+    (output_memory_actions "  ") init_moves
+    init_num
+
+
+let output_entry sourcefile ic oc has_refill tr e =
+  if has_refill then
+    output_entry_refill oc e
+  else
+    output_entry_classic oc e;
   List.iter
     (fun (num, env, loc) ->
       fprintf oc "  | ";
@@ -169,21 +227,28 @@ let output_entry sourcefile ic oc tr e =
       copy_chunk ic oc tr loc true;
       fprintf oc "\n")
     e.auto_actions;
-  fprintf oc "  | _ -> raise (Failure \"lexing: empty token\")\n\n\n"
+  fprintf oc "  | _ -> raise (Failure \"lexing: empty token\")\n";
+  if has_refill then
+    output_entry_close_refill oc e;
+  output_string oc "\n\n"
 
 
 (* Main output function *)
 
-let output_lexdef sourcefile ic oc tr header entry_points transitions trailer =
+let output_lexdef sourcefile ic oc tr header rh
+                  entry_points transitions trailer =
 
   copy_chunk ic oc tr header false;
-  output_automata oc transitions ;
+  let has_refill = output_refill_handler ic oc tr rh in
+  output_automata oc has_refill transitions;
   begin match entry_points with
     [] -> ()
   | entry1 :: entries ->
-      output_string oc "let rec "; output_entry sourcefile ic oc tr entry1;
+    output_string oc "let rec ";
+    output_entry sourcefile ic oc has_refill tr entry1;
       List.iter
-        (fun e -> output_string oc "and "; output_entry sourcefile ic oc tr e)
+        (fun e -> output_string oc "and ";
+          output_entry sourcefile ic oc has_refill tr e)
         entries;
       output_string oc ";;\n\n";
   end;
