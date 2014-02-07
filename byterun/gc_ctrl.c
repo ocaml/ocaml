@@ -18,6 +18,7 @@
 #include "gc_ctrl.h"
 #include "major_gc.h"
 #include "minor_gc.h"
+#include "shared_heap.h"
 #include "misc.h"
 #include "mlvalues.h"
 #ifdef NATIVE_CODE
@@ -468,6 +469,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
   caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
+  caml_init_shared_heap();
   caml_init_major_gc();
 /*
   caml_major_heap_increment = major_incr;
