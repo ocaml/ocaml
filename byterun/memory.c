@@ -1,9 +1,10 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "misc.h"
 #include "fail.h"
 #include "memory.h"
-
+#include "shared_heap.h"
 
 CAMLexport void caml_modify_field (value obj, int field, value val)
 {
@@ -28,11 +29,11 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  value* v = malloc( Bhsize_wosize (wosize) );
+  value* v = caml_shared_try_alloc(wosize, tag);
   if (v == NULL) {
+    /* FIXME: trigger GC */
     caml_raise_out_of_memory ();
   }
-  Hd_hp (v) = Make_header(wosize, tag, Caml_black);
   return Val_hp(v);
 }
 
