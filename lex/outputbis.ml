@@ -17,11 +17,8 @@ open Lexgen
 open Common
 
 let output_auto_defs oc has_refill =
-  if has_refill then
-    output_string oc
-      "exception Ocaml_lex_refill of (Lexing.lexbuf -> int)\n\n";
-
-  fprintf oc "let __ocaml_lex_init_lexbuf lexbuf mem_size =\
+  output_string oc
+    "let __ocaml_lex_init_lexbuf lexbuf mem_size =\
 \n  let pos = lexbuf.Lexing.lex_curr_pos in\
 \n  lexbuf.Lexing.lex_mem <- Array.create mem_size (-1) ;\
 \n  lexbuf.Lexing.lex_start_pos <- pos ;\
@@ -30,20 +27,34 @@ let output_auto_defs oc has_refill =
 \n\n\
 " ;
 
-  let on_refill =
-    if has_refill then
-      "-1"
-    else
-        "lexbuf.Lexing.refill_buff lexbuf ;\
-\n      __ocaml_lex_next_char lexbuf"
-  in
-  fprintf oc
-    "let rec __ocaml_lex_next_char lexbuf =\
+  if has_refill then
+    output_string oc
+      "let rec __ocaml_lex_next_char lexbuf state k =\
+\n  if lexbuf.Lexing.lex_curr_pos >= lexbuf.Lexing.lex_buffer_len then begin\
+\n    if lexbuf.Lexing.lex_eof_reached then\
+\n      state lexbuf k 256\
+\n    else begin\
+\n      __ocaml_lex_refill (fun lexbuf ->
+\n        lexbuf.Lexing.refill_buff lexbuf ;\
+\n        __ocaml_lex_next_char lexbuf state k)\
+\n        lexbuf\
+\n    end\
+\n  end else begin\
+\n    let i = lexbuf.Lexing.lex_curr_pos in\
+\n    let c = lexbuf.Lexing.lex_buffer.[i] in\
+\n    lexbuf.Lexing.lex_curr_pos <- i+1 ;\
+\n    state lexbuf k (Char.code c)\
+\n  end\
+\n\n"
+  else
+    output_string oc
+      "let rec __ocaml_lex_next_char lexbuf =\
 \n  if lexbuf.Lexing.lex_curr_pos >= lexbuf.Lexing.lex_buffer_len then begin\
 \n    if lexbuf.Lexing.lex_eof_reached then\
 \n      256\
 \n    else begin\
-\n      %s\
+\n      lexbuf.Lexing.refill_buff lexbuf ;\
+\n      __ocaml_lex_next_char lexbuf\
 \n    end\
 \n  end else begin\
 \n    let i = lexbuf.Lexing.lex_curr_pos in\
@@ -52,12 +63,11 @@ let output_auto_defs oc has_refill =
 \n    Char.code c\
 \n  end\
 \n\n"
-    on_refill
 
 
 let output_pats oc pats = List.iter (fun p -> fprintf oc "|%d" p) pats
 
-let output_action oc mems r =
+let output_action oc has_refill mems r =
   output_memory_actions "    " oc mems ;
   match r with
   | Backtrack ->
@@ -65,7 +75,8 @@ let output_action oc mems r =
       "    lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_last_pos ;\n" ;
     fprintf oc "    lexbuf.Lexing.lex_last_action\n"
   | Goto n ->
-    fprintf oc "    __ocaml_lex_state%d lexbuf\n" n
+    fprintf oc "    __ocaml_lex_state%d lexbuf%s\n" n
+      (if has_refill then " k" else "")
 
 let output_pat oc i =
   if i >= 256 then
@@ -73,17 +84,18 @@ let output_pat oc i =
   else
     fprintf oc "|'%s'" (Char.escaped (Char.chr i))
 
-let output_clause oc pats mems r =
+let output_clause oc has_refill pats mems r =
   fprintf oc "(* " ;
   List.iter (output_pat oc) pats ;
   fprintf oc " *)\n" ;
-  fprintf oc "  %a ->\n" output_pats pats ;  output_action oc mems r
+  fprintf oc "  %a ->\n" output_pats pats ;
+  output_action oc has_refill mems r
 
-let output_default_clause oc mems r =
-  fprintf oc "  | _ ->\n" ; output_action oc mems r
+let output_default_clause oc has_refill mems r =
+  fprintf oc "  | _ ->\n" ; output_action oc has_refill mems r
 
 
-let output_moves oc moves =
+let output_moves oc has_refill moves =
   let t = Hashtbl.create 17 in
   let add_move i (m,mems) =
     let mems,r = try Hashtbl.find t m with Not_found -> mems,[] in
@@ -107,9 +119,10 @@ let output_moves oc moves =
     t ;
   Hashtbl.iter
     (fun m (mems,pats) ->
-      if m <> !most_frequent then output_clause oc (List.rev pats) mems m)
+       if m <> !most_frequent then
+         output_clause oc has_refill (List.rev pats) mems m)
     t ;
-  output_default_clause oc !most_mems !most_frequent
+  output_default_clause oc has_refill !most_mems !most_frequent
 
 
 let output_tag_actions pref oc mvs =
@@ -131,34 +144,31 @@ let output_tag_actions pref oc mvs =
     mvs
 
 let output_trans pref oc has_refill i trans =
-  let self = sprintf "__ocaml_lex_state%d" i in
-  fprintf oc "%s %s lexbuf = " pref self;
+  let entry = sprintf "__ocaml_lex_state%d" i in
+  fprintf oc "%s %s lexbuf %s= " pref entry
+    (if has_refill then "k " else "");
   match trans with
   | Perform (n,mvs) ->
       output_tag_actions "  " oc mvs ;
-      fprintf oc "  %d\n" n
+      fprintf oc "  %s%d\n"
+        (if has_refill then "k lexbuf " else "")
+        n
   | Shift (trans, move) ->
-    let self =
-      match trans with
+    begin match trans with
       | Remember (n,mvs) ->
         output_tag_actions "  " oc mvs ;
         fprintf oc
           "  lexbuf.Lexing.lex_last_pos <- lexbuf.Lexing.lex_curr_pos ;\n" ;
         fprintf oc "  lexbuf.Lexing.lex_last_action <- %d ;\n" n;
-        if has_refill then
-          let next = sprintf "__ocaml_lex_state%d_next" i in
-          fprintf oc "  %s lexbuf\n" next;
-          fprintf oc "and %s lexbuf = " next;
-          next
-        else
-          self
-      | No_remember ->
-        self
-    in
-    output_string oc "match __ocaml_lex_next_char lexbuf with\n";
+      | No_remember -> ()
+    end;
     if has_refill then
-      fprintf oc "\n  | -1 -> raise (Ocaml_lex_refill %s)\n" self;
-    output_moves oc move
+      let next = entry ^ "_next" in
+      fprintf oc "  __ocaml_lex_next_char lexbuf %s k\n" next;
+      fprintf oc "and %s lexbuf k = function " next
+    else
+      output_string oc "match __ocaml_lex_next_char lexbuf with\n";
+    output_moves oc has_refill move
 
 let output_automata oc has_refill auto =
   output_auto_defs oc has_refill;
@@ -172,53 +182,22 @@ let output_automata oc has_refill auto =
 
 (* Output the entries *)
 
-let output_entry_refill oc e =
+let output_entry sourcefile ic oc has_refill tr e =
   let init_num, init_moves = e.auto_initial_state in
-  fprintf oc "%s %alexbuf =\
-\n  __ocaml_lex_init_lexbuf lexbuf %d; %a\
-\n  __ocaml_lex_%s_rec __ocaml_lex_state%d %alexbuf
-\nand __ocaml_lex_%s_rec __ocaml_lex_state %alexbuf =
-\n  try
-\n    let __ocaml_lex_result = __ocaml_lex_state lexbuf in\
-\n    lexbuf.Lexing.lex_start_p <- lexbuf.Lexing.lex_curr_p;\
-\n    lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with\
-\n      Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos};\
-\n    match __ocaml_lex_result with\n"
+  fprintf oc "%s %alexbuf =\n  __ocaml_lex_init_lexbuf lexbuf %d; %a"
     e.auto_name output_args e.auto_args
     e.auto_mem_size
-    (output_memory_actions "  ") init_moves
-    e.auto_name init_num output_args e.auto_args
-    e.auto_name output_args e.auto_args
-
-let output_entry_close_refill oc e =
-  fprintf oc "  with Ocaml_lex_refill __ocaml_lex_state ->\
-            \n  __ocaml_lex_refill \
-                 (fun lexbuf -> lexbuf.Lexing.refill_buff lexbuf;\
-            \n      __ocaml_lex_%s_rec __ocaml_lex_state %alexbuf)\
-            \n    lexbuf"
-    e.auto_name output_args e.auto_args
-
-let output_entry_classic oc e =
-  let init_num, init_moves = e.auto_initial_state in
-  fprintf oc "%s %alexbuf =\
-\n  __ocaml_lex_init_lexbuf lexbuf %d; %a\
-\n  let __ocaml_lex_result = __ocaml_lex_state%d lexbuf in\
+    (output_memory_actions "  ") init_moves;
+  fprintf oc
+    (if has_refill
+     then "\n  __ocaml_lex_state%d lexbuf (fun lexbuf __ocaml_lex_result ->"
+     else "\n  let __ocaml_lex_result = __ocaml_lex_state%d lexbuf in")
+    init_num;
+  output_string oc "\
 \n  lexbuf.Lexing.lex_start_p <- lexbuf.Lexing.lex_curr_p;\
 \n  lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with\
 \n    Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos};\
-\n  match __ocaml_lex_result with\n"
-    e.auto_name
-    output_args e.auto_args
-    e.auto_mem_size
-    (output_memory_actions "  ") init_moves
-    init_num
-
-
-let output_entry sourcefile ic oc has_refill tr e =
-  if has_refill then
-    output_entry_refill oc e
-  else
-    output_entry_classic oc e;
+\n  match __ocaml_lex_result with\n";
   List.iter
     (fun (num, env, loc) ->
       fprintf oc "  | ";
@@ -229,8 +208,9 @@ let output_entry sourcefile ic oc has_refill tr e =
     e.auto_actions;
   fprintf oc "  | _ -> raise (Failure \"lexing: empty token\")\n";
   if has_refill then
-    output_entry_close_refill oc e;
-  output_string oc "\n\n"
+    output_string oc "  )\n\n"
+  else
+    output_string oc "\n\n"
 
 
 (* Main output function *)
