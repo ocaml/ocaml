@@ -1144,6 +1144,13 @@ static inline int is_mmapped(struct caml_ba_array *ba)
   return (ba->flags & CAML_BA_MAPPED_FILE);
 }
 
+/* Determine memory-map status of a bigarray */
+
+CAMLprim value caml_ba_is_mapped(value v)
+{
+  return Val_bool(is_mmapped(Caml_ba_array_val(v)));
+}
+
 #define LEAVE_RUNTIME_OP_CUTOFF 4096
 
 CAMLprim value caml_ba_blit(value vsrc, value vdst)

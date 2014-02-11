@@ -454,6 +454,9 @@ module Genarray :
      or a SIGBUS signal may be raised. This happens, for instance, if the
      file is shrinked. *)
 
+  external is_mapped : ('a, 'b, 'c) t -> bool = "caml_ba_is_mapped" "noalloc"
+  (** Return [true] if the bigarray is memory-mapped, [false] otherwise. *)
+
   end
 
 (** {6 One-dimensional arrays} *)
@@ -534,6 +537,9 @@ module Array1 : sig
   (** Like {!Bigarray.Array1.set}, but bounds checking is not always performed.
       Use with caution and only when the program logic guarantees that
       the access is within bounds. *)
+
+  external is_mapped : ('a, 'b, 'c) t -> bool = "caml_ba_is_mapped" "noalloc"
+  (** Return [true] if the bigarray is memory-mapped, [false] otherwise. *)
 
 end
 
@@ -638,6 +644,9 @@ module Array2 :
                      = "%caml_ba_unsafe_set_2"
   (** Like {!Bigarray.Array2.set}, but bounds checking is not always
       performed. *)
+
+  external is_mapped : ('a, 'b, 'c) t -> bool = "caml_ba_is_mapped" "noalloc"
+  (** Return [true] if the bigarray is memory-mapped, [false] otherwise. *)
 
 end
 
@@ -766,6 +775,9 @@ module Array3 :
                      = "%caml_ba_unsafe_set_3"
   (** Like {!Bigarray.Array3.set}, but bounds checking is not always
       performed. *)
+
+  external is_mapped : ('a, 'b, 'c) t -> bool = "caml_ba_is_mapped" "noalloc"
+  (** Return [true] if the bigarray is memory-mapped, [false] otherwise. *)
 
 end
 

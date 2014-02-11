@@ -112,6 +112,8 @@ module Genarray = struct
      = "caml_ba_map_file_bytecode" "caml_ba_map_file"
   let map_file fd ?(pos = 0L) kind layout shared dims =
     map_internal fd kind layout shared dims pos
+
+  external is_mapped : ('a, 'b, 'c) t -> bool = "caml_ba_is_mapped" "noalloc"
 end
 
 module Array1 = struct
@@ -140,6 +142,7 @@ module Array1 = struct
     ba
   let map_file fd ?pos kind layout shared dim =
     Genarray.map_file fd ?pos kind layout shared [|dim|]
+  external is_mapped : ('a, 'b, 'c) t -> bool = "caml_ba_is_mapped" "noalloc"
 end
 
 module Array2 = struct
@@ -185,6 +188,7 @@ module Array2 = struct
     ba
   let map_file fd ?pos kind layout shared dim1 dim2 =
     Genarray.map_file fd ?pos kind layout shared [|dim1;dim2|]
+  external is_mapped : ('a, 'b, 'c) t -> bool = "caml_ba_is_mapped" "noalloc"
 end
 
 module Array3 = struct
@@ -240,6 +244,7 @@ module Array3 = struct
     ba
   let map_file fd ?pos kind layout shared dim1 dim2 dim3 =
     Genarray.map_file fd ?pos kind layout shared [|dim1;dim2;dim3|]
+  external is_mapped : ('a, 'b, 'c) t -> bool = "caml_ba_is_mapped" "noalloc"
 end
 
 external genarray_of_array1: ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t
