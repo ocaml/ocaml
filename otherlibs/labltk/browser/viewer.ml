@@ -92,7 +92,7 @@ let view_symbol ~kind ~env ?path id =
                     ext_private = cd.cstr_private }
                 in
                   view_signature ~title:(string_of_longident id) ~env ?path
-                    [Sig_extension (Ident.create name, ext, Text_first)]
+                    [Sig_typext (Ident.create name, ext, Text_first)]
             | Cstr_constant _ | Cstr_block _ ->
                 view_type_decl cpath ~env
         end
@@ -238,7 +238,7 @@ let search_symbol () =
 let ident_of_decl ~modlid = function
     Sig_value (id, _) -> Lident (Ident.name id), Pvalue
   | Sig_type (id, _, _) -> Lident (Ident.name id), Ptype
-  | Sig_extension (id, _, _) -> Ldot (modlid, Ident.name id), Pconstructor
+  | Sig_typext (id, _, _) -> Ldot (modlid, Ident.name id), Pconstructor
   | Sig_exception (id, _) -> Ldot (modlid, Ident.name id), Pconstructor
   | Sig_module (id, _, _) -> Lident (Ident.name id), Pmodule
   | Sig_modtype (id, _) -> Lident (Ident.name id), Pmodtype

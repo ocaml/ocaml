@@ -13,6 +13,7 @@
 open Asttypes
 open Typedtree
 open Parsetree
+open Ast_helper
 
 (*
 Some notes:
@@ -30,6 +31,8 @@ Some notes:
 *)
 
 
+let option f = function None -> None | Some e -> Some (f e)
+
 let rec lident_of_path path =
   match path with
       Path.Pident id -> Longident.Lident (Ident.name id)
@@ -43,30 +46,26 @@ let rec untype_structure str =
 and untype_structure_item item =
   let desc =
     match item.str_desc with
-      Tstr_eval exp -> Pstr_eval (untype_expression exp)
+      Tstr_eval (exp, attrs) -> Pstr_eval (untype_expression exp, attrs)
     | Tstr_value (rec_flag, list) ->
-        Pstr_value (rec_flag, List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) list)
-    | Tstr_primitive (_id, name, v) ->
-        Pstr_primitive (name, untype_value_description v)
+        Pstr_value (rec_flag, List.map untype_binding list)
+    | Tstr_primitive vd ->
+        Pstr_primitive (untype_value_description vd)
     | Tstr_type list ->
-        Pstr_type (List.map (fun (_id, name, decl) ->
-              name, untype_type_declaration decl) list)
-    | Tstr_extension tyext ->
-        Pstr_extension (untype_type_extension tyext)
-    | Tstr_exception (_id, name, decl) ->
-        Pstr_exception (name, untype_exception_declaration decl)
-    | Tstr_exn_rebind (_id, name, _p, lid) ->
-        Pstr_exn_rebind (name, lid)
-    | Tstr_module (_id, name, mexpr) ->
-        Pstr_module (name, untype_module_expr mexpr)
+        Pstr_type (List.map untype_type_declaration list)
+    | Tstr_typext tyext ->
+        Pstr_typext (untype_type_extension tyext)
+    | Tstr_exception decl ->
+        Pstr_exception (untype_constructor_declaration decl)
+    | Tstr_exn_rebind (_id, name, _p, lid, attrs) ->
+        Pstr_exn_rebind (name, lid, attrs)
+    | Tstr_module mb ->
+        Pstr_module (untype_module_binding mb)
     | Tstr_recmodule list ->
-        Pstr_recmodule (List.map (fun (_id, name, mtype, mexpr) ->
-              name, untype_module_type mtype,
-              untype_module_expr mexpr) list)
-    | Tstr_modtype (_id, name, mtype) ->
-        Pstr_modtype (name, untype_module_type mtype)
-    | Tstr_open (ovf, _path, lid) -> Pstr_open (ovf, lid)
+        Pstr_recmodule (List.map untype_module_binding list)
+    | Tstr_modtype mtd ->
+        Pstr_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
+    | Tstr_open (ovf, _path, lid, attrs) -> Pstr_open (ovf, lid, attrs)
     | Tstr_class list ->
         Pstr_class
           (List.map
@@ -77,20 +76,33 @@ and untype_structure_item item =
           (List.map
              (fun (_id, _name, ct) -> untype_class_type_declaration ct)
              list)
-    | Tstr_include (mexpr, _) ->
-        Pstr_include (untype_module_expr mexpr)
+    | Tstr_include (mexpr, _, attrs) ->
+        Pstr_include (untype_module_expr mexpr, attrs)
+    | Tstr_attribute x ->
+        Pstr_attribute x
   in
   { pstr_desc = desc; pstr_loc = item.str_loc; }
 
 and untype_value_description v =
   {
-    pval_prim = v.val_prim;
-    pval_type = untype_core_type v.val_desc;
-    pval_loc = v.val_loc }
+   pval_name = v.val_name;
+   pval_prim = v.val_prim;
+   pval_type = untype_core_type v.val_desc;
+   pval_loc = v.val_loc;
+   pval_attributes = v.val_attributes;
+  }
+
+and untype_module_binding mb =
+  {
+   pmb_name = mb.mb_name;
+   pmb_expr = untype_module_expr mb.mb_expr;
+   pmb_attributes = mb.mb_attributes;
+  }
 
 and untype_type_declaration decl =
   {
-    ptype_params = List.map untype_core_type decl.typ_params;
+    ptype_name = decl.typ_name;
+    ptype_params = List.map untype_type_parameter decl.typ_params;
     ptype_cstrs = List.map (fun (ct1, ct2, loc) ->
         (untype_core_type ct1,
           untype_core_type ct2, loc)
@@ -98,36 +110,50 @@ and untype_type_declaration decl =
     ptype_kind = (match decl.typ_kind with
         Ttype_abstract -> Ptype_abstract
       | Ttype_variant list ->
-          Ptype_variant (List.map (fun (_s, name, cts, loc) ->
-                (name, List.map untype_core_type cts, None, loc)
-            ) list)
+          Ptype_variant (List.map untype_constructor_declaration list)
       | Ttype_record list ->
-          Ptype_record (List.map (fun (_s, name, mut, ct, loc) ->
-                (name, mut, untype_core_type ct, loc)
-            ) list)
+          Ptype_record (List.map untype_label_declaration list)
       | Ttype_open -> Ptype_open
     );
     ptype_private = decl.typ_private;
-    ptype_manifest = (match decl.typ_manifest with
-        None -> None
-      | Some ct -> Some (untype_core_type ct));
-    ptype_variance = decl.typ_variance;
+    ptype_manifest = option untype_core_type decl.typ_manifest;
+    ptype_attributes = decl.typ_attributes;
     ptype_loc = decl.typ_loc;
+  }
+
+and untype_type_parameter (ct, v) = (untype_core_type ct, v)
+
+and untype_constructor_declaration cd = 
+  {
+   pcd_name = cd.cd_name;
+   pcd_args = List.map untype_core_type cd.cd_args;
+   pcd_res = option untype_core_type cd.cd_res;
+   pcd_loc = cd.cd_loc;
+   pcd_attributes = cd.cd_attributes;
+  }
+
+and untype_label_declaration ld =
+  {
+    pld_name=ld.ld_name;
+    pld_mutable=ld.ld_mutable;
+    pld_type=untype_core_type ld.ld_type;
+    pld_loc=ld.ld_loc;
+    pld_attributes=ld.ld_attributes
   }
 
 and untype_type_extension tyext =
   {
-    ptyext_path = tyext.tyext_path_txt;
-    ptyext_params = List.map untype_core_type tyext.tyext_params;
+    ptyext_path = tyext.tyext_txt;
+    ptyext_params = List.map untype_type_parameter tyext.tyext_params;
     ptyext_constructors =
       List.map untype_extension_constructor tyext.tyext_constructors;
     ptyext_private = tyext.tyext_private;
-    ptyext_variance = tyext.tyext_variance;
+    ptyext_attributes = tyext.tyext_attributes;
   }
 
 and untype_extension_constructor ext =
   {
-    pext_name = ext.ext_name_txt;
+    pext_name = ext.ext_name;
     pext_kind = (match ext.ext_kind with
         Text_decl (args, ret) ->
           Pext_decl (List.map untype_core_type args,
@@ -135,17 +161,15 @@ and untype_extension_constructor ext =
       | Text_rebind (p, lid) -> Pext_rebind lid
     );
     pext_loc = ext.ext_loc;
+    pext_attributes = ext.ext_attributes;
   }
-
-and untype_exception_declaration decl =
-  List.map untype_core_type decl.exn_args
 
 and untype_pattern pat =
   let desc =
   match pat with
-      { pat_extra=[Tpat_unpack, _]; pat_desc = Tpat_var (_,name); _ } -> Ppat_unpack name
-    | { pat_extra=[Tpat_type (_path, lid), _]; _ } -> Ppat_type lid
-    | { pat_extra= (Tpat_constraint ct, _) :: rem; _ } ->
+      { pat_extra=[Tpat_unpack, _, _attrs]; pat_desc = Tpat_var (_,name); _ } -> Ppat_unpack name
+    | { pat_extra=[Tpat_type (_path, lid), _, _attrs]; _ } -> Ppat_type lid
+    | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
         Ppat_constraint (untype_pattern { pat with pat_extra=rem }, untype_core_type ct)
     | _ ->
     match pat.pat_desc with
@@ -163,19 +187,19 @@ and untype_pattern pat =
     | Tpat_constant cst -> Ppat_constant cst
     | Tpat_tuple list ->
         Ppat_tuple (List.map untype_pattern list)
-    | Tpat_construct (lid, _, args, explicit_arity) ->
+    | Tpat_construct (lid, _, args) ->
         Ppat_construct (lid,
           (match args with
               [] -> None
             | [arg] -> Some (untype_pattern arg)
-            | args -> Some
-                  { ppat_desc = Ppat_tuple (List.map untype_pattern args);
-                  ppat_loc = pat.pat_loc; }
-          ), explicit_arity)
+            | args ->
+                Some
+                  (Pat.tuple ~loc:pat.pat_loc
+                     (List.map untype_pattern args)
+                  )
+          ))
     | Tpat_variant (label, pato, _) ->
-        Ppat_variant (label, match pato with
-            None -> None
-          | Some pat -> Some (untype_pattern pat))
+        Ppat_variant (label, option untype_pattern pato)
     | Tpat_record (list, closed) ->
         Ppat_record (List.map (fun (lid, _, pat) ->
               lid, untype_pattern pat) list, closed)
@@ -183,26 +207,38 @@ and untype_pattern pat =
     | Tpat_or (p1, p2, _) -> Ppat_or (untype_pattern p1, untype_pattern p2)
     | Tpat_lazy p -> Ppat_lazy (untype_pattern p)
   in
-  {
-    ppat_desc = desc;
-    ppat_loc = pat.pat_loc;
-  }
+  Pat.mk ~loc:pat.pat_loc ~attrs:pat.pat_attributes desc (* todo: fix attributes on extras *)
 
-and option f x = match x with None -> None | Some e -> Some (f e)
-
-and untype_extra (extra, loc) sexp =
+and untype_extra (extra, loc, attrs) sexp =
   let desc =
     match extra with
-      Texp_constraint (cty1, cty2) ->
-        Pexp_constraint (sexp,
-                         option untype_core_type cty1,
-                         option untype_core_type cty2)
+      Texp_coerce (cty1, cty2) ->
+        Pexp_coerce (sexp,
+                     option untype_core_type cty1,
+                     untype_core_type cty2)
+    | Texp_constraint cty ->
+        Pexp_constraint (sexp, untype_core_type cty)
     | Texp_open (ovf, _path, lid, _) -> Pexp_open (ovf, lid, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, option untype_core_type cto)
     | Texp_newtype s -> Pexp_newtype (s, sexp)
   in
-  { pexp_desc = desc;
-    pexp_loc = loc }
+  Exp.mk ~loc ~attrs desc
+
+and untype_cases l = List.map untype_case l
+
+and untype_case {c_lhs; c_guard; c_rhs} =
+  {
+   pc_lhs = untype_pattern c_lhs;
+   pc_guard = option untype_expression c_guard;
+   pc_rhs = untype_expression c_rhs;
+  }
+
+and untype_binding {vb_pat; vb_expr; vb_attributes} =
+  {
+    pvb_pat = untype_pattern vb_pat;
+    pvb_expr = untype_expression vb_expr;
+    pvb_attributes = vb_attributes;
+  }
 
 and untype_expression exp =
   let desc =
@@ -211,13 +247,14 @@ and untype_expression exp =
     | Texp_constant cst -> Pexp_constant cst
     | Texp_let (rec_flag, list, exp) ->
         Pexp_let (rec_flag,
-          List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) list,
+          List.map untype_binding list,
           untype_expression exp)
-    | Texp_function (label, cases, _) ->
-        Pexp_function (label, None,
-          List.map (fun (pat, exp) ->
-              (untype_pattern pat, untype_expression exp)) cases)
+    | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
+        Pexp_fun (label, None, untype_pattern p, untype_expression e)
+    | Texp_function ("", cases, _) ->
+        Pexp_function (untype_cases cases)
+    | Texp_function _ ->
+        assert false
     | Texp_apply (exp, list) ->
         Pexp_apply (untype_expression exp,
           List.fold_right (fun (label, expo, _) list ->
@@ -225,36 +262,28 @@ and untype_expression exp =
                 None -> list
               | Some exp -> (label, untype_expression exp) :: list
           ) list [])
-    | Texp_match (exp, list, _) ->
-        Pexp_match (untype_expression exp,
-          List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) list)
-    | Texp_try (exp, list) ->
-        Pexp_try (untype_expression exp,
-          List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) list)
+    | Texp_match (exp, cases, _) ->
+        Pexp_match (untype_expression exp, untype_cases cases)
+    | Texp_try (exp, cases) ->
+        Pexp_try (untype_expression exp, untype_cases cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map untype_expression list)
-    | Texp_construct (lid, _, args, explicit_arity) ->
+    | Texp_construct (lid, _, args) ->
         Pexp_construct (lid,
           (match args with
               [] -> None
           | [ arg ] -> Some (untype_expression arg)
-          | args -> Some
-            { pexp_desc = Pexp_tuple (List.map untype_expression args);
-              pexp_loc = exp.exp_loc; }
-          ), explicit_arity)
+          | args ->
+              Some
+                (Exp.tuple ~loc:exp.exp_loc (List.map untype_expression args))
+          ))
     | Texp_variant (label, expo) ->
-        Pexp_variant (label, match expo with
-            None -> None
-          | Some exp -> Some (untype_expression exp))
+        Pexp_variant (label, option untype_expression expo)
     | Texp_record (list, expo) ->
         Pexp_record (List.map (fun (lid, _, exp) ->
               lid, untype_expression exp
           ) list,
-          match expo with
-            None -> None
-          | Some exp -> Some (untype_expression exp))
+          option untype_expression expo)
     | Texp_field (exp, lid, _label) ->
         Pexp_field (untype_expression exp, lid)
     | Texp_setfield (exp1, lid, _label, exp2) ->
@@ -265,9 +294,7 @@ and untype_expression exp =
     | Texp_ifthenelse (exp1, exp2, expo) ->
         Pexp_ifthenelse (untype_expression exp1,
           untype_expression exp2,
-          match expo with
-            None -> None
-          | Some exp -> Some (untype_expression exp))
+          option untype_expression expo)
     | Texp_sequence (exp1, exp2) ->
         Pexp_sequence (untype_expression exp1, untype_expression exp2)
     | Texp_while (exp1, exp2) ->
@@ -276,8 +303,6 @@ and untype_expression exp =
         Pexp_for (name,
           untype_expression exp1, untype_expression exp2,
           dir, untype_expression exp3)
-    | Texp_when (exp1, exp2) ->
-        Pexp_when (untype_expression exp1, untype_expression exp2)
     | Texp_send (exp, meth, _) ->
         Pexp_send (untype_expression exp, match meth with
             Tmeth_name name -> name
@@ -295,7 +320,6 @@ and untype_expression exp =
         Pexp_letmodule (name, untype_module_expr mexpr,
           untype_expression exp)
     | Texp_assert exp -> Pexp_assert (untype_expression exp)
-    | Texp_assertfalse -> Pexp_assertfalse
     | Texp_lazy exp -> Pexp_lazy (untype_expression exp)
     | Texp_object (cl, _) ->
         Pexp_object (untype_class_structure cl)
@@ -303,8 +327,7 @@ and untype_expression exp =
         Pexp_pack (untype_module_expr mexpr)
   in
   List.fold_right untype_extra exp.exp_extra
-    { pexp_loc = exp.exp_loc;
-      pexp_desc = desc }
+    (Exp.mk ~loc:exp.exp_loc ~attrs:exp.exp_attributes desc)
 
 and untype_package_type pack =
   (pack.pack_txt,
@@ -317,46 +340,41 @@ and untype_signature sg =
 and untype_signature_item item =
   let desc =
     match item.sig_desc with
-      Tsig_value (_id, name, v) ->
-        Psig_value (name, untype_value_description v)
+      Tsig_value v ->
+        Psig_value (untype_value_description v)
     | Tsig_type list ->
-        Psig_type (List.map (fun (_id, name, decl) ->
-              name, untype_type_declaration decl
-          ) list)
-    | Tsig_extension tyext ->
-        Psig_extension (untype_type_extension tyext)
-    | Tsig_exception (_id, name, decl) ->
-        Psig_exception (name, untype_exception_declaration decl)
-    | Tsig_module (_id, name, mtype) ->
-        Psig_module (name, untype_module_type mtype)
+        Psig_type (List.map untype_type_declaration list)
+    | Tsig_typext tyext ->
+        Psig_typext (untype_type_extension tyext)
+    | Tsig_exception decl ->
+        Psig_exception (untype_constructor_declaration decl)
+    | Tsig_module md ->
+        Psig_module {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type; pmd_attributes = md.md_attributes}
     | Tsig_recmodule list ->
-        Psig_recmodule (List.map (fun (_id, name, mtype) ->
-              name, untype_module_type mtype) list)
-    | Tsig_modtype (_id, name, mdecl) ->
-        Psig_modtype (name, untype_modtype_declaration mdecl)
-    | Tsig_open (ovf, _path, lid) -> Psig_open (ovf, lid)
-    | Tsig_include (mty, _) -> Psig_include (untype_module_type mty)
+        Psig_recmodule (List.map (fun md ->
+              {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
+               pmd_attributes = md.md_attributes}) list)
+    | Tsig_modtype mtd ->
+        Psig_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
+    | Tsig_open (ovf, _path, lid, attrs) -> Psig_open (ovf, lid, attrs)
+    | Tsig_include (mty, _, attrs) -> Psig_include (untype_module_type mty, attrs)
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->
         Psig_class_type (List.map untype_class_type_declaration list)
+    | Tsig_attribute x ->
+        Psig_attribute x
   in
   { psig_desc = desc;
     psig_loc = item.sig_loc;
   }
 
-and untype_modtype_declaration mdecl =
-  match mdecl with
-    Tmodtype_abstract -> Pmodtype_abstract
-  | Tmodtype_manifest mtype -> Pmodtype_manifest (untype_module_type mtype)
-
 and untype_class_declaration cd =
   {
     pci_virt = cd.ci_virt;
-    pci_params = List.map untype_core_type cd.ci_params;
+    pci_params = List.map untype_type_parameters cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_expr cd.ci_expr;
-    pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
   }
 
@@ -366,8 +384,8 @@ and untype_class_description cd =
     pci_params = List.map untype_core_type cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
-    pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
+    pci_attributes = cd.ci_attributes;
   }
 
 and untype_class_type_declaration cd =
@@ -376,8 +394,8 @@ and untype_class_type_declaration cd =
     pci_params = List.map untype_core_type cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
-    pci_variance = cd.ci_variance;
     pci_loc = cd.ci_loc;
+    pci_attributes = cd.ci_attributes;
   }
 
 and untype_module_type mty =
@@ -390,22 +408,20 @@ and untype_module_type mty =
     | Tmty_with (mtype, list) ->
         Pmty_with (untype_module_type mtype,
           List.map (fun (_path, lid, withc) ->
-              lid, untype_with_constraint withc
+              untype_with_constraint lid withc
           ) list)
     | Tmty_typeof mexpr ->
         Pmty_typeof (untype_module_expr mexpr)
   in
-  {
-    pmty_desc = desc;
-    pmty_loc = mty.mty_loc;
-  }
+  Mty.mk ~loc:mty.mty_loc desc
 
-and untype_with_constraint cstr =
+and untype_with_constraint lid cstr =
   match cstr with
-    Twith_type decl -> Pwith_type (untype_type_declaration decl)
-  | Twith_module (_path, lid) -> Pwith_module (lid)
+    Twith_type decl -> Pwith_type (lid, untype_type_declaration decl)
+  | Twith_module (_path, lid2) -> Pwith_module (lid, lid2)
   | Twith_typesubst decl -> Pwith_typesubst (untype_type_declaration decl)
-  | Twith_modsubst (_path, lid) -> Pwith_modsubst (lid)
+  | Twith_modsubst (_path, lid2) ->
+      Pwith_modsubst ({loc = lid.loc; txt=Longident.last lid.txt}, lid2)
 
 and untype_module_expr mexpr =
   match mexpr.mod_desc with
@@ -430,10 +446,7 @@ and untype_module_expr mexpr =
         (* TODO , untype_package_type pack) *)
 
   in
-  {
-    pmod_desc = desc;
-    pmod_loc = mexpr.mod_loc;
-  }
+  Mod.mk ~loc:mexpr.mod_loc desc
 
 and untype_class_expr cexpr =
   let desc = match cexpr.cl_desc with
@@ -455,8 +468,7 @@ and untype_class_expr cexpr =
 
     | Tcl_let (rec_flat, bindings, _ivars, cl) ->
         Pcl_let (rec_flat,
-          List.map (fun (pat, exp) ->
-              (untype_pattern pat, untype_expression exp)) bindings,
+          List.map untype_binding bindings,
           untype_class_expr cl)
 
     | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
@@ -467,6 +479,7 @@ and untype_class_expr cexpr =
   in
   { pcl_desc = desc;
     pcl_loc = cexpr.cl_loc;
+    pcl_attributes = cexpr.cl_attributes;
   }
 
 and untype_class_type ct =
@@ -474,34 +487,34 @@ and untype_class_type ct =
       Tcty_signature csg -> Pcty_signature (untype_class_signature csg)
     | Tcty_constr (_path, lid, list) ->
         Pcty_constr (lid, List.map untype_core_type list)
-    | Tcty_fun (label, ct, cl) ->
-        Pcty_fun (label, untype_core_type ct, untype_class_type cl)
+    | Tcty_arrow (label, ct, cl) ->
+        Pcty_arrow (label, untype_core_type ct, untype_class_type cl)
   in
   { pcty_desc = desc;
-    pcty_loc = ct.cltyp_loc }
+    pcty_loc = ct.cltyp_loc;
+    pcty_attributes = ct.cltyp_attributes;
+   }
 
 and untype_class_signature cs =
   {
     pcsig_self = untype_core_type cs.csig_self;
     pcsig_fields = List.map untype_class_type_field cs.csig_fields;
-    pcsig_loc = cs.csig_loc;
   }
 
 and untype_class_type_field ctf =
   let desc = match ctf.ctf_desc with
-      Tctf_inher ct -> Pctf_inher (untype_class_type ct)
+      Tctf_inherit ct -> Pctf_inherit (untype_class_type ct)
     | Tctf_val (s, mut, virt, ct) ->
         Pctf_val (s, mut, virt, untype_core_type ct)
-    | Tctf_virt  (s, priv, ct) ->
-        Pctf_virt (s, priv, untype_core_type ct)
-    | Tctf_meth  (s, priv, ct) ->
-        Pctf_meth  (s, priv, untype_core_type ct)
-    | Tctf_cstr  (ct1, ct2) ->
-        Pctf_cstr (untype_core_type ct1, untype_core_type ct2)
+    | Tctf_method  (s, priv, virt, ct) ->
+        Pctf_method  (s, priv, virt, untype_core_type ct)
+    | Tctf_constraint  (ct1, ct2) ->
+        Pctf_constraint (untype_core_type ct1, untype_core_type ct2)
   in
   {
     pctf_desc = desc;
     pctf_loc = ctf.ctf_loc;
+    pctf_attributes = ctf.ctf_attributes;
   }
 
 and untype_core_type ct =
@@ -514,11 +527,10 @@ and untype_core_type ct =
     | Ttyp_constr (_path, lid, list) ->
         Ptyp_constr (lid,
           List.map untype_core_type list)
-    | Ttyp_object list ->
-        Ptyp_object (List.map untype_core_field_type list)
-    | Ttyp_class (_path, lid, list, labels) ->
-        Ptyp_class (lid,
-          List.map untype_core_type list, labels)
+    | Ttyp_object (list, o) ->
+        Ptyp_object (List.map (fun (s, t) -> (s, untype_core_type t)) list, o)
+    | Ttyp_class (_path, lid, list) ->
+        Ptyp_class (lid, List.map untype_core_type list)
     | Ttyp_alias (ct, s) ->
         Ptyp_alias (untype_core_type ct, s)
     | Ttyp_variant (list, bool, labels) ->
@@ -526,16 +538,10 @@ and untype_core_type ct =
     | Ttyp_poly (list, ct) -> Ptyp_poly (list, untype_core_type ct)
     | Ttyp_package pack -> Ptyp_package (untype_package_type pack)
   in
-  { ptyp_desc = desc; ptyp_loc = ct.ctyp_loc }
-
-and untype_core_field_type cft =
-  { pfield_desc = (match cft.field_desc with
-        Tcfield_var -> Pfield_var
-      | Tcfield (s, ct) -> Pfield (s, untype_core_type ct));
-    pfield_loc = cft.field_loc; }
+  Typ.mk ~loc:ct.ctyp_loc desc
 
 and untype_class_structure cs =
-  { pcstr_pat = untype_pattern cs.cstr_pat;
+  { pcstr_self = untype_pattern cs.cstr_self;
     pcstr_fields = List.map untype_class_field cs.cstr_fields;
   }
 
@@ -547,26 +553,18 @@ and untype_row_field rf =
 
 and untype_class_field cf =
   let desc = match cf.cf_desc with
-      Tcf_inher (ovf, cl, super, _vals, _meths) ->
-        Pcf_inher (ovf, untype_class_expr cl, super)
-    | Tcf_constr (cty, cty') ->
-        Pcf_constr (untype_core_type cty, untype_core_type cty')
-    | Tcf_val (_lab, name, mut, _, Tcfk_virtual cty, _override) ->
-        Pcf_valvirt (name, mut, untype_core_type cty)
-    | Tcf_val (_lab, name, mut, _, Tcfk_concrete exp, override) ->
-        Pcf_val (name, mut,
-          (if override then Override else Fresh),
-          untype_expression exp)
-    | Tcf_meth (_lab, name, priv, Tcfk_virtual cty, _override) ->
-        Pcf_virt (name, priv, untype_core_type cty)
-    | Tcf_meth (_lab, name, priv, Tcfk_concrete exp, override) ->
-        Pcf_meth (name, priv,
-          (if override then Override else Fresh),
-          untype_expression exp)
-(*    | Tcf_let (rec_flag, bindings, _) ->
-        Pcf_let (rec_flag, List.map (fun (pat, exp) ->
-              untype_pattern pat, untype_expression exp) bindings)
-*)
-  | Tcf_init exp -> Pcf_init (untype_expression exp)
+      Tcf_inherit (ovf, cl, super, _vals, _meths) ->
+        Pcf_inherit (ovf, untype_class_expr cl, super)
+    | Tcf_constraint (cty, cty') ->
+        Pcf_constraint (untype_core_type cty, untype_core_type cty')
+    | Tcf_val (lab, mut, _, Tcfk_virtual cty, _) ->
+        Pcf_val (lab, mut, Cfk_virtual (untype_core_type cty))
+    | Tcf_val (lab, mut, _, Tcfk_concrete (o, exp), _) ->
+        Pcf_val (lab, mut, Cfk_concrete (o, untype_expression exp))
+    | Tcf_method (lab, priv, Tcfk_virtual cty) ->
+        Pcf_method (lab, priv, Cfk_virtual (untype_core_type cty))
+    | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
+        Pcf_method (lab, priv, Cfk_concrete (o, untype_expression exp))
+    | Tcf_initializer exp -> Pcf_initializer (untype_expression exp)
   in
-  { pcf_desc = desc; pcf_loc = cf.cf_loc }
+  { pcf_desc = desc; pcf_loc = cf.cf_loc; pcf_attributes = cf.cf_attributes }

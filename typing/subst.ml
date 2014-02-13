@@ -213,8 +213,8 @@ let rec class_type s =
       Cty_constr (type_path s p, List.map (typexp s) tyl, class_type s cty)
   | Cty_signature sign ->
       Cty_signature (class_signature s sign)
-  | Cty_fun (l, ty, cty) ->
-      Cty_fun (l, typexp s ty, class_type s cty)
+  | Cty_arrow (l, ty, cty) ->
+      Cty_arrow (l, typexp s ty, class_type s cty)
 
 let class_declaration s decl =
   let decl =
@@ -283,7 +283,7 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_extension(id, _, _) | Sig_exception(id, _) |
+  | (Sig_value(id, _) | Sig_typext(id, _, _) | Sig_exception(id, _) |
      Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
@@ -319,8 +319,8 @@ and signature_component s comp newid =
       Sig_value(newid, value_description s d)
   | Sig_type(id, d, rs) ->
       Sig_type(newid, type_declaration s d, rs)
-  | Sig_extension(id, ext, es) ->
-      Sig_extension(newid, extension_constructor s ext, es)
+  | Sig_typext(id, ext, es) ->
+      Sig_typext(newid, extension_constructor s ext, es)
   | Sig_exception(id, d) ->
       Sig_exception(newid, exception_declaration s d)
   | Sig_module(id, mty, rs) ->

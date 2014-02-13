@@ -58,6 +58,8 @@ type error =
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
+  | Extension of string
+  | Recursive_module_require_explicit_type
 
 exception Error of Location.t * Env.t * error
 

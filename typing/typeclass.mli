@@ -104,6 +104,7 @@ type error =
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
+  | Extension of string
 
 exception Error of Location.t * Env.t * error
 

@@ -67,7 +67,7 @@ and out_variant =
 
 type out_class_type =
   | Octy_constr of out_ident * out_type list
-  | Octy_fun of string * out_type * out_class_type
+  | Octy_arrow of string * out_type * out_class_type
   | Octy_signature of out_type option * out_class_sig_item list
 and out_class_sig_item =
   | Ocsg_constraint of out_type * out_type
@@ -86,7 +86,7 @@ and out_sig_item =
   | Osig_class_type of
       bool * string * (string * (bool * bool)) list * out_class_type *
         out_rec_status
-  | Osig_extension of out_extension_constructor * out_ext_status
+  | Osig_typext of out_extension_constructor * out_ext_status
   | Osig_exception of string * out_type list
   | Osig_modtype of string * out_module_type
   | Osig_module of string * out_module_type * out_rec_status

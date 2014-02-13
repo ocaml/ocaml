@@ -36,7 +36,7 @@ open Ctype
 
 (*
 let rec hide_params = function
-    Tcty_fun ("*", _, cty) -> hide_params cty
+    Tcty_arrow ("*", _, cty) -> hide_params cty
   | cty -> cty
 *)
 

@@ -1941,7 +1941,7 @@ let rec emit_constant symb cst cont =
   match cst with
     Const_base(Const_float s) ->
       Cint(float_header) :: Cdefine_symbol symb :: Cdouble s :: cont
-  | Const_base(Const_string s) | Const_immstring s ->
+  | Const_base(Const_string (s, _)) | Const_immstring s ->
       Cint(string_header (String.length s)) ::
       Cdefine_symbol symb ::
       emit_string_constant s cont
@@ -1984,7 +1984,7 @@ and emit_constant_field field cont =
       let lbl = Compilenv.new_const_label() in
       (Clabel_address lbl,
        Cint(float_header) :: Cdefine_label lbl :: Cdouble s :: cont)
-  | Const_base(Const_string s) ->
+  | Const_base(Const_string (s, _)) ->
       let lbl = Compilenv.new_const_label() in
       (Clabel_address lbl,
        Cint(string_header (String.length s)) :: Cdefine_label lbl ::
@@ -2467,7 +2467,7 @@ let reference_symbols namelist =
 let global_data name v =
   Cdata(Cglobal_symbol name ::
           emit_constant name
-          (Const_base (Const_string (Marshal.to_string v []))) [])
+          (Const_base (Const_string (Marshal.to_string v [], None))) [])
 
 let globals_map v = global_data "caml_globals_map" v
 
@@ -2506,7 +2506,8 @@ let predef_exception name =
   let bucketname = "caml_bucket_" ^ name in
   let symname = "caml_exn_" ^ name in
   Cdata(Cglobal_symbol symname ::
-        emit_constant symname (Const_block(0,[Const_base(Const_string name)]))
+        emit_constant symname
+          (Const_block(0,[Const_base(Const_string (name, None))]))
         [ Cglobal_symbol bucketname;
           Cint(block_header 0 1);
           Cdefine_symbol bucketname;

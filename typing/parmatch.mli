@@ -53,13 +53,13 @@ val complete_constrs :
     pattern -> constructor_tag list -> constructor_description  list
 
 val pressure_variants: Env.t -> pattern list -> unit
-val check_partial: Location.t -> (pattern * expression) list -> partial
+val check_partial: Location.t -> case list -> partial
 val check_partial_gadt:
     ((string, constructor_description) Hashtbl.t ->
      (string, label_description) Hashtbl.t ->
      Parsetree.pattern -> pattern option) ->
-    Location.t -> (pattern * expression) list -> partial
-val check_unused: Env.t -> (pattern * expression) list -> unit
+    Location.t -> case list -> partial
+val check_unused: Env.t -> case list -> unit
 
 (* Irrefutability tests *)
 val irrefutable : pattern -> bool

@@ -115,7 +115,7 @@ let expand_module_path env cxt path =
 type field_desc =
     Field_value of string
   | Field_type of string
-  | Field_extension of string
+  | Field_typext of string
   | Field_exception of string
   | Field_module of string
   | Field_modtype of string
@@ -125,7 +125,7 @@ type field_desc =
 let item_ident_name = function
     Sig_value(id, _) -> (id, Field_value(Ident.name id))
   | Sig_type(id, _, _) -> (id, Field_type(Ident.name id))
-  | Sig_extension(id, _, _) -> (id, Field_extension(Ident.name id))
+  | Sig_typext(id, _, _) -> (id, Field_typext(Ident.name id))
   | Sig_exception(id, _) -> (id, Field_exception(Ident.name id))
   | Sig_module(id, _, _) -> (id, Field_module(Ident.name id))
   | Sig_modtype(id, _) -> (id, Field_modtype(Ident.name id))
@@ -138,7 +138,7 @@ let is_runtime_component = function
   | Sig_modtype(_,_)
   | Sig_class_type(_,_,_) -> false
   | Sig_value(_,_)
-  | Sig_extension(_,_,_)
+  | Sig_typext(_,_,_)
   | Sig_exception(_,_)
   | Sig_module(_,_,_)
   | Sig_class(_, _,_) -> true
@@ -263,7 +263,7 @@ and signatures env cxt subst sig1 sig2 =
                 Subst.add_module id2 (Pident id1) subst
             | Sig_modtype _ ->
                 Subst.add_modtype id2 (Mty_ident (Pident id1)) subst
-            | Sig_value _ | Sig_extension _
+            | Sig_value _ | Sig_typext _
             | Sig_exception _ | Sig_class _ | Sig_class_type _ ->
                 subst
           in
@@ -291,7 +291,7 @@ and signature_components env cxt subst = function
   | (Sig_type(id1, tydecl1, _), Sig_type(id2, tydecl2, _), pos) :: rem ->
       type_declarations env cxt subst id1 tydecl1 tydecl2;
       signature_components env cxt subst rem
-  | (Sig_extension(id1, ext1, _), Sig_extension(id2, ext2, _), pos)
+  | (Sig_typext(id1, ext1, _), Sig_typext(id2, ext2, _), pos)
     :: rem ->
       extension_constructors env cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: signature_components env cxt subst rem

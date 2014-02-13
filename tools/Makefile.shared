@@ -17,18 +17,20 @@ CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
-	 -I ../driver
+	 -I ../driver -I ../toplevel
 COMPFLAGS= -w +32..39 -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
      objinfo read_cmt
 
+moretools: ocamlast
+
 all: tast_iter.cmo
 
 # scrapelabels addlabels
 
-.PHONY: all
+.PHONY: all moretools
 
 opt.opt: ocamldep.opt read_cmt.opt
 .PHONY: opt.opt
@@ -38,7 +40,7 @@ opt.opt: ocamldep.opt read_cmt.opt
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
-  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo \
+  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
   ccomp.cmo pparse.cmo compenv.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
@@ -64,7 +66,7 @@ install::
 CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
-  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
+  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
@@ -165,7 +167,7 @@ clean::
 
 ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
-  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
+  syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
 addlabels: addlabels.cmo
 	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
@@ -211,6 +213,7 @@ READ_CMT= \
           ../parsing/longident.cmo \
           ../parsing/lexer.cmo \
           ../parsing/pprintast.cmo \
+          ../parsing/ast_helper.cmo \
           ../typing/ident.cmo \
           ../typing/path.cmo \
           ../typing/types.cmo \
@@ -306,6 +309,19 @@ primreq: $(PRIMREQ)
 
 clean::
 	rm -f primreq
+
+# Dump the Parsetree representation of OCaml code, in OCaml syntax
+
+OCAMLAST=dump_ast.cmo
+
+ocamlast: $(OCAMLAST)
+	$(CAMLC) $(LINKFLAGS) -o ocamlast ../compilerlibs/ocamlcommon.cma ../compilerlibs/ocamlbytecomp.cma ../compilerlibs/ocamltoplevel.cma $(OCAMLAST)
+
+clean::
+	rm -rf ocamlast
+
+install::
+	cp ocamlast $(BINDIR)/ocamlast$(EXE)
 
 # Common stuff
 

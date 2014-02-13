@@ -27,6 +27,14 @@ depend.cmo : ../parsing/parsetree.cmi ../utils/misc.cmi \
 depend.cmx : ../parsing/parsetree.cmi ../utils/misc.cmx \
     ../parsing/longident.cmx ../parsing/location.cmx ../parsing/asttypes.cmi \
     depend.cmi
+dump_ast.cmo : ../typing/typetexp.cmi ../typing/typedtree.cmi \
+    ../toplevel/toploop.cmi ../parsing/parse.cmi ../typing/outcometree.cmi \
+    ../typing/oprint.cmi ../driver/errors.cmi ../typing/env.cmi \
+    ../utils/config.cmi
+dump_ast.cmx : ../typing/typetexp.cmx ../typing/typedtree.cmx \
+    ../toplevel/toploop.cmx ../parsing/parse.cmx ../typing/outcometree.cmi \
+    ../typing/oprint.cmx ../driver/errors.cmx ../typing/env.cmx \
+    ../utils/config.cmx
 dumpobj.cmo : ../utils/tbl.cmi opnames.cmo ../bytecomp/opcodes.cmo \
     ../utils/misc.cmi ../parsing/location.cmi ../bytecomp/lambda.cmi \
     ../bytecomp/instruct.cmi ../typing/ident.cmi ../utils/config.cmi \
@@ -58,11 +66,11 @@ ocamlcp.cmx : ../driver/main_args.cmx
 ocamldep.cmo : ../parsing/syntaxerr.cmi ../driver/pparse.cmi \
     ../parsing/parsetree.cmi ../parsing/parse.cmi ../utils/misc.cmi \
     ../parsing/location.cmi ../parsing/lexer.cmi depend.cmi \
-    ../utils/config.cmi ../driver/compenv.cmi ../utils/clflags.cmi
+    ../utils/config.cmi ../utils/clflags.cmi
 ocamldep.cmx : ../parsing/syntaxerr.cmx ../driver/pparse.cmx \
     ../parsing/parsetree.cmi ../parsing/parse.cmx ../utils/misc.cmx \
     ../parsing/location.cmx ../parsing/lexer.cmx depend.cmx \
-    ../utils/config.cmx ../driver/compenv.cmx ../utils/clflags.cmx
+    ../utils/config.cmx ../utils/clflags.cmx
 ocamlmklib.cmo : myocamlbuild_config.cmo
 ocamlmklib.cmx : myocamlbuild_config.cmx
 ocamlmktop.cmo : ../utils/ccomp.cmi
@@ -91,7 +99,7 @@ tast_iter.cmx : ../typing/typedtree.cmx ../parsing/asttypes.cmi \
     tast_iter.cmi
 untypeast.cmo : ../typing/typedtree.cmi ../typing/path.cmi \
     ../parsing/parsetree.cmi ../parsing/longident.cmi ../typing/ident.cmi \
-    ../parsing/asttypes.cmi untypeast.cmi
+    ../parsing/asttypes.cmi ../parsing/ast_helper.cmi untypeast.cmi
 untypeast.cmx : ../typing/typedtree.cmx ../typing/path.cmx \
     ../parsing/parsetree.cmi ../parsing/longident.cmx ../typing/ident.cmx \
-    ../parsing/asttypes.cmi untypeast.cmi
+    ../parsing/asttypes.cmi ../parsing/ast_helper.cmx untypeast.cmi

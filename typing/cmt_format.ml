@@ -75,8 +75,8 @@ module ClearEnv  = TypedtreeMap.MakeMap (struct
   let leave_pattern p = { p with pat_env = keep_only_summary p.pat_env }
   let leave_expression e =
     let exp_extra = List.map (function
-        (Texp_open (ovf, path, lloc, env), loc) ->
-          (Texp_open (ovf, path, lloc, keep_only_summary env), loc)
+        (Texp_open (ovf, path, lloc, env), loc, attrs) ->
+          (Texp_open (ovf, path, lloc, keep_only_summary env), loc, attrs)
       | exp_extra -> exp_extra) e.exp_extra in
     { e with
       exp_env = keep_only_summary e.exp_env;

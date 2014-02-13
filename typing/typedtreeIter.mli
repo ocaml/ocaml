@@ -20,14 +20,12 @@ module type IteratorArgument = sig
     val enter_type_declaration : type_declaration -> unit
     val enter_type_extension : type_extension -> unit
     val enter_extension_constructor : extension_constructor -> unit
-    val enter_exception_declaration :
-      exception_declaration -> unit
     val enter_pattern : pattern -> unit
     val enter_expression : expression -> unit
     val enter_package_type : package_type -> unit
     val enter_signature : signature -> unit
     val enter_signature_item : signature_item -> unit
-    val enter_modtype_declaration : modtype_declaration -> unit
+    val enter_module_type_declaration : module_type_declaration -> unit
     val enter_module_type : module_type -> unit
     val enter_module_expr : module_expr -> unit
     val enter_with_constraint : with_constraint -> unit
@@ -39,25 +37,22 @@ module type IteratorArgument = sig
     val enter_class_type : class_type -> unit
     val enter_class_type_field : class_type_field -> unit
     val enter_core_type : core_type -> unit
-    val enter_core_field_type : core_field_type -> unit
     val enter_class_structure : class_structure -> unit
     val enter_class_field : class_field -> unit
     val enter_structure_item : structure_item -> unit
 
 
-      val leave_structure : structure -> unit
+    val leave_structure : structure -> unit
     val leave_value_description : value_description -> unit
     val leave_type_declaration : type_declaration -> unit
     val leave_type_extension : type_extension -> unit
     val leave_extension_constructor : extension_constructor -> unit
-    val leave_exception_declaration :
-      exception_declaration -> unit
     val leave_pattern : pattern -> unit
     val leave_expression : expression -> unit
     val leave_package_type : package_type -> unit
     val leave_signature : signature -> unit
     val leave_signature_item : signature_item -> unit
-    val leave_modtype_declaration : modtype_declaration -> unit
+    val leave_module_type_declaration : module_type_declaration -> unit
     val leave_module_type : module_type -> unit
     val leave_module_expr : module_expr -> unit
     val leave_with_constraint : with_constraint -> unit
@@ -69,14 +64,13 @@ module type IteratorArgument = sig
     val leave_class_type : class_type -> unit
     val leave_class_type_field : class_type_field -> unit
     val leave_core_type : core_type -> unit
-    val leave_core_field_type : core_field_type -> unit
     val leave_class_structure : class_structure -> unit
     val leave_class_field : class_field -> unit
     val leave_structure_item : structure_item -> unit
 
     val enter_bindings : rec_flag -> unit
-    val enter_binding : pattern -> expression -> unit
-    val leave_binding : pattern -> expression -> unit
+    val enter_binding : value_binding -> unit
+    val leave_binding : value_binding -> unit
     val leave_bindings : rec_flag -> unit
 
       end

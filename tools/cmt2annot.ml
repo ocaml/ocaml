@@ -29,10 +29,18 @@ let bind_variables scope =
 
 let bind_bindings scope bindings =
   let o = bind_variables scope in
-  List.iter (fun (p, _) -> o # pattern p) bindings
+  List.iter (fun x -> o # pattern x.vb_pat) bindings
 
 let bind_cases l =
-  List.iter (fun (p, e) -> (bind_variables e.exp_loc) # pattern p) l
+  List.iter
+    (fun {c_lhs; c_guard; c_rhs} ->
+      let loc =
+        let open Location in
+        match c_guard with
+        | None -> c_rhs.exp_loc
+        | Some g -> {c_rhs.exp_loc with loc_start=g.exp_loc.loc_start}
+      in
+      (bind_variables loc) # pattern c_lhs) l
 
 let iterator rebuild_env =
   object(this)
@@ -96,7 +104,6 @@ let iterator rebuild_env =
           let open Location in
           let doit loc_start = bind_bindings {scope with loc_start} bindings in
           begin match rec_flag, rem with
-          | Default, _ -> ()
           | Recursive, _ -> doit loc.loc_start
           | Nonrecursive, [] -> doit loc.loc_end
           | Nonrecursive,  {str_loc = loc2} :: _ -> doit loc2.loc_start

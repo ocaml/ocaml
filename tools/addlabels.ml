@@ -44,7 +44,7 @@ let rec labels_of_sty sty =
 
 let rec labels_of_cty cty =
   match cty.pcty_desc with
-    Pcty_fun (lab, _, rem) ->
+    Pcty_arrow (lab, _, rem) ->
       let (labs, meths) = labels_of_cty rem in
       (lab :: labs, meths)
   | Pcty_signature { pcsig_fields = fields } ->
@@ -65,7 +65,7 @@ let rec pattern_vars pat =
   | Ppat_tuple l
   | Ppat_array l ->
       List.concat (List.map pattern_vars l)
-  | Ppat_construct (_, Some pat, _)
+  | Ppat_construct (_, Some pat)
   | Ppat_variant (_, Some pat)
   | Ppat_constraint (pat, _) ->
       pattern_vars pat
@@ -260,7 +260,7 @@ let rec add_labels_expr ~text ~values ~classes expr =
       List.iter add_labels_rec (e :: List.map snd args)
   | Pexp_tuple l | Pexp_array l ->
       List.iter add_labels_rec l
-  | Pexp_construct (_, Some e, _)
+  | Pexp_construct (_, Some e)
   | Pexp_variant (_, Some e)
   | Pexp_field (e, _)
   | Pexp_constraint (e, _, _)
@@ -290,13 +290,13 @@ let rec add_labels_expr ~text ~values ~classes expr =
   | Pexp_override lst ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e)
   | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
-  | Pexp_new _ | Pexp_assertfalse | Pexp_object _ | Pexp_pack _ ->
+  | Pexp_new _ | Pexp_object _ | Pexp_pack _ ->
       ()
 
 let rec add_labels_class ~text ~classes ~values ~methods cl =
   match cl.pcl_desc with
     Pcl_constr _ -> ()
-  | Pcl_structure { pcstr_pat = p; pcstr_fields = l } ->
+  | Pcl_structure { pcstr_self = p; pcstr_fields = l } ->
       let values = SMap.removes (pattern_vars p) values in
       let values =
         match pattern_name p with None -> values

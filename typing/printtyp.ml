@@ -910,7 +910,7 @@ let tree_of_extension_constructor id ext es =
         Text_first -> Oext_first
       | Text_next -> Oext_next
   in
-    Osig_extension (ext, es)
+    Osig_typext (ext, es)
 
 let extension_constructor id ppf ext =
   !Oprint.out_sig_item ppf (tree_of_extension_constructor id ext Text_first)
@@ -982,7 +982,7 @@ let rec prepare_class_type params = function
       in
       List.iter (fun met -> mark_loops (fst (method_type met))) fields;
       Vars.iter (fun _ (_, _, ty) -> mark_loops ty) sign.cty_vars
-  | Cty_fun (_, ty, cty) ->
+  | Cty_arrow (_, ty, cty) ->
       mark_loops ty;
       prepare_class_type params cty
 
@@ -1028,7 +1028,7 @@ let rec tree_of_class_type sch params =
         List.fold_left (tree_of_metho sch sign.cty_concr) csil fields
       in
       Octy_signature (self_ty, List.rev csil)
-  | Cty_fun (l, ty, cty) ->
+  | Cty_arrow (l, ty, cty) ->
       let lab = if !print_labels && l <> "" || is_optional l then l else "" in
       let ty =
        if is_optional l then
@@ -1037,7 +1037,7 @@ let rec tree_of_class_type sch params =
          | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) []
        else ty in
       let tr = tree_of_typexp sch ty in
-      Octy_fun (lab, tr, tree_of_class_type sch params cty)
+      Octy_arrow (lab, tr, tree_of_class_type sch params cty)
 
 let class_type ppf cty =
   reset ();
@@ -1180,7 +1180,7 @@ and tree_of_signature_rec env' = function
         | Sig_type(id, decl, rs) ->
             hide_rec_items (item :: rem);
             [Osig_type(tree_of_type_decl id decl, tree_of_rec rs)]
-        | Sig_extension(id, ext, es) ->
+        | Sig_typext(id, ext, es) ->
             [tree_of_extension_constructor id ext es]
         | Sig_exception(id, decl) ->
             [tree_of_exception_declaration id decl]

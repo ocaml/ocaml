@@ -306,7 +306,7 @@ let rec print_out_class_type ppf =
             fprintf ppf "@[<1>[%a]@]@ " (print_typlist !out_type ",") tyl
       in
       fprintf ppf "@[%a%a@]" pr_tyl tyl print_ident id
-  | Octy_fun (lab, ty, cty) ->
+  | Octy_arrow (lab, ty, cty) ->
       fprintf ppf "@[%s%a ->@ %a@]" (if lab <> "" then lab ^ ":" else "")
         print_out_type_2 ty print_out_class_type cty
   | Octy_signature (self_ty, csil) ->
@@ -355,11 +355,11 @@ and print_out_signature ppf =
   function
     [] -> ()
   | [item] -> !out_sig_item ppf item
-  | Osig_extension(ext, Oext_first) :: items ->
+  | Osig_typext(ext, Oext_first) :: items ->
       (* Gather together the extension constructors *)
       let rec gather_extensions acc items =
         match items with
-            Osig_extension(ext, Oext_next) :: items ->
+            Osig_typext(ext, Oext_next) :: items ->
               gather_extensions
                 ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc)
                 items
@@ -391,7 +391,7 @@ and print_out_sig_item ppf =
         (if rs = Orec_next then "and" else "class type")
         (if vir_flag then " virtual" else "") print_out_class_params params
         name !out_class_type clt
-  | Osig_extension (ext, _) ->
+  | Osig_typext (ext, _) ->
       print_out_extension_constructor ppf ext
   | Osig_exception (id, tyl) ->
       fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl,None)
@@ -569,11 +569,11 @@ let print_out_exception ppf exn outv =
 let rec print_items ppf =
   function
     [] -> ()
-  | (Osig_extension(ext, Oext_first), None) :: items ->
+  | (Osig_typext(ext, Oext_first), None) :: items ->
       (* Gather together extension constructors *)
       let rec gather_extensions acc items =
         match items with
-            (Osig_extension(ext, Oext_next), None) :: items ->
+            (Osig_typext(ext, Oext_next), None) :: items ->
               gather_extensions
                 ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc)
                 items

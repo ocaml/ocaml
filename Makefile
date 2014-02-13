@@ -29,14 +29,8 @@ CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
 MKDIR=mkdir -p
 
-CAMLP4OUT=$(WITH_CAMLP4:=out)
-CAMLP4OPT=$(WITH_CAMLP4:=opt)
-
-OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
-OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
-OCAMLBUILDLIBNATIVE=$(WITH_OCAMLBUILD:=lib.native)
-
-OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
+CAMLP4OUT=$(CAMLP4:=out)
+CAMLP4OPT=$(CAMLP4:=opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
@@ -46,6 +40,7 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/consistbl.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
+  parsing/ast_helper.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
@@ -122,16 +117,9 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
-all:
-	$(MAKE) runtime
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex
-	$(MAKE) ocamlyacc
-	$(MAKE) ocamltools
-	$(MAKE) library
-	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
-	  $(WITH_OCAMLDOC)
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
+  otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc \
+  moretools
 
 # Compile everything the first time
 world:
@@ -199,15 +187,10 @@ coldstart:
 	  ln -s ../byterun stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core:
-	$(MAKE) coldstart
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools library
+core: coldstart ocamlc ocamllex ocamlyacc ocamltools library
 
 # Recompile the core system using the bootstrap compiler
-coreall:
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools library
+coreall: ocamlc ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -264,34 +247,20 @@ opt:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
-	$(MAKE) otherlibrariesopt ocamltoolsopt $(OCAMLBUILDNATIVE)
+	$(MAKE) otherlibrariesopt
+	$(MAKE) ocamltoolsopt
+	$(MAKE) ocamlbuildlib.native
 
 # Native-code versions of the tools
-opt.opt:
-	$(MAKE) checkstack
-	$(MAKE) runtime
-	$(MAKE) core
-	$(MAKE) ocaml
-	$(MAKE) opt-core
-	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
-	        $(OCAMLBUILDBYTE) $(CAMLP4OUT)
-	$(MAKE) ocamlopt.opt
-	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	        $(OCAMLBUILDNATIVE) $(CAMLP4OPT)
+opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
+	 $(DEBUGGER) ocamldoc ocamlbuild.byte $(CAMLP4OUT) \
+	 ocamlopt.opt otherlibrariesopt ocamllex.opt \
+	 ocamltoolsopt ocamltoolsopt.opt ocamldoc.opt ocamlbuild.native \
+	 $(CAMLP4OPT)
 
-base.opt:
-	$(MAKE) checkstack
-	$(MAKE) runtime
-	$(MAKE) core
-	$(MAKE) ocaml
-	$(MAKE) opt-core
-	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
-	  $(WITH_OCAMLDOC)
-	$(MAKE) ocamlopt.opt
-	$(MAKE) otherlibrariesopt
+base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
+	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
+	 otherlibrariesopt
 
 # Installation
 
@@ -326,9 +295,9 @@ install:
 	for i in $(OTHERLIBRARIES); do \
 	  (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
 	done
-	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) install); else :; fi
+	cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	if test -n "$(WITH_OCAMLDEBUG)"; then (cd debugger; $(MAKE) install); \
+	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
 	BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) PREFIX=$(PREFIX) \
@@ -341,8 +310,7 @@ installopt:
 	cd stdlib; $(MAKE) installopt
 	cp asmcomp/*.cmi $(COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
-	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
-		else :; fi
+	cd ocamldoc; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); \
 	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; fi
@@ -705,6 +673,9 @@ clean::
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi
 	cd tools; $(MAKE) all
 
+moretools: ocamlc compilerlibs/ocamltoplevel.cma
+	cd tools; $(MAKE) moretools
+
 ocamltoolsopt: ocamlopt
 	cd tools; $(MAKE) opt
 
@@ -854,7 +825,7 @@ distclean:
 .PHONY: coreboot defaultentry depend distclean install installopt
 .PHONY: library library-cross libraryopt
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
-.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
+.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt moretools
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt

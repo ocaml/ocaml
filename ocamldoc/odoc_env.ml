@@ -54,7 +54,7 @@ let rec add_signature env root ?rel signat =
     match item with
       Types.Sig_value (ident, _) -> { env with env_values = (rel_name ident, qualify ident) :: env.env_values }
     | Types.Sig_type (ident,_,_) -> { env with env_types = (rel_name ident, qualify ident) :: env.env_types }
-    | Types.Sig_extension (ident, _, _) -> { env with env_extensions = (rel_name ident, qualify ident) :: env.env_extensions }
+    | Types.Sig_typext (ident, _, _) -> { env with env_extensions = (rel_name ident, qualify ident) :: env.env_extensions }
     | Types.Sig_exception (ident, _) -> { env with env_exceptions = (rel_name ident, qualify ident) :: env.env_exceptions }
     | Types.Sig_module (ident, modtype, _) ->
         let env2 =
@@ -252,9 +252,9 @@ let subst_class_type env t =
     | Types.Cty_signature cs ->
         (* on ne s'occupe pas des vals et methods *)
         t
-    | Types.Cty_fun (l, texp, ct) ->
+    | Types.Cty_arrow (l, texp, ct) ->
         let new_texp = subst_type env texp in
         let new_ct = iter ct in
-        Types.Cty_fun (l, new_texp, new_ct)
+        Types.Cty_arrow (l, new_texp, new_ct)
   in
   iter t

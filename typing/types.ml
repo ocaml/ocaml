@@ -215,7 +215,7 @@ module Concr = Set.Make(OrderedString)
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type
   | Cty_signature of class_signature
-  | Cty_fun of label * type_expr * class_type
+  | Cty_arrow of label * type_expr * class_type
 
 and class_signature =
   { cty_self: type_expr;
@@ -249,7 +249,7 @@ and signature = signature_item list
 and signature_item =
     Sig_value of Ident.t * value_description
   | Sig_type of Ident.t * type_declaration * rec_status
-  | Sig_extension of Ident.t * extension_constructor * ext_status
+  | Sig_typext of Ident.t * extension_constructor * ext_status
   | Sig_exception of Ident.t * exception_declaration
   | Sig_module of Ident.t * module_type * rec_status
   | Sig_modtype of Ident.t * modtype_declaration
