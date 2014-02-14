@@ -39,8 +39,6 @@ let report_error ppf exn =
       fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
        have the same hash value.@ Change one of them." l l'
-  | Typecore.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typecore.report_error env ppf err
   | Typetexp.Error(loc, env, err) ->
       Location.print_error ppf loc; Typetexp.report_error env ppf err
   | Typedecl.Error(loc, err) ->
@@ -76,6 +74,10 @@ let report_error ppf exn =
   | Warnings.Errors (n) ->
       Location.print_error_cur_file ppf;
       fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
-  | x -> fprintf ppf "@]"; raise x in
+  | x ->
+      match Location.error_of_exn x with
+      | Some err -> Location.report_error ppf err
+      | None -> fprintf ppf "@]"; raise x
+  in
 
   fprintf ppf "@[%a@]@." report exn

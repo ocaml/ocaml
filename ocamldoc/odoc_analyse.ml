@@ -124,8 +124,6 @@ let process_error exn =
       fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
        have the same hash value." l l'
-  | Typecore.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typecore.report_error env ppf err
   | Typetexp.Error(loc, env, err) ->
       Location.print_error ppf loc; Typetexp.report_error env ppf err
   | Typedecl.Error(loc, err) ->
@@ -148,10 +146,13 @@ let process_error exn =
       Location.print_error_cur_file ppf;
       fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
   | x ->
-      fprintf ppf "@]";
-      fprintf ppf
-        "Compilation error(%s). Use the OCaml compiler to get more details."
-        (Printexc.to_string x)
+      match Location.error_of_exn x with
+      | Some err -> Location.report_error ppf err
+      | None ->
+          fprintf ppf "@]";
+          fprintf ppf
+            "Compilation error(%s). Use the OCaml compiler to get more details."
+            (Printexc.to_string x)
   in
   Format.fprintf Format.err_formatter "@[%a@]@." report exn
 
