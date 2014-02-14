@@ -74,7 +74,7 @@ let num_loc_lines = ref 0 (* number of lines already printed after input *)
 
 (* Highlight the locations using standout mode. *)
 
-let highlight_terminfo ppf num_lines lb loc1 loc2 =
+let highlight_terminfo ppf num_lines lb locs =
   Format.pp_print_flush ppf ();  (* avoid mixing Format and normal output *)
   (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
   let pos0 = -lb.lex_abs_pos in
@@ -94,9 +94,9 @@ let highlight_terminfo ppf num_lines lb loc1 loc2 =
   print_string "# ";
   for pos = 0 to lb.lex_buffer_len - pos0 - 1 do
     if !bol then (print_string "  "; bol := false);
-    if pos = loc1.loc_start.pos_cnum || pos = loc2.loc_start.pos_cnum then
+    if List.exists (fun loc -> pos = loc.loc_start.pos_cnum) locs then
       Terminfo.standout true;
-    if pos = loc1.loc_end.pos_cnum || pos = loc2.loc_end.pos_cnum then
+    if List.exists (fun loc -> pos = loc.loc_end.pos_cnum) locs then
       Terminfo.standout false;
     let c = lb.lex_buffer.[pos + pos0] in
     print_char c;
@@ -176,10 +176,10 @@ let highlight_dumb ppf lb loc =
 
 (* Highlight the location using one of the supported modes. *)
 
-let rec highlight_locations ppf loc1 loc2 =
+let rec highlight_locations ppf locs =
   match !status with
     Terminfo.Uninitialised ->
-      status := Terminfo.setup stdout; highlight_locations ppf loc1 loc2
+      status := Terminfo.setup stdout; highlight_locations ppf locs
   | Terminfo.Bad_term ->
       begin match !input_lexbuf with
         None -> false
@@ -187,6 +187,7 @@ let rec highlight_locations ppf loc1 loc2 =
           let norepeat =
             try Sys.getenv "TERM" = "norepeat" with Not_found -> false in
           if norepeat then false else
+            let loc1 = List.hd locs in
             try highlight_dumb ppf lb loc1; true
             with Exit -> false
       end
@@ -194,7 +195,7 @@ let rec highlight_locations ppf loc1 loc2 =
       begin match !input_lexbuf with
         None -> false
       | Some lb ->
-          try highlight_terminfo ppf num_lines lb loc1 loc2; true
+          try highlight_terminfo ppf num_lines lb locs; true
           with Exit -> false
       end
 
@@ -237,7 +238,7 @@ let print_loc ppf loc =
   let (file, line, startchar) = get_pos_info loc.loc_start in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
   if file = "//toplevel//" then begin
-    if highlight_locations ppf loc none then () else
+    if highlight_locations ppf [loc] then () else
       fprintf ppf "Characters %i-%i"
               loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
@@ -249,7 +250,7 @@ let print_loc ppf loc =
 
 let print ppf loc =
   if loc.loc_start.pos_fname = "//toplevel//"
-  && highlight_locations ppf loc none then ()
+  && highlight_locations ppf [loc] then ()
   else fprintf ppf "%a%s@." print_loc loc msg_colon
 ;;
 
@@ -286,3 +287,82 @@ type 'a loc = {
 
 let mkloc txt loc = { txt ; loc }
 let mknoloc txt = mkloc txt none
+
+
+type error =
+  {
+    loc: t;
+    msg: string;
+    sub: error list;
+    if_highlight: string; (* alternative message if locations are highlighted *)
+  }
+
+let errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
+  Printf.ksprintf (fun msg -> {loc; msg; sub; if_highlight})
+
+let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
+  {loc; msg; sub; if_highlight}
+
+let error_of_exn : (exn -> error option) list ref = ref []
+
+let register_error_of_exn f = error_of_exn := f :: !error_of_exn
+
+let error_of_exn exn =
+  let rec loop = function
+    | [] -> None
+    | f :: rest ->
+        match f exn with
+        | Some _ as r -> r
+        | None -> loop rest
+  in
+  loop !error_of_exn
+
+let rec report_error ppf ({loc; msg; sub; if_highlight} as err) =
+  let highlighted =
+    if if_highlight <> "" then
+      let rec collect_locs locs {loc; sub; if_highlight; _} =
+        List.fold_left collect_locs (loc :: locs) sub
+      in
+      let locs = collect_locs [] err in
+      highlight_locations ppf locs
+    else
+      false
+  in
+  if highlighted then
+    Format.pp_print_string ppf if_highlight
+  else begin
+    print ppf loc;
+    Format.pp_print_string ppf msg;
+    List.iter (fun err -> Format.fprintf ppf "@\n@[<2>%a@]" report_error err) sub
+  end
+
+let error_of_printer loc print x =
+  let buf = Buffer.create 64 in
+  let ppf = Format.formatter_of_buffer buf in
+  pp_print_string ppf "Error: ";
+  print ppf x;
+  pp_print_flush ppf ();
+  let msg = Buffer.contents buf in
+  errorf ~loc "%s" msg
+
+let error_of_printer_file print x =
+  error_of_printer (in_file !input_name) print x
+
+let () =
+  register_error_of_exn
+    (function
+      | Sys_error msg ->
+          Some (errorf ~loc:(in_file !input_name) "Error: I/O error: %s" msg)
+      | Warnings.Errors n ->
+          Some
+            (errorf ~loc:(in_file !input_name)
+               "Error: Some fatal warnings were triggered (%d occurrences)" n)
+      | _ ->
+          None
+    )
+
+
+let report_exception ppf exn =
+  match error_of_exn exn with
+  | Some err -> fprintf ppf "@[%a@]@." report_error err
+  | None -> raise exn

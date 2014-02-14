@@ -84,6 +84,19 @@ exception Unify of (type_expr * type_expr) list
 
 exception Tags of label * label
 
+let () =
+  Location.register_error_of_exn
+    (function
+      | Tags (l, l') ->
+          Some
+            Location.
+              (errorf ~loc:(in_file !input_name)
+                 "In this program,@ variant constructors@ `%s and `%s@ \
+                  have the same hash value.@ Change one of them." l l'
+              )
+      | _ -> None
+    )
+
 exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 

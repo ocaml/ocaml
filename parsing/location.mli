@@ -56,7 +56,7 @@ val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
 
-val highlight_locations: formatter -> t -> t -> bool
+val highlight_locations: formatter -> t list -> bool
 
 type 'a loc = {
   txt : 'a;
@@ -75,3 +75,37 @@ val show_filename: string -> string
 
 
 val absname: bool ref
+
+
+(* Support for located errors *)
+
+type error =
+  {
+    loc: t;
+    msg: string;
+    sub: error list;
+    if_highlight: string; (* alternative message if locations are highlighted *)
+  }
+
+val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
+
+val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string -> ('a, unit, string, error) format4 -> 'a
+
+val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
+
+val error_of_printer_file: (formatter -> 'a -> unit) -> 'a -> error
+
+val error_of_exn: exn -> error option
+
+val register_error_of_exn: (exn -> error option) -> unit
+  (* Each compiler module which defines a custom type of exception
+     which can surface as a user-visible error should register
+     a "printer" for this exception using [register_error_of_exn].
+     The result of the printer is an [error] value containing
+     a location, a message, and optionally sub-messages (each of them
+     being located as well). *)
+
+val report_error: formatter -> error -> unit
+
+val report_exception: formatter -> exn -> unit
+  (* Reraise the exception if it is unknown. *)

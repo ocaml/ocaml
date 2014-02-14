@@ -826,3 +826,12 @@ let report_error ppf = function
   | Tags (lab1, lab2) ->
       fprintf ppf "Method labels `%s' and `%s' are incompatible.@ %s"
         lab1 lab2 "Change one of them."
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (loc, err) ->
+        Some (Location.error_of_printer loc report_error err)
+      | _ ->
+        None
+    )

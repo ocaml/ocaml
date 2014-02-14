@@ -59,7 +59,8 @@ let apply_rewriter magic fn_in ppx =
     Misc.remove_file fn_out;
     raise (Error (CannotRun comm));
   end;
-  if not (Sys.file_exists fn_out) then raise (Error (WrongMagic comm));
+  if not (Sys.file_exists fn_out) then
+    raise (Error (WrongMagic comm));
   (* check magic before passing to the next ppx *)
   let ic = open_in_bin fn_out in
   let buffer =
@@ -143,6 +144,12 @@ let report_error ppf = function
       fprintf ppf "External preprocessor does not produce a valid file@.\
                    Command line: %s@." cmd
 
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )
 
 let parse_all parse_fun magic ppf sourcefile =
   Location.input_name := sourcefile;

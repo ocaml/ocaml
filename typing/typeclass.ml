@@ -1788,3 +1788,12 @@ let report_error env ppf = function
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (loc, env, err) ->
+        Some (Location.error_of_printer loc (report_error env) err)
+      | _ ->
+        None
+    )

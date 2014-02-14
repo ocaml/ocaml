@@ -10,74 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* WARNING: if you change something in this file, you must look at
-   errors.ml to see if you need to make the same changes there.
-*)
+(* This module should be removed.  We keep it for now, to avoid
+   breaking external tools depending on it. *)
 
-open Format
-
-(* Report an error *)
-
-let report_error ppf exn =
-  let report ppf = function
-  | Lexer.Error(err, l) ->
-      Location.print_error ppf l;
-      Lexer.report_error ppf err
-  | Syntaxerr.Error err ->
-      Syntaxerr.report_error ppf err
-  | Pparse.Error err ->
-      Pparse.report_error ppf err
-  | Env.Error err ->
-      Location.print_error_cur_file ppf;
-      Env.report_error ppf err
-  | Cmi_format.Error err ->
-      Location.print_error_cur_file ppf;
-      Cmi_format.report_error ppf err
-  | Ctype.Tags(l, l') ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf
-      "In this program,@ variant constructors@ `%s and `%s@ \
-       have the same hash value.@ Change one of them." l l'
-  | Typecore.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typecore.report_error env ppf err
-  | Typetexp.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typetexp.report_error env ppf err
-  | Typedecl.Error(loc, err) ->
-      Location.print_error ppf loc; Typedecl.report_error ppf err
-  | Typeclass.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typeclass.report_error env ppf err
-  | Includemod.Error err ->
-      Location.print_error_cur_file ppf;
-      Includemod.report_error ppf err
-  | Typemod.Error(loc, env, err) ->
-      Location.print_error ppf loc; Typemod.report_error env ppf err
-  | Translcore.Error(loc, err) ->
-      Location.print_error ppf loc; Translcore.report_error ppf err
-  | Translclass.Error(loc, err) ->
-      Location.print_error ppf loc; Translclass.report_error ppf err
-  | Translmod.Error(loc, err) ->
-      Location.print_error ppf loc; Translmod.report_error ppf err
-  | Compilenv.Error code ->
-      Location.print_error_cur_file ppf;
-      Compilenv.report_error ppf code
-  | Asmgen.Error code ->
-      Location.print_error_cur_file ppf;
-      Asmgen.report_error ppf code
-  | Asmlink.Error code ->
-      Location.print_error_cur_file ppf;
-      Asmlink.report_error ppf code
-  | Asmlibrarian.Error code ->
-      Location.print_error_cur_file ppf;
-      Asmlibrarian.report_error ppf code
-  | Asmpackager.Error code ->
-      Location.print_error_cur_file ppf;
-      Asmpackager.report_error ppf code
-  | Sys_error msg ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "I/O error: %s" msg
-  | Warnings.Errors (n) ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
-  | x -> fprintf ppf "@]"; raise x in
-
-  fprintf ppf "@[%a@]@." report exn
+let report_error = Location.report_exception

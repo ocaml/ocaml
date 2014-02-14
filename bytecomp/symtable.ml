@@ -372,3 +372,10 @@ let report_error ppf = function
       fprintf ppf "Cannot find or execute the runtime system %s" s
   | Uninitialized_global s ->
       fprintf ppf "The value of the global `%s' is not yet computed" s
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )

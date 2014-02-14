@@ -353,7 +353,7 @@ let use_file ppf wrap_mod name =
         with
         | Exit -> false
         | Sys.Break -> fprintf ppf "Interrupted.@."; false
-        | x -> Errors.report_error ppf x; false) in
+        | x -> Location.report_exception ppf x; false) in
     if must_close then close_in ic;
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
@@ -472,7 +472,7 @@ let loop ppf =
     | End_of_file -> exit 0
     | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
     | PPerror -> ()
-    | x -> Errors.report_error ppf x; Btype.backtrack snap
+    | x -> Location.report_exception ppf x; Btype.backtrack snap
   done
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)

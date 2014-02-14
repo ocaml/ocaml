@@ -1156,3 +1156,12 @@ let report_error ppf = function
         "Ancestor names can only be used to select inherited methods"
   | Unknown_builtin_primitive prim_name ->
     fprintf ppf  "Unknown builtin primitive \"%s\"" prim_name
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (loc, err) ->
+          Some (Location.error_of_printer loc report_error err)
+      | _ ->
+        None
+    )

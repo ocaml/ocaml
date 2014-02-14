@@ -511,3 +511,14 @@ let report_error ppf errs =
   in
   let print_errs ppf = List.iter (include_err' ppf) in
   fprintf ppf "@[<v>%a%a@]" print_errs errs include_err err
+
+
+(* We could do a better job to split the individual error items
+   as sub-messages of the main interface mismatch on the whole unit. *)
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )
+

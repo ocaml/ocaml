@@ -835,3 +835,13 @@ let report_error env ppf = function
       fprintf ppf "Illegal recursive module reference"
   | Extension s ->
       fprintf ppf "Uninterpreted extension '%s'." s
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (loc, env, err) ->
+        Some (Location.error_of_printer loc (report_error env) err)
+      | _ ->
+        None
+    )
+
