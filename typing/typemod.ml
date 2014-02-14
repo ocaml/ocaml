@@ -402,14 +402,14 @@ let rec remove_duplicates val_ids ext_ids exn_ids = function
     [] -> []
   | Sig_value (id, _) :: rem
     when List.exists (Ident.equal id) val_ids ->
-      remove_duplicates val_ids ext_ids exn_ids rem
+      remove_duplicates val_ids exn_ids rem
   | Sig_typext (id, _, _) :: rem
     when List.exists (Ident.equal id) ext_ids ->
       remove_duplicates val_ids ext_ids exn_ids rem
-  | Sig_exception (id, _) :: rem
+  | Sig_exception(id, _) :: rem
     when List.exists (Ident.equal id) exn_ids ->
-      remove_duplicates val_ids ext_ids exn_ids rem
-  | f :: rem -> f :: remove_duplicates val_ids ext_ids exn_ids rem
+      remove_duplicates val_ids exn_ids rem
+  | f :: rem -> f :: remove_duplicates val_ids exn_ids rem
 
 let rec get_values = function
     [] -> []
@@ -1038,7 +1038,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           let loc = pstr.pstr_loc in
           let mk desc =
             let str = { str_desc = desc; str_loc = loc; str_env = env } in
-            Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str :: previous_saved_types);
+            Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
+                                        :: previous_saved_types);
             str
           in
             match pstr.pstr_desc with
@@ -1271,7 +1272,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     (Cmt_format.Partial_structure str :: previous_saved_types);
   str, sg, final_env
 
-let type_toplevel_phrase env s = type_structure ~toplevel:true false None env s Location.none
+let type_toplevel_phrase env s =
+  type_structure ~toplevel:true false None env s Location.none
 let type_module = type_module true false None
 let type_structure = type_structure false None
 

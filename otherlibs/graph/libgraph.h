@@ -32,8 +32,8 @@ extern int caml_gr_background;        /* Background color for X
                                      (used for CAML color -1) */
 extern Bool caml_gr_display_modeflag;     /* Display-mode flag */
 extern Bool caml_gr_remember_modeflag;    /* Remember-mode flag */
-extern int caml_gr_x, caml_gr_y;            /* Coordinates of the current point */
-extern int caml_gr_color;             /* Current *CAML* drawing color (can be -1) */
+extern int caml_gr_x, caml_gr_y;      /* Coordinates of the current point */
+extern int caml_gr_color;        /* Current *CAML* drawing color (can be -1) */
 extern XFontStruct * caml_gr_font;    /* Current font */
 extern long caml_gr_selected_events;  /* Events we are interested in */
 extern Bool caml_gr_ignore_sigio;     /* Whether to consume events on sigio */

@@ -170,7 +170,7 @@ module Variance = struct
   let conjugate v = swap May_pos May_neg (swap Pos Neg v)
   let get_upper v = (mem May_pos v, mem May_neg v)
   let get_lower v = (mem Pos v, mem Neg v, mem Inv v, mem Inj v)
-end 
+end
 
 (* Type definitions *)
 

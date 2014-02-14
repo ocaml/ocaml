@@ -79,3 +79,10 @@ copy_typedef:
 nomli:
 	$(OCAMLC) -linkall -o nomli.exe -w +A-4-9 $(COMMON) $(BYTECMP) ../../tools/untypeast.cmo ../../tools/tast_iter.cmo nomli.ml
 	./nomli.exe test_nomli.ml
+
+## A port of pa_matches
+
+.PHONY: matches
+matches:
+	$(OCAMLC) -linkall -o ppx_matches.exe $(COMMON) ppx_matches.ml
+	$(OCAMLC) -c -dsource -ppx ./ppx_matches.exe test_matches.ml

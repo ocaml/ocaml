@@ -47,7 +47,8 @@ let standard_runtime =
   if windows then "ocamlrun"
   else C.bindir^"/ocamlrun"
 let ccomp_type = C.ccomptype
-let bytecomp_c_compiler = sf "%s %s %s" C.bytecc C.bytecccompopts C.sharedcccompopts
+let bytecomp_c_compiler =
+  sf "%s %s %s" C.bytecc C.bytecccompopts C.sharedcccompopts
 let bytecomp_c_libraries = C.bytecclibs
 let native_c_compiler = sf "%s %s" C.nativecc C.nativecccompopts
 let native_c_libraries = C.nativecclibs

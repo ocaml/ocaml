@@ -123,7 +123,7 @@ and untype_type_declaration decl =
 
 and untype_type_parameter (ct, v) = (untype_core_type ct, v)
 
-and untype_constructor_declaration cd = 
+and untype_constructor_declaration cd =
   {
    pcd_name = cd.cd_name;
    pcd_args = List.map untype_core_type cd.cd_args;
@@ -167,10 +167,12 @@ and untype_extension_constructor ext =
 and untype_pattern pat =
   let desc =
   match pat with
-      { pat_extra=[Tpat_unpack, _, _attrs]; pat_desc = Tpat_var (_,name); _ } -> Ppat_unpack name
+      { pat_extra=[Tpat_unpack, _, _attrs]; pat_desc = Tpat_var (_,name); _ } ->
+        Ppat_unpack name
     | { pat_extra=[Tpat_type (_path, lid), _, _attrs]; _ } -> Ppat_type lid
     | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
-        Ppat_constraint (untype_pattern { pat with pat_extra=rem }, untype_core_type ct)
+        Ppat_constraint (untype_pattern { pat with pat_extra=rem },
+                         untype_core_type ct)
     | _ ->
     match pat.pat_desc with
       Tpat_any -> Ppat_any
@@ -450,7 +452,8 @@ and untype_module_expr mexpr =
 
 and untype_class_expr cexpr =
   let desc = match cexpr.cl_desc with
-    | Tcl_constraint ( { cl_desc = Tcl_ident (_path, lid, tyl); _ }, None, _, _, _ ) ->
+    | Tcl_constraint ( { cl_desc = Tcl_ident (_path, lid, tyl); _ },
+                       None, _, _, _ ) ->
         Pcl_constr (lid,
           List.map untype_core_type tyl)
     | Tcl_structure clstr -> Pcl_structure (untype_class_structure clstr)

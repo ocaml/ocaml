@@ -30,13 +30,13 @@ version="`ocamlc -v | sed -n -e 's/.*version //p'`"
 
 major="`echo "$version" | sed -n -e '1s/^\([0-9]*\)\..*/\1/p'`"
 minor="`echo "$version" | sed -n -e '1s/^[0-9]*\.\([0-9]*\).*/\1/p'`"
-patchlevel="`echo "$version" | sed -n -e '1s/^[0-9]*\.[0-9]*\.\([0-9]*\).*/\1/p'`"
+patchlvl="`echo "$version" | sed -n -e '1s/^[0-9]*\.[0-9]*\.\([0-9]*\).*/\1/p'`"
 suffix="`echo "$version" | sed -n -e '1s/^[^+]*+\(.*\)/\1/p'`"
 
 echo "#define OCAML_VERSION_MAJOR $major"
 echo "#define OCAML_VERSION_MINOR $minor"
-case $patchlevel in "") patchlevel=0;; esac
-echo "#define OCAML_VERSION_PATCHLEVEL $patchlevel"
+case $patchlvl in "") patchlvl=0;; esac
+echo "#define OCAML_VERSION_PATCHLEVEL $patchlvl"
 case "$suffix" in
   "") echo "#undef OCAML_VERSION_ADDITIONAL";;
   *) echo "#define OCAML_VERSION_ADDITIONAL \"$suffix\"";;

@@ -34,7 +34,7 @@ static uintnat size_64;  /* Size in words of 64-bit block for struct. */
 
 /* Flags affecting marshaling */
 
-enum { 
+enum {
   NO_SHARING = 1,               /* Flag to ignore sharing */
   CLOSURES = 2,                 /* Flag to allow marshaling code pointers */
   COMPAT_32 = 4                 /* Flag to ensure that output can safely

@@ -119,7 +119,7 @@ let _ =
 (* Was segfaulting *)
 
 let f = function
- | lazy (), _, {contents=None} -> 0 
+ | lazy (), _, {contents=None} -> 0
  | _, lazy (), {contents=Some x} -> 1
 
 let s = ref None
@@ -129,7 +129,6 @@ let set_false = lazy (s := None)
 let () =
   let _r = try f (set_true, set_false, s) with Match_failure _ -> 2 in
   printf "PR#5992=Ok\n"
-
 
 (* PR #5788, was giving wrong result 3 *)
 exception Foo

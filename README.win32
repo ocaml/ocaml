@@ -106,7 +106,7 @@ You will need the following software components to perform the recompilation:
   compiling on a 64-bit Windows.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
   Install at least the following packages (and their dependencies):
-  diffutils, make, ncurses.
+  diffutils, dos2unix, gcc-core, make, ncurses.
 
 First, you need to set up your cygwin environment for using the MS
 tools.  The following assumes that you have installed [1], [2], and [3]
@@ -425,7 +425,7 @@ to adjust the paths accordingly.
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
     echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
     echo FLPATH="`cygpath '%PFPATH%\flexdll'`" >>C:\cygwin\tmp\msenv
-    echo PATH="${VCPATH}:$PATH:${FLPATH}" >>C:\cygwin\tmp\msenv
+    echo PATH="$VCPATH:$FLPATH:$PATH" >>C:\cygwin\tmp\msenv
     echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
     echo export OCAMLBUILD_FIND=/usr/bin/find >>C:\cygwin\tmp\msenv
 

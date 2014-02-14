@@ -1268,7 +1268,7 @@ let rec filter_trace keep_last = function
 
 let rec type_path_list ppf = function
   | [tp, tp'] -> type_path_expansion tp ppf tp'
-  | (tp, tp') :: rem -> 
+  | (tp, tp') :: rem ->
       fprintf ppf "%a@;<2 0>%a"
         (type_path_expansion tp) tp'
         type_path_list rem
@@ -1473,12 +1473,12 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
 let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =
   wrap_printing_env env (fun () ->
     reset ();
-    List.iter 
-      (fun (tp, tp') -> path_same_name tp0 tp; path_same_name tp0' tp') 
+    List.iter
+      (fun (tp, tp') -> path_same_name tp0 tp; path_same_name tp0' tp')
       tpl;
     match tpl with
       [] -> assert false
-    | [tp, tp'] ->       
+    | [tp, tp'] ->
         fprintf ppf
           "@[%t@;<1 2>%a@ \
              %t@;<1 2>%a\

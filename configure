@@ -49,6 +49,7 @@ with_ocamldoc=ocamldoc
 with_ocamlbuild=ocamlbuild
 with_frame_pointers=false
 TOOLPREF=""
+with_cfi=true
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -164,6 +165,8 @@ while : ; do
         with_ocamlbuild="";;
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
+    -no-cfi|--no-cfi)
+        with_cfi=false;;
     *) err "Unknown option \"$1\".";;
   esac
   shift
@@ -648,11 +651,12 @@ if $int64_native; then
            echo "#undef ARCH_ALIGN_INT64" >> m.h;;
         1) inf "64-bit integers must be doubleword-aligned."
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
-        *) wrn "Something went wrong during alignment determination for 64-bit integers.\n" \
-               "I'm going to assume this architecture has alignment constraints.\n" \
-               "That's a safe bet: OCaml will work even if\n" \
-               "this architecture has actually no alignment constraints."
-               "#define ARCH_ALIGN_INT64" >> m.h;;
+        *) wrn "Something went wrong during alignment determination for\n" \
+               "64-bit integers. I'm going to assume this architecture has\n" \
+               "alignment constraints. That's a safe bet: OCaml will work\n" \
+               "even if this architecture has actually no alignment\n" \
+               "constraints." \
+           echo "#define ARCH_ALIGN_INT64" >> m.h;;
       esac
   esac
 else
@@ -663,14 +667,18 @@ fi
 
 sh ./runtest divmod.c
 case $? in
-  0) inf "Native division and modulus have round-towards-zero semantics, will use them."
+  0) inf "Native division and modulus have round-towards-zero semantics," \
+         "will use them."
      echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
-  1) inf "Native division and modulus do not have round-towards-zero semantics, will use software emulation."
+  1) inf "Native division and modulus do not have round-towards-zero"
+         "semantics, will use software emulation."
      echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
   *) case $target in
-       *-*-mingw*) inf "Native division and modulus have round-towards-zero semantics, will use them."
+       *-*-mingw*) inf "Native division and modulus have round-towards-zero" \
+                       "semantics, will use them."
                    echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
-       *) wrn "Something went wrong while checking native division and modulus, please report it."
+       *) wrn "Something went wrong while checking native division and modulus"\
+              "please report it at http://http://caml.inria.fr/mantis/"
           echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
      esac;;
 esac
@@ -695,7 +703,7 @@ if test $with_sharedlibs = "yes"; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -852,7 +860,7 @@ case "$target" in
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
-                                if $arch64; then model=ppc64; else model=ppc; fi;;
+                                if $arch64;then model=ppc64;else model=ppc;fi;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
   arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
@@ -930,7 +938,7 @@ case "$arch,$system" in
                     *gcc*) aspp="${TOOLPREF}gcc -c";;
                               *) aspp="${TOOLPREF}as -P";;
                   esac;;
-  amd64,*|arm,*|arm64,*|i386,*|power,bsd|sparc,*)
+  amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
                   as="${TOOLPREF}as"
                   aspp="${TOOLPREF}gcc -c";;
 esac
@@ -1753,7 +1761,9 @@ asm_cfi_supported=false
 
 export as aspp
 
-if sh ./tryassemble cfi.S; then
+if ! $with_cfi; then
+  echo "CFI support: disabled by command-line option -no-cfi"
+elif sh ./tryassemble cfi.S; then
   echo "#define ASM_CFI_SUPPORTED" >> m.h
   asm_cfi_supported=true
   inf "Assembler supports CFI"

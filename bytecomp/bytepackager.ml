@@ -271,7 +271,8 @@ let report_error ppf = function
       fprintf ppf "%a is not a bytecode object file"
         Location.print_filename file
   | Illegal_renaming(name, file, id) ->
-      fprintf ppf "Wrong file naming: %a@ contains the code for @ %s when %s was expected"
-        Location.print_filename file name id 
+      fprintf ppf "Wrong file naming: %a@ contains the code for\
+                   @ %s when %s was expected"
+        Location.print_filename file name id
   | File_not_found file ->
       fprintf ppf "File %s not found" file

@@ -27,7 +27,8 @@
 #else
 #include <stdio.h>
 #define TRACE(x) printf("%d: %s\n", GetCurrentThreadId(), x); fflush(stdout)
-#define TRACE1(x,y) printf("%d: %s %p\n", GetCurrentThreadId(), x, (void *)y); fflush(stdout)
+#define TRACE1(x,y) printf("%d: %s %p\n", GetCurrentThreadId(), x, (void *)y); \
+                    fflush(stdout)
 #endif
 
 typedef DWORD st_retcode;

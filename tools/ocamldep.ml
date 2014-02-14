@@ -283,8 +283,9 @@ let ml_file_dependencies source_file =
     end
 
 let mli_file_dependencies source_file =
-  let extracted_deps = read_parse_and_extract
-      Parse.interface Depend.add_signature Config.ast_intf_magic_number source_file
+  let extracted_deps =
+    read_parse_and_extract Parse.interface Depend.add_signature
+                           Config.ast_intf_magic_number source_file
   in
   if !sort_files then
     files := (source_file, MLI, extracted_deps) :: !files
@@ -437,7 +438,7 @@ let _ =
         " Output one line per file, regardless of the length";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
-    "-ppx", Arg.String(fun s -> first_ppx := s :: !first_ppx),
+     "-ppx", Arg.String(fun s -> first_ppx := s :: !first_ppx),
          "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
      "-slash", Arg.Set Clflags.force_slash,
          " (Windows) Use forward slash / instead of backslash \\ in file paths";

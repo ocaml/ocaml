@@ -82,3 +82,8 @@ static int win_has_console(void)
     return 1;
   }
 }
+
+CAMLprim value win_terminate_process(value v_pid)
+{
+  return (Val_bool(TerminateProcess((HANDLE) Long_val(v_pid), 0)));
+}

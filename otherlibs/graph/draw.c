@@ -20,9 +20,11 @@ value caml_gr_plot(value vx, value vy)
   int y = Int_val(vy);
   caml_gr_check_open();
   if(caml_gr_remember_modeflag)
-    XDrawPoint(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc, x, Bcvt(y));
+    XDrawPoint(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc, x,
+               Bcvt(y));
   if(caml_gr_display_modeflag) {
-    XDrawPoint(caml_gr_display, caml_gr_window.win, caml_gr_window.gc, x, Wcvt(y));
+    XDrawPoint(caml_gr_display, caml_gr_window.win, caml_gr_window.gc, x,
+               Wcvt(y));
     XFlush(caml_gr_display);
   }
   return Val_unit;
@@ -82,7 +84,8 @@ value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
   return Val_unit;
 }
 
-value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, value va2)
+value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1,
+                           value va2)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -105,7 +108,8 @@ value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, 
 
 value caml_gr_draw_arc(value *argv, int argc)
 {
-  return caml_gr_draw_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+  return caml_gr_draw_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4],
+                              argv[5]);
 }
 
 value caml_gr_set_line_width(value vwidth)

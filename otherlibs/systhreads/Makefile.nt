@@ -32,7 +32,8 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 allopt: lib$(LIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).cmxs $(CMIFILES)
 
 $(LIBNAME).cma: $(CAMLOBJS)
-	$(MKLIB) -o $(LIBNAME) -ocamlc "../../boot/ocamlrun ../../ocamlc" -linkall $(CAMLOBJS) $(LINKOPTS)
+	$(MKLIB) -o $(LIBNAME) -ocamlc "../../boot/ocamlrun ../../ocamlc" \
+	         -linkall $(CAMLOBJS) $(LINKOPTS)
 
 lib$(LIBNAME).$(A): $(COBJS)
 	$(MKLIB) -o $(LIBNAME) $(COBJS) $(LDOPTS)
@@ -44,7 +45,9 @@ st_stubs_b.$(O): st_stubs.c st_win32.h
 
 
 $(LIBNAME).cmxa: $(CAMLOBJS:.cmo=.cmx)
-	$(MKLIB) -o $(LIBNAME)nat -ocamlopt "../../boot/ocamlrun ../../ocamlopt" -linkall $(CAMLOBJS:.cmo=.cmx) $(LINKOPTS)
+	$(MKLIB) -o $(LIBNAME)nat \
+	         -ocamlopt "../../boot/ocamlrun ../../ocamlopt" -linkall \
+	         $(CAMLOBJS:.cmo=.cmx) $(LINKOPTS)
 	mv $(LIBNAME)nat.cmxa $(LIBNAME).cmxa
 	mv $(LIBNAME)nat.$(A) $(LIBNAME).$(A)
 
@@ -55,7 +58,8 @@ lib$(LIBNAME)nat.$(A): $(COBJS_NAT)
 	$(MKLIB) -o $(LIBNAME)nat $(COBJS_NAT) $(LDOPTS)
 
 st_stubs_n.$(O): st_stubs.c st_win32.h
-	$(NATIVECC) -DNATIVE_CODE -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -c st_stubs.c
+	$(NATIVECC) -DNATIVE_CODE -I../../asmrun -I../../byterun \
+	            $(NATIVECCCOMPOPTS) -c st_stubs.c
 	mv st_stubs.$(O) st_stubs_n.$(O)
 
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt

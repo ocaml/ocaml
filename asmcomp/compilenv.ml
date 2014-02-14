@@ -242,5 +242,6 @@ let report_error ppf = function
       fprintf ppf "Corrupted compilation unit description@ %a"
         Location.print_filename filename
   | Illegal_renaming(name, modname, filename) ->
-      fprintf ppf "%a@ contains the description for unit @ %s when %s was expected"
+      fprintf ppf "%a@ contains the description for unit\
+                   @ %s when %s was expected"
         Location.print_filename filename name modname

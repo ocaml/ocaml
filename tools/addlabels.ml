@@ -190,7 +190,8 @@ let rec insert_labels_app ~labels ~text args =
         let pos0 = arg.pexp_loc.Location.loc_start.Lexing.pos_cnum in
         let pos = insertion_point pos0 ~text in
         match arg.pexp_desc with
-        | Pexp_ident({ txt = Longident.Lident name }) when l = name && pos = pos0 ->
+        | Pexp_ident({ txt = Longident.Lident name })
+          when l = name && pos = pos0 ->
             add_insertion pos "~"
         | _ -> add_insertion pos ("~" ^ l ^ ":")
       end;
@@ -224,7 +225,9 @@ let rec add_labels_expr ~text ~values ~classes expr =
       end;
       List.iter args ~f:(fun (_,e) -> add_labels_rec e)
   | Pexp_apply ({pexp_desc=Pexp_send
-                   ({pexp_desc=Pexp_ident({ txt = Longident.Lident s })},meth)}, args) ->
+                   ({pexp_desc=Pexp_ident({ txt = Longident.Lident s })},
+                    meth)},
+                args) ->
       begin try
         if SMap.find s values = ["<object>"] then
           let labels = SMap.find (s ^ "#" ^ meth) values in

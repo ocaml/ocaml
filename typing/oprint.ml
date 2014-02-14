@@ -22,7 +22,8 @@ let cautious f ppf arg =
 let rec print_ident ppf =
   function
     Oide_ident s -> pp_print_string ppf s
-  | Oide_dot (id, s) -> print_ident ppf id; pp_print_char ppf '.'; pp_print_string ppf s
+  | Oide_dot (id, s) ->
+      print_ident ppf id; pp_print_char ppf '.'; pp_print_string ppf s
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
 

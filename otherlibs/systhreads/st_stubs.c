@@ -823,7 +823,7 @@ CAMLprim value caml_condition_signal(value wrapper)           /* ML */
 CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
 {
   st_check_error(st_condvar_broadcast(Condition_val(wrapper)),
-                 "Condition.signal");
+                 "Condition.broadcast");
   return Val_unit;
 }
 

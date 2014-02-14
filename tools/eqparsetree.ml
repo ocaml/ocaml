@@ -12,8 +12,8 @@
 
 
 (*
-  This module is mainly used to diff two parsetree, it helps to automate the test
-  for parsing/pprintast.ml
+  This module is mainly used to diff two parsetree, it helps to automate the
+  test for parsing/pprintast.ml
  *)
 
 
@@ -38,7 +38,7 @@ let eq_option mf_a (x, y) =
   | (None, None) -> true
   | (Some x, Some y) -> mf_a (x, y)
   | (_, _) -> false
-    
+
 module Location =struct
   include Location
   let eq_t : (t*t) -> bool = fun (_,_) -> true
@@ -66,54 +66,54 @@ module Asttypes = struct
     | (Const_int64 a0, Const_int64 b0) -> eq_int64 (a0, b0)
     | (Const_nativeint a0, Const_nativeint b0) -> eq_nativeint (a0, b0)
     | (_, _) -> false
-    
+
   let eq_rec_flag : (rec_flag * rec_flag) -> 'result =
     function
     | (Nonrecursive, Nonrecursive) -> true
     | (Recursive, Recursive) -> true
     | (Default, Default) -> true
     | (_, _) -> false
-    
+
   let eq_direction_flag :
     (direction_flag * direction_flag) -> 'result =
     function
     | (Upto, Upto) -> true
     | (Downto, Downto) -> true
     | (_, _) -> false
-    
+
   let eq_private_flag : (private_flag * private_flag) -> 'result =
     function
     | (Private, Private) -> true
     | (Public, Public) -> true
     | (_, _) -> false
-    
+
   let eq_mutable_flag : (mutable_flag * mutable_flag) -> 'result =
     function
     | (Immutable, Immutable) -> true
     | (Mutable, Mutable) -> true
     | (_, _) -> false
-    
+
   let eq_virtual_flag : (virtual_flag * virtual_flag) -> 'result =
     function
     | (Virtual, Virtual) -> true
     | (Concrete, Concrete) -> true
     | (_, _) -> false
-    
+
   let eq_override_flag : (override_flag * override_flag) -> 'result =
     function
     | (Override, Override) -> true
     | (Fresh, Fresh) -> true
     | (_, _) -> false
-    
+
   let eq_closed_flag : (closed_flag * closed_flag) -> 'result =
     function
     | (Closed, Closed) -> true
     | (Open, Open) -> true
     | (_, _) -> false
-    
+
   let eq_label : (label * label) -> 'result =
     fun (a0, a1) -> eq_string (a0, a1)
-    
+
   let  eq_loc :
     'all_a0.
       (('all_a0 * 'all_a0) -> 'result) ->
@@ -777,5 +777,3 @@ and eq_toplevel_phrase :
   | (Ptop_dir (a0, a1), Ptop_dir (b0, b1)) ->
       (eq_string (a0, b0)) && (eq_directive_argument (a1, b1))
   | (_, _) -> false
-  
-

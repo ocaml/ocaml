@@ -32,7 +32,7 @@ let sub b ofs len =
   then invalid_arg "Buffer.sub"
   else begin
     let r = String.create len in
-    String.blit b.buffer ofs r 0 len;
+    String.unsafe_blit b.buffer ofs r 0 len;
     r
   end
 ;;
@@ -48,7 +48,7 @@ let blit src srcoff dst dstoff len =
 let nth b ofs =
   if ofs < 0 || ofs >= b.position then
    invalid_arg "Buffer.nth"
-  else String.get b.buffer ofs
+  else String.unsafe_get b.buffer ofs
 ;;
 
 let length b = b.position
@@ -76,7 +76,7 @@ let resize b more =
 let add_char b c =
   let pos = b.position in
   if pos >= b.length then resize b 1;
-  b.buffer.[pos] <- c;
+  String.unsafe_set b.buffer pos c;
   b.position <- pos + 1
 
 let add_substring b s offset len =
@@ -84,14 +84,14 @@ let add_substring b s offset len =
   then invalid_arg "Buffer.add_substring";
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
-  String.blit s offset b.buffer b.position len;
+  String.unsafe_blit s offset b.buffer b.position len;
   b.position <- new_position
 
 let add_string b s =
   let len = String.length s in
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
-  String.blit s 0 b.buffer b.position len;
+  String.unsafe_blit s 0 b.buffer b.position len;
   b.position <- new_position
 
 let add_buffer b bs =

@@ -80,11 +80,12 @@ install-runtimed:
 # the bytecode interpreter is confused).
 # We sort the primitive file and remove duplicates to avoid this problem.
 
+# Warning: we use "sort | uniq" instead of "sort -u" because in the MSVC
+# port, the "sort" program in the path is Microsoft's and not cygwin's
+
 primitives : $(PRIMS)
-	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" \
-	    $(PRIMS) > primitives.tmp
-	sort primitives.tmp | uniq > primitives
-	rm primitives.tmp
+	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
+	  | sort | uniq > primitives
 
 prims.c : primitives
 	(echo '#include "mlvalues.h"'; \

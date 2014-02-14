@@ -8,17 +8,6 @@ PREREQUISITES
   performance.  gcc is the standard compiler under Linux, MacOS X,
   and many other systems.
 
-* Under MacOS X 10.5, you need version 3.1 or later of the XCode
-  development tools.  The version of XCode found on MacOS X 10.5
-  installation media causes linking problems.  XCode updates
-  are available free of charge at http://developer.apple.com/tools/xcode/
-
-* Under MacOS X up to version 10.2.8, you must raise the limit on the
-  stack size with one of the following commands:
-
-    limit stacksize 64M  # if your shell is zsh or tcsh
-    ulimit -s 65536      # if your shell is bash
-
 * If you do not have write access to /tmp, you should set the environment
   variable TMPDIR to the name of some other temporary directory.
 
@@ -158,6 +147,9 @@ The "configure" script accepts the following options:
 -partialld <linker and options>  (default: determined automatically)
         The linker and options to use for producing an object file
         (rather than an executable) from several other object files.
+
+-no-cfi
+        Do not compile support for CFI directives.
 
 Examples:
 
@@ -366,3 +358,7 @@ system.  The "configure" script tries to work around this problem.
 unable to compile correctly the runtime system (wrong code is
 generated for (x - y) where x is a pointer and y an integer).
 Fix: use gcc.
+
+* Under MacOS X 10.6, with XCode 4.0.2, the configure script mistakenly
+detects support for CFI directives in the assembler.
+Fix: give the "-no-cfi" option to configure.

@@ -34,8 +34,8 @@ val native_c_compiler: string
 val native_c_libraries: string
         (* The C libraries to link with native-code programs *)
 val native_pack_linker: string
-        (* The linker to use for packaging (ocamlopt -pack) and for partial links
-           (ocamlopt -output-obj). *)
+        (* The linker to use for packaging (ocamlopt -pack) and for partial
+           links (ocamlopt -output-obj). *)
 val mkdll: string
         (* The linker command line to build dynamic libraries. *)
 val mkexe: string

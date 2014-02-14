@@ -253,9 +253,9 @@ type file_perm = int
     read for group, none for others *)
 
 val openfile : string -> open_flag list -> file_perm -> file_descr
-(** Open the named file with the given flags. Third argument is
-   the permissions to give to the file if it is created. Return
-   a file descriptor on the named file. *)
+(** Open the named file with the given flags. Third argument is the
+   permissions to give to the file if it is created (see
+   {!umask}). Return a file descriptor on the named file. *)
 
 val close : file_descr -> unit
 (** Close a file descriptor. *)
@@ -483,7 +483,7 @@ val clear_close_on_exec : file_descr -> unit
 
 
 val mkdir : string -> file_perm -> unit
-(** Create a directory with the given permissions. *)
+(** Create a directory with the given permissions (see {!umask}). *)
 
 val rmdir : string -> unit
 (** Remove an empty directory. *)
@@ -524,7 +524,7 @@ val pipe : unit -> file_descr * file_descr
    opened for writing, that's the entrance to the pipe. *)
 
 val mkfifo : string -> file_perm -> unit
-(** Create a named pipe with the given permissions. *)
+(** Create a named pipe with the given permissions (see {!umask}). *)
 
 
 (** {6 High-level process and redirection management} *)
@@ -677,7 +677,8 @@ val lockf : file_descr -> lock_command -> int -> unit
 
 val kill : int -> int -> unit
 (** [kill pid sig] sends signal number [sig] to the process
-   with id [pid]. *)
+   with id [pid]. Under Windows, only the [Sys.sigkill] signal
+   is emulated. *)
 
 type sigprocmask_command =
     SIG_SETMASK

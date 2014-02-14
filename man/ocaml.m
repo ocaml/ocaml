@@ -64,6 +64,9 @@ exits after the execution of the last phrase.
 The following command-line options are recognized by
 .BR ocaml (1).
 .TP
+.B \-absname
+Show absolute filenames in error messages.
+.TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
 source and compiled files. By default, the current directory is
@@ -100,6 +103,12 @@ in the user's home directory.
 Labels are not ignored in types, labels may be used in applications,
 and labelled parameters can be given in any order.  This is the default.
 .TP
+.B \-no\-app\-funct
+Deactivates the applicative behaviour of functors. With this option,
+each functor application generates new types in its result and
+applying the same functor twice to the same argument yields two
+incompatible structures.
+.TP
 .B \-noassert
 Do not compile assertion checks.  Note that the special form
 .B assert\ false
@@ -124,6 +133,12 @@ window.
 Do not include the standard library directory in the list of
 directories searched for source and compiled files.
 .TP
+.BI \-ppx \ command
+After parsing, pipe the abstract syntax tree through the preprocessor
+.IR command .
+The format of the input and ouput of the preprocessor
+are not yet documented.
+.TP
 .B \-principal
 Check information path during type-checking, to make sure that all
 types are derived in a principal way.  When using labelled arguments
@@ -141,6 +156,18 @@ use it once before publishing source code.
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported.
+.TP
+.B \-short\-paths
+When a type is visible under several module-paths, use the shortest
+one when printing the type's name in inferred interfaces and error and
+warning messages.
+.TP
+.B \-stdin
+Read the standard input as a script file rather than starting an
+interactive session.
+.TP
+.B \-strict\-sequence
+Force the left-hand part of each sequence to have type unit.
 .TP
 .B \-unsafe
 Turn bound checking off on array and string accesses (the
@@ -166,9 +193,9 @@ for the syntax of the
 argument.
 .TP
 .BI \-warn-error \ warning-list
-Treat as errors the warnings described by the argument
+Mark as fatal the warnings described by the argument
 .IR warning\-list .
-Note that a warning is not triggered (and not treated as error) if
+Note that a warning is not triggered (and does not trigger an error) if
 it is disabled by the
 .B \-w
 option.  See
@@ -176,6 +203,14 @@ option.  See
 for the syntax of the
 .I warning\-list
 argument.
+.TP
+.B \-warn\-help
+Show the description of all available warning numbers.
+.TP
+.BI \- \ file
+Use
+.I file
+as a script file name, even when it starts with a hyphen (-).
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.

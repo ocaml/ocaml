@@ -195,6 +195,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 #define O_BINARY 0
 #endif
 
+static char *read_debug_info_error = "";
 static value read_debug_info(void)
 {
   CAMLparam0();
@@ -212,10 +213,14 @@ static value read_debug_info(void)
     exec_name = caml_exe_name;
   }
   fd = caml_attempt_open(&exec_name, &trail, 1);
-  if (fd < 0) CAMLreturn(Val_false);
+  if (fd < 0){
+    read_debug_info_error = "executable program file not found";
+    CAMLreturn(Val_false);
+  }
   caml_read_section_descriptors(fd, &trail);
   if (caml_seek_optional_section(fd, &trail, "DBUG") == -1) {
     close(fd);
+    read_debug_info_error = "program not linked with -g";
     CAMLreturn(Val_false);
   }
   chan = caml_open_descriptor_in(fd);
@@ -334,8 +339,8 @@ CAMLexport void caml_print_exception_backtrace(void)
 
   events = read_debug_info();
   if (events == Val_false) {
-    fprintf(stderr,
-            "(Program not linked with -g, cannot print stack backtrace)\n");
+    fprintf(stderr, "(Cannot print stack backtrace: %s)\n",
+            read_debug_info_error);
     return;
   }
   for (i = 0; i < caml_backtrace_pos; i++) {

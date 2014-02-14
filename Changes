@@ -3,16 +3,25 @@ Next version:
 
 (Changes that can break existing programs are marked with a "*")
 
+Language features:
+- Attributes and extension nodes
+
 Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
+- PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
 - PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
+- PR#5820: Fix camlp4 lexer roll back problem
+- PR#6062: Fix a regression bug caused by commit 13047
+- PR#6109: Typos in ocamlbuild error messages
 - PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
+- PR#6148: speed improvement for Buffer (patch by John Whitington)
+- PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
@@ -60,7 +69,7 @@ Compilers:
 * warning 3 is extended to warn about other deprecated features:
   - ISO-latin1 characters in identifiers
   - uses of the (&) and (or) operators instead of (&&) and (||)
-- Experimental OCAMLCOMPPARAM for ocamlc and ocamlopt
+- Experimental OCAMLPARAM for ocamlc and ocamlopt
 - PR#5571: incorrect ordinal number in error message
 - PR#6073: add signature to Tstr_include
 
@@ -70,7 +79,6 @@ Standard library:
 - PR#5986: new flag Marshal.Compat_32 for the serialization functions
   (Marshal.to_*), forcing the output to be readable on 32-bit hosts.
 - Add optimized composition operators |> and @@ in Pervasives
-
 
 Other libraries:
 - PR#5568: add O_CLOEXEC flag to Unix.openfile, so that the returned
@@ -83,15 +91,24 @@ Runtime system:
   major heaps, and the destination pointer of caml_initialize() must
   point within the major heap.
 
+Internals:
+- Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
+  as part of compilerlibs, to be used on bin-annot files.
+- The test suite can now be run without installing OCaml first.
+
 Bug fixes:
-- PR#5820: Fix camlp4 lexer roll back problem
-- PR#4855: 'camlp4 -I +dir' accepted, dir is related to 'camlp4 -where'
-- PR#6062: Fix a regression bug caused by commit 13047
+- PR#3236: Document the fact that queues are not thread-safe
+- PR#3468: (part 1) Sys_error documentation
 - PR#3679: Warning display problems
 - PR#3963: Graphics.wait_next_event in Win32 hangs if window closed
 - PR#4079: Queue.copy is now tail-recursive
+- PR#4138: Documentation for Unix.mkdir
+- PR#4469: emacs mode: caml-set-compile-command is annoying with ocamlbuild
+- PR#4485: Graphics: Keyboard events incorrectly delivered in native code
 - PR#4502: ocamlbuild now reliably excludes the build-dir from hygiene check
 - PR#4762: ?? is not used at all, but registered as a lexer token
+- PR#4788: wrong error message when executable file is not found for backtrace
+- PR#4812: otherlibs/unix: add extern int code_of_unix_error (value error);
 - PR#4887: input_char after close_in crashes ocaml (msvc runtime)
 - PR#4994: ocaml-mode doesn't work with xemacs21
 - PR#5098: creating module values may lead to memory leaks
@@ -115,45 +132,59 @@ Bug fixes:
 - PR#5611: avoid clashes betwen .cmo files and output files during linking
 - PR#5662: typo in md5.c
 - PR#5673: type equality in a polymorphic field
+- PR#5674: Methods call are 2 times slower with 4.00 than with 3.12
+- PR#5694: Exception raised by type checker
 - PR#5695: remove warnings on sparc code emitter
 - PR#5697: better location for warnings on statement expressions
 - PR#5698: remove harcoded limit of 200000 labels in emitaux.ml
+- PR#5702: bytecomp/bytelibrarian lib_sharedobjs was defined but never used
 - PR#5708: catch Failure"int_of_string" in ocamldebug
+- PR#5712: (9) new option -bin-annot is not documented
 - PR#5731: instruction scheduling forgot to account for destroyed registers
 - PR#5734: improved Win32 implementation of Unix.gettimeofday
 - PR#5735: %apply and %revapply not first class citizens
 - PR#5738: first class module patterns not handled by ocamldep
 - PR#5739: Printf.printf "%F" (-.nan) returns -nan
+- PR#5741: make pprintast.ml in compiler_libs
 - PR#5747: 'unused open' warning not given when compiling with -annot
 - PR#5752: missing dependencies at byte-code link with mlpack
 - PR#5758: Compiler bug when matching on floats
 - PR#5763: ocamlbuild does not give correct flags when running menhir
+- PR#5765: ocamllex doesn't preserve line directives
+- PR#5770: Syntax error messages involving unclosed parens are sometimes
+  incorrect
 - PR#5772: problem with marshaling of mutually-recursive functions
 - PR#5775: several bug fixes for tools/pprintast.ml
 - PR#5784: -dclambda option is ignored
 - PR#5785: misbehaviour with abstracted structural type used as GADT index
 - PR#5787: Bad behavior of 'Unused ...' warnings in the toplevel
-- PR#5770: Syntax error messages involving unclosed parens are sometimes
-  incorrect
 - PR#5793: integer marshalling is inconsistent between architectures
 - PR#5798: add ARM VFPv2 support for Raspbian (ocamlopt)
 - PR#5802: Avoiding "let" as a value name
 - PR#5805: Assert failure with warning 34 on pre-processed file
 - PR#5806: ensure that backtrace tests are always run (testsuite)
+- PR#5809: Generating .cmt files takes a long time, in case of type error
 - PR#5810: error in switch printing when using -dclambda
 - PR#5811: Untypeast produces singleton tuples for constructor patterns
   with only one argument
 - PR#5813: GC not called when unmarshaling repeatedly in a tight loop (ocamlopt)
+- PR#5814: read_cmt -annot does not report internal references
 - PR#5815: Multiple exceptions in signatures gives an error
+- PR#5816: read_cmt -annot does not work for partial .cmt files
 - PR#5819: segfault when using [with] on large recursive record (ocamlopt)
 - PR#5821: Wrong record field is reported as duplicate
 - PR#5824: Generate more efficient code for immediate right shifts.
 - PR#5825: Add a toplevel primitive to use source file wrapped with the
   coresponding module
+- PR#5833: README.win32 can leave the wrong flexlink in the path
 - PR#5835: nonoptional labeled arguments can be passed with '?'
 - PR#5840: improved documentation for 'Unix.lseek'
+- PR#5848: Assertion failure in type checker
 - PR#5858: Assert failure during typing of class
 - PR#5865: assert failure when reporting undefined field label
+- PR#5872: Performance: Buffer.add_char is not inlined
+- PR#5876: Uncaught exception with a typing error
+- PR#5877: multiple "open" can become expensive in memory
 - PR#5880: 'Genlex.make_lexer' documention mentions the wrong exception
 - PR#5885: Incorrect rule for compiling C stubs when shared libraries are not
   supported.
@@ -163,19 +194,29 @@ Bug fixes:
 - PR#5907: Undetected cycle during typecheck causes exceptions
 - PR#5910: Fix code generation bug for "mod 1" on ARM.
 - PR#5911: Signature substitutions fail in submodules
+- PR#5912: add configure option -no-cfi (for OSX 10.6.x with XCode 4.0.2)
 - PR#5914: Functor breaks with an equivalent argument signature
 - PR#5920, PR#5957: linking failure for big bytecodes on 32bit architectures
 - PR#5928: Missing space between words in manual page for ocamlmktop
 - PR#5930: ocamldep leaks temporary preprocessing files
+- PR#5933: Linking is slow when there are functions with large arities
 - PR#5934: integer shift by negative amount (in otherlibs/num)
 - PR#5944: Bad typing performances of big variant type declaration
+- PR#5945: Mix-up of Minor_heap_min and Minor_heap_max units
 - PR#5948: GADT with polymorphic variants bug
+- PR#5953: Unix.system does not handle EINTR
 - PR#5965: disallow auto-reference to a recursive module in its definition
 - PR#5973: Format module incorrectly parses format string
+- PR#5974: better documentation for Str.regexp
 - PR#5976: crash after recovering from two stack overflows (ocamlopt on MacOS X)
+- PR#5977: Build failure on raspberry pi: "input_value: integer too large"
 - PR#5981: Incompatibility check assumes abstracted types are injective
+- PR#5982: caml_leave_blocking section and errno corruption
 - PR#5985: Unexpected interaction between variance and GADTs
+- PR#5986: Protect against marshaling 64-bit integers in bytecode
+- PR#5988: missing from the documentation: -impl is a valid flag for ocamlopt
 - PR#5989: Assumed inequalities involving private rows
+- PR#5992: Crash when pattern-matching lazy values modifies the scrutinee
 - PR#5993: Variance of private type abbreviations not checked for modules
 - PR#5997: Non-compatibility assumed for concrete types with same constructor
 - PR#6004: Type information does not flow to "inherit" parameters
@@ -186,29 +227,38 @@ Bug fixes:
 - PR#6031: Camomile problem with -with-frame-pointers
 - PR#6032: better Random.self_init under Windows
 - PR#6033: Matching.inline_lazy_force needs eta-expansion (command-line flags)
+- PR#6046: testsuite picks up the wrong ocamlrun dlls
 - PR#6056: Using 'match' prevents generalization of values
+- PR#6058: 'ocamlbuild -use-ocamlfind -tag thread -package threads t.cma' fails
 - PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
-- PR#6090: Module constraint + private type seems brocken in ocaml 4.01.0
+- PR#6069: ocamldoc: lexing: empty token
+- PR#6072: configure does not handle FreeBSD current (i.e. 10) correctly
+- PR#6074: Wrong error message for failing Condition.broadcast
 - PR#6084: Define caml_modify and caml_initialize as weak symbols to help
   with Netmulticore
+- PR#6090: Module constraint + private type seems broken in ocaml 4.01.0
 - PR#6109: Typos in ocamlbuild error messages
 - PR#6123: Assert failure when self escapes its class
 
-Internals:
-- Moved debugger/envaux.ml to typing/envaux.ml to publish env_of_only_summary
-  as part of compilerlibs, to be used on bin-annot files.
-
 Feature wishes:
+- PR#5181: Merge common floating point constants in ocamlopt
+- PR#5546: moving a function into an internal module slows down its use
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM
+- PR#5676: IPv6 support under Windows
 - PR#5721: configure -with-frame-pointers for Linux perf profiling
+- PR#5722: toplevel: print full module path only for first record field
 - PR#5762: Add primitives for fast access to bigarray dimensions
-- PR#5795: Generate sqrtsd opcode instead of external call to sqrt on amd64
 - PR#5769: Allow propagation of Sys.big_endian in native code
 - PR#5771: Add primitives for reading 2, 4, 8 bytes in strings and bigarrays
 - PR#5774: Add bswap primitives for amd64 and arm
+- PR#5795: Generate sqrtsd opcode instead of external call to sqrt on amd64
 - PR#5827: provide a dynamic command line parsing mechanism
+- PR#5832: patch to improve "wrong file naming" error messages
 - PR#5864: Add a find operation to Set
+- PR#5886: Small changes to compile for Android
+- PR#5902: -ppx based pre-processor executables accept arguments
 - PR#6049: support for OpenBSD/macppc platform
+- PR#6059: add -output-obj rules for ocamlbuild
 
 Tools:
 - OCamlbuild now features a bin_annot tag to generate .cmt files.

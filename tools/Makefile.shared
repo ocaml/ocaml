@@ -24,13 +24,11 @@ LINKFLAGS=$(INCLUDES)
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
      objinfo read_cmt
 
-moretools: ocamlast
-
 all: tast_iter.cmo
 
 # scrapelabels addlabels
 
-.PHONY: all moretools
+.PHONY: all
 
 opt.opt: ocamldep.opt read_cmt.opt
 .PHONY: opt.opt
@@ -319,9 +317,6 @@ ocamlast: $(OCAMLAST)
 
 clean::
 	rm -rf ocamlast
-
-install::
-	cp ocamlast $(BINDIR)/ocamlast$(EXE)
 
 # Common stuff
 

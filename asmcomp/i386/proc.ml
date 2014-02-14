@@ -200,4 +200,3 @@ let assemble_file infile outfile =
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 let init () = ()
-

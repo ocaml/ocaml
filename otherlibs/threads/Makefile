@@ -100,8 +100,10 @@ install:
 	mkdir -p $(LIBDIR)/vmthreads
 	cp libvmthreads.a $(LIBDIR)/vmthreads/libvmthreads.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi \
+	   threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
+	   $(LIBDIR)/vmthreads
 
 installopt:
 

@@ -27,7 +27,8 @@ class mapper:
     method class_signature: class_signature -> class_signature
     method class_structure: class_structure -> class_structure
     method class_type: class_type -> class_type
-    method class_type_declaration: class_type_declaration -> class_type_declaration
+    method class_type_declaration:
+             class_type_declaration -> class_type_declaration
     method class_type_field: class_type_field -> class_type_field
     method expr: expression -> expression
     method implementation: string -> structure -> string * structure
@@ -95,3 +96,7 @@ val register: string -> (string list -> #mapper) -> unit
         themselves, and then run all or some of them.  It is also
         possible to have -ppx drivers apply rewriters to only specific
         parts of an AST.  *)
+
+(** {2 Convenience functions to write mappers} *)
+
+val map_opt: ('a -> 'b) -> 'a option -> 'b option
