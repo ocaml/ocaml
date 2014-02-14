@@ -81,6 +81,7 @@ let tag_pat_msgs =
 
 List.iteri (fun i (content,failing_msg) ->
   test (Printf.sprintf "TagsErrorMessage_%d" (i+1))
+    ~options:[`no_ocamlfind]
     ~description:"Confirm relevance of an error message due to erronous _tags"
     ~failing_msg
     ~tree:[T.f "_tags" ~content; T.f "dummy.ml"]
@@ -208,6 +209,40 @@ test "PrincipalFlag"
          T.f "_tags" ~content:"true: principal\n"]
   ~failing_msg:"File \"hello.ml\", line 1, characters 61-64:
 Warning 18: this type-based field disambiguation is not principal."
-  ~targets:("hello.byte",["hello.native"]) ();;
+  ~targets:("hello.byte",[]) ();;
+
+test "ModularPlugin1"
+  ~options:[`no_ocamlfind; `quiet; `plugin_tag "use_str"]
+  ~description:"test a plugin with dependency on external libraries"
+  ~tree:[T.f "main.ml" ~content:"let x = 1";
+         T.f "myocamlbuild.ml" ~content:"ignore (Str.quote \"\");;"]
+  ~matching:[M.f "main.byte"]
+  ~targets:("main.byte",[]) ();;
+
+test "ModularPlugin2"
+  ~description:"check that parametrized tags defined by the plugin
+                do not warn at plugin-compilation time"
+  ~options:[`no_ocamlfind; `quiet]
+  ~tree:[T.f "main.ml" ~content:"let x = 1";
+         T.f "_tags" ~content:"<main.*>: toto(-g)";
+         T.f "myocamlbuild.ml"
+           ~content:"open Ocamlbuild_plugin;;
+                     pflag [\"link\"] \"toto\" (fun arg -> A arg);;"]
+  ~failing_msg:""
+  ~matching:[M.f "main.byte"]
+  ~targets:("main.byte",[]) ();;
+
+test "ModularPlugin3"
+  ~description:"check that unknown parametrized tags encountered
+                during plugin compilation still warn"
+  ~options:[`no_ocamlfind; `quiet; `plugin_tag "'toto(-g)'"]
+  ~tree:[T.f "main.ml" ~content:"let x = 1";
+         T.f "myocamlbuild.ml"
+           ~content:"open Ocamlbuild_plugin;;
+                     pflag [\"link\"] \"toto\" (fun arg -> A arg);;"]
+  ~failing_msg:"Warning: tag \"toto\" does not expect a parameter, \
+                but is used with parameter \"-g\""
+  ~matching:[M.f "main.byte"]
+  ~targets:("main.byte",[]) ();;
 
 run ~root:"_test";;

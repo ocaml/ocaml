@@ -117,9 +117,16 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc \
-  moretools
+all:
+	$(MAKE) runtime
+	$(MAKE) ocamlc
+	$(MAKE) ocamllex
+	$(MAKE) ocamlyacc
+	$(MAKE) ocamltools
+	$(MAKE) library
+	$(MAKE) ocaml
+	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+	  $(WITH_OCAMLDOC) moretools
 
 # Compile everything the first time
 world:

@@ -195,13 +195,13 @@ let finish ctx =
   int32_to_string ctx.d res 12;
   res
 
-let test s =
+let test hex s =
   let ctx = init() in
   update ctx s 0 (String.length s);
   let res = finish ctx in
   let exp = Digest.string s in
-  let ok = (res = exp) in
-  if not ok then Printf.printf "Failure for '%s'\n" s;
+  let ok = res = exp && Digest.to_hex exp = hex in
+  if not ok then Printf.printf "Failure for %S : %S %S %S %S\n" s res exp (Digest.to_hex exp) hex;
   ok
 
 let time msg iter fn =
@@ -212,11 +212,15 @@ let time msg iter fn =
 
 let _ =
   (* Test *)
-  if test ""
-  && test "a"
-  && test "abc"
-  && test "message digest"
-  && test "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  if test "d41d8cd98f00b204e9800998ecf8427e" ""
+  && test "0cc175b9c0f1b6a831c399e269772661" "a"
+  && test "900150983cd24fb0d6963f7d28e17f72" "abc"
+  && test "8215ef0796a20bcaaae116d3876c664a" "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+  && test "7707d6ae4e027c70eea2a935c2296f21" (String.make 1_000_000 'a')
+  && test "f96b697d7cb7938d525a2f31aaf161d0" "message digest"
+  && test "d174ab98d277d9f5a5611c2c9f419d9f" "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  && test "9e107d9d372bb6826bd81d3542a419d6" "The quick brown fox jumps over the lazy dog"
+  && test "e4d909c290d0fb1ca068ffaddf22cbd0" "The quick brown fox jumps over the lazy dog."
   then printf "Test vectors passed.\n";
   flush stdout;
   (* Benchmark *)

@@ -42,10 +42,14 @@ let input chan =
   really_input chan digest 0 16;
   digest
 
+let char_hex n = Char.unsafe_chr (n + if n < 10 then Char.code '0' else (Char.code 'a' - 10))
+
 let to_hex d =
   let result = String.create 32 in
   for i = 0 to 15 do
-    String.blit (Printf.sprintf "%02x" (int_of_char d.[i])) 0 result (2*i) 2;
+    let x = Char.code d.[i] in
+    String.unsafe_set result (i*2) (char_hex (x lsr 4));
+    String.unsafe_set result (i*2+1) (char_hex (x land 0x0f));
   done;
   result
 

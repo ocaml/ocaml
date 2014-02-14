@@ -62,7 +62,8 @@ let tags_of_filename s =
     let () = Hashtbl.replace cache s res in
     res
 
-let has_tag tag = Tags.mem tag (tags_of_filename "")
+let global_tags () = tags_of_filename ""
+let has_tag tag = Tags.mem tag (global_tags ())
 
 let tag_file file tags =
   if tags <> [] then parse_string (Printf.sprintf "%S: %s" file (String.concat ", " tags));;

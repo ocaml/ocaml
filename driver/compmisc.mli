@@ -1,18 +1,15 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                             ocamlbuild                              *)
+(*                                OCaml                                *)
 (*                                                                     *)
-(*  Nicolas Pouillard, Berke Durak, projet Gallium, INRIA Rocquencourt *)
+(*      Fabrice Le Fessant, EPI Gallium, INRIA Paris-Rocquencourt      *)
 (*                                                                     *)
-(*  Copyright 2007 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
 
+val init_path : bool -> unit
+val initial_env : unit -> Env.t
 
-(* Original author: Nicolas Pouillard *)
-(* Plugin *)
-
-val execute_plugin_if_needed : unit -> unit
-val we_need_a_plugin : unit -> bool

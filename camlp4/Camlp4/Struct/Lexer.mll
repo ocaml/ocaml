@@ -308,7 +308,7 @@ module Make (Token : Sig.Camlp4Token)
           parse comment (in_comment c); COMMENT (buff_contents c)               }
     | "*)"
         { warn Comment_not_end (Loc.of_lexbuf lexbuf)                           ;
-          lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1;
+          c.lexbuf.lex_curr_pos <- c.lexbuf.lex_curr_pos - 1;
           SYMBOL "*"                                       }
     | "<<" (quotchar* as beginning)
       { if quotations c

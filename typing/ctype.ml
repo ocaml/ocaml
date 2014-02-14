@@ -747,8 +747,8 @@ let rec update_level env level ty =
         set_level ty level;
         iter_type_expr (update_level env level) ty
     | Tfield(lab, _, ty1, _)
-      when lab = dummy_method && (repr ty1).level > level->
-        raise (Unify [(ty, newvar2 level)])
+      when lab = dummy_method && (repr ty1).level > level ->
+        raise (Unify [(ty1, newvar2 level)])
     | _ ->
         set_level ty level;
         (* XXX what about abbreviations in Tconstr ? *)

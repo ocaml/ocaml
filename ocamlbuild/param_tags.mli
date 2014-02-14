@@ -32,10 +32,17 @@ acknowledged parameter. *)
 
 val init: unit -> unit
   (** Initialize parameterized tags.
+      
+This will make effective all instantiations [foo(bar)] such that the
+parametrized tag [foo] has been [declare]d and [foo(bar)] has been
+[acknowledge]d after the last [init] call. *)
 
-Call this function once all tags have been [declare]d and [acknowledge]d.
-If you [declare] or [acknowledge] a tag after having called [init], this will
-have no effect. [init] should only be called once. *)
+val partial_init: ?quiet:bool -> Tags.t -> unit
+(** Initialize a list of tags
+
+This will make effective the instances [foo(bar)] appearing
+in the given tag list, instead of those that have been
+[acknowledged] previously. This is for system use only. *)
 
 val make: Tags.elt -> string -> Tags.elt
   (** Make a parameterized tag instance.

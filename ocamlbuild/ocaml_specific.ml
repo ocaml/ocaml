@@ -58,6 +58,11 @@ let x_p_o = "%.p"-.-ext_obj;;
 let x_p_a = "%.p"-.-ext_lib;;
 let x_p_dll = "%.p"-.-ext_dll;;
 
+(* -output-obj targets *)
+let x_byte_c = "%.byte.c";;
+let x_byte_o = "%.byte"-.-ext_obj;;
+let x_native_o = "%.native"-.-ext_obj;;
+
 rule "target files"
   ~dep:"%.itarget"
   ~stamp:"%.otarget"
@@ -75,141 +80,118 @@ rule "target files"
   end;;
 
 rule "ocaml: mli -> cmi"
-  ~tags:["ocaml"]
   ~prod:"%.cmi"
   ~deps:["%.mli"; "%.mli.depends"]
   (Ocaml_compiler.compile_ocaml_interf "%.mli" "%.cmi");;
 
 rule "ocaml: mlpack & d.cmo* -> d.cmo & cmi"
-  ~tags:["ocaml"; "debug"; "byte"]
   ~prods:["%.d.cmo"]
   ~deps:["%.mlpack"; "%.cmi"]
   (Ocaml_compiler.byte_debug_pack_mlpack "%.mlpack" "%.d.cmo");;
 
 rule "ocaml: mlpack & cmo* & cmi -> cmo"
-  ~tags:["ocaml"; "byte"]
   ~prod:"%.cmo"
   ~deps:["%.mli"; "%.cmi"; "%.mlpack"]
   (Ocaml_compiler.byte_pack_mlpack "%.mlpack" "%.cmo");;
 
 rule "ocaml: mlpack & cmo* -> cmo & cmi"
-  ~tags:["ocaml"; "byte"]
   ~prods:["%.cmo"; "%.cmi"]
   ~dep:"%.mlpack"
   (Ocaml_compiler.byte_pack_mlpack "%.mlpack" "%.cmo");;
 
 rule "ocaml: ml & cmi -> d.cmo"
-  ~tags:["ocaml"; "byte"]
   ~prod:"%.d.cmo"
   ~deps:["%.mli"(* This one is inserted to force this rule to be skiped when
     a .ml is provided without a .mli *); "%.ml"; "%.ml.depends"; "%.cmi"]
   (Ocaml_compiler.byte_compile_ocaml_implem ~tag:"debug" "%.ml" "%.d.cmo");;
 
 rule "ocaml: ml & cmi -> cmo"
-  ~tags:["ocaml"; "byte"]
   ~prod:"%.cmo"
   ~deps:["%.mli"(* This one is inserted to force this rule to be skiped when
     a .ml is provided without a .mli *); "%.ml"; "%.ml.depends"; "%.cmi"]
   (Ocaml_compiler.byte_compile_ocaml_implem "%.ml" "%.cmo");;
 
 rule "ocaml: mlpack & cmi & p.cmx* & p.o* -> p.cmx & p.o"
-  ~tags:["ocaml"; "profile"; "native"]
   ~prods:["%.p.cmx"; x_p_o(* no cmi here you must make the byte version to have it *)]
   ~deps:["%.mlpack"; "%.cmi"]
   (Ocaml_compiler.native_profile_pack_mlpack "%.mlpack" "%.p.cmx");;
 
 rule "ocaml: mlpack & cmi & cmx* & o* -> cmx & o"
-  ~tags:["ocaml"; "native"]
   ~prods:["%.cmx"; x_o(* no cmi here you must make the byte version to have it *)]
   ~deps:["%.mlpack"; "%.cmi"]
   (Ocaml_compiler.native_pack_mlpack "%.mlpack" "%.cmx");;
 
 rule "ocaml: ml & cmi -> p.cmx & p.o"
-  ~tags:["ocaml"; "native"; "profile"]
   ~prods:["%.p.cmx"; x_p_o]
   ~deps:["%.ml"; "%.ml.depends"; "%.cmi"]
   (Ocaml_compiler.native_compile_ocaml_implem ~tag:"profile" ~cmx_ext:"p.cmx" "%.ml");;
 
 rule "ocaml: ml & cmi -> cmx & o"
-  ~tags:["ocaml"; "native"]
   ~prods:["%.cmx"; x_o]
   ~deps:["%.ml"; "%.ml.depends"; "%.cmi"]
   (Ocaml_compiler.native_compile_ocaml_implem "%.ml");;
 
 rule "ocaml: ml -> d.cmo & cmi"
-  ~tags:["ocaml"; "debug"]
   ~prods:["%.d.cmo"]
   ~deps:["%.ml"; "%.ml.depends"; "%.cmi"]
   (Ocaml_compiler.byte_compile_ocaml_implem ~tag:"debug" "%.ml" "%.d.cmo");;
 
 rule "ocaml: ml -> cmo & cmi"
-  ~tags:["ocaml"]
   ~prods:["%.cmo"; "%.cmi"]
   ~deps:["%.ml"; "%.ml.depends"]
   (Ocaml_compiler.byte_compile_ocaml_implem "%.ml" "%.cmo");;
 
 rule "ocaml: d.cmo* -> d.byte"
-  ~tags:["ocaml"; "byte"; "debug"; "program"]
   ~prod:"%.d.byte"
   ~dep:"%.d.cmo"
   (Ocaml_compiler.byte_debug_link "%.d.cmo" "%.d.byte");;
 
 rule "ocaml: cmo* -> byte"
-  ~tags:["ocaml"; "byte"; "program"]
   ~prod:"%.byte"
   ~dep:"%.cmo"
   (Ocaml_compiler.byte_link "%.cmo" "%.byte");;
 
-rule "ocaml: cmo* -> byte.o"
-  ~tags:["ocaml"; "byte"; "link"; "output_obj" ]
-  ~prod:"%.byte.o"
+rule "ocaml: cmo* -> byte.(o|obj)"
+  ~prod:x_byte_o
   ~dep:"%.cmo"
-  (Ocaml_compiler.byte_output_obj "%.cmo" "%.byte.o");;
+  (Ocaml_compiler.byte_output_obj "%.cmo" x_byte_o);;
 
 rule "ocaml: cmo* -> byte.c"
-  ~tags:["ocaml"; "byte"; "link"; "output_obj" ]
-  ~prod:"%.byte.c"
+  ~prod:x_byte_c
   ~dep:"%.cmo"
-  (Ocaml_compiler.byte_output_obj "%.cmo" "%.byte.c");;
+  (Ocaml_compiler.byte_output_obj "%.cmo" x_byte_c);;
 
 rule "ocaml: p.cmx* & p.o* -> p.native"
-  ~tags:["ocaml"; "native"; "profile"; "program"]
   ~prod:"%.p.native"
   ~deps:["%.p.cmx"; x_p_o]
   (Ocaml_compiler.native_profile_link "%.p.cmx" "%.p.native");;
 
 rule "ocaml: cmx* & o* -> native"
-  ~tags:["ocaml"; "native"; "program"]
   ~prod:"%.native"
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_link "%.cmx" "%.native");;
 
-rule "ocaml: cmx* & o* -> native.o"
-  ~tags:["ocaml"; "native"; "output_obj" ]
-  ~prod:"%.native.o"
+rule "ocaml: cmx* & o* -> native.(o|obj)"
+  ~prod:x_native_o
   ~deps:["%.cmx"; x_o]
-  (Ocaml_compiler.native_output_obj "%.cmx" "%.native.o");;
+  (Ocaml_compiler.native_output_obj "%.cmx" x_native_o);;
 
 rule "ocaml: mllib & d.cmo* -> d.cma"
-  ~tags:["ocaml"; "byte"; "debug"; "library"]
   ~prod:"%.d.cma"
   ~dep:"%.mllib"
   (Ocaml_compiler.byte_debug_library_link_mllib "%.mllib" "%.d.cma");;
 
 rule "ocaml: mllib & cmo* -> cma"
-  ~tags:["ocaml"; "byte"; "library"]
   ~prod:"%.cma"
   ~dep:"%.mllib"
   (Ocaml_compiler.byte_library_link_mllib "%.mllib" "%.cma");;
 
 rule "ocaml: d.cmo* -> d.cma"
-  ~tags:["ocaml"; "byte"; "debug"; "library"]
   ~prod:"%.d.cma"
   ~dep:"%.d.cmo"
   (Ocaml_compiler.byte_debug_library_link "%.d.cmo" "%.d.cma");;
 
 rule "ocaml: cmo* -> cma"
-  ~tags:["ocaml"; "byte"; "library"]
   ~prod:"%.cma"
   ~dep:"%.cmo"
   (Ocaml_compiler.byte_library_link "%.cmo" "%.cma");;
@@ -224,67 +206,56 @@ rule "ocaml C stubs: clib & (o|obj)* -> (a|lib) & (so|dll)"
   (C_tools.link_C_library "%(path)lib%(libname).clib" ("%(path)lib%(libname)"-.-ext_lib) "%(path)%(libname)");;
 
 rule "ocaml: mllib & p.cmx* & p.o* -> p.cmxa & p.a"
-  ~tags:["ocaml"; "native"; "profile"; "library"]
   ~prods:["%.p.cmxa"; x_p_a]
   ~dep:"%.mllib"
   (Ocaml_compiler.native_profile_library_link_mllib "%.mllib" "%.p.cmxa");;
 
 rule "ocaml: mllib & cmx* & o* -> cmxa & a"
-  ~tags:["ocaml"; "native"; "library"]
   ~prods:["%.cmxa"; x_a]
   ~dep:"%.mllib"
   (Ocaml_compiler.native_library_link_mllib "%.mllib" "%.cmxa");;
 
 rule "ocaml: p.cmx & p.o -> p.cmxa & p.a"
-  ~tags:["ocaml"; "native"; "profile"; "library"]
   ~prods:["%.p.cmxa"; x_p_a]
   ~deps:["%.p.cmx"; x_p_o]
   (Ocaml_compiler.native_profile_library_link "%.p.cmx" "%.p.cmxa");;
 
 rule "ocaml: cmx & o -> cmxa & a"
-  ~tags:["ocaml"; "native"; "library"]
   ~prods:["%.cmxa"; x_a]
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_library_link "%.cmx" "%.cmxa");;
 
 rule "ocaml: mldylib & p.cmx* & p.o* -> p.cmxs & p.so"
-  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
   ~prods:["%.p.cmxs"; x_p_dll]
   ~dep:"%.mldylib"
   (Ocaml_compiler.native_profile_shared_library_link_mldylib "%.mldylib" "%.p.cmxs");;
 
 rule "ocaml: mldylib & cmx* & o* -> cmxs & so"
-  ~tags:["ocaml"; "native"; "shared"; "library"]
   ~prods:["%.cmxs"; x_dll]
   ~dep:"%.mldylib"
   (Ocaml_compiler.native_shared_library_link_mldylib "%.mldylib" "%.cmxs");;
 
 rule "ocaml: p.cmx & p.o -> p.cmxs & p.so"
-  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
   ~prods:["%.p.cmxs"; x_p_dll]
   ~deps:["%.p.cmx"; x_p_o]
   (Ocaml_compiler.native_shared_library_link ~tags:["profile"] "%.p.cmx" "%.p.cmxs");;
 
 rule "ocaml: p.cmxa & p.a -> p.cmxs & p.so"
-  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
   ~prods:["%.p.cmxs"; x_p_dll]
   ~deps:["%.p.cmxa"; x_p_a]
   (Ocaml_compiler.native_shared_library_link ~tags:["profile";"linkall"] "%.p.cmxa" "%.p.cmxs");;
 
 rule "ocaml: cmx & o -> cmxs"
-  ~tags:["ocaml"; "native"; "shared"; "library"]
   ~prods:["%.cmxs"]
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_shared_library_link "%.cmx" "%.cmxs");;
 
 rule "ocaml: cmx & o -> cmxs & so"
-  ~tags:["ocaml"; "native"; "shared"; "library"]
   ~prods:["%.cmxs"; x_dll]
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_shared_library_link "%.cmx" "%.cmxs");;
 
 rule "ocaml: cmxa & a -> cmxs & so"
-  ~tags:["ocaml"; "native"; "shared"; "library"]
   ~prods:["%.cmxs"; x_dll]
   ~deps:["%.cmxa"; x_a]
   (Ocaml_compiler.native_shared_library_link ~tags:["linkall"] "%.cmxa" "%.cmxs");;
@@ -300,19 +271,16 @@ rule "ocaml dependencies mli"
   (Ocaml_tools.ocamldep_command "%.mli" "%.mli.depends");;
 
 rule "ocamllex"
-  ~tags:["ocaml"] (* FIXME "lexer" *)
   ~prod:"%.ml"
   ~dep:"%.mll"
   (Ocaml_tools.ocamllex "%.mll");;
 
 rule "ocaml: mli -> odoc"
-  ~tags:["ocaml"; "doc"]
   ~prod:"%.odoc"
   ~deps:["%.mli"; "%.mli.depends"]
   (Ocaml_tools.document_ocaml_interf "%.mli" "%.odoc");;
 
 rule "ocaml: ml -> odoc"
-  ~tags:["ocaml"; "doc"]
   ~prod:"%.odoc"
   ~deps:["%.ml"; "%.ml.depends"]
   (Ocaml_tools.document_ocaml_implem "%.ml" "%.odoc");;
@@ -364,7 +332,6 @@ if !Options.use_menhir || Configuration.has_tag "use_menhir" then begin
 
 end else
   rule "ocamlyacc"
-    ~tags:["ocaml"] (* FIXME "parser" *)
     ~prods:["%.ml"; "%.mli"]
     ~dep:"%.mly"
     (Ocaml_tools.ocamlyacc "%.mly");;

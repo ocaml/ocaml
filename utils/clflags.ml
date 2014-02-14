@@ -42,6 +42,7 @@ and verbose = ref false                 (* -verbose *)
 and noprompt = ref false                (* -noprompt *)
 and nopromptcont = ref false            (* -nopromptcont *)
 and init_file = ref (None : string option)   (* -init *)
+and noinit = ref false                  (* -noinit *)
 and use_prims = ref ""                  (* -use-prims ... *)
 and use_runtime = ref ""                (* -use-runtime ... *)
 and principal = ref false               (* -principal *)
@@ -101,4 +102,3 @@ let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
 
 let runtime_variant = ref "";;      (* -runtime-variant *)
-

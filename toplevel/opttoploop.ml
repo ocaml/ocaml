@@ -390,7 +390,8 @@ let _ =
   ()
 
 let load_ocamlinit ppf =
-  match !Clflags.init_file with
+  if !Clflags.noinit then ()
+  else match !Clflags.init_file with
   | Some f -> if Sys.file_exists f then ignore (use_silently ppf f)
               else fprintf ppf "Init file not found: \"%s\".@." f
   | None ->
