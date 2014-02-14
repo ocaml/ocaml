@@ -86,13 +86,16 @@ let type_module_type_of_fwd :
 
 let rec add_rec_types env = function
     Sig_type(id, decl, Trec_next) :: rem ->
-      add_rec_types (Env.add_type id decl env) rem
+      add_rec_types (Env.add_type ~check:true id decl env) rem
   | _ -> env
 
 let check_type_decl env loc id row_id newdecl decl rs rem =
-  let env = Env.add_type id newdecl env in
+  let env = Env.add_type ~check:true id newdecl env in
   let env =
-    match row_id with None -> env | Some id -> Env.add_type id newdecl env in
+    match row_id with
+    | None -> env
+    | Some id -> Env.add_type ~check:true id newdecl env
+  in
   let env = if rs = Trec_not then env else add_rec_types env rem in
   Includemod.type_declarations env id newdecl decl;
   Typedecl.check_coherence env loc id newdecl
@@ -156,7 +159,9 @@ let merge_constraint initial_env loc sg constr =
             type_loc = sdecl.ptype_loc;
             type_newtype_level = None }
         and id_row = Ident.create (s^"#row") in
-        let initial_env = Env.add_type id_row decl_row initial_env in
+        let initial_env =
+          Env.add_type ~check:true id_row decl_row initial_env
+        in
         let tdecl = Typedecl.transl_with_constraint
                         initial_env id (Some(Pident id_row)) decl sdecl in
         let newdecl = tdecl.typ_type in
@@ -780,7 +785,7 @@ let enrich_type_decls anchor decls oldenv newenv =
             Mtype.enrich_typedecl oldenv (Pdot(p, Ident.name id, nopos))
               info.typ_type
           in
-            Env.add_type id info' e)
+            Env.add_type ~check:true id info' e)
         oldenv decls
 
 let enrich_module_type anchor name mty env =

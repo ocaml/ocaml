@@ -11,6 +11,9 @@ Language features:
 
 Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
+- PR#6182: better message for virtual objects and class types
+  (Leo P. White, Stephen Dolan)
+- PR#5817: new flag to keep locations in cmi files
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
@@ -25,6 +28,7 @@ Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
 - PR#6148: speed improvement for Buffer (patch by John Whitington)
 - PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
+- PR#6180: efficient creation of uninitialized float arrays
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable

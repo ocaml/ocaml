@@ -1146,7 +1146,7 @@ let hide_rec_items = function
       let ids = id :: get_ids rem in
       set_printing_env
         (List.fold_right
-           (fun id -> Env.add_type (Ident.rename id) dummy)
+           (fun id -> Env.add_type ~check:false (Ident.rename id) dummy)
            ids !printing_env)
   | _ -> ()
 

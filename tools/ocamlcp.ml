@@ -60,6 +60,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _impl s = with_impl := true; option_with_arg "-impl" s
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
+  let _keep_locs = option "-keep-locs"
   let _labels = option "-labels"
   let _linkall = option "-linkall"
   let _make_runtime = option "-make-runtime"

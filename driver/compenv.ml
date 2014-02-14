@@ -161,6 +161,7 @@ let read_OCAMLPARAM ppf position =
       | "verbose" -> set "verbose" [ verbose ] v
       | "nopervasives" -> set "nopervasives" [ nopervasives ] v
       | "slash" -> set "slash" [ force_slash ] v (* for ocamldep *)
+      | "keep-locs" -> set "keep-locs" [ Clflags.keep_locs ] v
 
       | "compact" -> clear "compact" [ optimize_for_speed ] v
       | "no-app-funct" -> clear "no-app-funct" [ applicative_functors ] v

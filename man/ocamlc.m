@@ -368,6 +368,9 @@ Recognize file names ending with
 .I string
 as interface files (instead of the default .mli).
 .TP
+.B \-keep-locs
+Keep locations in generated .cmi files.
+.TP
 .B \-labels
 Labels are not ignored in types, labels may be used in applications,
 and labelled parameters can be given in any order.  This is the default.

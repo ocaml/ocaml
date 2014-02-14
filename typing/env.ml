@@ -1178,15 +1178,16 @@ and store_value ?check slot id path decl env renv =
     values = EnvTbl.add "value" slot id (path, decl) env.values renv.values;
     summary = Env_value(env.summary, id, decl) }
 
-and store_type slot id path info env renv =
+and store_type ~check slot id path info env renv =
   let loc = info.type_loc in
-  check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
-    type_declarations;
+  if check then
+    check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
+      type_declarations;
   let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in
   let descrs = (List.map snd constructors, List.map snd labels) in
 
-  if not loc.Location.loc_ghost &&
+  if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_constructor ("", false, false))
   then begin
     let ty = Ident.name id in
@@ -1234,9 +1235,9 @@ and store_type_infos slot id path info env renv =
                        renv.types;
     summary = Env_type(env.summary, id, info) }
 
-and store_extension slot id path ext env renv =
+and store_extension ~check slot id path ext env renv =
   let loc = ext.ext_loc in
-  if not loc.Location.loc_ghost &&
+  if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_extension ("", false, false))
   then begin
     let ty = Path.last ext.ext_type_path in
@@ -1261,9 +1262,9 @@ and store_extension slot id path ext env renv =
                 env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
-and store_exception slot id path decl env renv =
+and store_exception ~check slot id path decl env renv =
   let loc = decl.exn_loc in
-  if not loc.Location.loc_ghost &&
+  if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_exception ("", false))
   then begin
     let ty = "exn" in
@@ -1340,14 +1341,14 @@ let _ =
 let add_value ?check id desc env =
   store_value None ?check id (Pident id) desc env env
 
-let add_type id info env =
-  store_type None id (Pident id) info env env
+let add_type ~check id info env =
+  store_type ~check None id (Pident id) info env env
 
-and add_extension id ext env =
-  store_extension None id (Pident id) ext env env
+and add_extension ~check id ext env =
+  store_extension ~check None id (Pident id) ext env env
 
-and add_exception id decl env =
-  store_exception None id (Pident id) decl env env
+and add_exception ~check id decl env =
+  store_exception ~check None id (Pident id) decl env env
 
 and add_module id mty env =
   store_module None id (Pident id) mty env env
@@ -1366,7 +1367,8 @@ let add_local_constraint id info elv env =
     {type_manifest = Some ty; type_newtype_level = Some (lv, _)} ->
       (* elv is the expansion level, lv is the definition level *)
       let env =
-        add_type id {info with type_newtype_level = Some (lv, elv)} env in
+        add_type ~check:false
+          id {info with type_newtype_level = Some (lv, elv)} env in
       { env with local_constraints = true }
   | _ -> assert false
 
@@ -1376,9 +1378,9 @@ let enter store_fun name data env =
   let id = Ident.create name in (id, store_fun None id (Pident id) data env env)
 
 let enter_value ?check = enter (store_value ?check)
-and enter_type = enter store_type
-and enter_extension = enter store_extension
-and enter_exception = enter store_exception
+and enter_type = enter (store_type ~check:true)
+and enter_extension = enter (store_extension ~check:true)
+and enter_exception = enter (store_exception ~check:true)
 and enter_module = enter store_module
 and enter_modtype = enter store_modtype
 and enter_class = enter store_class
@@ -1389,9 +1391,9 @@ and enter_cltype = enter store_cltype
 let add_item comp env =
   match comp with
     Sig_value(id, decl)     -> add_value id decl env
-  | Sig_type(id, decl, _)   -> add_type id decl env
-  | Sig_typext(id, ext, _) -> add_extension id ext env
-  | Sig_exception(id, decl) -> add_exception id decl env
+  | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
+  | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
+  | Sig_exception(id, decl) -> add_exception ~check:false id decl env
   | Sig_module(id, mty, _)  -> add_module id mty env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
   | Sig_class(id, decl, _)  -> add_class id decl env
@@ -1418,11 +1420,11 @@ let open_signature slot root sg env0 =
           Sig_value(id, decl) ->
             store_value slot (Ident.hide id) p decl env env0
         | Sig_type(id, decl, _) ->
-            store_type slot (Ident.hide id) p decl env env0
+            store_type ~check:false slot (Ident.hide id) p decl env env0
         | Sig_typext(id, ext, _) ->
-            store_extension slot (Ident.hide id) p ext env env0
+            store_extension ~check:false slot (Ident.hide id) p ext env env0
         | Sig_exception(id, decl) ->
-            store_exception slot (Ident.hide id) p decl env env0
+            store_exception ~check:false slot (Ident.hide id) p decl env env0
         | Sig_module(id, mty, _) ->
             store_module slot (Ident.hide id) p mty env env0
         | Sig_modtype(id, decl) ->
@@ -1619,7 +1621,11 @@ and fold_cltypes f =
 
 (* Make the initial environment *)
 
-let initial = Predef.build_initial_env add_type add_exception empty
+let initial =
+  Predef.build_initial_env
+    (add_type ~check:false)
+    (add_exception ~check:false)
+    empty
 
 (* Return the environment summary *)
 
