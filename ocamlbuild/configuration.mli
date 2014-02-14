@@ -37,3 +37,8 @@ val tag_any : Tags.elt list -> unit
 
 (** the tags that apply to any file *)
 val global_tags : unit -> Tags.t
+
+(** Given the list of all tags that are really used by an existing
+    flagset, traverse existing configuration files and warns on tags
+    that will never get used. *)
+val check_tags_usage : Tags.t -> unit

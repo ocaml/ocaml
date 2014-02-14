@@ -3784,13 +3784,4 @@ let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
 
 let () =
-  Location.register_error_of_exn
-    (function
-      | Error (loc, env, err) ->
-        Some (Location.error_of_printer loc (report_error env) err)
-      | _ ->
-        None
-    )
-
-let () =
   Env.add_delayed_check_forward := add_delayed_check

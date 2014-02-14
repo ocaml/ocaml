@@ -19,8 +19,11 @@ let print_list ~sep f ppf = function
 | x :: [] -> f ppf x
 | x :: xs -> f ppf x; List.iter (fun x -> sep ppf (); f ppf x) xs
 
-let print_list_com f = print_list ~sep:(fun ppf () -> pp_print_string ppf ",") f
-let print_list_blank f = print_list ~sep:(fun ppf () -> pp_print_string ppf " ") f
+let print_list_com f =
+  print_list ~sep:(fun ppf () -> pp_print_string ppf ",") f
+let print_list_blank f =
+  print_list ~sep:(fun ppf () -> pp_print_string ppf " ") f
+
 let print_string_list = print_list_com pp_print_string
 let print_string_list_com = print_list_com pp_print_string
 let print_string_list_blank = print_list_blank pp_print_string
@@ -58,24 +61,25 @@ module Match = struct
     | D of file * t list
     (* Like file, but will be executed, and the result will compared *)
     | X of file * result
-    (* Symlink *)
-    | L of file * file
+    (* Symlink; currently not supported *)
+ (* | L of file * file *)
     (* We request that everything below should match exactly *)
     | Exact of t
     (* Here we want just the tree contained entities but we allow some
      other stuff to be there too *)
     | Contains of t
-    (* Any means that we match anything *)
-    | Any
-    (* Empty a tree leaf that don't match at all *)
+    (* matching on Empty always fail *)
     | Empty
+    (* matches the negation of its argument: fails when it succeeds
+       and vice versa; Any can be expressed as (Not Empty) *)
+    | Not of t
 
   (* Type of error, we either expect something or something is un-expected *)
   type error =
       Expected of string
     | Unexpected of string
     | Structure of string * string list
-    | Output of string * string
+    | Output of string * string * string
 
   (* This will print the tree *)
   let print ppf tree =
@@ -83,13 +87,14 @@ module Match = struct
       List.iter (fun line -> pp_print_space ppf (); item ppf line) lst
     and item ppf = function
     | F (_, name) -> fprintf ppf "@[<h>%s@]" name
-    | D ((_, name), children) -> fprintf ppf "@[<v 1>@[<h>%s/@]%a@]" name lines children
+    | D ((_, name), children) ->
+      fprintf ppf "@[<v 1>@[<h>%s/@]%a@]" name lines children
     | X ((_,name), _) -> fprintf ppf "@[<h>%s@]" name
-    | L ((_,src), (_,dst)) -> fprintf ppf "@[<h>%s->%s@]@" src dst
+ (* | L ((_,src), (_,dst)) -> fprintf ppf "@[<h>%s->%s@]@" src dst *)
     | Exact content -> fprintf ppf "{%a}" item content
     | Contains content -> fprintf ppf "<%a>" item content
-    | Any -> pp_print_char ppf '*'
     | Empty -> pp_print_char ppf '#'
+    | Not t -> fprintf ppf "not(@[%a@])" item t
     in
     pp_open_vbox ppf 0;
     item ppf tree;
@@ -101,57 +106,60 @@ module Match = struct
   let x ?(atts=()) name ~output = X ((atts,name), (0,output))
 
   let match_with_fs ~root m =
-
-    let errors = ref [] in
-
-    let rec visit ~exact path m =
-      let file name =
-        "./" ^ (List.rev (name :: path) |> String.concat "/")
-
+    let rec visit ~exact ~successes ~errors path m =
+      let string_of_path path = "./" ^ String.concat "/" (List.rev path) in
+      let file name = string_of_path (name :: path) in
+      let push li x = li := x :: !li in
+      let exists_assert filename =
+        push (if exists filename then successes else errors) (Expected filename)
       in
-
-    let exists_assert filename =
-      if not (exists (file filename)) then
-        errors := Expected filename :: !errors;
-    in
-
-    let take_name = function
-    | F (_, name)
-    | D ((_, name),_) -> [name]
-    | _ -> []
-    in
-
-    match m with
-    | F ((),name) ->
-      exists_assert name
-    | D (((),name), sub) ->
-      exists_assert name;
-      let lst = List.flatten (List.map take_name sub) in
-      let lst' = Sys.readdir name |> Array.to_list in
-      let lst' = List.filter (fun x -> not (List.mem x lst)) lst' in
-      (if exact && lst' <> [] then
-        errors := Structure ((file name), lst') :: !errors);
-      List.iter (visit ~exact (name :: path)) sub
-    | X (((), name), (retcode, output)) ->
-      let _,output' = execute (file name) in
-      let output' = String.concat "\n" output' in
-      if output <> output' then
-        errors := Output (output, output') :: !errors
-    | Exact sub -> visit ~exact:true path sub
-    | Contains sub -> visit ~exact:false path sub
-    | _ -> assert false
+      let rec take_name = function
+        | F (_, name)
+        | D ((_, name), _)
+        | X ((_, name), _) -> [name]
+        | Exact sub
+        | Contains sub
+        | Not sub -> take_name sub
+        | Empty -> []
+      in
+      match m with
+        | F ((),name) ->
+          exists_assert (file name)
+        | D (((),name), sub) ->
+          exists_assert (file name);
+          let lst = List.flatten (List.map take_name sub) in
+          let lst' = Sys.readdir name |> Array.to_list in
+          let lst' = List.filter (fun x -> not (List.mem x lst)) lst' in
+          (if exact && lst' <> [] then
+              errors := Structure ((file name), lst') :: !errors);
+          List.iter (visit ~exact ~successes ~errors (name :: path)) sub
+        | X (((), name), (retcode, output)) ->
+          let _,output' = execute (file name) in
+          let output' = String.concat "\n" output' in
+          push (if output <> output' then errors else successes)
+            (Output (file name, output, output'));
+        | Exact sub -> visit ~exact:true ~successes ~errors path sub
+        | Contains sub -> visit ~exact:false ~successes ~errors path sub
+        | Empty -> push errors (Unexpected (string_of_path path))
+        | Not sub -> visit ~exact ~errors:successes ~successes:errors path sub
     in
     let dir = Sys.getcwd () in
     Unix.chdir root;
-    visit ~exact:false [] m;
+    let successes = ref [] in
+    let errors = ref [] in
+    visit ~exact:false ~successes ~errors [] m;
     Unix.chdir dir;
     List.rev !errors
 
   let string_of_error = function
   | Expected s -> Printf.sprintf "expected '%s' on a file system" s
   | Unexpected s -> Printf.sprintf "un-expected '%s' on a file system" s
-  | Structure (s,l) -> Printf.sprintf  "directory structure '%s' has un-expected files %s" s (String.concat ", " l)
-  | Output (e, p) -> Printf.sprintf  "not matching output '%s' expected but got %s" e p
+  | Structure (s,l) ->
+    Printf.sprintf  "directory structure '%s' has un-expected files %s"
+      s (String.concat ", " l)
+  | Output (s, e, p) ->
+    Printf.sprintf "executable %s expected output %S but got %S"
+      s e p
 end
 
 module Option = struct
@@ -301,7 +309,7 @@ module Option = struct
     | `no_skip -> fprintf ppf "no-skip"
     | `no_hygiene -> fprintf ppf "no-hygiene"
     | `no_ocamlfind -> fprintf ppf "no-ocamlfind"
-    | `no_plugin -> fprintf ppf "no-pluging"
+    | `no_plugin -> fprintf ppf "no-plugin"
     | `no_stdlib -> fprintf ppf "no-stdlib"
     | `dont_catch_errors -> fprintf ppf "dont"
     | `just_plugin -> fprintf ppf "just-plugin"
@@ -375,8 +383,11 @@ type content = string
 type filename = string
 type run = filename * content
 
+type requirements = Fullfilled | Missing of string
+
 type test = { name     : string
             ; description : string
+            ; requirements : requirements option
             ; tree     : Tree.t list
             ; matching : Match.t list
             ; options  : Option.t list
@@ -389,12 +400,38 @@ let tests = ref []
 
 let test name
     ~description
+    ?requirements
     ?(options=[]) ?(run=[]) ?pre_cmd ?failing_msg
     ?(tree=[])
     ?(matching=[])
     ~targets ()
      =
-  tests := !tests @ [{ name; description; tree; matching; options; targets; pre_cmd; failing_msg; run }]
+  tests := !tests @ [{ 
+    name; 
+    description;
+    requirements;
+    tree;
+    matching;
+    options;
+    targets;
+    pre_cmd;
+    failing_msg;
+    run;
+  }]
+
+let print_colored header_color header name body_color body =
+  let color_code = function
+      | `Red -> "31"
+      | `Green -> "32"
+      | `Yellow -> "33"
+      | `Blue -> "34"
+      | `Magenta -> "35"
+      | `Cyan -> "36"
+  in
+  Printf.printf "\x1b[0;%sm\x1b[1m[%s]\x1b[0m \
+                 \x1b[1m%-20s\x1b[0;%sm%s.\n\x1b[m%!"
+    (color_code header_color) header name
+    (color_code body_color) body
 
 let run ~root =
   let dir = Sys.getcwd () in
@@ -413,6 +450,7 @@ let run ~root =
   let one_test
       { name
       ; description
+      ; requirements
       ; tree
       ; matching
       ; options
@@ -427,47 +465,72 @@ let run ~root =
     List.iter (Tree.create_on_fs ~root:full_name) tree;
     Unix.chdir full_name;
 
-    (match pre_cmd with
-    | None -> ()
-    | Some str -> ignore(Sys.command str));
+    match requirements with
+      | Some (Missing req) ->
+        print_colored `Yellow "SKIPPED" name `Yellow
+          (Printf.sprintf "%s is required and missing" req)
 
-    let log_name = full_name ^ ".log" in
+      | Some Fullfilled | None -> begin
 
-    let cmd = command options (fst targets :: snd targets) in
-    let allow_failure = failing_msg <> None in
+        (match pre_cmd with
+          | None -> ()
+          | Some str -> ignore(Sys.command str));
+        
+        let log_name = full_name ^ ".log" in
+        
+        let cmd = command options (fst targets :: snd targets) in
+        let allow_failure = failing_msg <> None in
+        
+        let open Unix in
 
-    Unix.(match execute cmd with
-    | WEXITED n,lines
-    | WSIGNALED n,lines
-    | WSTOPPED n,lines when allow_failure || n <> 0 ->
-      begin match failing_msg with
-      | None ->
-        let ch = open_out log_name in
-        List.iter (fun l -> output_string ch l; output_string ch "\n") lines;
-        close_out ch;
-        Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n\x1b[m%!" name
-          (Printf.sprintf "Command '%s' with error code %n output written to %s" cmd n log_name);
-      | Some failing_msg ->
-        let starts_with_plus s = String.length s > 0 && s.[0] = '+' in
-        let lines = List.filter (fun s -> not (starts_with_plus s)) lines in
-        let msg = String.concat "\n" lines in
-        if failing_msg = msg then
-          Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n\x1b[m%!" name description
-        else
-          Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n\x1b[m%!" name ((Printf.sprintf "Failure with not matching message:\n%s\n!=\n%s\n") msg failing_msg)
-      end;
-    | _ ->
-      let errors = List.concat (List.map (Match.match_with_fs ~root:full_name) matching) in
-      begin if errors == [] then
-        Printf.printf "\x1b[0;32m\x1b[1m[PASSED]\x1b[0m \x1b[1m%-20s\x1b[0;36m%s.\n\x1b[m%!" name description
-        else begin
-          let ch = open_out log_name in
-          output_string ch ("Run '" ^ cmd ^ "'\n");
-          List.iter (fun e -> output_string ch (Match.string_of_error e); output_string ch ".\n") errors;
-          close_out ch;
-          Printf.printf "\x1b[0;31m\x1b[1m[FAILED]\x1b[0m \x1b[1m%-20s\x1b[0;33m%s.\n\x1b[m%!" name
-            (Printf.sprintf "Some system checks failed, output written to %s" log_name)
-        end
-      end)
+        match execute cmd with
+          | WEXITED n,lines
+          | WSIGNALED n,lines
+          | WSTOPPED n,lines when allow_failure || n <> 0 ->
+            begin match failing_msg with
+                          | None ->
+                let ch = open_out log_name in
+                List.iter
+                  (fun l -> output_string ch l; output_string ch "\n")
+                  lines;
+                close_out ch;
+                print_colored `Red "FAILED" name `Yellow
+                  (Printf.sprintf "Command '%s' with error code %n \
+                                   output written to %s" cmd n log_name);
+              | Some failing_msg ->
+                let starts_with_plus s = String.length s > 0 && s.[0] = '+' in
+                let lines =
+                  (* filter out -classic-display output *)
+                  List.filter (fun s -> not (starts_with_plus s)) lines in
+                let msg = String.concat "\n" lines in
+                if failing_msg = msg then
+                  print_colored `Green "PASSED" name `Cyan description
+                else
+                  print_colored `Red "FAILED" name `Yellow
+                    ((Printf.sprintf "Failure with not matching message:\n\
+                                      %s\n!=\n%s\n") msg failing_msg)
+            end;
+          | _ ->
+            let errors =
+              List.concat
+                (List.map (Match.match_with_fs ~root:full_name) matching) in
+            begin if errors == [] then
+                print_colored `Green "PASSED" name `Cyan description
+              else begin
+                let ch = open_out log_name in
+                output_string ch ("Run '" ^ cmd ^ "'\n");
+                List.iter
+                  (fun e ->
+                    output_string ch (Match.string_of_error e); 
+                    output_string ch ".\n")
+                  errors;
+                close_out ch;
+                print_colored `Red "FAILED" name `Yellow
+                  (Printf.sprintf "Some system checks failed, \
+                                   output written to %s"
+                     log_name)
+              end
+            end
+      end
 
   in List.iter one_test !tests

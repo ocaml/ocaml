@@ -48,17 +48,17 @@ let show_tags () =
 ;;
 
 let show_documentation () =
-  let rules = Rule.get_rules () in
-  let flags = Flags.get_flags () in
-  let pp fmt = Log.raw_dprintf (-1) fmt in
-  List.iter begin fun rule ->
-    pp "%a@\n@\n" (Rule.pretty_print Resource.print_pattern) rule
-  end rules;
-  List.iter begin fun (tags, flag) ->
-    let sflag = Command.string_of_command_spec flag in
-    pp "@[<2>flag@ {. %a .}@ %S@]@\n@\n" Tags.print tags sflag
-  end flags;
-  pp "@."
+  Rule.show_documentation ();
+  Flags.show_documentation ();
+;;
+
+(* these tags are used in an ad-hoc way by the ocamlbuild implementation;
+   this means that even if they were not part of any flag declaration,
+   they should be marked as useful, to avoid the "unused tag" warning. *)
+let builtin_useful_tags =
+  Tags.of_list
+    ["include"; "traverse"; "not_hygienic";
+     "pack"; "ocamlmklib"; "native"; "thread"; "nopervasives"]
 ;;
 
 let proceed () =
@@ -182,6 +182,10 @@ let proceed () =
     show_documentation ();
     raise Exit_silently
   end;
+
+  let all_tags = Tags.union builtin_useful_tags (Flags.get_used_tags ()) in
+  Configuration.check_tags_usage all_tags;
+
   Digest_cache.init ();
 
   Sys.catch_break true;
@@ -297,9 +301,8 @@ let main () =
       | Ocaml_utils.Ocamldep_error msg ->
           Log.eprintf "Ocamldep error: %s" msg;
           exit rc_ocamldep_error
-      | Lexers.Error (msg,pos) ->
-          let module L = Lexing in
-          Log.eprintf "%s, line %d, column %d: Lexing error: %s." pos.L.pos_fname pos.L.pos_lnum (pos.L.pos_cnum - pos.L.pos_bol) msg;
+      | Lexers.Error (msg,loc) ->
+          Log.eprintf "%aLexing error: %s." Loc.print_loc loc msg;
           exit rc_lexing_error
       | Arg.Bad msg ->
           Log.eprintf "%s" msg;

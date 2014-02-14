@@ -66,6 +66,9 @@ let x_native_o = "%.native"-.-ext_obj;;
 rule "target files"
   ~dep:"%.itarget"
   ~stamp:"%.otarget"
+  ~doc:"If foo.itarget contains a list of ocamlbuild targets, \
+        asking ocamlbuild to produce foo.otarget will \
+        build each of those targets in turn."
   begin fun env build ->
     let itarget = env "%.itarget" in
     let dir = Pathname.dirname itarget in
@@ -92,6 +95,21 @@ rule "ocaml: mlpack & d.cmo* -> d.cmo & cmi"
 rule "ocaml: mlpack & cmo* & cmi -> cmo"
   ~prod:"%.cmo"
   ~deps:["%.mli"; "%.cmi"; "%.mlpack"]
+  ~doc:"If foo.mlpack contains a list of capitalized module names, \
+  the target foo.cmo will produce a packed module containing \
+  those modules as submodules. You can also have a foo.mli file \
+  to restrict the interface of the resulting module.
+
+\
+  Warning: to produce a native foo.cmx out of a foo.mlpack, you must \
+  manually tag the included compilation units with for-pack(foo). \
+  See the documentation of the corresponding rules for more details.
+
+\
+  The modules named in the .mlpack \
+  will be dynamic dependencies of the compilation action. \
+  You cannot give the .mlpack the same name as one of the module \
+  it contains, as this would create a circular dependency."
   (Ocaml_compiler.byte_pack_mlpack "%.mlpack" "%.cmo");;
 
 rule "ocaml: mlpack & cmo* -> cmo & cmi"
@@ -103,6 +121,13 @@ rule "ocaml: ml & cmi -> d.cmo"
   ~prod:"%.d.cmo"
   ~deps:["%.mli"(* This one is inserted to force this rule to be skiped when
     a .ml is provided without a .mli *); "%.ml"; "%.ml.depends"; "%.cmi"]
+  ~doc:"The foo.d.cmo target compiles foo.ml with the 'debug' tag enabled (-g).\
+        See also foo.d.byte.
+
+\
+        For technical reason, .d.cmx and .d.native are not yet supported, \
+        so you should explicitly add the 'debug' tag \
+        to native targets (both compilation and linking)."
   (Ocaml_compiler.byte_compile_ocaml_implem ~tag:"debug" "%.ml" "%.d.cmo");;
 
 rule "ocaml: ml & cmi -> cmo"
@@ -112,18 +137,39 @@ rule "ocaml: ml & cmi -> cmo"
   (Ocaml_compiler.byte_compile_ocaml_implem "%.ml" "%.cmo");;
 
 rule "ocaml: mlpack & cmi & p.cmx* & p.o* -> p.cmx & p.o"
-  ~prods:["%.p.cmx"; x_p_o(* no cmi here you must make the byte version to have it *)]
+  ~prods:["%.p.cmx"; x_p_o
+          (* no cmi here you must make the byte version to have it *)]
   ~deps:["%.mlpack"; "%.cmi"]
   (Ocaml_compiler.native_profile_pack_mlpack "%.mlpack" "%.p.cmx");;
 
 rule "ocaml: mlpack & cmi & cmx* & o* -> cmx & o"
-  ~prods:["%.cmx"; x_o(* no cmi here you must make the byte version to have it *)]
+  ~prods:["%.cmx"; x_o
+          (* no cmi here you must make the byte version to have it *)]
   ~deps:["%.mlpack"; "%.cmi"]
+  ~doc:"If foo.mlpack contains a list of capitalized module names, \
+  the target foo.cmx will produce a packed module containing \
+  those modules as submodules.
+
+\
+  Warning: The .cmx files that will be included must be manually tagged \
+  with the tag \"for-pack(foo)\". This means that you cannot include \
+  the same bar.cmx in several .mlpack files, and that you should not \
+  use an included .cmx as a separate module on its own.
+
+\
+  This requirement comes from a technical limitation of \
+  native module packing: ocamlopt needs the -for-pack argument to be passed \
+  ahead of time, when compiling each included submodule, \
+  because there is no reliable, portable way to rewrite \
+  native object files afterwards."
   (Ocaml_compiler.native_pack_mlpack "%.mlpack" "%.cmx");;
 
 rule "ocaml: ml & cmi -> p.cmx & p.o"
   ~prods:["%.p.cmx"; x_p_o]
   ~deps:["%.ml"; "%.ml.depends"; "%.cmi"]
+  ~doc:"The foo.p.cmx target compiles foo.ml with the 'profile' \
+       tag enabled (-p). Note that ocamlbuild provides no support \
+       for the bytecode profiler, which works completely differently."
   (Ocaml_compiler.native_compile_ocaml_implem ~tag:"profile" ~cmx_ext:"p.cmx" "%.ml");;
 
 rule "ocaml: ml & cmi -> cmx & o"
@@ -139,11 +185,22 @@ rule "ocaml: ml -> d.cmo & cmi"
 rule "ocaml: ml -> cmo & cmi"
   ~prods:["%.cmo"; "%.cmi"]
   ~deps:["%.ml"; "%.ml.depends"]
+  ~doc:"This rule allows to produce a .cmi from a .ml file \
+        when the corresponding .mli is missing.
+
+\
+        Note: you are strongly encourage to have a .mli file \
+        for each of your .ml module, as it is a good development \
+        practice which also simplifies the way build systems work, \
+        as it avoids producing .cmi files as a silent side-effect of \
+        another compilation action."
   (Ocaml_compiler.byte_compile_ocaml_implem "%.ml" "%.cmo");;
 
 rule "ocaml: d.cmo* -> d.byte"
   ~prod:"%.d.byte"
   ~dep:"%.d.cmo"
+  ~doc:"The target foo.d.byte will build a bytecode executable \
+        with debug information enabled."
   (Ocaml_compiler.byte_debug_link "%.d.cmo" "%.d.byte");;
 
 rule "ocaml: cmo* -> byte"
@@ -154,6 +211,9 @@ rule "ocaml: cmo* -> byte"
 rule "ocaml: cmo* -> byte.(o|obj)"
   ~prod:x_byte_o
   ~dep:"%.cmo"
+  ~doc:"The foo.byte.o target, or foo.byte.obj under Windows, \
+  will produce an object file by passing the -output-obj option \
+  to the OCaml compiler. See also foo.byte.c, and foo.native.{o,obj}."
   (Ocaml_compiler.byte_output_obj "%.cmo" x_byte_o);;
 
 rule "ocaml: cmo* -> byte.c"
@@ -164,11 +224,14 @@ rule "ocaml: cmo* -> byte.c"
 rule "ocaml: p.cmx* & p.o* -> p.native"
   ~prod:"%.p.native"
   ~deps:["%.p.cmx"; x_p_o]
+  ~doc:"The foo.p.native target builds the native executable \
+        with the 'profile' tag (-p) enabled throughout compilation and linking."
   (Ocaml_compiler.native_profile_link "%.p.cmx" "%.p.native");;
 
 rule "ocaml: cmx* & o* -> native"
   ~prod:"%.native"
   ~deps:["%.cmx"; x_o]
+  ~doc:"Builds a native executable"
   (Ocaml_compiler.native_link "%.cmx" "%.native");;
 
 rule "ocaml: cmx* & o* -> native.(o|obj)"
@@ -184,6 +247,10 @@ rule "ocaml: mllib & d.cmo* -> d.cma"
 rule "ocaml: mllib & cmo* -> cma"
   ~prod:"%.cma"
   ~dep:"%.mllib"
+  ~doc:"Build a .cma archive file (bytecode library) containing \
+        the list of modules given in the .mllib file of the same name. \
+        Note that the .cma archive will contain exactly the modules listed, \
+        so it may not be self-contained if some dependencies are missing."
   (Ocaml_compiler.byte_library_link_mllib "%.mllib" "%.cma");;
 
 rule "ocaml: d.cmo* -> d.cma"
@@ -194,6 +261,10 @@ rule "ocaml: d.cmo* -> d.cma"
 rule "ocaml: cmo* -> cma"
   ~prod:"%.cma"
   ~dep:"%.cmo"
+  ~doc:"The preferred way to build a .cma archive is to create a .mllib file \
+        with a list of modules to include. It is however possible to build one \
+        from a .cmo of the same name; the archive will include this module and \
+        the local modules it depends upon, transitively."
   (Ocaml_compiler.byte_library_link "%.cmo" "%.cma");;
 
 rule "ocaml C stubs: clib & (o|obj)* -> (a|lib) & (so|dll)"
@@ -203,6 +274,7 @@ rule "ocaml C stubs: clib & (o|obj)* -> (a|lib) & (so|dll)"
           else
 	    [])
   ~dep:"%(path)lib%(libname).clib"
+  ?doc:None (* TODO document *)
   (C_tools.link_C_library "%(path)lib%(libname).clib" ("%(path)lib%(libname)"-.-ext_lib) "%(path)%(libname)");;
 
 rule "ocaml: mllib & p.cmx* & p.o* -> p.cmxa & p.a"
@@ -213,6 +285,11 @@ rule "ocaml: mllib & p.cmx* & p.o* -> p.cmxa & p.a"
 rule "ocaml: mllib & cmx* & o* -> cmxa & a"
   ~prods:["%.cmxa"; x_a]
   ~dep:"%.mllib"
+  ~doc:"Creates a native archive file .cmxa, using the .mllib file \
+        as the .cma rule above. Note that whereas bytecode .cma can \
+        be used both for static and dynamic linking, .cmxa only support \
+        static linking. For an archive usable with Dynlink, \
+        see the rule producing a .cmxs from a .mldylib."
   (Ocaml_compiler.native_library_link_mllib "%.mllib" "%.cmxa");;
 
 rule "ocaml: p.cmx & p.o -> p.cmxa & p.a"
@@ -223,6 +300,10 @@ rule "ocaml: p.cmx & p.o -> p.cmxa & p.a"
 rule "ocaml: cmx & o -> cmxa & a"
   ~prods:["%.cmxa"; x_a]
   ~deps:["%.cmx"; x_o]
+  ~doc:"Just as you can build a .cma from a .cmo in absence of .mllib file, \
+        you can build a .cmxa (native archive file for static linking only) \
+        from a .cmx, which will include the local modules it depends upon, \
+        transitivitely."
   (Ocaml_compiler.native_library_link "%.cmx" "%.cmxa");;
 
 rule "ocaml: mldylib & p.cmx* & p.o* -> p.cmxs & p.so"
@@ -233,6 +314,8 @@ rule "ocaml: mldylib & p.cmx* & p.o* -> p.cmxs & p.so"
 rule "ocaml: mldylib & cmx* & o* -> cmxs & so"
   ~prods:["%.cmxs"; x_dll]
   ~dep:"%.mldylib"
+  ~doc:"Builds a .cmxs (native archive for dynamic linking) containing exactly \
+        the modules listed in the corresponding .mldylib file."
   (Ocaml_compiler.native_shared_library_link_mldylib "%.mldylib" "%.cmxs");;
 
 rule "ocaml: p.cmx & p.o -> p.cmxs & p.so"
@@ -248,6 +331,16 @@ rule "ocaml: p.cmxa & p.a -> p.cmxs & p.so"
 rule "ocaml: cmx & o -> cmxs"
   ~prods:["%.cmxs"]
   ~deps:["%.cmx"; x_o]
+  ~doc:"If you have not created a foo.mldylib file for a compilation unit \
+        foo.cmx, the target foo.cmxs will produce a .cmxs file containing \
+        exactly the .cmx.
+
+\
+        Note: this differs from the behavior of .cmxa targets \
+        with no .mllib, as the dependencies of the modules will not be \
+        included: generally, the modules compiled as dynamic plugins depend \
+        on library modules that will be already linked in the executable, \
+        and that the .cmxs should therefore not duplicate."
   (Ocaml_compiler.native_shared_library_link "%.cmx" "%.cmxs");;
 
 rule "ocaml: cmx & o -> cmxs & so"
@@ -258,11 +351,24 @@ rule "ocaml: cmx & o -> cmxs & so"
 rule "ocaml: cmxa & a -> cmxs & so"
   ~prods:["%.cmxs"; x_dll]
   ~deps:["%.cmxa"; x_a]
+  ~doc:"This rule allows to build a .cmxs from a .cmxa, to avoid having \
+        to duplicate a .mllib file into a .mldylib."
   (Ocaml_compiler.native_shared_library_link ~tags:["linkall"] "%.cmxa" "%.cmxs");;
 
 rule "ocaml dependencies ml"
   ~prod:"%.ml.depends"
   ~dep:"%.ml"
+  ~doc:"OCamlbuild will use ocamldep to approximate dependencies \
+        of a source file. The ocamldep tool being purely syntactic, \
+        it only computes an over-approximation of the dependencies.
+
+\
+        If you manipulate a module Foo that is in fact a submodule Bar.Foo \
+        (after 'open Bar'), ocamldep may believe that your module depends \
+        on foo.ml -- when such a file also exists in your project. This can \
+        lead to spurious circular dependencies. In that case, you can use \
+        OCamlbuild_plugin.non_dependency in your myocamlbuild.ml \
+        to manually remove the spurious dependency. See the plugins API."
   (Ocaml_tools.ocamldep_command "%.ml" "%.ml.depends");;
 
 rule "ocaml dependencies mli"
@@ -278,6 +384,8 @@ rule "ocamllex"
 rule "ocaml: mli -> odoc"
   ~prod:"%.odoc"
   ~deps:["%.mli"; "%.mli.depends"]
+  ~doc:".odoc are intermediate files storing the result of ocamldoc processing \
+        on a source file. See the various .docdir/... targets for ocamldoc."
   (Ocaml_tools.document_ocaml_interf "%.mli" "%.odoc");;
 
 rule "ocaml: ml -> odoc"
@@ -287,21 +395,27 @@ rule "ocaml: ml -> odoc"
 
 rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (html)"
   ~prod:"%.docdir/index.html"
-  ~stamp:"%.docdir/html.stamp" (* Depend on this file if you want to depends on all files of %.docdir *)
+  ~stamp:"%.docdir/html.stamp"
   ~dep:"%.odocl"
+  ~doc:"If you put a list of capitalized module names in a foo.odocl file, \
+        the target foo.docdir/index.html will call ocamldoc to produce \
+        the html documentation for these modules. \
+        See also the max|latex|doc target below."
   (Ocaml_tools.document_ocaml_project
       ~ocamldoc:Ocaml_tools.ocamldoc_l_dir "%.odocl" "%.docdir/index.html" "%.docdir");;
 
 rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (man)"
   ~prod:"%.docdir/man"
-  ~stamp:"%.docdir/man.stamp" (* Depend on this file if you want to depends on all files of %.docdir/man *)
+  ~stamp:"%.docdir/man.stamp"
   ~dep:"%.odocl"
+  ?doc:None (* TODO document *)
   (Ocaml_tools.document_ocaml_project
       ~ocamldoc:Ocaml_tools.ocamldoc_l_dir "%.odocl" "%.docdir/man" "%.docdir");;
 
 rule "ocamldoc: document ocaml project odocl & *odoc -> man|latex|dot..."
   ~prod:"%(dir).docdir/%(file)"
   ~dep:"%(dir).odocl"
+  ?doc:None (* TODO document *)
   (Ocaml_tools.document_ocaml_project
       ~ocamldoc:Ocaml_tools.ocamldoc_l_file "%(dir).odocl" "%(dir).docdir/%(file)" "%(dir).docdir");;
 
@@ -313,6 +427,12 @@ if !Options.use_menhir || Configuration.has_tag "use_menhir" then begin
   rule "ocaml: modular menhir (mlypack)"
     ~prods:["%.mli" ; "%.ml"]
     ~deps:["%.mlypack"]
+    ~doc:"Menhir supports building a parser by composing several .mly files \
+          together, containing different parts of the grammar description. \
+          To use that feature with ocamlbuild, you should create a .mlypack \
+          file with the same syntax as .mllib or .mlpack files: \
+          a whitespace-separated list of the capitalized module names \
+          of the .mly files you want to combine together."
     (Ocaml_tools.menhir_modular "%" "%.mlypack" "%.mlypack.depends");
 
   rule "ocaml: menhir modular dependencies"
@@ -323,6 +443,9 @@ if !Options.use_menhir || Configuration.has_tag "use_menhir" then begin
   rule "ocaml: menhir"
     ~prods:["%.ml"; "%.mli"]
     ~deps:["%.mly"; "%.mly.depends"]
+    ~doc:"Invokes menhir to build the .ml and .mli files derived from a .mly \
+          grammar. If you want to use ocamlyacc instead, you must disable the \
+          -use-menhir option that was passed to ocamlbuild."
     (Ocaml_tools.menhir "%.mly");
 
   rule "ocaml: menhir dependencies"
@@ -334,11 +457,17 @@ end else
   rule "ocamlyacc"
     ~prods:["%.ml"; "%.mli"]
     ~dep:"%.mly"
+    ~doc:"By default, ocamlbuild will use ocamlyacc to produce a .ml and .mly \
+          from a .mly file of the same name. You can also enable the \
+          -use-menhir option to use menhir instead. Menhir is a recommended \
+          replacement for ocamlyacc, that supports more feature, lets you \
+          write more readable grammars, and helps you understand conflicts."
     (Ocaml_tools.ocamlyacc "%.mly");;
 
 rule "ocaml C stubs: c -> o"
   ~prod:x_o
   ~dep:"%.c"
+  ?doc:None (* TODO document *)
   begin fun env _build ->
     let c = env "%.c" in
     let o = env x_o in
@@ -351,16 +480,28 @@ rule "ocaml C stubs: c -> o"
 rule "ocaml: ml & ml.depends & *cmi -> .inferred.mli"
   ~prod:"%.inferred.mli"
   ~deps:["%.ml"; "%.ml.depends"]
+  ~doc:"The target foo.inferred.mli will produce a .mli that exposes all the \
+        declarations in foo.ml, as obtained by direct invocation of `ocamlc -i`."
   (Ocaml_tools.infer_interface "%.ml" "%.inferred.mli");;
 
 rule "ocaml: mltop -> top"
   ~prod:"%.top"
   ~dep:"%.mltop"
+  ?doc:None (* TODO document *)
   (Ocaml_compiler.byte_toplevel_link_mltop "%.mltop" "%.top");;
 
 rule "preprocess: ml -> pp.ml"
   ~dep:"%.ml"
   ~prod:"%.pp.ml"
+  ~doc:"The target foo.pp.ml should generate a source file equivalent \
+        to foo.ml after syntactic preprocessors (camlp4, etc.) have been \
+        applied.
+
+\
+        Warning: This option is currently known to malfunction \
+        when used together with -use-ocamlfind (for syntax extensions \
+        coming from ocamlfind packages). Direct compilation of the \
+        corresponding file to produce a .cmx or .cmo will still work well."
   (Ocaml_tools.camlp4 "pp.ml" "%.ml" "%.pp.ml");;
 
 flag ["ocaml"; "pp"] begin
@@ -464,7 +605,10 @@ let () =
   pflag ["ocaml"; "infer_interface"] "pp"
     (fun param -> S [A "-pp"; A param]);
   pflag ["ocaml";"compile";] "warn"
-    (fun param -> S [A "-w"; A param])
+    (fun param -> S [A "-w"; A param]);
+  pflag ["ocaml";"compile";] "warn_error"
+    (fun param -> S [A "-warn-error"; A param]);
+  ()
 
 let camlp4_flags camlp4s =
   List.iter begin fun camlp4 ->
@@ -551,18 +695,23 @@ flag ["ocaml"; "compile"; "nolabels"] (A"-nolabels");;
 flag ["ocaml"; "ocamllex"; "quiet"] (A"-q");;
 
 let ocaml_warn_flag c =
-  flag ["ocaml"; "compile"; sprintf "warn_%c" (Char.uppercase c)]
-       (S[A"-w"; A (sprintf "%c" (Char.uppercase c))]);
-  flag ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.uppercase c)]
-       (S[A"-warn-error"; A (sprintf "%c" (Char.uppercase c))]);
-  flag ["ocaml"; "compile"; sprintf "warn_%c" (Char.lowercase c)]
-       (S[A"-w"; A (sprintf "%c" (Char.lowercase c))]);
-  flag ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase c)]
-       (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase c))]);;
+  flag ~deprecated:true
+    ["ocaml"; "compile"; sprintf "warn_%c" (Char.uppercase c)]
+    (S[A"-w"; A (sprintf "%c" (Char.uppercase c))]);
+  flag ~deprecated:true
+    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.uppercase c)]
+    (S[A"-warn-error"; A (sprintf "%c" (Char.uppercase c))]);
+  flag ~deprecated:true
+    ["ocaml"; "compile"; sprintf "warn_%c" (Char.lowercase c)]
+    (S[A"-w"; A (sprintf "%c" (Char.lowercase c))]);
+  flag ~deprecated:true
+    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase c)]
+    (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase c))]);;
 
 List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'K'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'X'; 'Y'; 'Z'];;
 
-flag ["ocaml"; "compile"; "strict-sequence"] (A "-strict-sequence");;
+flag ~deprecated:true
+  ["ocaml"; "compile"; "strict-sequence"] (A "-strict-sequence");;
 flag ["ocaml"; "compile"; "strict_sequence"] (A "-strict-sequence");;
 
 flag ["ocaml"; "doc"; "docdir"; "extension:html"] (A"-html");;

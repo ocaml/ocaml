@@ -13,19 +13,23 @@
 
 (* Original author: Nicolas Pouillard *)
 {
-exception Error of (string * Lexing.position)
+exception Error of (string * Loc.location)
 
-let error lexbuf fmt = Printf.ksprintf (fun s -> raise (Error (s,Lexing.lexeme_start_p lexbuf))) fmt
+let error lexbuf fmt =
+  Printf.ksprintf (fun s -> raise (Error (s, Loc.of_lexbuf lexbuf))) fmt
 
 open Glob_ast
 
 type conf_values =
-  { plus_tags   : string list;
-    minus_tags  : string list }
+  { plus_tags   : (string * Loc.location) list;
+    minus_tags  : (string * Loc.location) list }
 
 type conf = (Glob.globber * conf_values) list
 
 let empty = { plus_tags = []; minus_tags = [] }
+
+let locate lexbuf txt =
+  (txt, Loc.of_lexbuf lexbuf)
 }
 
 let newline = ('\n' | '\r' | "\r\n")
@@ -122,8 +126,8 @@ and conf_lines dir = parse
   | _ { error lexbuf "Invalid line syntax" }
 
 and conf_value x = parse
-  | '-'  (tag as tag) { { (x) with minus_tags = tag :: x.minus_tags } }
-  | '+'? (tag as tag) { { (x) with plus_tags = tag :: x.plus_tags } }
+  | '-'  (tag as tag) { { (x) with minus_tags = locate lexbuf tag :: x.minus_tags } }
+  | '+'? (tag as tag) { { (x) with plus_tags = locate lexbuf tag :: x.plus_tags } }
   | (_ | eof) { error lexbuf "Invalid tag modifier only '+ or '-' are allowed as prefix for tag" }
 
 and conf_values x = parse

@@ -119,6 +119,8 @@ react
 react-0.9.3
 res
 res-3.2.0
+rss
+ocamlrss-2.2.2
 sexplib
 sexplib-109.15.00
 sks

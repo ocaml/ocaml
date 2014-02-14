@@ -719,11 +719,11 @@ otherlibrariesopt:
 
 partialclean::
 	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) partialclean); \
+	  (cd otherlibs/$$i && $(MAKE) partialclean); \
 	done
 
 clean::
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) clean); done
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i && $(MAKE) clean); done
 
 alldepend::
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) depend); done

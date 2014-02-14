@@ -747,6 +747,41 @@ let pp_set_tab state () =
     enqueue_advance state elem
 ;;
 
+
+(* Convenience functions *)
+
+(* To format a list *)
+let rec pp_print_list ?(pp_sep = pp_print_cut) pp_v ppf = function
+  | [] -> ()
+  | [v] -> pp_v ppf v
+  | v :: vs ->
+    pp_v ppf v;
+    pp_sep ppf ();
+    pp_print_list ~pp_sep pp_v ppf vs
+
+(* To format free-flowing text *)
+let pp_print_text ppf s =
+  let len = String.length s in
+  let left = ref 0 in
+  let right = ref 0 in
+  let flush () =
+    pp_print_string ppf (String.sub s !left (!right - !left));
+    incr right; left := !right;
+  in
+  while (!right <> len) do
+    match s.[!right] with
+      | '\n' ->
+        flush ();
+        pp_force_newline ppf ()
+      | ' ' ->
+        flush (); pp_print_space ppf ()
+      (* there is no specific support for '\t'
+         as it is unclear what a right semantics would be *)
+      | _ -> incr right
+  done;
+  if !left <> len then flush ()
+
+
 (**************************************************************
 
   Procedures to control the pretty-printers

@@ -17,6 +17,8 @@ true: -traverse
 # Traverse only these directories
 <{bytecomp,driver,stdlib,tools,asmcomp,camlp4,ocamlbuild,toplevel,ocamldoc,typing,otherlibs,utils,debugger,lex,parsing,byterun,asmrun}/**>: traverse
 
+"ocamlbuild/test" or "ocamlbuild/testsuite": -traverse
+
 "boot" or "byterun" or "asmrun" or "compilerlibs": not_hygienic
 
 # These should not be required but it fails on *BSD and Windows...
@@ -86,6 +88,5 @@ true: use_stdlib
 <otherlibs/threads/**>: otherlibs_threads
 "otherlibs/threads/unix.cma": -otherlibs_threads
 <otherlibs/systhreads/**>: otherlibs_systhreads
-<otherlibs/dbm/**>: otherlibs_dbm
 <otherlibs/graph/**>: otherlibs_graph
 <otherlibs/win32graph/**>: otherlibs_win32graph

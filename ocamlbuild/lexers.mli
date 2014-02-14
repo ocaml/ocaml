@@ -12,11 +12,11 @@
 
 
 (* Original author: Nicolas Pouillard *)
-exception Error of (string * Lexing.position)
+exception Error of (string * Loc.location)
 
 type conf_values =
-  { plus_tags   : string list;
-    minus_tags  : string list }
+  { plus_tags   : (string * Loc.location)  list;
+    minus_tags  : (string * Loc.location) list }
 
 type conf = (Glob.globber * conf_values) list
 
