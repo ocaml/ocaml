@@ -1,3 +1,0 @@
-support.cmx rawwidget.cmx widget.cmx protocol.cmx
-textvariable.cmx timer.cmx fileevent.cmx camltkwrap.cmx
-tkthread.cmx

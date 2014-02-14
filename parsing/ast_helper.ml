@@ -433,8 +433,17 @@ module Convenience = struct
 
   let pvar s = Pat.var (mkloc s !default_loc)
   let pconstr s args = Pat.construct (lid s) (may_tuple Pat.tuple args)
+  let precord ?(closed = Open) l = Pat.record (List.map (fun (s, e) -> (lid s, e)) l) closed
+  let pnil () = pconstr "[]" []
+  let pcons hd tl = pconstr "::" [hd; tl]
   let punit () = pconstr "()" []
+  let plist l = List.fold_right pcons l (pnil ())
+  let ptuple l = Pat.tuple l
 
+  let pstr s = Pat.constant (Const_string (s, None))
+  let pint x = Pat.constant (Const_int x)
+  let pchar x = Pat.constant (Const_char x)
+  let pfloat x = Pat.constant (Const_float (string_of_float x))
 
   let tconstr c l = Typ.constr (lid c) l
 

@@ -158,18 +158,11 @@ PACKLD=$(TOOLPREF)ld -r $(NATIVECCLINKOPTS) -o # must have a space after '-o'
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix str num win32graph dynlink bigarray systhreads labltk
+OTHERLIBRARIES=win32unix str num win32graph dynlink bigarray systhreads
 
 ### Name of the target architecture for the "num" library
 BNG_ARCH=ia32
 BNG_ASM_LEVEL=1
-
-### Configuration for LablTk
-# Set TK_ROOT to the directory where you installed TCL/TK 8.5
-# There must be no spaces or special characters in $(TK_ROOT)
-TK_ROOT=c:/tcl
-TK_DEFS=-I$(TK_ROOT)/include
-TK_LINK=$(TK_ROOT)/bin/tk85.dll $(TK_ROOT)/bin/tcl85.dll -lws2_32
 
 ############# Aliases for common commands
 

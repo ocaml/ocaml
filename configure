@@ -31,11 +31,7 @@ dllib=''
 x11_include_dir=''
 x11_lib_dir=''
 graph_wanted=yes
-tk_wanted=yes
 pthread_wanted=yes
-tk_defs=''
-tk_libs=''
-tk_x11=yes
 dl_defs=''
 verbose=no
 with_curses=yes
@@ -137,16 +133,8 @@ while : ; do
         ;; # Ignored for backward compatibility
     -no-pthread*|--no-pthread*)
         pthread_wanted=no;;
-    -no-tk|--no-tk)
-        tk_wanted=no;;
     -partialld|--partialld)
         partialld="$2"; shift;;
-    -tkdefs*|--tkdefs*)
-        tk_defs=$2; shift;;
-    -tklibs*|--tklibs*)
-        tk_libs=$2; shift;;
-    -tk-no-x11|--tk-no-x11)
-        tk_x11=no;;
     -dldefs*|--dldefs*)
         dl_defs="$2"; shift;;
     -dllibs*|--dllibs*)
@@ -1609,140 +1597,6 @@ fi
 echo "X11_INCLUDES=$x11_include" >> Makefile
 echo "X11_LINK=$x11_link" >> Makefile
 
-# Look for tcl/tk
-
-inf "Configuring LablTk..."
-
-if test $tk_wanted = no; then
-  has_tk=false
-elif test $tk_x11 = no; then
-  has_tk=true
-elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
-  inf "X11 not found or disabled."
-  has_tk=false
-else
-  tk_x11_include="$x11_include"
-  tk_x11_libs="$x11_link"
-  has_tk=true
-fi
-
-if test $has_tk = true; then
-  tcl_version=''
-  tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  for tk_incs in \
-    "-I/usr/local/include" \
-    "-I/usr/include" \
-    "-I/usr/local/include/tcl8.6 -I/usr/local/include/tk8.6" \
-    "-I/usr/include/tcl8.6 -I/usr/include/tk8.6" \
-    "-I/usr/local/include/tcl8.5 -I/usr/local/include/tk8.5" \
-    "-I/usr/include/tcl8.5 -I/usr/include/tk8.5" \
-    "-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4" \
-    "-I/usr/include/tcl8.4 -I/usr/include/tk8.4" \
-    "-I/usr/local/include/tcl8.3 -I/usr/local/include/tk8.3" \
-    "-I/usr/include/tcl8.3 -I/usr/include/tk8.3" \
-    "-I/usr/local/include/tcl8.2 -I/usr/local/include/tk8.2" \
-    "-I/usr/include/tcl8.2 -I/usr/include/tk8.2" \
-    "-I/sw/include" \
-    "-I/usr/pkg/include"
-  do if test -z "$tcl_version"; then
-    tk_defs="$tk_incs"
-    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi; done
-  if test -n "$tcl_version" && test "x$tcl_version" != "xnone"; then
-    inf "tcl.h and tk.h version $tcl_version found with \"$tk_defs\"."
-    case $tcl_version in
-    8.6) tclmaj=8 tclmin=6 tkmaj=8 tkmin=6 ;;
-    8.5) tclmaj=8 tclmin=5 tkmaj=8 tkmin=5 ;;
-    8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
-    8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;
-    8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
-    8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
-    8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
-    7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
-    7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
-    *) wrn "This version is not known." ; has_tk=false ;;
-    esac
-  else
-    inf "tcl.h and/or tk.h not found."
-    has_tk=false
-  fi
-fi
-
-tkauxlibs="$mathlib $dllib"
-tcllib=''
-tklib=''
-if test $has_tk = true; then
-  if test -n "$tk_libs" && \
-     sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tcl_DoOneEvent
-  then tk_libs="$tk_libs $dllib"
-  elif sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
-  then
-    tk_libs="$tk_libs -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
-  elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
-  then
-    tk_libs="$tk_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin $dllib"
-  elif test -z "$tk_libs" && tk_libs=-L/usr/local/lib && \
-    sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
-  then
-    tk_libs="$tk_libs -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
-  elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
-  then
-    tk_libs="$tk_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin $dllib"
-  elif sh ./hasgot -L/sw/lib $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs \
-                   Tcl_DoOneEvent
-  then tk_libs="-L/sw/lib -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
-  elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs \
-        -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs \
-                   Tcl_DoOneEvent
-  then
-    case "$target" in
-      *-*-*bsd*) tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs";;
-      *) tk_libs="-L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs";;
-    esac
-  else
-    inf "Tcl library not found."
-    has_tk=false
-  fi
-fi
-
-if test $has_tk = true; then
-  if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
-    inf "Tcl/Tk libraries found."
-  elif sh ./hasgot -L/sw/lib $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
-    case "$target" in
-      *-*-*bsd*) tk_libs="-R/sw/lib -L/sw/lib $tk_libs";;
-      *) tk_libs="-L/sw/lib $tk_libs";;
-    esac
-    inf "Tcl/Tk libraries found."
-  elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs $tkauxlibs \
-                   Tk_SetGrid; then
-    case "$target" in
-      *-*-*bsd*) tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs";;
-      *) tk_libs="-L/usr/pkg/lib $tk_libs";;
-    esac
-    inf "Tcl/Tk libraries found."
-  else
-    inf "Tcl library found."
-    wrn "Tk library not found."
-    has_tk=false
-  fi
-fi
-
-if test $has_tk = true; then
-  if test $tk_x11 = yes; then
-    echo "TK_DEFS=$tk_defs "'$(X11_INCLUDES)' >> Makefile
-    echo "TK_LINK=$tk_libs "'$(X11_LINK)' >> Makefile
-  else
-    echo "TK_DEFS=$tk_defs" >> Makefile
-    echo "TK_LINK=$tk_libs" >> Makefile
-  fi
-  otherlibraries="$otherlibraries labltk"
-else
-  wrn "LablTk configuration failed, LablTk will not be built."
-  echo "TK_DEFS=" >> Makefile
-  echo "TK_LINK=" >> Makefile
-fi
-
 # Look for BFD library
 
 if ./hasgot -i bfd.h && \
@@ -1952,15 +1806,6 @@ inf "        options for compiling .... $x11_include"
 inf "        options for linking ...... $x11_link"
 else
 inf "The \"graph\" library: not supported"
-fi
-
-if test $has_tk = true; then
-inf "Configuration for the \"labltk\" library:"
-inf "        use tcl/tk version ....... $tcl_version"
-inf "        options for compiling .... $tk_defs $tk_x11_include"
-inf "        options for linking ...... $tk_libs $tk_x11_libs"
-else
-inf "The \"labltk\" library: not supported"
 fi
 
 inf

@@ -190,10 +190,9 @@ PARTIALLD=ld -r $(NATIVECCLINKOPTS)
 #       systhreads      Same as threads, requires POSIX threads
 #       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode
-#       labltk          Tcl/Tk interface
 #       bigarray        Large, multidimensional numerical arrays
 
-OTHERLIBRARIES=unix str num threads graph dynlink labltk bigarray
+OTHERLIBRARIES=unix str num threads graph dynlink bigarray
 
 ### Name of the target architecture for the "num" library
 # Known targets:
@@ -215,28 +214,15 @@ BNG_ASM_LEVEL=1
 #PTHREAD_LINK=-cclib -lpthread -cclib -lposix4
 
 ### -I options for finding the X11/*.h includes
-# Needed for the "graph" and "labltk" packages
+# Needed for the "graph" package
 # Usually:
 #X11_INCLUDES=-I/usr/X11R6/include
 # For SunOS with OpenLook:
 #X11_INCLUDES=/usr/openwin/include
 
 ### Link-time options to ocamlc or ocamlopt for linking with X11 libraries
-# Needed for the "graph" and "labltk" packages
+# Needed for the "graph" package
 # Usually:
 #X11_LINK=-lX11
 # For SunOS with OpenLook:
 #X11_LINK=-L$(X11_LIB) -lX11
-
-### Preprocessor options for finding tcl.h and tk.h
-# Needed for the "labltk" package
-# Required only if not in the standard include path.
-# For Tcl/Tk 8.0 on FreeBSD:
-#TK_DEFS="-I/usr/local/include/tcl8.0 -I/usr/local/include/tk8.0"
-
-### Linker options for linking tcl and tk libraries
-# Needed for the "labltk" package
-# Usually (with appropriate version numbers):
-#TK_LINK="-ltk8.0 -ltcl8.0"
-# For Tcl/Tk 8.0 on FreeBSD:
-#TK_LINK="-L/usr/local/lib -ltk8.0 -ltcl8.0"

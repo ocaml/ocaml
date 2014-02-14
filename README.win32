@@ -62,23 +62,11 @@ The native-code compiler (ocamlopt) requires the Microsoft Windows SDK
 Statically linking OCaml bytecode with C code (ocamlc -custom) also requires
 items [1] and [2].
 
-The LablTk GUI requires Tcl/Tk 8.5 (item [3]).
-
 
 INSTALLATION:
 
 The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
-
-To run programs that use the LablTK GUI, the directory where the
-DLLs tk85.dll and tcl85.dll were installed (by the Tcl/Tk
-installer) must be added to the PATH environment variable.
-
-To compile programs that use the LablTK GUI, the directory where the
-libraries tk85.lib and tcl85.lib were installed (by the Tcl/Tk
-installer) must be added to the library search path in the LIB
-environment variable.  E.g. if Tcl/Tk was installed in C:\Tcl, add
-"C:\Tcl\lib" to the LIB environment variable.
 
 THIRD-PARTY SOFTWARE:
 
@@ -90,9 +78,6 @@ THIRD-PARTY SOFTWARE:
 [2] flexdll version 0.31 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
 
-[3] TCL/TK version 8.5.  Windows binaries are available as part of the
-    ActiveTCL distribution at http://www.activestate.com/activetcl/downloads
-
 RECOMPILATION FROM THE SOURCES:
 
 The command-line tools can be recompiled from the Unix source
@@ -101,9 +86,7 @@ for Windows.
 
 You will need the following software components to perform the recompilation:
 - Windows NT, 2000, XP, Vista, or 7 (32 or 64 bits).
-- Items [1], [2] and [3] from the list of recommended software above.
-  Make sure to install the 32-bit version of TCL/TK, even if you are
-  compiling on a 64-bit Windows.
+- Items [1] and [2] from the list of recommended software above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
   Install at least the following packages (and their dependencies):
   diffutils, dos2unix, gcc-core, make, ncurses.
@@ -124,9 +107,8 @@ to adjust the paths accordingly.
     set FLEXDLLDIR=%PFPATH%\flexdll
     vcvars32
     echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
-    echo LIB="%LIB%;C:\Tcl\lib" >>C:\cygwin\tmp\msenv
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
-    echo INCLUDE="%INCLUDE%;%FLEXDLLDIR%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
+    echo INCLUDE="%INCLUDE%;%FLEXDLLDIR%" >>C:\cygwin\tmp\msenv
     echo FLPATH="`cygpath '%FLEXDLLDIR%'`" >>C:\cygwin\tmp\msenv
     echo PATH="$VCPATH:$FLPATH:$PATH" >>C:\cygwin\tmp\msenv
     echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
@@ -148,9 +130,8 @@ directory of the OCaml distribution.  Then, do
         cp config/Makefile.msvc config/Makefile
 
 Then, edit config/Makefile as needed, following the comments in this file.
-Normally, the only variables that need to be changed are
+Normally, the only variable that need to be changed is
         PREFIX      where to install everything
-        TK_ROOT     where TCL/TK was installed
 
 Finally, use "make -f Makefile.nt" to build the system, e.g.
 
@@ -168,7 +149,7 @@ performance of bytecode programs is about 2/3 of that obtained under
 Unix/GCC or Cygwin or Mingw on similar hardware.
 
 * Libraries available in this port: "num", "str", "threads", "graphics",
-"labltk", and large parts of "unix".
+and large parts of "unix".
 
 * The replay debugger is partially supported (no reverse execution).
 
@@ -224,26 +205,10 @@ NOTES:
     (http://mingw-w64.sourceforge.net/) is not supported.
     Please use the version packaged in Cygwin instead.
 
-The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available
-as part of the ActiveTCL distribution at
-  http://www.activestate.com/activetcl/downloads
-Note that you will need to install the 32-bit version of ActiveTCL,
-even if you are on a 64-bit version of Windows.
-
 INSTALLATION:
 
 The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
-
-To run programs that use the LablTK GUI, the directory where the
-DLLs tk85.dll and tcl85.dll were installed (by the Tcl/Tk
-installer) must be added to the PATH environment variable.
-
-To compile programs that use the LablTK GUI, the directory where the
-libraries tk85.lib and tcl85.lib were installed (by the Tcl/Tk
-installer) must be added to the library search path in the LIB
-environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
-"C:\tcl\lib" to the LIB environment variable.
 
 
 RECOMPILATION FROM THE SOURCES:
@@ -260,7 +225,6 @@ You will need the following software components to perform the recompilation:
      diffutils
      make
      ncurses
-- Tcl/Tk version 8.5 (see above).
 - The flexdll tool (see above).  Do not forget to add the flexdll directory
   to your PATH
 
@@ -277,9 +241,8 @@ directory of the OCaml distribution.  Then, do
         cp config/Makefile.mingw config/Makefile
 
 Then, edit config/Makefile as needed, following the comments in this file.
-Normally, the only variables that need to be changed are
+Normally, the only variable that need to be changed is
         PREFIX      where to install everything
-        TK_ROOT     where Tcl/Tk was installed
 
 Finally, use "make -f Makefile.nt" to build the system, e.g.
 
@@ -293,7 +256,7 @@ Finally, use "make -f Makefile.nt" to build the system, e.g.
 NOTES:
 
 * Libraries available in this port: "num", "str", "threads", "graphics",
-  "labltk", and large parts of "unix".
+  and large parts of "unix".
 
 * The replay debugger is partially supported (no reverse execution).
 
@@ -334,8 +297,8 @@ launch the C compiler.
 
 In order to recompile flexdll, you first need to configure, compile,
 and install OCaml without flexdll support (configure with options
--no-shared-libs -no-tk -no-camlp4), then modify the flexdll Makefile
-to change line 51 from:
+-no-shared-libs -no-camlp4), then modify the flexdll Makefile to change
+line 51 from:
   LINKFLAGS = -ccopt "-link version_res.o"
 to:
   LINKFLAGS = -cclib version_res.o
@@ -356,9 +319,9 @@ NOTES:
 - The replay debugger is fully supported.
 - When upgrading from 3.12.0 to 3.12.1, you will need to remove
   /usr/local/bin/ocamlmktop.exe before typing "make install".
-- In order to use the "graph" and "labltk" libraries, you will need
-  to use Cygwin's setup.exe to install the xinit, libX11-devel, tcl,
-  and tcl-tk packages before compiling OCaml.
+- In order to use the "graph" library, you will need to use Cygwin's
+  setup.exe to install the xinit, and libX11-devel packages before compiling
+  OCaml.
 
 ------------------------------------------------------------------------------
 
@@ -379,8 +342,6 @@ Microsoft Platform SDK compiler (item [1] in the section
 
 The native-code compiler (ocamlopt) requires the Microsoft compiler
 and the Microsoft assembler MASM64 (item [1]) and the flexdll tool (item [2]).
-
-The LablTk GUI is not available in this version.
 
 INSTALLATION:
 
@@ -421,9 +382,7 @@ to adjust the paths accordingly.
     cd "%PFPATH%\Microsoft Visual Studio 9.0\VC\bin"
     vcvars64
     echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
-    echo LIB="%LIB%;C:\Tcl\lib" >>C:\cygwin\tmp\msenv
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
-    echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
     echo FLPATH="`cygpath '%PFPATH%\flexdll'`" >>C:\cygwin\tmp\msenv
     echo PATH="$VCPATH:$FLPATH:$PATH" >>C:\cygwin\tmp\msenv
     echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv

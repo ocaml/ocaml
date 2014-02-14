@@ -1,8 +1,0 @@
-place.cmo wm.cmo imagephoto.cmo canvas.cmo button.cmo text.cmo label.cmo
-scrollbar.cmo image.cmo encoding.cmo pixmap.cmo palette.cmo font.cmo
-message.cmo menu.cmo entry.cmo listbox.cmo focus.cmo menubutton.cmo pack.cmo
-option.cmo toplevel.cmo frame.cmo dialog.cmo imagebitmap.cmo clipboard.cmo
-radiobutton.cmo tkwait.cmo grab.cmo selection.cmo scale.cmo optionmenu.cmo
-winfo.cmo grid.cmo checkbutton.cmo bell.cmo tkvars.cmo
-
-tk.cmo labltk.cmo

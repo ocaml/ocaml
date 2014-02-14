@@ -36,8 +36,6 @@ function blank () {
 function ocaml () {
   return (checkline(" {32}OCaml {32}") \
        || checkline(" {35}OCaml {32}") \
-       || checkline("                 MLTk, Tcl/Tk interface of OCaml                     ") \
-       || checkline("                         OCaml LablTk library                          ") \
        || checkline("                             ocamlbuild                              ") \
        || checkline("                             OCamldoc                                ") \
   );
@@ -91,8 +89,6 @@ FNR == 1 {
   add_ignore_re("^\\./experimental/");
   add_ignore_re("^\\./ocamlbuild/examples/");
   add_ignore_re("^\\./ocamlbuild/test/");
-  add_ignore_re("^\\./otherlibs/labltk/builtin/");
-  add_ignore_re("^\\./otherlibs/labltk/examples_");
   add_ignore_re("^\\./testsuite/");
   for (i in ignore_re){
       if (FILENAME ~ ignore_re[i]) { nextfile; }
@@ -105,9 +101,6 @@ FNR == 1 {
   add_exception("./ocamlbuild/manual/trace.out");       # TeX input file
   add_exception("./ocamldoc/Changes.txt");
   add_exception("./ocamldoc/ocamldoc.sty");             # public domain
-  add_exception("./otherlibs/labltk/browser/help.txt");
-  add_exception("./otherlibs/labltk/camltk/modules");   # generated
-  add_exception("./otherlibs/labltk/labltk/modules");   # generated
   add_exception("./tools/objinfo_helper.c");            # non-INRIA
   add_exception("./tools/magic");                       # public domain ?
   add_exception("./Upgrading");

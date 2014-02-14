@@ -89,12 +89,6 @@ finish_if_bad
 
 case "$opt_win" in
 win)
-
-  # FIXME
-  sed -e 's/\(OTHERLIBRARIES=.*\) labltk/\1/' \
-    < "config/Makefile.$opt_win2" > config/Makefile || bad
-  finish_if_bad
-
   cp config/m-nt.h config/m.h || bad
   finish_if_bad
   cp config/s-nt.h config/s.h || bad
