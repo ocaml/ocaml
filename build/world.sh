@@ -28,8 +28,7 @@ case "$1" in
      exit 1;;
 esac
 shift
-./mkconfig.sh
-./mkmyocamlbuild_config.sh
+./mk_shell_and_ocamlbuild_config.sh
 ./boot-c-parts.sh
 ./boot.sh "$@"
 ./world."$mode".sh "$@"

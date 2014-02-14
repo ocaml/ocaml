@@ -48,7 +48,6 @@ O=obj
 A=lib
 S=asm
 SO=s.obj
-DO=d.obj
 EXE=.exe
 EXT_DLL=.dll
 EXT_OBJ=.$(O)
@@ -184,3 +183,23 @@ CANKILL=false
 FIND=/usr/bin/find
 SORT=/usr/bin/sort
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
+
+THIS_MAKEFILE=$(filter %config/Makefile,$(MAKEFILE_LIST))
+ifeq ($(filter /%,$(THIS_MAKEFILE)),)
+ROOTDIR:=$(abspath $(dir $(CURDIR)/$(THIS_MAKEFILE))/..)
+else
+ROOTDIR:=$(abspath $(dir $(THIS_MAKEFILE))/..)
+endif
+CAMLRUN:=$(ROOTDIR)/boot/ocamlrun$(EXE)
+OCAMLRUN:=$(CAMLRUN)
+ROOTDIR_COMPAT:=$(shell $(CYGPATH) $(ROOTDIR))
+CAMLC_BIN_BOOT   = $(CAMLRUN) $(ROOTDIR_COMPAT)/boot/ocamlc
+CAMLC_BIN_BYTE   = $(CAMLRUN) $(ROOTDIR_COMPAT)/ocamlc
+CAMLC_BIN_OPT    = $(ROOTDIR_COMPAT)/ocamlc.opt
+CAMLOPT_BIN_BYTE = $(CAMLRUN) $(ROOTDIR_COMPAT)/ocamlopt
+CAMLOPT_BIN_OPT  = $(ROOTDIR_COMPAT)/ocamlopt.opt
+
+CAMLC_BIN   = @ . $(ROOTDIR)/config/ocamlcomp; PS4=""; set -x; $${CAMLC_BIN}
+CAMLOPT_BIN = @ . $(ROOTDIR)/config/ocamlcomp; PS4=""; set -x; $${CAMLOPT_BIN}
+CAMLC_BIN_CMD_TO_EVAL   = . $(ROOTDIR)/config/ocamlcomp; echo $${CAMLC_BIN}
+CAMLOPT_BIN_CMD_TO_EVAL = . $(ROOTDIR)/config/ocamlcomp; echo $${CAMLOPT_BIN}

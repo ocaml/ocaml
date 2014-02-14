@@ -123,26 +123,24 @@ let systhreads_lib f = "otherlibs/systhreads"/f-.-C.a
 let systhreads_dll f = "otherlibs/systhreads"/f-.-C.so
 
 let ocamlc_solver =
-  let native_deps = ["ocamlc.opt"; "stdlib/stdlib.cmxa";
-                    "stdlib/std_exit.cmx"; "stdlib/std_exit"-.-C.o] in
-  let byte_deps = ["ocamlc"; "stdlib/stdlib.cma"; "stdlib/std_exit.cmo"] in
+  let native_deps = ["../ocamlc.opt"; "../stdlib/stdlib.cmxa";
+                    "../stdlib/std_exit.cmx"; "../stdlib/std_exit"-.-C.o] in
+  let byte_deps = ["../ocamlc"; "../stdlib/stdlib.cma";
+                  "../stdlib/std_exit.cmo"] in
   fun () ->
-    if Pathname.exists "../ocamlcomp.sh" then S[A"../ocamlcomp.sh"] else
-    if List.for_all Pathname.exists native_deps then
-      S[A"./ocamlc.opt"; A"-nostdlib"]
-    else if List.for_all Pathname.exists byte_deps then
-      S[ocamlrun; A"./ocamlc"; A"-nostdlib"]
+    if List.for_all Pathname.exists native_deps then (
+      S[A"../ocamlc.opt"; A"-I"; A"../stdlib"; A"-nostdlib"])
+    else if List.for_all Pathname.exists byte_deps then (
+      S[ocamlrun; A"../ocamlc"; A"-I"; A"../stdlib"; A"-nostdlib"])
     else boot_ocamlc;;
 
 Command.setup_virtual_command_solver "OCAMLC" ocamlc_solver;;
 Command.setup_virtual_command_solver "OCAMLCWIN" (convert_for_windows_shell ocamlc_solver);;
 
 let ocamlopt_solver () =
-  S[if Pathname.exists "../ocamlcompopt.sh" then S[A"../ocamlcompopt.sh"] else
-    if Pathname.exists "ocamlopt.opt" && Pathname.exists ("stdlib/stdlib.cmxa")
-    then A"./ocamlopt.opt"
-    else S[ocamlrun; A"./ocamlopt"];
-    A"-nostdlib"];;
+  if List.for_all Pathname.exists [ "../ocamlopt.opt"; "../stdlib/stdlib.cmxa" ]
+  then S[A"../ocamlopt.opt"; A"-I"; A"../stdlib"; A"-nostdlib"]
+  else S[ocamlrun; A"../ocamlopt"; A"-I"; A"../stdlib"; A"-nostdlib"];;
 
 Command.setup_virtual_command_solver "OCAMLOPT" ocamlopt_solver;;
 Command.setup_virtual_command_solver "OCAMLOPTWIN" (convert_for_windows_shell ocamlopt_solver);;

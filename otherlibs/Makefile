@@ -13,9 +13,11 @@
 
 # Common Makefile for otherlibs on the Unix ports
 
-CAMLC=$(ROOTDIR)/ocamlcomp.sh
-CAMLOPT=$(ROOTDIR)/ocamlcompopt.sh
-CFLAGS=-I$(ROOTDIR)/byterun -O $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+CAMLC=$(CAMLC_BIN) -nostdlib -I ../../stdlib
+CAMLOPT=$(CAMLOPT_BIN) -nostdlib -I ../../stdlib
+CAMLC_BIN_CMD=$$($(CAMLC_BIN_CMD_TO_EVAL) -nostdlib -I ../../stdlib)
+CAMLOPT_BIN_CMD=$$($(CAMLOPT_BIN_CMD_TO_EVAL) -nostdlib -I ../../stdlib)
+CFLAGS=-I../../byterun -O $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
 
 include ../Makefile.shared
 # Note .. is the current directory (this makefile is included from

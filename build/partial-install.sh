@@ -20,7 +20,18 @@ set -e
 
 cd `dirname $0`/..
 
+# Save the following environment variables before sourcing config.sh since it
+# will overwrite them and the user might have set them to emulate $(DESTDIR)
+# which is unfortunately not supported.
+SAVED_BINDIR="${BINDIR}"
+SAVED_LIBDIR="${LIBDIR}"
+SAVED_MANDIR="${MANDIR}"
+
 . config/config.sh
+
+BINDIR="${SAVED_BINDIR:-${BINDIR}}"
+LIBDIR="${SAVED_LIBDIR:-${LIBDIR}}"
+MANDIR="${SAVED_MANDIR:-${MANDIR}}"
 
 not_installed=$PWD/_build/not_installed
 
@@ -105,14 +116,12 @@ mkdir -p $BINDIR
 mkdir -p $LIBDIR
 mkdir -p $LIBDIR/camlp4
 mkdir -p $LIBDIR/ocamlbuild
-mkdir -p $STUBLIBDIR
 mkdir -p $MANDIR/man1
 mkdir -p $MANDIR/man3
-mkdir -p $MANDIR/man$MANEXT
 
 cd _build
 
-if test -d camlp4; then
+if [ -n "${WITH_CAMLP4}" ]; then
   echo "Installing camlp4..."
   installbin camlp4/camlp4prof.byte$EXE $BINDIR/camlp4prof$EXE
   installbin camlp4/mkcamlp4.byte$EXE $BINDIR/mkcamlp4$EXE
@@ -153,14 +162,7 @@ if test -d camlp4; then
   cd ..
 fi
 
-# I would have liked to test the value of ${WITH_OCAMLBUILD} instead of using
-# "test -d". However, the config.sh script that gets sourced near the top of
-# the file does: WITH_CAMLP4=${WITH_CAMLP4:-camlp4}, effectly destroying the
-# information that camlp4, ocamlbuild and others might have been disabled.
-# Of course, I tried to fix that. The config.sh file is created by mkconfig.sh
-# through an awful set of sed expressions which I don't feel confident to
-# change. -- Adrien Nader
-if test -d ocamlbuild; then
+if [ -n "${WITH_OCAMLBUILD}" ]; then
   echo "Installing ocamlbuild..."
   cd ocamlbuild
   installbin ocamlbuild.byte$EXE $BINDIR/ocamlbuild.byte$EXE
