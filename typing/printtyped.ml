@@ -421,7 +421,7 @@ and extension_constructor i ppf x =
   line i ppf "extension_constructor %a\n" fmt_location x.ext_loc;
   attributes i ppf x.ext_attributes;
   let i = i + 1 in
-  line i ppf "pext_name = \"%a\"\n" fmt_ident x.ext_name;
+  line i ppf "pext_name = \"%a\"\n" fmt_ident x.ext_id;
   line i ppf "pext_kind =\n";
   extension_constructor_kind (i + 1) ppf x.ext_kind;
 

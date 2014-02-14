@@ -392,13 +392,13 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_class_description cd =
       Iter.enter_class_description cd;
-      List.iter iter_core_type cd.ci_params;
+      List.iter iter_type_parameter cd.ci_params;
       iter_class_type cd.ci_expr;
       Iter.leave_class_description cd;
 
     and iter_class_type_declaration cd =
       Iter.enter_class_type_declaration cd;
-      List.iter iter_core_type cd.ci_params;
+      List.iter iter_type_parameter cd.ci_params;
       iter_class_type cd.ci_expr;
       Iter.leave_class_type_declaration cd;
 

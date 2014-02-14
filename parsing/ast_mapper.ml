@@ -59,7 +59,7 @@ module T = struct
        ptype_attributes;
        ptype_loc} =
     Type.mk (map_loc sub ptype_name)
-      ~params:(List.map (map_fst (sub # typ))) ptype_params)
+      ~params:(List.map (map_fst (sub # typ)) ptype_params)
       ~priv:ptype_private
       ~cstrs:(List.map (map_tuple3 (sub # typ) (sub # typ) (sub # location)) ptype_cstrs)
       ~kind:(sub # type_kind ptype_kind)
@@ -81,26 +81,26 @@ module T = struct
     Te.mk
       (map_loc sub ptyext_path)
       (List.map (sub # extension_constructor) ptyext_constructors)
-      ~params:(List.map (map_fst (sub # typ))) ptype_params)
+      ~params:(List.map (map_fst (sub # typ)) ptyext_params)
       ~priv:ptyext_private
       ~attrs:(sub # attributes ptyext_attributes)
+
+  let map_extension_constructor_kind sub = function
+      Pext_decl(ctl, cto) ->
+        Pext_decl(List.map (sub # typ) ctl, map_opt (sub # typ) cto)
+    | Pext_rebind li ->
+        Pext_rebind (map_loc sub li)
 
   let map_extension_constructor sub
       {pext_name;
        pext_kind;
        pext_loc;
        pext_attributes} =
-    Ext.constructor
+    Te.constructor
       (map_loc sub pext_name)
       (map_extension_constructor_kind sub pext_kind)
       ~loc:(sub # location pext_loc)
       ~attrs:(sub # attributes pext_attributes)
-
-  let map_extension_constructor_kind sub = function
-      Pext_decl(ctl, cto) ->
-        Pext_decl(List.map (sub # typ) ctl, map_opt (sub # typ) cto)
-    | Pext_rebind li ->
-        Pext_rebind (map_loc sub li))
 
 end
 
@@ -339,7 +339,7 @@ module CE = struct
   let class_infos sub f {pci_virt; pci_params = pl; pci_name; pci_expr; pci_loc; pci_attributes} =
     Ci.mk
      ~virt:pci_virt
-     ~params:(List.map (sub # typ) pl)
+     ~params:(List.map (map_fst (sub # typ)) pl)
       (map_loc sub pci_name)
       (f pci_expr)
       ~loc:(sub # location pci_loc)

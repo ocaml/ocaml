@@ -136,7 +136,7 @@ module MakeMap(Map : MapArgument) = struct
           let list =
             List.map (fun (ci, string_list, virtual_flag) ->
               let ci = Map.enter_class_infos ci in
-              let ci_params = List.map map_core_type ci.ci_params in
+              let ci_params = List.map map_type_parameter ci.ci_params in
               let ci_expr = map_class_expr ci.ci_expr in
               (Map.leave_class_infos
                  { ci with ci_params = ci_params; ci_expr = ci_expr},
@@ -147,7 +147,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_class_type list ->
           let list = List.map (fun (id, name, ct) ->
             let ct = Map.enter_class_infos ct in
-            let ci_params = List.map map_core_type ct.ci_params in
+            let ci_params = List.map map_type_parameter ct.ci_params in
             let ci_expr = map_class_type ct.ci_expr in
             (id, name, Map.leave_class_infos
                          { ct with ci_params = ci_params; ci_expr = ci_expr})
@@ -169,7 +169,7 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_type_declaration decl =
     let decl = Map.enter_type_declaration decl in
-    let typ_params = List.map map_type_parameters decl.typ_params in
+    let typ_params = List.map map_type_parameter decl.typ_params in
     let typ_cstrs = List.map (fun (ct1, ct2, loc) ->
       (map_core_type ct1,
        map_core_type ct2,

@@ -156,9 +156,6 @@ let create_package_mty fake loc env (p, l) =
 
 (* Translation of type expressions *)
 
-let ctyp ctyp_desc ctyp_type ctyp_env ctyp_loc =
-  { ctyp_desc; ctyp_type; ctyp_env; ctyp_loc }
-
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let univars        = ref ([] : (string * type_expr) list)
 let pre_univars    = ref ([] : type_expr list)
@@ -198,7 +195,8 @@ let transl_type_param env styp =
   match styp.ptyp_desc with
     Ptyp_any ->
       let ty = new_global_var ~name:"_" () in
-        ctyp Ttyp_any ty env loc
+        { ctyp_desc = Ttyp_any; ctyp_type = ty; ctyp_env = env;
+          ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
   | Ptyp_var name ->
       let ty =
         try
@@ -211,7 +209,8 @@ let transl_type_param env styp =
             type_variables := Tbl.add name v !type_variables;
             v
       in
-        ctyp (Ttyp_var name) ty env loc
+        { ctyp_desc = Ttyp_var name; ctyp_type = ty; ctyp_env = env;
+          ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
   | _ -> assert false
 
 let wrap_method ty =

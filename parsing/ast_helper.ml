@@ -366,15 +366,15 @@ module Te = struct
      pext_name = name;
      pext_kind = kind;
      pext_loc = loc;
-     pext_attributes = atrrs;
+     pext_attributes = attrs;
     }
 
-  let decl ?(loc = !default_loc) ?(args = []) ?res ?(attrs = []) name =
+  let decl ?(loc = !default_loc) ?(attrs = []) ?(args = []) ?res name =
     {
      pext_name = name;
      pext_kind = Pext_decl(args, res);
      pext_loc = loc;
-     pext_attributes = atrrs;
+     pext_attributes = attrs;
     }
 
   let rebind ?(loc = !default_loc) ?(attrs = []) name lid =
@@ -382,7 +382,7 @@ module Te = struct
      pext_name = name;
      pext_kind = Pext_rebind lid;
      pext_loc = loc;
-     pext_attributes = atrrs;
+     pext_attributes = attrs;
     }
 end
 

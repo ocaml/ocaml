@@ -828,14 +828,14 @@ let build_other_constant proj make first next p env =
 
 let build_other ext env =  match env with
 | ({pat_desc = Tpat_construct (lid,
-      ({cstr_tag=(Cstr_ext_constant _|Cstr_ext_block _)} as c),_,_)},_)
+      ({cstr_tag=(Cstr_ext_constant _|Cstr_ext_block _)} as c),_)},_)
   ::_ ->
     make_pat
       (Tpat_construct
          (lid, {c with
            cstr_tag=(Cstr_ext_constant
             (Path.Pident (Ident.create "*extension*"), Location.none))},
-          [], false))
+          []))
       Ctype.none Env.empty
 | ({pat_desc =
     Tpat_construct (lid, ({cstr_tag=Cstr_exception _} as c),_)},_)

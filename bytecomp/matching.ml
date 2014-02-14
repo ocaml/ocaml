@@ -1081,7 +1081,7 @@ and is_exc p = match p.pat_desc with
 | Tpat_alias (p,v,_) -> is_exc p
 | Tpat_construct (_,{ cstr_tag = Cstr_exception _
                                | Cstr_ext_constant _
-                               | Cstr_ext_constant _ },_) -> true
+                               | Cstr_ext_block _ },_) -> true
 | _ -> false
 
 and precompile_or argo cls ors args def k = match ors with

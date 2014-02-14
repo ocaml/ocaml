@@ -1560,16 +1560,14 @@ label_declaration:
 str_type_extension:
   optional_type_parameters type_longident
   PLUSEQ private_flag opt_bar str_extension_constructors post_item_attributes
-      { Te.mk (mkrhs $2 2)
-          ~params:$1 ~constructors:(List.rev $6)
-          ~priv:$4 ~attrs:$7 }
+      { Te.mk (mkrhs $2 2) (List.rev $6)
+          ~params:$1 ~priv:$4 ~attrs:$7 }
 ;
 sig_type_extension:
   optional_type_parameters type_longident
   PLUSEQ private_flag opt_bar sig_extension_constructors post_item_attributes
-      { Te.mk (mkrhs $2 2)
-          ~params:$1 ~constructors:(List.rev $6)
-          ~priv:$4 ~attrs:$7 }
+      { Te.mk (mkrhs $2 2) (List.rev $6)
+          ~params:$1 ~priv:$4 ~attrs:$7 }
 ;
 str_extension_constructors:
     extension_constructor_declaration                     { [$1] }
@@ -1605,7 +1603,7 @@ with_constraint:
       { Pwith_type
           (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
-              ~params:(List.map (fun (x, v) -> Some x, v) $2)
+              ~params:$2
               ~cstrs:(List.rev $6)
               ~manifest:$5
               ~priv:$4
@@ -1615,7 +1613,7 @@ with_constraint:
   | TYPE type_parameters label COLONEQUAL core_type
       { Pwith_typesubst
           (Type.mk (mkrhs $3 3)
-             ~params:(List.map (fun (x, v) -> Some x, v) $2)
+             ~params:$2
              ~manifest:$5
              ~loc:(symbol_rloc())) }
   | MODULE mod_longident EQUAL mod_ext_longident

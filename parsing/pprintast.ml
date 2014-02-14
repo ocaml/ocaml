@@ -843,9 +843,9 @@ class printer  ()= object(self:'self)
               pp f "module %a =@ %a" self#longident_loc li self#longident_loc li2;
           | Pwith_typesubst ({ptype_params=ls;_} as td) ->
               let ls = List.map fst ls in
-              pp f "type@ %a %a :=@ %a"
+              pp f "type@ %a %s :=@ %a"
                 (self#list self#core_type ~sep:"," ~first:"(" ~last:")")
-                ls self#longident_loc li
+                ls td.ptype_name.txt
                 self#type_declaration  td
           | Pwith_modsubst (s, li2) ->
               pp f "module %s :=@ %a" s.txt self#longident_loc li2 in

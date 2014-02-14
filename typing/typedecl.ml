@@ -1127,7 +1127,7 @@ let transl_type_extension check_open env loc styext =
   let type_variance =
     List.map (fun v ->
                 let (co, cn) = Variance.get_upper v in
-                  (not cn, not co))
+                  (not cn, not co, false))
              type_decl.type_variance
   in
   let err =
@@ -1135,7 +1135,7 @@ let transl_type_extension check_open env loc styext =
       [Includecore.Arity]
     else
       if List.for_all2
-           (fun (c1, n1) (c2, n2, _) -> (not c2 || c1) && (not n2 || n1))
+           (fun (c1, n1, _) (c2, n2, _) -> (not c2 || c1) && (not n2 || n1))
            type_variance
            (add_injectivity (List.map snd styext.ptyext_params))
       then [] else [Includecore.Variance]
@@ -1164,7 +1164,7 @@ let transl_type_extension check_open env loc styext =
   List.iter
     (fun ext->
       ignore (compute_variance_extension env true type_decl
-                ext.ext_id ext.ext_type (add_injectivity type_variance, loc)))
+                ext.ext_id ext.ext_type (type_variance, loc)))
     constructors;
   (* Add extension constructors to the environment *)
   let newenv =
