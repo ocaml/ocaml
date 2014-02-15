@@ -248,6 +248,8 @@ module Make(U:sig end) =
           let rc = sys_command (Command.string_of_command_spec spec) in
           raise (Exit_silently_with_code rc);
         end
+      else if not (sys_file_exists plugin_file) && !Options.plugin_tags <> [] then
+        eprintf "Warning: -plugin-tag(s) is inefficient without %s" plugin_file
       else
         ()
   end
