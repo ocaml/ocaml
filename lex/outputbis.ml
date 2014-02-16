@@ -35,8 +35,8 @@ let output_auto_defs oc has_refill =
 \n      state lexbuf k 256\
 \n    else begin\
 \n      __ocaml_lex_refill (fun lexbuf ->
-\n        lexbuf.Lexing.refill_buff lexbuf ;\
-\n        __ocaml_lex_next_char lexbuf state k)\
+\n          lexbuf.Lexing.refill_buff lexbuf ;\
+\n          __ocaml_lex_next_char lexbuf state k)\
 \n        lexbuf\
 \n    end\
 \n  end else begin\
