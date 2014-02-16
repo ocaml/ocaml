@@ -79,6 +79,77 @@ let concat sep l =
         tl;
       r
 
+let cut sep s =
+  let sep_max = length sep - 1 in
+  if sep_max < 0 then invalid_arg "String.cut: empty separator" else
+  let s_max = length s - 1 in
+  if s_max < 0 then None else
+  let k = ref 0 in
+  let i = ref 0 in 
+  (* We run from the start of [s] to end with [i] trying to match the
+     first character of [sep] in [s]. If this matches, we verify that
+     the whole [sep] is matched using [k]. If it doesn't match we
+     continue to look for [sep] with [i]. If it matches we exit the
+     loop and extract a substring from the start of [s] to the
+     position before the [sep] we found and another from the position
+     after the [sep] we found to end of string. If [i] is such that no
+     separator can be found we exit the loop and return the no match
+     case. *)
+  try 
+    while (!i + sep_max <= s_max) do
+      (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
+           guaranteed by loop invariant. *)
+      if unsafe_get s !i <> unsafe_get sep 0 then incr i else begin
+        k := 1; 
+        while (!k <= sep_max && unsafe_get s (!i + !k) = unsafe_get sep !k)
+        do incr k done;
+        if !k <= sep_max then (* no match *) incr i else raise Exit
+      end
+    done; 
+    None (* no match in the whole string. *)
+  with
+  | Exit -> (* i is at the beginning of the separator *) 
+      let left_end = !i - 1 in 
+      let right_start = !i + sep_max + 1 in
+      Some (sub s 0 (left_end + 1), 
+            sub s right_start (s_max - right_start + 1))
+        
+let rcut sep s =
+  let sep_max = length sep - 1 in
+  if sep_max < 0 then invalid_arg "String.rcut: empty separator" else
+  let s_max = length s - 1 in
+  if s_max < 0 then None else
+  let k = ref 0 in
+  let i = ref s_max in 
+  (* We run from the end of [s] to the beginning with [i] trying to
+     match the last character of [sep] in [s]. If this matches, we
+     verify that the whole [sep] is matched using [k] (we do that
+     backwards).  If it doesn't match we continue to look for [sep]
+     with [i].  If it matches we exit the loop and extract a
+     substring from the start of [s] to the position before the
+     [sep] we found and another from the position after the [sep] we
+     found to end of string.  If [i] is such that no separator can
+     be found we exit the loop and return the no match case. *)
+  try 
+    while (!i >= sep_max) do
+      if unsafe_get s !i <> unsafe_get sep sep_max then decr i else begin 
+        (* Check remaining [sep] chars match, access to unsafe_get 
+             s (sep_start + !k) is guaranteed by loop invariant. *)
+        let sep_start = !i - sep_max in
+        k := sep_max - 1;
+        while (!k >= 0 && unsafe_get s (sep_start + !k) = unsafe_get sep !k)
+        do decr k done;
+          if !k >= 0 then (* no match *) decr i else raise Exit
+      end
+    done; 
+    None (* no match in the whole string. *)
+  with
+  | Exit -> (* i is at the end of the separator *) 
+      let left_end = !i - sep_max - 1 in 
+      let right_start = !i + 1 in
+      Some (sub s 0 (left_end + 1), 
+            sub s right_start (s_max - right_start + 1))
+
 external is_printable: char -> bool = "caml_is_printable"
 external char_code: char -> int = "%identity"
 external char_chr: int -> char = "%identity"

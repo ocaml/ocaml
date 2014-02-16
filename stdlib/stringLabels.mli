@@ -77,6 +77,24 @@ val concat : sep:string -> string list -> string
 (** [String.concat sep sl] concatenates the list of strings [sl],
    inserting the separator string [sep] between each. *)
 
+val cut : sep:string -> string -> (string * string) option
+(** [String.cut sep s] is either the pair [Some (l,r)] of the two
+    (possibly empty) substrings of [s] that are delimited by the first
+    match of the non empty separator string [sep] or [None] if [sep]
+    can't be matched in [s]. Matching starts from the beginning of [s].
+
+    The invariant [l ^ sep ^ r = s] holds. 
+
+    @raise Invalid_argument if [sep] is the empty string. 
+    @since 4.01.1 *)
+
+val rcut : sep:string -> string -> (string * string) option
+(** [String.rcut sep s] is like {!cut} but the matching is done backwards
+    starting from the end of [s].
+
+    @raise Invalid_argument if [sep] is the empty string. 
+    @since 4.01.1 *)
+
 val iter : f:(char -> unit) -> string -> unit
 (** [String.iter f s] applies function [f] in turn to all
    the characters of [s].  It is equivalent to
