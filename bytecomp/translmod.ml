@@ -822,6 +822,10 @@ let get_component = function
 
 let transl_package component_names target_name coercion =
   let components =
+    Lprim(Pmakeblock(0, Immutable), List.map get_component component_names) in
+  Lprim(Psetglobal target_name, [apply_coercion Strict coercion components])
+  (*
+  let components =
     match coercion with
       Tcoerce_none ->
         List.map get_component component_names
@@ -834,6 +838,7 @@ let transl_package component_names target_name coercion =
     | _ ->
         assert false in
   Lprim(Psetglobal target_name, [Lprim(Pmakeblock(0, Immutable), components)])
+   *)
 
 let transl_store_package component_names target_name coercion =
   let rec make_sequence fn pos arg =
@@ -850,6 +855,19 @@ let transl_store_package component_names target_name coercion =
                   get_component id]))
          0 component_names)
   | Tcoerce_structure (pos_cc_list, id_pos_list) ->
+      let components =
+        Lprim(Pmakeblock(0, Immutable), List.map get_component component_names)
+      in
+      let blk = Ident.create "block" in
+      (List.length pos_cc_list,
+       Llet (Strict, blk, apply_coercion Strict coercion components,
+             make_sequence
+               (fun pos id ->
+                 Lprim(Psetfield(pos, false),
+                       [Lprim(Pgetglobal target_name, []);
+                        Lprim(Pfield pos, [Lvar blk])]))
+               0 pos_cc_list))
+  (*    
               (* ignore id_pos_list as the ids are already bound *)
       let id = Array.of_list component_names in
       (List.length pos_cc_list,
@@ -859,6 +877,7 @@ let transl_store_package component_names target_name coercion =
                  [Lprim(Pgetglobal target_name, []);
                   apply_coercion Strict cc (get_component id.(src))]))
          0 pos_cc_list)
+  *)
   | _ -> assert false
 
 (* Error report *)
