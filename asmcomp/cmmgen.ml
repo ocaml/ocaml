@@ -78,52 +78,53 @@ let int_const n =
 let rec add_const c n =
   if n = 0 then c
   else match c with
-  | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+    Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+  | Cop(Caddi, ([Cconst_int x; c] | [c; Cconst_int x])) when no_overflow_add n x ->
+      let d = n + x in
+      if d == 0 then c else Cop(Caddi, [c; Cconst_int d])
   | Cop(Csubi, [Cconst_int x; c]) when no_overflow_add n x ->
       Cop(Csubi, [Cconst_int (n + x); c])
   | Cop(Csubi, [c; Cconst_int x]) when no_overflow_sub n x ->
       add_const c (n - x)
   | c -> Cop(Caddi, [c; Cconst_int n])
 
-let incr_int = function
-    Cconst_int n when n < max_int -> Cconst_int(n+1)
-  | Cop(Caddi, [c; Cconst_int n]) when n < max_int -> add_const c (n + 1)
-  | c -> add_const c 1
+let incr_int c = add_const c 1
+let decr_int c = add_const c (-1)
 
-let decr_int = function
-    Cconst_int n when n > min_int -> Cconst_int(n-1)
-  | Cop(Caddi, [c; Cconst_int n]) when n > min_int -> add_const c (n - 1)
-  | c -> add_const c (-1)
-
-let add_int c1 c2 =
+let rec add_int c1 c2 =
   match (c1, c2) with
-    (Cop(Caddi, [c1; Cconst_int n1]),
-     Cop(Caddi, [c2; Cconst_int n2])) when no_overflow_add n1 n2 ->
-      add_const (Cop(Caddi, [c1; c2])) (n1 + n2)
-  | (Cop(Caddi, [c1; Cconst_int n1]), c2) ->
-      add_const (Cop(Caddi, [c1; c2])) n1
+    (Cconst_int n, c) | (c, Cconst_int n) ->
+      add_const c n
+  | (Cop(Caddi, [c1; Cconst_int n1]), c2) -> 
+      add_const (add_int c1 c2) n1
   | (c1, Cop(Caddi, [c2; Cconst_int n2])) ->
-      add_const (Cop(Caddi, [c1; c2])) n2
-  | (Cconst_int _, _) ->
-      Cop(Caddi, [c2; c1])
+      add_const (add_int c1 c2) n2
   | (_, _) ->
       Cop(Caddi, [c1; c2])
 
-let sub_int c1 c2 =
+let rec sub_int c1 c2 =
   match (c1, c2) with
-    (Cop(Caddi, [c1; Cconst_int n1]),
-     Cop(Caddi, [c2; Cconst_int n2])) when no_overflow_sub n1 n2 ->
-      add_const (Cop(Csubi, [c1; c2])) (n1 - n2)
-  | (Cop(Caddi, [c1; Cconst_int n1]), c2) ->
-      add_const (Cop(Csubi, [c1; c2])) n1
+    (c1, Cconst_int n2) when n2 <> min_int ->
+      add_const c1 (-n2)
   | (c1, Cop(Caddi, [c2; Cconst_int n2])) when n2 <> min_int ->
-      add_const (Cop(Csubi, [c1; c2])) (-n2)
-  | (c1, Cconst_int n) when n <> min_int ->
-      add_const c1 (-n)
+      add_const (sub_int c1 c2) (-n2)
+  | (Cop(Caddi, [c1; Cconst_int n1]), c2) ->
+      add_const (sub_int c1 c2) n1
   | (c1, c2) ->
       Cop(Csubi, [c1; c2])
 
-let mul_int c1 c2 =
+let rec lsl_int c1 c2 =
+  match (c1, c2) with
+    (Cop(Clsl, [c; Cconst_int n1]), Cconst_int n2)
+    when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
+      Cop(Clsl, [c; Cconst_int (n1 + n2)])
+  | (Cop(Caddi, [c1; Cconst_int n1]), Cconst_int n2) 
+    when no_overflow_lsl n1 n2 ->
+      add_const (lsl_int c1 c2) (n1 lsl n2)
+  | (_, _) ->
+      Cop(Clsl, [c1; c2])
+
+let rec mul_int c1 c2 =
   match (c1, c2) with
     (c, Cconst_int 0) | (Cconst_int 0, c) ->
       Cconst_int 0
@@ -133,16 +134,13 @@ let mul_int c1 c2 =
       sub_int (Cconst_int 0) c
   | (c, Cconst_int n) | (Cconst_int n, c) when n = 1 lsl Misc.log2 n->
       Cop(Clsl, [c; Cconst_int(Misc.log2 n)])
+  | (Cop(Caddi, [c; Cconst_int n]), Cconst_int k) |
+    (Cconst_int k, Cop(Caddi, [c; Cconst_int n]))
+    when no_overflow_mul n k ->
+      add_const (mul_int c (Cconst_int k)) (n * k)
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2])
 
-let lsl_int c1 c2 =
-  match (c1, c2) with
-    (Cop(Clsl, [c; Cconst_int n1]), Cconst_int n2)
-    when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
-      Cop(Clsl, [c; Cconst_int (n1 + n2)])
-  | (_, _) ->
-      Cop(Clsl, [c1; c2])
 
 let ignore_low_bit_int = function
     Cop(Caddi, [(Cop(Clsl, [_; Cconst_int n]) as c); Cconst_int 1]) when n > 0
@@ -195,6 +193,11 @@ let untag_int = function
       Cop(Clsr, [c; Cconst_int (n+1)])
   | Cop(Cor, [c; Cconst_int 1]) -> Cop(Casr, [c; Cconst_int 1])
   | c -> Cop(Casr, [c; Cconst_int 1])
+
+let mul_int_tagged c1 c2 =
+  match (c1, c2) with
+  | (Cconst_int n1, c2) -> mul_int (untag_int c1) (decr_int c2)
+  | (_, _) -> mul_int (decr_int c1) (untag_int c2)
 
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
@@ -1489,7 +1492,7 @@ and transl_prim_1 p arg dbg =
         | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
       end
   | Poffsetint n ->
-      if no_overflow_lsl n then
+      if no_overflow_lsl n 1 then
         add_const (transl arg) (n lsl 1)
       else
         transl_prim_2 Paddint arg (Uconst (Const_base(Const_int n), None))
@@ -1591,7 +1594,7 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Psubint ->
       incr_int(sub_int (transl arg1) (transl arg2))
   | Pmulint ->
-      incr_int(mul_int (decr_int(transl arg1)) (untag_int(transl arg2)))
+      incr_int(mul_int_tagged (transl arg1) (transl arg2))
   | Pdivint ->
       tag_int(div_int (untag_int(transl arg1)) (untag_int(transl arg2)) dbg)
   | Pmodint ->
