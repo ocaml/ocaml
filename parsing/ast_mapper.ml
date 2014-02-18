@@ -13,14 +13,10 @@
 (* A generic Parsetree mapping class *)
 
 open Parsetree
-open Asttypes
 open Ast_helper
 open Location
 
 type mapper = {
-  interface: mapper -> (string * signature) -> (string * signature);
-  implementation: mapper -> (string * structure) -> (string * structure);
-
   attribute: mapper -> attribute -> attribute;
   attributes: mapper -> attribute list -> attribute list;
   case: mapper -> case -> case;
@@ -292,12 +288,6 @@ end
 module E = struct
   (* Value expressions for the core language *)
 
-  let lid ?(loc = Location.none) ?attrs lid =
-    Exp.ident ~loc ?attrs (mkloc (Longident.parse lid) loc)
-  let apply_nolabs ?loc ?attrs f el =
-    Exp.apply ?loc ?attrs f (List.map (fun e -> ("", e)) el)
-  let strconst ?loc ?attrs x = Exp.constant ?loc ?attrs (Const_string (x, None))
-
   let map sub {pexp_loc = loc; pexp_desc = desc; pexp_attributes = attrs} =
     let open Exp in
     let loc = sub.location sub loc in
@@ -306,14 +296,16 @@ module E = struct
     | Pexp_ident x -> ident ~loc ~attrs (map_loc sub x)
     | Pexp_constant x -> constant ~loc ~attrs x
     | Pexp_let (r, vbs, e) ->
-        let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs) (sub.expr sub e)
+        let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs)
+          (sub.expr sub e)
     | Pexp_fun (lab, def, p, e) ->
         fun_ ~loc ~attrs lab (map_opt (sub.expr sub) def) (sub.pat sub p)
           (sub.expr sub e)
     | Pexp_function pel -> function_ ~loc ~attrs (sub.cases sub pel)
     | Pexp_apply (e, l) ->
         apply ~loc ~attrs (sub.expr sub e) (List.map (map_snd (sub.expr sub)) l)
-    | Pexp_match (e, pel) -> match_ ~loc ~attrs (sub.expr sub e) (sub.cases sub pel)
+    | Pexp_match (e, pel) ->
+        match_ ~loc ~attrs (sub.expr sub e) (sub.cases sub pel)
     | Pexp_try (e, pel) -> try_ ~loc ~attrs (sub.expr sub e) (sub.cases sub pel)
     | Pexp_tuple el -> tuple ~loc ~attrs (List.map (sub.expr sub) el)
     | Pexp_construct (lid, arg) ->
@@ -323,9 +315,11 @@ module E = struct
     | Pexp_record (l, eo) ->
         record ~loc ~attrs (List.map (map_tuple (map_loc sub) (sub.expr sub)) l)
           (map_opt (sub.expr sub) eo)
-    | Pexp_field (e, lid) -> field ~loc ~attrs (sub.expr sub e) (map_loc sub lid)
+    | Pexp_field (e, lid) ->
+        field ~loc ~attrs (sub.expr sub e) (map_loc sub lid)
     | Pexp_setfield (e1, lid, e2) ->
-        setfield ~loc ~attrs (sub.expr sub e1) (map_loc sub lid) (sub.expr sub e2)
+        setfield ~loc ~attrs (sub.expr sub e1) (map_loc sub lid)
+          (sub.expr sub e2)
     | Pexp_array el -> array ~loc ~attrs (List.map (sub.expr sub) el)
     | Pexp_ifthenelse (e1, e2, e3) ->
         ifthenelse ~loc ~attrs (sub.expr sub e1) (sub.expr sub e2)
@@ -459,9 +453,6 @@ end
 
 let default_mapper =
   {
-    interface = (fun this (s, l) -> (s, this.signature this l));
-    implementation = (fun this (s, l) -> (s, this.structure this l));
-
     structure = (fun this l -> List.map (this.structure_item this) l);
     structure_item = M.map_structure_item;
     module_expr = M.map;
@@ -566,10 +557,12 @@ let default_mapper =
     extension = (fun this (s, e) -> (map_loc this s, this.payload this e));
     attribute = (fun this (s, e) -> (map_loc this s, this.payload this e));
     attributes = (fun this l -> List.map (this.attribute this) l);
-    payload = (fun this -> function
-        | PStr x -> PStr (this.structure this x)
-        | PTyp x -> PTyp (this.typ this x)
-        | PPat (x, g) -> PPat (this.pat this x, map_opt (this.expr this) g));
+    payload =
+      (fun this -> function
+         | PStr x -> PStr (this.structure this x)
+         | PTyp x -> PTyp (this.typ this x)
+         | PPat (x, g) -> PPat (this.pat this x, map_opt (this.expr this) g)
+      );
   }
 
 
@@ -580,20 +573,19 @@ let apply ~source ~target mapper =
   really_input ic magic 0 (String.length magic);
   if magic <> Config.ast_impl_magic_number
   && magic <> Config.ast_intf_magic_number then
-    failwith "Bad magic";
-  let input_name = input_value ic in
+    failwith "Ast_mapper: unknown magic number";
+  Location.input_name := input_value ic;
   let ast = input_value ic in
   close_in ic;
 
-  let (input_name, ast) =
+  let ast =
     if magic = Config.ast_impl_magic_number
-    then Obj.magic (mapper.implementation mapper (input_name, Obj.magic ast))
-    else Obj.magic (mapper.interface mapper (input_name, Obj.magic ast))
+    then Obj.magic (mapper.structure mapper (Obj.magic ast))
+    else Obj.magic (mapper.signature mapper (Obj.magic ast))
   in
-  Printf.printf "target = %s\n%!" target;
   let oc = open_out_bin target in
   output_string oc magic;
-  output_value oc input_name;
+  output_value oc !Location.input_name;
   output_value oc ast;
   close_out oc
 
@@ -607,13 +599,14 @@ let run_main mapper =
     else begin
       Printf.eprintf "Usage: %s [extra_args] <infile> <outfile>\n%!"
                      Sys.executable_name;
-      exit 1
+      exit 2
     end
   with exn ->
-    prerr_endline (Printexc.to_string exn);
+    begin try Location.report_exception Format.err_formatter exn
+    with exn -> prerr_endline (Printexc.to_string exn)
+    end;
     exit 2
 
-let main mapper = run_main (fun _ -> mapper)
-
 let register_function = ref (fun _name f -> run_main f)
-let register name f = !register_function name (f :> string list -> mapper)
+let register name f = !register_function name f
+

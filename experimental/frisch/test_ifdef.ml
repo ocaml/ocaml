@@ -22,3 +22,4 @@ let () =
   Printf.printf "compiled by user %s in directory %s\n%!"
     [%GETENV USER]
     [%GETENV PWD]
+

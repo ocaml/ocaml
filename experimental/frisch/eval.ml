@@ -67,12 +67,11 @@ module Main : sig end = struct
           Location.print_error loc;
         exit 2
 
-  let eval = object
-    inherit Ast_mapper.mapper as super
-
-    val mutable eval_str_items = None
-
-    method! structure_item i =
+  let eval _args =
+    let open Ast_mapper in
+    let eval_str_items = ref None in
+    let super = default_mapper in
+    let my_structure_item this i =
       match i.pstr_desc with
       | Pstr_extension(({txt="eval.load";loc}, e0), _) ->
           let e0 = get_exp loc e0 in
@@ -92,17 +91,17 @@ module Main : sig end = struct
       | Pstr_extension(({txt="eval.start";_},
                         PStr [{pstr_desc=Pstr_eval (e, _);_}]
                        ), _) when get_lid e = Some "both" ->
-          eval_str_items <- Some true;
+          eval_str_items := Some true;
           empty_str_item
       | Pstr_extension(({txt="eval.start";_}, PStr []), _) ->
-          eval_str_items <- Some false;
+          eval_str_items := Some false;
           empty_str_item
       | Pstr_extension(({txt="eval.stop";_}, PStr []), _) ->
-          eval_str_items <- None;
+          eval_str_items := None;
           empty_str_item
       | _ ->
-          let s = super # structure_item i in
-          match eval_str_items with
+          let s = super.structure_item this i in
+          match !eval_str_items with
           | None -> s
           | Some both ->
               if not (run (Ptop_def [s])) then begin
@@ -111,8 +110,8 @@ module Main : sig end = struct
                 exit 2
               end;
               if both then s else empty_str_item
-
-    method! expr e =
+    in
+    let my_expr this e =
       match e.pexp_desc with
       | Pexp_extension({txt="eval";loc}, e0) ->
           let e0 = get_exp loc e0 in
@@ -132,11 +131,11 @@ module Main : sig end = struct
           let v = match !last_result with None -> assert false | Some v -> v in
           with_default_loc e0.pexp_loc (fun () -> exp_of_out_value v)
       | _ ->
-          super # expr e
+          super.expr this e
+    in
+    Toploop.initialize_toplevel_env ();
+    {super with expr = my_expr; structure_item = my_structure_item}
 
-    initializer Toploop.initialize_toplevel_env ()
-  end
 
-
-  let () = Ast_mapper.main eval
+  let () = Ast_mapper.run_main eval
 end
