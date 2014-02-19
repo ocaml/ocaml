@@ -107,7 +107,7 @@ type summary =
   | Env_type of summary * Ident.t * type_declaration
   | Env_extension of summary * Ident.t * extension_constructor
   | Env_exception of summary * Ident.t * exception_declaration
-  | Env_module of summary * Ident.t * module_type
+  | Env_module of summary * Ident.t * module_declaration
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
@@ -168,7 +168,7 @@ type t = {
   constrs: constructor_description EnvTbl.t;
   labels: label_description EnvTbl.t;
   types: (Path.t * (type_declaration * type_descriptions)) EnvTbl.t;
-  modules: (Path.t * module_type) EnvTbl.t;
+  modules: (Path.t * module_declaration) EnvTbl.t;
   modtypes: (Path.t * modtype_declaration) EnvTbl.t;
   components: (Path.t * module_components) EnvTbl.t;
   classes: (Path.t * class_declaration) EnvTbl.t;
@@ -263,6 +263,9 @@ let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
   ref ((fun env mty1 path1 mty2 -> assert false) :
           t -> module_type -> Path.t -> module_type -> unit)
+
+let md md_type =
+  {md_type; md_attributes=[]}
 
 (* The name of the compilation unit currently compiled.
    "" if outside a compilation unit. *)
@@ -463,9 +466,9 @@ let find_type_expansion_opt path env =
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =
-  match find_modtype path env with
-    Modtype_abstract     -> raise Not_found
-  | Modtype_manifest mty -> mty
+  match (find_modtype path env).mtd_type with
+  | None -> raise Not_found
+  | Some mty -> mty
 
 let find_module path env =
   match path with
@@ -476,7 +479,7 @@ let find_module path env =
       with Not_found ->
         if Ident.persistent id then
           let ps = find_pers_struct (Ident.name id) in
-          Mty_signature(ps.ps_sig)
+          md (Mty_signature(ps.ps_sig))
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
@@ -485,7 +488,7 @@ let find_module path env =
       with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
-          EnvLazy.force subst_modtype_maker data
+          md (EnvLazy.force subst_modtype_maker data)
       | Functor_comps f ->
           raise Not_found
       end
@@ -517,7 +520,7 @@ let rec lookup_module_descr lid env =
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
-      let (p2, mty2) = lookup_module l2 env in
+      let (p2, {md_type=mty2}) = lookup_module l2 env in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 p2 f.fcomp_arg;
@@ -526,12 +529,12 @@ let rec lookup_module_descr lid env =
           raise Not_found
       end
 
-and lookup_module lid env =
+and lookup_module lid env : Path.t * module_declaration =
   match lid with
     Lident s ->
       begin try
-        let (_, ty) as r = EnvTbl.find_name s env.modules in
-        begin match ty with
+        let (_, {md_type}) as r = EnvTbl.find_name s env.modules in
+        begin match md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
           raise Recmodule
@@ -541,26 +544,30 @@ and lookup_module lid env =
       with Not_found ->
         if s = !current_unit then raise Not_found;
         let ps = find_pers_struct s in
-        (Pident(Ident.create_persistent s), Mty_signature ps.ps_sig)
+        (Pident(Ident.create_persistent s),
+         md (Mty_signature ps.ps_sig)
+        )
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
       begin match EnvLazy.force !components_of_module_maker' descr with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
-          (Pdot(p, s, pos), EnvLazy.force subst_modtype_maker data)
+          (Pdot(p, s, pos), md (EnvLazy.force subst_modtype_maker data))
       | Functor_comps f ->
           raise Not_found
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
-      let (p2, mty2) = lookup_module l2 env in
+      let (p2, {md_type=mty2}) = lookup_module l2 env in
       let p = Papply(p1, p2) in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 p2 f.fcomp_arg;
-          (p, Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
-                            f.fcomp_res)
+          let mty =
+            Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
+              f.fcomp_res in
+          (p, md mty)
       | Structure_comps c ->
           raise Not_found
       end
@@ -1013,7 +1020,7 @@ let subst_signature sub sg =
       | Sig_exception(id, decl) ->
           Sig_exception (id, Subst.exception_declaration sub decl)
       | Sig_module(id, mty, x) ->
-          Sig_module(id, Subst.modtype sub mty,x)
+          Sig_module(id, Subst.module_declaration sub mty,x)
       | Sig_modtype(id, decl) ->
           Sig_modtype(id, Subst.modtype_declaration sub decl)
       | Sig_class(id, decl, x) ->
@@ -1111,14 +1118,15 @@ and components_of_module_maker (env, sub, path, mty) =
             c.comp_constrs <-
               add_to_tbl s (cstr, !pos) c.comp_constrs;
             incr pos
-        | Sig_module(id, mty, _) ->
+        | Sig_module(id, md, _) ->
+            let mty = md.md_type in
             let mty' = EnvLazy.create (sub, mty) in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
             let comps = components_of_module !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
-            env := store_module None id path mty !env !env;
+            env := store_module None id path md !env !env;
             incr pos
         | Sig_modtype(id, decl) ->
             let decl' = Subst.modtype_declaration sub decl in
@@ -1289,14 +1297,14 @@ and store_exception ~check slot id path decl env renv =
                          renv.constrs;
     summary = Env_exception(env.summary, id, decl) }
 
-and store_module slot id path mty env renv =
+and store_module slot id path md env renv =
   { env with
-    modules = EnvTbl.add "module" slot id (path, mty) env.modules renv.modules;
+    modules = EnvTbl.add "module" slot id (path, md) env.modules renv.modules;
     components =
       EnvTbl.add "module" slot id
-                 (path, components_of_module env Subst.identity path mty)
+                 (path, components_of_module env Subst.identity path md.md_type)
                    env.components renv.components;
-    summary = Env_module(env.summary, id, mty) }
+    summary = Env_module(env.summary, id, md) }
 
 and store_modtype slot id path info env renv =
   { env with
@@ -1350,8 +1358,8 @@ and add_extension ~check id ext env =
 and add_exception ~check id decl env =
   store_exception ~check None id (Pident id) decl env env
 
-and add_module id mty env =
-  store_module None id (Pident id) mty env env
+and add_module_declaration id md env =
+  store_module None id (Pident id) md env env
 
 and add_modtype id info env =
   store_modtype None id (Pident id) info env env
@@ -1361,6 +1369,9 @@ and add_class id ty env =
 
 and add_cltype id ty env =
   store_cltype None id (Pident id) ty env env
+
+let add_module id mty env =
+  add_module_declaration id (md mty) env
 
 let add_local_constraint id info elv env =
   match info with
@@ -1381,10 +1392,13 @@ let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_extension = enter (store_extension ~check:true)
 and enter_exception = enter (store_exception ~check:true)
-and enter_module = enter store_module
+and enter_module_declaration = enter store_module
 and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
+
+let enter_module s mty env =
+  enter_module_declaration s (md mty) env
 
 (* Insertion of all components of a signature *)
 
@@ -1394,7 +1408,7 @@ let add_item comp env =
   | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
   | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
   | Sig_exception(id, decl) -> add_exception ~check:false id decl env
-  | Sig_module(id, mty, _)  -> add_module id mty env
+  | Sig_module(id, md, _)  -> add_module_declaration id md env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
   | Sig_class(id, decl, _)  -> add_class id decl env
   | Sig_class_type(id, decl, _) -> add_cltype id decl env
@@ -1586,7 +1600,7 @@ let fold_modules f lid env acc =
               None -> acc
             | Some ps ->
               f name (Pident(Ident.create_persistent name))
-                     (Mty_signature ps.ps_sig) acc)
+                     (md (Mty_signature ps.ps_sig)) acc)
         persistent_structures
         acc
     | Some l ->
@@ -1596,7 +1610,7 @@ let fold_modules f lid env acc =
             Tbl.fold
               (fun s (data, pos) acc ->
                 f s (Pdot (p, s, pos))
-                    (EnvLazy.force subst_modtype_maker data) acc)
+                    (md (EnvLazy.force subst_modtype_maker data)) acc)
               c.comp_modules
               acc
         | Functor_comps _ ->

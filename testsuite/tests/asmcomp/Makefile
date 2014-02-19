@@ -34,6 +34,7 @@ OTHEROBJS=\
   $(OTOPDIR)/parsing/longident.cmo \
   $(OTOPDIR)/parsing/syntaxerr.cmo \
   $(OTOPDIR)/parsing/ast_helper.cmo \
+  $(OTOPDIR)/parsing/ast_mapper.cmo \
   $(OTOPDIR)/parsing/parser.cmo \
   $(OTOPDIR)/parsing/lexer.cmo \
   $(OTOPDIR)/parsing/parse.cmo \

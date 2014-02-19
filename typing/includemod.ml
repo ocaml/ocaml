@@ -302,7 +302,7 @@ and signature_components env cxt subst = function
   | (Sig_module(id1, mty1, _), Sig_module(id2, mty2, _), pos) :: rem ->
       let cc =
         modtypes env (Module id1::cxt) subst
-          (Mtype.strengthen env mty1 (Pident id1)) mty2 in
+          (Mtype.strengthen env mty1.md_type (Pident id1)) mty2.md_type in
       (pos, cc) :: signature_components env cxt subst rem
   | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
@@ -323,12 +323,12 @@ and modtype_infos env cxt subst id info1 info2 =
   let info2 = Subst.modtype_declaration subst info2 in
   let cxt' = Modtype id :: cxt in
   try
-    match (info1, info2) with
-      (Modtype_abstract, Modtype_abstract) -> ()
-    | (Modtype_manifest mty1, Modtype_abstract) -> ()
-    | (Modtype_manifest mty1, Modtype_manifest mty2) ->
+    match (info1.mtd_type, info2.mtd_type) with
+      (None, None) -> ()
+    | (Some mty1, None) -> ()
+    | (Some mty1, Some mty2) ->
         check_modtype_equiv env cxt' mty1 mty2
-    | (Modtype_abstract, Modtype_manifest mty2) ->
+    | (None, Some mty2) ->
         check_modtype_equiv env cxt' (Mty_ident(Pident id)) mty2
   with Error reasons ->
     raise(Error((cxt, env, Modtype_infos(id, info1, info2)) :: reasons))

@@ -286,7 +286,7 @@ let extract_concrete_variant env ty =
 let extract_label_names sexp env ty =
   try
     let (_, _,fields) = extract_concrete_record env ty in
-    List.map (fun (name, _, _) -> name) fields
+    List.map (fun l -> l.Types.ld_id) fields
   with Not_found ->
     assert false
 
@@ -969,14 +969,16 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_env = !env }
   | Ppat_interval (Const_char c1, Const_char c2) ->
       let open Ast_helper.Pat in
+      let gloc = {loc with Location.loc_ghost=true} in
       let rec loop c1 c2 =
-        if c1 = c2 then constant ~loc (Const_char c1)
+        if c1 = c2 then constant ~loc:gloc (Const_char c1)
         else
-          or_ ~loc
-            (constant ~loc (Const_char c1))
+          or_ ~loc:gloc
+            (constant ~loc:gloc (Const_char c1))
             (loop (Char.chr(Char.code c1 + 1)) c2)
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
+      let p = {p with ppat_loc=loc} in
       type_pat p expected_ty (* TODO: record 'extra' to remember about interval *)
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
@@ -1014,6 +1016,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
           (Constructor.disambiguate lid !env opath ~check_lk) constrs
       in
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
+      Typetexp.check_deprecated loc constr.cstr_attributes constr.cstr_name;
       if no_existentials && constr.cstr_existentials <> [] then
         raise (Error (loc, !env, Unexpected_existential));
       (* if constructor is gadt, we must verify that the expected type has the
@@ -1231,7 +1234,9 @@ let add_pattern_variables ?check ?check_as env =
      (fun (id, ty, name, loc, as_var) env ->
        let check = if as_var then check_as else check in
        Env.add_value ?check id
-         {val_type = ty; val_kind = Val_reg; Types.val_loc = loc} env
+         {val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
+          val_attributes = [];
+         } env
      )
      pv env,
    get_ref module_variables)
@@ -1273,6 +1278,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
          ((id', name, id, ty)::pv,
           Env.add_value id' {val_type = ty;
                              val_kind = Val_ivar (Immutable, cl_num);
+                             val_attributes = [];
                              Types.val_loc = loc;
                             } ~check
             env))
@@ -1300,16 +1306,19 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
       (fun (id, ty, name, loc, as_var) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty;
                             val_kind = Val_unbound;
+                            val_attributes = [];
                             Types.val_loc = loc;
                            } val_env,
           Env.add_value id {val_type = ty;
                             val_kind = Val_self (meths, vars, cl_num, privty);
+                            val_attributes = [];
                             Types.val_loc = loc;
                            }
             ~check:(fun s -> if as_var then Warnings.Unused_var s
                              else Warnings.Unused_var_strict s)
             met_env,
           Env.add_value id {val_type = ty; val_kind = Val_unbound;
+                            val_attributes = [];
                             Types.val_loc = loc;
                            } par_env))
       pv (val_env, met_env, par_env)
@@ -1373,7 +1382,7 @@ let rec is_nonexpansive exp =
       true
   (* Note: nonexpansive only means no _observable_ side effects *)
   | Texp_lazy e -> is_nonexpansive e
-  | Texp_object ({cstr_fields=fields; cstr_type = { cty_vars=vars}}, _) ->
+  | Texp_object ({cstr_fields=fields; cstr_type = { csig_vars=vars}}, _) ->
       let count = ref 0 in
       List.for_all
         (fun field -> match field.cf_desc with
@@ -2308,6 +2317,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       let high = type_expect env shigh Predef.type_int in
       let (id, new_env) =
         Env.enter_value param.txt {val_type = instance_def Predef.type_int;
+          val_attributes = [];
           val_kind = Val_reg; Types.val_loc = loc; } env
           ~check:(fun s -> Warnings.Unused_for_index s)
       in
@@ -2466,6 +2476,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                                 Texp_ident(Path.Pident method_id, lid,
                                            {val_type = method_type;
                                             val_kind = Val_reg;
+                                            val_attributes = [];
                                             Types.val_loc = Location.none});
                                 exp_loc = loc; exp_extra = [];
                                 exp_type = method_type;
@@ -2524,7 +2535,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       end
   | Pexp_new cl ->
       let (cl_path, cl_decl) = Typetexp.find_class env loc cl.txt in
-        begin match cl_decl.cty_new with
+      begin match cl_decl.cty_new with
           None ->
             raise(Error(loc, env, Virtual_class cl.txt))
         | Some ty ->
@@ -2659,7 +2670,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       rue {
         exp_desc = Texp_object (desc, (*sign,*) meths);
         exp_loc = loc; exp_extra = [];
-        exp_type = sign.cty_self;
+        exp_type = sign.csig_self;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
@@ -2719,6 +2730,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         type_variance = [];
         type_newtype_level = Some (level, level);
         type_loc = loc;
+        type_attributes = [];
       }
       in
       Ident.set_current_time ty.level;
@@ -2958,6 +2970,7 @@ and type_argument env sarg ty_expected' ty_expected =
          exp_desc =
          Texp_ident(Path.Pident id, mknoloc (Longident.Lident name),
                     {val_type = ty; val_kind = Val_reg;
+                     val_attributes = [];
                      Types.val_loc = Location.none})}
       in
       let eta_pat, eta_var = var_pair "eta" ty_arg in
@@ -3185,6 +3198,7 @@ and type_construct env loc lid sarg ty_expected attrs =
     wrap_disambiguate "This variant expression is expected to have" ty_expected
       (Constructor.disambiguate lid env opath) constrs in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) constr;
+  Typetexp.check_deprecated loc constr.cstr_attributes constr.cstr_name;
   let sargs =
     match sarg with
       None -> []

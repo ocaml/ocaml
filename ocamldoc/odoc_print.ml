@@ -84,11 +84,11 @@ let simpl_class_type t =
         (* on vire les vals et methods pour ne pas qu'elles soient imprimees
            quand on affichera le type *)
         let tnil = { Types.desc = Types.Tnil ; Types.level = 0; Types.id = 0 } in
-        Types.Cty_signature { Types.cty_self = { cs.Types.cty_self with
+        Types.Cty_signature { Types.csig_self = { cs.Types.csig_self with
                                                   Types.desc = Types.Tobject (tnil, ref None) };
-                               Types.cty_vars = Types.Vars.empty ;
-                               Types.cty_concr = Types.Concr.empty ;
-                               Types.cty_inher = []
+                              csig_vars = Types.Vars.empty ;
+                              csig_concr = Types.Concr.empty ;
+                              csig_inher = []
                              }
     | Types.Cty_arrow (l, texp, ct) ->
         let new_ct = iter ct in

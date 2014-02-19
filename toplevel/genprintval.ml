@@ -245,10 +245,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
-                    let (constr_name, constr_args,ret_type) =
+                    let {cd_id;cd_args;cd_res} =
                       Datarepr.find_constr_by_tag tag constr_list in
                     let type_params =
-                      match ret_type with
+                      match cd_res with
                         Some t ->
                           begin match (Ctype.repr t).desc with
                             Tconstr (_,params,_) ->
@@ -261,23 +261,23 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         (function ty ->
                            try Ctype.apply env type_params ty ty_list with
                              Ctype.Cannot_apply -> abstract_type)
-                        constr_args in
+                        cd_args in
                     tree_of_constr_with_args (tree_of_constr env path)
-                                 (Ident.name constr_name) 0 depth obj ty_args
+                                 (Ident.name cd_id) 0 depth obj ty_args
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x
                     | None ->
                         let rec tree_of_fields pos = function
                           | [] -> []
-                          | (lbl_name, _, lbl_arg) :: remainder ->
+                          | {ld_id; ld_type} :: remainder ->
                               let ty_arg =
                                 try
-                                  Ctype.apply env decl.type_params lbl_arg
+                                  Ctype.apply env decl.type_params ld_type
                                     ty_list
                                 with
                                   Ctype.Cannot_apply -> abstract_type in
-                              let name = Ident.name lbl_name in
+                              let name = Ident.name ld_id in
                               (* PR#5722: print full module path only
                                  for first record field *)
                               let lid =

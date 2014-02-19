@@ -345,12 +345,12 @@ let unmark_type_decl decl =
     Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter
-        (fun (c, tl, ret_type_opt) ->
-          List.iter unmark_type tl;
-          Misc.may unmark_type ret_type_opt)
+        (fun d ->
+          List.iter unmark_type d.cd_args;
+          Misc.may unmark_type d.cd_res)
         cstrs
   | Type_record(lbls, rep) ->
-      List.iter (fun (c, mut, t) -> unmark_type t) lbls
+      List.iter (fun d -> unmark_type d.ld_type) lbls
   | Type_open -> ()
   end;
   begin match decl.type_manifest with
@@ -359,8 +359,8 @@ let unmark_type_decl decl =
   end
 
 let unmark_class_signature sign =
-  unmark_type sign.cty_self;
-  Vars.iter (fun l (m, v, t) -> unmark_type t) sign.cty_vars
+  unmark_type sign.csig_self;
+  Vars.iter (fun l (m, v, t) -> unmark_type t) sign.csig_vars
 
 let rec unmark_class_type =
   function

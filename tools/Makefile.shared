@@ -211,6 +211,7 @@ READ_CMT= \
           ../parsing/lexer.cmo \
           ../parsing/pprintast.cmo \
           ../parsing/ast_helper.cmo \
+          ../parsing/ast_mapper.cmo \
           ../typing/ident.cmo \
           ../typing/path.cmo \
           ../typing/types.cmo \

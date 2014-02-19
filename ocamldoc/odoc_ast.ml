@@ -956,18 +956,18 @@ module Analyser =
         let f = match ele with
           Element_module m ->
             (function
-                Types.Sig_module (ident,t,_) ->
+                Types.Sig_module (ident,md,_) ->
                   let n1 = Name.simple m.m_name
                   and n2 = Ident.name ident in
                   (
                    match n1 = n2 with
-                     true -> filter_module_with_module_type_constraint m t; true
+                     true -> filter_module_with_module_type_constraint m md.md_type; true
                    | false -> false
                   )
               | _ -> false)
         | Element_module_type mt ->
             (function
-                Types.Sig_modtype (ident,Types.Modtype_manifest t) ->
+                Types.Sig_modtype (ident,{Types.mtd_type=Some t}) ->
                   let n1 = Name.simple mt.mt_name
                   and n2 = Ident.name ident in
                   (

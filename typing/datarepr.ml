@@ -42,46 +42,48 @@ let free_vars ty =
 let constructor_descrs ty_res cstrs priv =
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
-    (fun (name, args, ret) ->
-      if args = [] then incr num_consts else incr num_nonconsts;
-      if ret = None then incr num_normal)
+    (fun {cd_args; cd_res; _} ->
+      if cd_args = [] then incr num_consts else incr num_nonconsts;
+      if cd_res = None then incr num_normal)
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
-    | (id, ty_args, ty_res_opt) :: rem ->
+    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes} :: rem ->
         let ty_res =
-          match ty_res_opt with
+          match cd_res with
           | Some ty_res' -> ty_res'
           | None -> ty_res
         in
         let (tag, descr_rem) =
-          match ty_args with
+          match cd_args with
             [] -> (Cstr_constant idx_const,
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
         let existentials =
-          match ty_res_opt with
+          match cd_res with
           | None -> []
           | Some type_ret ->
               let res_vars = free_vars type_ret in
-              let arg_vars = free_vars (newgenty (Ttuple ty_args)) in
+              let arg_vars = free_vars (newgenty (Ttuple cd_args)) in
               TypeSet.elements (TypeSet.diff arg_vars res_vars)
         in
         let cstr =
-          { cstr_name = Ident.name id;
+          { cstr_name = Ident.name cd_id;
             cstr_res = ty_res;
             cstr_existentials = existentials;
-            cstr_args = ty_args;
-            cstr_arity = List.length ty_args;
+            cstr_args = cd_args;
+            cstr_arity = List.length cd_args;
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
             cstr_normal = !num_normal;
             cstr_private = priv;
-            cstr_generalized = ty_res_opt <> None
+            cstr_generalized = cd_res <> None;
+            cstr_loc = cd_loc;
+            cstr_attributes = cd_attributes;
           } in
-        (id, cstr) :: descr_rem in
+        (cd_id, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
 
 let exception_descr path_exc decl =
@@ -95,7 +97,10 @@ let exception_descr path_exc decl =
     cstr_nonconsts = -1;
     cstr_private = Public;
     cstr_normal = -1;
-    cstr_generalized = false }
+    cstr_generalized = false;
+    cstr_loc = decl.exn_loc;
+    cstr_attributes = decl.exn_attributes;
+  }
 
 let extension_descr path_ext ext =
   let ty_res =
@@ -127,31 +132,40 @@ let extension_descr path_ext ext =
       cstr_nonconsts = -1;
       cstr_private = ext.ext_private;
       cstr_normal = -1;
-      cstr_generalized = ext.ext_ret_type <> None }
+      cstr_generalized = ext.ext_ret_type <> None;
+      cstr_loc = ext.ext_loc;
+      cstr_attributes = ext.ext_attributes;
+    }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
     lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
-    lbl_private = Public }
+    lbl_private = Public;
+    lbl_loc = Location.none;
+    lbl_attributes = [];
+  }
 
 let label_descrs ty_res lbls repres priv =
   let all_labels = Array.create (List.length lbls) dummy_label in
   let rec describe_labels num = function
       [] -> []
-    | (id, mut_flag, ty_arg) :: rest ->
+    | l :: rest ->
         let lbl =
-          { lbl_name = Ident.name id;
+          { lbl_name = Ident.name l.ld_id;
             lbl_res = ty_res;
-            lbl_arg = ty_arg;
-            lbl_mut = mut_flag;
+            lbl_arg = l.ld_type;
+            lbl_mut = l.ld_mutable;
             lbl_pos = num;
             lbl_all = all_labels;
             lbl_repres = repres;
-            lbl_private = priv } in
+            lbl_private = priv;
+            lbl_loc = l.ld_loc;
+            lbl_attributes = l.ld_attributes;
+          } in
         all_labels.(num) <- lbl;
-        (id, lbl) :: describe_labels (num+1) rest in
+        (l.ld_id, lbl) :: describe_labels (num+1) rest in
   describe_labels 0 lbls
 
 exception Constr_not_found
@@ -159,13 +173,13 @@ exception Constr_not_found
 let rec find_constr tag num_const num_nonconst = function
     [] ->
       raise Constr_not_found
-  | (name, ([] as cstr),(_ as ret_type_opt)) :: rem ->
+  | {cd_args = []; _} as c  :: rem ->
       if tag = Cstr_constant num_const
-      then (name,cstr,ret_type_opt)
+      then c
       else find_constr tag (num_const + 1) num_nonconst rem
-  | (name, (_ as cstr),(_ as ret_type_opt)) :: rem ->
+  | c :: rem ->
       if tag = Cstr_block num_nonconst
-      then (name,cstr,ret_type_opt)
+      then c
       else find_constr tag num_const (num_nonconst + 1) rem
 
 let find_constr_by_tag tag cstrlist =

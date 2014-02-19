@@ -398,7 +398,7 @@ let rec signature_of_class_type =
   | Cty_arrow (_, ty, cty)   -> signature_of_class_type cty
 
 let self_type cty =
-  repr (signature_of_class_type cty).cty_self
+  repr (signature_of_class_type cty).csig_self
 
 let rec class_type_arity =
   function
@@ -547,14 +547,13 @@ let closed_type_decl decl =
         ()
     | Type_variant v ->
         List.iter
-          (fun (_, tyl,ret_type_opt) ->
-            match ret_type_opt with
+          (fun {cd_args; cd_res; _} ->
+            match cd_res with
             | Some _ -> ()
-            | None ->
-                List.iter closed_type tyl)
+            | None -> List.iter closed_type cd_args)
           v
     | Type_record(r, rep) ->
-        List.iter (fun (_, _, ty) -> closed_type ty) r
+        List.iter (fun l -> closed_type l.ld_type) r
     | Type_open -> ()
     end;
     begin match decl.type_manifest with
@@ -574,7 +573,7 @@ type closed_class_failure =
 exception Failure of closed_class_failure
 
 let closed_class params sign =
-  let ty = object_fields (repr sign.cty_self) in
+  let ty = object_fields (repr sign.csig_self) in
   let (fields, rest) = flatten_fields ty in
   List.iter mark_type params;
   mark_type rest;
@@ -582,19 +581,19 @@ let closed_class params sign =
     (fun (lab, _, ty) -> if lab = dummy_method then mark_type ty)
     fields;
   try
-    mark_type_node (repr sign.cty_self);
+    mark_type_node (repr sign.csig_self);
     List.iter
       (fun (lab, kind, ty) ->
         if field_kind_repr kind = Fpresent then
         try closed_type ty with Non_closed (ty0, real) ->
           raise (Failure (CC_Method (ty0, real, lab, ty))))
       fields;
-    mark_type_params (repr sign.cty_self);
+    mark_type_params (repr sign.csig_self);
     List.iter unmark_type params;
     unmark_class_signature sign;
     None
   with Failure reason ->
-    mark_type_params (repr sign.cty_self);
+    mark_type_params (repr sign.csig_self);
     List.iter unmark_type params;
     unmark_class_signature sign;
     Some reason
@@ -1106,6 +1105,7 @@ let new_declaration newtype manifest =
     type_variance = [];
     type_newtype_level = newtype;
     type_loc = Location.none;
+    type_attributes = [];
   }
 
 let instance_constructor ?in_pattern cstr =
@@ -1155,11 +1155,19 @@ let instance_declaration decl =
      | Type_abstract -> Type_abstract
      | Type_variant cl ->
          Type_variant (
-         List.map (fun (s,tl,ot) -> (s, List.map copy tl, may_map copy ot))
-           cl)
+           List.map
+             (fun c ->
+                {c with cd_args=List.map copy c.cd_args;
+                        cd_res=may_map copy c.cd_res})
+             cl)
      | Type_record (fl, rr) ->
-         Type_record (List.map (fun (s,m,ty) -> (s, m, copy ty)) fl, rr)
-     | Type_open -> Type_open}
+         Type_record (
+           List.map
+             (fun l ->
+                {l with ld_type = copy l.ld_type}
+             ) fl, rr)
+     | Type_open -> Type_open
+    }
   in
   cleanup_types ();
   decl
@@ -1171,12 +1179,12 @@ let instance_class params cty =
         Cty_constr (path, List.map copy tyl, copy_class_type cty)
     | Cty_signature sign ->
         Cty_signature
-          {cty_self = copy sign.cty_self;
-           cty_vars =
-             Vars.map (function (m, v, ty) -> (m, v, copy ty)) sign.cty_vars;
-           cty_concr = sign.cty_concr;
-           cty_inher =
-             List.map (fun (p,tl) -> (p, List.map copy tl)) sign.cty_inher}
+          {csig_self = copy sign.csig_self;
+           csig_vars =
+             Vars.map (function (m, v, ty) -> (m, v, copy ty)) sign.csig_vars;
+           csig_concr = sign.csig_concr;
+           csig_inher =
+             List.map (fun (p,tl) -> (p, List.map copy tl)) sign.csig_inher}
     | Cty_arrow (l, ty, cty) ->
         Cty_arrow (l, copy ty, copy_class_type cty)
   in
@@ -2102,10 +2110,10 @@ and mcomp_type_option type_pairs env t t' =
 and mcomp_variant_description type_pairs env xs ys =
   let rec iter = fun x y ->
     match x, y with
-    (id, tl, t) :: xs, (id', tl', t') :: ys   ->
-      mcomp_type_option type_pairs env t t';
-      mcomp_list type_pairs env tl tl';
-      if Ident.name id = Ident.name id'
+    | c1 :: xs, c2 :: ys   ->
+      mcomp_type_option type_pairs env c1.cd_res c2.cd_res;
+      mcomp_list type_pairs env c1.cd_args c2.cd_args;
+     if Ident.name c1.cd_id = Ident.name c2.cd_id
       then iter xs ys
       else raise (Unify [])
     | [],[] -> ()
@@ -2114,11 +2122,12 @@ and mcomp_variant_description type_pairs env xs ys =
   iter xs ys
 
 and mcomp_record_description type_pairs env =
-  let rec iter = fun x y ->
+  let rec iter x y =
     match x, y with
-      (id, mutable_flag, t) :: xs, (id', mutable_flag', t') :: ys ->
-        mcomp type_pairs env t t';
-        if Ident.name id = Ident.name id' && mutable_flag = mutable_flag'
+    | l1 :: xs, l2 :: ys ->
+        mcomp type_pairs env l1.ld_type l2.ld_type;
+        if Ident.name l1.ld_id = Ident.name l2.ld_id &&
+           l1.ld_mutable = l2.ld_mutable
         then iter xs ys
         else raise (Unify [])
     | [], [] -> ()
@@ -3239,8 +3248,8 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
         end;
         moregen_clty false type_pairs env cty1' cty2'
     | Cty_signature sign1, Cty_signature sign2 ->
-        let ty1 = object_fields (repr sign1.cty_self) in
-        let ty2 = object_fields (repr sign2.cty_self) in
+        let ty1 = object_fields (repr sign1.csig_self) in
+        let ty2 = object_fields (repr sign2.csig_self) in
         let (fields1, rest1) = flatten_fields ty1
         and (fields2, rest2) = flatten_fields ty2 in
         let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -3253,11 +3262,11 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
         pairs;
       Vars.iter
         (fun lab (mut, v, ty) ->
-           let (mut', v', ty') = Vars.find lab sign1.cty_vars in
+           let (mut', v', ty') = Vars.find lab sign1.csig_vars in
            try moregen true type_pairs env ty' ty with Unify trace ->
              raise (Failure [CM_Val_type_mismatch
                                 (lab, env, expand_trace env trace)]))
-        sign2.cty_vars
+        sign2.csig_vars
   | _ ->
       raise (Failure [])
   with
@@ -3282,8 +3291,8 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
   let res =
     let sign1 = signature_of_class_type patt in
     let sign2 = signature_of_class_type subj in
-    let t1 = repr sign1.cty_self in
-    let t2 = repr sign2.cty_self in
+    let t1 = repr sign1.csig_self in
+    let t2 = repr sign2.csig_self in
     TypePairs.add type_pairs (t1, t2) ();
     let (fields1, rest1) = flatten_fields (object_fields t1)
     and (fields2, rest2) = flatten_fields (object_fields t2) in
@@ -3298,7 +3307,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
              | _      -> CM_Hide_public lab::err
              end
            in
-           if Concr.mem lab sign1.cty_concr then err
+           if Concr.mem lab sign1.csig_concr then err
            else CM_Hide_virtual ("method", lab) :: err)
         miss1 []
     in
@@ -3319,7 +3328,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
       Vars.fold
         (fun lab (mut, vr, ty) err ->
           try
-            let (mut', vr', ty') = Vars.find lab sign1.cty_vars in
+            let (mut', vr', ty') = Vars.find lab sign1.csig_vars in
             if mut = Mutable && mut' <> Mutable then
               CM_Non_mutable_value lab::err
             else if vr = Concrete && vr' <> Concrete then
@@ -3328,21 +3337,21 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
               err
           with Not_found ->
             CM_Missing_value lab::err)
-        sign2.cty_vars error
+        sign2.csig_vars error
     in
     let error =
       Vars.fold
         (fun lab (_,vr,_) err ->
-          if vr = Virtual && not (Vars.mem lab sign2.cty_vars) then
+          if vr = Virtual && not (Vars.mem lab sign2.csig_vars) then
             CM_Hide_virtual ("instance variable", lab) :: err
           else err)
-        sign1.cty_vars error
+        sign1.csig_vars error
     in
     let error =
       List.fold_right
         (fun e l ->
            if List.mem e missing_method then l else CM_Virtual_method e::l)
-        (Concr.elements (Concr.diff sign2.cty_concr sign1.cty_concr))
+        (Concr.elements (Concr.diff sign2.csig_concr sign1.csig_concr))
         error
     in
     match error with
@@ -3374,8 +3383,8 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
         end;
         equal_clty false type_pairs subst env cty1' cty2'
     | Cty_signature sign1, Cty_signature sign2 ->
-        let ty1 = object_fields (repr sign1.cty_self) in
-        let ty2 = object_fields (repr sign2.cty_self) in
+        let ty1 = object_fields (repr sign1.csig_self) in
+        let ty2 = object_fields (repr sign2.csig_self) in
         let (fields1, rest1) = flatten_fields ty1
         and (fields2, rest2) = flatten_fields ty2 in
         let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -3389,11 +3398,11 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
           pairs;
         Vars.iter
           (fun lab (_, _, ty) ->
-             let (_, _, ty') = Vars.find lab sign1.cty_vars in
+             let (_, _, ty') = Vars.find lab sign1.csig_vars in
              try eqtype true type_pairs subst env ty' ty with Unify trace ->
                raise (Failure [CM_Val_type_mismatch
                                   (lab, env, expand_trace env trace)]))
-          sign2.cty_vars
+          sign2.csig_vars
     | _ ->
         raise
           (Failure (if trace then []
@@ -3407,8 +3416,8 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
   let subst = ref [] in
   let sign1 = signature_of_class_type patt_type in
   let sign2 = signature_of_class_type subj_type in
-  let t1 = repr sign1.cty_self in
-  let t2 = repr sign2.cty_self in
+  let t1 = repr sign1.csig_self in
+  let t2 = repr sign2.csig_self in
   TypePairs.add type_pairs (t1, t2) ();
   let (fields1, rest1) = flatten_fields (object_fields t1)
   and (fields2, rest2) = flatten_fields (object_fields t2) in
@@ -3423,7 +3432,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
           | _      -> CM_Hide_public lab::err
           end
         in
-        if Concr.mem lab sign1.cty_concr then err
+        if Concr.mem lab sign1.csig_concr then err
         else CM_Hide_virtual ("method", lab) :: err)
       miss1 []
   in
@@ -3450,7 +3459,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
     Vars.fold
       (fun lab (mut, vr, ty) err ->
          try
-           let (mut', vr', ty') = Vars.find lab sign1.cty_vars in
+           let (mut', vr', ty') = Vars.find lab sign1.csig_vars in
            if mut = Mutable && mut' <> Mutable then
              CM_Non_mutable_value lab::err
            else if vr = Concrete && vr' <> Concrete then
@@ -3459,21 +3468,21 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
              err
          with Not_found ->
            CM_Missing_value lab::err)
-      sign2.cty_vars error
+      sign2.csig_vars error
   in
   let error =
     Vars.fold
       (fun lab (_,vr,_) err ->
-        if vr = Virtual && not (Vars.mem lab sign2.cty_vars) then
+        if vr = Virtual && not (Vars.mem lab sign2.csig_vars) then
           CM_Hide_virtual ("instance variable", lab) :: err
         else err)
-      sign1.cty_vars error
+      sign1.csig_vars error
   in
   let error =
     List.fold_right
       (fun e l ->
         if List.mem e missing_method then l else CM_Virtual_method e::l)
-      (Concr.elements (Concr.diff sign2.cty_concr sign1.cty_concr))
+      (Concr.elements (Concr.diff sign2.csig_concr sign1.csig_concr))
       error
   in
   match error with
@@ -4157,16 +4166,19 @@ let nondep_type_decl env mid id is_covariant decl =
       | Type_variant cstrs ->
           Type_variant
             (List.map
-               (fun (c, tl,ret_type_opt) ->
-                 let ret_type_opt =
-                   may_map (nondep_type_rec env mid) ret_type_opt
-                 in
-                 (c, List.map (nondep_type_rec env mid) tl,ret_type_opt))
+               (fun c ->
+                 {c with
+                  cd_args = List.map (nondep_type_rec env mid) c.cd_args;
+                  cd_res = may_map (nondep_type_rec env mid) c.cd_res;
+                 }
+               )
                cstrs)
       | Type_record(lbls, rep) ->
           Type_record
             (List.map
-               (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
+               (fun l ->
+                  {l with ld_type = nondep_type_rec env mid l.ld_type}
+               )
                lbls,
              rep)
       | Type_open ->
@@ -4194,6 +4206,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_variance = decl.type_variance;
       type_newtype_level = None;
       type_loc = decl.type_loc;
+      type_attributes = decl.type_attributes;
     }
   with Not_found ->
     clear_hash ();
@@ -4236,14 +4249,14 @@ let nondep_extension_constructor env mid ext =
 
 (* Preserve sharing inside class types. *)
 let nondep_class_signature env id sign =
-  { cty_self = nondep_type_rec env id sign.cty_self;
-    cty_vars =
+  { csig_self = nondep_type_rec env id sign.csig_self;
+    csig_vars =
       Vars.map (function (m, v, t) -> (m, v, nondep_type_rec env id t))
-        sign.cty_vars;
-    cty_concr = sign.cty_concr;
-    cty_inher =
+        sign.csig_vars;
+    csig_concr = sign.csig_concr;
+    csig_inher =
       List.map (fun (p,tl) -> (p, List.map (nondep_type_rec env id) tl))
-        sign.cty_inher }
+        sign.csig_inher }
 
 let rec nondep_class_type env id =
   function
@@ -4268,7 +4281,10 @@ let nondep_class_declaration env id decl =
         begin match decl.cty_new with
           None    -> None
         | Some ty -> Some (nondep_type_rec env id ty)
-        end }
+        end;
+      cty_loc = decl.cty_loc;
+      cty_attributes = decl.cty_attributes;
+    }
   in
   clear_hash ();
   decl
@@ -4279,7 +4295,10 @@ let nondep_cltype_declaration env id decl =
     { clty_params = List.map (nondep_type_rec env id) decl.clty_params;
       clty_variance = decl.clty_variance;
       clty_type = nondep_class_type env id decl.clty_type;
-      clty_path = decl.clty_path }
+      clty_path = decl.clty_path;
+      clty_loc = decl.clty_loc;
+      clty_attributes = decl.clty_attributes;
+    }
   in
   clear_hash ();
   decl

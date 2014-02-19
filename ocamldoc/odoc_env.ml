@@ -56,19 +56,19 @@ let rec add_signature env root ?rel signat =
     | Types.Sig_type (ident,_,_) -> { env with env_types = (rel_name ident, qualify ident) :: env.env_types }
     | Types.Sig_typext (ident, _, _) -> { env with env_extensions = (rel_name ident, qualify ident) :: env.env_extensions }
     | Types.Sig_exception (ident, _) -> { env with env_exceptions = (rel_name ident, qualify ident) :: env.env_exceptions }
-    | Types.Sig_module (ident, modtype, _) ->
+    | Types.Sig_module (ident, md, _) ->
         let env2 =
-          match modtype with (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
+          match md.Types.md_type with (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
             Types.Mty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
           |  _ -> env
         in
         { env2 with env_modules = (rel_name ident, qualify ident) :: env2.env_modules }
     | Types.Sig_modtype (ident, modtype_decl) ->
         let env2 =
-          match modtype_decl with
-            Types.Modtype_abstract ->
+          match modtype_decl.Types.mtd_type with
+            None ->
               env
-          | Types.Modtype_manifest modtype ->
+          | Some modtype ->
               match modtype with
                  (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
                 Types.Mty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s

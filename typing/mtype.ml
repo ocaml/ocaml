@@ -63,17 +63,19 @@ and strengthen_sig env sg p =
       sigelt :: strengthen_sig env rem p
   | (Sig_exception(id, d) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
-  | Sig_module(id, mty, rs) :: rem ->
-      Sig_module(id, strengthen env mty (Pdot(p, Ident.name id, nopos)), rs)
-      :: strengthen_sig (Env.add_module id mty env) rem p
+  | Sig_module(id, md, rs) :: rem ->
+      let str = strengthen_decl env md (Pdot(p, Ident.name id, nopos)) in
+      Sig_module(id, str, rs)
+      :: strengthen_sig (Env.add_module_declaration id md env) rem p
       (* Need to add the module in case it defines manifest module types *)
   | Sig_modtype(id, decl) :: rem ->
       let newdecl =
-        match decl with
-          Modtype_abstract ->
-            Modtype_manifest(Mty_ident(Pdot(p, Ident.name id, nopos)))
-        | Modtype_manifest _ ->
-            decl in
+        match decl.mtd_type with
+          None ->
+            {decl with mtd_type = Some(Mty_ident(Pdot(p, Ident.name id, nopos)))}
+        | Some _ ->
+            decl
+      in
       Sig_modtype(id, newdecl) ::
       strengthen_sig (Env.add_modtype id decl env) rem p
       (* Need to add the module type in case it is manifest *)
@@ -81,6 +83,10 @@ and strengthen_sig env sg p =
       sigelt :: strengthen_sig env rem p
   | (Sig_class_type(id, decl, rs) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
+
+and strengthen_decl env md p =
+  {md with md_type = strengthen env md.md_type p}
+
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
@@ -110,10 +116,9 @@ let nondep_supertype env mid mty =
       let rem' = nondep_sig env va rem in
       match item with
         Sig_value(id, d) ->
-          Sig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
-                          val_kind = d.val_kind;
-                          val_loc = d.val_loc;
-                        }) :: rem'
+          Sig_value(id,
+                    {d with val_type = Ctype.nondep_type env mid d.val_type})
+          :: rem'
       | Sig_type(id, d, rs) ->
           Sig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
           :: rem'
@@ -121,17 +126,21 @@ let nondep_supertype env mid mty =
           Sig_typext(id, Ctype.nondep_extension_constructor env mid ext, es)
           :: rem'
       | Sig_exception(id, d) ->
-          let d = {exn_args = List.map (Ctype.nondep_type env mid) d.exn_args;
-                   exn_loc = d.exn_loc} in
+          let d =
+            {d with
+             exn_args = List.map (Ctype.nondep_type env mid) d.exn_args
+            }
+          in
           Sig_exception(id, d) :: rem'
-      | Sig_module(id, mty, rs) ->
-          Sig_module(id, nondep_mty env va mty, rs) :: rem'
+      | Sig_module(id, md, rs) ->
+          Sig_module(id, {md with md_type=nondep_mty env va md.md_type}, rs)
+          :: rem'
       | Sig_modtype(id, d) ->
           begin try
             Sig_modtype(id, nondep_modtype_decl env d) :: rem'
           with Not_found ->
             match va with
-              Co -> Sig_modtype(id, Modtype_abstract) :: rem'
+              Co -> Sig_modtype(id, {mtd_type=None; mtd_attributes=[]}) :: rem'
             | _  -> raise Not_found
           end
       | Sig_class(id, d, rs) ->
@@ -141,9 +150,8 @@ let nondep_supertype env mid mty =
           Sig_class_type(id, Ctype.nondep_cltype_declaration env mid d, rs)
           :: rem'
 
-  and nondep_modtype_decl env = function
-      Modtype_abstract -> Modtype_abstract
-    | Modtype_manifest mty -> Modtype_manifest(nondep_mty env Strict mty)
+  and nondep_modtype_decl env mtd =
+    {mtd with mtd_type = Misc.may_map (nondep_mty env Strict) mtd.mtd_type}
 
   in
     nondep_mty env Co mty
@@ -172,9 +180,12 @@ and enrich_item env p = function
     Sig_type(id, decl, rs) ->
       Sig_type(id,
                 enrich_typedecl env (Pdot(p, Ident.name id, nopos)) decl, rs)
-  | Sig_module(id, mty, rs) ->
+  | Sig_module(id, md, rs) ->
       Sig_module(id,
-                  enrich_modtype env (Pdot(p, Ident.name id, nopos)) mty, rs)
+                  {md with
+                   md_type = enrich_modtype env
+                       (Pdot(p, Ident.name id, nopos)) md.md_type},
+                 rs)
   | item -> item
 
 let rec type_paths env p mty =
@@ -191,9 +202,9 @@ and type_paths_sig env p pos sg =
       type_paths_sig env p pos' rem
   | Sig_type(id, decl, _) :: rem ->
       Pdot(p, Ident.name id, nopos) :: type_paths_sig env p pos rem
-  | Sig_module(id, mty, _) :: rem ->
-      type_paths env (Pdot(p, Ident.name id, pos)) mty @
-      type_paths_sig (Env.add_module id mty env) p (pos+1) rem
+  | Sig_module(id, md, _) :: rem ->
+      type_paths env (Pdot(p, Ident.name id, pos)) md.md_type @
+      type_paths_sig (Env.add_module_declaration id md env) p (pos+1) rem
   | Sig_modtype(id, decl) :: rem ->
       type_paths_sig (Env.add_modtype id decl env) p pos rem
   | (Sig_typext _ | Sig_exception _ | Sig_class _) :: rem ->
@@ -215,9 +226,9 @@ and no_code_needed_sig env sg =
       | Val_prim _ -> no_code_needed_sig env rem
       | _ -> false
       end
-  | Sig_module(id, mty, _) :: rem ->
-      no_code_needed env mty &&
-      no_code_needed_sig (Env.add_module id mty env) rem
+  | Sig_module(id, md, _) :: rem ->
+      no_code_needed env md.md_type &&
+      no_code_needed_sig (Env.add_module_declaration id md env) rem
   | (Sig_type _ | Sig_modtype _ | Sig_class_type _) :: rem ->
       no_code_needed_sig env rem
   | (Sig_typext _ | Sig_exception _ | Sig_class _) :: rem ->

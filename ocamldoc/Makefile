@@ -154,6 +154,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/parsing/parser.cmo \
 	$(OCAMLSRCDIR)/parsing/lexer.cmo \
 	$(OCAMLSRCDIR)/parsing/parse.cmo \
+	$(OCAMLSRCDIR)/parsing/ast_mapper.cmo \
 	$(OCAMLSRCDIR)/typing/types.cmo \
 	$(OCAMLSRCDIR)/typing/path.cmo \
 	$(OCAMLSRCDIR)/typing/btype.cmo \

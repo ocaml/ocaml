@@ -96,7 +96,7 @@ val find_value:
 val find_class:
     Env.t -> Location.t -> Longident.t -> Path.t * class_declaration
 val find_module:
-    Env.t -> Location.t -> Longident.t -> Path.t * module_type
+    Env.t -> Location.t -> Longident.t -> Path.t * module_declaration
 val find_modtype:
     Env.t -> Location.t -> Longident.t -> Path.t * modtype_declaration
 val find_class_type:
@@ -110,3 +110,6 @@ val spellcheck_simple:
     Format.formatter ->
     (('a -> cd -> cd) -> Longident.t option -> 'b -> cd -> cd) ->
     ('a -> string) -> 'b -> Longident.t -> unit
+
+val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
+

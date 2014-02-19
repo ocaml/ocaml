@@ -14,6 +14,8 @@ Compilers:
 - PR#6182: better message for virtual objects and class types
   (Leo P. White, Stephen Dolan)
 - PR#5817: new flag to keep locations in cmi files
+- PR#5854: issue warning 3 when referring to a value marked with
+  the [@@deprecated] attribute
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)

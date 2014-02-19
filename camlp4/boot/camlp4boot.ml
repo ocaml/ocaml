@@ -1899,7 +1899,19 @@ New syntax:\
                  ((fun () ->
                      (None,
                       [ ((Some "top"), (Some Camlp4.Sig.Grammar.RightA),
-                         [ ([ Gram.Skeyword "object";
+                         [ ([ Gram.Sself; Gram.Skeyword "[@";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (a_LIDENT : 'a_LIDENT Gram.Entry.t));
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (str_items : 'str_items Gram.Entry.t));
+                              Gram.Skeyword "]" ],
+                            (Gram.Action.mk
+                               (fun _ (str : 'str_items) (s : 'a_LIDENT) _
+                                  (e : 'expr) (_loc : Gram.Loc.t) ->
+                                  (Ast.ExAtt (_loc, s, str, e) : 'expr))));
+                           ([ Gram.Skeyword "object";
                               Gram.Snterm
                                 (Gram.Entry.obj
                                    (opt_class_self_patt :
@@ -3570,7 +3582,20 @@ New syntax:\
                Gram.extend (patt : 'patt Gram.Entry.t)
                  ((fun () ->
                      (None,
-                      [ ((Some "|"), (Some Camlp4.Sig.Grammar.LeftA),
+                      [ ((Some "attribute"), None,
+                         [ ([ Gram.Sself; Gram.Skeyword "[@";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (a_LIDENT : 'a_LIDENT Gram.Entry.t));
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (str_items : 'str_items Gram.Entry.t));
+                              Gram.Skeyword "]" ],
+                            (Gram.Action.mk
+                               (fun _ (str : 'str_items) (s : 'a_LIDENT) _
+                                  (e : 'patt) (_loc : Gram.Loc.t) ->
+                                  (Ast.PaAtt (_loc, s, str, e) : 'patt)))) ]);
+                        ((Some "|"), (Some Camlp4.Sig.Grammar.LeftA),
                          [ ([ Gram.Sself; Gram.Skeyword "|"; Gram.Sself ],
                             (Gram.Action.mk
                                (fun (p2 : 'patt) _ (p1 : 'patt)
@@ -4946,6 +4971,19 @@ New syntax:\
                                    | Invalid_argument s ->
                                        raise (Stream.Error s) :
                                     'ctyp)))) ]);
+                        ((Some "attribute"), None,
+                         [ ([ Gram.Sself; Gram.Skeyword "[@";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (a_LIDENT : 'a_LIDENT Gram.Entry.t));
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (str_items : 'str_items Gram.Entry.t));
+                              Gram.Skeyword "]" ],
+                            (Gram.Action.mk
+                               (fun _ (str : 'str_items) (s : 'a_LIDENT) _
+                                  (e : 'ctyp) (_loc : Gram.Loc.t) ->
+                                  (Ast.TyAtt (_loc, s, str, e) : 'ctyp)))) ]);
                         ((Some "simple"), None,
                          [ ([ Gram.Skeyword ".." ],
                             (Gram.Action.mk
