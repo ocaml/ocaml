@@ -244,7 +244,7 @@ let report_error ppf = function
 
 }
 
-let newline = ('\013'* '\010' )
+let newline = ('\013'* '\010')
 let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '_']
 let uppercase = ['A'-'Z']
