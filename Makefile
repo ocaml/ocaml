@@ -15,7 +15,7 @@
 include config/Makefile
 include stdlib/StdlibModules
 
-CAMLC=$(CAMLC_BIN) -nostdlib -I boot
+CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
 CAMLOPT=$(CAMLOPT_BIN) -nostdlib -I stdlib -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -w +33..39 -warn-error A $(INCLUDES)
 LINKFLAGS=
@@ -186,7 +186,7 @@ coldstart:
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	cd yacc; $(MAKE) all
 	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
-	cd stdlib; $(MAKE) all
+	cd stdlib; $(MAKE) all CAMLC="../boot/ocamlrun ../boot/ocamlc -nostdlib -I ../boot"
 	cd stdlib; cp $(LIBFILES) ../boot
 	if test -f boot/libcamlrun.a; then :; else \
 	  ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi

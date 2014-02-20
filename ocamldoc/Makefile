@@ -138,61 +138,11 @@ LIBCMXFILES= $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES= $(LIBCMOFILES:.cmo=.cmi)
 
 # Les cmo et cmx de la distrib OCAML
-OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
-	$(OCAMLSRCDIR)/typing/ident.cmo \
-	$(OCAMLSRCDIR)/utils/tbl.cmo \
-	$(OCAMLSRCDIR)/utils/misc.cmo \
-	$(OCAMLSRCDIR)/utils/config.cmo \
-	$(OCAMLSRCDIR)/utils/clflags.cmo \
-	$(OCAMLSRCDIR)/utils/warnings.cmo \
-	$(OCAMLSRCDIR)/utils/ccomp.cmo \
-	$(OCAMLSRCDIR)/utils/consistbl.cmo \
-	$(OCAMLSRCDIR)/parsing/location.cmo\
-	$(OCAMLSRCDIR)/parsing/longident.cmo \
-	$(OCAMLSRCDIR)/parsing/syntaxerr.cmo \
-	$(OCAMLSRCDIR)/parsing/ast_helper.cmo \
-	$(OCAMLSRCDIR)/parsing/parser.cmo \
-	$(OCAMLSRCDIR)/parsing/lexer.cmo \
-	$(OCAMLSRCDIR)/parsing/parse.cmo \
-	$(OCAMLSRCDIR)/parsing/ast_mapper.cmo \
-	$(OCAMLSRCDIR)/typing/types.cmo \
-	$(OCAMLSRCDIR)/typing/path.cmo \
-	$(OCAMLSRCDIR)/typing/btype.cmo \
-	$(OCAMLSRCDIR)/typing/predef.cmo \
-	$(OCAMLSRCDIR)/typing/datarepr.cmo \
-	$(OCAMLSRCDIR)/typing/subst.cmo \
-	$(OCAMLSRCDIR)/typing/cmi_format.cmo \
-	$(OCAMLSRCDIR)/typing/env.cmo \
-	$(OCAMLSRCDIR)/typing/ctype.cmo \
-	$(OCAMLSRCDIR)/typing/primitive.cmo \
-	$(OCAMLSRCDIR)/typing/oprint.cmo \
-	$(OCAMLSRCDIR)/typing/printtyp.cmo \
-	$(OCAMLSRCDIR)/typing/includecore.cmo \
-	$(OCAMLSRCDIR)/typing/typedtree.cmo \
-	$(OCAMLSRCDIR)/typing/typetexp.cmo \
-	$(OCAMLSRCDIR)/typing/parmatch.cmo \
-	$(OCAMLSRCDIR)/typing/stypes.cmo \
-	$(OCAMLSRCDIR)/typing/typedtreeMap.cmo \
-	$(OCAMLSRCDIR)/typing/cmt_format.cmo \
-	$(OCAMLSRCDIR)/typing/typecore.cmo \
-	$(OCAMLSRCDIR)/typing/includeclass.cmo \
-	$(OCAMLSRCDIR)/typing/typedecl.cmo \
-	$(OCAMLSRCDIR)/typing/typeclass.cmo \
-	$(OCAMLSRCDIR)/typing/mtype.cmo \
-	$(OCAMLSRCDIR)/typing/includemod.cmo \
-	$(OCAMLSRCDIR)/typing/typemod.cmo \
-	$(OCAMLSRCDIR)/bytecomp/lambda.cmo \
-	$(OCAMLSRCDIR)/bytecomp/typeopt.cmo \
-	$(OCAMLSRCDIR)/bytecomp/printlambda.cmo \
-	$(OCAMLSRCDIR)/bytecomp/switch.cmo \
-	$(OCAMLSRCDIR)/bytecomp/matching.cmo \
-	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
-	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \
-	$(OCAMLSRCDIR)/bytecomp/translclass.cmo \
-	$(OCAMLSRCDIR)/tools/depend.cmo \
-	$(OCAMLSRCDIR)/driver/pparse.cmo
+OCAMLCMOFILES= \
+	$(OCAMLSRCDIR)/tools/depend.cmo
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
+
 
 STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/$(UNIXLIB)/unix.mli \
@@ -219,9 +169,9 @@ debug:
 	$(MAKE) OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo $(LIBCMOFILES)

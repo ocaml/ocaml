@@ -113,3 +113,4 @@ val spellcheck_simple:
 
 val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
 
+val warning_attribute: Parsetree.attributes -> Warnings.state option

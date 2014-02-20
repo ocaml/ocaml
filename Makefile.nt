@@ -15,7 +15,7 @@
 include config/Makefile
 include stdlib/StdlibModules
 
-CAMLC=$(CAMLC_BIN) -nostdlib -I boot
+CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
 CAMLOPT=$(CAMLOPT_BIN) -nostdlib -I stdlib -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -warn-error A $(INCLUDES)
 LINKFLAGS=
@@ -153,7 +153,7 @@ coldstart:
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
 	cd yacc ; $(MAKEREC) all
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
-	cd stdlib ; $(MAKEREC) all
+	cd stdlib ; $(MAKEREC) all CAMLC="../boot/ocamlrun ../boot/ocamlc -nostdlib -I ../boot"
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Build the core system: the minimum needed to make depend and bootstrap

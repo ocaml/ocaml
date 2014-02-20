@@ -14,8 +14,8 @@
 
 include ../config/Makefile
 
-CAMLC=$(CAMLC_BIN) -I ../boot
-CAMLOPT=$(CAMLOPT_BIN) -I ../stdlib
+CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
+CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib
 COMPFLAGS=-warn-error A
 LINKFLAGS=
 CAMLYACC=../boot/ocamlyacc

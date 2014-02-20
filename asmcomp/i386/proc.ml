@@ -162,8 +162,8 @@ let destroyed_at_c_call =               (* ebx, esi, edi, ebp preserved *)
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
-  | Iop(Iintop(Idiv | Imod)) -> [| eax; edx |]
-  | Iop(Iintop_imm(Imod, _)) -> [| eax |]
+  | Iop(Iintop(Idiv | Imod))
+  | Iop(Iintop_imm((Idiv | Imod), _)) -> [| eax; edx |]
   | Iop(Ialloc _) -> [| eax |]
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| eax |]
   | Iop(Iintoffloat) -> [| eax |]

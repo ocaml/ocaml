@@ -575,20 +575,60 @@ let emit_instr i =
     | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
         `	dec	{emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Idiv, n)) ->
+        (* Note: i.arg.(0) = i.res.(0) = ecx  (cf. selection.ml) *)
         let l = Misc.log2 n in
-        let lbl = new_label() in
-        output_test_zero i.arg.(0);
-        `	jge	{emit_label lbl}\n`;
-        `	add	{emit_reg i.arg.(0)}, {emit_int(n-1)}\n`;
-        `{emit_label lbl}:	sar	{emit_reg i.arg.(0)}, {emit_int l}\n`
+        if n = 1 lsl l then begin
+          let lbl = new_label() in
+          output_test_zero i.arg.(0);
+          `	jge	{emit_label lbl}\n`;
+          `	add	{emit_reg i.arg.(0)}, {emit_int(n-1)}\n`;
+          `{emit_label lbl}:	sar	{emit_reg i.arg.(0)}, {emit_int l}\n`
+        end else begin
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          (* Algorithm:
+                t = multiply-high-signed(arg, m)
+                if m < 0, t = t + m
+                t = shift-right-signed(t, p)
+                res = t + sign-bit(arg) 
+          *)
+          `	mov	edx, {emit_nativeint m}\n`;
+          `	mov	eax, ecx\n`;
+          `	imul	edx\n`; (* edx = high 32 bits of arg * m, signed *)
+          if m < 0n then
+            `	add	edx, ecx\n`;
+          if p > 0 then
+            `	sar	edx, {emit_int p}\n`;
+          `	shr	ecx, 31\n`;
+          `	add	ecx, edx\n`
+        end
     | Lop(Iintop_imm(Imod, n)) ->
-        let lbl = new_label() in
-        `	mov	eax, {emit_reg i.arg.(0)}\n`;
-        `	test	eax, eax\n`;
-        `	jge	{emit_label lbl}\n`;
-        `	add	eax, {emit_int(n-1)}\n`;
-        `{emit_label lbl}:	and	eax, {emit_int(-n)}\n`;
-        `	sub	{emit_reg i.arg.(0)}, eax\n`
+        let l = Misc.log2 n in
+        if n = 1 lsl l then begin
+          let lbl = new_label() in
+          `	mov	eax, {emit_reg i.arg.(0)}\n`;
+          `	test	eax, eax\n`;
+          `	jge	{emit_label lbl}\n`;
+          `	add	eax, {emit_int(n-1)}\n`;
+          `{emit_label lbl}:	and	eax, {emit_int(-n)}\n`;
+          `	sub	{emit_reg i.arg.(0)}, eax\n`
+        end else begin
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          (* Compute quotient as in the Idiv immediate case, but
+             compute it in edx, preserving ecx *)
+          `	mov	edx, {emit_nativeint m}\n`;
+          `	mov	eax, ecx\n`;
+          `	imul	edx\n`; (* edx = high 32 bits of arg * m, signed *)
+          if m < 0n then
+            `	add	edx, ecx\n`;
+          if p > 0 then
+            `	sar	edx, {emit_int p}\n`;
+          `	mov	eax, ecx\n`;
+          `	shr	eax, 31\n`;
+          `	add	edx, eax\n`;
+          (* Compute remainder via Euclid's equality *)
+          `	imul	edx, {emit_int n}\n`;
+          `	sub	ecx, edx\n`
+        end
     | Lop(Iintop_imm(op, n)) ->
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	{emit_reg i.res.(0)}, {emit_int n}\n`

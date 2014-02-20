@@ -149,13 +149,24 @@ let is_object_type path =
     | Path.Papply _ -> assert false
   in name.[0] = '#'
 
-(**** Abbreviations without parameters ****)
-(* Shall reset after generalizing *)
+(**** Control tracing of GADT instances *)
 
 let trace_gadt_instances = ref false
 let check_trace_gadt_instances env =
   not !trace_gadt_instances && Env.has_local_constraints env &&
   (trace_gadt_instances := true; cleanup_abbrev (); true)
+
+let reset_trace_gadt_instances b =
+  if b then trace_gadt_instances := false
+
+let wrap_trace_gadt_instances env f x =
+  let b = check_trace_gadt_instances env in
+  let y = f x in
+  reset_trace_gadt_instances b;
+  y
+
+(**** Abbreviations without parameters ****)
+(* Shall reset after generalizing *)
 
 let simple_abbrevs = ref Mnil
 
@@ -1677,7 +1688,8 @@ let rec local_non_recursive_abbrev visited env p ty =
         iter_type_expr (local_non_recursive_abbrev visited env p) ty
   end
 
-let local_non_recursive_abbrev = local_non_recursive_abbrev (ref [])
+let local_non_recursive_abbrev env p =
+  local_non_recursive_abbrev (ref []) env p
 
                    (*****************************)
                    (*  Polymorphic Unification  *)
@@ -2234,9 +2246,9 @@ let rec unify (env:Env.t ref) t1 t2 =
     | _ ->
         unify2 env t1 t2
     end;
-    if reset_tracing then trace_gadt_instances := false;
+    reset_trace_gadt_instances reset_tracing;
   with Unify trace ->
-    if reset_tracing then trace_gadt_instances := false;
+    reset_trace_gadt_instances reset_tracing;
     raise (Unify ((t1, t2)::trace))
 
 and unify2 env t1 t2 =
@@ -2656,9 +2668,9 @@ let unify_var env t1 t2 =
         occur env t1 t2;
         update_level env t1.level t2;
         link_type t1 t2;
-        if reset_tracing then trace_gadt_instances := false;
+        reset_trace_gadt_instances reset_tracing;
       with Unify trace ->
-        if reset_tracing then trace_gadt_instances := false;
+        reset_trace_gadt_instances reset_tracing;
         let expanded_trace = expand_trace env ((t1,t2)::trace) in
         raise (Unify expanded_trace)
       end
@@ -2681,7 +2693,7 @@ let unify env ty1 ty2 =
 let expand_head_trace env t =
   let reset_tracing = check_trace_gadt_instances env in
   let t = expand_head_unif env t in
-  if reset_tracing then trace_gadt_instances := false;
+  reset_trace_gadt_instances reset_tracing;
   t
 
 (*

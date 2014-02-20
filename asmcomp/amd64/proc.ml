@@ -257,9 +257,10 @@ let destroyed_at_c_call =
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
-  | Iop(Iintop(Idiv | Imod)) -> [| rax; rdx |]
+  | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
+        -> [| rax; rdx |]
   | Iop(Istore(Single, _)) -> [| rxmm15 |]
-  | Iop(Ialloc _ | Iintop(Icomp _) | Iintop_imm((Idiv|Imod|Icomp _), _))
+  | Iop(Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->
@@ -285,9 +286,9 @@ let max_register_pressure = function
         if fp then [| 7; 10 |]  else [| 8; 10 |]
         else
         if fp then [| 3; 0 |] else  [| 4; 0 |]
-  | Iintop(Idiv | Imod) ->
+  | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) ->
     if fp then [| 10; 16 |] else [| 11; 16 |]
-  | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Idiv|Imod|Icomp _), _) ->
+  | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
     if fp then [| 11; 16 |] else [| 12; 16 |]
   | Istore(Single, _) ->
     if fp then [| 12; 15 |] else [| 13; 15 |]

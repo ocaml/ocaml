@@ -68,7 +68,7 @@ CAMLprim value caml_string_get16(value str, value index)
   intnat res;
   unsigned char b1, b2;
   intnat idx = Long_val(index);
-  if (idx < 0 || idx >= caml_string_length(str) - 1) caml_array_bound_error();
+  if (idx < 0 || idx + 1 >= caml_string_length(str)) caml_array_bound_error();
   b1 = Byte_u(str, idx);
   b2 = Byte_u(str, idx + 1);
 #ifdef ARCH_BIG_ENDIAN
@@ -84,7 +84,7 @@ CAMLprim value caml_string_get32(value str, value index)
   intnat res;
   unsigned char b1, b2, b3, b4;
   intnat idx = Long_val(index);
-  if (idx < 0 || idx >= caml_string_length(str) - 3) caml_array_bound_error();
+  if (idx < 0 || idx + 3 >= caml_string_length(str)) caml_array_bound_error();
   b1 = Byte_u(str, idx);
   b2 = Byte_u(str, idx + 1);
   b3 = Byte_u(str, idx + 2);
@@ -109,7 +109,7 @@ CAMLprim value caml_string_get64(value str, value index)
   uint32 reslo;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(index);
-  if (idx < 0 || idx >= caml_string_length(str) - 7) caml_array_bound_error();
+  if (idx < 0 || idx + 7 >= caml_string_length(str)) caml_array_bound_error();
   b1 = Byte_u(str, idx);
   b2 = Byte_u(str, idx + 1);
   b3 = Byte_u(str, idx + 2);
@@ -133,7 +133,7 @@ CAMLprim value caml_string_set16(value str, value index, value newval)
   unsigned char b1, b2;
   intnat val;
   intnat idx = Long_val(index);
-  if (idx < 0 || idx >= caml_string_length(str) - 1) caml_array_bound_error();
+  if (idx < 0 || idx + 1 >= caml_string_length(str)) caml_array_bound_error();
   val = Long_val(newval);
 #ifdef ARCH_BIG_ENDIAN
   b1 = 0xFF & val >> 8;
@@ -152,7 +152,7 @@ CAMLprim value caml_string_set32(value str, value index, value newval)
   unsigned char b1, b2, b3, b4;
   intnat val;
   intnat idx = Long_val(index);
-  if (idx < 0 || idx >= caml_string_length(str) - 3) caml_array_bound_error();
+  if (idx < 0 || idx + 3 >= caml_string_length(str)) caml_array_bound_error();
   val = Int32_val(newval);
 #ifdef ARCH_BIG_ENDIAN
   b1 = 0xFF & val >> 24;
@@ -178,7 +178,7 @@ CAMLprim value caml_string_set64(value str, value index, value newval)
   uint32 lo,hi;
   int64 val;
   intnat idx = Long_val(index);
-  if (idx < 0 || idx >= caml_string_length(str) - 7) caml_array_bound_error();
+  if (idx < 0 || idx + 7 >= caml_string_length(str)) caml_array_bound_error();
   val = Int64_val(newval);
   I64_split(val,hi,lo);
 #ifdef ARCH_BIG_ENDIAN

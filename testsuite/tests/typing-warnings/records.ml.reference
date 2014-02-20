@@ -217,7 +217,7 @@ Error: The field A.x belongs to the record type A.t
                      ^^^
 Error: This record expression is expected to have type t
        The field yyz does not belong to type t
-Did you mean yyy?
+Hint: Did you mean yyy?
 #             type t = A
 type s = A
 class f : t -> object  end
@@ -264,5 +264,27 @@ module Shadow2 :
     type t = { x : int; }
     module M : sig type s = { x : string; } end
     val y : M.s
+  end
+#                 Characters 167-170:
+    let f (u : u) = match u with `Key {loc} -> loc
+                                       ^^^
+Warning 42: this use of loc required disambiguation.
+module P6235 :
+  sig
+    type t = { loc : string; }
+    type v = { loc : string; x : int; }
+    type u = [ `Key of t ]
+    val f : u -> string
+  end
+#                     Characters 220-223:
+      |`Key {loc} -> loc
+             ^^^
+Warning 42: this use of loc required disambiguation.
+module P6235' :
+  sig
+    type t = { loc : string; }
+    type v = { loc : string; x : int; }
+    type u = [ `Key of t ]
+    val f : u -> string
   end
 # 

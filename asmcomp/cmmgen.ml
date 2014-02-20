@@ -75,10 +75,14 @@ let int_const n =
   else Cconst_natint
           (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
 
-let add_const c n =
+let rec add_const c n =
   if n = 0 then c
   else match c with
   | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+  | Cop(Csubi, [Cconst_int x; c]) when no_overflow_add n x ->
+      Cop(Csubi, [Cconst_int (n + x); c])
+  | Cop(Csubi, [c; Cconst_int x]) when no_overflow_sub n x ->
+      add_const c (n - x)
   | c -> Cop(Caddi, [c; Cconst_int n])
 
 let incr_int = function
@@ -121,11 +125,16 @@ let sub_int c1 c2 =
 
 let mul_int c1 c2 =
   match (c1, c2) with
-    (Cconst_int 0, _) -> c1
-  | (Cconst_int 1, _) -> c2
-  | (_, Cconst_int 0) -> c2
-  | (_, Cconst_int 1) -> c1
-  | (_, _) -> Cop(Cmuli, [c1; c2])
+    (c, Cconst_int 0) | (Cconst_int 0, c) ->
+      Cconst_int 0
+  | (c, Cconst_int 1) | (Cconst_int 1, c) ->
+      c
+  | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
+      sub_int (Cconst_int 0) c
+  | (c, Cconst_int n) | (Cconst_int n, c) when n = 1 lsl Misc.log2 n->
+      Cop(Clsl, [c; Cconst_int(Misc.log2 n)])
+  | (c1, c2) ->
+      Cop(Cmuli, [c1; c2])
 
 let tag_int = function
     Cconst_int n -> int_const n
@@ -990,7 +999,7 @@ let is_unboxed_number = function
       end
   | _ -> No_unboxing
 
-let subst_boxed_number unbox_fn boxed_id unboxed_id exp =
+let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
   let need_boxed = ref false in
   let assigned = ref false in
   let rec subst = function
@@ -1004,10 +1013,14 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id exp =
         end else
           Cassign(id, subst arg)
     | Ctuple argv -> Ctuple(List.map subst argv)
-    | Cop(Cload _, [Cvar id]) as e ->
-        if Ident.same id boxed_id then Cvar unboxed_id else e
-    | Cop(Cload _, [Cop(Cadda, [Cvar id; _])]) as e ->
-        if Ident.same id boxed_id then Cvar unboxed_id else e
+    | Cop(Cload chunk, [Cvar id]) as e ->
+        if Ident.same id boxed_id && chunk = box_chunk && box_offset = 0
+        then Cvar unboxed_id
+        else e
+    | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])]) as e ->
+        if Ident.same id boxed_id && chunk = box_chunk && ofs = box_offset
+        then Cvar unboxed_id
+        else e
     | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
@@ -1098,9 +1111,12 @@ let rec transl = function
           Clet(id, transl exp, transl body)
       | Boxed_float ->
           transl_unbox_let box_float unbox_float transl_unbox_float
+                           Double_u 0
                            id exp body
       | Boxed_integer bi ->
           transl_unbox_let (box_int bi) (unbox_int bi) (transl_unbox_int bi)
+                           (if bi = Pint32 then Thirtytwo_signed else Word)
+                           size_addr
                            id exp body
       end
   | Uletrec(bindings, body) ->
@@ -1408,7 +1424,7 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Psubint ->
       incr_int(sub_int (transl arg1) (transl arg2))
   | Pmulint ->
-      incr_int(Cop(Cmuli, [decr_int(transl arg1); untag_int(transl arg2)]))
+      incr_int(mul_int (decr_int(transl arg1)) (untag_int(transl arg2)))
   | Pdivint ->
       tag_int(safe_divmod Cdivi (untag_int(transl arg1))
                           (untag_int(transl arg2)) dbg)
@@ -1755,11 +1771,12 @@ and transl_unbox_int bi = function
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
-and transl_unbox_let box_fn unbox_fn transl_unbox_fn id exp body =
+and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset 
+                     id exp body =
   let unboxed_id = Ident.create (Ident.name id) in
   let trbody1 = transl body in
   let (trbody2, need_boxed, is_assigned) =
-    subst_boxed_number unbox_fn id unboxed_id trbody1 in
+    subst_boxed_number unbox_fn id unboxed_id box_chunk box_offset trbody1 in
   if need_boxed && is_assigned then
     Clet(id, transl exp, trbody1)
   else

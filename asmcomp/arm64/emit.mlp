@@ -454,17 +454,41 @@ let emit_instr i =
     | Lop(Iintop Imod) ->
         `	sdiv	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	msub	{emit_reg i.res.(0)}, {emit_reg reg_tmp1}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
-    | Lop(Iintop_imm(Idiv, n)) -> (* n is a power of 2 *)
+    | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
-        `	asr	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, #63\n`;
-        `	add	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp1}, lsr {emit_int (64-l)}\n`;
-        `	asr	{emit_reg i.res.(0)}, {emit_reg reg_tmp1}, {emit_int l}\n`
-    | Lop(Iintop_imm(Imod, n)) -> (* n is a power of 2 *)
+        if n = 1 lsl l then begin
+          `	asr	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, #63\n`;
+          `	add	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp1}, lsr {emit_int (64-l)}\n`;
+          `	asr	{emit_reg i.res.(0)}, {emit_reg reg_tmp1}, {emit_int l}\n`
+        end else begin
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          emit_intconst reg_tmp1 m;
+          `	smulh	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp1}\n`;
+          if m < 0n then
+            `	add	{emit_reg reg_tmp1}, {emit_reg reg_tmp1}, {emit_reg i.arg.(0)}\n`;
+          if p > 0 then
+            `	asr	{emit_reg reg_tmp1}, #{emit_int p}\n`;
+          `	add	{emit_reg i.res.(0)}, {emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, lsr 63\n`
+        end
+    | Lop(Iintop_imm(Imod, n)) ->
         let l = Misc.log2 n in
-        `	asr	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, #63\n`;
-        `	add	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp1}, lsr {emit_int (64-l)}\n`;
-        `	asr	{emit_reg reg_tmp1}, {emit_reg reg_tmp1}, {emit_int l}\n`;
-        `	sub	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp1}, lsl {emit_int l}\n`
+        if n = 1 lsl l then begin
+          `	asr	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, #63\n`;
+          `	add	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp1}, lsr {emit_int (64-l)}\n`;
+          `	asr	{emit_reg reg_tmp1}, {emit_reg reg_tmp1}, {emit_int l}\n`;
+          `	sub	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp1}, lsl {emit_int l}\n`
+        end else begin
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          emit_intconst reg_tmp1 m;
+          `	smulh	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp1}\n`;
+          if m < 0n then
+            `	add	{emit_reg reg_tmp1}, {emit_reg reg_tmp1}, {emit_reg i.arg.(0)}\n`;
+          if p > 0 then
+            `	asr	{emit_reg reg_tmp1}, #{emit_int p}\n`;
+          `	add	{emit_reg reg_tmp1}, {emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, lsr 63\n`;
+          emit_intconst reg_tmp2 (Nativeint.of_int n);
+          `	msub	{emit_reg i.res.(0)}, {emit_reg reg_tmp1}, {emit_reg reg_tmp2}, {emit_reg i.arg.(0)}\n`
+        end
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`

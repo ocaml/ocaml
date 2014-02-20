@@ -15,3 +15,4 @@ MODULES=testing
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
+OCOPTFLAGS=-inline 20

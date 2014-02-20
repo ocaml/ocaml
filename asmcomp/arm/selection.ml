@@ -37,15 +37,18 @@ let is_offset chunk n =
   | _ ->
       n >= -255 && n <= 255
 
-let is_intconst = function
-    Cconst_int _ -> true
-  | _ -> false
+let select_shiftop = function
+    Clsl -> Ishiftlogicalleft
+  | Clsr -> Ishiftlogicalright
+  | Casr -> Ishiftarithmeticright
+  | __-> assert false
 
 (* Special constraints on operand and result registers *)
 
 exception Use_default
 
 let r1 = phys_reg 1
+let r12 = phys_reg 8
 
 let pseudoregs_for_operation op arg res =
   match op with
@@ -54,6 +57,15 @@ let pseudoregs_for_operation op arg res =
      is also a result of the mul / mla operation. *)
     Iintop Imul | Ispecific Imuladd when !arch < ARMv6 ->
       (arg, [| res.(0); arg.(0) |])
+  (* For integer division by a constant, which is not a power of 2, on ARMv6
+     and later, the result and argument registers must be different. We deal
+     with this by pretending that the argument value is also a result of the
+     operation. For modulus we also require a scratch register (r12) that
+     is different from both the result and argument registers. *)
+  | Iintop_imm(Idiv, n) when !arch >= ARMv6 && n <> 1 lsl Misc.log2 n->
+      (arg, [| res.(0); arg.(0) |])
+  | Iintop_imm(Imod, n) when !arch >= ARMv6 && n <> 1 lsl Misc.log2 n->
+      (arg, [| res.(0); arg.(0); r12 |])
   (* Soft-float Iabsf and Inegf: arg.(0) and res.(0) must be the same *)
   | Iabsf | Inegf when !fpu = Soft ->
       ([|res.(0); arg.(1)|], res)
@@ -110,20 +122,14 @@ method select_addressing chunk = function
   | arg ->
       (Iindexed 0, arg)
 
-method select_shift_arith op shiftop shiftrevop args =
+method select_shift_arith op arithop arithrevop args =
   match args with
-    [arg1; Cop(Clsl, [arg2; Cconst_int n])]
-    when n > 0 && n < 32 && not(is_intconst arg2) ->
-      (Ispecific(Ishiftarith(shiftop, n)), [arg1; arg2])
-  | [arg1; Cop(Casr, [arg2; Cconst_int n])]
-    when n > 0 && n < 32 && not(is_intconst arg2) ->
-      (Ispecific(Ishiftarith(shiftop, -n)), [arg1; arg2])
-  | [Cop(Clsl, [arg1; Cconst_int n]); arg2]
-    when n > 0 && n < 32 && not(is_intconst arg1) ->
-      (Ispecific(Ishiftarith(shiftrevop, n)), [arg2; arg1])
-  | [Cop(Casr, [arg1; Cconst_int n]); arg2]
-    when n > 0 && n < 32 && not(is_intconst arg1) ->
-      (Ispecific(Ishiftarith(shiftrevop, -n)), [arg2; arg1])
+    [arg1; Cop(Clsl | Clsr | Casr as op, [arg2; Cconst_int n])]
+    when n > 0 && n < 32 ->
+      (Ispecific(Ishiftarith(arithop, select_shiftop op, n)), [arg1; arg2])
+  | [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int n]); arg2]
+    when n > 0 && n < 32 ->
+      (Ispecific(Ishiftarith(arithrevop, select_shiftop op, n)), [arg2; arg1])
   | args ->
       begin match super#select_operation op args with
       (* Recognize multiply and add *)
@@ -161,20 +167,26 @@ method! select_operation op args =
       (Ispecific(Irevsubimm n), [arg])
   | ((Csuba | Csubi as op), args) ->
       self#select_shift_arith op Ishiftsub Ishiftsubrev args
-  | (Ccheckbound _, [Cop(Clsr, [arg1; Cconst_int n]); arg2])
-    when n > 0 && n < 32 && not(is_intconst arg2) ->
-      (Ispecific(Ishiftcheckbound n), [arg1; arg2])
+  | (Cand as op, args) ->
+      self#select_shift_arith op Ishiftand Ishiftand args
+  | (Cor as op, args) ->
+      self#select_shift_arith op Ishiftor Ishiftor args
+  | (Cxor as op, args) ->
+      self#select_shift_arith op Ishiftxor Ishiftxor args
+  | (Ccheckbound _, [Cop(Clsl | Clsr | Casr as op, [arg1; Cconst_int n]); arg2])
+    when n > 0 && n < 32 ->
+      (Ispecific(Ishiftcheckbound(select_shiftop op, n)), [arg1; arg2])
   (* ARM does not support immediate operands for multiplication *)
   | (Cmuli, args) ->
       (Iintop Imul, args)
   (* Turn integer division/modulus into runtime ABI calls *)
-  | (Cdivi, [arg; Cconst_int n])
-    when n = 1 lsl Misc.log2 n ->
+  | (Cdivi, [arg; Cconst_int n]) when n > 0 && (!arch >= ARMv6
+                                                || n = 1 lsl Misc.log2 n) ->
       (Iintop_imm(Idiv, n), [arg])
   | (Cdivi, args) ->
       (Iextcall("__aeabi_idiv", false), args)
-  | (Cmodi, [arg; Cconst_int n])
-    when n > 1 && n = 1 lsl Misc.log2 n ->
+  | (Cmodi, [arg; Cconst_int n]) when n > 0 && (!arch >= ARMv6
+                                                || n = 1 lsl Misc.log2 n) ->
       (Iintop_imm(Imod, n), [arg])
   | (Cmodi, args) ->
       (* See above for fix up of return register *)

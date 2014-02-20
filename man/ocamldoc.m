@@ -170,7 +170,7 @@ the comments in implementation files.
 Always keep the source code for values, methods and instance variables, when
 available. The source code is always kept when a .ml
 file is given, but is by default discarded when a .mli
-is given. This option allows to always keep the source code.
+is given. This option allows the source code to be always kept.
 .TP
 .BI \-load \ file
 Load information from

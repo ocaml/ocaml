@@ -122,25 +122,35 @@ let systhreads_obj f = "otherlibs/systhreads"/f-.-C.o
 let systhreads_lib f = "otherlibs/systhreads"/f-.-C.a
 let systhreads_dll f = "otherlibs/systhreads"/f-.-C.so
 
+let test_nt native byte =
+  (Ocamlbuild_pack.My_std.sys_command (sprintf "test '%s' -nt '%s'" native byte)) = 0
+
 let ocamlc_solver =
-  let native_deps = ["../ocamlc.opt"; "../stdlib/stdlib.cmxa";
-                    "../stdlib/std_exit.cmx"; "../stdlib/std_exit"-.-C.o] in
-  let byte_deps = ["../ocamlc"; "../stdlib/stdlib.cma";
-                  "../stdlib/std_exit.cmo"] in
+  let common_deps = [ "../stdlib/stdlib.cma"; "../stdlib/std_exit.cmo"] in
+  let byte = "../ocamlc" in
+  let native = byte ^ ".opt" in
   fun () ->
-    if List.for_all Pathname.exists native_deps then (
-      S[A"../ocamlc.opt"; A"-I"; A"../stdlib"; A"-nostdlib"])
-    else if List.for_all Pathname.exists byte_deps then (
-      S[ocamlrun; A"../ocamlc"; A"-I"; A"../stdlib"; A"-nostdlib"])
+    if List.for_all Pathname.exists (byte :: common_deps) then (
+      if Pathname.exists native && test_nt native byte then
+        S[A native; A"-I"; A"../stdlib"; A"-nostdlib"]
+      else
+        S[ocamlrun; A byte; A"-I"; A"../stdlib"; A"-nostdlib"]
+    )
     else boot_ocamlc;;
 
 Command.setup_virtual_command_solver "OCAMLC" ocamlc_solver;;
 Command.setup_virtual_command_solver "OCAMLCWIN" (convert_for_windows_shell ocamlc_solver);;
 
 let ocamlopt_solver () =
-  if List.for_all Pathname.exists [ "../ocamlopt.opt"; "../stdlib/stdlib.cmxa" ]
-  then S[A"../ocamlopt.opt"; A"-I"; A"../stdlib"; A"-nostdlib"]
-  else S[ocamlrun; A"../ocamlopt"; A"-I"; A"../stdlib"; A"-nostdlib"];;
+  let byte = "../ocamlopt" in
+  let native = byte ^ ".opt" in
+  if List.for_all Pathname.exists [ byte; "../stdlib/stdlib.cmxa" ] then
+    if Pathname.exists native && test_nt native byte then
+      S[A native ; A"-I"; A"../stdlib"; A"-nostdlib"]
+    else
+      S[ocamlrun; A byte; A"-I"; A"../stdlib"; A"-nostdlib"]
+  else
+    failwith "Native compiler is not available.";;
 
 Command.setup_virtual_command_solver "OCAMLOPT" ocamlopt_solver;;
 Command.setup_virtual_command_solver "OCAMLOPTWIN" (convert_for_windows_shell ocamlopt_solver);;

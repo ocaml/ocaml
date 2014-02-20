@@ -497,13 +497,17 @@ interface:
 ;
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def $1 }
-  | seq_expr post_item_attributes SEMISEMI                    { Ptop_def[mkstrexp $1 $2] }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
 top_structure:
-    structure_item                       { [$1] }
-  | structure_item top_structure         { $1 :: $2 }
+    str_attribute top_structure   { $1 :: $2 }
+  | seq_expr post_item_attributes { [mkstrexp $1 $2] }
+  | top_structure_tail            { $1 }
+;
+top_structure_tail:
+    /* empty */                          { [] }
+  | structure_item top_structure_tail    { $1 :: $2 }
 ;
 use_file:
     use_file_tail                        { $1 }

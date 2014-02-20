@@ -180,13 +180,15 @@ let name_for_int_operation = function
   | Iand -> "ands"
   | Ior  -> "orrs"
   | Ixor -> "eors"
+  | Ilsl -> "lsls"
+  | Ilsr -> "lsrs"
+  | Iasr -> "asrs"
   | _ -> assert false
 
 let name_for_shift_operation = function
-    Ilsl -> "lsl"
-  | Ilsr -> "lsr"
-  | Iasr -> "asr"
-  | _ -> assert false
+    Ishiftlogicalleft -> "lsl"
+  | Ishiftlogicalright -> "lsr"
+  | Ishiftarithmeticright -> "asr"
 
 (* General functional to decompose a non-immediate integer constant
    into 8-bit chunks shifted left 0 ... 30 bits. *)
@@ -564,10 +566,6 @@ let emit_instr i =
           `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
           1 + ninstr
         end
-    | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
-        let shift = name_for_shift_operation op in
-        (* Use movs to enable 16-bit T1 encoding *)
-        `	movs	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_string shift} {emit_reg i.arg.(1)}\n`; 1
     | Lop(Iintop(Icomp cmp)) ->
         let compthen = name_for_comparison cmp in
         let compelse = name_for_comparison (negate_integer_comparison cmp) in
@@ -590,44 +588,93 @@ let emit_instr i =
         let lbl = bound_error_label i.dbg in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
         `	bls	{emit_label lbl}\n`; 2
-    | Lop(Ispecific(Ishiftcheckbound shift)) ->
+    | Lop(Ispecific(Ishiftcheckbound(shiftop, n))) ->
         let lbl = bound_error_label i.dbg in
-        `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
+        let op = name_for_shift_operation shiftop in
+        `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, {emit_string op} #{emit_int n}\n`;
         `	bcs	{emit_label lbl}\n`; 2
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
-        `	{emit_string instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
-    | Lop(Iintop_imm(Idiv, n)) -> (* n is a power of 2 *)
-        let l = Misc.log2 n in
-        let r = i.res.(0) in
-        `	movs	{emit_reg r}, {emit_reg i.arg.(0)}\n`;
-        if n <= 256 then begin
-          `	it	lt\n`;
-          `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int (n-1)}\n`
-        end else begin
-          `	itt	lt\n`;
-          `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
-          `	sublt	{emit_reg r}, {emit_reg r}, #1\n`
-        end;
-        (* Use movs to enable 16-bit T1 encoding *)
-        `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int l}\n`; 5
-    | Lop(Iintop_imm(Imod, n)) -> (* n is a power of 2 *)
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
+    | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
         let a = i.arg.(0) in
         let r = i.res.(0) in
-        let lbl = new_label() in
-        `	cmp	{emit_reg a}, #0\n`;
-        `	mov	{emit_reg r}, {emit_reg a}, lsl #{emit_int (32-l)}\n`;
-        `	mov	{emit_reg r}, {emit_reg r}, lsr #{emit_int (32-l)}\n`;
-        `	bpl	{emit_label lbl}\n`;
-        `	cmp	{emit_reg r}, #0\n`;
-        `	it	ne\n`;
-        `	subne	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
-        `{emit_label lbl}:\n`; 7
-    | Lop(Iintop_imm((Ilsl | Ilsr | Iasr as op), n)) ->
-        let shift = name_for_shift_operation op in
-        (* Use movs to enable 16-bit T1 encoding *)
-        `	movs	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_string shift} #{emit_int n}\n`; 1
+        if n = 1 lsl l then begin
+          `	movs	{emit_reg r}, {emit_reg a}\n`;
+          if n <= 256 then begin
+            `	it	lt\n`;
+            `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int (n-1)}\n`
+          end else begin
+            `	itt	lt\n`;
+            `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
+            `	sublt	{emit_reg r}, {emit_reg r}, #1\n`
+          end;
+          (* Use movs to enable 16-bit T1 encoding *)
+          `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int l}\n`; 5
+        end else begin
+          assert (!arch >= ARMv6);
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          (* Algorithm:
+                t = multiply-high-signed(arg, m)
+                if m < 0, t = t + arg
+                t = shift-right-signed(t, p)
+                res = t + sign-bit(arg)
+          *)
+          let ninstr = emit_intconst r (Nativeint.to_int32 m) in
+          if m >= 0n then
+            `	smmul	{emit_reg r}, {emit_reg r}, {emit_reg a}\n`
+          else
+            `	smmla	{emit_reg r}, {emit_reg r}, {emit_reg a}, {emit_reg a}\n`;
+          if p > 0 then
+            `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int p}\n`;
+          `	add	{emit_reg r}, {emit_reg r}, {emit_reg a}, lsr #31\n`;
+          ninstr + 3
+        end
+    | Lop(Iintop_imm(Imod, n)) ->
+        let l = Misc.log2 n in
+        let a = i.arg.(0) in
+        let r = i.res.(0) in
+        if n = 1 lsl l then begin
+          let lbl = new_label() in
+          `	cmp	{emit_reg a}, #0\n`;
+          `	mov	{emit_reg r}, {emit_reg a}, lsl #{emit_int (32-l)}\n`;
+          `	mov	{emit_reg r}, {emit_reg r}, lsr #{emit_int (32-l)}\n`;
+          `	bpl	{emit_label lbl}\n`;
+          `	cmp	{emit_reg r}, #0\n`;
+          `	it	ne\n`;
+          `	subne	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
+          `{emit_label lbl}:\n`; 7
+        end else begin
+          assert (!arch >= ARMv6);
+          let (m, p) = Selectgen.divimm_parameters (Nativeint.of_int n) in
+          (* Algorithm:
+                t = multiply-high-signed(arg, m)
+                if m < 0, t = t + arg
+                t = shift-right-signed(t, p)
+                t = t + sign-bit(arg)
+                res = arg - (t * n)
+          *)
+          let r12 = phys_reg 8 in
+          let ninstr = emit_intconst r (Nativeint.to_int32 m) in
+          if m >= 0n then
+            `	smmul	{emit_reg r}, {emit_reg r}, {emit_reg a}\n`
+          else
+            `	smmla	{emit_reg r}, {emit_reg r}, {emit_reg a}, {emit_reg a}\n`;
+          if p > 0 then
+            `	movs	{emit_reg r}, {emit_reg r}, asr #{emit_int p}\n`;
+          `	add	{emit_reg r}, {emit_reg r}, {emit_reg a}, lsr #31\n`;
+          (* Compute remainder via Euclid's equality *)
+          let ninstr = ninstr + emit_intconst r12 (Int32.of_int n) in
+          if !arch >= ARMv6T2 then begin
+            `	mls	{emit_reg r}, {emit_reg r}, r12, {emit_reg a}\n`;
+            ninstr + 4
+          end else begin
+            `	mul	{emit_reg r}, {emit_reg r}, r12\n`;
+            `	sub	{emit_reg r}, {emit_reg a}, {emit_reg r}\n`;
+            ninstr + 5
+          end
+        end
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
@@ -669,16 +716,16 @@ let emit_instr i =
                      | _ -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`;
         1
-    | Lop(Ispecific(Ishiftarith(op, shift))) ->
+    | Lop(Ispecific(Ishiftarith(op, shiftop, n))) ->
         let instr = (match op with
                        Ishiftadd    -> "add"
                      | Ishiftsub    -> "sub"
-                     | Ishiftsubrev -> "rsb") in
-        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}`;
-        if shift >= 0
-        then `, lsl #{emit_int shift}\n`
-        else `, asr #{emit_int (-shift)}\n`;
-        1
+                     | Ishiftsubrev -> "rsb"
+                     | Ishiftand    -> "and"
+                     | Ishiftor     -> "orr"
+                     | Ishiftxor    -> "eor") in
+        let op = name_for_shift_operation shiftop in
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_string op} #{emit_int n}\n`; 1
     | Lop(Ispecific(Irevsubimm n)) ->
         `	rsb	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
     | Lop(Ispecific(Imuladd | Imulsub as op)) ->
