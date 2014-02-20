@@ -855,11 +855,13 @@ let emit_instr i =
         `	pop	\{trap_ptr, lr}\n`;
         cfi_adjust_cfa_offset (-8);
         stack_offset := !stack_offset - 8; 1
-    | Lraise ->
-        if !Clflags.debug then begin
+    | Lraise k ->
+        begin match !Clflags.debug, k with
+        | true, (Lambda.Raise_regular | Lambda.Raise_reraise) ->
           `	{emit_call "caml_raise_exn"}\n`;
           `{record_frame Reg.Set.empty i.dbg}\n`; 1
-        end else begin
+        | false, _
+        | true, Lambda.Raise_notrace ->
           `	mov	sp, trap_ptr\n`;
           `	pop	\{trap_ptr, pc}\n`; 2
         end

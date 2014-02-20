@@ -24,7 +24,7 @@ CAMLextern char * caml_cds_file;
 
 CAMLprim value caml_record_backtrace(value vflag);
 #ifndef NATIVE_CODE
-extern void caml_stash_backtrace(value exn, code_t pc, value * sp);
+extern void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
 #endif
 CAMLextern void caml_print_exception_backtrace(void);
 

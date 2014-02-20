@@ -300,5 +300,6 @@ extern value caml_global_data;
 }
 #endif
 
+CAMLextern value caml_set_oo_id(value obj);
 
 #endif /* CAML_MLVALUES_H */

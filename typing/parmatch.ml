@@ -163,9 +163,8 @@ open Format
 ;;
 
 let get_constr_name tag ty tenv  = match tag with
-| Cstr_exception(path, _)
-| Cstr_ext_constant(path, _)
-| Cstr_ext_block(path, _) -> Path.name path
+| Cstr_ext_constant(path, _, _)
+| Cstr_ext_block(path, _, _) -> Path.name path
 | _ ->
   try
     let cd = get_constr tag ty tenv in Ident.name cd.cd_id
@@ -828,23 +827,17 @@ let build_other_constant proj make first next p env =
 
 let build_other ext env =  match env with
 | ({pat_desc = Tpat_construct (lid,
-      ({cstr_tag=(Cstr_ext_constant _|Cstr_ext_block _)} as c),_)},_)
-  ::_ ->
+      ({cstr_tag=( Cstr_ext_constant(_, is_exc, _)
+                 | Cstr_ext_block(_, is_exc, _) )} as c),_)},_) :: _ ->
+    let id =
+      if is_exc then Ident.create "*exception*"
+      else Ident.create "*extension*"
+    in
     make_pat
       (Tpat_construct
-         (lid, {c with
-           cstr_tag=(Cstr_ext_constant
-            (Path.Pident (Ident.create "*extension*"), Location.none))},
-          []))
-      Ctype.none Env.empty
-| ({pat_desc =
-    Tpat_construct (lid, ({cstr_tag=Cstr_exception _} as c),_)},_)
-  ::_ ->
-    make_pat
-      (Tpat_construct
-         (lid, {c with
-           cstr_tag=(Cstr_exception
-            (Path.Pident (Ident.create "*exception*"), Location.none))},
+         (lid,
+          {c with cstr_tag =
+                    Cstr_ext_constant(Path.Pident, is_exc, Location.none)},
           []))
       Ctype.none Env.empty
 | ({pat_desc = Tpat_construct (_, _,_)} as p,_) :: _ ->
@@ -1927,7 +1920,7 @@ let extendable_path path =
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, c, ps) -> begin
     match c.cstr_tag with
-      | Cstr_ext_constant _ | Cstr_ext_block _ | Cstr_exception _ ->
+      | Cstr_ext_constant _ | Cstr_ext_block _ ->
           List.fold_left collect_paths_from_pat r ps
       | Cstr_constant _ | Cstr_block _ ->
           let path =  get_type_path p.pat_type p.pat_env in

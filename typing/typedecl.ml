@@ -1096,8 +1096,8 @@ let transl_extension_constructor env check_open type_decl
           end;
           let path =
             match cdescr.cstr_tag with
-              Cstr_ext_constant(path, _) -> path
-            | Cstr_ext_block(path, _) -> path
+              Cstr_ext_constant(path, false, _) -> path
+            | Cstr_ext_block(path, false, _) -> path
             | _ -> assert false
           in
           let ext =
@@ -1229,7 +1229,7 @@ let transl_exn_rebind env loc lid =
   let cdescr = Typetexp.find_constructor env loc lid in
   Env.mark_constructor Env.Positive env (Longident.last lid) cdescr;
   match cdescr.cstr_tag with
-    Cstr_exception (path, _) ->
+    Cstr_ext_constant(path, true, _) | Cstr_ext_block(path, true, _) ->
       (path, {exn_args = cdescr.cstr_args;
               exn_attributes = [];
               Types.exn_loc = loc})

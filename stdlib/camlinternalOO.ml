@@ -15,20 +15,13 @@ open Obj
 
 (**** Object representation ****)
 
-let last_id = ref 0
-let () = Callback.register "CamlinternalOO.last_id" last_id
-
-let set_id o id =
-  let id0 = !id in
-  Array.unsafe_set (Obj.magic o : int array) 1 id0;
-  id := id0 + 1
+external set_id: 'a -> 'a = "caml_set_oo_id" "noalloc"
 
 (**** Object copy ****)
 
 let copy o =
   let o = (Obj.obj (Obj.dup (Obj.repr o))) in
-  set_id o last_id;
-  o
+  set_id o
 
 (**** Compression options ****)
 (* Parameters *)
@@ -359,8 +352,7 @@ let create_object table =
   let obj = Obj.new_block Obj.object_tag table.size in
   (* XXX Appel de [caml_modify] *)
   Obj.set_field obj 0 (Obj.repr table.methods);
-  set_id obj last_id;
-  (Obj.obj obj)
+  Obj.obj (set_id obj)
 
 let create_object_opt obj_0 table =
   if (Obj.magic obj_0 : bool) then obj_0 else begin
@@ -368,8 +360,7 @@ let create_object_opt obj_0 table =
     let obj = Obj.new_block Obj.object_tag table.size in
     (* XXX Appel de [caml_modify] *)
     Obj.set_field obj 0 (Obj.repr table.methods);
-    set_id obj last_id;
-    (Obj.obj obj)
+    Obj.obj (set_id obj)
   end
 
 let rec iter_f obj =
@@ -581,16 +572,6 @@ let set_methods table methods =
     set_method table label clo;
     incr i
   done
-
-(**** Extension Tags ****)
-
-type extension_tag
-
-let create_extension_tag () =
-  let obj = Obj.new_block Obj.object_tag 2 in
-  set_id obj last_id;
-  (Obj.obj obj)
-
 
 (**** Statistics ****)
 

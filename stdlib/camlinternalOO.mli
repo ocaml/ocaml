@@ -142,11 +142,6 @@ type params =
 
 val params : params
 
-(** Extension tags *)
-type extension_tag
-
-val create_extension_tag : unit -> extension_tag
-
 (** {6 Statistics} *)
 
 type stats =

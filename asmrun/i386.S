@@ -339,6 +339,8 @@ FUNCTION(caml_raise_exn)
         UNDO_ALIGN_STACK(8)
         ret
 LBL(110):
+        movl    $0, G(caml_backtrace_pos)
+LBL(111):
         movl    %eax, %esi          /* Save exception bucket in esi */
         movl    G(caml_exception_pointer), %edi /* SP of handler */
         movl    0(%esp), %eax       /* PC of raise */
@@ -356,19 +358,29 @@ LBL(110):
         ret
         CFI_ENDPROC
 
+FUNCTION(caml_reraise_exn)
+        CFI_STARTPROC
+        testl   $1, G(caml_backtrace_active)
+        jne     LBL(111)
+        movl    G(caml_exception_pointer), %esp
+        popl    G(caml_exception_pointer); CFI_ADJUST(-4)
+        UNDO_ALIGN_STACK(8)
+        ret
+        CFI_ENDPROC
+
 /* Raise an exception from C */
 
 FUNCTION(caml_raise_exception)
         CFI_STARTPROC
         PROFILE_C
         testl   $1, G(caml_backtrace_active)
-        jne     LBL(111)
+        jne     LBL(112)
         movl    4(%esp), %eax
         movl    G(caml_exception_pointer), %esp
         popl    G(caml_exception_pointer); CFI_ADJUST(-4)
         UNDO_ALIGN_STACK(8)
         ret
-LBL(111):
+LBL(112):
         movl    4(%esp), %esi          /* Save exception bucket in esi */
         ALIGN_STACK(12)
         pushl   G(caml_exception_pointer); CFI_ADJUST(4)  /* 4: sp of handler */

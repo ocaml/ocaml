@@ -87,20 +87,25 @@ let constructor_descrs ty_res cstrs priv =
   describe_constructors 0 0 cstrs
 
 let exception_descr path_exc decl =
-  { cstr_name = Path.last path_exc;
-    cstr_res = Predef.type_exn;
-    cstr_existentials = [];
-    cstr_args = decl.exn_args;
-    cstr_arity = List.length decl.exn_args;
-    cstr_tag = Cstr_exception (path_exc, decl.exn_loc);
-    cstr_consts = -1;
-    cstr_nonconsts = -1;
-    cstr_private = Public;
-    cstr_normal = -1;
-    cstr_generalized = false;
-    cstr_loc = decl.exn_loc;
-    cstr_attributes = decl.exn_attributes;
-  }
+  let tag =
+    match decl.exn_args with
+        [] -> Cstr_ext_constant (path_exc, true, decl.exn_loc)
+      | _ -> Cstr_ext_block (path_exc, true, decl.exn_loc)
+  in
+    { cstr_name = Path.last path_exc;
+      cstr_res = Predef.type_exn;
+      cstr_existentials = [];
+      cstr_args = decl.exn_args;
+      cstr_arity = List.length decl.exn_args;
+      cstr_tag = tag;
+      cstr_consts = -1;
+      cstr_nonconsts = -1;
+      cstr_private = Public;
+      cstr_normal = -1;
+      cstr_generalized = false;
+      cstr_loc = decl.exn_loc;
+      cstr_attributes = decl.exn_attributes;
+    }
 
 let extension_descr path_ext ext =
   let ty_res =
@@ -111,8 +116,8 @@ let extension_descr path_ext ext =
   in
   let tag =
     match ext.ext_args with
-        [] -> Cstr_ext_constant (path_ext, ext.ext_loc)
-      | _ -> Cstr_ext_block (path_ext, ext.ext_loc)
+        [] -> Cstr_ext_constant(path_ext, false, ext.ext_loc)
+      | _ -> Cstr_ext_block(path_ext, false, ext.ext_loc)
   in
   let existentials =
     match ext.ext_ret_type with

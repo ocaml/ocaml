@@ -71,7 +71,7 @@ and instruction_desc =
   | Icatch of int * instruction * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
-  | Iraise
+  | Iraise of Lambda.raise_kind
 
 type fundecl =
   { fun_name: string;

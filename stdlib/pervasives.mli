@@ -28,6 +28,11 @@
 external raise : exn -> 'a = "%raise"
 (** Raise the given exception value *)
 
+external raise_notrace : exn -> 'a = "%raise_notrace"
+(** A faster version [raise] which does not record the backtrace.
+    @since 4.02.0
+*)
+
 val invalid_arg : string -> 'a
 (** Raise exception [Invalid_argument] with the given string. *)
 

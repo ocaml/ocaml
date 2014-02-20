@@ -27,7 +27,58 @@ open Translclass
 type error =
   Circular_dependency of Ident.t
 
+
 exception Error of Location.t * error
+
+(* Compile an exception definition *)
+
+let prim_set_oo_id =
+  Pccall {Primitive.prim_name = "caml_set_oo_id"; prim_arity = 1;
+          prim_alloc = false; prim_native_name = "";
+          prim_native_float = false}
+
+let transl_exception path decl =
+  let name =
+    match path with
+      None -> Ident.name decl.cd_id
+    | Some p -> Path.name p
+  in
+  Lprim(prim_set_oo_id,
+        [Lprim(Pmakeblock(Obj.object_tag, Immutable),
+              [Lconst(Const_base(Const_string (name,None)));
+               Lconst(Const_base(Const_int 0))])])
+
+(* Compile a type extension *)
+
+let transl_type_extension tyext body =
+  let (rebinds, body) =
+    List.fold_right
+      (fun ext (rebinds, body) ->
+         match ext.ext_kind with
+             Text_decl(args, ret) ->
+               let lam =
+                 Lprim(prim_set_oo_id,
+                       [Lprim(Pmakeblock(Obj.object_tag, Immutable),
+                              [Lconst(Const_base(Const_int 0));
+                               Lconst(Const_base(Const_int 0))])])
+               in
+               let body = Llet(Strict, ext.ext_id, lam, body) in
+                 (rebinds, body)
+           | Text_rebind(path, lid) ->
+               let idpath = Ident.create "rebind" in
+               let rebinds = (idpath, path) :: rebinds in
+               let lam = Lvar idpath in
+               let body = Llet(Strict, ext.ext_id, lam, body) in
+                 (rebinds, body))
+      tyext.tyext_constructors
+      ([], body)
+  in
+    List.fold_right
+      (fun (id, path) body ->
+         let lam = transl_path path in
+           Llet(Strict, id, lam, body))
+      rebinds
+      body
 
 (* Compile a coercion *)
 

@@ -79,6 +79,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       else []
 
     let outval_of_untyped_exception bucket =
+      if O.tag bucket <> 0 then
+        Oval_constr (Oide_ident (O.obj (O.field bucket 0) : string), [])
+      else
       let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
       let args =
         if (name = "Match_failure"
@@ -351,7 +354,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         Oval_constr (lid, args)
 
     and tree_of_exception depth bucket =
-      let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
+      let slot =
+        if O.tag bucket <> 0 then bucket
+        else O.field bucket 0
+      in
+      let name = (O.obj(O.field slot 0) : string) in
       let lid = Longident.parse name in
       try
         (* Attempt to recover the constructor description for the exn
@@ -359,11 +366,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let cstr = Env.lookup_constructor lid env in
         let path =
           match cstr.cstr_tag with
-            Cstr_exception (p, _) -> p | _ -> raise Not_found in
+            Cstr_ext_constant(p, true, _) | Cstr_ext_block(p, true, _)-> p
+            | _ -> raise Not_found
+        in
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)
-        if not (EVP.same_value (O.field bucket 0) (EVP.eval_path path))
+        if not (EVP.same_value slot (EVP.eval_path path))
         then raise Not_found;
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name 1 depth bucket cstr.cstr_args

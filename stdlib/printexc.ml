@@ -58,9 +58,12 @@ let to_string x =
             sprintf locfmt file line char (char+6) "Undefined recursive module"
         | _ ->
             let x = Obj.repr x in
-            let constructor =
-              (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
-            constructor ^ (fields x) in
+            if Obj.tag x <> 0 then
+              (Obj.magic (Obj.field x 0) : string)
+            else
+              let constructor =
+                (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
+              constructor ^ (fields x) in
   conv !printers
 
 let print fct arg =
@@ -168,3 +171,16 @@ let register_printer fn =
 
 
 external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
+
+
+let exn_slot x =
+  let x = Obj.repr x in
+  if Obj.tag x = 0 then Obj.field x 0 else x
+
+let exn_slot_id x =
+  let slot = exn_slot x in
+  (Obj.obj (Obj.field slot 1) : int)
+
+let exn_slot_name x =
+  let slot = exn_slot x in
+  (Obj.obj (Obj.field slot 0) : string)

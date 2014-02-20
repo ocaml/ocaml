@@ -134,13 +134,17 @@ let output_primitive_table outchan =
 
 let init () =
   (* Enter the predefined exceptions *)
-  Array.iter
-    (fun name ->
+  Array.iteri
+    (fun i name ->
       let id =
         try List.assoc name Predef.builtin_values
         with Not_found -> fatal_error "Symtable.init" in
       let c = slot_for_setglobal id in
-      let cst = Const_block(0, [Const_base(Const_string (name, None))]) in
+      let cst = Const_block(Obj.object_tag,
+                            [Const_base(Const_string (name, None));
+                             Const_base(Const_int (-i-1))
+                            ])
+      in
       literal_table := (c, cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
   (* Initialize the known C primitives *)

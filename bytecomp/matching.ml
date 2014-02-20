@@ -164,7 +164,7 @@ let ctx_matcher p =
   match p.pat_desc with
   | Tpat_construct (_, cstr,omegas) ->
       begin match cstr.cstr_tag with
-      | Cstr_exception _ | Cstr_ext_constant _ | Cstr_ext_block _ ->
+      | Cstr_ext_constant _ | Cstr_ext_block _ ->
           let nargs = List.length omegas in
           (fun q rem -> match q.pat_desc with
           | Tpat_construct (_, cstr',args)
@@ -501,8 +501,7 @@ let up_ok_action act1 act2 =
 (* Nothing is kown about exeception/extension patterns,
    because of potential rebind *)
 let rec exc_inside p = match p.pat_desc with
-  | Tpat_construct (_,{cstr_tag = Cstr_exception _
-                                | Cstr_ext_block _
+  | Tpat_construct (_,{cstr_tag = Cstr_ext_block _
                                 | Cstr_ext_constant _},_) -> true
   | Tpat_any|Tpat_constant _|Tpat_var _
   | Tpat_construct (_,_,[])
@@ -967,8 +966,7 @@ and split_constr cls args def k =
   let ex_pat = what_is_cases cls in
   match ex_pat.pat_desc with
   | Tpat_any -> precompile_var args cls def k
-  | Tpat_construct (_,{ cstr_tag = Cstr_exception _
-                                 | Cstr_ext_block _
+  | Tpat_construct (_,{ cstr_tag = Cstr_ext_block _
                                  | Cstr_ext_constant _ },_) ->
       split_naive cls args def k
   | _ ->
@@ -1079,8 +1077,7 @@ and dont_precompile_var args cls def k =
 and is_exc p = match p.pat_desc with
 | Tpat_or (p1,p2,_) -> is_exc p1 || is_exc p2
 | Tpat_alias (p,v,_) -> is_exc p
-| Tpat_construct (_,{ cstr_tag = Cstr_exception _
-                               | Cstr_ext_constant _
+| Tpat_construct (_,{ cstr_tag = Cstr_ext_constant _
                                | Cstr_ext_block _ },_) -> true
 | _ -> false
 
@@ -1320,7 +1317,7 @@ let make_constr_matching p def ctx = function
         match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
             make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
-        | Cstr_ext_constant _ | Cstr_ext_block _ | Cstr_exception _ ->
+        | Cstr_ext_constant _ | Cstr_ext_block _ ->
             make_field_args Alias arg 1 cstr.cstr_arity argl in
       {pm=
         {cases = []; args = newargs;
@@ -1684,7 +1681,7 @@ let rec do_tests_nofail tst arg = function
 
 let make_test_sequence fail tst lt_tst arg const_lambda_list =
   let rec make_test_sequence const_lambda_list =
-    if List.length const_lambda_list >= 4 && lt_tst <> Praise then
+    if List.length const_lambda_list >= 4 && lt_tst <> Pignore then
       split_sequence const_lambda_list
     else match fail with
     | None -> do_tests_nofail tst arg const_lambda_list
@@ -2104,7 +2101,7 @@ let combine_constant arg cst partial ctx def
           fail arg 0 255 int_lambda_list
     | Const_string _ ->
         make_test_sequence
-          fail prim_string_notequal Praise arg const_lambda_list
+          fail prim_string_notequal Pignore arg const_lambda_list
     | Const_float _ ->
         make_test_sequence
           fail
@@ -2148,9 +2145,8 @@ let split_extension_cases tag_lambda_list =
     | (cstr, act) :: rem ->
         let (consts, nonconsts) = split_rec rem in
         match cstr with
-          Cstr_ext_constant(path, _) -> ((path, act) :: consts, nonconsts)
-        | Cstr_ext_block(path, _) -> (consts, (path, act) :: nonconsts)
-        | Cstr_exception(path, _) -> (consts, (path, act) :: nonconsts)
+          Cstr_ext_constant(path, _, _) -> ((path, act) :: consts, nonconsts)
+        | Cstr_ext_block(path, _, _) -> (consts, (path, act) :: nonconsts)
         | _ -> assert false in
   split_rec tag_lambda_list
 
@@ -2763,7 +2759,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
 let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
-  Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
+  Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_match_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
@@ -2775,7 +2771,8 @@ let for_function loc repr param pat_act_list partial =
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
-  compile_matching Location.none None (fun () -> Lprim(Praise, [param]))
+  compile_matching Location.none None
+    (fun () -> Lprim(Praise Raise_reraise, [param]))
     param pat_act_list Partial
 
 let for_let loc param pat body =

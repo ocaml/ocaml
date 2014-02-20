@@ -65,7 +65,7 @@ type operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of comparison
-  | Craise of Debuginfo.t
+  | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
 
 type expression =

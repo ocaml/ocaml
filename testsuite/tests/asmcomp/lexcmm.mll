@@ -57,7 +57,9 @@ let keyword_table =
     "mod", MODI;
     "or", OR;
     "proj", PROJ;
-    "raise", RAISE;
+    "raise", RAISE Lambda.Raise_regular;
+    "reraise", RAISE Lambda.Raise_reraise;
+    "raise_notrace", RAISE Lambda.Raise_notrace;
     "seq", SEQ;
     "signed", SIGNED;
     "skip", SKIP;

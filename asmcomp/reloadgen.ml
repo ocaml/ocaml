@@ -88,7 +88,7 @@ method private reload i =
        already at the correct position (e.g. on stack for some arguments).
        However, something needs to be done for the function pointer in
        indirect calls. *)
-    Iend | Ireturn | Iop(Itailcall_imm _) | Iraise -> i
+    Iend | Ireturn | Iop(Itailcall_imm _) | Iraise _ -> i
   | Iop(Itailcall_ind) ->
       let newarg = self#makereg1 i.arg in
       insert_moves i.arg newarg

@@ -206,8 +206,8 @@ let make_startup_file ppf filename units_list =
   compile_phrase (Cmmgen.entry_point name_list);
   let units = List.map (fun (info,_,_) -> info) units_list in
   List.iter compile_phrase (Cmmgen.generic_functions false units);
-  Array.iter
-    (fun name -> compile_phrase (Cmmgen.predef_exception name))
+  Array.iteri
+    (fun i name -> compile_phrase (Cmmgen.predef_exception i name))
     Runtimedef.builtin_exceptions;
   compile_phrase (Cmmgen.global_table name_list);
   compile_phrase
