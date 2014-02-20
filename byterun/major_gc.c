@@ -457,15 +457,23 @@ static asize_t clip_heap_chunk_size (asize_t request)
   return ((request + Page_size - 1) >> Page_log) << Page_log;
 }
 
-/* Make sure the request is >= caml_major_heap_increment, then call
-   clip_heap_chunk_size, then make sure the result is >= request.
+/* Compute the heap increment, make sure the request is at least that big,
+   then call clip_heap_chunk_size, then make sure the result is >= request.
 */
 asize_t caml_round_heap_chunk_size (asize_t request)
 {
   asize_t result = request;
+  uintnat incr;
 
-  if (result < caml_major_heap_increment){
-    result = caml_major_heap_increment;
+  /* Compute the heap increment as a byte size. */
+  if (caml_major_heap_increment > 1000){
+    incr = Bsize_wsize (caml_major_heap_increment);
+  }else{
+    incr = caml_stat_heap_size / 100 * caml_major_heap_increment;
+  }
+
+  if (result < incr){
+    result = incr;
   }
   result = clip_heap_chunk_size (result);
 
