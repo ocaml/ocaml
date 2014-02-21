@@ -34,7 +34,8 @@ let rec strengthen env mty p =
   match scrape env mty with
     Mty_signature sg ->
       Mty_signature(strengthen_sig env sg p)
-  | Mty_functor(param, arg, res) when !Clflags.applicative_functors ->
+  | Mty_functor(param, arg, res)
+    when !Clflags.applicative_functors && Ident.name param <> "*" ->
       Mty_functor(param, arg, strengthen env res (Papply(p, Pident param)))
   | mty ->
       mty
@@ -107,8 +108,9 @@ let nondep_supertype env mid mty =
     | Mty_functor(param, arg, res) ->
         let var_inv =
           match va with Co -> Contra | Contra -> Co | Strict -> Strict in
-        Mty_functor(param, nondep_mty env var_inv arg,
-                     nondep_mty (Env.add_module param arg env) va res)
+        Mty_functor(param, Misc.may_map (nondep_mty env var_inv) arg,
+                    nondep_mty
+                      (Env.add_module param (Btype.default_mty arg) env) va res)
 
   and nondep_sig env va = function
     [] -> []
@@ -233,3 +235,34 @@ and no_code_needed_sig env sg =
       no_code_needed_sig env rem
   | (Sig_typext _ | Sig_exception _ | Sig_class _) :: rem ->
       false
+
+
+(* Check whether a module type may return types *)
+
+let rec contains_type env = function
+    Mty_ident path ->
+      (try Misc.may (contains_type env) (Env.find_modtype path env).mtd_type
+       with Not_found -> raise Exit)
+  | Mty_signature sg ->
+      contains_type_sig env sg
+  | Mty_functor (_, _, body) ->
+      contains_type env body
+
+and contains_type_sig env = List.iter (contains_type_item env)
+
+and contains_type_item env = function
+    Sig_type (_,({type_manifest = None} |
+                 {type_kind = Type_abstract; type_private = Private}),_)
+  | Sig_modtype _ ->
+      raise Exit
+  | Sig_module (_, {md_type = mty}, _) ->
+      contains_type env mty
+  | Sig_value _
+  | Sig_type _
+  | Sig_exception _
+  | Sig_class _
+  | Sig_class_type _ ->
+      ()
+
+let contains_type env mty =
+  try contains_type env mty; false with Exit -> true

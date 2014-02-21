@@ -207,7 +207,7 @@ let module_type sub mty =
   | Tmty_ident (_path, _) -> ()
   | Tmty_signature sg -> sub # signature sg
   | Tmty_functor (_id, _, mtype1, mtype2) ->
-      sub # module_type mtype1; sub # module_type mtype2
+      Misc.may (sub # module_type) mtype1; sub # module_type mtype2
   | Tmty_with (mtype, list) ->
       sub # module_type mtype;
       List.iter (fun (_, _, withc) -> sub # with_constraint withc) list
@@ -226,7 +226,7 @@ let module_expr sub mexpr =
   | Tmod_ident (_p, _) -> ()
   | Tmod_structure st -> sub # structure st
   | Tmod_functor (_id, _, mtype, mexpr) ->
-      sub # module_type mtype;
+      Misc.may (sub # module_type) mtype;
       sub # module_expr mexpr
   | Tmod_apply (mexp1, mexp2, _) ->
       sub # module_expr mexp1;

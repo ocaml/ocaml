@@ -202,7 +202,7 @@ and structure_components = {
 
 and functor_components = {
   fcomp_param: Ident.t;                 (* Formal parameter *)
-  fcomp_arg: module_type;               (* Argument signature *)
+  fcomp_arg: module_type option;        (* Argument signature *)
   fcomp_res: module_type;               (* Result signature *)
   fcomp_env: t;     (* Environment in which the result signature makes sense *)
   fcomp_subst: Subst.t;  (* Prefixing substitution for the result signature *)
@@ -523,7 +523,7 @@ let rec lookup_module_descr lid env =
       let (p2, {md_type=mty2}) = lookup_module l2 env in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
-          !check_modtype_inclusion env mty2 p2 f.fcomp_arg;
+          Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
           (Papply(p1, p2), !components_of_functor_appl' f p1 p2)
       | Structure_comps c ->
           raise Not_found
@@ -563,7 +563,7 @@ and lookup_module lid env : Path.t * module_declaration =
       let p = Papply(p1, p2) in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
-          !check_modtype_inclusion env mty2 p2 f.fcomp_arg;
+          Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
           let mty =
             Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
               f.fcomp_res in
@@ -1140,7 +1140,7 @@ and components_of_module_maker (env, sub, path, mty) =
           fcomp_param = param;
           (* fcomp_arg must be prefixed eagerly, because it is interpreted
              in the outer environment, not in env *)
-          fcomp_arg = Subst.modtype sub ty_arg;
+          fcomp_arg = may_map (Subst.modtype sub) ty_arg;
           (* fcomp_res is prefixed lazily, because it is interpreted in env *)
           fcomp_res = ty_res;
           fcomp_env = env;

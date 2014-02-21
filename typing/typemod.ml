@@ -39,6 +39,7 @@ type error =
   | Scoping_pack of Longident.t * type_expr
   | Extension of string
   | Recursive_module_require_explicit_type
+  | Apply_generative
 
 exception Error of Location.t * Env.t * error
 
@@ -302,8 +303,9 @@ let rec approx_modtype env smty =
   | Pmty_signature ssg ->
       Mty_signature(approx_sig env ssg)
   | Pmty_functor(param, sarg, sres) ->
-      let arg = approx_modtype env sarg in
-      let (id, newenv) = Env.enter_module param.txt arg env in
+      let arg = may_map (approx_modtype env) sarg in
+      let (id, newenv) =
+        Env.enter_module param.txt (Btype.default_mty arg) env in
       let res = approx_modtype newenv sres in
       Mty_functor(id, arg, res)
   | Pmty_with(sbody, constraints) ->
@@ -482,11 +484,13 @@ let rec transl_modtype env smty =
       mkmty (Tmty_signature sg) (Mty_signature sg.sig_type) env loc
         smty.pmty_attributes
   | Pmty_functor(param, sarg, sres) ->
-      let arg = transl_modtype env sarg in
-      let (id, newenv) = Env.enter_module param.txt arg.mty_type env in
+      let arg = Misc.may_map (transl_modtype env) sarg in
+      let ty_arg = Misc.may_map (fun m -> m.mty_type) arg in
+      let (id, newenv) =
+        Env.enter_module param.txt (Btype.default_mty ty_arg) env in
       let res = transl_modtype newenv sres in
       mkmty (Tmty_functor (id, param, arg, res))
-      (Mty_functor(id, arg.mty_type, res.mty_type)) env loc
+      (Mty_functor(id, ty_arg, res.mty_type)) env loc
         smty.pmty_attributes
   | Pmty_with(sbody, constraints) ->
       let body = transl_modtype env sbody in
@@ -975,11 +979,14 @@ let rec type_module sttn funct_body anchor env smod =
            mod_attributes = smod.pmod_attributes;
            mod_loc = smod.pmod_loc }
   | Pmod_functor(name, smty, sbody) ->
-      let mty = transl_modtype env smty in
-      let (id, newenv) = Env.enter_module name.txt mty.mty_type env in
-      let body = type_module sttn true None newenv sbody in
+      let mty = may_map (transl_modtype env) smty in
+      let ty_arg = may_map (fun m -> m.mty_type) mty in
+      let (id, newenv), funct_body =
+        match ty_arg with None -> (Ident.create "*", env), false
+        | Some mty -> Env.enter_module name.txt mty env, true in
+      let body = type_module sttn funct_body None newenv sbody in
       rm { mod_desc = Tmod_functor(id, name, mty, body);
-           mod_type = Mty_functor(id, mty.mty_type, body.mod_type);
+           mod_type = Mty_functor(id, ty_arg, body.mod_type);
            mod_env = env;
            mod_attributes = smod.pmod_attributes;
            mod_loc = smod.pmod_loc }
@@ -990,6 +997,14 @@ let rec type_module sttn funct_body anchor env smod =
         type_module (sttn && path <> None) funct_body None env sfunct in
       begin match Mtype.scrape env funct.mod_type with
         Mty_functor(param, mty_param, mty_res) as mty_functor ->
+          let generative, mty_param =
+            (mty_param = None, Btype.default_mty mty_param) in
+          if generative then begin
+            if sarg.pmod_desc <> Pmod_structure [] then
+              raise (Error (sfunct.pmod_loc, env, Apply_generative));
+            if funct_body && Mtype.contains_type env funct.mod_type then
+              raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
+          end;
           let coercion =
             try
               Includemod.modtypes env arg.mod_type mty_param
@@ -1001,6 +1016,7 @@ let rec type_module sttn funct_body anchor env smod =
                 Subst.modtype (Subst.add_module param path Subst.identity)
                               mty_res
             | None ->
+                if generative then mty_res else
                 try
                   Mtype.nondep_supertype
                     (Env.add_module param arg.mod_type env) param mty_res
@@ -1025,8 +1041,6 @@ let rec type_module sttn funct_body anchor env smod =
          }
 
   | Pmod_unpack sexp ->
-      if funct_body then
-        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
       if !Clflags.principal then Ctype.begin_def ();
       let exp = Typecore.type_exp env sexp in
       if !Clflags.principal then begin
@@ -1051,6 +1065,8 @@ let rec type_module sttn funct_body anchor env smod =
         | _ ->
             raise (Error(smod.pmod_loc, env, Not_a_packed_module exp.exp_type))
       in
+      if funct_body && Mtype.contains_type env mty then
+        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
       rm { mod_desc = Tmod_unpack(exp, mty);
            mod_type = mty;
            mod_env = env;
@@ -1589,7 +1605,8 @@ let report_error ppf = function
         Location.print_filename intf_name
   | Not_allowed_in_functor_body ->
       fprintf ppf
-        "This kind of expression is not allowed within the body of a functor."
+        "@[This expression creates fresh types.@ %s@]"
+        "It is not allowed inside applicative functors."
   | With_need_typeconstr ->
       fprintf ppf
         "Only type constructors with identical parameters can be substituted."
@@ -1610,6 +1627,8 @@ let report_error ppf = function
       fprintf ppf "Uninterpreted extension '%s'." s
   | Recursive_module_require_explicit_type ->
       fprintf ppf "Recursive modules require an explicit module type."
+  | Apply_generative ->
+      fprintf ppf "This is a generative functor. It can only be applied to ()"
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error ppf err)

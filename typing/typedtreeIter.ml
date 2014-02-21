@@ -409,7 +409,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           Tmty_ident (path, _) -> ()
         | Tmty_signature sg -> iter_signature sg
         | Tmty_functor (id, _, mtype1, mtype2) ->
-            iter_module_type mtype1; iter_module_type mtype2
+            Misc.may iter_module_type mtype1; iter_module_type mtype2
         | Tmty_with (mtype, list) ->
             iter_module_type mtype;
             List.iter (fun (path, _, withc) ->
@@ -438,7 +438,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           Tmod_ident (p, _) -> ()
         | Tmod_structure st -> iter_structure st
         | Tmod_functor (id, _, mtype, mexpr) ->
-            iter_module_type mtype;
+            Misc.may iter_module_type mtype;
             iter_module_expr mexpr
         | Tmod_apply (mexp1, mexp2, _) ->
             iter_module_expr mexp1;

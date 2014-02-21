@@ -829,7 +829,9 @@ class printer  ()= object(self:'self)
     | Pmty_signature (s) ->
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
           (self#list self#signature_item  ) s (* FIXME wrong indentation*)
-    | Pmty_functor (s, mt1, mt2) ->
+    | Pmty_functor (_, None, mt2) ->
+        pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2 
+    | Pmty_functor (s, Some mt1, mt2) ->
         pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
           self#module_type mt1  self#module_type mt2
     | Pmty_with (mt, l) ->
@@ -937,7 +939,9 @@ class printer  ()= object(self:'self)
           self#module_type mt
     | Pmod_ident (li) ->
         pp f "%a" self#longident_loc li;
-    | Pmod_functor (s, mt, me) ->
+    | Pmod_functor (_, None, me) ->
+        pp f "functor ()@;->@;%a" self#module_expr me
+    | Pmod_functor (s, Some mt, me) ->
         pp f "functor@ (%s@ :@ %a)@;->@;%a"
           s.txt  self#module_type mt  self#module_expr me
     | Pmod_apply (me1, me2) ->
@@ -1023,7 +1027,8 @@ class printer  ()= object(self:'self)
     | Pstr_module x ->
         let rec module_helper me = match me.pmod_desc with
         | Pmod_functor(s,mt,me) ->
-            pp f "(%s:%a)"  s.txt  self#module_type mt ;
+            if mt = None then pp f "()"
+            else Misc.may (pp f "(%s:%a)" s.txt self#module_type) mt;
             module_helper me
         | _ -> me in
         pp f "@[<hov2>module %s%a@]"

@@ -270,7 +270,7 @@ type class_type_declaration =
 type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
-  | Mty_functor of Ident.t * module_type * module_type
+  | Mty_functor of Ident.t * module_type option * module_type
 
 and signature = signature_item list
 

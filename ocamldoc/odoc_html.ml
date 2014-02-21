@@ -1406,7 +1406,8 @@ class html =
 
     (** Print html code to display the type of a module parameter.. *)
     method html_of_module_parameter_type b m_name p =
-      self#html_of_module_type b m_name ~code: p.mp_type_code p.mp_type
+      match p.mp_type with None -> bs b "<code>()</code>"
+      | Some mty -> self#html_of_module_type b m_name ~code: p.mp_type_code mty
 
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =

@@ -13,9 +13,13 @@ Type system:
 * Keep typing of pattern cases independent in principal mode
   (i.e. information from previous cases is no longer used when typing
   patterns; cf. PR6235' in typing-warnings/records.ml)
+- Allow opening a first-class module or applying a generative functor
+  in the body of a generative functor. Allow it also in the body of
+  an applicative functor if no types are created
 
 Language features:
 - Attributes and extension nodes
+- Generative functors
 
 Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)

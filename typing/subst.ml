@@ -340,8 +340,8 @@ let rec modtype s = function
       Mty_signature(signature s sg)
   | Mty_functor(id, arg, res) ->
       let id' = Ident.rename id in
-      Mty_functor(id', modtype s arg,
-                        modtype (add_module id (Pident id') s) res)
+      Mty_functor(id', may_map (modtype s) arg,
+                       modtype (add_module id (Pident id') s) res)
 
 and signature s sg =
   (* Components of signature may be mutually recursive (e.g. type declarations

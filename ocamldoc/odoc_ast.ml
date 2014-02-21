@@ -1732,18 +1732,25 @@ module Analyser =
 
       | (Parsetree.Pmod_functor (_, pmodule_type, p_module_expr2),
          Typedtree.Tmod_functor (ident, _, mtyp, tt_module_expr2)) ->
-           let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
-           let loc_end = pmodule_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
+           let loc = match pmodule_type with None -> Location.none
+                     | Some pmty -> pmty.Parsetree.pmty_loc in
+           let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
+           let loc_end = loc.Location.loc_end.Lexing.pos_cnum in
            let mp_type_code = get_string_of_file loc_start loc_end in
            print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
            let mp_name = Name.from_ident ident in
-           let mp_kind = Sig.analyse_module_type_kind env
-               current_module_name pmodule_type mtyp.mty_type
+           let mp_kind =
+             match pmodule_type, mtyp with
+               Some pmty, Some mty ->
+                 Sig.analyse_module_type_kind env current_module_name pmty
+                   mty.mty_type
+             | _ -> Module_type_struct []
            in
            let param =
              {
                mp_name = mp_name ;
-               mp_type = Odoc_env.subst_module_type env mtyp.mty_type ;
+               mp_type = Misc.may_map
+                (fun m -> Odoc_env.subst_module_type env m.mty_type) mtyp ;
                mp_type_code = mp_type_code ;
                mp_kind = mp_kind ;
              }

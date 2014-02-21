@@ -181,7 +181,13 @@ and try_modtypes env cxt subst mty1 mty2 =
       try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
   | (Mty_signature sig1, Mty_signature sig2) ->
       signatures env cxt subst sig1 sig2
-  | (Mty_functor(param1, arg1, res1), Mty_functor(param2, arg2, res2)) ->
+  | (Mty_functor(param1, None, res1), Mty_functor(param2, None, res2)) ->
+      begin match modtypes env (Body param1::cxt) subst res1 res2 with
+        Tcoerce_none -> Tcoerce_none
+      | cc -> Tcoerce_functor (Tcoerce_none, cc)
+      end
+  | (Mty_functor(param1, Some arg1, res1),
+     Mty_functor(param2, Some arg2, res2)) ->
       let arg2' = Subst.modtype subst arg2 in
       let cc_arg = modtypes env (Arg param1::cxt) Subst.identity arg2' arg1 in
       let cc_res =

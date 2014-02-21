@@ -407,7 +407,7 @@ and untype_module_type mty =
       Tmty_ident (_path, lid) -> Pmty_ident (lid)
     | Tmty_signature sg -> Pmty_signature (untype_signature sg)
     | Tmty_functor (_id, name, mtype1, mtype2) ->
-        Pmty_functor (name, untype_module_type mtype1,
+        Pmty_functor (name, Misc.may_map untype_module_type mtype1,
           untype_module_type mtype2)
     | Tmty_with (mtype, list) ->
         Pmty_with (untype_module_type mtype,
@@ -436,7 +436,7 @@ and untype_module_expr mexpr =
           Tmod_ident (_p, lid) -> Pmod_ident (lid)
         | Tmod_structure st -> Pmod_structure (untype_structure st)
         | Tmod_functor (_id, name, mtype, mexpr) ->
-            Pmod_functor (name, untype_module_type mtype,
+            Pmod_functor (name, Misc.may_map untype_module_type mtype,
               untype_module_expr mexpr)
         | Tmod_apply (mexp1, mexp2, _) ->
             Pmod_apply (untype_module_expr mexp1, untype_module_expr mexp2)

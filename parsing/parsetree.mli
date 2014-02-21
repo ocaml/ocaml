@@ -577,7 +577,7 @@ and module_type_desc =
         (* S *)
   | Pmty_signature of signature
         (* sig ... end *)
-  | Pmty_functor of string loc * module_type * module_type
+  | Pmty_functor of string loc * module_type option * module_type
         (* functor(X : MT1) -> MT2 *)
   | Pmty_with of module_type * with_constraint list
         (* MT with ... *)
@@ -673,7 +673,7 @@ and module_expr_desc =
         (* X *)
   | Pmod_structure of structure
         (* struct ... end *)
-  | Pmod_functor of string loc * module_type * module_expr
+  | Pmod_functor of string loc * module_type option * module_expr
         (* functor(X : MT1) -> ME *)
   | Pmod_apply of module_expr * module_expr
         (* ME1(ME2) *)
