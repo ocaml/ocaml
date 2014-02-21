@@ -226,19 +226,19 @@ module Str:
 (** Module declarations *)
 module Md:
   sig
-    val mk: ?attrs:attrs -> str -> module_type -> module_declaration
+    val mk: ?loc:loc -> ?attrs:attrs -> str -> module_type -> module_declaration
   end
 
 (** Module type declarations *)
 module Mtd:
   sig
-    val mk: ?attrs:attrs -> ?typ:module_type -> str -> module_type_declaration
+    val mk: ?loc:loc -> ?attrs:attrs -> ?typ:module_type -> str -> module_type_declaration
   end
 
 (** Module bindings *)
 module Mb:
   sig
-    val mk: ?attrs:attrs -> str -> module_expr -> module_binding
+    val mk: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> module_binding
   end
 
 (** Value bindings *)

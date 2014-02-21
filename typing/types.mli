@@ -289,12 +289,14 @@ and module_declaration =
   {
     md_type: module_type;
     md_attributes: Parsetree.attributes;
+    md_loc: Location.t;
   }
 
 and modtype_declaration =
   {
     mtd_type: module_type option;  (* None: abstract *)
     mtd_attributes: Parsetree.attributes;
+    mtd_loc: Location.t;
   }
 
 and rec_status =

@@ -227,6 +227,7 @@ and module_binding =
      mb_name: string loc;
      mb_expr: module_expr;
      mb_attributes: attributes;
+     mb_loc: Location.t;
     }
 
 and value_binding =
@@ -291,6 +292,7 @@ and module_declaration =
      md_name: string loc;
      md_type: module_type;
      md_attributes: attributes;
+     md_loc: Location.t;
     }
 
 and module_type_declaration =
@@ -299,6 +301,7 @@ and module_type_declaration =
      mtd_name: string loc;
      mtd_type: module_type option;
      mtd_attributes: attributes;
+     mtd_loc: Location.t;
     }
 
 and with_constraint =

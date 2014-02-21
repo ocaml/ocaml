@@ -266,29 +266,32 @@ module Val = struct
 end
 
 module Md = struct
-  let mk ?(attrs = []) name typ =
+  let mk ?(loc = !default_loc) ?(attrs = []) name typ =
     {
      pmd_name = name;
      pmd_type = typ;
      pmd_attributes = attrs;
+     pmd_loc = loc;
     }
 end
 
 module Mtd = struct
-  let mk ?(attrs = []) ?typ name =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?typ name =
     {
      pmtd_name = name;
      pmtd_type = typ;
      pmtd_attributes = attrs;
+     pmtd_loc = loc;
     }
 end
 
 module Mb = struct
-  let mk ?(attrs = []) name expr =
+  let mk ?(loc = !default_loc) ?(attrs = []) name expr =
     {
      pmb_name = name;
      pmb_expr = expr;
      pmb_attributes = attrs;
+     pmb_loc = loc;
     }
 end
 

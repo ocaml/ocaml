@@ -64,7 +64,8 @@ and untype_structure_item item =
     | Tstr_recmodule list ->
         Pstr_recmodule (List.map untype_module_binding list)
     | Tstr_modtype mtd ->
-        Pstr_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
+        Pstr_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type;
+                      pmtd_loc=mtd.mtd_loc;pmtd_attributes=mtd.mtd_attributes;}
     | Tstr_open (ovf, _path, lid, attrs) -> Pstr_open (ovf, lid, attrs)
     | Tstr_class list ->
         Pstr_class
@@ -97,6 +98,7 @@ and untype_module_binding mb =
    pmb_name = mb.mb_name;
    pmb_expr = untype_module_expr mb.mb_expr;
    pmb_attributes = mb.mb_attributes;
+   pmb_loc = mb.mb_loc;
   }
 
 and untype_type_declaration decl =
@@ -352,14 +354,15 @@ and untype_signature_item item =
         Psig_exception (untype_constructor_declaration decl)
     | Tsig_module md ->
         Psig_module {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
-                     pmd_attributes = md.md_attributes;
+                     pmd_attributes = md.md_attributes; pmd_loc = md.md_loc;
                     }
     | Tsig_recmodule list ->
         Psig_recmodule (List.map (fun md ->
               {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
-               pmd_attributes = md.md_attributes}) list)
+               pmd_attributes = md.md_attributes; pmd_loc = md.md_loc}) list)
     | Tsig_modtype mtd ->
-        Psig_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type; pmtd_attributes=mtd.mtd_attributes}
+        Psig_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type;
+                      pmtd_attributes=mtd.mtd_attributes; pmtd_loc=mtd.mtd_loc}
     | Tsig_open (ovf, _path, lid, attrs) -> Psig_open (ovf, lid, attrs)
     | Tsig_include (mty, _, attrs) -> Psig_include (untype_module_type mty, attrs)
     | Tsig_class list ->

@@ -35,6 +35,7 @@ Compilers:
 - PR#5854: issue warning 3 when referring to a value marked with
   the [@@deprecated] attribute
 - PR#6203: Constant exception constructor no longer allocate
+- PR#6311: Improve signature mismatch error messages
 
 Runtime system:
 - PR#4765: Structural equality should treat exception specifically
@@ -73,6 +74,8 @@ Features wishes:
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
 - PR#5808: allow simple patterns, not only identifiers, in "let p : t = ..."
+- PR#6054: add support for M.[ foo ], M.[| foo |] etc.
+           (patch by Kaustuv Chaudhuri)
 - PR#6064: GADT representation for Bigarray.kind + CAML_BA_CHAR runtime kind
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
