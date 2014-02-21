@@ -1253,6 +1253,8 @@ let_binding_:
         (ghpat(Ppat_constraint(mkpatvar $1 1, poly)), exp) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
+  | simple_pattern_not_ident COLON core_type EQUAL seq_expr
+      { (ghpat(Ppat_constraint($1, $3)), $5) }
 ;
 fun_binding:
     strict_binding
@@ -1361,6 +1363,9 @@ pattern:
 simple_pattern:
     val_ident %prec below_EQUAL
       { mkpat(Ppat_var (mkrhs $1 1)) }
+  | simple_pattern_not_ident { $1 }
+;
+simple_pattern_not_ident:
   | UNDERSCORE
       { mkpat(Ppat_any) }
   | signed_constant

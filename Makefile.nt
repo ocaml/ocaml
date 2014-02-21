@@ -202,8 +202,6 @@ opt-core:
 opt:
 	$(MAKE) -f Makefile.nt opt-core
 	$(MAKE) -f Makefile.nt otherlibrariesopt
-	if test -n "$(WITH_OCAMLBUILD)"; then \
-		$(MAKE) -f Makefile.nt ocamlbuildlib.native; else :; fi
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
@@ -242,7 +240,8 @@ installbyt:
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	if test -n "$(WITH_OCAMLDEBUG)"; then (cd debugger; $(MAKEREC) install); \
 	   else :; fi
-	./build/partial-install.sh
+	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
+	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
 	cp README $(DISTRIB)/Readme.general.txt
 	cp README.win32 $(DISTRIB)/Readme.windows.txt
@@ -257,6 +256,8 @@ installopt:
 	cp asmcomp/*.cmi driver/*.cmi $(COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); fi
+	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
+	   else :; fi
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 
@@ -657,19 +658,17 @@ alldepend::
 
 # Ocamlbuild
 
-ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-mixed-boot
-	./build/ocamlbuild-byte-only.sh
-ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
-	./build/ocamlbuild-native-only.sh
-ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
-	./build/ocamlbuildlib-native-only.sh
+ocamlbuild.byte: ocamlc otherlibraries
+	cd ocamlbuild && $(MAKE) all
 
+ocamlbuild.native: ocamlopt otherlibrariesopt
+	cd ocamlbuild && $(MAKE) allopt
 
-.PHONY: ocamlbuild-mixed-boot
-ocamlbuild-mixed-boot:
-	./build/mixed-boot.sh
 partialclean::
-	rm -rf _build
+	cd ocamlbuild && $(MAKE) clean
+
+alldepend::
+	cd ocamlbuild && $(MAKE) depend
 
 # Make clean in the test suite
 

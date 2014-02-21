@@ -63,6 +63,7 @@ Features wishes:
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
 - PR#6246: allow wilcard _ as for-loop index
+- PR#5808: allow simple patterns, not only identifiers, in "let p : t = ..."
 
 OCaml 4.01.1:
 -------------
@@ -76,7 +77,8 @@ Bug fixes:
 - PR#6241: Assumed inequality between paths involving functor arguments
 - PR#6243: Make "ocamlopt -g" more resistant to ill-formed locations
 - PR#6239: sometimes wrong stack alignment when raising exceptions
-  in -g mode with backtraces active
+           in -g mode with backtraces active
+- PR#6275: Soundness bug related to type constraints
 
 
 OCaml 4.01.0:

@@ -84,6 +84,8 @@ NATDYNLINK=true
 CMXS=cmxs
 RUNTIMED=noruntimed
 ASM_CFI_SUPPORTED=false
+UNIXLIB=win32unix
+GRAPHLIB=win32graph
 
 ########## Configuration for the bytecode compiler
 
