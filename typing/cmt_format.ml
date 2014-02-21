@@ -47,6 +47,8 @@ and binary_part =
 type cmt_infos = {
   cmt_modname : string;
   cmt_annots : binary_annots;
+  cmt_value_dependencies :
+    (Types.value_description * Types.value_description) list;
   cmt_comments : (string * Location.t) list;
   cmt_args : string array;
   cmt_sourcefile : string option;
@@ -185,10 +187,19 @@ let read_cmi filename =
     | Some cmi, _ -> cmi
 
 let saved_types = ref []
+let value_deps = ref []
+
+let clear () =
+  saved_types := [];
+  value_deps := []
 
 let add_saved_type b = saved_types := b :: !saved_types
 let get_saved_types () = !saved_types
 let set_saved_types l = saved_types := l
+
+let record_value_dependency vd1 vd2 =
+  if vd1.Types.val_loc <> vd2.Types.val_loc then
+    value_deps := (vd1, vd2) :: !value_deps
 
 let save_cmt filename modname binary_annots sourcefile initial_env sg =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
@@ -211,6 +222,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
     let cmt = {
       cmt_modname = modname;
       cmt_annots = clear_env binary_annots;
+      cmt_value_dependencies = !value_deps;
       cmt_comments = Lexer.comments ();
       cmt_args = Sys.argv;
       cmt_sourcefile = sourcefile;
@@ -225,6 +237,6 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
     } in
     output_cmt oc cmt;
     close_out oc;
-    set_saved_types [];
   end;
-  set_saved_types  []
+  clear ()
+

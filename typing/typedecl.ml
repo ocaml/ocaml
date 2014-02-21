@@ -1322,7 +1322,8 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   let decl =
     { type_params = params;
       type_arity = List.length params;
-      type_kind = if arity_ok then orig_decl.type_kind else Type_abstract;
+      type_kind =
+        if arity_ok && man <> None then orig_decl.type_kind else Type_abstract;
       type_private = priv;
       type_manifest = man;
       type_variance = [];

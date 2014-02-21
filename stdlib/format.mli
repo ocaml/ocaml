@@ -381,21 +381,21 @@ type formatter_out_functions = {
 ;;
 
 val set_formatter_out_functions : formatter_out_functions -> unit;;
-(** [set_formatter_out_functions out_funs]
-   Redirect the pretty-printer output to the functions [out_funs.out_string]
-   and [out_funs.out_flush] as described in
+(** [set_formatter_out_functions f]
+   Redirect the pretty-printer output to the functions [f.out_string]
+   and [f.out_flush] as described in
    [set_formatter_output_functions]. In addition, the pretty-printer function
-   that outputs a newline is set to the function [out_funs.out_newline] and
+   that outputs a newline is set to the function [f.out_newline] and
    the function that outputs indentation spaces is set to the function
-   [out_funs.out_spaces].
+   [f.out_spaces].
 
    This way, you can change the meaning of indentation (which can be
    something else than just printing space characters) and the meaning of new
    lines opening (which can be connected to any other action needed by the
-   application at hand). The two functions [out_spaces] and [out_newline] are
-   normally connected to [out_string] and [out_flush]: respective default
-   values for [out_space] and [out_newline] are
-   [out_string (String.make n ' ') 0 n] and [out_string "\n" 0 1]. *)
+   application at hand). The two functions [f.out_spaces] and [f.out_newline]
+   are normally connected to [f.out_string] and [f.out_flush]: respective
+   default values for [f.out_space] and [f.out_newline] are
+   [f.out_string (String.make n ' ') 0 n] and [f.out_string "\n" 0 1]. *)
 
 val get_formatter_out_functions : unit -> formatter_out_functions;;
 (** Return the current output functions of the pretty-printer,
@@ -567,14 +567,14 @@ val pp_get_formatter_out_functions :
 (** {6 Convenience formatting functions.} *)
 
 val pp_print_list:
-  ?pp_sep:(formatter -> unit -> unit) -> 
+  ?pp_sep:(formatter -> unit -> unit) ->
   (formatter -> 'a -> unit) -> (formatter -> 'a list -> unit)
 (** [pp_print_list ?pp_sep pp_v ppf l] prints the list [l]. [pp_v] is
     used on the elements of [l] and each element is separated by
     a call to [pp_sep] (defaults to {!pp_print_cut}). Does nothing on
     empty lists.
 
-    @since 4.02
+    @since 4.02.0
 *)
 
 val pp_print_text : formatter -> string -> unit
@@ -582,7 +582,7 @@ val pp_print_text : formatter -> string -> unit
     respectively printed with {!pp_print_space} and
     {!pp_force_newline}.
 
-    @since 4.02
+    @since 4.02.0
 *)
 
 (** {6 [printf] like functions for pretty-printing.} *)
@@ -652,9 +652,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    It prints [x = 1] within a pretty-printing box.
 
    Note: If you need to prevent the interpretation of a [@] character as a
-   pretty-printing indication, escape it with a [%] character, as usual in
-   format strings.
-   @since 3.12.2
+   pretty-printing indication, you can also escape it with a [%] character.
 
 *)
 
@@ -717,14 +715,14 @@ val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** {6 Deprecated} *)
 
 val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a;;
-(** A deprecated and error prone function. Do not use it.
+(** @deprecated This function is error prone. Do not use it.
 
   If you need to print to some buffer [b], you must first define a
   formatter writing to [b], using [let to_b = formatter_of_buffer b]; then
   use regular calls to [Format.fprintf] on formatter [to_b]. *)
 
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
-(** A deprecated synonym for [ksprintf]. *)
+(** @deprecated An alias for [ksprintf]. *)
 
 val set_all_formatter_output_functions :
   out:(string -> int -> int -> unit) ->
@@ -733,8 +731,7 @@ val set_all_formatter_output_functions :
   spaces:(int -> unit) ->
   unit
 ;;
-(** Deprecated. Subsumed by [set_formatter_out_functions].
-  @since 4.00.0
+(** @deprecated Subsumed by [set_formatter_out_functions].
 *)
 
 val get_all_formatter_output_functions :
@@ -744,15 +741,13 @@ val get_all_formatter_output_functions :
   (unit -> unit) *
   (int -> unit)
 ;;
-(** Deprecated. Subsumed by [get_formatter_out_functions].
-  @since 4.00.0
+(** @deprecated Subsumed by [get_formatter_out_functions].
 *)
 val pp_set_all_formatter_output_functions :
   formatter -> out:(string -> int -> int -> unit) -> flush:(unit -> unit) ->
   newline:(unit -> unit) -> spaces:(int -> unit) -> unit
 ;;
-(** Deprecated. Subsumed by [pp_set_formatter_out_functions].
-  @since 4.01.0
+(** @deprecated Subsumed by [pp_set_formatter_out_functions].
 *)
 
 val pp_get_all_formatter_output_functions :
@@ -760,6 +755,5 @@ val pp_get_all_formatter_output_functions :
   (string -> int -> int -> unit) * (unit -> unit) * (unit -> unit) *
   (int -> unit)
 ;;
-(** Deprecated. Subsumed by [pp_get_formatter_out_functions].
-  @since 4.01.0
+(** @deprecated Subsumed by [pp_get_formatter_out_functions].
 *)

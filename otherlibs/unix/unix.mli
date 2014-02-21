@@ -244,7 +244,6 @@ type open_flag =
                                    while still open *)
   | O_CLOEXEC                   (** Set the close-on-exec flag on the
                                    descriptor returned by {!openfile} *)
-
 (** The flags to {!Unix.openfile}. *)
 
 
@@ -1102,7 +1101,9 @@ val open_connection : sockaddr -> in_channel * out_channel
 val shutdown_connection : in_channel -> unit
 (** ``Shut down'' a connection established with {!Unix.open_connection};
    that is, transmit an end-of-file condition to the server reading
-   on the other side of the connection. *)
+   on the other side of the connection. This does not fully close the
+   file descriptor associated with the channel, which you must remember
+   to free via {!Pervasives.close_in}. *)
 
 val establish_server : (in_channel -> out_channel -> unit) -> sockaddr -> unit
 (** Establish a server on the given address.

@@ -53,8 +53,8 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
-  typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
   typing/typedtreeIter.cmo typing/typedtreeMap.cmo typing/cmt_format.cmo \
+  typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
   typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
   typing/typemod.cmo
@@ -238,7 +238,7 @@ installbyt:
 	  else :; fi
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
-	if test -n "$(WITH_OCAMLDEBUG)"; then (cd debugger; $(MAKEREC) install); \
+	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKEREC) install); \
 	   else :; fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
 	   else :; fi

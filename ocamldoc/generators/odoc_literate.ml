@@ -126,8 +126,8 @@ class html =
           "a:active {color : Red; text-decoration : underline; }" ;
           ".keyword { font-weight : bold ; color : Red }" ;
           ".keywordsign { color : #C04600 }" ;
-          ".superscript { font-size : 4 }" ;
-          ".subscript { font-size : 4 }" ;
+          ".superscript { font-size : 0.6em }" ;
+          ".subscript { font-size : 0.6em }" ;
           ".comment { color : Green }" ;
           ".constructor { color : Blue }" ;
           ".type { color : #5C6585 }" ;

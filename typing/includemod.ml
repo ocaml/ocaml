@@ -52,6 +52,7 @@ exception Error of error list
 (* Inclusion between value descriptions *)
 
 let value_descriptions env cxt subst id vd1 vd2 =
+  Cmt_format.record_value_dependency vd1 vd2;
   Env.mark_value_used (Ident.name id) vd1;
   let vd2 = Subst.value_description subst vd2 in
   try

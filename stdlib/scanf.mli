@@ -322,30 +322,30 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       the format specified by the second letter for regular integers.
     - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
       the format specified by the second letter for regular integers.
-    - [\[ range \]]: reads characters that matches one of the characters
+    - [[ range ]]: reads characters that matches one of the characters
       mentioned in the range of characters [range] (or not mentioned in
       it, if the range starts with [^]). Reads a [string] that can be
       empty, if the next input character does not match the range. The set of
       characters from [c1] to [c2] (inclusively) is denoted by [c1-c2].
-      Hence, [%\[0-9\]] returns a string representing a decimal number
+      Hence, [%[0-9]] returns a string representing a decimal number
       or an empty string if no decimal digit is found; similarly,
-      [%\[\\048-\\057\\065-\\070\]] returns a string of hexadecimal digits.
+      [%[0-9a-f]] returns a string of hexadecimal digits.
       If a closing bracket appears in a range, it must occur as the
       first character of the range (or just after the [^] in case of
-      range negation); hence [\[\]\]] matches a [\]] character and
-      [\[^\]\]] matches any character that is not [\]].
-      Use [%%] and [%\@] to include a [%] or a [\@] in a range.
+      range negation); hence [[\]]] matches a [\]] character and
+      [[^\]]] matches any character that is not [\]].
+      Use [%%] and [%@] to include a [%] or a [@] in a range.
     - [r]: user-defined reader. Takes the next [ri] formatted input
       function and applies it to the scanning buffer [ib] to read the
       next argument. The input function [ri] must therefore have type
       [Scanning.in_channel -> 'a] and the argument read has type ['a].
-    - [\{ fmt %\}]: reads a format string argument. The format string
+    - [{ fmt %}]: reads a format string argument. The format string
       read must have the same type as the format string specification
       [fmt]. For instance, ["%{ %i %}"] reads any format string that
       can read a value of type [int]; hence, if [s] is the string
       ["fmt:\"number is %u\""], then [Scanf.sscanf s "fmt: %{%i%}"]
       succeeds and returns the format string ["number is %u"].
-    - [\( fmt %\)]: scanning sub-format substitution.
+    - [( fmt %)]: scanning sub-format substitution.
       Reads a format string [rf] in the input, then goes on scanning with
       [rf] instead of scanning with [fmt].
       The format string [rf] must have the same type as the format string
@@ -357,21 +357,19 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       Hence, if [s] is the string ["\"%4d\"1234.00"], then
       [Scanf.sscanf s "%(%i%)" (fun fmt i -> fmt, i)] evaluates to
       [("%4d", 1234)].
-
       This behaviour is not mere format substitution, since the conversion
       returns the format string read as additional argument. If you need
       pure format substitution, use special flag [_] to discard the
-      extraneous argument: conversion [%_\( fmt %\)] reads a format string
+      extraneous argument: conversion [%_( fmt %)] reads a format string
       [rf] and then behaves the same as format string [rf].  Hence, if [s] is
       the string ["\"%4d\"1234.00"], then [Scanf.sscanf s "%_(%i%)"] is
       simply equivalent to [Scanf.sscanf "1234.00" "%4d"].
-
     - [l]: returns the number of lines read so far.
     - [n]: returns the number of characters read so far.
     - [N] or [L]: returns the number of tokens read so far.
     - [!]: matches the end of input condition.
     - [%]: matches one [%] character in the input.
-    - [\@]: matches one [\@] character in the input.
+    - [@]: matches one [@] character in the input.
     - [,]: does nothing.
 
     Following the [%] character that introduces a conversion, there may be
@@ -383,7 +381,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     The field width is composed of an optional integer literal
     indicating the maximal width of the token to read.
     For instance, [%6d] reads an integer, having at most 6 decimal digits;
-    [%4f] reads a float with at most 4 characters; and [%8[\\000-\\255]]
+    [%4f] reads a float with at most 4 characters; and [%8[\000-\255]]
     returns the next 8 characters (or all the characters still available,
     if fewer than 8 characters are available in the input).
 
@@ -408,18 +406,18 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
 (** Scanning indications appear just after the string conversions [%s]
     and [%[ range ]] to delimit the end of the token. A scanning
-    indication is introduced by a [\@] character, followed by some
+    indication is introduced by a [@] character, followed by some
     plain character [c]. It means that the string token should end
     just before the next matching [c] (which is skipped). If no [c]
     character is encountered, the string token spreads as much as
     possible. For instance, ["%s@\t"] reads a string up to the next
-    tab character or to the end of input. If a [\@] character appears
+    tab character or to the end of input. If a [@] character appears
     anywhere else in the format string, it is treated as a plain character.
 
     Note:
 
-    - As usual in format strings, [%] and [\@] characters must be escaped
-    using [%%] and [%\@]; this rule still holds within range specifications
+    - As usual in format strings, [%] and [@] characters must be escaped
+    using [%%] and [%@]; this rule still holds within range specifications
     and scanning indications.
     For instance, ["%s@%%"] reads a string up to the next [%] character.
     - The scanning indications introduce slight differences in the syntax of
@@ -428,7 +426,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     the [Format] module; hence, when producing formatted text to be scanned
     by [!Scanf.bscanf], it is wise to use printing functions from the
     [Format] module (or, if you need to use functions from [Printf], banish
-    or carefully double check the format strings that contain ['\@']
+    or carefully double check the format strings that contain ['@']
     characters).
 *)
 

@@ -30,6 +30,7 @@ let string_buff = Buffer.create 256
 let reset_string_buffer () = Buffer.clear string_buff
 
 let store_string_char c = Buffer.add_char string_buff c
+let store_string_chars s = Buffer.add_string string_buff s
 
 let get_stored_string () = Buffer.contents string_buff
 
@@ -197,7 +198,7 @@ rule main = parse
 and string = parse
     '"'
     { () }
-   | '\\' ("\010" | "\013" | "\013\010") ([' ' '\009'] * as spaces)
+   | '\\' ('\013'* '\010') ([' ' '\009'] * as spaces)
     { incr_loc lexbuf (String.length spaces);
       string lexbuf }
   | '\\' (backslash_escapes as c)
@@ -208,7 +209,7 @@ and string = parse
       if in_pattern () && v > 255 then
        warning lexbuf
         (Printf.sprintf
-          "illegal backslash escape in string: `\\%c%c%c'" c d u) ;
+          "illegal backslash escape in string: '\\%c%c%c'" c d u) ;
       store_string_char (Char.chr v);
       string lexbuf }
  | '\\' 'x' (['0'-'9' 'a'-'f' 'A'-'F'] as d) (['0'-'9' 'a'-'f' 'A'-'F'] as u)
@@ -217,14 +218,15 @@ and string = parse
   | '\\' (_ as c)
     {if in_pattern () then
        warning lexbuf
-        (Printf.sprintf "illegal backslash escape in string: `\\%c'" c) ;
+        (Printf.sprintf "illegal backslash escape in string: '\\%c'" c) ;
       store_string_char '\\' ;
       store_string_char c ;
       string lexbuf }
   | eof
     { raise(Lexical_error("unterminated string", "", 0, 0)) }
-  | '\010'
-    { store_string_char '\010';
+  | '\013'* '\010' as s
+    { warning lexbuf (Printf.sprintf "unescaped newline in string") ;
+      store_string_chars s;
       incr_loc lexbuf 0;
       string lexbuf }
   | _ as c

@@ -1124,8 +1124,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_value(rec_flag, sdefs) ->
         let scope =
           match rec_flag with
-          | Recursive -> Some (Annot.Idef {scope with
-                                           Location.loc_start = loc.Location.loc_start})
+          | Recursive ->
+              Some (Annot.Idef {scope with
+                                Location.loc_start = loc.Location.loc_start})
           | Nonrecursive ->
               let start =
                 match srem with
@@ -1496,7 +1497,7 @@ let () =
 (* Typecheck an implementation file *)
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
-  Cmt_format.set_saved_types [];
+  Cmt_format.clear ();
   try
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();

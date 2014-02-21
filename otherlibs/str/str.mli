@@ -121,6 +121,7 @@ val matched_string : string -> string
    - {!Str.string_partial_match}
    - {!Str.global_substitute}
    - {!Str.substitute_first}
+
    provided that none of the following functions was called inbetween:
    - {!Str.global_replace}
    - {!Str.replace_first}

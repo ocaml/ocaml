@@ -25,6 +25,7 @@ type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
+  | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
   | Expr_type_clash of (type_expr * type_expr) list
@@ -439,7 +440,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
               unify env t1 t2
             with
             | Unify trace ->
-                raise(Error(loc, env, Pattern_type_clash(trace)))
+                raise(Error(loc, env, Or_pattern_type_clash(x1, trace)))
             end;
           (x2,x1)::unify_vars rem1 rem2
           end
@@ -538,8 +539,10 @@ let build_or_pat env loc lid =
   let gloc = {loc with Location.loc_ghost=true} in
   let row' = ref {row with row_more=newvar()} in
   let pats =
-    List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row'); pat_loc=gloc;
-                            pat_env=env; pat_type=ty; pat_extra=[]; pat_attributes=[]})
+    List.map
+      (fun (l,p) ->
+        {pat_desc=Tpat_variant(l,p,row'); pat_loc=gloc;
+         pat_env=env; pat_type=ty; pat_extra=[]; pat_attributes=[]})
       pats
   in
   match pats with
@@ -547,8 +550,9 @@ let build_or_pat env loc lid =
   | pat :: pats ->
       let r =
         List.fold_left
-          (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some row0); pat_extra=[];
-                            pat_loc=gloc; pat_env=env; pat_type=ty; pat_attributes=[]})
+          (fun pat pat0 ->
+            {pat_desc=Tpat_or(pat0,pat,Some row0); pat_extra=[];
+             pat_loc=gloc; pat_env=env; pat_type=ty; pat_attributes=[]})
           pat pats in
       (path, rp { r with pat_loc = loc },ty)
 
@@ -982,7 +986,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
       let p = {p with ppat_loc=loc} in
-      type_pat p expected_ty (* TODO: record 'extra' to remember about interval *)
+      type_pat p expected_ty
+        (* TODO: record 'extra' to remember about interval *)
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
   | Ppat_tuple spl ->
@@ -1181,7 +1186,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         match p.pat_desc with
           Tpat_var (id,s) ->
             {p with pat_type = ty;
-             pat_desc = Tpat_alias ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s);
+             pat_desc = Tpat_alias
+               ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s);
              pat_extra = [extra];
             }
         | _ -> {p with pat_type = ty;
@@ -1190,7 +1196,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
   | Ppat_type lid ->
       let (path, p,ty) = build_or_pat !env loc lid.txt in
       unify_pat_types loc !env ty expected_ty;
-      { p with pat_extra = (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
+      { p with pat_extra =
+        (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
   | Ppat_extension (s, _arg) ->
       raise (Error (s.loc, !env, Extension s.txt))
 
@@ -1952,6 +1959,10 @@ and type_expect_ ?in_function env sexp ty_expected =
                 Texp_ident(path, lid, desc)
             | Val_unbound ->
                 raise(Error(loc, env, Masked_instance_variable lid.txt))
+            (*| Val_prim _ ->
+                let p = Env.normalize_path (Some loc) env path in
+                Env.add_required_global (Path.head p);
+                Texp_ident(path, lid, desc)*)
             | _ ->
                 Texp_ident(path, lid, desc)
           end;
@@ -1980,10 +1991,13 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = type_constant cst;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_let(Nonrecursive, [{pvb_pat=spat; pvb_expr=sval; pvb_attributes=[]}], sbody) when contains_gadt env spat ->
+  | Pexp_let(Nonrecursive,
+             [{pvb_pat=spat; pvb_expr=sval; pvb_attributes=[]}], sbody)
+    when contains_gadt env spat ->
     (* TODO: allow non-empty attributes? *)
       type_expect ?in_function env
-        {sexp with pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
+        {sexp with
+         pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
         ty_expected
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let scp =
@@ -2028,7 +2042,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         Exp.fun_ ~loc
           l None
           (Pat.var ~loc (mknoloc "*opt*"))
-          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []] [Vb.mk spat smatch] sexp)
+          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
+             [Vb.mk spat smatch] sexp)
       in
       type_expect ?in_function env sfun ty_expected
         (* TODO: keep attributes, call type_function directly *)
@@ -2177,7 +2192,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                     let ty =
                       newconstr p' (instance_list env decl.type_params) in
                     end_def ();
-                    generalize ty;
+                    generalize_structure ty;
                     ty, op
             end
         | op -> ty_expected, op
@@ -2364,7 +2379,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = ty';
         exp_attributes = arg.exp_attributes;
         exp_env = env;
-        exp_extra = (Texp_constraint cty, loc, sexp.pexp_attributes) :: arg.exp_extra;
+        exp_extra =
+          (Texp_constraint cty, loc, sexp.pexp_attributes) :: arg.exp_extra;
       }
   | Pexp_coerce(sarg, sty, sty') ->
       let separate = true (* always separate, 1% slowdown for lablgtk *)
@@ -2731,7 +2747,8 @@ and type_expect_ ?in_function env sexp ty_expected =
             exp
         | _ -> assert false
       in
-      re { exp with exp_extra = (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
+      re { exp with exp_extra =
+             (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
   | Pexp_newtype(name, sbody) ->
       let ty = newvar () in
       (* remember original level *)
@@ -2777,7 +2794,8 @@ and type_expect_ ?in_function env sexp ty_expected =
       (* non-expansive if the body is non-expansive, so we don't introduce
          any new extra node in the typed AST. *)
       rue { body with exp_loc = loc; exp_type = ety;
-            exp_extra = (Texp_newtype name, loc, sexp.pexp_attributes) :: body.exp_extra }
+            exp_extra =
+            (Texp_newtype name, loc, sexp.pexp_attributes) :: body.exp_extra }
   | Pexp_pack m ->
       let (p, nl, tl) =
         match Ctype.expand_head env (instance env ty_expected) with
@@ -3007,7 +3025,9 @@ and type_argument env sarg ty_expected' ty_expected =
       (* let-expand to have side effects *)
       let let_pat, let_var = var_pair "arg" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
-           Texp_let (Nonrecursive, [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[]}], func let_var) }
+           Texp_let (Nonrecursive,
+                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[]}],
+                     func let_var) }
       end
   | _ ->
       let texp = type_expect env sarg ty_expected' in
@@ -3286,7 +3306,7 @@ and type_statement env sexp =
 
 (* Typing of match cases *)
 
-and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist : Typedtree.case list * _ =
+and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* ty_arg is _fully_ generalized *)
   let patterns = List.map (fun {pc_lhs=p} -> p) caselist in
   let erase_either =
@@ -3595,7 +3615,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let l = List.combine pat_list exp_list in
   let l =
     List.map2
-      (fun (p, e) pvb -> {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes})
+      (fun (p, e) pvb ->
+        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes})
       l spat_sexp_list
   in
   (l, new_env, unpacks)
@@ -3660,6 +3681,12 @@ let report_error env ppf = function
           fprintf ppf "This pattern matches values of type")
         (function ppf ->
           fprintf ppf "but a pattern was expected which matches values of type")
+  | Or_pattern_type_clash (id, trace) ->
+      report_unification_error ppf env trace
+        (function ppf ->
+          fprintf ppf "The variable %s on the left-hand side of this or-pattern has type" (Ident.name id))
+        (function ppf ->
+          fprintf ppf "but on the right-hand side it has type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
   | Orpat_vars id ->
@@ -3836,7 +3863,8 @@ let report_error env ppf = function
   | Invalid_interval ->
       fprintf ppf "@[Only character intervals are supported in patterns.@]"
   | Invalid_for_loop_index ->
-      fprintf ppf "@[Invalid for-loop index: only variables and _ are allowed.@]"
+      fprintf ppf
+        "@[Invalid for-loop index: only variables and _ are allowed.@]"
   | Extension s ->
       fprintf ppf "Uninterpreted extension '%s'." s
 
