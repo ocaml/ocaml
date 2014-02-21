@@ -14,8 +14,9 @@ include ../config/Makefile
 
 # Various commands and dir
 ##########################
-OCAMLC   = $(CAMLC_BIN) -nostdlib -I ../stdlib
-OCAMLOPT = $(CAMLOPT_BIN) -nostdlib -I ../stdlib
+CAMLRUN=../boot/ocamlrun
+OCAMLC   = ../ocamlcomp.sh
+OCAMLOPT = ../ocamlcompopt.sh
 OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
 OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
 OCAMLYACC= ../boot/ocamlyacc

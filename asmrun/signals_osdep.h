@@ -253,6 +253,7 @@
   #define CONTEXT_EXCEPTION_POINTER (context->regs->gpr[29])
   #define CONTEXT_YOUNG_LIMIT (context->regs->gpr[30])
   #define CONTEXT_YOUNG_PTR (context->regs->gpr[31])
+  #define CONTEXT_SP (context->regs->gpr[1])
 
 /****************** PowerPC, BSD */
 

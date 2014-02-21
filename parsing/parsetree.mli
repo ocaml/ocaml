@@ -244,7 +244,7 @@ and expression_desc =
   | Pexp_while of expression * expression
         (* while E1 do E2 done *)
   | Pexp_for of
-      string loc *  expression * expression * direction_flag * expression
+      pattern *  expression * expression * direction_flag * expression
         (* for i = E1 to E2 do E3 done      (flag = Upto)
            for i = E1 downto E2 do E3 done  (flag = Downto)
          *)

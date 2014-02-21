@@ -13,7 +13,9 @@
 BASEDIR=../..
 
 .PHONY: default
-default: compile run
+default:
+	$(MAKE) compile
+	$(MAKE) run
 
 .PHONY: compile
 compile:

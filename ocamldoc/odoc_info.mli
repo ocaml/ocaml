@@ -192,7 +192,7 @@ module Extension :
           xt_type_extension: t_type_extension ; (** the type extension containing this constructor *)
           xt_alias: extension_alias option ; (** [None] when the extension is not a rebind. *)
           mutable xt_loc: Odoc_types.location ;
-          mutable xt_text: Odoc_types.text option ; (** optional user description *)
+          mutable xt_text: Odoc_types.info option ; (** optional user description *)
         }
 
     and t_type_extension = Odoc_extension.t_type_extension =
@@ -245,7 +245,7 @@ module Type :
           vc_name : string ; (** Name of the constructor. *)
           vc_args : Types.type_expr list ; (** Arguments of the constructor. *)
           vc_ret : Types.type_expr option ;
-          mutable vc_text : text option ; (** Optional description in the associated comment. *)
+          mutable vc_text : info option ; (** Optional description in the associated comment. *)
         }
 
     (** Description of a record type field. *)
@@ -254,7 +254,7 @@ module Type :
           rf_name : string ; (** Name of the field. *)
           rf_mutable : bool ; (** [true] if mutable. *)
           rf_type : Types.type_expr ; (** Type of the field. *)
-          mutable rf_text : text option ; (** Optional description in the associated comment.*)
+          mutable rf_text : info option ; (** Optional description in the associated comment.*)
         }
 
     (** The various kinds of a type. *)

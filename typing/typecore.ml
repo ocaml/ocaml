@@ -64,6 +64,7 @@ type error =
   | Unexpected_existential
   | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval
+  | Invalid_for_loop_index
   | Extension of string
 
 exception Error of Location.t * Env.t * error
@@ -2323,11 +2324,16 @@ and type_expect_ ?in_function env sexp ty_expected =
   | Pexp_for(param, slow, shigh, dir, sbody) ->
       let low = type_expect env slow Predef.type_int in
       let high = type_expect env shigh Predef.type_int in
-      let (id, new_env) =
-        Env.enter_value param.txt {val_type = instance_def Predef.type_int;
-          val_attributes = [];
-          val_kind = Val_reg; Types.val_loc = loc; } env
-          ~check:(fun s -> Warnings.Unused_for_index s)
+      let id, new_env =
+        match param.ppat_desc with
+        | Ppat_any -> Ident.create "_for", env
+        | Ppat_var {txt} ->
+            Env.enter_value txt {val_type = instance_def Predef.type_int;
+                                 val_attributes = [];
+                                 val_kind = Val_reg; Types.val_loc = loc; } env
+              ~check:(fun s -> Warnings.Unused_for_index s)
+        | _ ->
+            raise (Error (param.ppat_loc, env, Invalid_for_loop_index))
       in
       let body = type_statement new_env sbody in
       rue {
@@ -3826,6 +3832,8 @@ let report_error env ppf = function
         "must be qualified in this pattern"
   | Invalid_interval ->
       fprintf ppf "@[Only character intervals are supported in patterns.@]"
+  | Invalid_for_loop_index ->
+      fprintf ppf "@[Invalid for-loop index: only variables and _ are allowed.@]"
   | Extension s ->
       fprintf ppf "Uninterpreted extension '%s'." s
 

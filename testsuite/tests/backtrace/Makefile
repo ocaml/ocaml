@@ -62,7 +62,7 @@ native:
 	@for file in $(OTHERFILES); do \
 	  rm -f program program.exe; \
 	  $(OCAMLOPT) -g -o $(EXECNAME) $$file; \
-	  printf " ... testing '$$file' with ocamlc:"; \
+	  printf " ... testing '$$file' with ocamlopt:"; \
 	  F="`basename $$file .ml`"; \
 	  (OCAMLRUNPARAM=b=1 ./$(EXECNAME) $$arg || true) \
 	       >$$F.native.result 2>&1; \

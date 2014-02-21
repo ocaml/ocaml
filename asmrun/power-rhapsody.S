@@ -36,6 +36,14 @@
         addis   $2, 0, ha16($1)
         stg     $0, lo16($1)($2)
 .endmacro
+.macro Loadglobal32       /* reg,glob,tmp */
+        addis   $2, 0, ha16($1)
+        lwz     $0, lo16($1)($2)
+.endmacro
+.macro Storeglobal32      /* reg,glob,tmp */
+        addis   $2, 0, ha16($1)
+        stw     $0, lo16($1)($2)
+.endmacro
 
         .text
 
@@ -234,21 +242,22 @@ _caml_c_call:
 /* Raise an exception from OCaml */
         .globl  _caml_raise_exn
 _caml_raise_exn:
-        addis   r11, 0, ha16(_caml_backtrace_active)
-        lwz     r11, lo16(_caml_backtrace_active)(r11)
+        Loadglobal32 r11, _caml_backtrace_active, r11
         cmpwi   r11, 0
         bne     L110
 L111:
     /* Pop trap frame */
         lg      r0, 0(r29)
         mr      r1, r29
-        mtlr    r0
+        mtctr    r0
         lg      r29, WORD(r1)
         addi    r1, r1, 16
     /* Branch to handler */
-        blr
-
+        bctr
 L110:
+	li	r0, 0
+	Storeglobal32 r0, _caml_backtrace_pos, r11
+L114:		
         mr      r28, r3        /* preserve exn bucket in callee-save */
                                /* arg 1: exception bucket (already in r3) */
         mflr    r4             /* arg 2: PC of raise */
@@ -259,12 +268,25 @@ L110:
         mr      r3, r28
         b       L111
 
-/* Raise an exception from C */
+        .globl  _caml_reraise_exn
+_caml_reraise_exn:
+        Loadglobal32 r11, _caml_backtrace_active, r11
+        cmpwi   r11, 0
+        bne-    L114
+    /* Pop trap frame */
+        lg      r0, 0(r29)
+        mr      r1, r29
+        mtctr    r0
+        lg      r29, WORD(r1)
+        addi    r1, r1, 16
+    /* Branch to handler */
+        bctr
+
+	/* Raise an exception from C */
 
         .globl  _caml_raise_exception
 _caml_raise_exception:
-        addis   r11, 0, ha16(_caml_backtrace_active)
-        lwz     r11, lo16(_caml_backtrace_active)(r11)
+        Loadglobal32 r11, _caml_backtrace_active, r11
         cmpwi   r11, 0
         bne     L112
 L113:
@@ -278,10 +300,10 @@ L113:
     /* Pop trap frame */
         lg      r0, 0(r1)
         lg      r29, WORD(r1)
-        mtlr    r0
+        mtctr   r0
         addi    r1, r1, 16
     /* Branch to handler */
-        blr
+        bctr
 L112:
         mr      r28, r3        /* preserve exn bucket in callee-save */
                                /* arg 1: exception bucket (already in r3) */

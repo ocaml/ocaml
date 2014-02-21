@@ -166,10 +166,8 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 #endif
   caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
   caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
-#if defined(SYS_rhapsody)
   caml_bottom_of_stack = (char *) CONTEXT_SP;
   caml_last_return_address = (uintnat) CONTEXT_PC;
-#endif
   caml_array_bound_error();
 }
 #endif

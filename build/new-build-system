@@ -38,7 +38,8 @@ build/
   distclean.sh         # Clean all generated files
 
   myocamlbuild.sh      # Regenerate the boot/myocamlbuild program
-  mk_shell_and_ocamlbuild_config.sh # Generate config/config.sh and myocamlbuild_config.ml
+  mkconfig.sh          # Generate config/config.sh
+  mkmyocamlbuild_config.sh # Generate myocamlbuild_config.ml
 
   # Partial stuffs
   mixed-boot.sh

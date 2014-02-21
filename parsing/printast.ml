@@ -299,8 +299,9 @@ and expression i ppf x =
       line i ppf "Pexp_while\n";
       expression i ppf e1;
       expression i ppf e2;
-  | Pexp_for (s, e1, e2, df, e3) ->
-      line i ppf "Pexp_for %a %a\n" fmt_direction_flag df fmt_string_loc s;
+  | Pexp_for (p, e1, e2, df, e3) ->
+      line i ppf "Pexp_for %a\n" fmt_direction_flag df;
+      pattern i ppf p;
       expression i ppf e1;
       expression i ppf e2;
       expression i ppf e3;

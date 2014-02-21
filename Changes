@@ -41,6 +41,7 @@ Bug fixes:
 - PR#6109: Typos in ocamlbuild error messages
 - PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
+- PR#6262: equality of first-class modules take module aliases into account
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
@@ -48,6 +49,10 @@ Standard library:
 - PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
 - PR#6180: efficient creation of uninitialized float arrays
 - PR#5935: a faster version of "raise" which does not maintain the backtrace
+
+OCamldoc:
+- PR#6257: handle full doc comments for variant constructors and
+           record fields
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
@@ -57,7 +62,7 @@ Features wishes:
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
-
+- PR#6246: allow wilcard _ as for-loop index
 
 OCaml 4.01.1:
 -------------
@@ -69,6 +74,10 @@ Bug fixes:
 - PR#6235: Issue with type information flowing through a variant pattern
 - PR#6240: Fail to expand module type abbreviation during substyping
 - PR#6241: Assumed inequality between paths involving functor arguments
+- PR#6243: Make "ocamlopt -g" more resistant to ill-formed locations
+- PR#6239: sometimes wrong stack alignment when raising exceptions
+  in -g mode with backtraces active
+
 
 OCaml 4.01.0:
 -------------

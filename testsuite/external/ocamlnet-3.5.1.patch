@@ -39,3 +39,14 @@
      with _ -> raise Protocol_error;
 +*)
  end
+--- ocamlnet-3.5.1/src/netstring/netencoding.mli.orig	2013-11-27 14:41:37.000000000 +0100
++++ ocamlnet-3.5.1/src/netstring/netencoding.mli	2013-11-27 14:41:52.000000000 +0100
+@@ -120,7 +120,7 @@
+ 	 * to ensure that all output lines have a length <= 76 bytes.
+ 	 *
+ 	 * Note unsafe characters:
+-	 *   As recommended by RFC 2045, the characters [!#$\@[]^`{|}~]
++	 *   As recommended by RFC 2045, the characters [!#$\@[]^`{}|~]
+ 	 *   and the double quotes
+ 	 *   are additionally represented as hex tokens.        
+ 	 *   Furthermore, the letter 'F' is considered as unsafe if it

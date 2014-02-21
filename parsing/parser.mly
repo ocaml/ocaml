@@ -1053,8 +1053,8 @@ expr:
       { mkexp_attrs (Pexp_ifthenelse($3, $5, None)) $2 }
   | WHILE ext_attributes seq_expr DO seq_expr DONE
       { mkexp_attrs (Pexp_while($3, $5)) $2 }
-  | FOR ext_attributes val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
-      { mkexp_attrs(Pexp_for(mkrhs $3 3, $5, $7, $6, $9)) $2 }
+  | FOR ext_attributes pattern EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
+      { mkexp_attrs(Pexp_for($3, $5, $7, $6, $9)) $2 }
   | expr COLONCOLON expr
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
   | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN

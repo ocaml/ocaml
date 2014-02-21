@@ -30,7 +30,7 @@ and t_extension_constructor = {
     xt_type_extension: t_type_extension ; (** the type extension containing this constructor *)
     xt_alias: extension_alias option ;
     mutable xt_loc: Odoc_types.location ;
-    mutable xt_text: Odoc_types.text option ; (** optional user description *)
+    mutable xt_text: Odoc_types.info option ; (** optional user description *)
   }
 
 and t_type_extension = {

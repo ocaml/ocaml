@@ -22,6 +22,7 @@ open Emitaux
 
 let macosx = (Config.system = "macosx")
 let mingw64 = (Config.system = "mingw64")
+let cygwin = (Config.system = "cygwin")
 
 let fp = Config.with_frame_pointers
 
@@ -61,17 +62,17 @@ let emit_symbol s =
     Emitaux.emit_symbol '$' s
 
 let emit_call s =
-  if !Clflags.dlcode && not macosx && not mingw64
+  if !Clflags.dlcode && not macosx && not mingw64 && not cygwin
   then `call	{emit_symbol s}@PLT`
   else `call	{emit_symbol s}`
 
 let emit_jump s =
-  if !Clflags.dlcode && not macosx && not mingw64
+  if !Clflags.dlcode && not macosx && not mingw64 && not cygwin
   then `jmp	{emit_symbol s}@PLT`
   else `jmp	{emit_symbol s}`
 
 let load_symbol_addr s =
-  if !Clflags.dlcode && not mingw64
+  if !Clflags.dlcode && not mingw64 && not cygwin
   then `movq	{emit_symbol s}@GOTPCREL(%rip)`
   else if !pic_code
   then `leaq	{emit_symbol s}(%rip)`
@@ -636,7 +637,7 @@ let emit_instr fallthrough i =
         `	jmp	*{emit_reg tmp1}\n`;
         if macosx then
           `	.const\n`
-        else if mingw64 then
+        else if mingw64 || cygwin then
           `	.section .rdata,\"dr\"\n`
         else
           `	.section .rodata\n`;
@@ -790,7 +791,7 @@ let begin_assembly() =
     (* from amd64.S; could emit these constants on demand *)
     if macosx then
       `	.literal16\n`
-    else if mingw64 then
+    else if mingw64 || cygwin then
       `	.section .rdata,\"dr\"\n`
     else
       `	.section .rodata.cst8,\"a\",@progbits\n`;
@@ -813,7 +814,7 @@ let end_assembly() =
   if !float_constants <> [] then begin
     if macosx then
       `	.literal8\n`
-    else if mingw64 then
+    else if mingw64 || cygwin then
       `	.section .rdata,\"dr\"\n`
     else
       `	.section .rodata.cst8,\"a\",@progbits\n`;

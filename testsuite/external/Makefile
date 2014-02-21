@@ -40,14 +40,14 @@ default:
 all-cygwin: findlib ounit res pcre react ocamltext ocamlssl camlzip cryptokit \
             sqlite ocgi xmllight configfile xmlm omake \
             camomile zen vsyml extlib fileutils ocamlify ocamlmod \
-            calendar dbm ocamlscript camlp5 geneweb coq
+            calendar dbm ocamlscript coq compcert
 
 all-macos: findlib lablgtk ocamlgraph ounit res pcre core react ocamltext \
-           ocamlssl lwt camlzip cryptokit sqlite menhir obrowser hevea \
+           ocamlssl lwt camlzip cryptokit sqlite menhir hevea \
            unison ocgi xmllight configfile xmlm lablgtkextras sks omake \
            altergo boomerang camomile zen vsyml ocamlnet extlib fileutils \
            odn ocamlify expect ocamlmod oasis calendar camlimages advi \
-           dbm ocsigen ocamlscript camlp5 geneweb coq framac
+           dbm ocsigen ocamlscript coq compcert framac
 
 platform:
 	case `uname -s` in \
@@ -56,11 +56,35 @@ platform:
 	  *) ${MAKE} all;; \
 	esac
 
+# https://github.com/ocaml/camlp4/
+CAMLP4=camlp4-trunk
+${CAMLP4}.zip:
+	${WGET} https://github.com/ocaml/camlp4/archive/trunk.zip
+	mv trunk.zip ${CAMLP4}.zip
+camlp4: ${CAMLP4}.zip
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${CAMLP4}
+	unzip -q ${CAMLP4}.zip
+	./Patcher.sh ${CAMLP4}
+	( cd ${CAMLP4} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure --prefix ${PREFIX} && \
+	  ${MAKE} all && \
+	  ocamlfind remove camlp4 && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${CAMLP4} camlp4
+distclean::
+	rm -f ${CAMLP4}.tar.gz
+all: camlp4
+
 # http://projects.camlcity.org/projects/findlib.html
 FINDLIB=findlib-1.3.3
 ${FINDLIB}.tar.gz:
 	${WGET} http://download.camlcity.org/download/$@
-findlib: ${FINDLIB}.tar.gz
+findlib: ${FINDLIB}.tar.gz camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${FINDLIB}
@@ -80,9 +104,9 @@ distclean::
 all: findlib
 
 # http://lablgtk.forge.ocamlcore.org/
-LABLGTK=lablgtk-2.16.0
+LABLGTK=lablgtk-2.18.0
 ${LABLGTK}.tar.gz:
-	${WGET} https://forge.ocamlcore.org/frs/download.php/561/$@
+	${WGET} https://forge.ocamlcore.org/frs/download.php/1261/$@
 lablgtk: ${LABLGTK}.tar.gz findlib # TODO: add lablgl
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -574,19 +598,20 @@ distclean::
 	rm -f ${OCAMLTEXT}.tar.gz
 all: ocamltext
 
-# http://sourceforge.net/projects/savonet/files/ocaml-ssl/
+# https://github.com/savonet/ocaml-ssl
 OCAMLSSL=ocaml-ssl-0.4.6
 ${OCAMLSSL}.tar.gz:
-	${WGET} http://voxel.dl.sourceforge.net/project/savonet/ocaml-ssl/0.4.6/$@
+	${WGET} https://github.com/savonet/ocaml-ssl/archive/$@
 ocamlssl: ${OCAMLSSL}.tar.gz findlib
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OCAMLSSL}
-	tar zxf ${OCAMLSSL}.tar.gz
+	tar zxf ${OCAMLSSL}.tar.gz && mv ocaml-ssl-${OCAMLSSL} ${OCAMLSSL}
 	./Patcher.sh ${OCAMLSSL}
 	( cd ${OCAMLSSL} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
-	  ./configure && \
+	  autoconf configure.ac >configure && \
+	  sh ./configure && \
 	  ${MAKE} && \
 	  ocamlfind remove ssl && \
 	  ${MAKE} install )
@@ -715,27 +740,28 @@ distclean::
 	rm -f ${MENHIR}.tar.gz
 all: menhir
 
-# http://ocsigen.org/obrowser/install
-OBROWSER=obrowser-1.1.1
-${OBROWSER}.tar.gz:
-	${WGET} http://ocsigen.org/download/$@
-obrowser: ${OBROWSER}.tar.gz lwt menhir
-	printf "%s " "$@" >/dev/tty
-	test -d ${PREFIX}
-	rm -rf ${OBROWSER}
-	tar zxf ${OBROWSER}.tar.gz
-	./Patcher.sh ${OBROWSER}
-	( cd ${OBROWSER} && \
-	  export PATH=${PREFIX}/bin:$$PATH && \
-	  ${MAKE} && \
-	  ocamlfind remove obrowser && \
-	  ${MAKE} install )
-	echo ${VERSION} >$@
-clean::
-	rm -rf ${OBROWSER} obrowser
-distclean::
-	rm -f ${OBROWSER}.tar.gz
-all: obrowser
+# disabled: cannot find module Js
+# # http://ocsigen.org/obrowser/install
+# OBROWSER=obrowser-1.1.1
+# ${OBROWSER}.tar.gz:
+# 	${WGET} http://ocsigen.org/download/$@
+# obrowser: ${OBROWSER}.tar.gz lwt menhir ocsigen
+# 	printf "%s " "$@" >/dev/tty
+# 	test -d ${PREFIX}
+# 	rm -rf ${OBROWSER}
+# 	tar zxf ${OBROWSER}.tar.gz
+# 	./Patcher.sh ${OBROWSER}
+# 	( cd ${OBROWSER} && \
+# 	  export PATH=${PREFIX}/bin:$$PATH && \
+# 	  ${MAKE} && \
+# 	  ocamlfind remove obrowser && \
+# 	  ${MAKE} install )
+# 	echo ${VERSION} >$@
+# clean::
+# 	rm -rf ${OBROWSER} obrowser
+# distclean::
+# 	rm -f ${OBROWSER}.tar.gz
+# all: obrowser
 
 # http://hevea.inria.fr/old/
 HEVEA=hevea-2.09
@@ -965,11 +991,34 @@ distclean::
 	rm -f ${OMAKE}-0.rc1.tar.gz
 all: omake
 
-# http://alt-ergo.lri.fr/
-ALTERGO=alt-ergo-0.95
+# http://forge.ocamlcore.org/projects/zarith
+ZARITH=zarith-1.2.1
+${ZARITH}.tar.gz:
+	${WGET} http://forge.ocamlcore.org/frs/download.php/1199/$@
+zarith: ${ZARITH}.tar.gz
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${ZARITH}
+	tar zxf ${ZARITH}.tar.gz
+	./Patcher.sh ${ZARITH}
+	( cd ${ZARITH} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure && \
+	  ${MAKE} && \
+	  ocamlfind remove zarith && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${ZARITH} zarith
+distclean::
+	rm -f ${ZARITH}.tar.gz
+all: zarith
+
+# http://alt-ergo.ocamlpro.com
+ALTERGO=alt-ergo-0.95.2
 ${ALTERGO}.tar.gz:
-	${WGET} http://alt-ergo.lri.fr/http/$(ALTERGO)/$@
-altergo: ${ALTERGO}.tar.gz ocamlgraph
+	${WGET} http://alt-ergo.ocamlpro.com/download_manager.php?target=$@ -O $@
+altergo: ${ALTERGO}.tar.gz ocamlgraph zarith
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${ALTERGO}
@@ -1389,7 +1438,7 @@ all: dbm
 OCSIGEN=ocsigen-bundle-2.2.2
 ${OCSIGEN}.tar.gz:
 	${WGET} http://ocsigen.org/download/$@
-ocsigen: ${OCSIGEN}.tar.gz findlib lwt obrowser pcre ocamlnet ocamlssl \
+ocsigen: ${OCSIGEN}.tar.gz findlib lwt pcre ocamlnet ocamlssl \
          sqlite camlzip cryptokit calendar dbm
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -1501,54 +1550,56 @@ distclean::
 	rm -f ${CAMLPDF}.tar.gz
 all: camlpdf
 
-# http://pauillac.inria.fr/~ddr/camlp5/
-CAMLP5=camlp5-6.10
-${CAMLP5}.tgz:
-	${WGET} http://pauillac.inria.fr/~ddr/camlp5/distrib/src/$@
-camlp5: ${CAMLP5}.tgz
-	printf "%s " "$@" >/dev/tty
-	test -d ${PREFIX}
-	rm -rf ${CAMLP5}
-	tar zxf ${CAMLP5}.tgz
-	./Patcher.sh ${CAMLP5}
-	( cd ${CAMLP5} && \
-	  export PATH=${PREFIX}/bin:$$PATH && \
-	  ./configure --transitional && \
-	  ${MAKE} world.opt && \
-	  ${MAKE} install )
-	echo ${VERSION} >$@
-clean::
-	rm -rf ${CAMLP5} camlp5
-distclean::
-	rm -f ${CAMLP5}.tgz
-all: camlp5
+# disabled: need to be updated for new AST stuff
+# # http://pauillac.inria.fr/~ddr/camlp5/
+# CAMLP5=camlp5-6.10
+# ${CAMLP5}.tgz:
+# 	${WGET} http://pauillac.inria.fr/~ddr/camlp5/distrib/src/$@
+# camlp5: ${CAMLP5}.tgz
+# 	printf "%s " "$@" >/dev/tty
+# 	test -d ${PREFIX}
+# 	rm -rf ${CAMLP5}
+# 	tar zxf ${CAMLP5}.tgz
+# 	./Patcher.sh ${CAMLP5}
+# 	( cd ${CAMLP5} && \
+# 	  export PATH=${PREFIX}/bin:$$PATH && \
+# 	  ./configure --transitional && \
+# 	  ${MAKE} world.opt && \
+# 	  ${MAKE} install )
+# 	echo ${VERSION} >$@
+# clean::
+# 	rm -rf ${CAMLP5} camlp5
+# distclean::
+# 	rm -f ${CAMLP5}.tgz
+# all: camlp5
 
-# http://opensource.geneanet.org/projects/geneweb
-GENEWEB=gw-6.05-src
-${GENEWEB}.tgz:
-	${WGET} http://opensource.geneanet.org/attachments/download/190/$@
-geneweb: ${GENEWEB}.tgz camlp5
-	printf "%s " "$@" >/dev/tty
-	test -d ${PREFIX}
-	rm -rf ${GENEWEB}
-	tar zxf ${GENEWEB}.tgz
-	./Patcher.sh ${GENEWEB}
-	( cd ${GENEWEB} && \
-	  export PATH=${PREFIX}/bin:$$PATH && \
-	  sh ./configure && \
-	  ${MAKE} )
-	echo ${VERSION} >$@
-clean::
-	rm -rf ${GENEWEB} geneweb
-distclean::
-	rm -f ${GENEWEB}.tgz
-all: geneweb
+# disabled: depends on camlp5
+# # http://opensource.geneanet.org/projects/geneweb
+# GENEWEB=gw-6.05-src
+# ${GENEWEB}.tgz:
+# 	${WGET} http://opensource.geneanet.org/attachments/download/190/$@
+# geneweb: ${GENEWEB}.tgz camlp5
+# 	printf "%s " "$@" >/dev/tty
+# 	test -d ${PREFIX}
+# 	rm -rf ${GENEWEB}
+# 	tar zxf ${GENEWEB}.tgz
+# 	./Patcher.sh ${GENEWEB}
+# 	( cd ${GENEWEB} && \
+# 	  export PATH=${PREFIX}/bin:$$PATH && \
+# 	  sh ./configure && \
+# 	  ${MAKE} )
+# 	echo ${VERSION} >$@
+# clean::
+# 	rm -rf ${GENEWEB} geneweb
+# distclean::
+# 	rm -f ${GENEWEB}.tgz
+# all: geneweb
 
 # http://coq.inria.fr/download
-COQ=coq-8.4pl1
+COQ=coq-8.4pl2
 ${COQ}.tar.gz:
-	${WGET} http://coq.inria.fr/distrib/V8.4pl1/files/$@
-coq: ${COQ}.tar.gz camlp5
+	${WGET} http://coq.inria.fr/distrib/V8.4pl2/files/$@
+coq: ${COQ}.tar.gz
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${COQ}

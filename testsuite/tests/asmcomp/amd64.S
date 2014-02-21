@@ -58,7 +58,7 @@ CAML_C_CALL:
 
 #ifdef SYS_macosx
         .literal16
-#elif defined(SYS_mingw64)
+#elif defined(SYS_mingw64) || defined(SYS_cygwin)
         .section        .rodata.cst8
 #else
         .section        .rodata.cst8,"aM",@progbits,8

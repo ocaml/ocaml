@@ -94,7 +94,7 @@ val parse :
 *)
 
 val parse_dynamic :
-  (string * spec * string) list ref -> anon_fun -> string -> unit
+  (key * spec * doc) list ref -> anon_fun -> string -> unit
 (** Same as {!Arg.parse}, except that the [speclist] argument is a reference
     and may be updated during the parsing. A typical use for this feature
     is to parse command lines of the form:
@@ -116,7 +116,7 @@ val parse_argv : ?current: int ref -> string array ->
 *)
 
 val parse_argv_dynamic : ?current:int ref -> string array ->
-  (string * spec * string) list ref -> anon_fun -> string -> unit
+  (key * spec * doc) list ref -> anon_fun -> string -> unit
 (** Same as {!Arg.parse_argv}, except that the [speclist] argument is a
     reference and may be updated during the parsing.
     See {!Arg.parse_dynamic}.

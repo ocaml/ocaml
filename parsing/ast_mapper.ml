@@ -327,8 +327,8 @@ module E = struct
     | Pexp_sequence (e1, e2) ->
         sequence ~loc ~attrs (sub.expr sub e1) (sub.expr sub e2)
     | Pexp_while (e1, e2) -> while_ ~loc ~attrs (sub.expr sub e1) (sub.expr sub e2)
-    | Pexp_for (id, e1, e2, d, e3) ->
-        for_ ~loc ~attrs (map_loc sub id) (sub.expr sub e1) (sub.expr sub e2) d
+    | Pexp_for (p, e1, e2, d, e3) ->
+        for_ ~loc ~attrs (sub.pat sub p) (sub.expr sub e1) (sub.expr sub e2) d
           (sub.expr sub e3)
     | Pexp_coerce (e, t1, t2) ->
         coerce ~loc ~attrs (sub.expr sub e) (map_opt (sub.typ sub) t1)

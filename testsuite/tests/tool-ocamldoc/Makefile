@@ -18,7 +18,11 @@ DOCFLAGS=-I $(OTOPDIR)/stdlib $(COMPFLAGS)
 
 .PHONY: default
 default:
-	@$(SET_LD_PATH) $(MAKE) run
+	@if ! $(SUPPORTS_SHARED_LIBRARIES); then \
+	  echo 'skipped (shared libraries not available)'; \
+	else \
+	  $(SET_LD_PATH) $(MAKE) run; \
+	fi
 
 .PHONY: run
 run: $(CUSTOM_MODULE).cmo

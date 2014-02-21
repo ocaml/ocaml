@@ -246,7 +246,7 @@ let merge_types merge_options mli ml =
             | None, Some d -> Some d
             | Some d1, Some d2 ->
                 if List.mem Merge_description merge_options then
-                  Some (d1 @ d2)
+                  Some (merge_info merge_options d1 d2)
                 else
                   Some d1
           in
@@ -274,7 +274,7 @@ let merge_types merge_options mli ml =
             | None, Some d -> Some d
             | Some d1, Some d2 ->
                 if List.mem Merge_description merge_options then
-                  Some (d1 @ d2)
+                  Some (merge_info merge_options d1 d2)
                 else
                   Some d1
           in
@@ -316,7 +316,7 @@ let merge_extension_constructor merge_options mli ml =
     | None, Some d -> Some d
     | Some d1, Some d2 ->
       if List.mem Merge_description merge_options then
-        Some (d1 @ d2)
+        Some (merge_info merge_options d1 d2)
       else
         Some d1
   in

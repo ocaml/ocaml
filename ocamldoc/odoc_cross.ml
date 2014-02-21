@@ -997,7 +997,7 @@ and assoc_comments_value module_list v =
 
 and assoc_comments_extension_constructor module_list x =
   let parent = Name.father x.xt_name in
-  x.xt_text <- ao (assoc_comments_text parent module_list) x.xt_text
+  x.xt_text <- ao (assoc_comments_info parent module_list) x.xt_text
 
 and assoc_comments_type_extension parent_name module_list te =
   te.te_info <- ao (assoc_comments_info parent_name module_list) te.te_info;
@@ -1016,11 +1016,11 @@ and assoc_comments_type module_list t =
     Type_abstract -> ()
   | Type_variant vl ->
       List.iter
-        (fun vc -> vc.vc_text <- ao (assoc_comments_text parent module_list) vc.vc_text)
+        (fun vc -> vc.vc_text <- ao (assoc_comments_info parent module_list) vc.vc_text)
         vl
   | Type_record fl ->
       List.iter
-        (fun rf -> rf.rf_text <- ao (assoc_comments_text parent module_list) rf.rf_text)
+        (fun rf -> rf.rf_text <- ao (assoc_comments_info parent module_list) rf.rf_text)
         fl
   | Type_open -> ()
   );

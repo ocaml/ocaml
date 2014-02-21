@@ -1356,12 +1356,7 @@ module Analyser =
                             next.ext_loc.Location.loc_start.Lexing.pos_cnum
                       in
                       let s = get_string_of_file ext_loc_end pos_limit2 in
-                      let (maybe_more, com_opt) =  My_ir.just_after_special !file_name s in
-                      let comment_opt =
-                        match com_opt with
-                          None -> None
-                        | Some d -> d.Odoc_types.i_desc
-                      in
+                      let (maybe_more, comment_opt) =  My_ir.just_after_special !file_name s in
                         new_xt.xt_text <- comment_opt;
                         analyse_extension_constructors maybe_more (new_xt :: exts_acc) q
           in

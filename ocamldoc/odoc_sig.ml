@@ -233,10 +233,7 @@ module Analyser =
           let f {Types.cd_id=constructor_name;cd_args=type_expr_list;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
-              try
-                match List.assoc constructor_name name_comment_list with
-                  None -> None
-                | Some d -> d.Odoc_types.i_desc
+              try List.assoc constructor_name name_comment_list 
               with Not_found -> None
             in
             {
@@ -252,10 +249,7 @@ module Analyser =
           let f {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr} =
             let field_name = Ident.name field_name in
             let comment_opt =
-              try
-                match List.assoc field_name name_comment_list with
-                  None -> None
-                | Some d -> d.Odoc_types.i_desc
+              try List.assoc field_name name_comment_list
               with Not_found -> None
             in
             {
@@ -634,12 +628,7 @@ module Analyser =
                 | (_, next) :: _ -> next.Types.ext_loc.Location.loc_start.Lexing.pos_cnum
               in
               let s = get_string_of_file ext_loc_end pos_limit2 in
-              let (maybe_more, com_opt) =  My_ir.just_after_special !file_name s in
-              let comment_opt =
-                match com_opt with
-                  None -> None
-                | Some d -> d.Odoc_types.i_desc
-              in
+              let (maybe_more, comment_opt) =  My_ir.just_after_special !file_name s in
                 new_x.xt_text <- comment_opt;
                 analyse_extension_constructors maybe_more (new_x :: exts_acc) q
           in

@@ -5,6 +5,8 @@ expunge
 ocaml
 ocamlopt
 ocamlopt.opt
+ocamlcomp.sh
+ocamlcompopt.sh
 package-macosx
 _boot_log1
 _boot_log2
