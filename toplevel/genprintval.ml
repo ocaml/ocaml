@@ -366,7 +366,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let cstr = Env.lookup_constructor lid env in
         let path =
           match cstr.cstr_tag with
-            Cstr_ext_constant(p, true, _) | Cstr_ext_block(p, true, _)-> p
+            Cstr_extension(p, _) -> p
             | _ -> raise Not_found
         in
         (* Make sure this is the right exception and not an homonym,

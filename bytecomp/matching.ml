@@ -164,7 +164,7 @@ let ctx_matcher p =
   match p.pat_desc with
   | Tpat_construct (_, cstr,omegas) ->
       begin match cstr.cstr_tag with
-      | Cstr_ext_constant _ | Cstr_ext_block _ ->
+      | Cstr_extension _ ->
           let nargs = List.length omegas in
           (fun q rem -> match q.pat_desc with
           | Tpat_construct (_, cstr',args)
@@ -501,8 +501,7 @@ let up_ok_action act1 act2 =
 (* Nothing is kown about exeception/extension patterns,
    because of potential rebind *)
 let rec exc_inside p = match p.pat_desc with
-  | Tpat_construct (_,{cstr_tag = Cstr_ext_block _
-                                | Cstr_ext_constant _},_) -> true
+  | Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
   | Tpat_any|Tpat_constant _|Tpat_var _
   | Tpat_construct (_,_,[])
   | Tpat_variant (_,None,_)
@@ -966,8 +965,7 @@ and split_constr cls args def k =
   let ex_pat = what_is_cases cls in
   match ex_pat.pat_desc with
   | Tpat_any -> precompile_var args cls def k
-  | Tpat_construct (_,{ cstr_tag = Cstr_ext_block _
-                                 | Cstr_ext_constant _ },_) ->
+  | Tpat_construct (_,{cstr_tag=Cstr_extension _},_) ->
       split_naive cls args def k
   | _ ->
 
@@ -1077,8 +1075,7 @@ and dont_precompile_var args cls def k =
 and is_exc p = match p.pat_desc with
 | Tpat_or (p1,p2,_) -> is_exc p1 || is_exc p2
 | Tpat_alias (p,v,_) -> is_exc p
-| Tpat_construct (_,{ cstr_tag = Cstr_ext_constant _
-                               | Cstr_ext_block _ },_) -> true
+| Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
 | _ -> false
 
 and precompile_or argo cls ors args def k = match ors with
@@ -1317,7 +1314,7 @@ let make_constr_matching p def ctx = function
         match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
             make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
-        | Cstr_ext_constant _ | Cstr_ext_block _ ->
+        | Cstr_extension _ ->
             make_field_args Alias arg 1 cstr.cstr_arity argl in
       {pm=
         {cases = []; args = newargs;
@@ -2145,8 +2142,8 @@ let split_extension_cases tag_lambda_list =
     | (cstr, act) :: rem ->
         let (consts, nonconsts) = split_rec rem in
         match cstr with
-          Cstr_ext_constant(path, _, _) -> ((path, act) :: consts, nonconsts)
-        | Cstr_ext_block(path, _, _) -> (consts, (path, act) :: nonconsts)
+          Cstr_extension(path, true) -> ((path, act) :: consts, nonconsts)
+        | Cstr_extension(path, false) -> (consts, (path, act) :: nonconsts)
         | _ -> assert false in
   split_rec tag_lambda_list
 

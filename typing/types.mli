@@ -114,6 +114,7 @@ type constructor_description =
     cstr_normal: int;                   (* Number of non generalized constrs *)
     cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag;         (* Read-only constructor? *)
+    cstr_exception: bool;               (* Exception constructor? *)
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
    }
@@ -121,12 +122,8 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_ext_constant of Path.t * bool * Location.t
-                                        (* Constant extension constructor
-                                           true denotes an exception *)
-  | Cstr_ext_block of Path.t * bool * Location.t
-                                        (* Regular extension constructor
-                                           true denotes an exception *)
+  | Cstr_extension of Path.t * bool     (* Extension constructor
+                                           true if a constant false if a block *)
 
 (* Record label descriptions *)
 

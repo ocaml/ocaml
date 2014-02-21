@@ -239,8 +239,7 @@ let is_ident = function
 let is_local (p, _) = is_ident p
 
 let is_local_ext = function
-  | {cstr_tag = ( Cstr_ext_constant(p, _, _)
-                | Cstr_ext_block(p, _, _) )} -> is_ident p
+  | {cstr_tag = Cstr_extension(p, _)} -> is_ident p
   | _ -> false
 
 let diff env1 env2 =
@@ -637,10 +636,7 @@ let has_local_constraints env = env.local_constraints
 
 let cstr_shadow cstr1 cstr2 =
   match cstr1.cstr_tag, cstr2.cstr_tag with
-  | Cstr_ext_constant _, Cstr_ext_constant _ -> true
-  | Cstr_ext_constant _, Cstr_ext_block _ -> true
-  | Cstr_ext_block _, Cstr_ext_constant _ -> true
-  | Cstr_ext_block _, Cstr_ext_block _ -> true
+  | Cstr_extension _, Cstr_extension _ -> true
   | _ -> false
 
 let lbl_shadow lbl1 lbl2 = false
@@ -758,16 +754,11 @@ let lookup_all_constructors lid env =
 
 let mark_constructor usage env name desc =
   match desc.cstr_tag with
-  | Cstr_ext_constant(_, true, loc) | Cstr_ext_block(_, true, loc) ->
-      begin
-        try Hashtbl.find used_constructors ("exn", loc, name) usage
-        with Not_found -> ()
-      end
-  | Cstr_ext_constant(_, false, loc) | Cstr_ext_block(_, false, loc) ->
+  | Cstr_extension _ ->
       begin
         let ty_path = ty_path desc.cstr_res in
         let ty_name = Path.last ty_path in
-        try Hashtbl.find used_constructors (ty_name, loc, name) usage
+        try Hashtbl.find used_constructors (ty_name, desc.cstr_loc, name) usage
         with Not_found -> ()
       end
   | _ ->
