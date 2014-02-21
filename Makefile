@@ -29,8 +29,11 @@ DEPFLAGS=$(INCLUDES)
 SHELL=/bin/sh
 MKDIR=mkdir -p
 
-CAMLP4OUT=$(CAMLP4:=out)
-CAMLP4OPT=$(CAMLP4:=opt)
+OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
+OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
+OCAMLBUILDLIBNATIVE=$(WITH_OCAMLBUILD:=lib.native)
+
+OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
@@ -125,7 +128,7 @@ all:
 	$(MAKE) ocamltools
 	$(MAKE) library
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(CAMLP4OUT) $(WITH_DEBUGGER) \
+	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
 	  $(WITH_OCAMLDOC)
 
 # Compile everything the first time
@@ -259,15 +262,31 @@ opt:
 	$(MAKE) ocamlbuildlib.native
 
 # Native-code versions of the tools
-opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 $(DEBUGGER) ocamldoc ocamlbuild.byte $(CAMLP4OUT) \
-	 ocamlopt.opt otherlibrariesopt ocamllex.opt \
-	 ocamltoolsopt ocamltoolsopt.opt ocamldoc.opt ocamlbuild.native \
-	 $(CAMLP4OPT)
+opt.opt:
+	$(MAKE) checkstack
+	$(MAKE) runtime
+	$(MAKE) core
+	$(MAKE) ocaml
+	$(MAKE) opt-core
+	$(MAKE) ocamlc.opt
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
+	        $(OCAMLBUILDBYTE)
+	$(MAKE) ocamlopt.opt
+	$(MAKE) otherlibrariesopt
+	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
+	        $(OCAMLBUILDNATIVE)
 
-base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
-	 otherlibrariesopt
+base.opt:
+	$(MAKE) checkstack
+	$(MAKE) runtime
+	$(MAKE) core
+	$(MAKE) ocaml
+	$(MAKE) opt-core
+	$(MAKE) ocamlc.opt
+	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
+	  $(WITH_OCAMLDOC)
+	$(MAKE) ocamlopt.opt
+	$(MAKE) otherlibrariesopt
 
 # Installation
 
@@ -746,14 +765,6 @@ partialclean::
 alldepend::
 	cd debugger; $(MAKE) depend
 
-# Camlp4
-
-camlp4out: ocamlc ocamlbuild.byte
-	./build/camlp4-byte-only.sh
-
-camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
-	./build/camlp4-native-only.sh
-
 # Ocamlbuild
 #ifeq ($(OCAMLBUILD_NOBOOT),"yes")
 #ocamlbuild.byte: ocamlc
@@ -829,7 +840,7 @@ distclean:
 	./build/distclean.sh
 	rm -f ocaml testsuite/_log
 
-.PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
+.PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot defaultentry depend distclean install installopt

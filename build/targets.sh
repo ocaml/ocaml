@@ -12,7 +12,6 @@
 
 . config/config.sh
 . build/otherlibs-targets.sh
-. build/camlp4-targets.sh
 
 INSTALL_BIN="$BINDIR"
 export INSTALL_BIN

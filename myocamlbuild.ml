@@ -197,11 +197,6 @@ dispatch begin function
     let module M = struct
 
 
-
-let hot_camlp4boot = "camlp4"/"boot"/"camlp4boot.byte";;
-let cold_camlp4boot = "camlp4boot" (* The installed version *);;
-let cold_camlp4o = "camlp4o" (* The installed version *);;
-
 flag ["ocaml"; "ocamlyacc"] (A"-v");;
 
 flag ["ocaml"; "compile"; "strict_sequence"] (A"-strict-sequence");;
@@ -216,15 +211,7 @@ let add_extensions extensions modules =
     end extensions
   end modules [];;
 
-flag ["ocaml"; "pp"; "camlp4boot"] (convert_command_for_windows_shell (S[ocamlrun; P hot_camlp4boot]));;
-flag ["ocaml"; "pp"; "camlp4boot"; "native"] (S[A"-D"; A"OPT"]);;
-flag ["ocaml"; "pp"; "camlp4boot"; "pp:dep"] (S[A"-D"; A"OPT"]);;
-flag ["ocaml"; "pp"; "camlp4boot"; "pp:doc"] (S[A"-printer"; A"o"]);;
-let exn_tracer = Pathname.pwd/"camlp4"/"boot"/"Camlp4ExceptionTracer.cmo" in
-if Pathname.exists exn_tracer then
-  flag ["ocaml"; "pp"; "camlp4boot"; "exntracer"] (P exn_tracer);
 
-use_lib "camlp4/mkcamlp4" "camlp4/camlp4lib";;
 use_lib "toplevel/topstart" "toplevel/toplevellib";;
 use_lib "otherlibs/dynlink/extract_crc" "otherlibs/dynlink/dynlink";;
 
@@ -257,29 +244,9 @@ let setup_arch arch =
     Pathname.define_context i.current_path i.include_dirs
   end annotated_arch;;
 
-let camlp4_arch =
-  dir "" [
-    dir "camlp4" [
-      dir "build" [];
-      dir_pack "Camlp4" [
-        dir_pack "Struct" [
-          dir_pack "Grammar" [];
-        ];
-        dir_pack "Printers" [];
-      ];
-      dir_pack "Camlp4Top" [];
-    ];
-  ];;
-
-setup_arch camlp4_arch;;
 
 Pathname.define_context "" ["stdlib"];;
 Pathname.define_context "utils" [Pathname.current_dir_name; "stdlib"];;
-Pathname.define_context "camlp4/boot" ["camlp4"];;
-Pathname.define_context "camlp4/Camlp4Parsers" ["camlp4"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Printers" ["camlp4"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Filters" ["camlp4"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Top" ["camlp4"; "stdlib"];;
 Pathname.define_context "parsing" ["parsing"; "utils"; "stdlib"];;
 Pathname.define_context "typing" ["typing"; "parsing"; "utils"; "stdlib"];;
 Pathname.define_context "ocamldoc" ["typing"; "parsing"; "utils"; "tools"; "bytecomp"; "stdlib"];;
@@ -412,7 +379,7 @@ let () =
   (* define flags otherlibs_unix, otherlibs_bigarray... *)
   let otherlibs = "otherlibs" in
   let open Pathname in
-  Array.iter (fun file -> 
+  Array.iter (fun file ->
     if is_directory (concat "otherlibs" file) then
       mark_tag_used ("otherlibs_" ^ file)
   ) (readdir otherlibs);;
@@ -643,221 +610,6 @@ rule "emit.mlp"
     Cmd(S[ocamlrun; P"tools/cvt_emit.byte"; Sh "<"; P emit_mlp;
           Sh">"; Px"asmcomp/emit.ml"])
   end;;
-
-let p4  = Pathname.concat "camlp4"
-let pa  = Pathname.concat (p4 "Camlp4Parsers")
-let pr  = Pathname.concat (p4 "Camlp4Printers")
-let fi  = Pathname.concat (p4 "Camlp4Filters")
-let top = Pathname.concat (p4 "Camlp4Top")
-
-let pa_r  = pa "Camlp4OCamlRevisedParser"
-let pa_o  = pa "Camlp4OCamlParser"
-let pa_q  = pa "Camlp4QuotationExpander"
-let pa_qc = pa "Camlp4QuotationCommon"
-let pa_rq = pa "Camlp4OCamlRevisedQuotationExpander"
-let pa_oq = pa "Camlp4OCamlOriginalQuotationExpander"
-let pa_rp = pa "Camlp4OCamlRevisedParserParser"
-let pa_op = pa "Camlp4OCamlParserParser"
-let pa_g  = pa "Camlp4GrammarParser"
-let pa_l  = pa "Camlp4ListComprehension"
-let pa_macro = pa "Camlp4MacroParser"
-let pa_debug = pa "Camlp4DebugParser"
-
-let pr_dump  = pr "Camlp4OCamlAstDumper"
-let pr_r = pr "Camlp4OCamlRevisedPrinter"
-let pr_o = pr "Camlp4OCamlPrinter"
-let pr_a = pr "Camlp4AutoPrinter"
-let fi_exc = fi "Camlp4ExceptionTracer"
-let fi_meta = fi "MetaGenerator"
-let camlp4_bin = p4 "Camlp4Bin"
-let top_rprint = top "Rprint"
-let top_top = top "Top"
-let camlp4Profiler = p4 "Camlp4Profiler"
-
-let camlp4lib_cma = p4 "camlp4lib.cma"
-let camlp4lib_cmxa = p4 "camlp4lib.cmxa"
-let camlp4lib_lib = p4 ("camlp4lib"-.-C.a)
-
-let special_modules =
-  if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
-;;
-
-let camlp4_import_list =
-    ["utils/misc.ml";
-     "utils/terminfo.ml";
-     "utils/warnings.ml";
-     "parsing/location.ml";
-     "parsing/longident.ml";
-     "parsing/asttypes.mli";
-     "parsing/parsetree.mli";
-     "parsing/ast_helper.ml";
-     "typing/outcometree.mli";
-     "typing/oprint.ml";
-     "myocamlbuild_config.ml";
-     "utils/config.mlbuild"]
-;;
-
-rule "camlp4/Camlp4_import.ml"
-  ~deps:camlp4_import_list
-  ~prod:"camlp4/Camlp4_import.ml"
-  begin fun _ _ ->
-    Echo begin
-      List.fold_right begin fun path acc ->
-        let modname = module_name_of_pathname path in
-        "module " :: modname :: " = struct\n" :: Pathname.read path :: "\nend;;\n" :: acc
-      end camlp4_import_list [],
-      "camlp4/Camlp4_import.ml"
-    end
-  end;;
-
-let mk_camlp4_top_lib name modules =
-  let name = "camlp4"/name in
-  let cma = name-.-"cma" in
-  let deps = special_modules @ modules @ [top_top] in
-  let cmos = add_extensions ["cmo"] deps in
-  rule cma
-    ~deps:(camlp4lib_cma::cmos)
-    ~prods:[cma]
-    ~insert:(`before "ocaml: mllib & cmo* -> cma")
-    begin fun _ _ ->
-      Cmd(S[ocamlc; A"-a"; T(tags_of_pathname cma++"ocaml"++"link"++"byte");
-            P camlp4lib_cma; A"-linkall"; atomize cmos; A"-o"; Px cma])
-    end;;
-
-let mk_camlp4_bin name ?unix:(link_unix=true) modules =
-  let name = "camlp4"/name in
-  let byte = name-.-"byte" in
-  let native = name-.-"native" in
-  let unix_cma, unix_cmxa, include_unix =
-    if link_unix
-    then A"unix.cma", A"unix.cmxa", S[A"-I"; P unix_dir]
-    else N,N,N in
-  let dep_unix_byte, dep_unix_native =
-    if link_unix && not mixed
-    then [unix_dir/"unix.cma"],
-         [unix_dir/"unix.cmxa"; unix_dir/"unix"-.-C.a]
-    else [],[] in
-  let deps = special_modules @ modules @ [camlp4_bin] in
-  let cmos = add_extensions ["cmo"] deps in
-  let cmxs = add_extensions ["cmx"] deps in
-  let objs = add_extensions [C.o] deps in
-  let dep_dynlink_byte, dep_dynlink_native =
-    if mixed
-    then [], []
-    else [dynlink_dir/"dynlink.cma"],
-         [dynlink_dir/"dynlink.cmxa"; dynlink_dir/"dynlink"-.-C.a]
-  in
-  rule byte
-    ~deps:(camlp4lib_cma::cmos @ dep_unix_byte @ dep_dynlink_byte)
-    ~prod:(add_exe byte)
-    ~insert:(`before "ocaml: cmo* -> byte")
-    begin fun _ _ ->
-      Cmd(S[ocamlc; A"-I"; P dynlink_dir; A "dynlink.cma"; include_unix; unix_cma;
-            T(tags_of_pathname byte++"ocaml"++"link"++"byte");
-            P camlp4lib_cma; A"-linkall"; atomize cmos; A"-o"; Px (add_exe byte)])
-    end;
-  rule native
-    ~deps:(camlp4lib_cmxa :: camlp4lib_lib :: (cmxs @ objs @ dep_unix_native @ dep_dynlink_native))
-    ~prod:(add_exe native)
-    ~insert:(`before "ocaml: cmx* & o* -> native")
-    begin fun _ _ ->
-      Cmd(S[ocamlopt; A"-I"; P dynlink_dir; A "dynlink.cmxa"; include_unix; unix_cmxa;
-            T(tags_of_pathname native++"ocaml"++"link"++"native");
-            P camlp4lib_cmxa; A"-linkall"; atomize cmxs; A"-o"; Px (add_exe native)])
-    end;;
-
-let mk_camlp4 name ?unix modules bin_mods top_mods =
-  mk_camlp4_bin name ?unix (modules @ bin_mods);
-  mk_camlp4_top_lib name (modules @ top_mods);;
-
-copy_rule "camlp4: boot/Camlp4Ast.ml -> Camlp4/Struct/Camlp4Ast.ml"
-  ~insert:`top "camlp4/boot/Camlp4Ast.ml" "camlp4/Camlp4/Struct/Camlp4Ast.ml";;
-
-rule "camlp4: Camlp4/Struct/Lexer.ml -> boot/Lexer.ml"
-  ~prod:"camlp4/boot/Lexer.ml"
-  ~dep:"camlp4/Camlp4/Struct/Lexer.ml"
-  begin fun _ _ ->
-    Cmd(S[P cold_camlp4o; P"camlp4/Camlp4/Struct/Lexer.ml";
-          A"-printer"; A"r"; A"-o"; Px"camlp4/boot/Lexer.ml"])
-  end;;
-
-module Camlp4deps = struct
-  let lexer = Genlex.make_lexer ["INCLUDE"; ";"; "="; ":"];;
-
-  let rec parse strm =
-    match Stream.peek strm with
-    | None -> []
-    | Some(Genlex.Kwd "INCLUDE") ->
-        Stream.junk strm;
-        begin match Stream.peek strm with
-        | Some(Genlex.String s) ->
-            Stream.junk strm;
-            s :: parse strm
-        | _ -> invalid_arg "Camlp4deps parse failure"
-        end
-    | Some _ ->
-        Stream.junk strm;
-        parse strm
-
-  let parse_file file =
-    with_input_file file begin fun ic ->
-      let strm = Stream.of_channel ic in
-      parse (lexer strm)
-    end
-
-  let build_deps build file =
-    let includes = parse_file file in
-    List.iter Outcome.ignore_good (build (List.map (fun i -> [i]) includes));
-end;;
-
-dep ["ocaml"; "file:camlp4/Camlp4/Sig.ml"]
-    ["camlp4/Camlp4/Camlp4Ast.partial.ml"];;
-
-rule "camlp4: ml4 -> ml"
-  ~prod:"%.ml"
-  ~dep:"%.ml4"
-  begin fun env build ->
-    let ml4 = env "%.ml4" and ml = env "%.ml" in
-    Camlp4deps.build_deps build ml4;
-    Cmd(S[P cold_camlp4boot; A"-impl"; P ml4; A"-printer"; A"o";
-          A"-D"; A"OPT"; A"-o"; Px ml])
-  end;;
-
-rule "camlp4: mlast -> ml"
-  ~prod:"%.ml"
-  ~deps:["%.mlast"; "camlp4/Camlp4/Camlp4Ast.partial.ml"]
-  begin fun env _ ->
-    let mlast = env "%.mlast" and ml = env "%.ml" in
-    (* Camlp4deps.build_deps build mlast; too hard to lex *)
-    Cmd(S[P cold_camlp4boot;
-          A"-printer"; A"r";
-          A"-filter"; A"map";
-          A"-filter"; A"fold";
-          A"-filter"; A"meta";
-          A"-filter"; A"trash";
-          A"-impl"; P mlast;
-          A"-o"; Px ml])
-  end;;
-
-dep ["ocaml"; "compile"; "file:camlp4/Camlp4/Sig.ml"]
-    ["camlp4/Camlp4/Camlp4Ast.partial.ml"];;
-
-mk_camlp4_bin "camlp4" [];;
-mk_camlp4 "camlp4boot" ~unix:false
-  [pa_r; pa_qc; pa_q; pa_rp; pa_g; pa_macro; pa_debug; pa_l] [pr_dump] [top_rprint];;
-mk_camlp4 "camlp4r"
-  [pa_r; pa_rp] [pr_a] [top_rprint];;
-mk_camlp4 "camlp4rf"
-  [pa_r; pa_qc; pa_q; pa_rp; pa_g; pa_macro; pa_l] [pr_a] [top_rprint];;
-mk_camlp4 "camlp4o"
-  [pa_r; pa_o; pa_rp; pa_op] [pr_a] [];;
-mk_camlp4 "camlp4of"
-  [pa_r; pa_qc; pa_q; pa_o; pa_rp; pa_op; pa_g; pa_macro; pa_l] [pr_a] [];;
-mk_camlp4 "camlp4oof"
-  [pa_r; pa_o; pa_rp; pa_op; pa_qc; pa_oq; pa_g; pa_macro; pa_l] [pr_a] [];;
-mk_camlp4 "camlp4orf"
-  [pa_r; pa_o; pa_rp; pa_op; pa_qc; pa_rq; pa_g; pa_macro; pa_l] [pr_a] [];;
-
       end in ()
   | _ -> ()
 end

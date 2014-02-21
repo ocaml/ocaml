@@ -1,7 +1,7 @@
 In the following, "the Library" refers to all files marked "Copyright
 INRIA" in the following directories and their sub-directories:
 
-  asmrun, byterun, camlp4, config, otherlibs, stdlib, win32caml
+  asmrun, byterun, config, otherlibs, stdlib, win32caml
 
 and "the Compiler" refers to all files marked "Copyright INRIA" in the
 following directories and their sub-directories:

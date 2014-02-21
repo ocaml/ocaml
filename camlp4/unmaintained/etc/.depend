@@ -1,6 +1,0 @@
-parserify.cmo: parserify.cmi
-parserify.cmx: parserify.cmi
-pr_op_main.cmo: parserify.cmi
-pr_op_main.cmx: parserify.cmx
-pr_rp_main.cmo: parserify.cmi
-pr_rp_main.cmx: parserify.cmx

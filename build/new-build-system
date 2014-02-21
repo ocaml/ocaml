@@ -30,7 +30,6 @@ build/
   fastworld.sh         # Same as above but faster
     boot-c-parts.sh         # Compile byterun, ocamlyacc and asmrun with the Makefiles
     boot.sh                 # Compile the stdlib and ocamlc
-    camlp4-targets.sh       # Setup camlp4 targets
     otherlibs-targets.sh    # Setup otherlibs targets
     targets.sh              # All targets of the OCaml distribution
 
@@ -41,11 +40,7 @@ build/
   myocamlbuild.sh      # Regenerate the boot/myocamlbuild program
   mk_shell_and_ocamlbuild_config.sh # Generate config/config.sh and myocamlbuild_config.ml
 
-  camlp4-bootstrap.sh
-
-  # Partial stuffs (just camlp4 and ocamlbuild)
+  # Partial stuffs
   mixed-boot.sh
-  camlp4-byte-only.sh
-  camlp4-native-only.sh
   ocamlbuild-byte-only.sh
   ocamlbuild-native-only.sh
