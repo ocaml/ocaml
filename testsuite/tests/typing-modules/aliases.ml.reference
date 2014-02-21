@@ -1,0 +1,264 @@
+
+# module C = Char
+# - : char = 'B'
+#   module C' :
+  sig
+    external code : char -> int = "%identity"
+    val chr : int -> char
+    val escaped : char -> string
+    val lowercase : char -> char
+    val uppercase : char -> char
+    type t = char
+    val compare : t -> t -> int
+    external unsafe_chr : int -> char = "%identity"
+  end
+# - : char = 'B'
+#   Characters 27-29:
+  module C'' : (module C) = C';; (* fails *)
+                            ^^
+Error: Signature mismatch:
+       Modules do not match: (module C') is not included in (module C)
+#   module C'' = Char
+# - : char = 'B'
+#   module C3 :
+  sig
+    external code : char -> int = "%identity"
+    val chr : int -> char
+    val escaped : char -> string
+    val lowercase : char -> char
+    val uppercase : char -> char
+    type t = char
+    val compare : t -> t -> int
+    external unsafe_chr : int -> char = "%identity"
+  end
+# - : char = 'B'
+#   val f : 'a list -> int = <fun>
+# val g : int list -> int = <fun>
+#   module F :
+  functor (X : sig  end) ->
+    sig
+      external code : char -> int = "%identity"
+      val chr : int -> char
+      val escaped : char -> string
+      val lowercase : char -> char
+      val uppercase : char -> char
+      type t = char
+      val compare : t -> t -> int
+      external unsafe_chr : int -> char = "%identity"
+    end
+# module C4 :
+  sig
+    external code : char -> int = "%identity"
+    val chr : int -> char
+    val escaped : char -> string
+    val lowercase : char -> char
+    val uppercase : char -> char
+    type t = char
+    val compare : t -> t -> int
+    external unsafe_chr : int -> char = "%identity"
+  end
+# - : char = 'B'
+#   module G : functor (X : sig  end) -> sig module M : sig  end end
+# module M : sig module M : sig  end end
+#         module M' : sig module N : sig val x : int end module N' = N end
+# - : int = 1
+#   module M'' : sig module N' : sig val x : int end end
+# - : int = 1
+# module M2 : sig module N = M'.N module N' = M'.N' end
+# module M3 : sig module N' : sig val x : int end end
+# - : int = 1
+# module M3' : sig module N' : sig val x : int end end
+# - : int = 1
+#         module M4 : sig module N' : sig val x : int end end
+# - : int = 1
+#         module F :
+  functor (X : sig  end) ->
+    sig module N : sig val x : int end module N' = N end
+# module G : functor (X : sig  end) -> sig module N' : sig val x : int end end
+# module M5 : sig module N' : sig val x : int end end
+# - : int = 1
+#           module M :
+  sig
+    module D : sig val y : int end
+    module N : sig val x : int end
+    module N' = N
+  end
+#   module M1 : sig module N : sig val x : int end module N' = N end
+# - : int = 1
+#   module M2 : sig module N' : sig val x : int end end
+# - : int = 1
+#   # - : int = 1
+#         module M : sig module C = Char module C' = C end
+#     module M1 :
+  sig module C : sig val escaped : char -> string end module C' = C end
+# - : string = "A"
+#   module M2 : sig module C' : sig val chr : int -> char end end
+# - : char = 'B'
+#   - : f:('a -> 'b) -> 'a list -> 'b list = <fun>
+#   module Q = Queue
+# exception QE
+# - : string = "Ok"
+#   module type Complex =
+  sig
+    type t = Complex.t = { re : float; im : float; }
+    val zero : t
+    val one : t
+    val i : t
+    val neg : t -> t
+    val conj : t -> t
+    val add : t -> t -> t
+    val sub : t -> t -> t
+    val mul : t -> t -> t
+    val inv : t -> t
+    val div : t -> t -> t
+    val sqrt : t -> t
+    val norm2 : t -> float
+    val norm : t -> float
+    val arg : t -> float
+    val polar : float -> float -> t
+    val exp : t -> t
+    val log : t -> t
+    val pow : t -> t -> t
+  end
+# module M : sig module C : Complex end
+#   module C = Complex
+# - : float = 1.
+# type t = Complex.t = { re : float; im : float; }
+val zero : t = {re = 0.; im = 0.}
+val one : t = {re = 1.; im = 0.}
+val i : t = {re = 0.; im = 1.}
+val neg : t -> t = <fun>
+val conj : t -> t = <fun>
+val add : t -> t -> t = <fun>
+val sub : t -> t -> t = <fun>
+val mul : t -> t -> t = <fun>
+val inv : t -> t = <fun>
+val div : t -> t -> t = <fun>
+val sqrt : t -> t = <fun>
+val norm2 : t -> float = <fun>
+val norm : t -> float = <fun>
+val arg : t -> float = <fun>
+val polar : float -> float -> t = <fun>
+val exp : t -> t = <fun>
+val log : t -> t = <fun>
+val pow : t -> t -> t = <fun>
+#   module F : functor (X : sig module C = Char end) -> sig module C = Char end
+#         module S = String
+module StringSet :
+  sig
+    type elt = String.t
+    type t = Set.Make(String).t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+    val split : elt -> t -> t * bool * t
+    val find : elt -> t -> elt
+    val of_list : elt list -> t
+  end
+module SSet :
+  sig
+    type elt = S.t
+    type t = Set.Make(S).t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+    val split : elt -> t -> t * bool * t
+    val find : elt -> t -> elt
+    val of_list : elt list -> t
+  end
+# val f : StringSet.t -> SSet.t = <fun>
+#             module F : functor (M : sig  end) -> sig type t end
+module T : sig module M : sig  end type t = F(M).t end
+# module M = T.M
+type t = F(M).t
+# val f : t -> T.t = <fun>
+#                 module A :
+  sig
+    module B : sig type t val compare : 'a -> 'b -> int end
+    module S :
+      sig
+        type elt = B.t
+        type t = Set.Make(B).t
+        val empty : t
+        val is_empty : t -> bool
+        val mem : elt -> t -> bool
+        val add : elt -> t -> t
+        val singleton : elt -> t
+        val remove : elt -> t -> t
+        val union : t -> t -> t
+        val inter : t -> t -> t
+        val diff : t -> t -> t
+        val compare : t -> t -> int
+        val equal : t -> t -> bool
+        val subset : t -> t -> bool
+        val iter : (elt -> unit) -> t -> unit
+        val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+        val for_all : (elt -> bool) -> t -> bool
+        val exists : (elt -> bool) -> t -> bool
+        val filter : (elt -> bool) -> t -> t
+        val partition : (elt -> bool) -> t -> t * t
+        val cardinal : t -> int
+        val elements : t -> elt list
+        val min_elt : t -> elt
+        val max_elt : t -> elt
+        val choose : t -> elt
+        val split : elt -> t -> t * bool * t
+        val find : elt -> t -> elt
+        val of_list : elt list -> t
+      end
+    val empty : S.t
+  end
+module A1 = A
+# - : bool = true
+#                   module FF : functor (X : sig  end) -> sig type t end
+module M :
+  sig
+    module X : sig  end
+    module Y : sig type t = FF(X).t end
+    type t = Y.t
+  end
+module F :
+  functor (Y : sig type t end) ->
+    functor (M : sig type t = Y.t end) -> sig  end
+#   module G : functor (M : sig type t = M.Y.t end) -> sig  end
+# *   

@@ -205,6 +205,7 @@ let class_type_declaration sub cd =
 let module_type sub mty =
   match mty.mty_desc with
   | Tmty_ident (_path, _) -> ()
+  | Tmty_alias (_path, _) -> ()
   | Tmty_signature sg -> sub # signature sg
   | Tmty_functor (_id, _, mtype1, mtype2) ->
       Misc.may (sub # module_type) mtype1; sub # module_type mtype2

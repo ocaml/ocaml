@@ -14,12 +14,20 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <mlvalues.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_chmod(value path, value perm)
 {
+  CAMLparam2(path, perm);
+  char * p;
   int ret;
-  ret = chmod(String_val(path), Int_val(perm));
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = chmod(p, Int_val(perm));
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (ret == -1) uerror("chmod", path);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }

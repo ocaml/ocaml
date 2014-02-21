@@ -826,8 +826,13 @@ depend: beforedepend
 alldepend:: depend
 
 distclean:
-	./build/distclean.sh
-	rm -f ocaml ocamlcomp.sh testsuite/_log
+	$(MAKE) clean
+	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
+	      boot/*.cm* boot/libcamlrun.a
+	rm -f config/Makefile config/m.h config/s.h
+	rm -f tools/*.bak tools/ocamlmklibconfig.ml
+	rm -f ocaml ocamlc ocamlcomp.sh
+	rm -f testsuite/_log
 
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart

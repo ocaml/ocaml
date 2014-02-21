@@ -258,10 +258,10 @@ and sameswitch sw1 sw2 =
     | (Some a1, Some a2) -> same a1 a2
     | _ -> false)
 
-let name_lambda arg fn =
+let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(Strict, id, arg, fn id)
+  | _ -> let id = Ident.create "let" in Llet(strict, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
@@ -383,13 +383,18 @@ let rec patch_guarded patch = function
 
 (* Translate an access path *)
 
-let rec transl_path = function
+let rec transl_normal_path = function
     Pident id ->
       if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
   | Pdot(p, s, pos) ->
-      Lprim(Pfield pos, [transl_path p])
+      Lprim(Pfield pos, [transl_normal_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
+
+(* Translation of value identifiers *)
+
+let transl_path ?(loc=Location.none) env path =
+  transl_normal_path (Env.normalize_path (Some loc) env path) 
 
 (* Compile a sequence of expressions *)
 

@@ -57,6 +57,7 @@ type error =
   | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
+  | Missing_module of Location.t * Path.t * Path.t
 
 exception Error of error
 
@@ -112,6 +113,7 @@ type summary =
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
   | Env_open of summary * Path.t
+  | Env_functor_arg of summary * Ident.t
 
 module EnvTbl =
   struct
@@ -173,6 +175,7 @@ type t = {
   components: (Path.t * module_components) EnvTbl.t;
   classes: (Path.t * class_declaration) EnvTbl.t;
   cltypes: (Path.t * class_type_declaration) EnvTbl.t;
+  functor_args: unit Ident.tbl;
   summary: summary;
   local_constraints: bool;
   gadt_instances: (int * TypeSet.t ref) list;
@@ -219,6 +222,7 @@ let empty = {
   cltypes = EnvTbl.empty;
   summary = Env_empty; local_constraints = false; gadt_instances = [];
   in_signature = false;
+  functor_args = Ident.empty;
  }
 
 let in_signature env = {env with in_signature = true}
@@ -263,6 +267,10 @@ let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
   ref ((fun env mty1 path1 mty2 -> assert false) :
           t -> module_type -> Path.t -> module_type -> unit)
+let strengthen =
+  (* to be filled with Mtype.strengthen *)
+  ref ((fun env mty path -> assert false) :
+         t -> module_type -> Path.t -> module_type)
 
 let md md_type =
   {md_type; md_attributes=[]}
@@ -280,7 +288,8 @@ type pers_struct =
     ps_comps: module_components;
     ps_crcs: (string * Digest.t) list;
     ps_filename: string;
-    ps_flags: pers_flags list }
+    ps_flags: pers_flags list;
+    mutable ps_crcs_checked: bool }
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
@@ -289,17 +298,19 @@ let persistent_structures =
 
 let crc_units = Consistbl.create()
 
-let check_consistency filename crcs =
+let check_consistency ps =
+  if ps.ps_crcs_checked then () else
   try
     List.iter
-      (fun (name, crc) -> Consistbl.check crc_units name crc filename)
-      crcs
+      (fun (name, crc) -> Consistbl.check crc_units name crc ps.ps_filename)
+      ps.ps_crcs;
+    ps.ps_crcs_checked <- true
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
 
 (* Reading persistent structures from .cmi files *)
 
-let read_pers_struct modname filename = (
+let read_pers_struct modname filename =
   let cmi = read_cmi filename in
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
@@ -308,35 +319,37 @@ let read_pers_struct modname filename = (
   let comps =
       !components_of_module' empty Subst.identity
                              (Pident(Ident.create_persistent name))
-                             (Mty_signature sign) in
-    let ps = { ps_name = name;
-               ps_sig = sign;
-               ps_comps = comps;
-               ps_crcs = crcs;
-               ps_filename = filename;
-               ps_flags = flags } in
-    if ps.ps_name <> modname then
-      error (Illegal_renaming(modname, ps.ps_name, filename));
-    check_consistency filename ps.ps_crcs;
-    List.iter
-      (function Rectypes ->
-        if not !Clflags.recursive_types then
-          error (Need_recursive_types(ps.ps_name, !current_unit)))
-      ps.ps_flags;
-    Hashtbl.add persistent_structures modname (Some ps);
-    ps
-)
+                             (Mty_signature sign)
+  in
+  let ps = { ps_name = name;
+             ps_sig = sign;
+             ps_comps = comps;
+             ps_crcs = crcs;
+             ps_crcs_checked = false;
+             ps_filename = filename;
+             ps_flags = flags } in
+  if ps.ps_name <> modname then
+    error (Illegal_renaming(modname, ps.ps_name, filename));
+  if not !Clflags.transparent_modules then check_consistency ps;
+  List.iter
+    (function Rectypes ->
+      if not !Clflags.recursive_types then
+        error (Need_recursive_types(ps.ps_name, !current_unit)))
+    ps.ps_flags;
+  Hashtbl.add persistent_structures modname (Some ps);
+  ps
 
-let find_pers_struct name =
+let find_pers_struct ?(check=true) name =
   if name = "*predef*" then raise Not_found;
   let r =
     try Some (Hashtbl.find persistent_structures name)
     with Not_found -> None
   in
-  match r with
-  | Some None -> raise Not_found
-  | Some (Some sg) -> sg
-  | None ->
+  let ps =
+    match r with
+    | Some None -> raise Not_found
+    | Some (Some sg) -> sg
+    | None ->
       let filename =
         try find_in_path_uncap !load_path (name ^ ".cmi")
         with Not_found ->
@@ -344,6 +357,9 @@ let find_pers_struct name =
           raise Not_found
       in
       read_pers_struct name filename
+  in
+  if check then check_consistency ps;
+  ps
 
 let reset_cache () =
   current_unit := "";
@@ -437,39 +453,6 @@ let find_type p env =
 let find_type_descrs p env =
   snd (find_type_full p env)
 
-(* Find the manifest type associated to a type when appropriate:
-   - the type should be public or should have a private row,
-   - the type should have an associated manifest type. *)
-let find_type_expansion ?level path env =
-  let decl = find_type path env in
-  match decl.type_manifest with
-  | Some body when decl.type_private = Public
-              || decl.type_kind <> Type_abstract
-              || Btype.has_constr_row body ->
-                  (decl.type_params, body, may_map snd decl.type_newtype_level)
-  (* The manifest type of Private abstract data types without
-     private row are still considered unknown to the type system.
-     Hence, this case is caught by the following clause that also handles
-     purely abstract data types without manifest type definition. *)
-  | _ -> raise Not_found
-
-(* Find the manifest type information associated to a type, i.e.
-   the necessary information for the compiler's type-based optimisations.
-   In particular, the manifest type associated to a private abstract type
-   is revealed for the sake of compiler's type-based optimisations. *)
-let find_type_expansion_opt path env =
-  let decl = find_type path env in
-  match decl.type_manifest with
-  (* The manifest type of Private abstract data types can still get
-     an approximation using their manifest type. *)
-  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
-  | _ -> raise Not_found
-
-let find_modtype_expansion path env =
-  match (find_modtype path env).mtd_type with
-  | None -> raise Not_found
-  | Some mty -> mty
-
 let find_module path env =
   match path with
     Pident id ->
@@ -493,7 +476,106 @@ let find_module path env =
           raise Not_found
       end
   | Papply(p1, p2) ->
-      raise Not_found (* not right *)
+      let desc1 = find_module_descr p1 env in
+      begin match EnvLazy.force !components_of_module_maker' desc1 with
+        Functor_comps f ->
+          let mty =
+            Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
+              f.fcomp_res in
+          md mty
+      | Structure_comps c ->
+          raise Not_found
+      end
+
+let required_globals = ref []
+let reset_required_globals () = required_globals := []
+let get_required_globals () = !required_globals
+let add_required_global id =
+  if Ident.global id && not !Clflags.transparent_modules
+  && not (List.exists (Ident.same id) !required_globals)
+  then required_globals := id :: !required_globals
+
+let rec normalize_path lax env path =
+  let path =
+    match path with
+      Pdot(p, s, pos) ->
+        Pdot(normalize_path lax env p, s, pos)
+    | Papply(p1, p2) ->
+        Papply(normalize_path lax env p1, normalize_path true env p2)
+    | _ -> path
+  in
+  try match find_module path env with
+    {md_type=Mty_alias path1} ->
+      let path' = normalize_path lax env path1 in
+      if lax || !Clflags.transparent_modules then path' else
+      let id = Path.head path in
+      if Ident.global id && not (Ident.same id (Path.head path'))
+      then add_required_global id;
+      path'
+  | _ -> path
+  with Not_found when lax
+  || (match path with Pident id -> not (Ident.persistent id) | _ -> true) ->
+      path
+
+let normalize_path oloc env path =
+  try normalize_path (oloc = None) env path
+  with Not_found ->
+    match oloc with None -> assert false
+    | Some loc ->
+        raise (Error(Missing_module(loc, path, normalize_path true env path)))
+
+(* Find the manifest type associated to a type when appropriate:
+   - the type should be public or should have a private row,
+   - the type should have an associated manifest type. *)
+let find_type_expansion path env =
+  let decl = find_type path env in
+  match decl.type_manifest with
+  | Some body when decl.type_private = Public
+              || decl.type_kind <> Type_abstract
+              || Btype.has_constr_row body ->
+                  (decl.type_params, body, may_map snd decl.type_newtype_level)
+  (* The manifest type of Private abstract data types without
+     private row are still considered unknown to the type system.
+     Hence, this case is caught by the following clause that also handles
+     purely abstract data types without manifest type definition. *)
+  | _ ->
+      (* another way to expand is to normalize the path itself *)
+      let path' = normalize_path None env path in
+      if Path.same path path' then raise Not_found else
+      (decl.type_params,
+       newgenty (Tconstr (path', decl.type_params, ref Mnil)),
+       may_map snd decl.type_newtype_level)
+
+(* Find the manifest type information associated to a type, i.e.
+   the necessary information for the compiler's type-based optimisations.
+   In particular, the manifest type associated to a private abstract type
+   is revealed for the sake of compiler's type-based optimisations. *)
+let find_type_expansion_opt path env =
+  let decl = find_type path env in
+  match decl.type_manifest with
+  (* The manifest type of Private abstract data types can still get
+     an approximation using their manifest type. *)
+  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
+  | _ ->
+      let path' = normalize_path None env path in
+      if Path.same path path' then raise Not_found else
+      (decl.type_params,
+       newgenty (Tconstr (path', decl.type_params, ref Mnil)),
+       may_map snd decl.type_newtype_level)
+
+let find_modtype_expansion path env =
+  match (find_modtype path env).mtd_type with
+  | None -> raise Not_found
+  | Some mty -> mty
+
+let rec is_functor_arg path env =
+  match path with
+    Pident id ->
+      begin try Ident.find_same id env.functor_args; true
+      with Not_found -> false
+      end
+  | Pdot (p, s, _) -> is_functor_arg p env
+  | Papply _ -> true
 
 (* Lookup by name *)
 
@@ -520,7 +602,8 @@ let rec lookup_module_descr lid env =
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
-      let (p2, {md_type=mty2}) = lookup_module l2 env in
+      let p2 = lookup_module l2 env in
+      let {md_type=mty2} = find_module p2 env in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
@@ -529,45 +612,41 @@ let rec lookup_module_descr lid env =
           raise Not_found
       end
 
-and lookup_module lid env : Path.t * module_declaration =
+and lookup_module lid env : Path.t =
   match lid with
     Lident s ->
       begin try
-        let (_, {md_type}) as r = EnvTbl.find_name s env.modules in
+        let (p, {md_type}) as r = EnvTbl.find_name s env.modules in
         begin match md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
           raise Recmodule
         | _ -> ()
         end;
-        r
+        p
       with Not_found ->
         if s = !current_unit then raise Not_found;
-        let ps = find_pers_struct s in
-        (Pident(Ident.create_persistent s),
-         md (Mty_signature ps.ps_sig)
-        )
+        ignore (find_pers_struct ~check:false s);
+        Pident(Ident.create_persistent s)
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
       begin match EnvLazy.force !components_of_module_maker' descr with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
-          (Pdot(p, s, pos), md (EnvLazy.force subst_modtype_maker data))
+          Pdot(p, s, pos)
       | Functor_comps f ->
           raise Not_found
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
-      let (p2, {md_type=mty2}) = lookup_module l2 env in
+      let p2 = lookup_module l2 env in
+      let {md_type=mty2} = find_module p2 env in
       let p = Papply(p1, p2) in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
-          let mty =
-            Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
-              f.fcomp_res in
-          (p, md mty)
+          p
       | Structure_comps c ->
           raise Not_found
       end
@@ -923,15 +1002,28 @@ let add_gadt_instance_chain env lv t =
 
 (* Expand manifest module type names at the top of the given module type *)
 
-let rec scrape_modtype mty env =
-  match mty with
-    Mty_ident path ->
+let rec scrape_alias env ?path mty =
+  match mty, path with
+    Mty_ident path, _ ->
       begin try
-        scrape_modtype (find_modtype_expansion path env) env
+        scrape_alias env (find_modtype_expansion path env)
       with Not_found ->
         mty
       end
+  | Mty_alias path, _ ->
+      begin try
+        scrape_alias env (find_module path env).md_type ~path
+      with Not_found ->
+        Location.prerr_warning Location.none 
+          (Warnings.Deprecated
+             ("module " ^ Path.name path ^ " cannot be accessed"));
+        mty
+      end      
+  | mty, Some path ->
+      !strengthen env mty path
   | _ -> mty
+
+let scrape_alias env mty = scrape_alias env mty
 
 (* Compute constructor descriptions *)
 
@@ -1056,7 +1148,7 @@ let rec components_of_module env sub path mty =
   EnvLazy.create (env, sub, path, mty)
 
 and components_of_module_maker (env, sub, path, mty) =
-  (match scrape_modtype mty env with
+  (match scrape_alias env mty with
     Mty_signature sg ->
       let c =
         { comp_values = Tbl.empty;
@@ -1146,7 +1238,8 @@ and components_of_module_maker (env, sub, path, mty) =
           fcomp_env = env;
           fcomp_subst = sub;
           fcomp_cache = Hashtbl.create 17 }
-  | Mty_ident p ->
+  | Mty_ident _
+  | Mty_alias _ ->
         Structure_comps {
           comp_values = Tbl.empty;
           comp_constrs = Tbl.empty;
@@ -1337,6 +1430,12 @@ let _ =
 
 (* Insertion of bindings by identifier *)
 
+let add_functor_arg ?(arg=false) id env =
+  if not arg then env else
+  {env with
+   functor_args = Ident.add id () env.functor_args;
+   summary = Env_functor_arg (env.summary, id)}
+
 let add_value ?check id desc env =
   store_value None ?check id (Pident id) desc env env
 
@@ -1349,8 +1448,14 @@ and add_extension ~check id ext env =
 and add_exception ~check id decl env =
   store_exception ~check None id (Pident id) decl env env
 
-and add_module_declaration id md env =
-  store_module None id (Pident id) md env env
+and add_module_declaration ?arg id md env =
+  let path =
+    (*match md.md_type with
+      Mty_alias path -> normalize_path env path
+    | _ ->*) Pident id
+  in
+  let env = store_module None id path md env env in
+  add_functor_arg ?arg id env
 
 and add_modtype id info env =
   store_modtype None id (Pident id) info env env
@@ -1361,8 +1466,8 @@ and add_class id ty env =
 and add_cltype id ty env =
   store_cltype None id (Pident id) ty env env
 
-let add_module id mty env =
-  add_module_declaration id (md mty) env
+let add_module ?arg id mty env =
+  add_module_declaration ?arg id (md mty) env
 
 let add_local_constraint id info elv env =
   match info with
@@ -1383,13 +1488,17 @@ let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_extension = enter (store_extension ~check:true)
 and enter_exception = enter (store_exception ~check:true)
-and enter_module_declaration = enter store_module
+and enter_module_declaration ?arg name md env =
+  let id = Ident.create name in
+  (id, add_module_declaration ?arg id md env)
+  (* let (id, env) = enter store_module name md env in
+  (id, add_functor_arg ?arg id env) *)
 and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
 
-let enter_module s mty env =
-  enter_module_declaration s (md mty) env
+let enter_module ?arg s mty env =
+  enter_module_declaration ?arg s (md mty) env
 
 (* Insertion of all components of a signature *)
 
@@ -1481,12 +1590,14 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
 (* Read a signature from a file *)
 
 let read_signature modname filename =
-  let ps = read_pers_struct modname filename in ps.ps_sig
+  let ps = read_pers_struct modname filename in
+  check_consistency ps;
+  ps.ps_sig
 
 (* Return the CRC of the interface of the given compilation unit *)
 
 let crc_of_unit name =
-  let ps = find_pers_struct name in
+  let ps = find_pers_struct ~check:false name in
   try
     List.assoc name ps.ps_crcs
   with Not_found ->
@@ -1500,6 +1611,8 @@ let imported_units() =
 (* Save a signature to a file *)
 
 let save_signature_with_imports sg modname filename imports =
+  (*prerr_endline filename;
+  List.iter (fun (name, crc) -> prerr_endline name) imports;*)
   Btype.cleanup_abbrev ();
   Subst.reset_for_saving ();
   let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
@@ -1524,7 +1637,8 @@ let save_signature_with_imports sg modname filename imports =
         ps_comps = comps;
         ps_crcs = (cmi.cmi_name, crc) :: imports;
         ps_filename = filename;
-        ps_flags = cmi.cmi_flags } in
+        ps_flags = cmi.cmi_flags;
+        ps_crcs_checked = true } in
     Hashtbl.add persistent_structures modname (Some ps);
     Consistbl.set crc_units modname crc filename;
     sg
@@ -1679,10 +1793,22 @@ let report_error ppf = function
       fprintf ppf
         "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
         export import "The compilation flag -rectypes is required"
+  | Missing_module(_, path1, path2) ->
+      fprintf ppf "@[@[<hov>";
+      if Path.same path1 path2 then
+        fprintf ppf "Internal path@ %s@ is dangling." (Path.name path1)
+      else
+        fprintf ppf "Internal path@ %s@ expands to@ %s@ which is dangling."
+          (Path.name path1) (Path.name path2);
+      fprintf ppf "@]@ @[%s@ %s@ %s.@]@]"
+        "The compiled interface for module" (Ident.name (Path.head path2))
+        "was not found"
 
 let () =
   Location.register_error_of_exn
     (function
+      | Error (Missing_module (loc, _, _) as err) when loc <> Location.none ->
+          Some (Location.error_of_printer loc report_error err)
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )

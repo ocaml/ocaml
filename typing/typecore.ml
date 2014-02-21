@@ -564,7 +564,9 @@ let rec expand_path env p =
         {desc=Tconstr(p,_,_)} -> expand_path env p
       | _ -> assert false
       end
-  | _ -> p
+  | _ ->
+      let p' = Env.normalize_path None env p in
+      if Path.same p p' then p else expand_path env p'
 
 let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
@@ -1423,7 +1425,8 @@ and is_nonexpansive_mod mexp =
           | Tstr_open _ | Tstr_class_type _ | Tstr_exn_rebind _ -> true
           | Tstr_value (_, pat_exp_list) ->
               List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
-          | Tstr_module {mb_expr=m;_} | Tstr_include (m, _, _) -> is_nonexpansive_mod m
+          | Tstr_module {mb_expr=m;_}
+          | Tstr_include (m, _, _) -> is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
                 id_mod_list

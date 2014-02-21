@@ -125,8 +125,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   int fd, flags, perm;
   char * p;
 
-  p = caml_stat_alloc(caml_string_length(path) + 1);
-  strcpy(p, String_val(path));
+  p = caml_stat_alloc_string(path);
   flags = caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
@@ -145,46 +144,91 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
 
 CAMLprim value caml_sys_close(value fd)
 {
+  caml_enter_blocking_section();
   close(Int_val(fd));
+  caml_leave_blocking_section();
   return Val_unit;
 }
 
 CAMLprim value caml_sys_file_exists(value name)
 {
   struct stat st;
-  return Val_bool(stat(String_val(name), &st) == 0);
+  char * p;
+  int ret;
+
+  p = caml_stat_alloc_string(name);
+  caml_enter_blocking_section();
+  ret = stat(p, &st);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+
+  return Val_bool(ret == 0);
 }
 
 CAMLprim value caml_sys_is_directory(value name)
 {
+  CAMLparam1(name);
   struct stat st;
-  if (stat(String_val(name), &st) == -1) caml_sys_error(name);
+  char * p;
+  int ret;
+
+  p = caml_stat_alloc_string(name);
+  caml_enter_blocking_section();
+  ret = stat(p, &st);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+
+  if (ret == -1) caml_sys_error(name);
 #ifdef S_ISDIR
-  return Val_bool(S_ISDIR(st.st_mode));
+  CAMLreturn(Val_bool(S_ISDIR(st.st_mode)));
 #else
-  return Val_bool(st.st_mode & S_IFDIR);
+  CAMLreturn(Val_bool(st.st_mode & S_IFDIR));
 #endif
 }
 
 CAMLprim value caml_sys_remove(value name)
 {
+  CAMLparam1(name);
+  char * p;
   int ret;
-  ret = unlink(String_val(name));
+  p = caml_stat_alloc_string(name);
+  caml_enter_blocking_section();
+  ret = unlink(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (ret != 0) caml_sys_error(name);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_sys_rename(value oldname, value newname)
 {
-  if (rename(String_val(oldname), String_val(newname)) != 0)
+  char * p_old;
+  char * p_new;
+  int ret;
+  p_old = caml_stat_alloc_string(oldname);
+  p_new = caml_stat_alloc_string(newname);
+  caml_enter_blocking_section();
+  ret = rename(p_old, p_new);
+  caml_leave_blocking_section();
+  caml_stat_free(p_new);
+  caml_stat_free(p_old);
+  if (ret != 0)
     caml_sys_error(NO_ARG);
   return Val_unit;
 }
 
 CAMLprim value caml_sys_chdir(value dirname)
 {
-  if (chdir(String_val(dirname)) != 0) caml_sys_error(dirname);
-  return Val_unit;
+  CAMLparam1(dirname);
+  char * p;
+  int ret;
+  p = caml_stat_alloc_string(dirname);
+  caml_enter_blocking_section();
+  ret = chdir(p);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret != 0) caml_sys_error(dirname);
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_sys_getcwd(value unit)
@@ -244,11 +288,8 @@ CAMLprim value caml_sys_system_command(value command)
   CAMLparam1 (command);
   int status, retcode;
   char *buf;
-  intnat len;
 
-  len = caml_string_length (command);
-  buf = caml_stat_alloc (len + 1);
-  memmove (buf, String_val (command), len + 1);
+  buf = caml_stat_alloc_string(command);
   caml_enter_blocking_section ();
   status = system(buf);
   caml_leave_blocking_section ();
@@ -385,9 +426,16 @@ CAMLprim value caml_sys_read_directory(value path)
   CAMLparam1(path);
   CAMLlocal1(result);
   struct ext_table tbl;
+  char * p;
+  int ret;
 
   caml_ext_table_init(&tbl, 50);
-  if (caml_read_directory(String_val(path), &tbl) == -1){
+  p = caml_stat_alloc_string(path);
+  caml_enter_blocking_section();
+  ret = caml_read_directory(p, &tbl);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
+  if (ret == -1){
     caml_ext_table_free(&tbl, 1);
     caml_sys_error(path);
   }

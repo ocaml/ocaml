@@ -1,4 +1,4 @@
-(***********************************************************************)
+2(***********************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
@@ -583,6 +583,7 @@ and module_type i ppf x =
   let i = i+1 in
   match x.mty_desc with
   | Tmty_ident (li,_) -> line i ppf "Pmty_ident %a\n" fmt_path li;
+  | Tmty_alias (li,_) -> line i ppf "Pmty_alias %a\n" fmt_path li;
   | Tmty_signature (s) ->
       line i ppf "Pmty_signature\n";
       signature i ppf s;

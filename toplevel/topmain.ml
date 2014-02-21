@@ -79,6 +79,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _short_paths = clear real_paths
   let _stdin () = file_argument ""
   let _strict_sequence = set strict_sequence
+  let _trans_mod = set transparent_modules
   let _unsafe = set fast
   let _version () = print_version ()
   let _vnum () = print_version_num ()

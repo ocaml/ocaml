@@ -679,6 +679,8 @@ module_type:
       { mkmty(Pmty_with($1, List.rev $3)) }
   | MODULE TYPE OF module_expr %prec below_LBRACKETAT
       { mkmty(Pmty_typeof $4) }
+  | LPAREN MODULE mod_longident RPAREN
+      { mkmty (Pmty_alias (mkrhs $3 3)) }
   | LPAREN module_type RPAREN
       { $2 }
   | LPAREN module_type error
@@ -704,7 +706,8 @@ signature_item:
     VAL val_ident COLON core_type post_item_attributes
       { mksig(Psig_value
                 (Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()))) }
-  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
+    post_item_attributes
       { mksig(Psig_value
                 (Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7
                    ~loc:(symbol_rloc()))) }
@@ -716,6 +719,10 @@ signature_item:
       { mksig(Psig_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
       { mksig(Psig_module (Md.mk (mkrhs $2 2) $3 ~attrs:$4)) }
+  | MODULE UIDENT EQUAL mod_longident post_item_attributes
+      { mksig(Psig_module (Md.mk (mkrhs $2 2)
+                             (Mty.alias ~loc:(rhs_loc 4) (mkrhs $4 4))
+                             ~attrs:$5)) }
   | MODULE REC module_rec_declarations
       { mksig(Psig_recmodule (List.rev $3)) }
   | MODULE TYPE ident post_item_attributes

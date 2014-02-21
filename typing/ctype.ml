@@ -1396,7 +1396,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           ty
       | None ->
           let (params, body, lv) =
-            try find_type_expansion level path env with Not_found ->
+            try find_type_expansion path env with Not_found ->
               raise Cannot_expand
           in
           (* prerr_endline
@@ -1422,10 +1422,9 @@ let expand_abbrev_gen kind find_type_expansion env ty =
   | _ ->
       assert false
 
-(* inside objects and variants we do not want to
-   use local constraints *)
+(* Expand respecting privacy *)
 let expand_abbrev ty =
-  expand_abbrev_gen Public (fun level -> Env.find_type_expansion ~level) ty
+  expand_abbrev_gen Public Env.find_type_expansion ty
 
 (* Expand once the head of a type *)
 let expand_head_once env ty =
@@ -1503,7 +1502,7 @@ let rec extract_concrete_typedecl env ty =
    the private abbreviation. *)
 
 let expand_abbrev_opt =
-  expand_abbrev_gen Private (fun level -> Env.find_type_expansion_opt)
+  expand_abbrev_gen Private Env.find_type_expansion_opt
 
 let try_expand_once_opt env ty =
   let ty = repr ty in
@@ -2191,7 +2190,7 @@ let rec normalize_package_path env p =
   in
   match t with
   | Some (Mty_ident p) -> normalize_package_path env p
-  | Some (Mty_signature _ | Mty_functor _) | None -> p
+  | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None -> p
 
 let eq_package_path env p1 p2 =
   Path.same p1 p2 ||

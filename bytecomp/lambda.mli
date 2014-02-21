@@ -207,7 +207,7 @@ and lambda_event_kind =
 val same: lambda -> lambda -> bool
 val const_unit: structured_constant
 val lambda_unit: lambda
-val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
+val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
 val iter: (lambda -> unit) -> lambda -> unit
@@ -215,7 +215,8 @@ module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
 val free_methods: lambda -> IdentSet.t
 
-val transl_path: Path.t -> lambda
+val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
+val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda

@@ -234,16 +234,22 @@ let instr_env ppf lexbuf =
   let cmdarg = argument_list_eol argument lexbuf in
   let cmdarg = string_trim (String.concat " " cmdarg) in
   if cmdarg <> "" then
-    try
-      if (String.index cmdarg '=') > 0 then
-        Debugger_config.environment := cmdarg :: !Debugger_config.environment
-      else
-        eprintf "Environment variables should not have an empty name\n%!"
-    with Not_found ->
-      eprintf "Environment variables should have the \"name=value\" format\n%!"
+    if ask_kill_program () then begin
+      try
+        let eqpos = String.index cmdarg '=' in
+        if eqpos = 0 then raise Not_found;
+        let name = String.sub cmdarg 0 eqpos in
+        let value =
+          String.sub cmdarg (eqpos + 1) (String.length cmdarg - eqpos - 1)
+        in
+        Debugger_config.environment :=
+          (name, value) :: List.remove_assoc name !Debugger_config.environment
+      with Not_found ->
+        eprintf "Environment variable must be in name=value format\n%!"
+    end
   else
     List.iter
-      (printf "%s\n%!")
+      (fun (vvar, vval) -> printf "%s=%s\n%!" vvar vval)
       (List.rev !Debugger_config.environment)
 
 let instr_pwd ppf lexbuf =

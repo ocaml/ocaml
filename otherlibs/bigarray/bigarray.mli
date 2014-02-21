@@ -52,24 +52,38 @@
 - platform-native signed integers (32 bits on 32-bit architectures,
    64 bits on 64-bit architectures) ({!Bigarray.nativeint_elt}).
 
-   Each element kind is represented at the type level by one
-   of the abstract types defined below.
+   Each element kind is represented at the type level by one of the
+   [*_elt] types defined below (defined with a single constructor instead
+   of abstract types for technical injectivity reasons).
 *)
 
-type float32_elt
-type float64_elt
-type complex32_elt
-type complex64_elt
-type int8_signed_elt
-type int8_unsigned_elt
-type int16_signed_elt
-type int16_unsigned_elt
-type int_elt
-type int32_elt
-type int64_elt
-type nativeint_elt
+type float32_elt = Float32_elt
+type float64_elt = Float64_elt
+type int8_signed_elt = Int8_signed_elt
+type int8_unsigned_elt = Int8_unsigned_elt
+type int16_signed_elt = Int16_signed_elt
+type int16_unsigned_elt = Int16_unsigned_elt
+type int32_elt = Int32_elt
+type int64_elt = Int64_elt
+type int_elt = Int_elt
+type nativeint_elt = Nativeint_elt
+type complex32_elt = Complex32_elt
+type complex64_elt = Complex64_elt
 
-type ('a, 'b) kind
+type ('a, 'b) kind =
+    Float32 : (float, float32_elt) kind
+  | Float64 : (float, float64_elt) kind
+  | Int8_signed : (int, int8_signed_elt) kind
+  | Int8_unsigned : (int, int8_unsigned_elt) kind
+  | Int16_signed : (int, int16_signed_elt) kind
+  | Int16_unsigned : (int, int16_unsigned_elt) kind
+  | Int32 : (int32, int32_elt) kind
+  | Int64 : (int64, int64_elt) kind
+  | Int : (int, int_elt) kind
+  | Nativeint : (nativeint, nativeint_elt) kind
+  | Complex32 : (Complex.t, complex32_elt) kind
+  | Complex64 : (Complex.t, complex64_elt) kind
+  | Char : (char, int8_unsigned_elt) kind
 (** To each element kind is associated an OCaml type, which is
    the type of OCaml values that can be stored in the big array
    or read back from it.  This type is not necessarily the same
@@ -79,12 +93,28 @@ type ('a, 'b) kind
    its elements from OCaml uses the OCaml type [float], which is
    64-bit double precision floats.
 
-   The abstract type [('a, 'b) kind] captures this association
+   The GADT type [('a, 'b) kind] captures this association
    of an OCaml type ['a] for values read or written in the big array,
    and of an element kind ['b] which represents the actual contents
-   of the big array.  The following predefined values of type
-   [kind] list all possible associations of OCaml types with
-   element kinds: *)
+   of the big array. Its constructors list all possible associations
+   of OCaml types with element kinds, and are re-exported below for
+   backward-compatibility reasons.
+
+   Using a generalized algebraic datatype (GADT) here allows to write
+   well-typed polymorphic functions whose return type depend on the
+   argument type, such as:
+
+{[
+  let zero : type a b. (a, b) kind -> a = function
+    | Float32 -> 0.0 | Complex32 -> Complex.zero
+    | Float64 -> 0.0 | Complex64 -> Complex.zero
+    | Int8_signed -> 0 | Int8_unsigned -> 0 
+    | Int16_signed -> 0 | Int16_unsigned -> 0
+    | Int32 -> 0l | Int64 -> 0L
+    | Int -> 0 | Nativeint -> 0n
+    | Char -> '\000'
+]}
+*)
 
 val float32 : (float, float32_elt) kind
 (** See {!Bigarray.char}. *)
@@ -127,7 +157,7 @@ val char : (char, int8_unsigned_elt) kind
    big arrays of kind [float32_elt] and [float64_elt] are
    accessed using the OCaml type [float].  Big arrays of complex kinds
    [complex32_elt], [complex64_elt] are accessed with the OCaml type
-   {!Complex.t}.  Big arrays of
+   {!Complex.t}. Big arrays of
    integer kinds are accessed using the smallest OCaml integer
    type large enough to represent the array elements:
    [int] for 8- and 16-bit integer bigarrays, as well as OCaml-integer
@@ -140,10 +170,10 @@ val char : (char, int8_unsigned_elt) kind
 
 (** {6 Array layouts} *)
 
-type c_layout
+type c_layout = C_layout_typ
 (** See {!Bigarray.fortran_layout}.*)
 
-type fortran_layout
+type fortran_layout = Fortran_layout_typ
 (** To facilitate interoperability with existing C and Fortran code,
    this library supports two different memory layouts for big arrays,
    one compatible with the C conventions,
@@ -164,19 +194,19 @@ type fortran_layout
    and [(x+1, y)] are adjacent in memory.
 
    Each layout style is identified at the type level by the
-   abstract types {!Bigarray.c_layout} and [fortran_layout] respectively. *)
-
-type 'a layout
-(** The type ['a layout] represents one of the two supported
-   memory layouts: C-style if ['a] is {!Bigarray.c_layout}, Fortran-style
-   if ['a] is {!Bigarray.fortran_layout}. *)
-
+   phantom types {!Bigarray.c_layout} and {!Bigarray.fortran_layout}
+   respectively. *)
 
 (** {7 Supported layouts}
 
-   The abstract values [c_layout] and [fortran_layout] represent
-   the two supported layouts at the level of values.
+   The GADT type ['a layout] represents one of the two supported
+   memory layouts: C-style or Fortran-style. Its constructors are
+   re-exported as values below for backward-compatibility reasons.
 *)
+
+type 'a layout =
+    C_layout: c_layout layout
+  | Fortran_layout: fortran_layout layout
 
 val c_layout : c_layout layout
 val fortran_layout : fortran_layout layout

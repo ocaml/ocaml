@@ -25,6 +25,7 @@ type summary =
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
   | Env_open of summary * Path.t
+  | Env_functor_arg of summary * Ident.t
 
 type t
 
@@ -54,12 +55,21 @@ val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> class_type_declaration
 
 val find_type_expansion:
-    ?level:int -> Path.t -> t -> type_expr list * type_expr * int option
+    Path.t -> t -> type_expr list * type_expr * int option
 val find_type_expansion_opt:
     Path.t -> t -> type_expr list * type_expr * int option
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
+val is_functor_arg: Path.t -> t -> bool
+val normalize_path: Location.t option -> t -> Path.t -> Path.t
+(* Normalize the path to a concrete value or module.
+   If the option is None, allow returning dangling paths.
+   Otherwise raise a Missing_module error, and may add forgotten
+   head as required global. *)
+val reset_required_globals: unit -> unit
+val get_required_globals: unit -> Ident.t list
+val add_required_global: Ident.t -> unit
 
 val has_local_constraints: t -> bool
 val add_gadt_instance_level: int -> t -> t
@@ -77,7 +87,7 @@ val lookup_label: Longident.t -> t -> label_description
 val lookup_all_labels:
   Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
-val lookup_module: Longident.t -> t -> Path.t * module_declaration
+val lookup_module: Longident.t -> t -> Path.t
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class: Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
@@ -94,8 +104,8 @@ val add_value:
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
 val add_extension: check:bool -> Ident.t -> extension_constructor -> t -> t
 val add_exception: check:bool -> Ident.t -> exception_declaration -> t -> t
-val add_module: Ident.t -> module_type -> t -> t
-val add_module_declaration: Ident.t -> module_declaration -> t -> t
+val add_module: ?arg:bool -> Ident.t -> module_type -> t -> t
+val add_module_declaration: ?arg:bool -> Ident.t -> module_declaration -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
@@ -122,8 +132,9 @@ val enter_value:
 val enter_type: string -> type_declaration -> t -> Ident.t * t
 val enter_extension: string -> extension_constructor -> t -> Ident.t * t
 val enter_exception: string -> exception_declaration -> t -> Ident.t * t
-val enter_module: string -> module_type -> t -> Ident.t * t
-val enter_module_declaration: string -> module_declaration -> t -> Ident.t * t
+val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
+val enter_module_declaration:
+    ?arg:bool -> string -> module_declaration -> t -> Ident.t * t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
@@ -178,6 +189,7 @@ type error =
   | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
+  | Missing_module of Location.t * Path.t * Path.t
 
 exception Error of error
 
@@ -211,6 +223,8 @@ val check_modtype_inclusion:
       (t -> module_type -> Path.t -> module_type -> unit) ref
 (* Forward declaration to break mutual recursion with Typecore. *)
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
+(* Forward declaration to break mutual recursion with Mtype. *)
+val strengthen: (t -> module_type -> Path.t -> module_type) ref
 
 (** Folding over all identifiers (for analysis purpose) *)
 
@@ -241,3 +255,6 @@ val fold_classs:
 val fold_cltypes:
   (string -> Path.t -> class_type_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
+
+(** Utilities *)
+val scrape_alias: t -> module_type -> module_type

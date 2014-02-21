@@ -826,6 +826,8 @@ class printer  ()= object(self:'self)
     match x.pmty_desc with
     | Pmty_ident li ->
         pp f "%a" self#longident_loc li;
+    | Pmty_alias li ->
+        pp f "(module %a)" self#longident_loc li;
     | Pmty_signature (s) ->
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
           (self#list self#signature_item  ) s (* FIXME wrong indentation*)
@@ -870,7 +872,8 @@ class printer  ()= object(self:'self)
         pp f "@[<2>%a@]"
           (fun f vd ->
             let intro = if vd.pval_prim = [] then "val" else "external" in
-            if (is_infix (fixity_of_string vd.pval_name.txt)) || List.mem vd.pval_name.txt.[0] prefix_symbols then
+            if (is_infix (fixity_of_string vd.pval_name.txt))
+            || List.mem vd.pval_name.txt.[0] prefix_symbols then
               pp f "%s@ (@ %s@ )@ :@ " intro vd.pval_name.txt
             else
               pp f "%s@ %s@ :@ " intro vd.pval_name.txt;
@@ -890,8 +893,13 @@ class printer  ()= object(self:'self)
           (fun f l ->  match l with
             |[]  ->()
             |[x] -> pp f "@[<2>class %a@]" class_description x
-            |_ -> self#list ~first:"@[<v0>class @[<2>" ~sep:"@]@;and @[" ~last:"@]@]"
-                  class_description f l) l
+            |_ ->
+                self#list ~first:"@[<v0>class @[<2>" ~sep:"@]@;and @["
+                  ~last:"@]@]" class_description f l)
+          l
+    | Psig_module {pmd_name; pmd_type={pmty_desc=Pmty_alias alias}} ->
+        pp f "@[<hov>module@ %s@ =@ %a@]"
+          pmd_name.txt self#longident_loc alias
     | Psig_module pmd ->
         pp f "@[<hov>module@ %s@ :@ %a@]"
           pmd.pmd_name.txt

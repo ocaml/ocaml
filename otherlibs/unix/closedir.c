@@ -12,6 +12,8 @@
 /***********************************************************************/
 
 #include <mlvalues.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 #include <errno.h>
 #include <sys/types.h>
@@ -23,9 +25,12 @@
 
 CAMLprim value unix_closedir(value vd)
 {
+  CAMLparam1(vd);
   DIR * d = DIR_Val(vd);
   if (d == (DIR *) NULL) unix_error(EBADF, "closedir", Nothing);
+  caml_enter_blocking_section();
   closedir(d);
+  caml_leave_blocking_section();
   DIR_Val(vd) = (DIR *) NULL;
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }

@@ -61,12 +61,15 @@ let rec eval_path = function
   | Papply(p1, p2) ->
       fatal_error "Toploop.eval_path"
 
+let eval_path env path =
+  eval_path (Env.normalize_path (Some Location.none) env path)
+
 (* To print values *)
 
 module EvalPath = struct
   type valu = Obj.t
   exception Error
-  let eval_path p = try eval_path p with Symtable.Error _ -> raise Error
+  let eval_path env p = try eval_path env p with Symtable.Error _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
 end
 

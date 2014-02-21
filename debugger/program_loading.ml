@@ -33,38 +33,19 @@ let load_program () =
 
 (*** Launching functions. ***)
 
-(* Returns the environment to be passed to debugee *)
-let get_environment () =
-  let env = Unix.environment () in
-  let have_same_name x y =
-    let split = Primitives.split_string '=' in
-    match split x, split y with
-      (hd1 :: _), (hd2 :: _) -> hd1 = hd2
-    | _ -> false in
-  let have_name_in_config_env x =
-    List.exists
-      (have_same_name x)
-      !Debugger_config.environment in
-  let env =
-    Array.fold_right
-      (fun elem acc ->
-        if have_name_in_config_env elem then
-          acc
-        else
-          elem :: acc)
-      env
-      [] in
-  Array.of_list (env @ !Debugger_config.environment)
+(* Returns a command line prefix to set environment for the debuggee *)
+let get_unix_environment () =
+  let f (vname, vvalue) =
+    Printf.sprintf "%s=%s " vname (Filename.quote vvalue)
+  in
+  String.concat "" (List.map f !Debugger_config.environment)
+;;
 
-(* Returns the environment to be passed to debugee *)
+(* Returns a command line prefix to set environment for the debuggee *)
 let get_win32_environment () =
-  let res = Buffer.create 256 in
-  let env = get_environment () in
-  let len = Array.length env in
-  for i = 0 to pred len do
-    Buffer.add_string res (Printf.sprintf "set %s && " env.(i))
-  done;
-  Buffer.contents res
+  (* Note: no space before the & or Windows will add it to the value *)
+  let f (vname, vvalue) = Printf.sprintf "set %s=%s&" vname vvalue in
+  String.concat "" (List.map f !Debugger_config.environment)
 
 (* A generic function for launching the program *)
 let generic_exec_unix cmdline = function () ->
@@ -83,7 +64,7 @@ let generic_exec_unix cmdline = function () ->
            0 -> (* Try to detach the process from the controlling terminal,
                    so that it does not receive SIGINT on ctrl-C. *)
                 begin try ignore(setsid()) with Invalid_argument _ -> () end;
-                execve shell [| shell; "-c"; cmdline() |] (get_environment ())
+                execv shell [| shell; "-c"; cmdline() |]
          | _ -> exit 0
        with x ->
          Unix_tools.report_error x;
@@ -113,18 +94,19 @@ let exec_with_runtime =
     (function () ->
       match Sys.os_type with
         "Win32" ->
-          (* This fould fail on a file name with spaces
+          (* This would fail on a file name with spaces
              but quoting is even worse because Unix.create_process
              thinks each command line parameter is a file.
              So no good solution so far *)
-          Printf.sprintf "%sset CAML_DEBUG_SOCKET=%s && %s %s %s"
+          Printf.sprintf "%sset CAML_DEBUG_SOCKET=%s& %s %s %s"
                      (get_win32_environment ())
                      !socket_name
                      runtime_program
                      !program_name
                      !arguments
       | _ ->
-          Printf.sprintf "CAML_DEBUG_SOCKET=%s %s %s %s"
+          Printf.sprintf "%sCAML_DEBUG_SOCKET=%s %s %s %s"
+                     (get_unix_environment ())
                      !socket_name
                      (Filename.quote runtime_program)
                      (Filename.quote !program_name)
@@ -137,13 +119,14 @@ let exec_direct =
       match Sys.os_type with
         "Win32" ->
           (* See the comment above *)
-          Printf.sprintf "%sset CAML_DEBUG_SOCKET=%s && %s %s"
+          Printf.sprintf "%sset CAML_DEBUG_SOCKET=%s& %s %s"
                      (get_win32_environment ())
                      !socket_name
                      !program_name
                      !arguments
       | _ ->
-          Printf.sprintf "CAML_DEBUG_SOCKET=%s %s %s"
+          Printf.sprintf "%sCAML_DEBUG_SOCKET=%s %s %s"
+                     (get_unix_environment ())
                      !socket_name
                      (Filename.quote !program_name)
                      !arguments)

@@ -44,14 +44,24 @@ enum caml_ba_kind {
   CAML_BA_NATIVE_INT,       /* Platform-native long integers (32 or 64 bits) */
   CAML_BA_COMPLEX32,           /* Single-precision complex */
   CAML_BA_COMPLEX64,           /* Double-precision complex */
+  CAML_BA_CHAR,                /* Characters */
   CAML_BA_KIND_MASK = 0xFF     /* Mask for kind in flags field */
 };
+
+#define Caml_ba_kind_val(v) Int_val(v)
+
+#define Val_caml_ba_kind(k) Val_int(k)
 
 enum caml_ba_layout {
   CAML_BA_C_LAYOUT = 0,           /* Row major, indices start at 0 */
   CAML_BA_FORTRAN_LAYOUT = 0x100, /* Column major, indices start at 1 */
-  CAML_BA_LAYOUT_MASK = 0x100  /* Mask for layout in flags field */
+  CAML_BA_LAYOUT_MASK = 0x100,    /* Mask for layout in flags field */
+  CAML_BA_LAYOUT_SHIFT = 8        /* Bit offset of layout flag */
 };
+
+#define Caml_ba_layout_val(v) (Int_val(v) << CAML_BA_LAYOUT_SHIFT)
+
+#define Val_caml_ba_layout(l) Val_int(l >> CAML_BA_LAYOUT_SHIFT)
 
 enum caml_ba_managed {
   CAML_BA_EXTERNAL = 0,        /* Data is not allocated by OCaml */

@@ -407,6 +407,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
       begin
         match mty.mty_desc with
           Tmty_ident (path, _) -> ()
+        | Tmty_alias (path, _) -> ()
         | Tmty_signature sg -> iter_signature sg
         | Tmty_functor (id, _, mtype1, mtype2) ->
             Misc.may iter_module_type mtype1; iter_module_type mtype2

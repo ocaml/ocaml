@@ -50,7 +50,8 @@ int caml_ba_element_size[] =
   2 /*SINT16*/, 2 /*UINT16*/,
   4 /*INT32*/, 8 /*INT64*/,
   sizeof(value) /*CAML_INT*/, sizeof(value) /*NATIVE_INT*/,
-  8 /*COMPLEX32*/, 16 /*COMPLEX64*/
+  8 /*COMPLEX32*/, 16 /*COMPLEX64*/,
+  1 /*CHAR*/
 };
 
 /* Compute the number of bytes for the elements of a big array */
@@ -141,7 +142,7 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
 
   Assert(num_dims >= 1 && num_dims <= CAML_BA_MAX_NUM_DIMS);
-  Assert((flags & CAML_BA_KIND_MASK) <= CAML_BA_COMPLEX64);
+  Assert((flags & CAML_BA_KIND_MASK) <= CAML_BA_CHAR);
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
   if (data == NULL) {
@@ -203,7 +204,7 @@ CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
     if (dim[i] < 0)
       caml_invalid_argument("Bigarray.create: negative dimension");
   }
-  flags = Int_val(vkind) | Int_val(vlayout);
+  flags = Caml_ba_kind_val(vkind) | Caml_ba_layout_val(vlayout);
   return caml_ba_alloc(flags, num_dims, NULL, dim);
 }
 
@@ -291,6 +292,8 @@ value caml_ba_get_N(value vb, value * vind, int nind)
   case CAML_BA_COMPLEX64:
     { double * p = ((double *) b->data) + offset * 2;
       return copy_two_doubles(p[0], p[1]); }
+  case CAML_BA_CHAR:
+    return Val_int(((char *) b->data)[offset]);
   }
 }
 
@@ -439,6 +442,7 @@ static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
     ((float *) b->data)[offset] = Double_val(newval); break;
   case CAML_BA_FLOAT64:
     ((double *) b->data)[offset] = Double_val(newval); break;
+  case CAML_BA_CHAR:
   case CAML_BA_SINT8:
   case CAML_BA_UINT8:
     ((int8 *) b->data)[offset] = Int_val(newval); break;
@@ -649,14 +653,15 @@ CAMLprim value caml_ba_dim_3(value vb)
 
 CAMLprim value caml_ba_kind(value vb)
 {
-  return Val_int(Caml_ba_array_val(vb)->flags & CAML_BA_KIND_MASK);
+  return Val_caml_ba_kind(Caml_ba_array_val(vb)->flags & CAML_BA_KIND_MASK);
 }
 
 /* Return the layout of a big array */
 
 CAMLprim value caml_ba_layout(value vb)
 {
-  return Val_int(Caml_ba_array_val(vb)->flags & CAML_BA_LAYOUT_MASK);
+  int layout = Caml_ba_array_val(vb)->flags & CAML_BA_LAYOUT_MASK;
+  return Val_caml_ba_layout(layout);
 }
 
 /* Finalization of a big array */
@@ -749,6 +754,8 @@ static int caml_ba_compare(value v1, value v2)
     num_elts *= 2; /*fallthrough*/
   case CAML_BA_FLOAT64:
     DO_FLOAT_COMPARISON(double);
+  case CAML_BA_CHAR:
+    DO_INTEGER_COMPARISON(char);
   case CAML_BA_SINT8:
     DO_INTEGER_COMPARISON(int8);
   case CAML_BA_UINT8:
@@ -799,6 +806,7 @@ static intnat caml_ba_hash(value v)
   h = 0;
 
   switch (b->flags & CAML_BA_KIND_MASK) {
+  case CAML_BA_CHAR:
   case CAML_BA_SINT8:
   case CAML_BA_UINT8: {
     uint8 * p = b->data;
@@ -917,6 +925,7 @@ static void caml_ba_serialize(value v,
   for (i = 0; i < b->num_dims; i++) num_elts = num_elts * b->dim[i];
   /* Serialize elements */
   switch (b->flags & CAML_BA_KIND_MASK) {
+  case CAML_BA_CHAR:
   case CAML_BA_SINT8:
   case CAML_BA_UINT8:
     caml_serialize_block_1(b->data, num_elts); break;
@@ -980,7 +989,7 @@ uintnat caml_ba_deserialize(void * dst)
   /* Compute total number of elements */
   num_elts = caml_ba_num_elts(b);
   /* Determine element size in bytes */
-  if ((b->flags & CAML_BA_KIND_MASK) > CAML_BA_COMPLEX64)
+  if ((b->flags & CAML_BA_KIND_MASK) > CAML_BA_CHAR)
     caml_deserialize_error("input_value: bad bigarray kind");
   elt_size = caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
   /* Allocate room for data */
@@ -989,6 +998,7 @@ uintnat caml_ba_deserialize(void * dst)
     caml_deserialize_error("input_value: out of memory for bigarray");
   /* Read data */
   switch (b->flags & CAML_BA_KIND_MASK) {
+  case CAML_BA_CHAR:
   case CAML_BA_SINT8:
   case CAML_BA_UINT8:
     caml_deserialize_block_1(b->data, num_elts); break;
@@ -1173,6 +1183,7 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
   }
+  case CAML_BA_CHAR:
   case CAML_BA_SINT8:
   case CAML_BA_UINT8: {
     int init = Int_val(vinit);

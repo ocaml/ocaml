@@ -56,7 +56,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   SYSTEM_INFO sysinfo;
 
   fd = Handle_val(vfd);
-  flags = Int_val(vkind) | Int_val(vlayout);
+  flags = Caml_ba_kind_val(vkind) | Caml_ba_layout_val(vlayout);
   startpos = Int64_val(vstart);
   num_dims = Wosize_val(vdim);
   major_dim = flags & CAML_BA_FORTRAN_LAYOUT ? num_dims - 1 : 0;

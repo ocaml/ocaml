@@ -3,6 +3,11 @@ Next version:
 
 (Changes that can break existing programs are marked with a "*")
 
+Language features:
+- Attributes and extension nodes
+- Generative functors
+- Module aliases
+
 Camlp4:
 - Removed from the official distribution
 
@@ -16,10 +21,9 @@ Type system:
 - Allow opening a first-class module or applying a generative functor
   in the body of a generative functor. Allow it also in the body of
   an applicative functor if no types are created
-
-Language features:
-- Attributes and extension nodes
-- Generative functors
+* Module aliases are now typed in a specific way, which remembers their
+  identity. In particular this changes the signature inferred by
+  "module type of"
 
 Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
@@ -64,6 +68,7 @@ Features wishes:
   hexa representations (patch by Zoe Paraskevopoulou)
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
+- PR#6064: GADT representation for Bigarray.kind + CAML_BA_CHAR runtime kind
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
 - PR#6246: allow wilcard _ as for-loop index

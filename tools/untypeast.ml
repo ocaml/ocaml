@@ -405,6 +405,7 @@ and untype_class_type_declaration cd =
 and untype_module_type mty =
   let desc = match mty.mty_desc with
       Tmty_ident (_path, lid) -> Pmty_ident (lid)
+    | Tmty_alias (_path, lid) -> Pmty_alias (lid)
     | Tmty_signature sg -> Pmty_signature (untype_signature sg)
     | Tmty_functor (_id, name, mtype1, mtype2) ->
         Pmty_functor (name, Misc.may_map untype_module_type mtype1,

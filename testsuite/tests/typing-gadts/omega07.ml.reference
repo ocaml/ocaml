@@ -14,7 +14,7 @@ type _ nat = NZ : zero nat | NS : 'a nat -> 'a succ nat
 #   *                     type (_, _, _) app =
     App : ('a, 'p) seq * ('n, 'm, 'p) plus -> ('a, 'n, 'm) app
 val app : ('a, 'n) seq -> ('a, 'm) seq -> ('a, 'n, 'm) app = <fun>
-# *                           type tp = TP
+#                         type tp = TP
 type nd = ND
 type ('a, 'b) fk = FK
 type _ shape =
