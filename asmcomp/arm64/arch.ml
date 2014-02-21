@@ -143,4 +143,3 @@ let print_specific_operation printreg op ppf arg =
   | Ibswap n ->
       fprintf ppf "bswap%i %a" n
         printreg arg.(0)
-

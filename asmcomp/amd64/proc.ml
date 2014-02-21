@@ -260,7 +260,7 @@ let destroyed_at_oper = function
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
   | Iop(Istore(Single, _)) -> [| rxmm15 |]
-  | Iop(Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _))
+  | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->

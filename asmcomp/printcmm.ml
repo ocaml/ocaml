@@ -60,6 +60,7 @@ let operation = function
   | Caddi -> "+"
   | Csubi -> "-"
   | Cmuli -> "*"
+  | Cmulhi -> "*h"
   | Cdivi -> "/"
   | Cmodi -> "mod"
   | Cand -> "and"

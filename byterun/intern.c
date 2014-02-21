@@ -287,7 +287,7 @@ static void intern_rec(value *dest)
   case OFreshOID:
     /* Refresh the object ID */
     /* but do not do it for predefined exception slots */
-    if (Int_val(Field(dest, 1)) >= 0)
+    if (Int_val(Field((value)dest, 1)) >= 0)
       caml_set_oo_id((value)dest);
     /* Pop item and iterate */
     sp--;
@@ -325,7 +325,7 @@ static void intern_rec(value *dest)
           /* Request freshing OID */
           PushItem();
           sp->op = OFreshOID;
-          sp->dest = v;
+          sp->dest = (value*) v;
           sp->arg = 1;
           /* Finally read first two block elements: method table and old OID */
           ReadItems(&Field(v, 0), 2);

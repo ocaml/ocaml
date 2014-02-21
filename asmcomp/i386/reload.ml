@@ -57,9 +57,11 @@ method! reload_operation op arg res =
       if stackp arg.(0)
       then let r = self#makereg arg.(0) in ([|r|], [|r|])
       else (arg, res)
-  | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ifloatofint | Iintoffloat |
-    Ispecific(Ipush) ->
+  | Iintop(Imulh | Ilsl | Ilsr | Iasr) | Iintop_imm(_, _)
+  | Ifloatofint | Iintoffloat | Ispecific(Ipush) ->
       (* The argument(s) can be either in register or on stack *)
+      (* Note: Imulh: arg(0 and res(0) already forced in regs
+               Ilsl, Ilsr, Iasr: arg(1) already forced in regs *)
       (arg, res)
   | _ -> (* Other operations: all args and results in registers *)
       super#reload_operation op arg res

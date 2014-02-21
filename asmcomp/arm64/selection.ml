@@ -184,31 +184,9 @@ method! select_operation op args =
   (* Integer multiplication *)
   (* ARM does not support immediate operands for multiplication *)
   | Cmuli ->
-      begin match args with
-      | [arg; Cconst_int n] | [Cconst_int n; arg] ->
-          let l = Misc.log2 n in
-          if n = 1 lsl l
-          then (Iintop_imm(Ilsl, l), [arg])
-          else (Iintop Imul, args)
-      | _ ->
-          (Iintop Imul, args)
-      end
-  (* Division and modulus *)
-  (* Recognize (x / cst) and (x % cst) only if cst is > 0. *)
-  | Cdivi ->
-      begin match args with
-      | [arg; Cconst_int n] when n > 0 ->
-          ((if n = 1 then Imove else Iintop_imm(Idiv, n)), [arg])
-      | _ ->
-          (Iintop Idiv, args)
-      end
-  | Cmodi ->
-      begin match args with
-      | [arg; Cconst_int n] when n > 0 ->
-          ((if n = 1 then Iconst_int 0n else Iintop_imm(Imod, n)), [arg])
-      | _ ->
-          (Iintop Imod, args)
-      end
+      (Iintop Imul, args)
+  | Cmulhi ->
+      (Iintop Imulh, args)
   (* Bitwise logical operations have a different range of immediate
      operands than the other instructions *)
   | Cand -> self#select_logical Iand args

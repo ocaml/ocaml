@@ -17,7 +17,7 @@ type integer_comparison =
   | Iunsigned of Cmm.comparison
 
 type integer_operation =
-    Iadd | Isub | Imul | Idiv | Imod
+    Iadd | Isub | Imul | Imulh | Idiv | Imod
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
   | Icheckbound

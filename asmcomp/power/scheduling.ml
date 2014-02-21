@@ -26,7 +26,7 @@ method oper_latency = function
   | Iload(_, _) -> 2
   | Iconst_float _ -> 2 (* turned into a load *)
   | Iconst_symbol _ -> 1
-  | Iintop Imul -> 9
+  | Iintop(Imul | Imulh) -> 9
   | Iintop_imm(Imul, _) -> 5
   | Iintop(Idiv | Imod) -> 36
   | Iaddf | Isubf -> 4
@@ -48,8 +48,6 @@ method oper_issue_cycles = function
   | Ialloc _ -> 4
   | Iintop(Imod) -> 40 (* assuming full stall *)
   | Iintop(Icomp _) -> 4
-  | Iintop_imm(Idiv, _) -> 2
-  | Iintop_imm(Imod, _) -> 4
   | Iintop_imm(Icomp _, _) -> 4
   | Ifloatofint -> 9
   | Iintoffloat -> 4

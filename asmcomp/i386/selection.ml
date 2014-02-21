@@ -112,6 +112,10 @@ let pseudoregs_for_operation op arg res =
   (* Two-address unary operations *)
   | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) ->
       (res, res, false)
+  (* For imull, first arg must be in eax, eax is clobbered, and result is in
+     edx. *)
+  | Iintop(Imulh) ->
+      ([| eax; arg.(1) |], [| edx |], true)
   (* For shifts with variable shift count, second arg must be in ecx *)
   | Iintop(Ilsl|Ilsr|Iasr) ->
       ([|res.(0); ecx|], res, false)
@@ -122,10 +126,6 @@ let pseudoregs_for_operation op arg res =
       ([| eax; ecx |], [| eax |], true)
   | Iintop(Imod) ->
       ([| eax; ecx |], [| edx |], true)
-  (* For div and mod with immediate operand, arg must not be in eax nor edx.
-     Keep it simple, force it in ecx. *)
-  | Iintop_imm((Idiv|Imod), _) ->
-      ([| ecx |], [| ecx |], true)
   (* For floating-point operations and floating-point loads,
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
@@ -202,19 +202,6 @@ method! select_operation op args =
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
-  (* Recognize (x / cst) and (x % cst) only if cst is > 0. *)
-  | Cdivi ->
-      begin match args with
-        [arg1; Cconst_int n] when n > 0 ->
-          (Iintop_imm(Idiv, n), [arg1])
-      | _ -> (Iintop Idiv, args)
-      end
-  | Cmodi ->
-      begin match args with
-        [arg1; Cconst_int n] when n > 0 ->
-          (Iintop_imm(Imod, n), [arg1])
-      | _ -> (Iintop Imod, args)
-      end
   (* Recognize float arithmetic with memory.
      In passing, apply Ershov's algorithm to reduce stack usage *)
   | Caddf ->
@@ -241,6 +228,9 @@ method! select_operation op args =
   | Cextcall(fn, ty_res, false, dbg)
     when !fast_math && List.mem fn inline_float_ops ->
       (Ispecific(Ifloatspecial fn), args)
+  (* i386 does not support immediate operands for multiply high signed *)
+  | Cmulhi ->
+      (Iintop Imulh, args)
   (* Default *)
   | _ -> super#select_operation op args
 

@@ -25,6 +25,7 @@
 #include "signals.h"
 #include "stack.h"
 #include "roots.h"
+#include "callback.h"
 
 /* The globals holding predefined exceptions */
 

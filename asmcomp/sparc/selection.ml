@@ -38,23 +38,13 @@ method select_addressing chunk = function
 method! select_operation op args =
   match (op, args) with
   (* For SPARC V7 multiplication, division and modulus are turned into
-     calls to C library routines, except if the dividend is a power of 2.
+     calls to C library routines.
      For SPARC V8 and V9, use hardware multiplication and division,
      but C library routine for modulus. *)
-    (Cmuli, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Ilsl, Misc.log2 n), [arg])
-  | (Cmuli, [Cconst_int n; arg]) when n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Ilsl, Misc.log2 n), [arg])
-  | (Cmuli, _) when !arch_version = SPARC_V7 ->
+    (Cmuli, _) when !arch_version = SPARC_V7 ->
       (Iextcall(".umul", false), args)
-  | (Cdivi, [arg; Cconst_int n])
-    when self#is_immediate n && n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Idiv, n), [arg])
   | (Cdivi, _) when !arch_version = SPARC_V7 ->
       (Iextcall(".div", false), args)
-  | (Cmodi, [arg; Cconst_int n])
-    when self#is_immediate n && n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Imod, n), [arg])
   | (Cmodi, _) ->
       (Iextcall(".rem", false), args)
   | _ ->

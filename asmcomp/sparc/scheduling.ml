@@ -47,8 +47,6 @@ method oper_issue_cycles = function
   | Ialloc _ -> 6
   | Iintop(Icomp _) -> 4
   | Iintop(Icheckbound) -> 2
-  | Iintop_imm(Idiv, _) -> 5
-  | Iintop_imm(Imod, _) -> 5
   | Iintop_imm(Icomp _, _) -> 4
   | Iintop_imm(Icheckbound, _) -> 2
   | Inegf -> 2
