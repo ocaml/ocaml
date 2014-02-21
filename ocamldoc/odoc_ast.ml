@@ -1301,7 +1301,7 @@ module Analyser =
               te_type_name =
                 Odoc_env.full_type_name new_env (Name.from_path tt_tyext.tyext_path);
               te_type_parameters =
-                List.map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) tt_tyext.tyext_params;
+                List.map (fun (ctyp, _) -> Odoc_env.subst_type new_env ctyp.ctyp_type)  tt_tyext.tyext_params;
               te_private = tt_tyext.tyext_private;
               te_constructors = [];
               te_loc = { loc_impl = Some loc ; loc_inter = None } ;
@@ -1318,7 +1318,7 @@ module Analyser =
               match tt_ext_list with
                   [] -> (maybe_more, List.rev exts_acc)
                 | tt_ext :: q ->
-                    let complete_name = Name.concat current_module_name tt_ext.ext_txt.txt in
+                    let complete_name = Name.concat current_module_name tt_ext.ext_name.txt in
                     let ext_loc_end =  tt_ext.ext_loc.Location.loc_end.Lexing.pos_cnum in
                     let new_xt =
                       match tt_ext.ext_kind with

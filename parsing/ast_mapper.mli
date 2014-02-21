@@ -33,7 +33,7 @@ type mapper = {
   constructor_declaration: mapper -> constructor_declaration -> constructor_declaration;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
-  extension_constructor: extension_constructor -> extension_constructor;
+  extension_constructor: mapper -> extension_constructor -> extension_constructor;
   label_declaration: mapper -> label_declaration -> label_declaration;
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;

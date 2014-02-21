@@ -50,7 +50,7 @@ let transl_exception path decl =
 
 (* Compile a type extension *)
 
-let transl_type_extension tyext body =
+let transl_type_extension env tyext body =
   let (rebinds, body) =
     List.fold_right
       (fun ext (rebinds, body) ->
@@ -66,7 +66,7 @@ let transl_type_extension tyext body =
                  (rebinds, body)
            | Text_rebind(path, lid) ->
                let idpath = Ident.create "rebind" in
-               let rebinds = (idpath, path) :: rebinds in
+               let rebinds = (idpath, path, ext.ext_loc) :: rebinds in
                let lam = Lvar idpath in
                let body = Llet(Strict, ext.ext_id, lam, body) in
                  (rebinds, body))
@@ -74,8 +74,8 @@ let transl_type_extension tyext body =
       ([], body)
   in
     List.fold_right
-      (fun (id, path) body ->
-         let lam = transl_path path in
+      (fun (id, path, loc) body ->
+         let lam = transl_path ~loc env path in
            Llet(Strict, id, lam, body))
       rebinds
       body
@@ -399,7 +399,7 @@ and transl_structure fields cc rootpath = function
       transl_structure fields cc rootpath rem
   | Tstr_typext(tyext) ->
       let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
-        transl_type_extension tyext
+        transl_type_extension item.str_env tyext
           (transl_structure (List.rev_append ids fields) cc rootpath rem)
   | Tstr_exception decl ->
       let id = decl.cd_id in
@@ -592,7 +592,7 @@ let transl_store_structure glob map prims str =
       transl_store rootpath subst rem
   | Tstr_typext(tyext) ->
       let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
-      let lam = transl_type_extension tyext (store_idents ids) in
+      let lam = transl_type_extension item.str_env tyext (store_idents ids) in
         Lsequence(subst_lambda subst lam,
                   transl_store rootpath (add_idents false ids subst) rem)
   | Tstr_exception decl ->
@@ -814,7 +814,7 @@ let transl_toplevel_item item =
       let idents =
         List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       in
-        transl_type_extension tyext
+        transl_type_extension item.str_env tyext
           (make_sequence toploop_setvalue_id idents)
   | Tstr_exception decl ->
       toploop_setvalue decl.cd_id (transl_exception None decl)

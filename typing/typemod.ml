@@ -430,14 +430,14 @@ let rec remove_duplicates val_ids ext_ids exn_ids = function
     [] -> []
   | Sig_value (id, _) :: rem
     when List.exists (Ident.equal id) val_ids ->
-      remove_duplicates val_ids exn_ids rem
+      remove_duplicates val_ids ext_ids exn_ids rem
   | Sig_typext (id, _, _) :: rem
     when List.exists (Ident.equal id) ext_ids ->
       remove_duplicates val_ids ext_ids exn_ids rem
   | Sig_exception(id, _) :: rem
     when List.exists (Ident.equal id) exn_ids ->
-      remove_duplicates val_ids exn_ids rem
-  | f :: rem -> f :: remove_duplicates val_ids exn_ids rem
+      remove_duplicates val_ids ext_ids exn_ids rem
+  | f :: rem -> f :: remove_duplicates val_ids ext_ids exn_ids rem
 
 let rec get_values = function
     [] -> []
@@ -1330,7 +1330,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                                        Mty_alias (Pdot(p,Ident.name id,n))},
                                   rs)
                   | Sig_value (_, {val_kind=Val_reg}) | Sig_exception _
-                  | Sig_class _ as it ->
+                  | Sig_typext _ | Sig_class _ as it ->
                       incr pos; it
                   | Sig_value _ | Sig_type _ | Sig_modtype _
                   | Sig_class_type _ as it ->

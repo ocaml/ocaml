@@ -270,6 +270,7 @@ and contains_type_item env = function
       contains_type env mty
   | Sig_value _
   | Sig_type _
+  | Sig_typext _
   | Sig_exception _
   | Sig_class _
   | Sig_class_type _ ->

@@ -181,11 +181,6 @@ type type_declaration =
 
 and type_kind =
     Type_abstract
-<<<<<<< variant A
-  | Type_record of
-      (Ident.t * mutable_flag * type_expr) list * record_representation
-  | Type_variant of (Ident.t * type_expr list * type_expr option) list
->>>>>>> variant B
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
   | Type_open

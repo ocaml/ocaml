@@ -731,10 +731,10 @@ let compute_variance_gadt env check (required, loc as rloc) decl
             (add_false tl)
       | _ -> assert false
 
-let compute_variance_extension env check decl name ext rloc =
+let compute_variance_extension env check decl ext rloc =
   compute_variance_gadt env check rloc
     {decl with type_params = ext.ext_type_params}
-    (name, ext.ext_args, ext.ext_ret_type)
+    (ext.ext_args, ext.ext_ret_type)
 
 let compute_variance_decl env check decl (required, loc as rloc) =
   if (decl.type_kind = Type_abstract || decl.type_kind = Type_open)
@@ -1069,6 +1069,7 @@ let transl_extension_constructor env check_open type_decl
               ext_args = args;
               ext_ret_type = Some ret_type;
               ext_private = priv;
+              Types.ext_attributes = sext.pext_attributes;
               Types.ext_loc = sext.pext_loc; }
           in
             { ext_id = id;
@@ -1076,7 +1077,7 @@ let transl_extension_constructor env check_open type_decl
               ext_type = ext;
               ext_kind = Text_decl(targs, Some tret_type);
               Typedtree.ext_loc = sext.pext_loc;
-              ext_attributes = sext.pext_attributes; }
+              Typedtree.ext_attributes = sext.pext_attributes; }
 
     | Pext_rebind lid ->
       let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
@@ -1111,6 +1112,7 @@ let transl_extension_constructor env check_open type_decl
               ext_args = args;
               ext_ret_type = Some ret_type;
               ext_private = priv;
+              Types.ext_attributes = sext.pext_attributes;
               Types.ext_loc = sext.pext_loc; }
           in
             { ext_id = id;
@@ -1118,7 +1120,7 @@ let transl_extension_constructor env check_open type_decl
               ext_type = ext;
               ext_kind = Text_rebind(path, lid);
               Typedtree.ext_loc = sext.pext_loc;
-              ext_attributes = sext.pext_attributes; }
+              Typedtree.ext_attributes = sext.pext_attributes; }
 
 let transl_type_extension check_open env loc styext =
   reset_type_variables();
@@ -1171,7 +1173,7 @@ let transl_type_extension check_open env loc styext =
   List.iter
     (fun ext->
       ignore (compute_variance_extension env true type_decl
-                ext.ext_id ext.ext_type (type_variance, loc)))
+                ext.ext_type (type_variance, loc)))
     constructors;
   (* Add extension constructors to the environment *)
   let newenv =

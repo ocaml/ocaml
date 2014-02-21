@@ -33,7 +33,7 @@ type mapper = {
   constructor_declaration: mapper -> constructor_declaration -> constructor_declaration;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
-  extension_constructor : mapper -> extension_constructor -> extension_constructor
+  extension_constructor : mapper -> extension_constructor -> extension_constructor;
   label_declaration: mapper -> label_declaration -> label_declaration;
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
@@ -104,7 +104,7 @@ module T = struct
        ptype_attributes;
        ptype_loc} =
     Type.mk (map_loc sub ptype_name)
-      ~params:(List.map (map_fst (sub # typ)) ptype_params)
+      ~params:(List.map (map_fst (sub.typ sub)) ptype_params)
       ~priv:ptype_private
       ~cstrs:(List.map (map_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
                 ptype_cstrs)
@@ -478,8 +478,8 @@ let default_mapper =
     type_declaration = T.map_type_declaration;
     type_kind = T.map_type_kind;
     typ = T.map;
-    type_extension = T.map_type_extension this
-    extension_constructor = T.map_extension_construct
+    type_extension = T.map_type_extension;
+    extension_constructor = T.map_extension_constructor;
     value_description =
       (fun this {pval_name; pval_type; pval_prim; pval_loc;
                  pval_attributes} ->

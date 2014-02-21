@@ -379,16 +379,17 @@ and untype_signature_item item =
 and untype_class_declaration cd =
   {
     pci_virt = cd.ci_virt;
-    pci_params = List.map untype_type_parameters cd.ci_params;
+    pci_params = List.map untype_type_parameter cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_expr cd.ci_expr;
     pci_loc = cd.ci_loc;
+    pci_attributes = cd.ci_attributes;
   }
 
 and untype_class_description cd =
   {
     pci_virt = cd.ci_virt;
-    pci_params = List.map untype_core_type cd.ci_params;
+    pci_params = List.map untype_type_parameter cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
     pci_loc = cd.ci_loc;
@@ -398,7 +399,7 @@ and untype_class_description cd =
 and untype_class_type_declaration cd =
   {
     pci_virt = cd.ci_virt;
-    pci_params = List.map untype_core_type cd.ci_params;
+    pci_params = List.map untype_type_parameter cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
     pci_loc = cd.ci_loc;

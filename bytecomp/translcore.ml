@@ -735,9 +735,10 @@ and transl_exp0 e =
           end
       | Cstr_extension(path, is_const) ->
           if is_const then
-            transl_path path
+            transl_path e.exp_env path
           else
-            Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
+            Lprim(Pmakeblock(0, Immutable),
+                  transl_path e.exp_env path :: ll)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in

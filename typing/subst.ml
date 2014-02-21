@@ -298,6 +298,7 @@ let extension_constructor s ext =
       ext_args = List.map (typexp s) ext.ext_args;
       ext_ret_type = may_map (typexp s) ext.ext_ret_type;
       ext_private = ext.ext_private;
+      ext_attributes = ext.ext_attributes;
       ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
   in
     cleanup_types ();

@@ -4266,6 +4266,7 @@ let nondep_extension_constructor env mid ext =
         ext_args = args;
         ext_ret_type = ret_type;
         ext_private = ext.ext_private;
+        ext_attributes = ext.ext_attributes;
         ext_loc = ext.ext_loc;
       }
   with Not_found ->

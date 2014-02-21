@@ -890,8 +890,17 @@ let tree_of_extension_constructor id ext es =
   let ty_params =
     List.map (fun ty -> type_param (tree_of_typexp false ty)) ty_params
   in
-  let name, args, ret =
-    tree_of_constructor (id, ext.ext_args, ext.ext_ret_type)
+  let name = Ident.name id in
+  let args, ret =
+    match ext.ext_ret_type with
+    | None -> (tree_of_typlist false ext.ext_args, None)
+    | Some res ->
+        let nm = !names in
+        names := [];
+        let ret = tree_of_typexp false res in
+        let args = tree_of_typlist false ext.ext_args in
+        names := nm;
+        (args, Some ret)
   in
   let ext =
     { oext_name = name;
