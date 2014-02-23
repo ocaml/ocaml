@@ -172,7 +172,12 @@ let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
 let no_overflow_mul a b = b <> 0 && (a * b) / b = a
 
-let no_overflow_lsl a k = min_int asr k <= a && a <= max_int asr k
+let bitsize =
+  if 1 lsl 30 < 0 && 1 lsl 31 == 0 then 32      (* 32-bit *)
+  else if 1 lsl 62 < 0 && 1 lsl 63 == 0 then 64 (* 64-bit *)
+  else failwith "unknown platform bit width"
+
+let no_overflow_lsl a k = 0 <= k && k < bitsize && min_int asr k <= a && a <= max_int asr k
 
 (* String operations *)
 

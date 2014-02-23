@@ -133,7 +133,7 @@ let rec mul_int c1 c2 =
   | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
       sub_int (Cconst_int 0) c
   | (c, Cconst_int n) | (Cconst_int n, c) when n = 1 lsl Misc.log2 n->
-      Cop(Clsl, [c; Cconst_int(Misc.log2 n)])
+      lsl_int c (Cconst_int (Misc.log2 n))
   | (Cop(Caddi, [c; Cconst_int n]), Cconst_int k) |
     (Cconst_int k, Cop(Caddi, [c; Cconst_int n]))
     when no_overflow_mul n k ->
@@ -196,8 +196,8 @@ let untag_int = function
 
 let mul_int_tagged c1 c2 =
   match (c1, c2) with
-  | (Cconst_int n1, c2) -> mul_int (untag_int c1) (decr_int c2)
-  | (_, _) -> mul_int (decr_int c1) (untag_int c2)
+  | (Cconst_int n1, c2) -> incr_int (mul_int (untag_int c1) (decr_int c2))
+  | (_, _) -> incr_int (mul_int (decr_int c1) (untag_int c2))
 
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
@@ -1594,7 +1594,7 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Psubint ->
       incr_int(sub_int (transl arg1) (transl arg2))
   | Pmulint ->
-      incr_int(mul_int_tagged (transl arg1) (transl arg2))
+      mul_int_tagged (transl arg1) (transl arg2)
   | Pdivint ->
       tag_int(div_int (untag_int(transl arg1)) (untag_int(transl arg2)) dbg)
   | Pmodint ->
