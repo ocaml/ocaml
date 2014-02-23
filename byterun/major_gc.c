@@ -159,25 +159,80 @@ static void start_cycle (void)
 static value current_value = 0;
 static mlsize_t current_index = 0;
 
+/* For instrumentation */
 #ifdef CAML_INSTR
 #define INSTR(x) x
 #else
 #define INSTR(x) /**/
 #endif
 
+//auxillary function of mark_slice
+static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
+                                       int *slice_pointers)
+{
+  value child;
+  header_t chd;
+
+  child = Field (v, i);
+
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+  if (Is_block (child)
+        && ! Is_young (child)
+        && Wosize_val (child) > 0  /* Atoms never need to be marked. */
+        /* Closure blocks contain code pointers at offsets that cannot
+           be reliably determined, so we always use the page table when
+           marking such values. */
+        && (!(Tag_val (v) == Closure_tag || Tag_val (v) == Infix_tag) ||
+            Is_in_heap (child))) {
+#else
+  if (Is_block (child) && Is_in_heap (child)) {
+#endif
+    INSTR (++ *slice_pointers;)
+    chd = Hd_val (child);
+    if (Tag_hd (chd) == Forward_tag){
+      value f = Forward_val (child);
+      if (Is_block (f)
+          && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+              || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
+        /* Do not short-circuit the pointer. */
+      }else{
+        Field (v, i) = f;
+        if (Is_block (f) && Is_young (f) && !Is_young (child))
+          add_to_ref_table (&caml_ref_table, &Field (v, i));
+      }
+    }
+    else if (Tag_hd(chd) == Infix_tag) {
+      child -= Infix_offset_val(child);
+      chd = Hd_val(child);
+    }
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+    /* See [caml_darken] for a description of this assertion. */
+    CAMLassert (Is_in_heap (child) || Is_black_hd (chd));
+#endif
+    if (Is_white_hd (chd)){
+      Hd_val (child) = Grayhd_hd (chd);
+      *gray_vals_ptr++ = child;
+      if (gray_vals_ptr >= gray_vals_end) {
+        gray_vals_cur = gray_vals_ptr;
+        realloc_gray_vals ();
+        gray_vals_ptr = gray_vals_cur;
+      }
+    }
+  }
+
+  return gray_vals_ptr;
+}
+
 static void mark_slice (intnat work)
 {
   value *gray_vals_ptr;  /* Local copy of [gray_vals_cur] */
-  value v, child;
-  header_t hd, chd;
+  value v;
+  header_t hd;
   mlsize_t size, i, start, end; /* [start] is a local copy of [current_index] */
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-  int marking_closure = 0;
-#endif
 #ifdef CAML_INSTR
   int slice_fields = 0;
-  int slice_pointers = 0;
 #endif
+  int slice_pointers = 0; /** gcc removes it when not in CAML_INSTR */
 
   caml_gc_message (0x40, "Marking %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
@@ -192,10 +247,6 @@ static void mark_slice (intnat work)
     }
     if (v != 0){
       hd = Hd_val(v);
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-      marking_closure =
-        (Tag_hd (hd) == Closure_tag || Tag_hd (hd) == Infix_tag);
-#endif
       Assert (Is_gray_hd (hd));
       size = Wosize_hd (hd);
       end = start + work;
@@ -207,49 +258,7 @@ static void mark_slice (intnat work)
         INSTR (if (size > end)
                  CAML_INSTR_INT ("major/mark/slice/remain", size - end);)
         for (i = start; i < end; i++){
-          child = Field (v, i);
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-          if (Is_block (child)
-                && ! Is_young (child)
-                && Wosize_val (child) > 0  /* Atoms never need to be marked. */
-                /* Closure blocks contain code pointers at offsets that cannot
-                   be reliably determined, so we always use the page table when
-                   marking such values. */
-                && (!marking_closure || Is_in_heap (child))) {
-#else
-          if (Is_block (child) && Is_in_heap (child)) {
-#endif
-            INSTR (++ slice_pointers;)
-            chd = Hd_val (child);
-            if (Tag_hd (chd) == Forward_tag){
-              value f = Forward_val (child);
-              if (Is_block (f)
-                  && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-                      || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
-                /* Do not short-circuit the pointer. */
-              }else{
-                Field (v, i) = f;
-                if (Is_block (f) && Is_young (f) && !Is_young (child))
-                  add_to_ref_table (&caml_ref_table, &Field (v, i));
-              }
-            }else if (Tag_hd(chd) == Infix_tag) {
-              child -= Infix_offset_val(child);
-              chd = Hd_val(child);
-            }
-#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-            /* See [caml_darken] for a description of this assertion. */
-            CAMLassert (Is_in_heap (child) || Is_black_hd (chd));
-#endif
-            if (Is_white_hd (chd)){
-              Hd_val (child) = Grayhd_hd (chd);
-              *gray_vals_ptr++ = child;
-              if (gray_vals_ptr >= gray_vals_end) {
-                gray_vals_cur = gray_vals_ptr;
-                realloc_gray_vals ();
-                gray_vals_ptr = gray_vals_cur;
-              }
-            }
-          }
+          gray_vals_ptr = mark_slice_darken(gray_vals_ptr,v,i,&slice_pointers);
         }
         if (end < size){
           work = 0;
