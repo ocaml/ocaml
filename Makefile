@@ -196,10 +196,15 @@ coldstart:
 	  ln -s ../byterun stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core: coldstart ocamlc ocamllex ocamlyacc ocamltools library
+core:
+	$(MAKE) coldstart
+	$(MAKE) ocamlc
+	$(MAKE) ocamllex ocamlyacc ocamltools library
 
 # Recompile the core system using the bootstrap compiler
-coreall: ocamlc ocamllex ocamlyacc ocamltools library
+coreall:
+	$(MAKE) ocamlc
+	$(MAKE) ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -256,9 +261,7 @@ opt:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
-	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamltoolsopt
-	$(MAKE) ocamlbuildlib.native
+	$(MAKE) otherlibrariesopt ocamltoolsopt $(OCAMLBUILDNATIVE)
 
 # Native-code versions of the tools
 opt.opt:
