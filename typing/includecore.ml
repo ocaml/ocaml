@@ -297,7 +297,7 @@ let extension_constructors env id ext1 ext2 =
 
 let exception_declarations env ed1 ed2 =
   Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2])
-    ed1.Types.exn_args ed2.Types.exn_args
+    ed1.exn_args ed2.exn_args
 
 (* Inclusion between class types *)
 let encode_val (mut, ty) rem =

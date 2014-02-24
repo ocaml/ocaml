@@ -31,8 +31,8 @@ module Signature_search :
          in the given table.
          @raise Not_found if error.*)
       val search_extension : tab -> string -> Types.extension_constructor
- 
-     (** This function returns the type expression list for the exception whose name is given,
+
+      (** This function returns the type expression list for the exception whose name is given,
          in the given table.
          @raise Not_found if error.*)
       val search_exception : tab -> string -> Types.exception_declaration
