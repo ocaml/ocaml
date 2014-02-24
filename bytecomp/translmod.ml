@@ -51,34 +51,21 @@ let transl_exception path decl =
 (* Compile a type extension *)
 
 let transl_type_extension env tyext body =
-  let (rebinds, body) =
-    List.fold_right
-      (fun ext (rebinds, body) ->
+  List.fold_right
+    (fun ext body ->
+       let lam =
          match ext.ext_kind with
-             Text_decl(args, ret) ->
-               let lam =
-                 Lprim(prim_set_oo_id,
-                       [Lprim(Pmakeblock(Obj.object_tag, Immutable),
-                              [Lconst(Const_base(Const_int 0));
-                               Lconst(Const_base(Const_int 0))])])
-               in
-               let body = Llet(Strict, ext.ext_id, lam, body) in
-                 (rebinds, body)
-           | Text_rebind(path, lid) ->
-               let idpath = Ident.create "rebind" in
-               let rebinds = (idpath, path, ext.ext_loc) :: rebinds in
-               let lam = Lvar idpath in
-               let body = Llet(Strict, ext.ext_id, lam, body) in
-                 (rebinds, body))
-      tyext.tyext_constructors
-      ([], body)
-  in
-    List.fold_right
-      (fun (id, path, loc) body ->
-         let lam = transl_path ~loc env path in
-           Llet(Strict, id, lam, body))
-      rebinds
-      body
+           Text_decl(args, ret) ->
+             Lprim(prim_set_oo_id,
+                   [Lprim(Pmakeblock(Obj.object_tag, Immutable),
+                          [Lconst(Const_base(Const_int 0));
+                           Lconst(Const_base(Const_int 0))])])
+         | Text_rebind(path, lid) ->
+             transl_path ~loc:ext.ext_loc env path
+       in
+         Llet(Strict, ext.ext_id, lam, body))
+    tyext.tyext_constructors
+    body
 
 (* Compile a coercion *)
 
