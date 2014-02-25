@@ -103,3 +103,11 @@ let a = Test2.A;; (* fail *)
 (* The following should fail from a semantical point of view,
    but allow it for backward compatibility *)
 module Test2 : module type of Test with type t = private Test.t = Test;;
+
+(* PR#6331 *)
+type t = private < x : int; .. > as 'a;;
+type t = private (< x : int; .. > as 'a) as 'a;;
+type t = private < x : int > as 'a;;
+type t = private (< x : int > as 'a) as 'b;;
+type 'a t = private < x : int; .. > as 'a;;
+type 'a t = private 'a constraint 'a = < x : int; .. >;;
