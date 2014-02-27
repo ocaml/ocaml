@@ -68,7 +68,8 @@ val clear : ('a, 'b) t -> unit
 
 val reset : ('a, 'b) t -> unit
 (** Empty a hash table and shrink the size of the bucket table
-    to its initial size. *)
+    to its initial size.
+    @since 4.00.0 *)
 
 val copy : ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable. *)

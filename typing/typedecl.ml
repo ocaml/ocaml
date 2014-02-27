@@ -90,13 +90,21 @@ let is_float env ty =
 
 (* Determine if a type definition defines a fixed type. (PW) *)
 let is_fixed_type sd =
-  (match sd.ptype_manifest with
-   | Some { ptyp_desc =
-       (Ptyp_variant _|Ptyp_object _|Ptyp_class _|Ptyp_alias
-         ({ptyp_desc = Ptyp_variant _|Ptyp_object _|Ptyp_class _},_)) } -> true
-   | _ -> false) &&
-  sd.ptype_kind = Ptype_abstract &&
-  sd.ptype_private = Private
+  let rec has_row_var sty =
+    match sty.ptyp_desc with
+      Ptyp_alias (sty, _) -> has_row_var sty
+    | Ptyp_class _
+    | Ptyp_object (_, Open)
+    | Ptyp_variant (_, Open, _)
+    | Ptyp_variant (_, Closed, Some _) -> true
+    | _ -> false
+  in
+  match sd.ptype_manifest with
+    None -> false
+  | Some sty ->
+      sd.ptype_kind = Ptype_abstract &&
+      sd.ptype_private = Private &&
+      has_row_var sty
 
 (* Set the row variable in a fixed type *)
 let set_fixed_row env loc p decl =

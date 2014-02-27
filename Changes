@@ -24,6 +24,9 @@ Type system:
 * Module aliases are now typed in a specific way, which remembers their
   identity. In particular this changes the signature inferred by
   "module type of"
+- Slight change in the criterion to distinguish private abbreviations
+  and private row types: create a private abbreviation for closed objects
+  and fixed polymorphic variants (cf. PR#6331)
 
 Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
@@ -38,21 +41,10 @@ Compilers:
 - PR#6311: Improve signature mismatch error messages
 
 Runtime system:
+- Fixed a major performance problem on large heaps (~1GB) by making heap
+  increments proportional to heap size
 - PR#4765: Structural equality should treat exception specifically
 - PR#5009: Extending exception tag blocks
-
-Bug fixes:
-- PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
-- PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
-- PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
-- PR#5598: follow-up fix related to PR#6165
-- PR#5820: Fix camlp4 lexer roll back problem
-- PR#6062: Fix a regression bug caused by commit 13047
-- PR#6109: Typos in ocamlbuild error messages
-- PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
-- PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
-- PR#6262: equality of first-class modules take module aliases into account
-- PR#6293: Assert_failure with invalid package type
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
@@ -67,6 +59,20 @@ OCamldoc:
 - PR#6310: fix ocamldoc's subscript/superscript CSS font size
            (patch by Anil Madhavapeddy)
 
+Bug fixes:
+- PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
+- PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
+- PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
+- PR#5598: follow-up fix related to PR#6165
+- PR#5820: Fix camlp4 lexer roll back problem
+- PR#6062: Fix a regression bug caused by commit 13047
+- PR#6109: Typos in ocamlbuild error messages
+- PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
+- PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
+- PR#6262: equality of first-class modules take module aliases into account
+- PR#6293: Assert_failure with invalid package type
+- PR#6331: `is_fixed_type` does not take account of nested aliases
+
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
 - PR#4323: have "of_string" in Num and Big_int work with binary and
@@ -80,7 +86,6 @@ Features wishes:
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
 - PR#6246: allow wilcard _ as for-loop index
-
 
 OCaml 4.01.1:
 -------------

@@ -19,7 +19,7 @@ PREREQUISITES
   make is not GNU make, you need to define the GNUMAKE environment
   variable to the name of GNU make, typically with this command:
 
-    export GNUMAKE=gnumake
+    export GNUMAKE=gmake
 
 INSTALLATION INSTRUCTIONS
 
@@ -316,6 +316,9 @@ Fix: do not pass the -j option to make, and be patient.
 
 * The Makefiles use the "include" directive, which is not supported by
 all versions of make. Use GNU make if this is a problem.
+
+* Solaris make mishandles a space in our Makefiles, so you have to use GNU
+make to build on Solaris.
 
 * The Makefiles assume that make executes commands by calling /bin/sh. They
 won't work if /bin/csh is called instead. You may have to unset the SHELL

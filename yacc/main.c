@@ -32,10 +32,12 @@ char big_endian;
 
 char *file_prefix = 0;
 char *myname = "yacc";
-#ifdef NO_UNIX
-char temp_form[] = "yacc.X";
-#else
 char temp_form[] = "yacc.XXXXXXX";
+
+#ifdef NO_UNIX
+char dirsep = '\\';
+#else
+char dirsep = '/';
 #endif
 
 int lineno;
@@ -102,7 +104,9 @@ char *nullable;
 #if !defined(HAVE_MKSTEMP)
 extern char *mktemp(char *);
 #endif
+#ifndef NO_UNIX
 extern char *getenv(const char *);
+#endif
 
 
 void done(int k)
@@ -277,16 +281,16 @@ void create_file_names(void)
     char *tmpdir;
 
 #ifdef NO_UNIX
-    len = 0;
-    i = sizeof(temp_form);
+    tmpdir = getenv("TEMP");
+    if (tmpdir == 0) tmpdir = ".";
 #else
     tmpdir = getenv("TMPDIR");
     if (tmpdir == 0) tmpdir = "/tmp";
+#endif
     len = strlen(tmpdir);
     i = len + sizeof(temp_form);
-    if (len && tmpdir[len-1] != '/')
+    if (len && tmpdir[len-1] != dirsep)
         ++i;
-#endif
 
     action_file_name = MALLOC(i);
     if (action_file_name == 0) no_space();
@@ -297,21 +301,19 @@ void create_file_names(void)
     union_file_name = MALLOC(i);
     if (union_file_name == 0) no_space();
 
-#ifndef NO_UNIX
     strcpy(action_file_name, tmpdir);
     strcpy(entry_file_name, tmpdir);
     strcpy(text_file_name, tmpdir);
     strcpy(union_file_name, tmpdir);
 
-    if (len && tmpdir[len - 1] != '/')
+    if (len && tmpdir[len - 1] != dirsep)
     {
-        action_file_name[len] = '/';
-        entry_file_name[len] = '/';
-        text_file_name[len] = '/';
-        union_file_name[len] = '/';
+        action_file_name[len] = dirsep;
+        entry_file_name[len] = dirsep;
+        text_file_name[len] = dirsep;
+        union_file_name[len] = dirsep;
         ++len;
     }
-#endif
 
     strcpy(action_file_name + len, temp_form);
     strcpy(entry_file_name + len, temp_form);
@@ -323,7 +325,6 @@ void create_file_names(void)
     text_file_name[len + 5] = 't';
     union_file_name[len + 5] = 'u';
 
-#ifndef NO_UNIX
 #ifdef HAVE_MKSTEMP
     action_fd = mkstemp(action_file_name);
     if (action_fd == -1)
@@ -342,7 +343,6 @@ void create_file_names(void)
     mktemp(entry_file_name);
     mktemp(text_file_name);
     mktemp(union_file_name);
-#endif
 #endif
 
     len = strlen(file_prefix);

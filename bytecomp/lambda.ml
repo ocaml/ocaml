@@ -204,6 +204,8 @@ let rec same l1 l2 =
   match (l1, l2) with
   | Lvar v1, Lvar v2 ->
       Ident.same v1 v2
+  | Lconst (Const_base (Const_string _)), _ ->
+      false  (* do not share strings *)
   | Lconst c1, Lconst c2 ->
       c1 = c2
   | Lapply(a1, bl1, _), Lapply(a2, bl2, _) ->

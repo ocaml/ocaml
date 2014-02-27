@@ -69,7 +69,8 @@ let warning_attribute attrs =
     (function
       | ({txt = "warning"; loc}, payload) ->
           begin match payload with
-          | PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(s, _))}, _)}] ->
+          | PStr [{pstr_desc=Pstr_eval
+                     ({pexp_desc=Pexp_constant(Const_string(s, _))}, _)}] ->
               if !prev_warnings = None then
                 prev_warnings := Some (Warnings.backup ());
               begin try Warnings.parse_options false s
@@ -303,7 +304,8 @@ type policy = Fixed | Extensible | Univars
 let rec transl_type env policy styp =
   let loc = styp.ptyp_loc in
   let ctyp ctyp_desc ctyp_type =
-    { ctyp_desc; ctyp_type; ctyp_env = env; ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes }
+    { ctyp_desc; ctyp_type; ctyp_env = env;
+      ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes }
   in
   match styp.ptyp_desc with
     Ptyp_any ->

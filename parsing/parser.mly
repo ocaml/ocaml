@@ -511,16 +511,18 @@ top_structure_tail:
 ;
 use_file:
     use_file_tail                        { $1 }
-  | seq_expr post_item_attributes use_file_tail               { Ptop_def[mkstrexp $1 $2] :: $3 }
+  | seq_expr post_item_attributes use_file_tail
+                                         { Ptop_def[mkstrexp $1 $2] :: $3 }
 ;
 use_file_tail:
-    EOF                                         { [] }
-  | SEMISEMI EOF                                { [] }
-  | SEMISEMI seq_expr post_item_attributes use_file_tail             { Ptop_def[mkstrexp $2 $3] :: $4 }
-  | SEMISEMI structure_item use_file_tail       { Ptop_def[$2] :: $3 }
-  | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
-  | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
-  | toplevel_directive use_file_tail            { $1 :: $2 }
+    EOF                                       { [] }
+  | SEMISEMI EOF                              { [] }
+  | SEMISEMI seq_expr post_item_attributes use_file_tail
+                                              { Ptop_def[mkstrexp $2 $3] :: $4 }
+  | SEMISEMI structure_item use_file_tail     { Ptop_def[$2] :: $3 }
+  | SEMISEMI toplevel_directive use_file_tail { $2 :: $3 }
+  | structure_item use_file_tail              { Ptop_def[$1] :: $2 }
+  | toplevel_directive use_file_tail          { $1 :: $2 }
 ;
 parse_core_type:
     core_type EOF { $1 }
@@ -600,7 +602,8 @@ structure_item:
     LET ext_attributes rec_flag let_bindings
       {
         match $4 with
-          [ {pvb_pat = { ppat_desc = Ppat_any; ppat_loc = _ }; pvb_expr = exp; pvb_attributes = attrs}] ->
+          [ {pvb_pat = { ppat_desc = Ppat_any; ppat_loc = _ };
+             pvb_expr = exp; pvb_attributes = attrs}] ->
             let exp = wrap_exp_attrs exp $2 in
             mkstr(Pstr_eval (exp, attrs))
         | l ->
@@ -610,7 +613,8 @@ structure_item:
             | None, _ :: _ -> not_expecting 2 "attribute"
             end
       }
-  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration post_item_attributes
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
+    post_item_attributes
       { mkstr
           (Pstr_primitive (Val.mk (mkrhs $2 2) $4
                              ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
