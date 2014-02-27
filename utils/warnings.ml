@@ -370,7 +370,7 @@ let message = function
   | Unused_extension (s, false, true) ->
       "extension constructor " ^ s ^
       " is never used to build values.\n\
-        It is exported as a private extension."
+        It is exported or rebound as a private extension."
 ;;
 
 let nerrors = ref 0;;

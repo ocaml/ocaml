@@ -1081,7 +1081,11 @@ let transl_extension_constructor env check_open type_decl
 
     | Pext_rebind lid ->
       let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
-        Env.mark_constructor Env.Positive env (Longident.last lid.txt) cdescr;
+      let usage =
+        if cdescr.cstr_private = Private || priv = Public
+        then Env.Positive else Env.Privatize
+      in
+        Env.mark_constructor usage env (Longident.last lid.txt) cdescr;
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let ret_type =
           Ctype.newconstr type_path
