@@ -58,14 +58,14 @@ Error: This type int should be an instance of type [> `Var ]
 Error: Cannot create values of the private type foo
 #         type foo = ..
 #     module M : sig type foo += A1 of int end
-#     type foo += A2 : int -> foo
+#     type foo += A2 of int
 #     type bar = ..
 #     Characters 18-22:
   type bar += A3 = M.A1    (* Error: rebind wrong type *)
                    ^^^^
 Error: The constructor M.A1 has type foo but was expected to be of type bar
 #     module M : sig type foo += private B1 of int end
-#     type foo += private B2 : int -> foo
+#     type foo += private B2 of int
 #     Characters 18-22:
   type foo += B3 = M.B1  (* Error: rebind private extension *)
                    ^^^^
@@ -75,12 +75,12 @@ Error: The constructor M.B1 is private
               ^^^^^^^^^^^
 Error: Unbound constructor Unknown
 #                       module M : sig type foo type foo += A1 of int end
-type M.foo += A2 : int -> M.foo
+type M.foo += A2 of int
 type 'a foo = ..
 #     type 'a foo1 = 'a foo = ..
 #     type 'a foo2 = 'a foo = ..
 #           type 'a foo1 += A of int | B of 'a | C : int foo1
-#           type 'a foo2 += D : int -> 'b foo2 | E : 'b -> 'b foo2 | F : int foo2
+#           type 'a foo2 += D of int | E of 'a | F : int foo2
 #         type +'a foo = ..
 #     type 'a foo += A of (int -> 'a)
 #     Characters 1-32:
