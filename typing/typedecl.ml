@@ -1087,13 +1087,18 @@ let transl_extension_constructor env check_open type_decl
       in
         Env.mark_constructor usage env (Longident.last lid.txt) cdescr;
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
-        let ret_type =
-          Ctype.newconstr type_path
-            (Ctype.instance_list env type_decl.type_params)
+        let res, ret_type =
+          if cdescr.cstr_generalized then
+            let res =
+              Ctype.newconstr type_path
+                (Ctype.instance_list env type_decl.type_params)
+            in
+              res, Some res
+          else (Ctype.newconstr type_path type_params), None
         in
           begin
             try
-              Ctype.unify env cstr_res ret_type
+              Ctype.unify env cstr_res res
             with Ctype.Unify trace ->
               raise (Error(lid.loc,
                      Rebind_wrong_type(lid.txt, env, trace)))
@@ -1114,7 +1119,7 @@ let transl_extension_constructor env check_open type_decl
             { ext_type_path = type_path;
               ext_type_params = type_params;
               ext_args = args;
-              ext_ret_type = Some ret_type;
+              ext_ret_type = ret_type;
               ext_private = priv;
               Types.ext_attributes = sext.pext_attributes;
               Types.ext_loc = sext.pext_loc; }
