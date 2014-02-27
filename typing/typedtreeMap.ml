@@ -30,10 +30,10 @@ module type MapArgument = sig
   val enter_with_constraint : with_constraint -> with_constraint
   val enter_class_expr : class_expr -> class_expr
   val enter_class_signature : class_signature -> class_signature
+  val enter_class_declaration : class_declaration -> class_declaration
   val enter_class_description : class_description -> class_description
   val enter_class_type_declaration :
     class_type_declaration -> class_type_declaration
-  val enter_class_infos : 'a class_infos -> 'a class_infos
   val enter_class_type : class_type -> class_type
   val enter_class_type_field : class_type_field -> class_type_field
   val enter_core_type : core_type -> core_type
@@ -58,10 +58,10 @@ module type MapArgument = sig
   val leave_with_constraint : with_constraint -> with_constraint
   val leave_class_expr : class_expr -> class_expr
   val leave_class_signature : class_signature -> class_signature
+  val leave_class_declaration : class_declaration -> class_declaration
   val leave_class_description : class_description -> class_description
   val leave_class_type_declaration :
     class_type_declaration -> class_type_declaration
-  val leave_class_infos : 'a class_infos -> 'a class_infos
   val leave_class_type : class_type -> class_type
   val leave_class_type_field : class_type_field -> class_type_field
   val leave_core_type : core_type -> core_type
@@ -134,25 +134,20 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_open (ovf, path, lid, attrs) -> Tstr_open (ovf, path, lid, attrs)
         | Tstr_class list ->
           let list =
-            List.map (fun (ci, string_list, virtual_flag) ->
-              let ci = Map.enter_class_infos ci in
-              let ci_params = List.map map_type_parameter ci.ci_params in
-              let ci_expr = map_class_expr ci.ci_expr in
-              (Map.leave_class_infos
-                 { ci with ci_params = ci_params; ci_expr = ci_expr},
-               string_list, virtual_flag)
-            ) list
+            List.map
+              (fun (ci, string_list, virtual_flag) ->
+                 map_class_declaration ci, string_list, virtual_flag)
+              list
           in
-          Tstr_class list
+            Tstr_class list
         | Tstr_class_type list ->
-          let list = List.map (fun (id, name, ct) ->
-            let ct = Map.enter_class_infos ct in
-            let ci_params = List.map map_type_parameter ct.ci_params in
-            let ci_expr = map_class_type ct.ci_expr in
-            (id, name, Map.leave_class_infos
-                         { ct with ci_params = ci_params; ci_expr = ci_expr})
-          ) list in
-          Tstr_class_type list
+          let list =
+            List.map
+              (fun (id, name, ct) ->
+               id, name, map_class_type_declaration ct)
+              list
+          in
+            Tstr_class_type list
         | Tstr_include (mexpr, sg, attrs) ->
           Tstr_include (map_module_expr mexpr, sg, attrs)
         | Tstr_attribute x -> Tstr_attribute x
@@ -442,6 +437,13 @@ module MakeMap(Map : MapArgument) = struct
     let mtd = {mtd with mtd_type = may_map map_module_type mtd.mtd_type} in
     Map.leave_module_type_declaration mtd
 
+  and map_class_declaration cd =
+    let cd = Map.enter_class_declaration cd in
+    let ci_params = List.map map_type_parameter cd.ci_params in
+    let ci_expr = map_class_expr cd.ci_expr in
+    Map.leave_class_declaration
+      { cd with ci_params = ci_params; ci_expr = ci_expr }
+
   and map_class_description cd =
     let cd = Map.enter_class_description cd in
     let ci_params = List.map map_type_parameter cd.ci_params in
@@ -656,9 +658,9 @@ module DefaultMapArgument = struct
   let enter_with_constraint t = t
   let enter_class_expr t = t
   let enter_class_signature t = t
+  let enter_class_declaration t = t
   let enter_class_description t = t
   let enter_class_type_declaration t = t
-  let enter_class_infos t = t
   let enter_class_type t = t
   let enter_class_type_field t = t
   let enter_core_type t = t
@@ -685,9 +687,9 @@ module DefaultMapArgument = struct
   let leave_with_constraint t = t
   let leave_class_expr t = t
   let leave_class_signature t = t
+  let leave_class_declaration t = t
   let leave_class_description t = t
   let leave_class_type_declaration t = t
-  let leave_class_infos t = t
   let leave_class_type t = t
   let leave_class_type_field t = t
   let leave_core_type t = t

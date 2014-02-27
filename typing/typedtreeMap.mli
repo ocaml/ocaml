@@ -30,10 +30,10 @@ module type MapArgument = sig
   val enter_with_constraint : with_constraint -> with_constraint
   val enter_class_expr : class_expr -> class_expr
   val enter_class_signature : class_signature -> class_signature
+  val enter_class_declaration : class_declaration -> class_declaration
   val enter_class_description : class_description -> class_description
   val enter_class_type_declaration :
     class_type_declaration -> class_type_declaration
-  val enter_class_infos : 'a class_infos -> 'a class_infos
   val enter_class_type : class_type -> class_type
   val enter_class_type_field : class_type_field -> class_type_field
   val enter_core_type : core_type -> core_type
@@ -58,10 +58,10 @@ module type MapArgument = sig
   val leave_with_constraint : with_constraint -> with_constraint
   val leave_class_expr : class_expr -> class_expr
   val leave_class_signature : class_signature -> class_signature
+  val leave_class_declaration : class_declaration -> class_declaration
   val leave_class_description : class_description -> class_description
   val leave_class_type_declaration :
     class_type_declaration -> class_type_declaration
-  val leave_class_infos : 'a class_infos -> 'a class_infos
   val leave_class_type : class_type -> class_type
   val leave_class_type_field : class_type_field -> class_type_field
   val leave_core_type : core_type -> core_type
