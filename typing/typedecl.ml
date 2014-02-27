@@ -1103,6 +1103,17 @@ let transl_extension_constructor env check_open type_decl
               raise (Error(lid.loc,
                      Rebind_wrong_type(lid.txt, env, trace)))
           end;
+          (* Remove "_" names from parameters which appear in constructor arguments *)
+          if not cdescr.cstr_generalized then begin
+            let vars =
+              Ctype.free_variables (Btype.newgenty (Ttuple args))
+            in
+              List.iter
+                (function {desc = Tvar (Some "_")} as ty ->
+                          if List.memq ty vars then ty.desc <- Tvar None
+                          | _ -> ())
+                type_params
+          end;
           (* Disallow rebinding private constructors to non-private *)
           begin
             match cdescr.cstr_private, priv with
