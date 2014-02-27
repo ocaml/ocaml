@@ -1911,19 +1911,15 @@ let extendable_path path =
     Path.same path Predef.path_option)
 
 let rec collect_paths_from_pat r p = match p.pat_desc with
-| Tpat_construct(_, c, ps) -> begin
-    match c.cstr_tag with
-      | Cstr_extension _ ->
-          List.fold_left collect_paths_from_pat r ps
-      | Cstr_constant _ | Cstr_block _ ->
-          let path =  get_type_path p.pat_type p.pat_env in
-            List.fold_left
-              collect_paths_from_pat
-              (if extendable_path path then add_path path r else r)
-              ps
-  end
+| Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _)},ps) ->
+    let path =  get_type_path p.pat_type p.pat_env in
+    List.fold_left
+      collect_paths_from_pat
+      (if extendable_path path then add_path path r else r)
+      ps
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
-| Tpat_tuple ps | Tpat_array ps ->
+| Tpat_tuple ps | Tpat_array ps
+| Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->
     List.fold_left collect_paths_from_pat r ps
 | Tpat_record (lps,_) ->
     List.fold_left
