@@ -174,6 +174,20 @@ static mlsize_t current_index = 0;
 #define INSTR(x) /**/
 #endif
 
+static void init_sweep_phase(void)
+{
+  /* Phase_clean is done. */
+  /* Initialise the sweep phase. */
+  caml_gc_sweep_hp = caml_heap_start;
+  caml_fl_init_merge ();
+  caml_gc_phase = Phase_sweep;
+  chunk = caml_heap_start;
+  caml_gc_sweep_hp = chunk;
+  limit = chunk + Chunk_size (chunk);
+  caml_fl_wsz_at_phase_change = caml_fl_cur_wsz;
+  if (caml_major_gc_hook) (*caml_major_gc_hook)();
+}
+
 /* auxillary function of mark_slice */
 static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
                                        int in_ephemeron, int *slice_pointers)
@@ -408,11 +422,17 @@ static void mark_slice (intnat work)
       }
         break;
       case Subphase_mark_final: {
-        /* Initialise the clean phase. */
-        caml_gc_phase = Phase_clean;
-        caml_gc_subphase = Subphase_clean_ephe;
-        ephe_prev = &caml_ephe_list_head;
-        work = 0;
+        if (caml_ephe_list_head != (value) NULL){
+          /* Initialise the clean phase. */
+          caml_gc_phase = Phase_clean;
+          caml_gc_subphase = Subphase_clean_ephe;
+          ephe_prev = &caml_ephe_list_head;
+          work = 0;
+        } else {
+          /* Initialise the sweep phase. */
+          init_sweep_phase();
+          work = 0;
+        }
       }
         break;
       default: Assert (0);
@@ -461,15 +481,8 @@ static void clean_slice (intnat work)
       }else{
         /* Phase_clean is done. */
         /* Initialise the sweep phase. */
-        caml_gc_sweep_hp = caml_heap_start;
-        caml_fl_init_merge ();
-        caml_gc_phase = Phase_sweep;
-        chunk = caml_heap_start;
-        caml_gc_sweep_hp = chunk;
-        limit = chunk + Chunk_size (chunk);
+        init_sweep_phase();
         work = 0;
-        caml_fl_wsz_at_phase_change = caml_fl_cur_wsz;
-        if (caml_major_gc_hook) (*caml_major_gc_hook)();
       }
     }
       break;
