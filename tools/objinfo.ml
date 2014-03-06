@@ -20,7 +20,6 @@ open Printf
 open Misc
 open Config
 open Cmo_format
-open Clambda
 
 let input_stringlist ic len =
   let get_string_list sect len =
@@ -53,31 +52,6 @@ let print_cmo_infos cu =
         printf "Primitives declared in this module:\n";
         List.iter print_line l);
   printf "Force link: %s\n" (if cu.cu_force_link then "YES" else "no")
-
-let rec print_approx_infos ppf = function
-    Value_closure(fundesc, approx) ->
-      Format.fprintf ppf "@[<2>function %s@ arity %i"
-        fundesc.fun_label fundesc.fun_arity;
-      if fundesc.fun_closed then begin
-        Format.fprintf ppf "@ (closed)"
-      end;
-      if fundesc.fun_inline <> None then begin
-        Format.fprintf ppf "@ (inline)"
-      end;
-      Format.fprintf ppf "@ -> @ %a@]" print_approx_infos approx
-  | Value_tuple approx ->
-      let tuple ppf approx =
-        for i = 0 to Array.length approx - 1 do
-          if i > 0 then Format.fprintf ppf ";@ ";
-          Format.fprintf ppf "%i: %a" i print_approx_infos approx.(i)
-        done in
-      Format.fprintf ppf "@[<hov 1>(%a)@]" tuple approx
-  | Value_unknown ->
-      Format.fprintf ppf "_"
-  | Value_integer n ->
-      Format.fprintf ppf "%d" n
-  | Value_constptr n ->
-      Format.fprintf ppf "%dp" n
 
 let print_spaced_string s =
   printf " %s" s
@@ -116,7 +90,7 @@ let print_cmx_infos (ui, crc) =
   print_general_infos
     ui.ui_name crc ui.ui_defines ui.ui_imports_cmi ui.ui_imports_cmx;
   printf "Approximation:\n";
-  Format.fprintf Format.std_formatter "  %a@." print_approx_infos ui.ui_approx;
+  Format.fprintf Format.std_formatter "  %a@." Printclambda.approx ui.ui_approx;
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in
   printf "Currying functions:%a\n" pr_funs ui.ui_curry_fun;

@@ -15,15 +15,30 @@ open Format
 open Asttypes
 open Clambda
 
-let rec pr_idents ppf = function
-  | [] -> ()
-  | h::t -> fprintf ppf "%a %a" Ident.print h pr_idents t
+let rec structured_constant ppf = function
+  | Uconst_float x -> fprintf ppf "%s" x
+  | Uconst_int32 x -> fprintf ppf "%ld" x
+  | Uconst_int64 x -> fprintf ppf "%Ld" x
+  | Uconst_nativeint x -> fprintf ppf "%nd" x
+  | Uconst_block (tag, l) ->
+      fprintf ppf "block(%i" tag;
+      List.iter (fun u -> fprintf ppf ",%a" uconstant u) l;
+      fprintf ppf ")"
+  | Uconst_float_array sl ->
+      fprintf ppf "floatarray(%s)"
+        (String.concat "," sl)
+  | Uconst_string s -> fprintf ppf "%S" s
+
+and uconstant ppf = function
+  | Uconst_ref (s, c) ->
+      fprintf ppf "%S=%a" s structured_constant c
+  | Uconst_int i -> fprintf ppf "%i" i
+  | Uconst_ptr i -> fprintf ppf "%ia" i
 
 let rec lam ppf = function
   | Uvar id ->
       Ident.print ppf id
-  | Uconst (cst,_) ->
-      Printlambda.structured_constant ppf cst
+  | Uconst c -> uconstant ppf c
   | Udirect_apply(f, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
@@ -132,3 +147,27 @@ and sequence ppf ulam = match ulam with
 
 let clambda ppf ulam =
   fprintf ppf "%a@." lam ulam
+
+
+let rec approx ppf = function
+    Value_closure(fundesc, a) ->
+      Format.fprintf ppf "@[<2>function %s@ arity %i"
+        fundesc.fun_label fundesc.fun_arity;
+      if fundesc.fun_closed then begin
+        Format.fprintf ppf "@ (closed)"
+      end;
+      if fundesc.fun_inline <> None then begin
+        Format.fprintf ppf "@ (inline)"
+      end;
+      Format.fprintf ppf "@ -> @ %a@]" approx a
+  | Value_tuple a ->
+      let tuple ppf a =
+        for i = 0 to Array.length a - 1 do
+          if i > 0 then Format.fprintf ppf ";@ ";
+          Format.fprintf ppf "%i: %a" i approx a.(i)
+        done in
+      Format.fprintf ppf "@[<hov 1>(%a)@]" tuple a
+  | Value_unknown ->
+      Format.fprintf ppf "_"
+  | Value_const c ->
+      fprintf ppf "@[const(%a)@]" uconstant c

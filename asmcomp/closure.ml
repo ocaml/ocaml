@@ -48,7 +48,7 @@ let getglobal id =
 let occurs_var var u =
   let rec occurs = function
       Uvar v -> v = var
-    | Uconst (cst,_) -> false
+    | Uconst _ -> false
     | Udirect_apply(lbl, args, _) -> List.exists occurs args
     | Ugeneric_apply(funct, args, _) -> occurs funct || List.exists occurs args
     | Uclosure(fundecls, clos) -> List.exists occurs clos
@@ -118,14 +118,7 @@ let lambda_smaller lam threshold =
     if !size > threshold then raise Exit;
     match lam with
       Uvar v -> ()
-    | Uconst(
-        (Const_base(Const_int _ | Const_char _ | Const_float _ |
-                        Const_int32 _ | Const_int64 _ | Const_nativeint _) |
-             Const_pointer _), _) -> incr size
-(* Structured Constants are now emitted during closure conversion. *)
-    | Uconst (_, Some _) -> incr size
-    | Uconst _ ->
-        raise Exit (* avoid duplication of structured constants *)
+    | Uconst _ -> incr size
     | Udirect_apply(fn, args, _) ->
         size := !size + 4; lambda_list_size args
     | Ugeneric_apply(fn, args, _) ->
@@ -187,8 +180,10 @@ let rec is_pure_clambda = function
 
 (* Simplify primitive operations on integers *)
 
-let make_const_int n = (Uconst(Const_base(Const_int n), None), Value_integer n)
-let make_const_ptr n = (Uconst(Const_pointer n, None), Value_constptr n)
+let make_const c = (Uconst c, Value_const c)
+
+let make_const_int n = make_const (Uconst_int n)
+let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
 let make_comparison cmp (x: int) (y: int) =
   make_const_bool
@@ -200,9 +195,9 @@ let make_comparison cmp (x: int) (y: int) =
      | Cle -> x <= y
      | Cge -> x >= y)
 
-let simplif_prim_pure p (args, approxs) dbg =
+let simplif_int_prim_pure p (args, approxs) dbg =
   match approxs with
-    [Value_integer x] ->
+    [Value_const (Uconst_int x)] ->
       begin match p with
         Pidentity -> make_const_int x
       | Pnegint -> make_const_int (-x)
@@ -212,7 +207,7 @@ let simplif_prim_pure p (args, approxs) dbg =
       | Poffsetint y -> make_const_int (x + y)
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
-  | [Value_integer x; Value_integer y] ->
+  | [Value_const (Uconst_int x); Value_const (Uconst_int y)] ->
       begin match p with
         Paddint -> make_const_int(x + y)
       | Psubint -> make_const_int(x - y)
@@ -228,7 +223,7 @@ let simplif_prim_pure p (args, approxs) dbg =
       | Pintcomp cmp -> make_comparison cmp x y
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
-  | [Value_constptr x] ->
+  | [Value_const (Uconst_ptr x)] ->
       begin match p with
         Pidentity -> make_const_ptr x
       | Pnot -> make_const_bool(x = 0)
@@ -244,19 +239,19 @@ let simplif_prim_pure p (args, approxs) dbg =
           end
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
-  | [Value_constptr x; Value_constptr y] ->
+  | [Value_const (Uconst_ptr x); Value_const (Uconst_ptr y)] ->
       begin match p with
         Psequand -> make_const_bool(x <> 0 && y <> 0)
       | Psequor  -> make_const_bool(x <> 0 || y <> 0)
       | Pintcomp cmp -> make_comparison cmp x y
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
-  | [Value_constptr x; Value_integer y] ->
+  | [Value_const (Uconst_ptr x); Value_const (Uconst_int y)] ->
       begin match p with
       | Pintcomp cmp -> make_comparison cmp x y
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
-  | [Value_integer x; Value_constptr y] ->
+  | [Value_const (Uconst_int x); Value_const (Uconst_ptr y)] ->
       begin match p with
       | Pintcomp cmp -> make_comparison cmp x y
       | _ -> (Uprim(p, args, dbg), Value_unknown)
@@ -264,10 +259,45 @@ let simplif_prim_pure p (args, approxs) dbg =
   | _ ->
       (Uprim(p, args, dbg), Value_unknown)
 
+let simplif_prim_pure p (args, approxs) dbg =
+  match p, approxs with
+  | Pmakeblock(tag, Immutable), _ ->
+      let field = function
+        | Value_const c -> c
+        | _ -> raise Exit
+      in
+      begin try
+        let cst = Uconst_block (tag, List.map field approxs) in
+        let name =
+          Compilenv.new_structured_constant cst ~shared:true
+        in
+        make_const (Uconst_ref (name, cst))
+      with Exit ->
+        (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
+      end
+  | Pfield n, [ Value_const(Uconst_ref(_, Uconst_block(_, l))) ]
+    when n < List.length l ->
+      make_const (List.nth l n)
+
+  | Pstringlength, [ Value_const(Uconst_ref(_, Uconst_string s)) ]
+    ->
+      make_const_int (String.length s)
+
+  | _ -> simplif_int_prim_pure p (args, approxs) dbg
+
 let simplif_prim p (args, approxs as args_approxs) dbg =
   if List.for_all is_pure_clambda args
   then simplif_prim_pure p args_approxs dbg
-  else (Uprim(p, args, dbg), Value_unknown)
+  else
+    (* XXX : always return the same approxs as simplif_prim_pure? *)
+    let approx =
+      match p with
+      | Pmakeblock(_, Immutable) ->
+          Value_tuple (Array.of_list approxs)
+      | _ ->
+          Value_unknown
+    in
+    (Uprim(p, args, dbg), approx)
 
 (* Substitute variables in a [ulambda] term (a body of an inlined function)
    and perform some more simplifications on integer primitives.
@@ -279,9 +309,7 @@ let simplif_prim p (args, approxs as args_approxs) dbg =
    over functions. *)
 
 let approx_ulam = function
-    Uconst(Const_base(Const_int n),_) -> Value_integer n
-  | Uconst(Const_base(Const_char c),_) -> Value_integer(Char.code c)
-  | Uconst(Const_pointer n,_) -> Value_constptr n
+    Uconst c -> Value_const c
   | _ -> Value_unknown
 
 let rec substitute sb ulam =
@@ -338,7 +366,7 @@ let rec substitute sb ulam =
       Utrywith(substitute sb u1, id', substitute (Tbl.add id (Uvar id') sb) u2)
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute sb u1 with
-        Uconst(Const_pointer n, _) ->
+        Uconst (Uconst_ptr n) ->
           if n <> 0 then substitute sb u2 else substitute sb u3
       | su1 ->
           Uifthenelse(su1, substitute sb u2, substitute sb u3)
@@ -363,16 +391,11 @@ let rec substitute sb ulam =
 (* Perform an inline expansion *)
 
 let is_simple_argument = function
-    Uvar _ -> true
-  | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _ |
-                      Const_int32 _ | Const_int64 _ | Const_nativeint _),_) ->
-      true
-  | Uconst(Const_pointer _, _) -> true
+  | Uvar _  | Uconst _ -> true
   | _ -> false
 
 let no_effects = function
-    Uclosure _ -> true
-  | Uconst(Const_base(Const_string _),_) -> true
+  | Uclosure _ -> true
   | u -> is_simple_argument u
 
 let rec bind_params_rec subst params args body =
@@ -432,7 +455,8 @@ let direct_apply fundesc funct ufunct uargs =
 
 let strengthen_approx appl approx =
   match approx_ulam appl with
-    (Value_integer _ | Value_constptr _) as intapprox -> intapprox
+    (Value_const _) as intapprox ->
+      intapprox
   | _ -> approx
 
 (* If a term has approximation Value_integer or Value_constptr and is pure,
@@ -440,8 +464,7 @@ let strengthen_approx appl approx =
 
 let check_constant_result lam ulam approx =
   match approx with
-    Value_integer n when is_pure lam -> make_const_int n
-  | Value_constptr n when is_pure lam -> make_const_ptr n
+    Value_const c when is_pure lam -> make_const c
   | _ -> (ulam, approx)
 
 (* Evaluate an expression with known value for its side effects only,
@@ -495,10 +518,7 @@ let rec add_debug_info ev u =
 let close_approx_var fenv cenv id =
   let approx = try Tbl.find id fenv with Not_found -> Value_unknown in
   match approx with
-    Value_integer n ->
-      make_const_int n
-  | Value_constptr n ->
-      make_const_ptr n
+    Value_const c -> make_const c
   | approx ->
       let subst = try Tbl.find id cenv with Not_found -> Uvar id in
       (subst, approx)
@@ -510,14 +530,33 @@ let rec close fenv cenv = function
     Lvar id ->
       close_approx_var fenv cenv id
   | Lconst cst ->
-      begin match cst with
-        Const_base(Const_int n) -> (Uconst (cst,None), Value_integer n)
-      | Const_base(Const_char c) -> (Uconst (cst,None),
-                                     Value_integer(Char.code c))
-      | Const_pointer n -> (Uconst (cst, None), Value_constptr n)
-      | _ -> (Uconst (cst, Some (Compilenv.new_structured_constant cst true)),
-              Value_unknown)
-      end
+      let str ?(shared = true) cst =
+        let name =
+          Compilenv.new_structured_constant cst ~shared
+        in
+        Uconst_ref (name, cst)
+      in
+      let rec transl = function
+        | Const_base(Const_int n) -> Uconst_int n
+        | Const_base(Const_char c) -> Uconst_int (Char.code c)
+        | Const_pointer n -> Uconst_ptr n
+        | Const_block (tag, fields) ->
+            str (Uconst_block (tag, List.map transl fields))
+        | Const_float_array sl ->
+            (* constant float arrays are really immutable *)
+            str (Uconst_float_array sl)
+        | Const_immstring s ->
+            str (Uconst_string s)
+        | Const_base (Const_string (s, _)) ->
+              (* strings (even literal ones) are mutable! *)
+              (* of course, the empty string is really immutable *)
+            str ~shared:false(*(String.length s = 0)*) (Uconst_string s)
+        | Const_base(Const_float x) -> str (Uconst_float x)
+        | Const_base(Const_int32 x) -> str (Uconst_int32 x)
+        | Const_base(Const_int64 x) -> str (Uconst_int64 x)
+        | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
+      in
+      make_const (transl cst)
   | Lfunction(kind, params, body) as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
 
@@ -581,7 +620,7 @@ let rec close fenv cenv = function
         (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
           (Ulet(id, ulam, ubody), abody)
-      | (_, (Value_integer _ | Value_constptr _))
+      | (_, Value_const _)
         when str = Alias || is_pure lam ->
           close (Tbl.add id alam fenv) cenv body
       | (_, _) ->
@@ -627,23 +666,20 @@ let rec close fenv cenv = function
       check_constant_result lam
                             (getglobal id)
                             (Compilenv.global_approx id)
-  | Lprim(Pmakeblock(tag, mut) as prim, lams) ->
-      let (ulams, approxs) = List.split (List.map (close fenv cenv) lams) in
-      (Uprim(prim, ulams, Debuginfo.none),
-       begin match mut with
-           Immutable -> Value_tuple(Array.of_list approxs)
-         | Mutable -> Value_unknown
-       end)
   | Lprim(Pfield n, [lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       let fieldapprox =
         match approx with
           Value_tuple a when n < Array.length a -> a.(n)
+        | Value_const (Uconst_ref(_, Uconst_block(_, l)))
+          when n < List.length l ->
+            Value_const (List.nth l n)
         | _ -> Value_unknown in
       check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
                             fieldapprox
   | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
+      Format.printf "set global field %i, approx = %a@." n Printclambda.approx approx;
       (!global_approx).(n) <- approx;
       (Uprim(Psetfield(n, false), [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
@@ -678,7 +714,7 @@ let rec close fenv cenv = function
       (Utrywith(ubody, id, uhandler), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
       begin match close fenv cenv arg with
-        (uarg, Value_constptr n) ->
+        (uarg, Value_const (Uconst_ptr n)) ->
           sequence_constant_expr arg uarg
             (close fenv cenv (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
@@ -798,11 +834,13 @@ and close_functions fenv cenv fun_defs =
   (* Translate all function definitions. *)
   let clos_info_list =
     if initially_closed then begin
+      let snap = Compilenv.snapshot () in
       let cl = List.map2 clos_fundef uncurried_defs clos_offsets in
       (* If the hypothesis that the environment parameters are useless has been
          invalidated, then set [fun_closed] to false in all descriptions and
          recompile *)
       if !useless_env then cl else begin
+        Compilenv.backtrack snap; (* PR#6337 *)
         List.iter
           (fun (id, params, body, fundesc) -> fundesc.fun_closed <- false)
           uncurried_defs;
@@ -861,6 +899,57 @@ and close_switch fenv cenv cases num_keys default =
   | _     -> index, actions
 
 
+(* Collect exported symbols for structured constants *)
+
+let collect_exported_structured_constants a =
+  let rec approx = function
+    | Value_closure (fd, a) ->
+        approx a;
+        begin match fd.fun_inline with
+        | Some (_, u) -> ulam u
+        | None -> ()
+        end
+    | Value_tuple a -> Array.iter approx a
+    | Value_const c -> const c
+    | Value_unknown -> ()
+  and const = function
+    | Uconst_ref (s, c) ->
+        Compilenv.add_exported_constant s;
+        structured_constant c
+    | Uconst_int _ | Uconst_ptr _ -> ()
+  and structured_constant = function
+    | Uconst_block (_, ul) -> List.iter const ul
+    | Uconst_float _ | Uconst_int32 _
+    | Uconst_int64 _ | Uconst_nativeint _
+    | Uconst_float_array _ | Uconst_string _ -> ()
+  and ulam = function
+    | Uvar _ -> ()
+    | Uconst c -> const c
+    | Udirect_apply (_, ul, _) -> List.iter ulam ul
+    | Ugeneric_apply (u, ul, _) -> ulam u; List.iter ulam ul
+    | Uclosure (fl, ul) ->
+        List.iter (fun f -> ulam f.body) fl;
+        List.iter ulam ul
+    | Uoffset(u, _) -> ulam u
+    | Ulet (_, u1, u2) -> ulam u1; ulam u2
+    | Uletrec (l, u) -> List.iter (fun (_, u) -> ulam u) l; ulam u
+    | Uprim (_, ul, _) -> List.iter ulam ul
+    | Uswitch (u, sl) ->
+        ulam u;
+        Array.iter ulam sl.us_actions_consts;
+        Array.iter ulam sl.us_actions_blocks
+    | Ustaticfail (_, ul) -> List.iter ulam ul
+    | Ucatch (_, _, u1, u2)
+    | Utrywith (u1, _, u2)
+    | Usequence (u1, u2)
+    | Uwhile (u1, u2)  -> ulam u1; ulam u2
+    | Uifthenelse (u1, u2, u3)
+    | Ufor (_, u1, u2, _, u3) -> ulam u1; ulam u2; ulam u3
+    | Uassign (_, u) -> ulam u
+    | Usend (_, u1, u2, ul, _) -> ulam u1; ulam u2; List.iter ulam ul
+  in
+  approx a
+
 (* The entry point *)
 
 let intro size lam =
@@ -868,5 +957,6 @@ let intro size lam =
   global_approx := Array.create size Value_unknown;
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let (ulam, approx) = close Tbl.empty Tbl.empty lam in
+  collect_exported_structured_constants (Value_tuple !global_approx);
   global_approx := [||];
   ulam

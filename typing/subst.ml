@@ -85,6 +85,14 @@ let newpersty desc =
   decr new_id;
   { desc = desc; level = generic_level; id = !new_id }
 
+(* ensure that all occurrences of 'Tvar None' are physically shared *)
+let tvar_none = Tvar None
+let tunivar_none = Tunivar None
+let norm = function
+  | Tvar None -> tvar_none
+  | Tunivar None -> tunivar_none
+  | d -> d
+
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
@@ -92,7 +100,7 @@ let rec typexp s ty =
     Tvar _ | Tunivar _ as desc ->
       if s.for_saving || ty.id < 0 then
         let ty' =
-          if s.for_saving then newpersty desc
+          if s.for_saving then newpersty (norm desc)
           else newty2 ty.level desc
         in
         save_desc ty desc; ty.desc <- Tsubst ty'; ty'
@@ -146,7 +154,7 @@ let rec typexp s ty =
                 | Tconstr _ | Tnil -> typexp s more
                 | Tunivar _ | Tvar _ ->
                     save_desc more more.desc;
-                    if s.for_saving then newpersty more.desc else
+                    if s.for_saving then newpersty (norm more.desc) else
                     if dup && is_Tvar more then newgenty more.desc else more
                 | _ -> assert false
               in

@@ -27,8 +27,30 @@ exception Error of error
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 
-let structured_constants =
-  ref ([] : (string * bool * Lambda.structured_constant) list)
+module CstMap =
+  Map.Make(struct
+    type t = Clambda.ustructured_constant
+    let compare = Pervasives.compare
+        (* could use a better version, comparing on the
+           first arg of Uconst_ref *)
+  end)
+
+type structured_constants =
+  {
+    strcst_shared: string CstMap.t;
+    strcst_all: (string * Clambda.ustructured_constant) list;
+  }
+
+let structured_constants_empty  =
+  {
+    strcst_shared = CstMap.empty;
+    strcst_all = [];
+  }
+
+let structured_constants = ref structured_constants_empty
+
+
+let exported_constants = Hashtbl.create 17
 
 let current_unit =
   { ui_name = "";
@@ -69,7 +91,8 @@ let reset ?packname name =
   current_unit.ui_apply_fun <- [];
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- false;
-  structured_constants := []
+  Hashtbl.clear exported_constants;
+  structured_constants := structured_constants_empty
 
 let current_unit_infos () =
   current_unit
@@ -223,12 +246,39 @@ let new_const_symbol () =
   incr const_label;
   make_symbol (Some (string_of_int !const_label))
 
-let new_structured_constant cst global =
-  let lbl = new_const_symbol() in
-  structured_constants := (lbl, global, cst) :: !structured_constants;
-  lbl
+let snapshot () = !structured_constants
+let backtrack s = structured_constants := s
 
-let structured_constants () = !structured_constants
+let new_structured_constant cst ~shared =
+  let {strcst_shared; strcst_all} = !structured_constants in
+  if shared then
+    try
+      CstMap.find cst strcst_shared
+    with Not_found ->
+      let lbl = new_const_symbol() in
+      structured_constants :=
+        {
+          strcst_shared = CstMap.add cst lbl strcst_shared;
+          strcst_all = (lbl, cst) :: strcst_all;
+        };
+      lbl
+  else
+    let lbl = new_const_symbol() in
+    structured_constants :=
+      {
+        strcst_shared;
+        strcst_all = (lbl, cst) :: strcst_all;
+      };
+    lbl
+
+let add_exported_constant s =
+  Hashtbl.replace exported_constants s ()
+
+let structured_constants () =
+  List.map
+    (fun (lbl, cst) ->
+       (lbl, Hashtbl.mem exported_constants lbl, cst)
+    ) (!structured_constants).strcst_all
 
 (* Error report *)
 

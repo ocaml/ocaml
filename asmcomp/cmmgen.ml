@@ -660,32 +660,20 @@ let transl_comparison = function
 
 (* Translate structured constants *)
 
-(* Fabrice: moved to compilenv.ml ----
-let const_label = ref 0
-
-let new_const_label () =
-  incr const_label;
-  !const_label
-
-let new_const_symbol () =
-  incr const_label;
-  Compilenv.make_symbol (Some (string_of_int !const_label))
-
-let structured_constants = ref ([] : (string * structured_constant) list)
-*)
-
 let transl_constant = function
-    Const_base(Const_int n) ->
+  | Uconst_int n ->
       int_const n
-  | Const_base(Const_char c) ->
-      Cconst_int(((Char.code c) lsl 1) + 1)
-  | Const_pointer n ->
+  | Uconst_ptr n ->
       if n <= max_repr_int && n >= min_repr_int
       then Cconst_pointer((n lsl 1) + 1)
       else Cconst_natpointer
               (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
-  | cst ->
-      Cconst_symbol (Compilenv.new_structured_constant cst false)
+  | Uconst_ref (label, _) ->
+      Cconst_symbol label
+
+let transl_structured_constant cst =
+  let label = Compilenv.new_structured_constant cst ~shared:true in
+  Cconst_symbol label
 
 (* Translate constant closures *)
 
@@ -696,9 +684,9 @@ let constant_closures =
 
 let box_int_constant bi n =
   match bi with
-    Pnativeint -> Const_base(Const_nativeint n)
-  | Pint32 -> Const_base(Const_int32 (Nativeint.to_int32 n))
-  | Pint64 -> Const_base(Const_int64 (Int64.of_nativeint n))
+    Pnativeint -> Uconst_nativeint n
+  | Pint32 -> Uconst_int32 (Nativeint.to_int32 n)
+  | Pint64 -> Uconst_int64 (Int64.of_nativeint n)
 
 let operations_boxed_int bi =
   match bi with
@@ -715,9 +703,9 @@ let alloc_header_boxed_int bi =
 let box_int bi arg =
   match arg with
     Cconst_int n ->
-      transl_constant (box_int_constant bi (Nativeint.of_int n))
+      transl_structured_constant (box_int_constant bi (Nativeint.of_int n))
   | Cconst_natint n ->
-      transl_constant (box_int_constant bi n)
+      transl_structured_constant (box_int_constant bi n)
   | _ ->
       let arg' =
         if bi = Pint32 && size_int = 8 && big_endian
@@ -1123,7 +1111,7 @@ type unboxed_number_kind =
   | Boxed_integer of boxed_integer
 
 let is_unboxed_number = function
-    Uconst(Const_base(Const_float f), _) ->
+    Uconst(Uconst_ref(_, Uconst_float _)) ->
       Boxed_float
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
@@ -1208,9 +1196,7 @@ let functions = (Queue.create() : ufunction Queue.t)
 let rec transl = function
     Uvar id ->
       Cvar id
-  | Uconst (sc, Some const_label) ->
-      Cconst_symbol const_label
-  | Uconst (sc, None) ->
+  | Uconst sc ->
       transl_constant sc
   | Uclosure(fundecls, []) ->
       let lbl = Compilenv.new_const_symbol() in
@@ -1295,7 +1281,7 @@ let rec transl = function
         (Pgetglobal id, []) ->
           Cconst_symbol (Ident.name id)
       | (Pmakeblock(tag, mut), []) ->
-          transl_constant(Const_block(tag, []))
+          assert false
       | (Pmakeblock(tag, mut), args) ->
           make_alloc tag (List.map transl args)
       | (Pccall prim, args) ->
@@ -1308,7 +1294,7 @@ let rec transl = function
                          dbg),
                 List.map transl args)
       | (Pmakearray kind, []) ->
-          transl_constant(Const_block(0, []))
+          transl_structured_constant (Uconst_block(0, []))
       | (Pmakearray kind, args) ->
           begin match kind with
             Pgenarray ->
@@ -1492,7 +1478,7 @@ and transl_prim_1 p arg dbg =
       if no_overflow_lsl n then
         add_const (transl arg) (n lsl 1)
       else
-        transl_prim_2 Paddint arg (Uconst (Const_base(Const_int n), None))
+        transl_prim_2 Paddint arg (Uconst (Uconst_int n))
                       Debuginfo.none
   | Poffsetref n ->
       return_unit
@@ -1922,17 +1908,17 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
     fatal_error "Cmmgen.transl_prim_3"
 
 and transl_unbox_float = function
-    Uconst(Const_base(Const_float f), _) -> Cconst_float f
+    Uconst(Uconst_ref(_, Uconst_float f)) -> Cconst_float f
   | exp -> unbox_float(transl exp)
 
 and transl_unbox_int bi = function
-    Uconst(Const_base(Const_int32 n), _) ->
+    Uconst(Uconst_ref(_, Uconst_int32 n)) ->
       Cconst_natint (Nativeint.of_int32 n)
-  | Uconst(Const_base(Const_nativeint n), _) ->
+  | Uconst(Uconst_ref(_, Uconst_nativeint n)) ->
       Cconst_natint n
-  | Uconst(Const_base(Const_int64 n), _) ->
+  | Uconst(Uconst_ref(_, Uconst_int64 n)) ->
       assert (size_int = 8); Cconst_natint (Int64.to_nativeint n)
-  | Uprim(Pbintofint bi',[Uconst(Const_base(Const_int i),_)],_) when bi = bi' ->
+  | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
@@ -1966,8 +1952,8 @@ and make_catch2 mk_body handler = match handler with
 
 and exit_if_true cond nfail otherwise =
   match cond with
-  | Uconst (Const_pointer 0, _) -> otherwise
-  | Uconst (Const_pointer 1, _) -> Cexit (nfail,[])
+  | Uconst (Uconst_ptr 0) -> otherwise
+  | Uconst (Uconst_ptr 1) -> Cexit (nfail,[])
   | Uprim(Psequor, [arg1; arg2], _) ->
       exit_if_true arg1 nfail (exit_if_true arg2 nfail otherwise)
   | Uprim(Psequand, _, _) ->
@@ -1996,8 +1982,8 @@ and exit_if_true cond nfail otherwise =
 
 and exit_if_false cond otherwise nfail =
   match cond with
-  | Uconst (Const_pointer 0, _) -> Cexit (nfail,[])
-  | Uconst (Const_pointer 1, _) -> otherwise
+  | Uconst (Uconst_ptr 0) -> Cexit (nfail,[])
+  | Uconst (Uconst_ptr 1) -> otherwise
   | Uprim(Psequand, [arg1; arg2], _) ->
       exit_if_false arg1 (exit_if_false arg2 otherwise nfail) nfail
   | Uprim(Psequor, _, _) ->
@@ -2117,99 +2103,38 @@ let rec transl_all_functions already_translated cont =
 
 (* Emit structured constants *)
 
-let immstrings = Hashtbl.create 17
+let emit_block header symb cont =
+  Cint header :: Cdefine_symbol symb :: cont
 
-let rec emit_constant symb cst cont =
+let rec emit_structured_constant symb cst cont =
   match cst with
-    Const_base(Const_float s) ->
-      Cint(float_header) :: Cdefine_symbol symb :: Cdouble s :: cont
-  | Const_base(Const_string (s, _)) | Const_immstring s ->
-      Cint(string_header (String.length s)) ::
-      Cdefine_symbol symb ::
-      emit_string_constant s cont
-  | Const_base(Const_int32 n) ->
-      Cint(boxedint32_header) :: Cdefine_symbol symb ::
-      emit_boxed_int32_constant n cont
-  | Const_base(Const_int64 n) ->
-      Cint(boxedint64_header) :: Cdefine_symbol symb ::
-      emit_boxed_int64_constant n cont
-  | Const_base(Const_nativeint n) ->
-      Cint(boxedintnat_header) :: Cdefine_symbol symb ::
-      emit_boxed_nativeint_constant n cont
-  | Const_block(tag, fields) ->
-      let (emit_fields, cont1) = emit_constant_fields fields cont in
-      Cint(block_header tag (List.length fields)) ::
-      Cdefine_symbol symb ::
-      emit_fields @ cont1
-  | Const_float_array(fields) ->
-      Cint(floatarray_header (List.length fields)) ::
-      Cdefine_symbol symb ::
-      Misc.map_end (fun f -> Cdouble f) fields cont
-  | _ -> fatal_error "gencmm.emit_constant"
+  | Uconst_float s->
+      emit_block float_header symb (Cdouble s :: cont)
+  | Uconst_string s ->
+      emit_block (string_header (String.length s)) symb
+        (emit_string_constant s cont)
+  | Uconst_int32 n ->
+      emit_block boxedint32_header symb
+        (emit_boxed_int32_constant n cont)
+  | Uconst_int64 n ->
+      emit_block boxedint64_header symb
+        (emit_boxed_int64_constant n cont)
+  | Uconst_nativeint n ->
+      emit_block boxedintnat_header symb
+        (emit_boxed_nativeint_constant n cont)
+  | Uconst_block (tag, csts) ->
+      let cont = List.fold_right emit_constant csts cont in
+      emit_block (block_header tag (List.length csts)) symb cont
+  | Uconst_float_array fields ->
+      emit_block (floatarray_header (List.length fields)) symb
+        (Misc.map_end (fun f -> Cdouble f) fields cont)
 
-and emit_constant_fields fields cont =
-  match fields with
-    [] -> ([], cont)
-  | f1 :: fl ->
-      let (data1, cont1) = emit_constant_field f1 cont in
-      let (datal, contl) = emit_constant_fields fl cont1 in
-      (data1 :: datal, contl)
-
-and emit_constant_field field cont =
-  match field with
-    Const_base(Const_int n) ->
-      (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n),
-       cont)
-  | Const_base(Const_char c) ->
-      (Cint(Nativeint.of_int(((Char.code c) lsl 1) + 1)), cont)
-  | Const_base(Const_float s) ->
-      let lbl = Compilenv.new_const_label() in
-      (Clabel_address lbl,
-       Cint(float_header) :: Cdefine_label lbl :: Cdouble s :: cont)
-  | Const_base(Const_string (s, _)) ->
-      let lbl = Compilenv.new_const_label() in
-      (Clabel_address lbl,
-       Cint(string_header (String.length s)) :: Cdefine_label lbl ::
-       emit_string_constant s cont)
-  | Const_immstring s ->
-      begin try
-        (Clabel_address (Hashtbl.find immstrings s), cont)
-      with Not_found ->
-        let lbl = Compilenv.new_const_label() in
-        Hashtbl.add immstrings s lbl;
-        (Clabel_address lbl,
-         Cint(string_header (String.length s)) :: Cdefine_label lbl ::
-         emit_string_constant s cont)
-      end
-  | Const_base(Const_int32 n) ->
-      let lbl = Compilenv.new_const_label() in
-      (Clabel_address lbl,
-       Cint(boxedint32_header) :: Cdefine_label lbl ::
-       emit_boxed_int32_constant n cont)
-  | Const_base(Const_int64 n) ->
-      let lbl = Compilenv.new_const_label() in
-      (Clabel_address lbl,
-       Cint(boxedint64_header) :: Cdefine_label lbl ::
-       emit_boxed_int64_constant n cont)
-  | Const_base(Const_nativeint n) ->
-      let lbl = Compilenv.new_const_label() in
-      (Clabel_address lbl,
-       Cint(boxedintnat_header) :: Cdefine_label lbl ::
-       emit_boxed_nativeint_constant n cont)
-  | Const_pointer n ->
-      (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n),
-       cont)
-  | Const_block(tag, fields) ->
-      let lbl = Compilenv.new_const_label() in
-      let (emit_fields, cont1) = emit_constant_fields fields cont in
-      (Clabel_address lbl,
-       Cint(block_header tag (List.length fields)) :: Cdefine_label lbl ::
-       emit_fields @ cont1)
-  | Const_float_array(fields) ->
-      let lbl = Compilenv.new_const_label() in
-      (Clabel_address lbl,
-       Cint(floatarray_header (List.length fields)) :: Cdefine_label lbl ::
-       Misc.map_end (fun f -> Cdouble f) fields cont)
+and emit_constant cst cont =
+  match cst with
+  | Uconst_int n | Uconst_ptr n ->
+      Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n) :: cont
+  | Uconst_ref (label, _) ->
+      Csymbol_address label :: cont
 
 and emit_string_constant s cont =
   let n = size_int - 1 - (String.length s) mod size_int in
@@ -2275,14 +2200,12 @@ let emit_all_constants cont =
   let c = ref cont in
   List.iter
     (fun (lbl, global, cst) ->
-       let cst = emit_constant lbl cst [] in
+       let cst = emit_structured_constant lbl cst [] in
        let cst = if global then
          Cglobal_symbol lbl :: cst
        else cst in
          c:= Cdata(cst):: !c)
     (Compilenv.structured_constants());
-(*  structured_constants := []; done in Compilenv.reset() *)
-  Hashtbl.clear immstrings;   (* PR#3979 *)
   List.iter
     (fun (symb, fundecls) ->
         c := Cdata(emit_constant_closure symb fundecls []) :: !c)
@@ -2648,8 +2571,8 @@ let reference_symbols namelist =
 
 let global_data name v =
   Cdata(Cglobal_symbol name ::
-          emit_constant name
-          (Const_base (Const_string (Marshal.to_string v [], None))) [])
+          emit_structured_constant name
+          (Uconst_string (Marshal.to_string v [])) [])
 
 let globals_map v = global_data "caml_globals_map" v
 
@@ -2686,12 +2609,16 @@ let code_segment_table namelist =
 
 let predef_exception i name =
   let symname = "caml_exn_" ^ name in
+  let cst = Uconst_string name in
+  let label = Compilenv.new_const_symbol () in
+  let cont = emit_structured_constant label cst [] in
   Cdata(Cglobal_symbol symname ::
-        emit_constant symname
-          (Const_block(Obj.object_tag,
-                       [Const_base(Const_string (name, None));
-                        Const_base(Const_int (-i-1))
-                       ])) [])
+        emit_structured_constant symname
+          (Uconst_block(Obj.object_tag,
+                       [
+                         Uconst_ref(label, cst);
+                         Uconst_int (-i-1);
+                       ])) cont)
 
 (* Header for a plugin *)
 
