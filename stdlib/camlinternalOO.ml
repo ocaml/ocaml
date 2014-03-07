@@ -399,18 +399,19 @@ external get_public_method : obj -> tag -> closure
 
 (**** table collection access ****)
 
-type tables = {key: closure; mutable data: tables; mutable next: tables}
-
-let rec empty = {key = Obj.magic 0; data = empty; next = empty}
-let non_empty x = (x.data != x)
-  (* Would (x != empty) be ok?  Probably yes, unless the data structure
-     can go through marshaling. *)
+type tables = Empty | Cons of closure * tables * tables
+type mut_tables =
+    {key: closure; mutable data: tables; mutable next: tables}
+external mut : tables -> mut_tables = "%identity"
+external demut : mut_tables -> tables = "%identity"
 
 let build_path n keys tables =
-  let res = {key = Obj.magic 0; data = empty; next = empty} in
+  (* Be careful not to create a seemingly immutable block, otherwise it could
+     be statically allocated.  See #5779. *)
+  let res = demut {key = Obj.magic 0; data = Empty; next = Empty} in
   let r = ref res in
   for i = 0 to n do
-    r := {key = keys.(i); data = !r; next = empty}
+    r := Cons (keys.(i), !r, Empty)
   done;
   tables.data <- !r;
   res
@@ -420,15 +421,16 @@ let rec lookup_keys i keys tables =
   let key = keys.(i) in
   let rec lookup_key tables =
     if tables.key == key then lookup_keys (i-1) keys tables.data else
-    if non_empty tables.next then lookup_key tables.next else
-    let next = {key; data = empty; next = empty} in
+    if tables.next <> Empty then lookup_key (mut tables.next) else
+    let next = Cons (key, Empty, Empty) in
     tables.next <- next;
-    build_path (i-1) keys next
+    build_path (i-1) keys (mut next)
   in
-  lookup_key tables
+  lookup_key (mut tables)
 
 let lookup_tables root keys =
-  if non_empty root.data then
+  let root = mut root in
+  if root.data <> Empty then
     lookup_keys (Array.length keys - 1) keys root.data
   else
     build_path (Array.length keys - 1) keys root
