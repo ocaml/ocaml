@@ -679,7 +679,7 @@ let rec close fenv cenv = function
                             fieldapprox
   | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
-      Format.printf "set global field %i, approx = %a@." n Printclambda.approx approx;
+      (*Format.printf "set global field %i, approx = %a@." n Printclambda.approx approx;*)
       (!global_approx).(n) <- approx;
       (Uprim(Psetfield(n, false), [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
