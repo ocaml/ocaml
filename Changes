@@ -8,6 +8,9 @@ Language features:
 - Generative functors
 - Module aliases
 
+Build system for the OCaml distribution:
+- Use -bin-annot when building.
+
 Camlp4:
 - Removed from the official distribution
 
