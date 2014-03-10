@@ -44,7 +44,7 @@ let transl_exception path decl =
     | Some p -> Path.name p
   in
   Lprim(prim_set_oo_id,
-        [Lprim(Pmakeblock(Obj.object_tag, Immutable),
+        [Lprim(Pmakeblock(Obj.object_tag, Mutable),
               [Lconst(Const_base(Const_string (name,None)));
                Lconst(Const_base(Const_int 0))])])
 
