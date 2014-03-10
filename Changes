@@ -77,6 +77,7 @@ Bug fixes:
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
 - PR#6262: equality of first-class modules take module aliases into account
 - PR#6293: Assert_failure with invalid package type
+- PR#6307: Behavior of 'module type of' w.r.t. module aliases
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable

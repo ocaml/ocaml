@@ -16,6 +16,7 @@ type shape =
   | Lazy
   | Class
   | Module of shape array
+  | Value of Obj.t
 
 let rec init_mod loc shape =
   match shape with
@@ -32,6 +33,8 @@ let rec init_mod loc shape =
       Obj.repr (CamlinternalOO.dummy_class loc)
   | Module comps ->
       Obj.repr (Array.map (init_mod loc) comps)
+  | Value v ->
+      v
 
 let overwrite o n =
   assert (Obj.size o >= Obj.size n);
@@ -64,3 +67,5 @@ let rec update_mod shape o n =
       for i = 0 to Array.length comps - 1 do
         update_mod comps.(i) (Obj.field o i) (Obj.field n i)
       done
+  | Value v ->
+      overwrite o n

@@ -1422,8 +1422,8 @@ let type_module_type_of env smod =
              mod_loc = smod.pmod_loc }
     | _ -> type_module env smod in
   let mty = tmty.mod_type in
-  (* expand modtype identifiers and aliases (at root) *)
-  let mty = Env.scrape_alias env mty in
+  (* PR#6307: expand aliases at root and submodules *)
+  let mty = Mtype.remove_aliases env mty in
   (* PR#5037: clean up inferred signature to remove duplicate specs *)
   let mty = simplify_modtype mty in
   (* PR#5036: must not contain non-generalized type variables *)
