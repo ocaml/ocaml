@@ -171,3 +171,6 @@ let rec approx ppf = function
       Format.fprintf ppf "_"
   | Value_const c ->
       fprintf ppf "@[const(%a)@]" uconstant c
+  | Value_global_field (s, i) ->
+      fprintf ppf "@[global(%s,%i)@]" s i
+

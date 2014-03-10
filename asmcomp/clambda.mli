@@ -82,3 +82,4 @@ type value_approximation =
   | Value_tuple of value_approximation array
   | Value_unknown
   | Value_const of uconstant
+  | Value_global_field of string * int
