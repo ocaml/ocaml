@@ -27,9 +27,12 @@ Type system:
 * Module aliases are now typed in a specific way, which remembers their
   identity. In particular this changes the signature inferred by
   "module type of"
-- Slight change in the criterion to distinguish private abbreviations
-  and private row types: create a private abbreviation for closed objects
-  and fixed polymorphic variants (cf. PR#6331)
+- PR#6331: Slight change in the criterion to distinguish private
+  abbreviations and private row types: create a private abbreviation for
+  closed objects and fixed polymorphic variants.
+- PR#6333: Compare first class module types structurally rather than
+  nominally. Value subtyping allows module subtyping as long as the internal
+  representation is unchanged.
 
 Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
@@ -74,7 +77,6 @@ Bug fixes:
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
 - PR#6262: equality of first-class modules take module aliases into account
 - PR#6293: Assert_failure with invalid package type
-- PR#6331: `is_fixed_type` does not take account of nested aliases
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable

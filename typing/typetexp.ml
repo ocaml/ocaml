@@ -208,7 +208,7 @@ let create_package_mty fake loc env (p, l) =
       (fun (s1, t1) (s2, t2) ->
          if s1.txt = s2.txt then
            raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
-         compare s1 s2)
+         compare s1.txt s2.txt)
       l
   in
   l,

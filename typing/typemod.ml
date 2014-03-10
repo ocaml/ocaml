@@ -947,6 +947,21 @@ let modtype_of_package env loc p nl tl =
     let error = Typetexp.Unbound_modtype (Ctype.lid_of_path p) in
     raise(Typetexp.Error(loc, env, error))
 
+let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
+  let mkmty p nl tl =
+    let ntl =
+      List.filter (fun (n,t) -> Ctype.free_variables t = [])
+        (List.combine nl tl) in
+    let (nl, tl) = List.split ntl in
+    modtype_of_package env Location.none p nl tl
+  in
+  let mty1 = mkmty p1 nl1 tl1 and mty2 = mkmty p2 nl2 tl2 in
+  try Includemod.modtypes env mty1 mty2 = Tcoerce_none
+  with Includemod.Error msg -> false
+    (* raise(Error(Location.none, env, Not_included msg)) *)
+
+let () = Ctype.package_subtype := package_subtype
+
 let wrap_constraint env arg mty explicit =
   let coercion =
     try
