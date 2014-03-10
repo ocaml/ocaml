@@ -73,7 +73,10 @@ let output_action oc has_refill mems r =
   | Backtrack ->
     fprintf oc
       "    lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_last_pos ;\n" ;
-    fprintf oc "    lexbuf.Lexing.lex_last_action\n"
+    if has_refill then
+      fprintf oc "    k lexbuf lexbuf.Lexing.lex_last_action\n"
+    else
+      fprintf oc "    lexbuf.Lexing.lex_last_action\n"
   | Goto n ->
     fprintf oc "    __ocaml_lex_state%d lexbuf%s\n" n
       (if has_refill then " k" else "")
