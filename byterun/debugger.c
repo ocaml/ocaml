@@ -250,7 +250,6 @@ static void safe_output_value(struct channel *chan, value val)
 
 void caml_debugger(enum event_kind event)
 {
-  int frame_number;
   value * frame;
   intnat i, pos;
   value val;
@@ -258,7 +257,6 @@ void caml_debugger(enum event_kind event)
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
   /* Reset current frame */
-  frame_number = 0;
   frame = caml_extern_sp + 1;
 
   /* Report the event to the debugger */
