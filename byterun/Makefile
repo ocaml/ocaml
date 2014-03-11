@@ -54,17 +54,10 @@ clean::
 .SUFFIXES: .d.o .pic.o
 
 .c.d.o:
-	ln -s -f $*.c $*.d.c
-	$(CC) -c $(DFLAGS) $*.d.c
-	rm $*.d.c
+	$(CC) -c $(DFLAGS) $*.c -o $*.d.o
 
 .c.pic.o:
-	ln -s -f $*.c $*.pic.c
-	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $*.pic.c
-	rm $*.pic.c
-
-clean::
-	rm -f *.pic.c *.d.c
+	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $*.c -o $*.pic.o
 
 depend : prims.c opnames.h jumptbl.h version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
