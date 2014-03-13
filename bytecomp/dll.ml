@@ -128,11 +128,7 @@ let read_ld_conf_contents dir =
   List.rev !path
 
 let ld_conf_contents () =
-  read_ld_conf_contents Config.standard_library @
-  begin match  Config.ocaml_library with
-  | None -> []
-  | Some dir -> read_ld_conf_contents dir
-  end
+  read_ld_conf_contents Config.standard_library
 
 (* Split the CAML_LD_LIBRARY_PATH environment variable and return
    the corresponding list of directories.  *)

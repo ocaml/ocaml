@@ -47,6 +47,7 @@ all-runtimed: ocamlrund$(EXE) libcamlrund.$(A)
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > ld.conf
 	echo "$(LIBDIR)" >> ld.conf
+	-test -f $(OCAMLLIB)/ld.conf && cat  $(OCAMLLIB)/ld.conf >> ld.conf
 
 install::
 	cp ocamlrun$(EXE) $(BINDIR)/jocamlrun$(EXE)
