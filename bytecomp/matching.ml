@@ -2484,7 +2484,7 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
 (* The entry points *)
 
 (*
-   If there is a guard in a matching or a lazy pattern, 
+   If there is a guard in a matching or a lazy pattern,
    then set exhaustiveness info to Partial.
    (because of side effects, assume the worst).
 
@@ -2542,7 +2542,7 @@ let have_mutable_field p = match p with
 | Tpat_or _
 | Tpat_constant _ | Tpat_var _ | Tpat_any
   -> false
-    
+
 let is_mutable p = find_in_pat have_mutable_field p
 
 (* Downgrade Total when

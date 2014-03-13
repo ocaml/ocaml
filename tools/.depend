@@ -78,10 +78,6 @@ ocamlprof.cmx : ../utils/warnings.cmx ../parsing/syntaxerr.cmx \
     ../parsing/lexer.cmx
 opnames.cmo :
 opnames.cmx :
-pprintast.cmo : ../parsing/parsetree.cmi ../utils/misc.cmi \
-    ../parsing/longident.cmi ../parsing/location.cmi ../parsing/asttypes.cmi
-pprintast.cmx : ../parsing/parsetree.cmi ../utils/misc.cmx \
-    ../parsing/longident.cmx ../parsing/location.cmx ../parsing/asttypes.cmi
 primreq.cmo : ../utils/config.cmi ../bytecomp/cmo_format.cmi
 primreq.cmx : ../utils/config.cmx ../bytecomp/cmo_format.cmi
 profiling.cmo : profiling.cmi

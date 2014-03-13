@@ -33,15 +33,18 @@ value caml_gr_dump_image(value image)
     }
 
     idata =
-      XGetImage(caml_gr_display, Data_im(image), 0, 0, width, height, (-1), ZPixmap);
+      XGetImage(caml_gr_display, Data_im(image), 0, 0, width, height, (-1),
+                ZPixmap);
     for (i = 0; i < height; i++)
       for (j = 0; j < width; j++)
-        Field(Field(m, i), j) = Val_int(caml_gr_rgb_pixel(XGetPixel(idata, j, i)));
+        Field(Field(m, i), j) =
+          Val_int(caml_gr_rgb_pixel(XGetPixel(idata, j, i)));
     XDestroyImage(idata);
 
     if (Mask_im(image) != None) {
       imask =
-        XGetImage(caml_gr_display, Mask_im(image), 0, 0, width, height, 1, ZPixmap);
+        XGetImage(caml_gr_display, Mask_im(image), 0, 0, width, height, 1,
+                  ZPixmap);
       for (i = 0; i < height; i++)
         for (j = 0; j < width; j++)
           if (XGetPixel(imask, j, i) == 0)

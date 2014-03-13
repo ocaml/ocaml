@@ -122,12 +122,6 @@ type type_mismatch =
   | Field_missing of bool * Ident.t
   | Record_representation of bool
 
-let nth n =
-  if n = 1 then "first" else
-  if n = 2 then "2nd" else
-  if n = 3 then "3rd" else
-  string_of_int n ^ "th"
-
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match err with
@@ -144,8 +138,8 @@ let report_type_mismatch0 first second decl ppf err =
   | Field_arity s ->
       pr "The arities for field %s differ" (Ident.name s)
   | Field_names (n, name1, name2) ->
-      pr "Their %s fields have different names, %s and %s"
-        (nth n) (Ident.name name1) (Ident.name name2)
+      pr "Fields number %i have different names, %s and %s"
+        n (Ident.name name1) (Ident.name name2)
   | Field_missing (b, s) ->
       pr "The field %s is only present in %s %s"
         (Ident.name s) (if b then second else first) decl

@@ -215,7 +215,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
       ) {
 #ifdef RETURN_AFTER_STACK_OVERFLOW
     /* Tweak the PC part of the context so that on return from this
-       handler, we jump to the asm function [caml_stack_overflow] 
+       handler, we jump to the asm function [caml_stack_overflow]
        (from $ARCH.S). */
 #ifdef CONTEXT_PC
     CONTEXT_PC = (context_reg) &caml_stack_overflow;

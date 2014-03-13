@@ -116,10 +116,10 @@ pervasives.cmo : pervasives.cmi
 pervasives.cmx : pervasives.cmi
 printexc.cmo : printf.cmi obj.cmi buffer.cmi array.cmi printexc.cmi
 printexc.cmx : printf.cmx obj.cmx buffer.cmx array.cmx printexc.cmi
-printf.cmo : string.cmi pervasives.cmi obj.cmi list.cmi char.cmi buffer.cmi \
-    array.cmi printf.cmi
-printf.cmx : string.cmx pervasives.cmx obj.cmx list.cmx char.cmx buffer.cmx \
-    array.cmx printf.cmi
+printf.cmo : string.cmi obj.cmi list.cmi char.cmi buffer.cmi array.cmi \
+    printf.cmi
+printf.cmx : string.cmx obj.cmx list.cmx char.cmx buffer.cmx array.cmx \
+    printf.cmi
 queue.cmo : obj.cmi queue.cmi
 queue.cmx : obj.cmx queue.cmi
 random.cmo : string.cmi pervasives.cmi nativeint.cmi int64.cmi int32.cmi \
@@ -226,10 +226,10 @@ pervasives.cmo : pervasives.cmi
 pervasives.p.cmx : pervasives.cmi
 printexc.cmo : printf.cmi obj.cmi buffer.cmi array.cmi printexc.cmi
 printexc.p.cmx : printf.p.cmx obj.p.cmx buffer.p.cmx array.p.cmx printexc.cmi
-printf.cmo : string.cmi pervasives.cmi obj.cmi list.cmi char.cmi buffer.cmi \
-    array.cmi printf.cmi
-printf.p.cmx : string.p.cmx pervasives.p.cmx obj.p.cmx list.p.cmx char.p.cmx buffer.p.cmx \
-    array.p.cmx printf.cmi
+printf.cmo : string.cmi obj.cmi list.cmi char.cmi buffer.cmi array.cmi \
+    printf.cmi
+printf.p.cmx : string.p.cmx obj.p.cmx list.p.cmx char.p.cmx buffer.p.cmx array.p.cmx \
+    printf.cmi
 queue.cmo : obj.cmi queue.cmi
 queue.p.cmx : obj.p.cmx queue.cmi
 random.cmo : string.cmi pervasives.cmi nativeint.cmi int64.cmi int32.cmi \

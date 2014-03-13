@@ -58,11 +58,11 @@ let ppf = Format.err_formatter
 
 (* Error messages to standard error formatter *)
 let anonymous filename =
-  readenv Before_compile; process_file ppf filename;;
+  readenv ppf Before_compile; process_file ppf filename;;
 let impl filename =
-  readenv Before_compile; process_implementation_file ppf filename;;
+  readenv ppf Before_compile; process_implementation_file ppf filename;;
 let intf filename =
-  readenv Before_compile; process_interface_file ppf filename;;
+  readenv ppf Before_compile; process_interface_file ppf filename;;
 
 let show_config () =
   Config.print_config stdout;
@@ -80,8 +80,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _cc s = c_compiler := Some s
   let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
   let _ccopt s = first_ccopts := s :: !first_ccopts
-  let _config = show_config
   let _compat_32 = set bytecode_compatible_32
+  let _config = show_config
   let _custom = set custom_runtime
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
@@ -139,9 +139,9 @@ end)
 
 let main () =
   try
-    readenv Before_args;
+    readenv ppf Before_args;
     Arg.parse Options.list anonymous usage;
-    readenv Before_link;
+    readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
                       [make_archive;make_package;compile_only;output_c_object])

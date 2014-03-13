@@ -57,11 +57,11 @@ let ppf = Format.err_formatter
 
 (* Error messages to standard error formatter *)
 let anonymous filename =
-  readenv Before_compile; process_file ppf filename;;
+  readenv ppf Before_compile; process_file ppf filename;;
 let impl filename =
-  readenv Before_compile; process_implementation_file ppf filename;;
+  readenv ppf Before_compile; process_implementation_file ppf filename;;
 let intf filename =
-  readenv Before_compile; process_interface_file ppf filename;;
+  readenv ppf Before_compile; process_interface_file ppf filename;;
 
 let show_config () =
   Config.print_config stdout;
@@ -106,9 +106,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
-  let _short_paths = clear real_paths
   let _rectypes = set recursive_types
   let _runtime_variant s = runtime_variant := s
+  let _short_paths = clear real_paths
   let _strict_sequence = set strict_sequence
   let _shared () = shared := true; dlcode := true
   let _S = set keep_asm_file
@@ -151,9 +151,9 @@ let main () =
   native_code := true;
   let ppf = Format.err_formatter in
   try
-    readenv Before_args;
+    readenv ppf Before_args;
     Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
-    readenv Before_link;
+    readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;

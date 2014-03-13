@@ -186,7 +186,7 @@ let poweropen_external_conventions first_int last_int
 let loc_external_arguments =
   match Config.system with
   | "rhapsody" -> poweropen_external_conventions 0 7 100 112
-  | "elf" | "bsd" -> calling_conventions 0 7 100 107 outgoing 8
+  | "elf" | "bsd" | "bsd_elf" -> calling_conventions 0 7 100 107 outgoing 8
   | _ -> assert false
 
 let extcall_use_push = false
@@ -234,8 +234,5 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   Ccomp.command (Config.asm ^ " -o " ^
                  Filename.quote outfile ^ " " ^ Filename.quote infile)
-
-open Clflags;;
-open Config;;
 
 let init () = ()

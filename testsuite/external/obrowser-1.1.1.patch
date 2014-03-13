@@ -271,8 +271,721 @@
  val rev_map : ('a -> 'b) -> 'a list -> 'b list
  (** [List.rev_map f l] gives the same result as
     {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
+--- obrowser-1.1.1-old/rt/caml/pervasives.mli	2013-06-20 13:50:19.000000000 +0200
++++ obrowser-1.1.1/rt/caml/pervasives.mli	2013-06-20 13:50:59.000000000 +0200
+@@ -11,8 +11,6 @@
+ (*                                                                     *)
+ (***********************************************************************)
+ 
+-(* $Id: pervasives.mli 10548 2010-06-09 10:26:19Z weis $ *)
+-
+ (** The initially opened module.
+ 
+    This module provides the basic operations over the built-in types
+@@ -122,7 +120,7 @@
+ (** The boolean negation. *)
+ 
+ external ( && ) : bool -> bool -> bool = "%sequand"
+-(** The boolean ``and''. Evaluation is sequential, left-to-right:
++(** The boolean 'and'. Evaluation is sequential, left-to-right:
+    in [e1 && e2], [e1] is evaluated first, and if it returns [false],
+    [e2] is not evaluated at all. *)
+ 
+@@ -130,7 +128,7 @@
+ (** @deprecated {!Pervasives.( && )} should be used instead. *)
+ 
+ external ( || ) : bool -> bool -> bool = "%sequor"
+-(** The boolean ``or''. Evaluation is sequential, left-to-right:
++(** The boolean 'or'. Evaluation is sequential, left-to-right:
+    in [e1 || e2], [e1] is evaluated first, and if it returns [true],
+    [e2] is not evaluated at all. *)
+ 
+@@ -138,6 +136,20 @@
+ (** @deprecated {!Pervasives.( || )} should be used instead.*)
+ 
+ 
++(** {6 Composition operators} *)
++
++external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
++(** Reverse-application operator: [x |> f |> g] is exactly equivalent
++ to [g (f (x))].
++   @since 4.01
++*)
++
++external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
++(** Application operator: [g @@ f @@ x] is exactly equivalent to
++ [g (f (x))].
++   @since 4.01
++*)
++
+ (** {6 Integer arithmetic} *)
+ 
+ (** Integers are 31 bits wide (or 63 bits on 64-bit processors).
+@@ -234,7 +246,7 @@
+    Floating-point operations never raise an exception on overflow,
+    underflow, division by zero, etc.  Instead, special IEEE numbers
+    are returned as appropriate, such as [infinity] for [1.0 /. 0.0],
+-   [neg_infinity] for [-1.0 /. 0.0], and [nan] (``not a number'')
++   [neg_infinity] for [-1.0 /. 0.0], and [nan] ('not a number')
+    for [0.0 /. 0.0].  These special numbers then propagate through
+    floating-point computations as expected: for instance,
+    [1.0 /. infinity] is [0.0], and any arithmetic operation with [nan]
+@@ -320,7 +332,7 @@
+   of the hypotenuse of a right-angled triangle with sides of length
+   [x] and [y], or, equivalently, the distance of the point [(x,y)]
+   to origin.
+-  @since 3.13.0  *)
++  @since 4.00.0  *)
+ 
+ external cosh : float -> float = "caml_cosh_float" "cosh" "float"
+ (** Hyperbolic cosine.  Argument is in radians. *)
+@@ -351,7 +363,7 @@
+   and whose sign is that of [y].  If [x] is [nan], returns [nan].
+   If [y] is [nan], returns either [x] or [-. x], but it is not
+   specified which.
+-  @since 3.13.0  *)
++  @since 4.00.0  *)
+ 
+ external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
+ (** [mod_float a b] returns the remainder of [a] with respect to
+@@ -395,7 +407,7 @@
+ val nan : float
+ (** A special floating-point value denoting the result of an
+    undefined operation such as [0.0 /. 0.0].  Stands for
+-   ``not a number''.  Any floating-point operation with [nan] as
++   'not a number'.  Any floating-point operation with [nan] as
+    argument returns [nan] as result.  As for floating-point comparisons,
+    [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
+    if one or both of their arguments is [nan]. *)
+@@ -461,7 +473,9 @@
+ (** {6 String conversion functions} *)
+ 
+ val string_of_bool : bool -> string
+-(** Return the string representation of a boolean. *)
++(** Return the string representation of a boolean. As the returned values
++   may be shared, the user should not modify them directly.
++*)
+ 
+ val bool_of_string : string -> bool
+ (** Convert the given string to a boolean.
+@@ -506,7 +520,9 @@
+ (** List concatenation. *)
+ 
+ 
+-(** {6 Input/output} *)
++(** {6 Input/output}
++    Note: all input/output functions can raise [Sys_error] when the system
++    calls they invoke fail. *)
+ 
+ type in_channel
+ (** The type of input channel. *)
+@@ -864,23 +880,73 @@
+ 
+ (** {6 Operations on format strings} *)
+ 
+-(** Format strings are used to read and print data using formatted input
+-    functions in module {!Scanf} and formatted output in modules {!Printf} and
+-    {!Format}. *)
++(** Format strings are character strings with special lexical conventions
++  that defines the functionality of formatted input/output functions. Format
++  strings are used to read data with formatted input functions from module
++  {!Scanf} and to print data with formatted output functions from modules
++  {!Printf} and {!Format}.
++
++  Format strings are made of three kinds of entities:
++  - {e conversions specifications}, introduced by the special character ['%']
++    followed by one or more characters specifying what kind of argument to
++    read or print,
++  - {e formatting indications}, introduced by the special character ['@']
++    followed by one or more characters specifying how to read or print the
++    argument,
++  - {e plain characters} that are regular characters with usual lexical
++    conventions. Plain characters specify string literals to be read in the
++    input or printed in the output.
++
++  There is an additional lexical rule to escape the special characters ['%']
++  and ['@'] in format strings: if a special character follows a ['%']
++  character, it is treated as a plain character. In other words, ["%%"] is
++  considered as a plain ['%'] and ["%@"] as a plain ['@'].
++
++  For more information about conversion specifications and formatting
++  indications available, read the documentation of modules {!Scanf},
++  {!Printf} and {!Format}.
++*)
+ 
+ (** Format strings have a general and highly polymorphic type
+     [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
+     The two simplified types, [format] and [format4] below are
+-    included for backward compatibility with earlier releases of OCaml.
+-    ['a] is the type of the parameters of the format,
+-    ['b] is the type of the first argument given to
+-         [%a] and [%t] printing functions,
+-    ['c] is the type of the argument transmitted to the first argument of
+-         "kprintf"-style functions,
+-    ['d] is the result type for the "scanf"-style functions,
+-    ['e] is the type of the receiver function for the "scanf"-style functions,
+-    ['f] is the result type for the "printf"-style function.
+- *)
++    included for backward compatibility with earlier releases of
++    OCaml.
++
++    The meaning of format string type parameters is as follows:
++
++    - ['a] is the type of the parameters of the format for formatted output
++      functions ([printf]-style functions);
++      ['a] is the type of the values read by the format for formatted input
++      functions ([scanf]-style functions).
++
++    - ['b] is the type of input source for formatted input functions and the
++      type of output target for formatted output functions.
++      For [printf]-style functions from module [Printf], ['b] is typically
++      [out_channel];
++      for [printf]-style functions from module [Format], ['b] is typically
++      [Format.formatter];
++      for [scanf]-style functions from module [Scanf], ['b] is typically
++      [Scanf.Scanning.in_channel].
++
++      Type argument ['b] is also the type of the first argument given to
++      user's defined printing functions for [%a] and [%t] conversions,
++      and user's defined reading functions for [%r] conversion.
++
++    - ['c] is the type of the result of the [%a] and [%t] printing
++      functions, and also the type of the argument transmitted to the
++      first argument of [kprintf]-style functions or to the
++      [kscanf]-style functions.
++
++    - ['d] is the type of parameters for the [scanf]-style functions.
++
++    - ['e] is the type of the receiver function for the [scanf]-style functions.
++
++    - ['f] is the final result type of a formatted input/output function
++      invocation: for the [printf]-style functions, it is typically [unit];
++      for the [scanf]-style functions, it is typically the result type of the
++      receiver function.
++*)
+ type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
+ 
+ type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+@@ -892,14 +958,22 @@
+   ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+   ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
+ (** [format_of_string s] returns a format string read from the string
+-    literal [s]. *)
++    literal [s].
++    Note: [format_of_string] can not convert a string argument that is not a
++    literal. If you need this functionality, use the more general
++    {!Scanf.format_from_string} function.
++*)
+ 
+ val ( ^^ ) :
+       ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+       ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+       ('a, 'b, 'c, 'd, 'g, 'h) format6
+-(** [f1 ^^ f2] catenates formats [f1] and [f2].  The result is a format
+-  that accepts arguments from [f1], then arguments from [f2]. *)
++(** [f1 ^^ f2] catenates format strings [f1] and [f2]. The result is a
++  format string that behaves as the concatenation of format strings [f1] and
++  [f2]: in case of formatted output, it accepts arguments from [f1], then
++  arguments from [f2]; in case of formatted input, it returns results from
++  [f1], then results from [f2].
++*)
+ 
+ 
+ (** {6 Program termination} *)
+@@ -918,13 +992,12 @@
+    termination time. The functions registered with [at_exit]
+    will be called when the program executes {!Pervasives.exit},
+    or terminates, either normally or because of an uncaught exception.
+-   The functions are called in ``last in, first out'' order:
++   The functions are called in 'last in, first out' order:
+    the function most recently added with [at_exit] is called first. *)
+ 
+ (**/**)
+ 
+-
+-(** {6 For system use only, not for the casual user} *)
++(* The following is for system use only. Do not call directly. *)
+ 
+ val valid_float_lexem : string -> string
+ 
+--- obrowser-1.1.1-old/rt/caml/pervasives.ml	2013-06-20 13:50:19.000000000 +0200
++++ obrowser-1.1.1/rt/caml/pervasives.ml	2013-06-20 13:51:53.000000000 +0200
+@@ -1,6 +1,6 @@
+ (***********************************************************************)
+ (*                                                                     *)
+-(*                           Objective Caml                            *)
++(*                                OCaml                                *)
+ (*                                                                     *)
+ (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+ (*                                                                     *)
+@@ -11,8 +11,6 @@
+ (*                                                                     *)
+ (***********************************************************************)
+ 
+-(* $Id: pervasives.ml 9412 2009-11-09 11:42:39Z weis $ *)
+-
+ (* type 'a option = None | Some of 'a *)
+ 
+ (* Exceptions *)
+@@ -24,66 +22,70 @@
+ 
+ exception Exit
+ 
++(* Composition operators *)
++
++external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
++external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
++
+ (* Comparisons *)
+ 
+-external (=) : 'a -> 'a -> bool = "%equal"
+-external (<>) : 'a -> 'a -> bool = "%notequal"
+-external (<) : 'a -> 'a -> bool = "%lessthan"
+-external (>) : 'a -> 'a -> bool = "%greaterthan"
+-external (<=) : 'a -> 'a -> bool = "%lessequal"
+-external (>=) : 'a -> 'a -> bool = "%greaterequal"
+-external compare: 'a -> 'a -> int = "%compare"
++external ( = ) : 'a -> 'a -> bool = "%equal"
++external ( <> ) : 'a -> 'a -> bool = "%notequal"
++external ( < ) : 'a -> 'a -> bool = "%lessthan"
++external ( > ) : 'a -> 'a -> bool = "%greaterthan"
++external ( <= ) : 'a -> 'a -> bool = "%lessequal"
++external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
++external compare : 'a -> 'a -> int = "%compare"
+ 
+ let min x y = if x <= y then x else y
+ let max x y = if x >= y then x else y
+ 
+-external (==) : 'a -> 'a -> bool = "%eq"
+-external (!=) : 'a -> 'a -> bool = "%noteq"
++external ( == ) : 'a -> 'a -> bool = "%eq"
++external ( != ) : 'a -> 'a -> bool = "%noteq"
+ 
+ (* Boolean operations *)
+ 
+ external not : bool -> bool = "%boolnot"
+-external (&) : bool -> bool -> bool = "%sequand"
+-external (&&) : bool -> bool -> bool = "%sequand"
+-external (or) : bool -> bool -> bool = "%sequor"
+-external (||) : bool -> bool -> bool = "%sequor"
++external ( & ) : bool -> bool -> bool = "%sequand"
++external ( && ) : bool -> bool -> bool = "%sequand"
++external ( or ) : bool -> bool -> bool = "%sequor"
++external ( || ) : bool -> bool -> bool = "%sequor"
+ 
+ (* Integer operations *)
+ 
+-external (~-) : int -> int = "%negint"
+-external (~+) : int -> int = "%identity"
++external ( ~- ) : int -> int = "%negint"
++external ( ~+ ) : int -> int = "%identity"
+ external succ : int -> int = "%succint"
+ external pred : int -> int = "%predint"
+-external (+) : int -> int -> int = "%addint"
+-external (-) : int -> int -> int = "%subint"
+-external ( * ) : int -> int -> int = "%mulint"
+-external (/) : int -> int -> int = "%divint"
+-external (mod) : int -> int -> int = "%modint"
++external ( + ) : int -> int -> int = "%addint"
++external ( - ) : int -> int -> int = "%subint"
++external ( *  ) : int -> int -> int = "%mulint"
++external ( / ) : int -> int -> int = "%divint"
++external ( mod ) : int -> int -> int = "%modint"
+ 
+ let abs x = if x >= 0 then x else -x
+ 
+-external (land) : int -> int -> int = "%andint"
+-external (lor) : int -> int -> int = "%orint"
+-external (lxor) : int -> int -> int = "%xorint"
++external ( land ) : int -> int -> int = "%andint"
++external ( lor ) : int -> int -> int = "%orint"
++external ( lxor ) : int -> int -> int = "%xorint"
+ 
+ let lnot x = x lxor (-1)
+ 
+-external (lsl) : int -> int -> int = "%lslint"
+-external (lsr) : int -> int -> int = "%lsrint"
+-external (asr) : int -> int -> int = "%asrint"
++external ( lsl ) : int -> int -> int = "%lslint"
++external ( lsr ) : int -> int -> int = "%lsrint"
++external ( asr ) : int -> int -> int = "%asrint"
+ 
+-let min_int = 1 lsl (if 1 lsl 32 = 1 then 31 else 63) (* obrowser mod: no tag bit*)
++let min_int = 1 lsl (if 1 lsl 31 = 0 then 30 else 62)
+ let max_int = min_int - 1
+ 
+-
+ (* Floating-point operations *)
+ 
+-external (~-.) : float -> float = "%negfloat"
+-external (~+.) : float -> float = "%identity"
+-external (+.) : float -> float -> float = "%addfloat"
+-external (-.) : float -> float -> float = "%subfloat"
++external ( ~-. ) : float -> float = "%negfloat"
++external ( ~+. ) : float -> float = "%identity"
++external ( +. ) : float -> float -> float = "%addfloat"
++external ( -. ) : float -> float -> float = "%subfloat"
+ external ( *. ) : float -> float -> float = "%mulfloat"
+-external (/.) : float -> float -> float = "%divfloat"
++external ( /. ) : float -> float -> float = "%divfloat"
+ external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
+ external exp : float -> float = "caml_exp_float" "exp" "float"
+ external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
+@@ -136,16 +138,16 @@
+   | FP_zero
+   | FP_infinite
+   | FP_nan
+-external classify_float: float -> fpclass = "caml_classify_float"
++external classify_float : float -> fpclass = "caml_classify_float"
+ 
+ (* String operations -- more in module String *)
+ 
+ external string_length : string -> int = "%string_length"
+-external string_create: int -> string = "caml_create_string"
++external string_create : int -> string = "caml_create_string"
+ external string_blit : string -> int -> string -> int -> int -> unit
+                      = "caml_blit_string" "noalloc"
+ 
+-let (^) s1 s2 =
++let ( ^ ) s1 s2 =
+   let l1 = string_length s1 and l2 = string_length s2 in
+   let s = string_create (l1 + l2) in
+   string_blit s1 0 s 0 l1;
+@@ -170,8 +172,8 @@
+ 
+ (* String conversion functions *)
+ 
+-external format_int: string -> int -> string = "caml_format_int"
+-external format_float: string -> float -> string = "caml_format_float"
++external format_int : string -> int -> string = "caml_format_int"
++external format_float : string -> float -> string = "caml_format_float"
+ 
+ let string_of_bool b =
+   if b then "true" else "false"
+@@ -187,7 +189,6 @@
+ 
+ module String = struct
+   external get : string -> int -> char = "%string_safe_get"
+-  external set : string -> int -> char -> unit = "%string_safe_set"
+ end
+ 
+ let valid_float_lexem s =
+@@ -195,7 +196,7 @@
+   let rec loop i =
+     if i >= l then s ^ "." else
+     match s.[i] with
+-    | '0' .. '9' | '-' -> loop (i+1)
++    | '0' .. '9' | '-' -> loop (i + 1)
+     | _ -> s
+   in
+   loop 0
+@@ -207,7 +208,7 @@
+ 
+ (* List operations -- more in module List *)
+ 
+-let rec (@) l1 l2 =
++let rec ( @ ) l1 l2 =
+   match l1 with
+     [] -> l2
+   | hd :: tl -> hd :: (tl @ l2)
+@@ -217,12 +218,13 @@
+ type in_channel
+ type out_channel
+ 
+-let open_descriptor_out _ = failwith "not implemented in obrowser"
+-let open_descriptor_in _ = failwith "not implemented in obrowser"
+-
+-let stdin = Obj.magic 0
+-let stdout = Obj.magic 0
+-let stderr = Obj.magic 0
++external open_descriptor_out : int -> out_channel
++                             = "caml_ml_open_descriptor_out"
++external open_descriptor_in : int -> in_channel = "caml_ml_open_descriptor_in"
++
++let stdin = open_descriptor_in 0
++let stdout = open_descriptor_out 1
++let stderr = open_descriptor_out 2
+ 
+ (* General output functions *)
+ 
+@@ -231,103 +233,184 @@
+   | Open_creat | Open_trunc | Open_excl
+   | Open_binary | Open_text | Open_nonblock
+ 
+-let open_desc _ _ _ = failwith "not implemented in obrowser"
+-let open_out_gen mode perm name = failwith "not implemented in obrowser"
+-let open_out name = failwith "not implemented in obrowser"
+-let open_out_bin name = failwith "not implemented in obrowser"
+-let flush _ =  failwith "not implemented in obrowser"
+-let out_channels_list _ = failwith "not implemented in obrowser"
+-let flush_all () = failwith "not implemented in obrowser"
+-let unsafe_output _ _ _ _ = failwith "not implemented in obrowser"
+-let output_char _ _ = failwith "not implemented in obrowser"
+-let output_string oc s = failwith "not implemented in obrowser"
+-let output oc s ofs len = failwith "not implemented in obrowser"
+-let output_byte _ _ = failwith "not implemented in obrowser"
+-let  output_binary_int _ _ = failwith "not implemented in obrowser"
+-let marshal_to_channel _ _ _ = failwith "not implemented in obrowser"
+-let output_value _ _ = failwith "not implemented in obrowser"
+-let seek_out _ _ = failwith "not implemented in obrowser"
+-let pos_out _ = failwith "not implemented in obrowser"
+-let out_channel_length _ = failwith "not implemented in obrowser"
+-let close_out_channel _ = failwith "not implemented in obrowser"
+-let close_out _ = failwith "not implemented in obrowser"
+-let close_out_noerr _ = failwith "not implemented in obrowser"
+-let set_binary_mode_out _ _  = failwith "not implemented in obrowser"
++external open_desc : string -> open_flag list -> int -> int = "caml_sys_open"
++
++let open_out_gen mode perm name =
++  open_descriptor_out(open_desc name mode perm)
++
++let open_out name =
++  open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o666 name
++
++let open_out_bin name =
++  open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
++
++external flush : out_channel -> unit = "caml_ml_flush"
++
++external out_channels_list : unit -> out_channel list
++                           = "caml_ml_out_channels_list"
++
++let flush_all () =
++  let rec iter = function
++      [] -> ()
++    | a :: l -> (try flush a with _ -> ()); iter l
++  in iter (out_channels_list ())
++
++external unsafe_output : out_channel -> string -> int -> int -> unit
++                       = "caml_ml_output"
++
++external output_char : out_channel -> char -> unit = "caml_ml_output_char"
++
++let output_string oc s =
++  unsafe_output oc s 0 (string_length s)
++
++let output oc s ofs len =
++  if ofs < 0 || len < 0 || ofs > string_length s - len
++  then invalid_arg "output"
++  else unsafe_output oc s ofs len
++
++external output_byte : out_channel -> int -> unit = "caml_ml_output_char"
++external output_binary_int : out_channel -> int -> unit = "caml_ml_output_int"
++
++external marshal_to_channel : out_channel -> 'a -> unit list -> unit
++     = "caml_output_value"
++let output_value chan v = marshal_to_channel chan v []
++
++external seek_out : out_channel -> int -> unit = "caml_ml_seek_out"
++external pos_out : out_channel -> int = "caml_ml_pos_out"
++external out_channel_length : out_channel -> int = "caml_ml_channel_size"
++external close_out_channel : out_channel -> unit = "caml_ml_close_channel"
++let close_out oc = flush oc; close_out_channel oc
++let close_out_noerr oc =
++  (try flush oc with _ -> ());
++  (try close_out_channel oc with _ -> ())
++external set_binary_mode_out : out_channel -> bool -> unit
++                             = "caml_ml_set_binary_mode"
+ 
+ (* General input functions *)
+ 
+-let open_in_gen _ _ _ =  failwith "not implemented in obrowser"
+-let open_in _ =  failwith "not implemented in obrowser"
+-let open_in_bin _ =  failwith "not implemented in obrowser"
+-let input_char _ =  failwith "not implemented in obrowser"
+-let unsafe_input _ _ _ _ = failwith "not implemented in obrowser"
+-let input _ _ _ _ = failwith "not implemented in obrowser"
+-let rec unsafe_really_input _ _ _ _ = failwith "not implemented in obrowser"
+-let really_input _ _ _ _ = failwith "not implemented in obrowser"
+-let input_scan_line _ = failwith "not implemented in obrowser"
+-let input_line _ = failwith "not implemented in obrowser"
+-
+-let input_byte _ = failwith "not implemented in obrowser"
+-let input_binary_int _ = failwith "not implemented in obrowser"
+-let input_value _ = failwith "not implemented in obrowser"
+-let seek_in _ _ = failwith "not implemented in obrowser"
+-let pos_in _ = failwith "not implemented in obrowser"
+-let in_channel_length _ = failwith "not implemented in obrowser"
+-let close_in _ = failwith "not implemented in obrowser"
+-let close_in_noerr _ = failwith "not implemented in obrowser"
+-let set_binary_mode_in _ _ = failwith "not implemented in obrowser"
++let open_in_gen mode perm name =
++  open_descriptor_in(open_desc name mode perm)
+ 
+-(* Output functions on standard output *)
++let open_in name =
++  open_in_gen [Open_rdonly; Open_text] 0 name
++
++let open_in_bin name =
++  open_in_gen [Open_rdonly; Open_binary] 0 name
++
++external input_char : in_channel -> char = "caml_ml_input_char"
++
++external unsafe_input : in_channel -> string -> int -> int -> int
++                      = "caml_ml_input"
++
++let input ic s ofs len =
++  if ofs < 0 || len < 0 || ofs > string_length s - len
++  then invalid_arg "input"
++  else unsafe_input ic s ofs len
++
++let rec unsafe_really_input ic s ofs len =
++  if len <= 0 then () else begin
++    let r = unsafe_input ic s ofs len in
++    if r = 0
++    then raise End_of_file
++    else unsafe_really_input ic s (ofs + r) (len - r)
++  end
+ 
+-external basic_io_write : string -> unit = "caml_basic_io_write"
++let really_input ic s ofs len =
++  if ofs < 0 || len < 0 || ofs > string_length s - len
++  then invalid_arg "really_input"
++  else unsafe_really_input ic s ofs len
++
++external input_scan_line : in_channel -> int = "caml_ml_input_scan_line"
++
++let input_line chan =
++  let rec build_result buf pos = function
++    [] -> buf
++  | hd :: tl ->
++      let len = string_length hd in
++      string_blit hd 0 buf (pos - len) len;
++      build_result buf (pos - len) tl in
++  let rec scan accu len =
++    let n = input_scan_line chan in
++    if n = 0 then begin                   (* n = 0: we are at EOF *)
++      match accu with
++        [] -> raise End_of_file
++      | _  -> build_result (string_create len) len accu
++    end else if n > 0 then begin          (* n > 0: newline found in buffer *)
++      let res = string_create (n - 1) in
++      ignore (unsafe_input chan res 0 (n - 1));
++      ignore (input_char chan);           (* skip the newline *)
++      match accu with
++        [] -> res
++      |  _ -> let len = len + n - 1 in
++              build_result (string_create len) len (res :: accu)
++    end else begin                        (* n < 0: newline not found *)
++      let beg = string_create (-n) in
++      ignore(unsafe_input chan beg 0 (-n));
++      scan (beg :: accu) (len - n)
++    end
++  in scan [] 0
++
++external input_byte : in_channel -> int = "caml_ml_input_char"
++external input_binary_int : in_channel -> int = "caml_ml_input_int"
++external input_value : in_channel -> 'a = "caml_input_value"
++external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
++external pos_in : in_channel -> int = "caml_ml_pos_in"
++external in_channel_length : in_channel -> int = "caml_ml_channel_size"
++external close_in : in_channel -> unit = "caml_ml_close_channel"
++let close_in_noerr ic = (try close_in ic with _ -> ());;
++external set_binary_mode_in : in_channel -> bool -> unit
++                            = "caml_ml_set_binary_mode"
+ 
+-let print_char c = basic_io_write (let s = string_create 1 in s.[0] <- c ; s)
+-let print_string s = basic_io_write s
+-let print_int i = basic_io_write (string_of_int i)
+-let print_float f = basic_io_write (string_of_float f)
++(* Output functions on standard output *)
++
++let print_char c = output_char stdout c
++let print_string s = output_string stdout s
++let print_int i = output_string stdout (string_of_int i)
++let print_float f = output_string stdout (string_of_float f)
+ let print_endline s =
+-  print_string s; print_char '\n'
+-let print_newline () = print_char '\n'
++  output_string stdout s; output_char stdout '\n'; flush stdout
++let print_newline () = output_char stdout '\n'; flush stdout
+ 
+ (* Output functions on standard error *)
+ 
+-let prerr_char c = basic_io_write (let s = string_create 1 in s.[0] <- c ; s)
+-let prerr_string s = basic_io_write s
+-let prerr_int i = basic_io_write (string_of_int i)
+-let prerr_float f = basic_io_write (string_of_float f)
++let prerr_char c = output_char stderr c
++let prerr_string s = output_string stderr s
++let prerr_int i = output_string stderr (string_of_int i)
++let prerr_float f = output_string stderr (string_of_float f)
+ let prerr_endline s =
+-  prerr_string s; prerr_char '\n'
+-let prerr_newline () = prerr_char '\n'
++  output_string stderr s; output_char stderr '\n'; flush stderr
++let prerr_newline () = output_char stderr '\n'; flush stderr
+ 
+ (* Input functions on standard input *)
+ 
+-let read_line () = failwith "not implemented in obrowser"
+-let read_int () = failwith "not implemented in obrowser"
+-let read_float () = failwith "not implemented in obrowser"
++let read_line () = flush stdout; input_line stdin
++let read_int () = int_of_string(read_line())
++let read_float () = float_of_string(read_line())
+ 
+ (* Operations on large files *)
+ 
+ module LargeFile =
+   struct
+-    let seek_out _ _ = failwith "not implemented in obrowser"
+-    let pos_out _ = failwith "not implemented in obrowser"
+-    let out_channel_length _ = failwith "not implemented in obrowser"
+-    let seek_in _ _ = failwith "not implemented in obrowser"
+-    let pos_in _ = failwith "not implemented in obrowser"
+-    let in_channel_length _ = failwith "not implemented in obrowser"
++    external seek_out : out_channel -> int64 -> unit = "caml_ml_seek_out_64"
++    external pos_out : out_channel -> int64 = "caml_ml_pos_out_64"
++    external out_channel_length : out_channel -> int64
++                                = "caml_ml_channel_size_64"
++    external seek_in : in_channel -> int64 -> unit = "caml_ml_seek_in_64"
++    external pos_in : in_channel -> int64 = "caml_ml_pos_in_64"
++    external in_channel_length : in_channel -> int64 = "caml_ml_channel_size_64"
+   end
+ 
+ (* References *)
+ 
+-type 'a ref = { mutable contents: 'a }
+-external ref: 'a -> 'a ref = "%makemutable"
+-external (!): 'a ref -> 'a = "%field0"
+-external (:=): 'a ref -> 'a -> unit = "%setfield0"
+-external incr: int ref -> unit = "%incr"
+-external decr: int ref -> unit = "%decr"
++type 'a ref = { mutable contents : 'a }
++external ref : 'a -> 'a ref = "%makemutable"
++external ( ! ) : 'a ref -> 'a = "%field0"
++external ( := ) : 'a ref -> 'a -> unit = "%setfield0"
++external incr : int ref -> unit = "%incr"
++external decr : int ref -> unit = "%decr"
+ 
+ (* Formats *)
+-type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
++type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
+ 
+ type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+ 
+@@ -345,7 +428,8 @@
+       ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+       ('a, 'b, 'c, 'd, 'g, 'h) format6) =
+   fun fmt1 fmt2 ->
+-    string_to_format (format_to_string fmt1 ^ format_to_string fmt2);;
++    string_to_format (format_to_string fmt1 ^ "%," ^ format_to_string fmt2)
++;;
+ 
+ let string_of_format fmt =
+   let s = format_to_string fmt in
+@@ -358,7 +442,7 @@
+ 
+ external sys_exit : int -> 'a = "caml_sys_exit"
+ 
+-let exit_function = ref (fun () -> ())
++let exit_function = ref flush_all
+ 
+ let at_exit f =
+   let g = !exit_function in
 --- obrowser-1.1.1.orig/rt/caml/printexc.ml	2011-04-20 18:26:44.000000000 +0200
-+++ obrowser-1.1.1/rt/caml/printexc.ml	2013-03-17 17:47:35.000000000 +0100
++++ obrowser-1.1.1/rt/caml/printexc.ml	2013-08-13 15:54:35.000000000 +0200
 @@ -1,6 +1,6 @@
  (***********************************************************************)
  (*                                                                     *)
@@ -361,7 +1074,7 @@
    | None ->
       "(Program not linked with -g, cannot print stack backtrace)\n"
    | Some a ->
-@@ -131,6 +149,17 @@
+@@ -131,8 +149,22 @@
        done;
        Buffer.contents b
  
@@ -379,8 +1092,13 @@
  external record_backtrace: bool -> unit = "caml_record_backtrace"
  external backtrace_status: unit -> bool = "caml_backtrace_status"
  
+ let register_printer fn =
+   printers := fn :: !printers
++
++
++external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
 --- obrowser-1.1.1.orig/rt/caml/printexc.mli	2011-04-20 18:26:44.000000000 +0200
-+++ obrowser-1.1.1/rt/caml/printexc.mli	2013-03-17 17:47:39.000000000 +0100
++++ obrowser-1.1.1/rt/caml/printexc.mli	2013-08-13 15:54:40.000000000 +0200
 @@ -1,6 +1,6 @@
  (***********************************************************************)
  (*                                                                     *)
@@ -389,16 +1107,18 @@
  (*                                                                     *)
  (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
  (*                                                                     *)
-@@ -11,8 +11,6 @@
+@@ -11,9 +11,7 @@
  (*                                                                     *)
  (***********************************************************************)
  
 -(* $Id: printexc.mli 10457 2010-05-21 18:30:12Z doligez $ *)
 -
- (** Facilities for printing exceptions. *)
+-(** Facilities for printing exceptions. *)
++(** Facilities for printing exceptions and inspecting current call stack. *)
  
  val to_string: exn -> string
-@@ -77,5 +75,27 @@
+ (** [Printexc.to_string e] returns a string representation of
+@@ -77,5 +75,40 @@
      in the reverse order of their registrations, until a printer returns
      a [Some s] value (if no such printer exists, the runtime will use a
      generic printer).
@@ -426,3 +1146,16 @@
 +val get_raw_backtrace: unit -> raw_backtrace
 +val print_raw_backtrace: out_channel -> raw_backtrace -> unit
 +val raw_backtrace_to_string: raw_backtrace -> string
++
++
++(** {6 Current call stack} *)
++
++val get_callstack: int -> raw_backtrace
++
++(** [Printexc.get_callstack n] returns a description of the top of the
++    call stack on the current program point (for the current thread),
++    with at most [n] entries.  (Note: this function is not related to
++    exceptions at all, despite being part of the [Printexc] module.)
++
++    @since 4.01.0
++*)

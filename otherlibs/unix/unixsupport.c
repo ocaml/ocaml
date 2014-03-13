@@ -270,6 +270,15 @@ value unix_error_of_code (int errcode)
   return err;
 }
 
+extern int code_of_unix_error (value error)
+{
+  if (Is_block(error)) {
+    return Int_val(Field(error, 0));
+  } else {
+    return error_table[Int_val(error)];
+  }
+}
+
 void unix_error(int errcode, char *cmdname, value cmdarg)
 {
   value res;
@@ -282,7 +291,8 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
     if (unix_error_exn == NULL) {
       unix_error_exn = caml_named_value("Unix.Unix_error");
       if (unix_error_exn == NULL)
-        invalid_argument("Exception Unix.Unix_error not initialized, please link unix.cma");
+        invalid_argument("Exception Unix.Unix_error not initialized,"
+                         " please link unix.cma");
     }
     res = alloc_small(4, 0);
     Field(res, 0) = *unix_error_exn;

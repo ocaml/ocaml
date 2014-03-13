@@ -102,7 +102,8 @@ let test4 () =
 let test5 () =
   if Array.append [| 1;2;3 |] [| 4;5 |] <> [| 1;2;3;4;5 |] then
     print_string "Test5: failed on int arrays\n";
-  if Array.append [| 1.0;2.0;3.0 |] [| 4.0;5.0 |] <> [| 1.0;2.0;3.0;4.0;5.0 |] then
+  if Array.append [| 1.0;2.0;3.0 |] [| 4.0;5.0 |] <> [| 1.0;2.0;3.0;4.0;5.0 |]
+  then
     print_string "Test5: failed on float arrays\n"
 
 let test6 () =

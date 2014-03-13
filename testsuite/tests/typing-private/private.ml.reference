@@ -96,4 +96,13 @@ Error: This variant or record definition does not match that of type M.t
 #         module M3' : sig type t = M'.t val mk : int -> t end
 #     module M : sig type 'a t = private T of 'a end
 #     module M1 : sig type 'a t = 'a M.t = private T of 'a end
+#       module Test : sig type t = private A end
+module Test2 : sig type t = Test.t = private A end
+# val f : Test.t -> Test2.t = <fun>
+# val f : Test2.t -> unit = <fun>
+# Characters 8-15:
+  let a = Test2.A;; (* fail *)
+          ^^^^^^^
+Error: Cannot create values of the private type Test2.t
+# *   module Test2 : sig type t = Test.t = private A end
 # 

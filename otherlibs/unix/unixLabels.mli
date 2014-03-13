@@ -183,7 +183,8 @@ val wait : unit -> int * process_status
    and termination status. *)
 
 val waitpid : mode:wait_flag list -> int -> int * process_status
-(** Same as {!UnixLabels.wait}, but waits for the child process whose pid is given.
+(** Same as {!UnixLabels.wait}, but waits for the child process whose pid
+   is given.
    A pid of [-1] means wait for any child.
    A pid of [0] means wait for any child in the same process group
    as the current process.
@@ -239,6 +240,8 @@ type open_flag = Unix.open_flag =
   | O_SYNC                      (** Writes complete as `Synchronised I/O file integrity completion' *)
   | O_RSYNC                     (** Reads complete as writes (depending on O_SYNC/O_DSYNC) *)
   | O_SHARE_DELETE              (** Windows only: allow the file to be deleted while still open *)
+  | O_CLOEXEC                   (** Set the close-on-exec flag on the
+                                   descriptor returned by {!openfile} *)
 (** The flags to {!UnixLabels.openfile}. *)
 
 

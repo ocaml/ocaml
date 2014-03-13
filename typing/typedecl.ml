@@ -492,6 +492,7 @@ let get_variance ty visited =
 
 let compute_variance env visited vari ty =
   let rec compute_variance_rec vari ty =
+    (* Format.eprintf "%a: %x@." Printtyp.type_expr ty (Obj.magic vari); *)
     let ty = Ctype.repr ty in
     let vari' = get_variance ty visited in
     if Variance.subset vari vari' then () else
@@ -525,7 +526,7 @@ let compute_variance env visited vari ty =
                 if strict then compute_variance_rec full ty else
                 let p1 = inter v vari
                 and n1 = inter v (conjugate vari) in
-                let v1 = 
+                let v1 =
                   union (inter covariant (union p1 (conjugate p1)))
                     (inter (conjugate covariant) (union n1 (conjugate n1)))
                 and weak =
@@ -617,7 +618,7 @@ let compute_variance_type env check (required, loc) decl tyl =
       params required;
     (* Check propagation from constrained parameters *)
     let args = Btype.newgenty (Ttuple params) in
-    let fvl = if check then Ctype.free_variables args else [] in
+    let fvl = Ctype.free_variables args in
     let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
     (* If there are no extra variables there is nothing to do *)
     if fvl = [] then () else
@@ -645,7 +646,7 @@ let compute_variance_type env check (required, loc) decl tyl =
       Btype.backtrack snap;
       let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then
-        if List.memq ty fvl then 
+        if List.memq ty fvl then
           let code = if not i2 then -2 else if c2 || n2 then -1 else -3 in
           raise (Error (loc, Bad_variance (code, (c1,n1,false), (c2,n2,false))))
         else
@@ -693,7 +694,8 @@ let compute_variance_gadt env check (required, loc as rloc) decl
   | Some ret_type ->
       match Ctype.repr ret_type with
       | {desc=Tconstr (path, tyl, _)} ->
-          let tyl = List.map (Ctype.expand_head env) tyl in
+          (* let tyl = List.map (Ctype.expand_head env) tyl in *)
+          let tyl = List.map Ctype.repr tyl in
           let fvl = List.map Ctype.free_variables tyl in
           let _ =
             List.fold_left2
@@ -1067,11 +1069,16 @@ let transl_with_constraint env id row_path orig_decl sdecl =
         let cty = transl_simple_type env no_row sty in
         Some cty, Some cty.ctyp_type
   in
+  let priv =
+    if sdecl.ptype_private = Private then Private else
+    if arity_ok && orig_decl.type_kind <> Type_abstract
+    then orig_decl.type_private else sdecl.ptype_private
+  in
   let decl =
     { type_params = params;
       type_arity = List.length params;
       type_kind = if arity_ok then orig_decl.type_kind else Type_abstract;
-      type_private = sdecl.ptype_private;
+      type_private = priv;
       type_manifest = man;
       type_variance = [];
       type_newtype_level = None;

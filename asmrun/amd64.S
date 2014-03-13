@@ -74,7 +74,7 @@
 #endif
 
 #ifdef WITH_FRAME_POINTERS
-	
+
 #define ENTER_FUNCTION \
         pushq   %rbp; CFI_ADJUST(8); \
         movq    %rsp, %rbp
@@ -89,7 +89,7 @@
         addq    $8, %rsp; CFI_ADJUST (-8);
 
 #endif
-	
+
 #if defined(__PIC__) && !defined(SYS_mingw64)
 
 /* Position-independent operations on global variables. */
@@ -135,7 +135,7 @@
 
 /* Load address of global [label] in register [dst]. */
 #define LEA_VAR(label,dst) \
-	movq	GREL(label)(%rip), dst
+        movq    GREL(label)(%rip), dst
 
 #else
 
@@ -166,7 +166,7 @@
         STORE_VAR(%rax,caml_bottom_of_stack)
 
 #define LEA_VAR(label,dst) \
-	leaq	G(label)(%rip), dst
+        leaq    G(label)(%rip), dst
 #endif
 
 /* Save and restore all callee-save registers on stack.
@@ -273,9 +273,9 @@ LBL(caml_call_gc):
 #endif
     /* Build array of registers, save it into caml_gc_regs */
 #ifdef WITH_FRAME_POINTERS
-	ENTER_FUNCTION		;
+        ENTER_FUNCTION          ;
 #else
-	pushq   %rbp; CFI_ADJUST(8);
+        pushq   %rbp; CFI_ADJUST(8);
 #endif
         pushq   %r11; CFI_ADJUST (8);
         pushq   %r10; CFI_ADJUST (8);
@@ -349,9 +349,9 @@ LBL(caml_call_gc):
         popq    %r10; CFI_ADJUST(-8)
         popq    %r11; CFI_ADJUST(-8)
 #ifdef WITH_FRAME_POINTERS
-	LEAVE_FUNCTION
+        LEAVE_FUNCTION
 #else
-	popq    %rbp; CFI_ADJUST(-8);
+        popq    %rbp; CFI_ADJUST(-8);
 #endif
     /* Return to caller */
         ret
@@ -366,11 +366,11 @@ LBL(caml_alloc1):
         ret
 LBL(100):
         RECORD_STACK_FRAME(0)
-	ENTER_FUNCTION
+        ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8); */
         call    LBL(caml_call_gc)
 /*        addq    $8, %rsp; CFI_ADJUST (-8); */
-	LEAVE_FUNCTION
+        LEAVE_FUNCTION
         jmp     LBL(caml_alloc1)
 CFI_ENDPROC
 
@@ -383,11 +383,11 @@ LBL(caml_alloc2):
         ret
 LBL(101):
         RECORD_STACK_FRAME(0)
-	ENTER_FUNCTION 
+        ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8); */
         call    LBL(caml_call_gc)
 /*        addq    $8, %rsp; CFI_ADJUST (-8); */
-	LEAVE_FUNCTION
+        LEAVE_FUNCTION
         jmp     LBL(caml_alloc2)
 CFI_ENDPROC
 
@@ -400,11 +400,11 @@ LBL(caml_alloc3):
         ret
 LBL(102):
         RECORD_STACK_FRAME(0)
-	ENTER_FUNCTION
+        ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8) */
         call    LBL(caml_call_gc)
 /*        addq    $8, %rsp; CFI_ADJUST (-8) */
-	LEAVE_FUNCTION
+        LEAVE_FUNCTION
         jmp     LBL(caml_alloc3)
 CFI_ENDPROC
 
@@ -420,12 +420,12 @@ LBL(caml_allocN):
 LBL(103):
         RECORD_STACK_FRAME(8)
 #ifdef WITH_FRAME_POINTERS
-	/* Do we need 16-byte alignment here ? */
-	ENTER_FUNCTION
+        /* Do we need 16-byte alignment here ? */
+        ENTER_FUNCTION
 #endif
         call    LBL(caml_call_gc)
 #ifdef WITH_FRAME_POINTERS
-	LEAVE_FUNCTION
+        LEAVE_FUNCTION
 #endif
         popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
         jmp     LBL(caml_allocN)
@@ -535,8 +535,8 @@ LBL(110):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
 #ifdef WITH_FRAME_POINTERS
-	ENTER_FUNCTION
-        movq	8(%rsp), C_ARG_2      /* arg 2: pc of raise */
+        ENTER_FUNCTION
+        movq    8(%rsp), C_ARG_2      /* arg 2: pc of raise */
         leaq    16(%rsp), C_ARG_3     /* arg 3: sp at raise */
 #else
         popq    C_ARG_2               /* arg 2: pc of raise */
@@ -544,7 +544,7 @@ LBL(110):
 #endif
         movq    %r14, C_ARG_4         /* arg 4: sp of handler */
         /* PR#5700: thanks to popq above, stack is now 16-aligned */
-	/* Thanks to ENTER_FUNCTION, stack is now 16-aligned */
+        /* Thanks to ENTER_FUNCTION, stack is now 16-aligned */
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
@@ -566,7 +566,7 @@ CFI_STARTPROC
         ret
 LBL(111):
 #ifdef WITH_FRAME_POINTERS
-        ENTER_FUNCTION		;
+        ENTER_FUNCTION          ;
 #endif
         movq    C_ARG_1, %r12            /* Save exception bucket */
                                       /* arg 1: exception bucket */
@@ -587,7 +587,7 @@ CFI_ENDPROC
 
 /* Raise a Stack_overflow exception on return from segv_handler()
    (in asmrun/signals_asm.c).  On entry, the stack is full, so we
-   cannot record a backtrace. 
+   cannot record a backtrace.
    No CFI information here since this function disrupts the stack
    backtrace anyway. */
 

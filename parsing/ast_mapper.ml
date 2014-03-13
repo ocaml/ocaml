@@ -71,13 +71,18 @@ module T = struct
     | Ptyp_var s -> var ~loc s
     | Ptyp_arrow (lab, t1, t2) -> arrow ~loc lab (sub # typ t1) (sub # typ t2)
     | Ptyp_tuple tyl -> tuple ~loc (List.map (sub # typ) tyl)
-    | Ptyp_constr (lid, tl) -> constr ~loc (map_loc sub lid) (List.map (sub # typ) tl)
+    | Ptyp_constr (lid, tl) ->
+        constr ~loc (map_loc sub lid) (List.map (sub # typ) tl)
     | Ptyp_object l -> object_ ~loc (List.map (core_field_type sub) l)
-    | Ptyp_class (lid, tl, ll) -> class_ ~loc (map_loc sub lid) (List.map (sub # typ) tl) ll
+    | Ptyp_class (lid, tl, ll) ->
+        class_ ~loc (map_loc sub lid) (List.map (sub # typ) tl) ll
     | Ptyp_alias (t, s) -> alias ~loc (sub # typ t) s
-    | Ptyp_variant (rl, b, ll) -> variant ~loc (List.map (row_field sub) rl) b ll
+    | Ptyp_variant (rl, b, ll) ->
+        variant ~loc (List.map (row_field sub) rl) b ll
     | Ptyp_poly (sl, t) -> poly ~loc sl (sub # typ t)
-    | Ptyp_package (lid, l) -> package ~loc (map_loc sub lid) (List.map (map_tuple (map_loc sub) (sub # typ)) l)
+    | Ptyp_package (lid, l) ->
+        package ~loc (map_loc sub lid)
+                (List.map (map_tuple (map_loc sub) (sub # typ)) l)
 
   let map_type_declaration sub td =
     {td with
@@ -92,8 +97,19 @@ module T = struct
 
   let map_type_kind sub = function
     | Ptype_abstract -> Ptype_abstract
-    | Ptype_variant l -> Ptype_variant (List.map (fun (s, tl, t, loc) -> (map_loc sub s, List.map (sub # typ) tl, map_opt (sub # typ) t, sub # location loc)) l)
-    | Ptype_record l -> Ptype_record (List.map (fun (s, flags, t, loc) -> (map_loc sub s, flags, sub # typ t, sub # location loc)) l)
+    | Ptype_variant l ->
+        let f (s, tl, t, loc) =
+          (map_loc sub s,
+           List.map (sub # typ) tl,
+           map_opt (sub # typ) t,
+           sub # location loc)
+        in
+        Ptype_variant (List.map f l)
+    | Ptype_record l ->
+        let f (s, flags, t, loc) =
+          (map_loc sub s, flags, sub # typ t, sub # location loc)
+        in
+        Ptype_record (List.map f l)
 end
 
 module CT = struct
@@ -108,7 +124,8 @@ module CT = struct
   let map sub {pcty_loc = loc; pcty_desc = desc} =
     let loc = sub # location loc in
     match desc with
-    | Pcty_constr (lid, tys) -> constr ~loc (map_loc sub lid) (List.map (sub # typ) tys)
+    | Pcty_constr (lid, tys) ->
+        constr ~loc (map_loc sub lid) (List.map (sub # typ) tys)
     | Pcty_signature x -> signature ~loc (sub # class_signature x)
     | Pcty_fun (lab, t, ct) ->
         fun_ ~loc lab
@@ -155,8 +172,12 @@ module MT = struct
     match desc with
     | Pmty_ident s -> ident ~loc (map_loc sub s)
     | Pmty_signature sg -> signature ~loc (sub # signature sg)
-    | Pmty_functor (s, mt1, mt2) -> functor_ ~loc (map_loc sub s) (sub # module_type mt1) (sub # module_type mt2)
-    | Pmty_with (mt, l) -> with_ ~loc (sub # module_type mt) (List.map (map_tuple (map_loc sub) (sub # with_constraint)) l)
+    | Pmty_functor (s, mt1, mt2) ->
+        functor_ ~loc (map_loc sub s) (sub # module_type mt1)
+                 (sub # module_type mt2)
+    | Pmty_with (mt, l) ->
+        with_ ~loc (sub # module_type mt)
+              (List.map (map_tuple (map_loc sub) (sub # with_constraint)) l)
     | Pmty_typeof me -> typeof_ ~loc (sub # module_expr me)
 
   let map_with_constraint sub = function
@@ -181,17 +202,27 @@ module MT = struct
   let map_signature_item sub {psig_desc = desc; psig_loc = loc} =
     let loc = sub # location loc in
     match desc with
-    | Psig_value (s, vd) -> value ~loc (map_loc sub s) (sub # value_description vd)
-    | Psig_type l -> type_ ~loc (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
-    | Psig_exception (s, ed) -> exception_ ~loc (map_loc sub s) (sub # exception_declaration ed)
-    | Psig_module (s, mt) -> module_ ~loc (map_loc sub s) (sub # module_type mt)
-    | Psig_recmodule l -> rec_module ~loc (List.map (map_tuple (map_loc sub) (sub # module_type)) l)
-    | Psig_modtype (s, Pmodtype_manifest mt) -> modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt))
-    | Psig_modtype (s, Pmodtype_abstract) -> modtype ~loc (map_loc sub s) Pmodtype_abstract
+    | Psig_value (s, vd) ->
+        value ~loc (map_loc sub s) (sub # value_description vd)
+    | Psig_type l ->
+        type_ ~loc
+              (List.map (map_tuple (map_loc sub) (sub # type_declaration)) l)
+    | Psig_exception (s, ed) ->
+        exception_ ~loc (map_loc sub s) (sub # exception_declaration ed)
+    | Psig_module (s, mt) ->
+        module_ ~loc (map_loc sub s) (sub # module_type mt)
+    | Psig_recmodule l ->
+        rec_module ~loc
+                   (List.map (map_tuple (map_loc sub) (sub # module_type)) l)
+    | Psig_modtype (s, Pmodtype_manifest mt) ->
+        modtype ~loc (map_loc sub s) (Pmodtype_manifest  (sub # module_type mt))
+    | Psig_modtype (s, Pmodtype_abstract) ->
+        modtype ~loc (map_loc sub s) Pmodtype_abstract
     | Psig_open (ovf, s) -> open_ ~loc ovf (map_loc sub s)
     | Psig_include mt -> include_ ~loc (sub # module_type mt)
     | Psig_class l -> class_ ~loc (List.map (sub # class_description) l)
-    | Psig_class_type l -> class_type ~loc (List.map (sub # class_type_declaration) l)
+    | Psig_class_type l ->
+        class_type ~loc (List.map (sub # class_type_declaration) l)
 
 end
 

@@ -47,7 +47,10 @@ let _ =
   manyargs_tail2 0 1;
   manyargs_tail3 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
 
-external manyargs_ext: int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int = "manyargs_argv" "manyargs"
+external manyargs_ext:
+  int -> int -> int -> int -> int -> int -> int -> int -> int -> int -> int ->
+    int
+  = "manyargs_argv" "manyargs"
 
 let _ =
   print_string "external:\n"; flush stdout;

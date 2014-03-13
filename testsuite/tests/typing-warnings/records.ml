@@ -138,3 +138,23 @@ class g = f A;; (* ok *)
 
 class f (_ : 'a) (_ : 'a) = object end;;
 class g = f (A : t) A;; (* warn with -principal *)
+
+
+(* PR#5980 *)
+
+module Shadow1 = struct
+  type t = {x: int}
+  module M = struct
+    type s = {x: string}
+  end
+  open M  (* this open is unused, it isn't reported as shadowing 'x' *)
+  let y : t = {x = 0}
+end;;
+module Shadow2 = struct
+  type t = {x: int}
+  module M = struct
+    type s = {x: string}
+  end
+  open M  (* this open shadows label 'x' *)
+  let y = {x = ""}
+end;;

@@ -228,6 +228,19 @@ let compile_recmodule compile_rhs bindings cont =
         bindings))
     cont
 
+(* Extract the list of "value" identifiers bound by a signature.
+   "Value" identifiers are identifiers for signature components that
+   correspond to a run-time value: values, exceptions, modules, classes.
+   Note: manifest primitives do not correspond to a run-time value! *)
+
+let rec bound_value_identifiers = function
+    [] -> []
+  | Sig_value(id, {val_kind = Val_reg}) :: rem ->
+      id :: bound_value_identifiers rem
+  | Sig_exception(id, decl) :: rem -> id :: bound_value_identifiers rem
+  | Sig_module(id, mty, _) :: rem -> id :: bound_value_identifiers rem
+  | Sig_class(id, decl, _) :: rem -> id :: bound_value_identifiers rem
+  | _ :: rem -> bound_value_identifiers rem
 
 (* Compile a module expression *)
 
@@ -338,7 +351,8 @@ and transl_structure fields cc rootpath = function
               transl_structure (List.rev ids @ fields) cc rootpath rem)
   | Tstr_class_type cl_list ->
       transl_structure fields cc rootpath rem
-  | Tstr_include(modl, ids) ->
+  | Tstr_include(modl, sg) ->
+      let ids = bound_value_identifiers sg in
       let mid = Ident.create "include" in
       let rec rebind_idents pos newfields = function
         [] ->
@@ -390,7 +404,7 @@ let rec defined_idents = function
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ defined_idents rem
     | Tstr_class_type cl_list -> defined_idents rem
-    | Tstr_include(modl, ids) -> ids @ defined_idents rem
+    | Tstr_include(modl, sg) -> bound_value_identifiers sg @ defined_idents rem
 
 (* second level idents (module M = struct ... let id = ... end),
    and all sub-levels idents *)
@@ -413,7 +427,7 @@ let rec more_idents = function
     | Tstr_open _ -> more_idents rem
     | Tstr_class cl_list -> more_idents rem
     | Tstr_class_type cl_list -> more_idents rem
-    | Tstr_include(modl, ids) -> more_idents rem
+    | Tstr_include(modl, _) -> more_idents rem
     | Tstr_module(id, _, { mod_desc = Tmod_structure str }) ->
       all_idents str.str_items @ more_idents rem
     | Tstr_module(id, _, _) -> more_idents rem
@@ -440,7 +454,7 @@ and all_idents = function
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type cl_list -> all_idents rem
-    | Tstr_include(modl, ids) -> ids @ all_idents rem
+    | Tstr_include(modl, sg) -> bound_value_identifiers sg @ all_idents rem
     | Tstr_module(id, _, { mod_desc = Tmod_structure str }) ->
       id :: all_idents str.str_items @ all_idents rem
     | Tstr_module(id, _, _) -> id :: all_idents rem
@@ -557,7 +571,8 @@ let transl_store_structure glob map prims str =
                 transl_store rootpath (add_idents false ids subst) rem)
   | Tstr_class_type cl_list ->
       transl_store rootpath subst rem
-  | Tstr_include(modl, ids) ->
+  | Tstr_include(modl, sg) ->
+      let ids = bound_value_identifiers sg in
       let mid = Ident.create "include" in
       let rec store_idents pos = function
         [] -> transl_store rootpath (add_idents true ids subst) rem
@@ -757,7 +772,8 @@ let transl_toplevel_item item =
                 cl_list)
   | Tstr_class_type cl_list ->
       lambda_unit
-  | Tstr_include(modl, ids) ->
+  | Tstr_include(modl, sg) ->
+      let ids = bound_value_identifiers sg in
       let mid = Ident.create "include" in
       let rec set_idents pos = function
         [] ->

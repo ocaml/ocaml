@@ -20,7 +20,8 @@ let compiler_path name =
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to jocamlc *)
 and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to jocamlopt *)
-and c_objs = ref []         (* .o, .a, .obj, .lib, .dll files to pass to mksharedlib and ar *)
+and c_objs = ref []         (* .o, .a, .obj, .lib, .dll files to pass
+                               to mksharedlib and ar *)
 and caml_libs = ref []      (* -cclib to pass to jocamlc, jocamlopt *)
 and caml_opts = ref []      (* -ccopt to pass to jocamlc, jocamlopt *)
 and dynlink = ref supports_shared_libraries
@@ -142,7 +143,8 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
-Usage: jocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|.dll files>\
+Usage: jocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|\
+                              .dll files>\
 \nOptions are:\
 \n  -cclib <lib>   C library passed to jocamlc -a or jocamlopt -a only\
 \n  -ccopt <opt>   C option passed to jocamlc -a or jocamlopt -a only\

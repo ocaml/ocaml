@@ -31,6 +31,7 @@ default:
 	@printf "\n\n########## Starting make at " >>log-${VERSION}
 	@date >>log-${VERSION}
 	${MAKE} platform >>log-${VERSION} 2>&1
+	@printf '\n'
 	mv log-${VERSION} log_${VERSION}_`date -u '+%Y-%m-%d:%H:%M:%S'`
 
 # Platform-dependent subsets: add your own here.
@@ -94,8 +95,9 @@ lablgtk: ${LABLGTK}.tar.gz findlib # TODO: add lablgl
 	  ${MAKE} world && \
 	  ocamlfind remove lablgtk2 && \
 	  ${MAKE} install && \
-	  ln -h -f -s ${PREFIX}/lib/ocaml/site-lib/lablgtk2 \
-	              ${PREFIX}/lib/ocaml/lablgtk2 )
+	  rm -f ${PREFIX}/lib/ocaml/lablgtk2 && \
+	  ln -f -s ${PREFIX}/lib/ocaml/site-lib/lablgtk2 \
+	           ${PREFIX}/lib/ocaml/lablgtk2 )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${LABLGTK} lablgtk
@@ -199,10 +201,10 @@ all: pcre
 
 ## Jane Street Core
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-TYPECONV=type_conv-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.28.00/individual/
+TYPECONV=type_conv-109.28.00
 ${TYPECONV}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.28.00/individual/$@
 typeconv: ${TYPECONV}.tar.gz findlib
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -222,10 +224,10 @@ distclean::
 	rm -f ${TYPECONV}.tar.gz
 all: typeconv
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-VARIANTSLIB=variantslib-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/
+VARIANTSLIB=variantslib-109.15.00
 ${VARIANTSLIB}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/$@
 variantslib: ${VARIANTSLIB}.tar.gz findlib typeconv
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -245,10 +247,10 @@ distclean::
 	rm -f ${VARIANTSLIB}.tar.gz
 all: variantslib
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-PIPEBANG=pipebang-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.28.00/individual/
+PIPEBANG=pipebang-109.28.00
 ${PIPEBANG}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.28.00/individual/$@
 pipebang: ${PIPEBANG}.tar.gz findlib typeconv
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -268,10 +270,10 @@ distclean::
 	rm -f ${PIPEBANG}.tar.gz
 all: pipebang
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-PAOUNIT=pa_ounit-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.36.00/individual/
+PAOUNIT=pa_ounit-109.36.00
 ${PAOUNIT}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.36.00/individual/$@
 paounit: ${PAOUNIT}.tar.gz findlib typeconv
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -291,10 +293,10 @@ distclean::
 	rm -f ${PAOUNIT}.tar.gz
 all: paounit
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-COMPARELIB=comparelib-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/
+COMPARELIB=comparelib-109.15.00
 ${COMPARELIB}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/$@
 comparelib: ${COMPARELIB}.tar.gz findlib typeconv
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -314,10 +316,10 @@ distclean::
 	rm -f ${COMPARELIB}.tar.gz
 all: comparelib
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-BINPROT=bin_prot-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.30.00/individual/
+BINPROT=bin_prot-109.30.00
 ${BINPROT}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.30.00/individual/$@
 binprot: ${BINPROT}.tar.gz findlib typeconv ounit
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -337,10 +339,10 @@ distclean::
 	rm -f ${BINPROT}.tar.gz
 all: binprot
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-FIELDSLIB=fieldslib-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/
+FIELDSLIB=fieldslib-109.15.00
 ${FIELDSLIB}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/$@
 fieldslib: ${FIELDSLIB}.tar.gz findlib typeconv
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -360,10 +362,10 @@ distclean::
 	rm -f ${FIELDSLIB}.tar.gz
 all: fieldslib
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-SEXPLIB=sexplib-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/
+SEXPLIB=sexplib-109.15.00
 ${SEXPLIB}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/$@
 sexplib: ${SEXPLIB}.tar.gz findlib typeconv
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -383,12 +385,59 @@ distclean::
 	rm -f ${SEXPLIB}.tar.gz
 all: sexplib
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-CORE=core-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.35.00/individual/
+HERELIB=herelib-109.35.00
+${HERELIB}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.35.00/individual/$@
+herelib: ${HERELIB}.tar.gz
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${HERELIB}
+	tar zxf ${HERELIB}.tar.gz
+	./Patcher.sh ${HERELIB}
+	( cd ${HERELIB} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure --prefix ${PREFIX} && \
+	  ${MAKE} && \
+	  ocamlfind remove herelib && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${HERELIB} herelib
+distclean::
+	rm -f ${HERELIB}.tar.gz
+all: herelib
+
+# https://ocaml.janestreet.com/ocaml-core/109.37.00/individual/
+COREKERNEL=core_kernel-109.37.00
+${COREKERNEL}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.37.00/individual/$@
+corekernel: ${COREKERNEL}.tar.gz findlib variantslib sexplib fieldslib \
+      binprot comparelib paounit pipebang res ounit herelib
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${COREKERNEL}
+	tar zxf ${COREKERNEL}.tar.gz
+	./Patcher.sh ${COREKERNEL}
+	( cd ${COREKERNEL} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure && \
+	  ocaml setup.ml -build && \
+	  ocamlfind remove core_kernel && \
+	  ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${COREKERNEL} corekernel
+distclean::
+	rm -f ${COREKERNEL}.tar.gz
+all: core
+
+# https://ocaml.janestreet.com/ocaml-core/109.37.00/individual/
+CORE=core-109.37.00
 ${CORE}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.37.00/individual/$@
 core: ${CORE}.tar.gz findlib variantslib sexplib fieldslib binprot comparelib \
-      paounit pipebang res ounit
+      paounit pipebang res ounit corekernel
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${CORE}
@@ -407,10 +456,56 @@ distclean::
 	rm -f ${CORE}.tar.gz
 all: core
 
-# https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/
-COREEXTENDED=core_extended-109.09.00
+# https://ocaml.janestreet.com/ocaml-core/109.27.00/individual/
+CUSTOMPRINTF=custom_printf-109.27.00
+${CUSTOMPRINTF}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.27.00/individual/$@
+customprintf: ${CUSTOMPRINTF}.tar.gz
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${CUSTOMPRINTF}
+	tar zxf ${CUSTOMPRINTF}.tar.gz
+	./Patcher.sh ${CUSTOMPRINTF}
+	( cd ${CUSTOMPRINTF} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure --prefix ${PREFIX} && \
+	  ${MAKE} && \
+	  ocamlfind remove customprintf && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${CUSTOMPRINTF} customprintf
+distclean::
+	rm -f ${CUSTOMPRINTF}.tar.gz
+all: customprintf
+
+# https://ocaml.janestreet.com/ocaml-core/109.36.00/individual/
+TEXTUTILS=textutils-109.36.00
+${TEXTUTILS}.tar.gz:
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.36.00/individual/$@
+textutils: ${TEXTUTILS}.tar.gz
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${TEXTUTILS}
+	tar zxf ${TEXTUTILS}.tar.gz
+	./Patcher.sh ${TEXTUTILS}
+	( cd ${TEXTUTILS} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure --prefix ${PREFIX} && \
+	  ${MAKE} && \
+	  ocamlfind remove textutils && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${TEXTUTILS} textutils
+distclean::
+	rm -f ${TEXTUTILS}.tar.gz
+all: textutils
+
+# https://ocaml.janestreet.com/ocaml-core/109.36.00/individual/
+COREEXTENDED=core_extended-109.36.00
 ${COREEXTENDED}.tar.gz:
-	${WGET} https://ocaml.janestreet.com/ocaml-core/109.09.00/individual/$@
+	${WGET} https://ocaml.janestreet.com/ocaml-core/109.36.00/individual/$@
 coreextended: ${COREEXTENDED}.tar.gz findlib sexplib fieldslib binprot paounit \
               pipebang core pcre res comparelib ounit
 	printf "%s " "$@" >/dev/tty
@@ -642,10 +737,10 @@ distclean::
 	rm -f ${OBROWSER}.tar.gz
 all: obrowser
 
-# http://hevea.inria.fr/
-HEVEA=hevea-2.00
+# http://hevea.inria.fr/old/
+HEVEA=hevea-2.09
 ${HEVEA}.tar.gz:
-	${WGET} http://hevea.inria.fr/distri/$@
+	${WGET} http://hevea.inria.fr/old/$@
 hevea: ${HEVEA}.tar.gz
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -746,6 +841,7 @@ xmllight: ${XMLLIGHT}.zip
 	./Patcher.sh ${XMLLIGHT}
 	( cd ${XMLLIGHT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ${MAKE} xml_parser.ml && \
 	  ${MAKE} all opt && \
 	  ${MAKE} install )
 	echo ${VERSION} >$@
@@ -782,7 +878,7 @@ all: configfile
 XMLM=xmlm-1.1.0
 ${XMLM}.tbz:
 	${WGET} http://erratique.ch/software/xmlm/releases/$@
-xmlm: ${XMLM}.tbz
+xmlm: ${XMLM}.tbz findlib
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${XMLM}
@@ -790,7 +886,7 @@ xmlm: ${XMLM}.tbz
 	./Patcher.sh ${XMLM} oasis-common.patch
 	( cd ${XMLM} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
-	  ocaml setup.ml -configure && \
+	  ocaml setup.ml -configure --prefix ${PREFIX} && \
 	  ocaml setup.ml -build && \
 	  ocamlfind remove xmlm && \
 	  ocaml setup.ml -install )
@@ -1015,6 +1111,28 @@ clean::
 distclean::
 	rm -f ${OCAMLNET}.tar.gz
 all: ocamlnet
+
+# http://zoggy.github.io/ocamlrss/
+RSS=ocamlrss-2.2.2
+${RSS}.tar.gz:
+	${WGET} http://zoggy.github.io/ocamlrss/$@
+rss: ${RSS}.tar.gz xmlm ocamlnet
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${RSS}
+	tar zxf ${RSS}.tar.gz
+	./Patcher.sh ${RSS}
+	( cd ${RSS} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ${MAKE} all && \
+	  ocamlfind remove ocaml-rss && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${RSS} rss
+distclean::
+	rm -f ${RSS}.tar.gz
+all: rss
 
 # http://code.google.com/p/ocaml-extlib/
 EXTLIB=extlib-1.5.2
@@ -1378,13 +1496,13 @@ camlpdf: ${CAMLPDF}.tar.bz2
 	  ${MAKE} install )
 	echo ${VERSION} >$@
 clean::
-	rm -rf ${CAMLPDF} foo
+	rm -rf ${CAMLPDF} camlpdf
 distclean::
 	rm -f ${CAMLPDF}.tar.gz
 all: camlpdf
 
 # http://pauillac.inria.fr/~ddr/camlp5/
-CAMLP5=camlp5-6.08
+CAMLP5=camlp5-6.10
 ${CAMLP5}.tgz:
 	${WGET} http://pauillac.inria.fr/~ddr/camlp5/distrib/src/$@
 camlp5: ${CAMLP5}.tgz
@@ -1536,7 +1654,7 @@ foo: ${FOO}.tar.gz
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  sh ./configure --prefix ${PREFIX} && \
 	  ${MAKE} && \
-	  ocamlfind remove foo \
+	  ocamlfind remove foo && \
 	  ${MAKE} install )
 	echo ${VERSION} >$@
 xxclean::

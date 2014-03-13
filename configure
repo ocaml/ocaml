@@ -46,6 +46,7 @@ partialld="ld -r"
 ocamlc=''
 withcamlp4=""
 with_frame_pointers=false
+with_cfi=true
 
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
@@ -125,6 +126,8 @@ while : ; do
         withcamlp4="";;
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
+    -no-cfi|--no-cfi)
+        with_cfi=false;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -548,9 +551,9 @@ if $int64_native; then
            echo "#undef ARCH_ALIGN_INT64" >> m.h;;
         1) echo "64-bit integers must be doubleword-aligned."
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
-        *) echo "Something went wrong during alignment determination for 64-bit integers."
-           echo "I'm going to assume this architecture has alignment constraints."
-           echo "That's a safe bet: OCaml will work even if"
+        *) echo "Something went wrong during alignment determination for 64-bit"
+           echo "integers. I'm going to assume this architecture has alignment"
+           echo "constraints. That's a safe bet: OCaml will work even if"
            echo "this architecture has actually no alignment constraints."
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
       esac
@@ -563,11 +566,14 @@ fi
 
 sh ./runtest divmod.c
 case $? in
-  0) echo "Native division and modulus have round-towards-zero semantics, will use them."
+  0) echo "Native division and modulus have round-towards-zero semantics,"
+     echo "will use them."
      echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
-  1) echo "Native division and modulus do not have round-towards-zero semantics, will use software emulation."
+  1) echo "Native division and modulus do not have round-towards-zero"
+     echo "semantics, will use software emulation."
      echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
-  *) echo "Something went wrong while checking native division and modulus, please report it."
+  *) echo "Something went wrong while checking native division and modulus,"
+     echo "please report it at http://http://caml.inria.fr/mantis/"
      echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
 esac
 
@@ -587,7 +593,7 @@ if test $withsharedlibs = "yes"; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -738,9 +744,10 @@ case "$host" in
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
   powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
+  powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
-                                if $arch64; then model=ppc64; else model=ppc; fi;;
+                                if $arch64;then model=ppc64;else model=ppc;fi;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
   arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
@@ -815,7 +822,7 @@ case "$arch,$model,$system" in
                     aspp='gcc -c';;
   power,*,elf)      as='as -u -m ppc'
                     aspp='gcc -c';;
-  power,*,bsd)      as='as'
+  power,*,bsd*)     as='as'
                     aspp='gcc -c';;
   power,*,rhapsody) as="as -arch $model"
                     aspp="$bytecc -c";;
@@ -1627,7 +1634,9 @@ asm_cfi_supported=false
 
 export as aspp
 
-if sh ./tryassemble cfi.S; then
+if ! $with_cfi; then
+  echo "CFI support: disabled by command-line option -no-cfi"
+elif sh ./tryassemble cfi.S; then
   echo "#define ASM_CFI_SUPPORTED" >> m.h
   asm_cfi_supported=true
   echo "Assembler supports CFI"
@@ -1636,14 +1645,14 @@ else
 fi
 
 if test "$with_frame_pointers" = "true"; then
-  nativecccompopts="$nativecccompopts -g"
-  nativecclinkopts="$nativecclinkopts -g"
-  echo "#define WITH_FRAME_POINTERS" >> m.h
-
-  case "$cc" in
-    gcc*)
-      bytecccompopts="$bytecccompopts -fno-omit-frame-pointer"
-      nativecccompopts="$nativecccompopts -fno-omit-frame-pointer";;
+  case "$host,$cc" in
+    x86_64-*-linux*,gcc*)
+       nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
+       bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
+       nativecclinkopts="$nativecclinkopts -g"
+       echo "#define WITH_FRAME_POINTERS" >> m.h
+       ;;
+    *)  echo "Unsupported architecture with frame pointers" 1>&2; exit 2;;
   esac
 
 fi

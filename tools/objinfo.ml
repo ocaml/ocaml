@@ -268,7 +268,8 @@ let dump_obj filename =
   end
 
 let arg_list = []
-let arg_usage = Printf.sprintf "%s [OPTIONS] FILES : give information on files" Sys.argv.(0)
+let arg_usage =
+   Printf.sprintf "%s [OPTIONS] FILES : give information on files" Sys.argv.(0)
 
 let main() =
   Arg.parse arg_list dump_obj arg_usage;

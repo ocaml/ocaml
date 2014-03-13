@@ -15,7 +15,6 @@
 module StringSet =
   Set.Make(struct type t = string let compare (x:t) y = compare x y end)
 
-open Location
 open Misc
 open Cmm
 open Arch
@@ -57,7 +56,7 @@ let supports_backtraces =
 
 let emit_symbol =
   match Config.system with
-  | "elf" | "bsd" -> (fun s -> Emitaux.emit_symbol '.' s)
+  | "elf" | "bsd" | "bsd_elf" -> (fun s -> Emitaux.emit_symbol '.' s)
   | "rhapsody"    -> (fun s -> emit_char '_'; Emitaux.emit_symbol '$' s)
   | _ -> assert false
 
@@ -65,7 +64,7 @@ let emit_symbol =
 
 let label_prefix =
   match Config.system with
-  | "elf" | "bsd" -> ".L"
+  | "elf" | "bsd" | "bsd_elf" -> ".L"
   | "rhapsody" -> "L"
   | _ -> assert false
 
@@ -79,19 +78,19 @@ let emit_data_label lbl =
 
 let data_space =
   match Config.system with
-  | "elf" | "bsd" -> "	.section \".data\"\n"
+  | "elf" | "bsd" | "bsd_elf" -> "	.section \".data\"\n"
   | "rhapsody"    -> "	.data\n"
   | _ -> assert false
 
 let code_space =
   match Config.system with
-  | "elf" | "bsd" -> "	.section \".text\"\n"
+  | "elf" | "bsd" | "bsd_elf" -> "	.section \".text\"\n"
   | "rhapsody"    -> "	.text\n"
   | _ -> assert false
 
 let rodata_space =
   match Config.system with
-  | "elf" | "bsd" -> "	.section \".rodata\"\n"
+  | "elf" | "bsd" | "bsd_elf" -> "	.section \".rodata\"\n"
   | "rhapsody"    -> "	.const\n"
   | _ -> assert false
 
@@ -159,7 +158,7 @@ let is_native_immediate n =
 
 let emit_upper emit_fun arg =
   match Config.system with
-  | "elf" | "bsd" ->
+  | "elf" | "bsd" | "bsd_elf" ->
       emit_fun arg; emit_string "@ha"
   | "rhapsody" ->
       emit_string "ha16("; emit_fun arg; emit_string ")"
@@ -167,7 +166,7 @@ let emit_upper emit_fun arg =
 
 let emit_lower emit_fun arg =
   match Config.system with
-  | "elf" | "bsd" ->
+  | "elf" | "bsd" | "bsd_elf" ->
       emit_fun arg; emit_string "@l"
   | "rhapsody" ->
       emit_string "lo16("; emit_fun arg; emit_string ")"
@@ -820,7 +819,7 @@ let rec emit_all i =
   match i with
     {desc = Lend} -> ()
   | {next = {desc = (Lcondbranch(_, _) | Lcondbranch3(_, _, _))}}
-    when is_simple_instr i & no_interference i.res i.next.arg ->
+    when is_simple_instr i && no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | _ ->
@@ -845,7 +844,7 @@ let fundecl fundecl =
   else
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   begin match Config.system with
-  | "elf" | "bsd" ->
+  | "elf" | "bsd" | "bsd_elf" ->
       `	.type	{emit_symbol fundecl.fun_name}, @function\n`
   | _ -> ()
   end;
@@ -890,8 +889,11 @@ let fundecl fundecl =
 
 let declare_global_data s =
   `	.globl	{emit_symbol s}\n`;
-  if Config.system = "elf" || Config.system = "bsd" then
+  match Config.system with
+  | "elf" | "bsd" | "bsd_elf" ->
     `	.type	{emit_symbol s}, @object\n`
+  | "rhapsody" -> ()
+  | _ -> assert false
 
 let emit_item = function
     Cglobal_symbol s ->

@@ -36,7 +36,7 @@ val failwith : string -> 'a
 
 exception Exit
 (** The [Exit] exception is not raised by any library function.  It is
-    provided for use in your programs.*)
+    provided for use in your programs. *)
 
 
 (** {6 Comparisons} *)
@@ -138,7 +138,7 @@ external ( or ) : bool -> bool -> bool = "%sequor"
 
 (** {6 Composition operators} *)
 
-external (|>) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 (** Reverse-application operator: [x |> f |> g] is exactly equivalent
  to [g (f (x))].
    @since 4.01
@@ -625,8 +625,7 @@ val open_out : string -> out_channel
 (** Open the named file for writing, and return a new output channel
    on that file, positionned at the beginning of the file. The
    file is truncated to zero length if it already exists. It
-   is created if it does not already exists.
-   Raise [Sys_error] if the file could not be opened. *)
+   is created if it does not already exists. *)
 
 val open_out_bin : string -> out_channel
 (** Same as {!Pervasives.open_out}, but the file is opened in binary mode,
@@ -726,8 +725,7 @@ val set_binary_mode_out : out_channel -> bool -> unit
 
 val open_in : string -> in_channel
 (** Open the named file for reading, and return a new input channel
-   on that file, positionned at the beginning of the file.
-   Raise [Sys_error] if the file could not be opened. *)
+   on that file, positionned at the beginning of the file. *)
 
 val open_in_bin : string -> in_channel
 (** Same as {!Pervasives.open_in}, but the file is opened in binary mode,
@@ -816,8 +814,7 @@ val close_in : in_channel -> unit
 (** Close the given channel.  Input functions raise a [Sys_error]
   exception when they are applied to a closed input channel,
   except [close_in], which does nothing when applied to an already
-  closed channel.  Note that [close_in] may raise [Sys_error] if
-  the operating system signals an error. *)
+  closed channel. *)
 
 val close_in_noerr : in_channel -> unit
 (** Same as [close_in], but ignore all errors. *)

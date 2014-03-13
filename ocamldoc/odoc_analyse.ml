@@ -146,7 +146,7 @@ let process_error exn =
       Location.print_error ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->
       Location.print_error_cur_file ppf;
-      fprintf ppf "Error-enabled warnings (%d occurrences)" n
+      fprintf ppf "Some fatal warnings were triggered (%d occurrences)" n
   | x ->
       fprintf ppf "@]";
       fprintf ppf

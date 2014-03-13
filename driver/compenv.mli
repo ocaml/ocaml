@@ -2,9 +2,9 @@
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
-(*      Fabrice Le Fessant, équipe Gallium, INRIA Rocquencourt         *)
+(*      Fabrice Le Fessant, EPI Gallium, INRIA Paris-Rocquencourt      *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -33,4 +33,4 @@ val get_objfiles : unit -> string list
 type readenv_position =
   Before_args | Before_compile | Before_link
 
-val readenv : readenv_position -> unit
+val readenv : Format.formatter -> readenv_position -> unit

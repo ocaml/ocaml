@@ -75,7 +75,10 @@ let add_type_declaration bv td =
   let add_tkind = function
     Ptype_abstract -> ()
   | Ptype_variant cstrs ->
-      List.iter (fun (c, args, rty, _) -> List.iter (add_type bv) args; Misc.may (add_type bv) rty) cstrs
+      List.iter (fun (c, args, rty, _) ->
+                   List.iter (add_type bv) args;
+                   Misc.may (add_type bv) rty)
+                cstrs
   | Ptype_record lbls ->
       List.iter (fun (l, mut, ty, _) -> add_type bv ty) lbls in
   add_tkind td.ptype_kind
@@ -234,7 +237,9 @@ and add_sig_item bv item =
   | Psig_module(id, mty) ->
       add_modtype bv mty; StringSet.add id.txt bv
   | Psig_recmodule decls ->
-      let bv' = List.fold_right StringSet.add (List.map (fun (x,_) -> x.txt) decls) bv in
+      let bv' =
+         List.fold_right StringSet.add (List.map (fun (x,_) -> x.txt) decls) bv
+      in
       List.iter (fun (id, mty) -> add_modtype bv' mty) decls;
       bv'
   | Psig_modtype(id,mtyd) ->

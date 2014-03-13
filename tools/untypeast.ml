@@ -153,10 +153,12 @@ and untype_exception_declaration decl =
 and untype_pattern pat =
   let desc =
   match pat with
-      { pat_extra=[Tpat_unpack, _]; pat_desc = Tpat_var (_,name); _ } -> Ppat_unpack name
+      { pat_extra=[Tpat_unpack, _]; pat_desc = Tpat_var (_,name); _ } ->
+        Ppat_unpack name
     | { pat_extra=[Tpat_type (_path, lid), _]; _ } -> Ppat_type lid
     | { pat_extra= (Tpat_constraint ct, _) :: rem; _ } ->
-        Ppat_constraint (untype_pattern { pat with pat_extra=rem }, untype_core_type ct)
+        Ppat_constraint (untype_pattern { pat with pat_extra=rem },
+                         untype_core_type ct)
     | _ ->
     match pat.pat_desc with
       Tpat_any -> Ppat_any
@@ -177,6 +179,7 @@ and untype_pattern pat =
         Ppat_construct (lid,
           (match args with
               [] -> None
+            | [arg] -> Some (untype_pattern arg)
             | args -> Some
                   { ppat_desc = Ppat_tuple (List.map untype_pattern args);
                   ppat_loc = pat.pat_loc; }
@@ -356,7 +359,7 @@ and untype_signature_item item =
     | Tsig_modtype (_id, name, mdecl) ->
         Psig_modtype (name, untype_modtype_declaration mdecl)
     | Tsig_open (ovf, _path, lid) -> Psig_open (ovf, lid)
-    | Tsig_include (mty, _lid) -> Psig_include (untype_module_type mty)
+    | Tsig_include (mty, _) -> Psig_include (untype_module_type mty)
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->
@@ -448,7 +451,8 @@ and untype_module_expr mexpr =
 
 and untype_class_expr cexpr =
   let desc = match cexpr.cl_desc with
-    | Tcl_constraint ( { cl_desc = Tcl_ident (_path, lid, tyl); _ }, None, _, _, _ ) ->
+    | Tcl_constraint ( { cl_desc = Tcl_ident (_path, lid, tyl); _ },
+                       None, _, _, _ ) ->
         Pcl_constr (lid,
           List.map untype_core_type tyl)
     | Tcl_structure clstr -> Pcl_structure (untype_class_structure clstr)

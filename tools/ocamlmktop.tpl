@@ -11,4 +11,5 @@
 #                                                                       #
 #########################################################################
 
-exec %%BINDIR%%/jocamlc -I +compiler-libs -linkall ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma "$@" topstart.cmo
+exec %%BINDIR%%/jocamlc -I +compiler-libs -linkall ocamlcommon.cma \
+                       ocamlbytecomp.cma ocamltoplevel.cma "$@" topstart.cmo

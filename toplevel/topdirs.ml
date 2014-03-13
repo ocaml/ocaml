@@ -93,7 +93,9 @@ let load_compunit ic filename ppf compunit =
   end
 
 let rec load_file recursive ppf name =
-  let filename = try Some (find_in_path !Config.load_path name) with Not_found -> None in
+  let filename =
+    try Some (find_in_path !Config.load_path name) with Not_found -> None
+  in
   match filename with
   | None -> fprintf ppf "Cannot find file %s.@." name; false
   | Some filename ->
@@ -117,11 +119,16 @@ and really_load_file recursive ppf name filename ic =
       if recursive then
         List.iter
           (function
-            | (Reloc_getglobal id, _) when not (Symtable.is_global_defined id) ->
+            | (Reloc_getglobal id, _)
+              when not (Symtable.is_global_defined id) ->
                 let file = Ident.name id ^ ".cmo" in
-                begin match try Some (Misc.find_in_path_uncap !Config.load_path file) with Not_found -> None with
+                begin match try Some (Misc.find_in_path_uncap !Config.load_path
+                                        file)
+                      with Not_found -> None
+                with
                 | None -> ()
-                | Some file -> if not (load_file recursive ppf file) then raise Load_failed
+                | Some file ->
+                    if not (load_file recursive ppf file) then raise Load_failed
                 end
             | _ -> ()
           )
@@ -157,7 +164,8 @@ let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
 
 let dir_load_rec ppf name = ignore (load_file true ppf name)
 
-let _ = Hashtbl.add directive_table "load_rec" (Directive_string (dir_load_rec std_out))
+let _ = Hashtbl.add directive_table "load_rec"
+                    (Directive_string (dir_load_rec std_out))
 
 let load_file = load_file false
 
@@ -167,7 +175,8 @@ let dir_use ppf name = ignore(Toploop.use_file ppf name)
 let dir_mod_use ppf name = ignore(Toploop.mod_use_file ppf name)
 
 let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_out))
-let _ = Hashtbl.add directive_table "mod_use" (Directive_string (dir_mod_use std_out))
+let _ = Hashtbl.add directive_table "mod_use"
+                    (Directive_string (dir_mod_use std_out))
 
 (* Install, remove a printer *)
 

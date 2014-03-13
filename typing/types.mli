@@ -166,7 +166,7 @@ module Variance : sig
   val conjugate : t -> t                (* exchange positive and negative *)
   val get_upper : t -> bool * bool                  (* may_pos, may_neg   *)
   val get_lower : t -> bool * bool * bool * bool    (* pos, neg, inv, inj *)
-end 
+end
 
 (* Type definitions *)
 

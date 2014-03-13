@@ -40,7 +40,9 @@ let need_symbol sym =
   with _ -> true
 
 let dll_run dll entry =
-  match (try Result (Obj.magic (ndl_run_toplevel dll entry)) with exn -> Exception exn) with
+  match (try Result (Obj.magic (ndl_run_toplevel dll entry))
+         with exn -> Exception exn)
+  with
     | Exception _ as r -> r
     | Result r ->
         match Obj.magic r with

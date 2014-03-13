@@ -765,14 +765,6 @@ camlp4opt:
 #	./build/ocamlbuild-byte-only.sh
 #endif
 
-#ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot
-#	./build/ocamlbuild-native-only.sh
-#ocamlbuildlib.native: ocamlopt ocamlbuild-mixed-boot
-#	./build/ocamlbuildlib-native-only.sh
-#
-#ocamlbuild-mixed-boot: ocamlc
-#	./build/mixed-boot.sh
-#	touch ocamlbuild-mixed-boot
 ocamlbuild.byte:
 ocamlbuild.native:
 

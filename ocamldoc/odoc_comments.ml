@@ -90,7 +90,7 @@ module Info_retriever =
                with
                  Failure s ->
                    incr Odoc_global.errors ;
-                   prerr_endline (file^" : "^s^"\n");
+                    Printf.eprintf "File %S, line %d:\n%s\n%!" file (!Odoc_lexer.line_number + 1) s;
                    (0, None)
                | Odoc_text.Text_syntax (l, c, s) ->
                    incr Odoc_global.errors ;

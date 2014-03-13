@@ -156,7 +156,8 @@ let print_info pp prev_loc ti =
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
       Format.pp_print_string Format.str_formatter "  ";
-      Printtyp.wrap_printing_env env (fun () -> Printtyp.type_sch Format.str_formatter typ);
+      Printtyp.wrap_printing_env env
+                       (fun () -> Printtyp.type_sch Format.str_formatter typ);
       Format.pp_print_newline Format.str_formatter ();
       let s = Format.flush_str_formatter () in
       output_string pp s;

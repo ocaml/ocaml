@@ -9,11 +9,9 @@ CONTEXT
   the name 'INSTALL_OCAML'. Here we focus on differences with Objective
   Caml installation.
 
-
 * They are the same as the ones of Objective Caml,
 
 * plus: the POSIX threads library 'phreads' is required.
-
 
 INSTALLATION INSTRUCTIONS
 
@@ -46,6 +44,7 @@ Added options.
 -ocamllib <dir>
    The Objective Caml library is <dir>. No version check is performed. Use
    this option at your own risk.
+
 
 2- From the top directory, do:
 
