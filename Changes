@@ -188,6 +188,9 @@ Standard library:
   (Xavier Leroy)
 - infix application operators |> and @@ in Pervasives
   (Fabrice Le Fessant)
+- PR#6176: new Format.asprintf function with a %a formatter
+  compatible with Format.fprintf (unlike Format.sprintf)
+  (Pierre Weis)
 
 Other libraries:
 - PR#5568: add O_CLOEXEC flag to Unix.openfile, so that the returned
