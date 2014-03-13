@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_types.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 type ref_kind =
     RK_module
@@ -48,6 +47,7 @@ and text_element =
   | Subscript of text
   | Module_list of string list
   | Index_list
+  | Custom of string * text
   | Target of string * string
 
 and text = text_element list

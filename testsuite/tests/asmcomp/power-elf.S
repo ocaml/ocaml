@@ -10,8 +10,6 @@
 /*                                                                   */
 /*********************************************************************/
 
-/* $Id: power-elf.S 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Save and restore all callee-save registers */
 /* GPR 14 at sp+16 ... GPR 31 at sp+84
    FPR 14 at sp+92 ... FPR 31 at sp+228 */

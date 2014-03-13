@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_dag2html.ml 7197 2005-10-27 11:14:16Z maranget $ *)
 
 (** The types and functions to create a html table representing a dag. Thanks to Daniel De Rauglaudre. *)
 
@@ -349,7 +348,7 @@ let rec get_block t i j =
 ;;
 
 let group_by_common_children d list =
-  let module O = struct type t = idag;; let compare = compare;; end
+  let module O = struct type t = idag;; let compare (x:t) y = compare x y;; end
   in
   let module S = Set.Make (O)
   in
@@ -605,7 +604,7 @@ let group_children t =
    if A and B have common children *)
 
 let group_span_by_common_children d t =
-  let module O = struct type t = idag;; let compare = compare;; end
+  let module O = struct type t = idag;; let compare (x:t) y = compare x y;; end
   in
   let module S = Set.Make (O)
   in

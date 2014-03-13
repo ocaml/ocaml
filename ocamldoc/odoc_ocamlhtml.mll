@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_ocamlhtml.mll 10519 2010-06-04 19:19:34Z maranget $ *)
-
 (** Generation of html code to display OCaml code. *)
 open Lexing
 

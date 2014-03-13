@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: errors.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* WARNING: if you change something in this file, you must look at
    opterrors.ml and ocamldoc/odoc_analyse.ml
    to see if you need to make the same changes there.
@@ -28,9 +26,8 @@ let report_error ppf exn =
       Lexer.report_error ppf err
   | Syntaxerr.Error err ->
       Syntaxerr.report_error ppf err
-  | Pparse.Error ->
-      Location.print_error_cur_file ppf;
-      fprintf ppf "Preprocessor error"
+  | Pparse.Error err ->
+      Pparse.report_error ppf err
   | Env.Error err ->
       Location.print_error_cur_file ppf;
       Env.report_error ppf err
@@ -42,19 +39,19 @@ let report_error ppf exn =
       fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
        have the same hash value.@ Change one of them." l l'
-  | Typecore.Error(loc, err) ->
-      Location.print_error ppf loc; Typecore.report_error ppf err
-  | Typetexp.Error(loc, err) ->
-      Location.print_error ppf loc; Typetexp.report_error ppf err
+  | Typecore.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typecore.report_error env ppf err
+  | Typetexp.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typetexp.report_error env ppf err
   | Typedecl.Error(loc, err) ->
       Location.print_error ppf loc; Typedecl.report_error ppf err
-  | Typeclass.Error(loc, err) ->
-      Location.print_error ppf loc; Typeclass.report_error ppf err
+  | Typeclass.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typeclass.report_error env ppf err
   | Includemod.Error err ->
       Location.print_error_cur_file ppf;
       Includemod.report_error ppf err
-  | Typemod.Error(loc, err) ->
-      Location.print_error ppf loc; Typemod.report_error ppf err
+  | Typemod.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typemod.report_error env ppf err
   | Translcore.Error(loc, err) ->
       Location.print_error ppf loc; Translcore.report_error ppf err
   | Translclass.Error(loc, err) ->

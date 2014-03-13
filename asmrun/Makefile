@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile 12959 2012-09-27 13:12:51Z maranget $
-
 include ../config/Makefile
 
 CC=$(NATIVECC)
@@ -172,8 +170,11 @@ clean::
 .SUFFIXES: .S .d.o .p.o
 
 .S.o:
-	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.S || \
-	{ echo "If your assembler produced syntax errors, it is probably unhappy with the"; echo "preprocessor. Check your assembler, or try producing $*.o by hand."; exit 2; }
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S || \
+	{ echo "If your assembler produced syntax errors, it is probably";\
+          echo "unhappy with the preprocessor. Check your assembler, or";\
+          echo "try producing $*.o by hand.";\
+          exit 2; }
 
 .S.p.o:
 	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.S

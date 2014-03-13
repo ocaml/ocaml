@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: unix.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Interface to the Unix system *)
 
 
@@ -189,7 +187,8 @@ val waitpid : wait_flag list -> int -> int * process_status
    as the current process.
    Negative pid arguments represent process groups.
    The list of options indicates whether [waitpid] should return
-   immediately without waiting, or also report stopped children. *)
+   immediately without waiting, and whether it should report stopped
+   children. *)
 
 val system : string -> process_status
 (** Execute the given command, wait until it terminates, and return
@@ -307,7 +306,8 @@ type seek_command =
 
 
 val lseek : file_descr -> int -> seek_command -> int
-(** Set the current position for a file descriptor *)
+(** Set the current position for a file descriptor, and return the resulting
+    offset (from the beginning of the file). *)
 
 val truncate : string -> int -> unit
 (** Truncates the named file to the given size. *)

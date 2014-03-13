@@ -10,8 +10,6 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id: inf-caml.el 12858 2012-08-10 14:45:51Z maranget $ *)
-
 ;;; inf-caml.el --- run the OCaml toplevel in an Emacs buffer
 
 ;; Xavier Leroy, july 1993.
@@ -282,7 +280,8 @@ should lies."
                        (column (-   (match-end 3) (match-beginning 3)))
                        (width (-   (match-end 2) (match-end 3))))
                    (if (string-match  "^\\(.*\\)[<]EOF[>]$" expr)
-                       (setq expr (substring expr (match-beginning 1) (match-end 1))))
+                       (setq expr (substring expr (match-beginning 1)
+                                             (match-end 1))))
                    (switch-to-buffer buf)
                    (re-search-backward
                     (concat "^" (regexp-quote expr) "$")

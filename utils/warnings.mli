@@ -10,14 +10,12 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Format
 
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated                              (*  3 *)
+  | Deprecated of string                    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted                          (*  6 *)
@@ -44,16 +42,21 @@ type t =
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
-  | Duplicate_definitions of string * string * string * string (*30 *)
+  | Duplicate_definitions of string * string * string * string (* 30 *)
   | Multiple_definition of string * string * string (* 31 *)
   | Unused_value_declaration of string      (* 32 *)
   | Unused_open of string                   (* 33 *)
   | Unused_type_declaration of string       (* 34 *)
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
-  | Unused_constructor of string * bool * bool  (* 37 *)
+  | Unused_constructor of string * bool * bool (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
+  | Name_out_of_scope of string * string list * bool   (* 40 *)
+  | Ambiguous_name of string list * string list * bool (* 41 *)
+  | Disambiguated_name of string            (* 42 *)
+  | Nonoptional_label of string             (* 43 *)
+  | Open_shadow_identifier of string * string (* 44 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

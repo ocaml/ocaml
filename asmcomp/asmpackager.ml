@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: asmpackager.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* "Package" a set of .cmx/.o files into one .cmx/.o file having the
    original compilation units as sub-modules. *)
 
@@ -19,7 +17,7 @@ open Misc
 open Cmx_format
 
 type error =
-    Illegal_renaming of string * string
+    Illegal_renaming of string * string * string
   | Forward_reference of string * string
   | Wrong_for_pack of string * string
   | Linking_error
@@ -38,14 +36,14 @@ type pack_member =
     pm_name: string;
     pm_kind: pack_member_kind }
 
-let read_member_info pack_path file =
+let read_member_info pack_path file = (
   let name =
     String.capitalize(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmx" then begin
       let (info, crc) = Compilenv.read_unit_info file in
       if info.ui_name <> name
-      then raise(Error(Illegal_renaming(file, info.ui_name)));
+      then raise(Error(Illegal_renaming(name, file, info.ui_name)));
       if info.ui_symbol <>
          (Compilenv.current_unit_infos()).ui_symbol ^ "__" ^ info.ui_name
       then raise(Error(Wrong_for_pack(file, pack_path)));
@@ -55,6 +53,7 @@ let read_member_info pack_path file =
     end else
       PM_intf in
   { pm_file = file; pm_name = name; pm_kind = kind }
+)
 
 (* Check absence of forward references *)
 
@@ -189,9 +188,9 @@ let package_files ppf files targetcmx =
 open Format
 
 let report_error ppf = function
-    Illegal_renaming(file, id) ->
-      fprintf ppf "Wrong file naming: %a@ contains the code for@ %s"
-        Location.print_filename file id
+    Illegal_renaming(name, file, id) ->
+      fprintf ppf "Wrong file naming: %a@ contains the code for @ %s when %s was expected"
+        Location.print_filename file name id 
   | Forward_reference(file, ident) ->
       fprintf ppf "Forward reference to %s in file %a" ident
         Location.print_filename file

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: getaddrinfo.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <string.h>
 #include <mlvalues.h>
 #include <alloc.h>
@@ -69,7 +67,7 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   if (len == 0) {
     node = NULL;
   } else {
-    node = stat_alloc(len + 1);
+    node = caml_stat_alloc(len + 1);
     strcpy(node, String_val(vnode));
   }
   /* Extract "service" parameter */
@@ -77,7 +75,7 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   if (len == 0) {
     serv = NULL;
   } else {
-    serv = stat_alloc(len + 1);
+    serv = caml_stat_alloc(len + 1);
     strcpy(serv, String_val(vserv));
   }
   /* Parse options, set hints */

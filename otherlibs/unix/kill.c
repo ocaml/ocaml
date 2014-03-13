@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: kill.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <mlvalues.h>
 #include <fail.h>
 #include "unixsupport.h"

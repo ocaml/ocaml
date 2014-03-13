@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: asttypes.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Auxiliary a.s.t. types used by parsetree and typedtree. *)
 
 type constant =

@@ -10,8 +10,6 @@
 .\"*                                                                     *
 .\"***********************************************************************
 .\"
-.\" $Id: ocamldoc.m 12858 2012-08-10 14:45:51Z maranget $
-.\"
 .TH OCAMLDOC 1
 
 \" .de Sh \" Subsection heading
@@ -257,7 +255,7 @@ as the title for the generated documentation.
 .BI \-intro \ file
 Use content of
 .I file
-as 
+as
 .B ocamldoc
 text to use as introduction (HTML, LaTeX and TeXinfo only).
 For HTML, the file is used to create the whole "index.html" file.

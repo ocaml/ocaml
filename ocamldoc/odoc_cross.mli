@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -9,9 +10,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_cross.mli 6336 2004-05-27 09:18:38Z maranget $ *)
-
 (** Cross-referencing. *)
 
 val associate : Odoc_module.t_module list -> unit
 
+val assoc_comments_info :
+    string -> Odoc_module.t_module list ->
+      Odoc_types.info -> Odoc_types.info

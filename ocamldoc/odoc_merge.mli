@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -9,11 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_merge.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (** Merge of information from [.ml] and [.mli] for a module.*)
 
-(** Merging \@before tags. *)
+(** Merging \@before tags. *)
 val merge_before_tags :
     (string * Odoc_types.text) list -> (string * Odoc_types.text) list
 

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: translcore.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Translation from typed abstract syntax to lambda terms,
    for the core language *)
 
@@ -172,6 +170,11 @@ let primitives_table = create_hashtable 57 [
   "%sequand", Psequand;
   "%sequor", Psequor;
   "%boolnot", Pnot;
+  "%big_endian", Pctconst Big_endian;
+  "%word_size", Pctconst Word_size;
+  "%ostype_unix", Pctconst Ostype_unix;
+  "%ostype_win32", Pctconst Ostype_win32;
+  "%ostype_cygwin", Pctconst Ostype_cygwin;
   "%negint", Pnegint;
   "%succint", Poffsetint 1;
   "%predint", Poffsetint(-1);
@@ -294,7 +297,38 @@ let primitives_table = create_hashtable 57 [
   "%caml_ba_unsafe_set_2",
     Pbigarrayset(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
   "%caml_ba_unsafe_set_3",
-    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout)
+    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_dim_1", Pbigarraydim(1);
+  "%caml_ba_dim_2", Pbigarraydim(2);
+  "%caml_ba_dim_3", Pbigarraydim(3);
+  "%caml_string_get16", Pstring_load_16(false);
+  "%caml_string_get16u", Pstring_load_16(true);
+  "%caml_string_get32", Pstring_load_32(false);
+  "%caml_string_get32u", Pstring_load_32(true);
+  "%caml_string_get64", Pstring_load_64(false);
+  "%caml_string_get64u", Pstring_load_64(true);
+  "%caml_string_set16", Pstring_set_16(false);
+  "%caml_string_set16u", Pstring_set_16(true);
+  "%caml_string_set32", Pstring_set_32(false);
+  "%caml_string_set32u", Pstring_set_32(true);
+  "%caml_string_set64", Pstring_set_64(false);
+  "%caml_string_set64u", Pstring_set_64(true);
+  "%caml_bigstring_get16", Pbigstring_load_16(false);
+  "%caml_bigstring_get16u", Pbigstring_load_16(true);
+  "%caml_bigstring_get32", Pbigstring_load_32(false);
+  "%caml_bigstring_get32u", Pbigstring_load_32(true);
+  "%caml_bigstring_get64", Pbigstring_load_64(false);
+  "%caml_bigstring_get64u", Pbigstring_load_64(true);
+  "%caml_bigstring_set16", Pbigstring_set_16(false);
+  "%caml_bigstring_set16u", Pbigstring_set_16(true);
+  "%caml_bigstring_set32", Pbigstring_set_32(false);
+  "%caml_bigstring_set32u", Pbigstring_set_32(true);
+  "%caml_bigstring_set64", Pbigstring_set_64(false);
+  "%caml_bigstring_set64u", Pbigstring_set_64(true);
+  "%bswap16", Pbswap16;
+  "%bswap_int32", Pbbswap(Pint32);
+  "%bswap_int64", Pbbswap(Pint64);
+  "%bswap_native", Pbbswap(Pnativeint);
 ]
 
 let prim_makearray =
@@ -305,6 +339,12 @@ let prim_obj_dup =
   { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
+let find_primitive loc prim_name =
+  match prim_name with
+      "%revapply" -> Prevapply loc
+    | "%apply" -> Pdirapply loc
+    | name -> Hashtbl.find primitives_table name
+
 let transl_prim loc prim args =
   let prim_name = prim.prim_name in
   try
@@ -313,10 +353,10 @@ let transl_prim loc prim args =
          simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct(_, _, {cstr_tag = Cstr_constant _}, _, _)}]
+      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _, _)}]
       when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct(_, _, {cstr_tag = Cstr_constant _}, _, _)}; arg2]
+    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; {exp_desc = Texp_variant(_, None)}]
@@ -343,11 +383,7 @@ let transl_prim loc prim args =
     end
   with Not_found ->
   try
-    let p =
-      match prim_name with
-          "%revapply" -> Prevapply loc
-        | "%apply" -> Pdirapply loc
-        | name -> Hashtbl.find primitives_table name in
+    let p = find_primitive loc prim_name in
     (* Try strength reduction based on the type of the argument *)
     begin match (p, args) with
         (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
@@ -405,7 +441,7 @@ let () = Transljoin.simple_prim := simple_prim
 
 (* Eta-expand a primitive without knowing the types of its arguments *)
 
-let transl_primitive p =
+let transl_primitive loc p =
   let prim =
     try
       let (gencomp, _, _, _, _, _, _, _) =
@@ -413,18 +449,20 @@ let transl_primitive p =
       gencomp
     with Not_found ->
     try
-      Hashtbl.find primitives_table p.prim_name
+      find_primitive loc p.prim_name
     with Not_found ->
       Pccall p in
   match prim with
     Plazyforce ->
       let parm = Ident.create "prim" in
-      Lfunction(Curried, [parm], Matching.inline_lazy_force (Lvar parm) Location.none)
+      Lfunction(Curried, [parm],
+                Matching.inline_lazy_force (Lvar parm) Location.none)
   | _ ->
       let rec make_params n =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
-      Lfunction(Curried, params, Lprim(prim, List.map (fun id -> Lvar id) params))
+      Lfunction(Curried, params,
+                Lprim(prim, List.map (fun id -> Lvar id) params))
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -638,14 +676,16 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
-        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc))
+        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, [],
+                                              e.exp_loc))
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
         Lfunction(Curried, [obj; meth; cache; pos],
-                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos], e.exp_loc))
+                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos],
+                        e.exp_loc))
       else
-        transl_primitive p
+        transl_primitive e.exp_loc p
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
@@ -668,7 +708,8 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})}, oargs)
+  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})} as fn,
+               oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
@@ -679,7 +720,8 @@ and transl_exp0 e =
       in
       let wrap0 f =
         if args' = [] then f else wrap f in
-      let args = List.map (function _, Some x, _ -> x | _ -> assert false) args in
+      let args =
+         List.map (function _, Some x, _ -> x | _ -> assert false) args in
       let argl = transl_list transl_exp args in
       let public_send = p.prim_name = "%send"
         || not !Clflags.native_code && p.prim_name = "%sendcache"in
@@ -692,6 +734,12 @@ and transl_exp0 e =
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
+        if p.prim_name = "%sequand" && Path.last path = "&" then
+          Location.prerr_warning fn.exp_loc
+            (Warnings.Deprecated "operator (&); you should use (&&) instead");
+        if p.prim_name = "%sequor" && Path.last path = "or" then
+          Location.prerr_warning fn.exp_loc
+            (Warnings.Deprecated "operator (or); you should use (||) instead");
         let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
           (Praise, [arg1]) ->
@@ -747,7 +795,7 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(_, _, cstr, args, _) ->
+  | Texp_construct(_, cstr, args, _) ->
       let ll = transl_list transl_exp args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
@@ -774,17 +822,17 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable),
                   [Lconst(Const_base(Const_int tag)); lam])
       end
-  | Texp_record ((_, _, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
+  | Texp_record ((_, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
   | Texp_record ([], _) ->
       fatal_error "Translcore.transl_exp: bad Texp_record"
-  | Texp_field(arg, _, _, lbl) ->
+  | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
           Record_regular -> Pfield lbl.lbl_pos
         | Record_float -> Pfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp arg])
-  | Texp_setfield(arg, _, _, lbl, newval) ->
+  | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
@@ -875,7 +923,7 @@ and transl_exp0 e =
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
       | Texp_function(_, _, _)
-      | Texp_construct (_, _, {cstr_arity = 0}, _, _)
+      | Texp_construct (_, {cstr_arity = 0}, _, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
           Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
@@ -1447,11 +1495,11 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
         done
     end;
     List.iter
-      (fun (_, _, lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
+      (fun (_, lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
       lbl_expr_list;
     let ll = Array.to_list lv in
     let mut =
-      if List.exists (fun (_, _, lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
+      if List.exists (fun (_, lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
       then Mutable
       else Immutable in
     let lam =
@@ -1476,7 +1524,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     (* If you change anything here, you will likely have to change
        [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
-    let update_field (_, _, lbl, expr) cont =
+    let update_field (_, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr)

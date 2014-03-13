@@ -394,4 +394,3 @@ static intnat hash_nat(value v)
   }
   return h;
 }
-

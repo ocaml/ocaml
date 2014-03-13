@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: gram_aux.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Auxiliaries for the parser. *)
 
 open Syntax
@@ -44,4 +42,3 @@ let rec subtract l1 l2 =
   match l1 with
     [] -> []
   | a::l -> if List.mem a l2 then subtract l l2 else a :: subtract l l2
-

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: unix.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 type error =
     E2BIG
   | EACCES
@@ -90,6 +88,83 @@ let _ = Callback.register_exception "Unix.Unix_error"
                                     (Unix_error(E2BIG, "", ""))
 
 external error_message : error -> string = "unix_error_message"
+
+let () =
+  Printexc.register_printer
+    (function
+      | Unix_error (e, s, s') ->
+          let msg = match e with
+          | E2BIG -> "E2BIG"
+          | EACCES -> "EACCES"
+          | EAGAIN -> "EAGAIN"
+          | EBADF -> "EBADF"
+          | EBUSY -> "EBUSY"
+          | ECHILD -> "ECHILD"
+          | EDEADLK -> "EDEADLK"
+          | EDOM -> "EDOM"
+          | EEXIST -> "EEXIST"
+          | EFAULT -> "EFAULT"
+          | EFBIG -> "EFBIG"
+          | EINTR -> "EINTR"
+          | EINVAL -> "EINVAL"
+          | EIO -> "EIO"
+          | EISDIR -> "EISDIR"
+          | EMFILE -> "EMFILE"
+          | EMLINK -> "EMLINK"
+          | ENAMETOOLONG -> "ENAMETOOLONG"
+          | ENFILE -> "ENFILE"
+          | ENODEV -> "ENODEV"
+          | ENOENT -> "ENOENT"
+          | ENOEXEC -> "ENOEXEC"
+          | ENOLCK -> "ENOLCK"
+          | ENOMEM -> "ENOMEM"
+          | ENOSPC -> "ENOSPC"
+          | ENOSYS -> "ENOSYS"
+          | ENOTDIR -> "ENOTDIR"
+          | ENOTEMPTY -> "ENOTEMPTY"
+          | ENOTTY -> "ENOTTY"
+          | ENXIO -> "ENXIO"
+          | EPERM -> "EPERM"
+          | EPIPE -> "EPIPE"
+          | ERANGE -> "ERANGE"
+          | EROFS -> "EROFS"
+          | ESPIPE -> "ESPIPE"
+          | ESRCH -> "ESRCH"
+          | EXDEV -> "EXDEV"
+          | EWOULDBLOCK -> "EWOULDBLOCK"
+          | EINPROGRESS -> "EINPROGRESS"
+          | EALREADY -> "EALREADY"
+          | ENOTSOCK -> "ENOTSOCK"
+          | EDESTADDRREQ -> "EDESTADDRREQ"
+          | EMSGSIZE -> "EMSGSIZE"
+          | EPROTOTYPE -> "EPROTOTYPE"
+          | ENOPROTOOPT -> "ENOPROTOOPT"
+          | EPROTONOSUPPORT -> "EPROTONOSUPPORT"
+          | ESOCKTNOSUPPORT -> "ESOCKTNOSUPPORT"
+          | EOPNOTSUPP -> "EOPNOTSUPP"
+          | EPFNOSUPPORT -> "EPFNOSUPPORT"
+          | EAFNOSUPPORT -> "EAFNOSUPPORT"
+          | EADDRINUSE -> "EADDRINUSE"
+          | EADDRNOTAVAIL -> "EADDRNOTAVAIL"
+          | ENETDOWN -> "ENETDOWN"
+          | ENETUNREACH -> "ENETUNREACH"
+          | ENETRESET -> "ENETRESET"
+          | ECONNABORTED -> "ECONNABORTED"
+          | ECONNRESET -> "ECONNRESET"
+          | ENOBUFS -> "ENOBUFS"
+          | EISCONN -> "EISCONN"
+          | ENOTCONN -> "ENOTCONN"
+          | ESHUTDOWN -> "ESHUTDOWN"
+          | ETOOMANYREFS -> "ETOOMANYREFS"
+          | ETIMEDOUT -> "ETIMEDOUT"
+          | ECONNREFUSED -> "ECONNREFUSED"
+          | EHOSTDOWN -> "EHOSTDOWN"
+          | EHOSTUNREACH -> "EHOSTUNREACH"
+          | ELOOP -> "ELOOP"
+          | EOVERFLOW -> "EOVERFLOW"
+          | EUNKNOWNERR x -> Printf.sprintf "EUNKNOWNERR %d" x in
+          Some (Printf.sprintf "Unix.Unix_error(Unix.%s, %S, %S)" msg s s')
+      | _ -> None)
 
 let handle_unix_error f arg =
   try
@@ -762,6 +837,10 @@ external setsid : unit -> int = "unix_setsid"
 
 (* High-level process management (system, popen) *)
 
+let rec waitpid_non_intr pid =
+  try waitpid [] pid
+  with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
+
 let system cmd =
   match fork() with
      0 -> begin try
@@ -769,7 +848,7 @@ let system cmd =
           with _ ->
             exit 127
           end
-  | id -> snd(waitpid [] id)
+  | id -> snd(waitpid_non_intr id)
 
 let rec safe_dup fd =
   let new_fd = dup fd in
@@ -921,10 +1000,6 @@ let find_proc_id fun_name proc =
     pid
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
-
-let rec waitpid_non_intr pid =
-  try waitpid [] pid
-  with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
 
 let close_process_in inchan =
   let pid = find_proc_id "close_process_in" (Process_in inchan) in

@@ -11,11 +11,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: digest.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** MD5 message digest.
 
-   This module provides functions to compute 128-bit ``digests'' of
+   This module provides functions to compute 128-bit 'digests' of
    arbitrary-length strings or files. The digests are of cryptographic
    quality: it is very hard, given a digest, to forge a string having
    that digest. The algorithm used is MD5. This module should not be

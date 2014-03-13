@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: stat.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <errno.h>
 #include <mlvalues.h>
 #include <memory.h>

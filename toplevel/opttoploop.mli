@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: opttoploop.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 open Format
 
 (* Set the load paths, before running anything *)

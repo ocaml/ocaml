@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: btype.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Basic operations on core types *)
 
 open Types
@@ -186,6 +184,12 @@ let is_row_name s =
   let l = String.length s in
   if l < 4 then false else String.sub s (l-4) 4 = "#row"
 
+let is_constr_row t =
+  match t.desc with
+    Tconstr (Path.Pident id, _, _) -> is_row_name (Ident.name id)
+  | Tconstr (Path.Pdot (_, s, _), _, _) -> is_row_name s
+  | _ -> false
+
 
                   (**********************************)
                   (*  Utilities for type traversal  *)
@@ -343,11 +347,11 @@ let unmark_type_decl decl =
   begin match decl.type_kind with
     Type_abstract -> ()
   | Type_variant cstrs ->
-      List.iter 
-	(fun (c, tl, ret_type_opt) -> 
-	  List.iter unmark_type tl;
-	  Misc.may unmark_type ret_type_opt)
-	cstrs
+      List.iter
+        (fun (c, tl, ret_type_opt) ->
+          List.iter unmark_type tl;
+          Misc.may unmark_type ret_type_opt)
+        cstrs
   | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
   end;

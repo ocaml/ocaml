@@ -10,11 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: equations.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 open Terms
 
-type rule = 
+type rule =
   { number: int;
     numvars: int;
     lhs: term;

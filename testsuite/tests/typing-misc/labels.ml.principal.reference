@@ -1,0 +1,8 @@
+
+#     val f : x:int -> int = <fun>
+# Characters 5-6:
+  f ?x:0;;
+       ^
+Warning 43: the label x is not optional.
+- : int = 1
+# 

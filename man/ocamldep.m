@@ -10,8 +10,6 @@
 .\"*                                                                     *
 .\"***********************************************************************
 .\"
-.\" $Id$
-.\"
 .TH OCAMLDEP 1
 
 .SH NAME
@@ -55,6 +53,9 @@ and with the native-code compiler
 
 The following command-line options are recognized by
 .BR ocamldep (1).
+.TP
+.B \-absname
+Show absolute filenames in error messages.
 .TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
@@ -112,6 +113,10 @@ Cause
 to call the given
 .I command
 as a preprocessor for each source file.
+.TP
+.BI \-ppx \ command
+Pipe abstract syntax tree through preprocessor
+.IR command .
 .TP
 .B \-slash
 Under Unix, this option does nothing.

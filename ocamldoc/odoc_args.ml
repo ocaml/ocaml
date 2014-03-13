@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* cvsid $Id: odoc_args.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Command-line arguments. *)
 
@@ -141,76 +140,6 @@ let analyse_merge_options s =
   analyse_option_string l s
 
 
-let dump = ref (None : string option)
-
-let load = ref ([] : string list)
-
-(** Allow arbitrary recursive types. *)
-let recursive_types = Clflags.recursive_types
-
-let verbose = ref false
-
-(** Optional preprocessor command. *)
-let preprocessor = Clflags.preprocessor
-
-let sort_modules = ref false
-
-let no_custom_tags = ref false
-
-let no_stop = ref false
-
-let remove_stars = ref false
-
-let keep_code = ref false
-
-let inverse_merge_ml_mli = ref false
-
-let filter_with_module_constraints = ref true
-
-let title = ref (None : string option)
-
-let intro_file = ref (None : string option)
-
-let with_parameter_list = ref false
-
-let hidden_modules = ref ([] : string list)
-
-let target_dir = ref Filename.current_dir_name
-
-let css_style = ref None
-
-let index_only = ref false
-
-let colorize_code = ref false
-
-let charset = ref "iso-8859-1"
-
-let with_header = ref true
-
-let with_trailer = ref true
-
-let separate_files = ref false
-
-let latex_titles = ref [
-  1, "section" ;
-  2, "subsection" ;
-  3, "subsubsection" ;
-  4, "paragraph" ;
-  5, "subparagraph" ;
-]
-
-let with_toc = ref true
-
-let with_index = ref true
-
-let esc_8bits = ref false
-
-let info_section = ref "Objective Caml"
-
-let info_entry = ref []
-
-let files = ref []
-
 let f_latex_title s =
   try
     let pos = String.index s ',' in
@@ -267,6 +196,7 @@ let default_options = [
   "-rectypes", Arg.Set Odoc_global.recursive_types, M.rectypes ;
   "-nolabels", Arg.Unit (fun () -> Odoc_global.classic := true), M.nolabels ;
   "-warn-error", Arg.Set Odoc_global.warn_error, M.werr ;
+  "-hide-warnings", Arg.Clear Odoc_config.print_warnings, M.hide_warnings ;
   "-o", Arg.String (fun s -> Odoc_global.out_file := s), M.out_file ;
   "-d", Arg.String (fun s -> Odoc_global.target_dir := s), M.target_dir ;
   "-sort", Arg.Unit (fun () -> Odoc_global.sort_modules := true), M.sort_modules ;

@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_messages.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** The messages of the application. *)
 
@@ -38,12 +37,14 @@ let preprocess = "<command>\tPipe sources through preprocessor <command>"
 let ppx = "<command>\n\t\tPipe abstract syntax tree through preprocessor <command>"
 let option_impl ="<file>\tConsider <file> as a .ml file"
 let option_intf ="<file>\tConsider <file> as a .mli file"
+let option_text ="<file>\tConsider <file> as a .txt file"
 let display_custom_generators_dir = "\tDisplay custom generators standard directory and exit"
 let add_load_dir = "<dir>\tAdd the given directory to the search path for custom\n"^
   "\t\tgenerators"
 let load_file = "<file.cm[o|a|xs]>\n\t\tLoad file defining a new documentation generator"
 let nolabels = "\tIgnore non-optional labels in types"
 let werr = "\tTreat ocamldoc warnings as errors"
+let hide_warnings = "\n\t\tdo not print ocamldoc warnings"
 let target_dir = "<dir>\tGenerate files in directory <dir>, rather than in current\n"^
   "\t\tdirectory (for man and HTML generators)"
 let dump = "<file>\tDump collected information into <file>"
@@ -51,9 +52,7 @@ let load = "<file>\tLoad information from <file> ; may be used several times"
 let css_style = "<file>\n\t\tUse content of <file> as CSS style definition "^html_only
 let index_only = "\tGenerate index files only "^html_only
 let colorize_code = "\n\t\tColorize code even in documentation pages "^html_only
-let charset c = Printf.sprintf
-  "<s>\n\t\tAdd information about character encoding being s\n\t\t(default is %s)"
-  c
+let html_short_functors = "\n\t\tUse short form to display functor types "^html_only
 let charset c = Printf.sprintf
   "<s>\n\t\tAdd information about character encoding being s\n\t\t(default is %s)"
   c
@@ -154,7 +153,7 @@ let latex_class_prefix =
   "\t\t(default is \""^default_latex_class_prefix^"\")"
 
 let default_latex_class_type_prefix = "classtype:"
-let latex_class_type_prefix = 
+let latex_class_type_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of class types.\n"^
   "\t\t(default is \""^default_latex_class_type_prefix^"\")"
 
@@ -257,7 +256,7 @@ let implicit_match_in_parameter = "Parameters contain implicit pattern matching.
 let unknown_extension f = "Unknown extension for file "^f^"."
 let two_implementations name = "There are two implementations of module "^name^"."
 let two_interfaces name = "There are two interfaces of module "^name^"."
-let too_many_module_objects name = "There are two many interfaces/implementation of module "^name^"."
+let too_many_module_objects name = "There are too many interfaces/implementation of module "^name^"."
 let exception_not_found_in_implementation exc m = "Exception "^exc^" was not found in implementation of module "^m^"."
 let type_not_found_in_implementation exc m = "Type "^exc^" was not found in implementation of module "^m^"."
 let module_not_found_in_implementation m m2 = "Module "^m^" was not found in implementation of module "^m2^"."
@@ -298,7 +297,7 @@ let cross_element_not_found n = "Element "^n^" not found"
 let cross_method_not_found n = "Method "^n^" not found"
 let cross_attribute_not_found n = "Attribute "^n^" not found"
 let cross_section_not_found n = "Section "^n^" not found"
-let cross_value_not_found n = "Attribute "^n^" not found"
+let cross_value_not_found n = "Value "^n^" not found"
 let cross_type_not_found n = "Type "^n^" not found"
 let cross_recfield_not_found n = Printf.sprintf "Record field %s not found" n
 let cross_const_not_found n = Printf.sprintf "Constructor %s not found" n

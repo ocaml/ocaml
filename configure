@@ -13,8 +13,7 @@
 #                                                                       #
 #########################################################################
 
-# $Id: configure 12959 2012-09-27 13:12:51Z maranget $
-topdir=`pwd`
+topdir=$(pwd)
 configure_options="$*"
 prefix=/usr/local
 bindir=''
@@ -46,6 +45,7 @@ gcc_warnings="-Wall"
 partialld="ld -r"
 ocamlc=''
 withcamlp4=""
+with_frame_pointers=false
 
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
@@ -123,6 +123,8 @@ while : ; do
         debugruntime=runtimed;;
     -no-camlp4|--no-camlp4)
         withcamlp4="";;
+    -with-frame-pointers|--with-frame-pointers)
+        with_frame_pointers=true;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -323,6 +325,7 @@ case "$bytecc,$host" in
   *,*-*-darwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     mathlib=""
+    mkexe="$mkexe -Wl,-no_compact_unwind"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
     echo "#ifndef __PIC__" >> m.h
@@ -520,9 +523,9 @@ case "$host" in
       1) echo "Doubles must be doubleword-aligned."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
       *) echo "Something went wrong during alignment determination for doubles."
-         echo "I'm going to assume this architecture has alignment constraints over doubles."
+         echo "We will assume alignment constraints over doubles."
          echo "That's a safe bet: OCaml will work even if"
-         echo "this architecture has actually no alignment constraints."
+         echo "this architecture actually has no alignment constraints."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
     esac;;
 esac
@@ -645,7 +648,7 @@ if test $withsharedlibs = "yes"; then
       dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-apple-darwin*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
+      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -Wl,-no_compact_unwind"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
@@ -738,6 +741,7 @@ case "$host" in
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
                                 if $arch64; then model=ppc64; else model=ppc; fi;;
+  armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
   arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
   armv6t2*-*-linux-gnueabi)     arch=arm; model=armv6t2; system=linux_eabi;;
@@ -772,6 +776,8 @@ fi
 
 nativecccompopts=''
 nativecclinkopts=''
+# FIXME the naming of nativecclinkopts is broken: these are options for
+# ld (for shared libs), not for cc
 nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$host_type" in
@@ -790,8 +796,13 @@ esac
 asppprofflags='-DPROFILING'
 
 case "$arch,$model,$system" in
-  amd64,*,macosx)   as='as -arch x86_64'
-                    aspp='gcc -arch x86_64 -c';;
+  amd64,*,macosx)   if ./searchpath clang; then
+                      as='clang -arch x86_64 -c'
+                      aspp='clang -arch x86_64 -c'
+                    else
+                      as='as -arch x86_64'
+                      aspp='gcc -arch x86_64 -c'
+                    fi;;
   amd64,*,solaris)  as='as --64'
                     aspp='gcc -m64 -c';;
   amd64,*,*)        as='as'
@@ -1483,6 +1494,8 @@ if test $has_tk = true; then
   for tk_incs in \
     "-I/usr/local/include" \
     "-I/usr/include" \
+    "-I/usr/local/include/tcl8.6 -I/usr/local/include/tk8.6" \
+    "-I/usr/include/tcl8.6 -I/usr/include/tk8.6" \
     "-I/usr/local/include/tcl8.5 -I/usr/local/include/tk8.5" \
     "-I/usr/include/tcl8.5 -I/usr/include/tk8.5" \
     "-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4" \
@@ -1500,6 +1513,7 @@ if test $has_tk = true; then
   if test -n "$tcl_version" && test "x$tcl_version" != "xnone"; then
     echo "tcl.h and tk.h version $tcl_version found with \"$tk_defs\"."
     case $tcl_version in
+    8.6) tclmaj=8 tclmin=6 tkmaj=8 tkmin=6 ;;
     8.5) tclmaj=8 tclmin=5 tkmaj=8 tkmin=5 ;;
     8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
     8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;
@@ -1621,6 +1635,20 @@ else
   echo "Assembler does not support CFI"
 fi
 
+if test "$with_frame_pointers" = "true"; then
+  nativecccompopts="$nativecccompopts -g"
+  nativecclinkopts="$nativecclinkopts -g"
+  echo "#define WITH_FRAME_POINTERS" >> m.h
+
+  case "$cc" in
+    gcc*)
+      bytecccompopts="$bytecccompopts -fno-omit-frame-pointer"
+      nativecccompopts="$nativecccompopts -fno-omit-frame-pointer";;
+  esac
+
+fi
+
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"
@@ -1694,6 +1722,11 @@ echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
 echo "CAMLP4=${withcamlp4}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
+echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
+if [ "$ostype" = Cygwin ]; then
+  echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
+fi
+
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
@@ -1749,6 +1782,11 @@ else
   echo "        assembler supports CFI ... yes"
   else
   echo "        assembler supports CFI ... no"
+  fi
+  if test "$with_frame_pointers" = "true"; then
+  echo "        with frame pointers....... yes"
+  else
+  echo "        with frame pointers....... no"
   fi
   echo "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: parsetree.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Abstract syntax tree produced by parsing *)
 
 open Asttypes
@@ -104,7 +102,8 @@ and expression_desc =
   | Pexp_ifthenelse of expression * expression * expression option
   | Pexp_sequence of expression * expression
   | Pexp_while of expression * expression
-  | Pexp_for of string loc *  expression * expression * direction_flag * expression
+  | Pexp_for of
+      string loc *  expression * expression * direction_flag * expression
   | Pexp_constraint of expression * core_type option * core_type option
   | Pexp_when of expression * expression
   | Pexp_send of expression * string
@@ -119,7 +118,7 @@ and expression_desc =
   | Pexp_object of class_structure
   | Pexp_newtype of string * expression
   | Pexp_pack of module_expr
-  | Pexp_open of Longident.t loc * expression
+  | Pexp_open of override_flag * Longident.t loc * expression
 (*> JOCAML *)
   | Pexp_spawn of expression
   | Pexp_par of expression * expression
@@ -149,7 +148,7 @@ and joinpattern_desc =  joinident * pattern
 and value_description =
   { pval_type: core_type;
     pval_prim: string list;
-    pval_loc : Location.t
+    pval_loc: Location.t
     }
 
 (* Type declarations *)
@@ -184,14 +183,14 @@ and class_type_desc =
   | Pcty_fun of label * core_type * class_type
 
 and class_signature = {
-    pcsig_self : core_type;
-    pcsig_fields : class_type_field list;
-    pcsig_loc : Location.t;
+    pcsig_self: core_type;
+    pcsig_fields: class_type_field list;
+    pcsig_loc: Location.t;
   }
 
 and class_type_field = {
-    pctf_desc : class_type_field_desc;
-    pctf_loc : Location.t;
+    pctf_desc: class_type_field_desc;
+    pctf_loc: Location.t;
   }
 
 and class_type_field_desc =
@@ -220,23 +219,23 @@ and class_expr_desc =
   | Pcl_constraint of class_expr * class_type
 
 and class_structure = {
-    pcstr_pat : pattern;
-    pcstr_fields :  class_field list;
+    pcstr_pat: pattern;
+    pcstr_fields: class_field list;
   }
 
 and class_field = {
-    pcf_desc : class_field_desc;
-    pcf_loc : Location.t;
+    pcf_desc: class_field_desc;
+    pcf_loc: Location.t;
   }
 
 and class_field_desc =
     Pcf_inher of override_flag * class_expr * string option
   | Pcf_valvirt of (string loc * mutable_flag * core_type)
   | Pcf_val of (string loc * mutable_flag * override_flag * expression)
-  | Pcf_virt  of (string loc * private_flag * core_type)
-  | Pcf_meth of (string loc * private_flag *override_flag * expression)
-  | Pcf_constr  of (core_type * core_type)
-  | Pcf_init  of expression
+  | Pcf_virt of (string loc * private_flag * core_type)
+  | Pcf_meth of (string loc * private_flag * override_flag * expression)
+  | Pcf_constr of (core_type * core_type)
+  | Pcf_init of expression
 
 and class_declaration = class_expr class_infos
 
@@ -266,7 +265,7 @@ and signature_item_desc =
   | Psig_module of string loc * module_type
   | Psig_recmodule of (string loc * module_type) list
   | Psig_modtype of string loc * modtype_declaration
-  | Psig_open of Longident.t loc
+  | Psig_open of override_flag * Longident.t loc
   | Psig_include of module_type
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
@@ -311,7 +310,7 @@ and structure_item_desc =
   | Pstr_module of string loc * module_expr
   | Pstr_recmodule of (string loc * module_type * module_expr) list
   | Pstr_modtype of string loc * module_type
-  | Pstr_open of Longident.t loc
+  | Pstr_open of override_flag * Longident.t loc
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: depend.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Module dependencies. *)
 
 module StringSet : Set.S with type elt = string

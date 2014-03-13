@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: codegen.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* From C-- to assembly code *)
 
 val phrase: Cmm.phrase -> unit

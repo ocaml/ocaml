@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: scheduling.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Instruction scheduling *)
 
 val fundecl: Linearize.fundecl -> Linearize.fundecl

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: arch.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Specific operations for the Sparc processor *)
 
 open Format
@@ -45,6 +43,8 @@ let big_endian = true
 let size_addr = 4
 let size_int = 4
 let size_float = 8
+
+let allow_unaligned_access = false
 
 (* Behavior of division *)
 

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: filename.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (** Operations on file names. *)
 
 val current_dir_name : string
@@ -89,7 +87,8 @@ val temp_file : ?temp_dir: string -> string -> string -> string
 *)
 
 val open_temp_file :
-      ?mode: open_flag list -> ?temp_dir: string -> string -> string -> string * out_channel
+      ?mode: open_flag list -> ?temp_dir: string -> string -> string ->
+      string * out_channel
 (** Same as {!Filename.temp_file}, but returns both the name of a fresh
    temporary file, and an output channel opened (atomically) on
    this file.  This function is more secure than [temp_file]: there

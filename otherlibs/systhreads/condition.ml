@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: condition.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 type t
 external create: unit -> t = "caml_condition_new"
 external wait: t -> Mutex.t -> unit = "caml_condition_wait"

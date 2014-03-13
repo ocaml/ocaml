@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: consistbl.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Consistency tables: for checking consistency of module CRCs *)
 
 type t

@@ -1,4 +1,16 @@
-module M = Map.Make(struct type t = int let compare = compare end)
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
+module M = Map.Make(struct type t = int let compare (x:t) y = compare x y end)
 
 let img x m = try Some(M.find x m) with Not_found -> None
 
@@ -103,7 +115,7 @@ let test x v s1 s2 =
 
   check "split"
     (let (l, p, r) = M.split x s1 in
-     fun i -> 
+     fun i ->
        if i < x then img i l = img i s1
        else if i > x then img i r = img i s1
        else p = img i s1)
@@ -120,4 +132,3 @@ let rmap() =
 let _ =
   Random.init 42;
   for i = 1 to 25000 do test (rkey()) (rdata()) (rmap()) (rmap()) done
-  

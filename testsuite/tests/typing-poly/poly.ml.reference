@@ -1,5 +1,5 @@
 
-#   * * *       #   type 'a t = { t : 'a; }
+# * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
 # val f : 'a list -> 'a fold = <fun>
 # - : int = 6
@@ -118,7 +118,7 @@
 val p1 : point = <obj>
 val cp : color_point = <obj>
 val c : circle = <obj>
-val d : float = 11.4536240470737098
+val d : float = 11.
 #   val f : < m : 'a. 'a -> 'a > -> < m : 'b. 'b -> 'b > = <fun>
 #   Characters 41-42:
   let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
@@ -330,7 +330,7 @@ Characters 21-24:
 Warning 11: this match case is unused.
 - : int * [< `B ] -> int = <fun>
 #       Characters 69-135:
-  type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b] 
+  type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
        Type
@@ -437,6 +437,7 @@ Error: This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
          :> <m : 'a. 'a -> ('a * 'foo)> as 'foo)..
 Error: Type < m : 'a. 'a -> ('a * (< m : 'c. 'c -> 'b as 'e > as 'd) as 'b) >
        is not a subtype of < m : 'a. 'a -> ('a * 'f as 'h) as 'g > as 'f 
+       Type 'c. 'e is not a subtype of 'a. 'g 
 #       Characters 88-150:
   = struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -490,6 +491,8 @@ Error: Type p = < x : p > is not a subtype of q = < x : p; .. >
       :> <m:'b. (<p:int;q:int;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
          < m : 'b. (< p : int; q : int; .. > as 'b) -> int > 
+       Type < p : int; q : int; .. > as 'c is not a subtype of
+         < p : int; .. > as 'd 
 #     val f2 :
   < m : 'a. (< p : < a : int >; .. > as 'a) -> int > ->
   < m : 'b. (< p : < a : int; b : int >; .. > as 'b) -> int > = <fun>
@@ -498,12 +501,13 @@ Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
       :> <m:'b. (<p:<a:int>;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int >
        is not a subtype of < m : 'b. (< p : < a : int >; .. > as 'b) -> int > 
+       Type < a : int > is not a subtype of < a : int; b : int > 
 # Characters 11-55:
   let f4 x = (x : <p:<a:int;b:int>;..> :> <p:<a:int>;..>);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type < p : < a : int; b : int >; .. > is not a subtype of
          < p : < a : int >; .. > 
-The second object type has no method b
+       The second object type has no method b
 #   val f5 :
   < m : 'a. [< `A of < p : int > ] as 'a > ->
   < m : 'b. [< `A of <  > ] as 'b > = <fun>
@@ -512,6 +516,7 @@ The second object type has no method b
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
          < m : 'b. [< `A of < p : int > ] as 'b > 
+       Type <  > is not a subtype of < p : int > 
 #     val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
 # - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 # val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
@@ -550,7 +555,7 @@ Error: This definition has type 'a t -> 'a which is less general than
     function Leaf x -> x | Node x -> depth x;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This definition has type 'b. 'b t -> 'b which is less general than
-         'b 'a. 'a t -> 'b
+         'a 'b. 'a t -> 'b
 #   val r : 'a list * '_b list ref = ([], {contents = []})
 val q : unit -> 'a list * '_b list ref = <fun>
 # val f : 'a -> 'a = <fun>

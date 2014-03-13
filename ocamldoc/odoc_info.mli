@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_info.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Interface to the information collected in source files. *)
 
@@ -56,6 +55,7 @@ and text_element = Odoc_types.text_element =
   | Module_list of string list
        (** The table of the given modules with their abstract. *)
   | Index_list (** The links to the various indexes (values, types, ...) *)
+  | Custom of string * text (** to extend \{foo syntax *)
   | Target of string * string (** (target, code) : to specify code specific to a target format *)
 
 (** A text is a list of [text_element]. The order matters. *)
@@ -202,7 +202,7 @@ module Type :
         {
           vc_name : string ; (** Name of the constructor. *)
           vc_args : Types.type_expr list ; (** Arguments of the constructor. *)
-	  vc_ret : Types.type_expr option ;
+          vc_ret : Types.type_expr option ;
           mutable vc_text : text option ; (** Optional description in the associated comment. *)
         }
 
@@ -423,7 +423,7 @@ module Module :
         {
           im_name : Name.t ; (** Complete name of the included module. *)
           mutable im_module : mmt option ; (** The included module or module type, if we found it. *)
-	  mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
+          mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
         }
 
     and module_alias = Odoc_module.module_alias =
@@ -433,10 +433,10 @@ module Module :
         }
 
     and module_parameter = Odoc_module.module_parameter = {
-	mp_name : string ; (** the name *)
-	mp_type : Types.module_type ; (** the type *)
-	mp_type_code : string ; (** the original code *)
-	mp_kind : module_type_kind ; (** the way the parameter was built *)
+        mp_name : string ; (** the name *)
+        mp_type : Types.module_type ; (** the type *)
+        mp_type_code : string ; (** the original code *)
+        mp_kind : module_type_kind ; (** the way the parameter was built *)
       }
 
     (** Different kinds of a module. *)
@@ -459,15 +459,16 @@ module Module :
     and t_module = Odoc_module.t_module =
         {
           m_name : Name.t ; (** Complete name of the module. *)
-          m_type : Types.module_type ; (** The type of the module. *)
+          mutable m_type : Types.module_type ; (** The type of the module. *)
           mutable m_info : info option ; (** Information found in the optional associated comment. *)
           m_is_interface : bool ; (** [true] for modules read from interface files *)
           m_file : string ; (** The file the module is defined in. *)
           mutable m_kind : module_kind ; (** The way the module is defined. *)
           mutable m_loc : location ;
           mutable m_top_deps : Name.t list ; (** The toplevels module names this module depends on. *)
-	  mutable m_code : string option ; (** The whole code of the module *)
-	  mutable m_code_intf : string option ; (** The whole code of the interface of the module *)
+          mutable m_code : string option ; (** The whole code of the module *)
+          mutable m_code_intf : string option ; (** The whole code of the interface of the module *)
+          m_text_only : bool ; (** [true] if the module comes from a text file *)
         }
 
     and module_type_alias = Odoc_module.module_type_alias =
@@ -493,7 +494,7 @@ module Module :
         {
           mt_name : Name.t ; (** Complete name of the module type. *)
           mutable mt_info : info option ; (** Information found in the optional associated comment. *)
-          mt_type : Types.module_type option ; (** [None] means that the module type is abstract. *)
+          mutable mt_type : Types.module_type option ; (** [None] means that the module type is abstract. *)
           mt_is_interface : bool ; (** [true] for modules read from interface files. *)
           mt_file : string ; (** The file the module type is defined in. *)
           mutable mt_kind : module_type_kind option ;
@@ -727,6 +728,9 @@ val verbose : string -> unit
    error counter is incremented. *)
 val warning : string -> unit
 
+(** A flag to indicate whether ocamldoc warnings must be printed or not. *)
+val print_warnings : bool ref
+
 (** Increment this counter when an error is encountered.
    The ocamldoc tool will print the number of errors
    encountered exit with code 1 if this number is greater
@@ -766,10 +770,11 @@ val info_string_of_info : info -> string
 (** [info_of_comment_file file] parses the given file
    and return an {!Odoc_info.info} structure. The content of the
    file must have the same syntax as the content of a special comment.
+   The given module list is used for cross reference.
    @raise Failure is the file could not be opened or there is a
    syntax error.
 *)
-val info_of_comment_file : string -> info
+val info_of_comment_file : Module.t_module list -> string -> info
 
 (** [remove_ending_newline s] returns [s] without the optional ending newline. *)
 val remove_ending_newline : string -> string
@@ -968,109 +973,6 @@ module Global :
     (** The flag which indicates if we must generate a trailer.*)
     val with_trailer : bool ref
 end
-
-      (** The list of module names to hide. *)
-      val hidden_modules : string list ref
-
-      (** The directory where files have to be generated. *)
-      val target_dir : string ref
-
-      (** An optional file to use where a CSS style is defined (for HTML). *)
-      val css_style : string option ref
-
-      (** Generate only index files. (for HTML). *)
-      val index_only : bool ref
-
-      (** To colorize code in HTML generated documentation pages, not code pages. *)
-      val colorize_code : bool ref
-
-      (** Character encoding used in HTML pages header. *)
-      val charset : string ref
-
-      (** The flag which indicates if we must generate a header (for LaTeX). *)
-      val with_header : bool ref
-
-      (** The flag which indicates if we must generate a trailer (for LaTeX). *)
-      val with_trailer : bool ref
-
-      (** The flag to indicate if we must generate one file per module (for LaTeX). *)
-      val separate_files : bool ref
-
-      (** The list of pairs (title level, sectionning style). *)
-      val latex_titles : (int * string) list ref
-
-      (** The prefix to use for value labels in LaTeX. *)
-      val latex_value_prefix : string ref
-
-      (** The prefix to use for type labels in LaTeX. *)
-      val latex_type_prefix : string ref
-
-      (** The prefix to use for exception labels in LaTeX. *)
-      val latex_exception_prefix : string ref
-
-      (** The prefix to use for module labels in LaTeX. *)
-      val latex_module_prefix : string ref
-
-      (** The prefix to use for module type labels in LaTeX. *)
-      val latex_module_type_prefix : string ref
-
-      (** The prefix to use for class labels in LaTeX. *)
-      val latex_class_prefix : string ref
-
-      (** The prefix to use for class type labels in LaTeX. *)
-      val latex_class_type_prefix : string ref
-
-      (** The prefix to use for attribute labels in LaTeX. *)
-      val latex_attribute_prefix : string ref
-
-      (** The prefix to use for method labels in LaTeX. *)
-      val latex_method_prefix : string ref
-
-      (** The flag which indicates if we must generate a table of contents (for LaTeX). *)
-      val with_toc : bool ref
-
-      (** The flag which indicates if we must generate an index (for TeXinfo). *)
-      val with_index : bool ref
-
-      (** The flag which indicates if we must escape accentuated characters (for TeXinfo).*)
-      val esc_8bits : bool ref
-
-      (** The Info directory section *)
-      val info_section : string ref
-
-      (** The Info directory entries to insert *)
-      val info_entry : string list ref
-
-      (** Include all modules or only the ones on the command line, for the dot output. *)
-      val dot_include_all : bool ref
-
-      (** Generate dependency graph for types. *)
-      val dot_types : bool ref
-
-      (** Perform transitive reduction before dot output. *)
-      val dot_reduce : bool ref
-
-      (** The colors used in the dot output. *)
-      val dot_colors : string list ref
-
-      (** The suffix for man pages. *)
-      val man_suffix : string ref
-
-      (** The section for man pages. *)
-      val man_section : string ref
-
-      (** The flag to generate all man pages or only for modules and classes.*)
-      val man_mini : bool ref
-
-      (** The files to be analysed. *)
-      val files : source_file list ref
-
-      (** To set the documentation generator. *)
-      val set_doc_generator : doc_generator option -> unit
-
-      (** Add an option specification. *)
-      val add_option : string * Arg.spec * string -> unit
-    end
 
 (** Analysis of the given source files.
    @param init is the list of modules already known from a previous analysis.

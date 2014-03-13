@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: dll.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Handling of dynamically-linked libraries *)
 
 (* Extract the name of a DLLs from its external name (xxx.so or -lxxx) *)

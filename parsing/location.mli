@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: location.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Source code locations (ranges of positions), used in parsetree. *)
 
 open Format
@@ -77,4 +75,3 @@ val show_filename: string -> string
 
 
 val absname: bool ref
-

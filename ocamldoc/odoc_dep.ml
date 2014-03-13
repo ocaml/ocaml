@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_dep.ml 12858 2012-08-10 14:45:51Z maranget $ *)
 
 (** Top modules dependencies. *)
 
@@ -37,7 +36,10 @@ module Dep =
   struct
     type id = string
 
-    module S = Set.Make (struct type t = string let compare = compare end)
+    module S = Set.Make (struct
+      type t = string
+      let compare (x:t) y = compare x y
+    end)
 
     let set_to_list s =
       let l = ref [] in

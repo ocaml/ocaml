@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id$ *)
 
 (** An OCamldoc generator to retrieve information in "todo" tags and
    generate an html page with all todo items. *)
@@ -48,7 +47,7 @@ struct
     method private gen_if_tag name target info_opt =
       match info_opt with
         None -> ()
-      |	Some i ->
+      | Some i ->
           let l =
             List.fold_left
               (fun acc (t, text) ->
@@ -69,7 +68,7 @@ struct
                        | _ -> (None, text) :: acc
 
                      end
-                 |	_ -> acc
+                 | _ -> acc
               )
               []
               i.i_custom

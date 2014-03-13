@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: nucleic.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Use floating-point arithmetic *)
 
 external (+) : float -> float -> float = "%addfloat"
@@ -60,14 +58,14 @@ pt_theta p
    matrices don't have the perspective terms and are the transpose of
    Paul's one.  See also "M\"antyl\"a, M. (1985) An Introduction to
    Solid Modeling, Computer Science Press" Appendix A.
-  
+
    The components of a transformation matrix are named like this:
-  
+
     a  b  c
     d  e  f
     g  h  i
    tx ty tz
-  
+
    The components tx, ty, and tz are the translation vector.
 *)
 
@@ -208,7 +206,7 @@ tfo_align p1 p2 p3
 
 (*
    Numbering of atoms follows the paper:
-  
+
    IUPAC-IUB Joint Commission on Biochemical Nomenclature (JCBN)
    (1983) Abbreviations and Symbols for the Description of
    Conformations of Polynucleotide Chains.  Eur. J. Biochem 131,
@@ -273,7 +271,7 @@ nuc_C1'
   = c1'
 
 let
-nuc_C2 
+nuc_C2
 (N(dgf_base_tfo,p_o3'_275_tfo,p_o3'_180_tfo,p_o3'_60_tfo,
    p,o1p,o2p,o5',c5',h5',h5'',c4',h4',o4',c1',h1',c2',h2'',o2',h2',
    c3',h3',o3',n1,n3,c2,c4,c5,c6,_))
@@ -287,7 +285,7 @@ nuc_C3'
   = c3'
 
 let
-nuc_C4 
+nuc_C4
 (N(dgf_base_tfo,p_o3'_275_tfo,p_o3'_180_tfo,p_o3'_60_tfo,
    p,o1p,o2p,o5',c5',h5',h5'',c4',h4',o4',c1',h1',c2',h2'',o2',h2',
    c3',h3',o3',n1,n3,c2,c4,c5,c6,_))
@@ -301,7 +299,7 @@ nuc_C4'
   = c4'
 
 let
-nuc_N1 
+nuc_N1
 (N(dgf_base_tfo,p_o3'_275_tfo,p_o3'_180_tfo,p_o3'_60_tfo,
    p,o1p,o2p,o5',c5',h5',h5'',c4',h4',o4',c1',h1',c2',h2'',o2',h2',
    c3',h3',o3',n1,n3,c2,c4,c5,c6,_))
@@ -2896,13 +2894,13 @@ let rec search (partial_inst : variable list) l constr =
 (* -- DOMAINS ---------------------------------------------------------------*)
 
 (* Primary structure:   strand A CUGCCACGUCUG, strand B CAGACGUGGCAG
-  
+
    Secondary structure: strand A CUGCCACGUCUG
                                  ||||||||||||
                                  GACGGUGCAGAC strand B
-  
+
    Tertiary structure:
-  
+
       5' end of strand A C1----G12 3' end of strand B
                        U2-------A11
                       G3-------C10
@@ -2915,13 +2913,13 @@ let rec search (partial_inst : variable list) l constr =
                       G3--------C10
                        A2-------U11
      5' end of strand B C1----G12 3' end of strand A
-  
+
    "helix", "stacked" and "connected" describe the spatial relationship
    between two consecutive nucleotides. E.g. the nucleotides C1 and U2
    from the strand A.
-  
+
    "wc" (stands for Watson-Crick and is a type of base-pairing),
-   and "wc-dumas" describe the spatial relationship between 
+   and "wc-dumas" describe the spatial relationship between
    nucleotides from two chains that are growing in opposite directions.
    E.g. the nucleotides C1 from strand A and G12 from strand B.
 *)
@@ -2965,7 +2963,7 @@ let
 reference n i partial_inst = [ mk_var i tfo_id n ]
 
 (* The transformation matrix for wc is from:
-  
+
    Chandrasekaran R. et al (1989) A Re-Examination of the Crystal
    Structure of A-DNA Using Fiber Diffraction Data. J. Biomol.
    Struct. & Dynamics 6(6):1189-1202.
@@ -3047,7 +3045,7 @@ let
 a38_g37 nucl i j partial_inst
   = mk_var i (dgf_base a38_g37_tfo (get_var j partial_inst) nucl) nucl
 
-let   
+let
 stacked3' nucl i j partial_inst
   = (a38_g37 nucl i j partial_inst) :: (helix3' nucl i j partial_inst)
 
@@ -3146,7 +3144,7 @@ pseudoknot_domains
      stacked5' rU   5  4; (*   | 4.5 Angstroms *)
      stacked5' rC   6  5  (* <-'               *)
     ]
-  
+
 (* Pseudoknot constraint *)
 
 let
@@ -3212,7 +3210,7 @@ var_most_distant_atom v =
   let max_dist = ref 0.0 in
   for i = 0 to pred (Array.length atoms) do
     let p = atoms.(i) in
-    let distance = 
+    let distance =
       let pos = absolute_pos v p
       in sqrt ((pos.x * pos.x) + (pos.y * pos.y) + (pos.z * pos.z)) in
     if distance > !max_dist then max_dist := distance

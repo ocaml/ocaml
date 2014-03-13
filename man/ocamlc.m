@@ -10,8 +10,6 @@
 .\"*                                                                     *
 .\"***********************************************************************
 .\"
-.\" $Id: ocamlc.m 12959 2012-09-27 13:12:51Z maranget $
-.\"
 .TH OCAMLC 1
 
 .SH NAME
@@ -194,6 +192,9 @@ options as if they had been provided on the
 command line, unless the
 .B -noautolink
 option is given.
+.TP
+.B \-absname
+Show absolute filenames in error messages.
 .TP
 .B \-annot
 Dump detailed information about the compilation (types, bindings,
@@ -407,7 +408,7 @@ specify the name of the output file produced.
 .B \-output\-obj
 Cause the linker to produce a C object file instead of a bytecode
 executable file. This is useful to wrap OCaml code as a C library,
-callable from any C program. The name of the output object file 
+callable from any C program. The name of the output object file
 must be set with the
 .B \-o
 option. This
@@ -751,7 +752,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-9\-27\-29\-32..39 .
+.BR \-w\ +a\-4\-6\-9\-27\-29\-32..39\-42\-44 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

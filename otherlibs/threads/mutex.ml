@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: mutex.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 type t = { mutable locked: bool; mutable waiting: Thread.t list }
 
 let create () = { locked = false; waiting = [] }

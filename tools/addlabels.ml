@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: addlabels.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 open StdLabels
 open Asttypes
 open Parsetree

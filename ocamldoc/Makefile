@@ -1,4 +1,5 @@
 #(***********************************************************************)
+#(*                                                                     *)
 #(*                             OCamldoc                                *)
 #(*                                                                     *)
 #(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 #(*  under the terms of the Q Public License version 1.0.               *)
 #(*                                                                     *)
 #(***********************************************************************)
-
-# $Id: Makefile 12959 2012-09-27 13:12:51Z maranget $
 
 include ../config/Makefile
 
@@ -50,9 +49,9 @@ ODOC_TEST=odoc_test.cmo
 GENERATORS_CMOS= \
 	generators/odoc_todo.cmo \
 	generators/odoc_literate.cmo
-GENERATORS_CMXS_TMP1=$(GENERATORS_CMOS:.cmo=.cmxs)
-GENERATORS_CMXS_TMP2=$(NATDYNLINK:false=)
-GENERATORS_CMXS=$(GENERATORS_CMXS_TMP2:true=$(GENERATORS_CMXS_TMP1))
+true = $(GENERATORS_CMOS:.cmo=.cmxs)
+false =
+GENERATORS_CMXS := $($(NATDYNLINK))
 
 
 # Compilation

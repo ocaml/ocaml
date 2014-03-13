@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Specific operations for the PowerPC processor *)
 
 open Misc
@@ -45,6 +43,8 @@ let ppc64 =
 let size_addr = if ppc64 then 8 else 4
 let size_int = size_addr
 let size_float = 8
+
+let allow_unaligned_access = false
 
 (* Behavior of division *)
 

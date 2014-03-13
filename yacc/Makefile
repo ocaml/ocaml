@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile 12858 2012-08-10 14:45:51Z maranget $
-
 # Makefile for the parser generator.
 
 include ../config/Makefile
@@ -25,7 +23,7 @@ OBJS= closure.o error.o lalr.o lr0.o main.o mkpar.o output.o reader.o \
 all: ocamlyacc$(EXE)
 
 ocamlyacc$(EXE): $(OBJS)
-	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc $(OBJS)
+	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc$(EXE) $(OBJS)
 
 version.h : ../VERSION
 	echo "#define OCAML_VERSION \"`sed -e 1q ../VERSION`\"" >version.h

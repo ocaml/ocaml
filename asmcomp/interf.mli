@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: interf.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Construction of the interference graph.
    Annotate pseudoregs with interference lists and preference lists. *)
 

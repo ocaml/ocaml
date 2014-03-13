@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: list.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** List operations.
 
    Some functions are flagged as not tail-recursive.  A tail-recursive

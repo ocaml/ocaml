@@ -1,3 +1,4 @@
+;;; caml-help.el --- Contextual completion and help to caml-mode
 ;(***********************************************************************)
 ;(*                                                                     *)
 ;(*                                OCaml                                *)
@@ -10,14 +11,12 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id: caml-help.el 12858 2012-08-10 14:45:51Z maranget $ *)
+;; Author: Didier Remy, November 2001.
 
-;; caml-info.el --- contextual completion and help to caml-mode
+;;; Commentary:
 
-;; Didier Remy, November 2001.
-
-;; This provides two functions completion and help
-;; look for caml-complete and caml-help
+;; This provides two functions: completion and help.
+;; Look for caml-complete and caml-help.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -34,15 +33,16 @@
 ;;   - the viewing method and the database, so that the documentation for
 ;;     and identifier could be search in
 ;;       * info / html / man / mli's sources
-;;       * viewed in emacs or using an external previewer.
+;;       * viewed in Emacs or using an external previewer.
 ;;
 ;;  Take all identifiers (labels, Constructors, exceptions, etc.)
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; Code:
 
 (eval-and-compile
-  (if (and (boundp 'running-xemacs) running-xemacs)
+  (if (featurep 'xemacs)
       (require 'caml-xemacs)
     (require 'caml-emacs)))
 
@@ -52,11 +52,11 @@
 ;; variables to be customized
 
 (defvar ocaml-lib-path 'lazy
-  "Path list for ocaml lib sources (mli files)
+  "Path list for ocaml lib sources (mli files).
 
-'lazy means ask ocaml to find it for your at first use.")
+`lazy' means ask ocaml to find it for your at first use.")
 (defun ocaml-lib-path ()
-  "Computes if necessary and returns the path for ocaml libs"
+  "Compute if necessary and return the path for ocaml libs."
   (if (listp ocaml-lib-path) nil
     (setq ocaml-lib-path
           (split-string
@@ -85,13 +85,11 @@
       (concat (downcase (substring s 0 1)) (substring s 1))
     s))
 
-(defun iter (f l) (while (consp l) (apply f (list (car l))) (setq l (cdr l))))
-
 (defun ocaml-find-files (path filter &optional depth split)
   (let* ((path-string
           (if (stringp path)
               (if (file-directory-p path) path nil)
-            (mapconcat '(lambda (d) (if (file-directory-p d) d))
+            (mapconcat (lambda (d) (if (file-directory-p d) d))
                        path " ")))
          (command
           (and path-string
@@ -112,7 +110,7 @@
 
 (defvar ocaml-module-alist 'lazy
   "A-list of modules with how and where to find help information.
-  'delay means non computed yet")
+`delay' means non computed yet.")
 
 (defun ocaml-add-mli-modules (modules tag &optional path)
   (let ((files
@@ -133,13 +131,13 @@
     modules))
 
 (defun ocaml-add-path (dir &optional path)
-  "Extend  ocaml-module-alist with modules of DIR relative to PATH"
+  "Extend  `ocaml-module-alist' with modules of DIR relative to PATH."
   (interactive "D")
   (let* ((old (ocaml-lib-path))
          (new
           (if (file-name-absolute-p dir) dir
             (concat
-             (or (find-if '(lambda (p) (file-directory-p (concat p  "/" dir)))
+             (or (find-if (lambda (p) (file-directory-p (concat p  "/" dir)))
                       (cons default-directory old))
                  (error "Directory not found"))
              "/" dir))))
@@ -148,7 +146,7 @@
           (ocaml-add-mli-modules (ocaml-module-alist) 'lib new))))
 
 (defun ocaml-module-alist ()
-  "Call by need value of variable ocaml-module-alist"
+  "Call by need value of variable `ocaml-module-alist'."
   (if (listp ocaml-module-alist)
       nil
     ;; build list of mli files
@@ -251,7 +249,7 @@ When call interactively, make completion over known modules."
 (defun ocaml-close-module (arg)
   "*Close module of name ARG when ARG is a string.
 When call interactively, make completion over visible modules.
-Otherwise if ARG is true, close all modules and reset to default. "
+Otherwise if ARG is true, close all modules and reset to default."
   (interactive "P")
   (if (= (prefix-numeric-value arg) 4)
       (setq ocaml-visible-modules 'lazy)
@@ -264,7 +262,7 @@ Otherwise if ARG is true, close all modules and reset to default. "
                modules))
         (if (equal arg "") (setq arg (caar modules))))
       (setq ocaml-visible-modules
-            (remove-if '(lambda (m) (equal (car m) arg))
+            (remove-if (lambda (m) (equal (car m) arg))
                        ocaml-visible-modules))
       ))
   (message "%S" (mapcar 'car (ocaml-visible-modules))))
@@ -284,8 +282,7 @@ If defined Module and Entry are represented by a region in the buffer,
 and are nil otherwise.
 
 For debugging purposes, it returns the string Module.entry if called
-with an optional non-nil argument.
-"
+with an optional non-nil argument."
   (save-excursion
     (let ((module) (entry))
       (if (looking-at "[ \n]") (skip-chars-backward " "))
@@ -322,12 +319,12 @@ with an optional non-nil argument.
     (if (null pattern)
         (apply 'append (mapcar 'ocaml-module-symbols list))
       (let ((pat (concat "^" (regexp-quote pattern))) (res))
-        (iter
-         '(lambda (l)
-            (iter '(lambda (x)
-                     (if (string-match pat (car l))
-                         (if (member x res) nil (setq res (cons x res)))))
-                  (ocaml-module-symbols l)))
+        (mapc
+         (lambda (l)
+           (mapc (lambda (x)
+                   (if (string-match pat (car l))
+                       (if (member x res) nil (setq res (cons x res)))))
+                 (ocaml-module-symbols l)))
          list)
         res)
       )))
@@ -427,8 +424,7 @@ where identifier is defined."
 (defvar ocaml-info-prefix "ocaml-lib"
   "Prefix of ocaml info files describing library modules.
 Suffix .info will be added to info files.
-Additional suffix .gz may be added if info files are compressed.
-")
+Additional suffix .gz may be added if info files are compressed.")
 ;;
 
 (defun ocaml-hevea-info-add-entries (entries dir name)
@@ -474,15 +470,14 @@ Additional suffix .gz may be added if info files are compressed.
 of \\[Info-default-directory-list] and the base name \\[ocaml-info-name]
 of files to look for.
 
-This uses info files produced by HeVeA.
-"
+This uses info files produced by HeVeA."
   (let ((collect) (seen))
-    (iter '(lambda (d)
-             (if (member d seen) nil
-               (setq collect
-                     (ocaml-hevea-info-add-entries
-                      collect d ocaml-info-prefix))
-               (setq done (cons d seen))))
+    (mapc (lambda (d)
+            (if (member d seen) nil
+              (setq collect
+                    (ocaml-hevea-info-add-entries
+                     collect d ocaml-info-prefix))
+              (setq seen (cons d seen))))
           Info-directory-list)
     collect))
 
@@ -520,12 +515,12 @@ of files to look for.
 This uses info files produced by ocamldoc."
   (require 'info)
   (let ((collect) (seen))
-    (iter '(lambda (d)
-             (if (member d seen) nil
-               (setq collect
-                     (ocaml-ocamldoc-info-add-entries collect d
-                                                      ocaml-info-prefix))
-               (setq done (cons d seen))))
+    (mapc (lambda (d)
+            (if (member d seen) nil
+              (setq collect
+                    (ocaml-ocamldoc-info-add-entries collect d
+                                                     ocaml-info-prefix))
+              (setq seen (cons d seen))))
           Info-directory-list)
     collect))
 
@@ -536,11 +531,11 @@ This uses info files produced by ocamldoc."
 
   nil means do not use info.
 
-  A function to build the list lazily (at the first call). The result of
+  A function to build the list lazily (at the first call).  The result of
 the function call will be assign permanently to this variable for future
-uses. We provide two default functions \\[ocaml-info-default-function]
-(info produced by HeVeA is the default) and \\[ocaml-info-default-function]
-(info produced by ocamldoc).
+uses.  We provide two default functions `ocaml-hevea-info'
+\(info produced by HeVeA is the default) and `ocaml-ocamldoc-info'
+\(info produced by ocamldoc).
 
   Otherwise, this value should be an alist binding module names to info
 entries of the form to \"(entry)section\" be taken by the \\[info]
@@ -548,7 +543,7 @@ command. An entry may be an info module or a complete file name."
 )
 
 (defun ocaml-info-alist ()
-  "Call by need value of variable ocaml-info-alist"
+  "Call by need value of variable `ocaml-info-alist'."
   (cond
    ((listp ocaml-info-alist))
    ((functionp ocaml-info-alist)
@@ -574,9 +569,11 @@ command. An entry may be an info module or a complete file name."
 
 ;; Help function.
 
+(defvar view-return-to-alist)
+(defvar view-exit-action)
 
 (defun ocaml-goto-help (&optional module entry same-window)
-  "Searches info manual for MODULE and ENTRY in MODULE.
+  "Search info manual for MODULE and ENTRY in MODULE.
 If unspecified, MODULE and ENTRY are inferred from the position in the
 current buffer using \\[ocaml-qualified-identifier]."
   (interactive)
@@ -635,6 +632,15 @@ current buffer using \\[ocaml-qualified-identifier]."
     (if (window-live-p window) (select-window window))
     ))
 
+(defface ocaml-help-face
+  '((t :background "#88FF44"))
+  "Face to highlight expressions and types.")
+
+(defvar ocaml-help-ovl
+  (let ((ovl (make-overlay 1 1)))
+    (overlay-put ovl 'face 'ocaml-help-face)
+    ovl))
+
 (defun caml-help (arg)
   "Find documentation for OCaml qualified identifiers.
 
@@ -642,11 +648,11 @@ It attemps to recognize an qualified identifier of the form
 ``Module . entry'' around point using function `ocaml-qualified-identifier'.
 
 If Module is undetermined it is temptatively guessed from the identifier name
-and according to visible modules. If this is still unsucessful,  the user is
+and according to visible modules.  If this is still unsucessful,  the user is
 then prompted for a Module name.
 
 The documentation for Module is first seach in the info manual if available,
-then in the ``module.mli'' source file. The entry is then searched in the
+then in the ``module.mli'' source file.  The entry is then searched in the
 documentation.
 
 Visible modules are computed only once, at the first call.
@@ -657,8 +663,7 @@ Prefix arg 0 forces recompilation of visible modules (and their content)
 from the file content.
 
 Prefix arg 4 prompts for Module and identifier instead of guessing values
-from the possition of point in the current buffer.
-"
+from the possition of point in the current buffer."
   (interactive "p")
   (delete-overlay ocaml-help-ovl)
   (let ((module) (entry) (module-entry))
@@ -743,16 +748,10 @@ buffer positions."
          (setq ocaml-links (cons section all))
          )))))
 
-(defvar ocaml-link-map (make-sparse-keymap))
-(define-key ocaml-link-map [mouse-2] 'ocaml-link-goto)
-
-(defvar ocaml-help-ovl (make-overlay 1 1))
-(make-face 'ocaml-help-face)
-(set-face-doc-string 'ocaml-help-face
-                     "face for hilighting expressions and types")
-(if (not (face-differs-from-default-p 'ocaml-help-face))
-    (set-face-background 'ocaml-help-face "#88FF44"))
-(overlay-put ocaml-help-ovl 'face 'ocaml-help-face)
+(defvar ocaml-link-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-2] 'ocaml-link-goto)
+    map))
 
 (defun ocaml-help-show (arg)
   (let ((right (point))
@@ -763,6 +762,7 @@ buffer positions."
     ))
 
 (defun ocaml-link-goto (click)
+  "Follow link at point."
   (interactive "e")
   (let* ((pos (caml-event-point-start click))
          (win (caml-event-window click))
@@ -787,12 +787,10 @@ buffer positions."
       (if (window-live-p window) (select-window window))
       )))
 
-(cond
- ((and (x-display-color-p)
-       (not (memq 'ocaml-link-face (face-list))))
-  (make-face 'ocaml-link-face)
-  (set-face-foreground 'ocaml-link-face "Purple")))
 
+(defface ocaml-link-face
+  '((((class color)) :foreground "Purple"))
+  "Face to highlight hyperlinks.")
 
 (defun ocaml-link-activate (section)
   (let ((links (ocaml-info-links section)))
@@ -853,3 +851,4 @@ buffer positions."
 
 
 (provide 'caml-help)
+;;; caml-help.el ends here

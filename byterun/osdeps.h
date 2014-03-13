@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: osdeps.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Operating system - specific stuff */
 
 #ifndef CAML_OSDEPS_H

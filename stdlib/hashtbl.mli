@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: hashtbl.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (** Hash tables and hash functions.
 
    Hash tables are hashed association tables, with in-place modification.

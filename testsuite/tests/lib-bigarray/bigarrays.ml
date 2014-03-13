@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 open Bigarray
 open Printf
 open Complex
@@ -139,14 +151,14 @@ let _ =
   let from_list kind vals =
     let a = Array1.create kind c_layout (List.length vals) in
     let rec set i = function
-        [] -> () 
+        [] -> ()
       | hd :: tl -> a.{i} <- hd; set (i+1) tl in
     set 0 vals;
     a in
   let from_list_fortran kind vals =
     let a = Array1.create kind fortran_layout (List.length vals) in
     let rec set i = function
-        [] -> () 
+        [] -> ()
       | hd :: tl -> a.{i} <- hd; set (i+1) tl in
     set 1 vals;
     a in
@@ -157,7 +169,7 @@ let _ =
   for i = 0 to 2 do test (i+1) a.{i} i done;
   test 4 true (try ignore a.{3}; false with Invalid_argument _ -> true);
   test 5 true (try ignore a.{-1}; false with Invalid_argument _ -> true);
-    
+
   let b = Array1.create float64 fortran_layout 3 in
   for i = 1 to 3 do b.{i} <- float i done;
   for i = 1 to 3 do test (5 + i) b.{i} (float i) done;
@@ -180,7 +192,7 @@ let _ =
   let a = Array1.create int c_layout 3 in
   for i = 0 to 2 do Array1.unsafe_set a i i done;
   for i = 0 to 2 do test (i+1) (Array1.unsafe_get a i) i done;
-    
+
   let b = Array1.create float64 fortran_layout 3 in
   for i = 1 to 3 do Array1.unsafe_set b i (float i) done;
   for i = 1 to 3 do test (5 + i) (Array1.unsafe_get b i) (float i) done;
@@ -459,7 +471,7 @@ let _ =
   test 3 true (try ignore a.{-1,0}; false with Invalid_argument _ -> true);
   test 4 true (try ignore a.{0,3}; false with Invalid_argument _ -> true);
   test 5 true (try ignore a.{0,-1}; false with Invalid_argument _ -> true);
-    
+
   let b = Array2.create float32 fortran_layout 3 3 in
   for i = 1 to 3 do for j = 1 to 3 do b.{i,j} <- float(i-j) done done;
   let ok = ref true in
@@ -480,7 +492,7 @@ let _ =
     for j = 0 to 2 do if Array2.unsafe_get a i j <> i-j then ok := false done
   done;
   test 1 true !ok;
-    
+
   let b = Array2.create float32 fortran_layout 3 3 in
   for i = 1 to 3 do for j = 1 to 3 do Array2.unsafe_set b i j (float(i-j)) done done;
   let ok = ref true in
@@ -611,7 +623,7 @@ let _ =
      if Int32.to_int a.{i,j,k} <> (i lsl 4) + (j lsl 2) + k then ok := false
   done done done;
   test 1 true !ok;
-    
+
   let b = Array3.create int64 fortran_layout 2 3 4 in
   for i = 1 to 2 do for j = 1 to 3 do for k = 1 to 4 do
      b.{i,j,k} <- Int64.of_int((i lsl 4) + (j lsl 2) + k)
@@ -764,7 +776,7 @@ let _ =
   Sys.remove mapped_file;
 
   ()
-                  
+
 (********* End of test *********)
 
 let _ =

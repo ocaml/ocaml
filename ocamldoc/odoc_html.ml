@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_html.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Generation of html documentation. *)
 
@@ -204,7 +203,10 @@ module Naming =
       f
   end
 
-module StringSet = Set.Make (struct type t = string let compare = compare end)
+module StringSet = Set.Make (struct
+  type t = string
+  let compare (x:t) y = compare x y
+end)
 
 (** A class with a method to colorize a string which represents OCaml code. *)
 class ocaml_code =
@@ -331,7 +333,11 @@ class virtual text =
 	in
 	fun b s ->
       if !colorize_code then
-         self#html_of_code b (remove_useless_newlines s)
+          (
+           bs b "<pre class=\"codepre\">";
+           self#html_of_code b (remove_useless_newlines s);
+           bs b "</pre>"
+          )
       else
         (
          bs b "<pre class=\"codepre\"><code class=\"";
@@ -399,7 +405,6 @@ class virtual text =
 
     method html_of_Title b n label_opt t =
       let label1 = self#create_title_label (n, label_opt, t) in
-      bp b "<span id=\"%s\">" (Naming.label_target label1);
       let (tag_o, tag_c) =
 	if n > 6 then
 	  (Printf.sprintf "div class=\"h%d\"" n, "div")
@@ -407,13 +412,12 @@ class virtual text =
 	  let t = Printf.sprintf "h%d" n in (t, t)
       in
       bs b "<";
-      bs b tag_o;
+      bp b "%s id=\"%s\"" tag_o (Naming.label_target label1);
       bs b ">";
       self#html_of_text b t;
       bs b "</";
       bs b tag_c;
-      bs b ">";
-      bs b "</span>"
+      bs b ">"
 
     method html_of_Latex b _ = ()
       (* don't care about LaTeX stuff in HTML. *)
@@ -451,6 +455,8 @@ class virtual text =
             | Odoc_info.RK_method -> (Naming.complete_target Naming.mark_method name, h name)
             | Odoc_info.RK_section t -> (Naming.complete_label_target name,
 					 Odoc_info.Italic [Raw (Odoc_info.string_of_text t)])
+            | Odoc_info.RK_recfield -> (Naming.complete_recfield_target name, h name)
+            | Odoc_info.RK_const -> (Naming.complete_const_target name, h name)
             | Odoc_info.RK_recfield -> (Naming.complete_recfield_target name, h name)
             | Odoc_info.RK_const -> (Naming.complete_const_target name, h name)
           in
@@ -830,14 +836,12 @@ class html =
         "a:hover {background-color: #ddd; text-decoration: underline}";
         "pre { margin-bottom: 4px; font-family: monospace; }" ;
         "pre.verbatim, pre.codepre { }";
-
         ".indextable {border: 1px #ddd solid; border-collapse: collapse}";
-        ".indextable td, .indextable th {border: 1px #ddd solid;	min-width: 80px}";
+        ".indextable td, .indextable th {border: 1px #ddd solid; min-width: 80px}";
         ".indextable td.module {background-color: #eee ;  padding-left: 2px; padding-right: 2px}";
-        ".indextable td.module a {color: 4E6272;	text-decoration: none; display: block; width: 100%}";
+        ".indextable td.module a {color: 4E6272; text-decoration: none; display: block; width: 100%}";
         ".indextable td.module a:hover {text-decoration: underline; background-color: transparent}";
         ".deprecated {color: #888; font-style: italic}" ;
-
         ".indextable tr td div.info { margin-left: 2px; margin-right: 2px }" ;
 
         "ul.indexlist { margin-left: 0; padding-left: 0;}";
@@ -1506,7 +1510,7 @@ class html =
              | l,Some r ->
                  bs b (" " ^ (self#keyword ":") ^ " ");
                  self#html_of_type_expr_list ~par: false b father " * " l;
-		 bs b (" " ^ (self#keyword "->") ^ " ");
+                 bs b (" " ^ (self#keyword "->") ^ " ");
                  self#html_of_type_expr b father r;
             );
             bs b "</code></td>\n";
@@ -1547,11 +1551,11 @@ class html =
             bs b "<code>&nbsp;&nbsp;</code>";
             bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
-	    if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
+            if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
             bp b "<span id=\"%s\">%s</span>&nbsp;:"
               (Naming.recfield_target t r)
               r.rf_name;
-	    self#html_of_type_expr b father r.rf_type;
+            self#html_of_type_expr b father r.rf_type;
             bs b ";</code></td>\n";
             (
 	     match r.rf_text with
@@ -1772,11 +1776,11 @@ class html =
       bs b "</pre>";
       if info then
         (
-	 if complete then
-	   self#html_of_info ~indent: false
-	 else
-	   self#html_of_info_first_sentence
-	) b m.m_info
+         if complete then
+           self#html_of_info ~indent: true
+         else
+           self#html_of_info_first_sentence
+        ) b m.m_info
       else
         ()
 
@@ -1801,11 +1805,11 @@ class html =
       bs b "</pre>";
       if info then
         (
-	 if complete then
-	   self#html_of_info ~indent: false
-	 else
-	   self#html_of_info_first_sentence
-	) b mt.mt_info
+         if complete then
+           self#html_of_info ~indent: true
+         else
+           self#html_of_info_first_sentence
+        ) b mt.mt_info
       else
         ()
 
@@ -1959,7 +1963,7 @@ class html =
       print_DEBUG "html#html_of_class : info" ;
       (
        if complete then
-	 self#html_of_info ~indent: false
+         self#html_of_info ~indent: true
        else
 	 self#html_of_info_first_sentence
       ) b c.cl_info
@@ -2002,7 +2006,7 @@ class html =
       bs b "</pre>";
       (
        if complete then
-	 self#html_of_info ~indent: false
+         self#html_of_info ~indent: true
        else
 	 self#html_of_info_first_sentence
       ) b ct.clt_info
@@ -2190,7 +2194,7 @@ class html =
 	bs b "<body>\n";
         self#print_navbar b pre_name post_name cl.cl_name;
         bs b "<h1>";
-	bs b (Odoc_messages.clas^" ");
+        bs b (Odoc_messages.clas^" ");
         if cl.cl_virtual then bs b "virtual " ;
         bp b "<a href=\"%s\">%s</a>" type_file cl.cl_name;
         bs b "</h1>\n";
@@ -2237,7 +2241,7 @@ class html =
         bs b "<body>\n";
         self#print_navbar b pre_name post_name clt.clt_name;
         bs b "<h1>";
-	bs b (Odoc_messages.class_type^" ");
+        bs b (Odoc_messages.class_type^" ");
         if clt.clt_virtual then bs b "virtual ";
         bp b "<a href=\"%s\">%s</a>" type_file clt.clt_name;
         bs b "</h1>\n";
@@ -2281,7 +2285,7 @@ class html =
         bs b "<body>\n";
         self#print_navbar b pre_name post_name mt.mt_name;
         bp b "<h1>";
-	bs b (Odoc_messages.module_type^" ");
+        bs b (Odoc_messages.module_type^" ");
         (
 	 match mt.mt_type with
            Some _ -> bp b "<a href=\"%s\">%s</a>" type_file mt.mt_name
@@ -2348,19 +2352,24 @@ class html =
 	bs b "<body>\n" ;
         self#print_navbar b pre_name post_name modu.m_name ;
         bs b "<h1>";
-	bs b
-	  (
-	   if Module.module_is_functor modu then
-	     Odoc_messages.functo
-	   else
-	     Odoc_messages.modul
-	  );
-	bp b " <a href=\"%s\">%s</a>" type_file modu.m_name;
-	(
-	 match modu.m_code with
-	   None -> ()
-	 | Some _ -> bp b " (<a href=\"%s\">.ml</a>)" code_file
-	);
+        if modu.m_text_only then
+          bs b modu.m_name
+        else
+          (
+           bs b
+             (
+              if Module.module_is_functor modu then
+                Odoc_messages.functo
+              else
+                Odoc_messages.modul
+             );
+           bp b " <a href=\"%s\">%s</a>" type_file modu.m_name;
+           (
+            match modu.m_code with
+              None -> ()
+            | Some _ -> bp b " (<a href=\"%s\">.ml</a>)" code_file
+           )
+          );
         bs b "</h1>\n";
 
         self#html_of_module b ~with_link: false modu;

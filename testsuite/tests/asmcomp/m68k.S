@@ -10,8 +10,6 @@
 |*                                                                     *
 |***********************************************************************
 
-| $Id: m68k.S 12858 2012-08-10 14:45:51Z maranget $
-
 | call_gen_code is used with the following types:
 |       unit -> int
 |       int -> int
@@ -19,7 +17,7 @@
 |       int * int * address -> void
 |       int * int -> void
 |       unit -> unit
-| Hence arg1 -> d0, arg2 -> d1, arg3 -> a0, 
+| Hence arg1 -> d0, arg2 -> d1, arg3 -> a0,
 | and we need a special case for int -> double
 
         .text

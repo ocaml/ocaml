@@ -1,7 +1,7 @@
 TODO:
  - need to fix display of type parameters for inherited classes/class types
- - latex: types variant polymorphes dépassent de la page quand ils sont trop longs
- - utilisation nouvelles infos de Xavier: "début de rec", etc.
+ - latex: types variant polymorphes depassent de la page quand ils sont trop longs
+ - utilisation nouvelles infos de Xavier: "debut de rec", etc.
 
 =====
 <<<<<<< .courant
@@ -58,12 +58,12 @@ Release 3.08.1:
 Release 3.08.0:
  - fix: method parameters names in signature are now retrieved correctly
    (fix of Odoc_value.parameter_list_from_arrows to handle Tpoly for methods)
- - ajout à la doc de Module_list et Index_list (utilisé dans le html seulement)
- - ajout à la doc: fichier de l'option -intro utilisé pour l'index en html
+ - ajout a la doc de Module_list et Index_list (utilise dans le html seulement)
+ - ajout a la doc: fichier de l'option -intro utilise pour l'index en html
  - fix: create a Module_with instead of a Module_alias when we encounter
      module A : Foo in a signature
  - latex: style latex pour indenter dans les module kind et les class kind
- - latex: il manque la génération des paramètres de classe
+ - latex: il manque la generation des parametres de classe
  - parse des {!modules: } et {!indexlist}
  - gestion des Module_list et Index_list
  - no need to Dynlink.add_available_units any more

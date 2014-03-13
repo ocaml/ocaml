@@ -152,7 +152,7 @@ let ssmap =
 
 let ssmap =
   (let module S = struct include SSMap end in (module S) :
-  (module 
+  (module
    MapT with type key = string and type data = string and type map = SSMap.map))
 ;;
 

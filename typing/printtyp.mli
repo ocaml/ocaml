@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: printtyp.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Printing functions *)
 
 open Format
@@ -22,7 +20,13 @@ val longident: formatter -> Longident.t -> unit
 val ident: formatter -> Ident.t -> unit
 val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
+val string_of_path: Path.t -> string
 val raw_type_expr: formatter -> type_expr -> unit
+
+val wrap_printing_env: Env.t -> (unit -> 'a) -> 'a
+    (* Call the function using the environment for type path shortening *)
+    (* This affects all the printing functions below *)
+
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
 val reset_and_mark_loops: type_expr -> unit
@@ -62,15 +66,18 @@ val tree_of_cltype_declaration:
 val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
 val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
-val trace: bool -> string -> formatter -> (type_expr * type_expr) list -> unit
-val unification_error:
-    bool -> (type_expr * type_expr) list ->
-    (formatter -> unit) -> formatter -> (formatter -> unit) ->
-    unit
+val trace:
+    bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit
 val report_unification_error:
-    formatter -> (type_expr * type_expr) list ->
+    formatter -> Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 val report_subtyping_error:
-    formatter -> (type_expr * type_expr) list ->
+    formatter -> Env.t -> (type_expr * type_expr) list ->
     string -> (type_expr * type_expr) list -> unit
+val report_ambiguous_type_error:
+    formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list -> 
+    (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
+
+(* for toploop *)
+val hide_rec_items: signature_item list -> unit

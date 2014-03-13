@@ -12,8 +12,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 set -e
 
 cd `dirname $0`/..
@@ -553,6 +551,8 @@ installdir \
   ocamlbuildlib.cmxa \
   ocamlbuildlib.cma \
   ocamlbuild_plugin.cmi \
+  ocamlbuild_plugin.cmo \
+  ocamlbuild_plugin.cmx \
   ocamlbuild_pack.cmi \
   ocamlbuild_unix_plugin.cmi \
   ocamlbuild_unix_plugin.cmo \

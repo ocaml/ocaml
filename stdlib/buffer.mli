@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: buffer.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Extensible string buffers.
 
    This module implements string buffers that automatically expand

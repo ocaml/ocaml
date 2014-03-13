@@ -10,8 +10,6 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id: caml-types.el 12959 2012-09-27 13:12:51Z maranget $ *)
-
 ; An emacs-lisp complement to the "-annot" option of ocamlc and ocamlopt.
 
 ;; XEmacs compatibility
@@ -55,6 +53,8 @@ Their format is:
 The current list of keywords is:
 type call ident"
 )
+
+(defvar caml-types-position-re nil)
 
 (let* ((caml-types-filename-re "\"\\(\\([^\\\"]\\|\\\\.\\)*\\)\"")
        (caml-types-number-re "\\([0-9]*\\)"))
@@ -331,7 +331,8 @@ See `caml-types-location-re' for annotation file format.
                  caml-types-annotation-date
                  (not (caml-types-date< caml-types-annotation-date type-date)))
       (if (and type-date target-date (caml-types-date< type-date target-date))
-          (error (format "`%s' is more recent than `%s'" target-path type-path)))
+          (error (format "`%s' is more recent than `%s'"
+                         target-path type-path)))
       (message "Reading annotation file...")
       (let* ((type-buf (caml-types-find-file type-path))
              (tree (with-current-buffer type-buf
@@ -687,21 +688,21 @@ The function uses two overlays.
                            (vector target-file target-line target-bol cnum))
                      (save-excursion
                        (setq node (caml-types-find-location target-pos "type" ()
-							    target-tree))
+                                                            target-tree))
                        (set-buffer caml-types-buffer)
                        (erase-buffer)
                        (cond
-			((null node)
+                        ((null node)
                          (delete-overlay caml-types-expr-ovl)
                          (setq type "*no type information*")
                          (setq limits
                                (caml-types-find-interval
                                 target-buf target-pos target-tree)))
                         (t
-			 (let ((left
-				(caml-types-get-pos target-buf (elt node 0)))
+                         (let ((left
+                                (caml-types-get-pos target-buf (elt node 0)))
                                (right
-				(caml-types-get-pos target-buf (elt node 1))))
+                                (caml-types-get-pos target-buf (elt node 1))))
                          (move-overlay
                           caml-types-expr-ovl left right target-buf)
                          (setq limits
@@ -709,7 +710,7 @@ The function uses two overlays.
                                                          target-pos node)
                                type (cdr (assoc "type" (elt node 2))))
                          ))
-			)
+                        )
                        (setq mes (format "type: %s" type))
                        (insert type)
                        ))

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: ocamlmktop.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 let _ =
   let args = Ccomp.quote_files (List.tl (Array.to_list Sys.argv)) in
   exit(Sys.command("ocamlc -I +compiler-libs -linkall ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma " ^ args ^ " topstart.cmo"))

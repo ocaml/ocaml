@@ -11,8 +11,6 @@
 ;*                                                                     *
 ;***********************************************************************
 
-; $Id: amd64nt.asm 12858 2012-08-10 14:45:51Z maranget $
-
 ; Asm part of the runtime system, AMD64 processor, Intel syntax
 
 ; Notes on Win64 calling conventions:
@@ -30,7 +28,7 @@
         EXTRN  caml_bottom_of_stack: QWORD
         EXTRN  caml_last_return_address: QWORD
         EXTRN  caml_gc_regs: QWORD
-	EXTRN  caml_exception_pointer: QWORD
+        EXTRN  caml_exception_pointer: QWORD
         EXTRN  caml_backtrace_active: DWORD
         EXTRN  caml_stash_backtrace: NEAR
 
@@ -48,14 +46,14 @@ caml_call_gc:
         mov     caml_bottom_of_stack, rax
 L105:
     ; Save caml_young_ptr, caml_exception_pointer
-	mov	caml_young_ptr, r15
-	mov	caml_exception_pointer, r14
+        mov     caml_young_ptr, r15
+        mov     caml_exception_pointer, r14
     ; Build array of registers, save it into caml_gc_regs
-        push    r13
-        push    r12
         push    rbp
         push    r11
         push    r10
+        push    r13
+        push    r12
         push    r9
         push    r8
         push    rcx
@@ -113,14 +111,14 @@ L105:
         pop     rcx
         pop     r8
         pop     r9
+        pop     r12
+        pop     r13
         pop     r10
         pop     r11
         pop     rbp
-        pop     r12
-        pop     r13
     ; Restore caml_young_ptr, caml_exception_pointer
-	mov	r15, caml_young_ptr
-	mov	r14, caml_exception_pointer
+        mov     r15, caml_young_ptr
+        mov     r14, caml_exception_pointer
     ; Return to caller
         ret
 
@@ -136,9 +134,9 @@ L100:
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
         mov     caml_bottom_of_stack, rax
-	sub	rsp, 8
+        sub     rsp, 8
         call    L105
-	add	rsp, 8
+        add     rsp, 8
         jmp     caml_alloc1
 
         PUBLIC  caml_alloc2
@@ -153,9 +151,9 @@ L101:
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
         mov     caml_bottom_of_stack, rax
-	sub	rsp, 8
+        sub     rsp, 8
         call    L105
-	add	rsp, 8
+        add     rsp, 8
         jmp     caml_alloc2
 
         PUBLIC  caml_alloc3
@@ -170,9 +168,9 @@ L102:
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 8]
         mov     caml_bottom_of_stack, rax
-	sub	rsp, 8
+        sub     rsp, 8
         call    L105
-	add	rsp, 8
+        add     rsp, 8
         jmp     caml_alloc3
 
         PUBLIC  caml_allocN
@@ -202,15 +200,15 @@ caml_c_call:
         mov     caml_last_return_address, r12
         mov     caml_bottom_of_stack, rsp
     ; Make the exception handler and alloc ptr available to the C code
-	mov	caml_young_ptr, r15
-	mov	caml_exception_pointer, r14
+        mov     caml_young_ptr, r15
+        mov     caml_exception_pointer, r14
     ; Call the function (address in rax)
         call    rax
     ; Reload alloc ptr
-	mov	r15, caml_young_ptr
+        mov     r15, caml_young_ptr
     ; Return to caller
-	push	r12
-	ret
+        push    r12
+        ret
 
 ; Start the OCaml program
 
@@ -242,13 +240,13 @@ caml_start_program:
     ; Common code for caml_start_program and caml_callback*
 L106:
     ; Build a callback link
-	sub	rsp, 8	; stack 16-aligned
+        sub     rsp, 8  ; stack 16-aligned
         push    caml_gc_regs
         push    caml_last_return_address
         push    caml_bottom_of_stack
     ; Setup alloc ptr and exception ptr
-	mov	r15, caml_young_ptr
-	mov	r14, caml_exception_pointer
+        mov     r15, caml_young_ptr
+        mov     r14, caml_exception_pointer
     ; Build an exception handler
         lea     r13, L108
         push    r13
@@ -262,13 +260,13 @@ L107:
         pop     r12    ; dummy register
 L109:
     ; Update alloc ptr and exception ptr
-	mov	caml_young_ptr, r15
-	mov	caml_exception_pointer, r14
+        mov     caml_young_ptr, r15
+        mov     caml_exception_pointer, r14
     ; Pop the callback restoring, link the global variables
         pop     caml_bottom_of_stack
         pop     caml_last_return_address
         pop     caml_gc_regs
-	add	rsp, 8
+        add     rsp, 8
     ; Restore callee-save registers.
         movapd  xmm6, OWORD PTR [rsp + 0*16]
         movapd  xmm7, OWORD PTR [rsp + 1*16]
@@ -441,8 +439,8 @@ caml_callback3_exn:
         PUBLIC  caml_ml_array_bound_error
         ALIGN   16
 caml_ml_array_bound_error:
-	lea	rax, caml_array_bound_error
-	jmp	caml_c_call
+        lea     rax, caml_array_bound_error
+        jmp     caml_c_call
 
         .DATA
         PUBLIC  caml_system__frametable
@@ -456,11 +454,11 @@ caml_system__frametable LABEL QWORD
         PUBLIC  caml_negf_mask
         ALIGN   16
 caml_negf_mask LABEL QWORD
-	QWORD	8000000000000000H, 0
+        QWORD   8000000000000000H, 0
 
         PUBLIC  caml_absf_mask
         ALIGN   16
 caml_absf_mask LABEL QWORD
-	QWORD	7FFFFFFFFFFFFFFFH, 0FFFFFFFFFFFFFFFFH
+        QWORD   7FFFFFFFFFFFFFFFH, 0FFFFFFFFFFFFFFFFH
 
         END

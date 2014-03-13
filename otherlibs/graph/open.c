@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: open.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <string.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -242,7 +240,7 @@ value caml_gr_window_id(void)
 value caml_gr_set_window_title(value n)
 {
   if (window_name != NULL) stat_free(window_name);
-  window_name = stat_alloc(strlen(String_val(n))+1);
+  window_name = caml_stat_alloc(strlen(String_val(n))+1);
   strcpy(window_name, String_val(n));
   if (caml_gr_initialized) {
     XStoreName(caml_gr_display, caml_gr_window.win, window_name);

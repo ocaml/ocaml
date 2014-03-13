@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Bigarray
 
 let pi = 3.14159265358979323846
@@ -22,17 +20,17 @@ let fft (px : (float, float64_elt, c_layout) Array1.t)
         (py : (float, float64_elt, c_layout) Array1.t) np =
   let i = ref 2 in
   let m = ref 1 in
-  
+
   while (!i < np) do
-    i := !i + !i; 
+    i := !i + !i;
     m := !m + 1
   done;
 
-  let n = !i in  
-  
+  let n = !i in
+
   if n <> np then begin
     for i = np+1 to n do
-      px.{i} <- 0.0; 
+      px.{i} <- 0.0;
       py.{i} <- 0.0
     done;
     print_string "Use "; print_int n;
@@ -41,7 +39,7 @@ let fft (px : (float, float64_elt, c_layout) Array1.t)
 
   let n2 = ref(n+n) in
   for k = 1 to !m-1 do
-    n2 := !n2 / 2; 
+    n2 := !n2 / 2;
     let n4 = !n2 / 4 in
     let e  = tpi /. float !n2 in
 
@@ -54,7 +52,7 @@ let fft (px : (float, float64_elt, c_layout) Array1.t)
       let ss3 = sin(a3) in
       let is = ref j in
       let id = ref(2 * !n2) in
-  
+
         while !is < n do
           let i0r = ref !is in
           while !i0r < n do
@@ -74,13 +72,13 @@ let fft (px : (float, float64_elt, c_layout) Array1.t)
              let r1 = r1 +. s2 in
              let s2 = r2 -. s1 in
              let r2 = r2 +. s1 in
-             px.{i2} <- r1*.cc1 -. s2*.ss1; 
+             px.{i2} <- r1*.cc1 -. s2*.ss1;
              py.{i2} <- -.s2*.cc1 -. r1*.ss1;
              px.{i3} <- s3*.cc3 +. r2*.ss3;
              py.{i3} <- r2*.cc3 -. s3*.ss3;
              i0r := i0 + !id
           done;
-          is := 2 * !id - !n2 + j; 
+          is := 2 * !id - !n2 + j;
           id := 4 * !id
         done
     done
@@ -92,7 +90,7 @@ let fft (px : (float, float64_elt, c_layout) Array1.t)
 
   let is = ref 1 in
   let id = ref 4 in
-  
+
   while !is < n do
     let i0r = ref !is in
     while !i0r <= n do
@@ -106,7 +104,7 @@ let fft (px : (float, float64_elt, c_layout) Array1.t)
       py.{i1} <- r1 -. py.{i1};
       i0r := i0 + !id
     done;
-    is := 2 * !id - 1; 
+    is := 2 * !id - 1;
     id := 4 * !id
   done;
 
@@ -115,11 +113,11 @@ let fft (px : (float, float64_elt, c_layout) Array1.t)
 (*************************)
 
   let j = ref 1 in
-  
+
   for i = 1 to n - 1 do
     if i < !j then begin
       let xt = px.{!j} in
-      px.{!j} <- px.{i}; 
+      px.{!j} <- px.{i};
       px.{i} <- xt;
       let xt = py.{!j} in
       py.{!j} <- py.{i};
@@ -127,7 +125,7 @@ let fft (px : (float, float64_elt, c_layout) Array1.t)
     end;
     let k = ref(n / 2) in
     while !k < !j do
-      j := !j - !k; 
+      j := !j - !k;
       k := !k / 2
     done;
     j := !j + !k
@@ -173,12 +171,12 @@ let test np =
   for i = 0 to np-1 do
       let a = abs_float(pxr.{i+1} -. float i) in
       if !zr < a then begin
-         zr := a; 
+         zr := a;
          kr := i
       end;
       let a = abs_float(pxi.{i+1}) in
       if !zi < a then begin
-         zi := a; 
+         zi := a;
          ki := i
       end
   done;
@@ -194,4 +192,3 @@ let test np =
 
 let _ =
   let np = ref 16 in for i = 1 to 13 do test !np; np := !np*2 done
-

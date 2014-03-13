@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: selectgen.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 

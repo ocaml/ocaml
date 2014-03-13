@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_search.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Research of elements through modules. *)
 
@@ -69,7 +68,7 @@ module Search =
       | T.Code _
       | T.CodePre _
       | T.Latex _
-      | T.Verbatim _ 
+      | T.Verbatim _
       | T.Ref (_, _, _) -> []
       | T.Bold t
       | T.Italic t
@@ -80,18 +79,15 @@ module Search =
       | T.Block t
       | T.Superscript t
       | T.Subscript t
-<<<<<<< .courant
-=======
       | T.Custom (_,t)
->>>>>>> .fusion-droit.r10497
       | T.Link (_, t) -> search_text root t v
-      | T.List l 
+      | T.List l
       | T.Enum l -> List.flatten (List.map (fun t -> search_text root t v) l)
-      | T.Newline 
+      | T.Newline
       | T.Module_list _
       | T.Index_list -> []
       | T.Target _ -> []
-      | T.Title (n, l_opt, t) -> 
+      | T.Title (n, l_opt, t) ->
           (match l_opt with
             None -> []
           | Some s -> search_section t (Name.concat root s) v) @
@@ -128,21 +124,21 @@ module Search =
 
     let search_class c v =
       let (go_deeper, ok) = P.p_class c v in
-      let l = 
+      let l =
         if go_deeper then
-          let res_att = 
+          let res_att =
             List.fold_left
               (fun acc -> fun att -> acc @ (search_attribute att v))
               []
               (Odoc_class.class_attributes c)
           in
-          let res_met = 
+          let res_met =
             List.fold_left
               (fun acc -> fun m -> acc @ (search_method m v))
               []
               (Odoc_class.class_methods c)
           in
-          let res_sec = 
+          let res_sec =
             List.fold_left
               (fun acc -> fun t -> acc @ (search_text c.cl_name t v))
               []
@@ -160,21 +156,21 @@ module Search =
 
     let search_class_type ct v =
       let (go_deeper, ok) = P.p_class_type ct v in
-      let l = 
+      let l =
         if go_deeper then
-          let res_att = 
+          let res_att =
             List.fold_left
               (fun acc -> fun att -> acc @ (search_attribute att v))
               []
               (Odoc_class.class_type_attributes ct)
           in
-          let res_met = 
+          let res_met =
             List.fold_left
               (fun acc -> fun m -> acc @ (search_method m v))
               []
               (Odoc_class.class_type_methods ct)
           in
-          let res_sec = 
+          let res_sec =
             List.fold_left
               (fun acc -> fun t -> acc @ (search_text ct.clt_name t v))
               []
@@ -194,57 +190,57 @@ module Search =
       let (go_deeper, ok) =  P.p_module_type mt v in
       let l =
         if go_deeper then
-          let res_val = 
+          let res_val =
             List.fold_left
               (fun acc -> fun va -> acc @ (search_value va v))
               []
               (Odoc_module.module_type_values mt)
           in
-          let res_typ = 
+          let res_typ =
             List.fold_left
               (fun acc -> fun t -> acc @ (search_type t v))
               []
               (Odoc_module.module_type_types mt)
           in
-          let res_exc = 
+          let res_exc =
             List.fold_left
               (fun acc -> fun e -> acc @ (search_exception e v))
               []
               (Odoc_module.module_type_exceptions mt)
           in
           let res_mod = search (Odoc_module.module_type_modules mt) v in
-          let res_modtyp = 
+          let res_modtyp =
             List.fold_left
               (fun acc -> fun mt -> acc @ (search_module_type mt v))
               []
               (Odoc_module.module_type_module_types mt)
-          in    
-          let res_cl = 
+          in
+          let res_cl =
             List.fold_left
               (fun acc -> fun cl -> acc @ (search_class cl v))
               []
               (Odoc_module.module_type_classes mt)
           in
-          let res_cltyp = 
+          let res_cltyp =
             List.fold_left
               (fun acc -> fun clt -> acc @ (search_class_type clt v))
               []
               (Odoc_module.module_type_class_types mt)
           in
-          let res_sec = 
+          let res_sec =
             List.fold_left
               (fun acc -> fun t -> acc @ (search_text mt.mt_name t v))
               []
               (Odoc_module.module_type_comments mt)
           in
-          let l = res_val @ res_typ @ res_exc @ res_mod @ 
-            res_modtyp @ res_cl @ res_cltyp @ res_sec 
+          let l = res_val @ res_typ @ res_exc @ res_mod @
+            res_modtyp @ res_cl @ res_cltyp @ res_sec
           in
           l
         else
           []
       in
-      if ok then 
+      if ok then
         (Res_module_type mt) :: l
       else
         l
@@ -253,64 +249,64 @@ module Search =
       let (go_deeper, ok) =  P.p_module m v in
       let l =
         if go_deeper then
-          let res_val = 
+          let res_val =
             List.fold_left
               (fun acc -> fun va -> acc @ (search_value va v))
               []
               (Odoc_module.module_values m)
           in
-          let res_typ = 
+          let res_typ =
             List.fold_left
               (fun acc -> fun t -> acc @ (search_type t v))
               []
               (Odoc_module.module_types m)
           in
-          let res_exc = 
+          let res_exc =
             List.fold_left
               (fun acc -> fun e -> acc @ (search_exception e v))
               []
               (Odoc_module.module_exceptions m)
           in
           let res_mod = search (Odoc_module.module_modules m) v in
-          let res_modtyp = 
+          let res_modtyp =
             List.fold_left
               (fun acc -> fun mt -> acc @ (search_module_type mt v))
               []
               (Odoc_module.module_module_types m)
           in
-          let res_cl = 
+          let res_cl =
             List.fold_left
               (fun acc -> fun cl -> acc @ (search_class cl v))
               []
               (Odoc_module.module_classes m)
           in
-          let res_cltyp = 
+          let res_cltyp =
             List.fold_left
               (fun acc -> fun clt -> acc @ (search_class_type clt v))
               []
               (Odoc_module.module_class_types m)
           in
-          let res_sec = 
+          let res_sec =
             List.fold_left
               (fun acc -> fun t -> acc @ (search_text m.m_name t v))
               []
               (Odoc_module.module_comments m)
           in
-          let l = res_val @ res_typ @ res_exc @ res_mod @ 
+          let l = res_val @ res_typ @ res_exc @ res_mod @
             res_modtyp @ res_cl @ res_cltyp @ res_sec
           in
           l
         else
           []
       in
-      if ok then 
+      if ok then
         (Res_module m) :: l
       else
         l
 
     and search module_list v =
       List.fold_left
-        (fun acc -> fun m -> 
+        (fun acc -> fun m ->
           List.fold_left
             (fun acc2 -> fun ele ->
               if List.mem ele acc2 then acc2 else acc2 @ [ele]
@@ -322,8 +318,8 @@ module Search =
         module_list
   end
 
-module P_name = 
-  struct 
+module P_name =
+  struct
     type t = Str.regexp
     let (=~) name regexp = Str.string_match regexp name 0
     let p_module m r = (true, m.m_name =~ r)
@@ -343,11 +339,11 @@ module P_name =
     let p_method m r = m.met_value.val_name =~ r
     let p_section s r = s =~ r
   end
-    
+
 module Search_by_name = Search ( P_name )
 
 module P_values =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, false)
     let p_module_type _ _ = (true, false)
@@ -363,7 +359,7 @@ module P_values =
     let p_section _ _ = false
   end
 module Search_values = Search ( P_values )
-let values l = 
+let values l =
   let l_ele = Search_values.search l () in
   let p v1 v2 = v1.val_name = v2.val_name in
   let rec iter acc = function
@@ -372,9 +368,9 @@ let values l =
     | [] -> acc
   in
   iter [] l_ele
-  
+
 module P_exceptions =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, false)
     let p_module_type _ _ = (true, false)
@@ -390,7 +386,7 @@ module P_exceptions =
     let p_section _ _ = false
   end
 module Search_exceptions = Search ( P_exceptions )
-let exceptions l = 
+let exceptions l =
   let l_ele = Search_exceptions.search l () in
   let p e1 e2 = e1.ex_name = e2.ex_name in
   let rec iter acc = function
@@ -399,9 +395,9 @@ let exceptions l =
     | [] -> acc
   in
   iter [] l_ele
-  
+
 module P_types =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, false)
     let p_module_type _ _ = (true, false)
@@ -417,7 +413,7 @@ module P_types =
     let p_section _ _ = false
   end
 module Search_types = Search ( P_types )
-let types l = 
+let types l =
   let l_ele = Search_types.search l () in
   let p t1 t2 = t1.ty_name = t2.ty_name in
   let rec iter acc = function
@@ -426,9 +422,9 @@ let types l =
     | [] -> acc
   in
   iter [] l_ele
-  
+
 module P_attributes =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, false)
     let p_module_type _ _ = (true, false)
@@ -444,7 +440,7 @@ module P_attributes =
     let p_section _ _ = false
   end
 module Search_attributes = Search ( P_attributes )
-let attributes l = 
+let attributes l =
   let l_ele = Search_attributes.search l () in
   let p a1 a2 = a1.att_value.val_name = a2.att_value.val_name in
   let rec iter acc = function
@@ -455,7 +451,7 @@ let attributes l =
   iter [] l_ele
 
 module P_methods =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, false)
     let p_module_type _ _ = (true, false)
@@ -471,7 +467,7 @@ module P_methods =
     let p_section _ _ = true
   end
 module Search_methods = Search ( P_methods )
-let methods l = 
+let methods l =
   let l_ele = Search_methods.search l () in
   let p m1 m2 = m1.met_value.val_name = m2.met_value.val_name in
   let rec iter acc = function
@@ -482,7 +478,7 @@ let methods l =
   iter [] l_ele
 
 module P_classes =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, false)
     let p_module_type _ _ = (true, false)
@@ -498,7 +494,7 @@ module P_classes =
     let p_section _ _ = false
   end
 module Search_classes = Search ( P_classes )
-let classes l = 
+let classes l =
   let l_ele = Search_classes.search l () in
   let p c1 c2 = c1.cl_name = c2.cl_name in
   let rec iter acc = function
@@ -509,7 +505,7 @@ let classes l =
   iter [] l_ele
 
 module P_class_types =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, false)
     let p_module_type _ _ = (true, false)
@@ -525,7 +521,7 @@ module P_class_types =
     let p_section _ _ = false
   end
 module Search_class_types = Search ( P_class_types )
-let class_types l = 
+let class_types l =
   let l_ele = Search_class_types.search l () in
   let p c1 c2 = c1.clt_name = c2.clt_name in
   let rec iter acc = function
@@ -536,7 +532,7 @@ let class_types l =
   iter [] l_ele
 
 module P_modules =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, true)
     let p_module_type _ _ = (true, false)
@@ -552,7 +548,7 @@ module P_modules =
     let p_section _ _ = false
   end
 module Search_modules = Search ( P_modules )
-let modules l = 
+let modules l =
   let l_ele = Search_modules.search l () in
   let p m1 m2 = m1.m_name = m2.m_name in
   let rec iter acc = function
@@ -563,7 +559,7 @@ let modules l =
   iter [] l_ele
 
 module P_module_types =
-  struct 
+  struct
     type t = unit
     let p_module _ _ = (true, false)
     let p_module_type _ _ = (true, true)
@@ -579,7 +575,7 @@ module P_module_types =
     let p_section _ _ = false
   end
 module Search_module_types = Search ( P_module_types )
-let module_types l = 
+let module_types l =
   let l_ele = Search_module_types.search l () in
   let p m1 m2 = m1.mt_name = m2.mt_name in
   let rec iter acc = function
@@ -672,7 +668,7 @@ let method_exists mods regexp =
 
 let find_section mods regexp =
   let l = Search_by_name.search mods regexp in
-  match 
+  match
     List.find
       (function
           Res_section _ -> true
@@ -682,5 +678,3 @@ let find_section mods regexp =
   with
     Res_section (_,t) -> t
   | _ -> assert false
-
-(* eof $Id: odoc_search.ml 12959 2012-09-27 13:12:51Z maranget $ *)

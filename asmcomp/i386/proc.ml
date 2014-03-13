@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: proc.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Description of the Intel 386 processor *)
 
 open Misc
@@ -200,3 +198,6 @@ let assemble_file infile outfile =
   else
     Ccomp.command (Config.asm ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
+
+let init () = ()
+

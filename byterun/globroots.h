@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: globroots.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Registration of global memory roots */
 
 #ifndef CAML_GLOBROOTS_H

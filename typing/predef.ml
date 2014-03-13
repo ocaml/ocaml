@@ -10,11 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: predef.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Predefined type constructors (with special typing rules in typecore) *)
 
-open Asttypes
 open Path
 open Types
 open Btype
@@ -97,6 +94,16 @@ let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module
 
+let decl_abstr =
+  {type_params = [];
+   type_arity = 0;
+   type_kind = Type_abstract;
+   type_loc = Location.none;
+   type_private = Asttypes.Public;
+   type_manifest = None;
+   type_variance = [];
+   type_newtype_level = None}
+
 let ident_false = ident_create "false"
 and ident_true = ident_create "true"
 and ident_void = ident_create "()"
@@ -105,100 +112,49 @@ and ident_cons = ident_create "::"
 and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
 let build_initial_env add_type add_exception empty_env =
-  let decl_abstr =
-    {type_params = [];
-     type_arity = 0;
-     type_kind = Type_abstract;
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [];
-     type_newtype_level = None}
-  and decl_bool =
-    {type_params = [];
-     type_arity = 0;
-     type_kind = Type_variant([ident_false, [], None; ident_true, [], None]);
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [];
-     type_newtype_level = None}
+  let decl_bool =
+    {decl_abstr with
+     type_kind = Type_variant([ident_false, [], None; ident_true, [], None])}
   and decl_unit =
-    {type_params = [];
-     type_arity = 0;
-     type_kind = Type_variant([ident_void, [], None]);
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [];
-     type_newtype_level = None}
+    {decl_abstr with
+     type_kind = Type_variant([ident_void, [], None])}
   and decl_exn =
-    {type_params = [];
-     type_arity = 0;
-     type_kind = Type_variant [];
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [];
-     type_newtype_level = None}
+    {decl_abstr with
+     type_kind = Type_variant []}
   and decl_array =
     let tvar = newgenvar() in
-    {type_params = [tvar];
+    {decl_abstr with
+     type_params = [tvar];
      type_arity = 1;
-     type_kind = Type_abstract;
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [true, true, true];
-     type_newtype_level = None}
+     type_variance = [Variance.full]}
   and decl_list =
     let tvar = newgenvar() in
-    {type_params = [tvar];
+    {decl_abstr with
+     type_params = [tvar];
      type_arity = 1;
      type_kind =
      Type_variant([ident_nil, [], None; ident_cons, [tvar; type_list tvar],
                    None]);
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [true, false, false];
-     type_newtype_level = None}
+     type_variance = [Variance.covariant]}
   and decl_format6 =
-    {type_params = [
-     newgenvar(); newgenvar(); newgenvar();
-     newgenvar(); newgenvar(); newgenvar();
-   ];
+    let params = List.map newgenvar [();();();();();()] in
+    {decl_abstr with
+     type_params = params;
      type_arity = 6;
-     type_kind = Type_abstract;
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [
-     true, true, true; true, true, true;
-     true, true, true; true, true, true;
-     true, true, true; true, true, true;
-   ];
-     type_newtype_level = None}
+     type_variance = List.map (fun _ -> Variance.full) params}
   and decl_option =
     let tvar = newgenvar() in
-    {type_params = [tvar];
+    {decl_abstr with
+     type_params = [tvar];
      type_arity = 1;
      type_kind = Type_variant([ident_none, [], None; ident_some, [tvar], None]);
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [true, false, false];
-     type_newtype_level = None}
+     type_variance = [Variance.covariant]}
   and decl_lazy_t =
     let tvar = newgenvar() in
-    {type_params = [tvar];
+    {decl_abstr with
+     type_params = [tvar];
      type_arity = 1;
-     type_kind = Type_abstract;
-     type_loc = Location.none;
-     type_private = Public;
-     type_manifest = None;
-     type_variance = [true, false, false];
-     type_newtype_level = None}
+     type_variance = [Variance.covariant]}
   in
 
   let add_exception id l =

@@ -10,8 +10,6 @@
 ;(*                                                                     *)
 ;(***********************************************************************)
 
-;(* $Id: camldebug.el 12858 2012-08-10 14:45:51Z maranget $ *)
-
 ;;; Run camldebug under Emacs
 ;;; Derived from gdb.el.
 ;;; gdb.el is Copyright (C) 1988 Free Software Foundation, Inc, and is part
@@ -98,8 +96,8 @@ The following commands are available:
 \\[camldebug-display-frame] displays in the other window
 the last line referred to in the camldebug buffer.
 
-\\[camldebug-step], \\[camldebug-back] and \\[camldebug-next], in the camldebug window,
-call camldebug to step, backstep or next and then update the other window
+\\[camldebug-step], \\[camldebug-back] and \\[camldebug-next], in the camldebug
+window,call camldebug to step, backstep or next and then update the other window
 with the current file and position.
 
 If you are in a source file, you may select a point to break
@@ -252,7 +250,8 @@ representation is simply concatenated with the COMMAND."
                                      camldebug-goto-position
                                      "-[0-9]+[ \t]*\\(before\\).*\n")
                              camldebug-filter-accumulator)
-               (string-match (concat "\\(\n\\|\\`\\)[ \t]*\\([0-9]+\\)[ \t]+[0-9]+-"
+               (string-match (concat "\\(\n\\|\\`\\)[ \t]*\\([0-9]+\\)"
+                                     "[ \t]+[0-9]+-"
                                      camldebug-goto-position
                                      "[ \t]*\\(after\\).*\n")
                              camldebug-filter-accumulator)))
@@ -575,7 +574,7 @@ the camldebug commands `cd DIR' and `directory'."
         (let ((process-window))
           ;; it does not seem necessary to save excursion here,
           ;; since set-buffer as a temporary effect.
-          ;; comint-output-filter explicitly avoids it. 
+          ;; comint-output-filter explicitly avoids it.
           ;; in version 23, it prevents the marker to stay at end of buffer
           ;; (save-excursion
             (set-buffer (process-buffer proc))
@@ -595,8 +594,8 @@ the camldebug commands `cd DIR' and `directory'."
                                       (get-buffer-window (current-buffer))))
             ;; Insert the text, moving the process-marker.
             (comint-output-filter proc output)
-          ;; ) 
-          ;; this was the end of save-excursion. 
+          ;; )
+          ;; this was the end of save-excursion.
           ;; if save-excursion is used (comint-next-prompt 1) would be needed
           ;; to move the mark past then next prompt, but this is not as good
           ;; as solution.
@@ -712,7 +711,8 @@ Obeying it means displaying in another window the specified file and line."
 ;;; Miscellaneous.
 
 (defun camldebug-module-name (filename)
-  (substring filename (string-match "\\([^/]*\\)\\.ml$" filename) (match-end 1)))
+  (substring filename (string-match "\\([^/]*\\)\\.ml$" filename)
+             (match-end 1)))
 
 ;;; The camldebug-call function must do the right thing whether its
 ;;; invoking keystroke is from the camldebug buffer itself (via

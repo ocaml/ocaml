@@ -10,8 +10,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: checkstack.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>

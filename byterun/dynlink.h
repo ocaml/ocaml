@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: dynlink.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Dynamic loading of C primitives. */
 
 #ifndef CAML_DYNLINK_H

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: scheduler.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* The thread scheduler */
 
 #include <string.h>
@@ -227,7 +225,7 @@ value thread_new(value clos)          /* ML */
   End_roots();
   th->ident = next_ident;
   next_ident = Val_int(Int_val(next_ident) + 1);
-  th->stack_low = (value *) stat_alloc(Thread_stack_size);
+  th->stack_low = (value *) caml_stat_alloc(Thread_stack_size);
   th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
   th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
   th->sp = th->stack_high;

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: callback.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Registering OCaml values with the C runtime for later callbacks *)
 
 external register_named_value : string -> Obj.t -> unit

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: int64.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** 64-bit integers.
 
    This module provides operations on the type [int64] of
@@ -158,14 +156,14 @@ val to_string : int64 -> string
 
 external bits_of_float : float -> int64 = "caml_int64_bits_of_float"
 (** Return the internal representation of the given float according
-   to the IEEE 754 floating-point ``double format'' bit layout.
+   to the IEEE 754 floating-point 'double format' bit layout.
    Bit 63 of the result represents the sign of the float;
    bits 62 to 52 represent the (biased) exponent; bits 51 to 0
    represent the mantissa. *)
 
 external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
 (** Return the floating-point number whose internal representation,
-   according to the IEEE 754 floating-point ``double format'' bit layout,
+   according to the IEEE 754 floating-point 'double format' bit layout,
    is the given [int64]. *)
 
 type t = int64

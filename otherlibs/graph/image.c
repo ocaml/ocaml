@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: image.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include "libgraph.h"
 #include "image.h"
 #include <alloc.h>
@@ -104,5 +102,3 @@ value caml_gr_draw_image(value im, value vx, value vy)
     XFlush(caml_gr_display);
   return Val_unit;
 }
-
-/* eof $Id: image.c 12858 2012-08-10 14:45:51Z maranget $ */

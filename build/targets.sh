@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: targets.sh 12858 2012-08-10 14:45:51Z maranget $
-
 . config/config.sh
 . build/otherlibs-targets.sh
 . build/camlp4-targets.sh

@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Test a file copy function *)
 
 let test msg producer consumer src dst =
@@ -107,7 +119,7 @@ let main() =
   test "0...8192 byte chunks"
        (copy_random 8192) (copy_random 8192) ifile ofile;
   test "line per line, short lines"
-       copy_line copy_line "/etc/hosts" ofile;
+       copy_line copy_line "test-file-short-lines" ofile;
   let linesfile = Filename.temp_file "lines" "" in
   make_lines linesfile;
   test "line per line, short and long lines"

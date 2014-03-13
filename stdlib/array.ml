@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: array.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Array operations *)
 
 external length : 'a array -> int = "%array_length"
@@ -22,10 +20,11 @@ external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 external make: int -> 'a -> 'a array = "caml_make_vect"
 external create: int -> 'a -> 'a array = "caml_make_vect"
-external sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
+external unsafe_sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
 external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"
-external unsafe_blit : 'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
+external unsafe_blit :
+  'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
 
 let init l f =
   if l = 0 then [||] else
@@ -45,13 +44,18 @@ let make_matrix sx sy init =
 let create_matrix = make_matrix
 
 let copy a =
-  let l = length a in if l = 0 then [||] else sub a 0 l
+  let l = length a in if l = 0 then [||] else unsafe_sub a 0 l
 
 let append a1 a2 =
   let l1 = length a1 in
   if l1 = 0 then copy a2
-  else if length a2 = 0 then sub a1 0 l1
+  else if length a2 = 0 then unsafe_sub a1 0 l1
   else append_prim a1 a2
+
+let sub a ofs len =
+  if len < 0 || ofs > length a - len
+  then invalid_arg "Array.sub"
+  else unsafe_sub a ofs len
 
 let fill a ofs len v =
   if ofs < 0 || len < 0 || ofs > length a - len

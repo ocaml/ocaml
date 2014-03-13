@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: power-rhapsody.S 12858 2012-08-10 14:45:51Z maranget $ */
-
 #ifdef __ppc64__
 #define X(a,b) b
 #else
@@ -43,7 +41,7 @@
 
         .globl  _caml_system__code_begin
 _caml_system__code_begin:
-        
+
 /* Invoke the garbage collector. */
 
         .globl  _caml_call_gc
@@ -287,8 +285,8 @@ L113:
 L112:
         mr      r28, r3        /* preserve exn bucket in callee-save */
                                /* arg 1: exception bucket (already in r3) */
-	Loadglobal r4, _caml_last_return_address, r11 /* arg 2: PC of raise */
-	Loadglobal r5, _caml_bottom_of_stack, r11 /* arg 3: SP of raise */
+        Loadglobal r4, _caml_last_return_address, r11 /* arg 2: PC of raise */
+        Loadglobal r5, _caml_bottom_of_stack, r11 /* arg 3: SP of raise */
         Loadglobal r6, _caml_exception_pointer, r11 /* arg 4: SP of handler */
         addi    r1, r1, -(16*WORD)    /* reserve stack space for C call */
         bl      _caml_stash_backtrace
@@ -487,4 +485,4 @@ _caml_system__frametable:
         gdata   L105 + 4       /* return address into callback */
         .short  -1              /* negative size count => use callback link */
         .short  0               /* no roots here */
-	.align	X(2,3)
+        .align  X(2,3)

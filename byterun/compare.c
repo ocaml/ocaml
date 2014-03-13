@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: compare.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <string.h>
 #include <stdlib.h>
 #include "custom.h"

@@ -10,8 +10,6 @@
 .\"*                                                                     *
 .\"***********************************************************************
 .\"
-.\" $Id$
-.\"
 .TH OCAMLMKTOP 1
 
 .SH NAME
@@ -64,7 +62,7 @@ The following command-line options are recognized by
 .B \-v
 Print the version string of the compiler and exit.
 .TP
-.BR \-vnum or \-version
+.BR \-vnum \ or\  \-version
 Print the version number of the compiler in short form and exit.
 .TP
 .BI \-cclib\ \-l libname

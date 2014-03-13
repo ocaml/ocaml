@@ -12,8 +12,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 cd `dirname $0`/..
 set -xe
 if [ ! -x _build/ocamlbuild/ocamlbuildlight.byte ]; then

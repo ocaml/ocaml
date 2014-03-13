@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: termios.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <mlvalues.h>
 #include <alloc.h>
 #include <fail.h>
@@ -265,11 +263,16 @@ CAMLprim value unix_tcsendbreak(value fd, value delay)
   return Val_unit;
 }
 
+#if defined(__ANDROID__)
+CAMLprim value unix_tcdrain(value fd)
+{ invalid_argument("tcdrain not implemented"); }
+#else
 CAMLprim value unix_tcdrain(value fd)
 {
   if (tcdrain(Int_val(fd)) == -1) uerror("tcdrain", Nothing);
   return Val_unit;
 }
+#endif
 
 static int queue_flag_table[] = {
   TCIFLUSH, TCOFLUSH, TCIOFLUSH

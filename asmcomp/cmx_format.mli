@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: cmx_format.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Format of .cmx, .cmxa and .cmxs files *)
 
 (* Each .o file has a matching .cmx file that provides the following infos
@@ -30,7 +28,7 @@ type unit_infos =
     mutable ui_defines: string list;      (* Unit and sub-units implemented *)
     mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
-    mutable ui_approx: Clambda.value_approximation; (* Approx of the structure *)
+    mutable ui_approx: Clambda.value_approximation; (* Approx of the structure*)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_send_fun: int list;              (* Send functions needed *)
@@ -60,4 +58,3 @@ type dynheader = {
   dynu_magic: string;
   dynu_units: dynunit list;
 }
-

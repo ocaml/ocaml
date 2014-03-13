@@ -12,11 +12,11 @@ module Js = struct
 end
 
 let foo1 o =
-  if JS.(o.bar) then JS.(o.foo1.foo2) else JS.(o.foo2)
+  if JVS.(o.bar) then JVS.(o.foo1.foo2) else JVS.(o.foo2)
 
 let foo2 o =
-  JS.(o.x <- o.x + 1)
+  JVS.(o.x <- o.x + 1)
 
 
 let foo3 o a =
-  JS.(o#x) + JS.(o#y 1 a)
+  JVS.(o#x) + JVS.(o#y 1 a)

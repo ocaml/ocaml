@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: warnings.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* When you change this, you need to update the documentation:
    - man/ocamlc.m   in ocaml
    - man/ocamlopt.m in ocaml
@@ -22,7 +20,7 @@
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated                              (*  3 *)
+  | Deprecated of string                    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted                          (*  6 *)
@@ -59,6 +57,11 @@ type t =
   | Unused_constructor of string * bool * bool  (* 37 *)
   | Unused_exception of string * bool       (* 38 *)
   | Unused_rec_flag                         (* 39 *)
+  | Name_out_of_scope of string * string list * bool (* 40 *)
+  | Ambiguous_name of string list * string list *  bool    (* 41 *)
+  | Disambiguated_name of string            (* 42 *)
+  | Nonoptional_label of string             (* 43 *)
+  | Open_shadow_identifier of string * string (* 44 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -70,7 +73,7 @@ type t =
 let number = function
   | Comment_start -> 1
   | Comment_not_end -> 2
-  | Deprecated -> 3
+  | Deprecated _ -> 3
   | Fragile_match _ -> 4
   | Partial_application -> 5
   | Labels_omitted -> 6
@@ -107,9 +110,14 @@ let number = function
   | Unused_constructor _ -> 37
   | Unused_exception _ -> 38
   | Unused_rec_flag -> 39
+  | Name_out_of_scope _ -> 40
+  | Ambiguous_name _ -> 41
+  | Disambiguated_name _ -> 42
+  | Nonoptional_label _ -> 43
+  | Open_shadow_identifier _ -> 44
 ;;
 
-let last_warning_number = 39
+let last_warning_number = 44
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -204,7 +212,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -213,7 +221,7 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated -> "this syntax is deprecated."
+  | Deprecated s -> "deprecated feature: " ^ s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -304,6 +312,32 @@ let message = function
         (However, this constructor appears in patterns.)"
   | Unused_rec_flag ->
       "unused rec flag."
+  | Name_out_of_scope (ty, [nm], false) ->
+      nm ^ " was selected from type " ^ ty ^
+      ".\nIt is not visible in the current scope, and will not \n\
+       be selected if the type becomes unknown."
+  | Name_out_of_scope (_, _, false) -> assert false
+  | Name_out_of_scope (ty, slist, true) ->
+      "this record of type "^ ty ^" contains fields that are \n\
+       not visible in the current scope: "
+      ^ String.concat " " slist ^ ".\n\
+       They will not be selected if the type becomes unknown."
+  | Ambiguous_name ([s], tl, false) ->
+      s ^ " belongs to several types: " ^ String.concat " " tl ^
+      "\nThe first one was selected. Please disambiguate if this is wrong."
+  | Ambiguous_name (_, _, false) -> assert false
+  | Ambiguous_name (slist, tl, true) ->
+      "these field labels belong to several types: " ^
+      String.concat " " tl ^
+      "\nThe first one was selected. Please disambiguate if this is wrong."
+  | Disambiguated_name s ->
+      "this use of " ^ s ^ " required disambiguation."
+  | Nonoptional_label s ->
+      "the label " ^ s ^ " is not optional."
+  | Open_shadow_identifier (kind, s) ->
+      Printf.sprintf
+        "this open statement shadows the %s identifier %s (which is later used)"
+        kind s
 ;;
 
 let nerrors = ref 0;;
@@ -341,7 +375,7 @@ let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
     2, "Suspicious-looking end-of-comment mark.";
-    3, "Deprecated syntax.";
+    3, "Deprecated feature.";
     4, "Fragile pattern matching: matching that will remain complete even\n\
    \    if additional constructors are added to one of the variant types\n\
    \    matched.";
@@ -389,6 +423,11 @@ let descriptions =
    37, "Unused constructor.";
    38, "Unused exception constructor.";
    39, "Unused rec flag.";
+   40, "Constructor or label name used out of scope.";
+   41, "Ambiguous constructor or label name.";
+   42, "Disambiguated constructor or label name.";
+   43, "Nonoptional label applied as optional.";
+   44, "Open statement shadows an already defined identifier.";
   ]
 ;;
 

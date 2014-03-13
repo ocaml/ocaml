@@ -241,7 +241,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tpat_constant cst -> ()
         | Tpat_tuple list ->
             List.iter iter_pattern list
-        | Tpat_construct (path, _, _, args, _) ->
+        | Tpat_construct (_, _, args, _) ->
             List.iter iter_pattern args
         | Tpat_variant (label, pato, _) ->
             begin match pato with
@@ -249,7 +249,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
               | Some pat -> iter_pattern pat
             end
         | Tpat_record (list, closed) ->
-            List.iter (fun (path, _, _, pat) -> iter_pattern pat) list
+            List.iter (fun (_, _, pat) -> iter_pattern pat) list
         | Tpat_array list -> List.iter iter_pattern list
         | Tpat_or (p1, p2, _) -> iter_pattern p1; iter_pattern p2
         | Tpat_lazy p -> iter_pattern p
@@ -264,7 +264,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         match cstr with
           Texp_constraint (cty1, cty2) ->
             option iter_core_type cty1; option iter_core_type cty2
-        | Texp_open (path, _, _) -> ()
+        | Texp_open (_, path, _, _) -> ()
         | Texp_poly cto -> option iter_core_type cto
         | Texp_newtype s -> ())
         exp.exp_extra;
@@ -292,7 +292,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_bindings Nonrecursive list
         | Texp_tuple list ->
             List.iter iter_expression list
-        | Texp_construct (path, _, _, args, _) ->
+        | Texp_construct (_, _, args, _) ->
             List.iter iter_expression args
         | Texp_variant (label, expo) ->
             begin match expo with
@@ -300,16 +300,14 @@ module MakeIterator(Iter : IteratorArgument) : sig
               | Some exp -> iter_expression exp
             end
         | Texp_record (list, expo) ->
-            List.iter (fun (path, _, _, exp) ->
-                iter_expression exp
-            ) list;
+            List.iter (fun (_, _, exp) -> iter_expression exp) list;
             begin match expo with
                 None -> ()
               | Some exp -> iter_expression exp
             end
-        | Texp_field (exp, path, _, label) ->
+        | Texp_field (exp, _, label) ->
             iter_expression exp
-        | Texp_setfield (exp1, path, _ , label, exp2) ->
+        | Texp_setfield (exp1, _, label, exp2) ->
             iter_expression exp1;
             iter_expression exp2
         | Texp_array list ->
@@ -336,11 +334,11 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_expression exp2
         | Texp_send (exp, meth, expo) ->
             iter_expression exp;
-	  begin
-	    match expo with
-		None -> ()
-	      | Some exp -> iter_expression exp
-	  end
+          begin
+            match expo with
+                None -> ()
+              | Some exp -> iter_expression exp
+          end
         | Texp_new (path, _, _) -> ()
         | Texp_instvar (_, path, _) -> ()
         | Texp_setinstvar (_, _, _, exp) ->
@@ -493,7 +491,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcl_structure clstr -> iter_class_structure clstr
         | Tcl_fun (label, pat, priv, cl, partial) ->
           iter_pattern pat;
-	  List.iter (fun (id, _, exp) -> iter_expression exp) priv;
+          List.iter (fun (id, _, exp) -> iter_expression exp) priv;
           iter_class_expr cl
 
         | Tcl_apply (cl, args) ->
@@ -506,7 +504,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
         | Tcl_let (rec_flat, bindings, ivars, cl) ->
           iter_bindings rec_flat bindings;
-	  List.iter (fun (id, _, exp) -> iter_expression exp) ivars;
+          List.iter (fun (id, _, exp) -> iter_expression exp) ivars;
             iter_class_expr cl
 
         | Tcl_constraint (cl, Some clty, vals, meths, concrs) ->
@@ -620,7 +618,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           iter_expression exp
 (*      | Tcf_let (rec_flag, bindings, exps) ->
           iter_bindings rec_flag bindings;
-	List.iter (fun (id, _, exp) -> iter_expression exp) exps; *)
+        List.iter (fun (id, _, exp) -> iter_expression exp) exps; *)
       | Tcf_init exp ->
           iter_expression exp
       end;
@@ -698,5 +696,3 @@ module DefaultIteratorArgument = struct
     let leave_joinautomaton _ = ()
 (*<JOCAML *)
   end
-
-

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: printexc.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Facilities for printing exceptions. *)
 
 val to_string: exn -> string
@@ -84,3 +82,20 @@ val register_printer: (exn -> string option) -> unit
     the backtrace if it has itself raised an exception before.
     @since 3.11.2
 *)
+
+(** {6 Raw backtraces} *)
+
+type raw_backtrace
+
+(** The abstract type [backtrace] stores exception backtraces in
+    a low-level format, instead of directly exposing them as string as
+    the [get_backtrace()] function does.
+
+    This allows to pay the performance overhead of representation
+    conversion and formatting only at printing time, which is useful
+    if you want to record more backtrace than you actually print.
+*)
+
+val get_raw_backtrace: unit -> raw_backtrace
+val print_raw_backtrace: out_channel -> raw_backtrace -> unit
+val raw_backtrace_to_string: raw_backtrace -> string

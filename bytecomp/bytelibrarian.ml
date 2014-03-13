@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: bytelibrarian.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Build libraries of .cmo files *)
 
 open Misc
@@ -38,7 +36,6 @@ let copy_compunit ic oc compunit =
 
 (* Add C objects and options and "custom" info from a library descriptor *)
 
-let lib_sharedobjs = ref []
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
 let lib_dllibs = ref []
@@ -94,12 +91,13 @@ let create_archive ppf file_list lib_name =
     output_string outchan cma_magic_number;
     let ofs_pos_toc = pos_out outchan in
     output_binary_int outchan 0;
-    let units = List.flatten(List.map (copy_object_file ppf outchan) file_list) in
+    let units =
+      List.flatten(List.map (copy_object_file ppf outchan) file_list) in
     let toc =
       { lib_units = units;
         lib_custom = !Clflags.custom_runtime;
         lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
-        lib_ccopts = !Clflags.ccopts @ !lib_ccopts;
+        lib_ccopts = !Clflags.all_ccopts @ !lib_ccopts;
         lib_dllibs = !Clflags.dllibs @ !lib_dllibs } in
     let pos_toc = pos_out outchan in
     output_value outchan toc;

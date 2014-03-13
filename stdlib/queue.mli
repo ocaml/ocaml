@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: queue.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** First-in first-out queues.
 
    This module implements queues (FIFOs), with in-place modification.

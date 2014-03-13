@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: asmlibrarian.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Build libraries of .cmx files *)
 
 open Format

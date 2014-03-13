@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: sparc.S 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Asm part of the runtime system for the Sparc processor.  */
 /* Must be preprocessed by cpp */
 
@@ -351,10 +349,10 @@ caml_system__frametable:
         .half   0               /* no roots */
 
 #ifdef SYS_solaris
-	.type caml_allocN, #function
-	.type caml_call_gc, #function
+        .type caml_allocN, #function
+        .type caml_call_gc, #function
         .type caml_c_call, #function
         .type caml_start_program, #function
         .type caml_raise_exception, #function
-	.type caml_system__frametable, #object
+        .type caml_system__frametable, #object
 #endif

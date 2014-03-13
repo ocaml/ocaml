@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: cset.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Set of characters encoded as list of intervals *)
 
 type t

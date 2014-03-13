@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: event.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** First-class synchronous communication.
 
    This module implements synchronous inter-thread communications over
@@ -64,13 +62,13 @@ val guard : (unit -> 'a event) -> 'a event
    operation. *)
 
 val sync : 'a event -> 'a
-(** ``Synchronize'' on an event: offer all the communication
+(** 'Synchronize' on an event: offer all the communication
    possibilities specified in the event to the outside world,
    and block until one of the communications succeed. The result
    value of that communication is returned. *)
 
 val select : 'a event list -> 'a
-(** ``Synchronize'' on an alternative of events.
+(** 'Synchronize' on an alternative of events.
    [select evl] is shorthand for [sync(choose evl)]. *)
 
 val poll : 'a event -> 'a option

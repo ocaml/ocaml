@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: ui.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Function declarations for non-Unix user interfaces */
 
 #ifndef CAML_UI_H

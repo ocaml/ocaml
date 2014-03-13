@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Test bound checks with ocamlopt *)
 
 let a = [| 0; 1; 2 |]
@@ -24,5 +36,3 @@ let _ =
   print_string "Trail:";
   List.iter (fun n -> print_string " "; print_int n) !trail;
   print_newline()
-
-

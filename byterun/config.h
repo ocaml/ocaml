@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: config.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 #ifndef CAML_CONFIG_H
 #define CAML_CONFIG_H
 
@@ -96,7 +94,8 @@ typedef struct { uint32 l, h; } uint64, int64;
 /* We use threaded code interpretation if the compiler provides labels
    as first-class values (GCC 2.x). */
 
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) && !defined (SHRINKED_GNUC) && !defined(CAML_JIT)
+#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) \
+    && !defined (SHRINKED_GNUC) && !defined(CAML_JIT)
 #define THREADED_CODE
 #endif
 

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: dynlink.c 12959 2012-09-27 13:12:51Z maranget $ */
-
 /* Dynamic loading of C primitives. */
 
 #include <stddef.h>
@@ -72,13 +70,15 @@ static c_primitive lookup_primitive(char * name)
 
 #define LD_CONF_NAME "ld.conf"
 
-static char * do_parse_ld_conf(char *dir)
+static char * parse_ld_conf(void)
 {
   char * stdlib, * ldconfname, * config, * p, * q;
   struct stat st;
   int ldconf, nread;
 
-  stdlib = dir ;
+  stdlib = getenv("OCAMLLIB");
+  if (stdlib == NULL) stdlib = getenv("CAMLLIB");
+  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
   ldconfname = caml_stat_alloc(strlen(stdlib) + 2 + sizeof(LD_CONF_NAME));
   strcpy(ldconfname, stdlib);
   strcat(ldconfname, "/" LD_CONF_NAME);
@@ -111,15 +111,6 @@ static char * do_parse_ld_conf(char *dir)
   return config;
 }
 
-static char * parse_ld_conf(void)
-{
-  char * stdlib ;
-  stdlib = getenv("OCAMLLIB");
-  if (stdlib == NULL) stdlib = getenv("CAMLLIB");
-  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
-  return do_parse_ld_conf(stdlib) ;
-}
-
 /* Open the given shared library and add it to shared_libs.
    Abort on error. */
 static void open_shared_lib(char * name)
@@ -146,9 +137,6 @@ void caml_build_primitive_table(char * lib_path,
                                 char * req_prims)
 {
   char * tofree1, * tofree2;
-#ifdef OCAML_LIB
-  char * tofree3 ;
-#endif  
   char * p;
 
   /* Initialize the search path for dynamic libraries:
@@ -162,9 +150,6 @@ void caml_build_primitive_table(char * lib_path,
     for (p = lib_path; *p != 0; p += strlen(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
   tofree2 = parse_ld_conf();
-#ifdef OCAML_LIB
-  tofree3 = do_parse_ld_conf(OCAML_LIB) ;
-#endif  
   /* Open the shared libraries */
   caml_ext_table_init(&shared_libs, 8);
   if (libs != NULL)
@@ -178,7 +163,7 @@ void caml_build_primitive_table(char * lib_path,
   for (p = req_prims; *p != 0; p += strlen(p) + 1) {
     c_primitive prim = lookup_primitive(p);
     if (prim == NULL)
-      caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
+          caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
     caml_ext_table_add(&caml_prim_table, (void *) prim);
 #ifdef DEBUG
     caml_ext_table_add(&caml_prim_name_table, strdup(p));
@@ -187,9 +172,6 @@ void caml_build_primitive_table(char * lib_path,
   /* Clean up */
   caml_stat_free(tofree1);
   caml_stat_free(tofree2);
-#ifdef OCAML_LIB
-  caml_stat_free(tofree3);
-#endif 
   caml_ext_table_free(&caml_shared_libs_path, 0);
 }
 
@@ -206,7 +188,8 @@ void caml_build_primitive_table_builtin(void)
   for (i = 0; caml_builtin_cprim[i] != 0; i++) {
     caml_ext_table_add(&caml_prim_table, (void *) caml_builtin_cprim[i]);
 #ifdef DEBUG
-    caml_ext_table_add(&caml_prim_name_table, strdup(caml_names_of_builtin_cprim[i]));
+    caml_ext_table_add(&caml_prim_name_table,
+                       strdup(caml_names_of_builtin_cprim[i]));
 #endif
 }
 }

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: parse.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Entry points in the parser *)
 
 val implementation : Lexing.lexbuf -> Parsetree.structure

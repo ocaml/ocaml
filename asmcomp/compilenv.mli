@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: compilenv.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Compilation environments for compilation units *)
 
 open Cmx_format
@@ -53,7 +51,8 @@ val need_send_fun: int -> unit
 val new_const_symbol : unit -> string
 val new_const_label : unit -> int
 val new_structured_constant : Lambda.structured_constant -> bool -> string
-val structured_constants : unit -> (string * bool * Lambda.structured_constant) list
+val structured_constants :
+  unit -> (string * bool * Lambda.structured_constant) list
 
 val read_unit_info: string -> unit_infos * Digest.t
         (* Read infos and MD5 from a [.cmx] file. *)
@@ -75,7 +74,7 @@ val read_library_info: string -> library_infos
 type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
 
 exception Error of error
 

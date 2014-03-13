@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: std_exit.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Ensure that [at_exit] functions are called at the end of every program *)
 
 let _ = do_at_exit()

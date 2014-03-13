@@ -267,7 +267,7 @@ let rec simple_pat p = match p.pat_desc with
 | Tpat_any | Tpat_var _ -> true
 | Tpat_alias (p,_,_)|Tpat_lazy p -> simple_pat p
 | Tpat_tuple ps -> List.for_all simple_pat ps
-| Tpat_record (lps,_) ->  List.for_all (fun (_,_,_,p) -> simple_pat p) lps
+| Tpat_record (lps,_) ->  List.for_all (fun (_,_,p) -> simple_pat p) lps
 | Tpat_or (p1,p2,_) -> simple_pat p1 && simple_pat p2
 | Tpat_constant _|Tpat_construct _|Tpat_variant _
 | Tpat_array _ -> false
@@ -292,11 +292,11 @@ let rec simple_exp e = match e.exp_desc with
 | Texp_instvar _ | Texp_setinstvar _ | Texp_spawn (_)
  -> true
 (* Recursion *)
-| Texp_construct (_,_,_,es,_) | Texp_tuple (es) | Texp_array (es)
+| Texp_construct (_,_,es,_) | Texp_tuple (es) | Texp_array (es)
  -> List.for_all simple_exp es
-| Texp_variant (_, Some e) | Texp_field (e,_,_,_)
+| Texp_variant (_, Some e) | Texp_field (e,_,_)
    -> simple_exp e
-| Texp_setfield (e1,_,_,_,e2) -> simple_exp e1 && simple_exp e2
+| Texp_setfield (e1,_,_,e2) -> simple_exp e1 && simple_exp e2
 | Texp_apply ({exp_desc=Texp_ident (_,_,{val_kind=Val_prim p})}, args) ->
    List.length args < p.prim_arity || (* will be compiled as function *)
    (!simple_prim p &&
@@ -305,7 +305,7 @@ let rec simple_exp e = match e.exp_desc with
 | Texp_for (_,_,e1,e2,_,e3) ->
    simple_exp e1 && simple_exp e2 && simple_exp e3
 | Texp_record (les,eo) ->
-   List.for_all (fun (_,_,_,e) -> simple_exp e) les &&
+   List.for_all (fun (_,_,e) -> simple_exp e) les &&
    simple_exp_option eo
 (* Asserts are special *)
 | Texp_assert e -> !Clflags.noassert || simple_exp e

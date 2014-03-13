@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc.ml 11010 2011-04-13 09:30:59Z maranget $ *)
 
 (** Main module for bytecode.
 @todo coucou le todo*)
@@ -22,7 +21,7 @@ open Typedtree
 
 module M = Odoc_messages
 
-let print_DEBUG s = print_string s ; print_newline () 
+let print_DEBUG s = print_string s ; print_newline ()
 
 (* we check if we must load a module given on the command line *)
 let arg_list = Array.to_list Sys.argv
@@ -30,8 +29,8 @@ let (plugins, paths) =
   let rec iter (files, incs) = function
       [] | _ :: [] -> (List.rev files, List.rev incs)
     | "-g" :: file :: q when
-        ((Filename.check_suffix file "cmo") or
-         (Filename.check_suffix file "cma") or
+        ((Filename.check_suffix file "cmo") ||
+         (Filename.check_suffix file "cma") ||
            (Filename.check_suffix file "cmxs")) ->
       iter (file :: files, incs) q
   | "-i" :: dir :: q ->
@@ -43,7 +42,7 @@ let (plugins, paths) =
 
 let _ = print_DEBUG "Fin analyse des arguments pour le dynamic load"
 
-(** Return the real name of the file to load, 
+(** Return the real name of the file to load,
    searching it in the paths if it is
    a simple name and not in the current directory. *)
 let get_real_filename name =
@@ -89,16 +88,16 @@ let () = Odoc_args.parse ()
 
 
 let loaded_modules =
-  List.flatten 
-    (List.map 
+  List.flatten
+    (List.map
        (fun f ->
          Odoc_info.verbose (Odoc_messages.loading f);
-         try 
+         try
            let l = Odoc_analyse.load_modules f in
            Odoc_info.verbose Odoc_messages.ok;
            l
-         with Failure s -> 
-           prerr_endline s ; 
+         with Failure s ->
+           prerr_endline s ;
            incr Odoc_global.errors ;
            []
        )
@@ -112,7 +111,7 @@ let _ =
     None -> ()
   | Some f ->
       try Odoc_analyse.dump_modules f modules
-      with Failure s -> 
+      with Failure s ->
         prerr_endline s ;
         incr Odoc_global.errors
 
@@ -121,13 +120,13 @@ let _ =
   match !Odoc_args.current_generator with
     None ->
       ()
-  | Some gen -> 
+  | Some gen ->
       let generator = Odoc_gen.get_minimal_generator gen in
       Odoc_info.verbose Odoc_messages.generating_doc;
       generator#generate modules;
       Odoc_info.verbose Odoc_messages.ok
 
-let _ = 
+let _ =
   if !Odoc_global.errors > 0 then
   (
    prerr_endline (Odoc_messages.errors_occured !Odoc_global.errors) ;
@@ -135,9 +134,3 @@ let _ =
   )
   else
     exit 0
-<<<<<<< .courant
-  
-
-(* eof $Id: odoc.ml 11010 2011-04-13 09:30:59Z maranget $ *)
-=======
->>>>>>> .fusion-droit.r10497

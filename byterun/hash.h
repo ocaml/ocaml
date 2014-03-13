@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* Auxiliary functions for custom hash functions */
 
 #ifndef CAML_HASH_H
@@ -29,4 +27,3 @@ CAMLextern uint32 caml_hash_mix_string(uint32 h, value s);
 
 
 #endif
-

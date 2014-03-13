@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_str.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
@@ -33,7 +32,6 @@ let rec is_arrow_type t =
   | Types.Tconstr _
   | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
   | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
-  | Types.Tproc _ -> false
 
 let raw_string_of_type_list sep type_list =
   let buf = Buffer.create 256 in
@@ -46,7 +44,6 @@ let raw_string_of_type_list sep type_list =
         false
     | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
     | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
-    | Types.Tproc _ -> false
   in
   let print_one_type variance t =
     Printtyp.mark_loops t;
@@ -285,5 +282,3 @@ let string_of_method m =
   (match m.M.met_value.M.val_info with
     None -> ""
   | Some i -> Odoc_misc.string_of_info i)
-
-(* eof $Id: odoc_str.ml 12959 2012-09-27 13:12:51Z maranget $ *)

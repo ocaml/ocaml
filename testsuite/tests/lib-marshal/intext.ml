@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Test for output_value / input_value *)
 
 let max_data_depth = 500000
@@ -447,7 +459,7 @@ let test_deep () =
   test 426 (Marshal.from_string s 0 = x)
 
 (* Test for objects *)
-class foo = object (self : 'self) 
+class foo = object (self : 'self)
   val data1 = "foo"
   val data2 = "bar"
   val data3 = 42L
@@ -462,11 +474,11 @@ class bar = object (self : 'self)
   val! data2 = "test5"
   val data4 = "test3"
   val data5 = "test4"
-  method test1 = 
-    data1 
-  ^ data2 
-  ^ data4 
-  ^ data5 
+  method test1 =
+    data1
+  ^ data2
+  ^ data4
+  ^ data5
   ^ Int64.to_string self#test4
 end
 
@@ -523,7 +535,18 @@ let test_infix () =
   test 605 (even' 41 = even 41);
   test 606 (even' 142 = true);
   test 607 (even' 142 = even 142)
-  
+
+
+let test_mutual_rec_regression () =
+  (* this regression was reported by Cedric Pasteur in PR#5772 *)
+  let rec test_one q x = x > 3
+  and test_list q = List.for_all (test_one q) q in
+  let g () = () in
+  let f q = if test_list q then g () in
+
+  test 700 (try ignore (Marshal.to_string f [Marshal.Closures]); true
+            with _ -> false)
+
 let main() =
   if Array.length Sys.argv <= 2 then begin
     test_out "intext.data"; test_in "intext.data";
@@ -535,7 +558,8 @@ let main() =
     test_block();
     test_deep();
     test_objects();
-    test_infix ()
+    test_infix ();
+    test_mutual_rec_regression ();
   end else
   if Sys.argv.(1) = "make" then begin
     let n = int_of_string Sys.argv.(2) in

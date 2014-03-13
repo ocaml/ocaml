@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: genprintval.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* To print values *)
 
 open Misc
@@ -156,10 +154,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let tree_of_constr =
       tree_of_qualified
-        (fun lid env -> (snd (Env.lookup_constructor lid env)).cstr_res)
+        (fun lid env -> (Env.lookup_constructor lid env).cstr_res)
 
     and tree_of_label =
-      tree_of_qualified (fun lid env -> (snd (Env.lookup_label lid env)).lbl_res)
+      tree_of_qualified (fun lid env -> (Env.lookup_label lid env).lbl_res)
 
     (* An abstract type *)
 
@@ -249,15 +247,15 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       else Cstr_constant(O.obj obj) in
                     let (constr_name, constr_args,ret_type) =
                       Datarepr.find_constr_by_tag tag constr_list in
-		    let type_params =
-		      match ret_type with
-			Some t ->
-			  begin match (Ctype.repr t).desc with
-			    Tconstr (_,params,_) ->
-			      params
-			  | _ -> assert false end
-		      | None -> decl.type_params
-		    in
+                    let type_params =
+                      match ret_type with
+                        Some t ->
+                          begin match (Ctype.repr t).desc with
+                            Tconstr (_,params,_) ->
+                              params
+                          | _ -> assert false end
+                      | None -> decl.type_params
+                    in
                     let ty_args =
                       List.map
                         (function ty ->
@@ -279,8 +277,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                                     ty_list
                                 with
                                   Ctype.Cannot_apply -> abstract_type in
-                              let lid = tree_of_label env path (Ident.name lbl_name) in
-                              let v =
+                              let name = Ident.name lbl_name in
+                              (* PR#5722: print full module path only
+                                 for first record field *)
+                              let lid =
+                                if pos = 0 then tree_of_label env path name
+                                else Oide_ident name
+                              and v =
                                 tree_of_val (depth - 1) (O.field obj pos)
                                   ty_arg
                               in
@@ -352,7 +355,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       try
         (* Attempt to recover the constructor description for the exn
            from its name *)
-        let cstr = snd (Env.lookup_constructor lid env) in
+        let cstr = Env.lookup_constructor lid env in
         let path =
           match cstr.cstr_tag with
             Cstr_exception (p, _) -> p | _ -> raise Not_found in

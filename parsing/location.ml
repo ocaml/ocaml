@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: location.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 open Lexing
 
 let absname = ref false
@@ -134,25 +132,8 @@ let highlight_dumb ppf lb loc =
   let line = ref 0 in
   let pos_at_bol = ref 0 in
   for pos = 0 to end_pos do
-    let c = lb.lex_buffer.[pos + pos0] in
-    if c <> '\n' then begin
-      if !line = !line_start && !line = !line_end then
-        (* loc is on one line: print whole line *)
-        Format.pp_print_char ppf c
-      else if !line = !line_start then
-        (* first line of multiline loc: print ... before loc_start *)
-        if pos < loc.loc_start.pos_cnum
-        then Format.pp_print_char ppf '.'
-        else Format.pp_print_char ppf c
-      else if !line = !line_end then
-        (* last line of multiline loc: print ... after loc_end *)
-        if pos < loc.loc_end.pos_cnum
-        then Format.pp_print_char ppf c
-        else Format.pp_print_char ppf '.'
-      else if !line > !line_start && !line < !line_end then
-        (* intermediate line of multiline loc: print whole line *)
-        Format.pp_print_char ppf c
-    end else begin
+    match lb.lex_buffer.[pos + pos0] with
+    | '\n' ->
       if !line = !line_start && !line = !line_end then begin
         (* loc is on one line: underline location *)
         Format.fprintf ppf "@.  ";
@@ -168,8 +149,29 @@ let highlight_dumb ppf lb loc =
         if pos < loc.loc_end.pos_cnum then Format.pp_print_string ppf "  "
       end;
       incr line;
-      pos_at_bol := pos + 1;
-    end
+      pos_at_bol := pos + 1
+    | '\r' -> () (* discard *)
+    | c ->
+      if !line = !line_start && !line = !line_end then
+        (* loc is on one line: print whole line *)
+        Format.pp_print_char ppf c
+      else if !line = !line_start then
+        (* first line of multiline loc:
+           print a dot for each char before loc_start *)
+        if pos < loc.loc_start.pos_cnum then
+          Format.pp_print_char ppf '.'
+        else
+          Format.pp_print_char ppf c
+      else if !line = !line_end then
+        (* last line of multiline loc: print a dot for each char
+           after loc_end, even whitespaces *)
+        if pos < loc.loc_end.pos_cnum then
+          Format.pp_print_char ppf c
+        else
+          Format.pp_print_char ppf '.'
+      else if !line > !line_start && !line < !line_end then
+        (* intermediate line of multiline loc: print whole line *)
+        Format.pp_print_char ppf c
   done
 
 (* Highlight the location using one of the supported modes. *)

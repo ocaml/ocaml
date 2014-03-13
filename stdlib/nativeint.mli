@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: nativeint.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Processor-native integers.
 
    This module provides operations on the type [nativeint] of
@@ -60,7 +58,8 @@ external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
 (** Integer remainder.  If [y] is not zero, the result
    of [Nativeint.rem x y] satisfies the following properties:
    [Nativeint.zero <= Nativeint.rem x y < Nativeint.abs y] and
-   [x = Nativeint.add (Nativeint.mul (Nativeint.div x y) y) (Nativeint.rem x y)].
+   [x = Nativeint.add (Nativeint.mul (Nativeint.div x y) y)
+                      (Nativeint.rem x y)].
    If [y = 0], [Nativeint.rem x y] raises [Division_by_zero]. *)
 
 val succ : nativeint -> nativeint

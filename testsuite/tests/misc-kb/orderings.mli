@@ -10,11 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: orderings.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 open Terms
 
-type ordering = 
+type ordering =
     Greater
   | Equal
   | NotGE

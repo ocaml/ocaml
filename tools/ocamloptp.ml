@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: ocamlcp.ml 11890 2011-12-20 10:35:43Z frisch $ *)
-
 open Printf
 
 let compargs = ref ([] : string list)
@@ -38,10 +36,10 @@ let process_file filename =
   compargs := (Filename.quote filename) :: !compargs
 ;;
 
-let usage = "Usage: ocamloptp <options> <files>\noptions are:"
+let usage = "Usage: jocamloptp <options> <files>\noptions are:"
 
 let incompatible o =
-  fprintf stderr "ocamloptp: profiling is incompatible with the %s option\n" o;
+  fprintf stderr "jocamloptp: profiling is incompatible with the %s option\n" o;
   exit 2
 
 module Options = Main_args.Make_optcomp_options (struct
@@ -78,6 +76,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _pp s = incompatible "-pp"
   let _ppx s = incompatible "-ppx"
   let _principal = option "-principal"
+  let _short_paths = option "-short-paths"
   let _rectypes = option "-rectypes"
   let _runtime_variant s = option_with_arg "-runtime-variant" s
   let _S = option "-S"
@@ -95,7 +94,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _where = option "-where"
 
   let _nopervasives = option "-nopervasives"
+  let _dsource = option "-dsource"
   let _dparsetree = option "-dparsetree"
+  let _dtypedtree = option "-dtypedtree"
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"
   let _dclambda = option "-dclambda"
@@ -136,15 +137,15 @@ let optlist =
 in
 Arg.parse optlist process_file usage;
 if !with_impl && !with_intf then begin
-  fprintf stderr "ocamloptp cannot deal with both \"-impl\" and \"-intf\"\n";
+  fprintf stderr "jocamloptp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";
   exit 2;
 end else if !with_impl && !with_mli then begin
-  fprintf stderr "ocamloptp cannot deal with both \"-impl\" and .mli files\n";
+  fprintf stderr "jocamloptp cannot deal with both \"-impl\" and .mli files\n";
   fprintf stderr "please compile interfaces and implementations separately\n";
   exit 2;
 end else if !with_intf && !with_ml then begin
-  fprintf stderr "ocamloptp cannot deal with both \"-intf\" and .ml files\n";
+  fprintf stderr "jocamloptp cannot deal with both \"-intf\" and .ml files\n";
   fprintf stderr "please compile interfaces and implementations separately\n";
   exit 2;
 end;
@@ -152,7 +153,7 @@ if !with_impl then profargs := "-impl" :: !profargs;
 if !with_intf then profargs := "-intf" :: !profargs;
 let status =
   Sys.command
-    (Printf.sprintf "ocamlopt -pp \"ocamlprof -instrument %s\" %s %s"
+    (Printf.sprintf "jocamlopt -pp \"jocamlprof -instrument %s\" %s %s"
         (String.concat " " (List.rev !profargs))
         (if !make_archive then "" else "profiling.cmx")
         (String.concat " " (List.rev !compargs)))

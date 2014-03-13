@@ -10,8 +10,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
-
 /* A simple parser for C-- */
 
 %{
@@ -325,4 +323,3 @@ dataitem:
   | SKIP INTCONST               { Cskip $2 }
   | ALIGN INTCONST              { Calign $2 }
 ;
-

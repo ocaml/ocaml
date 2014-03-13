@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: simplif.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Elimination of useless Llet(Alias) bindings.
    Also transform let-bound references into variables. *)
 
@@ -266,7 +264,8 @@ let simplify_exits lam =
   | Lfor(v, l1, l2, dir, l3) ->
       Lfor(v, simplif l1, simplif l2, dir, simplif l3)
   | Lassign(v, l) -> Lassign(v, simplif l)
-  | Lsend(k, m, o, ll, loc) -> Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
+  | Lsend(k, m, o, ll, loc) ->
+      Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
   | Levent(l, ev) -> Levent(simplif l, ev)
   | Lifused(v, l) -> Lifused (v,simplif l)
   in
@@ -476,7 +475,8 @@ let simplify_lets lam =
   | Lfor(v, l1, l2, dir, l3) ->
       Lfor(v, simplif l1, simplif l2, dir, simplif l3)
   | Lassign(v, l) -> Lassign(v, simplif l)
-  | Lsend(k, m, o, ll, loc) -> Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
+  | Lsend(k, m, o, ll, loc) ->
+      Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
   | Levent(l, ev) -> Levent(simplif l, ev)
   | Lifused(v, l) ->
       if count_var v > 0 then simplif l else lambda_unit

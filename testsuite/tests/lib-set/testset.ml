@@ -1,4 +1,16 @@
-module S = Set.Make(struct type t = int let compare = compare end)
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
+module S = Set.Make(struct type t = int let compare (x:t) y = compare x y end)
 
 let testvals = [0;1;2;3;4;5;6;7;8;9]
 
@@ -102,7 +114,7 @@ let test x s1 s2 =
 
   check "split"
     (let (l, p, r) = S.split x s1 in
-     fun i -> 
+     fun i ->
        if i < x then S.mem i l = S.mem i s1
        else if i > x then S.mem i r = S.mem i s1
        else p = S.mem i s1)
@@ -117,4 +129,3 @@ let rset() =
 let _ =
   Random.init 42;
   for i = 1 to 25000 do test (relt()) (rset()) (rset()) done
-  

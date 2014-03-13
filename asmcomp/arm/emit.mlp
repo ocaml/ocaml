@@ -11,11 +11,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Emission of ARM assembly code *)
 
-open Location
 open Misc
 open Cmm
 open Arch
@@ -402,6 +399,10 @@ let emit_instr i =
           `	ldr	{emit_reg i.res.(1)}, {emit_label lbl} + 4\n`;
           2
         end
+    | Lop(Iconst_float f) when !fpu = VFPv2 ->
+        let lbl = float_literal f in
+        `	fldd	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_string f}\n`;
+        1
     | Lop(Iconst_float f) ->
         let encode imm =
           let sg = Int64.to_int (Int64.shift_right_logical imm 63) in
@@ -468,7 +469,7 @@ let emit_instr i =
         let ninstr = emit_stack_adjustment (-n) in
         stack_offset := !stack_offset + n;
         ninstr
-    | Lop(Iload(Single, addr)) when !fpu >= VFPv3_D16 ->
+    | Lop(Iload(Single, addr)) when !fpu >= VFPv2 ->
         `	flds	s14, {emit_addressing addr i.arg 0}\n`;
         `	fcvtds	{emit_reg i.res.(0)}, s14\n`; 2
     | Lop(Iload((Double | Double_u), addr)) when !fpu = Soft ->
@@ -502,7 +503,7 @@ let emit_instr i =
           | Double_u -> "fldd"
           | _ (* 32-bit quantities *) -> "ldr" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 0}\n`; 1
-    | Lop(Istore(Single, addr)) when !fpu >= VFPv3_D16 ->
+    | Lop(Istore(Single, addr)) when !fpu >= VFPv2 ->
         `	fcvtsd	s14, {emit_reg i.arg.(0)}\n`;
         `	fsts	s14, {emit_addressing addr i.arg 1}\n`; 2
     | Lop(Istore((Double | Double_u), addr)) when !fpu = Soft ->
@@ -681,6 +682,16 @@ let emit_instr i =
                      | Imulsub -> "mls"
                      | _ -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`; 1
+    | Lop(Ispecific(Ibswap size)) ->
+        begin match size with
+          16 ->
+            `	rev16	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
+            `	movt	{emit_reg i.res.(0)}, #0\n`; 2
+        | 32 ->
+            `	rev	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`; 1
+        | _ ->
+            assert false
+        end
     | Lreloadretaddr ->
         let n = frame_size() in
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
@@ -808,7 +819,7 @@ let rec emit_all ninstr i =
     let n = emit_instr i in
     let ninstr' = ninstr + n in
     (* fldd can address up to +/-1KB, ldr can address up to +/-4KB *)
-    let limit = (if !fpu >= VFPv3_D16 && !float_literals <> []
+    let limit = (if !fpu >= VFPv2 && !float_literals <> []
                  then 127
                  else 511) in
     let limit = limit - !num_literals in
@@ -910,6 +921,7 @@ let begin_assembly() =
   end;
   begin match !fpu with
     Soft      -> `	.fpu	softvfp\n`
+  | VFPv2     -> `	.fpu	vfpv2\n`
   | VFPv3_D16 -> `	.fpu	vfpv3-d16\n`
   | VFPv3     -> `	.fpu	vfpv3\n`
   end;

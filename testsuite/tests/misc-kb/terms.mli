@@ -10,9 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: terms.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
-type term = 
+type term =
     Var of int
   | Term of string * term list
 

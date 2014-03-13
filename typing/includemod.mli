@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: includemod.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Inclusion checks for the module language *)
 
 open Typedtree
@@ -45,7 +43,7 @@ type symptom =
 
 type pos =
     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
-type error = pos list * symptom
+type error = pos list * Env.t * symptom
 
 exception Error of error list
 

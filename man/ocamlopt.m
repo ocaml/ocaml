@@ -10,8 +10,6 @@
 .\"*                                                                     *
 .\"***********************************************************************
 .\"
-.\" $Id: ocamlopt.m 12959 2012-09-27 13:12:51Z maranget $
-.\"
 .TH OCAMLOPT 1
 
 .SH NAME
@@ -157,6 +155,9 @@ command line, unless the
 .B \-noautolink
 option is given.
 .TP
+.B \-absname
+Show absolute filenames in error messages.
+.TP
 .B \-annot
 Dump detailed information about the compilation (types, bindings,
 tail-calls, etc).  The information for file
@@ -171,8 +172,8 @@ file can be used with the emacs commands given in
 to display types and other annotations interactively.
 .TP
 .B \-dtypes
-Has been deprecated. Please use 
-.BI \-annot 
+Has been deprecated. Please use
+.BI \-annot
 instead.
 .TP
 .B \-c
@@ -336,7 +337,7 @@ option is given, specify the name of plugin file produced.
 .B \-output\-obj
 Cause the linker to produce a C object file instead of an executable
 file. This is useful to wrap OCaml code as a C library,
-callable from any C program. The name of the output object file 
+callable from any C program. The name of the output object file
 must be set with the
 .B \-o
 option.

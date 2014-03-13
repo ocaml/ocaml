@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_parser.mly 10519 2010-06-04 19:19:34Z maranget $ *)
-
 open Odoc_types
 open Odoc_comments_global
 

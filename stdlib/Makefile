@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile 12858 2012-08-10 14:45:51Z maranget $
-
 include Makefile.shared
 
 allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILING)
@@ -45,7 +43,7 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 camlheader camlheaderd camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
 	  echo '#!$(BINDIR)/jocamlrun' > camlheader && \
-	  echo '#!$(BINDIR)/ocamlrund' > camlheaderd && \
+	  echo '#!$(BINDIR)/jocamlrund' > camlheaderd && \
 	  echo '#!' | tr -d '\012' > camlheader_ur; \
 	else \
 	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
@@ -55,7 +53,7 @@ camlheader camlheaderd camlheader_ur: header.c ../config/Makefile
 	  mv tmpheader$(EXE) camlheader && \
 	  cp camlheader camlheader_ur && \
 	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrund"' \
+	            -DRUNTIME_NAME='"$(BINDIR)/jocamlrund"' \
 	            header.c -o tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheaderd; \

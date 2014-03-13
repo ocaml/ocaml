@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: kbmain.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 open Terms
 open Equations
 open Orderings
@@ -72,11 +70,10 @@ let group_precedence op1 op2 =
     if r1 = r2 then Equal else
     if r1 > r2 then Greater else NotGE
 
-let group_order = rpo group_precedence lex_ext 
+let group_order = rpo group_precedence lex_ext
 
 let greater pair =
   match group_order pair with Greater -> true | _ -> false
 
 let _ =
   for i = 1 to 20 do kb_complete greater [] geom_rules done
-

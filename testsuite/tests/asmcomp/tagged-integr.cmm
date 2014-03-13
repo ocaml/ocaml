@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: tagged-integr.cmm 12858 2012-08-10 14:45:51Z maranget $ *)
-
 ("res_square": skip 8)
 ("h": skip 8)
 ("x": skip 8)
@@ -42,4 +40,3 @@
   (store float "low" 0.0)
   (store float "hi" 1.0)
   (load float (app "integr" "square" "low" "hi" n addr)))
-

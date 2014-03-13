@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -9,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_comments.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (** Analysis of comments. *)
 
 open Odoc_types
@@ -20,7 +19,7 @@ let print_DEBUG s = print_string s ; print_newline ();;
 (** This variable contains the regular expression representing a blank but not a '\n'.*)
 let simple_blank = "[ \013\009\012]"
 
-module type Texter = 
+module type Texter =
     sig
       (** Return a text structure from a string. *)
       val text_of_string : string -> text
@@ -50,7 +49,7 @@ module Info_retriever =
             (0, None)
         | Some (desc, remain_opt) ->
             let mem_nb_chars = !Odoc_comments_global.nb_chars in
-            let _ = 
+            let _ =
               match remain_opt with
                 None ->
                   ()
@@ -59,7 +58,7 @@ module Info_retriever =
                   let lexbuf2 = Lexing.from_string s in
                   Odoc_parser.info_part2 Odoc_lexer.elements lexbuf2
             in
-            (mem_nb_chars, 
+            (mem_nb_chars,
              Some
                {
                  i_desc = (match desc with "" -> None | _ -> Some (MyTexter.text_of_string desc));
@@ -67,31 +66,26 @@ module Info_retriever =
                  i_version = !Odoc_comments_global.version;
                  i_sees = (List.map create_see !Odoc_comments_global.sees) ;
                  i_since = !Odoc_comments_global.since;
-<<<<<<< .courant
-                 i_deprecated = 
-                 (match !Odoc_comments_global.deprecated with 
-=======
                  i_before = Odoc_merge.merge_before_tags
                      (List.map (fun (n, s) ->
                          (n, MyTexter.text_of_string s)) !Odoc_comments_global.before)
                    ;
                  i_deprecated =
                  (match !Odoc_comments_global.deprecated with
->>>>>>> .fusion-droit.r10497
                    None -> None | Some s -> Some (MyTexter.text_of_string s));
-                 i_params = 
-                 (List.map (fun (n, s) -> 
+                 i_params =
+                 (List.map (fun (n, s) ->
                    (n, MyTexter.text_of_string s)) !Odoc_comments_global.params);
-                 i_raised_exceptions = 
+                 i_raised_exceptions =
                  (List.map (fun (n, s) ->
                    (n, MyTexter.text_of_string s)) !Odoc_comments_global.raised_exceptions);
                  i_return_value =
-                 (match !Odoc_comments_global.return_value with 
+                 (match !Odoc_comments_global.return_value with
                    None -> None | Some s -> Some (MyTexter.text_of_string s)) ;
                  i_custom = (List.map
-                               (fun (tag, s) -> (tag, MyTexter.text_of_string s)) 
+                               (fun (tag, s) -> (tag, MyTexter.text_of_string s))
                                !Odoc_comments_global.customs)
-               } 
+               }
             )
                with
                  Failure s ->
@@ -142,7 +136,7 @@ module Info_retriever =
       with
         Not_found ->
           false
-            
+
     let retrieve_info_special file (s : string) =
       retrieve_info Odoc_lexer.main file s
 
@@ -197,7 +191,7 @@ module Info_retriever =
     let retrieve_last_info_simple file (s : string) =
       print_DEBUG ("retrieve_last_info_simple:"^s);
       let rec f cur_len cur_d =
-        try 
+        try
           let s2 = String.sub s cur_len ((String.length s) - cur_len) in
           print_DEBUG ("retrieve_last_info_simple.f:"^s2);
           match retrieve_info_simple file s2 with
@@ -217,7 +211,7 @@ module Info_retriever =
     let retrieve_last_special_no_blank_after file (s : string) =
       print_DEBUG ("retrieve_last_special_no_blank_after:"^s);
       let rec f cur_len cur_d =
-        try 
+        try
           let s2 = String.sub s cur_len ((String.length s) - cur_len) in
           print_DEBUG ("retrieve_last_special_no_blank_after.f:"^s2);
           match retrieve_info_special file s2 with
@@ -266,7 +260,7 @@ module Info_retriever =
                  (* if the special comment is the stop comment (**/**),
                     then we must not associate it. *)
                  let pos = Str.search_forward (Str.regexp_string "(**") s 0 in
-                 if blank_line (String.sub s 0 pos) || 
+                 if blank_line (String.sub s 0 pos) ||
                    d.Odoc_types.i_desc = Some [Odoc_types.Raw "/*"]
                  then
                    (0, None)
@@ -291,7 +285,7 @@ module Info_retriever =
         (* get the comments *)
         let (len, special_coms) =  all_special file s in
         (* if there is no blank line after the special comments, and
-           if the last special comment is not the stop special comment, then the 
+           if the last special comment is not the stop special comment, then the
            last special comments must be associated to the element. *)
         match List.rev special_coms with
           [] ->
@@ -321,9 +315,6 @@ module Info_retriever =
 
 module Basic_info_retriever = Info_retriever (Odoc_text.Texter)
 
-<<<<<<< .courant
-(* eof $Id: odoc_comments.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-=======
 let info_of_string s =
   let dummy =
     {
@@ -354,4 +345,3 @@ let info_of_comment_file modlist f =
   with
     Sys_error s ->
       failwith s
->>>>>>> .fusion-droit.r10497

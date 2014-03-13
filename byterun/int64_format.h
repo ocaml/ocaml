@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: int64_format.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* printf-like formatting of 64-bit integers, in case the C library
    printf() function does not support them. */
 

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: set.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Sets over ordered types.
 
    This module implements the set data structure, given a total ordering
@@ -72,8 +70,8 @@ module type S =
     val inter: t -> t -> t
     (** Set intersection. *)
 
-    (** Set difference. *)
     val diff: t -> t -> t
+    (** Set difference. *)
 
     val compare: t -> t -> int
     (** Total ordering between sets. Can be used as the ordering function
@@ -145,6 +143,12 @@ module type S =
           strictly greater than [x];
           [present] is [false] if [s] contains no element equal to [x],
           or [true] if [s] contains an element equal to [x]. *)
+
+    val find: elt -> t -> elt
+    (** [find x s] returns the element of [s] equal to [x] (according
+        to [Ord.compare]), or raise [Not_found] if no such element
+        exists.
+        @since 4.01.0 *)
   end
 (** Output signature of the functor {!Set.Make}. *)
 

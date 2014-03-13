@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: maps.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 module IntMap = Map.Make(struct type t = int let compare x y = x-y end)
 
 let m1 = IntMap.add 4 "Y" (IntMap.singleton 3 "X1")
@@ -25,4 +23,3 @@ let () =
   print_endline "Inter";
   show (IntMap.merge (fun _ l r -> match l, r with Some x, Some y when x = y -> Some x | _ -> None) m1 m2);
   ()
-

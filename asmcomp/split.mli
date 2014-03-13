@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: split.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Renaming of registers at reload points to split live ranges. *)
 
 val fundecl: Mach.fundecl -> Mach.fundecl

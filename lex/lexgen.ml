@@ -12,8 +12,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: lexgen.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Compiling a lexer definition *)
 
 open Syntax
@@ -80,7 +78,8 @@ type ('args,'action) automata_entry =
 
 (* A lot of sets and map structures *)
 
-module Ints = Set.Make(struct type t = int let compare = compare end)
+module Ints =
+  Set.Make(struct type t = int let compare (x:t) y = compare x y end)
 
 let id_compare (id1,_) (id2,_) = String.compare id1 id2
 
@@ -508,7 +507,7 @@ let encode_lexdef def =
   chars_count := 0;
   let entry_list =
     List.map
-      (fun {name=entry_name ; args=args ; shortest=shortest ; clauses= casedef} ->
+      (fun {name=entry_name; args=args; shortest=shortest; clauses=casedef} ->
         let (re,actions,_,ntags) = encode_casedef casedef in
         { lex_name = entry_name;
           lex_regexp = re;
@@ -524,8 +523,8 @@ let encode_lexdef def =
    Extension to tagged automata.
      Confer
        Ville Larikari
-      ``NFAs with Tagged Transitions, their Conversion to Deterministic
-        Automata and Application to Regular Expressions''.
+       'NFAs with Tagged Transitions, their Conversion to Deterministic
+        Automata and Application to Regular Expressions'.
        Symposium on String Processing and Information Retrieval (SPIRE 2000),
      http://kouli.iki.fi/~vlaurika/spire2000-tnfa.ps
 (See also)
@@ -606,7 +605,8 @@ let followpos size entry_list =
         fill s r2
     | Star r ->
         fill (TransSet.union (firstpos r) s) r in
-  List.iter (fun (entry,_,_) -> fill TransSet.empty entry.lex_regexp) entry_list ;
+  List.iter (fun (entry,_,_) -> fill TransSet.empty entry.lex_regexp)
+            entry_list;
   v
 
 (************************)
@@ -620,7 +620,8 @@ module StateSet =
 
 
 module MemMap =
-  Map.Make (struct type t = int let compare = Pervasives.compare end)
+  Map.Make (struct type t = int
+                   let compare (x:t) y = Pervasives.compare x y end)
 
 type 'a dfa_state =
   {final : int * ('a * int TagMap.t) ;

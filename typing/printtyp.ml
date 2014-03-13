@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: printtyp.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Printing functions *)
 
 open Misc
@@ -27,7 +25,7 @@ open Outcometree
 (* Print a long identifier *)
 
 let rec longident ppf = function
-  | Lident s -> fprintf ppf "%s" s
+  | Lident s -> pp_print_string ppf s
   | Ldot(p, s) -> fprintf ppf "%a.%s" longident p s
   | Lapply(p1, p2) -> fprintf ppf "%a(%a)" longident p1 longident p2
 
@@ -43,7 +41,7 @@ let add_unique id =
   with Not_found ->
     unique_names := Ident.add id (Ident.unique_toplevel_name id) !unique_names
 
-let ident ppf id = fprintf ppf "%s" (ident_name id)
+let ident ppf id = pp_print_string ppf (ident_name id)
 
 (* Print a path *)
 
@@ -63,11 +61,22 @@ let rec path ppf = function
   | Pident id ->
       ident ppf id
   | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
-      fprintf ppf "%s" s
+      pp_print_string ppf s
   | Pdot(p, s, pos) ->
-      fprintf ppf "%a.%s" path p s
+      path ppf p;
+      pp_print_char ppf '.';
+      pp_print_string ppf s
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
+
+let rec string_of_out_ident = function
+  | Oide_ident s -> s
+  | Oide_dot (id, s) -> String.concat "." [string_of_out_ident id; s]
+  | Oide_apply (id1, id2) ->
+      String.concat ""
+        [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
+
+let string_of_path p = string_of_out_ident (tree_of_path p)
 
 (* Print a recursive annotation *)
 
@@ -191,6 +200,168 @@ let raw_type_expr ppf t =
 
 let () = Btype.print_raw := raw_type_expr
 
+(* Normalize paths *)
+
+type param_subst = Id | Nth of int | Map of int list
+
+let compose l1 = function
+  | Id -> Map l1
+  | Map l2 -> Map (List.map (List.nth l1) l2)
+  | Nth n  -> Nth (List.nth l1 n)
+
+let apply_subst s1 tyl =
+  match s1 with
+    Nth n1 -> [List.nth tyl n1]
+  | Map l1 -> List.map (List.nth tyl) l1
+  | Id -> tyl
+
+type best_path = Paths of Path.t list | Best of Path.t
+
+let printing_env = ref Env.empty
+let printing_old = ref Env.empty
+let printing_pers = ref Concr.empty
+module Path2 = struct
+  include Path
+  let rec compare p1 p2 =
+    (* must ignore position when comparing paths *)
+    match (p1, p2) with
+      (Pdot(p1, s1, pos1), Pdot(p2, s2, pos2)) ->
+        let c = compare p1 p2 in
+        if c <> 0 then c else String.compare s1 s2
+    | (Papply(fun1, arg1), Papply(fun2, arg2)) ->
+        let c = compare fun1 fun2 in
+        if c <> 0 then c else compare arg1 arg2
+    | _ -> Pervasives.compare p1 p2
+end
+module PathMap = Map.Make(Path2)
+let printing_map = ref (Lazy.lazy_from_val PathMap.empty)
+
+let same_type t t' = repr t == repr t'
+
+let rec index l x =
+  match l with
+    [] -> raise Not_found
+  | a :: l -> if x == a then 0 else 1 + index l x
+
+let rec uniq = function
+    [] -> true
+  | a :: l -> not (List.memq a l) && uniq l
+
+let rec normalize_type_path ?(cache=false) env p =
+  try
+    let desc = Env.find_type p env in
+    if desc.type_private = Private || desc.type_newtype_level <> None then
+      (p, Id)
+    else match desc.type_manifest with
+      Some ty ->
+        let params = List.map repr desc.type_params in
+        begin match repr ty with
+          {desc = Tconstr (p1, tyl, _)} ->
+            let tyl = List.map repr tyl in
+            if List.length params = List.length tyl
+            && List.for_all2 (==) params tyl
+            then normalize_type_path ~cache env p1
+            else if cache || List.length params <= List.length tyl
+                 || not (uniq tyl) then (p, Id)
+            else
+              let l1 = List.map (index params) tyl in
+              let (p2, s2) = normalize_type_path ~cache env p1 in
+              (p2, compose l1 s2)
+        | ty ->
+            (p, Nth (index params ty))
+        end
+    | None -> (p, Id)
+  with
+    Not_found -> (p, Id)
+
+let rec path_size = function
+    Pident id ->
+      (let s = Ident.name id in if s <> "" && s.[0] = '_' then 10 else 1),
+      -Ident.binding_time id
+  | Pdot (p, _, _) ->
+      let (l, b) = path_size p in (1+l, b)
+  | Papply (p1, p2) ->
+      let (l, b) = path_size p1 in
+      (l + fst (path_size p2), b)
+
+let same_printing_env env =
+  let used_pers = Env.used_persistent () in
+  Env.same_types !printing_old env && Concr.equal !printing_pers used_pers
+
+let set_printing_env env =
+  printing_env := if !Clflags.real_paths then Env.empty else env;
+  if !printing_env == Env.empty || same_printing_env env then () else
+  begin
+    (* printf "Reset printing_map@."; *)
+    printing_old := env;
+    printing_pers := Env.used_persistent ();
+    printing_map := lazy begin
+      (* printf "Recompute printing_map.@."; *)
+      let map = ref PathMap.empty in
+      Env.iter_types
+        (fun p (p', decl) ->
+          let (p1, s1) = normalize_type_path env p' ~cache:true in
+          (* Format.eprintf "%a -> %a = %a@." path p path p' path p1 *)
+          if s1 = Id then
+          try
+            let r = PathMap.find p1 !map in
+            match !r with
+              Paths l -> r := Paths (p :: l)
+            | Best _  -> assert false
+          with Not_found ->
+            map := PathMap.add p1 (ref (Paths [p])) !map)
+        env;
+      !map
+    end
+  end
+
+let wrap_printing_env env f =
+  set_printing_env env;
+  try_finally f (fun () -> set_printing_env Env.empty)
+
+let is_unambiguous path env =
+  let l = Env.find_shadowed_types path env in
+  List.exists (Path.same path) l || (* concrete paths are ok *)
+  match l with
+    [] -> true
+  | p :: rem ->
+      (* allow also coherent paths:  *)
+      let normalize p = fst (normalize_type_path ~cache:true env p) in
+      let p' = normalize p in
+      List.for_all (fun p -> Path.same (normalize p) p') rem ||
+      (* also allow repeatedly defining and opening (for toplevel) *)
+      let id = lid_of_path p in
+      List.for_all (fun p -> lid_of_path p = id) rem &&
+      Path.same p (fst (Env.lookup_type id env))
+
+let rec get_best_path r =
+  match !r with
+    Best p' -> p'
+  | Paths [] -> raise Not_found
+  | Paths l ->
+      r := Paths [];
+      List.iter
+        (fun p ->
+          (* Format.eprintf "evaluating %a@." path p; *)
+          match !r with
+            Best p' when path_size p >= path_size p' -> ()
+          | _ -> if is_unambiguous p !printing_env then r := Best p)
+              (* else Format.eprintf "%a ignored as ambiguous@." path p *)
+        l;
+      get_best_path r
+
+let best_type_path p =
+  if !Clflags.real_paths || !printing_env == Env.empty
+  then (p, Id)
+  else
+    let (p', s) = normalize_type_path !printing_env p in
+    let p'' =
+      try get_best_path (PathMap.find  p' (Lazy.force !printing_map))
+      with Not_found -> p'
+    in
+    (* Format.eprintf "%a = %a -> %a@." path p path p' path p''; *)
+    (p'', s)
+
 (* Print a type expression *)
 
 let names = ref ([] : (type_expr * string) list)
@@ -271,7 +442,11 @@ let add_alias ty =
   end
 
 let aliasable ty =
-  match ty.desc with Tvar _ | Tunivar _ | Tpoly _ -> false | _ -> true
+  match ty.desc with
+    Tvar _ | Tunivar _ | Tpoly _ -> false
+  | Tconstr (p, _, _) ->
+      (match best_type_path p with (_, Nth _) -> false | _ -> true)
+  | _ -> true
 
 let namable_row row =
   row.row_name <> None &&
@@ -293,7 +468,10 @@ let rec mark_loops_rec visited ty =
     | Tarrow(_, ty1, ty2, _) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
-    | Tconstr(_, tyl, _) | Tpackage (_, _, tyl) ->
+    | Tconstr(p, tyl, _) ->
+        let (p', s) = best_type_path p in
+        List.iter (mark_loops_rec visited) (apply_subst s tyl)
+    | Tpackage (_, _, tyl) ->
         List.iter (mark_loops_rec visited) tyl
     | Tvariant row ->
         if List.memq px !visited_objects then add_alias px else
@@ -387,7 +565,12 @@ let rec tree_of_typexp sch ty =
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist sch tyl)
     | Tconstr(p, tyl, abbrev) ->
-        Otyp_constr (tree_of_path p, tree_of_typlist sch tyl)
+        begin match best_type_path p with
+          (_, Nth n) -> tree_of_typexp sch (List.nth tyl n)
+        | (p', s) ->
+            let tyl' = apply_subst s tyl in
+            Otyp_constr (tree_of_path p', tree_of_typlist sch tyl')
+        end
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -405,7 +588,9 @@ let rec tree_of_typexp sch ty =
         let all_present = List.length present = List.length fields in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
-            let id = tree_of_path p in
+            let (p', s) = best_type_path p in
+            assert (s = Id);
+            let id = tree_of_path p' in
             let args = tree_of_typlist sch tyl in
             if row.row_closed && all_present then
               Otyp_constr (id, args)
@@ -413,7 +598,7 @@ let rec tree_of_typexp sch ty =
               let non_gen = is_non_gen sch px in
               let tags =
                 if all_present then None else Some (List.map fst present) in
-              Otyp_variant (non_gen, Ovar_name(tree_of_path p, args),
+              Otyp_variant (non_gen, Ovar_name(id, args),
                             row.row_closed, tags)
         | _ ->
             let non_gen =
@@ -496,7 +681,9 @@ and tree_of_typobject sch fi nm =
   | Some (p, ty :: tyl) ->
       let non_gen = is_non_gen sch (repr ty) in
       let args = tree_of_typlist sch tyl in
-      Otyp_class (non_gen, tree_of_path p, args)
+      let (p', s) = best_type_path p in
+      assert (s = Id);
+      Otyp_class (non_gen, tree_of_path p', args)
   | _ ->
       fatal_error "Printtyp.tree_of_typobject"
   end
@@ -568,6 +755,17 @@ let rec tree_of_type_decl id decl =
 
   let params = filter_params decl.type_params in
 
+  begin match decl.type_manifest with
+  | Some ty ->
+      let vars = free_variables ty in
+      List.iter
+        (function {desc = Tvar (Some "_")} as ty ->
+            if List.memq ty vars then ty.desc <- Tvar None
+          | _ -> ())
+        params
+  | None -> ()
+  end;
+
   List.iter add_alias params;
   List.iter mark_loops params;
   List.iter check_name_of_type (List.map proxy params);
@@ -593,10 +791,10 @@ let rec tree_of_type_decl id decl =
   | Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter
-	(fun (_, args,ret_type_opt) ->
-	  List.iter mark_loops args;
-	  may mark_loops ret_type_opt)
-	cstrs
+        (fun (_, args,ret_type_opt) ->
+          List.iter mark_loops args;
+          may mark_loops ret_type_opt)
+        cstrs
   | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
   end;
@@ -619,8 +817,9 @@ let rec tree_of_type_decl id decl =
     in
     let vari =
       List.map2
-        (fun ty (co,cn,ct) ->
-          if abstr || not (is_Tvar (repr ty)) then (co,cn) else (true,true))
+        (fun ty v ->
+          if abstr || not (is_Tvar (repr ty)) then Variance.get_upper v
+          else (true,true))
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -815,6 +1014,9 @@ let tree_of_class_params params =
   let tyl = tree_of_typlist true params in
   List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
 
+let class_variance =
+  List.map Variance.(fun v -> mem May_pos v, mem May_neg v)
+
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in
 
@@ -830,7 +1032,7 @@ let tree_of_class_declaration id cl rs =
   let vir_flag = cl.cty_new = None in
   Osig_class
     (vir_flag, Ident.name id,
-     List.map2 tree_of_class_param params cl.cty_variance,
+     List.map2 tree_of_class_param params (class_variance cl.cty_variance),
      tree_of_class_type true params cl.cty_type,
      tree_of_rec rs)
 
@@ -863,7 +1065,7 @@ let tree_of_cltype_declaration id cl rs =
 
   Osig_class_type
     (virt, Ident.name id,
-     List.map2 tree_of_class_param params cl.clty_variance,
+     List.map2 tree_of_class_param params (class_variance cl.clty_variance),
      tree_of_class_type true params cl.clty_type,
      tree_of_rec rs)
 
@@ -872,6 +1074,42 @@ let cltype_declaration id ppf cl =
 
 (* Print a module type *)
 
+let wrap_env fenv ftree arg =
+  let env = !printing_env in
+  set_printing_env (fenv env);
+  let tree = ftree arg in
+  set_printing_env env;
+  tree
+
+let filter_rem_sig item rem =
+  match item, rem with
+  | Sig_class _, ctydecl :: tydecl1 :: tydecl2 :: rem ->
+      ([ctydecl; tydecl1; tydecl2], rem)
+  | Sig_class_type _, tydecl1 :: tydecl2 :: rem ->
+      ([tydecl1; tydecl2], rem)
+  | _ ->
+      ([], rem)
+
+let dummy =
+  { type_params = []; type_arity = 0; type_kind = Type_abstract;
+    type_private = Public; type_manifest = None; type_variance = [];
+    type_newtype_level = None; type_loc = Location.none; }
+
+let hide_rec_items = function
+  | Sig_type(id, decl, rs) ::rem
+    when rs <> Trec_next && not !Clflags.real_paths ->
+      let rec get_ids = function
+          Sig_type (id, _, Trec_next) :: rem ->
+            id :: get_ids rem
+        | _ -> []
+      in
+      let ids = id :: get_ids rem in
+      set_printing_env
+        (List.fold_right
+           (fun id -> Env.add_type (Ident.rename id) dummy)
+           ids !printing_env)
+  | _ -> ()
+
 let rec tree_of_modtype = function
   | Mty_ident p ->
       Omty_ident (tree_of_path p)
@@ -879,30 +1117,42 @@ let rec tree_of_modtype = function
       Omty_signature (tree_of_signature sg)
   | Mty_functor(param, ty_arg, ty_res) ->
       Omty_functor
-        (Ident.name param, tree_of_modtype ty_arg, tree_of_modtype ty_res)
+        (Ident.name param, tree_of_modtype ty_arg,
+         wrap_env (Env.add_module param ty_arg) tree_of_modtype ty_res)
 
-and tree_of_signature = function
-  | [] -> []
-  | Sig_value(id, decl) :: rem ->
-      tree_of_value_description id decl :: tree_of_signature rem
-  | Sig_type(id, _, _) :: rem when is_row_name (Ident.name id) ->
-      tree_of_signature rem
-  | Sig_type(id, decl, rs) :: rem ->
-      Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
-      tree_of_signature rem
-  | Sig_exception(id, decl) :: rem ->
-      tree_of_exception_declaration id decl :: tree_of_signature rem
-  | Sig_module(id, mty, rs) :: rem ->
-      Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs) ::
-      tree_of_signature rem
-  | Sig_modtype(id, decl) :: rem ->
-      tree_of_modtype_declaration id decl :: tree_of_signature rem
-  | Sig_class(id, decl, rs) :: ctydecl :: tydecl1 :: tydecl2 :: rem ->
-      tree_of_class_declaration id decl rs :: tree_of_signature rem
-  | Sig_class_type(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
-      tree_of_cltype_declaration id decl rs :: tree_of_signature rem
-  | _ ->
-      assert false
+and tree_of_signature sg =
+  wrap_env (fun env -> env) (tree_of_signature_rec !printing_env) sg
+
+and tree_of_signature_rec env' = function
+    [] -> []
+  | item :: rem ->
+      begin match item with
+        Sig_type (_, _, rs) when rs <> Trec_next -> ()
+      | _ -> set_printing_env env'
+      end;
+      let (sg, rem) = filter_rem_sig item rem in
+      let trees =
+        match item with
+        | Sig_value(id, decl) ->
+            [tree_of_value_description id decl]
+        | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
+            []
+        | Sig_type(id, decl, rs) ->
+            hide_rec_items (item :: rem);
+            [Osig_type(tree_of_type_decl id decl, tree_of_rec rs)]
+        | Sig_exception(id, decl) ->
+            [tree_of_exception_declaration id decl]
+        | Sig_module(id, mty, rs) ->
+            [Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)]
+        | Sig_modtype(id, decl) ->
+            [tree_of_modtype_declaration id decl]
+        | Sig_class(id, decl, rs) ->
+            [tree_of_class_declaration id decl rs]
+        | Sig_class_type(id, decl, rs) ->
+            [tree_of_cltype_declaration id decl rs]
+      in
+      let env' = Env.add_signature (item :: sg) env' in
+      trees @ tree_of_signature_rec env' rem
 
 and tree_of_modtype_declaration id decl =
   let mty =
@@ -929,10 +1179,31 @@ let signature ppf sg =
 
 (* Print an unification error *)
 
+let same_path t t' =
+  let t = repr t and t' = repr t' in
+  t == t' ||
+  match t.desc, t'.desc with
+    Tconstr(p,tl,_), Tconstr(p',tl',_) ->
+      let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
+      begin match s1, s2 with
+        Nth n1, Nth n2 when n1 = n2 -> true
+      | (Id | Map _), (Id | Map _) when Path.same p1 p2 ->
+          let tl = apply_subst s1 tl and tl' = apply_subst s2 tl' in
+          List.length tl = List.length tl' &&
+          List.for_all2 same_type tl tl'
+      | _ -> false
+      end
+  | _ ->
+      false
+
 let type_expansion t ppf t' =
-  if t == t' then type_expr ppf t else
+  if same_path t t' then type_expr ppf t else
   let t' = if proxy t == proxy t' then unalias t' else t' in
   fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
+
+let type_path_expansion tp ppf tp' =
+  if Path.same tp tp' then path ppf tp else
+  fprintf ppf "@[<2>%a@ =@ %a@]" path tp path tp'
 
 let rec trace fst txt ppf = function
   | (t1, t1') :: (t2, t2') :: rem ->
@@ -942,15 +1213,24 @@ let rec trace fst txt ppf = function
        (trace false txt) rem
   | _ -> ()
 
-let rec filter_trace = function
+let rec filter_trace keep_last = function
   | (_, t1') :: (_, t2') :: [] when is_Tvar t1' || is_Tvar t2' ->
       []
   | (t1, t1') :: (t2, t2') :: rem ->
-      let rem' = filter_trace rem in
-      if t1 == t1' && t2 == t2'
+      let rem' = filter_trace keep_last rem in
+      if is_constr_row t1' || is_constr_row t2'
+      || same_path t1 t1' && same_path t2 t2' && not (keep_last && rem' = [])
       then rem'
       else (t1, t1') :: (t2, t2') :: rem'
   | _ -> []
+
+let rec type_path_list ppf = function
+  | [tp, tp'] -> type_path_expansion tp ppf tp'
+  | (tp, tp') :: rem -> 
+      fprintf ppf "%a@;<2 0>%a"
+        (type_path_expansion tp) tp'
+        type_path_list rem
+  | [] -> ()
 
 (* Hide variant name and var, to force printing the expanded type *)
 let hide_variant_name t =
@@ -963,7 +1243,8 @@ let hide_variant_name t =
 
 let prepare_expansion (t, t') =
   let t' = hide_variant_name t' in
-  mark_loops t; if t != t' then mark_loops t';
+  mark_loops t;
+  if not (same_path t t') then mark_loops t';
   (t, t')
 
 let may_prepare_expansion compact (t, t') =
@@ -981,6 +1262,7 @@ let print_tags ppf fields =
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
     Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
+  | Tnil, Tconstr _ | Tconstr _, Tnil
   | _, Tvar _ | Tvar _, _
   | Tvariant _, Tvariant _ -> true
   | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) -> l = l'
@@ -1034,6 +1316,10 @@ let explanation unif t3 t4 ppf =
   | Tfield (l, _, _, _), (Tnil|Tconstr _) ->
       fprintf ppf
         "@,@[The second object type has no method %s@]" l
+  | Tnil, Tconstr _ | Tconstr _, Tnil ->
+      fprintf ppf
+        "@,@[The %s object type has an abstract row, it cannot be closed@]"
+        (if t4.desc = Tnil then "first" else "second")
   | Tvariant row1, Tvariant row2 ->
       let row1 = row_repr row1 and row2 = row_repr row2 in
       begin match
@@ -1074,7 +1360,8 @@ let rec path_same_name p1 p2 =
 
 let type_same_name t1 t2 =
   match (repr t1).desc, (repr t2).desc with
-    Tconstr (p1, _, _), Tconstr (p2, _, _) -> path_same_name p1 p2
+    Tconstr (p1, _, _), Tconstr (p2, _, _) ->
+      path_same_name (fst (best_type_path p1)) (fst (best_type_path p2))
   | _ -> ()
 
 let rec trace_same_names = function
@@ -1091,7 +1378,7 @@ let unification_error unif tr txt1 ppf txt2 =
   | [] | _ :: [] -> assert false
   | t1 :: t2 :: tr ->
     try
-      let tr = filter_trace tr in
+      let tr = filter_trace (mis = None) tr in
       let t1, t1' = may_prepare_expansion (tr = []) t1
       and t2, t2' = may_prepare_expansion (tr = []) t2 in
       print_labels := not !Clflags.classic;
@@ -1111,28 +1398,55 @@ let unification_error unif tr txt1 ppf txt2 =
       print_labels := true;
       raise exn
 
-let report_unification_error ppf tr txt1 txt2 =
-  unification_error true tr txt1 ppf txt2;;
+let report_unification_error ppf env ?(unif=true)
+    tr txt1 txt2 =
+  wrap_printing_env env (fun () -> unification_error unif tr txt1 ppf txt2)
+;;
 
-let trace fst txt ppf tr =
+let trace fst keep_last txt ppf tr =
   print_labels := not !Clflags.classic;
   trace_same_names tr;
   try match tr with
     t1 :: t2 :: tr' ->
-      if fst then trace fst txt ppf (t1 :: t2 :: filter_trace tr')
-      else trace fst txt ppf (filter_trace tr);
+      if fst then trace fst txt ppf (t1 :: t2 :: filter_trace keep_last tr')
+      else trace fst txt ppf (filter_trace keep_last tr);
       print_labels := true
   | _ -> ()
   with exn ->
     print_labels := true;
     raise exn
 
-let report_subtyping_error ppf tr1 txt1 tr2 =
-  reset ();
-  let tr1 = List.map prepare_expansion tr1
-  and tr2 = List.map prepare_expansion tr2 in
-  trace true txt1 ppf tr1;
-  if tr2 = [] then () else
-  let mis = mismatch true tr2 in
-  trace false "is not compatible with type" ppf tr2;
-  explanation true mis ppf
+let report_subtyping_error ppf env tr1 txt1 tr2 =
+  wrap_printing_env env (fun () ->
+    reset ();
+    let tr1 = List.map prepare_expansion tr1
+    and tr2 = List.map prepare_expansion tr2 in
+    fprintf ppf "@[<v>%a" (trace true (tr2 = []) txt1) tr1;
+    if tr2 = [] then fprintf ppf "@]" else
+    let mis = mismatch true tr2 in
+    fprintf ppf "%a%t@]"
+      (trace false (mis = None) "is not compatible with type") tr2
+      (explanation true mis))
+
+let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =
+  wrap_printing_env env (fun () ->
+    reset ();
+    List.iter 
+      (fun (tp, tp') -> path_same_name tp0 tp; path_same_name tp0' tp') 
+      tpl;
+    match tpl with
+      [] -> assert false
+    | [tp, tp'] ->       
+        fprintf ppf
+          "@[%t@;<1 2>%a@ \
+             %t@;<1 2>%a\
+           @]"
+          txt1 (type_path_expansion tp) tp'
+          txt3 (type_path_expansion tp0) tp0'
+    | _ ->
+        fprintf ppf
+          "@[%t@;<1 2>@[<hv>%a@]\
+             @ %t@;<1 2>%a\
+           @]"
+          txt2 type_path_list tpl
+          txt3 (type_path_expansion tp0) tp0')

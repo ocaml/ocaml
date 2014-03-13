@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: compatibility.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* definitions for compatibility with old identifiers */
 
 #ifndef CAML_COMPATIBILITY_H

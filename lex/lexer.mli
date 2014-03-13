@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: lexer.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 val main: Lexing.lexbuf -> Parser.token
 
 exception Lexical_error of string * string * int * int

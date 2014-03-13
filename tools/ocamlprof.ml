@@ -11,14 +11,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: ocamlprof.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 open Printf
 
-open Clflags
-open Config
 open Location
-open Misc
 open Parsetree
 
 (* User programs must not use identifiers that start with these prefixes. *)
@@ -52,7 +47,7 @@ let copy_chars_unix nchars =
   done
 
 let copy_chars_win32 nchars =
-  for i = 1 to nchars do
+  for _i = 1 to nchars do
     let c = input_char !inchan in
     if c <> '\r' then output_char !outchan c
   done
@@ -292,7 +287,7 @@ and rw_exp iflag sexp =
       List.iter (rewrite_class_field iflag) cl.pcstr_fields
 
   | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
-  | Pexp_open (_, e) -> rewrite_exp iflag e
+  | Pexp_open (_ovf, _, e) -> rewrite_exp iflag e
   | Pexp_pack (smod) -> rewrite_mod iflag smod
 
 and rewrite_ifbody iflag ghost sifbody =

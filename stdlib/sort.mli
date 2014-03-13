@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: sort.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Sorting and merging lists.
 
    @deprecated This module is obsolete and exists only for backward

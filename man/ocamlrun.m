@@ -10,8 +10,6 @@
 .\"*                                                                     *
 .\"***********************************************************************
 .\"
-.\" $Id$
-.\"
 .TH OCAMLRUN 1
 
 .SH NAME
@@ -114,8 +112,8 @@ This variable must be a sequence of parameter specifications.
 A parameter specification is an option letter followed by an =
 sign, a decimal number (or a hexadecimal number prefixed by
 .BR 0x ),
-and an optional multiplier.  There are nine options, six of which
-correspond to the fields of the
+and an optional multiplier.  The options are documented below; the
+last six correspond to the fields of the
 .B control
 record documented in
 .IR "The OCaml user's manual",
@@ -133,10 +131,19 @@ parsers.  When this option is on,
 the pushdown automaton that executes the parsers prints a
 trace of its actions.  This option takes no argument.
 .TP
+.BR R
+Turn on randomization of all hash tables by default (see the
+.B Hashtbl
+module of the standard library). This option takes no
+argument.
+.TP
+.BR h
+The initial size of the major heap (in words).
+.TP
 .BR a \ (allocation_policy)
 The policy used for allocating in the OCaml heap.  Possible values
 are 0 for the next-fit policy, and 1 for the first-fit
-policy.  Next-fit is somewhat faster, but first-fit is better for
+policy.  Next-fit is usually faster, but first-fit is better for
 avoiding fragmentation and the associated heap compactions.
 .TP
 .BR s \ (minor_heap_size)
@@ -153,9 +160,6 @@ The heap compaction trigger setting.
 .TP
 .BR l \ (stack_limit)
 The limit (in words) of the stack size.
-.TP
-.BR h
-The initial size of the major heap (in words).
 .TP
 .BR v \ (verbose)
 What GC messages to print to stderr.  This is a sum of values selected
@@ -191,7 +195,7 @@ shared libraries).
 
 The multiplier is
 .BR k ,
-.BR M \ or
+.BR M ,\ or
 .BR G ,
 for multiplication by 2^10, 2^20, and 2^30 respectively.
 For example, on a 32-bit machine under bash, the command

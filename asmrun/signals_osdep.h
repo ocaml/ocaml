@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: signals_osdep.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Processor- and OS-dependent signal interface */
 
 /****************** AMD64, Linux */
@@ -30,7 +28,7 @@
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
   #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[REG_R14])
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
-  #define CONTEXT_FAULTING_ADDRESS ((char *) context->uc_mcontext.gregs[REG_CR2])
+  #define CONTEXT_FAULTING_ADDRESS ((char *)context->uc_mcontext.gregs[REG_CR2])
 
 /****************** AMD64, MacOSX */
 
@@ -46,12 +44,14 @@
   #include <sys/ucontext.h>
   #include <AvailabilityMacros.h>
 
-#if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+  #if !defined(MAC_OS_X_VERSION_10_5) \
+      || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
     #define CONTEXT_REG(r) r
   #else
     #define CONTEXT_REG(r) __##r
   #endif
 
+  typedef unsigned long long context_reg;
   #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->CONTEXT_REG(ss))
   #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(rip))
   #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.CONTEXT_REG(r14))
@@ -59,11 +59,25 @@
   #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(rsp))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
+  #define RETURN_AFTER_STACK_OVERFLOW
+
 /****************** ARM, Linux */
 
-#elif defined(TARGET_arm) && (defined(SYS_linux_eabi) || defined(SYS_linux_eabihf))
+#elif defined(TARGET_arm) && (defined(SYS_linux_eabi) \
+      || defined(SYS_linux_eabihf))
 
-  #include <sys/ucontext.h>
+  #if defined(__ANDROID__)
+    // The Android NDK does not have sys/ucontext.h yet.
+    typedef struct ucontext {
+      uint32_t uc_flags;
+      struct ucontext *uc_link;
+      stack_t uc_stack;
+      struct sigcontext uc_mcontext;
+      // Other fields omitted...
+    } ucontext_t;
+  #else
+    #include <sys/ucontext.h>
+  #endif
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, siginfo_t * info, ucontext_t * context)
@@ -137,7 +151,8 @@
   #include <sys/ucontext.h>
   #include <AvailabilityMacros.h>
 
-#if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+  #if !defined(MAC_OS_X_VERSION_10_5) \
+      || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
     #define CONTEXT_REG(r) r
   #else
     #define CONTEXT_REG(r) __##r
@@ -188,7 +203,8 @@
     #define CONTEXT_MCONTEXT (((ucontext_t *)context)->uc_mcontext)
   #endif
 
-#if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+  #if !defined(MAC_OS_X_VERSION_10_5) \
+      || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
     #define CONTEXT_REG(r) r
   #else
     #define CONTEXT_REG(r) __##r

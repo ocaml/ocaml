@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_text.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 exception Text_syntax of int * int * string (* line, char, string *)
 
@@ -25,8 +24,8 @@ module Texter =
         Odoc_text_parser.main Odoc_text_lexer.main lexbuf
       with
         _ ->
-          raise (Text_syntax (!Odoc_text_lexer.line_number, 
-                              !Odoc_text_lexer.char_number, 
+          raise (Text_syntax (!Odoc_text_lexer.line_number,
+                              !Odoc_text_lexer.char_number,
                               s)
                 )
 
@@ -58,17 +57,10 @@ module Texter =
       if open_brackets > close_brackets then
         escape_n s '[' (open_brackets - close_brackets)
       else
-<<<<<<< .courant
-	if close_brackets > open_brackets then
-	  escape_n s ']' (close_brackets - open_brackets) 
-	else
-	  s
-=======
         if close_brackets > open_brackets then
           escape_n s ']' (close_brackets - open_brackets)
         else
           s
->>>>>>> .fusion-droit.r10497
 
     let escape_raw s =
       let len = String.length s in
@@ -105,19 +97,9 @@ module Texter =
       | Right t -> p b "{R " ; p_text b t ; p b "}"
       | List l -> p b "{ul\n"; p_list b l; p b "}"
       | Enum l -> p b "{ol\n"; p_list b l; p b "}"
-      | Newline -> p b "\n" 
+      | Newline -> p b "\n"
       | Block  t -> p_text b t
       | Title (n, l_opt, t) ->
-<<<<<<< .courant
-	  p b "{%d%s " 
-	    n
-	    (match l_opt with
-	      None -> ""
-	    | Some s -> ":"^s
-	    );
-	  p_text b t ; 
-	  p b "}"
-=======
           p b "{%d%s "
             n
             (match l_opt with
@@ -126,32 +108,8 @@ module Texter =
             );
           p_text b t ;
           p b "}"
->>>>>>> .fusion-droit.r10497
       | Latex s -> p b "{%% %s%%}" s
       | Link (s,t) ->
-<<<<<<< .courant
-	  p b "{{:%s}" s;
-	  p_text b t ;
-	  p b "}"
-      | Ref (s,None) ->
-	  p b "{!%s}" s
-      |	Ref (s, Some k) ->
-	  (
-	   let sk = match k with
-	     RK_module -> "module"
-	   | RK_module_type -> "modtype"
-	   | RK_class -> "class"
-	   | RK_class_type -> "classtype"
-	   | RK_value -> "val"
-	   | RK_type -> "type"
-	   | RK_exception -> "exception"
-	   | RK_attribute -> "attribute"
-	   | RK_method -> "method"
-	   | RK_section _ -> "section"
-	   in
-	   p b "{!%s:%s}" sk s	   
-	  )
-=======
           p b "{{:%s}" s;
           p_text b t ;
           p b "}"
@@ -184,18 +142,9 @@ module Texter =
             None -> ()
           | Some t -> p_text b t; p b "}"
         end
->>>>>>> .fusion-droit.r10497
       | Superscript t -> p b "{^" ; p_text b t ; p b "}"
       | Subscript t -> p b "{_" ; p_text b t ; p b "}"
-      | Module_list l -> 
-<<<<<<< .courant
-	  p b "{!modules:";
-	  List.iter (fun s -> p b " %s" s) l;
-	  p b "}"
-      |	Index_list ->
-	  p b "{!indexlist}"
-	    
-=======
+      | Module_list l ->
           p b "{!modules:";
           List.iter (fun s -> p b " %s" s) l;
           p b "}"
@@ -208,11 +157,9 @@ module Texter =
       | Target (target, code) ->
           p b "{%%%s: %s}" target (escape_raw code)
 
->>>>>>> .fusion-droit.r10497
     let string_of_text s =
       let b = Buffer.create 256 in
       p_text b s;
       Buffer.contents b
-	
+
   end
- 

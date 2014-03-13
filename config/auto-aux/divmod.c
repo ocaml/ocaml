@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: divmod.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Test semantics of division and modulus for negative arguments */
 
 long div4[] =

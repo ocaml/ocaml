@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Compiling a lexer definition *)
 
 open Syntax
@@ -200,7 +198,7 @@ let memory = (Hashtbl.create 131 : (transition list, int) Hashtbl.t)
 let todo = ref ([] : (transition list * int) list)
 let next = ref 0
 
-let get_state st = 
+let get_state st =
   try
     Hashtbl.find memory st
   with Not_found ->
@@ -222,7 +220,7 @@ let goto_state = function
   | ps -> Goto (get_state ps)
 
 
-let transition_from chars follow pos_set = 
+let transition_from chars follow pos_set =
   let tr = Array.create 256 []
   and shift = Array.create 256 Backtrack in
     List.iter
@@ -263,4 +261,3 @@ let make_dfa lexdef =
     Array.create (number_of_states()) (Perform 0) in
   List.iter (fun (auto, i) -> v.(i) <- auto) states;
   (initial_states, v, actions)
-

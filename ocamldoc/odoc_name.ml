@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_name.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Representation of element names. *)
 
@@ -52,11 +51,11 @@ let strip_string s =
         else
           match s.[n] with
             ' ' | '\t' | '\n' | '\r' -> iter_last (n-1)
-          |	_ -> Some n
+          | _ -> Some n
       in
       match iter_last (len-1) with
         None -> String.sub s first 1
-      |	Some last -> String.sub s first ((last-first)+1)
+      | Some last -> String.sub s first ((last-first)+1)
 
 let parens_if_infix name =
   match strip_string name with

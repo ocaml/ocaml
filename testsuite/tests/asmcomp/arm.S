@@ -10,8 +10,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: arm.S 12858 2012-08-10 14:45:51Z maranget $ */
-
         .text
 
         .global call_gen_code
@@ -37,4 +35,3 @@ call_gen_code:
 caml_c_call:
     @ function to call is in r10
         mov     pc, r10
-

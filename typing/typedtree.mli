@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: typedtree.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Abstract syntax tree after typing *)
 
 open Asttypes
@@ -41,10 +39,10 @@ and pattern_desc =
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
   | Tpat_construct of
-      Path.t * Longident.t loc * constructor_description * pattern list * bool
+      Longident.t loc * constructor_description * pattern list * bool
   | Tpat_variant of label * pattern option * row_desc ref
   | Tpat_record of
-      (Path.t * Longident.t loc * label_description * pattern) list *
+      (Longident.t loc * label_description * pattern) list *
         closed_flag
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * row_desc option
@@ -59,7 +57,7 @@ and expression =
 
 and exp_extra =
   | Texp_constraint of core_type option * core_type option
-  | Texp_open of Path.t * Longident.t loc * Env.t
+  | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
   | Texp_poly of core_type option
   | Texp_newtype of string
 
@@ -73,15 +71,15 @@ and expression_desc =
   | Texp_try of expression * (pattern * expression) list
   | Texp_tuple of expression list
   | Texp_construct of
-      Path.t * Longident.t loc * constructor_description * expression list *
+      Longident.t loc * constructor_description * expression list *
         bool
   | Texp_variant of label * expression option
   | Texp_record of
-      (Path.t * Longident.t loc * label_description * expression) list *
+      (Longident.t loc * label_description * expression) list *
         expression option
-  | Texp_field of expression * Path.t * Longident.t loc * label_description
+  | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
-      expression * Path.t * Longident.t loc * label_description * expression
+      expression * Longident.t loc * label_description * expression
   | Texp_array of expression list
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression
@@ -235,7 +233,7 @@ and structure_item_desc =
   | Tstr_module of Ident.t * string loc * module_expr
   | Tstr_recmodule of (Ident.t * string loc * module_type * module_expr) list
   | Tstr_modtype of Ident.t * string loc * module_type
-  | Tstr_open of Path.t * Longident.t loc
+  | Tstr_open of override_flag * Path.t * Longident.t loc
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of module_expr * Ident.t list
@@ -281,7 +279,7 @@ and signature_item_desc =
   | Tsig_module of Ident.t * string loc * module_type
   | Tsig_recmodule of (Ident.t * string loc * module_type) list
   | Tsig_modtype of Ident.t * string loc * modtype_declaration
-  | Tsig_open of Path.t * Longident.t loc
+  | Tsig_open of override_flag * Path.t * Longident.t loc
   | Tsig_include of module_type * Types.signature
   | Tsig_class of class_description list
   | Tsig_class_type of class_type_declaration list
@@ -423,7 +421,6 @@ val map_pattern_desc: (pattern -> pattern) -> pattern_desc -> pattern_desc
 
 val let_bound_idents: (pattern * expression) list -> Ident.t list
 val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
-val pat_bound_idents: pattern -> Ident.t list
 (*> JOCAML *)
 val def_bound_idents: joinautomaton list -> Ident.t list
 val rev_def_bound_idents: joinautomaton list -> Ident.t list

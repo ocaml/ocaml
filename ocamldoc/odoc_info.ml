@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_info.ml 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Interface for analysing documented OCaml source files and to the collected information. *)
 
@@ -50,6 +49,7 @@ and text_element = Odoc_types.text_element =
   | Subscript of text
   | Module_list of string list
   | Index_list
+  | Custom of string * text
   | Target of string * string
 
 and text = text_element list
@@ -178,6 +178,7 @@ let verbose s =
     ()
 
 let warning s = Odoc_global.pwarning s
+let print_warnings = Odoc_config.print_warnings
 
 let errors = Odoc_global.errors
 
@@ -230,8 +231,8 @@ let info_string_of_info i =
    List.iter
      (fun (sref, t) ->
        p b "\n@@see %s %s"
-	 (escape_arobas (f_see_ref sref))
-	 (escape_arobas (text_string_of_text t))
+         (escape_arobas (f_see_ref sref))
+         (escape_arobas (text_string_of_text t))
      )
      i.i_sees
   );
@@ -245,20 +246,20 @@ let info_string_of_info i =
      None -> ()
    | Some t ->
        p b "\n@@deprecated %s"
-	 (escape_arobas (text_string_of_text t))
+         (escape_arobas (text_string_of_text t))
   );
   List.iter
     (fun (s, t) ->
       p b "\n@@param %s %s"
-	(escape_arobas s)
-	(escape_arobas (text_string_of_text t))
+        (escape_arobas s)
+        (escape_arobas (text_string_of_text t))
     )
     i.i_params;
   List.iter
     (fun (s, t) ->
       p b "\n@@raise %s %s"
-	(escape_arobas s)
-	(escape_arobas (text_string_of_text t))
+        (escape_arobas s)
+        (escape_arobas (text_string_of_text t))
     )
     i.i_raised_exceptions;
   (
@@ -266,45 +267,19 @@ let info_string_of_info i =
      None -> ()
    | Some t ->
        p b "\n@@return %s"
-	 (escape_arobas (text_string_of_text t))
+         (escape_arobas (text_string_of_text t))
   );
   List.iter
     (fun (s, t) ->
       p b "\n@@%s %s" s
-	(escape_arobas (text_string_of_text t))
+        (escape_arobas (text_string_of_text t))
     )
     i.i_custom;
 
   Buffer.contents b
 
-let info_of_string s =
-  let dummy =
-    {
-      i_desc = None ;
-      i_authors = [] ;
-      i_version = None ;
-      i_sees = [] ;
-      i_since = None ;
-      i_deprecated = None ;
-      i_params = [] ;
-      i_raised_exceptions = [] ;
-      i_return_value = None ;
-      i_custom = [] ;
-    }
-  in
-  let s2 = Printf.sprintf "(** %s *)" s in
-  let (_, i_opt) = Odoc_comments.Basic_info_retriever.first_special "-" s2 in
-  match i_opt with
-    None -> dummy
-  | Some i -> i
-
-let info_of_comment_file f =
-  try
-    let s = Odoc_misc.input_file_as_string f in
-    info_of_string s
-  with
-    Sys_error s ->
-      failwith s
+let info_of_string = Odoc_comments.info_of_string
+let info_of_comment_file = Odoc_comments.info_of_comment_file
 
 module Search =
   struct

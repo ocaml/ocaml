@@ -7,8 +7,6 @@ ocamlc -nostdlib -I ../../stdlib \
   t301-object.ml -o t301-object.byte
 
 ***)
-(* $Id: t301-object.ml 12845 2012-08-09 12:54:45Z maranget $ *)
-
 
 class c = object (self)
   method pubmet = 1
@@ -25,5 +23,3 @@ let (x,y,z) = f () in
   if x <> 1 then raise Not_found;
   if y <> 2 then raise Not_found;
   if z <> 4 then raise Not_found;;
-
-(**** eof $Id: t301-object.ml 12845 2012-08-09 12:54:45Z maranget $ *)

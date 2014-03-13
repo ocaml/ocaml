@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile.msvc 12959 2012-09-27 13:12:51Z maranget $
-
 # Configuration for Windows, Visual C++ compiler
 
 ######### General configuration
@@ -53,8 +51,6 @@ SHARPBANGSCRIPTS=false
 PTHREAD_LINK=
 X11_INCLUDES=
 X11_LINK=
-DBM_INCLUDES=
-DBM_LINK=
 BYTECCRPATH=
 SUPPORTS_SHARED_LIBRARIES=true
 SHAREDCCCOMPOPTS=
@@ -174,3 +170,14 @@ TK_LINK=tk85.lib tcl85.lib ws2_32.lib
 
 MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)
+
+############# for the testsuite makefiles
+#ml let topdir = "" and wintopdir = "";;
+OTOPDIR=$(WINTOPDIR)
+CTOPDIR=$(WINTOPDIR)
+CYGPATH=cygpath -m
+DIFF=diff -q --strip-trailing-cr
+CANKILL=false
+FIND=/usr/bin/find
+SORT=/usr/bin/sort
+SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"

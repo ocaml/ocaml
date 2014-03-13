@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: symtable.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* To assign numbers to globals and primitives *)
 
 open Misc
@@ -177,24 +175,27 @@ let init () =
 (* Must use the unsafe String.set here because the block may be
    a "fake" string as returned by Meta.static_alloc. *)
 
-let patch_int buff pos n =
-  String.unsafe_set buff pos (Char.unsafe_chr n);
-  String.unsafe_set buff (pos + 1) (Char.unsafe_chr (n asr 8));
-  String.unsafe_set buff (pos + 2) (Char.unsafe_chr (n asr 16));
-  String.unsafe_set buff (pos + 3) (Char.unsafe_chr (n asr 24))
+let gen_patch_int str_set buff pos n =
+  str_set buff pos (Char.unsafe_chr n);
+  str_set buff (pos + 1) (Char.unsafe_chr (n asr 8));
+  str_set buff (pos + 2) (Char.unsafe_chr (n asr 16));
+  str_set buff (pos + 3) (Char.unsafe_chr (n asr 24))
 
-let patch_object buff patchlist =
+let gen_patch_object str_set buff patchlist =
   List.iter
     (function
         (Reloc_literal sc, pos) ->
-          patch_int buff pos (slot_for_literal sc)
+          gen_patch_int str_set buff pos (slot_for_literal sc)
       | (Reloc_getglobal id, pos) ->
-          patch_int buff pos (slot_for_getglobal id)
+          gen_patch_int str_set buff pos (slot_for_getglobal id)
       | (Reloc_setglobal id, pos) ->
-          patch_int buff pos (slot_for_setglobal id)
+          gen_patch_int str_set buff pos (slot_for_setglobal id)
       | (Reloc_primitive name, pos) ->
-          patch_int buff pos (num_of_prim name))
+          gen_patch_int str_set buff pos (num_of_prim name))
     patchlist
+
+let patch_object = gen_patch_object String.unsafe_set
+let ls_patch_object = gen_patch_object LongString.set
 
 (* Translate structured constants *)
 

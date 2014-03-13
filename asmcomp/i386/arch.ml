@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: arch.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Machine-specific command-line options *)
 
 let fast_math = ref false
@@ -57,6 +55,8 @@ let big_endian = false
 let size_addr = 4
 let size_int = 4
 let size_float = 8
+
+let allow_unaligned_access = true
 
 (* Behavior of division *)
 

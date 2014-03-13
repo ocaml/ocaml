@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 let rec tailcall4 a b c d =
   if a < 0
   then b
@@ -18,7 +30,7 @@ let indtailcall8 fn a b c d e f g h =
   fn a b c d e f g h
 
 let indtailcall16 fn a b c d e f g h i j k l m n o p =
-  fn a b c d e f g h i j k l m n o p 
+  fn a b c d e f g h i j k l m n o p
 
 let _ =
   print_int (tailcall4 10000000 0 0 0); print_newline();

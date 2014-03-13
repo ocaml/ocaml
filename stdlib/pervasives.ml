@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: pervasives.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* type 'a option = None | Some of 'a *)
 
 (* Exceptions *)
@@ -23,6 +21,11 @@ let failwith s = raise(Failure s)
 let invalid_arg s = raise(Invalid_argument s)
 
 exception Exit
+
+(* Composition operators *)
+
+external (|>) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
 (* Comparisons *)
 

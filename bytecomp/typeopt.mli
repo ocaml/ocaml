@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: typeopt.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
 val has_base_type : Typedtree.expression -> Path.t -> bool

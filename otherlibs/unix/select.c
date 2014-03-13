@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: select.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <mlvalues.h>
 #include <alloc.h>
 #include <fail.h>
@@ -29,18 +27,20 @@
 #endif
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
-typedef fd_set file_descr_set;
-
-static void fdlist_to_fdset(value fdlist, fd_set *fdset, int *maxfd)
+static int fdlist_to_fdset(value fdlist, fd_set *fdset, int *maxfd)
 {
   value l;
   FD_ZERO(fdset);
   for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
-    int fd = Int_val(Field(l, 0));
-    FD_SET(fd, fdset);
+    long fd = Long_val(Field(l, 0));
+    /* PR#5563: harden against bad fds */
+    if (fd < 0 || fd >= FD_SETSIZE) return -1;
+    FD_SET((int) fd, fdset);
     if (fd > *maxfd) *maxfd = fd;
   }
+  return 0;
 }
 
 static value fdset_to_fdlist(value fdlist, fd_set *fdset)
@@ -75,9 +75,11 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
   Begin_roots3 (readfds, writefds, exceptfds);
     maxfd = -1;
-    fdlist_to_fdset(readfds, &read, &maxfd);
-    fdlist_to_fdset(writefds, &write, &maxfd);
-    fdlist_to_fdset(exceptfds, &except, &maxfd);
+    retcode  = fdlist_to_fdset(readfds, &read, &maxfd);
+    retcode += fdlist_to_fdset(writefds, &write, &maxfd);
+    retcode += fdlist_to_fdset(exceptfds, &except, &maxfd);
+    /* PR#5563: if a bad fd was encountered, report EINVAL error */
+    if (retcode != 0) unix_error(EINVAL, "select", Nothing);
     tm = Double_val(timeout);
     if (tm < 0.0)
       tvp = (struct timeval *) NULL;

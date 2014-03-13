@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: compile.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Compile a .ml or .mli file *)
 
 open Format
@@ -19,6 +17,3 @@ open Format
 val interface: formatter -> string -> string -> unit
 val implementation: formatter -> string -> string -> unit
 val c_file: string -> unit
-
-val initial_env: unit -> Env.t
-val init_path: unit -> unit

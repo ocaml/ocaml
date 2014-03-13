@@ -12,8 +12,6 @@
 #                                                                     #
 #######################################################################
 
-# $Id: runocamldoc 12858 2012-08-10 14:45:51Z maranget $
-
 case "$1" in
   true) shift
         exec ../boot/ocamlrun  -I ../otherlibs/unix -I ../otherlibs/str \

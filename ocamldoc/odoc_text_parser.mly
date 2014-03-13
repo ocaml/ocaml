@@ -10,11 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_text_parser.mly 12959 2012-09-27 13:12:51Z maranget $ *)
-
 open Odoc_types
 
-let identchar = 
+let identchar =
   "[A-Z a-z_\192-\214\216-\246\248-\255'0-9]"
 let blank = "[ \010\013\009\012]"
 
@@ -35,6 +33,7 @@ let print_DEBUG s = print_string s; print_newline ()
 %token LEFT
 %token RIGHT
 %token ITALIC
+%token <string> CUSTOM
 %token LIST
 %token ENUM
 %token ITEM
@@ -130,6 +129,7 @@ text_element:
   Title text END { let n, l_opt = $1 in Title (n, l_opt, $2) }
 | BOLD text END { Bold $2 }
 | ITALIC text END { Italic $2 }
+| CUSTOM text END { Custom ($1, $2) }
 | EMP text END { Emphasize $2 }
 | SUPERSCRIPT text END { Superscript $2 }
 | SUBSCRIPT text END { Subscript $2 }
@@ -140,87 +140,24 @@ text_element:
 | ENUM list END { Enum $2 }
 | CODE string END_CODE { Code $2 }
 | CODE_PRE string END_CODE_PRE { CodePre $2 }
-<<<<<<< .courant
-| ELE_REF string END { 
-=======
 | ele_ref_kind string END  {
->>>>>>> .fusion-droit.r10497
       let s2 = remove_beginning_blanks $2 in
       let s3 = remove_trailing_blanks s2 in
-<<<<<<< .courant
-      Ref (s3, None) 
-=======
       Ref (s3, $1, None)
->>>>>>> .fusion-droit.r10497
      }
-<<<<<<< .courant
-| VAL_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-=======
 | LBRACE ele_ref_kind string END text END {
       let s2 = remove_beginning_blanks $3 in
->>>>>>> .fusion-droit.r10497
       let s3 = remove_trailing_blanks s2 in
-<<<<<<< .courant
-      Ref (s3, Some RK_value) 
-     }
-| TYP_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some RK_type) 
-     }
-| EXC_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some RK_exception) 
-     }
-| MOD_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some RK_module) 
-     }
-| MODT_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some RK_module_type) 
-     }
-| CLA_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some RK_class) 
-     }
-| CLT_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some RK_class_type) 
-     }
-| ATT_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some RK_attribute) 
-     }
-| MET_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some RK_method) 
-     }
-| SEC_REF string END { 
-      let s2 = remove_beginning_blanks $2 in
-      let s3 = remove_trailing_blanks s2 in
-      Ref (s3, Some (RK_section []))
-     }
-=======
       Ref (s3, $2, Some $5)
     }
 
->>>>>>> .fusion-droit.r10497
-| MOD_LIST_REF string END { 
+| MOD_LIST_REF string END {
       let s2 = remove_beginning_blanks $2 in
       let s3 = remove_trailing_blanks s2 in
       let l = Odoc_misc.split_with_blanks s3 in
       Module_list l
      }
-| INDEX_LIST { Index_list } 
+| INDEX_LIST { Index_list }
 | VERB string END_VERB { Verbatim $2 }
 | LATEX string END_TARGET { Latex $2 }
 | Target string END_TARGET { Target ($1, $2) }
@@ -234,7 +171,7 @@ text_element:
 ;
 
 list:
-| string { [] (* A VOIR : un test pour voir qu'il n'y a que des blancs *) } 
+| string { [] (* A VOIR : un test pour voir qu'il n'y a que des blancs *) }
 | string list { $2 }
 | list string  { $1 }
 | item { [ $1 ] }
@@ -270,4 +207,4 @@ string:
 | Char string { $1^$2 }
 ;
 
-%% 
+%%

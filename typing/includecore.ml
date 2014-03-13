@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: includecore.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Inclusion checks for the core language *)
 
 open Asttypes
@@ -174,18 +172,18 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
         [Field_arity cstr1]
       else match ret1, ret2 with
       | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) ->
-	  [Field_type cstr1]
+          [Field_type cstr1]
       | Some _, None | None, Some _ ->
-	  [Field_type cstr1]
+          [Field_type cstr1]
       | _ ->
-	  if Misc.for_all2
-	      (fun ty1 ty2 ->
-		Ctype.equal env true (ty1::decl1.type_params)
-		  (ty2::decl2.type_params))
-	      (arg1) (arg2)
-	  then
-	    compare_variants env decl1 decl2 (n+1) rem1 rem2
-	  else [Field_type cstr1]
+          if Misc.for_all2
+              (fun ty1 ty2 ->
+                Ctype.equal env true (ty1::decl1.type_params)
+                  (ty2::decl2.type_params))
+              (arg1) (arg2)
+          then
+            compare_variants env decl1 decl2 (n+1) rem1 rem2
+          else [Field_type cstr1]
 
 
 let rec compare_records env decl1 decl2 n labels1 labels2 =
@@ -246,18 +244,20 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         else [Constraint]
   in
   if err <> [] then err else
-  if match decl2.type_kind with
-  | Type_record (_,_) | Type_variant _ -> decl2.type_private = Private
-  | Type_abstract ->
-      match decl2.type_manifest with
-      | None -> true
-      | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
-  then
-    if List.for_all2
-        (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2)&&(not cn1 || cn2))
-        decl1.type_variance decl2.type_variance
-    then [] else [Variance]
-  else []
+  let abstr =
+    decl2.type_private = Private ||
+    decl2.type_kind = Type_abstract && decl2.type_manifest = None in
+  if List.for_all2
+      (fun ty (v1,v2) ->
+        let open Variance in
+        let imp a b = not a || b in
+        let (co1,cn1) = get_upper v1 and (co2,cn2) = get_upper v2 in
+        imp abstr (imp co1 co2 && imp cn1 cn2) &&
+        (abstr || Btype.(is_Tvar (repr ty)) || co1 = co2 && cn1 = cn2) &&
+        let (p1,n1,i1,j1) = get_lower v1 and (p2,n2,i2,j2) = get_lower v2 in
+        imp abstr (imp p2 p1 && imp n2 n1 && imp i2 i1 && imp j2 j1))
+      decl2.type_params (List.combine decl1.type_variance decl2.type_variance)
+  then [] else [Variance]
 
 (* Inclusion between exception declarations *)
 

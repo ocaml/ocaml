@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: typeopt.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
 open Path
@@ -122,7 +120,8 @@ let bigarray_kind_and_layout exp =
   match scrape exp.exp_env exp.exp_type with
   | Tconstr(p, [caml_type; elt_type; layout_type], abbrev) ->
       (bigarray_decode_type exp.exp_env elt_type kind_table Pbigarray_unknown,
-       bigarray_decode_type exp.exp_env layout_type layout_table Pbigarray_unknown_layout)
+       bigarray_decode_type exp.exp_env layout_type layout_table
+                            Pbigarray_unknown_layout)
   | _ ->
       (Pbigarray_unknown, Pbigarray_unknown_layout)
 

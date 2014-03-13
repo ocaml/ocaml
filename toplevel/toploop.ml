@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: toploop.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* The interactive toplevel loop *)
 
 open Path
@@ -104,6 +102,23 @@ let print_error = Location.print_error
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
+let parse_mod_use_file name lb =
+  let modname =
+    String.capitalize (Filename.chop_extension (Filename.basename name))
+  in
+  let items =
+    List.concat
+      (List.map
+         (function Ptop_def s -> s | Ptop_dir _ -> [])
+         (!parse_use_file lb))
+  in
+  [ Ptop_def
+      [ { pstr_desc =
+            Pstr_module ( Location.mknoloc modname ,
+                          { pmod_desc = Pmod_structure items;
+                            pmod_loc = Location.none } );
+          pstr_loc = Location.none } ] ]
+
 (* Hooks for initialization *)
 
 let toplevel_startup_hook = ref (fun () -> ())
@@ -148,7 +163,9 @@ let load_lambda ppf lam =
 
 (* Print the outcome of an evaluation *)
 
-let rec pr_item env = function
+let rec pr_item env items =
+  Printtyp.hide_rec_items items;
+  match items with
   | Sig_value(id, decl) :: rem ->
       let tree = Printtyp.tree_of_value_description id decl in
       let valopt =
@@ -218,6 +235,7 @@ let execute_phrase print_outcome ppf phr =
       let oldenv = !toplevel_env in
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       let sg' = Typemod.simplify_signature sg in
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
@@ -230,13 +248,14 @@ let execute_phrase print_outcome ppf phr =
           match res with
           | Result v ->
               if print_outcome then
-                match str.str_items with
-                | [ { str_desc = Tstr_eval exp }] ->
-                    let outv = outval_of_value newenv v exp.exp_type in
-                    let ty = Printtyp.tree_of_type_scheme exp.exp_type in
-                    Ophr_eval (outv, ty)
-                | [] -> Ophr_signature []
-                | _ -> Ophr_signature (item_list newenv sg')
+                Printtyp.wrap_printing_env oldenv (fun () ->
+                  match str.str_items with
+                  | [ { str_desc = Tstr_eval exp }] ->
+                      let outv = outval_of_value newenv v exp.exp_type in
+                      let ty = Printtyp.tree_of_type_scheme exp.exp_type in
+                      Ophr_eval (outv, ty)
+                  | [] -> Ophr_signature []
+                  | _ -> Ophr_signature (item_list newenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -286,7 +305,18 @@ let protect r newval body =
 
 let use_print_results = ref true
 
-let use_file ppf name =
+let phrase ppf phr =
+  let phr =
+    match phr with
+    | Ptop_def str ->
+        Ptop_def (Pparse.apply_rewriters ast_impl_magic_number str)
+    | phr -> phr
+  in
+  if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
+  if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
+  phr
+
+let use_file ppf wrap_mod name =
   try
     let (filename, ic, must_close) =
       if name = "" then
@@ -306,9 +336,12 @@ let use_file ppf name =
         try
           List.iter
             (fun ph ->
-              if !Clflags.dump_parsetree then Printast.top_phrase ppf ph;
+              let ph = phrase ppf ph in
               if not (execute_phrase !use_print_results ppf ph) then raise Exit)
-            (!parse_use_file lb);
+            (if wrap_mod then
+               parse_mod_use_file name lb
+             else
+               !parse_use_file lb);
           true
         with
         | Exit -> false
@@ -317,6 +350,9 @@ let use_file ppf name =
     if must_close then close_in ic;
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
+
+let mod_use_file ppf name = use_file ppf true name
+let use_file ppf name = use_file ppf false name
 
 let use_silently ppf name =
   protect use_print_results false (fun () -> use_file ppf name)
@@ -372,7 +408,7 @@ let refill_lexbuf buffer len =
 let _ =
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
-  Compile.init_path();
+  Compmisc.init_path false;
   List.iter
     (fun (name, crc) ->
       Consistbl.set Env.crc_units name crc Sys.executable_name)
@@ -399,7 +435,7 @@ let set_paths () =
   Dll.add_path !load_path
 
 let initialize_toplevel_env () =
-  toplevel_env := Compile.initial_env()
+  toplevel_env := Compmisc.initial_env()
 
 (* The interactive loop *)
 
@@ -421,8 +457,8 @@ let loop ppf =
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
-      Env.reset_missing_cmis ();
+      let phr = phrase ppf phr  in
+      Env.reset_cache_toplevel ();
       ignore(execute_phrase true ppf phr)
     with
     | End_of_file -> exit 0
@@ -439,7 +475,7 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Compile.init_path();
-  toplevel_env := Compile.initial_env();
+  Compmisc.init_path false;
+  toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
   use_silently ppf name

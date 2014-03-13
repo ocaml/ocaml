@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: optmain.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (*
   this "empty" file is here to speed up garbage collection in ocamlopt.opt
 *)

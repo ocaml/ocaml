@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: condition.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Condition variables to synchronize between threads.
 
    Condition variables are used when one thread wants to wait until another

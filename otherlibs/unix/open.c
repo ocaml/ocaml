@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: open.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
@@ -46,7 +44,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   char * p;
 
   cv_flags = convert_flag_list(flags, open_flag_table);
-  p = stat_alloc(string_length(path) + 1);
+  p = caml_stat_alloc(string_length(path) + 1);
   strcpy(p, String_val(path));
   /* open on a named FIFO can block (PR#1533) */
   enter_blocking_section();

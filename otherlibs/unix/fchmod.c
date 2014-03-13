@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: fchmod.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fail.h>

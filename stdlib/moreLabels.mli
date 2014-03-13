@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: moreLabels.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (** Extra labeled libraries.
 
    This meta-module provides labelized version of the {!Hashtbl},
@@ -107,7 +105,8 @@ module Map : sig
       val add : key:key -> data:'a -> 'a t -> 'a t
       val singleton: key -> 'a -> 'a t
       val remove : key -> 'a t -> 'a t
-      val merge: f:(key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+      val merge:
+          f:(key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
       val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
       val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
@@ -161,6 +160,7 @@ module Set : sig
       val max_elt : t -> elt
       val choose : t -> elt
       val split: elt -> t -> t * bool * t
+      val find: elt -> t -> elt
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
 end

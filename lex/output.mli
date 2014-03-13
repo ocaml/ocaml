@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: output.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Output the DFA tables and its entry points *)
 
 val output_lexdef:

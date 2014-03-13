@@ -10,13 +10,16 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: pparse.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 open Format
 
-exception Error
+type error =
+  | CannotRun of string
+  | WrongMagic of string
+
+exception Error of error
 
 val preprocess : string -> string
 val remove_preprocessed : string -> unit
-val remove_preprocessed_if_ast : string -> unit
 val file : formatter -> string -> (Lexing.lexbuf -> 'a) -> string -> 'a
+val apply_rewriters : string -> 'a -> 'a
+val report_error : formatter -> error -> unit

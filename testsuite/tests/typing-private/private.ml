@@ -57,18 +57,18 @@ module M3 : sig
   val mk : int -> t
 end = M;;
 
-module M4 : sig   
+module M4 : sig
     type t = M.t = T of int
     val mk : int -> t
   end = M;;
 (* Error: The variant or record definition does not match that of type M.t *)
 
-module M5 : sig   
+module M5 : sig
   type t = M.t = private T of int
   val mk : int -> t
 end = M;;
 
-module M6 : sig   
+module M6 : sig
   type t = private T of int
   val mk : int -> t
 end = M;;
@@ -87,3 +87,9 @@ module M3' : sig
   type t = M'.t
   val mk : int -> t
 end = M';;
+
+module M : sig type 'a t = private T of 'a end =
+  struct type 'a t = T of 'a end;;
+
+module M1 : sig type 'a t = 'a M.t = private T of 'a end =
+  struct type 'a t = 'a M.t = private T of 'a end;;

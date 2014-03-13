@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile 12858 2012-08-10 14:45:51Z maranget $
-
 include ../config/Makefile
 
 # Files to install
@@ -20,7 +18,7 @@ FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \
 	caml-xemacs.el caml-emacs.el
 
 # Where to install. If empty, automatically determined.
-EMACSDIR=/usr/local/share/emacs/site-lisp
+#EMACSDIR=
 
 # Name of Emacs executable
 EMACS=emacs
@@ -37,6 +35,7 @@ COMPILECMD=(progn \
 	      (byte-compile-file "inf-caml.el") \
 	      (byte-compile-file "caml-help.el") \
 	      (byte-compile-file "caml-types.el") \
+	      (byte-compile-file "caml-font.el") \
 	      (byte-compile-file "camldebug.el"))
 
 install:
@@ -80,4 +79,4 @@ compile-only:
 	$(EMACS) --batch --eval '$(COMPILECMD)'
 
 clean:
-	rm -f ocamltags *~ #*# *.elc
+	rm -f ocamltags *~ \#*# *.elc

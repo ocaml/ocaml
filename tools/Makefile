@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile 12858 2012-08-10 14:45:51Z maranget $
-
 include Makefile.shared
 
 # To make custom toplevels

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: freelist.c 12959 2012-09-27 13:12:51Z maranget $ */
-
 #define FREELIST_DEBUG 0
 #if FREELIST_DEBUG
 #include <stdio.h>
@@ -196,7 +194,8 @@ char *caml_fl_allocate (mlsize_t wo_sz)
 #if FREELIST_DEBUG
         if (i > 5) fprintf (stderr, "FLP: found at %d  size=%d\n", i, wo_sz);
 #endif
-        result = allocate_block (Whsize_wosize (wo_sz), i, flp[i], Next(flp[i]));
+        result = allocate_block (Whsize_wosize (wo_sz), i, flp[i],
+                                 Next (flp[i]));
         goto update_flp;
       }
     }
@@ -509,8 +508,11 @@ void caml_fl_add_blocks (char *bp)
    p: pointer to the first word of the block
    size: size of the block (in words)
    do_merge: 1 -> do merge; 0 -> do not merge
+   color: which color to give to the pieces; if [do_merge] is 1, this
+          is overridden by the merge code, but we have historically used
+          [Caml_white].
 */
-void caml_make_free_blocks (value *p, mlsize_t size, int do_merge)
+void caml_make_free_blocks (value *p, mlsize_t size, int do_merge, int color)
 {
   mlsize_t sz;
 
@@ -520,7 +522,7 @@ void caml_make_free_blocks (value *p, mlsize_t size, int do_merge)
     }else{
       sz = size;
     }
-    *(header_t *)p = Make_header (Wosize_whsize (sz), 0, Caml_white);
+    *(header_t *)p = Make_header (Wosize_whsize (sz), 0, color);
     if (do_merge) caml_fl_merge_block (Bp_hp (p));
     size -= sz;
     p += sz;

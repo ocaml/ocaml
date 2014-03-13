@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile 12959 2012-09-27 13:12:51Z maranget $
-
 # Makefile for the dynamic link library
 
 include ../../config/Makefile

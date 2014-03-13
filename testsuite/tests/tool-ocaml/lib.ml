@@ -1,5 +1,3 @@
-(* file $Id: lib.ml 12845 2012-08-09 12:54:45Z maranget $ *)
-
 external raise : exn -> 'a = "%raise"
 
 external not : bool -> bool = "%boolnot"
@@ -42,5 +40,3 @@ external weak_set : 'a weak_t -> int -> 'a option -> unit = "caml_weak_set";;
 external weak_get: 'a weak_t -> int -> 'a option = "caml_weak_get";;
 
 let x = 42;;
-
-(* eof $Id: lib.ml 12845 2012-08-09 12:54:45Z maranget $ *)

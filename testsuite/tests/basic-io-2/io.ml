@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Test a file copy function *)
 
 let test msg funct f1 f2 =
@@ -93,7 +105,7 @@ let _ =
   test "263-byte chunks" (copy_file 263) src testio;
   test "4011-byte chunks" (copy_file 4011) src testio;
   test "0...8192 byte chunks" (copy_random 8192) src testio;
-  test "line per line, short lines" copy_line "/etc/hosts" testio;
+  test "line per line, short lines" copy_line "test-file-short-lines" testio;
   make_lines lines;
   test "line per line, short and long lines" copy_line lines testio;
   test "backwards, 4096-byte chunks" (copy_seek 4096) src testio;

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: int64_native.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Wrapper macros around native 64-bit integer arithmetic,
    so that it has the same interface as the software emulation
    provided in int64_emul.h */
@@ -50,5 +48,14 @@
 #define I64_of_int32(x) ((int64) (x))
 #define I64_to_double(x) ((double)(x))
 #define I64_of_double(x) ((int64)(x))
+
+#define I64_bswap(x) ((((x) & 0x00000000000000FFULL) << 56) | \
+                      (((x) & 0x000000000000FF00ULL) << 40) | \
+                      (((x) & 0x0000000000FF0000ULL) << 24) | \
+                      (((x) & 0x00000000FF000000ULL) << 8) |  \
+                      (((x) & 0x000000FF00000000ULL) >> 8) |  \
+                      (((x) & 0x0000FF0000000000ULL) >> 24) | \
+                      (((x) & 0x00FF000000000000ULL) >> 40) | \
+                      (((x) & 0xFF00000000000000ULL) >> 56))
 
 #endif /* CAML_INT64_NATIVE_H */

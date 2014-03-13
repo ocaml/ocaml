@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2011 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Testing the hash function Hashtbl.hash *)
 (* What is tested:
      - reproducibility on various platforms, esp. 32/64 bit issues
@@ -39,12 +51,3 @@ let _ =
   printf "[10..0]\t\t%08x\n" (Hashtbl.hash [10;9;8;7;6;5;4;3;2;1;0]);
 
   ()
-
-
-
-
-
-
-
-
-  

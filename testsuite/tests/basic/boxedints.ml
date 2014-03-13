@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Test the types nativeint, int32, int64 *)
 
 open Printf
@@ -28,30 +40,30 @@ let test test_number answer correct_answer =
 module type TESTSIG = sig
   type t
   module Ops : sig
-    val neg: t -> t 
-    val add: t -> t -> t 
-    val sub: t -> t -> t 
-    val mul: t -> t -> t 
-    val div: t -> t -> t 
-    val rem: t -> t -> t 
-    val logand: t -> t -> t 
-    val logor: t -> t -> t 
-    val logxor: t -> t -> t 
-    val shift_left: t -> int -> t 
-    val shift_right: t -> int -> t 
-    val shift_right_logical: t -> int -> t 
-    val of_int: int -> t 
-    val to_int: t -> int 
-    val of_float: float -> t 
+    val neg: t -> t
+    val add: t -> t -> t
+    val sub: t -> t -> t
+    val mul: t -> t -> t
+    val div: t -> t -> t
+    val rem: t -> t -> t
+    val logand: t -> t -> t
+    val logor: t -> t -> t
+    val logxor: t -> t -> t
+    val shift_left: t -> int -> t
+    val shift_right: t -> int -> t
+    val shift_right_logical: t -> int -> t
+    val of_int: int -> t
+    val to_int: t -> int
+    val of_float: float -> t
     val to_float: t -> float
     val zero: t
     val one: t
     val minus_one: t
     val min_int: t
     val max_int: t
-    val format : string -> t -> string 
+    val format : string -> t -> string
     val to_string: t -> string
-    val of_string: string -> t 
+    val of_string: string -> t
   end
   val testcomp: t -> t -> bool*bool*bool*bool*bool*bool*int
   val skip_float_tests: bool
@@ -347,7 +359,7 @@ struct
     test 5 (add (of_int (-123)) (of_int 456)) (of_int 333);
     test 6 (add (of_int 123) (of_int (-456))) (of_int (-333));
     test 7 (add (of_int (-123)) (of_int (-456))) (of_int (-579));
-    test 8 (add (of_string "0x1234567812345678") 
+    test 8 (add (of_string "0x1234567812345678")
                 (of_string "0x9ABCDEF09ABCDEF"))
            (of_string "0x1be024671be02467");
     test 9 (add max_int max_int) (of_int (-2));
@@ -364,7 +376,7 @@ struct
     test 5 (sub (of_int (-123)) (of_int 456)) (of_int (-579));
     test 6 (sub (of_int 123) (of_int (-456))) (of_int 579);
     test 7 (sub (of_int (-123)) (of_int (-456))) (of_int 333);
-    test 8 (sub (of_string "0x1234567812345678") 
+    test 8 (sub (of_string "0x1234567812345678")
                 (of_string "0x9ABCDEF09ABCDEF"))
            (of_string "0x888888908888889");
     test 9 (sub max_int min_int) minus_one;
@@ -528,7 +540,7 @@ let _ =
   begin match Sys.word_size with
     32 ->
       let module C =
-        Test32(struct type t = nativeint 
+        Test32(struct type t = nativeint
                       module Ops = Nativeint
                       let testcomp = testcomp_nativeint
                       let skip_float_tests = true end)
@@ -537,7 +549,7 @@ let _ =
       let module C =
         Test64(struct type t = nativeint
                       module Ops = Nativeint
-                      let testcomp = testcomp_nativeint 
+                      let testcomp = testcomp_nativeint
                       let skip_float_tests = true end)
       in ()
   | _ ->

@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -9,9 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_dot.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
-(** Definition of a class which outputs a dot file showing 
+(** Definition of a class which outputs a dot file showing
    top modules dependencies.*)
 
 open Odoc_info
@@ -43,7 +42,7 @@ class dot =
     val mutable colors = !dot_colors
 
     (** Graph header. *)
-    method header = 
+    method header =
       "digraph G {\n"^
       "  size=\"10,7.5\";\n"^
       "  ratio=\"fill\";\n"^
@@ -54,14 +53,14 @@ class dot =
     method get_one_color =
       match colors with
         [] -> None
-      | h :: q -> 
+      | h :: q ->
           colors <- q ;
           Some h
 
     method node_color s =
       try Some (List.assoc s loc_colors)
       with
-        Not_found -> 
+        Not_found ->
           match self#get_one_color with
             None -> None
           | Some c ->
@@ -84,7 +83,7 @@ class dot =
     method generate_for_module fmt m =
       let l = List.filter
           (fun n ->
-            !dot_include_all or
+            !dot_include_all ||
             (List.exists (fun m -> m.Module.m_name = n) modules))
           m.Module.m_top_deps
       in
@@ -102,9 +101,9 @@ class dot =
         let oc = open_out !Global.out_file in
         let fmt = F.formatter_of_out_channel oc in
         F.fprintf fmt "%s" self#header;
-        let graph = Odoc_info.Dep.deps_of_types 
+        let graph = Odoc_info.Dep.deps_of_types
             ~kernel: !dot_reduce
-            types 
+            types
         in
         List.iter (self#generate_for_type fmt) graph;
         F.fprintf fmt "}\n" ;
@@ -114,7 +113,7 @@ class dot =
         Sys_error s ->
           raise (Failure s)
 
-    method generate_modules modules_list = 
+    method generate_modules modules_list =
       try
         modules <- modules_list ;
         let oc = open_out !Global.out_file in
@@ -143,4 +142,3 @@ class dot =
 end
 
 module type Dot_generator = module type of Generator
-

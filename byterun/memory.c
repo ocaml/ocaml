@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: memory.c 12959 2012-09-27 13:12:51Z maranget $ */
-
 #include <stdlib.h>
 #include <string.h>
 #include "fail.h"
@@ -318,7 +316,7 @@ static char *expand_heap (mlsize_t request)
   }
   remain = malloc_request;
   prev = hp = mem;
-  /* XXX find a way to do this with a call to caml_make_free_blocks */
+  /* FIXME find a way to do this with a call to caml_make_free_blocks */
   while (Wosize_bhsize (remain) > Max_wosize){
     Hd_hp (hp) = Make_header (Max_wosize, 0, Caml_blue);
 #ifdef DEBUG
@@ -502,12 +500,13 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
    A block value [v] is a shared block if and only if [Is_in_heap (v)]
    is true.
 */
-/* [caml_initialize] never calls the GC, so you may call it while an block is
+/* [caml_initialize] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
-void caml_initialize (value *fp, value val)
+CAMLexport void caml_initialize (value *fp, value val)
 {
+  CAMLassert(Is_in_heap(fp));
   *fp = val;
-  if (Is_block (val) && Is_young (val) && Is_in_heap (fp)){
+  if (Is_block (val) && Is_young (val)) {
     if (caml_ref_table.ptr >= caml_ref_table.limit){
       caml_realloc_ref_table (&caml_ref_table);
     }
@@ -519,9 +518,54 @@ void caml_initialize (value *fp, value val)
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */
 /* [caml_modify] never calls the GC. */
-void caml_modify (value *fp, value val)
+/* [caml_modify] can also be used to do assignment on data structures that are
+   in the minor heap instead of in the major heap.  In this case, it
+   is a bit slower than simple assignment.
+   In particular, you can use [caml_modify] when you don't know whether the
+   block being changed is in the minor heap or the major heap.
+*/
+
+CAMLexport void caml_modify (value *fp, value val)
 {
-  Modify (fp, val);
+  /* The write barrier implemented by [caml_modify] checks for the 
+     following two conditions and takes appropriate action:
+     1- a pointer from the major heap to the minor heap is created
+        --> add [fp] to the remembered set
+     2- a pointer from the major heap to the major heap is overwritten,
+        while the GC is in the marking phase
+        --> call [caml_darken] on the overwritten pointer so that the
+            major GC treats it as an additional root.
+  */
+  value old;
+
+  if (Is_young((value)fp)) {
+    /* The modified object resides in the minor heap.
+       Conditions 1 and 2 cannot occur. */
+    *fp = val;
+  } else {
+    /* The modified object resides in the major heap. */
+    CAMLassert(Is_in_heap(fp));
+    old = *fp;
+    *fp = val;
+    if (Is_block(old)) {
+      /* If [old] is a pointer within the minor heap, we already
+         have a major->minor pointer and [fp] is already in the
+         remembered set.  Conditions 1 and 2 cannot occur. */
+      if (Is_young(old)) return;
+      /* Here, [old] can be a pointer within the major heap.
+         Check for condition 2. */
+      if (caml_gc_phase == Phase_mark) caml_darken(old, NULL);
+    }
+    /* Check for condition 1. */
+    if (Is_block(val) && Is_young(val)) {
+      /* Add [fp] to remembered set */
+      if (caml_ref_table.ptr >= caml_ref_table.limit){
+        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);
+        caml_realloc_ref_table (&caml_ref_table);
+      }
+      *caml_ref_table.ptr++ = fp;
+    }
+  }
 }
 
 CAMLexport void * caml_stat_alloc (asize_t sz)

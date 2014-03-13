@@ -11,21 +11,18 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Specific operations for the ARM processor *)
 
-open Misc
 open Format
 
-type abi = EABI | EABI_VFP
+type abi = EABI | EABI_HF
 type arch = ARMv4 | ARMv5 | ARMv5TE | ARMv6 | ARMv6T2 | ARMv7
-type fpu = Soft | VFPv3_D16 | VFPv3
+type fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 
 let abi =
   match Config.system with
     "linux_eabi"   -> EABI
-  | "linux_eabihf" -> EABI_VFP
+  | "linux_eabihf" -> EABI_HF
   | _ -> assert false
 
 let string_of_arch = function
@@ -38,6 +35,7 @@ let string_of_arch = function
 
 let string_of_fpu = function
     Soft      -> "soft"
+  | VFPv2     -> "vfpv2"
   | VFPv3_D16 -> "vfpv3-d16"
   | VFPv3     -> "vfpv3"
 
@@ -47,13 +45,14 @@ let (arch, fpu, thumb) =
   let (def_arch, def_fpu, def_thumb) =
     begin match abi, Config.model with
     (* Defaults for architecture, FPU and Thumb *)
-      EABI, "armv5"   -> ARMv5,   Soft,      false
-    | EABI, "armv5te" -> ARMv5TE, Soft,      false
-    | EABI, "armv6"   -> ARMv6,   Soft,      false
-    | EABI, "armv6t2" -> ARMv6T2, Soft,      false
-    | EABI, "armv7"   -> ARMv7,   Soft,      false
-    | EABI, _         -> ARMv4,   Soft,      false
-    | EABI_VFP, _     -> ARMv7,   VFPv3_D16, true
+      EABI, "armv5"    -> ARMv5,   Soft,      false
+    | EABI, "armv5te"  -> ARMv5TE, Soft,      false
+    | EABI, "armv6"    -> ARMv6,   Soft,      false
+    | EABI, "armv6t2"  -> ARMv6T2, Soft,      false
+    | EABI, "armv7"    -> ARMv7,   Soft,      false
+    | EABI, _          -> ARMv4,   Soft,      false
+    | EABI_HF, "armv6" -> ARMv6,   VFPv2,     false
+    | EABI_HF, _       -> ARMv7,   VFPv3_D16, true
     end in
   (ref def_arch, ref def_fpu, ref def_thumb)
 
@@ -61,19 +60,20 @@ let pic_code = ref false
 
 let farch spec =
   arch := (match spec with
-             "armv4" when abi <> EABI_VFP   -> ARMv4
-           | "armv5" when abi <> EABI_VFP   -> ARMv5
-           | "armv5te" when abi <> EABI_VFP -> ARMv5TE
-           | "armv6" when abi <> EABI_VFP   -> ARMv6
-           | "armv6t2" when abi <> EABI_VFP -> ARMv6T2
-           | "armv7"                        -> ARMv7
+             "armv4" when abi <> EABI_HF   -> ARMv4
+           | "armv5" when abi <> EABI_HF   -> ARMv5
+           | "armv5te" when abi <> EABI_HF -> ARMv5TE
+           | "armv6"                       -> ARMv6
+           | "armv6t2"                     -> ARMv6T2
+           | "armv7"                       -> ARMv7
            | spec -> raise (Arg.Bad spec))
 
 let ffpu spec =
   fpu := (match spec with
-            "soft" when abi <> EABI_VFP     -> Soft
-          | "vfpv3-d16" when abi = EABI_VFP -> VFPv3_D16
-          | "vfpv3" when abi = EABI_VFP     -> VFPv3
+            "soft" when abi <> EABI_HF     -> Soft
+          | "vfpv2" when abi = EABI_HF     -> VFPv2
+          | "vfpv3-d16" when abi = EABI_HF -> VFPv3_D16
+          | "vfpv3" when abi = EABI_HF     -> VFPv3
           | spec -> raise (Arg.Bad spec))
 
 let command_line_options =
@@ -110,14 +110,15 @@ type specific_operation =
     Ishiftarith of arith_operation * int
   | Ishiftcheckbound of int
   | Irevsubimm of int
-  | Imuladd     (* multiply and add *)
-  | Imulsub     (* multiply and subtract *)
-  | Inegmulf    (* floating-point negate and multiply *)
-  | Imuladdf    (* floating-point multiply and add *)
-  | Inegmuladdf (* floating-point negate, multiply and add *)
-  | Imulsubf    (* floating-point multiply and subtract *)
-  | Inegmulsubf (* floating-point negate, multiply and subtract *)
-  | Isqrtf      (* floating-point square root *)
+  | Imuladd       (* multiply and add *)
+  | Imulsub       (* multiply and subtract *)
+  | Inegmulf      (* floating-point negate and multiply *)
+  | Imuladdf      (* floating-point multiply and add *)
+  | Inegmuladdf   (* floating-point negate, multiply and add *)
+  | Imulsubf      (* floating-point multiply and subtract *)
+  | Inegmulsubf   (* floating-point negate, multiply and subtract *)
+  | Isqrtf        (* floating-point square root *)
+  | Ibswap of int (* endianess conversion *)
 
 and arith_operation =
     Ishiftadd
@@ -131,6 +132,8 @@ let big_endian = false
 let size_addr = 4
 let size_int = 4
 let size_float = 8
+
+let allow_unaligned_access = false
 
 (* Behavior of division *)
 
@@ -205,6 +208,9 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(2)
   | Isqrtf ->
       fprintf ppf "sqrtf %a"
+        printreg arg.(0)
+  | Ibswap n ->
+      fprintf ppf "bswap%i %a" n
         printreg arg.(0)
 
 (* Recognize immediate operands *)

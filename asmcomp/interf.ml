@@ -10,13 +10,17 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: interf.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Construction of the interference graph.
    Annotate pseudoregs with interference lists and preference lists. *)
 
 module IntPairSet =
-  Set.Make(struct type t = int * int let compare = compare end)
+  Set.Make(struct
+    type t = int * int
+    let compare ((a1,b1) : t) (a2,b2) =
+      match compare a1 a2 with
+        | 0 -> compare b1 b2
+        | c -> c
+  end)
 
 open Reg
 open Mach
@@ -31,13 +35,21 @@ let build_graph fundecl =
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
-    let i = ri.stamp and j = rj.stamp in
-    if i <> j then begin
-      let p = if i < j then (i, j) else (j, i) in
-      if not(IntPairSet.mem p !mat) then begin
-        mat := IntPairSet.add p !mat;
-        if ri.loc = Unknown then ri.interf <- rj :: ri.interf;
-        if rj.loc = Unknown then rj.interf <- ri :: rj.interf
+    if Proc.register_class ri = Proc.register_class rj then begin
+      let i = ri.stamp and j = rj.stamp in
+      if i <> j then begin
+        let p = if i < j then (i, j) else (j, i) in
+        if not(IntPairSet.mem p !mat) then begin
+          mat := IntPairSet.add p !mat;
+          if ri.loc = Unknown then begin
+            ri.interf <- rj :: ri.interf;
+            if not rj.spill then ri.degree <- ri.degree + 1
+          end;
+          if rj.loc = Unknown then begin
+            rj.interf <- ri :: rj.interf;
+            if not ri.spill then rj.degree <- rj.degree + 1
+          end
+        end
       end
     end in
 

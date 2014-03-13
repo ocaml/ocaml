@@ -24,4 +24,3 @@
  300	   format(/1X, I3, 2X, 10F6.1/)
  200	continue
 	end
-

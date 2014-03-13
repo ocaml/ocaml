@@ -1,0 +1,25 @@
+--- ocamlnet-3.5.1.orig/src/netsys/netsys_posix.ml	2011-10-12 14:09:05.000000000 +0200
++++ ocamlnet-3.5.1/src/netsys/netsys_posix.ml	2012-01-12 19:33:39.000000000 +0100
+@@ -412,9 +412,11 @@
+ type at_flag = AT_EACCESS | AT_SYMLINK_NOFOLLOW | AT_REMOVEDIR
+ 
+ (* The stubs assume these type definitions: *)
++(* In fact, they don't: they assume OCaml's stdlib definition
+ type open_flag1 = Unix.open_flag =
+     O_RDONLY | O_WRONLY | O_RDWR | O_NONBLOCK | O_APPEND | O_CREAT | O_TRUNC
+   | O_EXCL | O_NOCTTY | O_DSYNC | O_SYNC | O_RSYNC
++*)
+ 
+ type access_permission1 = Unix.access_permission =
+     R_OK | W_OK | X_OK | F_OK
+--- ocamlnet-3.5.1.orig/src/netstring/Makefile.def	2012-02-29 19:02:52.000000000 +0100
++++ ocamlnet-3.5.1/src/netstring/Makefile.def	2012-05-25 16:59:56.000000000 +0200
+@@ -13,7 +13,7 @@
+ PKGNAME  = netstring
+ 
+ REQUIRES = $(REGEXP_PROVIDER) bigarray
+-INCLUDES += $(INC_NETSYS)
++INCLUDES += $(INC_NETSYS) -I +compiler-libs
+ 
+ ISO_MAPPINGS   = mappings/iso*.unimap
+ JP_MAPPINGS    = mappings/jis*.*map

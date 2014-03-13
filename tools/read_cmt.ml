@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*                  Fabrice Le Fessant, INRIA Saclay                   *)
 (*                                                                     *)
@@ -78,4 +78,3 @@ let _ =
       Arg.usage arg_list arg_usage
     end
   ) arg_usage
-

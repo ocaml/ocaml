@@ -10,13 +10,14 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: mainarith.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../../../byterun/config.h"
+#define FMT ARCH_INTNAT_PRINTF_FORMAT
 
 void caml_ml_array_bound_error(void)
 {
@@ -24,21 +25,21 @@ void caml_ml_array_bound_error(void)
   exit(2);
 }
 
-long R[200];
+intnat R[200];
 double D[40];
-long X, Y;
+intnat X, Y;
 double F, G;
 
 #define INTTEST(arg,res) \
-  { long result = (res); \
+  { intnat result = (res); \
     if (arg != result) \
-      printf("Failed test \"%s == %s\" for X=%ld and Y=%ld: result %ld, expected %ld\n", \
+      printf("Failed test \"%s == %s\" for X=%"FMT"d and Y=%"FMT"d: result %"FMT"d, expected %"FMT"d\n", \
              #arg, #res, X, Y, arg, result); \
   }
 #define INTFLOATTEST(arg,res) \
-  { long result = (res); \
+  { intnat result = (res); \
     if (arg != result) \
-      printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: result %ld, expected %ld\n", \
+      printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: result %"FMT"d, expected %"FMT"d\n", \
              #arg, #res, F, G, arg, result); \
   }
 #define FLOATTEST(arg,res) \
@@ -50,7 +51,7 @@ double F, G;
 #define FLOATINTTEST(arg,res) \
   { double result = (res); \
     if (arg < result || arg > result) \
-      printf("Failed test \"%s == %s\" for X=%ld and Y=%ld: result %.15g, expected %.15g\n", \
+      printf("Failed test \"%s == %s\" for X=%"FMT"d and Y=%"FMT"d: result %.15g, expected %.15g\n", \
              #arg, #res, X, Y, arg, result); \
   }
 
@@ -75,15 +76,15 @@ void do_test(void)
       INTTEST(R[10], (X + 1));
       INTTEST(R[11], (X + -1));
 
-      INTTEST(R[12], ((long) ((char *)R + 8)));
-      INTTEST(R[13], ((long) ((char *)R + Y)));
+      INTTEST(R[12], ((intnat) ((char *)R + 8)));
+      INTTEST(R[13], ((intnat) ((char *)R + Y)));
 
       INTTEST(R[14], (X - Y));
       INTTEST(R[15], (X - 1));
       INTTEST(R[16], (X - -1));
 
-      INTTEST(R[17], ((long) ((char *)R - 8)));
-      INTTEST(R[18], ((long) ((char *)R - Y)));
+      INTTEST(R[17], ((intnat) ((char *)R - 8)));
+      INTTEST(R[18], ((intnat) ((char *)R - Y)));
 
       INTTEST(R[19], (X * 2));
       INTTEST(R[20], (2 * X));
@@ -118,9 +119,9 @@ void do_test(void)
       INTTEST(R[43], (X << 1));
       INTTEST(R[44], (X << 8));
 
-      INTTEST(R[45], ((unsigned long) X >> Y));
-      INTTEST(R[46], ((unsigned long) X >> 1));
-      INTTEST(R[47], ((unsigned long) X >> 8));
+      INTTEST(R[45], ((uintnat) X >> Y));
+      INTTEST(R[46], ((uintnat) X >> 1));
+      INTTEST(R[47], ((uintnat) X >> 8));
 
       INTTEST(R[48], (X >> Y));
       INTTEST(R[49], (X >> 1));
@@ -190,7 +191,7 @@ void do_test(void)
       INTFLOATTEST(R[86], (F >= G));
 
       FLOATINTTEST(D[19], (double) X);
-      INTFLOATTEST(R[87], (long) F);
+      INTFLOATTEST(R[87], (intnat) F);
 
       INTTEST(R[88], (X >= 0) && (X < Y));
       INTTEST(R[89], (0 < Y));
@@ -225,7 +226,7 @@ void do_test(void)
       INTFLOATTEST(R[114], (F + 1.0 >= G));
 
       FLOATINTTEST(D[20], ((double) X) + 1.0);
-      INTFLOATTEST(R[115], (long)(F + 1.0));
+      INTFLOATTEST(R[115], (intnat)(F + 1.0));
 
       FLOATTEST(D[21], F + G);
       FLOATTEST(D[22], G + F);
@@ -304,4 +305,3 @@ int main(int argc, char **argv)
   }
   return 0;
 }
-

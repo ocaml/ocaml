@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Miscellaneous useful types and functions *)
 
 val fatal_error: string -> 'a
@@ -124,3 +122,47 @@ val thd3: 'a * 'b * 'c -> 'c
 val fst4: 'a * 'b * 'c * 'd -> 'a
 val snd4: 'a * 'b * 'c * 'd -> 'b
 val thd4: 'a * 'b * 'c * 'd -> 'c
+val for4: 'a * 'b * 'c * 'd -> 'd
+
+module LongString :
+  sig
+    type t = string array
+    val create : int -> t
+    val length : t -> int
+    val get : t -> int -> char
+    val set : t -> int -> char -> unit
+    val blit : t -> int -> t -> int -> int -> unit
+    val output : out_channel -> t -> int -> int -> unit
+    val unsafe_blit_to_string : t -> int -> string -> int -> int -> unit
+    val input_bytes : in_channel -> int -> t
+  end
+
+val edit_distance : string -> string -> int -> int option
+(** [edit_distance a b cutoff] computes the edit distance between
+    strings [a] and [b]. To help efficiency, it uses a cutoff: if the
+    distance [d] is smaller than [cutoff], it returns [Some d], else
+    [None].
+
+    The distance algorithm currently used is Damerau-Levenshtein: it
+    computes the number of insertion, deletion, substitution of
+    letters, or swapping of adjacent letters to go from one word to the
+    other. The particular algorithm may change in the future.
+*)
+
+val split : string -> char -> string list
+(** [String.split string char] splits the string [string] at every char
+    [char], and returns the list of sub-strings between the chars.
+    [String.concat (String.make 1 c) (String.split s c)] is the identity.
+    @since 4.01
+ *)
+
+val cut_at : string -> char -> string * string
+(** [String.cut_at s c] returns a pair containing the sub-string before
+   the first occurrence of [c] in [s], and the sub-string after the
+   first occurrence of [c] in [s].
+   [let (before, after) = String.cut_at s c in
+    before ^ String.make 1 c ^ after] is the identity if [s] contains [c].
+
+   Raise [Not_found] if the character does not appear in the string
+   @since 4.01
+*)

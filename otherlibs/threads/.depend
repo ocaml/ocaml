@@ -71,8 +71,8 @@ join_scheduler.cmo : thread.cmi mutex.cmi join_types.cmi join_misc.cmi \
     join_extern.cmi join_debug.cmi condition.cmi join_scheduler.cmi
 join_scheduler.cmx : thread.cmx mutex.cmx join_types.cmi join_misc.cmx \
     join_extern.cmx join_debug.cmx condition.cmx join_scheduler.cmi
-join_set.cmo : mutex.cmi join_misc.cmi join_set.cmi
-join_set.cmx : mutex.cmx join_misc.cmx join_set.cmi
+join_set.cmo : mutex.cmi join_set.cmi
+join_set.cmx : mutex.cmx join_set.cmi
 join_space.cmo : unix.cmo thread.cmi pervasives.cmo mutex.cmi marshal.cmo \
     join_types.cmi join_set.cmi join_scheduler.cmi join_port.cmi \
     join_misc.cmi join_message.cmi join_link.cmi join_hash.cmi join_debug.cmi \

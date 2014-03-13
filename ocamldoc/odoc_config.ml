@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -9,8 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_config.ml 6336 2004-05-27 09:18:38Z maranget $ *)
-
-let custom_generators_path = 
-  Filename.concat Config.standard_library 
+let custom_generators_path =
+  Filename.concat Config.standard_library
     (Filename.concat "ocamldoc" "custom")
+
+let print_warnings = ref true

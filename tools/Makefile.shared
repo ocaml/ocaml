@@ -10,8 +10,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile.shared 12959 2012-09-27 13:12:51Z maranget $
-
 include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
@@ -20,15 +18,19 @@ CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib  $(NOJOIN)
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 	 -I ../driver
-COMPFLAGS= -annot -warn-error A $(INCLUDES)
+COMPFLAGS= -w +32..39 -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
      objinfo read_cmt
 
+all: tast_iter.cmo
+
+# scrapelabels addlabels
+
 .PHONY: all
 
-opt.opt: ocamldep.opt
+opt.opt: ocamldep.opt read_cmt.opt
 .PHONY: opt.opt
 
 # The dependency generator
@@ -37,10 +39,10 @@ CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo pparse.cmo
+  ccomp.cmo pparse.cmo compenv.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
-	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
 ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
@@ -79,7 +81,7 @@ opt:: profiling.cmx
 install::
 	cp ocamlprof $(BINDIR)/jocamlprof$(EXE)
 	cp ocamlcp $(BINDIR)/jocamlcp$(EXE)
-	cp ocamloptp $(BINDIR)/ocamloptp$(EXE)
+	cp ocamloptp $(BINDIR)/jocamloptp$(EXE)
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 installopt::
@@ -208,6 +210,7 @@ READ_CMT= \
           ../parsing/location.cmo \
           ../parsing/longident.cmo \
           ../parsing/lexer.cmo \
+          ../parsing/pprintast.cmo \
           ../typing/ident.cmo \
           ../typing/path.cmo \
           ../typing/types.cmo \
@@ -222,17 +225,25 @@ READ_CMT= \
           ../typing/oprint.cmo \
           ../typing/primitive.cmo \
           ../typing/printtyp.cmo \
+          ../typing/mtype.cmo \
+          ../typing/envaux.cmo \
+          ../typing/typedtreeMap.cmo \
+          ../typing/typedtreeIter.cmo \
           ../typing/cmt_format.cmo \
           ../typing/stypes.cmo \
           \
-          pprintast.cmo untypeast.cmo typedtreeIter.cmo  \
+          untypeast.cmo \
+          tast_iter.cmo \
           cmt2annot.cmo read_cmt.cmo
 
 read_cmt: $(READ_CMT)
 	$(CAMLC) $(LINKFLAGS) -o read_cmt $(READ_CMT)
 
+read_cmt.opt: $(READ_CMT:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o read_cmt.opt $(READ_CMT:.cmo=.cmx)
+
 clean::
-	rm -f read_cmt
+	rm -f read_cmt read_cmt.opt
 
 beforedepend::
 
@@ -280,8 +291,8 @@ objinfo: objinfo_helper$(EXE) $(OBJINFO)
 	$(CAMLC) -o objinfo $(OBJINFO)
 
 install::
-	cp objinfo $(BINDIR)/ocamlobjinfo$(EXE)
-	cp objinfo_helper$(EXE) $(LIBDIR)/objinfo_helper$(EXE)
+	cp objinfo $(BINDIR)/jocamlobjinfo$(EXE)
+	cp objinfo_helper$(EXE) $(LIBDIR)/jobjinfo_helper$(EXE)
 
 clean::
 	rm -f objinfo objinfo_helper$(EXE)

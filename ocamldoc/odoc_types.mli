@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_types.mli 12959 2012-09-27 13:12:51Z maranget $ *)
 
 (** Types for the information collected in comments. *)
 
@@ -97,7 +96,7 @@ val dummy_info : info
 type location = {
     loc_impl : Location.t option ; (** implementation location *)
     loc_inter : Location.t option ; (** interface location *)
-  } 
+  }
 
 (** A dummy location. *)
 val dummy_loc : location

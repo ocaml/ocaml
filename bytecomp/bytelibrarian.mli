@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: bytelibrarian.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Build libraries of .cmo files *)
 
 (* Format of a library file:

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: emit.mlp 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Emission of Sparc assembly code *)
 
 open Misc
@@ -22,6 +20,10 @@ open Reg
 open Mach
 open Linearize
 open Emitaux
+
+(* Solaris vs. the other ports *)
+
+let solaris = Config.system = "solaris"
 
 (* Tradeoff between code size and code speed *)
 
@@ -62,7 +64,7 @@ let symbol_prefix =
   if Config.system = "sunos" then "_" else ""
 
 let emit_symbol s =
-  if String.length s >= 1 && s.[0] = '.'
+  if String.length s >= 1 & s.[0] = '.'
   then emit_string s
   else begin emit_string symbol_prefix; Emitaux.emit_symbol '$' s end
 
@@ -264,6 +266,7 @@ let name_for_float_comparison cmp neg =
 
 let function_name = ref ""
 let tailrec_entry_point = ref 0
+let range_check_trap = ref 0
 
 let rec emit_instr i dslot =
     match i.desc with
@@ -392,15 +395,15 @@ let rec emit_instr i dslot =
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
-          let indirect = Config.system <> "solaris" in
           let lbl_cont = new_label() in
-          if indirect then 
+          if solaris then begin
+            `	sub	%l6, {emit_int n}, %l6\n`;
+            `	cmp	%l6, %l7\n`
+          end else begin
             `	ld	[%l7], %g1\n`;
-          `	sub	%l6, {emit_int n}, %l6\n`;
-          if indirect then
+            `	sub	%l6, {emit_int n}, %l6\n`;
             `	cmp	%l6, %g1\n`
-          else
-            `	cmp	%l6, %l7\n`;
+          end;
           `	bgeu	{emit_label lbl_cont}\n`;
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`; (* in delay slot *)
           `{record_frame i.live}	call	{emit_symbol "caml_call_gc"}\n`;
@@ -429,7 +432,13 @@ let rec emit_instr i dslot =
         end
     | Lop(Iintop Icheckbound) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
+        if solaris then
+          `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
+        else begin
+          if !range_check_trap = 0 then range_check_trap := new_label();
+          `	bleu	{emit_label !range_check_trap}\n`;
+          `	nop\n`                  (* delay slot *)
+        end
     | Lop(Iintop Idiv) ->
         `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
         `	wr	%g1, %y\n`;
@@ -456,7 +465,6 @@ let rec emit_instr i dslot =
           `	sdiv	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop_imm(Imod, n)) ->       (* n is a power of 2 *)
-        let _log = Misc.log2 n in
         let lbl = new_label() in
         `	tst	{emit_reg i.arg.(0)}\n`;
         `	bge	{emit_label lbl}\n`;
@@ -481,7 +489,13 @@ let rec emit_instr i dslot =
         end
     | Lop(Iintop_imm(Icheckbound, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
-        `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
+        if solaris then
+          `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
+        else begin
+          if !range_check_trap = 0 then range_check_trap := new_label();
+          `	bleu	{emit_label !range_check_trap}\n`;
+          `	nop\n`                  (* delay slot *)
+        end
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
@@ -615,8 +629,8 @@ let is_one_instr i =
           i.arg.(0).typ <> Float && i.res.(0).typ <> Float
       | Iconst_int n -> is_native_immediate n
       | Istackoffset _ -> true
-      | Iload(_, Iindexed n) -> i.res.(0).typ <> Float && is_immediate n
-      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float && is_immediate n
+      | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_immediate n
+      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_immediate n
       | Iintop(op) -> is_one_instr_op op
       | Iintop_imm(op, _) -> is_one_instr_op op
       | Iaddf | Isubf | Imulf | Idivf -> true
@@ -646,15 +660,15 @@ let rec emit_all i =
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lop(Itailcall_imm s)}}
-    when s = !function_name && is_one_instr i ->
+    when s = !function_name & is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lop(Icall_ind)}}
-    when is_one_instr i && no_interference i.res i.next.arg ->
+    when is_one_instr i & no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lcondbranch(_, _)}}
-    when is_one_instr i && no_interference i.res i.next.arg ->
+    when is_one_instr i & no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | _ ->
@@ -667,6 +681,7 @@ let fundecl fundecl =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
+  range_check_trap := 0;
   stack_offset := 0;
   float_constants := [];
   `	.text\n`;
@@ -683,6 +698,11 @@ let fundecl fundecl =
     `	st	%o7, [%sp + {emit_int(n - 4 + 96)}]\n`;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
+  if !range_check_trap > 0 then begin
+    `{emit_label !range_check_trap}:\n`;
+    `	call	{emit_symbol "caml_ml_array_bound_error"}\n`;
+    `	nop\n`
+  end;
   emit_size fundecl.fun_name;
   List.iter emit_float_constant !float_constants
 

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: sys.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** System interface. *)
 
 val argv : string array
@@ -80,6 +78,18 @@ val os_type : string
 -  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
 -  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
 
+val unix : bool
+(** True if [Sys.os_type = "Unix"].
+    @since 4.01.0 *)
+
+val win32 : bool
+(** True if [Sys.os_type = "Win32"].
+    @since 4.01.0 *)
+
+val cygwin : bool
+(** True if [Sys.os_type = "Cygwin"].
+    @since 4.01.0 *)
+
 val word_size : int
 (** Size of one word on the machine currently executing the OCaml
    program, in bits: 32 or 64. *)
@@ -103,7 +113,7 @@ val max_array_length : int
 type signal_behavior =
     Signal_default
   | Signal_ignore
-  | Signal_handle of (int -> unit)
+  | Signal_handle of (int -> unit)   (** *)
 (** What to do when receiving a signal:
    - [Signal_default]: take the default behavior
      (usually: abort the program)

@@ -18,7 +18,7 @@ type variant =
   | VString of string
   | VList of variant list
   | VPair of variant * variant
- 
+
 let rec variantize: type t. t ty -> t -> variant =
   fun ty x ->
     (* type t is abstract here *)
@@ -31,9 +31,9 @@ let rec variantize: type t. t ty -> t -> variant =
     | Pair (ty1, ty2) ->
         VPair (variantize ty1 (fst x), variantize ty2 (snd x))
         (* t = ('a, 'b) for some 'a and 'b *)
- 
+
 exception VariantMismatch
- 
+
 let rec devariantize: type t. t ty -> variant -> t =
   fun ty v ->
     match ty, v with
@@ -54,16 +54,16 @@ type 'a ty =
   | List: 'a ty -> 'a list ty
   | Pair: ('a ty * 'b ty) -> ('a * 'b) ty
   | Record: 'a record -> 'a ty
- 
+
 and 'a record =
     {
      path: string;
      fields: 'a field_ list;
     }
- 
+
 and 'a field_ =
   | Field: ('a, 'b) field -> 'a field_
- 
+
 and ('a, 'b) field =
     {
      label: string;
@@ -98,7 +98,7 @@ let rec variantize: type t. t ty -> t -> variant =
           (List.map (fun (Field{field_type; label; get}) ->
                        (label, variantize field_type (get x))) fields)
 ;;
- 
+
 (* Extraction *)
 
 type 'a ty =
@@ -107,7 +107,7 @@ type 'a ty =
   | List: 'a ty -> 'a list ty
   | Pair: ('a ty * 'b ty) -> ('a * 'b) ty
   | Record: ('a, 'builder) record -> 'a ty
- 
+
 and ('a, 'builder) record =
     {
      path: string;
@@ -115,10 +115,10 @@ and ('a, 'builder) record =
      create_builder: (unit -> 'builder);
      of_builder: ('builder -> 'a);
     }
- 
+
 and ('a, 'builder) field =
   | Field: ('a, 'builder, 'b) field_ -> ('a, 'builder) field
- 
+
 and ('a, 'builder, 'b) field_ =
   {
    label: string;
@@ -126,7 +126,7 @@ and ('a, 'builder, 'b) field_ =
    get: ('a -> 'b);
    set: ('builder -> 'b -> unit);
   }
- 
+
 let rec devariantize: type t. t ty -> variant -> t =
   fun ty v ->
     match ty, v with
@@ -154,7 +154,7 @@ type my_record  =
      a: int;
      b: string list;
     }
- 
+
 let my_record =
   let fields =
     [

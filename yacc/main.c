@@ -12,8 +12,6 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
-/* $Id: main.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #include <signal.h>
 #include <string.h>
 #include "defs.h"
@@ -331,7 +329,7 @@ void create_file_names(void)
     if (action_fd == -1)
         open_error(action_file_name);
     entry_fd = mkstemp(entry_file_name);
-    if (entry_fd == -1)                 
+    if (entry_fd == -1)
         open_error(entry_file_name);
     text_fd = mkstemp(text_file_name);
     if (text_fd == -1)

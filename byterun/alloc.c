@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: alloc.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* 1. Allocation functions doing the same work as the macros in the
       case where [Setup_for_gc] and [Restore_after_gc] are no-ops.
    2. Convenience functions related to allocation.

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: includecore.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Inclusion checks for the core language *)
 
 open Typedtree

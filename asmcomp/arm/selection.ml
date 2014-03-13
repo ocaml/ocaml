@@ -11,22 +11,18 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Instruction selection for the ARM processor *)
 
 open Arch
+open Proc
 open Cmm
 open Mach
-open Misc
-open Proc
-open Reg
 
 let is_offset chunk n =
   match chunk with
-  (* VFPv3 load/store have -1020 to 1020 *)
+  (* VFPv{2,3} load/store have -1020 to 1020 *)
     Single | Double | Double_u
-    when !fpu >= VFPv3_D16 ->
+    when !fpu >= VFPv2 ->
       n >= -1020 && n <= 1020
   (* ARM load/store byte/word have -4095 to 4095 *)
   | Byte_unsigned | Byte_signed
@@ -61,7 +57,7 @@ let pseudoregs_for_operation op arg res =
   (* Soft-float Iabsf and Inegf: arg.(0) and res.(0) must be the same *)
   | Iabsf | Inegf when !fpu = Soft ->
       ([|res.(0); arg.(1)|], res)
-  (* VFPv3 Imuladdf...Inegmulsubf: arg.(0) and res.(0) must be the same *)
+  (* VFPv{2,3} Imuladdf...Inegmulsubf: arg.(0) and res.(0) must be the same *)
   | Ispecific(Imuladdf | Inegmuladdf | Imulsubf | Inegmulsubf) ->
       let arg' = Array.copy arg in
       arg'.(0) <- res.(0);
@@ -95,7 +91,12 @@ method is_immediate n =
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
-  | Cop(Cextcall("sqrt", _, _, _), args) when !fpu >= VFPv3_D16 ->
+  | Cop(Cextcall("sqrt", _, _, _), args) when !fpu >= VFPv2 ->
+      List.for_all self#is_simple_expr args
+  (* inlined byte-swap ops are simple if their arguments are *)
+  | Cop(Cextcall("caml_bswap16_direct", _, _, _), args) when !arch >= ARMv6T2 ->
+      List.for_all self#is_simple_expr args
+  | Cop(Cextcall("caml_int32_direct_bswap", _,_,_), args) when !arch >= ARMv6 ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
@@ -173,14 +174,20 @@ method! select_operation op args =
   | (Cdivi, args) ->
       (Iextcall("__aeabi_idiv", false), args)
   | (Cmodi, [arg; Cconst_int n])
-    when n = 1 lsl Misc.log2 n ->
+    when n > 1 && n = 1 lsl Misc.log2 n ->
       (Iintop_imm(Imod, n), [arg])
   | (Cmodi, args) ->
       (* See above for fix up of return register *)
       (Iextcall("__aeabi_idivmod", false), args)
+  (* Recognize 16-bit bswap instruction (ARMv6T2 because we need movt) *)
+  | (Cextcall("caml_bswap16_direct", _, _, _), args) when !arch >= ARMv6T2 ->
+      (Ispecific(Ibswap 16), args)
+  (* Recognize 32-bit bswap instructions (ARMv6 and above) *)
+  | (Cextcall("caml_int32_direct_bswap", _, _, _), args) when !arch >= ARMv6 ->
+      (Ispecific(Ibswap 32), args)
   (* Turn floating-point operations into runtime ABI calls for softfp *)
   | (op, args) when !fpu = Soft -> self#select_operation_softfp op args
-  (* Select operations for VFPv3 *)
+  (* Select operations for VFPv{2,3} *)
   | (op, args) -> self#select_operation_vfpv3 op args
 
 method private select_operation_softfp op args =

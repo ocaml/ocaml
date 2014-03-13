@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: headernt.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 #define STRICT
 #define WIN32_LEAN_AND_MEAN
 
@@ -157,7 +155,8 @@ void __declspec(noreturn) __cdecl headerentry()
     DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
     WriteFile(errh, truename, strlen(truename), &numwritten, NULL);
-    WriteFile(errh, msg_and_length(" not found or is not a bytecode executable file\r\n"),
+    WriteFile(errh, msg_and_length(" not found or is not a bytecode"
+                                   " executable file\r\n"),
               &numwritten, NULL);
     ExitProcess(2);
 #if _MSC_VER >= 1200

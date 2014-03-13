@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: typemod.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 open Misc
 open Longident
 open Path
@@ -40,7 +38,7 @@ type error =
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
 
-exception Error of Location.t * error
+exception Error of Location.t * Env.t * error
 
 open Typedtree
 
@@ -57,19 +55,19 @@ let rec path_concat head p =
 let extract_sig env loc mty =
   match Mtype.scrape env mty with
     Mty_signature sg -> sg
-  | _ -> raise(Error(loc, Signature_expected))
+  | _ -> raise(Error(loc, env, Signature_expected))
 
 let extract_sig_open env loc mty =
   match Mtype.scrape env mty with
     Mty_signature sg -> sg
-  | _ -> raise(Error(loc, Structure_expected mty))
+  | _ -> raise(Error(loc, env, Structure_expected mty))
 
 (* Compute the environment after opening a module *)
 
-let type_open ?toplevel env loc lid =
+let type_open ?toplevel ovf env loc lid =
   let (path, mty) = Typetexp.find_module env loc lid.txt in
   let sg = extract_sig_open env loc mty in
-  path, Env.open_signature ~loc ?toplevel path sg env
+  path, Env.open_signature ~loc ?toplevel ovf path sg env
 
 (* Record a module type *)
 let rm node =
@@ -89,12 +87,13 @@ let rec add_rec_types env = function
       add_rec_types (Env.add_type id decl env) rem
   | _ -> env
 
-let check_type_decl env id row_id newdecl decl rs rem =
+let check_type_decl env loc id row_id newdecl decl rs rem =
   let env = Env.add_type id newdecl env in
   let env =
     match row_id with None -> env | Some id -> Env.add_type id newdecl env in
   let env = if rs = Trec_not then env else add_rec_types env rem in
-  Includemod.type_declarations env id newdecl decl
+  Includemod.type_declarations env id newdecl decl;
+  Typedecl.check_coherence env loc id newdecl
 
 let rec make_params n = function
     [] -> []
@@ -116,12 +115,16 @@ let sig_item desc typ env loc = {
   Typedtree.sig_desc = desc; sig_loc = loc; sig_env = env
 }
 
+let make p n i =
+  let open Variance in
+  set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
+
 let merge_constraint initial_env loc  sg lid constr =
   let real_id = ref None in
   let rec merge env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
-        raise(Error(loc, With_no_component lid.txt))
+        raise(Error(loc, env, With_no_component lid.txt))
     | (Sig_type(id, decl, rs) :: rem, [s],
        Pwith_type ({ptype_kind = Ptype_abstract} as sdecl))
       when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
@@ -133,16 +136,16 @@ let merge_constraint initial_env loc  sg lid constr =
             type_private = Private;
             type_manifest = None;
             type_variance =
-              List.map (fun (c,n) -> (not n, not c, not c))
+              List.map (fun (c,n) -> make (not n) (not c) false)
               sdecl.ptype_variance;
-            type_loc = Location.none;
-	    type_newtype_level = None }
+            type_loc = sdecl.ptype_loc;
+            type_newtype_level = None }
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let tdecl = Typedecl.transl_with_constraint
                         initial_env id (Some(Pident id_row)) decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
         (Pident id, lid, Twith_type tdecl),
@@ -152,7 +155,7 @@ let merge_constraint initial_env loc  sg lid constr =
         let tdecl =
           Typedecl.transl_with_constraint initial_env id None decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         (Pident id, lid, Twith_type tdecl), Sig_type(id, newdecl, rs) :: rem
     | (Sig_type(id, decl, rs) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
@@ -163,7 +166,7 @@ let merge_constraint initial_env loc  sg lid constr =
         let tdecl =
           Typedecl.transl_with_constraint initial_env id None decl sdecl in
         let newdecl = tdecl.typ_type in
-        check_type_decl env id row_id newdecl decl rs rem;
+        check_type_decl env sdecl.ptype_loc id row_id newdecl decl rs rem;
         real_id := Some id;
         (Pident id, lid, Twith_typesubst tdecl),
         make_next_first rs rem
@@ -216,7 +219,8 @@ let merge_constraint initial_env loc  sg lid constr =
               ) params sdecl.ptype_params;
               lid
           | _ -> raise Exit
-          with Exit -> raise (Error (sdecl.ptype_loc, With_need_typeconstr))
+          with Exit ->
+            raise(Error(sdecl.ptype_loc, initial_env, With_need_typeconstr))
         in
         let (path, _) =
           try Env.lookup_type lid.txt initial_env with Not_found -> assert false
@@ -234,7 +238,7 @@ let merge_constraint initial_env loc  sg lid constr =
     in
     (tcstr, sg)
   with Includemod.Error explanation ->
-    raise(Error(loc, With_mismatch(lid.txt, explanation)))
+    raise(Error(loc, initial_env, With_mismatch(lid.txt, explanation)))
 
 (* Add recursion flags on declarations arising from a mutually recursive
    block. *)
@@ -244,11 +248,14 @@ let map_rec fn decls rem =
   | [] -> rem
   | d1 :: dl -> fn Trec_first d1 :: map_end (fn Trec_next) dl rem
 
+let map_rec' = map_rec
+(*
 let rec map_rec' fn decls rem =
   match decls with
   | (id,_ as d1) :: dl when Btype.is_row_name (Ident.name id) ->
       fn Trec_not d1 :: map_rec' fn dl rem
   | _ -> map_rec fn decls rem
+*)
 
 let rec map_rec'' fn decls rem =
   match decls with
@@ -308,8 +315,8 @@ and approx_sig env ssg =
           let info = approx_modtype_info env sinfo in
           let (id, newenv) = Env.enter_modtype name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
-      | Psig_open lid ->
-          let (path, mty) = type_open env item.psig_loc lid in
+      | Psig_open (ovf, lid) ->
+          let (path, mty) = type_open ovf env item.psig_loc lid in
           approx_sig mty srem
       | Psig_include smty ->
           let mty = approx_modtype env smty in
@@ -354,11 +361,12 @@ let check_recmod_typedecls env sdecls decls =
 
 (* Auxiliaries for checking uniqueness of names in signatures and structures *)
 
-module StringSet = Set.Make(struct type t = string let compare = compare end)
+module StringSet =
+  Set.Make(struct type t = string let compare (x:t) y = compare x y end)
 
 let check cl loc set_ref name =
   if StringSet.mem name !set_ref
-  then raise(Error(loc, Repeated_name(cl, name)))
+  then raise(Error(loc, Env.empty, Repeated_name(cl, name)))
   else set_ref := StringSet.add name !set_ref
 
 let check_sig_item type_names module_names modtype_names loc = function
@@ -446,7 +454,7 @@ and transl_signature env sg =
     match sg with
       [] -> [], [], env
     | item :: srem ->
-	let loc = item.psig_loc in
+        let loc = item.psig_loc in
         match item.psig_desc with
         | Psig_value(name, sdesc) ->
             let tdesc = Typedecl.transl_value_decl env item.psig_loc sdesc in
@@ -506,10 +514,11 @@ and transl_signature env sg =
             mksig (Tsig_modtype (id, name, tinfo)) env loc :: trem,
             Sig_modtype(id, info) :: rem,
             final_env
-        | Psig_open lid ->
-            let (path, newenv) = type_open env item.psig_loc lid in
+        | Psig_open (ovf, lid) ->
+            let (path, newenv) = type_open ovf env item.psig_loc lid in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_open (path,lid)) env loc :: trem, rem, final_env
+            mksig (Tsig_open (ovf, path,lid)) env loc :: trem,
+            rem, final_env
         | Psig_include smty ->
             let tmty = transl_modtype env smty in
             let mty = tmty.mty_type in
@@ -533,9 +542,9 @@ and transl_signature env sg =
             mksig (Tsig_class
                      (List.map2
                         (fun pcl tcl ->
-		          let (_, _, _, _, _, _, _, _, _, _, _, tcl) = tcl in
+                          let (_, _, _, _, _, _, _, _, _, _, _, tcl) = tcl in
                           tcl)
-			cl classes)) env loc
+                        cl classes)) env loc
             :: trem,
             List.flatten
               (map_rec
@@ -554,9 +563,9 @@ and transl_signature env sg =
             let (classes, newenv) = Typeclass.class_type_declarations env cl in
             let (trem,rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_class_type (List.map2 (fun pcl tcl ->
-	      let (_, _, _, _, _, _, _, tcl) = tcl in
-	      tcl
-	    ) cl classes)) env loc :: trem,
+              let (_, _, _, _, _, _, _, tcl) = tcl in
+              tcl
+            ) cl classes)) env loc :: trem,
             List.flatten
               (map_rec
                  (fun rs (i, _, d, i', d', i'', d'', _) ->
@@ -594,11 +603,27 @@ and transl_recmodule_modtypes loc env sdecls =
     List.map2
       (fun (_,smty) (id,id_loc,mty) -> (id, id_loc, transl_modtype env_c smty))
       sdecls curr in
+  let ids = List.map (fun (name, _) -> Ident.create name.txt) sdecls in
+  let approx_env =
+    (*
+       cf #5965
+       We use a dummy module type in order to detect a reference to one
+       of the module being defined during the call to approx_modtype.
+       It will be detected in Env.lookup_module.
+    *)
+    List.fold_left
+      (fun env id ->
+         let dummy = Mty_ident (Path.Pident (Ident.create "#recmod#")) in
+         Env.add_module id dummy env
+      )
+      env ids
+  in
   let init =
-    List.map
-      (fun (name, smty) ->
-        (Ident.create name.txt, name, approx_modtype env smty))
-      sdecls in
+    List.map2
+      (fun id (name, smty) ->
+         (id, name, approx_modtype approx_env smty))
+      ids sdecls
+  in
   let env0 = make_env init in
   let dcl1 = transition env0 init in
   let env1 = make_env2 dcl1 in
@@ -643,11 +668,11 @@ let check_nongen_scheme env str =
       List.iter
         (fun (pat, exp) ->
           if not (Ctype.closed_schema exp.exp_type) then
-            raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
+            raise(Error(exp.exp_loc, env, Non_generalizable exp.exp_type)))
         pat_exp_list
   | Tstr_module(id, _, md) ->
       if not (closed_modtype md.mod_type) then
-        raise(Error(md.mod_loc, Non_generalizable_module md.mod_type))
+        raise(Error(md.mod_loc, env, Non_generalizable_module md.mod_type))
   | _ -> ()
 
 let check_nongen_schemes env str =
@@ -763,7 +788,7 @@ let check_recmodule_inclusion env bindings =
           try
             Includemod.modtypes env mty_actual' mty_decl'
           with Includemod.Error msg ->
-            raise(Error(modl.mod_loc, Not_included msg)) in
+            raise(Error(modl.mod_loc, env, Not_included msg)) in
         let modl' =
             { mod_desc = Tmod_constraint(modl, mty_decl.mty_type,
                 Tmodtype_explicit mty_decl, coercion);
@@ -808,27 +833,23 @@ let modtype_of_package env loc p nl tl =
         (List.combine (List.map Longident.flatten nl) tl)
   | _ ->
       if nl = [] then Mty_ident p
-      else raise(Error(loc, Signature_expected))
+      else raise(Error(loc, env, Signature_expected))
   with Not_found ->
-    raise(Typetexp.Error(loc, Typetexp.Unbound_modtype (Ctype.lid_of_path p)))
+    let error = Typetexp.Unbound_modtype (Ctype.lid_of_path p) in
+    raise(Typetexp.Error(loc, env, error))
 
 let wrap_constraint env arg mty explicit =
   let coercion =
     try
       Includemod.modtypes env arg.mod_type mty
     with Includemod.Error msg ->
-      raise(Error(arg.mod_loc, Not_included msg)) in
+      raise(Error(arg.mod_loc, env, Not_included msg)) in
   { mod_desc = Tmod_constraint(arg, mty, explicit, coercion);
     mod_type = mty;
     mod_env = env;
     mod_loc = arg.mod_loc }
 
 (* Type a module value expression *)
-
-let mkstr desc loc env =
-  let str = { str_desc = desc; str_loc = loc; str_env = env } in
-  Cmt_format.add_saved_type (Cmt_format.Partial_structure_item str);
-  str
 
 let rec type_module sttn funct_body anchor env smod =
   match smod.pmod_desc with
@@ -864,7 +885,7 @@ let rec type_module sttn funct_body anchor env smod =
             try
               Includemod.modtypes env arg.mod_type mty_param
             with Includemod.Error msg ->
-              raise(Error(sarg.pmod_loc, Not_included msg)) in
+              raise(Error(sarg.pmod_loc, env, Not_included msg)) in
           let mty_appl =
             match path with
               Some path ->
@@ -875,7 +896,7 @@ let rec type_module sttn funct_body anchor env smod =
                   Mtype.nondep_supertype
                     (Env.add_module param arg.mod_type env) param mty_res
                 with Not_found ->
-                  raise(Error(smod.pmod_loc,
+                  raise(Error(smod.pmod_loc, env,
                               Cannot_eliminate_dependency mty_functor))
           in
           rm { mod_desc = Tmod_apply(funct, arg, coercion);
@@ -883,7 +904,7 @@ let rec type_module sttn funct_body anchor env smod =
                mod_env = env;
                mod_loc = smod.pmod_loc }
       | _ ->
-          raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
+          raise(Error(sfunct.pmod_loc, env, Cannot_apply funct.mod_type))
       end
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module true funct_body anchor env sarg in
@@ -893,7 +914,7 @@ let rec type_module sttn funct_body anchor env smod =
 
   | Pmod_unpack sexp ->
       if funct_body then
-        raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
+        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
       if !Clflags.principal then Ctype.begin_def ();
       let exp = Typecore.type_exp env sexp in
       if !Clflags.principal then begin
@@ -904,7 +925,7 @@ let rec type_module sttn funct_body anchor env smod =
         match Ctype.expand_head env exp.exp_type with
           {desc = Tpackage (p, nl, tl)} ->
             if List.exists (fun t -> Ctype.free_variables t <> []) tl then
-              raise (Error (smod.pmod_loc,
+              raise (Error (smod.pmod_loc, env,
                             Incomplete_packed_module exp.exp_type));
             if !Clflags.principal &&
               not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
@@ -914,9 +935,9 @@ let rec type_module sttn funct_body anchor env smod =
             modtype_of_package env smod.pmod_loc p nl tl
         | {desc = Tvar _} ->
             raise (Typecore.Error
-                     (smod.pmod_loc, Typecore.Cannot_infer_signature))
+                     (smod.pmod_loc, env, Typecore.Cannot_infer_signature))
         | _ ->
-            raise (Error (smod.pmod_loc, Not_a_packed_module exp.exp_type))
+            raise (Error(smod.pmod_loc, env, Not_a_packed_module exp.exp_type))
       in
       rm { mod_desc = Tmod_unpack(exp, mty);
            mod_type = mty;
@@ -928,19 +949,25 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
   let rec type_struct env sstr =
-    let mkstr desc loc = mkstr desc loc env in
+    let previous_saved_types = Cmt_format.get_saved_types () in
     Ctype.init_def(Ident.current_time());
     match sstr with
       [] ->
         ([], [], env)
       | pstr :: srem ->
-	  let loc = pstr.pstr_loc in
-	    match pstr.pstr_desc with
-	      | Pstr_eval sexpr ->
-		  let expr = Typecore.type_expression env sexpr in
-		  let (str_rem, sig_rem, final_env) = type_struct env srem in
-		    (mkstr (Tstr_eval expr) loc :: str_rem, sig_rem, final_env)
-	      | Pstr_value(rec_flag, sdefs) ->
+          let loc = pstr.pstr_loc in
+          let mk desc =
+            let str = { str_desc = desc; str_loc = loc; str_env = env } in
+            Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str :: previous_saved_types);
+            str
+          in
+            match pstr.pstr_desc with
+              | Pstr_eval sexpr ->
+                  let expr = Typecore.type_expression env sexpr in
+                  let item = mk (Tstr_eval expr) in
+                  let (str_rem, sig_rem, final_env) = type_struct env srem in
+                  (item :: str_rem, sig_rem, final_env)
+              | Pstr_value(rec_flag, sdefs) ->
         let scope =
           match rec_flag with
           | Recursive -> Some (Annot.Idef {scope with
@@ -954,47 +981,50 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         let (defs, newenv) =
           Typecore.type_binding env rec_flag sdefs scope in
+        let item = mk (Tstr_value(rec_flag, defs)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         let bound_idents = let_bound_idents defs in
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         let make_sig_value id =
           Sig_value(id, Env.find_value (Pident id) newenv) in
-        (mkstr (Tstr_value(rec_flag, defs)) loc :: str_rem,
+        (item :: str_rem,
          map_end make_sig_value bound_idents sig_rem,
          final_env)
     | Pstr_primitive(name, sdesc) ->
         let desc = Typedecl.transl_value_decl env loc sdesc in
         let (id, newenv) = Env.enter_value name.txt desc.val_val env
             ~check:(fun s -> Warnings.Unused_value_declaration s) in
+        let item = mk (Tstr_primitive(id, name, desc)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (mkstr (Tstr_primitive(id, name, desc)) loc :: str_rem,
-         Sig_value(id, desc.val_val) :: sig_rem,
-         final_env)
+        (item :: str_rem, Sig_value(id, desc.val_val) :: sig_rem, final_env)
     | Pstr_type sdecls ->
         List.iter
           (fun (name, decl) -> check "type" loc type_names name.txt)
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
+        let item = mk (Tstr_type decls) in
         let newenv' =
           enrich_type_decls anchor decls env newenv in
         let (str_rem, sig_rem, final_env) = type_struct newenv' srem in
-        (mkstr (Tstr_type decls) loc :: str_rem,
+        (item :: str_rem,
          map_rec'' (fun rs (id, _, info) -> Sig_type(id, info.typ_type, rs))
            decls sig_rem,
          final_env)
     | Pstr_exception(name, sarg) ->
         let arg = Typedecl.transl_exception env loc sarg in
         let (id, newenv) = Env.enter_exception name.txt arg.exn_exn env in
+        let item = mk (Tstr_exception(id, name, arg)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (mkstr (Tstr_exception(id, name, arg)) loc :: str_rem,
+        (item :: str_rem,
          Sig_exception(id, arg.exn_exn) :: sig_rem,
          final_env)
     | Pstr_exn_rebind(name, longid) ->
         let (path, arg) = Typedecl.transl_exn_rebind env loc longid.txt in
         let (id, newenv) = Env.enter_exception name.txt arg env in
+        let item = mk (Tstr_exn_rebind(id, name, path, longid)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (mkstr (Tstr_exn_rebind(id, name, path, longid)) loc :: str_rem,
+        (item :: str_rem,
          Sig_exception(id, arg) :: sig_rem,
          final_env)
     | Pstr_module(name, smodl) ->
@@ -1004,8 +1034,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             smodl in
         let mty = enrich_module_type anchor name.txt modl.mod_type env in
         let (id, newenv) = Env.enter_module name.txt mty env in
+        let item = mk (Tstr_module(id, name, modl)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (mkstr (Tstr_module(id, name, modl)) loc :: str_rem,
+        (item :: str_rem,
          Sig_module(id, modl.mod_type, Trec_not) :: sig_rem,
          final_env)
     | Pstr_recmodule sbind ->
@@ -1028,8 +1059,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
            decls sbind in
         let bindings2 =
           check_recmodule_inclusion newenv bindings1 in
+        let item = mk (Tstr_recmodule bindings2) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (mkstr (Tstr_recmodule bindings2) loc :: str_rem,
+        (item :: str_rem,
          map_rec (fun rs (id, _, _, modl) -> Sig_module(id, modl.mod_type, rs))
                  bindings2 sig_rem,
          final_env)
@@ -1038,24 +1070,27 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let mty = transl_modtype env smty in
         let (id, newenv) =
           Env.enter_modtype name.txt (Modtype_manifest mty.mty_type) env in
+        let item = mk (Tstr_modtype(id, name, mty)) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (mkstr (Tstr_modtype(id, name, mty)) loc :: str_rem,
+        (item :: str_rem,
          Sig_modtype(id, Modtype_manifest mty.mty_type) :: sig_rem,
          final_env)
-    | Pstr_open (lid) ->
-	let (path, newenv) = type_open ~toplevel env loc lid in
-	let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-	  (mkstr (Tstr_open (path, lid)) loc :: str_rem, sig_rem, final_env)
+    | Pstr_open (ovf, lid) ->
+        let (path, newenv) = type_open ovf ~toplevel env loc lid in
+        let item = mk (Tstr_open (ovf, path, lid)) in
+        let (str_rem, sig_rem, final_env) = type_struct newenv srem in
+        (item :: str_rem, sig_rem, final_env)
     | Pstr_class cl ->
          List.iter
            (fun {pci_name = name} -> check "type" loc type_names name.txt)
            cl;
         let (classes, new_env) = Typeclass.class_declarations env cl in
-        let (str_rem, sig_rem, final_env) = type_struct new_env srem in
-        (mkstr (Tstr_class
-           (List.map (fun (i, _, d, _,_,_,_,_,_, s, m, c) ->
-              let vf = if d.cty_new = None then Virtual else Concrete in
-              (* (i, s, m, c, vf) *) (c, m, vf)) classes)) loc ::
+        let item =
+          mk
+            (Tstr_class
+               (List.map (fun (i, _, d, _,_,_,_,_,_, s, m, c) ->
+                 let vf = if d.cty_new = None then Virtual else Concrete in
+                 (* (i, s, m, c, vf) *) (c, m, vf)) classes))
 (* TODO: check with Jacques why this is here
            Tstr_class_type
            (List.map (fun (_,_, i, d, _,_,_,_,_,_,c) -> (i, c)) classes) ::
@@ -1064,14 +1099,16 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
          Tstr_type
            (List.map (fun (_,_,_,_,_,_, i, d, _,_,_) -> (i, d)) classes) ::
 *)
-         str_rem,
+        in
+        let (str_rem, sig_rem, final_env) = type_struct new_env srem in
+        (item :: str_rem,
          List.flatten
            (map_rec
               (fun rs (i, _, d, i', d', i'', d'', i''', d''', _, _, _) ->
-                 [Sig_class(i, d, rs);
-                  Sig_class_type(i', d', rs);
-                  Sig_type(i'', d'', rs);
-                  Sig_type(i''', d''', rs)])
+                [Sig_class(i, d, rs);
+                 Sig_class_type(i', d', rs);
+                 Sig_type(i'', d'', rs);
+                 Sig_type(i''', d''', rs)])
               classes [sig_rem]),
          final_env)
     | Pstr_class_type cl ->
@@ -1079,16 +1116,19 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           (fun {pci_name = name} -> check "type" loc type_names name.txt)
           cl;
         let (classes, new_env) = Typeclass.class_type_declarations env cl in
-        let (str_rem, sig_rem, final_env) = type_struct new_env srem in
-        (mkstr (Tstr_class_type
-           (List.map (fun (i, i_loc, d, _, _, _, _, c) ->
-             (i, i_loc, c)) classes)) loc ::
+        let item =
+          mk
+            (Tstr_class_type
+               (List.map (fun (i, i_loc, d, _, _, _, _, c) ->
+                 (i, i_loc, c)) classes))
 (*  TODO: check with Jacques why this is here
        Tstr_type
            (List.map (fun (_, _, i, d, _, _) -> (i, d)) classes) ::
          Tstr_type
            (List.map (fun (_, _, _, _, i, d) -> (i, d)) classes) :: *)
-         str_rem,
+        in
+        let (str_rem, sig_rem, final_env) = type_struct new_env srem in
+        (item :: str_rem,
          List.flatten
            (map_rec
               (fun rs (i, _, d, i', d', i'', d'', _) ->
@@ -1105,8 +1145,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         List.iter
           (check_sig_item type_names module_names modtype_names loc) sg;
         let new_env = Env.add_signature sg env in
+        let item = mk (Tstr_include (modl, bound_value_identifiers sg)) in
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
-        (mkstr (Tstr_include (modl, bound_value_identifiers sg)) loc :: str_rem,
+        (item :: str_rem,
          sg @ sig_rem,
          final_env)
 (*>JOCAML *)
@@ -1119,15 +1160,17 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 	  Some (Annot.Idef {scope with Location.loc_start = start}) in
         let (defs, newenv) =
           Typecore.type_joindefinition env sdefs scope in
+        let item = mk (Tstr_def defs) in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         let bound_idents = Typedtree.def_bound_idents defs in
-        (mkstr (Tstr_def defs) loc :: str_rem,
+        (item :: str_rem,
          map_end (make_sig_channel_value newenv) bound_idents sig_rem,
          final_env)
     | Pstr_exn_global longid ->
         let path = Typedecl.transl_exn_global env loc longid.txt in
+        let item = mk (Tstr_exn_global (path,longid)) in
         let (str_rem, sig_rem, final_env) = type_struct env srem in
-        (mkstr (Tstr_exn_global (path,longid)) loc:: str_rem,
+        (item :: str_rem,
          sig_rem,
          final_env)
 (*<JOCAML *)
@@ -1209,7 +1252,7 @@ let type_module_type_of env smod =
   let mty = simplify_modtype mty in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype mty) then
-    raise(Error(smod.pmod_loc, Non_generalizable_module mty));
+    raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
   tmty, mty
 
 (* For Typecore *)
@@ -1252,7 +1295,8 @@ let type_package env m p nl tl =
   List.iter2
     (fun n ty ->
       try Ctype.unify env ty (Ctype.newvar ())
-      with Ctype.Unify _ -> raise (Error(m.pmod_loc, Scoping_pack (n,ty))))
+      with Ctype.Unify _ ->
+        raise (Error(m.pmod_loc, env, Scoping_pack (n,ty))))
     nl tl';
   (wrap_constraint env modl mty Tmodtype_implicit, tl')
 
@@ -1271,10 +1315,12 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.set_saved_types [];
   try
   Typecore.reset_delayed_checks ();
-  let (str, sg, finalenv) = type_structure initial_env ast Location.none in
+  let (str, sg, finalenv) =
+    type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
   if !Clflags.print_types then begin
-    fprintf std_formatter "%a@." Printtyp.signature simple_sg;
+    Printtyp.wrap_printing_env initial_env
+      (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =
@@ -1284,7 +1330,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         try
           find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
         with Not_found ->
-          raise(Error(Location.none, Interface_not_compiled sourceintf)) in
+          raise(Error(Location.in_file sourcefile, Env.empty,
+                      Interface_not_compiled sourceintf)) in
       let dclsig = Env.read_signature modulename intf_file in
       let coercion = Includemod.compunit sourcefile sg intf_file dclsig in
       Typecore.force_delayed_checks ();
@@ -1349,7 +1396,8 @@ let package_units objfiles cmifile modulename =
          let sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
             not(Mtype.no_code_needed_sig Env.initial sg)
-         then raise(Error(Location.none, Implementation_is_required f));
+         then raise(Error(Location.none, Env.empty,
+                          Implementation_is_required f));
          (modname, Env.read_signature modname (pref ^ ".cmi")))
       objfiles in
   (* Compute signature of packaged unit *)
@@ -1360,7 +1408,8 @@ let package_units objfiles cmifile modulename =
   let mlifile = prefix ^ !Config.interface_suffix in
   if Sys.file_exists mlifile then begin
     if not (Sys.file_exists cmifile) then begin
-      raise(Error(Location.in_file mlifile, Interface_not_compiled mlifile))
+      raise(Error(Location.in_file mlifile, Env.empty,
+                  Interface_not_compiled mlifile))
     end;
     let dclsig = Env.read_signature modulename cmifile in
     Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
@@ -1461,3 +1510,6 @@ let report_error ppf = function
         "The type %a in this module cannot be exported.@ " longident lid;
       fprintf ppf
         "Its type contains local dependencies:@ %a" type_expr ty
+
+let report_error env ppf err =
+  Printtyp.wrap_printing_env env (fun () -> report_error ppf err)

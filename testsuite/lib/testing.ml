@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Testing auxilliaries. *)
 
 open Scanf;;
@@ -30,7 +28,7 @@ at_exit finish;;
 let test_num = ref (-1);;
 
 let print_test_number () =
-  print_int !test_num; print_string " "; flush stdout;;
+  print_string " "; print_int !test_num; flush stdout;;
 
 let next_test () =
   incr test_num;
@@ -93,4 +91,3 @@ let any_failure_test = test_raises_some_failure;;
 
 let scan_failure_test f x =
   test_raises_exc_p (function Scan_failure _ -> true | _ -> false) f x;;
-

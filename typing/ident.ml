@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: ident.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 open Format
 
 type t = { stamp: int; name: string; mutable flags: int }
@@ -172,19 +170,43 @@ let rec find_name name = function
       else
         find_name name (if c < 0 then l else r)
 
-let rec keys_aux stack accu = function
+let rec get_all = function
+  | None -> []
+  | Some k -> k.data :: get_all k.previous
+
+let rec find_all name = function
+    Empty ->
+      []
+  | Node(l, k, r, _) ->
+      let c = compare name k.ident.name in
+      if c = 0 then
+        k.data :: get_all k.previous
+      else
+        find_all name (if c < 0 then l else r)
+
+let rec fold_aux f stack accu = function
     Empty ->
       begin match stack with
         [] -> accu
-      | a :: l -> keys_aux l accu a
+      | a :: l -> fold_aux f l accu a
       end
   | Node(l, k, r, _) ->
-      keys_aux (l :: stack) (k.ident :: accu) r
+      fold_aux f (l :: stack) (f k accu) r
 
-let keys tbl = keys_aux [] [] tbl
+let fold_name f tbl accu = fold_aux (fun k -> f k.ident k.data) [] accu tbl
 
-let rec map f = function
-  | Empty -> Empty
-  | Node (l, k, r, h) ->
-      Node (map f l, { k with data = f k.data ; }, map f r, h)
+let rec fold_data f d accu =
+  match d with
+    None -> accu
+  | Some k -> f k.ident k.data (fold_data f k.previous accu)
+
+let fold_all f tbl accu =
+  fold_aux (fun k -> fold_data f (Some k)) [] accu tbl
+
+(* let keys tbl = fold_name (fun k _ accu -> k::accu) tbl [] *)
+
+let rec iter f = function
+    Empty -> ()
+  | Node(l, k, r, _) ->
+      iter f l; f k.ident k.data; iter f r
 

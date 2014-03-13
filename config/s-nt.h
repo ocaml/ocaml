@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: s-nt.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Operating system dependencies, Intel x86 processors, Windows NT */
 
 #define OCAML_OS_TYPE "Win32"

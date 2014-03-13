@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: cmm.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Second intermediate language (machine independent) *)
 
 type machtype_component =

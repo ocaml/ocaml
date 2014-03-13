@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: st_stubs.c 12959 2012-09-27 13:12:51Z maranget $ */
-
 #include "alloc.h"
 #include "backtrace.h"
 #include "callback.h"
@@ -279,7 +277,7 @@ static uintnat caml_thread_stack_usage(void)
     sz += (value *) th->top_of_stack - (value *) th->bottom_of_stack;
 #else
     sz += th->stack_high - th->sp;
-#endif    
+#endif
   }
   if (prev_stack_usage_hook != NULL)
     sz += prev_stack_usage_hook();
@@ -306,7 +304,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->exit_buf = NULL;
 #else
   /* Allocate the stacks */
-  th->stack_low = (value *) stat_alloc(Thread_stack_size);
+  th->stack_low = (value *) caml_stat_alloc(Thread_stack_size);
   th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
   th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
   th->sp = th->stack_high;
@@ -408,7 +406,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   st_tls_newkey(&last_channel_locked_key);
   /* Set up a thread info block for the current thread */
   curr_thread =
-    (caml_thread_t) stat_alloc(sizeof(struct caml_thread_struct));
+    (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
   curr_thread->descr = caml_thread_new_descriptor(Val_unit);
   curr_thread->next = curr_thread;
   curr_thread->prev = curr_thread;
@@ -501,7 +499,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 #endif
   /* The thread now stops running */
   return 0;
-}  
+}
 
 CAMLprim value caml_thread_new(value clos)          /* ML */
 {
@@ -525,7 +523,7 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
     caml_thread_remove_info(th);
     st_check_error(err, "Thread.create");
   }
-  /* Create the tick thread if not already done.  
+  /* Create the tick thread if not already done.
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process*/
   if (! caml_tick_thread_running) {
@@ -581,7 +579,7 @@ CAMLexport int caml_c_thread_register(void)
   return 1;
 }
 
-/* Unregister a thread that was created from C and registered with 
+/* Unregister a thread that was created from C and registered with
    the function above */
 
 CAMLexport int caml_c_thread_unregister(void)

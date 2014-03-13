@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: signals.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* To determine the semantics of signal handlers
    (System V: signal is reset to default behavior on entrance to the handler
     BSD: signal handler remains active). */

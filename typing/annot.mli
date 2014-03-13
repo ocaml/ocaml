@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: annot.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Data types for annotations (Stypes.ml) *)
 
 type call = Tail | Stack | Inline;;

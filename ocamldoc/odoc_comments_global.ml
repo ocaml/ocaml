@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: odoc_comments_global.ml 10519 2010-06-04 19:19:34Z maranget $ *)
 
 (** The global variables used by the special comment parser.*)
 
@@ -47,5 +46,3 @@ let init () =
   raised_exceptions := [];
   return_value := None ;
   customs := []
-
-(* eof $Id: odoc_comments_global.ml 10519 2010-06-04 19:19:34Z maranget $ *)

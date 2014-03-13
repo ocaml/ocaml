@@ -10,8 +10,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: ia64.S 12858 2012-08-10 14:45:51Z maranget $ */
-
 #define ST8OFF(a,b,d) st8 [a] = b, d
 #define LD8OFF(a,b,d) ld8 a = [b], d
 #define STFDOFF(a,b,d) stfd [a] = b, d

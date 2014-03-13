@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: typemod.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Type-checking of the module language *)
 
 open Types
@@ -63,6 +61,6 @@ type error =
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
 
-exception Error of Location.t * error
+exception Error of Location.t * Env.t * error
 
-val report_error: formatter -> error -> unit
+val report_error: Env.t -> formatter -> error -> unit

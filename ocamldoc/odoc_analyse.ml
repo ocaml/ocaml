@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id$ *)
 
 (** Analysis of source files. This module is strongly inspired from
     driver/main.ml :-) *)
@@ -45,8 +44,9 @@ let initial_env () =
 let preprocess sourcefile =
   try
     Pparse.preprocess sourcefile
-  with Pparse.Error ->
-    Printf.eprintf "Preprocessing error\n";
+  with Pparse.Error err ->
+    Format.eprintf "Preprocessing error@.%a@."
+      Pparse.report_error err;
     exit 2
 
 let (++) x f = f x
@@ -64,7 +64,7 @@ let process_implementation_file ppf sourcefile =
     let parsetree = Pparse.file Format.err_formatter inputfile Parse.implementation ast_impl_magic_number in
     let typedtree =
       Typemod.type_implementation
-	sourcefile prefixname modulename env parsetree
+        sourcefile prefixname modulename env parsetree
     in
     (Some (parsetree, typedtree), inputfile)
   with
@@ -124,24 +124,24 @@ let process_error exn =
       fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
        have the same hash value." l l'
-  | Typecore.Error(loc, err) ->
-      Location.print_error ppf loc; Typecore.report_error ppf err
-  | Typetexp.Error(loc, err) ->
-      Location.print_error ppf loc; Typetexp.report_error ppf err
+  | Typecore.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typecore.report_error env ppf err
+  | Typetexp.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typetexp.report_error env ppf err
   | Typedecl.Error(loc, err) ->
       Location.print_error ppf loc; Typedecl.report_error ppf err
   | Includemod.Error err ->
       Location.print_error_cur_file ppf;
       Includemod.report_error ppf err
-  | Typemod.Error(loc, err) ->
-      Location.print_error ppf loc; Typemod.report_error ppf err
+  | Typemod.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typemod.report_error env ppf err
   | Translcore.Error(loc, err) ->
       Location.print_error ppf loc; Translcore.report_error ppf err
   | Sys_error msg ->
       Location.print_error_cur_file ppf;
       fprintf ppf "I/O error: %s" msg
-  | Typeclass.Error(loc, err) ->
-      Location.print_error ppf loc; Typeclass.report_error ppf err
+  | Typeclass.Error(loc, env, err) ->
+      Location.print_error ppf loc; Typeclass.report_error env ppf err
   | Translclass.Error(loc, err) ->
       Location.print_error ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->
@@ -233,7 +233,11 @@ let process_file ppf sourcefile =
       Location.input_name := file;
       try
         let mod_name =
-          String.capitalize (Filename.basename (Filename.chop_extension file))
+          let s =
+            try Filename.chop_extension file
+            with _ -> file
+          in
+          String.capitalize (Filename.basename s)
         in
         let txt =
           try Odoc_text.Texter.text_of_string (Odoc_misc.input_file_as_string file)
@@ -251,7 +255,7 @@ let process_file ppf sourcefile =
               [Odoc_module.Element_module_comment txt] ;
             Odoc_module.m_loc =
               { Odoc_types.loc_impl = None ;
-                Odoc_types.loc_inter = Some (file, 0) } ;
+                Odoc_types.loc_inter = Some (Location.in_file file) } ;
             Odoc_module.m_top_deps = [] ;
             Odoc_module.m_code = None ;
             Odoc_module.m_code_intf = None ;

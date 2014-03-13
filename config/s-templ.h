@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: s-templ.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Operating system and standard library dependencies. */
 
 /* 0. Operating system type string. */

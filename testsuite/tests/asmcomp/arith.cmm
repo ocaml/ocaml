@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: arith.cmm 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Regression test for arithmetic instructions *)
 
 (function "testarith" ()
@@ -217,6 +215,3 @@
       (floataset d 38 (absf f))
 
 )))))))
-
-
-

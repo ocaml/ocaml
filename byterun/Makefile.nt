@@ -11,8 +11,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: Makefile.nt 12858 2012-08-10 14:45:51Z maranget $
-
 include Makefile.common
 
 CFLAGS=-DOCAML_STDLIB_DIR='"$(LIBDIR)"' $(IFLEXDIR)
@@ -22,10 +20,12 @@ OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O) main.$(O)
 DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
 
 ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
-	$(MKEXE) -o ocamlrun$(EXE) prims.$(O) $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrun.$(A)
+	$(MKEXE) -o ocamlrun$(EXE) prims.$(O) $(call SYSLIB,ws2_32) \
+	         $(EXTRALIBS) libcamlrun.$(A)
 
 ocamlrund$(EXE): libcamlrund.$(A) prims.$(O) main.$(O)
-	$(MKEXE) -o ocamlrun$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrund.$(A)
+	$(MKEXE) -o ocamlrun$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) \
+	         $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrund.$(A)
 
 libcamlrun.$(A): $(OBJS)
 	$(call MKLIB,libcamlrun.$(A),$(OBJS))
@@ -44,11 +44,13 @@ libcamlrund.$(A): $(DOBJS)
 
 .depend.nt: .depend
 	rm -f .depend.win32
-	echo "win32.o: win32.c fail.h compatibility.h misc.h config.h \\" >> .depend.win32
-	echo " ../config/m.h ../config/s.h mlvalues.h memory.h gc.h \\" >> .depend.win32
-	echo " major_gc.h freelist.h minor_gc.h osdeps.h signals.h" >> .depend.win32
+	echo "win32.o: win32.c fail.h compatibility.h \\" >> .depend.win32
+	echo " misc.h config.h ../config/m.h ../config/s.h \\" >> .depend.win32
+	echo " mlvalues.h memory.h gc.h major_gc.h \\" >> .depend.win32
+	echo " freelist.h minor_gc.h osdeps.h signals.h" >> .depend.win32
 	cat .depend >> .depend.win32
-	sed -e '/\.d\.o/q' -e 's/^\(.*\)\.o:/\1.$$(O) \1.$$(DBGO):/' .depend.win32 > .depend.nt
+	sed -e '/\.d\.o/q' -e 's/^\(.*\)\.o:/\1.$$(O) \1.$$(DBGO):/' \
+	    .depend.win32 > .depend.nt
 	rm -f .depend.win32
 
 include .depend.nt

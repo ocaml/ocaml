@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: bytesections.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Handling of sections in bytecode executable files *)
 
 (* List of all sections, in reverse order *)

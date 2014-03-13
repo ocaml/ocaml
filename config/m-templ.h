@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: m-templ.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Processor dependencies */
 
 #define ARCH_SIXTYFOUR

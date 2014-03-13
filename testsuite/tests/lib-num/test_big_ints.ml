@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 open Test;;
 open Nat;;
 open Big_int;;
@@ -56,52 +68,52 @@ testing_function "add_big_int";;
 test 1
 eq_big_int (add_big_int zero_big_int zero_big_int, zero_big_int);;
 test 2
-eq_big_int (add_big_int zero_big_int (big_int_of_int 1), 
+eq_big_int (add_big_int zero_big_int (big_int_of_int 1),
             big_int_of_int 1);;
 test 3
-eq_big_int (add_big_int (big_int_of_int 1) zero_big_int, 
+eq_big_int (add_big_int (big_int_of_int 1) zero_big_int,
             big_int_of_int 1);;
 test 4
-eq_big_int (add_big_int zero_big_int (big_int_of_int (-1)), 
+eq_big_int (add_big_int zero_big_int (big_int_of_int (-1)),
             big_int_of_int (-1));;
 test 5
-eq_big_int (add_big_int (big_int_of_int (-1)) zero_big_int, 
+eq_big_int (add_big_int (big_int_of_int (-1)) zero_big_int,
             big_int_of_int (-1));;
 test 6
-eq_big_int (add_big_int (big_int_of_int 1) (big_int_of_int 1), 
+eq_big_int (add_big_int (big_int_of_int 1) (big_int_of_int 1),
             big_int_of_int 2);;
 test 7
-eq_big_int (add_big_int (big_int_of_int 1) (big_int_of_int 2), 
+eq_big_int (add_big_int (big_int_of_int 1) (big_int_of_int 2),
             big_int_of_int 3);;
 test 8
-eq_big_int (add_big_int (big_int_of_int 2) (big_int_of_int 1), 
+eq_big_int (add_big_int (big_int_of_int 2) (big_int_of_int 1),
             big_int_of_int 3);;
 test 9
-eq_big_int (add_big_int (big_int_of_int (-1)) (big_int_of_int (-1)), 
+eq_big_int (add_big_int (big_int_of_int (-1)) (big_int_of_int (-1)),
             big_int_of_int (-2));;
 test 10
-eq_big_int (add_big_int (big_int_of_int (-1)) (big_int_of_int (-2)), 
+eq_big_int (add_big_int (big_int_of_int (-1)) (big_int_of_int (-2)),
             big_int_of_int (-3));;
 test 11
-eq_big_int (add_big_int (big_int_of_int (-2)) (big_int_of_int (-1)), 
+eq_big_int (add_big_int (big_int_of_int (-2)) (big_int_of_int (-1)),
             big_int_of_int (-3));;
 test 12
-eq_big_int (add_big_int (big_int_of_int 1) (big_int_of_int (-1)), 
+eq_big_int (add_big_int (big_int_of_int 1) (big_int_of_int (-1)),
             zero_big_int);;
 test 13
-eq_big_int (add_big_int (big_int_of_int (-1)) (big_int_of_int 1), 
+eq_big_int (add_big_int (big_int_of_int (-1)) (big_int_of_int 1),
             zero_big_int);;
 test 14
-eq_big_int (add_big_int (big_int_of_int 1) (big_int_of_int (-2)), 
+eq_big_int (add_big_int (big_int_of_int 1) (big_int_of_int (-2)),
             big_int_of_int (-1));;
 test 15
-eq_big_int (add_big_int (big_int_of_int (-2)) (big_int_of_int 1), 
+eq_big_int (add_big_int (big_int_of_int (-2)) (big_int_of_int 1),
             big_int_of_int (-1));;
 test 16
-eq_big_int (add_big_int (big_int_of_int (-1)) (big_int_of_int 2), 
+eq_big_int (add_big_int (big_int_of_int (-1)) (big_int_of_int 2),
             big_int_of_int 1);;
 test 17
-eq_big_int (add_big_int (big_int_of_int 2) (big_int_of_int (-1)), 
+eq_big_int (add_big_int (big_int_of_int 2) (big_int_of_int (-1)),
             big_int_of_int 1);;
 
 
@@ -110,52 +122,52 @@ testing_function "sub_big_int";;
 test 1
 eq_big_int (sub_big_int zero_big_int zero_big_int, zero_big_int);;
 test 2
-eq_big_int (sub_big_int zero_big_int (big_int_of_int 1), 
+eq_big_int (sub_big_int zero_big_int (big_int_of_int 1),
             big_int_of_int (-1));;
 test 3
-eq_big_int (sub_big_int (big_int_of_int 1) zero_big_int, 
+eq_big_int (sub_big_int (big_int_of_int 1) zero_big_int,
             big_int_of_int 1);;
 test 4
-eq_big_int (sub_big_int zero_big_int (big_int_of_int (-1)), 
+eq_big_int (sub_big_int zero_big_int (big_int_of_int (-1)),
             big_int_of_int 1);;
 test 5
-eq_big_int (sub_big_int (big_int_of_int (-1)) zero_big_int, 
+eq_big_int (sub_big_int (big_int_of_int (-1)) zero_big_int,
             big_int_of_int (-1));;
 test 6
-eq_big_int (sub_big_int (big_int_of_int 1) (big_int_of_int 1), 
+eq_big_int (sub_big_int (big_int_of_int 1) (big_int_of_int 1),
             zero_big_int);;
 test 7
-eq_big_int (sub_big_int (big_int_of_int 1) (big_int_of_int 2), 
+eq_big_int (sub_big_int (big_int_of_int 1) (big_int_of_int 2),
             big_int_of_int (-1));;
 test 8
-eq_big_int (sub_big_int (big_int_of_int 2) (big_int_of_int 1), 
+eq_big_int (sub_big_int (big_int_of_int 2) (big_int_of_int 1),
             big_int_of_int 1);;
 test 9
-eq_big_int (sub_big_int (big_int_of_int (-1)) (big_int_of_int (-1)), 
+eq_big_int (sub_big_int (big_int_of_int (-1)) (big_int_of_int (-1)),
             zero_big_int);;
 test 10
-eq_big_int (sub_big_int (big_int_of_int (-1)) (big_int_of_int (-2)), 
+eq_big_int (sub_big_int (big_int_of_int (-1)) (big_int_of_int (-2)),
             big_int_of_int 1);;
 test 11
-eq_big_int (sub_big_int (big_int_of_int (-2)) (big_int_of_int (-1)), 
+eq_big_int (sub_big_int (big_int_of_int (-2)) (big_int_of_int (-1)),
             big_int_of_int (-1));;
 test 12
-eq_big_int (sub_big_int (big_int_of_int 1) (big_int_of_int (-1)), 
+eq_big_int (sub_big_int (big_int_of_int 1) (big_int_of_int (-1)),
             big_int_of_int 2);;
 test 13
-eq_big_int (sub_big_int (big_int_of_int (-1)) (big_int_of_int 1), 
+eq_big_int (sub_big_int (big_int_of_int (-1)) (big_int_of_int 1),
             big_int_of_int (-2));;
 test 14
-eq_big_int (sub_big_int (big_int_of_int 1) (big_int_of_int (-2)), 
+eq_big_int (sub_big_int (big_int_of_int 1) (big_int_of_int (-2)),
             big_int_of_int 3);;
 test 15
-eq_big_int (sub_big_int (big_int_of_int (-2)) (big_int_of_int 1), 
+eq_big_int (sub_big_int (big_int_of_int (-2)) (big_int_of_int 1),
             big_int_of_int (-3));;
 test 16
-eq_big_int (sub_big_int (big_int_of_int (-1)) (big_int_of_int 2), 
+eq_big_int (sub_big_int (big_int_of_int (-1)) (big_int_of_int 2),
             big_int_of_int (-3));;
 test 17
-eq_big_int (sub_big_int (big_int_of_int 2) (big_int_of_int (-1)), 
+eq_big_int (sub_big_int (big_int_of_int 2) (big_int_of_int (-1)),
             big_int_of_int 3);;
 
 testing_function "mult_int_big_int";;
@@ -172,21 +184,21 @@ eq_big_int (mult_int_big_int 2 (big_int_of_int 3), big_int_of_int 6);;
 testing_function "mult_big_int";;
 
 test 1
-eq_big_int (mult_big_int zero_big_int zero_big_int, 
+eq_big_int (mult_big_int zero_big_int zero_big_int,
             zero_big_int);;
 test 2
-eq_big_int (mult_big_int (big_int_of_int 2) (big_int_of_int 3), 
+eq_big_int (mult_big_int (big_int_of_int 2) (big_int_of_int 3),
             big_int_of_int 6);;
 test 3
-eq_big_int (mult_big_int (big_int_of_int 2) (big_int_of_int (-3)), 
+eq_big_int (mult_big_int (big_int_of_int 2) (big_int_of_int (-3)),
             big_int_of_int (-6));;
-test 4 
-eq_big_int (mult_big_int (big_int_of_string "12724951") 
-                         (big_int_of_string "81749606400"), 
+test 4
+eq_big_int (mult_big_int (big_int_of_string "12724951")
+                         (big_int_of_string "81749606400"),
             big_int_of_string "1040259735709286400");;
-test 5 
-eq_big_int (mult_big_int (big_int_of_string "26542080") 
-                          (big_int_of_string "81749606400"), 
+test 5
+eq_big_int (mult_big_int (big_int_of_string "26542080")
+                          (big_int_of_string "81749606400"),
             big_int_of_string "2169804593037312000");;
 
 testing_function "quomod_big_int";;
@@ -201,14 +213,14 @@ let (quotient, modulo) =
  test 3 eq_big_int (quotient, big_int_of_int (-1)) &&
  test 4 eq_big_int (modulo, zero_big_int);;
 
-let (quotient, modulo) = 
+let (quotient, modulo) =
       quomod_big_int (big_int_of_int (-1)) (big_int_of_int 1) in
- test 5 eq_big_int (quotient, big_int_of_int (-1)) && 
+ test 5 eq_big_int (quotient, big_int_of_int (-1)) &&
  test 6 eq_big_int (modulo, zero_big_int);;
 
-let (quotient, modulo) = 
+let (quotient, modulo) =
       quomod_big_int (big_int_of_int 3) (big_int_of_int 2) in
- test 7 eq_big_int (quotient, big_int_of_int 1) && 
+ test 7 eq_big_int (quotient, big_int_of_int 1) &&
  test 8 eq_big_int (modulo, big_int_of_int 1);;
 
 let (quotient, modulo) =
@@ -221,12 +233,12 @@ let (quotient, modulo) =
  test 11 eq_big_int (quotient, big_int_of_int (-2)) &&
  test 12 eq_big_int (modulo, big_int_of_int 1);;
 
-let (quotient, modulo) = 
+let (quotient, modulo) =
       quomod_big_int (big_int_of_int 1) (big_int_of_int 2) in
- test 13 eq_big_int (quotient, zero_big_int) && 
+ test 13 eq_big_int (quotient, zero_big_int) &&
  test 14 eq_big_int (modulo, big_int_of_int 1);;
 
-let (quotient, modulo) = 
+let (quotient, modulo) =
       quomod_big_int (big_int_of_int (-1)) (big_int_of_int 3) in
  test 15 eq_big_int (quotient, minus_big_int unit_big_int) &&
  test 16 eq_big_int (modulo, big_int_of_int 2);;
@@ -236,22 +248,22 @@ failwith_test 17
 Division_by_zero
 ;;
 
-let (quotient, modulo) = 
+let (quotient, modulo) =
       quomod_big_int (big_int_of_int 10) (big_int_of_int 20) in
  test 18 eq_big_int (quotient, big_int_of_int 0) &&
  test 19 eq_big_int (modulo, big_int_of_int 10);;
 
-let (quotient, modulo) = 
+let (quotient, modulo) =
       quomod_big_int (big_int_of_int (-10)) (big_int_of_int 20) in
  test 20 eq_big_int (quotient, big_int_of_int (-1)) &&
  test 21 eq_big_int (modulo, big_int_of_int 10);;
 
-let (quotient, modulo) = 
+let (quotient, modulo) =
       quomod_big_int (big_int_of_int 10) (big_int_of_int (-20)) in
  test 22 eq_big_int (quotient, big_int_of_int 0) &&
  test 23 eq_big_int (modulo, big_int_of_int 10);;
 
-let (quotient, modulo) = 
+let (quotient, modulo) =
       quomod_big_int (big_int_of_int (-10)) (big_int_of_int (-20)) in
  test 24 eq_big_int (quotient, big_int_of_int 1) &&
  test 25 eq_big_int (modulo, big_int_of_int 10);;
@@ -260,28 +272,28 @@ let (quotient, modulo) =
 testing_function "gcd_big_int";;
 
 test 1
-eq_big_int (gcd_big_int zero_big_int zero_big_int, 
+eq_big_int (gcd_big_int zero_big_int zero_big_int,
             zero_big_int);;
 test 2
-eq_big_int (gcd_big_int zero_big_int (big_int_of_int 1), 
+eq_big_int (gcd_big_int zero_big_int (big_int_of_int 1),
             big_int_of_int 1);;
 test 3
-eq_big_int (gcd_big_int (big_int_of_int 1) zero_big_int, 
+eq_big_int (gcd_big_int (big_int_of_int 1) zero_big_int,
             big_int_of_int 1);;
 test 4
-eq_big_int (gcd_big_int (big_int_of_int 1) (big_int_of_int 2), 
+eq_big_int (gcd_big_int (big_int_of_int 1) (big_int_of_int 2),
             big_int_of_int 1);;
 test 5
-eq_big_int (gcd_big_int (big_int_of_int 2) (big_int_of_int 1), 
+eq_big_int (gcd_big_int (big_int_of_int 2) (big_int_of_int 1),
             big_int_of_int 1);;
 test 6
-eq_big_int (gcd_big_int (big_int_of_int 1) (big_int_of_int 1), 
+eq_big_int (gcd_big_int (big_int_of_int 1) (big_int_of_int 1),
             big_int_of_int 1);;
 test 7
-eq_big_int (gcd_big_int (big_int_of_int 9) (big_int_of_int 16), 
+eq_big_int (gcd_big_int (big_int_of_int 9) (big_int_of_int 16),
             big_int_of_int 1);;
 test 8
-eq_big_int (gcd_big_int (big_int_of_int 12) (big_int_of_int 16), 
+eq_big_int (gcd_big_int (big_int_of_int 12) (big_int_of_int 16),
             big_int_of_int 4);;
 
 for i = 9 to 28 do
@@ -404,7 +416,7 @@ let bi1 = big_int_of_string (implode (rev l)) in
 let bi2 = big_int_of_string (implode (rev ("3" :: tl l))) in
 
 test 10
-eq_big_int (bi1, (add_big_int (mult_big_int bi2 (big_int_of_string "10")) 
+eq_big_int (bi1, (add_big_int (mult_big_int bi2 (big_int_of_string "10"))
                               (big_int_of_string "2")))
 (* test 11
  &&
@@ -444,7 +456,7 @@ test 2
 eq_big_int (big_int_of_nat (power_base_int 10 8), big_int_of_int 100000000)
 ;;
 test 3
-eq_big_int (big_int_of_nat (power_base_int 2 (length_of_int + 2)), 
+eq_big_int (big_int_of_nat (power_base_int 2 (length_of_int + 2)),
             big_int_of_nat (let nat = make_nat 2 in
                               set_digit_nat nat 1 1;
                               nat))
@@ -920,8 +932,20 @@ test 5 eq_big_int
   (extract_big_int (big_int_of_int64 0x123456789ABCDEFL) 0 32,
    big_int_of_int64 2309737967L);;
 test 6 eq_big_int
-  (extract_big_int (big_int_of_int (-1)) 2048 254,
-   zero_big_int);;
+  (extract_big_int (big_int_of_int (-1)) 0 16,
+   big_int_of_int 0xFFFF);;
+test 7 eq_big_int
+  (extract_big_int (big_int_of_int (-1)) 1027 12,
+   big_int_of_int 0xFFF);;
+test 8 eq_big_int
+  (extract_big_int (big_int_of_int (-1234567)) 0 16,
+   big_int_of_int 10617);;
+test 9 eq_big_int
+  (extract_big_int (minus_big_int (power_int_positive_int 2 64)) 64 20,
+   big_int_of_int 0xFFFFF);;
+test 10 eq_big_int
+  (extract_big_int (pred_big_int (minus_big_int (power_int_positive_int 2 64))) 64 20,
+   big_int_of_int 0xFFFFE);;
 
 testing_function "hashing of big integers";;
 
@@ -933,12 +957,11 @@ test 3 eq_int (Hashtbl.hash (minus_big_int unit_big_int),
                161678167);;
 test 4 eq_int (Hashtbl.hash (big_int_of_string "123456789123456789"),
                755417385);;
-test 5 eq_int (Hashtbl.hash (sub_big_int 
+test 5 eq_int (Hashtbl.hash (sub_big_int
                                (big_int_of_string "123456789123456789")
                                (big_int_of_string "123456789123456789")),
                955772237);;
-test 6 eq_int (Hashtbl.hash (sub_big_int 
+test 6 eq_int (Hashtbl.hash (sub_big_int
                                (big_int_of_string "123456789123456789")
                                (big_int_of_string "123456789123456788")),
               992063522);;
-

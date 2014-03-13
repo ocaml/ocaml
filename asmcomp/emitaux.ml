@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: emitaux.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Common functions for emitting assembly code *)
 
 open Debuginfo
@@ -111,42 +109,6 @@ let emit_float32_directive directive f =
   let x = Int32.bits_of_float (float_of_string f) in
   emit_printf "\t%s\t0x%lx\n" directive x
 
-(* Emit debug information *)
-
-(* This assoc list is expected to be very short *)
-let file_pos_nums =
-  (ref [] : (string * int) list ref)
-
-(* Number of files *)
-let file_pos_num_cnt = ref 1
-
-(* Reset debug state at beginning of asm file *)
-let reset_debug_info () =
-  file_pos_nums := [];
-  file_pos_num_cnt := 1
-
-(* We only diplay .file if the file has not been seen before. We
-   display .loc for every instruction. *)
-let emit_debug_info dbg =
-  if !Clflags.debug && not (Debuginfo.is_none dbg) then (
-    let line = dbg.Debuginfo.dinfo_line in
-    assert (line <> 0); (* clang errors out on zero line numbers *)
-    let file_name = dbg.Debuginfo.dinfo_file in
-    let file_num =
-      try List.assoc file_name !file_pos_nums
-      with Not_found ->
-        let file_num = !file_pos_num_cnt in
-        incr file_pos_num_cnt;
-        emit_string "	.file	";
-        emit_int file_num; emit_char '	';
-        emit_string_literal file_name; emit_char '\n';
-        file_pos_nums := (file_name,file_num) :: !file_pos_nums;
-        file_num in
-    emit_string "	.loc	";
-    emit_int file_num; emit_char '	';
-    emit_int line; emit_char '\n'
-  )
-
 (* Record live pointers at call points *)
 
 type frame_descr =
@@ -228,15 +190,52 @@ let is_cfi_enabled () =
 
 let cfi_startproc () =
   if is_cfi_enabled () then
-    emit_string "	.cfi_startproc\n"
+    emit_string "\t.cfi_startproc\n"
 
 let cfi_endproc () =
   if is_cfi_enabled () then
-    emit_string "	.cfi_endproc\n"
+    emit_string "\t.cfi_endproc\n"
 
 let cfi_adjust_cfa_offset n =
   if is_cfi_enabled () then
   begin
-    emit_string "	.cfi_adjust_cfa_offset	"; emit_int n; emit_string "\n";
+    emit_string "\t.cfi_adjust_cfa_offset\t"; emit_int n; emit_string "\n";
   end
 
+(* Emit debug information *)
+
+(* This assoc list is expected to be very short *)
+let file_pos_nums =
+  (ref [] : (string * int) list ref)
+
+(* Number of files *)
+let file_pos_num_cnt = ref 1
+
+(* Reset debug state at beginning of asm file *)
+let reset_debug_info () =
+  file_pos_nums := [];
+  file_pos_num_cnt := 1
+
+(* We only diplay .file if the file has not been seen before. We
+   display .loc for every instruction. *)
+let emit_debug_info dbg =
+  if is_cfi_enabled () &&
+    (!Clflags.debug || Config.with_frame_pointers)
+     && not (Debuginfo.is_none dbg) then begin
+    let line = dbg.Debuginfo.dinfo_line in
+    assert (line <> 0); (* clang errors out on zero line numbers *)
+    let file_name = dbg.Debuginfo.dinfo_file in
+    let file_num =
+      try List.assoc file_name !file_pos_nums
+      with Not_found ->
+        let file_num = !file_pos_num_cnt in
+        incr file_pos_num_cnt;
+        emit_string "\t.file\t";
+        emit_int file_num; emit_char '\t';
+        emit_string_literal file_name; emit_char '\n';
+        file_pos_nums := (file_name,file_num) :: !file_pos_nums;
+        file_num in
+    emit_string "\t.loc\t";
+    emit_int file_num; emit_char '\t';
+    emit_int line; emit_char '\n'
+  end

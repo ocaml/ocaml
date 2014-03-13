@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: unix.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* An alternate implementation of the Unix module from ../unix
    which is safe in conjunction with bytecode threads. *)
 

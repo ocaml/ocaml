@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: cvt_emit.mll 12858 2012-08-10 14:45:51Z maranget $ *)
-
 {
 let first_item = ref false
 let command_beginning = ref 0
@@ -59,7 +57,8 @@ and command = parse
           command lexbuf }
   | ( [^ '`' '{' '\\'] |
       '\\' ['\\' '"' 'n' 't' 'b' 'r' '`' '{' ] |
-      '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] ) +
+      '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] |
+      '\\' ('\n' | "\r\n")) +
         { let s = Lexing.lexeme lexbuf in
           add_semicolon();
           (* Optimise one-character strings *)

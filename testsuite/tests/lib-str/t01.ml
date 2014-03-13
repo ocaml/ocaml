@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 open Printf
 
 let build_result ngroups input =
@@ -34,7 +46,7 @@ let start_test msg =
 let num_failures = ref 0
 
 let test res1 res2 =
-  if res1 = res2 
+  if res1 = res2
   then print_char '.'
   else begin print_string " FAIL "; incr num_failures end
 
@@ -743,7 +755,7 @@ let automated_test() =
   test (Str.split_delim (Str.regexp "[ \t]+") " si non e vero\t")
        [""; "si"; "non"; "e"; "vero"; ""];
   test (Str.full_split (Str.regexp "[ \t]+") " si non\te vero\t")
-       [Str.Delim " "; Str.Text "si"; 
+       [Str.Delim " "; Str.Text "si";
         Str.Delim " "; Str.Text "non";
         Str.Delim "\t"; Str.Text "e";
         Str.Delim " "; Str.Text "vero"; Str.Delim "\t"];
@@ -752,7 +764,7 @@ let automated_test() =
   (* See "REX: XML Shallow Parsing with Regular Expressions",
      Robert D. Cameron, Simon Fraser University, CMPT TR 1998-17. *)
   start_test "XML tokenization";
-  begin 
+  begin
     let _TextSE = "[^<]+" in
     let _UntilHyphen = "[^-]*-" in
     let _Until2Hyphens = _UntilHyphen ^ "\\([^-]" ^ _UntilHyphen ^ "\\)*-" in

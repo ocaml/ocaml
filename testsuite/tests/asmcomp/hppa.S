@@ -10,7 +10,6 @@
 ;*                                                                   *
 ;*********************************************************************
 
-; $Id: hppa.S 12858 2012-08-10 14:45:51Z maranget $
 ; Must be preprocessed by cpp
 
 #ifdef SYS_hpux
@@ -32,13 +31,13 @@
 #endif
 
 #ifdef SYS_hpux
-	.space $PRIVATE$
-	.subspa $DATA$,quad=1,align=8,access=31
-	.subspa $BSS$,quad=1,align=8,access=31,zero,sort=82
-	.space $TEXT$
-	.subspa $LIT$,quad=0,align=8,access=44
-	.subspa $CODE$,quad=0,align=8,access=44,code_only
-	.import $global$, data
+        .space $PRIVATE$
+        .subspa $DATA$,quad=1,align=8,access=31
+        .subspa $BSS$,quad=1,align=8,access=31,zero,sort=82
+        .space $TEXT$
+        .subspa $LIT$,quad=0,align=8,access=44
+        .subspa $CODE$,quad=0,align=8,access=44,code_only
+        .import $global$, data
         .import $$dyncall, millicode
 #endif
 
@@ -47,8 +46,8 @@
         EXPORT_CODE(G(call_gen_code))
 G(call_gen_code):
         STARTPROC
-	stw     %r2,-20(%r30)
-        ldo	256(%r30), %r30
+        stw     %r2,-20(%r30)
+        ldo     256(%r30), %r30
 ; Save the callee-save registers
         ldo     -32(%r30), %r1
         stws,ma %r3, -4(%r1)
@@ -67,26 +66,26 @@ G(call_gen_code):
         stws,ma %r16, -4(%r1)
         stws,ma %r17, -4(%r1)
         stws,ma %r18, -4(%r1)
-	fstds,ma %fr12, -8(%r1)
-	fstds,ma %fr13, -8(%r1)
-	fstds,ma %fr14, -8(%r1)
-	fstds,ma %fr15, -8(%r1)
-	fstds,ma %fr16, -8(%r1)
-	fstds,ma %fr17, -8(%r1)
-	fstds,ma %fr18, -8(%r1)
-	fstds,ma %fr19, -8(%r1)
-	fstds,ma %fr20, -8(%r1)
-	fstds,ma %fr21, -8(%r1)
-	fstds,ma %fr22, -8(%r1)
-	fstds,ma %fr23, -8(%r1)
-	fstds,ma %fr24, -8(%r1)
-	fstds,ma %fr25, -8(%r1)
-	fstds,ma %fr26, -8(%r1)
-	fstds,ma %fr27, -8(%r1)
-	fstds,ma %fr28, -8(%r1)
-	fstds,ma %fr29, -8(%r1)
-	fstds,ma %fr30, -8(%r1)
-	fstds,ma %fr31, -8(%r1)
+        fstds,ma %fr12, -8(%r1)
+        fstds,ma %fr13, -8(%r1)
+        fstds,ma %fr14, -8(%r1)
+        fstds,ma %fr15, -8(%r1)
+        fstds,ma %fr16, -8(%r1)
+        fstds,ma %fr17, -8(%r1)
+        fstds,ma %fr18, -8(%r1)
+        fstds,ma %fr19, -8(%r1)
+        fstds,ma %fr20, -8(%r1)
+        fstds,ma %fr21, -8(%r1)
+        fstds,ma %fr22, -8(%r1)
+        fstds,ma %fr23, -8(%r1)
+        fstds,ma %fr24, -8(%r1)
+        fstds,ma %fr25, -8(%r1)
+        fstds,ma %fr26, -8(%r1)
+        fstds,ma %fr27, -8(%r1)
+        fstds,ma %fr28, -8(%r1)
+        fstds,ma %fr29, -8(%r1)
+        fstds,ma %fr30, -8(%r1)
+        fstds,ma %fr31, -8(%r1)
 
 ; Shuffle the arguments and call
         copy    %r26, %r22
@@ -121,42 +120,42 @@ G(call_gen_code):
         ldws,ma -4(%r1), %r16
         ldws,ma -4(%r1), %r17
         ldws,ma -4(%r1), %r18
-	fldds,ma -8(%r1), %fr12
-	fldds,ma -8(%r1), %fr13
-	fldds,ma -8(%r1), %fr14
-	fldds,ma -8(%r1), %fr15
-	fldds,ma -8(%r1), %fr16
-	fldds,ma -8(%r1), %fr17
-	fldds,ma -8(%r1), %fr18
-	fldds,ma -8(%r1), %fr19
-	fldds,ma -8(%r1), %fr20
-	fldds,ma -8(%r1), %fr21
-	fldds,ma -8(%r1), %fr22
-	fldds,ma -8(%r1), %fr23
-	fldds,ma -8(%r1), %fr24
-	fldds,ma -8(%r1), %fr25
-	fldds,ma -8(%r1), %fr26
-	fldds,ma -8(%r1), %fr27
-	fldds,ma -8(%r1), %fr28
-	fldds,ma -8(%r1), %fr29
-	fldds,ma -8(%r1), %fr30
-	fldds,ma -8(%r1), %fr31
+        fldds,ma -8(%r1), %fr12
+        fldds,ma -8(%r1), %fr13
+        fldds,ma -8(%r1), %fr14
+        fldds,ma -8(%r1), %fr15
+        fldds,ma -8(%r1), %fr16
+        fldds,ma -8(%r1), %fr17
+        fldds,ma -8(%r1), %fr18
+        fldds,ma -8(%r1), %fr19
+        fldds,ma -8(%r1), %fr20
+        fldds,ma -8(%r1), %fr21
+        fldds,ma -8(%r1), %fr22
+        fldds,ma -8(%r1), %fr23
+        fldds,ma -8(%r1), %fr24
+        fldds,ma -8(%r1), %fr25
+        fldds,ma -8(%r1), %fr26
+        fldds,ma -8(%r1), %fr27
+        fldds,ma -8(%r1), %fr28
+        fldds,ma -8(%r1), %fr29
+        fldds,ma -8(%r1), %fr30
+        fldds,ma -8(%r1), %fr31
 
-        ldo	-256(%r30), %r30
-	ldw     -20(%r30), %r2
+        ldo     -256(%r30), %r30
+        ldw     -20(%r30), %r2
         bv      0(%r2)
         nop
         ENDPROC
 
-	.align	CODE_ALIGN
-	EXPORT_CODE(caml_c_call)
+        .align  CODE_ALIGN
+        EXPORT_CODE(caml_c_call)
 G(caml_c_call):
         STARTPROC
 #ifdef SYS_hpux
         bl $$dyncall, %r0
         nop
 #else
-        bv	0(%r22)
+        bv      0(%r22)
         nop
 #endif
         ENDPROC

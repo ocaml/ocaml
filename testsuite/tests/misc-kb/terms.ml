@@ -10,11 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: terms.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (****************** Term manipulations *****************)
 
-type term = 
+type term =
     Var of int
   | Term of string * term list
 
@@ -22,7 +20,7 @@ let rec union l1 l2 =
   match l1 with
     []   -> l2
   | a::r -> if List.mem a l2 then union r l2 else a :: union r l2
-  
+
 
 let rec vars = function
     Var n -> [n]
@@ -73,7 +71,7 @@ let matching term1 term2 =
 
 (* A naive unification algorithm. *)
 
-let compsubst subst1 subst2 = 
+let compsubst subst1 subst2 =
   (List.map (fun (v,t) -> (v, substitute subst1 t)) subst2) @ subst1
 
 
@@ -133,5 +131,3 @@ and pretty_close = function
         pretty_term m
   | m ->
       pretty_term m
-
-

@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: sys.c 12959 2012-09-27 13:12:51Z maranget $ */
-
 /* Basic system calls */
 
 #include <errno.h>
@@ -334,6 +332,35 @@ CAMLprim value caml_sys_random_seed (value unit)
   res = caml_alloc_small(n, 0);
   for (i = 0; i < n; i++) Field(res, i) = Val_long(data[i]);
   return res;
+}
+
+CAMLprim value caml_sys_const_big_endian(value unit)
+{
+#ifdef ARCH_BIG_ENDIAN
+  return Val_true;
+#else
+  return Val_false;
+#endif
+}
+
+CAMLprim value caml_sys_const_word_size(value unit)
+{
+  return Val_long(8 * sizeof(value));
+}
+
+CAMLprim value caml_sys_const_ostype_unix(value unit)
+{
+  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Unix"));
+}
+
+CAMLprim value caml_sys_const_ostype_win32(value unit)
+{
+  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Win32"));
+}
+
+CAMLprim value caml_sys_const_ostype_cygwin(value unit)
+{
+  return Val_long(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
 }
 
 CAMLprim value caml_sys_get_config(value unit)

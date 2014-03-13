@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: set.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Sets over ordered types *)
 
 module type OrderedType =
@@ -49,6 +47,7 @@ module type S =
     val max_elt: t -> elt
     val choose: t -> elt
     val split: elt -> t -> t * bool * t
+    val find: elt -> t -> elt
   end
 
 module Make(Ord: OrderedType) =
@@ -350,4 +349,10 @@ module Make(Ord: OrderedType) =
 
     let choose = min_elt
 
+    let rec find x = function
+        Empty -> raise Not_found
+      | Node(l, v, r, _) ->
+          let c = Ord.compare x v in
+          if c = 0 then v
+          else find x (if c < 0 then l else r)
   end

@@ -75,3 +75,6 @@ BUG REPORTS AND USER FEEDBACK:
 
 Please report bugs by contacting the implementors at jocaml-devel@inria.fr
 
+To be effective, bug reports should include a complete program
+(preferably small) that exhibits the unexpected behavior, and the
+configuration you are using (machine type, etc).

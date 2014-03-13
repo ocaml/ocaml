@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: includeclass.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Inclusion checks for the class language *)
 
 open Types
@@ -49,36 +47,35 @@ let include_err ppf =
   | CM_Parameter_arity_mismatch (ls, lp) ->
       fprintf ppf
         "The classes do not have the same number of type parameters"
-  | CM_Type_parameter_mismatch trace ->
-      fprintf ppf "@[%a@]"
-      (Printtyp.unification_error false trace
+  | CM_Type_parameter_mismatch (env, trace) ->
+      Printtyp.report_unification_error ppf env ~unif:false trace
         (function ppf ->
-          fprintf ppf "A type parameter has type"))
-        (function ppf ->
-          fprintf ppf "but is expected to have type")
-  | CM_Class_type_mismatch (cty1, cty2) ->
-      fprintf ppf
-       "@[The class type@;<1 2>%a@ is not matched by the class type@;<1 2>%a@]"
-       Printtyp.class_type cty1 Printtyp.class_type cty2
-  | CM_Parameter_mismatch trace ->
-      fprintf ppf "@[%a@]"
-      (Printtyp.unification_error false trace
-        (function ppf ->
-          fprintf ppf "A parameter has type"))
+          fprintf ppf "A type parameter has type")
         (function ppf ->
           fprintf ppf "but is expected to have type")
-  | CM_Val_type_mismatch (lab, trace) ->
-      fprintf ppf "@[%a@]"
-      (Printtyp.unification_error false trace
+  | CM_Class_type_mismatch (env, cty1, cty2) ->
+      Printtyp.wrap_printing_env env (fun () ->
+        fprintf ppf
+          "@[The class type@;<1 2>%a@ %s@;<1 2>%a@]"
+          Printtyp.class_type cty1
+          "is not matched by the class type"
+          Printtyp.class_type cty2)
+  | CM_Parameter_mismatch (env, trace) ->
+      Printtyp.report_unification_error ppf env ~unif:false trace
         (function ppf ->
-          fprintf ppf "The instance variable %s@ has type" lab))
+          fprintf ppf "A parameter has type")
         (function ppf ->
           fprintf ppf "but is expected to have type")
-  | CM_Meth_type_mismatch (lab, trace) ->
-      fprintf ppf "@[%a@]"
-      (Printtyp.unification_error false trace
+  | CM_Val_type_mismatch (lab, env, trace) ->
+      Printtyp.report_unification_error ppf env ~unif:false trace
         (function ppf ->
-          fprintf ppf "The method %s@ has type" lab))
+          fprintf ppf "The instance variable %s@ has type" lab)
+        (function ppf ->
+          fprintf ppf "but is expected to have type")
+  | CM_Meth_type_mismatch (lab, env, trace) ->
+      Printtyp.report_unification_error ppf env ~unif:false trace
+        (function ppf ->
+          fprintf ppf "The method %s@ has type" lab)
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Non_mutable_value lab ->

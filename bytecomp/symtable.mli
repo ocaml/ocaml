@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: symtable.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Assign locations and numbers to globals and primitives *)
 
 open Cmo_format
@@ -20,6 +18,7 @@ open Cmo_format
 
 val init: unit -> unit
 val patch_object: string -> (reloc_info * int) list -> unit
+val ls_patch_object: Misc.LongString.t -> (reloc_info * int) list -> unit
 val require_primitive: string -> unit
 val initial_global_table: unit -> Obj.t array
 val output_global_map: out_channel -> unit

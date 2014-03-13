@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*      Olivier Andrieu, base sur du code de Maxence Guesdon           *)
@@ -9,16 +10,14 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_texi.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Generation of Texinfo documentation. *)
 
-open Odoc_info 
+open Odoc_info
 open Parameter
 open Value
 open Type
 open Exception
-open Class 
+open Class
 open Module
 
 let esc_8bits = ref false
@@ -29,19 +28,19 @@ let info_entry = ref []
 
 (** {2 Some small helper functions} *)
 
-let puts_nl chan s = 
+let puts_nl chan s =
   output_string chan s ;
   output_char chan '\n'
-let puts chan s = 
+let puts chan s =
   output_string chan s
-let nl chan = 
+let nl chan =
   output_char chan '\n'
 
 let is = function
   | None -> false
   | Some _ -> true
 
-let pad_to n s = 
+let pad_to n s =
   let len = String.length s in
   if len < n
   then
@@ -49,28 +48,28 @@ let pad_to n s =
     String.blit s 0 s' 0 len ; s'
   else s
 
-let indent nb_sp s = 
+let indent nb_sp s =
   let c = ref 0 in
   let len = pred (String.length s) in
   for i = 0 to len do if s.[i] = '\n' then incr c done ;
   let s' = String.make (succ len + (succ !c) * nb_sp ) ' ' in
   c := nb_sp ;
-  for i = 0 to len do 
-    s'.[!c] <- s.[i] ; 
+  for i = 0 to len do
+    s'.[!c] <- s.[i] ;
     if s.[i] = '\n' then c := !c + nb_sp ;
     incr c
   done ;
   s'
 
-type subparts = [ 
+type subparts = [
   | `Module of Odoc_info.Module.t_module
   | `Module_type of Odoc_info.Module.t_module_type
   | `Class of Odoc_info.Class.t_class
   | `Class_type of Odoc_info.Class.t_class_type
   ]
 
-type menu_data = [ 
-  | subparts 
+type menu_data = [
+  | subparts
   | `Blank
   | `Comment of string
   | `Texi of string
@@ -79,22 +78,22 @@ type menu_data = [
 
 let nothing = Verbatim ""
 
-let module_subparts = 
+let module_subparts =
   let rec iter acc = function
     | [] -> List.rev acc
-    (* skip aliases *)    
-    | Element_module { m_kind = Module_alias _ } :: n -> 
+    (* skip aliases *)
+    | Element_module { m_kind = Module_alias _ } :: n ->
         iter acc n
-    | Element_module_type { mt_kind = Some (Module_type_alias _) } :: n -> 
+    | Element_module_type { mt_kind = Some (Module_type_alias _) } :: n ->
         iter acc n
     (* keep modules, module types, classes and class types *)
-    | Element_module m :: n -> 
-        iter (`Module m :: acc) n 
-    | Element_module_type mt :: n -> 
+    | Element_module m :: n ->
+        iter (`Module m :: acc) n
+    | Element_module_type mt :: n ->
         iter (`Module_type mt :: acc) n
-    | Element_class c :: n -> 
+    | Element_class c :: n ->
         iter (`Class c :: acc) n
-    | Element_class_type ct :: n -> 
+    | Element_class_type ct :: n ->
         iter (`Class_type ct :: acc) n
     (* forget the rest *)
     | _ :: n -> iter acc n
@@ -102,14 +101,14 @@ let module_subparts =
   iter []
 
 type indices = [
-  | `Type       
-  | `Exception  
-  | `Value      
-  | `Class_att  
-  | `Method     
-  | `Class      
-  | `Class_type 
-  | `Module     
+  | `Type
+  | `Exception
+  | `Value
+  | `Class_att
+  | `Method
+  | `Class
+  | `Class_type
+  | `Module
   | `Module_type
 ]
 
@@ -137,8 +136,8 @@ let indices_names = [
 
 
 
-(** Module for generating various Texinfo things (menus, xrefs, ...) *) 
-module Texi = 
+(** Module for generating various Texinfo things (menus, xrefs, ...) *)
+module Texi =
 struct
   (** Associations of strings to subsitute in Texinfo code. *)
   let subst_strings = [
@@ -149,64 +148,64 @@ struct
   ] @
     (if !esc_8bits
     then [
-    (Str.regexp "à", "@`a") ;
-    (Str.regexp "â", "@^a") ;
-    (Str.regexp "é", "@'e") ;
-    (Str.regexp "è", "@`e") ; 
-    (Str.regexp "ê", "@^e") ;
-    (Str.regexp "ë", "@\"e") ;
-    (Str.regexp "ç", "@,{c}") ;
-    (Str.regexp "ô", "@^o") ;
-    (Str.regexp "ö", "@\"o") ;
-    (Str.regexp "î", "@^i") ;
-    (Str.regexp "ï", "@\"i") ;
-    (Str.regexp "ù", "@`u") ;
-    (Str.regexp "û", "@^u") ;
-    (Str.regexp "æ", "@ae{}" ) ;
-    (Str.regexp "Æ", "@AE{}" ) ;
-    (Str.regexp "ß", "@ss{}" ) ;
-    (Str.regexp "©", "@copyright{}" ) ;
+    (Str.regexp "\xE0", "@`a") ;
+    (Str.regexp "\xE2", "@^a") ;
+    (Str.regexp "\xE9", "@'e") ;
+    (Str.regexp "\xE8", "@`e") ;
+    (Str.regexp "\xEA", "@^e") ;
+    (Str.regexp "\xEB", "@\"e") ;
+    (Str.regexp "\xF7", "@,{c}") ;
+    (Str.regexp "\xF4", "@^o") ;
+    (Str.regexp "\xF6", "@\"o") ;
+    (Str.regexp "\xEE", "@^i") ;
+    (Str.regexp "\xEF", "@\"i") ;
+    (Str.regexp "\xF9", "@`u") ;
+    (Str.regexp "\xFB", "@^u") ;
+    (Str.regexp "\xE6", "@ae{}" ) ;
+    (Str.regexp "\xC6", "@AE{}" ) ;
+    (Str.regexp "\xDF", "@ss{}" ) ;
+    (Str.regexp "\xA9", "@copyright{}" ) ;
     ]
     else [])
 
   (** Escape the strings which would clash with Texinfo syntax. *)
-  let escape s = 
+  let escape s =
     List.fold_left
       (fun acc (p, r) -> Str.global_replace p r acc)
       s subst_strings
 
   (** Removes dots (no good for a node name). *)
-  let fix_nodename s = 
+  let fix_nodename s =
     Str.global_replace (Str.regexp "\\.") "/" (escape s)
 
   (** Generates a Texinfo menu. *)
-  let generate_menu chan subpart_list = 
+  let generate_menu chan subpart_list =
     if subpart_list <> []
     then begin
-      let menu_line part_qual name = 
+      let menu_line part_qual name =
         let sname = Name.simple name in
         if sname = name
         then (
-          puts chan (pad_to 35 
+          puts chan (pad_to 35
                        ("* " ^ sname ^ ":: ")) ;
           puts_nl chan part_qual )
         else (
-          puts chan (pad_to 35 
+          puts chan (pad_to 35
                        ("* " ^ sname ^ ": " ^ (fix_nodename name) ^ ". " )) ;
           puts_nl chan part_qual )
       in
       puts_nl chan "@menu" ;
       List.iter
         (function
-        | `Module { m_name = name } -> 
+        | `Module { m_name = name } ->
             menu_line Odoc_messages.modul name
         | `Module_type { mt_name = name } ->
             menu_line Odoc_messages.module_type name
         | `Class { cl_name = name } ->
             menu_line Odoc_messages.clas name
         | `Class_type { clt_name = name } ->
-            menu_line Odoc_messages.class_type name 
-        | `Blank -> nl chan 
+            menu_line Odoc_messages.class_type name
+        | `Blank -> nl chan
         | `Comment c -> puts_nl chan (escape c)
         | `Texi t -> puts_nl chan t
         | `Index ind -> Printf.fprintf chan "* %s::\n" ind)
@@ -216,12 +215,12 @@ struct
 
   (** cross reference to node [name] *)
   let xref ?xname name =
-    "@xref{" ^ (fix_nodename name) ^ 
-    (match xname with | None -> "" | Some s -> "," ^ s) ^ 
+    "@xref{" ^ (fix_nodename name) ^
+    (match xname with | None -> "" | Some s -> "," ^ s) ^
     "}."
 
   (** enclose the string between [\@ifinfo] tags *)
-  let ifinfo s = 
+  let ifinfo s =
     String.concat "\n"
       [ "@ifinfo" ; s ; "@end ifinfo" ; "" ]
 
@@ -230,8 +229,8 @@ struct
     "@dircategory " ^ (escape sec)
 
   let direntry ent =
-    [ "@direntry" ] @ 
-      (List.map escape ent) @ 
+    [ "@direntry" ] @
+      (List.map escape ent) @
     [ "@end direntry" ]
 end
 
@@ -242,7 +241,7 @@ end
 (** {2 Generation of Texinfo code} *)
 
 (** This class generates Texinfo code from text structures *)
-class text = 
+class text =
   object(self)
 
   (** Associations between a title number and texinfo code. *)
@@ -253,7 +252,7 @@ class text =
       4, "@subsubsection " ;
     ]
 
-    val fallback_title = 
+    val fallback_title =
       "@unnumberedsubsubsec "
 
     val headings = [
@@ -261,24 +260,24 @@ class text =
       2, "@heading " ;
       3, "@subheading " ;
       4, "@subsubheading " ;
-    ] 
-  
-    val fallback_heading = 
-      "@subsubheading " 
+    ]
 
-    method escape = 
-      Texi.escape 
+    val fallback_heading =
+      "@subsubheading "
+
+    method escape =
+      Texi.escape
 
     (** this method is not used here but is virtual
         in a class we will inherit later *)
-    method label ?(no_ : bool option) (_ : string) : string = 
+    method label ?(no_ : bool option) (_ : string) : string =
       failwith "gni"
 
     (** Return the Texinfo code corresponding to the [text] parameter.*)
     method texi_of_text t =
       String.concat ""
         (List.map self#texi_of_text_element t)
-      
+
 
     (** {3 Conversion methods}
        [texi_of_????] converts a [text_element] to a Texinfo string. *)
@@ -304,9 +303,12 @@ class text =
       | Ref (name, kind, _) ->self#texi_of_Ref name kind
       | Superscript t -> self#texi_of_Superscript t
       | Subscript t -> self#texi_of_Subscript t
-      |	Odoc_info.Module_list _ -> ""
-      |	Odoc_info.Index_list -> ""
+      | Odoc_info.Module_list _ -> ""
+      | Odoc_info.Index_list -> ""
+      | Odoc_info.Custom (s,t) -> self#texi_of_custom_text s t
       | Odoc_info.Target (target, code) -> self#texi_of_Target ~target ~code
+
+    method texi_of_custom_text s t = ""
 
     method texi_of_Target ~target ~code =
       if String.lowercase target = "texi" then code else ""
@@ -314,30 +316,30 @@ class text =
     method texi_of_Verbatim s = s
     method texi_of_Raw s = self#escape s
     method texi_of_Code s = "@code{" ^ (self#escape s) ^ "}"
-    method texi_of_CodePre s = 
+    method texi_of_CodePre s =
       String.concat "\n"
         [ "" ;  "@example" ; self#escape s ; "@end example" ; "" ]
     method texi_of_Bold t = "@strong{" ^ (self#texi_of_text t) ^ "}"
     method texi_of_Italic t = "@i{" ^ (self#texi_of_text t) ^ "}"
     method texi_of_Emphasize t = "@emph{" ^ (self#texi_of_text t) ^ "}"
-    method texi_of_Center t = 
+    method texi_of_Center t =
       let sl = Str.split (Str.regexp "\n") (self#texi_of_text t) in
       String.concat ""
         ((List.map (fun s -> "\n@center "^s) sl) @ [ "\n" ])
     method texi_of_Left t =
-      String.concat "\n" 
-        [ "" ; "@flushleft" ; self#texi_of_text t ; "@end flushleft" ; "" ]
-    method texi_of_Right t = 
-      String.concat "\n" 
-        [ "" ; "@flushright" ; self#texi_of_text t ; "@end flushright"; "" ]
-    method texi_of_List tl = 
       String.concat "\n"
-        ( [ "" ; "@itemize" ] @ 
+        [ "" ; "@flushleft" ; self#texi_of_text t ; "@end flushleft" ; "" ]
+    method texi_of_Right t =
+      String.concat "\n"
+        [ "" ; "@flushright" ; self#texi_of_text t ; "@end flushright"; "" ]
+    method texi_of_List tl =
+      String.concat "\n"
+        ( [ "" ; "@itemize" ] @
           (List.map (fun t -> "@item\n" ^ (self#texi_of_text t)) tl) @
           [ "@end itemize"; "" ] )
-    method texi_of_Enum tl = 
+    method texi_of_Enum tl =
       String.concat "\n"
-        ( [ "" ; "@enumerate" ] @ 
+        ( [ "" ; "@enumerate" ] @
           (List.map (fun t -> "@item\n" ^ (self#texi_of_text t)) tl) @
           [ "@end enumerate"; "" ] )
     method texi_of_Newline = "\n"
@@ -345,23 +347,23 @@ class text =
       String.concat "\n"
         [ "@format" ; self#texi_of_text t ; "@end format" ; "" ]
     method texi_of_Title n t =
-      let t_begin = 
-        try List.assoc n titles 
+      let t_begin =
+        try List.assoc n titles
         with Not_found -> fallback_title in
       t_begin ^ (self#texi_of_text t) ^ "\n"
     method texi_of_Link s t =
       String.concat ""
         [ "@uref{" ; s ;  "," ; self#texi_of_text t ; "}" ]
     method texi_of_Ref name kind =
-      let xname = 
+      let xname =
         match kind with
-        | Some RK_module -> 
+        | Some RK_module ->
             Odoc_messages.modul ^ " " ^ (Name.simple name)
-        | Some RK_module_type -> 
+        | Some RK_module_type ->
             Odoc_messages.module_type ^ " " ^ (Name.simple name)
-        | Some RK_class -> 
+        | Some RK_class ->
             Odoc_messages.clas ^ " " ^ (Name.simple name)
-        | Some RK_class_type -> 
+        | Some RK_class_type ->
             Odoc_messages.class_type ^ " " ^ (Name.simple name)
         | _ -> ""
       in
@@ -372,13 +374,13 @@ class text =
       "_@{" ^ (self#texi_of_text t) ^ "@}"
 
     method heading n t =
-      let f = 
+      let f =
         try List.assoc n headings
         with Not_found -> fallback_heading
       in
       f ^ (self#texi_of_text t) ^ "\n"
 
-    method fixedblock t = 
+    method fixedblock t =
       Block ( ( Verbatim "@t{" :: t ) @ [ Verbatim "}" ] )
 
   end
@@ -410,11 +412,11 @@ class texi =
         don't do it, just link to the previous one *)
     val node_tbl = Hashtbl.create 37
 
-    method node depth name = 
+    method node depth name =
       if Hashtbl.mem node_tbl name
       then raise Aliased_node ;
       Hashtbl.add node_tbl name () ;
-      if depth <= maxdepth 
+      if depth <= maxdepth
       then Verbatim ("@node " ^ (Texi.fix_nodename name) ^ ",\n")
       else nothing
 
@@ -422,17 +424,17 @@ class texi =
       Verbatim
         (if !Global.with_index
         then (assert(List.mem ind indices_to_build) ;
-	      String.concat "" 
-		[ "@" ; indices ind ; "index " ; 
-		  Texi.escape (Name.simple ent) ; "\n" ])
+              String.concat ""
+                [ "@" ; indices ind ; "index " ;
+                  Texi.escape (Name.simple ent) ; "\n" ])
         else "")
-      
+
 
     (** Two hacks to fix linebreaks in the descriptions.*)
-    method private fix_linebreaks = 
+    method private fix_linebreaks =
       let re = Str.regexp "\n[ \t]*" in
       fun t ->
-        List.map 
+        List.map
           (function
             | Newline -> Raw "\n"
             | Raw s -> Raw (Str.global_replace re "\n" s)
@@ -440,7 +442,7 @@ class texi =
             | Enum tel -> Enum (List.map self#fix_linebreaks tel)
             | te -> te) t
 
-    method private soft_fix_linebreaks = 
+    method private soft_fix_linebreaks =
       let re = Str.regexp "\n[ \t]*" in
       fun ind t ->
         let rep = String.make (succ ind) ' ' in
@@ -457,16 +459,16 @@ class texi =
     method text_of_desc = function
       | None -> []
       | Some [ Raw "" ] -> []
-      | Some t -> (self#fix_linebreaks t) @ [ Newline ] 
+      | Some t -> (self#fix_linebreaks t) @ [ Newline ]
 
-    method text_of_sees_opt see_l = 
+    method text_of_sees_opt see_l =
       List.concat
         (List.map
            (function
              | (See_url s, t) ->
                  [ linebreak ; Bold [ Raw Odoc_messages.see_also ] ;
                    Raw " " ; Link (s, t) ; Newline ]
-             | (See_file s, t) 
+             | (See_file s, t)
              | (See_doc s, t)  ->
                  [ linebreak ; Bold [ Raw Odoc_messages.see_also ] ;
                    Raw " " ; Raw s ] @ t @ [ Newline ])
@@ -481,17 +483,17 @@ class texi =
         List.concat
           (List.map
              (fun (s, t) ->
-               [ linebreak ; 
+               [ linebreak ;
                  Bold [ Raw Odoc_messages.parameters ] ;
                  Raw " " ; Raw s ; Raw ": " ] @ t @ [ Newline ] )
              params_list)
 
     method! text_of_raised_exceptions = function
       | [] -> []
-      | (s, t) :: [] -> 
+      | (s, t) :: [] ->
           [ linebreak ;
             Bold [ Raw Odoc_messages.raises ] ;
-            Raw " " ; Code s ; Raw " " ]  
+            Raw " " ; Code s ; Raw " " ]
           @ t @ [ Newline ]
       | l ->
           [ linebreak ;
@@ -500,17 +502,17 @@ class texi =
             List
               (List.map
                  (fun (ex, desc) ->(Code ex) :: (Raw " ") :: desc ) l ) ;
-            Newline ] 
+            Newline ]
 
     method! text_of_return_opt = function
       | None -> []
-      | Some t -> 
+      | Some t ->
           (Bold [Raw Odoc_messages.returns ]) :: Raw " " :: t @ [ Newline ]
 
     method! text_of_custom c_l =
-      List.flatten 
-        (List.rev 
-           (List.fold_left 
+      List.flatten
+        (List.rev
+           (List.fold_left
               (fun acc -> fun (tag, text) ->
                 try
                   let f = List.assoc tag tag_functions in
@@ -523,22 +525,22 @@ class texi =
 
     method! text_of_info ?(block=false) = function
       | None -> []
-      | Some info -> 
-          let t = 
+      | Some info ->
+          let t =
             List.concat
                  [ ( match info.i_deprecated with
                  | None -> []
-                 | Some t -> 
-                     (Raw (Odoc_messages.deprecated ^ " ")) :: 
-                     (self#fix_linebreaks t) 
+                 | Some t ->
+                     (Raw (Odoc_messages.deprecated ^ " ")) ::
+                     (self#fix_linebreaks t)
                      @ [ Newline ; Newline ] ) ;
                    self#text_of_desc info.i_desc ;
-                   if info.i_authors <> [] 
+                   if info.i_authors <> []
                    then ( linebreak ::
                           self#text_of_author_list info.i_authors )
                    else [] ;
-                   if is info.i_version 
-                   then ( linebreak :: 
+                   if is info.i_version
+                   then ( linebreak ::
                           self#text_of_version_opt info.i_version )
                    else [] ;
                    self#text_of_sees_opt info.i_sees ;
@@ -550,38 +552,38 @@ class texi =
                    self#text_of_params info.i_params ;
                    self#text_of_raised_exceptions info.i_raised_exceptions ;
                    if is info.i_return_value
-                   then ( linebreak :: 
+                   then ( linebreak ::
                           self#text_of_return_opt info.i_return_value )
                    else [] ;
                    self#text_of_custom info.i_custom ;
                  ] in
-          if block 
-          then [ Block t ] 
+          if block
+          then [ Block t ]
           else (t @ [ Newline ] )
 
     method texi_of_info i =
       self#texi_of_text (self#text_of_info i)
 
     (** {3 Conversion of [module_elements] into Texinfo strings}
-       The following functions convert [module_elements] and their 
+       The following functions convert [module_elements] and their
        description to [text] values then to Texinfo strings using the
        functions above. *)
 
-    method text_el_of_type_expr m_name typ = 
+    method text_el_of_type_expr m_name typ =
       Raw (indent 5
-             (self#relative_idents m_name 
+             (self#relative_idents m_name
                 (Odoc_info.string_of_type_expr typ)))
 
     method! text_of_short_type_expr m_name typ =
       [ Raw (self#normal_type m_name typ) ]
 
     (** Return Texinfo code for a value. *)
-    method texi_of_value v = 
+    method texi_of_value v =
       Odoc_info.reset_type_names () ;
-      let t = [ self#fixedblock 
-                  [ Newline ; minus ; 
-                    Raw ("val " ^ (Name.simple v.val_name) ^ " :\n") ; 
-                    self#text_el_of_type_expr 
+      let t = [ self#fixedblock
+                  [ Newline ; minus ;
+                    Raw ("val " ^ (Name.simple v.val_name) ^ " :\n") ;
+                    self#text_el_of_type_expr
                       (Name.father v.val_name) v.val_type ] ;
                 self#index `Value v.val_name ; Newline  ] @
                 (self#text_of_info v.val_info) in
@@ -592,14 +594,14 @@ class texi =
     method texi_of_attribute a =
       Odoc_info.reset_type_names () ;
       let t = [ self#fixedblock
-                  [ Newline ; minus ; 
+                  [ Newline ; minus ;
                     Raw "val " ;
                     Raw (if a.att_virtual then "virtual " else "") ;
                     Raw (if a.att_mutable then "mutable " else "") ;
                     Raw (Name.simple a.att_value.val_name) ;
-                    Raw " :\n" ; 
-                    self#text_el_of_type_expr 
-                      (Name.father a.att_value.val_name) 
+                    Raw " :\n" ;
+                    self#text_el_of_type_expr
+                      (Name.father a.att_value.val_name)
                       a.att_value.val_type ] ;
                 self#index `Class_att a.att_value.val_name  ; Newline ] @
         (self#text_of_info a.att_value.val_info) in
@@ -607,15 +609,15 @@ class texi =
 
 
     (** Return Texinfo code for a class method. *)
-    method texi_of_method m = 
+    method texi_of_method m =
       Odoc_info.reset_type_names () ;
       let t = [ self#fixedblock
                   [ Newline ; minus ; Raw "method " ;
                     Raw (if m.met_private then "private " else "") ;
                     Raw (if m.met_virtual then "virtual " else "") ;
                     Raw (Name.simple m.met_value.val_name) ;
-                    Raw " :\n" ; 
-                    self#text_el_of_type_expr 
+                    Raw " :\n" ;
+                    self#text_el_of_type_expr
                       (Name.father m.met_value.val_name)
                       m.met_value.val_type ] ;
                 self#index `Method m.met_value.val_name ; Newline ] @
@@ -623,33 +625,33 @@ class texi =
       self#texi_of_text t
 
 
-    method string_of_type_parameters t = 
+    method string_of_type_parameters t =
       let f (tp, co, cn) =
-	Printf.sprintf "%s%s"
-	  (Odoc_info.string_of_variance t (co, cn))
-	  (Odoc_info.string_of_type_expr tp)
+        Printf.sprintf "%s%s"
+          (Odoc_info.string_of_variance t (co, cn))
+          (Odoc_info.string_of_type_expr tp)
       in
       match t.ty_parameters with
       | [] -> ""
-      | [ (tp, co, cn) ] -> 
-	  (f (tp, co, cn))^" "
-      | l -> 
-	  Printf.sprintf "(%s) "
-	    (String.concat ", " (List.map f l))
+      | [ (tp, co, cn) ] ->
+          (f (tp, co, cn))^" "
+      | l ->
+          Printf.sprintf "(%s) "
+            (String.concat ", " (List.map f l))
 
-    method string_of_type_args (args:Types.type_expr list) (ret:Types.type_expr option) = 
+    method string_of_type_args (args:Types.type_expr list) (ret:Types.type_expr option) =
       match args, ret with
       | [], None -> ""
       | args, None -> " of " ^ (Odoc_info.string_of_type_list " * " args)
       | [], Some r -> " : " ^ (Odoc_info.string_of_type_expr r)
-      | args, Some r -> " : " ^ (Odoc_info.string_of_type_list " * " args) ^ 
-	                        " -> " ^ (Odoc_info.string_of_type_expr r)
+      | args, Some r -> " : " ^ (Odoc_info.string_of_type_list " * " args) ^
+                                " -> " ^ (Odoc_info.string_of_type_expr r)
 
     (** Return Texinfo code for a type. *)
-    method texi_of_type ty = 
+    method texi_of_type ty =
       Odoc_info.reset_type_names () ;
-      let t = 
-        [ self#fixedblock ( 
+      let t =
+        [ self#fixedblock (
           [ Newline ; minus ; Raw "type " ;
             Raw (self#string_of_type_parameters ty) ;
             Raw (Name.simple ty.ty_name) ] @
@@ -665,8 +667,8 @@ class texi =
            | Type_abstract -> [ Newline ]
            | Type_variant l ->
                (Raw (" ="^(if priv then " private" else "")^"\n")) ::
-               (List.flatten 
-                  (List.map 
+               (List.flatten
+                  (List.map
                      (fun constr ->
                        (Raw ("  | " ^ constr.vc_name)) ::
                        (Raw (self#string_of_type_args
@@ -680,32 +682,32 @@ class texi =
                        ) ) l ) )
            | Type_record l ->
                (Raw (" = "^(if priv then "private " else "")^"{\n")) ::
-               (List.flatten 
-                  (List.map 
-                     (fun r -> 
+               (List.flatten
+                  (List.map
+                     (fun r ->
                        [ Raw ("  " ^ r.rf_name ^ " : ") ] @
-                       (self#text_of_short_type_expr 
+                       (self#text_of_short_type_expr
                           (Name.father r.rf_name)
-                          r.rf_type) @ 
+                          r.rf_type) @
                        [ Raw " ;" ] @
                        (match r.rf_text with
                        | None -> [ Newline ]
-                       | Some t -> 
-                           ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @ 
-                           [ Raw " *)" ; Newline ] ) ) 
+                       | Some t ->
+                           ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @
+                           [ Raw " *)" ; Newline ] ) )
                      l ) )
-               @  [ Raw " }" ] 
-	  ) ) ;
+               @  [ Raw " }" ]
+          ) ) ;
           self#index `Type ty.ty_name ; Newline ] @
         (self#text_of_info ty.ty_info) in
       self#texi_of_text t
 
     (** Return Texinfo code for an exception. *)
-    method texi_of_exception e = 
+    method texi_of_exception e =
       Odoc_info.reset_type_names () ;
-      let t = 
+      let t =
         [ self#fixedblock
-            ( [ Newline ; minus ; Raw "exception " ; 
+            ( [ Newline ; minus ; Raw "exception " ;
                 Raw (Name.simple e.ex_name) ;
                 Raw (self#string_of_type_args e.ex_args None) ] @
               (match e.ex_alias with
@@ -731,18 +733,18 @@ class texi =
       let resolve_alias_name = function
         | { m_kind = Module_alias { ma_name = name } } -> name
         | { m_name = name } -> name in
-      let t = 
-        [ [ self#fixedblock 
-              [ Newline ; minus ; Raw "module " ; 
+      let t =
+        [ [ self#fixedblock
+              [ Newline ; minus ; Raw "module " ;
                 Raw (Name.simple m.m_name) ;
-                Raw (if is_alias m 
-                then " = " ^ (resolve_alias_name m) 
+                Raw (if is_alias m
+                then " = " ^ (resolve_alias_name m)
                 else "" ) ] ] ;
           ( if is_alias_there m
           then [ Ref (resolve_alias_name m, Some RK_module, None) ;
                  Newline ; ]
           else [] ) ;
-          ( if is_alias m 
+          ( if is_alias m
           then [ self#index `Module m.m_name ; Newline ]
           else [ Newline ] ) ;
           self#text_of_info m.m_info ]
@@ -760,12 +762,12 @@ class texi =
       let resolve_alias_name = function
         | { mt_kind = Some (Module_type_alias { mta_name = name }) } -> name
         | { mt_name = name } -> name in
-      let t = 
-        [ [ self#fixedblock 
-              [ Newline ; minus ; Raw "module type" ; 
+      let t =
+        [ [ self#fixedblock
+              [ Newline ; minus ; Raw "module type " ;
                 Raw (Name.simple mt.mt_name) ;
                 Raw (if is_alias mt
-                then " = " ^ (resolve_alias_name mt) 
+                then " = " ^ (resolve_alias_name mt)
                 else "" ) ] ] ;
           ( if is_alias_there mt
           then [ Ref (resolve_alias_name mt, Some RK_module_type, None) ;
@@ -783,28 +785,28 @@ class texi =
       let t = [ self#fixedblock
                   ( Newline :: minus :: (Raw "include ") ::
                     ( match im.im_module with
-                    | None -> 
+                    | None ->
                         [ Raw im.im_name ]
-                    | Some (Mod { m_name = name }) -> 
-                        [ Raw name ; Raw "\n     " ; 
+                    | Some (Mod { m_name = name }) ->
+                        [ Raw name ; Raw "\n     " ;
                           Ref (name, Some RK_module, None) ]
                     | Some (Modtype { mt_name = name }) ->
-                        [ Raw name ; Raw "\n     " ; 
+                        [ Raw name ; Raw "\n     " ;
                           Ref (name, Some RK_module_type, None) ]
-                    ) @ 
-		   [ Newline ] @
-		   (self#text_of_info im.im_info)
-		  ) 
-	      ] 
+                    ) @
+                   [ Newline ] @
+                   (self#text_of_info im.im_info)
+                  )
+              ]
       in
       self#texi_of_text t
 
     (** Return the Texinfo code for the given class. *)
     method texi_of_class c =
       Odoc_info.reset_type_names () ;
-      let t = [ self#fixedblock 
-                  [ Newline ; minus ; Raw "class " ; 
-                    Raw (Name.simple c.cl_name) ] ; 
+      let t = [ self#fixedblock
+                  [ Newline ; minus ; Raw "class " ;
+                    Raw (Name.simple c.cl_name) ] ;
                 Ref (c.cl_name, Some RK_class, None) ; Newline ;
                 Newline ] @ (self#text_of_info c.cl_info) in
       self#texi_of_text t
@@ -812,9 +814,9 @@ class texi =
     (** Return the Texinfo code for the given class type. *)
     method texi_of_class_type ct =
       Odoc_info.reset_type_names () ;
-      let t = [ self#fixedblock 
-                  [ Newline ; minus ; Raw "class type " ; 
-                    Raw (Name.simple ct.clt_name) ] ; 
+      let t = [ self#fixedblock
+                  [ Newline ; minus ; Raw "class type " ;
+                    Raw (Name.simple ct.clt_name) ] ;
                 Ref (ct.clt_name, Some RK_class_type, None) ; Newline ;
                 Newline ] @ (self#text_of_info ct.clt_info) in
       self#texi_of_text t
@@ -837,7 +839,7 @@ class texi =
       | Element_value v -> self#texi_of_value v
       | Element_exception e -> self#texi_of_exception e
       | Element_type t -> self#texi_of_type t
-      | Element_module_comment t -> 
+      | Element_module_comment t ->
           self#texi_of_text (Newline :: t @ [Newline])
       )
 
@@ -854,9 +856,9 @@ class texi =
             | None -> []
             | Some t -> Newline :: t)
         | Some cct -> (* we can create the reference *)
-            let kind = 
+            let kind =
               match cct with
-              | Cl _ -> Some RK_class 
+              | Cl _ -> Some RK_class
               | Cltype _ -> Some RK_class_type in
             (Code inh.ic_name) ::
             (Ref (inh.ic_name, kind, None)) ::
@@ -866,13 +868,13 @@ class texi =
       in
       let text = [
         Bold [ Raw Odoc_messages.inherits ] ;
-        List (List.map f inher_l) ; Newline ] 
+        List (List.map f inher_l) ; Newline ]
       in
       puts chanout (self#texi_of_text text)
 
 
 
-    (** Generate the Texinfo code for the inherited classes 
+    (** Generate the Texinfo code for the inherited classes
        of the given class. *)
     method generate_class_inheritance_info chanout cl =
       let rec iter_kind = function
@@ -887,7 +889,7 @@ class texi =
 
 
 
-    (** Generate the Texinfo code for the inherited classes 
+    (** Generate the Texinfo code for the inherited classes
        of the given class type. *)
     method generate_class_type_inheritance_info chanout clt =
       match clt.clt_kind with
@@ -898,16 +900,16 @@ class texi =
       | Class_type _ ->
           ()
 
-    (** Generate the Texinfo code for the given class, 
+    (** Generate the Texinfo code for the given class,
        in the given out channel. *)
     method generate_for_class chanout c =
      try
       Odoc_info.reset_type_names () ;
       let depth = Name.depth c.cl_name in
-      let title = [ 
+      let title = [
         self#node depth c.cl_name ;
         Title (depth, None, [ Raw (Odoc_messages.clas ^ " ") ;
-                                    Code c.cl_name ]) ; 
+                                    Code c.cl_name ]) ;
         self#index `Class c.cl_name ] in
       puts chanout (self#texi_of_text title) ;
 
@@ -916,10 +918,10 @@ class texi =
         let descr = [ Title (succ depth, None,
                              [ Raw Odoc_messages.description ]) ] in
         puts chanout (self#texi_of_text descr) ;
-        puts chanout (self#texi_of_info c.cl_info) 
+        puts chanout (self#texi_of_info c.cl_info)
       end ;
-      
-      let intf = [ Title (succ depth, None, 
+
+      let intf = [ Title (succ depth, None,
                           [ Raw Odoc_messages.interface]) ] in
       puts chanout (self#texi_of_text intf);
       self#generate_class_inheritance_info chanout c ;
@@ -930,19 +932,19 @@ class texi =
      with Aliased_node -> ()
 
 
-    (** Generate the Texinfo code for the given class type, 
+    (** Generate the Texinfo code for the given class type,
        in the given out channel. *)
     method generate_for_class_type chanout ct =
      try
       Odoc_info.reset_type_names () ;
       let depth = Name.depth ct.clt_name in
-      let title = [ 
+      let title = [
         self#node depth ct.clt_name ;
-        Title (depth, None, [ Raw (Odoc_messages.class_type ^ " ") ; 
-                                    Code ct.clt_name ]) ; 
+        Title (depth, None, [ Raw (Odoc_messages.class_type ^ " ") ;
+                                    Code ct.clt_name ]) ;
         self#index `Class_type ct.clt_name ] in
       puts chanout (self#texi_of_text title) ;
-      
+
       if is ct.clt_info
       then begin
         let descr = [ Title (succ depth, None,
@@ -951,29 +953,29 @@ class texi =
         puts chanout (self#texi_of_info ct.clt_info)
       end ;
 
-      let intf = [ Title (succ depth, None, 
+      let intf = [ Title (succ depth, None,
                           [ Raw Odoc_messages.interface ]) ] in
       puts chanout (self#texi_of_text intf) ;
       self#generate_class_type_inheritance_info chanout ct;
-      List.iter 
+      List.iter
         (fun ele -> puts chanout
             (self#texi_of_class_element ct.clt_name ele))
         (Class.class_type_elements ~trans:false ct)
      with Aliased_node -> ()
 
 
-    (** Generate the Texinfo code for the given module type, 
+    (** Generate the Texinfo code for the given module type,
        in the given out channel. *)
     method generate_for_module_type chanout mt =
      try
       let depth = Name.depth mt.mt_name in
-      let title = [ 
+      let title = [
         self#node depth mt.mt_name ;
-        Title (depth, None, [ Raw (Odoc_messages.module_type ^ " ") ; 
-                              Code mt.mt_name ]) ; 
+        Title (depth, None, [ Raw (Odoc_messages.module_type ^ " ") ;
+                              Code mt.mt_name ]) ;
         self#index `Module_type mt.mt_name ; Newline ] in
       puts chanout (self#texi_of_text title) ;
-      
+
       if is mt.mt_info
       then begin
         let descr = [ Title (succ depth, None,
@@ -986,13 +988,13 @@ class texi =
       let subparts = module_subparts mt_ele in
       if depth < maxdepth && subparts <> []
       then begin
-        let menu = Texi.ifinfo 
+        let menu = Texi.ifinfo
             ( self#heading (succ depth) [ Raw "Subparts" ]) in
         puts chanout menu ;
         Texi.generate_menu chanout (subparts :> menu_data)
       end ;
 
-      let intf = [ Title (succ depth, None, 
+      let intf = [ Title (succ depth, None,
                           [ Raw Odoc_messages.interface ]) ] in
       puts chanout (self#texi_of_text intf) ;
       List.iter
@@ -1010,19 +1012,24 @@ class texi =
         subparts
      with Aliased_node -> ()
 
-    (** Generate the Texinfo code for the given module, 
+    (** Generate the Texinfo code for the given module,
        in the given out channel. *)
     method generate_for_module chanout m =
      try
       Odoc_info.verbose ("Generate for module " ^ m.m_name) ;
       let depth = Name.depth m.m_name in
-      let title = [ 
+      let title = [
         self#node depth m.m_name ;
-        Title (depth, None, [ Raw (Odoc_messages.modul ^ " ") ; 
-                              Code m.m_name ]) ; 
+        Title (depth, None,
+               if m.m_text_only then
+                 [ Raw m.m_name ]
+               else
+                 [ Raw (Odoc_messages.modul ^ " ") ;
+                   Code m.m_name ]
+              ) ;
         self#index `Module m.m_name ; Newline ] in
       puts chanout (self#texi_of_text title) ;
-      
+
       if is m.m_info
       then begin
         let descr = [ Title (succ depth, None,
@@ -1030,18 +1037,18 @@ class texi =
         puts chanout (self#texi_of_text descr) ;
         puts chanout (self#texi_of_info m.m_info)
       end ;
-      
+
       let m_ele = Module.module_elements ~trans:true m in
       let subparts = module_subparts m_ele in
       if depth < maxdepth && subparts <> []
       then begin
-        let menu = Texi.ifinfo 
+        let menu = Texi.ifinfo
             ( self#heading (succ depth) [ Raw "Subparts" ]) in
         puts chanout menu ;
         Texi.generate_menu chanout (subparts :> menu_data)
       end ;
 
-      let intf = [ Title (succ depth, None, 
+      let intf = [ Title (succ depth, None,
                           [ Raw Odoc_messages.interface]) ] in
       puts chanout (self#texi_of_text intf) ;
 
@@ -1067,29 +1074,29 @@ class texi =
       | None -> ""
       | Some s -> self#escape s in
       let filename =
-	if texi_filename <> "ocamldoc.texi"
-	then 
-	  let fn = Filename.basename texi_filename in
-	  (if Filename.check_suffix fn ".texi"
-	  then Filename.chop_suffix fn ".texi"
-	  else fn) ^ ".info"
-	else
-	  if title <> ""
-	  then title ^ ".info"
-	  else "doc.info"
+        if texi_filename <> "ocamldoc.texi"
+        then
+          let fn = Filename.basename texi_filename in
+          (if Filename.check_suffix fn ".texi"
+          then Filename.chop_suffix fn ".texi"
+          else fn) ^ ".info"
+        else
+          if title <> ""
+          then title ^ ".info"
+          else "doc.info"
       in
       (* write a standard Texinfo header *)
       List.iter
         (puts_nl chan)
-        (List.flatten 
+        (List.flatten
            [ [ "\\input texinfo   @c -*-texinfo-*-" ;
                "@c %**start of header" ;
                "@setfilename " ^ filename ;
                "@settitle " ^ title ;
                "@c %**end of header" ; ] ;
-             
+
              (if !Global.with_index then
-               List.map 
+               List.map
                  (fun ind ->
                    "@defcodeindex " ^ (indices ind))
                  indices_to_build
@@ -1107,7 +1114,7 @@ class texi =
              [ "@ifinfo" ;
                "This file was generated by Ocamldoc using the Texinfo generator." ;
                "@end ifinfo" ;
-               
+
                "@c no titlepage." ;
 
                "@node Top, , , (dir)" ;
@@ -1121,46 +1128,47 @@ class texi =
             puts_nl chan "@ifinfo" ;
             puts_nl chan ("Documentation for " ^ title) ;
             puts_nl chan "@end ifinfo"
-	| None ->
-	    puts_nl chan "@c no title given"
-	| Some f ->
-	    nl chan ;
-	    puts_nl chan
-	      (self#texi_of_info (Some (Odoc_info.info_of_comment_file f)))
+        | None ->
+            puts_nl chan "@c no title given"
+        | Some f ->
+            nl chan ;
+            puts_nl chan
+              (self#texi_of_info
+                 (Some (Odoc_info.info_of_comment_file m_list f)))
       end ;
 
       (* write a top menu *)
-      Texi.generate_menu chan 
+      Texi.generate_menu chan
         ((List.map (fun m -> `Module m) m_list) @
          (if !Global.with_index then
-	   let indices_names_to_build = List.map indices indices_to_build in
-           List.rev 
-	     (List.fold_left
-                (fun acc -> 
-		  function (longname, shortname) 
-		      when List.mem shortname indices_names_to_build -> 
-			(`Index (longname ^ " index")) :: acc
-		    | _ -> acc)
-		[ `Comment "Indices :" ; `Blank ]
+           let indices_names_to_build = List.map indices indices_to_build in
+           List.rev
+             (List.fold_left
+                (fun acc ->
+                  function (longname, shortname)
+                      when List.mem shortname indices_names_to_build ->
+                        (`Index (longname ^ " index")) :: acc
+                    | _ -> acc)
+                [ `Comment "Indices :" ; `Blank ]
                 indices_names )
          else [] ))
-      
+
 
     (** Writes the trailer of the TeXinfo document. *)
-    method generate_texi_trailer chan = 
-      nl chan ; 
+    method generate_texi_trailer chan =
+      nl chan ;
       if !Global.with_index
-      then 
-	let indices_names_to_build = List.map indices indices_to_build in
+      then
+        let indices_names_to_build = List.map indices indices_to_build in
         List.iter (puts_nl chan)
           (List.flatten
-             (List.map 
+             (List.map
                 (fun (longname, shortname) ->
-		  if List.mem shortname indices_names_to_build
-		  then [ "@node " ^ longname ^ " index," ;
-			 "@unnumbered " ^ longname ^ " index" ;
-			 "@printindex " ^ shortname ; ]
-		  else [])
+                  if List.mem shortname indices_names_to_build
+                  then [ "@node " ^ longname ^ " index," ;
+                         "@unnumbered " ^ longname ^ " index" ;
+                         "@printindex " ^ shortname ; ]
+                  else [])
                 indices_names )) ;
       if !Global.with_toc
       then puts_nl chan "@contents" ;
@@ -1170,38 +1178,38 @@ class texi =
     method do_index it =
       if not (List.mem it indices_to_build)
       then indices_to_build <- it :: indices_to_build
-				      
+
    (** Scan the whole module information to know which indices need to be build *)
     method scan_for_index : subparts -> unit = function
       | `Module m ->
           let m_ele = Module.module_elements ~trans:true m in
-	  List.iter self#scan_for_index_in_mod m_ele
-      | `Module_type mt ->	  
+          List.iter self#scan_for_index_in_mod m_ele
+      | `Module_type mt ->
           let m_ele = Module.module_type_elements ~trans:true mt in
-	  List.iter self#scan_for_index_in_mod m_ele
+          List.iter self#scan_for_index_in_mod m_ele
       | `Class c ->
           let c_ele = Class.class_elements ~trans:true c in
-	  List.iter self#scan_for_index_in_class c_ele
+          List.iter self#scan_for_index_in_class c_ele
       | `Class_type ct ->
           let c_ele = Class.class_type_elements ~trans:true ct in
-	  List.iter self#scan_for_index_in_class c_ele
-	    
+          List.iter self#scan_for_index_in_class c_ele
+
     method scan_for_index_in_mod = function
-	(* no recursion *)
+        (* no recursion *)
       | Element_value _ -> self#do_index `Value
       | Element_exception _ -> self#do_index `Exception
       | Element_type _ -> self#do_index `Type
       | Element_included_module _
       | Element_module_comment _ -> ()
-	 (* recursion *)
+         (* recursion *)
       | Element_module m -> self#do_index `Module ;
-	  self#scan_for_index (`Module m)
+          self#scan_for_index (`Module m)
       | Element_module_type mt -> self#do_index `Module_type ;
-	  self#scan_for_index (`Module_type mt)
+          self#scan_for_index (`Module_type mt)
       | Element_class c -> self#do_index `Class ;
-	  self#scan_for_index (`Class c)
+          self#scan_for_index (`Class c)
       | Element_class_type ct -> self#do_index `Class_type ;
-	  self#scan_for_index (`Class_type ct)
+          self#scan_for_index (`Class_type ct)
 
     method scan_for_index_in_class = function
       | Class_attribute _ -> self#do_index `Class_att
@@ -1209,7 +1217,7 @@ class texi =
       | Class_comment _ -> ()
 
 
-    (** Generate the Texinfo file from a module list, 
+    (** Generate the Texinfo file from a module list,
        in the {!Odoc_info.Global.out_file} file. *)
     method generate module_list =
       Hashtbl.clear node_tbl ;
@@ -1218,15 +1226,15 @@ class texi =
         then "ocamldoc.texi"
         else !Global.out_file in
       if !Global.with_index
-      then List.iter self#scan_for_index 
-	  (List.map (fun m -> `Module m) module_list) ;
+      then List.iter self#scan_for_index
+          (List.map (fun m -> `Module m) module_list) ;
       try
-        let chanout = open_out 
+        let chanout = open_out
             (Filename.concat !Global.target_dir filename) in
         if !Global.with_header
         then self#generate_texi_header chanout filename module_list ;
-        List.iter 
-          (self#generate_for_module chanout) 
+        List.iter
+          (self#generate_for_module chanout)
           module_list ;
         if !Global.with_trailer
         then self#generate_texi_trailer chanout ;
@@ -1235,7 +1243,7 @@ class texi =
       | Failure s
       | Sys_error s ->
           prerr_endline s ;
-          incr Odoc_info.errors 
+          incr Odoc_info.errors
   end
 end
 

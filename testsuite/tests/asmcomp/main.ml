@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: main.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 open Clflags
 
 let compile_file filename =
@@ -57,4 +55,3 @@ let main() =
     ] compile_file usage
 
 let _ = (*Printexc.catch*) main (); exit 0
-

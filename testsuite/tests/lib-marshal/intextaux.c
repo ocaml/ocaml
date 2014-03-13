@@ -1,9 +1,21 @@
+/***********************************************************************/
+/*                                                                     */
+/*                                OCaml                                */
+/*                                                                     */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*                                                                     */
+/*  Copyright 2001 Institut National de Recherche en Informatique et   */
+/*  en Automatique.  All rights reserved.  This file is distributed    */
+/*  under the terms of the Q Public License version 1.0.               */
+/*                                                                     */
+/***********************************************************************/
+
 #include <mlvalues.h>
 #include <intext.h>
 
 value marshal_to_block(value vbuf, value vlen, value v, value vflags)
 {
-  return Val_long(output_value_to_block(v, vflags, 
+  return Val_long(output_value_to_block(v, vflags,
                                         (char *) vbuf, Long_val(vlen)));
 }
 

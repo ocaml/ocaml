@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: gc_ctrl.c 12959 2012-09-27 13:12:51Z maranget $ */
-
 #include "alloc.h"
 #include "compact.h"
 #include "custom.h"
@@ -129,7 +127,10 @@ static value heap_stats (int returnstats)
          free_words = 0, free_blocks = 0, largest_free = 0,
          fragments = 0, heap_chunks = 0;
   char *chunk = caml_heap_start, *chunk_end;
-  char *cur_hp, *prev_hp;
+  char *cur_hp;
+#ifdef DEBUG
+  char *prev_hp;
+#endif
   header_t cur_hd;
 
 #ifdef DEBUG
@@ -139,7 +140,9 @@ static value heap_stats (int returnstats)
   while (chunk != NULL){
     ++ heap_chunks;
     chunk_end = chunk + Chunk_size (chunk);
+#ifdef DEBUG
     prev_hp = NULL;
+#endif
     cur_hp = chunk;
     while (cur_hp < chunk_end){
       cur_hd = Hd_hp (cur_hp);
@@ -194,7 +197,9 @@ static value heap_stats (int returnstats)
         */
         break;
       }
+#ifdef DEBUG
       prev_hp = cur_hp;
+#endif
       cur_hp = Next (cur_hp);
     }                                          Assert (cur_hp == chunk_end);
     chunk = Chunk_next (chunk);

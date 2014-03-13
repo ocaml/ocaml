@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: stdLabels.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Standard labeled libraries.
 
    This meta-module provides labelized version of the {!Array},
@@ -117,6 +115,8 @@ module String :
         unit
     val concat : sep:string -> string list -> string
     val iter : f:(char -> unit) -> string -> unit
+    val iteri : f:(int -> char -> unit) -> string -> unit
+    val map : f:(char -> char) -> string -> string
     val trim : string -> string
     val escaped : string -> string
     val index : string -> char -> int

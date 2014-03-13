@@ -12,7 +12,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id: camlp4-targets.sh 12858 2012-08-10 14:45:51Z maranget $
 CAMLP4_COMMON="\
   camlp4/Camlp4/Camlp4Ast.partial.ml \
   camlp4/boot/camlp4boot.byte"

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: mutex.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Locks for mutual exclusion.
 
    Mutexes (mutual-exclusion locks) are used to implement critical sections

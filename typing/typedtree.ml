@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: typedtree.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Abstract syntax tree after typing *)
 
 open Misc
@@ -42,10 +40,10 @@ and pattern_desc =
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
   | Tpat_construct of
-      Path.t * Longident.t loc * constructor_description * pattern list * bool
+      Longident.t loc * constructor_description * pattern list * bool
   | Tpat_variant of label * pattern option * row_desc ref
   | Tpat_record of
-      (Path.t * Longident.t loc * label_description * pattern) list *
+      (Longident.t loc * label_description * pattern) list *
         closed_flag
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * row_desc option
@@ -60,7 +58,7 @@ and expression =
 
 and exp_extra =
   | Texp_constraint of core_type option * core_type option
-  | Texp_open of Path.t * Longident.t loc * Env.t
+  | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
   | Texp_poly of core_type option
   | Texp_newtype of string
 
@@ -74,15 +72,15 @@ and expression_desc =
   | Texp_try of expression * (pattern * expression) list
   | Texp_tuple of expression list
   | Texp_construct of
-      Path.t * Longident.t loc * constructor_description * expression list *
+      Longident.t loc * constructor_description * expression list *
         bool
   | Texp_variant of label * expression option
   | Texp_record of
-      (Path.t * Longident.t loc * label_description * expression) list *
+      (Longident.t loc * label_description * expression) list *
         expression option
-  | Texp_field of expression * Path.t * Longident.t loc * label_description
+  | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
-      expression * Path.t * Longident.t loc * label_description * expression
+      expression * Longident.t loc * label_description * expression
   | Texp_array of expression list
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression
@@ -236,7 +234,7 @@ and structure_item_desc =
   | Tstr_module of Ident.t * string loc * module_expr
   | Tstr_recmodule of (Ident.t * string loc * module_type * module_expr) list
   | Tstr_modtype of Ident.t * string loc * module_type
-  | Tstr_open of Path.t * Longident.t loc
+  | Tstr_open of override_flag * Path.t * Longident.t loc
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of module_expr * Ident.t list
@@ -282,7 +280,7 @@ and signature_item_desc =
   | Tsig_module of Ident.t * string loc * module_type
   | Tsig_recmodule of (Ident.t * string loc * module_type) list
   | Tsig_modtype of Ident.t * string loc * modtype_declaration
-  | Tsig_open of Path.t * Longident.t loc
+  | Tsig_open of override_flag * Path.t * Longident.t loc
   | Tsig_include of module_type * Types.signature
   | Tsig_class of class_description list
   | Tsig_class_type of class_type_declaration list
@@ -422,10 +420,10 @@ and 'a class_infos =
 let iter_pattern_desc f = function
   | Tpat_alias(p, _, _) -> f p
   | Tpat_tuple patl -> List.iter f patl
-  | Tpat_construct(_, _, cstr, patl, _) -> List.iter f patl
+  | Tpat_construct(_, cstr, patl, _) -> List.iter f patl
   | Tpat_variant(_, pat, _) -> may f pat
   | Tpat_record (lbl_pat_list, _) ->
-      List.iter (fun (_, _, lbl, pat) -> f pat) lbl_pat_list
+      List.iter (fun (_, lbl, pat) -> f pat) lbl_pat_list
   | Tpat_array patl -> List.iter f patl
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_lazy p -> f p
@@ -440,10 +438,9 @@ let map_pattern_desc f d =
   | Tpat_tuple pats ->
       Tpat_tuple (List.map f pats)
   | Tpat_record (lpats, closed) ->
-      Tpat_record (List.map (fun ( lid, lid_loc, l,p) -> lid, lid_loc, l, f p)
-                     lpats, closed)
-  | Tpat_construct (lid, lid_loc, c,pats, arity) ->
-      Tpat_construct (lid, lid_loc, c, List.map f pats, arity)
+      Tpat_record (List.map (fun (lid, l,p) -> lid, l, f p) lpats, closed)
+  | Tpat_construct (lid, c,pats, arity) ->
+      Tpat_construct (lid, c, List.map f pats, arity)
   | Tpat_array pats ->
       Tpat_array (List.map f pats)
   | Tpat_lazy p1 -> Tpat_lazy (f p1)

@@ -12,8 +12,6 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
-/* $Id: error.c 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* routines for printing error messages  */
 
 #include "defs.h"

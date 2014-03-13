@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -9,7 +10,15 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: odoc_misc.ml 12959 2012-09-27 13:12:51Z maranget $ *)
+let no_blanks s =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  for i = 0 to len - 1 do
+    match s.[i] with
+      ' ' | '\n' | '\t' | '\r' -> ()
+    | c -> Buffer.add_char buf c
+  done;
+  Buffer.contents buf
 
 let input_file_as_string nom =
   let chanin = open_in_bin nom in
@@ -38,15 +47,15 @@ let split_string s chars =
   let rec iter acc pos =
     if pos >= len then
       match acc with
-	"" -> []
-      |	_ -> [acc]
+        "" -> []
+      | _ -> [acc]
     else
       if List.mem s.[pos] chars then
-	match acc with
-	  "" -> iter "" (pos + 1)
-	| _ -> acc :: (iter "" (pos + 1))
+        match acc with
+          "" -> iter "" (pos + 1)
+        | _ -> acc :: (iter "" (pos + 1))
       else
-	iter (Printf.sprintf "%s%c" acc s.[pos]) (pos + 1)
+        iter (Printf.sprintf "%s%c" acc s.[pos]) (pos + 1)
   in
   iter "" 0
 
@@ -60,7 +69,12 @@ let list_concat sep =
   in
   iter
 
-let string_of_longident li = String.concat "." (Longident.flatten li)
+let rec string_of_longident li =
+  match li with
+  | Longident.Lident s -> s
+  | Longident.Ldot(li, s) -> string_of_longident li ^ "." ^ s
+  | Longident.Lapply(l1, l2) ->
+      string_of_longident l1 ^ "(" ^ string_of_longident l2 ^ ")"
 
 let get_fields type_expr =
   let (fields, _) = Ctype.flatten_fields (Ctype.object_fields type_expr) in
@@ -117,13 +131,14 @@ let rec string_of_text t =
           "^{"^(string_of_text t)^"}"
       | Odoc_types.Subscript t ->
           "^{"^(string_of_text t)^"}"
-      |	Odoc_types.Module_list l ->
-	  string_of_text
-	    (list_concat (Odoc_types.Raw ", ")
-	       (List.map (fun s -> Odoc_types.Code s) l)
-	    )
-      |	Odoc_types.Index_list ->
-	  ""
+      | Odoc_types.Module_list l ->
+          string_of_text
+            (list_concat (Odoc_types.Raw ", ")
+               (List.map (fun s -> Odoc_types.Code s) l)
+            )
+      | Odoc_types.Index_list ->
+          ""
+      | Odoc_types.Custom (_, t) -> string_of_text t
       | Odoc_types.Target _ -> ""
   in
   String.concat "" (List.map iter t)
@@ -260,20 +275,13 @@ let rec text_no_title_no_list t =
     | Odoc_types.Superscript t -> [Odoc_types.Superscript (text_no_title_no_list t)]
     | Odoc_types.Subscript t -> [Odoc_types.Subscript (text_no_title_no_list t)]
     | Odoc_types.Module_list l ->
-<<<<<<< .courant
-	list_concat (Odoc_types.Raw ", ")
-	  (List.map
-	     (fun s -> Odoc_types.Ref (s, Some Odoc_types.RK_module))
-	     l
-	  )
-=======
         list_concat (Odoc_types.Raw ", ")
           (List.map
              (fun s -> Odoc_types.Ref (s, Some Odoc_types.RK_module, None))
              l
           )
->>>>>>> .fusion-droit.r10497
     | Odoc_types.Index_list -> []
+    | Odoc_types.Custom (s,t) -> [Odoc_types.Custom (s, text_no_title_no_list t)]
   in
   List.flatten (List.map iter t)
 
@@ -303,6 +311,7 @@ let get_titles_in_text t =
     | Odoc_types.Subscript t  -> iter_text t
     | Odoc_types.Module_list _ -> ()
     | Odoc_types.Index_list -> ()
+    | Odoc_types.Custom (_, t) -> iter_text t
     | Odoc_types.Target _ -> ()
   and iter_text te =
     List.iter iter_ele te
@@ -324,7 +333,7 @@ let rec get_before_dot s =
     let len = String.length s in
     let n = String.index s '.' in
     if n + 1 >= len then
-      (* le point est le dernier caractère *)
+      (* le point est le dernier caractere *)
       (true, s, "")
     else
       match s.[n+1] with
@@ -395,11 +404,8 @@ and first_sentence_text_ele text_ele =
   | Odoc_types.Subscript _
   | Odoc_types.Module_list _
   | Odoc_types.Index_list -> (false, text_ele, None)
-<<<<<<< .courant
-=======
   | Odoc_types.Custom _
   | Odoc_types.Target _ -> (false, text_ele, None)
->>>>>>> .fusion-droit.r10497
 
 
 let first_sentence_of_text t =
@@ -427,12 +433,12 @@ let search_string_backward ~pat =
       -1 -> raise Not_found
     | 0 -> if pat = s then 0 else raise Not_found
     | _ ->
-	let pos = len - lenp in
-	let s2 = String.sub s pos lenp in
-	if s2 = pat then
-	  pos
-	else
-	  iter (String.sub s 0 pos)
+        let pos = len - lenp in
+        let s2 = String.sub s pos lenp in
+        if s2 = pat then
+          pos
+        else
+          iter (String.sub s 0 pos)
   in
   fun ~s -> iter s
 
@@ -483,8 +489,5 @@ let remove_option typ =
     | Types.Tpackage _ -> t
     | Types.Tlink t2
     | Types.Tsubst t2 -> iter t2.Types.desc
-    | Types.Tproc _ -> t
   in
   { typ with Types.desc = iter typ.Types.desc }
-
-(* eof $Id: odoc_misc.ml 12959 2012-09-27 13:12:51Z maranget $ *)

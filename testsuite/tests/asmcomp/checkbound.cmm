@@ -10,12 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: checkbound.cmm 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (function "checkbound2" (x: int y: int)
   (checkbound x y))
 
 (function "checkbound1" (x: int)
   (checkbound x 2))
-
-

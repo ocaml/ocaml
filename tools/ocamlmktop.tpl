@@ -11,6 +11,4 @@
 #                                                                       #
 #########################################################################
 
-# $Id: ocamlmktop.tpl 12959 2012-09-27 13:12:51Z maranget $
-
 exec %%BINDIR%%/jocamlc -I +compiler-libs -linkall ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma "$@" topstart.cmo

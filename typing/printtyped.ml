@@ -209,8 +209,8 @@ and pattern i ppf x =
   | Tpat_tuple (l) ->
       line i ppf "Ppat_tuple\n";
       list i pattern ppf l;
-  | Tpat_construct (li, _, _, po, explicity_arity) ->
-      line i ppf "Ppat_construct %a\n" fmt_path li;
+  | Tpat_construct (li, _, po, explicity_arity) ->
+      line i ppf "Ppat_construct %a\n" fmt_longident li;
       list i pattern ppf po;
       bool i ppf explicity_arity;
   | Tpat_variant (l, po, _) ->
@@ -236,8 +236,8 @@ and expression_extra i ppf x =
       line i ppf "Pexp_constraint\n";
       option i core_type ppf cto1;
       option i core_type ppf cto2;
-  | Texp_open (m, _, _) ->
-      line i ppf "Pexp_open \"%a\"\n" fmt_path m;
+  | Texp_open (ovf, m, _, _) ->
+      line i ppf "Pexp_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
   | Texp_poly cto ->
       line i ppf "Pexp_poly\n";
       option i core_type ppf cto;
@@ -277,8 +277,8 @@ and expression i ppf x =
   | Texp_tuple (l) ->
       line i ppf "Pexp_tuple\n";
       list i expression ppf l;
-  | Texp_construct (li, _, _, eo, b) ->
-      line i ppf "Pexp_construct %a\n" fmt_path li;
+  | Texp_construct (li, _, eo, b) ->
+      line i ppf "Pexp_construct %a\n" fmt_longident li;
       list i expression ppf eo;
       bool i ppf b;
   | Texp_variant (l, eo) ->
@@ -288,14 +288,14 @@ and expression i ppf x =
       line i ppf "Pexp_record\n";
       list i longident_x_expression ppf l;
       option i expression ppf eo;
-  | Texp_field (e, li, _, _) ->
+  | Texp_field (e, li, _) ->
       line i ppf "Pexp_field\n";
       expression i ppf e;
-      path i ppf li;
-  | Texp_setfield (e1, li, _, _, e2) ->
+      longident i ppf li;
+  | Texp_setfield (e1, li, _, e2) ->
       line i ppf "Pexp_setfield\n";
       expression i ppf e1;
-      path i ppf li;
+      longident i ppf li;
       expression i ppf e2;
   | Texp_array (l) ->
       line i ppf "Pexp_array\n";
@@ -385,9 +385,9 @@ and value_description i ppf x =
 and string_option_underscore i ppf =
   function
     | Some x ->
-	string i ppf x.txt
+        string i ppf x.txt
     | None ->
-	string i ppf "_"
+        string i ppf "_"
 
 and type_declaration i ppf x =
   line i ppf "type_declaration %a\n" fmt_location x.typ_loc;
@@ -602,7 +602,8 @@ and signature_item i ppf x =
   | Tsig_modtype (s, _, md) ->
       line i ppf "Psig_modtype \"%a\"\n" fmt_ident s;
       modtype_declaration i ppf md;
-  | Tsig_open (li,_) -> line i ppf "Psig_open %a\n" fmt_path li;
+  | Tsig_open (ovf, li,_) ->
+    line i ppf "Psig_open %a %a\n" fmt_override_flag ovf fmt_path li;
   | Tsig_include (mt, _) ->
       line i ppf "Psig_include\n";
       module_type i ppf mt;
@@ -691,7 +692,8 @@ and structure_item i ppf x =
   | Tstr_modtype (s, _, mt) ->
       line i ppf "Pstr_modtype \"%a\"\n" fmt_ident s;
       module_type i ppf mt;
-  | Tstr_open (li, _) -> line i ppf "Pstr_open %a\n" fmt_path li;
+  | Tstr_open (ovf, li, _) ->
+    line i ppf "Pstr_open %a %a\n" fmt_override_flag ovf fmt_path li;
   | Tstr_class (l) ->
       line i ppf "Pstr_class\n";
       list i class_declaration ppf (List.map (fun (cl, _,_) -> cl) l);
@@ -744,8 +746,8 @@ and string_list_x_location i ppf (l, loc) =
   line i ppf "<params> %a\n" fmt_location loc;
   list (i+1) string_loc ppf l;
 
-and longident_x_pattern i ppf (li, _, _, p) =
-  line i ppf "%a\n" fmt_path li;
+and longident_x_pattern i ppf (li, _, p) =
+  line i ppf "%a\n" fmt_longident li;
   pattern (i+1) ppf p;
 
 and pattern_x_expression_case i ppf (p, e) =
@@ -762,8 +764,8 @@ and string_x_expression i ppf (s, _, e) =
   line i ppf "<override> \"%a\"\n" fmt_path s;
   expression (i+1) ppf e;
 
-and longident_x_expression i ppf (li, _, _, e) =
-  line i ppf "%a\n" fmt_path li;
+and longident_x_expression i ppf (li, _, e) =
+  line i ppf "%a\n" fmt_longident li;
   expression (i+1) ppf e;
 
 and label_x_expression i ppf (l, e, _) =
@@ -790,3 +792,5 @@ and joinautomaton i ppf d = ()
 let interface ppf x = list 0 signature_item ppf x.sig_items;;
 
 let implementation ppf x = list 0 structure_item ppf x.str_items;;
+
+let implementation_with_coercion ppf (x, _) = implementation ppf x

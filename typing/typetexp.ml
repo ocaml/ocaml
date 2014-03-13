@@ -50,8 +50,9 @@ type error =
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
+  | Illegal_reference_to_recursive_module
 
-exception Error of Location.t * error
+exception Error of Location.t * Env.t * error
 
 type variable_context = int * (string, type_expr) Tbl.t
 
@@ -61,12 +62,15 @@ let instance_list = Ctype.instance_list Env.empty
 
 (* Narrowing unbound identifier errors. *)
 
-let rec narrow_unbound_lid_error env loc lid make_error =
+let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
+  fun env loc lid make_error ->
   let check_module mlid =
     try ignore (Env.lookup_module mlid env)
     with Not_found ->
-      narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid);
-      assert false
+      narrow_unbound_lid_error env loc mlid
+        (fun lid -> Unbound_module lid)
+       | Env.Recmodule ->
+         raise (Error (loc, env, Illegal_reference_to_recursive_module))
   in
   begin match lid with
   | Longident.Lident _ -> ()
@@ -74,9 +78,9 @@ let rec narrow_unbound_lid_error env loc lid make_error =
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
       check_module mlid;
-      raise (Error (loc, Ill_typed_functor_application lid))
+      raise (Error (loc, env, Ill_typed_functor_application lid))
   end;
-  raise (Error (loc, make_error lid))
+  raise (Error (loc, env, make_error lid))
 
 let find_component lookup make_error env loc lid =
   try
@@ -85,16 +89,21 @@ let find_component lookup make_error env loc lid =
         lookup (Longident.Lident s) Env.initial
     | _ -> lookup lid env
   with Not_found ->
-    (narrow_unbound_lid_error env loc lid make_error
-     : unit (* to avoid a warning *));
-    assert false
+    narrow_unbound_lid_error env loc lid make_error
+  | Env.Recmodule ->
+    raise (Error (loc, env, Illegal_reference_to_recursive_module))
 
 let find_type =
   find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
 let find_constructor =
   find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
+let find_all_constructors =
+  find_component Env.lookup_all_constructors
+    (fun lid -> Unbound_constructor lid)
 let find_label =
   find_component Env.lookup_label (fun lid -> Unbound_label lid)
+let find_all_labels =
+  find_component Env.lookup_all_labels (fun lid -> Unbound_label lid)
 let find_class =
   find_component Env.lookup_class (fun lid -> Unbound_class lid)
 let find_value =
@@ -106,6 +115,14 @@ let find_modtype =
 let find_class_type =
   find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
 
+let unbound_constructor_error env lid =
+  narrow_unbound_lid_error env lid.loc lid.txt
+    (fun lid -> Unbound_constructor lid)
+
+let unbound_label_error env lid =
+  narrow_unbound_lid_error env lid.loc lid.txt
+    (fun lid -> Unbound_label lid)
+
 (* Support for first-class modules. *)
 
 let transl_modtype_longident = ref (fun _ -> assert false)
@@ -116,7 +133,7 @@ let create_package_mty fake loc env (p, l) =
     List.sort
       (fun (s1, t1) (s2, t2) ->
          if s1.txt = s2.txt then
-           raise (Error (loc, Multiple_constraints_on_type s1.txt));
+           raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
          compare s1 s2)
       l
   in
@@ -169,7 +186,7 @@ let newvar ?name () =
 let enter_type_variable strict loc name =
   try
     if name <> "" && name.[0] = '_' then
-      raise (Error (loc, Invalid_variable_name ("'" ^ name)));
+      raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
     let v = Tbl.find name !type_variables in
     if strict then raise Already_bound;
     v
@@ -182,7 +199,7 @@ let type_variable loc name =
   try
     Tbl.find name !type_variables
   with Not_found ->
-    raise(Error(loc, Unbound_type_variable ("'" ^ name)))
+    raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
 
 let wrap_method ty =
   match (Ctype.repr ty).desc with
@@ -208,14 +225,14 @@ let rec transl_type env policy styp =
       let ty =
         if policy = Univars then new_pre_univar () else
           if policy = Fixed then
-            raise (Error (styp.ptyp_loc, Unbound_type_variable "_"))
+            raise (Error (styp.ptyp_loc, env, Unbound_type_variable "_"))
           else newvar ()
       in
       ctyp Ttyp_any ty env loc
   | Ptyp_var name ->
     let ty =
       if name <> "" && name.[0] = '_' then
-        raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
+        raise (Error (styp.ptyp_loc, env, Invalid_variable_name ("'" ^ name)));
       begin try
         instance env (List.assoc name !univars)
       with Not_found -> try
@@ -241,8 +258,9 @@ let rec transl_type env policy styp =
   | Ptyp_constr(lid, stl) ->
       let (path, decl) = find_type env styp.ptyp_loc lid.txt in
       if List.length stl <> decl.type_arity then
-        raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid.txt, decl.type_arity,
-                                                           List.length stl)));
+        raise(Error(styp.ptyp_loc, env,
+		    Type_arity_mismatch(lid.txt, decl.type_arity,
+                                        List.length stl)));
       let args = List.map (transl_type env policy) stl in
       let params = instance_list decl.type_params in
       let unify_param =
@@ -254,30 +272,30 @@ let rec transl_type env policy styp =
       List.iter2
         (fun (sty, cty) ty' ->
            try unify_param env ty' cty.ctyp_type with Unify trace ->
-             raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
+             raise (Error(sty.ptyp_loc, env, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       let constr =
         newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
       begin try
         Ctype.enforce_constraints env constr
       with Unify trace ->
-        raise (Error(styp.ptyp_loc, Type_mismatch trace))
+        raise (Error(styp.ptyp_loc, env, Type_mismatch trace))
       end;
-	ctyp (Ttyp_constr (path, lid, args)) constr env loc
+        ctyp (Ttyp_constr (path, lid, args)) constr env loc
   | Ptyp_object fields ->
       let fields = List.map
           (fun pf ->
-	    let desc =
-	      match pf.pfield_desc with
-	      | Pfield_var -> Tcfield_var
-	      | Pfield (s,e) ->
-		  let ty1 = transl_type env policy e in
-		  Tcfield (s, ty1)
-	    in
-	    { field_desc = desc; field_loc = pf.pfield_loc })
-	  fields in
+            let desc =
+              match pf.pfield_desc with
+              | Pfield_var -> Tcfield_var
+              | Pfield (s,e) ->
+                  let ty1 = transl_type env policy e in
+                  Tcfield (s, ty1)
+            in
+            { field_desc = desc; field_loc = pf.pfield_loc })
+          fields in
       let ty = newobj (transl_fields env policy [] fields) in
-	ctyp (Ttyp_object fields) ty env loc
+        ctyp (Ttyp_object fields) ty env loc
   | Ptyp_class(lid, stl, present) ->
       let (path, decl, is_variant) =
         try
@@ -292,7 +310,8 @@ let rec transl_type env policy styp =
                     check (Env.find_type path env)
                 | _ -> raise Not_found
           in check decl;
-          Location.prerr_warning styp.ptyp_loc Warnings.Deprecated;
+          Location.prerr_warning styp.ptyp_loc
+            (Warnings.Deprecated "old syntax for polymorphic variant type");
           (path, decl,true)
         with Not_found -> try
           if present <> [] then raise Not_found;
@@ -305,30 +324,31 @@ let rec transl_type env policy styp =
           let (path, decl) = Env.lookup_type lid2 env in
           (path, decl, false)
         with Not_found ->
-          raise(Error(styp.ptyp_loc, Unbound_class lid.txt))
+          raise(Error(styp.ptyp_loc, env, Unbound_class lid.txt))
       in
       if List.length stl <> decl.type_arity then
-        raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid.txt, decl.type_arity,
-                                                       List.length stl)));
+        raise(Error(styp.ptyp_loc, env,
+                    Type_arity_mismatch(lid.txt, decl.type_arity,
+                                        List.length stl)));
       let args = List.map (transl_type env policy) stl in
       let params = instance_list decl.type_params in
       List.iter2
         (fun (sty, cty) ty' ->
            try unify_var env ty' cty.ctyp_type with Unify trace ->
-             raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
+             raise (Error(sty.ptyp_loc, env, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
-	let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
+        let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
       let ty =
         try Ctype.expand_head env (newconstr path ty_args)
         with Unify trace ->
-          raise (Error(styp.ptyp_loc, Type_mismatch trace))
+          raise (Error(styp.ptyp_loc, env, Type_mismatch trace))
       in
       let ty = match ty.desc with
         Tvariant row ->
           let row = Btype.row_repr row in
           List.iter
             (fun l -> if not (List.mem_assoc l row.row_fields) then
-              raise(Error(styp.ptyp_loc, Present_has_no_type l)))
+              raise(Error(styp.ptyp_loc, env, Present_has_no_type l)))
             present;
           let fields =
             List.map
@@ -359,7 +379,7 @@ let rec transl_type env policy styp =
       | _ ->
           assert false
       in
-	ctyp (Ttyp_class (path, lid, args, present)) ty env loc
+        ctyp (Ttyp_class (path, lid, args, present)) ty env loc
   | Ptyp_alias(st, alias) ->
       let cty =
         try
@@ -371,7 +391,7 @@ let rec transl_type env policy styp =
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
             let trace = swap_list trace in
-            raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
+            raise(Error(styp.ptyp_loc, env, Alias_type_mismatch trace))
           end;
           ty
         with Not_found ->
@@ -381,7 +401,7 @@ let rec transl_type env policy styp =
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
             let trace = swap_list trace in
-            raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
+            raise(Error(styp.ptyp_loc, env, Alias_type_mismatch trace))
           end;
           if !Clflags.principal then begin
             end_def ();
@@ -409,11 +429,12 @@ let rec transl_type env policy styp =
         try
           let (l',f') = Hashtbl.find hfields h in
           (* Check for tag conflicts *)
-          if l <> l' then raise(Error(styp.ptyp_loc, Variant_tags(l, l')));
+          if l <> l' then raise(Error(styp.ptyp_loc, env, Variant_tags(l, l')));
           let ty = mkfield l f and ty' = mkfield l f' in
           if equal env false [ty] [ty'] then () else
           try unify env ty ty'
-          with Unify trace -> raise(Error(loc, Constructor_mismatch (ty,ty')))
+          with Unify trace ->
+            raise(Error(loc, env, Constructor_mismatch (ty,ty')))
         with Not_found ->
           Hashtbl.add hfields h (l,f)
       in
@@ -423,20 +444,20 @@ let rec transl_type env policy styp =
             let tl = List.map (transl_type env policy) stl in
             let f = match present with
               Some present when not (List.mem l present) ->
-		let ty_tl = List.map (fun cty -> cty.ctyp_type) tl in
+                let ty_tl = List.map (fun cty -> cty.ctyp_type) tl in
                 Reither(c, ty_tl, false, ref None)
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
-                  raise(Error(styp.ptyp_loc, Present_has_conjunction l));
+                  raise(Error(styp.ptyp_loc, env, Present_has_conjunction l));
                 match tl with [] -> Rpresent None
                 | st :: _ ->
-		      Rpresent (Some st.ctyp_type)
+                      Rpresent (Some st.ctyp_type)
             in
             add_typed_field styp.ptyp_loc l f;
-	      Ttag (l,c,tl)
+              Ttag (l,c,tl)
         | Rinherit sty ->
             let cty = transl_type env policy sty in
-	    let ty = cty.ctyp_type in
+            let ty = cty.ctyp_type in
             let nm =
               match repr cty.ctyp_type with
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
@@ -455,9 +476,9 @@ let rec transl_type env policy styp =
                 let row = Btype.row_repr row in
                 row.row_fields
             | {desc=Tvar _}, Some(p, _) ->
-                raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p))
+                raise(Error(sty.ptyp_loc, env, Unbound_type_constructor_2 p))
             | _ ->
-                raise(Error(sty.ptyp_loc, Not_a_variant ty))
+                raise(Error(sty.ptyp_loc, env, Not_a_variant ty))
             in
             List.iter
               (fun (l, f) ->
@@ -475,7 +496,7 @@ let rec transl_type env policy styp =
                 in
                 add_typed_field sty.ptyp_loc l f)
               fl;
-	      Tinherit cty
+              Tinherit cty
       in
       let tfields = List.map add_field fields in
       let fields = Hashtbl.fold (fun _ p l -> p :: l) hfields [] in
@@ -483,7 +504,7 @@ let rec transl_type env policy styp =
       | Some present ->
           List.iter
             (fun l -> if not (List.mem_assoc l fields) then
-              raise(Error(styp.ptyp_loc, Present_has_no_type l)))
+              raise(Error(styp.ptyp_loc, env, Present_has_no_type l)))
             present
       end;
       let row =
@@ -518,7 +539,7 @@ let rec transl_type env policy styp =
                   v.desc <- Tunivar name;
                   v :: tyl
               | _ ->
-                raise (Error (styp.ptyp_loc, Cannot_quantify (name, v)))
+                raise (Error (styp.ptyp_loc, env, Cannot_quantify (name, v)))
             end else tyl)
           [] new_univars
       in
@@ -531,19 +552,19 @@ let rec transl_type env policy styp =
       let mty = !transl_modtype env mty in
       widen z;
       let ptys = List.map (fun (s, pty) ->
-			     s, transl_type env policy pty
-			  ) l in
+                             s, transl_type env policy pty
+                          ) l in
       let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
       let ty = newty (Tpackage (path,
                        List.map (fun (s, pty) -> s.txt) l,
                        List.map (fun (_,cty) -> cty.ctyp_type) ptys))
       in
-	ctyp (Ttyp_package {
-		pack_name = path;
-		pack_type = mty.mty_type;
-		pack_fields = ptys;
+        ctyp (Ttyp_package {
+                pack_name = path;
+                pack_type = mty.mty_type;
+                pack_fields = ptys;
                 pack_txt = p;
-	      }) ty env loc
+              }) ty env loc
 
 and transl_fields env policy seen =
   function
@@ -552,7 +573,7 @@ and transl_fields env policy seen =
   | {field_desc = Tcfield_var}::_ ->
       if policy = Univars then new_pre_univar () else newvar ()
   | {field_desc = Tcfield(s, ty1); field_loc = loc}::l ->
-      if List.mem s seen then  raise (Error (loc, Repeated_method_label s));
+      if List.mem s seen then raise (Error (loc, env, Repeated_method_label s));
       let ty2 = transl_fields env policy (s::seen) l in
         newty (Tfield (s, Fpresent, ty1.ctyp_type, ty2))
 
@@ -594,7 +615,7 @@ let globalize_used_variables env fixed =
         r := (loc, v,  Tbl.find name !type_variables) :: !r
       with Not_found ->
         if fixed && Btype.is_Tvar (repr ty) then
-          raise(Error(loc, Unbound_type_variable ("'"^name)));
+          raise(Error(loc, env, Unbound_type_variable ("'"^name)));
         let v2 = new_global_var () in
         r := (loc, v, v2) :: !r;
         type_variables := Tbl.add name v2 !type_variables)
@@ -604,7 +625,7 @@ let globalize_used_variables env fixed =
     List.iter
       (function (loc, t1, t2) ->
         try unify env t1 t2 with Unify trace ->
-          raise (Error(loc, Type_mismatch trace)))
+          raise (Error(loc, env, Type_mismatch trace)))
       !r
 
 let transl_simple_type env fixed styp =
@@ -641,7 +662,7 @@ let transl_simple_type_univars env styp =
   in
   make_fixed_univars typ.ctyp_type;
     { typ with ctyp_type =
-	instance env (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
+        instance env (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := Tbl.empty;
@@ -663,37 +684,87 @@ let transl_type_scheme env styp =
 open Format
 open Printtyp
 
-let report_error ppf = function
+let spellcheck ppf fold env lid =
+  let cutoff =
+    match String.length (Longident.last lid) with
+      | 1 | 2 -> 0
+      | 3 | 4 -> 1
+      | 5 | 6 -> 2
+      | _ -> 3
+  in
+  let compare target head acc =
+    let (best_choice, best_dist) = acc in
+    match Misc.edit_distance target head cutoff with
+      | None -> (best_choice, best_dist)
+      | Some dist ->
+        let choice =
+          if dist < best_dist then [head]
+          else if dist = best_dist then head :: best_choice
+          else best_choice in
+        (choice, min dist best_dist)
+  in
+  let init = ([], max_int) in
+  let handle (choice, _dist) =
+    match List.rev choice with
+      | [] -> ()
+      | last :: rev_rest ->
+        fprintf ppf "@\nDid you mean %s%s%s?"
+          (String.concat ", " (List.rev rev_rest))
+          (if rev_rest = [] then "" else " or ")
+          last
+  in
+  (* flush now to get the error report early, in the (unheard of) case
+     where the linear search would take a bit of time; in the worst
+     case, the user has seen the error, she can interrupt the process
+     before the spell-checking terminates. *)
+  fprintf ppf "@?";
+  match lid with
+    | Longident.Lapply _ -> ()
+    | Longident.Lident s ->
+      handle (fold (compare s) None env init)
+    | Longident.Ldot (r, s) ->
+      handle (fold (compare s) (Some r) env init)
+
+let spellcheck_simple ppf fold extr =
+  spellcheck ppf (fun f -> fold (fun decl x -> f (extr decl) x))
+
+let spellcheck ppf fold =
+  spellcheck ppf (fun f -> fold (fun s _ _ x -> f s x))
+
+type cd = string list * int
+
+let report_error env ppf = function
   | Unbound_type_variable name ->
-      fprintf ppf "Unbound type parameter %s" name
+    fprintf ppf "Unbound type parameter %s@." name
   | Unbound_type_constructor lid ->
-      fprintf ppf "Unbound type constructor %a" longident lid
+    fprintf ppf "Unbound type constructor %a" longident lid;
+    spellcheck ppf Env.fold_types env lid;
   | Unbound_type_constructor_2 p ->
-      fprintf ppf "The type constructor@ %a@ is not yet completely defined"
-        path p
+    fprintf ppf "The type constructor@ %a@ is not yet completely defined"
+      path p
   | Type_arity_mismatch(lid, expected, provided) ->
-      fprintf ppf
-       "@[The type constructor %a@ expects %i argument(s),@ \
+    fprintf ppf
+      "@[The type constructor %a@ expects %i argument(s),@ \
         but is here applied to %i argument(s)@]"
-       longident lid expected provided
+      longident lid expected provided
   | Bound_type_variable name ->
-      fprintf ppf "Already bound type parameter '%s" name
+    fprintf ppf "Already bound type parameter '%s" name
   | Recursive_type ->
-      fprintf ppf "This type is recursive"
+    fprintf ppf "This type is recursive"
   | Unbound_row_variable lid ->
+      (* we don't use "spellcheck" here: this error is not raised
+         anywhere so it's unclear how it should be handled *)
       fprintf ppf "Unbound row variable in #%a" longident lid
   | Type_mismatch trace ->
-      Printtyp.unification_error true trace
+      Printtyp.report_unification_error ppf Env.empty trace
         (function ppf ->
            fprintf ppf "This type")
-        ppf
         (function ppf ->
            fprintf ppf "should be an instance of type")
   | Alias_type_mismatch trace ->
-      Printtyp.unification_error true trace
+      Printtyp.report_unification_error ppf Env.empty trace
         (function ppf ->
            fprintf ppf "This alias is bound to type")
-        ppf
         (function ppf ->
            fprintf ppf "but is used as an instance of type")
   | Present_has_conjunction l ->
@@ -701,12 +772,13 @@ let report_error ppf = function
   | Present_has_no_type l ->
       fprintf ppf "The present constructor %s has no type" l
   | Constructor_mismatch (ty, ty') ->
-      Printtyp.reset_and_mark_loops_list [ty; ty'];
-      fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
-        "This variant type contains a constructor"
-        Printtyp.type_expr ty
-        "which should be"
-        Printtyp.type_expr ty'
+      wrap_printing_env env (fun ()  ->
+	Printtyp.reset_and_mark_loops_list [ty; ty'];
+	fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
+          "This variant type contains a constructor"
+          Printtyp.type_expr ty
+          "which should be"
+          Printtyp.type_expr ty')
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
@@ -730,18 +802,28 @@ let report_error ppf = function
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
         s "Multiple occurences are not allowed."
   | Unbound_value lid ->
-      fprintf ppf "Unbound value %a" longident lid
+      fprintf ppf "Unbound value %a" longident lid;
+      spellcheck ppf Env.fold_values env lid;
   | Unbound_module lid ->
-      fprintf ppf "Unbound module %a" longident lid
+      fprintf ppf "Unbound module %a" longident lid;
+      spellcheck ppf Env.fold_modules env lid;
   | Unbound_constructor lid ->
-      fprintf ppf "Unbound constructor %a" longident lid
+      fprintf ppf "Unbound constructor %a" longident lid;
+      spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name)
+	env lid;
   | Unbound_label lid ->
-      fprintf ppf "Unbound record field label %a" longident lid
+      fprintf ppf "Unbound record field %a" longident lid;
+      spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;
   | Unbound_class lid ->
-      fprintf ppf "Unbound class %a" longident lid
+      fprintf ppf "Unbound class %a" longident lid;
+      spellcheck ppf Env.fold_classs env lid;
   | Unbound_modtype lid ->
-      fprintf ppf "Unbound module type %a" longident lid
+      fprintf ppf "Unbound module type %a" longident lid;
+      spellcheck ppf Env.fold_modtypes env lid;
   | Unbound_cltype lid ->
-      fprintf ppf "Unbound class type %a" longident lid
+      fprintf ppf "Unbound class type %a" longident lid;
+      spellcheck ppf Env.fold_cltypes env lid;
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
+  | Illegal_reference_to_recursive_module ->
+      fprintf ppf "Illegal recursive module reference"

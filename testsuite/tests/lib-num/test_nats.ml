@@ -1,9 +1,21 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 open Test;;
 open Nat;;
 
 (* Can compare nats less than 2**32 *)
 let equal_nat n1 n2 =
- eq_nat n1 0 (num_digits_nat n1 0 1) 
+ eq_nat n1 0 (num_digits_nat n1 0 1)
         n2 0 (num_digits_nat n2 0 1);;
 
 testing_function "num_digits_nat";;
@@ -108,10 +120,10 @@ let set_mult_digit_nat n1 d1 l1 n2 d2 l2 n3 d3 =
 let s = "3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333" in
 test 21 equal_nat (
 nat_of_string s,
-(let nat = make_nat 15 in 
+(let nat = make_nat 15 in
   set_digit_nat nat 0 3;
-  set_mult_digit_nat nat 0 15 
-                 (nat_of_string (String.sub s 0 135)) 0 14 
+  set_mult_digit_nat nat 0 15
+                 (nat_of_string (String.sub s 0 135)) 0 14
                  (nat_of_int 10) 0;
   nat))
 ;;

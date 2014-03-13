@@ -11,12 +11,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Large, multi-dimensional, numerical arrays.
 
    This module implements multi-dimensional arrays of integers and
-   floating-point numbers, thereafter referred to as ``big arrays''.
+   floating-point numbers, thereafter referred to as 'big arrays'.
    The implementation allows efficient sharing of large numerical
    arrays between OCaml code and C or Fortran numerical libraries.
 
@@ -333,7 +331,7 @@ module Genarray :
     = "caml_ba_slice"
   (** Extract a sub-array of lower dimension from the given big array
      by fixing one or several of the first (left-most) coordinates.
-     [Genarray.slice_left a [|i1; ... ; iM|]] returns the ``slice''
+     [Genarray.slice_left a [|i1; ... ; iM|]] returns the 'slice'
      of [a] obtained by setting the first [M] coordinates to
      [i1], ..., [iM].  If [a] has [N] dimensions, the slice has
      dimension [N - M], and the element at coordinates
@@ -351,7 +349,7 @@ module Genarray :
     = "caml_ba_slice"
   (** Extract a sub-array of lower dimension from the given big array
      by fixing one or several of the last (right-most) coordinates.
-     [Genarray.slice_right a [|i1; ... ; iM|]] returns the ``slice''
+     [Genarray.slice_right a [|i1; ... ; iM|]] returns the 'slice'
      of [a] obtained by setting the last [M] coordinates to
      [i1], ..., [iM].  If [a] has [N] dimensions, the slice has
      dimension [N - M], and the element at coordinates
@@ -448,7 +446,7 @@ module Array1 : sig
      determine the array element kind and the array layout
      as described for [Genarray.create]. *)
 
-  val dim: ('a, 'b, 'c) t -> int
+  external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the size (dimension) of the given one-dimensional
      big array. *)
 
@@ -528,10 +526,10 @@ module Array2 :
      determine the array element kind and the array layout
      as described for {!Bigarray.Genarray.create}. *)
 
-  val dim1: ('a, 'b, 'c) t -> int
+  external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given two-dimensional big array. *)
 
-  val dim2: ('a, 'b, 'c) t -> int
+  external dim2: ('a, 'b, 'c) t -> int = "%caml_ba_dim_2"
   (** Return the second dimension of the given two-dimensional big array. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
@@ -631,13 +629,13 @@ module Array3 :
      [kind] and [layout] determine the array element kind and
      the array layout as described for {!Bigarray.Genarray.create}. *)
 
-  val dim1: ('a, 'b, 'c) t -> int
+  external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given three-dimensional big array. *)
 
-  val dim2: ('a, 'b, 'c) t -> int
+  external dim2: ('a, 'b, 'c) t -> int = "%caml_ba_dim_2"
   (** Return the second dimension of the given three-dimensional big array. *)
 
-  val dim3: ('a, 'b, 'c) t -> int
+  external dim3: ('a, 'b, 'c) t -> int = "%caml_ba_dim_3"
   (** Return the third dimension of the given three-dimensional big array. *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"

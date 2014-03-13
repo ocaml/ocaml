@@ -71,16 +71,16 @@ let rec lam ppf = function
       let switch ppf sw =
         let spc = ref false in
         for i = 0 to Array.length sw.us_index_consts - 1 do
-          let n = sw.us_index_consts.(i)
-          and l = sw.us_actions_consts.(i) in
+          let n = sw.us_index_consts.(i) in
+          let l = sw.us_actions_consts.(n) in
           if !spc then fprintf ppf "@ " else spc := true;
-          fprintf ppf "@[<hv 1>case int %i:@ %a@]" n lam l;
+          fprintf ppf "@[<hv 1>case int %i:@ %a@]" i lam l;
         done;
         for i = 0 to Array.length sw.us_index_blocks - 1 do
-          let n = sw.us_index_blocks.(i)
-          and l = sw.us_actions_blocks.(i) in
+          let n = sw.us_index_blocks.(i) in
+          let l = sw.us_actions_blocks.(n) in
           if !spc then fprintf ppf "@ " else spc := true;
-          fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l;
+          fprintf ppf "@[<hv 1>case tag %i:@ %a@]" i lam l;
         done in
       fprintf ppf
        "@[<1>(switch %a@ @[<v 0>%a@])@]"
@@ -120,7 +120,9 @@ let rec lam ppf = function
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let kind =
-        if k = Lambda.Self then "self" else if k = Lambda.Cached then "cache" else "" in
+        if k = Lambda.Self then "self"
+        else if k = Lambda.Cached then "cache"
+        else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
 
 and sequence ppf ulam = match ulam with
@@ -128,4 +130,5 @@ and sequence ppf ulam = match ulam with
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | _ -> lam ppf ulam
 
-let clambda = lam
+let clambda ppf ulam =
+  fprintf ppf "%a@." lam ulam

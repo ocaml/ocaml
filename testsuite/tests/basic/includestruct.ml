@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Test for "include <module-expr>" inside structures *)
 
 module A =
@@ -65,7 +77,7 @@ module D =
     include F(struct end)
     let test() = print_t A; print_newline(); print_t (B 42); print_newline()
   end
-    
+
 let _ =
   D.test();
   D.print_t D.A; print_newline(); D.print_t (D.B 42); print_newline()
@@ -89,4 +101,3 @@ module G =
 let _ =
   begin try raise (G.Exn "foo") with G.Exn s -> print_string s end;
   print_int ((new G.c)#m); print_newline()
-

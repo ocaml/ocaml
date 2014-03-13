@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: meta.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* To control the runtime system and bytecode interpreter *)
 
 external global_data : unit -> Obj.t array = "caml_get_global_data"

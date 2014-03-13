@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Description of the ARM processor *)
 
 open Misc
@@ -38,7 +36,7 @@ let word_addressed = false
     r13                   stack pointer
     r14                   return address
     r15                   program counter
-   Floatinng-point register map (VFPv3):
+   Floating-point register map (VFPv{2,3}):
     d0 - d7               general purpose (not preserved)
     d8 - d15              general purpose (preserved)
     d16 - d31             generat purpose (not preserved), VFPv3 only
@@ -55,9 +53,9 @@ let float_reg_name =
 
 (* We have three register classes:
     0 for integer registers
-    1 for VFPv3-D16
+    1 for VFPv2 and VFPv3-D16
     2 for VFPv3
-   This way we can choose between VFPv3-D16 and VFPv3
+   This way we can choose between VFPv2/VFPv3-D16 and VFPv3
    at (ocamlopt) runtime using command line switches.
 *)
 
@@ -66,6 +64,7 @@ let num_register_classes = 3
 let register_class r =
   match (r.typ, !fpu) with
     (Int | Addr), _  -> 0
+  | Float, VFPv2     -> 1
   | Float, VFPv3_D16 -> 1
   | Float, _         -> 2
 
@@ -124,8 +123,8 @@ let calling_conventions
           ofs := !ofs + size_int
         end
     | Float ->
-        assert (abi = EABI_VFP);
-        assert (!fpu >= VFPv3_D16);
+        assert (abi = EABI_HF);
+        assert (!fpu >= VFPv2);
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
           incr float
@@ -186,24 +185,24 @@ let destroyed_at_c_call =
                          108;109;110;111;112;113;114;115;
                          116;116;118;119;120;121;122;123;
                          124;125;126;127;128;129;130;131]
-                    | EABI_VFP ->   (* r4-r7, d8-d15 preserved *)
+                    | EABI_HF ->    (* r4-r7, d8-d15 preserved *)
                         [0;1;2;3;8;
                          100;101;102;103;104;105;106;107;
                          116;116;118;119;120;121;122;123;
                          124;125;126;127;128;129;130;131]))
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ )
+    Iop(Icall_ind | Icall_imm _)
   | Iop(Iextcall(_, true)) ->
       all_phys_regs
   | Iop(Iextcall(_, false)) ->
       destroyed_at_c_call
-  | Iop(Ialloc n) ->
+  | Iop(Ialloc _) ->
       destroyed_at_alloc
   | Iop(Iconst_symbol _) when !pic_code ->
-      [|phys_reg 3; phys_reg 8|]  (* r3 and r12 destroyed *)
+      [| phys_reg 3; phys_reg 8 |]  (* r3 and r12 destroyed *)
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _)) ->
-      [|phys_reg 107|]            (* d7 (s14-s15) destroyed *)
+      [| phys_reg 107 |]            (* d7 (s14-s15) destroyed *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -211,11 +210,17 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> 5
+    Iextcall(_, _) -> if abi = EABI then 0 else 4
+  | Ialloc _ -> if abi = EABI then 0 else 7
+  | Iconst_symbol _ when !pic_code -> 7
   | _ -> 9
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 5; 9; 9 |]
+    Iextcall(_, _) -> if abi = EABI then [| 4; 0; 0 |] else [| 4; 8; 8 |]
+  | Ialloc _ -> if abi = EABI then [| 7; 0; 0 |] else [| 7; 8; 8 |]
+  | Iconst_symbol _ when !pic_code -> [| 7; 16; 32 |]
+  | Iintoffloat | Ifloatofint
+  | Iload(Single, _) | Istore(Single, _) -> [| 9; 15; 31 |]
   | _ -> [| 9; 16; 32 |]
 
 (* Layout of the stack *)
@@ -228,3 +233,6 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   Ccomp.command (Config.asm ^ " -o " ^
                  Filename.quote outfile ^ " " ^ Filename.quote infile)
+
+
+let init () = ()

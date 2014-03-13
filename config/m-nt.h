@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: m-nt.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Machine configuration, Intel x86 processors, Win32,
    Visual C++ or Mingw compiler */
 

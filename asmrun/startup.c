@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: startup.c 12959 2012-09-27 13:12:51Z maranget $ */
-
 /* Start-up code */
 
 #include <stdio.h>
@@ -33,7 +31,6 @@
 #include "printexc.h"
 #include "stack.h"
 #include "sys.h"
-#include "natdynlink.h"
 #ifdef HAS_UI
 #include "ui.h"
 #endif
@@ -57,7 +54,7 @@ static void init_atoms(void)
   }
   if (caml_page_table_add(In_static_data,
                           caml_atom_table, caml_atom_table + 256) != 0)
-    caml_fatal_error("Fatal error: not enough memory for the initial page table");
+    caml_fatal_error("Fatal error: not enough memory for initial page table");
 
   for (i = 0; caml_data_segments[i].begin != 0; i++) {
     /* PR#5509: we must include the zero word at end of data segment,
@@ -65,7 +62,7 @@ static void init_atoms(void)
     if (caml_page_table_add(In_static_data,
                             caml_data_segments[i].begin,
                             caml_data_segments[i].end + sizeof(value)) != 0)
-      caml_fatal_error("Fatal error: not enough memory for the initial page table");
+      caml_fatal_error("Fatal error: not enough memory for initial page table");
   }
 
   caml_code_area_start = caml_code_segments[0].begin;
@@ -150,6 +147,14 @@ extern value caml_start_program (void);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
+#ifdef _MSC_VER
+
+/* PR 4887: avoid crash box of windows runtime on some system calls */
+extern void caml_install_invalid_parameter_handler();
+
+#endif
+
+
 void caml_main(char **argv)
 {
   char * exe_name;
@@ -160,6 +165,9 @@ void caml_main(char **argv)
   char tos;
 
   caml_init_ieee_floats();
+#ifdef _MSC_VER
+  caml_install_invalid_parameter_handler();
+#endif
   caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;

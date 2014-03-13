@@ -11,8 +11,6 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: callback.h 12858 2012-08-10 14:45:51Z maranget $ */
-
 /* Callbacks from C to OCaml */
 
 #ifndef CAML_CALLBACK_H

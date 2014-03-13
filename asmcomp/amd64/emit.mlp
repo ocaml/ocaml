@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: emit.mlp 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Emission of x86-64 (AMD 64) assembly code *)
 
 open Cmm
@@ -25,6 +23,8 @@ open Emitaux
 let macosx = (Config.system = "macosx")
 let mingw64 = (Config.system = "mingw64")
 
+let fp = Config.with_frame_pointers
+
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -34,12 +34,13 @@ let stack_offset = ref 0
 (* Layout of the stack frame *)
 
 let frame_required () =
-  !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
+  fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
     let sz =
-      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8)
+      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
+      + (if fp then 8 else 0) )
     in Misc.align sz 16
   end else
     !stack_offset + 8
@@ -109,13 +110,13 @@ let emit_reg = function
 
 let reg_low_8_name =
   [| "%al"; "%bl"; "%dil"; "%sil"; "%dl"; "%cl"; "%r8b"; "%r9b";
-     "%r10b"; "%r11b"; "%bpl"; "%r12b"; "%r13b" |]
+     "%r12b"; "%r13b"; "%r10b"; "%r11b"; "%bpl" |]
 let reg_low_16_name =
   [| "%ax"; "%bx"; "%di"; "%si"; "%dx"; "%cx"; "%r8w"; "%r9w";
-     "%r10w"; "%r11w"; "%bp"; "%r12w"; "%r13w" |]
+     "%r12w"; "%r13w"; "%r10w"; "%r11w"; "%bp" |]
 let reg_low_32_name =
   [| "%eax"; "%ebx"; "%edi"; "%esi"; "%edx"; "%ecx"; "%r8d"; "%r9d";
-     "%r10d"; "%r11d"; "%ebp"; "%r12d"; "%r13d" |]
+     "%r12d"; "%r13d"; "%r10d"; "%r11d"; "%ebp" |]
 
 let emit_subreg tbl r =
   match r.loc with
@@ -290,25 +291,25 @@ let emit_float_test cmp neg arg lbl =
       `	jp	{emit_label lbl}\n`;     (* branch taken if unordered *)
       `	jne	{emit_label lbl}\n`      (* branch taken if x<y or x>y *)
   | (Clt, _) ->
-      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
       if not neg then
       `	ja	{emit_label lbl}\n`     (* branch taken if y>x i.e. x<y *)
       else
       `	jbe	{emit_label lbl}\n` (* taken if unordered or y<=x i.e. !(x<y) *)
   | (Cle, _) ->
-      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
       if not neg then
       `	jae	{emit_label lbl}\n`     (* branch taken if y>=x i.e. x<=y *)
       else
       `	jb	{emit_label lbl}\n` (* taken if unordered or y<x i.e. !(x<=y) *)
   | (Cgt, _) ->
-      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
+      `	comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
       if not neg then
       `	ja	{emit_label lbl}\n`     (* branch taken if x>y *)
       else
       `	jbe	{emit_label lbl}\n` (* taken if unordered or x<=y i.e. !(x>y) *)
   | (Cge, _) ->
-      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
+      `	comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
       if not neg then
       `	jae	{emit_label lbl}\n`     (* branch taken if x>=y *)
       else
@@ -318,9 +319,12 @@ let emit_float_test cmp neg arg lbl =
 
 let output_epilogue f =
   if frame_required() then begin
-    let n = frame_size() - 8 in
+    let n = frame_size() - 8 - (if fp then 8 else 0) in
     `	addq	${emit_int n}, %rsp\n`;
     cfi_adjust_cfa_offset (-n);
+    if fp then begin
+       `	popq	%rbp\n`
+    end;
     f ();
     (* reset CFA back cause function body may continue *)
     cfi_adjust_cfa_offset n
@@ -328,14 +332,29 @@ let output_epilogue f =
   else
     f ()
 
+(* Floating-point constants *)
+
+let float_constants = ref ([] : (string * int) list)
+
+let add_float_constant cst =
+  try
+    List.assoc cst !float_constants
+  with
+    Not_found ->
+      let lbl = new_label() in
+      float_constants := (cst, lbl) :: !float_constants;
+      lbl
+
+let emit_float_constant (cst, lbl) =
+  `{emit_label lbl}:`;
+  emit_float64_directive ".quad" cst
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
 let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
-
-let float_constants = ref ([] : (int * string) list)
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =
@@ -367,8 +386,7 @@ let emit_instr fallthrough i =
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           `	xorpd	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
         | _ ->
-          let lbl = new_label() in
-          float_constants := (lbl, s) :: !float_constants;
+          let lbl = add_float_constant s in
           `	movsd	{emit_label lbl}(%rip), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_symbol s) ->
@@ -545,6 +563,22 @@ let emit_instr fallthrough i =
         `	addq	${emit_int n}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
         `	{emit_string(instr_for_floatarithmem op)}	{emit_addressing addr i.arg 1}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific(Ibswap size)) ->
+       begin match size with
+       | 16 ->
+        `	xchg	%ah, %al\n`;
+        `	movzwq	{emit_reg16 i.res.(0)}, {emit_reg i.res.(0)}\n`
+       | 32 ->
+        `	bswap	{emit_reg32 i.res.(0)}\n`;
+        `	movslq	{emit_reg32 i.res.(0)}, {emit_reg i.res.(0)}\n`
+       | 64 ->
+        `	bswap	{emit_reg i.res.(0)}\n`
+       | _ -> assert false
+       end
+    | Lop(Ispecific Isqrtf) ->
+        `	sqrtsd	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific(Ifloatsqrtf addr)) ->
+        `	sqrtsd	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
     | Lreloadretaddr ->
         ()
     | Lreturn ->
@@ -657,26 +691,20 @@ let rec emit_all fallthrough i =
       emit_instr fallthrough i;
       emit_all (Linearize.has_fallthrough i.desc) i.next
 
-(* Emission of the floating-point constants *)
-
-let emit_float_constant (lbl, cst) =
-  `{emit_label lbl}:`;
-  emit_float64_directive ".quad" cst
-
 (* Emission of the profiling prelude *)
 
 let emit_profile () =
   match Config.system with
   | "linux" | "gnu" ->
       (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
-         and rbx, rbp, r12-r15 like all C functions.
-         We need to preserve r10 and r11 ourselves, since OCaml can
-         use them for argument passing. *)
+         and rbx, rbp, r12-r15 like all C functions.  This includes
+         all the registers used for argument passing, so we don't
+         need to preserve other regs.  We do need to initialize rbp
+         like mcount expects it, though. *)
       `	pushq	%r10\n`;
-      `	movq	%rsp, %rbp\n`;
-      `	pushq	%r11\n`;
+      if not fp then
+        `	movq	%rsp, %rbp\n`;
       `	{emit_call "mcount"}\n`;
-      `	popq	%r11\n`;
       `	popq	%r10\n`
   | _ ->
       () (*unsupported yet*)
@@ -688,7 +716,6 @@ let fundecl fundecl =
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := 0;
-  float_constants := [];
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
@@ -704,9 +731,14 @@ let fundecl fundecl =
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
+  if fp then begin
+       `	pushq	%rbp\n`;
+       cfi_adjust_cfa_offset 8;
+       `	movq	%rsp, %rbp\n`;
+  end;
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
-    let n = frame_size() - 8 in
+    let n = frame_size() - 8 - (if fp then 8 else 0) in
     `	subq	${emit_int n}, %rsp\n`;
     cfi_adjust_cfa_offset n;
   end;
@@ -720,15 +752,6 @@ let fundecl fundecl =
       `	.type	{emit_symbol fundecl.fun_name},@function\n`;
       `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
     | _ -> ()
-  end;
-  if !float_constants <> [] then begin
-    if macosx then
-      `	.literal8\n`
-    else if mingw64 then
-      `	.section .rdata,\"dr\"\n`
-    else
-      `	.section .rodata.cst8,\"a\",@progbits\n`;
-    List.iter emit_float_constant !float_constants
   end
 
 (* Emission of data *)
@@ -771,6 +794,7 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();                   (* PR#5603 *)
+  float_constants := [];
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
     if macosx then
@@ -795,6 +819,15 @@ let begin_assembly() =
   if macosx then `	nop\n` (* PR#4690 *)
 
 let end_assembly() =
+  if !float_constants <> [] then begin
+    if macosx then
+      `	.literal8\n`
+    else if mingw64 then
+      `	.section .rdata,\"dr\"\n`
+    else
+      `	.section .rodata.cst8,\"a\",@progbits\n`;
+    List.iter emit_float_constant !float_constants
+  end;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   if macosx then `	nop\n`; (* suppress "ld warning: atom sorting error" *)

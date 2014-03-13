@@ -12,8 +12,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 cd package-macosx
 rm -rf ocaml.pkg ocaml-rw.dmg
 
@@ -87,7 +85,7 @@ mkdir -p resources
 cat >resources/ReadMe.txt <<EOF
 This package installs OCaml version ${VERSION}.
 You need Mac OS X 10.7.x (Lion), with the
-XCode tools installed (v3.2.6 or later).
+XCode tools installed (v4.3.3 or later).
 
 Files will be installed in the following directories:
 
@@ -102,7 +100,12 @@ EOF
 chmod -R g-w root
 sudo chown -R root:wheel root
 
-/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker \
+# HOW TO INSTALL PackageMaker:
+# Get PackageMaker.app from
+# https://developer.apple.com/downloads/index.action?name=Auxiliary
+# It's in the "Auxiliary Tools for Xcode" download.
+# Copy it to /Applications/.
+/Applications/PackageMaker.app/Contents/MacOS/PackageMaker \
   -build -p "`pwd`/ocaml.pkg" -f "`pwd`/root" -i "`pwd`/Info.plist" \
   -d "`pwd`/Description.plist" -r "`pwd`/resources"
 

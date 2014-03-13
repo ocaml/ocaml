@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: env.mli 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Environment handling *)
 
 open Types
@@ -33,12 +31,22 @@ val empty: t
 val initial: t
 val diff: t -> t -> Ident.t list
 
+type type_descriptions =
+    constructor_description list * label_description list
+
+(* For short-paths *)
+val iter_types:
+    (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
+    t -> unit
+val same_types: t -> t -> bool
+val used_persistent: unit -> Concr.t
+val find_shadowed_types: Path.t -> t -> Path.t list
+
 (* Lookup by paths *)
 
 val find_value: Path.t -> t -> value_description
-val find_annot: Path.t -> t -> Annot.ident
 val find_type: Path.t -> t -> type_declaration
-val find_constructors: Path.t -> t -> constructor_description list
+val find_type_descrs: Path.t -> t -> type_descriptions
 val find_module: Path.t -> t -> module_type
 val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
@@ -50,7 +58,7 @@ val find_type_expansion_opt:
     Path.t -> t -> type_expr list * type_expr * int option
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
-val find_modtype_expansion: Path.t -> t -> Types.module_type
+val find_modtype_expansion: Path.t -> t -> module_type
 
 val has_local_constraints: t -> bool
 val add_gadt_instance_level: int -> t -> t
@@ -61,9 +69,12 @@ val add_gadt_instance_chain: t -> int -> type_expr -> unit
 (* Lookup by long identifiers *)
 
 val lookup_value: Longident.t -> t -> Path.t * value_description
-val lookup_annot: Longident.t -> t -> Path.t * Annot.ident
-val lookup_constructor: Longident.t -> t -> Path.t * constructor_description
-val lookup_label: Longident.t -> t -> Path.t * label_description
+val lookup_constructor: Longident.t -> t -> constructor_description
+val lookup_all_constructors:
+  Longident.t -> t -> (constructor_description * (unit -> unit)) list
+val lookup_label: Longident.t -> t -> label_description
+val lookup_all_labels:
+  Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
 val lookup_module: Longident.t -> t -> Path.t * module_type
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
@@ -73,11 +84,15 @@ val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
 val lookup_continuation: Longident.t -> t -> Path.t * continuation_description
 (*< JOCAML *)
 
+exception Recmodule
+  (* Raise by lookup_module when the identifier refers
+     to one of the modules of a recursive definition
+     during the computation of its approximation (see #5965). *)
+
 (* Insertion by identifier *)
 
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
-val add_annot: Ident.t -> Annot.ident -> t -> t
 val add_type: Ident.t -> type_declaration -> t -> t
 val add_exception: Ident.t -> exception_declaration -> t -> t
 val add_module: Ident.t -> module_type -> t -> t
@@ -99,7 +114,7 @@ val remove_continuations: t -> t
 (* Insertion of all fields of a signature, relative to the given path.
    Used to implement open. *)
 
-val open_signature: ?loc:Location.t -> ?toplevel:bool -> Path.t -> signature -> t -> t
+val open_signature: ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t -> signature -> t -> t
 val open_pers_signature: string -> t -> t
 
 (* Insertion by name *)
@@ -116,7 +131,9 @@ val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
 
 (* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit
-val reset_missing_cmis: unit -> unit
+
+(* To be called before each toplevel phrase. *)
+val reset_cache_toplevel: unit -> unit
 
 (* Remember the name of the current compilation unit. *)
 val set_unit_name: string -> unit
@@ -159,7 +176,7 @@ val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 (* Error report *)
 
 type error =
-  | Illegal_renaming of string * string
+  | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
 
@@ -197,32 +214,29 @@ val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (** Folding over all identifiers (for analysis purpose) *)
 
 val fold_values:
-  (string -> Path.t -> Types.value_description -> 'a -> 'a) ->
+  (string -> Path.t -> value_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_types:
-  (string -> Path.t -> Types.type_declaration -> 'a -> 'a) ->
+  (string -> Path.t -> type_declaration * type_descriptions -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_constructors:
-  (string -> Path.t -> Types.constructor_description -> 'a -> 'a) ->
+  (constructor_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_labels:
-  (string -> Path.t -> Types.label_description -> 'a -> 'a) ->
+  (label_description -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 
 (** Persistent structures are only traversed if they are already loaded. *)
 val fold_modules:
-  (string -> Path.t -> Types.module_type -> 'a -> 'a) ->
+  (string -> Path.t -> module_type -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 
 val fold_modtypes:
-  (string -> Path.t -> Types.modtype_declaration -> 'a -> 'a) ->
+  (string -> Path.t -> modtype_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_classs:
-  (string -> Path.t -> Types.class_declaration -> 'a -> 'a) ->
+  (string -> Path.t -> class_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
 val fold_cltypes:
-  (string -> Path.t -> Types.class_type_declaration -> 'a -> 'a) ->
+  (string -> Path.t -> class_type_declaration -> 'a -> 'a) ->
   Longident.t option -> t -> 'a -> 'a
-
-
-

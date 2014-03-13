@@ -1,4 +1,5 @@
 (***********************************************************************)
+(*                                                                     *)
 (*                             OCamldoc                                *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
@@ -8,8 +9,6 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id$ *)
 
 (** Environment for finding complete names from relative names. *)
 
@@ -56,7 +55,7 @@ let rec add_signature env root ?rel signat =
     | Types.Sig_exception (ident, _) -> { env with env_exceptions = (rel_name ident, qualify ident) :: env.env_exceptions }
     | Types.Sig_module (ident, modtype, _) ->
         let env2 =
-          match modtype with (* A VOIR : le cas où c'est un identificateur, dans ce cas on n'a pas de signature *)
+          match modtype with (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
             Types.Mty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
           |  _ -> env
         in
@@ -68,7 +67,7 @@ let rec add_signature env root ?rel signat =
               env
           | Types.Modtype_manifest modtype ->
               match modtype with
-                 (* A VOIR : le cas où c'est un identificateur, dans ce cas on n'a pas de signature *)
+                 (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
                 Types.Mty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
               |  _ -> env
         in
@@ -245,5 +244,3 @@ let subst_class_type env t =
         Types.Cty_fun (l, new_texp, new_ct)
   in
   iter t
-
-(* eof $Id$ *)

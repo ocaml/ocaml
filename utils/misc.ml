@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: misc.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 (* Errors *)
 
 exception Fatal_error
@@ -243,4 +241,115 @@ let thd3 (_,_,x) = x
 let fst4 (x, _, _, _) = x
 let snd4 (_,x,_, _) = x
 let thd4 (_,_,x,_) = x
+let for4 (_,_,_,x) = x
 
+
+module LongString = struct
+  type t = string array
+
+  let create str_size =
+    let tbl_size = str_size / Sys.max_string_length + 1 in
+    let tbl = Array.make tbl_size "" in
+    for i = 0 to tbl_size - 2 do
+      tbl.(i) <- String.create Sys.max_string_length;
+    done;
+    tbl.(tbl_size - 1) <- String.create (str_size mod Sys.max_string_length);
+    tbl
+
+  let length tbl =
+    let tbl_size = Array.length tbl in
+    Sys.max_string_length * (tbl_size - 1) + String.length tbl.(tbl_size - 1)
+
+  let get tbl ind =
+    tbl.(ind / Sys.max_string_length).[ind mod Sys.max_string_length]
+
+  let set tbl ind c =
+    tbl.(ind / Sys.max_string_length).[ind mod Sys.max_string_length] <- c
+
+  let blit src srcoff dst dstoff len =
+    for i = 0 to len - 1 do
+      set dst (dstoff + i) (get src (srcoff + i))
+    done
+
+  let output oc tbl pos len =
+    for i = pos to pos + len - 1 do
+      output_char oc (get tbl i)
+    done
+
+  let unsafe_blit_to_string src srcoff dst dstoff len =
+    for i = 0 to len - 1 do
+      String.unsafe_set dst (dstoff + i) (get src (srcoff + i))
+    done
+
+  let input_bytes ic len =
+    let tbl = create len in
+    Array.iter (fun str -> really_input ic str 0 (String.length str)) tbl;
+    tbl
+end
+
+
+let edit_distance a b cutoff =
+  let la, lb = String.length a, String.length b in
+  let cutoff =
+    (* using max_int for cutoff would cause overflows in (i + cutoff + 1);
+       we bring it back to the (max la lb) worstcase *)
+    min (max la lb) cutoff in
+  if abs (la - lb) > cutoff then None
+  else begin
+    (* initialize with 'cutoff + 1' so that not-yet-written-to cases have
+       the worst possible cost; this is useful when computing the cost of
+       a case just at the boundary of the cutoff diagonal. *)
+    let m = Array.make_matrix (la + 1) (lb + 1) (cutoff + 1) in
+    m.(0).(0) <- 0;
+    for i = 1 to la do
+      m.(i).(0) <- i;
+    done;
+    for j = 1 to lb do
+      m.(0).(j) <- j;
+    done;
+    for i = 1 to la do
+      for j = max 1 (i - cutoff - 1) to min lb (i + cutoff + 1) do
+        let cost = if a.[i-1] = b.[j-1] then 0 else 1 in
+        let best =
+          (* insert, delete or substitute *)
+          min (1 + min m.(i-1).(j) m.(i).(j-1)) (m.(i-1).(j-1) + cost)
+        in
+        let best =
+          (* swap two adjacent letters; we use "cost" again in case of
+             a swap between two identical letters; this is slightly
+             redundant as this is a double-substitution case, but it
+             was done this way in most online implementations and
+             imitation has its virtues *)
+          if not (i > 1 && j > 1 && a.[i-1] = b.[j-2] && a.[i-2] = b.[j-1])
+          then best
+          else min best (m.(i-2).(j-2) + cost)
+        in
+        m.(i).(j) <- best
+      done;
+    done;
+    let result = m.(la).(lb) in
+    if result > cutoff
+    then None
+    else Some result
+  end
+
+
+(* split a string [s] at every char [c], and return the list of sub-strings *)
+let split s c =
+  let len = String.length s in
+  let rec iter pos to_rev =
+    if pos = len then List.rev ("" :: to_rev) else
+      match try
+              Some ( String.index_from s pos c )
+        with Not_found -> None
+      with
+          Some pos2 ->
+            if pos2 = pos then iter (pos+1) ("" :: to_rev) else
+              iter (pos2+1) ((String.sub s pos (pos2-pos)) :: to_rev)
+        | None -> List.rev ( String.sub s pos (len-pos) :: to_rev )
+  in
+  iter 0 []
+
+let cut_at s c =
+  let pos = String.index s c in
+  String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)

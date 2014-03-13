@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: threadUnix.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Thread-compatible system calls.
 
    @deprecated The functionality of this module has been merged back into

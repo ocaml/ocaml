@@ -16,7 +16,7 @@
  *     Longitudes, Paris, France), as detailed in Astronomy & Astrophysics
  *     282, 663 (1994)
  *
- *    Note that the code herein is design for the purpose of testing 
+ *    Note that the code herein is design for the purpose of testing
  *     computational performance; error handling and other such "niceties"
  *    is virtually non-existent.
  *
@@ -68,7 +68,7 @@ and a = [|
   [|  19.2184460618;     -3716e-10;  979e-10 |];
   [|  30.1103868694;    -16635e-10;  686e-10 |] |]
 
-and dlm =        
+and dlm =
   [| [| 252.25090552; 5381016286.88982;  -1.92789 |];
      [| 181.97980085; 2106641364.33548;   0.59381 |];
      [| 100.46645683; 1295977422.83429;  -2.04411 |];
@@ -151,7 +151,7 @@ and sa =
 
 (* tables giving the trigonometric terms to be added to the mean elements of
    the mean longitudes . *)
-and kq = 
+and kq =
   [| [|  3086.0; 15746.0; 69613.0; 59899.0; 75645.0; 88306.0; 12661.0; 2658.0;  0.0;   0.0 |];
      [| 21863.0; 32794.0; 10931.0;    73.0;  4387.0; 26934.0;  1473.0; 2157.0;  0.0;   0.0 |];
      [|    10.0; 16002.0; 21863.0; 10931.0;  1473.0; 32004.0;  4387.0;   73.0;  0.0;   0.0 |];
@@ -181,15 +181,15 @@ and sl =
      [|  71234.0;-41116.0; 5334.0;-4935.0;-1848.0;   66.0;  434.0;-1748.0;  3780.0; -701.0 |];
      [| -47645.0; 11647.0; 2166.0; 3194.0;  679.0;    0.0; -244.0; -419.0; -2531.0;   48.0 |] |]
 
-  
+
 (* Normalize angle into the range -pi <= A < +pi. *)
 let anpm a =
   let w = mod_float a twopi in
     if abs_float w >= pic then begin
       if a < 0.0 then
-	w +. twopi
+        w +. twopi
       else
-	w -. twopi
+        w -. twopi
     end else
       w
 
@@ -204,10 +204,10 @@ let planetpv epoch np pv =
   and de  = e.(np).(0) +. (e.(np).(1) +. e.(np).(2) *. t ) *. t
   and dp  = anpm ((3600.0 *. pi.(np).(0) +. (pi.(np).(1) +. pi.(np).(2) *. t ) *. t ) *. a2r )
   and  di  = (3600.0 *. dinc.(np).(0) +. (dinc.(np).(1) +. dinc.(np).(2) *. t ) *. t ) *. a2r
-  and doh = anpm ((3600.0 *. omega.(np).(0) +. (omega.(np).(1) +. omega.(np).(2) *. t ) *. t ) *. a2r )     
-	      (* apply the trigonometric terms. *)
+  and doh = anpm ((3600.0 *. omega.(np).(0) +. (omega.(np).(1) +. omega.(np).(2) *. t ) *. t ) *. a2r )
+              (* apply the trigonometric terms. *)
   and dmu = 0.35953620 *. t in
-    
+
   (* loop invariant *)
   let kp = kp.(np) and kq = kq.(np) and ca = ca.(np) and sa = sa.(np)
   and cl = cl.(np) and sl = sl.(np) in
@@ -231,20 +231,20 @@ let planetpv epoch np pv =
     (* iterative solution of kepler's equation to get eccentric anomaly. *)
     let am = !dl -. dp in
     let ae = ref (am +. de *. sin am)
-    and k = ref 0 in 
+    and k = ref 0 in
     let dae = ref ((am -. !ae +. de *. sin !ae) /. (1.0 -. de *. cos !ae)) in
       ae := !ae +. !dae;
       incr k;
-      while !k < 10 || abs_float !dae >= 1e-12 do
-	dae := (am -. !ae +. de *. sin !ae) /. (1.0 -. de *. cos !ae);
-	ae := !ae +. !dae;
-	incr k
+      while !k < 10 or abs_float !dae >= 1e-12 do
+        dae := (am -. !ae +. de *. sin !ae) /. (1.0 -. de *. cos !ae);
+        ae := !ae +. !dae;
+        incr k
       done;
-      
+
       (* true anomaly. *)
       let ae2 = !ae /. 2.0 in
-      let at  = 2.0 *. atan2 (sqrt ((1.0 +. de) /. (1.0 -. de)) *. sin ae2)  (cos ae2) 
-		  (* distance (au) and speed (radians per day). *)
+      let at  = 2.0 *. atan2 (sqrt ((1.0 +. de) /. (1.0 -. de)) *. sin ae2)  (cos ae2)
+                  (* distance (au) and speed (radians per day). *)
       and r = !da *. (1.0 -. de *. cos !ae)
       and v = gaussk *. sqrt ((1.0 +. 1.0 /. amas.(np) ) /. (!da *. !da *. !da))
       and si2   = sin (di /. 2.0) in
@@ -253,7 +253,7 @@ let planetpv epoch np pv =
       and tl = at +. dp in
       let xsw = sin tl
       and xcw = cos tl in
-      let xm2  = 2.0 *. (xp *. xcw -. xq *. xsw ) 
+      let xm2  = 2.0 *. (xp *. xcw -. xq *. xsw )
       and xf = !da /. sqrt (1.0 -. de *. de)
       and ci2 = cos (di /. 2.0) in
       let xms = (de *. sin dp +. xsw) *. xf
@@ -265,42 +265,42 @@ let planetpv epoch np pv =
       and y = r *. (xsw +. xm2 *. xq)
       and z = r *. (-.xm2 *. ci2) in
 
-	(* rotate to equatorial. *)
-	pv.(0).(0) <- x;
-	pv.(0).(1) <- y *. coseps -. z *. sineps;
-	pv.(0).(2) <- y *. sineps +. z *. coseps;
+        (* rotate to equatorial. *)
+        pv.(0).(0) <- x;
+        pv.(0).(1) <- y *. coseps -. z *. sineps;
+        pv.(0).(2) <- y *. sineps +. z *. coseps;
 
-	(* velocity (j2000 ecliptic xdot,ydot,zdot in au/d). *)
-	let x = v *. ((-1.0 +. 2.0 *. xp *. xp) *. xms +. xpxq2 *. xmc)
-	and y = v *. (( 1.0 -. 2.0 *. xq *. xq ) *. xmc -. xpxq2 *. xms)
-	and z = v *. (2.0 *. ci2 *. (xp *. xms +. xq *. xmc)) in
+        (* velocity (j2000 ecliptic xdot,ydot,zdot in au/d). *)
+        let x = v *. ((-1.0 +. 2.0 *. xp *. xp) *. xms +. xpxq2 *. xmc)
+        and y = v *. (( 1.0 -. 2.0 *. xq *. xq ) *. xmc -. xpxq2 *. xms)
+        and z = v *. (2.0 *. ci2 *. (xp *. xms +. xq *. xmc)) in
 
-	  (* rotate to equatorial *)
-	  pv.(1).(0) <- x;
-	  pv.(1).(1) <- y *. coseps -. z *. sineps;
-	  pv.(1).(2) <- y *. sineps +. z *. coseps
+          (* rotate to equatorial *)
+          pv.(1).(0) <- x;
+          pv.(1).(1) <- y *. coseps -. z *. sineps;
+          pv.(1).(2) <- y *. sineps +. z *. coseps
 
 
-(* Computes RA, Declination, and distance from a state vector returned by 
+(* Computes RA, Declination, and distance from a state vector returned by
  * planetpv. *)
 let radecdist state rdd =
   (* Distance *)
   rdd.(2) <- sqrt (state.(0).(0) *. state.(0).(0)
-		 +. state.(0).(1) *. state.(0).(1)
-		 +. state.(0).(2) *. state.(0).(2));
+                 +. state.(0).(1) *. state.(0).(1)
+                 +. state.(0).(2) *. state.(0).(2));
   (* RA *)
   rdd.(0) <- atan2 state.(0).(1) state.(0).(0) *. r2h;
   if rdd.(0) < 0.0 then rdd.(0) <- rdd.(0) +. 24.0;
-  
+
   (* Declination *)
   rdd.(1) <- asin (state.(0).(2) /. rdd.(2)) *. r2d
-  
+
 
 
 (* Entry point. Calculate RA and Dec for noon on every day in 1900-2100 *)
 let _ =
   let jd = [| 0.0; 0.0 |]
-  and pv = [| [| 0.0; 0.0; 0.0 |]; [| 0.0; 0.0; 0.0 |] |] 
+  and pv = [| [| 0.0; 0.0; 0.0 |]; [| 0.0; 0.0; 0.0 |] |]
   and position = [| 0.0; 0.0; 0.0 |] in
   (* Test *)
   jd.(0) <- j2000;
@@ -317,8 +317,8 @@ let _ =
     for n = 0 to test_length - 1 do
       jd.(0) <- jd.(0) +. 1.0;
       for p = 0 to 7 do
-	planetpv jd p pv;
-	radecdist pv position;
+        planetpv jd p pv;
+        radecdist pv position;
       done
     done
   done

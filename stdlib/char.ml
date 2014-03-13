@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: char.ml 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (* Character operations *)
 
 external code: char -> int = "%identity"

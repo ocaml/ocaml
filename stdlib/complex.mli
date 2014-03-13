@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: complex.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Complex numbers.
 
     This module provides arithmetic operations on complex numbers.

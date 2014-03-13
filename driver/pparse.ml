@@ -10,11 +10,13 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: pparse.ml 12959 2012-09-27 13:12:51Z maranget $ *)
-
 open Format
 
-exception Error
+type error =
+  | CannotRun of string
+  | WrongMagic of string
+
+exception Error of error
 
 (* Optionally preprocess a source file *)
 
@@ -28,7 +30,7 @@ let preprocess sourcefile =
       in
       if Ccomp.command comm <> 0 then begin
         Misc.remove_file tmpfile;
-        raise Error;
+        raise (Error (CannotRun comm));
       end;
       tmpfile
 
@@ -36,16 +38,6 @@ let remove_preprocessed inputfile =
   match !Clflags.preprocessor with
     None -> ()
   | Some _ -> Misc.remove_file inputfile
-
-let remove_preprocessed_if_ast inputfile =
-  match !Clflags.preprocessor with
-    None -> ()
-  | Some _ ->
-      if inputfile <> !Location.input_name then Misc.remove_file inputfile
-
-(* Parse a file or get a dumped syntax tree in it *)
-
-exception Outdated_version
 
 let write_ast magic ast =
   let fn = Filename.temp_file "camlppx" "" in
@@ -56,24 +48,34 @@ let write_ast magic ast =
   close_out oc;
   fn
 
-let apply_rewriter fn_in ppx =
+let apply_rewriter magic fn_in ppx =
   let fn_out = Filename.temp_file "camlppx" "" in
-  let comm = Printf.sprintf "%s %s %s" ppx (Filename.quote fn_in) (Filename.quote fn_out) in
+  let comm =
+    Printf.sprintf "%s %s %s" ppx (Filename.quote fn_in) (Filename.quote fn_out)
+  in
   let ok = Ccomp.command comm = 0 in
   Misc.remove_file fn_in;
   if not ok then begin
     Misc.remove_file fn_out;
-    raise Error;
+    raise (Error (CannotRun comm));
   end;
-  if not (Sys.file_exists fn_out) then raise Error;
+  if not (Sys.file_exists fn_out) then raise (Error (WrongMagic comm));
+  (* check magic before passing to the next ppx *)
+  let ic = open_in_bin fn_out in
+  let buffer =
+    try Misc.input_bytes ic (String.length magic) with End_of_file -> "" in
+  close_in ic;
+  if buffer <> magic then begin
+    Misc.remove_file fn_out;
+    raise (Error (WrongMagic comm));
+  end;
   fn_out
 
 let read_ast magic fn =
   let ic = open_in_bin fn in
   try
     let buffer = Misc.input_bytes ic (String.length magic) in
-    if buffer <> magic then
-      Misc.fatal_error "OCaml and preprocessor have incompatible versions";
+    assert(buffer = magic); (* already checked by apply_rewriter *)
     Location.input_name := input_value ic;
     let ast = input_value ic in
     close_in ic;
@@ -84,10 +86,17 @@ let read_ast magic fn =
     Misc.remove_file fn;
     raise exn
 
-let apply_rewriters magic ast ppxs =
-  if ppxs = [] then ast
-  else let fn = List.fold_left apply_rewriter (write_ast magic ast) ppxs in
-  read_ast magic fn
+let apply_rewriters magic ast =
+  match !Clflags.all_ppx with
+  | [] -> ast
+  | ppxs ->
+      let fn =
+        List.fold_left (apply_rewriter magic) (write_ast magic ast) ppxs in
+      read_ast magic fn
+
+(* Parse a file or get a dumped syntax tree from it *)
+
+exception Outdated_version
 
 let file ppf inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
@@ -107,6 +116,7 @@ let file ppf inputfile parse_fun ast_magic =
     try
       if is_ast_file then begin
         if !Clflags.fast then
+          (* FIXME make this a proper warning *)
           fprintf ppf "@[Warning: %s@]@."
             "option -unsafe used with a preprocessor returning a syntax tree";
         Location.input_name := input_value ic;
@@ -121,4 +131,12 @@ let file ppf inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
-  apply_rewriters ast_magic ast !Clflags.ppx
+  apply_rewriters ast_magic ast
+
+let report_error ppf = function
+  | CannotRun cmd ->
+      fprintf ppf "Error while running external preprocessor@.\
+                   Command line: %s@." cmd
+  | WrongMagic cmd ->
+      fprintf ppf "External preprocessor does not produce a valid file@.\
+                   Command line: %s@." cmd

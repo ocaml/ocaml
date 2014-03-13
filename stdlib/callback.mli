@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: callback.mli 12858 2012-08-10 14:45:51Z maranget $ *)
-
 (** Registering OCaml values with the C runtime.
 
    This module allows OCaml values to be registered with the C runtime
