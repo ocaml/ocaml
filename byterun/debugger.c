@@ -211,7 +211,7 @@ void caml_debugger_init(void)
   }
   open_connection();
   caml_debugger_in_use = 1;
-  caml_trap_barrier = caml_stack_high;
+  caml_trap_barrier_off = 0;
 }
 
 static value getval(struct channel *chan)
@@ -372,7 +372,7 @@ void caml_debugger(enum event_kind event)
       break;
     case REQ_SET_TRAP_BARRIER:
       i = caml_getword(dbg_in);
-      caml_trap_barrier = caml_stack_high - i;
+      caml_trap_barrier_off = -i;
       break;
     case REQ_GET_LOCAL:
       i = caml_getword(dbg_in);

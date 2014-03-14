@@ -24,8 +24,8 @@ CAMLexport value * caml_stack_low;
 CAMLexport value * caml_stack_high;
 CAMLexport value * caml_stack_threshold;
 CAMLexport value * caml_extern_sp;
-CAMLexport value * caml_trapsp;
-CAMLexport value * caml_trap_barrier;
+CAMLexport intnat caml_trap_sp_off;
+CAMLexport intnat caml_trap_barrier_off;
 value caml_global_data = 0;
 
 uintnat caml_max_stack_size;            /* also used in gc_ctrl.c */
@@ -36,8 +36,8 @@ void caml_init_stack (uintnat initial_max_size)
   caml_stack_high = caml_stack_low + Stack_size / sizeof (value);
   caml_stack_threshold = caml_stack_low + Stack_threshold / sizeof (value);
   caml_extern_sp = caml_stack_high;
-  caml_trapsp = caml_stack_high;
-  caml_trap_barrier = caml_stack_high + 1;
+  caml_trap_sp_off = 0;
+  caml_trap_barrier_off = 1;
   caml_max_stack_size = initial_max_size;
   caml_gc_message (0x08, "Initial stack limit: %luk bytes\n",
                    caml_max_stack_size / 1024 * sizeof (value));
@@ -47,7 +47,6 @@ void caml_realloc_stack(asize_t required_space)
 {
   asize_t size;
   value * new_low, * new_high, * new_sp;
-  value * p;
 
   Assert(caml_extern_sp >= caml_stack_low);
   size = caml_stack_high - caml_stack_low;
@@ -69,10 +68,6 @@ void caml_realloc_stack(asize_t required_space)
           (char *) caml_extern_sp,
           (caml_stack_high - caml_extern_sp) * sizeof(value));
   caml_stat_free(caml_stack_low);
-  caml_trapsp = (value *) shift(caml_trapsp);
-  caml_trap_barrier = (value *) shift(caml_trap_barrier);
-  for (p = caml_trapsp; p < new_high; p = Trap_link(p))
-    Trap_link(p) = (value *) shift(Trap_link(p));
   caml_stack_low = new_low;
   caml_stack_high = new_high;
   caml_stack_threshold = caml_stack_low + Stack_threshold / sizeof (value);

@@ -110,30 +110,33 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     /* testing the code region is needed: PR#1554 */
     caml_backtrace_buffer[caml_backtrace_pos++] = pc;
   }
-  for (/*nothing*/; sp < caml_trapsp; sp++) {
-    code_t p = (code_t) *sp;
-    if (p >= caml_start_code && p < end_code) {
+  for (/*nothing*/; sp < caml_stack_high + caml_trap_sp_off; sp++) {
+    if (Is_long(*sp) && Pc_val(*sp) >= caml_start_code && Pc_val(*sp) < end_code) {
       if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
-      caml_backtrace_buffer[caml_backtrace_pos++] = p;
+      caml_backtrace_buffer[caml_backtrace_pos++] = Pc_val(*sp);
     }
   }
 }
 
 /* returns the next frame pointer (or NULL if none is available);
-   updates *sp to point to the following one, and *trapsp to the next
+   updates *sp to point to the following one, and *trap_spoff to the next
    trap frame, which we will skip when we reach it  */
 
-code_t caml_next_frame_pointer(value ** sp, value ** trapsp)
+code_t caml_next_frame_pointer(value ** sp, intnat * trap_spoff)
 {
   code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
 
   while (*sp < caml_stack_high) {
-    code_t *p = (code_t*) (*sp)++;
-    if(&Trap_pc(*trapsp) == p) {
-      *trapsp = Trap_link(*trapsp);
+    value* p = (*sp)++;
+    if(&Trap_pc(caml_stack_high + *trap_spoff) == p) {
+      *trap_spoff = Trap_link(caml_stack_high + *trap_spoff);
       continue;
     }
-    if (*p >= caml_start_code && *p < end_code) return *p;
+    if (Is_long(*p) &&
+        Pc_val(*p) >= caml_start_code &&
+        Pc_val(*p) < end_code) {
+      return Pc_val(*p);
+    }
   }
   return NULL;
 }
@@ -157,10 +160,10 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   /* first compute the size of the trace */
   {
     value * sp = caml_extern_sp;
-    value * trapsp = caml_trapsp;
+    intnat trap_spoff = caml_trap_sp_off;
 
     for (trace_size = 0; trace_size < max_frames; trace_size++) {
-      code_t p = caml_next_frame_pointer(&sp, &trapsp);
+      code_t p = caml_next_frame_pointer(&sp, &trap_spoff);
       if (p == NULL) break;
     }
   }
@@ -170,11 +173,11 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
   /* then collect the trace */
   {
     value * sp = caml_extern_sp;
-    value * trapsp = caml_trapsp;
+    intnat trap_spoff = caml_trap_sp_off;
     uintnat trace_pos;
 
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
-      code_t p = caml_next_frame_pointer(&sp, &trapsp);
+      code_t p = caml_next_frame_pointer(&sp, &trap_spoff);
       Assert(p != NULL);
       /* The assignment below is safe because we assign into an Abstract_tag block */
       Field(trace, trace_pos) = (value) p;
