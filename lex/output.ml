@@ -69,7 +69,7 @@ let output_tables oc tbl =
 
 (* Output the entries *)
 
-let output_entry sourcefile ic oc oci e =
+let output_entry sourcefile ic oc has_refill oci e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s %alexbuf =\
 \n  %a%a  __ocaml_lex_%s_rec %alexbuf %d\n"
@@ -96,15 +96,23 @@ let output_entry sourcefile ic oc oci e =
       copy_chunk ic oc oci loc true;
       fprintf oc "\n")
     e.auto_actions;
-  fprintf oc "  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; \
-              __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state\n\n"
-          e.auto_name output_args e.auto_args
+  if has_refill then
+    fprintf oc
+      "  | __ocaml_lex_state -> __ocaml_lex_refill \
+     \n      (fun lexbuf -> lexbuf.Lexing.refill_buff lexbuf; \
+     \n         __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state) lexbuf\n\n"
+      e.auto_name output_args e.auto_args
+  else
+    fprintf oc
+      "  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; \
+     \n      __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state\n\n"
+      e.auto_name output_args e.auto_args
 
 (* Main output function *)
 
 exception Table_overflow
 
-let output_lexdef sourcefile ic oc oci header tables entry_points trailer =
+let output_lexdef sourcefile ic oc oci header rh tables entry_points trailer =
   if not !Common.quiet_mode then
     Printf.printf "%d states, %d transitions, table size %d bytes\n"
       (Array.length tables.tbl_base)
@@ -124,13 +132,17 @@ let output_lexdef sourcefile ic oc oci header tables entry_points trailer =
   flush stdout;
   if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;
   copy_chunk ic oc oci header false;
+  let has_refill = output_refill_handler ic oc oci rh in
   output_tables oc tables;
   begin match entry_points with
     [] -> ()
   | entry1 :: entries ->
-      output_string oc "let rec "; output_entry sourcefile ic oc oci entry1;
+    output_string oc "let rec ";
+    output_entry sourcefile ic oc has_refill oci entry1;
       List.iter
-        (fun e -> output_string oc "and "; output_entry sourcefile ic oc oci e)
+        (fun e ->
+           output_string oc "and ";
+           output_entry sourcefile ic oc has_refill oci e)
         entries;
       output_string oc ";;\n\n";
   end;
