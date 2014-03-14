@@ -78,7 +78,7 @@ struct caml_thread_struct {
   value * stack_high;
   value * stack_threshold;
   value * sp;
-  value * trapsp;
+  intnat trap_spoff;
   value backtrace_pos;          /* The backtrace info for this thread */
   code_t * backtrace_buffer;
   value backtrace_last_exn;
@@ -169,7 +169,7 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->stack_high = stack_high;
   curr_thread->stack_threshold = stack_threshold;
   curr_thread->sp = extern_sp;
-  curr_thread->trapsp = trapsp;
+  curr_thread->trap_spoff = caml_trap_sp_off;
   curr_thread->backtrace_pos = Val_int(backtrace_pos);
   curr_thread->backtrace_buffer = backtrace_buffer;
   caml_initialize (&curr_thread->backtrace_last_exn, backtrace_last_exn);
@@ -229,7 +229,7 @@ value thread_new(value clos)          /* ML */
   th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
   th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
   th->sp = th->stack_high;
-  th->trapsp = th->stack_high;
+  th->trap_spoff = 0;
   /* Set up a return frame that pretends we're applying the function to ().
      This way, the next RETURN instruction will run the function. */
   th->sp -= 5;
@@ -306,7 +306,7 @@ static value schedule_thread(void)
   curr_thread->stack_high = stack_high;
   curr_thread->stack_threshold = stack_threshold;
   curr_thread->sp = extern_sp;
-  curr_thread->trapsp = trapsp;
+  curr_thread->trap_spoff = caml_trap_sp_off;
   curr_thread->backtrace_pos = Val_int(backtrace_pos);
   curr_thread->backtrace_buffer = backtrace_buffer;
   caml_modify (&curr_thread->backtrace_last_exn, backtrace_last_exn);
@@ -499,7 +499,7 @@ try_again:
   stack_high = curr_thread->stack_high;
   stack_threshold = curr_thread->stack_threshold;
   extern_sp = curr_thread->sp;
-  trapsp = curr_thread->trapsp;
+  caml_trap_sp_off = curr_thread->trap_spoff;
   backtrace_pos = Int_val(curr_thread->backtrace_pos);
   backtrace_buffer = curr_thread->backtrace_buffer;
   backtrace_last_exn = curr_thread->backtrace_last_exn;
@@ -752,7 +752,7 @@ value thread_kill(value thread)       /* ML */
   th->stack_high = NULL;
   th->stack_threshold = NULL;
   th->sp = NULL;
-  th->trapsp = NULL;
+  th->trap_spoff = 0;
   if (th->backtrace_buffer != NULL) {
     free(th->backtrace_buffer);
     th->backtrace_buffer = NULL;

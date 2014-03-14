@@ -56,7 +56,7 @@ CAMLprim value caml_reify_bytecode(value prog, value len)
 #endif
   caml_prepare_bytecode((code_t) prog, (asize_t) Long_val(len));
   clos = caml_alloc_small (1, Closure_tag);
-  Code_val(clos) = (code_t) prog;
+  Field(clos, 0) = Val_bytecode(prog);
   return clos;
 }
 
@@ -175,7 +175,7 @@ value * caml_stack_low;
 value * caml_stack_high;
 value * caml_stack_threshold;
 value * caml_extern_sp;
-value * caml_trapsp;
+intnat caml_trap_sp_off;
 int caml_callback_depth;
 int volatile caml_something_to_do;
 void (* volatile caml_async_action_hook)(void);

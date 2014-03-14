@@ -70,7 +70,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   caml_extern_sp -= narg + 4;
   for (i = 0; i < narg; i++) caml_extern_sp[i] = args[i]; /* arguments */
 #ifndef LOCAL_CALLBACK_BYTECODE
-  caml_extern_sp[narg] = (value) (callback_code + 4); /* return address */
+  caml_extern_sp[narg] = Val_pc (callback_code + 4); /* return address */
   caml_extern_sp[narg + 1] = Val_unit;    /* environment */
   caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
   caml_extern_sp[narg + 3] = closure;
@@ -79,7 +79,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   callback_code[3] = narg;
   res = caml_interprete(callback_code, sizeof(callback_code));
 #else /*have LOCAL_CALLBACK_BYTECODE*/
-  caml_extern_sp[narg] = (value) (local_callback_code + 4); /* return address */
+  caml_extern_sp[narg] = Val_pc (local_callback_code + 4); /* return address */
   caml_extern_sp[narg + 1] = Val_unit;    /* environment */
   caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
   caml_extern_sp[narg + 3] = closure;

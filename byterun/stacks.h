@@ -25,11 +25,13 @@ CAMLextern value * caml_stack_low;
 CAMLextern value * caml_stack_high;
 CAMLextern value * caml_stack_threshold;
 CAMLextern value * caml_extern_sp;
-CAMLextern value * caml_trapsp;
-CAMLextern value * caml_trap_barrier;
+CAMLextern intnat caml_trap_sp_off;
+CAMLextern intnat caml_trap_barrier_off;
 
-#define Trap_pc(tp) (((code_t *)(tp))[0])
-#define Trap_link(tp) (((value **)(tp))[1])
+#define Val_off(off) (caml_stack_high + Long_val (off))
+#define Off_val(p) Val_long (caml_stack_high - Long_val (p))
+#define Trap_pc(tp) Field((tp), 0)
+#define Trap_link(tp) Field((tp), 1)
 
 void caml_init_stack (uintnat init_max_size);
 void caml_realloc_stack (asize_t required_size);

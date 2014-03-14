@@ -271,8 +271,6 @@
 #define stack_high caml_stack_high
 #define stack_threshold caml_stack_threshold
 #define extern_sp caml_extern_sp
-#define trapsp caml_trapsp
-#define trap_barrier caml_trap_barrier
 
 /* **** asmrun/startup.c */
 #define static_data_start caml_static_data_start
