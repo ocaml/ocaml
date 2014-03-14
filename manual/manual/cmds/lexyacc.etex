@@ -81,6 +81,7 @@ The format of lexer definitions is as follows:
 \begin{alltt}
 \{ \var{header} \}
 let \var{ident} = \var{regexp} \ldots
+[refill \{ \var{refill-handler} \}]
 rule \var{entrypoint} [\nth{arg}{1}\ldots{} \nth{arg}{n}] =
   parse \var{regexp} \{ \var{action} \}
       | \ldots
@@ -94,6 +95,8 @@ Comments are delimited by "(*" and "*)", as in OCaml.
 The "parse" keyword, can be replaced by the "shortest" keyword, with
 the semantic consequences explained below.
 
+Refill handlers are a recent (optional) feature introduced in 4.02,
+documented below in subsection~\ref{ss:refill-handlers}.
 
 \subsection{Header and trailer}
 The {\it header} and {\it trailer} sections are arbitrary OCaml
@@ -306,6 +309,69 @@ expressions will select one of the possible resulting sets of
 bindings.
 The selected set of bindings is purposely left unspecified.
 
+\subsection{Refill handlers}
+\label{ss:refill-handlers}
+
+By default, when ocamllex reaches the end of its lexing buffer, it
+will silently call the "refill_buff" function of "lexbuf" structure
+and continue lexing. It is sometimes useful to be able to take control
+of refilling action; typically, if you use a library for asynchronous
+computation, you may want to wrap the refilling action in a delaying
+function to avoid blocking synchronous operations.
+
+Since OCaml 4.02, it is possible to specify a \var{refill-handler},
+a function that will be called when refill happens. It is passed the
+continuation of the lexing, on which it has total control. The OCaml
+expression used as refill action should have a type that is an
+instance of
+\begin{verbatim}
+   (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'a
+\end{verbatim}
+where the first argument is the continuation which captures the
+processing ocamllex would usually perform (refilling the buffer, then
+calling the lexing function again), and the result type that
+instantiates ['a] should unify with the result type of all lexing
+rules.
+
+As an example, consider the following lexer that is parametrized over
+an arbitrary monad:
+\begin{verbatim}
+{
+type token = EOL | INT of int | PLUS
+
+module Make (M : sig
+               type 'a t
+               val return: 'a -> 'a t
+               val bind: 'a t -> ('a -> 'b t) -> 'b t
+               val fail : string -> 'a t
+
+               (* Set up lexbuf *)
+               val on_refill : Lexing.lexbuf -> unit t
+             end)
+= struct
+
+let refill_handler k lexbuf arg =
+    M.bind (M.on_refill lexbuf) (fun () -> k lexbuf arg)
+
+}
+
+refill {refill_handler}
+
+rule token = parse
+| [' ' '\t']
+    { token lexbuf }
+| '\n'
+    { M.return EOL }
+| ['0'-'9']+ as i
+    { M.return (INT (int_of_string i)) }
+| '+'
+    { M.return PLUS }
+| _
+    { M.fail "unexpected character" }
+{
+end
+}
+\end{verbatim}
 
 \subsection{Reserved identifiers}
 
