@@ -18,8 +18,8 @@ open Reg
 open Mach
 
 let reg ppf r =
-  if String.length r.name > 0 then
-    fprintf ppf "%s" r.name
+  if not (Reg.anonymous r) then
+    fprintf ppf "%s" (Reg.name r)
   else
     fprintf ppf "%s" (match r.typ with Addr -> "A" | Int -> "I" | Float -> "F");
   fprintf ppf "/%i" r.stamp;
