@@ -92,6 +92,8 @@ Features wishes:
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
 - PR#6246: allow wilcard _ as for-loop index
+- ocamllex: user-definable refill action
+	    (patch by Frédéric Bour)
 
 OCaml 4.01.1:
 -------------
