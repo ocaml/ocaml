@@ -378,7 +378,7 @@ let emit_instr fallthrough i =
           | _ ->
               `	mov	{emit_reg dst}, {emit_reg src}\n`
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         if n = 0n then begin
           match i.res.(0).loc with
             Reg n -> `	xor	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`

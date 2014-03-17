@@ -87,7 +87,8 @@ let operation = function
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
-  | Cconst_natint n -> fprintf ppf "%s" (Nativeint.to_string n)
+  | Cconst_natint n | Cconst_blockheader n ->
+    fprintf ppf "%s" (Nativeint.to_string n)
   | Cconst_float s -> fprintf ppf "%s" s
   | Cconst_symbol s -> fprintf ppf "\"%s\"" s
   | Cconst_pointer n -> fprintf ppf "%ia" n

@@ -103,7 +103,8 @@ let operation op arg ppf res =
   | Imove -> regs ppf arg
   | Ispill -> fprintf ppf "%a (spill)" regs arg
   | Ireload -> fprintf ppf "%a (reload)" regs arg
-  | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
+  | Iconst_int n
+  | Iconst_blockheader n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float s -> fprintf ppf "%s" s
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
   | Icall_ind -> fprintf ppf "call %a" regs arg

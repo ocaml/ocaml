@@ -302,7 +302,7 @@ let rec emit_instr i dslot =
           | (_, _) ->
               fatal_error "Emit: Imove"
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         if is_native_immediate n then
           `	mov	{emit_nativeint n}, {emit_reg i.res.(0)}\n`
         else begin
@@ -609,7 +609,7 @@ let is_one_instr i =
       begin match op with
         Imove | Ispill | Ireload ->
           i.arg.(0).typ <> Float && i.res.(0).typ <> Float
-      | Iconst_int n -> is_native_immediate n
+      | Iconst_int n | Iconst_blockheader n -> is_native_immediate n
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float && is_immediate n
       | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float && is_immediate n
