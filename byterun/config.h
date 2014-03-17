@@ -126,7 +126,7 @@ typedef struct { uint32 l, h; } uint64, int64;
 
 /* Minimum size of the minor zone (words).
    This must be at least [Max_young_wosize + 1]. */
-#define Minor_heap_min 4096
+#define Minor_heap_min (Max_young_wosize + 1)
 
 /* Maximum size of the minor zone (words).
    Must be greater than or equal to [Minor_heap_min].

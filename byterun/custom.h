@@ -28,7 +28,7 @@ struct custom_operations {
   void (*serialize)(value v,
                     /*out*/ uintnat * wsize_32 /*size in bytes*/,
                     /*out*/ uintnat * wsize_64 /*size in bytes*/);
-  uintnat (*deserialize)(void * dst);
+  value (*deserialize)(void);
   int (*compare_ext)(value v1, value v2);
 };
 
