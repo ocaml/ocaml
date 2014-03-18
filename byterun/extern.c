@@ -27,6 +27,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "reverse.h"
+#include "addrmap.h"
 
 static uintnat obj_counter;  /* Number of objects emitted so far */
 static uintnat size_32;  /* Size in words of 32-bit block for struct. */
@@ -43,22 +44,7 @@ enum {
 
 static int extern_flags;        /* logical or of some of the flags above */
 
-/* Trail mechanism to undo forwarding pointers put inside objects */
-
-struct trail_entry {
-  value obj;    /* address of object + initial color in low 2 bits */
-  value field0; /* initial contents of field 0 */
-};
-
-struct trail_block {
-  struct trail_block * previous;
-  struct trail_entry entries[ENTRIES_PER_TRAIL_BLOCK];
-};
-
-static struct trail_block extern_trail_first;
-static struct trail_block * extern_trail_block;
-static struct trail_entry * extern_trail_cur, * extern_trail_limit;
-
+static struct addrmap recorded_objs = ADDRMAP_INIT;
 
 /* Stack for pending values to marshal */
 
@@ -80,7 +66,6 @@ static void extern_invalid_argument(char *msg);
 static void extern_failwith(char *msg);
 static void extern_stack_overflow(void);
 static struct code_fragment * extern_find_code(char *addr);
-static void extern_replay_trail(void);
 static void free_extern_output(void);
 
 /* Free the extern stack if needed */
@@ -116,67 +101,10 @@ static struct extern_item * extern_resize_stack(struct extern_item * sp)
   return newstack + sp_offset;
 }
 
-/* Initialize the trail */
-
-static void init_extern_trail(void)
-{
-  extern_trail_block = &extern_trail_first;
-  extern_trail_cur = extern_trail_block->entries;
-  extern_trail_limit = extern_trail_block->entries + ENTRIES_PER_TRAIL_BLOCK;
-}
-
-/* Replay the trail, undoing the in-place modifications
-   performed on objects */
-
-static void extern_replay_trail(void)
-{
-  struct trail_block * blk, * prevblk;
-  struct trail_entry * ent, * lim;
-
-  blk = extern_trail_block;
-  lim = extern_trail_cur;
-  while (1) {
-    for (ent = &(blk->entries[0]); ent < lim; ent++) {
-      value obj = ent->obj;
-      color_t colornum = obj & 3;
-      obj = obj & ~3;
-      Hd_val(obj) = Coloredhd_hd(Hd_val(obj), colornum);
-      Field(obj, 0) = ent->field0;
-    }
-    if (blk == &extern_trail_first) break;
-    prevblk = blk->previous;
-    free(blk);
-    blk = prevblk;
-    lim = &(blk->entries[ENTRIES_PER_TRAIL_BLOCK]);
-  }
-  /* Protect against a second call to extern_replay_trail */
-  extern_trail_block = &extern_trail_first;
-  extern_trail_cur = extern_trail_block->entries;
-}
-
-/* Set forwarding pointer on an object and add corresponding entry
-   to the trail. */
-
-static void extern_record_location(value obj)
-{
-  header_t hdr;
-
+static void extern_record_location(value* loc) {
   if (extern_flags & NO_SHARING) return;
-  if (extern_trail_cur == extern_trail_limit) {
-    struct trail_block * new_block = malloc(sizeof(struct trail_block));
-    if (new_block == NULL) extern_out_of_memory();
-    new_block->previous = extern_trail_block;
-    extern_trail_block = new_block;
-    extern_trail_cur = extern_trail_block->entries;
-    extern_trail_limit = extern_trail_block->entries + ENTRIES_PER_TRAIL_BLOCK;
-  }
-  hdr = Hd_val(obj);
-  extern_trail_cur->obj = obj | Colornum_hd(hdr);
-  extern_trail_cur->field0 = Field(obj, 0);
-  extern_trail_cur++;
-  Hd_val(obj) = Bluehd_hd(hdr);
-  Field(obj, 0) = (value) obj_counter;
-  obj_counter++;
+  Assert(loc);
+  *loc = Val_long(obj_counter++);
 }
 
 /* To buffer the output */
@@ -263,21 +191,21 @@ static intnat extern_output_length(void)
 
 static void extern_out_of_memory(void)
 {
-  extern_replay_trail();
+  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_raise_out_of_memory();
 }
 
 static void extern_invalid_argument(char *msg)
 {
-  extern_replay_trail();
+  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_invalid_argument(msg);
 }
 
 static void extern_failwith(char *msg)
 {
-  extern_replay_trail();
+  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_failwith(msg);
 }
@@ -285,7 +213,7 @@ static void extern_failwith(char *msg)
 static void extern_stack_overflow(void)
 {
   caml_gc_message (0x04, "Stack overflow in marshaling value\n", 0);
-  extern_replay_trail();
+  caml_addrmap_clear(&recorded_objs);
   free_extern_output();
   caml_raise_out_of_memory();
 }
@@ -391,6 +319,7 @@ static void extern_rec(value v)
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
+    value* output_location;
 
     if (tag == Forward_tag) {
       value f = Forward_val (v);
@@ -414,8 +343,13 @@ static void extern_rec(value v)
       goto next_item;
     }
     /* Check if already seen */
-    if (Color_hd(hd) == Caml_blue) {
-      uintnat d = obj_counter - (uintnat) Field(v, 0);
+    if (extern_flags & NO_SHARING) {
+      output_location = 0;
+    } else {
+      output_location = caml_addrmap_insert_pos(&recorded_objs, v);
+    }
+    if (output_location && *output_location != ADDRMAP_NOT_PRESENT) {
+      uintnat d = obj_counter - (uintnat)Long_val(*output_location);
       if (d < 0x100) {
         writecode8(CODE_SHARED8, d);
       } else if (d < 0x10000) {
@@ -445,7 +379,7 @@ static void extern_rec(value v)
       writeblock(String_val(v), len);
       size_32 += 1 + (len + 4) / 4;
       size_64 += 1 + (len + 8) / 8;
-      extern_record_location(v);
+      extern_record_location(output_location);
       break;
     }
     case Double_tag: {
@@ -455,7 +389,7 @@ static void extern_rec(value v)
       writeblock_float8((double *) v, 1);
       size_32 += 1 + 2;
       size_64 += 1 + 1;
-      extern_record_location(v);
+      extern_record_location(output_location);
       break;
     }
     case Double_array_tag: {
@@ -476,7 +410,7 @@ static void extern_rec(value v)
       writeblock_float8((double *) v, nfloats);
       size_32 += 1 + nfloats * 2;
       size_64 += 1 + nfloats;
-      extern_record_location(v);
+      extern_record_location(output_location);
       break;
     }
     case Abstract_tag:
@@ -499,7 +433,7 @@ static void extern_rec(value v)
       Custom_ops_val(v)->serialize(v, &sz_32, &sz_64);
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */
       size_64 += 2 + ((sz_64 + 7) >> 3);
-      extern_record_location(v);
+      extern_record_location(output_location);
       break;
     }
     default: {
@@ -522,7 +456,7 @@ static void extern_rec(value v)
       size_32 += 1 + sz;
       size_64 += 1 + sz;
       field0 = Field(v, 0);
-      extern_record_location(v);
+      extern_record_location(output_location);
       /* Remember that we still have to serialize fields 1 ... sz - 1 */
       if (sz > 1) {
         sp++;
@@ -565,7 +499,7 @@ static intnat extern_value(value v, value flags)
   /* Parse flag list */
   extern_flags = caml_convert_flag_list(flags, extern_flag_values);
   /* Initializations */
-  init_extern_trail();
+  caml_addrmap_clear(&recorded_objs);
   obj_counter = 0;
   size_32 = 0;
   size_64 = 0;
@@ -577,8 +511,8 @@ static intnat extern_value(value v, value flags)
   extern_rec(v);
   /* Record end of output */
   close_extern_output();
-  /* Undo the modifications done on externed blocks */
-  extern_replay_trail();
+  /* Delete the hashtable of recorded objects */
+  caml_addrmap_clear(&recorded_objs);
   /* Write the sizes */
   res_len = extern_output_length();
 #ifdef ARCH_SIXTYFOUR
