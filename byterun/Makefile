@@ -60,9 +60,13 @@ clean::
 	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $*.c -o $*.pic.o
 
 depend : prims.c opnames.h jumptbl.h version.h
+	$(MAKE) --always-make .depend
+
+.PHONY: depend
+
+.depend:
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
 	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 	-gcc -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
-.PHONY: depend
 
 include .depend
