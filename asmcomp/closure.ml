@@ -81,6 +81,52 @@ let occurs_var var u =
       true
   in occurs u
 
+(* Split a function with default parameters into a wrapper and an
+   inner function.  The wrapper fills in missing optional parameters
+   with their default value and tail-calls the inner function.  The
+   wrapper can then hopefully be inlined on most call sites to avoid
+   the overhead associated with boxing an optional argument with a
+   'Some' constructor, only to deconstruct it immediately in the
+   function's body. *)
+
+let split_default_wrapper fun_id kind params body =
+  let rec aux map = function
+    | Llet(Strict, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
+        Ident.name optparam = "*opt*" && List.mem optparam params
+          && not (List.mem_assoc optparam map)
+      ->
+        let wrapper_body, inner = aux ((optparam, id) :: map) rest in
+        Llet(Strict, id, def, wrapper_body), inner
+    | _ when map = [] -> raise Exit
+    | body ->
+        (* Check that those *opt* identifiers don't appear in the remaining
+           body. This should not appear, but let's be on the safe side. *)
+        let fv = Lambda.free_variables body in
+        List.iter (fun (id, _) -> if IdentSet.mem id fv then raise Exit) map;
+
+        let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
+        let map_param p = try List.assoc p map with Not_found -> p in
+        let args = List.map (fun p -> Lvar (map_param p)) params in
+        let wrapper_body = Lapply (Lvar inner_id, args, Location.none) in
+
+        let inner_params = List.map map_param params in
+        let new_ids = List.map Ident.rename inner_params in
+        let subst = List.fold_left2
+            (fun s id new_id ->
+               Ident.add id (Lvar new_id) s)
+            Ident.empty inner_params new_ids
+        in
+        let body = Lambda.subst_lambda subst body in
+        let inner_fun = Lfunction(Curried, new_ids, body) in
+        (wrapper_body, (inner_id, inner_fun))
+  in
+  try
+    let wrapper_body, inner = aux [] body in
+    [(fun_id, Lfunction(kind, params, wrapper_body)); inner]
+  with Exit ->
+    [(fun_id, Lfunction(kind, params, body))]
+
+
 (* Determine whether the estimated size of a clambda term is below
    some threshold *)
 
@@ -259,9 +305,16 @@ let simplif_int_prim_pure p (args, approxs) dbg =
   | _ ->
       (Uprim(p, args, dbg), Value_unknown)
 
+
+let field_approx n = function
+  | Value_tuple a when n < Array.length a -> a.(n)
+  | Value_const (Uconst_ref(_, Uconst_block(_, l))) when n < List.length l ->
+      Value_const (List.nth l n)
+  | _ -> Value_unknown
+
 let simplif_prim_pure p (args, approxs) dbg =
-  match p, approxs with
-  | Pmakeblock(tag, Immutable), _ ->
+  match p, args, approxs with
+  | Pmakeblock(tag, Immutable), _, _ ->
       let field = function
         | Value_const c -> c
         | _ -> raise Exit
@@ -275,15 +328,20 @@ let simplif_prim_pure p (args, approxs) dbg =
       with Exit ->
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
-  | Pfield n, [ Value_const(Uconst_ref(_, Uconst_block(_, l))) ]
+  | Pfield n, _, [ Value_const(Uconst_ref(_, Uconst_block(_, l))) ]
     when n < List.length l ->
       make_const (List.nth l n)
 
-  | Pstringlength, [ Value_const(Uconst_ref(_, Uconst_string s)) ]
+  | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx] ->
+      assert(n < List.length ul);
+      List.nth ul n, field_approx n approx
+
+  | Pstringlength, _, [ Value_const(Uconst_ref(_, Uconst_string s)) ]
     ->
       make_const_int (String.length s)
 
-  | _ -> simplif_int_prim_pure p (args, approxs) dbg
+  | _ ->
+      simplif_int_prim_pure p (args, approxs) dbg
 
 let simplif_prim p (args, approxs as args_approxs) dbg =
   if List.for_all is_pure_clambda args
@@ -368,6 +426,8 @@ let rec substitute sb ulam =
       begin match substitute sb u1 with
         Uconst (Uconst_ptr n) ->
           if n <> 0 then substitute sb u2 else substitute sb u3
+      | Uprim(Pmakeblock _, _, _) ->
+          substitute sb u2
       | su1 ->
           Uifthenelse(su1, substitute sb u2, substitute sb u3)
       end
@@ -406,9 +466,16 @@ let rec bind_params_rec subst params args body =
         bind_params_rec (Tbl.add p1 a1 subst) pl al body
       else begin
         let p1' = Ident.rename p1 in
+        let u1, u2 =
+          match Ident.name p1, a1 with
+          | "*opt*", Uprim(Pmakeblock(0, Immutable), [a], dbg) ->
+              a, Uprim(Pmakeblock(0, Immutable), [Uvar p1'], dbg)
+          | _ ->
+              a1, Uvar p1'
+        in
         let body' =
-          bind_params_rec (Tbl.add p1 (Uvar p1') subst) pl al body in
-        if occurs_var p1 body then Ulet(p1', a1, body')
+          bind_params_rec (Tbl.add p1 u2 subst) pl al body in
+        if occurs_var p1 body then Ulet(p1', u1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
       end
@@ -523,6 +590,8 @@ let rec add_debug_info ev u =
    Idents not bound in [fenv] approximate to [Value_unknown].
    The closure environment [cenv] maps idents to [ulambda] terms.
    It is used to substitute environment accesses for free identifiers. *)
+
+exception NotClosed
 
 let close_approx_var fenv cenv id =
   let approx = try Tbl.find id fenv with Not_found -> Value_unknown in
@@ -677,15 +746,8 @@ let rec close fenv cenv = function
                             (Compilenv.global_approx id)
   | Lprim(Pfield n, [lam]) ->
       let (ulam, approx) = close fenv cenv lam in
-      let fieldapprox =
-        match approx with
-          Value_tuple a when n < Array.length a -> a.(n)
-        | Value_const (Uconst_ref(_, Uconst_block(_, l)))
-          when n < List.length l ->
-            Value_const (List.nth l n)
-        | _ -> Value_unknown in
       check_constant_result lam (Uprim(Pfield n, [ulam], Debuginfo.none))
-                            fieldapprox
+                            (field_approx n approx)
   | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
@@ -775,6 +837,17 @@ and close_named fenv cenv id = function
 (* Build a shared closure for a set of mutually recursive functions *)
 
 and close_functions fenv cenv fun_defs =
+  let fun_defs =
+    List.flatten
+      (List.map
+         (function
+           | (id, Lfunction(kind, params, body)) ->
+               split_default_wrapper id kind params body
+           | _ -> assert false
+         )
+         fun_defs)
+  in
+
   (* Update and check nesting depth *)
   incr function_nesting_depth;
   let initially_closed =
@@ -832,29 +905,48 @@ and close_functions fenv cenv fun_defs =
           Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
-    if !useless_env && occurs_var env_param ubody then useless_env := false;
+    if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params = if !useless_env then params else params @ [env_param] in
-    ({ label  = fundesc.fun_label;
-       arity  = fundesc.fun_arity;
-       params = fun_params;
-       body   = ubody;
-       dbg },
-     (id, env_pos, Value_closure(fundesc, approx))) in
+    let f =
+      {
+        label  = fundesc.fun_label;
+        arity  = fundesc.fun_arity;
+        params = fun_params;
+        body   = ubody;
+        dbg;
+      }
+    in
+    (* give more chance of function with default parameters (i.e.
+       their wrapper functions) to be inlined *)
+    let n =
+      List.fold_left
+        (fun n id -> n + if Ident.name id = "*opt*" then 8 else 1)
+        0
+        fun_params
+    in
+    if lambda_smaller ubody
+        (!Clflags.inline_threshold + n)
+    then fundesc.fun_inline <- Some(fun_params, ubody);
+
+    (f, (id, env_pos, Value_closure(fundesc, approx))) in
   (* Translate all function definitions. *)
   let clos_info_list =
     if initially_closed then begin
       let snap = Compilenv.snapshot () in
-      let cl = List.map2 clos_fundef uncurried_defs clos_offsets in
+      try List.map2 clos_fundef uncurried_defs clos_offsets
+      with NotClosed ->
       (* If the hypothesis that the environment parameters are useless has been
          invalidated, then set [fun_closed] to false in all descriptions and
          recompile *)
-      if !useless_env then cl else begin
         Compilenv.backtrack snap; (* PR#6337 *)
         List.iter
-          (fun (id, params, body, fundesc) -> fundesc.fun_closed <- false)
+          (fun (id, params, body, fundesc) ->
+             fundesc.fun_closed <- false;
+             fundesc.fun_inline <- None;
+          )
           uncurried_defs;
+        useless_env := false;
         List.map2 clos_fundef uncurried_defs clos_offsets
-      end
     end else
       (* Excessive closure nesting: assume environment parameter is used *)
         List.map2 clos_fundef uncurried_defs clos_offsets
@@ -871,14 +963,8 @@ and close_functions fenv cenv fun_defs =
 
 and close_one_function fenv cenv id funct =
   match close_functions fenv cenv [id, funct] with
-      ((Uclosure([f], _) as clos),
-       [_, _, (Value_closure(fundesc, _) as approx)]) ->
-        (* See if the function can be inlined *)
-        if lambda_smaller f.body
-          (!Clflags.inline_threshold + List.length f.params)
-        then fundesc.fun_inline <- Some(f.params, f.body);
-        (clos, approx)
-    | _ -> fatal_error "Closure.close_one_function"
+  | (clos, (i, _, approx) :: _) when id = i -> (clos, approx)
+  | _ -> fatal_error "Closure.close_one_function"
 
 (* Close a switch *)
 
