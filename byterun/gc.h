@@ -49,8 +49,4 @@
 #define Is_blue_val(val) (Color_val(val) == Caml_blue)
 #define Is_black_val(val) (Color_val(val) == Caml_black)
 
-/* For extern.c */
-#define Colornum_hd(hd) ((color_t) (((hd) >> 8) & 3))
-#define Coloredhd_hd(hd,colnum) (((hd) & ~Caml_black) | ((colnum) << 8))
-
 #endif /* CAML_GC_H */
