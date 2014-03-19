@@ -274,8 +274,6 @@
 #define trapsp caml_trapsp
 #define trap_barrier caml_trap_barrier
 
-/* **** startup.c */
-#define atom_table caml_atom_table
 /* **** asmrun/startup.c */
 #define static_data_start caml_static_data_start
 #define static_data_end caml_static_data_end

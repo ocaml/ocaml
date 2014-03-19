@@ -36,25 +36,17 @@
 #endif
 
 extern int caml_parser_trace;
-CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
 
-/* Initialize the atom table and the static data and code area limits. */
+/* Initialize the static data and code area limits. */
 
 struct segment { char * begin; char * end; };
 
-static void init_atoms(void)
+static void init_segments(void)
 {
   extern struct segment caml_data_segments[], caml_code_segments[];
   int i;
   struct code_fragment * cf;
-
-  for (i = 0; i < 256; i++) {
-    caml_atom_table[i] = Make_header(0, i, Caml_white);
-  }
-  if (caml_page_table_add(In_static_data,
-                          caml_atom_table, caml_atom_table + 256) != 0)
-    caml_fatal_error("Fatal error: not enough memory for initial page table");
 
   for (i = 0; caml_data_segments[i].begin != 0; i++) {
     /* PR#5509: we must include the zero word at end of data segment,
@@ -174,7 +166,7 @@ void caml_main(char **argv)
   parse_camlrunparam();
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
-  init_atoms();
+  init_segments();
   caml_init_signals();
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
