@@ -183,10 +183,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
       Assert(descr != NULL);
-      /* The assignment below is safe without [caml_initialize], even
-         if the trace is large and allocated on the old heap, because
-         we assign values that are outside the OCaml heap. */
-      Assert(!(Is_block((value) descr) && Is_in_heap((value) descr)));
+      /* The assignment below is safe because we assign into an Abstract_tag block */
       Field(trace, trace_pos) = (value) descr;
     }
   }
