@@ -26,6 +26,10 @@ val transl_exception:
 val transl_exn_rebind:
     Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
 
+val transl_type_extension:
+    bool -> Env.t -> Location.t -> Parsetree.type_extension ->
+    Typedtree.type_extension * Env.t
+
 val transl_value_decl:
     Env.t -> Location.t ->
     Parsetree.value_description -> Typedtree.value_description * Env.t
@@ -69,7 +73,11 @@ type error =
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
-  | Unbound_exception of Longident.t
+  | Not_open_type of Path.t
+  | Not_extensible_type of Path.t
+  | Extension_mismatch of Path.t * Includecore.type_mismatch list
+  | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
+  | Rebind_private of Longident.t
   | Not_an_exception of Longident.t
   | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)
   | Unavailable_type_constructor of Path.t

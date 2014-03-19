@@ -372,6 +372,7 @@ let mkexp_attrs d attrs =
 %token PERCENT
 %token PLUS
 %token PLUSDOT
+%token PLUSEQ
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
@@ -452,7 +453,7 @@ The precedences must be listed from low to high.
 %nonassoc LBRACKETPERCENT
 %nonassoc LBRACKETPERCENTPERCENT
 %right    COLONCOLON                    /* expr (e :: e :: e) */
-%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
+%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ /* expr (e OP e OP e) */
 %left     PERCENT INFIXOP3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
 %nonassoc prec_unary_minus prec_unary_plus /* unary - */
@@ -619,6 +620,8 @@ structure_item:
                              ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
   | TYPE type_declarations
       { mkstr(Pstr_type (List.rev $2) ) }
+  | TYPE str_type_extension
+      { mkstr(Pstr_typext $2) }
   | EXCEPTION exception_declaration
       { mkstr(Pstr_exception $2) }
   | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
@@ -716,6 +719,8 @@ signature_item:
                    ~loc:(symbol_rloc()))) }
   | TYPE type_declarations
       { mksig(Psig_type (List.rev $2)) }
+  | TYPE sig_type_extension
+      { mksig(Psig_typext $2) }
   | EXCEPTION exception_declaration
       { mksig(Psig_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
@@ -1525,27 +1530,33 @@ type_kind:
       { (Ptype_variant(List.rev $3), Private, None) }
   | EQUAL private_flag BAR constructor_declarations
       { (Ptype_variant(List.rev $4), $2, None) }
+  | EQUAL DOTDOT
+      { (Ptype_open, Public, None) }
   | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $4), $2, None) }
   | EQUAL core_type EQUAL private_flag opt_bar constructor_declarations
       { (Ptype_variant(List.rev $6), $4, Some $2) }
+  | EQUAL core_type EQUAL DOTDOT
+      { (Ptype_open, Public, Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $6), $4, Some $2) }
 ;
 optional_type_parameters:
     /*empty*/                                   { [] }
-  | optional_type_parameter                              { [$1] }
+  | optional_type_parameter                     { [$1] }
   | LPAREN optional_type_parameter_list RPAREN  { List.rev $2 }
 ;
 optional_type_parameter:
-    type_variance QUOTE ident                   { Some (mkrhs $3 3), $1 }
-  | type_variance UNDERSCORE                    { None, $1 }
+    type_variance optional_type_variable        { $2, $1 }
 ;
 optional_type_parameter_list:
     optional_type_parameter                              { [$1] }
   | optional_type_parameter_list COMMA optional_type_parameter    { $3 :: $1 }
 ;
-
+optional_type_variable:
+    QUOTE ident                                 { mktyp(Ptyp_var $2) }
+  | UNDERSCORE                                  { mktyp(Ptyp_any) }
+;
 
 
 type_parameters:
@@ -1554,12 +1565,15 @@ type_parameters:
   | LPAREN type_parameter_list RPAREN           { List.rev $2 }
 ;
 type_parameter:
-    type_variance QUOTE ident                   { mkrhs $3 3, $1 }
+    type_variance type_variable                   { $2, $1 }
 ;
 type_variance:
     /* empty */                                 { Invariant }
   | PLUS                                        { Covariant }
   | MINUS                                       { Contravariant }
+;
+type_variable:
+    QUOTE ident                                 { mktyp(Ptyp_var $2) }
 ;
 type_parameter_list:
     type_parameter                              { [$1] }
@@ -1605,6 +1619,43 @@ label_declaration:
       }
 ;
 
+/* Type Extensions */
+
+str_type_extension:
+  optional_type_parameters type_longident
+  PLUSEQ private_flag opt_bar str_extension_constructors post_item_attributes
+      { Te.mk (mkrhs $2 2) (List.rev $6)
+          ~params:$1 ~priv:$4 ~attrs:$7 }
+;
+sig_type_extension:
+  optional_type_parameters type_longident
+  PLUSEQ private_flag opt_bar sig_extension_constructors post_item_attributes
+      { Te.mk (mkrhs $2 2) (List.rev $6)
+          ~params:$1 ~priv:$4 ~attrs:$7 }
+;
+str_extension_constructors:
+    extension_constructor_declaration                     { [$1] }
+  | extension_constructor_rebind                          { [$1] }
+  | str_extension_constructors BAR extension_constructor_declaration
+      { $3 :: $1 }
+  | str_extension_constructors BAR extension_constructor_rebind
+      { $3 :: $1 }
+;
+sig_extension_constructors:
+    extension_constructor_declaration                     { [$1] }
+  | sig_extension_constructors BAR extension_constructor_declaration
+      { $3 :: $1 }
+;
+extension_constructor_declaration:
+  | constr_ident attributes generalized_constructor_arguments
+      { let args, res = $3 in
+        Te.decl (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2 }
+;
+extension_constructor_rebind:
+  | constr_ident attributes EQUAL constr_longident
+      { Te.rebind (mkrhs $1 1) (mkrhs $4 4) ~loc:(symbol_rloc()) ~attrs:$2 }
+;
+
 /* "with" constraints (additional type equations over signature components) */
 
 with_constraints:
@@ -1616,7 +1667,7 @@ with_constraint:
       { Pwith_type
           (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
-              ~params:(List.map (fun (x, v) -> Some x, v) $2)
+              ~params:$2
               ~cstrs:(List.rev $6)
               ~manifest:$5
               ~priv:$4
@@ -1626,7 +1677,7 @@ with_constraint:
   | TYPE type_parameters label COLONEQUAL core_type
       { Pwith_typesubst
           (Type.mk (mkrhs $3 3)
-             ~params:(List.map (fun (x, v) -> Some x, v) $2)
+             ~params:$2
              ~manifest:$5
              ~loc:(symbol_rloc())) }
   | MODULE mod_longident EQUAL mod_ext_longident
@@ -1864,6 +1915,7 @@ operator:
   | AMPERSAND                                   { "&" }
   | AMPERAMPER                                  { "&&" }
   | COLONEQUAL                                  { ":=" }
+  | PLUSEQ                                      { "+=" }
   | PERCENT                                     { "%" }
 ;
 constr_ident:

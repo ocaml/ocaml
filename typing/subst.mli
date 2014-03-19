@@ -43,6 +43,8 @@ val type_expr: t -> type_expr -> type_expr
 val class_type: t -> class_type -> class_type
 val value_description: t -> value_description -> value_description
 val type_declaration: t -> type_declaration -> type_declaration
+val extension_constructor:
+        t -> extension_constructor -> extension_constructor
 val exception_declaration:
         t -> exception_declaration -> exception_declaration
 val class_declaration: t -> class_declaration -> class_declaration

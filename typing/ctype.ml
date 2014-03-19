@@ -217,22 +217,37 @@ type unification_mode =
 
 let umode = ref Expression
 let generate_equations = ref false
+let assume_injective = ref false
 
-let set_mode mode ?(generate = (mode = Pattern)) f =
-  let old_unification_mode = !umode
-  and old_gen = !generate_equations in
+let set_mode_expression f =
+  let old_unification_mode = !umode in
   try
-    umode := mode;
+    umode := Expression;
+    let ret = f () in
+    umode := old_unification_mode;
+    ret
+  with e ->
+    umode := old_unification_mode;
+    raise e
+
+let set_mode_pattern ~generate ~injective f =
+  let old_unification_mode = !umode
+  and old_gen = !generate_equations
+  and old_inj = !assume_injective in
+  try
+    umode := Pattern;
     generate_equations := generate;
+    assume_injective := injective;
     let ret = f () in
     umode := old_unification_mode;
     generate_equations := old_gen;
+    assume_injective := old_inj;
     ret
   with e ->
     umode := old_unification_mode;
     generate_equations := old_gen;
+    assume_injective := old_inj;
     raise e
-
 
 (*** Checks for type definitions ***)
 
@@ -247,7 +262,7 @@ let in_pervasives p =
 
 let is_datatype decl=
   match decl.type_kind with
-    Type_record _ | Type_variant _ -> true
+    Type_record _ | Type_variant _ | Type_open -> true
   | Type_abstract -> false
 
 
@@ -550,6 +565,7 @@ let closed_type_decl decl =
           v
     | Type_record(r, rep) ->
         List.iter (fun l -> closed_type l.ld_type) r
+    | Type_open -> ()
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -1173,6 +1189,7 @@ let instance_declaration decl =
              (fun l ->
                 {l with ld_type = copy l.ld_type}
              ) fl, rr)
+     | Type_open -> Type_open
     }
   in
   cleanup_types ();
@@ -2085,10 +2102,6 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
     if Path.same p1 p2 then begin
-      (* Format.eprintf "@[%a@ %a@]@."
-        !print_raw (newconstr p1 tl2) !print_raw (newconstr p2 tl2);
-      if non_aliasable p1 decl then Format.eprintf "non_aliasable@."
-      else Format.eprintf "aliasable@."; *)
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1
@@ -2096,19 +2109,21 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end
-    else match decl.type_kind, decl'.type_kind with
-    | Type_record (lst,r), Type_record (lst',r') when r = r' ->
-        mcomp_list type_pairs env tl1 tl2;
-        mcomp_record_description type_pairs env lst lst'
-    | Type_variant v1, Type_variant v2 ->
-        mcomp_list type_pairs env tl1 tl2;
-        mcomp_variant_description type_pairs env v1 v2
-    | Type_variant _, Type_record _
-    | Type_record _, Type_variant _ -> raise (Unify [])
-    | _ ->
-        if non_aliasable p1 decl && (non_aliasable p2 decl'||is_datatype decl')
-        || is_datatype decl && non_aliasable p2 decl' then raise (Unify [])
+    end else if non_aliasable p1 decl && non_aliasable p2 decl' then raise (Unify [])
+    else
+      match decl.type_kind, decl'.type_kind with
+      | Type_record (lst,r), Type_record (lst',r') when r = r' ->
+          mcomp_list type_pairs env tl1 tl2;
+          mcomp_record_description type_pairs env lst lst'
+      | Type_variant v1, Type_variant v2 ->
+          mcomp_list type_pairs env tl1 tl2;
+          mcomp_variant_description type_pairs env v1 v2
+      | Type_open, Type_open ->
+          mcomp_list type_pairs env tl1 tl2
+      | Type_abstract, Type_abstract -> ()
+      | Type_abstract, _ when not (non_aliasable p1 decl)-> ()
+      | _, Type_abstract when not (non_aliasable p2 decl') -> ()
+      | _ -> raise (Unify [])
   with Not_found -> ()
 
 and mcomp_type_option type_pairs env t t' =
@@ -2391,10 +2406,13 @@ and unify3 env t1 t1' t2 t2' =
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list env tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-          if !umode = Expression || not !generate_equations
-          || in_current_module p1 (* || in_pervasives p1 *)
-          || try is_datatype (Env.find_type p1 !env) with Not_found -> false
-          then
+          if !umode = Expression || not !generate_equations then
+            unify_list env tl1 tl2
+          else if !assume_injective then
+            set_mode_pattern ~generate:true ~injective:false
+                             (fun () -> unify_list env tl1 tl2)
+          else if in_current_module p1 (* || in_pervasives p1 *)
+                  || try is_datatype (Env.find_type p1 !env) with Not_found -> false then
             unify_list env tl1 tl2
           else
             let inj =
@@ -2405,7 +2423,7 @@ and unify3 env t1 t1' t2 t2' =
             List.iter2
               (fun i (t1, t2) ->
                 if i then unify env t1 t2 else
-                set_mode Pattern ~generate:false
+                set_mode_pattern ~generate:false ~injective:false
                   begin fun () ->
                     let snap = snapshot () in
                     try unify env t1 t2 with Unify _ ->
@@ -2712,7 +2730,7 @@ let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =
   try
     univar_pairs := [];
     newtype_level := Some lev;
-    set_mode Pattern (fun () -> unify env ty1 ty2);
+    set_mode_pattern ~generate:true ~injective:true (fun () -> unify env ty1 ty2);
     newtype_level := None;
     TypePairs.clear unify_eq_set;
   with e ->
@@ -4291,6 +4309,8 @@ let nondep_type_decl env mid id is_covariant decl =
                )
                lbls,
              rep)
+      | Type_open ->
+          Type_open
       with Not_found when is_covariant -> Type_abstract
     and tm =
       try match decl.type_manifest with
@@ -4319,6 +4339,42 @@ let nondep_type_decl env mid id is_covariant decl =
   with Not_found ->
     clear_hash ();
     raise Not_found
+
+(* Preserve sharing inside extension constructors. *)
+let nondep_extension_constructor env mid ext =
+  try
+    let type_path, type_params =
+      if Path.isfree mid ext.ext_type_path then
+        begin
+          let ty =
+            newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
+          in
+          let ty' = nondep_type_rec env mid ty in
+            match (repr ty').desc with
+                Tconstr(p, tl, _) -> p, tl
+              | _ -> raise Not_found
+        end
+      else
+        let type_params =
+          List.map (nondep_type_rec env mid) ext.ext_type_params
+        in
+          ext.ext_type_path, type_params
+    in
+    let args = List.map (nondep_type_rec env mid) ext.ext_args in
+    let ret_type = may_map (nondep_type_rec env mid) ext.ext_ret_type in
+      clear_hash ();
+      { ext_type_path = type_path;
+        ext_type_params = type_params;
+        ext_args = args;
+        ext_ret_type = ret_type;
+        ext_private = ext.ext_private;
+        ext_attributes = ext.ext_attributes;
+        ext_loc = ext.ext_loc;
+      }
+  with Not_found ->
+    clear_hash ();
+    raise Not_found
+
 
 (* Preserve sharing inside class types. *)
 let nondep_class_signature env id sign =

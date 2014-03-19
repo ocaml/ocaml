@@ -60,6 +60,8 @@ and strengthen_sig env sg p =
               { decl with type_manifest = manif }
       in
       Sig_type(id, newdecl, rs) :: strengthen_sig env rem p
+  | (Sig_typext(id, ext, es) as sigelt) :: rem ->
+      sigelt :: strengthen_sig env rem p
   | (Sig_exception(id, d) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
   | Sig_module(id, md, rs) :: rem ->
@@ -127,6 +129,9 @@ let nondep_supertype env mid mty =
           :: rem'
       | Sig_type(id, d, rs) ->
           Sig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
+          :: rem'
+      | Sig_typext(id, ext, es) ->
+          Sig_typext(id, Ctype.nondep_extension_constructor env mid ext, es)
           :: rem'
       | Sig_exception(id, d) ->
           let d =
@@ -212,7 +217,7 @@ and type_paths_sig env p pos sg =
       type_paths_sig (Env.add_module_declaration id md env) p (pos+1) rem
   | Sig_modtype(id, decl) :: rem ->
       type_paths_sig (Env.add_modtype id decl env) p pos rem
-  | (Sig_exception _ | Sig_class _) :: rem ->
+  | (Sig_typext _ | Sig_exception _ | Sig_class _) :: rem ->
       type_paths_sig env p (pos+1) rem
   | (Sig_class_type _) :: rem ->
       type_paths_sig env p pos rem
@@ -237,7 +242,7 @@ and no_code_needed_sig env sg =
       no_code_needed_sig (Env.add_module_declaration id md env) rem
   | (Sig_type _ | Sig_modtype _ | Sig_class_type _) :: rem ->
       no_code_needed_sig env rem
-  | (Sig_exception _ | Sig_class _) :: rem ->
+  | (Sig_typext _ | Sig_exception _ | Sig_class _) :: rem ->
       false
 
 
@@ -265,6 +270,7 @@ and contains_type_item env = function
       contains_type env mty
   | Sig_value _
   | Sig_type _
+  | Sig_typext _
   | Sig_exception _
   | Sig_class _
   | Sig_class_type _ ->

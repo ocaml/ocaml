@@ -27,6 +27,8 @@ type symptom =
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch list
+  | Extension_constructors of
+      Ident.t * extension_constructor * extension_constructor
   | Exception_declarations of
       Ident.t * exception_declaration * exception_declaration
   | Module_types of module_type * module_type

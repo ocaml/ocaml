@@ -151,6 +151,7 @@ module Sig = struct
 
   let value ?loc a = mk ?loc (Psig_value a)
   let type_ ?loc a = mk ?loc (Psig_type a)
+  let type_extension ?loc a = mk ?loc (Psig_typext a)
   let exception_ ?loc a = mk ?loc (Psig_exception a)
   let module_ ?loc a = mk ?loc (Psig_module a)
   let rec_module ?loc a = mk ?loc (Psig_recmodule a)
@@ -170,6 +171,7 @@ module Str = struct
   let value ?loc a b = mk ?loc (Pstr_value (a, b))
   let primitive ?loc a = mk ?loc (Pstr_primitive a)
   let type_ ?loc a = mk ?loc (Pstr_type a)
+  let type_extension ?loc a = mk ?loc (Pstr_typext a)
   let exception_ ?loc a = mk ?loc (Pstr_exception a)
   let exn_rebind ?loc ?(attrs = []) a b = mk ?loc (Pstr_exn_rebind (a, b, attrs))
   let module_ ?loc a = mk ?loc (Pstr_module a)
@@ -351,6 +353,43 @@ module Type = struct
      pld_attributes = attrs;
     }
 end
+
+(** Type extensions *)
+module Te = struct
+  let mk ?(attrs = []) ?(params = []) ?(priv = Public) path constructors =
+    {
+     ptyext_path = path;
+     ptyext_params = params;
+     ptyext_constructors = constructors;
+     ptyext_private = priv;
+     ptyext_attributes = attrs;
+    }
+
+  let constructor ?(loc = !default_loc) ?(attrs = []) name kind =
+    {
+     pext_name = name;
+     pext_kind = kind;
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+
+  let decl ?(loc = !default_loc) ?(attrs = []) ?(args = []) ?res name =
+    {
+     pext_name = name;
+     pext_kind = Pext_decl(args, res);
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+
+  let rebind ?(loc = !default_loc) ?(attrs = []) name lid =
+    {
+     pext_name = name;
+     pext_kind = Pext_rebind lid;
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+end
+
 
 module Csig = struct
   let mk self fields =

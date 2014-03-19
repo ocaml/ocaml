@@ -815,7 +815,7 @@ mentioned here corresponds to the empty set.
 \ 5
 
 .B K
-\ 32, 33, 34, 35, 36, 37, 38, 39
+\ 32, 33, 34, 35, 36, 37, 38, 39, 47
 
 .B L
 \ 6
@@ -849,7 +849,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41..42\-44\-45 .
+.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41..42\-44\-45\-47 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

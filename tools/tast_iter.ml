@@ -27,6 +27,7 @@ let structure_item sub x =
   | Tstr_value (rec_flag, list) -> sub # bindings (rec_flag, list)
   | Tstr_primitive v -> sub # value_description v
   | Tstr_type list -> List.iter (sub # type_declaration) list
+  | Tstr_typext te -> sub # type_extension te
   | Tstr_exception decl -> constructor_decl sub decl
   | Tstr_exn_rebind (_id, _, _p, _, _) -> ()
   | Tstr_module mb -> sub # module_binding mb
@@ -53,8 +54,19 @@ let type_declaration sub decl =
       List.iter (constructor_decl sub) list
   | Ttype_record list ->
       List.iter (fun ld -> sub # core_type ld.ld_type) list
+  | Ttype_open -> ()
   end;
   opt (sub # core_type) decl.typ_manifest
+
+let type_extension sub te =
+  let extension_constructors ext =
+    match ext.ext_kind with
+      Text_decl(ctl, cto) ->
+        List.iter (sub # core_type) ctl;
+        opt (sub # core_type) cto
+    | Text_rebind _ -> ()
+  in
+    List.iter extension_constructors te.tyext_constructors
 
 let pattern sub pat =
   let extra = function
@@ -166,6 +178,8 @@ let signature_item sub item =
       sub # value_description v
   | Tsig_type list ->
       List.iter (sub # type_declaration) list
+  | Tsig_typext te ->
+      sub # type_extension te
   | Tsig_exception decl ->
       constructor_decl sub decl
   | Tsig_module md ->
@@ -364,6 +378,7 @@ class iter = object(this)
   method structure = structure this
   method structure_item = structure_item this
   method type_declaration = type_declaration this
+  method type_extension = type_extension this
   method value_description = value_description this
   method with_constraint = with_constraint this
 end

@@ -76,8 +76,19 @@ let add_type_declaration bv td =
   | Ptype_variant cstrs ->
       List.iter (add_constructor_decl bv) cstrs
   | Ptype_record lbls ->
-      List.iter (fun pld -> add_type bv pld.pld_type) lbls in
+      List.iter (fun pld -> add_type bv pld.pld_type) lbls
+  | Ptype_open -> () in
   add_tkind td.ptype_kind
+
+let add_extension_constructor bv ext =
+  match ext.pext_kind with
+      Pext_decl(args, rty) ->
+        List.iter (add_type bv) args; Misc.may (add_type bv) rty
+    | Pext_rebind lid -> add bv lid
+
+let add_type_extension bv te =
+  add bv te.ptyext_path;
+  List.iter (add_extension_constructor bv) te.ptyext_constructors
 
 let rec add_class_type bv cty =
   match cty.pcty_desc with
@@ -227,6 +238,8 @@ and add_sig_item bv item =
       add_type bv vd.pval_type; bv
   | Psig_type dcls ->
       List.iter (add_type_declaration bv) dcls; bv
+  | Psig_typext te ->
+      add_type_extension bv te; bv
   | Psig_exception pcd ->
       add_constructor_decl bv pcd; bv
   | Psig_module pmd ->
@@ -284,6 +297,9 @@ and add_struct_item bv item =
       add_type bv vd.pval_type; bv
   | Pstr_type dcls ->
       List.iter (add_type_declaration bv) dcls; bv
+  | Pstr_typext te ->
+      add_type_extension bv te;
+      bv
   | Pstr_exception pcd ->
       add_constructor_decl bv pcd; bv
   | Pstr_exn_rebind(id, l, _attrs) ->

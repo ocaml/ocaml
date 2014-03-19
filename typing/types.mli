@@ -114,6 +114,7 @@ type constructor_description =
     cstr_normal: int;                   (* Number of non generalized constrs *)
     cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag;         (* Read-only constructor? *)
+    cstr_exception: bool;               (* Exception constructor? *)
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
    }
@@ -121,7 +122,8 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_exception of Path.t * Location.t (* Exception constructor *)
+  | Cstr_extension of Path.t * bool     (* Extension constructor
+                                           true if a constant false if a block *)
 
 (* Record label descriptions *)
 
@@ -181,6 +183,7 @@ and type_kind =
     Type_abstract
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
+  | Type_open
 
 and label_declaration =
   {
@@ -199,6 +202,17 @@ and constructor_declaration =
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
   }
+
+type extension_constructor =
+    {
+      ext_type_path: Path.t;
+      ext_type_params: type_expr list;
+      ext_args: type_expr list;
+      ext_ret_type: type_expr option;
+      ext_private: private_flag;
+      ext_loc: Location.t;
+      ext_attributes: Parsetree.attributes;
+    }
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -259,6 +273,7 @@ and signature = signature_item list
 and signature_item =
     Sig_value of Ident.t * value_description
   | Sig_type of Ident.t * type_declaration * rec_status
+  | Sig_typext of Ident.t * extension_constructor * ext_status
   | Sig_exception of Ident.t * exception_declaration
   | Sig_module of Ident.t * module_declaration * rec_status
   | Sig_modtype of Ident.t * modtype_declaration
@@ -283,3 +298,7 @@ and rec_status =
     Trec_not                            (* not recursive *)
   | Trec_first                          (* first in a recursive group *)
   | Trec_next                           (* not first in a recursive group *)
+
+and ext_status =
+    Text_first                     (* first constructor in an extension *)
+  | Text_next                      (* not first constructor in an extension *)

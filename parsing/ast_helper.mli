@@ -129,10 +129,21 @@ module Val:
 (** Type declarations *)
 module Type:
   sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?params:(str option * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
+    val mk: ?loc:loc -> ?attrs:attrs -> ?params:(core_type * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
 
     val constructor: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> constructor_declaration
     val field: ?loc:loc -> ?attrs:attrs -> ?mut:mutable_flag -> str -> core_type -> label_declaration
+  end
+
+(** Type extensions *)
+module Te:
+  sig
+    val mk: ?attrs:attrs -> ?params:(core_type * variance) list -> ?priv:private_flag -> lid -> extension_constructor list -> type_extension
+
+    val constructor: ?loc:loc -> ?attrs:attrs -> str -> extension_constructor_kind -> extension_constructor
+
+    val decl: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> extension_constructor
+    val rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> extension_constructor
   end
 
 (** {2 Module language} *)
@@ -176,6 +187,7 @@ module Sig:
 
     val value: ?loc:loc -> value_description -> signature_item
     val type_: ?loc:loc -> type_declaration list -> signature_item
+    val type_extension: ?loc:loc -> type_extension -> signature_item
     val exception_: ?loc:loc -> constructor_declaration -> signature_item
     val module_: ?loc:loc -> module_declaration -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
@@ -197,6 +209,7 @@ module Str:
     val value: ?loc:loc -> rec_flag -> value_binding list -> structure_item
     val primitive: ?loc:loc -> value_description -> structure_item
     val type_: ?loc:loc -> type_declaration list -> structure_item
+    val type_extension: ?loc:loc -> type_extension -> structure_item
     val exception_: ?loc:loc -> constructor_declaration -> structure_item
     val exn_rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> structure_item
     val module_: ?loc:loc -> module_binding -> structure_item
@@ -298,7 +311,7 @@ module Cf:
 (** Classes *)
 module Ci:
   sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(str * variance) list -> str -> 'a -> 'a class_infos
+    val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(core_type * variance) list -> str -> 'a -> 'a class_infos
   end
 
 (** Class signatures *)

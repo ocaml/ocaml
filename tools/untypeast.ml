@@ -53,6 +53,8 @@ and untype_structure_item item =
         Pstr_primitive (untype_value_description vd)
     | Tstr_type list ->
         Pstr_type (List.map untype_type_declaration list)
+    | Tstr_typext tyext ->
+        Pstr_typext (untype_type_extension tyext)
     | Tstr_exception decl ->
         Pstr_exception (untype_constructor_declaration decl)
     | Tstr_exn_rebind (_id, name, _p, lid, attrs) ->
@@ -66,26 +68,15 @@ and untype_structure_item item =
                       pmtd_loc=mtd.mtd_loc;pmtd_attributes=mtd.mtd_attributes;}
     | Tstr_open (ovf, _path, lid, attrs) -> Pstr_open (ovf, lid, attrs)
     | Tstr_class list ->
-        Pstr_class (List.map (fun (ci, _, _) ->
-              { pci_virt = ci.ci_virt;
-                pci_params = ci.ci_params;
-                pci_name = ci.ci_id_name;
-                pci_expr = untype_class_expr ci.ci_expr;
-                pci_loc = ci.ci_loc;
-                pci_attributes = ci.ci_attributes;
-              }
-          ) list)
+        Pstr_class
+          (List.map
+             (fun (ci, _, _) -> untype_class_declaration ci)
+             list)
     | Tstr_class_type list ->
-        Pstr_class_type (List.map (fun (_id, _name, ct) ->
-              {
-                pci_virt = ct.ci_virt;
-                pci_params = ct.ci_params;
-                pci_name = ct.ci_id_name;
-                pci_expr = untype_class_type ct.ci_expr;
-                pci_loc = ct.ci_loc;
-                pci_attributes = ct.ci_attributes;
-              }
-          ) list)
+        Pstr_class_type
+          (List.map
+             (fun (_id, _name, ct) -> untype_class_type_declaration ct)
+             list)
     | Tstr_include (mexpr, _, attrs) ->
         Pstr_include (untype_module_expr mexpr, attrs)
     | Tstr_attribute x ->
@@ -113,7 +104,7 @@ and untype_module_binding mb =
 and untype_type_declaration decl =
   {
     ptype_name = decl.typ_name;
-    ptype_params = decl.typ_params;
+    ptype_params = List.map untype_type_parameter decl.typ_params;
     ptype_cstrs = List.map (fun (ct1, ct2, loc) ->
         (untype_core_type ct1,
           untype_core_type ct2, loc)
@@ -123,19 +114,16 @@ and untype_type_declaration decl =
       | Ttype_variant list ->
           Ptype_variant (List.map untype_constructor_declaration list)
       | Ttype_record list ->
-          Ptype_record (List.map (fun ld ->
-                {pld_name=ld.ld_name;
-                 pld_mutable=ld.ld_mutable;
-                 pld_type=untype_core_type ld.ld_type;
-                 pld_loc=ld.ld_loc;
-                 pld_attributes=ld.ld_attributes}
-            ) list)
+          Ptype_record (List.map untype_label_declaration list)
+      | Ttype_open -> Ptype_open
     );
     ptype_private = decl.typ_private;
     ptype_manifest = option untype_core_type decl.typ_manifest;
     ptype_attributes = decl.typ_attributes;
     ptype_loc = decl.typ_loc;
   }
+
+and untype_type_parameter (ct, v) = (untype_core_type ct, v)
 
 and untype_constructor_declaration cd =
   {
@@ -144,6 +132,38 @@ and untype_constructor_declaration cd =
    pcd_res = option untype_core_type cd.cd_res;
    pcd_loc = cd.cd_loc;
    pcd_attributes = cd.cd_attributes;
+  }
+
+and untype_label_declaration ld =
+  {
+    pld_name=ld.ld_name;
+    pld_mutable=ld.ld_mutable;
+    pld_type=untype_core_type ld.ld_type;
+    pld_loc=ld.ld_loc;
+    pld_attributes=ld.ld_attributes
+  }
+
+and untype_type_extension tyext =
+  {
+    ptyext_path = tyext.tyext_txt;
+    ptyext_params = List.map untype_type_parameter tyext.tyext_params;
+    ptyext_constructors =
+      List.map untype_extension_constructor tyext.tyext_constructors;
+    ptyext_private = tyext.tyext_private;
+    ptyext_attributes = tyext.tyext_attributes;
+  }
+
+and untype_extension_constructor ext =
+  {
+    pext_name = ext.ext_name;
+    pext_kind = (match ext.ext_kind with
+        Text_decl (args, ret) ->
+          Pext_decl (List.map untype_core_type args,
+                     option untype_core_type ret)
+      | Text_rebind (p, lid) -> Pext_rebind lid
+    );
+    pext_loc = ext.ext_loc;
+    pext_attributes = ext.ext_attributes;
   }
 
 and untype_pattern pat =
@@ -328,6 +348,8 @@ and untype_signature_item item =
         Psig_value (untype_value_description v)
     | Tsig_type list ->
         Psig_type (List.map untype_type_declaration list)
+    | Tsig_typext tyext ->
+        Psig_typext (untype_type_extension tyext)
     | Tsig_exception decl ->
         Psig_exception (untype_constructor_declaration decl)
     | Tsig_module md ->
@@ -354,10 +376,20 @@ and untype_signature_item item =
     psig_loc = item.sig_loc;
   }
 
+and untype_class_declaration cd =
+  {
+    pci_virt = cd.ci_virt;
+    pci_params = List.map untype_type_parameter cd.ci_params;
+    pci_name = cd.ci_id_name;
+    pci_expr = untype_class_expr cd.ci_expr;
+    pci_loc = cd.ci_loc;
+    pci_attributes = cd.ci_attributes;
+  }
+
 and untype_class_description cd =
   {
     pci_virt = cd.ci_virt;
-    pci_params = cd.ci_params;
+    pci_params = List.map untype_type_parameter cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
     pci_loc = cd.ci_loc;
@@ -367,7 +399,7 @@ and untype_class_description cd =
 and untype_class_type_declaration cd =
   {
     pci_virt = cd.ci_virt;
-    pci_params = cd.ci_params;
+    pci_params = List.map untype_type_parameter cd.ci_params;
     pci_name = cd.ci_id_name;
     pci_expr = untype_class_type cd.ci_expr;
     pci_loc = cd.ci_loc;

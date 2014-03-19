@@ -45,6 +45,10 @@ val value_description: Ident.t -> formatter -> value_description -> unit
 val tree_of_type_declaration:
     Ident.t -> type_declaration -> rec_status -> out_sig_item
 val type_declaration: Ident.t -> formatter -> type_declaration -> unit
+val tree_of_extension_constructor:
+    Ident.t -> extension_constructor -> ext_status -> out_sig_item
+val extension_constructor:
+    Ident.t -> formatter -> extension_constructor -> unit
 val tree_of_exception_declaration:
     Ident.t -> exception_declaration -> out_sig_item
 val exception_declaration:

@@ -79,6 +79,7 @@ let constructor_descrs ty_res cstrs priv =
             cstr_nonconsts = !num_nonconsts;
             cstr_normal = !num_normal;
             cstr_private = priv;
+            cstr_exception = false;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
             cstr_attributes = cd_attributes;
@@ -92,15 +93,48 @@ let exception_descr path_exc decl =
     cstr_existentials = [];
     cstr_args = decl.exn_args;
     cstr_arity = List.length decl.exn_args;
-    cstr_tag = Cstr_exception (path_exc, decl.exn_loc);
+    cstr_tag = Cstr_extension(path_exc, decl.exn_args = []);
     cstr_consts = -1;
     cstr_nonconsts = -1;
     cstr_private = Public;
+    cstr_exception = true;
     cstr_normal = -1;
     cstr_generalized = false;
     cstr_loc = decl.exn_loc;
     cstr_attributes = decl.exn_attributes;
   }
+
+let extension_descr path_ext ext =
+  let ty_res =
+    match ext.ext_ret_type with
+        Some type_ret -> type_ret
+      | None ->
+          newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
+  in
+  let tag = Cstr_extension(path_ext, ext.ext_args = []) in
+  let existentials =
+    match ext.ext_ret_type with
+      | None -> []
+      | Some type_ret ->
+          let ret_vars = free_vars type_ret in
+          let arg_vars = free_vars (newgenty (Ttuple ext.ext_args)) in
+            TypeSet.elements (TypeSet.diff arg_vars ret_vars)
+  in
+    { cstr_name = Path.last path_ext;
+      cstr_res = ty_res;
+      cstr_existentials = existentials;
+      cstr_args = ext.ext_args;
+      cstr_arity = List.length ext.ext_args;
+      cstr_tag = tag;
+      cstr_consts = -1;
+      cstr_nonconsts = -1;
+      cstr_private = ext.ext_private;
+      cstr_exception = false;
+      cstr_normal = -1;
+      cstr_generalized = ext.ext_ret_type <> None;
+      cstr_loc = ext.ext_loc;
+      cstr_attributes = ext.ext_attributes;
+    }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)

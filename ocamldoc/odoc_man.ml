@@ -15,6 +15,7 @@ open Odoc_info
 open Parameter
 open Value
 open Type
+open Extension
 open Exception
 open Class
 open Module
@@ -281,8 +282,8 @@ class man =
       Str.global_replace (Str.regexp "[ ]*\n[ ]*") " " s
 
     (** Print the groff string for a text element. *)
-    method man_of_text_element b te =
-      match te with
+    method man_of_text_element b txt =
+      match txt with
       | Odoc_info.Raw s -> bs b (self#escape s)
       | Odoc_info.Code s ->
           bs b "\n.B ";
@@ -421,6 +422,74 @@ class man =
       self#man_of_info b v.val_info;
       bs b "\n.sp\n"
 
+    (** Print groff string code for a type extension. *)
+    method man_of_type_extension b m_name te =
+      Odoc_info.reset_type_names () ;
+      bs b ".I type ";
+      (
+        match te.te_type_parameters with
+            [] -> ()
+          | l ->
+              let s = Odoc_str.string_of_type_extension_param_list te in
+              let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
+                bs b "\n.B ";
+                bs b (self#relative_idents m_name s2);
+                bs b "\n";
+                bs b ".I "
+      );
+      bs b (self#relative_idents m_name te.te_type_name);
+      bs b " \n";
+      bs b "+=";
+      if te.te_private = Asttypes.Private then bs b " private";
+      bs b "\n ";
+      List.iter
+        (fun x ->
+           let father = Name.father x.xt_name in
+           bs b ("| "^(Name.simple x.xt_name));
+           (
+             match x.xt_args, x.xt_ret with
+               | [], None -> bs b "\n"
+               | l, None ->
+                   bs b "\n.B of ";
+                   self#man_of_type_expr_list ~par: false b father " * " l;
+               | [], Some r ->
+                   bs b "\n.B : ";
+                   self#man_of_type_expr b father r;
+               | l, Some r ->
+                   bs b "\n.B : ";
+                   self#man_of_type_expr_list ~par: false b father " * " l;
+                   bs b ".B -> ";
+                   self#man_of_type_expr b father r;
+           );
+           (
+             match x.xt_alias with
+                 None -> ()
+               | Some xa ->
+                   bs b ".B = ";
+                   bs b
+                     (
+                       match xa.xa_xt with
+                           None -> xa.xa_name
+                         | Some x -> x.xt_name
+                     );
+                   bs b "\n"
+           );
+           (
+             match x.xt_text with
+                 None ->
+                   bs b " "
+               | Some t ->
+                   bs b ".I \"  \"\n";
+                   bs b "(* ";
+                   self#man_of_info b (Some t);
+                   bs b " *)\n "
+           )
+        )
+        te.te_constructors;
+      bs b "\n.sp\n";
+      self#man_of_info b te.te_info;
+      bs b "\n.sp\n"
+
     (** Print groff string code for an exception. *)
     method man_of_exception b e =
       Odoc_info.reset_type_names () ;
@@ -552,6 +621,9 @@ class man =
             )
             l;
           bs b "\n }\n"
+      | Type_open ->
+          bs b "= ..";
+          bs b "\n"
       );
       bs b "\n.sp\n";
       self#man_of_info b t.ty_info;
@@ -919,6 +991,8 @@ class man =
                 self#man_of_class_type b ct
             | Element_value v ->
                 self#man_of_value b v
+            | Element_type_extension te ->
+                self#man_of_type_extension b mt.mt_name te
             | Element_exception e ->
                 self#man_of_exception b e
             | Element_type t ->
@@ -993,6 +1067,8 @@ class man =
                 self#man_of_class_type b ct
             | Element_value v ->
                 self#man_of_value b v
+            | Element_type_extension te ->
+                self#man_of_type_extension b m.m_name te
             | Element_exception e ->
                 self#man_of_exception b e
             | Element_type t ->
@@ -1019,6 +1095,7 @@ class man =
         | Res_class_type ct -> ct.clt_name
         | Res_value v -> Name.simple v.val_name
         | Res_type t -> Name.simple t.ty_name
+        | Res_extension x -> Name.simple x.xt_name
         | Res_exception e -> Name.simple e.ex_name
         | Res_attribute a -> Name.simple a.att_value.val_name
         | Res_method m -> Name.simple m.met_value.val_name
@@ -1062,6 +1139,7 @@ class man =
           | Res_class_type ct -> ct.clt_name
           | Res_value v -> v.val_name
           | Res_type t -> t.ty_name
+          | Res_extension x -> x.xt_name
           | Res_exception e -> e.ex_name
           | Res_attribute a -> a.att_value.val_name
           | Res_method m -> m.met_value.val_name
@@ -1091,6 +1169,9 @@ class man =
           | Res_type t ->
               bs b ("\n.SH "^Odoc_messages.modul^" "^(Name.father t.ty_name)^"\n");
               self#man_of_type b t
+          | Res_extension x ->
+              bs b ("\n.SH "^Odoc_messages.modul^" "^(Name.father x.xt_name)^"\n");
+              self#man_of_type_extension b (Name.father x.xt_name) x.xt_type_extension
           | Res_exception e ->
               bs b ("\n.SH "^Odoc_messages.modul^" "^(Name.father e.ex_name)^"\n");
               self#man_of_exception b e

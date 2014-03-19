@@ -65,6 +65,7 @@ type t =
   | Open_shadow_label_constructor of string * string (* 45 *)
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
+  | Unused_extension of string * bool * bool  (* 48 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -121,9 +122,10 @@ let number = function
   | Open_shadow_label_constructor _ -> 45
   | Bad_env_variable _ -> 46
   | Attribute_payload _ -> 47
+  | Unused_extension _ -> 48
 ;;
 
-let last_warning_number = 47
+let last_warning_number = 48
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -139,7 +141,7 @@ let letter = function
   | 'h' -> []
   | 'i' -> []
   | 'j' -> []
-  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39]
+  | 'k' -> [32; 33; 34; 35; 36; 37; 38; 39; 48]
   | 'l' -> [6]
   | 'm' -> [7]
   | 'n' -> []
@@ -226,7 +228,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -360,6 +362,15 @@ let message = function
       Printf.sprintf "illegal environment variable %s : %s" var s
   | Attribute_payload (a, s) ->
       Printf.sprintf "illegal payload for attribute '%s'.\n%s" a s
+  | Unused_extension (s, false, false) -> "unused extension constructor " ^ s ^ "."
+  | Unused_extension (s, true, _) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
+        (However, this constructor appears in patterns.)"
+  | Unused_extension (s, false, true) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
+        It is exported or rebound as a private extension."
 ;;
 
 let nerrors = ref 0;;
@@ -453,6 +464,7 @@ let descriptions =
    45, "Open statement shadows an already defined label or constructor.";
    46, "Illegal environment variable";
    47, "Illegal attribute payload";
+   48, "Unused extension constructor.";
   ]
 ;;
 

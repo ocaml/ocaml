@@ -21,6 +21,8 @@ val constructor_descrs:
   private_flag -> (Ident.t * constructor_description) list
 val exception_descr:
   Path.t -> exception_declaration -> constructor_description
+val extension_descr:
+  Path.t -> extension_constructor -> constructor_description
 val label_descrs:
   type_expr -> label_declaration list ->
     record_representation -> private_flag ->

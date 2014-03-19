@@ -808,7 +808,7 @@ let transl_class ids cl_id pub_meths cl vflag =
 (*
     let cl_id = ci.ci_id_class in
 (* TODO: cl_id is used somewhere else as typesharp ? *)
-  let _arity = List.length (fst ci.ci_params) in
+  let _arity = List.length ci.ci_params in
   let pub_meths = m in
   let cl = ci.ci_expr in
   let vflag = vf in
