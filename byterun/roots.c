@@ -46,7 +46,9 @@ void caml_oldify_local_roots (void)
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
-        caml_oldify_one (*sp, sp);
+        if (*sp != 0) {
+          caml_oldify_one (*sp, sp);
+        }
       }
     }
   }
@@ -94,7 +96,9 @@ CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
-        f (*sp, sp);
+        if (*sp != 0) {
+          f (*sp, sp);
+        }
       }
     }
   }
