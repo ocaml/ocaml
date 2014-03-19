@@ -163,10 +163,14 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     RESTORE;
     if (Is_block(arg)) {
       env->curr_char = Field(tables->transl_block, Tag_val(arg));
-      caml_modify(&env->lval, Field(arg, 0));
+      caml_modify_field((value)env, 
+                        offsetof(struct parser_env, lval) / sizeof(value),
+                        Field(arg, 0));
     } else {
       env->curr_char = Field(tables->transl_const, Int_val(arg));
-      caml_modify(&env->lval, Val_long(0));
+      caml_modify_field((value)env, 
+                        offsetof(struct parser_env, lval) / sizeof(value),
+                        Val_long(0));
     }
     if (caml_parser_trace) print_token(tables, state, arg);
 
@@ -238,7 +242,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     RESTORE;
   push:
     Field(env->s_stack, sp) = Val_int(state);
-    caml_modify(&Field(env->v_stack, sp), env->lval);
+    caml_modify_field(env->v_stack, sp, env->lval);
     Store_field (env->symb_start_stack, sp, env->symb_start);
     Store_field (env->symb_end_stack, sp, env->symb_end);
     goto loop;
@@ -274,7 +278,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
   case SEMANTIC_ACTION_COMPUTED:
     RESTORE;
     Field(env->s_stack, sp) = Val_int(state);
-    caml_modify(&Field(env->v_stack, sp), arg);
+    caml_modify_field(env->v_stack, sp, arg);
     asp = Int_val(env->asp);
     Store_field (env->symb_end_stack, sp, Field(env->symb_end_stack, asp));
     if (sp > asp) {

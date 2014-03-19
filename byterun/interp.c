@@ -607,7 +607,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(SETGLOBAL):
-      caml_modify(&Field(caml_global_data, *pc), accu);
+      caml_modify_field(caml_global_data, *pc, accu);
       accu = Val_unit;
       pc++;
       Next;
@@ -637,8 +637,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
         for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
       } else {
         block = caml_alloc_shr(wosize, tag);
-        caml_initialize(&Field(block, 0), accu);
-        for (i = 1; i < wosize; i++) caml_initialize(&Field(block, i), *sp++);
+        caml_initialize_field(block, 0, accu);
+        for (i = 1; i < wosize; i++) caml_initialize_field(block, i, *sp++);
       }
       accu = block;
       Next;
@@ -711,23 +711,23 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(SETFIELD0):
-      caml_modify(&Field(accu, 0), *sp++);
+      caml_modify_field(accu, 0, *sp++);
       accu = Val_unit;
       Next;
     Instruct(SETFIELD1):
-      caml_modify(&Field(accu, 1), *sp++);
+      caml_modify_field(accu, 1, *sp++);
       accu = Val_unit;
       Next;
     Instruct(SETFIELD2):
-      caml_modify(&Field(accu, 2), *sp++);
+      caml_modify_field(accu, 2, *sp++);
       accu = Val_unit;
       Next;
     Instruct(SETFIELD3):
-      caml_modify(&Field(accu, 3), *sp++);
+      caml_modify_field(accu, 3, *sp++);
       accu = Val_unit;
       Next;
     Instruct(SETFIELD):
-      caml_modify(&Field(accu, *pc), *sp++);
+      caml_modify_field(accu, *pc, *sp++);
       accu = Val_unit;
       pc++;
       Next;
@@ -751,7 +751,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp += 1;
       Next;
     Instruct(SETVECTITEM):
-      caml_modify(&Field(accu, Long_val(sp[0])), sp[1]);
+      caml_modify_field(accu, Long_val(sp[0]), sp[1]);
       accu = Val_unit;
       sp += 2;
       Next;

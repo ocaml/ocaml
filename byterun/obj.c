@@ -114,7 +114,7 @@ CAMLprim value caml_obj_dup(value arg)
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
     res = caml_alloc_shr(sz, tg);
-    for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
+    for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
   }
   CAMLreturn (res);
 }
@@ -148,7 +148,7 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
      can darken them as appropriate. */
   if (tag < No_scan_tag) {
     for (i = new_wosize; i < wosize; i++){
-      caml_modify(&Field(v, i), Val_unit);
+      caml_modify_field(v, i, Val_unit);
 #ifdef DEBUG
       Field (v, i) = Debug_free_truncate;
 #endif

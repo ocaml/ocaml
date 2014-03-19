@@ -220,8 +220,6 @@
 
 /* **** memory.c */
 #define alloc_shr caml_alloc_shr
-#define initialize caml_initialize
-#define modify caml_modify
 #define stat_alloc caml_stat_alloc
 #define stat_free caml_stat_free
 #define stat_resize caml_stat_resize

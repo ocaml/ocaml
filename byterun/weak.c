@@ -130,7 +130,7 @@ CAMLprim value caml_weak_get_copy (value ar, value n)
         if (caml_gc_phase == Phase_mark && Is_block (f) && Is_in_heap (f)){
           caml_darken (f, NULL);
         }
-        Modify (&Field (elt, i), f);
+        caml_modify_field (elt, i, f);
       }
     }else{
       memmove (Bp_val (elt), Bp_val (v), Bosize_val (v));

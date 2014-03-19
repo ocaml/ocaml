@@ -495,16 +495,17 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   }
 }
 
-/* You must use [caml_initialize] to store the initial value in a field of
+/* You must use [caml_initialize_field] to store the initial value in a field of
    a shared block, unless you are sure the value is not a young block.
    A block value [v] is a shared block if and only if [Is_in_heap (v)]
    is true.
 */
-/* [caml_initialize] never calls the GC, so you may call it while a block is
+/* [caml_initialize_field] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
 /* PR#6084 workaround: define it as a weak symbol */
-CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
+CAMLexport CAMLweakdef void caml_initialize_field (value obj, int field, value val)
 {
+  value* fp = &Field(obj, field);
   CAMLassert(Is_in_heap(fp));
   *fp = val;
   if (Is_block (val) && Is_young (val)) {
@@ -515,20 +516,20 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   }
 }
 
-/* You must use [caml_modify] to change a field of an existing shared block,
+/* You must use [caml_modify_field] to change a field of an existing shared block,
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */
-/* [caml_modify] never calls the GC. */
-/* [caml_modify] can also be used to do assignment on data structures that are
+/* [caml_modify_field] never calls the GC. */
+/* [caml_modify_field] can also be used to do assignment on data structures that are
    in the minor heap instead of in the major heap.  In this case, it
    is a bit slower than simple assignment.
-   In particular, you can use [caml_modify] when you don't know whether the
+   In particular, you can use [caml_modify_field] when you don't know whether the
    block being changed is in the minor heap or the major heap. */
 /* PR#6084 workaround: define it as a weak symbol */
 
-CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
+CAMLexport CAMLweakdef void caml_modify_field (value obj, int field, value val)
 {
-  /* The write barrier implemented by [caml_modify] checks for the
+  /* The write barrier implemented by [caml_modify_field] checks for the
      following two conditions and takes appropriate action:
      1- a pointer from the major heap to the minor heap is created
         --> add [fp] to the remembered set
@@ -538,6 +539,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
             major GC treats it as an additional root.
   */
   value old;
+  value* fp = &Field(obj, field);
 
   if (Is_young((value)fp)) {
     /* The modified object resides in the minor heap.

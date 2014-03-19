@@ -111,11 +111,7 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
   } else {
     result = caml_alloc (nbr, 0);
     for (n = 0; n < nbr; n++) {
-      /* The two statements below must be separate because of evaluation
-         order (don't take the address &Field(result, n) before
-         calling funct, which may cause a GC and move result). */
-      v = funct(arr[n]);
-      caml_modify(&Field(result, n), v);
+      caml_modify_field(result, n, funct(arr[n]));
     }
     CAMLreturn (result);
   }
@@ -173,7 +169,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     }
   }else{
     for (i = 0; i < size; i++){
-      caml_modify (&Field(dummy, i), Field(newval, i));
+      caml_modify_field (dummy, i, Field(newval, i));
     }
   }
   return Val_unit;

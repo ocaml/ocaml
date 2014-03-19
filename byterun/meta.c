@@ -84,7 +84,7 @@ CAMLprim value caml_realloc_global(value size)
                      requested_size);
     new_global_data = caml_alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
-      caml_initialize(&Field(new_global_data, i), Field(caml_global_data, i));
+      caml_initialize_field(new_global_data, i, Field(caml_global_data, i));
     for (i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
