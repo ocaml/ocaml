@@ -107,6 +107,10 @@ CAMLexport void caml_array_bound_error(void)
 
 CAMLexport void caml_raise_out_of_memory(void)
 {
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: out of memory during initialisation\n");
+    exit(2);
+  }
   caml_raise_constant(Field(caml_global_data, OUT_OF_MEMORY_EXN));
 }
 
