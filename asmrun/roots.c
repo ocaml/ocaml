@@ -231,7 +231,9 @@ void caml_oldify_local_roots (void)
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
-        Oldify (root);
+        if (*root != 0) {
+          Oldify (root);
+        }
       }
     }
   }
@@ -351,7 +353,9 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
-        f (*root, root);
+        if (*root != 0) {
+          f (*root, root);
+        }
       }
     }
   }
