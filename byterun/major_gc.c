@@ -484,6 +484,22 @@ asize_t caml_round_heap_chunk_size (asize_t request)
   return result;
 }
 
+
+static header_t caml_atom_table[256];
+CAMLexport value caml_atom(tag_t tag) {
+  return Val_hp (&(caml_atom_table[tag]));
+}
+
+static void init_atoms(void)
+{
+  int i;
+  for(i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
+  if (caml_page_table_add(In_static_data,
+                          caml_atom_table, caml_atom_table + 256) != 0) {
+    caml_fatal_error("Fatal error: not enough memory for initial page table");
+  }
+}
+
 void caml_init_major_heap (asize_t heap_size)
 {
   caml_stat_heap_size = clip_heap_chunk_size (heap_size);
@@ -514,4 +530,5 @@ void caml_init_major_heap (asize_t heap_size)
   heap_is_pure = 1;
   caml_allocated_words = 0;
   caml_extra_heap_resources = 0.0;
+  init_atoms();
 }

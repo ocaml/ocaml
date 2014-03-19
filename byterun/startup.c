@@ -63,20 +63,6 @@
 
 extern int caml_parser_trace;
 
-CAMLexport header_t caml_atom_table[256];
-
-/* Initialize the atom table */
-
-static void init_atoms(void)
-{
-  int i;
-  for(i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
-  if (caml_page_table_add(In_static_data,
-                          caml_atom_table, caml_atom_table + 256) != 0) {
-    caml_fatal_error("Fatal error: not enough memory for initial page table");
-  }
-}
-
 /* Read the trailer of a bytecode file */
 
 static void fixup_endianness_trailer(uint32 * p)
@@ -402,7 +388,6 @@ CAMLexport void caml_main(char **argv)
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
-  init_atoms();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -484,7 +469,6 @@ CAMLexport void caml_startup_code(
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
-  init_atoms();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

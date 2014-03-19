@@ -273,8 +273,8 @@ CAMLextern int64 caml_Int64_val(value v);
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 
-CAMLextern header_t caml_atom_table[];
-#define Atom(tag) (Val_hp (&(caml_atom_table [(tag)])))
+CAMLextern value caml_atom(tag_t);
+#define Atom(tag) caml_atom(tag)
 
 /* Booleans are integers 0 or 1 */
 
