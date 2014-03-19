@@ -70,7 +70,7 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
-  Modify(&Field(array, idx), newval);
+  caml_modify_field(array, idx, newval);
   return Val_unit;
 }
 
@@ -117,7 +117,7 @@ CAMLprim value caml_array_unsafe_get(value array, value index)
 CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
-  Modify(&Field(array, idx), newval);
+  caml_modify_field(array, idx, newval);
   return Val_unit;
 }
 
@@ -191,7 +191,7 @@ CAMLprim value caml_make_vect(value len, value init)
     }
     else {
       res = caml_alloc_shr(size, 0);
-      for (i = 0; i < size; i++) caml_initialize(&Field(res, i), init);
+      for (i = 0; i < size; i++) caml_initialize_field(res, i, init);
       res = caml_check_urgent_gc (res);
     }
   }
@@ -230,7 +230,6 @@ CAMLprim value caml_make_array(value init)
 CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
                                value n)
 {
-  value * src, * dst;
   intnat count;
 
   if (Tag_val(a2) == Double_array_tag) {
@@ -253,25 +252,21 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
     return Val_unit;
   }
   /* Array of values, destination is in old generation.
-     We must use caml_modify.  */
+     We must use caml_modify_field.  */
   count = Long_val(n);
   if (a1 == a2 && Long_val(ofs1) < Long_val(ofs2)) {
     /* Copy in descending order */
-    for (dst = &Field(a2, Long_val(ofs2) + count - 1),
-           src = &Field(a1, Long_val(ofs1) + count - 1);
-         count > 0;
-         count--, src--, dst--) {
-      caml_modify(dst, *src);
+    for (; count > 0; count--) {
+      caml_modify_field(a2, Long_val(ofs2) + count - 1, Field(a1, Long_val(ofs1) + count - 1));
     }
   } else {
     /* Copy in ascending order */
-    for (dst = &Field(a2, Long_val(ofs2)), src = &Field(a1, Long_val(ofs1));
-         count > 0;
-         count--, src++, dst++) {
-      caml_modify(dst, *src);
+    int i;
+    for (i = 0; i < count; i++) {
+      caml_modify_field(a2, Long_val(ofs2) + i, Field(a1, Long_val(ofs1) + i));
     }
   }
-  /* Many caml_modify in a row can create a lot of old-to-young refs.
+  /* Many caml_modify_field in a row can create a lot of old-to-young refs.
      Give the minor GC a chance to run if it needs to. */
   caml_check_urgent_gc(Val_unit);
   return Val_unit;
@@ -331,19 +326,19 @@ static value caml_array_gather(intnat num_arrays,
     Assert(pos == size);
   } else {
     /* Array of values, must be allocated in old generation and filled
-       using caml_initialize. */
+       using caml_initialize_field. */
     res = caml_alloc_shr(size, 0);
     pos = 0;
     for (i = 0, pos = 0; i < num_arrays; i++) {
       for (src = &Field(arrays[i], offsets[i]), count = lengths[i];
            count > 0;
            count--, src++, pos++) {
-        caml_initialize(&Field(res, pos), *src);
+        caml_initialize_field(res, pos, *src);
       }
     }
     Assert(pos == size);
 
-    /* Many caml_initialize in a row can create a lot of old-to-young
+    /* Many caml_initialize_field in a row can create a lot of old-to-young
        refs.  Give the minor GC a chance to run if it needs to. */
     res = caml_check_urgent_gc(res);
   }

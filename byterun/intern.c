@@ -365,7 +365,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             v = Atom(tag);
           } else {
             v = caml_alloc(size, tag);
-            if (use_intern_table) caml_modify(&Field(intern_obj_table, obj_counter++), v);
+            if (use_intern_table) caml_modify_field(intern_obj_table, obj_counter++, v);
             /* For objects, we need to freshen the oid */
             if (tag == Object_tag) {
               Assert(size >= 2);
@@ -390,7 +390,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
           len = (code & 0x1F);
         read_string:
           v = caml_alloc_string(len);
-          if (use_intern_table) caml_modify(&Field(intern_obj_table, obj_counter++), v);
+          if (use_intern_table) caml_modify_field(intern_obj_table, obj_counter++, v);
           readblock(String_val(v), len);
         } else {
           switch(code) {
@@ -451,7 +451,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
           case CODE_DOUBLE_LITTLE:
           case CODE_DOUBLE_BIG:
             v = caml_alloc(Double_wosize, Double_tag);
-            if (use_intern_table) caml_modify(&Field(intern_obj_table, obj_counter++), v);
+            if (use_intern_table) caml_modify_field(intern_obj_table, obj_counter++, v);
             readfloat((double *) v, code);
             break;
           case CODE_DOUBLE_ARRAY8_LITTLE:
@@ -459,7 +459,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             len = read8u();
           read_double_array:
             v = caml_alloc(len * Double_wosize, Double_array_tag);
-            if (use_intern_table) caml_modify(&Field(intern_obj_table, obj_counter++), v);
+            if (use_intern_table) caml_modify_field(intern_obj_table, obj_counter++, v);
             readfloats((double *) v, len, code);
             break;
           case CODE_DOUBLE_ARRAY32_LITTLE:
@@ -504,7 +504,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             }
             while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
             v = ops->deserialize();
-            if (use_intern_table) caml_modify(&Field(intern_obj_table, obj_counter++), v);
+            if (use_intern_table) caml_modify_field(intern_obj_table, obj_counter++, v);
             break;
           default:
             intern_cleanup(&S);
@@ -517,7 +517,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
         result = v;
         first = 0;
       } else {
-        caml_modify(&Field(dest, curr_field), v);
+        caml_modify_field(dest, curr_field, v);
       }
       break;
     default:

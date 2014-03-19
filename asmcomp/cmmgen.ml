@@ -527,8 +527,8 @@ let float_array_ref arr ofs =
   box_float(unboxed_float_array_ref arr ofs)
 
 let addr_array_set arr ofs newval =
-  Cop(Cextcall("caml_modify", typ_void, false, Debuginfo.none),
-      [array_indexing log2_size_addr arr ofs; newval])
+  Cop(Cextcall("caml_modify_field", typ_void, false, Debuginfo.none),
+      [arr; untag_int ofs; newval])
 let int_array_set arr ofs newval =
   Cop(Cstore Word, [array_indexing log2_size_addr arr ofs; newval])
 let float_array_set arr ofs newval =
@@ -1550,8 +1550,8 @@ and transl_prim_2 p arg1 arg2 dbg =
   (* Heap operations *)
     Psetfield(n, ptr) ->
       if ptr then
-        return_unit(Cop(Cextcall("caml_modify", typ_void, false,Debuginfo.none),
-                        [field_address (transl arg1) n; transl arg2]))
+        return_unit(Cop(Cextcall("caml_modify_field", typ_void, false,Debuginfo.none),
+                        [transl arg1; Cconst_int n; transl arg2]))
       else
         return_unit(set_field (transl arg1) n (transl arg2))
   | Psetfloatfield n ->

@@ -167,7 +167,7 @@ void caml_urge_major_slice (void)
 #else
   caml_young_limit = caml_young_end;
   /* This is only moderately effective on ports that cache [caml_young_limit]
-     in a register, since [caml_modify] is called directly, not through
+     in a register, since [caml_modify_field] is called directly, not through
      [caml_c_call], so it may take a while before the register is reloaded
      from [caml_young_limit]. */
 #endif
@@ -303,7 +303,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
       caml_signal_handlers = caml_alloc(NSIG, 0);
       caml_register_global_root(&caml_signal_handlers);
     }
-    caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
+    caml_modify_field(caml_signal_handlers, sig, Field(action, 0));
   }
   caml_process_pending_signals();
   CAMLreturn (res);

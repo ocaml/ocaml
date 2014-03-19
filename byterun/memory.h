@@ -37,8 +37,8 @@ CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
-CAMLextern void caml_modify (value *, value);
-CAMLextern void caml_initialize (value *, value);
+CAMLextern void caml_modify_field (value, int, value);
+CAMLextern void caml_initialize_field (value, int, value);
 CAMLextern value caml_check_urgent_gc (value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
 CAMLextern char * caml_stat_alloc_string (value);
@@ -117,10 +117,6 @@ int caml_page_table_initialize(mlsize_t bytesize);
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
-
-/* Deprecated alias for [caml_modify] */
-
-#define Modify(fp,val) caml_modify((fp), (val))
 
 /* </private> */
 
@@ -308,11 +304,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 
 /* convenience macro */
-#define Store_field(block, offset, val) do{ \
-  mlsize_t caml__temp_offset = (offset); \
-  value caml__temp_val = (val); \
-  caml_modify (&Field ((block), caml__temp_offset), caml__temp_val); \
-}while(0)
+#define Store_field(block, offset, val) caml_modify_field(block, offset, val)
 
 /*
    NOTE: [Begin_roots] and [End_roots] are superseded by [CAMLparam]*,

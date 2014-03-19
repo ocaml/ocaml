@@ -313,7 +313,7 @@ CAMLprim value caml_convert_raw_backtrace(value backtrace) {
       p = caml_alloc_small(1, 1);
       Field(p, 0) = Val_bool(li.loc_is_raise);
     }
-    caml_modify(&Field(arr, i), p);
+    caml_modify_field(arr, i, p);
   }
   res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
   CAMLreturn(res);

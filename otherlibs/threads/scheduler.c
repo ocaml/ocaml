@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stddef.h>
 
 #include "alloc.h"
 #include "backtrace.h"
@@ -172,7 +173,9 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->trap_spoff = caml_trap_sp_off;
   curr_thread->backtrace_pos = Val_int(backtrace_pos);
   curr_thread->backtrace_buffer = backtrace_buffer;
-  caml_initialize (&curr_thread->backtrace_last_exn, backtrace_last_exn);
+  caml_initialize_field ((value)curr_thread,
+                         offsetof(struct caml_thread_struct, backtrace_last_exn) / sizeof(value),
+                         backtrace_last_exn);
   curr_thread->status = RUNNABLE;
   curr_thread->fd = Val_int(0);
   curr_thread->readfds = NO_FDS;
@@ -309,7 +312,9 @@ static value schedule_thread(void)
   curr_thread->trap_spoff = caml_trap_sp_off;
   curr_thread->backtrace_pos = Val_int(backtrace_pos);
   curr_thread->backtrace_buffer = backtrace_buffer;
-  caml_modify (&curr_thread->backtrace_last_exn, backtrace_last_exn);
+  caml_modify_field ((value)curr_thread, 
+                     offsetof(struct caml_thread_struct, backtrace_last_exn) / sizeof(value), 
+                     backtrace_last_exn);
 
 try_again:
   /* Find if a thread is runnable.
