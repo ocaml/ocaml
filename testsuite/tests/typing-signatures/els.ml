@@ -90,3 +90,6 @@ module type WEAPON_LIB = sig
   module Make :
     functor (TV : TYPEVIEW with type t = t) -> USERCODE(TV).F
 end;;
+
+module type X = functor (X: CORE) -> BARECODE;;
+module type X = functor (_: CORE) -> BARECODE;;
