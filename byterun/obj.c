@@ -67,10 +67,8 @@ CAMLprim value caml_obj_tag(value arg)
     return Val_int (1000);   /* int_tag */
   }else if ((long) arg & (sizeof (value) - 1)){
     return Val_int (1002);   /* unaligned_tag */
-  }else if (Is_in_value_area (arg)){
-    return Val_int(Tag_val(arg));
   }else{
-    return Val_int (1001);   /* out_of_heap_tag */
+    return Val_int(Tag_val(arg));
   }
 }
 
@@ -130,6 +128,8 @@ CAMLprim value caml_obj_dup(value arg)
 */
 CAMLprim value caml_obj_truncate (value v, value newsize)
 {
+  caml_failwith("Obj.truncate not supported");
+#if 0
   mlsize_t new_wosize = Long_val (newsize);
   header_t hd = Hd_val (v);
   tag_t tag = Tag_hd (hd);
@@ -161,6 +161,7 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
     Make_header (Wosize_whsize (wosize-new_wosize), 1, Caml_white);
   Hd_val (v) = Make_header (new_wosize, tag, color);
   return Val_unit;
+#endif
 }
 
 CAMLprim value caml_obj_add_offset (value v, value offset)
@@ -175,8 +176,7 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
 
 CAMLprim value caml_lazy_follow_forward (value v)
 {
-  if (Is_block (v) && Is_in_value_area(v)
-      && Tag_val (v) == Forward_tag){
+  if (Is_block (v) && Tag_val (v) == Forward_tag){
     return Forward_val (v);
   }else{
     return v;

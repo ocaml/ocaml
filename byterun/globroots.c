@@ -197,7 +197,7 @@ CAMLexport void caml_register_generational_global_root(value *r)
   if (Is_block(v)) {
     if (Is_young(v))
       caml_insert_global_root(&caml_global_roots_young, r);
-    else if (Is_in_heap(v))
+    else
       caml_insert_global_root(&caml_global_roots_old, r);
   }
 }
@@ -210,7 +210,7 @@ CAMLexport void caml_remove_generational_global_root(value *r)
   if (Is_block(v)) {
     if (Is_young(v))
       caml_delete_global_root(&caml_global_roots_young, r);
-    else if (Is_in_heap(v))
+    else
       caml_delete_global_root(&caml_global_roots_old, r);
   }
 }
@@ -226,7 +226,7 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
      What needs corrective action is a root in roots_old that suddenly
      points to the young generation. */
   if (Is_block(newval) && Is_young(newval) &&
-      Is_block(oldval) && Is_in_heap(oldval)) {
+      Is_block(oldval) && !Is_young(oldval)) /* !! */ {
     caml_delete_global_root(&caml_global_roots_old, r);
     caml_insert_global_root(&caml_global_roots_young, r);
   }
@@ -238,7 +238,7 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
        need to make sure it gets in, or else it will never be scanned. */
     if (Is_young(newval))
       caml_insert_global_root(&caml_global_roots_young, r);
-    else if (Is_in_heap(newval))
+    else
       caml_insert_global_root(&caml_global_roots_old, r);
   }
   else if (Is_block(oldval) && !Is_block(newval)) {
@@ -248,7 +248,7 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
        here. */
     if (Is_young(oldval))
       caml_delete_global_root(&caml_global_roots_young, r);
-    else if (Is_in_heap(oldval))
+    else
       caml_delete_global_root(&caml_global_roots_old, r);
   }
   /* end PR#4704 */

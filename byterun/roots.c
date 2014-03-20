@@ -54,17 +54,8 @@ void caml_oldify_local_roots (void)
   }
   /* Global C roots */
   caml_scan_global_young_roots(&caml_oldify_one);
-  /* Finalised values */
-  caml_final_do_young_roots (&caml_oldify_one);
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
-}
-
-/* Call [caml_darken] on all roots */
-
-void caml_darken_all_roots (void)
-{
-  caml_do_roots (caml_darken);
 }
 
 void caml_do_roots (scanning_action f)
@@ -75,8 +66,6 @@ void caml_do_roots (scanning_action f)
   caml_do_local_roots(f, caml_extern_sp, caml_stack_high, caml_local_roots);
   /* Global C roots */
   caml_scan_global_roots(f);
-  /* Finalised values */
-  caml_final_do_strong_roots (f);
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }

@@ -201,8 +201,8 @@ CAMLextern value caml_get_public_method (value obj, value tag);
 
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
-#define Bytecode_val(val) ((code_t)(val))
-#define Val_bytecode(code) ((value)(code))
+#define Bytecode_val(val) (Pc_val(val))
+#define Val_bytecode(code) (Val_pc(code))
 #define Code_val(val) Bytecode_val(Field((val), 0))
 
 /* This tag is used (with Forward_tag) to implement lazy values.
