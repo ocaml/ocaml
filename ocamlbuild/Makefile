@@ -105,17 +105,17 @@ ocamlbuild.native: ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
 
 # The libraries
 
-ocamlbuildlib.cma: ocamlbuild_pack.cmo $(EXTRA_CMO) ocamlbuild.cmo
+ocamlbuildlib.cma: ocamlbuild_pack.cmo $(EXTRA_CMO)
 	$(OCAMLC) -a -o ocamlbuildlib.cma \
-          ocamlbuild_pack.cmo $(EXTRA_CMO) ocamlbuild.cmo
+          ocamlbuild_pack.cmo $(EXTRA_CMO)
 
 ocamlbuildlightlib.cma: ocamlbuild_pack.cmo ocamlbuildlight.cmo
 	$(OCAMLC) -a -o ocamlbuildlightlib.cma \
           ocamlbuild_pack.cmo ocamlbuildlight.cmo
 
-ocamlbuildlib.cmxa: ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
+ocamlbuildlib.cmxa: ocamlbuild_pack.cmx $(EXTRA_CMX)
 	$(OCAMLOPT) -a -o ocamlbuildlib.cmxa \
-          ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
+          ocamlbuild_pack.cmx $(EXTRA_CMX)
 
 # The packs
 
