@@ -33,7 +33,6 @@
 #include "exec.h"
 #include "fail.h"
 #include "fix_code.h"
-#include "freelist.h"
 #include "gc_ctrl.h"
 #include "instrtrace.h"
 #include "interp.h"
@@ -287,14 +286,12 @@ static void scanmult (char *opt, uintnat *var)
 static void parse_camlrunparam(void)
 {
   char *opt = getenv ("OCAMLRUNPARAM");
-  uintnat p;
 
   if (opt == NULL) opt = getenv ("CAMLRUNPARAM");
 
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
       case 'b': caml_record_backtrace(Val_true); break;
       case 'h': scanmult (opt, &heap_size_init); break;
       case 'i': scanmult (opt, &heap_chunk_init); break;

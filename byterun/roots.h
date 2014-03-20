@@ -20,7 +20,6 @@
 typedef void (*scanning_action) (value, value *);
 
 void caml_oldify_local_roots (void);
-void caml_darken_all_roots (void);
 void caml_do_roots (scanning_action);
 #ifndef NATIVE_CODE
 CAMLextern void caml_do_local_roots (scanning_action, value *, value *,

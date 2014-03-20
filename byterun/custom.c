@@ -34,7 +34,7 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
   } else {
     result = caml_alloc_shr(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
-    caml_adjust_gc_speed(mem, max);
+    /* !! caml_adjust_gc_speed(mem, max); */
     result = caml_check_urgent_gc(result);
   }
   return result;

@@ -168,7 +168,6 @@ CAMLprim value caml_make_vect(value len, value init)
     res = Atom(0);
   }
   else if (Is_block(init)
-           && Is_in_value_area(init)
            && Tag_val(init) == Double_tag) {
     d = Double_val(init);
     wsize = size * Double_wosize;
@@ -210,7 +209,6 @@ CAMLprim value caml_make_array(value init)
   } else {
     v = Field(init, 0);
     if (Is_long(v)
-        || ! Is_in_value_area(v)
         || Tag_val(v) != Double_tag) {
       CAMLreturn (init);
     } else {
