@@ -258,8 +258,7 @@ module M :
     type t = Y.t
   end
 module F :
-  functor (Y : sig type t end) ->
-    functor (M : sig type t = Y.t end) -> sig  end
+  functor (Y : sig type t end) (M : sig type t = Y.t end) -> sig  end
 #   module G : functor (M : sig type t = M.Y.t end) -> sig  end
 # *               module A1 : sig  end
 module A2 : sig  end

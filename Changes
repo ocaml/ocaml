@@ -94,7 +94,9 @@ Features wishes:
 - PR#6166: document -ocamldoc option of ocamlbuild
 - PR#6246: allow wilcard _ as for-loop index
 - ocamllex: user-definable refill action
-	    (patch by Frédéric Bour)
+	    (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
+- shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
+  (patch by Thomas Gazagnaire, review by Gabriel Scherer)
 
 OCaml 4.01.1:
 -------------
