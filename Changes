@@ -76,6 +76,8 @@ Bug fixes:
 - PR#6109: Typos in ocamlbuild error messages
 - PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
+- PR#6184: ocamlbuild: `ocamlfind ocamldep` does not support -predicate
+           (report and patch by Jacques-Pascal Deplaix)
 - PR#6262: equality of first-class modules take module aliases into account
 - PR#6293: Assert_failure with invalid package type
 - PR#6307: Behavior of 'module type of' w.r.t. module aliases
