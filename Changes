@@ -92,6 +92,8 @@ Features wishes:
 - PR#6064: GADT representation for Bigarray.kind + CAML_BA_CHAR runtime kind
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
+- PR#6187: ocamlbuild: warn when using -plugin-tag(s) without myocamlbuild.ml
+	   (patch by Jacques-Pascal Deplaix)
 - PR#6246: allow wilcard _ as for-loop index
 - ocamllex: user-definable refill action
 	    (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
