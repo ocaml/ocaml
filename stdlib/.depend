@@ -36,7 +36,7 @@ scanf.cmi : pervasives.cmi
 set.cmi :
 sort.cmi :
 stack.cmi :
-stdLabels.cmi :
+stdLabels.cmi : stringLabels.cmi listLabels.cmi arrayLabels.cmi
 stream.cmi :
 string.cmi :
 stringLabels.cmi :
@@ -61,15 +61,15 @@ camlinternalMod.cmo : obj.cmi camlinternalOO.cmi array.cmi \
 camlinternalMod.cmx : obj.cmx camlinternalOO.cmx array.cmx \
     camlinternalMod.cmi
 camlinternalOO.cmo : sys.cmi string.cmi obj.cmi map.cmi list.cmi char.cmi \
-    callback.cmi array.cmi camlinternalOO.cmi
+    array.cmi camlinternalOO.cmi
 camlinternalOO.cmx : sys.cmx string.cmx obj.cmx map.cmx list.cmx char.cmx \
-    callback.cmx array.cmx camlinternalOO.cmi
+    array.cmx camlinternalOO.cmi
 char.cmo : char.cmi
 char.cmx : char.cmi
 complex.cmo : complex.cmi
 complex.cmx : complex.cmi
-digest.cmo : string.cmi printf.cmi char.cmi digest.cmi
-digest.cmx : string.cmx printf.cmx char.cmx digest.cmi
+digest.cmo : string.cmi char.cmi digest.cmi
+digest.cmx : string.cmx char.cmx digest.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
@@ -171,15 +171,15 @@ camlinternalMod.cmo : obj.cmi camlinternalOO.cmi array.cmi \
 camlinternalMod.p.cmx : obj.p.cmx camlinternalOO.p.cmx array.p.cmx \
     camlinternalMod.cmi
 camlinternalOO.cmo : sys.cmi string.cmi obj.cmi map.cmi list.cmi char.cmi \
-    callback.cmi array.cmi camlinternalOO.cmi
+    array.cmi camlinternalOO.cmi
 camlinternalOO.p.cmx : sys.p.cmx string.p.cmx obj.p.cmx map.p.cmx list.p.cmx char.p.cmx \
-    callback.p.cmx array.p.cmx camlinternalOO.cmi
+    array.p.cmx camlinternalOO.cmi
 char.cmo : char.cmi
 char.p.cmx : char.cmi
 complex.cmo : complex.cmi
 complex.p.cmx : complex.cmi
-digest.cmo : string.cmi printf.cmi char.cmi digest.cmi
-digest.p.cmx : string.p.cmx printf.p.cmx char.p.cmx digest.cmi
+digest.cmo : string.cmi char.cmi digest.cmi
+digest.p.cmx : string.p.cmx char.p.cmx digest.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.p.cmx : sys.p.cmx string.p.cmx random.p.cmx printf.p.cmx lazy.p.cmx buffer.p.cmx \

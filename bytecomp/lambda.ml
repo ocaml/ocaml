@@ -166,6 +166,7 @@ type lambda =
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
+  | Lstringswitch of lambda * (string * lambda) list * lambda
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -297,6 +298,10 @@ let iter f = function
       | None -> ()
       | Some l -> f l
       end
+  | Lstringswitch (arg,cases,default) ->
+      f arg ;
+      List.iter (fun (_,act) -> f act) cases ;
+      f default
   | Lstaticraise (_,args) ->
       List.iter f args
   | Lstaticcatch(e1, (_,vars), e2) ->
@@ -347,7 +352,7 @@ let free_ids get l =
     | Lassign(id, e) ->
         fv := IdentSet.add id !fv
     | Lvar _ | Lconst _ | Lapply _
-    | Lprim _ | Lswitch _ | Lstaticraise _
+    | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
     | Lsend _ | Levent _ | Lifused _ -> ()
   in free l; !fv
@@ -430,7 +435,9 @@ let subst_lambda s lam =
                          match sw.sw_failaction with
                          | None -> None
                          | Some l -> Some (subst l)})
-
+  | Lstringswitch (arg,cases,default) ->
+      Lstringswitch
+        (subst arg,List.map subst_strcase cases,subst default)
   | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
@@ -445,6 +452,7 @@ let subst_lambda s lam =
   | Lifused (v, e) -> Lifused (v, subst e)
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
+  and subst_strcase (key, case) = (key, subst case)
   in subst lam
 
 

@@ -275,6 +275,10 @@ let compunit_name = ref ""
 
 let max_stack_used = ref 0
 
+
+(* Sequence of string tests *)
+
+
 (* Translate a primitive to a bytecode instruction (possibly a call to a C
    function) *)
 
@@ -618,7 +622,7 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-   | Lstaticcatch (body, (i, vars) , handler) ->
+  | Lstaticcatch (body, (i, vars) , handler) ->
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
       let r =
@@ -703,7 +707,6 @@ let rec comp_expr env exp sz cont =
         (fun (n, act) -> act_consts.(n) <- store.act_store act) sw.sw_consts;
       List.iter
         (fun (n, act) -> act_blocks.(n) <- store.act_store act) sw.sw_blocks;
-
 (* Compile and label actions *)
       let acts = store.act_get () in
       let lbls = Array.create (Array.length acts) 0 in
@@ -723,6 +726,8 @@ let rec comp_expr env exp sz cont =
         lbl_consts.(i) <- lbls.(act_consts.(i))
       done;
       comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
+  | Lstringswitch (arg,sw,d) ->
+      comp_expr env (Matching.expand_stringswitch arg sw d) sz cont
   | Lassign(id, expr) ->
       begin try
         let pos = Ident.find_same id env.ce_stack in
@@ -826,6 +831,10 @@ and comp_binary_test env cond ifso ifnot sz cont =
             comp_expr env ifso sz (branch_end :: cont2) in
 
   comp_expr env cond sz cont_cond
+
+(* Compile string switch *)
+
+and comp_string_switch env arg cases default sz cont = ()
 
 (**** Compilation of a code block (with tracking of stack usage) ****)
 

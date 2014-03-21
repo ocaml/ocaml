@@ -537,13 +537,17 @@ let float_array_set arr ofs newval =
 
 (* String length *)
 
+(* Length of string block *)
+
+let string_block_length str = Cop(Clsr, [header str; Cconst_int 10])
+
 let string_length exp =
   bind "str" exp (fun str ->
     let tmp_var = Ident.create "tmp" in
     Clet(tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
-                   [Cop(Clsr, [header str; Cconst_int 10]);
+                   [string_block_length str;
                      Cconst_int log2_size_addr]);
               Cconst_int 1]),
          Cop(Csubi,
@@ -1103,6 +1107,41 @@ end
 
 module SwitcherBlocks = Switch.Make(SArgBlocks)
 
+(* Int switcher, arg in [low..high],
+   cases is list of individual cases, and is sorted by first component *)
+
+let transl_int_switch arg low high cases default = match cases with
+| [] -> assert false
+| (k0,_)::_ ->    
+    let nacts = List.length cases + 1 in
+    let actions = Array.create nacts default in
+    let rec set_acts idx = function
+      | [] -> assert false
+      | [i,act] ->
+          actions.(idx) <- act ;
+          if i = high then [(i,i,idx)]
+          else [(i,i,idx); (i+1,max_int,0)]
+      | (i,act)::((j,_)::_ as rem) ->
+          actions.(idx) <- act ;
+          let inters = set_acts (idx+1) rem in
+          (i,i,idx)::
+          begin
+            if j = i+1 then inters
+            else (i+1,j-1,0)::inters
+          end in
+    let inters = set_acts 1 cases in
+    let inters =
+      if k0 = low then inters else (low,k0-1,0)::inters in
+      bind "switcher" arg
+        (fun a ->
+          SwitcherBlocks.zyva
+            (low,high)
+            (fun i -> Cconst_int i)
+            a
+            (Array.of_list inters) actions)
+
+        
+
 (* Auxiliary functions for optimizing "let" of boxed numbers (floats and
    boxed integers *)
 
@@ -1194,6 +1233,15 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
 
 let functions = (Queue.create() : ufunction Queue.t)
 
+let strmatch_compile =
+  let module S =
+    Strmatch.Make
+      (struct
+        let string_block_length = string_block_length
+        let transl_switch = transl_int_switch
+      end) in
+  S.compile
+    
 let rec transl = function
     Uvar id ->
       Cvar id
@@ -1367,6 +1415,11 @@ let rec transl = function
             (untag_int arg) s.us_index_consts s.us_actions_consts,
           transl_switch
             (get_tag arg) s.us_index_blocks s.us_actions_blocks))
+  | Ustringswitch(arg,sw,d) ->
+      bind "switch" (transl arg)
+        (fun arg ->
+          strmatch_compile arg (transl d)
+            (List.map (fun (s,act) -> s,transl act) sw))
   | Ustaticfail (nfail, args) ->
       Cexit (nfail, List.map transl args)
   | Ucatch(nfail, [], body, handler) ->

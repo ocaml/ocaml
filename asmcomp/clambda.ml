@@ -43,6 +43,7 @@ type ulambda =
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch
+  | Ustringswitch of ulambda * (string * ulambda) list * ulambda
   | Ustaticfail of int * ulambda list
   | Ucatch of int * Ident.t list * ulambda * ulambda
   | Utrywith of ulambda * Ident.t * ulambda
