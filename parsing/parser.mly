@@ -535,19 +535,22 @@ parse_pattern:
 
 /* Module expressions */
 
-module_expr_functor_arg:
+functor_arg:
     LPAREN RPAREN
       { mkrhs "()" 2, None }
-  | LPAREN UIDENT COLON module_type RPAREN
+  | LPAREN functor_arg_name COLON module_type RPAREN
       { mkrhs $2 2, Some $4 }
-  | LPAREN UNDERSCORE COLON module_type RPAREN
-      { mkrhs "_" 2 , Some $4 }
 ;
 
-module_expr_functor_args:
-    module_expr_functor_args module_expr_functor_arg
+functor_arg_name:
+    UIDENT     { $1 }
+  | UNDERSCORE { "_" }
+;
+
+functor_args:
+    functor_args functor_arg
       { $2 :: $1 }
-  | module_expr_functor_arg
+  | functor_arg
       { [ $1 ] }
 ;
 
@@ -558,7 +561,7 @@ module_expr:
       { mkmod(Pmod_structure($2)) }
   | STRUCT structure error
       { unclosed "struct" 1 "end" 3 }
-  | FUNCTOR module_expr_functor_args MINUSGREATER module_expr
+  | FUNCTOR functor_args MINUSGREATER module_expr
       { List.fold_left (fun acc (n, t) -> mkmod(Pmod_functor(n, t, acc))) $4 $2 }
   | module_expr LPAREN module_expr RPAREN
       { mkmod(Pmod_apply($1, $3)) }
@@ -663,10 +666,8 @@ module_binding_body:
       { $2 }
   | COLON module_type EQUAL module_expr
       { mkmod(Pmod_constraint($4, $2)) }
-  | LPAREN UIDENT COLON module_type RPAREN module_binding_body
-      { mkmod(Pmod_functor(mkrhs $2 2, Some $4, $6)) }
-  | LPAREN RPAREN module_binding_body
-      { mkmod(Pmod_functor(mkrhs "()" 1, None, $3)) }
+  | functor_arg module_binding_body
+      { mkmod(Pmod_functor(fst $1, snd $1, $2)) }
 ;
 module_bindings:
     module_binding                        { [$1] }
@@ -679,22 +680,6 @@ module_binding:
 
 /* Module types */
 
-module_type_functor_arg:
-    LPAREN RPAREN
-      { mkrhs "()" 1, None }
-  | LPAREN UIDENT COLON module_type RPAREN
-      { mkrhs $2 2, Some $4 }
-  | LPAREN UNDERSCORE COLON module_type RPAREN
-      { mkrhs "_" 2, Some $4 }
-;
-
-module_type_functor_args:
-    module_type_functor_args module_type_functor_arg
-      { $2 :: $1 }
-  | module_type_functor_arg
-      { [ $1 ] }
-;
-
 module_type:
     mty_longident
       { mkmty(Pmty_ident (mkrhs $1 1)) }
@@ -702,7 +687,7 @@ module_type:
       { mkmty(Pmty_signature $2) }
   | SIG signature error
       { unclosed "sig" 1 "end" 3 }
-  | FUNCTOR module_type_functor_args MINUSGREATER module_type
+  | FUNCTOR functor_args MINUSGREATER module_type
       %prec below_WITH
       { List.fold_left (fun acc (n, t) -> mkmty(Pmty_functor(n, t, acc))) $4 $2 }
   | module_type WITH with_constraints

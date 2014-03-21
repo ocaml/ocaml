@@ -100,7 +100,7 @@ Features wishes:
 - ocamllex: user-definable refill action
 	    (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
-  (patch by Thomas Gazagnaire, review by Gabriel Scherer)
+  (patches by Thomas Gazagnaire and Jeremy Yallop, review by Gabriel Scherer)
 
 OCaml 4.01.1:
 -------------
