@@ -208,7 +208,8 @@ and functor_components = {
   fcomp_res: module_type;               (* Result signature *)
   fcomp_env: t;     (* Environment in which the result signature makes sense *)
   fcomp_subst: Subst.t;  (* Prefixing substitution for the result signature *)
-  fcomp_cache: (Path.t, module_components) Hashtbl.t  (* For memoization *)
+  fcomp_cache: (Path.t, module_components) Hashtbl.t;  (* For memoization *)
+  fcomp_subst_cache: (Path.t, module_type) Hashtbl.t
 }
 
 let subst_modtype_maker (subst, mty) = Subst.modtype subst mty
@@ -478,10 +479,15 @@ let find_module path env =
       let desc1 = find_module_descr p1 env in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
-          let mty =
-            Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
-              f.fcomp_res in
-          md mty
+          md begin try
+            Hashtbl.find f.fcomp_subst_cache p2
+          with Not_found ->
+            let mty =
+              Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
+                f.fcomp_res in
+            Hashtbl.add f.fcomp_subst_cache p2 mty;
+            mty
+          end
       | Structure_comps c ->
           raise Not_found
       end
@@ -996,9 +1002,9 @@ let add_gadt_instance_chain env lv t =
 
 let rec scrape_alias env ?path mty =
   match mty, path with
-    Mty_ident path, _ ->
+    Mty_ident p, _ ->
       begin try
-        scrape_alias env (find_modtype_expansion path env)
+        scrape_alias env (find_modtype_expansion p env) ?path
       with Not_found ->
         mty
       end
@@ -1217,7 +1223,8 @@ and components_of_module_maker (env, sub, path, mty) =
           fcomp_res = ty_res;
           fcomp_env = env;
           fcomp_subst = sub;
-          fcomp_cache = Hashtbl.create 17 }
+          fcomp_cache = Hashtbl.create 17;
+          fcomp_subst_cache = Hashtbl.create 17 }
   | Mty_ident _
   | Mty_alias _ ->
         Structure_comps {
