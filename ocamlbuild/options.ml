@@ -92,8 +92,6 @@ let ocamllex = ref (V"OCAMLLEX")
 let ocamlmklib = ref (V"OCAMLMKLIB")
 let ocamlmktop = ref (V"OCAMLMKTOP")
 let ocamlrun = ref N
-let ocamlfind_cmd = ref (V"OCAMLFIND")
-let ocamlfind arg = S[!ocamlfind_cmd; arg]
 let program_to_execute = ref false
 let must_clean = ref false
 let show_documentation = ref false
@@ -283,21 +281,6 @@ let init () =
       let log = if !Log.level > 0 then Some log else None in
       Log.init log
   in
-
-  if !use_ocamlfind then begin
-    ocamlfind_cmd := A "ocamlfind";
-    let cmd = Command.string_of_command_spec !ocamlfind_cmd in
-    begin try ignore(Command.search_in_path cmd)
-    with Not_found -> failwith "ocamlfind not found on path, but -no-ocamlfind not used" end;
-    (* TODO: warning message when using an option such as -ocamlc *)
-    (* Note that plugins can still modify these variables After_options.
-       This design decision can easily be changed. *)
-    ocamlc := ocamlfind & A"ocamlc";
-    ocamlopt := ocamlfind & A"ocamlopt";
-    ocamldep := ocamlfind & A"ocamldep";
-    ocamldoc := ocamlfind & A"ocamldoc";
-    ocamlmktop := ocamlfind & A"ocamlmktop";
-  end;
 
   let reorder x y = x := !x @ (List.concat (List.rev !y)) in
   reorder targets targets_internal;
