@@ -453,7 +453,7 @@ let find_type p env =
 let find_type_descrs p env =
   snd (find_type_full p env)
 
-let find_module path env =
+let find_module ~alias path env =
   match path with
     Pident id ->
       begin try
@@ -479,14 +479,20 @@ let find_module path env =
       let desc1 = find_module_descr p1 env in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
-          md begin try
-            Hashtbl.find f.fcomp_subst_cache p2
-          with Not_found ->
-            let mty =
-              Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
-                f.fcomp_res in
-            Hashtbl.add f.fcomp_subst_cache p2 mty;
-            mty
+          md begin match f.fcomp_res with
+          | Mty_alias p ->
+              Mty_alias (Subst.module_path f.fcomp_subst p)
+          | mty ->
+              if alias then mty else
+              try
+                Hashtbl.find f.fcomp_subst_cache p2
+              with Not_found ->
+                let mty =
+                  Subst.modtype
+                    (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
+                    f.fcomp_res in
+                Hashtbl.add f.fcomp_subst_cache p2 mty;
+                mty
           end
       | Structure_comps c ->
           raise Not_found
@@ -509,7 +515,7 @@ let rec normalize_path lax env path =
         Papply(normalize_path lax env p1, normalize_path true env p2)
     | _ -> path
   in
-  try match find_module path env with
+  try match find_module ~alias:true path env with
     {md_type=Mty_alias path1} ->
       let path' = normalize_path lax env path1 in
       if lax || !Clflags.transparent_modules then path' else
@@ -528,6 +534,8 @@ let normalize_path oloc env path =
     match oloc with None -> assert false
     | Some loc ->
         raise (Error(Missing_module(loc, path, normalize_path true env path)))
+
+let find_module = find_module ~alias:false
 
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
