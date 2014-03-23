@@ -254,7 +254,7 @@ let proceed () =
             link (Pathname.dirname cmd); acc
         | _ ->
             if !Options.program_to_execute then
-              eprintf "Warning: Won't execute %s whose extension is neither .byte nor .native" cmd;
+              Log.eprintf "Warning: Won't execute %s whose extension is neither .byte nor .native" cmd;
             acc
       end targets [] in
 
