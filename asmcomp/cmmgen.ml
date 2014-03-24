@@ -1150,7 +1150,7 @@ type unboxed_number_kind =
   | Boxed_float
   | Boxed_integer of boxed_integer
 
-let is_unboxed_number = function
+let rec is_unboxed_number = function
     Uconst(Uconst_ref(_, Uconst_float _)) ->
       Boxed_float
   | Uprim(p, _, _) ->
@@ -1192,6 +1192,8 @@ let is_unboxed_number = function
         | Pbbswap bi -> Boxed_integer bi
         | _ -> No_unboxing
       end
+  | Ulet(_, _, body) -> is_unboxed_number body
+  | Usequence(_, e2) -> is_unboxed_number e2
   | _ -> No_unboxing
 
 let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
