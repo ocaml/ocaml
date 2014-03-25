@@ -48,6 +48,7 @@ Compilers:
 - PR#6203: Constant exception constructor no longer allocate
 - PR#6311: Improve signature mismatch error messages
 - PR#6345: Better compilation of optional arguments with default values
+- PR#6260: Unnecessary boxing in let (patch by vbrankov)
 
 Runtime system:
 - Fixed a major performance problem on large heaps (~1GB) by making heap
