@@ -17,8 +17,12 @@ LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
 .PHONY: default
 default:
-	@$(MAKE) compile
-	@$(SET_LD_PATH) OCAMLLIB=. $(MAKE) run
+        @if ! $(SUPPORTS_SHARED_LIBRARIES); then \
+          echo 'skipped (shared libraries not available)'; \
+        else \
+          $(MAKE) compile; \
+          $(SET_LD_PATH) OCAMLLIB=. $(MAKE) run; \
+        fi
 
 .PHONY: compile
 compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
