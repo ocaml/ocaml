@@ -604,7 +604,7 @@ let emit_instr i =
         `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
         cfi_adjust_cfa_offset (-16);
         stack_offset := !stack_offset - 16
-    | Lraise ->
+    | Lraise k ->
         begin match !Clflags.debug, k with
         | true, (Lambda.Raise_regular | Lambda.Raise_reraise) ->
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
