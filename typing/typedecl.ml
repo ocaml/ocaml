@@ -1020,6 +1020,7 @@ let transl_type_decl env sdecl_list =
 let transl_extension_constructor env check_open type_decl
                                  type_path type_params priv sext =
   let id = Ident.create sext.pext_name.txt in
+  let args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(args, None) ->
         begin
@@ -1032,22 +1033,7 @@ let transl_extension_constructor env check_open type_decl
         end;
         let targs = List.map (transl_simple_type env true) args in
         let args = List.map (fun cty -> cty.ctyp_type) targs in
-        let ext =
-          { ext_type_path = type_path;
-            ext_type_params = type_params;
-            ext_args = args;
-            ext_ret_type = None;
-            ext_private = priv;
-            Types.ext_loc = sext.pext_loc;
-            Types.ext_attributes = sext.pext_attributes; }
-        in
-          { ext_id = id;
-            ext_name = sext.pext_name;
-            ext_type = ext;
-            ext_kind = Text_decl(targs, None);
-            Typedtree.ext_loc = sext.pext_loc;
-            Typedtree.ext_attributes = sext.pext_attributes; }
-
+          args, None, Text_decl(targs, None)
     | Pext_decl(args, Some ret_type) ->
         begin
           match type_decl.type_kind with
@@ -1071,22 +1057,7 @@ let transl_extension_constructor env check_open type_decl
                 Constraint_failed (ty, Ctype.newconstr type_path type_params)))
         in
           widen z;
-          let ext =
-            { ext_type_path = type_path;
-              ext_type_params = type_params;
-              ext_args = args;
-              ext_ret_type = Some ret_type;
-              ext_private = priv;
-              Types.ext_attributes = sext.pext_attributes;
-              Types.ext_loc = sext.pext_loc; }
-          in
-            { ext_id = id;
-              ext_name = sext.pext_name;
-              ext_type = ext;
-              ext_kind = Text_decl(targs, Some tret_type);
-              Typedtree.ext_loc = sext.pext_loc;
-              Typedtree.ext_attributes = sext.pext_attributes; }
-
+          args, Some ret_type, Text_decl(targs, Some tret_type)
     | Pext_rebind lid ->
       let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
       let usage =
@@ -1134,21 +1105,23 @@ let transl_extension_constructor env check_open type_decl
               Cstr_extension(path, _) -> path
             | _ -> assert false
           in
-          let ext =
-            { ext_type_path = type_path;
-              ext_type_params = type_params;
-              ext_args = args;
-              ext_ret_type = ret_type;
-              ext_private = priv;
-              Types.ext_attributes = sext.pext_attributes;
-              Types.ext_loc = sext.pext_loc; }
-          in
-            { ext_id = id;
-              ext_name = sext.pext_name;
-              ext_type = ext;
-              ext_kind = Text_rebind(path, lid);
-              Typedtree.ext_loc = sext.pext_loc;
-              Typedtree.ext_attributes = sext.pext_attributes; }
+            args, ret_type, Text_rebind(path, lid)
+  in
+  let ext =
+    { ext_type_path = type_path;
+      ext_type_params = type_params;
+      ext_args = args;
+      ext_ret_type = ret_type;
+      ext_private = priv;
+      Types.ext_loc = sext.pext_loc;
+      Types.ext_attributes = sext.pext_attributes; }
+  in
+    { ext_id = id;
+      ext_name = sext.pext_name;
+      ext_type = ext;
+      ext_kind = kind;
+      Typedtree.ext_loc = sext.pext_loc;
+      Typedtree.ext_attributes = sext.pext_attributes; }
 
 let transl_type_extension check_open env loc styext =
   reset_type_variables();
