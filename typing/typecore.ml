@@ -2973,8 +2973,8 @@ and type_argument env sarg ty_expected' ty_expected =
             let ty = option_none (instance env ty_arg) sarg.pexp_loc in
             make_args ((l, Some ty, Optional) :: args) ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
-            args, ty_fun, no_labels ty_res'
-        | Tvar _ ->  args, ty_fun, false
+            List.rev args, ty_fun, no_labels ty_res'
+        | Tvar _ ->  List.rev args, ty_fun, false
         |  _ -> [], texp.exp_type, false
       in
       let args, ty_fun', simple_res = make_args [] texp.exp_type in
@@ -3008,11 +3008,13 @@ and type_argument env sarg ty_expected' ty_expected =
           {texp with exp_type = ty_res; exp_desc =
            Texp_apply
              (texp,
-              List.rev args @ ["", Some eta_var, Required])}
+              args @ ["", Some eta_var, Required])}
         in
         { texp with exp_type = ty_fun; exp_desc =
           Texp_function("", [case eta_pat e], Total) }
       in
+      Location.prerr_warning texp.exp_loc
+        (Warnings.Eliminated_optional_arguments (List.map (fun (l, _, _) -> l) args));
       if warn then Location.prerr_warning texp.exp_loc
           (Warnings.Without_principality "eliminated optional argument");
       if is_nonexpansive texp then func texp else
