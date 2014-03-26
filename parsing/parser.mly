@@ -640,7 +640,8 @@ structure_item:
   | EXCEPTION exception_declaration
       { mkstr(Pstr_exception $2) }
   | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
-      { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4), $5)) }
+      { mkstr (Pstr_exn_rebind (Exrb.mk (mkrhs $2 2)
+                                        (mkloc $4 (rhs_loc 4)) ~attrs:$5)) }
   | MODULE module_binding
       { mkstr(Pstr_module $2) }
   | MODULE REC module_bindings
@@ -652,13 +653,13 @@ structure_item:
       { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
                               ~typ:$5 ~attrs:$6 ~loc:(symbol_rloc()))) }
   | OPEN override_flag mod_longident post_item_attributes
-      { mkstr(Pstr_open ($2, mkrhs $3 3, $4)) }
+      { mkstr(Pstr_open (Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4)) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr post_item_attributes
-      { mkstr(Pstr_include ($2, $3)) }
+      { mkstr(Pstr_include (Incl.mk $2 ~attrs:$3)) }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, $2)) }
 ;
@@ -751,9 +752,9 @@ signature_item:
                               ~loc:(symbol_rloc())
                               ~attrs:$6)) }
   | OPEN override_flag mod_longident post_item_attributes
-      { mksig(Psig_open ($2, mkrhs $3 3, $4)) }
+      { mksig(Psig_open (Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4)) }
   | INCLUDE module_type post_item_attributes %prec below_WITH
-      { mksig(Psig_include ($2, $3)) }
+      { mksig(Psig_include (Incl.mk $2 ~attrs:$3)) }
   | CLASS class_descriptions
       { mksig(Psig_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations

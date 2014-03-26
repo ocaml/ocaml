@@ -37,8 +37,11 @@ type mapper = {
   class_type_field: mapper -> class_type_field -> class_type_field;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
+  exception_rebind: mapper -> exception_rebind -> exception_rebind;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
+  include_declaration: mapper -> include_declaration -> include_declaration;
+  include_description: mapper -> include_description -> include_description;
   label_declaration: mapper -> label_declaration -> label_declaration;
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
@@ -47,6 +50,7 @@ type mapper = {
   module_type: mapper -> module_type -> module_type;
   module_type_declaration: mapper -> module_type_declaration
                            -> module_type_declaration;
+  open_description: mapper -> open_description -> open_description;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
   signature: mapper -> signature -> signature;
@@ -199,10 +203,8 @@ module MT = struct
     | Psig_recmodule l ->
         rec_module ~loc (List.map (sub.module_declaration sub) l)
     | Psig_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
-    | Psig_open (ovf, lid, attrs) ->
-        open_ ~loc ~attrs:(sub.attributes sub attrs) ovf (map_loc sub lid)
-    | Psig_include (mt, attrs) ->
-        include_ ~loc (sub.module_type sub mt) ~attrs:(sub.attributes sub attrs)
+    | Psig_open x -> open_ ~loc (sub.open_description sub x)
+    | Psig_include x -> include_ ~loc (sub.include_description sub x)
     | Psig_class l -> class_ ~loc (List.map (sub.class_description sub) l)
     | Psig_class_type l ->
         class_type ~loc (List.map (sub.class_type_declaration sub) l)
@@ -244,19 +246,15 @@ module M = struct
     | Pstr_primitive vd -> primitive ~loc (sub.value_description sub vd)
     | Pstr_type l -> type_ ~loc (List.map (sub.type_declaration sub) l)
     | Pstr_exception ed -> exception_ ~loc (sub.constructor_declaration sub ed)
-    | Pstr_exn_rebind (s, lid, attrs) ->
-        exn_rebind ~loc (map_loc sub s) (map_loc sub lid)
-          ~attrs:(sub.attributes sub attrs)
+    | Pstr_exn_rebind x -> exn_rebind ~loc (sub.exception_rebind sub x)
     | Pstr_module x -> module_ ~loc (sub.module_binding sub x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub.module_binding sub) l)
     | Pstr_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
-    | Pstr_open (ovf, lid, attrs) ->
-        open_ ~loc ~attrs:(sub.attributes sub attrs) ovf (map_loc sub lid)
+    | Pstr_open x -> open_ ~loc (sub.open_description sub x)
     | Pstr_class l -> class_ ~loc (List.map (sub.class_declaration sub) l)
     | Pstr_class_type l ->
         class_type ~loc (List.map (sub.class_type_declaration sub) l)
-    | Pstr_include (e, attrs) ->
-        include_ ~loc (sub.module_expr sub e) ~attrs:(sub.attributes sub attrs)
+    | Pstr_include x -> include_ ~loc (sub.include_declaration sub x)
     | Pstr_extension (x, attrs) ->
         extension ~loc (sub.extension sub x) ~attrs:(sub.attributes sub attrs)
     | Pstr_attribute x -> attribute ~loc (sub.attribute sub x)
@@ -493,6 +491,28 @@ let default_mapper =
            ~loc:(this.location this pmb_loc)
       );
 
+
+    open_description =
+      (fun this {popen_lid; popen_override; popen_attributes} ->
+         Opn.mk (map_loc this popen_lid)
+           ~override:popen_override
+           ~attrs:(this.attributes this popen_attributes)
+      );
+
+
+    include_description =
+      (fun this {pincl_mod; pincl_attributes} ->
+         Incl.mk (this.module_type this pincl_mod)
+           ~attrs:(this.attributes this pincl_attributes)
+      );
+
+    include_declaration =
+      (fun this {pincl_mod; pincl_attributes} ->
+         Incl.mk (this.module_expr this pincl_mod)
+           ~attrs:(this.attributes this pincl_attributes)
+      );
+
+
     value_binding =
       (fun this {pvb_pat; pvb_expr; pvb_attributes} ->
          Vb.mk
@@ -520,6 +540,14 @@ let default_mapper =
            ~mut:pld_mutable
            ~loc:(this.location this pld_loc)
            ~attrs:(this.attributes this pld_attributes)
+      );
+
+    exception_rebind =
+      (fun this {pexrb_name; pexrb_lid; pexrb_attributes} ->
+         Exrb.mk
+           (map_loc this pexrb_name)
+           (map_loc this pexrb_lid)
+           ~attrs:(this.attributes this pexrb_attributes)
       );
 
     cases = (fun this l -> List.map (this.case this) l);
