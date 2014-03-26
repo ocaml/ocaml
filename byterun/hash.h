@@ -22,7 +22,7 @@ typedef uint32 hash_key;
 typedef uint32 hash_out;
 
 typedef struct hash_internal *hash_t;
-#define CAML_HASH_T_SIZE sizeof(uint32)
+#define CAML_HASH_T_SIZE (4*sizeof(uint64))
 
 CAMLextern hash_t caml_hash_init(void* h, hash_key k);
 CAMLextern hash_out caml_hash_final(hash_t h);

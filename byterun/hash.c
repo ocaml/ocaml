@@ -21,62 +21,76 @@
 #include "memory.h"
 #include "hash.h"
 
-/* The new implementation, based on MurmurHash 3,
-     http://code.google.com/p/smhasher/  */
+#ifdef ARCH_INT64_TYPE
+#include "int64_native.h"
+#else
+#include "int64_emul.h"
+#endif
+
+/* The new implementation (OCaml 4.02, 2014), based on SipHash-2-4
+   https://131002.net/siphash/  */
 
 struct hash_internal {
-	uint32 i;
+	uint64 v0, v1, v2, v3;
 };
+
+#define cRounds 2
+#define dRounds 4
+
+#define ROTL(x,n) ((x) << n | (x) >> (64-n))
+
+static void sipround(hash_t h) {
+	h->v0 += h->v1;             h->v2 += h->v3;
+	h->v1  = ROTL(h->v1,13);    h->v3  = ROTL(h->v3,13);
+	h->v1 += h->v0;             h->v3 += h->v2;
+	h->v0  = ROTL(h->v0,32);
+
+	h->v2 += h->v1;             h->v0 += h->v3;
+	h->v1  = ROTL(h->v1,17);    h->v3  = ROTL(h->v3,21);
+	h->v1 ^= h->v2;             h->v3 ^= h->v0;
+	h->v2  = ROTL(h->v2,32);
+}
 
 CAMLexport hash_t caml_hash_init(void* a, hash_key k) {
 	hash_t h = (hash_t) a;
-	h->i = k;
+	uint64 l = (uint64) k;
+
+	h->v0 = l ^ 0x736f6d6570736575;
+	h->v1 = 0x646f72616e646f6d;
+	h->v2 = l ^ 0x6c7967656e657261;
+	h->v3 = 0x7465646279746573;
 	return h;
 }
 
 CAMLexport hash_out caml_hash_final(hash_t h) {
-	uint32 v = h->i;
-	v ^= v >> 16;
-	v *= 0x85ebca6b;
-	v ^= v >> 13;
-	v *= 0xc2b2ae35;
-	v ^= v >> 16;
-	return v;
+	int i;
+	h->v2 ^= 0xff;
+	for(i=0; i<dRounds; i++) sipround(h);
+	return (h->v0 ^ h->v1 ^ h->v2 ^ h->v3) & 0x3FFFFFFFU;
 }
-
-#define ROTL32(x,n) ((x) << n | (x) >> (32-n))
-
-#define MIX(h,d) \
-  d *= 0xcc9e2d51; \
-  d = ROTL32(d, 15); \
-  d *= 0x1b873593; \
-  h->i ^= d; \
-  h->i = ROTL32(h->i, 13); \
-  h->i = (h->i) * 5 + 0xe6546b64;
 
 
 CAMLexport void caml_hash_mix_uint32(hash_t h, uint32 d)
 {
-  MIX(h, d);
+  caml_hash_mix_int64(h, (uint64) d);
 }
 
 /* Mix a platform-native integer. */
 
 CAMLexport void caml_hash_mix_intnat(hash_t h, intnat d)
 {
-  uint64 n = (int64) d; /* Cast to get proper sign-expansion on 32-bit */
-  uint32 lo = n >> 32, hi = (uint32) n;
-  MIX(h, lo);
-  MIX(h, hi);
+  /* Convert to 64-bits to get proper sign-expansion */
+  caml_hash_mix_int64(h, (int64) d);
 }
 
 /* Mix a 64-bit integer. */
 
 CAMLexport void caml_hash_mix_int64(hash_t h, int64 d)
 {
-  uint32 hi = (uint32) (d >> 32), lo = (uint32) d;
-  MIX(h, lo);
-  MIX(h, hi);
+  int i;
+  h->v3 ^= d;
+  for(i=0; i < cRounds; i++) sipround(h);
+  h->v0 ^= d;
 }
 
 /* Mix a double-precision float.
@@ -94,7 +108,7 @@ CAMLexport void caml_hash_mix_double(hash_t hash, double d)
     struct { uint32 l; uint32 h; } i;
 #endif
   } u;
-  uint32 h, l;
+  uint64 h, l;
   /* Convert to two 32-bit halves */
   u.d = d;
   h = u.i.h; l = u.i.l;
@@ -107,8 +121,8 @@ CAMLexport void caml_hash_mix_double(hash_t hash, double d)
   else if (h == 0x80000000 && l == 0) {
     h = 0;
   }
-  MIX(hash, l);
-  MIX(hash, h);
+
+  caml_hash_mix_int64(hash, (h << 32) | l);
 }
 
 /* Mix a single-precision float.
@@ -133,40 +147,47 @@ CAMLexport void caml_hash_mix_float(hash_t hash, float d)
   else if (n == 0x80000000) {
     n = 0;
   }
-  MIX(hash, n);
+
+  caml_hash_mix_uint32(hash, n);
 }
 
 /* Mix an OCaml string */
 
 CAMLexport void caml_hash_mix_string(hash_t h, value s)
 {
-  mlsize_t len = caml_string_length(s);
+  const mlsize_t len = caml_string_length(s);
   mlsize_t i;
-  uint32 w;
-
-  /* Mix by 32-bit blocks (little-endian) */
-  for (i = 0; i + 4 <= len; i += 4) {
+  uint64 w;
+  /* Mix by 64-bit blocks (little-endian) */
+  for (i = 0; i + 8 <= len; i += 8) {
 #ifdef ARCH_BIG_ENDIAN
-    w = Byte_u(s, i)
-        | (Byte_u(s, i+1) << 8)
-        | (Byte_u(s, i+2) << 16)
-        | (Byte_u(s, i+3) << 24);
+	/* TODO */
+	w = (uint64) Byte_u(s, i)
+        | ((uint64) Byte_u(s, i+1) << 8)
+        | ((uint64) Byte_u(s, i+2) << 16)
+        | ((uint64) Byte_u(s, i+3) << 24)
+        | ((uint64) Byte_u(s, i+4) << 32)
+        | ((uint64) Byte_u(s, i+5) << 40)
+        | ((uint64) Byte_u(s, i+6) << 48)
+        | ((uint64) Byte_u(s, i+7) << 56);
 #else
-    w = *((uint32 *) &Byte_u(s, i));
+    w = *((uint64 *) &Byte_u(s, i));
 #endif
-    MIX(h, w);
+    caml_hash_mix_int64(h, w);
   }
-  /* Finish with up to 3 bytes */
+  /* Finish with up to 7 bytes */
   w = 0;
-  switch (len & 3) {
-  case 3: w  = Byte_u(s, i+2) << 16;   /* fallthrough */
-  case 2: w |= Byte_u(s, i+1) << 8;    /* fallthrough */
-  case 1: w |= Byte_u(s, i);
-          MIX(h, w);
-  default: /*skip*/;     /* len & 3 == 0, no extra bytes, do nothing */
+  switch (len & 7) {
+  case 7:   w  = (uint64) Byte_u(s, i+6) << 56;   /* fallthrough */
+  case 6:   w |= (uint64) Byte_u(s, i+5) << 48;   /* fallthrough */
+  case 5:   w |= (uint64) Byte_u(s, i+4) << 40;   /* fallthrough */
+  case 4:   w |= (uint64) Byte_u(s, i+3) << 32;   /* fallthrough */
+  case 3:   w |= (uint64) Byte_u(s, i+2) << 24;   /* fallthrough */
+  case 2:   w |= (uint64) Byte_u(s, i+1) << 16;   /* fallthrough */
+  case 1:   w |= (uint64) Byte_u(s, i)   << 8;    /* fallthrough */
+  default:  w |= len & 0xFF;
+	  caml_hash_mix_int64(h, w);
   }
-  /* Finally, mix in the length.  Ignore the upper 32 bits, generally 0. */
-  h->i ^= (uint32) len;
 }
 
 /* Maximal size of the queue used for breadth-first traversal.  */
