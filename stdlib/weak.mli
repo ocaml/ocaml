@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(** Arrays of weak pointers and hash tables of weak pointers. *)
+(** Arrays of weak pointers and hash sets of weak pointers. *)
 
 
 (** {6 Low-level functions} *)
@@ -86,13 +86,13 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
    do not designate a valid subarray of [ar2].*)
 
 
-(** {6 Weak hash tables} *)
+(** {6 Weak hash sets} *)
 
-(** A weak hash table is a hashed set of values.  Each value may
+(** A weak hash set is a hashed set of values.  Each value may
     magically disappear from the set when it is not used by the
     rest of the program any more.  This is normally used to share
     data structures without inducing memory leaks.
-    Weak hash tables are defined on values from a {!Hashtbl.HashedType}
+    Weak hash sets are defined on values from a {!Hashtbl.HashedType}
     module; the [equal] relation and [hash] function are taken from that
     module.  We will say that [v] is an instance of [x] if [equal x v]
     is [true].
@@ -106,11 +106,11 @@ module type S = sig
     (** The type of the elements stored in the table. *)
   type t
     (** The type of tables that contain elements of type [data].
-        Note that weak hash tables cannot be marshaled using
+        Note that weak hash sets cannot be marshaled using
         {!Pervasives.output_value} or the functions of the {!Marshal}
         module. *)
   val create : int -> t
-    (** [create n] creates a new empty weak hash table, of initial
+    (** [create n] creates a new empty weak hash set, of initial
         size [n].  The table will grow as needed. *)
   val clear : t -> unit
     (** Remove all elements from the table. *)
@@ -154,4 +154,4 @@ end;;
 (** The output signature of the functor {!Weak.Make}. *)
 
 module Make (H : Hashtbl.HashedType) : S with type data = H.t;;
-(** Functor building an implementation of the weak hash table structure. *)
+(** Functor building an implementation of the weak hash set structure. *)
