@@ -1061,6 +1061,8 @@ let rec copy ?env ?partial ?keep_names ty =
       end;
     t
 
+let simple_copy t = copy t
+
 (**** Variants of instantiations ****)
 
 let gadt_env env =
@@ -1086,7 +1088,7 @@ let instance_def sch =
 
 let instance_list env schl =
   let env = gadt_env env in
-  let tyl = List.map (copy ?env) schl in
+  let tyl = List.map (fun t -> copy ?env t) schl in
   cleanup_types ();
   tyl
 
@@ -1137,35 +1139,35 @@ let instance_constructor ?in_pattern cstr =
       List.iter process cstr.cstr_existentials
   end;
   let ty_res = copy cstr.cstr_res in
-  let ty_args = List.map copy cstr.cstr_args in
+  let ty_args = List.map simple_copy  cstr.cstr_args in
   cleanup_types ();
   (ty_args, ty_res)
 
 let instance_parameterized_type ?keep_names sch_args sch =
-  let ty_args = List.map (copy ?keep_names) sch_args in
+  let ty_args = List.map (fun t -> copy ?keep_names t) sch_args in
   let ty = copy sch in
   cleanup_types ();
   (ty_args, ty)
 
 let instance_parameterized_type_2 sch_args sch_lst sch =
-  let ty_args = List.map copy sch_args in
-  let ty_lst = List.map copy sch_lst in
+  let ty_args = List.map simple_copy sch_args in
+  let ty_lst = List.map simple_copy sch_lst in
   let ty = copy sch in
   cleanup_types ();
   (ty_args, ty_lst, ty)
 
 let instance_declaration decl =
   let decl =
-    {decl with type_params = List.map copy decl.type_params;
-     type_manifest = may_map copy decl.type_manifest;
+    {decl with type_params = List.map simple_copy decl.type_params;
+     type_manifest = may_map simple_copy decl.type_manifest;
      type_kind = match decl.type_kind with
      | Type_abstract -> Type_abstract
      | Type_variant cl ->
          Type_variant (
            List.map
              (fun c ->
-                {c with cd_args=List.map copy c.cd_args;
-                        cd_res=may_map copy c.cd_res})
+                {c with cd_args=List.map simple_copy c.cd_args;
+                        cd_res=may_map simple_copy c.cd_res})
              cl)
      | Type_record (fl, rr) ->
          Type_record (
@@ -1182,7 +1184,7 @@ let instance_class params cty =
   let rec copy_class_type =
     function
       Cty_constr (path, tyl, cty) ->
-        Cty_constr (path, List.map copy tyl, copy_class_type cty)
+        Cty_constr (path, List.map simple_copy tyl, copy_class_type cty)
     | Cty_signature sign ->
         Cty_signature
           {csig_self = copy sign.csig_self;
@@ -1190,11 +1192,12 @@ let instance_class params cty =
              Vars.map (function (m, v, ty) -> (m, v, copy ty)) sign.csig_vars;
            csig_concr = sign.csig_concr;
            csig_inher =
-             List.map (fun (p,tl) -> (p, List.map copy tl)) sign.csig_inher}
+             List.map (fun (p,tl) -> (p, List.map simple_copy tl))
+               sign.csig_inher}
     | Cty_arrow (l, ty, cty) ->
         Cty_arrow (l, copy ty, copy_class_type cty)
   in
-  let params' = List.map copy params in
+  let params' = List.map simple_copy params in
   let cty' = copy_class_type cty in
   cleanup_types ();
   (params', cty')
