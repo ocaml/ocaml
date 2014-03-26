@@ -21,7 +21,7 @@
 typedef uint32 hash_key;
 typedef uint32 hash_out;
 
-typedef uint32 *hash_t;
+typedef struct hash_internal *hash_t;
 #define CAML_HASH_T_SIZE sizeof(uint32)
 
 CAMLextern hash_t caml_hash_init(void* h, hash_key k);
