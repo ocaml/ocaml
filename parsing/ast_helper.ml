@@ -374,7 +374,7 @@ module Convenience = struct
   let may_tuple tup = function
     | [] -> None
     | [x] -> Some x
-    | l -> Some (tup l)
+    | l -> Some (tup ?loc:None ?attrs:None l)
 
   let lid s = mkloc (Longident.parse s) !default_loc
   let tuple l = Exp.tuple l
